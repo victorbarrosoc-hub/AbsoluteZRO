@@ -3007,3 +3007,16 @@ produção (deploy só com autorização).
   sha256 do banco antes de gravar. Deploy de `e40b627` (main): `/api/zro/eu` responde `configurado: true` e
   `/api/zro/entrar` leva a `absolutezro.com/oauth/authorize` com `client_id=relay-web`, que segue para o login (sem
   `invalid_client`). Falta o titular entrar uma vez e ver o Set no topo.
+
+## Relay: painel da conta e Sair (30/10/2026)
+
+- `/painel` (`painel.html`, `app/painel.js`): fora da conta pede "Entrar" e volta para ele; dentro, olá com a foto da
+  conta, três números, recentes, projetos e meus presets. Histórico e projetos no IndexedDB do aparelho, por conta
+  (`pessoa.id` = resumo do sub, conferido no `set.test.js`: nunca o sub nem o e-mail).
+- Topo de todas as páginas com a conta: "Painel", a foto (iniciais sem foto) com o menu Painel, Converter, Sua conta
+  Absolute ZRO e **Sair** (`POST /api/zro/sair`, volta à inicial, que mostra "Entrar"). Login sem `volta` (o "Abrir" do
+  HUB) e o "Entrar" da inicial caem no painel.
+- `test/painel.test.js` no Chromium: cria projeto com dois destinos, abre o conversor por ele, converte um MP4 nos dois,
+  as duas saídas aparecem nos recentes e no projeto, outra conta no mesmo aparelho não vê nada, Sair encerra; 375 px sem
+  rolar para o lado. Relay `npm test`: 92/92. Lint, Prettier e `scan-secrets`: ok.
+- Não conferido aqui: o painel na produção com a conta do titular (depende do merge e do deploy pela main).

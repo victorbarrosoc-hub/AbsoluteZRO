@@ -66,6 +66,11 @@ describe('conta (só para o Set; converter segue sem conta)', () => {
     assert.equal(volta.headers.get('location'), '/converter?zro=ok')
   })
 
+  test('sem volta (o "Abrir" do HUB, por exemplo), o login cai no painel', async () => {
+    const { volta } = await entrar('/api/zro/entrar')
+    assert.equal(volta.headers.get('location'), '/painel?zro=ok')
+  })
+
   test('Absolute ZRO de antes do Set (invalid_scope): entra sem zro.set', async () => {
     zro.estado.recusarSet = true
     const { cookies } = await entrar()
@@ -82,6 +87,9 @@ describe('conta (só para o Set; converter segue sem conta)', () => {
     const j = await r.json()
     assert.equal(j.ok, true)
     assert.equal(j.pessoa.nome, LIA.nome)
+    // o id separa o histórico do painel por conta no aparelho: um resumo, nunca o sub nem o e-mail
+    assert.match(j.pessoa.id, /^[0-9a-f]{24}$/)
+    assert.ok(!j.pessoa.id.includes(LIA.sub))
     const id = process.env.ZRO_CLIENT_ID
     delete process.env.ZRO_CLIENT_ID
     try {
@@ -152,7 +160,7 @@ describe('a aba em comum no topo', () => {
   const ler = (p) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
   test('o topo das páginas monta "Set"; a folha é o <zro-set modo="folha"> da Absolute ZRO, pelo repasse', () => {
-    for (const p of ['../app/home.js', '../app/converter.js']) assert.match(ler(p), /montarSet\(\)/, p)
+    for (const p of ['../app/home.js', '../app/converter.js', '../app/painel.js']) assert.match(ler(p), /montarSet\(\)/, p)
     const js = ler('../app/set.js')
     assert.match(js, /https:\/\/absolutezro\.com\/set\/v1\/zro-set\.js/)
     assert.match(js, /setAttribute\('modo', 'folha'\)/)

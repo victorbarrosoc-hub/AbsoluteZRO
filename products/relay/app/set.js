@@ -1,11 +1,14 @@
 // Relay · o Set da Absolute ZRO (ADR 0032 de lá): quem da equipe e dos contatos está online, em qual app, e as
 // conversas (diretas e do projeto). É a aba em comum de todas as plataformas: aqui, "Set" no fim das páginas do topo.
 // O Relay continua aberto (converter não pede conta): sem sessão, o topo mostra "Entrar" (com a Absolute ZRO, volta
-// para a mesma página); o "Set" só aparece depois do login, quando o Set responde (pedido do titular, 30/10/2026), e
+// para a mesma página; da inicial, para o painel). Com sessão: "Painel", a foto da conta com o menu (Painel, Sua conta,
+// Sair; app/conta.js) e o "Set", que só aparece quando o Set responde (pedido do titular, 30/10/2026), e
 // abre a folha, o <zro-set modo="folha"> da Absolute ZRO (lateral no computador, tela cheia no iPhone), vestida com a
 // identidade do Relay (relay.css, --zro-set-*) e no tema escolhido (data-tema).
 // O widget fala com /api/zro/set, o repasse do próprio Relay (api/zro/set.js), que acrescenta o token da conta no
 // servidor; o token nunca chega a esta página. Sem o login ligado neste site (sem ZRO_CLIENT_ID), nada aparece.
+
+import { lerConta, linkEntrar, menuConta } from './conta.js'
 
 export const SCRIPT_SET = 'https://absolutezro.com/set/v1/zro-set.js'
 
@@ -59,19 +62,24 @@ export function ligarSet(el, entrada, { dentro = false } = {}) {
 
 const temaDe = () => (document.documentElement.dataset.tema === 'escuro' ? 'escuro' : 'claro')
 
-const volta = () => `/api/zro/entrar?volta=${encodeURIComponent(location.pathname + location.search)}`
-
-/** Um link no fim das páginas do topo: "Entrar" (fora da conta) ou "Set" (dentro, escondido até o Set responder). */
+/** Um link no fim das páginas do topo: "Entrar" (fora da conta), "Painel" ou "Set" (dentro; o Set escondido até
+ * responder). */
 function linkNoTopo(tipo) {
   const nav = document.querySelector('.topo nav')
   if (!nav) return null
   const a = document.createElement('a')
-  a.href = volta()
   if (tipo === 'entrar') {
+    a.href = linkEntrar()
     a.dataset.entrar = ''
     a.title = 'Entrar com a conta Absolute ZRO'
     a.append('Entrar')
+  } else if (tipo === 'painel') {
+    a.href = '/painel'
+    a.dataset.painel = ''
+    a.className = 'opcional'
+    a.append('Painel')
   } else {
+    a.href = '/painel'
     a.dataset.set = ''
     a.hidden = true
     a.title = 'Quem está online e as conversas'
@@ -110,21 +118,17 @@ function avisoDaVolta() {
 export async function montarSet() {
   avisoDaVolta()
   if (document.querySelector('[data-set], [data-entrar]')) return null
-  let conta
-  try {
-    // o /eu do Relay responde 200 sempre (api/zro/eu.js): ok com sessão, configurado sem ela
-    const r = await fetch('/api/zro/eu', { credentials: 'same-origin', cache: 'no-store', headers: { accept: 'application/json' } })
-    const j = r.ok && (r.headers.get('content-type') || '').includes('application/json') ? await r.json().catch(() => null) : null
-    conta = j?.ok ? 'dentro' : j?.configurado ? 'fora' : null
-  } catch {
-    conta = null
-  }
+  const { estado: conta, pessoa } = await lerConta()
   // login não ligado neste site (ou sem as funções, no servidor local): nada de conta no topo
-  if (!conta) return null
+  if (conta === 'desligado') return null
   if (conta === 'fora') {
     linkNoTopo('entrar')
     return null
   }
+  // dentro: a foto da conta no fim do topo (menu com Painel, Sua conta e Sair) e o "Painel" nas páginas
+  document.body.classList.add('com-conta')
+  if (!document.querySelector('.topo nav a[href="/painel"], .topo nav a[href="painel"]')) linkNoTopo('painel')
+  document.querySelector('.topo')?.append(menuConta(pessoa))
   const entrada = linkNoTopo('set')
   if (!entrada) return null
   try {

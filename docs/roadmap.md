@@ -777,6 +777,10 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ⬜ Revela: looks pela conta (`/api/zro/looks`) e ligar `REVELA=released` no projeto `relay` quando abrir.
 - ⬜ Cor da Revela no computador: a mesma conta no ffmpeg e o SOBEDESCE assando a receita (hoje preset com cor fica
   no navegador).
+- ✅ Painel da conta (pedido do titular, 30/10/2026): `/painel` com recentes, números, projetos (nome + destinos, abre o
+  conversor com eles e as saídas entram no projeto) e meus presets; quem entra cai nele. Topo com a foto da conta e o
+  menu (Painel, Sua conta, Sair); a página inicial mostra que a pessoa está dentro ("Seu painel").
+- ⬜ Painel entre aparelhos e no app de computador do Relay: API e schema `relay` no Supabase (autorização do titular).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.

@@ -159,6 +159,10 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
 - **Conta e acesso:** converter no aparelho não pede conta nem consome quota (nenhum custo de servidor). Fila do
   computador e Drive pedem a conta Absolute ZRO e passam por `authorize()` com o produto `relay`. Se um dia houver
   conversão em servidor, ela entra com `consumeQuota` (chave = id do pedido) e limite por plano.
+- **Painel da conta** (`/painel`, 30/10/2026): histórico das conversões e projetos no IndexedDB do aparelho, por conta
+  (`pessoa.id` do `/api/zro/eu`, um resumo do sub). Nada sobe. Quando o app de computador do Relay existir, o mesmo
+  formato (`src/painel.js`: `registro` e `projeto`) é o que ele grava, e a sincronização entre aparelhos passa a ser uma
+  API do Relay sobre o schema `relay` (com autorização do titular).
 - **Banco:** schema e papel próprios (`relay`) no Supabase `AbsoluteZRO`, nunca dentro de `zro` (ADR 0013).
 
 ## Presets (fonte: `products/relay/src/presets.js`)

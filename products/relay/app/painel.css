@@ -1,0 +1,514 @@
+/* Relay · painel da conta. Uma ideia por bloco, muito respiro, quase nada de texto: os números, as conversões e os
+   projetos falam por forma (ícone do destino, fichas, cartões). */
+
+.painel {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 48px 16px 24px;
+  display: grid;
+  gap: 48px;
+}
+.painel-carregando {
+  display: grid;
+  place-items: center;
+  min-height: 50vh;
+}
+.painel-carregando .rele {
+  --largura: 96px;
+  --altura: 32px;
+  animation: carregando 1.4s var(--mola) infinite alternate;
+}
+@keyframes carregando {
+  from {
+    --curso: 0;
+  }
+}
+@property --curso {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .painel-carregando .rele {
+    animation: none;
+  }
+}
+
+/* fora da conta */
+.painel-fora {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 10vh 0;
+}
+.painel-fora .rele {
+  --largura: 120px;
+  --altura: 40px;
+  margin-bottom: 12px;
+}
+.painel-fora h1 {
+  font-size: clamp(40px, 7vw, 64px);
+}
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+#dentro {
+  display: grid;
+  gap: 48px;
+}
+
+/* cabeça: a foto, o olá e as duas ações */
+.cabeca-painel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 20px;
+  animation: surge 0.6s var(--mola) both;
+}
+.cabeca-painel h1 {
+  font-size: clamp(34px, 5vw, 48px);
+  line-height: 1.05;
+}
+.cabeca-painel .apoio {
+  margin-top: 6px;
+}
+.avatar--grande {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+@media (max-width: 760px) {
+  .cabeca-painel {
+    grid-template-columns: auto 1fr;
+  }
+  .cabeca-painel .acoes {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+  .cabeca-painel .acoes > * {
+    flex: 1;
+  }
+  .avatar--grande {
+    width: 56px;
+    height: 56px;
+    font-size: 19px;
+  }
+}
+@keyframes surge {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cabeca-painel,
+  .numero {
+    animation: none;
+  }
+}
+
+/* números */
+.numeros {
+  list-style: none;
+  margin: -16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.numero {
+  display: grid;
+  gap: 2px;
+  padding: 18px 20px;
+  border-radius: var(--raio-g);
+  animation: surge 0.6s var(--mola) both;
+}
+.numero:nth-child(2) {
+  animation-delay: 60ms;
+}
+.numero:nth-child(3) {
+  animation-delay: 120ms;
+}
+.numero svg {
+  width: 20px;
+  height: 20px;
+  color: var(--mudo);
+  margin-bottom: 8px;
+}
+.numero strong {
+  font: 800 28px/1.1 var(--fonte-titulo);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.numero span {
+  color: var(--mudo);
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .numeros {
+    gap: 8px;
+  }
+  .numero {
+    padding: 14px;
+  }
+  .numero strong {
+    font-size: 20px;
+  }
+}
+
+/* blocos */
+.bloco {
+  display: grid;
+  gap: 16px;
+}
+.bloco-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bloco-cabeca h2 {
+  font-size: 24px;
+  font-weight: 800;
+}
+.bloco-cabeca .vidro {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+/* recentes */
+.recentes {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: grid;
+}
+.conversao {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 18px;
+}
+.conversao + .conversao {
+  border-top: 1px solid var(--linha);
+  border-radius: 0;
+}
+.conversao-icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgb(var(--t) / 0.05);
+}
+.conversao-icone svg {
+  width: 20px;
+  height: 20px;
+}
+.conversao-corpo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.conversao-corpo strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.conversao-corpo .fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.conversao-quando {
+  color: var(--fraco);
+  font-size: 13px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .conversao {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .conversao-quando {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .conversao > .vidro {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .conversao .ficha--projeto {
+    display: none;
+  }
+  .projeto--novo {
+    min-height: 72px;
+    grid-auto-flow: column;
+    gap: 8px;
+  }
+}
+
+.vazio {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.vazio p {
+  margin: 0;
+}
+.vazio .rele {
+  --largura: 96px;
+  --altura: 32px;
+}
+.vazio-linha {
+  font-size: 15px;
+}
+
+/* projetos */
+.projetos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.projeto {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: 100%;
+  min-height: 140px;
+  padding: 20px;
+  border: 0;
+  border-radius: var(--raio-g);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.3s var(--mola);
+}
+.projeto:hover {
+  transform: translateY(-2px);
+}
+.projeto:active {
+  transform: scale(0.98);
+}
+.projeto strong {
+  font: 700 18px/1.2 var(--fonte-titulo);
+  overflow-wrap: anywhere;
+}
+.projeto .apoio {
+  font-size: 13px;
+  margin-top: auto;
+}
+.projeto-destinos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--mudo);
+  min-height: 20px;
+}
+.projeto-destinos svg {
+  width: 20px;
+  height: 20px;
+}
+.projeto--novo {
+  place-content: center;
+  justify-items: center;
+  background: none;
+  border: 1.5px dashed var(--linha-forte);
+  color: var(--mudo);
+}
+.projeto--novo svg {
+  width: 24px;
+  height: 24px;
+}
+.projeto--novo strong {
+  font-size: 15px;
+}
+
+/* meus presets e escolha de destinos: pílulas com o ícone */
+.meus,
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-destino {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: 0 0 0 1px var(--linha);
+  color: var(--texto);
+  font: 500 14px/1.2 var(--fonte);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+.chip-destino svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.chip-destino[aria-pressed='true'] {
+  background: var(--btn-main-fill);
+  color: var(--btn-main-ink);
+  box-shadow: none;
+}
+
+.painel-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--linha);
+  color: var(--fraco);
+  font-size: 13px;
+}
+.painel-pe span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.painel-pe svg {
+  width: 14px;
+  height: 14px;
+}
+.link {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--mudo);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* folha do projeto */
+.folha {
+  width: min(640px, calc(100vw - 24px));
+  max-height: min(92vh, 860px);
+  padding: 0;
+  border: 0;
+  border-radius: 28px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 0.3);
+  overflow: auto;
+}
+.folha[open] {
+  animation: folha 0.45s var(--mola) both;
+}
+@keyframes folha {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+    scale: 0.98;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .folha[open] {
+    animation: none;
+  }
+}
+.folha::backdrop {
+  background: rgb(0 0 0 / 0.32);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.folha-corpo {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+.folha-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.folha-cabeca h2 {
+  font-size: 26px;
+  overflow-wrap: anywhere;
+}
+.campo {
+  display: grid;
+  gap: 8px;
+}
+.rotulo {
+  color: var(--mudo);
+  font-size: 13px;
+  font-weight: 500;
+}
+.campo input {
+  font: 650 18px/1.2 var(--fonte-titulo);
+  border: 0;
+  border-bottom: 1.5px solid var(--linha-forte);
+  background: none;
+  padding: 6px 0;
+  outline: none;
+}
+.campo input:focus {
+  border-color: var(--texto);
+}
+.escolha-destinos {
+  display: grid;
+  gap: 14px;
+}
+.grupo-destinos {
+  display: grid;
+  gap: 8px;
+}
+.recentes--folha {
+  padding: 0;
+  border-top: 1px solid var(--linha);
+}
+.recentes--folha .conversao {
+  padding: 10px 0;
+}
+.erro {
+  color: var(--erro);
+  font-size: 14px;
+  margin: 0;
+}
+.folha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.folha-acoes .apagar {
+  color: var(--erro);
+  margin-right: auto;
+}
+@media (max-width: 720px) {
+  .folha {
+    margin: auto 0 0;
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 28px 28px 0 0;
+  }
+}

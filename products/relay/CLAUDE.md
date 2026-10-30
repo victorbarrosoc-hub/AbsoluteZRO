@@ -28,9 +28,12 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 - **Opção que só o computador faz** (velocidade, filtros, LUFS) fica no grupo "No computador" e a ficha do navegador
   diz que ficou de fora. Nunca aceitar uma opção e ignorar calado.
 - **O arquivo da pessoa não sai do aparelho.** Nenhum upload; o site é estático. A única parte com servidor é a conta,
-  e ela só serve ao Set da Absolute ZRO (`api/`, 30/10/2026): login com a Absolute ZRO (cliente `relay-web`), o "Set"
-  no topo e o repasse `/api/zro/set/*` com o token no servidor. Converter continua sem conta, e com o site fechado
-  (sem `RELEASE=released`) o login fica desligado (`siteFechado()` em `api/_zro.js`).
+  e ela só serve ao que toca a conta (`api/`, 30/10/2026): login com a Absolute ZRO (cliente `relay-web`), o "Set" no
+  topo, o repasse `/api/zro/set/*` com o token no servidor e a foto da conta com o menu (Painel, Sua conta, Sair;
+  `app/conta.js`). O **painel** (`/painel`, `app/painel.js`) guarda o histórico e os projetos no IndexedDB do aparelho
+  (`app/historico.js`), separados pelo `id` da conta (resumo do sub); nada disso sobe. Sincronizar entre aparelhos (e
+  com o app de computador) pede o schema `relay` no Supabase: autorização do titular antes. Converter continua sem
+  conta, e com o site fechado (sem `RELEASE=released`) o login fica desligado (`siteFechado()` em `api/_zro.js`).
 - **Cor:** SDR sai marcado BT.709 (1-1-1). A cor de entrada vem do contêiner (o decodificador de ProRes erra a marca);
   10 bits vira 8 com arredondamento. HDR e gamut largo viram aviso, nunca silêncio.
 - **Nunca fingir:** sem codificador, sem decodificador ou sem caber no tamanho, a tela diz o porquê.

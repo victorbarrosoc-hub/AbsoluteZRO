@@ -9,6 +9,9 @@ import { montarSet } from './set.js'
 import * as Meus from './meus.js'
 import * as Looks from './looks.js'
 import { linkMaxima } from '../src/link.js'
+import { registro } from '../src/painel.js'
+import { lerConta } from './conta.js'
+import * as Historico from './historico.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -52,7 +55,7 @@ if (FAMILIA[de]) {
 }
 const escolhidos = new Set((pedido && achar(pedido) ? [pedido] : lembrados).filter((id) => achar(id)))
 if (!escolhidos.size) escolhidos.add('youtube-1080')
-let grupo = achar([...escolhidos][0])?.grupo ?? GRUPOS[0]
+let grupo = new URLSearchParams(location.search).get('aba') === 'Meus' ? 'Meus' : (achar([...escolhidos][0])?.grupo ?? GRUPOS[0])
 let resolucao = 'original'
 const fila = [] // { id, arquivo, info, estado, erro, saidas: [{ preset, estado, plano, url, bytes, conversao, avisos }] }
 let pasta = null
@@ -402,6 +405,7 @@ async function converterSaida(item, s) {
       `${velocidade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}× tempo real`,
     ].filter(Boolean)
     s.estado = 'feito'
+    registrarNoPainel(item, s, r)
   } catch (e) {
     s.estado = e instanceof MB.ConversionCanceledError ? 'cancelado' : 'erro'
     s.erro = s.estado === 'erro' ? (e.codigo ? e.message : `Não deu para converter: ${e.message}`) : null
@@ -409,6 +413,39 @@ async function converterSaida(item, s) {
   }
   s.conversao = null
   atualizarItem(item)
+}
+
+// ─────────── painel: com conta, cada saída pronta entra no histórico do aparelho (app/painel.js) ───────────
+
+const idProjeto = new URLSearchParams(location.search).get('projeto')
+let projetoAtual = null
+
+async function registrarNoPainel(item, s, r) {
+  const c = await lerConta()
+  if (c.estado !== 'dentro' || !c.pessoa?.id) return
+  await Historico.registrar(c.pessoa.id, registro({ arquivo: item.arquivo, info: item.info, preset: s.preset, resultado: r, nome: s.nome, projeto: projetoAtual?.id })).catch(() => {})
+}
+
+/** ?projeto=<id> (vindo do painel): marca os destinos do projeto e as conversões entram nele. */
+async function abrirProjeto() {
+  if (!idProjeto) return
+  const c = await lerConta()
+  if (c.estado !== 'dentro' || !c.pessoa?.id) return
+  const p = await Historico.projetoPorId(c.pessoa.id, idProjeto).catch(() => null)
+  if (!p) return
+  projetoAtual = p
+  const destinos = p.destinos.filter((d) => achar(d))
+  if (!pedido && destinos.length) {
+    escolhidos.clear()
+    for (const d of destinos) escolhidos.add(d)
+    grupo = achar(destinos[0])?.grupo ?? grupo
+    desenharAbas()
+    desenharPresets()
+    atualizarTudo()
+  }
+  const chip = el('a', { className: 'vindo', href: '/painel', title: 'Voltar ao painel' }, icone('camadas'), el('span', { textContent: p.nome }))
+  chip.dataset.projeto = ''
+  ;(document.querySelector('.vindo') ?? $('soltar')).after(chip)
 }
 
 $('converter').addEventListener('click', async () => {
@@ -516,6 +553,7 @@ desenharAbas()
 desenharPresets()
 atualizarTudo()
 window.relayPronto = true
+abrirProjeto()
 
 // o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
 montarSet()
