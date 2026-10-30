@@ -3,22 +3,59 @@
 // "Entre discos" (discos.js): cartão/SSD → outros discos, comparando antes e conferindo o checksum.
 // Visual no padrão do kit (docs/UI-KIT.md): passos numerados, resumo colorido ao lado e o botão grande.
 import { html, useEffect, useMemo, useRef, useState } from '/vendor/preact-htm.js'
-import { useStore, setCompareJob } from '../lib/store.js'
+import { getState, useStore, setCompareJob } from '../lib/store.js'
 import { api, attempt, enc } from '../lib/api.js'
 import { bytes, count, plural, relTime, tildify, baseName, dirOf } from '../lib/format.js'
-import { cx, usePersistentState, useNow } from '../lib/ui.js'
+import { cx, storage, usePersistentState, useNow } from '../lib/ui.js'
 import { announceBatch } from '../lib/actions.js'
 import { pickDriveFolder, confirmDialog } from '../lib/modals.js'
 import { bridge, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, FileIcon, Pill } from './common.js'
 import { Barra, BotaoGrande, Destaque, Opcoes, Pagina, Passo, Pilulas, Resumo } from './kit.js'
-import { useLocalRoots } from './local-picker.js'
+import { loadLocalRoots, useLocalRoots } from './local-picker.js'
+import { navigate } from '../lib/router.js'
 import { DiscosPanel } from './discos.js'
 import { Fonte, Rota } from './comparar-partes.js'
 
 // lembra a última comparação enquanto o app está aberto (trocar de tela não perde o resultado)
-const mem = { jobId: null, result: null, startedAt: null }
+const mem = { jobId: null, result: null, startedAt: null, looks: null }
+
+// ─────────── Looks do Relay (link sobedesce://looks, desktop/links.js) ───────────
+// O site do Relay grava os looks (.cube) numa pasta deste computador. O link abre o Comparar com essa pasta e a pasta do
+// Drive dos looks, escolhidas uma vez (guardadas aqui), e já compara. Subir o que falta e baixar o que só está no Drive
+// continuam sendo um toque da pessoa: nada é apagado nem gravado por cima.
+export const LOOKS_LOCAL = 'looks.local'
+export const LOOKS_DRIVE = 'looks.remote'
+
+export async function abrirLooks({ trocar = false } = {}) {
+  const accountId = getState().activeAccountId
+  let local = trocar ? null : storage.get(LOOKS_LOCAL)
+  if (!local) {
+    const { home, sep } = await loadLocalRoots().catch(() => ({ home: '', sep: '/' }))
+    local = await pickFolderPath({
+      title: 'Qual é a pasta dos looks?',
+      defaultPath: home ? [home, 'Absolute ZRO', 'Looks do Relay'].join(sep) : undefined,
+      subtitle: 'A mesma que você escolheu no Relay.',
+    })
+    if (!local) return
+    storage.set(LOOKS_LOCAL, local)
+  }
+  if (!accountId) return navigate('drive') // sem Drive conectado: a tela do Drive pede para conectar
+  let remote = trocar ? null : storage.get(LOOKS_DRIVE)
+  if (!remote) {
+    remote = await pickDriveFolder({ accountId, title: 'Para qual pasta do Drive vão os looks?', initialFolderId: 'root' })
+    if (!remote) return
+    storage.set(LOOKS_DRIVE, remote)
+  }
+  mem.looks = { local, remote }
+  navigate('comparar')
+  window.dispatchEvent(new CustomEvent('sobedesce:looks'))
+}
+
+bridge?.aoLink?.((link) => {
+  if (link?.tipo === 'looks') abrirLooks({ trocar: link.trocar === true })
+})
 
 const MODES = [
   { value: 'quick', titulo: 'Rápido', sub: 'Nome e tamanho, em segundos', icone: 'bolt' },
@@ -420,10 +457,12 @@ function CompareDrive({ topo }) {
     }
   }, [temResultado])
 
-  const start = async () => {
-    if (!local || !remote || !accountId) return
+  const start = async (par = null) => {
+    const l = par?.local ?? local
+    const r = par?.remote ?? remote
+    if (!l || !r || !accountId) return
     setStarting(true)
-    const res = await attempt(api.post('/api/compare', { accountId, localPath: local, driveFolderId: remote.id, mode }))
+    const res = await attempt(api.post('/api/compare', { accountId, localPath: l, driveFolderId: r.id, mode }))
     setStarting(false)
     if (!res?.jobId) return
     mem.jobId = res.jobId
@@ -435,6 +474,23 @@ function CompareDrive({ topo }) {
     setHidden(false)
     setIncludeDiff(false)
   }
+
+  // Looks do Relay: o link traz as duas pastas e já compara (abrirLooks, acima)
+  const comecar = useRef(start)
+  comecar.current = start
+  useEffect(() => {
+    const usar = () => {
+      if (!mem.looks) return
+      const par = mem.looks
+      mem.looks = null
+      setLocal(par.local)
+      setRemote(par.remote)
+      comecar.current(par)
+    }
+    usar()
+    window.addEventListener('sobedesce:looks', usar)
+    return () => window.removeEventListener('sobedesce:looks', usar)
+  }, [])
 
   // Cancelar: o motor para de ler (e de calcular o MD5) na hora; a tela mostra "cancelada".
   const cancelar = () => jobId && attempt(api.del(`/api/compare/${enc(jobId)}`))
