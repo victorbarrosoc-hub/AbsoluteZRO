@@ -3066,3 +3066,27 @@ produção (deploy só com autorização).
   RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
+
+## Maestro: o freela entra pela conta Absolute ZRO (30/10/2026)
+
+Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/ponte-falsa.mts`, `tests/zro-falso.mts`).
+
+- `tests/freela-convite.test.mts` (novo): o @ liga pelo perfil relido no HUB; a mesma conta em dois freelas é recusada e
+  nada do salvar fica; tirar o @ desliga; escondido e inexistente dão a mesma resposta. Convite idempotente (duas vezes e
+  em paralelo = um link só), 7 dias, um aberto por freela, hash ilegível pelo app, aceite/validade/apagar barrados,
+  revogar para sempre, auditoria sem o token; leitura não convida; a outra organização (e a forjada) não vê nem revoga;
+  freela já ligado não recebe convite e ligar pelo @ revoga o aberto. Porta estreita: só o primeiro nome e a marca
+  saem (nem e-mail, WhatsApp, sobrenome ou id); aceitar liga uma vez, a mesma conta de novo = ok, outra conta, vencido
+  e desconhecido = morto, conta já em outro freela = recusa com o convite aberto, a mesma pessoa em outra produtora
+  pode. Rota pública: Origin conferido, sem identidade 401, o `sub` do corpo é ignorado. Volta do login com
+  `volta=/convite/…`: escopos básicos, sem sessão, membro ou organização no Maestro, refresh token devolvido, cookie
+  `mae_conv` com a identidade do id_token.
+- `npm test` do Maestro **599/599**; lint, Prettier, tipos e build ok; `desktop/test/regras.test.mjs` com `/convite`.
+- E2E (`e2e/freela-convite.spec.ts`, computador 1440 e iPhone 393): prévia do @ (escondido = "Não achamos esse @."),
+  "Usar" preenche e liga, ficha "Conectado @fulano", a mesma conta recusada; avulso com "Convidar para o Absolute ZRO",
+  ficha "Convite enviado" com Copiar link (área de transferência conferida) e Mandar no WhatsApp (`wa.me/55…` com a
+  mensagem do cadastro e o link); o freela abre o link sem conta ("Criar conta" com `modo=criar` e a volta), volta
+  com a conta, aceita ("Pronto"), a produtora vê "Conectado"; outra conta no mesmo link = tela neutra; sem conta →
+  convidar → revogar = tela neutra. Junto: `pessoas-zro`, `acessos`, `produtora` e `sem-corte` (iPhone, 375/393, claro
+  e escuro, com `/convite`): **34 passaram**, 6 pulados por projeto. `scan-secrets` sem segredo.
+- Fica para depois: tela do freela dentro do Maestro e o aviso do convite por e-mail (em espera pelo titular).

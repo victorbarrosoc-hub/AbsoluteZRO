@@ -48,10 +48,25 @@ async function ids() {
         projeto_id: string;
       }[],
       fluxo: await fluxoDeExemplo(sql, org.id),
+      convite: await conviteDeExemplo(sql, org.id),
     };
   } finally {
     await sql.end();
   }
+}
+
+/** Token fixo do convite de um freela da demonstração (a página `/convite/<token>`, drizzle/0036). */
+const TOKEN_CONVITE = "corte-do-convite-do-freela-".padEnd(43, "x");
+
+/** Um freela sem conta com o convite aberto (só o sha256, como o app grava); criado uma vez. */
+async function conviteDeExemplo(sql: postgres.Sql, org: string): Promise<boolean> {
+  const [f] = await sql`select id from maestro.freelas where org_id = ${org} and zro_sub is null order by nome limit 1`;
+  if (!f) return false;
+  await sql`
+    insert into maestro.freela_convites (org_id, freela_id, token_hash, token_enc, expira_em)
+    values (${org}, ${f.id}, encode(sha256(convert_to(${TOKEN_CONVITE}, 'UTF8')), 'hex'), 'copia-cifrada-de-teste', now() + interval '7 days')
+    on conflict do nothing`;
+  return true;
 }
 
 /** Token fixo do link de exportação do fluxo de exemplo (a página `/f/<token>`, Criação F6). */
@@ -242,6 +257,7 @@ async function telas(): Promise<Tela[]> {
   ficha("lancamento", i.lancamento, (x) => `/app/financeiro/${x}`);
   ficha("lancamento-editar", i.lancamento, (x) => `/app/financeiro/${x}/editar`);
   i.documentos.forEach((d, n) => t.push({ nome: `documento-${n + 1}`, rota: `/app/projetos/${d.projeto_id}/documentos/${d.id}` }));
+  if (i.convite) t.push({ nome: "convite-freela", rota: `/convite/${TOKEN_CONVITE}`, publica: true });
   if (s.p) t.push({ nome: "pedido-publico", rota: `/p/${s.p}`, publica: true });
   if (s.o) t.push({ nome: "orcamento-publico", rota: `/o/${s.o}`, publica: true });
   if (s.a)

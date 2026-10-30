@@ -716,6 +716,19 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
 - ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
 
+## Maestro · o freela entra pela conta Absolute ZRO (30/10/2026)
+
+- ✅ "Novo freela" e a edição com o campo **"@ no Absolute ZRO"** no topo: prévia (foto, nome, @) depois de uma pausa,
+  "Usar" preenche nome, cidade e funções e liga o freela à conta (perfil relido no HUB; escondido = inexistente; a mesma
+  conta não entra em dois freelas da produtora).
+- ✅ Avulso continua igual, com **"Convidar para o Absolute ZRO"**: link de 7 dias (um aberto por freela, revogável),
+  **Copiar link** e **Mandar no WhatsApp** com a mensagem do cadastro. E-mail em espera (decisão do titular): nada sai
+  sozinho. A ficha mostra "Sem conta", "Convite enviado" ou "Conectado @fulano".
+- ✅ `/convite/<token>`: o freela cria a conta (ou entra) e aceita; o login do convite não cria sessão nem organização
+  no Maestro. Migração `0036` do Maestro (`freela_convites` + porta estreita).
+- ⛔ Em produção: migração `0036` do Maestro no próximo deploy autorizado.
+- ⬜ Tela do freela dentro do Maestro (as escalas dele) e o aviso do convite por e-mail quando o titular liberar.
+
 ## Maestro · Criação: o cliente aprova o roteiro (F7, 30/10/2026)
 
 - ✅ "Enviar ▾ › Para o cliente aprovar" (administração e gestão, `podeCriacao(…, 'enviar')`): de uma versão salva, a
