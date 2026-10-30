@@ -698,6 +698,12 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   a identidade de cada app (`--zro-set-*`). Fechados (Carro, NOSSOM, AEON, Revela) seguem o portão: a conta fora da lista
   não vê a entrada e o repasse responde 403. O Relay ganhou um login só para o Set, desligado enquanto o site estiver
   fechado. Tabela em [set.md](integration-contracts/set.md).
+- ✅ Integrado com "a Z nunca é a primeira tela" (30/10/2026): a entrada de cada app continua a tarefa, a Z segue
+  discreta (só carrega no toque) e o Set tem a entrada dele sem ser a entrada. Barra de baixo do iPhone com no máximo
+  cinco itens: no SOBEDESCE (celular), no Synquei (celular) e na Revela o Set foi para o topo, ao lado da Z; TPeasy
+  (Roteiros, Teleprompter, Ajustes, Set), AEON (Mídia, Revisar, Edição, Entrega, Set) e NOSSOM (Início, Projetos,
+  Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
+  sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
 - ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
