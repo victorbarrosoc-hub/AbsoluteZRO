@@ -2860,3 +2860,13 @@ Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamad
 Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
 da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
 produção (deploy só com autorização).
+
+## Relay: login único e Set ligados na produção (30/10/2026)
+
+- Cliente `relay-web` cadastrado pelo titular no console do HUB (Apps → Login único): confidencial, app da família,
+  produto `relay`, retorno só em `https://relay.absolutezro.com/api/zro/callback`, escopos da família com `zro.set`.
+  Canal `sso` do Relay aberto (Lançamento); computador, download e API seguem fechados.
+- `ZRO_CLIENT_ID` e `ZRO_CLIENT_SECRET` (sensível) só na produção do projeto Vercel `relay`; o segredo conferido contra o
+  sha256 do banco antes de gravar. Deploy de `e40b627` (main): `/api/zro/eu` responde `configurado: true` e
+  `/api/zro/entrar` leva a `absolutezro.com/oauth/authorize` com `client_id=relay-web`, que segue para o login (sem
+  `invalid_client`). Falta o titular entrar uma vez e ver o Set no topo.
