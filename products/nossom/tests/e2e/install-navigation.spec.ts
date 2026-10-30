@@ -128,7 +128,16 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
 }) => {
   await page.goto('/studio/inicio');
   const family = page.getByRole('navigation', { name: 'Absolute ZRO', exact: true });
-  const apps = ['Absolute ZRO', 'Carro do Freela', 'Revela', 'Sobedesce', 'Synquei', 'TPEasy'];
+  // o Maestro entrou na família no lançamento (29/10/2026, MAESTRO_NA_FAMILIA em components/family-nav.tsx)
+  const apps = [
+    'Absolute ZRO',
+    'Carro do Freela',
+    'Maestro',
+    'Revela',
+    'Sobedesce',
+    'Synquei',
+    'TPEasy',
+  ];
   await expect(family.getByRole('link')).toHaveText(apps);
   for (const name of apps) {
     const link = family.getByRole('link', { name, exact: true });
