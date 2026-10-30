@@ -24,14 +24,31 @@ export const FALA_AMOSTRAGEM = 24_000
 export const ESCUTA_BYTES_POR_SEGUNDO = 32_000
 
 function chave(): string {
-  const k = process.env.ELEVENLABS_API_KEY
+  const k = process.env.ELEVENLABS_API_KEY?.trim()
   if (!k) throw new DomainError('upstream_unavailable', 'Conecte a chave da ElevenLabs (ELEVENLABS_API_KEY).')
   return k
 }
 
-async function falha(r: Response): Promise<never> {
+/** O que cada chamada usa da chave: diz qual permissão ligar na ElevenLabs quando ela recusa. */
+type Servico = 'vozes' | 'fala' | 'transcricao' | 'escuta' | 'desenho' | 'salvar-voz'
+const PERMISSAO: Record<Servico, string> = {
+  vozes: 'Voices (ler)',
+  fala: 'Text to Speech',
+  transcricao: 'Speech to Text',
+  escuta: 'Speech to Text (tempo real)',
+  desenho: 'Voice Generation',
+  'salvar-voz': 'Voices (escrever)',
+}
+
+async function falha(r: Response, servico: Servico): Promise<never> {
   // Só o status: o corpo pode ecoar dados do pedido, e nada da chave vai para o log.
-  if (r.status === 401 || r.status === 403) throw new DomainError('upstream_unavailable', 'A ElevenLabs recusou a chave. Confira ELEVENLABS_API_KEY.')
+  if (r.status === 401 || r.status === 403) {
+    console.warn(JSON.stringify({ scope: 'z-lab', event: 'elevenlabs.recusou', servico, status: r.status }))
+    throw new DomainError(
+      'upstream_unavailable',
+      `A ElevenLabs recusou a chave para ${PERMISSAO[servico]} (${r.status}). Ligue essa permissão na chave ou confira ELEVENLABS_API_KEY.`,
+    )
+  }
   if (r.status === 429) throw new DomainError('rate_limited', 'A ElevenLabs pediu calma. Tente de novo em instantes.')
   if (r.status === 422) throw new DomainError('invalid_input', 'A ElevenLabs não aceitou o pedido (voz ou áudio inválido).')
   throw new DomainError('upstream_unavailable', `A ElevenLabs não respondeu agora (${r.status}).`)
@@ -50,7 +67,7 @@ export async function listarVozes(signal?: AbortSignal): Promise<Voz[]> {
     const q = new URLSearchParams({ page_size: '100', include_total_count: 'false' })
     if (pagina) q.set('next_page_token', pagina)
     const r = await fetch(`${base()}/v2/voices?${q}`, { headers: { 'xi-api-key': chave() }, signal, cache: 'no-store' })
-    if (!r.ok) await falha(r)
+    if (!r.ok) await falha(r, 'vozes')
     const d = (await r.json()) as {
       voices: {
         voice_id: string
@@ -99,7 +116,7 @@ export async function falar(f: Fala, signal?: AbortSignal): Promise<ReadableStre
     }),
     signal,
   })
-  if (!r.ok || !r.body) await falha(r)
+  if (!r.ok || !r.body) await falha(r, 'fala')
   return r.body!
 }
 
@@ -112,7 +129,7 @@ export async function transcrever(pcm: Uint8Array, signal?: AbortSignal, idioma?
   if (idioma) form.set('language_code', idioma)
   form.set('file', new Blob([pcm as BlobPart], { type: 'application/octet-stream' }), 'audio.pcm')
   const r = await fetch(`${base()}/v1/speech-to-text`, { method: 'POST', headers: { 'xi-api-key': chave() }, body: form, signal })
-  if (!r.ok) await falha(r)
+  if (!r.ok) await falha(r, 'transcricao')
   const d = (await r.json()) as { text?: string; language_code?: string | null }
   return { texto: (d.text ?? '').trim(), idioma: d.language_code ?? null }
 }
@@ -120,7 +137,7 @@ export async function transcrever(pcm: Uint8Array, signal?: AbortSignal, idioma?
 /** Token de uso único (vale 15 min, uma conexão) para o navegador abrir a escuta ao vivo sem ver a chave. */
 export async function tokenDaEscuta(signal?: AbortSignal): Promise<string> {
   const r = await fetch(`${base()}/v1/single-use-token/realtime_scribe`, { method: 'POST', headers: { 'xi-api-key': chave() }, signal })
-  if (!r.ok) await falha(r)
+  if (!r.ok) await falha(r, 'escuta')
   const d = (await r.json()) as { token?: string }
   if (!d.token) throw new DomainError('upstream_unavailable', 'A ElevenLabs não devolveu o token da escuta.')
   return d.token
@@ -139,7 +156,7 @@ export async function desenharVoz(descricao: string, texto: string, signal?: Abo
     body: JSON.stringify({ voice_description: descricao, text: texto, model_id: 'eleven_multilingual_ttv_v2' }),
     signal,
   })
-  if (!r.ok) await falha(r)
+  if (!r.ok) await falha(r, 'desenho')
   const d = (await r.json()) as { previews?: { generated_voice_id?: string; audio_base_64?: string; media_type?: string; duration_secs?: number }[] }
   return (d.previews ?? [])
     .filter((p) => typeof p.generated_voice_id === 'string' && /^[A-Za-z0-9_-]{6,80}$/.test(p.generated_voice_id) && typeof p.audio_base_64 === 'string')
@@ -165,7 +182,7 @@ export async function criarVoz(p: { amostra: string; nome: string; descricao: st
     }),
     signal,
   })
-  if (!r.ok) await falha(r)
+  if (!r.ok) await falha(r, 'salvar-voz')
   const d = (await r.json()) as { voice_id?: string; name?: string }
   if (!d.voice_id || !/^[A-Za-z0-9]{8,40}$/.test(d.voice_id)) throw new DomainError('upstream_unavailable', 'A ElevenLabs não devolveu a voz nova.')
   cacheVozes = null
