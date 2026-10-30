@@ -716,6 +716,24 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
 - ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
 
+## Maestro · Criação: o cliente aprova o roteiro (F7, 30/10/2026)
+
+- ✅ "Enviar ▾ › Para o cliente aprovar" (administração e gestão, `podeCriacao(…, 'enviar')`): de uma versão salva, a
+  versão vira **mais uma peça do link de aprovação do card** (`/a`; decisão do titular nº 4, nada de segundo sistema).
+  Sem card, a folha liga um; sem lote aberto, nasce o lote do cliente do card; sem link, o link nasce; copia o link.
+  Mandar a mesma versão de novo devolve a mesma peça e o mesmo link.
+- ✅ No `/a`: o roteiro na vista Literário (montada no servidor: sem nota interna, plano, observação, dica, ids nem a
+  nota `((…))` da fala), versão e duração; tocar num trecho comenta nele; Aprovar / Pedir ajuste com nome e hora como
+  as outras peças. Token, PIN, validade e limites de sempre (nenhuma rota pública nova).
+- ✅ No editor: o comentário embaixo do bloco (id estável: o da v1 continua no mesmo trecho da v2), resolver/reabrir,
+  o número em aberto no topo e a folha "Cliente" com as decisões; o estado vira "Com o cliente" / "Aprovado" /
+  "Ajustes pedidos" sozinho e aparece na ficha do card; versão nova troca a peça (a volta sobe) e os comentários
+  antigos ficam na versão deles; auditoria `roteiro.enviado` (destino cliente) e `roteiro.decisao`.
+- ✅ Migração `0033` do Maestro (`versoes.fonte = 'roteiro'` + `roteiro_versao_id` sem URL, `comentarios.bloco_id`,
+  `maestro.roteiro_para_cliente`, gatilho em `approvals`, `link_abrir`/`link_comentar` com o roteiro e o bloco).
+- ⛔ Em produção: migração `0033` do Maestro no próximo deploy autorizado.
+- ⬜ Resposta da equipe dentro do trecho (hoje a equipe resolve; a conversa segue no lote); vista Técnico para o cliente.
+
 ## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
 
 - ✅ Uma entrada "Criação" (Produção no computador, Mais no iPhone) com o seletor **Roteiros · Fluxos**: duas rotas

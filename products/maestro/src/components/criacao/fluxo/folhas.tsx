@@ -76,7 +76,7 @@ export function FolhaLink({ aoFechar, aoAdicionar }: { aoFechar: () => void; aoA
   );
 }
 
-const ESTADO: Record<string, string> = { rascunho: "Rascunho", com_cliente: "Com o cliente", aprovado: "Aprovado", ajuste: "Ajuste" };
+const ESTADO: Record<string, string> = { rascunho: "Rascunho", com_cliente: "Com o cliente", aprovado: "Aprovado", ajuste: "Ajustes pedidos" };
 
 function Escolher({
   roteiros,

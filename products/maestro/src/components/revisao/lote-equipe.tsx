@@ -37,6 +37,28 @@ function estadoDaPeca(p: PecaDaEquipe): "aprovado" | "ajuste" | "falta" {
 
 const NOME_ESTADO = { aprovado: "Aprovada", ajuste: "Ajuste pedido", falta: "Esperando" } as const;
 
+/**
+ * A versão mais nova é um roteiro (Criação, F7): o texto e os comentários por trecho moram no editor do roteiro; aqui,
+ * o resumo e o caminho até lá.
+ */
+function RoteiroDaPeca({ v }: { v: VersaoVista }) {
+  const abertos = v.comentarios.filter((c) => c.autor === "cliente" && !c.resolvido && !c.pai).length;
+  return (
+    <div className="ap-roteiro">
+      <Icone nome="criacao" size={22} />
+      <span className="ap-roteiro__miolo">
+        <b>Roteiro{v.doRoteiro ? ` · v${v.doRoteiro.n}` : ""}</b>
+        <small>{abertos ? `${abertos} comentário${abertos > 1 ? "s" : ""} do cliente em aberto` : "O cliente lê e comenta por trecho."}</small>
+      </span>
+      {v.doRoteiro ? (
+        <Link className="glass-btn glass-btn--sm" href={`/app/criacao/roteiros/${v.doRoteiro.id}`}>
+          Abrir no editor
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 /** "Escolher no Drive" (com o SOBEDESCE): o navegador do Drive como seletor, só vídeos. */
 function EscolherNoDrive({ sobedesce, aoEscolher, aoFechar }: { sobedesce: string; aoEscolher: (id: string, nome: string) => void; aoFechar: () => void }) {
   useEffect(() => {
@@ -425,11 +447,13 @@ export function LoteEquipe({
           </header>
           {ultimaDecisao?.nota ? <p className="ap-nota">“{ultimaDecisao.nota}”</p> : null}
           {escreve && lote.status !== "fechado" ? <NovaVersao card={peca.card} driveStream={driveStream} sobedesce={sobedesce} aoFim={atualizar} /> : null}
-          {peca.versoes.length ? (
+          {peca.versoes[0]?.fonte === "roteiro" ? (
+            <RoteiroDaPeca v={peca.versoes[0]} />
+          ) : peca.versoes.some((v) => v.fonte !== "roteiro") ? (
             <ComDriveDaEquipe ligado={!!sobedesce}>
               <Revisor
                 key={peca.card}
-                versoes={peca.versoes}
+                versoes={peca.versoes.filter((v) => v.fonte !== "roteiro")}
                 modo="equipe"
                 podeComentar={escreve}
                 aoComentar={aoComentar}

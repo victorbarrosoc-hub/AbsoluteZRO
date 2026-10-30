@@ -42,6 +42,7 @@ import {
 } from "@/lib/criacao/roteiro/modelo";
 import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
 import { Icone } from "@/components/icones";
+import { ComentariosDoBloco } from "./cliente";
 import { ICONE_TIPO, useEditor } from "./contexto";
 
 const DICA: Record<TipoBloco, string> = {
@@ -463,6 +464,7 @@ export const CampoBloco = memo(function CampoBloco({
         onKeyDown={tecla}
         onBlur={() => setTimeout(() => setMenu((m) => (document.activeElement?.closest(".cr-menu") ? m : null)), 120)}
       />
+      <ComentariosDoBloco bloco={b.id} />
       {menu ? (
         <ul className="cr-menu" role="listbox" aria-label={menu === "tipo" ? "Tipo do bloco" : "Quem fala"}>
           {itens.map((it, i) => (

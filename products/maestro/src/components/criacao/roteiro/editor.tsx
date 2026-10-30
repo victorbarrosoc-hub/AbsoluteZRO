@@ -23,6 +23,7 @@ import { Icone } from "@/components/icones";
 import { FolhaAjustes } from "./ajustes";
 import { STATUS_DO_ESTADO, textoAlvo } from "./comum";
 import { Contexto, type EditorCtx, type Foco, ICONE_TIPO, type Operacoes } from "./contexto";
+import { BotaoCliente, ClienteCtx, FolhaCliente, useClienteDoRoteiro } from "./cliente";
 import { useGravacao } from "./gravacao";
 import { type DestinoEnvio, FolhaEnviar, FolhaMenuEnviar, MenuEnviar } from "./enviar";
 import { ListaEdicao, PreviaTeleprompter } from "./leitura";
@@ -163,7 +164,7 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
   const [cena, setCena] = useState(0);
   const [pessoaTp, setPessoaTp] = useState<string | null>(null);
   const [ocultar, setOcultar] = useState<ColunaTecnico[]>([]);
-  const [folha, setFolha] = useState<null | "versoes" | "ajustes" | "adicionar" | "conflitos" | "menu">(null);
+  const [folha, setFolha] = useState<null | "versoes" | "ajustes" | "adicionar" | "conflitos" | "menu" | "cliente">(null);
   const [envio, setEnvio] = useState<DestinoEnvio | null>(null);
   const [lista, setLista] = useState(versoes);
   const [vinculo, setVinculo] = useState({ projetoId: inicial.projetoId, cardId: inicial.cardId, projeto: inicial.projeto, card: inicial.card });
@@ -210,6 +211,8 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
     [mudarDoc],
   );
   const ctx = useMemo<EditorCtx>(() => ({ ops, pessoas: roteiro.pessoas, editavel }), [ops, roteiro.pessoas, editavel]);
+  const cliente = useClienteDoRoteiro(url);
+  const ctxCliente = useMemo(() => ({ cliente, editavel }), [cliente, editavel]);
 
   const total = roteiro.cenas.length;
   const atual = Math.min(cena, total - 1);
@@ -289,239 +292,258 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
   const ligacao = [vinculo.projeto, vinculo.card].filter(Boolean).join(" · ");
   const quem = g.aviso?.quem ? (nomes[g.aviso.quem] ?? "Outra pessoa") : "Outra pessoa";
 
+  const ligarAoCard = async (cardId: string) => {
+    const r = await post({ op: "ligar", projetoId: vinculo.projetoId, cardId });
+    if (r.ok && r.roteiro) setVinculo({ projetoId: r.roteiro.projetoId, cardId: r.roteiro.cardId, projeto: r.roteiro.projeto, card: r.roteiro.card });
+    return r.ok ? null : (r.mensagem ?? "Não deu para ligar.");
+  };
+
   return (
     <Contexto.Provider value={ctx}>
-      <div className="pagina pagina--larga cr-editor" data-vista={vista}>
-        <div className="cr-topo">
-          <Link className="voltar" href="/app/criacao" onClick={() => void g.gravar()}>
-            <Icone nome="voltar" size={16} /> Criação
-          </Link>
-          <span className="cr-topo__acoes">
-            {podeEnviar ? (
-              <button type="button" className="glass-btn glass-btn--icone glass-btn--ink cr-so-celular" onClick={() => setFolha("menu")} aria-label="Enviar">
-                <Icone nome="compartilhar" size={18} />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="glass-btn glass-btn--icone cr-so-celular"
-              onClick={() => setFolha("versoes")}
-              aria-label={editavel ? "Salvar versão" : "Versões"}
-            >
-              <Icone nome="versoes" size={18} />
-            </button>
-            <button
-              type="button"
-              className="glass-btn glass-btn--icone cr-so-celular"
-              onClick={() => void imprimir()}
-              aria-label="Imprimir ou PDF"
-              title="Imprimir ou PDF"
-            >
-              <Icone nome="imprimir" size={18} />
-            </button>
-            <button type="button" className="glass-btn glass-btn--icone cr-so-celular" onClick={() => setFolha("ajustes")} aria-label="Ajustes do roteiro">
-              <Icone nome="pontos" size={20} />
-            </button>
-          </span>
-        </div>
-
-        <header className="cr-cabeca">
-          <div className="cr-cabeca__miolo">
-            <input
-              className="cr-titulo"
-              value={g.titulo}
-              onChange={(e) => g.mudarTitulo(e.target.value)}
-              onBlur={() => void g.gravar()}
-              readOnly={!editavel}
-              maxLength={200}
-              aria-label="Título do roteiro"
-              placeholder="Título"
-            />
-            <div className="cr-cabeca__meta">
-              <span className="selo" data-status={STATUS_DO_ESTADO[g.meta.estado]}>
-                <i aria-hidden="true" />
-                {g.meta.versaoAtual ? `v${g.meta.versaoAtual} · ` : ""}
-                {NOME_ESTADO_ROTEIRO[g.meta.estado as EstadoRoteiro]}
-              </span>
-              <span className="cr-cabeca__formato">{[roteiro.formato, textoAlvo(roteiro.alvo)].filter(Boolean).join(" · ")}</span>
-              <span className="cr-medidor cr-medidor--topo" data-estado={m.estado} aria-hidden="true">
-                <i style={{ width: `${Math.round(m.fracao * 100)}%` }} />
-              </span>
-              <b className="cr-cabeca__total num" title="Duração estimada" data-estado={m.estado}>
-                {formatarTempo(tempo.totalSeg)}
-              </b>
-              {ligacao ? (
-                <span className="cr-cabeca__ligacao">
-                  <Icone nome="link" size={13} /> {vinculo.projetoId ? <Link href={`/app/projetos/${vinculo.projetoId}`}>{ligacao}</Link> : ligacao}
-                </span>
-              ) : null}
-              {editavel ? (
-                <span className="cr-gravacao" data-estado={g.estado} role="status" aria-live="polite" title={g.mensagem ?? undefined}>
-                  {g.estado === "erro" && g.mensagem ? g.mensagem : TEXTO_GRAVACAO[g.estado]}
-                </span>
-              ) : (
-                <span className="cr-gravacao">Só leitura</span>
-              )}
-            </div>
-          </div>
-          <div className="cr-cabeca__lado">
-            <div className="q-segmentos cr-vistas" role="radiogroup" aria-label="Vista">
-              {VISTAS.map((v) => (
-                <button key={v.k} type="button" role="radio" aria-checked={vista === v.k} aria-label={v.nome} onClick={() => trocarVista(v.k)}>
-                  <span className="cr-vistas__longo">{v.nome}</span>
-                  <span className="cr-vistas__curto" aria-hidden="true">
-                    {CURTO[v.k]}
-                  </span>
+      <ClienteCtx.Provider value={ctxCliente}>
+        <div className="pagina pagina--larga cr-editor" data-vista={vista}>
+          <div className="cr-topo">
+            <Link className="voltar" href="/app/criacao" onClick={() => void g.gravar()}>
+              <Icone nome="voltar" size={16} /> Criação
+            </Link>
+            <span className="cr-topo__acoes">
+              {podeEnviar ? (
+                <button type="button" className="glass-btn glass-btn--icone glass-btn--ink cr-so-celular" onClick={() => setFolha("menu")} aria-label="Enviar">
+                  <Icone nome="compartilhar" size={18} />
                 </button>
-              ))}
-            </div>
-            <div className="acoes cr-cabeca__acoes">
-              {podeEnviar ? <MenuEnviar aeon={aeon} escolher={setEnvio} salvarVersao={() => setFolha("versoes")} /> : null}
-              <button type="button" className={`glass-btn${podeEnviar ? "" : " glass-btn--ink"}`} onClick={() => setFolha("versoes")}>
-                <Icone nome="versoes" size={17} /> {editavel ? "Salvar versão" : "Versões"}
+              ) : null}
+              <button
+                type="button"
+                className="glass-btn glass-btn--icone cr-so-celular"
+                onClick={() => setFolha("versoes")}
+                aria-label={editavel ? "Salvar versão" : "Versões"}
+              >
+                <Icone nome="versoes" size={18} />
               </button>
               <button
                 type="button"
-                className="glass-btn glass-btn--icone cr-so-computador"
+                className="glass-btn glass-btn--icone cr-so-celular"
                 onClick={() => void imprimir()}
                 aria-label="Imprimir ou PDF"
                 title="Imprimir ou PDF"
               >
                 <Icone nome="imprimir" size={18} />
               </button>
-              <button
-                type="button"
-                className="glass-btn glass-btn--icone cr-so-computador"
-                onClick={() => setFolha("ajustes")}
-                aria-label="Ajustes do roteiro"
-                title="Ajustes do roteiro"
-              >
+              <button type="button" className="glass-btn glass-btn--icone cr-so-celular" onClick={() => setFolha("ajustes")} aria-label="Ajustes do roteiro">
                 <Icone nome="pontos" size={20} />
               </button>
-            </div>
-          </div>
-        </header>
-
-        {g.aviso ? (
-          <div className="cr-aviso" role="status">
-            <Icone nome="alerta" size={16} />
-            <span>
-              {quem} mudou {g.aviso.conflitos.length === 1 ? "um trecho" : `${g.aviso.conflitos.length} trechos`} ao mesmo tempo. Ficou o dele.
             </span>
-            <button type="button" className="glass-btn glass-btn--sm" onClick={() => setFolha("conflitos")}>
-              Ver
-            </button>
-            <button type="button" className="cr-icone" onClick={() => g.setAviso(null)} aria-label="Fechar aviso">
-              <Icone nome="fechar" size={15} />
-            </button>
           </div>
-        ) : null}
 
-        <div className="cr-corpo" key={vista}>
-          {vista === "literario" ? (
-            <VistaLiterarioEditor cenas={roteiro.cenas} tempos={tempo.cenas} atual={atual} irPara={setCena} adicionarNoFim={adicionarNoFim} />
-          ) : vista === "tecnico" ? (
-            <VistaTecnicoEditor roteiro={roteiro} tempos={tempo.cenas} ocultar={ocultar} alternar={alternarColuna} adicionarNoFim={adicionarNoFim} />
-          ) : vista === "teleprompter" ? (
-            <PreviaTeleprompter roteiro={roteiro} pessoa={pessoaTp} escolher={setPessoaTp} />
-          ) : (
-            <ListaEdicao roteiro={roteiro} />
-          )}
+          <header className="cr-cabeca">
+            <div className="cr-cabeca__miolo">
+              <input
+                className="cr-titulo"
+                value={g.titulo}
+                onChange={(e) => g.mudarTitulo(e.target.value)}
+                onBlur={() => void g.gravar()}
+                readOnly={!editavel}
+                maxLength={200}
+                aria-label="Título do roteiro"
+                placeholder="Título"
+              />
+              <div className="cr-cabeca__meta">
+                <span className="selo" data-status={STATUS_DO_ESTADO[g.meta.estado]}>
+                  <i aria-hidden="true" />
+                  {g.meta.versaoAtual ? `v${g.meta.versaoAtual} · ` : ""}
+                  {NOME_ESTADO_ROTEIRO[g.meta.estado as EstadoRoteiro]}
+                </span>
+                <span className="cr-cabeca__formato">{[roteiro.formato, textoAlvo(roteiro.alvo)].filter(Boolean).join(" · ")}</span>
+                <span className="cr-medidor cr-medidor--topo" data-estado={m.estado} aria-hidden="true">
+                  <i style={{ width: `${Math.round(m.fracao * 100)}%` }} />
+                </span>
+                <b className="cr-cabeca__total num" title="Duração estimada" data-estado={m.estado}>
+                  {formatarTempo(tempo.totalSeg)}
+                </b>
+                <BotaoCliente cliente={cliente} abrir={() => setFolha("cliente")} />
+                {ligacao ? (
+                  <span className="cr-cabeca__ligacao">
+                    <Icone nome="link" size={13} /> {vinculo.projetoId ? <Link href={`/app/projetos/${vinculo.projetoId}`}>{ligacao}</Link> : ligacao}
+                  </span>
+                ) : null}
+                {editavel ? (
+                  <span className="cr-gravacao" data-estado={g.estado} role="status" aria-live="polite" title={g.mensagem ?? undefined}>
+                    {g.estado === "erro" && g.mensagem ? g.mensagem : TEXTO_GRAVACAO[g.estado]}
+                  </span>
+                ) : (
+                  <span className="cr-gravacao">Só leitura</span>
+                )}
+              </div>
+            </div>
+            <div className="cr-cabeca__lado">
+              <div className="q-segmentos cr-vistas" role="radiogroup" aria-label="Vista">
+                {VISTAS.map((v) => (
+                  <button key={v.k} type="button" role="radio" aria-checked={vista === v.k} aria-label={v.nome} onClick={() => trocarVista(v.k)}>
+                    <span className="cr-vistas__longo">{v.nome}</span>
+                    <span className="cr-vistas__curto" aria-hidden="true">
+                      {CURTO[v.k]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="acoes cr-cabeca__acoes">
+                {podeEnviar ? <MenuEnviar aeon={aeon} escolher={setEnvio} salvarVersao={() => setFolha("versoes")} /> : null}
+                <button type="button" className={`glass-btn${podeEnviar ? "" : " glass-btn--ink"}`} onClick={() => setFolha("versoes")}>
+                  <Icone nome="versoes" size={17} /> {editavel ? "Salvar versão" : "Versões"}
+                </button>
+                <button
+                  type="button"
+                  className="glass-btn glass-btn--icone cr-so-computador"
+                  onClick={() => void imprimir()}
+                  aria-label="Imprimir ou PDF"
+                  title="Imprimir ou PDF"
+                >
+                  <Icone nome="imprimir" size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="glass-btn glass-btn--icone cr-so-computador"
+                  onClick={() => setFolha("ajustes")}
+                  aria-label="Ajustes do roteiro"
+                  title="Ajustes do roteiro"
+                >
+                  <Icone nome="pontos" size={20} />
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {g.aviso ? (
+            <div className="cr-aviso" role="status">
+              <Icone nome="alerta" size={16} />
+              <span>
+                {quem} mudou {g.aviso.conflitos.length === 1 ? "um trecho" : `${g.aviso.conflitos.length} trechos`} ao mesmo tempo. Ficou o dele.
+              </span>
+              <button type="button" className="glass-btn glass-btn--sm" onClick={() => setFolha("conflitos")}>
+                Ver
+              </button>
+              <button type="button" className="cr-icone" onClick={() => g.setAviso(null)} aria-label="Fechar aviso">
+                <Icone nome="fechar" size={15} />
+              </button>
+            </div>
+          ) : null}
+
+          <div className="cr-corpo" key={vista}>
+            {vista === "literario" ? (
+              <VistaLiterarioEditor cenas={roteiro.cenas} tempos={tempo.cenas} atual={atual} irPara={setCena} adicionarNoFim={adicionarNoFim} />
+            ) : vista === "tecnico" ? (
+              <VistaTecnicoEditor roteiro={roteiro} tempos={tempo.cenas} ocultar={ocultar} alternar={alternarColuna} adicionarNoFim={adicionarNoFim} />
+            ) : vista === "teleprompter" ? (
+              <PreviaTeleprompter roteiro={roteiro} pessoa={pessoaTp} escolher={setPessoaTp} />
+            ) : (
+              <ListaEdicao roteiro={roteiro} />
+            )}
+          </div>
+
+          {editavel && vista === "literario" ? (
+            <button type="button" className="cr-fab" onClick={() => setFolha("adicionar")} aria-label="Adicionar bloco">
+              <Icone nome="mais" size={26} />
+            </button>
+          ) : null}
+
+          {folha === "adicionar" ? <FolhaAdicionar aoEscolher={escolherNoMais} aoFechar={() => setFolha(null)} /> : null}
+          {folha === "versoes" ? (
+            <FolhaVersoes
+              url={url}
+              versoes={lista}
+              setVersoes={setLista}
+              roteiro={roteiro}
+              editavel={editavel}
+              antes={async () => {
+                await g.gravar();
+                return g.rev();
+              }}
+              aoRestaurar={(r) => g.adotar(r)}
+              aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
+              nomes={nomes}
+              aoFechar={() => setFolha(null)}
+            />
+          ) : null}
+          {folha === "menu" ? (
+            <FolhaMenuEnviar
+              aeon={aeon}
+              escolher={setEnvio}
+              salvarVersao={() => setFolha("versoes")}
+              aoFechar={() => setFolha((f) => (f === "menu" ? null : f))}
+            />
+          ) : null}
+          {envio ? (
+            <FolhaEnviar
+              key={envio}
+              destino={envio}
+              url={url}
+              roteiroId={inicial.id}
+              roteiro={roteiro}
+              titulo={g.titulo}
+              versoes={lista}
+              setVersoes={setLista}
+              antes={() => g.gravar()}
+              aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
+              pessoa={pessoaTp}
+              cards={opcoes.cards}
+              ligar={ligarAoCard}
+              aoCliente={() => {
+                g.setMeta((x) => ({ ...x, estado: "com_cliente" }));
+                cliente.recarregar();
+              }}
+              aoFechar={() => setEnvio(null)}
+            />
+          ) : null}
+          {folha === "cliente" ? (
+            <FolhaCliente cliente={cliente} roteiro={roteiro} editavel={editavel} irPara={(id) => ops.focar({ id })} aoFechar={() => setFolha(null)} />
+          ) : null}
+          {folha === "ajustes" ? (
+            <FolhaAjustes
+              roteiro={roteiro}
+              mudar={(fn) => ops.mudar(fn)}
+              editavel={editavel}
+              podeEstado={podeEstado}
+              estado={g.meta.estado}
+              mudarEstado={async (e) => {
+                const r = await post({ op: "estado", estado: e });
+                if (r.ok) g.setMeta((x) => ({ ...x, estado: e }));
+                return r.ok ? null : (r.mensagem ?? "Não deu para mudar o estado.");
+              }}
+              vinculo={vinculo}
+              ligar={async (v) => {
+                const r = await post({ op: "ligar", ...v });
+                if (r.ok && r.roteiro)
+                  setVinculo({ projetoId: r.roteiro.projetoId, cardId: r.roteiro.cardId, projeto: r.roteiro.projeto, card: r.roteiro.card });
+                return r.ok ? null : (r.mensagem ?? "Não deu para ligar.");
+              }}
+              opcoes={opcoes}
+              lixeira={async () => {
+                await g.gravar();
+                const r = await post({ op: "lixeira", apagar: true });
+                if (r.ok) {
+                  router.push("/app/criacao");
+                  router.refresh();
+                  return null;
+                }
+                return r.mensagem ?? "Não deu para mandar para a lixeira.";
+              }}
+              aoFechar={() => setFolha(null)}
+            />
+          ) : null}
+          {folha === "conflitos" && g.aviso ? (
+            <FolhaConflitos
+              conflitos={g.aviso.conflitos}
+              quem={quem}
+              roteiro={roteiro}
+              mudar={(fn) => ops.mudar(fn)}
+              aoFechar={() => {
+                setFolha(null);
+                g.setAviso(null);
+              }}
+            />
+          ) : null}
         </div>
-
-        {editavel && vista === "literario" ? (
-          <button type="button" className="cr-fab" onClick={() => setFolha("adicionar")} aria-label="Adicionar bloco">
-            <Icone nome="mais" size={26} />
-          </button>
-        ) : null}
-
-        {folha === "adicionar" ? <FolhaAdicionar aoEscolher={escolherNoMais} aoFechar={() => setFolha(null)} /> : null}
-        {folha === "versoes" ? (
-          <FolhaVersoes
-            url={url}
-            versoes={lista}
-            setVersoes={setLista}
-            roteiro={roteiro}
-            editavel={editavel}
-            antes={async () => {
-              await g.gravar();
-              return g.rev();
-            }}
-            aoRestaurar={(r) => g.adotar(r)}
-            aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
-            nomes={nomes}
-            aoFechar={() => setFolha(null)}
-          />
-        ) : null}
-        {folha === "menu" ? (
-          <FolhaMenuEnviar
-            aeon={aeon}
-            escolher={setEnvio}
-            salvarVersao={() => setFolha("versoes")}
-            aoFechar={() => setFolha((f) => (f === "menu" ? null : f))}
-          />
-        ) : null}
-        {envio ? (
-          <FolhaEnviar
-            key={envio}
-            destino={envio}
-            url={url}
-            roteiroId={inicial.id}
-            roteiro={roteiro}
-            titulo={g.titulo}
-            versoes={lista}
-            setVersoes={setLista}
-            antes={() => g.gravar()}
-            aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
-            pessoa={pessoaTp}
-            aoFechar={() => setEnvio(null)}
-          />
-        ) : null}
-        {folha === "ajustes" ? (
-          <FolhaAjustes
-            roteiro={roteiro}
-            mudar={(fn) => ops.mudar(fn)}
-            editavel={editavel}
-            podeEstado={podeEstado}
-            estado={g.meta.estado}
-            mudarEstado={async (e) => {
-              const r = await post({ op: "estado", estado: e });
-              if (r.ok) g.setMeta((x) => ({ ...x, estado: e }));
-              return r.ok ? null : (r.mensagem ?? "Não deu para mudar o estado.");
-            }}
-            vinculo={vinculo}
-            ligar={async (v) => {
-              const r = await post({ op: "ligar", ...v });
-              if (r.ok && r.roteiro) setVinculo({ projetoId: r.roteiro.projetoId, cardId: r.roteiro.cardId, projeto: r.roteiro.projeto, card: r.roteiro.card });
-              return r.ok ? null : (r.mensagem ?? "Não deu para ligar.");
-            }}
-            opcoes={opcoes}
-            lixeira={async () => {
-              await g.gravar();
-              const r = await post({ op: "lixeira", apagar: true });
-              if (r.ok) {
-                router.push("/app/criacao");
-                router.refresh();
-                return null;
-              }
-              return r.mensagem ?? "Não deu para mandar para a lixeira.";
-            }}
-            aoFechar={() => setFolha(null)}
-          />
-        ) : null}
-        {folha === "conflitos" && g.aviso ? (
-          <FolhaConflitos
-            conflitos={g.aviso.conflitos}
-            quem={quem}
-            roteiro={roteiro}
-            mudar={(fn) => ops.mudar(fn)}
-            aoFechar={() => {
-              setFolha(null);
-              g.setAviso(null);
-            }}
-          />
-        ) : null}
-      </div>
+      </ClienteCtx.Provider>
     </Contexto.Provider>
   );
 }

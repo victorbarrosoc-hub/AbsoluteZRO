@@ -336,7 +336,7 @@ export function Player({ versao, aoControle, ...ev }: { versao: VersaoVista; aoC
     // Falhou o player com tempo: o Drive cai no iframe (sem tempo); os outros, no aviso com o link.
     const c = falhou
       ? { tempo: false, quadro: false, velocidade: false }
-      : capacidades({ tipo: versao.fonte, chave: versao.driveChave ?? undefined }, { driveStream: !!stream });
+      : capacidades({ tipo: versao.fonte === "roteiro" ? "link" : versao.fonte, chave: versao.driveChave ?? undefined }, { driveStream: !!stream });
     aoCapacidades?.(c);
   }, [versao.fonte, versao.driveChave, stream, falhou, aoCapacidades]);
 

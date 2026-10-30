@@ -7,6 +7,8 @@
  * GET  ?versoes=1      as versões salvas
  * GET  ?versao=n       uma versão com o conteúdo (comparar e enviar)
  * GET  ?envios=1       os últimos envios (só administração e gestão)
+ * GET  ?cliente=1      os comentários do cliente (por bloco e versão) e as decisões (F7)
+ * GET  ?para-cliente=1 o card, o lote e o cliente antes de mandar (só administração e gestão)
  * POST { op: "salvar", rev, conteudo?, titulo? }   autosave com `rev`; 409 `conflito` traz o atual para juntar
  * POST { op: "versao", nota? }                     "Salvar versão" (congela o que está gravado)
  * POST { op: "restaurar", n, rev }                 o rascunho volta à versão n
@@ -14,11 +16,14 @@
  * POST { op: "estado", estado }                    só administração e gestão
  * POST { op: "lixeira", apagar }                   manda para a lixeira ou tira dela
  * POST { op: "enviado", n, destino, formato, pessoa? }  anota o que saiu de qual versão (admin e gestão; AEON só aberto)
+ * POST { op: "cliente", n, clienteId? }         a versão n vira peça do link de aprovação do card (admin e gestão; F7)
+ * POST { op: "resolver", id, resolvido }        resolve ou reabre um comentário do cliente (quem edita)
  */
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { erro, json, lerJson, origemConfere } from "@/lib/http";
-import { origensDoSite } from "@/lib/site";
+import { origemDoSite, origensDoSite } from "@/lib/site";
 import { podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "../permissoes";
+import { clienteDoRoteiro, enviarAoCliente, paraOClienteEstado, resolverDoRoteiro } from "./cliente";
 import { ehSaida, type FormatoSaida } from "./saidas";
 import {
   type EstadoRoteiro,
@@ -39,7 +44,7 @@ import {
 const LIMITE_CORPO = 400 * 1024;
 
 type Falha = { ok: false; erro: string; mensagem: string };
-const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, conflito: 409, ja_existe: 409, tem_versao: 409 };
+const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, conflito: 409, ja_existe: 409, tem_versao: 409, sem_card: 409, sem_cliente: 409 };
 const responder = (f: Falha & { atual?: unknown }) =>
   json({ erro: f.erro, mensagem: f.mensagem, ...(f.atual ? { atual: f.atual } : {}) }, STATUS[f.erro] ?? 400);
 
@@ -50,6 +55,12 @@ export async function getRoteiro(req: Request, id: string): Promise<Response> {
   const q = new URL(req.url).searchParams;
   if (q.has("versoes")) return json({ versoes: await listarVersoes(ctx, id) });
   if (q.has("envios")) return json({ envios: podeEnviarCriacao(s.papel) ? await listarEnvios(ctx, id) : [] });
+  if (q.has("cliente")) return json(await clienteDoRoteiro(ctx, id));
+  if (q.has("para-cliente")) {
+    if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mandam o roteiro ao cliente.");
+    const e = await paraOClienteEstado(ctx, id);
+    return e ? json(e) : erro(404, "nao_existe", "Esse roteiro não existe mais.");
+  }
   if (q.has("versao")) {
     const v = await obterVersao(ctx, id, Number(q.get("versao")));
     return v ? json({ versao: v }) : erro(404, "nao_existe", "Essa versão não existe.");
@@ -75,7 +86,8 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
   }
   if (corpo.op === "enviado") {
     if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão enviam o roteiro.");
-    if (!ehSaida(corpo.destino, corpo.formato)) return erro(400, "formato", "Destino desconhecido.");
+    // "cliente" é anotado pelo banco ao mandar (op "cliente"), nunca à mão.
+    if (!ehSaida(corpo.destino, corpo.formato) || corpo.destino === "cliente") return erro(400, "formato", "Destino desconhecido.");
     if (corpo.destino === "aeon" && !podeMandarParaAeon(s)) return erro(403, "sem_permissao", "O AEON ainda não está aberto para a sua conta.");
     const r = await registrarEnvio(ctx, id, {
       n: Number(corpo.n),
@@ -85,8 +97,18 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
     });
     return r.ok ? json({ ok: true, sha256: r.sha256 }) : responder(r);
   }
+  if (corpo.op === "cliente") {
+    if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mandam o roteiro ao cliente.");
+    const r = await enviarAoCliente(ctx, id, Number(corpo.n), { clienteId: typeof corpo.clienteId === "string" ? corpo.clienteId : null });
+    if (!r.ok) return responder(r);
+    return json({ ok: true, url: `${origemDoSite(req.headers.get("origin"))}/a/${r.token}`, novo: r.novo, n: r.n, loteId: r.loteId, loteNovo: r.loteNovo });
+  }
   if (!podeEditarCriacao(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê.");
   switch (corpo.op) {
+    case "resolver": {
+      const r = await resolverDoRoteiro(ctx, id, String(corpo.id ?? ""), corpo.resolvido !== false);
+      return r.ok ? json({ ok: true }) : responder(r);
+    }
     case "salvar": {
       const r = await salvarRoteiro(ctx, id, {
         rev: Number(corpo.rev),
