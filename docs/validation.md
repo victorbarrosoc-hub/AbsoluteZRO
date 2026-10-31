@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Acesso total do Drive do SOBEDESCE no console (31/10/2026)
+
+Branch `console-acesso-drive`. Sem rede: o SOBEDESCE do lado do HUB é um servidor falso local; do lado do SOBEDESCE, a
+Absolute ZRO falsa de `web/tests/zro-falso.mts`.
+
+- `tests/integration/sobedesce-console.test.ts` (6): sem papel e Financeiro barrados antes de chamar; suporte lê e não
+  muda; sem motivo ou id ruim recusado sem chamar; ligar assina `console.drive.acesso` em nome do admin e audita;
+  `sem_vaga`/`nao_encontrada` viram mensagem e ficam na auditoria; SOBEDESCE fora do ar nunca vira "ligado".
+- `products/sobedesce/web/tests/zro-console-drive.test.mts` (4): 401 sem token, com a ação trocada, de outro público e
+  reapresentado; 400/404; lê vagas e pessoas sem segredo; liga, desliga sem devolver vaga, 409 no limite, `auditoria_zro`.
+- `drive-hibrido.test.mts`: o `/admin` do SOBEDESCE não tem mais a ação nem o botão, só o link para o console.
+
 ## Papel Financeiro e Correio no console (31/10/2026)
 
 Branch `console-financeiro-correio` (com a main mesclada, até `0045_tpeasy_subdominio`): migração `0046_papel_financeiro`

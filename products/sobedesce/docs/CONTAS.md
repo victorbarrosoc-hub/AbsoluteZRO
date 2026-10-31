@@ -13,7 +13,7 @@ Mudou algo aqui? Avise as outras frentes.
 - Público: o app do Google está **publicado sem verificação** (projeto `zro-site-511809`, o
   mesmo da ZRO): qualquer conta Google conecta, depois do aviso "O Google não verificou este app",
   com limite de cerca de 100 usuários até verificar. **Drive híbrido** desde 31/10/2026 (§13): o escopo
-  `https://www.googleapis.com/auth/drive` só para quem o admin deu "Acesso total"; os outros conectam com
+  `https://www.googleapis.com/auth/drive` só para quem o admin deu "Acesso total" (no console da Absolute ZRO); os outros conectam com
   `drive.file` ("Arquivos escolhidos"). O refresh token não vence mais em 7 dias, mas a tela
   continua lidando bem com "reconectar" (senha trocada, acesso removido).
 - Login: **conta Absolute ZRO** (§12). Desde 25/10/2026 conta nova só nasce por ela; e-mail + senha e o Google de
@@ -431,8 +431,13 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
 Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto** usarem o escopo restrito `drive`
 (vaga usada não volta; contas de teste contam). Por isso:
 
-- **Acesso total** (`usuarios.drive_acesso_total`) só o admin liga, na ficha da pessoa (`/admin/pessoa/<id>`, botão
-  "Acesso total" com confirmação). Contador no topo do `/admin` e na ficha: vagas usadas / limite
+- **Acesso total** (`usuarios.drive_acesso_total`) é decidido no **console da Absolute ZRO** (desde 31/10/2026, pedido
+  do titular): Console › Apps › SOBEDESCE › Drive inteiro (`absolutezro.com/admin/apps/sobedesce`). Ver: admin e suporte;
+  ligar ou desligar: só admin, com motivo e confirmação, auditado nos dois lados (`zro.audit_logs` no HUB,
+  `auditoria_zro` aqui). O HUB chama `POST /api/zro/console/drive` (ação `console.drive.ler`) e
+  `/api/zro/console/drive/acesso` `{ usuarioId, ligar }` (ação `console.drive.acesso`; 409 `sem_vaga`, 404
+  `nao_encontrada`) com o pedido assinado de sempre (`zro-pedido+jwt`, 60 s, uso único; `web/src/lib/zro/console-drive.ts`),
+  sem segredo novo. O `/admin` daqui só mostra o estado e o link. Contador no topo do `/admin` e na ficha: vagas usadas / limite
   (`LIMITE_VAGAS_DRIVE = 90` em `web/src/lib/google/vagas.ts`, folga sob os 100). **Vaga usada** = conta Google que já
   recebeu `drive` (`vagas_drive`, uma linha por `google_sub`, nunca sai: nem desconectando, nem desligando, nem apagando
   a conta). Liberar é recusado quando usadas + liberadas sem uso ≥ limite. Desligar revoga os Drives com `drive` da pessoa

@@ -1,7 +1,7 @@
 /**
  * Drive híbrido (titular, 31/10/2026): o escopo sai do modo antes de ir ao Google (acesso total = `drive`, os outros
  * `drive.file`, entrar nunca pede Drive), contador de vagas e trava no limite, vaga não volta, callback com escopo
- * diferente do pedido, a regra do navegar/comparar no modo Arquivos escolhidos (app do celular) e o botão só para admin.
+ * diferente do pedido, a regra do navegar/comparar no modo Arquivos escolhidos (app do celular) e o Acesso total decidido no console da Absolute ZRO.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -21,7 +21,6 @@ let eu: typeof import("../src/app/api/eu/route");
 let picker: typeof import("../src/app/api/drive/picker/route");
 let vagas: typeof import("../src/lib/google/vagas");
 let googleContas: typeof import("../src/lib/google/contas");
-let admin: typeof import("../src/lib/admin");
 let drizzle: typeof import("drizzle-orm");
 
 let n = 0;
@@ -36,7 +35,6 @@ before(async () => {
   picker = await import("../src/app/api/drive/picker/route");
   vagas = await import("../src/lib/google/vagas");
   googleContas = await import("../src/lib/google/contas");
-  admin = await import("../src/lib/admin");
   drizzle = await import("drizzle-orm");
 });
 
@@ -318,33 +316,12 @@ describe("app do celular: navegar e comparar em Arquivos escolhidos", () => {
   });
 });
 
-describe("admin: só o admin liga o acesso total", () => {
-  test("quem não é admin recebe recusado e nada muda; o admin liga", async () => {
-    await zerarVagas();
-    const alvo = await pessoa("Kim");
-    const curioso = await pessoa("Leo");
-    const r = await admin.acessoTotalPeloAdmin({ id: curioso.id }, alvo.id, true);
-    assert.deepEqual(r, { ok: false, erro: "recusado" });
-    const r2 = await admin.acessoTotalPeloAdmin({ id: alvo.id }, alvo.id, true);
-    assert.deepEqual(r2, { ok: false, erro: "recusado" }, "nem a própria pessoa se libera");
-    const { db, schema } = amb.banco;
-    const [antes] = await db.select().from(schema.usuarios).where(drizzle.eq(schema.usuarios.id, alvo.id));
-    assert.equal(antes.driveAcessoTotal, false);
-
-    // Admin: e-mail de um Drive conectado e confirmado pelo Google (lib/admin.ts).
-    const chefe = await pessoa("Chefe");
-    const gChefe = conta("chefe");
-    await conectarDrive(chefe.token, gChefe);
-    const ok = await admin.acessoTotalPeloAdmin({ id: chefe.id }, alvo.id, true, { admins: [gChefe.email] });
-    assert.ok(ok.ok);
-    const [depois] = await db.select().from(schema.usuarios).where(drizzle.eq(schema.usuarios.id, alvo.id));
-    assert.equal(depois.driveAcessoTotal, true);
-  });
-
-  test("a ação do botão passa pelo acessoTotalPeloAdmin (que confere o admin)", () => {
+describe("admin: o Acesso total mudou para o console da Absolute ZRO", () => {
+  test("o /admin daqui só mostra o estado; não há mais ação para ligar", () => {
     const acoes = readFileSync(new URL("../src/app/(conta)/acoes.ts", import.meta.url), "utf8");
-    const corpo = /export async function acaoAcessoTotal[\s\S]*?\n}\n/.exec(acoes)?.[0] ?? "";
-    assert.match(corpo, /acessoTotalPeloAdmin\(atual\.usuario/);
-    assert.doesNotMatch(corpo, /trocarAcessoTotal\(/, "nunca chama a troca direto");
+    assert.doesNotMatch(acoes, /acaoAcessoTotal|trocarAcessoTotal/);
+    const ficha = readFileSync(new URL("../src/components/admin/acesso-total.tsx", import.meta.url), "utf8");
+    assert.doesNotMatch(ficha, /use client|<form|<button/);
+    assert.match(ficha, /absolutezro\.com\/admin\/apps\/sobedesce/);
   });
 });
