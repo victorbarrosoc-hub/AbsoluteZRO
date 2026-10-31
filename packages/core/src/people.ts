@@ -288,6 +288,62 @@ export async function onlineNow(tx: Queryable): Promise<{ total: number; hub: nu
   return { total: r!.total as number, hub: r!.hub as number, apps: r!.apps as number }
 }
 
+/** Quem está online agora e onde (mesma regra do número): HUB (com o aparelho da sessão) e/ou os apps abertos. */
+export type OnlineAgora = {
+  userId: string
+  name: string
+  email: string
+  avatarId: string | null
+  /** Último sinal de vida, em qualquer lugar. */
+  lastSeenAt: Date
+  hub: { userAgent: string | null; lastSeenAt: Date } | null
+  apps: { clientId: string; name: string; productId: string | null; lastSeenAt: Date }[]
+}
+
+export async function onlineAgora(tx: Queryable, limit = 200): Promise<OnlineAgora[]> {
+  const online = `${ONLINE_MINUTES} minutes`
+  const rows = await tx`
+    with hub as (
+      select distinct on (s.user_id) s.user_id, s.user_agent, s.last_used_at as em
+      from zro.sessions s
+      where s.revoked_at is null and s.expires_at > now() and s.last_used_at > now() - ${online}::interval
+      order by s.user_id, s.last_used_at desc
+    ), sinais as (
+      select a.user_id, a.client_id, a.last_login_at as em from zro.app_accounts a where a.last_login_at > now() - ${online}::interval
+      union all
+      select r.user_id, r.client_id, r.created_at as em from zro.oauth_refresh_tokens r where r.created_at > now() - ${online}::interval
+    ), apps as (
+      select g.user_id, g.client_id, max(g.em) as em from sinais g group by g.user_id, g.client_id
+    ), todos as (
+      select user_id from hub union select user_id from apps
+    )
+    select u.id, u.display_name, u.email,
+           (select v.public_id from zro.user_avatars v where v.user_id = u.id) as avatar_id,
+           h.user_agent as hub_ua, h.em as hub_em,
+           coalesce((select json_agg(json_build_object('clientId', c.id, 'name', c.name, 'productId', c.product_id, 'em', a.em) order by a.em desc)
+                       from apps a join zro.oauth_clients c on c.id = a.client_id where a.user_id = u.id), '[]'::json) as apps,
+           greatest(h.em, (select max(a.em) from apps a where a.user_id = u.id)) as ultimo
+    from todos t
+    join zro.users u on u.id = t.user_id and u.status = 'active'
+    left join hub h on h.user_id = u.id
+    order by ultimo desc nulls last
+    limit ${limit}`
+  return rows.map((r) => ({
+    userId: r.id as string,
+    name: (r.display_name as string) || (r.email as string),
+    email: r.email as string,
+    avatarId: (r.avatar_id as string) ?? null,
+    lastSeenAt: new Date(r.ultimo as string),
+    hub: r.hub_em ? { userAgent: (r.hub_ua as string) ?? null, lastSeenAt: new Date(r.hub_em as string) } : null,
+    apps: (r.apps as { clientId: string; name: string; productId: string | null; em: string }[]).map((a) => ({
+      clientId: a.clientId,
+      name: a.name,
+      productId: a.productId,
+      lastSeenAt: new Date(a.em),
+    })),
+  }))
+}
+
 export type PeopleSummary = {
   accounts: number
   new7: number

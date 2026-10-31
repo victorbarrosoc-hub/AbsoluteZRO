@@ -6,6 +6,7 @@ import { changeOrgPlan, checkEntitlement } from '@zro/billing'
 import {
   consoleOverview,
   listPeople,
+  onlineAgora,
   onlineNow,
   parsePeopleFilter,
   peopleCsv,
@@ -341,6 +342,30 @@ describe('segmentos, online, arquivos e páginas', () => {
     await sys(async (tx) => suspendUser(tx, { userId: await admin(db), reason: 'teste' }, ativo.userId))
     const susp = await sys(async (tx) => listPeople(tx, filter({ q: tag, f: 'online' })))
     expect(susp.rows.map((x) => x.id)).toEqual([app.userId])
+  })
+
+  it('online agora: quem está e onde (HUB com o aparelho, apps pelo nome); parado e suspenso ficam de fora', async () => {
+    const tag = randomBytes(3).toString('hex')
+    const noHub = await newUser(db, `ag-hub-${tag}`)
+    const nosDois = await newUser(db, `ag-dois-${tag}`)
+    const parado = await newUser(db, `ag-parado-${tag}`)
+    const suspenso = await newUser(db, `ag-susp-${tag}`)
+    await db.sql`update zro.sessions set user_agent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1' where user_id = ${noHub.userId}`
+    await db.sql`update zro.sessions set last_used_at = now() - interval '20 minutes' where user_id = ${parado.userId}`
+    const clientId = `ag-${tag}`
+    await db.sql`insert into zro.oauth_clients (id, name, product_id, kind, redirect_uris) values (${clientId}, 'SOBEDESCE teste', 'sobedesce', 'public', ${['http://127.0.0.1/cb']})`
+    await db.sql`insert into zro.app_accounts (user_id, client_id, product_id, last_login_at) values (${nosDois.userId}, ${clientId}, 'sobedesce', now())`
+    await db.sql`insert into zro.app_accounts (user_id, client_id, product_id, last_login_at) values (${parado.userId}, ${clientId}, 'sobedesce', now() - interval '1 hour')`
+    await sys(async (tx) => suspendUser(tx, { userId: await admin(db), reason: 'teste' }, suspenso.userId))
+
+    const lista = await sys(async (tx) => onlineAgora(tx, 1000))
+    const meus = new Map(lista.filter((p) => p.email.includes(tag)).map((p) => [p.userId, p]))
+    expect([...meus.keys()].sort()).toEqual([noHub.userId, nosDois.userId].sort())
+    expect(meus.get(noHub.userId)!.hub!.userAgent).toMatch(/iPhone/)
+    expect(meus.get(noHub.userId)!.apps).toEqual([])
+    const dois = meus.get(nosDois.userId)!
+    expect(dois.hub).not.toBeNull()
+    expect(dois.apps.map((a) => [a.clientId, a.name, a.productId])).toEqual([[clientId, 'SOBEDESCE teste', 'sobedesce']])
   })
 
   it('arquivos: só o que a pessoa catalogou nos projetos do HUB (manifesto importado por ela)', async () => {

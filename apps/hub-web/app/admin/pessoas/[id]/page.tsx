@@ -9,7 +9,7 @@ import { AUDIT_LABEL, OrgPlan, ORIGIN_LABEL } from '@/components/admin-people'
 import { Face, Fold } from '@/components/admin/parts'
 import { Icon } from '@/components/icons'
 import { reactivateUserAction, suspendUserAction } from '@/lib/actions/people'
-import { fmtAgo, fmtBytes, fmtDate, fmtDay, limitText, ROLE_LABEL } from '@/lib/labels'
+import { deviceLabel, fmtAgo, fmtBytes, fmtDate, fmtDay, limitText, ROLE_LABEL } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Pessoa · Console', robots: { index: false, follow: false } }
@@ -26,23 +26,6 @@ const SUB_STATUS: Record<string, string> = {
 }
 
 /** Navegador e sistema a partir do user-agent, sem mostrar o texto todo. */
-function device(ua: string | null): string {
-  if (!ua) return 'Aparelho desconhecido'
-  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Navegador'
-  const os = /iPhone|iPad/.test(ua)
-    ? 'iOS'
-    : /Android/.test(ua)
-      ? 'Android'
-      : /Mac OS X/.test(ua)
-        ? 'macOS'
-        : /Windows/.test(ua)
-          ? 'Windows'
-          : /Linux/.test(ua)
-            ? 'Linux'
-            : ''
-  return os ? `${browser} · ${os}` : browser
-}
-
 export default async function Pessoa({ params }: { params: Promise<{ id: string }> }) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
@@ -199,7 +182,7 @@ export default async function Pessoa({ params }: { params: Promise<{ id: string 
             return (
               <li key={s.id}>
                 <span>
-                  {device(s.userAgent)} {open ? <Pill tone="ok">Aberta</Pill> : <Pill tone="faint">Encerrada</Pill>}
+                  {deviceLabel(s.userAgent)} {open ? <Pill tone="ok">Aberta</Pill> : <Pill tone="faint">Encerrada</Pill>}
                 </span>
                 <span className="zro-faint" title={`Entrou ${fmtDate(s.createdAt)}`}>
                   usada {fmtAgo(s.lastUsedAt)}
