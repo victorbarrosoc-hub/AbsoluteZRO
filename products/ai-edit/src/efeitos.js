@@ -13,7 +13,7 @@ export const SOM_MAX_S = 600
 export const VOLUME_MIN = -60
 export const VOLUME_MAX = 12
 
-/** De onde o som veio. 'arquivo' = do computador da pessoa (licença é dela). */
+/** De onde o som veio. 'arquivo' = do computador da pessoa e 'banco' = da pasta dela no Drive (a licença é dela). */
 export const ORIGENS = ['arquivo', 'banco', 'openverse', 'elevenlabs']
 
 let seq = 0
@@ -146,13 +146,13 @@ export function momentos(p) {
 
 /**
  * Créditos dos sons que estão na linha e pedem atribuição (licença com BY, ou origem que o termo manda citar): uma linha
- * por som, na ordem em que aparecem. Som do computador da pessoa não entra (a licença é dela).
+ * por som, na ordem em que aparecem. Som do computador ou do banco da pessoa no Drive não entra (a licença é dela).
  */
 export function creditos(p) {
   const vistos = new Set()
   const out = []
   for (const { som } of efeitosNaLinha(p)) {
-    if (vistos.has(som.id) || som.origem?.tipo === 'arquivo') continue
+    if (vistos.has(som.id) || som.origem?.tipo === 'arquivo' || som.origem?.tipo === 'banco') continue
     vistos.add(som.id)
     const o = som.origem || {}
     const titulo = o.titulo || som.nome.replace(/\.[^.]+$/, '')

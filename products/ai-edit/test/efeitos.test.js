@@ -118,10 +118,12 @@ test('momentos: cortes entre clipes e marcadores, sem repetir quadro', () => {
   ])
 })
 
-test('créditos: só sons de fora que estão na linha, um por som, na ordem', () => {
+test('créditos: só sons de fora (nem do computador nem do banco da pessoa) que estão na linha, um por som, na ordem', () => {
   let p = adicionarSom(adicionarSom(base(), WHOOSH).projeto, MEU).projeto
   p = adicionarSom(p, { id: 'gerado', nome: 'riser.mp3', duracao: 2, origem: { tipo: 'elevenlabs', titulo: 'Riser para abertura' } }).projeto
+  p = adicionarSom(p, { id: 'drive', nome: 'clique.wav', duracao: 0.2, origem: { tipo: 'banco', id: '1Clique', titulo: 'clique' } }).projeto
   p = colocarEfeito(p, 'meu', 0).projeto
+  p = colocarEfeito(p, 'drive', 50).projeto
   p = colocarEfeito(p, 'whoosh', 100).projeto
   p = colocarEfeito(p, 'whoosh', 200).projeto
   p = colocarEfeito(p, 'gerado', 300).projeto

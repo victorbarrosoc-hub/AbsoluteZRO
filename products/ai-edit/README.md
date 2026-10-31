@@ -25,7 +25,8 @@ rebranding troca tudo num lugar só.
    volume no Inspector, ⌫ tira. Aba **Sons** (Sonoplasta): os cortes e marcadores viram momentos; tocar num momento
    busca o som que combina (regras em [`presets/sonoplasta.v1.json`](presets/sonoplasta.v1.json)) no banco de sons
    livres pela Absolute ZRO (Openverse: CC0, CC BY e domínio público), em português; ouvir, colocar no momento com o
-   crédito anotado. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
+   crédito anotado. **Meu banco**: a pasta do Drive da pessoa com os sons dela (cola o link uma vez; pela conexão do
+   Drive no SOBEDESCE, só leitura), com subpastas e busca pelo nome. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
 5. **Entrega**: Premiere (xmeml), Final Cut (FCPXML 1.10), DaVinci (FCPXML + EDL), OTIO, SRT/VTT e o
    `zro-timeline-ref.json` (contrato `ZroTimelineRef` v0.1 do `edit.timeline.ready`), com o caminho completo da mídia;
    zoom vai como escala e posição do clipe, cor como rótulo do Premiere e etiqueta como palavra-chave. Efeitos sonoros
@@ -109,8 +110,7 @@ npx electron . --medir=<vídeo> [--modelo=preciso]   # demo medida no app de ver
 
 ## Ainda não (próximas etapas)
 
-- **Sonoplasta** (pedido do titular, 31/10/2026): sugerir efeitos nos cortes e marcadores, buscar no banco da pessoa
-  (pasta do Drive), no Openverse (só licença comercial) e criar som novo com a conta ElevenLabs dela (créditos dela,
+- **Sonoplasta** (pedido do titular, 31/10/2026): criar som novo com a conta ElevenLabs da pessoa (créditos dela,
   com confirmação e o gasto na tela). Conexões no HUB; batida e abaixar sob a voz pelo NOSSOM. Epidemic e Artlist só
   com contrato de parceria.
 

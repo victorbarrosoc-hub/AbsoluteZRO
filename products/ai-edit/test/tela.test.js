@@ -443,7 +443,7 @@ test('efeitos sonoros: som do computador no ponto, arrastar, volume, desfazer, t
   await pagina.close()
 })
 
-test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar no corte, crédito e arquivo na entrega', async () => {
+test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar no corte, o banco no Drive, crédito e arquivo na entrega', async () => {
   const { pagina, erros } = await abrir()
   const { bytes } = await pagina.evaluate(async () => {
     const { videoDeTeste } = await import('/app/autoteste.js')
@@ -517,6 +517,44 @@ test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar
   await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 2)
   assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.sons.length), 1)
 
+  // Meu banco: o link da pasta do Drive, a subpasta, buscar nela e colocar um som da pessoa (sem crédito)
+  const BANCO = '1AbCdEfGhIjKlMnOp'
+  const SUB = '1PastaWhooshesAbc'
+  const SOM = '1WhooshDoBancoXyz'
+  const listagens = []
+  await pagina.route('**/api/zro/sons/banco?*', (r) => {
+    const u = new URL(r.request().url()).searchParams
+    listagens.push({ pasta: u.get('pasta'), q: u.get('q') })
+    const raiz = u.get('pasta') === BANCO
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ pasta: { id: u.get('pasta'), nome: raiz ? 'Meus SFX' : 'Whooshes' }, conta: 'c1', pastas: raiz ? [{ id: SUB, nome: 'Whooshes' }] : [], sons: raiz ? [] : [{ id: SOM, origem: 'banco', titulo: 'Whoosh grave', nome: 'Whoosh grave.wav', formato: 'wav', bytes: wav.length, conta: 'c1' }], proxima: null }),
+    })
+  })
+  await pagina.route(`**/api/zro/sons/banco/${SOM}?conta=c1`, (r) => r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': SOM, 'cross-origin-resource-policy': 'same-origin' } }))
+  await pagina.click('#sonsFonte [data-fonte="banco"]')
+  assert.equal(await pagina.locator('#sonsBancoForm').isVisible(), true)
+  await pagina.fill('#sonsBancoLink', `https://drive.google.com/drive/u/0/folders/${BANCO}?usp=sharing`)
+  await pagina.press('#sonsBancoLink', 'Enter')
+  await pagina.locator('#sonsPasta [aria-current="true"]', { hasText: 'Meus SFX' }).waitFor()
+  assert.match(await pagina.locator('#sonsLista').innerText(), /Nenhum som nesta pasta/)
+  await pagina.locator('#sonsPastas button', { hasText: 'Whooshes' }).click()
+  await pagina.locator('.som-item', { hasText: 'Whoosh grave' }).waitFor()
+  assert.match(await pagina.locator('#sonsPasta').innerText(), /Meus SFX\s*›\s*Whooshes/)
+  await pagina.fill('#sonsTermo', 'grave')
+  await pagina.press('#sonsTermo', 'Enter')
+  await pagina.waitForFunction(() => document.querySelector('.som-item'))
+  assert.deepEqual(listagens.at(-1), { pasta: SUB, q: 'grave' })
+  // a pasta fica guardada neste navegador
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('aeon.sons.banco')).id), BANCO)
+  await pagina.locator('.som-item .som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 3)
+  const doBanco = await pagina.evaluate(() => globalThis.__editor.h.atual.sons.find((x) => x.origem.tipo === 'banco'))
+  assert.deepEqual(doBanco.origem, { tipo: 'banco', id: SOM, titulo: 'Whoosh grave', fonte: 'Meu banco no Drive', conta: 'c1' })
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Do seu banco no Drive/)
+  await pagina.click('#sonsFonte [data-fonte="livres"]')
+
   // entrega: o arquivo do som vai junto, o XML aponta para ele e o crédito sai no CREDITOS.txt
   await pagina.click('.dock [data-ir="entrega"]')
   const downloads = []
@@ -527,6 +565,8 @@ test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar
   assert.ok(zip.includes('Efeito - Whoosh Rápido.wav'), 'o arquivo do som vai na entrega')
   assert.ok(zip.includes('src="Efeito%20-%20Whoosh%20R%C3%A1pido.wav"'), 'o FCPXML aponta para ele')
   assert.match(zip, /"Whoosh Rápido" por Ana · CC BY 4\.0 · https:\/\/freesound\.org\/s\/1/)
+  assert.ok(zip.includes('Efeito - Whoosh grave.wav'), 'o som do banco também vai na entrega')
+  assert.doesNotMatch(zip, /"Whoosh grave" (por|·)/, 'o som do banco da pessoa não pede crédito')
   assert.deepEqual(erros, [])
   await pagina.close()
 })

@@ -3674,3 +3674,19 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 - Medido de verdade (31/10/2026): a API do Openverse respondeu à busca "whoosh" com sons CC0 do Freesound, autor,
   licença, duração e o arquivo em `cdn.freesound.org`; o limite anônimo é 20/min e 200/dia.
 - Não validado: a busca em produção (falta aplicar a 0043 e publicar o HUB) e o cadastro do app no Openverse.
+
+## Sonoplasta · fase 2b: o banco de sons da pessoa no Drive (31/10/2026)
+
+- HUB: `packages/core/src/sons-drive.ts`, `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` (escopo `zro.sons`; sem
+  migration nova). `tests/integration/sons-banco.test.ts` (SOBEDESCE e Google falsos): a pasta vai com o pedido
+  assinado `drive.listar`, voltam subpastas e só áudios (vídeo e id estranho ficam de fora), sem o e-mail da conta;
+  pasta, busca e conta conferidas antes de pedir; cada erro do SOBEDESCE (`sem_drive`, `reconectar_drive`,
+  `sem_vinculo`, `sem_acesso_zro`, `nao_achou`, `devagar`, fora do ar) vira frase com o código e o link; o arquivo usa o
+  token curto do Drive (`drive.token`) pedido uma vez e reaproveitado, nunca devolvido; só áudio, não apagado, até
+  25 MB; token recusado pelo Google pede outro uma vez. OpenAPI conferido; `typecheck` e `lint` OK.
+- AEON: repasse `/api/zro/sons/banco*` no site e no desktop só com os parâmetros conferidos (pasta que não é id do
+  Drive não segue como veio); `pastaDoLink` aceita link de pasta do Drive (com `/u/0/` e `?usp=`), link antigo
+  (`open?id=`), link do SOBEDESCE (`#drive/<id>`) ou o id; som do banco sem crédito no `CREDITOS.txt`. Tela no Chromium:
+  "Meu banco", colar o link, subpasta, buscar nela, colocar o som (origem `banco` com a conta), Inspector "Do seu banco
+  no Drive", o arquivo na entrega e nenhum crédito para ele.
+- Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0043 aplicada).

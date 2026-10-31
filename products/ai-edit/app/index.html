@@ -180,13 +180,23 @@
                 <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
               </section>
               <section class="aba sons" data-aba="sons" hidden aria-label="Sons">
+                <div class="sons-fonte" id="sonsFonte" role="group" aria-label="De onde vêm os sons">
+                  <button type="button" data-fonte="livres" aria-pressed="true" title="Openverse: Freesound e Wikimedia, livres para uso comercial">Livres</button>
+                  <button type="button" data-fonte="banco" aria-pressed="false" title="A sua pasta de sons no Google Drive, pelo SOBEDESCE">Meu banco</button>
+                </div>
+                <form class="sons-banco-link" id="sonsBancoForm" hidden>
+                  <input type="url" id="sonsBancoLink" placeholder="Link da pasta do Drive" aria-label="Link da pasta do Drive com os seus sons" autocomplete="off" required />
+                  <button type="submit" class="glass-btn">Usar</button>
+                </form>
+                <nav class="sons-pasta" id="sonsPasta" hidden aria-label="Pasta do banco"></nav>
                 <form class="sons-busca" id="sonsBusca" role="search">
                   <input type="search" id="sonsTermo" maxlength="80" placeholder="whoosh, impacto, clique…" aria-label="Buscar som" autocomplete="off" />
                 </form>
                 <div class="sons-momentos" id="sonsMomentos" role="group" aria-label="Momentos da linha"></div>
                 <div class="sons-sugestoes" id="sonsSugestoes" role="group" aria-label="Sugestões"></div>
+                <div class="sons-pastas" id="sonsPastas" role="group" aria-label="Subpastas" hidden></div>
                 <ol class="sons-lista" id="sonsLista" aria-live="polite"></ol>
-                <p class="apoio sons-rodape" title="Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.">Sons livres para uso comercial, com crédito.</p>
+                <p class="apoio sons-rodape" id="sonsRodape" title="Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.">Sons livres para uso comercial, com crédito.</p>
               </section>
               <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
             </aside>

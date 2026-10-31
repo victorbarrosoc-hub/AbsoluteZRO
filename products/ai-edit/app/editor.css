@@ -2555,6 +2555,7 @@ html:not([data-conta]) body {
   flex-wrap: wrap;
   gap: 6px;
 }
+.sons-sugestoes[hidden],
 .sons-momentos:empty,
 .sons-sugestoes:empty {
   display: none;
@@ -2635,4 +2636,104 @@ html:not([data-conta]) body {
 }
 .sons-rodape {
   font-size: 12px;
+}
+/* De onde vêm os sons: os livres ou o banco da pessoa no Drive */
+.sons-fonte {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.sons-fonte button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-fonte button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text-strong);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+.sons-banco-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+.sons-banco-link input {
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.sons-banco-link[hidden],
+.sons-pasta[hidden],
+.sons-pastas[hidden] {
+  display: none;
+}
+.sons-pasta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  font-size: 12.5px;
+}
+.sons-pasta button {
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.sons-pasta button:hover {
+  background: var(--hover);
+}
+.sons-pasta button[aria-current='true'] {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.sons-pasta .sep {
+  color: var(--text-faint);
+}
+.sons-pasta .sons-trocar {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+.sons-pastas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sons-pastas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-pastas button::before {
+  content: '';
+  width: 10px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--text-faint);
+  opacity: 0.6;
 }

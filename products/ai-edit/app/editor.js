@@ -9,7 +9,7 @@ import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, momentos, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
-import { idDoSomBuscado, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
+import { idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
 import * as bancoSons from './sons.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
@@ -109,7 +109,10 @@ if (ponte.desktop) $('abrirSobedesce').hidden = false
 S.preset = prepararPreset(await fetch(new URL('../presets/fala.v1.json', import.meta.url)).then((r) => r.json()))
 // Sonoplasta: o que buscar em cada momento e como o português vira termo do banco (regras no preset, não no código)
 S.sonoplasta = await fetch(new URL('../presets/sonoplasta.v1.json', import.meta.url)).then((r) => r.json())
-S.sons = { alvo: null, resultados: [], estado: 'vazio', erro: null, ouvindo: null }
+/** Os sons que descem de novo sozinhos quando o projeto reabre: os livres e os do banco no Drive. */
+const DESCEM = new Set(['openverse', 'banco'])
+// fonte: 'livres' (Openverse) ou 'banco' (a pasta da pessoa no Drive, guardada só neste navegador)
+S.sons = { fonte: lerGuardado('aeon.sons.fonte') === 'banco' ? 'banco' : 'livres', alvo: null, resultados: [], estado: 'vazio', erro: null, ouvindo: null, banco: bancoDe(lerGuardado('aeon.sons.banco')), pedido: 0 }
 
 const player = new Player($('tela'), (id) => ponte.urlTocavel(S.entradas.get(id)))
 const linha = new LinhaUI($('linha'), {
@@ -907,6 +910,8 @@ $('abasPainel').onclick = (e) => {
 function aba(nome) {
   for (const b of $('abasPainel').children) b.setAttribute('aria-selected', String(b.dataset.aba === nome))
   for (const sec of document.querySelectorAll('.painel-lateral .aba')) sec.hidden = sec.dataset.aba !== nome
+  // o banco no Drive só é lido quando a pessoa abre a aba Sons
+  if (nome === 'sons' && S.sons.fonte === 'banco' && S.sons.banco && S.sons.estado === 'vazio') listarPasta()
 }
 
 // controles do Inspector: valor na tela ↔ valor no clipe
@@ -982,7 +987,7 @@ function desenharInspector() {
     const o = som?.origem || {}
     sec.querySelector('.insp-efeito strong').textContent = som?.nome.replace(/\.[^.]+$/, '') || 'Efeito'
     // de onde veio: do computador (licença da pessoa) ou de um banco (autor e licença para os créditos)
-    sec.querySelector('.insp-efeito .apoio').textContent = o.tipo === 'arquivo' ? 'Do seu computador' : [o.autor, o.licenca].filter(Boolean).join(' · ') || 'Banco de sons'
+    sec.querySelector('.insp-efeito .apoio').textContent = o.tipo === 'arquivo' ? 'Do seu computador' : o.tipo === 'banco' ? 'Do seu banco no Drive' : [o.autor, o.licenca].filter(Boolean).join(' · ') || 'Banco de sons'
     const i = $('fxVolume')
     if (document.activeElement !== i) i.value = String(fx.volume || 0)
     i.previousElementSibling.textContent = `${fx.volume > 0 ? '+' : ''}${String(fx.volume || 0).replace('.', ',')} dB`
@@ -1113,7 +1118,35 @@ addEventListener('keydown', (e) => {
   }
 })
 
-// ───────── Sonoplasta: momentos, busca no banco de sons livres (pela Absolute ZRO), ouvir e colocar ─────────
+// ───────── Sonoplasta: momentos, busca nos sons livres ou no banco da pessoa no Drive (pela Absolute ZRO), ouvir e colocar ─────────
+
+function lerGuardado(chave) {
+  try {
+    return localStorage.getItem(chave)
+  } catch {
+    return null
+  }
+}
+function guardar(chave, valor) {
+  try {
+    if (valor == null) localStorage.removeItem(chave)
+    else localStorage.setItem(chave, valor)
+  } catch {
+    // navegador sem armazenamento: vale só nesta aba
+  }
+}
+/** O banco guardado ({ id, nome }) → estado da navegação: a raiz, o caminho até a pasta aberta e as subpastas dela. */
+function bancoDe(texto) {
+  try {
+    const b = JSON.parse(texto || 'null')
+    if (!b || pastaDoLink(b.id) !== b.id) return null
+    const raiz = { id: b.id, nome: String(b.nome || 'Meu banco').slice(0, 120) }
+    return { raiz, caminho: [raiz], pastas: [], conta: typeof b.conta === 'string' ? b.conta : null }
+  } catch {
+    return null
+  }
+}
+const guardarBanco = (b) => guardar('aeon.sons.banco', b ? JSON.stringify({ id: b.raiz.id, nome: b.raiz.nome, conta: b.conta }) : null)
 
 function el(tag, cls, props = {}) {
   return Object.assign(document.createElement(tag), cls ? { className: cls } : {}, props)
@@ -1122,8 +1155,113 @@ function segundosLegiveis(s) {
   return s == null ? '' : s < 10 ? `${String(Math.round(s * 10) / 10).replace('.', ',')} s` : relogio(s)
 }
 
+/** O seletor Livres | Meu banco, o link da pasta, o caminho até a pasta aberta e as subpastas dela. */
+function desenharFonte() {
+  const banco = S.sons.fonte === 'banco'
+  const b = S.sons.banco
+  for (const x of $('sonsFonte').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.fonte === S.sons.fonte))
+  $('sonsBancoForm').hidden = !banco || Boolean(b)
+  $('sonsBusca').hidden = banco && !b
+  $('sonsSugestoes').hidden = banco
+  $('sonsPasta').hidden = !banco || !b
+  $('sonsPastas').hidden = !banco || !b?.pastas.length
+  $('sonsTermo').placeholder = banco ? 'Buscar nesta pasta' : 'whoosh, impacto, clique…'
+  const r = $('sonsRodape')
+  r.textContent = banco ? 'Da sua pasta no Drive, pelo SOBEDESCE. A licença é sua.' : 'Sons livres para uso comercial, com crédito.'
+  r.title = banco
+    ? 'Os sons descem da sua pasta no Google Drive pela conexão do SOBEDESCE. Nada é movido nem apagado no Drive.'
+    : 'Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.'
+  if (!banco || !b) return
+  const itens = []
+  b.caminho.forEach((pasta, i) => {
+    if (i) itens.push(el('span', 'sep', { textContent: '›', ariaHidden: 'true' }))
+    const x = el('button', '', { type: 'button', textContent: pasta.nome })
+    if (i === b.caminho.length - 1) x.setAttribute('aria-current', 'true')
+    x.onclick = () => {
+      S.sons.banco = { ...b, caminho: b.caminho.slice(0, i + 1), pastas: [] }
+      $('sonsTermo').value = ''
+      listarPasta()
+    }
+    itens.push(x)
+  })
+  const trocar = el('button', 'sons-trocar', { type: 'button', textContent: 'Trocar', title: 'Usar outra pasta do Drive' })
+  trocar.onclick = () => {
+    S.sons = { ...S.sons, banco: null, resultados: [], estado: 'vazio', erro: null }
+    guardarBanco(null)
+    desenharFonte()
+    desenharResultados()
+    $('sonsBancoLink').focus()
+  }
+  $('sonsPasta').replaceChildren(...itens, trocar)
+  $('sonsPastas').replaceChildren(
+    ...b.pastas.map((pasta) => {
+      const x = el('button', '', { type: 'button', textContent: pasta.nome, title: `Abrir ${pasta.nome}` })
+      x.onclick = () => {
+        S.sons.banco = { ...S.sons.banco, caminho: [...S.sons.banco.caminho, pasta], pastas: [] }
+        $('sonsTermo').value = ''
+        listarPasta()
+      }
+      return x
+    }),
+  )
+}
+
+$('sonsFonte').onclick = (e) => {
+  const fonte = e.target.closest('[data-fonte]')?.dataset.fonte
+  if (!fonte || fonte === S.sons.fonte) return
+  S.sons = { ...S.sons, fonte, resultados: [], estado: 'vazio', erro: null }
+  guardar('aeon.sons.fonte', fonte)
+  desenharFonte()
+  desenharResultados()
+  if (fonte === 'banco' && S.sons.banco) listarPasta()
+  else if (fonte === 'livres' && $('sonsTermo').value.trim()) buscarSons($('sonsTermo').value)
+}
+
+$('sonsBancoForm').onsubmit = (e) => {
+  e.preventDefault()
+  const id = pastaDoLink($('sonsBancoLink').value)
+  if (!id) return aviso('Cole o link de uma pasta do Google Drive.')
+  const raiz = { id, nome: 'Meu banco' }
+  S.sons.banco = { raiz, caminho: [raiz], pastas: [], conta: null }
+  $('sonsBancoLink').value = ''
+  $('sonsTermo').value = ''
+  guardarBanco(S.sons.banco)
+  listarPasta()
+}
+
+/** Lista a pasta aberta do banco (com `q`, só o que tem o termo no nome). O pedido mais novo ganha. */
+async function listarPasta(q = '') {
+  const b = S.sons.banco
+  if (!b) return
+  const pasta = b.caminho.at(-1)
+  const pedido = ++S.sons.pedido
+  S.sons = { ...S.sons, estado: 'buscando', erro: null }
+  desenharFonte()
+  desenharResultados()
+  try {
+    const r = await bancoSons.listarBanco(pasta.id, { q, conta: b.conta || '' })
+    if (pedido !== S.sons.pedido || S.sons.banco?.raiz.id !== b.raiz.id) return
+    const nome = r.pasta?.nome || pasta.nome
+    const caminho = b.caminho.map((x, i) => (i === b.caminho.length - 1 ? { ...x, nome } : x))
+    S.sons.banco = { ...b, caminho, raiz: caminho[0], pastas: q ? b.pastas : r.pastas || [], conta: r.conta || b.conta }
+    if (b.caminho.length === 1) guardarBanco(S.sons.banco)
+    S.sons = { ...S.sons, resultados: r.sons, estado: r.sons.length ? 'pronto' : 'nada', consulta: q }
+  } catch (err) {
+    if (pedido !== S.sons.pedido) return
+    S.sons = { ...S.sons, resultados: [], estado: 'erro', erro: err }
+  }
+  desenharFonte()
+  desenharResultados()
+}
+
+function tamanhoLegivel(bytes) {
+  if (!bytes) return ''
+  return bytes < 1e6 ? `${Math.max(1, Math.round(bytes / 1e3))} KB` : `${String(Math.round(bytes / 1e5) / 10).replace('.', ',')} MB`
+}
+
 function desenharSons() {
   const p = P()
+  desenharFonte()
   if (!p) return
   const ms = momentos(p)
   if (S.sons.alvo && !ms.some((m) => m.q === S.sons.alvo.q)) S.sons.alvo = null
@@ -1171,7 +1309,12 @@ function desenharResultados() {
     if (erro.status === 401) li.append(el('a', 'link', { href: `/api/zro/entrar?volta=${encodeURIComponent('/app/')}`, textContent: ' Entrar de novo' }))
     return ol.replaceChildren(li)
   }
-  if (estado === 'nada') return ol.replaceChildren(el('li', 'apoio sons-estado', { textContent: 'Nenhum som livre com esse nome. Tente outra palavra.' }))
+  if (estado === 'nada')
+    return ol.replaceChildren(
+      el('li', 'apoio sons-estado', {
+        textContent: S.sons.fonte === 'banco' ? (S.sons.consulta ? 'Nenhum som com esse nome nesta pasta.' : 'Nenhum som nesta pasta.') : 'Nenhum som livre com esse nome. Tente outra palavra.',
+      }),
+    )
   ol.replaceChildren(
     ...resultados.map((s) => {
       const li = el('li', 'som-item')
@@ -1179,8 +1322,10 @@ function desenharResultados() {
       const ouvir = el('button', 'icone-btn som-ouvir', { type: 'button', title: 'Ouvir', ariaLabel: `Ouvir ${s.titulo}`, innerHTML: '<svg><use href="#i-play"/></svg>' })
       ouvir.onclick = () => ouvirSom(s, ouvir)
       const info = el('span', 'som-info')
-      info.append(el('strong', '', { textContent: s.titulo }), el('span', 'apoio', { textContent: [s.autor, s.licenca, segundosLegiveis(s.duracao)].filter(Boolean).join(' · ') }))
-      info.title = `${s.titulo}${s.autor ? ` · ${s.autor}` : ''} · ${s.licenca} · ${s.fonte}`
+      const banco = s.origem === 'banco'
+      const detalhe = banco ? [s.formato?.toUpperCase(), tamanhoLegivel(s.bytes)] : [s.autor, s.licenca, segundosLegiveis(s.duracao)]
+      info.append(el('strong', '', { textContent: s.titulo }), el('span', 'apoio', { textContent: detalhe.filter(Boolean).join(' · ') }))
+      info.title = banco ? s.nome : `${s.titulo}${s.autor ? ` · ${s.autor}` : ''} · ${s.licenca} · ${s.fonte}`
       const colocar = el('button', 'glass-btn som-colocar', { type: 'button', textContent: 'Colocar', title: S.sons.alvo ? `Colocar em ${S.sons.alvo.nome}` : 'Colocar no ponto' })
       colocar.onclick = () => colocarSomBuscado(s, colocar)
       li.append(ouvir, info, colocar)
@@ -1190,6 +1335,8 @@ function desenharResultados() {
 }
 
 async function buscarSons(texto) {
+  // no banco da pessoa, o termo vai como ela escreveu (os nomes são dela), dentro da pasta aberta
+  if (S.sons.fonte === 'banco') return listarPasta(String(texto).replace(/\s+/g, ' ').trim().slice(0, 80))
   const termo = termoDeBusca(texto, S.sonoplasta)
   if (termo.length < 2) return
   S.sons = { ...S.sons, estado: 'buscando', erro: null }
@@ -1213,7 +1360,7 @@ function ouvirSom(s, botao) {
   antes?.audio.pause()
   if (antes) antes.botao.innerHTML = '<svg><use href="#i-play"/></svg>'
   if (antes?.id === s.id) return (S.sons.ouvindo = null)
-  const audio = new Audio(bancoSons.urlDoSom(s.id))
+  const audio = new Audio(bancoSons.urlDoSom(s))
   audio.onended = () => {
     botao.innerHTML = '<svg><use href="#i-play"/></svg>'
     S.sons.ouvindo = null
@@ -1232,7 +1379,7 @@ async function colocarSomBuscado(s, botao) {
   botao.disabled = true
   try {
     if (!somPorId(p, id) || !S.entradas.has(id)) {
-      const blob = await bancoSons.baixar(s.id)
+      const blob = await bancoSons.baixar(s)
       const nome = somDoBanco(s, {}).nome
       const e = await ponte.entradaDe(new File([blob], nome, { type: blob.type }))
       const info = await lerInfo(e)
@@ -1251,12 +1398,12 @@ async function colocarSomBuscado(s, botao) {
   }
 }
 
-/** Projeto reaberto: os sons que vieram do banco descem de novo sozinhos (o app não guarda áudio no projeto). */
+/** Projeto reaberto: os sons que vieram de um banco descem de novo sozinhos (o app não guarda áudio no projeto). */
 async function rebaixarSons(p) {
   for (const som of p.sons || []) {
-    if (som.origem?.tipo !== 'openverse' || S.entradas.has(som.id) || !som.origem.id) continue
+    if (!DESCEM.has(som.origem?.tipo) || S.entradas.has(som.id) || !som.origem.id) continue
     try {
-      const blob = await bancoSons.baixar(som.origem.id)
+      const blob = await bancoSons.baixar(som.origem)
       S.entradas.set(som.id, await ponte.entradaDe(new File([blob], som.nome, { type: blob.type })))
     } catch {
       aviso(`O som "${som.nome}" não desceu agora; tente abrir de novo.`)
@@ -1298,7 +1445,7 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   const faltam = []
   for (const m of [...p.midias, ...(p.sons || [])]) {
     if (m.caminho && ponte.desktop) S.entradas.set(m.id, await ponte.entradaDoCaminho(m.caminho, m.nome))
-    else if (m.origem?.tipo !== 'openverse') faltam.push(m)
+    else if (!DESCEM.has(m.origem?.tipo)) faltam.push(m)
   }
   S.h = new Historico(p)
   S.salvo = true

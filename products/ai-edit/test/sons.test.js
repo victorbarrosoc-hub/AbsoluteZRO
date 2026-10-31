@@ -95,6 +95,32 @@ describe('repasse dos sons', () => {
     assert.equal((await pedir(`/api/zro/sons/openverse/${ID}`, { cookies: c, method: 'POST' })).status, 405)
   })
 
+  test('banco no Drive: a pasta e o arquivo seguem só com os parâmetros conferidos', async () => {
+    const c = await entrar()
+    f.banco = f.banco || (await import('../api/zro/sons/banco/index.js')).default
+    f.somBanco = f.somBanco || (await import('../api/zro/sons/banco/[id].js')).default
+    const lista = await pedir('/api/zro/sons/banco?pasta=1AbCdEfGhIjKlMnOp&q=whoosh&conta=c1&token=roubar', { cookies: c })
+    assert.equal(lista.status, 200)
+    assert.equal((await lista.json()).sons[0].origem, 'banco')
+    assert.equal(zro.estado.sons.at(-1).caminho, '/banco')
+    assert.equal(zro.estado.sons.at(-1).consulta, '?pasta=1AbCdEfGhIjKlMnOp&q=whoosh&conta=c1')
+    // pasta que não é id do Drive vira "x" (a Absolute ZRO responde 422 com a frase), nunca segue como veio
+    const ruim = await pedir('/api/zro/sons/banco?pasta=https%3A%2F%2Fevil', { cookies: c })
+    assert.equal(ruim.status, 422)
+    assert.equal(zro.estado.sons.at(-1).consulta, '?pasta=x')
+    // Drive não conectado: a frase da Absolute ZRO chega à tela
+    const semDrive = await pedir('/api/zro/sons/banco?pasta=1SemDriveConectado', { cookies: c })
+    assert.equal(semDrive.status, 409)
+    assert.match((await semDrive.json()).message, /SOBEDESCE/)
+    const som = await pedir('/api/zro/sons/banco/1WhooshDoBancoXyz?conta=c1&x=1', { cookies: c })
+    assert.equal(som.status, 200)
+    assert.equal(som.headers.get('x-zro-som-id'), '1WhooshDoBancoXyz')
+    assert.equal(som.headers.get('cache-control'), 'no-store')
+    assert.deepEqual([...new Uint8Array(await som.arrayBuffer())], [1, 2, 3, 4])
+    assert.equal(zro.estado.sons.at(-1).consulta, '?conta=c1')
+    assert.equal((await pedir('/api/zro/sons/banco/curto', { cookies: c })).status, 404)
+  })
+
   test('fechado ao público: sessão que o HUB não liberou recebe 403 sem falar com a Absolute ZRO', async () => {
     const cookies = await entrar()
     zro.estado.sons = []

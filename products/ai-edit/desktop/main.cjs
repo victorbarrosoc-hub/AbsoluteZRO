@@ -257,15 +257,30 @@ async function repassarSet(req, u) {
   return new Response(semCorpo ? null : await r.arrayBuffer(), { status: r.status, headers: cabecalhos(extra) })
 }
 
-// Os sons da Sonoplasta: /api/zro/sons/buscar e /api/zro/sons/openverse/<id> → <Absolute ZRO>/api/v1/sons/… com o
-// mesmo access token. Os mesmos caminhos do site (api/_sons.js); só GET; o arquivo passa com o tipo e os X-Zro-Som-*.
-const SOM_ID = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+// Os sons da Sonoplasta: /api/zro/sons/buscar, /openverse/<id>, /banco e /banco/<id> → <Absolute ZRO>/api/v1/sons/… com
+// o mesmo access token. Os mesmos caminhos e parâmetros do site (api/_sons.js); só GET; o arquivo passa com o tipo e
+// os X-Zro-Som-*.
+const SOM_OPENVERSE = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const SOM_BANCO = /^\/banco\/[A-Za-z0-9_-]{10,200}$/
 const PASSAM_SOM = ['content-type', 'content-length', 'x-zro-som-id', 'x-zro-som-titulo', 'x-zro-som-autor', 'x-zro-som-licenca']
+function consultaDoSom(caminho, q) {
+  const so = (o) => new URLSearchParams(Object.entries(o).filter(([, v]) => v)).toString()
+  const conta = /^[A-Za-z0-9_-]{1,64}$/.test(q.get('conta') || '') ? q.get('conta') : ''
+  if (caminho === '/buscar') return so({ q: String(q.get('q') || '').slice(0, 80), pagina: /^\d{1,2}$/.test(q.get('pagina') || '') ? q.get('pagina') : '1' })
+  if (caminho === '/banco') {
+    const pagina = String(q.get('pagina') || '')
+    return so({ pasta: /^[A-Za-z0-9_-]{10,200}$/.test(q.get('pasta') || '') ? q.get('pasta') : 'x', q: String(q.get('q') || '').slice(0, 80), pagina: pagina.length <= 2000 ? pagina : '', conta })
+  }
+  if (SOM_BANCO.test(caminho)) return so({ conta })
+  if (SOM_OPENVERSE.test(caminho)) return ''
+  return null
+}
 async function repassarSons(req, u) {
   const caminho = u.pathname.slice('/api/zro/sons'.length)
-  const busca = caminho === '/buscar'
-  if (!busca && !SOM_ID.test(caminho)) return jsonResp(404, { ok: false })
+  const consulta = consultaDoSom(caminho, u.searchParams)
+  if (consulta === null) return jsonResp(404, { ok: false })
   if (req.method !== 'GET') return jsonResp(405, { ok: false })
+  const lista = caminho === '/buscar' || caminho === '/banco'
   let token
   try {
     token = await contaApp().tokenDeAcesso()
@@ -273,14 +288,13 @@ async function repassarSons(req, u) {
     return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
   }
   if (!token) return jsonResp(401, { ok: false, message: 'Entre com a conta Absolute ZRO para buscar sons.' })
-  const q = new URLSearchParams({ q: String(u.searchParams.get('q') || '').slice(0, 80), pagina: /^\d{1,2}$/.test(u.searchParams.get('pagina') || '') ? u.searchParams.get('pagina') : '1' })
   let r
   try {
-    r = await net.fetch(`${EMISSOR}/api/v1/sons${caminho}${busca ? `?${q}` : ''}`, { headers: { authorization: `Bearer ${token}`, accept: busca ? 'application/json' : 'audio/*' }, signal: req.signal, redirect: 'manual' })
+    r = await net.fetch(`${EMISSOR}/api/v1/sons${caminho}${consulta ? `?${consulta}` : ''}`, { headers: { authorization: `Bearer ${token}`, accept: lista ? 'application/json' : 'audio/*' }, signal: req.signal, redirect: 'manual' })
   } catch {
     return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
   }
-  const extra = { 'cache-control': busca ? 'no-store' : 'private, max-age=3600' }
+  const extra = { 'cache-control': lista || SOM_BANCO.test(caminho) ? 'no-store' : 'private, max-age=3600' }
   for (const k of PASSAM_SOM) if (r.headers.get(k)) extra[k] = r.headers.get(k)
   return new Response(r.body, { status: r.status, headers: cabecalhos(extra) })
 }

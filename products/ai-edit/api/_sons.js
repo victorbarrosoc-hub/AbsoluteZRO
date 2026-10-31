@@ -1,33 +1,49 @@
-// Repasse dos sons da Sonoplasta (efeitos sonoros livres, pela Absolute ZRO): /api/zro/sons/buscar?q&pagina e
-// /api/zro/sons/openverse/<id> → <emissor>/api/v1/sons/…, com o access token da sessão no Authorization. A página fala
+// Repasse dos sons da Sonoplasta pela Absolute ZRO: os livres (/api/zro/sons/buscar?q&pagina e /openverse/<id>) e o
+// banco da pessoa no Drive (/api/zro/sons/banco?pasta&q&pagina&conta e /banco/<id>?conta) → <emissor>/api/v1/sons/…,
+// com o access token da sessão no Authorization. A página fala
 // só com este site (cookie da sessão, mesma origem); o token fica no cookie cifrado que só /api/zro recebe.
-// Só leitura (GET) e só estes dois caminhos; o arquivo de som passa aos poucos, com o tipo e os cabeçalhos X-Zro-Som-*.
+// Só leitura (GET) e só estes caminhos, com os parâmetros conferidos; o arquivo de som passa aos poucos, com o tipo e
+// os cabeçalhos X-Zro-Som-*.
 // Sem sessão ou sem tokens: 401. Token sem zro.sons (login de antes da Sonoplasta): a Absolute ZRO responde 401 e passa,
 // sem apagar o cookie dos tokens (eles continuam valendo para a Z e o Set). Fechado ao público: 403 antes de tudo.
 
 import { liberado } from './_release.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_TOKENS, CONTA_S, decifrar, emissor, json, lerCookie, renovarTokens, ZroErro } from './_zro.js'
 
-const ID = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const OPENVERSE = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const BANCO = /^\/banco\/[A-Za-z0-9_-]{10,200}$/
 const PASSAM = ['content-type', 'content-length', 'x-zro-som-id', 'x-zro-som-titulo', 'x-zro-som-autor', 'x-zro-som-licenca']
 const PRAZO_MS = 30_000
 const agoraS = () => Math.floor(Date.now() / 1000)
 
 export const caminhoDe = (req) => new URL(req.url || '/', 'https://site.invalid').pathname.replace(/^\/api\/zro\/sons(?=\/|$)/, '')
 
-/** Só os parâmetros da busca, conferidos (o resto não sai daqui). */
-function consultaDaBusca(req) {
-  const q = new URL(req.url || '/', 'https://site.invalid').searchParams
-  const termo = String(q.get('q') || '').slice(0, 80)
-  const pagina = /^\d{1,2}$/.test(q.get('pagina') || '') ? q.get('pagina') : '1'
-  return new URLSearchParams({ q: termo, pagina }).toString()
+const DRIVE_ID = /^[A-Za-z0-9_-]{10,200}$/
+const CONTA = /^[A-Za-z0-9_-]{1,64}$/
+
+/**
+ * A consulta que segue para a Absolute ZRO em cada caminho, só com os parâmetros conferidos (o resto não sai daqui).
+ * null: caminho fora do contrato.
+ */
+export function consultaDe(caminho, q) {
+  const so = (o) => new URLSearchParams(Object.entries(o).filter(([, v]) => v)).toString()
+  const conta = CONTA.test(q.get('conta') || '') ? q.get('conta') : ''
+  if (caminho === '/buscar') return so({ q: String(q.get('q') || '').slice(0, 80), pagina: /^\d{1,2}$/.test(q.get('pagina') || '') ? q.get('pagina') : '1' })
+  if (caminho === '/banco') {
+    const pagina = String(q.get('pagina') || '')
+    return so({ pasta: DRIVE_ID.test(q.get('pasta') || '') ? q.get('pasta') : 'x', q: String(q.get('q') || '').slice(0, 80), pagina: pagina.length <= 2000 ? pagina : '', conta })
+  }
+  if (BANCO.test(caminho)) return so({ conta })
+  if (OPENVERSE.test(caminho)) return ''
+  return null
 }
 
 const negar = (res, status, message, cookies = []) => json(res, status, { ok: false, message }, cookies)
 
 export async function repassarSons(req, res, caminho = caminhoDe(req)) {
-  const busca = caminho === '/buscar'
-  if (!busca && !ID.test(caminho)) return negar(res, 404, 'Não encontrado.')
+  const consulta = consultaDe(caminho, new URL(req.url || '/', 'https://site.invalid').searchParams)
+  if (consulta === null) return negar(res, 404, 'Não encontrado.')
+  const lista = caminho === '/buscar' || caminho === '/banco'
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return negar(res, 405, 'Método não permitido.')
@@ -54,8 +70,8 @@ export async function repassarSons(req, res, caminho = caminhoDe(req)) {
   })
   let r
   try {
-    r = await fetch(`${emissor()}/api/v1/sons${caminho}${busca ? `?${consultaDaBusca(req)}` : ''}`, {
-      headers: { authorization: `Bearer ${t.at}`, accept: busca ? 'application/json' : 'audio/*' },
+    r = await fetch(`${emissor()}/api/v1/sons${caminho}${consulta ? `?${consulta}` : ''}`, {
+      headers: { authorization: `Bearer ${t.at}`, accept: lista ? 'application/json' : 'audio/*' },
       signal: ctrl.signal,
       redirect: 'manual',
     })
@@ -65,7 +81,7 @@ export async function repassarSons(req, res, caminho = caminhoDe(req)) {
   }
   res.statusCode = r.status
   for (const k of PASSAM) if (r.headers.get(k)) res.setHeader(k, r.headers.get(k))
-  res.setHeader('Cache-Control', busca ? 'no-store' : 'private, max-age=3600')
+  res.setHeader('Cache-Control', lista || BANCO.test(caminho) ? 'no-store' : 'private, max-age=3600')
   if (cookies.length) res.setHeader('Set-Cookie', cookies)
   try {
     if (r.body) for await (const pedaco of r.body) res.write(pedaco)
