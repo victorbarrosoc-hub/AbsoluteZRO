@@ -1,6 +1,6 @@
 // Teste do Drive (/admin/teste-drive): o que a tela precisa do ambiente e a política de conteúdo (CSP) só desta rota.
 // Tudo aqui é público por natureza (client ID, chave do Picker restrita por referenciador, número do projeto): não é
-// segredo, mas a tela nunca mostra os valores, só se estão configurados.
+// segredo, mas a tela nunca mostra os valores, só se estão configurados. Configurados na Vercel em 31/10/2026.
 
 export const ROTA_TESTE_DRIVE = '/admin/teste-drive'
 
