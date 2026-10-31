@@ -1,6 +1,6 @@
 {
   "name": "sobedesce",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "SOBEDESCE — transferências rápidas e retomáveis para o Google Drive, feitas para arquivos gigantes de audiovisual.",
   "type": "module",
   "private": true,
