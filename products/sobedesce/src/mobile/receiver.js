@@ -20,6 +20,7 @@
 //    ponto que o celular ouve (rec.offset) é o gravado; o que vai para mobile-uploads.json é o sincronizado
 //    (rec.synced). Se o computador desligar, o celular continua do ponto sincronizado e manda de novo o resto: nunca
 //    fica um buraco de zeros no arquivo. Fechar o app sincroniza tudo antes de gravar a lista.
+import { criadaPeloSobedesce } from '../google/modo-drive.js'
 import http from 'node:http'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -975,7 +976,8 @@ export class MobileReceiver extends EventEmitter {
     const st = this.settings.get()
     return {
       mac: { name: host.name },
-      account: acc ? { email: acc.email, name: acc.name || null } : null,
+      // modo (docs/CONTAS.md §13): em Arquivos escolhidos, o celular avisa que só aparecem as pastas do SOBEDESCE.
+      account: acc ? { email: acc.email, name: acc.name || null, modo: acc.modo === 'arquivos' ? 'arquivos' : 'total' } : null,
       folder: await this.#defaultFolder(acc, signal),
       maxSize: MAX_UPLOAD_SIZE,
       deleteAfterUpload: !!st.mobileDeleteAfterUpload,
@@ -1012,8 +1014,9 @@ export class MobileReceiver extends EventEmitter {
     const drive = this.manager.driveFor(acc.id)
     if (query.get('drives') === '1') return { drives: await drive.listSharedDrives({ signal }) }
     const folderId = googleId(query.get('folderId')) || 'root'
-    const items = await drive.listChildren(folderId, { signal })
-    return { folders: items.filter(it => it.isFolder).map(it => ({ id: it.id, name: it.name, driveId: it.driveId || null })) }
+    const items = await drive.listChildren(folderId, { signal, appProps: true })
+    // `sd`: pasta criada pelo SOBEDESCE (a única que aparece inteira no modo Arquivos escolhidos, src/google/modo-drive.js).
+    return { folders: items.filter(it => it.isFolder).map(it => ({ id: it.id, name: it.name, driveId: it.driveId || null, ...(criadaPeloSobedesce(it) ? { sd: true } : {}) })) }
   }
 
   #driveView(rec) {

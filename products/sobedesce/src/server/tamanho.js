@@ -10,6 +10,8 @@
 // TamanhoView = { folderId, status: 'queued'|'running'|'done'|'stopped'|'error', bytes, files, folders, docs,
 //                 shortcuts, pending, startedAt, finishedAt, elapsedMs, error? }
 
+import { PRECISA_TOTAL } from '../google/modo-drive.js'
+
 const DRIVE_ID = /^[\w-]{1,200}$/
 const MAX_RUNNING = 2
 const LEASE_MS = 20_000
@@ -64,6 +66,8 @@ export class FolderSizeJobs {
       finishedAt: job.finishedAt,
       elapsedMs: job.startedAt ? Math.max(0, end - job.startedAt) : 0,
       ...(job.error ? { error: job.error } : {}),
+      // Arquivos escolhidos fora das pastas do SOBEDESCE: a tela mostra "Precisa de acesso total" no lugar do tamanho.
+      ...(job.precisaTotal ? { precisaTotal: true } : {}),
     }
   }
 
@@ -165,8 +169,14 @@ export class FolderSizeJobs {
       this.ctx.log?.('tamanho da pasta: conta', err?.message)
       return
     }
-    drive
-      .folderSize(job.folderId, { signal, onProgress: p => job.ac?.signal === signal && take(p) })
+    // Drive híbrido (src/google/modo-drive.js): somar uma pasta pela metade daria um tamanho falso.
+    const conferir = drive.modo === 'arquivos' ? drive.pastaCompleta(job.folderId, { signal }) : Promise.resolve({ completo: true })
+    conferir
+      .then(({ completo }) => {
+        if (completo) return drive.folderSize(job.folderId, { signal, onProgress: p => job.ac?.signal === signal && take(p) })
+        job.precisaTotal = true
+        throw Object.assign(new Error(`${PRECISA_TOTAL} para somar esta pasta.`), { status: 403 })
+      })
       .then(
         out => {
           take(out)

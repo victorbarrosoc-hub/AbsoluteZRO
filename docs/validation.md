@@ -3730,3 +3730,24 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   lote, histórico e migração IndexedDB v1 → v2, MD5 contra a RFC 1321 e o `crypto` do Node em 6 MB); `npm test`
   336/336, lint e typecheck limpos; testes do produto que leem `web/public/app` 132/132. Capturas no
   Playwright (iPhone e computador, claro e escuro) sem erro na página.
+
+## SOBEDESCE: Drive híbrido (31/10/2026)
+
+- `products/sobedesce/web`: `tests/drive-hibrido.test.mts` 18/18 (escopo por modo, contador e trava no limite, vaga não volta, callback com escopo diferente, regra do navegar/comparar em `drive.file`, admin só para admin); `npm test` 354/354, lint e typecheck limpos; testes do produto que leem `web/public/app` 73/73. Capturas no Playwright (iPhone e computador, claro e escuro).
+
+## SOBEDESCE: app de computador 0.3.0 entende o Drive híbrido (31/10/2026)
+
+Ramo `sobedesce-desktop-modo` sobre a main f022924.
+
+- `products/sobedesce`: `npm run test:fast` **806/806** (4 pulados, os lentos de sempre), com `test/modo-drive.test.js`
+  6/6 (mesma marca e regra no motor, na tela e no celular; pastas novas marcadas; Comparar recusa raiz, pasta de fora e
+  subpasta sem marca e compara a pasta do SOBEDESCE; modo por Drive vindo do site, capacidade em todo pedido, 403 do
+  site vira "Precisa de acesso total" sem repetir), `test/cloud-app.test.js` com o app inteiro em Arquivos escolhidos
+  (lista `modo`/`completo`, Liberados, Comparar, tamanho e Copiar de um link), `mobile-receiver` (`modo` e `sd` no
+  Wi-Fi), `drive-link` (`#escolher/<conta>`) e `app-sw` (2.8.61 / `sobedesce-app-v76`).
+- `products/sobedesce/web`: lint e typecheck limpos; `npm test` **354/354** (o token `drive.file` só sai com
+  `x-sobedesce-capacidades: drive-arquivos`; app antigo, build alto sem a capacidade e volta para o antigo: 403).
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas no Playwright (interface `public/` com `scripts/ui-stub.js` em `STUB_MODO=arquivos`): Drive na raiz
+  ("Precisa de acesso total"), pasta do SOBEDESCE, Liberados, Escolher do Drive (abre `/app/#escolher/g1`), Ajustes
+  com o modo, seletor do Comparar travado e o resultado do Comparar, claro e escuro.

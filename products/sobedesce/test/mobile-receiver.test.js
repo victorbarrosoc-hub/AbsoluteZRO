@@ -138,6 +138,7 @@ test('sem código → 401; código errado → 401; só /m/*; a API principal nã
   const info = await mget('/m/api/info')
   assert.equal(info.status, 200)
   assert.equal(info.json.account.email, env.account.email)
+  assert.equal(info.json.account.modo, 'total', 'conta deste computador: Drive inteiro (Drive híbrido, docs/CONTAS.md §13)')
   assert.equal(info.json.folder.id, 'root')
   assert.ok(info.json.mac.name)
 
@@ -363,11 +364,15 @@ test('corpo maior que o declarado é recusado (com e sem Content-Length) e o tam
 
 test('pastas do Drive pelo celular: só pastas, e os drives compartilhados', async () => {
   const sub = env.mock.addFolder('Brutos', folder.id)
+  const nossa = env.mock.addFolder('Do SOBEDESCE', folder.id, { appProperties: { sobedesce: 'pasta' } })
   env.mock.addFile('solto.mov', folder.id, { size: 10 })
   const r = await mget(`/m/api/folders?folderId=${folder.id}`)
   assert.equal(r.status, 200, r.text)
-  assert.deepEqual(r.json.folders.map(f => f.name), ['Brutos'])
+  assert.deepEqual(r.json.folders.map(f => f.name), ['Brutos', 'Do SOBEDESCE'])
   assert.equal(r.json.folders[0].id, sub.id)
+  // `sd`: a pasta criada pelo SOBEDESCE (no modo Arquivos escolhidos, a única que aparece inteira no celular).
+  assert.equal(r.json.folders[0].sd, undefined)
+  assert.equal(r.json.folders.find(f => f.id === nossa.id).sd, true)
   const shared = env.mock.addSharedDrive('Produtora')
   const d = await mget('/m/api/folders?drives=1')
   assert.ok(d.json.drives.some(x => x.id === shared.id && x.name === 'Produtora'))

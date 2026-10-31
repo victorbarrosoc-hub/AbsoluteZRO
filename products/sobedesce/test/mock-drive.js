@@ -1313,6 +1313,7 @@ class MockDrive {
       canShare: extra.canShare,
       canTrash: extra.canTrash,
       canEdit: extra.canEdit,
+      appProperties: extra.appProperties ?? null, // { sobedesce: 'pasta' } = criada pelo SOBEDESCE (Drive híbrido)
     })
     return this._view(item)
   }

@@ -1148,6 +1148,16 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: Drive híbrido (31/10/2026)
+
+- 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
+- 🔶 App de computador 0.3.0 no ramo `sobedesce-desktop-modo` (liberado pelo titular em 31/10/2026): diz ao site que
+  entende o modo (`x-sobedesce-capacidades: drive-arquivos`) e só ele recebe o token `drive.file`; o 0.2.0 segue com 403. Mesma marca e regra do celular: pastas novas marcadas, Comparar (e Looks do Relay) e tamanho só nas pastas do
+  SOBEDESCE ("Precisa de acesso total" nas outras), Copiar de um link desligado, lugar Liberados, faixa e linha do modo
+  em Ajustes, "Escolher do Drive" pelo navegador (`/app/#escolher/<conta>`), celular pelo Wi-Fi com o modo. Relay
+  embutido ganha o Picker. App do celular 2.8.61 (`sobedesce-app-v76`). Falta: merge na main (gera o instalador) e
+  conferir o Picker num Drive de verdade.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

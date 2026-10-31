@@ -67,7 +67,10 @@ async function contaAntiga() {
     refreshTokenEnc: cripto.selar(amb.google.emitirRefresh({ ...CONTA_ANA, sub: `${CONTA_ANA.sub}-${n}` }), `contas_google.refresh:${id}`),
     escopos: "https://www.googleapis.com/auth/drive",
   });
-  const pc = await sessao.criarSessao(c.usuario.id, "dispositivo", { nome: "MacBook", plataforma: "mac" });
+  // Drive conectado com o `drive` inteiro antes do modo híbrido: a migração 0018 deixou a conta com acesso total.
+  const { eq } = await import("drizzle-orm");
+  await db.update(schema.usuarios).set({ driveAcessoTotal: true }).where(eq(schema.usuarios.id, c.usuario.id));
+  const pc =await sessao.criarSessao(c.usuario.id, "dispositivo", { nome: "MacBook", plataforma: "mac" });
   return { ...c, driveId: id, bearer: pc.token };
 }
 

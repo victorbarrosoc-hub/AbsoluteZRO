@@ -17,6 +17,7 @@ import { newId } from '../util/ids.js'
 import { isJunkFile, joinRel, splitRel } from '../util/paths.js'
 import { abortError, isAbortError } from '../util/backoff.js'
 import { classifyError } from '../google/errors.js'
+import { criadaPeloSobedesce, erroPrecisaTotal } from '../google/modo-drive.js'
 
 const PROGRESS_MS = 200 // no máximo 5 avisos de progresso por segundo (por fase)
 const HASH_CONCURRENCY = 4 // pedidos simultâneos ao Hasher (ele tem os próprios workers)
@@ -167,6 +168,16 @@ export async function compareFolders({ drive, localPath, driveFolderId, mode = '
   if (!driveFolderId) throw badRequest('Escolha a pasta do Drive.')
   const deep = mode === 'deep'
   const report = makeReporter(onProgress)
+  // Drive híbrido (src/google/modo-drive.js): em Arquivos escolhidos, o Drive de uma pasta qualquer aparece pela metade
+  // e o resto viraria "falta subir". Só compara a pasta criada pelo SOBEDESCE; nas outras, "Precisa de acesso total".
+  const arquivos = drive.modo === 'arquivos'
+  if (arquivos) {
+    const { completo } = await drive.pastaCompleta(driveFolderId, { signal }).catch(err => {
+      if (classifyError(err).kind === 'notfound') throw driveNotFound(err)
+      throw err
+    })
+    if (!completo) throw erroPrecisaTotal()
+  }
 
   // 1 + 2. Disco e Drive ao mesmo tempo. Se um falhar, o outro para (não gasta cota à toa).
   const inner = new AbortController()
@@ -235,6 +246,11 @@ export async function compareFolders({ drive, localPath, driveFolderId, mode = '
     throw failure ?? err
   }
   if (!tree.root.isFolder) throw badRequest('Escolha uma pasta do Drive para comparar (não um arquivo).')
+  if (arquivos) {
+    // Uma subpasta sem a marca (criada no site do Google ou pelo SOBEDESCE antigo) também pode estar pela metade.
+    const fora = tree.items.find(it => it.isFolder && !it.isShortcut && !hasJunkSegment(it.relPath) && !criadaPeloSobedesce(it))
+    if (fora) throw erroPrecisaTotal(`A pasta “${fora.relPath}” não foi criada pelo SOBEDESCE: o app não vê tudo o que tem nela.`)
+  }
   driveFiles = tree.items.reduce((n, it) => n + (it.isFolder ? 0 : 1), 0)
   report({ phase: 'drive', done: driveFiles, total: driveFiles, current: '' }, true)
 

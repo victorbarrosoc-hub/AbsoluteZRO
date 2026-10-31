@@ -11,7 +11,9 @@ import { ProxyChoice, proxyPadrao } from './previa.js'
 import { Modal } from './modal.js'
 import { DriveTable } from './drive-table.js'
 import { Breadcrumb, SourceChips, sourceOf } from './drive.js'
-import { SHARED_ID, createDriveFolder, crumbsFor, useDriveFolder, useFolderSearch, useSharedDrives } from './drive-data.js'
+import { LIBERADOS_ID, SHARED_ID, createDriveFolder, crumbsFor, useDriveFolder, useFolderSearch, useSharedDrives } from './drive-data.js'
+import { FaixaArquivos } from './modo-drive.js'
+import { PRECISA_TOTAL, criadaPeloSobedesce, modoDe } from '../lib/modo-drive.js'
 
 /** "Meu Drive / SERHS / 01 Brutos / Diária 02" → "em 01 Brutos" (a pasta de cima; o caminho todo fica na dica). */
 function parentOf(path) {
@@ -48,8 +50,10 @@ function FolderResults({ search, term, onOpen }) {
 /**
  * `arquivo`: escolher um ARQUIVO em vez de pasta (ex.: o vídeo do Frames). Recebe { aceita(item), nome } e devolve o
  * item do Drive escolhido (dois cliques também escolhem).
+ * `inteira` (Comparar): a pasta precisa aparecer inteira. No modo Arquivos escolhidos (lib/modo-drive.js), só vale
+ * uma pasta criada pelo SOBEDESCE; as outras ficam com "Precisa de acesso total" no botão.
  */
-export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', subtitle, confirmLabel, initialFolderId = 'root', proxyChoice = false, destinos = false, arquivo = null, onClose }) {
+export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', subtitle, confirmLabel, initialFolderId = 'root', proxyChoice = false, destinos = false, arquivo = null, inteira = false, onClose }) {
   const [folderId, setFolderId] = useState(initialFolderId || 'root')
   const [query, setQuery] = useState('')
   const q = useDebounced(query, 300).trim()
@@ -62,6 +66,8 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
   const drives = useSharedDrives(accountId)
   const { data, loading, error, errorStatus, reload } = useDriveFolder(accountId, folderId)
   const folder = data?.folder
+  const modo = useStore((s) => modoDe((s.accounts || []).find((a) => a.id === accountId)))
+  const incompleto = modo === 'arquivos' && !!data && (data.completo === false || folder?.id === LIBERADOS_ID)
   const sourceId = sourceOf(data, drives)
   // Buscar pasta: no escopo aberto (Meu Drive ou o drive compartilhado da pasta atual). A busca do Meu Drive já
   // inclui o que foi compartilhado com você.
@@ -89,6 +95,9 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
   const byId = useMemo(() => new Map((data?.items || []).map((x) => [x.id, x])), [data])
   const chosenSub = [...selected].map((id) => byId.get(id)).find(Boolean)
   const crumbs = crumbsOf(data, drives)
+  // Comparar em Arquivos escolhidos: a pasta escolhida (a marcada ou a aberta) tem de ser do SOBEDESCE.
+  const alvo = chosenSub || folder
+  const faltaInteira = inteira && !arquivo && modo === 'arquivos' && !!alvo && !(chosenSub ? criadaPeloSobedesce(chosenSub) : data?.completo === true && !folder?.virtual)
 
   const confirm = () => {
     if (!folder) return
@@ -97,6 +106,7 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
       return
     }
     if (!chosenSub && soVer) return
+    if (faltaInteira) return
     if (chosenSub) {
       onClose({ id: chosenSub.id, name: chosenSub.name, path: [...crumbs, chosenSub.name].join(' / '), driveId: chosenSub.driveId || folder.driveId || null, ...extra })
     } else {
@@ -115,7 +125,9 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
   }
 
   const label =
-    !arquivo && soVer && !chosenSub
+    faltaInteira
+      ? PRECISA_TOTAL
+      : !arquivo && soVer && !chosenSub
       ? 'Escolha uma pasta'
       : confirmLabel || (arquivo ? (chosenSub ? `Escolher “${chosenSub.name}”` : `Escolha ${arquivo.nome || 'o arquivo'}`) : chosenSub ? `Escolher “${chosenSub.name}”` : 'Escolher esta pasta')
 
@@ -138,13 +150,13 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
       </div>
       ${arquivo ? null : html`<${Button} icon="folder-plus" onClick=${newFolder} disabled=${!folder || soVer}>Nova pasta</${Button}>`}
       <${Button} onClick=${() => onClose(null)}>Cancelar</${Button}>
-      <${Button} variant="primary" onClick=${confirm} disabled=${!folder || (arquivo && !chosenSub) || (!arquivo && soVer && !chosenSub)}>${label}</${Button}>
+      <${Button} variant="primary" onClick=${confirm} disabled=${!folder || faltaInteira || (arquivo && !chosenSub) || (!arquivo && soVer && !chosenSub)} title=${faltaInteira ? 'Em Arquivos escolhidos, só a pasta criada pelo SOBEDESCE aparece inteira.' : undefined}>${label}</${Button}>
     `}
   >
     <div class="picker-grid">
       <aside class="picker-side" aria-label="Drives">
         <div class="side-label">Drives</div>
-        <${SourceChips} vertical drives=${drives} current=${sourceId} onPick=${(id) => { setSelected(new Set()); setQuery(''); setFolderId(id) }} />
+        <${SourceChips} vertical drives=${drives} liberados=${modo === 'arquivos'} current=${sourceId} onPick=${(id) => { setSelected(new Set()); setQuery(''); setFolderId(id) }} />
         ${recent.length
           ? html`<div class="side-label picker-recent-label">Recentes</div>
               <ul class="picker-recent" aria-label="Pastas de destino recentes">
@@ -185,6 +197,7 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
             />
           </label>
         </div>
+        ${modo === 'arquivos' ? html`<${FaixaArquivos} compact accountId=${accountId} completo=${!incompleto && !!data && !folder?.virtual} />` : null}
         ${searching
           ? html`<div class="picker-results"><${FolderResults} search=${search} term=${q} onOpen=${open} /></div>`
           : html`<${DriveTable}
@@ -201,7 +214,9 @@ export function DrivePicker({ accountId, title = 'Escolha uma pasta do Drive', s
           error=${error}
           onRetry=${reload}
           resetKey=${folderId}
-          empty=${arquivo
+          empty=${incompleto
+            ? html`<div class="table-empty is-incompleto"><${Icon} name="key" size=${22} /><b>${PRECISA_TOTAL}</b><span>Aqui só aparece o que passou pelo SOBEDESCE ou que você escolheu.</span></div>`
+            : arquivo
             ? html`<div class="table-empty"><${Icon} name="film" size=${22} /><b>Pasta vazia</b><span>Volte e abra outra pasta.</span></div>`
             : html`<div class="table-empty"><${Icon} name="folder" size=${22} /><b>Sem subpastas</b><span>Escolha esta mesma ou crie uma nova.</span></div>`}
         />`}

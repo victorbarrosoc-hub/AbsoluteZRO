@@ -10,6 +10,12 @@ import { api, enc, withQuery } from '../lib/api.js'
 export const SHARED_ID = 'compartilhados'
 export const SHARED_NAME = 'Compartilhados comigo'
 export const SHARED_URL = 'https://drive.google.com/drive/shared-with-me'
+/**
+ * "Liberados" (Drive em Arquivos escolhidos, lib/modo-drive.js): tudo o que o SOBEDESCE pode abrir, de qualquer pasta
+ * (o que ele enviou ou criou e o que a pessoa escolheu em "Escolher do Drive"). Também um lugar, não uma pasta.
+ */
+export const LIBERADOS_ID = 'liberados'
+export const LIBERADOS_NAME = 'Liberados'
 
 const listCache = new Map() // `${acc}:${folderId}` -> { folder, path, items, at }
 const drivesCache = new Map() // acc -> drives[]
@@ -40,7 +46,12 @@ export function useDriveFolder(accountId, folderId) {
         const data =
           folderId === SHARED_ID
             ? await sharedWithMe(accountId)
-            : await api.get(withQuery(`/api/drive/${enc(accountId)}/list`, { folderId })).then((res) => ({ folder: res.folder, path: res.path || [], items: res.items || [], at: Date.now() }))
+            : folderId === LIBERADOS_ID
+              ? await liberados(accountId)
+              : await api
+                  .get(withQuery(`/api/drive/${enc(accountId)}/list`, { folderId }))
+                  // modo/completo (Drive híbrido): em Arquivos escolhidos, a pasta que não é do SOBEDESCE vem com completo: false.
+                  .then((res) => ({ folder: res.folder, path: res.path || [], items: res.items || [], modo: res.modo || 'total', completo: res.completo !== false, at: Date.now() }))
         listCache.set(key, data)
         if (my === seq.current) setState({ data, loading: false, error: null, key })
       } catch (err) {
@@ -66,13 +77,20 @@ async function sharedWithMe(accountId) {
   return { folder, path: [{ id: SHARED_ID, name: SHARED_NAME }], items: res.items || [], at: Date.now() }
 }
 
+/** Liberados no formato de uma pasta listada (só leitura: o destino de um envio é uma pasta de verdade). */
+async function liberados(accountId) {
+  const res = await api.get(`/api/drive/${enc(accountId)}/liberados`)
+  const folder = { id: LIBERADOS_ID, name: LIBERADOS_NAME, isFolder: true, virtual: true, driveId: null, canAddChildren: false }
+  return { folder, path: [{ id: LIBERADOS_ID, name: LIBERADOS_NAME }], items: res.items || [], modo: res.modo || 'arquivos', completo: true, at: Date.now() }
+}
+
 /**
  * A pasta aberta está em "Compartilhados comigo"? O caminho começa numa pasta que não é o Meu Drive nem um drive
  * compartilhado (o pai dela a conta não enxerga).
  */
 export function isSharedTree(data, drives) {
   const first = data?.path?.[0]?.id
-  if (!first || data?.folder?.driveId) return false
+  if (!first || data?.folder?.driveId || first === LIBERADOS_ID) return false
   return first === SHARED_ID || (first !== 'root' && !drives?.some((d) => d.id === first))
 }
 

@@ -40,6 +40,8 @@ function origemDoAnfitriao() {
   return null
 }
 const ORIGEM = origemDoAnfitriao()
+/** A origem do anfitrião (o Google Picker aberto dentro do quadro precisa dela em setOrigin, lib/picker.js). */
+export const ORIGEM_ANFITRIAO = ORIGEM
 
 /** Manda um recado ao anfitrião (só para a origem dele). */
 export function avisarAnfitriao(tipo, dados = {}) {

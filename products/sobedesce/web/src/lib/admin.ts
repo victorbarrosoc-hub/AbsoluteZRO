@@ -12,6 +12,8 @@ import { and, desc, eq, gt, gte, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Plataforma, Plano } from "@/lib/db/schema";
 import { versaoPublicada } from "@/lib/release";
+import type { ModoDrive } from "@/lib/google/config";
+import { modoEfetivo, trocarAcessoTotal, type ResultadoLiberar } from "@/lib/google/vagas";
 
 const PADRAO = ["contato@dissesim.com.br"];
 
@@ -40,7 +42,21 @@ export async function ehAdmin(usuario: { id: string; email?: string }, admins = 
   return drive.length > 0;
 }
 
-export type DriveAdmin = { email: string; nome: string | null; fotoUrl: string | null; estado: "ok" | "reconectar"; criadoEm: Date };
+/**
+ * O botão "Acesso total" da ficha: só um admin (ehAdmin) liga ou desliga. Quem não é recebe "recusado" e nada muda.
+ * `revogar`: como revogar no Google os Drives com o `drive` inteiro quando desliga (a action passa o de verdade).
+ */
+export async function acessoTotalPeloAdmin(
+  quem: { id: string; email?: string },
+  usuarioId: string,
+  ligar: boolean,
+  o: { limite?: number; revogar?: (refreshEnc: string, contaId: string) => Promise<void>; admins?: string[] } = {},
+): Promise<ResultadoLiberar | { ok: false; erro: "recusado" }> {
+  if (!(await ehAdmin(quem, o.admins))) return { ok: false, erro: "recusado" };
+  return trocarAcessoTotal(usuarioId, ligar, o);
+}
+
+export type DriveAdmin = { email: string; nome: string | null; fotoUrl: string | null; estado: "ok" | "reconectar"; criadoEm: Date; modo: ModoDrive };
 export type PessoaAdmin = {
   id: string;
   plano: Plano;
@@ -53,6 +69,8 @@ export type PessoaAdmin = {
   comSenha: boolean;
   /** Conta criada pela Absolute ZRO e ainda sem senha (marca SEM_SENHA_ZRO). */
   soZro: boolean;
+  /** "Acesso total" ao Drive ligado pelo admin (lib/google/vagas.ts). */
+  acessoTotal: boolean;
   drives: DriveAdmin[];
   computadores: number;
 };
@@ -73,6 +91,7 @@ export async function listarPessoas(agora = new Date()): Promise<{ pessoas: Pess
         senhaHash: schema.usuarios.senhaHash,
         criadoEm: schema.usuarios.criadoEm,
         ultimoLoginEm: schema.usuarios.ultimoLoginEm,
+        acessoTotal: schema.usuarios.driveAcessoTotal,
       })
       .from(schema.usuarios)
       .orderBy(desc(schema.usuarios.criadoEm)),
@@ -83,6 +102,7 @@ export async function listarPessoas(agora = new Date()): Promise<{ pessoas: Pess
         nome: schema.contasGoogle.nome,
         fotoUrl: schema.contasGoogle.fotoUrl,
         estado: schema.contasGoogle.estado,
+        escopos: schema.contasGoogle.escopos,
         criadoEm: schema.contasGoogle.criadoEm,
       })
       .from(schema.contasGoogle)
@@ -106,11 +126,16 @@ export async function listarPessoas(agora = new Date()): Promise<{ pessoas: Pess
       // Conta criada pelo antigo "Continuar com Google" (SEM_SENHA) ou pela Absolute ZRO (SEM_SENHA_ZRO) não tem senha.
       comSenha: u.senhaHash.startsWith("scrypt$"),
       soZro: u.senhaHash === "zro",
+      acessoTotal: u.acessoTotal,
       drives: [],
       computadores: 0,
     });
   }
-  for (const d of drives) porUsuario.get(d.usuarioId)?.drives.push({ email: d.email, nome: d.nome, fotoUrl: d.fotoUrl, estado: d.estado, criadoEm: d.criadoEm });
+  for (const d of drives) {
+    const p = porUsuario.get(d.usuarioId);
+    if (!p) continue;
+    p.drives.push({ email: d.email, nome: d.nome, fotoUrl: d.fotoUrl, estado: d.estado, criadoEm: d.criadoEm, modo: modoEfetivo(p.acessoTotal, d.escopos) });
+  }
   for (const s of sessoes) {
     const p = porUsuario.get(s.usuarioId);
     if (!p) continue;

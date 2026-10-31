@@ -8,6 +8,7 @@
 //   DELETE /api/copiar/:id                                       → { parou }  "Parar"
 // Uma cópia por vez. Progresso pelo SSE ('copiar', no máximo 4×/s). O plano fica guardado no servidor (pode ter
 // milhares de arquivos): a tela só manda o id dele de volta. O resultado da última cópia fica para a tela mostrar.
+import { PRECISA_TOTAL } from '../google/modo-drive.js'
 import fs from 'node:fs/promises'
 import { copiarPlano, copyDownloadItems, lerLink, parseDriveLink, readErrorMessage } from '../google/copiar.js'
 import { newId } from '../util/ids.js'
@@ -169,6 +170,8 @@ export function registerCopiar({ route, ctx, account, HttpProblem, baixar }) {
 
   route('POST', '/api/copiar/:acc/ler', async ({ params, body, signal }) => {
     account(params.acc)
+    // Arquivos escolhidos (src/google/modo-drive.js): o link de outra pessoa fica invisível para o app.
+    if (ctx.manager.driveFor(params.acc).modo === 'arquivos') throw new HttpProblem(403, `${PRECISA_TOTAL} para copiar de um link.`)
     const ref = parseDriveLink(typeof body.link === 'string' ? body.link.slice(0, 4000) : '')
     if (!ref) throw new HttpProblem(400, 'Cole um link do Google Drive (pasta ou arquivo).')
     try {
