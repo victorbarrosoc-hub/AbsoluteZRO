@@ -6817,7 +6817,11 @@ button.sd-cartaz:hover:not([data-sel]){transform:translateY(-5px)}
   .sd-mfer{top:-30px}
   /* quadro e memória */
   .sd-qh h1,.sd-mcab h1{font-size:34px}
-  .sd-filt{margin-left:0;overflow-x:auto;flex-wrap:nowrap;max-width:100%;scrollbar-width:none}
+  .sd-filt{margin-left:0;overflow-x:auto;flex-wrap:nowrap;max-width:100%;min-width:0;width:100%;scrollbar-width:none}
+  .sd-qwrap{display:block}
+  .sd-placa{margin-top:26px;width:auto;border-left:0;padding:0}
+  .sd-fund{gap:12px;padding:14px}
+  .sd-fund .sd-ic{width:44px;height:44px}
   .sd-mural{columns:1}
   .sd-creds{grid-template-columns:repeat(4,1fr);gap:8px}
   .sd-semanas{display:none}
@@ -22026,7 +22030,7 @@ function sdLigarMsgs(raiz){
       sdPedirSede({acao:"reagir",id:id,emoji:e,ligar:!ja}).then(function(){ sdPollChat(false) }) } });
     var f=el.querySelector("[data-sd-fixar]"); if(f) f.onclick=function(){ sdPedirSede({acao:"fixar",id:id,fixar:f.dataset.sdFixar==="1"}).then(function(r){ if(r.ok){ som("toque"); sdPollChat(false) } }) };
     var a=el.querySelector("[data-sd-apagar]"); if(a) a.onclick=function(){ if(!window.confirm("Apagar esta mensagem?")) return; sdPedirSede({acao:"apagar",id:id}).then(function(){ sdPollChat(false) }) };
-    el.querySelectorAll("[data-sd-resp]").forEach(function(b){ b.onclick=function(){ sdPedirSede({acao:"responder",id:id,resposta:b.dataset.sdResp}).then(function(r){ if(r.ok){ som(b.dataset.sdResp==="vou"?"aceitou":"toque"); sdPollChat(false) } }) } });
+    el.querySelectorAll("[data-sd-resp]").forEach(function(b){ b.onclick=function(){ sdPedirSede({acao:"responder",id:id,resposta:b.dataset.sdResp}).then(function(r){ if(r.ok){ if(b.dataset.sdResp==="vou") som("aceitou"); else som("toque"); sdPollChat(false) } }) } });
     el.querySelectorAll("[data-sd-pres]").forEach(function(b){ b.onclick=function(){
       var on=b.getAttribute("aria-pressed")!=="true";
       sdPedirSede({acao:"presenca",id:id,sub:b.dataset.sdPres,presente:on}).then(function(r){ if(r.ok){ som("toque"); sdPollChat(false); realGuildaCarregar() } }) } });
