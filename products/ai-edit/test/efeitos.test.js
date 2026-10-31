@@ -1,7 +1,7 @@
 // Faixa de efeitos: sons do projeto, efeitos presos à imagem, momentos de corte e créditos de licença.
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { aparar, dividir, mover, remover } from '../src/linha.js'
+import { acelerar, aparar, dividir, mover, remover } from '../src/linha.js'
 import { abrir, novoProjeto, removerMidia, salvar } from '../src/projeto.js'
 import { adicionarSom, ajustarEfeito, colocarEfeito, creditos, efeitosNaLinha, faixas, foraDaLinha, misturarEfeitos, momentos, moverEfeito, removerEfeitos, removerSons } from '../src/efeitos.js'
 
@@ -151,4 +151,23 @@ test('mistura do render: o efeito entra na amostra exata, com o volume, atravess
   misturarEfeitos(b, x, fx, 0.6, p.fps)
   assert.equal(b.getChannelData(0)[0], 1, 'limitado em 1')
   assert.ok(Math.abs(b.getChannelData(0)[400] - 0.8) < 1e-6, 'acabou no fim do som')
+})
+
+test('com speed ramp o efeito segue a curva contínua da prévia: colocar em q cai em q, e acelerar depois leva o efeito com a imagem', () => {
+  let p = adicionarSom(base(), WHOOSH).projeto
+  // rampa: rápido no começo, câmera lenta no meio, rápido no fim (a "Herói")
+  const heroi = [[0, 2], [0.3, 2], [0.44, 0.25], [0.6, 0.25], [0.74, 2], [1, 2]]
+  p = { ...p, linha: acelerar(p.linha, p.linha.clipes[0].id, heroi) }
+  for (const q of [0, 17, 60, 95, 140, 200]) {
+    const r = colocarEfeito(p, 'whoosh', q).projeto
+    assert.equal(efeitosNaLinha(r)[0].inicio, q, `q ${q}`)
+  }
+  // em câmera lenta a origem fica fracionária (vários quadros da linha no mesmo quadro de origem)
+  const lento = colocarEfeito(p, 'whoosh', 95).projeto.efeitos[0]
+  assert.ok(!Number.isInteger(lento.fonte))
+  // efeito posto sem velocidade; depois o clipe acelera a 200%: o efeito anda junto com a imagem
+  let q = adicionarSom(base(), WHOOSH).projeto
+  q = colocarEfeito(q, 'whoosh', 100).projeto
+  q = { ...q, linha: acelerar(q.linha, q.linha.clipes[0].id, [[0, 2], [1, 2]]) }
+  assert.equal(efeitosNaLinha(q)[0].inicio, 50)
 })

@@ -1,11 +1,15 @@
 // Faixa de efeitos sonoros (sonoplastia): sons do projeto e efeitos presos à imagem. Como o clipe conectado do Final
 // Cut, o efeito se prende ao quadro de origem da mídia que está tocando quando ele começa (midia + fonte), não a um
 // segundo solto da linha: cortar, aparar ou mover o trecho leva o efeito junto; se o trecho sai da linha, o efeito
-// fica fora até ele voltar (Desfazer). Tudo imutável, como a linha.
+// fica fora até ele voltar (Desfazer). Tudo imutável, como a linha. Com velocidade (speed ramp), o quadro de origem e a
+// posição na linha seguem a curva CONTÍNUA do clipe (src/velocidade.js), a mesma da prévia e do render: o som cai no
+// quadro exato em que a imagem aparece (os degraus inteiros ficam só para os exportadores). Em câmera lenta a origem é
+// fracionária, para o efeito não pular para o começo do quadro de origem.
 
-import { duracao, fonteParaLinha, localizar, posicoes } from './linha.js'
+import { duracao, localizar, posicoes, tamanho } from './linha.js'
 import { paraQuadros, paraSegundos } from './tempo.js'
 import { ganho } from './quadro.js'
+import { origemContinua, saidaContinua } from './velocidade.js'
 
 /** Um efeito pode durar no máximo isto (s): mais que isso é trilha, não efeito. */
 export const SOM_MAX_S = 600
@@ -52,7 +56,22 @@ function ancora(p, q) {
   const total = duracao(p.linha)
   if (!total) return null
   const l = localizar(p.linha, Math.max(0, Math.min(Math.round(q), total - 1)))
-  return l && { midia: l.clipe.midia, fonte: l.fonte }
+  if (!l) return null
+  const c = l.clipe
+  const k = Math.max(0, Math.min(Math.round(q), total - 1)) - l.inicio
+  const fonte = c.velocidade ? Math.min(c.fim - 1e-4, Math.round(origemContinua(c, k) * 1e4) / 1e4) : c.ini + k
+  return { midia: c.midia, fonte }
+}
+
+/** Quadro de origem → quadro na linha pela curva contínua (null se aquele trecho foi cortado). Primeira ocorrência. */
+function naLinha(linha, midia, fonte) {
+  let t = 0
+  for (const c of linha.clipes) {
+    const n = tamanho(c)
+    if (c.midia === midia && fonte >= c.ini && fonte < c.fim) return t + Math.min(n - 1, Math.max(0, Math.round(c.velocidade ? saidaContinua(c, fonte) : fonte - c.ini)))
+    t += n
+  }
+  return null
 }
 
 /** Coloca o som no quadro q da linha. { projeto, id } (id null se não há onde prender: linha vazia ou som desconhecido). */
@@ -105,7 +124,7 @@ export function efeitosNaLinha(p) {
   const out = []
   for (const e of efeitosDe(p)) {
     const som = somPorId(p, e.som)
-    const inicio = som ? fonteParaLinha(p.linha, e.midia, e.fonte) : null
+    const inicio = som ? naLinha(p.linha, e.midia, e.fonte) : null
     if (inicio === null || inicio >= total) continue
     const quadros = Math.min(Math.max(1, paraQuadros(som.duracao, p.fps)), total - inicio)
     out.push({ efeito: e, som, inicio, quadros })
