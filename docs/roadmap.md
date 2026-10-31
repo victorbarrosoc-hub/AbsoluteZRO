@@ -969,6 +969,10 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): o SOBEDESCE embutido (`?no=relay&modo=escolher`)
   escolhe o vídeo, o Relay lê aos pedaços pelo canal e "Para o Drive" devolve o resultado à mesma pasta.
   `DRIVE=released` no projeto `relay`. ⬜ Conferir com o Drive de verdade e um arquivo grande.
+- ⏸ Interpretar a cadência (pedido do titular, 31/10/2026, como o Footage FPS do After Effects): pronto e testado no
+  commit `be560435` (núcleo, motor, ffmpeg e as cópias no SOBEDESCE). Mexe em `products/sobedesce/src/relay/`, que gera
+  o app de computador: entra junto com a próxima versão do desktop, quando o titular mandar gerar (`git revert` do
+  `a9415132` traz de volta).
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
