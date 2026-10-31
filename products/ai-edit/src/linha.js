@@ -2,6 +2,8 @@
 // aponta para um trecho da mídia de origem em quadros [ini, fim). Toda operação devolve uma linha nova (a antiga fica
 // intacta), o que deixa o desfazer trivial: o Historico guarda as versões.
 
+import { limparPontos, origemNoClipe, reancorar, saidaDoClipe, saidaNoClipe } from './velocidade.js'
+
 let seq = 0
 const novoId = () => `c${Date.now().toString(36)}${(seq++).toString(36)}`
 
@@ -10,7 +12,19 @@ export function linhaInicial(midias) {
   return { clipes: midias.filter((m) => m.quadros > 0).map((m) => ({ id: novoId(), midia: m.id, ini: 0, fim: m.quadros })) }
 }
 
-export const tamanho = (c) => c.fim - c.ini
+/** Quadros que o clipe ocupa na linha (com velocidade, o tamanho de saída da curva; sem, o trecho de origem). */
+export const tamanho = (c) => (c.velocidade ? saidaDoClipe(c) : c.fim - c.ini)
+
+/** O mesmo clipe num trecho de origem novo: a curva de velocidade acompanha a mídia (src/velocidade.js › reancorar). */
+function retrecho(c, ini, fim, extra = {}) {
+  const novo = { ...c, ...extra, ini, fim }
+  if (c.velocidade) {
+    const pontos = reancorar(c.velocidade.pontos, c.ini, c.fim, ini, fim)
+    if (pontos) novo.velocidade = { pontos }
+    else delete novo.velocidade
+  }
+  return novo
+}
 export const duracao = (linha) => linha.clipes.reduce((s, c) => s + tamanho(c), 0)
 
 /** Onde cada clipe começa na linha: [{ clipe, indice, inicio }]. */
@@ -29,7 +43,7 @@ export function localizar(linha, q) {
   for (let i = 0; i < linha.clipes.length; i++) {
     const c = linha.clipes[i]
     const n = tamanho(c)
-    if (q < t + n) return { clipe: c, indice: i, inicio: t, fonte: c.ini + Math.max(0, q - t) }
+    if (q < t + n) return { clipe: c, indice: i, inicio: t, fonte: c.velocidade ? Math.min(c.fim - 1, Math.floor(origemNoClipe(c, Math.max(0, q - t)))) : c.ini + Math.max(0, q - t) }
     t += n
   }
   return null
@@ -39,7 +53,7 @@ export function localizar(linha, q) {
 export function fonteParaLinha(linha, midia, qFonte) {
   let t = 0
   for (const c of linha.clipes) {
-    if (c.midia === midia && qFonte >= c.ini && qFonte < c.fim) return t + (qFonte - c.ini)
+    if (c.midia === midia && qFonte >= c.ini && qFonte < c.fim) return t + (c.velocidade ? Math.floor(saidaNoClipe(c, qFonte)) : qFonte - c.ini)
     t += tamanho(c)
   }
   return null
@@ -50,8 +64,10 @@ export function dividir(linha, q) {
   const l = localizar(linha, q)
   if (!l || q === l.inicio) return linha
   const { clipe: c, indice: i, fonte } = l
-  const a = { ...c, fim: fonte }
-  const b = { ...c, id: novoId(), ini: fonte }
+  // em câmera lenta vários quadros da linha mostram o mesmo quadro de origem: dividir ali não deixaria nada de um lado
+  if (fonte <= c.ini || fonte >= c.fim) return linha
+  const a = retrecho(c, c.ini, fonte)
+  const b = retrecho(c, fonte, c.fim, { id: novoId() })
   return { ...linha, clipes: [...linha.clipes.slice(0, i), a, b, ...linha.clipes.slice(i + 1)] }
 }
 
@@ -79,12 +95,13 @@ export function aparar(linha, id, lado, delta, limite = Infinity) {
   const i = linha.clipes.findIndex((c) => c.id === id)
   if (i < 0 || !delta) return linha
   const c = linha.clipes[i]
-  const novo = { ...c }
-  if (lado === 'ini') novo.ini = Math.max(0, Math.min(c.fim - 1, c.ini + Math.round(delta)))
-  else novo.fim = Math.min(limite, Math.max(c.ini + 1, c.fim + Math.round(delta)))
-  if (novo.ini === c.ini && novo.fim === c.fim) return linha
+  let ini = c.ini
+  let fim = c.fim
+  if (lado === 'ini') ini = Math.max(0, Math.min(c.fim - 1, c.ini + Math.round(delta)))
+  else fim = Math.min(limite, Math.max(c.ini + 1, c.fim + Math.round(delta)))
+  if (ini === c.ini && fim === c.fim) return linha
   const clipes = linha.clipes.slice()
-  clipes[i] = novo
+  clipes[i] = retrecho(c, ini, fim)
   return { ...linha, clipes }
 }
 
@@ -117,7 +134,7 @@ export function removerTrechos(linha, midia, trechos) {
       }
       pedacos = prox
     }
-    pedacos.forEach((p, k) => clipes.push({ ...c, id: k === 0 ? c.id : novoId(), ini: p.ini, fim: p.fim }))
+    pedacos.forEach((p, k) => clipes.push(p.ini === c.ini && p.fim === c.fim ? c : retrecho(c, p.ini, p.fim, { id: k === 0 ? c.id : novoId() })))
   }
   return { ...linha, clipes }
 }
@@ -178,12 +195,32 @@ export function ajustar(linha, ids, props) {
   return mudou ? { ...linha, clipes } : linha
 }
 
+/**
+ * Velocidade de clipes: pontos [x, v] da curva (src/velocidade.js) ou null para voltar a 100%. Cada clipe guarda a
+ * curva no próprio trecho de origem.
+ */
+export function acelerar(linha, ids, pontos) {
+  const alvo = new Set(Array.isArray(ids) ? ids : [ids])
+  const limpos = limparPontos(pontos)
+  let mudou = false
+  const clipes = linha.clipes.map((c) => {
+    if (!alvo.has(c.id)) return c
+    if (JSON.stringify(c.velocidade?.pontos || null) === JSON.stringify(limpos)) return c
+    mudou = true
+    const novo = { ...c }
+    if (limpos) novo.velocidade = { pontos: limpos }
+    else delete novo.velocidade
+    return novo
+  })
+  return mudou ? { ...linha, clipes } : linha
+}
+
 /** Junta clipes vizinhos que continuam a mesma mídia sem salto (depois de desfazer um corte, por exemplo). */
 export function juntarContinuos(linha) {
   const clipes = []
   for (const c of linha.clipes) {
     const ant = clipes[clipes.length - 1]
-    if (ant && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
+    if (ant && !ant.velocidade && !c.velocidade && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
     else clipes.push(c)
   }
   return clipes.length === linha.clipes.length ? linha : { ...linha, clipes }

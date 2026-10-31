@@ -1,12 +1,14 @@
 // Prévia da linha do tempo: dois <video> que se revezam (enquanto um toca, o outro já espera parado no começo do
 // próximo clipe), então o corte troca na hora, sem esperar a busca. Zoom e ajustes do clipe (escala, posição,
 // opacidade) pelo transform e pela opacidade do elemento (placa de vídeo), volume por um ganho do Web Audio, legenda num
-// canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js).
+// canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js). Velocidade: o <video> toca na velocidade
+// do degrau da curva (src/velocidade.js, a mesma tabela do render e dos exportadores) e fica mudo fora de 100%.
 
 import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
 import { ganho, transformCssClipe, zoomEm } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
+import { comSom, origemNoClipe, saidaNoClipe, velocidadeNoClipe } from '../src/velocidade.js'
 
 export class Player {
   /** tela: elemento que recebe os dois vídeos e o canvas; urlDe(midiaId) → URL tocável */
@@ -97,8 +99,28 @@ export class Player {
       v.src = url
       v.dataset.url = url
     }
-    const alvo = seg.fonteIni + Math.max(0, t - seg.linhaIni)
+    const alvo = this.#origem(seg, t)
     if (Math.abs(v.currentTime - alvo) > 0.02) v.currentTime = alvo
+  }
+
+  /** Instante da mídia (s) no instante t da linha, pela curva de velocidade do clipe. */
+  #origem(seg, t) {
+    const dt = Math.max(0, t - seg.linhaIni)
+    if (!seg.clipe.velocidade) return seg.fonteIni + dt
+    const fps = this.fps
+    return origemNoClipe(seg.clipe, dt * fps) / fps
+  }
+
+  /** Instante da linha para o instante da mídia (o inverso de #origem). */
+  #linhaDe(seg, tMidia) {
+    if (!seg.clipe.velocidade) return seg.linhaIni + (tMidia - seg.fonteIni)
+    const fps = this.fps
+    return seg.linhaIni + saidaNoClipe(seg.clipe, tMidia * fps) / fps
+  }
+
+  /** Velocidade do clipe no instante t da linha. */
+  #velocidade(seg, t) {
+    return seg.clipe.velocidade ? velocidadeNoClipe(seg.clipe, Math.max(0, t - seg.linhaIni) * this.fps) : 1
   }
 
   #preparar(i) {
@@ -181,7 +203,10 @@ export class Player {
     const v = this.videos[this.ativo]
     const seg = this.segs[this.i]
     if (this.tocando && seg) {
-      const t = seg.linhaIni + (v.currentTime - seg.fonteIni)
+      const t = this.#linhaDe(seg, v.currentTime)
+      // o vídeo anda na velocidade do degrau (o navegador aceita de 1/16 a 16×)
+      const taxa = Math.min(16, Math.max(0.0625, this.#velocidade(seg, t)))
+      if (Math.abs(v.playbackRate - taxa) > 1e-3) v.playbackRate = taxa
       if (v.currentTime >= seg.fonteFim - 0.008 || v.ended) {
         // fim do clipe: o outro vídeo já está no começo do próximo
         if (this.preparado === this.i + 1) {
@@ -209,11 +234,13 @@ export class Player {
     const seg = this.segs[this.i]
     if (!p || !seg) return
     const v = this.videos[this.ativo]
-    const q = paraQuadros(seg.fonteIni + (this.t - seg.linhaIni), p.fps)
+    const q = paraQuadros(this.#origem(seg, this.t), p.fps)
     const z = zoomEm(this.zooms, seg.midia, q)
     const aj = ajustesDe(seg.clipe)
     const css = transformCssClipe(p.largura, p.altura, v.videoWidth || p.largura, v.videoHeight || p.altura, aj, z)
-    const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}`
+    // som só em 100% (a regra do AEON): fora disso o ganho vai a zero
+    const mudo = !comSom(this.#velocidade(seg, this.t))
+    const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}|${mudo}`
     if (chave === this.ultimoZoom) return
     this.ultimoZoom = chave
     const outro = this.videos[1 - this.ativo]
@@ -221,7 +248,7 @@ export class Player {
     v.style.opacity = String(aj.opacidade)
     outro.style.transform = ''
     outro.style.opacity = '0'
-    const g = ganho(aj.volume)
+    const g = mudo ? 0 : ganho(aj.volume)
     if (this.ganhos) {
       this.ganhos[this.ativo].gain.value = g
       this.ganhos[1 - this.ativo].gain.value = 0

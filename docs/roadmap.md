@@ -292,6 +292,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   própria página com um vídeo de exemplo (Cortes com limite e aprovar/desfazer, Legenda Destaque/Pop/Limpa, Zoom
   112%/122%, Entrega com o que cada formato leva), "De editor para editor", "Por dentro" com as telas do app que trocam
   sozinhas, "Para quem é" com o resto do ecossistema e Perguntas. Tudo âncora: o AEON segue fechado ao público.
+- ✅ AEON, velocidade (speed ramp, 31/10/2026, pedido do titular a partir do Hélice Ramps): curva por clipe de 10% a
+  800% no Inspector (arrastar, dois cliques criam ponto, teclado), 11 curvas prontas (Montagem, Herói, Bala, Vale,
+  Pico, Flash de entrada e de saída, Arrancada, Pulso duplo, Câmera lenta, Acelerado), Manter duração, Aplicar em
+  todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
+  degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
+  na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
 - 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
   ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
   `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,

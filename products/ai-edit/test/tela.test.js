@@ -530,6 +530,51 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   await pagina.close()
 })
 
+test('velocidade: curva pronta no Inspector, selo no clipe, teclado, manter duração, desfazer, prévia e FCPXML', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const vel = pagina.locator('.insp-velocidade')
+  await vel.waitFor()
+  const projeto = () => pagina.evaluate(() => globalThis.__editor.h.atual)
+  const quadros = (await projeto()).linha.clipes[0].fim
+  // Herói: rápido, câmera lenta no meio, rápido; o clipe ganha o selo e o resumo mostra o tempo novo
+  await vel.getByRole('button', { name: 'Herói' }).click()
+  let p = await projeto()
+  assert.ok(p.linha.clipes[0].velocidade, 'curva no clipe')
+  await pagina.locator('.clipe .clipe-vel', { hasText: /Rampa/ }).waitFor()
+  assert.match(await vel.locator('.vel-resumo').innerText(), /^\d+,\d s → \d+,\d s$/)
+  assert.equal(await vel.getByRole('button', { name: 'Herói' }).getAttribute('aria-pressed'), 'true')
+  // teclado: seta para cima no segundo ponto aumenta a velocidade dele (uma ação no desfazer)
+  const v0 = p.linha.clipes[0].velocidade.pontos[1][1]
+  await vel.locator('.vel-ponto').nth(1).focus()
+  await pagina.keyboard.press('ArrowUp')
+  p = await projeto()
+  assert.ok(p.linha.clipes[0].velocidade.pontos[1][1] > v0)
+  // Manter duração: a mesma forma no tempo original do clipe
+  await vel.getByRole('button', { name: 'Manter duração' }).click()
+  const { saidaDoClipe } = await import('../src/velocidade.js')
+  p = await projeto()
+  assert.ok(Math.abs(saidaDoClipe(p.linha.clipes[0]) - quadros) <= 3, 'mesmo tempo na linha')
+  // a prévia toca a rampa sem erro
+  await pagina.keyboard.press('Space')
+  await pagina.waitForTimeout(800)
+  await pagina.keyboard.press('Space')
+  // o Final Cut recebe os degraus com timeMap
+  const fcp = await pagina.evaluate(async () => (await import('../src/exportar/fcpxml.js')).paraFcpxml(globalThis.__editor.h.atual))
+  assert.match(fcp, /<timeMap>/)
+  // 100% tira a curva; ⌘Z devolve
+  await vel.getByRole('button', { name: '100%' }).click()
+  assert.equal((await projeto()).linha.clipes[0].velocidade, undefined)
+  assert.equal(await pagina.locator('.clipe .clipe-vel').first().isHidden(), true)
+  await pagina.keyboard.press('Control+z')
+  assert.ok((await projeto()).linha.clipes[0].velocidade)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('reduzir movimento: páginas trocam sem deslize', async () => {
   const { pagina } = await abrir({ reducedMotion: 'reduce' })
   await pagina.click('.dock [data-ir="entrega"]')
@@ -654,7 +699,19 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   // o exemplo toca sozinho enquanto aparece
   const t0 = await pagina.locator('#visorTempo').innerText()
   await pagina.waitForFunction((t) => document.querySelector('#visorTempo').textContent !== t, t0)
+  // velocidade (a aba que abre): Herói, o vídeo da falésia na velocidade da curva, Bala muda a duração, teclado no ponto
+  assert.equal(await est.getByRole('tab', { name: 'Velocidade' }).getAttribute('aria-selected'), 'true')
+  assert.equal(await est.getByRole('radio', { name: 'Herói' }).getAttribute('aria-checked'), 'true')
+  const durHeroi = await pagina.locator('#rampaDuracao').innerText()
+  await est.getByRole('radio', { name: 'Bala' }).click()
+  assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), durHeroi)
+  await pagina.locator('.curva-ponto').nth(1).focus()
+  const antes = await pagina.locator('#rampaDuracao').innerText()
+  await pagina.keyboard.press('ArrowDown')
+  assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), antes, 'mais lento, mais longo')
+  assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'curva própria')
   // cortes: 0,45 s marca as duas pausas maiores; aprovar tira 1,7 s; desfazer devolve
+  await est.getByRole('tab', { name: 'Cortes' }).click()
   assert.equal(await pagina.locator('#aprovarCortes').innerText(), 'Aprovar 2 cortes')
   assert.equal(await pagina.locator('.celula.pausa.marcada').count(), 2)
   await pagina.click('#aprovarCortes')
@@ -693,6 +750,8 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   await pagina.getByRole('button', { name: 'Funciona com o meu editor?' }).click()
   assert.equal(await pagina.locator('#faq [aria-expanded="true"]').count(), 1)
   assert.match(await pagina.locator('#r4').innerText(), /Premiere Pro \(\.xml\)/)
+  await pagina.getByRole('button', { name: 'Tem speed ramp?' }).click()
+  assert.match(await pagina.locator('#r7').innerText(), /10% a 800%/)
   assert.deepEqual(erros, [])
   await pagina.close()
 })

@@ -101,12 +101,13 @@
           <p class="apoio">Um vídeo de exemplo, rodando aqui no navegador.</p>
         </div>
 
-        <div class="estudio ao-rolar" id="estudio" data-aba="cortes">
+        <div class="estudio ao-rolar" id="estudio" data-aba="velocidade">
           <div class="estudio-barra">
             <span class="estudio-luzes" aria-hidden="true"><i></i><i></i><i></i></span>
             <div class="segmentos" role="tablist" aria-label="O que testar">
               <span class="segmentos-marca" aria-hidden="true"></span>
-              <button role="tab" id="aba-cortes" aria-controls="painel-cortes" aria-selected="true" data-aba="cortes">Cortes</button>
+              <button role="tab" id="aba-velocidade" aria-controls="painel-velocidade" aria-selected="true" data-aba="velocidade">Velocidade</button>
+              <button role="tab" id="aba-cortes" aria-controls="painel-cortes" aria-selected="false" tabindex="-1" data-aba="cortes">Cortes</button>
               <button role="tab" id="aba-legenda" aria-controls="painel-legenda" aria-selected="false" tabindex="-1" data-aba="legenda">Legenda</button>
               <button role="tab" id="aba-zoom" aria-controls="painel-zoom" aria-selected="false" tabindex="-1" data-aba="zoom">Zoom</button>
               <button role="tab" id="aba-entrega" aria-controls="painel-entrega" aria-selected="false" tabindex="-1" data-aba="entrega">Entrega</button>
@@ -116,7 +117,8 @@
 
           <div class="estudio-corpo">
             <figure class="visor" aria-label="Prévia do vídeo de exemplo">
-              <div class="visor-quadro"><img src="marca/home/criadora.jpg" alt="Uma criadora falando para a câmera" width="1344" height="752" loading="lazy" id="visorImg" /></div>
+              <div class="visor-quadro"><img src="marca/home/criadora.jpg" alt="Uma criadora falando para a câmera" width="1344" height="752" loading="lazy" id="visorImg" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4" aria-label="Mar e nuvens na falésia, na velocidade da curva"></video></div>
+              <span class="visor-velocidade" id="visorVelocidade" aria-hidden="true">100%</span>
               <p class="visor-legenda" id="visorLegenda" aria-live="off"></p>
               <span class="visor-zoom" id="visorZoom" aria-hidden="true"></span>
               <div class="visor-controles">
@@ -126,7 +128,21 @@
             </figure>
 
             <div class="paineis">
-              <div class="painel" role="tabpanel" id="painel-cortes" aria-labelledby="aba-cortes">
+              <div class="painel" role="tabpanel" id="painel-velocidade" aria-labelledby="aba-velocidade">
+                <h3>Desenhe o ritmo.</h3>
+                <div class="fichas-escolha" role="radiogroup" aria-label="Curva de velocidade" id="rampas">
+                  <button role="radio" aria-checked="false" data-rampa="normal">100%</button>
+                  <button role="radio" aria-checked="true" data-rampa="heroi">Herói</button>
+                  <button role="radio" aria-checked="false" data-rampa="bala">Bala</button>
+                  <button role="radio" aria-checked="false" data-rampa="vale">Vale</button>
+                  <button role="radio" aria-checked="false" data-rampa="pico">Pico</button>
+                  <button role="radio" aria-checked="false" data-rampa="montagem">Montagem</button>
+                </div>
+                <div class="duracao" aria-live="polite"><strong id="rampaDuracao">10,0 s</strong><span id="rampaAntes">de 10,0 s</span></div>
+                <p class="painel-dica">Arraste os pontos da curva. Som só em 100%, como no app.</p>
+              </div>
+
+              <div class="painel" role="tabpanel" id="painel-cortes" aria-labelledby="aba-cortes" hidden>
                 <h3>Tire as pausas.</h3>
                 <label class="controle">
                   <span>Pausas maiores que <output id="limiarValor">0,45 s</output></span>
@@ -170,6 +186,10 @@
                 <ul class="pacote" id="pacote" aria-live="polite"></ul>
               </div>
             </div>
+          </div>
+
+          <div class="curva-demo" id="curvaDemo">
+            <svg viewBox="0 0 1000 220" preserveAspectRatio="none" role="group" aria-label="Curva de velocidade. Arraste os pontos; dois cliques criam um ponto."></svg>
           </div>
 
           <div class="linha-demo" aria-hidden="true">
@@ -332,6 +352,7 @@
         <div class="faq ao-rolar" id="faq">
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r1" id="p1">Quando o AEON abre?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r1" role="region" aria-labelledby="p1"><div><p>Está em desenvolvimento, ainda sem data. Chega com a sua conta Absolute ZRO, no Mac, no Windows e no navegador.</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r2" id="p2">Preciso usar a IA?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r2" role="region" aria-labelledby="p2"><div><p>Não. Dá para editar do começo ao fim sem ela. Quando você pede, ela marca pausas, sugere zoom e transcreve a legenda, e nada entra sem você aprovar.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r7" id="p7">Tem speed ramp?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r7" role="region" aria-labelledby="p7"><div><p>Tem. Curvas prontas (Montagem, Herói, Bala, Vale, Pico, Flash) ou a sua, de 10% a 800%, num clipe ou em todos. Vai para o Final Cut, o Premiere e o DaVinci em degraus de velocidade constante, e o som toca só em 100%.</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r3" id="p3">Meus vídeos saem do computador?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r3" role="region" aria-labelledby="p3"><div><p>Não. O AEON lê os arquivos no lugar e a transcrição roda na sua máquina. Nada é enviado, movido ou apagado.</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r4" id="p4">Funciona com o meu editor?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r4" role="region" aria-labelledby="p4"><div><p>Leva a timeline para o Premiere Pro (.xml), o Final Cut Pro (.fcpxml) e o DaVinci Resolve (.fcpxml e .edl), com cores e marcadores. Ou saia com o vídeo pronto (.mp4).</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r5" id="p5">Precisa de internet?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r5" role="region" aria-labelledby="p5"><div><p>Para entrar com a conta. O modelo de transcrição baixa uma vez e depois funciona sem internet.</p></div></div></div>

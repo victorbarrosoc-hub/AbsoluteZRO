@@ -2250,6 +2250,29 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `/api/zro/set` no console). `npm test` com as telas: 141 testes; telas 18/18.
 - Conferido no Chromium em 1440×900 e 390×844, escuro e claro, com "reduzir movimento"; sem rolagem lateral.
 
+## AEON: velocidade, o speed ramp (31/10/2026)
+
+- Pesquisa: curvas prontas do CapCut (Montagem, Herói, Bala, Flash), pontos de velocidade + curva com alças do
+  DaVinci (e o modo de reamostragem: quadro mais próximo, mistura, fluxo óptico), rampa com alças Bézier do Premiere
+  (que exporta e importa por XML só velocidade constante) e o `timeMap`/`timept` do FCPXML (DTD da Apple).
+- `src/velocidade.js`: curva no clipe, ancorada na mídia de origem; Hermite monótona no log da velocidade (sem passar do
+  desenho); degraus de ≈4 quadros de saída, vizinhos com menos de 2% de diferença juntos; som só em 100% (±2%).
+  `src/linha.js`: tamanho, localizar, fonteParaLinha, dividir, aparar e cortar trechos seguem a curva (reancorada na
+  mídia ao dividir e aparar); acelerado não se junta com o vizinho. Exportadores: FCPXML com `timeMap` linear por
+  degrau ancorado em 0s e −96 dB fora de 100%; xmeml com Time Remap constante e sem clipitem de som fora de 100%; OTIO
+  com `LinearTimeWarp` e Gap (as trilhas de vídeo e som ficam do mesmo tamanho; antes um áudio solto desalinhava o
+  vídeo); EDL com linha M2. Render: um quadro de origem a cada v quadros, silêncio fora de 100%. Prévia: playbackRate
+  do degrau e som mudo fora de 100%.
+- `test/velocidade.test.js` 5/5 (curva monótona e nos limites, degraus sem buraco, Manter duração, ida e volta
+  origem↔saída, linha com dividir/aparar/cortar, som só em 100%, os quatro exportadores com xmllint). Tela
+  "velocidade": Herói pelo Inspector, selo "Rampa" no clipe, seta no ponto, Manter duração, prévia tocando, FCPXML
+  com `timeMap`, 100% e ⌘Z. Autoteste (navegador e app de computador): vídeo final com a curva Pico saiu com 4,54 s
+  para 4,53 s esperados e com som. `npm test` 147/147; `xvfb-run -a npx electron . --smoke` SMOKE OK.
+- Site: aba Velocidade (a que abre) no Teste ao vivo, com o vídeo da falésia tocando na velocidade da curva, curvas
+  prontas, pontos para arrastar e a pergunta "Tem speed ramp?".
+- Não validado: a importação dos degraus num Final Cut, Premiere e DaVinci de verdade; câmera lenta com mistura de
+  quadros ou fluxo óptico (não feito).
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da

@@ -139,8 +139,12 @@ test('OTIO: JSON com trilhas de vídeo e áudio e zoom em metadata', () => {
   const o = JSON.parse(paraOtio(projeto()))
   assert.equal(o.OTIO_SCHEMA, 'Timeline.1')
   const [v, a] = o.tracks.children
-  assert.equal(v.children.length, 4)
+  // as duas trilhas do mesmo tamanho: o áudio solto (trilha.wav) entra como Gap no vídeo, no mesmo lugar
+  assert.equal(v.children.length, 5)
   assert.equal(a.children.length, 5)
+  assert.equal(v.children[4].OTIO_SCHEMA, 'Gap.1')
+  const soma = (t) => t.children.reduce((s, c) => s + c.source_range.duration.value, 0)
+  assert.equal(soma(v), soma(a))
   assert.deepEqual(v.children[1].metadata.zro.zoom, { escala: 1.25, foco: { x: 0.5, y: 0.4 } })
   assert.equal(v.children[0].source_range.duration.value, 30)
 })

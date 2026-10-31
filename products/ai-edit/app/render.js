@@ -1,6 +1,7 @@
 // Vídeo final: decodifica cada trecho da linha, aplica os ajustes do clipe e o zoom e desenha a legenda no mesmo canvas da prévia,
 // e grava H.264 com o som (AAC quando o sistema tem codificador, como no Mac e no Windows; senão Opus) com WebCodecs.
-// O som de cada corte ganha 4 ms de rampa nas pontas: sem estalo na emenda.
+// O som de cada corte ganha 4 ms de rampa nas pontas: sem estalo na emenda. Velocidade: cada degrau da curva pega um
+// quadro de origem a cada v quadros (o mais próximo; sem mistura de quadros) e só tem som em 100% (silêncio fora).
 
 import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
@@ -28,7 +29,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   const codecs = await codecsDaMaquina(L, A)
   if (!codecs.video) throw new Error('Este computador não grava vídeo H.264 nem VP9 pelo navegador do app.')
   const segs = segmentos(p)
-  const total = segs.reduce((s, x) => s + (x.fim - x.ini), 0)
+  const total = segs.reduce((s, x) => s + x.saida, 0)
 
   const tela = new OffscreenCanvas(L, A)
   const ctx = tela.getContext('2d', { alpha: false })
@@ -68,11 +69,11 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
     for (const s of segs) {
       if (sinal?.aborted) throw new DOMException('cancelado', 'AbortError')
       const o = await abrir(s.midia)
-      const n = s.fim - s.ini
+      const n = s.saida
       const iniS = paraSegundos(s.ini, p.fps)
-      // vídeo: um quadro de origem para cada quadro de saída
+      // vídeo: um quadro de origem para cada quadro de saída (v quadros de origem por quadro de saída no degrau)
       // tempo de apresentação do arquivo (o mesmo do <video>.currentTime da prévia)
-      const instantes = Array.from({ length: n }, (_, k) => iniS + k / fps)
+      const instantes = Array.from({ length: n }, (_, k) => iniS + Math.min(s.fim - s.ini - 1, Math.floor(k * s.v + 1e-6)) / fps)
       const quadros = o.canvas ? o.canvas.canvasesAtTimestamps(instantes) : null
       for (let k = 0; k < n; k++) {
         const r = quadros ? (await quadros.next()).value : null
@@ -101,7 +102,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
       // som: o trecho exato, colado no anterior, com rampa nas pontas
       if (fonteAudio) {
         const dur = n / fps
-        const buf = await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume))
+        const buf = s.som ? await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume)) : new AudioBuffer({ length: Math.max(1, Math.round(dur * taxaSaida)), numberOfChannels: 2, sampleRate: taxaSaida })
         await fonteAudio.add(buf)
         tAudio += dur
       }

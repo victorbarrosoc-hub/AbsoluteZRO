@@ -4,7 +4,7 @@
 
 import { PRODUTO } from '../src/produto.js'
 import { simbolo, wordmark } from '../src/marca.js'
-import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, AJUSTES_PADRAO } from '../src/linha.js'
+import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, acelerar, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
@@ -27,6 +27,7 @@ import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
 import { lerConta, ondeEditar, PAGINA_FECHADO } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
+import { montarVelocidade } from './velocidade-ui.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 import { montarSet } from './set.js'
@@ -907,7 +908,26 @@ function montarInspector() {
     const p = P()
     if (p && linha.sel) fazer({ ...p, linha: ajustar(p.linha, linha.sel, AJUSTES_PADRAO) }, 'redefinir ajustes')
   }
+  // velocidade (speed ramp): a curva do clipe, ao vivo na prévia e uma ação no desfazer ao soltar
+  velUI = montarVelocidade(sec.querySelector('.insp-clipe'), {
+    obter: () => {
+      const p = P()
+      return { p, clipe: p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null }
+    },
+    previa: (pontos) => {
+      const p = P()
+      if (p && linha.sel) player.carregar({ ...p, linha: acelerar(p.linha, linha.sel, pontos) }, opcoesPlayer(p))
+    },
+    gravar: (pontos, rotulo, todos = false) => {
+      const p = P()
+      if (!p || (!linha.sel && !todos)) return
+      fazer({ ...p, linha: acelerar(p.linha, todos ? p.linha.clipes.map((c) => c.id) : linha.sel, pontos) }, rotulo)
+    },
+    fps: () => (P() ? P().fps.n / P().fps.d : 30),
+  })
+  $('inspRedefinir').before(velUI.el)
 }
+let velUI = null
 montarInspector()
 
 function desenharInspector() {
@@ -948,6 +968,7 @@ function desenharInspector() {
     i.closest('label').classList.toggle('mudado', aj[ctl.k] !== AJUSTES_PADRAO[ctl.k])
   }
   $('inspRedefinir').hidden = !c.ajustes
+  velUI.desenhar(c)
 }
 
 /** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */
