@@ -7,10 +7,12 @@ on:
     branches: [main]
     paths:
       - 'products/carro-do-freela/**'
+      - '!products/carro-do-freela/desktop/**'
       - '.github/workflows/carro-testes.yml'
   pull_request:
     paths:
       - 'products/carro-do-freela/**'
+      - '!products/carro-do-freela/desktop/**'
       - '.github/workflows/carro-testes.yml'
   workflow_dispatch:
 
@@ -102,4 +104,4 @@ jobs:
         run: |
           npm run build:vercel
           node src/blindar.js .vercel/output/static > blindar.json
-          node -e "const r=require('./blindar.json'); if(r.erro||r.arquivos.length!==7||r.arquivos.some(a=>!a.ok)){console.error(JSON.stringify(r).slice(0,2000));process.exit(1)} console.log('CSP provada nos 7 HTML')"
+          node -e "const r=require('./blindar.json'); if(r.erro||r.arquivos.length!==1||r.arquivos.some(a=>!a.ok)){console.error(JSON.stringify(r).slice(0,2000));process.exit(1)} console.log('CSP provada no HTML do site real')"

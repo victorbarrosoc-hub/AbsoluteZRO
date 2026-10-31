@@ -122,3 +122,31 @@ export const CRIACAO_PADRAO: Readonly<Record<Papel, Readonly<Record<NivelCriacao
 export function podeCriacao(s: { papel: Papel }, nivel: NivelCriacao): boolean {
   return CRIACAO_PADRAO[s.papel]?.[nivel] === true;
 }
+
+/* ───────────── Entregas (versões de entrega pelo Relay) ───────────── */
+
+/**
+ * "Gerar versões com o Relay" (src/lib/relay/entregaveis.ts) também é um nível por papel, não área sensível (não
+ * mostra dinheiro): ver = todos que veem o card (o acesso por cliente vale); pedir (gerar, conferir e cancelar) =
+ * administração, gestão e equipe, porque entregar o arquivo certo ao cliente é trabalho de quem produz; leitura só
+ * acompanha o que foi guardado e nunca pergunta ao SOBEDESCE. O banco confere os mesmos papéis nas políticas de
+ * `maestro.entregaveis` (drizzle/0034) e `tests/relay.test.mts` compara. Além do papel, a organização precisa do
+ * SOBEDESCE (fila, Drive e ffmpeg) e do Relay no plano (`disponibilidade` em entregaveis.ts; o HUB confere de novo).
+ */
+export const NIVEIS_ENTREGAS = ["ver", "pedir"] as const;
+export type NivelEntregas = (typeof NIVEIS_ENTREGAS)[number];
+
+export const ENTREGAS_PADRAO: Readonly<Record<Papel, Readonly<Record<NivelEntregas, boolean>>>> = {
+  admin: { ver: true, pedir: true },
+  gestor: { ver: true, pedir: true },
+  equipe: { ver: true, pedir: true },
+  leitura: { ver: true, pedir: false },
+};
+
+/** O papel pode isto nas entregas? Só decide a tela e a ação; o banco confere de novo pelas políticas da 0034. */
+export function podeEntregas(s: { papel: Papel }, nivel: NivelEntregas): boolean {
+  return ENTREGAS_PADRAO[s.papel]?.[nivel] === true;
+}
+
+/** Os papéis que pedem (a mesma lista das políticas de escrita de `maestro.entregaveis`). */
+export const PAPEIS_PEDIR_ENTREGAS: readonly Papel[] = (["admin", "gestor", "equipe", "leitura"] as const).filter((p) => podeEntregas({ papel: p }, "pedir"));

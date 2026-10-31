@@ -15,11 +15,182 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Teste do Drive no console (31/10/2026)
+
+Branch `teste-drive` sobre a main dfdca05: `/admin/teste-drive` (só admin) mede se `drive.file` + Picker cobrem o
+SOBEDESCE ([google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)). Sem chamada real ao Google nos
+testes: `tests/integration/teste-drive.test.ts` (17: tabela de decisão e fluxos, escopo amplo, falha de configuração,
+variáveis, CSP só nesta rota, checagens contra um Drive falso nos modos drive.file e amplo, limpeza só por id) e
+`tests/e2e/teste-drive.spec.ts` (3: 404 para cliente e suporte, login exigido, lista do que falta, cabeçalhos CSP/COOP
+só nesta rota, resultado de exemplo, axe WCAG 2.1 A/AA, nenhuma requisição ao Google). Lint, formatação, tipos, `npm test`,
+build e `node scripts/scan-secrets.mjs` ok.
+
+## Versões de computador: Gerar versões, BT.709 e a família (30/10/2026)
+
+Branch `versoes-computador` sobre a main 581c84d: `relay-lancamento` (Maestro `0034`, SOBEDESCE web `0016`/`0017`,
+SOBEDESCE 0.2.0), o `setparams` do Relay de volta (Relay e a cópia do SOBEDESCE iguais byte a byte) e o Relay nos
+menus do Synquei (`app/`, cache `synquei-v27`) e do SOBEDESCE de computador; `test/app-sw.test.js` espera o app
+2.8.60 / `sobedesce-app-v75`. Conflitos só no journal do Maestro (0033 → 0037 em ordem, `when` únicos), no Quadro
+(os dois CSS), nos testes do Maestro (as duas tabelas; a caixa de entregas da F8 e a fila do Relay na ponte falsa) e
+neste arquivo.
+
+| Verificação          | Comando                                                    | Resultado                               |
+| -------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| Raiz                 | `npm run lint` · `format:check` · `typecheck` · `npm test` | limpo · ok · ok · **443/443**           |
+| Régua da família     | `vitest run tests/integration/familia-menus.test.ts`       | **6/6** (os seis menus)                 |
+| Maestro              | lint · `format:check` · typecheck · `npm test` · build     | limpo · **694/694** · ok                |
+| Maestro e2e          | `npx playwright test e2e/relay.spec.ts`                    | **12/12** (6 pulados, vídeo e capturas) |
+| SOBEDESCE web        | lint · typecheck · `npm test`                              | limpo · **317/317**                     |
+| SOBEDESCE computador | `npm run test:fast`                                        | **799/799** (4 pulados)                 |
+| Relay · Synquei      | `npm test`                                                 | **122/122** · **155/155** (5 pulados)   |
+
+## CI verde de novo: duas corridas nos testes e a cor no ffmpeg 8 (30/10/2026)
+
+O `main` ficou vermelho em três workflows; cada falha foi reproduzida aqui antes da correção.
+
+- **CI** (`people.test.ts`): `after.todas >= before.todas` caiu (213 → 212) porque outro arquivo excluiu uma conta
+  entre as duas leituras. Prova: ler, excluir por outra conexão e ler de novo derruba o total; numa transação em
+  leitura repetível fica igual. O teste lê e muda numa transação só, com a conta exata (Completo e avulso +1, grátis
+  -2). Raiz: `npm test` **428/428**, `npm run build` ok, `npm run test:e2e` **58/58**.
+- **Maestro** (`acessos.test.mts`, 23505 em `create role maestro_app`): os arquivos rodam em paralelo e a 0000
+  ("cria se não existe") corria num Postgres novo. Prova: 12 conexões com o bloco da 0000 num papel descartável, 1/12
+  passou; com o papel garantido antes, 12/12. `tests/ambiente.mts` garante o papel antes de migrar (a 0000 não muda).
+  O `format:check` das execuções anteriores já tinha saído na 72e5b58. Maestro: lint, formatação, tipos,
+  `npm test` **650/650**, build e `npm run test:e2e` (os 321 em três rodadas; nenhuma falha).
+- **Relay** (`ffmpeg.test.js`, `color_primaries` vazio): o `ubuntu-latest` passou para o 26.04, com ffmpeg 8.0.1, que
+  lê a cor dos quadros; as opções `-color_*` sozinhas não bastam e todos os presets saíam sem primárias e transferência
+  (o app do SOBEDESCE no Mac já leva o 9.0.2). Reproduzido com o ffmpeg 8.0.1 do Ubuntu 26.04 extraído à parte. O
+  filtro termina com `setparams` (como a Revela) e a cópia do SOBEDESCE foi junto. Relay `npm test` **117/117** no
+  ffmpeg 8.0.1 e **122/122** no 6.1.1 depois de juntar com a main; SOBEDESCE `npm run test:fast` 788/793 (4 pulados,
+  1 tempo esgotado no `set-celular.test.js` sob carga, que passa sozinho e não toca no Relay).
+- A correção do Relay mexe em `products/sobedesce/src/relay/`: na main, isso dispara o "SOBEDESCE · app de desktop"
+  (build, Release de teste e `versao.json`).
+
+## Maestro: Arquivos é o SOBEDESCE (30/10/2026)
+
+Local, Postgres e Chromium desta máquina; o SOBEDESCE é a casca de mentira `e2e/falsos/sobedesce.ts` em
+https://sobedesce.absolutezro.com (interceptada no navegador, `serviceWorkers: 'block'`), com o contrato do modo
+embutido (`/app/?no=maestro`, recados `pronto`/`envios`/`pasta`, `{tipo:'tema'}`, `#drive/<id>`).
+
+- `tests/sobedesce-embutido.test.mts` (novo, 7): endereço e tema do quadro, troca de pasta só pelo `#` (id estranho não
+  entra), recados aceitos só da origem exata e na forma combinada (origem parecida, `http`, porta, subdomínio, tipo
+  desconhecido, número negativo ou texto, id com `/` ficam de fora), CSP da equipe com o `frame-src` do SOBEDESCE e os
+  links públicos sem, e o ponto só em Arquivos e Mais. `npm test` **657/657**.
+- `e2e/arquivos.spec.ts` reescrito, computador (1440) e iPhone (393), **8/8**: cadeado sem o produto; o quadro em
+  `/app/?no=maestro&tema=claro` com só Transferências e Drive, o selo (≤ 34 px, leva a sobedesce.com) e nenhum "Abrir no
+  SOBEDESCE"; o quadro até o fim da janela (computador) e até a barra (iPhone), também depois que "Ligar" aparece;
+  trocar o tema manda o recado e o quadro muda sem recarregar; a pasta aberta no quadro vira "Ligar a um projeto" e
+  liga; "Abrir" leva o quadro à pasta pelo `#` sem recarregar; "Estrutura no Drive" abre a pasta nova; recado de outra
+  origem não acende nada; envio andando acende o ponto (menu Produção, a opção Arquivos, Mais e o cartão de Mais),
+  segura o `beforeunload` e sobrevive à troca de seção (o quadro é pedido uma vez só); terminou, apaga; fechar a aba
+  com envio andando abre o diálogo do navegador; SOBEDESCE respondendo 404 vira "O SOBEDESCE não abriu aqui." com
+  "Abrir o SOBEDESCE" e "Tentar de novo". A revisão (Drive tocando com tempo e "Escolher no Drive") segue igual.
+- `sem-corte.spec.ts` com Arquivos e o quadro pronto (375 e 393 px, claro e escuro, Chromium e WebKit) e
+  `acessos.spec.ts` (computador e iPhone): **14/14** (4 do computador pulados de propósito no `sem-corte`). Lint,
+  `format:check`, typecheck e build do Maestro limpos; na raiz, `npm run lint`, `format:check` e
+  `node scripts/scan-secrets.mjs` limpos.
+
+## A família igual em todos os apps, com o Relay (30/10/2026)
+
+Menus da família de Synquei, TPeasy, Carro do Freela e SOBEDESCE com Maestro, Relay, SOBEDESCE, Synquei e TPeasy
+(sem o próprio app; NOSSOM, AEON, Revela e Carro fora até lançarem); documentos do banco atualizados para o
+AbsoluteZRO-SP (`sa-east-1`) e funções em `gru1`; Relay, TPeasy e Synquei com `"regions": ["gru1"]`.
+
+| Verificação                  | Comando                                                                   | Resultado                                                             |
+| ---------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Régua da família (raiz)      | `vitest run tests/integration/familia-menus.test.ts` (+ chaves Maestro)   | **8/8** (6 menus, endereços e ícones byte a byte iguais aos oficiais) |
+| Synquei                      | `npm test`                                                                | **154/154** (6 pulados, como antes)                                   |
+| TPeasy                       | `node --test tests/*.test.mjs`                                            | **61/61**                                                             |
+| SOBEDESCE                    | `npm run test:fast`                                                       | **789/789** (4 pulados)                                               |
+| Relay                        | `npm test`                                                                | **117/117**                                                           |
+| Carro do Freela              | `npm run test:api` · `node test/run.js`                                   | **47/47** · 86/89 (ver abaixo)                                        |
+| Lint · formatação · segredos | `npm run lint` · `npm run format:check` · `node scripts/scan-secrets.mjs` | limpo · ok · nenhum segredo em 3604 arquivos                          |
+
+Fotos (computador 1440×900 e iPhone 390×844, tema claro) de cada menu conferidas: nomes e ícones na ordem
+alfabética. O Synquei no iPhone não tem menu da família (a barra lateral some abaixo de 860px).
+
+Carro: `mapa` (a família igual na lateral e na gaveta) **72/72**. As três suítes que não fecharam na bateria não
+dependem da família e se comportam igual no template da `main` neste ambiente: `abertura` ("o piso encolhe", medida
+de tempo) falha nos dois; `entrar` ("a partida do carro é uma cópia por cima") falha e passa nos dois, conforme a
+rodada; `conta-zro` passa sozinha, **149/149**, mas leva mais que o teto de 240 s do `run.js` nesta máquina.
+
+## Lançamento de "Gerar versões com o Relay": o botão só quando funciona e o SOBEDESCE 0.2.0 (30/10/2026)
+
+O `relay-sobedesce` sobre a main de 30/10 (Set @, apagar na Criação, aprendizados da Z, looks do Relay; conflitos só no
+e2e do Maestro e neste arquivo). O app de computador 0.2.0 diz `x-sobedesce-capacidades: relay`; o site grava
+(`sessoes.capacidades`, migração SOBEDESCE `0017_capacidades_do_computador`) e conta ao Maestro pelo `relay.pedido`
+(`computador.relay`/`desatualizado`, `ids: []` aceito); o Maestro só mostra o botão com `relay` e o pedido para
+atualizar com `desatualizado` (só depois que o `/baixar` entrega a 0.2.0); o site recusa `relay.converter` sem computador
+que converta (409). Passos do lançamento: [operations/lancamento-gerar-versoes.md](operations/lancamento-gerar-versoes.md).
+Bancos e portas próprios: `zro_rlanc_test`, `maestro_test_*_rlanc`, `maestro_test_e2e_rlanc` (portas 7417–7423).
+
+| Verificação                              | Resultado                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Raiz `lint`, `format:check`, `typecheck` | ok                                                                                                                                                                                                                                                                                                                                                                 |
+| Raiz `npm test`                          | **419/419** em 46 arquivos                                                                                                                                                                                                                                                                                                                                         |
+| `npm run contracts:export`               | `sobedesce.relay-pedido.{entrada,resposta}.v1`: `ids` de 0 a 50; `computador.relay` e `computador.desatualizado` opcionais (site antigo não manda = `false`)                                                                                                                                                                                                       |
+| SOBEDESCE site `lint`, `typecheck`       | ok                                                                                                                                                                                                                                                                                                                                                                 |
+| SOBEDESCE site `npm test`                | **316/316**. `zro-relay.test.mts`: o cabeçalho (só as conhecidas), só app antigo = 409 e nada na fila, "desatualizado" só com a 0.2.0 no Release (GitHub de mentira; fora do ar = não pede), o app novo vale na hora e voltar para o antigo desliga, sem computador nem um nem outro. `zro-relay-ciclo`: o executor de verdade manda o cabeçalho e libera o pedido |
+| SOBEDESCE app `test:fast`                | **796 ok**, 2 falhas do ambiente: `mobile-stream` (tempo, com a máquina carregada; passa sozinho) e o `smoke` de `protecao.test.js` (o `onnxruntime-node` opcional ficou de fora da instalação por falta de disco). `cloud.test.js`: todo pedido ao site diz `relay`                                                                                               |
+| Maestro `lint`, `typecheck`, `npm test`  | ok, ok, **636/636**. `relay.test.mts`: `gerarCom`/`computadorConferido` (site antigo = sem botão), botão com computador que converte, aviso com app antigo, 409 sem gravar nada, nada sem resposta, sem acompanhar, leitura, sem Relay ou sem SOBEDESCE (sem perguntar)                                                                                            |
+| Maestro `build` e e2e `relay.spec.ts`    | `build` ok; **12 ok**, 6 pulados (os de `SHOTS_DIR`), no computador, iPhone Chromium e iPhone WebKit. Novo: app antigo = o aviso no card e no lote, sem computador = nada, o app novo abre = o botão; sem o Relay no plano = nem botão nem aviso                                                                                                                   |
+| `node scripts/scan-secrets.mjs`          | nenhum segredo                                                                                                                                                                                                                                                                                                                                                     |
+| Não verificado                           | o deploy (sem autorização para este passo), o build do app 0.2.0 no Actions, um computador de verdade com Drive de verdade                                                                                                                                                                                                                                         |
+
+## SOBEDESCE: o lado que faltava de "Gerar versões com o Relay" (30/10/2026)
+
+Rotas `/api/zro/relay/{converter,pedido,cancelar}`, o tipo `relay` na fila `pedidos_proxy` (migração SOBEDESCE
+`0016_pedidos_relay`, só no banco de teste) e o executor no app de computador (`src/engine/pedidos-relay.js`). Sobre a
+main de 30/10 e o `claude/admiring-goodall-eiznf7` do Relay (conflitos só no Maestro: 0033 antes da 0034). Bancos com
+sufixo próprio (`zro_rlsd_test`, `maestro_test_*_rlsd`), apagados no fim.
+
+| Verificação                              | Resultado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SOBEDESCE site `lint`, `typecheck`       | ok                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| SOBEDESCE site `npm test`                | **311/311**. `tests/zro-relay.test.mts` (9): pedido de outra ação ou reapresentado 401, sem o SOBEDESCE 403; contrato estrito (Tamanho exato, mais de 8, campo a mais, ref longa); arquivo de outra pessoa 404, pasta que é arquivo 400, áudio com preset de vídeo 400; um pedido por preset na pasta pedida, idempotente por `ref:preset` até com dois pedidos ao mesmo tempo (índice único); auditoria no converter e nenhuma no acompanhamento; isolamento (a outra pessoa não vê, não cancela e o computador dela não pega); o computador pega de uma vez só, `frac` só cresce, `pronto` só com o arquivo e o MD5, finais que ninguém reabre; cancelar (pendente e convertendo; o sinal de vida recebe 409); computador sumido vira erro e outro computador não pega; o celular não cria pedido do Relay. `tests/zro-relay-ciclo.test.mts` (1): o ciclo Maestro → rotas → fila → executor de verdade (`PedidosRelay` + `RelayJobs`, conversão de mentira) → acompanhamento, com cada corpo e resposta conferidos contra `docs/integration-contracts/schemas/sobedesce.relay-*.v1.schema.json`: uma versão pronta com o MD5, a outra cancelada no meio sem subir nada, e pedir de novo sem duplicar |
+| SOBEDESCE app `npm run test:fast`        | **798 ok, 0 falhas** (4 pulados de sempre). `test/pedidos-relay.test.js` (9): só os do Relay, na pasta pedida, andamento que só cresce; sem MD5 é erro; frase do erro; preset desconhecido; preset com a cor da Revela recusado e nunca convertido; cancelado no Maestro para antes de subir; outro computador levou; fechar o app antes de subir devolve, no meio do envio vira erro; "pronto" repetido quando a resposta cai; sem ffmpeg não pega; site antigo pausa; **de verdade: ffmpeg do sistema e o Drive falso**, o ProRes vira `Master (WhatsApp).mp4` na pasta de entregas com o MD5 conferido e o original intacto. `test/relay.test.js` e as filas antigas sem mudança                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Raiz `lint`, `format:check`, `typecheck` | ok                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Raiz `npm test`                          | **396/396** em 45 arquivos (inclui `pedidos-entre-apps.test.ts` e o `findEventCycle`; nenhum evento novo)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Maestro `npm test`                       | **626/626** (com a 0033 da Criação e a 0034 juntas)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Maestro `build` e e2e `relay.spec.ts`    | `build` ok; **12 ok**, 3 pulados (computador, iPhone Chromium e iPhone WebKit; portas 3617–3623, banco `_rlsd`), com as capturas `rl-*` claro e escuro e o vídeo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Demonstração do app de computador        | `startApp` de verdade com o Drive falso, o ffmpeg do sistema e um site de mentira com duas versões pedidas: o executor pegou, converteu com o x264 (`libx264`), subiu `Lançamento v3 (WhatsApp).mp4` e `… (Reels · No Compress).mp4` em "05 Entregas", mandou `pronto` com o MD5 e a tela mostrou "Versão para o Maestro: …" (capturas `sd-*` claro e escuro e o vídeo, fora do repositório)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `node scripts/scan-secrets.mjs`          | nenhum segredo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Não verificado                           | o site do SOBEDESCE publicado com a `0016` aplicada (sem autorização de deploy) e um app de computador instalado com o executor (sem build nem release); Drive e computador de verdade; o HUB de verdade assinando para o SOBEDESCE de verdade (cada lado testado com o outro de mentira, pelo mesmo contrato)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+## Maestro: "Gerar versões com o Relay" (30/10/2026)
+
+A frente interrompida de 29/10 retomada sobre a main de 30/10 (acesso por área, Set, Criação, arrastar novo; drizzle do
+Maestro até a 0032) e terminada: migração Maestro `0034_entregaveis_relay` (`when` 1796083200000; a 0033 fica com a
+F7), presets do Relay copiados de novo (23 destinos, com "Vídeo de fundo" sem som), a `PONTES` do HUB com as `relay.*`,
+estados só para a frente, **Conferir** no despacho ambíguo, cancelar, quem pede por `acessos.ts` e o Relay no
+navegador com o computador fechado. Bancos e portas próprios: `zro_relay_test`, `maestro_test_relay`,
+`maestro_test_e2e_relay` (portas 6817/6819/6821/6823).
+
+| Verificação                                  | Resultado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Maestro `lint`, `format:check`, `typecheck`  | ok                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Maestro `npm test`                           | **611/611**. `tests/relay.test.mts` (36): cópia de `presets.js`/`plano.js`/ícone igual à do Relay e todo campo tipado em `presets.d.ts`; "Mais" nos grupos do Relay e a forma de cada destino; o intervalo do acompanhamento; `aplicavel` (pronto final, erro/cancelado finais no mesmo pedido); ambíguo → `revisar` com uma chamada só e Conferir devolvendo o mesmo pedido; resposta parcial; recusa 400 sem gravar; a mesma resposta duas vezes; atrasada não desfaz o pronto (código e gatilho, 23514); pedido sumido → Conferir; acompanhar e cancelar sem resposta não mudam o estado; `podeEntregas` igual às políticas da 0034; o resto de antes (folha, idempotência, sem plano, computador fechado, duas organizações, acesso por cliente) |
+| Maestro `build`                              | ok                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Maestro e2e `relay.spec.ts`                  | **12 ok** com `SHOTS_DIR` (computador, iPhone Chromium e iPhone WebKit; o escuro e o vídeo só com ele): pedir 4 → na fila com o computador fechado e o link do Relay no navegador → cancelar o TikTok (a fila falsa confere) → o computador abre → 3 prontos com MD5, 1 cancelado → o lote mostra; despacho ambíguo → "A conferir" → Conferir → a mesma fila (um pedido); sem o Relay no plano; detector de corte na folha no iPhone. Capturas `rl-*` em 1440 e 393, claro e escuro                                                                                                                                                                                                                                                                  |
+| Maestro e2e completo                         | **186 ok**, 56 pulados (projetos que não se aplicam), 2 do `arrastar.spec.ts` caíram com a máquina carregada (carga ~15; o WebKit sem GPU desenhou 7 quadros em 4 s) e passaram rodando de novo (o de Chromium no arquivo inteiro e o de WebKit sozinho); 42,9 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Raiz `lint`, `format:check`, `typecheck`     | ok                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Raiz `npm test`                              | **390/390** em 44 arquivos. `tests/integration/pedidos-entre-apps.test.ts` (10): as `relay.*` assinadas para a rota exata; sem o Relay, 403 com `details.product = relay` e nada auditado; só o Relay sem o SOBEDESCE, 403 do SOBEDESCE; nunca sem a pessoa; `relay.pedido` com contador próprio. `findEventCycle` passa (nenhum evento novo)                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `npm run contracts:export`                   | 6 schemas novos `sobedesce.relay-*.v1` e as ações no `zro.app-pedido.*`; sem diferença depois de exportar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `node scripts/scan-secrets.mjs`              | nenhum segredo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Não verificado (o lado que ainda não existe) | as rotas `/api/zro/relay/*` do SOBEDESCE, o tipo `relay` na fila e o executor no app de computador (conversão e MD5 de verdade); metadados reais do Drive (o Google é interceptado com `videoMediaMetadata` fixo); um iPhone de verdade                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
 ## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
 
 - HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
   sozinho e na rodada seguinte); `npm run lint` limpo. Carro `npm run test:api` **47/47** (origem `carro.absolutezro.com`
   aceita). SOBEDESCE: só a lista de origens do site mudou (`origensDoSite`).
+
+## Set: sugestões enquanto digita o @ (30/10/2026)
+
+`POST /api/v1/set/contatos { buscar }` e a lista no widget ("@ron" acha Ronny Freitas). Raiz `lint`, `format:check`,
+`typecheck`, `build` ok; `tests/integration/set.test.ts` 16/16 (prefixo, nome sem acento, escondido, bloqueado nos dois
+sentidos, até 5, limite) e `openapi.test.ts` ok; `tests/e2e/set.spec.ts` adicionar/sugestões 4/4 e Chromium completo
+3/3 (`E2E_PORT=3417`, banco `zro_e2e_sug_test`); `node scripts/scan-secrets.mjs` sem segredo.
 
 ## Set: adicionar pelo @ no Online (30/10/2026)
 
@@ -2692,6 +2863,24 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
 
+## Relay e Carro do Freela para computador (30/10/2026)
+
+Apps Electron em `products/relay/desktop` e `products/carro-do-freela/desktop` (Mac e Windows), copiados do Maestro para
+computador; Releases de teste `relay-versao-de-teste` e `carro-versao-de-teste`; os dois no catálogo e em `/baixar`, atrás
+do gate (migração `0042`, não aplicada em produção).
+
+| Verificação                              | Comando                                                                                                  | Resultado                                                                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Regras, versão, cópias, ícones e Release | `cd products/<app>/desktop && npm test`                                                                  | **24/24** em cada um                                                                           |
+| Fumaça (dev)                             | `xvfb-run -a npx electron . --smoke --no-sandbox`                                                        | `SMOKE OK` nos dois (ponte, sem Node, Figtree, ícone, fundo do site, regras)                   |
+| Empacotar                                | `electron-builder --linux dir` (Carro)                                                                   | ok, fusíveis gravados; o .dmg e o .exe saem no GitHub Actions                                  |
+| Hub: catálogo, downloads e gate          | `npx vitest run tests/integration/{desktop-apps,downloads,relay-carro-desktop,carro-lancamento}.test.ts` | catálogo com Relay e Carro, mac/windows/versao.json pela rota, fechado = 404; 0042 idempotente |
+| Raiz                                     | `npm run lint`, `format:check`, `typecheck`, `npm test`                                                  | ok · ok · ok · **450/450** em 51 arquivos                                                      |
+| Segredos                                 | `node scripts/scan-secrets.mjs`                                                                          | nenhum                                                                                         |
+
+Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o login real dentro da janela, o "Atualizar"
+trocando o app, e o primeiro Release (sai no primeiro push na main com `products/<app>/desktop/**`).
+
 ## SOBEDESCE: contador de "Agora" (29/10/2026)
 
 - Relato do titular: pasta de 100,3 GB enviada de novo depois de uma falha; terminou e o painel mostrava "51% de 205 GB".
@@ -3376,3 +3565,57 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   60 fps de 2 s vira 24 fps com os 120 quadros e 5 s sem som; um 24 fps vira 23,976 com os 48 quadros e o som junto
   (2,002 s), conferidos pelo ffprobe. Relay `npm test`: 125/125. Cópias no SOBEDESCE atualizadas (`src/relay/` e o app
   do celular, v75 / 2.8.60).
+
+## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
+
+- HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
+  paginação por `depois`; limite de 200; `invalid_input` (422) fora disso; auditoria `perfil.comunidade`.
+- Carro `npm run test:api`: 47/47 (o escopo `zro.pessoas` no login, a foto da claim `picture`).
+- Carro `npm run test:banco` (Postgres 16 local): 27/27 — agenda própria por RLS, janela de -31 a +366 dias, hora só
+  na meia diária; `carro_do_freela.agendas()` só devolve quem consentiu e recusa janela acima de 62 dias; a lista
+  pagina o HUB (450 pessoas = 3 páginas) e devolve `reconectar` quando o HUB recusa o token.
+- Carro `test/site-real.js`: 16/16 — nenhum dos 108 nomes fictícios na página do domínio; o app abre com o CREW de uma
+  pessoa só; nada semeado nem simulado (sem produtora de exemplo, sem "Simular chamada", sem checkout de assinatura,
+  sem tempo de resposta inventado); com a conta liberada, a busca e a agenda vêm do servidor, só quem divulgou a agenda
+  entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
+- `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
+  saíram do domínio.
+
+## Carro do Freela: lançamento preparado (30/10/2026)
+
+- HUB `npm test` (Postgres local): 422 passaram e 2 puladas; `z-lab.test.ts` caiu uma vez sob carga e passou sozinho
+  (15/15). Novo `tests/integration/carro-lancamento.test.ts` (4/4): catálogo `active` em `carro.absolutezro.com`, gate
+  `released` com web/api/sso (desktop e download fechados), planos sem mudança, conta grátis contratada e no login
+  único, 0041 idempotente (só o entitlement novo, sem auditoria nova). `release-gate`, `carro-hub`, `accounts`, `oidc`,
+  `ia`, `divulgacao`, `downloads`, `maestro-lancamento` e `core` passaram a tratar o Carro como aberto.
+- HUB `npm run test:e2e`: 58/58 (faixa com o Carro primeiro, fluxo "Equipe" 1 de 7, órbita com 6, `/baixar` no
+  subdomínio, Sua conta com 6 acessos). `lint`, `format:check`, `typecheck`, `build` ok; `scan-secrets` sem achados.
+- Carro: `test:api` 47/47, `test:banco` 27/27, `banco-tela` 3/3, `test/site-real.js` 27/27 (inclui as cinco novas do
+  lançamento), `build:vercel` aberto e fechado, CSP provada no único HTML do domínio (o passo do CI esperava 7 HTML e
+  foi corrigido para 1). Bateria `npm test`: 88/90 com a máquina sob carga de outras sessões; as duas que caíram
+  (`conta-zro` por tempo, `entrar` em medida de animação) passaram sozinhas: 149/149 e 103/103.
+- Prévias (fora do repositório): Carro e HUB em iPhone e computador, claro e escuro, e um vídeo de 56 s.
+
+- Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
+  fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
+  da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
+## Carro do Freela: Propostas, Jobs, Feed e Brechó no servidor (30/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 3 testes novos da 0003 — a consulta chega na caixa do freela, só os dois
+  lados veem, a terceira conta não vê nem responde, quem mandou não aceita a própria, telefone/CPF/PIX recusados, aceitar
+  vira job e não volta; feed e brechó vistos por quem tem conta, só a dona apaga ou marca vendido, interesse no anúncio
+  chega ao dono, denúncia guardada (some só para quem denunciou); isolamento direto no papel `carro_do_freela_app`.
+- Carro `test/site-real.js`: 37/37 (a caixa vem do servidor, aceitar faz `PATCH` e vira job, feed e brechó do banco
+  com o nome certo, publicar é `POST`, o post antigo do aparelho não sobe sozinho e a tela oferece enviar).
+- Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
+  `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.
+
+- Google (31/10/2026): inventário de escopos feito (Maestro não pede escopo Google próprio: usa o token curto do SOBEDESCE pela ponte, nada migrado). Páginas `/privacidade` (com Limited Use) e `/termos` no HUB; teste `tests/integration/legal.test.ts`. Kit de verificação e roteiro do teste `drive.file` em `docs/operations/`.
+
+## SOBEDESCE celular: Transferências como no computador (31/10/2026)
+
+- `products/sobedesce/web`: `tests/transferencias-celular.test.mts` 19/19 (prioridade, cancelar com DELETE na sessão,
+  lote, histórico e migração IndexedDB v1 → v2, MD5 contra a RFC 1321 e o `crypto` do Node em 6 MB); `npm test`
+  336/336, lint e typecheck limpos; testes do produto que leem `web/public/app` 132/132. Capturas no
+  Playwright (iPhone e computador, claro e escuro) sem erro na página.

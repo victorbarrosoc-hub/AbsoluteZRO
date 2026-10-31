@@ -1,4 +1,5 @@
 {
+  "regions": ["gru1"],
   "rewrites": [
     {
       "source": "/api/zro/ia/:caminho*",

@@ -6,8 +6,19 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   // Cópias idênticas de packages/drive-web (tests/drive-web.test.mts confere): o estilo é o do pacote.
+  // Cópias idênticas de products/relay/src (presets.js e plano.js; tests/relay.test.mts confere): o estilo é o do Relay.
   // desktop/: o app de computador (Electron), pacote próprio com os testes dele (node --test).
-  globalIgnores([".next/**", "out/**", "next-env.d.ts", "node_modules/**", "src/lib/drive-web/**", "public/drive-sw.js", "desktop/**"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "next-env.d.ts",
+    "node_modules/**",
+    "src/lib/drive-web/**",
+    "public/drive-sw.js",
+    "src/lib/relay/presets.js",
+    "src/lib/relay/plano.js",
+    "desktop/**",
+  ]),
   {
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],

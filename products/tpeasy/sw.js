@@ -37,6 +37,7 @@ const FILES = [
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",
   "/icons/familia/maestro.svg",
+  "/icons/familia/relay.svg",
 ];
 
 self.addEventListener("install", (e) => {

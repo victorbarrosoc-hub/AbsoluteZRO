@@ -11,6 +11,7 @@ import { Tabs } from './components/tabs.js'
 import { FolderSheet } from './components/folders.js'
 import { SettingsSheet } from './components/settings.js'
 import { ItemSheet } from './components/queue.js'
+import { HistSheet } from './components/transferencias.js'
 import { SheetHost, Toasts, useEngine } from './components/ui.js'
 import { LigarZroFaixa, LigarZroTela } from './components/ligar-zro.js'
 import { filaAndando, modoLigar } from './lib/ligar-zro.js'
@@ -38,6 +39,7 @@ const SHEETS = {
   folders: FolderSheet,
   settings: SettingsSheet,
   item: ItemSheet,
+  hist: HistSheet,
   drives: DrivesSheet,
   refSave: RefSaveSheet,
   refName: RefNameSheet,

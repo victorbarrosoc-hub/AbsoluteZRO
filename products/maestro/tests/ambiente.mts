@@ -12,6 +12,19 @@ export const SITE = "http://localhost:3000";
 export const CLIENTE = { clientId: "maestro-web", clientSecret: "segredo-de-teste-do-maestro" };
 const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
 
+/**
+ * O papel `maestro_app` é do servidor inteiro, não do banco: os arquivos de teste rodam em processos paralelos e a
+ * 0000 ("cria se não existe") corria entre eles num Postgres novo (o do CI): dois viam o papel faltando e um caía em
+ * 23505. Aqui ele nasce antes da migração; quem perde a corrida (42710 já existe, 23505 criado agora) segue.
+ */
+export async function garantirPapelDoApp(admin: postgres.Sql): Promise<void> {
+  try {
+    await admin.unsafe("create role maestro_app nologin");
+  } catch (e) {
+    if (!["42710", "23505"].includes((e as { code?: string }).code ?? "")) throw e;
+  }
+}
+
 /** Recria `maestro_test_<nome>` do zero e aplica drizzle/*.sql. Devolve o endereço. */
 export async function bancoDeTeste(nome: string): Promise<string> {
   if (!/^[a-z0-9_]{1,30}$/.test(nome)) throw new Error(`nome de banco de teste inválido: ${nome}`);
@@ -24,6 +37,7 @@ export async function bancoDeTeste(nome: string): Promise<string> {
   try {
     await admin.unsafe(`drop database if exists ${db} with (force)`);
     await admin.unsafe(`create database ${db}`);
+    await garantirPapelDoApp(admin);
   } finally {
     await admin.end();
   }

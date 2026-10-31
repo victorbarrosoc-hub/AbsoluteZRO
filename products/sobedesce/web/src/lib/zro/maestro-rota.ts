@@ -4,7 +4,7 @@
  * uma linha em `auditoria_zro` por pedido atendido (a ação, o alvo, o resultado e o jti; nunca nome de arquivo ou token).
  */
 import { db, schema } from "@/lib/db";
-import { REGRAS } from "@/lib/auth/limite";
+import { REGRAS, type Regra } from "@/lib/auth/limite";
 import { erro } from "@/lib/http";
 import { atenderPedidoZro, respostaDaFalha } from "./pedido-rota";
 import type { FalhaDrive } from "./drive-da-z";
@@ -28,13 +28,15 @@ export async function atenderPedidoDoMaestro(
   req: Request,
   acao: string,
   fazer: (usuarioId: string, corpo: Record<string, unknown>) => Promise<{ resposta: Response; alvo?: string | null }>,
-  opcoes: { token?: boolean; exigirProduto?: boolean } = {},
+  opcoes: { token?: boolean; exigirProduto?: boolean; limite?: { prefixo: string; regra: Regra }; auditar?: boolean } = {},
 ): Promise<Response> {
   return atenderPedidoZro(
     req,
     acao,
     async (usuarioId, corpo, pedido) => {
       const { resposta, alvo } = await fazer(usuarioId, corpo);
+      // Só leitura da fila, a cada 5 s (relay.pedido): sem uma linha por consulta.
+      if (opcoes.auditar === false) return resposta;
       await db
         .insert(schema.auditoriaZro)
         .values({ usuarioId, zroSub: pedido.sub, acao, alvo: alvo ?? null, resultado: String(resposta.status), jti: pedido.jti })
@@ -42,7 +44,7 @@ export async function atenderPedidoDoMaestro(
       return resposta;
     },
     {
-      limite: opcoes.token ? { prefixo: "drive-token-maestro", regra: REGRAS.driveTokenMaestro } : { prefixo: "drive-maestro", regra: REGRAS.driveMaestro },
+      limite: opcoes.limite ?? (opcoes.token ? { prefixo: "drive-token-maestro", regra: REGRAS.driveTokenMaestro } : { prefixo: "drive-maestro", regra: REGRAS.driveMaestro }),
       exigirProduto: opcoes.exigirProduto,
     },
   );

@@ -72,7 +72,7 @@ export async function criarEstrutura(
   sessao: Sessao,
   projetoId: string,
   conta?: string | null,
-): Promise<Resultado<{ pasta: { id: string; nome: string }; criadas: number }>> {
+): Promise<Resultado<{ pasta: { id: string; nome: string }; subpastas: { id: string; nome: string }[]; criadas: number }>> {
   if (!temArquivos(sessao)) return SEM_SOBEDESCE();
   if (!podeEscrever(sessao.papel)) return negar("Seu papel nesta organização só lê.");
   if (!UUID.test(projetoId)) return { ok: false, status: 400, erro: "formato", mensagem: "Projeto inválido." };
@@ -85,13 +85,20 @@ export async function criarEstrutura(
        where p.id = ${projetoId}::uuid and p.deleted_at is null`)) as unknown as { codigo: string; titulo: string; cliente: string }[],
   );
   if (!p) return { ok: false, status: 404, erro: "nao_existe", mensagem: "Esse projeto não existe mais." };
-  const r = await noSobedesce<{ pasta: { id: string; nome: string }; criadas: number }>(sessao, "drive.pasta.criar", {
-    cliente: p.cliente,
-    projeto: `${p.codigo} ${p.titulo}`,
-    ...(conta ? { conta } : {}),
-  });
+  const r = await noSobedesce<{ pasta: { id: string; nome: string }; subpastas?: { id: string; nome: string }[]; criadas: number }>(
+    sessao,
+    "drive.pasta.criar",
+    {
+      cliente: p.cliente,
+      projeto: `${p.codigo} ${p.titulo}`,
+      ...(conta ? { conta } : {}),
+    },
+  );
   if (!r.ok) return r;
   const l = await ligarPasta(sessao, projetoId, { id: r.dados.pasta.id, nome: r.dados.pasta.nome });
   if (!l.ok) return l;
-  return { ok: true, dados: { pasta: r.dados.pasta, criadas: r.dados.criadas } };
+  const subpastas = Array.isArray(r.dados.subpastas)
+    ? r.dados.subpastas.filter((x) => typeof x?.id === "string" && ID_DRIVE.test(x.id) && typeof x.nome === "string")
+    : [];
+  return { ok: true, dados: { pasta: r.dados.pasta, subpastas, criadas: r.dados.criadas } };
 }

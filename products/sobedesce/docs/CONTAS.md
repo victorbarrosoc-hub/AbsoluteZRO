@@ -317,8 +317,21 @@ das Referências (pegar de uma vez só, sinal de vida, preso volta para a fila).
 - **Tipos** (`tipo`, migração `0008_pedidos_tipo`): `proxy` (padrão; o que os apps antigos pegam), `frames`
   (docs/FRAMES.md, `ajustes` dos frames e takes) e `formato` ("Baixar como…" das Referências, `ajustes: { formato }`
   com `mp4`, `mp4-1080`, `mp4-720`, `mp3-320`, `wav`, `m4a` ou `jpg`; até 20 por vez; o mesmo arquivo pode ter um
-  pedido esperando por formato; computador: `src/referencias/pedidos-formato.js`, docs/REFERENCIAS.md §7). `GET`
-  sem `tipo` lista só `proxy`; `?tipo=frames|formato|todos`.
+  pedido esperando por formato; computador: `src/referencias/pedidos-formato.js`, docs/REFERENCIAS.md §7) e `relay`
+  (as versões de entrega que o Maestro pede pela ponte do HUB, `/api/zro/relay/*`; abaixo). `GET` sem `tipo` lista só
+  `proxy`; `?tipo=frames|formato|relay|todos`.
+- **Tipo `relay`** (30/10/2026, migração `0016_pedidos_relay`, só acrescenta: `chave`, `frac`, `saida` e o índice único
+  parcial `(usuario_id, chave)` com `pendente | gerando | pronto`): só entra por `POST /api/zro/relay/converter`
+  (`web/src/lib/zro/relay.ts`; o `POST` da fila comum recusa o tipo). `ajustes: { preset, pastaId, ref }` e
+  `chave = ref:preset` (a mesma chave andando ou pronta devolve o pedido que existe). O estado só anda para a frente:
+  só o computador que pegou muda (o dono não devolve para a fila), `frac` só cresce, `pronto` exige
+  `saida: { arquivoId, nome, tamanho, md5, pastaId }` (o MD5 do Drive que bateu), `pronto`/`erro`/`cancelado` são
+  finais, e `gerando` sem notícia há 30 min vira `erro` ("veja na pasta") em vez de voltar para a fila (nenhum outro
+  computador pega: converter de novo sozinho seria um segundo arquivo). Cancelar (`/api/zro/relay/cancelar`) marca
+  `cancelado`; o computador vê o 409 no sinal de vida ou na conferência logo antes de subir e para. Computador:
+  `src/engine/pedidos-relay.js` (a cada 20 s; sinal de vida a cada 30 s e andamento a cada 10 s; converte nos trabalhos
+  do Relay da tela, `src/server/relay.js` + `converterComRelay`, na pasta `pastaId`; preset com a cor da Revela é
+  recusado com o aviso; fechar o app antes de subir devolve para a fila, no meio do envio vira erro).
 - **Celular** (`components/proxies.js`): na seleção da aba Drive, **Gerar proxy** (só vídeos, inclusive RAW de câmera;
   não as próprias cópias leves). A folha diz se há um computador ligado (pela notícia do "Acompanhar pelo celular"),
   pede e acompanha cada vídeo a cada 5 s enquanto está aberta: esperando, gerando, pronto ou o erro com **De novo**.

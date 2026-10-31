@@ -8,7 +8,13 @@ import { JsonFile } from './util/store.js'
 
 export const APP_NAME = 'SOBEDESCE'
 export const APP_ID = 'sobedesce'
-export const APP_VERSION = '0.1.0'
+export const APP_VERSION = '0.2.0'
+/**
+ * O que este app sabe fazer, dito ao site em todo pedido (cabeçalho x-sobedesce-capacidades, src/google/cloud-auth.js).
+ * "relay": pega e converte as versões do Relay pedidas pelo Maestro (src/engine/pedidos-relay.js), desde a 0.2.0. O
+ * Maestro só mostra "Gerar versões" quando algum computador da conta diz isso (web/src/lib/zro/relay.ts).
+ */
+export const CAPACIDADES_DO_APP = Object.freeze(['relay'])
 
 const MiB = 1024 * 1024
 

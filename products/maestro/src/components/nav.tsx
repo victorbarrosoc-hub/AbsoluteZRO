@@ -71,6 +71,7 @@ function LinkSecao({
       data-sentido={sentido(caminho, aba.href)}
       aria-current={on ? "page" : undefined}
       data-aba={aba.icone}
+      data-sinal={aba.sinal}
       className={className}
       onPointerEnter={querer}
       onFocus={querer}
@@ -155,6 +156,7 @@ function Menu({
         aria-expanded={aberto}
         aria-controls={id}
         aria-current={atual ? "true" : undefined}
+        data-sinal={grupo.abas.find((a) => a.sinal)?.sinal}
         onClick={() => {
           parar();
           if (!aberto) {
@@ -284,6 +286,7 @@ export function Barra() {
             data-sentido={sentidoNaBarra(caminho, a.href)}
             aria-current={on ? "page" : undefined}
             data-aba={a.icone}
+            data-sinal={a.sinal}
             onClick={(e) => {
               if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) ir(a.href);
             }}

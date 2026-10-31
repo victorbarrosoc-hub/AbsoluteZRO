@@ -110,7 +110,7 @@ describe('leitura e linha de comando', () => {
     assert.equal(depois('-c:v'), 'libx264')
     assert.equal(depois('-preset'), 'slow')
     assert.equal(depois('-crf'), '17')
-    assert.match(depois('-vf'), /^scale=1920:1080:flags=lanczos\+accurate_rnd\+full_chroma_int:in_color_matrix=bt709:in_range=tv:out_color_matrix=bt709:out_range=tv,setsar=1,format=yuv420p$/)
+    assert.match(depois('-vf'), /^scale=1920:1080:flags=lanczos\+accurate_rnd\+full_chroma_int:in_color_matrix=bt709:in_range=tv:out_color_matrix=bt709:out_range=tv,setsar=1,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv$/)
     for (const k of ['-color_primaries', '-color_trc', '-colorspace']) assert.equal(depois(k), 'bt709')
     assert.equal(depois('-c:a'), 'aac')
     assert.equal(depois('-b:a'), '384k')

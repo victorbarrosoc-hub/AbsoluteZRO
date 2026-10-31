@@ -23,6 +23,9 @@ function useNoNavegador() {
 
 const SAIDA_MS = 220;
 
+/** Folha sobre folha (ex.: "Gerar versões" por cima da ficha do card): Esc e o Tab valem só para a de cima. */
+const pilha: object[] = [];
+
 /** Fechar com a animação de saída (botão Fechar, Cancelar). Fora de uma folha, não faz nada. */
 const Fechar = createContext<() => void>(() => {});
 export const useFecharFolha = () => useContext(Fechar);
@@ -63,7 +66,10 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
   // foco: guarda quem abriu, prende o Tab dentro, Esc fecha
   useEffect(() => {
     const antes = document.activeElement as HTMLElement | null;
+    const eu = {};
+    pilha.push(eu);
     const tecla = (e: KeyboardEvent) => {
+      if (pilha[pilha.length - 1] !== eu) return;
       if (e.key === "Escape") {
         e.preventDefault();
         fechar();
@@ -92,6 +98,7 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
     }
     return () => {
       document.removeEventListener("keydown", tecla);
+      pilha.splice(pilha.indexOf(eu), 1);
       if (antes?.isConnected) antes.focus({ preventScroll: true });
     };
   }, [fechar]);

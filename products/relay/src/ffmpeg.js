@@ -72,6 +72,9 @@ export function filtroVideo(plano, encoder = 'libx264', lut = null) {
   // interpretar: todos os quadros, com o tempo de cada um multiplicado (e a cadência nova marcada no arquivo)
   if (v.conforme && v.conforme.fator !== 1) f.push(`setpts=PTS*${fracaoFps(v.conforme.de)}/(${fracaoFps(v.conforme.para)})`, `fps=${fracaoFps(v.conforme.para)}`)
   f.push(`format=${pixFor(encoder)}`)
+  // marca cada quadro 1-1-1: do ffmpeg 8 em diante o codificador lê a cor dos quadros, e as opções -color_* sozinhas
+  // não bastam (a saída perdia primárias e transferência). O mesmo que a Revela faz (products/finishing).
+  f.push('setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv')
   return f.join(',')
 }
 

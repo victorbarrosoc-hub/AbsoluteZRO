@@ -32,10 +32,10 @@ describe('Maestro no ar (0027 + 0039)', () => {
     expect(p!.description).not.toMatch(/desenvolvimento|fechado/i)
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
     expect(s.maestro).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
-    // o Relay também está no ar, só no site
+    // o Relay também está no ar: site e, desde a 0042, o app de computador (sem API nem login único)
     const [r] = await db.sql`select stage from zro.products where id = 'relay'`
     expect(r).toMatchObject({ stage: 'active' })
-    expect(s.relay).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: false, api: false, download: false, sso: false } })
+    expect(s.relay).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: true, api: false, download: true, sso: false } })
     for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(ch !== 'desktop' && ch !== 'download')
   })
 
@@ -49,8 +49,8 @@ describe('Maestro no ar (0027 + 0039)', () => {
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
     expect(claims.products).toContain('maestro')
     expect(claims.release.maestro).toBe('released')
-    // os fechados continuam fechados
-    for (const id of ['nossom', 'ai-edit', 'finishing', 'carro-do-freela']) expect(claims.release[id], id).toBe('closed')
+    // os fechados continuam fechados (o Carro do Freela abriu na 0041)
+    for (const id of ['nossom', 'ai-edit', 'finishing']) expect(claims.release[id], id).toBe('closed')
   })
 
   it('marca própria: o grátis e o Completo não dão o sinal; só o Pro v2 (rascunho) e o adicional trazem', async () => {

@@ -204,7 +204,7 @@ describe('painel do app', () => {
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v25/)
+    assert.match(sw, /synquei-v27/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })
@@ -212,7 +212,15 @@ describe('painel do app', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
     assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
-    for (const nome of ['Absolute ZRO', 'Sobedesce', 'TPEasy']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
+    const nomes = [...fam.replace(/<!--maestro-familia ([\s\S]*?) maestro-familia-->/, '').matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1])
+    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Relay', 'SOBEDESCE', 'TPeasy'])
+  })
+  test('o Relay está na família, com o ícone oficial guardado pelo service worker', () => {
+    const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    assert.match(fam, /href="https:\/\/relay\.absolutezro\.com"[^>]*><img class="familia-icone" src="\/app\/familia\/relay\.svg"/)
+    assert.ok(existsSync(new URL('../app/familia/relay.svg', import.meta.url)))
+    assert.ok(sw.includes("'/app/familia/relay.svg'"))
   })
   test('o Maestro entra na família no lançamento (bloco maestro-familia, aberto ou comentado), com o ícone dele', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]

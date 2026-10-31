@@ -50,6 +50,7 @@ class MockCloud {
     // Acompanhar pelo celular (docs/CONTAS.md §9): os retratos que o computador mandou.
     this.andamento = [] // { metodo, corpo, nome }
     this.builds = [] // cabeçalho x-sobedesce-build de cada pedido
+    this.capacidades = [] // cabeçalho x-sobedesce-capacidades de cada pedido (o que o app sabe fazer)
     this.uso = [] // corpos de POST /api/dispositivos/uso
     // A Z (IA da Absolute ZRO): os pedidos repassados pelo motor a /api/zro/ia/*; `iaSemToken` = a conta não tem o token da Z.
     this.ia = [] // { metodo, caminho, autorizacao, corpo }
@@ -256,6 +257,7 @@ class MockCloud {
 
   async #handle(req, res) {
     this.builds.push(req.headers['x-sobedesce-build'] ?? null)
+    this.capacidades.push(req.headers['x-sobedesce-capacidades'] ?? null)
     if (this.down) return req.socket.destroy()
     const url = new URL(req.url, this.url)
     const p = url.pathname

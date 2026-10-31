@@ -31,8 +31,9 @@ test('HUB e app Absolute ZRO abrem na tarefa; a Z é discreta e só abre quando 
   await expect(page).toHaveURL(/\/app$/)
   await expect(page.locator('#painel-titulo')).toContainText('Olá,')
   await expect(page.locator('ul.painel__apps')).toHaveCount(1)
-  // Maestro e Relay no ar só na web (0039): abrem na web, sem o selo "Em desenvolvimento" do canal de computador
-  for (const app of ['Maestro', 'Relay']) {
+  // Maestro e Relay (0039) e Carro do Freela (0041) no ar só na web: abrem na web, sem o selo "Em desenvolvimento" do
+  // canal de computador
+  for (const app of ['Maestro', 'Relay', 'Carro do Freela']) {
     const cartao = page.locator('.painel__apps > li').filter({ has: page.getByRole('heading', { name: app, exact: true }) })
     await expect(cartao.getByText('Em desenvolvimento')).toHaveCount(0)
     await expect(cartao.getByRole('link', { name: /Abrir/ })).toHaveCount(1)

@@ -167,9 +167,13 @@ export async function md5Arquivo(file, signal) {
  * @param {string} o.destino id do preset do Relay
  * @param {string|null} [o.localPath] o original neste computador (envio da fila, mesmo tamanho); sem ele, baixa
  * @param {(fase: 'esperando'|'baixando'|'analisando'|'convertendo'|'enviando'|'conferindo', frac?: number) => void} [o.onFase]
- * @returns {Promise<{ fileId, nome, size, encoder, destino, avisos: string[], conferido: boolean }>}
+ * @param {string|null} [o.parentId] a pasta do Drive onde a versão sobe (o Maestro manda a de entregas); sem ela, a do original
+ * @param {() => Promise<void>} [o.antesDeSubir] chamada logo antes de subir (o pedido do Maestro confere se não foi
+ *   cancelado; lançar aqui para tudo e nada sobe)
+ * @param {string|null} [o.pedido] id do pedido da fila (vai nas appProperties do arquivo novo)
+ * @returns {Promise<{ fileId, nome, size, encoder, destino, avisos: string[], conferido: boolean, md5: string, pastaId: string|null }>}
  */
-export async function converterComRelay({ gerador, drive, item, destino, localPath = null, signal, onFase, tmpRoot = os.tmpdir(), log = () => {} }) {
+export async function converterComRelay({ gerador, drive, item, destino, localPath = null, signal, onFase, parentId = null, antesDeSubir = null, pedido = null, tmpRoot = os.tmpdir(), log = () => {} }) {
   const p = destinoRelay(destino)
   if (!p) throw Object.assign(new Error('Destino desconhecido.'), { status: 400 })
   const motor = await gerador.motor()
@@ -179,6 +183,14 @@ export async function converterComRelay({ gerador, drive, item, destino, localPa
     let baixado = null
     let dir = null
     try {
+      // A pasta de destino (outra que a do original): existe e é pasta, e em qual drive está, antes de baixar e converter.
+      const pasta = parentId || item.parents?.[0] || null
+      let driveId = item.driveId ?? null
+      if (parentId && parentId !== item.parents?.[0]) {
+        const alvo = await drive.getItem(parentId, { signal })
+        if (!alvo?.isFolder) throw new Error('a pasta de destino não é mais uma pasta do Drive')
+        driveId = alvo.driveId ?? null
+      }
       let input = localPath
       if (!input) {
         baixado = await gerador.baixarOriginal(drive, item, { signal, onFase })
@@ -198,14 +210,15 @@ export async function converterComRelay({ gerador, drive, item, destino, localPa
       const st = await fsp.stat(output)
       if (st.size < 1024) throw new Error('o convertido saiu vazio')
 
+      await antesDeSubir?.()
       onFase?.('enviando', 0)
       const nome = nomeSaida(item.name, p)
       const fileId = await gerador.subirArquivo(drive, {
         localPath: output,
         name: nome,
-        parentId: item.parents?.[0],
-        driveId: item.driveId ?? null,
-        appProperties: { sobedesce: RELAY_MARCA, original: item.id, destino: p.id },
+        parentId: pasta,
+        driveId,
+        appProperties: { sobedesce: RELAY_MARCA, original: item.id, destino: p.id, ...(pedido ? { pedido } : {}) },
         signal,
         onFrac: f => onFase?.('enviando', f),
       })
@@ -213,7 +226,7 @@ export async function converterComRelay({ gerador, drive, item, destino, localPa
       const [md5, noDrive] = await Promise.all([md5Arquivo(output, signal), drive.getItem(fileId, { signal })])
       if (noDrive.md5 && noDrive.md5 !== md5) throw new Error('o arquivo no Drive não bateu com o convertido (MD5 diferente)')
       log(`relay: "${item.name}" → ${noDrive.name || nome} (${p.id}, ${encoder})`)
-      return { fileId, nome: noDrive.name || nome, size: st.size, encoder, destino: p.id, avisos: plano.avisos, conferido: Boolean(noDrive.md5) }
+      return { fileId, nome: noDrive.name || nome, size: st.size, encoder, destino: p.id, avisos: plano.avisos, conferido: Boolean(noDrive.md5), md5, pastaId: pasta }
     } finally {
       await baixado?.limpar()
       if (dir) await fsp.rm(dir, { recursive: true, force: true }).catch(() => {})

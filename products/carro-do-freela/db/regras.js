@@ -210,4 +210,77 @@ function pessoaSaida(z, carro, funcaoDoHub = {}) {
   };
 }
 
-module.exports = { diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+/* ───────────── propostas, feed, brechó e denúncia (0003) ───────────── */
+const UUIDR = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function uuidDe(v, campo) {
+  if (typeof v !== 'string' || !UUIDR.test(v)) throw new Recusa('tipo', campo);
+  return v.toLowerCase();
+}
+function horaDe(v, campo) {
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) throw new Recusa('tipo', campo);
+  return v;
+}
+function centavos(v, campo, obrigatorio) {
+  if (v === undefined || v === null) { if (obrigatorio) throw new Recusa('obrigatorio', campo); return null }
+  if (!Number.isInteger(v) || v < 0 || v > 100000000) throw new Recusa('tipo', campo);
+  return v;
+}
+/** POST /api/zro/propostas — o contratante chama alguém (job) ou o comprador fala com o vendedor (brecho) */
+function propostaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['para', 'tipo', 'anuncio', 'dia', 'ini', 'fim', 'funcao', 'local', 'mensagem', 'valor_cents']);
+  const tipo = corpo.tipo === undefined ? 'job' : corpo.tipo;
+  if (tipo !== 'job' && tipo !== 'brecho') throw new Recusa('tipo', 'tipo');
+  return {
+    para: uuidDe(corpo.para, 'para'), tipo,
+    anuncio: tipo === 'brecho' ? uuidDe(corpo.anuncio, 'anuncio') : null,
+    dia: corpo.dia === undefined || corpo.dia === null ? null : diaDe(corpo.dia),
+    ini: horaDe(corpo.ini, 'ini'), fim: horaDe(corpo.fim, 'fim'),
+    funcao: texto(corpo.funcao, 'funcao', 60), local: texto(corpo.local, 'local', 120),
+    mensagem: texto(corpo.mensagem, 'mensagem', 1000, { linhas: true }),
+    valor_cents: centavos(corpo.valor_cents, 'valor_cents', false),
+  };
+}
+/** PATCH /api/zro/propostas?id= — aceitar, recusar (com motivo) ou cancelar */
+function respostaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['estado', 'motivo']);
+  if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
+  return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
+}
+const TIPOS_POST = ['nota', 'bastidor', 'entrega', 'procura'];
+function postDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['texto', 'tipo']);
+  const tipo = corpo.tipo === undefined ? 'nota' : corpo.tipo;
+  if (!TIPOS_POST.includes(tipo)) throw new Recusa('tipo', 'tipo');
+  return { tipo, texto: texto(corpo.texto, 'texto', 1000, { obrigatorio: true, linhas: true }) };
+}
+function anuncioDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['titulo', 'categoria', 'estado_item', 'descricao', 'cidade', 'preco_cents']);
+  return {
+    titulo: texto(corpo.titulo, 'titulo', 120, { obrigatorio: true }),
+    categoria: texto(corpo.categoria, 'categoria', 40, { obrigatorio: true }),
+    estado_item: texto(corpo.estado_item, 'estado_item', 40),
+    descricao: texto(corpo.descricao, 'descricao', 1000, { linhas: true }),
+    cidade: texto(corpo.cidade, 'cidade', 80),
+    preco_cents: centavos(corpo.preco_cents, 'preco_cents', true),
+  };
+}
+function situacaoDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['situacao']);
+  if (!['disponivel', 'vendido'].includes(corpo.situacao)) throw new Recusa('tipo', 'situacao');
+  return corpo.situacao;
+}
+function denunciaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['alvo', 'id', 'motivo', 'detalhe']);
+  if (corpo.alvo !== 'post' && corpo.alvo !== 'anuncio') throw new Recusa('tipo', 'alvo');
+  return { alvo: corpo.alvo, id: uuidDe(corpo.id, 'id'), motivo: texto(corpo.motivo, 'motivo', 80, { obrigatorio: true }),
+    detalhe: texto(corpo.detalhe, 'detalhe', 500, { linhas: true }) };
+}
+
+module.exports = { propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

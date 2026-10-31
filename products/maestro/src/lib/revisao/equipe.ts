@@ -307,10 +307,21 @@ export async function novaVersao(ctx: Contexto, cardId: string, link: string, ti
 }
 
 /**
- * Uma versão como a ficha do card mostra: número, nome, fonte e o link para abrir. A versão de roteiro (0033) não tem
- * URL: `url` é o editor do roteiro na versão dela.
+ * Uma versão como a ficha do card mostra: número, nome, fonte e o link para abrir. `driveId` e `aprovada` (o cliente
+ * aprovou esta versão, ou o card passou de Aprovado e esta é a mais nova) são para "Gerar versões com o Relay". A versão
+ * de roteiro (0033) não tem URL: `url` é o editor do roteiro na versão dela.
  */
-export type VersaoDoCard = { id: string; n: number; titulo: string | null; fonte: VersaoVista["fonte"]; url: string; em: string; roteiroN: number | null };
+export type VersaoDoCard = {
+  id: string;
+  n: number;
+  titulo: string | null;
+  fonte: VersaoVista["fonte"];
+  url: string;
+  em: string;
+  driveId: string | null;
+  aprovada: boolean;
+  roteiroN: number | null;
+};
 
 /**
  * As versões vivas de um card, da mais nova para a mais velha (a ficha do Quadro). Como a pessoa: o RLS e o acesso por
@@ -320,8 +331,11 @@ export async function versoesDoCard(ctx: Contexto, cardId: string): Promise<Vers
   if (!ID_CARD.test(cardId)) return [];
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select v.id, v.n, v.titulo, v.fonte, v.criado_em as em, rv.n as "roteiroN",
-             coalesce(v.url, '/app/criacao/roteiros/' || rv.roteiro_id::text) as url
+      select v.id, v.n, v.titulo, v.fonte, v.criado_em as em, v.drive_file_id as "driveId", rv.n as "roteiroN",
+             coalesce(v.url, '/app/criacao/roteiros/' || rv.roteiro_id::text) as url,
+             (exists (select 1 from maestro.approvals a where a.org_id = v.org_id and a.card_id = v.card_id and a.decision = 'aprovado' and a.versao_id = v.id)
+              or (k.coluna in ('aprovado', 'agendado', 'entregue')
+                  and v.n = (select max(v2.n) from maestro.versoes v2 where v2.org_id = v.org_id and v2.card_id = v.card_id and v2.apagado_em is null))) as aprovada
         from maestro.versoes v
         join maestro.cards k on k.org_id = v.org_id and k.id = v.card_id and k.apagado_em is null
         left join maestro.roteiro_versoes rv on rv.org_id = v.org_id and rv.id = v.roteiro_versao_id

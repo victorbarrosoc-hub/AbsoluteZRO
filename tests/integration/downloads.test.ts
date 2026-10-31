@@ -7,7 +7,7 @@ const OFFICIAL = new Set([
   'synquei.vercel.app',
   'nossom-teal.vercel.app',
   'tpeasy.vercel.app',
-  'carrodofreela.com.br',
+  'carro.absolutezro.com',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
   'maestro.absolutezro.com',
@@ -77,8 +77,37 @@ describe('downloads', () => {
     expect(hasDesktopInstaller('maestro', new Set(['maestro']))).toBe(true)
   })
 
-  it('no ar só na web (Maestro sem o app de computador, Relay): navegador e celular, sem instalador nem Terminal', () => {
-    const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay']))
+  it('Relay e Carro do Freela (0042): liberado no canal download mostra Mac e Windows pela Absolute ZRO e o navegador; fechado, só a web', () => {
+    const fechado = downloadsLiberados(new Set(['sobedesce']), new Set(['relay', 'carro-do-freela']))
+    for (const id of ['relay', 'carro-do-freela']) {
+      expect(
+        fechado.find((x) => x.productId === id)!.options.every((o) => o.os === 'web' || o.os === 'mobile'),
+        id,
+      ).toBe(true)
+      expect(hasDesktopInstaller(id, new Set(['sobedesce']))).toBe(false)
+      expect(hasDesktopInstaller(id, new Set([id]))).toBe(true)
+      const aberto = downloadsLiberados(new Set([id])).find((x) => x.productId === id)!
+      expect(aberto.status).toBe('test')
+      expect(aberto.options.filter((o) => o.os === 'mac' || o.os === 'windows').map((o) => o.href)).toEqual([
+        `https://absolutezro.com/baixar/app/${id}/mac`,
+        `https://absolutezro.com/baixar/app/${id}/windows`,
+      ])
+      expect(aberto.options.some((o) => o.os === 'web')).toBe(true)
+      expect(aberto.firstOpen?.mac).toBeTruthy()
+    }
+    // o Maestro não mudou
+    expect(
+      downloadsLiberados(new Set(['maestro']))
+        .find((x) => x.productId === 'maestro')!
+        .options.map((o) => o.os),
+    ).toEqual(['mac', 'windows', 'web', 'mobile'])
+  })
+
+  it('no ar só na web (Maestro sem o app de computador, Relay, Carro do Freela): navegador e celular, sem instalador nem Terminal', () => {
+    const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay', 'carro-do-freela']))
+    const carro = vistos.find((x) => x.productId === 'carro-do-freela')!
+    expect(carro).toMatchObject({ status: 'web', site: 'https://carro.absolutezro.com' })
+    expect(carro.options.map((o) => o.os)).toEqual(['web', 'mobile'])
     const maestro = vistos.find((x) => x.productId === 'maestro')!
     expect(maestro.status).toBe('web')
     expect(maestro.options.map((o) => o.os)).toEqual(['web', 'mobile'])

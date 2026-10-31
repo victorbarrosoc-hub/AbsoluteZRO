@@ -9238,3 +9238,242 @@ select.input {
   color: var(--text);
   font-weight: 600;
 }
+
+/* ───────────── Transferências (components/transferencias.js) ─────────────
+   A tela cheia da fila, aberta pelo cartão do Início: o andamento geral, os lotes da fila e os terminados com a
+   conferência. Mesmas peças do "No computador" (pc-card, pc-row-icon, pc-bar) e das linhas da fila. */
+.tr-tela {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: calc(var(--safe-t) + 6px);
+}
+.tr-voltar {
+  align-self: flex-start;
+  color: var(--up-text);
+}
+.tr-tela .k-cabeca {
+  padding-top: 0;
+}
+.tr-tela .k-cabeca p {
+  font-variant-numeric: tabular-nums;
+}
+.tr-card .pc-card-chev {
+  margin-left: 0;
+}
+.tr-card-tc,
+.tr-geral-tc {
+  margin-left: auto;
+  color: var(--text-2);
+}
+.tr-card.is-pronto .pc-card-pct {
+  color: var(--ok-text);
+}
+.tr-card.is-erro .pc-card-pct,
+.tr-card.is-erro .pc-card-sub {
+  color: var(--err-text);
+}
+.tr-card.is-pausado .pc-card-pct {
+  color: var(--text-2);
+}
+.tr-geral {
+  gap: 12px;
+}
+.tr-geral .pc-card-name {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.tr-geral-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: -8px -6px -8px 0;
+  background: var(--fill);
+}
+.tr-geral .pc-card-pct {
+  font-size: 34px;
+}
+.tr-aviso {
+  margin: -4px 0 -6px;
+}
+.tr-filtros .k-pilula.is-on {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  transform: none;
+}
+
+/* lote */
+.tr-lote-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 4px 14px;
+}
+.tr-lote-head .pc-row-icon {
+  flex: none;
+}
+.tr-lote-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.tr-lote-txt b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.tr-lote-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tr-lote-acts {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+.tr-lote-acts .icon-btn {
+  width: 40px;
+  height: 40px;
+  color: var(--text-2);
+}
+.tr-lote-acts .icon-btn.is-strong {
+  background: color-mix(in srgb, var(--up) 13%, transparent);
+  color: var(--up-text);
+}
+.tr-lote-acts .icon-btn.is-danger {
+  color: var(--err-text);
+}
+.tr-lote.is-paused .tr-lote-txt b {
+  color: var(--text-2);
+}
+.tr-confirma {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 14px 4px 58px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--err) 8%, transparent);
+  font-size: 14px;
+  font-weight: 550;
+}
+.tr-confirma > span {
+  flex: 1 1 100%;
+}
+@media (min-width: 420px) {
+  .tr-confirma > span {
+    flex-basis: auto;
+  }
+}
+.tr-lote .rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tr-lote-conf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 14px 2px 58px;
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tr-lote-conf.is-ok {
+  color: var(--ok-text);
+}
+.tr-lote-conf.is-erro {
+  color: var(--err-text);
+}
+.tr-feitos-head {
+  margin-top: 6px;
+}
+
+/* terminados */
+.row.is-hist {
+  padding-block: 10px;
+}
+.row.is-hist .row-main {
+  gap: 4px;
+}
+.row-tile.tone-canceled {
+  background: var(--fill);
+  color: var(--text-3);
+}
+.row.is-canceled .row-name {
+  color: var(--text-2);
+}
+.tr-quando {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.tr-hist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.tr-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-2);
+}
+.tr-selo > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tr-selo .icon {
+  flex: none;
+}
+.tr-selo.is-ok {
+  color: var(--ok-text);
+}
+.tr-selo.is-erro {
+  color: var(--err-text);
+  font-weight: 650;
+}
+.tr-selo.is-vivo {
+  color: var(--up-text);
+}
+.tr-selo.is-muted {
+  color: var(--text-3);
+}
+.row.is-mismatch {
+  background: color-mix(in srgb, var(--err) 6%, transparent);
+}
+.row.is-mismatch .row-name {
+  color: var(--err-text);
+}
+.tr-lote.is-erro {
+  box-shadow: var(--shadow-card), inset 0 0 0 1px color-mix(in srgb, var(--err) 35%, transparent);
+}
+.item-state .tr-selo {
+  font-size: 14px;
+}
+.tr-conferir {
+  margin: 4px 0 12px;
+}
+
+/* computador: a fila ganha espaço, sem passar de uma coluna confortável */
+@media (min-width: 900px) {
+  .tabs .screen.tr-tela {
+    max-width: 720px;
+  }
+}

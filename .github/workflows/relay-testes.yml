@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'products/relay/**'
+      - '!products/relay/desktop/**'
       - 'products/sobedesce/src/relay/**'
       - 'products/sobedesce/web/public/app/relay/**'
       - 'apps/hub-web/public/products/relay.svg'
@@ -15,6 +16,7 @@ on:
   pull_request:
     paths:
       - 'products/relay/**'
+      - '!products/relay/desktop/**'
       - 'products/sobedesce/src/relay/**'
       - 'products/sobedesce/web/public/app/relay/**'
       - 'apps/hub-web/public/products/relay.svg'

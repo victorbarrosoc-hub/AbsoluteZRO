@@ -453,7 +453,9 @@ describe('a comunidade (0038)', () => {
     }
     const minhas = todas.filter((a) => a.startsWith(prefixo))
     expect(minhas).toEqual([conf.arroba, outra.arroba].sort())
-    expect([...todas].sort()).toEqual(todas)
+    // a ordem é a do banco (collation do Postgres ignora pontuação: "recebe" vem antes de "rec."), não a do JS
+    const ordenadas = (await db.sql`select a from unnest(${todas}::text[]) as a order by a`).map((l) => l.a as string)
+    expect(ordenadas).toEqual(todas)
     expect(todas).not.toContain(sugerida.arroba)
     // cursor de verdade: uma por página
     const p1 = await listarComunidade(db, quem.auth, { depois: `${prefixo}.`, limite: 1 })
