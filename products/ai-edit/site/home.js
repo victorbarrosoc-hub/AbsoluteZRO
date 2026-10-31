@@ -222,6 +222,7 @@ const LUGARES = [
   { id: 'finishing', faz: 'Cor e LUT' },
   { id: 'nossom', faz: 'Som e master' },
   { id: 'synquei', faz: 'Câmeras em sincronia' },
+  { id: 'relay', faz: 'Versões para cada rede' },
   { id: 'sobedesce', faz: 'Cartão descarregado e conferido' },
 ]
 const lugares = $('#lugares')

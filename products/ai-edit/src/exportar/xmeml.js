@@ -48,7 +48,8 @@ export function paraXmeml(p) {
           `<parameter authoringApp="PremierePro">\n  <parameterid>variablespeed</parameterid>\n  <name>variablespeed</name>\n  <valuemin>0</valuemin>\n  <valuemax>1</valuemax>\n  <value>0</value>\n</parameter>`,
           `<parameter authoringApp="PremierePro">\n  <parameterid>speed</parameterid>\n  <name>speed</name>\n  <valuemin>-100000</valuemin>\n  <valuemax>100000</valuemax>\n  <value>${Math.round(s.v * 100000) / 1000}</value>\n</parameter>`,
           `<parameter authoringApp="PremierePro">\n  <parameterid>reverse</parameterid>\n  <name>reverse</name>\n  <value>FALSE</value>\n</parameter>`,
-          `<parameter authoringApp="PremierePro">\n  <parameterid>frameblending</parameterid>\n  <name>frameblending</name>\n  <value>FALSE</value>\n</parameter>`,
+          // câmera lenta com mistura ou fluxo: o Premiere liga a Mistura de quadros (o fluxo óptico dele não vem pelo XML)
+          `<parameter authoringApp="PremierePro">\n  <parameterid>frameblending</parameterid>\n  <name>frameblending</name>\n  <value>${s.v < 1 && s.modo !== 'quadro' ? 'TRUE' : 'FALSE'}</value>\n</parameter>`,
         ])
   // volume no efeito Níveis de áudio (ganho linear)
   const niveis = (s, ind) =>

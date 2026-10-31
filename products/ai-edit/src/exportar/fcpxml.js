@@ -29,7 +29,9 @@ export function paraFcpxml(p) {
       const m = p.midias.find((x) => x.id === s.midia)
       const attrs = `ref="${ref.get(s.midia)}" offset="${racional(s.linha, f)}" name="${esc(nome.get(s.midia))}" start="${ajustado(s.ini)}" duration="${racional(s.saida, f)}" tcFormat="NDF"`
       const filhos = []
-      if (acelerado) filhos.push(`<timeMap>\n  <timept time="0s" value="0s" interp="linear"/>\n  <timept time="${ajustado(m.quadros)}" value="${racional(m.quadros, f)}" interp="linear"/>\n</timeMap>`)
+      // câmera lenta: o Final Cut faz a mistura ou o fluxo óptico dele (frameSampling); fora disso, o quadro (floor)
+      const amostra = s.v < 1 && s.modo !== 'quadro' ? ` frameSampling="${s.modo === 'mistura' ? 'frame-blending' : 'optical-flow'}"` : ''
+      if (acelerado) filhos.push(`<timeMap${amostra}>\n  <timept time="0s" value="0s" interp="linear"/>\n  <timept time="${ajustado(m.quadros)}" value="${racional(m.quadros, f)}" interp="linear"/>\n</timeMap>`)
       // escala e posição (ajustes do clipe + zoom); posição do FCPXML em % da altura do quadro, a partir do centro, y para cima
       const tr = transformacao(p, s)
       if (Math.abs(tr.escala - 1) > 1e-4 || Math.abs(tr.cx) > 0.01 || Math.abs(tr.cy) > 0.01) {

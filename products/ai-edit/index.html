@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>AEON · Time is yours.</title>
-    <meta name="description" content="AEON, o editor de vídeo da Absolute ZRO, em desenvolvimento. Monte, corte, legende e entregue do começo ao fim, com a IA ajudando nos cortes, no zoom e na legenda quando você quiser. Junto com SOBEDESCE, Synquei, Revela e NOSSOM, na mesma conta." />
+    <!-- lancamento:descricao --><meta name="description" content="AEON, o editor de vídeo da Absolute ZRO, em desenvolvimento. Monte, corte, legende, acelere e desacelere, estabilize e entregue do começo ao fim, com a IA ajudando quando você quiser. Junto com SOBEDESCE, Synquei, Relay, Revela e NOSSOM, na mesma conta." /><!-- /lancamento:descricao -->
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#000000" />
     <meta property="og:type" content="website" />
@@ -49,7 +49,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-lua"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
         </button>
         <a class="nav-entrar" href="entrar.html" data-conta>Entrar</a>
-        <a class="vidro vidro--tinta pequeno" href="#testar">Testar ao vivo</a>
+        <!-- lancamento:nav --><a class="vidro vidro--tinta pequeno" href="#testar">Testar ao vivo</a><!-- /lancamento:nav -->
       </div>
     </header>
 
@@ -66,7 +66,7 @@
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
         <a href="#perguntas">Perguntas</a>
-        <a href="#em-desenvolvimento">Em desenvolvimento</a>
+        <!-- lancamento:menu --><a href="#em-desenvolvimento">Em desenvolvimento</a><!-- /lancamento:menu -->
       </nav>
       <p class="menu-grupo">Sua conta</p>
       <div class="menu-conta">
@@ -86,8 +86,8 @@
         <div class="hero-texto">
           <h1 id="hero-titulo" class="hero-titulo"><span class="fino">Time is</span> <span class="forte">yours.</span></h1>
           <div class="acoes">
-            <a class="vidro vidro--tinta grande" href="#testar">Testar ao vivo</a>
-            <a class="vidro grande" href="#produto">Conhecer o AEON</a>
+            <!-- lancamento:topo --><a class="vidro vidro--tinta grande" href="#testar">Testar ao vivo</a>
+            <a class="vidro grande" href="#produto">Conhecer o AEON</a><!-- /lancamento:topo -->
           </div>
         </div>
         <a class="rolar" href="#testar" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
@@ -122,7 +122,7 @@
                 <img class="visor-cena" data-cena="cortes" src="marca/home/podcast.jpg" alt="Dois apresentadores gravando um podcast" width="1344" height="752" loading="lazy" />
                 <img class="visor-cena" data-cena="legenda" src="marca/home/rua.jpg" alt="Um criador gravando com o celular na rua, à noite" width="1344" height="752" loading="lazy" />
                 <img class="visor-cena" data-cena="zoom" src="marca/home/review.jpg" alt="Uma criadora mostrando uma lente na mesa de trabalho" width="1344" height="752" loading="lazy" />
-                <img class="visor-cena" data-cena="entrega" src="marca/home/entrevista.jpg" alt="Um entrevistado num escritório com luz de estúdio" width="1344" height="752" loading="lazy" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/cenas/onda.jpg" data-src="marca/home/cenas/onda.mp4" aria-label="Onda vista de cima, na velocidade da curva"></video></div>
+                <img class="visor-cena" data-cena="entrega" src="marca/home/entrevista.jpg" alt="Um entrevistado num escritório com luz de estúdio" width="1344" height="752" loading="lazy" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/cenas/onda.jpg" data-src="marca/home/cenas/onda.mp4" aria-label="Onda quebrando na praia, na velocidade da curva"></video></div>
               <span class="visor-velocidade" id="visorVelocidade" aria-hidden="true">100%</span>
               <p class="visor-legenda" id="visorLegenda" aria-live="off"></p>
               <span class="visor-zoom" id="visorZoom" aria-hidden="true"></span>
@@ -137,9 +137,9 @@
                 <h3>Desenhe o ritmo.</h3>
                 <div class="takes-demo" role="radiogroup" aria-label="Take" id="takesDemo">
                   <button role="radio" aria-checked="true" data-take="onda"><img src="marca/home/cenas/mini/onda.jpg" alt="" width="256" height="144" loading="lazy" /><span>Onda</span></button>
-                  <button role="radio" aria-checked="false" data-take="carro"><img src="marca/home/cenas/mini/carro.jpg" alt="" width="256" height="144" loading="lazy" /><span>Estrada</span></button>
-                  <button role="radio" aria-checked="false" data-take="mar"><img src="marca/home/cenas/mini/mar.jpg" alt="" width="256" height="144" loading="lazy" /><span>Mar</span></button>
-                  <button role="radio" aria-checked="false" data-take="cidade"><img src="marca/home/cenas/mini/cidade.jpg" alt="" width="256" height="144" loading="lazy" /><span>Cidade</span></button>
+                  <button role="radio" aria-checked="false" data-take="cavalo"><img src="marca/home/cenas/mini/cavalo.jpg" alt="" width="256" height="144" loading="lazy" /><span>Cavalo</span></button>
+                  <button role="radio" aria-checked="false" data-take="pelicano"><img src="marca/home/cenas/mini/pelicano.jpg" alt="" width="256" height="144" loading="lazy" /><span>Pelicano</span></button>
+                  <button role="radio" aria-checked="false" data-take="flores"><img src="marca/home/cenas/mini/flores.jpg" alt="" width="256" height="144" loading="lazy" /><span>Flores</span></button>
                 </div>
                 <div class="fichas-escolha" role="radiogroup" aria-label="Curva de velocidade" id="rampas">
                   <button role="radio" aria-checked="false" data-rampa="normal">100%</button>
@@ -150,7 +150,7 @@
                   <button role="radio" aria-checked="false" data-rampa="montagem">Montagem</button>
                 </div>
                 <div class="duracao" aria-live="polite"><strong id="rampaDuracao">10,0 s</strong><span id="rampaAntes">de 10,0 s</span></div>
-                <p class="painel-dica">Takes de câmera de verdade. Arraste os pontos da curva; som só em 100%, como no app.</p>
+                <p class="painel-dica">Takes de verdade em 50 e 60 qps. Arraste os pontos da curva; som só em 100%, como no app.</p>
               </div>
 
               <div class="painel" role="tabpanel" id="painel-cortes" aria-labelledby="aba-cortes" hidden>
@@ -249,7 +249,7 @@
       <!-- 3b · para todo vídeo falado: os tipos de vídeo passam numa fita (para no mouse e no foco; parada com reduzir movimento) -->
       <section class="takes" aria-labelledby="takes-titulo">
         <div class="cabeca-sec ao-rolar">
-          <p class="olho">Para todo vídeo falado</p>
+          <p class="olho">Para todo tipo de vídeo</p>
           <h2 id="takes-titulo" class="titulo"><span class="fino">Do podcast</span> <span class="forte">à receita.</span></h2>
         </div>
         <div class="fita-moldura ao-rolar" id="fita" tabindex="0" aria-label="Tipos de vídeo que o AEON edita">
@@ -314,6 +314,9 @@
           <li class="cartao ao-rolar" data-cor="azul"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M4.5 13v4.5a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V13" /></svg></span><h3>Premiere, Final Cut, DaVinci</h3><p>Cores e marcadores vão junto.</p></li>
           <li class="cartao ao-rolar" data-cor="menta"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16M5 11.5h9.5a5 5 0 0 1 0 10H12" /></svg></span><h3>Salva sozinho</h3><p>Histórico de cada passo.</p></li>
           <li class="cartao ao-rolar" data-cor="rosa"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg></span><h3>Fica com você</h3><p>Nada é enviado, movido ou apagado.</p></li>
+          <li class="cartao ao-rolar" data-cor="laranja"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M4 16.5a8 8 0 1 1 16 0" /><path d="M12 16.5l4.2-5.2" /></svg></span><h3>Velocidade em curva</h3><p>Herói, Bala ou a sua, de 10% a 800%.</p></li>
+          <li class="cartao ao-rolar" data-cor="azul"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="3" y="6.5" width="6" height="11" rx="1.6" /><rect x="15" y="6.5" width="6" height="11" rx="1.6" /><path d="M10.6 12h.01M12 12h.01M13.4 12h.01" /></svg></span><h3>Câmera lenta lisa</h3><p>O fluxo óptico cria o quadro que falta.</p></li>
+          <li class="cartao ao-rolar" data-cor="verde"><span class="cartao-icone"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M3 12h4.5M16.5 12H21M12 3v4.5M12 16.5V21" /></svg></span><h3>Estabilizar</h3><p>Tira o tremor com o menor recorte.</p></li>
         </ul>
       </section>
 
@@ -344,7 +347,7 @@
           <div class="paraquem-cartao ao-rolar">
             <h3>O AEON é para você se</h3>
             <ul class="checks">
-              <li>Edita vídeo falado: entrevista, aula, Reels, YouTube.</li>
+              <li>Edita vídeo: entrevista, aula, Reels, YouTube, B-roll e montagem.</li>
               <li>Termina no Premiere, no Final Cut, no DaVinci, ou quer o vídeo pronto.</li>
               <li>Quer a mídia no seu computador, sem enviar nada.</li>
             </ul>
@@ -361,9 +364,9 @@
         <div class="z-caixa ao-rolar">
           <div class="z-simbolo" aria-hidden="true"><img class="z-anel" src="marca/z/anel.webp" alt="" width="560" height="560" loading="lazy" /><img class="z-estrela" src="marca/z/estrela.webp" alt="" width="400" height="400" loading="lazy" /></div>
           <div class="z-texto">
-            <p class="z-selo"><i aria-hidden="true"></i>Chegando ao AEON</p>
+            <!-- lancamento:z --><p class="z-selo"><i aria-hidden="true"></i>Chegando ao AEON</p>
             <h2 id="z-titulo" class="z-titulo"><span class="fino">Z.</span> <span class="forte">Uma IA para todo o ecossistema.</span></h2>
-            <p class="apoio">No painel inicial do app, quando ele abrir. Ela conversa e lê sua conta; a edição é sua.</p>
+            <p class="apoio">No painel inicial do app, quando ele abrir. Ela conversa e lê sua conta; a edição é sua.</p><!-- /lancamento:z -->
             <ul class="z-fichas" aria-label="Como a Z funciona">
               <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>Mesma conta</li>
               <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z" /></svg>Conversas reunidas</li>
@@ -375,6 +378,7 @@
         </div>
       </section>
 
+<!-- lancamento:baixar -->
       <!-- 6b · Em desenvolvimento: o app de computador (Mac e Windows) chega quando o AEON abrir; nada para instalar agora -->
       <section class="fechado-sec" id="em-desenvolvimento" aria-labelledby="fechado-titulo">
         <div class="cabeca-sec ao-rolar">
@@ -384,6 +388,7 @@
           <p class="selo"><i aria-hidden="true"></i>Ainda sem download</p>
         </div>
       </section>
+      <!-- /lancamento:baixar -->
 
       <!-- 6c · perguntas: respostas curtas e honestas (abre uma de cada vez) -->
       <section class="perguntas" id="perguntas" aria-labelledby="perguntas-titulo">
@@ -392,9 +397,10 @@
           <h2 id="perguntas-titulo" class="titulo"><span class="fino">Antes de</span> <span class="forte">você perguntar.</span></h2>
         </div>
         <div class="faq ao-rolar" id="faq">
-          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r1" id="p1">Quando o AEON abre?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r1" role="region" aria-labelledby="p1"><div><p>Está em desenvolvimento, ainda sem data. Chega com a sua conta Absolute ZRO, no Mac, no Windows e no navegador.</p></div></div></div>
+          <!-- lancamento:faq --><div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r1" id="p1">Quando o AEON abre?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r1" role="region" aria-labelledby="p1"><div><p>Está em desenvolvimento, ainda sem data. Chega com a sua conta Absolute ZRO, no Mac, no Windows e no navegador.</p></div></div></div><!-- /lancamento:faq -->
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r2" id="p2">Preciso usar a IA?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r2" role="region" aria-labelledby="p2"><div><p>Não. Dá para editar do começo ao fim sem ela. Quando você pede, ela marca pausas, sugere zoom e transcreve a legenda, e nada entra sem você aprovar.</p></div></div></div>
-          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r7" id="p7">Tem speed ramp?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r7" role="region" aria-labelledby="p7"><div><p>Tem. Curvas prontas (Montagem, Herói, Bala, Vale, Pico, Flash) ou a sua, de 10% a 800%, num clipe ou em todos. Vai para o Final Cut, o Premiere e o DaVinci em degraus de velocidade constante, e o som toca só em 100%.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r7" id="p7">Tem speed ramp?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r7" role="region" aria-labelledby="p7"><div><p>Tem. Curvas prontas (Montagem, Herói, Bala, Vale, Pico, Flash) ou a sua, de 10% a 800%, num clipe ou em todos. A câmera lenta usa os quadros reais da câmera e, onde faltar, o fluxo óptico cria o quadro do meio, sem repetir. Vai para o Final Cut, o Premiere e o DaVinci, e o som toca só em 100%.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r8" id="p8">Estabiliza o vídeo?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r8" role="region" aria-labelledby="p8"><div><p>Estabiliza. O AEON acompanha o movimento da cena, suaviza a câmera e corta só o necessário para não aparecer borda. Vai na prévia e no vídeo final.</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r3" id="p3">Meus vídeos saem do computador?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r3" role="region" aria-labelledby="p3"><div><p>Não. O AEON lê os arquivos no lugar e a transcrição roda na sua máquina. Nada é enviado, movido ou apagado.</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r4" id="p4">Funciona com o meu editor?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r4" role="region" aria-labelledby="p4"><div><p>Leva a timeline para o Premiere Pro (.xml), o Final Cut Pro (.fcpxml) e o DaVinci Resolve (.fcpxml e .edl), com cores e marcadores. Ou saia com o vídeo pronto (.mp4).</p></div></div></div>
           <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r5" id="p5">Precisa de internet?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r5" role="region" aria-labelledby="p5"><div><p>Para entrar com a conta. O modelo de transcrição baixa uma vez e depois funciona sem internet.</p></div></div></div>
@@ -406,11 +412,11 @@
       <section class="fim" aria-labelledby="fim-titulo">
         <div class="fim-simbolo" aria-hidden="true" data-marca="palco"></div>
         <h2 id="fim-titulo" class="titulo"><span class="fino">O futuro começa</span> <span class="forte">do zero.</span></h2>
-        <div class="acoes">
+        <!-- lancamento:fim --><div class="acoes">
           <a class="vidro vidro--tinta grande" href="#testar">Testar ao vivo</a>
           <a class="vidro grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
         </div>
-        <p class="nota">Em desenvolvimento. Chega com a sua conta Absolute ZRO.</p>
+        <p class="nota">Em desenvolvimento. Chega com a sua conta Absolute ZRO.</p><!-- /lancamento:fim -->
       </section>
     </main>
 

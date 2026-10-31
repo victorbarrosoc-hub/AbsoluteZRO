@@ -2,7 +2,7 @@
 // aponta para um trecho da mídia de origem em quadros [ini, fim). Toda operação devolve uma linha nova (a antiga fica
 // intacta), o que deixa o desfazer trivial: o Historico guarda as versões.
 
-import { limparPontos, origemNoClipe, reancorar, saidaDoClipe, saidaNoClipe } from './velocidade.js'
+import { MODOS, limparPontos, modoDe, origemNoClipe, reancorar, saidaDoClipe, saidaNoClipe } from './velocidade.js'
 
 let seq = 0
 const novoId = () => `c${Date.now().toString(36)}${(seq++).toString(36)}`
@@ -20,7 +20,7 @@ function retrecho(c, ini, fim, extra = {}) {
   const novo = { ...c, ...extra, ini, fim }
   if (c.velocidade) {
     const pontos = reancorar(c.velocidade.pontos, c.ini, c.fim, ini, fim)
-    if (pontos) novo.velocidade = { pontos }
+    if (pontos) novo.velocidade = { ...c.velocidade, pontos }
     else delete novo.velocidade
   }
   return novo
@@ -208,9 +208,37 @@ export function acelerar(linha, ids, pontos) {
     if (JSON.stringify(c.velocidade?.pontos || null) === JSON.stringify(limpos)) return c
     mudou = true
     const novo = { ...c }
-    if (limpos) novo.velocidade = { pontos: limpos }
+    if (limpos) novo.velocidade = { ...c.velocidade, pontos: limpos }
     else delete novo.velocidade
     return novo
+  })
+  return mudou ? { ...linha, clipes } : linha
+}
+
+/** Estabilização do clipe (src/estabilizar): ajustes { suavidade (s), recorte (zoom máximo) } ou null para tirar. */
+export function estabilizar(linha, ids, ajustes) {
+  const alvo = new Set(Array.isArray(ids) ? ids : [ids])
+  let mudou = false
+  const clipes = linha.clipes.map((c) => {
+    if (!alvo.has(c.id) || JSON.stringify(c.estabilizar || null) === JSON.stringify(ajustes || null)) return c
+    mudou = true
+    const novo = { ...c }
+    if (ajustes) novo.estabilizar = { suavidade: ajustes.suavidade, recorte: ajustes.recorte }
+    else delete novo.estabilizar
+    return novo
+  })
+  return mudou ? { ...linha, clipes } : linha
+}
+
+/** Como a câmera lenta preenche entre quadros (src/velocidade.js › MODOS), nos clipes com curva. */
+export function retempo(linha, ids, modo) {
+  if (!MODOS.includes(modo)) return linha
+  const alvo = new Set(Array.isArray(ids) ? ids : [ids])
+  let mudou = false
+  const clipes = linha.clipes.map((c) => {
+    if (!alvo.has(c.id) || !c.velocidade || modoDe(c) === modo) return c
+    mudou = true
+    return { ...c, velocidade: { ...c.velocidade, modo } }
   })
   return mudou ? { ...linha, clipes } : linha
 }
@@ -220,7 +248,7 @@ export function juntarContinuos(linha) {
   const clipes = []
   for (const c of linha.clipes) {
     const ant = clipes[clipes.length - 1]
-    if (ant && !ant.velocidade && !c.velocidade && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
+    if (ant && !ant.velocidade && !c.velocidade && JSON.stringify(ant.estabilizar || null) === JSON.stringify(c.estabilizar || null) && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
     else clipes.push(c)
   }
   return clipes.length === linha.clipes.length ? linha : { ...linha, clipes }

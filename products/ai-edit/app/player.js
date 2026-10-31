@@ -2,13 +2,14 @@
 // próximo clipe), então o corte troca na hora, sem esperar a busca. Zoom e ajustes do clipe (escala, posição,
 // opacidade) pelo transform e pela opacidade do elemento (placa de vídeo), volume por um ganho do Web Audio, legenda num
 // canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js). Velocidade: o <video> toca na velocidade
-// do degrau da curva (src/velocidade.js, a mesma tabela do render e dos exportadores) e fica mudo fora de 100%.
+// da curva contínua do clipe (src/velocidade.js, a mesma do render) e fica mudo fora de 100%.
 
 import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
 import { ganho, transformCssClipe, zoomEm } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
-import { comSom, origemNoClipe, saidaNoClipe, velocidadeNoClipe } from '../src/velocidade.js'
+import { comSom, origemContinua, saidaContinua, velocidadeContinua } from '../src/velocidade.js'
+import { correcaoEm, cssDaCorrecao } from '../src/estabilizar/aplicar.js'
 
 export class Player {
   /** tela: elemento que recebe os dois vídeos e o canvas; urlDe(midiaId) → URL tocável */
@@ -37,6 +38,17 @@ export class Player {
     this.zooms = []
     this.projeto = null
     this.ultimoZoom = ''
+    // estabilização: a correção segue o quadro que a tela mostrou (o tempo de mídia de cada quadro apresentado), não o
+    // relógio da página, senão a correção chega um quadro atrasada e a prévia treme
+    for (const v of this.videos)
+      if ('requestVideoFrameCallback' in v) {
+        const quadro = (_agora, meta) => {
+          v._tempoMidia = meta.mediaTime
+          if (v === this.videos[this.ativo]) this.#zoom()
+          v.requestVideoFrameCallback(quadro)
+        }
+        v.requestVideoFrameCallback(quadro)
+      }
     new ResizeObserver(() => this.#medir()).observe(tela)
     this.#medir()
     const loop = () => {
@@ -108,19 +120,19 @@ export class Player {
     const dt = Math.max(0, t - seg.linhaIni)
     if (!seg.clipe.velocidade) return seg.fonteIni + dt
     const fps = this.fps
-    return origemNoClipe(seg.clipe, dt * fps) / fps
+    return origemContinua(seg.clipe, dt * fps) / fps
   }
 
   /** Instante da linha para o instante da mídia (o inverso de #origem). */
   #linhaDe(seg, tMidia) {
     if (!seg.clipe.velocidade) return seg.linhaIni + (tMidia - seg.fonteIni)
     const fps = this.fps
-    return seg.linhaIni + saidaNoClipe(seg.clipe, tMidia * fps) / fps
+    return seg.linhaIni + saidaContinua(seg.clipe, tMidia * fps) / fps
   }
 
   /** Velocidade do clipe no instante t da linha. */
   #velocidade(seg, t) {
-    return seg.clipe.velocidade ? velocidadeNoClipe(seg.clipe, Math.max(0, t - seg.linhaIni) * this.fps) : 1
+    return seg.clipe.velocidade ? velocidadeContinua(seg.clipe, Math.max(0, t - seg.linhaIni) * this.fps) : 1
   }
 
   #preparar(i) {
@@ -204,7 +216,7 @@ export class Player {
     const seg = this.segs[this.i]
     if (this.tocando && seg) {
       const t = this.#linhaDe(seg, v.currentTime)
-      // o vídeo anda na velocidade do degrau (o navegador aceita de 1/16 a 16×)
+      // o vídeo anda na velocidade da curva (o navegador aceita de 1/16 a 16×)
       const taxa = Math.min(16, Math.max(0.0625, this.#velocidade(seg, t)))
       if (Math.abs(v.playbackRate - taxa) > 1e-3) v.playbackRate = taxa
       if (v.currentTime >= seg.fonteFim - 0.008 || v.ended) {
@@ -237,7 +249,11 @@ export class Player {
     const q = paraQuadros(this.#origem(seg, this.t), p.fps)
     const z = zoomEm(this.zooms, seg.midia, q)
     const aj = ajustesDe(seg.clipe)
-    const css = transformCssClipe(p.largura, p.altura, v.videoWidth || p.largura, v.videoHeight || p.altura, aj, z)
+    const cw = v.videoWidth || p.largura
+    const ch = v.videoHeight || p.altura
+    const clipeCss = transformCssClipe(p.largura, p.altura, cw, ch, aj, z)
+    const est = seg.clipe.estabilizar ? cssDaCorrecao(p.largura, p.altura, cw, ch, correcaoEm(p, seg.clipe, p.midias.find((m) => m.id === seg.midia), v._tempoMidia ?? v.currentTime)) : ''
+    const css = [clipeCss === 'none' ? '' : clipeCss, est].filter(Boolean).join(' ') || 'none'
     // som só em 100% (a regra do AEON): fora disso o ganho vai a zero
     const mudo = !comSom(this.#velocidade(seg, this.t))
     const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}|${mudo}`

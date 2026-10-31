@@ -2287,6 +2287,42 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Conferido no Chromium em 1440×900 e 390×844, sem rolagem lateral; `test/fechado.test.js` e as telas da página
   inicial passam.
 
+## AEON: motores de câmera lenta e estabilização, página pronta para lançar (31/10/2026)
+
+- **Velocidade sem tranco.** Os degraus inteiros (≈ 4 quadros) alternavam 25% e 50% numa rampa de 35% (um tranco a cada
+  1/6 s, visível no JSON da montagem antiga). Prévia e render agora seguem a curva contínua no mesmo tamanho dos degraus
+  (`origemContinua`, desvio de menos de um quadro de saída) e o render pede o instante exato da origem. Regressão:
+  fonte de 60 qps numa linha de 24 qps a 50% → nenhum quadro repetido (o render antigo repete metade: conferido rodando
+  o teste contra ele).
+- **Footage de alta taxa de verdade.** O Mixkit só entrega 23,976 qps (até no 1080p): os takes saíram. Do Coverr, cada
+  candidato foi conferido quadro a quadro: gaivotas, cachoeira, roda, vales são "50/60 qps" com metade dos quadros
+  repetida (25/30 por dentro) e ficaram fora; onda, cavalo, pelicano, mergulho e flores não repetem nenhum.
+- **Fluxo óptico (RIFE 4.25 em campos, MIT).** Escolha medida em quadros reais de 60 qps, tirando 3 de 4 quadros e
+  comparando o do meio com o verdadeiro (PSNR em Y, quadro 1280×720, movimento estimado em 640×360):
+  pelicano 42,1 dB (mistura 35,5; quadro repetido 33,7), cavalo 35,5 (34,0; 32,0), onda 41,5 (40,6; 38,6), flores 37,5
+  (37,8; 35,1), mergulho 37,1 (36,8; 34,4); o pior quadro do fluxo nunca abaixo do pior da mistura. Três exportações
+  comparadas (4.17-lite, 4.25 em campos, walterlow): a 4.25 em campos ganha por permitir montar o quadro em resolução
+  cheia. Tempo: ≈ 0,47 s de modelo + 0,21 s de montagem por quadro de 720p (Node, WASM, 4 linhas). A WebGPU fica
+  desligada: a versão do ONNX Runtime do app erra a convolução de 15 canais (onnxruntime #32928) que o RIFE tem.
+- Testes: `test/fluxo.test.js` (movimento conhecido → quadro do meio a mais de 38 dB e 8 dB acima da mistura;
+  movimento absurdo → mistura, sem rasgo); na tela, 24 qps a 50% com o modelo de verdade e a CSP do site: metade dos
+  96 quadros sai do fluxo, nenhum repetido (menos o último, depois do último quadro da câmera) e cada quadro novo fica
+  entre os vizinhos. No app de desktop (Electron): o modelo baixou pelo repasse `/__hf/` (22,7 MB, guardado no disco),
+  isolamento entre origens ligado, primeiro quadro em 1,1 s, confiança 0,9999.
+- **Montagem da página** refeita no AEON com os takes de alta taxa: projeto 16:9 em 24 qps, 545 quadros (22,7 s) =
+  soma dos degraus, render 1920×1080 em 150 s, **191 quadros pelo fluxo** (só onde a câmera não tinha quadro: abaixo de
+  40–48%); quadros interpolados do cavalo e da onda conferidos de perto (cerca e cordas finas sem rasgo).
+- **Estabilização por imagem.** Tremor sintético de valor conhecido: movimento medido com erro máximo de 0,053 px;
+  tremor 43,7 → 1,4 px (−97%) com recorte de 17% e nenhum quadro mostrando borda. De ponta a ponta no app: o cavalo com
+  tremor de recorte (ffmpeg) → "Analisar e estabilizar" → render → tremor medido de novo no arquivo final, fora do app:
+  56,3 → 0,45 px (−99%), recorte de 13%. Análise ≈ 140 ms por quadro de 640×360 (pior caso). Giroscópio não feito.
+- **Página do lançamento** (`RELEASE=released`): conferida em 1440×900 e 390×844 no tema claro, sem erro nem rolagem
+  lateral; `test/fechado.test.js` 12/12 (a aberta sem "Em desenvolvimento", com Baixar e os três destinos; `/baixar`
+  fechado volta para a página, aberto vai ao instalador). Subdomínios da família conferidos (200 e o título de cada app).
+- AEON 163/163, `electron . --smoke` OK, scan-secrets limpo.
+- Não validado: o fluxo e a estabilização num Mac e num Windows de verdade (tempo por quadro), o Safari, e as
+  importações com frameSampling no Final Cut e Mistura de quadros no Premiere.
+
 ## AEON: footage de verdade nas demonstrações e nos testes (31/10/2026)
 
 - Takes do Mixkit com a Stock Video Free License, conferida na página de cada um (a onda e a gaivota da primeira

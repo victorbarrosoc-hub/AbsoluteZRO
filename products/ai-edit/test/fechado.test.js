@@ -10,18 +10,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { caminhoSeguro } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, MARCA, RECADO, SITE, itens, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, MARCA, RECADO, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
+import baixar, { INSTALADORES, destino } from '../api/baixar.js'
 import { iniciarZroFalsa } from './zro-falso.js'
 
 const RAIZ = new URL('..', import.meta.url)
 const ler = (p) => readFileSync(new URL(p, RAIZ), 'utf8')
 
 describe('o que o site publica', () => {
-  test('vercel.json: nada aponta para o GitHub; /baixar volta à home; o editor só pela função; recado nos instaladores', () => {
+  test('vercel.json: nada aponta para o GitHub; /baixar pela função (fechado volta à home); o editor só pela função; recado nos instaladores', () => {
     const v = JSON.parse(ler('vercel.json'))
     assert.doesNotMatch(JSON.stringify(v), /github\.com/)
     assert.equal(v.outputDirectory, 'publico')
-    assert.deepEqual(v.redirects, [{ source: '/baixar/:resto*', destination: '/#em-desenvolvimento', permanent: false }])
+    assert.equal(v.redirects, undefined)
     assert.deepEqual(
       v.rewrites.map((r) => [r.source, r.destination]),
       [
@@ -30,6 +31,8 @@ describe('o que o site publica', () => {
         ['/app/:caminho*', '/api/app?caminho=app/:caminho*'],
         ['/src/:caminho*', '/api/app?caminho=src/:caminho*'],
         ['/presets/:caminho*', '/api/app?caminho=presets/:caminho*'],
+        // o instalador (api/baixar.js): fechado volta para "Em desenvolvimento"
+        ['/baixar/:sistema', '/api/baixar?sistema=:sistema'],
       ],
     )
     const inclui = v.functions['api/app.js'].includeFiles
@@ -48,12 +51,17 @@ describe('o que o site publica', () => {
       }
       for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'instalar.sh', 'instalar.ps1', 'site/home.js', 'marca/og.jpg', 'vendor/mediabunny.min.mjs', 'app/index.html', 'app/editor.js', 'presets/fala.v1.json', 'desktop/main.cjs', 'api/app.js']) arquivo(p)
       for (const p of [...MARCA, 'src/linha.js', 'src/exportar/edl.js']) arquivo(p)
+      // a página inicial com um trecho marcado e a peça do lançamento (fora de site/: não é publicada)
+      writeFileSync(join(raiz, 'index.html'), '<p><!-- lancamento:x -->Em desenvolvimento<!-- /lancamento:x --></p>')
+      mkdirSync(join(raiz, 'lancamento'), { recursive: true })
+      writeFileSync(join(raiz, 'lancamento', 'pagina.html'), '<template data-parte="x"><a href="#baixar">Baixar</a></template>')
 
       const fechado = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'fechado')}/`), estado: 'closed' })
       assert.deepEqual(fechado.itens, [...SITE, ...MARCA])
       const tem = (saida, p) => existsSync(join(dir, saida, p))
       for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'site/home.js', 'marca/og.jpg', 'vendor/mediabunny.min.mjs', ...MARCA]) assert.ok(tem('fechado', p), `fechado tem ${p}`)
-      for (const p of ['app', 'app/index.html', 'presets', 'src/linha.js', 'src/exportar', 'desktop', 'api']) assert.ok(!tem('fechado', p), `fechado não tem ${p}`)
+      for (const p of ['app', 'app/index.html', 'presets', 'src/linha.js', 'src/exportar', 'desktop', 'api', 'lancamento']) assert.ok(!tem('fechado', p), `fechado não tem ${p}`)
+      assert.match(readFileSync(join(dir, 'fechado', 'index.html'), 'utf8'), /Em desenvolvimento/)
       // os instaladores existem, mas só com o recado: nada de Release, download ou instalação
       for (const nome of ['instalar.sh', 'instalar.ps1']) {
         const texto = readFileSync(join(dir, 'fechado', nome), 'utf8')
@@ -69,12 +77,62 @@ describe('o que o site publica', () => {
       assert.deepEqual(aberto.itens, [...SITE, ...ABERTO])
       for (const p of ['app/editor.js', 'presets/fala.v1.json', 'src/linha.js', 'src/exportar/edl.js', 'instalar.sh']) assert.ok(tem('aberto', p), `aberto tem ${p}`)
       assert.equal(readFileSync(join(dir, 'aberto', 'instalar.sh'), 'utf8'), 'conteudo de instalar.sh')
-      for (const p of ['desktop', 'api']) assert.ok(!tem('aberto', p), p)
+      for (const p of ['desktop', 'api', 'lancamento']) assert.ok(!tem('aberto', p), p)
+      // a página do lançamento: o trecho marcado vira a peça
+      assert.equal(readFileSync(join(dir, 'aberto', 'index.html'), 'utf8'), '<p><a href="#baixar">Baixar</a></p>')
       // o padrão é fechado: sem RELEASE no ambiente, nada do editor
       delete process.env.RELEASE
       assert.deepEqual(itens(), [...SITE, ...MARCA])
     } finally {
       rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('lançamento: a página aberta tem Baixar (Mac, Windows, navegador, Terminal) e nada de "Em desenvolvimento"', () => {
+    const pecas = pecasDoLancamento(ler('lancamento/pagina.html'))
+    const html = paginaAberta(ler('index.html'), pecas)
+    // cada trecho marcado tem a sua peça (e nenhuma sobra): paginaAberta reclama dos dois lados
+    assert.deepEqual(Object.keys(pecas).sort(), ['baixar', 'descricao', 'faq', 'fim', 'menu', 'nav', 'topo', 'z'])
+    assert.doesNotMatch(html, /Em desenvolvimento|em-desenvolvimento|Chegando|quando ele abrir|Quando o AEON abre|Ainda sem download|lancamento:/)
+    assert.match(html, /<section class="baixar-sec" id="baixar"/)
+    for (const href of ['/baixar/mac', '/baixar/windows', '/app/']) assert.match(html, new RegExp(`href="${href}"`))
+    assert.match(html, /curl -fsSL https:\/\/aeon\.absolutezro\.com\/instalar\.sh \| bash/)
+    assert.match(html, /irm https:\/\/aeon\.absolutezro\.com\/instalar\.ps1 \| iex/)
+    assert.match(html, /xattr -cr \/Applications\/AEON\.app/)
+    // o topo, a barra e o fim levam para Baixar; o teste ao vivo continua no topo
+    assert.equal((html.match(/href="#baixar"/g) || []).length, 4)
+    assert.match(html, />Baixar o AEON</)
+    assert.match(html, />Quanto custa\?</)
+    assert.match(html, /No AEON</)
+    // nenhum link direto para o Release na página: o arquivo sai por /baixar (api/baixar.js)
+    assert.doesNotMatch(html, /releases|\.dmg"|\.exe"/)
+    assert.throws(() => paginaAberta(ler('index.html'), { ...pecas, sobra: '' }), /sem lugar/)
+    const { nav: _nav, ...semNav } = pecas
+    assert.throws(() => paginaAberta(ler('index.html'), semNav), /não tem a peça "nav"/)
+  })
+
+  test('/baixar/<sistema> (api/baixar.js): fechado volta para "Em desenvolvimento"; aberto vai ao instalador do Release', () => {
+    const antes = process.env.RELEASE
+    try {
+      delete process.env.RELEASE
+      for (const s of ['mac', 'windows', 'linux']) assert.equal(destino(s), '/#em-desenvolvimento')
+      process.env.RELEASE = 'released'
+      assert.equal(destino('mac'), 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-mac-universal.dmg')
+      assert.equal(destino('windows'), 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-windows-setup.exe')
+      assert.equal(destino('linux'), '/#baixar')
+      // os nomes são os do workflow (ai-edit-desktop.yml) e do atualizador do app
+      const wf = readFileSync(new URL('../../../.github/workflows/ai-edit-desktop.yml', import.meta.url), 'utf8')
+      assert.match(wf, /\*-mac-universal\.dmg/)
+      assert.match(wf, /\*-windows-setup\.exe/)
+      assert.deepEqual(Object.values(INSTALADORES), ['AEON-mac-universal.dmg', 'AEON-windows-setup.exe'])
+      const res = { headers: {}, setHeader(k, v) { this.headers[k] = v }, end() { this.fim = true } }
+      baixar({ url: '/api/baixar?sistema=MAC' }, res)
+      assert.equal(res.statusCode, 302)
+      assert.match(res.headers.Location, /AEON-mac-universal\.dmg$/)
+      assert.equal(res.headers['Cache-Control'], 'no-store')
+    } finally {
+      if (antes === undefined) delete process.env.RELEASE
+      else process.env.RELEASE = antes
     }
   })
 

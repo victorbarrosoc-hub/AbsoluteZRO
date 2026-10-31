@@ -1,0 +1,50 @@
+<!--
+  A página inicial no dia do lançamento (RELEASE=released): cada <template data-parte="X"> entra no lugar do trecho entre
+  <!- - lancamento:X - -> e <!- - /lancamento:X - -> do index.html (scripts/publicar-site.mjs › paginaAberta). Fica fora de
+  site/ para não ser publicado enquanto o AEON está fechado. Os destinos são os mesmos do HUB em Downloads
+  (apps/hub-web/lib/downloads.ts): /baixar/mac, /baixar/windows (api/baixar.js), /app/ e os comandos de Terminal.
+-->
+
+<template data-parte="descricao"><meta name="description" content="AEON, o editor de vídeo da Absolute ZRO, no Mac, no Windows e no navegador. Monte, corte, legende, acelere e desacelere, estabilize e entregue do começo ao fim, com a IA ajudando quando você quiser. Junto com SOBEDESCE, Synquei, Relay, Revela e NOSSOM, na mesma conta." /></template>
+
+<template data-parte="nav"><a class="vidro vidro--tinta pequeno" href="#baixar">Baixar</a></template>
+
+<template data-parte="menu"><a href="#baixar">Baixar</a></template>
+
+<template data-parte="topo"><a class="vidro vidro--tinta grande" href="#baixar">Baixar o AEON</a>
+            <a class="vidro grande" href="#testar">Testar ao vivo</a></template>
+
+<template data-parte="z"><p class="z-selo"><i aria-hidden="true"></i>No AEON</p>
+            <h2 id="z-titulo" class="z-titulo"><span class="fino">Z.</span> <span class="forte">Uma IA para todo o ecossistema.</span></h2>
+            <p class="apoio">No painel do app. Ela conversa e lê sua conta; a edição é sua.</p></template>
+
+<template data-parte="baixar">
+      <!-- 6b · Baixar: Mac, Windows e o navegador, com a conta Absolute ZRO (os mesmos destinos do HUB em Downloads) -->
+      <section class="baixar-sec" id="baixar" aria-labelledby="baixar-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Baixar</p>
+          <h2 id="baixar-titulo" class="titulo"><span class="fino">No seu</span> <span class="forte">computador.</span></h2>
+          <p class="apoio">Com a sua conta Absolute ZRO. O app avisa e se atualiza quando sai versão nova.</p>
+        </div>
+        <ul class="baixar-opcoes ao-rolar">
+          <li><a href="/baixar/mac"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="11.5" rx="1.8" /><path d="M2 19.5h20" /></svg><b>Mac</b><span>Apple Silicon e Intel · .dmg</span></a></li>
+          <li><a href="/baixar/windows"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" rx="1.8" /><path d="M8.5 20h7M12 17v3" /></svg><b>Windows</b><span>Windows 10 e 11 · .exe</span></a></li>
+          <li><a href="/app/"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.6 2.4 3.6 5.2 3.6 8.5s-1 6.1-3.6 8.5c-2.6-2.4-3.6-5.2-3.6-8.5s1-6.1 3.6-8.5z" /></svg><b>Navegador</b><span>Chrome ou Edge · sem instalar</span></a></li>
+        </ul>
+        <details class="baixar-terminal ao-rolar">
+          <summary>Pelo Terminal</summary>
+          <p>Mac</p>
+          <code>curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash</code>
+          <p>Windows (PowerShell)</p>
+          <code>irm https://aeon.absolutezro.com/instalar.ps1 | iex</code>
+          <p class="baixar-dica">Baixou o .dmg pelo navegador? Rode uma vez no Terminal: <code>xattr -cr /Applications/AEON.app</code></p>
+        </details>
+      </section></template>
+
+<template data-parte="faq"><div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r1" id="p1">Quanto custa?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r1" role="region" aria-labelledby="p1"><div><p>Vem na sua conta Absolute ZRO, inclusive na grátis. A transcrição roda no seu computador e não gasta crédito; a Z usa os créditos de IA do seu plano.</p></div></div></div></template>
+
+<template data-parte="fim"><div class="acoes">
+          <a class="vidro vidro--tinta grande" href="#baixar">Baixar o AEON</a>
+          <a class="vidro grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
+        </div>
+        <p class="nota">Mac, Windows e navegador, com a sua conta Absolute ZRO.</p></template>

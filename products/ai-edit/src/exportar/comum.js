@@ -7,7 +7,7 @@ import { zoomsAprovados } from '../projeto.js'
 import { zoomEm } from '../quadro.js'
 import { ajustesDe, tamanho } from '../linha.js'
 import { corDoClipe } from '../cores.js'
-import { pedacos, saidaNoClipe } from '../velocidade.js'
+import { modoDe, pedacos, saidaNoClipe } from '../velocidade.js'
 import { posicionar } from '../quadro.js'
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c])
@@ -58,7 +58,7 @@ export function segmentos(p) {
     for (let i = 0; i < pts.length - 1; i++) {
       const z = zoomEm(zooms, c.midia, pts[i])
       for (const pc of pedacos(c, pts[i], pts[i + 1]))
-        out.push({ clipe: c.id, midia: c.midia, ini: pc.ini, fim: pc.fim, linha: t + Math.round(saidaNoClipe(c, pc.ini)), saida: pc.saida, v: pc.v, som: pc.som, escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
+        out.push({ clipe: c.id, midia: c.midia, ini: pc.ini, fim: pc.fim, linha: t + Math.round(saidaNoClipe(c, pc.ini)), saida: pc.saida, v: pc.v, som: pc.som, modo: modoDe(c), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
     }
     t += tamanho(c)
   }

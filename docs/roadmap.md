@@ -298,6 +298,22 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
   degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
   na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
+- ✅ AEON pronto para lançar (31/10/2026, pedido do titular: "como se eu já fosse lançar hoje"), **ainda fechado**: a
+  página do lançamento (Baixar no topo, seção `#baixar` com Mac, Windows, navegador e Terminal, Z "No AEON", "Quanto
+  custa?") sai do mesmo `index.html` com `RELEASE=released`; `/baixar/<sistema>` pela função; família no subdomínio com
+  o Relay. Roteiro do dia em [lancamento-aeon.md](operations/lancamento-aeon.md). Abre quando o titular mandar.
+- ✅ AEON, câmera lenta sem travar (31/10/2026): a prévia e o render seguem a curva contínua (os degraus inteiros ficam
+  para o Premiere, o Final Cut e o EDL) e pegam o instante exato da origem, então uma fonte de 60 qps entrega quadro
+  real até 40% numa linha de 24 qps; abaixo disso, **fluxo óptico** (RIFE 4.25, MIT, na máquina, montado em resolução
+  cheia, com corte de cena e confiança por pixel), mistura ou quadro, por clipe, e o modo vai para o Final Cut
+  (frameSampling) e o Premiere (Mistura de quadros). Demonstrações com takes de 50 e 60 qps de verdade (Coverr). Falta:
+  fluxo na placa de vídeo (esperar o ONNX Runtime com a correção da convolução de 15 canais e conferir contra a CPU) e
+  hospedar o modelo numa conta própria.
+- 🟡 AEON, estabilização (31/10/2026): **por imagem** pronta (rastreio de cantos, Lucas-Kanade piramidal, RANSAC de
+  similaridade, suavização gaussiana e zoom fixo que esconde a borda; análise num worker, guardada na mídia; prévia e
+  render com a mesma correção). **Giroscópio** (GoPro, Sony, DJI, Insta360, como o Gyroflow e o DaVinci) é o próximo
+  passo: telemetry-parser (MIT/Apache) em WASM, perfis de lente do Gyroflow (CC0), correção de giro e de lente numa
+  WebGL comum à prévia e ao render; antes, revisão de patentes (lancamento-aeon.md).
 - ✅ AEON, footage de verdade na página e nos testes (31/10/2026, pedido do titular): seis takes de câmera do Mixkit
   (licença livre comercial, sem pessoas reconhecíveis nem marca; origem em `marca/home/cenas/LEIAME.md`). A Velocidade
   do Teste ao vivo troca de take (onda, estrada, mar, cidade); "Edite além do tempo." virou uma montagem de cinco takes

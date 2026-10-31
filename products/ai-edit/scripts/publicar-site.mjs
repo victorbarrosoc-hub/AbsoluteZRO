@@ -1,9 +1,11 @@
 // Monta publico/ para a Vercel (aeon.absolutezro.com). Fechado ao público (api/_release.js, o padrão): só o site
 // institucional (página inicial, entrar, "Em desenvolvimento", site/, marca/, vendor/ e os módulos que desenham a
 // marca em src/); o editor (app/, o resto de src/, presets/) fica fora do estático e só sai pela função api/app.js para
-// a conta liberada; instalar.sh e instalar.ps1 viram um recado (sem download). Com RELEASE=released, tudo como antes.
+// a conta liberada; instalar.sh e instalar.ps1 viram um recado (sem download). Com RELEASE=released, tudo como antes e a
+// página inicial do lançamento: os trechos marcados com <!-- lancamento:X --> no index.html trocam pelas peças de
+// lancamento/pagina.html (Baixar no topo, a seção #baixar no lugar de "Em desenvolvimento", a Z "No AEON", Quanto custa).
 // Só arquivos de site: nada de desktop/, testes, scripts ou node_modules. Rode depois do npm run vendor.
-import { cpSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HUB_INICIO, release } from '../api/_release.js'
@@ -21,6 +23,25 @@ export const RECADO = {
   'instalar.ps1': `# AEON (by Absolute ZRO): em desenvolvimento. Este comando ainda não instala nada.\nWrite-Host 'O AEON está em desenvolvimento. Ele chega com a sua conta Absolute ZRO.'\nWrite-Host 'Volte ao HUB: ${HUB_INICIO}'\n`,
 }
 
+/** As peças do lançamento: { nome: html } de cada <template data-parte="nome">. */
+export function pecasDoLancamento(fonte) {
+  return Object.fromEntries([...fonte.matchAll(/<template data-parte="([a-z-]+)">([\s\S]*?)<\/template>/g)].map((m) => [m[1], m[2]]))
+}
+
+/** A página inicial aberta: cada trecho marcado vira a peça do mesmo nome (falta de um lado ou do outro é erro). */
+export function paginaAberta(html, pecas) {
+  const usadas = new Set()
+  const saida = html.replace(/<!-- lancamento:([a-z-]+) -->([\s\S]*?)<!-- \/lancamento:\1 -->/g, (_, nome) => {
+    if (!(nome in pecas)) throw new Error(`lancamento/pagina.html não tem a peça "${nome}"`)
+    usadas.add(nome)
+    return pecas[nome]
+  })
+  const sobra = Object.keys(pecas).filter((n) => !usadas.has(n))
+  if (sobra.length) throw new Error(`peças sem lugar no index.html: ${sobra.join(', ')}`)
+  if (/lancamento:/.test(saida)) throw new Error('marca de lançamento sem fechamento no index.html')
+  return saida
+}
+
 export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...SITE, ...MARCA])
 
 /** Copia os itens do estado para `saida` (apagada antes). Devolve o estado e a lista. */
@@ -36,6 +57,10 @@ export function publicar({ raiz = new URL('..', import.meta.url), saida = new UR
     cpSync(de, para, { recursive: true })
   }
   if (estado !== 'released') for (const [nome, texto] of Object.entries(RECADO)) writeFileSync(new URL(nome, saida), texto)
+  else {
+    const pecas = pecasDoLancamento(readFileSync(new URL('lancamento/pagina.html', raiz), 'utf8'))
+    writeFileSync(new URL('index.html', saida), paginaAberta(readFileSync(new URL('index.html', raiz), 'utf8'), pecas))
+  }
   return { estado, itens: lista }
 }
 

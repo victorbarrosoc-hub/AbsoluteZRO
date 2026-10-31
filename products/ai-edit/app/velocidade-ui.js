@@ -3,7 +3,7 @@
 // embaixo, 800% em cima, 100% marcado (é onde o som toca). Arrastar mostra ao vivo na prévia; soltar grava uma ação
 // só no desfazer. Dois cliques criam ponto; Delete apaga; setas ajustam o ponto com o teclado.
 
-import { CURVAS, V_MAX, V_MIN, avaliar, limparPontos, manterDuracao, saidaDoClipe } from '../src/velocidade.js'
+import { CURVAS, V_MAX, V_MIN, avaliar, limparPontos, manterDuracao, modoDe, saidaDoClipe } from '../src/velocidade.js'
 
 const W = 300
 const H = 132
@@ -25,21 +25,43 @@ function lerEstilo() {
   }
 }
 
+const MODOS_UI = [
+  { id: 'fluxo', nome: 'Fluxo óptico', dica: 'Cria os quadros que faltam pelo movimento da cena: a câmera lenta não repete quadro. Entra no vídeo final; a prévia mostra o quadro mais próximo.' },
+  { id: 'mistura', nome: 'Mistura', dica: 'Dissolve os dois quadros vizinhos.' },
+  { id: 'quadro', nome: 'Quadro', dica: 'Repete o quadro mais próximo, como a câmera gravou.' },
+]
+
 /**
  * caixa: onde montar. obter(): { p, clipe } (o clipe selecionado). previa(pontos): mostra sem gravar. gravar(pontos,
- * rotulo, todos): grava uma ação (todos = todos os clipes da linha). fps(): quadros por segundo do projeto.
+ * rotulo, todos): grava uma ação (todos = todos os clipes da linha). modo(id): como a câmera lenta preenche entre
+ * quadros (src/velocidade.js › MODOS). fps(): quadros por segundo do projeto.
  */
-export function montarVelocidade(caixa, { obter, previa, gravar, fps }) {
+export function montarVelocidade(caixa, { obter, previa, gravar, modo, fps }) {
   const sec = document.createElement('div')
   sec.className = 'insp-velocidade'
   sec.innerHTML = `<div class="vel-cabeca"><span class="insp-rotulo">Velocidade</span><output class="vel-resumo"></output></div>
 <svg class="vel-curva" viewBox="0 0 ${W} ${H}" role="group" aria-label="Curva de velocidade do clipe. Dois cliques criam um ponto."></svg>
 <div class="vel-curvas" role="group" aria-label="Curvas prontas"></div>
+<div class="vel-modo"><span class="vel-modo-rotulo">Entre quadros</span><div class="vel-modos" role="radiogroup" aria-label="Câmera lenta entre quadros"></div></div>
 <div class="vel-acoes"><button type="button" class="ficha" data-acao="manter" title="A mesma forma, sem mudar o tempo do clipe na linha">Manter duração</button><button type="button" class="ficha" data-acao="todos" title="A mesma curva em todos os clipes da linha">Aplicar em todos</button><button type="button" class="ficha" data-acao="salvar" title="Guarda esta curva como Meu estilo">Salvar meu estilo</button></div>
 <p class="vel-dica">Som só em 100%. Dois cliques criam ponto; Delete apaga.</p>`
   caixa.append(sec)
   const svg = sec.querySelector('svg')
   const chips = sec.querySelector('.vel-curvas')
+  const modos = sec.querySelector('.vel-modos')
+  modos.replaceChildren(
+    ...MODOS_UI.map((m) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'ficha'
+      b.setAttribute('role', 'radio')
+      b.dataset.modo = m.id
+      b.textContent = m.nome
+      b.title = m.dica
+      b.onclick = () => modo?.(m.id)
+      return b
+    }),
+  )
   let pontos = null
   let arrasto = null
   let focado = -1
@@ -104,8 +126,13 @@ export function montarVelocidade(caixa, { obter, previa, gravar, fps }) {
     out.textContent = `${seg(antes)} → ${seg(depois)}`
   }
 
-  function mostrar(novos) {
+  function mostrar(novos, clipe) {
     pontos = novos
+    const m = modoDe(clipe)
+    for (const b of modos.children) {
+      b.setAttribute('aria-checked', String(b.dataset.modo === m))
+      b.disabled = !pontos
+    }
     desenharCurva()
     desenharResumo()
     desenharChips()
@@ -196,7 +223,7 @@ export function montarVelocidade(caixa, { obter, previa, gravar, fps }) {
     /** Mostra a curva do clipe selecionado (chamado a cada mudança do projeto). */
     desenhar(clipe) {
       if (arrasto) return
-      mostrar(limparPontos(clipe?.velocidade?.pontos) || null)
+      mostrar(limparPontos(clipe?.velocidade?.pontos) || null, clipe)
     },
   }
 }

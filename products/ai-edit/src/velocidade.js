@@ -3,8 +3,11 @@
 // (100% → 800% e 100% → 12,5% andam o mesmo tanto, e a curva nunca passa do ponto: sem "pulo" fora do desenho).
 //
 // A curva vira uma tabela de DEGRAUS de velocidade constante (≈ 4 quadros de saída cada; vizinhos quase iguais se
-// juntam). Prévia, render e exportadores usam os mesmos degraus: o que se vê é o que sai, e o Premiere, o DaVinci e o
-// EDL (que só leem velocidade constante) recebem a mesma rampa que o Final Cut.
+// juntam), em quadros inteiros: é o que o Premiere, o DaVinci e o EDL (que só leem velocidade constante) e o Final Cut
+// recebem, e o que dá o tamanho do clipe na linha. A prévia e o render seguem a CURVA CONTÍNUA dentro desse mesmo
+// tamanho (origemContinua): com degrau inteiro, uma rampa de 35% alternava 25% e 50% a cada 4 quadros (um tranco a
+// cada 1/6 s); contínua, cada quadro de saída pega o instante exato da origem, e uma fonte de 60 qps entrega 60
+// quadros diferentes por segundo de origem (a câmera lenta não repete quadro enquanto a fonte tiver quadro).
 //
 // Som (decisão do titular, 31/10/2026): só toca onde a velocidade é 100%; nas partes aceleradas ou lentas, silêncio.
 //
@@ -18,6 +21,14 @@ const JUNTA = 0.02 // degraus vizinhos com menos de 2% de diferença viram um
 const NORMAL = 0.02 // |v − 1| até 2% conta como 100% (som ligado)
 
 const lim = (v) => Math.min(V_MAX, Math.max(V_MIN, v))
+
+/**
+ * Câmera lenta entre quadros (o "Retime Process" do DaVinci): quando a origem não tem quadro no instante pedido.
+ * fluxo = quadro novo por fluxo óptico (app/fluxo.js), o padrão; mistura = os dois vizinhos dissolvidos; quadro = o
+ * mais próximo (repete). Vale para a curva toda do clipe e vai junto para o Final Cut e o Premiere.
+ */
+export const MODOS = Object.freeze(['fluxo', 'mistura', 'quadro'])
+export const modoDe = (c) => (MODOS.includes(c?.velocidade?.modo) ? c.velocidade.modo : 'fluxo')
 
 /** Curvas prontas: nome, dica e pontos [x, v]. As de cima vêm do mercado (CapCut, Hélice); "Manter duração" é nossa. */
 export const CURVAS = Object.freeze([
@@ -211,6 +222,57 @@ export function velocidadeNoClipe(c, k) {
   if (!c.velocidade) return 1
   const ds = degraus(c)
   return (ds.find((x) => k < x.o1) || ds.at(-1)).v
+}
+
+// ───────── a curva contínua (prévia e render), no mesmo tamanho dos degraus ─────────
+
+const cacheContinua = new WeakMap()
+function continua(c) {
+  let t = cacheContinua.get(c)
+  if (t) return t
+  const N = Math.max(1, c.fim - c.ini)
+  const pontos = c.velocidade.pontos
+  // tempo de saída acumulado em cada quadro de origem, escalado para fechar no tamanho dos degraus
+  const C = new Float64Array(N + 1)
+  for (let s = 0; s < N; s++) C[s + 1] = C[s] + 1 / avaliar(pontos, (s + 0.5) / N)
+  const L = saidaDoClipe(c)
+  const escala = L / C[N]
+  for (let s = 0; s <= N; s++) C[s] *= escala
+  t = { N, C, L, escala, pontos }
+  cacheContinua.set(c, t)
+  return t
+}
+
+/** Quadro de origem (absoluto, fracionário) no deslocamento de saída k (fracionário), pela curva contínua. */
+export function origemContinua(c, k) {
+  if (!c.velocidade) return c.ini + k
+  const { N, C, L } = continua(c)
+  const alvo = Math.min(L, Math.max(0, k))
+  let a = 0
+  let b = N
+  while (b - a > 1) {
+    const m = (a + b) >> 1
+    if (C[m] <= alvo) a = m
+    else b = m
+  }
+  const d = C[b] - C[a]
+  return c.ini + a + (d > 0 ? (alvo - C[a]) / d : 0)
+}
+
+/** Deslocamento de saída (fracionário) do quadro de origem absoluto q, pela curva contínua (o inverso). */
+export function saidaContinua(c, q) {
+  if (!c.velocidade) return q - c.ini
+  const { N, C } = continua(c)
+  const s = Math.min(N, Math.max(0, q - c.ini))
+  const j = Math.min(N - 1, Math.floor(s))
+  return C[j] + (s - j) * (C[j + 1] - C[j])
+}
+
+/** Velocidade da curva contínua no deslocamento de saída k (a da prévia e do render). */
+export function velocidadeContinua(c, k) {
+  if (!c.velocidade) return 1
+  const { N, escala, pontos } = continua(c)
+  return avaliar(pontos, (origemContinua(c, k) - c.ini) / N) / escala
 }
 
 /** O som toca nesta velocidade? Só em 100% (decisão do titular). */

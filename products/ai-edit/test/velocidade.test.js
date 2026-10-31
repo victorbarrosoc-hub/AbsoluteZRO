@@ -6,8 +6,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { acelerar, aparar, dividir, duracao, fonteParaLinha, juntarContinuos, localizar, removerTrechos, tamanho } from '../src/linha.js'
-import { CURVAS, avaliar, degraus, fatorDuracao, limparPontos, manterDuracao, origemNoClipe, pedacos, reancorar, saidaDoClipe, saidaNoClipe, V_MAX, V_MIN } from '../src/velocidade.js'
+import { acelerar, aparar, dividir, duracao, fonteParaLinha, juntarContinuos, localizar, removerTrechos, retempo, tamanho } from '../src/linha.js'
+import { CURVAS, avaliar, degraus, fatorDuracao, limparPontos, manterDuracao, origemContinua, origemNoClipe, pedacos, reancorar, saidaContinua, saidaDoClipe, saidaNoClipe, velocidadeContinua, V_MAX, V_MIN } from '../src/velocidade.js'
 import { novoProjeto } from '../src/projeto.js'
 import { segmentos } from '../src/exportar/comum.js'
 import { paraFcpxml } from '../src/exportar/fcpxml.js'
@@ -74,6 +74,31 @@ test('degraus: cobrem a origem e a saída sem buraco; 200% constante ocupa metad
   for (const q of [0, 37, 150, 299]) assert.ok(Math.abs(origemNoClipe(c, saidaNoClipe(c, q)) - q) < 1e-6)
 })
 
+test('curva contínua (prévia e render): mesmo tamanho dos degraus, monótona, perto deles e sem tranco entre degraus', () => {
+  for (const { id, pontos } of CURVAS) {
+    const c = clipe(pontos, 10, 310)
+    const L = saidaDoClipe(c)
+    assert.equal(origemContinua(c, 0), 10)
+    assert.ok(Math.abs(origemContinua(c, L) - 310) < 1e-9, `${id} fecha no fim do clipe`)
+    let antes = -Infinity
+    for (let k = 0; k <= L; k += 0.5) {
+      const o = origemContinua(c, k)
+      assert.ok(o >= antes, `${id} monótona`)
+      antes = o
+      // perto dos degraus (o que o Premiere e o Final Cut recebem): menos de um quadro de saída de diferença
+      assert.ok(Math.abs(o - origemNoClipe(c, Math.min(k, L))) <= 0.6 + 0.5 * velocidadeContinua(c, k), `${id} perto dos degraus em ${k}`)
+    }
+    for (const q of [10, 33.3, 160, 309]) assert.ok(Math.abs(origemContinua(c, saidaContinua(c, q)) - q) < 1e-6, `${id} ida e volta`)
+  }
+  // no platô de 25% do Herói, a velocidade contínua é 25% em todo quadro (os degraus alternavam 25% e 50% numa rampa)
+  const h = clipe(curva('heroi'))
+  const meio = saidaNoClipe(h, 156)
+  for (let k = meio - 8; k <= meio + 8; k++) assert.ok(Math.abs(velocidadeContinua(h, k) - 0.25) < 0.01)
+  // numa rampa (Vale, que desce de 320% a 35%), a velocidade contínua muda devagar de um quadro para o outro
+  const v = clipe(curva('vale'))
+  for (let k = 1; k < saidaDoClipe(v); k++) assert.ok(Math.abs(Math.log2(velocidadeContinua(v, k) / velocidadeContinua(v, k - 1))) < 0.2, `sem tranco em ${k}`)
+})
+
 test('linha: tamanho, localizar e fonteParaLinha seguem a curva; dividir, aparar e cortar mantêm a rampa na mídia', () => {
   let linha = { clipes: [{ id: 'a', midia: 'm', ini: 0, fim: 300 }, { id: 'b', midia: 'n', ini: 0, fim: 60 }] }
   linha = acelerar(linha, 'a', [[0, 1], [0.5, 1], [0.51, 4], [1, 4]])
@@ -103,6 +128,14 @@ test('linha: tamanho, localizar e fonteParaLinha seguem a curva; dividir, aparar
   assert.equal(juntarContinuos(d).clipes.length, 3)
   assert.equal(acelerar(linha, 'a', null).clipes[0].velocidade, undefined)
   assert.equal(acelerar(linha, 'b', null), linha, 'sem mudança, mesma linha (sem passo no desfazer)')
+  // o modo da câmera lenta fica no clipe e acompanha dividir e mudar a curva; sem curva, nada a mudar
+  const m = retempo(linha, 'a', 'mistura')
+  assert.equal(m.clipes[0].velocidade.modo, 'mistura')
+  assert.equal(retempo(m, 'a', 'mistura'), m, 'o mesmo modo: mesma linha')
+  assert.equal(retempo(linha, 'b', 'mistura'), linha, 'clipe sem curva não ganha modo')
+  assert.equal(retempo(linha, 'a', 'outro'), linha)
+  assert.ok(dividir(m, fimA - 20).clipes.slice(0, 2).every((c) => c.velocidade.modo === 'mistura'))
+  assert.equal(acelerar(m, 'a', curva('bala')).clipes[0].velocidade.modo, 'mistura')
   // reancorar fora do trecho antigo usa a velocidade da ponta
   assert.ok(reancorar([[0, 2], [1, 2]], 0, 100, 50, 200).every(([, v]) => v === 2))
 })
@@ -135,7 +168,18 @@ test('exportadores: a mesma rampa em degraus no Final Cut (timeMap), no Premiere
   // Final Cut: timeMap linear ancorado no começo da mídia, e −96 dB fora de 100%
   const fcp = paraFcpxml(p)
   bemFormado(fcp)
-  assert.equal((fcp.match(/<timeMap>/g) || []).length, rapidos.length)
+  assert.equal((fcp.match(/<timeMap[ >]/g) || []).length, rapidos.length)
+  // câmera lenta: o fluxo óptico (o padrão) vai como frameSampling; o Premiere liga a mistura de quadros
+  const lentos = segs.filter((s) => s.v < 1)
+  assert.ok(lentos.length > 0)
+  assert.equal((fcp.match(/<timeMap frameSampling="optical-flow">/g) || []).length, lentos.length)
+  const misturas = (x) => (x.match(/frameblending<\/name>\s*<value>TRUE/g) || []).length
+  assert.equal(misturas(paraXmeml(p)), lentos.length + 2 * lentos.filter((s) => s.som).length)
+  const q = { ...p, linha: retempo(p.linha, p.linha.clipes[0].id, 'quadro') }
+  assert.doesNotMatch(paraFcpxml(q), /frameSampling/)
+  assert.equal(misturas(paraXmeml(q)), 0)
+  const mi = { ...p, linha: retempo(p.linha, p.linha.clipes[0].id, 'mistura') }
+  assert.equal((paraFcpxml(mi).match(/frameSampling="frame-blending"/g) || []).length, lentos.length)
   assert.match(fcp, /<timept time="0s" value="0s" interp="linear"\/>/)
   assert.equal((fcp.match(/amount="-96dB"/g) || []).length, segs.filter((s) => !s.som).length)
   // Premiere: Time Remap constante; sem clipitem de som onde a velocidade não é 100%

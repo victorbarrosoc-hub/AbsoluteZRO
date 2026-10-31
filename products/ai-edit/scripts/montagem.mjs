@@ -1,9 +1,10 @@
-// A montagem da página inicial, editada no próprio AEON com footage de verdade (marca/home/cenas, Mixkit, licença
-// livre; ver marca/home/cenas/LEIAME.md). Serve também de teste de ponta a ponta com material real: o editor no Chromium
-// importa os takes, apara pelas bordas da linha do tempo, põe uma curva pronta de velocidade em cada clipe (Inspector),
+// A montagem da página inicial, editada no próprio AEON com footage de verdade em 50 e 60 qps (marca/home/cenas, Coverr,
+// licença livre; ver marca/home/cenas/LEIAME.md). Serve também de teste de ponta a ponta com material real: o editor no
+// Chromium cria um projeto 16:9 em 24 qps, importa os takes, apara pelas bordas da linha do tempo, põe uma curva pronta
+// de velocidade em cada clipe (Inspector; a câmera lenta usa os quadros reais da câmera e o fluxo óptico onde faltar),
 // exporta o pacote (Premiere, Final Cut, EDL; xmllint) e renderiza o vídeo final pelo render do app. A duração do vídeo
 // tem de bater, quadro a quadro, com a soma dos degraus (src/velocidade.js).
-// Saída: marca/home/cenas/montagem.mp4 (o render, só recomprimido para a web), montagem.jpg, montagem.json (clipes e
+// Saída: marca/home/cenas/montagem.mp4 (o render em 1080p, reduzido para 720p e recomprimido para a web), montagem.jpg, montagem.json (clipes e
 // a velocidade de cada quadro, para a linha do tempo da página) e marca/home/app-velocidade.jpg (a tela do Por dentro).
 //   node scripts/montagem.mjs   (depois do npm run vendor; precisa de ffmpeg, ffprobe e xmllint)
 import assert from 'node:assert/strict'
@@ -16,14 +17,15 @@ import { chromium } from 'playwright'
 import { servir } from './servidor.mjs'
 import { CURVAS, avaliar, origemNoClipe, saidaDoClipe } from '../src/velocidade.js'
 
-// do dia para a noite: o take, o trecho que fica (segundos do take) e a curva pronta do Inspector
+// o céu, o mar, a terra: o take, o trecho que fica (segundos do take) e a curva pronta do Inspector
 const PLANO = [
-  { take: 'coqueiros', de: 0.5, ate: 6, curva: 'vale' },
-  { take: 'mar', de: 0, ate: 6, curva: 'flash-entrada' },
-  { take: 'onda', de: 1.6, ate: 6.4, curva: 'heroi' },
-  { take: 'carro', de: 0.4, ate: 5.4, curva: 'bala' },
-  { take: 'cidade', de: 0, ate: 6.5, curva: 'pulso' },
+  { take: 'pelicano', de: 0.3, ate: 5.5, curva: 'vale' },
+  { take: 'onda', de: 1.5, ate: 6.5, curva: 'heroi' },
+  { take: 'cavalo', de: 0, ate: 3.6, curva: 'bala' },
+  { take: 'mergulho', de: 1, ate: 6, curva: 'arrancada' },
+  { take: 'flores', de: 0.5, ate: 4.5, curva: 'pulso' },
 ]
+const HEROI = PLANO.findIndex((x) => x.curva === 'heroi')
 const cenas = new URL('../marca/home/cenas/', import.meta.url)
 const arq = (n) => fileURLToPath(new URL(n, cenas))
 const dir = mkdtempSync(join(tmpdir(), 'aeon-montagem-'))
@@ -45,21 +47,24 @@ await pagina.goto(s.url + 'app/')
 await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
 const projeto = () => pagina.evaluate(() => globalThis.__editor.h.atual)
 
+// projeto novo em 24 qps (cinema): os takes de 50 e 60 qps dão câmera lenta com quadro real até 40–48%
+await pagina.click('#novoProjeto')
+await pagina.fill('#novoNome', 'Além do tempo')
+await pagina.selectOption('#novoFps', '24')
+await pagina.click('#novoCriar')
+await pagina.locator('#nomeProjeto', { hasText: 'Além do tempo' }).waitFor()
 await pagina.setInputFiles(
   '#arquivo',
   PLANO.map((x) => arq(`${x.take}.mp4`)),
 )
 await pagina.waitForFunction((n) => document.querySelectorAll('.cartao-mini canvas').length === n, PLANO.length)
-await pagina.click('#nomeProjeto')
-await pagina.keyboard.press('Control+a')
-await pagina.keyboard.type('Além do tempo')
-await pagina.keyboard.press('Enter')
 await pagina.click('.dock [data-ir="edicao"]')
 await pagina
   .locator('.clipe')
   .nth(PLANO.length - 1)
   .waitFor()
 const fps = await pagina.evaluate(() => globalThis.__editor.h.atual.fps.n / globalThis.__editor.h.atual.fps.d)
+assert.equal(fps, 24)
 
 // a linha do tempo anda com mola (e se ajusta à tela): medir só depois que os clipes param
 async function parada() {
@@ -117,9 +122,9 @@ for (const [i, c] of p.linha.clipes.entries()) {
 
 // a tela do Por dentro: a onda selecionada, a curva Herói no Inspector e a cabeça na crista
 await parada()
-await pagina.locator('.clipe').nth(2).click()
+await pagina.locator('.clipe').nth(HEROI).click()
 await pagina.locator('.insp-velocidade').scrollIntoViewIfNeeded()
-const inicioOnda = p.linha.clipes.slice(0, 2).reduce((s, c) => s + saidaDoClipe(c), 0) + Math.round(saidaDoClipe(p.linha.clipes[2]) * 0.55)
+const inicioOnda = p.linha.clipes.slice(0, HEROI).reduce((s, c) => s + saidaDoClipe(c), 0) + Math.round(saidaDoClipe(p.linha.clipes[HEROI]) * 0.55)
 const regua = await pagina.locator('.clipe').first().boundingBox()
 const escala = regua.width / (saidaDoClipe(p.linha.clipes[0]) / fps)
 await pagina.mouse.click(regua.x + (inicioOnda / fps) * escala, regua.y - 10)
@@ -135,9 +140,10 @@ const baixados = []
 pagina.on('download', (d) => baixados.push(d))
 const t0 = Date.now()
 await pagina.click('#exportar')
-await pagina.locator('#entregaFim:not([hidden])', { hasText: 'Pronto' }).waitFor({ timeout: 300_000 })
+await pagina.locator('#entregaFim:not([hidden])', { hasText: 'Pronto' }).waitFor({ timeout: 900_000 })
+const quadrosFluxo = Number((await pagina.locator('#entregaFim').innerText()).match(/(\d+) quadros de câmera lenta por fluxo óptico/)?.[1] || 0)
 const segundosRender = (Date.now() - t0) / 1000
-while (baixados.length < 2 && Date.now() - t0 < 320_000) await pagina.waitForTimeout(200)
+while (baixados.length < 2 && Date.now() - t0 < 920_000) await pagina.waitForTimeout(200)
 // (o Chromium sem tela troca nome com acento por "download": aqui cada arquivo se reconhece pelo conteúdo)
 assert.equal(baixados.length, 2, 'vídeo e pacote baixados')
 const bruto = join(dir, 'render.mp4')
@@ -181,7 +187,7 @@ const probe = JSON.parse(
   ]).toString(),
 ).streams[0]
 assert.equal(Number(probe.nb_read_frames), quadros, `quadros do render (${probe.nb_read_frames}) = soma dos degraus (${quadros})`)
-assert.equal(`${probe.width}×${probe.height}`, '1280×720')
+assert.equal(`${probe.width}×${probe.height}`, '1920×1080')
 assert.deepEqual(erros, [])
 
 // para a página: o render recomprimido (mesmos quadros), o pôster na crista da onda e os dados da linha do tempo
@@ -193,6 +199,8 @@ execFileSync('ffmpeg', [
   '-i',
   bruto,
   '-an',
+  '-vf',
+  'scale=1280:720:flags=lanczos',
   '-c:v',
   'libx264',
   '-preset',
@@ -219,6 +227,7 @@ const dados = {
   fps,
   duracao: quadros / fps,
   poster: inicioOnda / fps, // o quadro do montagem.jpg (a crista da onda)
+  fluxo: quadrosFluxo, // quadros da câmera lenta que saíram do fluxo óptico (o resto é quadro real da câmera)
   clipes: p.linha.clipes.map((c, i) => {
     const saida = saidaDoClipe(c)
     for (let k = 0; k < saida; k++) vel.push(Math.round(avaliar(c.velocidade.pontos, (origemNoClipe(c, k) - c.ini) / (c.fim - c.ini)) * 100))
@@ -237,7 +246,7 @@ const dados = {
 const arred = (k, v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)
 writeFileSync(arq('montagem.json'), JSON.stringify(dados, arred) + '\n')
 console.log(
-  `ok · ${PLANO.length} takes, ${quadros} quadros (${(quadros / fps).toFixed(2)} s) = render ${probe.codec_name} ${probe.width}×${probe.height} em ${segundosRender.toFixed(1)} s · ${xmls.length} XML válidos`,
+  `ok · ${PLANO.length} takes, ${quadros} quadros (${(quadros / fps).toFixed(2)} s) = render ${probe.codec_name} ${probe.width}×${probe.height} em ${segundosRender.toFixed(1)} s, ${quadrosFluxo} quadros por fluxo óptico · ${xmls.length} XML válidos`,
 )
 
 await nav.close()

@@ -2065,6 +2065,116 @@ html:not(.js) .hora-saida {
   background: var(--cor-laranja);
 }
 
+/* ───────── 6b (lançamento) · Baixar: três cartões e o Terminal recolhido (lancamento/pagina.html) ───────── */
+.baixar-sec {
+  padding: 120px 24px 140px;
+  background: var(--fundo-2);
+}
+.baixar-opcoes {
+  list-style: none;
+  margin: 56px auto 0;
+  padding: 0;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.baixar-opcoes a {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 30px 18px 26px;
+  border-radius: 22px;
+  background: var(--cartao);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--texto);
+  text-decoration: none;
+  transition:
+    transform 0.35s var(--mola),
+    box-shadow 0.25s ease;
+}
+.baixar-opcoes a:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 0 0 1px var(--vidro-borda),
+    0 14px 40px rgb(0 0 0 / 0.12);
+}
+.baixar-opcoes svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: var(--forte);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  margin-bottom: 6px;
+}
+.baixar-opcoes b {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--forte);
+}
+.baixar-opcoes span {
+  font-size: 13.5px;
+  color: var(--apoio);
+}
+.baixar-terminal {
+  max-width: 900px;
+  margin: 22px auto 0;
+  text-align: center;
+  color: var(--apoio);
+  font-size: 14px;
+}
+.baixar-terminal summary {
+  cursor: pointer;
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--linha);
+  font-weight: 600;
+  list-style: none;
+}
+.baixar-terminal summary::-webkit-details-marker {
+  display: none;
+}
+.baixar-terminal p {
+  margin: 18px 0 6px;
+}
+.baixar-terminal code {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--cartao);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--texto);
+  font: 500 13px/1.4 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  text-align: left;
+}
+.baixar-terminal .baixar-dica code {
+  display: inline;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+@media (max-width: 700px) {
+  .baixar-opcoes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .baixar-opcoes a {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    column-gap: 14px;
+    padding: 18px;
+    text-align: left;
+  }
+  .baixar-opcoes svg {
+    grid-row: span 2;
+    margin: 0;
+  }
+}
+
 /* ───────── 7 · fim ───────── */
 .fim {
   text-align: center;

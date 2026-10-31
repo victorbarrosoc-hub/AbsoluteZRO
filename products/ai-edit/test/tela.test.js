@@ -506,11 +506,11 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   assert.equal(await pagina.locator('#trilho .trilho-item').count(), 6, 'projeto (4) + apps + conta')
   await item('apps').click()
   await pagina.locator('#trilhoApps:popover-open').waitFor()
-  // a família de src/familia.js (7 hoje; 8 com o Maestro no lançamento, MAESTRO_NA_FAMILIA)
+  // a família de src/familia.js (9 hoje, com o Maestro e o Relay; MAESTRO_NA_FAMILIA)
   assert.equal(await pagina.locator('#trilhoApps .familia-app').count(), FAMILIA.length)
-  await pagina.context().route('https://sobedesce.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
+  await pagina.context().route('https://sobedesce.absolutezro.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
   const [aba] = await Promise.all([pagina.context().waitForEvent('page'), pagina.locator('#trilhoApps .familia-app', { hasText: 'SOBEDESCE' }).click()])
-  assert.match(aba.url(), /^https:\/\/sobedesce\.vercel\.app/)
+  assert.match(aba.url(), /^https:\/\/sobedesce\.absolutezro\.com/)
   await aba.close()
   assert.equal(await pagina.locator('#trilhoApps:popover-open').count(), 0, 'a grade fecha depois de abrir um app')
 
@@ -579,11 +579,12 @@ test('velocidade: curva pronta no Inspector, selo no clipe, teclado, manter dura
 
 test('footage de verdade: um take de câmera (marca/home/cenas) com a curva Herói sai do render com os quadros da curva', async () => {
   const { pagina, erros } = await abrir()
-  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/carro.mp4', import.meta.url)))
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
   await pagina.locator('.cartao-midia').waitFor()
   await pagina.click('.dock [data-ir="edicao"]')
   await pagina.locator('.clipe').first().click()
   await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Herói' }).click()
+  await pagina.locator('.vel-modos').getByRole('radio', { name: 'Quadro' }).click()
   const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
   const { saidaDoClipe } = await import('../src/velocidade.js')
   const quadros = saidaDoClipe(p.linha.clipes[0])
@@ -593,12 +594,129 @@ test('footage de verdade: um take de câmera (marca/home/cenas) com a curva Her�
   for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
   await pagina.check('#destinos input[value="video"]')
   const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
-  const arquivo = join(dir, 'carro-heroi.mp4')
+  const arquivo = join(dir, 'onda-heroi.mp4')
   await baixado.saveAs(arquivo)
   const sonda = ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_frames,width,height', '-of', 'json', arquivo]
   const [v] = JSON.parse(execFileSync('ffprobe', sonda).toString()).streams
   assert.equal(Number(v.nb_read_frames), quadros, 'um quadro do render para cada quadro da curva')
   assert.equal(`${v.width}×${v.height}`, '1280×720')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('câmera lenta com fonte de 60 qps numa linha de 24 qps: cada quadro de saída é um quadro diferente (sem repetir)', async () => {
+  // 24 qps primeiro (o projeto fica em 24), depois 60 qps; o padrão de teste do ffmpeg muda a cada quadro
+  const gerar = (nome, taxa) => execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=640x360:rate=${taxa}`, '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(dir, nome)])
+  gerar('base24.mp4', 24)
+  gerar('alta60.mp4', 60)
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', [join(dir, 'base24.mp4'), join(dir, 'alta60.mp4')])
+  await pagina.locator('.cartao-midia').nth(1).waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').nth(1).click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Câmera lenta' }).click()
+  // só quadros reais (sem fluxo): a fonte tem quadro para cada instante pedido
+  await pagina.locator('.vel-modos').getByRole('radio', { name: 'Quadro' }).click()
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  assert.equal(p.fps.n / p.fps.d, 24)
+  assert.equal(p.linha.clipes[1].velocidade.modo, 'quadro')
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'lenta.mp4')
+  await baixado.saveAs(arquivo)
+  // quadros em cinza 64×36; dois seguidos quase iguais = quadro repetido
+  const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=64:36,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+  const T = 64 * 36
+  const n = bruto.length / T
+  assert.equal(n, 48 + 96, '2 s a 100% e 2 s a 50% (4 s) em 24 qps')
+  const dif = (i) => {
+    let s = 0
+    for (let j = 0; j < T; j++) s += Math.abs(bruto[i * T + j] - bruto[(i - 1) * T + j])
+    return s / T
+  }
+  const repetidos = []
+  for (let i = 49; i < n; i++) if (dif(i) < 0.5) repetidos.push(i)
+  assert.deepEqual(repetidos, [], 'na câmera lenta, nenhum quadro repetido')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('fluxo óptico: 24 qps a 50% ganha um quadro novo entre cada par (o modelo de verdade, na CSP do site), sem repetir', async () => {
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=24', '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(dir, 'fluxo24.mp4')])
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', join(dir, 'fluxo24.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Câmera lenta' }).click()
+  // o padrão é o fluxo óptico
+  assert.equal(await pagina.locator('.vel-modos').getByRole('radio', { name: 'Fluxo óptico' }).getAttribute('aria-checked'), 'true')
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 300_000 }), pagina.click('#exportar')])
+  await pagina.locator('#entregaFim', { hasText: /\d+ quadros de câmera lenta por fluxo óptico/ }).waitFor({ timeout: 60_000 })
+  const n = Number((await pagina.locator('#entregaFim').innerText()).match(/(\d+) quadros de câmera lenta por fluxo óptico/)[1])
+  assert.ok(n >= 40 && n <= 48, `metade dos 96 quadros sai do fluxo (${n})`)
+  const arquivo = join(dir, 'fluxo.mp4')
+  await baixado.saveAs(arquivo)
+  const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=128:72,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+  const T = 128 * 72
+  const q = bruto.length / T
+  assert.equal(q, 96)
+  const dif = (i, j) => {
+    let s = 0
+    for (let k = 0; k < T; k++) s += Math.abs(bruto[i * T + k] - bruto[j * T + k])
+    return s / T
+  }
+  // nenhum quadro repetido (menos o último: depois do último quadro da câmera não há vizinho para o fluxo); e cada
+  // quadro do meio fica mais perto dos vizinhos do que um vizinho do outro
+  for (let i = 1; i < q - 1; i++) assert.ok(dif(i, i - 1) > 0.3, `quadro ${i} repetido`)
+  for (let i = 1; i < q - 1; i += 2) assert.ok(dif(i, i - 1) < dif(i + 1, i - 1) && dif(i, i + 1) < dif(i + 1, i - 1), `quadro ${i} entre os vizinhos`)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('estabilizar: um take real tremido (o cavalo, com tremor de recorte) sai do render com o tremor medido bem menor', async () => {
+  const take = fileURLToPath(new URL('../marca/home/cenas/cavalo.mp4', import.meta.url))
+  const tremido = join(dir, 'tremido.mp4')
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', take, '-t', '4', '-an', '-vf', "crop=1180:664:x='50+30*sin(n*1.3)+18*sin(n*0.41)':y='28+18*cos(n*1.7)+9*sin(n*0.53)',scale=640:360", '-c:v', 'libx264', '-pix_fmt', 'yuv420p', tremido])
+  const { Analisador } = await import('../src/estabilizar/index.js')
+  const { tremor } = await import('../src/estabilizar/trajetoria.js')
+  // a medida é independente do app: lê o arquivo com o ffmpeg e mede o movimento quadro a quadro
+  const medir = (arquivo) => {
+    const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=320:180,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+    const T = 320 * 180
+    const an = new Analisador()
+    const movs = []
+    for (let i = 0; i < bruto.length / T; i++) movs.push(an.adicionar({ w: 320, h: 180, d: Float32Array.from(bruto.subarray(i * T, (i + 1) * T)) }))
+    return tremor(movs, 50)
+  }
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', tremido)
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const est = pagina.locator('.insp-estab')
+  await est.getByRole('button', { name: 'Analisar e estabilizar' }).click()
+  await est.locator('.estab-resumo', { hasText: /^Tremor −\d+% · recorte \d+%$/ }).waitFor({ timeout: 120_000 })
+  const resumo = await est.locator('.estab-resumo').innerText()
+  assert.ok(Number(resumo.match(/−(\d+)%/)[1]) >= 70, resumo)
+  assert.equal(await est.getByRole('button', { name: 'Estabilizado' }).getAttribute('aria-pressed'), 'true')
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  assert.equal(p.midias[0].estabilidade.n, 200, 'a análise de cada quadro fica na mídia do projeto')
+  assert.deepEqual(p.linha.clipes[0].estabilizar, { suavidade: 1, recorte: 1.2 })
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'estabilizado.mp4')
+  await baixado.saveAs(arquivo)
+  const antes = medir(tremido)
+  const depois = medir(arquivo)
+  assert.ok(depois < antes * 0.35, `tremor no arquivo: ${antes.toFixed(1)} → ${depois.toFixed(1)} px`)
   assert.deepEqual(erros, [])
   await pagina.close()
 })
@@ -739,11 +857,11 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   await pagina.keyboard.press('ArrowDown')
   assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), antes, 'mais lento, mais longo')
   assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'curva própria')
-  // o take: a Estrada troca o vídeo e a duração de origem; a curva fica
-  await est.getByRole('radio', { name: 'Estrada' }).click()
-  assert.equal(await est.getByRole('radio', { name: 'Estrada' }).getAttribute('aria-checked'), 'true')
-  await pagina.waitForFunction(() => /cenas\/carro\.mp4$/.test(document.querySelector('#visorVideo').currentSrc))
-  await pagina.waitForFunction(() => document.querySelector('#rampaAntes').textContent === 'de 7,3 s')
+  // o take: o Cavalo (50 qps) troca o vídeo e a duração de origem; a curva fica
+  await est.getByRole('radio', { name: 'Cavalo' }).click()
+  assert.equal(await est.getByRole('radio', { name: 'Cavalo' }).getAttribute('aria-checked'), 'true')
+  await pagina.waitForFunction(() => /cenas\/cavalo\.mp4$/.test(document.querySelector('#visorVideo').currentSrc))
+  await pagina.waitForFunction(() => document.querySelector('#rampaAntes').textContent === 'de 7,0 s')
   assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'a curva própria continua')
   // cortes: 0,45 s marca as duas pausas maiores; aprovar tira 1,7 s; desfazer devolve
   await est.getByRole('tab', { name: 'Cortes' }).click()
@@ -780,7 +898,7 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   // cabeça anda com o vídeo e o número é a velocidade do quadro; o botão pausa
   await pagina.locator('#montagem').scrollIntoViewIfNeeded()
   await pagina.locator('.montagem-clipe').nth(4).waitFor()
-  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Flash de entrada', 'Herói', 'Bala', 'Pulso duplo'])
+  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Herói', 'Bala', 'Arrancada', 'Pulso duplo'])
   await pagina.waitForFunction(() => document.querySelector('#montagemVideo').currentTime > 0.5)
   assert.match(await pagina.locator('#montagemVel').innerText(), /^\d+%$/)
   assert.equal(await pagina.locator('.montagem-clipe.agora').count(), 1)
