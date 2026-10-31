@@ -3923,3 +3923,29 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `products/tpeasy/desktop`: `npm test` 24/24; `npm run smoke` (xvfb) SMOKE OK.
 - HUB: `tests/integration/downloads.test.ts` e `desktop-apps.test.ts` 27/27 (o TPeasy no catálogo, Mac e Windows só com o
   download aberto). `release-gate.test.ts` tem 5 falhas que já existem na `main` sem esta mudança (o estado do Carro).
+
+## Maestro: cronômetro de tarefas e tempo por tipo de vídeo (31/10/2026)
+
+- Pesquisa (Toggl, Harvest, Clockify, ClickUp, monday/Asana/Linear, Session/Flow, Live Activities da Apple, Raycast)
+  aplicada: play no card, um rodando por vez, pílula tipo Live Activity, início no servidor, parado em duas escolhas,
+  Pomodoro como modo, previsto sugerido pelo histórico do tipo. Migração nova `products/maestro/drizzle/0038_cronometro.sql`.
+- `tests/cronometro.test.mts` 19/19: contas puras (relógio, dia e semana no fuso do Brasil com a sessão que passa da
+  meia-noite, quantis p25/mediana/p75, típico só com 3+ vídeos, parado, Pomodoro, previsto digitado), tipos de fábrica
+  iguais no SQL e no TS, papéis dos tipos, `tipo`/`previsto` no card (tipo de outra organização e arquivado recusados),
+  um rodando por pessoa (índice), início do relógio do banco, cada um vê o seu e a gestão o time, ninguém muda ou apaga
+  o tempo de outro, leitura não cronometra, outra organização, organização forjada e escopo do freela não veem nada,
+  Ajustar (motivo, futuro e 24 h), Zerar com Desfazer, parado com descartar e continuar, acesso por cliente, Semana e
+  painel por tipo por papel, rota `/api/tempo` (401, Origin, leitura 403). `tests/acesso-cliente.test.mts` ganhou
+  `tempo_registros`.
+- `npm test` do Maestro: 713 testes, 712 passaram; a falha é `relay.test.mts` ("copie de novo de
+  products/relay/src/plano.js"), que já falha na `main` (a cópia do Relay está desatualizada; nada desta frente).
+- Lint, Prettier, tipos e build ok; `node scripts/scan-secrets.mjs`: nenhum segredo.
+- E2E (Playwright, computador 1440×900 e iPhone 15 Pro, claro e escuro): `e2e/cronometro.spec.ts` 23/23 (play → pílula
+  → painel, um rodando por vez, título da aba, Livre/Pomodoro/Hoje/Semana, Eu/Time, ⌥T, Esc e espaço; Ajustar com
+  motivo, Zerar com Desfazer; parado com relógio falso; ficha com tipo, sugestão do típico e "Usar"; tela Tempo com
+  média, faixa, tendência, filtro de 12 meses e criar tipo; a equipe sem o time). Também passaram `inicio`, `quadro`,
+  `quadro-achar`, `colunas`, `arrastar`, `gestos`, `transicao` (84) e `inicio`, `sem-corte` (com `/app/tempo`) e
+  `visual` em computador, iPhone e iPhone Safari (32). `gestos` "segurar ergue em menos de 400 ms" oscilou uma vez sob
+  carga e passou ao repetir.
+- Capturas fictícias `tp-<computador|iphone>-<claro|escuro>-*.png` (Quadro rodando, painel Livre, Pomodoro, Hoje,
+  Semana, Ajustar, parado, ficha, Tempo, tipos) e o vídeo do passeio (`TP_VIDEO`), fora do repositório.

@@ -203,6 +203,7 @@ async function telas(): Promise<Tela[]> {
     { nome: "inventario", rota: "/app/inventario" },
     { nome: "inventario-novo", rota: "/app/inventario/novo" },
     { nome: "agenda", rota: "/app/agenda" },
+    { nome: "tempo", rota: "/app/tempo" },
     { nome: "agenda-novo", rota: "/app/agenda/novo" },
     { nome: "arquivos-cadeado", rota: "/app/arquivos" },
     {

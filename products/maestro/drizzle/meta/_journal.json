@@ -239,6 +239,13 @@
       "when": 1796342400000,
       "tag": "0037_area_do_freela",
       "breakpoints": false
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1796428800000,
+      "tag": "0038_cronometro",
+      "breakpoints": false
     }
   ]
 }

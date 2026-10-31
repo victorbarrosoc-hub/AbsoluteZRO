@@ -18,6 +18,9 @@ import { SetZro } from "./set-zro";
 import { Transicao } from "./movimento";
 import { SobedesceVivo } from "./arquivos/sobedesce-vivo";
 import { temProduto } from "@/lib/auth/acesso";
+import { Cronometro } from "./tempo/cronometro";
+import { BotaoDoCronometro } from "./tempo/botao";
+import "../app/tempo.css";
 
 export function iniciais(nome: string | null, email: string | null): string {
   const base = (nome || email || "?").trim();
@@ -106,6 +109,8 @@ export function Shell({
         <div className="capsula__fim">
           {selo}
           <Relogio />
+          {/* o cronômetro de tarefas (drizzle/0038): abre o painel; ⌥T também */}
+          <BotaoDoCronometro />
           {freela ? <IrParaTrabalhos /> : null}
           {/* o Set da Absolute ZRO: quem está online e as conversas (discreto, como a Z) */}
           <SetZro />
@@ -132,6 +137,7 @@ export function Shell({
             <Icone nome="z" size={18} />
             <span className="sr-only">Z</span>
           </Link>
+          <BotaoDoCronometro />
           {freela ? <IrParaTrabalhos /> : null}
           <SetZro />
           <SeletorDeTema />
@@ -152,6 +158,8 @@ export function Shell({
         ) : null}
       </main>
       <Barra />
+      {/* a pílula do cronômetro e o painel (portal no <body>): em toda tela do app */}
+      <Cronometro />
     </div>
   );
 }

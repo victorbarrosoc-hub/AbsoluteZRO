@@ -30,6 +30,8 @@ import { useFlip } from "./flip";
 import { useGestosCelular } from "./gestos";
 import { useArrastoComMouse } from "./arrastar";
 import { CampoNome, EditarColunas, NomeDaColuna, type AcoesDeColunas } from "./colunas";
+import { PlayDoCard, SeloTempo } from "@/components/tempo/play";
+import { conhecerCards } from "@/components/tempo/loja";
 
 type Props = Inicial & {
   cardInicial?: string | null;
@@ -67,10 +69,10 @@ function comecarArrasteDeColuna(e: React.DragEvent<HTMLElement>, nome: string): 
 export function Quadro(props: Props) {
   const q = useQuadro(props);
   const { cards, selos, mudar, criar, apagar, aviso, avisar, fecharAviso, colunas } = q;
-  const { pessoas, clientes, projetos, eu, podeEscrever, podeEditarColunas } = props;
+  const { pessoas, clientes, projetos, tipos, eu, podeEscrever, podeEditarColunas } = props;
   const vivas = useMemo(() => colunasVivas(colunas), [colunas]);
   const ordemColunas = useMemo(() => vivas.map((c) => c.id), [vivas]);
-  const refs = useMemo(() => ({ pessoas, clientes, projetos }), [pessoas, clientes, projetos]);
+  const refs = useMemo(() => ({ pessoas, clientes, projetos, tipos }), [pessoas, clientes, projetos, tipos]);
   const [filtro, setFiltro] = useState<Filtro>(() => ({ ...FILTRO_VAZIO, cliente: props.clienteInicial ?? "todos" }));
   const [ficha, setFicha] = useState<FichaAberta | null>(() =>
     props.cardInicial
@@ -108,6 +110,13 @@ export function Quadro(props: Props) {
   const codigoProjeto = useCallback((id?: string) => projetos.find((p) => p.id === id)?.codigo ?? "", [projetos]);
 
   const lista = useMemo(() => Object.values(cards), [cards]);
+  // o cronômetro conhece o título, a coluna e o cliente dos cards (a pílula mostra o título já no toque)
+  useEffect(() => {
+    conhecerCards(
+      lista.map((c) => ({ id: c.id, tema: c.dados.tema, coluna: c.dados.coluna, cliente: c.dados.cliente, projeto: c.dados.projeto, tipo: c.dados.tipo })),
+      clientes,
+    );
+  }, [lista, clientes]);
   const porColuna = useMemo(() => {
     const m = Object.fromEntries(ordemColunas.map((k) => [k, [] as CardQ[]])) as Record<ColunaId, CardQ[]>;
     // card numa coluna que esta tela ainda não conhece (ou acabou de ser arquivada): fica na primeira até a lista chegar
@@ -601,6 +610,8 @@ const Cartao = memo(function Cartao({ c, cliente, projeto, resp, selo, realce, p
           <MarcaCliente id={d.cliente} nome={cliente} />
           <span className="q-card__cliente-nome">{cliente ? <Realce texto={cliente} termos={termos} /> : "Sem cliente"}</span>
         </span>
+        {/* o cronômetro do card (drizzle/0038): um toque começa o tempo; a peça assina a loja sozinha */}
+        <PlayDoCard card={c.id} tema={d.tema} />
         {podeEscrever ? (
           <button type="button" className="q-icone-btn q-card__mais" aria-label="Mover para…" title="Mover para…" onClick={() => mais(c.id)}>
             <Icone nome="pontos" size={16} />
@@ -610,18 +621,18 @@ const Cartao = memo(function Cartao({ c, cliente, projeto, resp, selo, realce, p
       <h3 className="q-card__tema">
         <Realce texto={d.tema} termos={termos} />
       </h3>
-      {d.prazo || d.prioridade === "alta" || resp || selo ? (
-        <div className="q-card__meta">
-          <ChipPrazo d={d} />
-          <ChipPrioridade p={d.prioridade} />
-          <SeloDoCard selo={selo} aoTocar={() => abrir(c.id)} />
-          {resp ? (
-            <span className="q-card__fim">
-              <AvatarPessoa pessoa={resp} />
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+      {/* sem nada para mostrar, a linha some pelo CSS (:empty): o selo do tempo aparece sozinho quando há tempo */}
+      <div className="q-card__meta">
+        <ChipPrazo d={d} />
+        <ChipPrioridade p={d.prioridade} />
+        <SeloDoCard selo={selo} aoTocar={() => abrir(c.id)} />
+        <SeloTempo card={c.id} previsto={d.previsto} />
+        {resp ? (
+          <span className="q-card__fim">
+            <AvatarPessoa pessoa={resp} />
+          </span>
+        ) : null}
+      </div>
       {px ? (
         <button type="button" className="q-card__passo" onClick={() => passo(c.id)} title={px.rotulo}>
           <span>{px.rotulo}</span>

@@ -227,6 +227,7 @@ test.describe("navegação do app", () => {
         "/app/criacao",
         "/app/arquivos",
         "/app/agenda",
+        "/app/tempo",
         "/app/pedidos",
         "/app/orcamentos",
         "/app/clientes",

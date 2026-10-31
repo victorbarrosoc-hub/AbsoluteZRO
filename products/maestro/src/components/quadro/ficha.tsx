@@ -32,6 +32,7 @@ import { VersoesDoCard } from "./versoes";
 import { CapaDaFicha } from "./capa";
 import type { Selo } from "@/lib/quadro/selos";
 import { CriacaoDoCard } from "@/components/criacao/do-card";
+import { TempoDaFicha } from "@/components/tempo/do-card";
 
 type Props = {
   card: CardQ | null;
@@ -458,6 +459,9 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
       </div>
 
       <Prazo id={campo("prazo")} valor={d.prazo ?? ""} ro={ro} aoMudar={(v) => por({ prazo: v })} />
+
+      {/* o cronômetro do card (drizzle/0038): play, tempo × previsto, tipo de vídeo e a sugestão do típico */}
+      <TempoDaFicha card={card?.id ?? null} tema={d.tema ?? ""} tipo={d.tipo} previsto={d.previsto} tipos={refs.tipos} ro={ro} por={por} />
 
       <label className="q-campo">
         <span>Briefing</span>
