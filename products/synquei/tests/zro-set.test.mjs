@@ -219,14 +219,14 @@ describe('a aba em comum no app', () => {
   const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
   const css = readFileSync(new URL('../app/app.css', import.meta.url), 'utf8')
 
-  test('"Set" no menu (depois do Início) e, no celular, no canto do Início ao lado da Z, escondido até o Set responder', () => {
+  test('"Set" no menu (depois do Início) e, no celular, no canto do Início ao lado da Z (depois da conta), escondido até o Set responder', () => {
     assert.match(html, /data-r="inicio"><svg class="icon"><use href="#i-home" \/><\/svg><span>Início<\/span><\/a>\s*<!--[^>]*-->\s*<button class="nav-item" type="button" data-set hidden/)
     // a barra de baixo fica com as cinco abas da tarefa: nem Set nem Z
     const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
     assert.doesNotMatch(abas, /data-set|#\/z/)
     assert.equal((abas.match(/<a /g) || []).length, 5)
     const inicio = readFileSync(new URL('../app/js/views/inicio.js', import.meta.url), 'utf8')
-    assert.match(inicio, /<span class="eco-atalhos"><button class="icon-btn set-atalho" type="button" data-set hidden[^>]*>\$\{icon\('set'\)\}<span class="balao" data-set-balao hidden><\/span><\/button><a class="icon-btn z-atalho"/)
+    assert.match(inicio, /<span class="eco-atalhos"><span class="conta-atalho" data-conta-atalho>\$\{atalhoConta\(\)\}<\/span><button class="icon-btn set-atalho" type="button" data-set hidden[^>]*>\$\{icon\('set'\)\}<span class="balao" data-set-balao hidden><\/span><\/button><a class="icon-btn z-atalho"/)
     assert.match(main, /pintarSet\(\)/)
     assert.match(html, /<symbol id="i-set"/)
     assert.match(main, /contaPronta\.then\(iniciarSet\)/)

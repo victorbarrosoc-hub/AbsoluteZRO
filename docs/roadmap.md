@@ -71,10 +71,13 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ TPeasy em tpeasy.absolutezro.com (31/10/2026): migração `0044` (catálogo e Abrir do HUB no subdomínio; retorno
   novo no cliente `tpeasy-web`, o antigo continua), login do TPeasy aceitando os dois endereços (o `tpeasy.vercel.app`
   segue valendo, sem redirecionar, porque os roteiros ficam presos ao endereço), OG, Downloads e menus da família na web.
-  Downloads do SOBEDESCE em `sobedesce.com`. ⬜ Menus da família no Synquei e no SOBEDESCE de computador: no commit de
-  computador (dispara os instaladores).
+  Downloads do SOBEDESCE em `sobedesce.com`. Menus da família no Synquei e no SOBEDESCE de computador também, num
+  commit à parte (dispara os instaladores; publica com a autorização do titular).
 - ✅ Conta à vista no celular do TPeasy (31/10/2026): **Entrar** ao lado do título de Roteiros (antes só em Ajustes) e a
   foto de quem entrou, que abre Ajustes (nome e Sair). Sem a configuração do login, nada aparece.
+- ✅ Conta à vista no celular do Synquei (31/10/2026): abaixo de 860 px a barra lateral (com a conta e Ajustes) sumia e
+  não havia como entrar; agora **Entrar** ou a foto de quem entrou ficam no canto do Início, antes do Set e da Z. Mora
+  em `products/synquei/app/**`, que também é o app de computador: vai no commit de computador.
 - ✅ Entrar e criar conta como conversa (27/10/2026): uma pergunta por vez (e-mail → senha; e-mail → nome → senha), o símbolo da marca como orbe (Absolute ZRO · ouvindo · conferindo · pronto, com ✓ em traço fino) e "Conectado. Abrindo seu HUB…"; vale para `/entrar`, `/criar-conta` e `/app/entrar`, funciona sem JavaScript. ✅ O orbe é o Z animado (27/10/2026).
 - 🟡 IA do ecossistema, o Z (27/10/2026): uma IA para todas as plataformas, conversas por plataforma reunidas no HUB, 1 crédito por resposta, `<zro-ia>` para as plataformas e o visual aprovado (anel e estrela cromados movidos por código, rastro e correntes). Falta: migrações 0016/0017 em produção, publicar, testar com a chave real e colocar o `<zro-ia>` em cada plataforma.
 - ✅ Balões de pendência no Synquei (web e computador), TPeasy e Carro do Freela (27/10/2026): a aba com algo esperando a pessoa mostra o número (99+ acima de 99, `aria-label` "N pendências", o que espera no `title`), ao vivo, e vira ponto no canto do ícone no menu recolhido e na barra do celular. Só conta o que a tela já pede (religar mídia, sincronizar, clipe para conferir, cartão esperando, versão nova; conta sem acesso; proposta, contrato a assinar, entrega a conferir, avaliação, pedido de aluguel).

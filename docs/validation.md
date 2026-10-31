@@ -3789,3 +3789,14 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Capturas no Playwright (390×844, claro, `/api/zro/eu` simulado): TPeasy fora (Entrar ao lado do título), dentro (foto)
   e Ajustes (nome, e-mail, organização e Sair).
 - Não validado: o login de verdade no subdomínio, que depende de a 0044 rodar no banco e do deploy do TPeasy.
+
+### Parte de computador (Synquei e SOBEDESCE)
+
+- Commit à parte: `products/synquei/app/**` (o mesmo app no site, no celular e no computador) e
+  `products/sobedesce/public/**` disparam `synquei-desktop.yml` e `sobedesce-desktop.yml`.
+- `products/synquei`: `npm test` 162 (156 passaram, 6 pulados, 0 falhas), com `tests/conta-ui.test.mjs` 9/9 ("Entrar"
+  sem sessão, a foto de quem entrou abre Ajustes, nada sem login neste lugar ou no site sem configuração, aviso de sem
+  acesso) e `tests/zro-set.test.mjs` (o canto do Início com a conta antes do Set e da Z).
+- `products/sobedesce`: `test/familia.test.js` 4/4. Raiz: `familia-menus` 6/6, agora sem aceitar o endereço antigo.
+- Capturas no Playwright (390×844, claro): Synquei antes (sem nenhuma entrada de conta no celular), fora (Entrar no
+  canto do Início), dentro (foto) e Ajustes (nome, e-mail e Sair); no computador (1280) a barra lateral não mudou.
