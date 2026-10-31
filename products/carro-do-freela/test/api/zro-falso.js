@@ -79,6 +79,7 @@ async function iniciarZroFalsa(cliente) {
     /* o @ do perfil profissional (ADR 0029 do HUB) */
     p.arroba ? { preferred_username: p.arroba } : {},
     p.foto ? { picture: p.foto } : {},
+    p.recursos ? { zro_features: p.recursos } : {},
     p.semRelease ? {} : { zro_release: { 'carro-do-freela': liberacao(p) } },
   );
   const emitir = (pessoa, escopo) => {

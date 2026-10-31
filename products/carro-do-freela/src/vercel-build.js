@@ -45,7 +45,7 @@ const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'ic
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set'];
 /* (28/out) as rotas de dados falam com o banco (pg): vão EMPACOTADAS pelo
    esbuild num arquivo só, com o `pg` dentro — as outras seguem copiadas */
-const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'propostas', 'feed', 'brecho', 'denuncia'];
+const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'propostas', 'feed', 'brecho', 'denuncia', 'guildas'];
 const RUNTIME = 'nodejs22.x';
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD): o domínio nasce
    FECHADO — só a conta do proprietário entra, e só com a claim relida no

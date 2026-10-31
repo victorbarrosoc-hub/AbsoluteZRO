@@ -3592,3 +3592,18 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   com o nome certo, publicar é `POST`, o post antigo do aparelho não sobe sozinho e a tela oferece enviar).
 - Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
   `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.
+
+## Carro do Freela: a guilda da fase 2, no branch `fase2-guilda` (31/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 34/34. Quatro testes novos da 0004 (`test/api/_guilda-testes.js`): com a fase 1 a rota
+  responde 404 a todos, até sem sessão; criar, convite pelo @ e por link (código só em hash, uso único, vence), vagas (15, cheia
+  recusa, +5 do adicional lido da claim do dono, nível 10 dá +2, sem o adicional ninguém sai), RLS entre guildas e pessoas
+  (sem INSERT/UPDATE direto); bloqueio (nem por link), carência de 7 dias, remover sem carência, dono não sai com gente
+  dentro, memória dos jobs (nível 1 a 2, cancelado deixa de contar, sair não apaga, sem valor nem mensagem);
+  `/api/zro/pessoas` com a mesma ordem com e sem guilda, nível e espaço extra. A 0004 também aplica com o login sem superusuário.
+- Carro `test/guilda-real.js`: 31/31 (site real construído com a constante em 2 e em 1; fase 1 sem aba, sem menu, sem um
+  pedido ao servidor; fase 2 com fundar, convidar, aceitar, sair, tirar; `filtrar()` idêntico com e sem guilda). `test:api` 48/48.
+  Suítes da prévia sem mudança: `guildas` 60/60, `guilda-social` 49/49, `site-real` 40/40, `versoes` 95/95, `seguranca`, `mapa`.
+- HUB `tests/integration/carro-guilda-espaco-extra.test.ts` (5): a 0043 é idempotente, o plano é rascunho (o HUB recusa conceder),
+  o sinal `carro-do-freela.guilda_espaco_extra` chega por `zro_features` só a quem recebe, sem dar acesso ao Carro.
+- Modelo do adicional: o sinal do HUB é presença, não quantidade; o Carro dá UM pacote de 5. Vários pacotes pedem quantidade no plano.

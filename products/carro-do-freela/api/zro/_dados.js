@@ -90,6 +90,8 @@ async function corpoDe(req, res, extra) {
 function responderErro(res, e, extra) {
   if (e instanceof R.Recusa) return json(res, 400, { erro: e.erro, campo: e.campo }, extra);
   if (e && e.code === '23514') return json(res, 400, { erro: /Limite/.test(e.message) ? 'limite' : 'regra' }, extra);
+  /* regras da guilda levantadas pelo banco (db/migrations/0004): o texto da exceção é o código curto */
+  if (e && e.code === 'P0001' && ERROS_GUILDA[e.message]) return json(res, ERROS_GUILDA[e.message], { erro: e.message }, extra);
   if (e && e.code === '42501') return json(res, 403, { erro: 'proibido' }, extra);
   if (e && e.code === '22P02') return json(res, 400, { erro: 'pedido' }, extra);
   if (e && e.code === '22023') return json(res, 400, { erro: 'janela' }, extra);
@@ -471,6 +473,135 @@ async function denuncia(req, res) {
   }
 }
 
+/* ---------------- guilda (0004, fase 2) ----------------
+ * GET  /api/zro/guildas                → { fase, minha: {...}|null, recebidos: [...], carencia_ate }
+ * POST /api/zro/guildas                → 201 { guilda }            (acao "criar", o padrão)
+ * POST /api/zro/guildas {acao:"convidar", para?}  → 201 { convite, link? }  (sem `para` = convite por link)
+ * POST ... {acao:"ver", token} · {acao:"aceitar", id|token} · {acao:"recusar", id, bloquear?}
+ *      · {acao:"cancelar", id} · {acao:"sair"} · {acao:"remover", sub}
+ * ⚠️ O portão é db/fase.js: com a fase 1 a rota responde 404, antes de qualquer outra coisa.
+ * Nome, @ e foto de quem entra vêm da CONTA (sessão conferida), nunca do pedido. Vagas, bloqueio, carência e convite
+ * vencido são conferidos no banco. O adicional "Espaço extra na guilda" é lido da claim do DONO e gravado na guilda. */
+const FASES = require('../../db/fase.js');
+const crypto = require('crypto');
+const ERROS_GUILDA = { ja_em_guilda: 409, carencia: 409, nome_em_uso: 409, cheia: 409, ja_membro: 409, ja_convidado: 409, limite_convites: 429,
+  bloqueado: 403, so_dono: 403, dono_nao_sai: 409, convite_invalido: 404, convite_expirado: 410, sem_guilda: 404, nao_achado: 404 };
+const EXTRA_POR_ADICIONAL = 5;
+const SINAL_EXTRA = 'carro-do-freela.guilda_espaco_extra';
+const hashToken = t => crypto.createHash('sha256').update(t).digest('hex');
+/** vagas extras que a conta tem: o sinal do adicional na claim (o HUB só diz "tem", sem quantidade: um pacote de 5) */
+const extraDaConta = quem => (quem && Array.isArray(quem.recursos) && quem.recursos.includes(SINAL_EXTRA) ? EXTRA_POR_ADICIONAL : 0);
+
+async function guildaMinha(c, sub) {
+  const m = (await c.query(
+    `select g.*, carro_do_freela.guilda_nivel(g.id) as nivel, carro_do_freela.guilda_vagas(g.id) as vagas,
+            carro_do_freela.guilda_ocupadas(g.id) as ocupadas
+       from carro_do_freela.guildas g where g.encerrada_em is null`)).rows[0];
+  if (!m) return null;
+  const membros = (await c.query('select sub, nome, arroba, foto, papel, entrou_em from carro_do_freela.guilda_membros where guilda_id = $1 and saiu_em is null order by papel, entrou_em', [m.id])).rows;
+  const jobs = (await c.query('select * from carro_do_freela.guilda_jobs where guilda_id = $1 order by fechado_em desc', [m.id])).rows;
+  const beneficios = (await c.query('select nivel, codigo, titulo, detalhe, dados, ativo from carro_do_freela.guilda_beneficios order by nivel')).rows;
+  const dono = m.dono_sub === sub;
+  const convites = dono
+    ? (await c.query("select id, para_sub, expira_em from carro_do_freela.guilda_convites where guilda_id = $1 and estado = 'pendente' and expira_em > clock_timestamp() order by criado_em desc", [m.id])).rows
+    : [];
+  const bonus = Number(m.vagas) - 15 - m.espaco_extra;
+  return {
+    guilda: { id: m.id, nome: m.nome, tag: m.tag, cor: m.cor, sobre: m.sobre, criada_em: iso(m.criado_em) },
+    eu: { sub, papel: dono ? 'dono' : 'membro' },
+    membros: membros.map(x => ({ sub: x.sub, nome: x.nome, arroba: x.arroba, foto: x.foto, papel: x.papel, eu: x.sub === sub, entrou_em: iso(x.entrou_em) })),
+    nivel: { atual: m.nivel, jobs: jobs.length, por_nivel: 3, faltam: 3 - (jobs.length % 3) },
+    vagas: { base: 15, bonus_de_nivel: bonus, extra: m.espaco_extra, total: Number(m.vagas), ocupadas: Number(m.ocupadas), livres: Math.max(0, Number(m.vagas) - Number(m.ocupadas)) },
+    beneficios: beneficios.map(b => ({ nivel: b.nivel, codigo: b.codigo, titulo: b.titulo, detalhe: b.detalhe, dados: b.dados, ativo: b.ativo, conquistado: m.nivel >= b.nivel })),
+    jobs: jobs.slice(0, 30).map(j => ({ id: j.id, dia: diaTxt(j.dia), funcao: j.funcao, membros: [j.de_nome, j.para_nome].filter(Boolean), fechado_em: iso(j.fechado_em) })),
+    convites: convites.map(v => ({ id: v.id, tipo: v.para_sub ? 'arroba' : 'link', para: v.para_sub, expira_em: iso(v.expira_em) })),
+  };
+}
+
+async function guildas(req, res) {
+  if (!FASES.guildaNoAr()) return json(res, 404, { erro: 'nao_encontrado' });
+  const p = await preparar(req, res, { metodos: ['GET', 'POST'], escrita: req.method === 'POST' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  const nome = nomeDaConta(quem), arroba = quem.arroba || null, foto = quem.foto || null;
+  try {
+    if (req.method === 'GET') {
+      const r = await db.asUser(sub, async c => {
+        await c.query('select carro_do_freela.guilda_tocar($1, $2, $3)', [nome, arroba, foto]);
+        await c.query('select carro_do_freela.guilda_definir_extra($1)', [extraDaConta(quem)]);
+        const minha = await guildaMinha(c, sub);
+        const recebidos = (await c.query('select * from carro_do_freela.guilda_convites_para_mim()')).rows;
+        const sai = (await c.query("select max(saiu_em) as t from carro_do_freela.guilda_membros where sub = $1 and saida = 'saiu'", [sub])).rows[0].t;
+        return { minha, recebidos, sai };
+      });
+      const ate = r.sai ? new Date(r.sai.getTime() + 7 * 864e5) : null;
+      return json(res, 200, {
+        fase: FASES.faseAtual(), minha: r.minha,
+        recebidos: r.recebidos.map(x => ({ id: x.id, nome: x.nome, tag: x.tag, cor: x.cor, de_nome: x.de_nome, expira_em: iso(x.expira_em) })),
+        carencia_ate: ate && ate > new Date() ? ate.toISOString() : null,
+      }, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const acao = corpo && corpo.acao !== undefined ? corpo.acao : 'criar';
+    if (acao === 'criar') {
+      const v = R.guildaDe(corpo);
+      const g = await db.asUser(sub, async c => {
+        const id = (await c.query('select carro_do_freela.guilda_criar($1, $2, $3, $4, $5, $6, $7) as id', [v.nome, v.tag, v.cor, v.sobre, nome, arroba, foto])).rows[0].id;
+        await c.query('select carro_do_freela.guilda_definir_extra($1)', [extraDaConta(quem)]);
+        return id;
+      });
+      return json(res, 201, { guilda: { id: g } }, extra);
+    }
+    if (acao === 'convidar') {
+      const v = R.conviteDe(corpo);
+      const token = v.para ? null : crypto.randomBytes(24).toString('base64url');
+      const id = await db.asUser(sub, async c => {
+        const g = (await c.query('select id from carro_do_freela.guildas where dono_sub = $1 and encerrada_em is null', [sub])).rows[0];
+        if (!g) { const e = new Error('so_dono'); e.code = 'P0001'; throw e }
+        await c.query('select carro_do_freela.guilda_definir_extra($1)', [extraDaConta(quem)]);
+        return (await c.query('select carro_do_freela.guilda_convidar($1, $2, $3) as id', [g.id, v.para, token && hashToken(token)])).rows[0].id;
+      });
+      return json(res, 201, { convite: { id, tipo: v.para ? 'arroba' : 'link' }, link: token ? Z.origemDe(req) + '/?guilda=' + token : undefined }, extra);
+    }
+    if (acao === 'ver') {
+      const t = R.verConviteDe(corpo);
+      const l = (await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.guilda_ver_convite($1)', [hashToken(t)])).rows))[0];
+      if (!l) return json(res, 404, { erro: 'convite_invalido' }, extra);
+      return json(res, 200, { guilda: { nome: l.nome, tag: l.tag, cor: l.cor, ocupadas: l.ocupadas, vagas: l.vagas, expira_em: iso(l.expira_em) } }, extra);
+    }
+    if (acao === 'aceitar') {
+      const v = R.aceitarDe(corpo);
+      const id = await db.asUser(sub, async c =>
+        (await c.query('select carro_do_freela.guilda_aceitar($1, $2, $3, $4, $5) as id', [v.id, v.token && hashToken(v.token), nome, arroba, foto])).rows[0].id);
+      return json(res, 200, { guilda: { id } }, extra);
+    }
+    if (acao === 'recusar') {
+      const v = R.recusarDe(corpo);
+      await db.asUser(sub, async c => c.query('select carro_do_freela.guilda_recusar($1, $2)', [v.id, v.bloquear]));
+      return semConteudo(res, extra);
+    }
+    if (acao === 'cancelar') {
+      const id = R.idConviteDe(corpo);
+      await db.asUser(sub, async c => c.query('select carro_do_freela.guilda_cancelar_convite($1)', [id]));
+      return semConteudo(res, extra);
+    }
+    if (acao === 'sair') {
+      R.guildaSemCampos(corpo);
+      await db.asUser(sub, async c => c.query('select carro_do_freela.guilda_sair()'));
+      return semConteudo(res, extra);
+    }
+    if (acao === 'remover') {
+      const alvo = R.removerDe(corpo);
+      await db.asUser(sub, async c => c.query('select carro_do_freela.guilda_remover($1)', [alvo]));
+      return semConteudo(res, extra);
+    }
+    return json(res, 400, { erro: 'acao' }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
 const protegido = fn => async (req, res) => {
   try {
     await fn(req, res);
@@ -489,5 +620,6 @@ module.exports = {
   feed: protegido(feed),
   brecho: protegido(brecho),
   denuncia: protegido(denuncia),
+  guildas: protegido(guildas),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
 };

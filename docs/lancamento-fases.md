@@ -7,6 +7,10 @@ ficam fora do repositório (ele é público). O plano muda ao longo do caminho: 
 do ar o que ainda não é da fase, guardando o código pronto, ou liga o que foi guardado; (2) atualiza homepages e site;
 (3) publica as versões novas dos apps; (4) aplica as migrações da fase. Nada de interruptor visível para o usuário.
 
+**Guilda (fase 2), como está no código (31/10/2026):** pronta no branch `fase2-guilda`, atrás de UMA constante,
+`FASE_LANCAMENTO` em `products/carro-do-freela/db/fase.js` (padrão 1). "Libera fase 2" = trocar para 2 nesse arquivo, publicar
+o Carro e aplicar a `0043_carro_guilda_espaco_extra` do HUB só se o titular também liberar a venda do adicional (nasce em rascunho).
+
 Hoje (30/10/2026) **tudo o que está abaixo, exceto a guilda e o aluguel, já está no ar**. A retirada do que for das fases 2 e 3
 acontece no dia do lançamento da fase 1, a pedido do titular, e não antes.
 

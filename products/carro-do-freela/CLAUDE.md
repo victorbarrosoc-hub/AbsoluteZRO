@@ -181,6 +181,22 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 31/out — a guilda da fase 2 (branch `fase2-guilda`; `test/guilda-real.js`, `test:banco`)
+
+Pedido do titular: guilda e espaço extra são da fase 2 (`docs/lancamento-fases.md`). Pronta, guardada e sem deploy.
+- ⚠️ **O portão é `FASE_LANCAMENTO` em `db/fase.js`** (padrão 1): o build escreve o número no site (`/*__FASE_LANCAMENTO__*/`),
+  a rota `/api/zro/guildas` responde 404 abaixo de 2 e a aba some. "Libera fase 2" = trocar o número. `CDF_TESTE_FASE` e
+  `fixarParaTeste` existem só para as suítes. A prévia (não-real) segue com a guilda de demonstração de sempre.
+- Migração `0004_guildas`: tabelas só com SELECT para o app (RLS); tudo muda por função `security definer` que confere vagas,
+  bloqueio, carência (7 dias ao sair; quem foi tirado não tem) e convite vencido. Vagas = 15 + 2 (nível 10, de
+  `guilda_beneficios`) + `espaco_extra`. Nível = 1 + jobs/3; o job é a proposta aceita (gatilho em `propostas`), conta para
+  cada guilda de que um dos lados é membro AGORA, some se a proposta for cancelada, e fica quando alguém sai.
+- ⚠️ **A guilda não toca a busca**: `filtrar()` não a conhece e há teste (cliente e `/api/zro/pessoas`). O adicional só abre
+  vagas: lido da claim `zro_features` do DONO (`carro-do-freela.guilda_espaco_extra`) e gravado na guilda nas rotas dele.
+  O sinal é presença (um pacote de 5). Taxa de 5% do nível 15: dado inativo, nada é cobrado.
+- Nome, @ e foto vêm da conta; convite por link guarda só o hash, vale uma vez e 7 dias; bloqueio ao recusar. Sem e-mail nem
+  WhatsApp. No site real não há ranking, salão, chat nem VIP (`realGuildaPintar`, prefixo `rg-`).
+
 ## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
 
 Titular: *"O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do

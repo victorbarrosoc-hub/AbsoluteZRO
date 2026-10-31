@@ -283,4 +283,43 @@ function denunciaDe(corpo) {
     detalhe: texto(corpo.detalhe, 'detalhe', 500, { linhas: true }) };
 }
 
-module.exports = { propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+/* ───────────── guilda (0004) ───────────── */
+const TOKEN_GUILDA = /^[A-Za-z0-9_-]{20,64}$/;
+function guildaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'nome', 'tag', 'cor', 'sobre']);
+  const tag = typeof corpo.tag === 'string' ? corpo.tag.trim().toUpperCase() : '';
+  if (!/^[A-ZÀ-Ú]{2,3}$/.test(tag)) throw new Recusa('tipo', 'tag');
+  const cor = corpo.cor === undefined || corpo.cor === null ? null : corpo.cor;
+  if (cor !== null && !(typeof cor === 'string' && /^#[0-9a-fA-F]{6}$/.test(cor))) throw new Recusa('tipo', 'cor');
+  const nome = texto(corpo.nome, 'nome', 24, { obrigatorio: true });
+  if ([...nome].length < 3) throw new Recusa('tamanho', 'nome');
+  return { nome, tag, cor, sobre: texto(corpo.sobre, 'sobre', 90) };
+}
+function conviteDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'para']);
+  return { para: corpo.para === undefined || corpo.para === null ? null : uuidDe(corpo.para, 'para') };
+}
+function tokenDe(v) {
+  if (typeof v !== 'string' || !TOKEN_GUILDA.test(v)) throw new Recusa('tipo', 'token');
+  return v;
+}
+function aceitarDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'token']);
+  if ((corpo.id === undefined) === (corpo.token === undefined)) throw new Recusa('pedido');
+  return corpo.id !== undefined ? { id: uuidDe(corpo.id, 'id'), token: null } : { id: null, token: tokenDe(corpo.token) };
+}
+function verConviteDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'token']); return tokenDe(corpo.token) }
+function recusarDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'bloquear']);
+  if (corpo.bloquear !== undefined && typeof corpo.bloquear !== 'boolean') throw new Recusa('tipo', 'bloquear');
+  return { id: uuidDe(corpo.id, 'id'), bloquear: corpo.bloquear === true };
+}
+function idConviteDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'id']); return uuidDe(corpo.id, 'id') }
+function guildaSemCampos(corpo) { objeto(corpo); soEstes(corpo, ['acao']) }
+function removerDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'sub']); return uuidDe(corpo.sub, 'sub') }
+
+module.exports = { guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

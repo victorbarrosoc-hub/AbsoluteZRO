@@ -338,6 +338,10 @@ function contaDeClaims(dados) {
     foto: typeof dados.picture === 'string' && /^https:\/\/[^\s]{1,290}$/.test(dados.picture) ? dados.picture : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
     produtos,
+    /* (fase 2) sinais de recurso do Carro na conta (claim zro_features do HUB, `carro-do-freela.<recurso>`), só os do Carro */
+    recursos: Array.isArray(dados.zro_features)
+      ? dados.zro_features.filter(f => typeof f === 'string' && /^carro-do-freela\.[a-z0-9_]{1,40}$/.test(f)).slice(0, 16)
+      : [],
     /* o portão: released | closed | allowed — sem a claim, closed */
     release: liberacaoDe(dados),
   };

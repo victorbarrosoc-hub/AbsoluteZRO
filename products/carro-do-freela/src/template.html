@@ -657,6 +657,12 @@ html.app .homenav{padding-top:env(safe-area-inset-top,0px)}
 .slm>div b{display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slm>div small{display:block;font-size:11.5px;color:var(--cal-tenue)}
 .slm .tg{margin-left:auto;flex:none}
+.slm .btn{margin-left:auto;flex:none}
+/* a guilda no site real (fase 2): poucas peças, as mesmas do resto da casa */
+.rg-nome{display:block;font-family:var(--display);font-size:22px;letter-spacing:-.03em;margin:4px 0 0}
+.rg-p{color:var(--cal-fraco);font-size:13px;line-height:1.5;margin:6px 0 0}
+.rg-acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.rg-lista{margin-top:8px}
 .sl-vagas{font-size:12.5px;color:var(--cal-tenue);margin-top:10px}
 
 /* mural */
@@ -7485,15 +7491,15 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
   <div class="wrap" style="padding:42px 22px 72px">
     <span class="lab" id="gl-lab">Guildas</span>
     <h1 id="gl-h1">Quem roda junto</h1>
-    <p class="lead explica" data-exp="guildas" data-lead="O grupo com quem você sempre roda — com memória." style="margin-top:12px">Guilda é o grupo com quem você sempre trabalha — a panelinha com memória. Quem é da guilda vê o time que ela já aprovou, e o job fechado por qualquer integrante conta para o nível de todos.</p>
+    <p class="lead explica" id="gl-lead" data-exp="guildas" data-lead="O grupo com quem você sempre roda — com memória." style="margin-top:12px">Guilda é o grupo com quem você sempre trabalha — a panelinha com memória. Quem é da guilda vê o time que ela já aprovou, e o job fechado por qualquer integrante conta para o nível de todos.</p>
     <div id="gl-eu"></div>
     <div class="fundar" id="gl-fundar">
       <div><b>Fundar a sua guilda</b>
         <p>Nome próprio, brasão, salão e chat do seu time fixo. <b class="fnd-v">—</b> uma única vez · até 15 membros, VIP sobe para 30.</p></div>
       <button class="btn" id="gl-criar">Fundar guilda</button>
     </div>
-    <span class="lab" style="display:block;margin:26px 0 0">Ranking por movimento</span>
-    <p class="note" style="margin:6px 0 0">Ordenado por job fechado, desempatando pelo que a guilda movimentou. <b style="color:var(--cal)">Não existe posição comprada aqui</b> — nenhum plano sobe guilda no ranking.</p>
+    <span class="lab" id="gl-rank-lab" style="display:block;margin:26px 0 0">Ranking por movimento</span>
+    <p class="note" id="gl-rank-nota" style="margin:6px 0 0">Ordenado por job fechado, desempatando pelo que a guilda movimentou. <b style="color:var(--cal)">Não existe posição comprada aqui</b> — nenhum plano sobe guilda no ranking.</p>
     <div class="grank" id="gl-rank"></div>
   </div>
 </section>
@@ -9728,6 +9734,11 @@ const REAL=!!document.querySelector('meta[name="cdf-real"]');
 const FORA_DO_REAL=new Set(["planos","aprender","passar","orcar"]);
 /* (0003) autores e donos que vêm do servidor e não estão no CREW (gente que posta ou anuncia sem divulgar a agenda) */
 var REAL_AUTORES={};
+/* ⚠️ A FASE DO LANÇAMENTO (31/out): a guilda é da fase 2 e o ÚNICO portão é esta constante, escrita pelo build a partir
+   de db/fase.js (o servidor lê o mesmo arquivo: com a fase 1 /api/zro/guildas responde 404). Fase 1 = sem guilda.
+   "Libera fase 2" = trocar o número em db/fase.js. Não é interruptor de tela. Só vale no site real. */
+const FASE_LANCAMENTO=/*__FASE_LANCAMENTO__*/1;
+const guildaReal=()=>REAL&&FASE_LANCAMENTO>=2;
 if(REAL) document.documentElement.classList.add("real");
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
@@ -11710,6 +11721,7 @@ function show(t){
      /api/zro/eu disser que esta conta pode, ela abre. */
   if(zroFechado()&&t!=="fechado"&&(t!=="home"||FASE)){ FC_VOLTA=t; t="fechado" }
   if(REAL&&FORA_DO_REAL.has(t)) t="meu";
+  if(REAL&&(t==="guildas"||t==="salao")&&!(t==="guildas"&&guildaReal())) t="meu";
   /* quem assinou tem os dois chapéus: entrar nas telas de contratar
      assume o chapéu certo sozinho. O toggle no topo mostra a troca —
      ninguém fica sem saber de que lado está. */
@@ -12701,6 +12713,7 @@ function poeSoft(t){
 })();
 function drawGuildas(){
   const eu=v("gl-eu"), rank=v("gl-rank"); if(!eu||!rank) return;
+  if(REAL){ if(guildaReal()) realGuildaPintar(); return }   /* no site real a guilda vem do servidor, sem ranking nem demonstração */
   const souFreela=MODO==="freela";
   v("gl-lab").textContent=souFreela?"Guilda":"Guildas";
   v("gl-h1").textContent=souFreela?"A sua guilda":"Quem roda junto";
@@ -20637,6 +20650,199 @@ function realCarregar(){
     realSocial();
   });
 }
+/* ============ GUILDA NO SERVIDOR (0004, fase 2: só com FASE_LANCAMENTO >= 2) ============
+   A guilda é a panelinha com memória: time, convite (link e pelo @), nível que sai dos jobs fechados por quem estava
+   nela e vagas. Tudo vem de /api/zro/guildas; nada mora no aparelho. ⚠️ A guilda muda só o que a PRÓPRIA guilda vê:
+   nada aqui entra em filtrar() nem na ordem da busca, e o espaço extra (adicional) só abre vagas.
+   Sem ranking entre guildas. Só var e function (o TDZ de 19/out · 2). */
+var REAL_GUILDA=null, REAL_GUILDA_PESSOAS=null, REAL_GUILDA_BUSCA="";
+var ERRO_GUILDA={ja_em_guilda:"Você já está numa guilda.",carencia:"Você saiu de uma guilda há pouco: espere os 7 dias.",
+  nome_em_uso:"Já existe uma guilda com esse nome ou essa tag.",cheia:"A guilda está sem vagas.",ja_membro:"Essa pessoa já está na guilda.",
+  ja_convidado:"Essa pessoa já foi convidada.",limite_convites:"Convites demais abertos. Cancele algum.",bloqueado:"Não dá para convidar essa pessoa.",
+  so_dono:"Só quem fundou a guilda faz isso.",dono_nao_sai:"Tire os outros membros antes de sair.",convite_invalido:"Esse convite não vale mais.",
+  convite_expirado:"Esse convite venceu. Peça outro.",nao_achado:"Não achei.",tag:"A tag são 2 ou 3 letras.",nome:"Dê um nome com pelo menos 3 letras."};
+function rgMsg(r){ var j=r&&r.j; return (j&&(ERRO_GUILDA[j.erro]||ERRO_GUILDA[j.campo]))||cfbMsg(r) }
+function rgDia(d){ return d?d.slice(8,10)+"/"+d.slice(5,7):"" }
+function rgToken(){
+  try{ var t=new URLSearchParams(location.search).get("guilda"); if(t&&/^[A-Za-z0-9_-]{20,64}$/.test(t)){ sessionStorage.setItem("cdf-guilda-token",t); return t } }catch(e){}
+  try{ return sessionStorage.getItem("cdf-guilda-token")||"" }catch(e){ return "" }
+}
+function rgLimparToken(){
+  try{ sessionStorage.removeItem("cdf-guilda-token"); if(/[?&]guilda=/.test(location.search)) history.replaceState(null,"",location.pathname+location.hash) }catch(e){}
+}
+function rgOvl(html){
+  var o=v("rg-ovl");
+  if(!o){ o=document.createElement("div"); o.id="rg-ovl"; o.className="ovl"; o.hidden=true; o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true");
+    o.addEventListener("click",function(e){ if(e.target===o) rgFechar() });
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!o.hidden) rgFechar() });
+    document.body.appendChild(o) }
+  o.innerHTML='<div class="cx" style="max-width:480px">'+html+'</div>'; o.hidden=false; document.body.style.overflow="hidden";
+  return o;
+}
+function rgFechar(){ var o=v("rg-ovl"); if(o) o.hidden=true; document.body.style.overflow="" }
+function rgBrasao(g){ return '<div class="bras g" style="'+brasaoBG(g)+'">'+esc(g.tag)+'</div>' }
+function realGuildaCarregar(){
+  if(!realLigado()||!guildaReal()) return Promise.resolve(null);
+  return cfbPedir("GET","/api/zro/guildas").then(function(r){
+    if(r.status!==200||!r.j) return null;
+    REAL_GUILDA=r.j; return r.j;
+  });
+}
+function realGuildaPintar(){
+  var eu=v("gl-eu"); if(!eu) return;
+  ["gl-rank","gl-fundar","gl-rank-lab","gl-rank-nota"].forEach(function(id){ var e=v(id); if(e) e.hidden=true });
+  v("gl-lab").textContent="Guilda"; v("gl-h1").textContent="A panelinha com memória";
+  var lead=v("gl-lead"); if(lead){ lead.textContent="Quem roda junto, o que já fechou e o nível do grupo."; lead.setAttribute("data-lead",lead.textContent) }
+  if(!realLigado()){ eu.innerHTML=""; return }
+  eu.innerHTML=REAL_GUILDA?rgHtml(REAL_GUILDA):'<p class="note">Abrindo…</p>';
+  rgLigar(eu);
+  realGuildaCarregar().then(function(j){ if(!j) return; eu.innerHTML=rgHtml(j); rgLigar(eu); rgConviteDoLink() });
+}
+function rgHtml(j){
+  var m=j.minha, h="";
+  if(!m){
+    h+='<div class="blk rg-vazio" style="margin-top:20px"><span class="lab">Você ainda não tem guilda</span>'+
+      '<p class="rg-p">Funde a sua ou entre por convite.</p>'+
+      (j.carencia_ate?'<p class="note">Você saiu de uma guilda há pouco. Dá para entrar em outra a partir de '+esc(rgDia(j.carencia_ate.slice(0,10)))+'.</p>':"")+
+      '<div class="rg-acoes"><button class="btn" id="rg-fundar"'+(j.carencia_ate?" disabled":"")+'>Fundar guilda</button></div></div>';
+    (j.recebidos||[]).forEach(function(c){
+      h+='<div class="blk rg-conv" style="margin-top:14px"><div class="colcab">'+rgBrasao(c)+
+        '<div><span class="lab">Convite</span><b class="rg-nome">'+esc(c.nome)+'</b><small class="rg-p">de '+esc(c.de_nome)+'</small></div></div>'+
+        '<div class="rg-acoes"><button class="btn" data-rg-aceitar="'+esc(c.id)+'">Entrar</button>'+
+        '<button class="btn gh sm" data-rg-recusar="'+esc(c.id)+'">Agora não</button>'+
+        '<button class="btn gh sm" data-rg-bloquear="'+esc(c.id)+'" title="Essa pessoa não poderá mais te convidar">Bloquear</button></div></div>';
+    });
+    return h;
+  }
+  var g=m.guilda, dono=m.eu.papel==="dono", n=m.nivel, vg=m.vagas;
+  h+='<div class="blk" style="margin-top:20px"><div class="colcab">'+rgBrasao(g)+
+    '<div><span class="lab">Sua guilda</span><b class="rg-nome">'+esc(g.nome)+'</b>'+(g.sobre?'<small class="rg-p">'+esc(g.sobre)+'</small>':"")+'</div>'+
+    (dono?'<button class="btn" id="rg-convidar" style="margin-left:auto">Convidar</button>':"")+'</div>'+
+    '<div class="colnums" style="margin-top:16px">'+
+      '<div class="colnum"><b>nível '+n.atual+'</b><span>faltam '+pl(n.faltam,"job")+' pro próximo</span></div>'+
+      '<div class="colnum"><b>'+n.jobs+'</b><span>jobs fechados</span></div>'+
+      '<div class="colnum"><b>'+vg.ocupadas+'/'+vg.total+'</b><span>membros'+(vg.extra?' · +'+vg.extra+' de espaço extra':"")+'</span></div>'+
+    '</div><span class="gnv" style="color:'+corOk(g.cor)+';margin-top:14px"><i style="width:'+Math.round((n.por_nivel-n.faltam)/n.por_nivel*100||6)+'%"></i></span></div>';
+  h+='<div class="blk" style="margin-top:14px"><span class="lab">O time</span><div id="rg-time">'+m.membros.map(function(x){
+    return '<div class="slm"><i>'+esc(iniProd(x.nome))+'</i><div><b>'+esc(x.nome)+'</b><small>'+(x.arroba?'@'+esc(x.arroba)+' · ':"")+(x.papel==="dono"?"fundou a guilda":"membro")+'</small></div>'+
+      (x.eu?'<span class="tg n0">você</span>':dono?'<button class="btn gh sm" data-rg-tirar="'+esc(x.sub)+'" data-rg-nome="'+esc(x.nome)+'">Tirar</button>':"")+'</div>';
+  }).join("")+'</div></div>';
+  if(dono&&(m.convites||[]).length) h+='<div class="blk" style="margin-top:14px"><span class="lab">Convites abertos</span>'+m.convites.map(function(c){
+    return '<div class="slm"><div><b>'+(c.tipo==="link"?"Convite por link":"Convite pelo @")+'</b><small>vence em '+esc(rgDia(c.expira_em.slice(0,10)))+'</small></div>'+
+      '<button class="btn gh sm" data-rg-cancelar="'+esc(c.id)+'">Cancelar</button></div>' }).join("")+'</div>';
+  h+='<div class="blk" style="margin-top:14px"><span class="lab">Memória dos jobs</span>'+
+    (m.jobs.length?m.jobs.map(function(x){
+      return '<div class="slm"><div><b>'+esc(x.funcao||"Job")+'</b><small>'+esc(rgDia(x.dia)||"sem data")+(x.membros.length?' · '+esc(x.membros.join(", ")):"")+'</small></div></div>' }).join("")
+      :'<p class="note" style="margin:8px 0 0">Nenhum job fechado ainda. O primeiro a ser aceito por alguém da guilda começa a contar.</p>')+'</div>';
+  h+='<div class="blk" style="margin-top:14px"><span class="lab">Conquistas</span><div class="benef">'+m.beneficios.map(function(b){
+    return '<div class="bnf'+(b.conquistado&&b.ativo?" ok":"")+'" style="--slcor:'+corOk(g.cor)+'"><span class="nv">nível '+b.nivel+'</span><b>'+esc(b.titulo)+'</b><p>'+esc(b.detalhe)+'</p>'+
+      '<span class="falta">'+(!b.ativo?"em breve":b.conquistado?"✓ conquistado":"faltam "+pl(Math.max(1,(b.nivel-1)*n.por_nivel-n.jobs),"job"))+'</span></div>' }).join("")+'</div>'+
+    '<p class="note" style="margin:10px 0 0">A guilda muda só o que ela mesma vê. A busca é igual para todo mundo.</p></div>';
+  h+='<div class="rg-acoes" style="margin-top:18px"><button class="btn gh sm" id="rg-sair">Sair da guilda</button>'+
+    '<span class="note" style="margin:0">sair custa 7 dias de carência; o que a guilda já fechou fica</span></div>';
+  return h;
+}
+function rgPedir(corpo,ok){
+  return cfbPedir("POST","/api/zro/guildas",corpo).then(function(r){
+    if(r.status===200||r.status===201||r.status===204){ if(ok) ok(r); return realGuildaCarregar().then(function(){ realGuildaPintar(); return r }) }
+    avisar({t:rgMsg(r),tipo:"chama",icone:"⚠"}); return r;
+  });
+}
+function rgLigar(eu){
+  var b=v("rg-fundar"); if(b) b.onclick=rgFundar;
+  b=v("rg-convidar"); if(b) b.onclick=rgConvidar;
+  b=v("rg-sair"); if(b) b.onclick=function(){
+    if(!window.confirm("Sair da guilda? Você só poderá entrar em outra daqui a 7 dias. O que a guilda já fechou fica.")) return;
+    rgPedir({acao:"sair"},function(){ som("nao") }) };
+  eu.querySelectorAll("[data-rg-aceitar]").forEach(function(x){ x.onclick=function(){ rgPedir({acao:"aceitar",id:x.dataset.rgAceitar},function(){ som("claquete") }) } });
+  eu.querySelectorAll("[data-rg-recusar]").forEach(function(x){ x.onclick=function(){ rgPedir({acao:"recusar",id:x.dataset.rgRecusar}) } });
+  eu.querySelectorAll("[data-rg-bloquear]").forEach(function(x){ x.onclick=function(){ rgPedir({acao:"recusar",id:x.dataset.rgBloquear,bloquear:true}) } });
+  eu.querySelectorAll("[data-rg-cancelar]").forEach(function(x){ x.onclick=function(){ rgPedir({acao:"cancelar",id:x.dataset.rgCancelar}) } });
+  eu.querySelectorAll("[data-rg-tirar]").forEach(function(x){ x.onclick=function(){
+    if(window.confirm("Tirar "+x.dataset.rgNome+" da guilda?")) rgPedir({acao:"remover",sub:x.dataset.rgTirar}) } });
+}
+var RG_CORES=["#ff6b9d","#4dd8c0","#7c9cff","#ffb347","#b78bff","#7fd97f"], RG_COR="#7c9cff";
+function rgFundar(){
+  var o=rgOvl('<h2 style="margin:0">Fundar guilda</h2><p class="rg-p">Dê um nome e uma tag. Quem entra, entra por convite.</p>'+
+    '<div class="frow" style="margin-top:16px"><span class="lab">Nome da guilda</span><input class="fld" id="rg-f-nome" maxlength="24" placeholder="ex.: Farol Filmes"></div>'+
+    '<div style="display:grid;grid-template-columns:110px 1fr;gap:14px;margin-top:14px"><div class="frow"><span class="lab">Tag (2 a 3 letras)</span>'+
+    '<input class="fld mono" id="rg-f-tag" maxlength="3" placeholder="FRL" style="text-transform:uppercase"></div>'+
+    '<div class="frow"><span class="lab">Cor do brasão</span><div class="fswatch" id="rg-f-cores">'+RG_CORES.map(function(c){
+      return '<button type="button" style="background:'+c+'" data-c="'+c+'" aria-pressed="'+(c===RG_COR)+'" aria-label="cor '+c+'"></button>' }).join("")+'</div></div></div>'+
+    '<div class="frow" style="margin-top:14px"><span class="lab">Sobre (opcional)</span><input class="fld" id="rg-f-sobre" maxlength="90" placeholder="que tipo de job a guilda roda"></div>'+
+    '<p class="note" id="rg-f-erro" style="color:var(--magenta)" hidden></p>'+
+    '<div class="acoes" style="margin-top:18px"><button class="btn gh" id="rg-f-x">Cancelar</button><button class="btn" id="rg-f-ok">Criar</button></div>');
+  o.querySelectorAll("[data-c]").forEach(function(b){ b.onclick=function(){ RG_COR=b.dataset.c; o.querySelectorAll("[data-c]").forEach(function(x){ x.setAttribute("aria-pressed",String(x===b)) }) } });
+  v("rg-f-x").onclick=rgFechar;
+  v("rg-f-ok").onclick=function(){
+    var erro=v("rg-f-erro"), nome=v("rg-f-nome").value.trim(), tag=v("rg-f-tag").value.trim().toUpperCase();
+    if(nome.length<3){ erro.textContent=ERRO_GUILDA.nome; erro.hidden=false; return }
+    if(!/^[A-ZÀ-Ú]{2,3}$/.test(tag)){ erro.textContent=ERRO_GUILDA.tag; erro.hidden=false; return }
+    cfbPedir("POST","/api/zro/guildas",{nome:nome,tag:tag,cor:RG_COR,sobre:v("rg-f-sobre").value.trim()||null}).then(function(r){
+      if(r.status!==201){ erro.textContent=rgMsg(r); erro.hidden=false; return }
+      rgFechar(); som("claquete"); realGuildaCarregar().then(realGuildaPintar);
+    });
+  };
+  v("rg-f-nome").focus();
+}
+/* convidar: pelo @ (a busca da comunidade da Absolute ZRO) ou por link. Nada sai por e-mail nem WhatsApp. */
+function rgConvidar(){
+  var o=rgOvl('<h2 style="margin:0">Convidar</h2><p class="rg-p">Pelo @ ou por um link para mandar a quem você quiser.</p>'+
+    '<div class="frow" style="margin-top:16px"><span class="lab">Procurar pelo @ ou nome</span><input class="fld" id="rg-c-q" placeholder="@ ou nome" autocomplete="off"></div>'+
+    '<div id="rg-c-lista" class="rg-lista"></div>'+
+    '<div class="acoes" style="margin-top:14px"><button class="btn gh" id="rg-c-link">Gerar link</button><button class="btn gh" id="rg-c-x">Fechar</button></div>'+
+    '<p class="note" id="rg-c-saida" hidden></p>');
+  v("rg-c-x").onclick=rgFechar;
+  var lista=v("rg-c-lista");
+  function pintar(){
+    var q=v("rg-c-q").value.trim().toLowerCase().replace(/^@/,""), m=REAL_GUILDA&&REAL_GUILDA.minha;
+    var fora=m?m.membros.map(function(x){return x.sub}):[];
+    var achou=q.length<2||!REAL_GUILDA_PESSOAS?[]:REAL_GUILDA_PESSOAS.filter(function(p){
+      return fora.indexOf(p.id)<0&&p.id!==(ZRO_CONTA&&String(ZRO_CONTA.sub).toLowerCase())&&((p.arroba||"").toLowerCase().indexOf(q)>=0||(p.nome||"").toLowerCase().indexOf(q)>=0) }).slice(0,6);
+    lista.innerHTML=achou.map(function(p){ return '<div class="slm"><div><b>'+esc(p.nome||("@"+p.arroba))+'</b><small>@'+esc(p.arroba)+'</small></div>'+
+      '<button class="btn sm" data-rg-conv="'+esc(p.id)+'">Convidar</button></div>' }).join("")||(q.length>=2?'<p class="note" style="margin:8px 0 0">Ninguém com esse @.</p>':"");
+    lista.querySelectorAll("[data-rg-conv]").forEach(function(b){ b.onclick=function(){
+      cfbPedir("POST","/api/zro/guildas",{acao:"convidar",para:b.dataset.rgConv}).then(function(r){
+        if(r.status===201){ b.textContent="Convidado"; b.disabled=true; som("toque"); realGuildaCarregar().then(realGuildaPintar) } else avisar({t:rgMsg(r),tipo:"chama",icone:"⚠"}) }) } });
+  }
+  v("rg-c-q").oninput=function(){
+    if(REAL_GUILDA_PESSOAS) return pintar();
+    cfbPedir("GET","/api/zro/pessoas?de="+key(HOJE)+"&ate="+key(HOJE)).then(function(r){
+      REAL_GUILDA_PESSOAS=(r.j&&r.j.pessoas)||[]; pintar() });
+  };
+  v("rg-c-link").onclick=function(){
+    cfbPedir("POST","/api/zro/guildas",{acao:"convidar"}).then(function(r){
+      var s=v("rg-c-saida"); s.hidden=false;
+      if(r.status!==201){ s.textContent=rgMsg(r); return }
+      s.innerHTML='Link de uso único, vale 7 dias:<br><input class="fld" id="rg-c-url" readonly value="'+esc(r.j.link)+'" style="margin-top:6px">';
+      var u=v("rg-c-url"); u.focus(); u.select();
+      try{ navigator.clipboard.writeText(r.j.link) }catch(e){}
+      realGuildaCarregar().then(realGuildaPintar);
+    });
+  };
+  v("rg-c-q").focus();
+}
+/* o link de convite (?guilda=código): mostra o mínimo da guilda e pergunta; nada entra sem o toque da pessoa */
+function rgConviteDoLink(){
+  if(!guildaReal()||!realLigado()) return;
+  var t=rgToken(); if(!t||v("rg-ovl")&&!v("rg-ovl").hidden) return;
+  if(REAL_GUILDA&&REAL_GUILDA.minha){ rgLimparToken(); return }
+  cfbPedir("POST","/api/zro/guildas",{acao:"ver",token:t}).then(function(r){
+    if(r.status!==200||!r.j){ rgLimparToken(); avisar({t:rgMsg(r),tipo:"chama",icone:"⚠"}); return }
+    var g=r.j.guilda;
+    var o=rgOvl('<div class="colcab">'+rgBrasao(g)+'<div><span class="lab">Convite para a guilda</span><b class="rg-nome">'+esc(g.nome)+'</b>'+
+      '<small class="rg-p">'+g.ocupadas+' de '+g.vagas+' vagas ocupadas</small></div></div>'+
+      '<p class="note" id="rg-l-erro" style="color:var(--magenta)" hidden></p>'+
+      '<div class="acoes" style="margin-top:18px"><button class="btn gh" id="rg-l-x">Agora não</button><button class="btn" id="rg-l-ok">Entrar na guilda</button></div>');
+    v("rg-l-x").onclick=function(){ rgFechar(); rgLimparToken() };
+    v("rg-l-ok").onclick=function(){
+      cfbPedir("POST","/api/zro/guildas",{acao:"aceitar",token:t}).then(function(r2){
+        if(r2.status!==200){ var e=v("rg-l-erro"); e.textContent=rgMsg(r2); e.hidden=false; return }
+        rgFechar(); rgLimparToken(); som("claquete"); realGuildaCarregar().then(function(){ show("guildas") });
+      });
+    };
+  });
+}
 /* ============ PROPOSTAS, JOBS, FEED E BRECHÓ NO SERVIDOR (0003, decisão do titular antes do lançamento) ============
    No site real as quatro telas não moram mais no aparelho. A consulta vai para a caixa de quem foi chamado
    (/api/zro/propostas; dentro do Carro, sem e-mail nem WhatsApp), o job é a proposta aceita, e o feed e o brechó são
@@ -20668,6 +20874,7 @@ function realSocial(){
       sub:"Enviar para a sua conta — toque para publicar no Carro",icone:"↑",dur:15000,fazer:realEnviarLocais});
   }
   realPropostas(); realFeed(); realBrecho();
+  if(guildaReal()) realGuildaCarregar().then(rgConviteDoLink);
 }
 function realEnviarLocais(){
   var L=REAL_LOCAIS||{posts:[],anuncios:[]}, fila=[];
@@ -26660,7 +26867,7 @@ const FASE_BP={inv:1,vender:1,alugar:2};
    pronto para a seguradora (Fase 5). Esconder a aba "Alugar" não resolvia
    nada disso — a promessa estava dentro de uma tela que a Fase 1 tem. */
 const temAluguel=()=>!FASE||FASE>=(FASE_BP.alugar||1);
-const naFase=k=>!(REAL&&FORA_DO_REAL.has(k))&&(!FASE||(FASE_DE[k]||1)<=FASE);
+const naFase=k=>(REAL&&(k==="guildas"||k==="salao"))?(k==="guildas"&&guildaReal()):!(REAL&&FORA_DO_REAL.has(k))&&(!FASE||(FASE_DE[k]||1)<=FASE);
 /* o que cada versão entrega, em palavras de quem usa — é o que o chip abre */
 const FASE_ENTREGA={
   1:["Agenda: marque os dias em que você está livre","Busca por praça, data, função e equipamento",

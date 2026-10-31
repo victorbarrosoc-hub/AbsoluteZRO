@@ -232,6 +232,8 @@ const html = comMidia(tpl, 'template.html')
      dele, e public/ chegava a 70 MB). Cada página diz a sua fase numa
      <meta name="cdf-fase"> e o script lê no arranque. */
   .replace('/*__FASE__*/0', '+((document.querySelector(\'meta[name="cdf-fase"]\')||{}).content||0)')
+  /* a fase do lançamento (db/fase.js, o mesmo número que o servidor lê). CDF_TESTE_FASE só serve às suítes. */
+  .replace('/*__FASE_LANCAMENTO__*/1', () => String(Number(process.env.CDF_TESTE_FASE) || require('../db/fase.js').FASE_LANCAMENTO))
   .replace('/*__WEB3FORMS_KEY__*/""', () => comoJS(deFora.web3forms))
   .replace('/*__SUPABASE_URL__*/""', () => comoJS(deFora.supabaseUrl))
   .replace('/*__SUPABASE_ANON_KEY__*/""', () => comoJS(deFora.supabaseKey));

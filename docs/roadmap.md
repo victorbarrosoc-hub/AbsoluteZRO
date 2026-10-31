@@ -1105,6 +1105,14 @@ do card... não consigo localizar o job que quero achar".
   do Carro `0003_propostas_feed_brecho` (RLS pelo `sub` da Absolute ZRO), rotas `/api/zro/propostas|feed|brecho|denuncia`:
   a consulta chega na caixa do freela dentro do Carro (sem e-mail nem WhatsApp), aceitar vira job, feed e brechó com
   apagar o próprio e denúncia guardada; o que estava no aparelho só sobe se a pessoa tocar em "Enviar para a sua conta".
+- 🟡 **Guilda do Carro (fase 2 do lançamento), pronta e GUARDADA no branch `fase2-guilda`** (31/10/2026; só entra no ar
+  com o "libera fase 2" do titular). Migração do Carro `0004_guildas` (RLS, regras no banco: vagas, bloqueio, carência de
+  7 dias, convite que vence), rota `/api/zro/guildas` e a tela do site real. Criar, convidar pelo @ ou por link, aceitar,
+  sair, tirar, memória dos jobs fechados (nasce da proposta aceita) e nível (3 jobs por nível). Vagas: 15 de base, +2 no
+  nível 10, +5 do adicional. O portão é UMA constante, `FASE_LANCAMENTO` em `products/carro-do-freela/db/fase.js` (padrão 1:
+  rota 404 e guilda escondida). HUB `0043_carro_guilda_espaco_extra`: adicional "Espaço extra na guilda" (R$ 14,90/mês, +5
+  vagas) em RASCUNHO, não aplicado em produção. Sem cobrança (a taxa de 5% do nível 15 fica como dado, inativa).
+  Fora: gov.br e contrato; e-mail e WhatsApp; ranking entre guildas.
 - ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
   separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 
