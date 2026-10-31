@@ -26,7 +26,9 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 - **Meus presets** (`src/personalizado.js`, editor em `app/meus.js`): a pessoa parte de um preset do Relay e muda,
   com a ficha ao vivo:
   - vídeo: codec, tamanho (proporção do arquivo ou tela fixa com faixas, preencher ou esticar), cadência até um teto
-    ou exata (23,976, 29,97, 59,94…), bitrate médio, constante (CBR), qualidade constante (RF) ou tamanho máximo,
+    ou exata (23,976, 29,97, 59,94…), ou **interpretar** (como o "Interpret Footage" do After Effects: todos os quadros,
+    só a velocidade muda; 59,94 → 23,976 vira câmera lenta sem som; até 5% de diferença, como 24 → 23,976, o som
+    acompanha), bitrate médio, constante (CBR), qualidade constante (RF) ou tamanho máximo,
     quadro-chave;
   - recorte e giro (90°, 180°, 270°, espelho), trecho (início e fim);
   - áudio: codec, bitrate, taxa, canais e volume em dB;
