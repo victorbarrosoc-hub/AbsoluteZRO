@@ -4,8 +4,15 @@
  *   GET  /api/zro/sede?canal=<id>&desde=<v>  → { v, canal, mensagens, fixadas, digitando, agora, canais }  (ETag/304)
  *   GET  /api/zro/sede?ver=mural             → { posts: [...] }
  *   GET  /api/zro/sede?ver=memoria           → { cartazes: [...] }   (todos os jobs juntos, com os créditos)
+ *   GET  /api/zro/sede?ver=dia&dia=AAAA-MM-DD → { dia, pessoas: [{ sub, estado }] }   (quem da guilda está livre: 0006)
  *   POST /api/zro/sede {acao, ...}           → mensagem · chamada · reagir · apagar · fixar · responder · presenca ·
- *                                              canal_job · nomear · lido · digitando · post · post_apagar · post_fixar · post_reagir
+ *                                              canal_job · nomear · lido · digitando · post · post_apagar · post_fixar · post_reagir ·
+ *                                              missao · missao_trocar · missao_cancelar   (o quadro de missões, 0006)
+ *
+ * O QUADRO DE MISSÕES (0006): `missao` monta o job com gente da guilda (as vagas, o canal do job e, se pedido, o call
+ * sheet nele); a tela manda então UMA proposta por pessoa pelo POST /api/zro/propostas de sempre, com `missao`. O estado de
+ * cada vaga vem da proposta (aceitar/recusar pelo mesmo PATCH, na mesma caixa). O quadro sai em GET /api/zro/guildas
+ * (`minha.missoes` e `minha.proximos`).
  *
  * O chat é em tempo real por POLL barato: a guilda tem um contador de versão (guilda_versao, sobe a cada mensagem,
  * reação, resposta de call sheet ou post); o ETag é a versão + quem está digitando + quantos estão na sede, e o
@@ -135,6 +142,17 @@ const ACOES = {
   },
   async post_apagar(c, corpo) { await c.query('select carro_do_freela.guilda_post_apagar($1)', [R.sedeIdDe(corpo)]) },
   async post_fixar(c, corpo) { const v = R.fixarDe(corpo); await c.query('select carro_do_freela.guilda_post_fixar($1, $2)', [v.id, v.fixar]) },
+  async missao(c, corpo, nome) {
+    const v = R.missaoDe(corpo);
+    const r = (await c.query('select * from carro_do_freela.guilda_missao_criar($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [v.titulo, v.contratante, v.cliente, v.dia, v.ini, v.fim, v.local, JSON.stringify(v.equipe), nome, v.chamada && JSON.stringify(v.chamada)])).rows[0];
+    return { status: 201, corpo: { missao: { id: r.id, canal: r.canal, chamada: r.chamada || null } } };
+  },
+  async missao_trocar(c, corpo) {
+    const v = R.missaoTrocarDe(corpo);
+    await c.query('select carro_do_freela.guilda_missao_trocar($1, $2, $3, $4)', [v.missao, v.sai, v.entra, v.funcao]);
+  },
+  async missao_cancelar(c, corpo) { await c.query('select carro_do_freela.guilda_missao_cancelar($1)', [R.missaoIdDe(corpo)]) },
   async post_reagir(c, corpo) { const v = R.reagirDe(corpo, R.EMOJIS.concat('quero')); await c.query('select carro_do_freela.guilda_post_reagir($1, $2, $3)', [v.id, v.emoji, v.ligar]) },
 };
 
@@ -157,6 +175,11 @@ async function sede(req, res) {
           return res.end();
         }
         return json(res, 200, r.corpo, Object.assign({ ETag: r.etag, 'Cache-Control': 'no-cache' }, extra));
+      }
+      if (q.get('ver') === 'dia') {
+        const dia = R.diaDe(String(q.get('dia') || ''));
+        const l = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.guilda_missao_dia($1::date)', [dia])).rows);
+        return json(res, 200, { dia, pessoas: l.map(x => ({ sub: x.sub, estado: x.estado })) }, extra);
       }
       if (q.get('ver') === 'mural') return json(res, 200, { posts: await db.asUser(sub, c => mural(c, sub)) }, extra);
       if (q.get('ver') === 'memoria') {

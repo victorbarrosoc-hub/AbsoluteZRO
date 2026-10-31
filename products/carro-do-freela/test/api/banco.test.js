@@ -706,6 +706,8 @@ test('rotas: limite de pedidos por IP (freio por instância) e a régua de orige
 require('./_guilda-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais, FREELA, OUTRA, TERCEIRA }));
 /* a Sede (0005): chat, quadro, XP, personalização, imagens e lugares — o mesmo banco, a mesma Absolute ZRO falsa */
 require('./_sede-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, SITE, cookieDe }));
+/* o quadro de missões (0006): montar o job na Sede, uma proposta por pessoa, o estado de cada vaga, trocar, fechar */
+require('./_missoes-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, SITE, cookieDe }));
 
 test('regras: os catálogos do servidor são os do app (funções da base, nichos de TIPOS)', () => {
   const tpl = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');

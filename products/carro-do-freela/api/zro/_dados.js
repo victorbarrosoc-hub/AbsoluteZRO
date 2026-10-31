@@ -323,10 +323,26 @@ function nomeDaConta(quem) {
 const iso = d => (d instanceof Date ? d.toISOString() : d);
 const diaTxt = d => (d instanceof Date ? d.toISOString().slice(0, 10) : d || null);
 const horaTxt = h => (h ? String(h).slice(0, 5) : null);
-function propostaSaida(l, sub) {
-  return { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
+function propostaSaida(l, sub, missoes) {
+  const o = { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
     anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
     mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+  /* a marca da guilda (0006): só existe na proposta que nasceu de uma missão da Sede; sem ela a saída é a de sempre */
+  if (l.missao_id) {
+    const m = missoes && missoes.get(l.missao_id);
+    o.guilda = m ? { missao: l.missao_id, titulo: m.titulo, nome: m.nome, tag: m.tag, equipe: m.equipe } : { missao: l.missao_id };
+  }
+  return o;
+}
+/** o mínimo da missão para a caixa de Propostas: título, a guilda e o tamanho da equipe (RLS: só quem é da guilda lê) */
+async function missoesDasPropostas(c, rows) {
+  const ids = [...new Set(rows.map(l => l.missao_id).filter(Boolean))];
+  if (!ids.length) return new Map();
+  const r = (await c.query(
+    `select m.id, m.titulo, g.nome, g.tag,
+            (select count(*)::int from carro_do_freela.guilda_missao_vagas v where v.missao_id = m.id and v.estado <> 'trocada') + 1 as equipe
+       from carro_do_freela.guilda_missoes m join carro_do_freela.guildas g on g.id = m.guilda_id where m.id = any($1::uuid[])`, [ids])).rows;
+  return new Map(r.map(x => [x.id, x]));
 }
 const postSaida = (l, sub) => ({ id: l.id, autor: { sub: l.sub, nome: l.autor_nome }, eu: l.sub === sub, tipo: l.tipo,
   texto: l.texto, criado_em: iso(l.criado_em) });
@@ -344,9 +360,11 @@ async function propostas(req, res) {
   const { db, sub, quem, extra } = p;
   try {
     if (req.method === 'GET') {
-      const rows = await db.asUser(sub, async c =>
-        (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows);
-      const todas = rows.map(l => propostaSaida(l, sub));
+      const { rows, missoes } = await db.asUser(sub, async c => {
+        const rows = (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows;
+        return { rows, missoes: FASES.guildaNoAr() ? await missoesDasPropostas(c, rows) : new Map() };
+      });
+      const todas = rows.map(l => propostaSaida(l, sub, missoes));
       return json(res, 200, { recebidas: todas.filter(x => x.recebida), enviadas: todas.filter(x => !x.recebida) }, extra);
     }
     const corpo = await corpoDe(req, res, extra);
@@ -354,19 +372,21 @@ async function propostas(req, res) {
     if (req.method === 'POST') {
       const v = R.propostaDe(corpo);
       if (v.para === sub) return json(res, 400, { erro: 'para', campo: 'para' }, extra);
+      /* a marca da guilda só existe com a fase 2 (db/fase.js): antes disso é um campo que não existe */
+      if (v.missao && !FASES.guildaNoAr()) return json(res, 400, { erro: 'campo', campo: 'missao' }, extra);
       const l = await db.asUser(sub, async c => {
         if (v.tipo === 'brecho') {
           const an = (await c.query("select sub from carro_do_freela.anuncios where id = $1 and situacao = 'disponivel'", [v.anuncio])).rows[0];
           if (!an || an.sub !== v.para) return null;
         }
         return (await c.query(
-          `insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, ini, fim, funcao, local, mensagem, valor_cents)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
-          [sub, v.para, nomeDaConta(quem), v.tipo, v.anuncio, v.dia, v.ini, v.fim, v.funcao, v.local, v.mensagem, v.valor_cents],
+          `insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, ini, fim, funcao, local, mensagem, valor_cents, missao_id)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning *`,
+          [sub, v.para, nomeDaConta(quem), v.tipo, v.anuncio, v.dia, v.ini, v.fim, v.funcao, v.local, v.mensagem, v.valor_cents, v.missao],
         )).rows[0];
       });
       if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
-      return json(res, 201, { proposta: propostaSaida(l, sub) }, extra);
+      return json(res, 201, { proposta: propostaSaida(l, sub, null) }, extra);
     }
     const id = idDe(req);
     if (!id) return json(res, 400, { erro: 'id' }, extra);
@@ -493,7 +513,9 @@ const ERROS_GUILDA = { ja_em_guilda: 409, carencia: 409, nome_em_uso: 409, cheia
   bloqueado: 403, so_dono: 403, dono_nao_sai: 409, convite_invalido: 404, convite_expirado: 410, sem_guilda: 404, nao_achado: 404,
   /* a Sede (0005) */
   devagar: 429, pedido: 400, chamada: 400, chamada_passou: 409, chamada_futura: 409, limite_fixados: 409, so_quem_fez: 403,
-  limite_canais: 409, cota: 413 };
+  limite_canais: 409, cota: 413,
+  /* o quadro de missões (0006) */
+  missao: 409, missao_dia: 409, equipe: 400, dia: 400 };
 /* os sinais dos adicionais na claim: presença, não quantidade (o HUB não guarda quantos). Cada pacote é UM sinal. */
 const SINAL_FUNDACAO = 'carro-do-freela.guilda_fundacao';
 const PACOTES = { 'carro-do-freela.guilda_espaco_extra': 5, 'carro-do-freela.guilda_espaco_extra_15': 15 };
@@ -612,6 +634,7 @@ async function guildaMinha(c, sub) {
   const bonus = Number(m.vagas) - 15 - m.espaco_extra;
   const online = x => !!x.visto_em && Date.now() - new Date(x.visto_em).getTime() < 120000;
   const lista = cartazes(jobs, membros, sub);
+  const missoes = await missoesDa(c, m.id, sub);
   return {
     guilda: { id: m.id, nome: m.nome, tag: m.tag, cor: m.cor, sobre: m.sobre, praca: m.praca, criada_em: iso(m.criado_em),
       paleta: R.paletaDe(m.paleta, m.cor_propria), cor_propria: m.cor_propria, logo: logo ? { id: logo.id, sha: logo.sha256, url: LOGO_URL(logo) } : null },
@@ -633,7 +656,51 @@ async function guildaMinha(c, sub) {
       ultimas: ultimas.map(x => ({ id: x.id, autor: x.autor_sub ? { sub: x.autor_sub, nome: x.autor_nome } : null, tipo: x.tipo, texto: x.texto,
         dados: x.dados, criado_em: iso(x.criado_em), reacoes: x.reacoes })) },
     convites: convites.map(v => ({ id: v.id, tipo: v.para_sub ? 'arroba' : 'link', para: v.para_sub, expira_em: iso(v.expira_em) })),
+    missoes, proximos: proximosDe(missoes),
   };
+}
+
+/* ---------------- o quadro de missões (0006): os jobs montados na Sede, com a equipe e o estado de cada pessoa ----------------
+ * a rodar = o dia ainda vem; rodando = é hoje; feito = já passou (o que foi feito fica 45 dias no quadro; depois, só na
+ * memória). Sem preço (missão e vaga não guardam valor) e sem o motivo de quem recusou (esse fica entre os dois lados).
+ * O dia "de hoje" é o da praça (Natal, UTC−3), não o do servidor. */
+const hojeNaPraca = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+function estadoDaMissao(dia, hoje) { return dia > hoje ? 'a_rodar' : dia === hoje ? 'rodando' : 'feito' }
+async function missoesDa(c, g, sub) {
+  const ms = (await c.query(
+    `select * from carro_do_freela.guilda_missoes where guilda_id = $1 and estado = 'aberta' and dia >= current_date - 45
+      order by dia, criado_em limit 60`, [g])).rows;
+  if (!ms.length) return [];
+  const vagas = (await c.query(
+    `select missao_id, sub, nome, funcao, estado from carro_do_freela.guilda_missao_vagas
+      where missao_id = any($1::uuid[]) and estado <> 'trocada' order by criado_em`, [ms.map(x => x.id)])).rows;
+  const hoje = hojeNaPraca();
+  const lista = ms.map(x => {
+    const dia = diaTxt(x.dia);
+    const eq = vagas.filter(v => v.missao_id === x.id).map(v => ({ sub: v.sub, nome: v.nome, funcao: v.funcao,
+      estado: v.estado === 'enviar' ? 'pendente' : v.estado, enviada: v.estado !== 'enviar', eu: v.sub === sub }));
+    return {
+      id: x.id, titulo: x.titulo, contratante: x.contratante, cliente: x.cliente, dia, ini: horaTxt(x.ini), fim: horaTxt(x.fim),
+      local: x.local, dono: { sub: x.dono_sub, nome: x.dono_nome }, eu_dono: x.dono_sub === sub, canal: x.canal_id, chamada: x.chamada_id,
+      estado: estadoDaMissao(dia, hoje), equipe: eq,
+      conta: { vai: eq.filter(v => v.estado === 'vai').length, pendente: eq.filter(v => v.estado === 'pendente').length,
+        nao_vai: eq.filter(v => v.estado === 'nao_vai').length },
+      criado_em: iso(x.criado_em),
+    };
+  });
+  /* no quadro: o que vem primeiro (o mais perto antes) e o que já foi depois (o mais novo antes) */
+  return lista.filter(x => x.estado !== 'feito').concat(lista.filter(x => x.estado === 'feito').reverse());
+}
+/** o próximo job de cada pessoa da guilda (o selo na lista de membros): quem montou ou quem vai/está pendente */
+function proximosDe(missoes) {
+  const out = {};
+  const pegar = (s, x, estado) => { if (!out[s] || out[s].dia > x.dia) out[s] = { missao: x.id, titulo: x.titulo, dia: x.dia, estado } };
+  for (const x of missoes) {
+    if (x.estado === 'feito') continue;
+    pegar(x.dono.sub, x, 'monta');
+    for (const v of x.equipe) if (v.estado !== 'nao_vai') pegar(v.sub, x, v.estado);
+  }
+  return out;
 }
 
 async function guildas(req, res) {
@@ -750,5 +817,5 @@ module.exports = {
   guildas: protegido(guildas),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
   /* o que a Sede (_sede.js) usa daqui: o mesmo caminho de toda rota */
-  _comum: { json, preparar, corpoDe, responderErro, nomeDaConta, semConteudo, protegido, iso, diaTxt, FASES, cartazes },
+  _comum: { json, preparar, corpoDe, responderErro, nomeDaConta, semConteudo, protegido, iso, diaTxt, FASES, cartazes, hojeNaPraca },
 };
