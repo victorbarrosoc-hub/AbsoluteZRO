@@ -16,7 +16,7 @@ const NO_AR: Record<string, string> = {
   relay: 'https://relay.absolutezro.com',
   sobedesce: 'https://sobedesce.vercel.app',
   synquei: 'https://synquei.vercel.app',
-  tpeasy: 'https://tpeasy.vercel.app',
+  tpeasy: 'https://tpeasy.absolutezro.com',
 }
 const HUB = 'https://absolutezro.com'
 const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|carro-?do-?freela|carrodofreela/i
@@ -28,7 +28,15 @@ type Menu = {
   bloco: (texto: string) => string
   /** Onde mora o ícone de cada plataforma, a partir da raiz do repositório. */
   icone: (id: string) => string
+  /**
+   * Menu num arquivo que dispara o build de computador: o endereço antigo ainda vale até o commit de computador (que
+   * troca o menu e tira esta marca), para a parte web publicar antes sem esperar a autorização dos instaladores.
+   */
+  aceitaAntigo?: boolean
 }
+
+/** Endereço antigo → o de agora (o antigo continua no ar). */
+const ANTIGOS: Record<string, string> = { 'https://tpeasy.vercel.app': 'https://tpeasy.absolutezro.com' }
 
 const entre = (inicio: RegExp, fim: RegExp) => (texto: string) => {
   const i = texto.search(inicio)
@@ -43,6 +51,7 @@ const MENUS: Menu[] = [
     arquivo: 'products/synquei/app/index.html',
     bloco: entre(/<nav class="nav nav-familia"/, /<\/nav>/),
     icone: (id) => `products/synquei/app/familia/${id}.svg`,
+    aceitaAntigo: true,
   },
   {
     app: 'tpeasy',
@@ -67,6 +76,7 @@ const MENUS: Menu[] = [
     arquivo: 'products/sobedesce/public/components/sidebar.js',
     bloco: entre(/const FAMILIA = \[/, /\n\n/),
     icone: (id) => `products/sobedesce/public/familia/${id}.svg`,
+    aceitaAntigo: true,
   },
   {
     app: 'sobedesce',
@@ -90,7 +100,7 @@ describe('a família Absolute ZRO nos menus dos apps', () => {
           .filter(([id]) => id !== menu.app)
           .map(([, url]) => url),
       ].sort()
-      expect([...enderecos(bloco)].sort()).toEqual(esperado)
+      expect([...enderecos(bloco)].map((u) => (menu.aceitaAntigo && u && ANTIGOS[u]) || u).sort()).toEqual(esperado)
       expect(bloco).not.toMatch(FECHADOS)
       for (const id of Object.keys(NO_AR).filter((i) => i !== menu.app)) {
         const copia = menu.icone(id)

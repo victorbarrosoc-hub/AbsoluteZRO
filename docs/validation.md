@@ -3763,3 +3763,29 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 - Capturas no Playwright (interface `public/` com `scripts/ui-stub.js` em `STUB_MODO=arquivos`): Drive na raiz
   ("Precisa de acesso total"), pasta do SOBEDESCE, Liberados, Escolher do Drive (abre `/app/#escolher/g1`), Ajustes
   com o modo, seletor do Comparar travado e o resultado do Comparar, claro e escuro.
+
+## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
+
+Ramo `tpeasy-subdominio-login` sobre a main cba9ba9. Commit web (este) separado do commit de computador (Synquei e
+SOBEDESCE de computador, que disparam os instaladores).
+
+- Antes: `https://tpeasy.absolutezro.com/api/zro/entrar` respondia 307 para o `tpeasy.vercel.app` (o login do TPeasy só
+  aceitava o endereço antigo). `/api/zro/eu` do TPeasy e do Synquei em produção: 401 com a configuração presente.
+- Migração `0044_tpeasy_subdominio.sql`: `tests/integration/tpeasy-subdominio.test.ts` 3/3 (catálogo e `sso_start_url`
+  no subdomínio; `tpeasy-web` ganha o retorno novo, mantém o antigo e não duplica ao rodar de novo; sem o cliente, nada é
+  criado).
+- `products/tpeasy`: `node --test` 78/78 (entrar no subdomínio com cookie Secure e retorno dele; o endereço antigo entra
+  nele mesmo; prévia vai para o subdomínio; "Entrar" e a foto no topo de Roteiros; nada sem saber da conta).
+- Raiz: lint, format:check e typecheck limpos; `npm test` 55 arquivos, **476/476** (Postgres 16 local), com
+  `downloads` (SOBEDESCE em `sobedesce.com`, TPeasy no subdomínio) e `familia-menus` (TPeasy no subdomínio; os dois
+  menus de computador aceitam o endereço antigo até o commit de computador).
+- Menus da família na web: NOSSOM `tests/familia.test.ts` 2/2; Relay 121/122 e Revela 179/180 (a única falha de cada um
+  é `vendor/` × `node_modules`, que não estava instalado nesta máquina; nada a ver com o menu). Carro do Freela:
+  `mapa` 72/72 (a suíte que lê o menu da família), `sem-zoom` 41/41 e `busca-e-cartao` 24/24 sozinhas; a bateria
+  inteira não coube no limite de 15 min desta máquina (as que estouraram eram de tela, sem relação com o link).
+- `https://sobedesce.com`: `/`, `/app/`, `/instalar.sh`, `/instalar.ps1` 200; `/baixar/mac` e `/baixar/windows` 307 para o
+  Release. `https://tpeasy.absolutezro.com/` e `/app/` 200.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas no Playwright (390×844, claro, `/api/zro/eu` simulado): TPeasy fora (Entrar ao lado do título), dentro (foto)
+  e Ajustes (nome, e-mail, organização e Sair).
+- Não validado: o login de verdade no subdomínio, que depende de a 0044 rodar no banco e do deploy do TPeasy.

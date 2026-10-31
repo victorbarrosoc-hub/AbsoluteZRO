@@ -4,7 +4,7 @@
 // Perfil único: nome, e-mail e foto são os da conta Absolute ZRO (o /api/zro/eu relê a cada abertura). O TPeasy só
 // mostra; para mudar, "Editar na conta Absolute ZRO" abre o Perfil da Absolute ZRO fora do app.
 import { emit } from "./data.js";
-import { esc } from "./util.js";
+import { esc, icon } from "./util.js";
 
 export const zro = { estado: "?", pessoa: null }; // "?" = não sei, "fora", "dentro"
 const temServidor = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
@@ -51,6 +51,19 @@ if (typeof document !== "undefined")
     },
     true,
   );
+/**
+ * A conta no topo de Roteiros, à vista no celular (antes ela só existia em Ajustes): "Entrar" para quem está fora (volta
+ * para Roteiros já logado) e a foto de quem entrou, que abre Ajustes (nome, e-mail e Sair). Sem as funções /api/zro
+ * (offline, servidor estático) ou sem a configuração do login, o estado fica "?" e não aparece botão nenhum.
+ */
+export function atalhoContaHtml(z = zro) {
+  if (z.estado === "fora") return `<a class="pill is-small conta-entrar" href="${linkEntrar("/app/")}">${icon("user")}Entrar</a>`;
+  if (z.estado === "dentro" && z.pessoa) {
+    const quem = esc(z.pessoa.nome || z.pessoa.email || "Conta");
+    return `<button class="conta-topo-av" type="button" data-go="ajustes" aria-label="Conta: ${quem}" title="${quem}">${avatarHtml(z.pessoa)}</button>`;
+  }
+  return "";
+}
 // Quem entrou pela Absolute ZRO só usa a conta no TPeasy se a organização liberou o app.
 export const semAcesso = () => zro.estado === "dentro" && !!zro.pessoa && zro.pessoa.acesso === false;
 
