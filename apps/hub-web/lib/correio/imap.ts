@@ -95,7 +95,8 @@ const opcoesDoParser = { skipHtmlToText: false, skipTextToHtml: true, skipTextLi
 async function resumo(m: FetchMessageObject): Promise<{ r: Resumo; destinos: string[] }> {
   const bloco = m.headers?.toString('utf8') ?? ''
   const p = await simpleParser(bloco + '\r\n', opcoesDoParser)
-  const data = p.date ?? (m.internalDate ? new Date(m.internalDate) : null)
+  // Data de chegada no iCloud (INTERNALDATE), como no Mail; o Date do remetente só na falta dela.
+  const data = m.internalDate ? new Date(m.internalDate) : (p.date ?? null)
   return {
     destinos: destinosDaMensagem(bloco),
     r: {
@@ -132,7 +133,7 @@ export async function listarMensagens(cfg: ConfigCorreio, caixa: CaixaCorreio): 
       return lidas
         .filter((x) => daCaixa(x.destinos, caixa))
         .map((x) => x.r)
-        .sort((a, b) => b.uid - a.uid)
+        .sort((a, b) => (b.data ?? '').localeCompare(a.data ?? '') || b.uid - a.uid)
         .slice(0, LIMITES.lista)
     } finally {
       lock.release()

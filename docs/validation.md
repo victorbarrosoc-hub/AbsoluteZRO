@@ -15,6 +15,33 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Papel Financeiro e Correio no console (31/10/2026)
+
+Branch `console-financeiro-correio` (com a main mesclada, até `0045_tpeasy_subdominio`): migração `0046_papel_financeiro`
+e [ADR 0034](decisions/0034-console-financeiro-e-correio.md). Sem rede nos testes: o iCloud é o falso local de
+`tests/fixtures/icloud-falso.ts` (IMAP e SMTP em memória).
+
+- `tests/integration/console-papeis.test.ts` (14): o que cada papel vê e muda; `requireConsole`/`requireCaixa` negam
+  (403) para cada área e caixa fora do papel; Financeiro barrado pelas guardas antigas; toda página, layout e rota do
+  /admin e de `/api/v1/admin/correio` com guarda; 0046 aceita `financeiro` e recusa papel inventado; isolamento:
+  `zro_app` não grava `platform_role` (nem o Financeiro vira admin) e `zro.is_platform_admin()` segue falso para ele;
+  atribuição só por admin, nunca o próprio papel, e-mail confirmado, auditoria de → para.
+- `tests/integration/correio.test.ts` (24): filtro por caixa (To, Cc, Delivered-To, X-Original-To, endereço exato,
+  grupo, linha dobrada); HTML sem script/evento/iframe/form/base/meta, imagem remota bloqueada e contada, `@import` e
+  `url()` remota fora, `cid:` em `data:`, CSP do documento; resposta com From/Reply-To do alias, To = Reply-To,
+  `Re:`, In-Reply-To, References e citação (conferidos no MIME); "todos" sem os aliases; injeção de cabeçalho barrada;
+  configuração (iCloud 993/587, servidor de teste só local e fora de produção); erros do iCloud; download sempre
+  `attachment`; e o caminho inteiro: lista por caixa e por chegada, abrir marca lida, mensagem e anexo de outra caixa =
+  404, envio pelo SMTP, cópia em "Sent Messages", auditoria sem corpo nem assunto, SMTP/IMAP com senha errada ou
+  remetente recusado sem cópia nem auditoria.
+- Capturas (Playwright, 1440×900 e 390×844, claro e escuro, dados falsos): Correio (lista, mensagem, resposta,
+  escrever, enviado), console do Financeiro (menu com Planos, Custos e Correio) e Papéis. No servidor real local, o
+  Financeiro recebe 404 em Pessoas, Apps, Lançamento, Denúncias, Papéis, Laboratório, `/admin/online` e
+  `/admin/pessoas/csv`, 403 na API da caixa victor@, e `/admin` leva a Custos.
+- `npm run lint`, `format:check`, `typecheck`, `npm test` (**527/527** em 59 arquivos), `npm run build` e
+  `node scripts/scan-secrets.mjs` ok. `npm audit`: nada nos pacotes novos (os 11 moderados são do eslint/minimatch,
+  de antes).
+
 ## SOBEDESCE: trocar de conta no login (31/10/2026)
 
 Branch `sobedesce-login-trocar-conta` sobre a main d721336. Site do SOBEDESCE e o mínimo no HUB (`prompt=login` em

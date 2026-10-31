@@ -242,6 +242,16 @@ describe('IMAP e SMTP (iCloud falso local)', () => {
   })
   afterAll(() => ic.fechar())
 
+  it('ordem pela chegada no iCloud, não pelo número da mensagem', async () => {
+    const velha = ic.receber(msg({ para: 'victor@absolutezro.com', assunto: 'Chegou antes', id: '<v0@exemplo.com>' }), {
+      data: new Date('2026-10-01T10:00:00Z'),
+    })
+    const lista = await listarMensagens(cfg, caixa('victor'))
+    expect(lista.map((m) => m.assunto)).toEqual(['Pessoal do Victor', 'Chegou antes'])
+    expect(lista[1]!.data).toBe('2026-10-01T10:00:00.000Z')
+    ic.estado.pastas.get('INBOX')!.splice(ic.estado.pastas.get('INBOX')!.indexOf(velha), 1)
+  })
+
   it('cada caixa vê só as suas, da mais nova para a mais antiga, com lida e anexo', async () => {
     const fin = await listarMensagens(cfg, caixa('financeiro'))
     expect(fin.map((m) => m.assunto)).toEqual(['Extrato com anexo', 'Fatura pela lista', 'Boleto de outubro'])
