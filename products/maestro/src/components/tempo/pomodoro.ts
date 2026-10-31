@@ -7,6 +7,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { lerPomodoro, OCIOSO_PADRAO_MIN, POMODORO_PADRAO, type ConfigPomodoro } from "@/lib/tempo/calculo";
+import { cronometroDoApp } from "./desktop";
 
 export type Fase = "foco" | "pausa" | "longa" | "pronto";
 export type EstadoPomodoro = {
@@ -28,22 +29,27 @@ const PADRAO: EstadoPomodoro = { config: POMODORO_PADRAO, ociosoMin: OCIOSO_PADR
 
 function ler(): EstadoPomodoro {
   try {
-    const v = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Partial<EstadoPomodoro> | null;
-    if (!v) return PADRAO;
-    const fase: Fase = v.fase === "foco" || v.fase === "pausa" || v.fase === "longa" ? v.fase : "pronto";
-    const num = (x: unknown, min: number, max: number, p: number) => (typeof x === "number" && Number.isFinite(x) && x >= min && x <= max ? x : p);
-    return {
-      config: lerPomodoro(v.config),
-      ociosoMin: num(v.ociosoMin, 0, 120, OCIOSO_PADRAO_MIN),
-      fase,
-      feitos: num(v.feitos, 0, 1000, 0),
-      acumulado: num(v.acumulado, 0, 4 * 3600_000, 0),
-      pausaDe: typeof v.pausaDe === "number" ? v.pausaDe : null,
-      pausaMs: num(v.pausaMs, 0, 3600_000, 0),
-    };
+    return conferir(JSON.parse(localStorage.getItem(CHAVE) ?? "null"));
   } catch {
     return PADRAO;
   }
+}
+
+/** Confere um estado guardado (ou vindo do app de computador): fora da forma, o padrão de cada campo. */
+function conferir(bruto: unknown): EstadoPomodoro {
+  const v = bruto && typeof bruto === "object" ? (bruto as Partial<EstadoPomodoro>) : null;
+  if (!v) return PADRAO;
+  const fase: Fase = v.fase === "foco" || v.fase === "pausa" || v.fase === "longa" ? v.fase : "pronto";
+  const num = (x: unknown, min: number, max: number, p: number) => (typeof x === "number" && Number.isFinite(x) && x >= min && x <= max ? x : p);
+  return {
+    config: lerPomodoro(v.config),
+    ociosoMin: num(v.ociosoMin, 0, 120, OCIOSO_PADRAO_MIN),
+    fase,
+    feitos: num(v.feitos, 0, 1000, 0),
+    acumulado: num(v.acumulado, 0, 4 * 3600_000, 0),
+    pausaDe: typeof v.pausaDe === "number" && Number.isFinite(v.pausaDe) ? v.pausaDe : null,
+    pausaMs: num(v.pausaMs, 0, 3600_000, 0),
+  };
 }
 
 let p: EstadoPomodoro = PADRAO;
@@ -56,12 +62,29 @@ const garantir = () => {
   }
   return p;
 };
-export function mudarPomodoro(m: Partial<EstadoPomodoro>) {
+/** Muda o Pomodoro (e guarda). No app de computador, o que a pessoa mudou aqui vai para o app, que conduz as fases. */
+export function mudarPomodoro(m: Partial<EstadoPomodoro>, doApp = false) {
   p = { ...garantir(), ...m };
   try {
     localStorage.setItem(CHAVE, JSON.stringify(p));
   } catch {}
   for (const f of ouvintes) f();
+  // a fase só vai quando a pessoa mexeu nela (encerrar a pausa); mudar o tempo do foco não mexe na fase do app
+  if (!doApp) cronometroDoApp()?.pomodoro({ config: p.config, ociosoMin: p.ociosoMin, fase: "fase" in m ? p.fase : undefined });
+}
+
+/**
+ * No app de computador: a fase, os focos e a pausa vêm do app (ele avisa no fim do foco e da pausa, também com a janela
+ * fechada). Ao ligar, manda as preferências daqui (o painel é onde elas mudam) e pede o estado do app.
+ */
+export function ligarPomodoroDoApp(): () => void {
+  const app = cronometroDoApp();
+  if (!app) return () => {};
+  const soltar = app.aoPomodoro((v) => mudarPomodoro(conferir(v), true));
+  const atual = garantir();
+  app.pomodoro({ config: atual.config, ociosoMin: atual.ociosoMin });
+  app.pronto();
+  return soltar;
 }
 export const lerPomodoroAtual = () => garantir();
 export function usePomodoro<T>(escolher: (e: EstadoPomodoro) => T): T {

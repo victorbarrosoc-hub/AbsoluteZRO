@@ -1,7 +1,7 @@
 {
   "name": "maestro-desktop",
   "productName": "Maestro",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Maestro para computador: a pauta, a aprovação do cliente e a produtora numa janela própria, no Mac e no Windows.",
   "private": true,
   "main": "desktop/main.cjs",
@@ -20,6 +20,7 @@
     "smoke": "electron . --smoke",
     "test": "node --test test/*.test.mjs",
     "icones": "node scripts/icones.mjs",
+    "icones:bandeja": "node scripts/icones-bandeja.mjs",
     "compartilhado": "node scripts/compartilhado.mjs",
     "dist:mac": "electron-builder --mac --publish never",
     "dist:win": "electron-builder --win --publish never",

@@ -27,7 +27,8 @@ import {
   resolverParado,
   useTempo,
 } from "./loja";
-import { lerPomodoroAtual, mudarPomodoro, notificar, usePomodoro } from "./pomodoro";
+import { ligarPomodoroDoApp, lerPomodoroAtual, mudarPomodoro, notificar, usePomodoro } from "./pomodoro";
+import { appCuida } from "./desktop";
 import { Painel } from "./painel";
 
 const nada = () => () => {};
@@ -59,6 +60,7 @@ function useSaida(visivel: boolean, ms = 220): { montado: boolean; saindo: boole
 export function Cronometro() {
   const noNavegador = useNoNavegador();
   useEffect(() => ligarLoja(), []);
+  useEffect(() => ligarPomodoroDoApp(), []);
   useTitulo();
   useAtalho();
   useOcioso();
@@ -344,8 +346,8 @@ function useTitulo() {
 function useAtalho() {
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
-      // ⌥T no Mac (o code, porque a letra vira "†") e Alt+T no Windows
-      if (!e.altKey || e.metaKey || e.ctrlKey || e.code !== "KeyT") return;
+      // ⌥T no Mac (o code, porque a letra vira "†") e Alt+T no Windows; ⌥⇧T é o atalho global do app de computador
+      if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey || e.code !== "KeyT") return;
       e.preventDefault();
       alternarPainel();
     };
@@ -363,7 +365,8 @@ function useOcioso() {
   const rodando = useTempo((e) => e.rodando);
   const limite = usePomodoro((p) => p.ociosoMin);
   useEffect(() => {
-    if (!rodando || !limite) return;
+    // no app de computador quem mede o parado é o app (o computador inteiro, não só esta janela) e manda a pergunta
+    if (!rodando || !limite || appCuida()) return;
     let ultima = agoraServidor();
     let batida = ultima;
     const conferir = () => {
@@ -410,6 +413,8 @@ function useRelogioDoPomodoro() {
   useEffect(() => {
     const antes = anterior.current;
     anterior.current = rodando;
+    // no app de computador quem conduz o Pomodoro é o app (também com a janela fechada); aqui só se mostra
+    if (appCuida()) return;
     const p = lerPomodoroAtual();
     if (antes && !rodando && antes.modo === "pomodoro" && p.fase === "foco") {
       // pausou no meio do foco: guarda o feito
@@ -418,6 +423,7 @@ function useRelogioDoPomodoro() {
     if (rodando?.modo === "pomodoro" && p.fase !== "foco") mudarPomodoro({ fase: "foco", pausaDe: null });
   }, [rodando]);
   useEffect(() => {
+    if (appCuida()) return;
     const t = setInterval(() => {
       const s = lerEstado();
       const p = lerPomodoroAtual();

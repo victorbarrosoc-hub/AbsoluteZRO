@@ -3961,3 +3961,24 @@ SOBEDESCE de computador, que disparam os instaladores).
   carga e passou ao repetir.
 - Capturas fictícias `tp-<computador|iphone>-<claro|escuro>-*.png` (Quadro rodando, painel Livre, Pomodoro, Hoje,
   Semana, Ajustar, parado, ficha, Tempo, tipos) e o vídeo do passeio (`TP_VIDEO`), fora do repositório.
+
+## Maestro para computador 0.2.0: o cronômetro na barra de menus e na bandeja (31/10/2026)
+
+- `products/maestro/desktop`: `npm test` 53/53, com `test/cronometro.test.mjs` (formatador: relógio, curto da barra,
+  contagem do Pomodoro, duração; estado do servidor com o desvio do relógio e o que não tem forma fora; início rápido;
+  menu rodando, parado, sem sessão/acesso/leitura/conexão e com parado pendente; ajustes; atalho que não colide com o
+  ⌥T do site nem com o menu do app, troca, ocupado e liberar; o controlador contra um `/api/tempo` falso: GET com
+  credenciais, Origin só nas gravações, 401/403/rede, Pomodoro terminando com a janela fechada, parado pelo sistema →
+  Descartar = `op: "parado"`, preferências da página), `test/pomodoro.test.mjs` (padrões e limites iguais aos do site,
+  foco → pausa → longa, pausa no meio guardada pela hora gravada, parado só na volta e com a suspensão) e
+  `test/bandeja.test.mjs` (tamanhos 1x/1,5x/2x, Mac de modelo só preto, Windows grafite/branco, ponto do "rodando", a
+  ponte estreita).
+- `npm run smoke` (xvfb, Electron 44.5.1) SMOKE OK, agora com o cronômetro: ícones carregam, o estado vem de um Maestro
+  falso local pelo fetch da sessão (cookie e Origin), o menu monta e "Pausar" chega ao servidor; o atalho registra e
+  libera. O app de verdade (12 s contra um Maestro falso): a página recebe a ponte, manda "pronto" e as preferências
+  (foco de 30 min gravado em `cronometro.json`), e o POST da janela faz o app reler na hora; sem erro no log.
+- Lint da raiz em `products/maestro/desktop` limpo; Prettier do desktop limpo. Site (`src/components/tempo`): `tsc`
+  sem erro nos arquivos do cronômetro, ESLint e Prettier limpos. `node scripts/scan-secrets.mjs` limpo.
+- Prévia (fora do repositório): o menu gerado do modelo real com os ícones reais (Mac claro e escuro, Windows) e os
+  ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
+  isso a prévia em vez da captura do menu nativo.
