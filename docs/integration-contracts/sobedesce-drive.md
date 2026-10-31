@@ -34,6 +34,16 @@ Outras ações (`drive.listar`, `drive.miniatura`, `drive.pasta.criar`, `drive.c
 | `/api/zro/drive/computador` | `{ arquivoId, formato }`                                             | `201`/`200 { pedido: { id, status, novo }, original, formato, computadores, destino, acompanhar }` |
 | `/api/zro/transferencias`   | `{}`                                                                 | `{ fonte: "SOBEDESCE", lido_em, computadores: Transferencias[] }` (só lê; desde 28/10/2026)        |
 
+Console (desde 31/10/2026, `packages/core/src/sobedesce-console.ts`): o `sub` é quem age no console da Absolute ZRO,
+que confere o papel antes de assinar (ler: admin e suporte; mudar: só admin, com motivo).
+
+| Rota                            | Ação                   | Corpo                  | Resposta 200                                                                |
+| ------------------------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| `/api/zro/console/drive`        | `console.drive.ler`    | `{}`                   | `{ vagas: { limite, usadas, liberadasSemUso, livres }, pessoas: Pessoa[] }` |
+| `/api/zro/console/drive/acesso` | `console.drive.acesso` | `{ usuarioId, ligar }` | `{ ok, acessoTotal, vagas }` · 409 `sem_vaga` · 404 `nao_encontrada`        |
+
+`Pessoa = { id, nome, email, zroSub, acessoTotal, usouVaga, drives: { email, modo, estado }[] }`. Vaga usada não volta.
+
 `Arquivo = { id, nome, tipo (mimeType), pasta, criado, modificado, tamanho, video: { largura, altura, duracao_s } |
 null, imagem: { largura, altura } | null, icone, abrir_no_sobedesce, baixar_pelo_sobedesce }`. `Pasta = { id, nome,
 modificado, abrir_no_sobedesce }`. Os links são sempre do app do SOBEDESCE (`web/public/app/lib/drive-link.js`), nunca

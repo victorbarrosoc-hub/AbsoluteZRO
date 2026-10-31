@@ -639,7 +639,9 @@ function pintarBandeja(e) {
   // o número no ícone (Dock no Mac, Linux): propostas esperando resposta
   try {
     app.setBadgeCount(e && e.entrou ? e.pendentes : 0)
-  } catch {}
+  } catch {
+    // sistema sem número no ícone: segue sem ele
+  }
 }
 
 function ligarPulso() {

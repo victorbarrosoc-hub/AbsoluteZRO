@@ -1,12 +1,12 @@
-"use client";
 /**
- * Ficha da pessoa no admin: o botão "Acesso total" ao Drive (escopo `drive`), com confirmação curta. Cada conta Google
- * que recebe o `drive` gasta uma vaga do projeto Google para sempre (lib/google/vagas.ts).
+ * Ficha da pessoa no admin: o Acesso total ao Drive (escopo `drive`) e o contador de vagas, só para ler. Ligar e
+ * desligar ficam no console da Absolute ZRO (lib/zro/console-drive.ts). Cada conta Google que recebe o `drive` gasta
+ * uma vaga do projeto Google para sempre (lib/google/vagas.ts).
  */
-import { useActionState, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import { acaoAcessoTotal, type EstadoForm } from "@/app/(conta)/acoes";
+
+/** Onde o Acesso total é decidido (titular, 31/10/2026): Console da Absolute ZRO › Apps › SOBEDESCE. */
+export const CONSOLE_DRIVE = "https://absolutezro.com/admin/apps/sobedesce";
 
 export type VagasTela = { usadas: number; limite: number; liberadasSemUso: number; livres: number };
 
@@ -38,100 +38,20 @@ export function ContadorVagas({ v, className }: { v: VagasTela; className?: stri
   );
 }
 
-export function BotaoAcessoTotal({
-  usuarioId,
-  ligado,
-  jaUsouVaga,
-  vagas,
-  confirmarDeInicio = false,
-}: {
-  usuarioId: string;
-  ligado: boolean;
-  /** Uma conta Google desta pessoa já recebeu o `drive`: ligar de novo não gasta outra vaga. */
-  jaUsouVaga: boolean;
-  vagas: VagasTela;
-  /** Só para as capturas: abre já na confirmação. */
-  confirmarDeInicio?: boolean;
-}) {
-  const [confirmando, setConfirmando] = useState(confirmarDeInicio);
-  const [estado, enviar, pendente] = useActionState<EstadoForm, FormData>(acaoAcessoTotal, null);
-  const semVaga = !ligado && !jaUsouVaga && vagas.livres <= 0;
-
+/** O Acesso total da pessoa, só para ler: quem liga e desliga é o console da Absolute ZRO (lib/zro/console-drive.ts). */
+export function EstadoAcessoTotal({ ligado }: { ligado: boolean }) {
   return (
-    <div className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="grid gap-0.5">
-          <span className="inline-flex items-center gap-2 text-[15px] font-medium">
-            <span aria-hidden className={cn("size-2 rounded-full", ligado ? "bg-ok" : "bg-ink/30")} />
-            {ligado ? "Acesso total" : "Arquivos escolhidos"}
-          </span>
-          <span className="text-[13px] text-ink-3">{ligado ? "O Drive inteiro, como sempre foi." : "Só o que passou pelo SOBEDESCE e o que a pessoa escolher."}</span>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <span className="grid gap-0.5">
+        <span className="inline-flex items-center gap-2 text-[15px] font-medium">
+          <span aria-hidden className={cn("size-2 rounded-full", ligado ? "bg-ok" : "bg-ink/30")} />
+          {ligado ? "Acesso total" : "Arquivos escolhidos"}
         </span>
-        {!confirmando ? (
-          <Button
-            variant={ligado ? "secondary" : "primary"}
-            size="sm"
-            disabled={semVaga}
-            aria-pressed={ligado}
-            onClick={() => setConfirmando(true)}
-            title={semVaga ? `As ${vagas.limite} vagas já estão ocupadas.` : undefined}
-          >
-            {ligado ? "Desligar acesso total" : "Acesso total"}
-          </Button>
-        ) : null}
-      </div>
-
-      {confirmando ? (
-        <form
-          action={(fd) => {
-            enviar(fd);
-            setConfirmando(false);
-          }}
-          className="grid gap-3 rounded-xl bg-surface px-4 py-3.5 ring-1 ring-line sm:flex sm:items-center sm:justify-between"
-          role="group"
-          aria-label="Confirmar"
-        >
-          <input type="hidden" name="usuarioId" value={usuarioId} />
-          <input type="hidden" name="ligar" value={ligado ? "0" : "1"} />
-          <p className="text-[14px] leading-relaxed text-pretty text-ink-2">
-            {ligado ? (
-              <>
-                <strong className="font-semibold text-ink">Desligar?</strong> A vaga não volta. O Drive dela pede para reconectar, já com os arquivos escolhidos.
-              </>
-            ) : jaUsouVaga ? (
-              <>
-                <strong className="font-semibold text-ink">Ligar de novo?</strong> Esta pessoa já usou a vaga dela: não gasta outra.
-              </>
-            ) : (
-              <>
-                <strong className="font-semibold text-ink">
-                  Usar 1 das {vagas.livres} vagas que sobram?
-                </strong>{" "}
-                Vaga usada não volta, nem se desligar depois.
-              </>
-            )}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={() => setConfirmando(false)} disabled={pendente}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant={ligado ? "danger" : "primary"} size="sm" className="flex-1 sm:flex-none" disabled={pendente}>
-              {pendente ? "Salvando…" : ligado ? "Desligar" : "Liberar"}
-            </Button>
-          </div>
-        </form>
-      ) : null}
-
-      {semVaga ? <p className="text-[13px] font-medium text-warn-text">As {vagas.limite} vagas já estão ocupadas.</p> : null}
-      {estado?.erro ? (
-        <p role="alert" className="text-[13px] font-medium text-err-text">
-          {estado.erro}
-        </p>
-      ) : estado?.ok ? (
-        <p role="status" className="text-[13px] text-ink-2">
-          {estado.ok}
-        </p>
-      ) : null}
+        <span className="text-[13px] text-ink-3">{ligado ? "O Drive inteiro, como sempre foi." : "Só o que passou pelo SOBEDESCE e o que a pessoa escolher."}</span>
+      </span>
+      <a href={CONSOLE_DRIVE} className="text-[13px] font-medium text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+        Muda no console da Absolute ZRO
+      </a>
     </div>
   );
 }

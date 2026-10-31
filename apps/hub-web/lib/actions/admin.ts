@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, launchSales, publishPlanVersion, revokeEntitlement } from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requireConsole, requirePlatformAdmin, resolvePlanRequest, resolverDenunciaSet } from '@zro/core'
+import { mudarAcessoDrive, requireConsole, requirePlatformAdmin, resolvePlanRequest, resolverDenunciaSet } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
@@ -201,6 +201,18 @@ export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Pr
     })
     revalidatePath('/admin', 'layout')
     return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** SOBEDESCE: liga ou desliga o Drive inteiro de uma pessoa (só admin, com motivo; a vaga usada não volta). */
+export async function sobedesceAcessoDriveAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const ligar = str(fd, 'ligar') === '1'
+    const r = await mudarAcessoDrive(db(), await getAuth(), { usuarioId: str(fd, 'usuarioId'), ligar, reason: str(fd, 'reason') })
+    revalidatePath('/admin/apps/sobedesce')
+    return { ok: r.acessoTotal ? `Acesso total ligado. ${r.vagas.livres} vagas livres.` : 'Acesso total desligado.' }
   } catch (e) {
     return toFormError(e)
   }

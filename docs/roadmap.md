@@ -1228,6 +1228,7 @@ do card... não consigo localizar o job que quero achar".
 
 ## SOBEDESCE: Drive híbrido (31/10/2026)
 
+- ✅ Ramo `console-acesso-drive`: o "Acesso total" saiu do `/admin` do SOBEDESCE e foi para o console da Absolute ZRO (Apps › SOBEDESCE › Drive inteiro, `/admin/apps/sobedesce`): vagas e pessoas lidas do SOBEDESCE na hora, ligar/desligar só admin com motivo, pedido assinado `console.drive.*` (sem segredo novo), auditoria nos dois lados.
 - 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
 - 🔶 App de computador 0.3.0 no ramo `sobedesce-desktop-modo` (liberado pelo titular em 31/10/2026): diz ao site que
   entende o modo (`x-sobedesce-capacidades: drive-arquivos`) e só ele recebe o token `drive.file`; o 0.2.0 segue com 403. Mesma marca e regra do celular: pastas novas marcadas, Comparar (e Looks do Relay) e tamanho só nas pastas do
