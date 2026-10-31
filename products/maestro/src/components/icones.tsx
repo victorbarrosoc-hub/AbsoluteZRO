@@ -21,6 +21,7 @@ export type NomeIcone =
   | "fechar"
   | "pontos"
   | "relogio"
+  | "cronometro"
   | "seta"
   | "voltar"
   | "lixo"
@@ -239,6 +240,12 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  cronometro: (
+    <>
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M12 13.5V9.8M9.8 3h4.4M18.2 6.8l1.3-1.3" />
     </>
   ),
   seta: <path d="M5 12h14M13 6l6 6-6 6" />,

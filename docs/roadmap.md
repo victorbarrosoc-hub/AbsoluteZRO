@@ -1097,6 +1097,31 @@ do card... não consigo localizar o job que quero achar".
 - ⛔ Em produção: migração `0035` do Maestro no próximo deploy autorizado.
 - ⬜ Miniatura do Drive pelo SOBEDESCE (`drive.miniatura` na ponte), se o titular quiser.
 
+## Maestro: cronômetro de tarefas e tempo por tipo de vídeo (31/10/2026, pedido do titular, inspirado no Ritto)
+
+- ✅ Migração **`drizzle/0038_cronometro.sql`**: `maestro.tempo_registros` (início e fim do relógio do banco, um
+  rodando por pessoa pelo índice `tempo_um_rodando`, até 24 h por sessão, tempo à mão só com motivo, Zerar = lápide com
+  Desfazer; cada um vê o seu, administração e gestão o do time, ninguém grava o tempo de outro, leitura não
+  cronometra, `_cliente` pelo card) e `maestro.tipos_video` (6 de fábrica por organização, nome e cor da paleta das
+  colunas, arquivar só administração e gestão). O card ganhou `tipo` e `previsto` (minutos) como campos do Quadro.
+- ✅ Play no card (no gesto no computador, à vista no toque) e na ficha; iniciar outro pausa o anterior. Selo discreto
+  "1h24 / 6h30" (estimado × real, tingido perto e passou do previsto).
+- ✅ Pílula de vidro em toda tela (tarefa + tempo + pausar; arrasta para os cantos no computador; no iPhone acima da
+  barra), título da aba "▶ 01:11 · tarefa", botão na cápsula e no topo, ⌥T/Alt+T, Esc e espaço no painel.
+- ✅ Painel (gaveta no computador, folha no iPhone): Agora (cronômetro grande com dígitos que sobem, Livre/Pomodoro com
+  foco/pausa/longa configuráveis, notificação do navegador e som curto, Ajustar, Zerar, o próximo passo do card),
+  Hoje (dias da semana, cards e Concluídas com "levou", Limpar) e Semana (total, dias, feitas, barras por dia, por
+  cliente, por tipo, tarefas; Eu/Time para quem gerencia).
+- ✅ Parado: sem gesto por N min (padrão 10, em Preferências) ou o computador dormiu → "Parado 12min · Manter /
+  Descartar" (descartar fecha no último gesto e segue contando).
+- ✅ Tela **Tempo** (`/app/tempo`, em Produção): por tipo de vídeo concluído, média, faixa típica p25–p75 e mediana numa
+  régua comum, nº de vídeos, horas e tendência por semana/mês; filtros de período, cliente e pessoa (só quem gerencia);
+  "Tipos" cria, renomeia, recolore e arquiva. A ficha sugere o previsto pelo típico do tipo ("Reels costuma levar
+  ~2h10 · Usar", 3+ vídeos).
+- ⛔ Em produção: migração `0038` do Maestro no próximo deploy autorizado.
+- ⬜ App de computador: cronômetro na barra de menus/bandeja (proposta, sem tocar em `desktop/`); tempo na
+  demonstração; lembrete de timer esquecido; exportar CSV.
+
 ## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
 
 - ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos
