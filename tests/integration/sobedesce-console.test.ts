@@ -1,7 +1,9 @@
 // Console › Apps › SOBEDESCE (titular, 31/10/2026): o Drive inteiro é ligado e desligado no HUB. O HUB confere o papel
 // (ler: admin e suporte; mudar: só admin, com motivo), assina o pedido com a ação certa e audita; contra um SOBEDESCE
 // falso (sem rede de verdade). A regra das vagas fica no SOBEDESCE (products/sobedesce/web/tests/zro-console-drive).
+import fs from 'node:fs'
 import http from 'node:http'
+import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { setIssuer, type Authenticated } from '@zro/auth'
@@ -117,5 +119,17 @@ describe('mudar (admin)', () => {
   })
   it('SOBEDESCE fora do ar: erro de indisponível, nunca "ligado"', async () => {
     await expect(lerAcessoDrive(db, auth(adminId, 'admin'), { ...cfg, base: 'http://127.0.0.1:1' })).rejects.toMatchObject({ code: 'upstream_unavailable' })
+  })
+})
+
+describe('emissor certo em produção', () => {
+  it('página e ação do console só chamam o SOBEDESCE pelo módulo que define o emissor (lib/oidc)', () => {
+    const ler = (p: string) => fs.readFileSync(path.join(process.cwd(), 'apps/hub-web', p), 'utf8')
+    expect(ler('lib/sobedesce-console.ts')).toMatch(/import '\.\/oidc'/)
+    for (const p of ['app/admin/apps/sobedesce/page.tsx', 'lib/actions/admin.ts']) {
+      const s = ler(p)
+      expect(s, p).not.toMatch(/\b(lerAcessoDrive|mudarAcessoDrive)\(/)
+      expect(s, p).toMatch(/sobedesce-console'/)
+    }
   })
 })
