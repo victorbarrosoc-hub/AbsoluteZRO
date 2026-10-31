@@ -95,6 +95,16 @@ export const APPS_DESKTOP: AppDesktop[] = [
       nomeNoSistema: 'Carro do Freela',
     },
   },
+  {
+    // TPeasy para computador (products/tpeasy/desktop, .github/workflows/tpeasy-desktop.yml): o teleprompter numa janela
+    // própria (titular, 31/10/2026: "todos têm que ter app de computador").
+    id: 'tpeasy',
+    nome: 'TPeasy',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'tpeasy-versao-de-teste' }],
+    versaoJson: true,
+    mac: { arquivos: [{ arch: 'universal', re: /^TPeasy-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'TPeasy.app' },
+    windows: { re: /^TPeasy-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'TPeasy.exe', nomeNoSistema: 'TPeasy' },
+  },
 ]
 
 export type Asset = { name: string; url: string; browser_download_url: string; size?: number; digest?: string | null }

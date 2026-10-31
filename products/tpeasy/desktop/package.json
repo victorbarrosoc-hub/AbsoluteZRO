@@ -1,0 +1,32 @@
+{
+  "name": "tpeasy-desktop",
+  "productName": "TPeasy",
+  "version": "0.1.0",
+  "description": "TPeasy para computador: o conversor de vídeo da Absolute ZRO numa janela própria, no Mac e no Windows.",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "author": "Absolute ZRO",
+  "homepage": "https://tpeasy.absolutezro.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/victorbarrosoc-hub/AbsoluteZRO.git",
+    "directory": "products/tpeasy/desktop"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "desktop": "electron .",
+    "smoke": "electron . --smoke",
+    "test": "node --test test/*.test.mjs",
+    "icones": "node scripts/icones.mjs",
+    "compartilhado": "node scripts/compartilhado.mjs",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  }
+}

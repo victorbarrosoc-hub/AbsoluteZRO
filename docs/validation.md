@@ -3913,3 +3913,13 @@ SOBEDESCE de computador, que disparam os instaladores).
   baixar da Absolute ZRO) some no celular e dentro do próprio app.
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
+
+## TPeasy para computador (31/10/2026)
+
+- Pedido do titular: todo app no ar tem app de computador (Relay, Maestro, Carro do Freela, Synquei, SOBEDESCE, TPeasy e
+  Absolute ZRO). Só faltava o TPeasy: `products/tpeasy/desktop` (a moldura do Relay, abre em `/app/`, ícone oficial
+  `products/tpeasy/icons/favicon.svg`), workflow `tpeasy-desktop.yml` (Release `tpeasy-versao-de-teste`), gate na
+  migração `0047` (desktop e download só para o TPeasy; nenhum e-mail).
+- `products/tpeasy/desktop`: `npm test` 24/24; `npm run smoke` (xvfb) SMOKE OK.
+- HUB: `tests/integration/downloads.test.ts` e `desktop-apps.test.ts` 27/27 (o TPeasy no catálogo, Mac e Windows só com o
+  download aberto). `release-gate.test.ts` tem 5 falhas que já existem na `main` sem esta mudança (o estado do Carro).

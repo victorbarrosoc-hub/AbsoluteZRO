@@ -5,10 +5,12 @@ on:
     branches: ['**']
     paths:
       - 'products/tpeasy/**'
+      - '!products/tpeasy/desktop/**'
       - '.github/workflows/tpeasy.yml'
   pull_request:
     paths:
       - 'products/tpeasy/**'
+      - '!products/tpeasy/desktop/**'
       - '.github/workflows/tpeasy.yml'
 
 permissions:
