@@ -15,6 +15,16 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Teste do Drive no console (31/10/2026)
+
+Branch `teste-drive` sobre a main dfdca05: `/admin/teste-drive` (só admin) mede se `drive.file` + Picker cobrem o
+SOBEDESCE ([google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)). Sem chamada real ao Google nos
+testes: `tests/integration/teste-drive.test.ts` (17: tabela de decisão e fluxos, escopo amplo, falha de configuração,
+variáveis, CSP só nesta rota, checagens contra um Drive falso nos modos drive.file e amplo, limpeza só por id) e
+`tests/e2e/teste-drive.spec.ts` (3: 404 para cliente e suporte, login exigido, lista do que falta, cabeçalhos CSP/COOP
+só nesta rota, resultado de exemplo, axe WCAG 2.1 A/AA, nenhuma requisição ao Google). Lint, formatação, tipos, `npm test`,
+build e `node scripts/scan-secrets.mjs` ok.
+
 ## Versões de computador: Gerar versões, BT.709 e a família (30/10/2026)
 
 Branch `versoes-computador` sobre a main 581c84d: `relay-lancamento` (Maestro `0034`, SOBEDESCE web `0016`/`0017`,

@@ -1,0 +1,318 @@
+/* ───── Console · Teste do Drive (/admin/teste-drive) ─────
+   Tudo com prefixo td-: não mexe no resto do console. Cores só dos tokens (claro e escuro); texto nunca colorido, a cor
+   fica no estado (ícone e rótulo curto). */
+
+.td {
+  max-width: 760px;
+}
+.td-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--pill-rim);
+  min-width: 0;
+}
+.td-card h2 {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+.td-card p {
+  color: var(--text-mute);
+}
+.td-faint {
+  color: var(--text-faint) !important;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.td-erro {
+  color: var(--danger-text) !important;
+  font-size: 0.92rem;
+}
+.td code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.td-exemplo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* ───── começar ───── */
+.td-campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.td-campo span {
+  color: var(--text-mute);
+  font-size: 0.94rem;
+}
+.td-campo input {
+  width: 7.5em;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 1rem;
+  text-align: right;
+  box-shadow: var(--pill-rim);
+}
+.td-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.td-btn {
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 0.98rem;
+}
+.td-btn[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.td-acoes--fim {
+  justify-content: flex-start;
+}
+
+/* ───── veredito ───── */
+.td-veredito {
+  border-left: 0;
+  position: relative;
+  overflow: hidden;
+}
+.td-veredito::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--text-faint);
+}
+.td-veredito[data-tipo='cobre']::before {
+  background: var(--ok-text);
+}
+.td-veredito[data-tipo='parcial']::before,
+.td-veredito[data-tipo='incompleto']::before,
+.td-veredito[data-tipo='inconclusivo']::before {
+  background: var(--warn-text);
+}
+.td-veredito[data-tipo='nao_cobre']::before {
+  background: var(--danger-text);
+}
+.td-veredito h2 {
+  font-size: 1.5rem;
+}
+.td-veredito p {
+  color: var(--text-strong);
+  line-height: 1.5;
+}
+.td-fluxos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.td-fluxos li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 0.92rem;
+  color: var(--text-mute);
+}
+.td-fluxos b {
+  flex: none;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.td-fluxos li[data-estado='funciona'] b {
+  color: var(--ok-text);
+}
+.td-fluxos li[data-estado='quebra'] b {
+  color: var(--danger-text);
+}
+
+/* ───── checagens ───── */
+.td-checks {
+  list-style: none;
+  margin: 0;
+  gap: 0;
+  padding: 6px var(--space-4);
+}
+.td-checks li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 0;
+}
+.td-checks li + li {
+  border-top: 1px solid var(--line, rgb(127 127 127 / 0.16));
+}
+.td-checks li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.td-checks strong {
+  font-weight: 620;
+  color: var(--text-strong);
+}
+.td-checks__det {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.td-checks__n {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.td-checks li[data-estado='passou'] .td-checks__n {
+  color: var(--ok-text);
+}
+.td-checks li[data-estado='falhou'] .td-checks__n {
+  color: var(--danger-text);
+}
+.td-checks__estado {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  font-weight: 650;
+  font-size: 0.9rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.td-checks li[data-estado='passou'] .td-checks__estado {
+  color: var(--ok-text);
+}
+.td-checks li[data-estado='falhou'] .td-checks__estado {
+  color: var(--danger-text);
+}
+.td-checks__estado small {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+.td-copia {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-m);
+  border: 0;
+  background: var(--surface-2);
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+/* ───── faltam configurações ───── */
+.td-config {
+  justify-items: start;
+}
+.td-config__icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-strong);
+}
+.td-vars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.td-vars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.td-vars span {
+  grid-column: 1;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+}
+.td-vars b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-weight: 650;
+  font-size: 0.9rem;
+  color: var(--warn-text);
+}
+.td-vars li[data-ok] b {
+  color: var(--ok-text);
+}
+.td-passos {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 1.3em;
+  color: var(--text-mute);
+  line-height: 1.5;
+}
+.td-passos b {
+  color: var(--text-strong);
+  font-weight: 620;
+}
+
+@media (max-width: 520px) {
+  .td-card {
+    padding: var(--space-4);
+  }
+  .td-btn {
+    flex: 1 1 100%;
+  }
+  .td-checks {
+    padding: 4px var(--space-3);
+  }
+  .td-checks li {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .td-checks__estado {
+    grid-column: 2;
+    justify-content: start;
+    align-items: baseline;
+    grid-auto-flow: column;
+    gap: 10px;
+  }
+}
