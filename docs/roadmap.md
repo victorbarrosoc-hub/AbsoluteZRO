@@ -63,6 +63,13 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Carro do Freela com conta única: "Criar conta" cria a conta Absolute ZRO (`prompt=create`), o app não cria conta própria, e a área logada respeita `carro-do-freela` em `zro_products` (lista de convite segue aberta).
 - ✅ Synquei: conta pela Absolute ZRO ("Criar conta" com `prompt=create`) e aviso "ainda não tem acesso" quando `synquei` não está em `zro_products`; app, site e download continuam abertos.
 - ✅ SOBEDESCE: conta nova só pela Absolute ZRO (`prompt=create`), Google vira só porta das contas antigas e conexão do Drive, e o acesso segue `zro_products` (sem `sobedesce` = funções bloqueadas com aviso).
+- ✅ SOBEDESCE: trocar de conta no login (31/10/2026, pedido do titular). Ligar uma conta antiga caía na sessão aberta do
+  HUB, já ligada a outro SOBEDESCE (`zro_outra_conta`), sem saída. Agora: **Entrar nessa conta** (selo cifrado de 5 min
+  guardado no callback, preso à sessão; troca a sessão para a conta ligada àquela Absolute ZRO), **Usar outra conta**
+  (`prompt=login`, que o HUB passou a aceitar: mostra o login mesmo logado e encerra a sessão anterior ao entrar) em
+  `/entrar`, na tela "Agora sua conta é Absolute ZRO" (site e celular) e no erro; `/entrar` com a Absolute ZRO principal e
+  Google + e-mail e senha como secundários ([CONTAS §12](../products/sobedesce/docs/CONTAS.md)). ⬜ Conferir no
+  sobedesce.com e no absolutezro.com depois de publicar.
 - ✅ Um repositório para tudo ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): as cinco plataformas moram em `products/<app>` e publicam nos próprios projetos Vercel a partir daqui (Root Directory por pasta, build só quando a pasta muda). CI e releases de desktop na raiz, com tag por app e o release antigo como reserva.
 - ✅ Um Supabase para tudo: SOBEDESCE (schema `sobedesce`, papel `sobedesce_app`, cópia do Neon conferida tabela a tabela) e NOSSOM (`nossom_private` + Auth) migrados e conferidos. Bancos antigos intactos como reserva.
 - ✅ TPeasy com conta única: "Criar conta" abre o cadastro da Absolute ZRO (`prompt=create`), o código por e-mail do Supabase vale só para contas antigas e o Google saiu do app; sem `tpeasy` em `zro_products`, a conta mostra "ainda não tem acesso" (o teleprompter continua aberto).

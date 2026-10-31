@@ -1,7 +1,22 @@
 // "Agora sua conta é Absolute ZRO" (lib/ligar-zro.js): a tela inteira no lugar das abas e, com envio andando, a faixa
 // fixa em cima (a fila continua embaixo). O botão é um link de verdade para o vincular de sempre.
 import { html } from '../vendor/preact-htm.js'
-import { BOTAO, LIGAR, recadoDe, TITULO } from '../lib/ligar-zro.js'
+import { BOTAO, BOTAO_TROCAR, LIGAR, LINK_OUTRA, OUTRA, recadoDe, TITULO, TROCAR } from '../lib/ligar-zro.js'
+
+/**
+ * "Entrar nessa conta": o servidor troca a sessão (com o selo do callback) e responde 303 para /app/ (ou de volta com
+ * ?erro=zro_expirou). O fetch segue o 303 e grava o cookie novo; a página abre onde ele parou.
+ */
+async function entrarNessaConta(e) {
+  const b = e.currentTarget
+  b.disabled = true
+  try {
+    const r = await fetch(TROCAR, { method: 'POST', credentials: 'same-origin' })
+    location.replace(r.redirected ? r.url : './?erro=zro_expirou')
+  } catch {
+    b.disabled = false
+  }
+}
 
 /** Símbolo flat da Absolute ZRO (uma cor só, herda a cor do texto), o mesmo do site. */
 export function SimboloZro({ size = 96 }) {
@@ -17,7 +32,10 @@ export function LigarZroTela({ temDrive, erro }) {
     <${SimboloZro} size=${96} />
     <h1 class="lz-titulo">${TITULO}</h1>
     ${recado ? html`<p class=${erro === 'zro_recusado' ? 'lz-recado' : 'lz-recado is-erro'} role=${erro === 'zro_recusado' ? 'status' : 'alert'}>${recado}</p>` : null}
-    <a class="btn btn-primary btn-xl lz-botao" href=${LIGAR}><span>${BOTAO}</span></a>
+    ${erro === 'zro_outra_conta'
+      ? html`<button type="button" class="btn btn-primary btn-xl lz-botao" onClick=${entrarNessaConta}><span>${BOTAO_TROCAR}</span></button>`
+      : html`<a class="btn btn-primary btn-xl lz-botao" href=${LIGAR}><span>${BOTAO}</span></a>`}
+    <a class="lz-outra" href=${OUTRA}>${LINK_OUTRA}</a>
     <p class="lz-nota">${temDrive ? 'Seu Google Drive continua conectado.' : 'Nada muda nos seus arquivos.'}</p>
   </main>`
 }

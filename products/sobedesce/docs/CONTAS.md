@@ -364,8 +364,8 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
   Atualizar", que religa e traz a lista nova); a API responde 403 `sem_acesso_zro` (`exigirNaApi`, `/api/eu`,
   Drives, computador, rede local) e o app do celular mostra o aviso. Conta antiga sem `contas_zro` segue como sempre
   (`src/lib/zro/acesso.ts`, campo `liberado` de `autenticar`).
-- **Rotas:** `GET /api/zro/entrar?modo=entrar|criar|vincular&volta=` (cookie `sd_zro`, cifrado, 10 min, só em `/api/zro`)
-  e `GET /api/zro/callback`. Mesmo molde do Google (`src/lib/zro/`).
+- **Rotas:** `GET /api/zro/entrar?modo=entrar|criar|vincular&volta=[&trocar=1]` (cookie `sd_zro`, cifrado, 10 min, só em
+  `/api/zro`), `GET /api/zro/callback` e `POST /api/zro/trocar-conta` (ver "Trocar de conta"). Mesmo molde do Google (`src/lib/zro/`).
 - **Tabela `contas_zro`** (migração 0013): `usuario_id` (uma por conta), `zro_sub` (único), e-mail, organização e
   produtos contratados no último login (`zro_products`).
 - **Regras:**
@@ -395,6 +395,25 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
     `zro_products` fica no site (a tela "Acesso ainda não liberado" vale, como para qualquer conta ligada).
   - **Bordas:** vínculo novo exige e-mail confirmado na Absolute ZRO (`zro_email_nao_verificado`); Absolute ZRO de outra
     conta (`zro_outra_conta`); cancelar (`zro_recusado`). O recado aparece na própria tela de ligar.
+- **Trocar de conta (31/10/2026, pedido do titular).** A Absolute ZRO reaproveita a sessão aberta no HUB; se ela já tem
+  outra conta SOBEDESCE, ligar dava `zro_outra_conta` e a pessoa ficava sem saída.
+  - **Entrar nessa conta** (`src/lib/zro/outra-conta.ts`, `POST /api/zro/trocar-conta`): no `zro_outra_conta` do
+    vincular, o callback (depois de conferir o id_token) grava o cookie `sd_zro_outra`: `zroSub`, e-mail, id da sessão
+    SOBEDESCE que pediu e `volta`, cifrado com AES-256-GCM (contexto próprio), `httpOnly`, `sameSite=lax`, `path=/`,
+    5 minutos. A tela de ligar (e o aviso de `/conta`) lê o selo e, se for desta sessão, troca a ação principal por
+    "Entrar nessa conta" com o e-mail. O POST não tem campos e confere a Origin (403 `origem`); só troca com o selo
+    válido, recente e da sessão atual, e com a Absolute ZRO ainda ligada a outra conta: encerra a sessão atual, abre a da
+    conta ligada (aviso de entrada nova como no login), apaga o selo e volta para `volta`. Sem selo, vencido, adulterado,
+    de outra sessão ou reapresentado (a sessão dele já saiu): `?erro=zro_expirou` e nada muda. O app do celular faz o
+    mesmo POST por `fetch` (o CSP dele é `form-action 'none'`).
+  - **Usar outra conta:** link discreto em `/entrar`, na tela "Agora sua conta é Absolute ZRO" (site e celular) e no
+    erro. `GET /api/zro/entrar?…&trocar=1` pede `prompt=login`: a Absolute ZRO mostra o login mesmo com sessão aberta
+    (`/entrar?outra=1`), encerra a sessão anterior dela quando a pessoa entra e volta ao pedido sem o prompt. O refazer
+    por `invalid_scope` não repete o `trocar`. Absolute ZRO antiga ignora o prompt (segue como antes).
+  - **`/entrar`:** "Entrar com Absolute ZRO" é a ação principal, com "Usar outra conta" embaixo; depois, em "Conta
+    antiga do SOBEDESCE", "Entrar com Google" (só o Google de entrar de conta que já existe) e "Entrar com e-mail e
+    senha" (recolhido num toque; abre sozinho com erro de senha) (`src/components/conta/opcoes-entrar.tsx`).
+  - **Testes:** `web/tests/zro-outra-conta.test.mts` e, no HUB, `tests/integration/oidc.test.ts`.
   - **Testes:** `web/tests/zro-ligar.test.mts` e `test/ligar-zro.test.js` (envio de verdade terminando conferido
     enquanto a conta liga).
 - **Cadastro no console da Absolute ZRO:** confidencial, produto SOBEDESCE, retornos

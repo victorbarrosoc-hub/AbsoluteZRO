@@ -3,7 +3,7 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Aviso } from "@/components/conta/aviso";
-import { BotaoZro } from "@/components/conta/zro";
+import { OpcoesEntrar } from "@/components/conta/opcoes-entrar";
 import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
 import { buttonClasses } from "@/components/ui/button";
@@ -49,20 +49,7 @@ export default async function Entrar({ searchParams }: Props) {
         </Aviso>
       ) : null}
 
-      <BotaoZro modo="entrar" volta={volta} variant="primary" className="w-full">
-        Entrar com Absolute ZRO
-      </BotaoZro>
-      <p className="mt-3 text-center text-[13px] leading-relaxed text-pretty text-ink-3">A sua conta da família Absolute ZRO.</p>
-
-      {/* Contas antigas do SOBEDESCE (com senha própria) continuam entrando por aqui; conta nova é só Absolute ZRO. */}
-      <details className="mt-10 group" open={erro === "senha" || erro === "credenciais"}>
-        <summary className="toque cursor-pointer list-none text-center text-[13px] text-ink-3 hover:text-ink">
-          Tenho conta antiga do SOBEDESCE
-        </summary>
-        <div className="mt-6">
-          <FormEntrar volta={volta} />
-        </div>
-      </details>
+      <OpcoesEntrar volta={volta} formulario={<FormEntrar volta={volta} />} abrirFormulario={erro === "senha" || erro === "credenciais"} />
 
       <p className="mt-12 text-center text-[15px] text-ink-2">
         Ainda não tem conta?{" "}
