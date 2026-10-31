@@ -11,7 +11,7 @@
 // `--smoke` (CI, depois do build): abre a janela com a tela "Sem conexão" local (sem rede), confere a ponte e as
 // regras e escreve "SMOKE OK" (também em CARRO_SMOKE_SAIDA, se definido).
 
-const { app, BrowserWindow, WebContentsView, Menu, shell, session, ipcMain, dialog, screen, nativeTheme, clipboard, systemPreferences } = require('electron')
+const { app, BrowserWindow, WebContentsView, Menu, shell, session, ipcMain, dialog, screen, nativeTheme, clipboard, systemPreferences, Tray, Notification, nativeImage, globalShortcut } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -21,6 +21,7 @@ const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, baixarPara, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
 const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
+const { Pulso, NOME_ESTADO, ESTADOS } = require('./pulso.cjs')
 
 const NOME = 'Carro do Freela'
 const SMOKE = process.argv.includes('--smoke')
@@ -562,6 +563,105 @@ async function smoke() {
   }
 }
 
+// ───────── o que o app faz a mais que o site (pulso.cjs) ─────────
+// A barra do computador com a semana (marcar o dia sem abrir a janela), o aviso de proposta nova na hora, o número no
+// ícone e o atalho para chamar o Carro de qualquer lugar. Os pedidos saem de DENTRO da página do Carro (mesma origem,
+// a sessão de quem entrou): sem a página do Carro aberta e logada, a barra só oferece abrir o app.
+const ATALHO = 'CommandOrControl+Alt+C'
+let bandeja = null
+let pulso = null
+
+async function buscarNoCarro(metodo, caminho, corpo) {
+  const wc = view && !view.webContents.isDestroyed() ? view.webContents : null
+  if (!wc || !String(wc.getURL()).startsWith(O.carro + '/')) return null
+  const init = { method: metodo, credentials: 'include', cache: 'no-store' }
+  if (corpo) Object.assign(init, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+  const js = `fetch(${JSON.stringify(caminho)}, ${JSON.stringify(init)}).then(async (r) => ({ status: r.status, dados: r.status === 200 ? await r.json().catch(() => null) : null })).catch(() => null)`
+  return wc.executeJavaScript(js, true).catch(() => null)
+}
+
+function irPara(tela) {
+  focar()
+  const wc = view && view.webContents
+  if (wc && String(wc.getURL()).startsWith(O.carro + '/')) wc.executeJavaScript(`typeof show === 'function' && show(${JSON.stringify(tela)})`, true).catch(() => {})
+}
+
+function iconeBandeja() {
+  const img = nativeImage.createFromPath(path.join(__dirname, '..', 'build', MAC ? 'icon.png' : 'icon-windows.png'))
+  return img.isEmpty() ? img : img.resize({ width: MAC ? 18 : 16, height: MAC ? 18 : 16 })
+}
+
+function pintarBandeja(e) {
+  if (!bandeja || bandeja.isDestroyed()) return
+  const abrir = { label: 'Abrir o Carro do Freela', accelerator: ATALHO, click: focar }
+  const fim = [
+    { type: 'separator' },
+    {
+      label: 'Abrir ao ligar o computador',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (it) => app.setLoginItemSettings({ openAtLogin: it.checked, openAsHidden: true }),
+    },
+    { label: 'Sair', role: 'quit' },
+  ]
+  let itens
+  if (!e || !e.entrou) {
+    bandeja.setToolTip(NOME)
+    itens = [abrir, { label: 'Entre no app para ver a sua semana aqui', enabled: false }, ...fim]
+  } else {
+    const hoje = e.semana[0]
+    bandeja.setToolTip(`${NOME} · hoje: ${NOME_ESTADO[hoje.estado]}${e.pendentes ? ` · ${e.pendentes} proposta(s)` : ''}`)
+    itens = [
+      abrir,
+      { type: 'separator' },
+      e.pendentes
+        ? { label: e.pendentes === 1 ? '1 proposta esperando resposta' : `${e.pendentes} propostas esperando resposta`, click: () => irPara('propostas') }
+        : { label: 'Nenhuma proposta esperando', enabled: false },
+      { type: 'separator' },
+      { label: 'Sua semana', enabled: false },
+      ...e.semana.map((d) => ({
+        label: `${d.rotulo}: ${NOME_ESTADO[d.estado]}${d.meia ? ' (meia)' : ''}`,
+        submenu: ESTADOS.map((est) => ({
+          label: NOME_ESTADO[est],
+          type: 'radio',
+          checked: d.estado === est,
+          click: () =>
+            pulso.marcar(d.dia, est).catch(() => {
+              new Notification({ title: 'A agenda não foi salva', body: 'Abra o Carro do Freela e tente de novo.' }).show()
+            }),
+        })),
+      })),
+      { label: 'Abrir a agenda', click: () => irPara('agenda') },
+      ...fim,
+    ]
+  }
+  bandeja.setContextMenu(Menu.buildFromTemplate(itens))
+  // o número no ícone (Dock no Mac, Linux): propostas esperando resposta
+  try {
+    app.setBadgeCount(e && e.entrou ? e.pendentes : 0)
+  } catch {}
+}
+
+function ligarPulso() {
+  bandeja = new Tray(iconeBandeja())
+  bandeja.on('click', () => (MAC ? bandeja.popUpContextMenu() : focar()))
+  pulso = new Pulso({
+    buscar: buscarNoCarro,
+    aoMudar: pintarBandeja,
+    notificar: ({ titulo, corpo }) => {
+      if (!Notification.isSupported()) return
+      const n = new Notification({ title: titulo, body: corpo })
+      n.on('click', () => irPara('propostas'))
+      n.show()
+    },
+  })
+  pintarBandeja(null)
+  // a primeira leitura espera a página do Carro carregar; depois, de minuto em minuto
+  view.webContents.on('did-finish-load', () => pulso.ler().catch(() => {}))
+  pulso.start()
+  if (!globalShortcut.register(ATALHO, () => (win && win.isVisible() && win.isFocused() ? win.hide() : focar()))) console.log('atalho ocupado:', ATALHO)
+}
+
 // ───────── ciclo de vida ─────────
 app.on('open-url', (e, url) => {
   // Mac: link carrodofreela:// (pode chegar antes do app ficar pronto)
@@ -593,6 +693,7 @@ app.whenReady().then(() => {
   menu()
   criarJanela()
   if (SMOKE) return smoke()
+  ligarPulso()
   if (app.isPackaged) {
     atualizador = new Atualizador({
       nome: NOME,
@@ -638,6 +739,8 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   if (aviso) aviso.stop()
+  if (pulso) pulso.stop()
+  globalShortcut.unregisterAll()
   salvarJanela()
 })
 

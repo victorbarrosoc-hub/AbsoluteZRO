@@ -6,6 +6,19 @@ conexão" local quando falta internet e avisa quando sai versão nova. Mesma mol
 (`products/maestro/desktop`) e do Absolute ZRO para computador (`apps/hub-desktop`), sem a central de apps e sem a bandeja:
 é só o Carro do Freela.
 
+## O que o app faz a mais que o site (0.2.0)
+
+Pedido do titular (31/10/2026): "um app no nível mais alto que o site, que instigue a baixar". Tudo pelas mesmas rotas do
+site, chamadas de dentro da página do Carro (`desktop/pulso.cjs`, testado em `test/pulso.test.mjs`):
+
+- **Proposta nova avisa na hora**: notificação do sistema (tocar abre Propostas) e o número no ícone (Dock e Linux).
+- **A semana na barra do computador** (bandeja no Windows, barra de menus no Mac): hoje e os próximos seis dias, e marcar
+  Livre, Negociando ou Fechado sem abrir a janela.
+- **Atalho global** ⌥⌘C (Ctrl+Alt+C no Windows) chama o Carro de qualquer lugar.
+- **Abrir ao ligar o computador**, se a pessoa quiser (na bandeja).
+
+Sem login, a bandeja só oferece abrir o app. O app não guarda token nem senha: é a sessão do próprio site.
+
 Pacote próprio (fora do `package.json` do site): `package.json` e `package-lock.json` só com Electron e electron-builder.
 
 ```bash

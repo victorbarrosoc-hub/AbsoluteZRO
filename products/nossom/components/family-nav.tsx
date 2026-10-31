@@ -13,7 +13,7 @@ const FAMILY = [
     icon: '/familia/absolute-zro.webp',
   },
   {
-    href: 'https://carrodofreela.com.br',
+    href: 'https://carro.absolutezro.com',
     name: 'Carro do Freela',
     icon: '/familia/carro-do-freela.png',
   },
