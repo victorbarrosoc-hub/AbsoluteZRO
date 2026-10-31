@@ -3868,3 +3868,13 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `products/sobedesce`: `test/familia.test.js` 4/4. Raiz: `familia-menus` 6/6, agora sem aceitar o endereço antigo.
 - Capturas no Playwright (390×844, claro): Synquei antes (sem nenhuma entrada de conta no celular), fora (Entrar no
   canto do Início), dentro (foto) e Ajustes (nome, e-mail e Sair); no computador (1280) a barra lateral não mudou.
+
+## Carro do Freela para computador 0.2.0: o app acima do site (31/10/2026)
+
+- `products/carro-do-freela/desktop`: `npm test` 28/28 (com `test/pulso.test.mjs`: semana de sete dias, só proposta
+  pendente e nova avisa, a primeira leitura só aprende, sem login nada, marcar o dia vira PUT/DELETE das rotas do site);
+  `npm run smoke` (xvfb) SMOKE OK; o app abriu 25 s no Linux com a bandeja ligada, sem erro.
+- Carro `test/site-real.js` 41/41: o convite "Melhor no computador" (três coisas que o app faz, botão para a página de
+  baixar da Absolute ZRO) some no celular e dentro do próprio app.
+- Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
+  `apps/hub-desktop` (6/6).

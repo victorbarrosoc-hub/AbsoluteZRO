@@ -73,7 +73,7 @@ const RAIZ = path.resolve(__dirname, '..');
       video: !!document.querySelector('#hp-video') && !document.querySelector('.hprod .hp-arte').closest('[hidden]') && getComputedStyle(document.querySelector('.hprod .hp-arte')).display !== 'none',
       praca: [...document.querySelectorAll('#h-praca .pc-it b')].filter(vis).map(b => b.textContent) };
   });
-  t(m.blocos.join(',') === 'hero,hp-jogo-w,h-rec,h-como,h-praca,h-z,fim2', 'a home real: topo com vídeo, quem está livre, recursos, como funciona, a praça, a Z e o fechamento (' + m.blocos.join(', ') + ')');
+  t(m.blocos.join(',') === 'hero,hp-jogo-w,h-rec,h-app,h-como,h-praca,h-z,fim2', 'a home real: topo com vídeo, quem está livre, recursos, o app de computador, como funciona, a praça, a Z e o fechamento (' + m.blocos.join(', ') + ')');
   t(m.video, '⟶⟶ o vídeo do carro voltou ao topo');
   t(m.titulo === 'Quem está livre, na data certa.' && m.fim === m.titulo, 'a manchete é a do site real, em cima e no fechamento');
   t(m.lista.length > 0 && m.exemplo && !m.aoVivo && m.rostos === 0, '⟶⟶ a prévia por data usa perfis de EXEMPLO, sem rosto, e diz isso (não "agenda ao vivo")');
@@ -83,6 +83,13 @@ const RAIZ = path.resolve(__dirname, '..');
   t(!m.dinheiro, 'a home não fala de preço, grátis, moeda, base fictícia nem de AEON, Revela ou NOSSOM');
   t(!m.chip && !m.previa, 'sem o chip de fase e sem o selo "Prévia": é o produto, não um teste');
   t(!m.links.includes('#h-planos') && m.links.includes('#h-rec') && m.links.includes('#h-praca'), 'os links do topo e do pé apontam para o que está na página (' + m.links.join(' ') + ')');
+
+  /* o convite do app de computador: só o que ele faz, aponta para a página de baixar da Absolute ZRO e some dentro do app */
+  m = await p.evaluate(() => { const h = document.getElementById('h-app'); const antes = getComputedStyle(h).display;
+    document.documentElement.classList.add('carro-desktop'); const dentro = getComputedStyle(h).display; document.documentElement.classList.remove('carro-desktop');
+    return { antes, dentro, href: h.querySelector('.happ-ir').href, itens: h.querySelectorAll('.happ-lista li').length } });
+  t(m.antes !== 'none' && m.dentro === 'none' && m.href === 'https://absolutezro.com/baixar' && m.itens === 3,
+    '⟶⟶ "Melhor no computador": três coisas que o app faz, o botão leva à página de baixar, e o convite some dentro do app');
 
   /* da linha B ficam o escuro fosco do ecossistema e os títulos finos × pesados sem degradê (topo e entrada) */
   m = await p.evaluate(() => {
