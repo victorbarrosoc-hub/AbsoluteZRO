@@ -41,6 +41,8 @@ const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
 // Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
 const RELAY_BAIXAR = 'https://absolutezro.com/baixar/app/relay/'
 const CARRO_BAIXAR = 'https://absolutezro.com/baixar/app/carro-do-freela/'
+// TPeasy para computador: a mesma rota e o mesmo gate (migração 0047).
+const TPEASY_BAIXAR = 'https://absolutezro.com/baixar/app/tpeasy/'
 const PRIMEIRA_VEZ = {
   mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
   windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
@@ -101,9 +103,11 @@ export const DOWNLOADS: DownloadEntry[] = [
   {
     productId: 'tpeasy',
     site: 'https://tpeasy.absolutezro.com',
-    status: 'web',
-    note: 'Feito para iPhone e iPad. Instala pela tela de início, sem loja.',
+    status: 'test',
+    note: 'No computador, o app; no iPhone e iPad, pela tela de início, sem loja.',
     options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: TPEASY_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: TPEASY_BAIXAR + 'windows', format: 'Instalador .exe' },
       {
         os: 'mobile',
         label: 'iPhone e iPad',
@@ -112,6 +116,7 @@ export const DOWNLOADS: DownloadEntry[] = [
         format: 'App da web',
       },
     ],
+    firstOpen: PRIMEIRA_VEZ,
   },
   {
     // Carro do Freela (products/carro-do-freela): no ar desde a 0041 e, com o app de computador, desde a 0042 (a mesma rota

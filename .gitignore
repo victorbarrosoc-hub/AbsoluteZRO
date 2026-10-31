@@ -24,6 +24,9 @@ products/maestro/desktop/sha256/
 products/relay/desktop/desktop/build-info.json
 products/relay/desktop/versao.json
 products/relay/desktop/sha256/
+products/tpeasy/desktop/desktop/build-info.json
+products/tpeasy/desktop/versao.json
+products/tpeasy/desktop/sha256/
 products/carro-do-freela/desktop/desktop/build-info.json
 products/carro-do-freela/desktop/versao.json
 products/carro-do-freela/desktop/sha256/

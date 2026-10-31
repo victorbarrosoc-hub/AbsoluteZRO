@@ -103,6 +103,19 @@ describe('downloads', () => {
     ).toEqual(['mac', 'windows', 'web', 'mobile'])
   })
 
+  it('TPeasy (0047): com o download aberto, Mac e Windows pela Absolute ZRO; fechado, só o iPhone e iPad', () => {
+    const fechado = downloadsLiberados(new Set(['sobedesce']), new Set(['tpeasy'])).find((x) => x.productId === 'tpeasy')!
+    expect(fechado.options.map((o) => o.os)).toEqual(['mobile'])
+    expect(hasDesktopInstaller('tpeasy', new Set(['sobedesce']))).toBe(false)
+    const aberto = downloadsLiberados(new Set(['tpeasy'])).find((x) => x.productId === 'tpeasy')!
+    expect(aberto.status).toBe('test')
+    expect(aberto.options.filter((o) => o.os === 'mac' || o.os === 'windows').map((o) => o.href)).toEqual([
+      'https://absolutezro.com/baixar/app/tpeasy/mac',
+      'https://absolutezro.com/baixar/app/tpeasy/windows',
+    ])
+    expect(hasDesktopInstaller('tpeasy', new Set(['tpeasy']))).toBe(true)
+  })
+
   it('no ar só na web (Maestro sem o app de computador, Relay, Carro do Freela): navegador e celular, sem instalador nem Terminal', () => {
     const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay', 'carro-do-freela']))
     const carro = vistos.find((x) => x.productId === 'carro-do-freela')!
