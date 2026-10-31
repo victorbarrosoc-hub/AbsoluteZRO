@@ -58,6 +58,8 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           <Link href="/baixar">Downloads</Link>
           <Link href="/planos">Planos</Link>
           <Link href="/entrar">Entrar</Link>
+          <Link href="/privacidade">Privacidade</Link>
+          <Link href="/termos">Termos</Link>
           <a href="mailto:contato@absolutezro.com">Contato</a>
         </nav>
         <span>© {new Date().getFullYear()} Absolute ZRO</span>
