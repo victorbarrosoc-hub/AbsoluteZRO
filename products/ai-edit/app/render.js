@@ -1,12 +1,14 @@
 // Vídeo final: decodifica cada trecho da linha, aplica os ajustes do clipe e o zoom e desenha a legenda no mesmo canvas da prévia,
 // e grava H.264 com o som (AAC quando o sistema tem codificador, como no Mac e no Windows; senão Opus) com WebCodecs.
-// O som de cada corte ganha 4 ms de rampa nas pontas: sem estalo na emenda.
+// O som de cada corte ganha 4 ms de rampa nas pontas: sem estalo na emenda. Os efeitos sonoros entram por cima, no
+// quadro exato em que começam (src/efeitos.js), com o volume de cada um.
 
 import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
 import { paraSegundos, fpsNumero } from '../src/tempo.js'
 import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
+import { efeitosNaLinha, misturarEfeitos } from '../src/efeitos.js'
 
 const RAMPA_S = 0.004
 
@@ -35,7 +37,8 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   const saida = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: false }), target: destino })
   const fonteVideo = new MB.CanvasSource(tela, { codec: codecs.video, bitrate: MB.QUALITY_HIGH, keyFrameInterval: 2, latencyMode: 'quality' })
   saida.addVideoTrack(fonteVideo, { frameRate: fps })
-  const temAudio = p.midias.some((m) => m.temAudio) && codecs.audio
+  const efeitos = efeitosNaLinha(p)
+  const temAudio = (p.midias.some((m) => m.temAudio) || efeitos.length > 0) && codecs.audio
   const fonteAudio = temAudio ? new MB.AudioBufferSource({ codec: codecs.audio, bitrate: 192_000 }) : null
   if (fonteAudio) saida.addAudioTrack(fonteAudio)
   await saida.start()
@@ -59,6 +62,17 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
     abertos.set(id, o)
     return o
   }
+
+  // cada som de efeito decodificado uma vez, em estéreo na taxa de saída
+  const somFx = new Map()
+  if (fonteAudio)
+    for (const { som } of efeitos) {
+      if (somFx.has(som.id)) continue
+      const entrada = entradas.get(som.id)
+      if (!entrada) throw new Error(`O som "${som.nome}" não está neste computador. Escolha o arquivo de novo ou tire o efeito.`)
+      const o = await abrir(som.id)
+      somFx.set(som.id, await somDoTrecho(o, 0, som.duracao, taxaSaida, 1, false))
+    }
 
   const t0 = performance.now()
   let feitos = 0
@@ -102,6 +116,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
       if (fonteAudio) {
         const dur = n / fps
         const buf = await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume))
+        misturarEfeitos(buf, efeitos, somFx, paraSegundos(s.linha, p.fps), p.fps)
         await fonteAudio.add(buf)
         tAudio += dur
       }
@@ -118,8 +133,11 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   return { segundos, quadros: feitos, duracao: quadroSaida / fps, audio: tAudio, codecs }
 }
 
-/** O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som). */
-async function somDoTrecho(o, ini, dur, taxaSaida, g = 1) {
+/**
+ * O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som).
+ * rampa = false para o som inteiro de um efeito (ele já começa e acaba como foi feito).
+ */
+async function somDoTrecho(o, ini, dur, taxaSaida, g = 1, rampa = true) {
   const taxa = o.audio?.sampleRate || taxaSaida
   const amostras = Math.max(1, Math.round(dur * taxa))
   let buf = new AudioBuffer({ length: amostras, numberOfChannels: 2, sampleRate: taxa })
@@ -132,7 +150,7 @@ async function somDoTrecho(o, ini, dur, taxaSaida, g = 1) {
         for (let i = Math.max(0, -desloc); i < src.length && desloc + i < amostras; i++) dst[desloc + i] = src[i]
       }
     }
-    const r = Math.min(Math.floor(amostras / 2), Math.round(RAMPA_S * taxa))
+    const r = rampa ? Math.min(Math.floor(amostras / 2), Math.round(RAMPA_S * taxa)) : 0
     for (let c = 0; c < 2; c++) {
       const d = buf.getChannelData(c)
       if (g !== 1) for (let i = 0; i < amostras; i++) d[i] = Math.max(-1, Math.min(1, d[i] * g))

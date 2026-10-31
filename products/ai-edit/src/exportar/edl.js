@@ -1,8 +1,9 @@
-// EDL CMX 3600: o formato mais antigo e aceito por todos (Avid, Resolve, Premiere). Só cortes: zoom e legenda não
-// cabem na EDL (vão como comentário).
+// EDL CMX 3600: o formato mais antigo e aceito por todos (Avid, Resolve, Premiere). Só cortes: zoom, legenda e efeitos
+// sonoros não cabem na EDL (vão como comentário).
 
 import { timecode } from '../tempo.js'
 import { segmentos } from './comum.js'
+import { efeitosNaLinha } from '../efeitos.js'
 
 const ascii = (t) =>
   String(t)
@@ -32,5 +33,6 @@ export function paraEdl(p) {
     linhas.push('')
   })
   for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}`)
+  for (const x of efeitosNaLinha(p)) linhas.push(`* EFEITO ${tc(x.inicio)}: ${ascii(x.som.nome)}${x.efeito.volume ? ` ${x.efeito.volume} DB` : ''}`)
   return linhas.join('\r\n')
 }

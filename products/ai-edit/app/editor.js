@@ -8,6 +8,7 @@ import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, aj
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
+import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
 import { trechosParaTranscrever } from '../src/analise/trechos.js'
@@ -346,6 +347,11 @@ async function adicionar(entradas) {
   const novas = []
   for (const e of entradas) {
     // projeto reaberto no navegador: o arquivo de mesmo nome volta para a mídia que já estava no projeto
+    const somVolta = P()?.sons?.find((x) => !S.entradas.has(x.id) && x.nome === e.nome)
+    if (somVolta) {
+      S.entradas.set(somVolta.id, e)
+      continue
+    }
     const volta = P()?.midias.find((m) => !S.entradas.has(m.id) && m.nome === e.nome)
     if (volta) {
       S.entradas.set(volta.id, e)
@@ -771,6 +777,9 @@ function acaoLinha(tipo, ...a) {
     fazer(novo, 'marcador')
   } else if (tipo === 'desmarcar') fazer(removerMarcador(p, a[0]), 'apagar marcador')
   else if (tipo === 'remover') fazer({ ...p, linha: remover(p.linha, a[0]) }, 'apagar clipe')
+  else if (tipo === 'som') $('arquivoSom').click()
+  else if (tipo === 'moverEfeito') fazer(moverEfeito(p, a[0], paraQuadros(a[1], p.fps)), 'mover efeito')
+  else if (tipo === 'tirarEfeito') fazer(removerEfeitos(p, a[0]), 'tirar efeito')
   else if (tipo === 'mover') fazer({ ...p, linha: mover(p.linha, a[0], a[1]) }, 'mover clipe')
   else if (tipo === 'etiquetar') fazer({ ...p, linha: etiquetar(p.linha, a[0], a[1]) }, a[1].cor !== undefined ? 'cor do clipe' : 'etiqueta')
   else if (tipo === 'aparar') {
@@ -778,6 +787,34 @@ function acaoLinha(tipo, ...a) {
     const m = c && midiaPorId(p, c.midia)
     fazer({ ...p, linha: aparar(p.linha, a[0], a[1], a[2], m?.quadros) }, 'aparar')
   }
+}
+
+// efeito sonoro do computador: entra no projeto e vai para o ponto (vários: um depois do outro)
+$('arquivoSom').onchange = async () => {
+  const fs = [...$('arquivoSom').files]
+  $('arquivoSom').value = ''
+  let p = P()
+  if (!p || !fs.length) return
+  let q = paraQuadros(player.t, p.fps)
+  let ultimo = null
+  for (const f of fs) {
+    const e = await ponte.entradaDe(f)
+    try {
+      const info = await lerInfo(e)
+      if (!info.temAudio || info.decodificaAudio === false) throw new Error('sem som que este computador toque')
+      const r = adicionarSom(p, { id: crypto.randomUUID(), nome: e.nome, caminho: e.caminho || null, duracao: info.duracao, taxa: info.taxa, canais: info.canais, origem: { tipo: 'arquivo' } })
+      S.entradas.set(r.id, e)
+      const c = colocarEfeito(r.projeto, r.id, q)
+      p = c.projeto
+      ultimo = c.id || ultimo
+      q += paraQuadros(info.duracao, p.fps)
+    } catch (err) {
+      aviso(`${e.nome}: ${err.message}.`)
+    }
+  }
+  if (p === P()) return
+  fazer(p, fs.length > 1 ? 'efeitos sonoros' : 'efeito sonoro')
+  if (ultimo) linha.selecionarEfeito(ultimo)
 }
 
 $('legendaLigada').onchange = () => fazer({ ...P(), legenda: { ...P().legenda, ligada: $('legendaLigada').checked } }, $('legendaLigada').checked ? 'mostrar legenda' : 'esconder legenda')
@@ -877,7 +914,23 @@ const CONTROLES = [
 
 function montarInspector() {
   const sec = $('inspector')
-  sec.innerHTML = `<div class="insp-vazio"><svg><use href="#i-edicao"/></svg><span class="apoio">Escolha um clipe na linha.</span><dl class="insp-projeto"></dl></div><div class="insp-clipe" hidden><div class="insp-cabeca"><span class="insp-cor"></span><span class="insp-nome"><strong></strong><span class="apoio"></span></span></div><div class="insp-controles"></div><button class="link" id="inspRedefinir">Redefinir</button></div>`
+  sec.innerHTML = `<div class="insp-vazio"><svg><use href="#i-edicao"/></svg><span class="apoio">Escolha um clipe na linha.</span><dl class="insp-projeto"></dl></div><div class="insp-clipe" hidden><div class="insp-cabeca"><span class="insp-cor"></span><span class="insp-nome"><strong></strong><span class="apoio"></span></span></div><div class="insp-controles"></div><button class="link" id="inspRedefinir">Redefinir</button></div><div class="insp-efeito" hidden><div class="insp-cabeca"><svg class="insp-icone"><use href="#i-som"/></svg><span class="insp-nome"><strong></strong><span class="apoio"></span></span></div><label class="insp-controle"><span class="insp-rotulo">Volume</span><output></output><input type="range" class="deslizar" id="fxVolume" min="-60" max="12" step="0.5" aria-label="Volume do efeito" /></label><button class="link" id="fxTirar">Tirar efeito</button></div>`
+  const rotuloDb = (v) => `${v > 0 ? '+' : ''}${String(v).replace('.', ',')} dB`
+  // volume do efeito: arrastar ouve ao vivo, soltar grava uma ação só, dois cliques volta a 0 dB
+  $('fxVolume').oninput = () => {
+    const p = P()
+    $('fxVolume').previousElementSibling.textContent = rotuloDb(Number($('fxVolume').value))
+    if (p && linha.selFx) player.carregar(ajustarEfeito(p, linha.selFx, { volume: Number($('fxVolume').value) }), opcoesPlayer(p))
+  }
+  $('fxVolume').onchange = () => {
+    const p = P()
+    if (p && linha.selFx) fazer(ajustarEfeito(p, linha.selFx, { volume: Number($('fxVolume').value) }), 'volume do efeito')
+  }
+  $('fxVolume').ondblclick = () => {
+    const p = P()
+    if (p && linha.selFx) fazer(ajustarEfeito(p, linha.selFx, { volume: 0 }), 'volume do efeito')
+  }
+  $('fxTirar').onclick = () => linha.selFx && acaoLinha('tirarEfeito', linha.selFx)
   const caixa = sec.querySelector('.insp-controles')
   for (const c of CONTROLES) {
     const l = document.createElement('label')
@@ -914,8 +967,22 @@ function desenharInspector() {
   const p = P()
   const sec = $('inspector')
   const c = p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null
-  sec.querySelector('.insp-vazio').hidden = Boolean(c)
+  const fx = p && linha.selFx ? (p.efeitos || []).find((x) => x.id === linha.selFx) : null
+  sec.querySelector('.insp-vazio').hidden = Boolean(c || fx)
   sec.querySelector('.insp-clipe').hidden = !c
+  sec.querySelector('.insp-efeito').hidden = !fx
+  if (fx) {
+    const som = somPorId(p, fx.som)
+    const o = som?.origem || {}
+    sec.querySelector('.insp-efeito strong').textContent = som?.nome.replace(/\.[^.]+$/, '') || 'Efeito'
+    // de onde veio: do computador (licença da pessoa) ou de um banco (autor e licença para os créditos)
+    sec.querySelector('.insp-efeito .apoio').textContent = o.tipo === 'arquivo' ? 'Do seu computador' : [o.autor, o.licenca].filter(Boolean).join(' · ') || 'Banco de sons'
+    const i = $('fxVolume')
+    if (document.activeElement !== i) i.value = String(fx.volume || 0)
+    i.previousElementSibling.textContent = `${fx.volume > 0 ? '+' : ''}${String(fx.volume || 0).replace('.', ',')} dB`
+    i.closest('label').classList.toggle('mudado', Boolean(fx.volume))
+    return
+  }
   if (!c) {
     const dl = sec.querySelector('.insp-projeto')
     dl.replaceChildren()
@@ -927,6 +994,7 @@ function desenharInspector() {
       ['Duração', relogio(n.final)],
       ['Clipes', String(p.linha.clipes.length)],
       ['Marcadores', String((p.marcadores || []).length)],
+      ['Efeitos', `${(p.efeitos || []).length - foraDaLinha(p).length}${foraDaLinha(p).length ? ` (+${foraDaLinha(p).length} em trecho cortado)` : ''}`],
     ])
       dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v }))
     return
@@ -1021,6 +1089,8 @@ addEventListener('keydown', (e) => {
     else if (e.key === 'ArrowLeft') player.irPara(player.t - passo)
     else if (e.key.toLowerCase() === 'b') acaoLinha('dividir')
     else if (e.key.toLowerCase() === 'm') acaoLinha('marcar')
+    else if (e.key.toLowerCase() === 's') acaoLinha('som')
+    else if ((e.key === 'Backspace' || e.key === 'Delete') && linha.selFx) acaoLinha('tirarEfeito', linha.selFx)
     else if ((e.key === 'Backspace' || e.key === 'Delete') && linha.sel) acaoLinha('remover', linha.sel)
     else return
     e.preventDefault()
@@ -1068,7 +1138,7 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   S.dbs.clear()
   S.miniaturas.clear()
   const faltam = []
-  for (const m of p.midias) {
+  for (const m of [...p.midias, ...(p.sons || [])]) {
     if (m.caminho && ponte.desktop) S.entradas.set(m.id, await ponte.entradaDoCaminho(m.caminho, m.nome))
     else faltam.push(m)
   }

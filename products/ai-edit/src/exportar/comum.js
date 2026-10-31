@@ -6,6 +6,8 @@ import { zoomEm } from '../quadro.js'
 import { ajustesDe, tamanho } from '../linha.js'
 import { corDoClipe } from '../cores.js'
 import { posicionar } from '../quadro.js'
+import { efeitosNaLinha, faixas } from '../efeitos.js'
+import { paraQuadros } from '../tempo.js'
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c])
 
@@ -75,3 +77,20 @@ export function transformacao(p, s) {
 
 /** Marcadores que caem dentro de um segmento: [{ nome, q (quadro de origem) }]. */
 export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + (s.fim - s.ini)).map((k) => ({ nome: k.nome || 'Marcador', q: s.ini + (k.q - s.linha) }))
+
+/**
+ * Efeitos sonoros para os exportadores: [{ ...x de efeitosNaLinha, faixa (0, 1, …), seg (segmento onde começa),
+ * quadrosSom (duração do arquivo em quadros) }]. Cada faixa não tem sobreposição.
+ */
+export function efeitosExportados(p) {
+  const segs = segmentos(p)
+  return faixas(p).flatMap((fx, faixa) =>
+    fx.map((x) => ({ ...x, faixa, seg: segs.find((s) => x.inicio >= s.linha && x.inicio < s.linha + (s.fim - s.ini)), quadrosSom: Math.max(1, paraQuadros(x.som.duracao, p.fps)) })),
+  )
+}
+
+/** Sons usados na linha, na ordem do projeto (cada um vira um arquivo/asset no exportador). */
+export const sonsUsados = (p) => {
+  const usados = new Set(efeitosNaLinha(p).map((x) => x.som.id))
+  return (p.sons || []).filter((s) => usados.has(s.id))
+}

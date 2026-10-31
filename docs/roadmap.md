@@ -281,6 +281,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   cadastrar o cliente no console e pôr `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET` no projeto Vercel, e o login no app de desktop. Primeiro
   Release do app no ar (build 8, 26/10/2026). Depois: tirar mídia do projeto (uma ou várias, com desfazer), AEON como
   editor completo (a IA é ajuda opcional) e homepage com motion no estilo do SOBEDESCE.
+- 🟡 AEON · faixa de efeitos sonoros (31/10/2026, pedido do titular, fase 1 da Sonoplasta): som do computador no
+  ponto, preso à imagem (corte, aparar e mover levam junto), arrastar com ímã, volume, tirar e desfazer; prévia e
+  vídeo final com o efeito misturado; FCPXML (conectado, função effects), xmeml (A3/A4…), OTIO (FX) e `CREDITOS.txt`.
+  Próximas fases: sugestões nos cortes e marcadores, banco da pessoa (Drive) e Openverse com licença comercial,
+  ElevenLabs pela conta da pessoa (Conexões do HUB, créditos dela), batida e abaixar sob a voz pelo NOSSOM; Epidemic e
+  Artlist dependem de contrato de parceria.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron

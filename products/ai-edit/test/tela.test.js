@@ -354,6 +354,95 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   await pagina.close()
 })
 
+test('efeitos sonoros: som do computador no ponto, arrastar, volume, desfazer, tirar, exportar e renderizar com o efeito', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'cena.mp4'), Buffer.from(bytes))
+  // um "whoosh" de 0,4 s gerado aqui (WAV PCM, 48 kHz, estéreo)
+  const taxa = 48000
+  const n = Math.round(0.4 * taxa)
+  const wav = Buffer.alloc(44 + n * 4)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(36 + n * 4, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(2, 22)
+  wav.writeUInt32LE(taxa, 24)
+  wav.writeUInt32LE(taxa * 4, 28)
+  wav.writeUInt16LE(4, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(n * 4, 40)
+  for (let i = 0; i < n; i++) {
+    const v = Math.round(Math.sin((2 * Math.PI * 300 * i) / taxa) * 8000 * (1 - i / n))
+    wav.writeInt16LE(v, 44 + i * 4)
+    wav.writeInt16LE(v, 46 + i * 4)
+  }
+  writeFileSync(join(dir, 'whoosh.wav'), wav)
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'cena.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+
+  // o botão de som (ou S) abre o seletor; o som entra no ponto, selecionado, com a origem no Inspector
+  await pagina.setInputFiles('#arquivoSom', join(dir, 'whoosh.wav'))
+  const efeito = pagina.locator('.efeito')
+  await efeito.waitFor()
+  assert.equal(await efeito.innerText(), 'whoosh')
+  assert.ok(await efeito.evaluate((e) => e.classList.contains('selecionado')))
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /whoosh[\s\S]*Do seu computador[\s\S]*0 dB/)
+  const estado = () => pagina.evaluate(() => globalThis.__editor.h.atual.efeitos.map((e) => ({ fonte: e.fonte, volume: e.volume })))
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+
+  // arrastar para a direita: o efeito se prende a outro quadro da imagem; desfazer volta
+  const caixa = await efeito.boundingBox()
+  await pagina.mouse.move(caixa.x + 5, caixa.y + caixa.height / 2)
+  await pagina.mouse.down()
+  await pagina.mouse.move(caixa.x + 165, caixa.y + caixa.height / 2, { steps: 8 })
+  await pagina.mouse.up()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos[0].fonte > 0)
+  await pagina.click('#desfazer')
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+  await pagina.click('#refazer')
+
+  // volume no Inspector: soltar grava uma ação só
+  await pagina.locator('#fxVolume').evaluate((i) => {
+    i.value = '-6'
+    i.dispatchEvent(new Event('input'))
+    i.dispatchEvent(new Event('change'))
+  })
+  assert.equal((await estado())[0].volume, -6)
+  assert.match(await pagina.locator('#historico').innerText(), /Volume do efeito/)
+
+  // Entrega: a faixa de efeitos vai para o Final Cut e o vídeo final sai com o efeito misturado
+  await pagina.click('.dock [data-ir="entrega"]')
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 60_000 })
+  const zip = readFileSync(await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).path()).toString('latin1')
+  assert.ok(zip.includes('audioRole="effects"'), 'efeito conectado no FCPXML')
+  assert.ok(zip.includes('<adjust-volume amount="-6dB"/>'), 'com o volume')
+  assert.ok(downloads.some((d) => d.suggestedFilename().endsWith('.mp4')), 'o vídeo final saiu')
+
+  // tirar com Delete na Edição; desfazer traz de volta
+  await pagina.click('.dock [data-ir="edicao"]')
+  await efeito.click()
+  await pagina.keyboard.press('Delete')
+  await efeito.waitFor({ state: 'detached' })
+  await pagina.click('#desfazer')
+  await efeito.waitFor()
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('projeto novo: nome, formato vertical e quadros; renomear pela barra', async () => {
   const { pagina, erros } = await abrir()
   await pagina.click('#novoProjeto')
@@ -412,6 +501,8 @@ test('perfil único: foto e nome da conta Absolute ZRO no menu; editar leva à c
   const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
   await simularZ(pagina)
+  // o Set fica de fora (como em abrir()): sem isso a página pede /api/zro/set ao servidor de teste e o 404 vira erro
+  await simularSet(pagina, { desligado: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))

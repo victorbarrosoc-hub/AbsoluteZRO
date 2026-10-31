@@ -16,6 +16,7 @@ import { paraOtio } from '../src/exportar/otio.js'
 import { fileUrl, pathUrl, segmentos } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
 import { PRESET } from './apoio.js'
+import { adicionarSom, colocarEfeito } from '../src/efeitos.js'
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../../../docs/integration-contracts/schemas/zro-timeline-ref.v0.schema.json', import.meta.url), 'utf8'))
 
@@ -171,4 +172,42 @@ test('URLs de arquivo para Mac, Windows e rede', () => {
   assert.equal(pathUrl('C:\\Vídeos\\a b.mov'), 'file://localhost/C%3a/V%C3%ADdeos/a%20b.mov')
   assert.equal(fileUrl('/Users/eu/a.mp4'), 'file:///Users/eu/a.mp4')
   assert.equal(pathUrl('/Users/eu/a.mp4'), 'file://localhost/Users/eu/a.mp4')
+})
+
+test('efeitos sonoros: conectados no FCPXML, pares de faixas no xmeml, trilha FX no OTIO, comentário na EDL e créditos', () => {
+  let p = projeto()
+  p = adicionarSom(p, { id: 'w1', nome: 'whoosh & cia.wav', caminho: '/Sons/whoosh & cia.wav', duracao: 1, taxa: 48000, canais: 2, origem: { tipo: 'openverse', titulo: 'Whoosh', autor: 'Ana', licenca: 'CC BY 4.0', url: 'https://openverse.org/audio/w1' } }).projeto
+  // dois efeitos que se sobrepõem (quadros 10 e 20 da linha) e um no segundo clipe, com volume
+  p = colocarEfeito(p, 'w1', 10).projeto
+  p = colocarEfeito(p, 'w1', 20).projeto
+  const segs = segmentos(p)
+  const q2 = segs[2].linha + 5
+  p = colocarEfeito(p, 'w1', q2, { volume: -6 }).projeto
+
+  const fcp = paraFcpxml(p)
+  bemFormado(fcp)
+  assert.match(fcp, /<asset id="s1" name="whoosh &amp; cia" start="0s" duration="1001\/1000s" hasAudio="1"/)
+  // conectado no tempo de origem do clipe em que começa, em lanes diferentes quando sobrepõe
+  assert.match(fcp, /<asset-clip ref="s1" lane="-1" offset="1001\/3000s"[^>]*audioRole="effects"\/>/)
+  assert.match(fcp, /<asset-clip ref="s1" lane="-2" offset="1001\/1500s"/)
+  assert.match(fcp, /lane="-1" offset="[^"]+"[^>]*>\s*<adjust-volume amount="-6dB"\/>/)
+
+  const xm = paraXmeml(p)
+  bemFormado(xm)
+  assert.equal((xm.match(/<track>/g) || []).length, 1 + 2 + 4)
+  assert.match(xm, /<clipitem id="clipitem-e1L-1">[\s\S]*?<start>10<\/start>\s*<end>40<\/end>\s*<in>0<\/in>\s*<out>30<\/out>/)
+  assert.match(xm, /<file id="file-s1">/)
+  assert.equal((xm.match(/<file id="file-s1">/g) || []).length, 1, 'um arquivo por som, o resto referencia')
+
+  const o = JSON.parse(paraOtio(p))
+  const fx = o.tracks.children.filter((t) => t.name.startsWith('FX'))
+  assert.deepEqual(fx.map((t) => t.children.map((c) => c.OTIO_SCHEMA)), [['Gap.1', 'Clip.2', 'Gap.1', 'Clip.2'], ['Gap.1', 'Clip.2']])
+  assert.equal(fx[0].children[0].source_range.duration.value, 10)
+
+  assert.match(paraEdl(p), /\* EFEITO 00:00:00:10: whoosh & cia\.wav/)
+
+  const arquivos = pacote(p, PRESET.legenda, new Date('2026-10-31T12:00:00Z'))
+  const cred = arquivos.find((a) => a.name === 'CREDITOS.txt')
+  assert.match(cred.data, /"Whoosh" por Ana · CC BY 4\.0 · https:\/\/openverse\.org\/audio\/w1/)
+  for (const r of JSON.parse(arquivos.at(-1).data)) assert.deepEqual(validar(r, SCHEMA), [])
 })

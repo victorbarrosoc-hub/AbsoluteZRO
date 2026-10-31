@@ -3644,3 +3644,17 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 - Capturas no Playwright (interface `public/` com `scripts/ui-stub.js` em `STUB_MODO=arquivos`): Drive na raiz
   ("Precisa de acesso total"), pasta do SOBEDESCE, Liberados, Escolher do Drive (abre `/app/#escolher/g1`), Ajustes
   com o modo, seletor do Comparar travado e o resultado do Comparar, claro e escuro.
+
+## AEON: faixa de efeitos sonoros (31/10/2026)
+
+- `src/efeitos.js`: sons do projeto e efeitos presos à imagem (mídia + quadro de origem), `efeitosNaLinha`, faixas sem
+  sobreposição, momentos (cortes e marcadores), créditos por licença e a mistura do render (pura, testada fora do
+  navegador). `test/efeitos.test.js` 11/11; `test/exportar.test.js` com efeitos (FCPXML e xmeml no `xmllint`, OTIO,
+  EDL, `CREDITOS.txt`, `ZroTimelineRef` válido pelo contrato).
+- Tela no Chromium (`test/tela.test.js`): som do computador no ponto, arrastar, desfazer, volume, exportar (efeito
+  conectado com `-6dB` no FCPXML) e vídeo final renderizado com o efeito, tirar com ⌫ e desfazer.
+- `npm test` da AEON 152/153 (1 pulado: Whisper real sem rede) e `xvfb-run electron . --smoke` OK.
+- Corrigido junto: o teste "perfil único" falhava em todo PR que tocava a AEON (`/api/zro/set` respondia 404 no servidor
+  de teste porque o teste não simulava o Set); agora simula, como os outros.
+- Não validado: abrir o FCPXML/XML com efeitos no Final Cut, Premiere e Resolve reais; prévia longa (sincronia do
+  efeito com o vídeo depois de vários minutos).
