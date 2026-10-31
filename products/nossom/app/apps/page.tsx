@@ -124,7 +124,7 @@ export default async function Apps() {
             em quarentena, então o Mac abre o NOSSOM sem o aviso:
           </p>
           <pre>
-            <code>curl -fsSL https://nossom-teal.vercel.app/instalar.sh | bash</code>
+            <code>curl -fsSL https://nossom.absolutezro.com/instalar.sh | bash</code>
           </pre>
           <p>
             Ele escolhe a versão do seu Mac (Apple Silicon ou Intel), coloca o NOSSOM em Aplicativos

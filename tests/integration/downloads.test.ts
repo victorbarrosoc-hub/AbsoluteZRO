@@ -5,7 +5,7 @@ import { DOWNLOADS, downloadsLiberados, hasDesktopInstaller } from '../../apps/h
 const OFFICIAL = new Set([
   'sobedesce.vercel.app',
   'synquei.vercel.app',
-  'nossom-teal.vercel.app',
+  'nossom.absolutezro.com',
   'tpeasy.vercel.app',
   'carro.absolutezro.com',
   'aeon.absolutezro.com',
@@ -31,7 +31,7 @@ describe('downloads', () => {
         expect(u.hostname, o.href).not.toMatch(/github(usercontent)?\.com$/)
       }
       for (const cmd of Object.values(d.terminal ?? {}))
-        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei|nossom-teal)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
+        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei)\.vercel\.app|(aeon|nossom)\.absolutezro\.com)\/instalar\.(sh|ps1)/)
     }
   })
 

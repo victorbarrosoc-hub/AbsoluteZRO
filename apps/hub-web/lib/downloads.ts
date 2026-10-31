@@ -35,7 +35,7 @@ export type DownloadEntry = {
 
 // Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
 // GITHUB_TOKEN e redireciona para o endereço assinado e temporário do arquivo.
-const NOSSOM_BAIXAR = 'https://nossom-teal.vercel.app/baixar/'
+const NOSSOM_BAIXAR = 'https://nossom.absolutezro.com/baixar/'
 // Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
 const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
 // Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
@@ -78,7 +78,7 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'nossom',
-    site: 'https://nossom-teal.vercel.app',
+    site: 'https://nossom.absolutezro.com',
     status: 'test',
     note: 'Prévia 0.2.2: sem notarização da Apple e sem atualização automática.',
     options: [
@@ -91,12 +91,12 @@ export const DOWNLOADS: DownloadEntry[] = [
       },
       { os: 'mac', label: 'Mac · Intel', detail: 'Processador Intel', href: NOSSOM_BAIXAR + 'mac-x64', format: 'Instalador .dmg' },
       { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11, 64 bits', href: NOSSOM_BAIXAR + 'windows', format: 'Instalador .exe' },
-      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom-teal.vercel.app/studio', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom.absolutezro.com/studio', format: 'Sem instalar' },
     ],
     // pelo Terminal o .dmg não fica em quarentena (o xattr depois falha no macOS novo sem Gerenciamento de Apps)
-    terminal: { mac: 'curl -fsSL https://nossom-teal.vercel.app/instalar.sh | bash' },
+    terminal: { mac: 'curl -fsSL https://nossom.absolutezro.com/instalar.sh | bash' },
     firstOpen: { mac: 'Se o Mac bloquear, instale pelo Terminal (abaixo): o NOSSOM chega sem o bloqueio.' },
-    moreUrl: 'https://nossom-teal.vercel.app/apps',
+    moreUrl: 'https://nossom.absolutezro.com/apps',
   },
   {
     productId: 'tpeasy',
