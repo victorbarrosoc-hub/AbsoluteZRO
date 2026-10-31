@@ -25,7 +25,9 @@ describe('app de computador do Relay e do Carro do Freela (0042)', () => {
     expect(s.relay).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: true, api: false, download: true, sso: false } })
     expect(s['carro-do-freela']).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: true, api: true, download: true, sso: true } })
     expect(s.maestro!.channels).toMatchObject({ desktop: false, download: false })
-    for (const id of ['ai-edit', 'finishing', 'nossom']) expect(s[id]!.open, id).toBe(false)
+    for (const id of ['finishing', 'nossom']) expect(s[id]!.open, id).toBe(false)
+    // o AEON abriu na web (0043), sem o app de computador
+    expect(s['ai-edit']!.channels).toMatchObject({ desktop: false, download: false })
     // continuam divulgados (a página pública /baixar lista pelo gate)
     for (const id of ['relay', 'carro-do-freela']) expect(divulgado({ state: s[id]!.state, canais: s[id]!.channels }), id).toBe(true)
   })

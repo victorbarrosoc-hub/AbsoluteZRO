@@ -88,13 +88,7 @@
     { "source": "/api/zro/set/:caminho*", "destination": "/api/zro/set?c=:caminho*" },
     { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
     { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
-    { "source": "/presets/:caminho*", "destination": "/api/app?caminho=presets/:caminho*" }
-  ],
-  "redirects": [
-    {
-      "source": "/baixar/:resto*",
-      "destination": "/#em-desenvolvimento",
-      "permanent": false
-    }
+    { "source": "/presets/:caminho*", "destination": "/api/app?caminho=presets/:caminho*" },
+    { "source": "/baixar/:sistema", "destination": "/api/baixar?sistema=:sistema" }
   ]
 }

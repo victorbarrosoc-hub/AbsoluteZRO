@@ -4,7 +4,7 @@
 
 import { PRODUTO } from '../src/produto.js'
 import { simbolo, wordmark } from '../src/marca.js'
-import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, AJUSTES_PADRAO } from '../src/linha.js'
+import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, acelerar, retempo, estabilizar, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
@@ -14,19 +14,24 @@ import { trechosParaTranscrever } from '../src/analise/trechos.js'
 import { agrupar } from '../src/legenda.js'
 import { paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
 import { pacote } from '../src/exportar/index.js'
-import { nomeArquivo } from '../src/exportar/comum.js'
+import { nomeArquivo, segmentos } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
 import { MODELOS } from '../src/modelos.js'
 import { extrairAudio, lerInfo, miniatura, MB } from './midia.js'
 import { Player } from './player.js'
 import { LinhaUI } from './linha-ui.js'
 import { renderizar, codecsDaMaquina } from './render.js'
+import { carregarFluxo } from './fluxo.js'
 import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
 import { lerConta, ondeEditar, PAGINA_FECHADO } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
+import { montarVelocidade } from './velocidade-ui.js'
+import { analisarMidia, montarEstabilizar } from './estabilizar-ui.js'
+import { PADRAO as ESTAB_PADRAO } from '../src/estabilizar/index.js'
+import { analiseDe } from '../src/estabilizar/aplicar.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 import { montarSet } from './set.js'
@@ -907,7 +912,71 @@ function montarInspector() {
     const p = P()
     if (p && linha.sel) fazer({ ...p, linha: ajustar(p.linha, linha.sel, AJUSTES_PADRAO) }, 'redefinir ajustes')
   }
+  // velocidade (speed ramp): a curva do clipe, ao vivo na prévia e uma ação no desfazer ao soltar
+  velUI = montarVelocidade(sec.querySelector('.insp-clipe'), {
+    obter: () => {
+      const p = P()
+      return { p, clipe: p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null }
+    },
+    previa: (pontos) => {
+      const p = P()
+      if (p && linha.sel) player.carregar({ ...p, linha: acelerar(p.linha, linha.sel, pontos) }, opcoesPlayer(p))
+    },
+    gravar: (pontos, rotulo, todos = false) => {
+      const p = P()
+      if (!p || (!linha.sel && !todos)) return
+      fazer({ ...p, linha: acelerar(p.linha, todos ? p.linha.clipes.map((c) => c.id) : linha.sel, pontos) }, rotulo)
+    },
+    modo: (m) => {
+      const p = P()
+      if (!p || !linha.sel) return
+      const novo = retempo(p.linha, linha.sel, m)
+      if (novo !== p.linha) fazer({ ...p, linha: novo }, `câmera lenta · ${{ fluxo: 'fluxo óptico', mistura: 'mistura', quadro: 'quadro' }[m]}`)
+    },
+    fps: () => (P() ? P().fps.n / P().fps.d : 30),
+  })
+  $('inspRedefinir').before(velUI.el)
+  // estabilizar: a primeira vez analisa a mídia (worker, quadros contados); a análise fica na mídia do projeto
+  const selecionado = () => {
+    const p = P()
+    const clipe = p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null
+    return { p, clipe, midia: clipe ? midiaPorId(p, clipe.midia) : null }
+  }
+  estUI = montarEstabilizar(sec.querySelector('.insp-clipe'), {
+    obter: selecionado,
+    ligar: async (aoAndar) => {
+      const { clipe, midia } = selecionado()
+      if (!clipe) return
+      let est = null
+      if (!analiseDe(midia)) {
+        const entrada = S.entradas.get(midia.id)
+        if (!entrada) return aviso('Escolha o arquivo desta mídia de novo para analisar.')
+        try {
+          est = await analisarMidia(entrada, aoAndar)
+        } catch (err) {
+          return aviso(`A análise parou: ${err.message}`)
+        }
+      }
+      const p = P()
+      const midias = est ? p.midias.map((m) => (m.id === midia.id ? { ...m, estabilidade: est } : m)) : p.midias
+      fazer({ ...p, midias, linha: estabilizar(p.linha, clipe.id, clipe.estabilizar || ESTAB_PADRAO) }, 'estabilizar')
+    },
+    desligar: () => {
+      const p = P()
+      if (p && linha.sel) fazer({ ...p, linha: estabilizar(p.linha, linha.sel, null) }, 'tirar estabilização')
+    },
+    ajustar: (aj, gravar) => {
+      const p = P()
+      if (!p || !linha.sel) return
+      const novo = { ...p, linha: estabilizar(p.linha, linha.sel, aj) }
+      if (gravar) fazer(novo, 'ajustar estabilização')
+      else player.carregar(novo, opcoesPlayer(novo))
+    },
+  })
+  $('inspRedefinir').before(estUI.el)
 }
+let velUI = null
+let estUI = null
 montarInspector()
 
 function desenharInspector() {
@@ -948,6 +1017,8 @@ function desenharInspector() {
     i.closest('label').classList.toggle('mudado', aj[ctl.k] !== AJUSTES_PADRAO[ctl.k])
   }
   $('inspRedefinir').hidden = !c.ajustes
+  velUI.desenhar(c)
+  estUI.desenhar()
 }
 
 /** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */
@@ -1235,7 +1306,19 @@ async function exportar({ marcados } = {}) {
     try {
       await document.fonts.load('800 40px Figtree')
       const blocos = blocosDaLegenda(p)
+      // câmera lenta com fluxo óptico em algum trecho: o motor (o primeiro uso baixa o modelo); se não abrir, a câmera
+      // lenta sai com o quadro mais próximo e a pessoa sabe
+      let fluxo = null
+      if (segmentos(p).some((s) => s.v < 1 && s.modo === 'fluxo')) {
+        $('renderTexto').textContent = 'Preparando o fluxo óptico…'
+        try {
+          fluxo = await carregarFluxo({ aoBaixar: (f, t) => ($('renderTexto').textContent = `Baixando o motor de fluxo óptico · ${Math.round((f / t) * 100)}%`) })
+        } catch (err) {
+          aviso(`${err.message} A câmera lenta sai com o quadro mais próximo.`)
+        }
+      }
       const r = await renderizar(p, {
+        fluxo,
         entradas: S.entradas,
         destino: alvo,
         blocos,
@@ -1264,6 +1347,7 @@ async function exportar({ marcados } = {}) {
   const partes = []
   if (resultado.arquivos) partes.push(`${resultado.arquivos.length} arquivos para o seu editor`)
   if (resultado.video) partes.push(`vídeo de ${relogio(resultado.video.duracao)} em ${relogio(resultado.video.segundos)}`)
+  if (resultado.video?.retempo?.fluxo) partes.push(`${resultado.video.retempo.fluxo} quadros de câmera lenta por fluxo óptico`)
   $('entregaFim').hidden = false
   $('entregaFim').textContent = `Pronto: ${partes.join(' e ')}.`
   if (resultado.pasta && ponte.desktop) {

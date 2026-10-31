@@ -10,6 +10,8 @@ import { aprovar, comPropostas, comTranscricao, novoProjeto, numeros, palavrasNa
 import { agrupar } from '../src/legenda.js'
 import { pacote } from '../src/exportar/index.js'
 import { renderizar, codecsDaMaquina } from './render.js'
+import { acelerar, duracao as duracaoDaLinha } from '../src/linha.js'
+import { CURVAS } from '../src/velocidade.js'
 
 /** Fala sintética: tom com envelope nos trechos de "palavra", quase silêncio nas pausas. */
 const ROTEIRO = [
@@ -87,7 +89,15 @@ export async function autoteste() {
     const rr = await renderizar(p, { entradas: new Map([['m1', entrada]]), destino: alvo, blocos, legenda: { ligada: true, estilo: 'destaque', posicaoY: 0.8 } })
     const volta = await lerInfo({ arquivo: new File([alvo.buffer], 'saida.mp4') })
     r.render = { segundos: Math.round(rr.segundos * 100) / 100, quadros: rr.quadros, duracao: Math.round(volta.duracao * 100) / 100, video: volta.temVideo, audio: volta.temAudio, codecs: rr.codecs }
-    r.ok = r.cortes >= 2 && r.duracao.final < total - 1 && r.arquivos.length >= 5 && volta.temVideo && volta.temAudio && Math.abs(volta.duracao - r.duracao.final) < 0.2
+    // velocidade: o primeiro clipe com a curva Pico (100%, estouro de 600% no meio, 100%); o vídeo final tem o tempo da
+    // rampa e som (das partes em 100%)
+    const pRampa = { ...p, linha: acelerar(p.linha, p.linha.clipes[0].id, CURVAS.find((c) => c.id === 'pico').pontos) }
+    const alvoRampa = new MB.BufferTarget()
+    const rv = await renderizar(pRampa, { entradas: new Map([['m1', entrada]]), destino: alvoRampa, blocos: [], legenda: { ligada: false } })
+    const voltaRampa = await lerInfo({ arquivo: new File([alvoRampa.buffer], 'rampa.mp4') })
+    const esperado = (duracaoDaLinha(pRampa.linha) * p.fps.d) / p.fps.n
+    r.rampa = { quadros: rv.quadros, duracao: Math.round(voltaRampa.duracao * 100) / 100, esperado: Math.round(esperado * 100) / 100, audio: voltaRampa.temAudio }
+    r.ok = r.cortes >= 2 && r.duracao.final < total - 1 && r.arquivos.length >= 5 && volta.temVideo && volta.temAudio && Math.abs(volta.duracao - r.duracao.final) < 0.2 && esperado < r.duracao.final && Math.abs(voltaRampa.duracao - esperado) < 0.2 && voltaRampa.temAudio
   } catch (err) {
     r.erro = String(err?.stack || err)
     r.ok = false
