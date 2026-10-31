@@ -83,18 +83,19 @@ describe('o que o site publica', () => {
       const imports = [...ler(m).matchAll(/from\s+'([^']+)'/g)].map((x) => x[1])
       for (const i of imports) assert.ok(MARCA.includes(`src/${i.replace(/^\.\//, '')}`), `${m} importa ${i}`)
     }
-    for (const f of ['site/home.js', 'site/entrar.js', 'site/fechado.js', 'site/conta.js']) {
+    for (const f of ['site/home.js', 'site/estudio.js', 'site/entrar.js', 'site/fechado.js', 'site/conta.js']) {
       const fora = [...ler(f).matchAll(/from\s+'\.\.\/src\/([^']+)'/g)].map((x) => `src/${x[1]}`).filter((p) => !MARCA.includes(p))
       assert.deepEqual(fora, [], `${f} importa do editor`)
     }
   })
 
-  test('página inicial sem CTA funcional: "Conhecer o projeto" é âncora, nada de Baixar, instalar, abrir o editor ou criar conta', () => {
+  test('página inicial sem CTA funcional: "Testar ao vivo" e "Conhecer o AEON" são âncoras, nada de Baixar, instalar, abrir o editor ou criar conta', () => {
     const html = ler('index.html')
     assert.doesNotMatch(html, /href="app\/"/)
     assert.doesNotMatch(html, /baixar\/(mac|windows)|instalar\.(sh|ps1)|github\.com\/[^"]*releases|curl -fsSL|irm https/)
     assert.doesNotMatch(html, /Começar a criar|Conversar com a Z|Criar conta|Agora no AEON/)
-    assert.match(html, /href="#produto">Conhecer o projeto</)
+    assert.match(html, /href="#testar">Testar ao vivo</)
+    assert.match(html, /href="#produto">Conhecer o AEON</)
     assert.match(html, /Chegando ao AEON/)
     assert.match(html, /id="em-desenvolvimento"/)
     assert.match(html, /href="https:\/\/absolutezro\.com\/inicio">Voltar ao HUB</)

@@ -23,9 +23,10 @@
     <script src="site/tema.js"></script>
     <link rel="stylesheet" href="site/site.css" />
     <script type="module" src="site/home.js"></script>
+    <script type="module" src="site/estudio.js"></script>
   </head>
   <body>
-    <a class="pular" href="#produto">Pular para o conteúdo</a>
+    <a class="pular" href="#testar">Pular para o conteúdo</a>
 
     <header class="nav" id="nav">
       <div class="nav-esq">
@@ -35,10 +36,11 @@
         <a class="nav-marca" href="./" aria-label="AEON, página inicial"><span data-marca="simbolo"></span><span data-marca="nome"></span></a>
       </div>
       <nav class="nav-links" aria-label="Seções">
-        <a href="#produto">Produto</a>
-        <a href="#como-funciona">Como funciona</a>
+        <a href="#testar">Testar</a>
+        <a href="#produto">Por dentro</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
+        <a href="#perguntas">Perguntas</a>
       </nav>
       <div class="nav-dir">
         <button class="nav-icone" id="tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
@@ -46,7 +48,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-lua"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
         </button>
         <a class="nav-entrar" href="entrar.html" data-conta>Entrar</a>
-        <a class="vidro vidro--tinta pequeno" href="#produto">Conhecer o projeto</a>
+        <a class="vidro vidro--tinta pequeno" href="#testar">Testar ao vivo</a>
       </div>
     </header>
 
@@ -58,10 +60,11 @@
         <button class="nav-icone" id="menuFechar" type="button" aria-label="Fechar menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></svg></button>
       </div>
       <nav class="menu-links" aria-label="Seções do menu">
-        <a href="#produto">Produto</a>
-        <a href="#como-funciona">Como funciona</a>
+        <a href="#testar">Testar ao vivo</a>
+        <a href="#produto">Por dentro</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
+        <a href="#perguntas">Perguntas</a>
         <a href="#em-desenvolvimento">Em desenvolvimento</a>
       </nav>
       <p class="menu-grupo">Sua conta</p>
@@ -82,25 +85,100 @@
         <div class="hero-texto">
           <h1 id="hero-titulo" class="hero-titulo"><span class="fino">Time is</span> <span class="forte">yours.</span></h1>
           <div class="acoes">
-            <a class="vidro vidro--tinta grande" href="#produto">Conhecer o projeto</a>
-            <a class="vidro grande" href="#como-funciona">Como funciona</a>
+            <a class="vidro vidro--tinta grande" href="#testar">Testar ao vivo</a>
+            <a class="vidro grande" href="#produto">Conhecer o AEON</a>
           </div>
         </div>
-        <a class="rolar" href="#produto" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
+        <a class="rolar" href="#testar" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
       </section>
 
 
-      <!-- 2 · Do registro à narrativa: a tela de verdade num MacBook -->
-      <section class="produto" id="produto" aria-labelledby="produto-titulo">
+      <!-- 2 · Teste ao vivo: o editor na própria página (dados de exemplo, nada é enviado nem gravado). site/estudio.js -->
+      <section class="testar" id="testar" aria-labelledby="testar-titulo">
         <div class="cabeca-sec ao-rolar">
-          <p class="olho">Produto</p>
-          <h2 id="produto-titulo" class="titulo"><span class="fino">Do registro</span> <span class="forte">à narrativa.</span></h2>
-          <p class="apoio">Edição completa na linha do tempo. A IA ajuda quando você quiser.</p>
+          <p class="olho">Teste ao vivo</p>
+          <h2 id="testar-titulo" class="titulo"><span class="fino">Mexa à vontade.</span> <span class="forte">É só uma prévia.</span></h2>
+          <p class="apoio">Um vídeo de exemplo, rodando aqui no navegador.</p>
         </div>
-        <figure class="mac ao-rolar" id="mac">
-          <div class="mac-tela"><img src="marca/home/app-edicao.jpg" alt="A tela de Edição do AEON: o vídeo com legenda, o Inspector e a linha do tempo com clipes coloridos, etiquetas, forma de onda e marcador" width="1600" height="1000" loading="lazy" /></div>
-          <div class="mac-base" aria-hidden="true"></div>
-        </figure>
+
+        <div class="estudio ao-rolar" id="estudio" data-aba="cortes">
+          <div class="estudio-barra">
+            <span class="estudio-luzes" aria-hidden="true"><i></i><i></i><i></i></span>
+            <div class="segmentos" role="tablist" aria-label="O que testar">
+              <span class="segmentos-marca" aria-hidden="true"></span>
+              <button role="tab" id="aba-cortes" aria-controls="painel-cortes" aria-selected="true" data-aba="cortes">Cortes</button>
+              <button role="tab" id="aba-legenda" aria-controls="painel-legenda" aria-selected="false" tabindex="-1" data-aba="legenda">Legenda</button>
+              <button role="tab" id="aba-zoom" aria-controls="painel-zoom" aria-selected="false" tabindex="-1" data-aba="zoom">Zoom</button>
+              <button role="tab" id="aba-entrega" aria-controls="painel-entrega" aria-selected="false" tabindex="-1" data-aba="entrega">Entrega</button>
+            </div>
+            <span class="estudio-selo" title="Demonstração com dados de exemplo. Nada é enviado nem gravado.">Exemplo</span>
+          </div>
+
+          <div class="estudio-corpo">
+            <figure class="visor" aria-label="Prévia do vídeo de exemplo">
+              <div class="visor-quadro"><img src="marca/home/criadora.jpg" alt="Uma criadora falando para a câmera" width="1344" height="752" loading="lazy" id="visorImg" /></div>
+              <p class="visor-legenda" id="visorLegenda" aria-live="off"></p>
+              <span class="visor-zoom" id="visorZoom" aria-hidden="true"></span>
+              <div class="visor-controles">
+                <button class="visor-play" id="visorPlay" type="button" aria-label="Pausar"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ic-pausa" d="M8 5.5h3v13H8zM13 5.5h3v13h-3z" /><path class="ic-play" d="M8 5.5v13l10.5-6.5z" /></svg></button>
+                <span class="visor-tempo" id="visorTempo">0:00</span>
+              </div>
+            </figure>
+
+            <div class="paineis">
+              <div class="painel" role="tabpanel" id="painel-cortes" aria-labelledby="aba-cortes">
+                <h3>Tire as pausas.</h3>
+                <label class="controle">
+                  <span>Pausas maiores que <output id="limiarValor">0,45 s</output></span>
+                  <input type="range" id="limiar" min="0.2" max="1.2" step="0.05" value="0.45" />
+                </label>
+                <div class="duracao" aria-live="polite"><strong id="duracaoAgora">20,5 s</strong><span id="duracaoGanho"></span></div>
+                <div class="painel-acoes">
+                  <button class="vidro vidro--tinta" type="button" id="aprovarCortes">Aprovar cortes</button>
+                  <button class="vidro" type="button" id="desfazerCortes" hidden>Desfazer</button>
+                </div>
+              </div>
+
+              <div class="painel" role="tabpanel" id="painel-legenda" aria-labelledby="aba-legenda" hidden>
+                <h3>Escolha o estilo.</h3>
+                <div class="fichas-escolha" role="radiogroup" aria-label="Estilo da legenda" id="estilos">
+                  <button role="radio" aria-checked="true" data-estilo="destaque">Destaque</button>
+                  <button role="radio" aria-checked="false" data-estilo="pop">Pop</button>
+                  <button role="radio" aria-checked="false" data-estilo="limpa">Limpa</button>
+                </div>
+                <p class="painel-dica">Os mesmos estilos do app. A transcrição roda no seu computador.</p>
+              </div>
+
+              <div class="painel" role="tabpanel" id="painel-zoom" aria-labelledby="aba-zoom" hidden>
+                <h3>Aproxime na fala.</h3>
+                <div class="fichas-escolha" role="radiogroup" aria-label="Intensidade do zoom" id="zooms">
+                  <button role="radio" aria-checked="false" data-zoom="1">Sem zoom</button>
+                  <button role="radio" aria-checked="false" data-zoom="1.12">Sutil · 112%</button>
+                  <button role="radio" aria-checked="true" data-zoom="1.22">Ênfase · 122%</button>
+                </div>
+                <p class="painel-dica">Entra nas frases de ênfase e nunca em cima de um corte.</p>
+              </div>
+
+              <div class="painel" role="tabpanel" id="painel-entrega" aria-labelledby="aba-entrega" hidden>
+                <h3>Leve para onde quiser.</h3>
+                <div class="destinos" role="radiogroup" aria-label="Destino" id="destinos">
+                  <button role="radio" aria-checked="true" data-destino="fcpxml"><b>Final Cut Pro</b><span>.fcpxml</span></button>
+                  <button role="radio" aria-checked="false" data-destino="xmeml"><b>Premiere Pro</b><span>.xml</span></button>
+                  <button role="radio" aria-checked="false" data-destino="resolve"><b>DaVinci Resolve</b><span>.fcpxml · .edl</span></button>
+                  <button role="radio" aria-checked="false" data-destino="video"><b>Vídeo final</b><span>.mp4</span></button>
+                </div>
+                <ul class="pacote" id="pacote" aria-live="polite"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="linha-demo" aria-hidden="true">
+            <div class="linha-zooms" id="linhaZooms"></div>
+            <div class="linha-trilha" id="linhaTrilha"></div>
+            <div class="linha-legendas" id="linhaLegendas"></div>
+            <span class="linha-cabeca" id="linhaCabeca"></span>
+          </div>
+        </div>
       </section>
 
       <!-- 2b · números que contam ao aparecer (só fatos do produto) -->
@@ -112,91 +190,77 @@
         </ul>
       </section>
 
-      <!-- 3 · Importar → Construir → Exportar -->
-      <section class="fluxo" id="como-funciona" aria-labelledby="fluxo-titulo">
+      <!-- 3 · de editor para editor: a madrugada que todo editor conhece, e o que muda -->
+      <section class="madrugada" aria-labelledby="madrugada-titulo">
         <div class="cabeca-sec ao-rolar">
-          <p class="olho">Como funciona</p>
-          <h2 id="fluxo-titulo" class="titulo"><span class="fino">Três passos.</span> <span class="forte">Você no comando.</span></h2>
+          <p class="olho">De editor para editor</p>
+          <h2 id="madrugada-titulo" class="titulo"><span class="fino">Você conhece</span> <span class="forte">essa madrugada.</span></h2>
         </div>
-        <ol class="passos">
-          <li class="passo ao-rolar">
-            <img src="marca/home/app-midia.jpg" alt="Página Mídia: três vídeos importados, com miniatura, duração e formato" width="1600" height="1000" loading="lazy" />
-            <span class="passo-n" data-cor="azul">1</span>
-            <h3>Importar</h3>
-            <p>Do computador ou direto do SOBEDESCE.</p>
+        <ol class="horas">
+          <li class="hora ao-rolar">
+            <time>23:14</time>
+            <p class="hora-dor"><span>Cortar respiro por respiro, clipe por clipe.</span></p>
+            <p class="hora-saida">O AEON marca todos. Você aprova de uma vez.</p>
           </li>
-          <li class="passo ao-rolar">
-            <img src="marca/home/app-revisar.jpg" alt="Página Revisar: silêncios, respiros e zooms propostos, cada um com aprovar e recusar" width="1600" height="1000" loading="lazy" />
-            <span class="passo-n" data-cor="laranja">2</span>
-            <h3>Construir</h3>
-            <p>Monte na linha do tempo. A IA sugere, você decide.</p>
+          <li class="hora ao-rolar">
+            <time>00:42</time>
+            <p class="hora-dor"><span>Digitar a legenda palavra por palavra.</span></p>
+            <p class="hora-saida">A transcrição sai na sua máquina. Você só corrige.</p>
           </li>
-          <li class="passo ao-rolar">
-            <img src="marca/home/app-entrega.jpg" alt="Página Entrega: Premiere Pro, Final Cut Pro, DaVinci Resolve e vídeo final" width="1600" height="1000" loading="lazy" />
-            <span class="passo-n" data-cor="verde">3</span>
-            <h3>Exportar</h3>
-            <p>Para o seu editor, ou o vídeo pronto.</p>
+          <li class="hora ao-rolar">
+            <time>01:37</time>
+            <p class="hora-dor"><span>O cliente pediu ajuste. Refazer do zero.</span></p>
+            <p class="hora-saida">Desfazer, histórico e salvamento sozinho.</p>
           </li>
         </ol>
       </section>
 
-      <!-- 3b · ao vivo: o que o AEON faz, em movimento (como as demonstrações do SOBEDESCE) -->
-      <section class="aovivo" aria-labelledby="aovivo-titulo">
+      <!-- 4 · por dentro: as telas de verdade num MacBook, na ordem do trabalho (troca sozinha até a pessoa escolher) -->
+      <section class="produto" id="produto" aria-labelledby="produto-titulo">
         <div class="cabeca-sec ao-rolar">
-          <p class="olho">Ao vivo</p>
-          <h2 id="aovivo-titulo" class="titulo"><span class="fino">Menos tempo cortando.</span> <span class="forte">Mais tempo criando.</span></h2>
+          <p class="olho">Por dentro</p>
+          <h2 id="produto-titulo" class="titulo"><span class="fino">Do bruto</span> <span class="forte">à entrega.</span></h2>
+          <p class="apoio">Edição completa na linha do tempo. A IA ajuda quando você quiser.</p>
         </div>
-        <div class="demos">
-          <article class="demo demo--larga ao-rolar" data-demo="corte">
-            <div class="demo-palco demo-linha" aria-hidden="true">
-              <div class="trilha" id="trilhaDemo"></div>
-              <div class="cabeca-leitura"></div>
+        <div class="explorar ao-rolar" id="explorar">
+          <ol class="explorar-lista" role="tablist" aria-label="Telas do AEON" aria-orientation="vertical">
+            <li><button role="tab" aria-selected="true" aria-controls="tela-midia" id="ver-midia" data-tela="midia"><b>Mídia</b><span>Do computador ou do SOBEDESCE.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="tela-revisar" id="ver-revisar" tabindex="-1" data-tela="revisar"><b>Revisar</b><span>Pausas e zooms para aprovar.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="tela-edicao" id="ver-edicao" tabindex="-1" data-tela="edicao"><b>Edição</b><span>Cortar, aparar, mover e ajustar.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="tela-texto" id="ver-texto" tabindex="-1" data-tela="texto"><b>Texto</b><span>A legenda se edita como texto.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="tela-entrega" id="ver-entrega" tabindex="-1" data-tela="entrega"><b>Entrega</b><span>Para o seu editor ou o vídeo pronto.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+          </ol>
+          <figure class="mac">
+            <div class="mac-tela">
+              <img class="ativa" id="tela-midia" role="tabpanel" aria-labelledby="ver-midia" src="marca/home/app-midia.jpg" alt="Mídia: os vídeos importados, com miniatura, duração e formato" width="1600" height="1000" loading="lazy" />
+              <img id="tela-revisar" role="tabpanel" aria-labelledby="ver-revisar" src="marca/home/app-revisar.jpg" alt="Revisar: silêncios, respiros e zooms propostos, cada um com aprovar e recusar" width="1600" height="1000" loading="lazy" />
+              <img id="tela-edicao" role="tabpanel" aria-labelledby="ver-edicao" src="marca/home/app-edicao.jpg" alt="Edição: o vídeo com legenda, o Inspector e a linha do tempo com clipes coloridos" width="1600" height="1000" loading="lazy" />
+              <img id="tela-texto" role="tabpanel" aria-labelledby="ver-texto" src="marca/home/app-texto.jpg" alt="Texto: a fala transcrita ao lado do vídeo; clicar numa palavra leva até ela" width="1600" height="1000" loading="lazy" />
+              <img id="tela-entrega" role="tabpanel" aria-labelledby="ver-entrega" src="marca/home/app-entrega.jpg" alt="Entrega: Premiere Pro, Final Cut Pro, DaVinci Resolve e vídeo final" width="1600" height="1000" loading="lazy" />
             </div>
-            <div class="demo-texto"><h3>Silêncio fora, num toque.</h3><p>Os respiros somem e os clipes se juntam. Você aprova.</p></div>
-          </article>
-          <article class="demo ao-rolar" data-demo="legenda">
-            <div class="demo-palco demo-quadro" aria-hidden="true">
-              <img src="marca/home/criadora.jpg" alt="" width="1344" height="752" loading="lazy" />
-              <p class="legenda-demo" id="legendaDemo"></p>
-            </div>
-            <div class="demo-texto"><h3>Legenda palavra por palavra.</h3><p>Transcrita na sua máquina.</p></div>
-          </article>
-          <article class="demo ao-rolar" data-demo="zoom">
-            <div class="demo-palco demo-quadro demo-zoom" aria-hidden="true">
-              <img src="marca/home/camera.jpg" alt="" width="1344" height="752" loading="lazy" />
-              <span class="zoom-marca">Zoom</span>
-            </div>
-            <div class="demo-texto"><h3>Zoom onde a fala pede.</h3><p>Punch-in nas frases de ênfase.</p></div>
-          </article>
+            <div class="mac-base" aria-hidden="true"></div>
+          </figure>
         </div>
       </section>
 
-      <!-- 3c · a salina, sem texto: se dissolve no fundo, sem borda -->
+      <!-- 4b · a salina, sem texto: se dissolve no fundo, sem borda -->
       <div class="cena" aria-hidden="true">
         <img src="marca/home/salina-estrela.jpg" alt="" width="2400" height="1357" loading="lazy" />
       </div>
 
-      <!-- 4 · Recursos: forma, pouco texto -->
+      <!-- 5 · Recursos: forma, pouco texto -->
       <section class="recursos" id="recursos" aria-labelledby="recursos-titulo">
         <div class="cabeca-sec ao-rolar">
           <p class="olho">Recursos</p>
           <h2 id="recursos-titulo" class="titulo"><span class="fino">Corta o tempo.</span> <span class="forte">Não o seu estilo.</span></h2>
         </div>
         <ul class="grade">
-          <li class="cartao largo ao-rolar">
-            <img src="marca/home/app-texto.jpg" alt="O texto falado ao lado do vídeo: clicar numa palavra leva até ela, dois cliques corrigem" width="1600" height="1000" loading="lazy" />
-            <div class="cartao-texto"><h3>Legenda que se edita como texto.</h3><p>Transcrição na sua máquina.</p></div>
-          </li>
           <li class="cartao ao-rolar" data-cor="laranja"><span class="cartao-icone"><svg viewBox="0 0 24 24"><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="6.5" cy="17.5" r="2.5" /><path d="M8.5 8l11 9.5M8.5 16l11-9.5" /></svg></span><h3>Silêncio e respiro</h3><p>Em lote, nunca no meio da palavra.</p></li>
           <li class="cartao ao-rolar" data-cor="roxo"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></span><h3>Zoom na fala</h3><p>Punch-in nas frases de ênfase.</p></li>
           <li class="cartao ao-rolar" data-cor="verde"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="7" height="10" rx="2" /><rect x="11" y="7" width="10" height="10" rx="2" /></svg></span><h3>Edição completa</h3><p>Corte, apare, mova, cores e etiquetas.</p></li>
           <li class="cartao ao-rolar" data-cor="azul"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M4.5 13v4.5a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V13" /></svg></span><h3>Premiere, Final Cut, DaVinci</h3><p>Cores e marcadores vão junto.</p></li>
           <li class="cartao ao-rolar" data-cor="menta"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16M5 11.5h9.5a5 5 0 0 1 0 10H12" /></svg></span><h3>Salva sozinho</h3><p>Histórico de cada passo.</p></li>
           <li class="cartao ao-rolar" data-cor="rosa"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg></span><h3>Fica com você</h3><p>Nada é enviado, movido ou apagado.</p></li>
-          <li class="cartao largo ao-rolar">
-            <img src="marca/home/app-edicao-claro.jpg" alt="A Edição do AEON no tema claro" width="1600" height="1000" loading="lazy" />
-            <div class="cartao-texto"><h3>Escuro para criar. Claro quando quiser.</h3><p>Um toque troca o tema.</p></div>
-          </li>
         </ul>
       </section>
 
@@ -214,6 +278,20 @@
           <p class="apoio">Do cartão à entrega, o AEON trabalha junto com as outras ferramentas, na mesma conta.</p>
         </div>
         <ol class="caminho ao-rolar" id="caminho"></ol>
+        <div class="paraquem">
+          <div class="paraquem-cartao ao-rolar">
+            <h3>O AEON é para você se</h3>
+            <ul class="checks">
+              <li>Edita vídeo falado: entrevista, aula, Reels, YouTube.</li>
+              <li>Termina no Premiere, no Final Cut, no DaVinci, ou quer o vídeo pronto.</li>
+              <li>Quer a mídia no seu computador, sem enviar nada.</li>
+            </ul>
+          </div>
+          <div class="paraquem-cartao ao-rolar">
+            <h3>Para o resto, o ecossistema</h3>
+            <ul class="lugares" id="lugares"></ul>
+          </div>
+        </div>
       </section>
 
       <!-- 6a · a Z, a IA do ecossistema: chega junto com o AEON (fechado ao público, só a apresentação). -->
@@ -245,12 +323,28 @@
         </div>
       </section>
 
+      <!-- 6c · perguntas: respostas curtas e honestas (abre uma de cada vez) -->
+      <section class="perguntas" id="perguntas" aria-labelledby="perguntas-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Perguntas</p>
+          <h2 id="perguntas-titulo" class="titulo"><span class="fino">Antes de</span> <span class="forte">você perguntar.</span></h2>
+        </div>
+        <div class="faq ao-rolar" id="faq">
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r1" id="p1">Quando o AEON abre?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r1" role="region" aria-labelledby="p1"><div><p>Está em desenvolvimento, ainda sem data. Chega com a sua conta Absolute ZRO, no Mac, no Windows e no navegador.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r2" id="p2">Preciso usar a IA?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r2" role="region" aria-labelledby="p2"><div><p>Não. Dá para editar do começo ao fim sem ela. Quando você pede, ela marca pausas, sugere zoom e transcreve a legenda, e nada entra sem você aprovar.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r3" id="p3">Meus vídeos saem do computador?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r3" role="region" aria-labelledby="p3"><div><p>Não. O AEON lê os arquivos no lugar e a transcrição roda na sua máquina. Nada é enviado, movido ou apagado.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r4" id="p4">Funciona com o meu editor?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r4" role="region" aria-labelledby="p4"><div><p>Leva a timeline para o Premiere Pro (.xml), o Final Cut Pro (.fcpxml) e o DaVinci Resolve (.fcpxml e .edl), com cores e marcadores. Ou saia com o vídeo pronto (.mp4).</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r5" id="p5">Precisa de internet?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r5" role="region" aria-labelledby="p5"><div><p>Para entrar com a conta. O modelo de transcrição baixa uma vez e depois funciona sem internet.</p></div></div></div>
+          <div class="faq-item"><h3><button type="button" aria-expanded="false" aria-controls="r6" id="p6">O teste desta página é o app?<i aria-hidden="true"></i></button></h3><div class="faq-resposta" id="r6" role="region" aria-labelledby="p6"><div><p>É uma prévia com um vídeo de exemplo, rodando no navegador. Mostra como o AEON corta, legenda, aproxima e entrega. Não envia nem grava nada.</p></div></div></div>
+        </div>
+      </section>
+
       <!-- 7 · fim -->
       <section class="fim" aria-labelledby="fim-titulo">
         <div class="fim-simbolo" aria-hidden="true" data-marca="palco"></div>
         <h2 id="fim-titulo" class="titulo"><span class="fino">O futuro começa</span> <span class="forte">do zero.</span></h2>
         <div class="acoes">
-          <a class="vidro vidro--tinta grande" href="#produto">Conhecer o projeto</a>
+          <a class="vidro vidro--tinta grande" href="#testar">Testar ao vivo</a>
           <a class="vidro grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
         </div>
         <p class="nota">Em desenvolvimento. Chega com a sua conta Absolute ZRO.</p>

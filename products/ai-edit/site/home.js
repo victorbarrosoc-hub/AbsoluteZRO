@@ -149,102 +149,89 @@ const contar = new IntersectionObserver(
 )
 for (const n of $$('[data-contar]')) contar.observe(n)
 
-// ───────── ao vivo: cada demonstração roda só enquanto está na tela ─────────
-/** Liga e desliga um laço conforme o elemento aparece. */
-function aoVer(el, ligar, desligar) {
-  new IntersectionObserver((es) => (es[0].isIntersecting ? ligar() : desligar()), { rootMargin: '60px' }).observe(el)
-}
-
-// corte: fala (azul) e silêncio (cinza); os silêncios acendem em laranja, fecham e a trilha encolhe
-const trilha = $('#trilhaDemo')
-if (trilha) {
-  const PEDACOS = [['f', 14], ['s', 6], ['f', 18], ['s', 4], ['f', 11], ['s', 7], ['f', 16], ['s', 5], ['f', 12]]
-  const total = PEDACOS.reduce((t, [, n]) => t + n, 0)
-  let semente = 7
-  const acaso = () => ((semente = (semente * 9301 + 49297) % 233280) / 233280)
-  trilha.replaceChildren(
-    ...PEDACOS.map(([tipo, n]) => {
-      const d = document.createElement('div')
-      d.className = `pedaco${tipo === 's' ? ' silencio' : ''}`
-      d.style.width = `calc(${((n / total) * 100).toFixed(2)}% - 4px)`
-      for (let i = 0; i < n * 2; i++) {
-        const b = document.createElement('i')
-        b.style.height = `${tipo === 's' ? 6 + acaso() * 8 : 22 + acaso() * 70}%`
-        d.append(b)
-      }
-      return d
+// ───────── por dentro: as telas do app no MacBook. Troca sozinha (barra que enche) até a pessoa escolher uma ─────────
+const explorar = $('#explorar')
+if (explorar) {
+  const abas = $$('[role="tab"]', explorar)
+  const TEMPO = 6000
+  let atual = 0
+  let sozinho = !reduzir.matches
+  let timer = null
+  const mostrarTela = (i, foco = false) => {
+    atual = (i + abas.length) % abas.length
+    abas.forEach((b, k) => {
+      const sim = k === atual
+      b.setAttribute('aria-selected', String(sim))
+      b.tabIndex = sim ? 0 : -1
+      $(`#${b.getAttribute('aria-controls')}`).classList.toggle('ativa', sim)
+    })
+    if (foco) abas[atual].focus()
+    explorar.classList.toggle('sozinho', sozinho)
+    // a barra recomeça a encher na tela nova
+    const barra = $('.explorar-barra', abas[atual])
+    barra.style.animation = 'none'
+    void barra.offsetWidth
+    barra.style.animation = ''
+    clearTimeout(timer)
+    if (sozinho && emTela) timer = setTimeout(() => mostrarTela(atual + 1), TEMPO)
+  }
+  const parar = () => {
+    sozinho = false
+    clearTimeout(timer)
+    explorar.classList.remove('sozinho')
+  }
+  abas.forEach((b, k) =>
+    b.addEventListener('click', () => {
+      parar()
+      mostrarTela(k)
     }),
   )
-  const palco = trilha.parentElement
-  if (reduzir.matches) palco.classList.add('marcando', 'cortado')
-  else {
-    let timers = []
-    const ciclo = () => {
-      palco.classList.remove('marcando', 'cortado')
-      timers = [setTimeout(() => palco.classList.add('marcando'), 1200), setTimeout(() => palco.classList.add('cortado'), 2600), setTimeout(ciclo, 6400)]
-    }
-    aoVer(
-      palco,
-      () => {
-        palco.classList.add('tocando')
-        ciclo()
-      },
-      () => {
-        palco.classList.remove('tocando')
-        timers.forEach(clearTimeout)
-      },
-    )
-  }
+  explorar.addEventListener('keydown', (e) => {
+    const passo = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]
+    if (!passo || !e.target.matches('[role="tab"]')) return
+    e.preventDefault()
+    parar()
+    mostrarTela(atual + passo, true)
+  })
+  let emTela = false
+  new IntersectionObserver(
+    (es) => {
+      emTela = es[0].isIntersecting
+      if (emTela) mostrarTela(atual)
+      else clearTimeout(timer)
+    },
+    { threshold: 0.35 },
+  ).observe(explorar)
+  mostrarTela(0)
 }
 
-// legenda: a palavra da vez acende, frase por frase
-const legenda = $('#legendaDemo')
-if (legenda) {
-  const FRASES = ['Todo vídeo começa no bruto.', 'Você escolhe o que fica.', 'O tempo é seu.']
-  let f = 0
-  let w = 0
-  let timer = null
-  const mostrar = () => {
-    const palavras = FRASES[f].split(' ')
-    legenda.replaceChildren(
-      ...palavras.flatMap((p, i) => {
-        const b = document.createElement('b')
-        b.textContent = p
-        if (i < w) b.className = 'dita'
-        if (i === w) b.className = 'agora'
-        return i < palavras.length - 1 ? [b, ' '] : [b]
-      }),
-    )
-    return palavras.length
-  }
-  const passo = () => {
-    const n = mostrar()
-    w++
-    if (w > n) {
-      w = 0
-      f = (f + 1) % FRASES.length
-      timer = setTimeout(passo, 700)
-    } else timer = setTimeout(passo, 380)
-  }
-  if (reduzir.matches) {
-    w = 99
-    mostrar()
-  } else
-    aoVer(
-      legenda,
-      () => {
-        clearTimeout(timer)
-        passo()
-      },
-      () => clearTimeout(timer),
-    )
-}
+// ───────── para o resto, o ecossistema: cada ferramenta no seu lugar (da lista da família) ─────────
+const LUGARES = [
+  { id: 'finishing', faz: 'Cor e LUT' },
+  { id: 'nossom', faz: 'Som e master' },
+  { id: 'synquei', faz: 'Câmeras em sincronia' },
+  { id: 'sobedesce', faz: 'Cartão descarregado e conferido' },
+]
+const lugares = $('#lugares')
+if (lugares)
+  lugares.replaceChildren(
+    ...LUGARES.map((l) => {
+      const f = FAMILIA.find((x) => x.id === l.id)
+      const li = document.createElement('li')
+      li.innerHTML = `<a><img alt="" width="36" height="36"/><span></span><strong></strong></a>`
+      const a = li.querySelector('a')
+      a.href = f.href
+      li.querySelector('img').src = iconeDe(f)
+      li.querySelector('span').textContent = l.faz
+      li.querySelector('strong').textContent = f.nome
+      return li
+    }),
+  )
 
-// zoom: o punch-in roda (CSS) só enquanto aparece
-for (const z of $$('.demo-zoom'))
-  if (!reduzir.matches)
-    aoVer(
-      z,
-      () => z.classList.add('tocando'),
-      () => z.classList.remove('tocando'),
-    )
+// ───────── perguntas: abre uma de cada vez (a altura anima pelo CSS) ─────────
+for (const b of $$('#faq button[aria-expanded]'))
+  b.addEventListener('click', () => {
+    const abrir = b.getAttribute('aria-expanded') !== 'true'
+    for (const o of $$('#faq button[aria-expanded]')) o.setAttribute('aria-expanded', 'false')
+    b.setAttribute('aria-expanded', String(abrir))
+  })

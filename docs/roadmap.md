@@ -288,6 +288,10 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   fecha e abre já atualizado (Mac e Windows, no molde do SOBEDESCE). Site: sem corte seco entre as fotos (as cenas se
   dissolvem no fundo), a salina sem texto e o fecho com a estrela inteira. Falta conferir a troca num Mac e num
   Windows de verdade com o próximo Release.
+- ✅ AEON, página inicial com teste ao vivo (31/10/2026, ideia do titular a partir da página do Hélice Ramps): o editor na
+  própria página com um vídeo de exemplo (Cortes com limite e aprovar/desfazer, Legenda Destaque/Pop/Limpa, Zoom
+  112%/122%, Entrega com o que cada formato leva), "De editor para editor", "Por dentro" com as telas do app que trocam
+  sozinhas, "Para quem é" com o resto do ecossistema e Perguntas. Tudo âncora: o AEON segue fechado ao público.
 - 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
   ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
   `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,

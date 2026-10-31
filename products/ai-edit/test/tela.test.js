@@ -412,6 +412,8 @@ test('perfil único: foto e nome da conta Absolute ZRO no menu; editar leva à c
   const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
   await simularZ(pagina)
+  // o app abre o Set da conta (presença do ecossistema): sem o repasse simulado, /api/zro/set daria 404 no console
+  await simularSet(pagina)
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
@@ -602,7 +604,7 @@ test('Whisper de verdade carrega no navegador e transcreve (modelo Rápido, prec
   await pagina.close()
 })
 
-test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o projeto é âncora e nada leva ao editor', async () => {
+test('página inicial fechada ao público: a Z "Chegando ao AEON", Testar ao vivo é âncora e nada leva ao editor', async () => {
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
@@ -624,9 +626,9 @@ test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o pr
       hrefs.filter((h) => /^app\/|\/app\/|baixar|instalar/.test(h)),
       [],
     )
-    assert.ok(hrefs.includes('#produto'), 'Conhecer o projeto é âncora')
-    // no celular a barra esconde o atalho; no HTML são três (barra, abertura e fim), todos âncora
-    assert.deepEqual(await pagina.$$eval('a', (as) => as.filter((a) => a.textContent.trim() === 'Conhecer o projeto').map((a) => a.getAttribute('href'))), ['#produto', '#produto', '#produto'])
+    assert.ok(hrefs.includes('#produto'), 'Conhecer o AEON é âncora')
+    // no celular a barra esconde o atalho; no HTML são quatro (barra, menu, abertura e fim), todos âncora para o teste ao vivo
+    assert.deepEqual(await pagina.$$eval('a', (as) => as.filter((a) => a.textContent.trim() === 'Testar ao vivo').map((a) => a.getAttribute('href'))), ['#testar', '#testar', '#testar', '#testar'])
     // a seção entra com a rolagem (ao-rolar): o texto existe antes de aparecer
     assert.match(await pagina.locator('#em-desenvolvimento').textContent(), /Em desenvolvimento[\s\S]*Ainda sem download/)
     assert.equal(await pagina.locator('.fim').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
@@ -638,6 +640,61 @@ test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o pr
     assert.deepEqual(erros, [])
     await pagina.close()
   }
+})
+
+test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a tela; perguntas abrem uma por vez', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !/status of 401/.test(m.text()) && erros.push(m.text()))
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
+  await pagina.goto(s.url)
+  await pagina.locator('#testar').scrollIntoViewIfNeeded()
+  const est = pagina.locator('#estudio')
+  // o exemplo toca sozinho enquanto aparece
+  const t0 = await pagina.locator('#visorTempo').innerText()
+  await pagina.waitForFunction((t) => document.querySelector('#visorTempo').textContent !== t, t0)
+  // cortes: 0,45 s marca as duas pausas maiores; aprovar tira 1,7 s; desfazer devolve
+  assert.equal(await pagina.locator('#aprovarCortes').innerText(), 'Aprovar 2 cortes')
+  assert.equal(await pagina.locator('.celula.pausa.marcada').count(), 2)
+  await pagina.click('#aprovarCortes')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '18,8 s')
+  assert.equal(await pagina.locator('#duracaoGanho').innerText(), '−1,7 s')
+  await pagina.locator('#limiar').fill('0.2')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '17,9 s')
+  // entrega: 6 clipes depois de tirar as 5 pausas, zoom de 122% no efeito Movimento do Premiere
+  await est.getByRole('tab', { name: 'Entrega' }).click()
+  await pagina.getByRole('radio', { name: /Premiere Pro/ }).click()
+  const pacote = await pagina.locator('#pacote').innerText()
+  assert.match(pacote, /Entrevista\.xml/)
+  assert.match(pacote, /6 clipes na linha do tempo/)
+  assert.match(pacote, /Zoom de 122% no efeito Movimento/)
+  // zoom: sem zoom, a entrega não fala de zoom e a faixa roxa some
+  await est.getByRole('tab', { name: 'Zoom' }).click()
+  await pagina.getByRole('radio', { name: 'Sem zoom' }).click()
+  assert.equal(await pagina.locator('#estudio.com-zoom').count(), 0)
+  await est.getByRole('tab', { name: 'Entrega' }).click()
+  assert.doesNotMatch(await pagina.locator('#pacote').innerText(), /Zoom/)
+  // legenda: setas do teclado trocam o estilo
+  await est.getByRole('tab', { name: 'Legenda' }).click()
+  await pagina.getByRole('radio', { name: 'Destaque' }).focus()
+  await pagina.keyboard.press('ArrowRight')
+  assert.equal(await pagina.locator('#visorLegenda').getAttribute('data-estilo'), 'pop')
+  // desfazer os cortes volta aos 20,5 s
+  await est.getByRole('tab', { name: 'Cortes' }).click()
+  await pagina.click('#desfazerCortes')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '20,5 s')
+  // Por dentro: escolher a tela para de trocar sozinho
+  await pagina.getByRole('tab', { name: /Entrega Para o seu editor/ }).click()
+  assert.equal(await pagina.locator('#tela-entrega.ativa').count(), 1)
+  assert.equal(await pagina.locator('#explorar.sozinho').count(), 0)
+  // perguntas: uma aberta por vez
+  await pagina.getByRole('button', { name: 'Preciso usar a IA?' }).click()
+  await pagina.getByRole('button', { name: 'Funciona com o meu editor?' }).click()
+  assert.equal(await pagina.locator('#faq [aria-expanded="true"]').count(), 1)
+  assert.match(await pagina.locator('#r4').innerText(), /Premiere Pro \(\.xml\)/)
+  assert.deepEqual(erros, [])
+  await pagina.close()
 })
 
 test('em-desenvolvimento.html: símbolo, marca do AEON, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {

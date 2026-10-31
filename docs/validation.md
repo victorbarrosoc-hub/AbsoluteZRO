@@ -2233,6 +2233,23 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
   app instalado; publicar é decisão do titular).
 
+## AEON: página inicial com teste ao vivo (31/10/2026)
+
+- Referência do titular: a página do Hélice Ramps (demos que se mexem na própria página). Adaptado ao Padrão Apple e
+  ao AEON fechado ao público: sem preço, sem download e sem link para o editor; todo botão é âncora.
+- `site/estudio.js`: um vídeo de exemplo (foto + fala de 20,5 s escrita no arquivo), sem transcrever, enviar ou gravar
+  nada. Cortes: pausas acima do limite viram proposta (laranja) e só saem ao aprovar; a linha junta o que ficou em
+  clipes e a duração conta até o valor novo. Legenda: os estilos do app (Destaque, Pop, Limpa) em blocos de até 4
+  palavras. Zoom: 112% ou 122% nas frases de ênfase (o preset `fala`). Entrega: o que cada exportador grava de verdade
+  (zoom na escala do FCPXML e no Movimento do Premiere, legenda .srt/.vtt). Só toca enquanto aparece; com "reduzir
+  movimento" fica parado.
+- `test/tela.test.js` › "teste ao vivo": aprovar 2 cortes (20,5 → 18,8 s), limite 0,2 s (17,9 s), entrega com 6 clipes
+  e zoom de 122%, sem zoom some da entrega, setas no estilo, desfazer, Por dentro para de trocar ao escolher, uma
+  pergunta aberta por vez. "página inicial fechada" e `test/fechado.test.js` passam a exigir "Testar ao vivo" como
+  âncora. O "perfil único" simula o Set (`simularSet`), que a main passou a carregar no app (antes dava 404 de
+  `/api/zro/set` no console). `npm test` com as telas: 141 testes; telas 18/18.
+- Conferido no Chromium em 1440×900 e 390×844, escuro e claro, com "reduzir movimento"; sem rolagem lateral.
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da
