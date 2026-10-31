@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { lerAcessoDrive, papelNoConsole, podeMudar, podeVer, requirePlatformAdmin, type PainelDrive } from '@zro/core'
+import { papelNoConsole, podeMudar, podeVer, requirePlatformAdmin, type PainelDrive } from '@zro/core'
 import { EmptyState, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { sobedesceAcessoDriveAction } from '@/lib/actions/admin'
 import { db, getAuth } from '@/lib/session'
+import { lerDriveDoSobedesce } from '@/lib/sobedesce-console'
 
 export const metadata: Metadata = { title: 'SOBEDESCE · Console', robots: { index: false, follow: false } }
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,7 @@ export default async function SobedesceDrive() {
 
   let painel: PainelDrive | null = null
   try {
-    painel = await lerAcessoDrive(db(), auth)
+    painel = await lerDriveDoSobedesce(db(), auth)
   } catch {
     painel = null
   }

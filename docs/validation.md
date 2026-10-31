@@ -26,6 +26,9 @@ Absolute ZRO falsa de `web/tests/zro-falso.mts`.
 - `products/sobedesce/web/tests/zro-console-drive.test.mts` (4): 401 sem token, com a ação trocada, de outro público e
   reapresentado; 400/404; lê vagas e pessoas sem segredo; liga, desliga sem devolver vaga, 409 no limite, `auditoria_zro`.
 - `drive-hibrido.test.mts`: o `/admin` do SOBEDESCE não tem mais a ação nem o botão, só o link para o console.
+- Correção (31/10/2026): em produção a página mostrava "O SOBEDESCE não respondeu agora." porque o pedido saía com
+  `iss` = localhost (o emissor só era definido nas rotas do login). Página e ação agora passam por
+  `apps/hub-web/lib/sobedesce-console.ts`, que carrega `lib/oidc`; o teste confere esse caminho.
 
 ## Papel Financeiro e Correio no console (31/10/2026)
 
