@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { providerLabel, salesStatus } from '@zro/billing'
-import { requirePlatformAdmin } from '@zro/core'
+import { papelNoConsole, podeMudar, podeVer, requireConsole } from '@zro/core'
 import { Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { Fold } from '@/components/admin/parts'
@@ -39,9 +39,11 @@ type PlanProduct = { product: string; limits: Record<string, number> | null }
 export default async function Planos() {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
-  requirePlatformAdmin(auth, ['admin', 'support'])
-  const isAdmin = auth.user.platformRole === 'admin'
+  const papel = papelNoConsole(auth)
+  if (!auth || !podeVer(papel, 'planos')) notFound()
+  requireConsole(auth, 'planos')
+  // Admin e Financeiro mudam planos e cobranças; o suporte só lê.
+  const isAdmin = podeMudar(papel, 'planos')
   const d = await db().asSystem('admin: planos', async (tx) => ({
     orgs: await tx`select id, name from zro.organizations where status = 'active' order by lower(name) limit 1000`,
     subs: await tx`
@@ -82,7 +84,7 @@ export default async function Planos() {
         <h1>Planos</h1>
         <p>O que está à venda, quem pediu e o que foi dado à mão.</p>
       </header>
-      {!isAdmin && <Notice title="Só leitura">Conceder e cancelar exige papel admin.</Notice>}
+      {!isAdmin && <Notice title="Só leitura">Conceder e cancelar exige papel admin ou financeiro.</Notice>}
 
       <div className="adm-status-row">
         <div className="adm-status">
@@ -367,9 +369,11 @@ export default async function Planos() {
           </details>
         )}
       </Fold>
-      <p className="zro-faint adm-foot">
-        Trocar o plano de uma pessoa: <Link href="/admin/pessoas">Pessoas</Link> › ficha › Plano.
-      </p>
+      {podeVer(papel, 'pessoas') && (
+        <p className="zro-faint adm-foot">
+          Trocar o plano de uma pessoa: <Link href="/admin/pessoas">Pessoas</Link> › ficha › Plano.
+        </p>
+      )}
     </div>
   )
 }

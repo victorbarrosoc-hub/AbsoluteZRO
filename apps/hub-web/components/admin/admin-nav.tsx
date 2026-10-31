@@ -1,28 +1,31 @@
 'use client'
 import { usePathname } from 'next/navigation'
+import type { AreaConsole } from '@zro/core'
 import { Icon, type IconName } from '../icons'
 import { LinkIntencao, sentido } from '../movimento'
 
 /** `documento`: abre a tela num carregamento novo (o Laboratório da Z precisa da permissão de microfone da própria página). */
-const SECTIONS: { href: string; label: string; icon: IconName; onlyAdmin?: boolean; documento?: boolean }[] = [
-  { href: '/admin', label: 'Visão geral', icon: 'activity' },
-  { href: '/admin/pessoas', label: 'Pessoas', icon: 'team' },
-  { href: '/admin/planos', label: 'Planos', icon: 'card' },
-  { href: '/admin/custos', label: 'Custos', icon: 'pie', onlyAdmin: true },
-  { href: '/admin/laboratorio', label: 'Laboratório da Z', icon: 'flask', onlyAdmin: true, documento: true },
-  { href: '/admin/lancamento', label: 'Lançamento', icon: 'sparkle' },
-  { href: '/admin/apps', label: 'Apps', icon: 'apps' },
-  { href: '/admin/denuncias', label: 'Denúncias', icon: 'chat' },
+const SECTIONS: { area: AreaConsole; href: string; label: string; icon: IconName; documento?: boolean }[] = [
+  { area: 'visao', href: '/admin', label: 'Visão geral', icon: 'activity' },
+  { area: 'pessoas', href: '/admin/pessoas', label: 'Pessoas', icon: 'team' },
+  { area: 'planos', href: '/admin/planos', label: 'Planos', icon: 'card' },
+  { area: 'custos', href: '/admin/custos', label: 'Custos', icon: 'pie' },
+  { area: 'correio', href: '/admin/correio', label: 'Correio', icon: 'mail' },
+  { area: 'laboratorio', href: '/admin/laboratorio', label: 'Laboratório da Z', icon: 'flask', documento: true },
+  { area: 'lancamento', href: '/admin/lancamento', label: 'Lançamento', icon: 'sparkle' },
+  { area: 'apps', href: '/admin/apps', label: 'Apps', icon: 'apps' },
+  { area: 'denuncias', href: '/admin/denuncias', label: 'Denúncias', icon: 'chat' },
+  { area: 'papeis', href: '/admin/papeis', label: 'Papéis', icon: 'key' },
 ]
 
 /**
- * Seções do console: coluna no computador, faixa de pílulas no celular. Custos e o Laboratório da Z só aparecem para o
- * papel admin (o suporte não vê).
+ * Seções do console: coluna no computador, faixa de pílulas no celular. Só aparecem as áreas do papel (ADR 0034); o
+ * servidor nega o resto de qualquer jeito.
  */
-export function AdminNav({ isAdmin = false }: { isAdmin?: boolean }) {
+export function AdminNav({ areas }: { areas: AreaConsole[] }) {
   const path = usePathname()
-  const secoes = SECTIONS.filter((s) => isAdmin || !s.onlyAdmin)
-  const ordem = secoes.map((s) => s.href).slice(1)
+  const secoes = SECTIONS.filter((s) => areas.includes(s.area))
+  const ordem = secoes.map((s) => s.href).filter((h) => h !== '/admin')
   const current = (href: string) => (href === '/admin' ? path === '/admin' : path === href || path.startsWith(`${href}/`))
   return (
     <nav className="adm-nav" aria-label="Console">

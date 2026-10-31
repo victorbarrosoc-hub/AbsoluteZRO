@@ -711,7 +711,7 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 
-- ✅ `/admin/custos` (só papel admin; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$
+- ✅ `/admin/custos` (papel admin e, desde 31/10/2026, Financeiro; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$
   (anual ÷ 12 no mês, por uso à parte como "+ uso"), cotação do dólar editável com data, rosca por categoria, barras por
   fornecedor, projeção de 12 meses (ativo, previsto e futuro pelo mês estimado), ponto de equilíbrio com os planos
   publicados e a receita real das assinaturas pagas, metas (receita, assinantes, data-alvo) e recomendações por regra.
@@ -721,6 +721,21 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Titular: informar a cotação do dólar e as metas no console e conferir os itens marcados "a conferir" (API da Z,
   Vercel uso, Stripe, RunPod, avaliação CASA, Resend, domínio). Migration `0028` sobe no próximo deploy autorizado.
 - ⬜ Contagem de quem conectou o Drive (mora no SOBEDESCE) para o gatilho da avaliação CASA, se o SOBEDESCE expuser.
+
+## Papel Financeiro e Correio no console (31/10/2026, [ADR 0034](decisions/0034-console-financeiro-e-correio.md))
+
+- ✅ Papel **Financeiro** (`zro.users.platform_role`, migração `0046`): vê e usa só Custos, Planos e a caixa
+  financeiro@; o console abre em Custos e o resto some do menu e responde 404 (API 403). Admin segue vendo tudo.
+- ✅ Tela **Papéis** (só admin): lista de quem tem papel, trocar ou tirar, adicionar por e-mail (conta com e-mail
+  confirmado). Ninguém muda o próprio papel; tudo em `audit_logs`.
+- ✅ **Correio**: victor@, contato@ e financeiro@ (aliases de uma conta iCloud) lidos e respondidos no console por
+  IMAP/SMTP do iCloud. Admin vê as três; Financeiro, só financeiro@. Lista à esquerda e leitura à direita (no iPhone,
+  lista → mensagem), HTML limpo em iframe sandbox com imagens remotas bloqueadas, anexos sob demanda, responder e
+  escrever pela caixa certa, cópia em Enviadas e auditoria sem corpo. Nada de e-mail no banco.
+- ⛔ Titular: gerar a senha específica de app no Apple ID e pôr `ICLOUD_MAIL_USER` e `ICLOUD_MAIL_APP_PASSWORD` no
+  projeto `absolutezro` da Vercel; dar o papel Financeiro em Console › Papéis. Migração `0046` sobe no próximo deploy
+  autorizado.
+- ⬜ Conferir com a conta real se o iCloud põe Delivered-To/X-Original-To (mensagem só em Cco para um alias).
 
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 

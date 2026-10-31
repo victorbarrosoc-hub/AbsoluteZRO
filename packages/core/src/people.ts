@@ -111,7 +111,7 @@ export type PersonRow = {
   name: string
   email: string
   status: 'active' | 'suspended' | 'deleted'
-  platformRole: 'admin' | 'support' | null
+  platformRole: 'admin' | 'support' | 'financeiro' | null
   emailVerified: boolean
   createdAt: Date
   hubLastSeenAt: Date | null

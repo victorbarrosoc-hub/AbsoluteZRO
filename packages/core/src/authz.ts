@@ -111,8 +111,11 @@ export async function authorize(db: Database, auth: Authenticated | null, need: 
   return actor
 }
 
-/** Console de administração: papel de plataforma, nunca papel de organização. */
-export function requirePlatformAdmin(auth: Authenticated | null, roles: ('admin' | 'support')[] = ['admin']): UserActor {
+/**
+ * Console de administração: papel de plataforma, nunca papel de organização. As áreas do console usam requireConsole
+ * (console-papeis.ts), que sabe o que cada papel vê; esta guarda segue para as operações de admin e suporte.
+ */
+export function requirePlatformAdmin(auth: Authenticated | null, roles: ('admin' | 'support' | 'financeiro')[] = ['admin']): UserActor {
   const u = requireUser(auth, { verifiedEmail: true })
   if (!auth!.user.platformRole || !roles.includes(auth!.user.platformRole)) {
     throw new DomainError('platform_role_required', 'Área restrita à administração da plataforma.')

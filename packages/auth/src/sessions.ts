@@ -20,7 +20,8 @@ export type SessionUser = {
   email: string
   displayName: string
   emailVerified: boolean
-  platformRole: 'support' | 'admin' | null
+  /** Papel no console da plataforma (ADR 0034): admin, suporte ou financeiro. */
+  platformRole: 'support' | 'admin' | 'financeiro' | null
 }
 
 export type CurrentSession = {

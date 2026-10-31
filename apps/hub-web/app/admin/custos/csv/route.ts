@@ -1,5 +1,5 @@
-/** /admin/custos/csv: os custos em planilha. Só admin da plataforma; para os outros a rota não existe (404). */
-import { custosCsv, hojeNoFuso, lerConfigCustos, listarCustos, requirePlatformAdmin, type UserActor } from '@zro/core'
+/** /admin/custos/csv: os custos em planilha. Admin e Financeiro; para os outros a rota não existe (404). */
+import { custosCsv, hojeNoFuso, lerConfigCustos, listarCustos, requireConsole, type UserActor } from '@zro/core'
 import { audit } from '@zro/observability'
 import { db, getAuth } from '@/lib/session'
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   let who: UserActor
   try {
-    who = requirePlatformAdmin(await getAuth(), ['admin'])
+    who = requireConsole(await getAuth(), 'custos')
   } catch {
     return new Response('Não encontrado', { status: 404 })
   }

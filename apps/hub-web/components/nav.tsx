@@ -38,12 +38,13 @@ const GROUPS: { label: string; items: Item[] }[] = [
 /** Um app da família no menu. A lista vem do servidor: só o lançado ou liberado para a pessoa (ADR 0023). */
 export type FamilyApp = { productId: string; name: string; href: string }
 
-export function Nav({ admin, pendencias = {}, familia = [] }: { admin: boolean; pendencias?: Record<string, number>; familia?: FamilyApp[] }) {
+/** `admin`: onde o console abre para o papel da pessoa (nulo = sem console). */
+export function Nav({ admin, pendencias = {}, familia = [] }: { admin: string | null; pendencias?: Record<string, number>; familia?: FamilyApp[] }) {
   const path = usePathname()
   // o destino acende no clique, antes de a tela chegar (como no Synquei); volta ao caminho de verdade quando ele muda
   const [indo, setIndo] = useState<{ de: string; para: string } | null>(null)
   const visto = indo && indo.de === path ? indo.para : path
-  const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: '/admin', label: 'Administração', icon: 'shield' as const }] }] : GROUPS
+  const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: admin, label: 'Administração', icon: 'shield' as const }] }] : GROUPS
   const ordem = groups.flatMap((g) => g.items.map((i) => i.href))
   const ativo = (href: string) => visto === href || visto.startsWith(href + '/')
 

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Authenticated } from '@zro/auth'
-import type { OrganizationSummary, Pendencias } from '@zro/core'
+import { inicioDoConsole, papelNoConsole, type OrganizationSummary, type Pendencias } from '@zro/core'
 import { Pill } from '@zro/ui'
 import { logoutAction } from '@/lib/actions/auth'
 import { switchOrgAction } from '@/lib/actions/org'
@@ -62,7 +62,7 @@ export function Shell({
   familia?: FamilyApp[]
   children: ReactNode
 }) {
-  const admin = auth.user.platformRole === 'admin' || auth.user.platformRole === 'support'
+  const admin = inicioDoConsole(papelNoConsole(auth))
   const name = auth.user.displayName || auth.user.email
   const activeOrg = orgs.find((o) => o.active)
   return (
