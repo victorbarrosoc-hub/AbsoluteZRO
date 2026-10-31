@@ -2319,8 +2319,15 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   tremor de recorte (ffmpeg) → "Analisar e estabilizar" → render → tremor medido de novo no arquivo final, fora do app:
   56,3 → 0,45 px (−99%), recorte de 13%. Análise ≈ 140 ms por quadro de 640×360 (pior caso). Giroscópio não feito.
 - **Página do lançamento** (`RELEASE=released`): conferida em 1440×900 e 390×844 no tema claro, sem erro nem rolagem
-  lateral; `test/fechado.test.js` 12/12 (a aberta sem "Em desenvolvimento", com Baixar e os três destinos; `/baixar`
-  fechado volta para a página, aberto vai ao instalador). Subdomínios da família conferidos (200 e o título de cada app).
+  lateral; `test/fechado.test.js` 13/13 (só na web: Abrir o AEON nos quatro lugares, Mac e Windows "Em breve" sem link,
+  nada de instalador; com o computador: Baixar e os três destinos; `/baixar` fechado volta para "Em desenvolvimento",
+  só na web volta para a seção, com o computador vai ao Release). Subdomínios da família conferidos (200 e o título).
+- **HUB, migration 0043** (AEON na web): com um Postgres 16 local, a bateria do HUB passa 370/372 (as duas do
+  Laboratório da Z falham igual sem a 0043: o `@anthropic-ai/sdk` não está no `node_modules` desta máquina). Teste novo
+  `tests/integration/aeon-web.test.ts` (gate web, api e sso abertos, desktop e download fechados; conta só com o grátis
+  contratada, autorizada e no login único; backfill idempotente) e os testes que usavam o AEON como exemplo de fechado
+  passam a usar a Revela. Produção conferida antes (só leitura, AbsoluteZRO-SP): AEON em `development`, já em todos os
+  planos e nas 9 organizações com assinatura; migrations aplicadas até a 0042.
 - AEON 163/163, `electron . --smoke` OK, scan-secrets limpo.
 - Não validado: o fluxo e a estabilização num Mac e num Windows de verdade (tempo por quadro), o Safari, e as
   importações com frameSampling no Final Cut e Mistura de quadros no Premiere.

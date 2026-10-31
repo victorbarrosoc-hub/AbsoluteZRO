@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { caminhoSeguro } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, MARCA, RECADO, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, MARCA, RECADO, RECADO_WEB, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
 import baixar, { INSTALADORES, destino } from '../api/baixar.js'
 import { iniciarZroFalsa } from './zro-falso.js'
 
@@ -73,13 +73,23 @@ describe('o que o site publica', () => {
       assert.match(RECADO['instalar.sh'], /^#!\/bin\/sh\n/)
       assert.match(RECADO['instalar.sh'], /\nexit 1\n$/)
 
-      const aberto = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'aberto')}/`), estado: 'released' })
+      const aberto = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'aberto')}/`), estado: 'released', computador: true })
       assert.deepEqual(aberto.itens, [...SITE, ...ABERTO])
       for (const p of ['app/editor.js', 'presets/fala.v1.json', 'src/linha.js', 'src/exportar/edl.js', 'instalar.sh']) assert.ok(tem('aberto', p), `aberto tem ${p}`)
       assert.equal(readFileSync(join(dir, 'aberto', 'instalar.sh'), 'utf8'), 'conteudo de instalar.sh')
       for (const p of ['desktop', 'api', 'lancamento']) assert.ok(!tem('aberto', p), p)
       // a página do lançamento: o trecho marcado vira a peça
       assert.equal(readFileSync(join(dir, 'aberto', 'index.html'), 'utf8'), '<p><a href="#baixar">Baixar</a></p>')
+      // aberto só na web (o app de computador ainda não): o editor sai, e o Terminal manda para o navegador
+      const web = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'web')}/`), estado: 'released', computador: false })
+      assert.equal(web.computador, false)
+      assert.ok(tem('web', 'app/editor.js'))
+      for (const nome of ['instalar.sh', 'instalar.ps1']) {
+        const texto = readFileSync(join(dir, 'web', nome), 'utf8')
+        assert.equal(texto, RECADO_WEB[nome])
+        assert.doesNotMatch(texto, /github|releases|curl|Invoke-WebRequest|hdiutil|Start-Process/i)
+        assert.match(texto, /aeon\.absolutezro\.com\/app\//)
+      }
       // o padrão é fechado: sem RELEASE no ambiente, nada do editor
       delete process.env.RELEASE
       assert.deepEqual(itens(), [...SITE, ...MARCA])
@@ -88,8 +98,22 @@ describe('o que o site publica', () => {
     }
   })
 
-  test('lançamento: a página aberta tem Baixar (Mac, Windows, navegador, Terminal) e nada de "Em desenvolvimento"', () => {
-    const pecas = pecasDoLancamento(ler('lancamento/pagina.html'))
+  test('lançamento só na web (o app de computador ainda não): Abrir o AEON no navegador, Mac e Windows "Em breve" sem link', () => {
+    const html = paginaAberta(ler('index.html'), pecasDoLancamento(ler('lancamento/pagina.html')))
+    assert.doesNotMatch(html, /Em desenvolvimento|em-desenvolvimento|Chegando|quando ele abrir|Quando o AEON abre|lancamento:/)
+    assert.match(html, /<section class="baixar-sec" id="baixar"/)
+    // barra, topo, cartão e fim abrem o editor; nada de instalador, Release ou Terminal
+    assert.equal((html.match(/href="\/app\/"/g) || []).length, 4)
+    assert.doesNotMatch(html, /\/baixar\/(mac|windows)|instalar\.(sh|ps1)|curl -fsSL|irm https|xattr|releases|\.dmg|\.exe/)
+    assert.equal((html.match(/<li class="baixar-breve" aria-disabled="true">/g) || []).length, 2)
+    assert.match(html, />Abrir o AEON</)
+    assert.match(html, /Mac e Windows em breve/)
+    assert.match(html, />Quanto custa\?</)
+    assert.match(html, /No AEON</)
+  })
+
+  test('lançamento com o app de computador: a página aberta tem Baixar (Mac, Windows, navegador, Terminal) e nada de "Em desenvolvimento"', () => {
+    const pecas = pecasDoLancamento(ler('lancamento/pagina.html'), { computador: true })
     const html = paginaAberta(ler('index.html'), pecas)
     // cada trecho marcado tem a sua peça (e nenhuma sobra): paginaAberta reclama dos dois lados
     assert.deepEqual(Object.keys(pecas).sort(), ['baixar', 'descricao', 'faq', 'fim', 'menu', 'nav', 'topo', 'z'])
@@ -111,12 +135,15 @@ describe('o que o site publica', () => {
     assert.throws(() => paginaAberta(ler('index.html'), semNav), /não tem a peça "nav"/)
   })
 
-  test('/baixar/<sistema> (api/baixar.js): fechado volta para "Em desenvolvimento"; aberto vai ao instalador do Release', () => {
+  test('/baixar/<sistema> (api/baixar.js): fechado volta para "Em desenvolvimento"; só na web volta para a página; com o computador aberto vai ao Release', () => {
     const antes = process.env.RELEASE
     try {
       delete process.env.RELEASE
       for (const s of ['mac', 'windows', 'linux']) assert.equal(destino(s), '/#em-desenvolvimento')
       process.env.RELEASE = 'released'
+      // só na web: o instalador ainda não sai; volta para a seção da página ("Em breve")
+      for (const s of ['mac', 'windows']) assert.equal(destino(s), '/#baixar')
+      process.env.RELEASE_DESKTOP = 'released'
       assert.equal(destino('mac'), 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-mac-universal.dmg')
       assert.equal(destino('windows'), 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-windows-setup.exe')
       assert.equal(destino('linux'), '/#baixar')
@@ -133,6 +160,7 @@ describe('o que o site publica', () => {
     } finally {
       if (antes === undefined) delete process.env.RELEASE
       else process.env.RELEASE = antes
+      delete process.env.RELEASE_DESKTOP
     }
   })
 

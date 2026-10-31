@@ -1,8 +1,16 @@
 # Lançamento do AEON — o que vira no dia
 
-Tudo pronto no ramo `claude/ai-edit-primeiro-recorte` e **nada aberto**: o site segue fechado (`RELEASE` ausente) até o
-titular mandar. Abrir pede os dois lados (PRD §5–§6): o HUB diz `released` e o projeto Vercel `aeon` tem
-`RELEASE=released`. Mesmo modelo do Carro do Freela ([lancamento-carro.md](lancamento-carro.md)).
+**31/10/2026: no ar na web** (titular: "pode subir no web, não faz a versão de computador ainda"). Os dois lados (PRD
+§5–§6): no HUB, a migration `0043_aeon_web.sql` (gate `released` com web, api e sso; desktop e download fechados); no
+projeto Vercel `aeon`, `RELEASE=released` sem `RELEASE_DESKTOP`. O app de computador abre depois, com uma migration
+própria (desktop e download) e `RELEASE_DESKTOP=released` no `aeon`. Mesmo modelo do Carro do Freela
+([lancamento-carro.md](lancamento-carro.md)).
+
+| Estado               | Site (`aeon`)                | HUB (gate)                  | A página                                                                                 |
+| -------------------- | ---------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| Fechado              | sem `RELEASE`                | `development`               | "Em desenvolvimento"; `/baixar/*` volta para ela                                         |
+| **Só na web (hoje)** | `RELEASE=released`           | `released`, web + api + sso | "Abrir o AEON" (`/app/`); Mac e Windows "Em breve", sem link; `/baixar/*` volta à página |
+| Com o computador     | + `RELEASE_DESKTOP=released` | + desktop + download (nova) | "Baixar o AEON"; Mac, Windows, navegador e Terminal; `/baixar/*` vai ao Release          |
 
 ## O que já está pronto (conferido em 31/10/2026)
 
@@ -20,29 +28,32 @@ titular mandar. Abrir pede os dois lados (PRD §5–§6): o HUB diz `released` e
 - **Motores**: velocidade com curva contínua, câmera lenta com fluxo óptico e estabilização por imagem
   ([validation.md](../validation.md), "AEON: motores de câmera lenta e estabilização").
 
-## No dia (nesta ordem)
+## Na web (31/10/2026, nesta ordem)
 
-1. **Build novo do app de desktop** (Release `ai-edit-app-desktop`): Actions › `ai-edit-desktop.yml` › Run workflow
-   na `main` com `publicar` ligado, depois do merge do passo 2. É o que leva velocidade, fluxo óptico e estabilização
-   para quem já tem o app (ele mostra "Versão nova · Atualizar").
-2. **Mesclar o PR do ramo na `main`**. O projeto `aeon` publica a `main` ainda **fechada** (sem `RELEASE`).
-3. **Vercel, projeto `aeon`** (Production): `RELEASE` = **`released`** e um deploy novo (a variável só vale no build).
-   Log do build: `publico/ pronto (released): index.html, …, app, src, presets`.
-4. **HUB**: Administração › Lançamento › AEON em **Lançado**, com os canais web, api, sso, desktop e download ligados
-   (mesma tela que abriu o Carro; não precisa migration). A página Downloads do HUB passa a mostrar o AEON.
+1. **Vercel, projeto `aeon`** (Production): `RELEASE` = **`released`** (sem `RELEASE_DESKTOP`).
+2. **Mesclar o PR do ramo na `main`**: o HUB (`absolutezro`) aplica a `0043_aeon_web.sql` no build; o `aeon` publica
+   a página só na web (log: `publico/ pronto (released, só na web): …, app, src, presets`).
+3. Conferir abaixo.
+
+## Depois: o app de computador (quando o titular pedir)
+
+1. Build novo do app (Release `ai-edit-app-desktop`): Actions › `ai-edit-desktop.yml` › Run workflow na `main` com
+   `publicar` ligado. Leva velocidade, fluxo óptico e estabilização a quem já tem o app ("Versão nova · Atualizar").
+2. Migration nova no HUB com desktop e download ligados para o `ai-edit` (como a 0042 fez com o Relay e o Carro).
+3. `RELEASE_DESKTOP=released` no projeto `aeon` e um deploy novo: a página troca para "Baixar o AEON".
 
 ## Conferir (com uma conta comum, fora da lista de acesso)
 
-- `https://aeon.absolutezro.com/` — "Baixar o AEON" no topo, a seção Baixar com Mac, Windows e Navegador; nada de "Em
-  desenvolvimento"; o teste ao vivo e a montagem tocando.
-- `https://aeon.absolutezro.com/baixar/mac` → 302 para o `.dmg` do Release; `/baixar/windows` → o `.exe`.
-- `https://aeon.absolutezro.com/app/` → o editor (entra com a conta).
-- `curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash` instala no Mac.
-- No app de desktop antigo: "Versão nova · Atualizar".
+- `https://aeon.absolutezro.com/` — "Abrir o AEON" no topo, a seção Começar com o navegador e Mac/Windows "Em breve";
+  nada de "Em desenvolvimento"; o teste ao vivo e a montagem tocando.
+- `https://aeon.absolutezro.com/app/` → entra com a conta e abre o editor.
+- `/baixar/mac` e `/baixar/windows` → 302 para `/#baixar` (nada de instalador ainda); `instalar.sh` só dá o recado.
+- `https://absolutezro.com/` — o AEON na faixa do ecossistema e em Downloads só com o navegador.
 
 ## Reversão
 
-1. HUB: Administração › Lançamento › AEON em "Em desenvolvimento", canais desligados.
+1. HUB: Administração › Lançamento › AEON em "Em desenvolvimento", canais desligados (nunca editar a 0043; mudança é
+   migration nova).
 2. Vercel: tirar `RELEASE` do projeto `aeon` e publicar de novo (o site volta a nascer fechado, com "Em
    desenvolvimento" e `/baixar/*` voltando para a página).
 3. O app de desktop já instalado continua pedindo a conta; com o HUB fechado, só a lista de acesso entra.

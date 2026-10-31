@@ -71,7 +71,9 @@ describe('Carro do Freela no ar (0041)', () => {
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
     expect(claims.products).toContain(ID)
     expect(claims.release[ID]).toBe('released')
-    for (const id of ['nossom', 'ai-edit', 'finishing']) expect(claims.release[id], id).toBe('closed')
+    for (const id of ['nossom', 'finishing']) expect(claims.release[id], id).toBe('closed')
+    // o AEON está no ar na web (0043)
+    expect(claims.release['ai-edit']).toBe('released')
   })
 
   it('backfill idempotente: conta de antes do lançamento ganha o Carro uma vez; rodar a 0041 de novo não muda nada', async () => {

@@ -298,10 +298,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
   degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
   na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
-- ✅ AEON pronto para lançar (31/10/2026, pedido do titular: "como se eu já fosse lançar hoje"), **ainda fechado**: a
-  página do lançamento (Baixar no topo, seção `#baixar` com Mac, Windows, navegador e Terminal, Z "No AEON", "Quanto
-  custa?") sai do mesmo `index.html` com `RELEASE=released`; `/baixar/<sistema>` pela função; família no subdomínio com
-  o Relay. Roteiro do dia em [lancamento-aeon.md](operations/lancamento-aeon.md). Abre quando o titular mandar.
+- ✅ AEON **no ar na web** (31/10/2026, titular: "pode subir no web, não faz a versão de computador ainda"): migration
+  `0043_aeon_web.sql` (gate `released` com web, api e sso; desktop e download fechados) e `RELEASE=released` no projeto
+  `aeon`. A página aberta sai do mesmo `index.html` (Abrir o AEON no navegador, Mac e Windows "Em breve", Z "No AEON",
+  "Quanto custa?"); com `RELEASE_DESKTOP=released` ela troca para "Baixar o AEON". Família no subdomínio com o Relay.
+  Falta: o app de computador (build novo, migration de desktop e download, `RELEASE_DESKTOP`), em
+  [lancamento-aeon.md](operations/lancamento-aeon.md).
 - ✅ AEON, câmera lenta sem travar (31/10/2026): a prévia e o render seguem a curva contínua (os degraus inteiros ficam
   para o Premiere, o Final Cut e o EDL) e pegam o instante exato da origem, então uma fonte de 60 qps entrega quadro
   real até 40% numa linha de 24 qps; abaixo disso, **fluxo óptico** (RIFE 4.25, MIT, na máquina, montado em resolução

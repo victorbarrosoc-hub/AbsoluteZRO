@@ -2099,6 +2099,22 @@ html:not(.js) .hora-saida {
     inset 0 0 0 1px var(--vidro-borda),
     0 14px 40px rgb(0 0 0 / 0.12);
 }
+/* só na web: o navegador é a ação; Mac e Windows aparecem sem link, "Em breve" */
+.baixar-breve .baixar-cartao {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 30px 18px 26px;
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--apoio);
+  opacity: 0.7;
+}
+.baixar-principal a {
+  box-shadow:
+    inset 0 0 0 1.5px var(--forte),
+    0 14px 40px rgb(0 0 0 / 0.08);
+}
 .baixar-opcoes svg {
   width: 34px;
   height: 34px;
@@ -2172,6 +2188,13 @@ html:not(.js) .hora-saida {
   .baixar-opcoes svg {
     grid-row: span 2;
     margin: 0;
+  }
+  .baixar-breve .baixar-cartao {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    column-gap: 14px;
+    padding: 18px;
   }
 }
 
