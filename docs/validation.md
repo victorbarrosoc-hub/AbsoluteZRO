@@ -15,6 +15,28 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## SOBEDESCE: trocar de conta no login (31/10/2026)
+
+Branch `sobedesce-login-trocar-conta` sobre a main d721336. Site do SOBEDESCE e o mínimo no HUB (`prompt=login` em
+`@zro/auth` e `/oauth/authorize`, `/entrar?outra=1`, sessão anterior encerrada ao entrar).
+
+| Verificação     | Comando                                                    | Resultado                                                   |
+| --------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Raiz            | `npm run lint` · `format:check` · `typecheck` · `npm test` | limpo · ok · ok · **486/486**                               |
+| OIDC do HUB     | `vitest run tests/integration/oidc.test.ts`                | **14/14** (+2: `prompt=login` aceito e anunciado, sem laço) |
+| SOBEDESCE web   | `npm run lint` · `typecheck` · `npm test`                  | limpo · ok · **367/368**                                    |
+| Trocar de conta | `tests/zro-outra-conta.test.mts`                           | **14/14**                                                   |
+| Segredos        | `node scripts/scan-secrets.mjs`                            | nenhum segredo                                              |
+
+O que falha no site é `zro-relay-ciclo` por ambiente: importa o motor (`products/sobedesce/src`), que precisa do
+`undici` em `products/sobedesce/node_modules`, ausente neste checkout. `zro-outra-conta` cobre: selo válido (sessão
+antiga encerrada, nova na conta ligada, selo apagado, reapresentar não serve), volta `/z` e `/app/`, selo vencido,
+adulterado, de outro cookie, ausente, de outra sessão, sem Origin ou de outro site (403), `zroSub` no corpo ignorado,
+Absolute ZRO desligada no meio; `trocar=1` → `prompt=login` (entrar e ligar; criar continua `create`; o refazer por
+`invalid_scope` não pede a conta de novo); a ordem de `/entrar` e as duas variações da tela do erro. Capturas no iPhone
+(390×844, claro e escuro): `/entrar`, a tela de ligar com "Usar outra conta" e o erro com "Entrar nessa conta", sem
+rolagem lateral. Build e E2E do HUB não rodados aqui (disco).
+
 ## Teste do Drive no console (31/10/2026)
 
 Branch `teste-drive` sobre a main dfdca05: `/admin/teste-drive` (só admin) mede se `drive.file` + Picker cobrem o

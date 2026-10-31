@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { denyUrl, grantConsent, hasConsent, issueCode, parseAuthorizeRequest, productClosedFor, RELEASE_CLOSED_DESCRIPTION } from '@zro/auth'
+import { denyUrl, grantConsent, hasConsent, issueCode, loginAgainPath, parseAuthorizeRequest, productClosedFor, RELEASE_CLOSED_DESCRIPTION } from '@zro/auth'
 import { listMyOrganizations } from '@zro/core'
 import { audit } from '@zro/observability'
 import { Notice, ProductMark, ZroSymbol } from '@zro/ui'
@@ -48,6 +48,8 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
   const req = parsed.req
   const auth = await getAuth()
   const here = `/oauth/authorize?${q.toString()}`
+  // "Usar outra conta" no app (prompt=login): não reaproveita a sessão aberta; o /entrar pede a conta e volta sem o prompt.
+  if (req.prompt === 'login') redirect(loginAgainPath(q))
   if (!auth) {
     if (req.prompt === 'none') redirect(denyUrl(req).replace('error=access_denied', 'error=login_required'))
     // "Criar conta" num app da família: a conta nasce aqui, na Absolute ZRO, e volta ao app já logada.

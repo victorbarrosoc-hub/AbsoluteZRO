@@ -18,6 +18,7 @@ import { criarContaComZro, donoDaContaZro, vincularZro } from "./contas";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
 import { guardarTokensIa } from "./ia";
 import { novoValor, trocarCodigoZro, urlDeLogin, type PerfilZro, type TokensIa } from "./oidc";
+import { cookieOutraConta, selarOutraConta } from "./outra-conta";
 
 function paginaDeErro(modo: ModoZro, volta: string, codigo: string): string {
   if (modo === "entrar") {
@@ -30,12 +31,14 @@ function paginaDeErro(modo: ModoZro, volta: string, codigo: string): string {
 /**
  * ?modo=entrar|criar|vincular. "criar" (a tela Criar conta) é o "entrar" com `prompt=create`: a Absolute ZRO abre
  * direto em criar conta, e a volta segue igual (conta nova no SOBEDESCE só nasce por aqui).
+ * &trocar=1 ("Usar outra conta"): `prompt=login`, a Absolute ZRO pede a conta de novo em vez de usar a sessão de lá.
  */
 export async function entrar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const pedido = url.searchParams.get("modo");
   const modo: ModoZro = pedido === "vincular" ? "vincular" : "entrar";
   const criar = pedido === "criar";
+  const trocar = url.searchParams.get("trocar") === "1";
   const basico = url.searchParams.get("basico") === "1";
   const semSet = !basico && url.searchParams.get("sem_set") === "1";
   const volta = voltaSegura(url.searchParams.get("volta"));
@@ -58,7 +61,7 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar, basico, semSet });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar, trocar, basico, semSet });
   } catch {
     return redirecionar(new URL(paginaDeErro(modo, volta, "zro_erro"), url.origin));
   }
@@ -113,6 +116,12 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual || atual.usuario.id !== estado.usuarioId) return ir(comParametro("/entrar", "volta", volta));
     const r = await vincularZro(atual.usuario.id, quem);
+    // Esta Absolute ZRO já tem outra conta SOBEDESCE e a pessoa acabou de provar que é dona dela: o selo deixa a tela
+    // oferecer "Entrar nessa conta" (lib/zro/outra-conta.ts). Preso a esta sessão, 5 minutos.
+    if (!r.ok && r.erro === "zro_outra_conta") {
+      const selo = selarOutraConta({ zroSub: quem.sub, email: quem.email, sessao: atual.sessao.id, volta });
+      return ir(paginaDeErro(modo, volta, r.erro), [cookieOutraConta(selo, seguro)]);
+    }
     if (!r.ok) return falhar(r.erro);
     await guardarTokensIa(atual.usuario.id, ia);
     // Ligou agora (conta antiga sem vínculo): segue para as Conexões da central (lib/zro/ligar.ts). Religar fica aqui.

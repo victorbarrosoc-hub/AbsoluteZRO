@@ -13,6 +13,8 @@ import { SairDiscreto } from "../conta/sair";
 import { LigarZro } from "@/components/conta/ligar-zro";
 import { listarContas } from "@/lib/google/contas";
 import { precisaLigarZro } from "@/lib/zro/ligar";
+import { COOKIE_OUTRA_CONTA, outraContaParaTela } from "@/lib/zro/outra-conta";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = { title: "Z" };
 
@@ -27,8 +29,9 @@ export default async function PaginaZ({ searchParams }: { searchParams: Promise<
   if (atual && !atual.liberado) return <SemAcessoZro volta="/z" />;
   // Conta antiga sem vínculo com a Absolute ZRO: a tela de ligar, uma vez (lib/zro/ligar.ts).
   if (atual && precisaLigarZro(atual)) {
-    const [q, drives] = await Promise.all([searchParams, listarContas(atual.usuario.id)]);
-    return <LigarZro volta="/z" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
+    const [q, drives, jar] = await Promise.all([searchParams, listarContas(atual.usuario.id), cookies()]);
+    const outra = outraContaParaTela(jar.get(COOKIE_OUTRA_CONTA)?.value, atual.sessao.id);
+    return <LigarZro volta="/z" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} outra={outra} />;
   }
   const admin = atual ? await ehAdmin(atual.usuario) : false;
 

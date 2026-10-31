@@ -43,9 +43,19 @@ export function novoValor(): string {
 
 /**
  * `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta.
+ * `trocar`: "Usar outra conta"; `prompt=login` pede à Absolute ZRO a conta de novo, sem reaproveitar a sessão aberta lá.
  * `semSet`: sem o escopo do Set (a Absolute ZRO recusou `zro.set` com invalid_scope); `basico`: sem os da Z também.
  */
-export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean; basico?: boolean; semSet?: boolean }): Promise<string> {
+export async function urlDeLogin(o: {
+  state: string;
+  desafio: string;
+  nonce: string;
+  origem?: string | null;
+  criar?: boolean;
+  trocar?: boolean;
+  basico?: boolean;
+  semSet?: boolean;
+}): Promise<string> {
   const d = await descobrir();
   const u = new URL(d.authorization_endpoint);
   u.searchParams.set("response_type", "code");
@@ -57,6 +67,7 @@ export async function urlDeLogin(o: { state: string; desafio: string; nonce: str
   u.searchParams.set("code_challenge", o.desafio);
   u.searchParams.set("code_challenge_method", "S256");
   if (o.criar) u.searchParams.set("prompt", "create");
+  else if (o.trocar) u.searchParams.set("prompt", "login");
   return u.toString();
 }
 

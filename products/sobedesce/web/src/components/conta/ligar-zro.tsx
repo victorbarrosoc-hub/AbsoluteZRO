@@ -1,16 +1,32 @@
 import { Aviso } from "@/components/conta/aviso";
 import { LogoZro } from "@/components/conta/zro";
 import { mensagemDeErro } from "@/components/conta/mensagens";
+import { EntrarNessaConta, UsarOutraConta } from "@/components/conta/outra-conta";
 import { buttonClasses } from "@/components/ui/button";
 import { BOTAO_LIGAR_ZRO, caminhoLigarZro, TITULO_LIGAR_ZRO } from "@/lib/zro/ligar";
 
 /**
  * "Agora sua conta é Absolute ZRO" (lib/zro/ligar.ts): a tela inteira, uma vez, para a conta antiga sem vínculo. O
- * símbolo grande, o título, um botão (o vincular de sempre) e uma linha pequena. Sem ícone no botão: o símbolo já
- * está em cima. `sair`: o "Sair" discreto no canto (a pessoa não fica presa). `erro`: o ?erro= da volta.
+ * símbolo grande, o título, um botão (o vincular de sempre), "Usar outra conta" discreto e uma linha pequena. Sem ícone
+ * no botão: o símbolo já está em cima. `sair`: o "Sair" discreto no canto (a pessoa não fica presa). `erro`: o ?erro= da
+ * volta. `outra`: a Absolute ZRO que acabou de entrar já tem outra conta SOBEDESCE e o selo ainda vale
+ * (lib/zro/outra-conta.ts): a ação principal vira "Entrar nessa conta".
  */
-export function LigarZro({ volta, erro, temDrive, sair }: { volta: string; erro?: string; temDrive: boolean; sair?: React.ReactNode }) {
+export function LigarZro({
+  volta,
+  erro,
+  temDrive,
+  sair,
+  outra,
+}: {
+  volta: string;
+  erro?: string;
+  temDrive: boolean;
+  sair?: React.ReactNode;
+  outra?: { email: string } | null;
+}) {
   const recado = mensagemDeErro(erro);
+  const entrarNela = erro === "zro_outra_conta" && outra ? outra : null;
   return (
     <div className="relative flex min-h-dvh flex-col bg-bg px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" data-ligar-zro>
       {sair ? <div className="absolute top-[calc(env(safe-area-inset-top)+12px)] right-3 sm:top-5 sm:right-6">{sair}</div> : null}
@@ -30,10 +46,15 @@ export function LigarZro({ volta, erro, temDrive, sair }: { volta: string; erro?
           </Aviso>
         ) : null}
         <div className="k-entra mt-10 grid w-full justify-items-center gap-4" style={{ "--i": 2 } as React.CSSProperties}>
-          <a href={caminhoLigarZro(volta)} className={buttonClasses({ variant: "primary", size: "lg", className: "w-full sm:w-auto sm:min-w-[300px]" })}>
-            {BOTAO_LIGAR_ZRO}
-          </a>
-          <p className="text-[13px] text-ink-3">{temDrive ? "Seu Google Drive continua conectado." : "Nada muda nos seus arquivos."}</p>
+          {entrarNela ? (
+            <EntrarNessaConta email={entrarNela.email} />
+          ) : (
+            <a href={caminhoLigarZro(volta)} className={buttonClasses({ variant: "primary", size: "lg", className: "w-full sm:w-auto sm:min-w-[300px]" })}>
+              {BOTAO_LIGAR_ZRO}
+            </a>
+          )}
+          <UsarOutraConta href={caminhoLigarZro(volta, true)} />
+          <p className="mt-2 text-[13px] text-ink-3">{temDrive ? "Seu Google Drive continua conectado." : "Nada muda nos seus arquivos."}</p>
         </div>
       </main>
     </div>
