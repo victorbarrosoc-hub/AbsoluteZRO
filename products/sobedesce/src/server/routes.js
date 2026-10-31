@@ -10,6 +10,7 @@ import { FOLDER_MIME } from '../google/drive.js'
 import { listDir, listRoots, expandHome } from '../local/fsbrowse.js'
 import { planDownloads, planDownloadsFromCompare, planUploads, planUploadsFromCompare } from '../engine/planner.js'
 import { compareFolders, loadCompare } from '../engine/compare.js'
+import { criadaPeloSobedesce } from '../google/modo-drive.js'
 import { writeJSONAtomic } from '../util/store.js'
 import { newId } from '../util/ids.js'
 import { isMacClutter } from '../util/paths.js'
@@ -700,7 +701,22 @@ export function createApi(ctx) {
       folder.id = 'root'
       folder.name = 'Meu Drive'
     } else if (crumbs.length) folder.name = crumbs[crumbs.length - 1].name
-    return { folder, path: crumbs, items }
+    // Drive híbrido (src/google/modo-drive.js): em Arquivos escolhidos, só a pasta criada pelo SOBEDESCE aparece
+    // inteira; nas outras a tela diz "Precisa de acesso total" no lugar de "Pasta vazia" e do tamanho.
+    const modo = drive.modo
+    const raiz = folderId === 'root' || (item.driveId && item.driveId === item.id)
+    const completo = modo !== 'arquivos' || (!raiz && criadaPeloSobedesce(item))
+    return { folder, path: crumbs, items, modo, completo }
+  })
+
+  // ── Liberados (Arquivos escolhidos): tudo o que o SOBEDESCE pode abrir, de qualquer pasta (como no celular).
+  route('GET', '/api/drive/:acc/liberados', async ({ params, signal }) => {
+    account(params.acc)
+    const drive = ctx.manager.driveFor(params.acc)
+    if (drive.modo !== 'arquivos') return { items: [], modo: drive.modo }
+    const items = await drive.listLiberados({ signal, media: true })
+    ctx.media?.remember(params.acc, items)
+    return { items, modo: drive.modo }
   })
 
   route('GET', '/api/drive/:acc/search', async ({ params, query, signal }) => {

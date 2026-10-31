@@ -1,16 +1,22 @@
 import { MENSAGENS } from "@/lib/api/mensagens";
 import { exigirNaApi } from "@/lib/auth/requisicao";
+import { CAPACIDADE_MODO_DRIVE, lerCapacidades } from "@/lib/auth/sessao";
 import { ErroConta, modoDaConta, tokenDeAcesso } from "@/lib/google/contas";
 import { erro, json, lerJson } from "@/lib/http";
 
 const STATUS: Record<ErroConta["codigo"], number> = { nao_encontrada: 404, reconectar: 409, google: 502, sem_config: 503 };
 
 /**
- * O app de computador (até a versão de hoje) não sabe do modo Arquivos escolhidos: com um token só de `drive.file`, o
- * Comparar, o Backup e a navegação dele veriam pastas pela metade e diriam "falta subir" do que só está invisível.
- * Enquanto ele não aprende (precisa de versão nova do desktop), o servidor não entrega esse token a ele.
+ * O app de computador até a 0.2.0 não sabe do modo Arquivos escolhidos: com um token só de `drive.file`, o Comparar, o
+ * tamanho das pastas e a navegação dele veriam pastas pela metade e diriam "falta subir" do que só está invisível. A
+ * 0.3.0 diz em todo pedido que entende (x-sobedesce-capacidades: drive-arquivos, src/config.js do app) e aplica as
+ * mesmas regras do celular (src/google/modo-drive.js). Sem a capacidade, o servidor não entrega esse token ao
+ * computador. Vale o cabeçalho deste pedido (não o número do build nem o que a sessão disse antes): o app que voltar
+ * para uma versão antiga deixa de receber na hora. Mentir não abre nada a mais: é o mesmo token que o celular recebe.
  */
-const COMPUTADOR_SO_COM_ACESSO_TOTAL = true;
+function computadorEntendeModo(req: Request): boolean {
+  return lerCapacidades(req.headers.get("x-sobedesce-capacidades")).includes(CAPACIDADE_MODO_DRIVE);
+}
 
 /**
  * Access token de uma conta Google da pessoa: `{ conta, renovar? }` → `{ accessToken, expiraEm, email, modo }`.
@@ -26,7 +32,7 @@ export async function POST(req: Request) {
   try {
     const modo = await modoDaConta(atual.usuario.id, conta);
     if (!modo) throw new ErroConta("nao_encontrada");
-    if (modo === "arquivos" && atual.sessao.tipo === "dispositivo" && COMPUTADOR_SO_COM_ACESSO_TOTAL) {
+    if (modo === "arquivos" && atual.sessao.tipo === "dispositivo" && !computadorEntendeModo(req)) {
       return erro(403, "precisa_acesso_total", MENSAGENS.precisa_acesso_total);
     }
     const t = await tokenDeAcesso(atual.usuario.id, conta, { renovar: corpo?.renovar === true });

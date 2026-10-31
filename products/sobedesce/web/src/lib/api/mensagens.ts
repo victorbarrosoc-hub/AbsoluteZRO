@@ -7,5 +7,5 @@ export const MENSAGENS = {
   sem_config: "O Google ainda não foi configurado neste servidor.",
   expirado: "Este pedido venceu. Comece de novo no computador.",
   devagar: "Calma: espere alguns segundos entre uma consulta e outra.",
-  precisa_acesso_total: "No computador, este Drive precisa de acesso total. No celular e no site, ele funciona com os arquivos escolhidos.",
+  precisa_acesso_total: "Atualize o SOBEDESCE no computador para usar este Drive em Arquivos escolhidos. No celular e no site, ele já funciona.",
 } as const;

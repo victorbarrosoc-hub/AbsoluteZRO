@@ -45,11 +45,12 @@ import { framesDoDrive } from './criar.js'
 import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
-import { EMBUTIDO, ESCOLHER, avisarAnfitriao } from '../lib/embutido.js'
+import { EMBUTIDO, ESCOLHER, ORIGEM_ANFITRIAO, avisarAnfitriao } from '../lib/embutido.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
 import { alvoDoLink } from '../lib/drive-link.js'
 import { DICA_MODO, NOME_MODO, PRECISA_TOTAL, criadaPeloSobedesce, lugarCompleto, modoDe, vazioDoLugar } from '../lib/modo-drive.js'
 import { escolherDoDrive } from '../lib/picker.js'
+import { selectDrive } from '../lib/auth.js'
 
 // Modo Arquivos escolhidos (lib/modo-drive.js): um lugar a mais, "Liberados", com tudo o que o SOBEDESCE pode abrir
 // (o que ele enviou ou criou e o que a pessoa escolheu no Picker), de qualquer pasta. Sem filtro de pasta no `q`.
@@ -1127,6 +1128,17 @@ export function DriveScreen({ active }) {
     } catch {
       // segue com o # no endereço
     }
+    // "Escolher do Drive" do app de computador (#escolher/<conta>): aquele Drive, Liberados e o Picker.
+    if (link.tipo === 'escolher') {
+      if (getState().drive?.id !== link.id && (getState().drives || []).some((d) => d.id === link.id)) selectDrive(link.id)
+      if (modoDe(getState().drive) !== 'arquivos') {
+        toast('Este Drive tem acesso total: o computador já vê tudo.', { ms: 3600 })
+        return go('mine', [], 'none')
+      }
+      go('liberados', [], 'none')
+      escolherDoDriveAqui({ doComputador: true })
+      return
+    }
     alvoDoLink(link, { meta: metaDaPasta, arquivo: metaDoArquivo, caminho: folderPath, raiz: myDriveId })
       .catch(() => null)
       .then((alvo) => {
@@ -1244,7 +1256,8 @@ export function DriveScreen({ active }) {
   // Arquivos escolhidos: fora das pastas do SOBEDESCE, a lista pode estar pela metade (o resto só está invisível).
   const completo = search ? modo !== 'arquivos' : lugarCompleto(modo, folder)
   const vazioIncompleto = vazioDoLugar(modo, search ? null : folder)
-  const escolherDoDriveAqui = () =>
+  // `doComputador`: veio do "Escolher do Drive" do app de computador (#escolher/<conta>): o aviso lembra de voltar lá.
+  const escolherDoDriveAqui = ({ doComputador = false } = {}) =>
     escolherDoDrive({ tipo: 'arquivos' })
       .then(async (docs) => {
         const arquivos = docs.filter((d) => !isFolder(d))
@@ -1252,13 +1265,23 @@ export function DriveScreen({ active }) {
         // Os metadados completos (miniatura, duração) dos escolhidos: agora o app pode lê-los.
         const cheios = await Promise.all(arquivos.slice(0, 50).map((d) => getFile(d.id).catch(() => d)))
         for (const k of [...lists.keys()]) if (k.startsWith('["liberados"')) lists.delete(k)
-        toast(cheios.length === 1 ? 'Liberado para o SOBEDESCE' : `${cheios.length} arquivos liberados`, { tone: 'success' })
+        const feito = cheios.length === 1 ? 'Liberado para o SOBEDESCE' : `${cheios.length} arquivos liberados`
+        toast(doComputador ? `${feito}. Já aparece no computador, em Liberados.` : feito, { tone: 'success', ...(doComputador ? { ms: 5000 } : {}) })
         setPreview({ files: cheios, index: 0 })
         try {
           history.pushState({ ...(historyState() || {}), preview: true }, '')
         } catch {
           // segue sem
         }
+      })
+      .catch((err) => toast(err?.message || 'O Google não abriu a escolha agora.', { ms: 3200 }))
+  // Dentro do Relay (modo escolher), em Arquivos escolhidos: o vídeo vem do Picker e vai para o Relay como o toque.
+  const escolherVideoDoRelay = () =>
+    escolherDoDrive({ tipo: 'arquivos', titulo: 'Escolha o vídeo', origem: ORIGEM_ANFITRIAO, varios: false })
+      .then(async (docs) => {
+        const d = docs.find((x) => !isFolder(x))
+        if (!d) return
+        open(await getFile(d.id).catch(() => d))
       })
       .catch((err) => toast(err?.message || 'O Google não abriu a escolha agora.', { ms: 3200 }))
   const title = search ? 'Busca' : folder ? folder.name : scopeLabel
@@ -1358,7 +1381,7 @@ export function DriveScreen({ active }) {
             </button>`
           : null}
       </label>
-      ${modo === 'arquivos' && !escolher && !ESCOLHER ? html`<${FaixaArquivos} completo=${completo} onEscolher=${escolherDoDriveAqui} />` : null}
+      ${modo === 'arquivos' && !escolher ? html`<${FaixaArquivos} completo=${completo} onEscolher=${() => (ESCOLHER ? escolherVideoDoRelay() : escolherDoDriveAqui())} />` : null}
     </header>
 
     <div class=${cx('ptr', (pull > 0 || busy) && 'is-on')} style=${`height:${pull}px`} aria-hidden=${busy ? undefined : 'true'}>

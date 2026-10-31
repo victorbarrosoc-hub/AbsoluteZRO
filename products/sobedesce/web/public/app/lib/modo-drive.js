@@ -5,7 +5,8 @@
 //   está invisível. Por isso, nesse modo, o que precisa da pasta inteira (navegar completo, somar tamanho, comparar,
 //   backup, porta-malas) só vale nas pastas que o SOBEDESCE novo criou; nas outras fica desligado, com
 //   "Precisa de acesso total". Nunca "falta subir" nem "pasta vazia" para o que só está invisível.
-// Sem o campo (servidor antigo, modo Wi-Fi pelo computador): 'total', o comportamento de antes.
+// Sem o campo (servidor antigo, app de computador antigo no modo Wi-Fi): 'total', o comportamento de antes. No Wi-Fi
+// pelo computador, o modo vem do /m/api/info do app de computador 0.3.0+ (o do Drive dele, src/mobile/receiver.js).
 
 export const NOME_MODO = { total: 'Acesso total', arquivos: 'Arquivos escolhidos' }
 export const PRECISA_TOTAL = 'Precisa de acesso total'

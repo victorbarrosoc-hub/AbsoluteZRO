@@ -18,6 +18,9 @@
 //   STUB_VERSAO_PRONTA=1  com STUB_DESKTOP=1: a versão nova já baixada e conferida ("Atualizar agora")
 //   STUB_ZRO=folha|faixa  conta antiga sem vínculo com a Absolute ZRO ("Agora sua conta é Absolute ZRO"): `folha` sem
 //                         transferências (a folha cobre a interface), `faixa` com as transferências andando
+//   STUB_MODO=arquivos    Drive da conta SOBEDESCE em Arquivos escolhidos (Drive híbrido, docs/CONTAS.md §13): só o
+//                         "Documentário Mar Aberto" (e o que tem dentro) foi criado pelo SOBEDESCE; o resto pede
+//                         acesso total (lista, tamanho, Comparar), e Liberados mostra o que o app pode abrir
 //   STUB_DESKTOP=1        simula o app de desktop: injeta uma ponte falsa `window.sobedesce` (seletores nativos
 //                         devolvem caminhos da pasta de demonstração, notify/setProgress/reveal só registram no
 //                         console, openExternal da tela de login conclui o OAuth sozinho depois de 2,5 s)
@@ -47,6 +50,11 @@ const PLATFORM = process.env.STUB_PLATFORM || 'darwin'
 const DESKTOP = process.env.STUB_DESKTOP === '1'
 const VERSAO = Number(process.env.STUB_VERSAO) || 0
 const ZRO = ['folha', 'faixa'].includes(process.env.STUB_ZRO) ? process.env.STUB_ZRO : ''
+const MODO = process.env.STUB_MODO === 'arquivos' ? 'arquivos' : ''
+const MARCA = { sobedesce: 'pasta' }
+const PRECISA_TOTAL = 'Precisa de acesso total'
+/** Arquivos escolhidos: a pasta foi criada pelo SOBEDESCE? (a mesma regra de src/google/modo-drive.js) */
+const doSobedesce = (it) => Boolean(it?.appProperties?.sobedesce)
 let zroEsperando = false
 let versaoDispensada = 0
 
@@ -320,7 +328,11 @@ const ENUMS = { downloadConflict: ['skip', 'rename', 'overwrite'], uploadConflic
 
 const state = {
   setup: FRESH ? { configured: false, clientIdHint: null } : { configured: true, clientIdHint: '4821…apps.googleusercontent.com' },
-  accounts: FRESH ? [] : [{ id: 'acc_victor', email: 'victor@exemplo.com', name: 'Victor', photoUrl: null, addedAt: now() - 86400e3 * 12, status: 'ok' }],
+  accounts: FRESH
+    ? []
+    : MODO
+      ? [{ id: 'nuvem:g1', email: 'victor@exemplo.com', name: 'Victor', photoUrl: null, addedAt: null, status: 'ok', source: 'nuvem', modo: 'arquivos' }]
+      : [{ id: 'acc_victor', email: 'victor@exemplo.com', name: 'Victor', photoUrl: null, addedAt: now() - 86400e3 * 12, status: 'ok' }],
   settings: { ...DEFAULT_SETTINGS },
 }
 
@@ -778,15 +790,20 @@ function versaoStatus() {
 function snapshot() {
   return {
     versao: versaoStatus(),
-    app: { name: 'SOBEDESCE', version: '0.2.0', platform: PLATFORM },
+    app: { name: 'SOBEDESCE', version: '0.3.0', platform: PLATFORM },
     setup: state.setup,
     accounts: state.accounts,
     settings: state.settings,
     transfers: [...transfers.values()].map(publicTransfer),
     batches,
     stats: stats(),
-    ...(ZRO ? { cloud: stubCloud() } : {}),
+    ...(ZRO ? { cloud: stubCloud() } : MODO ? { cloud: stubCloudModo() } : {}),
   }
+}
+
+/** Conta SOBEDESCE com o Drive em Arquivos escolhidos (STUB_MODO=arquivos). */
+function stubCloudModo() {
+  return { ...stubCloud(), contas: state.accounts.map((a) => ({ ...a })), zro: { ligada: true, pedir: false, esperando: false } }
 }
 
 /** Conta SOBEDESCE neste computador, ainda sem vínculo com a Absolute ZRO (STUB_ZRO). */
@@ -958,6 +975,14 @@ function startCompare(body) {
   if (!driveFolderId) throw httpError(400, 'Escolha a pasta do Drive.')
   const folderItem = driveItems.get(driveFolderId)
   if (!folderItem) throw httpError(404, 'Não achei essa pasta no Drive.')
+  if (MODO && !doSobedesce(folderItem)) {
+    // Como o motor (src/engine/compare.js): fora da pasta do SOBEDESCE, nunca "falta subir".
+    const id = newId('cmp')
+    const job = { id, status: 'error', mode: 'quick', localPath, driveFolderId, progress: { phase: 'local', done: 0, total: 0, current: '' }, result: null, error: `${PRECISA_TOTAL}. Em Arquivos escolhidos, o SOBEDESCE só vê a pasta inteira quando foi ele que a criou.`, startedAt: now() }
+    compareJobs.set(id, job)
+    setTimeout(() => broadcast('compare', { jobId: id, status: job.status, progress: job.progress, error: job.error }), 300)
+    return { jobId: id }
+  }
   const id = newId('cmp')
   const job = {
     id, status: 'running', mode: mode === 'deep' ? 'deep' : 'quick', localPath, driveFolderId, driveName: folderItem.name,
@@ -1346,6 +1371,7 @@ async function route(req, res, url) {
       const conta = (id) => {
         const f = driveItems.get(id)
         if (!f || !f.isFolder) return null
+        if (MODO && !doSobedesce(f)) return { folderId: id, status: 'error', bytes: 0, files: 0, folders: 0, docs: 0, shortcuts: 0, pending: 0, startedAt: now(), finishedAt: now(), error: `${PRECISA_TOTAL} para somar esta pasta.`, precisaTotal: true }
         const tudo = walkDrive(id)
         const pastas = (fid) => driveItems.get(fid).children.reduce((n, c) => n + (driveItems.get(c).isFolder ? 1 + pastas(c) : 0), 0)
         const docs = tudo.filter((x) => x.item.isGoogleDoc).length
@@ -1402,7 +1428,15 @@ async function route(req, res, url) {
       const folderId = q.get('folderId') || 'root'
       const f = driveItems.get(folderId)
       if (!f || !f.isFolder) throw httpError(404, 'Pasta não encontrada no Drive.')
-      return { folder: publicItem(f), path: drivePath(folderId), items: sortItems(f.children.map((id) => publicItem(driveItems.get(id)))) }
+      // Arquivos escolhidos: fora das pastas do SOBEDESCE, só aparece o que passou por ele (aqui: nada).
+      const completo = !MODO || (folderId !== 'root' && doSobedesce(f))
+      const visiveis = f.children.map((id) => driveItems.get(id)).filter((it) => !MODO || completo || doSobedesce(it))
+      return { folder: publicItem(f), path: drivePath(folderId), items: sortItems(visiveis.map(publicItem)), modo: MODO || 'total', completo }
+    }
+    if (method === 'GET' && what === 'liberados') {
+      if (!MODO) return { items: [], modo: 'total' }
+      const items = [...driveItems.values()].filter((it) => it.parents.length && (doSobedesce(it) || doSobedesce(driveItems.get(it.parents[0])))).slice(0, 60)
+      return { items: sortItems(items.map(publicItem)), modo: MODO }
     }
     if (method === 'GET' && what === 'search') {
       const term = (q.get('q') || '').trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
@@ -1576,6 +1610,16 @@ const server = http.createServer(async (req, res) => {
 buildDemoDir()
 state.settings.downloadDir = vjoin(HOME, 'Downloads')
 buildDrive()
+if (MODO) {
+  // Só o "Documentário Mar Aberto" (e tudo o que tem dentro) foi criado pelo SOBEDESCE.
+  const marcar = (id) => {
+    const it = driveItems.get(id)
+    if (!it?.isFolder) return
+    it.appProperties = { ...MARCA }
+    for (const c of it.children) marcar(c)
+  }
+  marcar('f_mar')
+}
 seed = 99
 buildTransfers()
 prefillHistory()

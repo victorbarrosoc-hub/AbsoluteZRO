@@ -20,7 +20,7 @@ import { DriveTable, isOpenable } from './drive-table.js'
 import { DriveGrid } from './drive-grid.js'
 import { DrivePreview } from './drive-preview.js'
 import { onProxies, knownProxy, siblingProxies } from '../lib/media.js'
-import { SHARED_ID, SHARED_NAME, SHARED_URL, createDriveFolder, crumbsFor, invalidateFolder, isSharedTree, moveDriveItems, renameDriveItem, useAbout, useDriveFolder, useDriveSearch, useSharedDrives } from './drive-data.js'
+import { LIBERADOS_ID, LIBERADOS_NAME, SHARED_ID, SHARED_NAME, SHARED_URL, createDriveFolder, crumbsFor, invalidateFolder, isSharedTree, moveDriveItems, renameDriveItem, useAbout, useDriveFolder, useDriveSearch, useSharedDrives } from './drive-data.js'
 import { abrirMenuContexto } from './drive-menu.js'
 import { hasRawFiles, onRawThumbsDone, openRawThumbs, useRawThumbsRunning } from './raw-thumbs.js'
 import { hasVideoFiles, isVideoName, onPreviasDone, openPrevias, openProxyArquivo, usePreviasRunning, useComProxy } from './previa.js'
@@ -32,6 +32,8 @@ import { MacLine, SortMenu, openMacTrash } from './drive-ordenar.js'
 import { openCopyLink, useCopiaRunning } from './copiar-link.js'
 import { CenasPainel } from './cenas.js'
 import { Vazio } from './kit.js'
+import { FaixaArquivos, abrirEscolherDoDrive } from './modo-drive.js'
+import { PRECISA_TOTAL, modoDe } from '../lib/modo-drive.js'
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder'
 
@@ -51,6 +53,7 @@ function folderPathText(data, drives) {
 /** De onde é a pasta aberta: 'root' (Meu Drive), SHARED_ID (Compartilhados comigo) ou o id do drive compartilhado. */
 export function sourceOf(data, drives) {
   const folder = data?.folder
+  if (folder?.id === LIBERADOS_ID) return LIBERADOS_ID
   if (folder?.driveId) return folder.driveId
   const first = data?.path?.[0]?.id
   if (first && drives.some((d) => d.id === first)) return first
@@ -58,7 +61,7 @@ export function sourceOf(data, drives) {
 }
 
 /** Fontes: Meu Drive, Compartilhados comigo e drives compartilhados, em pílulas. */
-export function SourceChips({ drives, current, onPick, vertical }) {
+export function SourceChips({ drives, current, onPick, vertical, liberados = false }) {
   return html`<div class=${cx('sources', vertical && 'is-vertical')} role="tablist" aria-label="Onde procurar">
     <button type="button" role="tab" aria-selected=${current === 'root' ? 'true' : 'false'} class=${cx('source', current === 'root' && 'is-on')} onClick=${() => onPick('root')}>
       <${Icon} name="cloud" size=${15} /> Meu Drive
@@ -66,6 +69,11 @@ export function SourceChips({ drives, current, onPick, vertical }) {
     <button type="button" role="tab" aria-selected=${current === SHARED_ID ? 'true' : 'false'} class=${cx('source', current === SHARED_ID && 'is-on')} onClick=${() => onPick(SHARED_ID)} title="Compartilhados comigo: pastas que outras pessoas compartilharam com você">
       <${Icon} name="user" size=${15} /> <span>Compartilhados</span>
     </button>
+    ${liberados
+      ? html`<button type="button" role="tab" aria-selected=${current === LIBERADOS_ID ? 'true' : 'false'} class=${cx('source', current === LIBERADOS_ID && 'is-on')} onClick=${() => onPick(LIBERADOS_ID)} title="O que o SOBEDESCE pode abrir: o que passou por ele e o que você escolheu">
+          <${Icon} name="key" size=${15} /> <span>${LIBERADOS_NAME}</span>
+        </button>`
+      : null}
     ${drives.map(
       (d) => html`<button type="button" role="tab" aria-selected=${current === d.id ? 'true' : 'false'} class=${cx('source', current === d.id && 'is-on')} onClick=${() => onPick(d.id)} title=${d.name}>
         <${Icon} name="users" size=${15} /> <span>${d.name}</span>
@@ -109,7 +117,7 @@ function Espaco({ accountId }) {
 }
 
 /** Meu Drive, Compartilhados comigo e os drives compartilhados, em pílulas. */
-function Fontes({ drives, current, onPick }) {
+function Fontes({ drives, current, onPick, liberados = false }) {
   return html`<div class="k-pilulas dv-fontes" role="tablist" aria-label="Onde procurar">
     <button type="button" role="tab" aria-selected=${current === 'root' ? 'true' : 'false'} class=${cx('k-pilula', current === 'root' && 'is-on')} onClick=${() => onPick('root')}>
       <${Icon} name="cloud" size=${14} /> Meu Drive
@@ -117,6 +125,11 @@ function Fontes({ drives, current, onPick }) {
     <button type="button" role="tab" aria-selected=${current === SHARED_ID ? 'true' : 'false'} class=${cx('k-pilula', current === SHARED_ID && 'is-on')} onClick=${() => onPick(SHARED_ID)} title="Pastas e arquivos que outras pessoas compartilharam com você">
       <${Icon} name="user" size=${14} /> ${SHARED_NAME}
     </button>
+    ${liberados
+      ? html`<button type="button" role="tab" aria-selected=${current === LIBERADOS_ID ? 'true' : 'false'} class=${cx('k-pilula', current === LIBERADOS_ID && 'is-on')} onClick=${() => onPick(LIBERADOS_ID)} title="O que o SOBEDESCE pode abrir: o que passou por ele e o que você escolheu">
+          <${Icon} name="key" size=${14} /> ${LIBERADOS_NAME}
+        </button>`
+      : null}
     ${drives.map(
       (d) => html`<button type="button" role="tab" aria-selected=${current === d.id ? 'true' : 'false'} class=${cx('k-pilula', current === d.id && 'is-on')} onClick=${() => onPick(d.id)} title=${d.name}>
         <${Icon} name="users" size=${14} /> <span class="dv-fonte-nome">${d.name}</span>
@@ -185,6 +198,8 @@ function SelectionBar({ items, destDir, home, onChangeDest, onDownload, onClear,
 export function DriveScreen({ route }) {
   const accountId = useStore((s) => s.activeAccountId)
   const settings = useStore((s) => s.settings)
+  // Drive híbrido (lib/modo-drive.js): 'arquivos' = só o que passou pelo SOBEDESCE e o escolhido aparece.
+  const modo = useStore((s) => modoDe((s.accounts || []).find((a) => a.id === s.activeAccountId)))
   const folderId = route.parts[1] || 'root'
   const drives = useSharedDrives(accountId)
   const { data, loading, error, reload } = useDriveFolder(accountId, folderId)
@@ -234,6 +249,9 @@ export function DriveScreen({ route }) {
   // outra pessoa em que a conta só lê: também não recebe nada.
   const virtual = !!folder?.virtual
   const podeEnviar = !!folder && !virtual && folder.canAddChildren !== false
+  // Arquivos escolhidos fora das pastas do SOBEDESCE: a lista pode estar pela metade (o resto só está invisível).
+  const incompleto = !searching && !!data && data.completo === false
+  const liberadosAqui = folder?.id === LIBERADOS_ID
 
   useEffect(() => {
     setSelected(new Set())
@@ -245,7 +263,8 @@ export function DriveScreen({ route }) {
   }, [folderId, accountId])
   // lembra a pasta aberta: soltar arquivos na tela Transferências envia para cá
   useEffect(() => {
-    if (folder && accountId) storage.set('drive.last', { accountId, id: folder.id, name: folderLabel(folder, drives), driveId: folder.driveId || null })
+    // Lugar que não é pasta (Compartilhados, Liberados) não vira destino de envio.
+    if (folder && accountId && !folder.virtual) storage.set('drive.last', { accountId, id: folder.id, name: folderLabel(folder, drives), driveId: folder.driveId || null })
   }, [folder?.id, accountId, drives.length])
   useEffect(() => {
     api.get('/api/local/roots').then((r) => setHome(r.home || '')).catch(() => {})
@@ -454,8 +473,13 @@ export function DriveScreen({ route }) {
     else if (escolha === 'relay') openRelay({ accountId, item: it })
   }
 
+  const escolherAqui = html`<${Button} icon="external" onClick=${() => abrirEscolherDoDrive(accountId)} title="Abre o SOBEDESCE no navegador para escolher no Google Drive">Escolher do Drive</${Button}>`
   const emptyView =
-    shown.filter !== 'all' && items?.length
+    !searching && shown.filter === 'all' && liberadosAqui
+      ? html`<${Vazio} icone="key" titulo="Nada liberado ainda" acoes=${escolherAqui}>O que você enviar pelo SOBEDESCE ou escolher no Drive aparece aqui.</${Vazio}>`
+      : !searching && shown.filter === 'all' && incompleto
+      ? html`<div class="drive-vazio is-incompleto"><${Vazio} icone="key" titulo=${PRECISA_TOTAL} acoes=${escolherAqui}>Aqui só aparece o que passou pelo SOBEDESCE ou que você escolheu.</${Vazio}></div>`
+      : shown.filter !== 'all' && items?.length
       ? html`<${Vazio} icone="filter" titulo=${`Nenhum ${filterDef.one} ${searching ? 'nos resultados' : 'nesta pasta'}`} acoes=${html`<${Button} onClick=${() => setFilter('all')}>Mostrar tudo</${Button}>`} />`
       : shown.mac.length && !showMac && items?.length === shown.mac.length
         ? html`<${Vazio} icone="eye" titulo="Só arquivos de controle do Mac aqui" acoes=${html`<${Button} onClick=${() => setShowMac(true)}>Mostrar</${Button}>`}>${shown.mac.length === 1 ? 'Ele está oculto.' : 'Eles estão ocultos.'}</${Vazio}>`
@@ -476,9 +500,13 @@ export function DriveScreen({ route }) {
     if (e.key === 'Escape' && selected.size) setSelected(new Set())
   }
 
-  const ondeIcone = searching ? 'search' : folderId === 'root' ? 'cloud' : virtual ? 'user' : drives.some((d) => d.id === folderId) ? 'users' : 'folder'
+  const ondeIcone = searching ? 'search' : folderId === 'root' ? 'cloud' : liberadosAqui ? 'key' : virtual ? 'user' : drives.some((d) => d.id === folderId) ? 'users' : 'folder'
   const resumoPasta =
-    !searching && accountId && virtual
+    !searching && accountId && liberadosAqui
+      ? html`<div class="drive-sum"><span class="dsum-main" aria-live="polite"><span class="dsum-count">${data?.items ? plural(data.items.length, 'item liberado', 'itens liberados') : 'Carregando…'}</span></span></div>`
+      : !searching && accountId && incompleto
+      ? html`<div class="drive-sum"><span class="dsum-main" aria-live="polite">${data?.items?.length ? html`<span class="dsum-count">${plural(shown.counts.all, 'item visível', 'itens visíveis')}</span><span class="dsum-sep" aria-hidden="true">·</span>` : null}<span class="dsum-off" title="Somar o tamanho precisa ver a pasta inteira.">${PRECISA_TOTAL}</span></span>${macLine ? html`<span class="dsum-end">${macLine}</span>` : null}</div>`
+      : !searching && accountId && virtual
       ? html`<div class="drive-sum"><span class="dsum-main" aria-live="polite"><span class="dsum-count">${data?.items ? plural(data.items.length, 'item compartilhado com você', 'itens compartilhados com você') : 'Carregando…'}</span></span></div>`
       : !searching && accountId
       ? html`<${FolderSummary}
@@ -518,7 +546,7 @@ export function DriveScreen({ route }) {
         <p>Seus arquivos no Google Drive: abra as pastas, veja a prévia e baixe no computador.</p>
       </div>
       <div class="k-cabeca-acoes">
-        <${Button} icon="link" class=${cx(copiando && 'is-copying')} onClick=${copiarDeLink} title="Copiar uma pasta ou arquivo do Drive de outra pessoa (pelo link) para o seu Drive">
+        <${Button} icon="link" class=${cx(copiando && 'is-copying')} onClick=${copiarDeLink} disabled=${modo === 'arquivos' && !copiando} title=${modo === 'arquivos' ? `${PRECISA_TOTAL} para copiar de um link.` : 'Copiar uma pasta ou arquivo do Drive de outra pessoa (pelo link) para o seu Drive'}>
           ${copiando ? `Copiando ${copiando.progress?.done || 0}/${copiando.progress?.total || 0}` : 'Copiar de um link'}
         </${Button}>
         <button type="button" class="k-botao dv-enviar" onClick=${uploadHere} disabled=${searching || (folder && !podeEnviar)} title=${searching ? 'Saia da busca para escolher a pasta de destino' : virtual ? 'Abra uma das pastas compartilhadas para enviar para ela' : folder && !podeEnviar ? 'Você só pode ver esta pasta' : `Enviar arquivos do computador para “${folderLabel(folder, drives)}”`}>
@@ -526,7 +554,8 @@ export function DriveScreen({ route }) {
         </button>
       </div>
     </header>
-    <${Fontes} drives=${drives} current=${searching ? null : sourceId} onPick=${(id) => { setQuery(''); openId(id) }} />
+    <${Fontes} drives=${drives} liberados=${modo === 'arquivos'} current=${searching ? null : sourceId} onPick=${(id) => { setQuery(''); openId(id) }} />
+    ${modo === 'arquivos' ? html`<${FaixaArquivos} accountId=${accountId} completo=${!!data && !virtual && data.completo !== false} />` : null}
     <section class=${cx('dv-faixa k-entra', searching && 'is-busca')} style="--i:1" aria-label="Onde você está">
       <span class="dv-onde-ic" aria-hidden="true"><${Icon} name=${ondeIcone} size=${20} strokeWidth=${1.8} /></span>
       <div class="dv-onde">

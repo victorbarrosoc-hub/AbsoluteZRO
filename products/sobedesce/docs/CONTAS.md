@@ -140,7 +140,7 @@ Códigos comuns: `401 sem_sessao`, `403 origem` (cookie sem Origin do site), `40
 | `GET /api/eu` | | `200 { usuario: { id, email, nome }, contas: Conta[], recursos: { referencias }, zro: { ligada, pedir, ligar } }` (§12) · `401 { erro: "sem_sessao" }` |
 | `GET /api/drive/contas` | | `200 { contas: Conta[] }` |
 | `GET /api/drive/picker` | | `200 { pronto: false }` ou `{ pronto: true, clientId, apiKey, appId }` (§13) |
-| `POST /api/drive/token` | `{ conta: "<id>", renovar?: boolean }` | `200 { accessToken, expiraEm (ms epoch), email, modo }` · `403 precisa_acesso_total` (só computador, §13) · `404 nao_encontrada` · `409 { erro: "reconectar", mensagem }` · `502 google` · `503 sem_config` |
+| `POST /api/drive/token` | `{ conta: "<id>", renovar?: boolean }` | `200 { accessToken, expiraEm (ms epoch), email, modo }` · `403 precisa_acesso_total` (só computador sem a capacidade `drive-arquivos`, §13) · `404 nao_encontrada` · `409 { erro: "reconectar", mensagem }` · `502 google` · `503 sem_config` |
 | `POST /api/dispositivo/iniciar` | `{ nome, plataforma }` (sem sessão; `plataforma` fora de mac/windows/linux vira null) | `200 { codigo, segredo, url, intervalo: 3, expiraEm }` · `429 devagar` |
 | `POST /api/dispositivo/aguardar` | `{ segredo }` (sem sessão) | `202 { estado: "pendente" }` · `200 { estado: "pronto", token: "sdd_...", usuario }` (uma vez só) · `410 { erro: "expirado" }` (vencido, cancelado, já usado ou segredo desconhecido) · `429 devagar` (menos de 2 s desde a consulta anterior; `Retry-After: 3`) |
 | `POST /api/dispositivo/sair` | Bearer | `204` (revoga a própria sessão) |
@@ -197,6 +197,8 @@ antigo (`victorbarrosoc-hub/baixadordodrive`, `versao-de-teste`). Os builds daqu
 - Entrar: `POST /api/dispositivo/iniciar` → abre o navegador em `url` → `aguardar` a cada
   `intervalo` s → guarda o token no diretório de dados (arquivo 0600).
 - Servidor: `https://sobedesce.vercel.app` (`SOBEDESCE_CLOUD_URL` troca, para testes).
+- Todo pedido leva `x-sobedesce-build` e `x-sobedesce-capacidades` (`CAPACIDADES_DO_APP` em `src/config.js`):
+  `relay` (0.2.0) e `drive-arquivos` (0.3.0, o modo Arquivos escolhidos do §13).
 
 ## 8. Apagar a conta e e-mails
 
@@ -432,7 +434,30 @@ Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto*
   tamanho só valem inteiros nas pastas criadas pelo SOBEDESCE novo (`appProperties.sobedesce`, gravado em toda pasta
   que o app cria); nas outras, "Precisa de acesso total" no lugar do tamanho e do "Pasta vazia". Comparar e backup não
   existem na web; a regra (`situacaoDoLocal`: sem lugar completo, "não sei", nunca "falta subir") está pronta para eles.
-- **App de computador**: ainda não sabe do modo. Até ganhar versão nova, `/api/drive/token` responde 403
-  `precisa_acesso_total` a uma sessão de dispositivo num Drive em Arquivos escolhidos (evita Comparar/Backup com
-  resultado falso); com acesso total, nada muda.
+- **App de computador 0.3.0** (31/10/2026): entende o modo e diz isso em todo pedido
+  (`x-sobedesce-capacidades: relay,drive-arquivos`). O `/api/drive/token` só entrega o token `drive.file` a uma sessão de
+  dispositivo cujo pedido traz `drive-arquivos` (vale o cabeçalho de cada pedido, não o build nem o que a sessão disse
+  antes; mentir não abre nada a mais, é o mesmo token do celular). App até a 0.2.0: continua 403
+  `precisa_acesso_total` ("Atualize o SOBEDESCE no computador…"); com acesso total, nada muda para ninguém.
+  - O modo de cada Drive vem de `/api/eu`, `/api/drive/contas` e de cada `/api/drive/token` (`src/google/cloud-auth.js`
+    guarda por Drive, em `cloud.json`); conta conectada só no computador (chave própria) é sempre `total`.
+  - Regras em `src/google/modo-drive.js` (motor) e `public/lib/modo-drive.js` (tela), com a mesma marca e o mesmo
+    `criadaPeloSobedesce` do celular (`test/modo-drive.test.js` confere os três). Toda pasta que o app cria leva
+    `appProperties.sobedesce = "pasta"` (`DriveClient.createFolder`, `ensureFolderPath`, Copiar de um link).
+  - Comparar (e os Looks do Relay): só numa pasta criada pelo SOBEDESCE, com todas as subpastas também marcadas; senão
+    "Precisa de acesso total" (403 com o motivo, nunca "falta subir"). O seletor de pasta do Comparar já trava o botão.
+    Somar o tamanho: o mesmo. Copiar de um link: desligado (o link de outra pessoa é invisível).
+  - Tela Drive e seletor de pasta: faixa "Arquivos escolhidos", lugar **Liberados** (`GET /api/drive/:acc/liberados`,
+    sem filtro de pasta) e "Precisa de acesso total" no lugar de "Pasta vazia" e do tamanho (`/api/drive/:acc/list`
+    devolve `modo` e `completo`). Ajustes: a linha "Acesso ao Drive" em cada Drive da conta.
+  - **Escolher do Drive** no computador: o Picker só abre numa página do site (a chave é presa ao endereço), então o app
+    abre o navegador do sistema em `/app/#escolher/<id da conta>` (sem token no endereço). O app do celular troca para
+    aquele Drive, abre Liberados e o Picker; o escolhido fica liberado também para o computador (mesmo projeto Google)
+    e aparece em Liberados lá.
+  - Celular pelo Wi-Fi do computador (`src/mobile/receiver.js`): `/m/api/info` manda `account.modo` e as pastas vêm com
+    `sd` (a marca). O seletor de destino diz "Só aparecem as pastas que passaram pelo SOBEDESCE" em vez de "Nenhuma
+    pasta" (o Picker não existe nesse modo: o celular não tem token).
+  - Backup Automático, Entre discos e cartões não passam pelo Google: iguais para todos.
+- **Relay embutido** (`/app/?no=relay&modo=escolher`) em Arquivos escolhidos: a faixa aparece também lá, e o vídeo
+  escolhido no Picker (com `setOrigin` do anfitrião) vai para o Relay como o toque na lista.
 

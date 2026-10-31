@@ -8,6 +8,7 @@ import { abortError, backoffDelay, sleep } from '../util/backoff.js'
 import { joinRel, splitRel, toNFC } from '../util/paths.js'
 import { SobeDesceError, classifyError } from './errors.js'
 import { SIZE_LIST_FIELDS, walkFolderSize } from './folder-size.js'
+import { MARCA_PASTA, lugarCompleto } from './modo-drive.js'
 
 export const FOLDER_MIME = 'application/vnd.google-apps.folder'
 export const SHORTCUT_MIME = 'application/vnd.google-apps.shortcut'
@@ -39,6 +40,8 @@ const LIST_FIELDS = `nextPageToken,files(${FILE_FIELDS})`
 // Varredura que precisa das marcas do app (Comparar: deixar de fora a pasta Proxy que o SOBEDESCE gerou).
 const LIST_APP_FIELDS = `nextPageToken,files(${FILE_FIELDS},appProperties)`
 const BROWSE_LIST_FIELDS = `nextPageToken,files(${BROWSE_FIELDS})`
+// Um item com as marcas do app: a pasta foi criada pelo SOBEDESCE? (modo Arquivos escolhidos, src/google/modo-drive.js)
+const ITEM_APP_FIELDS = `${FILE_FIELDS},appProperties`
 // Compartilhamento (Copiar link): o link e quem consegue abrir. `permissions` não vem em drive compartilhado
 // (nem para quem não pode compartilhar): aí vai um permissions.list.
 const PERMISSION_FIELDS = 'id,type,role,domain,allowFileDiscovery'
@@ -58,6 +61,7 @@ const PAGE_SIZE = 1000
 const SEARCH_LIMIT = 200
 const FOLDER_SEARCH_LIMIT = 20
 const SHARED_LIMIT = 1000 // "Compartilhados comigo": até aqui (o resto aparece na busca)
+const LIBERADOS_LIMIT = 1000 // "Liberados" (Arquivos escolhidos): até aqui
 const MAX_RETRY_WAIT_MS = 120_000
 const FOLDER_CACHE_TTL_MS = 5 * 60_000
 const MAX_CACHED_FOLDERS = 20_000
@@ -501,10 +505,11 @@ export class DriveClient {
   // ─────────── itens ───────────
 
   /** `resourceKey` (opcional) é a do próprio item, para itens antigos compartilhados por link. */
-  /** `media: true` também traz miniatura, dimensões e dono (prévia). */
-  async getItem(fileId, { signal, resourceKey, media = false } = {}) {
+  /** `media: true` também traz miniatura, dimensões e dono (prévia). `appProps: true` só as marcas do app. */
+  async getItem(fileId, { signal, resourceKey, media = false, appProps = false } = {}) {
     const headers = resourceKey ? { 'x-goog-drive-resource-keys': `${fileId}/${resourceKey}` } : undefined
-    const f = await this.api('GET', `files/${encodeURIComponent(fileId)}`, { query: { fields: media ? BROWSE_FIELDS : FILE_FIELDS }, headers, signal })
+    const fields = media ? BROWSE_FIELDS : appProps ? ITEM_APP_FIELDS : FILE_FIELDS
+    const f = await this.api('GET', `files/${encodeURIComponent(fileId)}`, { query: { fields }, headers, signal })
     const item = toDriveItem(f)
     this.#remember(item)
     if (fileId === 'root' && item.isFolder) this.myDriveRootId = item.id
@@ -581,9 +586,9 @@ export class DriveClient {
    * Filhos diretos (sem lixeira), pastas primeiro e depois por nome. `media: true` = campos da prévia (tela Drive).
    * `driveId` (opcional, como no findChild) evita buscar a pasta; `limit` para de paginar ao chegar nisso.
    */
-  async listChildren(folderId, { signal, media = false, driveId, limit = Infinity } = {}) {
+  async listChildren(folderId, { signal, media = false, appProps = false, driveId, limit = Infinity } = {}) {
     const did = driveId !== undefined ? driveId : await this.#driveIdOf(folderId, signal)
-    const items = await this.#list(this.#childrenQuery(folderId), { driveId: did, signal, media, limit })
+    const items = await this.#list(this.#childrenQuery(folderId), { driveId: did, signal, media, appProps, limit })
     return sortItems(items)
   }
 
@@ -634,11 +639,15 @@ export class DriveClient {
     return items.find(it => toNFC(it.name) === wanted) ?? null
   }
 
-  /** `retries` (opcional): criar não é idempotente; ensureFolderPath usa 0 e confere antes de repetir. */
+  /**
+   * `retries` (opcional): criar não é idempotente; ensureFolderPath usa 0 e confere antes de repetir.
+   * Toda pasta nova leva a marca do SOBEDESCE (MARCA_PASTA, a mesma do celular): no modo Arquivos escolhidos, só as
+   * pastas com ela aparecem inteiras (o app vê tudo o que entra nelas pelo SOBEDESCE).
+   */
   async createFolder(name, parentId, { signal, retries } = {}) {
     const f = await this.api('POST', 'files', {
-      query: { fields: FILE_FIELDS },
-      body: { name: toNFC(name), mimeType: FOLDER_MIME, parents: [parentId] },
+      query: { fields: ITEM_APP_FIELDS },
+      body: { name: toNFC(name), mimeType: FOLDER_MIME, parents: [parentId], appProperties: { ...MARCA_PASTA } },
       signal,
       retries,
     })
@@ -799,6 +808,37 @@ export class DriveClient {
   async listSharedWithMe({ signal, media = true, limit = SHARED_LIMIT } = {}) {
     const items = await this.#list('sharedWithMe = true and trashed = false', { signal, media, limit, pageSize: Math.min(limit, PAGE_SIZE) })
     return sortItems(items.filter(it => !it.driveId))
+  }
+
+  // ─────────── Drive híbrido (docs/CONTAS.md §13) ───────────
+
+  /** O modo deste Drive: 'total' (Drive inteiro) ou 'arquivos' (Arquivos escolhidos, drive.file). */
+  get modo() {
+    return this.auth?.modoDe?.(this.accountId) ?? 'total'
+  }
+
+  /**
+   * A pasta aparece inteira para o app? Acesso total: sempre (sem pedido ao Google). Arquivos escolhidos: só a pasta
+   * criada pelo SOBEDESCE (a raiz do Meu Drive e a de um drive compartilhado nunca são). Devolve { completo, pasta }.
+   */
+  async pastaCompleta(folderId, { signal } = {}) {
+    if (this.modo !== 'arquivos') return { completo: true, pasta: null }
+    if (!folderId || folderId === 'root' || folderId === this.myDriveRootId || this.driveNames.has(folderId)) return { completo: false, pasta: null }
+    let pasta = await this.getItem(folderId, { signal, appProps: true })
+    if (pasta.isShortcut && pasta.shortcutTargetId && pasta.shortcutTargetMimeType === FOLDER_MIME) {
+      pasta = await this.getItem(pasta.shortcutTargetId, { signal, appProps: true, resourceKey: pasta.shortcutTargetResourceKey || undefined })
+    }
+    if (pasta.isFolder && pasta.driveId && pasta.driveId === pasta.id) return { completo: false, pasta }
+    return { completo: pasta.isFolder && lugarCompleto(this.modo, pasta), pasta }
+  }
+
+  /**
+   * "Liberados" (Arquivos escolhidos): tudo o que o app pode abrir (o que ele enviou ou criou e o que a pessoa escolheu
+   * no Picker), de qualquer pasta. Sem filtro de pasta no `q`, como no celular. Pastas primeiro e por nome.
+   */
+  async listLiberados({ signal, media = true, limit = LIBERADOS_LIMIT } = {}) {
+    const items = await this.#list('trashed = false', { signal, media, limit, pageSize: Math.min(limit, PAGE_SIZE) })
+    return sortItems(items)
   }
 
   /** Renomeia (files.update name). Sem permissão vira SobeDesceError 403 com a mensagem para mostrar. */

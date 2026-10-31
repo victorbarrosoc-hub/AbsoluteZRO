@@ -4,7 +4,7 @@
 // apagados), para conferir o lugar antes de enviar.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js'
 import { LAN } from '../lib/config.js'
-import { modoDe } from '../lib/modo-drive.js'
+import { PRECISA_TOTAL, criadaPeloSobedesce, modoDe } from '../lib/modo-drive.js'
 import { escolherDoDrive } from '../lib/picker.js'
 import { createFolder, folderMeta, folderPath, listFolders, listSharedDrives, listSharedFolders, listStarredFolders, myDriveId, searchFolders, setStarred } from '../lib/drive.js'
 import { isFolder, kindOf, listPage } from '../lib/browse.js'
@@ -304,7 +304,7 @@ function FilesHere({ folder, driveId }) {
     </ul>`
 }
 
-function FolderList({ path, driveId, onEnter, creating, setCreating }) {
+function FolderList({ path, driveId, onEnter, creating, setCreating, incompleto = false }) {
   const here = path[path.length - 1]
   const list = useList(`${driveId || 'my'}:${here.id}`, (signal) => listFolders(here.id, driveId, signal))
   return html`<div>
@@ -323,13 +323,19 @@ function FolderList({ path, driveId, onEnter, creating, setCreating }) {
     <ul class="group flist">
       ${list.loading ? html`<${SkeletonRows} />` : null}
       ${list.error ? html`<${ErrorRow} error=${list.error} onRetry=${list.reload} />` : null}
-      ${list.data && !list.data.length && !creating
+      ${list.data && !list.data.length && !creating && incompleto
+        ? html`<li class="frow-msg is-empty">
+            <${Icon} name="key" size=${22} />
+            <p><b>${PRECISA_TOTAL}</b><br />Aqui só aparecem as pastas que passaram pelo SOBEDESCE. Dá para enviar para cá mesmo.</p>
+          </li>`
+        : list.data && !list.data.length && !creating
         ? html`<li class="frow-msg is-empty">
             <${Icon} name="folder" size=${22} />
             <p>${LAN ? 'Nenhuma pasta aqui dentro. Dá para enviar para cá mesmo.' : 'Nenhuma pasta aqui dentro. Dá para enviar para cá mesmo, ou criar uma nova.'}</p>
           </li>`
         : null}
       ${(list.data || []).map((f) => html`<${FolderRow} key=${f.id} name=${f.name} onClick=${() => onEnter(f)} />`)}
+      ${incompleto && list.data?.length && !creating ? html`<li class="frow-msg"><p>Só aparecem as pastas que passaram pelo SOBEDESCE.</p></li>` : null}
     </ul>
     ${LAN ? null : html`<${FilesHere} folder=${here} driveId=${driveId} />`}
   </div>`
@@ -422,7 +428,8 @@ function FolderSearch({ text, onOpen, onRetry, opening }) {
  * ({ path, driveId }) abre numa pasta; `recente: false` não guarda a escolha nos Recentes (mover não é destino de envio).
  */
 export function FolderSheet({ titulo = 'Destino', verb, icone = 'upload', onChoose, onCancel, inicio = null, recente = true } = {}) {
-  const { dest, account, modo } = useApp((s) => ({ dest: s.dest, account: s.user?.emailAddress, modo: LAN ? 'total' : modoDe(s.drive) }))
+  // No Wi-Fi pelo computador, o modo é o do Drive do computador (src/mobile/receiver.js manda em /info).
+  const { dest, account, modo } = useApp((s) => ({ dest: s.dest, account: s.user?.emailAddress, modo: LAN ? modoDe(s.lan) : modoDe(s.drive) }))
   // Abre em `inicio` ou na última pasta usada: o destino de agora ou, sem ele, a mais recente.
   const [nav, setNav] = useState(() => {
     if (inicio?.path?.length) return { path: inicio.path, driveId: inicio.driveId || null }
@@ -542,7 +549,7 @@ export function FolderSheet({ titulo = 'Destino', verb, icone = 'upload', onChoo
       ${searching
         ? html`<${FolderSearch} key=${`${search}#${retry}`} text=${search} onOpen=${openFound} onRetry=${() => setRetry((n) => n + 1)} opening=${opening} />`
         : atHome
-          ? html`${modo === 'arquivos'
+          ? html`${modo === 'arquivos' && !LAN
                 ? html`<div class="modo-faixa" role="note">
                     <span class="modo-faixa-ic" aria-hidden="true"><${Icon} name="key" size=${15} strokeWidth=${1.9} /></span>
                     <span class="modo-faixa-txt"><b>Outra pasta do Drive?</b><small>Escolha uma vez e ela fica liberada.</small></span>
@@ -557,7 +564,8 @@ export function FolderSheet({ titulo = 'Destino', verb, icone = 'upload', onChoo
               driveId=${nav.driveId}
               creating=${creating}
               setCreating=${setCreating}
-              onEnter=${(f) => go([...nav.path, { id: f.id, name: f.name }], nav.driveId)}
+              incompleto=${modo === 'arquivos' && !criadaPeloSobedesce(nav.path[nav.path.length - 1])}
+              onEnter=${(f) => go([...nav.path, { id: f.id, name: f.name, ...(criadaPeloSobedesce(f) ? { sd: true } : {}) }], nav.driveId)}
             />`}
     </div>
     <footer class="sheet-foot">

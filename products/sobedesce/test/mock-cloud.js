@@ -57,6 +57,8 @@ class MockCloud {
     this.iaSemToken = false
     // Vínculo com a Absolute ZRO no /api/eu (web/src/lib/zro/ligar.ts). null = site antigo, sem o campo.
     this.zro = null // { ligada, pedir, ligar }
+    // Drive híbrido: true = o site recusa o token drive.file ao computador mesmo com a capacidade (site antigo).
+    this.recusarArquivos = false
     this.seq = 0
     this.server = null
     this.url = null
@@ -252,7 +254,8 @@ class MockCloud {
   }
 
   #conta(c) {
-    return { id: c.id, email: c.email, nome: c.nome, fotoUrl: c.fotoUrl ?? null, estado: c.estado }
+    // `modo` (Drive híbrido, docs/CONTAS.md §13): 'total' ou 'arquivos'. Sem `c.modo`: site antigo, sem o campo.
+    return { id: c.id, email: c.email, nome: c.nome, fotoUrl: c.fotoUrl ?? null, estado: c.estado, ...(c.modo ? { modo: c.modo } : {}) }
   }
 
   async #handle(req, res) {
@@ -314,6 +317,9 @@ class MockCloud {
       const c = this.contas.find(x => x.id === String(body?.conta ?? ''))
       if (!c) return this.#send(res, 404, { erro: 'nao_encontrada', mensagem: 'Drive não encontrado.' })
       if (c.estado === 'reconectar') return this.#send(res, 409, { erro: 'reconectar', mensagem: 'Reconecte este Drive.' })
+      // Como web/src/app/api/drive/token/route.ts: drive.file só para o computador que diz entender o modo.
+      const entende = String(req.headers['x-sobedesce-capacidades'] ?? '').split(',').map(x => x.trim()).includes('drive-arquivos')
+      if (c.modo === 'arquivos' && (!entende || this.recusarArquivos)) return this.#send(res, 403, { erro: 'precisa_acesso_total', mensagem: 'Atualize o SOBEDESCE no computador para usar este Drive em Arquivos escolhidos.' })
       if (body.renovar) this.stats.renovar++
       let t = this.issued.get(c.id)
       if (!t || body.renovar || t.expiraEm - Date.now() < 5 * 60_000) {
@@ -321,7 +327,7 @@ class MockCloud {
         t = { accessToken, expiraEm: Date.now() + this.tokenTtlMs }
         this.issued.set(c.id, t)
       }
-      return this.#send(res, 200, { accessToken: t.accessToken, expiraEm: t.expiraEm, email: c.email })
+      return this.#send(res, 200, { accessToken: t.accessToken, expiraEm: t.expiraEm, email: c.email, ...(c.modo ? { modo: c.modo } : {}) })
     }
 
     if (p.startsWith('/api/referencias/')) return this.#referencias(req, res, url, session)

@@ -136,7 +136,8 @@ export async function listFolders(parentId, driveId, signal) {
       includeItemsFromAllDrives: true,
       pageSize: 1000,
       orderBy: 'name',
-      fields: 'nextPageToken,files(id,name,driveId)',
+      // appProperties: a marca das pastas do SOBEDESCE (lib/modo-drive.js), para o modo Arquivos escolhidos.
+      fields: 'nextPageToken,files(id,name,driveId,appProperties)',
       pageToken,
     }
     if (driveId) Object.assign(query, { corpora: 'drive', driveId })

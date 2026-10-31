@@ -390,15 +390,30 @@ describe("token do Drive", () => {
     assert.equal((await pedirToken(victor.token, anaId)).status, 200);
   });
 
-  test("Bearer de dispositivo pega token só com acesso total (sem Origin); em arquivos escolhidos, 403 com recado", async () => {
+  test("Bearer de dispositivo: app antigo só com acesso total (403 com recado); o 0.3.0 (drive-arquivos) pega o drive.file", async () => {
     const { criarSessao } = await import("../src/lib/auth/sessao");
     const s = await criarSessao(victor.id, "dispositivo", { nome: "Mac de teste", plataforma: "mac" });
-    const recusado = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null }));
-    assert.equal(recusado.status, 403, "o app de computador de hoje daria resultado falso com drive.file");
-    const corpo = await recusado.json();
-    assert.equal(corpo.erro, "precisa_acesso_total");
-    assert.match(corpo.mensagem, /acesso total/);
-    assert.ok(!("accessToken" in corpo));
+    // App até a 0.2.0: só "relay" (ou nada) no cabeçalho.
+    const antigos: Record<string, string>[] = [{}, { "x-sobedesce-build": "1100", "x-sobedesce-capacidades": "relay" }, { "x-sobedesce-build": "9999", "x-sobedesce-capacidades": "relay,drive" }];
+    for (const headers of antigos) {
+      const recusado = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers }));
+      assert.equal(recusado.status, 403, "o app de computador antigo daria resultado falso com drive.file (o build alto não basta)");
+      const corpo = await recusado.json();
+      assert.equal(corpo.erro, "precisa_acesso_total");
+      assert.match(corpo.mensagem, /Atualize o SOBEDESCE no computador/);
+      assert.ok(!("accessToken" in corpo));
+    }
+    // App 0.3.0: diz que entende o modo (src/config.js do app) e recebe o token, com o modo junto.
+    const novo = await token.POST(
+      pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers: { "x-sobedesce-build": "1101", "x-sobedesce-capacidades": "relay,drive-arquivos" } }),
+    );
+    assert.equal(novo.status, 200);
+    const t = await novo.json();
+    assert.equal(t.modo, "arquivos");
+    assert.ok(t.accessToken);
+    assert.ok(!("refreshToken" in t));
+    // Voltou para o app antigo: recusa de novo na hora (vale o cabeçalho de cada pedido).
+    assert.equal((await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers: { "x-sobedesce-build": "1100", "x-sobedesce-capacidades": "relay" } }))).status, 403);
     // Com acesso total e o Drive reconectado com o `drive` inteiro, o computador volta a pegar o token.
     const { db, schema } = amb.banco;
     await db.update(schema.usuarios).set({ driveAcessoTotal: true }).where(drizzle.eq(schema.usuarios.id, victor.id));

@@ -71,7 +71,7 @@ export function doPicker(d) {
  * Abre o Picker. `tipo`: 'arquivos' (vários de uma vez, pastas só para entrar) ou 'pasta' (uma pasta, para enviar
  * para dentro dela). Resolve com a lista escolhida (vazia = cancelou). Erros: 'sem_config', 'picker_script', do token.
  */
-export async function escolherDoDrive({ tipo = 'arquivos', titulo } = {}) {
+export async function escolherDoDrive({ tipo = 'arquivos', titulo, origem = null, varios = true } = {}) {
   const c = await lerConfig()
   if (!c?.pronto) throw Object.assign(new Error(c?.rede ? 'Sem conexão. Tente de novo.' : 'O Escolher do Drive ainda não foi ligado neste servidor.'), { code: 'sem_config' })
   const [token] = await Promise.all([getToken(), carregar()])
@@ -87,11 +87,14 @@ export async function escolherDoDrive({ tipo = 'arquivos', titulo } = {}) {
       .setAppId(c.appId)
       .setLocale('pt-BR')
       .setTitle(titulo || (pasta ? 'Escolha a pasta' : 'Escolha os arquivos'))
+    // Dentro de um quadro (o Relay embute o app): o Picker precisa saber a origem da página de cima.
+    if (origem) b = b.setOrigin(origem)
+    b = b
       .setCallback((d) => {
         if (d.action === p.Action.PICKED) resolve((d.docs || []).map(doPicker))
         else if (d.action === p.Action.CANCEL) resolve([])
       })
-    if (!pasta) b = b.enableFeature(p.Feature.MULTISELECT_ENABLED)
+    if (!pasta && varios) b = b.enableFeature(p.Feature.MULTISELECT_ENABLED)
     b.build().setVisible(true)
   })
 }

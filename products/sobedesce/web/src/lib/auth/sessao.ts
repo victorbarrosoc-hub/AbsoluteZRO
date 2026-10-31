@@ -120,8 +120,12 @@ export async function criarSessao(
 /**
  * O que o app de computador sabe fazer, pelo cabeçalho x-sobedesce-capacidades ("relay", separadas por vírgula). Só
  * as conhecidas entram (o resto é ignorado); sem o cabeçalho, nenhuma (app até a 0.1.0).
+ * - "relay" (0.2.0): pega e converte as versões pedidas pelo Maestro.
+ * - "drive-arquivos" (0.3.0): entende o modo Arquivos escolhidos do Drive híbrido (docs/CONTAS.md §13); só com ela o
+ *   /api/drive/token entrega um token drive.file ao computador.
  */
-export const CAPACIDADES = ["relay"] as const;
+export const CAPACIDADES = ["relay", "drive-arquivos"] as const;
+export const CAPACIDADE_MODO_DRIVE: Capacidade = "drive-arquivos";
 export type Capacidade = (typeof CAPACIDADES)[number];
 export function lerCapacidades(cabecalho: string | null | undefined): Capacidade[] {
   const ditas = new Set(
