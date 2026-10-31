@@ -3592,3 +3592,5 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   com o nome certo, publicar é `POST`, o post antigo do aparelho não sobe sozinho e a tela oferece enviar).
 - Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
   `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.
+
+- Google (31/10/2026): inventário de escopos feito (Maestro não pede escopo Google próprio: usa o token curto do SOBEDESCE pela ponte, nada migrado). Páginas `/privacidade` (com Limited Use) e `/termos` no HUB; teste `tests/integration/legal.test.ts`. Kit de verificação e roteiro do teste `drive.file` em `docs/operations/`.
