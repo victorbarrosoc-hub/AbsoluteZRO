@@ -287,6 +287,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Próximas fases: sugestões nos cortes e marcadores, banco da pessoa (Drive) e Openverse com licença comercial,
   ElevenLabs pela conta da pessoa (Conexões do HUB, créditos dela), batida e abaixar sob a voz pelo NOSSOM; Epidemic e
   Artlist dependem de contrato de parceria.
+- 🟡 Sonoplasta · fase 2a (31/10/2026): aba **Sons** no AEON com os momentos da linha (cortes e marcadores), busca
+  em português no banco de sons livres (Openverse pelo HUB, só CC0, CC BY e domínio público; Freesound e Wikimedia),
+  ouvir antes, colocar no momento com o volume do preset (`presets/sonoplasta.v1.json`) e o crédito automático; o
+  arquivo vai junto na entrega e desce de novo ao reabrir o projeto. HUB: `/api/v1/sons/*` (escopo `zro.sons`,
+  migration 0043). Falta: aplicar a 0043, cadastro do app no Openverse (limite), e a fase 2b (banco da pessoa no Drive,
+  pela conexão do SOBEDESCE).
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron

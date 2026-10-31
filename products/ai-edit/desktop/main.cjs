@@ -257,11 +257,40 @@ async function repassarSet(req, u) {
   return new Response(semCorpo ? null : await r.arrayBuffer(), { status: r.status, headers: cabecalhos(extra) })
 }
 
+// Os sons da Sonoplasta: /api/zro/sons/buscar e /api/zro/sons/openverse/<id> → <Absolute ZRO>/api/v1/sons/… com o
+// mesmo access token. Os mesmos caminhos do site (api/_sons.js); só GET; o arquivo passa com o tipo e os X-Zro-Som-*.
+const SOM_ID = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const PASSAM_SOM = ['content-type', 'content-length', 'x-zro-som-id', 'x-zro-som-titulo', 'x-zro-som-autor', 'x-zro-som-licenca']
+async function repassarSons(req, u) {
+  const caminho = u.pathname.slice('/api/zro/sons'.length)
+  const busca = caminho === '/buscar'
+  if (!busca && !SOM_ID.test(caminho)) return jsonResp(404, { ok: false })
+  if (req.method !== 'GET') return jsonResp(405, { ok: false })
+  let token
+  try {
+    token = await contaApp().tokenDeAcesso()
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  if (!token) return jsonResp(401, { ok: false, message: 'Entre com a conta Absolute ZRO para buscar sons.' })
+  const q = new URLSearchParams({ q: String(u.searchParams.get('q') || '').slice(0, 80), pagina: /^\d{1,2}$/.test(u.searchParams.get('pagina') || '') ? u.searchParams.get('pagina') : '1' })
+  let r
+  try {
+    r = await net.fetch(`${EMISSOR}/api/v1/sons${caminho}${busca ? `?${q}` : ''}`, { headers: { authorization: `Bearer ${token}`, accept: busca ? 'application/json' : 'audio/*' }, signal: req.signal, redirect: 'manual' })
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  const extra = { 'cache-control': busca ? 'no-store' : 'private, max-age=3600' }
+  for (const k of PASSAM_SOM) if (r.headers.get(k)) extra[k] = r.headers.get(k)
+  return new Response(r.body, { status: r.status, headers: cabecalhos(extra) })
+}
+
 async function rotaConta(req, u) {
   // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede (nem a Z, nem o Set)
-  if ((SMOKE || MEDIR) && (u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/'))) return jsonResp(401, { ok: false })
+  if ((SMOKE || MEDIR) && (u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/') || u.pathname.startsWith('/api/zro/sons/'))) return jsonResp(401, { ok: false })
   if (u.pathname.startsWith('/api/zro/ia/')) return repassarIa(req, u)
   if (u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/')) return repassarSet(req, u)
+  if (u.pathname.startsWith('/api/zro/sons/')) return repassarSons(req, u)
   if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail e foto na Absolute ZRO a cada abertura (sem resposta em 3 s, vale a cópia)

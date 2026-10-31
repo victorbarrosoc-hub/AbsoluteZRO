@@ -89,6 +89,13 @@ export function efeitosExportados(p) {
   )
 }
 
+/**
+ * Efeito que veio de um banco (sem arquivo no disco de quem edita): o arquivo vai junto na entrega, ao lado do XML, com
+ * este nome; o XML aponta para ele pelo caminho relativo.
+ */
+export const arquivoDoSom = (s) => `Efeito - ${nomeArquivo(s.nome)}`
+export const caminhoDoSom = (s) => s.caminho || arquivoDoSom(s)
+
 /** Sons usados na linha, na ordem do projeto (cada um vira um arquivo/asset no exportador). */
 export const sonsUsados = (p) => {
   const usados = new Set(efeitosNaLinha(p).map((x) => x.som.id))

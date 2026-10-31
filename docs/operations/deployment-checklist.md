@@ -33,6 +33,10 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   "indisponível" e `/api/v1/agenda/*` responde 503. Trocar a chave invalida as conexões guardadas (cada pessoa conecta
   de novo). O cliente Google é o mesmo do "Entrar com Google" (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`), com o retorno
   `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
+- `OPENVERSE_CLIENT_ID` e `OPENVERSE_CLIENT_SECRET` (opcionais, Production): cadastro gratuito do app no Openverse
+  (`POST https://api.openverse.org/v1/auth_tokens/register/`, depois confirmar o e-mail). Com eles, a busca de sons da
+  Sonoplasta (`/api/v1/sons/*`, escopo `zro.sons`, migration 0043) usa o limite do app; sem eles, o anônimo (20 por
+  minuto, 200 por dia para o servidor inteiro) e a pessoa vê "o banco pediu uma pausa" quando acaba.
 - `CRON_SECRET` (openssl rand -hex 32, Production; sem espaço nem quebra de linha no fim, ou a Vercel recusa o build): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
   PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
 - A Z (Claude): `IA_ANTHROPIC_KEY` (e `IA_MODELO`, padrão `claude-opus-5-5`). Sem ela, a Z fica desligada.

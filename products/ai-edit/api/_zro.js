@@ -26,10 +26,16 @@ import { estadoDaClaim, PRODUTO } from './_release.js'
 export { PRODUTO }
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // zro.ia: o token também fala com a Z (a IA do ecossistema, /api/v1/ia), pelo repasse em api/zro/ia/*
-// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set (api/_set.js). A Absolute ZRO
-// de antes do Set recusa o escopo (invalid_scope): o callback refaz o pedido sem ele (sem_set) e, se ainda recusar, sem
-// a Z também (sem_ia). O login nunca quebra por causa de um escopo novo.
-export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set (api/_set.js).
+// zro.sons: os efeitos sonoros livres da Sonoplasta, pelo repasse /api/zro/sons/* (api/_sons.js).
+// A Absolute ZRO de antes de um escopo recusa (invalid_scope): o callback refaz o pedido sem os mais novos, um passo por
+// vez (sem_sons, depois sem_set, por fim sem_ia). O login nunca quebra por causa de um escopo novo.
+export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set zro.sons'
+/** Os escopos do pedido, sem os que a Absolute ZRO recusou (cada passo tira também os mais novos). */
+export const escoposDo = ({ semSons = false, semSet = false, semIa = false } = {}) =>
+  ESCOPOS.replace(semSons || semSet || semIa ? / ?zro\.sons/ : '', '')
+    .replace(semSet || semIa ? / ?zro\.set/ : '', '')
+    .replace(semIa ? / ?zro\.ia/ : '', '')
 export const SITE = 'https://aeon.absolutezro.com'
 export const COOKIE_IDA = 'ae_zro'
 export const COOKIE_CONTA = 'ae_conta'

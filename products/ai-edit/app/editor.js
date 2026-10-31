@@ -8,14 +8,16 @@ import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, aj
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
-import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
+import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, momentos, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
+import { idDoSomBuscado, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
+import * as bancoSons from './sons.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
 import { trechosParaTranscrever } from '../src/analise/trechos.js'
 import { agrupar } from '../src/legenda.js'
 import { paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
 import { pacote } from '../src/exportar/index.js'
-import { nomeArquivo } from '../src/exportar/comum.js'
+import { arquivoDoSom, nomeArquivo, sonsUsados } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
 import { MODELOS } from '../src/modelos.js'
 import { extrairAudio, lerInfo, miniatura, MB } from './midia.js'
@@ -105,6 +107,9 @@ $('tema').onclick = () => tema(document.documentElement.dataset.theme === 'dark'
 if (ponte.desktop) $('abrirSobedesce').hidden = false
 
 S.preset = prepararPreset(await fetch(new URL('../presets/fala.v1.json', import.meta.url)).then((r) => r.json()))
+// Sonoplasta: o que buscar em cada momento e como o português vira termo do banco (regras no preset, não no código)
+S.sonoplasta = await fetch(new URL('../presets/sonoplasta.v1.json', import.meta.url)).then((r) => r.json())
+S.sons = { alvo: null, resultados: [], estado: 'vazio', erro: null, ouvindo: null }
 
 const player = new Player($('tela'), (id) => ponte.urlTocavel(S.entradas.get(id)))
 const linha = new LinhaUI($('linha'), {
@@ -300,6 +305,7 @@ function desenharTudo() {
   desenharTexto()
   desenharInspector()
   if (S.pagina === 'edicao') desenharLinha(blocos)
+  desenharSons()
 }
 
 function opcoesPlayer(p, blocos = blocosDaLegenda(p)) {
@@ -1107,6 +1113,158 @@ addEventListener('keydown', (e) => {
   }
 })
 
+// ───────── Sonoplasta: momentos, busca no banco de sons livres (pela Absolute ZRO), ouvir e colocar ─────────
+
+function el(tag, cls, props = {}) {
+  return Object.assign(document.createElement(tag), cls ? { className: cls } : {}, props)
+}
+function segundosLegiveis(s) {
+  return s == null ? '' : s < 10 ? `${String(Math.round(s * 10) / 10).replace('.', ',')} s` : relogio(s)
+}
+
+function desenharSons() {
+  const p = P()
+  if (!p) return
+  const ms = momentos(p)
+  if (S.sons.alvo && !ms.some((m) => m.q === S.sons.alvo.q)) S.sons.alvo = null
+  // os momentos da linha (cortes e marcadores): tocar leva até lá e busca o som que combina
+  $('sonsMomentos').replaceChildren(
+    ...ms.map((m) => {
+      const b = el('button', 'sons-momento', { type: 'button', title: sugestaoDoMomento(m, S.sonoplasta)?.porque || '' })
+      b.dataset.tipo = m.tipo
+      b.append(el('span', '', { textContent: m.nome }), el('span', 'apoio', { textContent: relogio(paraSegundos(m.q, p.fps)) }))
+      b.setAttribute('aria-pressed', String(S.sons.alvo?.q === m.q))
+      b.onclick = () => {
+        S.sons.alvo = S.sons.alvo?.q === m.q ? null : m
+        if (S.sons.alvo) {
+          player.irPara(paraSegundos(m.q, p.fps))
+          const sug = sugestaoDoMomento(m, S.sonoplasta)
+          if (sug) {
+            $('sonsTermo').value = sug.busca
+            buscarSons(sug.busca)
+          }
+        }
+        desenharSons()
+      }
+      return b
+    }),
+  )
+  $('sonsSugestoes').replaceChildren(
+    ...(S.sonoplasta.sugestoes || []).map((t) => {
+      const b = el('button', 'sons-sugestao', { type: 'button', textContent: t })
+      b.onclick = () => {
+        $('sonsTermo').value = t
+        buscarSons(t)
+      }
+      return b
+    }),
+  )
+  desenharResultados()
+}
+
+function desenharResultados() {
+  const ol = $('sonsLista')
+  const { estado, erro, resultados } = S.sons
+  if (estado === 'buscando') return ol.replaceChildren(el('li', 'apoio sons-estado', { textContent: 'Buscando…' }))
+  if (estado === 'erro') {
+    const li = el('li', 'sons-estado', { textContent: erro.message })
+    if (erro.status === 401) li.append(el('a', 'link', { href: `/api/zro/entrar?volta=${encodeURIComponent('/app/')}`, textContent: ' Entrar de novo' }))
+    return ol.replaceChildren(li)
+  }
+  if (estado === 'nada') return ol.replaceChildren(el('li', 'apoio sons-estado', { textContent: 'Nenhum som livre com esse nome. Tente outra palavra.' }))
+  ol.replaceChildren(
+    ...resultados.map((s) => {
+      const li = el('li', 'som-item')
+      li.dataset.id = s.id
+      const ouvir = el('button', 'icone-btn som-ouvir', { type: 'button', title: 'Ouvir', ariaLabel: `Ouvir ${s.titulo}`, innerHTML: '<svg><use href="#i-play"/></svg>' })
+      ouvir.onclick = () => ouvirSom(s, ouvir)
+      const info = el('span', 'som-info')
+      info.append(el('strong', '', { textContent: s.titulo }), el('span', 'apoio', { textContent: [s.autor, s.licenca, segundosLegiveis(s.duracao)].filter(Boolean).join(' · ') }))
+      info.title = `${s.titulo}${s.autor ? ` · ${s.autor}` : ''} · ${s.licenca} · ${s.fonte}`
+      const colocar = el('button', 'glass-btn som-colocar', { type: 'button', textContent: 'Colocar', title: S.sons.alvo ? `Colocar em ${S.sons.alvo.nome}` : 'Colocar no ponto' })
+      colocar.onclick = () => colocarSomBuscado(s, colocar)
+      li.append(ouvir, info, colocar)
+      return li
+    }),
+  )
+}
+
+async function buscarSons(texto) {
+  const termo = termoDeBusca(texto, S.sonoplasta)
+  if (termo.length < 2) return
+  S.sons = { ...S.sons, estado: 'buscando', erro: null }
+  desenharResultados()
+  try {
+    const r = await bancoSons.buscar(termo)
+    S.sons = { ...S.sons, resultados: r.sons, estado: r.sons.length ? 'pronto' : 'nada' }
+  } catch (err) {
+    S.sons = { ...S.sons, resultados: [], estado: 'erro', erro: err }
+  }
+  desenharResultados()
+}
+$('sonsBusca').onsubmit = (e) => {
+  e.preventDefault()
+  buscarSons($('sonsTermo').value)
+}
+
+/** Ouvir antes de escolher (o mesmo arquivo, pela mesma origem); tocar outro para o anterior. */
+function ouvirSom(s, botao) {
+  const antes = S.sons.ouvindo
+  antes?.audio.pause()
+  if (antes) antes.botao.innerHTML = '<svg><use href="#i-play"/></svg>'
+  if (antes?.id === s.id) return (S.sons.ouvindo = null)
+  const audio = new Audio(bancoSons.urlDoSom(s.id))
+  audio.onended = () => {
+    botao.innerHTML = '<svg><use href="#i-play"/></svg>'
+    S.sons.ouvindo = null
+  }
+  audio.play().catch(() => aviso('Não deu para tocar esse som agora.'))
+  botao.innerHTML = '<svg><use href="#i-pausa"/></svg>'
+  S.sons.ouvindo = { id: s.id, audio, botao }
+}
+
+/** Baixa (uma vez por som) e põe no momento escolhido, ou no ponto; o crédito vai junto na origem do som. */
+async function colocarSomBuscado(s, botao) {
+  let p = P()
+  if (!p) return
+  const id = idDoSomBuscado(s)
+  const q = S.sons.alvo ? S.sons.alvo.q : paraQuadros(player.t, p.fps)
+  botao.disabled = true
+  try {
+    if (!somPorId(p, id) || !S.entradas.has(id)) {
+      const blob = await bancoSons.baixar(s.id)
+      const nome = somDoBanco(s, {}).nome
+      const e = await ponte.entradaDe(new File([blob], nome, { type: blob.type }))
+      const info = await lerInfo(e)
+      if (!info.temAudio) throw new Error('o arquivo não tem som')
+      S.entradas.set(id, e)
+      if (!somPorId(p, id)) p = adicionarSom(p, somDoBanco(s, info)).projeto
+    }
+    const c = colocarEfeito(p, id, q, { volume: S.sonoplasta.volume_db, momento: S.sons.alvo?.tipo })
+    if (!c.id) return aviso('Ponha um vídeo na linha antes do efeito.')
+    fazer(c.projeto, 'efeito sonoro')
+    linha.selecionarEfeito(c.id)
+  } catch (err) {
+    aviso(`${s.titulo}: ${err.message}`)
+  } finally {
+    botao.disabled = false
+  }
+}
+
+/** Projeto reaberto: os sons que vieram do banco descem de novo sozinhos (o app não guarda áudio no projeto). */
+async function rebaixarSons(p) {
+  for (const som of p.sons || []) {
+    if (som.origem?.tipo !== 'openverse' || S.entradas.has(som.id) || !som.origem.id) continue
+    try {
+      const blob = await bancoSons.baixar(som.origem.id)
+      S.entradas.set(som.id, await ponte.entradaDe(new File([blob], som.nome, { type: blob.type })))
+    } catch {
+      aviso(`O som "${som.nome}" não desceu agora; tente abrir de novo.`)
+    }
+  }
+  if (P()) player.carregar(P(), opcoesPlayer(P()))
+}
+
 // ───────── salvar e abrir ─────────
 
 async function salvarAgora() {
@@ -1140,7 +1298,7 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   const faltam = []
   for (const m of [...p.midias, ...(p.sons || [])]) {
     if (m.caminho && ponte.desktop) S.entradas.set(m.id, await ponte.entradaDoCaminho(m.caminho, m.nome))
-    else faltam.push(m)
+    else if (m.origem?.tipo !== 'openverse') faltam.push(m)
   }
   S.h = new Historico(p)
   S.salvo = true
@@ -1148,6 +1306,7 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   autosalvar()
   if (faltam.length) aviso(`Escolha de novo: ${faltam.map((m) => m.nome).join(', ')}.`)
   desenharTudo()
+  rebaixarSons(p)
   ir(p.propostas.length ? 'revisar' : 'midia')
 }
 
@@ -1290,6 +1449,11 @@ async function exportar({ marcados } = {}) {
   if (quer.has('resolve')) formatos.add('edl')
   if (formatos.size) {
     const arquivos = pacote(p, S.preset.legenda, new Date(), [...formatos])
+    // os efeitos que vieram do banco (sem arquivo no disco) vão junto, ao lado do XML que aponta para eles
+    for (const som of sonsUsados(p)) {
+      const e = !som.caminho && S.entradas.get(som.id)
+      if (e?.arquivo) arquivos.push({ name: arquivoDoSom(som), data: new Uint8Array(await e.arquivo.arrayBuffer()) })
+    }
     const r = await ponte.gravarPacote(base, arquivos, zip)
     if (!r) return
     resultado.pasta = r.pasta

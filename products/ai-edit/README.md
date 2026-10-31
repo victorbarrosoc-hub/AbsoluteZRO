@@ -22,7 +22,10 @@ rebranding troca tudo num lugar só.
    por clipe ("Gancho", "B-roll"…) com filtro. Legenda animada (Destaque, Pop, Limpa) e texto corrigível com dois
    cliques. **Faixa de efeitos sonoros** (FX): um som do computador entra no ponto (S ou o botão de onda), preso à
    imagem como o clipe conectado do Final Cut (cortar, aparar ou mover o trecho leva o efeito junto); arrastar com ímã,
-   volume no Inspector, ⌫ tira. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
+   volume no Inspector, ⌫ tira. Aba **Sons** (Sonoplasta): os cortes e marcadores viram momentos; tocar num momento
+   busca o som que combina (regras em [`presets/sonoplasta.v1.json`](presets/sonoplasta.v1.json)) no banco de sons
+   livres pela Absolute ZRO (Openverse: CC0, CC BY e domínio público), em português; ouvir, colocar no momento com o
+   crédito anotado. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
 5. **Entrega**: Premiere (xmeml), Final Cut (FCPXML 1.10), DaVinci (FCPXML + EDL), OTIO, SRT/VTT e o
    `zro-timeline-ref.json` (contrato `ZroTimelineRef` v0.1 do `edit.timeline.ready`), com o caminho completo da mídia;
    zoom vai como escala e posição do clipe, cor como rótulo do Premiere e etiqueta como palavra-chave. Efeitos sonoros

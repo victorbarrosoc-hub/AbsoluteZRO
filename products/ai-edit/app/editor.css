@@ -2538,3 +2538,101 @@ html:not([data-conta]) body {
   --zro-set-raio-controle: 999px;
   --zro-set-fonte: var(--fonte);
 }
+
+/* Sonoplasta: momentos da linha, sugestões e o banco de sons livres (aba Sons) */
+.sons-busca input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.sons-momentos,
+.sons-sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sons-momentos:empty,
+.sons-sugestoes:empty {
+  display: none;
+}
+.sons-momento,
+.sons-sugestao {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-momento[data-tipo='corte']::before,
+.sons-momento[data-tipo='marcador']::before {
+  content: '';
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--cor-verde);
+}
+.sons-momento[data-tipo='marcador']::before {
+  background: var(--cor-amarelo);
+}
+.sons-momento[aria-pressed='true'] {
+  border-color: var(--produto);
+  box-shadow: 0 0 0 1px var(--produto);
+}
+.sons-lista {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.som-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 10px;
+}
+.som-item:hover {
+  background: var(--hover);
+}
+.som-info {
+  display: grid;
+  min-width: 0;
+}
+.som-info strong,
+.som-info .apoio {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.som-info strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 13px;
+}
+.som-info .apoio {
+  font-size: 12px;
+}
+.som-colocar {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+.sons-estado {
+  padding: 8px 4px;
+  font-size: 13px;
+}
+.sons-rodape {
+  font-size: 12px;
+}

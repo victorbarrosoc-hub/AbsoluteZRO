@@ -163,6 +163,7 @@
               <div class="abas" role="tablist" aria-label="Painel" id="abasPainel">
                 <button role="tab" data-aba="inspector" aria-selected="true">Inspector</button>
                 <button role="tab" data-aba="texto" aria-selected="false">Texto</button>
+                <button role="tab" data-aba="sons" aria-selected="false">Sons</button>
                 <button role="tab" data-aba="historico" aria-selected="false">Histórico</button>
               </div>
               <section class="aba" data-aba="inspector" id="inspector" aria-label="Inspector"></section>
@@ -177,6 +178,15 @@
                   </select>
                 </div>
                 <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
+              </section>
+              <section class="aba sons" data-aba="sons" hidden aria-label="Sons">
+                <form class="sons-busca" id="sonsBusca" role="search">
+                  <input type="search" id="sonsTermo" maxlength="80" placeholder="whoosh, impacto, clique…" aria-label="Buscar som" autocomplete="off" />
+                </form>
+                <div class="sons-momentos" id="sonsMomentos" role="group" aria-label="Momentos da linha"></div>
+                <div class="sons-sugestoes" id="sonsSugestoes" role="group" aria-label="Sugestões"></div>
+                <ol class="sons-lista" id="sonsLista" aria-live="polite"></ol>
+                <p class="apoio sons-rodape" title="Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.">Sons livres para uso comercial, com crédito.</p>
               </section>
               <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
             </aside>

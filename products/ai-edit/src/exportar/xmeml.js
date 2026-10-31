@@ -4,7 +4,7 @@
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { caminhoDa, efeitosExportados, esc, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
+import { caminhoDa, caminhoDoSom, efeitosExportados, esc, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
 import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
@@ -74,7 +74,7 @@ ${ind}</clipitem>`
     if (arquivos.has(id)) return `${ind}<file id="${id}"/>`
     arquivos.add(id)
     const quadros = Math.max(1, Math.round((m.duracao * p.fps.n) / p.fps.d))
-    return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(m.nome)}</name>`, `${ind}  <pathurl>${esc(pathUrl(caminhoDa(m)))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${quadros}</duration>`, `${ind}  <media>`, `${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>${m.taxa || 48000}</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>${m.canais || 2}</channelcount>\n${ind}    </audio>`, `${ind}  </media>`, `${ind}</file>`].join('\n')
+    return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(m.nome)}</name>`, `${ind}  <pathurl>${esc(pathUrl(caminhoDoSom(m)))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${quadros}</duration>`, `${ind}  <media>`, `${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>${m.taxa || 48000}</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>${m.canais || 2}</channelcount>\n${ind}    </audio>`, `${ind}  </media>`, `${ind}</file>`].join('\n')
   }
   const efeitos = efeitosExportados(p)
   const itemEfeito = (x, k, lado, ind) => {

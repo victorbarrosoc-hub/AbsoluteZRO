@@ -1,7 +1,7 @@
 // OpenTimelineIO (JSON .otio): a ponte aberta entre editores. Zoom e foco vão em metadata.zro de cada clipe; efeitos
 // sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro.
 
-import { caminhoDa, efeitosExportados, fileUrl, segmentos } from './comum.js'
+import { caminhoDa, caminhoDoSom, efeitosExportados, fileUrl, segmentos } from './comum.js'
 import { fpsNumero } from '../tempo.js'
 import { PRODUTO } from '../produto.js'
 
@@ -48,7 +48,7 @@ export function paraOtio(p) {
         OTIO_SCHEMA: 'Clip.2',
         name: x.som.nome,
         source_range: range(0, x.quadros, rate),
-        media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(caminhoDa(x.som)), available_range: range(0, x.quadrosSom, rate), metadata: { zro: { sound_id: x.som.id } } } },
+        media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(caminhoDoSom(x.som)), available_range: range(0, x.quadrosSom, rate), metadata: { zro: { sound_id: x.som.id } } } },
         active_media_reference_key: 'DEFAULT_MEDIA',
         effects: [],
         markers: [],

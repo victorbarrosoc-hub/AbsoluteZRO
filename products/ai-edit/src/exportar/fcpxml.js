@@ -4,7 +4,7 @@
 
 import { duracao } from '../linha.js'
 import { racional } from '../tempo.js'
-import { caminhoDa, efeitosExportados, esc, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao } from './comum.js'
+import { caminhoDa, caminhoDoSom, efeitosExportados, esc, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao } from './comum.js'
 import { PRODUTO } from '../produto.js'
 
 export function paraFcpxml(p) {
@@ -19,7 +19,7 @@ export function paraFcpxml(p) {
     .join('\n')
   const sons = sonsUsados(p)
   const assetsSom = sons
-    .map((m, i) => `    <asset id="s${i + 1}" name="${esc(m.nome.replace(/\.[^.]+$/, ''))}" start="0s" duration="${racional(Math.max(1, Math.round((m.duracao * f.n) / f.d)), f)}" hasAudio="1" audioSources="1" audioChannels="${m.canais || 2}" audioRate="${m.taxa || 48000}">\n      <media-rep kind="original-media" src="${esc(fileUrl(caminhoDa(m)))}"/>\n    </asset>`)
+    .map((m, i) => `    <asset id="s${i + 1}" name="${esc(m.nome.replace(/\.[^.]+$/, ''))}" start="0s" duration="${racional(Math.max(1, Math.round((m.duracao * f.n) / f.d)), f)}" hasAudio="1" audioSources="1" audioChannels="${m.canais || 2}" audioRate="${m.taxa || 48000}">\n      <media-rep kind="original-media" src="${esc(fileUrl(caminhoDoSom(m)))}"/>\n    </asset>`)
     .join('\n')
   const refSom = new Map(sons.map((m, i) => [m.id, `s${i + 1}`]))
   const efeitos = efeitosExportados(p)
