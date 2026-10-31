@@ -10,6 +10,9 @@ test('linkDoHash: #drive (pasta), #arquivo (abrir) e #baixar, só com id do Driv
   assert.deepEqual(linkDoHash('#drive/1AbC_d-9'), { tipo: 'pasta', id: '1AbC_d-9' })
   assert.deepEqual(linkDoHash('#arquivo/1AbC_d-9'), { tipo: 'abrir', id: '1AbC_d-9' })
   assert.deepEqual(linkDoHash('#baixar/1AbC_d-9'), { tipo: 'baixar', id: '1AbC_d-9' })
+  // "Escolher do Drive" do app de computador (Drive híbrido): o id é o da conta Google no site.
+  assert.deepEqual(linkDoHash('#escolher/Ab_c-9'), { tipo: 'escolher', id: 'Ab_c-9' })
+  for (const ruim of ['#escolher', '#escolher/', '#escolher/a/b', '#escolher/a b', '#Escolher/x']) assert.equal(linkDoHash(ruim), null)
   const ruins = ['', '#drive', '#drive/', '#drive/a/b', '#drive/a b', '#drive/x?y', '#referencias', '#arquivo', '#arquivo/', '#baixar/a/b', '#baixar/a b', '#baixar/x?y', '#Baixar/x', '#abrir/x', 'baixar/x', '#baixar/' + 'a'.repeat(201), null, undefined]
   for (const ruim of ruins) assert.equal(linkDoHash(ruim), null)
 })

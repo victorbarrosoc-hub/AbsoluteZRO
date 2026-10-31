@@ -4,12 +4,15 @@
 //                               compartilhado ou Compartilhados comigo).
 //   /app/#arquivo/<id>          abre a pasta do arquivo (o primeiro pai) e o arquivo na prévia.
 //   /app/#baixar/<id>           o mesmo, e aperta o Baixar da prévia (arquivo grande pede confirmação, como sempre).
+//   /app/#escolher/<id da conta> "Escolher do Drive" do app de computador (modo Arquivos escolhidos): usa aquele Drive
+//                               da conta, abre Liberados e o Google Picker. O que for escolhido fica liberado também
+//                               para o computador (o mesmo projeto Google). O id é o da conta Google no site, não do Drive.
 // Sem dependência do navegador: os testes rodam em Node.
 
-const HASH = /^#(drive|arquivo|baixar)\/([A-Za-z0-9_-]{1,200})$/
-const TIPOS = { drive: 'pasta', arquivo: 'abrir', baixar: 'baixar' }
+const HASH = /^#(drive|arquivo|baixar|escolher)\/([A-Za-z0-9_-]{1,200})$/
+const TIPOS = { drive: 'pasta', arquivo: 'abrir', baixar: 'baixar', escolher: 'escolher' }
 
-/** O link em "#drive/<id>", "#arquivo/<id>" ou "#baixar/<id>": { tipo: 'pasta'|'abrir'|'baixar', id } (null para o resto). */
+/** O link em "#drive/<id>", "#arquivo/<id>", "#baixar/<id>" ou "#escolher/<conta>": { tipo, id } (null para o resto). */
 export function linkDoHash(hash) {
   const m = HASH.exec(String(hash || ''))
   return m ? { tipo: TIPOS[m[1]], id: m[2] } : null

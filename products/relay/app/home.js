@@ -208,7 +208,7 @@ export const FAMILIA = [
   { nome: 'Maestro', img: 'marca/familia/maestro.svg', href: 'https://maestro.absolutezro.com', uso: 'Versões da entrega' },
   { nome: 'SOBEDESCE', img: 'marca/familia/sobedesce.svg', href: 'https://sobedesce.vercel.app', uso: 'Converter do Drive' },
   { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.vercel.app', uso: 'Pronto para editar' },
-  { nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', href: 'https://tpeasy.vercel.app', uso: 'Gravação para a rede' },
+  { nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', href: 'https://tpeasy.absolutezro.com', uso: 'Gravação para a rede' },
 ]
 const orbita = $('[data-familia]')
 if (orbita)

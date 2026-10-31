@@ -18,6 +18,11 @@ export const PAGINA_FECHADO = '/em-desenvolvimento.html'
 /** O estado local: 'closed' (padrão) ou 'released' (RELEASE=released no ambiente). */
 export const release = () => (String(process.env.RELEASE || '').trim() === 'released' ? 'released' : 'closed')
 export const fechado = () => release() === 'closed'
+/**
+ * O app de computador aberto? Só com o site aberto e RELEASE_DESKTOP=released (decisão do titular, 31/10/2026: a web
+ * abre antes, "não faz a versão de computador ainda"). Fechado: sem instalador, sem /baixar para o Release.
+ */
+export const desktopAberto = () => !fechado() && String(process.env.RELEASE_DESKTOP || '').trim() === 'released'
 
 /** O que o HUB disse sobre este produto para esta conta (claim zro_release), ou null quando não disse. */
 export function estadoDaClaim(zroRelease) {

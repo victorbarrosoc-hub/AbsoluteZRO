@@ -190,6 +190,11 @@ Variáveis na Vercel (projeto `synquei`, Production):
 
 No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 
+**Onde fica a conta.** No computador (e na janela larga), no pé da barra lateral e em Ajustes. No celular a barra lateral
+some: a conta fica no canto do Início, antes do Set e da Z (`atalhoConta` em `app/js/conta.js`): **Entrar** para quem
+está fora e a foto de quem entrou, que abre Ajustes (nome, e-mail e **Sair**). Sem login neste lugar (offline, arquivo,
+app de computador antigo ou site sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`), nada aparece.
+
 Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, criar conta (`prompt=create`), Synquei fora de `zro_products` (sem acesso) e liberado depois, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site; perfil único (foto, mudança na conta aparece na abertura seguinte, refresh que roda, Absolute ZRO fora do ar, acesso removido, cofre cifrado, sair revoga). `tests/conta-ui.test.mjs`: o que a parte de conta do app mostra em cada caso (foto ou iniciais, Editar na conta Absolute ZRO).
 
 ## Rodar local

@@ -4,6 +4,7 @@
 // copia pasta). O mesmo fluxo do celular (web/public/app/lib/copiar.js).
 import { FOLDER_MIME, SHORTCUT_MIME, toDriveItem } from './drive.js'
 import { SobeDesceError, classifyError } from './errors.js'
+import { MARCA_PASTA } from './modo-drive.js'
 
 export const MAX_COPY_FILES = 5000
 const PARALLEL = 3
@@ -165,7 +166,8 @@ export async function copiarPlano(drive, plan, dest, { signal, onProgress, novas
   const made = new Map() // id da pasta de origem → id da pasta nova
   // `novas`: o que foi criado no Drive da conta (DriveItem com relPath/relDir), preenchido aos poucos e válido mesmo
   // se a cópia parar no meio. O "Também baixar" baixa daqui, da cópia.
-  const mkdir = async (name, parent) => (await drive.api('POST', 'files', { query: { fields: 'id' }, body: { name, mimeType: FOLDER_MIME, parents: [parent] }, signal, retries: 2 })).id
+  // Com a marca do SOBEDESCE (src/google/modo-drive.js): no modo Arquivos escolhidos, a cópia aparece inteira.
+  const mkdir = async (name, parent) => (await drive.api('POST', 'files', { query: { fields: 'id' }, body: { name, mimeType: FOLDER_MIME, parents: [parent], appProperties: { ...MARCA_PASTA } }, signal, retries: 2 })).id
   try {
     if (plan.root.folder) {
       s.newFolderId = await mkdir(plan.root.name, dest.id)

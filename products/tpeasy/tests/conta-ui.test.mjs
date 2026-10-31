@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
-globalThis.location = { protocol: 'https:', hostname: 'tpeasy.vercel.app', pathname: '/app/', search: '', hash: '#ajustes' }
+globalThis.location = { protocol: 'https:', hostname: 'tpeasy.absolutezro.com', pathname: '/app/', search: '', hash: '#ajustes' }
 globalThis.addEventListener = () => {}
 const Zro = await import('../app/js/zro.js')
 
@@ -36,4 +36,24 @@ test('Ajustes: "Editar na conta Absolute ZRO" abre fora do app e some o nome pr�
   assert.match(views, /href="\$\{esc\(Zro\.linkConta\(p\)\)\}" target="_blank" rel="noopener">Editar na conta Absolute ZRO<\/a>/)
   assert.match(views, /Zro\.avatarHtml\(p\)/)
   assert.match(views, /\$\("#setName"\)\.hidden = Zro\.zro\.estado === "dentro"/)
+})
+
+// O celular não achava a conta (só existia em Ajustes): agora ela fica ao lado do título de Roteiros.
+test('topo de Roteiros: "Entrar" para quem está fora, a foto de quem entrou (abre Ajustes) e nada sem saber da conta', () => {
+  assert.equal(Zro.atalhoContaHtml({ estado: '?', pessoa: null }), '', 'sem as funções ou sem configuração: nenhum botão que não funciona')
+  const fora = Zro.atalhoContaHtml({ estado: 'fora', pessoa: null })
+  assert.ok(fora.includes('href="/api/zro/entrar?volta=%2Fapp%2F"'), 'volta para Roteiros já logado')
+  assert.match(fora, /Entrar<\/a>$/)
+  const dentro = Zro.atalhoContaHtml({ estado: 'dentro', pessoa: { ...LIA, foto: FOTO } })
+  assert.match(dentro, /data-go="ajustes"/)
+  assert.match(dentro, /aria-label="Conta: Lia Produtora"/)
+  assert.ok(dentro.includes(`<img src="${FOTO}"`))
+  assert.ok(!Zro.atalhoContaHtml({ estado: 'dentro', pessoa: { nome: '<b>x</b>', email: 'a@b.c' } }).includes('<b>x'), 'nome escapado')
+})
+
+test('Roteiros tem o lugar da conta e ele redesenha junto com Ajustes', async () => {
+  const html = await readFile(new URL('../app/index.html', import.meta.url), 'utf8')
+  assert.match(html, /<div class="conta-topo" id="contaTopo"/)
+  const views = await readFile(new URL('../app/js/views.js', import.meta.url), 'utf8')
+  assert.match(views, /renderContaTopo\(\);\n  renderBaloes\(\);/)
 })

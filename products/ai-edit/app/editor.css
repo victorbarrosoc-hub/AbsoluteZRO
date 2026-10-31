@@ -1437,7 +1437,7 @@ select {
 .linha-conteudo {
   position: relative;
   height: 100%;
-  min-height: 168px;
+  min-height: 200px;
   cursor: text;
 }
 .regua,
@@ -1469,13 +1469,44 @@ select {
   height: 40px;
   width: 100%;
 }
-.trilha-l {
+.trilha-fx {
   top: 128px;
+  height: 26px;
+}
+.trilha-l {
+  top: 160px;
   height: 18px;
 }
 .trilha-z {
-  top: 150px;
+  top: 182px;
   height: 8px;
+}
+/* efeito sonoro: pílula na faixa FX (cor só na forma, o nome em texto neutro) */
+.efeito {
+  position: absolute;
+  top: 2px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--cor-verde, #7fd8a6) 34%, var(--surface));
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grab;
+}
+.efeito.selecionado {
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.25),
+    0 0 0 2px var(--produto);
+}
+.efeito.arrastando {
+  cursor: grabbing;
+  opacity: 0.85;
+  z-index: 3;
 }
 .clipe {
   position: absolute;
@@ -2227,9 +2258,20 @@ select {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.insp-clipe {
+.insp-clipe,
+.insp-efeito {
   display: grid;
   gap: 16px;
+}
+.insp-icone {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--cor-verde);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 .insp-cabeca {
   display: flex;
@@ -2289,6 +2331,195 @@ select {
 }
 #inspRedefinir {
   justify-self: start;
+}
+
+/* ───────── velocidade (speed ramp) no Inspector: a curva em log, 100% marcado (onde o som toca) ───────── */
+.insp-velocidade {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.vel-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+.vel-resumo {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.vel-curva {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: var(--surface-2, rgb(255 255 255 / 0.04));
+  box-shadow: inset 0 0 0 1px var(--line);
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+.vel-grade {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.vel-cem {
+  stroke: var(--cor-verde);
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+.vel-rotulo {
+  font-size: 8px;
+  font-weight: 600;
+  fill: var(--text-faint);
+}
+.vel-area {
+  fill: color-mix(in srgb, var(--cor-laranja) 14%, transparent);
+}
+.vel-linha {
+  fill: none;
+  stroke: var(--cor-laranja);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.vel-ponto {
+  fill: var(--text-strong);
+  stroke: var(--cor-laranja);
+  stroke-width: 2;
+  cursor: grab;
+  transition: r 0.2s var(--mola);
+}
+.vel-ponto:hover,
+.vel-ponto:focus-visible {
+  r: 8;
+  outline: none;
+}
+.vel-ponto:active {
+  cursor: grabbing;
+}
+.vel-curvas,
+.vel-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insp-velocidade button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    transform 0.25s var(--mola);
+}
+.insp-velocidade button.ficha:active {
+  transform: scale(0.96);
+}
+.insp-velocidade button.ficha[aria-pressed='true'] {
+  color: var(--text-strong);
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-laranja);
+}
+.insp-velocidade button.ficha:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vel-acoes button.ficha {
+  color: var(--text-strong);
+}
+/* estabilizar: ligar, suavidade e recorte; o resumo é o que foi medido */
+.insp-estab {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft, rgb(255 255 255 / 0.08));
+}
+.insp-estab button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-strong);
+}
+.insp-estab button.ficha[aria-pressed='true'] {
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-verde);
+}
+.insp-estab button.ficha:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.estab-resumo {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+.estab-campo {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.estab-campo input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--cor-verde);
+}
+.estab-campo input:disabled {
+  opacity: 0.4;
+}
+.estab-campo output {
+  font-variant-numeric: tabular-nums;
+}
+
+/* entre quadros: fluxo óptico, mistura ou quadro (um só aceso) */
+.vel-modo {
+  display: grid;
+  gap: 6px;
+}
+.vel-modo-rotulo {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.vel-modos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insp-velocidade .vel-modos button.ficha[aria-checked='true'] {
+  color: var(--text-strong);
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-laranja);
+}
+.vel-dica {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* o selo de velocidade no clipe da linha */
+.clipe-vel {
+  position: absolute;
+  left: 8px;
+  bottom: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  color: #000;
+  background: var(--cor-laranja);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.clipe-vel[hidden] {
+  display: none;
 }
 .historico {
   list-style: none;
@@ -2495,4 +2726,203 @@ html:not([data-conta]) body {
   --zro-set-raio: 22px;
   --zro-set-raio-controle: 999px;
   --zro-set-fonte: var(--fonte);
+}
+
+/* Sonoplasta: momentos da linha, sugestões e o banco de sons livres (aba Sons) */
+.sons-busca input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.sons-momentos,
+.sons-sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sons-sugestoes[hidden],
+.sons-momentos:empty,
+.sons-sugestoes:empty {
+  display: none;
+}
+.sons-momento,
+.sons-sugestao {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-momento[data-tipo='corte']::before,
+.sons-momento[data-tipo='marcador']::before {
+  content: '';
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--cor-verde);
+}
+.sons-momento[data-tipo='marcador']::before {
+  background: var(--cor-amarelo);
+}
+.sons-momento[aria-pressed='true'] {
+  border-color: var(--produto);
+  box-shadow: 0 0 0 1px var(--produto);
+}
+.sons-lista {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.som-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 10px;
+}
+.som-item:hover {
+  background: var(--hover);
+}
+.som-info {
+  display: grid;
+  min-width: 0;
+}
+.som-info strong,
+.som-info .apoio {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.som-info strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 13px;
+}
+.som-info .apoio {
+  font-size: 12px;
+}
+.som-colocar {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+.sons-estado {
+  padding: 8px 4px;
+  font-size: 13px;
+}
+.sons-rodape {
+  font-size: 12px;
+}
+/* De onde vêm os sons: os livres ou o banco da pessoa no Drive */
+.sons-fonte {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.sons-fonte button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-fonte button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text-strong);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+.sons-banco-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+.sons-banco-link input {
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.sons-banco-link[hidden],
+.sons-pasta[hidden],
+.sons-pastas[hidden] {
+  display: none;
+}
+.sons-pasta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  font-size: 12.5px;
+}
+.sons-pasta button {
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.sons-pasta button:hover {
+  background: var(--hover);
+}
+.sons-pasta button[aria-current='true'] {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.sons-pasta .sep {
+  color: var(--text-faint);
+}
+.sons-pasta .sons-trocar {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+.sons-pastas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sons-pastas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sons-pastas button::before {
+  content: '';
+  width: 10px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--text-faint);
+  opacity: 0.6;
 }

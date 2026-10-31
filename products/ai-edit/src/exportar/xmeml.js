@@ -1,10 +1,12 @@
 // XML do Final Cut 7 (xmeml v4): Premiere Pro e DaVinci Resolve importam. V1 com os clipes e A1/A2 com o som de cada
-// um, ligados; zoom vai no efeito Movimento (Basic Motion: escala e centro); a cor vira o rótulo do Premiere e a
-// etiqueta, o comentário do clipe.
+// um, ligados; efeitos sonoros em pares de faixas depois (A3/A4, A5/A6… sem sobreposição em cada par); zoom vai no
+// efeito Movimento (Basic Motion: escala e centro); a cor vira o rótulo do Premiere e a etiqueta, o comentário do clipe.
+// Velocidade: Time Remap constante em cada degrau (o Premiere não lê rampa suave por XML, só velocidade constante);
+// fora de 100% o degrau vai sem som (a regra do AEON).
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { caminhoDa, esc, pathUrl, segmentos, transformacao } from './comum.js'
+import { caminhoDa, caminhoDoSom, efeitosExportados, esc, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
 import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
@@ -39,6 +41,17 @@ export function paraXmeml(p) {
       out += efeito(ind, 'Opacity', 'opacity', 'motion', 'motion', 'video', [`<parameter authoringApp="PremierePro">\n  <parameterid>opacity</parameterid>\n  <name>opacity</name>\n  <valuemin>0</valuemin>\n  <valuemax>100</valuemax>\n  <value>${Math.round(s.ajustes.opacidade * 1000) / 10}</value>\n</parameter>`])
     return out
   }
+  // velocidade constante do degrau (Time Remap, como o Premiere grava a Velocidade/Duração)
+  const remap = (s, ind, midia) =>
+    s.v === 1
+      ? ''
+      : efeito(ind, 'Time Remap', 'timeremap', 'motion', 'motion', midia, [
+          `<parameter authoringApp="PremierePro">\n  <parameterid>variablespeed</parameterid>\n  <name>variablespeed</name>\n  <valuemin>0</valuemin>\n  <valuemax>1</valuemax>\n  <value>0</value>\n</parameter>`,
+          `<parameter authoringApp="PremierePro">\n  <parameterid>speed</parameterid>\n  <name>speed</name>\n  <valuemin>-100000</valuemin>\n  <valuemax>100000</valuemax>\n  <value>${Math.round(s.v * 100000) / 1000}</value>\n</parameter>`,
+          `<parameter authoringApp="PremierePro">\n  <parameterid>reverse</parameterid>\n  <name>reverse</name>\n  <value>FALSE</value>\n</parameter>`,
+          // câmera lenta com mistura ou fluxo: o Premiere liga a Mistura de quadros (o fluxo óptico dele não vem pelo XML)
+          `<parameter authoringApp="PremierePro">\n  <parameterid>frameblending</parameterid>\n  <name>frameblending</name>\n  <value>${s.v < 1 && s.modo !== 'quadro' ? 'TRUE' : 'FALSE'}</value>\n</parameter>`,
+        ])
   // volume no efeito Níveis de áudio (ganho linear)
   const niveis = (s, ind) =>
     s.ajustes.volume === 0 ? '' : efeito(ind, 'Audio Levels', 'audiolevels', 'audiolevels', 'audiolevels', 'audio', [`<parameter authoringApp="PremierePro">\n  <parameterid>level</parameterid>\n  <name>Level</name>\n  <valuemin>0.00001</valuemin>\n  <valuemax>31.6228</valuemax>\n  <value>${Math.round(ganho(s.ajustes.volume) * 10000) / 10000}</value>\n</parameter>`])
@@ -47,7 +60,7 @@ export function paraXmeml(p) {
     const id = `clipitem-${tipo}${faixa}-${k + 1}`
     const lig = []
     if (m.temVideo) lig.push(['video', 1])
-    if (m.temAudio) lig.push(['audio', 1], ['audio', 2])
+    if (m.temAudio && s.som) lig.push(['audio', 1], ['audio', 2])
     const links = lig.length > 1 ? lig.map(([t, f]) => `\n${ind}  <link>\n${ind}    <linkclipref>clipitem-${t === 'video' ? 'v' : 'a'}${f}-${k + 1}</linkclipref>\n${ind}    <mediatype>${t}</mediatype>\n${ind}    <trackindex>${f}</trackindex>\n${ind}    <clipindex>${k + 1}</clipindex>${t === 'audio' ? `\n${ind}    <groupindex>1</groupindex>` : ''}\n${ind}  </link>`).join('') : ''
     return `${ind}<clipitem id="${id}">
 ${ind}  <masterclipid>masterclip-${p.midias.indexOf(m) + 1}</masterclipid>
@@ -56,17 +69,50 @@ ${ind}  <enabled>TRUE</enabled>
 ${ind}  <duration>${m.quadros}</duration>
 ${rate(ind + '  ')}
 ${ind}  <start>${s.linha}</start>
-${ind}  <end>${s.linha + s.fim - s.ini}</end>
+${ind}  <end>${s.linha + s.saida}</end>
 ${ind}  <in>${s.ini}</in>
 ${ind}  <out>${s.fim}</out>
-${fileXml(m, ind + '  ')}${s.cor ? `\n${ind}  <labels>\n${ind}    <label2>${corPorId(s.cor)?.premiere || 'Iris'}</label2>\n${ind}  </labels>` : ''}${s.etiqueta ? `\n${ind}  <comments>\n${ind}    <mastercomment1>${esc(s.etiqueta)}</mastercomment1>\n${ind}  </comments>` : ''}${tipo === 'a' ? `\n${ind}  <sourcetrack>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${faixa}</trackindex>\n${ind}  </sourcetrack>${niveis(s, ind + '  ')}` : movimento(s, ind + '  ')}${links}
+${fileXml(m, ind + '  ')}${s.cor ? `\n${ind}  <labels>\n${ind}    <label2>${corPorId(s.cor)?.premiere || 'Iris'}</label2>\n${ind}  </labels>` : ''}${s.etiqueta ? `\n${ind}  <comments>\n${ind}    <mastercomment1>${esc(s.etiqueta)}</mastercomment1>\n${ind}  </comments>` : ''}${tipo === 'a' ? `\n${ind}  <sourcetrack>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${faixa}</trackindex>\n${ind}  </sourcetrack>${remap(s, ind + '  ', 'audio')}${niveis(s, ind + '  ')}` : remap(s, ind + '  ', 'video') + movimento(s, ind + '  ')}${links}
 ${ind}</clipitem>`
   }
   const comVideo = segs.map((s, k) => ({ s, k })).filter(({ s }) => p.midias.find((m) => m.id === s.midia)?.temVideo)
-  const comAudio = segs.map((s, k) => ({ s, k })).filter(({ s }) => p.midias.find((m) => m.id === s.midia)?.temAudio)
+  const comAudio = segs.map((s, k) => ({ s, k })).filter(({ s }) => s.som && p.midias.find((m) => m.id === s.midia)?.temAudio)
   const trilha = (itens, ind, extra = '') => `${ind}<track>\n${itens.join('\n')}\n${ind}  <enabled>TRUE</enabled>\n${ind}  <locked>FALSE</locked>${extra}\n${ind}</track>`
   const v1 = trilha(comVideo.map(({ s, k }) => item(s, k, 'v', 1, I + '    ')), I + '  ')
   const a = [1, 2].map((f) => trilha(comAudio.map(({ s, k }) => item(s, k, 'a', f, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${f}</outputchannelindex>`)).join('\n')
+  // efeitos: um arquivo por som (só áudio), o par de faixas da faixa de efeitos, esquerda e direita ligadas
+  const sons = sonsUsados(p)
+  const arquivoSom = (m, ind) => {
+    const id = `file-s${sons.indexOf(m) + 1}`
+    if (arquivos.has(id)) return `${ind}<file id="${id}"/>`
+    arquivos.add(id)
+    const quadros = Math.max(1, Math.round((m.duracao * p.fps.n) / p.fps.d))
+    return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(m.nome)}</name>`, `${ind}  <pathurl>${esc(pathUrl(caminhoDoSom(m)))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${quadros}</duration>`, `${ind}  <media>`, `${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>${m.taxa || 48000}</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>${m.canais || 2}</channelcount>\n${ind}    </audio>`, `${ind}  </media>`, `${ind}</file>`].join('\n')
+  }
+  const efeitos = efeitosExportados(p)
+  const itemEfeito = (x, k, lado, ind) => {
+    const links = [1, 2].map((l) => `\n${ind}  <link>\n${ind}    <linkclipref>clipitem-e${x.faixa + 1}${l === 1 ? 'L' : 'R'}-${k + 1}</linkclipref>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${3 + x.faixa * 2 + l - 1}</trackindex>\n${ind}    <clipindex>${k + 1}</clipindex>\n${ind}    <groupindex>1</groupindex>\n${ind}  </link>`).join('')
+    return `${ind}<clipitem id="clipitem-e${x.faixa + 1}${lado === 1 ? 'L' : 'R'}-${k + 1}">
+${ind}  <masterclipid>masterclip-s${sons.indexOf(x.som) + 1}</masterclipid>
+${ind}  <name>${esc(x.som.nome)}</name>
+${ind}  <enabled>TRUE</enabled>
+${ind}  <duration>${x.quadrosSom}</duration>
+${rate(ind + '  ')}
+${ind}  <start>${x.inicio}</start>
+${ind}  <end>${x.inicio + x.quadros}</end>
+${ind}  <in>0</in>
+${ind}  <out>${x.quadros}</out>
+${arquivoSom(x.som, ind + '  ')}
+${ind}  <sourcetrack>
+${ind}    <mediatype>audio</mediatype>
+${ind}    <trackindex>${lado}</trackindex>
+${ind}  </sourcetrack>${niveis({ ajustes: { volume: x.efeito.volume } }, ind + '  ')}${links}
+${ind}</clipitem>`
+  }
+  const nFaixas = efeitos.reduce((n, x) => Math.max(n, x.faixa + 1), 0)
+  const fx = Array.from({ length: nFaixas }, (_, f) =>
+    [1, 2].map((lado) => trilha(efeitos.map((x, k) => ({ x, k })).filter(({ x }) => x.faixa === f).map(({ x, k }) => itemEfeito(x, k, lado, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n'),
+  ).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
@@ -88,7 +134,7 @@ ${v1}
       </video>
       <audio>
         <numOutputChannels>2</numOutputChannels>
-${a}
+${a}${fx ? '\n' + fx : ''}
       </audio>
     </media>
 ${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment></comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}

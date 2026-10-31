@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -41,7 +41,7 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   dissolve por cima; com "reduzir movimento", troca seca. Falta: conferir no Safari do titular depois de publicar.
 - ✅ Página inicial no iPhone (29/10/2026, relato do titular): a cápsula do topo fica por cima de tudo, com faixa da cor
   da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
-  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0031). Falta: conferir num iPhone de verdade e regerar
+  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0034). Falta: conferir num iPhone de verdade e regerar
   a foto do app para computador quando o Relay entrar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
@@ -63,11 +63,28 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Carro do Freela com conta única: "Criar conta" cria a conta Absolute ZRO (`prompt=create`), o app não cria conta própria, e a área logada respeita `carro-do-freela` em `zro_products` (lista de convite segue aberta).
 - ✅ Synquei: conta pela Absolute ZRO ("Criar conta" com `prompt=create`) e aviso "ainda não tem acesso" quando `synquei` não está em `zro_products`; app, site e download continuam abertos.
 - ✅ SOBEDESCE: conta nova só pela Absolute ZRO (`prompt=create`), Google vira só porta das contas antigas e conexão do Drive, e o acesso segue `zro_products` (sem `sobedesce` = funções bloqueadas com aviso).
+- ✅ SOBEDESCE: trocar de conta no login (31/10/2026, pedido do titular). Ligar uma conta antiga caía na sessão aberta do
+  HUB, já ligada a outro SOBEDESCE (`zro_outra_conta`), sem saída. Agora: **Entrar nessa conta** (selo cifrado de 5 min
+  guardado no callback, preso à sessão; troca a sessão para a conta ligada àquela Absolute ZRO), **Usar outra conta**
+  (`prompt=login`, que o HUB passou a aceitar: mostra o login mesmo logado e encerra a sessão anterior ao entrar) em
+  `/entrar`, na tela "Agora sua conta é Absolute ZRO" (site e celular) e no erro; `/entrar` com a Absolute ZRO principal e
+  Google + e-mail e senha como secundários ([CONTAS §12](../products/sobedesce/docs/CONTAS.md)). ⬜ Conferir no
+  sobedesce.com e no absolutezro.com depois de publicar.
 - ✅ Um repositório para tudo ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): as cinco plataformas moram em `products/<app>` e publicam nos próprios projetos Vercel a partir daqui (Root Directory por pasta, build só quando a pasta muda). CI e releases de desktop na raiz, com tag por app e o release antigo como reserva.
 - ✅ Um Supabase para tudo: SOBEDESCE (schema `sobedesce`, papel `sobedesce_app`, cópia do Neon conferida tabela a tabela) e NOSSOM (`nossom_private` + Auth) migrados e conferidos. Bancos antigos intactos como reserva.
 - ✅ TPeasy com conta única: "Criar conta" abre o cadastro da Absolute ZRO (`prompt=create`), o código por e-mail do Supabase vale só para contas antigas e o Google saiu do app; sem `tpeasy` em `zro_products`, a conta mostra "ainda não tem acesso" (o teleprompter continua aberto).
 - ✅ Perfil único no Synquei e no TPeasy (27/10/2026): foto e nome da conta Absolute ZRO, relidos a cada abertura em `/oauth/userinfo` (refresh token cifrado só em `/api/zro`), e **Editar na conta Absolute ZRO** no lugar de editar nome no app. ⬜ Validar contra o HUB de verdade depois do deploy.
 - ✅ Synquei de computador com a conta Absolute ZRO (27/10/2026): a mesma tela do site (entrar, foto e nome na barra e em Ajustes, editar na conta, sair) com o cliente público `synquei-desktop` (navegador do sistema + 127.0.0.1, PKCE). ⬜ Validar num Mac/Windows de verdade contra o absolutezro.com.
+- ✅ TPeasy em tpeasy.absolutezro.com (31/10/2026): migração `0045` (catálogo e Abrir do HUB no subdomínio; retorno
+  novo no cliente `tpeasy-web`, o antigo continua), login do TPeasy aceitando os dois endereços (o `tpeasy.vercel.app`
+  segue valendo, sem redirecionar, porque os roteiros ficam presos ao endereço), OG, Downloads e menus da família na web.
+  Downloads do SOBEDESCE em `sobedesce.com`. Menus da família no Synquei e no SOBEDESCE de computador também, num
+  commit à parte (dispara os instaladores; publica com a autorização do titular).
+- ✅ Conta à vista no celular do TPeasy (31/10/2026): **Entrar** ao lado do título de Roteiros (antes só em Ajustes) e a
+  foto de quem entrou, que abre Ajustes (nome e Sair). Sem a configuração do login, nada aparece.
+- ✅ Conta à vista no celular do Synquei (31/10/2026): abaixo de 860 px a barra lateral (com a conta e Ajustes) sumia e
+  não havia como entrar; agora **Entrar** ou a foto de quem entrou ficam no canto do Início, antes do Set e da Z. Mora
+  em `products/synquei/app/**`, que também é o app de computador: vai no commit de computador.
 - ✅ Entrar e criar conta como conversa (27/10/2026): uma pergunta por vez (e-mail → senha; e-mail → nome → senha), o símbolo da marca como orbe (Absolute ZRO · ouvindo · conferindo · pronto, com ✓ em traço fino) e "Conectado. Abrindo seu HUB…"; vale para `/entrar`, `/criar-conta` e `/app/entrar`, funciona sem JavaScript. ✅ O orbe é o Z animado (27/10/2026).
 - 🟡 IA do ecossistema, o Z (27/10/2026): uma IA para todas as plataformas, conversas por plataforma reunidas no HUB, 1 crédito por resposta, `<zro-ia>` para as plataformas e o visual aprovado (anel e estrela cromados movidos por código, rastro e correntes). Falta: migrações 0016/0017 em produção, publicar, testar com a chave real e colocar o `<zro-ia>` em cada plataforma.
 - ✅ Balões de pendência no Synquei (web e computador), TPeasy e Carro do Freela (27/10/2026): a aba com algo esperando a pessoa mostra o número (99+ acima de 99, `aria-label` "N pendências", o que espera no `title`), ao vivo, e vira ponto no canto do ícone no menu recolhido e na barra do celular. Só conta o que a tela já pede (religar mídia, sincronizar, clipe para conferir, cartão esperando, versão nova; conta sem acesso; proposta, contrato a assinar, entrega a conferir, avaliação, pedido de aluguel).
@@ -230,7 +247,8 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
-- 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); falta build da imagem, homologação na GPU e audição cega (⛔ autorização de deploy e GPU).
+- ✅ NOSSOM em `nossom.absolutezro.com` (29/10/2026, ADR 0025): domínio no projeto Vercel, links e migração 0034. Falta aplicar a 0034 no banco, liberar o endereço no Supabase Auth e, depois do app de computador aceitar os dois endereços, redirecionar o antigo.
+- 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); no ar desde 29/10/2026 no endpoint RunPod `nossom-v2`, montado deste repositório (`products/nossom`); falta homologação na GPU e audição cega.
 - ✅ NOSSOM · vídeo de verdade (29/10/2026): vídeo até 2 GB lido no aparelho, só o som (FLAC) vai à GPU, botão Vídeo devolve o original com o som novo (até 1 GB).
 - ✅ NOSSOM · Legendas (29/10/2026): Whisper large-v3-turbo com tempo por palavra, SRT/VTT/TXT no navegador.
 - ✅ NOSSOM · Remixar (29/10/2026, pedido do titular): voz, bateria, baixo, guitarra e outros com faders, mudo, Só instrumental e Só acapella; as faixas somam o original.
@@ -280,6 +298,23 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   cadastrar o cliente no console e pôr `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET` no projeto Vercel, e o login no app de desktop. Primeiro
   Release do app no ar (build 8, 26/10/2026). Depois: tirar mídia do projeto (uma ou várias, com desfazer), AEON como
   editor completo (a IA é ajuda opcional) e homepage com motion no estilo do SOBEDESCE.
+- 🟡 AEON · faixa de efeitos sonoros (31/10/2026, pedido do titular, fase 1 da Sonoplasta): som do computador no
+  ponto, preso à imagem (corte, aparar e mover levam junto), arrastar com ímã, volume, tirar e desfazer; prévia e
+  vídeo final com o efeito misturado; FCPXML (conectado, função effects), xmeml (A3/A4…), OTIO (FX) e `CREDITOS.txt`.
+  Próximas fases: sugestões nos cortes e marcadores, banco da pessoa (Drive) e Openverse com licença comercial,
+  ElevenLabs pela conta da pessoa (Conexões do HUB, créditos dela), batida e abaixar sob a voz pelo NOSSOM; Epidemic e
+  Artlist dependem de contrato de parceria.
+- 🟡 Sonoplasta · fase 2a (31/10/2026): aba **Sons** no AEON com os momentos da linha (cortes e marcadores), busca
+  em português no banco de sons livres (Openverse pelo HUB, só CC0, CC BY e domínio público; Freesound e Wikimedia),
+  ouvir antes, colocar no momento com o volume do preset (`presets/sonoplasta.v1.json`) e o crédito automático; o
+  arquivo vai junto na entrega e desce de novo ao reabrir o projeto. HUB: `/api/v1/sons/*` (escopo `zro.sons`,
+  migration 0044). Falta: aplicar a 0044 e o cadastro do app no Openverse (limite).
+- 🟡 Sonoplasta · fase 2b (31/10/2026): **Meu banco** na aba Sons: a pessoa cola o link da pasta do Drive com os sons
+  dela, navega nas subpastas, busca pelo nome e coloca no momento; sem crédito (a licença é dela), o arquivo vai na
+  entrega e desce de novo ao reabrir. HUB: `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` pela conexão do Drive no
+  SOBEDESCE (`drive.listar` e `drive.token`, o token do Drive fica só no HUB); só leitura no Drive. Sem migration nova
+  (vale o `zro.sons` da 0044). Falta: validar com um Drive real em produção. Próximo: fase 3 (ElevenLabs pela conta da
+  pessoa).
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron
@@ -288,6 +323,40 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   fecha e abre já atualizado (Mac e Windows, no molde do SOBEDESCE). Site: sem corte seco entre as fotos (as cenas se
   dissolvem no fundo), a salina sem texto e o fecho com a estrela inteira. Falta conferir a troca num Mac e num
   Windows de verdade com o próximo Release.
+- ✅ AEON, página inicial com teste ao vivo (31/10/2026, ideia do titular a partir da página do Hélice Ramps): o editor na
+  própria página com um vídeo de exemplo (Cortes com limite e aprovar/desfazer, Legenda Destaque/Pop/Limpa, Zoom
+  112%/122%, Entrega com o que cada formato leva), "De editor para editor", "Por dentro" com as telas do app que trocam
+  sozinhas, "Para quem é" com o resto do ecossistema e Perguntas. Tudo âncora: o AEON segue fechado ao público.
+- ✅ AEON, velocidade (speed ramp, 31/10/2026, pedido do titular a partir do Hélice Ramps): curva por clipe de 10% a
+  800% no Inspector (arrastar, dois cliques criam ponto, teclado), 11 curvas prontas (Montagem, Herói, Bala, Vale,
+  Pico, Flash de entrada e de saída, Arrancada, Pulso duplo, Câmera lenta, Acelerado), Manter duração, Aplicar em
+  todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
+  degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
+  na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
+- ✅ AEON **no ar na web** (31/10/2026, titular: "pode subir no web, não faz a versão de computador ainda"): migration
+  `0043_aeon_web.sql` (gate `released` com web, api e sso; desktop e download fechados) e `RELEASE=released` no projeto
+  `aeon`. A página aberta sai do mesmo `index.html` (Abrir o AEON no navegador, Mac e Windows "Em breve", Z "No AEON",
+  "Quanto custa?"); com `RELEASE_DESKTOP=released` ela troca para "Baixar o AEON". Família no subdomínio com o Relay.
+  Falta: o app de computador (build novo, migration de desktop e download, `RELEASE_DESKTOP`), em
+  [lancamento-aeon.md](operations/lancamento-aeon.md).
+- ✅ AEON, câmera lenta sem travar (31/10/2026): a prévia e o render seguem a curva contínua (os degraus inteiros ficam
+  para o Premiere, o Final Cut e o EDL) e pegam o instante exato da origem, então uma fonte de 60 qps entrega quadro
+  real até 40% numa linha de 24 qps; abaixo disso, **fluxo óptico** (RIFE 4.25, MIT, na máquina, montado em resolução
+  cheia, com corte de cena e confiança por pixel), mistura ou quadro, por clipe, e o modo vai para o Final Cut
+  (frameSampling) e o Premiere (Mistura de quadros). Demonstrações com takes de 50 e 60 qps de verdade (Coverr). Falta:
+  fluxo na placa de vídeo (esperar o ONNX Runtime com a correção da convolução de 15 canais e conferir contra a CPU) e
+  hospedar o modelo numa conta própria.
+- 🟡 AEON, estabilização (31/10/2026): **por imagem** pronta (rastreio de cantos, Lucas-Kanade piramidal, RANSAC de
+  similaridade, suavização gaussiana e zoom fixo que esconde a borda; análise num worker, guardada na mídia; prévia e
+  render com a mesma correção). **Giroscópio** (GoPro, Sony, DJI, Insta360, como o Gyroflow e o DaVinci) é o próximo
+  passo: telemetry-parser (MIT/Apache) em WASM, perfis de lente do Gyroflow (CC0), correção de giro e de lente numa
+  WebGL comum à prévia e ao render; antes, revisão de patentes (lancamento-aeon.md).
+- ✅ AEON, footage de verdade na página e nos testes (31/10/2026, pedido do titular): seis takes de câmera do Mixkit
+  (licença livre comercial, sem pessoas reconhecíveis nem marca; origem em `marca/home/cenas/LEIAME.md`). A Velocidade
+  do Teste ao vivo troca de take (onda, estrada, mar, cidade); "Edite além do tempo." virou uma montagem de cinco takes
+  editada e renderizada no próprio AEON (`scripts/montagem.mjs`), com a linha embaixo andando junto e a velocidade de
+  cada quadro; "Por dentro" ganhou a tela da Velocidade. O mesmo roteiro e um teste novo conferem o render quadro a
+  quadro com material real.
 - 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
   ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
   `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,
@@ -1117,6 +1186,16 @@ do card... não consigo localizar o job que quero achar".
 - 🔶 No ramo `sobedesce-web-transferencias`, esperando a aprovação do titular pela prévia: tela Transferências no app
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
+
+## SOBEDESCE: Drive híbrido (31/10/2026)
+
+- 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
+- 🔶 App de computador 0.3.0 no ramo `sobedesce-desktop-modo` (liberado pelo titular em 31/10/2026): diz ao site que
+  entende o modo (`x-sobedesce-capacidades: drive-arquivos`) e só ele recebe o token `drive.file`; o 0.2.0 segue com 403. Mesma marca e regra do celular: pastas novas marcadas, Comparar (e Looks do Relay) e tamanho só nas pastas do
+  SOBEDESCE ("Precisa de acesso total" nas outras), Copiar de um link desligado, lugar Liberados, faixa e linha do modo
+  em Ajustes, "Escolher do Drive" pelo navegador (`/app/#escolher/<conta>`), celular pelo Wi-Fi com o modo. Relay
+  embutido ganha o Picker. App do celular 2.8.61 (`sobedesce-app-v76`). Falta: merge na main (gera o instalador) e
+  conferir o Picker num Drive de verdade.
 
 ## Fase 6 — Escala
 

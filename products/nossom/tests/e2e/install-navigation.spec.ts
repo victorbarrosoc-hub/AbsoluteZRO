@@ -68,7 +68,7 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     'content',
-    /^https:\/\/nossom-teal\.vercel\.app\/opengraph-image/,
+    /^https:\/\/nossom\.absolutezro\.com\/opengraph-image/,
   );
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     'content',

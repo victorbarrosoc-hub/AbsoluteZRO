@@ -571,6 +571,77 @@ paths:
           '429': { $ref: '#/components/responses/Error' },
           '503': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/sons/buscar:
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: Efeitos sonoros livres para uso comercial (Openverse, só CC0, CC BY e domínio público; Freesound e Wikimedia), com autor e licença para os créditos
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 80 } }
+        - { name: pagina, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 10 } }
+      responses:
+        {
+          '200': { description: '{ sons: [{ id, origem, titulo, autor, licenca, licencaUrl, pagina, fonte, duracao, formato, bytes }], pagina, paginas }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/openverse/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: 'Id do som no Openverse' }
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: O arquivo do som (stream), só de fontes conhecidas por https e até 25 MB; título, autor e licença nos cabeçalhos X-Zro-Som-*
+      responses:
+        {
+          '200': { description: 'Áudio (audio/*)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/banco:
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: Uma página da pasta do Drive com os sons da própria pessoa (pelo SOBEDESCE, só leitura); subpastas e só áudios, com busca por nome dentro da pasta
+      parameters:
+        - { name: pasta, in: query, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{10,200}$' }, description: 'Id da pasta no Drive' }
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 80 } }
+        - { name: pagina, in: query, required: false, schema: { type: string, maxLength: 2000 }, description: 'O `proxima` da página anterior' }
+        - { name: conta, in: query, required: false, schema: { type: string, maxLength: 64 }, description: 'A conta Google no SOBEDESCE' }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pasta: { id, nome }, conta, pastas: [{ id, nome }], sons: [{ id, origem: banco, titulo, nome, formato, bytes, conta }], proxima }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/banco/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{10,200}$' }, description: 'Id do arquivo no Drive' }
+      - { name: conta, in: query, required: false, schema: { type: string, maxLength: 64 } }
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: O arquivo de um som do banco da pessoa (stream), conferido como áudio e até 25 MB; o token do Drive nunca sai do HUB
+      responses:
+        {
+          '200': { description: 'Áudio (audio/*), com X-Zro-Som-Id e X-Zro-Som-Titulo' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/agenda/eventos:
     get:
       security: [{ appToken: [zro.agenda] }]

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { DOWNLOADS, downloadsLiberados, hasDesktopInstaller } from '../../apps/hub-web/lib/downloads'
 
 const OFFICIAL = new Set([
-  'sobedesce.vercel.app',
+  'sobedesce.com',
   'synquei.vercel.app',
-  'nossom-teal.vercel.app',
-  'tpeasy.vercel.app',
+  'nossom.absolutezro.com',
+  'tpeasy.absolutezro.com',
   'carro.absolutezro.com',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
@@ -31,7 +31,7 @@ describe('downloads', () => {
         expect(u.hostname, o.href).not.toMatch(/github(usercontent)?\.com$/)
       }
       for (const cmd of Object.values(d.terminal ?? {}))
-        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei|nossom-teal)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
+        expect(cmd).toMatch(/https:\/\/(sobedesce\.com|synquei\.vercel\.app|(aeon|nossom)\.absolutezro\.com)\/instalar\.(sh|ps1)/)
     }
   })
 

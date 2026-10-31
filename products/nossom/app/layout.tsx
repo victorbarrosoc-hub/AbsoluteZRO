@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BrandIntro from '@/components/brand-intro';
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nossom-teal.vercel.app'),
+  metadataBase: new URL('https://nossom.absolutezro.com'),
   title: { default: 'NOSSOM — O som em outra escala.', template: '%s · NOSSOM' },
   description:
     'Do áudio gravado ao áudio pronto para entregar. Trate, mixe e finalize seu som em um estúdio que acompanha o seu fluxo.',
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: 'NOSSOM — O som em outra escala.',
     description:
       'Crie, trate e entregue seu áudio. Seu estúdio com inteligência artificial, em um só lugar.',
-    url: 'https://nossom-teal.vercel.app',
+    url: 'https://nossom.absolutezro.com',
   },
   twitter: {
     card: 'summary_large_image',

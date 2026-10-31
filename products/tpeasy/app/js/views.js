@@ -304,7 +304,14 @@ export function renderAccount() {
   $("#soundsSwitch").setAttribute("aria-checked", String(!!D.ui.sounds));
   $("#installState").textContent = isStandalone() ? "Instalado" : "";
   $("#appVersion").textContent = `versão ${VERSION}`;
+  renderContaTopo();
   renderBaloes();
+}
+/** "Entrar" ou a foto de quem entrou, ao lado do título de Roteiros (app/js/zro.js). */
+export function renderContaTopo() {
+  const el = $("#contaTopo");
+  const html = Zro.atalhoContaHtml();
+  if (el && el.innerHTML !== html) el.innerHTML = html;
 }
 // Balões da barra de abas (app/js/pendencias.js): redesenham junto com a conta (zro, auth, sync)
 export function renderBaloes() {

@@ -74,8 +74,9 @@ Teste com PostgreSQL real em `tests/quota-postgres.integration.ts` (`npm run tes
 | `SUPABASE_SERVICE_ROLE_KEY` | já existente; necessária para criar contas e vínculos       |
 | `NOSSOM_AUTH_SECRET`        | já existente; também protege o cookie da ida à Absolute ZRO |
 
-Sem `ZRO_CLIENT_ID` e `ZRO_CLIENT_SECRET` o botão não aparece e o site fica igual. O retorno cadastrado no HUB é
-`https://nossom-teal.vercel.app/api/zro/callback`; o app usa o endereço em que foi aberto, então prévias da Vercel em
+Sem `ZRO_CLIENT_ID` e `ZRO_CLIENT_SECRET` o botão não aparece e o site fica igual. Os retornos cadastrados no HUB são
+`https://nossom.absolutezro.com/api/zro/callback` (endereço principal desde 29/10/2026, migração 0034) e
+`https://nossom-teal.vercel.app/api/zro/callback` (antigo, ainda usado pelo app de computador); o app usa o endereço em que foi aberto, então prévias da Vercel em
 outro domínio são recusadas pelo HUB (comportamento esperado).
 
 ## Vercel

@@ -5,11 +5,13 @@
 // de verdade carregando no navegador. A transcrição do caminho de uso é falsa (um worker trocado pela rota), para o
 // teste não depender de fala gravada; a de verdade tem o teste próprio no fim (precisa de internet uma vez).
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
 import { simularZ } from './z-falso.js'
 import { simularSet } from './set-falso.js'
@@ -354,6 +356,223 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   await pagina.close()
 })
 
+test('efeitos sonoros: som do computador no ponto, arrastar, volume, desfazer, tirar, exportar e renderizar com o efeito', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'cena.mp4'), Buffer.from(bytes))
+  // um "whoosh" de 0,4 s gerado aqui (WAV PCM, 48 kHz, estéreo)
+  const taxa = 48000
+  const n = Math.round(0.4 * taxa)
+  const wav = Buffer.alloc(44 + n * 4)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(36 + n * 4, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(2, 22)
+  wav.writeUInt32LE(taxa, 24)
+  wav.writeUInt32LE(taxa * 4, 28)
+  wav.writeUInt16LE(4, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(n * 4, 40)
+  for (let i = 0; i < n; i++) {
+    const v = Math.round(Math.sin((2 * Math.PI * 300 * i) / taxa) * 8000 * (1 - i / n))
+    wav.writeInt16LE(v, 44 + i * 4)
+    wav.writeInt16LE(v, 46 + i * 4)
+  }
+  writeFileSync(join(dir, 'whoosh.wav'), wav)
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'cena.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+
+  // o botão de som (ou S) abre o seletor; o som entra no ponto, selecionado, com a origem no Inspector
+  await pagina.setInputFiles('#arquivoSom', join(dir, 'whoosh.wav'))
+  const efeito = pagina.locator('.efeito')
+  await efeito.waitFor()
+  assert.equal(await efeito.innerText(), 'whoosh')
+  assert.ok(await efeito.evaluate((e) => e.classList.contains('selecionado')))
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /whoosh[\s\S]*Do seu computador[\s\S]*0 dB/)
+  const estado = () => pagina.evaluate(() => globalThis.__editor.h.atual.efeitos.map((e) => ({ fonte: e.fonte, volume: e.volume })))
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+
+  // arrastar para a direita: o efeito se prende a outro quadro da imagem; desfazer volta
+  const caixa = await efeito.boundingBox()
+  await pagina.mouse.move(caixa.x + 5, caixa.y + caixa.height / 2)
+  await pagina.mouse.down()
+  await pagina.mouse.move(caixa.x + 165, caixa.y + caixa.height / 2, { steps: 8 })
+  await pagina.mouse.up()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos[0].fonte > 0)
+  await pagina.click('#desfazer')
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+  await pagina.click('#refazer')
+
+  // volume no Inspector: soltar grava uma ação só
+  await pagina.locator('#fxVolume').evaluate((i) => {
+    i.value = '-6'
+    i.dispatchEvent(new Event('input'))
+    i.dispatchEvent(new Event('change'))
+  })
+  assert.equal((await estado())[0].volume, -6)
+  assert.match(await pagina.locator('#historico').innerText(), /Volume do efeito/)
+
+  // Entrega: a faixa de efeitos vai para o Final Cut e o vídeo final sai com o efeito misturado
+  await pagina.click('.dock [data-ir="entrega"]')
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 60_000 })
+  const zip = readFileSync(await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).path()).toString('latin1')
+  assert.ok(zip.includes('audioRole="effects"'), 'efeito conectado no FCPXML')
+  assert.ok(zip.includes('<adjust-volume amount="-6dB"/>'), 'com o volume')
+  assert.ok(downloads.some((d) => d.suggestedFilename().endsWith('.mp4')), 'o vídeo final saiu')
+
+  // tirar com Delete na Edição; desfazer traz de volta
+  await pagina.click('.dock [data-ir="edicao"]')
+  await efeito.click()
+  await pagina.keyboard.press('Delete')
+  await efeito.waitFor({ state: 'detached' })
+  await pagina.click('#desfazer')
+  await efeito.waitFor()
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar no corte, o banco no Drive, crédito e arquivo na entrega', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'sono.mp4'), Buffer.from(bytes))
+  // o banco de sons pela Absolute ZRO (falso): uma busca com um som CC BY e o arquivo (WAV curto)
+  const taxa = 48000
+  const n = Math.round(0.3 * taxa)
+  const wav = Buffer.alloc(44 + n * 2)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(36 + n * 2, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(1, 22)
+  wav.writeUInt32LE(taxa, 24)
+  wav.writeUInt32LE(taxa * 2, 28)
+  wav.writeUInt16LE(2, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(n * 2, 40)
+  for (let i = 0; i < n; i++) wav.writeInt16LE(Math.round(Math.sin(i / 8) * 6000), 44 + i * 2)
+  const ID = 'eab8a6e2-0ac8-4615-9e0d-ebde30523783'
+  const buscas = []
+  await pagina.route('**/api/zro/sons/buscar?*', (r) => {
+    buscas.push(new URL(r.request().url()).searchParams.get('q'))
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sons: [{ id: ID, origem: 'openverse', titulo: 'Whoosh Rápido', autor: 'Ana', licenca: 'CC BY 4.0', licencaUrl: 'https://creativecommons.org/licenses/by/4.0/', pagina: 'https://freesound.org/s/1', fonte: 'Freesound', duracao: 0.3, formato: 'wav', bytes: wav.length }], pagina: 1, paginas: 1 }) })
+  })
+  await pagina.route(`**/api/zro/sons/openverse/${ID}`, (r) => r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': ID, 'cross-origin-resource-policy': 'same-origin' } }))
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'sono.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  // um corte em 2 s (⇧→ anda 1 s; B divide)
+  await pagina.keyboard.press('Shift+ArrowRight')
+  await pagina.keyboard.press('Shift+ArrowRight')
+  await pagina.keyboard.press('b')
+  await pagina.locator('.clipe').nth(1).waitFor()
+
+  await pagina.click('#abasPainel [data-aba="sons"]')
+  const momento = pagina.locator('.sons-momento', { hasText: 'Corte 1' })
+  await momento.click()
+  // o corte pede whoosh (preset) e a busca aparece com autor e licença
+  await pagina.locator('.som-item').waitFor()
+  assert.equal(buscas.at(-1), 'whoosh')
+  assert.match(await pagina.locator('.som-item').innerText(), /Whoosh Rápido[\s\S]*Ana · CC BY 4\.0/)
+  // em português: "impacto" vira "impact"
+  await pagina.fill('#sonsTermo', 'impacto')
+  await pagina.press('#sonsTermo', 'Enter')
+  await pagina.waitForFunction(() => document.querySelector('.som-item'))
+  assert.equal(buscas.at(-1), 'impact')
+
+  // ouvir não coloca; Colocar põe no corte, no volume do preset, com o crédito na origem
+  await pagina.locator('.som-ouvir').click()
+  await pagina.locator('.som-colocar').click()
+  await pagina.locator('.efeito').waitFor()
+  const fx = await pagina.evaluate(() => {
+    const p = globalThis.__editor.h.atual
+    return { efeitos: p.efeitos.map((e) => ({ volume: e.volume, momento: e.momento })), som: p.sons[0], corte: p.linha.clipes[0].fim }
+  })
+  assert.deepEqual(fx.efeitos, [{ volume: -6, momento: 'corte' }])
+  assert.equal(fx.som.origem.autor, 'Ana')
+  assert.equal(fx.som.nome, 'Whoosh Rápido.wav')
+  assert.equal(await pagina.locator('.efeito').evaluate((e) => Math.round(parseFloat(e.style.left))), await pagina.locator('.clipe').nth(1).evaluate((e) => Math.round(parseFloat(e.style.left))))
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Ana · CC BY 4\.0/)
+  // colocar o mesmo som de novo não baixa outra vez (um som, dois efeitos)
+  await pagina.locator('.som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 2)
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.sons.length), 1)
+
+  // Meu banco: o link da pasta do Drive, a subpasta, buscar nela e colocar um som da pessoa (sem crédito)
+  const BANCO = '1AbCdEfGhIjKlMnOp'
+  const SUB = '1PastaWhooshesAbc'
+  const SOM = '1WhooshDoBancoXyz'
+  const listagens = []
+  await pagina.route('**/api/zro/sons/banco?*', (r) => {
+    const u = new URL(r.request().url()).searchParams
+    listagens.push({ pasta: u.get('pasta'), q: u.get('q') })
+    const raiz = u.get('pasta') === BANCO
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ pasta: { id: u.get('pasta'), nome: raiz ? 'Meus SFX' : 'Whooshes' }, conta: 'c1', pastas: raiz ? [{ id: SUB, nome: 'Whooshes' }] : [], sons: raiz ? [] : [{ id: SOM, origem: 'banco', titulo: 'Whoosh grave', nome: 'Whoosh grave.wav', formato: 'wav', bytes: wav.length, conta: 'c1' }], proxima: null }),
+    })
+  })
+  await pagina.route(`**/api/zro/sons/banco/${SOM}?conta=c1`, (r) => r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': SOM, 'cross-origin-resource-policy': 'same-origin' } }))
+  await pagina.click('#sonsFonte [data-fonte="banco"]')
+  assert.equal(await pagina.locator('#sonsBancoForm').isVisible(), true)
+  await pagina.fill('#sonsBancoLink', `https://drive.google.com/drive/u/0/folders/${BANCO}?usp=sharing`)
+  await pagina.press('#sonsBancoLink', 'Enter')
+  await pagina.locator('#sonsPasta [aria-current="true"]', { hasText: 'Meus SFX' }).waitFor()
+  assert.match(await pagina.locator('#sonsLista').innerText(), /Nenhum som nesta pasta/)
+  await pagina.locator('#sonsPastas button', { hasText: 'Whooshes' }).click()
+  await pagina.locator('.som-item', { hasText: 'Whoosh grave' }).waitFor()
+  assert.match(await pagina.locator('#sonsPasta').innerText(), /Meus SFX\s*›\s*Whooshes/)
+  await pagina.fill('#sonsTermo', 'grave')
+  await pagina.press('#sonsTermo', 'Enter')
+  await pagina.waitForFunction(() => document.querySelector('.som-item'))
+  assert.deepEqual(listagens.at(-1), { pasta: SUB, q: 'grave' })
+  // a pasta fica guardada neste navegador
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('aeon.sons.banco')).id), BANCO)
+  await pagina.locator('.som-item .som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 3)
+  const doBanco = await pagina.evaluate(() => globalThis.__editor.h.atual.sons.find((x) => x.origem.tipo === 'banco'))
+  assert.deepEqual(doBanco.origem, { tipo: 'banco', id: SOM, titulo: 'Whoosh grave', fonte: 'Meu banco no Drive', conta: 'c1' })
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Do seu banco no Drive/)
+  await pagina.click('#sonsFonte [data-fonte="livres"]')
+
+  // entrega: o arquivo do som vai junto, o XML aponta para ele e o crédito sai no CREDITOS.txt
+  await pagina.click('.dock [data-ir="entrega"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 60_000 })
+  const zip = readFileSync(await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).path()).toString('utf8')
+  assert.ok(zip.includes('Efeito - Whoosh Rápido.wav'), 'o arquivo do som vai na entrega')
+  assert.ok(zip.includes('src="Efeito%20-%20Whoosh%20R%C3%A1pido.wav"'), 'o FCPXML aponta para ele')
+  assert.match(zip, /"Whoosh Rápido" por Ana · CC BY 4\.0 · https:\/\/freesound\.org\/s\/1/)
+  assert.ok(zip.includes('Efeito - Whoosh grave.wav'), 'o som do banco também vai na entrega')
+  assert.doesNotMatch(zip, /"Whoosh grave" (por|·)/, 'o som do banco da pessoa não pede crédito')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('projeto novo: nome, formato vertical e quadros; renomear pela barra', async () => {
   const { pagina, erros } = await abrir()
   await pagina.click('#novoProjeto')
@@ -412,6 +631,8 @@ test('perfil único: foto e nome da conta Absolute ZRO no menu; editar leva à c
   const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
   await simularZ(pagina)
+  // o app abre o Set da conta (presença do ecossistema): sem o repasse simulado, /api/zro/set daria 404 no console
+  await simularSet(pagina)
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
@@ -502,11 +723,11 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   assert.equal(await pagina.locator('#trilho .trilho-item').count(), 6, 'projeto (4) + apps + conta')
   await item('apps').click()
   await pagina.locator('#trilhoApps:popover-open').waitFor()
-  // a família de src/familia.js (7 hoje; 8 com o Maestro no lançamento, MAESTRO_NA_FAMILIA)
+  // a família de src/familia.js (9 hoje, com o Maestro e o Relay; MAESTRO_NA_FAMILIA)
   assert.equal(await pagina.locator('#trilhoApps .familia-app').count(), FAMILIA.length)
-  await pagina.context().route('https://sobedesce.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
+  await pagina.context().route('https://sobedesce.absolutezro.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
   const [aba] = await Promise.all([pagina.context().waitForEvent('page'), pagina.locator('#trilhoApps .familia-app', { hasText: 'SOBEDESCE' }).click()])
-  assert.match(aba.url(), /^https:\/\/sobedesce\.vercel\.app/)
+  assert.match(aba.url(), /^https:\/\/sobedesce\.absolutezro\.com/)
   await aba.close()
   assert.equal(await pagina.locator('#trilhoApps:popover-open').count(), 0, 'a grade fecha depois de abrir um app')
 
@@ -524,6 +745,195 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   await pagina.locator('#trilhoConta [data-acao="sair"]').click()
   await pagina.waitForURL(/entrar\.html/)
   assert.equal(saiu, true)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('velocidade: curva pronta no Inspector, selo no clipe, teclado, manter duração, desfazer, prévia e FCPXML', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const vel = pagina.locator('.insp-velocidade')
+  await vel.waitFor()
+  const projeto = () => pagina.evaluate(() => globalThis.__editor.h.atual)
+  const quadros = (await projeto()).linha.clipes[0].fim
+  // Herói: rápido, câmera lenta no meio, rápido; o clipe ganha o selo e o resumo mostra o tempo novo
+  await vel.getByRole('button', { name: 'Herói' }).click()
+  let p = await projeto()
+  assert.ok(p.linha.clipes[0].velocidade, 'curva no clipe')
+  await pagina.locator('.clipe .clipe-vel', { hasText: /Rampa/ }).waitFor()
+  assert.match(await vel.locator('.vel-resumo').innerText(), /^\d+,\d s → \d+,\d s$/)
+  assert.equal(await vel.getByRole('button', { name: 'Herói' }).getAttribute('aria-pressed'), 'true')
+  // teclado: seta para cima no segundo ponto aumenta a velocidade dele (uma ação no desfazer)
+  const v0 = p.linha.clipes[0].velocidade.pontos[1][1]
+  await vel.locator('.vel-ponto').nth(1).focus()
+  await pagina.keyboard.press('ArrowUp')
+  p = await projeto()
+  assert.ok(p.linha.clipes[0].velocidade.pontos[1][1] > v0)
+  // Manter duração: a mesma forma no tempo original do clipe
+  await vel.getByRole('button', { name: 'Manter duração' }).click()
+  const { saidaDoClipe } = await import('../src/velocidade.js')
+  p = await projeto()
+  assert.ok(Math.abs(saidaDoClipe(p.linha.clipes[0]) - quadros) <= 3, 'mesmo tempo na linha')
+  // a prévia toca a rampa sem erro
+  await pagina.keyboard.press('Space')
+  await pagina.waitForTimeout(800)
+  await pagina.keyboard.press('Space')
+  // o Final Cut recebe os degraus com timeMap
+  const fcp = await pagina.evaluate(async () => (await import('../src/exportar/fcpxml.js')).paraFcpxml(globalThis.__editor.h.atual))
+  assert.match(fcp, /<timeMap>/)
+  // 100% tira a curva; ⌘Z devolve
+  await vel.getByRole('button', { name: '100%' }).click()
+  assert.equal((await projeto()).linha.clipes[0].velocidade, undefined)
+  assert.equal(await pagina.locator('.clipe .clipe-vel').first().isHidden(), true)
+  await pagina.keyboard.press('Control+z')
+  assert.ok((await projeto()).linha.clipes[0].velocidade)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('footage de verdade: um take de câmera (marca/home/cenas) com a curva Herói sai do render com os quadros da curva', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Herói' }).click()
+  await pagina.locator('.vel-modos').getByRole('radio', { name: 'Quadro' }).click()
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  const { saidaDoClipe } = await import('../src/velocidade.js')
+  const quadros = saidaDoClipe(p.linha.clipes[0])
+  assert.ok(quadros > p.linha.clipes[0].fim, 'a câmera lenta do meio deixa o clipe mais longo')
+  // só o vídeo final
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'onda-heroi.mp4')
+  await baixado.saveAs(arquivo)
+  const sonda = ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_frames,width,height', '-of', 'json', arquivo]
+  const [v] = JSON.parse(execFileSync('ffprobe', sonda).toString()).streams
+  assert.equal(Number(v.nb_read_frames), quadros, 'um quadro do render para cada quadro da curva')
+  assert.equal(`${v.width}×${v.height}`, '1280×720')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('câmera lenta com fonte de 60 qps numa linha de 24 qps: cada quadro de saída é um quadro diferente (sem repetir)', async () => {
+  // 24 qps primeiro (o projeto fica em 24), depois 60 qps; o padrão de teste do ffmpeg muda a cada quadro
+  const gerar = (nome, taxa) => execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=640x360:rate=${taxa}`, '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(dir, nome)])
+  gerar('base24.mp4', 24)
+  gerar('alta60.mp4', 60)
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', [join(dir, 'base24.mp4'), join(dir, 'alta60.mp4')])
+  await pagina.locator('.cartao-midia').nth(1).waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').nth(1).click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Câmera lenta' }).click()
+  // só quadros reais (sem fluxo): a fonte tem quadro para cada instante pedido
+  await pagina.locator('.vel-modos').getByRole('radio', { name: 'Quadro' }).click()
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  assert.equal(p.fps.n / p.fps.d, 24)
+  assert.equal(p.linha.clipes[1].velocidade.modo, 'quadro')
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'lenta.mp4')
+  await baixado.saveAs(arquivo)
+  // quadros em cinza 64×36; dois seguidos quase iguais = quadro repetido
+  const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=64:36,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+  const T = 64 * 36
+  const n = bruto.length / T
+  assert.equal(n, 48 + 96, '2 s a 100% e 2 s a 50% (4 s) em 24 qps')
+  const dif = (i) => {
+    let s = 0
+    for (let j = 0; j < T; j++) s += Math.abs(bruto[i * T + j] - bruto[(i - 1) * T + j])
+    return s / T
+  }
+  const repetidos = []
+  for (let i = 49; i < n; i++) if (dif(i) < 0.5) repetidos.push(i)
+  assert.deepEqual(repetidos, [], 'na câmera lenta, nenhum quadro repetido')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('fluxo óptico: 24 qps a 50% ganha um quadro novo entre cada par (o modelo de verdade, na CSP do site), sem repetir', async () => {
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=24', '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(dir, 'fluxo24.mp4')])
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', join(dir, 'fluxo24.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Câmera lenta' }).click()
+  // o padrão é o fluxo óptico
+  assert.equal(await pagina.locator('.vel-modos').getByRole('radio', { name: 'Fluxo óptico' }).getAttribute('aria-checked'), 'true')
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 300_000 }), pagina.click('#exportar')])
+  await pagina.locator('#entregaFim', { hasText: /\d+ quadros de câmera lenta por fluxo óptico/ }).waitFor({ timeout: 60_000 })
+  const n = Number((await pagina.locator('#entregaFim').innerText()).match(/(\d+) quadros de câmera lenta por fluxo óptico/)[1])
+  assert.ok(n >= 40 && n <= 48, `metade dos 96 quadros sai do fluxo (${n})`)
+  const arquivo = join(dir, 'fluxo.mp4')
+  await baixado.saveAs(arquivo)
+  const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=128:72,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+  const T = 128 * 72
+  const q = bruto.length / T
+  assert.equal(q, 96)
+  const dif = (i, j) => {
+    let s = 0
+    for (let k = 0; k < T; k++) s += Math.abs(bruto[i * T + k] - bruto[j * T + k])
+    return s / T
+  }
+  // nenhum quadro repetido (menos o último: depois do último quadro da câmera não há vizinho para o fluxo); e cada
+  // quadro do meio fica mais perto dos vizinhos do que um vizinho do outro
+  for (let i = 1; i < q - 1; i++) assert.ok(dif(i, i - 1) > 0.3, `quadro ${i} repetido`)
+  for (let i = 1; i < q - 1; i += 2) assert.ok(dif(i, i - 1) < dif(i + 1, i - 1) && dif(i, i + 1) < dif(i + 1, i - 1), `quadro ${i} entre os vizinhos`)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('estabilizar: um take real tremido (o cavalo, com tremor de recorte) sai do render com o tremor medido bem menor', async () => {
+  const take = fileURLToPath(new URL('../marca/home/cenas/cavalo.mp4', import.meta.url))
+  const tremido = join(dir, 'tremido.mp4')
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', take, '-t', '4', '-an', '-vf', "crop=1180:664:x='50+30*sin(n*1.3)+18*sin(n*0.41)':y='28+18*cos(n*1.7)+9*sin(n*0.53)',scale=640:360", '-c:v', 'libx264', '-pix_fmt', 'yuv420p', tremido])
+  const { Analisador } = await import('../src/estabilizar/index.js')
+  const { tremor } = await import('../src/estabilizar/trajetoria.js')
+  // a medida é independente do app: lê o arquivo com o ffmpeg e mede o movimento quadro a quadro
+  const medir = (arquivo) => {
+    const bruto = execFileSync('ffmpeg', ['-v', 'error', '-i', arquivo, '-vf', 'scale=320:180,format=gray', '-f', 'rawvideo', '-'], { maxBuffer: 64 << 20 })
+    const T = 320 * 180
+    const an = new Analisador()
+    const movs = []
+    for (let i = 0; i < bruto.length / T; i++) movs.push(an.adicionar({ w: 320, h: 180, d: Float32Array.from(bruto.subarray(i * T, (i + 1) * T)) }))
+    return tremor(movs, 50)
+  }
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', tremido)
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const est = pagina.locator('.insp-estab')
+  await est.getByRole('button', { name: 'Analisar e estabilizar' }).click()
+  await est.locator('.estab-resumo', { hasText: /^Tremor −\d+% · recorte \d+%$/ }).waitFor({ timeout: 120_000 })
+  const resumo = await est.locator('.estab-resumo').innerText()
+  assert.ok(Number(resumo.match(/−(\d+)%/)[1]) >= 70, resumo)
+  assert.equal(await est.getByRole('button', { name: 'Estabilizado' }).getAttribute('aria-pressed'), 'true')
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  assert.equal(p.midias[0].estabilidade.n, 200, 'a análise de cada quadro fica na mídia do projeto')
+  assert.deepEqual(p.linha.clipes[0].estabilizar, { suavidade: 1, recorte: 1.2 })
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'estabilizado.mp4')
+  await baixado.saveAs(arquivo)
+  const antes = medir(tremido)
+  const depois = medir(arquivo)
+  assert.ok(depois < antes * 0.35, `tremor no arquivo: ${antes.toFixed(1)} → ${depois.toFixed(1)} px`)
   assert.deepEqual(erros, [])
   await pagina.close()
 })
@@ -602,7 +1012,7 @@ test('Whisper de verdade carrega no navegador e transcreve (modelo Rápido, prec
   await pagina.close()
 })
 
-test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o projeto é âncora e nada leva ao editor', async () => {
+test('página inicial fechada ao público: a Z "Chegando ao AEON", Testar ao vivo é âncora e nada leva ao editor', async () => {
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
@@ -624,9 +1034,9 @@ test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o pr
       hrefs.filter((h) => /^app\/|\/app\/|baixar|instalar/.test(h)),
       [],
     )
-    assert.ok(hrefs.includes('#produto'), 'Conhecer o projeto é âncora')
-    // no celular a barra esconde o atalho; no HTML são três (barra, abertura e fim), todos âncora
-    assert.deepEqual(await pagina.$$eval('a', (as) => as.filter((a) => a.textContent.trim() === 'Conhecer o projeto').map((a) => a.getAttribute('href'))), ['#produto', '#produto', '#produto'])
+    assert.ok(hrefs.includes('#produto'), 'Conhecer o AEON é âncora')
+    // no celular a barra esconde o atalho; no HTML são quatro (barra, menu, abertura e fim), todos âncora para o teste ao vivo
+    assert.deepEqual(await pagina.$$eval('a', (as) => as.filter((a) => a.textContent.trim() === 'Testar ao vivo').map((a) => a.getAttribute('href'))), ['#testar', '#testar', '#testar', '#testar'])
     // a seção entra com a rolagem (ao-rolar): o texto existe antes de aparecer
     assert.match(await pagina.locator('#em-desenvolvimento').textContent(), /Em desenvolvimento[\s\S]*Ainda sem download/)
     assert.equal(await pagina.locator('.fim').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
@@ -638,6 +1048,95 @@ test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o pr
     assert.deepEqual(erros, [])
     await pagina.close()
   }
+})
+
+test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a tela; perguntas abrem uma por vez', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !/status of 401/.test(m.text()) && erros.push(m.text()))
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
+  await pagina.goto(s.url)
+  await pagina.locator('#testar').scrollIntoViewIfNeeded()
+  const est = pagina.locator('#estudio')
+  // o exemplo toca sozinho enquanto aparece
+  const t0 = await pagina.locator('#visorTempo').innerText()
+  await pagina.waitForFunction((t) => document.querySelector('#visorTempo').textContent !== t, t0)
+  // velocidade (a aba que abre): Herói, a onda (take de câmera de verdade) na velocidade da curva, Bala muda a duração,
+  // teclado no ponto
+  assert.equal(await est.getByRole('tab', { name: 'Velocidade' }).getAttribute('aria-selected'), 'true')
+  assert.equal(await est.getByRole('radio', { name: 'Herói' }).getAttribute('aria-checked'), 'true')
+  const durHeroi = await pagina.locator('#rampaDuracao').innerText()
+  await est.getByRole('radio', { name: 'Bala' }).click()
+  assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), durHeroi)
+  await pagina.locator('.curva-ponto').nth(1).focus()
+  const antes = await pagina.locator('#rampaDuracao').innerText()
+  await pagina.keyboard.press('ArrowDown')
+  assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), antes, 'mais lento, mais longo')
+  assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'curva própria')
+  // o take: o Cavalo (50 qps) troca o vídeo e a duração de origem; a curva fica
+  await est.getByRole('radio', { name: 'Cavalo' }).click()
+  assert.equal(await est.getByRole('radio', { name: 'Cavalo' }).getAttribute('aria-checked'), 'true')
+  await pagina.waitForFunction(() => /cenas\/cavalo\.mp4$/.test(document.querySelector('#visorVideo').currentSrc))
+  await pagina.waitForFunction(() => document.querySelector('#rampaAntes').textContent === 'de 7,0 s')
+  assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'a curva própria continua')
+  // cortes: 0,45 s marca as duas pausas maiores; aprovar tira 1,7 s; desfazer devolve
+  await est.getByRole('tab', { name: 'Cortes' }).click()
+  assert.equal(await pagina.locator('#aprovarCortes').innerText(), 'Aprovar 2 cortes')
+  assert.equal(await pagina.locator('.celula.pausa.marcada').count(), 2)
+  await pagina.click('#aprovarCortes')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '18,8 s')
+  assert.equal(await pagina.locator('#duracaoGanho').innerText(), '−1,7 s')
+  await pagina.locator('#limiar').fill('0.2')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '17,9 s')
+  // entrega: 6 clipes depois de tirar as 5 pausas, zoom de 122% no efeito Movimento do Premiere
+  await est.getByRole('tab', { name: 'Entrega' }).click()
+  await pagina.getByRole('radio', { name: /Premiere Pro/ }).click()
+  const pacote = await pagina.locator('#pacote').innerText()
+  assert.match(pacote, /Entrevista\.xml/)
+  assert.match(pacote, /6 clipes na linha do tempo/)
+  assert.match(pacote, /Zoom de 122% no efeito Movimento/)
+  // zoom: sem zoom, a entrega não fala de zoom e a faixa roxa some
+  await est.getByRole('tab', { name: 'Zoom' }).click()
+  await pagina.getByRole('radio', { name: 'Sem zoom' }).click()
+  assert.equal(await pagina.locator('#estudio.com-zoom').count(), 0)
+  await est.getByRole('tab', { name: 'Entrega' }).click()
+  assert.doesNotMatch(await pagina.locator('#pacote').innerText(), /Zoom/)
+  // legenda: setas do teclado trocam o estilo
+  await est.getByRole('tab', { name: 'Legenda' }).click()
+  await pagina.getByRole('radio', { name: 'Destaque' }).focus()
+  await pagina.keyboard.press('ArrowRight')
+  assert.equal(await pagina.locator('#visorLegenda').getAttribute('data-estilo'), 'pop')
+  // desfazer os cortes volta aos 20,5 s
+  await est.getByRole('tab', { name: 'Cortes' }).click()
+  await pagina.click('#desfazerCortes')
+  await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '20,5 s')
+  // além do tempo: a montagem feita no AEON toca ao aparecer; a linha mostra os cinco takes com a curva de cada um, a
+  // cabeça anda com o vídeo e o número é a velocidade do quadro; o botão pausa
+  await pagina.locator('#montagem').scrollIntoViewIfNeeded()
+  await pagina.locator('.montagem-clipe').nth(4).waitFor()
+  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Herói', 'Bala', 'Arrancada', 'Montagem'])
+  await pagina.waitForFunction(() => document.querySelector('#montagemVideo').currentTime > 0.5)
+  assert.match(await pagina.locator('#montagemVel').innerText(), /^\d+%$/)
+  assert.equal(await pagina.locator('.montagem-clipe.agora').count(), 1)
+  await pagina.click('#montagemPlay')
+  assert.equal(await pagina.getAttribute('#montagemPlay', 'aria-label'), 'Tocar')
+  assert.equal(await pagina.evaluate(() => document.querySelector('#montagemVideo').paused), true)
+  // Por dentro: a Velocidade com os takes de verdade; escolher a tela para de trocar sozinho
+  await pagina.getByRole('tab', { name: /Velocidade Uma curva por take/ }).click()
+  assert.equal(await pagina.locator('#tela-velocidade.ativa').count(), 1)
+  await pagina.getByRole('tab', { name: /Entrega Para o seu editor/ }).click()
+  assert.equal(await pagina.locator('#tela-entrega.ativa').count(), 1)
+  assert.equal(await pagina.locator('#explorar.sozinho').count(), 0)
+  // perguntas: uma aberta por vez
+  await pagina.getByRole('button', { name: 'Preciso usar a IA?' }).click()
+  await pagina.getByRole('button', { name: 'Funciona com o meu editor?' }).click()
+  assert.equal(await pagina.locator('#faq [aria-expanded="true"]').count(), 1)
+  assert.match(await pagina.locator('#r4').innerText(), /Premiere Pro \(\.xml\)/)
+  await pagina.getByRole('button', { name: 'Tem speed ramp?' }).click()
+  assert.match(await pagina.locator('#r7').innerText(), /10% a 800%/)
+  assert.deepEqual(erros, [])
+  await pagina.close()
 })
 
 test('em-desenvolvimento.html: símbolo, marca do AEON, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {

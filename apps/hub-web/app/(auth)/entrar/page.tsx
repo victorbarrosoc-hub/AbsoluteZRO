@@ -10,17 +10,21 @@ import { getAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Entrar' }
 
-/** Entrar como conversa: e-mail, senha, conferindo, pronto (components/conversa-conta.tsx). */
-export default async function Entrar({ searchParams }: { searchParams: Promise<{ next?: string; senha?: string; erro?: string }> }) {
+/**
+ * Entrar como conversa: e-mail, senha, conferindo, pronto (components/conversa-conta.tsx). `outra=1`: um app pediu
+ * prompt=login ("Usar outra conta"); mesmo com sessão aberta, o login aparece, e a sessão antiga sai ao entrar.
+ */
+export default async function Entrar({ searchParams }: { searchParams: Promise<{ next?: string; senha?: string; erro?: string; outra?: string }> }) {
   const sp = await searchParams
   const next = safeNext(sp.next)
-  if ((await getAuth()) && !(await respondendoAcao())) redirect(next ?? '/inicio')
+  const outra = sp.outra === '1'
+  if (!outra && (await getAuth()) && !(await respondendoAcao())) redirect(next ?? '/inicio')
   return (
     <ConversaConta
       modo="entrar"
       action={loginAction}
       next={next}
-      aviso={sp.senha === 'nova' ? 'Senha criada. Entre com ela.' : undefined}
+      aviso={sp.senha === 'nova' ? 'Senha criada. Entre com ela.' : outra ? 'Qual conta você quer usar?' : undefined}
       erroInicial={googleErro(sp.erro)}
       google={<GoogleButton next={next} variant="pilula" />}
       rodape={

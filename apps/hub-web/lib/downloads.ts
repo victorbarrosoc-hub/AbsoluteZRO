@@ -35,7 +35,7 @@ export type DownloadEntry = {
 
 // Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
 // GITHUB_TOKEN e redireciona para o endereço assinado e temporário do arquivo.
-const NOSSOM_BAIXAR = 'https://nossom-teal.vercel.app/baixar/'
+const NOSSOM_BAIXAR = 'https://nossom.absolutezro.com/baixar/'
 // Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
 const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
 // Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
@@ -49,16 +49,16 @@ const PRIMEIRA_VEZ = {
 export const DOWNLOADS: DownloadEntry[] = [
   {
     productId: 'sobedesce',
-    site: 'https://sobedesce.vercel.app',
+    site: 'https://sobedesce.com',
     status: 'test',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://sobedesce.vercel.app/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://sobedesce.vercel.app/baixar/windows', format: 'Instalador .exe' },
-      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, pelo navegador', href: 'https://sobedesce.vercel.app/app/', format: 'Sem instalar' },
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://sobedesce.com/baixar/mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://sobedesce.com/baixar/windows', format: 'Instalador .exe' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, pelo navegador', href: 'https://sobedesce.com/app/', format: 'Sem instalar' },
     ],
-    terminal: { mac: 'curl -fsSL https://sobedesce.vercel.app/instalar.sh | bash', windows: 'irm https://sobedesce.vercel.app/instalar.ps1 | iex' },
+    terminal: { mac: 'curl -fsSL https://sobedesce.com/instalar.sh | bash', windows: 'irm https://sobedesce.com/instalar.ps1 | iex' },
     firstOpen: { mac: 'Na primeira vez: botão direito › Abrir › Abrir.', windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.' },
-    moreUrl: 'https://sobedesce.vercel.app/#baixar',
+    moreUrl: 'https://sobedesce.com/#baixar',
   },
   {
     productId: 'synquei',
@@ -78,7 +78,7 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'nossom',
-    site: 'https://nossom-teal.vercel.app',
+    site: 'https://nossom.absolutezro.com',
     status: 'test',
     note: 'Prévia 0.2.2: sem notarização da Apple e sem atualização automática.',
     options: [
@@ -91,16 +91,16 @@ export const DOWNLOADS: DownloadEntry[] = [
       },
       { os: 'mac', label: 'Mac · Intel', detail: 'Processador Intel', href: NOSSOM_BAIXAR + 'mac-x64', format: 'Instalador .dmg' },
       { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11, 64 bits', href: NOSSOM_BAIXAR + 'windows', format: 'Instalador .exe' },
-      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom-teal.vercel.app/studio', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom.absolutezro.com/studio', format: 'Sem instalar' },
     ],
     // pelo Terminal o .dmg não fica em quarentena (o xattr depois falha no macOS novo sem Gerenciamento de Apps)
-    terminal: { mac: 'curl -fsSL https://nossom-teal.vercel.app/instalar.sh | bash' },
+    terminal: { mac: 'curl -fsSL https://nossom.absolutezro.com/instalar.sh | bash' },
     firstOpen: { mac: 'Se o Mac bloquear, instale pelo Terminal (abaixo): o NOSSOM chega sem o bloqueio.' },
-    moreUrl: 'https://nossom-teal.vercel.app/apps',
+    moreUrl: 'https://nossom.absolutezro.com/apps',
   },
   {
     productId: 'tpeasy',
-    site: 'https://tpeasy.vercel.app',
+    site: 'https://tpeasy.absolutezro.com',
     status: 'web',
     note: 'Feito para iPhone e iPad. Instala pela tela de início, sem loja.',
     options: [
@@ -108,7 +108,7 @@ export const DOWNLOADS: DownloadEntry[] = [
         os: 'mobile',
         label: 'iPhone e iPad',
         detail: 'Safari › Compartilhar › Adicionar à Tela de Início',
-        href: 'https://tpeasy.vercel.app/app/',
+        href: 'https://tpeasy.absolutezro.com/app/',
         format: 'App da web',
       },
     ],

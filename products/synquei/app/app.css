@@ -2416,12 +2416,69 @@ button.nav-item[aria-expanded="true"] .icon {
   display: none;
 }
 @media (max-width: 860px) {
+  /* só o título divide a linha com os ícones (a conta, o Set e a Z); o texto de apoio usa a largura toda */
   .pn-ola {
     position: relative;
-    padding-right: 88px;
+  }
+  .pn-ola h1 {
+    min-height: 40px;
+    padding-right: 96px;
+  }
+  .pn-ola:has(.conta-atalho-av) h1 {
+    padding-right: 136px;
+  }
+  .pn-ola:has(.conta-atalho-entrar) h1 {
+    padding-right: 184px;
+  }
+  .conta-atalho {
+    display: flex;
+    align-items: center;
+  }
+  .conta-atalho:empty {
+    display: none;
+  }
+  .conta-atalho-entrar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--hairline-2);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    animation: rise 0.4s var(--ease) both;
+  }
+  .conta-atalho-entrar .icon {
+    width: 16px;
+    height: 16px;
+  }
+  .conta-atalho-av {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    animation: rise 0.4s var(--ease) both;
+  }
+  .conta-atalho-av .conta-av {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  /* Ajustes › Conta no celular: o botão desce para a linha de baixo em vez de espremer o texto */
+  .set-row:has(> div > small):has(> a.btn) {
+    flex-wrap: wrap;
+  }
+  .conta-atalho-av.sem-acesso .conta-av {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--warn);
   }
   .eco-atalhos {
     display: flex;
+    align-items: center;
     gap: 4px;
     position: absolute;
     top: 0;

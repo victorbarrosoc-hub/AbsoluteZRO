@@ -37,7 +37,9 @@ const appCsp = [
   // 'wasm-unsafe-eval' e worker-src blob:: o "Converter com o Relay" decodifica ProRes e grava AAC/MP3 em
   // WebAssembly, em workers criados pela própria biblioteca (lib/relay.js, relay/vendor/mediabunny*). Nenhum script de
   // fora entra por aqui.
-  "script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com",
+  // apis.google.com: o "Escolher do Drive" (Google Picker, lib/picker.js) no modo Arquivos escolhidos. O Picker abre
+  // num quadro de docs.google.com (frame-src abaixo).
+  "script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com https://apis.google.com",
   // 'unsafe-inline' só no estilo: o painel da Z desenha num shadow root com <style> próprio. Estilo não executa código.
   "style-src 'self' 'unsafe-inline'",
   `connect-src ${appConnect.join(" ")}`,

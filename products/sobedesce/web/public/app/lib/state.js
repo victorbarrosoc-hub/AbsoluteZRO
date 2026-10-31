@@ -19,7 +19,7 @@ let state = {
   quota: null, // { limit, usage }
   dest: null, // pasta de destino { id, name, driveId, path }
   awake: false, // trava de tela acesa ativa
-  lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode }
+  lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode, modo }
   sheet: null, // { name, props }
   tab: 'send', // 'send' (Início, envio; a entrada) | 'z' (a Z, pelo botão discreto do topo, nunca a entrada) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
   criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'calc'

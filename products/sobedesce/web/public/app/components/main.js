@@ -79,7 +79,8 @@ function useLanAccount() {
         setState({
           user: { displayName: info.account?.name || email || 'Sem conta', emailAddress: email || '' },
           quota: null,
-          lan: { mac: info.mac?.name || LAN.mac, noAccount: !info.account, deleteAfterUpload: !!info.deleteAfterUpload, error: null, badCode: false },
+          // modo: o do Drive do computador (Drive híbrido, lib/modo-drive.js). App de computador antigo: sem o campo.
+          lan: { mac: info.mac?.name || LAN.mac, noAccount: !info.account, deleteAfterUpload: !!info.deleteAfterUpload, error: null, badCode: false, modo: info.account?.modo === 'arquivos' ? 'arquivos' : 'total' },
         })
         engine.setAccount(email)
         if (!getState().dest) setState({ dest: getRecents(email)[0] || info.folder || MY_DRIVE })

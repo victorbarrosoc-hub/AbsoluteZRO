@@ -28,10 +28,10 @@ const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
   { href: 'https://aeon.absolutezro.com', nome: 'AEON', img: 'marca/familia/aeon.svg' },
   { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
-  { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
+  { href: 'https://nossom.absolutezro.com', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
-  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
+  { href: 'https://tpeasy.absolutezro.com', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).

@@ -99,8 +99,9 @@ test('fluxo de dispositivo completo: código, aprovação, token guardado com 06
   assert.ok(site.builds.length > 0)
   assert.ok(site.builds.includes('163'), 'o build informado foi junto')
   assert.ok(site.builds.every(b => /^\d+$/.test(b ?? '')), 'nenhum pedido sem o cabeçalho')
-  // E o que o app sabe fazer (0.2.0: "relay", as versões pedidas pelo Maestro): o Maestro só mostra "Gerar versões" com ele.
-  assert.ok(site.capacidades.length === site.builds.length && site.capacidades.every(c => c === 'relay'), 'todo pedido diz "relay"')
+  // E o que o app sabe fazer (0.2.0: "relay", as versões pedidas pelo Maestro; 0.3.0: "drive-arquivos", o modo Arquivos
+  // escolhidos do Drive híbrido): o Maestro só mostra "Gerar versões" com o primeiro; o site só entrega drive.file com o segundo.
+  assert.ok(site.capacidades.length === site.builds.length && site.capacidades.every(c => c === 'relay,drive-arquivos'), 'todo pedido diz "relay,drive-arquivos"')
 
   // Outro servidor (SOBEDESCE_CLOUD_URL diferente): o token não vale lá.
   const other = new CloudAuth({ paths, baseUrl: 'http://127.0.0.1:9', ...FAST })

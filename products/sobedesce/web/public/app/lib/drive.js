@@ -4,6 +4,7 @@ import { ENDPOINTS, LAN } from './config.js'
 import { getToken, invalidate } from './auth.js'
 import { getState } from './state.js'
 import { lanDrives, lanFolders } from './lan.js'
+import { MARCA_PASTA } from './modo-drive.js'
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder'
 
@@ -135,7 +136,8 @@ export async function listFolders(parentId, driveId, signal) {
       includeItemsFromAllDrives: true,
       pageSize: 1000,
       orderBy: 'name',
-      fields: 'nextPageToken,files(id,name,driveId)',
+      // appProperties: a marca das pastas do SOBEDESCE (lib/modo-drive.js), para o modo Arquivos escolhidos.
+      fields: 'nextPageToken,files(id,name,driveId,appProperties)',
       pageToken,
     }
     if (driveId) Object.assign(query, { corpora: 'drive', driveId })
@@ -146,11 +148,15 @@ export async function listFolders(parentId, driveId, signal) {
   return out
 }
 
+/**
+ * Pasta nova, com a marca do SOBEDESCE (lib/modo-drive.js): no modo Arquivos escolhidos, só as pastas com ela
+ * contam como completas (o app vê tudo o que entra nelas pelo SOBEDESCE).
+ */
 export function createFolder(name, parentId) {
   return call('/files', {
     method: 'POST',
-    query: { supportsAllDrives: true, fields: 'id,name,driveId' },
-    body: { name, mimeType: FOLDER_MIME, parents: [parentId] },
+    query: { supportsAllDrives: true, fields: 'id,name,driveId,appProperties' },
+    body: { name, mimeType: FOLDER_MIME, parents: [parentId], appProperties: MARCA_PASTA },
     retries: 1,
   })
 }

@@ -16,6 +16,7 @@ import { httpRequest, HttpError } from '../net/http.js'
 import { backoffDelay, isAbortError, sleep } from '../util/backoff.js'
 import { classifyError, SobeDesceError } from './errors.js'
 import { readBuildInfo } from '../version.js'
+import { modoDe, PRECISA_TOTAL } from './modo-drive.js'
 
 /** O cabeçalho x-sobedesce-capacidades ("relay"): o que este app sabe fazer. */
 const CAPACIDADES = CAPACIDADES_DO_APP.join(',')
@@ -41,6 +42,7 @@ const MSG_NOT_SIGNED_IN = 'Entre na conta SOBEDESCE para usar este Drive.'
 const MSG_GONE = 'Este Drive saiu da sua conta SOBEDESCE. Confira em sobedesce.com/conta.'
 const MSG_OFFLINE = 'Sem conexão com a conta SOBEDESCE. Tentando de novo…'
 const MSG_SERVER = 'A conta SOBEDESCE não respondeu agora. Tentando de novo…'
+const MSG_PRECISA_TOTAL = `${PRECISA_TOTAL}. Este Drive está em Arquivos escolhidos e o site ainda não libera esse modo para este computador.`
 
 /** 'darwin' → 'mac', 'win32' → 'windows', resto → 'linux' (o que o site entende). */
 export function platformName(p = process.platform) {
@@ -76,6 +78,8 @@ function normalizeConta(raw) {
     nome: typeof raw.nome === 'string' ? raw.nome : null,
     fotoUrl: typeof raw.fotoUrl === 'string' && /^https:\/\//i.test(raw.fotoUrl) ? raw.fotoUrl : null,
     estado: raw.estado === 'reconectar' ? 'reconectar' : 'ok',
+    // Drive híbrido (docs/CONTAS.md §13): 'total' ou 'arquivos' (drive.file). Site antigo, sem o campo: 'total'.
+    modo: modoDe(raw),
   }
 }
 
@@ -237,10 +241,15 @@ export class CloudAuth extends EventEmitter {
   }
 
   #publicConta(c) {
-    return { id: `${CLOUD_PREFIX}${c.id}`, email: c.email, name: c.nome || c.email, photoUrl: c.fotoUrl, addedAt: null, status: c.estado === 'reconectar' ? 'reauth' : 'ok', source: 'nuvem' }
+    return { id: `${CLOUD_PREFIX}${c.id}`, email: c.email, name: c.nome || c.email, photoUrl: c.fotoUrl, addedAt: null, status: c.estado === 'reconectar' ? 'reauth' : 'ok', source: 'nuvem', modo: modoDe(c) }
   }
 
-  /** Contas no formato do AuthManager (id `nuvem:<id>`, status 'ok'|'reauth', source 'nuvem'). */
+  /** O modo do Drive (id do site, sem `nuvem:`): 'total' | 'arquivos'. Desconhecido: 'total' (o site recusa o resto). */
+  modoDe(contaId) {
+    return modoDe(this.session?.contas.find(x => x.id === String(contaId)))
+  }
+
+  /** Contas no formato do AuthManager (id `nuvem:<id>`, status 'ok'|'reauth', source 'nuvem', modo 'total'|'arquivos'). */
   listAccounts() {
     return this.session ? this.session.contas.map(c => this.#publicConta(c)) : []
   }
@@ -633,6 +642,15 @@ export class CloudAuth extends EventEmitter {
     this.#emitStatus()
   }
 
+  async #setModo(contaId, modo) {
+    const c = this.session?.contas.find(x => x.id === contaId)
+    if (!c || c.modo === modo) return
+    c.modo = modo
+    await this.#save().catch(() => {})
+    this.#emitAccounts()
+    this.#emitStatus()
+  }
+
   // ─────────── tokens ───────────
 
   /**
@@ -688,6 +706,11 @@ export class CloudAuth extends EventEmitter {
           this.refresh().catch(() => {})
           throw new SobeDesceError('reauth', MSG_GONE, { reason: 'cloudAccountNotFound', status: 404 })
         }
+        // Site que ainda não libera o drive.file ao computador (ou não reconheceu esta versão): não adianta repetir.
+        if (err instanceof HttpError && err.status === 403 && err.body?.erro === 'precisa_acesso_total') {
+          await this.#setModo(id, 'arquivos')
+          throw new SobeDesceError('fatal', siteMessage(err, MSG_PRECISA_TOTAL), { reason: 'precisaAcessoTotal', status: 403 })
+        }
         const t = transient(err)
         if (!t) throw new SobeDesceError('fatal', siteMessage(err, 'A conta SOBEDESCE recusou o pedido.'), { reason: err?.body?.erro || null, status: err?.status ?? null })
         last = t
@@ -704,6 +727,8 @@ export class CloudAuth extends EventEmitter {
         this.tokens.set(id, { token, expiresAt, at: Date.now() })
         const c = s.contas.find(x => x.id === id)
         if (c?.estado === 'reconectar') await this.#setEstado(id, 'ok')
+        // O modo vale por token: o admin pode ter ligado ou desligado o acesso total desde a última lista.
+        if (res.data && 'modo' in res.data) await this.#setModo(id, modoDe(res.data))
       }
       return token
     }
