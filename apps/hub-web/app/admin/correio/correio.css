@@ -1,5 +1,8 @@
 /* Correio do console (ADR 0034): lista à esquerda, leitura à direita; no celular, uma coisa de cada vez. */
 .cor {
+  /* iPhone: sem o "aumento automático" de texto em linhas longas (assuntos de relatório ficavam enormes). */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   --cor-alto: calc(100dvh - clamp(24px, 4vw, 56px) - 40px);
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
@@ -153,7 +156,7 @@
   font-size: 0.8rem;
 }
 .cor-item__assunto {
-  display: flex;
+  display: block;
   align-items: center;
   gap: 6px;
   min-width: 0;
@@ -165,6 +168,9 @@
 }
 .cor-item__assunto svg {
   flex: none;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 6px;
   width: 13px;
   height: 13px;
   color: var(--text-faint);
