@@ -15,10 +15,21 @@
 // site da conta, ou Drive para reconectar), só os passos que precisam mesmo de token
 // (conferir destino, abrir sessão) esperam.
 // Se mesmo assim o Google responder 401 num PUT, passamos a mandar o token naquela sessão.
+//
+// Tela Transferências (components/transferencias.js), a mesma do app do computador:
+//  - Lote (`batchId`): cada escolha de arquivos é um lote; pausar, retomar e cancelar valem para o lote inteiro.
+//  - Passar na frente (`priority`): pump() começa o da fila com maior prioridade; empate, a ordem de entrada.
+//  - Cancelar de verdade: interrompe, encerra a sessão retomável no Google (DELETE, cortesia), esquece a retomada e o
+//    item vira "cancelado" no histórico.
+//  - Histórico (IndexedDB, store `historico`): concluídos, já estavam e cancelados, com a conferência. Sobrevive a
+//    recarregar a página. Só metadados.
+//  - Conferência ao fim (lib/conferir.js): MD5 do Drive contra o MD5 do arquivo do aparelho, num Web Worker.
+//    "Conferido" só com MD5 igual.
 import { CHUNK_AUTO, LAN, getSettings, local } from './config.js'
 import * as auth from './auth.js'
-import { DriveError, backoffMs, createUploadSession, driveErrorFrom, findByName, isRetryable, sleep } from './drive.js'
-import { allRecords, deleteRecord, getRecord, putRecord, sessionKey } from './idb.js'
+import { DriveError, backoffMs, createUploadSession, driveCall, driveErrorFrom, findByName, isRetryable, sleep } from './drive.js'
+import { allHistory, allRecords, deleteHistory, deleteRecord, getRecord, putHistory, putRecord, sessionKey } from './idb.js'
+import { CONFERIR_AUTO_MAX, md5DoArquivo, mesmoMd5 } from './conferir.js'
 import { LAN_MSG, lanDiscard, lanPut, lanStart, lanStatus } from './lan.js'
 import { keepAwake } from './wakelock.js'
 import { bytes } from './format.js'
@@ -126,7 +137,11 @@ class ChunkSizer {
 export const ACTIVE = new Set(['queued', 'preparing', 'running', 'paused', 'mac'])
 const MAC_POLL_MS = 1500
 const MAC_POLL_MAX = 6 // por rodada: com centenas de arquivos no computador, não dá para perguntar de todos a cada 1,5 s
-const FINISHED = new Set(['done', 'skipped'])
+// Terminados: saem da fila e ficam no histórico. 'canceled' = a pessoa cancelou (nada a retomar).
+export const FINISHED = new Set(['done', 'skipped', 'canceled'])
+/** Quantos envios terminados o histórico guarda (os mais antigos saem). */
+export const HIST_MAX = 300
+const byPriority = (a, b) => (b.priority || 0) - (a.priority || 0)
 
 const MSG = {
   network: 'A conexão caiu várias vezes seguidas. Confira a internet e toque em Tentar de novo — continua de onde parou.',
@@ -219,11 +234,27 @@ function messageFor(err) {
 }
 
 let seq = 0
+let loteSeq = 0
+
+/** Pasta de destino só com o que o histórico precisa. */
+function folderOf(f) {
+  return f ? { id: f.id, name: f.name, driveId: f.driveId || null, path: f.path || [] } : null
+}
+
+/** Entrada do histórico lida do aparelho: o que estava no meio (conferindo) não tem mais o arquivo. */
+export function histFromStore(h) {
+  const v = h.verify
+  const vivo = v && (v.state === 'pending' || v.state === 'running' || v.state === 'big')
+  return vivo ? { ...h, verify: { state: 'unchecked', reason: 'semArquivo', at: v.at || null } } : h
+}
 
 class Engine {
   constructor() {
     this.items = []
+    this.history = [] // terminados (mais recente primeiro), espelho do store `historico`
     this.running = new Set()
+    this._verifyQueue = []
+    this._verifying = null
     this.notice = null // { kind: 'cap', text }
     this.account = null
     this.version = 0
@@ -282,7 +313,8 @@ class Engine {
   async restore() {
     if (this._restoredFor === this.account) return
     this._restoredFor = this.account
-    const records = await allRecords()
+    const [records, hist] = await Promise.all([allRecords(), allHistory()])
+    this._loadHistory(hist)
     const now = Date.now()
     for (const rec of records) {
       if (!rec?.key) continue
@@ -308,6 +340,8 @@ class Engine {
         addedAt: rec.createdAt,
         lanId: rec.lanId || null,
         lanMac: onMac,
+        priority: Number(rec.priority) || 0,
+        batchId: rec.batchId || `r-${rec.folder?.id || 'pasta'}`,
       })
     }
     this._watchMac()
@@ -337,6 +371,11 @@ class Engine {
       addedAt: Date.now(),
       finishedAt: 0,
       lastProgressAt: 0,
+      priority: 0, // "Passar na frente": maior começa antes
+      batchId: null, // lote: os arquivos escolhidos juntos
+      histId: null, // entrada no histórico (quando termina)
+      driveMd5: null, // md5Checksum que o Drive devolveu
+      verify: null, // conferência: { state, progress } (lib/conferir.js)
       ctl: null,
       _lastBytes: 0,
       _lastAt: 0,
@@ -349,6 +388,7 @@ class Engine {
 
   /** Arquivos escolhidos: retoma os pausados que batem (nome, tamanho, data) e enfileira os novos. */
   addFiles(files, folder) {
+    const batchId = `l${Date.now().toString(36)}${(++loteSeq).toString(36)}`
     let added = 0
     let resumed = 0
     let dupes = 0
@@ -378,13 +418,14 @@ class Engine {
         type: file.type || '',
         folder,
         key,
+        batchId,
       })
       added++
     }
     this.notice = null
     this.pump()
     this.changed(true)
-    return { added, resumed, dupes }
+    return { added, resumed, dupes, batchId }
   }
 
   // ───── controle ─────
@@ -392,8 +433,11 @@ class Engine {
   pump() {
     this._netCheck()
     const concurrency = this.net.bad ? 1 : getSettings().concurrency
-    // Rede instável: o que falta menos primeiro (termina antes da próxima queda).
-    const order = this.net.bad ? [...this.items].sort((a, b) => a.size - a.offset - (b.size - b.offset)) : this.items
+    // Quem passou na frente primeiro (sort estável: empate fica na ordem de entrada). Rede instável: depois da
+    // prioridade, o que falta menos (termina antes da próxima queda).
+    const order = this.net.bad
+      ? [...this.items].sort((a, b) => byPriority(a, b) || a.size - a.offset - (b.size - b.offset))
+      : [...this.items].sort(byPriority)
     for (const it of order) {
       if (this.running.size >= concurrency) break
       // Item que já está no computador (Wi-Fi) não precisa do arquivo para "tentar de novo".
@@ -469,12 +513,14 @@ class Engine {
     it.fileId = null
     it.offset = 0
     it.status = 'queued'
+    this._dropHistory(it)
     this.pump()
     this.changed(true)
   }
 
   remove(it) {
     if (it.ctl) this._abort(it, 'remove')
+    this._stopVerify(it)
     this.items = this.items.filter((x) => x !== it)
     if (LAN) {
       // Pela metade no computador: ele apaga o pedaço. Já inteiro lá: o computador termina de subir sozinho.
@@ -491,9 +537,269 @@ class Engine {
     this.changed(true)
   }
 
+  /** "Limpar concluídas": tira da lista e do histórico o que terminou. "Não conferiu" fica (é um problema a resolver). */
   clearFinished() {
-    this.items = this.items.filter((it) => !FINISHED.has(it.status))
+    const keep = (h) => h.verify?.state === 'mismatch'
+    for (const h of this.history) if (!keep(h)) deleteHistory(h.id)
+    this.history = this.history.filter(keep)
+    const kept = new Set(this.history.map((h) => h.id))
+    for (const it of this.items) if (FINISHED.has(it.status) && !kept.has(it.histId)) this._stopVerify(it)
+    this.items = this.items.filter((it) => !FINISHED.has(it.status) || kept.has(it.histId))
     this.changed(true)
+  }
+
+  // ───── passar na frente, cancelar, lotes ─────
+
+  /** "Passar na frente": sobe para o topo da fila (pausado volta para a fila). Fica guardado na sessão do aparelho. */
+  prioritize(it) {
+    if (it.status !== 'queued' && it.status !== 'paused') return false
+    const top = this.items.reduce((m, x) => Math.max(m, x.priority || 0), 0)
+    it.priority = top + 1
+    if (it.status === 'paused') {
+      it.authPaused = false
+      it.status = 'queued'
+      it.note = ''
+    }
+    const priority = it.priority
+    const ready = getRecord(it.key).then((rec) => rec && putRecord({ ...rec, priority }))
+    this.pump()
+    this.changed(true)
+    return ready.then(() => true)
+  }
+
+  /**
+   * Cancelar de verdade: interrompe, encerra a sessão no Google (cortesia), esquece a retomada e o item vira
+   * "cancelado" no histórico. O que já está inteiro no computador (Wi-Fi) não se cancela daqui.
+   */
+  cancel(it, { quiet = false } = {}) {
+    if (FINISHED.has(it.status) || it.status === 'mac') return false
+    if (it.ctl) this._abort(it, 'cancel')
+    this.running.delete(it) // a vaga fica livre já (o envio interrompido termina de sair sozinho)
+    this._stopVerify(it)
+    it.status = 'canceled'
+    it.note = ''
+    it.error = null
+    it.inflight = 0
+    it.speed = 0
+    it.authPaused = false
+    it.finishedAt = Date.now()
+    if (LAN) {
+      if (it.lanId && !it.lanMac) lanDiscard(it.lanId)
+      it._ended = deleteRecord(it.key)
+    } else it._ended = this._endSession(it.key)
+    this._saveHistory(it)
+    if (!quiet) {
+      this._activity()
+      this.pump()
+      this.changed(true)
+    }
+    return true
+  }
+
+  /** DELETE na sessão retomável (o Google libera na hora) e esquece a retomada no aparelho. */
+  _endSession(key) {
+    return getRecord(key).then((rec) => {
+      if (rec?.uri) fetch(rec.uri, { method: 'DELETE' }).catch(() => {})
+      return deleteRecord(key)
+    })
+  }
+
+  batchItems(batchId) {
+    return this.items.filter((it) => it.batchId === batchId)
+  }
+
+  pauseBatch(batchId) {
+    for (const it of this.batchItems(batchId)) if (it.status === 'queued' || it.status === 'preparing' || it.status === 'running') this.pause(it)
+  }
+
+  resumeBatch(batchId) {
+    this.notice = null
+    for (const it of this.batchItems(batchId)) {
+      if (it.status !== 'paused') continue
+      it.authPaused = false
+      it.status = 'queued'
+      it.note = ''
+    }
+    this.pump()
+    this.changed(true)
+  }
+
+  /** Cancela o lote inteiro: primeiro todos (para o pump não começar outro do mesmo lote), depois enche as vagas. */
+  cancelBatch(batchId) {
+    let n = 0
+    for (const it of this.batchItems(batchId)) if (this.cancel(it, { quiet: true })) n++
+    this._activity()
+    this.pump()
+    this.changed(true)
+    return n
+  }
+
+  // ───── histórico ─────
+
+  _loadHistory(list) {
+    const daConta = (h) => h?.id && (!h.account || !this.account || h.account === this.account)
+    const mine = (list || []).filter(daConta).map(histFromStore)
+    const atual = this.history.filter(daConta)
+    const known = new Set(atual.map((h) => h.id))
+    const all = [...atual, ...mine.filter((h) => !known.has(h.id))].sort((a, b) => (b.finishedAt || 0) - (a.finishedAt || 0))
+    for (const old of all.slice(HIST_MAX)) deleteHistory(old.id)
+    this.history = all.slice(0, HIST_MAX)
+  }
+
+  /** Grava (ou atualiza) a entrada do histórico deste item. persist=false só atualiza a memória (progresso). */
+  _saveHistory(it, persist = true) {
+    if (!FINISHED.has(it.status)) return null
+    if (!it.histId) it.histId = `h${Date.now().toString(36)}-${it.id}-${Math.random().toString(36).slice(2, 7)}`
+    const v = it.verify
+    const entry = {
+      id: it.histId,
+      account: this.account,
+      name: it.name,
+      size: it.size,
+      type: it.type || '',
+      folder: folderOf(it.folder),
+      fileId: it.fileId || null,
+      finishedAt: it.finishedAt || Date.now(),
+      result: it.status,
+      sizeOk: Boolean(it.sizeOk),
+      verify: v ? { state: v.state, progress: v.progress || 0, reason: v.reason || null, at: v.at || null } : null,
+      batchId: it.batchId || null,
+      lan: Boolean(LAN),
+    }
+    const i = this.history.findIndex((h) => h.id === entry.id)
+    if (i >= 0) this.history[i] = entry
+    else {
+      this.history.unshift(entry)
+      for (const old of this.history.splice(HIST_MAX)) deleteHistory(old.id)
+    }
+    if (persist) it._saved = putHistory(entry)
+    return entry
+  }
+
+  _dropHistory(it) {
+    if (!it.histId) return
+    deleteHistory(it.histId)
+    this.history = this.history.filter((h) => h.id !== it.histId)
+    it.histId = null
+    it.verify = null
+  }
+
+  /** "Tirar da lista" de um terminado: some do histórico e da lista. */
+  forget(histId) {
+    deleteHistory(histId)
+    this.history = this.history.filter((h) => h.id !== histId)
+    for (const it of this.items) if (it.histId === histId) this._stopVerify(it)
+    this.items = this.items.filter((it) => it.histId !== histId || !FINISHED.has(it.status))
+    this.changed(true)
+  }
+
+  /** O item vivo (com o arquivo) de uma entrada do histórico, se ainda estiver nesta página. */
+  liveOf(histId) {
+    return this.items.find((it) => it.histId === histId) || null
+  }
+
+  // ───── conferência (MD5) ─────
+
+  /** Envio terminou: se der, confere. manual = "Conferir agora" (sem o limite automático). */
+  _queueVerify(it, { manual = false } = {}) {
+    if (it.status !== 'done' && it.status !== 'skipped') return
+    if (LAN) return // no Wi-Fi quem confere é o computador
+    if (!it.file) {
+      it.verify = { state: 'unchecked', reason: 'semArquivo', at: Date.now() }
+      return this._saveHistory(it)
+    }
+    if (!manual && it.size > CONFERIR_AUTO_MAX) {
+      it.verify = { state: 'big' }
+      return this._saveHistory(it)
+    }
+    if (this._verifying === it || this._verifyQueue.includes(it)) return
+    it.verify = { state: 'pending' }
+    this._verifyQueue.push(it)
+    this._saveHistory(it, false)
+    this._nextVerify()
+  }
+
+  /** "Conferir agora" (arquivo acima do limite, ou que ficou sem conferência com o arquivo ainda aqui). */
+  verifyNow(it) {
+    const st = it?.verify?.state
+    if (!it?.file || st === 'ok' || st === 'running' || st === 'pending') return false
+    this._queueVerify(it, { manual: true })
+    this.changed(true)
+    return true
+  }
+
+  _stopVerify(it) {
+    this._verifyQueue = this._verifyQueue.filter((x) => x !== it)
+    it._verifyCtl?.abort()
+  }
+
+  /** Uma conferência por vez (o disco e a bateria agradecem). Devolve quando a fila de conferências esvaziar. */
+  async _nextVerify() {
+    if (this._verifying) return
+    const it = this._verifyQueue.shift()
+    if (!it) return
+    this._verifying = it
+    const ctl = new AbortController()
+    it._verifyCtl = ctl
+    try {
+      await this._verify(it, ctl.signal)
+    } catch (err) {
+      it.verify = ctl.signal.aborted || err?.aborted ? null : { state: 'unchecked', reason: 'erro', at: Date.now() }
+    } finally {
+      it._verifyCtl = null
+      this._verifying = null
+      if (FINISHED.has(it.status) && it.histId && this.history.some((h) => h.id === it.histId)) this._saveHistory(it)
+      this.changed(true)
+    }
+    return this._nextVerify()
+  }
+
+  async _verify(it, signal) {
+    it.verify = { state: 'running', progress: 0 }
+    this._saveHistory(it, false)
+    this.changed(true)
+    let remoto = it.driveMd5
+    if (!remoto && it.fileId) {
+      // O fim do envio veio sem o md5Checksum: pergunta ao Drive (Doc Google e atalhos não têm MD5).
+      try {
+        const meta = await driveCall(`/files/${encodeURIComponent(it.fileId)}`, { query: { supportsAllDrives: true, fields: 'id,size,md5Checksum' }, signal, retries: 2 })
+        remoto = meta?.md5Checksum || null
+        it.driveMd5 = remoto
+      } catch (err) {
+        if (signal.aborted) throw err
+        remoto = null
+      }
+    }
+    if (!remoto) {
+      it.verify = { state: 'unchecked', reason: 'semMd5', at: Date.now() }
+      return
+    }
+    const local = await md5DoArquivo(it.file, {
+      signal,
+      onProgress: (p) => {
+        it.verify = { state: 'running', progress: p }
+        this._saveHistory(it, false)
+        this.changed()
+      },
+    })
+    it.verify = { state: mesmoMd5(local, remoto) ? 'ok' : 'mismatch', at: Date.now() }
+  }
+
+  /** "Não conferiu" → "Enviar de novo": outra cópia, sem apagar a que chegou diferente (a entrada dela fica). */
+  resend(it) {
+    if (!it?.file || (it.status !== 'done' && it.status !== 'skipped')) return false
+    this._stopVerify(it)
+    it.forceCopy = true
+    it.fileId = null
+    it.driveMd5 = null
+    it.offset = 0
+    it.sizeOk = false
+    it.histId = null
+    it.verify = null
+    it.status = 'queued'
+    this.pump()
+    this.changed(true)
+    return true
   }
 
   hasWork() {
@@ -606,6 +912,13 @@ class Engine {
     it.ctl = ctl
     this.running.add(it)
     this._run(it, ctl)
+      .then(() => {
+        if (ctl.aborted) return
+        if (it.status === 'done' || it.status === 'skipped') {
+          this._saveHistory(it)
+          this._queueVerify(it)
+        }
+      })
       .catch((err) => {
         if (ctl.aborted) return
         if (err?.signedOut) {
@@ -657,6 +970,8 @@ class Engine {
       if (same) {
         it.status = 'skipped'
         it.fileId = same.id
+        it.sizeOk = true
+        it.driveMd5 = same.md5Checksum || null
         it.note = ''
         it.finishedAt = Date.now()
         return
@@ -708,6 +1023,8 @@ class Engine {
       type: it.type,
       folder: it.folder,
       account: this.account,
+      priority: it.priority || 0,
+      batchId: it.batchId || null,
     })
   }
 
@@ -1110,6 +1427,8 @@ class Engine {
       type: it.type,
       folder: it.folder,
       account: this.account,
+      priority: it.priority || 0,
+      batchId: it.batchId || null,
     })
   }
 
@@ -1136,6 +1455,7 @@ class Engine {
       it.fileId = drive.fileId || null
       it.finishedAt = Date.now()
       deleteRecord(it.key)
+      this._saveHistory(it)
     } else if (drive.status === 'failed' || drive.status === 'canceled') {
       it.status = 'failed'
       it.error = `Chegou no computador, mas não subiu pro Drive: ${drive.error || (drive.status === 'canceled' ? 'cancelado no computador' : 'erro')}.`
@@ -1195,6 +1515,7 @@ class Engine {
     it.status = 'done'
     it.sizeOk = size != null
     it.fileId = json?.id || null
+    it.driveMd5 = typeof json?.md5Checksum === 'string' ? json.md5Checksum : null
     it.offset = it.size
     it.inflight = 0
     it.note = ''
@@ -1218,6 +1539,7 @@ export function summarize(items) {
   let waitingFile = 0
   let onMac = 0
   for (const it of items) {
+    if (it.status === 'canceled') continue // cancelado não entra na conta
     total++
     if (FINISHED.has(it.status)) {
       finished++

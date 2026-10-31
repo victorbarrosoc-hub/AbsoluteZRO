@@ -1108,6 +1108,12 @@ do card... não consigo localizar o job que quero achar".
 - ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
   separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 
+## SOBEDESCE celular: Transferências como no computador (31/10/2026)
+
+- 🔶 No ramo `sobedesce-web-transferencias`, esperando a aprovação do titular pela prévia: tela Transferências no app
+  web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
+  IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

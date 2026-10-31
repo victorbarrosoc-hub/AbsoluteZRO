@@ -22,8 +22,8 @@ export const EMBUTIDO = ANFITRIAO !== null
 /** O Relay escolhendo um vídeo (/app/?no=relay&modo=escolher): o toque no arquivo vira o recado `escolhido`. */
 export const ESCOLHER = ANFITRIAO === 'relay' && params.get('modo') === 'escolher'
 
-/** Abas que existem no modo embutido. */
-export const ABAS_EMBUTIDO = ['send', 'drive']
+/** Abas que existem no modo embutido ('transferencias' é a tela cheia da fila, aberta pelo cartão do Início). */
+export const ABAS_EMBUTIDO = ['send', 'transferencias', 'drive']
 
 /** Acima disto, a fila sugere o app do computador (cartão de RAW inteiro, pasta de brutos). */
 export const GRANDE = 10 * 1024 ** 3

@@ -21,6 +21,7 @@ export const STATUS = {
   done: { label: 'Concluído', tone: 'success' },
   skipped: { label: 'Já estava no Drive', tone: 'success-soft' },
   failed: { label: 'Com problema', tone: 'error' },
+  canceled: { label: 'Cancelado', tone: 'muted' },
   // Modo Wi-Fi: chegou inteiro no computador, que está subindo pro Drive.
   mac: { label: `No ${LAN?.label || 'Mac'}`, tone: 'up-soft' },
 }
@@ -148,7 +149,7 @@ export function BatchCards({ items }) {
   if (LAN) return null
   const groups = new Map()
   for (const it of items) {
-    if (!it.folder) continue
+    if (!it.folder || it.status === 'canceled') continue
     const g = groups.get(it.folder.id) || { folder: it.folder, n: 0, open: 0, at: 0 }
     if (it.status === 'done' || it.status === 'skipped') {
       g.n++
@@ -250,7 +251,7 @@ function Meta({ it, waiting }) {
     case 'done':
       return html`<span class="row-nums">${bytes(it.size)}</span>
         ${it.sizeOk
-          ? html`<span class="row-ok" title="O Drive recebeu exatamente o tamanho do arquivo" aria-label="tamanho confere com o Drive"><${Icon} name="check" size=${13} strokeWidth=${2.4} /><span aria-hidden="true">confere</span></span>`
+          ? html`<span class="row-ok" title="O Drive recebeu exatamente o tamanho do arquivo" aria-label="tamanho confere com o Drive"><${Icon} name="check" size=${13} strokeWidth=${2.4} /><span aria-hidden="true">tamanho confere</span></span>`
           : null}
         ${it.fileId
           ? html`<a class="row-link" href=${driveLink(it.fileId)} target="_blank" rel="noopener noreferrer" onClick=${(e) => e.stopPropagation()}>
@@ -283,9 +284,15 @@ function Meta({ it, waiting }) {
   }
 }
 
+/** Rótulo da linha: "Na frente" para quem passou na frente e ainda espera a vez. */
+export function statusOf(it) {
+  if (it.status === 'queued' && it.priority > 0) return { label: 'Na frente', tone: 'up-soft' }
+  return STATUS[it.status] || STATUS.queued
+}
+
 export function QueueRow({ it, waiting }) {
   const kind = fileKind(it.name, it.type)
-  const st = STATUS[it.status] || STATUS.queued
+  const st = statusOf(it)
   return html`<li class=${cx('row', `is-${it.status}`)}>
     <button type="button" class="row-hit" onClick=${() => openSheet('item', { id: it.id })} aria-label=${`${it.name}, ${st.label}. Mais opções`}>
       <span class=${cx('row-tile', `tone-${it.status}`)} aria-hidden="true"><${Icon} name=${KIND_ICON[kind]} size=${20} /></span>
@@ -315,7 +322,11 @@ export function ItemSheet({ id }) {
   useEngine()
   const it = engine.items.find((x) => x.id === id)
   if (!it) return html`<div class="sheet-body"><p class="sub center">Este item saiu da fila.</p></div>`
-  const st = STATUS[it.status] || STATUS.queued
+  const st = statusOf(it)
+  // Passar na frente: só faz sentido se há outro esperando a vez (ou andando) e este ainda não começou.
+  const outros = engine.items.some((x) => x !== it && ['queued', 'preparing', 'running'].includes(x.status))
+  const podeFrente = (it.status === 'queued' || it.status === 'paused') && outros
+  const terminado = it.status === 'done' || it.status === 'skipped' || it.status === 'canceled' || it.status === 'mac'
   const act = (fn) => () => {
     fn()
     closeSheet()
@@ -344,6 +355,9 @@ export function ItemSheet({ id }) {
       ? html`<p class="item-explain">O arquivo já está inteiro no ${LAN?.label || 'computador'}. O SOBEDESCE de lá está subindo pro Drive — pode fechar esta tela.</p>`
       : null}
     <ul class="group menu">
+      ${podeFrente
+        ? html`<li><button type="button" class="menu-item" onClick=${act(() => engine.prioritize(it))}><${Icon} name="prioritize" /><span>Passar na frente</span></button></li>`
+        : null}
       ${it.status === 'running' || it.status === 'queued' || it.status === 'preparing'
         ? html`<li><button type="button" class="menu-item" onClick=${act(() => engine.pause(it))}><${Icon} name="pause" /><span>Pausar este arquivo</span></button></li>`
         : null}
@@ -360,9 +374,9 @@ export function ItemSheet({ id }) {
         ? html`<li><button type="button" class="menu-item" onClick=${act(() => engine.sendAnyway(it))}><${Icon} name="copy" /><span>Enviar mesmo assim (outra cópia)</span></button></li>`
         : null}
       <li>
-        <button type="button" class=${cx('menu-item', !(it.status === 'done' || it.status === 'skipped' || it.status === 'mac') && 'is-danger')} onClick=${act(() => engine.remove(it))}>
-          <${Icon} name=${it.status === 'done' || it.status === 'skipped' || it.status === 'mac' ? 'x' : 'trash'} />
-          <span>${it.status === 'done' || it.status === 'skipped' || it.status === 'mac' ? 'Tirar da lista' : it.status === 'needsFile' ? 'Descartar este envio' : 'Cancelar este envio'}</span>
+        <button type="button" class=${cx('menu-item', !terminado && 'is-danger')} onClick=${act(() => (terminado ? engine.remove(it) : engine.cancel(it)))}>
+          <${Icon} name=${terminado ? 'x' : 'trash'} />
+          <span>${terminado ? 'Tirar da lista' : it.status === 'needsFile' ? 'Descartar este envio' : 'Cancelar este envio'}</span>
         </button>
       </li>
     </ul>

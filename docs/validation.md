@@ -3604,3 +3604,10 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.
 
 - Google (31/10/2026): inventário de escopos feito (Maestro não pede escopo Google próprio: usa o token curto do SOBEDESCE pela ponte, nada migrado). Páginas `/privacidade` (com Limited Use) e `/termos` no HUB; teste `tests/integration/legal.test.ts`. Kit de verificação e roteiro do teste `drive.file` em `docs/operations/`.
+
+## SOBEDESCE celular: Transferências como no computador (31/10/2026)
+
+- `products/sobedesce/web`: `tests/transferencias-celular.test.mts` 19/19 (prioridade, cancelar com DELETE na sessão,
+  lote, histórico e migração IndexedDB v1 → v2, MD5 contra a RFC 1321 e o `crypto` do Node em 6 MB); `npm test`
+  336/336, lint e typecheck limpos; testes do produto que leem `web/public/app` 132/132. Capturas no
+  Playwright (iPhone e computador, claro e escuro) sem erro na página.
