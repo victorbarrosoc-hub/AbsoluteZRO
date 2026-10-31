@@ -331,7 +331,7 @@ Agora: `viewport-fit=cover` só no site, cápsula abaixo da safe area e faixa da
 degradê); vidro da cápsula quase opaco; `.public-main` isolado (nada da página sobe acima do topo); grade como a Tela de
 Início (4 por linha, 3 quando fecha a conta), nome alinhado pelo topo e "Em breve" em cinza; ícones fechados sem
 esmaecer; régua centrada e sem a margem extra. Maestro e Relay ("Em breve", pelo gate) com ícone e linha; o Relay entra
-sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 no celular, 5+4 no computador).
+sozinho quando a 0034 chegar (conferido aplicando a 0034 num banco local: 3×3 no celular, 5+4 no computador).
 
 | Verificação                             | Resultado                                                                                              |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -343,7 +343,7 @@ sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 n
 `home-celular.spec.ts` rola a página inteira e compara a faixa acima da cápsula e o meio dela com e sem o conteúdo da
 página (nada pode aparecer), confere nomes alinhados e selos inteiros na grade, o espaço até "Em números" e corte ou
 rolagem de lado em todas as seções. A foto do app para computador (`produto-hub-*.webp`) já mostra o catálogo atual;
-quando a 0031 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
+quando a 0034 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
 
 ## Início sem piscar cinza nem pular (29/10/2026)
 
@@ -2891,6 +2891,18 @@ trocando o app, e o primeiro Release (sai no primeiro push na main com `products
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## NOSSOM em nossom.absolutezro.com (29/10/2026)
+
+- `nossom.absolutezro.com` adicionado ao projeto Vercel `nossom` (zona `absolutezro.com` na DNS da Vercel; domínio
+  verificado na hora). O `nossom-teal.vercel.app` continua respondendo, sem redirecionar.
+- Migração `0034_nossom_dominio.sql`: retorno OIDC novo no cliente `nossom-web` (o antigo fica) e catálogo do HUB
+  (`external_url`, `sso_start_url`) no endereço novo, na mesma transação. O banco em uso é o AbsoluteZRO-SP (o AbsoluteZRO antigo parou na
+  0024); lá falta só a 0034. Número 0034 porque 0031–0033 já existem em outras branches (Relay, TPeasy, Synquei).
+- Links trocados: downloads e instalador no HUB, famílias da AEON e da Revela, metadados e página de apps do NOSSOM.
+  Ficam no endereço antigo o canal de atualização do app de computador e a documentação histórica.
+- Testes: `tests/integration/downloads.test.ts` (Postgres 16 local), `apps/hub-desktop` regras (6/6), e2e do gate
+  aceitando os dois endereços.
 
 ## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
 
