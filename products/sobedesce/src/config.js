@@ -8,13 +8,15 @@ import { JsonFile } from './util/store.js'
 
 export const APP_NAME = 'SOBEDESCE'
 export const APP_ID = 'sobedesce'
-export const APP_VERSION = '0.2.0'
+export const APP_VERSION = '0.3.0'
 /**
  * O que este app sabe fazer, dito ao site em todo pedido (cabeçalho x-sobedesce-capacidades, src/google/cloud-auth.js).
  * "relay": pega e converte as versões do Relay pedidas pelo Maestro (src/engine/pedidos-relay.js), desde a 0.2.0. O
  * Maestro só mostra "Gerar versões" quando algum computador da conta diz isso (web/src/lib/zro/relay.ts).
+ * "drive-arquivos": entende o modo Arquivos escolhidos do Drive híbrido (src/google/modo-drive.js), desde a 0.3.0. Sem
+ * ela, o site não entrega o token drive.file a este computador (web/src/app/api/drive/token/route.ts).
  */
-export const CAPACIDADES_DO_APP = Object.freeze(['relay'])
+export const CAPACIDADES_DO_APP = Object.freeze(['relay', 'drive-arquivos'])
 
 const MiB = 1024 * 1024
 

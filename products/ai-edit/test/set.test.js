@@ -17,7 +17,7 @@ const ARQUIVOS = { html: '../app/index.html', css: '../app/editor.css', js: '../
 
 const LIA = { sub: 'zro-411', email: 'lia@produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: [PRODUTO], release: { [PRODUTO]: 'allowed' } }
 const ID = '3f2b8c1e-7d4a-4b9e-9c21-5a6f7e8d9c0b'
-const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set zro.sons'
 let zro, app, SITE
 const f = {}
 
@@ -87,9 +87,12 @@ describe('login', () => {
   test('Absolute ZRO de antes do Set (invalid_scope): entra de novo sem zro.set, com a Z', async () => {
     zro.estado.pessoa = LIA
     zro.estado.recusarEscopoSet = true
+    // primeiro sem os sons (o mais novo); ainda recusa por causa do Set: sem o Set também
     const volta = await idaEVolta('/api/zro/entrar?volta=/x')
-    assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_set=1')
-    const fim = await idaEVolta(volta.headers.get('location'))
+    assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_sons=1')
+    const volta2 = await idaEVolta(volta.headers.get('location'))
+    assert.equal(volta2.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_set=1')
+    const fim = await idaEVolta(volta2.headers.get('location'))
     assert.equal(zro.estado.escopo, 'openid email profile org offline_access zro.ia')
     assert.equal(fim.headers.get('location'), '/x?zro=ok')
   })

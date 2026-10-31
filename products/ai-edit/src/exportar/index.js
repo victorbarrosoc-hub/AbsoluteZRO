@@ -9,6 +9,7 @@ import { nomeArquivo } from './comum.js'
 import { agrupar, srt, vtt } from '../legenda.js'
 import { palavrasNaLinha } from '../projeto.js'
 import { fpsNumero } from '../tempo.js'
+import { creditos } from '../efeitos.js'
 
 export const FORMATOS = [
   { id: 'fcpxml', editor: 'Final Cut Pro e DaVinci Resolve', ext: '.fcpxml', gerar: paraFcpxml },
@@ -28,7 +29,11 @@ export function referencia(p, formato, arquivo, agora = new Date()) {
     fps: Math.round(fpsNumero(p.fps) * 1000) / 1000,
     created_at: agora.toISOString(),
     relink: p.midias.map((m) => ({ asset_id: m.id, media_path: m.nome })),
-    notes: ['Zoom vai como escala e posição de cada clipe (na EDL, só como comentário).', 'Legenda vai à parte em SRT e VTT.'],
+    notes: [
+      'Zoom vai como escala e posição de cada clipe (na EDL, só como comentário).',
+      'Legenda vai à parte em SRT e VTT.',
+      ...((p.efeitos || []).length ? ['Efeitos sonoros em faixa própria (na EDL, só como comentário); créditos em CREDITOS.txt.'] : []),
+    ],
   }
 }
 
@@ -41,6 +46,8 @@ export function pacote(p, cfgLegenda, agora = new Date(), formatos = FORMATOS.ma
   const arquivos = FORMATOS.filter((f) => formatos.includes(f.id)).map((f) => ({ name: `${base}${f.ext}`, data: f.gerar(p), formato: f.id }))
   const blocos = agrupar(palavrasNaLinha(p), cfgLegenda)
   if (blocos.length) arquivos.push({ name: `${base}.srt`, data: srt(blocos) }, { name: `${base}.vtt`, data: vtt(blocos) })
+  const cred = creditos(p)
+  if (cred.length) arquivos.push({ name: 'CREDITOS.txt', data: `Efeitos sonoros\n\n${cred.join('\n')}\n` })
   const refs = arquivos.filter((a) => a.formato).map((a) => referencia(p, a.formato, a.name, agora))
   arquivos.push({ name: 'zro-timeline-ref.json', data: JSON.stringify(refs, null, 2) })
   return arquivos.map(({ name, data }) => ({ name, data }))

@@ -1,5 +1,7 @@
 // Tela principal (aba Início): a saudação, o destino, o botão grande de escolher arquivos, os atalhos, o espaço no
-// Drive, as pastas recentes e a fila. Com a fila andando, o topo encolhe e fica só o que importa para o envio.
+// Drive, as pastas recentes e o cartão das Transferências (a fila mora na tela Transferências, components/
+// transferencias.js: um lugar só). Com a fila andando, o topo encolhe e fica só o que importa para o envio.
+// No modo Wi-Fi não há abas: a fila continua aqui mesmo.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js'
 import * as auth from '../lib/auth.js'
 import { ACCOUNT, DEV, LAN, local } from '../lib/config.js'
@@ -12,6 +14,7 @@ import { Icon, Wordmark } from './icons.js'
 import { Button, cx, useEngine } from './ui.js'
 import { SetBotao } from './set.js'
 import { BatchCards, FileName, QueueRow, SequenceBar } from './queue.js'
+import { TransfersCard } from './transferencias.js'
 import { InstallHint } from './install-hint.js'
 import { isIOS } from '../lib/platform.js'
 import { ComputerCard } from './computador.js'
@@ -76,7 +79,8 @@ function useLanAccount() {
         setState({
           user: { displayName: info.account?.name || email || 'Sem conta', emailAddress: email || '' },
           quota: null,
-          lan: { mac: info.mac?.name || LAN.mac, noAccount: !info.account, deleteAfterUpload: !!info.deleteAfterUpload, error: null, badCode: false },
+          // modo: o do Drive do computador (Drive híbrido, lib/modo-drive.js). App de computador antigo: sem o campo.
+          lan: { mac: info.mac?.name || LAN.mac, noAccount: !info.account, deleteAfterUpload: !!info.deleteAfterUpload, error: null, badCode: false, modo: info.account?.modo === 'arquivos' ? 'arquivos' : 'total' },
         })
         engine.setAccount(email)
         if (!getState().dest) setState({ dest: getRecents(email)[0] || info.folder || MY_DRIVE })
@@ -374,6 +378,7 @@ export function MainScreen() {
         : html`<div class="ini-entra" style="--i:1"><${Destination} dest=${dest} /></div>`}
       ${reconnect ? html`<${ReconnectNotice} drive=${drive} message=${authError} />` : null}
       ${compact ? null : html`<div class="ini-entra" style="--i:2"><${Picker} dest=${lan?.noAccount || reconnect ? null : dest} account=${user?.emailAddress} /></div>`}
+      ${LAN ? null : html`<${TransfersCard} />`}
       ${inicio ? html`<${Atalhos} /><${P2pAndamentoCompacto} /><${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
       ${LAN ? html`<${LanNotices} lan=${lan} sum=${sum} />` : null}
 
@@ -392,7 +397,7 @@ export function MainScreen() {
 
       ${compact ? null : html`<${BatchCards} items=${items} />`}
 
-      ${items.length
+      ${LAN && items.length
         ? html`<section class="queue" aria-label="Envios">
             <div class="section-head">
               <h2>Envios</h2>

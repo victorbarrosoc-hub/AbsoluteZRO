@@ -15,6 +15,65 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Papel Financeiro e Correio no console (31/10/2026)
+
+Branch `console-financeiro-correio` (com a main mesclada, até `0045_tpeasy_subdominio`): migração `0046_papel_financeiro`
+e [ADR 0034](decisions/0034-console-financeiro-e-correio.md). Sem rede nos testes: o iCloud é o falso local de
+`tests/fixtures/icloud-falso.ts` (IMAP e SMTP em memória).
+
+- `tests/integration/console-papeis.test.ts` (14): o que cada papel vê e muda; `requireConsole`/`requireCaixa` negam
+  (403) para cada área e caixa fora do papel; Financeiro barrado pelas guardas antigas; toda página, layout e rota do
+  /admin e de `/api/v1/admin/correio` com guarda; 0046 aceita `financeiro` e recusa papel inventado; isolamento:
+  `zro_app` não grava `platform_role` (nem o Financeiro vira admin) e `zro.is_platform_admin()` segue falso para ele;
+  atribuição só por admin, nunca o próprio papel, e-mail confirmado, auditoria de → para.
+- `tests/integration/correio.test.ts` (24): filtro por caixa (To, Cc, Delivered-To, X-Original-To, endereço exato,
+  grupo, linha dobrada); HTML sem script/evento/iframe/form/base/meta, imagem remota bloqueada e contada, `@import` e
+  `url()` remota fora, `cid:` em `data:`, CSP do documento; resposta com From/Reply-To do alias, To = Reply-To,
+  `Re:`, In-Reply-To, References e citação (conferidos no MIME); "todos" sem os aliases; injeção de cabeçalho barrada;
+  configuração (iCloud 993/587, servidor de teste só local e fora de produção); erros do iCloud; download sempre
+  `attachment`; e o caminho inteiro: lista por caixa e por chegada, abrir marca lida, mensagem e anexo de outra caixa =
+  404, envio pelo SMTP, cópia em "Sent Messages", auditoria sem corpo nem assunto, SMTP/IMAP com senha errada ou
+  remetente recusado sem cópia nem auditoria.
+- Capturas (Playwright, 1440×900 e 390×844, claro e escuro, dados falsos): Correio (lista, mensagem, resposta,
+  escrever, enviado), console do Financeiro (menu com Planos, Custos e Correio) e Papéis. No servidor real local, o
+  Financeiro recebe 404 em Pessoas, Apps, Lançamento, Denúncias, Papéis, Laboratório, `/admin/online` e
+  `/admin/pessoas/csv`, 403 na API da caixa victor@, e `/admin` leva a Custos.
+- `npm run lint`, `format:check`, `typecheck`, `npm test` (**527/527** em 59 arquivos), `npm run build` e
+  `node scripts/scan-secrets.mjs` ok. `npm audit`: nada nos pacotes novos (os 11 moderados são do eslint/minimatch,
+  de antes).
+
+## SOBEDESCE: trocar de conta no login (31/10/2026)
+
+Branch `sobedesce-login-trocar-conta` sobre a main d721336. Site do SOBEDESCE e o mínimo no HUB (`prompt=login` em
+`@zro/auth` e `/oauth/authorize`, `/entrar?outra=1`, sessão anterior encerrada ao entrar).
+
+| Verificação     | Comando                                                    | Resultado                                                   |
+| --------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Raiz            | `npm run lint` · `format:check` · `typecheck` · `npm test` | limpo · ok · ok · **486/486**                               |
+| OIDC do HUB     | `vitest run tests/integration/oidc.test.ts`                | **14/14** (+2: `prompt=login` aceito e anunciado, sem laço) |
+| SOBEDESCE web   | `npm run lint` · `typecheck` · `npm test`                  | limpo · ok · **367/368**                                    |
+| Trocar de conta | `tests/zro-outra-conta.test.mts`                           | **14/14**                                                   |
+| Segredos        | `node scripts/scan-secrets.mjs`                            | nenhum segredo                                              |
+
+O que falha no site é `zro-relay-ciclo` por ambiente: importa o motor (`products/sobedesce/src`), que precisa do
+`undici` em `products/sobedesce/node_modules`, ausente neste checkout. `zro-outra-conta` cobre: selo válido (sessão
+antiga encerrada, nova na conta ligada, selo apagado, reapresentar não serve), volta `/z` e `/app/`, selo vencido,
+adulterado, de outro cookie, ausente, de outra sessão, sem Origin ou de outro site (403), `zroSub` no corpo ignorado,
+Absolute ZRO desligada no meio; `trocar=1` → `prompt=login` (entrar e ligar; criar continua `create`; o refazer por
+`invalid_scope` não pede a conta de novo); a ordem de `/entrar` e as duas variações da tela do erro. Capturas no iPhone
+(390×844, claro e escuro): `/entrar`, a tela de ligar com "Usar outra conta" e o erro com "Entrar nessa conta", sem
+rolagem lateral. Build e E2E do HUB não rodados aqui (disco).
+
+## Teste do Drive no console (31/10/2026)
+
+Branch `teste-drive` sobre a main dfdca05: `/admin/teste-drive` (só admin) mede se `drive.file` + Picker cobrem o
+SOBEDESCE ([google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)). Sem chamada real ao Google nos
+testes: `tests/integration/teste-drive.test.ts` (17: tabela de decisão e fluxos, escopo amplo, falha de configuração,
+variáveis, CSP só nesta rota, checagens contra um Drive falso nos modos drive.file e amplo, limpeza só por id) e
+`tests/e2e/teste-drive.spec.ts` (3: 404 para cliente e suporte, login exigido, lista do que falta, cabeçalhos CSP/COOP
+só nesta rota, resultado de exemplo, axe WCAG 2.1 A/AA, nenhuma requisição ao Google). Lint, formatação, tipos, `npm test`,
+build e `node scripts/scan-secrets.mjs` ok.
+
 ## Versões de computador: Gerar versões, BT.709 e a família (30/10/2026)
 
 Branch `versoes-computador` sobre a main 581c84d: `relay-lancamento` (Maestro `0034`, SOBEDESCE web `0016`/`0017`,
@@ -321,7 +380,7 @@ Agora: `viewport-fit=cover` só no site, cápsula abaixo da safe area e faixa da
 degradê); vidro da cápsula quase opaco; `.public-main` isolado (nada da página sobe acima do topo); grade como a Tela de
 Início (4 por linha, 3 quando fecha a conta), nome alinhado pelo topo e "Em breve" em cinza; ícones fechados sem
 esmaecer; régua centrada e sem a margem extra. Maestro e Relay ("Em breve", pelo gate) com ícone e linha; o Relay entra
-sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 no celular, 5+4 no computador).
+sozinho quando a 0034 chegar (conferido aplicando a 0034 num banco local: 3×3 no celular, 5+4 no computador).
 
 | Verificação                             | Resultado                                                                                              |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -333,7 +392,7 @@ sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 n
 `home-celular.spec.ts` rola a página inteira e compara a faixa acima da cápsula e o meio dela com e sem o conteúdo da
 página (nada pode aparecer), confere nomes alinhados e selos inteiros na grade, o espaço até "Em números" e corte ou
 rolagem de lado em todas as seções. A foto do app para computador (`produto-hub-*.webp`) já mostra o catálogo atual;
-quando a 0031 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
+quando a 0034 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
 
 ## Início sem piscar cinza nem pular (29/10/2026)
 
@@ -2223,6 +2282,125 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
   app instalado; publicar é decisão do titular).
 
+## AEON: página inicial com teste ao vivo (31/10/2026)
+
+- Referência do titular: a página do Hélice Ramps (demos que se mexem na própria página). Adaptado ao Padrão Apple e
+  ao AEON fechado ao público: sem preço, sem download e sem link para o editor; todo botão é âncora.
+- `site/estudio.js`: um vídeo de exemplo (foto + fala de 20,5 s escrita no arquivo), sem transcrever, enviar ou gravar
+  nada. Cortes: pausas acima do limite viram proposta (laranja) e só saem ao aprovar; a linha junta o que ficou em
+  clipes e a duração conta até o valor novo. Legenda: os estilos do app (Destaque, Pop, Limpa) em blocos de até 4
+  palavras. Zoom: 112% ou 122% nas frases de ênfase (o preset `fala`). Entrega: o que cada exportador grava de verdade
+  (zoom na escala do FCPXML e no Movimento do Premiere, legenda .srt/.vtt). Só toca enquanto aparece; com "reduzir
+  movimento" fica parado.
+- `test/tela.test.js` › "teste ao vivo": aprovar 2 cortes (20,5 → 18,8 s), limite 0,2 s (17,9 s), entrega com 6 clipes
+  e zoom de 122%, sem zoom some da entrega, setas no estilo, desfazer, Por dentro para de trocar ao escolher, uma
+  pergunta aberta por vez. "página inicial fechada" e `test/fechado.test.js` passam a exigir "Testar ao vivo" como
+  âncora. O "perfil único" simula o Set (`simularSet`), que a main passou a carregar no app (antes dava 404 de
+  `/api/zro/set` no console). `npm test` com as telas: 141 testes; telas 18/18.
+- Conferido no Chromium em 1440×900 e 390×844, escuro e claro, com "reduzir movimento"; sem rolagem lateral.
+
+## AEON: velocidade, o speed ramp (31/10/2026)
+
+- Pesquisa: curvas prontas do CapCut (Montagem, Herói, Bala, Flash), pontos de velocidade + curva com alças do
+  DaVinci (e o modo de reamostragem: quadro mais próximo, mistura, fluxo óptico), rampa com alças Bézier do Premiere
+  (que exporta e importa por XML só velocidade constante) e o `timeMap`/`timept` do FCPXML (DTD da Apple).
+- `src/velocidade.js`: curva no clipe, ancorada na mídia de origem; Hermite monótona no log da velocidade (sem passar do
+  desenho); degraus de ≈4 quadros de saída, vizinhos com menos de 2% de diferença juntos; som só em 100% (±2%).
+  `src/linha.js`: tamanho, localizar, fonteParaLinha, dividir, aparar e cortar trechos seguem a curva (reancorada na
+  mídia ao dividir e aparar); acelerado não se junta com o vizinho. Exportadores: FCPXML com `timeMap` linear por
+  degrau ancorado em 0s e −96 dB fora de 100%; xmeml com Time Remap constante e sem clipitem de som fora de 100%; OTIO
+  com `LinearTimeWarp` e Gap (as trilhas de vídeo e som ficam do mesmo tamanho; antes um áudio solto desalinhava o
+  vídeo); EDL com linha M2. Render: um quadro de origem a cada v quadros, silêncio fora de 100%. Prévia: playbackRate
+  do degrau e som mudo fora de 100%.
+- `test/velocidade.test.js` 5/5 (curva monótona e nos limites, degraus sem buraco, Manter duração, ida e volta
+  origem↔saída, linha com dividir/aparar/cortar, som só em 100%, os quatro exportadores com xmllint). Tela
+  "velocidade": Herói pelo Inspector, selo "Rampa" no clipe, seta no ponto, Manter duração, prévia tocando, FCPXML
+  com `timeMap`, 100% e ⌘Z. Autoteste (navegador e app de computador): vídeo final com a curva Pico saiu com 4,54 s
+  para 4,53 s esperados e com som. `npm test` 147/147; `xvfb-run -a npx electron . --smoke` SMOKE OK.
+- Site: aba Velocidade (a que abre) no Teste ao vivo, com o vídeo da falésia tocando na velocidade da curva, curvas
+  prontas, pontos para arrastar e a pergunta "Tem speed ramp?".
+- Não validado: a importação dos degraus num Final Cut, Premiere e DaVinci de verdade; câmera lenta com mistura de
+  quadros ou fluxo óptico (não feito).
+
+## AEON: imagens variadas na página inicial (31/10/2026)
+
+- Oito cenas novas no Higgsfield (`gpt_image_2_5`, 16:9, 1344×752, 0,25 crédito cada, 2 créditos no total): podcast,
+  aula, reels na rua, review, receita, viagem, entrevista e bastidor, em `marca/home/*.jpg` (80–160 KB) e
+  `marca/home/takes/*.jpg` (760 px, 32–64 KB).
+- Teste ao vivo: cada aba com a sua cena (podcast nos Cortes, rua na Legenda, review no Zoom, entrevista na Entrega;
+  a falésia em vídeo na Velocidade), com troca suave e uma deriva lenta de câmera enquanto toca.
+- Faixa nova "Do podcast à receita.": os oito tipos de vídeo passam sozinhos (duplicados para não ter emenda), param no
+  mouse e no foco, só andam na tela e viram rolagem lateral com "reduzir movimento".
+- "Por dentro": `scripts/telas.mjs` refeito com podcast, aula, viagem e bastidor (antes era a mesma criadora em todas
+  as telas) e a viagem com a rampa Herói; espera o "Salvo" antes de cada foto.
+- Conferido no Chromium em 1440×900 e 390×844, sem rolagem lateral; `test/fechado.test.js` e as telas da página
+  inicial passam.
+
+## AEON: motores de câmera lenta e estabilização, página pronta para lançar (31/10/2026)
+
+- **Velocidade sem tranco.** Os degraus inteiros (≈ 4 quadros) alternavam 25% e 50% numa rampa de 35% (um tranco a cada
+  1/6 s, visível no JSON da montagem antiga). Prévia e render agora seguem a curva contínua no mesmo tamanho dos degraus
+  (`origemContinua`, desvio de menos de um quadro de saída) e o render pede o instante exato da origem. Regressão:
+  fonte de 60 qps numa linha de 24 qps a 50% → nenhum quadro repetido (o render antigo repete metade: conferido rodando
+  o teste contra ele).
+- **Footage de alta taxa de verdade.** O Mixkit só entrega 23,976 qps (até no 1080p): os takes saíram. Do Coverr, cada
+  candidato foi conferido quadro a quadro: gaivotas, cachoeira, roda, vales são "50/60 qps" com metade dos quadros
+  repetida (25/30 por dentro) e ficaram fora; onda, cavalo, pelicano, mergulho e flores não repetem nenhum.
+- **Fluxo óptico (RIFE 4.25 em campos, MIT).** Escolha medida em quadros reais de 60 qps, tirando 3 de 4 quadros e
+  comparando o do meio com o verdadeiro (PSNR em Y, quadro 1280×720, movimento estimado em 640×360):
+  pelicano 42,1 dB (mistura 35,5; quadro repetido 33,7), cavalo 35,5 (34,0; 32,0), onda 41,5 (40,6; 38,6), flores 37,5
+  (37,8; 35,1), mergulho 37,1 (36,8; 34,4); o pior quadro do fluxo nunca abaixo do pior da mistura. Três exportações
+  comparadas (4.17-lite, 4.25 em campos, walterlow): a 4.25 em campos ganha por permitir montar o quadro em resolução
+  cheia. Tempo: ≈ 0,47 s de modelo + 0,21 s de montagem por quadro de 720p (Node, WASM, 4 linhas). A WebGPU fica
+  desligada: a versão do ONNX Runtime do app erra a convolução de 15 canais (onnxruntime #32928) que o RIFE tem.
+- Testes: `test/fluxo.test.js` (movimento conhecido → quadro do meio a mais de 38 dB e 8 dB acima da mistura;
+  movimento absurdo → mistura, sem rasgo); na tela, 24 qps a 50% com o modelo de verdade e a CSP do site: metade dos
+  96 quadros sai do fluxo, nenhum repetido (menos o último, depois do último quadro da câmera) e cada quadro novo fica
+  entre os vizinhos. No app de desktop (Electron): o modelo baixou pelo repasse `/__hf/` (22,7 MB, guardado no disco),
+  isolamento entre origens ligado, primeiro quadro em 1,1 s, confiança 0,9999.
+- **Montagem da página** refeita no AEON com os takes de alta taxa: projeto 16:9 em 24 qps, 554 quadros (23,1 s) =
+  soma dos degraus, render 1920×1080 em 160 s, **191 quadros pelo fluxo** (só onde a câmera não tinha quadro: abaixo de
+  40–48%); quadros interpolados do cavalo, da onda e dos faróis conferidos de perto (cerca e cordas finas sem rasgo).
+  Com marca, a pedido do titular: o carro retrô em neon e os faróis do Nissan 300ZX (60 qps de verdade); Porsche, BMW,
+  SUV e moeda do Coverr ficaram fora por serem 25 qps por dentro.
+- **Estabilização por imagem.** Tremor sintético de valor conhecido: movimento medido com erro máximo de 0,053 px;
+  tremor 43,7 → 1,4 px (−97%) com recorte de 17% e nenhum quadro mostrando borda. De ponta a ponta no app: o cavalo com
+  tremor de recorte (ffmpeg) → "Analisar e estabilizar" → render → tremor medido de novo no arquivo final, fora do app:
+  56,3 → 0,45 px (−99%), recorte de 13%. Análise ≈ 140 ms por quadro de 640×360 (pior caso). Giroscópio não feito.
+- **Página do lançamento** (`RELEASE=released`): conferida em 1440×900 e 390×844 no tema claro, sem erro nem rolagem
+  lateral; `test/fechado.test.js` 13/13 (só na web: Abrir o AEON nos quatro lugares, Mac e Windows "Em breve" sem link,
+  nada de instalador; com o computador: Baixar e os três destinos; `/baixar` fechado volta para "Em desenvolvimento",
+  só na web volta para a seção, com o computador vai ao Release). Subdomínios da família conferidos (200 e o título).
+- **HUB, migration 0043** (AEON na web): com um Postgres 16 local, a bateria do HUB passa 370/372 (as duas do
+  Laboratório da Z falham igual sem a 0043: o `@anthropic-ai/sdk` não está no `node_modules` desta máquina). Teste novo
+  `tests/integration/aeon-web.test.ts` (gate web, api e sso abertos, desktop e download fechados; conta só com o grátis
+  contratada, autorizada e no login único; backfill idempotente) e os testes que usavam o AEON como exemplo de fechado
+  passam a usar a Revela. Produção conferida antes (só leitura, AbsoluteZRO-SP): AEON em `development`, já em todos os
+  planos e nas 9 organizações com assinatura; migrations aplicadas até a 0042.
+- AEON 163/163, `electron . --smoke` OK, scan-secrets limpo.
+- Não validado: o fluxo e a estabilização num Mac e num Windows de verdade (tempo por quadro), o Safari, e as
+  importações com frameSampling no Final Cut e Mistura de quadros no Premiere.
+
+## AEON: footage de verdade nas demonstrações e nos testes (31/10/2026)
+
+- Takes do Mixkit com a Stock Video Free License, conferida na página de cada um (a onda e a gaivota da primeira
+  escolha eram "Restricted" e ficaram de fora; um túnel saiu por ter logo de empresa num prédio). Cortados, 1280×720 a
+  24 qps, sem som, CRF 27: 1–2 MB cada; a montagem, 4,5 MB. Origem, trecho e codificação em
+  `products/ai-edit/marca/home/cenas/LEIAME.md`.
+- `scripts/montagem.mjs` (editor no Chromium): importa cinco takes, apara pelas bordas da linha do tempo (com Alt, sem
+  ímã), põe uma curva pronta por clipe no Inspector (Vale, Flash de entrada, Herói, Bala, Pulso duplo), exporta o
+  pacote e renderiza. Medido: 579 quadros no render = 579 da soma dos degraus (24,1 s, H.264 1280×720, render em 8 s
+  nesta máquina); FCPXML e XML do Premiere válidos no xmllint, com timeMap e Time Remap.
+- Página: o seletor de take na Velocidade (troca o vídeo e mantém a curva) e a montagem com a linha que anda junto
+  (velocidade do quadro tirada da curva, pausa no botão, parada na crista da onda com "reduzir movimento"). Conferido
+  em 1440×900 e 390×844, claro e escuro, sem rolagem lateral nem erro no console.
+- Testes: "footage de verdade" (`test/tela.test.js`: um take real com Herói, render conferido no ffprobe quadro a
+  quadro) e o teste ao vivo cobre o take e a montagem. AEON 148/148, `electron . --smoke` OK, prettier e
+  scan-secrets limpos.
+- Achado: no Chromium sem tela, o download com acento no nome vira "download" (o roteiro reconhece pelo conteúdo). No
+  app de desktop o nome vem do diálogo de salvar; no Chrome de verdade não foi conferido. O app não mudou.
+- Não validado: o Safari do iPhone com os vídeos (só o Chromium).
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da
@@ -2881,6 +3059,18 @@ trocando o app, e o primeiro Release (sai no primeiro push na main com `products
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## NOSSOM em nossom.absolutezro.com (29/10/2026)
+
+- `nossom.absolutezro.com` adicionado ao projeto Vercel `nossom` (zona `absolutezro.com` na DNS da Vercel; domínio
+  verificado na hora). O `nossom-teal.vercel.app` continua respondendo, sem redirecionar.
+- Migração `0034_nossom_dominio.sql`: retorno OIDC novo no cliente `nossom-web` (o antigo fica) e catálogo do HUB
+  (`external_url`, `sso_start_url`) no endereço novo, na mesma transação. O banco em uso é o AbsoluteZRO-SP (o AbsoluteZRO antigo parou na
+  0024); lá falta só a 0034. Número 0034 porque 0031–0033 já existem em outras branches (Relay, TPeasy, Synquei).
+- Links trocados: downloads e instalador no HUB, famílias da AEON e da Revela, metadados e página de apps do NOSSOM.
+  Ficam no endereço antigo o canal de atualização do app de computador e a documentação histórica.
+- Testes: `tests/integration/downloads.test.ts` (Postgres 16 local), `apps/hub-desktop` regras (6/6), e2e do gate
+  aceitando os dois endereços.
 
 ## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
 
@@ -3548,6 +3738,14 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   `test/porta-malas-carro.test.js` seguindo verde. O estado final do envio virou `enviado` ("No Drive"): a fila do
   celular confere o tamanho, não o MD5, e o SOBEDESCE só diz "conferido" com MD5. Relay `test/drive.test.js`: 5/5.
 
+## Relay: interpretar a cadência (31/10/2026)
+
+- `test/conformar.test.js`: plano (fator, som só até 5%, aviso, ficha, erro sem cadência, a ficha do preset volta
+  igual), ffmpeg (`setpts=PTS*24/(24000/1001),fps=24000/1001` e `asetrate=47952,aresample=48000`) e, no Chromium, um
+  60 fps de 2 s vira 24 fps com os 120 quadros e 5 s sem som; um 24 fps vira 23,976 com os 48 quadros e o som junto
+  (2,002 s), conferidos pelo ffprobe. Relay `npm test`: 125/125. Cópias no SOBEDESCE atualizadas (`src/relay/` e o app
+  do celular, v75 / 2.8.60).
+
 ## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
 
 - HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
@@ -3627,3 +3825,134 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
 - HUB `tests/integration/carro-sede-planos.test.ts` (4): a 0044 é idempotente, fundação e +15 em rascunho (o HUB recusa
   conceder e o pedido de plano recusa), o sinal chega por `zro_features` quando concedido.
 - Fotos do site real com a fase 2 e o banco local semeado: `sede-real/` no rascunho da sessão (não versionadas).
+
+## SOBEDESCE celular: Transferências como no computador (31/10/2026)
+
+- `products/sobedesce/web`: `tests/transferencias-celular.test.mts` 19/19 (prioridade, cancelar com DELETE na sessão,
+  lote, histórico e migração IndexedDB v1 → v2, MD5 contra a RFC 1321 e o `crypto` do Node em 6 MB); `npm test`
+  336/336, lint e typecheck limpos; testes do produto que leem `web/public/app` 132/132. Capturas no
+  Playwright (iPhone e computador, claro e escuro) sem erro na página.
+
+## SOBEDESCE: Drive híbrido (31/10/2026)
+
+- `products/sobedesce/web`: `tests/drive-hibrido.test.mts` 18/18 (escopo por modo, contador e trava no limite, vaga não volta, callback com escopo diferente, regra do navegar/comparar em `drive.file`, admin só para admin); `npm test` 354/354, lint e typecheck limpos; testes do produto que leem `web/public/app` 73/73. Capturas no Playwright (iPhone e computador, claro e escuro).
+
+## SOBEDESCE: app de computador 0.3.0 entende o Drive híbrido (31/10/2026)
+
+Ramo `sobedesce-desktop-modo` sobre a main f022924.
+
+- `products/sobedesce`: `npm run test:fast` **806/806** (4 pulados, os lentos de sempre), com `test/modo-drive.test.js`
+  6/6 (mesma marca e regra no motor, na tela e no celular; pastas novas marcadas; Comparar recusa raiz, pasta de fora e
+  subpasta sem marca e compara a pasta do SOBEDESCE; modo por Drive vindo do site, capacidade em todo pedido, 403 do
+  site vira "Precisa de acesso total" sem repetir), `test/cloud-app.test.js` com o app inteiro em Arquivos escolhidos
+  (lista `modo`/`completo`, Liberados, Comparar, tamanho e Copiar de um link), `mobile-receiver` (`modo` e `sd` no
+  Wi-Fi), `drive-link` (`#escolher/<conta>`) e `app-sw` (2.8.61 / `sobedesce-app-v76`).
+- `products/sobedesce/web`: lint e typecheck limpos; `npm test` **354/354** (o token `drive.file` só sai com
+  `x-sobedesce-capacidades: drive-arquivos`; app antigo, build alto sem a capacidade e volta para o antigo: 403).
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas no Playwright (interface `public/` com `scripts/ui-stub.js` em `STUB_MODO=arquivos`): Drive na raiz
+  ("Precisa de acesso total"), pasta do SOBEDESCE, Liberados, Escolher do Drive (abre `/app/#escolher/g1`), Ajustes
+  com o modo, seletor do Comparar travado e o resultado do Comparar, claro e escuro.
+
+## AEON: faixa de efeitos sonoros (31/10/2026)
+
+- `src/efeitos.js`: sons do projeto e efeitos presos à imagem (mídia + quadro de origem), `efeitosNaLinha`, faixas sem
+  sobreposição, momentos (cortes e marcadores), créditos por licença e a mistura do render (pura, testada fora do
+  navegador). `test/efeitos.test.js` 11/11; `test/exportar.test.js` com efeitos (FCPXML e xmeml no `xmllint`, OTIO,
+  EDL, `CREDITOS.txt`, `ZroTimelineRef` válido pelo contrato).
+- Tela no Chromium (`test/tela.test.js`): som do computador no ponto, arrastar, desfazer, volume, exportar (efeito
+  conectado com `-6dB` no FCPXML) e vídeo final renderizado com o efeito, tirar com ⌫ e desfazer.
+- `npm test` da AEON 152/153 (1 pulado: Whisper real sem rede) e `xvfb-run electron . --smoke` OK.
+- Corrigido junto: o teste "perfil único" falhava em todo PR que tocava a AEON (`/api/zro/set` respondia 404 no servidor
+  de teste porque o teste não simulava o Set); agora simula, como os outros.
+- Não validado: abrir o FCPXML/XML com efeitos no Final Cut, Premiere e Resolve reais; prévia longa (sincronia do
+  efeito com o vídeo depois de vários minutos).
+
+## Sonoplasta · fase 2a: banco de sons livres pelo HUB e aba Sons no AEON (31/10/2026)
+
+- HUB: `packages/core/src/sons.ts` e `/api/v1/sons/buscar` e `/api/v1/sons/openverse/{id}` (escopo `zro.sons`, migration
+  0044). `tests/integration/sons.test.ts` (Openverse falso): filtro de licença (sem SA, NC, ND) e de fonte, formato da
+  família, token do app no Openverse pedido uma vez, erros 401/422/429/503, arquivo só de host conhecido por https, sem
+  seguir redirecionamento, só áudio e até 25 MB. OpenAPI conferido. `npm test` 475/475, `typecheck` e `lint` OK.
+- AEON: repasse `/api/zro/sons/*` no site (`api/_sons.js`) e no app de computador (`desktop/main.cjs`); login pede
+  `zro.sons` e, se a Absolute ZRO recusar (antes da 0044), entra de novo sem ele, com a Z e o Set (site e desktop).
+  `test/sons.test.js`, `test/sonoplasta.test.js`, `test/conta-desktop.test.js`; tela no Chromium: o corte vira
+  momento, a busca acha o som, "impacto" vira "impact", ouvir, colocar no corte a −6 dB, o mesmo som não baixa duas
+  vezes, e a entrega leva o arquivo e o crédito. `npm test` da AEON 162/163 (1 pulado: Whisper real sem rede) e
+  `electron . --smoke` OK.
+- Medido de verdade (31/10/2026): a API do Openverse respondeu à busca "whoosh" com sons CC0 do Freesound, autor,
+  licença, duração e o arquivo em `cdn.freesound.org`; o limite anônimo é 20/min e 200/dia.
+- Não validado: a busca em produção (falta aplicar a 0044 e publicar o HUB) e o cadastro do app no Openverse.
+
+## Sonoplasta · fase 2b: o banco de sons da pessoa no Drive (31/10/2026)
+
+- HUB: `packages/core/src/sons-drive.ts`, `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` (escopo `zro.sons`; sem
+  migration nova). `tests/integration/sons-banco.test.ts` (SOBEDESCE e Google falsos): a pasta vai com o pedido
+  assinado `drive.listar`, voltam subpastas e só áudios (vídeo e id estranho ficam de fora), sem o e-mail da conta;
+  pasta, busca e conta conferidas antes de pedir; cada erro do SOBEDESCE (`sem_drive`, `reconectar_drive`,
+  `sem_vinculo`, `sem_acesso_zro`, `nao_achou`, `devagar`, fora do ar) vira frase com o código e o link; o arquivo usa o
+  token curto do Drive (`drive.token`) pedido uma vez e reaproveitado, nunca devolvido; só áudio, não apagado, até
+  25 MB; token recusado pelo Google pede outro uma vez. OpenAPI conferido; `typecheck` e `lint` OK.
+- AEON: repasse `/api/zro/sons/banco*` no site e no desktop só com os parâmetros conferidos (pasta que não é id do
+  Drive não segue como veio); `pastaDoLink` aceita link de pasta do Drive (com `/u/0/` e `?usp=`), link antigo
+  (`open?id=`), link do SOBEDESCE (`#drive/<id>`) ou o id; som do banco sem crédito no `CREDITOS.txt`. Tela no Chromium:
+  "Meu banco", colar o link, subpasta, buscar nela, colocar o som (origem `banco` com a conta), Inspector "Do seu banco
+  no Drive", o arquivo na entrega e nenhum crédito para ele.
+- Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0044 aplicada).
+
+## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
+
+Ramo `tpeasy-subdominio-login` sobre a main cba9ba9. Commit web (este) separado do commit de computador (Synquei e
+SOBEDESCE de computador, que disparam os instaladores).
+
+- Antes: `https://tpeasy.absolutezro.com/api/zro/entrar` respondia 307 para o `tpeasy.vercel.app` (o login do TPeasy só
+  aceitava o endereço antigo). `/api/zro/eu` do TPeasy e do Synquei em produção: 401 com a configuração presente.
+- Migração `0045_tpeasy_subdominio.sql`: `tests/integration/tpeasy-subdominio.test.ts` 3/3 (catálogo e `sso_start_url`
+  no subdomínio; `tpeasy-web` ganha o retorno novo, mantém o antigo e não duplica ao rodar de novo; sem o cliente, nada é
+  criado).
+- `products/tpeasy`: `node --test` 78/78 (entrar no subdomínio com cookie Secure e retorno dele; o endereço antigo entra
+  nele mesmo; prévia vai para o subdomínio; "Entrar" e a foto no topo de Roteiros; nada sem saber da conta).
+- Raiz: lint, format:check e typecheck limpos; `npm test` 55 arquivos, **476/476** (Postgres 16 local), com
+  `downloads` (SOBEDESCE em `sobedesce.com`, TPeasy no subdomínio) e `familia-menus` (TPeasy no subdomínio; os dois
+  menus de computador aceitam o endereço antigo até o commit de computador).
+- Menus da família na web: NOSSOM `tests/familia.test.ts` 2/2; Relay 121/122 e Revela 179/180 (a única falha de cada um
+  é `vendor/` × `node_modules`, que não estava instalado nesta máquina; nada a ver com o menu). Carro do Freela:
+  `mapa` 72/72 (a suíte que lê o menu da família), `sem-zoom` 41/41 e `busca-e-cartao` 24/24 sozinhas; a bateria
+  inteira não coube no limite de 15 min desta máquina (as que estouraram eram de tela, sem relação com o link).
+- `https://sobedesce.com`: `/`, `/app/`, `/instalar.sh`, `/instalar.ps1` 200; `/baixar/mac` e `/baixar/windows` 307 para o
+  Release. `https://tpeasy.absolutezro.com/` e `/app/` 200.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas no Playwright (390×844, claro, `/api/zro/eu` simulado): TPeasy fora (Entrar ao lado do título), dentro (foto)
+  e Ajustes (nome, e-mail, organização e Sair).
+- Não validado: o login de verdade no subdomínio, que depende de a 0045 rodar no banco e do deploy do TPeasy.
+
+### Parte de computador (Synquei e SOBEDESCE)
+
+- Commit à parte: `products/synquei/app/**` (o mesmo app no site, no celular e no computador) e
+  `products/sobedesce/public/**` disparam `synquei-desktop.yml` e `sobedesce-desktop.yml`.
+- `products/synquei`: `npm test` 162 (156 passaram, 6 pulados, 0 falhas), com `tests/conta-ui.test.mjs` 9/9 ("Entrar"
+  sem sessão, a foto de quem entrou abre Ajustes, nada sem login neste lugar ou no site sem configuração, aviso de sem
+  acesso) e `tests/zro-set.test.mjs` (o canto do Início com a conta antes do Set e da Z).
+- `products/sobedesce`: `test/familia.test.js` 4/4. Raiz: `familia-menus` 6/6, agora sem aceitar o endereço antigo.
+- Capturas no Playwright (390×844, claro): Synquei antes (sem nenhuma entrada de conta no celular), fora (Entrar no
+  canto do Início), dentro (foto) e Ajustes (nome, e-mail e Sair); no computador (1280) a barra lateral não mudou.
+
+## Carro do Freela para computador 0.2.0: o app acima do site (31/10/2026)
+
+- `products/carro-do-freela/desktop`: `npm test` 28/28 (com `test/pulso.test.mjs`: semana de sete dias, só proposta
+  pendente e nova avisa, a primeira leitura só aprende, sem login nada, marcar o dia vira PUT/DELETE das rotas do site);
+  `npm run smoke` (xvfb) SMOKE OK; o app abriu 25 s no Linux com a bandeja ligada, sem erro.
+- Carro `test/site-real.js` 41/41: o convite "Melhor no computador" (três coisas que o app faz, botão para a página de
+  baixar da Absolute ZRO) some no celular e dentro do próprio app.
+- Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
+  `apps/hub-desktop` (6/6).
+
+## TPeasy para computador (31/10/2026)
+
+- Pedido do titular: todo app no ar tem app de computador (Relay, Maestro, Carro do Freela, Synquei, SOBEDESCE, TPeasy e
+  Absolute ZRO). Só faltava o TPeasy: `products/tpeasy/desktop` (a moldura do Relay, abre em `/app/`, ícone oficial
+  `products/tpeasy/icons/favicon.svg`), workflow `tpeasy-desktop.yml` (Release `tpeasy-versao-de-teste`), gate na
+  migração `0047` (desktop e download só para o TPeasy; nenhum e-mail).
+- `products/tpeasy/desktop`: `npm test` 24/24; `npm run smoke` (xvfb) SMOKE OK.
+- HUB: `tests/integration/downloads.test.ts` e `desktop-apps.test.ts` 27/27 (o TPeasy no catálogo, Mac e Windows só com o
+  download aberto). `release-gate.test.ts` tem 5 falhas que já existem na `main` sem esta mudança (o estado do Carro).

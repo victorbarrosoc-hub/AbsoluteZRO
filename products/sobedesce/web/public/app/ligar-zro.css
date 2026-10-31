@@ -43,6 +43,19 @@
   margin-top: 40px;
   width: min(100%, 340px);
 }
+.lz-outra {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--text-2);
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+.lz-outra:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 .lz-nota {
   margin: 14px 0 0;
   font-size: 13px;

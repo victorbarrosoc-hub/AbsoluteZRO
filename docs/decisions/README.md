@@ -34,3 +34,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0031](0031-maestro-acesso-por-area.md)          | Maestro: o que cada pessoa vê, por área                        | aceita                |
 | [0032](0032-set-presenca-e-conversas.md)         | Set: presença e conversas do ecossistema                       | aceita                |
 | [0033](0033-laboratorio-da-z.md)                 | Laboratório da Z: voz, ditado, anexos e configuração, só admin | aceita                |
+| [0034](0034-console-financeiro-e-correio.md)     | Papel Financeiro e Correio (caixas do iCloud) no console       | aceita                |

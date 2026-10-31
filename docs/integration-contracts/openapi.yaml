@@ -137,6 +137,76 @@ paths:
   # pessoa, suporte inclusive). Tudo que custa confere o teto do dia antes (403 quota_not_configured sem teto, 429
   # quota_exceeded passou) e registra o uso com chave de idempotência. Chave ausente: 503 upstream_unavailable com o
   # nome da variável (IA_ANTHROPIC_KEY ou ELEVENLABS_API_KEY).
+  /api/v1/admin/correio:
+    get:
+      summary: Correio do console (ADR 0034). Caixas do papel (admin vê victor@, contato@ e financeiro@; financeiro, só financeiro@) e se o iCloud está configurado
+      security: [{ session: [] }]
+      responses:
+        {
+          '200': { description: '{ configurado, faltam, caixas }' },
+          '403': { description: platform_role_required },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/correio/{caixa}/mensagens:
+    get:
+      summary: As 50 mensagens mais novas da caixa, direto do iCloud (IMAP). INBOX separado pelo alias em To, Cc, Delivered-To ou X-Original-To. Nada fica guardado
+      security: [{ session: [] }]
+      parameters: [{ name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }]
+      responses:
+        '200': { description: '{ caixa, mensagens: [{ uid, de, assunto, data, lida, tamanho }] }' }
+        '403': { description: platform_role_required (caixa fora do papel) }
+        '503': { description: upstream_unavailable (Correio não configurado ou iCloud fora) }
+        default: { $ref: '#/components/responses/Error' }
+  /api/v1/admin/correio/{caixa}/mensagens/{uid}:
+    get:
+      summary: Abre a mensagem e marca como lida. HTML limpo num documento com CSP própria (iframe sandbox na tela); imagens remotas só com imagens=1. De outra caixa = 404
+      security: [{ session: [] }]
+      parameters:
+        - { name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }
+        - { name: uid, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: imagens, in: query, required: false, schema: { type: string, enum: ['1'] } }
+      responses:
+        '200': { description: '{ mensagem: { uid, de, para, cc, replyTo, assunto, data, documento, imagensBloqueadas, texto, anexos } }' }
+        '404': { description: not_found }
+        default: { $ref: '#/components/responses/Error' }
+  /api/v1/admin/correio/{caixa}/mensagens/{uid}/anexos/{indice}:
+    get:
+      summary: Baixa um anexo (até 4 MB), sempre como download, com a mesma checagem de papel e de caixa
+      security: [{ session: [] }]
+      parameters:
+        - { name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }
+        - { name: uid, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: indice, in: path, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        {
+          '200': { description: o arquivo (content-disposition attachment) },
+          '404': { description: not_found },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/correio/{caixa}/enviar:
+    post:
+      summary: Responde (responderA = uid) ou escreve um e-mail novo saindo do alias da caixa, por SMTP do iCloud. Cópia em Sent Messages (IMAP APPEND) e audit_logs sem o corpo
+      security: [{ session: [] }]
+      parameters: [{ name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, maxLength: 100000 }
+                responderA: { type: integer, minimum: 1, description: uid da mensagem respondida (sem ele, e-mail novo) }
+                todos: { type: boolean, description: na resposta, inclui quem estava em To e Cc }
+                para: { type: string, description: e-mail novo, até 20 destinatários somando Cc }
+                cc: { type: string }
+                assunto: { type: string, maxLength: 300 }
+      responses:
+        '201': { description: '{ ok, messageId, copiaEmEnviadas }' }
+        '400': { description: invalid_input }
+        '403': { description: platform_role_required }
+        '503': { description: upstream_unavailable }
+        default: { $ref: '#/components/responses/Error' }
   /api/v1/admin/z-lab:
     get:
       summary: Estado do laboratório (chaves ligadas, rascunho, versões, publicada, conhecimento, recursos, gasto, catálogo)
@@ -567,6 +637,77 @@ paths:
               description: 'sem_conexao (details.motivo nenhuma | reconectar, details.conectar)',
               content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } },
             },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/buscar:
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: Efeitos sonoros livres para uso comercial (Openverse, só CC0, CC BY e domínio público; Freesound e Wikimedia), com autor e licença para os créditos
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 80 } }
+        - { name: pagina, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 10 } }
+      responses:
+        {
+          '200': { description: '{ sons: [{ id, origem, titulo, autor, licenca, licencaUrl, pagina, fonte, duracao, formato, bytes }], pagina, paginas }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/openverse/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: 'Id do som no Openverse' }
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: O arquivo do som (stream), só de fontes conhecidas por https e até 25 MB; título, autor e licença nos cabeçalhos X-Zro-Som-*
+      responses:
+        {
+          '200': { description: 'Áudio (audio/*)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/banco:
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: Uma página da pasta do Drive com os sons da própria pessoa (pelo SOBEDESCE, só leitura); subpastas e só áudios, com busca por nome dentro da pasta
+      parameters:
+        - { name: pasta, in: query, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{10,200}$' }, description: 'Id da pasta no Drive' }
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 80 } }
+        - { name: pagina, in: query, required: false, schema: { type: string, maxLength: 2000 }, description: 'O `proxima` da página anterior' }
+        - { name: conta, in: query, required: false, schema: { type: string, maxLength: 64 }, description: 'A conta Google no SOBEDESCE' }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pasta: { id, nome }, conta, pastas: [{ id, nome }], sons: [{ id, origem: banco, titulo, nome, formato, bytes, conta }], proxima }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/banco/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{10,200}$' }, description: 'Id do arquivo no Drive' }
+      - { name: conta, in: query, required: false, schema: { type: string, maxLength: 64 } }
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: O arquivo de um som do banco da pessoa (stream), conferido como áudio e até 25 MB; o token do Drive nunca sai do HUB
+      responses:
+        {
+          '200': { description: 'Áudio (audio/*), com X-Zro-Som-Id e X-Zro-Som-Titulo' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
           '422': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
           '503': { $ref: '#/components/responses/Error' },

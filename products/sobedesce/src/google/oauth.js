@@ -223,6 +223,16 @@ export class AuthManager extends EventEmitter {
     return this.cloud ? local.concat(this.cloud.listAccounts()) : local
   }
 
+  /**
+   * O modo do Drive (docs/CONTAS.md §13, src/google/modo-drive.js): 'arquivos' só para um Drive da conta SOBEDESCE em
+   * Arquivos escolhidos; conta conectada só neste computador (chave própria, Drive inteiro): 'total'.
+   */
+  modoDe(accountId) {
+    const id = String(accountId ?? '')
+    if (isCloudAccountId(id)) return this.cloud?.modoDe?.(id.slice(CLOUD_PREFIX.length)) ?? 'total'
+    return 'total'
+  }
+
   /** Para o relógio da conta SOBEDESCE (ao fechar o app). */
   close() {
     this.cloud?.close()

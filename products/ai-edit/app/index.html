@@ -40,6 +40,7 @@
         <symbol id="i-fora" viewBox="0 0 24 24"><path d="M14 4.5h4.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h10" /></symbol>
         <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M7 3.5h10v11l-5 5-5-5z" /></symbol>
         <symbol id="i-universos" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></symbol>
+        <symbol id="i-som" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" /></symbol>
         <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
         <symbol id="i-apps" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18" cy="12" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></symbol>
         <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
@@ -162,6 +163,7 @@
               <div class="abas" role="tablist" aria-label="Painel" id="abasPainel">
                 <button role="tab" data-aba="inspector" aria-selected="true">Inspector</button>
                 <button role="tab" data-aba="texto" aria-selected="false">Texto</button>
+                <button role="tab" data-aba="sons" aria-selected="false">Sons</button>
                 <button role="tab" data-aba="historico" aria-selected="false">Histórico</button>
               </div>
               <section class="aba" data-aba="inspector" id="inspector" aria-label="Inspector"></section>
@@ -176,6 +178,25 @@
                   </select>
                 </div>
                 <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
+              </section>
+              <section class="aba sons" data-aba="sons" hidden aria-label="Sons">
+                <div class="sons-fonte" id="sonsFonte" role="group" aria-label="De onde vêm os sons">
+                  <button type="button" data-fonte="livres" aria-pressed="true" title="Openverse: Freesound e Wikimedia, livres para uso comercial">Livres</button>
+                  <button type="button" data-fonte="banco" aria-pressed="false" title="A sua pasta de sons no Google Drive, pelo SOBEDESCE">Meu banco</button>
+                </div>
+                <form class="sons-banco-link" id="sonsBancoForm" hidden>
+                  <input type="url" id="sonsBancoLink" placeholder="Link da pasta do Drive" aria-label="Link da pasta do Drive com os seus sons" autocomplete="off" required />
+                  <button type="submit" class="glass-btn">Usar</button>
+                </form>
+                <nav class="sons-pasta" id="sonsPasta" hidden aria-label="Pasta do banco"></nav>
+                <form class="sons-busca" id="sonsBusca" role="search">
+                  <input type="search" id="sonsTermo" maxlength="80" placeholder="whoosh, impacto, clique…" aria-label="Buscar som" autocomplete="off" />
+                </form>
+                <div class="sons-momentos" id="sonsMomentos" role="group" aria-label="Momentos da linha"></div>
+                <div class="sons-sugestoes" id="sonsSugestoes" role="group" aria-label="Sugestões"></div>
+                <div class="sons-pastas" id="sonsPastas" role="group" aria-label="Subpastas" hidden></div>
+                <ol class="sons-lista" id="sonsLista" aria-live="polite"></ol>
+                <p class="apoio sons-rodape" id="sonsRodape" title="Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.">Sons livres para uso comercial, com crédito.</p>
               </section>
               <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
             </aside>
@@ -267,6 +288,7 @@
 
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
     <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />
+    <input type="file" id="arquivoSom" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.flac,.ogg" multiple hidden />
     <input type="file" id="arquivoProjeto" accept=".aeon,.zroedit,application/json" hidden />
   </body>
 </html>

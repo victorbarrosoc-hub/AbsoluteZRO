@@ -26,6 +26,12 @@ export const usuarios = pgTable("usuarios", {
   atualizadoEm: agora(),
   ultimoLoginEm: quando(),
   plano: text().$type<Plano>().notNull().default("gratis"),
+  /**
+   * "Acesso total" ao Drive (escopo `drive`), ligado só pelo admin (lib/google/vagas.ts). Desligado: o Google pede
+   * `drive.file` (o que passou pelo SOBEDESCE e o que a pessoa escolher no Picker).
+   */
+  driveAcessoTotal: boolean().notNull().default(false),
+  driveAcessoTotalEm: quando(),
 });
 
 export type TipoSessao = "web" | "dispositivo";
@@ -99,6 +105,18 @@ export const contasGoogle = pgTable(
       .where(sql`${t.loginPermitido}`),
   ],
 );
+
+/**
+ * Vagas do escopo `drive` (restrito) no projeto Google SOBEDESCE: sem a auditoria, o Google aceita no máximo 100
+ * contas na vida do projeto, e vaga usada não volta. Uma linha por conta Google que já recebeu `drive` (nunca sai,
+ * nem quando a pessoa desconecta ou apaga a conta). lib/google/vagas.ts.
+ */
+export const vagasDrive = pgTable("vagas_drive", {
+  googleSub: text().primaryKey(),
+  email: text().notNull(),
+  usuarioId: text().references(() => usuarios.id, { onDelete: "set null" }),
+  concedidaEm: agora(),
+});
 
 /** Fluxo de dispositivo: o computador pede um código, a pessoa libera em /dispositivo. */
 export const codigosDispositivo = pgTable("codigos_dispositivo", {

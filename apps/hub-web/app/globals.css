@@ -2752,6 +2752,8 @@ details.disclosure[open] > summary {
 @media (max-width: 860px) {
   .adm {
     grid-template-columns: minmax(0, 1fr);
+    /* a barra do topo não estica em página curta: o resto da altura é da página */
+    grid-template-rows: auto 1fr;
   }
   .adm-side {
     position: sticky;

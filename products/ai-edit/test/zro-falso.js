@@ -20,7 +20,7 @@ export async function iniciarZroFalsa(cliente) {
   const acessos = new Map()
   const escoposDe = new Map()
   const renovaveis = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], set: [], gate: null }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], set: [], sons: [], gate: null }
   let base = ''
   /** O gate do HUB barra esta pessoa? (produto fechado e a conta fora da lista) */
   const barrada = () => !!estado.gate && estado.pessoa?.release?.[estado.gate] !== 'allowed'
@@ -91,6 +91,9 @@ export async function iniciarZroFalsa(cliente) {
       const escopos = (q.get('scope') || '').split(' ')
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || !escopos.includes('openid')) {
         volta.searchParams.set('error', 'invalid_request')
+      } else if (estado.recusarEscopoSons && escopos.includes('zro.sons')) {
+        // Absolute ZRO de antes da Sonoplasta (zro.sons fora da lista do cliente)
+        volta.searchParams.set('error', 'invalid_scope')
       } else if (estado.recusarEscopoSet && escopos.includes('zro.set')) {
         // Absolute ZRO de antes do Set (zro.set fora da lista do cliente)
         volta.searchParams.set('error', 'invalid_scope')
@@ -161,6 +164,27 @@ export async function iniciarZroFalsa(cliente) {
       if (r) r.usado = true
       estado.revogados.push(f.get('token'))
       return responder(res, 200, {})
+    }
+    // os sons (/api/v1/sons): Bearer com o escopo zro.sons, como no HUB (sem ele, 401). Busca devolve um som; o arquivo,
+    // 4 bytes de "áudio" com os cabeçalhos X-Zro-Som-*. Guarda o que chegou.
+    if (url.pathname.startsWith('/api/v1/sons/')) {
+      const at = String(req.headers.authorization || '').replace(/^Bearer /, '')
+      estado.sons.push({ caminho: url.pathname.slice('/api/v1/sons'.length), consulta: url.search, autorizacao: req.headers.authorization || null, cookie: req.headers.cookie || null })
+      const sub = acessos.get(at)
+      if (!sub || !(escoposDe.get(at) || []).includes('zro.sons') || barrada()) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
+      if (url.pathname === '/api/v1/sons/buscar')
+        return responder(res, 200, { sons: [{ id: 'eab8a6e2-0ac8-4615-9e0d-ebde30523783', origem: 'openverse', titulo: 'Deep Whoosh', autor: 'Kinoton', licenca: 'CC0 1.0', licencaUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', pagina: 'https://freesound.org/s/1', fonte: 'Freesound', duracao: 1.2, formato: 'mp3', bytes: 4 }], pagina: 1, paginas: 1 })
+      // o banco no Drive (pelo SOBEDESCE no HUB): uma subpasta e um som; pasta "1SemDriveConectado" = Drive não conectado
+      if (url.pathname === '/api/v1/sons/banco') {
+        const pasta = url.searchParams.get('pasta') || ''
+        if (pasta === '1SemDriveConectado') return responder(res, 409, { error: 'sem_conexao', message: 'Conecte o seu Google Drive no SOBEDESCE para usar o seu banco de sons.' })
+        if (!/^[A-Za-z0-9_-]{10,200}$/.test(pasta)) return responder(res, 422, { error: 'invalid_input', message: 'Cole o link da pasta do Drive com os seus sons.' })
+        const q = (url.searchParams.get('q') || '').toLowerCase()
+        const sons = [{ id: '1WhooshDoBancoXyz', origem: 'banco', titulo: 'Whoosh grave', nome: 'Whoosh grave.mp3', formato: 'mp3', bytes: 4, conta: 'c1' }].filter((s) => !q || s.titulo.toLowerCase().includes(q))
+        return responder(res, 200, { pasta: { id: pasta, nome: pasta === '1PastaWhooshesAbc' ? 'Whooshes' : 'Meus SFX' }, conta: 'c1', pastas: pasta === '1PastaWhooshesAbc' ? [] : [{ id: '1PastaWhooshesAbc', nome: 'Whooshes' }], sons, proxima: null })
+      }
+      res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': '4', 'x-zro-som-id': url.pathname.split('/').pop(), ...(url.pathname.startsWith('/api/v1/sons/banco/') ? {} : { 'x-zro-som-licenca': encodeURIComponent('CC0 1.0') }) })
+      return res.end(Buffer.from([1, 2, 3, 4]))
     }
     // a API da Z (/api/v1/ia): Bearer com o escopo zro.ia, como no HUB (sem ele, 401). Guarda o que chegou.
     if (url.pathname.startsWith('/api/v1/ia/')) {

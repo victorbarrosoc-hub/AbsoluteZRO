@@ -7,6 +7,8 @@
 // por /app/#z, e mostra o estado de login dela; sem Drive pronto (`pronto` falso), as abas mostram a tela da conta.
 // O Set da Absolute ZRO (components/set.js) também não é aba: é o botão ao lado da Z no topo, que abre a folha dele sem
 // trocar de tela. As abas monta o <zro-set> (useSet) para o app inteiro, com ou sem Drive pronto.
+// Transferências (components/transferencias.js) também não é aba: é uma tela do Início (o cartão dele abre), e a aba
+// Início fica acesa enquanto ela está aberta.
 import { html, useRef } from '../vendor/preact-htm.js'
 import { setTab, useApp } from '../lib/state.js'
 import { engine, summarize } from '../lib/uploader.js'
@@ -22,6 +24,7 @@ import { AccountScreen } from './account.js'
 import { ZScreen } from './z.js'
 import { Calculadora } from './calculadora.js'
 import { useSet } from './set.js'
+import { TransfersScreen } from './transferencias.js'
 import { ABAS_EMBUTIDO, EMBUTIDO } from '../lib/embutido.js'
 
 function TabBar({ tab, refsOn }) {
@@ -29,11 +32,12 @@ function TabBar({ tab, refsOn }) {
   const sum = summarize(engine.items)
   const busy = sum.pending > 0
   const aviso = useP2pAviso()
+  const inicio = tab === 'send' || tab === 'transferencias'
   if (EMBUTIDO)
     return html`<nav class="tabbar n-2" aria-label="Seções">
-      <button type="button" class=${cx('tab', 'tab-up', tab === 'send' && 'is-on')} aria-current=${tab === 'send' ? 'page' : undefined} onClick=${() => setTab('send')}>
+      <button type="button" class=${cx('tab', 'tab-up', inicio && 'is-on')} aria-current=${inicio ? 'page' : undefined} onClick=${() => setTab('send')}>
         <span class="tab-icon">
-          <${Icon} name="upload" size=${24} strokeWidth=${tab === 'send' ? 2 : 1.7} />
+          <${Icon} name="upload" size=${24} strokeWidth=${inicio ? 2 : 1.7} />
           ${busy ? html`<span class="tab-dot" aria-label="Enviando"></span>` : null}
         </span>
         <span class="tab-label">Transferências</span>
@@ -44,9 +48,9 @@ function TabBar({ tab, refsOn }) {
       </button>
     </nav>`
   return html`<nav class=${cx('tabbar', refsOn && 'n-6')} aria-label="Seções">
-    <button type="button" class=${cx('tab', 'tab-up', tab === 'send' && 'is-on')} aria-current=${tab === 'send' ? 'page' : undefined} onClick=${() => setTab('send')}>
+    <button type="button" class=${cx('tab', 'tab-up', inicio && 'is-on')} aria-current=${inicio ? 'page' : undefined} onClick=${() => setTab('send')}>
       <span class="tab-icon">
-        <${Icon} name="home" size=${24} strokeWidth=${tab === 'send' ? 2 : 1.7} />
+        <${Icon} name="home" size=${24} strokeWidth=${inicio ? 2 : 1.7} />
         ${busy ? html`<span class="tab-dot" aria-label="Enviando"></span>` : null}
       </span>
       <span class="tab-label">Início</span>
@@ -94,6 +98,7 @@ export function Tabs({ pronto = true }) {
   return html`<div class="tabs">
     ${seen.current.z ? html`<div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>` : null}
     <div class="tab-pane" hidden=${tab !== 'send'}><${MainScreen} /></div>
+    ${seen.current.transferencias ? html`<div class="tab-pane" hidden=${tab !== 'transferencias'}><${TransfersScreen} /></div>` : null}
     ${seen.current.drive ? html`<div class="tab-pane" hidden=${tab !== 'drive'}><${DriveScreen} active=${tab === 'drive'} /></div>` : null}
     ${seen.current.ap ? html`<div class="tab-pane" hidden=${tab !== 'ap'}><${AparelhosScreen} active=${tab === 'ap'} /></div>` : null}
     ${seen.current.refs && refsOn ? html`<div class="tab-pane" hidden=${tab !== 'refs'}><${RefsScreen} active=${tab === 'refs'} /></div>` : null}

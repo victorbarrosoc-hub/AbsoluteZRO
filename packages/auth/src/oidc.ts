@@ -208,7 +208,7 @@ export function discovery(issuer: string) {
       'auth_time',
       'nonce',
     ],
-    prompt_values_supported: ['none', 'consent', 'create'],
+    prompt_values_supported: ['none', 'login', 'consent', 'create'],
   }
 }
 
@@ -347,8 +347,21 @@ export type AuthorizeRequest = {
   state: string
   codeChallenge: string
   nonce: string | null
-  /** create = a pessoa ainda não tem conta: o HUB abre direto a tela de criar conta. */
-  prompt: 'none' | 'consent' | 'create' | null
+  /**
+   * create = a pessoa ainda não tem conta: o HUB abre direto a tela de criar conta. login = "Usar outra conta" no app:
+   * o HUB não reaproveita a sessão aberta e pede a conta de novo (loginAgainPath).
+   */
+  prompt: 'none' | 'login' | 'consent' | 'create' | null
+}
+
+/**
+ * prompt=login: o /entrar do HUB, mostrando o login mesmo com sessão aberta (`outra=1`), e depois o mesmo pedido sem o
+ * prompt (a pessoa acabou de entrar; pedir de novo daria volta em círculo). Caminho interno, nunca de fora.
+ */
+export function loginAgainPath(q: URLSearchParams): string {
+  const back = new URLSearchParams(q)
+  back.delete('prompt')
+  return `/entrar?${new URLSearchParams({ outra: '1', next: `/oauth/authorize?${back.toString()}` }).toString()}`
 }
 
 /**
@@ -382,7 +395,7 @@ export async function parseAuthorizeRequest(
   const nonce = q.get('nonce')
   if (nonce && nonce.length > 512) return back('invalid_request', 'nonce longo demais.')
   const p = q.get('prompt')
-  const prompt = p === 'none' || p === 'consent' || p === 'create' ? p : null
+  const prompt = p === 'none' || p === 'login' || p === 'consent' || p === 'create' ? p : null
   return { ok: true, req: { client, redirectUri, scopes, state, codeChallenge, nonce, prompt } }
 }
 

@@ -47,10 +47,14 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).p
   writeFileSync(destino('mediabunny-prores.min.mjs'), prores())
   copyFileSync(nm('@huggingface/transformers/dist/transformers.min.js'), destino('transformers.min.js'))
   for (const f of ORT) copyFileSync(nm(`onnxruntime-web/dist/${f}`), destino(`ort/${f}`))
+  // a API do ONNX Runtime para o fluxo óptico (app/fluxo-worker.js): a entrada que usa o mesmo .wasm de cima
+  copyFileSync(nm('onnxruntime-web/dist/ort.webgpu.min.mjs'), destino('ort/ort.min.mjs'))
   copyFileSync(nm('mediabunny/LICENSE'), destino('LICENSE-mediabunny.txt'))
   copyFileSync(nm('@huggingface/transformers/LICENSE'), destino('LICENSE-transformers.txt'))
   // o pacote do ONNX Runtime Web não traz o arquivo de licença; o texto MIT vai aqui, com o copyright da Microsoft
   writeFileSync(destino('LICENSE-onnxruntime.txt'), MIT('Microsoft Corporation'))
+  // o modelo do fluxo óptico (baixado na hora, src/modelos.js › MODELO_FLUXO): RIFE da Practical-RIFE, MIT
+  writeFileSync(destino('LICENSE-rife.txt'), MIT('2021 hzwer (Practical-RIFE, https://github.com/hzwer/Practical-RIFE)'))
   writeFileSync(
     destino('versoes.json'),
     JSON.stringify({ mediabunny: versao('mediabunny'), '@mediabunny/prores': versao('@mediabunny/prores'), '@huggingface/transformers': versao('@huggingface/transformers'), 'onnxruntime-web': versao('onnxruntime-web') }, null, 2) + '\n',

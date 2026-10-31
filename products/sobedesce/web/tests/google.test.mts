@@ -47,7 +47,11 @@ after(async () => {
  * O caminho inteiro no navegador: /api/google/conectar → Google falso (consentimento) → /api/google/callback.
  * Devolve a resposta do callback e o destino final (caminho + busca).
  */
-async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null; sessao?: string; volta?: string; negar?: boolean; escopo?: string }) {
+const BASICOS = "openid email profile";
+const PEDIDO_ARQUIVOS = `${BASICOS} https://www.googleapis.com/auth/drive.file`;
+const PEDIDO_TOTAL = `${BASICOS} https://www.googleapis.com/auth/drive`;
+
+async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null; sessao?: string; volta?: string; negar?: boolean; escopo?: string; pedido?: string }) {
   amb.google.proximo.conta = o.conta;
   amb.google.proximo.negar = Boolean(o.negar);
   amb.google.proximo.escopo = o.escopo ?? null;
@@ -57,7 +61,8 @@ async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null;
   const destinoIda = ida.headers.get("location") ?? "";
   if (ida.status !== 302 || !destinoIda.startsWith(amb.google.url)) return { ida, destino: destinoIda, res: null as Response | null };
   const u = new URL(destinoIda);
-  assert.equal(u.searchParams.get("scope"), "openid email profile https://www.googleapis.com/auth/drive");
+  // Entrar nunca pede Drive; conectar pede o do modo (sem acesso total: drive.file).
+  assert.equal(u.searchParams.get("scope"), o.pedido ?? (o.modo === "entrar" ? BASICOS : PEDIDO_ARQUIVOS));
   assert.equal(u.searchParams.get("access_type"), "offline");
   assert.equal(u.searchParams.get("prompt"), "consent");
   assert.equal(u.searchParams.get("code_challenge_method"), "S256");
@@ -103,7 +108,8 @@ describe("vincular", () => {
     assert.ok(!/refresh|ya29|1\/\//i.test(texto), "nada de token na resposta");
     const corpo = JSON.parse(texto);
     assert.equal(corpo.contas.length, 1);
-    assert.deepEqual(Object.keys(corpo.contas[0]).sort(), ["email", "estado", "fotoUrl", "id", "nome"]);
+    assert.deepEqual(Object.keys(corpo.contas[0]).sort(), ["email", "estado", "fotoUrl", "id", "modo", "nome"]);
+    assert.equal(corpo.contas[0].modo, "arquivos", "sem acesso total: arquivos escolhidos");
     assert.equal(corpo.contas[0].email, "ana@exemplo.com");
     assert.equal(corpo.contas[0].estado, "ok");
 
@@ -319,7 +325,8 @@ describe("token do Drive", () => {
     assert.equal(r1.status, 200);
     assert.equal(r1.headers.get("cache-control"), "no-store");
     const t1 = await r1.json();
-    assert.deepEqual(Object.keys(t1).sort(), ["accessToken", "email", "expiraEm"]);
+    assert.deepEqual(Object.keys(t1).sort(), ["accessToken", "email", "expiraEm", "modo"]);
+    assert.equal(t1.modo, "arquivos");
     assert.equal(t1.email, "ana@exemplo.com");
     assert.ok(t1.expiraEm > Date.now() + 50 * 60_000);
     assert.ok(amb.google.acessoValido(t1.accessToken));
@@ -383,11 +390,38 @@ describe("token do Drive", () => {
     assert.equal((await pedirToken(victor.token, anaId)).status, 200);
   });
 
-  test("Bearer de dispositivo também pega token (sem Origin)", async () => {
+  test("Bearer de dispositivo: app antigo só com acesso total (403 com recado); o 0.3.0 (drive-arquivos) pega o drive.file", async () => {
     const { criarSessao } = await import("../src/lib/auth/sessao");
     const s = await criarSessao(victor.id, "dispositivo", { nome: "Mac de teste", plataforma: "mac" });
+    // App até a 0.2.0: só "relay" (ou nada) no cabeçalho.
+    const antigos: Record<string, string>[] = [{}, { "x-sobedesce-build": "1100", "x-sobedesce-capacidades": "relay" }, { "x-sobedesce-build": "9999", "x-sobedesce-capacidades": "relay,drive" }];
+    for (const headers of antigos) {
+      const recusado = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers }));
+      assert.equal(recusado.status, 403, "o app de computador antigo daria resultado falso com drive.file (o build alto não basta)");
+      const corpo = await recusado.json();
+      assert.equal(corpo.erro, "precisa_acesso_total");
+      assert.match(corpo.mensagem, /Atualize o SOBEDESCE no computador/);
+      assert.ok(!("accessToken" in corpo));
+    }
+    // App 0.3.0: diz que entende o modo (src/config.js do app) e recebe o token, com o modo junto.
+    const novo = await token.POST(
+      pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers: { "x-sobedesce-build": "1101", "x-sobedesce-capacidades": "relay,drive-arquivos" } }),
+    );
+    assert.equal(novo.status, 200);
+    const t = await novo.json();
+    assert.equal(t.modo, "arquivos");
+    assert.ok(t.accessToken);
+    assert.ok(!("refreshToken" in t));
+    // Voltou para o app antigo: recusa de novo na hora (vale o cabeçalho de cada pedido).
+    assert.equal((await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null, headers: { "x-sobedesce-build": "1100", "x-sobedesce-capacidades": "relay" } }))).status, 403);
+    // Com acesso total e o Drive reconectado com o `drive` inteiro, o computador volta a pegar o token.
+    const { db, schema } = amb.banco;
+    await db.update(schema.usuarios).set({ driveAcessoTotal: true }).where(drizzle.eq(schema.usuarios.id, victor.id));
+    const r1 = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_TOTAL });
+    assert.equal(r1.destino, "/conta?google=ok");
     const r = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null }));
     assert.equal(r.status, 200);
+    assert.equal((await r.json()).modo, "total");
   });
 
   test("remover: revoga no Google e apaga a linha", async () => {
@@ -403,7 +437,8 @@ describe("token do Drive", () => {
   });
 
   test("Google fora do ar ao renovar: 502", async () => {
-    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token });
+    // Victor ganhou acesso total no teste anterior: reconectar respeita o modo dele (pede o `drive`).
+    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_TOTAL });
     assert.equal(r.destino, "/conta?google=ok");
     const id = (await contasDe(victor.token))[0].id;
     const base = process.env.SOBEDESCE_GOOGLE_BASE;

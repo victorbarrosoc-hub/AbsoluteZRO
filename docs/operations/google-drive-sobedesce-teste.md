@@ -1,6 +1,36 @@
 # SOBEDESCE: teste de `drive.file` + Picker (10 minutos)
 
-Objetivo: descobrir se o escopo não sensível `https://www.googleapis.com/auth/drive` pode ser trocado por `drive.file` + Google Picker no SOBEDESCE, evitando o escopo restrito (e a avaliação CASA anual). Hoje o SOBEDESCE pede `drive` inteiro (`products/sobedesce/src/config.js` e `products/sobedesce/web/src/lib/google/config.ts`). **Nenhum código foi mudado.**
+Objetivo: descobrir se o escopo restrito `https://www.googleapis.com/auth/drive` pode ser trocado pelo não sensível `drive.file` + Google Picker no SOBEDESCE, evitando o escopo restrito (e a avaliação CASA anual). Hoje o SOBEDESCE pede `drive` inteiro (`products/sobedesce/src/config.js` e `products/sobedesce/web/src/lib/google/config.ts`). **Nenhum código foi mudado.**
+
+## Teste automático: absolutezro.com/admin/teste-drive
+
+Só o papel admin da plataforma (para os outros, 404); fora do menu e `noindex`. A tela pede só `drive.file` (Google
+Identity Services, sem somar escopos antigos), abre o Picker para escolher a pasta (`DocsView` com pastas selecionáveis)
+e roda sozinha, com a API REST v3 do Drive no navegador: (1) ler a pasta, (2) listar o que já existe nela, (3) baixar o
+começo de um arquivo que já existia, (4) listar uma subpasta que já existia, (5) enviar `teste-absolutezro.txt`, (6) criar
+`teste-absolutezro/` com um arquivo dentro, (7) ler de volta o que criou. O botão "Escolher arquivos" (multisseleção)
+faz a (8): metadados e primeiros bytes (`Range`) de cada arquivo escolhido. Cada checagem mostra Passou/Falhou, o HTTP e
+uma linha; o veredito aplica a tabela de decisão abaixo e mostra cada fluxo do SOBEDESCE como funciona/quebra. Falha de
+configuração (API desligada, token, rede) ou token com escopo amplo dão "inconclusivo", nunca um veredito. "Limpar o que
+o teste criou" apaga só os ids criados; "Copiar resultado" leva o texto (sem token nem ids); "Terminar e revogar" revoga o
+token (sair da página também revoga). Os scripts e as origens do Google só valem nesta rota (CSP própria em
+`apps/hub-web/lib/teste-drive/config.ts`).
+
+Configurar uma vez (valores públicos, nenhum segredo; nunca colar no repositório):
+
+1. Google Cloud Console (o projeto do cliente OAuth usado): ativar **Google Drive API** e **Google Picker API**.
+2. Credenciais: chave de API com restrição de referenciador HTTP `https://absolutezro.com/*` e restrita à Google Picker API.
+3. Cliente OAuth "Aplicativo da Web": `https://absolutezro.com` em Origens JavaScript autorizadas.
+4. Data Access: só `drive.file` do Drive (nenhum escopo amplo). App em Teste: seu e-mail como usuário de teste.
+5. Vercel, projeto `absolutezro` (Production): `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (sem ela, a tela usa o `GOOGLE_CLIENT_ID` do
+   Entrar com Google), `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY` e `NEXT_PUBLIC_GOOGLE_APP_ID` (número do projeto no Cloud).
+   Redeploy. Chave, cliente e número precisam ser do mesmo projeto.
+
+Antes de rodar: uma pasta criada pelo site do Drive (fora do app) com um `.txt`, um vídeo e `sub1/b.txt`. Opcional:
+informe quantos itens ela tem no primeiro nível. Se o token já tiver `drive` deste cliente, remova o acesso em
+myaccount.google.com/permissions e repita. Fora de produção, `/admin/teste-drive?exemplo=1` mostra um resultado fictício.
+
+O roteiro manual abaixo continua valendo como conferência.
 
 ## O que o código de hoje exige do Drive
 

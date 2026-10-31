@@ -17,6 +17,7 @@ import { loadLocalRoots, useLocalRoots } from './local-picker.js'
 import { navigate } from '../lib/router.js'
 import { DiscosPanel } from './discos.js'
 import { Fonte, Rota } from './comparar-partes.js'
+import { PRECISA_TOTAL } from '../lib/modo-drive.js'
 
 // lembra a última comparação enquanto o app está aberto (trocar de tela não perde o resultado)
 const mem = { jobId: null, result: null, startedAt: null, looks: null }
@@ -44,7 +45,7 @@ export async function abrirLooks({ trocar = false } = {}) {
   if (!accountId) return navigate('drive') // sem Drive conectado: a tela do Drive pede para conectar
   let remote = trocar ? null : storage.get(LOOKS_DRIVE)
   if (!remote) {
-    remote = await pickDriveFolder({ accountId, title: 'Para qual pasta do Drive vão os looks?', initialFolderId: 'root' })
+    remote = await pickDriveFolder({ accountId, title: 'Para qual pasta do Drive vão os looks?', initialFolderId: 'root', inteira: true })
     if (!remote) return
     storage.set(LOOKS_DRIVE, remote)
   }
@@ -515,7 +516,7 @@ function CompareDrive({ topo }) {
     if (p) setLocal(p)
   }
   const chooseRemote = async () => {
-    const f = await pickDriveFolder({ accountId, title: 'Qual pasta do Drive?', initialFolderId: remote?.id || 'root' })
+    const f = await pickDriveFolder({ accountId, title: 'Qual pasta do Drive?', initialFolderId: remote?.id || 'root', inteira: true })
     if (f) setRemote(f)
   }
 
@@ -548,6 +549,9 @@ function CompareDrive({ topo }) {
   }
 
   // ── coluna da direita: o que vai acontecer / agora / resultado, e o botão grande ──
+  // "Precisa de acesso total. <motivo>" (src/google/modo-drive.js): mostra o motivo sem repetir o título.
+  const precisaTotal = failed && typeof job?.error === 'string' && job.error.startsWith(PRECISA_TOTAL)
+  const motivoTotal = precisaTotal ? job.error.slice(PRECISA_TOTAL.length).replace(/^[.:]\s*/, '') || 'Em Arquivos escolhidos, só a pasta criada pelo SOBEDESCE aparece inteira.' : null
   let destaque = null
   if (running) {
     const p = andou(job, mode)
@@ -555,6 +559,9 @@ function CompareDrive({ topo }) {
     destaque = html`<${Destaque} titulo="Comparando" numero=${Math.floor(p * 100)} unidade="%" progresso=${p} linha=${fase?.label || 'Começando'} vivo />`
   } else if (canceled) {
     destaque = html`<${Destaque} tom="erro" titulo="Cancelada" linha="Nada foi gravado. Compare de novo quando quiser." />`
+  } else if (failed && precisaTotal) {
+    // Drive em Arquivos escolhidos e pasta que não é do SOBEDESCE: não é falha, é o limite do modo (nunca "falta subir").
+    destaque = html`<${Destaque} titulo=${PRECISA_TOTAL} linha=${motivoTotal} />`
   } else if (failed) {
     destaque = html`<${Destaque} tom="erro" titulo="Não terminou" linha=${job?.error || 'Algo deu errado no caminho.'} />`
   } else if (s && allGood) {
@@ -617,6 +624,8 @@ function CompareDrive({ topo }) {
     ${running && !hidden ? html`<${Progresso} job=${job} mode=${mode} onEsconder=${() => setHidden(true)} onCancelar=${cancelar} />` : null}
     ${canceled
       ? html`<${Passo} id="cp-resultado" icone="x" cor="warn" titulo="Comparação cancelada" frase="Parou no meio e nada foi gravado. Compare de novo quando quiser." i=${5} acao=${html`<div class="cp-acoes-topo"><${Button} onClick=${limpar} icon="trash">Limpar</${Button}><${Button} onClick=${start} icon="retry" disabled=${!local || !remote}>Comparar de novo</${Button}></div>`} />`
+      : failed && precisaTotal
+        ? html`<${Passo} id="cp-resultado" icone="key" cor="warn" titulo=${PRECISA_TOTAL} frase=${motivoTotal} i=${5} acao=${html`<${Button} onClick=${chooseRemote} icon="folder">Outra pasta do Drive</${Button}>`} />`
       : failed
         ? html`<${Passo} id="cp-resultado" icone="warning" cor="err" titulo="A comparação não terminou" frase=${job?.error || 'Algo deu errado no caminho.'} i=${5} acao=${html`<${Button} onClick=${start} icon="retry">Tentar de novo</${Button}>`} />`
         : null}

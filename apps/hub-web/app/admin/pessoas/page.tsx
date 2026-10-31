@@ -4,15 +4,18 @@ import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import {
   listPeople,
+  NOME_DO_PAPEL,
+  papelNoConsole,
   parsePeopleFilter,
   PEOPLE_FLAGS,
   PEOPLE_ORDERS,
   PEOPLE_SEGMENTS,
   peopleFilterQuery,
-  requirePlatformAdmin,
-  segmentCounts,
   type PeopleSegment,
   type PersonRow,
+  podeVer,
+  requirePlatformAdmin,
+  segmentCounts,
 } from '@zro/core'
 import { EmptyState, Field, ProductMark } from '@zro/ui'
 import { AppIcons, Face } from '@/components/admin/parts'
@@ -37,7 +40,7 @@ function planName(p: PersonRow): string {
 export default async function Pessoas({ searchParams }: Props) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  if (!auth || !podeVer(papelNoConsole(auth), 'pessoas')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const filter = parsePeopleFilter(await searchParams)
   const d = await db().asSystem('admin: pessoas', async (tx) => ({
@@ -167,7 +170,7 @@ export default async function Pessoas({ searchParams }: Props) {
                     <span className="person__name">
                       {p.name}
                       {p.status === 'suspended' && <span className="adm-chip adm-chip--danger">Suspensa</span>}
-                      {p.platformRole && <span className="adm-chip">{p.platformRole === 'admin' ? 'Admin' : 'Suporte'}</span>}
+                      {p.platformRole && <span className="adm-chip">{NOME_DO_PAPEL[p.platformRole]}</span>}
                     </span>
                     <span className="person__email">{p.email}</span>
                   </span>

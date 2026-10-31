@@ -37,6 +37,7 @@ export const OPCOES = {
   fpsModo: [
     { id: 'pico', nome: 'No máximo' },
     { id: 'constante', nome: 'Exata' },
+    { id: 'conformar', nome: 'Interpretar' }, // todos os quadros, só a velocidade muda (como o "Interpret Footage")
   ],
   qualidade: [
     { id: 'bitrate', nome: 'Bitrate médio' },
@@ -125,8 +126,8 @@ export function especificacaoDe(p) {
     recorte: { cima: 0, baixo: 0, esquerda: 0, direita: 0, ...v?.recorte },
     giro: v?.giro ?? 0,
     espelhar: Boolean(v?.espelhar),
-    fps: v?.fpsExato ?? (v?.fpsMax && v.fpsMax <= 60 ? v.fpsMax : null),
-    fpsModo: v?.fpsExato ? 'constante' : 'pico',
+    fps: v?.fpsExato ?? v?.fpsConforme ?? (v?.fpsMax && v.fpsMax <= 60 ? v.fpsMax : null),
+    fpsModo: v?.fpsExato ? 'constante' : v?.fpsConforme ? 'conformar' : 'pico',
     qualidade: p.tamanhoMax ? 'tamanho' : v?.cbr ? 'cbr' : v?.rf ? 'rf' : 'bitrate',
     kbps: v?.bitrateFixo ?? faixa?.[0] ?? 8000,
     rf: v?.crf ?? 18,
@@ -231,6 +232,7 @@ export function presetPersonalizado(e, id = null) {
     crf: 18,
   }
   if (fps && e.fpsModo === 'constante') v.fpsExato = fps
+  if (fps && e.fpsModo === 'conformar') v.fpsConforme = fps
   if (e.tamanho === 'tela') {
     v.quadro = { largura: par(entre(num(e.largura, 1080), LIMITES.tela)), altura: par(entre(num(e.altura, 1920), LIMITES.tela)) }
     v.encaixe = ids(OPCOES.encaixe).includes(e.encaixe) ? e.encaixe : 'contain'
@@ -270,7 +272,7 @@ function resumo(p) {
   const v = p.video
   const tam = v.quadro ? `${v.quadro.largura}×${v.quadro.altura}` : v.ladoMenor ? `${v.ladoMenor}p` : 'Original'
   const q = p.tamanhoMax ? `até ${Math.round(p.tamanhoMax / 1e6)} MB` : v.rf ? `RF ${v.crf}` : `${(v.bitrateFixo / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s${v.cbr ? ' CBR' : ''}`
-  return [v.codec === 'hevc' ? 'HEVC' : 'H.264', tam, v.fpsExato ? `${virgula(v.fpsExato)} fps` : null, q, p.cor ? 'cor da Revela' : null, p.semAudio ? 'sem áudio' : null].filter(Boolean).join(' · ')
+  return [v.codec === 'hevc' ? 'HEVC' : 'H.264', tam, v.fpsExato ? `${virgula(v.fpsExato)} fps` : v.fpsConforme ? `interpretado a ${virgula(v.fpsConforme)} fps` : null, q, p.cor ? 'cor da Revela' : null, p.semAudio ? 'sem áudio' : null].filter(Boolean).join(' · ')
 }
 
 // ─────────── guardar e levar ───────────

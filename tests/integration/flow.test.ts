@@ -77,8 +77,10 @@ describe('Ciclo do O ponta a ponta', () => {
     expect(step('tpeasy').displayState).toBe('done')
     expect(step('sobedesce').displayState).toBe('done')
     expect(step('synquei').displayState).toBe('needs_review')
-    // AEON está fechado por lançamento (ADR 0023): a etapa aparece indisponível mesmo com o plano que o lista.
-    expect(step('ai-edit').displayState).toBe('unavailable')
+    // o AEON está no ar na web (0043): a etapa fica disponível, ainda não começada; a Revela segue fechada por
+    // lançamento (ADR 0023): a etapa aparece indisponível mesmo com o plano que a lista.
+    expect(step('ai-edit').displayState).toBe('not_started')
+    expect(step('finishing').displayState).toBe('unavailable')
     const run = p.runs.find((r) => r.handler === 'synquei.organization-plan')!
     expect(run.status).toBe('succeeded')
     const plan = (run.result as { plan: { assets: { asset_id: string }[]; moves: unknown[] } }).plan

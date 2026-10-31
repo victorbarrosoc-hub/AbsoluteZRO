@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { aprovar, comPropostas, comTranscricao, novoProjeto } from '../src/projeto.js'
-import { etiquetar } from '../src/linha.js'
+import { acelerar, etiquetar } from '../src/linha.js'
 import { pacote, referencia } from '../src/exportar/index.js'
 import { paraFcpxml } from '../src/exportar/fcpxml.js'
 import { paraXmeml } from '../src/exportar/xmeml.js'
@@ -16,6 +16,7 @@ import { paraOtio } from '../src/exportar/otio.js'
 import { fileUrl, pathUrl, segmentos } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
 import { PRESET } from './apoio.js'
+import { adicionarSom, colocarEfeito } from '../src/efeitos.js'
 
 const SCHEMA = JSON.parse(readFileSync(new URL('../../../docs/integration-contracts/schemas/zro-timeline-ref.v0.schema.json', import.meta.url), 'utf8'))
 
@@ -139,8 +140,12 @@ test('OTIO: JSON com trilhas de vídeo e áudio e zoom em metadata', () => {
   const o = JSON.parse(paraOtio(projeto()))
   assert.equal(o.OTIO_SCHEMA, 'Timeline.1')
   const [v, a] = o.tracks.children
-  assert.equal(v.children.length, 4)
+  // as duas trilhas do mesmo tamanho: o áudio solto (trilha.wav) entra como Gap no vídeo, no mesmo lugar
+  assert.equal(v.children.length, 5)
   assert.equal(a.children.length, 5)
+  assert.equal(v.children[4].OTIO_SCHEMA, 'Gap.1')
+  const soma = (t) => t.children.reduce((s, c) => s + c.source_range.duration.value, 0)
+  assert.equal(soma(v), soma(a))
   assert.deepEqual(v.children[1].metadata.zro.zoom, { escala: 1.25, foco: { x: 0.5, y: 0.4 } })
   assert.equal(v.children[0].source_range.duration.value, 30)
 })
@@ -171,4 +176,59 @@ test('URLs de arquivo para Mac, Windows e rede', () => {
   assert.equal(pathUrl('C:\\Vídeos\\a b.mov'), 'file://localhost/C%3a/V%C3%ADdeos/a%20b.mov')
   assert.equal(fileUrl('/Users/eu/a.mp4'), 'file:///Users/eu/a.mp4')
   assert.equal(pathUrl('/Users/eu/a.mp4'), 'file://localhost/Users/eu/a.mp4')
+})
+
+test('efeitos sonoros: conectados no FCPXML, pares de faixas no xmeml, trilha FX no OTIO, comentário na EDL e créditos', () => {
+  let p = projeto()
+  p = adicionarSom(p, { id: 'w1', nome: 'whoosh & cia.wav', caminho: '/Sons/whoosh & cia.wav', duracao: 1, taxa: 48000, canais: 2, origem: { tipo: 'openverse', titulo: 'Whoosh', autor: 'Ana', licenca: 'CC BY 4.0', url: 'https://openverse.org/audio/w1' } }).projeto
+  // dois efeitos que se sobrepõem (quadros 10 e 20 da linha) e um no segundo clipe, com volume
+  p = colocarEfeito(p, 'w1', 10).projeto
+  p = colocarEfeito(p, 'w1', 20).projeto
+  const segs = segmentos(p)
+  const q2 = segs[2].linha + 5
+  p = colocarEfeito(p, 'w1', q2, { volume: -6 }).projeto
+
+  const fcp = paraFcpxml(p)
+  bemFormado(fcp)
+  assert.match(fcp, /<asset id="s1" name="whoosh &amp; cia" start="0s" duration="1001\/1000s" hasAudio="1"/)
+  // conectado no tempo de origem do clipe em que começa, em lanes diferentes quando sobrepõe
+  assert.match(fcp, /<asset-clip ref="s1" lane="-1" offset="1001\/3000s"[^>]*audioRole="effects"\/>/)
+  assert.match(fcp, /<asset-clip ref="s1" lane="-2" offset="1001\/1500s"/)
+  assert.match(fcp, /lane="-1" offset="[^"]+"[^>]*>\s*<adjust-volume amount="-6dB"\/>/)
+
+  const xm = paraXmeml(p)
+  bemFormado(xm)
+  assert.equal((xm.match(/<track>/g) || []).length, 1 + 2 + 4)
+  assert.match(xm, /<clipitem id="clipitem-e1L-1">[\s\S]*?<start>10<\/start>\s*<end>40<\/end>\s*<in>0<\/in>\s*<out>30<\/out>/)
+  assert.match(xm, /<file id="file-s1">/)
+  assert.equal((xm.match(/<file id="file-s1">/g) || []).length, 1, 'um arquivo por som, o resto referencia')
+
+  const o = JSON.parse(paraOtio(p))
+  const fx = o.tracks.children.filter((t) => t.name.startsWith('FX'))
+  assert.deepEqual(fx.map((t) => t.children.map((c) => c.OTIO_SCHEMA)), [['Gap.1', 'Clip.2', 'Gap.1', 'Clip.2'], ['Gap.1', 'Clip.2']])
+  assert.equal(fx[0].children[0].source_range.duration.value, 10)
+
+  assert.match(paraEdl(p), /\* EFEITO 00:00:00:10: whoosh & cia\.wav/)
+
+  const arquivos = pacote(p, PRESET.legenda, new Date('2026-10-31T12:00:00Z'))
+  const cred = arquivos.find((a) => a.name === 'CREDITOS.txt')
+  assert.match(cred.data, /"Whoosh" por Ana · CC BY 4\.0 · https:\/\/openverse\.org\/audio\/w1/)
+  for (const r of JSON.parse(arquivos.at(-1).data)) assert.deepEqual(validar(r, SCHEMA), [])
+})
+
+test('efeito num clipe acelerado: no FCPXML vai no tempo do clipe ajustado pela velocidade, e toca na linha onde ficou', () => {
+  let p = novoProjeto({ id: '0b6f3c2a-6d4e-4c1b-9a8f-2e7d5c4b3a22', nome: 'Rampa', fps: 30, midias: [{ id: 'm1', nome: 'a.mp4', duracao: 10, fps: 30, temVideo: true, temAudio: true }], preset: PRESET })
+  // o clipe todo a 200%: 300 quadros de origem viram 150 na linha
+  p = { ...p, linha: acelerar(p.linha, p.linha.clipes[0].id, [[0, 2], [1, 2]]) }
+  p = adicionarSom(p, { id: 'w1', nome: 'whoosh.wav', duracao: 0.5, origem: { tipo: 'arquivo' } }).projeto
+  p = colocarEfeito(p, 'w1', 30).projeto
+  // preso ao quadro 60 da origem, que a 200% cai no quadro 30 da linha
+  assert.equal(p.efeitos[0].fonte, 60)
+  const fcp = paraFcpxml(p)
+  bemFormado(fcp)
+  // no tempo do clipe com timeMap (origem ÷ velocidade): 60 ÷ 2 = 30 quadros = 1 s, como o marcador
+  assert.match(fcp, /<asset-clip ref="s1" lane="-1" offset="1\/1s" name="whoosh" start="0s" duration="1\/2s" audioRole="effects"\/>/)
+  const xm = paraXmeml(p)
+  bemFormado(xm)
+  assert.match(xm, /<clipitem id="clipitem-e1L-1">[\s\S]*?<start>30<\/start>\s*<end>45<\/end>/)
 })

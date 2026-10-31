@@ -257,11 +257,54 @@ async function repassarSet(req, u) {
   return new Response(semCorpo ? null : await r.arrayBuffer(), { status: r.status, headers: cabecalhos(extra) })
 }
 
+// Os sons da Sonoplasta: /api/zro/sons/buscar, /openverse/<id>, /banco e /banco/<id> → <Absolute ZRO>/api/v1/sons/… com
+// o mesmo access token. Os mesmos caminhos e parâmetros do site (api/_sons.js); só GET; o arquivo passa com o tipo e
+// os X-Zro-Som-*.
+const SOM_OPENVERSE = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const SOM_BANCO = /^\/banco\/[A-Za-z0-9_-]{10,200}$/
+const PASSAM_SOM = ['content-type', 'content-length', 'x-zro-som-id', 'x-zro-som-titulo', 'x-zro-som-autor', 'x-zro-som-licenca']
+function consultaDoSom(caminho, q) {
+  const so = (o) => new URLSearchParams(Object.entries(o).filter(([, v]) => v)).toString()
+  const conta = /^[A-Za-z0-9_-]{1,64}$/.test(q.get('conta') || '') ? q.get('conta') : ''
+  if (caminho === '/buscar') return so({ q: String(q.get('q') || '').slice(0, 80), pagina: /^\d{1,2}$/.test(q.get('pagina') || '') ? q.get('pagina') : '1' })
+  if (caminho === '/banco') {
+    const pagina = String(q.get('pagina') || '')
+    return so({ pasta: /^[A-Za-z0-9_-]{10,200}$/.test(q.get('pasta') || '') ? q.get('pasta') : 'x', q: String(q.get('q') || '').slice(0, 80), pagina: pagina.length <= 2000 ? pagina : '', conta })
+  }
+  if (SOM_BANCO.test(caminho)) return so({ conta })
+  if (SOM_OPENVERSE.test(caminho)) return ''
+  return null
+}
+async function repassarSons(req, u) {
+  const caminho = u.pathname.slice('/api/zro/sons'.length)
+  const consulta = consultaDoSom(caminho, u.searchParams)
+  if (consulta === null) return jsonResp(404, { ok: false })
+  if (req.method !== 'GET') return jsonResp(405, { ok: false })
+  const lista = caminho === '/buscar' || caminho === '/banco'
+  let token
+  try {
+    token = await contaApp().tokenDeAcesso()
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  if (!token) return jsonResp(401, { ok: false, message: 'Entre com a conta Absolute ZRO para buscar sons.' })
+  let r
+  try {
+    r = await net.fetch(`${EMISSOR}/api/v1/sons${caminho}${consulta ? `?${consulta}` : ''}`, { headers: { authorization: `Bearer ${token}`, accept: lista ? 'application/json' : 'audio/*' }, signal: req.signal, redirect: 'manual' })
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  const extra = { 'cache-control': lista || SOM_BANCO.test(caminho) ? 'no-store' : 'private, max-age=3600' }
+  for (const k of PASSAM_SOM) if (r.headers.get(k)) extra[k] = r.headers.get(k)
+  return new Response(r.body, { status: r.status, headers: cabecalhos(extra) })
+}
+
 async function rotaConta(req, u) {
   // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede (nem a Z, nem o Set)
-  if ((SMOKE || MEDIR) && (u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/'))) return jsonResp(401, { ok: false })
+  if ((SMOKE || MEDIR) && (u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/') || u.pathname.startsWith('/api/zro/sons/'))) return jsonResp(401, { ok: false })
   if (u.pathname.startsWith('/api/zro/ia/')) return repassarIa(req, u)
   if (u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/')) return repassarSet(req, u)
+  if (u.pathname.startsWith('/api/zro/sons/')) return repassarSons(req, u)
   if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail e foto na Absolute ZRO a cada abertura (sem resposta em 3 s, vale a cópia)

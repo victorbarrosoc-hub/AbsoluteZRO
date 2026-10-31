@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { cabecalhosTesteDrive, CSP_BASE, ROTA_TESTE_DRIVE } from './lib/teste-drive/config'
 
 const security = [
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -6,7 +7,7 @@ const security = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-  { key: 'Content-Security-Policy', value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" },
+  { key: 'Content-Security-Policy', value: CSP_BASE },
   ...(process.env.ZRO_ENV === 'production' || (!process.env.ZRO_ENV && process.env.VERCEL_ENV === 'production')
     ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }]
     : []),
@@ -15,7 +16,8 @@ const security = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  serverExternalPackages: ['postgres'],
+  // Correio do console (ADR 0034): imapflow (pino com require dinâmico), nodemailer e mailparser rodam como pacote do Node.
+  serverExternalPackages: ['postgres', 'imapflow', 'nodemailer', 'mailparser'],
   experimental: {
     // Troca de tela na hora (pedido do titular, 29/10/2026): a pré-busca inteira (intenção no menu) vale 60 s (o padrão
     // é 5 min). A tela visitada NÃO fica guardada (dynamic 0): com 30 s, o login único reaproveitava a tela de
@@ -37,6 +39,9 @@ const config: NextConfig = {
         source: '/admin/laboratorio',
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],
       },
+      // Teste do Drive (só admin): os scripts, as chamadas e o quadro do Google (Identity Services, Picker, API do Drive)
+      // valem nesta tela, e só nela. Também vem depois da regra geral.
+      { source: ROTA_TESTE_DRIVE, headers: cabecalhosTesteDrive({ dev: process.env.NODE_ENV !== 'production' }) },
       // o painel da IA (<zro-ia>) e as imagens do Z são carregados pelas plataformas, de outra origem: script módulo e
       // máscara CSS só funcionam com CORS. Arquivos públicos e estáticos, sem credencial.
       {

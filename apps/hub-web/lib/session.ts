@@ -2,7 +2,7 @@ import 'server-only'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
-import { authenticate, SESSION_COOKIE, sessionCookieOptions, type Authenticated } from '@zro/auth'
+import { authenticate, revokeSessionByToken, SESSION_COOKIE, sessionCookieOptions, type Authenticated } from '@zro/auth'
 import { getDatabase } from '@zro/db'
 import { hashIp } from '@zro/observability'
 import { isProduction } from './env'
@@ -34,8 +34,15 @@ export async function requestMeta() {
   return { ipHash: hashIp(ip), userAgent: h.get('user-agent') }
 }
 
+/**
+ * Sessão nova neste navegador (entrar, criar conta, Google). Se havia outra (prompt=login: "Usar outra conta" num app),
+ * ela é encerrada: o cookie dela some daqui e a sessão não fica órfã no Perfil.
+ */
 export async function setSessionCookie(token: string) {
-  ;(await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions(isProduction))
+  const jar = await cookies()
+  const anterior = jar.get(SESSION_COOKIE)?.value
+  jar.set(SESSION_COOKIE, token, sessionCookieOptions(isProduction))
+  if (anterior && anterior !== token) await revokeSessionByToken(db(), anterior).catch(() => {})
 }
 
 export async function clearSessionCookie() {

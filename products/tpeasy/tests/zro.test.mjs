@@ -333,8 +333,16 @@ describe('entrar', () => {
     assert.doesNotMatch(linha, /Secure/, 'em http://127.0.0.1 o cookie não pode ser Secure')
   })
 
-  test('no site oficial o cookie é Secure e o retorno é https://tpeasy.vercel.app', async () => {
+  test('no site oficial (tpeasy.absolutezro.com) o cookie é Secure e o retorno é o do subdomínio', async () => {
+    const ida = await ir('/api/zro/entrar', { headers: { 'x-forwarded-host': 'tpeasy.absolutezro.com' } })
+    assert.equal(ida.status, 302)
+    assert.equal(new URL(ida.headers.get('location')).searchParams.get('redirect_uri'), 'https://tpeasy.absolutezro.com/api/zro/callback')
+    assert.match(setCookies(ida)[0], /; Secure/)
+  })
+
+  test('o endereço antigo (tpeasy.vercel.app) continua entrando nele mesmo, sem trocar de endereço', async () => {
     const ida = await ir('/api/zro/entrar', { headers: { 'x-forwarded-host': 'tpeasy.vercel.app' } })
+    assert.equal(ida.status, 302)
     assert.equal(new URL(ida.headers.get('location')).searchParams.get('redirect_uri'), 'https://tpeasy.vercel.app/api/zro/callback')
     assert.match(setCookies(ida)[0], /; Secure/)
   })
@@ -342,7 +350,7 @@ describe('entrar', () => {
   test('outro endereço (prévia, domínio estranho) vai para o site oficial antes de tudo', async () => {
     const ida = await ir('/api/zro/entrar?volta=%2Fapp%2F', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
     assert.equal(ida.status, 307)
-    assert.equal(ida.headers.get('location'), 'https://tpeasy.vercel.app/api/zro/entrar?volta=%2Fapp%2F')
+    assert.equal(ida.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F')
     assert.equal(setCookies(ida).length, 0)
   })
 
@@ -499,7 +507,7 @@ describe('conta única da Absolute ZRO', () => {
     assert.equal(criar.searchParams.get('code_challenge_method'), 'S256')
     // Fora do site oficial, o pedido de cadastro segue junto para o site oficial.
     const previa = await ir('/api/zro/entrar?criar=1', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
-    assert.equal(previa.headers.get('location'), 'https://tpeasy.vercel.app/api/zro/entrar?criar=1')
+    assert.equal(previa.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?criar=1')
   })
 
   test('criar conta volta ao app já logado', async () => {

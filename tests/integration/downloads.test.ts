@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { DOWNLOADS, downloadsLiberados, hasDesktopInstaller } from '../../apps/hub-web/lib/downloads'
 
 const OFFICIAL = new Set([
-  'sobedesce.vercel.app',
+  'sobedesce.com',
   'synquei.vercel.app',
-  'nossom-teal.vercel.app',
-  'tpeasy.vercel.app',
+  'nossom.absolutezro.com',
+  'tpeasy.absolutezro.com',
   'carro.absolutezro.com',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
@@ -31,7 +31,7 @@ describe('downloads', () => {
         expect(u.hostname, o.href).not.toMatch(/github(usercontent)?\.com$/)
       }
       for (const cmd of Object.values(d.terminal ?? {}))
-        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei|nossom-teal)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
+        expect(cmd).toMatch(/https:\/\/(sobedesce\.com|synquei\.vercel\.app|(aeon|nossom)\.absolutezro\.com)\/instalar\.(sh|ps1)/)
     }
   })
 
@@ -101,6 +101,19 @@ describe('downloads', () => {
         .find((x) => x.productId === 'maestro')!
         .options.map((o) => o.os),
     ).toEqual(['mac', 'windows', 'web', 'mobile'])
+  })
+
+  it('TPeasy (0047): com o download aberto, Mac e Windows pela Absolute ZRO; fechado, só o iPhone e iPad', () => {
+    const fechado = downloadsLiberados(new Set(['sobedesce']), new Set(['tpeasy'])).find((x) => x.productId === 'tpeasy')!
+    expect(fechado.options.map((o) => o.os)).toEqual(['mobile'])
+    expect(hasDesktopInstaller('tpeasy', new Set(['sobedesce']))).toBe(false)
+    const aberto = downloadsLiberados(new Set(['tpeasy'])).find((x) => x.productId === 'tpeasy')!
+    expect(aberto.status).toBe('test')
+    expect(aberto.options.filter((o) => o.os === 'mac' || o.os === 'windows').map((o) => o.href)).toEqual([
+      'https://absolutezro.com/baixar/app/tpeasy/mac',
+      'https://absolutezro.com/baixar/app/tpeasy/windows',
+    ])
+    expect(hasDesktopInstaller('tpeasy', new Set(['tpeasy']))).toBe(true)
   })
 
   it('no ar só na web (Maestro sem o app de computador, Relay, Carro do Freela): navegador e celular, sem instalador nem Terminal', () => {

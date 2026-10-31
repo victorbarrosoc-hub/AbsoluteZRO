@@ -55,6 +55,44 @@ function comGanho(amostra, db) {
   return nova
 }
 
+/**
+ * Interpretar (conformar): o quadro fica, o tempo dele é multiplicado pelo fator (duração nova ÷ antiga). Muda o quadro
+ * que entra no processo (timestamp e duration são campos simples do VideoSample): o que sai dele herda o tempo novo.
+ */
+function retimar(amostra, fator) {
+  if (fator && fator !== 1) {
+    amostra.timestamp *= fator
+    amostra.duration *= fator
+  }
+  return amostra
+}
+
+/**
+ * O som acompanha a velocidade nova (o tom muda junto, como no cinema): cada bloco é esticado pelo fator, por
+ * interpolação linear, na mesma taxa (o codificador não aceita taxa quebrada). Só até 5% (CONFORME_SOM), onde a
+ * interpolação não se ouve.
+ */
+function audioConforme(amostra, fator) {
+  const n = amostra.numberOfFrames
+  const canais = amostra.numberOfChannels
+  const m = Math.max(1, Math.round(n * fator))
+  const plano = new Float32Array(n)
+  const dados = new Float32Array(m * canais)
+  for (let c = 0; c < canais; c++) {
+    amostra.copyTo(plano, { planeIndex: c, format: 'f32-planar' })
+    const o = c * m
+    for (let i = 0; i < m; i++) {
+      const x = Math.min(n - 1, i / fator)
+      const j = Math.floor(x)
+      const k = Math.min(n - 1, j + 1)
+      dados[o + i] = plano[j] + (plano[k] - plano[j]) * (x - j)
+    }
+  }
+  const nova = new MB.AudioSample({ data: dados, format: 'f32-planar', numberOfChannels: canais, sampleRate: amostra.sampleRate, timestamp: amostra.timestamp * fator })
+  amostra.close()
+  return nova
+}
+
 let aacPronto = null
 let mp3Pronto = null
 async function garantirCodificadorAudio(codec) {
@@ -376,7 +414,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     const comum = v
       ? {
           codec: codecVideo,
-          frameRate: v.fps ? ntsc(v.fps) : undefined,
+          frameRate: v.fps ? ntsc(v.fps) : undefined, // interpretar: sem frameRate (nenhum quadro sai nem repete)
           keyFrameInterval: v.gop,
           quality: new MB.Quality({ bitrate: v.bitrate, bitrateMode: v.modo === 'constante' ? 'constant' : 'variable' }),
           forceTranscode: true,
@@ -396,6 +434,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
         processedWidth: v.largura,
         processedHeight: v.altura,
         process: async (amostra) => {
+          retimar(amostra, v.conforme?.fator)
           const r = await escala.transformar(amostra, { ...d, rotation: (((amostra.rotation ?? 0) + v.giro) % 360 + 360) % 360 }, (a) => comCor(a, corOrigem, { fechar: false }))
           if (!r) throw Object.assign(new Error('Sem WebGL2 neste navegador: a cor da Revela não roda aqui.'), { codigo: 'cor' })
           return r
@@ -411,7 +450,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
         ...(v.espelhar ? { flip: true } : {}),
         ...(recorte ? { crop: recorte } : {}),
         // o que não passou pela escala (mesmo tamanho) chega aqui como saiu do decodificador
-        process: async (amostra) => para8bits(await comCor(amostra, corOrigem), corOrigem),
+        process: async (amostra) => para8bits(await comCor(retimar(amostra, v.conforme?.fator), corOrigem), corOrigem),
       }
     }
     const a = plano.audio
@@ -428,7 +467,9 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
             sampleRate: a.taxa,
             numberOfChannels: a.canais,
             forceTranscode: true,
-            ...(a.ganho ? { process: (amostra) => comGanho(amostra, a.ganho) } : {}),
+            ...(a.ganho || a.conforme
+              ? { process: (amostra) => (a.conforme ? audioConforme(a.ganho ? comGanho(amostra, a.ganho) : amostra, a.conforme) : comGanho(amostra, a.ganho)) }
+              : {}),
           }
         : { discard: true },
     })

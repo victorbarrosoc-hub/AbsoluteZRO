@@ -28,8 +28,9 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const LANCADOS = ['sobedesce', 'synquei', 'tpeasy']
-// O Carro do Freela saiu da lista dos fechados no lançamento (0041): no ar na web, na API e no login único.
-const FECHADOS = ['nossom', 'ai-edit', 'finishing']
+// O Carro do Freela saiu da lista dos fechados no lançamento (0041): no ar na web, na API e no login único. O AEON saiu
+// na 0043: no ar na web, na API e no login único, ainda sem o app de computador.
+const FECHADOS = ['nossom', 'finishing']
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 
 /** A mesma pessoa chamando pelo token de um app da família (canal api). */
@@ -41,7 +42,7 @@ const viaApp = (auth: Authenticated, productId: string): Authenticated => ({
 const job = (id: string) => ({ contract: 'carro-do-freela.job/1', job_id: id, title: 'Job', production_type: 'show', crew_roles: [] })
 
 describe('seed e regra do banco', () => {
-  it('SOBEDESCE, Synquei e TPeasy lançados em todos os canais; Carro no ar sem app de computador; NOSSOM, AEON e Revela em desenvolvimento', async () => {
+  it('SOBEDESCE, Synquei e TPeasy lançados em todos os canais; Carro no ar; AEON no ar sem app de computador; NOSSOM e Revela em desenvolvimento', async () => {
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
     for (const id of LANCADOS) {
       expect(s[id]?.state, id).toBe('released')
@@ -52,6 +53,11 @@ describe('seed e regra do banco', () => {
       state: 'released',
       open: true,
       channels: { web: true, desktop: true, api: true, download: true, sso: true },
+    })
+    expect(s['ai-edit']).toMatchObject({
+      state: 'released',
+      open: true,
+      channels: { web: true, desktop: false, api: true, download: false, sso: true },
     })
     for (const id of FECHADOS) {
       expect(s[id]?.state, id).toBe('development')
@@ -95,7 +101,7 @@ describe('contas do PRD §11', () => {
     const o = await newOrgWithOwner(db, 'gate-gratis', { freePlan: true })
     const access = await db.asUser({ userId: o.userId, orgId: o.orgId }, (tx) => productAccessFor(tx, o.orgId))
     const by = Object.fromEntries(access.map((a) => [a.productId, a]))
-    for (const id of [...LANCADOS, 'carro-do-freela']) expect(by[id]!.access, id).toBe('contracted')
+    for (const id of [...LANCADOS, 'carro-do-freela', 'ai-edit']) expect(by[id]!.access, id).toBe('contracted')
     for (const id of FECHADOS) {
       expect(by[id]!.access, id).toBe('closed')
       expect(by[id]!.release, id).toMatchObject({ state: 'development', open: false, allowed: false })
@@ -126,7 +132,7 @@ describe('contas do PRD §11', () => {
     const o = await newOrgWithOwner(db, 'gate-outro', { freePlan: true })
     await expect(authorize(db, viaApp(o.auth, 'sobedesce'), { release: { productId: 'sobedesce' } })).resolves.toBeTruthy()
     await expectCode(authorize(db, viaApp(o.auth, 'nossom'), { release: { productId: 'nossom' } }), 'product_closed')
-    await expectCode(authorize(db, viaApp(o.auth, 'ai-edit'), { product: { id: 'ai-edit' } }), 'product_closed')
+    await expectCode(authorize(db, viaApp(o.auth, 'finishing'), { product: { id: 'finishing' } }), 'product_closed')
   })
 
   it('admin da plataforma SEM linha é negado como qualquer pessoa (a lista é por conta, não por papel)', async () => {
@@ -135,8 +141,8 @@ describe('contas do PRD §11', () => {
     const auth = { ...o.auth, user: { ...o.auth.user, platformRole: 'admin' as const } }
     for (const id of FECHADOS) await expectCode(authorize(db, auth, { product: { id } }), 'product_closed')
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    // o Maestro (0027/0039) e o Carro do Freela (0041) estão no ar: entram como qualquer aberto
-    expect(claims.products.sort()).toEqual([...LANCADOS, 'maestro', 'carro-do-freela'].sort())
+    // o Maestro (0027/0039), o Carro do Freela (0041) e o AEON (0043) estão no ar: entram como qualquer aberto
+    expect(claims.products.sort()).toEqual([...LANCADOS, 'maestro', 'carro-do-freela', 'ai-edit'].sort())
     for (const id of FECHADOS) expect(claims.release[id], id).toBe('closed')
   })
 
@@ -154,18 +160,18 @@ describe('contas do PRD §11', () => {
     expect(await sys((tx) => releaseAllows(tx, 'nossom', o.userId, 'sso'))).toBe(true)
     expect(await sys((tx) => releaseAllows(tx, 'nossom', o.userId, 'download'))).toBe(false)
     expect(await sys((tx) => releaseAllows(tx, 'nossom', o.userId, 'api'))).toBe(false)
-    expect(await sys((tx) => releaseAllows(tx, 'ai-edit', o.userId, 'web'))).toBe(false)
+    expect(await sys((tx) => releaseAllows(tx, 'finishing', o.userId, 'web'))).toBe(false)
     // no HUB (canal web) o NOSSOM aparece contratado pelo plano grátis, com o gate marcando "allowed"
     const access = await db.asUser({ userId: o.userId, orgId: o.orgId }, (tx) => productAccessFor(tx, o.orgId))
     const nossom = access.find((a) => a.productId === 'nossom')!
     expect(nossom.access).toBe('contracted')
     expect(nossom.release).toMatchObject({ state: 'development', open: false, allowed: true })
-    expect(access.find((a) => a.productId === 'ai-edit')!.access).toBe('closed')
+    expect(access.find((a) => a.productId === 'finishing')!.access).toBe('closed')
     await expect(authorize(db, o.auth, { product: { id: 'nossom' } })).resolves.toBeTruthy()
     // pelo token do app (canal api) o tester não listou api: negado
     await expectCode(authorize(db, viaApp(o.auth, 'nossom'), { product: { id: 'nossom' } }), 'product_closed')
     const claims = await sys((tx) => releaseClaimsFor(tx, o.userId, 'sso'))
-    expect(claims).toMatchObject({ nossom: 'allowed', sobedesce: 'released', 'ai-edit': 'closed' })
+    expect(claims).toMatchObject({ nossom: 'allowed', sobedesce: 'released', finishing: 'closed' })
     expect((await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))).products).toContain('nossom')
 
     // validade vencida

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { denunciasSet, requirePlatformAdmin, type MotivoDenuncia } from '@zro/core'
+import { denunciasSet, type MotivoDenuncia, papelNoConsole, podeVer, requirePlatformAdmin } from '@zro/core'
 import { EmptyState, Pill } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { resolverDenunciaSetAction } from '@/lib/actions/admin'
@@ -21,7 +21,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 export default async function Denuncias({ searchParams }: Props) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  if (!auth || !podeVer(papelNoConsole(auth), 'denuncias')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const resolvidas = (await searchParams).ver === 'resolvidas'
   const lista = await db().asSystem('admin: denúncias do Set', (tx) => denunciasSet(tx, { estado: resolvidas ? 'resolvida' : 'aberta' }))

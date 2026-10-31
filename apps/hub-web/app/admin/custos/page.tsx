@@ -19,7 +19,9 @@ import {
   pontoDeEquilibrio,
   progressoDasMetas,
   recomendacoes,
-  requirePlatformAdmin,
+  papelNoConsole,
+  podeVer,
+  requireConsole,
   resumoCustos,
   type Custo,
   type Recomendacao,
@@ -54,9 +56,9 @@ const TOM: Record<Recomendacao['tom'], string> = { economia: 'ok', atencao: 'war
 
 export default async function Custos() {
   const auth = await getAuth()
-  // Layout e página renderizam em paralelo no Next: a página confere por conta própria. Custos: só admin.
-  if (!auth?.user.platformRole || !auth.user.emailVerified || auth.user.platformRole !== 'admin') notFound()
-  requirePlatformAdmin(auth, ['admin'])
+  // Layout e página renderizam em paralelo no Next: a página confere por conta própria. Custos: admin e Financeiro.
+  if (!auth || !podeVer(papelNoConsole(auth), 'custos')) notFound()
+  requireConsole(auth, 'custos')
   const d = await db().asSystem('admin: custos', async (tx) => ({
     custos: await listarCustos(tx),
     config: await lerConfigCustos(tx),

@@ -25,7 +25,8 @@ const CLIENTE = 'aeon-desktop'
 const PRODUTO = 'ai-edit'
 // zro.ia: o mesmo token fala com a Z (a IA do ecossistema), só pelo processo principal (desktop/main.cjs › repassarIa)
 // zro.set: o Set (presença e conversas), pelo mesmo processo (desktop/main.cjs › repassarSet)
-const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+// zro.sons: os efeitos sonoros livres da Sonoplasta (desktop/main.cjs › repassarSons)
+const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set zro.sons'
 const CONTA_S = 30 * 24 * 3600
 const ESPERA_MS = 10 * 60 * 1000
 // reler o perfil não pode prender a abertura do app: sem resposta nesse prazo, vale a cópia
@@ -284,19 +285,20 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
   /** Login completo. Devolve 'ok', 'recusado', 'expirou' ou 'erro' (os mesmos avisos do site). */
   function entrar({ criar = false } = {}) {
     if (emAndamento) return emAndamento
-    // cliente ainda sem o escopo do Set ou da Z na Absolute ZRO (invalid_scope): o login não quebra por causa deles;
-    // tenta sem o Set e, se ainda recusar, sem a Z também
-    emAndamento = tentar({ criar, semSet: false, semIa: false })
-      .then((r) => (r === 'escopo' ? tentar({ criar, semSet: true, semIa: false }) : r))
-      .then((r) => (r === 'escopo' ? tentar({ criar, semSet: true, semIa: true }) : r))
+    // cliente ainda sem o escopo dos sons, do Set ou da Z na Absolute ZRO (invalid_scope): o login não quebra por causa
+    // deles; tenta sem os sons, depois sem o Set e, se ainda recusar, sem a Z também
+    emAndamento = tentar({ criar, semSons: false, semSet: false, semIa: false })
+      .then((r) => (r === 'escopo' ? tentar({ criar, semSons: true, semSet: false, semIa: false }) : r))
+      .then((r) => (r === 'escopo' ? tentar({ criar, semSons: true, semSet: true, semIa: false }) : r))
+      .then((r) => (r === 'escopo' ? tentar({ criar, semSons: true, semSet: true, semIa: true }) : r))
       .then((r) => (r === 'escopo' ? 'erro' : r))
       .catch(() => 'erro')
       .finally(() => (emAndamento = null))
     return emAndamento
   }
 
-  /** Uma ida e volta pelo navegador. 'escopo': a Absolute ZRO recusou zro.set ou zro.ia (entrar() tenta sem ele). */
-  async function tentar({ criar, semSet, semIa }) {
+  /** Uma ida e volta pelo navegador. 'escopo': a Absolute ZRO recusou zro.sons, zro.set ou zro.ia (entrar() tenta sem ele). */
+  async function tentar({ criar, semSons, semSet, semIa }) {
     const d = await descobrir()
     const state = valor()
     const nonce = valor()
@@ -324,7 +326,7 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
         })
       })
       const a = new URL(d.authorization_endpoint)
-      a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: ESCOPOS.replace(semSet ? / ?zro\.set/ : '', '').replace(semIa ? / ?zro\.ia/ : '', ''), state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : {}) }).toString()
+      a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: ESCOPOS.replace(semSons ? / ?zro\.sons/ : '', '').replace(semSet ? / ?zro\.set/ : '', '').replace(semIa ? / ?zro\.ia/ : '', ''), state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : {}) }).toString()
       await abrirNavegador(a.toString())
       const r = await volta
       if (r.erro || !r.code) return r.erro || 'erro'

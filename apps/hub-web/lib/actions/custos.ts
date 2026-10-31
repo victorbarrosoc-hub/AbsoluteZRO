@@ -1,5 +1,5 @@
 'use server'
-/** Custos do ecossistema (/admin/custos, ADR 0028): só admin da plataforma, como sistema, com auditoria. */
+/** Custos do ecossistema (/admin/custos, ADR 0028): admin e Financeiro (ADR 0034), como sistema, com auditoria. */
 import { revalidatePath } from 'next/cache'
 import {
   apagarCusto,
@@ -8,7 +8,7 @@ import {
   lerFormularioConfig,
   lerFormularioCotacao,
   lerFormularioCusto,
-  requirePlatformAdmin,
+  requireConsole,
   salvarConfig,
   salvarCotacaoManual,
   salvarCusto,
@@ -19,7 +19,7 @@ import { db, getAuth } from '../session'
 import { str, toFormError } from './helpers'
 
 async function ator() {
-  const u = requirePlatformAdmin(await getAuth(), ['admin'])
+  const u = requireConsole(await getAuth(), 'custos', { mudar: true })
   return { userId: u.userId }
 }
 

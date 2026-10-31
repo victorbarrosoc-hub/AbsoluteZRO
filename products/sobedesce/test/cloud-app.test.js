@@ -199,6 +199,82 @@ test('upload e download de verdade no Drive falso usando uma conta nuvem:', asyn
   assert.ok(JSON.stringify(recs).includes('nuvem:g2'))
 })
 
+test('Drive em Arquivos escolhidos (docs/CONTAS.md §13): modo nas contas, lista honesta, Liberados e o que pede acesso total', async () => {
+  site.contas[0].modo = 'arquivos'
+  try {
+    let r = await post('/api/cloud/refresh')
+    assert.equal(r.status, 200, r.text)
+    const st = (await get('/api/state')).json
+    assert.equal(st.accounts.find(a => a.id === 'nuvem:g1').modo, 'arquivos')
+    assert.equal(st.accounts.find(a => a.id === 'nuvem:g2').modo ?? 'total', 'total')
+
+    // A raiz do Meu Drive nunca aparece inteira nesse modo; a pasta que o app criou (o envio de antes), sim.
+    r = await get('/api/drive/nuvem%3Ag1/list?folderId=root')
+    assert.equal(r.status, 200, r.text)
+    assert.equal(r.json.modo, 'arquivos')
+    assert.equal(r.json.completo, false)
+    const envio = r.json.items.find(it => it.name === 'Envio Nuvem')
+    assert.deepEqual(envio.appProperties, { sobedesce: 'pasta' }, 'a pasta do envio levou a marca')
+    r = await get(`/api/drive/nuvem%3Ag1/list?folderId=${envio.id}`)
+    assert.equal(r.json.completo, true)
+    // Pasta nova pela tela: com a marca.
+    r = await post('/api/drive/nuvem%3Ag1/folders', { name: 'Pela tela', parentId: 'root' })
+    assert.equal(r.status, 200, r.text)
+    assert.deepEqual(mock.getItem(r.json.item.id).appProperties, { sobedesce: 'pasta' })
+    // Acesso total: tudo completo, como sempre.
+    r = await get('/api/drive/nuvem%3Ag2/list?folderId=root')
+    assert.equal(r.json.modo, 'total')
+    assert.equal(r.json.completo, true)
+
+    // Liberados: o que o app pode abrir (o Drive falso mostra tudo; o recorte de verdade é do Google).
+    r = await get('/api/drive/nuvem%3Ag1/liberados')
+    assert.equal(r.status, 200, r.text)
+    assert.ok(r.json.items.some(it => it.name === 'Envio Nuvem'))
+    assert.deepEqual((await get('/api/drive/nuvem%3Ag2/liberados')).json.items, [], 'acesso total não tem Liberados')
+
+    // Comparar fora da pasta do SOBEDESCE: "Precisa de acesso total", nunca "falta subir".
+    const fora = mock.addFolder('Do site do Google', 'root')
+    r = await post('/api/compare', { accountId: 'nuvem:g1', localPath: path.join(files, 'Envio Nuvem'), driveFolderId: fora.id })
+    assert.equal(r.status, 200, r.text)
+    let job
+    await waitFor(async () => {
+      job = (await get(`/api/compare/${r.json.jobId}`)).json
+      return job.status !== 'running'
+    }, { timeoutMs: 10_000, message: 'a comparação não terminou' })
+    assert.equal(job.status, 'error')
+    assert.match(job.error, /^Precisa de acesso total/)
+    assert.ok(!job.result)
+    // Na pasta do envio (criada pelo app): compara e bate.
+    r = await post('/api/compare', { accountId: 'nuvem:g1', localPath: path.join(files, 'Envio Nuvem'), driveFolderId: envio.id })
+    await waitFor(async () => {
+      job = (await get(`/api/compare/${r.json.jobId}`)).json
+      return job.status !== 'running'
+    }, { timeoutMs: 10_000, message: 'a comparação não terminou' })
+    assert.equal(job.status, 'done', job.error)
+    assert.equal(job.result.summary.missing, 0)
+
+    // Somar o tamanho de uma pasta de fora: não soma pela metade.
+    r = await post('/api/drive/nuvem%3Ag1/tamanho', { folderId: fora.id })
+    assert.equal(r.status, 200, r.text)
+    let t
+    await waitFor(async () => {
+      t = (await get(`/api/drive/nuvem%3Ag1/tamanho?ids=${fora.id}`)).json.tamanhos[fora.id]
+      return t && t.status !== 'running' && t.status !== 'queued'
+    }, { timeoutMs: 10_000, message: 'o tamanho não terminou' })
+    assert.equal(t.status, 'error')
+    assert.equal(t.precisaTotal, true)
+    assert.match(t.error, /Precisa de acesso total/)
+
+    // Copiar de um link (de outra pessoa): invisível nesse modo.
+    r = await post('/api/copiar/nuvem%3Ag1/ler', { link: `https://drive.google.com/drive/folders/${fora.id}` })
+    assert.equal(r.status, 403)
+    assert.match(r.json?.error || r.text, /Precisa de acesso total/)
+  } finally {
+    delete site.contas[0].modo
+    await post('/api/cloud/refresh')
+  }
+})
+
 test('409 reconectar → o job pausa com erro reauth; reconectado no site, volta sozinho', async () => {
   site.setEstado('g1', 'reconectar')
   mock.expireAccessTokens() // o token guardado leva 401 do Google → renovar → 409

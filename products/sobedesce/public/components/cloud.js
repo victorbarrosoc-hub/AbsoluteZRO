@@ -8,6 +8,7 @@ import { confirmDialog } from '../lib/modals.js'
 import { cx } from '../lib/ui.js'
 import { Icon } from './icons.js'
 import { Avatar, Button, LinkButton, Pill, Spinner } from './common.js'
+import { ModoDoDrive } from './modo-drive.js'
 
 function useNow(active, ms = 1000) {
   const [now, setNow] = useState(Date.now())
@@ -127,6 +128,7 @@ export function CloudDrives({ accounts }) {
         <div class="srow-text">
           <div class="srow-label">${a.name || a.email}</div>
           <div class="srow-desc">${a.status === 'reauth' ? html`<span class="tone-warning">Precisa reconectar</span> · ` : null}${a.email}</div>
+          <${ModoDoDrive} account=${a} />
         </div>
       </div>
       <div class="srow-control"><${CloudDriveState} account=${a} /></div>

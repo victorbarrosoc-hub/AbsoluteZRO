@@ -23,10 +23,10 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
   }
   for (const url of [
     'https://sobedesce.vercel.app/',
-    'https://nossom-teal.vercel.app/studio',
+    'https://nossom.absolutezro.com/studio',
     'https://synquei.vercel.app/app/',
     'https://tpeasy.vercel.app/app/',
-    'https://carrodofreela.com.br',
+    'https://carro.absolutezro.com',
     'https://github.com/victorbarrosoc-hub',
     // parecidos com o HUB, mas não são ele
     'https://absolutezro.com.evil.com/',

@@ -50,7 +50,9 @@ describe('Maestro no ar (0027 + 0039)', () => {
     expect(claims.products).toContain('maestro')
     expect(claims.release.maestro).toBe('released')
     // os fechados continuam fechados (o Carro do Freela abriu na 0041)
-    for (const id of ['nossom', 'ai-edit', 'finishing']) expect(claims.release[id], id).toBe('closed')
+    for (const id of ['nossom', 'finishing']) expect(claims.release[id], id).toBe('closed')
+    // o AEON está no ar na web (0043)
+    expect(claims.release['ai-edit']).toBe('released')
   })
 
   it('marca própria: o grátis e o Completo não dão o sinal; só o Pro v2 (rascunho) e o adicional trazem', async () => {

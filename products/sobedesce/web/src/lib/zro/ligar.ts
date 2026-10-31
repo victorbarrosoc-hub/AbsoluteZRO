@@ -11,13 +11,23 @@ import { zroConfigurado } from "./config";
 
 export const TITULO_LIGAR_ZRO = "Agora sua conta é Absolute ZRO";
 export const BOTAO_LIGAR_ZRO = "Continuar com Absolute ZRO";
+/** A Absolute ZRO já tem outra conta SOBEDESCE: entrar nela (lib/zro/outra-conta.ts) ou pedir outra conta. */
+export const BOTAO_ENTRAR_NESSA_CONTA = "Entrar nessa conta";
+export const LINK_USAR_OUTRA_CONTA = "Usar outra conta";
+/** Para onde o "Entrar nessa conta" manda o formulário (POST, sem campos). */
+export const CAMINHO_TROCAR_CONTA = "/api/zro/trocar-conta";
 
 /** A tela de ligar aparece para esta sessão? Só com a Absolute ZRO configurada neste servidor. */
 export function precisaLigarZro(atual: { ligadoZro: boolean } | null | undefined): boolean {
   return Boolean(atual && !atual.ligadoZro && zroConfigurado());
 }
 
-/** O caminho de ligar (o modo=vincular de sempre). `volta`: onde mostrar um erro, se a ligação não der certo. */
-export function caminhoLigarZro(volta: string): string {
-  return `/api/zro/entrar?${new URLSearchParams({ modo: "vincular", volta })}`;
+/**
+ * O caminho de ligar (o modo=vincular de sempre). `volta`: onde mostrar um erro, se a ligação não der certo.
+ * `trocar` ("Usar outra conta"): a Absolute ZRO pede a conta de novo (prompt=login) em vez de usar a sessão aberta lá.
+ */
+export function caminhoLigarZro(volta: string, trocar = false): string {
+  const q = new URLSearchParams({ modo: "vincular", volta });
+  if (trocar) q.set("trocar", "1");
+  return `/api/zro/entrar?${q}`;
 }

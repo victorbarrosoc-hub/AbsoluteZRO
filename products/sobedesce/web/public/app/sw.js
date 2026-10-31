@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v75'
+const CACHE = 'sobedesce-app-v77'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -30,6 +30,7 @@ const SHELL = [
   './lib/auth.js',
   './lib/browse.js',
   './lib/computador.js',
+  './lib/conferir.js',
   './lib/config.js',
   './lib/copiar.js',
   './lib/cor.js',
@@ -49,6 +50,9 @@ const SHELL = [
   './lib/format.js',
   './lib/idb.js',
   './lib/lan.js',
+  './lib/md5.js',
+  './lib/md5-worker.js',
+  './lib/modo-drive.js',
   './lib/ligar-zro.js',
   './lib/midia-conta.js',
   './lib/midia-modos.js',
@@ -57,6 +61,7 @@ const SHELL = [
   './lib/p2p-gravar.js',
   './lib/p2p-util.js',
   './lib/now-playing.js',
+  './lib/picker.js',
   './lib/platform.js',
   './lib/proxies.js',
   './lib/psd.js',
@@ -69,6 +74,7 @@ const SHELL = [
   './lib/state.js',
   './lib/stream.js',
   './lib/tamanho.js',
+  './lib/transferencias.js',
   './lib/uploader.js',
   './lib/wakelock.js',
   './components/account.js',
@@ -100,6 +106,7 @@ const SHELL = [
   './components/settings.js',
   './components/tabs.js',
   './components/thumb.js',
+  './components/transferencias.js',
   './components/ui.js',
   './components/z.js',
   './icons/apple-touch-icon.png',

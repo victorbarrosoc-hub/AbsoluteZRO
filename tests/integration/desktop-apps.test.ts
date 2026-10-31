@@ -97,7 +97,7 @@ describe('catálogo', () => {
       throw new Error('rede')
     }) as unknown as typeof fetch
     const c = await catalogoDesktop(TODOS, { fetch: f, env: {} })
-    expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei', 'nossom', 'maestro', 'relay', 'carro-do-freela'])
+    expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei', 'nossom', 'maestro', 'relay', 'carro-do-freela', 'tpeasy'])
     expect(c.apps.every((a) => a.mac === null && a.windows === null)).toBe(true)
   })
 })
@@ -192,7 +192,7 @@ describe('Maestro para computador', () => {
   })
 
   it('o versao.json só vale para quem publica o aviso no Release', async () => {
-    expect(APPS_DESKTOP.filter((a) => a.versaoJson).map((a) => a.id)).toEqual(['maestro', 'relay', 'carro-do-freela'])
+    expect(APPS_DESKTOP.filter((a) => a.versaoJson).map((a) => a.id)).toEqual(['maestro', 'relay', 'carro-do-freela', 'tpeasy'])
   })
 })
 
@@ -207,6 +207,7 @@ describe.each([
     exe: 'Carro do Freela.exe',
     nome: 'Carro do Freela',
   },
+  { id: 'tpeasy', tag: 'tpeasy-versao-de-teste', pre: 'TPeasy', bundle: 'TPeasy.app', exe: 'TPeasy.exe', nome: 'TPeasy' },
 ])('$nome para computador', ({ id, tag, pre, bundle, exe, nome }) => {
   const URL_RELEASE = `https://api.github.com/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/${tag}`
   const rotas = () =>
