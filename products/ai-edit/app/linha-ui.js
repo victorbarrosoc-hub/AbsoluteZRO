@@ -9,6 +9,7 @@ import { paraSegundos, relogio } from '../src/tempo.js'
 import { JANELA_S } from '../src/analise/silencio.js'
 import { CORES, corDoClipe, etiquetasDa } from '../src/cores.js'
 import { efeitosNaLinha } from '../src/efeitos.js'
+import { origemNoClipe, saidaDoClipe, saidaNoClipe, velocidadeMedia, velocidadeNoClipe } from '../src/velocidade.js'
 
 const MIN_ESCALA = 1
 const MAX_ESCALA = 600
@@ -251,7 +252,7 @@ export class LinhaUI {
       if (!d) {
         d = el('div', 'clipe')
         d.dataset.id = clipe.id
-        d.append(el('span', 'clipe-nome', { innerHTML: '<span class="clipe-etiqueta"></span><span class="clipe-arquivo"></span>' }), el('i', 'borda borda-ini'), el('i', 'borda borda-fim'))
+        d.append(el('span', 'clipe-nome', { innerHTML: '<span class="clipe-etiqueta"></span><span class="clipe-arquivo"></span>' }), el('span', 'clipe-vel'), el('i', 'borda borda-ini'), el('i', 'borda borda-fim'))
         this.#arrastavel(d)
         this.trilhaV.append(d)
         if (animar && !reduzir()) d.animate([{ opacity: 0, transform: 'scaleY(0.6)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' })
@@ -263,6 +264,11 @@ export class LinhaUI {
       et.textContent = clipe.etiqueta || ''
       et.hidden = !clipe.etiqueta
       d.querySelector('.clipe-arquivo').textContent = nomes.get(clipe.midia) || ''
+      // velocidade: "200%" constante, "Rampa" quando muda ao longo do clipe
+      const vel = d.querySelector('.clipe-vel')
+      const pts = clipe.velocidade?.pontos
+      vel.hidden = !pts
+      if (pts) vel.textContent = pts.every(([, v]) => v === pts[0][1]) ? `${Math.round(pts[0][1] * 100)}%` : `Rampa · ${Math.round(velocidadeMedia(clipe) * 100)}%`
       const cor = corDoClipe(p, clipe)
       if (cor) d.dataset.cor = cor
       else delete d.dataset.cor
@@ -307,8 +313,11 @@ export class LinhaUI {
         const b = Math.min(z.qFim, clipe.fim)
         if (b <= a) continue
         const d = el('div', 'bloco-zoom', { title: `Zoom ${Math.round(z.escala * 100)}%` })
-        d.style.left = `${paraSegundos(inicio + a - clipe.ini, p.fps) * e}px`
-        d.style.width = `${Math.max(2, paraSegundos(b - a, p.fps) * e)}px`
+        // origem → linha pela curva de velocidade do clipe
+        const xa = saidaNoClipe(clipe, a)
+        const xb = saidaNoClipe(clipe, b)
+        d.style.left = `${paraSegundos(inicio + xa, p.fps) * e}px`
+        d.style.width = `${Math.max(2, paraSegundos(xb - xa, p.fps) * e)}px`
         marcas.push(d)
       }
     this.trilhaZ.replaceChildren(...marcas)
@@ -374,8 +383,10 @@ export class LinhaUI {
       const b = a + paraSegundos(tamanho(clipe), p.fps) * this.escala
       if (b < 0 || a > w) continue
       const fonte0 = paraSegundos(clipe.ini, p.fps)
+      const fps = p.fps.n / p.fps.d
       for (let x = Math.max(0, Math.floor(a)); x < Math.min(w, b); x++) {
-        const t0 = fonte0 + (x - a) / this.escala
+        // a onda acompanha a curva: cada coluna mostra o trecho de origem que toca ali
+        const t0 = clipe.velocidade ? origemNoClipe(clipe, ((x - a) / this.escala) * fps) / fps : fonte0 + (x - a) / this.escala
         const j0 = Math.floor(t0 / JANELA_S)
         const j1 = Math.max(j0 + 1, Math.floor((t0 + 1 / this.escala) / JANELA_S))
         let m = -100
@@ -448,17 +459,19 @@ export class LinhaUI {
         if (borda) {
           // aparar: a mudança em quadros, limitada pela mídia e por 1 quadro de clipe
           const c = clipes[i0]
-          const q = Math.round((dx / this.escala) * fps)
           const ini = borda.classList.contains('borda-ini')
+          // num clipe acelerado, cada quadro da tela vale v quadros de origem (a velocidade daquela borda)
+          const vb = c.velocidade ? velocidadeNoClipe(c, ini ? 0 : saidaDoClipe(c) - 1) : 1
+          const q = Math.round((dx / this.escala) * fps * vb)
           const limitar = (v) => (ini ? Math.max(-c.ini, Math.min(c.fim - c.ini - 1, v)) : Math.max(-(c.fim - c.ini - 1), Math.min(midia.quadros - c.fim, v)))
           delta = limitar(q)
           // ímã: a borda que anda na tela é a do fim do clipe (aparar empurra os seguintes)
           if (!ev.altKey) {
-            const fim = (esquerda0 + largura0) / this.escala + ((ini ? -delta : delta) / fps)
+            const fim = (esquerda0 + largura0) / this.escala + (ini ? -delta : delta) / vb / fps
             const alvoT = this.#imantar(fim, true)
-            if (alvoT !== fim) delta = limitar(delta + Math.round((alvoT - fim) * fps) * (ini ? -1 : 1))
+            if (alvoT !== fim) delta = limitar(delta + Math.round((alvoT - fim) * fps * vb) * (ini ? -1 : 1))
           }
-          const px = (delta / fps) * this.escala
+          const px = (delta / vb / fps) * this.escala
           if (borda.classList.contains('borda-ini')) d.style.width = `${largura0 - px}px`
           else d.style.width = `${largura0 + px}px`
           d.classList.add('aparando')

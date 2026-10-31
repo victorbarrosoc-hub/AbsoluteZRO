@@ -2233,6 +2233,125 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
   app instalado; publicar é decisão do titular).
 
+## AEON: página inicial com teste ao vivo (31/10/2026)
+
+- Referência do titular: a página do Hélice Ramps (demos que se mexem na própria página). Adaptado ao Padrão Apple e
+  ao AEON fechado ao público: sem preço, sem download e sem link para o editor; todo botão é âncora.
+- `site/estudio.js`: um vídeo de exemplo (foto + fala de 20,5 s escrita no arquivo), sem transcrever, enviar ou gravar
+  nada. Cortes: pausas acima do limite viram proposta (laranja) e só saem ao aprovar; a linha junta o que ficou em
+  clipes e a duração conta até o valor novo. Legenda: os estilos do app (Destaque, Pop, Limpa) em blocos de até 4
+  palavras. Zoom: 112% ou 122% nas frases de ênfase (o preset `fala`). Entrega: o que cada exportador grava de verdade
+  (zoom na escala do FCPXML e no Movimento do Premiere, legenda .srt/.vtt). Só toca enquanto aparece; com "reduzir
+  movimento" fica parado.
+- `test/tela.test.js` › "teste ao vivo": aprovar 2 cortes (20,5 → 18,8 s), limite 0,2 s (17,9 s), entrega com 6 clipes
+  e zoom de 122%, sem zoom some da entrega, setas no estilo, desfazer, Por dentro para de trocar ao escolher, uma
+  pergunta aberta por vez. "página inicial fechada" e `test/fechado.test.js` passam a exigir "Testar ao vivo" como
+  âncora. O "perfil único" simula o Set (`simularSet`), que a main passou a carregar no app (antes dava 404 de
+  `/api/zro/set` no console). `npm test` com as telas: 141 testes; telas 18/18.
+- Conferido no Chromium em 1440×900 e 390×844, escuro e claro, com "reduzir movimento"; sem rolagem lateral.
+
+## AEON: velocidade, o speed ramp (31/10/2026)
+
+- Pesquisa: curvas prontas do CapCut (Montagem, Herói, Bala, Flash), pontos de velocidade + curva com alças do
+  DaVinci (e o modo de reamostragem: quadro mais próximo, mistura, fluxo óptico), rampa com alças Bézier do Premiere
+  (que exporta e importa por XML só velocidade constante) e o `timeMap`/`timept` do FCPXML (DTD da Apple).
+- `src/velocidade.js`: curva no clipe, ancorada na mídia de origem; Hermite monótona no log da velocidade (sem passar do
+  desenho); degraus de ≈4 quadros de saída, vizinhos com menos de 2% de diferença juntos; som só em 100% (±2%).
+  `src/linha.js`: tamanho, localizar, fonteParaLinha, dividir, aparar e cortar trechos seguem a curva (reancorada na
+  mídia ao dividir e aparar); acelerado não se junta com o vizinho. Exportadores: FCPXML com `timeMap` linear por
+  degrau ancorado em 0s e −96 dB fora de 100%; xmeml com Time Remap constante e sem clipitem de som fora de 100%; OTIO
+  com `LinearTimeWarp` e Gap (as trilhas de vídeo e som ficam do mesmo tamanho; antes um áudio solto desalinhava o
+  vídeo); EDL com linha M2. Render: um quadro de origem a cada v quadros, silêncio fora de 100%. Prévia: playbackRate
+  do degrau e som mudo fora de 100%.
+- `test/velocidade.test.js` 5/5 (curva monótona e nos limites, degraus sem buraco, Manter duração, ida e volta
+  origem↔saída, linha com dividir/aparar/cortar, som só em 100%, os quatro exportadores com xmllint). Tela
+  "velocidade": Herói pelo Inspector, selo "Rampa" no clipe, seta no ponto, Manter duração, prévia tocando, FCPXML
+  com `timeMap`, 100% e ⌘Z. Autoteste (navegador e app de computador): vídeo final com a curva Pico saiu com 4,54 s
+  para 4,53 s esperados e com som. `npm test` 147/147; `xvfb-run -a npx electron . --smoke` SMOKE OK.
+- Site: aba Velocidade (a que abre) no Teste ao vivo, com o vídeo da falésia tocando na velocidade da curva, curvas
+  prontas, pontos para arrastar e a pergunta "Tem speed ramp?".
+- Não validado: a importação dos degraus num Final Cut, Premiere e DaVinci de verdade; câmera lenta com mistura de
+  quadros ou fluxo óptico (não feito).
+
+## AEON: imagens variadas na página inicial (31/10/2026)
+
+- Oito cenas novas no Higgsfield (`gpt_image_2_5`, 16:9, 1344×752, 0,25 crédito cada, 2 créditos no total): podcast,
+  aula, reels na rua, review, receita, viagem, entrevista e bastidor, em `marca/home/*.jpg` (80–160 KB) e
+  `marca/home/takes/*.jpg` (760 px, 32–64 KB).
+- Teste ao vivo: cada aba com a sua cena (podcast nos Cortes, rua na Legenda, review no Zoom, entrevista na Entrega;
+  a falésia em vídeo na Velocidade), com troca suave e uma deriva lenta de câmera enquanto toca.
+- Faixa nova "Do podcast à receita.": os oito tipos de vídeo passam sozinhos (duplicados para não ter emenda), param no
+  mouse e no foco, só andam na tela e viram rolagem lateral com "reduzir movimento".
+- "Por dentro": `scripts/telas.mjs` refeito com podcast, aula, viagem e bastidor (antes era a mesma criadora em todas
+  as telas) e a viagem com a rampa Herói; espera o "Salvo" antes de cada foto.
+- Conferido no Chromium em 1440×900 e 390×844, sem rolagem lateral; `test/fechado.test.js` e as telas da página
+  inicial passam.
+
+## AEON: motores de câmera lenta e estabilização, página pronta para lançar (31/10/2026)
+
+- **Velocidade sem tranco.** Os degraus inteiros (≈ 4 quadros) alternavam 25% e 50% numa rampa de 35% (um tranco a cada
+  1/6 s, visível no JSON da montagem antiga). Prévia e render agora seguem a curva contínua no mesmo tamanho dos degraus
+  (`origemContinua`, desvio de menos de um quadro de saída) e o render pede o instante exato da origem. Regressão:
+  fonte de 60 qps numa linha de 24 qps a 50% → nenhum quadro repetido (o render antigo repete metade: conferido rodando
+  o teste contra ele).
+- **Footage de alta taxa de verdade.** O Mixkit só entrega 23,976 qps (até no 1080p): os takes saíram. Do Coverr, cada
+  candidato foi conferido quadro a quadro: gaivotas, cachoeira, roda, vales são "50/60 qps" com metade dos quadros
+  repetida (25/30 por dentro) e ficaram fora; onda, cavalo, pelicano, mergulho e flores não repetem nenhum.
+- **Fluxo óptico (RIFE 4.25 em campos, MIT).** Escolha medida em quadros reais de 60 qps, tirando 3 de 4 quadros e
+  comparando o do meio com o verdadeiro (PSNR em Y, quadro 1280×720, movimento estimado em 640×360):
+  pelicano 42,1 dB (mistura 35,5; quadro repetido 33,7), cavalo 35,5 (34,0; 32,0), onda 41,5 (40,6; 38,6), flores 37,5
+  (37,8; 35,1), mergulho 37,1 (36,8; 34,4); o pior quadro do fluxo nunca abaixo do pior da mistura. Três exportações
+  comparadas (4.17-lite, 4.25 em campos, walterlow): a 4.25 em campos ganha por permitir montar o quadro em resolução
+  cheia. Tempo: ≈ 0,47 s de modelo + 0,21 s de montagem por quadro de 720p (Node, WASM, 4 linhas). A WebGPU fica
+  desligada: a versão do ONNX Runtime do app erra a convolução de 15 canais (onnxruntime #32928) que o RIFE tem.
+- Testes: `test/fluxo.test.js` (movimento conhecido → quadro do meio a mais de 38 dB e 8 dB acima da mistura;
+  movimento absurdo → mistura, sem rasgo); na tela, 24 qps a 50% com o modelo de verdade e a CSP do site: metade dos
+  96 quadros sai do fluxo, nenhum repetido (menos o último, depois do último quadro da câmera) e cada quadro novo fica
+  entre os vizinhos. No app de desktop (Electron): o modelo baixou pelo repasse `/__hf/` (22,7 MB, guardado no disco),
+  isolamento entre origens ligado, primeiro quadro em 1,1 s, confiança 0,9999.
+- **Montagem da página** refeita no AEON com os takes de alta taxa: projeto 16:9 em 24 qps, 554 quadros (23,1 s) =
+  soma dos degraus, render 1920×1080 em 160 s, **191 quadros pelo fluxo** (só onde a câmera não tinha quadro: abaixo de
+  40–48%); quadros interpolados do cavalo, da onda e dos faróis conferidos de perto (cerca e cordas finas sem rasgo).
+  Com marca, a pedido do titular: o carro retrô em neon e os faróis do Nissan 300ZX (60 qps de verdade); Porsche, BMW,
+  SUV e moeda do Coverr ficaram fora por serem 25 qps por dentro.
+- **Estabilização por imagem.** Tremor sintético de valor conhecido: movimento medido com erro máximo de 0,053 px;
+  tremor 43,7 → 1,4 px (−97%) com recorte de 17% e nenhum quadro mostrando borda. De ponta a ponta no app: o cavalo com
+  tremor de recorte (ffmpeg) → "Analisar e estabilizar" → render → tremor medido de novo no arquivo final, fora do app:
+  56,3 → 0,45 px (−99%), recorte de 13%. Análise ≈ 140 ms por quadro de 640×360 (pior caso). Giroscópio não feito.
+- **Página do lançamento** (`RELEASE=released`): conferida em 1440×900 e 390×844 no tema claro, sem erro nem rolagem
+  lateral; `test/fechado.test.js` 13/13 (só na web: Abrir o AEON nos quatro lugares, Mac e Windows "Em breve" sem link,
+  nada de instalador; com o computador: Baixar e os três destinos; `/baixar` fechado volta para "Em desenvolvimento",
+  só na web volta para a seção, com o computador vai ao Release). Subdomínios da família conferidos (200 e o título).
+- **HUB, migration 0043** (AEON na web): com um Postgres 16 local, a bateria do HUB passa 370/372 (as duas do
+  Laboratório da Z falham igual sem a 0043: o `@anthropic-ai/sdk` não está no `node_modules` desta máquina). Teste novo
+  `tests/integration/aeon-web.test.ts` (gate web, api e sso abertos, desktop e download fechados; conta só com o grátis
+  contratada, autorizada e no login único; backfill idempotente) e os testes que usavam o AEON como exemplo de fechado
+  passam a usar a Revela. Produção conferida antes (só leitura, AbsoluteZRO-SP): AEON em `development`, já em todos os
+  planos e nas 9 organizações com assinatura; migrations aplicadas até a 0042.
+- AEON 163/163, `electron . --smoke` OK, scan-secrets limpo.
+- Não validado: o fluxo e a estabilização num Mac e num Windows de verdade (tempo por quadro), o Safari, e as
+  importações com frameSampling no Final Cut e Mistura de quadros no Premiere.
+
+## AEON: footage de verdade nas demonstrações e nos testes (31/10/2026)
+
+- Takes do Mixkit com a Stock Video Free License, conferida na página de cada um (a onda e a gaivota da primeira
+  escolha eram "Restricted" e ficaram de fora; um túnel saiu por ter logo de empresa num prédio). Cortados, 1280×720 a
+  24 qps, sem som, CRF 27: 1–2 MB cada; a montagem, 4,5 MB. Origem, trecho e codificação em
+  `products/ai-edit/marca/home/cenas/LEIAME.md`.
+- `scripts/montagem.mjs` (editor no Chromium): importa cinco takes, apara pelas bordas da linha do tempo (com Alt, sem
+  ímã), põe uma curva pronta por clipe no Inspector (Vale, Flash de entrada, Herói, Bala, Pulso duplo), exporta o
+  pacote e renderiza. Medido: 579 quadros no render = 579 da soma dos degraus (24,1 s, H.264 1280×720, render em 8 s
+  nesta máquina); FCPXML e XML do Premiere válidos no xmllint, com timeMap e Time Remap.
+- Página: o seletor de take na Velocidade (troca o vídeo e mantém a curva) e a montagem com a linha que anda junto
+  (velocidade do quadro tirada da curva, pausa no botão, parada na crista da onda com "reduzir movimento"). Conferido
+  em 1440×900 e 390×844, claro e escuro, sem rolagem lateral nem erro no console.
+- Testes: "footage de verdade" (`test/tela.test.js`: um take real com Herói, render conferido no ffprobe quadro a
+  quadro) e o teste ao vivo cobre o take e a montagem. AEON 148/148, `electron . --smoke` OK, prettier e
+  scan-secrets limpos.
+- Achado: no Chromium sem tela, o download com acento no nome vira "download" (o roteiro reconhece pelo conteúdo). No
+  app de desktop o nome vem do diálogo de salvar; no Chrome de verdade não foi conferido. O app não mudou.
+- Não validado: o Safari do iPhone com os vídeos (só o Chromium).
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da
@@ -3662,18 +3781,18 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 ## Sonoplasta · fase 2a: banco de sons livres pelo HUB e aba Sons no AEON (31/10/2026)
 
 - HUB: `packages/core/src/sons.ts` e `/api/v1/sons/buscar` e `/api/v1/sons/openverse/{id}` (escopo `zro.sons`, migration
-  0043). `tests/integration/sons.test.ts` (Openverse falso): filtro de licença (sem SA, NC, ND) e de fonte, formato da
+  0044). `tests/integration/sons.test.ts` (Openverse falso): filtro de licença (sem SA, NC, ND) e de fonte, formato da
   família, token do app no Openverse pedido uma vez, erros 401/422/429/503, arquivo só de host conhecido por https, sem
   seguir redirecionamento, só áudio e até 25 MB. OpenAPI conferido. `npm test` 475/475, `typecheck` e `lint` OK.
 - AEON: repasse `/api/zro/sons/*` no site (`api/_sons.js`) e no app de computador (`desktop/main.cjs`); login pede
-  `zro.sons` e, se a Absolute ZRO recusar (antes da 0043), entra de novo sem ele, com a Z e o Set (site e desktop).
+  `zro.sons` e, se a Absolute ZRO recusar (antes da 0044), entra de novo sem ele, com a Z e o Set (site e desktop).
   `test/sons.test.js`, `test/sonoplasta.test.js`, `test/conta-desktop.test.js`; tela no Chromium: o corte vira
   momento, a busca acha o som, "impacto" vira "impact", ouvir, colocar no corte a −6 dB, o mesmo som não baixa duas
   vezes, e a entrega leva o arquivo e o crédito. `npm test` da AEON 162/163 (1 pulado: Whisper real sem rede) e
   `electron . --smoke` OK.
 - Medido de verdade (31/10/2026): a API do Openverse respondeu à busca "whoosh" com sons CC0 do Freesound, autor,
   licença, duração e o arquivo em `cdn.freesound.org`; o limite anônimo é 20/min e 200/dia.
-- Não validado: a busca em produção (falta aplicar a 0043 e publicar o HUB) e o cadastro do app no Openverse.
+- Não validado: a busca em produção (falta aplicar a 0044 e publicar o HUB) e o cadastro do app no Openverse.
 
 ## Sonoplasta · fase 2b: o banco de sons da pessoa no Drive (31/10/2026)
 
@@ -3689,4 +3808,4 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   (`open?id=`), link do SOBEDESCE (`#drive/<id>`) ou o id; som do banco sem crédito no `CREDITOS.txt`. Tela no Chromium:
   "Meu banco", colar o link, subpasta, buscar nela, colocar o som (origem `banco` com a conta), Inspector "Do seu banco
   no Drive", o arquivo na entrega e nenhum crédito para ele.
-- Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0043 aplicada).
+- Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0044 aplicada).

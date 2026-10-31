@@ -44,6 +44,15 @@ export function racional(q, fps) {
   return `${num / g}/${fps.n / g}s`
 }
 
+/** Tempo racional de uma fração de quadros (num/den quadros), para os tempos ajustados pela velocidade no FCPXML. */
+export function racionalFracao(num, den, fps) {
+  if (!num) return '0s'
+  const a = Math.round(num) * fps.d
+  const b = Math.round(den) * fps.n
+  const g = mdc(Math.abs(a), Math.abs(b))
+  return `${a / g}/${b / g}s`
+}
+
 /** "1:05" ou "1:02:05" para a interface. */
 export function relogio(s) {
   const t = Math.max(0, Math.round(s))

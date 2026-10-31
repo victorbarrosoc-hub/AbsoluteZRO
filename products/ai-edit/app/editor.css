@@ -2332,6 +2332,195 @@ select {
 #inspRedefinir {
   justify-self: start;
 }
+
+/* ───────── velocidade (speed ramp) no Inspector: a curva em log, 100% marcado (onde o som toca) ───────── */
+.insp-velocidade {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.vel-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+.vel-resumo {
+  color: var(--text-strong);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.vel-curva {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: var(--surface-2, rgb(255 255 255 / 0.04));
+  box-shadow: inset 0 0 0 1px var(--line);
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+.vel-grade {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.vel-cem {
+  stroke: var(--cor-verde);
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+.vel-rotulo {
+  font-size: 8px;
+  font-weight: 600;
+  fill: var(--text-faint);
+}
+.vel-area {
+  fill: color-mix(in srgb, var(--cor-laranja) 14%, transparent);
+}
+.vel-linha {
+  fill: none;
+  stroke: var(--cor-laranja);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.vel-ponto {
+  fill: var(--text-strong);
+  stroke: var(--cor-laranja);
+  stroke-width: 2;
+  cursor: grab;
+  transition: r 0.2s var(--mola);
+}
+.vel-ponto:hover,
+.vel-ponto:focus-visible {
+  r: 8;
+  outline: none;
+}
+.vel-ponto:active {
+  cursor: grabbing;
+}
+.vel-curvas,
+.vel-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insp-velocidade button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    transform 0.25s var(--mola);
+}
+.insp-velocidade button.ficha:active {
+  transform: scale(0.96);
+}
+.insp-velocidade button.ficha[aria-pressed='true'] {
+  color: var(--text-strong);
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-laranja);
+}
+.insp-velocidade button.ficha:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vel-acoes button.ficha {
+  color: var(--text-strong);
+}
+/* estabilizar: ligar, suavidade e recorte; o resumo é o que foi medido */
+.insp-estab {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft, rgb(255 255 255 / 0.08));
+}
+.insp-estab button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-strong);
+}
+.insp-estab button.ficha[aria-pressed='true'] {
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-verde);
+}
+.insp-estab button.ficha:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.estab-resumo {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+.estab-campo {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.estab-campo input {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--cor-verde);
+}
+.estab-campo input:disabled {
+  opacity: 0.4;
+}
+.estab-campo output {
+  font-variant-numeric: tabular-nums;
+}
+
+/* entre quadros: fluxo óptico, mistura ou quadro (um só aceso) */
+.vel-modo {
+  display: grid;
+  gap: 6px;
+}
+.vel-modo-rotulo {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.vel-modos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insp-velocidade .vel-modos button.ficha[aria-checked='true'] {
+  color: var(--text-strong);
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-laranja);
+}
+.vel-dica {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* o selo de velocidade no clipe da linha */
+.clipe-vel {
+  position: absolute;
+  left: 8px;
+  bottom: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  color: #000;
+  background: var(--cor-laranja);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.clipe-vel[hidden] {
+  display: none;
+}
 .historico {
   list-style: none;
   margin: 0;

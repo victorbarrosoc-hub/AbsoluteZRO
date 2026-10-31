@@ -282,7 +282,7 @@ describe('gate de lançamento (ADR 0023)', () => {
     const t = await exchange(c, code, verifier)
     const signer = await loadSigner(db)
     const id = verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!
-    expect(id.zro_release).toMatchObject({ nossom: 'allowed', sobedesce: 'released', 'ai-edit': 'closed' })
+    expect(id.zro_release).toMatchObject({ nossom: 'allowed', sobedesce: 'released', 'ai-edit': 'released', finishing: 'closed' })
     expect(id.zro_products).toContain('nossom')
     const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
     expect((at.zro_release as Record<string, string>).nossom).toBe('allowed')

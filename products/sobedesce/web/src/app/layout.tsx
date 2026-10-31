@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: SITE_NOME, statusBarStyle: "default", startupImage: telasDeAbertura() },
   icons: { apple: [{ url: "/app/icons/apple-touch-icon.png", sizes: "180x180" }] },
   formatDetection: { telephone: false },
+  // Search Console (propriedade https://sobedesce.com): prova de domínio para a verificação da marca no Google.
+  verification: { google: "giXZfVbQNx2xVm0WFIBViblaoQltp7JlmstrKC0GiKc" },
   // O Next só escreve mobile-web-app-capable; iPhones com iOS mais antigo ainda leem este.
   other: { "apple-mobile-web-app-capable": "yes" },
 };

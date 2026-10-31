@@ -80,13 +80,15 @@ const videos = await pagina.evaluate(async (FRASES) => {
   })
   const duracao = Math.ceil(t + 0.4)
   return {
-    entrevista: await gravar('/marca/home/criadora.jpg', duracao, palavras),
-    camera: await gravar('/marca/home/camera.jpg', 4, null),
-    salina: await gravar('/marca/home/salina.jpg', 4, null),
+    podcast: await gravar('/marca/home/podcast.jpg', duracao, palavras),
+    aula: await gravar('/marca/home/aula.jpg', 4, null),
+    viagem: await gravar('/marca/home/viagem.jpg', 4, null),
+    bastidor: await gravar('/marca/home/bastidor.jpg', 4, null),
     palavras,
   }
 }, FRASES)
-for (const n of ['entrevista', 'camera', 'salina']) writeFileSync(join(dir, `${n}.mp4`), Buffer.from(videos[n]))
+const MIDIAS = ['podcast', 'aula', 'viagem', 'bastidor']
+for (const n of MIDIAS) writeFileSync(join(dir, `${n}.mp4`), Buffer.from(videos[n]))
 
 // transcrição: o roteiro (worker trocado, com os mesmos cabeçalhos de isolamento)
 await pagina.route('**/app/transcricao-worker.js', (rota) =>
@@ -101,17 +103,19 @@ const foto = async (nome) => {
   // sem aviso na frente e com o vídeo parado
   await pagina.evaluate(() => document.getElementById('aviso').classList.remove('visivel'))
   if ((await pagina.getAttribute('#tocar', 'aria-label')) === 'Pausar') await pagina.evaluate(() => document.querySelector('#tocar').click())
+  // a barra mostra "Salvo" (o autosave terminou), não "Salvando…"
+  await pagina.waitForFunction(() => !document.querySelector('#nomeProjeto')?.textContent || document.querySelector('#salvo')?.dataset.estado === 'ok', null, { timeout: 5000 }).catch(() => {})
   await pagina.waitForTimeout(700)
   writeFileSync(new URL(`${nome}.jpg`, destino), await pagina.screenshot({ type: 'jpeg', quality: 85 }))
   console.log('ok', nome)
 }
 
-await pagina.setInputFiles('#arquivo', ['entrevista', 'camera', 'salina'].map((n) => join(dir, `${n}.mp4`)))
-await pagina.locator('.cartao-midia').nth(2).waitFor()
-await pagina.waitForFunction(() => document.querySelectorAll('.cartao-mini canvas').length === 3)
+await pagina.setInputFiles('#arquivo', MIDIAS.map((n) => join(dir, `${n}.mp4`)))
+await pagina.locator('.cartao-midia').nth(MIDIAS.length - 1).waitFor()
+await pagina.waitForFunction((n) => document.querySelectorAll('.cartao-mini canvas').length === n, MIDIAS.length)
 await pagina.click('#nomeProjeto')
 await pagina.keyboard.press('Control+a')
-await pagina.keyboard.type('Entrevista · Outubro')
+await pagina.keyboard.type('Podcast · Episódio 12')
 await pagina.keyboard.press('Enter')
 await foto('app-midia')
 
@@ -134,15 +138,22 @@ const marcar = async (i, cor, etiqueta) => {
   await pagina.press('.etiqueta-campo', 'Enter')
 }
 await marcar(0, 'laranja', 'Gancho')
+await marcar(n - 3, 'azul', 'Aula')
 await marcar(n - 2, 'menta', 'B-roll')
 await marcar(n - 1, 'menta', 'B-roll')
 await marcar(2, 'verde', 'Melhor take')
+// a viagem com a rampa Herói (o selo aparece no clipe)
+await pagina.locator('.clipe').nth(n - 2).click()
+await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Herói' }).click()
 // marcador e o ponto numa frase com legenda
 const caixa = await pagina.locator('.clipe').nth(3).boundingBox()
 await pagina.mouse.click(caixa.x + caixa.width * 0.4, caixa.y - 10)
 await pagina.keyboard.press('m')
 await pagina.locator('.clipe').nth(2).click()
 await pagina.mouse.click(caixa.x + caixa.width * 0.55, caixa.y - 10)
+// no Inspector, a viagem com a curva Herói
+await pagina.locator('.clipe').nth(n - 2).click()
+await pagina.locator('.insp-velocidade').scrollIntoViewIfNeeded()
 await foto('app-edicao')
 
 await pagina.click('#abasPainel [data-aba="texto"]')

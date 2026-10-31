@@ -1,5 +1,7 @@
-// OpenTimelineIO (JSON .otio): a ponte aberta entre editores. Zoom e foco vão em metadata.zro de cada clipe; efeitos
-// sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro.
+// OpenTimelineIO (JSON .otio): a ponte aberta entre editores. Zoom e foco vão em metadata.zro de cada clipe. Velocidade:
+// LinearTimeWarp por degrau (o clipe ocupa `saida` quadros na trilha e consome saida × v da mídia). Onde uma trilha não
+// tem o que tocar (mídia sem som, degrau fora de 100%) entra um Gap do mesmo tamanho: as trilhas ficam alinhadas.
+// Efeitos sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro.
 
 import { caminhoDa, caminhoDoSom, efeitosExportados, fileUrl, segmentos } from './comum.js'
 import { fpsNumero } from '../tempo.js'
@@ -15,10 +17,10 @@ export function paraOtio(p) {
     return {
       OTIO_SCHEMA: 'Clip.2',
       name: m.nome,
-      source_range: range(s.ini, s.fim - s.ini, rate),
+      source_range: range(s.ini, s.saida, rate),
       media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(caminhoDa(m)), available_range: range(0, m.quadros, rate), metadata: { zro: { asset_id: m.id } } } },
       active_media_reference_key: 'DEFAULT_MEDIA',
-      effects: [],
+      effects: s.v === 1 ? [] : [{ OTIO_SCHEMA: 'LinearTimeWarp.1', name: 'Velocidade', effect_name: 'LinearTimeWarp', time_scalar: s.v, metadata: {} }],
       markers: [],
       enabled: true,
       metadata: { zro: { ...(tipo === 'Video' && s.escala !== 1 ? { zoom: { escala: s.escala, foco: s.foco } } : {}), ...(s.cor ? { cor: s.cor } : {}), ...(s.etiqueta ? { etiqueta: s.etiqueta } : {}), ...(JSON.stringify(s.ajustes) !== '{"volume":0,"opacidade":1,"escala":1,"x":0,"y":0}' ? { ajustes: s.ajustes } : {}) } },
@@ -29,7 +31,7 @@ export function paraOtio(p) {
     OTIO_SCHEMA: 'Track.1',
     name: tipo === 'Video' ? 'V1' : 'A1',
     kind: tipo,
-    children: segs.filter((s) => p.midias.find((m) => m.id === s.midia)?.[tipo === 'Video' ? 'temVideo' : 'temAudio']).map((s) => clipe(s, tipo)),
+    children: segs.map((s) => (p.midias.find((m) => m.id === s.midia)?.[tipo === 'Video' ? 'temVideo' : 'temAudio'] && (tipo === 'Video' || s.som) ? clipe(s, tipo) : { OTIO_SCHEMA: 'Gap.1', name: '', source_range: range(0, s.saida, rate), effects: [], markers: [], enabled: true, metadata: {} })),
     effects: [],
     markers:
       tipo === 'Video'

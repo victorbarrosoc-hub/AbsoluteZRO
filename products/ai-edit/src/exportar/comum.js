@@ -1,10 +1,13 @@
 // Peças comuns dos exportadores: escape de XML, caminho do arquivo no disco de quem edita e a linha do tempo em
-// segmentos de zoom constante (cada editor recebe o zoom como escala do clipe, então um clipe com dois zooms vira dois).
+// segmentos de zoom e velocidade constantes (cada editor recebe o zoom como escala do clipe e a velocidade como
+// velocidade constante do clipe, então um clipe com dois zooms vira dois e uma rampa vira seus degraus).
+
 
 import { zoomsAprovados } from '../projeto.js'
 import { zoomEm } from '../quadro.js'
 import { ajustesDe, tamanho } from '../linha.js'
 import { corDoClipe } from '../cores.js'
+import { modoDe, pedacos, saidaNoClipe } from '../velocidade.js'
 import { posicionar } from '../quadro.js'
 import { efeitosNaLinha, faixas } from '../efeitos.js'
 import { paraQuadros } from '../tempo.js'
@@ -42,8 +45,9 @@ export const nomeArquivo = (s) =>
     .slice(0, 80) || 'projeto'
 
 /**
- * A linha em segmentos: [{ midia, ini, fim (quadros de origem), linha (quadro na linha), escala, foco, cor, etiqueta }], quebrando o
- * clipe onde o zoom aprovado muda.
+ * A linha em segmentos: [{ midia, ini, fim (quadros de origem), linha (quadro na linha), saida (quadros na linha), v
+ * (velocidade), som (toca o som?), escala, foco, cor, etiqueta }], quebrando o clipe onde o zoom aprovado muda e nos
+ * degraus da curva de velocidade (src/velocidade.js).
  */
 export function segmentos(p) {
   const zooms = zoomsAprovados(p)
@@ -55,7 +59,8 @@ export function segmentos(p) {
     const pts = [...cortes].sort((a, b) => a - b)
     for (let i = 0; i < pts.length - 1; i++) {
       const z = zoomEm(zooms, c.midia, pts[i])
-      out.push({ clipe: c.id, midia: c.midia, ini: pts[i], fim: pts[i + 1], linha: t + (pts[i] - c.ini), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
+      for (const pc of pedacos(c, pts[i], pts[i + 1]))
+        out.push({ clipe: c.id, midia: c.midia, ini: pc.ini, fim: pc.fim, linha: t + Math.round(saidaNoClipe(c, pc.ini)), saida: pc.saida, v: pc.v, som: pc.som, modo: modoDe(c), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
     }
     t += tamanho(c)
   }
@@ -76,7 +81,7 @@ export function transformacao(p, s) {
 }
 
 /** Marcadores que caem dentro de um segmento: [{ nome, q (quadro de origem) }]. */
-export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + (s.fim - s.ini)).map((k) => ({ nome: k.nome || 'Marcador', q: s.ini + (k.q - s.linha) }))
+export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + s.saida).map((k) => ({ nome: k.nome || 'Marcador', q: s.ini + Math.round((k.q - s.linha) * s.v) }))
 
 /**
  * Efeitos sonoros para os exportadores: [{ ...x de efeitosNaLinha, faixa (0, 1, …), seg (segmento onde começa),
@@ -85,7 +90,7 @@ export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= 
 export function efeitosExportados(p) {
   const segs = segmentos(p)
   return faixas(p).flatMap((fx, faixa) =>
-    fx.map((x) => ({ ...x, faixa, seg: segs.find((s) => x.inicio >= s.linha && x.inicio < s.linha + (s.fim - s.ini)), quadrosSom: Math.max(1, paraQuadros(x.som.duracao, p.fps)) })),
+    fx.map((x) => ({ ...x, faixa, seg: segs.find((s) => x.inicio >= s.linha && x.inicio < s.linha + s.saida), quadrosSom: Math.max(1, paraQuadros(x.som.duracao, p.fps)) })),
   )
 }
 

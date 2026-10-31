@@ -1,7 +1,8 @@
 // EDL CMX 3600: o formato mais antigo e aceito por todos (Avid, Resolve, Premiere). Só cortes: zoom, legenda e efeitos
-// sonoros não cabem na EDL (vão como comentário).
+// sonoros não cabem na EDL (vão como comentário). Velocidade: linha M2 (velocidade constante em quadros por segundo)
+// em cada degrau; fora de 100% o evento vai só com imagem (a regra do AEON: som só em 100%).
 
-import { timecode } from '../tempo.js'
+import { fpsNominal, timecode } from '../tempo.js'
 import { segmentos } from './comum.js'
 import { efeitosNaLinha } from '../efeitos.js'
 
@@ -22,8 +23,11 @@ export function paraEdl(p) {
   const linhas = [`TITLE: ${ascii(p.nome).toUpperCase().slice(0, 70)}`, 'FCM: NON-DROP FRAME', '']
   segmentos(p).forEach((s, k) => {
     const m = p.midias.find((x) => x.id === s.midia)
-    const canal = m.temVideo ? (m.temAudio ? 'AA/V ' : 'V    ') : 'AA   '
-    linhas.push(`${String(k + 1).padStart(3, '0')}  ${reel(m).padEnd(8)} ${canal} C        ${tc(s.ini)} ${tc(s.fim)} ${tc(s.linha)} ${tc(s.linha + s.fim - s.ini)}`)
+    const som = m.temAudio && s.som
+    const canal = m.temVideo ? (som ? 'AA/V ' : 'V    ') : 'AA   '
+    // com M2, a origem do evento tem o tamanho do evento na gravação; a velocidade real vem na linha M2
+    linhas.push(`${String(k + 1).padStart(3, '0')}  ${reel(m).padEnd(8)} ${canal} C        ${tc(s.ini)} ${tc(s.ini + s.saida)} ${tc(s.linha)} ${tc(s.linha + s.saida)}`)
+    if (s.v !== 1) linhas.push(`M2   ${reel(m).padEnd(8)}       ${(s.v * fpsNominal(p.fps)).toFixed(1).padStart(5, '0')}                ${tc(s.ini)}`)
     linhas.push(`* FROM CLIP NAME: ${ascii(m.nome)}`)
     if (s.escala !== 1) linhas.push(`* ZOOM: ${Math.round(s.escala * 100)}%`)
     if (s.etiqueta) linhas.push(`* ETIQUETA: ${ascii(s.etiqueta)}`)

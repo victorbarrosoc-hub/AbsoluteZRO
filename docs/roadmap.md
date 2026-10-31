@@ -291,12 +291,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   em português no banco de sons livres (Openverse pelo HUB, só CC0, CC BY e domínio público; Freesound e Wikimedia),
   ouvir antes, colocar no momento com o volume do preset (`presets/sonoplasta.v1.json`) e o crédito automático; o
   arquivo vai junto na entrega e desce de novo ao reabrir o projeto. HUB: `/api/v1/sons/*` (escopo `zro.sons`,
-  migration 0043). Falta: aplicar a 0043 e o cadastro do app no Openverse (limite).
+  migration 0044). Falta: aplicar a 0044 e o cadastro do app no Openverse (limite).
 - 🟡 Sonoplasta · fase 2b (31/10/2026): **Meu banco** na aba Sons: a pessoa cola o link da pasta do Drive com os sons
   dela, navega nas subpastas, busca pelo nome e coloca no momento; sem crédito (a licença é dela), o arquivo vai na
   entrega e desce de novo ao reabrir. HUB: `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` pela conexão do Drive no
   SOBEDESCE (`drive.listar` e `drive.token`, o token do Drive fica só no HUB); só leitura no Drive. Sem migration nova
-  (vale o `zro.sons` da 0043). Falta: validar com um Drive real em produção. Próximo: fase 3 (ElevenLabs pela conta da
+  (vale o `zro.sons` da 0044). Falta: validar com um Drive real em produção. Próximo: fase 3 (ElevenLabs pela conta da
   pessoa).
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
@@ -306,6 +306,40 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   fecha e abre já atualizado (Mac e Windows, no molde do SOBEDESCE). Site: sem corte seco entre as fotos (as cenas se
   dissolvem no fundo), a salina sem texto e o fecho com a estrela inteira. Falta conferir a troca num Mac e num
   Windows de verdade com o próximo Release.
+- ✅ AEON, página inicial com teste ao vivo (31/10/2026, ideia do titular a partir da página do Hélice Ramps): o editor na
+  própria página com um vídeo de exemplo (Cortes com limite e aprovar/desfazer, Legenda Destaque/Pop/Limpa, Zoom
+  112%/122%, Entrega com o que cada formato leva), "De editor para editor", "Por dentro" com as telas do app que trocam
+  sozinhas, "Para quem é" com o resto do ecossistema e Perguntas. Tudo âncora: o AEON segue fechado ao público.
+- ✅ AEON, velocidade (speed ramp, 31/10/2026, pedido do titular a partir do Hélice Ramps): curva por clipe de 10% a
+  800% no Inspector (arrastar, dois cliques criam ponto, teclado), 11 curvas prontas (Montagem, Herói, Bala, Vale,
+  Pico, Flash de entrada e de saída, Arrancada, Pulso duplo, Câmera lenta, Acelerado), Manter duração, Aplicar em
+  todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
+  degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
+  na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
+- ✅ AEON **no ar na web** (31/10/2026, titular: "pode subir no web, não faz a versão de computador ainda"): migration
+  `0043_aeon_web.sql` (gate `released` com web, api e sso; desktop e download fechados) e `RELEASE=released` no projeto
+  `aeon`. A página aberta sai do mesmo `index.html` (Abrir o AEON no navegador, Mac e Windows "Em breve", Z "No AEON",
+  "Quanto custa?"); com `RELEASE_DESKTOP=released` ela troca para "Baixar o AEON". Família no subdomínio com o Relay.
+  Falta: o app de computador (build novo, migration de desktop e download, `RELEASE_DESKTOP`), em
+  [lancamento-aeon.md](operations/lancamento-aeon.md).
+- ✅ AEON, câmera lenta sem travar (31/10/2026): a prévia e o render seguem a curva contínua (os degraus inteiros ficam
+  para o Premiere, o Final Cut e o EDL) e pegam o instante exato da origem, então uma fonte de 60 qps entrega quadro
+  real até 40% numa linha de 24 qps; abaixo disso, **fluxo óptico** (RIFE 4.25, MIT, na máquina, montado em resolução
+  cheia, com corte de cena e confiança por pixel), mistura ou quadro, por clipe, e o modo vai para o Final Cut
+  (frameSampling) e o Premiere (Mistura de quadros). Demonstrações com takes de 50 e 60 qps de verdade (Coverr). Falta:
+  fluxo na placa de vídeo (esperar o ONNX Runtime com a correção da convolução de 15 canais e conferir contra a CPU) e
+  hospedar o modelo numa conta própria.
+- 🟡 AEON, estabilização (31/10/2026): **por imagem** pronta (rastreio de cantos, Lucas-Kanade piramidal, RANSAC de
+  similaridade, suavização gaussiana e zoom fixo que esconde a borda; análise num worker, guardada na mídia; prévia e
+  render com a mesma correção). **Giroscópio** (GoPro, Sony, DJI, Insta360, como o Gyroflow e o DaVinci) é o próximo
+  passo: telemetry-parser (MIT/Apache) em WASM, perfis de lente do Gyroflow (CC0), correção de giro e de lente numa
+  WebGL comum à prévia e ao render; antes, revisão de patentes (lancamento-aeon.md).
+- ✅ AEON, footage de verdade na página e nos testes (31/10/2026, pedido do titular): seis takes de câmera do Mixkit
+  (licença livre comercial, sem pessoas reconhecíveis nem marca; origem em `marca/home/cenas/LEIAME.md`). A Velocidade
+  do Teste ao vivo troca de take (onda, estrada, mar, cidade); "Edite além do tempo." virou uma montagem de cinco takes
+  editada e renderizada no próprio AEON (`scripts/montagem.mjs`), com a linha embaixo andando junto e a velocidade de
+  cada quadro; "Por dentro" ganhou a tela da Velocidade. O mesmo roteiro e um teste novo conferem o render quadro a
+  quadro com material real.
 - 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
   ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
   `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,

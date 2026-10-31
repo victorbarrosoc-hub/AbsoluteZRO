@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { aprovar, comPropostas, comTranscricao, novoProjeto } from '../src/projeto.js'
-import { etiquetar } from '../src/linha.js'
+import { acelerar, etiquetar } from '../src/linha.js'
 import { pacote, referencia } from '../src/exportar/index.js'
 import { paraFcpxml } from '../src/exportar/fcpxml.js'
 import { paraXmeml } from '../src/exportar/xmeml.js'
@@ -140,8 +140,12 @@ test('OTIO: JSON com trilhas de vídeo e áudio e zoom em metadata', () => {
   const o = JSON.parse(paraOtio(projeto()))
   assert.equal(o.OTIO_SCHEMA, 'Timeline.1')
   const [v, a] = o.tracks.children
-  assert.equal(v.children.length, 4)
+  // as duas trilhas do mesmo tamanho: o áudio solto (trilha.wav) entra como Gap no vídeo, no mesmo lugar
+  assert.equal(v.children.length, 5)
   assert.equal(a.children.length, 5)
+  assert.equal(v.children[4].OTIO_SCHEMA, 'Gap.1')
+  const soma = (t) => t.children.reduce((s, c) => s + c.source_range.duration.value, 0)
+  assert.equal(soma(v), soma(a))
   assert.deepEqual(v.children[1].metadata.zro.zoom, { escala: 1.25, foco: { x: 0.5, y: 0.4 } })
   assert.equal(v.children[0].source_range.duration.value, 30)
 })
@@ -210,4 +214,21 @@ test('efeitos sonoros: conectados no FCPXML, pares de faixas no xmeml, trilha FX
   const cred = arquivos.find((a) => a.name === 'CREDITOS.txt')
   assert.match(cred.data, /"Whoosh" por Ana · CC BY 4\.0 · https:\/\/openverse\.org\/audio\/w1/)
   for (const r of JSON.parse(arquivos.at(-1).data)) assert.deepEqual(validar(r, SCHEMA), [])
+})
+
+test('efeito num clipe acelerado: no FCPXML vai no tempo do clipe ajustado pela velocidade, e toca na linha onde ficou', () => {
+  let p = novoProjeto({ id: '0b6f3c2a-6d4e-4c1b-9a8f-2e7d5c4b3a22', nome: 'Rampa', fps: 30, midias: [{ id: 'm1', nome: 'a.mp4', duracao: 10, fps: 30, temVideo: true, temAudio: true }], preset: PRESET })
+  // o clipe todo a 200%: 300 quadros de origem viram 150 na linha
+  p = { ...p, linha: acelerar(p.linha, p.linha.clipes[0].id, [[0, 2], [1, 2]]) }
+  p = adicionarSom(p, { id: 'w1', nome: 'whoosh.wav', duracao: 0.5, origem: { tipo: 'arquivo' } }).projeto
+  p = colocarEfeito(p, 'w1', 30).projeto
+  // preso ao quadro 60 da origem, que a 200% cai no quadro 30 da linha
+  assert.equal(p.efeitos[0].fonte, 60)
+  const fcp = paraFcpxml(p)
+  bemFormado(fcp)
+  // no tempo do clipe com timeMap (origem ÷ velocidade): 60 ÷ 2 = 30 quadros = 1 s, como o marcador
+  assert.match(fcp, /<asset-clip ref="s1" lane="-1" offset="1\/1s" name="whoosh" start="0s" duration="1\/2s" audioRole="effects"\/>/)
+  const xm = paraXmeml(p)
+  bemFormado(xm)
+  assert.match(xm, /<clipitem id="clipitem-e1L-1">[\s\S]*?<start>30<\/start>\s*<end>45<\/end>/)
 })
