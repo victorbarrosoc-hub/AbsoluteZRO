@@ -12,8 +12,9 @@ Mudou algo aqui? Avise as outras frentes.
 
 - Público: o app do Google está **publicado sem verificação** (projeto `zro-site-511809`, o
   mesmo da ZRO): qualquer conta Google conecta, depois do aviso "O Google não verificou este app",
-  com limite de cerca de 100 usuários até verificar. Escopo **Drive completo**
-  (`https://www.googleapis.com/auth/drive`). O refresh token não vence mais em 7 dias, mas a tela
+  com limite de cerca de 100 usuários até verificar. **Drive híbrido** desde 31/10/2026 (§13): o escopo
+  `https://www.googleapis.com/auth/drive` só para quem o admin deu "Acesso total"; os outros conectam com
+  `drive.file` ("Arquivos escolhidos"). O refresh token não vence mais em 7 dias, mas a tela
   continua lidando bem com "reconectar" (senha trocada, acesso removido).
 - Login: **conta Absolute ZRO** (§12). Desde 25/10/2026 conta nova só nasce por ela; e-mail + senha e o Google de
   entrar continuam abrindo as contas antigas. Dentro da conta, **"Conectar Google
@@ -39,6 +40,8 @@ Mudou algo aqui? Avise as outras frentes.
 | `DATABASE_URL` | Neon (pooler). Criada pela integração Neon da Vercel. Banco do site só enquanto não há `SOBEDESCE_DATABASE_URL`; depois, fica como reserva. |
 | `GOOGLE_CLIENT_ID` | Cliente OAuth "Aplicativo da Web" oficial (`235961238964-e87vitlplbrnu5kb3vsfms7tjgt98q4b...`). |
 | `GOOGLE_CLIENT_SECRET` | Segredo do mesmo cliente. |
+| `GOOGLE_PICKER_API_KEY` | "Escolher do Drive" (Google Picker, §13). Chave de API criada no projeto Google **SOBEDESCE** (o mesmo do `GOOGLE_CLIENT_ID`), com a **Google Picker API** ativada, restrita por referenciador (`https://sobedesce.com/*`, `https://sobedesce.vercel.app/*`) e só à Picker API. Pública por natureza; entregue ao app por `GET /api/drive/picker`. Sem ela, o botão avisa que ainda não foi ligado. |
+| `GOOGLE_APP_ID` | Número do projeto Google **SOBEDESCE** (Cloud Console › Painel › Número do projeto). Só dígitos. Vai junto com a chave do Picker. |
 | `SOBEDESCE_KEY` | 32 bytes em base64. Cifra AES-256-GCM dos tokens do Google. |
 | `NEXT_PUBLIC_SITE_URL` | Opcional. Padrão `https://sobedesce.vercel.app`. |
 | `SOBEDESCE_GOOGLE_BASE` | Só testes: Google falso. Ignorada se `VERCEL` ou `NODE_ENV=production`, e só aceita 127.0.0.1/localhost. Caminhos usados: `/o/oauth2/v2/auth`, `/token`, `/revoke`, `/v1/userinfo` (o Google falso das contas está em `web/tests/google-falso.mts`). |
@@ -136,14 +139,15 @@ Códigos comuns: `401 sem_sessao`, `403 origem` (cookie sem Origin do site), `40
 |---|---|---|
 | `GET /api/eu` | | `200 { usuario: { id, email, nome }, contas: Conta[], recursos: { referencias }, zro: { ligada, pedir, ligar } }` (§12) · `401 { erro: "sem_sessao" }` |
 | `GET /api/drive/contas` | | `200 { contas: Conta[] }` |
-| `POST /api/drive/token` | `{ conta: "<id>", renovar?: boolean }` | `200 { accessToken, expiraEm (ms epoch), email }` · `404 nao_encontrada` · `409 { erro: "reconectar", mensagem }` · `502 google` · `503 sem_config` |
+| `GET /api/drive/picker` | | `200 { pronto: false }` ou `{ pronto: true, clientId, apiKey, appId }` (§13) |
+| `POST /api/drive/token` | `{ conta: "<id>", renovar?: boolean }` | `200 { accessToken, expiraEm (ms epoch), email, modo }` · `403 precisa_acesso_total` (só computador, §13) · `404 nao_encontrada` · `409 { erro: "reconectar", mensagem }` · `502 google` · `503 sem_config` |
 | `POST /api/dispositivo/iniciar` | `{ nome, plataforma }` (sem sessão; `plataforma` fora de mac/windows/linux vira null) | `200 { codigo, segredo, url, intervalo: 3, expiraEm }` · `429 devagar` |
 | `POST /api/dispositivo/aguardar` | `{ segredo }` (sem sessão) | `202 { estado: "pendente" }` · `200 { estado: "pronto", token: "sdd_...", usuario }` (uma vez só) · `410 { erro: "expirado" }` (vencido, cancelado, já usado ou segredo desconhecido) · `429 devagar` (menos de 2 s desde a consulta anterior; `Retry-After: 3`) |
 | `POST /api/dispositivo/sair` | Bearer | `204` (revoga a própria sessão) |
 | `GET /api/google/conectar?modo=vincular\|entrar&volta=/conta` | | 302 para o Google (state + PKCE em cookie assinado de 10 min) |
 | `GET /api/google/callback` | | 302 para `volta` com `?google=ok` ou `?erro=<codigo>` |
 
-`Conta = { id, email, nome, fotoUrl, estado: "ok" | "reconectar" }`. Nunca sai token de refresh.
+`Conta = { id, email, nome, fotoUrl, estado: "ok" | "reconectar", modo: "total" | "arquivos" }`. Nunca sai token de refresh.
 
 Referências (coleções, fila do computador, Atalho do iPhone e o link pra IA em `/r/<token>`): contrato próprio em
 [REFERENCIAS.md](REFERENCIAS.md). `recursos` diz o que a conta usa (`web/src/lib/recursos.ts`: beta aberto por
@@ -400,4 +404,35 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
   `zro_products` bloqueado e liberado depois, conta antiga sem vínculo livre.
 - **Ainda não:** o desktop continua entrando pelo código de aparelho do site (quem entrou pela Absolute ZRO no site
   aprova o computador como hoje); os planos internos da SOBEDESCE continuam valendo por cima do `zro_products`.
+
+## 13. Drive híbrido (31/10/2026)
+
+Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto** usarem o escopo restrito `drive`
+(vaga usada não volta; contas de teste contam). Por isso:
+
+- **Acesso total** (`usuarios.drive_acesso_total`) só o admin liga, na ficha da pessoa (`/admin/pessoa/<id>`, botão
+  "Acesso total" com confirmação). Contador no topo do `/admin` e na ficha: vagas usadas / limite
+  (`LIMITE_VAGAS_DRIVE = 90` em `web/src/lib/google/vagas.ts`, folga sob os 100). **Vaga usada** = conta Google que já
+  recebeu `drive` (`vagas_drive`, uma linha por `google_sub`, nunca sai: nem desconectando, nem desligando, nem apagando
+  a conta). Liberar é recusado quando usadas + liberadas sem uso ≥ limite. Desligar revoga os Drives com `drive` da pessoa
+  e pede reconexão (já com `drive.file`).
+- **Escopo decidido antes de ir ao Google** (`pedidoParaConectar`): com acesso total, `openid email profile drive`
+  (somando o já concedido); sem, `openid email profile drive.file` (sem `include_granted_scopes`). Com acesso total e
+  sem vaga para outra conta Google, pede `drive.file` somando o concedido (o Drive que já usou vaga volta inteiro).
+  **Entrar com Google** pede só `openid email profile` e nunca troca um `drive` guardado por um token menor.
+- **Callback confere o que veio**: sem Drive nenhum (caixinha desmarcada) → `?erro=google_sem_drive`, nada gravado;
+  pediu `drive` e veio só `drive.file` → conecta e volta com `?google=escolhidos` (aviso honesto em `/conta`); todo `drive`
+  recebido grava a vaga (também na renovação do token, inclusive pelo app de computador).
+- **Modo de cada Drive** (`Conta.modo` em `/api/eu`, `/api/drive/contas` e `/api/drive/token`): `total` só com o acesso
+  total ligado E o `drive` recebido; qualquer outra coisa é `arquivos`. Sua conta e Ajustes do app mostram a linha
+  "Acesso ao Drive" com o que muda recolhido.
+- **App do celular em Arquivos escolhidos** (`web/public/app/lib/modo-drive.js`): faixa "Arquivos escolhidos" com
+  **Escolher do Drive** (Picker, multisseleção, `lib/picker.js`; o escolhido abre na prévia e fica liberado), lugar
+  "Liberados" (tudo o que o app pode abrir), "Escolher do Drive" também na folha de destino (pasta). Navegar e somar o
+  tamanho só valem inteiros nas pastas criadas pelo SOBEDESCE novo (`appProperties.sobedesce`, gravado em toda pasta
+  que o app cria); nas outras, "Precisa de acesso total" no lugar do tamanho e do "Pasta vazia". Comparar e backup não
+  existem na web; a regra (`situacaoDoLocal`: sem lugar completo, "não sei", nunca "falta subir") está pronta para eles.
+- **App de computador**: ainda não sabe do modo. Até ganhar versão nova, `/api/drive/token` responde 403
+  `precisa_acesso_total` a uma sessão de dispositivo num Drive em Arquivos escolhidos (evita Comparar/Backup com
+  resultado falso); com acesso total, nada muda.
 

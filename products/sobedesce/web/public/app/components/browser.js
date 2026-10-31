@@ -11,6 +11,7 @@ import {
   autoView,
   filterById,
   folderSizes,
+  getFile,
   getPrefs,
   isFolder,
   isMacJunk,
@@ -47,6 +48,15 @@ import { LAN } from '../lib/config.js'
 import { EMBUTIDO, ESCOLHER, avisarAnfitriao } from '../lib/embutido.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
 import { alvoDoLink } from '../lib/drive-link.js'
+import { DICA_MODO, NOME_MODO, PRECISA_TOTAL, criadaPeloSobedesce, lugarCompleto, modoDe, vazioDoLugar } from '../lib/modo-drive.js'
+import { escolherDoDrive } from '../lib/picker.js'
+
+// Modo Arquivos escolhidos (lib/modo-drive.js): um lugar a mais, "Liberados", com tudo o que o SOBEDESCE pode abrir
+// (o que ele enviou ou criou e o que a pessoa escolheu no Picker), de qualquer pasta. Sem filtro de pasta no `q`.
+const LIBERADOS = { id: 'liberados', label: 'Liberados', aria: 'Liberados para o SOBEDESCE' }
+const TODOS_LUGARES = [...SCOPES, LIBERADOS]
+const lugaresDo = (modo) => (modo === 'arquivos' ? TODOS_LUGARES : SCOPES)
+const lugar = (id) => TODOS_LUGARES.find((x) => x.id === id)
 
 // Listas já abertas (voltar para uma pasta não pisca). Vale enquanto a página está aberta.
 const lists = new Map()
@@ -56,6 +66,27 @@ function esquecer(id) {
 }
 // Carregar a pasta toda sozinho (ordem por tipo, "Somar tudo") vai até aqui.
 const AUTO_MAX = 3000
+
+/**
+ * Arquivos escolhidos (lib/modo-drive.js): a faixa da aba Drive. Uma linha (o modo e se o lugar aparece inteiro), o
+ * "Escolher do Drive" e o que muda recolhido.
+ */
+function FaixaArquivos({ completo, onEscolher }) {
+  return html`<div class="modo-faixa" role="note">
+    <span class="modo-faixa-ic" aria-hidden="true"><${Icon} name="key" size=${15} strokeWidth=${1.9} /></span>
+    <span class="modo-faixa-txt">
+      <b>${NOME_MODO.arquivos}</b>
+      <small>${completo ? 'Pasta do SOBEDESCE: aparece tudo.' : 'Só aparece o que passou pelo SOBEDESCE.'}</small>
+    </span>
+    <button type="button" class="btn btn-sm btn-primary modo-faixa-btn" onClick=${onEscolher}>
+      <${Icon} name="plus" size=${15} strokeWidth=${2} /><span>Escolher do Drive</span>
+    </button>
+    <details class="modo-faixa-dica">
+      <summary>O que muda</summary>
+      <ul>${DICA_MODO.arquivos.map((t) => html`<li>${t}</li>`)}</ul>
+    </details>
+  </div>`
+}
 
 // ───── tamanho das pastas (lib/tamanho.js) ─────
 
@@ -665,7 +696,7 @@ async function metaDoArquivo(id) {
 
 const samePath = (a, b) => a.length === b.length && a.every((p, i) => p.id === b[i].id)
 const ours = (st, nav) => st?.sd === 'drive' && st.scope === nav.scope && Array.isArray(st.path) && samePath(st.path, nav.path)
-const slim = (path) => path.map((p) => ({ id: p.id, name: p.name, driveId: p.driveId || null, canAdd: p.canAdd }))
+const slim = (path) => path.map((p) => ({ id: p.id, name: p.name, driveId: p.driveId || null, canAdd: p.canAdd, ...(p.sd ? { sd: true } : {}) }))
 const historyState = () => {
   try {
     return history.state
@@ -866,7 +897,7 @@ function SwipeBehind({ scope, path, prefs, innerRef }) {
   }
   const shown = files ? files.filter((f) => !isMacJunk(f)).slice(0, 24) : null
   const view = prefs.view || (shown ? autoView(shown) : 'list')
-  const title = folder ? folder.name : SCOPES.find((x) => x.id === scope)?.aria
+  const title = folder ? folder.name : lugar(scope)?.aria
   const size = folder ? folderSizes.get(folder.id) : null // só o que já foi somado (aqui não começa conta nenhuma)
   const noop = () => {}
   return html`<div class="dswipe-behind" ref=${innerRef} aria-hidden="true" inert>
@@ -879,7 +910,7 @@ function SwipeBehind({ scope, path, prefs, innerRef }) {
         </div>
         ${path.length
           ? html`<nav class="crumbs dcrumbs">
-              <span class="crumb">${SCOPES.find((x) => x.id === scope)?.label}</span>
+              <span class="crumb">${lugar(scope)?.label}</span>
               ${path.map(
                 (p, i) => html`<${Icon} name="chevron-right" size=${12} strokeWidth=${2} class="crumb-sep" />
                   <span class=${cx('crumb', i === path.length - 1 && 'is-here')}>${p.name}</span>`,
@@ -890,7 +921,7 @@ function SwipeBehind({ scope, path, prefs, innerRef }) {
             </div>`}
         <div class="search">
           <${Icon} name="search" size=${17} />
-          <input type="search" tabindex="-1" readonly placeholder=${scope === 'mine' ? 'Buscar no Drive todo' : scope === 'drives' && path[0] ? `Buscar em todo o “${path[0].name}”` : `Buscar em ${SCOPES.find((x) => x.id === scope)?.aria}`} />
+          <input type="search" tabindex="-1" readonly placeholder=${scope === 'mine' ? 'Buscar no Drive todo' : scope === 'drives' && path[0] ? `Buscar em todo o “${path[0].name}”` : `Buscar em ${lugar(scope)?.aria}`} />
         </div>
       </header>
       <main class="drive-body">
@@ -936,6 +967,7 @@ export function DriveScreen({ active }) {
   const [preview, setPreview] = useState(null) // { files, index, baixar? (link #baixar/<id>) }
   const sel = useSelecao()
   const escolher = useApp((s) => s.escolher)
+  const modo = useApp((s) => (LAN ? 'total' : modoDe(s.drive)))
   // Saiu da aba Drive no meio da escolha: desiste dela.
   useEffect(() => {
     if (!active && escolher) setState({ escolher: null })
@@ -1135,6 +1167,8 @@ export function DriveScreen({ active }) {
       const base = search ? [] : nav.path
       // canAdd: o Google diz se dá para pôr arquivos ali (sem isso, "Enviar aqui" não aparece).
       const entry = { id: t.id, name: f.name, driveId: f.driveId || null, canAdd: Boolean(t.shortcut) || f.capabilities?.canAddChildren !== false }
+      // Pasta criada pelo SOBEDESCE: no modo Arquivos escolhidos, é a única que aparece inteira (lib/modo-drive.js).
+      if (!t.shortcut && criadaPeloSobedesce(f)) entry.sd = true
       // Dentro de um resultado de busca: a pasta vira o novo começo da trilha.
       go(nav.scope, f.isDrive ? [entry] : [...base, entry])
       return
@@ -1206,7 +1240,27 @@ export function DriveScreen({ active }) {
           })
       : null
 
-  const scopeLabel = SCOPES.find((s) => s.id === nav.scope)?.aria
+  const scopeLabel = lugar(nav.scope)?.aria
+  // Arquivos escolhidos: fora das pastas do SOBEDESCE, a lista pode estar pela metade (o resto só está invisível).
+  const completo = search ? modo !== 'arquivos' : lugarCompleto(modo, folder)
+  const vazioIncompleto = vazioDoLugar(modo, search ? null : folder)
+  const escolherDoDriveAqui = () =>
+    escolherDoDrive({ tipo: 'arquivos' })
+      .then(async (docs) => {
+        const arquivos = docs.filter((d) => !isFolder(d))
+        if (!arquivos.length) return
+        // Os metadados completos (miniatura, duração) dos escolhidos: agora o app pode lê-los.
+        const cheios = await Promise.all(arquivos.slice(0, 50).map((d) => getFile(d.id).catch(() => d)))
+        for (const k of [...lists.keys()]) if (k.startsWith('["liberados"')) lists.delete(k)
+        toast(cheios.length === 1 ? 'Liberado para o SOBEDESCE' : `${cheios.length} arquivos liberados`, { tone: 'success' })
+        setPreview({ files: cheios, index: 0 })
+        try {
+          history.pushState({ ...(historyState() || {}), preview: true }, '')
+        } catch {
+          // segue sem
+        }
+      })
+      .catch((err) => toast(err?.message || 'O Google não abriu a escolha agora.', { ms: 3200 }))
   const title = search ? 'Busca' : folder ? folder.name : scopeLabel
   // A busca não fica na pasta aberta: em Meu Drive procura em tudo o que a conta vê; num Drive compartilhado, nele todo.
   const placeholder =
@@ -1257,7 +1311,7 @@ export function DriveScreen({ active }) {
       </div>
       ${nav.path.length && !search
         ? html`<nav class="crumbs dcrumbs" aria-label="Caminho" ref=${crumbsRef}>
-            <button type="button" class="crumb" onClick=${() => up(0)}>${SCOPES.find((s) => s.id === nav.scope)?.label}</button>
+            <button type="button" class="crumb" onClick=${() => up(0)}>${lugar(nav.scope)?.label}</button>
             ${nav.path.map(
               (p, i) => html`<${Icon} name="chevron-right" size=${12} strokeWidth=${2} class="crumb-sep" />
                 <button
@@ -1270,8 +1324,8 @@ export function DriveScreen({ active }) {
                 </button>`,
             )}
           </nav>`
-        : html`<div class="scopes" role="tablist" aria-label="Lugares">
-            ${SCOPES.map(
+        : html`<div class=${cx('scopes', modo === 'arquivos' && 'is-4')} role="tablist" aria-label="Lugares">
+            ${lugaresDo(modo).map(
               (s) => html`<button
                 type="button"
                 role="tab"
@@ -1304,6 +1358,7 @@ export function DriveScreen({ active }) {
             </button>`
           : null}
       </label>
+      ${modo === 'arquivos' && !escolher && !ESCOLHER ? html`<${FaixaArquivos} completo=${completo} onEscolher=${escolherDoDriveAqui} />` : null}
     </header>
 
     <div class=${cx('ptr', (pull > 0 || busy) && 'is-on')} style=${`height:${pull}px`} aria-hidden=${busy ? undefined : 'true'}>
@@ -1319,7 +1374,9 @@ export function DriveScreen({ active }) {
         : html`<${DriveTools} prefs=${prefs} filter=${filter} menu=${menu} setMenu=${setMenu} onPrefs=${changePrefs} onFilter=${changeFilter} />`}
       ${folder && !search
         ? html`<div class="dfolder">
-            <${FolderSize} folder=${folder} driveId=${driveId} active=${active} hide=${filtering} />
+            ${completo
+              ? html`<${FolderSize} folder=${folder} driveId=${driveId} active=${active} hide=${filtering} />`
+              : html`<span class="dsize is-off" title="Somar o tamanho precisa ver a pasta inteira.">${PRECISA_TOTAL}</span>`}
             ${filtering && list.files
               ? html`<${FilterTotal} files=${files} filter=${filter} partial=${partial} busy=${wantAll || hunting} onAll=${() => setWantAll(true)} />`
               : null}
@@ -1345,7 +1402,12 @@ export function DriveScreen({ active }) {
             acoes=${html`<${Button} size="sm" variant="secondary" icon="refresh" onClick=${list.reload}>Tentar de novo</${Button}>`}
           >${list.error?.reconnect ? 'O Google pediu uma nova autorização. Abra sua conta para reconectar.' : 'Confira a internet e tente de novo.'}</${Vazio}></div>`
         : null}
-      ${empty
+      ${empty && vazioIncompleto && !filtering && !search && !(nav.scope === 'drives' && !nav.path.length)
+        ? html`<div class="drive-vazio is-incompleto"><${Vazio}
+            icone="key"
+            titulo=${vazioIncompleto.titulo}
+          >${vazioIncompleto.texto}</${Vazio}></div>`
+        : empty
         ? html`<div class="drive-vazio"><${Vazio}
             icone=${search ? 'search' : filtering ? 'sliders' : 'folder'}
             titulo=${

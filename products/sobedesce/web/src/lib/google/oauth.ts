@@ -3,7 +3,7 @@
  * access_type=offline e prompt=consent: o Google sempre devolve refresh token.
  */
 import { createHash, randomBytes } from "node:crypto";
-import { credenciais, DRIVE_SCOPE, endpoints, ESCOPOS, redirectUri } from "./config";
+import { credenciais, DRIVE_FILE_SCOPE, DRIVE_SCOPE, endpoints, escoposDoModo, redirectUri, type ModoDrive } from "./config";
 import { deResposta, GoogleError } from "./erros";
 
 export function pkce(): { verificador: string; desafio: string } {
@@ -12,16 +12,33 @@ export function pkce(): { verificador: string; desafio: string } {
   return { verificador, desafio };
 }
 
-export function urlDeConsentimento({ state, desafio, origem }: { state: string; desafio: string; origem?: string | null }): string {
+/**
+ * `escopo`: decidido antes (ESCOPOS_ENTRAR ou escoposDoModo). `somarConcedidos` (include_granted_scopes): o token novo
+ * também cobre o que esta conta Google já tinha dado ao app. Desligado no modo Arquivos escolhidos: um `drive` antigo
+ * não volta escondido. Sem `escopo`: o de Arquivos escolhidos (nunca pede o Drive inteiro sem querer).
+ */
+export function urlDeConsentimento({
+  state,
+  desafio,
+  origem,
+  escopo = escoposDoModo("arquivos"),
+  somarConcedidos = true,
+}: {
+  state: string;
+  desafio: string;
+  origem?: string | null;
+  escopo?: string;
+  somarConcedidos?: boolean;
+}): string {
   const { clientId } = credenciais();
   const u = new URL(endpoints().auth);
   u.searchParams.set("client_id", clientId);
   u.searchParams.set("redirect_uri", redirectUri(origem));
   u.searchParams.set("response_type", "code");
-  u.searchParams.set("scope", ESCOPOS);
+  u.searchParams.set("scope", escopo);
   u.searchParams.set("access_type", "offline");
   u.searchParams.set("prompt", "consent");
-  u.searchParams.set("include_granted_scopes", "true");
+  if (somarConcedidos) u.searchParams.set("include_granted_scopes", "true");
   u.searchParams.set("code_challenge", desafio);
   u.searchParams.set("code_challenge_method", "S256");
   u.searchParams.set("state", state);
@@ -105,4 +122,12 @@ export async function perfil(acesso: string): Promise<PerfilGoogle> {
 /** O escopo devolvido tem o Drive completo? (igualdade exata, nunca substring) */
 export function escopoTemDrive(escopo: string): boolean {
   return escopo.split(/\s+/).includes(DRIVE_SCOPE);
+}
+
+/** O que o escopo recebido deixa fazer no Drive: "total", "arquivos" (só drive.file) ou null (nada de Drive). */
+export function acessoDoEscopo(escopo: string): ModoDrive | null {
+  const partes = escopo.split(/\s+/);
+  if (partes.includes(DRIVE_SCOPE)) return "total";
+  if (partes.includes(DRIVE_FILE_SCOPE)) return "arquivos";
+  return null;
 }

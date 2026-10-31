@@ -3611,3 +3611,7 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   lote, histórico e migração IndexedDB v1 → v2, MD5 contra a RFC 1321 e o `crypto` do Node em 6 MB); `npm test`
   336/336, lint e typecheck limpos; testes do produto que leem `web/public/app` 132/132. Capturas no
   Playwright (iPhone e computador, claro e escuro) sem erro na página.
+
+## SOBEDESCE: Drive híbrido (31/10/2026)
+
+- `products/sobedesce/web`: `tests/drive-hibrido.test.mts` 18/18 (escopo por modo, contador e trava no limite, vaga não volta, callback com escopo diferente, regra do navegar/comparar em `drive.file`, admin só para admin); `npm test` 354/354, lint e typecheck limpos; testes do produto que leem `web/public/app` 73/73. Capturas no Playwright (iPhone e computador, claro e escuro).

@@ -47,6 +47,8 @@ import {
 import { betaAberto, ehPlano, NOME_PLANO, PLANOS } from "@/lib/recursos";
 import { acaoTrocarPlano } from "../acoes";
 import { contasComMacTravado } from "@/lib/atualizar-mac";
+import { ContadorVagas } from "@/components/admin/acesso-total";
+import { resumoVagas } from "@/lib/google/vagas";
 import { exigirUsuario } from "@/lib/auth/atual";
 import { cn } from "@/lib/cn";
 import type { Plano as TipoPlano } from "@/lib/db/schema";
@@ -151,6 +153,7 @@ function Pessoa({
             ) : (
               <Selo tom="alerta">Sem Drive</Selo>
             )}
+            {p.acessoTotal ? <Selo tom="ok">Acesso total</Selo> : null}
             {p.listaComputadores.length ? (
               <Selo tom={velhos ? "alerta" : "neutro"}>
                 <Laptop className="size-3" aria-hidden="true" />
@@ -238,9 +241,10 @@ export default async function Admin({ searchParams }: Props) {
     : null;
   const agora = new Date();
   const buildAtual = await buildPublicado();
-  const [{ pessoas, resumo }, macsTravados] = await Promise.all([
+  const [{ pessoas, resumo }, macsTravados, vagas] = await Promise.all([
     painelAdmin(agora, buildAtual),
     contasComMacTravado(),
+    resumoVagas(),
   ]);
   const macsSemAviso = macsTravados.filter((c) => !c.avisada).length;
   const lista = aplicarFiltro(
@@ -330,6 +334,8 @@ export default async function Admin({ searchParams }: Props) {
           rotulo="com avisos no celular"
         />
       </div>
+
+      <ContadorVagas v={vagas} className="mb-4" />
 
       {macsTravados.length ? (
         <Link

@@ -127,6 +127,13 @@
       "when": 1793370247886,
       "tag": "0017_capacidades_do_computador",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793457544747,
+      "tag": "0018_vagas_drive",
+      "breakpoints": true
     }
   ]
 }

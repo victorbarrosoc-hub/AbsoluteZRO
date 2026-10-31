@@ -18,7 +18,8 @@ import { podeUsar } from "@/lib/recursos";
 import { listarComputadores } from "@/lib/acompanhar/status";
 import { macsParaAtualizar } from "@/lib/atualizar-mac";
 import { DOWNLOAD_MAC } from "@/lib/site";
-import { googleDeEntrar, listarContas } from "@/lib/google/contas";
+import { googleDeEntrar, listarContas, temAcessoTotal } from "@/lib/google/contas";
+import { LinhaModoDrive } from "@/components/conta/modo-drive";
 import { zroConfigurado } from "@/lib/zro/config";
 import { contaZroDe } from "@/lib/zro/contas";
 import { NOME_PLATAFORMA, tempoRelativo } from "@/lib/tempo";
@@ -45,7 +46,7 @@ export default async function Conta({ searchParams }: Props) {
     const drives = await listarContas(usuario.id);
     return <LigarZro volta="/conta" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
   }
-  const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro] = await Promise.all([
+  const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro, acessoTotal] = await Promise.all([
     listarContas(usuario.id),
     listarDispositivos(usuario.id),
     contaComSenha(usuario.id),
@@ -56,6 +57,7 @@ export default async function Conta({ searchParams }: Props) {
     googleDeEntrar(usuario.id),
     macsParaAtualizar(usuario.id),
     contaZroDe(usuario.id),
+    temAcessoTotal(usuario.id),
   ]);
   const erro = typeof q.erro === "string" ? q.erro : undefined;
   const conectou = q.google === "ok";
@@ -101,6 +103,10 @@ export default async function Conta({ searchParams }: Props) {
       ) : conectou ? (
         <Aviso tom="ok" className="mb-10">
           <p>Google Drive conectado.</p>
+        </Aviso>
+      ) : q.google === "escolhidos" ? (
+        <Aviso tom="info" className="mb-10">
+          <p>Drive conectado só com os arquivos escolhidos: a caixinha do Drive inteiro ficou desmarcada no Google. Para o acesso total, conecte de novo e deixe marcada.</p>
         </Aviso>
       ) : q.zro === "ok" ? (
         <Aviso tom="ok" className="mb-10">
@@ -158,6 +164,7 @@ export default async function Conta({ searchParams }: Props) {
             frase="As contas do Google que a SOBEDESCE usa para enviar e baixar."
             acao={contas.length ? <span className="text-[13px] font-medium text-ink-3 tabular-nums">{contas.length}</span> : null}
           >
+            {contas.length ? <LinhaModoDrive acessoTotal={acessoTotal} reconectarParaTotal={acessoTotal && contas.some((c) => c.modo !== "total")} /> : null}
             <Drives contas={contas} entrar={entrar} />
             <div>
               <BotaoGoogle modo="vincular" variant={contas.length ? "secondary" : "primary"} size="md" className="w-full sm:w-auto">

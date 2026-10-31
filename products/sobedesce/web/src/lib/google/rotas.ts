@@ -8,11 +8,12 @@ import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { cookieSeguro } from "@/lib/site";
-import { googleConfigurado, redirectUri } from "./config";
+import { ESCOPOS_ENTRAR, googleConfigurado, redirectUri, type ModoDrive } from "./config";
 import { donoDaContaGoogle, vincularConta } from "./contas";
 import { chaveConfigurada } from "./cripto";
 import { abrirEstado, COOKIE_OAUTH, DURACAO_OAUTH_S, novoState, selarEstado, stateConfere, type ModoGoogle } from "./estado";
-import { escopoTemDrive, perfil, pkce, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
+import { acessoDoEscopo, perfil, pkce, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
+import { pedidoParaConectar, registrarSeTotal } from "./vagas";
 
 /** Junta um parâmetro a um caminho interno que talvez já tenha "?". */
 export function comParametro(caminho: string, chave: string, valor: string): string {
@@ -41,22 +42,29 @@ export async function conectar(req: Request): Promise<Response> {
   if (!googleConfigurado() || !chaveConfigurada()) return redirecionar(new URL(paginaDeErro(modo, volta, "google_config"), url.origin));
 
   let usuarioId: string | null = null;
+  // Entrar com Google: só quem é a pessoa (nunca pede Drive, não gasta vaga). Conectar: o escopo do modo dela.
+  let escopo = ESCOPOS_ENTRAR;
+  let somarConcedidos = true;
+  let pedido: ModoDrive | undefined;
   if (modo === "vincular") {
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual) return redirecionar(new URL(comParametro("/entrar", "volta", volta), url.origin));
     // Conectar Drive é função da conta: sem a SOBEDESCE liberada pela Absolute ZRO, não começa.
     if (!atual.liberado) return redirecionar(new URL(paginaDeErro(modo, volta, "zro_sem_acesso"), url.origin));
     usuarioId = atual.usuario.id;
+    const p = await pedidoParaConectar(usuarioId);
+    ({ escopo, somarConcedidos } = p);
+    pedido = p.modo;
   }
 
   const state = novoState();
   const { verificador, desafio } = pkce();
-  const cookie = serializarCookie(COOKIE_OAUTH, selarEstado({ state, verificador, modo, usuarioId, volta }), {
+  const cookie = serializarCookie(COOKIE_OAUTH, selarEstado({ state, verificador, modo, usuarioId, volta, ...(pedido ? { pedido } : {}) }), {
     maxAge: DURACAO_OAUTH_S,
     path: "/api/google",
     secure: cookieSeguro(url.origin),
   });
-  return redirecionar(urlDeConsentimento({ state, desafio, origem: retorno.origin }), 302, [cookie]);
+  return redirecionar(urlDeConsentimento({ state, desafio, origem: retorno.origin, escopo, somarConcedidos }), 302, [cookie]);
 }
 
 /** `depois`: onde vai o aviso de entrada nova (a rota usa o `after` do Next; os testes passam o deles). */
@@ -89,21 +97,26 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   } catch {
     return falhar("google_erro");
   }
-  const temDrive = escopoTemDrive(tokens.escopo);
+  // O que veio de fato (a pessoa pode desmarcar a caixinha do Drive na tela do Google).
+  const acesso = acessoDoEscopo(tokens.escopo);
 
   if (modo === "vincular") {
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual || atual.usuario.id !== estado.usuarioId) return ir(comParametro("/entrar", "volta", volta));
-    if (!temDrive) return falhar("google_sem_drive");
+    if (!acesso) return falhar("google_sem_drive");
     if (!tokens.refresh) return falhar("google_erro");
     const r = await vincularConta(atual.usuario.id, quem, { ...tokens, refresh: tokens.refresh });
+    // O Google já contou a vaga quando deu o `drive`, gravando ou não aqui.
+    await registrarSeTotal(tokens.escopo, quem.sub, quem.email, r.ok ? atual.usuario.id : null);
     if (!r.ok) return falhar(r.erro);
+    // Pediu o Drive inteiro e voltou só com drive.file: conectou, mas em Arquivos escolhidos (a tela diz).
+    if ((estado.pedido ?? "total") === "total" && acesso === "arquivos") return ir(comParametro(volta, "google", "escolhidos"));
     return ir(comParametro(volta, "google", "ok"));
   }
 
   // Continuar com Google: o Google de entrar de uma conta entra nela; um Google que só está conectado como Drive
   // não abre a conta (revisão A3); um Google sem conta SOBEDESCE não cria nada: conta nova só pela Absolute ZRO.
-  const entrada = await donoDaContaGoogle(quem, temDrive ? tokens : { ...tokens, refresh: null });
+  const entrada = await donoDaContaGoogle(quem, tokens);
   if (entrada.tipo === "nao_e_login") return falhar("google_nao_e_login");
   if (entrada.tipo === "nao_vinculada") return falhar("google_sem_conta");
   const usuarioId = entrada.usuarioId;
