@@ -30,7 +30,8 @@ const { banco, UUID } = require('../../db/banco.js');
 const R = require('../../db/regras.js');
 const SYNC = require('../../db/sync.js');
 
-const LIMITE = { leitura: 120, escrita: 40 };
+/* `chat` é o freio da Sede: o poll e o "digitando" moram nele, sem tirar a vez das outras escritas */
+const LIMITE = { leitura: 120, escrita: 40, chat: 150 };
 const JANELA_MS = 60 * 1000;
 const contagem = new Map();
 
@@ -64,11 +65,11 @@ function mesmaOrigem(req) {
 }
 
 /** o caminho comum de toda rota: devolve { db, sub, extra, at } ou já respondeu */
-async function preparar(req, res, { metodos, escrita }) {
+async function preparar(req, res, { metodos, escrita, freio, formato }) {
   if (!metodos.includes(req.method)) { json(res, 405, { erro: 'metodo' }, { Allow: metodos.join(', ') }); return null }
-  if (passouDoLimite(req, escrita ? 'escrita' : 'leitura')) { json(res, 429, { erro: 'devagar' }, { 'Retry-After': '60' }); return null }
+  if (passouDoLimite(req, freio || (escrita ? 'escrita' : 'leitura'))) { json(res, 429, { erro: 'devagar' }, { 'Retry-After': '60' }); return null }
   if (escrita && !mesmaOrigem(req)) { json(res, 403, { erro: 'origem' }); return null }
-  if (escrita && req.method !== 'DELETE' && !/^application\/json\b/.test(String(req.headers['content-type'] || ''))) { json(res, 415, { erro: 'formato' }); return null }
+  if (escrita && req.method !== 'DELETE' && !(formato || /^application\/json\b/).test(String(req.headers['content-type'] || ''))) { json(res, 415, { erro: 'formato' }); return null }
   const s = await Z.sessaoConferida(req);
   if (!s.quem) { json(res, s.status, s.corpo, s.headers || {}); return null }
   if (!UUID.test(s.quem.sub)) { json(res, 403, { erro: 'conta' }, s.extra); return null }
@@ -473,47 +474,164 @@ async function denuncia(req, res) {
   }
 }
 
-/* ---------------- guilda (0004, fase 2) ----------------
- * GET  /api/zro/guildas                → { fase, minha: {...}|null, recebidos: [...], carencia_ate }
- * POST /api/zro/guildas                → 201 { guilda }            (acao "criar", o padrão)
+/* ---------------- guilda (0004 + a Sede da 0005, fase 2) ----------------
+ * GET  /api/zro/guildas                → { fase, pode_fundar, pedir_url, pacotes, minha: {...}|null, recebidos: [...], carencia_ate }
+ *      (minha = o painel da Sede: guilda com cores e logo, nível e XP, placa, lugares, memória em pôsteres, quem está
+ *      na sede agora e o resumo do chat; só para quem é da guilda — RLS)
+ * POST /api/zro/guildas                → 201 { guilda }            (acao "criar", o padrão; pede a FUNDAÇÃO na conta)
  * POST /api/zro/guildas {acao:"convidar", para?}  → 201 { convite, link? }  (sem `para` = convite por link)
  * POST ... {acao:"ver", token} · {acao:"aceitar", id|token} · {acao:"recusar", id, bloquear?}
- *      · {acao:"cancelar", id} · {acao:"sair"} · {acao:"remover", sub}
+ *      · {acao:"cancelar", id} · {acao:"sair"} · {acao:"remover", sub} · {acao:"personalizar", paleta, cor?, sobre?, praca?}
  * ⚠️ O portão é db/fase.js: com a fase 1 a rota responde 404, antes de qualquer outra coisa.
  * Nome, @ e foto de quem entra vêm da CONTA (sessão conferida), nunca do pedido. Vagas, bloqueio, carência e convite
- * vencido são conferidos no banco. O adicional "Espaço extra na guilda" é lido da claim do DONO e gravado na guilda. */
+ * vencido são conferidos no banco. Os adicionais (fundação, +5 e +15 lugares) são lidos da claim `zro_features` do DONO:
+ * o HUB guarda os planos em RASCUNHO (infra/migrations/0043 e 0044), então ninguém os compra ainda; a tela leva o pedido
+ * ao fluxo de pedido de plano do HUB (/perfil/plano), sem cobrança nenhuma aqui. */
 const FASES = require('../../db/fase.js');
 const crypto = require('crypto');
 const ERROS_GUILDA = { ja_em_guilda: 409, carencia: 409, nome_em_uso: 409, cheia: 409, ja_membro: 409, ja_convidado: 409, limite_convites: 429,
-  bloqueado: 403, so_dono: 403, dono_nao_sai: 409, convite_invalido: 404, convite_expirado: 410, sem_guilda: 404, nao_achado: 404 };
-const EXTRA_POR_ADICIONAL = 5;
-const SINAL_EXTRA = 'carro-do-freela.guilda_espaco_extra';
+  bloqueado: 403, so_dono: 403, dono_nao_sai: 409, convite_invalido: 404, convite_expirado: 410, sem_guilda: 404, nao_achado: 404,
+  /* a Sede (0005) */
+  devagar: 429, pedido: 400, chamada: 400, chamada_passou: 409, chamada_futura: 409, limite_fixados: 409, so_quem_fez: 403,
+  limite_canais: 409, cota: 413 };
+/* os sinais dos adicionais na claim: presença, não quantidade (o HUB não guarda quantos). Cada pacote é UM sinal. */
+const SINAL_FUNDACAO = 'carro-do-freela.guilda_fundacao';
+const PACOTES = { 'carro-do-freela.guilda_espaco_extra': 5, 'carro-do-freela.guilda_espaco_extra_15': 15 };
 const hashToken = t => crypto.createHash('sha256').update(t).digest('hex');
-/** vagas extras que a conta tem: o sinal do adicional na claim (o HUB só diz "tem", sem quantidade: um pacote de 5) */
-const extraDaConta = quem => (quem && Array.isArray(quem.recursos) && quem.recursos.includes(SINAL_EXTRA) ? EXTRA_POR_ADICIONAL : 0);
+const sinais = quem => (quem && Array.isArray(quem.recursos) ? quem.recursos : []);
+/** vagas extras que a conta tem: a soma dos pacotes presentes na claim (+5 e +15) */
+const extraDaConta = quem => sinais(quem).reduce((n, s) => n + (PACOTES[s] || 0), 0);
+const podeFundar = quem => sinais(quem).includes(SINAL_FUNDACAO);
+const XP_NIVEL = 400, XP_JOB = 120;
+const LOGO_URL = l => '/api/zro/sede-imagem?id=' + l.id + '&sha=' + l.sha256;
+const semanaDe = d => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10) };
+
+/** os jobs da memória agrupados como a guilda os viveu: o mesmo contratante no mesmo dia é UM job (um pôster) */
+function cartazes(jobs, membrosAgora, sub) {
+  const ativos = new Set(membrosAgora.map(m => m.sub));
+  const grupos = new Map();
+  for (const j of jobs) {
+    const k = j.de_sub + ':' + (diaTxt(j.dia) || 'sem-dia');
+    if (!grupos.has(k)) grupos.set(k, { id: j.id, dia: diaTxt(j.dia), titulo: null, tipo: null, local: null, de: j.de_sub,
+      contratante: j.de_nome || null, de_fora: !j.de_nome, creditos: [], fechado_em: iso(j.fechado_em), eu: false });
+    const g = grupos.get(k);
+    g.titulo = g.titulo || j.titulo || null; g.tipo = g.tipo || j.tipo || null; g.local = g.local || j.local || null;
+    if (j.de_nome && !g.contratante) { g.contratante = j.de_nome; g.de_fora = false }
+    g.creditos.push({ funcao: j.funcao || 'Equipe', nome: j.para_nome || null, de_fora: !j.para_nome, saiu: !!j.para_nome && !ativos.has(j.para_sub) });
+    if (j.de_sub === sub || j.para_sub === sub) g.eu = true;
+  }
+  const hoje = new Date().toISOString().slice(0, 10);
+  const todos = [...grupos.values()].map(g => { const x = Object.assign({}, g, { vem: !!g.dia && g.dia > hoje }); delete x.de; return x });
+  /* o que ainda vai rodar primeiro (o mais perto antes), depois o que já rodou (o mais novo antes) */
+  return todos.filter(g => g.vem).sort((a, b) => a.dia.localeCompare(b.dia))
+    .concat(todos.filter(g => !g.vem).sort((a, b) => String(b.dia || b.fechado_em).localeCompare(String(a.dia || a.fechado_em))));
+}
+
+/** a placa: sequência de semanas com job fechado, credenciais (todas de dado real) e o que a semana pede */
+function placa(m, jobs, extras) {
+  const semanas = new Set(jobs.map(j => semanaDe(j.fechado_em)));
+  const agora = Date.now();
+  const doze = [];
+  for (let i = 11; i >= 0; i--) doze.push(semanas.has(semanaDe(agora - i * 7 * 864e5)));
+  /* a sequência não quebra no meio da semana: se esta ainda não tem job, conta a partir da passada */
+  let seq = 0;
+  for (let i = doze[11] ? 11 : 10; i >= 0 && doze[i]; i--) seq++;
+  const grupos = new Set(jobs.map(j => j.de_sub + ':' + diaTxt(j.dia))).size;
+  const dias = Math.floor((agora - new Date(m.criado_em).getTime()) / 864e5);
+  const cred = (codigo, titulo, detalhe, ico, n, meta) => ({ codigo, titulo, detalhe, ico, n: Math.min(n, meta), meta, ok: n >= meta });
+  const credenciais = [
+    cred('primeiro', 'Primeiro job', 'o primeiro job fechado', 'estrela', grupos, 1),
+    cred('dez', '10 juntos', '10 jobs na memória', 'livro', grupos, 10),
+    cred('cliente', 'Cliente de volta', 'contratante de fora voltou', 'aperto', extras.volta, 1),
+    cred('madrugada', 'Madrugada', '3 chamadas antes das 6h', 'relogio', extras.madrugada, 3),
+    cred('equipe', 'Equipe completa', '6 da guilda num call sheet', 'equipe', extras.equipe, 6),
+    cred('sequencia', 'Sem parar', '4 semanas seguidas', 'fogo', seq, 4),
+    cred('cinquenta', '50 juntos', '50 jobs na memória', 'livro', grupos, 50),
+    cred('ano', 'Ano um', 'um ano de sede', 'escudo', dias, 365),
+  ];
+  const semana = [
+    { t: 'Fechar um job', n: Math.min(extras.semana.jobs, 1), meta: 1 },
+    { t: 'Presença num call sheet', n: Math.min(extras.semana.presencas, 1), meta: 1 },
+    { t: 'Uma vitória no quadro', n: Math.min(extras.semana.vitorias, 1), meta: 1 },
+  ];
+  return { sequencia: seq, semanas: doze, credenciais, semana, temporada: extras.temporada };
+}
 
 async function guildaMinha(c, sub) {
   const m = (await c.query(
     `select g.*, carro_do_freela.guilda_nivel(g.id) as nivel, carro_do_freela.guilda_vagas(g.id) as vagas,
-            carro_do_freela.guilda_ocupadas(g.id) as ocupadas
+            carro_do_freela.guilda_ocupadas(g.id) as ocupadas, carro_do_freela.guilda_xp_total(g.id) as xp
        from carro_do_freela.guildas g where g.encerrada_em is null`)).rows[0];
   if (!m) return null;
-  const membros = (await c.query('select sub, nome, arroba, foto, papel, entrou_em from carro_do_freela.guilda_membros where guilda_id = $1 and saiu_em is null order by papel, entrou_em', [m.id])).rows;
+  await c.query('select carro_do_freela.guilda_estou_aqui(null)');
+  const membros = (await c.query(
+    `select m.sub, m.nome, m.arroba, m.foto, m.papel, m.entrou_em, p.visto_em
+       from carro_do_freela.guilda_membros m left join carro_do_freela.guilda_presenca p on p.guilda_id = m.guilda_id and p.sub = m.sub
+      where m.guilda_id = $1 and m.saiu_em is null order by m.papel, m.entrou_em`, [m.id])).rows;
   const jobs = (await c.query('select * from carro_do_freela.guilda_jobs where guilda_id = $1 order by fechado_em desc', [m.id])).rows;
   const beneficios = (await c.query('select nivel, codigo, titulo, detalhe, dados, ativo from carro_do_freela.guilda_beneficios order by nivel')).rows;
+  const logo = m.logo_id ? (await c.query('select id, sha256 from carro_do_freela.guilda_imagens where id = $1', [m.logo_id])).rows[0] : null;
+  const extras = (await c.query(
+    `select
+       (select count(*)::int from (select x.chave from carro_do_freela.guilda_xp x join carro_do_freela.guilda_jobs j on j.id = x.job_id
+           where x.guilda_id = $1 and x.origem = 'job' and x.chave like 'fora:%' and j.de_nome is null
+           group by x.chave having count(distinct j.dia) >= 2) v) as volta,
+       (select count(*)::int from carro_do_freela.guilda_mensagens y where y.guilda_id = $1 and y.tipo = 'chamada' and y.apagada_em is null
+           and (y.dados ->> 'hora') < '06:00' and exists (select 1 from carro_do_freela.guilda_chamadas k where k.mensagem_id = y.id and k.presente)) as madrugada,
+       (select coalesce(max(n), 0)::int from (select count(*) as n from carro_do_freela.guilda_chamadas k where k.guilda_id = $1 and k.resposta = 'vou'
+           group by k.mensagem_id) e) as equipe,
+       (select count(*)::int from carro_do_freela.guilda_jobs j where j.guilda_id = $1 and j.fechado_em >= date_trunc('week', now())) as sem_jobs,
+       (select count(*)::int from carro_do_freela.guilda_chamadas k where k.guilda_id = $1 and k.presente and k.atualizado_em >= date_trunc('week', now())) as sem_presencas,
+       (select count(*)::int from carro_do_freela.guilda_mural p where p.guilda_id = $1 and p.tipo = 'vitoria' and p.criado_em >= date_trunc('week', now())) as sem_vitorias,
+       (select coalesce(sum(x.pontos), 0)::int from carro_do_freela.guilda_xp x where x.guilda_id = $1 and x.criado_em > now() - interval '90 days') as tmp_xp,
+       (select count(*)::int from carro_do_freela.guilda_jobs j where j.guilda_id = $1 and j.fechado_em > now() - interval '90 days') as tmp_jobs`, [m.id])).rows[0];
+  const sala = (await c.query("select id from carro_do_freela.guilda_canais where guilda_id = $1 and tipo = 'sala'", [m.id])).rows[0];
+  const canais = (await c.query(
+    `select c.id, c.tipo, c.nome, c.job_chave,
+            (select count(*)::int from carro_do_freela.guilda_mensagens x where x.canal_id = c.id and x.apagada_em is null
+               and x.autor_sub is distinct from $2 and x.seq > coalesce(l.seq, 0)) as nao_lidas,
+            (select max(x.criado_em) from carro_do_freela.guilda_mensagens x where x.canal_id = c.id) as ultima
+       from carro_do_freela.guilda_canais c left join carro_do_freela.guilda_leituras l on l.canal_id = c.id and l.sub = $2
+      where c.guilda_id = $1`, [m.id, sub])).rows
+    .sort((a, b) => (a.tipo === b.tipo ? String(iso(b.ultima) || '').localeCompare(String(iso(a.ultima) || '')) : a.tipo === 'sala' ? -1 : 1));
+  const ultimas = sala ? (await c.query(
+    `select x.id, x.autor_sub, x.autor_nome, x.tipo, left(x.texto, 160) as texto, x.dados, x.criado_em,
+            (select coalesce(json_agg(json_build_object('e', r.emoji, 'n', r.n, 'eu', r.eu)), '[]') from
+               (select emoji, count(*)::int as n, bool_or(sub = $2) as eu from carro_do_freela.guilda_reacoes where mensagem_id = x.id
+                 group by emoji order by count(*) desc limit 3) r) as reacoes
+       from carro_do_freela.guilda_mensagens x where x.canal_id = $1 and x.apagada_em is null and x.tipo <> 'evento' order by x.seq desc limit 2`,
+    [sala.id, sub])).rows.reverse() : [];
+  const digitando = (await c.query(
+    `select m.nome from carro_do_freela.guilda_presenca p join carro_do_freela.guilda_membros m on m.guilda_id = p.guilda_id and m.sub = p.sub and m.saiu_em is null
+      where p.guilda_id = $1 and p.sub <> $2 and p.digitando_em > clock_timestamp() - interval '6 seconds'`, [m.id, sub])).rows.map(x => x.nome);
   const dono = m.dono_sub === sub;
   const convites = dono
     ? (await c.query("select id, para_sub, expira_em from carro_do_freela.guilda_convites where guilda_id = $1 and estado = 'pendente' and expira_em > clock_timestamp() order by criado_em desc", [m.id])).rows
     : [];
+  const nivel = Number(m.nivel), xp = Number(m.xp);
   const bonus = Number(m.vagas) - 15 - m.espaco_extra;
+  const online = x => !!x.visto_em && Date.now() - new Date(x.visto_em).getTime() < 120000;
+  const lista = cartazes(jobs, membros, sub);
   return {
-    guilda: { id: m.id, nome: m.nome, tag: m.tag, cor: m.cor, sobre: m.sobre, criada_em: iso(m.criado_em) },
+    guilda: { id: m.id, nome: m.nome, tag: m.tag, cor: m.cor, sobre: m.sobre, praca: m.praca, criada_em: iso(m.criado_em),
+      paleta: R.paletaDe(m.paleta, m.cor_propria), cor_propria: m.cor_propria, logo: logo ? { id: logo.id, sha: logo.sha256, url: LOGO_URL(logo) } : null },
     eu: { sub, papel: dono ? 'dono' : 'membro' },
-    membros: membros.map(x => ({ sub: x.sub, nome: x.nome, arroba: x.arroba, foto: x.foto, papel: x.papel, eu: x.sub === sub, entrou_em: iso(x.entrou_em) })),
-    nivel: { atual: m.nivel, jobs: jobs.length, por_nivel: 3, faltam: 3 - (jobs.length % 3) },
+    membros: membros.map(x => ({ sub: x.sub, nome: x.nome, arroba: x.arroba, foto: x.foto, papel: x.papel, eu: x.sub === sub, entrou_em: iso(x.entrou_em),
+      online: online(x) })),
+    nivel: { atual: nivel, xp, de: (nivel - 1) * XP_NIVEL, ate: nivel * XP_NIVEL, por_nivel: XP_NIVEL,
+      faltam: Math.max(1, Math.ceil((nivel * XP_NIVEL - xp) / XP_JOB)), jobs: jobs.length },
     vagas: { base: 15, bonus_de_nivel: bonus, extra: m.espaco_extra, total: Number(m.vagas), ocupadas: Number(m.ocupadas), livres: Math.max(0, Number(m.vagas) - Number(m.ocupadas)) },
-    beneficios: beneficios.map(b => ({ nivel: b.nivel, codigo: b.codigo, titulo: b.titulo, detalhe: b.detalhe, dados: b.dados, ativo: b.ativo, conquistado: m.nivel >= b.nivel })),
+    beneficios: beneficios.map(b => ({ nivel: b.nivel, codigo: b.codigo, titulo: b.titulo, detalhe: b.detalhe, dados: b.dados, ativo: b.ativo, conquistado: nivel >= b.nivel })),
+    placa: placa(m, jobs, { volta: extras.volta, madrugada: extras.madrugada, equipe: extras.equipe,
+      semana: { jobs: extras.sem_jobs, presencas: extras.sem_presencas, vitorias: extras.sem_vitorias },
+      temporada: { xp: extras.tmp_xp, jobs: extras.tmp_jobs } }),
+    memoria: { jobs: lista.length, contratantes: new Set(jobs.map(j => j.de_sub)).size, desde: iso(m.criado_em), cartazes: lista.slice(0, 12) },
     jobs: jobs.slice(0, 30).map(j => ({ id: j.id, dia: diaTxt(j.dia), funcao: j.funcao, membros: [j.de_nome, j.para_nome].filter(Boolean), fechado_em: iso(j.fechado_em) })),
+    agora: { n: membros.filter(online).length, subs: membros.filter(online).map(x => x.sub) },
+    chat: { sala: sala ? sala.id : null, nao_lidas: canais.reduce((n, x) => n + x.nao_lidas, 0), digitando,
+      canais: canais.map(x => ({ id: x.id, tipo: x.tipo, nome: x.nome, nao_lidas: x.nao_lidas, ultima: iso(x.ultima) })),
+      ultimas: ultimas.map(x => ({ id: x.id, autor: x.autor_sub ? { sub: x.autor_sub, nome: x.autor_nome } : null, tipo: x.tipo, texto: x.texto,
+        dados: x.dados, criado_em: iso(x.criado_em), reacoes: x.reacoes })) },
     convites: convites.map(v => ({ id: v.id, tipo: v.para_sub ? 'arroba' : 'link', para: v.para_sub, expira_em: iso(v.expira_em) })),
   };
 }
@@ -536,7 +654,9 @@ async function guildas(req, res) {
       });
       const ate = r.sai ? new Date(r.sai.getTime() + 7 * 864e5) : null;
       return json(res, 200, {
-        fase: FASES.faseAtual(), minha: r.minha,
+        fase: FASES.faseAtual(), pode_fundar: podeFundar(quem), pedir_url: Z.config().issuer + '/perfil/plano',
+        pacotes: Object.keys(PACOTES).filter(s => sinais(quem).includes(s)).map(s => PACOTES[s]),
+        minha: r.minha,
         recebidos: r.recebidos.map(x => ({ id: x.id, nome: x.nome, tag: x.tag, cor: x.cor, de_nome: x.de_nome, expira_em: iso(x.expira_em) })),
         carencia_ate: ate && ate > new Date() ? ate.toISOString() : null,
       }, extra);
@@ -546,12 +666,19 @@ async function guildas(req, res) {
     const acao = corpo && corpo.acao !== undefined ? corpo.acao : 'criar';
     if (acao === 'criar') {
       const v = R.guildaDe(corpo);
+      /* fundar é pago (só quem funda paga): sem a fundação na conta, nada é criado. O plano ainda é rascunho no HUB. */
+      if (!podeFundar(quem)) return json(res, 402, { erro: 'fundacao' }, extra);
       const g = await db.asUser(sub, async c => {
         const id = (await c.query('select carro_do_freela.guilda_criar($1, $2, $3, $4, $5, $6, $7) as id', [v.nome, v.tag, v.cor, v.sobre, nome, arroba, foto])).rows[0].id;
         await c.query('select carro_do_freela.guilda_definir_extra($1)', [extraDaConta(quem)]);
         return id;
       });
       return json(res, 201, { guilda: { id: g } }, extra);
+    }
+    if (acao === 'personalizar') {
+      const v = R.personalizarDe(corpo);
+      await db.asUser(sub, async c => c.query('select carro_do_freela.guilda_personalizar($1, $2, $3, $4)', [v.paleta, v.cor, v.sobre, v.praca]));
+      return json(res, 200, { paleta: R.paletaDe(v.paleta, v.cor) }, extra);
     }
     if (acao === 'convidar') {
       const v = R.conviteDe(corpo);
@@ -622,4 +749,6 @@ module.exports = {
   denuncia: protegido(denuncia),
   guildas: protegido(guildas),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
+  /* o que a Sede (_sede.js) usa daqui: o mesmo caminho de toda rota */
+  _comum: { json, preparar, corpoDe, responderErro, nomeDaConta, semConteudo, protegido, iso, diaTxt, FASES, cartazes },
 };

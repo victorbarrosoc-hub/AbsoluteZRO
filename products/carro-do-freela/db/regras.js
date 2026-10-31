@@ -322,4 +322,155 @@ function idConviteDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'id']); ret
 function guildaSemCampos(corpo) { objeto(corpo); soEstes(corpo, ['acao']) }
 function removerDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'sub']); return uuidDe(corpo.sub, 'sub') }
 
-module.exports = { guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+/* ───────────── a Sede (0005) ─────────────
+ * As 5 paletas aprovadas pelo titular (31/10/2026; Gel magenta é a padrão) e a cor própria com a guarda de contraste:
+ * o tom do escuro passa 4,5:1 sobre o cartão mais claro do escuro (#1E1E22) e o do claro passa 4,5:1 sobre o fundo do
+ * claro (#F5F5F7). ⚠️ O template tem a MESMA conta (sdPaleta); a suíte guilda-real confere que as duas batem. */
+const PALETAS = {
+  'gel-magenta': { nome: 'Gel magenta', d: '#F062B8', l: '#B0307A', ink: '#1F0716' },
+  tungstenio: { nome: 'Tungstênio', d: '#F0A85E', l: '#B8691E', ink: '#1A1208' },
+  'luz-do-dia': { nome: 'Luz do dia', d: '#7CC4FF', l: '#1F6FB8', ink: '#06121F' },
+  bordo: { nome: 'Bordô', d: '#E8697D', l: '#A8283D', ink: '#1F0609' },
+  jade: { nome: 'Jade', d: '#3FD3B0', l: '#0F7D66', ink: '#04150F' },
+};
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const rgbDe = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const hexDe = c => '#' + c.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+const misturar = (a, b, t) => hexDe(rgbDe(a).map((v, i) => v * t + rgbDe(b)[i] * (1 - t)));
+function luminancia(h) {
+  const [r, g, b] = rgbDe(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contraste(a, b) {
+  const x = luminancia(a), y = luminancia(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+/** a cor própria nos dois temas: clareia (escuro) ou escurece (claro) até passar 4,5:1; a tinta é a que mais contrasta */
+function corPropria(hex) {
+  const base = String(hex).toUpperCase();
+  let d = base, l = base;
+  for (let i = 1; i <= 40 && contraste(d, '#1E1E22') < 4.5; i++) d = misturar(base, '#FFFFFF', 1 - i * 0.025);
+  for (let i = 1; i <= 40 && contraste(l, '#F5F5F7') < 4.5; i++) l = misturar(base, '#000000', 1 - i * 0.025);
+  const ink = contraste(d, '#0E0E10') >= contraste(d, '#FFFFFF') ? '#0E0E10' : '#FFFFFF';
+  return { d, l, ink };
+}
+/** as cores que a sede veste: { id, nome, d, l, ink } (paleta aprovada ou a própria, já com a guarda) */
+function paletaDe(id, propria) {
+  if (id === 'propria' && HEX.test(String(propria || ''))) return Object.assign({ id: 'propria', nome: 'Cor própria' }, corPropria(propria));
+  const p = PALETAS[id] || PALETAS['gel-magenta'];
+  return Object.assign({ id: PALETAS[id] ? id : 'gel-magenta' }, p);
+}
+const EMOJIS = ['👍', '🔥', '❤️', '🙌', '🙏', '😂', '👏', '🎬'];
+const TIPOS_MURAL = ['aviso', 'vitoria', 'vaga', 'set', 'equipamento'];
+function booleano(v, campo, padrao) {
+  if (v === undefined) return padrao;
+  if (typeof v !== 'boolean') throw new Recusa('tipo', campo);
+  return v;
+}
+function personalizarDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'paleta', 'cor', 'sobre', 'praca']);
+  const paleta = corpo.paleta;
+  if (paleta !== 'propria' && !PALETAS[paleta]) throw new Recusa('tipo', 'paleta');
+  let cor = null;
+  if (paleta === 'propria') {
+    if (typeof corpo.cor !== 'string' || !HEX.test(corpo.cor)) throw new Recusa('tipo', 'cor');
+    cor = corpo.cor.toUpperCase();
+  } else if (corpo.cor !== undefined && corpo.cor !== null) throw new Recusa('campo', 'cor');
+  const praca = texto(corpo.praca, 'praca', 40);
+  if (praca !== null && [...praca].length < 2) throw new Recusa('tamanho', 'praca');
+  return { paleta, cor, sobre: texto(corpo.sobre, 'sobre', 90), praca };
+}
+function mensagemDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'canal', 'texto', 'imagem']);
+  const t = texto(corpo.texto, 'texto', 2000, { linhas: true });
+  const imagem = corpo.imagem === undefined || corpo.imagem === null ? null : uuidDe(corpo.imagem, 'imagem');
+  if (t === null && imagem === null) throw new Recusa('obrigatorio', 'texto');
+  return { canal: uuidDe(corpo.canal, 'canal'), texto: t, imagem };
+}
+function chamadaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'canal', 'titulo', 'dia', 'hora', 'local', 'obs', 'equipe']);
+  const equipe = corpo.equipe === undefined ? [] : corpo.equipe;
+  if (!Array.isArray(equipe) || equipe.length > 40) throw new Recusa('tipo', 'equipe');
+  const titulo = texto(corpo.titulo, 'titulo', 80, { obrigatorio: true });
+  return {
+    canal: uuidDe(corpo.canal, 'canal'), titulo, dia: diaDe(corpo.dia), hora: horaDe(corpo.hora, 'hora'),
+    local: texto(corpo.local, 'local', 80, { obrigatorio: true }), obs: texto(corpo.obs, 'obs', 200),
+    equipe: [...new Set(equipe.map(x => uuidDe(x, 'equipe').toLowerCase()))],
+  };
+}
+function reagirDe(corpo, emojis = EMOJIS) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'emoji', 'ligar']);
+  if (!emojis.includes(corpo.emoji)) throw new Recusa('tipo', 'emoji');
+  return { id: uuidDe(corpo.id, 'id'), emoji: corpo.emoji, ligar: booleano(corpo.ligar, 'ligar', true) };
+}
+function sedeIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'id']); return uuidDe(corpo.id, 'id') }
+function fixarDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'fixar']);
+  return { id: uuidDe(corpo.id, 'id'), fixar: booleano(corpo.fixar, 'fixar', true) };
+}
+function responderChamadaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'resposta']);
+  if (corpo.resposta !== 'vou' && corpo.resposta !== 'nao') throw new Recusa('tipo', 'resposta');
+  return { id: uuidDe(corpo.id, 'id'), resposta: corpo.resposta };
+}
+function presencaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'id', 'sub', 'presente']);
+  return { id: uuidDe(corpo.id, 'id'), sub: uuidDe(corpo.sub, 'sub').toLowerCase(), presente: booleano(corpo.presente, 'presente', true) };
+}
+function jobDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'job']); return uuidDe(corpo.job, 'job') }
+function nomearDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'job', 'titulo', 'tipo']);
+  const titulo = texto(corpo.titulo, 'titulo', 60, { obrigatorio: true });
+  if ([...titulo].length < 2) throw new Recusa('tamanho', 'titulo');
+  const tipo = corpo.tipo === undefined || corpo.tipo === null ? null : corpo.tipo;
+  if (tipo !== null && !TIPOS.includes(tipo)) throw new Recusa('catalogo', 'tipo');
+  return { job: uuidDe(corpo.job, 'job'), titulo, tipo };
+}
+function lidoDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'canal', 'seq']);
+  if (!Number.isInteger(corpo.seq) || corpo.seq < 0) throw new Recusa('tipo', 'seq');
+  return { canal: uuidDe(corpo.canal, 'canal'), seq: corpo.seq };
+}
+function digitandoDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'canal']); return uuidDe(corpo.canal, 'canal') }
+function linkDe(v) {
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || v.length > 300) throw new Recusa('link', 'link');
+  let u;
+  try { u = new URL(v.trim()) } catch (e) { throw new Recusa('link', 'link') }
+  if (u.protocol !== 'https:' || !/\./.test(u.hostname) || u.username || u.password) throw new Recusa('link', 'link');
+  if (/(^|\.)(wa\.me|whatsapp\.com)$/i.test(u.hostname)) throw new Recusa('proibido', 'link');
+  if (TELEFONE.test(u.href)) throw new Recusa('telefone', 'link');
+  return u.href;
+}
+function muralDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'tipo', 'titulo', 'texto', 'link', 'imagem', 'dia', 'funcao', 'diaria_cents']);
+  if (!TIPOS_MURAL.includes(corpo.tipo)) throw new Recusa('tipo', 'tipo');
+  const titulo = texto(corpo.titulo, 'titulo', 120, { obrigatorio: true });
+  if ([...titulo].length < 2) throw new Recusa('tamanho', 'titulo');
+  const vaga = corpo.tipo === 'vaga';
+  if (!vaga && (corpo.dia !== undefined || corpo.funcao !== undefined || corpo.diaria_cents !== undefined)) throw new Recusa('campo', 'dia');
+  const dados = vaga ? {
+    dia: corpo.dia === undefined || corpo.dia === null ? null : diaDe(corpo.dia),
+    funcao: texto(corpo.funcao, 'funcao', 60),
+    diaria_cents: centavos(corpo.diaria_cents, 'diaria_cents', false),
+  } : null;
+  if (dados) for (const k of Object.keys(dados)) if (dados[k] === null) delete dados[k];
+  return {
+    tipo: corpo.tipo, titulo, texto: texto(corpo.texto, 'texto', 600, { linhas: true }), link: linkDe(corpo.link),
+    imagem: corpo.imagem === undefined || corpo.imagem === null ? null : uuidDe(corpo.imagem, 'imagem'), dados,
+  };
+}
+
+module.exports = { PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
+  sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
+  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

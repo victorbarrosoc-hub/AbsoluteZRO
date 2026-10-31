@@ -1113,6 +1113,19 @@ do card... não consigo localizar o job que quero achar".
   rota 404 e guilda escondida). HUB `0043_carro_guilda_espaco_extra`: adicional "Espaço extra na guilda" (R$ 14,90/mês, +5
   vagas) em RASCUNHO, não aplicado em produção. Sem cobrança (a taxa de 5% do nível 15 fica como dado, inativa).
   Fora: gov.br e contrato; e-mail e WhatsApp; ranking entre guildas.
+- 🟡 **A Sede da guilda (painel aprovado, Gel magenta), no mesmo branch e atrás da mesma constante** (31/10/2026). Migração
+  do Carro `0005_sede`: chat (sala + canal por job, menção, reação, fixado, call sheet com "vou"/"não vou" e presença,
+  digitando, presença, não lidas; poll com ETag/304), quadro com reação e "quero", XP como livro-razão só de evento real
+  (job fechado 120, contratante de fora 1,5× = 180; a mesma dupla da casa uma vez por mês; a mesma pessoa de fora até 4 por
+  mês; presença em call sheet de canal de job 15; post no quadro 10, até 3 por semana), nível de 400 em 400 XP, sequência,
+  8 credenciais de dado real, marco de nível no quadro e o job fechado como evento na sala; memória em pôsteres com os
+  créditos (quem saiu fica, marcado; contratante de fora sem nome); personalização só do dono (5 paletas + cor própria com
+  guarda de contraste 4,5:1 nos dois temas) e logo/foto do set reencodados em WebP pelo sharp, no banco, com cota de 50 MB
+  por guilda e bytes só pela porta `guilda_imagem`. Rotas `/api/zro/sede` e `/api/zro/sede-imagem` (o sharp vai copiado
+  para a função na Vercel). Fundar agora pede a fundação na conta (402 sem ela). HUB `0044_carro_sede_planos`: fundação
+  (R$ 189, sem periodicidade: o HUB não tem cobrança única, lacuna anotada) e +15 lugares (R$ 34,90/mês), em RASCUNHO; a
+  folha de compra leva o pedido ao fluxo de pedido de plano do HUB, nada é cobrado. Fora: Pix/cartão, notificação por
+  e-mail/WhatsApp, mensagem direta, áudio, ranking e temporada pública.
 - ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
   separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 

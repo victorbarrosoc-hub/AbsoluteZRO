@@ -7,9 +7,14 @@ ficam fora do repositório (ele é público). O plano muda ao longo do caminho: 
 do ar o que ainda não é da fase, guardando o código pronto, ou liga o que foi guardado; (2) atualiza homepages e site;
 (3) publica as versões novas dos apps; (4) aplica as migrações da fase. Nada de interruptor visível para o usuário.
 
-**Guilda (fase 2), como está no código (31/10/2026):** pronta no branch `fase2-guilda`, atrás de UMA constante,
-`FASE_LANCAMENTO` em `products/carro-do-freela/db/fase.js` (padrão 1). "Libera fase 2" = trocar para 2 nesse arquivo, publicar
-o Carro e aplicar a `0043_carro_guilda_espaco_extra` do HUB só se o titular também liberar a venda do adicional (nasce em rascunho).
+**Guilda (fase 2), como está no código (31/10/2026):** a guilda e o painel **Sede** (desenho aprovado, Gel magenta) estão
+prontos no branch `fase2-guilda`, atrás de UMA constante, `FASE_LANCAMENTO` em `products/carro-do-freela/db/fase.js` (padrão 1:
+`/api/zro/guildas`, `/api/zro/sede` e `/api/zro/sede-imagem` respondem 404 e nada aparece). "Libera fase 2" = trocar para 2
+nesse arquivo e publicar o Carro (o build aplica as migrações `0004_guildas` e `0005_sede` do banco do Carro). **Fundar é
+pago e os lugares extras também**: os planos do HUB nascem em rascunho (`0043` +5 lugares, `0044` fundação e +15 lugares) e
+só são aplicados/ativados quando o titular liberar a venda. Enquanto forem rascunho, ninguém funda guilda nova (a folha leva
+o pedido à conta Absolute ZRO; nada é cobrado). A fundação é cobrança ÚNICA, que o catálogo do HUB ainda não tem
+(`billing_interval` só mensal ou anual): vendê-la pede antes essa mudança no modelo de planos.
 
 Hoje (30/10/2026) **tudo o que está abaixo, exceto a guilda e o aluguel, já está no ar**. A retirada do que for das fases 2 e 3
 acontece no dia do lançamento da fase 1, a pedido do titular, e não antes.
@@ -26,8 +31,12 @@ acontece no dia do lançamento da fase 1, a pedido do titular, e não antes.
 
 ## Fase 2 · Comunidade
 
-- **Carro do Freela:** **guilda** (criar, entrar, time, nível, convite, memória dos jobs fechados) e **espaço extra na
-  guilda** (compra). Regra: comprar espaço nunca muda a ordem da busca.
+- **Carro do Freela:** **guilda** com o painel **Sede**: recepção (brasão ou logo, nível, sequência, lugares, memória em
+  pôsteres, chat ao vivo), **chat** (sala da guilda + canal por job, menção, reação, fixado, call sheet com confirmação e
+  presença), **quadro** (aviso, vitória, vaga interna, foto do set), **placa** (XP só de evento real, com antifarra;
+  credenciais; sequência), **memória** com os créditos de cada job, e **personalizar** (cor da casa e logo, só o dono).
+  **Fundação paga** (R$ 189 uma vez, 15 lugares) e **lugares extras** (+5 R$ 14,90/mês, +15 R$ 34,90/mês). Regra: nível,
+  XP, lugares e cor nunca mudam a ordem da busca.
 - **Maestro:** freela convidado pelo @, "Seus trabalhos" (área do freela), capas no quadro.
 - **Set:** sugestões ao digitar o @.
 - App de computador do Carro do Freela.

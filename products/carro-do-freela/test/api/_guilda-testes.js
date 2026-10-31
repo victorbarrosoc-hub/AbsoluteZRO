@@ -20,6 +20,9 @@ module.exports = function registrar(ctx) {
   const membroFalso = (g, n) => SQL("insert into carro_do_freela.guilda_membros (guilda_id, sub, nome) select $1, gen_random_uuid(), 'Membro ' || x from generate_series(1, $2::int) x", [g, n]);
   const jobFalso = (g, n) => SQL('insert into carro_do_freela.guilda_jobs (guilda_id, proposta_id, de_sub, para_sub) select $1, gen_random_uuid(), gen_random_uuid(), gen_random_uuid() from generate_series(1, $2::int)', [g, n]);
   const ADICIONAL = ['carro-do-freela.guilda_espaco_extra'];
+  /* fundar é pago (0005): só quem tem a fundação na conta (o sinal do plano do HUB, ainda rascunho) cria a guilda */
+  const FUNDACAO = 'carro-do-freela.guilda_fundacao';
+  const fundadora = (p, outros = []) => Object.assign({}, p, { recursos: [FUNDACAO].concat(outros) });
 
   test('guilda: com a fase 1 a rota responde 404 para todos (até sem sessão) e nada é criado; com a fase 2 abre', async () => {
     FASES.fixarParaTeste(1);
@@ -35,12 +38,19 @@ module.exports = function registrar(ctx) {
   test('guilda: criar, convidar pelo @ e por link, aceitar, vagas e espaço extra; RLS entre guildas e pessoas', async () => {
     const { db, entrar, OUTRA: dono, FREELA: m1, TERCEIRA: m2 } = ctx();
     const q1 = pessoaNova('quarta'), q2 = pessoaNova('quinta');
-    const cd = await entrar(dono), c1 = await entrar(m1), c2 = await entrar(m2);
+    const c1 = await entrar(m1), c2 = await entrar(m2);
+    /* sem a fundação na conta: 402 e nada é criado (o pedido vai ao HUB pela tela; aqui nada é cobrado) */
+    let r = await G(await entrar(dono), { nome: 'Panelinha', tag: 'pnl' });
+    assert.deepEqual([r.status, (await r.json()).erro], [402, 'fundacao']);
+    assert.equal((await SQL('select count(*)::int as n from carro_do_freela.guildas'))[0].n, 0);
+    const cd = await entrar(fundadora(dono));
+    assert.equal((await minha(cd)).pode_fundar, true);
+    assert.equal((await minha(c1)).pode_fundar, false, 'quem não pagou a fundação não funda');
     assert.equal((await G(cd, { nome: 'Panelinha', tag: 'x' })).status, 400);
     assert.equal((await G(cd, { nome: 'Panelinha', tag: 'PNL', cpf: '1' })).status, 400);
     assert.equal((await G(cd, { nome: 'Panelinha', tag: 'PNL', espaco_extra: 99 })).status, 400, 'o espaço extra não vem do pedido');
     assert.equal((await G(cd, { nome: 'Fale 84 99999-0000', tag: 'PNL' })).status, 400);
-    let r = await G(cd, { nome: 'Panelinha', tag: 'pnl', sobre: 'Clipe e publicidade' });
+    r = await G(cd, { nome: 'Panelinha', tag: 'pnl', sobre: 'Clipe e publicidade' });
     assert.equal(r.status, 201);
     const gid = (await r.json()).guilda.id;
     assert.equal((await G(cd, { nome: 'Outra', tag: 'OUT' })).status, 409, 'uma guilda por vez');
@@ -105,8 +115,8 @@ module.exports = function registrar(ctx) {
     assert.equal((await G(cq1, { acao: 'aceitar', id: (await minha(cq1)).recebidos[0].id })).status, 200, 'com o espaço extra a 16ª pessoa entra');
     g = (await minha(await entrar(dono))).minha;
     assert.deepEqual([g.vagas.extra, g.vagas.total, g.vagas.ocupadas, g.vagas.livres], [0, 15, 16, 0]);
-    /* nível 10: +2 vagas (dado em guilda_beneficios) */
-    await jobFalso(gid, 27);
+    /* nível 10 (3.600 XP: 20 jobs de contratante de fora, 180 cada): +2 vagas (dado em guilda_beneficios) */
+    await jobFalso(gid, 20);
     g = (await minha(await entrar(dono))).minha;
     assert.deepEqual([g.nivel.atual, g.vagas.bonus_de_nivel, g.vagas.total, g.vagas.livres], [10, 2, 17, 1]);
     assert.ok(g.beneficios.find(b => b.nivel === 10 && b.ativo && b.conquistado));
@@ -122,7 +132,7 @@ module.exports = function registrar(ctx) {
   test('guilda: bloqueio, carência, remover, sair e a memória dos jobs fechados (o nível)', async () => {
     const { db, entrar, pedir, hojeMais, D } = ctx();
     const dono = pessoaNova('dono2'), p1 = pessoaNova('p1'), p2 = pessoaNova('p2'), p3 = pessoaNova('p3'), cli = pessoaNova('cliente');
-    const [cd, c1, c2, c3, cc] = [await entrar(dono), await entrar(p1), await entrar(p2), await entrar(p3), await entrar(cli)];
+    const [cd, c1, c2, c3, cc] = [await entrar(fundadora(dono)), await entrar(p1), await entrar(p2), await entrar(p3), await entrar(cli)];
     const gid = (await (await G(cd, { nome: 'Maré Alta', tag: 'MRA' })).json()).guilda.id;
     const convidar = async (pes, ck) => {
       assert.equal((await G(cd, { acao: 'convidar', para: pes.sub })).status, 201);
@@ -158,7 +168,7 @@ module.exports = function registrar(ctx) {
     assert.deepEqual([g.nivel.atual, g.nivel.jobs, g.nivel.faltam, await memoria()], [2, 3, 3, 3]);
     const txt = JSON.stringify(g);
     assert.ok(!/77700|Clipe|valor|mensagem/.test(txt) && !txt.includes(cli.nome), 'a memória não leva valor, mensagem nem o nome de quem está fora');
-    assert.deepEqual(Object.keys(g.membros[0]).sort(), ['arroba', 'entrou_em', 'eu', 'foto', 'nome', 'papel', 'sub']);
+    assert.deepEqual(Object.keys(g.membros[0]).sort(), ['arroba', 'entrou_em', 'eu', 'foto', 'nome', 'online', 'papel', 'sub']);
     /* job cancelado deixa de contar */
     D._interno.esquecerLimite();
     assert.equal((await pedir('/api/zro/propostas?id=' + j1, { cookies: cc, method: 'PATCH', corpo: { estado: 'cancelada' } })).status, 200);
@@ -177,7 +187,7 @@ module.exports = function registrar(ctx) {
     assert.equal(await db.asUser(p2.sub, async c => (await c.query('select 1 from carro_do_freela.guilda_jobs')).rowCount), 0, 'quem saiu não lê a memória');
     r = await convidar(p2, c2);
     assert.deepEqual([r.status, (await r.json()).erro], [409, 'carencia']);
-    assert.equal((await G(c2, { nome: 'Outra Guilda', tag: 'OTR' })).status, 409, 'nem fundar outra na carência');
+    assert.equal((await G(await entrar(fundadora(p2)), { nome: 'Outra Guilda', tag: 'OTR' })).status, 409, 'nem fundar outra na carência');
     /* o dono tira alguém (sem carência); não sai com gente dentro; não-dono não tira */
     assert.equal((await G(c3, { acao: 'remover', sub: dono.sub })).status, 403);
     assert.equal((await G(cd, { acao: 'remover', sub: dono.sub })).status, 409);
@@ -202,7 +212,7 @@ module.exports = function registrar(ctx) {
     const ordem = async () => { D._interno.esquecerLimite(); return (await (await pedir('/api/zro/pessoas', { cookies: cv })).json()).pessoas.map(p => p.arroba) };
     const antes = await ordem();
     assert.deepEqual(antes, ['aaa', 'bbb', 'ccc']);
-    const cc = await entrar(Object.assign({}, c, { recursos: ADICIONAL }));
+    const cc = await entrar(fundadora(c, ADICIONAL));
     const gid = (await (await G(cc, { nome: 'Os do Fim', tag: 'FIM' })).json()).guilda.id;
     await jobFalso(gid, 30);
     await membroFalso(gid, 5);

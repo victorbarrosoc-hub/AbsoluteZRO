@@ -376,6 +376,8 @@ test('rotas: preparar a Absolute ZRO falsa e o servidor', async () => {
     '/api/zro/brecho': require(path.join(RAIZ, 'api', 'zro', 'brecho.js')),
     '/api/zro/denuncia': require(path.join(RAIZ, 'api', 'zro', 'denuncia.js')),
     '/api/zro/guildas': require(path.join(RAIZ, 'api', 'zro', 'guildas.js')),
+    '/api/zro/sede': require(path.join(RAIZ, 'api', 'zro', 'sede.js')),
+    '/api/zro/sede-imagem': require(path.join(RAIZ, 'api', 'zro', 'sede-imagem.js')),
   };
   app = http.createServer((req, res) => {
     const fn = rotas[new URL(req.url, 'http://x').pathname];
@@ -702,6 +704,8 @@ test('rotas: limite de pedidos por IP (freio por instância) e a régua de orige
 
 /* a guilda (0004, fase 2): suítes em _guilda-testes.js, com o mesmo banco, a mesma Absolute ZRO falsa e o mesmo servidor */
 require('./_guilda-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais, FREELA, OUTRA, TERCEIRA }));
+/* a Sede (0005): chat, quadro, XP, personalização, imagens e lugares — o mesmo banco, a mesma Absolute ZRO falsa */
+require('./_sede-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, SITE, cookieDe }));
 
 test('regras: os catálogos do servidor são os do app (funções da base, nichos de TIPOS)', () => {
   const tpl = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');

@@ -45,7 +45,10 @@ const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'ic
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set'];
 /* (28/out) as rotas de dados falam com o banco (pg): vão EMPACOTADAS pelo
    esbuild num arquivo só, com o `pg` dentro — as outras seguem copiadas */
-const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'propostas', 'feed', 'brecho', 'denuncia', 'guildas'];
+const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'propostas', 'feed', 'brecho', 'denuncia', 'guildas', 'sede', 'sede-imagem'];
+/* (31/out) a imagem da Sede (logo e foto do set) é reencodada pelo sharp, que tem binário nativo (libvips): ele fica
+   FORA do pacote do esbuild e vai copiado, com as dependências dele, para o node_modules da própria função */
+const COM_SHARP = ['sede-imagem'];
 const RUNTIME = 'nodejs22.x';
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD): o domínio nasce
    FECHADO — só a conta do proprietário entra, e só com a claim relida no
@@ -183,6 +186,21 @@ let bytes = 0;
 for (const f of sobe) { fs.copyFileSync(path.join(MDE, f), path.join(MPARA, f)); bytes += fs.statSync(path.join(MPARA, f)).size }
 if (!falhou) ok('m/ com ' + sobe.size + ' arquivos (' + (bytes / 1048576).toFixed(1) + ' MB) — todo arquivo citado está lá, e só eles');
 
+/** copia um pacote de node_modules e as dependências dele (e as opcionais que foram instaladas: no sharp, o binário da
+    plataforma do build, que é a mesma das funções) para `destino`; devolve quantos pacotes foram */
+function copiarPacote(nome, destino, vistos = new Set()) {
+  /* o sharp em wasm é a reserva de quem não tem binário nativo: a função tem, e ele só pesaria */
+  if (vistos.has(nome) || /wasm/.test(nome)) return 0;
+  let dirPkg;
+  try { dirPkg = path.dirname(require.resolve(nome + '/package.json', { paths: [RAIZ] })) } catch (e) { return 0 }
+  vistos.add(nome);
+  fs.cpSync(dirPkg, path.join(destino, nome), { recursive: true, dereference: true });
+  const pkg = JSON.parse(fs.readFileSync(path.join(dirPkg, 'package.json'), 'utf8'));
+  let n = 1;
+  for (const d of Object.keys(Object.assign({}, pkg.dependencies, pkg.optionalDependencies))) n += copiarPacote(d, destino, vistos);
+  return n;
+}
+
 /* ===================== 3. AS FUNÇÕES DO LOGIN ===================== */
 for (const n of FUNCOES) {
   const dir = path.join(SAIDA, 'functions', 'api', 'zro', n + '.func');
@@ -201,8 +219,13 @@ for (const n of FUNCOES_BANCO) {
     entryPoints: [path.join(RAIZ, 'api', 'zro', n + '.js')], outfile: path.join(dir, 'index.js'),
     bundle: true, platform: 'node', target: 'node22', format: 'cjs', minify: false, legalComments: 'none',
     /* o pg só tenta o pg-native se ele existir; aqui ele não existe nem deve ir */
-    external: ['pg-native'], logLevel: 'error',
+    external: ['pg-native'].concat(COM_SHARP.includes(n) ? ['sharp'] : []), logLevel: 'error',
   });
+  if (COM_SHARP.includes(n)) {
+    const n0 = copiarPacote('sharp', path.join(dir, 'node_modules'));
+    if (!fs.existsSync(path.join(dir, 'node_modules', 'sharp'))) nao(n + ': o sharp não foi copiado (npm ci instalou?)');
+    else ok(n + ': sharp e ' + (n0 - 1) + ' dependências copiadas para a função (binário de linux-x64)');
+  }
   fs.writeFileSync(path.join(dir, '.vc-config.json'), JSON.stringify({
     runtime: RUNTIME, handler: 'index.js', launcherType: 'Nodejs', shouldAddHelpers: false, maxDuration: 20
   }, null, 2) + '\n');

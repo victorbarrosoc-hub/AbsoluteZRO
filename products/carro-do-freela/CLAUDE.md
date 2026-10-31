@@ -189,13 +189,29 @@ Pedido do titular: guilda e espaço extra são da fase 2 (`docs/lancamento-fases
   `fixarParaTeste` existem só para as suítes. A prévia (não-real) segue com a guilda de demonstração de sempre.
 - Migração `0004_guildas`: tabelas só com SELECT para o app (RLS); tudo muda por função `security definer` que confere vagas,
   bloqueio, carência (7 dias ao sair; quem foi tirado não tem) e convite vencido. Vagas = 15 + 2 (nível 10, de
-  `guilda_beneficios`) + `espaco_extra`. Nível = 1 + jobs/3; o job é a proposta aceita (gatilho em `propostas`), conta para
+  `guilda_beneficios`) + `espaco_extra`. Nível = 1 + jobs/3 (desde a 0005, 1 + XP/400); o job é a proposta aceita (gatilho em `propostas`), conta para
   cada guilda de que um dos lados é membro AGORA, some se a proposta for cancelada, e fica quando alguém sai.
 - ⚠️ **A guilda não toca a busca**: `filtrar()` não a conhece e há teste (cliente e `/api/zro/pessoas`). O adicional só abre
   vagas: lido da claim `zro_features` do DONO (`carro-do-freela.guilda_espaco_extra`) e gravado na guilda nas rotas dele.
   O sinal é presença (um pacote de 5). Taxa de 5% do nível 15: dado inativo, nada é cobrado.
 - Nome, @ e foto vêm da conta; convite por link guarda só o hash, vale uma vez e 7 dias; bloqueio ao recusar. Sem e-mail nem
-  WhatsApp. No site real não há ranking, salão, chat nem VIP (`realGuildaPintar`, prefixo `rg-`).
+  WhatsApp. No site real não há ranking, salão de demonstração nem VIP; o chat e o resto são a Sede (31/out · 2, abaixo).
+
+## 31/out · 2 — a Sede da guilda (desenho aprovado, Gel magenta; `0005_sede`, `test/guilda-real.js`, `_sede-testes.js`)
+
+No site real com a fase 2, `realGuildaPintar()` monta o bloco `#sd` (prefixo `sd-`, estados por `data-*`/`aria-*`, nunca
+classe modificadora) e esconde o resto da `#v-guildas`. Quatro salas (`sdIr`): painel, chat, quadro (+ placa) e memória;
+folhas (`sdFolha`, no `body`, com os tokens da casa) para fundar, lugares, personalizar, membros, postar, call sheet e convite.
+- ⚠️ **O XP é um livro-razão no banco (`guilda_xp`)**, só de evento real, com antifarra; o nível é 1 + XP/400 (a 0005 refaz
+  `guilda_nivel`). Mensagem e reação não dão XP. Nada sai da guilda: a busca não conhece XP, lugares nem cor (teste nos dois lados).
+- **Fundar é pago**: sem `carro-do-freela.guilda_fundacao` na claim, `POST /guildas` responde 402 e a folha leva o pedido a
+  `pedir_url` (o pedido de plano do HUB). Lugares: +5 e +15 são sinais (somam). Planos em rascunho no HUB (0043, 0044).
+- **Cor da casa**: 5 paletas ou cor própria com guarda 4,5:1; `sdPaleta` (tela) e `paletaDe/corPropria` (`db/regras.js`)
+  são a MESMA conta — a suíte confere. **Imagens** (logo, foto do set): sharp no servidor (`api/zro/_imagem.js`), WebP no
+  banco, bytes só pela porta `guilda_imagem`; na Vercel o sharp vai copiado para a função `sede-imagem` (`COM_SHARP`).
+- **Chat**: poll com ETag/304 (`guilda_versao` sobe a cada mudança; `desde=v`), só com a aba visível e a tela aberta (`sdLaco`).
+  O job vira UM evento na sala (o mesmo contratante no mesmo dia), com o XP somado. Contratante de fora não tem nome na memória.
+- Harness de fotos fora do repo; para olhar: banco local + Absolute ZRO falsa + rotas, como `test/api/banco-tela.test.js`.
 
 ## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
 

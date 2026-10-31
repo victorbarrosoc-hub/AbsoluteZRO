@@ -3609,3 +3609,21 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
 - HUB `tests/integration/carro-guilda-espaco-extra.test.ts` (5): a 0043 é idempotente, o plano é rascunho (o HUB recusa conceder),
   o sinal `carro-do-freela.guilda_espaco_extra` chega por `zro_features` só a quem recebe, sem dar acesso ao Carro.
 - Modelo do adicional: o sinal do HUB é presença, não quantidade; o Carro dá UM pacote de 5. Vários pacotes pedem quantidade no plano.
+
+## Carro do Freela: a Sede da guilda, no branch `fase2-guilda` (31/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 44/44. Dez testes novos da 0005 (`test/api/_sede-testes.js`): fase 1 = 404 nas
+  rotas da sede e das imagens; chat (sala, menção só de membro, reação, apagar do autor/dono, fixar só do dono, telefone
+  recusado, freio de 20 mensagens/min no banco, RLS entre guildas direto no papel do app); poll com ETag (304, `desde`,
+  digitando, presença, não lidas); XP só de evento real com a antifarra (dupla da casa 1×/mês, o mesmo de fora até 4/mês,
+  cancelado tira o XP e o evento, post 3/semana), marcos no quadro; call sheet (canal do job só de quem fez ou do dono,
+  presença só no dia, só de quem confirmou, XP só no canal do job); quadro (aviso só do dono, vaga, "quero", fixar, apagar,
+  isolamento); personalizar só do dono, cor própria com 4,5:1 nos dois temas; logo só do dono, reencodado em WebP sem EXIF,
+  tipo pelos bytes (SVG/GIF recusados), 4 MB, só a guilda lê, cota igual no banco e no servidor; +5 e +15 somam; quem saiu
+  fica nos créditos; a busca não muda com XP alto, 30 lugares e cor própria. Os testes antigos da 0004 ganharam a fundação.
+- Carro `test/guilda-real.js`: 59/59 (site real com a constante em 2 e em 1; a Sede inteira contra o servidor de mentira:
+  painel, chat com ETag/304, mensagem, call sheet, quadro, memória, personalizar, fundar sem e com a fundação, convites,
+  sair; a conta da cor própria igual à do servidor; iPhone escuro e claro sem rolar de lado). `test:api` 48/48.
+- HUB `tests/integration/carro-sede-planos.test.ts` (4): a 0044 é idempotente, fundação e +15 em rascunho (o HUB recusa
+  conceder e o pedido de plano recusa), o sinal chega por `zro_features` quando concedido.
+- Fotos do site real com a fase 2 e o banco local semeado: `sede-real/` no rascunho da sessão (não versionadas).
