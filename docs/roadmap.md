@@ -1196,3 +1196,4 @@ do card... não consigo localizar o job que quero achar".
 8. Produtos fechados (AEON, Revela): pôr o Release `ai-edit-app-desktop` em rascunho no GitHub; publicar os projetos
    Vercel `aeon` e `revela` só depois de o HUB negar a emissão aos clientes fechados; quando for abrir, mudar os dois
    lados (HUB e `RELEASE=released` nos projetos).
+9. Google sem CASA (31/10/2026): rodar o teste de `drive.file` do SOBEDESCE ([google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)) e fazer a verificação de marca e de Agenda ([google-verificacao](operations/google-verificacao.md)). `/privacidade` e `/termos` já estão no HUB.

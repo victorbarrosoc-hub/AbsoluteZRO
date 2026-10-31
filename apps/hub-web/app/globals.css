@@ -8526,3 +8526,34 @@ a.pstrip__card:focus-visible .pstrip__go {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Páginas legais (/privacidade, /termos): coluna de leitura. */
+.legal__corpo {
+  display: grid;
+  gap: 28px;
+  max-width: 68ch;
+  margin-top: 28px;
+  text-align: left;
+}
+.legal__secao {
+  display: grid;
+  gap: 8px;
+}
+.legal__secao h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.legal__secao p,
+.legal__secao li {
+  opacity: 0.78;
+  line-height: 1.6;
+}
+.legal__secao ul {
+  padding-left: 1.2em;
+  display: grid;
+  gap: 6px;
+}
+.legal__secao a {
+  color: inherit;
+  text-decoration: underline;
+}

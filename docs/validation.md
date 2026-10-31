@@ -3593,6 +3593,8 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
 - Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
   `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.
 
+- Google (31/10/2026): inventário de escopos feito (Maestro não pede escopo Google próprio: usa o token curto do SOBEDESCE pela ponte, nada migrado). Páginas `/privacidade` (com Limited Use) e `/termos` no HUB; teste `tests/integration/legal.test.ts`. Kit de verificação e roteiro do teste `drive.file` em `docs/operations/`.
+
 ## Carro do Freela: a guilda da fase 2, no branch `fase2-guilda` (31/10/2026)
 
 - Carro `test:banco` (Postgres 16 local): 34/34. Quatro testes novos da 0004 (`test/api/_guilda-testes.js`): com a fase 1 a rota
