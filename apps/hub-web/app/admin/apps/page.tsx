@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
-import { requirePlatformAdmin } from '@zro/core'
+import { papelNoConsole, podeVer, requirePlatformAdmin } from '@zro/core'
 import { EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { Fold } from '@/components/admin/parts'
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'Apps · Console', robots: { index: f
 export default async function Apps() {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  if (!auth || !podeVer(papelNoConsole(auth), 'apps')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const isAdmin = auth.user.platformRole === 'admin'
   const d = await db().asSystem('admin: apps do login único', async (tx) => ({

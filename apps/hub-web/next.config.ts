@@ -16,7 +16,8 @@ const security = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  serverExternalPackages: ['postgres'],
+  // Correio do console (ADR 0034): imapflow (pino com require dinâmico), nodemailer e mailparser rodam como pacote do Node.
+  serverExternalPackages: ['postgres', 'imapflow', 'nodemailer', 'mailparser'],
   experimental: {
     // Troca de tela na hora (pedido do titular, 29/10/2026): a pré-busca inteira (intenção no menu) vale 60 s (o padrão
     // é 5 min). A tela visitada NÃO fica guardada (dynamic 0): com 30 s, o login único reaproveitava a tela de

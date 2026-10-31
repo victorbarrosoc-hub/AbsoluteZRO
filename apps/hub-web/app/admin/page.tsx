@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { providerLabel } from '@zro/billing'
-import { consoleOverview, PEOPLE_SEGMENTS, peopleSummary, requirePlatformAdmin, type PeopleSegment } from '@zro/core'
+import { consoleOverview, papelNoConsole, PEOPLE_SEGMENTS, peopleSummary, podeVer, requirePlatformAdmin, type PeopleSegment } from '@zro/core'
 import { Pill, ProductMark } from '@zro/ui'
 import { BILLING_EVENT_LABEL, BILLING_STATUS, Funnel } from '@/components/admin-people'
 import { OnlineAgora } from '@/components/admin/online-agora'
@@ -17,7 +17,9 @@ const KIND_LABEL: Record<string, string> = { bundle: 'pacote', team: 'equipe', i
 export default async function Admin() {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  const papel = papelNoConsole(auth)
+  if (papel === 'financeiro') redirect('/admin/custos')
+  if (!auth || !podeVer(papel, 'visao')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const d = await db().asSystem('admin: visão geral', async (tx) => ({
     o: await consoleOverview(tx),

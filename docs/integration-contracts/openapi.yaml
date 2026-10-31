@@ -137,6 +137,76 @@ paths:
   # pessoa, suporte inclusive). Tudo que custa confere o teto do dia antes (403 quota_not_configured sem teto, 429
   # quota_exceeded passou) e registra o uso com chave de idempotência. Chave ausente: 503 upstream_unavailable com o
   # nome da variável (IA_ANTHROPIC_KEY ou ELEVENLABS_API_KEY).
+  /api/v1/admin/correio:
+    get:
+      summary: Correio do console (ADR 0034). Caixas do papel (admin vê victor@, contato@ e financeiro@; financeiro, só financeiro@) e se o iCloud está configurado
+      security: [{ session: [] }]
+      responses:
+        {
+          '200': { description: '{ configurado, faltam, caixas }' },
+          '403': { description: platform_role_required },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/correio/{caixa}/mensagens:
+    get:
+      summary: As 50 mensagens mais novas da caixa, direto do iCloud (IMAP). INBOX separado pelo alias em To, Cc, Delivered-To ou X-Original-To. Nada fica guardado
+      security: [{ session: [] }]
+      parameters: [{ name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }]
+      responses:
+        '200': { description: '{ caixa, mensagens: [{ uid, de, assunto, data, lida, tamanho }] }' }
+        '403': { description: platform_role_required (caixa fora do papel) }
+        '503': { description: upstream_unavailable (Correio não configurado ou iCloud fora) }
+        default: { $ref: '#/components/responses/Error' }
+  /api/v1/admin/correio/{caixa}/mensagens/{uid}:
+    get:
+      summary: Abre a mensagem e marca como lida. HTML limpo num documento com CSP própria (iframe sandbox na tela); imagens remotas só com imagens=1. De outra caixa = 404
+      security: [{ session: [] }]
+      parameters:
+        - { name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }
+        - { name: uid, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: imagens, in: query, required: false, schema: { type: string, enum: ['1'] } }
+      responses:
+        '200': { description: '{ mensagem: { uid, de, para, cc, replyTo, assunto, data, documento, imagensBloqueadas, texto, anexos } }' }
+        '404': { description: not_found }
+        default: { $ref: '#/components/responses/Error' }
+  /api/v1/admin/correio/{caixa}/mensagens/{uid}/anexos/{indice}:
+    get:
+      summary: Baixa um anexo (até 4 MB), sempre como download, com a mesma checagem de papel e de caixa
+      security: [{ session: [] }]
+      parameters:
+        - { name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }
+        - { name: uid, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: indice, in: path, required: true, schema: { type: integer, minimum: 0 } }
+      responses:
+        {
+          '200': { description: o arquivo (content-disposition attachment) },
+          '404': { description: not_found },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/correio/{caixa}/enviar:
+    post:
+      summary: Responde (responderA = uid) ou escreve um e-mail novo saindo do alias da caixa, por SMTP do iCloud. Cópia em Sent Messages (IMAP APPEND) e audit_logs sem o corpo
+      security: [{ session: [] }]
+      parameters: [{ name: caixa, in: path, required: true, schema: { type: string, enum: [victor, contato, financeiro] } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, maxLength: 100000 }
+                responderA: { type: integer, minimum: 1, description: uid da mensagem respondida (sem ele, e-mail novo) }
+                todos: { type: boolean, description: na resposta, inclui quem estava em To e Cc }
+                para: { type: string, description: e-mail novo, até 20 destinatários somando Cc }
+                cc: { type: string }
+                assunto: { type: string, maxLength: 300 }
+      responses:
+        '201': { description: '{ ok, messageId, copiaEmEnviadas }' }
+        '400': { description: invalid_input }
+        '403': { description: platform_role_required }
+        '503': { description: upstream_unavailable }
+        default: { $ref: '#/components/responses/Error' }
   /api/v1/admin/z-lab:
     get:
       summary: Estado do laboratório (chaves ligadas, rascunho, versões, publicada, conhecimento, recursos, gasto, catálogo)

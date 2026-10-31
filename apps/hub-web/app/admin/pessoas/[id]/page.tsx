@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { providerLabel } from '@zro/billing'
-import { PEOPLE_SEGMENTS, personDetail, planOptions, requirePlatformAdmin } from '@zro/core'
+import { NOME_DO_PAPEL, papelNoConsole, PEOPLE_SEGMENTS, personDetail, planOptions, podeVer, requirePlatformAdmin } from '@zro/core'
 import { Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { AUDIT_LABEL, OrgPlan, ORIGIN_LABEL } from '@/components/admin-people'
@@ -46,7 +46,7 @@ function device(ua: string | null): string {
 export default async function Pessoa({ params }: { params: Promise<{ id: string }> }) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  if (!auth || !podeVer(papelNoConsole(auth), 'pessoas')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const isAdmin = auth.user.platformRole === 'admin'
   const { id } = await params
@@ -74,7 +74,7 @@ export default async function Pessoa({ params }: { params: Promise<{ id: string 
             <span className={`adm-chip adm-chip--seg-${p.segment}`} title={PEOPLE_SEGMENTS[p.segment].hint}>
               {PEOPLE_SEGMENTS[p.segment].label}
             </span>
-            {p.platformRole && <Pill tone="accent">{p.platformRole === 'admin' ? 'Admin da plataforma' : 'Suporte da plataforma'}</Pill>}
+            {p.platformRole && <Pill tone="accent">{NOME_DO_PAPEL[p.platformRole]} da plataforma</Pill>}
             {!p.emailVerified && <Pill tone="warn">E-mail sem confirmar</Pill>}
             {p.google && <Pill tone="neutral">Google</Pill>}
           </div>

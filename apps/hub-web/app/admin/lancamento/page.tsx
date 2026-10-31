@@ -12,7 +12,7 @@ import {
   type ReleaseChannel,
   type ReleaseState,
 } from '@zro/billing'
-import { requirePlatformAdmin } from '@zro/core'
+import { papelNoConsole, podeVer, requirePlatformAdmin } from '@zro/core'
 import { EmptyState, Field, Notice, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { Fold } from '@/components/admin/parts'
@@ -50,7 +50,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 export default async function Lancamento({ searchParams }: Props) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
-  if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
+  if (!auth || !podeVer(papelNoConsole(auth), 'lancamento')) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
   const isAdmin = auth.user.platformRole === 'admin'
   const sp = await searchParams
