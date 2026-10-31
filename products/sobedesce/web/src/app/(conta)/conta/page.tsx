@@ -30,7 +30,10 @@ import { ApagarConta } from "./apagar";
 import { BotaoSair, SairDiscreto } from "./sair";
 import { SemAcessoZro } from "../sem-acesso";
 import { LigarZro } from "@/components/conta/ligar-zro";
-import { precisaLigarZro } from "@/lib/zro/ligar";
+import { caminhoLigarZro, precisaLigarZro } from "@/lib/zro/ligar";
+import { COOKIE_OUTRA_CONTA, outraContaParaTela } from "@/lib/zro/outra-conta";
+import { EntrarNessaConta, UsarOutraConta } from "@/components/conta/outra-conta";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = { title: "Sua conta" };
 
@@ -42,9 +45,10 @@ export default async function Conta({ searchParams }: Props) {
   if (!liberado) return <SemAcessoZro volta="/conta" />;
   const q = await searchParams;
   // Conta antiga sem vínculo com a Absolute ZRO: a tela de ligar, uma vez (lib/zro/ligar.ts).
+  const outra = q.erro === "zro_outra_conta" ? outraContaParaTela((await cookies()).get(COOKIE_OUTRA_CONTA)?.value, atual.sessao.id) : null;
   if (precisaLigarZro(atual)) {
     const drives = await listarContas(usuario.id);
-    return <LigarZro volta="/conta" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
+    return <LigarZro volta="/conta" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} outra={outra} />;
   }
   const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro, acessoTotal] = await Promise.all([
     listarContas(usuario.id),
@@ -120,6 +124,13 @@ export default async function Conta({ searchParams }: Props) {
       ) : mensagemDeErro(erro) ? (
         <Aviso tom={erro === "google_recusado" || erro === "zro_recusado" ? "info" : "erro"} className="mb-10">
           <p>{mensagemDeErro(erro)}</p>
+          {erro === "zro_outra_conta" ? (
+            // Religar caiu numa Absolute ZRO de outra conta SOBEDESCE: entrar nela (com o selo) ou pedir outra conta.
+            <div className="mt-4 grid justify-items-start gap-3">
+              {outra ? <EntrarNessaConta email={outra.email} className="justify-items-start" /> : null}
+              <UsarOutraConta href={caminhoLigarZro("/conta", true)} />
+            </div>
+          ) : null}
         </Aviso>
       ) : null}
 

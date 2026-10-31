@@ -63,11 +63,28 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Carro do Freela com conta única: "Criar conta" cria a conta Absolute ZRO (`prompt=create`), o app não cria conta própria, e a área logada respeita `carro-do-freela` em `zro_products` (lista de convite segue aberta).
 - ✅ Synquei: conta pela Absolute ZRO ("Criar conta" com `prompt=create`) e aviso "ainda não tem acesso" quando `synquei` não está em `zro_products`; app, site e download continuam abertos.
 - ✅ SOBEDESCE: conta nova só pela Absolute ZRO (`prompt=create`), Google vira só porta das contas antigas e conexão do Drive, e o acesso segue `zro_products` (sem `sobedesce` = funções bloqueadas com aviso).
+- ✅ SOBEDESCE: trocar de conta no login (31/10/2026, pedido do titular). Ligar uma conta antiga caía na sessão aberta do
+  HUB, já ligada a outro SOBEDESCE (`zro_outra_conta`), sem saída. Agora: **Entrar nessa conta** (selo cifrado de 5 min
+  guardado no callback, preso à sessão; troca a sessão para a conta ligada àquela Absolute ZRO), **Usar outra conta**
+  (`prompt=login`, que o HUB passou a aceitar: mostra o login mesmo logado e encerra a sessão anterior ao entrar) em
+  `/entrar`, na tela "Agora sua conta é Absolute ZRO" (site e celular) e no erro; `/entrar` com a Absolute ZRO principal e
+  Google + e-mail e senha como secundários ([CONTAS §12](../products/sobedesce/docs/CONTAS.md)). ⬜ Conferir no
+  sobedesce.com e no absolutezro.com depois de publicar.
 - ✅ Um repositório para tudo ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): as cinco plataformas moram em `products/<app>` e publicam nos próprios projetos Vercel a partir daqui (Root Directory por pasta, build só quando a pasta muda). CI e releases de desktop na raiz, com tag por app e o release antigo como reserva.
 - ✅ Um Supabase para tudo: SOBEDESCE (schema `sobedesce`, papel `sobedesce_app`, cópia do Neon conferida tabela a tabela) e NOSSOM (`nossom_private` + Auth) migrados e conferidos. Bancos antigos intactos como reserva.
 - ✅ TPeasy com conta única: "Criar conta" abre o cadastro da Absolute ZRO (`prompt=create`), o código por e-mail do Supabase vale só para contas antigas e o Google saiu do app; sem `tpeasy` em `zro_products`, a conta mostra "ainda não tem acesso" (o teleprompter continua aberto).
 - ✅ Perfil único no Synquei e no TPeasy (27/10/2026): foto e nome da conta Absolute ZRO, relidos a cada abertura em `/oauth/userinfo` (refresh token cifrado só em `/api/zro`), e **Editar na conta Absolute ZRO** no lugar de editar nome no app. ⬜ Validar contra o HUB de verdade depois do deploy.
 - ✅ Synquei de computador com a conta Absolute ZRO (27/10/2026): a mesma tela do site (entrar, foto e nome na barra e em Ajustes, editar na conta, sair) com o cliente público `synquei-desktop` (navegador do sistema + 127.0.0.1, PKCE). ⬜ Validar num Mac/Windows de verdade contra o absolutezro.com.
+- ✅ TPeasy em tpeasy.absolutezro.com (31/10/2026): migração `0045` (catálogo e Abrir do HUB no subdomínio; retorno
+  novo no cliente `tpeasy-web`, o antigo continua), login do TPeasy aceitando os dois endereços (o `tpeasy.vercel.app`
+  segue valendo, sem redirecionar, porque os roteiros ficam presos ao endereço), OG, Downloads e menus da família na web.
+  Downloads do SOBEDESCE em `sobedesce.com`. Menus da família no Synquei e no SOBEDESCE de computador também, num
+  commit à parte (dispara os instaladores; publica com a autorização do titular).
+- ✅ Conta à vista no celular do TPeasy (31/10/2026): **Entrar** ao lado do título de Roteiros (antes só em Ajustes) e a
+  foto de quem entrou, que abre Ajustes (nome e Sair). Sem a configuração do login, nada aparece.
+- ✅ Conta à vista no celular do Synquei (31/10/2026): abaixo de 860 px a barra lateral (com a conta e Ajustes) sumia e
+  não havia como entrar; agora **Entrar** ou a foto de quem entrou ficam no canto do Início, antes do Set e da Z. Mora
+  em `products/synquei/app/**`, que também é o app de computador: vai no commit de computador.
 - ✅ Entrar e criar conta como conversa (27/10/2026): uma pergunta por vez (e-mail → senha; e-mail → nome → senha), o símbolo da marca como orbe (Absolute ZRO · ouvindo · conferindo · pronto, com ✓ em traço fino) e "Conectado. Abrindo seu HUB…"; vale para `/entrar`, `/criar-conta` e `/app/entrar`, funciona sem JavaScript. ✅ O orbe é o Z animado (27/10/2026).
 - 🟡 IA do ecossistema, o Z (27/10/2026): uma IA para todas as plataformas, conversas por plataforma reunidas no HUB, 1 crédito por resposta, `<zro-ia>` para as plataformas e o visual aprovado (anel e estrela cromados movidos por código, rastro e correntes). Falta: migrações 0016/0017 em produção, publicar, testar com a chave real e colocar o `<zro-ia>` em cada plataforma.
 - ✅ Balões de pendência no Synquei (web e computador), TPeasy e Carro do Freela (27/10/2026): a aba com algo esperando a pessoa mostra o número (99+ acima de 99, `aria-label` "N pendências", o que espera no `title`), ao vivo, e vira ponto no canto do ícone no menu recolhido e na barra do celular. Só conta o que a tela já pede (religar mídia, sincronizar, clipe para conferir, cartão esperando, versão nova; conta sem acesso; proposta, contrato a assinar, entrega a conferir, avaliação, pedido de aluguel).

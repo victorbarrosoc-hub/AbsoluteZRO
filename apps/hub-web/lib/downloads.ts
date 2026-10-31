@@ -49,16 +49,16 @@ const PRIMEIRA_VEZ = {
 export const DOWNLOADS: DownloadEntry[] = [
   {
     productId: 'sobedesce',
-    site: 'https://sobedesce.vercel.app',
+    site: 'https://sobedesce.com',
     status: 'test',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://sobedesce.vercel.app/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://sobedesce.vercel.app/baixar/windows', format: 'Instalador .exe' },
-      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, pelo navegador', href: 'https://sobedesce.vercel.app/app/', format: 'Sem instalar' },
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://sobedesce.com/baixar/mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://sobedesce.com/baixar/windows', format: 'Instalador .exe' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, pelo navegador', href: 'https://sobedesce.com/app/', format: 'Sem instalar' },
     ],
-    terminal: { mac: 'curl -fsSL https://sobedesce.vercel.app/instalar.sh | bash', windows: 'irm https://sobedesce.vercel.app/instalar.ps1 | iex' },
+    terminal: { mac: 'curl -fsSL https://sobedesce.com/instalar.sh | bash', windows: 'irm https://sobedesce.com/instalar.ps1 | iex' },
     firstOpen: { mac: 'Na primeira vez: botão direito › Abrir › Abrir.', windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.' },
-    moreUrl: 'https://sobedesce.vercel.app/#baixar',
+    moreUrl: 'https://sobedesce.com/#baixar',
   },
   {
     productId: 'synquei',
@@ -100,7 +100,7 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'tpeasy',
-    site: 'https://tpeasy.vercel.app',
+    site: 'https://tpeasy.absolutezro.com',
     status: 'web',
     note: 'Feito para iPhone e iPad. Instala pela tela de início, sem loja.',
     options: [
@@ -108,7 +108,7 @@ export const DOWNLOADS: DownloadEntry[] = [
         os: 'mobile',
         label: 'iPhone e iPad',
         detail: 'Safari › Compartilhar › Adicionar à Tela de Início',
-        href: 'https://tpeasy.vercel.app/app/',
+        href: 'https://tpeasy.absolutezro.com/app/',
         format: 'App da web',
       },
     ],

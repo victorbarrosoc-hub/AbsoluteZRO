@@ -3,10 +3,12 @@ import { createHash, randomBytes } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   authenticateAccessToken,
+  discovery,
   exchangeToken,
   grantConsent,
   issueCode,
   loadSigner,
+  loginAgainPath,
   OAuthError,
   parseAuthorizeRequest,
   parseTokenRequest,
@@ -101,6 +103,31 @@ describe('cadastro e retorno', () => {
     expect(bad).toMatchObject({ ok: false, redirect: false })
     const noPkce = await db.asSystem('t', (tx) => parseAuthorizeRequest(tx, authorizeQuery(c.clientId, challenge, { code_challenge_method: 'plain' })))
     expect(noPkce.ok === false && noPkce.redirect && noPkce.to).toContain('error=invalid_request')
+  })
+})
+
+describe('prompt=login ("Usar outra conta" no app)', () => {
+  it('é aceito e anunciado; prompt desconhecido continua ignorado', async () => {
+    const c = await newClient()
+    const { challenge } = pkce()
+    const p = await db.asSystem('t', (tx) => parseAuthorizeRequest(tx, authorizeQuery(c.clientId, challenge, { prompt: 'login' })))
+    expect(p.ok && p.req.prompt).toBe('login')
+    const outro = await db.asSystem('t', (tx) => parseAuthorizeRequest(tx, authorizeQuery(c.clientId, challenge, { prompt: 'select_account' })))
+    expect(outro.ok && outro.req.prompt).toBeNull()
+    expect(discovery(ISS).prompt_values_supported).toContain('login')
+  })
+
+  it('manda para o login do HUB (mesmo com sessão) e volta ao mesmo pedido sem o prompt, sem laço', () => {
+    const q = authorizeQuery('app-x', 'c'.repeat(43), { prompt: 'login' })
+    const to = new URL(loginAgainPath(q), 'https://hub.teste')
+    expect(to.origin).toBe('https://hub.teste')
+    expect(to.pathname).toBe('/entrar')
+    expect(to.searchParams.get('outra')).toBe('1')
+    const next = new URL(to.searchParams.get('next')!, 'https://hub.teste')
+    expect(next.pathname).toBe('/oauth/authorize')
+    expect(next.searchParams.get('prompt')).toBeNull()
+    for (const k of ['client_id', 'redirect_uri', 'state', 'code_challenge', 'nonce', 'scope']) expect(next.searchParams.get(k)).toBe(q.get(k))
+    expect(q.get('prompt')).toBe('login')
   })
 })
 

@@ -159,6 +159,21 @@ export function linhaConta() {
   return ''
 }
 
+/**
+ * A conta no canto do Início, no celular (a barra lateral, com a conta e Ajustes, some abaixo de 860 px): "Entrar" para
+ * quem está fora e a foto de quem entrou, que abre Ajustes (nome, e-mail e Sair). Vazio quando não há login neste lugar
+ * (offline, aberto de arquivo, desktop antigo, site sem a configuração): nada de botão que não funciona.
+ */
+export function atalhoConta() {
+  if (C.estado === 'logado') {
+    const p = C.pessoa
+    const quem = h(p.nome || p.email || 'Conta')
+    return `<a class="conta-atalho-av${C.acesso ? '' : ' sem-acesso'}" href="#/ajustes" aria-label="Conta: ${quem}" title="${C.acesso ? quem : h(SEM_ACESSO)}">${avatar(p)}</a>`
+  }
+  if (C.estado === 'anonimo') return `<a class="conta-atalho-entrar" data-entrar href="${h(linkEntrar())}">${icon('user')}Entrar</a>`
+  return ''
+}
+
 /** Cartão "Conta" em Ajustes. Vazio quando não há login neste lugar (offline, aberto de arquivo, desktop antigo). */
 export function cartaoConta() {
   if (C.estado === 'logado') {

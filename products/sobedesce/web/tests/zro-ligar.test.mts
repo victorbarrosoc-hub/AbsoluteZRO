@@ -212,13 +212,16 @@ describe("casos de borda", () => {
 describe("a tela", () => {
   const render = (...args: string[]) => execFileSync(process.execPath, ["--import", "tsx", path.join(raiz, "tests", "ligar-zro-render.mts"), ...args], { cwd: raiz, encoding: "utf8" });
 
-  test("símbolo, título, um botão para o vincular de sempre e a linha pequena", () => {
+  test("símbolo, título, um botão para o vincular de sempre, Usar outra conta discreto e a linha pequena", () => {
     const html = render("/conta", "-", "1");
     assert.match(html, /<h1[^>]*>Agora sua conta é Absolute ZRO<\/h1>/);
     assert.match(html, /<a href="\/api\/zro\/entrar\?modo=vincular&amp;volta=%2Fconta"[^>]*>Continuar com Absolute ZRO<\/a>/);
+    assert.match(html, /<a href="\/api\/zro\/entrar\?modo=vincular&amp;volta=%2Fconta&amp;trocar=1"[^>]*data-usar-outra-conta[^>]*>Usar outra conta<\/a>/);
     assert.match(html, /Seu Google Drive continua conectado\./);
     assert.match(html, /<svg[^>]*viewBox="0 0 100 100"/, "o símbolo flat da Absolute ZRO");
-    assert.equal((html.match(/<a /g) ?? []).length, 1, "uma ação só");
+    assert.equal((html.match(/<a /g) ?? []).length, 2, "uma ação principal e o Usar outra conta");
+    assert.ok(html.indexOf("Continuar com Absolute ZRO") < html.indexOf("Usar outra conta"), "a principal vem antes");
+    assert.doesNotMatch(html, /trocar-conta/, "sem o erro, nada de Entrar nessa conta");
     assert.doesNotMatch(html.replace(/<[^>]+>/g, " "), /!/, "sem exclamação no texto");
   });
 

@@ -415,6 +415,62 @@ html.scrolled .topbar-title {
   margin-right: 10px;
   color: var(--text);
 }
+/* a conta Absolute ZRO ao lado do título, como no iOS: "Entrar" ou a foto de quem entrou */
+.titulo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin-top: -2px;
+}
+.titulo-linha .wordmark {
+  margin-top: 0;
+}
+.conta-topo:empty {
+  display: none;
+}
+.conta-topo {
+  flex: none;
+  padding: 4px 2px;
+  animation: entra 0.35s var(--spring) both;
+}
+.conta-entrar {
+  background: var(--surface);
+  color: var(--blue);
+  box-shadow: var(--card-shadow), inset 0 0 0 0.5px var(--hairline);
+  text-decoration: none;
+}
+.conta-entrar .icon {
+  width: 16px;
+  height: 16px;
+}
+.conta-topo-av {
+  display: block;
+  padding: 0;
+  border-radius: 999px;
+  position: relative;
+  transition: transform 0.2s var(--spring);
+}
+.conta-topo-av::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.conta-topo-av:active {
+  transform: scale(0.92);
+}
+.conta-topo-av .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  box-shadow: 0 0 0 2px var(--surface), var(--card-shadow);
+}
+@media (prefers-reduced-motion: reduce) {
+  .conta-topo {
+    animation: none;
+  }
+}
 
 /* segmentado grande (Roteiros · Recentes · Favoritos) */
 .seg {

@@ -25,7 +25,16 @@ export const ESCOPOS_SEM_ROTEIROS = 'openid email profile org offline_access zro
 export const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
 /** O escopo da caixa de entrada (o repasse /api/zro/entregas confere antes de pedir ao HUB). */
 export const ESCOPO_ROTEIROS = 'tpeasy.roteiros'
-export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
+// Endereço principal: o subdomínio da Absolute ZRO (titular, 31/10/2026; migração 0045 do HUB). O tpeasy.vercel.app
+// continua valendo como endereço próprio, sem redirecionar: os roteiros ficam no aparelho, presos ao endereço em que
+// foram escritos (e o app instalado na Tela de Início abre sempre o endereço em que foi instalado).
+export const SITE_OFICIAL = 'https://tpeasy.absolutezro.com'
+export const SITE_ANTIGO = 'https://tpeasy.vercel.app'
+/** Os endereços públicos que recebem a volta do login (os dois cadastrados no cliente `tpeasy-web`). */
+const SITES = new Map([
+  ['tpeasy.absolutezro.com', SITE_OFICIAL],
+  ['tpeasy.vercel.app', SITE_ANTIGO],
+])
 export const VOLTA_PADRAO = '/app/'
 /** Id do TPeasy na lista `zro_products` do HUB. Fora da lista: entra, mas a conta fica sem acesso ao app. */
 export const PRODUTO = 'tpeasy'
@@ -55,13 +64,14 @@ export function configurado() {
 }
 
 /**
- * Endereço do app que fez o pedido, só se for um dos permitidos: o site oficial ou a máquina local (desenvolvimento).
- * Qualquer outro (prévia da Vercel, domínio estranho) devolve null e o pedido é mandado para o site oficial.
+ * Endereço do app que fez o pedido, só se for um dos permitidos: o site oficial, o endereço antigo (tpeasy.vercel.app)
+ * ou a máquina local (desenvolvimento). Qualquer outro (prévia da Vercel, domínio estranho) devolve null e o pedido é
+ * mandado para o site oficial.
  */
 export function origemDoPedido(req) {
   const bruto = String(req.headers['x-forwarded-host'] || req.headers.host || '')
   const host = bruto.split(',')[0].trim().toLowerCase()
-  if (host === 'tpeasy.vercel.app') return SITE_OFICIAL
+  if (SITES.has(host)) return SITES.get(host)
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return null
 }
