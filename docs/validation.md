@@ -3368,3 +3368,11 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   `https://relay.absolutezro.com`), `test/app-sw.test.js` (`embutido-relay.js` no cache, v74 / 2.8.59) e
   `test/porta-malas-carro.test.js` seguindo verde. O estado final do envio virou `enviado` ("No Drive"): a fila do
   celular confere o tamanho, não o MD5, e o SOBEDESCE só diz "conferido" com MD5. Relay `test/drive.test.js`: 5/5.
+
+## Relay: interpretar a cadência (31/10/2026)
+
+- `test/conformar.test.js`: plano (fator, som só até 5%, aviso, ficha, erro sem cadência, a ficha do preset volta
+  igual), ffmpeg (`setpts=PTS*24/(24000/1001),fps=24000/1001` e `asetrate=47952,aresample=48000`) e, no Chromium, um
+  60 fps de 2 s vira 24 fps com os 120 quadros e 5 s sem som; um 24 fps vira 23,976 com os 48 quadros e o som junto
+  (2,002 s), conferidos pelo ffprobe. Relay `npm test`: 125/125. Cópias no SOBEDESCE atualizadas (`src/relay/` e o app
+  do celular, v75 / 2.8.60).

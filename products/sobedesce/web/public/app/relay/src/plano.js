@@ -82,7 +82,9 @@ export function planejar(origem, p, opcoes = {}) {
   const inicio = t?.inicio ?? 0
   if (t && origem.duracao && inicio >= origem.duracao) throw Object.assign(new Error(`O trecho começa em ${fmtTempo(inicio)}, depois do fim do arquivo.`), { codigo: 'trecho' })
   const fimTrecho = t?.fim != null ? (origem.duracao ? Math.min(t.fim, origem.duracao) : t.fim) : (origem.duracao ?? 0)
-  const duracao = Math.max(0, (fimTrecho || 0) - inicio)
+  // interpretar (conformar): todos os quadros, tocados na cadência nova; a duração muda junto
+  const conforme = preset.video?.fpsConforme && origem.temVideo !== false ? conformacao(origem.fps, preset.video.fpsConforme) : null
+  const duracao = Math.max(0, (fimTrecho || 0) - inicio) * (conforme?.fator ?? 1)
   const trecho = t ? { inicio: inicio || null, fim: t.fim != null ? fimTrecho : null } : null
 
   // ─── só no computador ───
@@ -99,6 +101,7 @@ export function planejar(origem, p, opcoes = {}) {
     if (a.codec === 'mp3' && ![32000, 44100, 48000].includes(taxa)) taxa = taxa > 44100 ? 48000 : 44100
     if ((a.codec === 'aac' || a.codec === 'mp3') && taxa > 48000) taxa = 48000
     audio = { codec: a.codec, bitrate: a.kbps ? a.kbps * 1000 : null, taxa, canais }
+    if (conforme && conforme.fator !== 1) audio.conforme = conforme.fator
     if (a.ganho) audio.ganho = a.ganho
     if (comp?.loudness && motor === 'computador') audio.loudness = comp.loudness
   } else if (!preset.video) {
@@ -111,6 +114,14 @@ export function planejar(origem, p, opcoes = {}) {
     return { preset: preset.id, formato: preset.formato, video: null, audio, tamanhoEstimado: Math.round(bytes), avisos, motor, ...extras }
   }
   if (origem.temVideo === false || !origem.largura) throw Object.assign(new Error('Este arquivo não tem vídeo.'), { codigo: 'sem-video' })
+
+  if (conforme && conforme.fator !== 1) {
+    const vel = `${fmtPct(100 / conforme.fator)} da velocidade`
+    if (!conforme.somAcompanha && audio) {
+      audio = null
+      avisos.push(`${fmtFps(conforme.de)} → ${fmtFps(conforme.para)} fps com todos os quadros: ${vel}. O som fica de fora (não acompanha a câmera lenta).`)
+    } else avisos.push(`${fmtFps(conforme.de)} → ${fmtFps(conforme.para)} fps com todos os quadros: ${vel}${audio ? ', e o som acompanha' : ''}.`)
+  }
 
   // ─── giro e recorte: a imagem que entra na escala ───
   const v = preset.video
@@ -125,7 +136,8 @@ export function planejar(origem, p, opcoes = {}) {
 
   // ─── cadência ───
   let cad
-  if (v.fpsExato) {
+  if (conforme) cad = { fps: conforme.para, dividiu: 1 }
+  else if (v.fpsExato) {
     cad = { fps: v.fpsExato, dividiu: 1 }
     if (origem.fps && Math.abs(origem.fps - v.fpsExato) > 0.01)
       avisos.push(`${fmtFps(origem.fps)} fps → ${fmtFps(v.fpsExato)} fps exatos: o Relay repete ou descarta quadros, e o movimento pode soluçar.`)
@@ -233,9 +245,10 @@ export function planejar(origem, p, opcoes = {}) {
       giro,
       espelhar: Boolean(v.espelhar),
       recorte: v.recorte ?? null,
-      fps: v.fpsExato ? v.fpsExato : cad.dividiu === 1 ? null : fps, // null = a cadência do arquivo
+      fps: conforme ? null : v.fpsExato ? v.fpsExato : cad.dividiu === 1 ? null : fps, // null = a cadência do arquivo
       fpsSaida: fps,
-      fpsModo: v.fpsExato ? 'constante' : 'pico',
+      fpsModo: conforme ? 'conformar' : v.fpsExato ? 'constante' : 'pico',
+      conforme, // { de, para, fator }: o motor multiplica o tempo de cada quadro pelo fator
       bitrate,
       modo,
       fixo: Boolean(v.bitrateFixo),
@@ -252,6 +265,20 @@ export function planejar(origem, p, opcoes = {}) {
     avisos,
     ...extras,
   }
+}
+
+/** Até 5% de diferença (24 ↔ 23,976, 25 ↔ 24, 30 ↔ 29,97), o som acompanha a velocidade nova (o tom muda junto, como
+ * no cinema e na TV); mais que isso é câmera lenta ou acelerado, e o som sai. */
+export const CONFORME_SOM = 0.05
+
+/** 40%, 99,9%, 104,2%. */
+export const fmtPct = (x) => `${Number.isInteger(Math.round(x * 10) / 10) ? Math.round(x) : (Math.round(x * 10) / 10).toString().replace('.', ',')}%`
+
+/** Interpretar `de` fps como `para` fps: { de, para, fator (duração nova ÷ antiga), somAcompanha }. */
+export function conformacao(de, para) {
+  if (!de) throw Object.assign(new Error('Sem a cadência do arquivo não dá para interpretar.'), { codigo: 'conformar' })
+  const fator = Math.abs(de - para) < 0.001 ? 1 : de / para
+  return { de, para, fator, somAcompanha: Math.abs(fator - 1) <= CONFORME_SOM }
 }
 
 /** [chave, nome, padrão] das opções que só o computador faz (o x264 e os filtros do ffmpeg). */
@@ -298,7 +325,7 @@ export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
     linhas.push(['Tamanho', `${v.largura}×${v.altura}${v.encaixe === 'contain' ? ' (com faixas)' : v.encaixe === 'cover' ? ' (preenchendo)' : v.encaixe === 'fill' ? ' (esticado)' : ''}`])
     if (v.recorte) linhas.push(['Recorte', Object.entries(v.recorte).filter(([, n]) => n).map(([lado, n]) => `${lado} ${n}`).join(' · ') + ' px'])
     if (v.giro || v.espelhar) linhas.push(['Giro', [v.giro ? `${v.giro}°` : null, v.espelhar ? 'espelhado' : null].filter(Boolean).join(' · ')])
-    linhas.push(['Cadência', v.fps ? `${String(v.fps).replace('.', ',')} fps${v.fpsModo === 'constante' ? ' exatos' : ''}` : 'a do arquivo'])
+    linhas.push(['Cadência', v.conforme ? `${fmtFps(v.conforme.para)} fps interpretados (todos os quadros, ${fmtPct(100 / v.conforme.fator)} da velocidade)` : v.fps ? `${String(v.fps).replace('.', ',')} fps${v.fpsModo === 'constante' ? ' exatos' : ''}` : 'a do arquivo'])
     const mbps = (v.bitrate / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
     if (noComputador && !plano.tamanhoMax && !v.fixo) linhas.push(['Qualidade', `constante (x264 RF ${v.crf})${v.teto ? `, até ${(v.bitrate * v.teto * 1e-6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s` : ''}`])
     else if (noComputador && v.cbr) linhas.push(['Bitrate', `${mbps} Mbit/s constante (CBR)`])
