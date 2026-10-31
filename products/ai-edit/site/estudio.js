@@ -90,7 +90,8 @@ function iniciar() {
   }
 
   // ───────── a prévia: legenda no estilo escolhido, zoom na ênfase, tempo de saída ─────────
-  const img = $('#visorImg')
+  // a cena da aba (cada aba tem a sua foto; a da vez fica por cima, com a troca suave do CSS)
+  const cenas = $$('.visor-cena', estudio)
   const legenda = $('#visorLegenda')
   const selo = $('#visorZoom')
   let chaveLegenda = ''
@@ -99,7 +100,7 @@ function iniciar() {
     const t = TRECHOS.find((x) => S.t >= x.ini && S.t < x.ini + x.d) || TRECHOS[0]
     // zoom: só nas frases de ênfase, com a mola do CSS
     const escala = t.fala && t.enfase ? S.zoom : 1
-    img.style.transform = escala > 1 ? `scale(${escala})` : ''
+    for (const c of cenas) c.style.transform = escala > 1 && c.dataset.cena === S.aba ? `scale(${escala})` : ''
     selo.textContent = `${Math.round(S.zoom * 100)}%`
     selo.classList.toggle('visivel', escala > 1)
     // legenda: some na pausa; o bloco da vez com a palavra da vez
@@ -189,6 +190,7 @@ function iniciar() {
         if (foco) b.focus()
       }
     }
+    for (const c of cenas) c.classList.toggle('ativa', c.dataset.cena === nome)
     if (nome === 'entrega') desenharPacote()
     if (nome === 'velocidade') requestAnimationFrame(desenharCurva)
     tocarVideo(S.tocando && S.emTela)

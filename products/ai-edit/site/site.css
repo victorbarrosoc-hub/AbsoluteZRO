@@ -646,15 +646,43 @@ p {
   background: #000;
   aspect-ratio: 16 / 9;
 }
-.visor-quadro,
-.visor-quadro img {
+.visor-quadro {
+  position: relative;
   width: 100%;
   height: 100%;
 }
-.visor-quadro img {
+/* uma cena por aba: a da vez aparece por cima (troca suave) e deriva devagar, como câmera na mão, enquanto toca.
+   A deriva usa scale/translate próprios; o zoom da fala usa transform: os dois se somam */
+.visor-cena {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   transform-origin: 50% 42%;
-  transition: transform 0.75s var(--mola-e);
+  opacity: 0;
+  scale: 1.04;
+  transition:
+    opacity 0.7s ease,
+    transform 0.75s var(--mola-e),
+    scale 1.2s var(--mola-e);
+}
+.visor-cena.ativa {
+  opacity: 1;
+  scale: 1;
+}
+.estudio.tocando .visor-cena.ativa {
+  animation: deriva 16s ease-in-out infinite alternate;
+}
+@keyframes deriva {
+  from {
+    scale: 1.01;
+    translate: 0 0;
+  }
+  to {
+    scale: 1.07;
+    translate: -1.2% -0.8%;
+  }
 }
 .visor-legenda {
   position: absolute;
@@ -1306,6 +1334,90 @@ html:not(.js) .hora-saida {
 }
 .horas .hora:nth-child(3) {
   --d: 0.36s;
+}
+
+/* ───────── 3b · para todo vídeo falado: a fita dos tipos de vídeo, andando devagar (para no mouse e no foco) ───────── */
+.takes {
+  padding: 0 0 140px;
+  overflow: hidden;
+}
+.fita-moldura {
+  margin-top: 56px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  outline-offset: 6px;
+}
+.fita {
+  list-style: none;
+  margin: 0;
+  padding: 0 24px;
+  display: flex;
+  gap: 18px;
+  width: max-content;
+}
+.fita-moldura.rodando .fita {
+  animation: fita 70s linear infinite;
+}
+.fita-moldura:hover .fita,
+.fita-moldura:focus-within .fita {
+  animation-play-state: paused;
+}
+@keyframes fita {
+  to {
+    transform: translateX(calc(-50% - 9px));
+  }
+}
+.take {
+  position: relative;
+  flex: none;
+  width: clamp(240px, 26vw, 360px);
+  aspect-ratio: 16 / 10;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 20px 50px rgb(0 0 0 / 0.25);
+  transition: transform 0.5s var(--mola);
+}
+.take img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: scale 1.2s var(--mola);
+}
+.take:hover {
+  transform: translateY(-4px);
+}
+.take:hover img {
+  scale: 1.06;
+}
+.take p {
+  position: absolute;
+  inset: auto 0 0;
+  margin: 0;
+  padding: 40px 18px 16px;
+  display: grid;
+  gap: 4px;
+  background: linear-gradient(0deg, rgb(0 0 0 / 0.72), transparent);
+  color: #fff;
+}
+.take b {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.take span {
+  justify-self: start;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.16);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
 }
 
 /* ───────── 4 · por dentro: as telas do app no MacBook, escolhidas na lista ───────── */
@@ -2244,6 +2356,9 @@ html:not(.js) .hora-saida {
   .js .ao-rolar {
     opacity: 1;
     transform: none;
+  }
+  .fita-moldura {
+    overflow-x: auto;
   }
 }
 

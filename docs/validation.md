@@ -2273,6 +2273,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: a importação dos degraus num Final Cut, Premiere e DaVinci de verdade; câmera lenta com mistura de
   quadros ou fluxo óptico (não feito).
 
+## AEON: imagens variadas na página inicial (31/10/2026)
+
+- Oito cenas novas no Higgsfield (`gpt_image_2_5`, 16:9, 1344×752, 0,25 crédito cada, 2 créditos no total): podcast,
+  aula, reels na rua, review, receita, viagem, entrevista e bastidor, em `marca/home/*.jpg` (80–160 KB) e
+  `marca/home/takes/*.jpg` (760 px, 32–64 KB).
+- Teste ao vivo: cada aba com a sua cena (podcast nos Cortes, rua na Legenda, review no Zoom, entrevista na Entrega;
+  a falésia em vídeo na Velocidade), com troca suave e uma deriva lenta de câmera enquanto toca.
+- Faixa nova "Do podcast à receita.": os oito tipos de vídeo passam sozinhos (duplicados para não ter emenda), param no
+  mouse e no foco, só andam na tela e viram rolagem lateral com "reduzir movimento".
+- "Por dentro": `scripts/telas.mjs` refeito com podcast, aula, viagem e bastidor (antes era a mesma criadora em todas
+  as telas) e a viagem com a rampa Herói; espera o "Salvo" antes de cada foto.
+- Conferido no Chromium em 1440×900 e 390×844, sem rolagem lateral; `test/fechado.test.js` e as telas da página
+  inicial passam.
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da

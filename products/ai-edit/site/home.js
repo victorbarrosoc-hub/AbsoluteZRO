@@ -205,6 +205,18 @@ if (explorar) {
   mostrarTela(0)
 }
 
+// ───────── a fita dos tipos de vídeo: duplicada para andar sem emenda; anda só enquanto aparece ─────────
+const fita = $('#fita')
+if (fita && !reduzir.matches) {
+  const ul = $('.fita', fita)
+  for (const li of [...ul.children]) {
+    const copia = li.cloneNode(true)
+    copia.setAttribute('aria-hidden', 'true')
+    ul.append(copia)
+  }
+  new IntersectionObserver((es) => fita.classList.toggle('rodando', es[0].isIntersecting), { rootMargin: '80px' }).observe(fita)
+}
+
 // ───────── para o resto, o ecossistema: cada ferramenta no seu lugar (da lista da família) ─────────
 const LUGARES = [
   { id: 'finishing', faz: 'Cor e LUT' },

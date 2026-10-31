@@ -117,7 +117,11 @@
 
           <div class="estudio-corpo">
             <figure class="visor" aria-label="Prévia do vídeo de exemplo">
-              <div class="visor-quadro"><img src="marca/home/criadora.jpg" alt="Uma criadora falando para a câmera" width="1344" height="752" loading="lazy" id="visorImg" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4" aria-label="Mar e nuvens na falésia, na velocidade da curva"></video></div>
+              <div class="visor-quadro">
+                <img class="visor-cena" data-cena="cortes" src="marca/home/podcast.jpg" alt="Dois apresentadores gravando um podcast" width="1344" height="752" loading="lazy" />
+                <img class="visor-cena" data-cena="legenda" src="marca/home/rua.jpg" alt="Um criador gravando com o celular na rua, à noite" width="1344" height="752" loading="lazy" />
+                <img class="visor-cena" data-cena="zoom" src="marca/home/review.jpg" alt="Uma criadora mostrando uma lente na mesa de trabalho" width="1344" height="752" loading="lazy" />
+                <img class="visor-cena" data-cena="entrega" src="marca/home/entrevista.jpg" alt="Um entrevistado num escritório com luz de estúdio" width="1344" height="752" loading="lazy" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4" aria-label="Mar e nuvens na falésia, na velocidade da curva"></video></div>
               <span class="visor-velocidade" id="visorVelocidade" aria-hidden="true">100%</span>
               <p class="visor-legenda" id="visorLegenda" aria-live="off"></p>
               <span class="visor-zoom" id="visorZoom" aria-hidden="true"></span>
@@ -233,6 +237,26 @@
             <p class="hora-saida">Desfazer, histórico e salvamento sozinho.</p>
           </li>
         </ol>
+      </section>
+
+      <!-- 3b · para todo vídeo falado: os tipos de vídeo passam numa fita (para no mouse e no foco; parada com reduzir movimento) -->
+      <section class="takes" aria-labelledby="takes-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Para todo vídeo falado</p>
+          <h2 id="takes-titulo" class="titulo"><span class="fino">Do podcast</span> <span class="forte">à receita.</span></h2>
+        </div>
+        <div class="fita-moldura ao-rolar" id="fita" tabindex="0" aria-label="Tipos de vídeo que o AEON edita">
+          <ul class="fita">
+            <li class="take"><img src="marca/home/takes/podcast.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Podcast</b><span>Pausas fora em lote</span></p></li>
+            <li class="take"><img src="marca/home/takes/aula.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Aula</b><span>Legenda palavra por palavra</span></p></li>
+            <li class="take"><img src="marca/home/takes/rua.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Reels</b><span>Legenda Pop, em 9:16</span></p></li>
+            <li class="take"><img src="marca/home/takes/review.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Review</b><span>Zoom na fala</span></p></li>
+            <li class="take"><img src="marca/home/takes/receita.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Receita</b><span>Câmera lenta no prato</span></p></li>
+            <li class="take"><img src="marca/home/takes/viagem.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Viagem</b><span>Rampa Herói</span></p></li>
+            <li class="take"><img src="marca/home/takes/entrevista.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Entrevista</b><span>Para o Premiere e o DaVinci</span></p></li>
+            <li class="take"><img src="marca/home/takes/bastidor.jpg" alt="" width="760" height="425" loading="lazy" /><p><b>Bastidor</b><span>B-roll com cor e etiqueta</span></p></li>
+          </ul>
+        </div>
       </section>
 
       <!-- 4 · por dentro: as telas de verdade num MacBook, na ordem do trabalho (troca sozinha até a pessoa escolher) -->
