@@ -1119,8 +1119,16 @@ do card... não consigo localizar o job que quero achar".
   "Tipos" cria, renomeia, recolore e arquiva. A ficha sugere o previsto pelo típico do tipo ("Reels costuma levar
   ~2h10 · Usar", 3+ vídeos).
 - ⛔ Em produção: migração `0038` do Maestro no próximo deploy autorizado.
-- ⬜ App de computador: cronômetro na barra de menus/bandeja (proposta, sem tocar em `desktop/`); tempo na
-  demonstração; lembrete de timer esquecido; exportar CSV.
+- ✅ App de computador 0.2.0 (titular, 31/10/2026; branch `maestro-cronometro-desktop`): o cronômetro na barra de
+  menus (Mac, ícone de modelo + "01:11" ao lado) e na bandeja (Windows, claro/escuro, ponto quando roda); menu com a
+  tarefa, o cliente e o tempo, Pausar/Retomar, os últimos cards do dia, Pomodoro, Abrir painel e Ajustes (mostrar o
+  tempo, atalho, abrir ao ligar). Lê e muda pelas rotas do site (`/api/tempo`, cookies da janela, Origin do Maestro),
+  conta do `inicio` do banco + desvio, relê a cada 30 s, ao acordar e quando a janela muda; funciona com a janela
+  fechada. Atalho global ⌥⇧T/Alt+Shift+T (configurável, lista fechada, nunca o ⌥T do site). Notificação nativa no
+  fim do foco/pausa e no parado (ociosidade do sistema, suspensão; Manter/Descartar = `op: "parado"`). No app o site
+  deixa Pomodoro e parado com o app (ponte `maestroDesktop.cronometro`); no navegador nada muda.
+- ⛔ Publicar o app 0.2.0: juntar com o site do cronômetro na `main` (o workflow gera os instaladores) — decisão do titular.
+- ⬜ Tempo na demonstração; lembrete de timer esquecido; exportar CSV.
 
 ## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
 

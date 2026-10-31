@@ -554,7 +554,14 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   `download`; `APPS_DESKTOP` em `apps/hub-web/lib/desktop-apps.ts`, `DOWNLOADS` em `lib/downloads.ts`): fechado, só
   a lista de acesso vê. Release de teste `maestro-versao-de-teste` pelo `.github/workflows/maestro-desktop.yml` a
   cada push na main que mexe em `desktop/`. Sem assinatura da Apple/Microsoft por enquanto. Rota nova que deve abrir
-  no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste.
+  no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste. **Cronômetro na barra** (0.2.0,
+  titular 31/10/2026): `desktop/{tempo,cronometro,pomodoro,ocioso,atalho}.cjs` leem e mudam o tempo por `/api/tempo`
+  pelo fetch da sessão no processo principal (cookies da janela + Origin do Maestro; nada de token na página),
+  funcionam com a janela fechada (fechar não encerra; "Sair do Maestro" encerra) e conduzem o Pomodoro e o parado
+  (ociosidade do sistema). Ponte `maestroDesktop.cronometro` no `preload.cjs`; do lado do site, `components/tempo/desktop.ts`
+  (`appCuida()`: no app o site não conduz Pomodoro nem pergunta o parado, só mostra o que o app manda e manda as
+  preferências). Mudou uma regra do Pomodoro ou do parado no site? Mude também em `desktop/pomodoro.cjs`/`ocioso.cjs`
+  (o teste confere padrões e limites). Ícones da barra em `desktop/bandeja/` (`npm run icones:bandeja`).
 - **Visual: C1 · Aurora** (escolha do titular, 28/10/2026; plano v2 §9): uma luz ambiente que segue a hora de quem
   vê (`src/components/ambiente.tsx` + `src/lib/hora.ts`): o servidor desenha a luz apagada e o relógio vazio; ao montar,
   o `<html>` ganha `data-hora` (`manha`, `tarde`, `fim`, `noite`) e o plano `.amb` acende. No claro, pêssego/rosa de

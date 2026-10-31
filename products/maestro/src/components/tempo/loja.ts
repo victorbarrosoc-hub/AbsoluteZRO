@@ -9,6 +9,7 @@
  */
 import { useSyncExternalStore } from "react";
 import type { CardDoTempo, Modo, Registro } from "@/lib/tempo/calculo";
+import { cronometroDoApp, lerParadoDoApp } from "./desktop";
 
 export type AbaPainel = "agora" | "hoje" | "semana";
 /** O parado que a tela pergunta: de quando (último gesto) até quando (a volta), no relógio do servidor. */
@@ -204,8 +205,9 @@ export const marcarParado = (p: Parado | null) => mudar({ parado: p });
 export async function resolverParado(descartar: boolean) {
   const p = s.parado;
   mudar({ parado: null });
-  if (!p || !descartar) return;
-  await pedir({ op: "parado", desde: new Date(p.desde).toISOString(), continuar: true });
+  if (p && descartar) await pedir({ op: "parado", desde: new Date(p.desde).toISOString(), continuar: true });
+  // no app de computador quem perguntou foi o app: ele tira a pergunta da barra também
+  cronometroDoApp()?.paradoResolvido();
 }
 
 /* ───── Ajustar e Zerar ───── */
@@ -248,8 +250,14 @@ export function ligarLoja() {
   };
   document.addEventListener("visibilitychange", volta);
   window.addEventListener("focus", volta);
+  // no app de computador: a barra mudou o tempo (relê), pediu o painel e mandou o parado que o sistema viu
+  const app = cronometroDoApp();
+  const soltar = app
+    ? [app.aoMudar(() => void carregar()), app.aoAbrirPainel(() => abrirPainel("agora")), app.aoParado((v) => mudar({ parado: lerParadoDoApp(v) }))]
+    : [];
   return () => {
     ligada = false;
+    for (const f of soltar) f();
     clearInterval(t);
     document.removeEventListener("visibilitychange", volta);
     window.removeEventListener("focus", volta);
