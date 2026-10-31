@@ -1,0 +1,55 @@
+# Testes do Relay (products/relay): presets e plano, a linha de comando do ffmpeg com conversões de verdade, os presets
+# da pessoa, as cópias do núcleo nas outras plataformas e o site no Chromium (conversão real, Lanczos na placa
+# conferido com o ffmpeg, vídeo de celular girado). Roda quando a pasta, as cópias ou este arquivo mudam.
+name: Relay · testes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/relay/**'
+      - '!products/relay/desktop/**'
+      - 'products/sobedesce/src/relay/**'
+      - 'products/sobedesce/web/public/app/relay/**'
+      - 'apps/hub-web/public/products/relay.svg'
+      - '.github/workflows/relay-testes.yml'
+  pull_request:
+    paths:
+      - 'products/relay/**'
+      - '!products/relay/desktop/**'
+      - 'products/sobedesce/src/relay/**'
+      - 'products/sobedesce/web/public/app/relay/**'
+      - 'apps/hub-web/public/products/relay.svg'
+      - '.github/workflows/relay-testes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay-testes-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/relay
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/relay/package-lock.json
+      # só o ffmpeg e o que ele exige: a lista completa recomendada estoura o tempo do job
+      - run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 ffmpeg
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test

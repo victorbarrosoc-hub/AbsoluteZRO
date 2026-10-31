@@ -9,7 +9,6 @@ import {
   createCheckoutSession,
   featureFlagsFor,
   grantEntitlement,
-  grantReleaseAccess,
   isFeatureFlag,
   productAccessFor,
   launchSales,
@@ -64,22 +63,24 @@ describe('preços à venda', () => {
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
       where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
-      'absolute-zro-pro:7:2000',
-      'absolute-zro-pro-anual:7:2000',
-      'ciclo-do-o:7:600',
-      'individual-nossom:1:200',
+      // o Maestro (0027) e o Relay (0031) entram nos planos sem mexer nos créditos
+      'absolute-zro-pro:9:2000',
+      'absolute-zro-pro-anual:9:2000',
+      'ciclo-do-o:9:600',
+      'individual-nossom:2:200',
     ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
-    expect(anual!.n).toBe(7)
+    expect(anual!.n).toBe(9)
   })
 })
 
 describe('Maestro com a sua marca (0025)', () => {
-  it('adicional R$ 89,90/mês ou R$ 899/ano e o Pro v2 com o sinal, tudo em rascunho; o Pro publicado não muda', async () => {
+  it('adicional R$ 89,90/mês ou R$ 899/ano e o Pro v2 com o sinal, tudo em rascunho; o Pro publicado não ganha o sinal', async () => {
     const rows = await db.sql`
       select p.code, p.version, p.status, p.price_cents, p.billing_interval, pp.features, pp.limits
       from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = 'maestro'
-      where p.code like 'maestro-marca-propria%' or p.code like 'absolute-zro-pro%' order by p.code, p.version`
+      where (p.code like 'maestro-marca-propria%' or p.code like 'absolute-zro-pro%') and pp.limits ? 'maestro.marca_propria'
+      order by p.code, p.version`
     expect(rows.map((r) => `${r.code}@${r.version}:${r.status}:${r.price_cents}:${r.billing_interval}`)).toEqual([
       'absolute-zro-pro@2:draft:29990:month',
       'absolute-zro-pro-anual@2:draft:299900:year',
@@ -87,8 +88,14 @@ describe('Maestro com a sua marca (0025)', () => {
       'maestro-marca-propria-anual@1:draft:89900:year',
     ])
     for (const r of rows) {
-      expect(r.features).toEqual([])
-      expect(r.limits).toEqual({ 'maestro.marca_propria': 1 })
+      // o adicional é só o sinal; o Pro v2 abre o Maestro inteiro (0027) e leva o sinal junto
+      if (String(r.code).startsWith('maestro-')) {
+        expect(r.features).toEqual([])
+        expect(r.limits).toEqual({ 'maestro.marca_propria': 1 })
+      } else {
+        expect(r.features).toBeNull()
+        expect(r.limits).toEqual({ 'zro.ai_credits': 2000, 'maestro.marca_propria': 1 })
+      }
     }
     // Pro v2 = as 7 ferramentas da v1 (com os mesmos créditos) + o sinal do Maestro
     const [n] = await db.sql`
@@ -114,11 +121,7 @@ describe('Maestro com a sua marca (0025)', () => {
     expect(check).toMatchObject({ ok: false, code: 'entitlement_required' })
     const acesso = await db.asSystem('t', (tx) => productAccessFor(tx, o.orgId, { userId: o.userId }))
     expect(acesso.find((a) => a.productId === 'maestro')?.source).toBeNull()
-    // o Maestro está fechado (0024): sem a pessoa na lista, nem o sinal sai
-    expect(await db.asSystem('t', (tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual([])
-    await db.asSystem('t', (tx) =>
-      grantReleaseAccess(tx, { userId: adminId, reason: 'teste' }, { productId: 'maestro', userId: o.userId, kind: 'tester', channels: ['sso'], endsAt: null }),
-    )
+    // o Maestro está aberto em Beta grátis (0027): o sinal sai para quem tem o adicional, sem lista de acesso
     expect(await db.asSystem('t', (tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual(['maestro.marca_propria'])
     // outra organização não herda o sinal
     const b = await newOrgWithOwner(db, 'marca-propria-b')

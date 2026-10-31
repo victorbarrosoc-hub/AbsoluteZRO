@@ -1,10 +1,11 @@
 "use server";
-/** Ações do Financeiro: só administração e gestão (aqui e no banco, em todo comando). */
+/** Ações do Financeiro: quem tem a área Financeiro e escreve (aqui e no banco, em todo comando: maestro.pode). */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { ehData, lerReais } from "@/lib/dinheiro";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import { podeEscrever } from "@/lib/papeis";
 import {
   darBaixa,
   desfazerBaixa,
@@ -18,12 +19,12 @@ import {
 } from "@/lib/financeiro/servidor";
 import type { EstadoForm } from "@/components/form";
 
-const SO = "Só administração e gestão mexem no Financeiro.";
+const SO = "Você não mexe no Financeiro. A administração libera em Ajustes → Pessoas.";
 const valoresDe = (fd: FormData) => Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
 
 async function quem() {
   const s = await exigirAcessoNaAcao();
-  return { ctx: { sub: s.sub, orgId: s.orgId }, pode: podeVerDinheiro(s.papel) };
+  return { ctx: { sub: s.sub, orgId: s.orgId }, pode: podeArea(s, "financeiro") && podeEscrever(s.papel) };
 }
 const atualizar = () => revalidatePath("/app/financeiro", "layout");
 

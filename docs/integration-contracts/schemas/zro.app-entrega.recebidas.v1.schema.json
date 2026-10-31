@@ -1,0 +1,103 @@
+{
+  "$id": "https://absolutezro.local/schemas/zro.app-entrega.recebidas.v1.json",
+  "title": "Entrega entre apps: a caixa de entrada do TPeasy v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "entregas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "origem": {
+            "type": "string",
+            "const": "maestro"
+          },
+          "tipo": {
+            "type": "string",
+            "const": "roteiro"
+          },
+          "item": {
+            "type": "string",
+            "pattern": "^maestro-[A-Za-z0-9._-]{1,100}$"
+          },
+          "versao": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "corpo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "pattern": "^https?:\\/\\/[^\\s\"<>]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alvo_seg": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600
+          },
+          "de": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "atualizada_em": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "id",
+          "origem",
+          "tipo",
+          "item",
+          "versao",
+          "titulo",
+          "corpo",
+          "sha256",
+          "link",
+          "alvo_seg",
+          "de",
+          "atualizada_em"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "agora": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    }
+  },
+  "required": [
+    "entregas",
+    "agora"
+  ],
+  "additionalProperties": false
+}

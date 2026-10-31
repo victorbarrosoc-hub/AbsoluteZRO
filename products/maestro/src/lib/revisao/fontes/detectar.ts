@@ -30,7 +30,8 @@ export type Fonte = {
 
 export type Deteccao = ({ ok: true } & Fonte) | { ok: false; erro: string };
 
-export const NOME_DA_FONTE: Record<TipoFonte, string> = {
+/** O nome de cada fonte na tela (mais "roteiro", a versão salva de um roteiro da Criação, drizzle/0033). */
+export const NOME_DA_FONTE: Record<TipoFonte | "roteiro", string> = {
   drive: "Google Drive",
   youtube: "YouTube",
   vimeo: "Vimeo",
@@ -38,6 +39,7 @@ export const NOME_DA_FONTE: Record<TipoFonte, string> = {
   mp4: "Arquivo de vídeo",
   hls: "Transmissão HLS",
   link: "Link",
+  roteiro: "Roteiro",
 };
 
 export const LIMITE_URL = 2000;

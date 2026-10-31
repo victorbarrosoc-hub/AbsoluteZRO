@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Converter · Relay</title>
+    <meta name="description" content="Solte o arquivo, escolha o destino. Vídeo e áudio convertidos no seu aparelho." />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta property="og:title" content="Relay · Converter" />
+    <meta property="og:image" content="https://relay.absolutezro.com/marca/og.png" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="app/relay.css" />
+    <link rel="stylesheet" href="app/converter.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/converter.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Relay, início"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+      <nav aria-label="Páginas">
+        <a href="./" class="opcional">Início</a>
+        <a href="converter" aria-current="page">Converter</a>
+      </nav>
+      <button class="vidro vidro--icone tema" type="button" data-tema-botao title="Tema claro ou escuro" aria-label="Trocar tema"><i data-icone="lua"></i></button>
+    </header>
+
+    <main class="conversor">
+      <!-- 1 · soltar -->
+      <label class="soltar cartao" id="soltar">
+        <input id="arquivos" type="file" multiple accept="video/*,audio/*,.mov,.mxf,.mkv,.m4v,.avi,.wav,.aif,.aiff,.flac,.mp3,.m4a" class="so-leitor" />
+        <span class="soltar-rele" aria-hidden="true"><span class="rele"></span></span>
+        <span class="soltar-titulo"><span class="pesado">Solte os arquivos</span> <span class="fino">aqui.</span></span>
+        <span class="apoio">Vídeo ou áudio. Nada sai do seu aparelho.</span>
+      </label>
+
+      <div class="outras-fontes" id="outras-fontes" hidden>
+        <button class="vidro" type="button" id="escolher-drive" title="Um vídeo do seu Drive, pelo SOBEDESCE. Lido aos pedaços, sem baixar antes."><i data-icone="nuvem"></i>Escolher no Drive</button>
+      </div>
+
+      <!-- 2 · para onde -->
+      <section class="destinos" aria-labelledby="t-destinos">
+        <div class="cabeca">
+          <h2 id="t-destinos"><span class="fino">Para</span> <span class="pesado">onde vai?</span></h2>
+          <div class="abas" role="tablist" id="abas"></div>
+        </div>
+        <div class="presets" id="presets"></div>
+        <div class="ajustes" id="ajustes">
+          <div class="ajuste" id="ajuste-resolucao" hidden>
+            <span class="rotulo">Resolução</span>
+            <div class="segmentos" id="resolucoes" role="radiogroup" aria-label="Resolução"></div>
+          </div>
+          <label class="ajuste chave" id="ajuste-preencher" hidden title="Na tela em pé, corta as sobras em vez de faixas">
+            <input type="checkbox" id="preencher" />
+            <span class="chave-trilho" aria-hidden="true"></span>
+            <span class="rotulo">Preencher a tela</span>
+          </label>
+          <label class="ajuste" id="ajuste-mb" hidden>
+            <span class="rotulo">Tamanho</span>
+            <span class="mb"><input type="number" id="mb" min="1" max="4000" step="1" value="50" inputmode="numeric" /> MB</span>
+          </label>
+          <button class="vidro maxima" type="button" id="maxima" hidden title="Converte no app SOBEDESCE, com o x264 deste computador"><i data-icone="chip"></i>Máxima qualidade</button>
+          <label class="ajuste chave" id="ajuste-pasta" hidden title="Grava direto no disco: o caminho para arquivos grandes">
+            <input type="checkbox" id="salvar-pasta" />
+            <span class="chave-trilho" aria-hidden="true"></span>
+            <span class="rotulo">Salvar numa pasta</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 3 · fila -->
+      <section class="fila-secao" aria-label="Arquivos">
+        <ul class="fila" id="fila"></ul>
+      </section>
+
+      <details class="porque" id="porque">
+        <summary>De onde vêm os números</summary>
+        <ul id="fontes"></ul>
+      </details>
+    </main>
+
+    <!-- barra de ação: uma ação principal -->
+    <div class="barra-acao" id="barra" hidden>
+      <div class="aparelho" id="aparelho" title="O que este aparelho grava"></div>
+      <p class="resumo" id="resumo" aria-live="polite"></p>
+      <button class="vidro vidro--tinta vidro--grande" type="button" id="converter" disabled>Converter</button>
+    </div>
+  </body>
+</html>

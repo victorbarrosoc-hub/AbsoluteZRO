@@ -11,15 +11,20 @@ import { conferirSenha } from "@/lib/auth/senha";
 import { novoId } from "@/lib/auth/tokens";
 import { emSegundoPlano, type Depois } from "@/lib/depois";
 import { avisarGoogleDeEntrar } from "@/lib/email/avisos";
+import type { ModoDrive } from "./config";
 import { abrir, ChaveErrada, selar } from "./cripto";
 import { GoogleError } from "./erros";
-import { renovarAcesso, revogar, type PerfilGoogle, type Tokens } from "./oauth";
+import { acessoDoEscopo, renovarAcesso, revogar, type PerfilGoogle, type Tokens } from "./oauth";
+import { modoEfetivo, registrarSeTotal } from "./vagas";
 
 const { contasGoogle, usuarios } = schema;
 type Linha = typeof contasGoogle.$inferSelect;
 
-/** Formato público (docs/CONTAS.md §5). Nunca leva token. */
-export type Conta = { id: string; email: string; nome: string | null; fotoUrl: string | null; estado: EstadoContaGoogle };
+/**
+ * Formato público (docs/CONTAS.md §5). Nunca leva token. `modo`: "total" (Drive inteiro) ou "arquivos" (Arquivos
+ * escolhidos: só o que passou pelo SOBEDESCE e o que a pessoa escolheu no Picker).
+ */
+export type Conta = { id: string; email: string; nome: string | null; fotoUrl: string | null; estado: EstadoContaGoogle; modo: ModoDrive };
 
 const ctxRefresh = (id: string) => `contas_google.refresh:${id}`;
 const ctxAcesso = (id: string) => `contas_google.acesso:${id}`;
@@ -27,16 +32,40 @@ const ctxAcesso = (id: string) => `contas_google.acesso:${id}`;
 /** Folga: abaixo disso o access token guardado não é mais entregue. */
 export const FOLGA_MS = 5 * 60_000;
 
-export function contaPublica(l: Pick<Linha, "id" | "email" | "nome" | "fotoUrl" | "estado">): Conta {
-  return { id: l.id, email: l.email, nome: l.nome, fotoUrl: l.fotoUrl, estado: l.estado };
+export function contaPublica(l: Pick<Linha, "id" | "email" | "nome" | "fotoUrl" | "estado" | "escopos">, acessoTotal: boolean): Conta {
+  return { id: l.id, email: l.email, nome: l.nome, fotoUrl: l.fotoUrl, estado: l.estado, modo: modoEfetivo(acessoTotal, l.escopos) };
+}
+
+/** O admin ligou o "Acesso total" desta conta SOBEDESCE? */
+export async function temAcessoTotal(usuarioId: string): Promise<boolean> {
+  const u = await db.query.usuarios.findFirst({ where: eq(usuarios.id, usuarioId), columns: { driveAcessoTotal: true } });
+  return u?.driveAcessoTotal === true;
 }
 
 export async function listarContas(usuarioId: string): Promise<Conta[]> {
-  const linhas = await db
-    .select({ id: contasGoogle.id, email: contasGoogle.email, nome: contasGoogle.nome, fotoUrl: contasGoogle.fotoUrl, estado: contasGoogle.estado, criadoEm: contasGoogle.criadoEm })
-    .from(contasGoogle)
-    .where(eq(contasGoogle.usuarioId, usuarioId));
-  return linhas.sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime()).map(contaPublica);
+  const [linhas, total] = await Promise.all([
+    db
+      .select({
+        id: contasGoogle.id,
+        email: contasGoogle.email,
+        nome: contasGoogle.nome,
+        fotoUrl: contasGoogle.fotoUrl,
+        estado: contasGoogle.estado,
+        escopos: contasGoogle.escopos,
+        criadoEm: contasGoogle.criadoEm,
+      })
+      .from(contasGoogle)
+      .where(eq(contasGoogle.usuarioId, usuarioId)),
+    temAcessoTotal(usuarioId),
+  ]);
+  return linhas.sort((a, b) => a.criadoEm.getTime() - b.criadoEm.getTime()).map((l) => contaPublica(l, total));
+}
+
+/** O modo de um Drive da pessoa (null = não é dela). */
+export async function modoDaConta(usuarioId: string, contaId: string): Promise<ModoDrive | null> {
+  const l = await db.query.contasGoogle.findFirst({ where: and(eq(contasGoogle.id, contaId), eq(contasGoogle.usuarioId, usuarioId)), columns: { escopos: true } });
+  if (!l) return null;
+  return modoEfetivo(await temAcessoTotal(usuarioId), l.escopos);
 }
 
 function camposDosTokens(id: string, tokens: Tokens, refresh: string) {
@@ -65,12 +94,13 @@ export async function vincularConta(
 ): Promise<ResultadoVinculo> {
   const existente = await db.query.contasGoogle.findFirst({ where: eq(contasGoogle.googleSub, p.sub) });
   if (existente && existente.usuarioId !== usuarioId) return { ok: false, erro: "google_outra_conta" };
+  const total = await temAcessoTotal(usuarioId);
   if (existente) {
     await db
       .update(contasGoogle)
       .set({ ...camposDosTokens(existente.id, tokens, tokens.refresh), email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, emailVerificado: p.emailVerificado })
       .where(eq(contasGoogle.id, existente.id));
-    return { ok: true, nova: false, conta: contaPublica({ ...existente, email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, estado: "ok" }) };
+    return { ok: true, nova: false, conta: contaPublica({ ...existente, email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, estado: "ok", escopos: tokens.escopo }, total) };
   }
   const id = novoId();
   const inserida = await db
@@ -92,9 +122,9 @@ export async function vincularConta(
     // Duas abas vincularam a mesma conta ao mesmo tempo: decide quem gravou primeiro.
     const agora = await db.query.contasGoogle.findFirst({ where: eq(contasGoogle.googleSub, p.sub) });
     if (agora?.usuarioId !== usuarioId) return { ok: false, erro: "google_outra_conta" };
-    return { ok: true, nova: false, conta: contaPublica(agora) };
+    return { ok: true, nova: false, conta: contaPublica(agora, total) };
   }
-  return { ok: true, nova: true, conta: { id, email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, estado: "ok" } };
+  return { ok: true, nova: true, conta: { id, email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, estado: "ok", modo: modoEfetivo(total, tokens.escopo) } };
 }
 
 export type ResultadoEntrada = { tipo: "ok"; usuarioId: string } | { tipo: "nao_vinculada" } | { tipo: "nao_e_login" };
@@ -109,10 +139,16 @@ export async function donoDaContaGoogle(p: PerfilGoogle, tokens: Tokens): Promis
   if (!existente) return { tipo: "nao_vinculada" };
   if (!existente.loginPermitido) return { tipo: "nao_e_login" };
   const extras = { email: p.email, nome: p.nome, fotoUrl: p.fotoUrl, emailVerificado: p.emailVerificado, atualizadoEm: new Date() };
+  // O login só pede quem é a pessoa; com include_granted_scopes o token volta com o Drive que ela já deu. Só troca os
+  // tokens guardados se o novo cobre o Drive e não é menor que o de antes (nunca troca `drive` por `drive.file`).
+  const novo = acessoDoEscopo(tokens.escopo);
+  const antes = acessoDoEscopo(existente.escopos);
+  const trocar = Boolean(tokens.refresh) && novo !== null && (novo === "total" || antes !== "total");
   await db
     .update(contasGoogle)
-    .set(tokens.refresh ? { ...camposDosTokens(existente.id, tokens, tokens.refresh), ...extras } : extras)
+    .set(trocar ? { ...camposDosTokens(existente.id, tokens, tokens.refresh!), ...extras } : extras)
     .where(eq(contasGoogle.id, existente.id));
+  await registrarSeTotal(tokens.escopo, p.sub, p.email, existente.usuarioId);
   await db.update(usuarios).set({ ultimoLoginEm: new Date() }).where(eq(usuarios.id, existente.usuarioId));
   return { tipo: "ok", usuarioId: existente.usuarioId };
 }
@@ -170,7 +206,8 @@ export async function trocarGoogleDeEntrar(entrada: {
     // Primeiro desliga todos (o índice único aceita no máximo um ligado por conta), depois liga o escolhido.
     await t.update(contasGoogle).set({ loginPermitido: false }).where(and(eq(contasGoogle.usuarioId, usuario.id), eq(contasGoogle.loginPermitido, true)));
     if (escolhida) await t.update(contasGoogle).set({ loginPermitido: true }).where(eq(contasGoogle.id, escolhida.id));
-    return { ok: true as const, conta: escolhida ? contaPublica(escolhida) : null, anterior: anterior ?? null };
+    const [u] = await t.select({ total: usuarios.driveAcessoTotal }).from(usuarios).where(eq(usuarios.id, usuario.id));
+    return { ok: true as const, conta: escolhida ? contaPublica(escolhida, u?.total === true) : null, anterior: anterior ?? null };
   });
   if (!r.ok) return r;
   const { anterior, conta } = r;
@@ -188,7 +225,16 @@ export async function trocarGoogleDeEntrar(entrada: {
  */
 export const SEM_SENHA = "google";
 
-export type ResultadoRemocao = { ok: true } | { ok: false; erro: "nao_encontrada" | "google_de_entrar" };
+/** Revoga no Google o refresh guardado (cifrado) da conta `contaId`. Melhor esforço: nunca lança. */
+export async function revogarRefresh(refreshEnc: string, contaId: string): Promise<void> {
+  try {
+    await revogar(abrir(refreshEnc, ctxRefresh(contaId)));
+  } catch {
+    // chave trocada: nada a revogar daqui
+  }
+}
+
+export type ResultadoRemocao ={ ok: true } | { ok: false; erro: "nao_encontrada" | "google_de_entrar" };
 
 /**
  * Remove a conta: revoga no Google (melhor esforço) e apaga a linha.
@@ -297,6 +343,8 @@ async function renovarComTrava(contaId: string, depoisDe: Date | null): Promise<
           atualizadoEm,
         })
         .where(eq(contasGoogle.id, contaId));
+      // Também pelo app de computador: todo `drive` que o Google entrega gasta a vaga daquela conta Google.
+      if (novo.escopo) await registrarSeTotal(novo.escopo, l.googleSub, l.email, l.usuarioId, t);
       return { tipo: "ok", token: { accessToken: novo.acesso, expiraEm: novo.expiraEm, email: l.email } };
     } catch (e) {
       if (e instanceof GoogleError && e.motivo === "reconectar") {

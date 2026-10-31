@@ -1,0 +1,26 @@
+{
+  "name": "relay",
+  "version": "0.1.0",
+  "description": "Relay: conversão e exportação de vídeo e áudio da Absolute ZRO, no navegador e no computador.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/servir.mjs",
+    "test": "node --test test/*.test.js",
+    "vendor": "node scripts/vendor.mjs",
+    "qualidade": "node scripts/qualidade.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@mediabunny/aac-encoder": "1.62.1",
+    "@mediabunny/mp3-encoder": "1.62.1",
+    "@mediabunny/prores": "1.62.1",
+    "mediabunny": "1.62.1",
+    "playwright": "1.63.0"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
+  }
+}

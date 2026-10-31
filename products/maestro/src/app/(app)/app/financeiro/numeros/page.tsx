@@ -4,7 +4,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, brlCurto, centavosParaCampo, hojeBr, mesCurto, mesPorExtenso, porcento, somarMeses } from "@/lib/dinheiro";
 import { periodoDe, ritmoEsperado } from "@/lib/numeros/formulas";
 import { numerosDoNegocio, type LinhaMargem } from "@/lib/numeros/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { Pilulas } from "@/components/crm";
 import { CabecaFinanceiro, SemDinheiro } from "@/components/financeiro";
 import { Icone } from "@/components/icones";
@@ -72,10 +72,9 @@ function Barras({ itens, rotulo }: { itens: { nome: string; valor: number }[]; r
  */
 export default async function Numeros({ searchParams }: PageProps<"/app/financeiro/numeros">) {
   const s = await exigirAcessoNaPagina("/app/financeiro/numeros");
-  if (!podeVerDinheiro(s.papel))
+  if (!podeArea(s, "financeiro"))
     return (
       <div className="pagina">
-        <CabecaFinanceiro ativa="/app/financeiro/numeros" />
         <SemDinheiro />
       </div>
     );

@@ -2419,10 +2419,6 @@ details.disclosure[open] > summary {
   white-space: nowrap;
   color: var(--text-faint);
 }
-.pstrip .selo-dev {
-  padding: 2px 8px;
-  font-size: 0.62rem;
-}
 .pconheca__ficha .selo-dev {
   margin-bottom: 4px;
 }
@@ -4991,13 +4987,13 @@ a.pstrip__card:focus-visible .pstrip__go {
   background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
 }
 @media (max-width: 1100px) {
-  /* quatro por linha e a segunda linha centralizada, sem buraco no canto */
+  /* --tab por linha (page.tsx: todas até 5, senão quatro) e a segunda linha centralizada, sem buraco no canto */
   .pstrip__list li {
-    flex: 0 0 calc((100% - 30px) / 4);
+    flex: 0 0 calc((100% - (var(--tab, 4) - 1) * 10px) / var(--tab, 4));
   }
 }
-/* No celular, como a Tela de Início do iPhone: grade de ícones (4 por linha, ou 3 quando fecha a conta; --cols em
-   page.tsx), nome embaixo e, se for o caso, "Em breve" em cinza. Tudo alinhado pelo topo: o selo não empurra o nome. */
+/* No celular, como a Tela de Início do iPhone: grade de ícones (todas numa linha até 5; com mais, 4 por linha, ou 3
+   quando fecha a conta; --cols em page.tsx) e o nome embaixo. Tudo alinhado pelo topo. */
 @media (max-width: 760px) {
   .pstrip {
     margin-top: 0;
@@ -5032,20 +5028,13 @@ a.pstrip__card:focus-visible .pstrip__go {
     gap: 2px;
   }
   .pstrip__name {
-    font-size: 0.74rem;
+    /* cinco numa linha, como o Dock do iPhone: no 375 px o nome mais longo (SOBEDESCE) cabe inteiro */
+    font-size: min(0.74rem, 2.9vw);
     font-weight: 600;
     line-height: 1.25;
     white-space: normal;
     text-wrap: balance;
     overflow-wrap: normal;
-  }
-  .pstrip .selo-dev {
-    justify-self: center;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-    font-size: 0.66rem;
-    font-weight: 500;
   }
   .pstrip__line,
   .pstrip__go {
@@ -5285,6 +5274,29 @@ a.pstrip__card:focus-visible .pstrip__go {
 }
 .painel__item--ativo:hover {
   background: var(--text-strong);
+}
+/* a Z no app (titular, 29/10/2026; Plano de Integração §7–8): discreta, abaixo das abas, nunca a primeira tela */
+.painel__z {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: -16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.painel__z:hover,
+.painel__z--ativo {
+  color: var(--text-strong);
+  background: rgb(127 127 127 / 0.1);
+  text-decoration: none;
 }
 .painel__conta {
   margin-top: auto;
@@ -5826,9 +5838,10 @@ a.pstrip__card:focus-visible .pstrip__go {
   text-align: center;
 }
 .pnum__lista {
+  /* uma coluna por número (--n em numeros.tsx): sem casa vazia no fim quando um número sai (valor 0) */
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
   margin: 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -6093,9 +6106,10 @@ a.pstrip__card:focus-visible .pstrip__go {
   position: relative;
 }
 .pfluxo__linha {
+  /* do centro da primeira etapa ao da última (--n etapas, page.tsx): sem trilho sobrando depois da última */
   position: absolute;
-  left: calc(100% / 14);
-  right: calc(100% / 14);
+  left: calc(100% / (2 * var(--n, 7)));
+  right: calc(100% / (2 * var(--n, 7)));
   top: 28px;
   height: 2px;
   border-radius: 2px;
@@ -6114,7 +6128,7 @@ a.pstrip__card:focus-visible .pstrip__go {
 .pfluxo__trilho {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--n, 7), minmax(0, 1fr));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -6571,12 +6585,13 @@ a.pstrip__card:focus-visible .pstrip__go {
     animation: none !important;
   }
   .painel__marca,
-  .painel__conta {
+  .painel__conta,
+  .painel__z {
     display: none;
   }
   .painel__nav {
     width: 100%;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-flow: row;
     gap: 0;
     overflow: visible;
@@ -6625,6 +6640,24 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
   .painel__movel-conta {
     border-radius: 50%;
+  }
+  .painel__movel-acoes {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* a Z no celular: um anel discreto ao lado da conta, nunca uma aba da barra de baixo */
+  .painel__movel-z {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--text-faint);
+  }
+  .painel__movel-z--ativo {
+    color: var(--text-strong);
+    background: rgb(127 127 127 / 0.12);
   }
   .painel__titulo {
     font-size: 2.2rem;
@@ -8441,4 +8474,86 @@ a.pstrip__card:focus-visible .pstrip__go {
   .nav__pilula {
     transition: none;
   }
+}
+
+/* ───── Set (ADR 0032): a pílula na barra de cima e a página /set ───── */
+.topbar__set {
+  flex: none;
+}
+/* na própria página do Set, a pílula da barra sai (a página já mostra tudo) */
+.shell:has(zro-set[modo='pagina']) .topbar__set {
+  display: none;
+}
+/* no celular estreito, a pílula do Set entra no lugar do atalho de Ferramentas (que segue no menu) */
+@media (max-width: 430px) {
+  .topbar__end .icon-btn[href='/ferramentas'] {
+    display: none;
+  }
+}
+.set-pagina__fino {
+  font-weight: 300;
+}
+.set-pagina zro-set {
+  margin-top: 8px;
+}
+/* no celular, com uma conversa aberta, a conversa fica com a tela (o título volta com a lista) */
+@media (max-width: 720px) {
+  .set-pagina:has(zro-set[data-conversa]) > .page-head__text {
+    display: none;
+  }
+  .set-pagina:has(zro-set[data-conversa]) zro-set {
+    margin-top: 0;
+  }
+}
+/* console › denúncias do Set */
+.adm-denuncia {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.adm-denuncia__quem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.adm-denuncia__msg {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Páginas legais (/privacidade, /termos): coluna de leitura. */
+.legal__corpo {
+  display: grid;
+  gap: 28px;
+  max-width: 68ch;
+  margin-top: 28px;
+  text-align: left;
+}
+.legal__secao {
+  display: grid;
+  gap: 8px;
+}
+.legal__secao h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.legal__secao p,
+.legal__secao li {
+  opacity: 0.78;
+  line-height: 1.6;
+}
+.legal__secao ul {
+  padding-left: 1.2em;
+  display: grid;
+  gap: 6px;
+}
+.legal__secao a {
+  color: inherit;
+  text-decoration: underline;
 }

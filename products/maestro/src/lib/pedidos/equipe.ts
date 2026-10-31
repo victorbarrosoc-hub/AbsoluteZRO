@@ -126,9 +126,11 @@ export async function listarPedidos(ctx: Contexto): Promise<PedidoLista[]> {
     const r = (await tx.execute(sql`
       select p.id, p.protocolo, p.status, p.nome, p.empresa, p.respostas ->> 'tipo' as tipo, p.created_at, p.orcamento_id, p.etapa,
              p.proximo_contato::text as proximo_contato, p.proximo_nota,
+             -- Valor só para quem tem a área "Orçamentos e preços" (o RLS já esconde o orçamento; o estimado é do pedido).
+             case when maestro.pode(p.org_id, 'orcamentos') then
              coalesce((select greatest(0, coalesce(sum(round(i.quantidade * i.preco_cents)), 0) - q.desconto_cents)
                          from maestro.orcamentos q left join maestro.orcamento_itens i on i.org_id = q.org_id and i.orcamento_id = q.id
-                        where q.org_id = p.org_id and q.id = p.orcamento_id group by q.desconto_cents), p.valor_estimado_cents)::float8 as valor
+                        where q.org_id = p.org_id and q.id = p.orcamento_id group by q.desconto_cents), p.valor_estimado_cents)::float8 end as valor
         from maestro.pedidos p order by case p.status when 'novo' then 0 when 'em_orcamento' then 1 else 2 end, p.created_at desc limit 500`)) as unknown as Record<
       string,
       unknown
@@ -175,7 +177,8 @@ export async function obterPedido(ctx: Contexto, id: string): Promise<PedidoFich
   if (!ehUuid(id)) return null;
   return getBanco().asUser(ctx, async (tx) => {
     const [p] = (await tx.execute(sql`
-      select p.*, p.proximo_contato::text as proximo_txt, c.name as cliente_nome, q.numero, q.versao, q.status as orc_status
+      select p.*, p.proximo_contato::text as proximo_txt, c.name as cliente_nome, q.numero, q.versao, q.status as orc_status,
+             maestro.pode(p.org_id, 'orcamentos') as ve_valor
         from maestro.pedidos p
         left join maestro.clients c on c.id = p.cliente_id
         left join maestro.orcamentos q on q.id = p.orcamento_id
@@ -197,14 +200,18 @@ export async function obterPedido(ctx: Contexto, id: string): Promise<PedidoFich
       consentimentoEm: new Date(p.consentimento_em as string).toISOString(),
       clienteId: p.cliente_id as string | null,
       clienteNome: p.cliente_nome as string | null,
-      orcamento: p.orcamento_id ? { id: p.orcamento_id as string, numero: p.numero as string, versao: Number(p.versao), status: p.orc_status as string } : null,
+      // O orçamento só aparece para quem o vê (o RLS devolve a junção vazia para quem não tem a área).
+      orcamento:
+        p.orcamento_id && p.numero != null
+          ? { id: p.orcamento_id as string, numero: p.numero as string, versao: Number(p.versao), status: p.orc_status as string }
+          : null,
       notas: p.notas as string | null,
       etapa: p.etapa as Etapa,
-      valor: p.valor_estimado_cents == null ? null : Number(p.valor_estimado_cents),
+      valor: p.valor_estimado_cents == null || !p.ve_valor ? null : Number(p.valor_estimado_cents),
       proximoContato: (p.proximo_txt as string | null) ?? null,
       proximoNota: (p.proximo_nota as string | null) ?? null,
       motivoPerda: (p.motivo_perda as string | null) ?? null,
-      valorEstimado: p.valor_estimado_cents == null ? null : Number(p.valor_estimado_cents),
+      valorEstimado: p.valor_estimado_cents == null || !p.ve_valor ? null : Number(p.valor_estimado_cents),
       ultimoContatoEm: p.ultimo_contato_em ? new Date(p.ultimo_contato_em as string).toISOString() : null,
     };
   });

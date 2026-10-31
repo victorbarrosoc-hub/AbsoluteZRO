@@ -6,6 +6,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import {
+  AppEntregaDestinatariosSchema,
+  AppEntregaEntradaSchema,
+  AppEntregaEstadoSchema,
+  AppEntregaRecebidasEntradaSchema,
+  AppEntregasEnviadasSchema,
+  AppEntregasRecebidasSchema,
+} from './entregas'
 import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
 import { FreelaInventarioSchema } from './freela'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
@@ -26,9 +34,16 @@ import {
   DriveRecolherRespostaSchema,
   DriveTokenEntradaSchema,
   DriveTokenRespostaSchema,
+  RelayCancelarEntradaSchema,
+  RelayCancelarRespostaSchema,
+  RelayConverterEntradaSchema,
+  RelayConverterRespostaSchema,
+  RelayPedidoEntradaSchema,
+  RelayPedidoRespostaSchema,
 } from './ponte'
 import { DriveDownloadSchema, PreparoSchema } from './preparo'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
+import { MaestroRoteiroSchema } from './roteiro'
 import { TimelineRefSchema } from './timeline'
 
 export const OUT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/integration-contracts/schemas')
@@ -56,6 +71,7 @@ export function buildSchemas(): Record<string, unknown> {
     ),
     'synquei.preparo.v1': s(PreparoSchema, 'synquei.preparo.v1', 'Recibo de preparo do Synquei v1'),
     'freela.inventario.v1': s(FreelaInventarioSchema, 'freela.inventario.v1', 'Inventário do freela (Carro do Freela → Maestro) v1'),
+    'maestro.roteiro.v1': s(MaestroRoteiroSchema, 'maestro.roteiro.v1', 'Roteiro de uma versão salva do Maestro (para a edição) v1'),
   }
   // Ponte Maestro → SOBEDESCE pelo HUB (docs/integration-contracts/maestro-sobedesce.md).
   const ponte: [string, z.ZodType, string][] = [
@@ -73,8 +89,25 @@ export function buildSchemas(): Record<string, unknown> {
     ['sobedesce.drive-recolher.resposta.v1', DriveRecolherRespostaSchema, 'SOBEDESCE drive.recolher_revisao: resposta v1'],
     ['sobedesce.drive-token.entrada.v1', DriveTokenEntradaSchema, 'SOBEDESCE drive.token: corpo v1'],
     ['sobedesce.drive-token.resposta.v1', DriveTokenRespostaSchema, 'SOBEDESCE drive.token: resposta v1'],
+    // "Gerar versões com o Relay" (docs/integration-contracts/relay.md, "Maestro → Relay").
+    ['sobedesce.relay-converter.entrada.v1', RelayConverterEntradaSchema, 'SOBEDESCE relay.converter: corpo v1'],
+    ['sobedesce.relay-converter.resposta.v1', RelayConverterRespostaSchema, 'SOBEDESCE relay.converter: resposta v1'],
+    ['sobedesce.relay-pedido.entrada.v1', RelayPedidoEntradaSchema, 'SOBEDESCE relay.pedido: corpo v1'],
+    ['sobedesce.relay-pedido.resposta.v1', RelayPedidoRespostaSchema, 'SOBEDESCE relay.pedido: resposta v1'],
+    ['sobedesce.relay-cancelar.entrada.v1', RelayCancelarEntradaSchema, 'SOBEDESCE relay.cancelar: corpo v1'],
+    ['sobedesce.relay-cancelar.resposta.v1', RelayCancelarRespostaSchema, 'SOBEDESCE relay.cancelar: resposta v1'],
   ]
   for (const [id, schema, title] of ponte) out[id] = s(schema, id, title)
+  // Entregas entre apps: o roteiro do Maestro na caixa de entrada do TPeasy (docs/integration-contracts/maestro-tpeasy.md).
+  const entregas: [string, z.ZodType, string][] = [
+    ['zro.app-entrega.entrada.v1', AppEntregaEntradaSchema, 'Entrega entre apps: Maestro → HUB v1'],
+    ['zro.app-entrega.estado.v1', AppEntregaEstadoSchema, 'Entrega entre apps: o estado de um envio v1'],
+    ['zro.app-entrega.enviadas.v1', AppEntregasEnviadasSchema, 'Entrega entre apps: o que a pessoa mandou de um roteiro v1'],
+    ['zro.app-entrega.destinatarios.v1', AppEntregaDestinatariosSchema, 'Entrega entre apps: para quem dá para mandar v1'],
+    ['zro.app-entrega.recebidas.v1', AppEntregasRecebidasSchema, 'Entrega entre apps: a caixa de entrada do TPeasy v1'],
+    ['zro.app-entrega.recebidas-entrada.v1', AppEntregaRecebidasEntradaSchema, 'Entrega entre apps: o aparelho conta o que gravou v1'],
+  ]
+  for (const [id, schema, title] of entregas) out[id] = s(schema, id, title)
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
     for (const [v, schema] of Object.entries(versions as Record<string, z.ZodType>)) {
       out[`event.${type}.v${v}`] = s(schema, `event.${type}.v${v}`, `Payload de ${type} v${v}`)

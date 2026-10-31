@@ -180,6 +180,24 @@ describe("cabeçalhos e endereços (A12 e site)", () => {
     assert.equal(hsts?.value, "max-age=63072000; includeSubDomains");
   });
 
+  test("Sobedesce embutido: só /app/?no=<anfitrião> embute, e só no endereço do anfitrião", async () => {
+    const regras = await nextConfig.headers!();
+    const csp = (r?: { headers: { key: string; value: string }[] }) => r?.headers.find((h) => h.key === "Content-Security-Policy")?.value ?? "";
+    const app = regras.findIndex((r) => r.source === "/app/:path*" && !r.has);
+    assert.match(csp(regras[app]), /frame-ancestors 'none'/);
+    for (const [no, origem] of [["carro", "https://carro.absolutezro.com"], ["maestro", "https://maestro.absolutezro.com"], ["relay", "https://relay.absolutezro.com"]]) {
+      const i = regras.findIndex((r) => r.source === "/app/" && r.has?.some((h) => h.type === "query" && h.key === "no" && h.value === no));
+      assert.ok(i > app, `a regra de ${no} vem depois (a última vence)`);
+      const fa = /frame-ancestors ([^;]*)/.exec(csp(regras[i]))?.[1] ?? "";
+      assert.ok(fa.split(" ").includes(origem), `${no}: ${fa}`);
+      assert.ok(!fa.includes("'none'") && !fa.includes("*.absolutezro.com") && !fa.includes("https://*"), `${no} só no endereço dele`);
+      // o resto da CSP do app é o mesmo
+      assert.equal(csp(regras[i]).replace(/frame-ancestors[^;]*/, ""), csp(regras[app]).replace(/frame-ancestors[^;]*/, ""));
+    }
+    // o resto do site continua sem quadro
+    assert.match(csp(regras.find((r) => r.source === "/:path*")), /frame-ancestors 'none'/);
+  });
+
   test("/instalar leva para a seção de baixar da home (o id existe)", async () => {
     const r = (await nextConfig.redirects!()).find((x) => x.source === "/instalar");
     assert.ok(r);

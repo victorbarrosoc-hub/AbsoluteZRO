@@ -1,13 +1,15 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import Link from "next/link";
 import { demonstracaoCompleta, temDemonstracao } from "@/lib/demo/demonstracao";
-import { NOME_DO_PAPEL, podeRemover, podeVerDinheiro } from "@/lib/papeis";
+import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
+import { AREA, areasLigadas, pode as podeArea, veTudo } from "@/lib/acessos";
 import { meuAlcance } from "@/lib/pessoas";
 import { emissor } from "@/lib/zro/config";
 import { Icone } from "@/components/icones";
 import { Avatar, BotaoSair } from "@/components/shell";
 import { SeletorDeTema } from "@/components/tema";
 import { CarregarDemonstracao, RemoverDemonstracao } from "@/components/demonstracao";
+import { InstalarNoCelular } from "@/components/instalar";
 
 export const metadata = { title: "Ajustes" };
 
@@ -18,7 +20,9 @@ export const metadata = { title: "Ajustes" };
 export default async function Ajustes() {
   const s = await exigirAcessoNaPagina("/app/ajustes");
   const ctx = { sub: s.sub, orgId: s.orgId };
-  const demo = podeRemover(s.papel) ? await temDemonstracao(ctx) : false;
+  // A demonstração preenche todas as áreas (dinheiro inclusive): só quem vê tudo carrega e remove.
+  const gereDemo = podeRemover(s.papel) && veTudo(s.acessos);
+  const demo = gereDemo ? await temDemonstracao(ctx) : false;
   const completa = demo ? await demonstracaoCompleta(ctx) : false;
   const alcance = await meuAlcance(ctx);
   return (
@@ -54,6 +58,16 @@ export default async function Ajustes() {
               {NOME_DO_PAPEL[s.papel]}
               {s.hubRole ? <span className="sutil"> · {s.hubRole} na Absolute ZRO</span> : null}
             </dd>
+            <dt>Acesso</dt>
+            <dd>
+              {veTudo(s.acessos)
+                ? "Tudo"
+                : areasLigadas(s.acessos).length
+                  ? areasLigadas(s.acessos)
+                      .map((a) => AREA[a].nome)
+                      .join(" · ")
+                  : "Sem valores nem dados da equipe"}
+            </dd>
             {alcance.restrito ? (
               <>
                 <dt>Clientes</dt>
@@ -68,6 +82,7 @@ export default async function Ajustes() {
             </dd>
           </dl>
         </section>
+        <InstalarNoCelular />
         <section className="ficha" aria-label="Equipe e agenda">
           <div>
             <strong className="ficha__titulo">Equipe e agenda</strong>
@@ -99,20 +114,24 @@ export default async function Ajustes() {
             <Link className="atalho" href="/app/ajustes/empresa">
               <Icone nome="documento" size={18} /> Empresa e orçamento <Icone nome="seta" size={15} />
             </Link>
-            {podeVerDinheiro(s.papel) ? (
+            {podeArea(s, "contratos") ? (
               <Link className="atalho" href="/app/ajustes/contrato">
                 <Icone nome="documento" size={18} /> Contrato <Icone nome="seta" size={15} />
               </Link>
             ) : null}
-            <Link className="atalho" href="/app/ajustes/pedido">
-              <Icone nome="link" size={18} /> Link de pedido <Icone nome="seta" size={15} />
-            </Link>
-            <Link className="atalho" href="/app/ajustes/precos">
-              <Icone nome="orcamento" size={18} /> Tabela de preços <Icone nome="seta" size={15} />
-            </Link>
+            {podeArea(s, "orcamentos") && podeRemover(s.papel) ? (
+              <Link className="atalho" href="/app/ajustes/pedido">
+                <Icone nome="link" size={18} /> Link de pedido <Icone nome="seta" size={15} />
+              </Link>
+            ) : null}
+            {podeArea(s, "orcamentos") ? (
+              <Link className="atalho" href="/app/ajustes/precos">
+                <Icone nome="orcamento" size={18} /> Tabela de preços <Icone nome="seta" size={15} />
+              </Link>
+            ) : null}
           </nav>
         </section>
-        {podeRemover(s.papel) ? (
+        {gereDemo ? (
           <section className="ficha" id="demonstracao" aria-label="Demonstração">
             <div>
               <strong className="ficha__titulo">Demonstração</strong>

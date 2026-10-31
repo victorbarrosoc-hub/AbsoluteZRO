@@ -59,6 +59,7 @@ export function EditorOrcamento({
   editavel,
   podeAprovar,
   base,
+  baseTexto,
   veiculos,
   servicos,
 }: {
@@ -68,6 +69,7 @@ export function EditorOrcamento({
   editavel: boolean;
   podeAprovar: boolean;
   base: Lugar | null;
+  baseTexto: string | null;
   veiculos: { id: string; nome: string; kmL: number }[];
   servicos: boolean;
 }) {
@@ -500,6 +502,7 @@ export function EditorOrcamento({
         <Deslocamento
           orcamentoId={ficha.id}
           base={base}
+          baseTexto={baseTexto}
           veiculos={veiculos}
           servicos={servicos}
           aoFechar={() => setPainel(null)}

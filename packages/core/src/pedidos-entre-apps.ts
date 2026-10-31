@@ -16,7 +16,8 @@
  *   Desfazer nunca pede o produto no plano: tirar a exposição de um arquivo vale sempre.
  *
  * Toda emissão fica em `zro.audit_logs` (`app.pedido.emitido`, metadata só com app, destino, ação e o jeito), e cada
- * pessoa tem limite por app (120 pedidos em 10 min; `drive.token`, 30).
+ * pessoa tem limite por app (120 pedidos em 10 min; `drive.token`, 30; `relay.pedido`, o acompanhamento, 300 à parte).
+ * As `relay.*` (versões de entrega pelo Relay, docs/integration-contracts/relay.md) exigem também o Relay no plano.
  */
 import { appHasPerson, assinarPedidoDeApp, PEDIDO_TTL_S, registerAttempt, withinLimit, type Authenticated, type OAuthClient } from '@zro/auth'
 import type { Database } from '@zro/db'
@@ -32,8 +33,22 @@ export const ACOES_SOBEDESCE = {
   'drive.compartilhar_revisao': '/api/zro/drive/revisao/compartilhar',
   'drive.recolher_revisao': '/api/zro/drive/revisao/recolher',
   'drive.token': '/api/zro/drive/token',
+  // "Gerar versões com o Relay" (docs/integration-contracts/relay.md, "Maestro → Relay"): a fila do SOBEDESCE converte.
+  'relay.converter': '/api/zro/relay/converter',
+  'relay.pedido': '/api/zro/relay/pedido',
+  'relay.cancelar': '/api/zro/relay/cancelar',
 } as const
 export type AcaoSobedesce = keyof typeof ACOES_SOBEDESCE
+
+/**
+ * Ações que pedem um segundo produto no plano, além do destino: as `relay.*` exigem o Relay (incluído em todo plano
+ * pela 0031). O gate do Relay é o do site (canal `web`, 0032): ele não tem API própria; quem converte é o SOBEDESCE.
+ */
+export const PRODUTO_DA_ACAO: Record<string, { id: string; channel: 'web' }> = {
+  'relay.converter': { id: 'relay', channel: 'web' },
+  'relay.pedido': { id: 'relay', channel: 'web' },
+  'relay.cancelar': { id: 'relay', channel: 'web' },
+}
 
 /** App de origem (product_id do cliente OAuth) → destino → ações permitidas. */
 export const PONTES: Record<string, Record<string, readonly string[]>> = {
@@ -48,6 +63,8 @@ export const ACOES_SEM_PESSOA = new Set<string>(['drive.recolher_revisao'])
 
 export const LIMITE_PONTE = { max: 120, windowMs: 10 * 60_000 }
 export const LIMITE_PONTE_TOKEN = { max: 30, windowMs: 10 * 60_000 }
+/** Acompanhar as versões (`relay.pedido`, a cada 5 s com a ficha à vista): conta à parte, para não gastar o resto. */
+export const LIMITE_PONTE_ACOMPANHAR = { max: 300, windowMs: 10 * 60_000 }
 
 export const APP_PEDIDO_ACAO = 'app.pedido.emitido'
 
@@ -88,8 +105,9 @@ async function emitir(
   const d = destinoDe(p.destino, cfg)
   const caminho = d?.caminho(p.acao)
   if (!d || !caminho) throw new DomainError('action_not_allowed', 'Esta ação não está liberada para este app.', { erro: 'acao_nao_permitida' })
-  const regra = p.acao === 'drive.token' ? LIMITE_PONTE_TOKEN : LIMITE_PONTE
-  const chave = `ponte:${p.app}:${p.sub}${p.acao === 'drive.token' ? ':token' : ''}`
+  const [regra, sufixo] =
+    p.acao === 'drive.token' ? [LIMITE_PONTE_TOKEN, ':token'] : p.acao === 'relay.pedido' ? [LIMITE_PONTE_ACOMPANHAR, ':acompanhar'] : [LIMITE_PONTE, '']
+  const chave = `ponte:${p.app}:${p.sub}${sufixo}`
   const ok = await db.asSystem('ponte: limite', async (tx) => {
     if (!(await withinLimit(tx, chave, regra))) return false
     await registerAttempt(tx, chave)
@@ -134,6 +152,9 @@ export async function pedidoEntreAppsDaPessoa(
     auth,
     ACOES_SEM_PESSOA.has(p.acao) ? { release: { productId: app } } : { release: { productId: app }, product: { id: p.destino } },
   )
+  // As relay.* pedem também o Relay no plano (sem ele: 403 com `details.product = relay`, nada assinado).
+  const extra = Object.hasOwn(PRODUTO_DA_ACAO, p.acao) ? PRODUTO_DA_ACAO[p.acao] : undefined
+  if (extra) await authorize(db, auth, { release: { productId: app }, product: extra })
   return emitir(db, { sub: actor.userId, orgId: actor.orgId, ...p, jeito: 'pessoa' }, cfg)
 }
 

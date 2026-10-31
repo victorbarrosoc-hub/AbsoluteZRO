@@ -1,21 +1,28 @@
 // Tela principal (aba Início): a saudação, o destino, o botão grande de escolher arquivos, os atalhos, o espaço no
-// Drive, as pastas recentes e a fila. Com a fila andando, o topo encolhe e fica só o que importa para o envio.
+// Drive, as pastas recentes e o cartão das Transferências (a fila mora na tela Transferências, components/
+// transferencias.js: um lugar só). Com a fila andando, o topo encolhe e fica só o que importa para o envio.
+// No modo Wi-Fi não há abas: a fila continua aqui mesmo.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js'
 import * as auth from '../lib/auth.js'
 import { ACCOUNT, DEV, LAN, local } from '../lib/config.js'
 import { about, isRetryable } from '../lib/drive.js'
 import { lanInfo } from '../lib/lan.js'
 import { bytes, initials, plural, speed, timecode } from '../lib/format.js'
-import { MY_DRIVE, folderTrail, getRecents, getState, openSheet, pushRecent, setState, toast, useApp } from '../lib/state.js'
+import { MY_DRIVE, folderTrail, getRecents, getState, openSheet, pushRecent, setState, setTab, toast, useApp } from '../lib/state.js'
 import { NET_MSG, engine, summarize } from '../lib/uploader.js'
 import { Icon, Wordmark } from './icons.js'
 import { Button, cx, useEngine } from './ui.js'
+import { SetBotao } from './set.js'
 import { BatchCards, FileName, QueueRow, SequenceBar } from './queue.js'
+import { TransfersCard } from './transferencias.js'
 import { InstallHint } from './install-hint.js'
 import { isIOS } from '../lib/platform.js'
 import { ComputerCard } from './computador.js'
 import { Atalhos, Espaco, Recentes, Saudacao } from './inicio.js'
 import { P2pAndamentoCompacto } from './p2p.js'
+import { EMBUTIDO, GRANDE } from '../lib/embutido.js'
+
+const FINISHED_UI = new Set(['done', 'skipped'])
 
 export function Avatar({ user, size = 32 }) {
   const [broken, setBroken] = useState(false)
@@ -27,15 +34,33 @@ export function Avatar({ user, size = 32 }) {
   </span>`
 }
 
+/**
+ * A entrada da Z (titular, 29/10/2026; Plano de Integração §7–8): um anel pequeno ao lado da conta, nunca uma aba nem
+ * a tela de entrada. Abre a Z só quando a pessoa toca.
+ */
+export function ZBotao() {
+  return html`<button type="button" class="icon-btn z-botao" onClick=${() => setTab('z')} aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO">
+    <${Icon} name="z" size=${20} strokeWidth=${1.7} />
+  </button>`
+}
+
+/** O Set, a Z e a conta, à direita da barra do topo (o Set só aparece quando responde, components/set.js). */
+function TopoAcoes({ user }) {
+  return html`<div class="topbar-acoes">
+    ${EMBUTIDO ? null : html`<${SetBotao} /><${ZBotao} />`}
+    <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
+      <${Avatar} user=${user} size=${32} />
+    </button>
+  </div>`
+}
+
 /** A barra do topo (marca e conta) nas abas sem barra própria (Referências, Criar), igual à do Início. */
 export function TopoMarca() {
   const user = useApp((s) => s.user)
   return html`<header class="topbar">
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
-        <${Avatar} user=${user} size=${32} />
-      </button>
+      <${TopoAcoes} user=${user} />
     </div>
   </header>`
 }
@@ -111,9 +136,7 @@ function Header({ user, sum, items, waiting, awake }) {
   return html`<header class=${cx('topbar', active && 'is-active')}>
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
-        <${Avatar} user=${user} size=${32} />
-      </button>
+      <${TopoAcoes} user=${user} />
     </div>
     ${active
       ? html`<div class="meter" aria-label="Progresso total">
@@ -329,7 +352,9 @@ export function MainScreen() {
   // Fila andando (ou pausada no meio): o topo encolhe para a fila aparecer sem rolar, até no iPhone SE.
   const compact = sum.pending + sum.paused > 0
   // Início completo (atalhos, espaço, recentes) só com a fila parada e fora do modo Wi-Fi.
-  const inicio = !LAN && !compact
+  // Embutido (lib/embutido.js): só a tarefa de mover arquivo, sem a saudação, os atalhos e o computador.
+  const inicio = !LAN && !compact && !EMBUTIDO
+  const grande = EMBUTIDO && items.some((it) => !FINISHED_UI.has(it.status) && Number(it.size) >= GRANDE)
 
   const waiting = issue === 'rede'
   const reconnect = issue === 'reconectar'
@@ -337,7 +362,12 @@ export function MainScreen() {
     <${Header} user=${user} sum=${sum} items=${items} waiting=${waiting} awake=${awake} />
     <main class=${cx('main-body', compact && 'is-compact', inicio && 'is-inicio')}>
       ${inicio ? html`<${Saudacao} user=${user} />` : null}
-      ${LAN ? null : html`<${ComputerCard} />`}
+      ${LAN || EMBUTIDO ? null : html`<${ComputerCard} />`}
+      ${grande
+        ? html`<a class="emb-grande" href="https://sobedesce.com/#baixar" target="_blank" rel="noopener">
+            <${Icon} name="upload" size=${16} /><span>Arquivo grande vai mais firme pelo <b>app do computador</b>.</span>
+          </a>`
+        : null}
       ${!LAN && compact ? html`<${P2pAndamentoCompacto} />` : null}
       ${compact
         ? html`<div class="sendbar">
@@ -347,6 +377,7 @@ export function MainScreen() {
         : html`<div class="ini-entra" style="--i:1"><${Destination} dest=${dest} /></div>`}
       ${reconnect ? html`<${ReconnectNotice} drive=${drive} message=${authError} />` : null}
       ${compact ? null : html`<div class="ini-entra" style="--i:2"><${Picker} dest=${lan?.noAccount || reconnect ? null : dest} account=${user?.emailAddress} /></div>`}
+      ${LAN ? null : html`<${TransfersCard} />`}
       ${inicio ? html`<${Atalhos} /><${P2pAndamentoCompacto} /><${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
       ${LAN ? html`<${LanNotices} lan=${lan} sum=${sum} />` : null}
 
@@ -365,7 +396,7 @@ export function MainScreen() {
 
       ${compact ? null : html`<${BatchCards} items=${items} />`}
 
-      ${items.length
+      ${LAN && items.length
         ? html`<section class="queue" aria-label="Envios">
             <div class="section-head">
               <h2>Envios</h2>

@@ -4,14 +4,31 @@
  *   devolve um pedido "assinado" de uso único e a url do SOBEDESCE falso. `negar` = sem o SOBEDESCE no plano (403).
  * - /api/v1/pessoas/* (ADR 0029 do HUB): busca por @ ou nome nos perfis de `pessoas` (só os visíveis, nunca e-mail),
  *   o perfil de um @ e o convite pelo @ (guardado em `convites`; `naEquipe` = 409). Gente de demonstração, fictícia.
+ * - /api/v1/apps/entregas* (Criação F8): a caixa de entrada do TPeasy na Absolute ZRO de mentira. POST confere o corpo
+ *   contra o contrato publicado (zro.app-entrega.entrada.v1) e guarda uma entrega por destinatário e chave (a mesma
+ *   versão de novo = "reenviada", nada duplica); GET ?roteiro= o que foi; /destinatarios você + `equipe`; /recebidas é o
+ *   que o TPeasy lê (e marca "Recebido"). `negar` = sem o TPeasy no plano (403). No e2e, /__entregas lê e muda.
  * - POST /api/zro/drive/*: confere o pedido (mesma ação, uso único) e responde com o Drive de mentira
  *   (tests/drive-fixture.mts): listar, miniatura, criar a estrutura do projeto, compartilhar e recolher (as permissões
  *   ficam na memória para o teste conferir) e o token curto. `semDrive` = a pessoa sem Drive conectado (409).
+ * - POST /api/zro/relay/{converter,pedido,cancelar} (contrato "Maestro → Relay" em docs/integration-contracts/relay.md):
+ *   a fila de mentira do SOBEDESCE, idempotente por `ref:preset`. Nada converte sozinho: com `relay.avancar`, cada
+ *   leitura de `relay.pedido` anda um passo (pendente → convertendo 50% → pronto com resultado e MD5). `relay.negar` =
+ *   o HUB sem o Relay no plano (403 com `details.product = relay`); `relay.semPonte` = o HUB ainda sem as ações
+ *   `relay.*` na PONTES (403 `action_not_allowed`). `relay.converterFalha`: "rede" = guarda os pedidos e derruba a
+ *   conexão sem responder (o despacho ambíguo), "recusa" = 400 sem guardar nada, "parcial" = guarda todos e responde
+ *   só o primeiro. `relay.pedidoFalha` = "rede" derruba o `relay.pedido`; `relay.cancelarFalha` = "rede" cancela e
+ *   derruba. Apagar de `relay.pedidos` = o SOBEDESCE não acha mais o pedido. `relay.computador.relay` = false: nenhum
+ *   computador converte (`relay.converter` 409 `sem_computador_relay`, como o site); com `desatualizado`, só app antigo. No e2e, POST /__relay muda (com
+ *   `pronto: true`, todos os andando ficam prontos de uma vez) e GET /__relay lê.
  */
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { DRIVE_FIXO, listarFixo } from "./drive-fixture.mts";
+import { conferirEsquema, esquemaPublicado } from "./esquema-json.mts";
+import { nomeSaida } from "../src/lib/relay/plano.js";
+import { preset as acharPreset } from "../src/lib/relay/presets.js";
 
 const CAMINHOS: Record<string, string> = {
   "drive.listar": "/api/zro/drive/listar",
@@ -20,6 +37,50 @@ const CAMINHOS: Record<string, string> = {
   "drive.compartilhar_revisao": "/api/zro/drive/revisao/compartilhar",
   "drive.recolher_revisao": "/api/zro/drive/revisao/recolher",
   "drive.token": "/api/zro/drive/token",
+  "relay.converter": "/api/zro/relay/converter",
+  "relay.pedido": "/api/zro/relay/pedido",
+  "relay.cancelar": "/api/zro/relay/cancelar",
+};
+
+export type PedidoRelayFalso = {
+  id: string;
+  preset: string;
+  ref: string;
+  status: "pendente" | "convertendo" | "pronto" | "erro" | "cancelado";
+  frac?: number;
+  resultado?: { arquivoId: string; nome: string; tamanho: number; md5: string; pastaId: string };
+  erro?: string;
+  arquivoId: string;
+  pastaId: string | null;
+  conta: string | null;
+  criado_em: string;
+  atualizado_em: string;
+};
+
+/** Uma entrega guardada na caixa de mentira (a forma do HUB, migração 0040). */
+export type EntregaFalsa = {
+  id: string;
+  chave: string;
+  item: string;
+  versao: number;
+  titulo: string;
+  corpo: string;
+  link: string | null;
+  alvo_seg: number;
+  para: string;
+  de: string;
+  roteiro: string;
+  criada_em: string;
+  atualizada_em: string;
+  recebida_em: string | null;
+  vezes: number;
+};
+const EU_FALSO = "00000000-0000-4000-8000-00000000e0e0";
+/** O `sub` de quem chama: o token dos testes é `at-<sub>`; o resto é a mesma pessoa fixa. */
+const subDoToken = (autorizacao: string) => /^Bearer at-([0-9a-f-]{36})$/i.exec(autorizacao)?.[1] ?? EU_FALSO;
+const novoId = () => {
+  const h = randomBytes(16).toString("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
 
 export type PedidoVisto = { acao: string; jeito: "pessoa" | "app"; autorizacao: string; sub: string | null };
@@ -70,10 +131,31 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     pessoasZro: { lista: pessoas, convites: [] as { arroba: string; papel: string }[], naEquipe: new Set<string>() },
     negar: false,
     semDrive: false,
+    /** A caixa de entrada do TPeasy (F8): `negar` = sem o TPeasy no plano; `equipe` = quem da organização usa o TPeasy. */
+    entregas: {
+      negar: false,
+      equipe: [] as { id: string; nome: string }[],
+      lista: [] as EntregaFalsa[],
+      recusados: [] as string[][],
+    },
     pedidos: [] as PedidoVisto[],
     chamadas: [] as { acao: string; corpo: Record<string, unknown> }[],
     /** arquivo → permissões "anyone" criadas (id). */
     publicos: new Map<string, string[]>(),
+    /** A fila do Relay no SOBEDESCE de mentira (ver o topo). */
+    relay: {
+      pedidos: new Map<string, PedidoRelayFalso>(),
+      /** `relay`: algum computador da conta converte (app 0.2.0+); `desatualizado`: só app antigo. */
+      computador: { aberto_agora: false, usado_ha_pouco: false, relay: true, desatualizado: false },
+      avancar: false,
+      /** O próximo passo de quem converte: erro em vez de pronto. */
+      falhar: false,
+      negar: false,
+      semPonte: false,
+      converterFalha: null as null | "rede" | "recusa" | "parcial",
+      pedidoFalha: null as null | "rede",
+      cancelarFalha: null as null | "rede",
+    },
     pastas: new Map<string, { id: string; nome: string; pai: string }>(),
     /**
      * A Agenda das Conexões (/api/v1/agenda/*, ADR 0026 do HUB): conectada, Maestro ligado, ocupado e os eventos que o
@@ -106,6 +188,22 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       .toLowerCase();
   const emitidos = new Map<string, { acao: string; usado: boolean; sub: string | null }>();
 
+  /** Quem converte terminou: o arquivo novo no Drive, com o MD5 (conferido do lado do SOBEDESCE de verdade). */
+  const ficarPronto = (p: PedidoRelayFalso) => {
+    const original = DRIVE_FIXO.find((f) => f.id === p.arquivoId)?.name ?? "video.mp4";
+    Object.assign(p, {
+      status: "pronto",
+      frac: 1,
+      atualizado_em: new Date().toISOString(),
+      resultado: {
+        arquivoId: `out-${p.id.slice(3)}`,
+        nome: nomeSaida(original, p.preset),
+        tamanho: 12_345_678,
+        md5: randomBytes(16).toString("hex"),
+        pastaId: p.pastaId ?? "f-aurora",
+      },
+    });
+  };
   const enviar = (res: http.ServerResponse, status: number, dados: unknown) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(dados));
@@ -128,6 +226,116 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     if (url.pathname === "/__agenda") {
       if (req.method === "POST") Object.assign(ag, corpo);
       return enviar(res, 200, { ...ag, eventos: Object.fromEntries(ag.eventos) });
+    }
+    const en = estado.entregas;
+    if (url.pathname === "/__entregas") {
+      if (req.method === "POST") Object.assign(en, corpo);
+      return enviar(res, 200, en);
+    }
+    if (url.pathname.startsWith("/api/v1/apps/entregas")) {
+      if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
+      const eu = subDoToken(autorizacao);
+      const caminho = url.pathname.slice("/api/v1/apps/entregas".length);
+      const estadoDe = (e: EntregaFalsa) => ({
+        id: e.id,
+        item: e.item,
+        versao: e.versao,
+        para: { id: e.para, nome: e.para === eu ? "Você" : (en.equipe.find((x) => x.id === e.para)?.nome ?? "Pessoa"), eu: e.para === eu },
+        criada_em: e.criada_em,
+        atualizada_em: e.atualizada_em,
+        recebida_em: e.recebida_em,
+      });
+      if (caminho === "/recebidas" && req.method === "GET")
+        return enviar(res, 200, {
+          agora: new Date().toISOString(),
+          entregas: en.lista
+            .filter((e) => e.para === eu)
+            .map((e) => ({
+              id: e.id,
+              origem: "maestro",
+              tipo: "roteiro",
+              item: e.item,
+              versao: e.versao,
+              titulo: e.titulo,
+              corpo: e.corpo,
+              sha256: createHash("sha256").update(e.corpo).digest("hex"),
+              link: e.link,
+              alvo_seg: e.alvo_seg,
+              de: e.de,
+              atualizada_em: e.atualizada_em,
+            })),
+        });
+      if (caminho === "/recebidas" && req.method === "POST") {
+        let n = 0;
+        for (const e of en.lista)
+          if (e.para === eu && Array.isArray(corpo.ids) && corpo.ids.includes(e.id) && !e.recebida_em) {
+            e.recebida_em = new Date().toISOString();
+            n++;
+          }
+        return enviar(res, 200, { marcadas: n });
+      }
+      if (en.negar) return enviar(res, 403, { error: "entitlement_required", message: "Seu plano não inclui o TPeasy." });
+      if (caminho === "/destinatarios" && req.method === "GET")
+        return enviar(res, 200, {
+          destinatarios: [{ id: eu, nome: "Você", foto: null, eu: true }, ...en.equipe.map((x) => ({ ...x, foto: null, eu: false }))],
+        });
+      if (caminho === "" && req.method === "GET") {
+        const roteiro = url.searchParams.get("roteiro") ?? "";
+        return enviar(res, 200, {
+          entregas: en.lista
+            .filter((e) => e.roteiro === roteiro)
+            .sort((a, b) => b.atualizada_em.localeCompare(a.atualizada_em))
+            .map(estadoDe),
+        });
+      }
+      if (caminho === "" && req.method === "POST") {
+        const erros = conferirEsquema(esquemaPublicado("zro.app-entrega.entrada.v1"), corpo);
+        if (erros.length) {
+          en.recusados.push(erros);
+          return enviar(res, 422, { error: "invalid_input", message: "Entrega fora do formato." });
+        }
+        const r = corpo.roteiro as { id: string; versao: number; pessoa: string | null };
+        const para = typeof corpo.para === "string" ? corpo.para : eu;
+        if (para !== eu && !en.equipe.some((x) => x.id === para)) return enviar(res, 404, { error: "not_found", message: "Essa pessoa não usa o TPeasy." });
+        const chave = `maestro:roteiro:${r.id}:${r.pessoa || "todas"}:v${r.versao}`;
+        const agora = new Date().toISOString();
+        const ja = en.lista.find((e) => e.para === para && e.chave === chave);
+        if (ja) {
+          Object.assign(ja, { atualizada_em: agora, recebida_em: null, vezes: ja.vezes + 1, corpo: String(corpo.corpo), titulo: String(corpo.titulo) });
+          return enviar(res, 200, { ...estadoDe(ja), situacao: "reenviada" });
+        }
+        const e: EntregaFalsa = {
+          id: novoId(),
+          chave,
+          item: `maestro-${r.id}-${r.pessoa || "todas"}`.slice(0, 100),
+          versao: r.versao,
+          titulo: String(corpo.titulo),
+          corpo: String(corpo.corpo),
+          link: typeof corpo.link === "string" ? corpo.link : null,
+          alvo_seg: Number(corpo.alvo_seg) || 0,
+          para,
+          de: "Rita Roteiro",
+          roteiro: r.id,
+          criada_em: agora,
+          atualizada_em: agora,
+          recebida_em: null,
+          vezes: 1,
+        };
+        en.lista.push(e);
+        return enviar(res, 201, { ...estadoDe(e), situacao: "nova" });
+      }
+      return enviar(res, 404, { error: "not_found" });
+    }
+    if (url.pathname === "/__relay") {
+      const rl = estado.relay;
+      if (req.method === "POST") {
+        for (const k of ["avancar", "falhar", "negar", "semPonte"] as const) if (typeof corpo[k] === "boolean") rl[k] = corpo[k] as boolean;
+        for (const k of ["converterFalha", "pedidoFalha", "cancelarFalha"] as const)
+          if (k in corpo) (rl as Record<string, unknown>)[k] = corpo[k] === null ? null : String(corpo[k]);
+        if (corpo.computador && typeof corpo.computador === "object") Object.assign(rl.computador, corpo.computador);
+        if (corpo.pronto === true) for (const p of rl.pedidos.values()) if (p.status === "pendente" || p.status === "convertendo") ficarPronto(p);
+      }
+      return enviar(res, 200, { ...rl, pedidos: [...rl.pedidos.values()] });
     }
     if (url.pathname.startsWith("/api/v1/pessoas/")) {
       if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
@@ -204,6 +412,10 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
         jeito = "app";
       } else if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
       else if (estado.negar && acao !== "drive.recolher_revisao") return enviar(res, 403, { error: "entitlement_required" });
+      else if (acao.startsWith("relay.") && estado.relay.semPonte)
+        return enviar(res, 403, { error: "action_not_allowed", message: "Esta ação não está liberada para este app." });
+      else if (acao.startsWith("relay.") && estado.relay.negar)
+        return enviar(res, 403, { error: "entitlement_required", message: "Fora do plano.", details: { product: "relay", upgrade: true } });
       const sub = typeof corpo.sub === "string" ? corpo.sub : null;
       estado.pedidos.push({ acao, jeito, autorizacao, sub });
       const token = `${randomBytes(6).toString("base64url")}.${Buffer.from(acao).toString("base64url")}.${randomBytes(8).toString("base64url")}`;
@@ -227,7 +439,65 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       estado.chamadas.push({ acao, corpo });
       if (estado.semDrive && acao !== "drive.recolher_revisao") return enviar(res, 409, { erro: "sem_drive", mensagem: "Nenhum Google Drive conectado." });
       const id = String(corpo.arquivoId ?? "");
+      const rl = estado.relay;
+      const agora = () => new Date().toISOString();
       switch (acao) {
+        case "relay.converter": {
+          const presets = Array.isArray(corpo.presets) ? corpo.presets.map(String) : [];
+          const ref = String(corpo.ref ?? "");
+          if (!id || !ref || ref.length > 120 || presets.length < 1 || presets.length > 8 || presets.some((p) => !acharPreset(p)))
+            return enviar(res, 400, { erro: "entrada", mensagem: "Pedido inválido." });
+          if (rl.converterFalha === "recusa") return enviar(res, 400, { erro: "arquivo", mensagem: "O SOBEDESCE não acha este arquivo no Drive." });
+          // como o site: nenhum computador que converta, nada entra na fila
+          if (!rl.computador.relay)
+            return enviar(res, 409, { erro: "sem_computador_relay", mensagem: "Atualize o SOBEDESCE no computador para gerar versões." });
+          const pedidos = presets.map((preset) => {
+            const ja = [...rl.pedidos.values()].find((p) => p.ref === ref && p.preset === preset && p.status !== "erro" && p.status !== "cancelado");
+            if (ja) return ja;
+            const novo: PedidoRelayFalso = {
+              id: `rl-${randomBytes(5).toString("hex")}`,
+              preset,
+              ref,
+              status: "pendente",
+              arquivoId: id,
+              pastaId: typeof corpo.pastaId === "string" ? corpo.pastaId : null,
+              conta: typeof corpo.conta === "string" ? corpo.conta : null,
+              criado_em: agora(),
+              atualizado_em: agora(),
+            };
+            rl.pedidos.set(novo.id, novo);
+            return novo;
+          });
+          // guardou e a resposta não volta: o despacho ambíguo
+          if (rl.converterFalha === "rede") return void res.socket?.destroy();
+          const devolvidos = rl.converterFalha === "parcial" ? pedidos.slice(0, 1) : pedidos;
+          return enviar(res, 202, { pedidos: devolvidos.map((p) => ({ id: p.id, preset: p.preset, ref: p.ref, status: p.status })) });
+        }
+        case "relay.pedido": {
+          const ids = Array.isArray(corpo.ids) ? corpo.ids.map(String) : [];
+          if (ids.length > 50) return enviar(res, 400, { erro: "entrada", mensagem: "No máximo 50." });
+          if (rl.pedidoFalha === "rede") return void res.socket?.destroy();
+          const lista = ids.map((i) => rl.pedidos.get(i)).filter((p): p is PedidoRelayFalso => !!p);
+          if (rl.avancar)
+            for (const p of lista) {
+              if (p.status === "pendente") Object.assign(p, { status: "convertendo", frac: 0.5, atualizado_em: agora() });
+              else if (p.status === "convertendo" && rl.falhar)
+                Object.assign(p, { status: "erro", erro: "O ffmpeg parou no meio.", frac: undefined, atualizado_em: agora() });
+              else if (p.status === "convertendo") ficarPronto(p);
+            }
+          return enviar(res, 200, {
+            pedidos: lista.map(({ arquivoId: _a, pastaId: _p, conta: _c, ...p }) => (void _a, void _p, void _c, p)),
+            computador: rl.computador,
+          });
+        }
+        case "relay.cancelar": {
+          const p = rl.pedidos.get(String(corpo.id ?? ""));
+          if (!p) return enviar(res, 404, { erro: "nao_achou", mensagem: "Pedido não encontrado." });
+          if (p.status === "pronto" || p.status === "erro" || p.status === "cancelado") return enviar(res, 200, { cancelado: false, ja_terminado: true });
+          Object.assign(p, { status: "cancelado", atualizado_em: agora() });
+          if (rl.cancelarFalha === "rede") return void res.socket?.destroy();
+          return enviar(res, 200, { cancelado: true, ja_terminado: false });
+        }
         case "drive.token":
           return enviar(res, 200, {
             access_token: `ya29.falso-${randomBytes(6).toString("hex")}`,
@@ -247,6 +517,20 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
             video: null,
             abrir_no_sobedesce: null,
           }));
+          // as pastas que a estrutura do projeto criou (drive.pasta.criar) também aparecem
+          for (const pp of estado.pastas.values())
+            if (corpo.pasta && pp.pai === corpo.pasta)
+              itens.push({
+                id: pp.id,
+                nome: pp.nome,
+                tipo: "application/vnd.google-apps.folder",
+                pasta: true,
+                modificado: new Date().toISOString(),
+                tamanho: null,
+                miniatura: null,
+                video: null,
+                abrir_no_sobedesce: null,
+              });
           return enviar(res, 200, { conta: { id: "g-equipe", email: "equipe@produtora.test" }, pasta: null, itens, proxima: null });
         }
         case "drive.miniatura": {

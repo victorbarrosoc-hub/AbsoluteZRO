@@ -4,8 +4,9 @@
  * repassa instaladores, e cada app continua com o próprio login.
  *
  * Gate de lançamento (ADR 0023): `DOWNLOADS` é o que existe; o que cada pessoa vê sai de `downloadsLiberados`, com os
- * produtos liberados para ela no canal `download` (vindos do banco). Produto fechado vira "Em desenvolvimento", sem
- * instalador, sem Terminal e sem link.
+ * produtos liberados para ela no canal `download` (vindos do banco). Produto com o download fechado mas a web aberta
+ * (o Maestro, no ar sem o app de computador) mostra só o jeito de abrir no navegador e no celular. Fechado nos dois
+ * vira "Em desenvolvimento", sem instalador, sem Terminal e sem link (na página pública /baixar, nem aparece).
  */
 export type Os = 'mac' | 'windows' | 'mobile' | 'web'
 
@@ -37,6 +38,13 @@ export type DownloadEntry = {
 const NOSSOM_BAIXAR = 'https://nossom.absolutezro.com/baixar/'
 // Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
 const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
+// Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
+const RELAY_BAIXAR = 'https://absolutezro.com/baixar/app/relay/'
+const CARRO_BAIXAR = 'https://absolutezro.com/baixar/app/carro-do-freela/'
+const PRIMEIRA_VEZ = {
+  mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
+  windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
+}
 
 export const DOWNLOADS: DownloadEntry[] = [
   {
@@ -106,11 +114,25 @@ export const DOWNLOADS: DownloadEntry[] = [
     ],
   },
   {
+    // Carro do Freela (products/carro-do-freela): no ar desde a 0041 e, com o app de computador, desde a 0042 (a mesma rota
+    // /baixar/app/carro-do-freela/<sistema>, com o gate). Com o download fechado só aparecem o navegador e o celular.
     productId: 'carro-do-freela',
-    site: 'https://carrodofreela.com.br',
-    status: 'web',
+    site: 'https://carro.absolutezro.com',
+    status: 'test',
     note: 'Funciona no navegador, no computador e no celular.',
-    options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carrodofreela.com.br', format: 'Sem instalar' }],
+    options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: CARRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: CARRO_BAIXAR + 'windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carro.absolutezro.com', format: 'Sem instalar' },
+      {
+        os: 'mobile',
+        label: 'iPhone e Android',
+        detail: 'Safari › Compartilhar › Adicionar à Tela de Início',
+        href: 'https://carro.absolutezro.com',
+        format: 'App da web',
+      },
+    ],
+    firstOpen: PRIMEIRA_VEZ,
   },
   {
     productId: 'ai-edit',
@@ -143,25 +165,49 @@ export const DOWNLOADS: DownloadEntry[] = [
     productId: 'maestro',
     site: 'https://maestro.absolutezro.com',
     status: 'test',
-    note: 'Com a conta Absolute ZRO. O app de computador avisa e se atualiza quando sai versão nova.',
+    note: 'Com a conta Absolute ZRO. No iPhone: Safari › Compartilhar › Adicionar à Tela de Início.',
     options: [
       { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: MAESTRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
       { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: MAESTRO_BAIXAR + 'windows', format: 'Instalador .exe' },
       { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, na Tela de Início', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
     ],
     firstOpen: {
       mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
       windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
     },
   },
+  {
+    // Relay (products/relay): converte no próprio aparelho, no navegador ou no app de computador (a mesma página numa
+    // janela, products/relay/desktop). O instalador passa pela rota da Absolute ZRO, com o gate (0042).
+    productId: 'relay',
+    site: 'https://relay.absolutezro.com',
+    status: 'test',
+    note: 'Converte no próprio aparelho. Nada é enviado.',
+    options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: RELAY_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: RELAY_BAIXAR + 'windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' },
+    ],
+    firstOpen: PRIMEIRA_VEZ,
+  },
 ]
 
 /** Como um produto fechado aparece: só o selo "Em desenvolvimento". */
 export const emDesenvolvimento = (productId: string): DownloadEntry => ({ productId, status: 'soon', options: [] })
 
-/** O catálogo de downloads como esta pessoa vê: o que não está liberado para ela vira "Em desenvolvimento". */
-export const downloadsLiberados = (liberados: ReadonlySet<string>): DownloadEntry[] =>
-  DOWNLOADS.map((d) => (liberados.has(d.productId) ? d : emDesenvolvimento(d.productId)))
+/** Só o que abre no navegador e no celular (sem instalador nem Terminal): download fechado com a web aberta. */
+const soNaWeb = (d: DownloadEntry): DownloadEntry | null => {
+  const options = d.options.filter((o) => o.os === 'web' || o.os === 'mobile')
+  return options.length ? { productId: d.productId, status: 'web', note: d.note, options, site: d.site } : null
+}
+
+/**
+ * O catálogo de downloads como esta pessoa vê: liberado no canal download, tudo; senão, liberado na web (`naWeb`), só o
+ * navegador e o celular; senão, "Em desenvolvimento".
+ */
+export const downloadsLiberados = (liberados: ReadonlySet<string>, naWeb: ReadonlySet<string> = new Set()): DownloadEntry[] =>
+  DOWNLOADS.map((d) => (liberados.has(d.productId) ? d : (naWeb.has(d.productId) && soNaWeb(d)) || emDesenvolvimento(d.productId)))
 
 export const downloadFor = (productId: string, liberados: ReadonlySet<string>) => {
   const d = DOWNLOADS.find((x) => x.productId === productId)

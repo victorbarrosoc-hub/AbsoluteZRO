@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v68'
+const CACHE = 'sobedesce-app-v75'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -30,6 +30,7 @@ const SHELL = [
   './lib/auth.js',
   './lib/browse.js',
   './lib/computador.js',
+  './lib/conferir.js',
   './lib/config.js',
   './lib/copiar.js',
   './lib/cor.js',
@@ -39,7 +40,8 @@ const SHELL = [
   './lib/drive.js',
   './lib/drive-nucleo.js',
   './lib/drive-link.js',
-  './lib/entrada.js',
+  './lib/embutido.js',
+  './lib/embutido-relay.js',
   './lib/frames/celular.js',
   './lib/frames/codec.js',
   './lib/frames/escolha.js',
@@ -48,6 +50,9 @@ const SHELL = [
   './lib/format.js',
   './lib/idb.js',
   './lib/lan.js',
+  './lib/md5.js',
+  './lib/md5-worker.js',
+  './lib/modo-drive.js',
   './lib/ligar-zro.js',
   './lib/midia-conta.js',
   './lib/midia-modos.js',
@@ -56,18 +61,20 @@ const SHELL = [
   './lib/p2p-gravar.js',
   './lib/p2p-util.js',
   './lib/now-playing.js',
+  './lib/picker.js',
   './lib/platform.js',
   './lib/proxies.js',
   './lib/psd.js',
   './lib/psd-ler.js',
   './lib/psd-worker.js',
   './lib/referencias.js',
-  './lib/revela.js',
-  './lib/revela/conversao/plano.js',
-  './lib/revela/entrega/destinos.js',
+  './lib/relay.js',
+  './relay/src/presets.js',
+  './relay/src/plano.js',
   './lib/state.js',
   './lib/stream.js',
   './lib/tamanho.js',
+  './lib/transferencias.js',
   './lib/uploader.js',
   './lib/wakelock.js',
   './components/account.js',
@@ -92,12 +99,14 @@ const SHELL = [
   './components/psd.js',
   './components/queue.js',
   './components/referencias.js',
-  './components/revela.js',
+  './components/relay.js',
   './components/scrub.js',
   './components/selecao.js',
+  './components/set.js',
   './components/settings.js',
   './components/tabs.js',
   './components/thumb.js',
+  './components/transferencias.js',
   './components/ui.js',
   './components/z.js',
   './icons/apple-touch-icon.png',
@@ -106,7 +115,10 @@ const SHELL = [
   './icons/familia/absolute-zro.png',
   './icons/familia/synquei.svg',
   './icons/familia/tpeasy.svg',
+  './icons/familia/maestro.svg',
+  './icons/familia/relay.svg',
   './icons/revela.svg',
+  './icons/relay.svg',
 ]
 
 self.addEventListener('install', (event) => {

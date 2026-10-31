@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Painel · Relay</title>
+    <meta name="description" content="O que você converteu, seus projetos e seus presets, em todo aparelho." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="app/relay.css" />
+    <link rel="stylesheet" href="app/painel.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/painel.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Relay, início"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+      <nav aria-label="Páginas">
+        <a href="painel" aria-current="page" class="opcional">Painel</a>
+        <a href="converter" class="opcional">Converter</a>
+      </nav>
+      <button class="vidro vidro--icone tema" type="button" data-tema-botao title="Tema claro ou escuro" aria-label="Trocar tema"><i data-icone="lua"></i></button>
+    </header>
+
+    <main class="painel" id="painel" aria-busy="true">
+      <!-- carregando: o relé em curso, sem texto -->
+      <div class="painel-carregando" id="carregando" aria-label="Carregando"><span class="rele"></span></div>
+
+      <!-- fora da conta (ou login desligado neste endereço) -->
+      <section class="painel-fora" id="fora" hidden>
+        <span class="rele" aria-hidden="true"></span>
+        <h1><span class="fino">Seu</span> <span class="pesado">painel.</span></h1>
+        <p class="apoio" id="fora-apoio">Entre com a conta Absolute ZRO.</p>
+        <div class="acoes">
+          <a class="vidro vidro--tinta vidro--grande" id="fora-entrar" href="/api/zro/entrar?volta=%2Fpainel">Entrar</a>
+          <a class="vidro vidro--grande" href="converter">Converter sem conta</a>
+        </div>
+      </section>
+
+      <!-- dentro -->
+      <div id="dentro" hidden>
+        <section class="cabeca-painel">
+          <span class="avatar avatar--grande" id="avatar" aria-hidden="true"></span>
+          <div>
+            <h1><span class="fino">Olá,</span> <span class="pesado" id="ola"></span></h1>
+            <p class="apoio">O que você converteu neste aparelho.</p>
+          </div>
+          <div class="acoes">
+            <a class="vidro vidro--tinta vidro--grande" href="converter"><i data-icone="soltar"></i>Converter</a>
+            <button class="vidro vidro--grande" type="button" data-novo-projeto><i data-icone="mais"></i>Projeto</button>
+          </div>
+        </section>
+
+        <ul class="numeros" id="numeros" aria-label="Números" hidden></ul>
+
+        <section class="bloco" aria-labelledby="t-recentes">
+          <div class="bloco-cabeca">
+            <h2 id="t-recentes">Recentes</h2>
+            <button class="vidro" type="button" id="ver-tudo" hidden>Ver tudo</button>
+          </div>
+          <ul class="recentes cartao" id="recentes"></ul>
+          <div class="vazio cartao" id="recentes-vazio" hidden>
+            <span class="rele" style="--curso: 0" aria-hidden="true"></span>
+            <p><strong>Nada convertido ainda.</strong></p>
+            <a class="vidro vidro--tinta" href="converter">Converter</a>
+          </div>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-projetos">
+          <div class="bloco-cabeca">
+            <h2 id="t-projetos">Projetos</h2>
+          </div>
+          <ul class="projetos" id="projetos"></ul>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-meus">
+          <div class="bloco-cabeca">
+            <h2 id="t-meus">Meus presets</h2>
+            <a class="vidro" href="converter?aba=Meus"><i data-icone="editar"></i>Editar</a>
+          </div>
+          <ul class="meus" id="meus"></ul>
+          <p class="apoio vazio-linha" id="meus-vazio" hidden>Crie no conversor, na aba Meus.</p>
+          <div class="da-equipe" id="bloco-equipe" hidden>
+            <span class="rotulo">Da equipe</span>
+            <ul class="meus" id="meus-equipe"></ul>
+          </div>
+        </section>
+
+        <!-- looks (.cube) da cor da Revela: no aparelho, numa pasta e no Drive pelo SOBEDESCE (só com RECURSOS.revela) -->
+        <section class="bloco" aria-labelledby="t-looks" id="bloco-looks" hidden>
+          <div class="bloco-cabeca">
+            <h2 id="t-looks">Looks</h2>
+            <a class="vidro" id="looks-sobedesce" href="sobedesce://looks" title="Abre o SOBEDESCE comparando a pasta dos looks com o Drive"><i data-icone="pasta"></i>Drive pelo SOBEDESCE</a>
+          </div>
+          <ul class="meus" id="looks"></ul>
+          <p class="apoio vazio-linha" id="looks-vazio" hidden>Carregue um .cube no editor de preset, em Cor.</p>
+          <div class="looks-pasta" id="looks-pasta">
+            <span class="ficha" id="looks-nome-pasta" hidden></span>
+            <button class="vidro" type="button" id="looks-escolher"><i data-icone="pasta"></i>Escolher a pasta</button>
+            <button class="vidro vidro--tinta" type="button" id="looks-sincronizar" hidden>Sincronizar com a pasta</button>
+          </div>
+          <p class="apoio vazio-linha" id="looks-aviso" role="status"></p>
+        </section>
+
+        <footer class="painel-pe">
+          <span><i data-icone="cadeado"></i><span id="onde">Fica neste aparelho.</span></span>
+          <button type="button" class="link" id="limpar" hidden>Limpar histórico</button>
+        </footer>
+      </div>
+    </main>
+
+    <!-- folha do projeto -->
+    <dialog class="folha folha--projeto" id="folha-projeto" aria-labelledby="t-projeto">
+      <form method="dialog" class="folha-corpo" id="form-projeto">
+        <div class="folha-cabeca">
+          <h2 id="t-projeto">Projeto</h2>
+          <button class="vidro vidro--icone" type="button" data-fechar aria-label="Fechar"><i data-icone="x"></i></button>
+        </div>
+        <label class="campo">
+          <span class="rotulo">Nome</span>
+          <input id="projeto-nome" maxlength="60" autocomplete="off" placeholder="Campanha de verão" required />
+        </label>
+        <div class="campo">
+          <span class="rotulo">Destinos</span>
+          <div class="escolha-destinos" id="projeto-destinos"></div>
+        </div>
+        <label class="chave-linha" id="projeto-equipe-linha" hidden>
+          <input type="checkbox" id="projeto-equipe" />
+          <span class="chave-trilho" aria-hidden="true"></span>
+          <span>A equipe vê e usa</span>
+        </label>
+        <ul class="recentes recentes--folha" id="projeto-conversoes"></ul>
+        <p class="erro" id="projeto-erro" role="alert" hidden></p>
+        <div class="folha-acoes">
+          <button class="vidro apagar" type="button" id="projeto-apagar" hidden><i data-icone="lixo"></i>Apagar</button>
+          <a class="vidro" id="projeto-converter" hidden><i data-icone="soltar"></i>Converter</a>
+          <button class="vidro vidro--tinta" type="submit" id="projeto-guardar">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

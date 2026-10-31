@@ -6,7 +6,7 @@
 import { after, before, beforeEach, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { iniciarZroFalsa } from './zro-falso.mjs'
 
 const CLIENTE = { clientId: 'synquei-web', clientSecret: 'segredo-de-teste-do-synquei' }
@@ -178,14 +178,22 @@ describe('painel do app', () => {
     assert.ok(!/\.token\s*=/.test(z), 'a página não recebe token')
     assert.match(html, /id="zPainel"/)
   })
-  test('a Z tem aba própria: a primeira, e a tela de entrada', () => {
+  test('a Z tem tela própria (#/z), mas não é a primeira nem a entrada (titular, 29/10/2026)', () => {
     const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
     const css = readFileSync(new URL('../app/app.css', import.meta.url), 'utf8')
+    const inicio = readFileSync(new URL('../app/js/views/inicio.js', import.meta.url), 'utf8')
     const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
-    assert.match(abas.trim(), /^<a href="#\/z" data-r="z">/)
-    assert.match(html, /aria-label="Principal">\s*<a class="nav-item" href="#\/z" data-r="z"/)
-    assert.match(main, /const ORDER = \['z', 'inicio'/)
-    assert.match(main, /return VIEWS\[r\] \? r : 'z'/)
+    // barra do celular: a tarefa (Início primeiro), sem a Z
+    assert.match(abas.trim(), /^<a href="#\/inicio" data-r="inicio">/)
+    assert.doesNotMatch(abas, /#\/z/)
+    // barra lateral: Início primeiro; a Z discreta no pé, depois de Ajustes
+    assert.match(html, /aria-label="Principal">\s*<a class="nav-item" href="#\/inicio" data-r="inicio"/)
+    assert.match(html, /<div class="sidebar-foot">[\s\S]*data-r="ajustes"[\s\S]*href="#\/z" data-r="z"[\s\S]*<\/aside>/)
+    // no celular, um anel no Início leva à Z
+    assert.match(inicio, /class="icon-btn z-atalho" href="#\/z"/)
+    assert.match(main, /const ORDER = \['inicio', 'midia'/)
+    assert.doesNotMatch(main, /const ORDER = \[[^\]]*'z'/)
+    assert.match(main, /return VIEWS\[r\] \? r : 'inicio'/)
     assert.match(main, /z\.hidden = route !== 'z'/)
     // o Início volta a ser como era: sem a Z em cima e com o "Bom dia"
     assert.ok(!/tem-z/.test(css + main + z))
@@ -196,14 +204,36 @@ describe('painel do app', () => {
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v24/)
+    assert.match(sw, /synquei-v27/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })
-  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)', () => {
+  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela|maestro/i)
-    for (const nome of ['Absolute ZRO', 'Sobedesce', 'TPEasy']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
+    const nomes = [...fam.replace(/<!--maestro-familia ([\s\S]*?) maestro-familia-->/, '').matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1])
+    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Relay', 'SOBEDESCE', 'TPeasy'])
+  })
+  test('o Relay está na família, com o ícone oficial guardado pelo service worker', () => {
+    const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    assert.match(fam, /href="https:\/\/relay\.absolutezro\.com"[^>]*><img class="familia-icone" src="\/app\/familia\/relay\.svg"/)
+    assert.ok(existsSync(new URL('../app/familia/relay.svg', import.meta.url)))
+    assert.ok(sw.includes("'/app/familia/relay.svg'"))
+  })
+  test('o Maestro entra na família no lançamento (bloco maestro-familia, aberto ou comentado), com o ícone dele', () => {
+    const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    const aberto = /<!--maestro-familia-->([\s\S]*?)<!--\/maestro-familia-->/.exec(fam)
+    const fechado = /<!--maestro-familia ([\s\S]*?) maestro-familia-->/.exec(fam)
+    assert.ok(!!aberto !== !!fechado, 'um bloco só, aberto ou fechado')
+    const bloco = (aberto ?? fechado)[1]
+    assert.match(bloco, /href="https:\/\/maestro\.absolutezro\.com"/)
+    assert.match(bloco, /<span>Maestro<\/span>/)
+    assert.ok(existsSync(new URL('../app/familia/maestro.svg', import.meta.url)))
+    assert.ok(sw.includes("'/app/familia/maestro.svg'"))
+    // fora do bloco, nenhum Maestro
+    assert.doesNotMatch(fam.replace((aberto ?? fechado)[0], ''), /maestro\.absolutezro/)
   })
 })

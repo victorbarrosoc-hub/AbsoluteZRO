@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarDays, Cloud, Globe, History, Laptop, Smartphone } from "lucide-react";
+import { ArrowLeft, CalendarDays, Cloud, Globe, History, KeyRound, Laptop, Smartphone } from "lucide-react";
+import { BotaoAcessoTotal, ContadorVagas } from "@/components/admin/acesso-total";
+import { resumoVagas, vagasUsadasPor } from "@/lib/google/vagas";
 import { Avatar } from "@/components/conta/avatar";
 import { MenuConta } from "@/components/conta/menu";
 import { Moldura } from "@/components/conta/moldura";
@@ -20,7 +22,7 @@ const diaLongo = (dia: string) => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-export default async function PessoaAdmin({ params }: { params: Promise<{ id: string }> }) {
+export default async function PessoaAdmin({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { usuario, sessao } = await exigirUsuario("/admin");
   if (!(await ehAdmin(usuario))) notFound();
   const { id } = await params;
@@ -29,7 +31,7 @@ export default async function PessoaAdmin({ params }: { params: Promise<{ id: st
   const { pessoas } = await painelAdmin(agora, buildAtual);
   const p = pessoas.find((x) => x.id === id);
   if (!p) notFound();
-  const { dias, sessoes, eventos } = await linhaDoTempo(p.id, p, agora);
+  const [{ dias, sessoes, eventos }, vagas, usadasDela, q] = await Promise.all([linhaDoTempo(p.id, p, agora), resumoVagas(), vagasUsadasPor(p.id), searchParams]);
   const foto = p.drives.find((d) => d.fotoUrl)?.fotoUrl ?? null;
   const u = p.uso30;
 
@@ -57,6 +59,7 @@ export default async function PessoaAdmin({ params }: { params: Promise<{ id: st
         <div className="flex flex-wrap items-center gap-1.5">
           <Selo>Plano {NOME_PLANO[p.plano]}</Selo>
           <Selo>{p.comSenha ? "E-mail e senha" : p.soZro ? "Entrou com a Absolute ZRO" : "Entrou com o Google"}</Selo>
+          {p.acessoTotal ? <Selo tom="ok">Acesso total</Selo> : null}
           {p.usou.celular ? <Selo>Usa o celular</Selo> : null}
           {p.avisosCelular ? <Selo>Avisos no celular ligados</Selo> : null}
           <Tira dias={p.tira30} className="ml-1" />
@@ -74,6 +77,13 @@ export default async function PessoaAdmin({ params }: { params: Promise<{ id: st
         <Numero valor={p.colecoes} rotulo="coleções" detalhe={`${p.referencias} links${p.referenciasComErro ? `, ${p.referenciasComErro} com erro` : ""}`} />
       </div>
 
+      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Passo icone={<KeyRound />} tom="up" i={1} titulo="Acesso ao Drive" id="acesso">
+          <BotaoAcessoTotal usuarioId={p.id} ligado={p.acessoTotal} jaUsouVaga={usadasDela > 0} vagas={vagas} confirmarDeInicio={q.confirmar === "acesso"} />
+        </Passo>
+        <ContadorVagas v={vagas} />
+      </div>
+
       {/* Desktop largo: Drives e aparelhos lado a lado; embaixo, o dia a dia e a linha do tempo. */}
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-2">
         <Passo icone={<Cloud />} tom="down" i={2} titulo="Drives" id="drives">
@@ -81,9 +91,12 @@ export default async function PessoaAdmin({ params }: { params: Promise<{ id: st
             {p.drives.length ? (
               <ul className="divide-y divide-line">
                 {p.drives.map((d) => (
-                  <li key={d.email} className="flex items-center justify-between gap-3 px-5 py-3.5 text-[14px]">
-                    <span className="truncate">{d.email}</span>
-                    {d.estado === "ok" ? <Selo tom="ok">conectado</Selo> : <Selo tom="alerta">precisa reconectar</Selo>}
+                  <li key={d.email} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-5 py-3.5 text-[14px]">
+                    <span className="min-w-0 truncate">{d.email}</span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <Selo>{d.modo === "total" ? "Drive inteiro" : "arquivos escolhidos"}</Selo>
+                      {d.estado === "ok" ? <Selo tom="ok">conectado</Selo> : <Selo tom="alerta">precisa reconectar</Selo>}
+                    </span>
                   </li>
                 ))}
               </ul>

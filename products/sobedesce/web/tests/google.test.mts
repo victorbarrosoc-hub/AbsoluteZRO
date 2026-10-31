@@ -47,7 +47,11 @@ after(async () => {
  * O caminho inteiro no navegador: /api/google/conectar → Google falso (consentimento) → /api/google/callback.
  * Devolve a resposta do callback e o destino final (caminho + busca).
  */
-async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null; sessao?: string; volta?: string; negar?: boolean; escopo?: string }) {
+const BASICOS = "openid email profile";
+const PEDIDO_ARQUIVOS = `${BASICOS} https://www.googleapis.com/auth/drive.file`;
+const PEDIDO_TOTAL = `${BASICOS} https://www.googleapis.com/auth/drive`;
+
+async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null; sessao?: string; volta?: string; negar?: boolean; escopo?: string; pedido?: string }) {
   amb.google.proximo.conta = o.conta;
   amb.google.proximo.negar = Boolean(o.negar);
   amb.google.proximo.escopo = o.escopo ?? null;
@@ -57,7 +61,8 @@ async function fluxo(o: { modo: "vincular" | "entrar"; conta: ContaFalsa | null;
   const destinoIda = ida.headers.get("location") ?? "";
   if (ida.status !== 302 || !destinoIda.startsWith(amb.google.url)) return { ida, destino: destinoIda, res: null as Response | null };
   const u = new URL(destinoIda);
-  assert.equal(u.searchParams.get("scope"), "openid email profile https://www.googleapis.com/auth/drive");
+  // Entrar nunca pede Drive; conectar pede o do modo (sem acesso total: drive.file).
+  assert.equal(u.searchParams.get("scope"), o.pedido ?? (o.modo === "entrar" ? BASICOS : PEDIDO_ARQUIVOS));
   assert.equal(u.searchParams.get("access_type"), "offline");
   assert.equal(u.searchParams.get("prompt"), "consent");
   assert.equal(u.searchParams.get("code_challenge_method"), "S256");
@@ -103,7 +108,8 @@ describe("vincular", () => {
     assert.ok(!/refresh|ya29|1\/\//i.test(texto), "nada de token na resposta");
     const corpo = JSON.parse(texto);
     assert.equal(corpo.contas.length, 1);
-    assert.deepEqual(Object.keys(corpo.contas[0]).sort(), ["email", "estado", "fotoUrl", "id", "nome"]);
+    assert.deepEqual(Object.keys(corpo.contas[0]).sort(), ["email", "estado", "fotoUrl", "id", "modo", "nome"]);
+    assert.equal(corpo.contas[0].modo, "arquivos", "sem acesso total: arquivos escolhidos");
     assert.equal(corpo.contas[0].email, "ana@exemplo.com");
     assert.equal(corpo.contas[0].estado, "ok");
 
@@ -235,7 +241,7 @@ describe("entrar com Google", () => {
     assert.ok((await contasGoogle.trocarGoogleDeEntrar({ usuarioId: criada.usuario.id, contaId: drive0.id, senhaAtual: "senha provisória longa" })).ok);
     await db.update(schema.usuarios).set({ senhaHash: contasGoogle.SEM_SENHA }).where(eq(schema.usuarios.id, criada.usuario.id));
     const entrou = await fluxo({ modo: "entrar", conta: google });
-    assert.equal(entrou.destino, "/z", "quem já tem o Google ligado entra como antes (na aba da Z, a tela de entrada)");
+    assert.equal(entrou.destino, "/conta", "quem já tem o Google ligado entra na conta, a tela de entrada");
     const corpo = await (await eu.GET(pedido("/api/eu", { cookies: { sd_sessao: cookiesDe(entrou.res!).get("sd_sessao")! } }))).json();
     assert.equal(corpo.usuario.id, criada.usuario.id);
     assert.equal((await contas.entrarComSenha({ email: "novo@exemplo.com", senha: "google", ip: "9.9.9.9" })).ok, false, "sem senha: nenhuma senha entra");
@@ -319,7 +325,8 @@ describe("token do Drive", () => {
     assert.equal(r1.status, 200);
     assert.equal(r1.headers.get("cache-control"), "no-store");
     const t1 = await r1.json();
-    assert.deepEqual(Object.keys(t1).sort(), ["accessToken", "email", "expiraEm"]);
+    assert.deepEqual(Object.keys(t1).sort(), ["accessToken", "email", "expiraEm", "modo"]);
+    assert.equal(t1.modo, "arquivos");
     assert.equal(t1.email, "ana@exemplo.com");
     assert.ok(t1.expiraEm > Date.now() + 50 * 60_000);
     assert.ok(amb.google.acessoValido(t1.accessToken));
@@ -383,11 +390,23 @@ describe("token do Drive", () => {
     assert.equal((await pedirToken(victor.token, anaId)).status, 200);
   });
 
-  test("Bearer de dispositivo também pega token (sem Origin)", async () => {
+  test("Bearer de dispositivo pega token só com acesso total (sem Origin); em arquivos escolhidos, 403 com recado", async () => {
     const { criarSessao } = await import("../src/lib/auth/sessao");
     const s = await criarSessao(victor.id, "dispositivo", { nome: "Mac de teste", plataforma: "mac" });
+    const recusado = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null }));
+    assert.equal(recusado.status, 403, "o app de computador de hoje daria resultado falso com drive.file");
+    const corpo = await recusado.json();
+    assert.equal(corpo.erro, "precisa_acesso_total");
+    assert.match(corpo.mensagem, /acesso total/);
+    assert.ok(!("accessToken" in corpo));
+    // Com acesso total e o Drive reconectado com o `drive` inteiro, o computador volta a pegar o token.
+    const { db, schema } = amb.banco;
+    await db.update(schema.usuarios).set({ driveAcessoTotal: true }).where(drizzle.eq(schema.usuarios.id, victor.id));
+    const r1 = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_TOTAL });
+    assert.equal(r1.destino, "/conta?google=ok");
     const r = await token.POST(pedido("/api/drive/token", { corpo: { conta: anaId }, bearer: s.token, origin: null }));
     assert.equal(r.status, 200);
+    assert.equal((await r.json()).modo, "total");
   });
 
   test("remover: revoga no Google e apaga a linha", async () => {
@@ -403,7 +422,8 @@ describe("token do Drive", () => {
   });
 
   test("Google fora do ar ao renovar: 502", async () => {
-    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token });
+    // Victor ganhou acesso total no teste anterior: reconectar respeita o modo dele (pede o `drive`).
+    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_TOTAL });
     assert.equal(r.destino, "/conta?google=ok");
     const id = (await contasDe(victor.token))[0].id;
     const base = process.env.SOBEDESCE_GOOGLE_BASE;

@@ -9,7 +9,13 @@ import { requestOrigin } from '../ai-access';
 export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.com';
 /** `offline_access` mantém a conversa com a Z depois dos 10 minutos do access token; `zro.ia` abre a API da IA. */
 export const ZRO_IA_SCOPE = 'zro.ia';
-export const ZRO_SCOPES = 'openid email profile org offline_access ' + ZRO_IA_SCOPE;
+/**
+ * `zro.set`: o Set (presença e conversas do ecossistema, ADR 0032 da Absolute ZRO), pelo repasse /api/zro/set. A
+ * Absolute ZRO de antes do Set recusa o escopo (invalid_scope): o callback refaz o pedido sem ele, uma vez.
+ */
+export const ZRO_SET_SCOPE = 'zro.set';
+export const ZRO_SCOPES_SEM_SET = 'openid email profile org offline_access ' + ZRO_IA_SCOPE;
+export const ZRO_SCOPES = ZRO_SCOPES_SEM_SET + ' ' + ZRO_SET_SCOPE;
 
 export function zroIssuer() {
   return (process.env.ZRO_ISSUER?.trim() || ZRO_ISSUER_DEFAULT).replace(/\/$/, '');

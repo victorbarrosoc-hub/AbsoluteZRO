@@ -9,15 +9,14 @@ import { Conheca } from '@/components/home/conheca'
 import { Fluxo } from '@/components/home/fluxo'
 import { Numeros } from '@/components/home/numeros'
 import { PalcoZ, Z } from '@/components/ia/simbolo-z'
-import { liberadosPara, publicCatalog } from '@/lib/data/catalog'
+import { divulgado, publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
-import { getAuth } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 /** Uma linha por ferramenta, curta, na faixa logo abaixo do topo. */
 const LINE: Record<string, string> = {
-  'carro-do-freela': 'Equipe e oportunidades',
+  'carro-do-freela': 'Agenda e equipe',
   tpeasy: 'Teleprompter',
   sobedesce: 'Cópia e backup conferidos',
   synquei: 'Organização e sincronia',
@@ -35,7 +34,7 @@ const LINHA_LONGA: Record<string, string> = {
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
 const FATOS: Record<string, string[]> = {
-  'carro-do-freela': ['Agenda de freelas por praça', 'Disponibilidade pública que sai da agenda', 'Escala da equipe sem adivinhar'],
+  'carro-do-freela': ['Quem está livre, na data certa', 'A agenda que o próprio freela marca', 'Só aparece quem escolheu mostrar'],
   tpeasy: ['Teleprompter no Safari do iPhone', 'Rola com a sua voz', 'Funciona sem internet'],
   sobedesce: ['Até 32 conexões por arquivo', 'MD5 conferido em cada arquivo', 'Pausa e continua de onde parou'],
   synquei: ['Sincroniza câmeras e gravadores pelo som', 'Exporta para Premiere, Resolve, Final Cut e Avid', 'Nada sai do seu computador'],
@@ -43,21 +42,29 @@ const FATOS: Record<string, string[]> = {
   nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
   relay: ['YouTube, Reels, TikTok, WhatsApp e mais', 'Converte no aparelho, sem enviar o arquivo', 'Predefinição pronta para cada destino'],
+  maestro: ['Quadro de pauta em oito colunas', 'Aprovação do cliente no tempo do vídeo', 'Orçamento, contrato e financeiro'],
 }
 
 /** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
-const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing'])
+const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro'])
 
-/** O nome da etapa no fluxo, na ordem do catálogo. */
-const ETAPA: Record<string, string> = {
-  'carro-do-freela': 'Equipe',
-  tpeasy: 'Roteiro',
-  sobedesce: 'Cópia',
-  synquei: 'Sincronia',
-  'ai-edit': 'Edição',
-  nossom: 'Som',
-  finishing: 'Cor e entrega',
-}
+/**
+ * O fluxo da página, na ordem do trabalho (uma ferramenta pode aparecer em duas etapas). Só entra quem está no ar; cada
+ * etapa mostra os avisos reais que a ferramenta manda ao HUB (contratos de @zro/media-contracts) ou, quando ela ainda
+ * não avisa nada, o que faz ali (`faz`, tirado de FATOS). Quem abrir depois entra sozinho no lugar dele.
+ */
+const FLUXO: { id: string; etapa: string; faz?: string[] }[] = [
+  { id: 'maestro', etapa: 'Pauta', faz: ['Pedidos e orçamentos', 'Quadro de pauta em oito colunas'] },
+  { id: 'carro-do-freela', etapa: 'Equipe' },
+  { id: 'tpeasy', etapa: 'Gravação' },
+  { id: 'sobedesce', etapa: 'Cópia' },
+  { id: 'synquei', etapa: 'Sincronia' },
+  { id: 'ai-edit', etapa: 'Edição' },
+  { id: 'nossom', etapa: 'Som' },
+  { id: 'finishing', etapa: 'Cor' },
+  { id: 'relay', etapa: 'Entrega', faz: ['YouTube, Reels, TikTok e WhatsApp', 'Converte no aparelho'] },
+  { id: 'maestro', etapa: 'Aprovação', faz: ['Link para o cliente, sem conta', 'Comentário no tempo do vídeo'] },
+]
 
 /** O que cada evento quer dizer, em português de gente (o nome técnico fica na dica). */
 const EVENTO: Record<string, string> = {
@@ -76,22 +83,14 @@ const EVENTO: Record<string, string> = {
 /** Eventos de bastidor que não entram no fluxo da página (começo e falha da cópia). */
 const SO_BASTIDOR = new Set(['ingest.started', 'ingest.failed'])
 
-/** Site oficial quando o catálogo ainda não tem o endereço (Revela e AEON já estão no ar nos subdomínios). */
-const SITE: Record<string, string> = {
-  'ai-edit': 'https://aeon.absolutezro.com',
-  finishing: 'https://revela.absolutezro.com',
-}
+/** Contratos prontos e DESLIGADOS (packages/integrations/src/handlers.ts): não contam nem aparecem até a rota ligar. */
+const DESLIGADOS = new Set(['freela.inventario.atualizado'])
 
 export default async function Landing() {
-  // Gate de lançamento (ADR 0023): o que não está aberto ao público (ou liberado para a pessoa logada) aparece como
-  // "Em breve", sem link, e fica fora dos números, das etapas e da órbita da Z. Produto novo no catálogo (o Relay, na
-  // 0031) entra sozinho aqui, fechado até a migration que o abre.
-  const auth = await getAuth()
-  const [{ products }, liberados, baixaveis] = await Promise.all([
-    publicCatalog(),
-    liberadosPara(auth?.user.id ?? null, 'web'),
-    liberadosPara(auth?.user.id ?? null, 'download'),
-  ])
+  // Só o que está no ar para qualquer um (divulgado, lib/data/catalog.ts): o que está fechado não aparece em lugar
+  // nenhum da página, nem como "Em breve" (titular, 30/10/2026). Quando a migration abre um produto, ele entra sozinho.
+  const { products: catalogo } = await publicCatalog()
+  const products = catalogo.filter((p) => divulgado(p.release))
   // Cada palavra sobe na sua vez; o espaço fica fora do bloco para não sumir.
   const words = (text: string, from: number) =>
     text.split(' ').flatMap((w, i) => [
@@ -100,17 +99,20 @@ export default async function Landing() {
         {w}
       </span>,
     ])
-  const aberto = (id: string) => liberados.has(id)
+  const noAr = new Set(products.map((p) => p.id))
   // Faixa das ferramentas: no computador todas numa linha até 8; com mais, duas linhas (a de baixo centrada) para o nome
-  // não cortar. No celular, 4 por linha (Tela de Início do iPhone); 3 quando o total fecha certinho em 3 e não em 4.
+  // não cortar. No tablet, todas numa linha até 5 (senão 4). No celular, todas numa linha até 5 (Tela de Início do
+  // iPhone); com mais, 4 por linha, ou 3 quando o total fecha certinho em 3 e não em 4.
   const porLinha = products.length > 8 ? Math.ceil(products.length / 2) : products.length
-  const colunas = products.length % 4 !== 0 && products.length % 3 === 0 ? 3 : 4
-  const ativos = products.filter((p) => aberto(p.id) && (p.stage === 'active' || p.stage === 'beta'))
-  const siteDe = (p: (typeof products)[number]) => (aberto(p.id) ? (p.external_url as string | null) || SITE[p.id as string] || null : null)
-  // Só os eventos de quem está aberto: o fluxo e os números mostram o que roda hoje, não o que ainda está fechado.
-  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => aberto(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]))
-  const formatos = aberto(EVENT_PRODUCER['edit.timeline.ready']) ? EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length : 0
-  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string, baixaveis)).length
+  const noTablet = products.length <= 5 ? products.length : 4
+  const colunas = products.length <= 5 ? products.length : products.length % 4 !== 0 && products.length % 3 === 0 ? 3 : 4
+  const ativos = products.filter((p) => p.stage === 'active' || p.stage === 'beta')
+  const siteDe = (p: (typeof products)[number]) => p.external_url || null
+  // Só os eventos de quem está no ar: o fluxo e os números mostram o que roda hoje.
+  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => noAr.has(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]) && !DESLIGADOS.has(e))
+  const formatos = noAr.has(EVENT_PRODUCER['edit.timeline.ready']) ? EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length : 0
+  const baixaveis = new Set(products.filter((p) => p.release.canais.download).map((p) => p.id))
+  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id, baixaveis)).length
   const numeros = [
     { valor: ativos.length, rotulo: 'ferramentas' },
     { valor: 1, rotulo: 'conta para tudo' },
@@ -118,26 +120,28 @@ export default async function Landing() {
     { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
     { valor: noComputador, rotulo: 'apps para Mac e Windows' },
   ].filter((n) => n.valor > 0)
-  // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo "Em breve" e sem link.
-  const destaques = [...ativos, ...products.filter((p) => !ativos.includes(p))].map((p) => ({
-    id: p.id as string,
-    nome: p.name as string,
-    linha: LINHA_LONGA[p.id as string] ?? LINE[p.id as string] ?? (p.role_in_flow as string),
-    fatos: FATOS[p.id as string] ?? [],
+  // Conheça de perto: só quem está no ar, na ordem do catálogo.
+  const destaques = ativos.map((p) => ({
+    id: p.id,
+    nome: p.name,
+    linha: LINHA_LONGA[p.id] ?? LINE[p.id] ?? p.role_in_flow,
+    fatos: FATOS[p.id] ?? [],
     site: siteDe(p),
-    emDesenvolvimento: !aberto(p.id),
-    tela: TELA.has(p.id as string),
-    cor: productColor(p.id as string),
+    tela: TELA.has(p.id),
+    cor: productColor(p.id),
   }))
-  const etapas = ativos.map((p) => ({
-    id: p.id as string,
-    nome: p.name as string,
-    etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
-    eventos: eventos
-      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
-      .map((e) => ({ id: e, nome: EVENTO[e] ?? e })),
-    cor: productColor(p.id as string),
-  }))
+  const porId = new Map(ativos.map((p) => [p.id, p]))
+  const etapas = FLUXO.flatMap((f) => {
+    const p = porId.get(f.id)
+    if (!p) return []
+    const avisos = eventos
+      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e) && !DESLIGADOS.has(e))
+      .map((e) => ({ id: e, nome: EVENTO[e] ?? e }))
+    // Sem aviso ao HUB e sem o que contar, a etapa não entra (nada de etapa de fachada).
+    const itens = f.faz ? f.faz.map((t) => ({ id: t, nome: t })) : avisos
+    if (!itens.length) return []
+    return [{ chave: `${f.id}-${f.etapa}`, id: p.id, nome: p.name, etapa: f.etapa, itens, avisos: !f.faz, cor: productColor(p.id) }]
+  })
   return (
     <>
       {/* Topo de cinema: a paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha (Higgsfield, fiel à marca). */}
@@ -180,18 +184,17 @@ export default async function Landing() {
 
       {/* As ferramentas numa faixa só, discreta: ícone, nome e uma linha. */}
       <section className="pstrip" id="ecossistema" aria-label="Ferramentas">
-        <ul className="pstrip__list" style={{ '--n': porLinha, '--cols': colunas } as CSSProperties}>
+        <ul className="pstrip__list" style={{ '--n': porLinha, '--tab': noTablet, '--cols': colunas } as CSSProperties}>
           {products.map((p, i) => {
-            const id = p.id as string
-            const name = p.name as string
+            const id = p.id
+            const name = p.name
             const site = siteDe(p)
             const inner = (
               <>
                 <ProductMark productId={id} name={name} size={40} />
                 <span className="pstrip__text">
                   <span className="pstrip__name">{name}</span>
-                  <span className="pstrip__line">{LINE[id] ?? (p.role_in_flow as string)}</span>
-                  {!aberto(id) && <span className="selo-dev">Em breve</span>}
+                  <span className="pstrip__line">{LINE[id] ?? p.role_in_flow}</span>
                 </span>
                 {site && (
                   <span className="pstrip__go" aria-hidden="true">
@@ -208,9 +211,7 @@ export default async function Landing() {
                     <span className="zro-sr-only"> (abre o site oficial em nova aba)</span>
                   </a>
                 ) : (
-                  <span className="pstrip__card" data-fechado={aberto(id) ? undefined : 'sim'}>
-                    {inner}
-                  </span>
+                  <span className="pstrip__card">{inner}</span>
                 )}
               </li>
             )
@@ -250,7 +251,7 @@ export default async function Landing() {
             <span className="atitle__thin">Do roteiro</span>
             <span className="atitle__bold">à entrega.</span>
           </h2>
-          <p>Cada etapa avisa o HUB. A próxima começa de onde a outra parou.</p>
+          <p>Cada etapa numa ferramenta. Todas numa conta só.</p>
         </div>
         <Fluxo etapas={etapas} />
       </section>
@@ -268,8 +269,8 @@ export default async function Landing() {
           <Z movimento="pensando" tamanho={200} vento className="pz__z" />
           <ul className="pz__orbita" aria-label="Ferramentas que a Z conhece">
             {ativos.map((p, i) => (
-              <li key={p.id as string} style={{ '--i': i, '--n': ativos.length } as CSSProperties} title={p.name as string}>
-                <ProductMark productId={p.id as string} name={p.name as string} size={44} />
+              <li key={p.id} style={{ '--i': i, '--n': ativos.length } as CSSProperties} title={p.name}>
+                <ProductMark productId={p.id} name={p.name} size={44} />
               </li>
             ))}
           </ul>

@@ -117,6 +117,28 @@ export async function criarSessao(
 }
 
 /** Token de "Authorization: Bearer ..." (só o de dispositivo vale). */
+/**
+ * O que o app de computador sabe fazer, pelo cabeçalho x-sobedesce-capacidades ("relay", separadas por vírgula). Só
+ * as conhecidas entram (o resto é ignorado); sem o cabeçalho, nenhuma (app até a 0.1.0).
+ */
+export const CAPACIDADES = ["relay"] as const;
+export type Capacidade = (typeof CAPACIDADES)[number];
+export function lerCapacidades(cabecalho: string | null | undefined): Capacidade[] {
+  const ditas = new Set(
+    String(cabecalho ?? "")
+      .slice(0, 200)
+      .split(",")
+      .map((c) => c.trim().toLowerCase()),
+  );
+  return CAPACIDADES.filter((c) => ditas.has(c));
+}
+
+/** A gravada (null = nenhuma) e a de agora são a mesma lista? */
+function mesmasCapacidades(gravada: string[] | null, agora: Capacidade[]): boolean {
+  const g = [...new Set(gravada ?? [])].sort();
+  return g.length === agora.length && g.every((c, i) => c === [...agora].sort()[i]);
+}
+
 export function tokenDoBearer(authorization: string | null | undefined): string | null {
   const m = /^Bearer\s+(\S+)\s*$/i.exec(authorization ?? "");
   return m ? m[1] : null;
@@ -133,6 +155,8 @@ export async function autenticar(credenciais: {
   celular?: boolean;
   /** Build do app de computador (cabeçalho x-sobedesce-build). */
   build?: number | null;
+  /** O que o app de computador sabe fazer (cabeçalho x-sobedesce-capacidades; `lerCapacidades`). Só em pedido do app. */
+  capacidades?: Capacidade[];
 }): Promise<Autenticado | null> {
   let token: string;
   let tipo: TipoSessao;
@@ -160,6 +184,7 @@ export async function autenticar(credenciais: {
         plataforma: sessoes.plataforma,
         expiraEm: sessoes.expiraEm,
         ultimoUsoEm: sessoes.ultimoUsoEm,
+        capacidades: sessoes.capacidades,
       },
       usuario: { id: usuarios.id, email: usuarios.email, nome: usuarios.nome },
       produtosZro: contasZro.produtos,
@@ -173,6 +198,14 @@ export async function autenticar(credenciais: {
   limpezaDeCarona(agora);
 
   let expiraEm = linha.sessao.expiraEm;
+  // O app de computador atualizado (ou voltado para uma versão antiga) diz na hora o que sabe fazer: não espera o
+  // deslize de 10 min, para o Maestro mostrar (ou esconder) "Gerar versões" assim que o app novo abrir.
+  if (tipo === "dispositivo" && credenciais.capacidades && !mesmasCapacidades(linha.sessao.capacidades, credenciais.capacidades)) {
+    await db
+      .update(sessoes)
+      .set({ capacidades: credenciais.capacidades.length ? credenciais.capacidades : null })
+      .where(eq(sessoes.id, linha.sessao.id));
+  }
   // A cada 10 minutos (e na virada do dia, para o dia contar): desliza a sessão e marca o dia de uso.
   if (agora.getTime() - linha.sessao.ultimoUsoEm.getTime() > INTERVALO_DESLIZE || diaDe(agora) !== diaDe(linha.sessao.ultimoUsoEm)) {
     expiraEm = new Date(agora.getTime() + DURACAO[tipo]);

@@ -1,7 +1,13 @@
 /** As seções do Maestro (dados puros: servem à barra lateral, à barra de baixo e à página "Mais"). */
 import type { NomeIcone } from "@/components/icones";
+import type { Acessos, Area } from "./acessos";
 
-export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string };
+/**
+ * `area`: a seção inteira é de uma área sensível (src/lib/acessos.ts); quem não tem a área nem vê o item.
+ * `sinal`: o ponto que acende no item (e no menu do grupo) enquanto algo anda fora da seção: `envios` = o SOBEDESCE
+ * embutido de Arquivos com envio andando (`data-envios` no `<html>`, components/arquivos/sobedesce-vivo.tsx).
+ */
+export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string; area?: Area; sinal?: "envios" };
 export type Grupo = { nome: string | null; abas: Aba[] };
 
 export const GRUPOS: Grupo[] = [
@@ -12,7 +18,8 @@ export const GRUPOS: Grupo[] = [
       { href: "/app/quadro", nome: "Quadro", icone: "quadro" },
       { href: "/app/aprovacoes", nome: "Aprovações", icone: "aprovacoes", curto: "Aprovar" },
       { href: "/app/projetos", nome: "Projetos", icone: "projetos" },
-      { href: "/app/arquivos", nome: "Arquivos", icone: "arquivos" },
+      { href: "/app/criacao", nome: "Criação", icone: "criacao" },
+      { href: "/app/arquivos", nome: "Arquivos", icone: "arquivos", sinal: "envios" },
       { href: "/app/agenda", nome: "Agenda", icone: "agenda" },
     ],
   },
@@ -20,7 +27,7 @@ export const GRUPOS: Grupo[] = [
     nome: "Comercial",
     abas: [
       { href: "/app/pedidos", nome: "Pedidos", icone: "pedidos" },
-      { href: "/app/orcamentos", nome: "Orçamentos", icone: "orcamento" },
+      { href: "/app/orcamentos", nome: "Orçamentos", icone: "orcamento", area: "orcamentos" },
       { href: "/app/clientes", nome: "Clientes", icone: "clientes" },
     ],
   },
@@ -31,7 +38,7 @@ export const GRUPOS: Grupo[] = [
       { href: "/app/inventario", nome: "Inventário", icone: "inventario" },
     ],
   },
-  { nome: "Dinheiro", abas: [{ href: "/app/financeiro", nome: "Financeiro", icone: "dinheiro" }] },
+  { nome: "Dinheiro", abas: [{ href: "/app/financeiro", nome: "Financeiro", icone: "dinheiro", area: "financeiro" }] },
 ];
 
 export const AJUSTES: Aba = { href: "/app/ajustes", nome: "Ajustes", icone: "ajustes" };
@@ -46,6 +53,16 @@ export const Z: Aba = { href: "/app/z", nome: "Z", icone: "z" };
 export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES, Z];
 
 /** A barra de baixo do celular (plano v2 §3): o dia a dia (Hoje, Quadro, Aprovações) e "Mais" (todas as seções). */
-export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade" };
+export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade", sinal: "envios" };
 const aba = (href: string) => ABAS.find((a) => a.href === href)!;
 export const BARRA: Aba[] = [aba("/app/hoje"), aba("/app/quadro"), aba("/app/aprovacoes"), MAIS];
+
+/** As seções que a pessoa vê (sem link morto: quem não tem a área não vê o item; grupo vazio some). */
+export function gruposPara(acessos: Acessos): Grupo[] {
+  return GRUPOS.map((g) => ({ ...g, abas: g.abas.filter((a) => !a.area || acessos[a.area]) })).filter((g) => g.abas.length > 0);
+}
+
+/** Os endereços escondidos para esta pessoa (a cápsula, que roda no navegador, recebe só isto). */
+export function abasOcultas(acessos: Acessos): string[] {
+  return ABAS.filter((a) => a.area && !acessos[a.area]).map((a) => a.href);
+}

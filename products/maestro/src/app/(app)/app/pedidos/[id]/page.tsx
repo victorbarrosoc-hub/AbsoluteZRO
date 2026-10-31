@@ -6,7 +6,8 @@ import { historicoDeContatos } from "@/lib/funil/servidor";
 import { nomeEtapa, tomEtapa } from "@/lib/funil/regras";
 import { carregarTabela } from "@/lib/orcamento/precos";
 import { codigoOrcamento, nomeStatus } from "@/lib/orcamento/motor";
-import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { obterPedido } from "@/lib/pedidos/equipe";
 import { whatsappDaProdutora } from "@/lib/publico/porta";
 import { FAIXAS_INVESTIMENTO, periodoDoPedido } from "@/lib/pedidos/formulario";
@@ -29,6 +30,7 @@ export default async function FichaPedido({ params, searchParams }: PageProps<"/
   if (!p) notFound();
   const r = p.respostas;
   const escreve = podeEscrever(s.papel);
+  const orcamentos = podeArea(s, "orcamentos");
   const rotuloVar = (k: string, v: string | number) => {
     const d = tabela.variaveis.find((x) => x.chave === k);
     return [d?.rotulo ?? k, typeof v === "number" ? String(v) : (d?.opcoes.find((o) => o.valor === v)?.rotulo ?? v)] as const;
@@ -54,11 +56,11 @@ export default async function FichaPedido({ params, searchParams }: PageProps<"/
           </div>
         </div>
         <div className="acoes perfil__acoes">
-          {p.orcamento ? (
+          {p.orcamento && orcamentos ? (
             <Link className="glass-btn glass-btn--ink" href={`/app/orcamentos/${p.orcamento.id}`}>
               <Icone nome="orcamento" size={18} /> Orçamento {codigoOrcamento(p.orcamento.numero, p.orcamento.versao)}
             </Link>
-          ) : escreve && p.etapa !== "perdido" ? (
+          ) : !p.orcamento && escreve && orcamentos && p.etapa !== "perdido" ? (
             <BotaoAcao acao={gerarOrcamentoAcao} campos={{ id: p.id }} rotulo="Gerar orçamento" icone="orcamento" classe="glass-btn glass-btn--ink" />
           ) : null}
           {wpp ? (
@@ -115,7 +117,7 @@ export default async function FichaPedido({ params, searchParams }: PageProps<"/
               <p>{nomeEtapa(p.etapa)}</p>
             )}
             {p.etapa === "perdido" && p.motivoPerda ? <p className="sutil">Motivo: {p.motivoPerda}</p> : null}
-            {escreve && podeVerDinheiro(s.papel) && !p.orcamento ? <ValorEstimado id={p.id} valor={centavosParaCampo(p.valorEstimado)} /> : null}
+            {escreve && orcamentos && !p.orcamento ? <ValorEstimado id={p.id} valor={centavosParaCampo(p.valorEstimado)} /> : null}
             {escreve && p.etapa !== "ganho" && p.etapa !== "perdido" ? (
               <>
                 <ProximoContato alvo="pedido" id={p.id} data={p.proximoContato} nota={p.proximoNota} />

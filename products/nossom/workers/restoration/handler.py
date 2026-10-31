@@ -65,7 +65,7 @@ def download_parts(urls, path, expected):
             with requests.get(allowed_url(url, 'read'), timeout=(15, 90),
                               stream=True, allow_redirects=False) as response:
                 if response.status_code != 200:
-                    raise ValueError('Source download failed')
+                    raise ValueError(f'Source download failed (HTTP {response.status_code})')
                 for block in response.iter_content(256 * 1024):
                     count += len(block)
                     total += len(block)
@@ -95,7 +95,7 @@ def upload(data, outputs):
                                 headers={'Content-Type': 'application/octet-stream'},
                                 timeout=(15, 120), allow_redirects=False)
         if response.status_code not in (200, 201):
-            raise ValueError('Result upload failed')
+            raise ValueError(f'Result upload failed (HTTP {response.status_code})')
         parts.append({'index': index, 'bytes': len(block)})
     return parts
 
@@ -207,9 +207,23 @@ def handler(job):
             return {'preset': preset, 'chunks': upload(wav, outputs), 'totalBytes': len(wav),
                     'frames': len(samples), 'sampleRate': rate, 'channels': out_channels,
                     'gainDb': 20 * math.log10(gain)}
-    except Exception:
-        # Never return tracebacks containing signed source URLs to the provider.
-        raise RuntimeError('NOSSOM restoration failed; retry with the original file.') from None
+    except Exception as error:
+        # Never return tracebacks containing signed source URLs to the provider: only our own
+        # fixed messages, or the exception type, say where it stopped.
+        reason = failure_reason(error)
+        print(f'NOSSOM failed: {reason}', flush=True)
+        raise RuntimeError(f'NOSSOM restoration failed: {reason}') from None
+
+
+SAFE_REASON = re.compile(r'[A-Za-z][A-Za-z0-9 .,()_-]{0,119}')
+
+
+def failure_reason(error):
+    """A short reason that never carries a URL: our own messages pass, anything else is its type."""
+    message = str(error) if isinstance(error, (ValueError, RuntimeError)) else ''
+    if SAFE_REASON.fullmatch(message) and '://' not in message:
+        return message
+    return type(error).__name__
 
 
 if __name__ == '__main__':

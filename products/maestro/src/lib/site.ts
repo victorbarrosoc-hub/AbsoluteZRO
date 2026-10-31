@@ -4,8 +4,17 @@ export const SITE_NOME = "Maestro";
 export const SITE_OFICIAL = "https://maestro.absolutezro.com";
 /** A frase do Maestro (título da página inicial e do OG). */
 export const SITE_FRASE = "A produtora inteira num lugar só.";
-export const SITE_DESCRICAO =
-  "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
+/**
+ * Lançamento (ADR 0027 do HUB; no ar, fora do Beta, desde a migration 0039 do HUB, 30/10/2026; checklist em
+ * docs/operations/lancamento-maestro.md). Liga só a vitrine
+ * (página inicial, descrição): quem entra continua decidido pelo gate do HUB (migration 0027 + temAcesso). Vira com
+ * `node scripts/lancamento-maestro.mjs --abrir` (e volta com `--fechar`), junto com as listas da família dos outros apps.
+ */
+export const MAESTRO_LANCADO = true;
+
+export const SITE_DESCRICAO = MAESTRO_LANCADO
+  ? "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO."
+  : "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
 /** Fale com a gente (rodapé, lista de espera). */
 export const CONTATO = "contato@absolutezro.com";
 
@@ -47,8 +56,14 @@ export const ROTAS = {
   semAcesso: "/sem-acesso",
   /** A entrada: o Quadro com tarefa sua em andamento, senão a Z (src/app/(app)/app/page.tsx, 28/10/2026). */
   app: "/app",
+  /** A área do freela (drizzle/0037): "Seus trabalhos" de quem é freela ligado em alguma produtora. */
+  trabalhos: "/trabalhos",
 } as const;
 
 /** Onde a pessoa vê (e pede) as ferramentas liberadas para a conta Absolute ZRO. */
 export const HUB_URL = "https://absolutezro.com";
 export const FERRAMENTAS_ZRO = `${HUB_URL}/ferramentas`;
+
+/** O login único já com a volta para o app: "Entrar" e "Criar conta" (o mesmo login com prompt=create). */
+export const ENTRAR_ZRO = `/api/zro/entrar?${new URLSearchParams({ volta: ROTAS.app })}`;
+export const CRIAR_CONTA_ZRO = `/api/zro/entrar?${new URLSearchParams({ modo: "criar", volta: ROTAS.app })}`;

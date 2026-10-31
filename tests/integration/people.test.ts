@@ -251,7 +251,7 @@ describe('consultas do painel', () => {
       ['manual', 'active'],
       ['free', 'canceled'],
     ])
-    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei'])
+    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei', 'relay']) // o Relay entra em todo plano (0031)
     expect(d.sessions).toHaveLength(1)
     expect(d.timeline.map((t) => t.action)).toContain('billing.plan_changed')
     expect(d.timeline.find((t) => t.action === 'billing.plan_changed')!.reason).toBe('cortesia')
@@ -267,10 +267,17 @@ describe('segmentos, online, arquivos e páginas', () => {
     const avulso = await newOrgWithOwner(db, `seg-avulso-${tag}`, { freePlan: true })
     const gratis = await newOrgWithOwner(db, `seg-gratis-${tag}`, { freePlan: true })
     const nada = await newUser(db, `seg-nada-${tag}`)
-    const before = await sys(async (tx) => segmentCounts(tx))
-    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: eco.orgId, planId: await planId(db, 'ciclo-do-o', 2) }))
-    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: avulso.orgId, planId: await planId(db, 'individual-synquei') }))
-    const after = await sys(async (tx) => segmentCounts(tx))
+    const completo = await planId(db, 'ciclo-do-o', 2)
+    const synquei = await planId(db, 'individual-synquei')
+    // Os outros arquivos de teste rodam ao mesmo tempo no mesmo banco (e excluem contas): antes e depois numa transação
+    // só, em leitura repetível, a contagem vê só o que este teste mudou.
+    const { before, after } = await sys(async (tx) => {
+      await tx`set transaction isolation level repeatable read`
+      const before = await segmentCounts(tx)
+      await changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: eco.orgId, planId: completo })
+      await changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: avulso.orgId, planId: synquei })
+      return { before, after: await segmentCounts(tx) }
+    })
 
     const all = await sys(async (tx) => listPeople(tx, filter({ q: tag })))
     const seg = Object.fromEntries(all.rows.map((r) => [r.id, r.segment]))
@@ -292,10 +299,14 @@ describe('segmentos, online, arquivos e páginas', () => {
       ).toEqual([who])
       expect(r.matched).toBe(1)
     }
-    // Outros testes rodam no mesmo banco: só dá para garantir o que este teste moveu.
-    expect(after.todas).toBeGreaterThanOrEqual(before.todas)
-    expect(after.ecossistema).toBeGreaterThanOrEqual(before.ecossistema + 1)
-    expect(after.avulso).toBeGreaterThanOrEqual(before.avulso + 1)
+    // Dois saíram do grátis: um para o Completo, outro para o plano de um app; o total não muda.
+    expect(after).toEqual({
+      todas: before.todas,
+      ecossistema: before.ecossistema + 1,
+      avulso: before.avulso + 1,
+      gratis: before.gratis - 2,
+      'sem-plano': before['sem-plano'],
+    })
     expect(after.todas).toBe(after.ecossistema + after.avulso + after.gratis + after['sem-plano'])
     expect(peopleFilterQuery(filter({ seg: 'avulso', pagina: '2' }))).toBe('seg=avulso&pagina=2')
   })

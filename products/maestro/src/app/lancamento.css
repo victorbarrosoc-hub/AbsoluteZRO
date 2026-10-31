@@ -1,0 +1,79 @@
+/* Lançamento (ADR 0027 do HUB): "No celular, como app." (components/instalar.tsx) e a área do app de computador
+   na página inicial. Pouco texto: o ícone do Compartilhar e o do Adicionar falam por si. O latão
+   só no ícone (nunca texto). */
+.instalar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  min-width: 0;
+}
+.instalar--pagina {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  background: var(--painel);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+.instalar__icone {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 13px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+}
+.instalar__texto {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  justify-items: start;
+}
+.instalar__titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.15rem;
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+.instalar__titulo strong {
+  font-weight: 800;
+}
+.instalar__passos {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.instalar__passos li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 0.95rem;
+  color: var(--text-mute);
+}
+.instalar__passos svg {
+  flex: none;
+  color: var(--acento);
+}
+.instalar__passos strong {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+/* A área de download do app de computador na página inicial (só aparece com instalador publicado). */
+.idesktop {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.idesktop small {
+  color: var(--text-mute);
+  font-weight: 400;
+}

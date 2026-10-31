@@ -4,6 +4,8 @@ import { listarOrcamentos } from "@/lib/orcamento/orcamentos";
 import { avisoDeValidade, nomeStatus, STATUS_ORCAMENTO } from "@/lib/orcamento/motor";
 import { brl, dataCurta, hojeBr } from "@/lib/dinheiro";
 import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import { SemArea } from "@/components/sem-area";
 import { Busca } from "@/components/busca";
 import { Pilulas } from "@/components/crm";
 import { Icone } from "@/components/icones";
@@ -15,6 +17,12 @@ export const metadata = { title: "Orçamentos" };
 /** Orçamentos: a versão mais recente de cada número, com total, validade e status. */
 export default async function Orcamentos({ searchParams }: PageProps<"/app/orcamentos">) {
   const sessao = await exigirAcessoNaPagina("/app/orcamentos");
+  if (!podeArea(sessao, "orcamentos"))
+    return (
+      <div className="pagina">
+        <SemArea area="orcamentos" />
+      </div>
+    );
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const status = typeof sp.status === "string" && STATUS_ORCAMENTO.some((s) => s.k === sp.status) ? sp.status : "todos";

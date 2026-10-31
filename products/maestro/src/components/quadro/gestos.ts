@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import type { ColunaId } from "@/lib/quadro/metodo";
+import { criarFantasma, varsDoCard } from "./fantasma";
 
 const CELULAR = "(max-width: 760px)";
 const GAP = 16; // entre a coluna atual e a vizinha enquanto deslizam (é a margem da tela: a vizinha nasce na borda)
@@ -247,7 +248,7 @@ export function useGestosCelular(o: Opcoes) {
       null;
     let lado: { pontos: { t: number; x: number }[]; dx: number } | null = null;
     let arr: Arrasto | null = null;
-    let engolir = 0;
+    let engolir = -Infinity; // (0 engoliria todo clique nos primeiros 400 ms da página)
 
     const vizinhaDe = (dx: number): ColunaId | null => {
       const { colunas, coluna } = op.current;
@@ -369,16 +370,7 @@ export function useGestosCelular(o: Opcoes) {
         quadro.setPointerCapture(toque.id);
       } catch {}
       const r0 = card.getBoundingClientRect();
-      const fantasma = card.cloneNode(true) as HTMLElement;
-      fantasma.removeAttribute("data-card");
-      fantasma.removeAttribute("draggable");
-      fantasma.setAttribute("aria-hidden", "true");
-      fantasma.classList.add("q-fantasma");
-      fantasma.style.cssText = `position:fixed;left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px;margin:0;transform-origin:${toque.x0 - r0.left}px ${toque.y0 - r0.top}px`;
-      const cor = getComputedStyle(card).getPropertyValue("--col");
-      if (cor) fantasma.style.setProperty("--col", cor);
-      (quadro.closest(".shell") ?? document.body).appendChild(fantasma);
-      requestAnimationFrame(() => fantasma.classList.add("q-fantasma--no-ar"));
+      const fantasma = criarFantasma(card, r0, { x: toque.x0, y: toque.y0 }, varsDoCard(card));
       card.classList.add("q-card--origem");
       quadro.dataset.arrasto = "";
       arr = {

@@ -74,6 +74,8 @@ export type EquipamentoFicha = EquipamentoLista & {
   serie: string | null;
   compraEm: string | null;
   valorCents: number | null;
+  /** A pessoa tem a área "Valores do inventário". */
+  veValor: boolean;
   freelaId: string | null;
   local: string | null;
   notas: string | null;
@@ -84,7 +86,8 @@ export async function obterEquipamento(ctx: Contexto, id: string, hoje: string):
   if (!ehUuid(id)) return null;
   return getBanco().asUser(ctx, async (tx) => {
     const [e] = (await tx.execute(sql`
-      select e.*, f.nome as freela_nome, e.compra_em::text as compra_t from maestro.equipamentos e left join maestro.freelas f on f.id = e.freela_id
+      select e.*, f.nome as freela_nome, e.compra_em::text as compra_t, maestro.pode(e.org_id, 'inventario_valores') as ve_valor
+        from maestro.equipamentos e left join maestro.freelas f on f.id = e.freela_id
        where e.id = ${id}`)) as unknown as Record<string, unknown>[];
     if (!e) return null;
     const reservas = (await tx.execute(sql`
@@ -100,7 +103,9 @@ export async function obterEquipamento(ctx: Contexto, id: string, hoje: string):
       serie: e.serie as string | null,
       patrimonio: e.patrimonio as string | null,
       compraEm: e.compra_t as string | null,
-      valorCents: e.valor_cents == null ? null : Number(e.valor_cents),
+      // Só com a área "Valores do inventário" (src/lib/acessos.ts); o gatilho equipamentos_guarda_area segura a gravação.
+      valorCents: e.valor_cents == null || !e.ve_valor ? null : Number(e.valor_cents),
+      veValor: e.ve_valor === true,
       estado: e.estado as Estado,
       dono: e.dono as Dono,
       freelaId: e.freela_id as string | null,

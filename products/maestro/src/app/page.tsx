@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import { temAcesso } from "@/lib/auth/acesso";
 import { sessaoDaPagina } from "@/lib/auth/pagina";
 import { COLUNAS } from "@/lib/quadro/metodo";
-import { CONTATO, HUB_URL, ROTAS, SITE_FRASE, SITE_NOME } from "@/lib/site";
+import { downloadsDoMaestro } from "@/lib/desktop";
+import { CONTATO, CRIAR_CONTA_ZRO, ENTRAR_ZRO, HUB_URL, MAESTRO_LANCADO, ROTAS, SITE_FRASE, SITE_NOME } from "@/lib/site";
 import { Icone, type NomeIcone } from "@/components/icones";
-import { IPhone, MacBook } from "@/components/inicio/aparelhos";
+import { Abas } from "@/components/inicio/abas";
+import { IPhone, MacBook, Recorte } from "@/components/inicio/aparelhos";
+import { DemoAcessos, DemoViagem } from "@/components/inicio/demos";
+import { InstalarNoCelular } from "@/components/instalar";
 import { QueroAcesso } from "@/components/inicio/quero-acesso";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
 import { SeletorDeTema } from "@/components/tema";
@@ -18,36 +23,110 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-/** O que já roda hoje (Fase 1 do plano v2). Cada item só entra aqui quando a tela existe no app. */
-const JA: { icone: NomeIcone; nome: string; linha: string }[] = [
-  { icone: "aprovacoes", nome: "Aprovação do cliente", linha: "Um link por lote. O cliente comenta no tempo do vídeo e aprova sem conta." },
-  { icone: "clientes", nome: "Clientes", linha: "Quem você atende, com projetos e cards em aberto." },
-  { icone: "projetos", nome: "Projetos", linha: "Código, prazo e os cards do cliente juntos." },
-  { icone: "z", nome: "Z", linha: "A IA da Absolute ZRO em toda tela." },
+/** Números do próprio produto (src/lib/quadro/metodo.ts, revisao, roteiro/vistas, acessos.ts). */
+const NUMEROS: { n: string; rotulo: string }[] = [
+  { n: String(COLUNAS.length), rotulo: "colunas do método" },
+  { n: "1", rotulo: "link por lote, sem conta" },
+  { n: "4", rotulo: "vistas do roteiro" },
+  { n: "6", rotulo: "áreas de acesso por pessoa" },
 ];
 
-/** A produtora por dentro (plano v2 §6–§7): cada item só entra aqui quando a tela existe no app. */
-const PRODUTORA: { icone: NomeIcone; nome: string; dica: string }[] = [
-  { icone: "hoje", nome: "Hoje", dica: "O dia da produtora: agenda, prazos, quem retornar e o caixa da semana" },
-  { icone: "pedidos", nome: "Pedidos", dica: "Pedido pelo seu link e funil até o ganho, com o dia de retornar" },
-  { icone: "numeros", nome: "Números", dica: "Meta do mês, ticket médio, conversão e margem por projeto" },
-  { icone: "orcamento", nome: "Orçamentos", dica: "Tabela de preços, versões e timbrado em PDF" },
-  { icone: "check", nome: "Aceite online", dica: "O cliente aceita o orçamento e nasce o projeto com as parcelas" },
-  { icone: "documento", nome: "Contrato", dica: "Vai junto com o orçamento; o cliente aceita com CPF ou CNPJ e fica o registro" },
-  { icone: "marca", nome: "Sua marca", dica: "Logo e cor no timbrado e em tudo o que o cliente abre" },
-  { icone: "marca", nome: "O app com a sua marca", dica: "No Pro ou como adicional: seu logo e sua cor no app inteiro" },
-  { icone: "dinheiro", nome: "Financeiro", dica: "A pagar, a receber, fluxo e resultado" },
-  { icone: "freelas", nome: "Freelas", dica: "Banco de freelas, escala e pagamentos" },
-  { icone: "inventario", nome: "Inventário", dica: "Equipamento e reservas sem conflito" },
-  { icone: "agenda", nome: "Agenda", dica: "Diárias, equipe e ordem do dia, também no calendário do celular" },
-  { icone: "pessoas", nome: "Acesso por cliente", dica: "A equipe vê só os clientes dela" },
-  { icone: "importar", nome: "Importar planilha", dica: "Clientes, projetos, freelas e equipamento de um CSV" },
+/**
+ * As ferramentas de dentro, uma por aba, cada uma com a tela de verdade no MacBook e no iPhone. Só entra aqui o que já
+ * roda no app; `pontos` são 3 marcas curtas (o resto fica no app).
+ */
+const FERRAMENTAS: {
+  id: string;
+  aba: string;
+  icone: NomeIcone;
+  fino: string;
+  forte: string;
+  linha: string;
+  pontos: string[];
+  mac: { nome: string; alt: string };
+  iphone: { nome: string; alt: string };
+}[] = [
+  {
+    id: "quadro",
+    aba: "Quadro",
+    icone: "quadro",
+    fino: "A pauta em",
+    forte: "oito colunas.",
+    linha: "Da ideia à entrega, cada card sabe o próximo passo.",
+    pontos: ["Arrastar e soltar", "Prazo e responsável", "Colunas suas"],
+    mac: { nome: "quadro", alt: "O Quadro num MacBook: as oito colunas com os cards da produtora de demonstração" },
+    iphone: { nome: "quadro", alt: "O Quadro no iPhone, uma coluna por vez" },
+  },
+  {
+    id: "aprovacao",
+    aba: "Aprovação",
+    icone: "aprovacoes",
+    fino: "O cliente aprova",
+    forte: "pelo link.",
+    linha: "Sem conta: comenta no tempo do vídeo e decide.",
+    pontos: ["Comentário no tempo", "PIN opcional", "O card anda sozinho"],
+    mac: { nome: "aprovacao", alt: "Um lote de aprovação no MacBook: o vídeo, as versões e os comentários com tempo" },
+    iphone: { nome: "aprovacao", alt: "O link do cliente no iPhone, com o vídeo e a decisão" },
+  },
+  {
+    id: "orcamento",
+    aba: "Orçamento",
+    icone: "orcamento",
+    fino: "Orçamento",
+    forte: "com contrato.",
+    linha: "Tabela de preços, timbrado em PDF e aceite online.",
+    pontos: ["Timbrado em PDF", "Contrato junto", "Parcelas no caixa"],
+    mac: { nome: "orcamento", alt: "Um orçamento no MacBook, com o link para o cliente e o contrato indo junto" },
+    iphone: { nome: "orcamento", alt: "O orçamento no iPhone, com as parcelas do link" },
+  },
+  {
+    id: "equipe",
+    aba: "Equipe",
+    icone: "freelas",
+    fino: "Equipe e",
+    forte: "diárias.",
+    linha: "Escala, equipamento e conflito de agenda à vista.",
+    pontos: ["Ordem do dia", "Conflito avisado", "Agenda no celular"],
+    mac: { nome: "agenda", alt: "A agenda no MacBook: diárias com a equipe e o aviso de conflito" },
+    iphone: { nome: "equipe", alt: "Uma diária no iPhone, com a equipe escalada e o equipamento" },
+  },
+  {
+    id: "financeiro",
+    aba: "Financeiro",
+    icone: "dinheiro",
+    fino: "O caixa",
+    forte: "em dia.",
+    linha: "A pagar, a receber, fluxo e a meta do mês.",
+    pontos: ["Diária vira a pagar", "Meta do mês", "Margem por projeto"],
+    mac: { nome: "financeiro", alt: "O fluxo de caixa no MacBook, com o resultado por projeto" },
+    iphone: { nome: "financeiro", alt: "Os números do mês no iPhone, com a meta" },
+  },
+  {
+    id: "criacao",
+    aba: "Criação",
+    icone: "criacao",
+    fino: "Do roteiro",
+    forte: "ao set.",
+    linha: "Roteiro com tempo, teleprompter e o Fluxo das referências.",
+    pontos: ["Literário e técnico", "Teleprompter", "Fluxo"],
+    mac: { nome: "roteiro-literario", alt: "O editor de roteiro no MacBook, com cenas, falas e o tempo" },
+    iphone: { nome: "roteiro-teleprompter", alt: "O Teleprompter do roteiro no iPhone" },
+  },
 ];
 
-/** O que vem aí, com o selo "Em breve". Só troca de estado quando a fase dele entrar no ar. */
-const CHEGANDO: { icone: NomeIcone; nome: string }[] = [
-  { icone: "documento", nome: "Arquivos no Drive" },
-  { icone: "link", nome: "Domínio próprio" },
+const VISTAS = [
+  { id: "literario", rotulo: "Literário", alt: "O roteiro na vista Literário: cena a cena, como se lê" },
+  { id: "tecnico", rotulo: "Técnico", alt: "O roteiro na vista Técnico: imagem, lettering, áudio e tempo em colunas" },
+  { id: "teleprompter", rotulo: "Teleprompter", alt: "O roteiro na vista Teleprompter: só as falas, por pessoa" },
+  { id: "edicao", rotulo: "Edição", alt: "O roteiro na vista Edição: cada bloco com o tempo, para a ilha" },
+];
+
+/** O ecossistema: o que o Maestro reconhece porque é a mesma conta Absolute ZRO. */
+const JUNTO: { icone: NomeIcone; nome: string; linha: string }[] = [
+  { icone: "balao", nome: "Set", linha: "A conversa da equipe, em todos os apps." },
+  { icone: "pasta", nome: "Drive", linha: "As pastas do projeto, pelo SOBEDESCE." },
+  { icone: "agenda", nome: "Google Agenda", linha: "Diárias e prazos no seu calendário." },
+  { icone: "letra", nome: "TPeasy", linha: "O roteiro direto no teleprompter." },
 ];
 
 /** Cada palavra do título sobe na sua vez (CSS; o espaço fica fora do bloco). */
@@ -61,22 +140,37 @@ function palavras(texto: string, de: number) {
 }
 
 /**
- * Página inicial pública do Maestro (plano v2 §10), no padrão das irmãs: o símbolo desenhando a pauta, o produto real em
- * aparelhos, só o que existe, e a porta: "Entrar com Absolute ZRO" para quem já tem acesso e "Quero acesso" para os
- * outros. O Maestro está fechado (só a lista de acesso do HUB entra): a página diz isso sem rodeio.
+ * Página inicial pública do Maestro (plano v2 §10), no ritmo da do SOBEDESCE: o símbolo desenhando a pauta, o produto
+ * real em aparelhos, números do produto, as ferramentas numa aba cada, uma foto de set, os detalhes em cartões de mexer
+ * e a porta. Lançado (`MAESTRO_LANCADO`, no ar para toda conta Absolute ZRO; sem selo de Beta, decisão do titular de
+ * 30/10/2026): "Criar conta" e "Entrar com Absolute ZRO"
+ * direto no login único, o app no celular e, se houver instalador publicado, o de computador. Antes do lançamento:
+ * "Em teste fechado", "Quero acesso" (lista de espera) e "Entrar" para quem já está na lista do HUB. Quem entra é
+ * sempre o gate do HUB (temAcesso), nunca esta página.
  */
 export default async function Inicio() {
   const sessao = await sessaoDaPagina().catch(() => null);
   const dentro = !!sessao && temAcesso(sessao);
+  const downloads = MAESTRO_LANCADO ? await downloadsDoMaestro() : [];
   const entrar = dentro ? (
     <a className="glass-btn glass-btn--ink" href={ROTAS.app}>
       Abrir o Maestro
     </a>
   ) : (
-    <a className="glass-btn" href={ROTAS.entrar}>
+    <a className="glass-btn" href={MAESTRO_LANCADO ? ENTRAR_ZRO : ROTAS.entrar}>
       <ZroSimbolo size={18} /> Entrar com Absolute ZRO
     </a>
   );
+  const criarConta = dentro ? null : (
+    <a className="glass-btn glass-btn--ink" href={CRIAR_CONTA_ZRO}>
+      Criar conta
+    </a>
+  );
+  // O que ainda não existe, com o selo "Em breve" (o app de computador sai daqui quando há instalador publicado).
+  const chegando: { icone: NomeIcone; nome: string }[] = [
+    ...(downloads.length ? [] : [{ icone: "computador" as const, nome: "App de computador" }]),
+    { icone: "link", nome: "Domínio próprio" },
+  ];
   return (
     <div className="inicio">
       <header className="site-topo">
@@ -84,9 +178,14 @@ export default async function Inicio() {
           <MaestroSimbolo width={32} />
           <span>Maestro</span>
         </a>
+        <nav className="site-topo__nav" aria-label="Nesta página">
+          <a href="#ferramentas">Ferramentas</a>
+          <a href="#detalhes">Detalhes</a>
+          <a href="#acesso">Conta</a>
+        </nav>
         <div className="site-topo__fim">
           <SeletorDeTema />
-          <a className="glass-btn glass-btn--sm glass-btn--ink" href={dentro ? ROTAS.app : ROTAS.entrar}>
+          <a className="glass-btn glass-btn--sm glass-btn--ink" href={dentro ? ROTAS.app : MAESTRO_LANCADO ? ENTRAR_ZRO : ROTAS.entrar}>
             {dentro ? "Abrir" : "Entrar"}
           </a>
         </div>
@@ -95,17 +194,21 @@ export default async function Inicio() {
       <main id="conteudo">
         <section className="ihero" aria-labelledby="ihero-titulo">
           <MaestroSimbolo width={320} className="ihero__simbolo" />
-          <span className="selo selo--fechado">
-            <i aria-hidden="true" />
-            Em teste fechado
-          </span>
+          {MAESTRO_LANCADO ? null : (
+            <span className="selo selo--fechado">
+              <i aria-hidden="true" />
+              Em teste fechado
+            </span>
+          )}
           <h1 className="ihero__titulo" id="ihero-titulo">
             <span className="ihero__fino">{palavras("A produtora", 0)}</span> <strong>{palavras("inteira", 2)}</strong>{" "}
             <span className="ihero__fino">{palavras("num lugar só.", 3)}</span>
           </h1>
-          <p className="apoio ihero__apoio">Pauta, aprovação, orçamento e financeiro da sua equipe, com a sua conta Absolute ZRO.</p>
+          <p className="apoio ihero__apoio">Pauta, aprovação, orçamento, equipe e caixa, com a sua conta Absolute ZRO.</p>
           <div className="acoes acoes--centro ihero__acoes">
-            {dentro ? null : (
+            {dentro ? null : MAESTRO_LANCADO ? (
+              criarConta
+            ) : (
               <a className="glass-btn glass-btn--ink" href="#acesso">
                 Quero acesso
               </a>
@@ -114,92 +217,216 @@ export default async function Inicio() {
           </div>
           <div className="ihero__aparelhos">
             <MacBook tela={{ nome: "quadro", alt: "O Quadro do Maestro num MacBook, com a produtora de demonstração" }} prioridade />
-            <IPhone tela={{ nome: "quadro", alt: "O Quadro do Maestro no iPhone" }} />
+            <IPhone tela={{ nome: "hoje", alt: "O Hoje do Maestro no iPhone: agenda, prazos e quem retornar" }} />
           </div>
         </section>
 
-        <section className="isecao" aria-labelledby="quadro-titulo">
-          <div className="isecao__cabeca revela">
-            <h2 className="isecao__titulo" id="quadro-titulo">
-              Oito colunas, <strong>um método.</strong>
-            </h2>
-            <p className="apoio">Da ideia à entrega, cada card sabe o próximo passo.</p>
-          </div>
-          <ol className="metodo revela" aria-label="As colunas do Quadro">
-            {COLUNAS.map((c, i) => (
-              <li key={c.k} data-col={c.k} style={{ "--i": i } as CSSProperties} title={c.desc}>
-                <i className="q-ponto" aria-hidden="true" />
-                {c.nome}
-              </li>
+        <section className="inumeros" aria-label="O Maestro em números">
+          <dl>
+            {NUMEROS.map((x, i) => (
+              <div key={x.rotulo} className="revela" style={{ "--i": i } as CSSProperties}>
+                <dt>{x.rotulo}</dt>
+                <dd>{x.n}</dd>
+              </div>
             ))}
-          </ol>
+          </dl>
         </section>
 
-        <section className="isecao" aria-labelledby="ja-titulo">
+        <section className="isecao" id="ferramentas" aria-labelledby="ferramentas-titulo">
           <div className="isecao__cabeca revela">
-            <h2 className="isecao__titulo" id="ja-titulo">
-              Já <strong>funciona.</strong>
+            <p className="isecao__sobre">Por dentro</p>
+            <h2 className="isecao__titulo" id="ferramentas-titulo">
+              Tudo o que a produtora <strong>faz.</strong>
             </h2>
           </div>
-          <div className="ija">
-            <article className="icartao icartao--tela icartao--largo revela">
+          <Abas
+            prefixo="ferr"
+            rotulo="Ferramentas do Maestro"
+            className="itour revela"
+            abas={FERRAMENTAS.map((f) => ({
+              id: f.id,
+              rotulo: f.aba,
+              painel: (
+                <div className="itour__painel">
+                  <div className="itour__texto">
+                    <span className="itour__icone" aria-hidden="true">
+                      <Icone nome={f.icone} size={22} />
+                    </span>
+                    <h3>
+                      {f.fino} <strong>{f.forte}</strong>
+                    </h3>
+                    <p>{f.linha}</p>
+                    {f.id === "quadro" ? (
+                      <ol className="metodo" aria-label="As colunas do Quadro">
+                        {COLUNAS.map((c) => (
+                          <li key={c.k} data-col={c.k} title={c.desc}>
+                            <i className="q-ponto" aria-hidden="true" />
+                            {c.nome}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <ul className="itour__pontos">
+                        {f.pontos.map((p) => (
+                          <li key={p}>
+                            <Icone nome="check" size={14} />
+                            {p}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="itour__aparelhos">
+                    <MacBook tela={f.mac} sizes="(max-width: 900px) 90vw, 820px" />
+                    <IPhone tela={f.iphone} sizes="(max-width: 900px) 30vw, 220px" />
+                  </div>
+                </div>
+              ),
+            }))}
+          />
+        </section>
+
+        <section className="ifoto" aria-labelledby="foto-titulo">
+          <Image
+            className="ifoto__img"
+            src="/inicio/set-2400.webp"
+            alt="Uma equipe pequena filmando num cafezal ao entardecer: câmera no tripé, som com a vara e a direção olhando o celular"
+            fill
+            sizes="100vw"
+          />
+          <div className="ifoto__texto revela">
+            <h2 id="foto-titulo">
+              Feito para quem <strong>produz.</strong>
+            </h2>
+            <p>Do pedido do cliente ao pagamento do freela.</p>
+          </div>
+        </section>
+
+        <section className="isecao" id="detalhes" aria-labelledby="detalhes-titulo">
+          <div className="isecao__cabeca revela">
+            <p className="isecao__sobre">Detalhes</p>
+            <h2 className="isecao__titulo" id="detalhes-titulo">
+              O que poupa <strong>o seu dia.</strong>
+            </h2>
+          </div>
+          <div className="ibento">
+            <article className="icartao icartao--largo icartao--viagem revela">
               <div className="icartao__texto">
-                <Icone nome="aprovacoes" size={22} />
-                <h3>{JA[0].nome}</h3>
-                <p>{JA[0].linha}</p>
+                <p className="icartao__sobre">
+                  <Icone nome="carro" size={16} /> No orçamento
+                </p>
+                <h3>Viagem calculada.</h3>
+                <p>Km pela estrada e o litro da semana na ANP.</p>
+                <DemoViagem />
               </div>
-              <IPhone tela={{ nome: "aprovacao", alt: "A tela de aprovação do cliente no iPhone, com a versão nova e os comentários no tempo" }} />
+              <Recorte
+                tela={{ nome: "viagem-mac", alt: "A folha Deslocamento do orçamento: São Paulo a Campinas, SUV compacto, gasolina da semana e o custo" }}
+                larg={1020}
+                alt={1431}
+                sizes="(max-width: 900px) 90vw, 420px"
+                className="recorte--viagem"
+              />
             </article>
-            <article className="icartao icartao--tela revela">
+
+            <article className="icartao icartao--largo icartao--vistas revela">
               <div className="icartao__texto">
-                <Icone nome="clientes" size={22} />
-                <h3>{JA[1].nome}</h3>
-                <p>{JA[1].linha}</p>
+                <p className="icartao__sobre">
+                  <Icone nome="criacao" size={16} /> Criação
+                </p>
+                <h3>Um roteiro, quatro vistas.</h3>
+                <p>Escreva uma vez; a direção, o set e a ilha leem do jeito deles.</p>
               </div>
-              <IPhone tela={{ nome: "clientes", alt: "Clientes no iPhone" }} />
+              <Abas
+                prefixo="vistas"
+                rotulo="Vistas do roteiro"
+                className="iabas--vistas"
+                abas={VISTAS.map((v) => ({
+                  id: v.id,
+                  rotulo: v.rotulo,
+                  painel: <Recorte tela={{ nome: `roteiro-${v.id}-mac`, alt: v.alt }} larg={2160} alt={1350} sizes="(max-width: 900px) 92vw, 1100px" />,
+                }))}
+              />
             </article>
-            <article className="icartao icartao--tela revela">
+
+            <article className="icartao icartao--fluxo revela">
               <div className="icartao__texto">
-                <Icone nome="projetos" size={22} />
-                <h3>{JA[2].nome}</h3>
-                <p>{JA[2].linha}</p>
+                <p className="icartao__sobre">
+                  <Icone nome="fluxo" size={16} /> Fluxo
+                </p>
+                <h3>As referências num quadro.</h3>
+                <p>Fotos, notas, o roteiro e o card, ligados.</p>
               </div>
-              <IPhone tela={{ nome: "projetos", alt: "Projetos no iPhone" }} />
+              <Recorte
+                tela={{ nome: "fluxo-mac", alt: "Um Fluxo no MacBook: fotos de referência, notas em seções, o roteiro e o card ligados" }}
+                larg={2160}
+                alt={1350}
+                sizes="(max-width: 900px) 90vw, 560px"
+              />
             </article>
-            <article className="icartao icartao--produtora revela">
+
+            <article className="icartao icartao--acessos revela">
               <div className="icartao__texto">
-                <h3>A produtora por dentro.</h3>
-                <p>Do orçamento ao pagamento do freela, no mesmo lugar.</p>
+                <p className="icartao__sobre">
+                  <Icone nome="cadeado" size={16} /> Acessos
+                </p>
+                <h3>Cada um vê o que precisa.</h3>
+                <p>O valor fica com quem decide; a administração ajusta por pessoa.</p>
               </div>
-              <ul className="iproduto" aria-label="A produtora por dentro">
-                {PRODUTORA.map((p) => (
-                  <li key={p.nome} title={p.dica}>
-                    <Icone nome={p.icone} size={22} />
-                    <span>{p.nome}</span>
+              <DemoAcessos />
+            </article>
+
+            <article className="icartao icartao--junto revela">
+              <div className="icartao__texto">
+                <p className="icartao__sobre">
+                  <ZroSimbolo size={16} /> Uma conta
+                </p>
+                <h3>Os apps se reconhecem.</h3>
+              </div>
+              <ul className="ijunto">
+                {JUNTO.map((j) => (
+                  <li key={j.nome}>
+                    <span className="ijunto__icone" aria-hidden="true">
+                      <Icone nome={j.icone} size={20} />
+                    </span>
+                    <strong>{j.nome}</strong>
+                    <span>{j.linha}</span>
                   </li>
                 ))}
               </ul>
             </article>
-            <article className="icartao icartao--z revela">
-              <span className="icartao__z" aria-hidden="true">
-                <Icone nome="z" size={40} />
-              </span>
-              <div className="icartao__texto">
-                <h3>{JA[3].nome}</h3>
-                <p>{JA[3].linha}</p>
-              </div>
-            </article>
           </div>
         </section>
 
+        {MAESTRO_LANCADO ? (
+          <section className="isecao" id="celular" aria-label="No celular e no computador">
+            <div className="revela">
+              <InstalarNoCelular variante="pagina" />
+            </div>
+            {downloads.length ? (
+              <div className="isecao__cabeca revela">
+                <h2 className="isecao__titulo">
+                  No <strong>computador.</strong>
+                </h2>
+                <div className="idesktop">
+                  {downloads.map((d) => (
+                    <a key={d.sistema} className="glass-btn" href={d.href} title={d.versao ? `Versão ${d.versao}` : undefined}>
+                      <Icone nome="computador" size={18} /> {d.rotulo}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
         <section className="isecao" aria-labelledby="vem-titulo">
           <div className="isecao__cabeca revela">
-            <h2 className="isecao__titulo" id="vem-titulo">
+            <h2 className="isecao__titulo isecao__titulo--menor" id="vem-titulo">
               Vem <strong>aí.</strong>
             </h2>
           </div>
           <ul className="ivem revela">
-            {CHEGANDO.map((c) => (
+            {chegando.map((c) => (
               <li key={c.nome}>
                 <Icone nome={c.icone} size={20} />
                 <span>{c.nome}</span>
@@ -209,25 +436,41 @@ export default async function Inicio() {
           </ul>
         </section>
 
-        <section className="isecao iacesso" id="acesso" aria-labelledby="acesso-titulo">
-          <div className="isecao__cabeca revela">
-            <MaestroSimbolo width={96} />
-            <h2 className="isecao__titulo" id="acesso-titulo">
-              Por convite, <strong>por enquanto.</strong>
-            </h2>
-            <p className="apoio">Deixe seu e-mail e a gente avisa quando abrir para você.</p>
-          </div>
-          {dentro ? (
-            <div className="acoes acoes--centro">{entrar}</div>
-          ) : (
-            <>
-              <QueroAcesso />
-              <p className="sutil iacesso__ja">
-                Já tem acesso? <a href={ROTAS.entrar}>Entrar com Absolute ZRO</a>
-              </p>
-            </>
-          )}
-        </section>
+        {MAESTRO_LANCADO ? (
+          <section className="iacesso" id="acesso" aria-labelledby="acesso-titulo">
+            <div className="iacesso__miolo revela">
+              <MaestroSimbolo width={96} />
+              <h2 className="iacesso__titulo" id="acesso-titulo">
+                Já está <strong>na sua conta.</strong>
+              </h2>
+              <p>Entre com a conta Absolute ZRO.</p>
+              <div className="acoes acoes--centro">
+                {criarConta}
+                {entrar}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="iacesso" id="acesso" aria-labelledby="acesso-titulo">
+            <div className="iacesso__miolo revela">
+              <MaestroSimbolo width={96} />
+              <h2 className="iacesso__titulo" id="acesso-titulo">
+                Por convite, <strong>por enquanto.</strong>
+              </h2>
+              <p>Deixe seu e-mail e a gente avisa quando abrir para você.</p>
+              {dentro ? (
+                <div className="acoes acoes--centro">{entrar}</div>
+              ) : (
+                <>
+                  <QueroAcesso />
+                  <p className="iacesso__ja">
+                    Já tem acesso? <a href={ROTAS.entrar}>Entrar com Absolute ZRO</a>
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+        )}
       </main>
 
       <footer className="site-rodape">

@@ -19,8 +19,15 @@ export const ACOES_PONTE_SOBEDESCE = [
   'drive.compartilhar_revisao',
   'drive.recolher_revisao',
   'drive.token',
+  // "Gerar versões com o Relay" (docs/integration-contracts/relay.md, "Maestro → Relay"): a fila do SOBEDESCE.
+  'relay.converter',
+  'relay.pedido',
+  'relay.cancelar',
 ] as const
 export type AcaoPonteSobedesce = (typeof ACOES_PONTE_SOBEDESCE)[number]
+
+/** As ações que pedem também o Relay no plano da organização (além do SOBEDESCE, o destino). */
+export const ACOES_PONTE_RELAY = ['relay.converter', 'relay.pedido', 'relay.cancelar'] as const satisfies readonly AcaoPonteSobedesce[]
 
 /** Id de arquivo ou pasta do Drive. */
 export const DriveId = z.string().regex(/^[A-Za-z0-9_-]{1,200}$/)
@@ -135,6 +142,85 @@ export const DriveTokenRespostaSchema = z
     contas: z.array(z.object({ id: ContaSobedesce, email: z.string() }).strict()).max(3),
   })
   .strict()
+
+// ───── SOBEDESCE: as versões de entrega pelo Relay ─────
+
+/** Id de preset do Relay (`products/relay/src/presets.js`); "tamanho" (Tamanho exato) pede o MB na hora e fica de fora. */
+export const PresetRelayId = z
+  .string()
+  .regex(/^[a-z0-9-]{1,40}$/)
+  .refine((id) => id !== 'tamanho', 'Tamanho exato não entra no pedido')
+/** Id do pedido na fila do SOBEDESCE (opaco). */
+export const PedidoRelayId = z.string().regex(/^[A-Za-z0-9_.:-]{1,120}$/)
+
+export const STATUS_PEDIDO_RELAY = ['pendente', 'convertendo', 'pronto', 'erro', 'cancelado'] as const
+
+export const RelayConverterEntradaSchema = z
+  .object({
+    arquivoId: DriveId,
+    presets: z.array(PresetRelayId).min(1).max(8),
+    /** Sem ela, a pasta do original. */
+    pastaId: DriveId.optional(),
+    /** Do app que pede (o Maestro manda o id da versão): cada item da fila tem a chave `ref:preset`. */
+    ref: z.string().min(1).max(120),
+    conta: ContaSobedesce.optional(),
+  })
+  .strict()
+
+export const RelayConverterRespostaSchema = z
+  .object({
+    pedidos: z
+      .array(z.object({ id: PedidoRelayId, preset: PresetRelayId, ref: z.string().min(1).max(120), status: z.enum(STATUS_PEDIDO_RELAY) }).strict())
+      .min(1)
+      .max(8),
+  })
+  .strict()
+
+export const PedidoRelaySchema = z
+  .object({
+    id: PedidoRelayId,
+    preset: PresetRelayId,
+    ref: z.string().min(1).max(120),
+    status: z.enum(STATUS_PEDIDO_RELAY),
+    frac: z.number().min(0).max(1).optional(),
+    /** Só com "pronto", e "pronto" só com o MD5 do Drive igual ao do arquivo convertido. */
+    resultado: z
+      .object({
+        arquivoId: DriveId,
+        nome: z.string().min(1).max(300),
+        tamanho: z.number().int().nonnegative(),
+        md5: z.string().regex(/^[0-9a-f]{32}$/),
+        pastaId: DriveId,
+      })
+      .strict()
+      .optional(),
+    erro: z.string().max(300).optional(),
+    criado_em: IsoDate,
+    atualizado_em: IsoDate,
+  })
+  .strict()
+  .refine((p) => p.status !== 'pronto' || !!p.resultado, { message: 'pronto exige o resultado com o MD5', path: ['resultado'] })
+
+/** Sem ids (`[]`): só os computadores (o Maestro pergunta ao abrir o card se pode mostrar "Gerar versões"). */
+export const RelayPedidoEntradaSchema = z.object({ ids: z.array(PedidoRelayId).max(50) }).strict()
+export const RelayPedidoRespostaSchema = z
+  .object({
+    pedidos: z.array(PedidoRelaySchema).max(50),
+    /**
+     * Há um app de computador da conta aberto agora, ou usado há pouco (o app que pede diz isso sem prometer prazo).
+     * `relay`: algum computador da conta converte as versões (app 0.2.0 ou mais novo, que manda
+     * `x-sobedesce-capacidades: relay`); sem ele, `relay.converter` é 409 `sem_computador_relay` e o Maestro não mostra
+     * o botão. `desatualizado`: há computador, só com app antigo, e o app novo já está para baixar (o Maestro pede para atualizar). Opcionais: o site
+     * de antes da 0017 não manda, e ausente vale como `false`.
+     */
+    computador: z
+      .object({ aberto_agora: z.boolean(), usado_ha_pouco: z.boolean(), relay: z.boolean().optional(), desatualizado: z.boolean().optional() })
+      .strict(),
+  })
+  .strict()
+
+export const RelayCancelarEntradaSchema = z.object({ id: PedidoRelayId }).strict()
+export const RelayCancelarRespostaSchema = z.object({ cancelado: z.boolean(), ja_terminado: z.boolean() }).strict()
 
 /** A árvore padrão de cada projeto (`Maestro/<Cliente>/<Projeto>/…`). */
 export const ESTRUTURA_DO_PROJETO = ['01 Briefing', '02 Bruto', '03 Edição', '04 Revisão', '05 Entregas'] as const

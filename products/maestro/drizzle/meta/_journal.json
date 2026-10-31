@@ -176,6 +176,69 @@
       "when": 1795219200000,
       "tag": "0024_colunas",
       "breakpoints": false
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795478400000,
+      "tag": "0027_acessos",
+      "breakpoints": false
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795737600000,
+      "tag": "0030_roteiros",
+      "breakpoints": false
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795824000000,
+      "tag": "0031_fluxos",
+      "breakpoints": false
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795910400000,
+      "tag": "0032_fluxo_links",
+      "breakpoints": false
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795996800000,
+      "tag": "0033_roteiro_na_revisao",
+      "breakpoints": false
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1796083200000,
+      "tag": "0034_entregaveis_relay",
+      "breakpoints": false
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1796169600000,
+      "tag": "0035_capas_do_quadro",
+      "breakpoints": false
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1796256000000,
+      "tag": "0036_freela_convites",
+      "breakpoints": false
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1796342400000,
+      "tag": "0037_area_do_freela",
+      "breakpoints": false
     }
   ]
 }

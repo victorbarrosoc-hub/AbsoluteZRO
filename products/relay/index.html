@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Relay · Do master ao feed, sem perder nada</title>
+    <meta name="description" content="Conversor de vídeo e áudio da Absolute ZRO. YouTube, Reels, TikTok, WhatsApp, TV, MP3 e mais, com a ficha técnica de cada saída, no seu aparelho." />
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="canonical" href="https://relay.absolutezro.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Relay" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="Relay · Do master ao feed, sem perder nada" />
+    <meta property="og:description" content="Conversor de vídeo e áudio da Absolute ZRO. Roda no seu aparelho." />
+    <meta property="og:image" content="https://relay.absolutezro.com/marca/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://relay.absolutezro.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="preload" href="fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="app/relay.css" />
+    <link rel="stylesheet" href="app/home.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/home.js"></script>
+  </head>
+  <body>
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Relay, início"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+      <nav aria-label="Seções">
+        <a class="opcional" href="#ferramentas">Ferramentas</a>
+        <a class="opcional" href="#destinos">Destinos</a>
+        <a class="opcional" href="#conta">Conta</a>
+      </nav>
+      <button class="vidro vidro--icone tema" type="button" data-tema-botao title="Tema claro ou escuro" aria-label="Trocar tema"><i data-icone="lua"></i></button>
+      <a class="vidro vidro--tinta" href="converter">Converter</a>
+    </header>
+
+    <main id="conteudo">
+      <!-- 1 · herói: o relé liga; o produto de verdade no computador e no iPhone -->
+      <section class="heroi" aria-labelledby="t-heroi">
+        <div class="heroi-texto">
+          <span class="rele rele--heroi" aria-hidden="true"></span>
+          <p class="sobretitulo">Conversor de vídeo e áudio</p>
+          <h1 id="t-heroi"><span class="fino">Do master ao feed.</span> <span class="pesado">Sem perder nada.</span></h1>
+          <p class="apoio">O formato certo para cada destino, convertido no seu aparelho.</p>
+          <div class="acoes">
+            <a class="vidro vidro--tinta vidro--grande" href="converter">Converter agora</a>
+            <a class="vidro vidro--grande" href="#ferramentas" data-heroi-segunda>Ver as ferramentas</a>
+          </div>
+          <ul class="selos" aria-label="Destaques">
+            <li><i data-icone="cadeado"></i>Nada sai do aparelho</li>
+            <li><i data-icone="camadas"></i>Vários destinos de uma vez</li>
+          </ul>
+        </div>
+        <figure class="palco" aria-label="O Relay no computador e no iPhone">
+          <div class="macbook">
+            <div class="macbook-tela"><img data-tela="converter-mac" src="app/inicio/telas/converter-mac-claro.webp" width="1800" height="1125" alt="Conversor do Relay com YouTube 4K, Reels e WhatsApp escolhidos" fetchpriority="high" /></div>
+            <div class="macbook-base" aria-hidden="true"></div>
+          </div>
+          <div class="iphone">
+            <div class="iphone-tela"><img data-tela="fila-iphone" src="app/inicio/telas/fila-iphone-claro.webp" width="780" height="1688" alt="O mesmo arquivo no iPhone, com as três saídas e o botão Converter 3" /></div>
+          </div>
+        </figure>
+      </section>
+
+      <!-- 2 · números que vêm do próprio código -->
+      <section class="numeros-faixa" aria-label="Números">
+        <dl class="numeros">
+          <div data-aparecer><dt>destinos, com fonte e data</dt><dd data-contar="destinos">23</dd></div>
+          <div data-aparecer><dt>grupos: redes, trabalho, TV, tamanho e áudio</dt><dd data-contar="grupos">5</dd></div>
+          <div data-aparecer><dt>bytes enviados: converte aqui</dt><dd>0</dd></div>
+          <div data-aparecer><dt>conta para o ecossistema</dt><dd>1</dd></div>
+        </dl>
+      </section>
+
+      <!-- 3 · experimente: um master, o destino muda a tela, os números vêm do plano do conversor -->
+      <section class="demo" id="experimente" aria-labelledby="t-demo">
+        <header class="cabeca-secao" data-aparecer>
+          <p class="sobretitulo">Experimente</p>
+          <h2 id="t-demo"><span class="fino">Escolha para onde vai.</span> <span class="pesado">O resto é com ele.</span></h2>
+        </header>
+        <div class="demo-corpo cartao" data-aparecer>
+          <div class="demo-escolha">
+            <div class="demo-destinos" role="radiogroup" aria-label="Destino" data-demo-destinos></div>
+            <label class="chave demo-preencher" data-demo-preencher-linha>
+              <input type="checkbox" data-demo-preencher />
+              <span class="chave-trilho" aria-hidden="true"></span>
+              <span>Preencher a tela</span>
+            </label>
+          </div>
+          <div class="demo-palco" aria-hidden="true">
+            <div class="demo-tela" data-demo-tela>
+              <img src="app/inicio/praia.webp" width="1344" height="752" alt="" loading="lazy" decoding="async" />
+              <div class="demo-audio"><i data-icone="onda"></i></div>
+            </div>
+          </div>
+          <div class="demo-ficha">
+            <p class="demo-origem"><span class="ficha">master 4K</span><span class="ficha">23,976 fps</span><span class="ficha">2 min</span><i data-icone="seta"></i></p>
+            <p class="demo-nome" data-demo-nome aria-live="polite"></p>
+            <dl class="ficha-lista" data-demo-ficha></dl>
+            <a class="vidro" href="converter" data-demo-link>Converter assim<i data-icone="seta"></i></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 · as ferramentas, cada uma com a tela de verdade -->
+      <section class="ferramentas" id="ferramentas" aria-labelledby="t-ferramentas">
+        <header class="cabeca-secao" data-aparecer>
+          <p class="sobretitulo">Ferramentas</p>
+          <h2 id="t-ferramentas"><span class="fino">Tudo o que você exporta,</span> <span class="pesado">num lugar só.</span></h2>
+        </header>
+        <div class="segmentos segmentos--grande" role="tablist" aria-label="Ferramentas" data-abas="ferramentas" data-aparecer>
+          <button type="button" role="tab" id="aba-converter" aria-controls="painel-converter" aria-selected="true">Converter</button>
+          <button type="button" role="tab" id="aba-fila" aria-controls="painel-fila" aria-selected="false" tabindex="-1">Vários de uma vez</button>
+          <button type="button" role="tab" id="aba-meus" aria-controls="painel-meus" aria-selected="false" tabindex="-1">Meus presets</button>
+          <button type="button" role="tab" id="aba-painel" aria-controls="painel-painel" aria-selected="false" tabindex="-1">Painel</button>
+        </div>
+        <div class="ferramentas-paineis" data-aparecer>
+          <div class="ferramenta" role="tabpanel" id="painel-converter" aria-labelledby="aba-converter">
+            <div class="ferramenta-texto">
+              <h3>Um toque por destino.</h3>
+              <p class="apoio">Cada preset com a fonte e a data de onde veio.</p>
+              <ul class="checks">
+                <li>Resolução, faixas ou preencher</li>
+                <li>Tamanho máximo em MB</li>
+                <li>Áudio sozinho: MP3, AAC e WAV</li>
+              </ul>
+            </div>
+            <div class="macbook">
+              <div class="macbook-tela"><img data-tela="converter-mac" src="app/inicio/telas/converter-mac-claro.webp" width="1800" height="1125" alt="Conversor: os destinos de Redes, três escolhidos" loading="lazy" decoding="async" /></div>
+              <div class="macbook-base" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="ferramenta" role="tabpanel" id="painel-fila" aria-labelledby="aba-fila" hidden>
+            <div class="ferramenta-texto">
+              <h3>Vários arquivos, vários destinos.</h3>
+              <p class="apoio">Um por vez, com o progresso no próprio relé.</p>
+              <ul class="checks">
+                <li>Ficha técnica de cada saída</li>
+                <li>Arquivo grande direto numa pasta</li>
+                <li>Aviso claro quando algo não cabe</li>
+              </ul>
+            </div>
+            <div class="macbook so-computador">
+              <div class="macbook-tela"><img data-tela="fila-mac" src="app/inicio/telas/fila-mac-claro.webp" width="1800" height="1125" alt="Um arquivo 4K com três saídas: YouTube 4K, Reels e WhatsApp" loading="lazy" decoding="async" /></div>
+              <div class="macbook-base" aria-hidden="true"></div>
+            </div>
+            <div class="iphone so-celular">
+              <div class="iphone-tela"><img data-tela="fila-iphone" src="app/inicio/telas/fila-iphone-claro.webp" width="780" height="1688" alt="Um arquivo 4K com três saídas, no iPhone" loading="lazy" decoding="async" /></div>
+            </div>
+          </div>
+          <div class="ferramenta" role="tabpanel" id="painel-meus" aria-labelledby="aba-meus" hidden>
+            <div class="ferramenta-texto">
+              <h3>Do jeito da sua entrega.</h3>
+              <p class="apoio">Parta de um preset e mude o que quiser, com a ficha ao vivo.</p>
+              <ul class="checks">
+                <li>Codec, cadência exata e bitrate</li>
+                <li>Recorte, giro e trecho</li>
+                <li>Leve para outro aparelho em .relay.json</li>
+              </ul>
+            </div>
+            <div class="macbook">
+              <div class="macbook-tela"><img data-tela="meus-mac" src="app/inicio/telas/meus-mac-claro.webp" width="1800" height="1125" alt="Editor de preset: Reels da marca a 23,976 fps exatos, com a ficha técnica ao lado" loading="lazy" decoding="async" /></div>
+              <div class="macbook-base" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="ferramenta" role="tabpanel" id="painel-painel" aria-labelledby="aba-painel" hidden>
+            <div class="ferramenta-texto">
+              <h3>O que saiu, em todo aparelho.</h3>
+              <p class="apoio">Com a conta Absolute ZRO. Só nomes e números, nunca o arquivo.</p>
+              <ul class="checks">
+                <li>Recentes e converter de novo</li>
+                <li>Projetos com os destinos de sempre</li>
+                <li>Liberado para a equipe</li>
+              </ul>
+            </div>
+            <div class="macbook so-computador">
+              <div class="macbook-tela"><img data-tela="painel-mac" src="app/inicio/telas/painel-mac-claro.webp" width="1800" height="1125" alt="Painel: seis conversões, 15 minutos e 14,5 GB a menos no disco" loading="lazy" decoding="async" /></div>
+              <div class="macbook-base" aria-hidden="true"></div>
+            </div>
+            <div class="iphone so-celular">
+              <div class="iphone-tela"><img data-tela="painel-iphone" src="app/inicio/telas/painel-iphone-claro.webp" width="780" height="1688" alt="Painel no iPhone com os números e as conversões recentes" loading="lazy" decoding="async" /></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 · qualidade, em cartões; "cabe no limite" com a conta do conversor -->
+      <section class="qualidade" id="qualidade" aria-labelledby="t-qualidade">
+        <header class="cabeca-secao" data-aparecer>
+          <p class="sobretitulo">Qualidade</p>
+          <h2 id="t-qualidade"><span class="fino">Qualidade de</span> <span class="pesado">quem entrega.</span></h2>
+        </header>
+        <div class="bento">
+          <article class="cartao bloco bloco--limite" data-aparecer>
+            <div class="bloco-cabeca">
+              <p class="bloco-sobre">Tamanho exato</p>
+              <h3>Cabe no limite.</h3>
+              <p class="apoio">Você diz os MB. Ele escolhe a resolução que fica nítida.</p>
+            </div>
+            <div class="limite">
+              <label class="limite-rotulo" for="limite-mb">Limite</label>
+              <output class="limite-mb" for="limite-mb" data-limite-mb>20 MB</output>
+              <input type="range" id="limite-mb" min="0" max="7" step="1" value="2" data-limite />
+              <div class="limite-resultado" aria-live="polite">
+                <span class="limite-quadro" data-limite-quadro aria-hidden="true"></span>
+                <span><strong data-limite-tamanho>960×540</strong><small data-limite-detalhe></small></span>
+              </div>
+              <p class="limite-nota">Master 4K de 2 min.</p>
+            </div>
+          </article>
+          <article class="cartao bloco" data-aparecer>
+            <i data-icone="lupa"></i>
+            <h3>Lanczos-3</h3>
+            <p class="apoio">Redução nítida, na placa de vídeo.</p>
+          </article>
+          <article class="cartao bloco" data-aparecer>
+            <i data-icone="cor"></i>
+            <h3>Cor certa</h3>
+            <p class="apoio">BT.709 marcado. Igual em todo player.</p>
+          </article>
+          <article class="cartao bloco" data-aparecer>
+            <i data-icone="chip"></i>
+            <h3>Chip do aparelho</h3>
+            <p class="apoio">Usa o codificador de vídeo que ele tem.</p>
+          </article>
+          <article class="cartao bloco bloco--maxima" data-aparecer>
+            <i data-icone="estrela"></i>
+            <h3>Máxima qualidade</h3>
+            <p class="apoio">No Mac e no Windows, o app SOBEDESCE converte com o x264.</p>
+            <span class="ficha">App do Relay: depois</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- 6 · todos os destinos, por grupo -->
+      <section class="destinos" id="destinos" aria-labelledby="t-destinos">
+        <header class="cabeca-secao" data-aparecer>
+          <p class="sobretitulo">Destinos</p>
+          <h2 id="t-destinos"><span class="fino"><span data-contar="destinos">23</span> destinos.</span> <span class="pesado">Cada um com fonte e data.</span></h2>
+        </header>
+        <div class="segmentos" role="tablist" aria-label="Grupos de destinos" data-abas="destinos" data-destinos-abas data-aparecer></div>
+        <div class="grade-destinos" data-destinos data-aparecer></div>
+      </section>
+
+      <!-- 7 · a conta: painel, equipe e o Set -->
+      <section class="conta-secao" id="conta" aria-labelledby="t-conta">
+        <div class="conta-texto" data-aparecer>
+          <p class="sobretitulo">Conta Absolute ZRO</p>
+          <h2 id="t-conta"><span class="fino">Uma conta.</span> <span class="pesado">Tudo junto.</span></h2>
+          <p class="apoio">Converter não pede conta. Com ela, vêm o painel, a equipe e o Set.</p>
+          <ul class="conta-itens">
+            <li><span class="conta-icone"><i data-icone="ficha"></i></span><span><strong>Painel</strong><small>O que saiu, em todo aparelho</small></span></li>
+            <li><span class="conta-icone"><i data-icone="camadas"></i></span><span><strong>Equipe</strong><small>Projetos e presets liberados</small></span></li>
+            <li><span class="conta-icone conta-icone--set" aria-hidden="true">Set</span><span><strong>Set</strong><small>Quem está online e as conversas</small></span></li>
+          </ul>
+          <a class="vidro vidro--tinta vidro--grande" href="/api/zro/entrar?volta=%2Fpainel" data-conta-acao hidden>Entrar com a Absolute ZRO</a>
+        </div>
+        <div class="conta-palco" data-aparecer>
+          <div class="iphone iphone--grande">
+            <div class="iphone-tela"><img data-tela="painel-iphone" src="app/inicio/telas/painel-iphone-claro.webp" width="780" height="1688" alt="Painel do Relay no iPhone: olá, Lia, e os números da conta" loading="lazy" decoding="async" /></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8 · família -->
+      <section class="familia" id="familia" aria-labelledby="t-familia">
+        <header class="cabeca-secao" data-aparecer>
+          <h2 id="t-familia"><span class="fino">Mora no</span> <span class="pesado">ecossistema inteiro.</span></h2>
+          <p class="apoio">O Relay aparece onde você precisa exportar.</p>
+        </header>
+        <div class="orbita" data-familia data-aparecer>
+          <div class="orbita-centro"><img src="marca/relay-icone.svg" alt="Relay" /></div>
+        </div>
+      </section>
+
+      <!-- 9 · fecho escuro: privacidade e a ação -->
+      <section class="fecho" aria-labelledby="t-fecho">
+        <div class="fecho-caixa" data-aparecer>
+          <div class="cadeado" aria-hidden="true"><i data-icone="cadeado"></i></div>
+          <h2 id="t-fecho"><span class="pesado">Seu vídeo</span> <span class="fino">fica com você.</span></h2>
+          <p class="apoio">O Relay converte no seu computador ou celular. O vídeo não vai para a internet.</p>
+          <a class="vidro vidro--grande vidro--claro" href="converter">Converter agora</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <a class="zro" href="https://absolutezro.com" title="Absolute ZRO">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill="currentColor" fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg>
+        Feito pela Absolute ZRO
+      </a>
+      <a href="converter">Converter</a>
+      <a href="painel">Painel</a>
+      <a href="marca/">Marca</a>
+      <span>O futuro começa do zero.</span>
+    </footer>
+  </body>
+</html>

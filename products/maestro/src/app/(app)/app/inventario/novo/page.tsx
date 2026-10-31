@@ -3,6 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { listarFreelas } from "@/lib/freelas/servidor";
 import { camposEquipamento } from "@/lib/inventario/formularios";
 import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario } from "@/components/form";
 import { salvarEquipamentoAcao } from "../acoes";
 
@@ -26,7 +27,7 @@ export default async function NovoEquipamento() {
       </CabecaForm>
       <Formulario
         acao={salvarEquipamentoAcao}
-        campos={camposEquipamento(freelas)}
+        campos={camposEquipamento(freelas, podeArea(s, "inventario_valores"))}
         inicial={{ categoria: "auto", estado: "disponivel", dono: "produtora", local: "Estúdio" }}
         rotulo="Adicionar"
         voltar="/app/inventario"

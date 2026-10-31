@@ -11,13 +11,36 @@ import { SheetHead } from './ui.js'
 import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
 import { Avatar } from './main.js'
 import { AceitarOutros } from './p2p.js'
+import { DICA_MODO, NOME_MODO, modoDe } from '../lib/modo-drive.js'
+
+/** Drive híbrido: o modo deste Drive numa linha, com o que muda recolhido (os mesmos textos de Sua conta no site). */
+export function ModoDoDrive({ drive }) {
+  if (!drive) return null
+  const modo = modoDe(drive)
+  return html`<div class="k-modo" data-modo-drive=${modo}>
+    <div class="k-modo-linha">
+      <span>Acesso ao Drive</span>
+      <b><span class=${modo === 'total' ? 'k-modo-ponto is-total' : 'k-modo-ponto'} aria-hidden="true"></span>${NOME_MODO[modo]}</b>
+    </div>
+    <details class="k-modo-dica">
+      <summary>O que muda</summary>
+      <ul>${DICA_MODO[modo].map((t) => html`<li>${t}</li>`)}</ul>
+    </details>
+  </div>`
+}
 
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em icons/familia/). Abrem fora do app.
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
+  { href: 'https://relay.absolutezro.com', nome: 'Relay', img: 'icons/familia/relay.svg' },
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
-  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'icons/familia/tpeasy.svg' },
+  { href: 'https://tpeasy.vercel.app', nome: 'TPeasy', img: 'icons/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true
+// em ordem alfabética, logo depois da Absolute ZRO
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'icons/familia/maestro.svg' })
 
 function Familia() {
   return html`<section class="k-familia k-entra" style="--i:5" aria-label="Absolute ZRO">
@@ -65,7 +88,7 @@ function pcSummary(pcs = []) {
 }
 
 export function SettingsSheet() {
-  const { user, quota, lan, account, drives, pcs } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores }))
+  const { user, quota, lan, account, drives, pcs, drive } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive }))
   const [settings, setSettings] = useState(getSettings())
   const network = networkOf(settings)
 
@@ -85,6 +108,7 @@ export function SettingsSheet() {
         acao=${html`<${Avatar} user=${user} size=${40} />`}
       >
         ${quota ? html`<${Storage} quota=${quota} />` : null}
+        ${LAN ? null : html`<${ModoDoDrive} drive=${drive} />`}
       </${Passo}>
 
       <${Passo} icone="bolt" cor="up" titulo="Envio" frase=${NETWORKS[network].help} i=${1}>

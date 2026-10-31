@@ -6,7 +6,7 @@ import { NOME_STATUS, nomeCategoria } from "@/lib/financeiro/contas";
 import type { Lancamento } from "@/lib/financeiro/servidor";
 import { Icone } from "./icones";
 import { Abas, SeloStatus } from "./painel";
-import { EstadoVazio } from "./vazio";
+import { SemArea } from "./sem-area";
 
 const ABAS = [
   { href: "/app/financeiro", nome: "Lançamentos" },
@@ -30,8 +30,9 @@ export function CabecaFinanceiro({ ativa, acao }: { ativa: string; acao?: ReactN
   );
 }
 
+/** Para quem não tem a área Financeiro (src/lib/acessos.ts): sem abas nem link para dentro, só o estado fechado. */
 export function SemDinheiro() {
-  return <EstadoVazio icone="dinheiro" titulo="O Financeiro é da gestão" apoio="Só administração e gestão veem entradas, saídas e pagamentos." />;
+  return <SemArea area="financeiro" />;
 }
 
 export function NovoLancamento() {

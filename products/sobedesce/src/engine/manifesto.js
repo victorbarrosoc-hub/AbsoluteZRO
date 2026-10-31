@@ -29,7 +29,7 @@ const CONTAGENS = ['organizados', 'sincronizados', 'ignorados', 'pendentes', 'au
 const LISTAS = ['ausentes', 'alterados', 'movidos', 'revisar']
 const RECIBO_MAX_LIDO = 1024 * 1024 // só o fim do arquivo (as linhas mais novas)
 
-/** "0.1.0+1234" (build do CI) ou "0.1.0+dev". */
+/** "0.2.0+1234" (build do CI) ou "0.2.0+dev". */
 export function appVersao(build = readBuildInfo().build) {
   return `${APP_VERSION}+${build > 0 ? build : 'dev'}`
 }

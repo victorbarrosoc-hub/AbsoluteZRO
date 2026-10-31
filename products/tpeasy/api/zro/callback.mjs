@@ -44,6 +44,12 @@ export default async function callback(req, res) {
   const iss = url.searchParams.get('iss')
   if (iss !== null && iss !== config().emissor) return ir(comAviso(volta, 'erro'))
   const erro = url.searchParams.get('error')
+  // HUB de antes da 0040 (recusa tpeasy.roteiros) ou de antes do Set (recusa zro.set): pede de novo sem o escopo novo,
+  // um degrau por vez (no máximo duas vezes); o resto do login não muda.
+  if (erro === 'invalid_scope' && !ida.semSet) {
+    const degrau = ida.semRoteiros ? 'sem_set=1' : 'sem_roteiros=1'
+    return ir(`/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&${degrau}`)
+  }
   if (erro) return ir(comAviso(volta, erro === 'access_denied' ? 'recusado' : 'erro'))
   const code = url.searchParams.get('code')
   if (!code) return ir(comAviso(volta, 'erro'))

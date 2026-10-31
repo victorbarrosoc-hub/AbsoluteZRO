@@ -189,7 +189,8 @@ describe("no banco", () => {
     const vf = fr.validarFreela({ nome: "Rafael Moura", funcoes: "Edição", valores: "Edição: 500,00" });
     assert.ok(vf.ok);
     if (!vf.ok) return;
-    const fl = await fr.salvarFreela(o.equipe, vf.entrada);
+    // Os valores do freela são da área "Diárias e cachês" (a gestão tem); a equipe escala com a diária do cadastro.
+    const fl = await fr.salvarFreela(o.gestor, vf.entrada);
     assert.ok(fl.ok);
     if (!fl.ok) return;
     const ve = fr.validarEscala({ freela: fl.id, funcao: "edicao", inicio: "2026-11-02", fim: "2026-11-04", modo: "diaria", valor: "500,00" });

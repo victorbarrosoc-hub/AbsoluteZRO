@@ -1,16 +1,22 @@
 /**
  * Banco de freelas e escala (porte de freelancers/freelancer_rates/project_crew/event_crew do ZRO). Sempre como a
- * pessoa (`asUser`, RLS). A escala vira "a pagar" no Financeiro pelo gatilho do banco (drizzle/0008); o status
- * pago/pendente e os dados de pagamento só chegam para administração e gestão.
+ * pessoa (`asUser`, RLS). A escala vira "a pagar" no Financeiro pelo gatilho do banco (drizzle/0008). Por área
+ * (src/lib/acessos.ts, lida no banco por `maestro.pode` na mesma transação): diárias e cachês só com "Diárias";
+ * e-mail, WhatsApp, CPF e PIX só com "Dados da equipe"; o status pago/pendente só com "Financeiro".
  */
 import { sql } from "drizzle-orm";
 import { codigoPg, getBanco, PG, type Contexto, type Tx } from "@/lib/db/client";
 import { ehUuid, falha, padraoBusca, traduzirPg, type Erros, type Res } from "@/lib/crm/comum";
 import { ehData, lerReais } from "@/lib/dinheiro";
-import { podeVerDinheiro, type Papel } from "@/lib/papeis";
+import { areasNaTx } from "@/lib/acessos-servidor";
 import { statusDe, type Status } from "@/lib/financeiro/contas";
 import { diasDoPeriodo, normalizarFuncao, UNIDADES_VALOR, type UnidadeValor } from "./funcoes";
 import { abrirCampo, cifrarCampo, lerDocumento, lerPix, type TipoPix } from "./pagamento";
+import { desligarNaTx, ligarNaTx } from "./convite-servidor";
+import type { PessoaZro } from "@/lib/zro/pessoas";
+
+/** A conta Absolute ZRO no salvar: ligar à pessoa do @ (perfil relido no HUB pelo servidor) ou desligar. */
+export type ContaNoSalvar = { pessoa: PessoaZro } | { desligar: true };
 
 /* ───────────── lista e ficha ───────────── */
 
@@ -32,6 +38,7 @@ export async function listarFreelas(ctx: Contexto, o: { busca?: string; funcao?:
   return getBanco().asUser(ctx, async (tx) => {
     const r = await tx.execute(sql`
       select f.id, f.nome, f.cidade, f.funcoes, f.ativo,
+             -- freela_valores já é da área "Diárias" no RLS: sem ela, a subconsulta volta vazia.
              (select min(v.valor_cents)::float8 from maestro.freela_valores v where v.freela_id = f.id and v.unidade = 'diaria') as diaria,
              (select count(*)::int from maestro.escalas e where e.freela_id = f.id) as escalas,
              (select count(*)::int from maestro.freela_equipamentos q where q.freela_id = f.id and q.ativo) as equipamentos
@@ -59,8 +66,9 @@ export type EscalaDoFreela = {
   inicio: string;
   fim: string;
   dias: number;
-  valorCents: number;
-  /** Só para administração e gestão. */
+  /** null = a pessoa não tem a área "Diárias e cachês". */
+  valorCents: number | null;
+  /** Só com a área Financeiro. */
   pagamento: { status: Status; pagoCents: number; lancamentoId: string } | null;
 };
 export type DadosPagamento = { documento: string | null; pixTipo: TipoPix | null; pix: string | null; titular: string | null; ilegivel: boolean };
@@ -81,21 +89,25 @@ export type FreelaFicha = {
   valores: Valor[];
   escalas: EscalaDoFreela[];
   equipamentos: { id: string; nome: string; categoria: string }[];
-  /** undefined = o papel não vê; null = sem cadastro. */
+  /** undefined = a pessoa não tem a área "Dados da equipe"; null = sem cadastro. */
   dadosPagamento?: DadosPagamento | null;
+  /** O que a pessoa vê nesta ficha (a tela esconde o resto; os campos já vêm vazios). */
+  ve: { diarias: boolean; dados: boolean; financeiro: boolean };
 };
 
-export async function obterFreela(ctx: Contexto, papel: Papel, id: string, hoje: string): Promise<FreelaFicha | null> {
+export async function obterFreela(ctx: Contexto, id: string, hoje: string): Promise<FreelaFicha | null> {
   if (!ehUuid(id)) return null;
-  const dinheiro = podeVerDinheiro(papel);
   return getBanco().asUser(ctx, async (tx) => {
     const [f] = (await tx.execute(sql`select * from maestro.freelas where id = ${id}`)) as unknown as Record<string, unknown>[];
     if (!f) return null;
+    const a = await areasNaTx(tx, ctx.orgId);
+    const dinheiro = a.financeiro;
+    const dados = a.dados_equipe;
     const valores = (await tx.execute(sql`
       select funcao, unidade, valor_cents::float8 as "valorCents" from maestro.freela_valores where freela_id = ${id} order by funcao, unidade`)) as unknown as Valor[];
     const escalas = (await tx.execute(sql`
       select e.id, e.projeto_id as "projetoId", p.title as projeto, p.code as "projetoCodigo", ev.titulo as evento, e.funcao, e.inicio::text, e.fim::text, e.dias,
-             e.valor_cents::float8 as "valorCents"
+             case when maestro.pode(e.org_id, 'diarias') then e.valor_cents::float8 end as "valorCents"
         from maestro.escalas e
         left join maestro.projects p on p.id = e.projeto_id
         left join maestro.eventos ev on ev.id = e.evento_id
@@ -113,7 +125,7 @@ export async function obterFreela(ctx: Contexto, papel: Papel, id: string, hoje:
     const equipamentos = (await tx.execute(sql`
       select id, nome, categoria from maestro.equipamentos where freela_id = ${id} order by categoria, nome`)) as unknown as FreelaFicha["equipamentos"];
     let dadosPagamento: DadosPagamento | null | undefined;
-    if (dinheiro) {
+    if (dados) {
       const [pg] = (await tx.execute(sql`select * from maestro.freela_pagamento where freela_id = ${id}`)) as unknown as Record<string, string | null>[];
       if (pg) {
         const d = abrirCampo(ctx.orgId, id, "documento", pg.documento_enc);
@@ -125,8 +137,8 @@ export async function obterFreela(ctx: Contexto, papel: Papel, id: string, hoje:
       id,
       nome: f.nome as string,
       cidade: f.cidade as string | null,
-      email: f.email as string | null,
-      whatsapp: f.whatsapp as string | null,
+      email: dados ? (f.email as string | null) : null,
+      whatsapp: dados ? (f.whatsapp as string | null) : null,
       instagram: f.instagram as string | null,
       zroArroba: (f.zro_arroba as string | null) ?? null,
       funcoes: (f.funcoes as string[]) ?? [],
@@ -143,7 +155,8 @@ export async function obterFreela(ctx: Contexto, papel: Papel, id: string, hoje:
         };
       }),
       equipamentos: [...equipamentos],
-      ...(dinheiro ? { dadosPagamento } : {}),
+      ...(dados ? { dadosPagamento } : {}),
+      ve: { diarias: a.diarias, dados, financeiro: dinheiro },
     };
   });
 }
@@ -231,14 +244,28 @@ export function validarFreela(f: Record<string, string>): { ok: true; entrada: E
   return { ok: true, entrada };
 }
 
-export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
+export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false, conta?: ContaNoSalvar): Promise<Res<{ id: string }>> {
   if (id && !ehUuid(id)) return falha("nao_existe", "Esse freela não existe.");
   try {
-    return await getBanco().asUser(ctx, (tx) => gravarFreela(tx, ctx, e, id, demo));
+    return await getBanco().asUser(ctx, async (tx) => {
+      const r = await gravarFreela(tx, ctx, e, id, demo);
+      if (!r.ok || !conta) return r;
+      if ("desligar" in conta) {
+        await desligarNaTx(tx, ctx, r.id);
+        return r;
+      }
+      const l = await ligarNaTx(tx, ctx, r.id, conta.pessoa);
+      // a conta já é de outro freela: nada do salvar fica (a tela mostra o erro no campo do @)
+      if (!l.ok) throw new ContaEmOutro(l.mensagem);
+      return r;
+    });
   } catch (err) {
+    if (err instanceof ContaEmOutro) return falha("conta_em_outro", err.message, { zro_arroba: err.message });
     return traduzirPg(err);
   }
 }
+
+class ContaEmOutro extends Error {}
 
 export async function gravarFreela(tx: Tx, ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
   const arr = (a: string[]) => sql`${`{${a.map((x) => `"${x.replace(/["\\]/g, "")}"`).join(",")}}`}::text[]`;
@@ -249,7 +276,6 @@ export async function gravarFreela(tx: Tx, ctx: Contexto, e: EntradaFreela, id?:
              funcoes = ${arr(e.funcoes)}, nichos = ${arr(e.nichos)}, whatsapp_msg = ${e.whatsappMsg}, notas = ${e.notas}, ativo = ${e.ativo}
        where id = ${id} returning id`);
     if (!r.length) return falha("sem_permissao", "Seu papel nesta organização só lê.");
-    await tx.execute(sql`delete from maestro.freela_valores where freela_id = ${id}`);
   } else {
     const [r] = (await tx.execute(sql`
       insert into maestro.freelas (org_id, nome, cidade, email, whatsapp, instagram, funcoes, nichos, whatsapp_msg, notas, ativo, demo)
@@ -258,6 +284,10 @@ export async function gravarFreela(tx: Tx, ctx: Contexto, e: EntradaFreela, id?:
       returning id`)) as unknown as { id: string }[];
     freelaId = r.id;
   }
+  // Diárias e cachês só para quem tem a área (o RLS também barra): sem ela, o cadastro de valores fica como estava.
+  const [{ ve }] = (await tx.execute(sql`select maestro.pode(${ctx.orgId}::uuid, 'diarias') as ve`)) as unknown as { ve: boolean }[];
+  if (!ve) return { ok: true as const, id: freelaId! };
+  if (id) await tx.execute(sql`delete from maestro.freela_valores where freela_id = ${id}`);
   for (const v of e.valores) {
     await tx.execute(sql`
       insert into maestro.freela_valores (org_id, freela_id, funcao, unidade, valor_cents) values (${ctx.orgId}, ${freelaId}, ${v.funcao}, ${v.unidade}, ${v.valorCents})`);
@@ -406,11 +436,18 @@ export type EscalaDoProjeto = {
   inicio: string;
   fim: string;
   dias: number;
+  /** null = sem a área "Diárias e cachês" (ou escala por total, no caso da diária). */
   diariaCents: number | null;
-  valorCents: number;
+  valorCents: number | null;
   evento: string | null;
   conflitos: { titulo: string; inicio: string }[];
   pagamento: { status: Status; pagoCents: number } | null;
+  /** O freela tem a conta Absolute ZRO ligada: vê o trabalho em "Seus trabalhos" (drizzle/0037). */
+  conta: boolean;
+  /** A resposta do freela para as datas de hoje da escala (mudou a data, volta a null). */
+  resposta: "confirmado" | "recusado" | null;
+  paraFreela: string | null;
+  entregaUrl: string | null;
 };
 
 /** Quem está escalado em outra escala que se cruza com o período (o aviso de conflito de agenda do ZRO). */
@@ -430,20 +467,24 @@ async function conflitos(tx: Tx, ids: string[]) {
   return m;
 }
 
-export async function escalasDoProjeto(ctx: Contexto, papel: Papel, projetoId: string, hoje: string): Promise<EscalaDoProjeto[]> {
+export async function escalasDoProjeto(ctx: Contexto, projetoId: string, hoje: string): Promise<EscalaDoProjeto[]> {
   if (!ehUuid(projetoId)) return [];
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select e.id, e.freela_id as "freelaId", f.nome as freela, e.funcao, e.inicio::text, e.fim::text, e.dias, e.diaria_cents::float8 as "diariaCents",
-             e.valor_cents::float8 as "valorCents", ev.titulo as evento
+      select e.id, e.freela_id as "freelaId", f.nome as freela, e.funcao, e.inicio::text, e.fim::text, e.dias,
+             case when maestro.pode(e.org_id, 'diarias') then e.diaria_cents::float8 end as "diariaCents",
+             case when maestro.pode(e.org_id, 'diarias') then e.valor_cents::float8 end as "valorCents", ev.titulo as evento,
+             f.zro_sub is not null as conta, case when r.inicio = e.inicio and r.fim = e.fim then r.resposta end as resposta,
+             e.para_freela as "paraFreela", e.entrega_url as "entregaUrl"
         from maestro.escalas e join maestro.freelas f on f.id = e.freela_id
         left join maestro.eventos ev on ev.id = e.evento_id
+        left join maestro.escala_respostas r on r.org_id = e.org_id and r.escala_id = e.id
        where e.projeto_id = ${projetoId} order by e.inicio, f.nome`)) as unknown as Omit<EscalaDoProjeto, "conflitos" | "pagamento">[];
     const c = await conflitos(
       tx,
       r.map((x) => x.id),
     );
-    const pagos = podeVerDinheiro(papel)
+    const pagos = (await areasNaTx(tx, ctx.orgId)).financeiro
       ? ((await tx.execute(sql`
           select escala_id, valor_cents::float8 as v, pago_cents::float8 as p, vencimento::text as d from maestro.lancamentos where projeto_id = ${projetoId} and escala_id is not null`)) as unknown as {
           escala_id: string;
@@ -464,3 +505,38 @@ export async function escalasDoProjeto(ctx: Contexto, papel: Papel, projetoId: s
 }
 
 export { conflitos as conflitosDeEscala };
+
+/* ───────────── o que o freela vê (drizzle/0037) ───────────── */
+
+export type ParaFreela = { recado: string | null; entrega: string | null };
+
+/** O recado da produção e o link de entrega da escala: o freela vê os dois em "Seus trabalhos". */
+export function validarParaFreela(f: Record<string, string>): { ok: true; entrada: ParaFreela } | { ok: false; erros: Erros } {
+  const erros: Erros = {};
+  const recado = (f.recado ?? "").replace(/\r\n?/g, "\n").trim();
+  if (recado.length > 2000) erros.recado = "Até 2.000 caracteres.";
+  const entrega = (f.entrega ?? "").trim();
+  if (entrega) {
+    let ok = false;
+    try {
+      ok = new URL(entrega).protocol === "https:" && entrega.length <= 1000 && !/\s/.test(entrega);
+    } catch {
+      ok = false;
+    }
+    if (!ok) erros.entrega = "Cole um link que comece com https://";
+  }
+  if (Object.keys(erros).length) return { ok: false, erros };
+  return { ok: true, entrada: { recado: recado || null, entrega: entrega || null } };
+}
+
+export async function salvarParaFreela(ctx: Contexto, id: string, e: ParaFreela): Promise<Res> {
+  if (!ehUuid(id)) return falha("nao_existe", "Essa escala não existe.");
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      const r = await tx.execute(sql`update maestro.escalas set para_freela = ${e.recado}, entrega_url = ${e.entrega} where id = ${id} returning id`);
+      return r.length ? { ok: true as const } : falha("sem_permissao", "Seu papel nesta organização só lê.");
+    });
+  } catch (err) {
+    return traduzirPg(err);
+  }
+}

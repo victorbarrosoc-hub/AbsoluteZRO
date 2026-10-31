@@ -12,8 +12,12 @@ import { Icone } from "./icones";
 import { MaestroSimbolo, ZroSimbolo } from "./marca";
 import { Relogio } from "./ambiente";
 import { Barra, Capsula } from "./nav";
+import { abasOcultas } from "@/lib/navegacao";
 import { SeletorDeTema } from "./tema";
+import { SetZro } from "./set-zro";
 import { Transicao } from "./movimento";
+import { SobedesceVivo } from "./arquivos/sobedesce-vivo";
+import { temProduto } from "@/lib/auth/acesso";
 
 export function iniciais(nome: string | null, email: string | null): string {
   const base = (nome || email || "?").trim();
@@ -58,14 +62,27 @@ function MarcaDoTopo({ marca, largura }: { marca: MarcaPropria | null; largura: 
   );
 }
 
+/** A troca para a área do freela (drizzle/0037): só para quem também é freela ligado em outra produtora. */
+function IrParaTrabalhos() {
+  return (
+    <Link className="topo__z ir-trabalhos" href="/trabalhos" title="Seus trabalhos como freela">
+      <Icone nome="freelas" size={18} />
+      <span className="sr-only">Seus trabalhos como freela</span>
+    </Link>
+  );
+}
+
 export function Shell({
   sessao,
   demo = false,
   marca = null,
+  freela = false,
   children,
 }: {
   sessao: Sessao;
   demo?: boolean;
+  /** A pessoa também é freela ligada em outra produtora: o atalho para "Seus trabalhos". */
+  freela?: boolean;
   /** "Maestro com a sua marca" (src/lib/marca/propria.ts); null = a marca do Maestro. */
   marca?: MarcaPropria | null;
   children: ReactNode;
@@ -74,7 +91,7 @@ export function Shell({
   const selo = demo ? (
     <Link className="selo selo--demo" href="/app/ajustes#demonstracao" title="Dados de exemplo. Remova em Ajustes.">
       <i aria-hidden="true" />
-      Demonstração
+      <span>Demonstração</span>
     </Link>
   ) : null;
   return (
@@ -85,10 +102,13 @@ export function Shell({
         <Link className="capsula__marca" href="/app/hoje" aria-label={rotulo}>
           <MarcaDoTopo marca={marca} largura={30} />
         </Link>
-        <Capsula />
+        <Capsula ocultas={abasOcultas(sessao.acessos)} />
         <div className="capsula__fim">
           {selo}
           <Relogio />
+          {freela ? <IrParaTrabalhos /> : null}
+          {/* o Set da Absolute ZRO: quem está online e as conversas (discreto, como a Z) */}
+          <SetZro />
           <SeletorDeTema />
           <a className="assinatura" href={HUB_URL} title={marca ? "Powered by Absolute ZRO" : "Absolute ZRO"} target="_blank" rel="noreferrer">
             <ZroSimbolo size={18} />
@@ -112,6 +132,8 @@ export function Shell({
             <Icone nome="z" size={18} />
             <span className="sr-only">Z</span>
           </Link>
+          {freela ? <IrParaTrabalhos /> : null}
+          <SetZro />
           <SeletorDeTema />
           <Link className="conta" href="/app/ajustes" title={sessao.orgNome}>
             <Avatar sessao={sessao} />
@@ -121,6 +143,8 @@ export function Shell({
       </header>
       <main id="conteudo" className="conteudo">
         <Transicao>{children}</Transicao>
+        {/* Arquivos: o SOBEDESCE embutido nasce na primeira visita e fica vivo (o envio segue em outra seção). */}
+        {temProduto(sessao, "sobedesce") ? <SobedesceVivo /> : null}
         {marca ? (
           <p className="powered">
             <ZroSimbolo size={14} /> Powered by Absolute ZRO

@@ -15,6 +15,10 @@ let o: Awaited<ReturnType<typeof duasOrganizacoes>>;
 
 before(async () => {
   o = await duasOrganizacoes();
+  // "Orçamentos e preços" é uma área (drizzle/0027): aqui a administração confiou os orçamentos à Eva (equipe). O Leo
+  // (leitura) segue sem a área e não vê nada.
+  const { salvarAreas } = await import("../src/lib/acessos-servidor");
+  assert.ok((await salvarAreas(o.admin, o.equipe.sub, ["orcamentos"])).ok);
 });
 after(() => amb.fechar());
 
@@ -205,8 +209,9 @@ describe("no banco", () => {
     const mr = await precos.salvarModelo(o.gestor, mo.entrada);
     assert.ok(mr.ok);
     if (mr.ok) modeloId = mr.id;
-    const t = await precos.carregarTabela(o.leitura);
-    assert.equal(t.itens[0].faixas[0].precoCents, 75_000, "leitura lê");
+    const t = await precos.carregarTabela(o.equipe);
+    assert.equal(t.itens[0].faixas[0].precoCents, 75_000, "quem tem a área lê");
+    assert.equal((await precos.carregarTabela(o.leitura)).itens.length, 0, "sem a área, nem preço nem custo");
     assert.equal((await precos.carregarTabela(o.b)).itens.length, 0, "a outra organização não vê");
   });
 

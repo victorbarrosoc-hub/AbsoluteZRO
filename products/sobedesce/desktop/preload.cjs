@@ -26,4 +26,10 @@ contextBridge.exposeInMainWorld('sobedesce', {
   // Ajustes → "Minimizar para a bandeja": { disponivel, minimizar, padrao } (desktop/bandeja.js).
   bandeja: () => ipcRenderer.invoke('sobedesce:bandeja'),
   definirBandeja: ligado => ipcRenderer.invoke('sobedesce:bandeja-definir', !!ligado),
+  // Links sobedesce:// (desktop/links.js), já conferidos: { tipo: 'relay', destinos } ou { tipo: 'looks' }. Devolve a função de desligar.
+  aoLink: cb => {
+    const f = (_event, link) => cb(link)
+    ipcRenderer.on('sobedesce:link', f)
+    return () => ipcRenderer.removeListener('sobedesce:link', f)
+  },
 })

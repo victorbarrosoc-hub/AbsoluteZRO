@@ -1,19 +1,22 @@
 # Deploy — Vercel + Supabase
 
 **Autorizado pelo titular em 25/10/2026** para o projeto Vercel `absolutezro` (team Victorbarrosoc) em
-https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
+https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original). Desde
+29/10/2026 o banco é o **`AbsoluteZRO-SP`**, em São Paulo (`sa-east-1`), e as funções da Vercel rodam ao lado dele, em
+`gru1`.
 
 ## 1. Projeto na Vercel (feito)
 
 - Root Directory `apps/hub-web`, framework Next.js, Node 22, arquivos fora da pasta liberados (monorepo).
-- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `iad1` (perto do banco Supabase em us-east-2; cada consulta atravessaria o continente a partir de `gru1`).
+- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `gru1` (São Paulo, ao lado do banco `AbsoluteZRO-SP` em `sa-east-1`: função longe do
+  banco paga a viagem em cada consulta). Todo app com função (`api/*`) segue a mesma região no próprio `vercel.json`.
 
 ## 2. Banco Supabase
 
 1. Tabelas: SQL Editor › colar o SQL das migrations 0001–0003 (ou deixar o build aplicar, passo 3). O runner registra
    cada migration em `zro.schema_migrations` com checksum; rodar de novo não duplica nada.
 2. Ligar o banco ao projeto: Vercel › `absolutezro` › Storage › Supabase › conectar o projeto existente
-   `AbsoluteZRO` em Production e Preview. A integração cria `POSTGRES_URL` (pooler) e `POSTGRES_URL_NON_POOLING`.
+   `AbsoluteZRO-SP` em Production e Preview. A integração cria `POSTGRES_URL` (pooler) e `POSTGRES_URL_NON_POOLING`.
    Alternativa manual: `DATABASE_URL` = Transaction pooler (porta 6543) e `DATABASE_URL_UNPOOLED` = Session pooler
    (porta 5432), copiadas de Supabase › Connect. Nunca cole a senha em issue, PR ou chat.
 3. O código lê `DATABASE_URL` ou `POSTGRES_URL`, tira parâmetros extras da URL (`supa=`, `pgbouncer=`) e exige TLS
@@ -30,8 +33,15 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   "indisponível" e `/api/v1/agenda/*` responde 503. Trocar a chave invalida as conexões guardadas (cada pessoa conecta
   de novo). O cliente Google é o mesmo do "Entrar com Google" (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`), com o retorno
   `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
-- `CRON_SECRET` (openssl rand -hex 32, Production): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
+- `CRON_SECRET` (openssl rand -hex 32, Production; sem espaço nem quebra de linha no fim, ou a Vercel recusa o build): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
   PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
+- A Z (Claude): `IA_ANTHROPIC_KEY` (e `IA_MODELO`, padrão `claude-opus-5-5`). Sem ela, a Z fica desligada.
+- Laboratório da Z (ADR 0033, migração `0036`): `ELEVENLABS_API_KEY` no projeto `absolutezro` (Production; o titular já
+  adicionou em 30/10/2026). Voz, ditado e transcrição só para o admin da plataforma em `/admin/laboratorio`. Sem a
+  chave, o laboratório mostra "Conecte a chave" com o nome da variável; a chave nunca vai para o navegador nem para o
+  log. Antes do primeiro teste, defina o **teto de gasto por dia** no Configurar (sem teto, nada que custa roda). Nada
+  da voz, do ditado ou dos anexos chega aos clientes até ligar o recurso por plano em "Para os clientes" (auditado).
+  `ZRO_ANTHROPIC_URL`, `ZRO_ELEVENLABS_URL` e `ZRO_ELEVENLABS_WS_URL` são só do e2e: nunca configure em produção.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
 - Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).

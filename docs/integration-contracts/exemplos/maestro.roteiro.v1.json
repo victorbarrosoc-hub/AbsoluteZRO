@@ -1,0 +1,208 @@
+{
+  "contract": "maestro.roteiro/1",
+  "gerado_em": "2026-10-29T15:00:00.000Z",
+  "origem": {
+    "app": "maestro",
+    "roteiro_id": "6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f",
+    "titulo": "Café Aurora",
+    "versao": 3,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "salva_em": "2026-10-29T14:00:00.500Z"
+  },
+  "formato": "16:9",
+  "wpm": 150,
+  "alvo_seg": {
+    "min": 15,
+    "max": 30
+  },
+  "tempos": "estimados",
+  "duracao_seg": 16.4,
+  "pessoas": [
+    {
+      "id": "ana",
+      "nome": "Ana",
+      "papel": "locutor"
+    },
+    {
+      "id": "joao",
+      "nome": "João",
+      "papel": "entrevistado"
+    }
+  ],
+  "cenas": [
+    {
+      "id": "c1",
+      "numero": 1,
+      "titulo": "Abertura",
+      "cabecalho": "1. EXT. FAZENDA – AMANHECER",
+      "int_ext": "EXT",
+      "local": "Fazenda",
+      "periodo": "amanhecer",
+      "inicio_seg": 0,
+      "fim_seg": 4,
+      "duracao_digitada_seg": null,
+      "voz_seg": 2.8,
+      "blocos": [
+        {
+          "id": "p1",
+          "inicio_seg": 0,
+          "fim_seg": 4,
+          "duracao_digitada_seg": 4,
+          "tipo": "plano",
+          "tamanho": "GPG",
+          "sigla": "GPG",
+          "angulo": null,
+          "movimento": "drone subindo",
+          "lente": null,
+          "fps": null,
+          "texto": null
+        },
+        {
+          "id": "a1",
+          "inicio_seg": 0,
+          "fim_seg": 4,
+          "duracao_digitada_seg": null,
+          "tipo": "acao",
+          "texto": "O sol nasce sobre o cafezal."
+        },
+        {
+          "id": "s1",
+          "inicio_seg": 0,
+          "fim_seg": 4,
+          "duracao_digitada_seg": null,
+          "tipo": "audio",
+          "audio": "trilha",
+          "texto": "Violão leve",
+          "entra": "fade",
+          "sai": null
+        },
+        {
+          "id": "f1",
+          "inicio_seg": 0,
+          "fim_seg": 2.8,
+          "duracao_digitada_seg": null,
+          "tipo": "fala",
+          "pessoa_id": "ana",
+          "pessoa": "Ana",
+          "modo": "off",
+          "texto": "Todo café começa **muito antes** da xícara. [pausa]",
+          "texto_falado": "Todo café começa muito antes da xícara.",
+          "palavras": 7,
+          "obs": "calma"
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "numero": 2,
+      "titulo": "O processo",
+      "cabecalho": "2. INT. TORREFAÇÃO – DIA",
+      "int_ext": "INT",
+      "local": "Torrefação",
+      "periodo": "dia",
+      "inicio_seg": 4,
+      "fim_seg": 10.4,
+      "duracao_digitada_seg": null,
+      "voz_seg": 6.4,
+      "blocos": [
+        {
+          "id": "p2",
+          "inicio_seg": 4,
+          "fim_seg": 10.4,
+          "duracao_digitada_seg": null,
+          "tipo": "plano",
+          "tamanho": "PM",
+          "sigla": "PM",
+          "angulo": null,
+          "movimento": null,
+          "lente": "35mm",
+          "fps": null,
+          "texto": null
+        },
+        {
+          "id": "f2",
+          "inicio_seg": 4,
+          "fim_seg": 8.4,
+          "duracao_digitada_seg": null,
+          "tipo": "fala",
+          "pessoa_id": "joao",
+          "pessoa": "João",
+          "modo": "sonora",
+          "texto": "A gente torra em lotes pequenos.\n\nCada lote tem um nome.",
+          "texto_falado": "A gente torra em lotes pequenos.\n\nCada lote tem um nome.",
+          "palavras": 11,
+          "obs": null
+        },
+        {
+          "id": "l1",
+          "inicio_seg": 4,
+          "fim_seg": 8.4,
+          "duracao_digitada_seg": null,
+          "tipo": "lettering",
+          "estilo": "gc",
+          "texto": "João Lima, mestre de torra"
+        },
+        {
+          "id": "f3",
+          "inicio_seg": 8.4,
+          "fim_seg": 10.4,
+          "duracao_digitada_seg": null,
+          "tipo": "fala",
+          "pessoa_id": "ana",
+          "pessoa": "Ana",
+          "modo": "off",
+          "texto": "#1 em sabor na região.",
+          "texto_falado": "#1 em sabor na região.",
+          "palavras": 5,
+          "obs": null
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "numero": 3,
+      "titulo": "Assinatura",
+      "cabecalho": "3. ASSINATURA",
+      "int_ext": null,
+      "local": null,
+      "periodo": null,
+      "inicio_seg": 10.4,
+      "fim_seg": 16.4,
+      "duracao_digitada_seg": 6,
+      "voz_seg": 2.4,
+      "blocos": [
+        {
+          "id": "a2",
+          "inicio_seg": 10.4,
+          "fim_seg": 16.4,
+          "duracao_digitada_seg": null,
+          "tipo": "acao",
+          "texto": "Packshot da embalagem"
+        },
+        {
+          "id": "l2",
+          "inicio_seg": 10.4,
+          "fim_seg": 16.4,
+          "duracao_digitada_seg": null,
+          "tipo": "lettering",
+          "estilo": "cta",
+          "texto": "exemplo.com.br"
+        },
+        {
+          "id": "f4",
+          "inicio_seg": 10.4,
+          "fim_seg": 12.8,
+          "duracao_digitada_seg": null,
+          "tipo": "fala",
+          "pessoa_id": "ana",
+          "pessoa": "Ana",
+          "modo": "off",
+          "texto": "Café Aurora. Do pé à xícara.",
+          "texto_falado": "Café Aurora. Do pé à xícara.",
+          "palavras": 6,
+          "obs": null
+        }
+      ]
+    }
+  ]
+}

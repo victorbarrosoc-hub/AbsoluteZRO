@@ -8860,7 +8860,36 @@ select.input {
 }
 .rv-destino small {
   font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+/* grupos do Relay (Redes, Trabalho, Tamanho, Áudio): pílulas acima dos cartões */
+.rv-grupos {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rv-grupo {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.rv-grupo.is-on {
+  background: var(--text);
+  color: var(--bg);
 }
 .rv-destino:active {
   transform: scale(0.97);
@@ -9049,8 +9078,16 @@ select.input {
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
-.tab-z.is-on {
-  color: var(--text);
+/* a Z no topo, discreta, ao lado da conta (não é aba nem a tela de entrada) */
+.topbar-acoes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.z-botao {
+  width: 36px;
+  height: 36px;
+  color: var(--text-2);
 }
 /* seis abas (com Referências): no celular estreito o rótulo encolhe em vez de cortar */
 .tabbar .tab-label {
@@ -9068,5 +9105,499 @@ select.input {
 @media (max-width: 345px) {
   .tabbar.n-6 .tab {
     font-size: 9px;
+  }
+}
+/* O Set da Absolute ZRO (components/set.js): um botão ao lado da Z no topo, aceso com a folha aberta e com o balão das
+   novidades (a barra de baixo fica só com a tarefa, no máximo cinco abas) */
+.set-botao {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  color: var(--text-2);
+}
+.set-botao.is-on {
+  color: var(--text);
+}
+.set-botao .tab-balao {
+  top: 1px;
+  right: -1px;
+}
+/* na tela da conta (sem Drive pronto) o Set e a Z ficam no canto de cima */
+.signin-eco {
+  position: absolute;
+  top: calc(var(--safe-t) + 10px);
+  right: 0;
+  z-index: 2;
+}
+.tab-balao {
+  position: absolute;
+  top: -4px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--err);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* a folha do <zro-set> veste as cores do app nos dois temas (o widget copia o resultado para a folha) */
+:root {
+  --zro-set-tinta: var(--text);
+  --zro-set-apoio: var(--text-2);
+  --zro-set-apagado: var(--text-3);
+  --zro-set-linha: var(--hairline);
+  --zro-set-linha-forte: var(--hairline-2);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--fill-2);
+  --zro-set-vidro: var(--glass);
+  --zro-set-fundo: color-mix(in srgb, var(--sheet-bg) 97%, transparent);
+  --zro-set-acento: var(--primary-bg);
+  --zro-set-acento-tinta: var(--primary-fg);
+  --zro-set-online: var(--ok);
+  --zro-set-ausente: var(--warn);
+  --zro-set-perigo: var(--err-text);
+  --zro-set-raio: var(--r-lg);
+  --zro-set-fonte: var(--font);
+}
+/* O porta-malas do Carro do Freela (lib/embutido.js): só Transferências e Drive, numa pílula mais curta. */
+@media (min-width: 700px) {
+  .tabbar.n-2 {
+    width: min(300px, 100%);
+  }
+}
+
+/* ───── Embutido numa plataforma da Absolute ZRO (lib/embutido.js) ─────
+   O quadro é a tela inteira da aba: no computador a grade se abre e mostra mais arquivos; no celular tudo encolhe
+   (título, abas, cartões) para caber mais sem a tela ficar enorme. O tema vem do anfitrião (data-theme). */
+.is-embutido body {
+  background: var(--bg);
+}
+.is-embutido .screen {
+  max-width: 1280px;
+}
+@media (min-width: 700px) {
+  .is-embutido .tiles {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 14px 10px;
+  }
+}
+@media (max-width: 699px) {
+  .is-embutido {
+    --gutter: 12px;
+  }
+  .is-embutido .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+  .is-embutido .tile-name {
+    font-size: 11.5px;
+  }
+  .is-embutido .drive-screen .dtop-title {
+    font-size: 21px;
+  }
+  .is-embutido .segmented-opt {
+    height: 30px;
+    font-size: 13px;
+  }
+  .is-embutido .search {
+    height: 36px;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  .is-embutido .dchip {
+    --tap: 36px;
+    --chip-h: 30px;
+    font-size: 13px;
+  }
+  .is-embutido .tabbar {
+    height: calc(46px + var(--safe-b));
+  }
+  .is-embutido .tab {
+    min-height: 46px;
+    font-size: 10px;
+  }
+}
+.emb-grande {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text-2);
+  font-size: 13px;
+}
+.emb-grande b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ───────────── Transferências (components/transferencias.js) ─────────────
+   A tela cheia da fila, aberta pelo cartão do Início: o andamento geral, os lotes da fila e os terminados com a
+   conferência. Mesmas peças do "No computador" (pc-card, pc-row-icon, pc-bar) e das linhas da fila. */
+.tr-tela {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: calc(var(--safe-t) + 6px);
+}
+.tr-voltar {
+  align-self: flex-start;
+  color: var(--up-text);
+}
+.tr-tela .k-cabeca {
+  padding-top: 0;
+}
+.tr-tela .k-cabeca p {
+  font-variant-numeric: tabular-nums;
+}
+.tr-card .pc-card-chev {
+  margin-left: 0;
+}
+.tr-card-tc,
+.tr-geral-tc {
+  margin-left: auto;
+  color: var(--text-2);
+}
+.tr-card.is-pronto .pc-card-pct {
+  color: var(--ok-text);
+}
+.tr-card.is-erro .pc-card-pct,
+.tr-card.is-erro .pc-card-sub {
+  color: var(--err-text);
+}
+.tr-card.is-pausado .pc-card-pct {
+  color: var(--text-2);
+}
+.tr-geral {
+  gap: 12px;
+}
+.tr-geral .pc-card-name {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.tr-geral-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: -8px -6px -8px 0;
+  background: var(--fill);
+}
+.tr-geral .pc-card-pct {
+  font-size: 34px;
+}
+.tr-aviso {
+  margin: -4px 0 -6px;
+}
+.tr-filtros .k-pilula.is-on {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  transform: none;
+}
+
+/* lote */
+.tr-lote-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 4px 14px;
+}
+.tr-lote-head .pc-row-icon {
+  flex: none;
+}
+.tr-lote-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.tr-lote-txt b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.tr-lote-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tr-lote-acts {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+.tr-lote-acts .icon-btn {
+  width: 40px;
+  height: 40px;
+  color: var(--text-2);
+}
+.tr-lote-acts .icon-btn.is-strong {
+  background: color-mix(in srgb, var(--up) 13%, transparent);
+  color: var(--up-text);
+}
+.tr-lote-acts .icon-btn.is-danger {
+  color: var(--err-text);
+}
+.tr-lote.is-paused .tr-lote-txt b {
+  color: var(--text-2);
+}
+.tr-confirma {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 14px 4px 58px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--err) 8%, transparent);
+  font-size: 14px;
+  font-weight: 550;
+}
+.tr-confirma > span {
+  flex: 1 1 100%;
+}
+@media (min-width: 420px) {
+  .tr-confirma > span {
+    flex-basis: auto;
+  }
+}
+.tr-lote .rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tr-lote-conf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 14px 2px 58px;
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tr-lote-conf.is-ok {
+  color: var(--ok-text);
+}
+.tr-lote-conf.is-erro {
+  color: var(--err-text);
+}
+.tr-feitos-head {
+  margin-top: 6px;
+}
+
+/* terminados */
+.row.is-hist {
+  padding-block: 10px;
+}
+.row.is-hist .row-main {
+  gap: 4px;
+}
+.row-tile.tone-canceled {
+  background: var(--fill);
+  color: var(--text-3);
+}
+.row.is-canceled .row-name {
+  color: var(--text-2);
+}
+.tr-quando {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.tr-hist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.tr-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-2);
+}
+.tr-selo > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tr-selo .icon {
+  flex: none;
+}
+.tr-selo.is-ok {
+  color: var(--ok-text);
+}
+.tr-selo.is-erro {
+  color: var(--err-text);
+  font-weight: 650;
+}
+.tr-selo.is-vivo {
+  color: var(--up-text);
+}
+.tr-selo.is-muted {
+  color: var(--text-3);
+}
+.row.is-mismatch {
+  background: color-mix(in srgb, var(--err) 6%, transparent);
+}
+.row.is-mismatch .row-name {
+  color: var(--err-text);
+}
+.tr-lote.is-erro {
+  box-shadow: var(--shadow-card), inset 0 0 0 1px color-mix(in srgb, var(--err) 35%, transparent);
+}
+.item-state .tr-selo {
+  font-size: 14px;
+}
+.tr-conferir {
+  margin: 4px 0 12px;
+}
+
+/* computador: a fila ganha espaço, sem passar de uma coluna confortável */
+@media (min-width: 900px) {
+  .tabs .screen.tr-tela {
+    max-width: 720px;
+  }
+}
+
+/* Drive híbrido (lib/modo-drive.js): faixa "Arquivos escolhidos" da aba Drive, o "Precisa de acesso total" no lugar
+   do tamanho da pasta e a linha do modo em Ajustes. */
+.modo-faixa {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 10px 0 2px;
+  padding: 10px 10px 10px 12px;
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.modo-faixa-ic {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--fill-2);
+}
+.modo-faixa-txt {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.modo-faixa-txt b {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.modo-faixa-txt small {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.modo-faixa-btn {
+  white-space: nowrap;
+}
+.modo-faixa-dica {
+  grid-column: 2 / -1;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.modo-faixa-dica summary,
+.k-modo-dica summary {
+  cursor: pointer;
+  list-style: none;
+  width: max-content;
+  padding: 2px 0;
+}
+.modo-faixa-dica summary::-webkit-details-marker,
+.k-modo-dica summary::-webkit-details-marker {
+  display: none;
+}
+.modo-faixa-dica ul,
+.k-modo-dica ul {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 2px;
+  padding-left: 16px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.dsize.is-off,
+span.dsize.is-off {
+  color: var(--text-3);
+  font-size: 13.5px;
+  padding-right: 14px;
+}
+.k-modo {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--fill);
+}
+.k-modo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.k-modo-linha b {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.k-modo-ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.k-modo-ponto.is-total {
+  background: var(--ok);
+}
+.k-modo-dica {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.scopes.is-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.scopes.is-4 .scope {
+  font-size: 13.5px;
+  padding: 0 2px;
+}
+@media (max-width: 520px) {
+  .modo-faixa {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .modo-faixa-btn {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 4px;
   }
 }

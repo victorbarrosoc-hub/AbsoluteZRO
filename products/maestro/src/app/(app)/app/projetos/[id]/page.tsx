@@ -11,7 +11,8 @@ import { camposEscala } from "@/lib/freelas/formularios";
 import { nomeFuncao } from "@/lib/freelas/funcoes";
 import { escalasDoProjeto, listarFreelas } from "@/lib/freelas/servidor";
 import { reservasDoProjeto } from "@/lib/inventario/servidor";
-import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoAcao } from "@/components/acao";
 import { dataBr, LinhaCard, Secao, Selo } from "@/components/crm";
 import { ListaContratos } from "@/components/contrato/lista";
@@ -19,8 +20,13 @@ import { contratosDe } from "@/lib/contrato/servidor";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
-import { removerEscalaAcao, salvarEscalaAcao } from "../../freelas/acoes";
+import { paraFreelaAcao, removerEscalaAcao, salvarEscalaAcao } from "../../freelas/acoes";
+import { ParaFreela } from "@/components/freelas/para-freela";
 import { criarDocumentoAcao } from "./documentos/acoes";
+import { podeEditarCriacao } from "@/lib/criacao/permissoes";
+import { listarRoteiros, NOME_ESTADO_ROTEIRO } from "@/lib/criacao/roteiro/servidor";
+import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
+import { STATUS_DO_ESTADO } from "@/components/criacao/roteiro/comum";
 
 export const metadata = { title: "Projeto" };
 
@@ -34,17 +40,20 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
   const p = await obterProjeto(ctx, id);
   if (!p) notFound();
   const hoje = hojeBr();
-  const [escalas, freelas, eventos, reservas, docs, contratos] = await Promise.all([
-    escalasDoProjeto(ctx, sessao.papel, id, hoje),
+  const [escalas, freelas, eventos, reservas, docs, contratos, roteiros] = await Promise.all([
+    escalasDoProjeto(ctx, id, hoje),
     listarFreelas(ctx),
     listarEventos(ctx, "2000-01-01", "2999-12-31", { projeto: id }),
     reservasDoProjeto(ctx, id),
     listarDocumentos(ctx, id),
-    podeVerDinheiro(sessao.papel) ? contratosDe(ctx, { projetoId: id }) : Promise.resolve([]),
+    podeArea(sessao, "contratos") ? contratosDe(ctx, { projetoId: id }) : Promise.resolve([]),
+    listarRoteiros(ctx, { projetoId: id }),
   ]);
   const escreve = podeEscrever(sessao.papel);
-  const dinheiro = podeVerDinheiro(sessao.papel);
-  const custoEquipe = escalas.reduce((s, e) => s + e.valorCents, 0);
+  // Diárias e o custo da equipe só com "Diárias e cachês"; o status do pagamento só com "Financeiro" (o servidor já
+  // manda vazio para quem não tem).
+  const diarias = podeArea(sessao, "diarias");
+  const custoEquipe = escalas.reduce((s, e) => s + (e.valorCents ?? 0), 0);
   const proximos = eventos.filter((e) => (e.dataFim ?? e.data) >= hoje);
   return (
     <div className="pagina">
@@ -100,7 +109,7 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
 
           <ListaContratos contratos={contratos} />
 
-          <Secao titulo="Equipe" acao={escalas.length ? <span className="sutil num">{brl(custoEquipe)}</span> : undefined}>
+          <Secao titulo="Equipe" acao={escalas.length && diarias ? <span className="sutil num">{brl(custoEquipe)}</span> : undefined}>
             {escalas.length ? (
               <ul className="linhas">
                 {escalas.map((e) => (
@@ -119,13 +128,22 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
                         Conflito
                       </span>
                     ) : null}
-                    <span className="linha__meta num" title={e.diariaCents != null ? `${e.dias} × ${brl(e.diariaCents)}` : "Total"}>
-                      {brl(e.valorCents)}
-                    </span>
+                    {e.valorCents != null ? (
+                      <span className="linha__meta num" title={e.diariaCents != null ? `${e.dias} × ${brl(e.diariaCents)}` : "Total"}>
+                        {brl(e.valorCents)}
+                      </span>
+                    ) : null}
                     {e.pagamento ? <SeloStatus status={e.pagamento.status}>{NOME_STATUS[e.pagamento.status]}</SeloStatus> : null}
+                    {e.resposta ? (
+                      <span className="selo ef-resposta" data-status={e.resposta === "confirmado" ? "ok" : "recusado"} title="Resposta do freela">
+                        <i aria-hidden="true" />
+                        {e.resposta === "confirmado" ? "Confirmou" : "Recusou"}
+                      </span>
+                    ) : null}
                     {escreve && (!e.pagamento || e.pagamento.pagoCents === 0) ? (
                       <BotaoAcao acao={removerEscalaAcao} campos={{ id: e.id }} rotulo="Tirar" classe="q-limpar" confirmar="Tirar da escala?" />
                     ) : null}
+                    {escreve && e.conta ? <ParaFreela escala={e.id} recado={e.paraFreela} entrega={e.entregaUrl} acao={paraFreelaAcao} /> : null}
                   </li>
                 ))}
               </ul>
@@ -139,15 +157,14 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
                 </summary>
                 <Formulario
                   acao={salvarEscalaAcao}
-                  campos={camposEscala(freelas)}
+                  campos={diarias ? camposEscala(freelas) : camposEscala(freelas).filter((c) => c.nome !== "modo" && c.nome !== "valor")}
                   compacto
-                  ocultos={{ projeto: p.id }}
+                  ocultos={diarias ? { projeto: p.id } : { projeto: p.id, modo: "diaria", valor: "0" }}
                   inicial={{ inicio: hoje, fim: hoje, modo: "total" }}
                   rotulo="Escalar"
                 />
               </details>
             ) : null}
-            {dinheiro ? null : <p className="sutil">O pagamento de cada um aparece para a gestão.</p>}
           </Secao>
         </div>
         <div className="painel__lado">
@@ -177,6 +194,35 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
               <p className="nada">Nada marcado daqui para a frente.</p>
             )}
           </Secao>
+          <Secao
+            titulo="Roteiros"
+            acao={
+              podeEditarCriacao(sessao.papel) ? (
+                <Link className="secao__link" href={`/app/criacao?novo=1&projeto=${p.id}`}>
+                  Novo
+                </Link>
+              ) : undefined
+            }
+          >
+            {roteiros.length ? (
+              <ul className="linhas">
+                {roteiros.map((r) => (
+                  <li key={r.id}>
+                    <Link className="linha" href={`/app/criacao/roteiros/${r.id}`}>
+                      <span className="linha__coluna num">{formatarTempo(r.duracaoSeg)}</span>
+                      <span className="linha__titulo">{r.titulo}</span>
+                      <span className="selo" data-status={STATUS_DO_ESTADO[r.estado]}>
+                        <i aria-hidden="true" />
+                        {NOME_ESTADO_ROTEIRO[r.estado]}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="nada">Nenhum roteiro. Escreva na Criação, com as vistas Literário e Técnico.</p>
+            )}
+          </Secao>
           <Secao titulo="Documentos">
             {docs.length ? (
               <ul className="linhas">
@@ -191,11 +237,12 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
                 ))}
               </ul>
             ) : (
-              <p className="nada">Roteiro, decupagem, ordem do dia e checklist.</p>
+              <p className="nada">Ordem do dia e checklist.</p>
             )}
             {escreve ? (
               <div className="chips">
-                {TIPOS_DOC.map((t) => (
+                {/* Roteiro e decupagem agora nascem na Criação (os antigos continuam abrindo e vão para o editor novo). */}
+                {TIPOS_DOC.filter((t) => t.k !== "roteiro" && t.k !== "decupagem").map((t) => (
                   <BotaoAcao
                     key={t.k}
                     acao={criarDocumentoAcao}

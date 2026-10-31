@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
+import { pode as podeArea } from "@/lib/acessos";
 import { camposEvento } from "@/lib/agenda/formularios";
 import { nomeTipoEvento, obterEvento } from "@/lib/agenda/servidor";
 import { listarProjetos } from "@/lib/crm/projetos";
@@ -16,7 +17,8 @@ import { Secao } from "@/components/crm";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { OcupadoNoGoogle } from "@/components/ocupado-google";
-import { removerEscalaAcao } from "../../freelas/acoes";
+import { paraFreelaAcao, removerEscalaAcao } from "../../freelas/acoes";
+import { ParaFreela } from "@/components/freelas/para-freela";
 import { mudarReservaAcao } from "../../inventario/acoes";
 import { criarDocumentoAcao } from "../../projetos/[id]/documentos/acoes";
 import { escalarAcao, removerEventoAcao, reservarNaDiariaAcao, salvarEventoAcao } from "../acoes";
@@ -112,6 +114,12 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                       Conflito
                     </span>
                   ) : null}
+                  {p.resposta ? (
+                    <span className="selo ef-resposta" data-status={p.resposta === "confirmado" ? "ok" : "recusado"} title="Resposta do freela">
+                      <i aria-hidden="true" />
+                      {p.resposta === "confirmado" ? "Confirmou" : "Recusou"}
+                    </span>
+                  ) : null}
                   {escreve ? (
                     <BotaoAcao acao={removerEscalaAcao} campos={{ id: p.escalaId }} rotulo="Tirar" classe="q-limpar" confirmar="Tirar da diária?" />
                   ) : null}
@@ -119,10 +127,18 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                     ? (() => {
                         const k = kits.find((x) => x.escalaId === p.escalaId);
                         return k ? (
-                          <EquipNaEscala escalaId={k.escalaId} disponiveis={k.disponiveis} marcados={k.marcados} dias={k.dias} aluguelCents={k.aluguelCents} />
+                          <EquipNaEscala
+                            escalaId={k.escalaId}
+                            disponiveis={k.disponiveis}
+                            marcados={k.marcados}
+                            dias={k.dias}
+                            aluguelCents={k.aluguelCents}
+                            veValores={k.veValores}
+                          />
                         ) : null;
                       })()
                     : null}
+                  {escreve && p.conta ? <ParaFreela escala={p.escalaId} recado={p.paraFreela} entrega={p.entregaUrl} acao={paraFreelaAcao} /> : null}
                 </li>
               ))}
             </ul>
@@ -142,7 +158,10 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                   opcoes: [{ valor: "", nome: "Escolha" }, ...freelas.map((f) => ({ valor: f.id, nome: f.nome }))],
                 },
                 { nome: "funcao", rotulo: "Função", max: 40, placeholder: "a primeira do cadastro" },
-                { nome: "valor", rotulo: "Diária", tipo: "dinheiro", placeholder: "a do cadastro", dica: "Vira o a pagar no Financeiro." },
+                // Sem a área "Diárias e cachês", a diária vem do cadastro (o banco decide: gatilho escalas_guarda_area).
+                ...(podeArea(s, "diarias")
+                  ? [{ nome: "valor", rotulo: "Diária", tipo: "dinheiro" as const, placeholder: "a do cadastro", dica: "Vira o a pagar no Financeiro." }]
+                  : []),
               ]}
               inicial={{}}
               rotulo="Escalar"

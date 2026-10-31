@@ -5,15 +5,18 @@
 import { erro, lerCookie, origemConfere } from "@/lib/http";
 import { origensDoSite } from "@/lib/site";
 import { FERRAMENTAS_ZRO, MENSAGEM_SEM_ACESSO } from "@/lib/zro/acesso";
-import { autenticar, COOKIE_SESSAO, type Autenticado } from "./sessao";
+import { autenticar, COOKIE_SESSAO, lerCapacidades, type Autenticado } from "./sessao";
 
 export function usuarioDaRequisicao(req: Request): Promise<Autenticado | null> {
   const build = Number(req.headers.get("x-sobedesce-build"));
+  const doApp = req.headers.has("x-sobedesce-build");
   return autenticar({
     cookie: lerCookie(req, COOKIE_SESSAO),
     authorization: req.headers.get("authorization"),
     celular: req.headers.get("x-sobedesce-app") === "celular",
-    build: req.headers.has("x-sobedesce-build") && Number.isSafeInteger(build) ? build : null,
+    build: doApp && Number.isSafeInteger(build) ? build : null,
+    // Todo pedido do app de computador traz o build; o que ele sabe fazer vem junto (sem o cabeçalho = app antigo).
+    ...(doApp ? { capacidades: lerCapacidades(req.headers.get("x-sobedesce-capacidades")) } : {}),
   });
 }
 

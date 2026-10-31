@@ -168,9 +168,15 @@ const GERAIS = { 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-ref
  *  /index.html redirecionam), e só então o disco e as funções de /api/zro.
  *  ⚠️ A CSP é calculada NO BUILD, dos HTML que acabaram de ser escritos —
  *  é por isso que a configuração mora aqui e não num vercel.json fixo. */
+/* O endereço do Carro é carro.absolutezro.com (ADR 0025; o titular autorizou o redirecionamento em 30/10/2026): o
+   domínio antigo leva para lá, com o mesmo caminho, de vez (308). */
+const PRINCIPAL = 'https://carro.absolutezro.com';
+const ANTIGOS = ['carrodofreela.com.br', 'www.carrodofreela.com.br'];
+
 function rotasVercel(csp, paginas) {
   const limpas = paginas.filter(n => n !== 'index');
   return [
+    ...ANTIGOS.map(host => ({ src: '^/(.*)$', has: [{ type: 'host', value: host }], status: 308, headers: { Location: PRINCIPAL + '/$1' } })),
     { src: '^/(.*)$', headers: Object.assign({}, GERAIS, FIXOS, { 'Content-Security-Policy': csp }), continue: true },
     { src: '^/m/(.*)$', headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }, continue: true },
     { src: '^/app/?$', status: 307, headers: { Location: '/' } },
@@ -179,6 +185,8 @@ function rotasVercel(csp, paginas) {
     { src: '^/index(?:\\.html)?/?$', status: 308, headers: { Location: '/' } },
     /* a Z: /api/zro/ia/<caminho> vai para a função ia, que confere o caminho */
     { src: '^/api/zro/ia/(.+)$', dest: '/api/zro/ia?caminho=$1' },
+    /* o Set: /api/zro/set/<caminho> vai para a função set, que confere o caminho */
+    { src: '^/api/zro/set/(.+)$', dest: '/api/zro/set?caminho=$1' },
     { src: '^/(' + limpas.join('|') + ')\\.html/?$', status: 308, headers: { Location: '/$1' } },
     { src: '^/$', dest: '/index.html' },
     { src: '^/(' + limpas.join('|') + ')/?$', dest: '/$1.html' },
@@ -186,4 +194,4 @@ function rotasVercel(csp, paginas) {
   ];
 }
 
-module.exports = { ZRO, CONNECT, FIXOS, GERAIS, chavesDeFora, conexoes, politica, rotasVercel, scriptsDe, scriptsDoHtml, sha };
+module.exports = { ANTIGOS, PRINCIPAL, ZRO, CONNECT, FIXOS, GERAIS, chavesDeFora, conexoes, politica, rotasVercel, scriptsDe, scriptsDoHtml, sha };

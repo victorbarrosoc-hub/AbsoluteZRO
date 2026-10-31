@@ -108,7 +108,10 @@ Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
 Pedido do titular, do bloco que ele gostou no menu do Revela: ícone + nome de
 cada app da família, levando ao app, em ordem alfabética (pedido do titular,
 26/out): Absolute ZRO, Nossom, Revela, Sobedesce, Synquei, TPEasy — igual na
-lateral e na gaveta. O Carro do Freela fica de fora (é onde a pessoa
+lateral e na gaveta. ⚠️ **Desde 30/out só as plataformas no ar**, a mesma
+lista de todos os apps: Absolute ZRO, Maestro, Relay, SOBEDESCE, Synquei,
+TPeasy (NOSSOM, AEON e Revela voltam quando lançarem; a régua da raiz é
+`tests/integration/familia-menus.test.ts`). O Carro do Freela fica de fora (é onde a pessoa
 está); o AI Edit também (em desenvolvimento). No computador o bloco mora no
 pé da lateral (`.ladofam`, vira só ícone com a lateral recolhida); no
 celular, na gaveta (`#g-fam`, escondido no computador para não repetir).
@@ -129,6 +132,122 @@ o que a tela já pede com botão: **Propostas** = o "esperando você" de sempre 
 avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de aluguel numa peça minha. O resto não
 ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
 `title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
+
+## 30/out — o Set, a aba em comum do ecossistema (`conta-zro` §13, `npm run test:api`)
+
+Pedido do titular para todas as plataformas: o Set da Absolute ZRO (quem da equipe está online, em qual app, e as
+conversas). Aqui ele fecha a lateral (`#tab-set`, logo antes da Z, que é sempre o último item) e é o último da gaveta (`#g-set`); a barra de baixo
+não muda (3 + Menu + 3), sem `data-tab` nem `data-modo`
+de propósito: não abre tela, abre a folha do `<zro-set modo="folha">` (`setPintar()`). A MESMA régua da Z: só no
+domínio, com a conta liberada (`zAbaLigada() && zroPodeEnviar()`), e a entrada só aparece quando o Set responde. O
+repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim relida, portão, plano); o login pede
+`zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
+veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
+
+## 30/out · 6 — o lançamento preparado: o site real sem sobra de protótipo (checklist em `docs/operations/lancamento-carro.md`)
+
+O titular autorizou preparar o lançamento ("pode fazer o restante"); e-mail só quando ele pedir, nada de app de
+computador. O HUB abre o gate na `0041_carro_lancamento.sql` (web, api e sso; desktop e download fechados) e o Carro
+abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a prévia nem as suítes:
+- `FORA_DO_REAL` (perto de `REAL`): Planos, Aprender, Passar o carro e Orçamento saem do menu, da lateral e do
+  `show()` (que manda para "meu"). Eram preço, moeda, mensalidade e anúncio por WhatsApp do protótipo.
+- `temNivel()` é `true` no real: a escada Carona/Premium/Estrada/Volante/Frota não tranca nada. O direito de uso é o
+  do plano da conta Absolute ZRO (`liberado` do `/eu`), igual ao servidor (`podeVerAgendas`). Dinheiro, contrato e
+  seguro continuam fora pela FASE, não pelo plano. `pintarAssinatura()` some; `abrirAssinatura()` diz "Seu plano é o
+  da Absolute ZRO".
+- `data-sem-real` (o `realHome()` esconde): a etiqueta "Prévia" do menu, o "prévia" do rodapé do app, "Recomeçar do
+  zero", "Movimento na praça", o cartão "O que vem por aí" da agenda (planos pagos e "de graça"), os botões Google Agenda e lembrete no
+  WhatsApp (sem integração) da agenda e do cadastro, "Orçar antes de escalar" e "Anunciar a vaga" da equipe.
+- `PORTAS_REAL`: o guia de entrada mostra três portas que funcionam (agenda, perfil, achar / busca, equipe, achar), sem
+  "O dinheiro" nem "contrato e sinal".
+- `vivoPode()` é falso no real: a "plataforma viva" (chamada, pedido de aluguel e guilda que chegam sozinhos, com o selo
+  "simulação") não roda, e o interruptor "Movimento na praça" some. O outro lado no real é gente de verdade.
+- `nuvemLigada()` é falso no real: a contagem de passos e o convite "quando a plataforma abrir" (que pedia WhatsApp ou
+  e-mail) não falam mais com o Supabase do app original; `drawGuardar()` esconde as caixas.
+- Em todos os builds: a Z da home diz "Chegando ao Carro do Freela" só fechada e "No Carro do Freela" aberta
+  (`pintarSeloZ()` no `drawHome`); a família perdeu NOSSOM e Revela (só o que está no ar; `test/mapa.js`; os SVGs
+  ficam em `src/midia/` para quando voltarem); "Procurar alguém pelo nome" sem "— de graça".
+- **Propostas, Jobs, Feed e Brechó no servidor** (decisão do titular: construir antes de lançar, não esconder; migração
+  `db/migrations/0003_propostas_feed_brecho.sql`, rotas `/api/zro/propostas|feed|brecho|denuncia` em `_dados.js`,
+  regras em `db/regras.js`). A consulta (`realConsultar`, no `m-send`) vai para a caixa de quem foi chamado, DENTRO do
+  Carro (nada de e-mail ou WhatsApp); aceitar/recusar é `PATCH` (`realResponder`); o job é a proposta aceita
+  (`realPropostas` monta `PROPOSTAS` e `JOBS` com `srv`); "Você chamou" (`#pp-real-env`) lista o que eu mandei. Feed e
+  brechó vêm do banco (`realFeed`, `realBrecho`), com Apagar no que é meu, denúncia guardada (`realDenunciar`; quem
+  denunciou deixa de ver) e "Tenho interesse" no anúncio (proposta `tipo: brecho` para o dono). RLS: proposta só os
+  dois lados; feed/brechó para quem tem conta; só a dona apaga; denúncia invisível para os outros; o banco recusa texto
+  com jeito de telefone. Curtida, comentário, compartilhar, foto e vídeo ficam FORA no real (CSS `html.real .fdb`)
+  até terem servidor. ⚠️ Nada local sobe sozinho: post e anúncio que estavam no aparelho viram a oferta "Enviar para
+  a sua conta" (`realEnviarLocais`); proposta e job locais não têm destinatário e não sobem. `REAL_AUTORES` resolve
+  autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
+  `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
+
+## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
+
+Titular: *"O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do
+sobedesce, e transferências"*; aberto a toda conta (Drive e Transferências são do grátis do Sobedesce).
+
+- No site real, `malasReal()` põe o próprio app em `https://sobedesce.absolutezro.com/app/?no=carro&tema=…` (o Sobedesce
+  só se deixa embutir em carro.absolutezro.com). Nada de cópia, nada passa pelo Carro: o arquivo vai do aparelho ao
+  Google. A demonstração antiga (`data-sem-real`) segue só na prévia.
+- **Sem botão de "abrir"**: a tela já é o Sobedesce, com o selo pequeno dele (`.ml-selo`, leva ao sobedesce.com).
+- **Tema do Carro, nunca o do aparelho**: muda junto por mensagem (`temaCarro()` e o `MutationObserver`).
+- **Envio andando**: o recado `envios` (só da origem do Sobedesce) acende o ponto no Porta-malas (lateral, gaveta e
+  MENU do celular) e liga o "sair?" do navegador ao fechar a aba.
+- **O endereço é carro.absolutezro.com** (ADR 0025; o titular autorizou em 30/10/2026): carrodofreela.com.br e www
+  levam para lá com o mesmo caminho (308, `ANTIGOS` em `src/seguranca.js`, rota com `has: host` no `config.json`; o
+  `servir-saida.js` local respeita o host). Os links de compartilhar já saem no subdomínio. Isso também resolve o
+  porta-malas: fora de *.absolutezro.com o cookie do Sobedesce não iria junto.
+
+## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
+
+O titular escolheu, entre três linhas, a B: *"B, mas mantém a logo atual"*, com o neon *"em detalhes, como já é hoje"*.
+Vale só no site real (`html.real`, escrito pelo `build.js --real` no `<html>` e pelo `REAL` no boot); a prévia e as
+suítes de sempre não mudam.
+
+- **Escuro é o padrão do Carro, o claro é opção** (titular). O escuro é o grafite FOSCO do ecossistema
+  (`--grafite:#0E0E10`, como `--zro-void` em `packages/ui/src/tokens.css`), nunca preto 100%.
+- **O símbolo é o de sempre** (`.zselo`, que não se mistura com o chip `.selo`; cópia parada do véu de abertura): anel cônico ciano→azul→roxo→rosa, disco
+  escuro, as três barras branco→ciano (#mk, .34/.64/1) e o carrinho estacionado no alto à direita. ⚠️ Não redesenhar:
+  o titular corrigiu uma proposta que pintou o logo de rosa ("ela é azul").
+- **Home**: a foto de Natal à noite (o pôster da carona, `--real-foto` no `realHome()`, no degrau da tela via
+  `qual()`), texto à esquerda, o símbolo grande em cima do título, título fino × pesado em Figtree sem degradê,
+  botões de vidro da família (vidro claro na ação principal) e a barra de cima em cápsula de vidro.
+- **Entrar**: a mesma foto, o símbolo pequeno e "Entre no **Carro.**".
+- **Neon só em detalhe**: o brilho do símbolo, os pontos de status e as luzes da própria foto.
+
+## 30/out · 3 — o site real: o domínio sem os 109, a busca e a agenda no servidor (`test/site-real.js`)
+
+Pedido do titular: *"pode apagar esses 109 perfis fictícios, vamos começar com os usuários que já estão no
+ecossistema"*, e *"se não confirmou o próprio @, não precisa colocar"*.
+
+- **O domínio serve UMA página**: `node src/build.js --real` (o `vercel-build` só gera ela; `/fase1…6` saíram do ar).
+  `<meta name="cdf-real">` liga `REAL` no template; o CREW leva só a conta de quem abre, em branco; a fase é a 1
+  (agenda e brechó, sem dinheiro). O catálogo de funções continua vindo do `crew.json` (é lista, não pessoa).
+  ⚠️ **A prévia com os 109 continua existindo fora do domínio** (`npm run build`, fases, artifact, suítes): `REAL`
+  falso é no-op em tudo.
+- **Nada semeado com `REAL`**: `JOBS`, `POSTS`, `ANUNCIOS`, `PROPOSTAS`, `ESCALAS`, `TRABALHOS`, `REELS`, `RODANDO`,
+  `PAGOS`, `RESPOSTAS` e `VGP` nascem `REAL?[]:[…]` (o ternário não avalia a semente, que lia o CREW); a
+  `PRODUTORAS[0]` nasce em branco; a minha reputação (resposta, jobs, sequência) nasce zerada, e tempo de resposta
+  sem medida não aparece (`respTxt`). "Simular chamada/sirene" some. `abrirAssinatura()` não abre checkout: os planos
+  são do ecossistema e ainda não existem (decisão 2 do titular, pendente); `podeVerAgenda()` é `true` com `REAL`, a
+  mesma régua do servidor (`podeVerAgendas()` em `_dados.js`): quando o plano nascer, a tranca nasce nos dois.
+- **O servidor** (`realCarregar()`, junto do bloco `cfb`, só `var`/`function`): na volta do `/eu` com conta liberada,
+  `GET /api/zro/agenda` preenche `AGENDA` e `GET /api/zro/pessoas` põe no CREW quem divulgou a agenda
+  (`agenda !== null`), com `remoto:true` e `agendaSrv`; `status()` de remoto lê a agenda dela (`realStatus`), nunca
+  `rnd`. `declarar()`/`liberarDia()` mandam `PUT`/`DELETE`. ⚠️ **Quem nunca abriu o Carro não entra na busca**:
+  livre é a ausência de linha para quem USA a agenda; dizer "livre" de quem nunca declarou seria inventar.
+- ⚠️ **A home ainda vende o produto inteiro** (Passar o carro, custo somando com valores de exemplo): é vitrine com o
+  portão fechado, e refazê-la para o produto real é a próxima leva, junto com a revisão de dinheiro e planos.
+- `CDF_SEM_MIN=1 node src/build.js --real` gera sem minificar: a pilha de um erro aponta a linha do template.
+
+## 30/out — ⚠️ a prévia migrou o banco de produção (e só a produção migra desde então)
+
+O build da prévia do branch `claude/carro-no-ar` rodou `db/migrar.js`: a Vercel dá a MESMA `CARRO_DATABASE_URL` à
+prévia, e a `0001_agenda_e_pessoas` (ainda em revisão) entrou no banco real. Dali em diante todo build sem o arquivo
+(a `main`, o PR #68) era recusado com "migração aplicada 0001_agenda_e_pessoas sumiu da pasta". Conserto: a 0001
+foi para a `main` **byte a byte como foi aplicada** (sha256 `c02a49bf…`; nada nela expõe dado: tabela nova, colunas
+novas e uma função só do papel do app), e o `vercel-build` só migra com `VERCEL_ENV=production` (ou fora da Vercel).
+⚠️ **A 0001 não se edita mais**: mudança na agenda ou na lista é migração nova (0002…).
 
 ## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
 
@@ -437,7 +556,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `29/out · 1`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 4`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
@@ -8577,6 +8696,31 @@ ancestral prende a gaveta de Conversas).
 - Suítes: `conta-zro` §1 (fora do domínio a aba não aparece) e §11 (cai na Z, botão do topo aceso, primeiro da
   lateral, Feed limpo, reconectar dentro da aba). VERSAO `27/out · 5`.
 
+## 30/out · 1 — a Z deixa de ser a tela de entrada (titular, 29/out; Plano de Integração §7–8)
+
+Regra do titular para todas as plataformas: *a tarefa principal do aplicativo vem primeiro*; a Z é uma entrada
+discreta, nunca a primeira tela, nunca a primeira aba, nunca abre sozinha. Desfaz a parte "tela de entrada" do 27/out · 5.
+- **Botões:** no computador `#tab-z` é o **último** item da lateral (depois de Aprender, antes do bloco da família).
+  No celular `#z-top` virou um anel pequeno, sem rótulo, apagado (opacidade), **à direita, antes do menu** — não é
+  mais a pílula em destaque à esquerda da marca. A barra de baixo continua sem a Z (3 + Menu + 3).
+- **Entrada:** quem entra (`entrarNaConta`), quem termina o cadastro e quem abre o app já dentro cai no **Feed** (ou em
+  Propostas antes da Fase 4), como antes do 27/out · 5; a volta do portão fechado cai na home.
+- **Nada carrega sozinho:** `pintarAbaZ()` só mostra os botões; o `<zro-ia>` (e o script de absolutezro.com) nasce
+  em `pintarZ()` quando a pessoa abre a Z (`show("z")`).
+- **Volta para a Z:** "Entrar" ou "Reconectar com Absolute ZRO" dentro da Z marcam `cdf-volta-z` (sessionStorage); na
+  volta do HUB, depois do `zroEntrar`, a Z abre de novo — a pessoa tinha pedido. É o único caminho que abre a Z sem um
+  toque.
+- Suítes: `conta-zro` §11 (cai na tarefa, nada da Z montado, anel apagado e não primeiro, `#tab-z` último; abre só com
+  `show("z")`; reconectar volta para a Z) e §12e (o dono cai na tarefa e recarrega sem a Z). VERSAO `30/out · 1`.
+
+## 30/out · 2 — a Z discreta e o Set juntos (integração das duas levas de 30/out)
+
+A leva da Z (30/out · 1) e a do Set chegaram juntas. Ordem da lateral no computador: … Aprender · **Set** (`#tab-set`,
+aparece quando o Set responde) · **Z** (`#tab-z`, sempre o último). Na gaveta do celular o Set é o último item; a Z
+continua no anel do topo; a barra de baixo não muda (3 + Menu + 3). Nem a Z nem o Set são a entrada: quem entra cai no
+Feed (ou em Propostas). `set-zro` confere que a lateral termina em `tab-set tab-z` e que a tela de entrada é a tarefa;
+`conta-zro` §11 continua cobrando a Z como último item. VERSAO `30/out · 2`.
+
 ## 28/out · 1 — o portão do lançamento: só a conta do proprietário entra
 
 Adendo do PRD ("Carro do Freela: acesso exclusivo do proprietário"). Até o titular autorizar o lançamento, o Carro é
@@ -8604,3 +8748,12 @@ Nunca por e-mail, papel ou lista escrita aqui; outros admins, testers e assinant
   itens 2–11), sem funções e fechado (item 12: personas do PRD §11 negadas, a conta allowed permitida, sessão antiga
   negada quando o acesso sai, telas 390/1440 nos dois temas em `test/saida/fechado-*.png`).
 - VERSAO `28/out · 1`. Figtree entrou em `src/assets/fonts.json` (licença OFL em `src/assets/OFL-figtree.txt`).
+
+## 30/out · 7 — app de computador (`desktop/`, [README](desktop/README.md))
+
+Pedido do titular: o Carro do Freela para Mac e Windows, como o Maestro. Electron com pacote próprio (fora do `package.json`
+do site), o mesmo `carro.absolutezro.com` numa janela escura (o padrão do site), login único dentro dela, links de fora no
+navegador; nada nativo. Ícone = `public/icone-512.png` (`npm run icones` no `desktop/`; é o mesmo da Tela de Início).
+Workflow `.github/workflows/carro-desktop.yml` (Release de teste `carro-versao-de-teste`; arquivos `CarroDoFreela-…`, o
+app instalado é "Carro do Freela"); HUB: `APPS_DESKTOP`/`DOWNLOADS` e a migração `0042`. ⚠️ O `carro-testes.yml` ignora
+`desktop/**`.

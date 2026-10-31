@@ -7,7 +7,9 @@ import { closeSheet, getState, setState, useApp } from '../lib/state.js'
 import { engine } from '../lib/uploader.js'
 import { Icon } from './icons.js'
 import { Button, Pill, SheetHead, cx } from './ui.js'
-import { Avatar } from './main.js'
+import { Avatar, ZBotao } from './main.js'
+import { SetBotao } from './set.js'
+import { EMBUTIDO } from '../lib/embutido.js'
 import { InstallHint } from './install-hint.js'
 
 const asUser = (d) => ({ displayName: d.nome || d.email, emailAddress: d.email, photoLink: d.fotoUrl })
@@ -122,7 +124,10 @@ export function AccountScreen() {
   }
 
   const error = a.status !== 'error' ? a.error : null
+  // com conta e sem Drive pronto: o Set e a Z continuam a um toque, no canto (não são abas nem a tarefa)
+  const comConta = a.status === 'noDrive' || a.status === 'choose' || a.status === 'reconnect'
   return html`<div class=${cx('screen', 'signin', `is-${a.status}`)}>
+    ${comConta && !EMBUTIDO ? html`<div class="topbar-acoes signin-eco"><${SetBotao} /><${ZBotao} /></div>` : null}
     <main class="signin-main">
       <div class="signin-topo k-entra" style="--i:0"><${Hero} /></div>
       ${head ? html`<h2 class="signin-head k-entra" style="--i:1">${head}</h2>` : null}

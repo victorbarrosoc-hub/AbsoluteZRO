@@ -19,6 +19,7 @@ import { ReferenciasService } from './referencias/service.js'
 import { PedidosProxy } from './engine/pedidos-proxy.js'
 import { PedidosFrames } from './engine/pedidos-frames.js'
 import { PedidosFormato } from './referencias/pedidos-formato.js'
+import { PedidosRelay } from './engine/pedidos-relay.js'
 import { AcompanharCelular } from './engine/acompanhar.js'
 import { UsoDiario } from './engine/uso.js'
 import { closeHttp, requestJSON } from './net/http.js'
@@ -138,7 +139,7 @@ function banner(url, root) {
  * Sobe tudo: ajustes, contas, MD5, fila e servidor. Usado pelo `npm start`, pelo demo, pelos testes e pelo desktop.
  * @param {{ home?: string, port?: number, open?: boolean, desktop?: boolean, quiet?: boolean,
  *   managerOptions?: object, serverOptions?: object, mobileOptions?: object, cloudOptions?: object, versionOptions?: object,
- *   updaterOptions?: object, referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object }} [opts]
+ *   updaterOptions?: object, referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object, pedidosRelayOptions?: object }} [opts]
  *   `managerOptions`/`serverOptions`/`mobileOptions`/`cloudOptions`/`versionOptions` (opcionais) vão para o
  *   TransferManager/startServer/MobileReceiver/CloudAuth/VersionChecker (os testes trocam peças, ex.: mobileOptions { port: 0, host: '127.0.0.1' }).
  *   `updaterOptions` vai para o Updater (src/updater.js), que só existe com `handoff` (o app de desktop empacotado
@@ -148,14 +149,14 @@ function banner(url, root) {
  * @returns {Promise<{ url: string, port: number, manager: TransferManager, auth: AuthManager, settings: Settings,
  *   hasher: Hasher, paths: object, server: object, mobile: MobileReceiver, versao: VersionChecker, shutdown(): Promise<void> }>}
  */
-export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, updaterOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {} } = {}) {
+export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, updaterOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {}, pedidosRelayOptions = {} } = {}) {
   const root = home ? path.resolve(home) : dataDir()
   fs.mkdirSync(root, { recursive: true, mode: 0o700 })
   const paths = dataPaths(root)
   const lockFile = path.join(root, LOCK_NAME)
   const token = await acquireLock(lockFile)
 
-  let settings, auth, hasher, manager, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato
+  let settings, auth, hasher, manager, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay
   try {
     settings = new Settings(paths.settings)
     await settings.load()
@@ -195,6 +196,9 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     // "Baixar como…" pedido pelo celular (MP3 320, WAV…): este computador converte e sobe ao lado do original.
     pedidosFormato = new PedidosFormato({ cloud: auth.cloud, referencias: () => referencias, ...pedidosFormatoOptions })
     pedidosFormato.start()
+    // "Gerar versões com o Relay" pedido pelo Maestro: os trabalhos do Relay vêm com o servidor (src/server/relay.js).
+    pedidosRelay = new PedidosRelay({ cloud: auth.cloud, relay: () => server?.ctx?.relay ?? null, ...pedidosRelayOptions })
+    pedidosRelay.start()
     // Falhar aqui (porta ocupada, pasta sem permissão) não impede o app de abrir: o erro aparece em Ajustes → Celular.
     await mobile.init().catch(err => console.warn('[sobedesce] recepção do celular não iniciou:', err?.message))
   } catch (err) {
@@ -204,6 +208,7 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     await pedidosProxy?.close()
     await pedidosFrames?.close()
     await pedidosFormato?.close()
+    await pedidosRelay?.close()
     await referencias?.close()
     await mobile?.close().catch(() => {})
     await server?.close().catch(() => {})
@@ -228,6 +233,7 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
       await pedidosProxy.close()
       await pedidosFrames?.close()
       await pedidosFormato?.close()
+      await pedidosRelay?.close()
       await referencias.close()
       // Primeiro fecha a porta da rede local (o que já chegou do celular fica gravado para continuar depois).
       await mobile.close().catch(err => console.warn('[sobedesce] erro ao fechar a recepção do celular:', err?.message))
@@ -243,7 +249,7 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     })()
     return stopping
   }
-  return { url: server.url, port: server.port, manager, auth, settings, hasher, paths, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, shutdown }
+  return { url: server.url, port: server.port, manager, auth, settings, hasher, paths, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay, shutdown }
 }
 
 async function main() {

@@ -56,11 +56,15 @@ test('no navegador: o resto do HUB, as páginas do cliente e os outros sites', (
     `${HUB}/baixar`,
     `${HUB}/oauth/token`,
     `${HUB}/entrarx`,
-    // o cliente vê no navegador dele: aprovação, orçamento e pedido
+    // o cliente vê no navegador dele: aprovação, orçamento, pedido e o link do Fluxo
     `${M}/a/tok123`,
     `${M}/a`,
     `${M}/o/tok`,
     `${M}/p/tok?x=1`,
+    `${M}/f/tok`,
+    `${M}/f/tok.md`,
+    // o convite do freela: quem abre ainda não está na produtora
+    `${M}/convite/tok`,
     // outros sites e apps da família
     'https://sobedesce.vercel.app/',
     'https://wa.me/5511999999999?text=oi',
@@ -77,7 +81,8 @@ test('no navegador: o resto do HUB, as páginas do cliente e os outros sites', (
     assert.equal(r.destino(url, O), 'fora', url)
   }
   // páginas que começam com a/o/p mas não são do cliente ficam no app
-  for (const url of [`${M}/app`, `${M}/aprovacoes`, `${M}/orcamentos`, `${M}/pedidos`]) assert.equal(r.destino(url, O), 'app', url)
+  for (const url of [`${M}/app`, `${M}/aprovacoes`, `${M}/orcamentos`, `${M}/pedidos`, `${M}/fluxos`, `${M}/app/criacao/fluxos`])
+    assert.equal(r.destino(url, O), 'app', url)
 })
 
 test('saídas para o sistema: e-mail e a agenda do Maestro; nada de esquema perigoso', () => {

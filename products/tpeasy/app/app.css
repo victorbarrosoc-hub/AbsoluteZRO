@@ -578,6 +578,53 @@ html.scrolled .topbar-title {
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+/* "Do Maestro · v3": o roteiro veio do Maestro pela Absolute ZRO (app/js/maestro.js) */
+.item-origem {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.item-origem img {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.editor-origem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 5px 10px 5px 7px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+  align-self: flex-start;
+}
+.editor-origem[hidden] {
+  display: none;
+}
+.editor-origem img {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex: none;
+}
+.editor-origem .icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-2);
+}
+.editor-origem:not([href]) .icon {
+  display: none;
+}
 .row-prog {
   position: absolute;
   left: 72px;
@@ -1101,7 +1148,9 @@ a.btn {
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* uma coluna por aba visível: Roteiros, Teleprompter, Ajustes e o Set quando responde (app/js/set.js); a Z não é aba */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   height: calc(var(--tabbar-h) + var(--safe-b));
   padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
   background: var(--tab-glass);
@@ -1134,8 +1183,12 @@ html.has-prompter .tabbar {
 .tab:active .icon {
   transform: scale(0.86);
 }
-.tab[aria-current="page"] {
+.tab[aria-current="page"],
+.tab[aria-expanded="true"] {
   color: var(--blue);
+}
+.tab[hidden] {
+  display: none;
 }
 .tab[aria-current="page"] .icon {
   stroke-width: 1.9;
@@ -2508,4 +2561,24 @@ html.kb-open .editor-bar {
   justify-content: center;
   gap: 10px;
   margin-top: 14px;
+}
+
+/* ───────────── o Set da Absolute ZRO (app/js/set.js): a folha com a cara do TPeasy ───────────── */
+:root {
+  --zro-set-tinta: var(--text);
+  --zro-set-apoio: var(--text-2);
+  --zro-set-apagado: var(--text-3);
+  --zro-set-linha: var(--hairline);
+  --zro-set-linha-forte: var(--fill-2);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--fill-2);
+  --zro-set-vidro: var(--tab-glass);
+  --zro-set-fundo: var(--sheet-bg);
+  /* minhas mensagens e o botão de enviar no azul do TPeasy, como no iMessage */
+  --zro-set-acento: var(--blue);
+  --zro-set-acento-tinta: #fff;
+  --zro-set-perigo: var(--danger);
+  --zro-set-raio: var(--r-lg);
+  --zro-set-fonte: var(--font);
 }

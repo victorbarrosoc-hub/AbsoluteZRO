@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { nomeStatus } from "@/lib/orcamento/motor";
+import { pode as podeArea } from "@/lib/acessos";
 import { documentoDoOrcamento } from "@/lib/orcamento/orcamentos";
 import { BotaoImprimir } from "@/components/acao";
 import { Icone } from "@/components/icones";
@@ -18,6 +19,7 @@ export const metadata: Metadata = { title: "Timbrado" };
 export default async function PaginaTimbrado({ params }: PageProps<"/app/orcamentos/[id]/timbrado">) {
   const { id } = await params;
   const sessao = await exigirAcessoNaPagina(`/app/orcamentos/${id}/timbrado`);
+  if (!podeArea(sessao, "orcamentos")) notFound();
   const doc = await documentoDoOrcamento({ sub: sessao.sub, orgId: sessao.orgId }, id);
   if (!doc) notFound();
   return (

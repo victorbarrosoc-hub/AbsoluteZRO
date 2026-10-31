@@ -33,7 +33,7 @@ function lerAjustes(v: unknown): AjustesFrames | null {
 
 /**
  * Pedidos ao computador: `?status=pendente` (ou vários, separados por vírgula; `todos`), `?fileIds=a,b` e
- * `?tipo=proxy|frames|formato|todos` (sem tipo: proxy, que é o que os apps antigos do computador sabem fazer).
+ * `?tipo=proxy|frames|formato|relay|todos` (sem tipo: proxy, que é o que os apps antigos do computador sabem fazer).
  * Sem status: todos (o celular quer ver os prontos também).
  */
 export async function GET(req: Request) {
@@ -66,7 +66,8 @@ export async function POST(req: Request) {
     return falha(400, "entrada", MSG.entrada);
   }
   const tipo: TipoPedido = corpo.tipo == null ? "proxy" : (corpo.tipo as TipoPedido);
-  if (!TIPOS.includes(tipo)) return falha(400, "entrada", MSG.entrada);
+  // As versões do Relay só chegam pela Absolute ZRO (/api/zro/relay/converter), com a chave de quem pediu.
+  if (!TIPOS.includes(tipo) || tipo === "relay") return falha(400, "entrada", MSG.entrada);
   const max = tipo === "proxy" ? MAX_POR_PEDIDO : MAX_FRAMES;
   if (corpo.itens.length > max) return falha(400, "muitos", `Até ${max} vídeos por vez.`);
   const ajustes: AjustesPedido | null = tipo === "frames" ? lerAjustes(corpo.ajustes) : tipo === "formato" ? lerAjustesFormato(corpo.ajustes) : null;

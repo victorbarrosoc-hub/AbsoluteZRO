@@ -1,8 +1,9 @@
 /**
- * Capturas do HUB para `produto-hub-{claro,escuro}.webp` (MacBook com o painel /app/apps e iPhone com /inicio), feitas no
+ * Capturas do HUB para `produto-hub-{claro,escuro}.webp` (MacBook com o painel /app e iPhone com /inicio), feitas no
  * HUB local com uma conta de demonstração neutra. Os produtos aparecem como o gate de lançamento do banco diz (ADR
- * 0023): fechado = selo "Em desenvolvimento", sem Abrir. Nada é inventado na tela além da central do app de computador,
- * simulada com SOBEDESCE e Synquei instalados (no navegador ela não existe).
+ * 0023). A foto vai para a página pública, que só divulga o que está no ar (titular, 30/10/2026): os cartões fechados
+ * ("Em desenvolvimento") saem da tela antes da captura; nada é acrescentado. Nada é inventado na tela além da central
+ * do app de computador, simulada com SOBEDESCE e Synquei instalados (no navegador ela não existe).
  *
  *   DATABASE_URL=postgres://…/banco-local HUB_URL=http://localhost:3300 npx tsx scripts/marca/aparelhos/capturar-hub.ts <pasta>
  *   python3 scripts/marca/aparelhos/produtos.py <pasta> hub && python3 scripts/marca/aparelhos/transparente.py
@@ -10,7 +11,7 @@
  * Só roda contra banco e HUB locais (localhost), nunca produção.
  */
 import { authenticate, SESSION_COOKIE, signIn, signUp } from '@zro/auth'
-import { createOrganization, createProject } from '@zro/core'
+import { createOrganization, createProject, marcarAvisoDoPerfil } from '@zro/core'
 import { createDatabase } from '@zro/db'
 import { chromium } from '@playwright/test'
 
@@ -40,6 +41,8 @@ async function entrar() {
   }
   const [projeto] = await db.sql`select id from zro.projects where org_id = ${auth.session.activeOrgId} and title = 'Clipe Aurora'`
   if (!projeto) await createProject(db, auth, { title: 'Clipe Aurora', type: 'clipe' })
+  // o aviso único do perfil (0029) é de quem acabou de entrar, não da foto
+  await marcarAvisoDoPerfil(db, auth)
   return s.token
 }
 
@@ -65,6 +68,13 @@ const CENTRAL = `(() => {
   }
 })()`
 
+// Tira os cartões do que não está no ar (selo "Em desenvolvimento" no painel, .app-tile--soon no início).
+const SO_NO_AR = `(() => {
+  for (const li of document.querySelectorAll('.painel__apps > li'))
+    if (/Em desenvolvimento/.test(li.querySelector('.pcard__acoes')?.textContent ?? '')) li.remove()
+  for (const t of document.querySelectorAll('.app-tile--soon')) (t.closest('li') ?? t).remove()
+})()`
+
 try {
   const token = await entrar()
   const browser = await chromium.launch()
@@ -78,7 +88,8 @@ try {
     await mac.addCookies(cookies)
     await mac.addInitScript({ content: CENTRAL })
     const p = await mac.newPage()
-    await p.goto(`${hub}/app/apps`, { waitUntil: 'networkidle' })
+    await p.goto(`${hub}/app`, { waitUntil: 'networkidle' })
+    await p.evaluate(SO_NO_AR)
     await p.waitForTimeout(800)
     await p.screenshot({ path: `${pasta}/hub-mac-${tema}.png` })
     await mac.close()
@@ -94,6 +105,7 @@ try {
     await iph.addCookies(cookies)
     const q = await iph.newPage()
     await q.goto(`${hub}/inicio`, { waitUntil: 'networkidle' })
+    await q.evaluate(SO_NO_AR)
     await q.waitForTimeout(800)
     await q.screenshot({ path: `${pasta}/hub-iph-${tema}.png` })
     await iph.close()

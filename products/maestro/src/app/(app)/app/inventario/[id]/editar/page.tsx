@@ -29,7 +29,7 @@ export default async function EditarEquipamento({ params }: PageProps<"/app/inve
       />
       <Formulario
         acao={salvarEquipamentoAcao}
-        campos={camposEquipamento(freelas)}
+        campos={camposEquipamento(freelas, e.veValor)}
         id={id}
         inicial={{
           nome: e.nome,

@@ -32,12 +32,17 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
  * Escopos de API de um produto: o app chama a API do HUB em nome da pessoa (Bearer). Só entram no cadastro do
  * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
  */
-export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
+export const PRODUCT_SCOPES: Record<string, string[]> = {
+  'carro-do-freela': ['carro-do-freela.jobs'],
+  maestro: ['maestro.projects'],
+  // O TPeasy lê a própria caixa de entrada (roteiros mandados pelo Maestro, migração 0040).
+  tpeasy: ['tpeasy.roteiros'],
+}
 /**
- * Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016), a Agenda das Conexões (0026) e a
- * busca de perfis com convite pelo @ (0029).
+ * Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016), a Agenda das Conexões (0026), a
+ * busca de perfis com convite pelo @ (0029) e o Set, presença e conversas (0035).
  */
-export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda', 'zro.pessoas'] as const
+export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda', 'zro.pessoas', 'zro.set'] as const
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600

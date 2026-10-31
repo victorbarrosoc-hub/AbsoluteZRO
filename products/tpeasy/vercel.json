@@ -1,8 +1,13 @@
 {
+  "regions": ["gru1"],
   "rewrites": [
     {
       "source": "/api/zro/ia/:caminho*",
       "destination": "/api/zro/ia?c=:caminho*"
+    },
+    {
+      "source": "/api/zro/set/:caminho*",
+      "destination": "/api/zro/set?c=:caminho*"
     }
   ]
 }

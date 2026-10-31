@@ -8,6 +8,10 @@
  *   POST /api/zro/inventario           → 201 { item }
  *   PATCH  /api/zro/inventario?id=<id> → { item }             (só o que veio)
  *   DELETE /api/zro/inventario?id=<id> → 204
+ *   GET    /api/zro/agenda?de=&ate=    → { agenda: { "YYYY-MM-DD": {e,p,h?} } }   (a própria)
+ *   PUT    /api/zro/agenda             → { dia, declaracao }  (UM dia: fechado|negociando)
+ *   DELETE /api/zro/agenda?dia=        → 204                  (o dia volta a livre)
+ *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (a comunidade da Absolute ZRO + a agenda de quem consentiu)
  *
  * Cada pedido passa, nesta ordem: método → limite de pedidos (por IP) →
  * mesma origem (escrita: Origin igual ao site e Sec-Fetch-Site same-origin
@@ -70,7 +74,7 @@ async function preparar(req, res, { metodos, escrita }) {
   if (!UUID.test(s.quem.sub)) { json(res, 403, { erro: 'conta' }, s.extra); return null }
   const db = banco();
   if (!db) { json(res, 503, { erro: 'sem_banco' }, s.extra); return null }
-  return { db, sub: s.quem.sub.toLowerCase(), extra: s.extra, at: s.at };
+  return { db, sub: s.quem.sub.toLowerCase(), quem: s.quem, extra: s.extra, at: s.at };
 }
 
 async function corpoDe(req, res, extra) {
@@ -88,6 +92,7 @@ function responderErro(res, e, extra) {
   if (e && e.code === '23514') return json(res, 400, { erro: /Limite/.test(e.message) ? 'limite' : 'regra' }, extra);
   if (e && e.code === '42501') return json(res, 403, { erro: 'proibido' }, extra);
   if (e && e.code === '22P02') return json(res, 400, { erro: 'pedido' }, extra);
+  if (e && e.code === '22023') return json(res, 400, { erro: 'janela' }, extra);
   throw e;
 }
 
@@ -96,7 +101,7 @@ function responderErro(res, e, extra) {
 async function perfil(req, res) {
   const p = await preparar(req, res, { metodos: ['GET', 'PUT'], escrita: req.method === 'PUT' });
   if (!p) return;
-  const { db, sub, extra } = p;
+  const { db, sub, quem, extra } = p;
   try {
     if (req.method === 'GET') {
       const l = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.perfis where sub = $1', [sub])).rows[0]);
@@ -107,13 +112,14 @@ async function perfil(req, res) {
     const v = R.perfilDe(corpo);
     const l = await db.asUser(sub, async c =>
       (await c.query(
-        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade, arroba, foto)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          on conflict (sub) do update set nome_exibicao = excluded.nome_exibicao, cidade = excluded.cidade, uf = excluded.uf,
            funcoes = excluded.funcoes, nichos = excluded.nichos, bio = excluded.bio, portfolio_url = excluded.portfolio_url,
-           visibilidade = excluded.visibilidade
+           visibilidade = excluded.visibilidade, arroba = excluded.arroba, foto = excluded.foto
          returning *`,
-        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade],
+        /* o @ e a foto vêm da CONTA (claims relidas no HUB a cada pedido), nunca do corpo */
+        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade, quem.arroba || null, quem.foto || null],
       )).rows[0]);
     return json(res, 200, { perfil: R.perfilSaida(l) }, extra);
   } catch (e) {
@@ -187,6 +193,284 @@ async function inventario(req, res) {
   }
 }
 
+/* ---------------- agenda ---------------- */
+
+async function agenda(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'PUT', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    const q = new URL(req.url, 'http://x').searchParams;
+    if (req.method === 'GET') {
+      const j = R.janelaDe(q.get('de'), q.get('ate'));
+      const rows = await db.asUser(sub, async c =>
+        (await c.query("select to_char(dia, 'YYYY-MM-DD') as dia, estado, parte, hora from carro_do_freela.agenda_dias where dia between $1 and $2 order by dia", [j.de, j.ate])).rows);
+      const agenda = {};
+      for (const l of rows) agenda[l.dia] = R.agendaSaida(l);
+      return json(res, 200, { agenda, de: j.de, ate: j.ate }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const dia = R.diaDe(q.get('dia'));
+      await db.asUser(sub, async c => c.query('delete from carro_do_freela.agenda_dias where dia = $1', [dia]));
+      res.writeHead(204, Object.assign({ 'Cache-Control': 'no-store' }, extra));
+      return res.end();
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.agendaDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query(
+        `insert into carro_do_freela.agenda_dias (sub, dia, estado, parte, hora) values ($1, $2, $3, $4, $5)
+         on conflict (sub, dia) do update set estado = excluded.estado, parte = excluded.parte, hora = excluded.hora
+         returning estado, parte, hora`,
+        [sub, v.dia, v.estado, v.parte, v.hora],
+      )).rows[0]);
+    return json(res, 200, { dia: v.dia, declaracao: R.agendaSaida(l) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+/* ---------------- quem está no Carro ---------------- */
+
+/**
+ * Ver a agenda de quem está no Carro. ⚠️ É AQUI que mora a tranca do plano quando ela vier ("só quem paga sabe quem
+ * está livre"): hoje o Carro está fechado (só as contas liberadas no portão entram) e o preço ainda não foi decidido,
+ * então toda conta que passou do portão vê. Decidido o plano, esta função lê o direito da sessão (zro_products /
+ * entitlements do HUB) e, sem ele, a lista sai SEM a agenda (as pessoas continuam achadas pelo nome, de graça).
+ */
+function podeVerAgendas(/* quem */) {
+  return true;
+}
+
+/* as funções do perfil da Absolute ZRO (chaves do HUB) no catálogo do Carro, para a busca por função funcionar com
+   quem ainda não descreveu o ofício aqui; quem descreveu (e consentiu) aparece com as funções do Carro */
+const FUNCAO_DO_HUB = {
+  camera: 'Op. de câmera', edicao: 'Editor', color: 'Colorista', drone: 'Op. de drone', fotografia: 'Fotógrafo',
+  direcao: 'Direção', producao: 'Produtor', motion: 'Motion / VFX',
+};
+const PAGINAS_MAX = 10;
+
+/** a comunidade inteira no HUB (páginas de 200, até 2000), com o token da pessoa (escopo zro.pessoas) */
+async function comunidade(at) {
+  const cfg = Z.config();
+  const lista = [];
+  let depois = null;
+  for (let i = 0; i < PAGINAS_MAX; i++) {
+    const u = new URL(cfg.issuer + '/api/v1/pessoas');
+    u.searchParams.set('limite', '200');
+    if (depois) u.searchParams.set('depois', depois);
+    const r = await fetch(u, { headers: { authorization: 'Bearer ' + at, accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+    if (r.status === 401 || r.status === 403) return { recusado: true };
+    if (!r.ok) throw new Error('hub ' + r.status);
+    const corpo = await r.json();
+    for (const x of Array.isArray(corpo.pessoas) ? corpo.pessoas : []) lista.push(x);
+    if (!corpo.proximo) break;
+    depois = String(corpo.proximo);
+  }
+  return { lista };
+}
+
+async function pessoas(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET'], escrita: false });
+  if (!p) return;
+  const { db, sub, quem, extra, at } = p;
+  try {
+    const q = new URL(req.url, 'http://x').searchParams;
+    const j = R.janelaDe(q.get('de'), q.get('ate'));
+    let c;
+    try {
+      c = at ? await comunidade(at) : { recusado: true };
+    } catch (e) {
+      return json(res, 503, { erro: 'hub' }, extra);
+    }
+    /* o token desta sessão não tem zro.pessoas (login de antes): a lista pede entrar de novo, nada quebra */
+    if (c.recusado) return json(res, 200, { pessoas: [], de: j.de, ate: j.ate, agendas: false, reconectar: true }, extra);
+    const subs = c.lista.map(x => String(x.id || '').toLowerCase()).filter(x => UUID.test(x));
+    const rows = subs.length
+      ? await db.asUser(sub, async cx => (await cx.query('select * from carro_do_freela.agendas($1::uuid[], $2, $3)', [subs, j.de, j.ate])).rows)
+      : [];
+    const doCarro = new Map(rows.map(l => [String(l.sub), l]));
+    const ver = podeVerAgendas(quem);
+    const lista = c.lista.map(x => R.pessoaSaida(x, doCarro.get(String(x.id).toLowerCase()), FUNCAO_DO_HUB)).filter(Boolean)
+      .map(x => (ver || x.id === sub ? x : Object.assign(x, { agenda: null })));
+    return json(res, 200, { pessoas: lista, de: j.de, ate: j.ate, agendas: ver }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+/* ---------------- propostas, feed, brechó e denúncia (0003) ----------------
+ * GET    /api/zro/propostas              → { recebidas: [...], enviadas: [...] }   (as minhas, dos dois lados)
+ * POST   /api/zro/propostas              → 201 { proposta }   (chega na caixa de `para`, dentro do Carro)
+ * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou)
+ * GET    /api/zro/feed                   → { posts: [...] }   (os 100 mais novos, sem os que EU denunciei)
+ * POST   /api/zro/feed                   → 201 { post }
+ * DELETE /api/zro/feed?id=               → 204                (só o próprio)
+ * GET    /api/zro/brecho                 → { anuncios: [...] } (disponíveis + os meus)
+ * POST   /api/zro/brecho                 → 201 { anuncio }
+ * PATCH  /api/zro/brecho?id=             → { anuncio }        (vendido/disponível, só o próprio)
+ * DELETE /api/zro/brecho?id=             → 204                (só o próprio)
+ * POST   /api/zro/denuncia               → 204                (guardada; ninguém de fora lê)
+ * O nome de quem escreve vem da CONTA (sessão conferida no HUB), nunca do pedido. */
+function nomeDaConta(quem) {
+  const n = String((quem && quem.nome) || '').trim().slice(0, 80);
+  return n && !R.TELEFONE.test(n) ? n : quem && quem.arroba ? '@' + quem.arroba : 'Conta Absolute ZRO';
+}
+const iso = d => (d instanceof Date ? d.toISOString() : d);
+const diaTxt = d => (d instanceof Date ? d.toISOString().slice(0, 10) : d || null);
+const horaTxt = h => (h ? String(h).slice(0, 5) : null);
+function propostaSaida(l, sub) {
+  return { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
+    anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
+    mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+}
+const postSaida = (l, sub) => ({ id: l.id, autor: { sub: l.sub, nome: l.autor_nome }, eu: l.sub === sub, tipo: l.tipo,
+  texto: l.texto, criado_em: iso(l.criado_em) });
+const anuncioSaida = (l, sub) => ({ id: l.id, dono: { sub: l.sub, nome: l.dono_nome }, eu: l.sub === sub, titulo: l.titulo,
+  categoria: l.categoria, estado_item: l.estado_item, descricao: l.descricao, cidade: l.cidade, preco_cents: l.preco_cents,
+  situacao: l.situacao, criado_em: iso(l.criado_em) });
+function semConteudo(res, extra) {
+  res.writeHead(204, Object.assign({ 'Cache-Control': 'no-store' }, extra));
+  return res.end();
+}
+
+async function propostas(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows);
+      const todas = rows.map(l => propostaSaida(l, sub));
+      return json(res, 200, { recebidas: todas.filter(x => x.recebida), enviadas: todas.filter(x => !x.recebida) }, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    if (req.method === 'POST') {
+      const v = R.propostaDe(corpo);
+      if (v.para === sub) return json(res, 400, { erro: 'para', campo: 'para' }, extra);
+      const l = await db.asUser(sub, async c => {
+        if (v.tipo === 'brecho') {
+          const an = (await c.query("select sub from carro_do_freela.anuncios where id = $1 and situacao = 'disponivel'", [v.anuncio])).rows[0];
+          if (!an || an.sub !== v.para) return null;
+        }
+        return (await c.query(
+          `insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, ini, fim, funcao, local, mensagem, valor_cents)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
+          [sub, v.para, nomeDaConta(quem), v.tipo, v.anuncio, v.dia, v.ini, v.fim, v.funcao, v.local, v.mensagem, v.valor_cents],
+        )).rows[0];
+      });
+      if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return json(res, 201, { proposta: propostaSaida(l, sub) }, extra);
+    }
+    const id = idDe(req);
+    if (!id) return json(res, 400, { erro: 'id' }, extra);
+    const v = R.respostaDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1 returning *', [id, v.estado, v.motivo])).rows[0]);
+    if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+    return json(res, 200, { proposta: propostaSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function feed(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query(
+          `select p.* from carro_do_freela.posts p
+            where not exists (select 1 from carro_do_freela.denuncias d where d.alvo = 'post' and d.alvo_id = p.id)
+            order by p.criado_em desc limit 100`)).rows);
+      return json(res, 200, { posts: rows.map(l => postSaida(l, sub)) }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const id = idDe(req);
+      if (!id) return json(res, 400, { erro: 'id' }, extra);
+      const n = await db.asUser(sub, async c => (await c.query('delete from carro_do_freela.posts where id = $1', [id])).rowCount);
+      if (!n) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return semConteudo(res, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.postDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query('insert into carro_do_freela.posts (sub, autor_nome, tipo, texto) values ($1, $2, $3, $4) returning *',
+        [sub, nomeDaConta(quem), v.tipo, v.texto])).rows[0]);
+    return json(res, 201, { post: postSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function brecho(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query(
+          `select a.* from carro_do_freela.anuncios a
+            where not exists (select 1 from carro_do_freela.denuncias d where d.alvo = 'anuncio' and d.alvo_id = a.id)
+            order by a.criado_em desc limit 300`)).rows);
+      return json(res, 200, { anuncios: rows.map(l => anuncioSaida(l, sub)) }, extra);
+    }
+    let id = null;
+    if (req.method !== 'POST') {
+      id = idDe(req);
+      if (!id) return json(res, 400, { erro: 'id' }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const n = await db.asUser(sub, async c => (await c.query('delete from carro_do_freela.anuncios where id = $1', [id])).rowCount);
+      if (!n) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return semConteudo(res, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    if (req.method === 'PATCH') {
+      const situacao = R.situacaoDe(corpo);
+      const l = await db.asUser(sub, async c =>
+        (await c.query('update carro_do_freela.anuncios set situacao = $2 where id = $1 returning *', [id, situacao])).rows[0]);
+      if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return json(res, 200, { anuncio: anuncioSaida(l, sub) }, extra);
+    }
+    const v = R.anuncioDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query(
+        `insert into carro_do_freela.anuncios (sub, dono_nome, titulo, categoria, estado_item, descricao, cidade, preco_cents)
+         values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
+        [sub, nomeDaConta(quem), v.titulo, v.categoria, v.estado_item, v.descricao, v.cidade, v.preco_cents])).rows[0]);
+    return json(res, 201, { anuncio: anuncioSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function denuncia(req, res) {
+  const p = await preparar(req, res, { metodos: ['POST'], escrita: true });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.denunciaDe(corpo);
+    await db.asUser(sub, async c =>
+      c.query(
+        `insert into carro_do_freela.denuncias (sub, alvo, alvo_id, motivo, detalhe) values ($1, $2, $3, $4, $5)
+         on conflict (sub, alvo, alvo_id) do nothing`, [sub, v.alvo, v.id, v.motivo, v.detalhe]));
+    return semConteudo(res, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
 const protegido = fn => async (req, res) => {
   try {
     await fn(req, res);
@@ -199,5 +483,11 @@ const protegido = fn => async (req, res) => {
 module.exports = {
   perfil: protegido(perfil),
   inventario: protegido(inventario),
+  agenda: protegido(agenda),
+  pessoas: protegido(pessoas),
+  propostas: protegido(propostas),
+  feed: protegido(feed),
+  brecho: protegido(brecho),
+  denuncia: protegido(denuncia),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
 };

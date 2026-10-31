@@ -29,6 +29,9 @@ import { Icone } from "@/components/icones";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { AvatarPessoa, iniciaisDe } from "./pecas";
 import { VersoesDoCard } from "./versoes";
+import { CapaDaFicha } from "./capa";
+import type { Selo } from "@/lib/quadro/selos";
+import { CriacaoDoCard } from "@/components/criacao/do-card";
 
 type Props = {
   card: CardQ | null;
@@ -45,6 +48,10 @@ type Props = {
   fechar: () => void;
   /** O card nasceu: o Quadro o leva da folha até a coluna (a origem é o título da folha). */
   aoCriar: (id: string, origem: DOMRect | null, coluna: ColunaId) => void;
+  /** A peça e o cliente do card (a miniatura que a ficha mostra sem capa enviada). */
+  selo?: Selo;
+  /** O card como o banco devolveu depois de pôr ou tirar a capa. */
+  adotar: (c: CardQ) => void;
 };
 
 /** Texto que grava ao sair do campo; o que chega do banco só entra quando a pessoa não está digitando ali. */
@@ -193,7 +200,7 @@ export function Ficha(props: Props) {
   );
 }
 
-function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, aoCriar }: Props) {
+function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, aoCriar, selo, adotar }: Props) {
   const fechar = useFecharFolha();
   const idBase = useId();
   const caixa = useRef<HTMLFormElement>(null);
@@ -287,6 +294,8 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
           <Icone nome="fechar" size={18} />
         </button>
       </div>
+
+      {card ? <CapaDaFicha card={card} selo={selo} podeEscrever={podeEscrever} adotar={adotar} /> : null}
 
       <label className="sr-only" htmlFor={campo("tema")}>
         Título
@@ -480,6 +489,7 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
       </label>
 
       {card ? <VersoesDoCard key={card.id} card={card.id} podeEscrever={podeEscrever} /> : null}
+      {card ? <CriacaoDoCard key={`cr-${card.id}`} card={card.id} podeEscrever={podeEscrever} /> : null}
 
       {card && (card.dados.cliente || card.dados.projeto) ? (
         <div className="q-ficha__links">

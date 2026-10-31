@@ -1,0 +1,112 @@
+/* O convite do freela (/convite/<token>, drizzle/0036): uma ideia, uma ação principal. Papel claro, vidro nos botões. */
+.cv-pagina {
+  max-width: 560px;
+}
+.cv {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 36px 24px 30px;
+  border-radius: 28px;
+  background: var(--painel, var(--surface));
+  box-shadow: var(--shadow-float);
+  text-align: center;
+  animation: cv-entra 0.42s var(--g-entra, ease-out) both;
+}
+@keyframes cv-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.cv__marca {
+  margin-bottom: 6px;
+}
+.cv h1 {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-weight: 300;
+  font-size: clamp(2rem, 7vw, 2.8rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.cv h1 strong {
+  font-weight: 800;
+}
+.cv > p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 1.02rem;
+  color: var(--text-faint);
+}
+.cv__quem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cv__quem img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.cv__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.cv__nota {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+  color: var(--text-faint);
+}
+.cv__erro {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+  color: var(--danger-text);
+}
+.cv__ok {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--st-ok);
+  animation: cv-ok 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes cv-ok {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (max-width: 480px) {
+  .cv {
+    padding: 30px 18px 24px;
+  }
+  .cv__acoes {
+    width: 100%;
+  }
+  .cv__acoes > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cv,
+  .cv__ok {
+    animation: none;
+  }
+}

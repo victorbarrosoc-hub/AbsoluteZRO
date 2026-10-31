@@ -9,7 +9,9 @@
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import http from 'node:http'
 
-export const ESCOPOS_ESPERADOS = 'openid email profile org offline_access zro.ia'
+export const ESCOPOS_ESPERADOS = 'openid email profile org offline_access zro.ia zro.set'
+/** Absolute ZRO de antes do Set (`recusarSet`): recusa zro.set e aceita o pedido sem ele. */
+export const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
 
 export async function iniciarZroFalsa(cliente) {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
@@ -19,7 +21,7 @@ export async function iniciarZroFalsa(cliente) {
   const refreshes = new Map() // refresh token → { sub, familia, usado }
   const familiasMortas = new Set()
   const contas = new Map() // sub → pessoa (a conta na Absolute ZRO)
-  const estado = { semIa: false, iaPedidos: [], iaPausa: null, pessoa: null, negar: false, adulterar: null, trocas: 0, renovacoes: 0, userinfos: 0, revogados: 0, prompt: null, atTtl: 600, fora: false }
+  const estado = { semIa: false, iaPedidos: [], iaPausa: null, semSet: false, recusarSet: false, setPedidos: [], setVersao: 1, pessoa: null, negar: false, adulterar: null, trocas: 0, renovacoes: 0, userinfos: 0, revogados: 0, prompt: null, atTtl: 600, fora: false }
   let base = ''
 
   const jwt = (dados, assinarErrado = false) => {
@@ -75,7 +77,10 @@ export async function iniciarZroFalsa(cliente) {
       estado.prompt = q.get('prompt')
       const volta = new URL(q.get('redirect_uri'))
       volta.searchParams.set('state', q.get('state'))
-      if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || q.get('scope') !== ESCOPOS_ESPERADOS) {
+      estado.escopos = q.get('scope')
+      if (estado.recusarSet && q.get('scope') === ESCOPOS_ESPERADOS) {
+        volta.searchParams.set('error', 'invalid_scope')
+      } else if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || q.get('scope') !== (estado.recusarSet ? ESCOPOS_SEM_SET : ESCOPOS_ESPERADOS)) {
         volta.searchParams.set('error', 'invalid_request')
       } else if (estado.negar || !estado.pessoa) {
         volta.searchParams.set('error', 'access_denied')
@@ -174,6 +179,26 @@ export async function iniciarZroFalsa(cliente) {
       }
       if (/^conversas\/[\w-]+$/.test(caminho)) return responder(res, 200, req.method === 'DELETE' ? { ok: true } : { mensagens: [] })
       return responder(res, 404, { error: 'not_found' })
+    }
+    // O Set (/api/v1/set/*): só com Bearer válido; `semSet` = token sem zro.set (401, como a de verdade). Toda leitura
+    // devolve a ETag fraca da versão (`setVersao`); com If-None-Match igual, 304 sem corpo.
+    if (url.pathname === '/api/v1/set' || url.pathname.startsWith('/api/v1/set/')) {
+      const auth = String(req.headers.authorization || '')
+      let corpo = ''
+      for await (const c of req) corpo += c
+      const caminho = url.pathname.slice('/api/v1/set'.length).replace(/^\//, '')
+      estado.setPedidos.push({ metodo: req.method, caminho, busca: url.search, auth, corpo, cookie: req.headers.cookie || null, inm: req.headers['if-none-match'] || null })
+      const a = acessos.get(auth.replace(/^Bearer /, ''))
+      if (!a || a.exp < Date.now() || estado.semSet) return responder(res, 401, { error: 'unauthorized', message: 'Entre de novo.' })
+      const etag = `W/"v${estado.setVersao}"`
+      if (req.method === 'GET' && req.headers['if-none-match'] === etag) {
+        res.writeHead(304, { etag })
+        return res.end()
+      }
+      const eu = { id: '00000000-0000-4000-8000-000000000001', arroba: 'lia', nome: contas.get(a.sub)?.nome || 'Lia', foto: null, preferencias: { invisivel: false, quemVe: 'equipe_contatos', mostrarVisto: true } }
+      const dados = caminho === '' ? { eu, pessoas: [{ id: '00000000-0000-4000-8000-000000000002', arroba: 'rui', nome: 'Rui Som', foto: null, estado: 'online', app: { id: 'hub', nome: 'Absolute ZRO' } }], naoLidas: 2, pedidos: 0, porConversa: {}, ultima: 0 } : caminho === 'conversas' ? { conversas: [], projetos: [] } : { ok: true }
+      res.writeHead(200, { 'content-type': 'application/json', ...(req.method === 'GET' ? { etag } : {}) })
+      return res.end(JSON.stringify(dados))
     }
     responder(res, 404, { error: 'not_found' })
   })

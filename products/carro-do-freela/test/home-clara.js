@@ -79,7 +79,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
          ("Agenda e contratação · audiovisual") saiu a pedido do Victor —
          "isso é muito cara de IA". O que ele dizia, a manchete já diz. */
       olho:!!document.querySelector('.hp-olho'),
-      primeiro:(()=>{ const tx=document.querySelector('.hp-texto'); const f=tx&&tx.firstElementChild; return f?f.id||f.tagName:'' })(),
+      primeiro:(()=>{ const tx=document.querySelector('.hp-texto'); const f=tx&&[...tx.children].find(e=>!e.hidden&&getComputedStyle(e).display!=='none'); return f?f.id||f.tagName:'' })(),
       h1:v('hh-t').textContent,
       ctas:[...document.querySelectorAll('.hprod .hcta .btn')].map(x=>x.textContent.trim()+'|'+x.dataset.lg),
       /* (17/out · 15) Victor: "a homepage também precisa ficar à altura da
@@ -237,7 +237,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
           prova:v('hp-prova').innerText, hoje,
           rostosProva:[...document.querySelectorAll('#hp-prova .avs i')].filter(i=>/(?:data:image\/|\/m\/foto-rostos-\d+\.\w+\.webp)/.test(i.style.backgroundImage)).length,
           mentira:(txt.match(/★|☆|\d,\d\s*\(\d+\)|mil profissionais|mais escolhido|profissionais verificados|sem mensalidade/gi)||[]),
-          praca:[...document.querySelectorAll('#h-praca .pc-it b')].map(b=>b.textContent),
+          praca:[...document.querySelectorAll('#h-praca li:not([data-so-real]) .pc-it b')].map(b=>b.textContent),
           guildaFase:(document.querySelector('#h-praca .pc-it b')&&[...document.querySelectorAll('#h-praca li')].find(li=>/Guildas/.test(li.textContent)).dataset.fase),
           capas:[...document.querySelectorAll('#h-praca [data-capa]')].every(i=>/\/m\/(capa|heroi)-/.test(i.style.backgroundImage)),
           entrarTopo:document.querySelectorAll('.homenav .entrar-cta').length};

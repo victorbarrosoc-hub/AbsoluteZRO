@@ -35,7 +35,18 @@ export type Evento = {
   projetoId: string | null;
   projeto: string | null;
   projetoCodigo: string | null;
-  equipe: { escalaId: string; freelaId: string; nome: string; funcao: string; conflitos: { titulo: string; inicio: string }[] }[];
+  equipe: {
+    escalaId: string;
+    freelaId: string;
+    nome: string;
+    funcao: string;
+    conflitos: { titulo: string; inicio: string }[];
+    /** A área do freela (drizzle/0037): conta ligada, a resposta dele para as datas atuais, o recado e o link. */
+    conta: boolean;
+    resposta: "confirmado" | "recusado" | null;
+    paraFreela: string | null;
+    entregaUrl: string | null;
+  }[];
   equipamentos: number;
 };
 
@@ -53,15 +64,14 @@ export async function listarEventos(ctx: Contexto, de: string, ate: string, o: {
     const ids = ev.map((e) => e.id);
     const equipe = ids.length
       ? ((await tx.execute(sql`
-          select s.id as "escalaId", s.evento_id as "eventoId", s.freela_id as "freelaId", f.nome, s.funcao
+          select s.id as "escalaId", s.evento_id as "eventoId", s.freela_id as "freelaId", f.nome, s.funcao,
+                 f.zro_sub is not null as conta, case when r.inicio = s.inicio and r.fim = s.fim then r.resposta end as resposta,
+                 s.para_freela as "paraFreela", s.entrega_url as "entregaUrl"
             from maestro.escalas s join maestro.freelas f on f.id = s.freela_id
-           where s.evento_id = any (${`{${ids.join(",")}}`}::uuid[]) order by f.nome`)) as unknown as {
-          escalaId: string;
+            left join maestro.escala_respostas r on r.org_id = s.org_id and r.escala_id = s.id
+           where s.evento_id = any (${`{${ids.join(",")}}`}::uuid[]) order by f.nome`)) as unknown as (Omit<Evento["equipe"][number], "conflitos"> & {
           eventoId: string;
-          freelaId: string;
-          nome: string;
-          funcao: string;
-        }[])
+        })[])
       : [];
     const c = await conflitosDeEscala(
       tx,

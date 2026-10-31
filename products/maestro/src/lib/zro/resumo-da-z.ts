@@ -6,7 +6,8 @@
  *
  * A pessoa é a do pedido (`sub`); a organização é a do último login dela no Maestro, e só vale se esse login tinha
  * acesso (o mesmo temAcesso()) e ela segue ativa. Tudo é lido como ela (`asUser`: RLS, papel, acesso por cliente):
- * o dinheiro só para administração e gestão. Cada bloco vem com a fonte e a hora; nada é inventado nem guardado.
+ * o dinheiro só com a área Financeiro e os orçamentos só com a área Orçamentos (src/lib/acessos.ts, lidas no banco por
+ * `maestro.pode`). Cada bloco vem com a fonte e a hora; nada é inventado nem guardado.
  */
 import { sql } from "drizzle-orm";
 import { getBanco } from "@/lib/db/client";
@@ -16,7 +17,8 @@ import { erro, json } from "@/lib/http";
 import { hojeBr } from "@/lib/dinheiro";
 import { resumoDoDia } from "@/lib/hoje";
 import { metaDoMes } from "@/lib/numeros/servidor";
-import { podeVerDinheiro, type Papel } from "@/lib/papeis";
+import type { Papel } from "@/lib/papeis";
+import { minhasAreas } from "@/lib/acessos-servidor";
 import { siteUrl } from "@/lib/site";
 import { zroConfigurado } from "./config";
 import { conferirPedidoZro, PedidoRecusado } from "./pedido";
@@ -48,7 +50,8 @@ export type ResumoDaZ = {
   retornar_hoje: { nome: string; tipo: "pedido" | "cliente"; data: string; nota: string | null }[];
   vencendo: { card: string; cliente: string | null; prazo: string | null }[];
   com_o_cliente: { card: string; cliente: string | null; desde: string | null }[];
-  contagens: { pedidos_novos: number; orcamentos_aguardando: number; agenda_hoje: number; cards_atrasados: number };
+  /** `orcamentos_aguardando` é null para quem não tem a área Orçamentos. */
+  contagens: { pedidos_novos: number; orcamentos_aguardando: number | null; agenda_hoje: number; cards_atrasados: number };
   dinheiro: null | {
     meta_do_mes: number | null;
     faturado_no_mes: number | null;
@@ -63,7 +66,8 @@ export async function resumoParaZ(sub: string, hoje = hojeBr()): Promise<ResumoD
   const dono = await donoDoPedido(sub);
   if (!dono || !temAcesso({ produtos: dono.produtos ?? [], release: dono.release })) return null;
   const ctx = { sub, orgId: dono.org };
-  const dinheiro = podeVerDinheiro(dono.papel);
+  const areas = await minhasAreas(ctx);
+  const dinheiro = areas.financeiro;
   const [r, meta] = await Promise.all([resumoDoDia(ctx, dinheiro, hoje), dinheiro ? metaDoMes(ctx, hoje.slice(0, 7)) : null]);
   return {
     fonte: "Maestro",
@@ -76,7 +80,7 @@ export async function resumoParaZ(sub: string, hoje = hojeBr()): Promise<ResumoD
     com_o_cliente: r.comCliente.map((k) => ({ card: k.tema, cliente: k.cliente, desde: k.desde })),
     contagens: {
       pedidos_novos: r.pedidosNovos,
-      orcamentos_aguardando: r.orcamentos.aguardando,
+      orcamentos_aguardando: areas.orcamentos ? r.orcamentos.aguardando : null,
       agenda_hoje: r.agenda.hoje.length,
       cards_atrasados: r.cards.atrasados,
     },

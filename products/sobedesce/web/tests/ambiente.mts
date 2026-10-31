@@ -63,6 +63,8 @@ export type Pedido = {
   bearer?: string;
   origin?: string | null;
   ip?: string;
+  /** Cabeçalhos a mais (ex.: x-sobedesce-build e x-sobedesce-capacidades do app de computador). */
+  headers?: Record<string, string>;
 };
 
 /** Request para chamar uma rota direto (sem servidor). Origin do próprio site por padrão nos POST. */
@@ -77,6 +79,7 @@ export function pedido(caminho: string, p: Pedido = {}): Request {
   const origin = p.origin === undefined ? (method === "GET" ? null : SITE) : p.origin;
   if (origin) headers.set("origin", origin);
   if (p.ip) headers.set("x-real-ip", p.ip);
+  for (const [k, v] of Object.entries(p.headers ?? {})) headers.set(k, v);
   let body: string | undefined;
   if (p.corpo !== undefined) {
     headers.set("content-type", "application/json");

@@ -2,8 +2,11 @@ import { redirect } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { CAMPOS_FREELA } from "@/lib/freelas/formularios";
 import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario } from "@/components/form";
-import { salvarFreelaAcao } from "../acoes";
+import { ArrobaZro } from "@/components/freelas/arroba-zro";
+import { emissor } from "@/lib/zro/config";
+import { salvarFreelaAcao, verArrobaAcao } from "../acoes";
 
 export const metadata = { title: "Novo freela" };
 
@@ -20,9 +23,16 @@ export default async function NovoFreela() {
           </>
         }
       >
-        <p className="apoio">CPF e PIX entram depois, na ficha, só para a gestão.</p>
+        <p className="apoio">CPF e PIX entram depois, na ficha.</p>
       </CabecaForm>
-      <Formulario acao={salvarFreelaAcao} campos={CAMPOS_FREELA} inicial={{ ativo: "sim" }} rotulo="Cadastrar" voltar="/app/freelas" />
+      <Formulario
+        acao={salvarFreelaAcao}
+        campos={CAMPOS_FREELA.filter((c) => c.nome !== "valores" || podeArea(s, "diarias"))}
+        inicial={{ ativo: "sim" }}
+        antes={<ArrobaZro ver={verArrobaAcao} perfilBase={emissor()} convidar />}
+        rotulo="Cadastrar"
+        voltar="/app/freelas"
+      />
     </div>
   );
 }

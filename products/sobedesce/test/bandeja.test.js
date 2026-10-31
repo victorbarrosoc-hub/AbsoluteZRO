@@ -98,7 +98,9 @@ test('ajuste gravado em bandeja.json; o aviso sai uma vez só', () => {
 test('main.js: bandeja fora do teste de fumaça e volta pela segunda abertura', () => {
   const main = fs.readFileSync(new URL('../desktop/main.js', import.meta.url), 'utf8')
   assert.match(main, /function criarBandeja\(\) \{\n\s+if \(SMOKE/)
-  assert.match(main, /app\.on\('second-instance', \(\) => showWindow\(\)\)/)
+  // a segunda abertura volta a janela; com um link sobedesce:// (desktop/links.js), entrega o link (que também mostra a janela)
+  assert.match(main, /app\.on\('second-instance', \(_event, argv\) => \{[\s\S]*?if \(link\) receberLink\(link\)\n\s+else showWindow\(\)/)
+  assert.match(main, /function entregarLink\(\) \{[\s\S]*?showWindow\(\)/)
   assert.match(main, /setSkipTaskbar\(false\)/)
   assert.match(main, /win\.on\('minimize'/)
 })

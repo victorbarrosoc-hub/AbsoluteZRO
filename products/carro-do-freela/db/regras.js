@@ -138,7 +138,8 @@ function perfilSaida(l) {
   if (!l) return null;
   return {
     nome: l.nome_exibicao, cidade: l.cidade, uf: l.uf, funcoes: l.funcoes || [], nichos: l.nichos || [],
-    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, atualizado_em: iso(l.atualizado_em),
+    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, arroba: l.arroba || null,
+    atualizado_em: iso(l.atualizado_em),
   };
 }
 function itemSaida(l) {
@@ -149,4 +150,137 @@ function itemSaida(l) {
   };
 }
 
-module.exports = { FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+/* ---------------- agenda ---------------- */
+
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
+/** 'YYYY-MM-DD' de verdade (nada de 2026-02-31) */
+function diaDe(v, campo = 'dia') {
+  if (typeof v !== 'string' || !DIA.test(v)) throw new Recusa('dia', campo);
+  const d = new Date(v + 'T12:00:00Z');
+  if (isNaN(d) || d.toISOString().slice(0, 10) !== v) throw new Recusa('dia', campo);
+  return v;
+}
+/**
+ * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde, hora?: "HH:MM" }.
+ * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale na meia diária.
+ */
+function agendaDe(corpo) {
+  corpo = objeto(corpo);
+  soEstes(corpo, ['dia', 'estado', 'parte', 'hora']);
+  const dia = diaDe(corpo.dia);
+  if (!['fechado', 'negociando'].includes(corpo.estado)) throw new Recusa('estado', 'estado');
+  const parte = corpo.parte === undefined || corpo.parte === null ? 'dia' : corpo.parte;
+  if (!['dia', 'manha', 'tarde'].includes(parte)) throw new Recusa('parte', 'parte');
+  let hora = corpo.hora === undefined || corpo.hora === null || corpo.hora === '' ? null : corpo.hora;
+  if (hora !== null) {
+    if (typeof hora !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) throw new Recusa('hora', 'hora');
+    if (parte === 'dia') throw new Recusa('hora', 'hora');
+  }
+  return { dia, estado: corpo.estado, parte, hora };
+}
+function agendaSaida(l) {
+  const s = { e: l.estado, p: l.parte };
+  if (l.hora) s.h = String(l.hora).slice(0, 5);
+  return s;
+}
+/** a janela de leitura: de/ate em 'YYYY-MM-DD', até 62 dias; sem nada, hoje + 42 */
+function janelaDe(de, ate, hoje = new Date()) {
+  const base = hoje.toISOString().slice(0, 10);
+  const d = de ? diaDe(de, 'de') : base;
+  const a = ate ? diaDe(ate, 'ate') : new Date(Date.parse(d + 'T12:00:00Z') + 42 * 864e5).toISOString().slice(0, 10);
+  const dias = (Date.parse(a) - Date.parse(d)) / 864e5;
+  if (dias < 0 || dias > 62) throw new Recusa('janela', 'ate');
+  return { de: d, ate: a };
+}
+/**
+ * Uma pessoa da comunidade (o objeto do HUB) + o que o Carro tem dela (`carro`: linha de carro_do_freela.agendas, só
+ * de quem consentiu) → o que a lista devolve. Nada de contato, diária ou inventário. `agenda: null` = não divulgada.
+ */
+function pessoaSaida(z, carro, funcaoDoHub = {}) {
+  if (!z || typeof z.id !== 'string' || typeof z.arroba !== 'string') return null;
+  const doHub = (Array.isArray(z.funcoes) ? z.funcoes : []).map(f => funcaoDoHub[f && f.chave]).filter(Boolean);
+  const funcoes = carro && carro.funcoes && carro.funcoes.length ? carro.funcoes : [...new Set(doHub)];
+  const foto = typeof z.foto === 'string' && /^https:\/\/[^\s]{1,290}$/.test(z.foto) ? z.foto : null;
+  const portfolio = typeof z.portfolio === 'string' && /^https:\/\//.test(z.portfolio) ? z.portfolio.slice(0, 300) : null;
+  return {
+    id: z.id.toLowerCase(), arroba: z.arroba, nome: String(z.nome || '@' + z.arroba).slice(0, 120), foto,
+    cidade: typeof z.cidade === 'string' ? z.cidade.slice(0, 80) : null, funcoes,
+    nichos: carro && carro.nichos ? carro.nichos : [], bio: typeof z.bio === 'string' ? z.bio.slice(0, 280) : null, portfolio,
+    agenda: carro ? carro.agenda || {} : null, agenda_atualizada_em: carro ? iso(carro.agenda_atualizada_em) : null,
+  };
+}
+
+/* ───────────── propostas, feed, brechó e denúncia (0003) ───────────── */
+const UUIDR = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function uuidDe(v, campo) {
+  if (typeof v !== 'string' || !UUIDR.test(v)) throw new Recusa('tipo', campo);
+  return v.toLowerCase();
+}
+function horaDe(v, campo) {
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) throw new Recusa('tipo', campo);
+  return v;
+}
+function centavos(v, campo, obrigatorio) {
+  if (v === undefined || v === null) { if (obrigatorio) throw new Recusa('obrigatorio', campo); return null }
+  if (!Number.isInteger(v) || v < 0 || v > 100000000) throw new Recusa('tipo', campo);
+  return v;
+}
+/** POST /api/zro/propostas — o contratante chama alguém (job) ou o comprador fala com o vendedor (brecho) */
+function propostaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['para', 'tipo', 'anuncio', 'dia', 'ini', 'fim', 'funcao', 'local', 'mensagem', 'valor_cents']);
+  const tipo = corpo.tipo === undefined ? 'job' : corpo.tipo;
+  if (tipo !== 'job' && tipo !== 'brecho') throw new Recusa('tipo', 'tipo');
+  return {
+    para: uuidDe(corpo.para, 'para'), tipo,
+    anuncio: tipo === 'brecho' ? uuidDe(corpo.anuncio, 'anuncio') : null,
+    dia: corpo.dia === undefined || corpo.dia === null ? null : diaDe(corpo.dia),
+    ini: horaDe(corpo.ini, 'ini'), fim: horaDe(corpo.fim, 'fim'),
+    funcao: texto(corpo.funcao, 'funcao', 60), local: texto(corpo.local, 'local', 120),
+    mensagem: texto(corpo.mensagem, 'mensagem', 1000, { linhas: true }),
+    valor_cents: centavos(corpo.valor_cents, 'valor_cents', false),
+  };
+}
+/** PATCH /api/zro/propostas?id= — aceitar, recusar (com motivo) ou cancelar */
+function respostaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['estado', 'motivo']);
+  if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
+  return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
+}
+const TIPOS_POST = ['nota', 'bastidor', 'entrega', 'procura'];
+function postDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['texto', 'tipo']);
+  const tipo = corpo.tipo === undefined ? 'nota' : corpo.tipo;
+  if (!TIPOS_POST.includes(tipo)) throw new Recusa('tipo', 'tipo');
+  return { tipo, texto: texto(corpo.texto, 'texto', 1000, { obrigatorio: true, linhas: true }) };
+}
+function anuncioDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['titulo', 'categoria', 'estado_item', 'descricao', 'cidade', 'preco_cents']);
+  return {
+    titulo: texto(corpo.titulo, 'titulo', 120, { obrigatorio: true }),
+    categoria: texto(corpo.categoria, 'categoria', 40, { obrigatorio: true }),
+    estado_item: texto(corpo.estado_item, 'estado_item', 40),
+    descricao: texto(corpo.descricao, 'descricao', 1000, { linhas: true }),
+    cidade: texto(corpo.cidade, 'cidade', 80),
+    preco_cents: centavos(corpo.preco_cents, 'preco_cents', true),
+  };
+}
+function situacaoDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['situacao']);
+  if (!['disponivel', 'vendido'].includes(corpo.situacao)) throw new Recusa('tipo', 'situacao');
+  return corpo.situacao;
+}
+function denunciaDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['alvo', 'id', 'motivo', 'detalhe']);
+  if (corpo.alvo !== 'post' && corpo.alvo !== 'anuncio') throw new Recusa('tipo', 'alvo');
+  return { alvo: corpo.alvo, id: uuidDe(corpo.id, 'id'), motivo: texto(corpo.motivo, 'motivo', 80, { obrigatorio: true }),
+    detalhe: texto(corpo.detalhe, 'detalhe', 500, { linhas: true }) };
+}
+
+module.exports = { propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

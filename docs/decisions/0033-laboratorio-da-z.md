@@ -1,0 +1,150 @@
+# ADR 0033 — Laboratório da Z: voz, ditado, anexos e configuração, só para o admin
+
+**Status:** aceita (30/10/2026, pedido do titular; pontos em aberto no fim)
+
+## Contexto
+
+O titular quer a Z como uma IA conversacional "no mesmo jeito que o ChatGPT": falar e ouvir (voz ao vivo), ditar no
+campo, mandar qualquer arquivo (foto, vídeo, documento) e um painel para configurar a personalidade dela. "A Z é uma
+mulher, estilo a Sol do ChatGPT." Tudo isso custa por uso e só vai para os clientes quando os planos estiverem sendo
+comprados. Até lá, um **modelo teste** no perfil de administrador, para ele aperfeiçoar a Z. Ele já tem ElevenLabs
+(plano Creator) e pôs `ELEVENLABS_API_KEY` no projeto `absolutezro` da Vercel.
+
+## Decisão
+
+- **Onde**: console, `/admin/laboratorio` (Testar) e `/admin/laboratorio/configurar`. Só o papel **admin** da
+  plataforma (o suporte não vê): `notFound()` no layout e em cada página, `adminDoLab()` (`requirePlatformAdmin`) em
+  toda rota `/api/v1/admin/z-lab/*` e em toda função do core. A Z dos clientes não muda: sem versão publicada (e com
+  a trava desligada), ela segue o texto do código. A Z continua sem aba principal.
+- **Banco** (migração `0036_laboratorio_z.sql`): `z_lab_config` (teto por dia), `z_lab_uso` (cada chamada paga, chave
+  única de idempotência), `z_rascunho`, `z_versoes` (imutáveis por gatilho), `z_publicacao`, `z_conhecimento` e
+  `z_recursos`. RLS ligado e forçado; política `zro.is_platform_admin()` (papel admin, conta ativa, e-mail confirmado).
+  Quem não é admin não vê uma linha. Os clientes leem só `zro.z_config_publicada()` (a versão publicada, e só com a
+  trava `publicar_config` ligada).
+- **Custo**: antes de qualquer chamada paga, `conferirTeto`: **sem teto = bloqueado** (regra das quotas); passou do
+  teto do dia (fuso de Fortaleza) = bloqueado até o dia seguinte ou até subir o teto. Depois, `registrarUso` com tokens,
+  caracteres e segundos e o custo estimado (tabela pública: Claude por modelo; ElevenLabs Creator: Flash/Turbo US$ 0,04
+  e Multilingual/v3/v4 US$ 0,08 por mil caracteres, Scribe v2 US$ 0,22/h, Scribe v2 Realtime US$ 0,39/h; Voice Design
+  estimado como três amostras do texto a US$ 0,08 por mil). Entra nos Custos do console ("Laboratório da Z").
+- **Voz como a do ChatGPT**: mãos livres (escuta ao vivo pelo WebSocket do **Scribe v2 Realtime**, com VAD da própria
+  ElevenLabs e token de uso único pedido pelo HUB, então a chave nunca vai para o navegador) ou segure para falar
+  (grava e transcreve com **Scribe v2**, mais barato). A resposta do Claude chega em streaming e cada frase fechada já
+  vira voz (**`/v1/text-to-speech/{voz}/stream`**, PCM 24 kHz, modelo **Flash v2.5** por padrão, o de menor latência
+  com português), tocada enquanto chega. Falar por cima corta a Z (barge-in). Legenda ao vivo e o tempo de cada etapa
+  (escuta, primeira palavra, primeira voz). O modelo do Claude é escolhido na hora (o da Z hoje ou um mais rápido).
+- **A Z é uma mulher**: a personalidade proposta no rascunho (`Z_IDENTIDADE_LAB`) fala de si no feminino ("estou
+  pronta", "fiquei curiosa"), calorosa, leve e direta, nunca robótica. A lista de vozes abre filtrada nas femininas em
+  português do Brasil da conta; se nenhuma servir, o **Voice Design** (`/v1/text-to-voice/design` e
+  `/v1/text-to-voice`) cria uma a partir de uma descrição editável ("mulher brasileira, voz calorosa, natural e leve,
+  fala clara, ritmo tranquilo, sorriso na voz"), salva na conta **só depois da confirmação**. Não dizemos que é a voz
+  de outro produto nem imitamos pessoa real.
+- **Anexos**: imagem e PDF pelos **arquivos da Anthropic** (leitura nativa, validade de 24 h, apagados ao recomeçar a
+  conversa); Word, Excel e PowerPoint viram texto no servidor (ZIP só leitura, limites de partes, tamanho e proporção
+  contra bomba, sem macro, sem entidade externa); texto e CSV em UTF-8. O tipo vem do conteúdo, nunca só da extensão.
+  Áudio e vídeo: o navegador tira o som e manda em pedaços para o Scribe v2; do vídeo saem quatro quadros-chave. Até
+  4 MB por arquivo no servidor (limite da função), 300 MB e 30 min para áudio e vídeo. Nada é guardado no HUB; os
+  dados vão só para a Anthropic e a ElevenLabs.
+- **Configurar**: quem a Z é, tom (próxima ↔ formal, curta ↔ detalhada), regras e limites, instrução por plataforma,
+  textos de referência (dados, nunca instruções, no cache), voz e saudação, modelo e tamanho da resposta, teto por
+  dia. "Salvar versão" = número imutável com nota; "Diferenças" e "Comparar" (rascunho × versão ou padrão, lado a
+  lado, no Testar); "Restaurar"; "Publicar para os clientes" desligado até a trava `publicar_config` (confirmação e
+  auditoria).
+- **Liberação por plano**: `z_recursos` (voz, ditado, anexos, publicar a configuração), tudo desligado; ligar pede
+  confirmação e fica em `audit_logs` (`z_lab.recurso`). `zro.z_recurso_liberado(recurso, org)` já responde para a Z dos
+  clientes quando ela ganhar essas funções.
+- **Microfone**: o `Permissions-Policy` do HUB segue `microphone=()` em tudo, menos em `/admin/laboratorio`
+  (`microphone=(self)`); o link do console abre a tela num carregamento novo para valer.
+- **Chaves**: `IA_ANTHROPIC_KEY` (a de sempre) e `ELEVENLABS_API_KEY`, só no servidor. Faltou, a tela mostra
+  "Conecte a chave" com o nome da variável; nunca há campo de chave na interface nem chave no log. Os endereços falsos do
+  e2e (`ZRO_ANTHROPIC_URL`, `ZRO_ELEVENLABS_URL`, `ZRO_ELEVENLABS_WS_URL`) são ignorados em produção.
+
+## Consequências
+
+- O custo de um minuto de voz fica por volta de **US$ 0,07** com o modelo da Z hoje e **US$ 0,03** com o mais rápido
+  (escuta aberta o minuto todo, a Z falando metade, quatro respostas; `custoMinutoDeVoz`). O teto do dia segura
+  qualquer surpresa.
+- A conversa do laboratório não fica guardada (o navegador manda o histórico a cada turno).
+- Levar para os clientes é ligar o recurso por plano; a tela dos clientes ainda precisa ganhar voz, ditado e anexos
+  (o painel `<zro-ia>`), lendo `z_recurso_liberado`.
+
+## Escuta ao vivo recusada (30/10/2026)
+
+Em produção, `POST /v1/single-use-token/realtime_scribe` devolveu **401** com a chave do titular, mesmo com Speech to
+Text (e TTS, Voices, Voice Generation, Models, User) ligados numa chave restrita; a fala (TTS) funcionou com a mesma
+chave. O que a documentação oficial diz (conferido em 30/10/2026):
+
+- A página do endpoint ([tokens/create](https://elevenlabs.io/docs/api-reference/tokens/create)) e o OpenAPI público
+  (`api.elevenlabs.io/openapi.json`) não pedem permissão nenhuma: só `xi-api-key` e `token_type` (`realtime_scribe`,
+  `batch_scribe`, `tts_websocket`). A lista de permissões de chave do OpenAPI (`PermissionType`) não tem item de
+  "token de uso único"; a página de chaves
+  ([api-keys](https://elevenlabs.io/docs/overview/administration/workspaces/api-keys)) só diz que a chave restrita
+  limita "quais endpoints" alcança, sem listar quais.
+- Pela tabela de erros ([errors](https://elevenlabs.io/docs/eleven-api/resources/errors)), permissão que falta é
+  **403** `insufficient_permissions`; **401** é autenticação (`invalid_api_key`, `unauthorized`, `sign_in_required`).
+  Respostas antigas da API, porém, mandam 401 com `detail.status = missing_permissions` e a permissão na mensagem.
+- A escuta ao vivo aceita a chave no cabeçalho `xi-api-key` no lugar do token
+  ([realtime](https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime)), mas isso exige um
+  WebSocket aberto pelo servidor, que a função da Vercel não mantém; a chave nunca vai para o navegador.
+- Há servidores por região (`api.us.elevenlabs.io`, `api.eu.residency.elevenlabs.io`, …): conta com residência de
+  dados só autentica no servidor dela. Não é o caso provável aqui (a fala funciona em `api.elevenlabs.io`).
+- Desde 20/07/2026, `/v1/speech-to-text` também aceita token `batch_scribe`
+  ([changelog](https://elevenlabs.io/docs/changelog/2026/7/20)); não usamos, a transcrição já passa pelo HUB.
+
+Conclusão: o mais provável é que a chave restrita não alcance o endpoint de token (o painel não mostra essa permissão),
+ou que a chave usada não seja a que ganhou as permissões. Para confirmar, o log agora traz `codigo` e `permissao` da
+recusa (`elevenlabs.escuta_por_frase`), nunca a chave; testar com uma chave **sem restrição** separa os dois casos.
+
+**Decisão:** a voz não depende disso. Token recusado (ou WebSocket que não abre) → `/escuta` devolve `aoVivo: false`
+sem abrir sessão, e o modo mãos livres segue **por frase**: VAD por energia no navegador (quadros de 20 ms, ~700 ms de
+silêncio fecha a frase, até 30 s), cada frase em `/transcricao` (Scribe v2, português), que confere o teto e registra
+os segundos. Uma nota calma ("Escuta ao vivo indisponível: usando transcrição por frase") substitui o erro; o tempo de
+"Escuta" passa a ser do fim da fala até o texto. Por cima da Z, só frase de 6 letras ou mais interrompe (eco). Se a
+transcrição também for recusada, o erro nomeia a permissão.
+
+## Aprender conversando (30/10/2026)
+
+Pedido do titular: "Ela consegue aprender o que eu vou configurando por voz com ela? Quero fazer correções durante a
+conversa e quero que ela vá aprendendo como deve se comportar."
+
+- **Reconhecer**: no Testar, só com o **rascunho** (nem versão numerada nem o padrão, nem a coluna de comparação), a Z
+  ganha duas ferramentas (`strict`, todos os campos obrigatórios): `propor_aprendizado` (tipo `tom`, `regra`, `fato`,
+  `pronuncia` ou `plataforma`; texto curto no imperativo; plataforma ou "nenhuma"; exemplo ou vazio) e
+  `confirmar_aprendizado` (id do cartão, `guardar` ou `ignorar`). A instrução do laboratório vai na mensagem de sistema
+  do fim (junto do retrato), então o começo do cache não muda. A entrada da ferramenta é conferida de novo no servidor
+  (`lerEntradaDaProposta`); no máximo dois cartões por resposta. A Z responde natural ("Entendi, vou falar mais
+  próxima") e já segue a correção na conversa.
+- **Nada guardado sem o titular**: o cartão "Aprender: … · Guardar · Ajustar · Ignorar" vive no navegador até ele
+  decidir. Guardar = o toque (`POST /aprendizados` com `confirmar: true`) ou a fala: com um cartão esperando, uma frase
+  curta e clara ("sim", "pode guardar", "guarda os dois", "ignora", "deixa pra lá"; `intencaoDoCartao`) é decidida
+  **no servidor, antes do modelo**, e o mesmo turno já usa o rascunho novo; confirmação no meio de uma frase maior passa
+  por `confirmar_aprendizado`, que o servidor só aceita se a última frase do titular confirma mesmo (`confirmaNaFrase`):
+  o modelo não confirma sozinho.
+- **Onde fica**: uma seção `aprendizados` da própria configuração (JSON do rascunho, até 40 itens e 8 mil caracteres),
+  com origem (data, a frase que gerou, se foi por voz) e `editadoEm`. Sem migração e sem tabela nova: `z_rascunho` já tem
+  RLS só para o admin, e "Salvar versão" copia o rascunho para `z_versoes`, imutável por gatilho; a versão congela os
+  aprendizados do momento. Os clientes só os recebem numa versão numerada **e** publicada (publicação segue travada).
+  Rascunho ou versão antiga sem o campo abre com a lista vazia. "Salvar rascunho" do Configurar não mexe nos
+  aprendizados (ficam os do banco); "Restaurar" traz os da versão.
+- **No sistema da Z**: o bloco "Aprendizados" entra por último, depois das regras e do guia, dito como abaixo delas
+  ("nunca liberam uma ação, uma permissão ou um dado que as regras não liberam; se contradizer uma regra, siga a
+  regra"); fato é dado, não instrução; pronúncia vale para a voz; o de uma plataforma só nela.
+- **Travas**: `travaDeSeguranca` recusa (403 `action_not_allowed`, e a Z explica com gentileza) aprendizado que mexe em
+  regra, revela o sistema, dá uma ação (apagar, mover, cobrar, publicar…), tira uma confirmação, envolve senha, chave
+  ou dado pessoal, manda inventar dado, finge ser pessoa ou expõe outra conta. Repetido (a mesma coisa com outras
+  palavras, mesma plataforma) não duplica: o cartão vira "Já sabia". Contradição (tom no mesmo eixo ao contrário, ou a
+  mesma coisa com e sem "não") aparece no cartão ("Isso contradiz: …") e no Configurar; guardando, a correção nova fica
+  no lugar da antiga.
+- **Configurar › Aprendizados**: por seção (Personalidade, Regras, Por plataforma, Conhecimento, Pronúncia), com
+  "aprendido nesta conversa", a data e a frase; Editar (texto, exemplo e "Mover para" outra seção ou plataforma) e
+  Remover. Toda gravação, edição, mudança de seção e remoção vai para `audit_logs` (`z_lab.aprendizado_salvo`,
+  `_editado`, `_movido`, `_removido`, com o antes e o depois e se foi pelo toque, pela voz ou escrito).
+- **Custo**: a volta a mais da ferramenta soma no uso do turno (tokens das duas chamadas) e entra no `z_lab_uso` como
+  qualquer resposta; o teto do dia vale antes de começar.
+- **Quem pode**: só o admin da plataforma (`adminDoLab` na rota antes de ler o corpo e em cada função do core), como o
+  resto do laboratório.
+
+## Em aberto
+
+- Migração `0036` em produção (no deploy, com autorização) e o primeiro teste com as chaves reais.
+- Preços conferidos na tabela pública em 30/10/2026; se o plano da ElevenLabs mudar, ajustar `Z_VOZ_MODELOS` e os
+  preços do Scribe em `packages/core/src/z-lab.ts`.

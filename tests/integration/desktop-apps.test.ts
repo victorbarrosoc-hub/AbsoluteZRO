@@ -97,7 +97,7 @@ describe('catálogo', () => {
       throw new Error('rede')
     }) as unknown as typeof fetch
     const c = await catalogoDesktop(TODOS, { fetch: f, env: {} })
-    expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei', 'nossom', 'maestro'])
+    expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei', 'nossom', 'maestro', 'relay', 'carro-do-freela'])
     expect(c.apps.every((a) => a.mac === null && a.windows === null)).toBe(true)
   })
 })
@@ -192,6 +192,57 @@ describe('Maestro para computador', () => {
   })
 
   it('o versao.json só vale para quem publica o aviso no Release', async () => {
-    expect(APPS_DESKTOP.filter((a) => a.versaoJson).map((a) => a.id)).toEqual(['maestro'])
+    expect(APPS_DESKTOP.filter((a) => a.versaoJson).map((a) => a.id)).toEqual(['maestro', 'relay', 'carro-do-freela'])
+  })
+})
+
+// Relay e Carro do Freela para computador (products/relay/desktop, products/carro-do-freela/desktop): mesma rota, mesmo gate.
+describe.each([
+  { id: 'relay', tag: 'relay-versao-de-teste', pre: 'Relay', bundle: 'Relay.app', exe: 'Relay.exe', nome: 'Relay' },
+  {
+    id: 'carro-do-freela',
+    tag: 'carro-versao-de-teste',
+    pre: 'CarroDoFreela',
+    bundle: 'Carro do Freela.app',
+    exe: 'Carro do Freela.exe',
+    nome: 'Carro do Freela',
+  },
+])('$nome para computador', ({ id, tag, pre, bundle, exe, nome }) => {
+  const URL_RELEASE = `https://api.github.com/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/${tag}`
+  const rotas = () =>
+    github({
+      [URL_RELEASE]: {
+        assets: [
+          asset(`${pre}-0.1.0-b2006-mac-universal.dmg`, sha('a')),
+          asset(`${pre}-0.1.0-b2007-mac-universal.dmg`, sha('b')),
+          asset(`${pre}-0.1.0-b2007-windows-setup.exe`, sha('c')),
+          asset(`${pre}-sha256-b2007-mac.json`),
+          asset('versao.json'),
+        ],
+      },
+    })
+  const d = (f: typeof fetch) => ({ fetch: f, env: { GITHUB_TOKEN: 'github_pat_teste' } })
+  const assinado = (n: string) => `https://objects.githubusercontent.com/assinado/${n}`
+
+  it('fechado (canal desktop/download sem ele): fora do catálogo, nenhum arquivo e nem pergunta ao GitHub', async () => {
+    const { f, chamadas } = rotas()
+    const outros = new Set(['sobedesce', 'maestro'])
+    expect((await catalogoDesktop(outros, d(f))).apps.map((a) => a.id)).not.toContain(id)
+    for (const arq of ['mac', 'windows', 'versao.json']) expect(await enderecoDoArquivo(outros, id, arq, d(f)), arq).toBeNull()
+    expect(chamadas.filter((u) => u.includes(tag))).toEqual([])
+  })
+
+  it('liberado: entra no catálogo com o nome do app instalado, o build mais novo e o SHA-256; mac/windows/versao.json redirecionam', async () => {
+    const { f } = rotas()
+    const L = new Set([id])
+    const c = await catalogoDesktop(L, d(f))
+    expect(c.apps[0]!.mac).toMatchObject({ bundle, arquivos: [{ arquivo: `${pre}-0.1.0-b2007-mac-universal.dmg`, sha256: 'b'.repeat(64), build: 2007 }] })
+    expect(c.apps[0]!.windows).toMatchObject({ exe, nomeNoSistema: nome, arquivo: { build: 2007, sha256: 'c'.repeat(64) } })
+    expect(await enderecoDoArquivo(L, id, 'mac', d(f))).toBe(assinado(`${pre}-0.1.0-b2007-mac-universal.dmg`))
+    expect(await enderecoDoArquivo(L, id, 'windows', d(f))).toBe(assinado(`${pre}-0.1.0-b2007-windows-setup.exe`))
+    expect(await enderecoDoArquivo(L, id, 'versao.json', d(f))).toBe(assinado('versao.json'))
+    expect(await enderecoDoArquivo(L, id, `${pre}-sha256-b2007-mac.json`, d(f))).toBeNull()
+    // o instalador de outro app não passa por aqui
+    expect(await enderecoDoArquivo(L, id, 'Maestro-0.1.0-b7-mac-universal.dmg', d(f))).toBeNull()
   })
 })

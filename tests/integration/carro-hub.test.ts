@@ -56,8 +56,8 @@ async function carroClient(productId = 'carro-do-freela') {
 }
 
 /**
- * Login no app (código + PKCE) e troca por tokens, como o servidor do Carro faz. O Carro é fechado (gate de lançamento,
- * ADR 0023): só a conta proprietária listada entra; aqui a conta que faz login assume esse papel.
+ * Login no app (código + PKCE) e troca por tokens, como o servidor do Carro faz. Desde o lançamento (0041) o gate está
+ * aberto; a conta ainda ganha a linha de proprietário, como a do titular tem em produção (não muda nada com o gate aberto).
  */
 async function appToken(c: { clientId: string; clientSecret: string | null }, userId: string, orgId: string, scope: string) {
   await allowRelease(db, 'carro-do-freela', userId, { kind: 'owner' })
@@ -270,43 +270,47 @@ describe('equipe da escala → equipe do projeto', () => {
   })
 })
 
-describe('gate de lançamento do Carro (adendo do PRD, ADR 0023)', () => {
-  it('conta fora da lista: o HUB não emite código para o cliente do Carro e a API nega 403 product_closed, mesmo para admin da plataforma com plano', async () => {
+describe('gate de lançamento do Carro (ADR 0023) depois do lançamento (0041)', () => {
+  it('conta fora de qualquer lista, com o Carro no plano: o HUB emite o código e a API cria o projeto; sem o plano, entitlement_required', async () => {
     const o = await newOrgWithOwner(db, 'carro-fora')
     await givePlan(db, o.orgId, 'individual-carro-do-freela')
-    await db.sql`update zro.users set platform_role = 'admin' where id = ${o.userId}`
     const c = await carroClient()
+    const verifier = randomBytes(32).toString('base64url')
     const q = new URLSearchParams({
       response_type: 'code',
       client_id: c.clientId,
       redirect_uri: 'https://carro.teste/cb',
       scope: `openid org ${SCOPE}`,
       state: 'st',
-      code_challenge: createHash('sha256').update(randomBytes(32).toString('base64url')).digest('base64url'),
+      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256',
     })
-    await expect(
-      db.asSystem('teste', async (tx) => {
-        const p = await parseAuthorizeRequest(tx, q)
-        if (!p.ok) throw new Error('pedido recusado')
-        await grantConsent(tx, o.userId, c.clientId, p.req.scopes)
-        return issueCode(tx, p.req as AuthorizeRequest, { userId: o.userId, orgId: o.orgId, authTime: new Date() })
-      }),
-    ).rejects.toMatchObject({ error: 'access_denied', description: 'Este app ainda está em desenvolvimento.' })
-    const err = await expectCode(importCarroJob(db, o.auth, job('job-fora')), 'product_closed')
-    expect(err.status).toBe(403)
-    await expectCode(syncCarroCrew(db, o.auth, { contract: 'carro-do-freela.crew/1', job_id: 'job-fora', members: [] }), 'product_closed')
+    const url = await db.asSystem('teste', async (tx) => {
+      const p = await parseAuthorizeRequest(tx, q)
+      if (!p.ok) throw new Error('pedido recusado')
+      await grantConsent(tx, o.userId, c.clientId, p.req.scopes)
+      return issueCode(tx, p.req as AuthorizeRequest, { userId: o.userId, orgId: o.orgId, authTime: new Date() })
+    })
+    expect(new URL(url).searchParams.get('code')).toMatch(/^zc_/)
+    expect((await importCarroJob(db, o.auth, job('job-fora'))).created).toBe(true)
+    const claims = await db.asSystem('teste', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
+    expect(claims.products).toContain('carro-do-freela')
+    expect(claims.release['carro-do-freela']).toBe('released')
+
+    // aberto não é sem plano: organização sem nada contratado cai no entitlement
+    const sem = await newOrgWithOwner(db, 'carro-sem-plano')
+    await expectCode(importCarroJob(db, sem.auth, job('job-sem-plano')), 'entitlement_required')
+    await expectCode(syncCarroCrew(db, sem.auth, { contract: 'carro-do-freela.crew/1', job_id: 'job-sem-plano', members: [] }), 'entitlement_required')
   })
 
-  it('sessão antiga: o token emitido enquanto a conta estava na lista deixa de valer quando ela sai', async () => {
+  it('sair da lista do proprietário não derruba o token: com o gate aberto, quem vale é o plano', async () => {
     const o = await newOrgWithOwner(db, 'carro-saiu-da-lista')
     await givePlan(db, o.orgId, 'individual-carro-do-freela')
     const c = await carroClient()
     const at = await appToken(c, o.userId, o.orgId, `openid org ${SCOPE}`)
     expect(await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)).not.toBeNull()
-    expect((await importCarroJob(db, o.auth, job('job-ainda-na-lista'))).created).toBe(true)
     await db.sql`update zro.product_release_access set revoked_at = now() where product_id = 'carro-do-freela' and user_id = ${o.userId}`
-    expect(await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)).toBeNull()
-    await expectCode(importCarroJob(db, o.auth, job('job-fora-da-lista')), 'product_closed')
+    expect(await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)).not.toBeNull()
+    expect((await importCarroJob(db, o.auth, job('job-fora-da-lista'))).created).toBe(true)
   })
 })

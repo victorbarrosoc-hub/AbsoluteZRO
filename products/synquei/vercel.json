@@ -1,4 +1,5 @@
 {
+  "regions": ["gru1"],
   "framework": null,
   "installCommand": "echo sem dependências para o site",
   "buildCommand": "echo sem build",
@@ -79,6 +80,10 @@
     {
       "source": "/api/zro/ia/:caminho*",
       "destination": "/api/zro/ia?c=:caminho*"
+    },
+    {
+      "source": "/api/zro/set/:caminho*",
+      "destination": "/api/zro/set?c=:caminho*"
     },
     {
       "source": "/baixar/versao",
