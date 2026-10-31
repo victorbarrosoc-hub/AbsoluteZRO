@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import { papelNoConsole, podeVer, requirePlatformAdmin } from '@zro/core'
@@ -59,6 +60,11 @@ export default async function Apps() {
                     <strong>{(c.active7 as number).toLocaleString('pt-BR')}</strong> em 7 dias
                   </span>
                 </div>
+                {c.product_id === 'sobedesce' && (
+                  <Link href="/admin/apps/sobedesce" className="app-card__link">
+                    Drive inteiro →
+                  </Link>
+                )}
                 <details className="disclosure">
                   <summary>Detalhes técnicos</summary>
                   <dl className="kv">

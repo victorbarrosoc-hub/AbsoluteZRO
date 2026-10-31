@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays, Cloud, Globe, History, KeyRound, Laptop, Smartphone } from "lucide-react";
-import { BotaoAcessoTotal, ContadorVagas } from "@/components/admin/acesso-total";
-import { resumoVagas, vagasUsadasPor } from "@/lib/google/vagas";
+import { ContadorVagas, EstadoAcessoTotal } from "@/components/admin/acesso-total";
+import { resumoVagas } from "@/lib/google/vagas";
 import { Avatar } from "@/components/conta/avatar";
 import { MenuConta } from "@/components/conta/menu";
 import { Moldura } from "@/components/conta/moldura";
@@ -22,7 +22,7 @@ const diaLongo = (dia: string) => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-export default async function PessoaAdmin({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function PessoaAdmin({ params }: { params: Promise<{ id: string }> }) {
   const { usuario, sessao } = await exigirUsuario("/admin");
   if (!(await ehAdmin(usuario))) notFound();
   const { id } = await params;
@@ -31,7 +31,7 @@ export default async function PessoaAdmin({ params, searchParams }: { params: Pr
   const { pessoas } = await painelAdmin(agora, buildAtual);
   const p = pessoas.find((x) => x.id === id);
   if (!p) notFound();
-  const [{ dias, sessoes, eventos }, vagas, usadasDela, q] = await Promise.all([linhaDoTempo(p.id, p, agora), resumoVagas(), vagasUsadasPor(p.id), searchParams]);
+  const [{ dias, sessoes, eventos }, vagas] = await Promise.all([linhaDoTempo(p.id, p, agora), resumoVagas()]);
   const foto = p.drives.find((d) => d.fotoUrl)?.fotoUrl ?? null;
   const u = p.uso30;
 
@@ -79,7 +79,7 @@ export default async function PessoaAdmin({ params, searchParams }: { params: Pr
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Passo icone={<KeyRound />} tom="up" i={1} titulo="Acesso ao Drive" id="acesso">
-          <BotaoAcessoTotal usuarioId={p.id} ligado={p.acessoTotal} jaUsouVaga={usadasDela > 0} vagas={vagas} confirmarDeInicio={q.confirmar === "acesso"} />
+          <EstadoAcessoTotal ligado={p.acessoTotal} />
         </Passo>
         <ContadorVagas v={vagas} />
       </div>
