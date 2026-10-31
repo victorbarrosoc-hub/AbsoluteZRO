@@ -6,7 +6,7 @@ import { beforeEach, test } from 'node:test'
 import assert from 'node:assert/strict'
 
 globalThis.location = { pathname: '/app/', hash: '#/ajustes', search: '', protocol: 'https:' }
-const { C, cartaoConta, lerEu, linhaConta } = await import('../app/js/conta.js')
+const { C, atalhoConta, cartaoConta, lerEu, linhaConta } = await import('../app/js/conta.js')
 
 const LIA = { nome: 'Lia Produtora', email: 'lia@produtora.com', organizacao: { nome: 'Produtora Lia', papel: 'owner' }, produtos: ['synquei'] }
 
@@ -78,4 +78,31 @@ test('perfil único: nome, e-mail e foto se editam na conta Absolute ZRO, fora d
   // sem zro_conta (sessão antiga) ou endereço estranho: o Perfil da Absolute ZRO
   lerEu(200, { ok: true, acesso: false, pessoa: { ...LIA, conta: 'javascript:alert(1)' } })
   assert.ok(cartaoConta().includes('href="https://absolutezro.com/perfil" target="_blank"'))
+})
+
+// No celular a barra lateral some: a conta fica no canto do Início (app/js/views/inicio.js).
+test('canto do Início no celular: "Entrar" sem sessão, a foto de quem entrou (abre Ajustes) e nada sem login aqui', () => {
+  assert.equal(atalhoConta(), '', 'sem função (offline, desktop antigo): nenhum botão que não funciona')
+  lerEu(503, { ok: false })
+  assert.equal(atalhoConta(), '', 'site sem a configuração do login: nada aparece')
+  lerEu(401, { ok: false, configurado: true })
+  const fora = atalhoConta()
+  assert.match(fora, /class="conta-atalho-entrar" data-entrar href="\/api\/zro\/entrar\?volta=%2Fapp%2F%23%2Fajustes"/)
+  assert.match(fora, />Entrar<\/a>$/)
+  lerEu(200, { ok: true, acesso: true, pessoa: LIA })
+  const dentro = atalhoConta()
+  assert.match(dentro, /href="#\/ajustes"/)
+  assert.match(dentro, /aria-label="Conta: Lia Produtora"/)
+  assert.match(dentro, /class="conta-av"/)
+  lerEu(200, { ok: true, acesso: false, pessoa: LIA })
+  assert.match(atalhoConta(), /sem-acesso/)
+  assert.match(atalhoConta(), /ainda não tem acesso ao Synquei/)
+})
+
+test('o Início leva o canto da conta e o app redesenha quando a conta muda', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const inicio = await readFile(new URL('../app/js/views/inicio.js', import.meta.url), 'utf8')
+  assert.match(inicio, /data-conta-atalho>\$\{atalhoConta\(\)\}/)
+  const main = await readFile(new URL('../app/js/main.js', import.meta.url), 'utf8')
+  assert.match(main, /querySelectorAll\('\[data-conta-atalho\]'\)\) el\.innerHTML = atalhoConta\(\)/)
 })

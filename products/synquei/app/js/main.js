@@ -22,7 +22,7 @@ import organizar from './views/organizar.js'
 import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
-import { iniciarConta } from './conta.js'
+import { atalhoConta, iniciarConta } from './conta.js'
 import { abrirZ, ligarZ, telaZ } from './z.js'
 import { iniciarSet, pintarSet } from './set.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
@@ -575,6 +575,8 @@ document.addEventListener('synquei:atualizacao-mudou', () => (S.route === 'ajust
 document.addEventListener('synquei:conta-mudou', () => {
   const pc = $('#planoCard')
   if (pc) pc.innerHTML = cartaoPlano()
+  // o canto do Início no celular: "Entrar" ou a foto de quem entrou
+  for (const el of document.querySelectorAll('[data-conta-atalho]')) el.innerHTML = atalhoConta()
   if (S.route === 'ajustes') render()
 })
 // a Z monta só quando a pessoa abre #/z, depois de saber da conta (app/js/z.js); nunca ao abrir o app. O Set (a entrada

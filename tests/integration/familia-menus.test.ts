@@ -16,7 +16,7 @@ const NO_AR: Record<string, string> = {
   relay: 'https://relay.absolutezro.com',
   sobedesce: 'https://sobedesce.vercel.app',
   synquei: 'https://synquei.vercel.app',
-  tpeasy: 'https://tpeasy.vercel.app',
+  tpeasy: 'https://tpeasy.absolutezro.com',
 }
 const HUB = 'https://absolutezro.com'
 const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|carro-?do-?freela|carrodofreela/i

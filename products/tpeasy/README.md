@@ -46,8 +46,11 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
   - `sair` (POST, só do próprio site): revoga o refresh token no HUB e apaga `tp_zro` e `tp_zro_hub`. A conta no HUB
     continua aberta.
 - As chaves dos cookies saem de `ZRO_CLIENT_SECRET` por HKDF (uma por finalidade).
-- Só aceita `tpeasy.vercel.app` e `localhost`/`127.0.0.1`; outro endereço (prévia da Vercel) vai para o site oficial
-  antes de começar. `volta` só aceita caminho deste site; o resto vira `/app/`.
+- Só aceita `tpeasy.absolutezro.com` (endereço principal desde 31/10/2026), `tpeasy.vercel.app` (o antigo, que continua
+  valendo sem redirecionar: os roteiros ficam no aparelho, presos ao endereço em que foram escritos, e o app instalado
+  abre sempre o endereço em que foi instalado) e `localhost`/`127.0.0.1`. Cada um entra e volta nele mesmo; outro
+  endereço (prévia da Vercel) vai para o site oficial antes de começar. `volta` só aceita caminho deste site; o resto
+  vira `/app/`.
 - Erros voltam como `?zro=recusado|expirou|erro|config`; o app mostra um aviso curto e limpa o endereço.
 - Sem as funções (offline, `file://`, `python3 -m http.server`) a tela de Ajustes fica como antes.
 - O service worker não guarda nada de `/api/`.
@@ -59,8 +62,13 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
   - `ZRO_CLIENT_ID` = `tpeasy-web`
   - `ZRO_CLIENT_SECRET` = segredo do cliente `tpeasy-web` no console do HUB
   - `ZRO_ISSUER` (opcional) = `https://absolutezro.com`
-- No HUB, o cliente `tpeasy-web` tem retorno `https://tpeasy.vercel.app/api/zro/callback` e endereço de entrada
-  `https://tpeasy.vercel.app/api/zro/entrar`.
+- No HUB, o cliente `tpeasy-web` tem os retornos `https://tpeasy.absolutezro.com/api/zro/callback` (migração `0045`)
+  e `https://tpeasy.vercel.app/api/zro/callback`; o endereço de entrada (Abrir do HUB) é
+  `https://tpeasy.absolutezro.com/api/zro/entrar`.
+
+**Onde fica a conta.** No topo de Roteiros, ao lado do título: **Entrar** para quem está fora (volta para Roteiros já
+logado) e a foto de quem entrou, que abre Ajustes (nome, e-mail, organização e **Sair**). Sem as funções ou sem a
+configuração (`/api/zro/eu` sem resposta ou `503`), nada aparece: nenhum botão que não funciona.
 
 No app instalado no iPhone, a ida ao HUB pode abrir numa janela do Safari; ao voltar, o app pergunta de novo quem está
 logado.
