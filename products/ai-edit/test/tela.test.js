@@ -356,6 +356,223 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   await pagina.close()
 })
 
+test('efeitos sonoros: som do computador no ponto, arrastar, volume, desfazer, tirar, exportar e renderizar com o efeito', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'cena.mp4'), Buffer.from(bytes))
+  // um "whoosh" de 0,4 s gerado aqui (WAV PCM, 48 kHz, estéreo)
+  const taxa = 48000
+  const n = Math.round(0.4 * taxa)
+  const wav = Buffer.alloc(44 + n * 4)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(36 + n * 4, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(2, 22)
+  wav.writeUInt32LE(taxa, 24)
+  wav.writeUInt32LE(taxa * 4, 28)
+  wav.writeUInt16LE(4, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(n * 4, 40)
+  for (let i = 0; i < n; i++) {
+    const v = Math.round(Math.sin((2 * Math.PI * 300 * i) / taxa) * 8000 * (1 - i / n))
+    wav.writeInt16LE(v, 44 + i * 4)
+    wav.writeInt16LE(v, 46 + i * 4)
+  }
+  writeFileSync(join(dir, 'whoosh.wav'), wav)
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'cena.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+
+  // o botão de som (ou S) abre o seletor; o som entra no ponto, selecionado, com a origem no Inspector
+  await pagina.setInputFiles('#arquivoSom', join(dir, 'whoosh.wav'))
+  const efeito = pagina.locator('.efeito')
+  await efeito.waitFor()
+  assert.equal(await efeito.innerText(), 'whoosh')
+  assert.ok(await efeito.evaluate((e) => e.classList.contains('selecionado')))
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /whoosh[\s\S]*Do seu computador[\s\S]*0 dB/)
+  const estado = () => pagina.evaluate(() => globalThis.__editor.h.atual.efeitos.map((e) => ({ fonte: e.fonte, volume: e.volume })))
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+
+  // arrastar para a direita: o efeito se prende a outro quadro da imagem; desfazer volta
+  const caixa = await efeito.boundingBox()
+  await pagina.mouse.move(caixa.x + 5, caixa.y + caixa.height / 2)
+  await pagina.mouse.down()
+  await pagina.mouse.move(caixa.x + 165, caixa.y + caixa.height / 2, { steps: 8 })
+  await pagina.mouse.up()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos[0].fonte > 0)
+  await pagina.click('#desfazer')
+  assert.deepEqual(await estado(), [{ fonte: 0, volume: 0 }])
+  await pagina.click('#refazer')
+
+  // volume no Inspector: soltar grava uma ação só
+  await pagina.locator('#fxVolume').evaluate((i) => {
+    i.value = '-6'
+    i.dispatchEvent(new Event('input'))
+    i.dispatchEvent(new Event('change'))
+  })
+  assert.equal((await estado())[0].volume, -6)
+  assert.match(await pagina.locator('#historico').innerText(), /Volume do efeito/)
+
+  // Entrega: a faixa de efeitos vai para o Final Cut e o vídeo final sai com o efeito misturado
+  await pagina.click('.dock [data-ir="entrega"]')
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 60_000 })
+  const zip = readFileSync(await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).path()).toString('latin1')
+  assert.ok(zip.includes('audioRole="effects"'), 'efeito conectado no FCPXML')
+  assert.ok(zip.includes('<adjust-volume amount="-6dB"/>'), 'com o volume')
+  assert.ok(downloads.some((d) => d.suggestedFilename().endsWith('.mp4')), 'o vídeo final saiu')
+
+  // tirar com Delete na Edição; desfazer traz de volta
+  await pagina.click('.dock [data-ir="edicao"]')
+  await efeito.click()
+  await pagina.keyboard.press('Delete')
+  await efeito.waitFor({ state: 'detached' })
+  await pagina.click('#desfazer')
+  await efeito.waitFor()
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar no corte, o banco no Drive, crédito e arquivo na entrega', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'sono.mp4'), Buffer.from(bytes))
+  // o banco de sons pela Absolute ZRO (falso): uma busca com um som CC BY e o arquivo (WAV curto)
+  const taxa = 48000
+  const n = Math.round(0.3 * taxa)
+  const wav = Buffer.alloc(44 + n * 2)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(36 + n * 2, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(1, 22)
+  wav.writeUInt32LE(taxa, 24)
+  wav.writeUInt32LE(taxa * 2, 28)
+  wav.writeUInt16LE(2, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(n * 2, 40)
+  for (let i = 0; i < n; i++) wav.writeInt16LE(Math.round(Math.sin(i / 8) * 6000), 44 + i * 2)
+  const ID = 'eab8a6e2-0ac8-4615-9e0d-ebde30523783'
+  const buscas = []
+  await pagina.route('**/api/zro/sons/buscar?*', (r) => {
+    buscas.push(new URL(r.request().url()).searchParams.get('q'))
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sons: [{ id: ID, origem: 'openverse', titulo: 'Whoosh Rápido', autor: 'Ana', licenca: 'CC BY 4.0', licencaUrl: 'https://creativecommons.org/licenses/by/4.0/', pagina: 'https://freesound.org/s/1', fonte: 'Freesound', duracao: 0.3, formato: 'wav', bytes: wav.length }], pagina: 1, paginas: 1 }) })
+  })
+  await pagina.route(`**/api/zro/sons/openverse/${ID}`, (r) => r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': ID, 'cross-origin-resource-policy': 'same-origin' } }))
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'sono.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  // um corte em 2 s (⇧→ anda 1 s; B divide)
+  await pagina.keyboard.press('Shift+ArrowRight')
+  await pagina.keyboard.press('Shift+ArrowRight')
+  await pagina.keyboard.press('b')
+  await pagina.locator('.clipe').nth(1).waitFor()
+
+  await pagina.click('#abasPainel [data-aba="sons"]')
+  const momento = pagina.locator('.sons-momento', { hasText: 'Corte 1' })
+  await momento.click()
+  // o corte pede whoosh (preset) e a busca aparece com autor e licença
+  await pagina.locator('.som-item').waitFor()
+  assert.equal(buscas.at(-1), 'whoosh')
+  assert.match(await pagina.locator('.som-item').innerText(), /Whoosh Rápido[\s\S]*Ana · CC BY 4\.0/)
+  // em português: "impacto" vira "impact"
+  await pagina.fill('#sonsTermo', 'impacto')
+  await pagina.press('#sonsTermo', 'Enter')
+  await pagina.waitForFunction(() => document.querySelector('.som-item'))
+  assert.equal(buscas.at(-1), 'impact')
+
+  // ouvir não coloca; Colocar põe no corte, no volume do preset, com o crédito na origem
+  await pagina.locator('.som-ouvir').click()
+  await pagina.locator('.som-colocar').click()
+  await pagina.locator('.efeito').waitFor()
+  const fx = await pagina.evaluate(() => {
+    const p = globalThis.__editor.h.atual
+    return { efeitos: p.efeitos.map((e) => ({ volume: e.volume, momento: e.momento })), som: p.sons[0], corte: p.linha.clipes[0].fim }
+  })
+  assert.deepEqual(fx.efeitos, [{ volume: -6, momento: 'corte' }])
+  assert.equal(fx.som.origem.autor, 'Ana')
+  assert.equal(fx.som.nome, 'Whoosh Rápido.wav')
+  assert.equal(await pagina.locator('.efeito').evaluate((e) => Math.round(parseFloat(e.style.left))), await pagina.locator('.clipe').nth(1).evaluate((e) => Math.round(parseFloat(e.style.left))))
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Ana · CC BY 4\.0/)
+  // colocar o mesmo som de novo não baixa outra vez (um som, dois efeitos)
+  await pagina.locator('.som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 2)
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.sons.length), 1)
+
+  // Meu banco: o link da pasta do Drive, a subpasta, buscar nela e colocar um som da pessoa (sem crédito)
+  const BANCO = '1AbCdEfGhIjKlMnOp'
+  const SUB = '1PastaWhooshesAbc'
+  const SOM = '1WhooshDoBancoXyz'
+  const listagens = []
+  await pagina.route('**/api/zro/sons/banco?*', (r) => {
+    const u = new URL(r.request().url()).searchParams
+    listagens.push({ pasta: u.get('pasta'), q: u.get('q') })
+    const raiz = u.get('pasta') === BANCO
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ pasta: { id: u.get('pasta'), nome: raiz ? 'Meus SFX' : 'Whooshes' }, conta: 'c1', pastas: raiz ? [{ id: SUB, nome: 'Whooshes' }] : [], sons: raiz ? [] : [{ id: SOM, origem: 'banco', titulo: 'Whoosh grave', nome: 'Whoosh grave.wav', formato: 'wav', bytes: wav.length, conta: 'c1' }], proxima: null }),
+    })
+  })
+  await pagina.route(`**/api/zro/sons/banco/${SOM}?conta=c1`, (r) => r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': SOM, 'cross-origin-resource-policy': 'same-origin' } }))
+  await pagina.click('#sonsFonte [data-fonte="banco"]')
+  assert.equal(await pagina.locator('#sonsBancoForm').isVisible(), true)
+  await pagina.fill('#sonsBancoLink', `https://drive.google.com/drive/u/0/folders/${BANCO}?usp=sharing`)
+  await pagina.press('#sonsBancoLink', 'Enter')
+  await pagina.locator('#sonsPasta [aria-current="true"]', { hasText: 'Meus SFX' }).waitFor()
+  assert.match(await pagina.locator('#sonsLista').innerText(), /Nenhum som nesta pasta/)
+  await pagina.locator('#sonsPastas button', { hasText: 'Whooshes' }).click()
+  await pagina.locator('.som-item', { hasText: 'Whoosh grave' }).waitFor()
+  assert.match(await pagina.locator('#sonsPasta').innerText(), /Meus SFX\s*›\s*Whooshes/)
+  await pagina.fill('#sonsTermo', 'grave')
+  await pagina.press('#sonsTermo', 'Enter')
+  await pagina.waitForFunction(() => document.querySelector('.som-item'))
+  assert.deepEqual(listagens.at(-1), { pasta: SUB, q: 'grave' })
+  // a pasta fica guardada neste navegador
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('aeon.sons.banco')).id), BANCO)
+  await pagina.locator('.som-item .som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 3)
+  const doBanco = await pagina.evaluate(() => globalThis.__editor.h.atual.sons.find((x) => x.origem.tipo === 'banco'))
+  assert.deepEqual(doBanco.origem, { tipo: 'banco', id: SOM, titulo: 'Whoosh grave', fonte: 'Meu banco no Drive', conta: 'c1' })
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Do seu banco no Drive/)
+  await pagina.click('#sonsFonte [data-fonte="livres"]')
+
+  // entrega: o arquivo do som vai junto, o XML aponta para ele e o crédito sai no CREDITOS.txt
+  await pagina.click('.dock [data-ir="entrega"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 60_000 })
+  const zip = readFileSync(await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).path()).toString('utf8')
+  assert.ok(zip.includes('Efeito - Whoosh Rápido.wav'), 'o arquivo do som vai na entrega')
+  assert.ok(zip.includes('src="Efeito%20-%20Whoosh%20R%C3%A1pido.wav"'), 'o FCPXML aponta para ele')
+  assert.match(zip, /"Whoosh Rápido" por Ana · CC BY 4\.0 · https:\/\/freesound\.org\/s\/1/)
+  assert.ok(zip.includes('Efeito - Whoosh grave.wav'), 'o som do banco também vai na entrega')
+  assert.doesNotMatch(zip, /"Whoosh grave" (por|·)/, 'o som do banco da pessoa não pede crédito')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('projeto novo: nome, formato vertical e quadros; renomear pela barra', async () => {
   const { pagina, erros } = await abrir()
   await pagina.click('#novoProjeto')

@@ -3763,3 +3763,49 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 - Capturas no Playwright (interface `public/` com `scripts/ui-stub.js` em `STUB_MODO=arquivos`): Drive na raiz
   ("Precisa de acesso total"), pasta do SOBEDESCE, Liberados, Escolher do Drive (abre `/app/#escolher/g1`), Ajustes
   com o modo, seletor do Comparar travado e o resultado do Comparar, claro e escuro.
+
+## AEON: faixa de efeitos sonoros (31/10/2026)
+
+- `src/efeitos.js`: sons do projeto e efeitos presos à imagem (mídia + quadro de origem), `efeitosNaLinha`, faixas sem
+  sobreposição, momentos (cortes e marcadores), créditos por licença e a mistura do render (pura, testada fora do
+  navegador). `test/efeitos.test.js` 11/11; `test/exportar.test.js` com efeitos (FCPXML e xmeml no `xmllint`, OTIO,
+  EDL, `CREDITOS.txt`, `ZroTimelineRef` válido pelo contrato).
+- Tela no Chromium (`test/tela.test.js`): som do computador no ponto, arrastar, desfazer, volume, exportar (efeito
+  conectado com `-6dB` no FCPXML) e vídeo final renderizado com o efeito, tirar com ⌫ e desfazer.
+- `npm test` da AEON 152/153 (1 pulado: Whisper real sem rede) e `xvfb-run electron . --smoke` OK.
+- Corrigido junto: o teste "perfil único" falhava em todo PR que tocava a AEON (`/api/zro/set` respondia 404 no servidor
+  de teste porque o teste não simulava o Set); agora simula, como os outros.
+- Não validado: abrir o FCPXML/XML com efeitos no Final Cut, Premiere e Resolve reais; prévia longa (sincronia do
+  efeito com o vídeo depois de vários minutos).
+
+## Sonoplasta · fase 2a: banco de sons livres pelo HUB e aba Sons no AEON (31/10/2026)
+
+- HUB: `packages/core/src/sons.ts` e `/api/v1/sons/buscar` e `/api/v1/sons/openverse/{id}` (escopo `zro.sons`, migration
+  0044). `tests/integration/sons.test.ts` (Openverse falso): filtro de licença (sem SA, NC, ND) e de fonte, formato da
+  família, token do app no Openverse pedido uma vez, erros 401/422/429/503, arquivo só de host conhecido por https, sem
+  seguir redirecionamento, só áudio e até 25 MB. OpenAPI conferido. `npm test` 475/475, `typecheck` e `lint` OK.
+- AEON: repasse `/api/zro/sons/*` no site (`api/_sons.js`) e no app de computador (`desktop/main.cjs`); login pede
+  `zro.sons` e, se a Absolute ZRO recusar (antes da 0044), entra de novo sem ele, com a Z e o Set (site e desktop).
+  `test/sons.test.js`, `test/sonoplasta.test.js`, `test/conta-desktop.test.js`; tela no Chromium: o corte vira
+  momento, a busca acha o som, "impacto" vira "impact", ouvir, colocar no corte a −6 dB, o mesmo som não baixa duas
+  vezes, e a entrega leva o arquivo e o crédito. `npm test` da AEON 162/163 (1 pulado: Whisper real sem rede) e
+  `electron . --smoke` OK.
+- Medido de verdade (31/10/2026): a API do Openverse respondeu à busca "whoosh" com sons CC0 do Freesound, autor,
+  licença, duração e o arquivo em `cdn.freesound.org`; o limite anônimo é 20/min e 200/dia.
+- Não validado: a busca em produção (falta aplicar a 0044 e publicar o HUB) e o cadastro do app no Openverse.
+
+## Sonoplasta · fase 2b: o banco de sons da pessoa no Drive (31/10/2026)
+
+- HUB: `packages/core/src/sons-drive.ts`, `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` (escopo `zro.sons`; sem
+  migration nova). `tests/integration/sons-banco.test.ts` (SOBEDESCE e Google falsos): a pasta vai com o pedido
+  assinado `drive.listar`, voltam subpastas e só áudios (vídeo e id estranho ficam de fora), sem o e-mail da conta;
+  pasta, busca e conta conferidas antes de pedir; cada erro do SOBEDESCE (`sem_drive`, `reconectar_drive`,
+  `sem_vinculo`, `sem_acesso_zro`, `nao_achou`, `devagar`, fora do ar) vira frase com o código e o link; o arquivo usa o
+  token curto do Drive (`drive.token`) pedido uma vez e reaproveitado, nunca devolvido; só áudio, não apagado, até
+  25 MB; token recusado pelo Google pede outro uma vez. OpenAPI conferido; `typecheck` e `lint` OK.
+- AEON: repasse `/api/zro/sons/banco*` no site e no desktop só com os parâmetros conferidos (pasta que não é id do
+  Drive não segue como veio); `pastaDoLink` aceita link de pasta do Drive (com `/u/0/` e `?usp=`), link antigo
+  (`open?id=`), link do SOBEDESCE (`#drive/<id>`) ou o id; som do banco sem crédito no `CREDITOS.txt`. Tela no Chromium:
+  "Meu banco", colar o link, subpasta, buscar nela, colocar o som (origem `banco` com a conta), Inspector "Do seu banco
+  no Drive", o arquivo na entrega e nenhum crédito para ele.
+- Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0044 aplicada).

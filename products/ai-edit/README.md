@@ -20,11 +20,19 @@ rebranding troca tudo num lugar só.
 4. **Edição**: linha do tempo magnética com régua, forma de onda, legenda e zoom; dividir (B), apagar (⌫), mover
    arrastando (os outros abrem espaço com mola), aparar pelas bordas, aproximar com ⌘/Ctrl + roda. **Cor e etiqueta**
    por clipe ("Gancho", "B-roll"…) com filtro. Legenda animada (Destaque, Pop, Limpa) e texto corrigível com dois
-   cliques. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
+   cliques. **Faixa de efeitos sonoros** (FX): um som do computador entra no ponto (S ou o botão de onda), preso à
+   imagem como o clipe conectado do Final Cut (cortar, aparar ou mover o trecho leva o efeito junto); arrastar com ímã,
+   volume no Inspector, ⌫ tira. Aba **Sons** (Sonoplasta): os cortes e marcadores viram momentos; tocar num momento
+   busca o som que combina (regras em [`presets/sonoplasta.v1.json`](presets/sonoplasta.v1.json)) no banco de sons
+   livres pela Absolute ZRO (Openverse: CC0, CC BY e domínio público), em português; ouvir, colocar no momento com o
+   crédito anotado. **Meu banco**: a pasta do Drive da pessoa com os sons dela (cola o link uma vez; pela conexão do
+   Drive no SOBEDESCE, só leitura), com subpastas e busca pelo nome. Desfazer e refazer em tudo (⌘Z / ⇧⌘Z).
 5. **Entrega**: Premiere (xmeml), Final Cut (FCPXML 1.10), DaVinci (FCPXML + EDL), OTIO, SRT/VTT e o
    `zro-timeline-ref.json` (contrato `ZroTimelineRef` v0.1 do `edit.timeline.ready`), com o caminho completo da mídia;
-   zoom vai como escala e posição do clipe, cor como rótulo do Premiere e etiqueta como palavra-chave. **Vídeo final**
-   em MP4 H.264 com AAC (Mac/Windows) ou Opus, com zoom e legenda, igual à prévia.
+   zoom vai como escala e posição do clipe, cor como rótulo do Premiere e etiqueta como palavra-chave. Efeitos sonoros
+   vão como clipes conectados com a função "effects" (Final Cut), pares de faixas A3/A4… (Premiere), trilhas FX (OTIO)
+   e comentário (EDL); quem pede atribuição sai em `CREDITOS.txt`. **Vídeo final** em MP4 H.264 com AAC (Mac/Windows)
+   ou Opus, com zoom, legenda e efeitos, igual à prévia.
 
 O que é IA: a transcrição (Whisper). Cortes e zoom são regras sobre a energia do áudio e a transcrição, com os
 parâmetros no preset versionado [`presets/fala.v1.json`](presets/fala.v1.json) (nunca prompt no código).
@@ -101,6 +109,10 @@ npx electron . --medir=<vídeo> [--modelo=preciso]   # demo medida no app de ver
 - `presets/` critérios editoriais versionados (`fala.v1` em uso; `casamento.v1` é rascunho para a próxima etapa).
 
 ## Ainda não (próximas etapas)
+
+- **Sonoplasta** (pedido do titular, 31/10/2026): criar som novo com a conta ElevenLabs da pessoa (créditos dela,
+  com confirmação e o gasto na tela). Conexões no HUB; batida e abaixar sob a voz pelo NOSSOM. Epidemic e Artlist só
+  com contrato de parceria.
 
 - Login único (OIDC do HUB), créditos e o evento `edit.timeline.ready` publicado no HUB: entram com o primeiro recurso
   pago na nuvem.

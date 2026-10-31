@@ -58,6 +58,23 @@ computador pega, converte e sobe o convertido ao lado do original (`products/sob
 só chama depois do "sim" da pessoa: o modelo manda `confirmado_pela_pessoa: true` e o HUB confere que a mensagem
 anterior é a oferta da Z e a última da pessoa é uma confirmação clara (`confirmacaoClara`, `packages/core`).
 
+## Banco de sons do AEON (Sonoplasta, fase 2b, desde 31/10/2026)
+
+A pasta do Drive com os sons da própria pessoa, para a aba Sons do AEON. O HUB pede ao SOBEDESCE com o mesmo pedido
+assinado (`assinarPedidoDeApp`), em nome da pessoa do token do app (escopo `zro.sons`), e usa duas ações que já
+existiam para o Maestro ([maestro-sobedesce.md](maestro-sobedesce.md)): `drive.listar` (uma página da pasta, com busca
+por nome dentro dela) e `drive.token` (o token curto do Drive). Código: `packages/core/src/sons-drive.ts`.
+
+- `GET /api/v1/sons/banco?pasta&q&pagina&conta` → `{ pasta, conta, pastas, sons, proxima }`: subpastas e só áudios
+  (`audio/*`, `application/ogg` ou extensão de áudio), sem o e-mail da conta Google.
+- `GET /api/v1/sons/banco/{id}?conta` → o arquivo (stream), conferido no Google (`files/{id}`: áudio, não apagado, até
+  25 MB) e baixado com `alt=media`. **O token do Drive fica só na memória do HUB** até vencer (um por pessoa e conta);
+  nunca vai ao app nem ao navegador. Recusado pelo Google: pede outro uma vez.
+- Só leitura: nada é movido, renomeado, criado nem apagado no Drive. A licença é da pessoa: o AEON não escreve crédito
+  para esses sons. Os erros do SOBEDESCE viram frases com o código em `details.erro` e o link de onde resolver.
+- Limites: os do SOBEDESCE (`drive-maestro:<sub>` 240/10 min e `drive-token-maestro:<sub>` 40/10 min); o token
+  reaproveitado faz um pedido de token servir a vários sons.
+
 ## Transferências (`transferencias.ler`, Fase 1 da Z)
 
 Só leitura. A fonte é o mesmo retrato que o celular lê (`web/src/lib/acompanhar/status.ts`: o último andamento que cada

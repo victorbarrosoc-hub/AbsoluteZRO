@@ -1,11 +1,12 @@
 // XML do Final Cut 7 (xmeml v4): Premiere Pro e DaVinci Resolve importam. V1 com os clipes e A1/A2 com o som de cada
-// um, ligados; zoom vai no efeito Movimento (Basic Motion: escala e centro); a cor vira o rótulo do Premiere e a
-// etiqueta, o comentário do clipe. Velocidade: Time Remap constante em cada degrau (o Premiere não lê rampa suave por
-// XML, só velocidade constante); fora de 100% o degrau vai sem som (a regra do AEON).
+// um, ligados; efeitos sonoros em pares de faixas depois (A3/A4, A5/A6… sem sobreposição em cada par); zoom vai no
+// efeito Movimento (Basic Motion: escala e centro); a cor vira o rótulo do Premiere e a etiqueta, o comentário do clipe.
+// Velocidade: Time Remap constante em cada degrau (o Premiere não lê rampa suave por XML, só velocidade constante);
+// fora de 100% o degrau vai sem som (a regra do AEON).
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { caminhoDa, esc, pathUrl, segmentos, transformacao } from './comum.js'
+import { caminhoDa, caminhoDoSom, efeitosExportados, esc, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
 import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
@@ -79,6 +80,39 @@ ${ind}</clipitem>`
   const trilha = (itens, ind, extra = '') => `${ind}<track>\n${itens.join('\n')}\n${ind}  <enabled>TRUE</enabled>\n${ind}  <locked>FALSE</locked>${extra}\n${ind}</track>`
   const v1 = trilha(comVideo.map(({ s, k }) => item(s, k, 'v', 1, I + '    ')), I + '  ')
   const a = [1, 2].map((f) => trilha(comAudio.map(({ s, k }) => item(s, k, 'a', f, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${f}</outputchannelindex>`)).join('\n')
+  // efeitos: um arquivo por som (só áudio), o par de faixas da faixa de efeitos, esquerda e direita ligadas
+  const sons = sonsUsados(p)
+  const arquivoSom = (m, ind) => {
+    const id = `file-s${sons.indexOf(m) + 1}`
+    if (arquivos.has(id)) return `${ind}<file id="${id}"/>`
+    arquivos.add(id)
+    const quadros = Math.max(1, Math.round((m.duracao * p.fps.n) / p.fps.d))
+    return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(m.nome)}</name>`, `${ind}  <pathurl>${esc(pathUrl(caminhoDoSom(m)))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${quadros}</duration>`, `${ind}  <media>`, `${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>${m.taxa || 48000}</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>${m.canais || 2}</channelcount>\n${ind}    </audio>`, `${ind}  </media>`, `${ind}</file>`].join('\n')
+  }
+  const efeitos = efeitosExportados(p)
+  const itemEfeito = (x, k, lado, ind) => {
+    const links = [1, 2].map((l) => `\n${ind}  <link>\n${ind}    <linkclipref>clipitem-e${x.faixa + 1}${l === 1 ? 'L' : 'R'}-${k + 1}</linkclipref>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${3 + x.faixa * 2 + l - 1}</trackindex>\n${ind}    <clipindex>${k + 1}</clipindex>\n${ind}    <groupindex>1</groupindex>\n${ind}  </link>`).join('')
+    return `${ind}<clipitem id="clipitem-e${x.faixa + 1}${lado === 1 ? 'L' : 'R'}-${k + 1}">
+${ind}  <masterclipid>masterclip-s${sons.indexOf(x.som) + 1}</masterclipid>
+${ind}  <name>${esc(x.som.nome)}</name>
+${ind}  <enabled>TRUE</enabled>
+${ind}  <duration>${x.quadrosSom}</duration>
+${rate(ind + '  ')}
+${ind}  <start>${x.inicio}</start>
+${ind}  <end>${x.inicio + x.quadros}</end>
+${ind}  <in>0</in>
+${ind}  <out>${x.quadros}</out>
+${arquivoSom(x.som, ind + '  ')}
+${ind}  <sourcetrack>
+${ind}    <mediatype>audio</mediatype>
+${ind}    <trackindex>${lado}</trackindex>
+${ind}  </sourcetrack>${niveis({ ajustes: { volume: x.efeito.volume } }, ind + '  ')}${links}
+${ind}</clipitem>`
+  }
+  const nFaixas = efeitos.reduce((n, x) => Math.max(n, x.faixa + 1), 0)
+  const fx = Array.from({ length: nFaixas }, (_, f) =>
+    [1, 2].map((lado) => trilha(efeitos.map((x, k) => ({ x, k })).filter(({ x }) => x.faixa === f).map(({ x, k }) => itemEfeito(x, k, lado, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n'),
+  ).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
@@ -100,7 +134,7 @@ ${v1}
       </video>
       <audio>
         <numOutputChannels>2</numOutputChannels>
-${a}
+${a}${fx ? '\n' + fx : ''}
       </audio>
     </media>
 ${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment></comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}

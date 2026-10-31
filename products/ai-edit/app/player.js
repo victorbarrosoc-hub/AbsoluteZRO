@@ -2,12 +2,14 @@
 // próximo clipe), então o corte troca na hora, sem esperar a busca. Zoom e ajustes do clipe (escala, posição,
 // opacidade) pelo transform e pela opacidade do elemento (placa de vídeo), volume por um ganho do Web Audio, legenda num
 // canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js). Velocidade: o <video> toca na velocidade
-// da curva contínua do clipe (src/velocidade.js, a mesma do render) e fica mudo fora de 100%.
+// da curva contínua do clipe (src/velocidade.js, a mesma do render) e fica mudo fora de 100%. Os efeitos sonoros tocam
+// pelo mesmo Web Audio, agendados a partir do ponto da linha a cada toque, busca ou edição, em qualquer velocidade.
 
 import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
 import { ganho, transformCssClipe, zoomEm } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
+import { efeitosNaLinha } from '../src/efeitos.js'
 import { comSom, origemContinua, saidaContinua, velocidadeContinua } from '../src/velocidade.js'
 import { correcaoEm, cssDaCorrecao } from '../src/estabilizar/aplicar.js'
 
@@ -38,6 +40,10 @@ export class Player {
     this.zooms = []
     this.projeto = null
     this.ultimoZoom = ''
+    // efeitos sonoros: [{ som, ini, dur (s da linha), ganho }]; sons decodificados por id; nós tocando agora
+    this.fx = []
+    this.somFx = new Map()
+    this.tocandoFx = []
     // estabilização: a correção segue o quadro que a tela mostrou (o tempo de mídia de cada quadro apresentado), não o
     // relógio da página, senão a correção chega um quadro atrasada e a prévia treme
     for (const v of this.videos)
@@ -88,7 +94,58 @@ export class Player {
     }))
     this.t = Math.min(this.t, this.duracao)
     this.ultimoZoom = ''
+    this.fx = efeitosNaLinha(p).map((x) => ({ som: x.som.id, ini: paraSegundos(x.inicio, p.fps), dur: paraSegundos(x.quadros, p.fps), ganho: ganho(x.efeito.volume) }))
     if (!this.tocando) this.irPara(this.t)
+    else this.#agendarFx()
+  }
+
+  /** Decodifica o som do efeito uma vez (pela mesma URL da mídia). null se não deu (o vídeo segue sem ele). */
+  async #buffer(id) {
+    if (!this.somFx.has(id))
+      this.somFx.set(
+        id,
+        (async () => {
+          const url = this.urlDe(id)
+          if (!url || !this.ctxAudio) return null
+          const dados = await (await fetch(url)).arrayBuffer()
+          return await this.ctxAudio.decodeAudioData(dados)
+        })().catch(() => null),
+      )
+    const buf = await this.somFx.get(id)
+    // sem arquivo ainda (projeto reaberto no navegador): tenta de novo quando a pessoa escolher o som
+    if (!buf) this.somFx.delete(id)
+    return buf
+  }
+
+  #pararFx() {
+    for (const n of this.tocandoFx) n.stop()
+    this.tocandoFx = []
+  }
+
+  /** Agenda os efeitos que ainda vão tocar (ou estão no meio) a partir do ponto atual. */
+  async #agendarFx() {
+    this.#pararFx()
+    if (!this.tocando || !this.ctxAudio || !this.fx.length) return
+    const marca = (this.agendaFx = (this.agendaFx || 0) + 1)
+    const t0 = this.t
+    const c0 = this.ctxAudio.currentTime
+    for (const x of this.fx) {
+      if (x.ini + x.dur <= t0) continue
+      const buf = await this.#buffer(x.som)
+      if (marca !== this.agendaFx || !this.tocando) return
+      if (!buf) continue
+      // o tempo andou enquanto decodificava: agenda pelo relógio do áudio
+      const agora = t0 + (this.ctxAudio.currentTime - c0)
+      const desloc = Math.max(0, agora - x.ini)
+      if (desloc >= Math.min(x.dur, buf.duration)) continue
+      const no = this.ctxAudio.createBufferSource()
+      no.buffer = buf
+      const g = this.ctxAudio.createGain()
+      g.gain.value = x.ganho
+      no.connect(g).connect(this.ctxAudio.destination)
+      no.start(this.ctxAudio.currentTime + Math.max(0, x.ini - agora), desloc, Math.min(x.dur, buf.duration) - desloc)
+      this.tocandoFx.push(no)
+    }
   }
 
   #segEm(t) {
@@ -155,7 +212,10 @@ export class Player {
     this.#posicionar(v, this.segs[this.i], this.t)
     this.#mostrar(this.ativo)
     this.#preparar(this.i)
-    if (this.tocando) v.play().catch(() => {})
+    if (this.tocando) {
+      v.play().catch(() => {})
+      this.#agendarFx()
+    }
     this.#avisar()
   }
 
@@ -182,6 +242,7 @@ export class Player {
     this.tocando = true
     this.fim = null
     await this.videos[this.ativo].play().catch(() => (this.tocando = false))
+    this.#agendarFx()
     this.#avisar()
   }
 
@@ -189,6 +250,7 @@ export class Player {
     this.tocando = false
     this.fim = null
     for (const v of this.videos) v.pause()
+    this.#pararFx()
     this.#avisar()
   }
 

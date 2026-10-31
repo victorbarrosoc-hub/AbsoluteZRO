@@ -6,7 +6,8 @@
 // tem quadro no instante pedido (câmera lenta além do que a câmera gravou), o modo do clipe decide: fluxo óptico (um
 // quadro novo pelo movimento, app/fluxo.js; o padrão), mistura dos dois vizinhos ou o quadro mais próximo. Corte de cena
 // entre os dois vizinhos nunca é interpolado. Sem o motor de fluxo (não carregou), vai o quadro mais próximo, e o
-// resultado diz quantos quadros saíram de cada jeito.
+// resultado diz quantos quadros saíram de cada jeito. Os efeitos sonoros entram por cima, no quadro exato em que
+// começam (src/efeitos.js), com o volume de cada um, em qualquer velocidade.
 
 import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
@@ -15,6 +16,7 @@ import { correcaoEm, corrigirNoCanvas } from '../src/estabilizar/aplicar.js'
 import { paraSegundos, fpsNumero } from '../src/tempo.js'
 import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
+import { efeitosNaLinha, misturarEfeitos } from '../src/efeitos.js'
 
 const RAMPA_S = 0.004
 
@@ -43,7 +45,8 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   const saida = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: false }), target: destino })
   const fonteVideo = new MB.CanvasSource(tela, { codec: codecs.video, bitrate: MB.QUALITY_HIGH, keyFrameInterval: 2, latencyMode: 'quality' })
   saida.addVideoTrack(fonteVideo, { frameRate: fps })
-  const temAudio = p.midias.some((m) => m.temAudio) && codecs.audio
+  const efeitos = efeitosNaLinha(p)
+  const temAudio = (p.midias.some((m) => m.temAudio) || efeitos.length > 0) && codecs.audio
   const fonteAudio = temAudio ? new MB.AudioBufferSource({ codec: codecs.audio, bitrate: 192_000 }) : null
   if (fonteAudio) saida.addAudioTrack(fonteAudio)
   await saida.start()
@@ -67,6 +70,17 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
     abertos.set(id, o)
     return o
   }
+
+  // cada som de efeito decodificado uma vez, em estéreo na taxa de saída
+  const somFx = new Map()
+  if (fonteAudio)
+    for (const { som } of efeitos) {
+      if (somFx.has(som.id)) continue
+      const entrada = entradas.get(som.id)
+      if (!entrada) throw new Error(`O som "${som.nome}" não está neste computador. Escolha o arquivo de novo ou tire o efeito.`)
+      const o = await abrir(som.id)
+      somFx.set(som.id, await somDoTrecho(o, 0, som.duracao, taxaSaida, 1, false))
+    }
 
   const clipes = new Map(p.linha.clipes.map((c) => [c.id, c]))
   // quantos quadros da câmera lenta saíram de cada jeito (real = a origem tinha o quadro)
@@ -165,6 +179,8 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
       if (fonteAudio) {
         const dur = n / fps
         const buf = s.som ? await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume)) : new AudioBuffer({ length: Math.max(1, Math.round(dur * taxaSaida)), numberOfChannels: 2, sampleRate: taxaSaida })
+        // os efeitos tocam por cima em qualquer velocidade (são da linha, não da mídia)
+        misturarEfeitos(buf, efeitos, somFx, paraSegundos(s.linha, p.fps), p.fps)
         await fonteAudio.add(buf)
         tAudio += dur
       }
@@ -194,8 +210,11 @@ export function corteEntre(a, b, limite = 48) {
   return s / ((da.length / 4) * 3) > limite
 }
 
-/** O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som). */
-async function somDoTrecho(o, ini, dur, taxaSaida, g = 1) {
+/**
+ * O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som).
+ * rampa = false para o som inteiro de um efeito (ele já começa e acaba como foi feito).
+ */
+async function somDoTrecho(o, ini, dur, taxaSaida, g = 1, rampa = true) {
   const taxa = o.audio?.sampleRate || taxaSaida
   const amostras = Math.max(1, Math.round(dur * taxa))
   let buf = new AudioBuffer({ length: amostras, numberOfChannels: 2, sampleRate: taxa })
@@ -208,7 +227,7 @@ async function somDoTrecho(o, ini, dur, taxaSaida, g = 1) {
         for (let i = Math.max(0, -desloc); i < src.length && desloc + i < amostras; i++) dst[desloc + i] = src[i]
       }
     }
-    const r = Math.min(Math.floor(amostras / 2), Math.round(RAMPA_S * taxa))
+    const r = rampa ? Math.min(Math.floor(amostras / 2), Math.round(RAMPA_S * taxa)) : 0
     for (let c = 0; c < 2; c++) {
       const d = buf.getChannelData(c)
       if (g !== 1) for (let i = 0; i < amostras; i++) d[i] = Math.max(-1, Math.min(1, d[i] * g))

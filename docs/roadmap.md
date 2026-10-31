@@ -281,6 +281,23 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   cadastrar o cliente no console e pôr `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET` no projeto Vercel, e o login no app de desktop. Primeiro
   Release do app no ar (build 8, 26/10/2026). Depois: tirar mídia do projeto (uma ou várias, com desfazer), AEON como
   editor completo (a IA é ajuda opcional) e homepage com motion no estilo do SOBEDESCE.
+- 🟡 AEON · faixa de efeitos sonoros (31/10/2026, pedido do titular, fase 1 da Sonoplasta): som do computador no
+  ponto, preso à imagem (corte, aparar e mover levam junto), arrastar com ímã, volume, tirar e desfazer; prévia e
+  vídeo final com o efeito misturado; FCPXML (conectado, função effects), xmeml (A3/A4…), OTIO (FX) e `CREDITOS.txt`.
+  Próximas fases: sugestões nos cortes e marcadores, banco da pessoa (Drive) e Openverse com licença comercial,
+  ElevenLabs pela conta da pessoa (Conexões do HUB, créditos dela), batida e abaixar sob a voz pelo NOSSOM; Epidemic e
+  Artlist dependem de contrato de parceria.
+- 🟡 Sonoplasta · fase 2a (31/10/2026): aba **Sons** no AEON com os momentos da linha (cortes e marcadores), busca
+  em português no banco de sons livres (Openverse pelo HUB, só CC0, CC BY e domínio público; Freesound e Wikimedia),
+  ouvir antes, colocar no momento com o volume do preset (`presets/sonoplasta.v1.json`) e o crédito automático; o
+  arquivo vai junto na entrega e desce de novo ao reabrir o projeto. HUB: `/api/v1/sons/*` (escopo `zro.sons`,
+  migration 0044). Falta: aplicar a 0044 e o cadastro do app no Openverse (limite).
+- 🟡 Sonoplasta · fase 2b (31/10/2026): **Meu banco** na aba Sons: a pessoa cola o link da pasta do Drive com os sons
+  dela, navega nas subpastas, busca pelo nome e coloca no momento; sem crédito (a licença é dela), o arquivo vai na
+  entrega e desce de novo ao reabrir. HUB: `/api/v1/sons/banco` e `/api/v1/sons/banco/{id}` pela conexão do Drive no
+  SOBEDESCE (`drive.listar` e `drive.token`, o token do Drive fica só no HUB); só leitura no Drive. Sem migration nova
+  (vale o `zro.sons` da 0044). Falta: validar com um Drive real em produção. Próximo: fase 3 (ElevenLabs pela conta da
+  pessoa).
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron

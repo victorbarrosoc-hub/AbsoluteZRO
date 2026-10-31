@@ -28,6 +28,8 @@ export function novoProjeto({ id, nome, midias = [], preset, fps: fpsPedido, lar
     altura: altura || video?.altura || 1080,
     marcadores: [],
     midias: ms,
+    sons: [],
+    efeitos: [],
     transcricoes: {},
     propostas: [],
     linha: linhaInicial(ms),
@@ -48,8 +50,8 @@ function cryptoId() {
 export const midiaPorId = (p, id) => p.midias.find((m) => m.id === id)
 
 /**
- * Tira uma ou várias mídias do projeto (um passo só no Desfazer): some a mídia, os clipes dela na linha, a transcrição, as propostas e as correções da
- * legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
+ * Tira uma ou várias mídias do projeto (um passo só no Desfazer): some a mídia, os clipes dela na linha, os efeitos presos
+ * a ela, a transcrição, as propostas e as correções da legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
  */
 export function removerMidia(p, ids) {
   const fora = new Set(Array.isArray(ids) ? ids : [ids])
@@ -59,6 +61,7 @@ export function removerMidia(p, ids) {
     ...p,
     midias: p.midias.filter((m) => !fora.has(m.id)),
     linha: { ...p.linha, clipes: p.linha.clipes.filter((c) => !fora.has(c.midia)) },
+    efeitos: (p.efeitos || []).filter((e) => !fora.has(e.midia)),
     transcricoes: sem(p.transcricoes),
     propostas: p.propostas.filter((x) => !fora.has(x.midia)),
     legenda: { ...p.legenda, textos: sem(p.legenda.textos) },
@@ -204,5 +207,5 @@ export function abrir(texto) {
   if (!p || p.formato !== `${PRODUTO.id}/projeto`) throw new Error('Este arquivo não é um projeto do editor.')
   if (p.versao > VERSAO) throw new Error('Projeto de uma versão mais nova do app. Atualize o app.')
   if (!p.fps?.n || !p.fps?.d || !Array.isArray(p.midias) || !Array.isArray(p.linha?.clipes)) throw new Error('Projeto incompleto.')
-  return { marcadores: [], ...p }
+  return { marcadores: [], sons: [], efeitos: [], ...p }
 }

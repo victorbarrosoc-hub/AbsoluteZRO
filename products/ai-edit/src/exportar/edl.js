@@ -1,9 +1,10 @@
-// EDL CMX 3600: o formato mais antigo e aceito por todos (Avid, Resolve, Premiere). Só cortes: zoom e legenda não
-// cabem na EDL (vão como comentário). Velocidade: linha M2 (velocidade constante em quadros por segundo) em cada
-// degrau; fora de 100% o evento vai só com imagem (a regra do AEON: som só em 100%).
+// EDL CMX 3600: o formato mais antigo e aceito por todos (Avid, Resolve, Premiere). Só cortes: zoom, legenda e efeitos
+// sonoros não cabem na EDL (vão como comentário). Velocidade: linha M2 (velocidade constante em quadros por segundo)
+// em cada degrau; fora de 100% o evento vai só com imagem (a regra do AEON: som só em 100%).
 
 import { fpsNominal, timecode } from '../tempo.js'
 import { segmentos } from './comum.js'
+import { efeitosNaLinha } from '../efeitos.js'
 
 const ascii = (t) =>
   String(t)
@@ -36,5 +37,6 @@ export function paraEdl(p) {
     linhas.push('')
   })
   for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}`)
+  for (const x of efeitosNaLinha(p)) linhas.push(`* EFEITO ${tc(x.inicio)}: ${ascii(x.som.nome)}${x.efeito.volume ? ` ${x.efeito.volume} DB` : ''}`)
   return linhas.join('\r\n')
 }

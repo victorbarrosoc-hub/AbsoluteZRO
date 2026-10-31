@@ -1,12 +1,14 @@
-// Linha do tempo na tela: régua, clipes (V1), forma de onda (A1), legenda e zoom. Arrastar move o clipe (os outros
+// Linha do tempo na tela: régua, clipes (V1), forma de onda (A1), efeitos sonoros (FX), legenda e zoom. Arrastar move o clipe (os outros
 // abrem espaço com mola), as bordas aparam, ⌘/Ctrl + roda (ou pinça) aproxima em volta do ponteiro. Régua e forma de
 // onda são canvases do tamanho da janela, redesenhados na rolagem: a linha pode ter horas sem passar do limite de canvas.
-// Ímã: buscar na régua e aparar grudam nas bordas dos clipes, nos marcadores e no ponto (Alt solta o ímã).
+// Ímã: buscar na régua, aparar e arrastar efeito grudam nas bordas dos clipes, nos marcadores e no ponto (Alt solta o
+// ímã). O efeito se arrasta sozinho (não empurra nada): ele se prende à imagem que estiver embaixo quando soltar.
 
 import { posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, relogio } from '../src/tempo.js'
 import { JANELA_S } from '../src/analise/silencio.js'
 import { CORES, corDoClipe, etiquetasDa } from '../src/cores.js'
+import { efeitosNaLinha } from '../src/efeitos.js'
 import { origemNoClipe, saidaDoClipe, saidaNoClipe, velocidadeMedia, velocidadeNoClipe } from '../src/velocidade.js'
 
 const MIN_ESCALA = 1
@@ -24,6 +26,7 @@ export class LinhaUI {
     this.escala = 20
     this.ajustada = false
     this.sel = null
+    this.selFx = null
     this.dados = null
     this.t = 0
 
@@ -31,6 +34,7 @@ export class LinhaUI {
     this.btDividir = el('button', 'icone-btn', { title: 'Dividir no ponto (B)', ariaLabel: 'Dividir', innerHTML: '<svg><use href="#i-lamina"/></svg>' })
     this.btApagar = el('button', 'icone-btn', { title: 'Apagar o clipe (⌫)', ariaLabel: 'Apagar', innerHTML: '<svg><use href="#i-lixo"/></svg>', disabled: true })
     this.btMarcar = el('button', 'icone-btn', { title: 'Marcador no ponto (M)', ariaLabel: 'Marcador', innerHTML: '<svg><use href="#i-marcador"/></svg>' })
+    this.btSom = el('button', 'icone-btn', { title: 'Efeito sonoro no ponto (S)', ariaLabel: 'Efeito sonoro', innerHTML: '<svg><use href="#i-som"/></svg>' })
     this.zoom = el('input', 'deslizar', { type: 'range', min: '0', max: '1000', value: '300', ariaLabel: 'Aproximar a linha do tempo', title: 'Aproximar (⌘ + roda)' })
     this.info = el('span', 'apoio linha-info')
     // cor e etiqueta do clipe selecionado (aparecem só com seleção)
@@ -53,10 +57,11 @@ export class LinhaUI {
     this.paleta.append(this.campoEtiqueta)
     this.filtro = el('div', 'filtro-etiquetas', { role: 'group', ariaLabel: 'Filtrar por etiqueta' })
     this.filtroAtivo = null
-    barra.append(this.btDividir, this.btApagar, this.btMarcar, this.paleta, el('span', 'espaco'), this.filtro, this.info, this.zoom)
+    barra.append(this.btDividir, this.btApagar, this.btMarcar, this.btSom, this.paleta, el('span', 'espaco'), this.filtro, this.info, this.zoom)
     this.btDividir.onclick = () => this.aoAcao('dividir')
-    this.btApagar.onclick = () => this.sel && this.aoAcao('remover', this.sel)
+    this.btApagar.onclick = () => (this.selFx ? this.aoAcao('tirarEfeito', this.selFx) : this.sel && this.aoAcao('remover', this.sel))
     this.btMarcar.onclick = () => this.aoAcao('marcar')
+    this.btSom.onclick = () => this.aoAcao('som')
     this.zoom.oninput = () => this.#aproximar(this.#escalaDoDeslize(Number(this.zoom.value)), this.rolagem.clientWidth / 2)
 
     this.rolagem = el('div', 'linha-rolagem')
@@ -64,12 +69,13 @@ export class LinhaUI {
     this.regua = el('canvas', 'regua')
     this.onda = el('canvas', 'onda')
     this.trilhaV = el('div', 'trilha trilha-v')
+    this.trilhaFx = el('div', 'trilha trilha-fx', { role: 'group', ariaLabel: 'Efeitos sonoros' })
     this.trilhaL = el('div', 'trilha trilha-l')
     this.trilhaZ = el('div', 'trilha trilha-z')
     this.cabeca = el('div', 'cabeca')
     this.marcas = el('div', 'trilha-marcas')
     const fundoA = el('div', 'trilha trilha-a')
-    this.conteudo.append(this.regua, this.trilhaV, fundoA, this.onda, this.trilhaL, this.trilhaZ, this.marcas, this.cabeca)
+    this.conteudo.append(this.regua, this.trilhaV, fundoA, this.onda, this.trilhaFx, this.trilhaL, this.trilhaZ, this.marcas, this.cabeca)
     this.rolagem.append(this.conteudo)
     raiz.append(barra, this.rolagem)
 
@@ -94,7 +100,7 @@ export class LinhaUI {
     })
     // clicar na régua ou num espaço vazio: vai até ali
     this.conteudo.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.clipe')) return
+      if (e.target.closest('.clipe, .efeito')) return
       const buscar = (ev) => {
         const t = Math.max(0, this.#xParaT(ev.clientX))
         this.aoBuscar(ev.altKey ? t : this.#imantar(t, false))
@@ -173,6 +179,7 @@ export class LinhaUI {
     const primeira = !this.dados
     this.dados = { p, dbs, blocos, zooms }
     if (this.sel && !p.linha.clipes.some((c) => c.id === this.sel)) this.selecionar(null)
+    if (this.selFx && !(p.efeitos || []).some((x) => x.id === this.selFx)) this.selecionarEfeito(null)
     if (primeira) this.ajustada = false
     if (!this.ajustada) this.#ajustar()
     this.#layout(!primeira)
@@ -210,10 +217,24 @@ export class LinhaUI {
 
   selecionar(id) {
     this.sel = id
-    this.btApagar.disabled = !id
+    if (id) this.selFx = null
+    this.btApagar.disabled = !id && !this.selFx
     this.#mostrarPaleta()
     for (const c of this.trilhaV.children) c.classList.toggle('selecionado', c.dataset.id === id)
+    for (const c of this.trilhaFx.children) c.classList.toggle('selecionado', c.dataset.id === this.selFx)
     this.aoSelecionar?.(id)
+  }
+
+  /** Efeito selecionado (o clipe sai da seleção: um ou outro). */
+  selecionarEfeito(id) {
+    this.selFx = id
+    if (id) this.sel = null
+    this.btApagar.disabled = !id && !this.sel
+    this.btApagar.title = id ? 'Tirar o efeito (⌫)' : 'Apagar o clipe (⌫)'
+    this.#mostrarPaleta()
+    for (const c of this.trilhaV.children) c.classList.toggle('selecionado', c.dataset.id === this.sel)
+    for (const c of this.trilhaFx.children) c.classList.toggle('selecionado', c.dataset.id === id)
+    this.aoSelecionar?.(this.sel)
   }
 
   /** desenha clipes e marcas; animar = as mudanças de posição deslizam (mola) */
@@ -259,6 +280,19 @@ export class LinhaUI {
     this.conteudo.classList.toggle('filtrando', Boolean(this.filtroAtivo))
     this.#mostrarFiltro()
     this.#mostrarPaleta()
+    // efeitos sonoros: cada um onde começa e com a duração do som (até o fim do vídeo)
+    this.trilhaFx.replaceChildren(
+      ...efeitosNaLinha(p).map(({ efeito, som, inicio, quadros }) => {
+        const d = el('div', 'efeito', { textContent: som.nome.replace(/\.[^.]+$/, '') })
+        d.dataset.id = efeito.id
+        d.style.left = `${paraSegundos(inicio, p.fps) * e}px`
+        d.style.width = `${Math.max(6, paraSegundos(quadros, p.fps) * e - 1)}px`
+        d.title = `${som.nome} · ${relogio(paraSegundos(inicio, p.fps))}${efeito.volume ? ` · ${efeito.volume > 0 ? '+' : ''}${String(efeito.volume).replace('.', ',')} dB` : ''}`
+        d.classList.toggle('selecionado', efeito.id === this.selFx)
+        this.#efeitoArrastavel(d)
+        return d
+      }),
+    )
     const corMidia = new Map(p.midias.map((m) => [m.id, m.cor]))
     // legenda e zoom: blocos simples (posição em tempo da linha)
     this.trilhaL.replaceChildren(
@@ -362,6 +396,41 @@ export class LinhaUI {
         o.fillRect(x, (h - alt) / 2, 1, alt)
       }
     }
+  }
+
+  /** arrastar o efeito: anda sozinho, com ímã; soltar prende na imagem que estiver embaixo. Clique só seleciona. */
+  #efeitoArrastavel(d) {
+    d.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      const x0 = e.clientX
+      const esquerda0 = d.offsetLeft
+      let movendo = false
+      let t = esquerda0 / this.escala
+      d.setPointerCapture(e.pointerId)
+      const mover = (ev) => {
+        const dx = ev.clientX - x0
+        if (!movendo && Math.abs(dx) < 4) return
+        movendo = true
+        d.classList.add('arrastando')
+        t = Math.max(0, Math.min(this.duracao, (esquerda0 + dx) / this.escala))
+        if (!ev.altKey) t = this.#imantar(t, true)
+        d.style.left = `${t * this.escala}px`
+      }
+      const soltar = () => {
+        d.removeEventListener('pointermove', mover)
+        d.removeEventListener('pointerup', soltar)
+        d.removeEventListener('pointercancel', soltar)
+        d.classList.remove('arrastando')
+        if (!movendo) return this.selecionarEfeito(d.dataset.id)
+        this.selecionarEfeito(d.dataset.id)
+        this.aoAcao('moverEfeito', d.dataset.id, t)
+      }
+      d.addEventListener('pointermove', mover)
+      d.addEventListener('pointerup', soltar)
+      d.addEventListener('pointercancel', soltar)
+    })
   }
 
   /** arrastar o clipe (mover) e as bordas (aparar), com os outros abrindo espaço */
