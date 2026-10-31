@@ -83,7 +83,7 @@ describe('o que o site publica', () => {
       const imports = [...ler(m).matchAll(/from\s+'([^']+)'/g)].map((x) => x[1])
       for (const i of imports) assert.ok(MARCA.includes(`src/${i.replace(/^\.\//, '')}`), `${m} importa ${i}`)
     }
-    for (const f of ['site/home.js', 'site/estudio.js', 'site/entrar.js', 'site/fechado.js', 'site/conta.js']) {
+    for (const f of ['site/home.js', 'site/estudio.js', 'site/montagem.js', 'site/entrar.js', 'site/fechado.js', 'site/conta.js']) {
       const fora = [...ler(f).matchAll(/from\s+'\.\.\/src\/([^']+)'/g)].map((x) => `src/${x[1]}`).filter((p) => !MARCA.includes(p))
       assert.deepEqual(fora, [], `${f} importa do editor`)
     }

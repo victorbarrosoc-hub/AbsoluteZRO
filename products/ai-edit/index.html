@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="site/site.css" />
     <script type="module" src="site/home.js"></script>
     <script type="module" src="site/estudio.js"></script>
+    <script type="module" src="site/montagem.js"></script>
   </head>
   <body>
     <a class="pular" href="#testar">Pular para o conteúdo</a>
@@ -121,7 +122,7 @@
                 <img class="visor-cena" data-cena="cortes" src="marca/home/podcast.jpg" alt="Dois apresentadores gravando um podcast" width="1344" height="752" loading="lazy" />
                 <img class="visor-cena" data-cena="legenda" src="marca/home/rua.jpg" alt="Um criador gravando com o celular na rua, à noite" width="1344" height="752" loading="lazy" />
                 <img class="visor-cena" data-cena="zoom" src="marca/home/review.jpg" alt="Uma criadora mostrando uma lente na mesa de trabalho" width="1344" height="752" loading="lazy" />
-                <img class="visor-cena" data-cena="entrega" src="marca/home/entrevista.jpg" alt="Um entrevistado num escritório com luz de estúdio" width="1344" height="752" loading="lazy" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4" aria-label="Mar e nuvens na falésia, na velocidade da curva"></video></div>
+                <img class="visor-cena" data-cena="entrega" src="marca/home/entrevista.jpg" alt="Um entrevistado num escritório com luz de estúdio" width="1344" height="752" loading="lazy" /><video id="visorVideo" muted playsinline preload="none" poster="marca/home/cenas/onda.jpg" data-src="marca/home/cenas/onda.mp4" aria-label="Onda vista de cima, na velocidade da curva"></video></div>
               <span class="visor-velocidade" id="visorVelocidade" aria-hidden="true">100%</span>
               <p class="visor-legenda" id="visorLegenda" aria-live="off"></p>
               <span class="visor-zoom" id="visorZoom" aria-hidden="true"></span>
@@ -134,6 +135,12 @@
             <div class="paineis">
               <div class="painel" role="tabpanel" id="painel-velocidade" aria-labelledby="aba-velocidade">
                 <h3>Desenhe o ritmo.</h3>
+                <div class="takes-demo" role="radiogroup" aria-label="Take" id="takesDemo">
+                  <button role="radio" aria-checked="true" data-take="onda"><img src="marca/home/cenas/mini/onda.jpg" alt="" width="256" height="144" loading="lazy" /><span>Onda</span></button>
+                  <button role="radio" aria-checked="false" data-take="carro"><img src="marca/home/cenas/mini/carro.jpg" alt="" width="256" height="144" loading="lazy" /><span>Estrada</span></button>
+                  <button role="radio" aria-checked="false" data-take="mar"><img src="marca/home/cenas/mini/mar.jpg" alt="" width="256" height="144" loading="lazy" /><span>Mar</span></button>
+                  <button role="radio" aria-checked="false" data-take="cidade"><img src="marca/home/cenas/mini/cidade.jpg" alt="" width="256" height="144" loading="lazy" /><span>Cidade</span></button>
+                </div>
                 <div class="fichas-escolha" role="radiogroup" aria-label="Curva de velocidade" id="rampas">
                   <button role="radio" aria-checked="false" data-rampa="normal">100%</button>
                   <button role="radio" aria-checked="true" data-rampa="heroi">Herói</button>
@@ -143,7 +150,7 @@
                   <button role="radio" aria-checked="false" data-rampa="montagem">Montagem</button>
                 </div>
                 <div class="duracao" aria-live="polite"><strong id="rampaDuracao">10,0 s</strong><span id="rampaAntes">de 10,0 s</span></div>
-                <p class="painel-dica">Arraste os pontos da curva. Som só em 100%, como no app.</p>
+                <p class="painel-dica">Takes de câmera de verdade. Arraste os pontos da curva; som só em 100%, como no app.</p>
               </div>
 
               <div class="painel" role="tabpanel" id="painel-cortes" aria-labelledby="aba-cortes" hidden>
@@ -271,6 +278,7 @@
             <li><button role="tab" aria-selected="true" aria-controls="tela-midia" id="ver-midia" data-tela="midia"><b>Mídia</b><span>Do computador ou do SOBEDESCE.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
             <li><button role="tab" aria-selected="false" aria-controls="tela-revisar" id="ver-revisar" tabindex="-1" data-tela="revisar"><b>Revisar</b><span>Pausas e zooms para aprovar.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
             <li><button role="tab" aria-selected="false" aria-controls="tela-edicao" id="ver-edicao" tabindex="-1" data-tela="edicao"><b>Edição</b><span>Cortar, aparar, mover e ajustar.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="tela-velocidade" id="ver-velocidade" tabindex="-1" data-tela="velocidade"><b>Velocidade</b><span>Uma curva por take.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
             <li><button role="tab" aria-selected="false" aria-controls="tela-texto" id="ver-texto" tabindex="-1" data-tela="texto"><b>Texto</b><span>A legenda se edita como texto.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
             <li><button role="tab" aria-selected="false" aria-controls="tela-entrega" id="ver-entrega" tabindex="-1" data-tela="entrega"><b>Entrega</b><span>Para o seu editor ou o vídeo pronto.</span><i class="explorar-barra" aria-hidden="true"></i></button></li>
           </ol>
@@ -279,6 +287,7 @@
               <img class="ativa" id="tela-midia" role="tabpanel" aria-labelledby="ver-midia" src="marca/home/app-midia.jpg" alt="Mídia: os vídeos importados, com miniatura, duração e formato" width="1600" height="1000" loading="lazy" />
               <img id="tela-revisar" role="tabpanel" aria-labelledby="ver-revisar" src="marca/home/app-revisar.jpg" alt="Revisar: silêncios, respiros e zooms propostos, cada um com aprovar e recusar" width="1600" height="1000" loading="lazy" />
               <img id="tela-edicao" role="tabpanel" aria-labelledby="ver-edicao" src="marca/home/app-edicao.jpg" alt="Edição: o vídeo com legenda, o Inspector e a linha do tempo com clipes coloridos" width="1600" height="1000" loading="lazy" />
+              <img id="tela-velocidade" role="tabpanel" aria-labelledby="ver-velocidade" src="marca/home/app-velocidade.jpg" alt="Velocidade: cinco takes de câmera com rampa na linha do tempo e a curva Herói no Inspector" width="1600" height="1000" loading="lazy" />
               <img id="tela-texto" role="tabpanel" aria-labelledby="ver-texto" src="marca/home/app-texto.jpg" alt="Texto: a fala transcrita ao lado do vídeo; clicar numa palavra leva até ela" width="1600" height="1000" loading="lazy" />
               <img id="tela-entrega" role="tabpanel" aria-labelledby="ver-entrega" src="marca/home/app-entrega.jpg" alt="Entrega: Premiere Pro, Final Cut Pro, DaVinci Resolve e vídeo final" width="1600" height="1000" loading="lazy" />
             </div>
@@ -308,10 +317,19 @@
         </ul>
       </section>
 
-      <!-- 5 · o estúdio, inteiro -->
-      <section class="cena" aria-labelledby="estudio-titulo">
-        <img src="marca/home/estudio.jpg" alt="" width="2400" height="1357" loading="lazy" />
+      <!-- 5 · além do tempo: a montagem feita no AEON com takes de câmera de verdade (marca/home/cenas, scripts/montagem.mjs).
+           O vídeo é o render do app; a linha embaixo anda com ele e mostra a curva e a velocidade de cada quadro. site/montagem.js -->
+      <section class="cena cena--montagem" id="montagem" aria-labelledby="estudio-titulo">
+        <div class="cena-quadro">
+          <video id="montagemVideo" muted loop playsinline preload="none" poster="marca/home/cenas/montagem.jpg" data-src="marca/home/cenas/montagem.mp4" aria-label="Cinco takes de câmera com rampas de velocidade, editados e renderizados no AEON"></video>
+        </div>
         <h2 id="estudio-titulo" class="cena-titulo ao-rolar"><span class="fino">Edite</span> <span class="forte">além do tempo.</span></h2>
+        <div class="montagem-painel ao-rolar">
+          <button class="montagem-play" id="montagemPlay" type="button" aria-label="Tocar"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ic-pausa" d="M8 5.5h3v13H8zM13 5.5h3v13h-3z" /><path class="ic-play" d="M8 5.5v13l10.5-6.5z" /></svg></button>
+          <div class="montagem-linha" id="montagemLinha" aria-hidden="true"><i class="montagem-cabeca" id="montagemCabeca"></i></div>
+          <output class="montagem-vel" id="montagemVel" aria-hidden="true">100%</output>
+          <span class="montagem-selo" title="Cinco takes de câmera aparados na linha do tempo, uma curva pronta em cada. O vídeo é o render do app.">Feito no AEON</span>
+        </div>
       </section>
 
       <!-- 6 · Ecossistema -->

@@ -298,6 +298,12 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   todos e Meu estilo; som só em 100% (decisão do titular). Prévia, render e os quatro exportadores usam os mesmos
   degraus de velocidade constante (o Premiere e o EDL não leem rampa suave). Falta: mistura de quadros ou fluxo óptico
   na câmera lenta (hoje, o quadro mais próximo) e conferir a importação num Final Cut, Premiere e DaVinci de verdade.
+- ✅ AEON, footage de verdade na página e nos testes (31/10/2026, pedido do titular): seis takes de câmera do Mixkit
+  (licença livre comercial, sem pessoas reconhecíveis nem marca; origem em `marca/home/cenas/LEIAME.md`). A Velocidade
+  do Teste ao vivo troca de take (onda, estrada, mar, cidade); "Edite além do tempo." virou uma montagem de cinco takes
+  editada e renderizada no próprio AEON (`scripts/montagem.mjs`), com a linha embaixo andando junto e a velocidade de
+  cada quadro; "Por dentro" ganhou a tela da Velocidade. O mesmo roteiro e um teste novo conferem o render quadro a
+  quadro com material real.
 - 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
   ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
   `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,

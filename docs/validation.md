@@ -2287,6 +2287,26 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Conferido no Chromium em 1440×900 e 390×844, sem rolagem lateral; `test/fechado.test.js` e as telas da página
   inicial passam.
 
+## AEON: footage de verdade nas demonstrações e nos testes (31/10/2026)
+
+- Takes do Mixkit com a Stock Video Free License, conferida na página de cada um (a onda e a gaivota da primeira
+  escolha eram "Restricted" e ficaram de fora; um túnel saiu por ter logo de empresa num prédio). Cortados, 1280×720 a
+  24 qps, sem som, CRF 27: 1–2 MB cada; a montagem, 4,5 MB. Origem, trecho e codificação em
+  `products/ai-edit/marca/home/cenas/LEIAME.md`.
+- `scripts/montagem.mjs` (editor no Chromium): importa cinco takes, apara pelas bordas da linha do tempo (com Alt, sem
+  ímã), põe uma curva pronta por clipe no Inspector (Vale, Flash de entrada, Herói, Bala, Pulso duplo), exporta o
+  pacote e renderiza. Medido: 579 quadros no render = 579 da soma dos degraus (24,1 s, H.264 1280×720, render em 8 s
+  nesta máquina); FCPXML e XML do Premiere válidos no xmllint, com timeMap e Time Remap.
+- Página: o seletor de take na Velocidade (troca o vídeo e mantém a curva) e a montagem com a linha que anda junto
+  (velocidade do quadro tirada da curva, pausa no botão, parada na crista da onda com "reduzir movimento"). Conferido
+  em 1440×900 e 390×844, claro e escuro, sem rolagem lateral nem erro no console.
+- Testes: "footage de verdade" (`test/tela.test.js`: um take real com Herói, render conferido no ffprobe quadro a
+  quadro) e o teste ao vivo cobre o take e a montagem. AEON 148/148, `electron . --smoke` OK, prettier e
+  scan-secrets limpos.
+- Achado: no Chromium sem tela, o download com acento no nome vira "download" (o roteiro reconhece pelo conteúdo). No
+  app de desktop o nome vem do diálogo de salvar; no Chrome de verdade não foi conferido. O app não mudou.
+- Não validado: o Safari do iPhone com os vídeos (só o Chromium).
+
 ## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
 
 - OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da

@@ -5,11 +5,13 @@
 // de verdade carregando no navegador. A transcrição do caminho de uso é falsa (um worker trocado pela rota), para o
 // teste não depender de fala gravada; a de verdade tem o teste próprio no fim (precisa de internet uma vez).
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
 import { simularZ } from './z-falso.js'
 import { simularSet } from './set-falso.js'
@@ -575,6 +577,32 @@ test('velocidade: curva pronta no Inspector, selo no clipe, teclado, manter dura
   await pagina.close()
 })
 
+test('footage de verdade: um take de câmera (marca/home/cenas) com a curva Herói sai do render com os quadros da curva', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/carro.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  await pagina.locator('.insp-velocidade').getByRole('button', { name: 'Herói' }).click()
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  const { saidaDoClipe } = await import('../src/velocidade.js')
+  const quadros = saidaDoClipe(p.linha.clipes[0])
+  assert.ok(quadros > p.linha.clipes[0].fim, 'a câmera lenta do meio deixa o clipe mais longo')
+  // só o vídeo final
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 120_000 }), pagina.click('#exportar')])
+  const arquivo = join(dir, 'carro-heroi.mp4')
+  await baixado.saveAs(arquivo)
+  const sonda = ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_frames,width,height', '-of', 'json', arquivo]
+  const [v] = JSON.parse(execFileSync('ffprobe', sonda).toString()).streams
+  assert.equal(Number(v.nb_read_frames), quadros, 'um quadro do render para cada quadro da curva')
+  assert.equal(`${v.width}×${v.height}`, '1280×720')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('reduzir movimento: páginas trocam sem deslize', async () => {
   const { pagina } = await abrir({ reducedMotion: 'reduce' })
   await pagina.click('.dock [data-ir="entrega"]')
@@ -699,7 +727,8 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   // o exemplo toca sozinho enquanto aparece
   const t0 = await pagina.locator('#visorTempo').innerText()
   await pagina.waitForFunction((t) => document.querySelector('#visorTempo').textContent !== t, t0)
-  // velocidade (a aba que abre): Herói, o vídeo da falésia na velocidade da curva, Bala muda a duração, teclado no ponto
+  // velocidade (a aba que abre): Herói, a onda (take de câmera de verdade) na velocidade da curva, Bala muda a duração,
+  // teclado no ponto
   assert.equal(await est.getByRole('tab', { name: 'Velocidade' }).getAttribute('aria-selected'), 'true')
   assert.equal(await est.getByRole('radio', { name: 'Herói' }).getAttribute('aria-checked'), 'true')
   const durHeroi = await pagina.locator('#rampaDuracao').innerText()
@@ -710,6 +739,12 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   await pagina.keyboard.press('ArrowDown')
   assert.notEqual(await pagina.locator('#rampaDuracao').innerText(), antes, 'mais lento, mais longo')
   assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'curva própria')
+  // o take: a Estrada troca o vídeo e a duração de origem; a curva fica
+  await est.getByRole('radio', { name: 'Estrada' }).click()
+  assert.equal(await est.getByRole('radio', { name: 'Estrada' }).getAttribute('aria-checked'), 'true')
+  await pagina.waitForFunction(() => /cenas\/carro\.mp4$/.test(document.querySelector('#visorVideo').currentSrc))
+  await pagina.waitForFunction(() => document.querySelector('#rampaAntes').textContent === 'de 7,3 s')
+  assert.equal(await est.getByRole('radio', { name: 'Bala' }).getAttribute('aria-checked'), 'false', 'a curva própria continua')
   // cortes: 0,45 s marca as duas pausas maiores; aprovar tira 1,7 s; desfazer devolve
   await est.getByRole('tab', { name: 'Cortes' }).click()
   assert.equal(await pagina.locator('#aprovarCortes').innerText(), 'Aprovar 2 cortes')
@@ -741,7 +776,20 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   await est.getByRole('tab', { name: 'Cortes' }).click()
   await pagina.click('#desfazerCortes')
   await pagina.waitForFunction(() => document.querySelector('#duracaoAgora').textContent === '20,5 s')
-  // Por dentro: escolher a tela para de trocar sozinho
+  // além do tempo: a montagem feita no AEON toca ao aparecer; a linha mostra os cinco takes com a curva de cada um, a
+  // cabeça anda com o vídeo e o número é a velocidade do quadro; o botão pausa
+  await pagina.locator('#montagem').scrollIntoViewIfNeeded()
+  await pagina.locator('.montagem-clipe').nth(4).waitFor()
+  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Flash de entrada', 'Herói', 'Bala', 'Pulso duplo'])
+  await pagina.waitForFunction(() => document.querySelector('#montagemVideo').currentTime > 0.5)
+  assert.match(await pagina.locator('#montagemVel').innerText(), /^\d+%$/)
+  assert.equal(await pagina.locator('.montagem-clipe.agora').count(), 1)
+  await pagina.click('#montagemPlay')
+  assert.equal(await pagina.getAttribute('#montagemPlay', 'aria-label'), 'Tocar')
+  assert.equal(await pagina.evaluate(() => document.querySelector('#montagemVideo').paused), true)
+  // Por dentro: a Velocidade com os takes de verdade; escolher a tela para de trocar sozinho
+  await pagina.getByRole('tab', { name: /Velocidade Uma curva por take/ }).click()
+  assert.equal(await pagina.locator('#tela-velocidade.ativa').count(), 1)
   await pagina.getByRole('tab', { name: /Entrega Para o seu editor/ }).click()
   assert.equal(await pagina.locator('#tela-entrega.ativa').count(), 1)
   assert.equal(await pagina.locator('#explorar.sozinho').count(), 0)

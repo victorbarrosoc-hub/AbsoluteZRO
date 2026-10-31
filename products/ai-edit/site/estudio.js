@@ -1,5 +1,5 @@
-// O "Teste ao vivo" do site: o AEON na própria página. Velocidade: a curva sobre o vídeo da falésia, que toca de verdade
-// na velocidade da curva (playbackRate), com as curvas prontas do app (src/velocidade.js; a conta é repetida aqui
+// O "Teste ao vivo" do site: o AEON na própria página. Velocidade: a curva sobre um take de câmera de verdade (onda,
+// estrada, mar ou cidade; marca/home/cenas), que toca de verdade na velocidade da curva (playbackRate), com as curvas prontas do app (src/velocidade.js; a conta é repetida aqui
 // porque o site não carrega código do editor enquanto o AEON está fechado ao público). Cortes, Legenda, Zoom e
 // Entrega: um vídeo de exemplo (uma foto e uma fala de 20,5 s escrita
 // aqui). Não transcreve, não envia e não grava nada: mostra as mesmas regras do app (pausas acima de um limite viram
@@ -308,7 +308,7 @@ function iniciar() {
     )
   }
 
-  // ───────── velocidade: a curva (log, 10% a 800%, 100% marcado) sobre o vídeo da falésia ─────────
+  // ───────── velocidade: a curva (log, 10% a 800%, 100% marcado) sobre o take escolhido ─────────
   const V_MIN = 0.1
   const V_MAX = 8
   const RAMPAS = {
@@ -322,6 +322,21 @@ function iniciar() {
   S.rampa = RAMPAS.heroi.map((p) => p.slice())
   const video = $('#visorVideo')
   const svg = $('#curvaDemo svg')
+  // os takes (marca/home/cenas/LEIAME.md): trocar mantém a curva e recomeça do primeiro quadro
+  const TAKES = { onda: 'Onda vista de cima', carro: 'Carro na estrada ao pôr do sol', mar: 'Voo rente ao mar', cidade: 'Rotatória à noite, vista de cima' }
+  S.take = 'onda'
+  grupo('#takesDemo', 'take', () => {
+    const tocava = Boolean(video.src)
+    video.poster = `marca/home/cenas/${S.take}.jpg`
+    video.dataset.src = `marca/home/cenas/${S.take}.mp4`
+    video.setAttribute('aria-label', `${TAKES[S.take]}, na velocidade da curva`)
+    S.x = 0
+    if (tocava) {
+      video.src = video.dataset.src
+      tocarVideo(S.tocando && S.emTela)
+    }
+    mostrarRampa()
+  })
   const duracaoVideo = () => (Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 10)
   const pct = (v) => `${Math.round(v * 100)}%`
 
