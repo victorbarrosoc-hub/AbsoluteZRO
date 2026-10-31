@@ -1,5 +1,6 @@
 /**
  * Cliente OAuth "Aplicativo da Web" da SOBEDESCE (docs/CONTAS.md §2).
+ * Desde 31/10/2026 o cliente mora no projeto Google "SOBEDESCE", separado do HUB (a verificação do HUB não espera a do Drive).
  * Nada aqui lança no import: sem as variáveis, a tela de conta avisa e o resto abre normal.
  */
 import { origemDoSite } from "@/lib/site";
