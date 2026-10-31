@@ -2309,9 +2309,11 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   96 quadros sai do fluxo, nenhum repetido (menos o último, depois do último quadro da câmera) e cada quadro novo fica
   entre os vizinhos. No app de desktop (Electron): o modelo baixou pelo repasse `/__hf/` (22,7 MB, guardado no disco),
   isolamento entre origens ligado, primeiro quadro em 1,1 s, confiança 0,9999.
-- **Montagem da página** refeita no AEON com os takes de alta taxa: projeto 16:9 em 24 qps, 545 quadros (22,7 s) =
-  soma dos degraus, render 1920×1080 em 150 s, **191 quadros pelo fluxo** (só onde a câmera não tinha quadro: abaixo de
-  40–48%); quadros interpolados do cavalo e da onda conferidos de perto (cerca e cordas finas sem rasgo).
+- **Montagem da página** refeita no AEON com os takes de alta taxa: projeto 16:9 em 24 qps, 554 quadros (23,1 s) =
+  soma dos degraus, render 1920×1080 em 160 s, **191 quadros pelo fluxo** (só onde a câmera não tinha quadro: abaixo de
+  40–48%); quadros interpolados do cavalo, da onda e dos faróis conferidos de perto (cerca e cordas finas sem rasgo).
+  Com marca, a pedido do titular: o carro retrô em neon e os faróis do Nissan 300ZX (60 qps de verdade); Porsche, BMW,
+  SUV e moeda do Coverr ficaram fora por serem 25 qps por dentro.
 - **Estabilização por imagem.** Tremor sintético de valor conhecido: movimento medido com erro máximo de 0,053 px;
   tremor 43,7 → 1,4 px (−97%) com recorte de 17% e nenhum quadro mostrando borda. De ponta a ponta no app: o cavalo com
   tremor de recorte (ffmpeg) → "Analisar e estabilizar" → render → tremor medido de novo no arquivo final, fora do app:

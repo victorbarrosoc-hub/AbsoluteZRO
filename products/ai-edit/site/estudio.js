@@ -1,5 +1,5 @@
 // O "Teste ao vivo" do site: o AEON na própria página. Velocidade: a curva sobre um take de câmera de verdade em 50 ou
-// 60 qps (onda, cavalo, pelicano ou flores; marca/home/cenas: a câmera lenta usa quadros reais, sem travar), que toca de verdade na velocidade da curva (playbackRate), com as curvas prontas do app (src/velocidade.js; a conta é repetida aqui
+// 60 qps (carro, faróis, onda ou cavalo; marca/home/cenas: a câmera lenta usa quadros reais, sem travar), que toca de verdade na velocidade da curva (playbackRate), com as curvas prontas do app (src/velocidade.js; a conta é repetida aqui
 // porque o site não carrega código do editor enquanto o AEON está fechado ao público). Cortes, Legenda, Zoom e
 // Entrega: um vídeo de exemplo (uma foto e uma fala de 20,5 s escrita
 // aqui). Não transcreve, não envia e não grava nada: mostra as mesmas regras do app (pausas acima de um limite viram
@@ -323,8 +323,8 @@ function iniciar() {
   const video = $('#visorVideo')
   const svg = $('#curvaDemo svg')
   // os takes (marca/home/cenas/LEIAME.md): trocar mantém a curva e recomeça do primeiro quadro
-  const TAKES = { onda: 'Onda quebrando na praia', cavalo: 'Cavalo rolando na grama', pelicano: 'Pelicano voando sobre o mar', flores: 'Flores ao vento' }
-  S.take = 'onda'
+  const TAKES = { carro: 'Carro retrô em neon, com a câmera girando', farois: 'Faróis do Nissan 300ZX abrindo', onda: 'Onda quebrando na praia', cavalo: 'Cavalo rolando na grama' }
+  S.take = 'carro'
   grupo('#takesDemo', 'take', () => {
     const tocava = Boolean(video.src)
     video.poster = `marca/home/cenas/${S.take}.jpg`

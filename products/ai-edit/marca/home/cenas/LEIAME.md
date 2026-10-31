@@ -5,22 +5,26 @@ Takes de câmera para as demonstrações da página inicial e para os testes do 
 Coverr: uso comercial e pessoal sem custo e sem crédito obrigatório; não pode revender o vídeo nem oferecer como banco de
 imagens, nem usar para treinar IA (conferida em https://coverr.co/license em 31/10/2026). Aqui não vão como arquivo de
 banco de imagens: foram cortados, reduzidos para 1280×720, sem som, e fazem parte da página. Sem pessoas reconhecíveis
-e sem marca em destaque (regra do repositório público).
+(regra do repositório público). **Com marca**: os carros (Nissan 300ZX e um esportivo retrô) aparecem com o desenho e o
+logo; o titular liberou em 31/10/2026 ("pode botar com marca mesmo; eu me viro com as restrições depois"). O Coverr não
+libera marca nem modelo: o uso das marcas é decisão e responsabilidade do titular.
 
 **Alta taxa de verdade.** A câmera lenta só fica lisa se a fonte tem quadro novo de verdade: cada take foi conferido
 quadro a quadro (nenhum quadro repetido no trecho usado). Gaivotas, cachoeira, roda de bicicleta e vales do Coverr
-marcados como 50/60 qps repetem metade dos quadros (são 25/30 qps por dentro) e ficaram de fora.
+marcados como 50/60 qps repetem metade dos quadros (são 25/30 qps por dentro) e ficaram de fora, assim como os
+Porsche, o BMW M4, o SUV e a moeda (25 qps por dentro) e a água com gás (50 qps num arquivo de 60).
 
 | Arquivo | Take no Coverr | qps | Trecho usado |
 | --- | --- | --- | --- |
 | `onda.mp4` | [Ducks in the sea](https://coverr.co/videos/ducks-in-the-sea-cakpqymfd0) | 60 | 4–12 s |
 | `cavalo.mp4` | [Horse rolling on the grass](https://coverr.co/videos/horse-rolling-on-the-grass-lxbf1tq9hj) | 50 | 0–7 s |
 | `pelicano.mp4` | [Pelicans flying](https://coverr.co/videos/pelicans-flying-niuhsghinm) | 60 | 0,5–6,5 s |
-| `mergulho.mp4` | [Pelicans diving](https://coverr.co/videos/pelicans-diving-9n097vz2ht) | 60 | 1–9 s |
-| `flores.mp4` | [Flowers and bees](https://coverr.co/videos/flowers-and-bees-0szs5yqlax) | 59,94 | 1–9 s |
+| `carro.mp4` | [Rotating shot of a retro car](https://coverr.co/s?q=rotating%20shot%20of%20a%20retro%20car) (`coverr-rotating-shot-of-a-retro-car-9006`) | 60 | 0,5–7,5 s |
+| `farois.mp4` | [Nissan 300ZX headlights open up](https://coverr.co/s?q=nissan%20300zx%20headlights) (`coverr-nissan-300zx-headlights-open-up-9414`) | 60 | 0,3–6,3 s |
 
 `montagem.mp4` é o **render do próprio AEON**: um projeto 16:9 em 24 qps com os cinco takes aparados na linha do tempo
-e uma curva pronta de velocidade em cada um (Vale, Herói, Bala, Arrancada, Pulso duplo). A câmera lenta usa os quadros
+e uma curva pronta de velocidade em cada um: pelicano (Vale), onda (Herói), cavalo (Bala), carro (Arrancada) e faróis
+(Montagem, com a parte lenta nos faróis subindo e acendendo). A câmera lenta usa os quadros
 reais da câmera e o fluxo óptico só onde a câmera não tem quadro (abaixo de 40–48%). O render sai em 1920×1080 e aqui
 vai reduzido para 1280×720 e recomprimido para a web, com os mesmos quadros. `montagem.json` traz os clipes, as curvas, a
 velocidade de cada quadro e quantos quadros saíram do fluxo óptico. Refaça com `node scripts/montagem.mjs` (confere a

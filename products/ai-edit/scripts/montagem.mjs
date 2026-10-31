@@ -17,13 +17,13 @@ import { chromium } from 'playwright'
 import { servir } from './servidor.mjs'
 import { CURVAS, avaliar, origemNoClipe, saidaDoClipe } from '../src/velocidade.js'
 
-// o céu, o mar, a terra: o take, o trecho que fica (segundos do take) e a curva pronta do Inspector
+// o céu, o mar, a terra e a noite: o take, o trecho que fica (segundos do take) e a curva pronta do Inspector
 const PLANO = [
   { take: 'pelicano', de: 0.3, ate: 5.5, curva: 'vale' },
   { take: 'onda', de: 1.5, ate: 6.5, curva: 'heroi' },
   { take: 'cavalo', de: 0, ate: 3.6, curva: 'bala' },
-  { take: 'mergulho', de: 1, ate: 6, curva: 'arrancada' },
-  { take: 'flores', de: 0.5, ate: 4.5, curva: 'pulso' },
+  { take: 'carro', de: 0.5, ate: 5.5, curva: 'arrancada' },
+  { take: 'farois', de: 0, ate: 3, curva: 'montagem' },
 ]
 const HEROI = PLANO.findIndex((x) => x.curva === 'heroi')
 const cenas = new URL('../marca/home/cenas/', import.meta.url)

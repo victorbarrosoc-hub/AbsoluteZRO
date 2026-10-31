@@ -898,7 +898,7 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   // cabeça anda com o vídeo e o número é a velocidade do quadro; o botão pausa
   await pagina.locator('#montagem').scrollIntoViewIfNeeded()
   await pagina.locator('.montagem-clipe').nth(4).waitFor()
-  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Herói', 'Bala', 'Arrancada', 'Pulso duplo'])
+  assert.deepEqual(await pagina.locator('.montagem-clipe span').allTextContents(), ['Vale', 'Herói', 'Bala', 'Arrancada', 'Montagem'])
   await pagina.waitForFunction(() => document.querySelector('#montagemVideo').currentTime > 0.5)
   assert.match(await pagina.locator('#montagemVel').innerText(), /^\d+%$/)
   assert.equal(await pagina.locator('.montagem-clipe.agora').count(), 1)
