@@ -357,16 +357,30 @@ export async function conferirTeto(db: Database, auth: Authenticated | null, est
 
 /** Registra o uso (idempotente pela chave). Devolve se contou agora. */
 export async function registrarUso(db: Database, a: ZLabAdmin, u: ZUso): Promise<boolean> {
+  return comoAdmin(db, a, (tx) => inserirUso(tx, a.userId, u))
+}
+
+/**
+ * A Z de um app da família chamada servidor a servidor (hoje só o Rift, z-rift.ts): não há sessão de pessoa, então lê o
+ * teto e registra o uso como sistema. Quem chama já autenticou o cliente confidencial e conferiu a lista de liberados.
+ * Mesmo teto do dia do laboratório (sem teto = bloqueado) e o uso aparece nos Custos do console.
+ */
+export async function conferirTetoDoSistema(db: Database): Promise<ZGasto> {
+  const gasto = await db.asSystem('z: teto do dia (app da família)', lerGasto)
+  if (gasto.teto == null) throw new DomainError('quota_not_configured', 'O teto de gasto por dia da Z não foi definido.')
+  if (gasto.hoje > gasto.teto + 1e-9) throw new DomainError('quota_exceeded', 'A Z chegou ao teto de gasto de hoje. Ela volta amanhã.')
+  return gasto
+}
+
+export const registrarUsoDoSistema = (db: Database, userId: string, u: ZUso) => db.asSystem('z: uso (app da família)', (tx) => inserirUso(tx, userId, u))
+
+async function inserirUso(tx: Queryable, userId: string, u: ZUso): Promise<boolean> {
   if (!/^[a-z]+:[A-Za-z0-9_.:-]{6,110}$/.test(u.chave)) throw new DomainError('invalid_input', 'Chave de uso inválida.')
-  const r = await comoAdmin(
-    db,
-    a,
-    (tx) => tx`
+  const r = await tx`
       insert into zro.z_lab_uso (user_id, servico, modelo, tokens_entrada, tokens_saida, tokens_cache, caracteres, segundos, custo_usd, chave)
-      values (${a.userId}, ${u.servico}, ${u.modelo ?? null}, ${Math.round(u.tokensEntrada ?? 0)}, ${Math.round(u.tokensSaida ?? 0)},
+      values (${userId}, ${u.servico}, ${u.modelo ?? null}, ${Math.round(u.tokensEntrada ?? 0)}, ${Math.round(u.tokensSaida ?? 0)},
         ${Math.round(u.tokensCache ?? 0)}, ${Math.round(u.caracteres ?? 0)}, ${Number((u.segundos ?? 0).toFixed(2))}, ${Number(u.custoUsd.toFixed(6))}, ${u.chave})
-      on conflict (chave) do nothing returning id`,
-  )
+      on conflict (chave) do nothing returning id`
   return r.length > 0
 }
 

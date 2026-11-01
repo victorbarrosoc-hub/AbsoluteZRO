@@ -93,6 +93,9 @@
 
 .page {
   display: grid;
+  /* coluna que nunca cresce além da tela: sem isso, uma faixa longa (abas, chips, um título sem quebra) alarga a
+     página inteira no celular e o Safari reduz/amplia sozinho */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
   min-width: 0;
 }
@@ -195,6 +198,7 @@
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
 }
 .list-rows__link,
@@ -401,6 +405,12 @@
   border-radius: 10px;
   min-width: 0;
   flex: 1;
+}
+/* 16 px no celular: abaixo disso o Safari do iPhone amplia a página ao tocar no seletor */
+@media (max-width: 1024px), (pointer: coarse) {
+  .org-switch select {
+    font-size: 16px;
+  }
 }
 
 .me {
@@ -744,8 +754,7 @@
     display: none;
   }
   .topbar {
-    padding: 8px 12px;
-    padding-top: max(8px, env(safe-area-inset-top));
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
   }
   .topbar__brand {
     display: block;
@@ -801,7 +810,7 @@
     font-size: 1rem;
   }
   .content {
-    padding: 18px 16px var(--space-7);
+    padding: 18px max(16px, env(safe-area-inset-right)) var(--space-7) max(16px, env(safe-area-inset-left));
   }
 }
 
@@ -2854,8 +2863,10 @@ details.disclosure[open] > summary {
   gap: var(--space-2);
 }
 .adm-main {
+  --adm-margem-e: max(clamp(16px, 4vw, 56px), env(safe-area-inset-left));
+  --adm-margem-d: max(clamp(16px, 4vw, 56px), env(safe-area-inset-right));
   min-width: 0;
-  padding: clamp(24px, 4vw, 56px) clamp(16px, 4vw, 56px) 96px;
+  padding: clamp(24px, 4vw, 56px) var(--adm-margem-d) calc(96px + env(safe-area-inset-bottom)) var(--adm-margem-e);
 }
 .adm-page {
   max-width: 1120px;
@@ -2877,7 +2888,10 @@ details.disclosure[open] > summary {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2) var(--space-3);
-    padding: 10px 16px;
+    /* a barra do topo ocupa a largura toda e respeita o entalhe e a barra de status (app da Tela de Início) */
+    --adm-borda-e: max(16px, env(safe-area-inset-left));
+    --adm-borda-d: max(16px, env(safe-area-inset-right));
+    padding: max(10px, env(safe-area-inset-top)) var(--adm-borda-d) 10px var(--adm-borda-e);
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
@@ -2908,8 +2922,8 @@ details.disclosure[open] > summary {
     gap: 6px;
     overflow-x: auto;
     scrollbar-width: none;
-    margin-inline: -16px;
-    padding: 2px 16px 4px;
+    margin: 0 calc(-1 * var(--adm-borda-d)) 0 calc(-1 * var(--adm-borda-e));
+    padding: 2px var(--adm-borda-d) 4px var(--adm-borda-e);
   }
   .adm-nav::-webkit-scrollbar {
     display: none;
@@ -4019,6 +4033,7 @@ a.hbars__row:hover {
   margin: 0;
   padding: 6px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   border-radius: var(--radius-l);
   background: var(--surface);
   box-shadow: var(--pill-rim);
@@ -4097,6 +4112,12 @@ a.hbars__row:hover {
   color: var(--ok-text);
 }
 @media (max-width: 760px) {
+  /* os chips de app rolam de borda a borda da tela, como numa faixa da App Store; a página fica parada */
+  .adm-main .prod-filter {
+    margin: 0 calc(-1 * var(--adm-margem-d)) 0 calc(-1 * var(--adm-margem-e));
+    padding-inline: var(--adm-margem-e) var(--adm-margem-d);
+    scroll-padding-inline: var(--adm-margem-e) var(--adm-margem-d);
+  }
   .people__head {
     display: none;
   }

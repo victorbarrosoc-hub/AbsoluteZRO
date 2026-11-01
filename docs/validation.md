@@ -15,6 +15,45 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## iPhone sem zoom sozinho (01/11/2026)
+
+Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava
+e reduzia sozinho).
+
+- Causas: a coluna implícita de `.page`, `.zro-card`, `.list-rows` e `.people` crescia até o conteúdo mais largo (as
+  abas de segmento com `width: fit-content`, os chips de app, título de projeto sem quebra), e a página passava de 541 px
+  num iPhone de 393; campos com 13,6–15,2 px (`.zro-input` herdava 15 px do corpo, `.zro-textarea` 0.85rem, seletor de
+  organização 0.85rem, Laboratório da Z), que fazem o Safari ampliar ao tocar.
+- `tests/e2e/iphone-telas.spec.ts` (novo): admin da plataforma e conta comum, WebKit e Chromium (celular), 375/393/430
+  px, 8 páginas públicas, 22 do HUB (com projeto e perfil público) e 19 do console (com a ficha da pessoa e um e-mail
+  comprido na lista): nada mais largo que a tela (a régua é a largura pedida, não `innerWidth`, que cresce junto com a
+  página no celular) e nenhum campo visível abaixo de 16 px. Antes: Pessoas e o segmento Ecossistema a 541 px em todas
+  as larguras, Início a 383 px em 375 e 399 campos abaixo de 16 px por navegador; depois: **1/1** (5,6 min).
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **552/552** em 62 arquivos; `npm run build` ok;
+  `npm run test:e2e` 62/64 na rodada inteira, as duas que caíram (`sso` axe `document-title` e `z-lab-voz-celular`
+  WebKit, "element is not stable" no cadastro) passaram sozinhas logo depois (8/8), máquina carregada.
+- Maestro: `e2e/corte.ts` acusa campo visível abaixo de 16 px no celular e mede contra a tela (`screen.width`);
+  `sem-corte.spec.ts` **8/8** (Chromium e WebKit, 375 e 393, claro e escuro) com a regra nova de `celular.css`.
+- Relay: `test/tela.test.js` "celular" agora com `isMobile`, `/painel`, campos (até os fechados) com 16 px ou mais e a
+  meta viewport sem trava; pegou o `#mb` com 14 px. `npm test` 124/125 (a que falha é `vendor.test.js`, sem
+  `node_modules` neste ambiente).
+- Synquei `npm test` 148/148; TPeasy `node --test tests/*.test.mjs` 78/78; SOBEDESCE web typecheck ok e `npm test`
+  370/371 (a que cai é `zro-relay-ciclo`, sem o `undici` do app de computador neste ambiente).
+- Carro do Freela: sem mudança (já tinha campos com 16 px no celular e o `viewport-fit=cover` só no app instalado, por
+  decisão documentada em `src/build.js`); auditoria do `real.html` a 375/393/430 px sem achado. Maestro também mantém o
+  viewport sem `cover` por decisão do `CLAUDE.md` dele.
+- `node scripts/scan-secrets.mjs`: nenhum segredo. Capturas (WebKit 393 px, claro) antes e depois no scratchpad da
+  sessão (`iphone-zoom/antes`, `iphone-zoom/depois`: `console/`, `hub/`, `publico/`, e dos produtos estáticos).
+
+## Z do HUB no Rift Motion (01/11/2026)
+
+Branch `claude/z-rift-hub` (só a parte do HUB do PR #80, para a main). `POST /api/v1/ia/rift`: o servidor do Rift pede
+servidor a servidor (Basic do cliente `rift-web`) e a chave do Claude fica só no HUB.
+
+- `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista (`IA_RIFT_LIBERADOS`), conta da
+  lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem teto =
+  bloqueado, passou do teto = bloqueado, uso idempotente nos Custos; a tela só recebe as cinco ações, com valores limpos.
+
 ## Apps de computador só pela central (01/11/2026)
 
 Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se

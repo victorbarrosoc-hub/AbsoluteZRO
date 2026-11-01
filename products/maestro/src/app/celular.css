@@ -6,6 +6,21 @@
  * revisão ficam no fim de `revisao.css` (ele carrega depois deste e ganharia no empate).
  */
 
+/* iPhone: campo com fonte abaixo de 16 px faz o Safari ampliar a página ao tocar, e ela não volta sozinha (relato do
+   titular, 01/11/2026: "fica zoom do nada"). No celular e em tela de toque, todo campo fica com 16 px ou com a fonte de
+   quem o contém, se for maior. !important porque as folhas das telas carregam depois desta e põem 0.78–0.95rem nos
+   campos delas; os campos grandes de propósito (título do fluxo, contador, PIN) ficam de fora. Nada de travar o zoom no
+   viewport (acessibilidade). O detector e2e/corte.ts acusa campo visível abaixo de 16 px. */
+@media (max-width: 1024px), (pointer: coarse) {
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"]), select, textarea):not(
+    .fx-titulo__campo,
+    .pd-contador__controle input,
+    .cl-pin input
+  ) {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
 /* campos de grade encolhem (um select com opção comprida não empurra a página) */
 .form__campo,
 .form__campo > :is(input, select, textarea) {

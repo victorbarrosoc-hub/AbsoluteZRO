@@ -307,6 +307,15 @@ code,
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
+/* iPhone: campo com fonte abaixo de 16 px faz o Safari ampliar a página ao tocar, e ela não volta sozinha. No celular
+   (e em qualquer tela de toque) todo campo fica com 16 px ou mais; nada de travar o zoom (acessibilidade). */
+@media (max-width: 1024px), (pointer: coarse) {
+  .zro-input,
+  .zro-select,
+  .zro-textarea {
+    font-size: max(16px, 1rem);
+  }
+}
 .zro-field--error .zro-input {
   border-color: var(--zro-danger);
 }
@@ -375,6 +384,7 @@ code,
   border-radius: var(--radius-l);
   padding: var(--space-5);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   min-width: 0;
   transition:
