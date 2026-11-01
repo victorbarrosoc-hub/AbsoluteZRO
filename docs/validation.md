@@ -4375,6 +4375,13 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
 - Endereço: `quasar.absolutezro.com` adicionado ao projeto Vercel (verificado, DNS da Vercel sem conflito); metadados,
   links do HUB (`lib/downloads.ts`) e testes (`downloads`, `install-navigation`) no endereço novo; e2e 69/0 de novo.
+- Produção depois do merge: deploys do HUB e do Quasar READY; 0053 aplicada (nome, `external_url`, `sso_start_url` e o
+  retorno `https://quasar.absolutezro.com/api/zro/callback` no `nossom-web`, mantidos os antigos).
+- Redirecionamento: `redirects()` no `next.config.ts` só para o host `nossom.absolutezro.com` (teste
+  `tests/endereco.test.ts`); no build local, `Host: nossom.absolutezro.com` em `/studio?x=1` → 308 para
+  `https://quasar.absolutezro.com/studio?x=1`. O retorno do login usa a origem de quem chega (`zroRedirectUri`), e o
+  app de computador usa `nossom-teal.vercel.app`, fora da regra. AEON (`app/nossom.js`, CSP, família) e Revela
+  (família) no endereço novo: `npm test` do AEON 240/240, da Revela 180/180, do Quasar 131/131.
 
 ## NOSSOM · estúdio Comando + Console (01/11/2026)
 
