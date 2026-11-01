@@ -4,6 +4,40 @@ import { player, usePlayer } from '@/lib/player';
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Repeat2 } from 'lucide-react';
 import type { Version } from '@/lib/storage';
 import { formatTime } from '@/lib/audio';
+/**
+ * Medidor de borda (o toque de Console): uma régua de LEDs com o valor medido desta versão (volume percebido ou pico
+ * verdadeiro), não um nível ao vivo inventado. Acima de −1 dBTP (ou de −9 LUFS) os LEDs do topo acendem em âmbar.
+ */
+function Medidor({
+  lado,
+  rotulo,
+  valor,
+  unidade,
+  min,
+}: {
+  lado: 'esq' | 'dir';
+  rotulo: string;
+  valor: number | null;
+  unidade: string;
+  min: number;
+}) {
+  const LEDS = 24;
+  const acesos =
+    valor === null ? 0 : Math.round(Math.min(1, Math.max(0, (valor - min) / -min)) * LEDS);
+  const alerta = unidade === 'dBTP' ? -1 : -9;
+  const limite = Math.round(Math.min(1, Math.max(0, (alerta - min) / -min)) * LEDS);
+  return (
+    <span
+      className={`medidor medidor-${lado}`}
+      title={valor === null ? `${rotulo}: sem medida` : `${rotulo}: ${valor} ${unidade}`}
+      aria-hidden="true"
+    >
+      {Array.from({ length: LEDS }, (_, i) => (
+        <i key={i} className={i < acesos ? (i >= limite ? 'q' : 'on') : ''} />
+      ))}
+    </span>
+  );
+}
 export const WavePlayer = memo(function WavePlayer({
   original,
   version,
@@ -11,6 +45,8 @@ export const WavePlayer = memo(function WavePlayer({
   onRegion,
   previewOnly = false,
   projeto,
+  ferramentas,
+  onFerramenta,
 }: {
   original: Version;
   version: Version;
@@ -19,6 +55,9 @@ export const WavePlayer = memo(function WavePlayer({
   previewOnly?: boolean;
   /** O projeto e a conta: o som toca no player da plataforma e continua ao trocar de página. */
   projeto: { id: string; nome: string; dono: string };
+  /** Com um trecho selecionado, estas ferramentas aparecem sobre ele (o passo dá a cor do ponto). */
+  ferramentas?: { id: string; label: string; passo: string }[];
+  onFerramenta?: (id: string) => void;
 }) {
   const [mode, setMode] = useState<'original' | 'result'>('result'),
     [localTime, setLocalTime] = useState(0),
@@ -104,6 +143,40 @@ export const WavePlayer = memo(function WavePlayer({
         </div>
       </div>
       <div className={`wave-container ${region ? 'is-selecting' : ''}`}>
+        <Medidor
+          lado="esq"
+          rotulo="Volume percebido"
+          valor={active.metrics.lufs}
+          unidade="LUFS"
+          min={-40}
+        />
+        <Medidor
+          lado="dir"
+          rotulo="Pico"
+          valor={active.metrics.truePeak}
+          unidade="dBTP"
+          min={-30}
+        />
+        {region && ferramentas && onFerramenta && (
+          <div
+            className="wave-ferramentas"
+            role="group"
+            aria-label="Ferramentas para o trecho"
+            style={{ left: `${(region.start / duration) * 100}%` }}
+          >
+            {ferramentas.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                data-passo={f.passo}
+                onClick={() => onFerramenta(f.id)}
+              >
+                <i className="ponto" aria-hidden="true" />
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
         <svg viewBox="0 0 960 130" preserveAspectRatio="none" aria-hidden="true">
           {active.info.wave.map((value, i) => (
             <rect

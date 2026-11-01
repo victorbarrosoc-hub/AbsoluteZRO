@@ -1,0 +1,526 @@
+/* Estúdio · Comando + toques de Console (aprovado pelo titular em 01/11/2026).
+ * Na ferramenta, a tela é da onda: sem lateral (ela abre pelo menu), a onda na largura toda com medidores de LED nas
+ * bordas, as ferramentas que aparecem sobre o trecho selecionado e, embaixo, a folha de vidro da ferramenta com os
+ * passos, a lista do passo e os ajustes em botões giratórios. Recolhida a folha, fica o campo "Peça algo ao seu áudio"
+ * (⌘K) com um atalho de cada passo. */
+
+/* ── sem lateral na ferramenta (computador): o menu abre a mesma navegação por cima ── */
+@media (min-width: 681px) {
+  .palco.tool-editor .studio-sidebar:not(.open) {
+    display: none;
+  }
+  .palco.tool-editor .studio-sidebar.open {
+    display: flex;
+    box-shadow: 0 30px 80px rgb(0 6 20 / 60%);
+  }
+  .palco.tool-editor .studio-body {
+    margin-left: 0;
+    width: 100%;
+  }
+  .palco.tool-editor .studio-header .mobile-menu {
+    display: inline-grid;
+  }
+  .palco.tool-editor .studio-header .desktop-nav-toggle {
+    display: none;
+  }
+  .palco.tool-editor .studio-main {
+    max-width: none;
+    padding-inline: clamp(24px, 3vw, 48px);
+  }
+  .palco.tool-editor .editor-layout {
+    display: flex !important;
+    flex-direction: column;
+    gap: 22px;
+  }
+  /* a folha logo abaixo da onda: o editor-main se dissolve e os blocos se reordenam (a lógica não muda) */
+  .palco.tool-editor .editor-main {
+    display: contents;
+  }
+  .palco.tool-editor .editor-layout > *,
+  .palco.tool-editor .editor-main > * {
+    order: 5 !important;
+    width: 100%;
+  }
+  .palco.tool-editor .editor-main > .editor-player {
+    order: 1 !important;
+  }
+  .palco.tool-editor .editor-layout > .folha-ferramenta,
+  .palco.tool-editor .editor-layout > .comando {
+    order: 2 !important;
+  }
+}
+
+/* ── a onda: maior, com os medidores nas bordas ── */
+.palco .wave-container,
+.palco .editor-player {
+  position: relative;
+  overflow: visible !important;
+}
+@media (min-width: 681px) {
+  .palco.tool-editor .wave-container {
+    height: clamp(220px, 30vh, 320px);
+    margin-inline: 22px;
+  }
+  .palco.tool-editor .wave-container > svg {
+    height: 100%;
+  }
+}
+.medidor {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 9px;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  gap: 2px;
+  pointer-events: auto;
+}
+.medidor-esq {
+  left: -22px;
+}
+.medidor-dir {
+  right: -22px;
+}
+.medidor i {
+  flex: 1;
+  max-height: 7px;
+  border-radius: 2px;
+  background: rgb(200 220 255 / 10%);
+}
+.medidor i.on {
+  background: #e6f0ff;
+  box-shadow: 0 0 7px rgb(143 191 255 / 80%);
+}
+.medidor i.q {
+  background: #ffb35a;
+  box-shadow: 0 0 7px rgb(255 179 90 / 80%);
+}
+.studio-shell[data-theme='light'] .medidor i {
+  background: rgb(0 0 0 / 7%);
+}
+.studio-shell[data-theme='light'] .medidor i.on {
+  background: #4f84c9;
+  box-shadow: none;
+}
+@media (max-width: 680px) {
+  .medidor {
+    display: none;
+  }
+}
+
+/* ── ferramentas sobre o trecho ── */
+.wave-ferramentas {
+  position: absolute;
+  top: -50px;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  transform: translateX(-12px);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 16%), rgb(255 255 255 / 5%)), rgb(9 20 42 / 70%);
+  border: 1px solid rgb(200 220 255 / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 16px 34px rgb(0 6 20 / 50%);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  white-space: nowrap;
+}
+.wave-ferramentas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.wave-ferramentas button:hover {
+  background: rgb(255 255 255 / 12%);
+}
+.studio-shell[data-theme='light'] .wave-ferramentas {
+  background: rgb(255 255 255 / 92%);
+  border-color: rgb(0 0 0 / 8%);
+}
+
+/* ── a folha da ferramenta ── */
+.folha-ferramenta {
+  border-radius: 32px;
+  padding: 18px 20px 20px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 11%), rgb(255 255 255 / 3%)), var(--glass);
+  border: 1px solid var(--hairline-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 30px 70px rgb(0 6 20 / 55%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+}
+.studio-shell[data-theme='light'] .folha-ferramenta {
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 10%);
+}
+
+.palco.folha-recolhida .folha-ferramenta {
+  display: none;
+}
+.folha-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* os passos viram um seletor de pílulas, cada um com a sua cor */
+.folha-topo .passos-trilho {
+  flex-direction: row !important;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 28%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.studio-shell[data-theme='light'] .folha-topo .passos-trilho {
+  background: rgb(0 0 0 / 6%);
+}
+.folha-topo .trilho-item {
+  flex: none;
+  width: auto !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  min-height: 36px;
+  padding: 0 15px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+.folha-topo .trilho-item svg {
+  display: none;
+}
+.folha-topo .trilho-item[data-passo]::before {
+  order: 0;
+  margin: 0;
+  opacity: 1;
+}
+.folha-topo .trilho-item.active {
+  background: linear-gradient(180deg, rgb(255 255 255 / 30%), rgb(255 255 255 / 10%)) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%) !important;
+}
+.studio-shell[data-theme='light'] .folha-topo .trilho-item.active {
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%) !important;
+}
+.folha-fechar {
+  flex: none;
+}
+.folha-corpo {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 22px;
+  margin-top: 16px;
+  min-height: 0;
+}
+.folha-corpo .passos-lista h2 {
+  display: none;
+}
+.folha-corpo .passos-lista ul {
+  margin: 0;
+}
+/* o painel da ferramenta dentro da folha: sem caixa própria, ajustes lado a lado */
+.palco .folha-ferramenta .treatment-panel {
+  position: static !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 12px 18px;
+  overflow: visible !important;
+}
+.palco .folha-ferramenta .treatment-panel > * {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.palco .folha-ferramenta .treatment-panel > .botao-giratorio {
+  flex: 0 0 auto;
+}
+.palco .folha-ferramenta .panel-heading h2 {
+  font-size: 24px;
+  font-weight: 800;
+}
+.palco .folha-ferramenta .panel-help {
+  display: none;
+}
+@media (max-width: 680px) {
+  .folha-ferramenta {
+    border-radius: 28px;
+    padding: 14px;
+  }
+  .folha-corpo {
+    grid-template-columns: 1fr;
+  }
+  .folha-corpo .passos-lista {
+    display: none;
+  }
+}
+
+/* ── botões giratórios ── */
+.botao-giratorio {
+  position: relative;
+  display: inline-flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 128px;
+  padding: 4px 0 0;
+}
+.botao-giratorio .giro {
+  position: relative;
+  width: 86px;
+  height: 86px;
+}
+.botao-giratorio .giro svg {
+  position: absolute;
+  inset: -12px;
+  width: calc(100% + 24px);
+  height: calc(100% + 24px);
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 2.6;
+}
+.giro-trilho {
+  stroke: rgb(200 220 255 / 14%);
+}
+.giro-valor {
+  stroke: var(--passo, #fff);
+  filter: drop-shadow(0 0 4px var(--passo, #fff));
+}
+[data-passo='tratar'] .giro-valor {
+  stroke: #fff;
+  filter: drop-shadow(0 0 4px rgb(255 255 255 / 80%));
+}
+.studio-shell[data-theme='light'] .giro-trilho {
+  stroke: rgb(0 0 0 / 10%);
+}
+.studio-shell[data-theme='light'] [data-passo='tratar'] .giro-valor {
+  stroke: #4f84c9;
+  filter: none;
+}
+.giro-metal {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6f9ff, #b8c8de 35%, #5d7392 70%, #2a3a55);
+  box-shadow:
+    0 12px 26px rgb(0 0 0 / 55%),
+    inset 0 -4px 10px rgb(0 0 0 / 30%),
+    inset 0 2px 4px rgb(255 255 255 / 70%);
+  transform: rotate(calc(-135deg + var(--giro, 0) * 270deg));
+  transition: transform 0.12s var(--ease);
+}
+.giro-metal i {
+  position: absolute;
+  left: 50%;
+  top: 9px;
+  width: 4px;
+  height: 20px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #0b1426;
+}
+.botao-giratorio input[type='range'] {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 98px;
+  height: 86px;
+  margin: 0;
+  transform: translateX(-50%);
+  opacity: 0;
+  cursor: ew-resize;
+}
+.botao-giratorio:has(input:focus-visible) .giro-metal {
+  outline: 2px solid var(--text);
+  outline-offset: 6px;
+}
+.botao-giratorio.is-disabled {
+  opacity: 0.5;
+}
+.botao-giratorio.is-disabled input {
+  cursor: not-allowed;
+}
+.giro-rotulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  text-align: center;
+}
+.giro-rotulo output {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .giro-metal {
+    transition: none;
+  }
+}
+@media (max-width: 680px) {
+  .botao-giratorio {
+    width: 104px;
+  }
+  .botao-giratorio .giro {
+    width: 72px;
+    height: 72px;
+  }
+  .botao-giratorio input[type='range'] {
+    width: 84px;
+    height: 72px;
+  }
+}
+
+/* ── recolhida: o campo de pedir e um atalho de cada passo ── */
+.comando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 10px auto 0;
+  width: min(100%, 760px);
+}
+
+.comando-campo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  height: 62px;
+  padding: 0 14px 0 22px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 4%)), var(--glass);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 24px 50px rgb(0 6 20 / 50%);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: text;
+}
+.comando-campo span {
+  flex: 1;
+}
+.comando-campo kbd {
+  font: 600 11px var(--font, inherit);
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 10%);
+  color: var(--text-2);
+}
+.studio-shell[data-theme='light'] .comando-campo {
+  background: #fff;
+}
+.comando-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.comando-atalhos button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: linear-gradient(180deg, rgb(255 255 255 / 11%), rgb(255 255 255 / 3%));
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.studio-shell[data-theme='light'] .comando-atalhos button {
+  background: #fff;
+}
+
+/* compacto: a onda e a folha cabem juntas na tela do computador */
+@media (min-width: 681px) {
+  .palco.tool-editor .studio-main {
+    padding-top: 18px;
+  }
+  .palco.tool-editor .editor-heading {
+    margin-bottom: 6px;
+  }
+  .palco.tool-editor .editor-heading h1 {
+    font-size: 26px;
+  }
+  .palco.tool-editor .wave-container {
+    height: clamp(170px, 24vh, 270px);
+  }
+  .palco.tool-editor .editor-player {
+    padding-block: 16px 14px;
+  }
+  .palco.tool-editor .region-fields > span {
+    display: none;
+  }
+  .palco.tool-editor .region-fields {
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+}
+.palco .wave-ferramentas {
+  top: 10px;
+}
+@media (min-width: 681px) {
+  /* controles e "De/Até" na mesma linha, embaixo da onda */
+  .palco.tool-editor .editor-player {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 18px;
+  }
+  .palco.tool-editor .editor-player > * {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .palco.tool-editor .editor-player > .player-controls {
+    flex: 1 1 auto;
+  }
+  .palco.tool-editor .editor-player > .region-fields {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .palco.tool-editor .wave-container {
+    height: clamp(150px, 21vh, 250px);
+  }
+}
+@media (max-width: 680px) {
+  /* no celular a folha já está logo abaixo da onda */
+  .wave-ferramentas {
+    display: none;
+  }
+}
