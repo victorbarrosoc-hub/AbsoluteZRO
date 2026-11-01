@@ -19,6 +19,10 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
 
+- App de computador do Rift (01/11/2026, `products/rift-motion/desktop`): `npm test` 24/24 (regras com o login da
+  Higgsfield na janela e parecidos recusados, deep link `rift://`, aviso de versão `rift-motion`, cópias do hub-desktop,
+  ícones e nomes `RiftMotion-…` iguais ao catálogo do HUB); `--smoke` (Electron 44.5.1, xvfb) SMOKE OK com a tela "Sem
+  conexão · Rift Motion" conferida na captura. Não medido: o `.dmg` e o `.exe` (saem no GitHub Actions na main).
 - Z do HUB no Rift (01/11/2026): `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista,
   conta da lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem
   teto = bloqueado, passou do teto = bloqueado, uso idempotente; a tela só recebe as cinco ações, com valores limpos.

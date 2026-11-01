@@ -100,7 +100,10 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   curto ou longo) com o preço que a Higgsfield informa antes de gerar; sem saldo, a opção fica travada (migração 0002).
   Prévias (01/11/2026): "Criar com IA" e o passo "1 · Ver em imagem" geram 2 ou 4 telas baratas (conta: GPT Image 2.5
   Flare, a imagem da camada pode ir de referência; chave: Soul) no formato do projeto; a escolhida vira camada e segue
-  para "2 · Animar" (migração 0003). ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
+  para "2 · Animar" (migração 0003). App de computador (01/11/2026, `products/rift-motion/desktop`): o site numa janela
+  (Mac e Windows), igual ao do Relay, com o login da Higgsfield dentro da janela; instala e atualiza só pela central
+  (catálogo `rift-motion` já no HUB), Release `rift-motion-versao-de-teste` pelo `rift-motion-desktop.yml` quando
+  chegar à main. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay, primeiro build do app na main.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo

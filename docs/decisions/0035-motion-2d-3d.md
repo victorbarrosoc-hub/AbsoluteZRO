@@ -124,6 +124,7 @@ quadro." (no lugar de "Beyond the frame"). Conferir "Rift" no INPI (classes 9 e 
 - Nome (e INPI).
 - Navegador primeiro ou app de computador junto (o ProRes depende do computador). Decidido em 01/11/2026: o app de computador, quando
   vier, instala e atualiza só pela central Absolute ZRO (id `rift-motion`, sem autoatualização própria nem botão de
-  instalador no site).
+  instalador no site). Feito em 01/11/2026 (`products/rift-motion/desktop`, cópia da moldura do Relay): o site numa
+  janela, login único e o da Higgsfield dentro dela, aviso de versão que abre `absolutezro://apps/rift-motion`.
 - Plano e preço: a pesquisa mostra que cobrar por resolução ou por alfa irrita; a proposta é liberar a exportação
   completa e cobrar por recurso.
