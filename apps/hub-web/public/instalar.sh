@@ -1,9 +1,8 @@
 #!/bin/sh
-# Absolute ZRO · instalador do app de computador para Mac, sem o aviso "A Apple não pôde verificar se o item Absolute ZRO está livre de malware".
+# Absolute ZRO · instala a central de apps no Mac, numa linha (ela instala e atualiza todos os outros apps).
 #
 #   curl -fsSL https://absolutezro.com/instalar.sh | bash
 #
-# Por que funciona: o aviso vem da "quarentena" que o navegador põe em tudo o que baixa. O curl não põe.
 # O que este script faz, nesta ordem:
 #   1. lê a versão mais nova e o SHA-256 do instalador em /baixar/hub/versao;
 #   2. baixa o .dmg de /baixar/hub/mac e confere o SHA-256 (não bateu = não instala nada);
@@ -135,12 +134,12 @@ main() {
   $SUDO rm -rf "$ANTIGO"
   # Instalado com sudo: o app fica com o seu usuário (como ao arrastar), para o Atualizar do app conseguir trocá-lo.
   if [ -n "$SUDO" ]; then $SUDO chown -R "$(id -un)" "$DEST" 2>/dev/null || true; fi
-  # Sem quarentena: nada de "A Apple não pôde verificar…" ao abrir.
+  # Pronto para abrir: tira o atributo de quarentena, em silêncio.
   $SUDO xattr -cr "$DEST" 2>/dev/null || true
 
   printf '\n%s✓ Absolute ZRO instalado em Aplicativos (build %s).%s\n' "$VERDE" "$BUILD" "$FIM"
   open "$DEST" 2>/dev/null || nota "Abra o Absolute ZRO em Aplicativos."
-  nota "Dentro do app você entra com a conta Absolute ZRO e instala as ferramentas em Apps. Para atualizar, rode este mesmo comando."
+  nota "Entre com a sua conta: seus apps aparecem lá, prontos para instalar. Daqui em diante a Absolute ZRO se atualiza sozinha."
 }
 
 main "$@"

@@ -15,6 +15,29 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Central única de instalação (01/11/2026, ADR 0035)
+
+Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO 1.4.0.
+
+- `tests/integration/meus-apps.test.ts` (Postgres real, `usoLivre` vazio simula o app pago): sem sessão é 401; conta
+  sem o produto não vê para instalar (vem bloqueado com "Absolute ZRO Completo", sem arquivo) e não baixa (403; sem
+  sessão, 401); com o plano vê versão, arquivo e SHA-256 e baixa; plano cancelado volta a bloqueado; gate fechado
+  bloqueia mesmo com o plano; AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma (nem com a lista de acesso
+  do gate; suporte não é admin); uso livre baixa sem sessão como antes; `versao.json` continua público.
+- `tests/integration/downloads.test.ts`: app com versão para computador é app da central e usa a rota da Absolute ZRO;
+  sem Terminal nem "primeira vez" por app; passo a passo com no máximo 3 passos e sem palavra que assuste.
+- `apps/hub-desktop` (`npm test`, 70): central lê `meus-apps` (bloqueado não instala nem atualiza e o app fica no
+  computador; 401 = `semLogin`; HUB antigo cai no catálogo de antes); agenda avisa uma vez por versão ("Maestro 0.3.0
+  disponível" / "2 atualizações disponíveis"), não baixa nada sem pedido, Atualizar um (fechado agora; aberto ao
+  fechar) e todos, "Atualizar sozinho" por app; bandeja com "Atualizar <app> <versão>" e "Entrar na sua conta…"; deep
+  link `absolutezro://apps/<id>?acao=atualizar|instalar` (ids e ações fora do formato recusados). `npm run smoke` (Xvfb):
+  SMOKE OK, com o item novo da bandeja e o deep link de app.
+- `tests/e2e/hub.spec.ts`: `/baixar` sem instalador avulso, com `#absolute-zro`, Maestro com "Instale pela Absolute ZRO",
+  AEON fora; `/api/v1/desktop/meus-apps` sem sessão é 401; catálogo 1.3 sem os não lançados.
+- Capturas (scratchpad `central/`): Downloads no computador e no iPhone (claro e escuro, com o Release real do GitHub),
+  painel da central com instalados, disponível com Atualizar em destaque (deep link), bloqueado pelo plano, Ajustes e a
+  prévia fiel da notificação e da barra de menus (textos gerados pelo código da central).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
