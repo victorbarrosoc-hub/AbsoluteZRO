@@ -12,8 +12,8 @@ import { ESCOPOS_ENTRAR, googleConfigurado, redirectUri, type ModoDrive } from "
 import { donoDaContaGoogle, vincularConta } from "./contas";
 import { chaveConfigurada } from "./cripto";
 import { abrirEstado, COOKIE_OAUTH, DURACAO_OAUTH_S, novoState, selarEstado, stateConfere, type ModoGoogle } from "./estado";
-import { acessoDoEscopo, perfil, pkce, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
-import { pedidoParaConectar, registrarSeTotal } from "./vagas";
+import { acessoDoEscopo, perfil, pkce, revogar, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
+import { driveInteiroPermitido, pedidoParaConectar, recusarDriveInteiro, registrarSeTotal } from "./vagas";
 
 /** Junta um parâmetro a um caminho interno que talvez já tenha "?". */
 export function comParametro(caminho: string, chave: string, valor: string): string {
@@ -104,6 +104,10 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual || atual.usuario.id !== estado.usuarioId) return ir(comParametro("/entrar", "volta", volta));
     if (!acesso) return falhar("google_sem_drive");
+    // `drive` que não foi pedido (escopo trocado na URL do Google) ou de conta Google nova depois da vaga usada: não
+    // guarda o token, não dá vaga à pessoa e devolve a concessão ao Google (revisão M1/M2).
+    if (acesso === "total" && !(await driveInteiroPermitido(atual.usuario.id, quem.sub, estado.pedido)))
+      return falhar(await recusarDriveInteiro(atual.usuario.id, quem.sub, quem.email, tokens.refresh ?? tokens.acesso, revogar));
     if (!tokens.refresh) return falhar("google_erro");
     const r = await vincularConta(atual.usuario.id, quem, { ...tokens, refresh: tokens.refresh });
     // O Google já contou a vaga quando deu o `drive`, gravando ou não aqui.

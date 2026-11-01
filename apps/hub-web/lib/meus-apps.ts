@@ -145,9 +145,9 @@ export async function acessoAoDownload(
   // admin de plataforma instala tudo (lançado OU admin)
   if (ehAdmin(auth)) return 'ok'
   if (!liberados.has(id)) return 'fechado'
-  if (arquivo === 'versao.json') return 'ok'
-  // não lançado: só admin, nem com a lista de acesso do gate
+  // não lançado: só admin, nem com a lista de acesso do gate (nem o versao.json)
   if (SO_PARA_ADMIN.has(id)) return 'fechado'
+  if (arquivo === 'versao.json') return 'ok'
   const livres = opts.usoLivre ?? (await db.asSystem('central: uso livre', (tx) => produtosDeUsoLivre(tx)))
   if (livres.has(id)) return 'ok'
   if (!auth) return 'entrar'

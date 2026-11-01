@@ -8,7 +8,7 @@ import { ehAdmin } from '@/lib/downloads'
 import { disponibilidade } from '@/lib/hub-desktop-release'
 import { getAuth } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Downloads' }
+export const metadata: Metadata = { title: 'Downloads', alternates: { canonical: '/baixar' } }
 export const dynamic = 'force-dynamic'
 
 export default async function Baixar({ searchParams }: { searchParams: Promise<{ hub?: string }> }) {

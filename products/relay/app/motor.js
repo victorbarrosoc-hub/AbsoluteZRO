@@ -436,7 +436,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
         process: async (amostra) => {
           retimar(amostra, v.conforme?.fator)
           const r = await escala.transformar(amostra, { ...d, rotation: (((amostra.rotation ?? 0) + v.giro) % 360 + 360) % 360 }, (a) => comCor(a, corOrigem, { fechar: false }))
-          if (!r) throw Object.assign(new Error('Sem WebGL2 neste navegador: a cor da Revela não roda aqui.'), { codigo: 'cor' })
+          if (!r) throw Object.assign(new Error('Sem WebGL2 neste navegador: a cor não roda aqui.'), { codigo: 'cor' })
           return r
         },
       }

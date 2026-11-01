@@ -32,6 +32,7 @@ const {
   Tray,
   Notification,
   nativeImage,
+  net,
 } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -42,6 +43,7 @@ const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
 const { spawn } = require('node:child_process')
 const { Central } = require('./central.cjs')
+const { criarFetchDeDownload } = require('./download.cjs')
 const { AgendaDeApps } = require('./agenda.cjs')
 const bandeja = require('./bandeja.cjs')
 const inicio = require('./inicio-sistema.cjs')
@@ -370,6 +372,8 @@ function iniciarCentral() {
     registro: path.join(app.getPath('userData'), 'central.json'),
     // com os cookies do login (partição do HUB): o catálogo respeita o que está liberado para a pessoa (ADR 0023)
     fetch: (url, opts = {}) => session.fromPartition(PARTICAO).fetch(url, { credentials: 'include', ...opts }),
+    // o instalador: cada redirecionamento conferido (só o HUB, o Release no GitHub e o servidor de arquivos dele)
+    fetchDeDownload: criarFetchDeDownload({ net, session: session.fromPartition(PARTICAO), permitido: (url) => regras.downloadPermitido(url, HUB) }),
     permitirHttp: !app.isPackaged,
     fs,
     exec: (cmd, args, opts = {}) => exec(cmd, args, { maxBuffer: 8 * 1024 * 1024, ...opts }),
@@ -386,6 +390,8 @@ function iniciarCentral() {
     // Ajustes › "Atualizar sozinho" por app (padrão desligado: a central avisa e a pessoa atualiza; ADR 0036)
     atualizarSozinho: (id) => !!(prefs().atualizarSozinho || {})[id],
     marcarGerenciados: (ids) => gerenciados.gravar(fs, app.getPath('userData'), ids),
+    jaAvisou: (id, versao) => (prefs().avisados || {})[id] === versao,
+    lembrarAviso: (id, versao) => gravarPrefs({ avisados: { ...(prefs().avisados || {}), [id]: versao } }),
     log: (...a) => console.log(...a),
   })
   agenda.on('mudou', atualizarBandeja)

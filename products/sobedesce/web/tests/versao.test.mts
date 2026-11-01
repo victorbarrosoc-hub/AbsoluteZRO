@@ -216,50 +216,49 @@ describe("de qual Release", () => {
 describe("/baixar/[plataforma]", () => {
   const pedir = (p: string) =>
     plataforma.GET(new Request(`http://localhost:3000/baixar/${p}`) as never, { params: Promise.resolve({ plataforma: p }) });
+  const pedirBuild = (p: string, b: string) =>
+    plataforma.GET(new Request(`http://localhost:3000/baixar/${p}?build=${b}`) as never, { params: Promise.resolve({ plataforma: p }) });
 
-  test("mac e windows redirecionam para o instalador certo", async () => {
-    const mac = await pedir("mac");
-    assert.equal(mac.status, 307);
-    assert.equal(mac.headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-mac-universal.dmg`);
-    const win = await pedir("windows");
-    assert.equal(win.headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-windows-setup.exe`);
+  test("sem ?build (o navegador, o link do \"Nova versão\"): a central Absolute ZRO, nunca o instalador avulso", async () => {
+    for (const p of ["mac", "windows", "linux"]) {
+      const r = await pedir(p);
+      assert.equal(r.status, 307, p);
+      assert.equal(r.headers.get("location"), "https://absolutezro.com/baixar", p);
+    }
+    // build inválido não é o do app: também vai para a central
+    assert.equal((await pedirBuild("mac", "abc")).headers.get("location"), "https://absolutezro.com/baixar");
   });
 
-  test("?build=N entrega o instalador exatamente daquele build; build que já saiu dá 404", async () => {
+  test("?build=N (o \"Atualizar\" dos apps já instalados) entrega o instalador exatamente daquele build; build que já saiu dá 404", async () => {
     arquivos = [
       { nome: "SOBEDESCE-0.1.0-b57-mac-universal.dmg", conteudo: "dmg57" },
       { nome: "SOBEDESCE-0.1.0-b58-mac-universal.dmg", conteudo: "dmg58" },
       { nome: "SOBEDESCE-0.1.0-b58-windows-setup.exe", conteudo: "exe58" },
       { nome: "versao.json", conteudo: JSON.stringify(VERSAO) },
     ];
-    const pedirBuild = (p: string, b: string) =>
-      plataforma.GET(new Request(`http://localhost:3000/baixar/${p}?build=${b}`) as never, { params: Promise.resolve({ plataforma: p }) });
     assert.equal((await pedirBuild("mac", "57")).headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-b57-mac-universal.dmg`);
     assert.equal((await pedirBuild("mac", "58")).headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-b58-mac-universal.dmg`);
+    assert.equal((await pedirBuild("windows", "58")).headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-b58-windows-setup.exe`);
     const sumiu = await pedirBuild("windows", "57");
     assert.equal(sumiu.status, 404, "o app nunca recebe a página do site no lugar do instalador");
     assert.equal(sumiu.headers.get("location"), null);
-    // build inválido: ignora e entrega o do versao.json (sem arquivoMac: o de maior build)
-    assert.equal((await pedirBuild("mac", "abc")).headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-b58-mac-universal.dmg`);
   });
 
-  test("sem ?build: o instalador que o versao.json aponta, mesmo com um build mais novo subindo", async () => {
+  test("o versao.json continua dizendo o instalador de cada build (o aviso dos apps)", async () => {
     arquivos = [
       { nome: "SOBEDESCE-0.1.0-b57-mac-universal.dmg", conteudo: "dmg57" },
       { nome: "SOBEDESCE-0.1.0-b58-mac-universal.dmg", conteudo: "dmg58" },
       { nome: "versao.json", conteudo: JSON.stringify({ ...VERSAO, arquivoMac: "SOBEDESCE-0.1.0-b57-mac-universal.dmg", arquivoWindows: "../x" }) },
     ];
-    assert.equal((await pedir("mac")).headers.get("location"), `${base}/download/SOBEDESCE-0.1.0-b57-mac-universal.dmg`);
     const { corpo } = await pedirVersao();
     assert.equal(corpo.arquivoMac, "SOBEDESCE-0.1.0-b57-mac-universal.dmg");
     assert.equal(corpo.arquivoWindows, null, "nome com barra não vale");
   });
 
-  test("plataforma desconhecida volta para a seção de download; sem instalador, avisa", async () => {
-    const outra = await pedir("linux");
+  test("com ?build: plataforma desconhecida volta para a página; sem o instalador daquele build, 404", async () => {
+    const outra = await pedirBuild("linux", "58");
     assert.equal(outra.headers.get("location"), "http://localhost:3000/#baixar");
     arquivos = arquivos.filter((a) => !a.nome.endsWith(".dmg"));
-    const semMac = await pedir("mac");
-    assert.equal(semMac.headers.get("location"), "http://localhost:3000/?baixar=indisponivel#baixar");
+    assert.equal((await pedirBuild("mac", "58")).status, 404);
   });
 });

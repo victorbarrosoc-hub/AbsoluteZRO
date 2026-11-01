@@ -149,7 +149,12 @@ function caminhoDoComando(cmd) {
 
 /** Baixa para `destino`, conferindo tamanho e SHA-256. Se não bater, apaga e falha. */
 async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps }) {
-  const r = await deps.fetch(url, { redirect: 'follow', signal })
+  // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
+  const r = await (deps.fetchDeDownload || deps.fetch)(url, { redirect: 'follow', signal }).catch((e) => {
+    if (e instanceof ErroCentral) throw e
+    if (e && e.recusado) throw new ErroCentral('download', e.message)
+    throw new ErroCentral('download', signal && signal.aborted ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
+  })
   if (!r.ok || !r.body) throw new ErroCentral('download', 'Não deu para baixar agora. Tente de novo.')
   if (r.url && !/^https:\/\//.test(r.url) && !deps.permitirHttp) throw new ErroCentral('download', 'Endereço de download recusado.')
   const total = Number(r.headers.get('content-length')) || tamanho || 0
@@ -163,14 +168,23 @@ async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps
     for (;;) {
       const { done, value } = await leitor.read()
       if (done) break
+      recebido += value.length
+      // maior que o catálogo diz: não confere de jeito nenhum (e não enche o disco)
+      if (tamanho && recebido > tamanho) {
+        await leitor.cancel().catch(() => {})
+        throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
+      }
       hash.update(value)
       await arquivo.write(value)
-      recebido += value.length
       if (onProgresso) onProgresso(recebido, total)
     }
-  } finally {
-    await arquivo.close()
+  } catch (e) {
+    // cancelado, rede caiu ou grande demais: o pedaço baixado não fica para trás
+    await arquivo.close().catch(() => {})
+    await deps.fs.promises.rm(parcial, { force: true }).catch(() => {})
+    throw e
   }
+  await arquivo.close()
   const obtido = hash.digest('hex')
   if (obtido !== sha256 || (tamanho && recebido !== tamanho)) {
     await deps.fs.promises.rm(parcial, { force: true })

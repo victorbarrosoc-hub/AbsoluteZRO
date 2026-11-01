@@ -18,11 +18,14 @@ function mudar(estado, pessoa = null) {
 export async function verificarZro() {
   if (!temServidor || !navigator.onLine) return;
   try {
-    const r = await fetch("/api/zro/eu", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
+    // ?visitante=1: sem sessão o site responde 200 { entrou: false } (nada de 401 no console de quem só abriu o app);
+    // o site de antes, sem o parâmetro, responde 401, e os dois valem
+    const r = await fetch("/api/zro/eu?visitante=1", { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } });
     if (!(r.headers.get("content-type") || "").includes("application/json")) return;
     if (r.status === 200) {
       const p = await r.json();
       if (p && p.entrou && typeof p.email === "string") mudar("dentro", p);
+      else if (p && p.entrou === false) mudar("fora");
     } else if (r.status === 401) mudar("fora");
   } catch {}
 }

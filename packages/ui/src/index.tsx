@@ -111,19 +111,22 @@ export function Field({
   )
 }
 
+/**
+ * Os ícones públicos: só as plataformas no ar (apps/hub-web/public/products). Este arquivo vai para o navegador, então
+ * nada aqui cita app que ainda não lançou (revisão de 01/11/2026); o ícone dele vem da rota /marca/<produto> do HUB, que
+ * só o entrega para quem o produto existe (a administração e a lista do titular). Lançou? O ícone entra aqui e em public/.
+ */
+const ICONES_PUBLICOS: Readonly<Record<string, string>> = {
+  sobedesce: '/products/sobedesce.svg',
+  synquei: '/products/synquei.svg',
+  tpeasy: '/products/tpeasy.svg',
+  'carro-do-freela': '/products/carro-do-freela.png',
+  maestro: '/products/maestro.svg',
+  relay: '/products/relay.svg',
+}
+
 export function ProductMark({ productId, name, size = 32 }: { productId: string; name: string; size?: number }) {
-  const icons: Record<string, string> = {
-    nossom: '/products/nossom.svg',
-    sobedesce: '/products/sobedesce.svg',
-    synquei: '/products/synquei.svg',
-    tpeasy: '/products/tpeasy.svg',
-    'carro-do-freela': '/products/carro-do-freela.png',
-    finishing: '/products/finishing.svg',
-    'ai-edit': '/products/ai-edit.svg',
-    maestro: '/products/maestro.svg',
-    relay: '/products/relay.svg',
-  }
-  const src = icons[productId]
+  const src = ICONES_PUBLICOS[productId] ?? (/^[a-z0-9-]{1,40}$/.test(productId) ? `/marca/${productId}` : undefined)
   if (!src) {
     const initials = name
       .split(/\s+/)

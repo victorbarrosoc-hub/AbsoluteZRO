@@ -123,6 +123,14 @@ const nextConfig: NextConfig = {
       { source: "/:pagina(privacidade|termos)", has: antigo, destination: "https://sobedesce.com/:pagina", permanent: true },
       // /instalar (sem .sh/.ps1) não é página: leva para "Plataformas" da página inicial (id="plataformas": no computador, pela Absolute ZRO).
       { source: "/instalar", destination: "/#plataformas", permanent: false },
+      // Os instaladores de uma linha saíram (01/11/2026): no navegador, /instalar.sh e /instalar.ps1 levam para a
+      // central Absolute ZRO; o Terminal (curl | bash, irm | iex) recebe o recado de public/, que não instala nada.
+      ...["/instalar.sh", "/instalar.ps1"].map((source) => ({
+        source,
+        has: [{ type: "header" as const, key: "accept", value: ".*text/html.*" }],
+        destination: "https://absolutezro.com/baixar",
+        permanent: false,
+      })),
       // "/app" sem barra → "/app/". O Next aceita uma barra opcional no fim de toda origem; o (?!/) evita o laço.
       { source: "/:app(app(?!/))", destination: "/app/", permanent: true },
       // O padrão do Next (barra no fim → sem barra), menos em /app/.
@@ -130,7 +138,11 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    return [{ source: "/app/", destination: "/app/index.html" }];
+    // /favicon.ico (o navegador pede sozinho): o ícone do app, o mesmo do <link rel="icon">
+    return [
+      { source: "/app/", destination: "/app/index.html" },
+      { source: "/favicon.ico", destination: "/app/icons/icon-192.png" },
+    ];
   },
 };
 

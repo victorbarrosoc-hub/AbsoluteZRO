@@ -102,6 +102,11 @@ export type ZroProfile = {
   products: string[];
   /** `zro_release`: estado de cada produto para esta pessoa (`allowed` = fechado, mas na lista). */
   release: ZroRelease;
+  /**
+   * Admin da plataforma na Absolute ZRO (claim `zro_admin`: papel admin, conta ativa, e-mail confirmado lá). É o único
+   * jeito de ser ADM no NOSSOM: nada de e-mail fixo no código.
+   */
+  admin: boolean;
   /** Foto da conta Absolute ZRO (claim `picture`, endereço público do emissor), ou null. */
   picture: string | null;
   /** Onde a pessoa edita nome, foto e e-mail (claim `zro_conta`, ou o Perfil da Absolute ZRO). */
@@ -183,6 +188,7 @@ export async function verifyIdToken(
       ? claims.zro_products.filter((p): p is string => typeof p === 'string').slice(0, 50)
       : [],
     release: readZroRelease(claims.zro_release),
+    admin: claims.zro_admin === true && claims.email_verified === true,
     picture: zroPictureUrl(claims.picture),
     manage: zroManageUrl(claims.zro_conta),
   };

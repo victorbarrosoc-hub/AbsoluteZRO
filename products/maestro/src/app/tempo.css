@@ -16,6 +16,9 @@
 .tp-num .tp-d,
 .tp-num .tp-s {
   display: inline-block;
+  /* o número que anda ganha camada própria (a animação da troca) e ficava por cima do botão que abre o card: tocar no
+     tempo do card não abria nada no iPhone. O número nunca é alvo; o toque passa para o card. */
+  pointer-events: none;
 }
 .tp-num .tp-s {
   opacity: 0.55;
@@ -718,7 +721,8 @@
 .tp-linha .tp-play {
   margin: 0;
   opacity: 1;
-  position: static;
+  /* relativo (não static): a área de toque de 44 px do celular (celular.css) se mede pelo próprio botão */
+  position: relative;
 }
 .tp-linha__texto {
   display: grid;
@@ -1543,6 +1547,11 @@
   }
   .tp-pilula__tema {
     max-width: 44vw;
+  }
+  /* o que flutua no rodapé (o "+" do Roteiro e do Fluxo, os controles do Fluxo, o "Apagado · Desfazer") sobe acima
+     dela: nada fica por baixo da pílula (e2e/celular.spec.ts confere) */
+  body:has(.tp-pilula) :is(.cr-fab, .fx-mais, .fx-pe, .lx-aviso) {
+    bottom: calc(136px + env(safe-area-inset-bottom));
   }
   .tp-veu {
     display: block;

@@ -103,7 +103,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
 test('the administrator also reaches the plans, as customers see them, without losing unlimited access', async ({
   page,
 }) => {
-  const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
+  const credentials = { email: 'adm@example.test', password: 'test-only-password', admin: true };
   await signInExisting(page.request, { ...credentials, name: 'Administrador' });
   await page.goto('/studio/projetos');
   await page

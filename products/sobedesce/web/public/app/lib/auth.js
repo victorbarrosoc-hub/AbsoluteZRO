@@ -69,11 +69,13 @@ async function load() {
   const first = getState().auth.status === 'loading'
   let r
   try {
-    r = await api(ACCOUNT.me)
+    // ?visitante=1: sem sessão o site responde 200 { entrou: false } em vez de 401 (nada de erro no console de quem
+    // só abriu o app); servidor antigo, sem o parâmetro, segue no 401 de sempre
+    r = await api(`${ACCOUNT.me}?visitante=1`)
   } catch {
     r = null
   }
-  if (r?.status === 401) return endSession(first ? null : 'Sua sessão terminou. Entre de novo.')
+  if (r?.status === 401 || (r?.ok && r.json?.entrou === false)) return endSession(first ? null : 'Sua sessão terminou. Entre de novo.')
   if (r?.status === 403 && r.json?.erro === 'sem_acesso_zro') {
     // A conta Absolute ZRO ainda não tem a SOBEDESCE liberada: nada de Drive nem envio até o admin liberar.
     forget()

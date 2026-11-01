@@ -1,8 +1,8 @@
-// Monta publico/ para a Vercel (revela.absolutezro.com). Fechada ao público (api/_release.js, o padrão): só o site
-// institucional (página inicial, entrar, "Em desenvolvimento", manifesto, OG, marca/, fontes/, vendor/ e o pouco de app/
-// que a página inicial usa); as ferramentas (inicio, lut, lab, looks, cst, entrega, converter, com o resto de app/, src/ e
-// exemplos/) ficam fora do estático e só saem pela função api/app.js para a conta liberada. Com RELEASE=released,
-// tudo como antes. Só arquivos de site: nada de api/, testes, scripts ou node_modules.
+// Monta publico/ para a Vercel (revela.absolutezro.com). Fechada ao público (api/_release.js, o padrão): só a página
+// neutra (no lugar da inicial, da entrada e do 404), fontes/ e vendor/ (Figtree e Mediabunny, sem marca). Manifesto, OG,
+// marca/, app/, as ferramentas (inicio, lut, lab, looks, cst, entrega, converter), src/ e exemplos/ ficam fora do estático
+// e só saem pela função api/app.js para a conta liberada: nada de nome ou arte da Revela para o público (revisão de
+// 01/11/2026). Com RELEASE=released, tudo como antes. Só arquivos de site: nada de api/, testes, scripts ou node_modules.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +12,8 @@ import { release } from '../api/_release.js'
 export const SITE = ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'manifest.webmanifest', 'og.jpg', 'marca', 'fontes', 'vendor']
 /** O que a página inicial, a entrada e a página "Em desenvolvimento" usam de app/: tema, folhas, conta, ícones. */
 export const SITE_APP = ['app/tema.js', 'app/revela.css', 'app/home.css', 'app/home.js', 'app/conta.js', 'app/visual.js', 'app/entrar.js', 'app/entrar.css', 'app/fechado.css']
+/** Fechada, só o que não tem marca: a página neutra, as fontes e as bibliotecas de terceiros. */
+export const FECHADO = ['em-desenvolvimento.html', 'fontes', 'vendor']
 /** Só com RELEASE=released: as ferramentas e tudo que elas carregam. */
 export const ABERTO = ['inicio.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'app', 'src', 'exemplos']
 
@@ -21,8 +23,10 @@ export const ABERTO = ['inicio.html', 'lut.html', 'lab.html', 'looks.html', 'cst
  * liberada (a administração da plataforma, no HUB).
  */
 export const NEUTRAS = ['index.html', 'entrar.html']
+/** O 404 do site (a Vercel serve publico/404.html para o que não existe): a página neutra, aberta ou fechada. */
+export const PAGINA_404 = '404.html'
 
-export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...SITE, ...SITE_APP])
+export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...FECHADO])
 
 /** Copia os itens do estado para `saida` (apagada antes). Devolve o estado e a lista. */
 export function publicar({ raiz = new URL('..', import.meta.url), saida = new URL('publico/', raiz), estado = release() } = {}) {
@@ -36,10 +40,9 @@ export function publicar({ raiz = new URL('..', import.meta.url), saida = new UR
     if (statSync(de).isFile()) mkdirSync(dirname(fileURLToPath(para)), { recursive: true })
     cpSync(de, para, { recursive: true })
   }
-  if (estado !== 'released') {
-    const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
-    for (const nome of NEUTRAS) writeFileSync(new URL(nome, saida), neutra)
-  }
+  const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
+  writeFileSync(new URL(PAGINA_404, saida), neutra)
+  if (estado !== 'released') for (const nome of NEUTRAS) writeFileSync(new URL(nome, saida), neutra)
   return { estado, itens: lista }
 }
 

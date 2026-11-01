@@ -224,8 +224,8 @@ function montarSaida(o = {}) {
     t(dentro.url === '/' && !dentro.entrar && zro.estado.trocas === antes, '⟶⟶ com sessão o botão entra direto, sem ir ao HUB de novo');
     await p.evaluate(() => document.getElementById('g-sair').click());
     await p.waitForTimeout(700);
-    const eu = await p.evaluate(async () => (await fetch('/api/zro/eu', { cache: 'no-store' })).status);
-    t(eu === 401 && await p.evaluate(() => ZRO_CONTA === null), '⟶⟶ Sair apaga a sessão deste site (/eu volta a dar 401)');
+    const eu = await p.evaluate(async () => (await (async r => r.status === 401 || (r.status === 200 && (await r.json()).entrou === false) ? 'sem_sessao' : r.status)(await fetch('/api/zro/eu', { cache: 'no-store' }))));
+    t(eu === 'sem_sessao' && await p.evaluate(() => ZRO_CONTA === null), '⟶⟶ Sair apaga a sessão deste site (/eu volta a dizer que não há sessão)');
     await ctx.close();
   }
 
@@ -281,25 +281,25 @@ function montarSaida(o = {}) {
     await p.waitForTimeout(300);
     t((await tela(p)) === 'entrar' && await p.evaluate(() => localStorage.getItem('cdf-entrou')) === null, 'nem chamando a entrada por dentro');
     await p.locator('#lg-bloq-sair').click(); await p.waitForTimeout(600);
-    const s = await p.evaluate(async () => ({ bloq: !document.getElementById('lg-bloq').hidden, eu: (await fetch('/api/zro/eu', { cache: 'no-store' })).status }));
-    t(!s.bloq && s.eu === 401, '"Sair desta conta" apaga a sessão e o aviso sai');
+    const s = await p.evaluate(async () => ({ bloq: !document.getElementById('lg-bloq').hidden, eu: (await (async r => r.status === 401 || (r.status === 200 && (await r.json()).entrou === false) ? 'sem_sessao' : r.status)(await fetch('/api/zro/eu', { cache: 'no-store' }))) }));
+    t(!s.bloq && s.eu === 'sem_sessao', '"Sair desta conta" apaga a sessão e o aviso sai');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }
 
-  /* ============ 9. conta antiga deste aparelho continua entrando ============ */
+  /* ============ 9. conta antiga deste aparelho: só a porta da Absolute ZRO, e o perfil local fica ============ */
   {
+    /* 01/11/2026 (decisão do titular): os logins antigos (e-mail/senha deste aparelho e o Google da prévia) saíram do
+       domínio. Eles nunca guardaram nada no servidor; o que a pessoa tinha mora neste aparelho, e entrar pela
+       Absolute ZRO não zera quem já tinha entrado aqui. */
     const { ctx, p, erros } = await abrir(DOMINIO, { aceita401: true, antigo: true });
     await telaEntrar(p);
     const r = await botao(p);
-    t(!r.escondido && r.antesDoForm && r.texto === 'Entrar com Absolute ZRO', '⟶⟶ conta antiga: a Absolute ZRO vem primeiro, como caminho recomendado');
-    t(r.form && r.google, 'e o formulário de antes continua para quem já tinha conta aqui');
-    await p.evaluate(() => { LG_MODO = 'criar'; pintarLogin() });
-    t(!(await botao(p)).form, 'mas não serve para criar conta nova');
-    await p.evaluate(() => { LG_MODO = 'entrar'; pintarLogin() });
-    await p.fill('#lg-email', 'antiga@exemplo.com'); await p.fill('#lg-senha', 'segredo1');
-    await p.locator('#lg-ok').click(); await p.waitForTimeout(900);
-    t((await tela(p)) !== 'entrar', 'e ela entra como sempre entrou (' + (await tela(p)) + ')');
+    t(!r.escondido && r.texto === 'Entrar com Absolute ZRO', '⟶⟶ conta antiga: a porta é a Absolute ZRO');
+    t(!r.form && !r.google, 'e o formulário de e-mail e senha e o Google saíram');
+    t(await p.evaluate(() => !document.getElementById('lg-cx').classList.contains('compacto')), 'sem a pílula "Entrar" escondendo a porta');
+    const fica = await p.evaluate(() => { EU.nome = 'Antiga Deste Aparelho'; entrarNaConta('Absolute ZRO', false); return EU.nome });
+    t(fica === 'Antiga Deste Aparelho', 'entrar pela Absolute ZRO não zera o perfil que já estava neste aparelho (' + fica + ')');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }
@@ -542,8 +542,8 @@ function montarSaida(o = {}) {
         await p.waitForFunction(() => typeof ZRO_PRONTO !== 'undefined' && ZRO_PRONTO && S.tab === 'fechado', null, { timeout: 15000 }).catch(() => {});
         await p.waitForTimeout(500);
         const f = await fechadoNaTela(p);
-        const eu = await p.evaluate(async () => ({ conta: ZRO_CONTA, entrou: localStorage.getItem('cdf-entrou'), eu: (await fetch('/api/zro/eu', { cache: 'no-store' })).status }));
-        t(f.tela === 'fechado' && f.vis && /ainda não tem acesso/.test(f.sub) && eu.conta === null && eu.entrou === null && eu.eu === 401 && f.abaZ,
+        const eu = await p.evaluate(async () => ({ conta: ZRO_CONTA, entrou: localStorage.getItem('cdf-entrou'), eu: (await (async r => r.status === 401 || (r.status === 200 && (await r.json()).entrou === false) ? 'sem_sessao' : r.status)(await fetch('/api/zro/eu', { cache: 'no-store' }))) }));
+        t(f.tela === 'fechado' && f.vis && /ainda não tem acesso/.test(f.sub) && eu.conta === null && eu.entrou === null && eu.eu === 'sem_sessao' && f.abaZ,
           '⟶⟶ NEGADO — ' + nome + ' (' + modo + '): "' + f.sub + '", sem sessão (/eu ' + eu.eu + ')');
         t(erros.length === 0, 'sem erro (' + nome + '): ' + erros.slice(0, 2).join(' · '));
         await ctx.close();
@@ -576,8 +576,8 @@ function montarSaida(o = {}) {
     await p.waitForFunction(() => !document.getElementById('splash') && typeof ZRO_PRONTO !== 'undefined' && ZRO_PRONTO, null, { timeout: 20000 }).catch(() => {});
     await p.waitForTimeout(600);
     const f = await fechadoNaTela(p);
-    const s = await p.evaluate(async () => ({ conta: ZRO_CONTA, eu: (await fetch('/api/zro/eu', { cache: 'no-store' })).status }));
-    t(f.tela === 'fechado' && f.vis && s.conta === null && s.eu === 401 && f.abaZ, '⟶⟶ NEGADO — sessão antiga: o acesso saiu e a página volta a ser "Em desenvolvimento" (/eu ' + s.eu + ')');
+    const s = await p.evaluate(async () => ({ conta: ZRO_CONTA, eu: (await (async r => r.status === 401 || (r.status === 200 && (await r.json()).entrou === false) ? 'sem_sessao' : r.status)(await fetch('/api/zro/eu', { cache: 'no-store' }))) }));
+    t(f.tela === 'fechado' && f.vis && s.conta === null && s.eu === 'sem_sessao' && f.abaZ, '⟶⟶ NEGADO — sessão antiga: o acesso saiu e a página volta a ser "Em desenvolvimento" (/eu ' + s.eu + ')');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }
@@ -594,7 +594,7 @@ function montarSaida(o = {}) {
     t(await p.evaluate(() => localStorage.getItem('cdf-entrou') === null), 'a porta do app não foi marcada');
     await p.locator('#fc-sair').click(); await p.waitForTimeout(700);
     const f2 = await fechadoNaTela(p);
-    t(!f2.sair && f2.porta.vis && await p.evaluate(async () => ZRO_CONTA === null && (await fetch('/api/zro/eu', { cache: 'no-store' })).status === 401), 'saiu: a porta volta e a sessão foi embora');
+    t(!f2.sair && f2.porta.vis && await p.evaluate(async () => ZRO_CONTA === null && (await (async r => r.status === 401 || (r.status === 200 && (await r.json()).entrou === false) ? 'sem_sessao' : r.status)(await fetch('/api/zro/eu', { cache: 'no-store' }))) === 'sem_sessao'), 'saiu: a porta volta e a sessão foi embora');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }

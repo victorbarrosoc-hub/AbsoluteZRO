@@ -33,7 +33,7 @@ function usage(user: string, id?: string, op = 'auto') {
 }
 // Isolated container only: minimal GoTrue tables/roles, never a production project.
 sql(
-  `create role anon; create role authenticated; create role service_role; create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}',created_at timestamptz default now()); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; insert into auth.users(id,email,email_confirmed_at) values ('${alice}','alice@example.test',now()),('${bob}','bob@example.test',now()),('${admin}','victorbarrosoc@gmail.com',now()),('${unconfirmed}','victorbarrosoc@gmail.com',null);`,
+  `create role anon; create role authenticated; create role service_role; create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}',created_at timestamptz default now()); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; insert into auth.users(id,email,email_confirmed_at) values ('${alice}','alice@example.test',now()),('${bob}','bob@example.test',now()),('${admin}','adm@example.test',now()),('${unconfirmed}','adm-sem-confirmar@example.test',null);`,
 );
 sql(readFileSync('supabase/migrations/202610220001_accounts_and_weekly_usage.sql', 'utf8'));
 test('real PostgreSQL authorizes exactly 10 concurrent treatments per user across connections', async () => {
@@ -71,7 +71,7 @@ test('real PostgreSQL authorizes exactly 10 concurrent treatments per user acros
   assert.equal(usage(bob).used, 0);
   assert.equal(usage(alice, randomUUID()).allowed, false);
 });
-test('verified admin exceeds 10 while an unconfirmed matching email has the normal quota', () => {
+test('verified admin exceeds 10 while an unconfirmed account with the same admin link has the normal quota', () => {
   for (let i = 0; i < 13; i++) assert.equal(usage(admin, randomUUID()).allowed, true);
   assert.equal(usage(admin).unlimited, true);
   assert.equal(usage(admin).remaining, null);
@@ -485,6 +485,16 @@ test('a Stripe subscription grants its plan while paid, ends it when cancelled, 
   );
 });
 sql(readFileSync('supabase/migrations/202610250002_zro_links.sql', 'utf8'));
+sql(readFileSync('supabase/migrations/202610280001_zro_release.sql', 'utf8'));
+sql(readFileSync('supabase/migrations/202611010001_admin_da_plataforma.sql', 'utf8'));
+// Os testes rodam depois de todas as migrações: o ADM é o admin da plataforma Absolute ZRO guardado no vínculo
+// (claim `zro_admin`), com e-mail confirmado aqui. A conta sem e-mail confirmado tem o mesmo vínculo e não é ADM.
+zroLink('link', admin, 'zro-adm', { email: 'adm@example.test', products: ['nossom'], admin: true });
+zroLink('link', unconfirmed, 'zro-adm-2', {
+  email: 'adm2@example.test',
+  products: ['nossom'],
+  admin: true,
+});
 function zroLink(action: string, user: string | null, sub: string | null, data: unknown = {}) {
   return JSON.parse(
     sql(
@@ -542,4 +552,38 @@ test('Absolute ZRO links stay server-only, one person per account, and the only 
   // Deleting the account removes the link.
   sql(`delete from auth.users where id='${created}';`);
   assert.equal(zroLink('find', null, 'zro-new', lia).userId, null);
+});
+test('ADM is only the platform admin saved on the Absolute ZRO link, re-read at each login; never an e-mail', () => {
+  const pessoa = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  sql(
+    `insert into auth.users(id,email,email_confirmed_at) values ('${pessoa}','nova@example.test',now());`,
+  );
+  const dados = { email: 'nova@example.test', products: ['nossom'] };
+  zroLink('link', pessoa, 'zro-nova', dados);
+  assert.equal(zroLink('get', pessoa, null).link.admin, false);
+  assert.equal(planUsage(pessoa).unlimited, false);
+  assert.throws(() => adminRpc(pessoa, 'dashboard'), /Admin required/);
+  // Entrou de novo pela Absolute ZRO, agora admin da plataforma: vira ADM em toda função.
+  assert.equal(zroLink('find', null, 'zro-nova', { ...dados, admin: true }).userId, pessoa);
+  assert.equal(zroLink('get', pessoa, null).link.admin, true);
+  assert.equal(planUsage(pessoa).unlimited, true);
+  assert.equal(usage(pessoa).unlimited, true);
+  assert.equal(aiSession(pessoa).limit, null);
+  assert.ok(
+    adminRpc(pessoa, 'dashboard').users.some((u: any) => u.id === pessoa && u.is_admin === true),
+  );
+  // Um texto no lugar do booleano não vale; perdeu o papel no HUB, deixa de ser ADM no próximo login.
+  zroLink('find', null, 'zro-nova', { ...dados, admin: 'true' });
+  assert.equal(planUsage(pessoa).unlimited, false);
+  // Sem vínculo, ninguém é ADM.
+  zroLink('find', null, 'zro-nova', { ...dados, admin: true });
+  assert.equal(zroLink('unlink', pessoa, null).ok, true);
+  assert.equal(planUsage(pessoa).unlimited, false);
+  assert.equal(planUsage(unconfirmed).unlimited, false);
+  assert.equal(
+    sql(
+      `select count(*) from pg_proc where prosrc like '%@%.com%' and pronamespace in ('public'::regnamespace,'nossom_private'::regnamespace);`,
+    ),
+    '0',
+  );
 });
