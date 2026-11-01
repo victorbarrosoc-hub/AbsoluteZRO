@@ -28,7 +28,7 @@ const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
   { href: 'https://aeon.absolutezro.com', nome: 'AEON', img: 'marca/familia/aeon.svg' },
   { href: 'https://carro.absolutezro.com', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
-  { href: 'https://nossom.absolutezro.com', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
+  { href: 'https://quasar.absolutezro.com', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
   { href: 'https://tpeasy.absolutezro.com', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
