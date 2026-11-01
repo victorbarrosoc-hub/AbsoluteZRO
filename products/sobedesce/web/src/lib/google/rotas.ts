@@ -7,6 +7,7 @@ import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/li
 import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
+import { recuperarColecoes } from "@/lib/referencias/colecoes";
 import { cookieSeguro } from "@/lib/site";
 import { ESCOPOS_ENTRAR, googleConfigurado, redirectUri, type ModoDrive } from "./config";
 import { donoDaContaGoogle, vincularConta } from "./contas";
@@ -113,6 +114,10 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     // O Google já contou a vaga quando deu o `drive`, gravando ou não aqui.
     await registrarSeTotal(tokens.escopo, quem.sub, quem.email, r.ok ? atual.usuario.id : null);
     if (!r.ok) return falhar(r.erro);
+    // Drive (re)conectado: as coleções que já estão nele voltam para as Referências, sem segurar o redirect.
+    const usuarioId = atual.usuario.id;
+    const contaGoogleId = r.conta.id;
+    depois(() => recuperarColecoes(usuarioId, { contaGoogleId, forcar: true }));
     // Pediu o Drive inteiro e voltou só com drive.file: conectou, mas em Arquivos escolhidos (a tela diz).
     if ((estado.pedido ?? "total") === "total" && acesso === "arquivos") return ir(comParametro(volta, "google", "escolhidos"));
     return ir(comParametro(volta, "google", "ok"));

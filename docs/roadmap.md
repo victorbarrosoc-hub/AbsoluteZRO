@@ -2,6 +2,13 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026, ramo `sobedesce-recuperar-colecoes`)
+
+- ✅ A raiz "SOBEDESCE Referências" do app antigo é achada pelo nome e reaproveitada (nada de raiz nova vazia ao lado);
+  as coleções que estão no Drive e sumiram do banco voltam ao abrir Referências (no máximo a cada 10 min por Drive) e
+  logo depois de conectar o Drive. Migração `0019_referencias_recuperar`. ⬜ Não voltam: link pra IA (token novo), fila
+  antiga e, no link pra IA, os arquivos salvos pelo app antigo (a marca deles é privada do app antigo).
+
 ## Revisão dos sites em produção (01/11/2026, ramo `revisao-sites`)
 
 - ✅ Revela e AEON fechados sem vazar marca: manifesto, OG, `marca/`, `site/` e `app/` só pela função, para a conta

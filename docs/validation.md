@@ -41,6 +41,21 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026)
+
+Ramo `sobedesce-recuperar-colecoes`. Drive desconectado na migração levou `colecoes` em cascata; as pastas ficaram.
+`garantirRaiz` acha a raiz antiga pelo nome (`'me' in owners`, a mais antiga) antes de criar outra e a marca;
+`recuperarColecoes` recria as linhas das subpastas que faltam (ao abrir Referências, no máximo a cada 10 min por
+Drive, e logo depois de conectar o Drive). Migração nova `0019_referencias_recuperar` (duas colunas em `contas_google`).
+
+- `products/sobedesce/web`: `npm run lint`, `typecheck` e `build` ok; `npm test` 384/385 (falha só
+  `zro-relay-ciclo.test.mts`, que importa o motor do computador e precisa do `undici` de `products/sobedesce`, sem
+  `node_modules` neste ambiente). Novo `tests/referencias-recuperar.test.mts` **9/9** (raiz antiga sem marca
+  reaproveitada, sem raiz cria uma, recuperar sem duplicar, prazo de 10 min, nome já usado, pasta tirada da plataforma
+  não volta, Drive com erro não para os outros, drive.file não acha nada, callback do Google dispara);
+  `referencias`, `google` e `drive-hibrido` 71/71. O Google falso ganhou `'me' in owners`, `appProperties` no PATCH e
+  `drive.file` sem enxergar o que outro app criou (`foraDoApp`).
+
 ## Revisão dos sites em produção (01/11/2026)
 
 Ramo `revisao-sites`, a partir da revisão só de leitura dos sites no ar (dados em scratchpad, fora do repositório).

@@ -30,6 +30,32 @@ página pública /r/<token> (HTML, .json, .md) ◀── lê a pasta pelo servid
 | `atalhos` | `id`, `usuarioId` (fk, cascade), `tokenHash` (sha256, único), `criadoEm`, `ultimoUsoEm`, `revogadoEm` |
 | `usuarios.plano` | `text not null default 'gratis'` |
 | `contas_google.referenciasPastaId` | id da pasta “SOBEDESCE Referências” daquele Drive (achada ou criada na primeira coleção) |
+| `contas_google.referenciasConferidasEm` | última conferência das coleções no Drive (§2.1; migração `0019_referencias_recuperar`) |
+| `contas_google.referenciasIgnoradas` | `text[]`: pastas de coleção tiradas só da plataforma (a conferência não traz de volta) |
+
+### 2.1 Coleções que voltam sozinhas
+
+A linha da coleção some quando a conta Google sai (cascata), mas a pasta fica no Drive. Foi o que aconteceu na
+migração para o projeto Google novo. Por isso (`web/src/lib/referencias/colecoes.ts`):
+
+- **Raiz** (`garantirRaiz`): a guardada; senão a que já existe, com a marca deste app **ou pelo nome**
+  (`name = 'SOBEDESCE Referências'`, pasta, fora da lixeira, `'me' in owners`; a mais antiga). As `appProperties` são
+  privadas do cliente OAuth que gravou, então a raiz do app antigo só aparece pelo nome. Achada, é guardada e ganha a
+  marca deste app. Só sem nenhuma nasce uma nova.
+- **Conferência** (`recuperarColecoes`, idempotente): para cada Drive em estado ok, acha as raízes (sem criar), lista
+  as subpastas diretas fora da lixeira (até 200 por vez) e cria a linha das que faltam, com a data da pasta. Pula a
+  pasta que já é coleção, a que está em `referenciasIgnoradas`, nome que não serve (`validarNome`) e nome já usado por
+  outra coleção da pessoa. Erro de um Drive vai para o log e o próximo segue. Com `drive.file` o Google não mostra as
+  pastas do app antigo: não acha nada, sem erro.
+- **Quando:** ao abrir Referências (`GET /api/referencias/colecoes`), no máximo uma vez a cada 10 min por Drive (espera
+  até 8 s; Drive lento termina depois da resposta e aparece na próxima abertura); e logo depois de conectar ou
+  reconectar um Drive (callback do Google, depois do redirect).
+- **Tirar da plataforma** (`DELETE` sem `apagarNoDrive`) põe a pasta em `referenciasIgnoradas`; criar de novo uma
+  coleção com o mesmo nome aproveita a pasta e tira de lá.
+- **O que volta:** a coleção e os arquivos (o celular e o computador listam a pasta do Drive). Não voltam: o link pra
+  IA (token novo ao ligar; o antigo sumiu com a linha), os links que estavam na fila (`referencias_fila`) e, no link
+  pra IA, os arquivos salvos pelo app antigo (a página pública lista por `appProperties.sobedesce = referencia`, que é
+  privada do app antigo).
 
 ## 3. API (JSON, `Cache-Control: no-store`)
 
