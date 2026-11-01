@@ -161,6 +161,36 @@ describe('código + PKCE', () => {
     const info = await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)
     expect(info).toMatchObject({ sub: o.userId, email: o.email, zro_products: ['sobedesce'], zro_release: expect.objectContaining({ sobedesce: 'released' }) })
     expect(info.zro_release).not.toHaveProperty('nossom')
+    // zro_admin só para admin da plataforma (P6): conta comum não recebe
+    expect(id).not.toHaveProperty('zro_admin')
+    expect(info).not.toHaveProperty('zro_admin')
+  })
+
+  it('zro_admin: admin da plataforma com e-mail confirmado recebe; sem e-mail confirmado ou suporte, não', async () => {
+    const o = await newOrgWithOwner(db, 'oidc-admin')
+    const c = await newClient()
+    const signer = await loadSigner(db)
+    const idDe = async () => {
+      const { verifier, challenge } = pkce()
+      const code = await login(c.clientId, o.userId, o.orgId, challenge)
+      const t = await exchangeToken(
+        db,
+        parseTokenRequest(
+          form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }),
+          `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`,
+        ),
+        loadOidcClaims,
+      )
+      return { id: verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!, info: await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims) }
+    }
+    await db.sql`update zro.users set platform_role = 'admin' where id = ${o.userId}`
+    const a = await idDe()
+    expect(a.id.zro_admin).toBe(true)
+    expect(a.info.zro_admin).toBe(true)
+    await db.sql`update zro.users set email_verified_at = null where id = ${o.userId}`
+    expect((await idDe()).id).not.toHaveProperty('zro_admin')
+    await db.sql`update zro.users set email_verified_at = now(), platform_role = 'support' where id = ${o.userId}`
+    expect((await idDe()).id).not.toHaveProperty('zro_admin')
   })
 
   it('recusa verifier errado, segredo errado e código reapresentado', async () => {

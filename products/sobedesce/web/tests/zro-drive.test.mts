@@ -148,6 +148,13 @@ describe("o pedido do HUB", () => {
     assert.equal((await buscar(t)).status, 401);
   });
 
+  test("o mesmo pedido ao mesmo tempo: só um passa (uso único atômico)", async () => {
+    const { conferirPedidoZro } = await import("../src/lib/zro/pedido");
+    const t = jwt(ana.sub);
+    const r = await Promise.allSettled(Array.from({ length: 5 }, () => conferirPedidoZro(`Bearer ${t}`, "drive.buscar")));
+    assert.equal(r.filter((x) => x.status === "fulfilled").length, 1);
+  });
+
   test("sem vínculo é 404, sem Drive é 409, sem o SOBEDESCE liberado é 403", async () => {
     const r1 = await buscar(jwt("zro-desconhecida"));
     assert.equal(r1.status, 404);

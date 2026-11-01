@@ -437,8 +437,9 @@ describe("token do Drive", () => {
   });
 
   test("Google fora do ar ao renovar: 502", async () => {
-    // Victor ganhou acesso total no teste anterior: reconectar respeita o modo dele (pede o `drive`).
-    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_TOTAL });
+    // Victor ganhou acesso total e já usou a vaga dele: reconectar pede drive.file (somando o que já foi dado; o
+    // `drive` foi revogado ao remover). Uma vaga por pessoa (revisão M1).
+    const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_ARQUIVOS });
     assert.equal(r.destino, "/conta?google=ok");
     const id = (await contasDe(victor.token))[0].id;
     const base = process.env.SOBEDESCE_GOOGLE_BASE;

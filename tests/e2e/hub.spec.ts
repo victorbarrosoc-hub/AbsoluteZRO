@@ -295,6 +295,8 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   // a central 1.4 lê os apps da conta: sem sessão, 401
   expect((await request.get('/api/v1/desktop/meus-apps')).status()).toBe(401)
   expect((await request.get('/baixar/app/nossom/NOSSOM-0.2.2-win-x64.exe', { maxRedirects: 0 })).status()).toBe(404)
+  // nome de arquivo com escape quebrado depois da decodificação do Next: 404, nunca 500 (revisão P3)
+  expect((await request.get('/baixar/app/maestro/%25E0%25A4%25A', { maxRedirects: 0 })).status()).toBe(404)
 })
 
 test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {

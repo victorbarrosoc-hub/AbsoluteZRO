@@ -20,10 +20,8 @@ import { zroLinkReady, zroLinkSummary, type ZroLinkSummary } from './zro/account
 import { zroManageUrl } from './zro/config';
 export { ZRO_PRODUCT };
 export const ACCOUNT_COOKIE = 'nossom-account';
-// Admin do NOSSOM (não é acesso ao produto, que vem do gate do HUB). O endereço novo vale junto com o antigo até a
-// troca de e-mail da conta do titular (28/10/2026).
-export const ADMIN_EMAIL = 'victorbarrosoc@gmail.com';
-const ADMIN_EMAILS = new Set([ADMIN_EMAIL, 'victor@absolutezro.com']);
+// Admin do NOSSOM (não é acesso ao produto, que vem do gate do HUB): só o admin da plataforma Absolute ZRO, pela claim
+// `zro_admin` guardada no vínculo (`zro.admin` da sessão). Nada de e-mail fixo (decisão do titular, 01/11/2026).
 const lifetime = 7 * 24 * 60 * 60 * 1000;
 export type AuthUser = {
   id: string;
@@ -62,6 +60,8 @@ type ZroIdentity = {
   organization: string | null;
   picture?: string;
   manage?: string;
+  /** Admin da plataforma Absolute ZRO (claim `zro_admin`, relida do vínculo a cada pedido). */
+  admin?: true;
 };
 /** Identidade da Absolute ZRO guardada na sessão, a partir do id_token já conferido. */
 export function zroIdentity(p: {
@@ -69,12 +69,14 @@ export function zroIdentity(p: {
   organization: string | null;
   picture: string | null;
   manage: string;
+  admin?: boolean;
 }): ZroIdentity {
   return {
     email: p.email,
     organization: p.organization,
     ...(p.picture ? { picture: p.picture } : {}),
     manage: p.manage,
+    ...(p.admin === true ? { admin: true as const } : {}),
   };
 }
 const validIdentity = (z: unknown) =>
@@ -84,7 +86,8 @@ const validIdentity = (z: unknown) =>
   ((z as ZroIdentity).organization === null ||
     typeof (z as ZroIdentity).organization === 'string') &&
   ['undefined', 'string'].includes(typeof (z as ZroIdentity).picture) &&
-  ['undefined', 'string'].includes(typeof (z as ZroIdentity).manage);
+  ['undefined', 'string'].includes(typeof (z as ZroIdentity).manage) &&
+  [undefined, true].includes((z as ZroIdentity).admin);
 const validRelease = (r: unknown) =>
   !!r &&
   typeof r === 'object' &&
@@ -109,6 +112,8 @@ function withAccess(session: Session, account = session.account): Account {
   const z = session.zro;
   return {
     ...plain,
+    // ADM só pelo vínculo com a Absolute ZRO (admin da plataforma); sem vínculo, nunca.
+    isAdmin: Array.isArray(session.zroProducts) && session.zro?.admin === true,
     ...(zroBlocked(session) ? { zroBlocked: true as const } : {}),
     ...(Array.isArray(session.zroProducts)
       ? {
@@ -147,7 +152,8 @@ export function accountFromUser(user: AuthUser): Account {
     username: email,
     email,
     kind: 'supabase',
-    isAdmin: ADMIN_EMAILS.has(email ?? '') && !!user.email_confirmed_at,
+    // Admin vem do vínculo com a Absolute ZRO (withAccess), nunca do e-mail.
+    isAdmin: false,
     ...(typeof user.user_metadata?.avatar_version === 'number' &&
     Number.isSafeInteger(user.user_metadata.avatar_version) &&
     (user.user_metadata?.avatar_version as number) > 0
@@ -253,13 +259,19 @@ async function withLink(session: Session, userId: string): Promise<Session> {
     zroRelease: link.release,
     // A foto e o "onde editar" vêm do último login pela Absolute ZRO; e-mail e organização, do vínculo.
     zro: {
-      ...session.zro,
+      ...withoutAdmin(session.zro),
       email: link.email,
       organization: link.organization,
       manage: session.zro?.manage || zroManageUrl(),
+      ...(link.admin ? { admin: true as const } : {}),
     },
   };
 }
+const withoutAdmin = (z: ZroIdentity | undefined) => {
+  if (!z) return z;
+  const { admin: _admin, ...rest } = z;
+  return rest;
+};
 const sameClaims = (a: Session, b: Session) =>
   JSON.stringify([a.zroProducts, a.zroRelease, a.zro]) ===
   JSON.stringify([b.zroProducts, b.zroRelease, b.zro]);
@@ -377,7 +389,12 @@ export async function authenticate(email: unknown, password: unknown) {
         ? {
             zroProducts: link.products,
             zroRelease: link.release,
-            zro: { email: link.email, organization: link.organization, manage: zroManageUrl() },
+            zro: {
+              email: link.email,
+              organization: link.organization,
+              manage: zroManageUrl(),
+              ...(link.admin ? { admin: true as const } : {}),
+            },
           }
         : {}),
     };

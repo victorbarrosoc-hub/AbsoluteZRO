@@ -34,18 +34,19 @@ test('free monthly allowance is visible and local EQ never consumes GPU minutes'
 test('verified administrator has no monthly minute limit and normal users cannot grant themselves admin', async ({
   page,
 }) => {
-  // Campos de papel enviados pelo navegador são ignorados; o ADM vem do e-mail confirmado (e, fechado ao
-  // público, a conta precisa estar na lista do proprietário no HUB).
+  // Campos de papel enviados pelo navegador são ignorados; o ADM vem do admin da plataforma na Absolute ZRO (claim
+  // `zro_admin` guardada no vínculo) e, fechado ao público, a conta precisa estar na lista do proprietário no HUB.
   await allowedAccount(page.request, {
-    email: 'victorbarrosoc@gmail.com',
+    email: 'adm@example.test',
     password: 'test-only-password',
     name: 'Administrador',
+    admin: true,
   });
   const login = await page.request.post('/api/account', {
     headers: { Origin: 'http://localhost:3000' },
     data: {
       action: 'login',
-      email: 'victorbarrosoc@gmail.com',
+      email: 'adm@example.test',
       password: 'test-only-password',
       isAdmin: true,
     },

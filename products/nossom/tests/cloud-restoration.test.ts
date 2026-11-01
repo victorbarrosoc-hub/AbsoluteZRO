@@ -216,11 +216,19 @@ for (const preset of [
 test('RunPod owner diagnostics hide secrets and explicit provider rejection releases the reservation', async () => {
   const restore = authEnvironment(),
     previous = globalThis.fetch;
-  const keys = ['RUNPOD_API_KEY', 'RUNPOD_ENDPOINT_ID', 'SUPABASE_SERVICE_ROLE_KEY'];
+  const keys = [
+    'RUNPOD_API_KEY',
+    'RUNPOD_ENDPOINT_ID',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'ZRO_CLIENT_ID',
+    'ZRO_CLIENT_SECRET',
+  ];
   const old = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
   process.env.RUNPOD_API_KEY = 'private-diagnostic-placeholder';
   process.env.RUNPOD_ENDPOINT_ID = 'endpoint-diagnostic';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'private-storage-placeholder';
+  process.env.ZRO_CLIENT_ID = 'nossom-web';
+  process.env.ZRO_CLIENT_SECRET = 'zro-test-secret-placeholder';
   let owner = false,
     code = 404,
     failed = 0,
@@ -236,8 +244,18 @@ test('RunPod owner diagnostics hide secrets and explicit provider rejection rele
   globalThis.fetch = async (input, init) => {
     const url = String(input),
       body = init?.body ? JSON.parse(String(init.body)) : {};
-    if (url.endsWith('/auth/v1/user'))
-      return Response.json(owner ? { ...testUser, email: 'victorbarrosoc@gmail.com' } : testUser);
+    if (url.endsWith('/auth/v1/user')) return Response.json(testUser);
+    // O ADM é o admin da plataforma guardado no vínculo com a Absolute ZRO (claim `zro_admin`).
+    if (url.endsWith('/rpc/nossom_zro_link'))
+      return Response.json({
+        link: {
+          email: testUser.email,
+          organization: null,
+          products: ['nossom'],
+          release: {},
+          admin: owner,
+        },
+      });
     if (url.endsWith('/health'))
       return code === 200
         ? Response.json({

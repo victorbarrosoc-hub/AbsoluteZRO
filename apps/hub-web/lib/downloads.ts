@@ -18,8 +18,12 @@ export type Os = 'mac' | 'windows' | 'mobile' | 'web'
  */
 export const SO_PARA_ADMIN: ReadonlySet<string> = new Set(['ai-edit', 'finishing', 'nossom', 'rift-motion'])
 
-/** Admin de plataforma (papel `admin`; suporte e financeiro não). */
-export const ehAdmin = (auth: { user: { platformRole?: string | null } } | null | undefined) => auth?.user.platformRole === 'admin'
+/**
+ * Admin de plataforma (papel `admin`; suporte e financeiro não), com e-mail confirmado: a mesma regra de
+ * papelNoConsole e de zro.release_admin (0049).
+ */
+export const ehAdmin = (auth: { user: { platformRole?: string | null; emailVerified?: boolean } } | null | undefined) =>
+  auth?.user.platformRole === 'admin' && auth.user.emailVerified === true
 
 /** Instalação da Absolute ZRO pelo Terminal (public/instalar.sh e instalar.ps1: baixam, conferem o SHA-256 e instalam). */
 export const HUB_TERMINAL = {

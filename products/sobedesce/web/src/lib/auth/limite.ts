@@ -7,7 +7,7 @@
  * "pedido-zro:<jti>" (uso único dos pedidos do HUB).
  * Limpeza preguiçosa: de vez em quando apaga o que tem mais de um dia.
  */
-import { and, count, eq, gte, isNotNull, lt, or } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 
 const { tentativas } = schema;
@@ -52,6 +52,21 @@ export async function dentroDoLimite(chave: string, regra: Regra): Promise<boole
     .from(tentativas)
     .where(and(eq(tentativas.chave, chave), gte(tentativas.quando, desde)));
   return (linha?.n ?? 0) < regra.max;
+}
+
+/**
+ * Uso único dentro da janela, atômico (revisão P5): conferir e gravar na mesma transação, com trava pela chave. Dois
+ * pedidos iguais ao mesmo tempo: só um passa.
+ */
+export async function usarUmaVez(chave: string, janelaMs: number): Promise<boolean> {
+  return db.transaction(async (t) => {
+    await t.execute(sql`select pg_advisory_xact_lock(hashtext(${chave}))`);
+    const desde = new Date(Date.now() - janelaMs);
+    const [linha] = await t.select({ n: count() }).from(tentativas).where(and(eq(tentativas.chave, chave), gte(tentativas.quando, desde)));
+    if ((linha?.n ?? 0) > 0) return false;
+    await t.insert(tentativas).values({ chave });
+    return true;
+  });
 }
 
 export async function registrarTentativa(...chaves: string[]): Promise<void> {

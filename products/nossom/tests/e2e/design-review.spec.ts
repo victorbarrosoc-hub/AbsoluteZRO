@@ -4,7 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 test('account administration action belongs to the summary with clear separation on phone and desktop', async ({
   page,
 }) => {
-  const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
+  const credentials = { email: 'adm@example.test', password: 'test-only-password', admin: true };
   await signInExisting(page.request, { ...credentials, name: 'Victor Barroso' });
   for (const width of [360, 390, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
