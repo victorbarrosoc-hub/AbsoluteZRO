@@ -181,6 +181,23 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 01/nov · 2 — revisão dos sites e os logins antigos aposentados (`conta-zro` §9, `npm run test:api`)
+
+- ⚠️ **No domínio a única porta é "Entrar com Absolute ZRO"** (decisão do titular, 01/11/2026). O formulário de e-mail
+  e senha e o "Continuar com Google" eram só deste aparelho (nada no servidor) e saíram da tela (`pintarZro`: `antigo`
+  é sempre falso); o cartão de entrar não fica mais compacto ("Entrar ▾") no domínio (`preso()` com `ZRO_PRONTO`). O
+  perfil que já estava no aparelho continua: `entrarNaConta` só zera quem nunca entrou aqui (`ENTROU_KEY`). Fora do
+  domínio (prévia, suítes) o formulário segue igual.
+- **O HTML publicado sai sem comentário** (`semComentarios` no `build.js`; script, style, textarea e pre ficam como
+  estão). Os comentários do template continuam valendo como documentação.
+- `canonical`, `og:url` e `og:image` em **carro.absolutezro.com**; ícone da aba (`<link rel="icon">` só no `--real`,
+  relativo) e `/favicon.ico` servindo o `icone-192.png` (`rotasVercel`).
+- `/api/zro/eu` sem cookie de sessão nenhum responde **200 `{ entrou: false, release }`** (era 401 a cada visita, no
+  console); cookie que não vale continua 401. O template trata os dois como "sem sessão".
+- Vídeo da home e do login: **com Save-Data, `prefers-reduced-data` ou rede 2G, só o quadro parado** (`poupaDados()`).
+  ⚠️ O peso do vídeo (14,4 MB AV1 no computador) **não** foi reduzido: a regra do titular é que a qualidade não cai.
+- Família: SOBEDESCE em `https://sobedesce.com` e Synquei em `https://synquei.absolutezro.com`.
+
 ## 01/nov — a guilda entra na FASE 1, GRÁTIS (branch `guilda-fase1`; `_guilda-testes.js`, `test/guilda-real.js`)
 
 Titular: *"a guilda do Carro do Freela entra na fase 1 do lançamento, GRÁTIS"*. O que está abaixo (31/out) segue valendo,

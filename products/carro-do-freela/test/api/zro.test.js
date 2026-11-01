@@ -193,11 +193,16 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
   assert.match(sair.headers.getSetCookie()[0], /Max-Age=0/);
 });
 
-test('/eu sem sessão é 401, sem cache; GET só', async () => {
+test('/eu sem sessão: 200 { entrou: false } para o visitante (sem 401 no console), 401 para cookie que não vale; sem cache; GET só', async () => {
   const r = await pedir('/api/zro/eu');
-  assert.equal(r.status, 401);
+  assert.equal(r.status, 200);
   assert.equal(r.headers.get('cache-control'), 'no-store');
-  assert.equal((await r.json()).erro, 'sem_sessao');
+  const j = await r.json();
+  assert.equal(j.entrou, false);
+  assert.equal(j.sub, undefined);
+  const lixo = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=abc.def' });
+  assert.equal(lixo.status, 401);
+  assert.equal((await lixo.json()).erro, 'sem_sessao');
   assert.equal((await pedir('/api/zro/eu', { method: 'POST' })).status, 405);
   assert.equal((await pedir('/api/zro/sair')).status, 405, 'sair só por POST');
 });
@@ -390,13 +395,14 @@ test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as fun�
       assert.match((await get('/m/x.1234567890.webp')).headers.get('cache-control'), /immutable/);
       /* a Z: /api/zro/ia/<caminho> chega à função ia (sem sessão, 401; caminho fora da lista, 404) */
       assert.equal((await get('/api/zro/ia/estado')).status, 401);
-      assert.equal((await get('/api/zro/ia/../eu')).status, 401);
+      assert.equal((await get('/api/zro/ia/../eu')).status, 200, 'o ../ normaliza para /api/zro/eu (visitante: 200 entrou:false), nunca para a Z');
       assert.equal((await get('/api/zro/ia/carro-do-freela/jobs')).status, 404);
       assert.match(csp, /script-src 'self' https:\/\/absolutezro\.com 'sha256-/);
       assert.match(csp, /img-src 'self' data: blob: https:\/\/absolutezro\.com/);
       assert.doesNotMatch(csp, /connect-src[^;]*absolutezro/);
       const eu = await get('/api/zro/eu');
-      assert.equal(eu.status, 401);
+      assert.equal(eu.status, 200);
+      assert.equal((await eu.json()).entrou, false);
       assert.equal(eu.headers.get('cache-control'), 'no-store');
       assert.equal(eu.headers.get('x-content-type-options'), 'nosniff');
     } finally {
@@ -892,8 +898,8 @@ test('o portão: HUB fora do ar — nada se confere, nada abre (503/502), e a se
 
 test('o portão: /eu sem sessão e sem chaves dizem o estado do deploy (release) — e anônimo não passa em nada', async () => {
   const r = await pedir('/api/zro/eu');
-  assert.equal(r.status, 401);
-  assert.deepEqual(await r.json(), { erro: 'sem_sessao', release: 'closed' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { entrou: false, release: 'closed' });
   assert.equal((await ia('estado', new Map())).status, 401);
   assert.equal((await fetch(SITE + '/api/zro/enviar', { method: 'POST', headers: { 'content-type': 'application/json', origin: SITE }, body: '{}' })).status, 401);
   const guardado = process.env.ZRO_CLIENT_SECRET;

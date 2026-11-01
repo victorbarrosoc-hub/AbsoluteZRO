@@ -183,6 +183,8 @@ function rotasVercel(csp, paginas) {
     { src: '^/app/(.*)$', status: 307, headers: { Location: '/' } },
     { src: '^/README(?:\\.md)?/?$', status: 307, headers: { Location: '/' } },
     { src: '^/index(?:\\.html)?/?$', status: 308, headers: { Location: '/' } },
+    /* o ícone da aba que o navegador pede sozinho: o mesmo do <link rel="icon"> */
+    { src: '^/favicon\\.ico$', dest: '/icone-192.png' },
     /* a Z: /api/zro/ia/<caminho> vai para a função ia, que confere o caminho */
     { src: '^/api/zro/ia/(.+)$', dest: '/api/zro/ia?caminho=$1' },
     /* o Set: /api/zro/set/<caminho> vai para a função set, que confere o caminho */
