@@ -36,8 +36,8 @@ npm run compartilhado           # copia de apps/hub-desktop o que é igual (o te
 Igual ao do Relay ([README](../../relay/desktop/README.md)); aqui só o que muda:
 
 - **Na janela:** o Rift Motion (`rift.absolutezro.com`), as telas de entrar da Absolute ZRO (`/oauth/authorize`,
-  `/entrar`, `/criar-conta`…), `accounts.google.com` e o login da Higgsfield (`higgsfield.ai` e subdomínios, só https),
-  para "Conectar a conta" voltar para o Rift na mesma partição. O resto abre no navegador, só se for `https`.
+  `/entrar`, `/criar-conta`…) e `accounts.google.com`. A Higgsfield é conectada uma vez na conta Absolute ZRO
+  (`absolutezro.com/conexoes`, no navegador) e vale para todos os apps. O resto abre no navegador, só se for `https`.
   `rift://rota` abre só rotas do Rift (nunca `/api`).
 - **Login:** o fluxo do site (cliente `rift-web`) dentro da janela. Partição `persist:rift`. Agente sem "Electron".
 - **Segurança:** `contextIsolation`, `sandbox`, sem `nodeIntegration`, sem `<webview>`, sem janelas novas; permissões

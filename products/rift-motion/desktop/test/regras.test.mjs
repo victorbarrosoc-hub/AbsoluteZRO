@@ -40,26 +40,16 @@ test('na janela: o site, as telas do login único e o login do Google', () => {
     `${HUB}/boas-vindas?next=x`,
     'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
     'https://accounts.google.com/signin/v2/challenge',
-    `${M}/api/higgsfield/entrar?volta=%2F`,
-    `${M}/api/higgsfield/callback?code=x&state=y`,
-    'https://clerk.higgsfield.ai/oauth/authorize?client_id=x',
-    'https://higgsfield.ai/sign-in',
   ]) {
     assert.equal(r.destino(url, O), 'app', url)
   }
 })
 
-test('login da Higgsfield: só https, só o domínio dela e subdomínios; parecidos vão para o navegador ou para nada', () => {
-  assert.equal(r.ehLoginHiggsfield('https://clerk.higgsfield.ai/x'), true)
-  for (const url of [
-    'https://higgsfield.ai.exemplo.com/',
-    'https://exemplohiggsfield.ai/',
-    'https://clerk.higgsfield.ai:8443/',
-    'https://a:b@clerk.higgsfield.ai/',
-  ])
-    assert.equal(r.ehLoginHiggsfield(url), false, url)
+test('Higgsfield: conectada na conta Absolute ZRO, não na janela do app (vai para o navegador)', () => {
+  assert.equal(r.ehLoginHiggsfield, undefined)
+  assert.equal(r.destino('https://clerk.higgsfield.ai/oauth/authorize?client_id=x', O), 'fora')
+  assert.equal(r.destino(`${HUB}/conexoes`, O), 'fora')
   assert.equal(r.destino('http://clerk.higgsfield.ai/', O), 'nada')
-  assert.equal(r.destino('https://higgsfield.ai.exemplo.com/', O), 'fora')
 })
 
 test('no navegador: o resto do HUB e os outros sites; parecidos não enganam', () => {

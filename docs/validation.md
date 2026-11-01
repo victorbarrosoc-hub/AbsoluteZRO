@@ -15,6 +15,19 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rift Motion: Higgsfield pela central (01/11/2026)
+
+Branch `claude/motion-2d-3d`. Depende da migration `0054` do HUB (PR `claude/rift-higgsfield-hub`).
+
+- `products/rift-motion`: `npm test` verde. `test/ia.test.js` com a Absolute ZRO simulada: o repasse
+  `/api/zro/higgsfield` leva só os parâmetros conferidos e o token da pessoa, devolve a resposta do HUB como veio (inclusive
+  `sem_conexao` com o link das Conexões), recusa sem sessão, tokens de outra pessoa, outra origem, método e caminho
+  errados sem chamar o HUB, renova o token vencido e regrava o cookie, e pede para entrar de novo com o refresh recusado.
+- Desktop: `npm test` 27/27 (a Higgsfield não abre mais dentro da janela).
+- Tela conferida no Chromium com a API simulada: "Conecte a sua Higgsfield na conta Absolute ZRO" com "Já conectei" e o
+  painel (saldo, plano, medidor, o que o Rift gastou no mês, prévias com preço), sem erro no console.
+- Não testado: gerar de verdade pela central com a conta do titular (depois do deploy do HUB com a `0054` e do Rift).
+
 ## Rift Motion: login, painel e banco próprio (01/11/2026)
 
 Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).

@@ -99,19 +99,19 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   projeto novo começa vazio (Mídia, Texto ou Modelo), barra de adicionar embaixo no celular, tocar numa camada abre a
   gaveta com Movimento (Entrar, Quicar, Girar, Aparecer, Crescer, Sair, duração), Estilo e Ajuste fino (keyframes);
   os movimentos viram keyframes de verdade. IA (01/11/2026): "Gerar movimento com IA" anima uma camada de imagem pela
-  Higgsfield da pessoa, por duas portas: a conta (login OAuth da Higgsfield + MCP, créditos do plano; preferida) ou a
-  chave da API (saldo em dólar). O arquivo vai do aparelho direto para a Higgsfield, o vídeo volta como camada no lugar
-  da imagem; credenciais só cifradas no banco (`rift.conexoes`, migração 0001). A Z no Rift (barra "Peça à Z", ações
+  Higgsfield conectada uma vez na conta Absolute ZRO (`/conexoes`, vale para todos os apps; desde 01/11/2026 o Rift
+  pede pelo repasse `/api/zro/higgsfield` ao HUB e não guarda credencial; a conexão própria por conta e por chave da
+  API saiu). O arquivo vai do aparelho direto para a Higgsfield, o vídeo volta como camada no lugar da imagem. A Z no Rift (barra "Peça à Z", ações
   com desfazer) só para o titular (`RIFT_Z_LIBERADOS`, teto `RIFT_Z_LIMITE_DIA`) é a Z do HUB: o Rift pede em
   `POST /api/v1/ia/rift` com a credencial do cliente `rift-web`, a chave do Claude fica só no HUB, o HUB confere a lista
   dele (`IA_RIFT_LIBERADOS`) e o gasto entra no teto do dia da Z e nos Custos. Créditos (01/11/2026): a folha mostra o saldo e o plano da conta, o medidor (usado no mês × disponível,
   pelo extrato da Higgsfield) e o que o Rift gastou, e três opções de gasto (Rápido, Equilibrado, Máxima qualidade;
   curto ou longo) com o preço que a Higgsfield informa antes de gerar; sem saldo, a opção fica travada (migração 0002).
   Prévias (01/11/2026): "Criar com IA" e o passo "1 · Ver em imagem" geram 2 ou 4 telas baratas (conta: GPT Image 2.5
-  Flare, a imagem da camada pode ir de referência; chave: Soul) no formato do projeto; a escolhida vira camada e segue
+  Flare, a imagem da camada pode ir de referência) no formato do projeto; a escolhida vira camada e segue
   para "2 · Animar" (migração 0003). App de computador (01/11/2026, `products/rift-motion/desktop`): o site numa janela
   (Mac e Windows), na moldura do Relay mas feito para computador (menus de programa, arrastar do Finder, progresso
-  no Dock e aviso quando a IA termina, sem página de apresentação), com o login da Higgsfield dentro da janela; instala e atualiza só pela central
+  no Dock e aviso quando a IA termina, sem página de apresentação); instala e atualiza só pela central
   (catálogo `rift-motion` já no HUB), Release `rift-motion-versao-de-teste` pelo `rift-motion-desktop.yml` quando
   chegar à main. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay, primeiro build do app na main.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em

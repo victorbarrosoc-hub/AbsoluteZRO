@@ -1867,9 +1867,10 @@ function estudio() {
     $$('[data-d]', host).forEach((b) => (b.onclick = () => { dest = b.dataset.d; sheet(); }));
     $('#shGo').focus();
   }
-  // ---------- Gerar com IA (Higgsfield da pessoa) ----------
-  // O arquivo vai do aparelho direto para a Higgsfield e o vídeo volta direto para o aparelho; o servidor do Rift só
-  // guarda a conexão e acompanha o pedido. Gastar crédito só no toque em "Gerar". O resultado vira camada de vídeo.
+  // ---------- Gerar com IA (Higgsfield das Conexões da Absolute ZRO) ----------
+  // A pessoa conecta a Higgsfield uma vez na conta Absolute ZRO (absolutezro.com/conexoes) e vale para todos os apps.
+  // O Rift pede pelo repasse /api/zro/higgsfield (api/_higgsfield.js); o arquivo vai do aparelho direto para a
+  // Higgsfield e o vídeo volta direto para o aparelho. Gastar crédito só no toque em "Gerar". Vira camada de vídeo.
   async function apiRift(caminho, { metodo = 'GET', corpo } = {}) {
     let r;
     try { r = await fetch('/api/rift/' + caminho, { method: metodo, credentials: 'same-origin', headers: corpo ? { 'content-type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined }); }
@@ -1878,6 +1879,19 @@ function estudio() {
     if (!r.ok || !d.ok) throw Object.assign(new Error(d.erro || (r.status === 401 ? 'Entre com a sua conta Absolute ZRO.' : r.status === 503 ? 'Gerar com IA precisa da sua conta no rift.absolutezro.com.' : 'Não deu agora. Tente de novo.')), { status: r.status, reconectar: !!d.reconectar });
     return d;
   }
+  const CONEXOES = 'https://absolutezro.com/conexoes';
+  async function apiHf(caminho, { metodo = 'GET', corpo } = {}) {
+    let r;
+    try { r = await fetch('/api/zro/higgsfield' + caminho, { method: metodo, credentials: 'same-origin', headers: corpo ? { 'content-type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined }); }
+    catch (e) { throw new Error('Sem conexão com o Rift agora.'); }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(d.message || (r.status === 401 ? 'Entre de novo com a sua conta Absolute ZRO.' : 'Não deu agora. Tente de novo.')), { status: r.status, codigo: d.error || null, conectar: d.details?.conectar || CONEXOES });
+    return d;
+  }
+  // o painel da Absolute ZRO no formato que a folha desenha
+  const painelDe = (d) => ({ saldo: { creditos: d.saldo ?? null, plano: d.plano || null }, usoMes: d.usoMes ?? null, usoRift: { creditos_mes: d.usoApp?.mes || 0, n_mes: d.usoApp?.pedidos || 0 },
+    imagens: Object.fromEntries((d.imagens || []).map((i) => [i.quantidade, { creditos: i.creditos }])), opcoes: d.opcoes || [] });
+  const precisaConectar = (e) => e.status === 401 || e.codigo === 'sem_conexao' || e.codigo === 'app_desligado';
   const geracoes = new Map(); // id da camada de origem → { id, estado }
   const fecharFolha = () => { $('#sheetHost').innerHTML = ''; };
   const xFolha = '<button class="icon-btn" id="gfX" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>';
@@ -1895,11 +1909,12 @@ function estudio() {
     if (idCamada && (!c || c.tipo !== 'midia' || c.midia.tipo !== 'imagem')) return toast('Escolha uma camada de imagem para gerar.');
     const g = c && geracoes.get(c.id);
     if (g && !['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) return mostrarAndamento(c.id);
-    folhaGerar('<p class="nota">Conferindo a sua conexão…</p>');
-    let st;
-    try { st = await apiRift('higgsfield'); } catch (e) { return folhaGerar(`<p class="nota">${escH(e.message)}</p>`); }
-    if (!st.conectado) return telaConectar(idCamada, promptInicial);
-    const estado = { passo: passo || (c ? 'movimento' : 'imagem'), duracao: 'curto', opcao: 'equilibrado', prompt: promptInicial, painel: null,
+    folhaGerar('<p class="nota">Conferindo a sua Higgsfield…</p>');
+    let pn0;
+    try { pn0 = await apiHf(`?duracao=curto&proporcao=${encodeURIComponent(proporcaoProj())}`); }
+    catch (e) { return precisaConectar(e) ? telaConectar(idCamada, promptInicial, e) : folhaGerar(`<p class="nota">${escH(e.message)}</p>`); }
+    const st = { conectado: true, tipo: 'conta', rotulo: pn0.conta };
+    const estado = { passo: passo || (c ? 'movimento' : 'imagem'), duracao: 'curto', opcao: 'equilibrado', prompt: promptInicial, painel: painelDe(pn0),
       img: { prompt: '', quantidade: 4, usarRef: !!c && st.tipo === 'conta', gerando: false, prontas: [], escolhida: -1, erro: null } };
     const fmt = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
     const custoTxt = (o) => (o && o.creditos != null ? `${fmt(o.creditos)} ${o.creditos === 1 ? 'crédito' : 'créditos'}` : o && o.usd != null ? `US$ ${fmt(o.usd)}` : 'preço na Higgsfield');
@@ -1938,18 +1953,17 @@ function estudio() {
         <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(estado.prompt)}</textarea></label>
         <div class="linha"><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração"><button class="chip" data-d="curto" aria-pressed="${estado.duracao === 'curto'}">Curto</button><button class="chip" data-d="longo" aria-pressed="${estado.duracao === 'longo'}">Longo</button></div></div>
         <div class="ops" role="radiogroup" aria-label="Quanto gastar">${pn ? ops.map((o) => `<button class="op" role="radio" data-op="${o.id}" aria-checked="${sel && o.id === sel.id}" ${semSaldo(o) ? 'disabled' : ''}><span class="op__nome">${escH(o.nome)}</span><span class="op__custo">${custoTxt(o)}</span><span class="op__desc">${escH(o.desc)} · ${o.segundos} s</span>${semSaldo(o) ? '<span class="op__falta">Faltam créditos</span>' : ''}</button>`).join('') : '<p class="nota">Calculando o preço das opções…</p>'}</div>
-        <p class="nota">${sel && st.tipo === 'conta' && saldo != null && sel.creditos != null ? `Depois de gerar, sobram <b>${fmt(Math.max(0, saldo - sel.creditos))}</b> créditos.` : st.tipo === 'chave' ? 'Cobrado do saldo em dólar da sua chave da API.' : ''} Sem som: o som vem do NOSSOM.</p>
+        <p class="nota">${sel && st.tipo === 'conta' && saldo != null && sel.creditos != null ? `Depois de gerar, sobram <b>${fmt(Math.max(0, saldo - sel.creditos))}</b> créditos.` : ''} Sem som: o som vem do NOSSOM.</p>
         <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar" ${!sel || semSaldo(sel) ? 'disabled' : ''}>${sel ? `Gerar vídeo · ${custoTxt(sel)}` : 'Gerar vídeo'}</button></div>` };
     }
     function pintar() {
       const pn = estado.painel;
       const mov = estado.passo === 'movimento' && c ? corpoMovimento() : null;
       const host = folhaGerar(`
-        <div class="conectada"><span>Conectada: <b>${escH(st.rotulo || 'Higgsfield')}</b></span><button class="chip" id="gfSair" style="margin-left:auto;height:28px">Desconectar</button></div>
+        <div class="conectada"><span>Higgsfield: <b>${escH(st.rotulo || 'conectada')}</b></span><a class="chip" href="${CONEXOES}" target="_blank" rel="noopener" style="margin-left:auto;height:28px;display:inline-flex;align-items:center;text-decoration:none" title="A conexão fica na sua conta Absolute ZRO e vale para todos os apps">Conexões</a></div>
         ${pn ? medidor(pn) : '<div class="cred"><p class="nota">Conferindo seus créditos…</p></div>'}
         <div class="passos" role="tablist" aria-label="Passos"><button role="tab" data-passo="imagem" aria-selected="${!mov}">1 · Ver em imagem</button><button role="tab" data-passo="movimento" aria-selected="${!!mov}" ${c ? '' : 'disabled title="Escolha uma prévia primeiro"'}>2 · Animar</button></div>
         ${mov ? mov.html : corpoImagem()}`);
-      $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c?.id || null, estado.prompt); } catch (e) { toast(e.message); } });
       $$('[data-passo]', host).forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; estado.passo = b.dataset.passo; pintar(); }));
       if (mov) {
         const pr = $('#gfPrompt', host);
@@ -1985,16 +1999,16 @@ function estudio() {
         let ref = null;
         if (c && im.usarRef && st.tipo === 'conta') {
           const blob = await imagemParaEnvio(c);
-          const pp = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'preparar', conteudo: 'image/jpeg' } });
+          const pp = await apiHf('/gerar', { metodo: 'POST', corpo: { acao: 'envio', conteudo: 'image/jpeg' } });
           const up = await fetch(pp.upload_url, { method: 'PUT', headers: pp.headers || { 'Content-Type': 'image/jpeg' }, body: blob }).catch(() => null);
           if (!up || !up.ok) throw new Error('A imagem não subiu para a Higgsfield. Tente de novo.');
           ref = pp.ref;
         }
-        const r = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'imagens', prompt: im.prompt.trim(), quantidade: im.quantidade, proporcao: proporcaoProj(), ref } });
+        const r = await apiHf('/gerar', { metodo: 'POST', corpo: { acao: 'telas', prompt: im.prompt.trim(), quantidade: im.quantidade, proporcao: proporcaoProj(), ref } });
         let espera = 3000, s = { estado: r.estado };
         while (!['pronto', 'falhou', 'recusado', 'cancelado'].includes(s.estado)) {
           await new Promise((ok) => setTimeout(ok, espera)); espera = Math.min(8000, espera + 1000);
-          s = await apiRift('gerar?id=' + encodeURIComponent(r.id));
+          s = await apiHf('/gerar?id=' + encodeURIComponent(r.id));
         }
         if (s.estado !== 'pronto' || !s.urls?.length) throw new Error(s.erro || NOME_ESTADO[s.estado] || 'As prévias não vieram.');
         const prontas = [];
@@ -2006,7 +2020,7 @@ function estudio() {
         }
         if (!prontas.length) throw new Error('As prévias ficaram prontas, mas não desceram agora. Veja na sua Higgsfield.');
         Object.assign(im, { prontas, escolhida: 0 });
-      } catch (e) { im.erro = e.reconectar ? 'Conecte a Higgsfield de novo.' : e.message; }
+      } catch (e) { if (precisaConectar(e)) return telaConectar(c?.id || null, estado.prompt, e); im.erro = e.message; }
       im.gerando = false;
       if ($('#gfT')) pintar();
       carregar(); // o saldo mudou
@@ -2036,27 +2050,30 @@ function estudio() {
     let pedido = 0;
     async function carregar() {
       const meu = ++pedido;
-      try { const pn = await apiRift(`higgsfield?painel=${estado.duracao}&prop=${encodeURIComponent(proporcaoProj())}`); if (meu === pedido && $('#gfT')) { estado.painel = pn; if (!estado.img.gerando) pintar(); } }
-      catch (e) { if (meu === pedido && $('#gfT')) { if (e.reconectar) return telaConectar(c?.id || null, estado.prompt); estado.painel = { opcoes: [] }; pintar(); toast(e.message); } }
+      try { const pn = painelDe(await apiHf(`?duracao=${estado.duracao}&proporcao=${encodeURIComponent(proporcaoProj())}`)); if (meu === pedido && $('#gfT')) { estado.painel = pn; if (!estado.img.gerando) pintar(); } }
+      catch (e) { if (meu === pedido && $('#gfT')) { if (precisaConectar(e)) return telaConectar(c?.id || null, estado.prompt, e); estado.painel = { opcoes: [] }; pintar(); toast(e.message); } }
     }
-    pintar(); carregar();
+    pintar();
   }
   const proporcaoProj = () => ({ '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:5': '4:5', '4K': '16:9' }[formatoProj] || '16:9');
-  function telaConectar(idCamada, promptInicial) {
+  // Sem Higgsfield na conta (ou login de antes do escopo): a conexão é feita uma vez na Absolute ZRO.
+  function telaConectar(idCamada, promptInicial, e = {}) {
+    const guardar = () => { try { sessionStorage.setItem('rift-gerar', JSON.stringify({ camada: idCamada, prompt: promptInicial })); } catch (x) {} };
+    if (e.status === 401) {
+      const host = folhaGerar(`
+        <p class="nota" style="font-size:0.9rem;color:var(--ink)">Entre de novo com a sua conta Absolute ZRO para criar com IA.</p>
+        <a class="glass-btn glass-btn--ink" id="gfEntrar" href="/api/zro/entrar?volta=${encodeURIComponent('/#estudio')}" style="justify-content:center">Entrar de novo</a>`);
+      $('#gfEntrar', host).addEventListener('click', guardar);
+      return;
+    }
+    const desligado = e.codigo === 'app_desligado';
     const host = folhaGerar(`
-      <p class="nota" style="font-size:0.9rem;color:var(--ink)">Conecte a sua Higgsfield para transformar a imagem em vídeo.</p>
-      <a class="glass-btn glass-btn--ink" id="gfEntrar" href="/api/higgsfield/entrar?volta=${encodeURIComponent('/#estudio')}" style="justify-content:center">Entrar com a Higgsfield</a>
-      <p class="nota" style="text-align:center">Usa os créditos do seu plano.</p>
-      <details><summary class="nota" style="cursor:pointer">Prefiro usar uma chave da API</summary>
-        <div class="gf" style="margin-top:10px"><label for="gfChave">Chave (id:segredo, do console.higgsfield.ai)<input id="gfChave" autocomplete="off" spellcheck="false" placeholder="id:segredo"></label>
-        <p class="nota">A chave fica cifrada no servidor e nunca volta para a tela. Usa o saldo em dólar da API, separado do plano.</p>
-        <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfSalvar">Salvar chave</button></div></div></details>`);
-    $('#gfEntrar', host).addEventListener('click', () => { try { sessionStorage.setItem('rift-gerar', JSON.stringify({ camada: idCamada, prompt: promptInicial })); } catch (e) {} });
-    $('#gfSalvar', host).addEventListener('click', async () => {
-      const b = $('#gfSalvar', host); b.disabled = true; b.textContent = 'Conferindo…';
-      try { await apiRift('higgsfield', { metodo: 'POST', corpo: { chave: $('#gfChave', host).value } }); toast('Chave conectada.'); abrirGerar(idCamada, promptInicial); }
-      catch (e) { toast(e.message); b.disabled = false; b.textContent = 'Salvar chave'; }
-    });
+      <p class="nota" style="font-size:0.9rem;color:var(--ink)">${desligado ? 'O Rift está desligado na sua Higgsfield.' : 'Conecte a sua Higgsfield na conta Absolute ZRO.'}</p>
+      <a class="glass-btn glass-btn--ink" id="gfEntrar" href="${escH(e.conectar || CONEXOES)}" target="_blank" rel="noopener" style="justify-content:center">${desligado ? 'Abrir Conexões' : 'Conectar na Absolute ZRO'}</a>
+      <p class="nota" style="text-align:center" title="Conecta uma vez e vale para todos os apps da Absolute ZRO. Usa os créditos do seu plano da Higgsfield.">Uma vez, para todos os apps.</p>
+      <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfJa">Já conectei</button></div>`);
+    $('#gfEntrar', host).addEventListener('click', guardar);
+    $('#gfJa', host).addEventListener('click', () => abrirGerar(idCamada, promptInicial));
   }
   // a imagem vai como JPEG de até 2048 px (o que a Higgsfield aceita e sobe rápido)
   async function imagemParaEnvio(c) {
@@ -2084,16 +2101,17 @@ function estudio() {
     geracoes.set(idCamada, g); mostrarAndamento(idCamada);
     try {
       const img = await imagemParaEnvio(c);
-      const p = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'preparar', conteudo: 'image/jpeg' } });
+      const p = await apiHf('/gerar', { metodo: 'POST', corpo: { acao: 'envio', conteudo: 'image/jpeg' } });
       const up = await fetch(p.upload_url, { method: 'PUT', headers: p.headers || { 'Content-Type': 'image/jpeg' }, body: img }).catch(() => null);
       if (!up || !up.ok) throw new Error('A imagem não subiu para a Higgsfield. Tente de novo.');
-      const i = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'iniciar', ref: p.ref, prompt, opcao, duracao } });
+      const i = await apiHf('/gerar', { metodo: 'POST', corpo: { acao: 'animar', ref: p.ref, prompt, opcao, duracao } });
       Object.assign(g, { id: i.id, estado: i.estado });
       if (folhaDe(idCamada)) mostrarAndamento(idCamada);
       acompanhar(idCamada);
     } catch (e) {
       Object.assign(g, { estado: 'falhou', erro: e.message });
-      if ($('#gfT')) mostrarAndamento(idCamada, e.reconectar ? 'Conecte a Higgsfield de novo.' : e.message);
+      if (precisaConectar(e)) { geracoes.delete(idCamada); return telaConectar(idCamada, prompt, e); }
+      if ($('#gfT')) mostrarAndamento(idCamada, e.message);
     }
   }
   async function acompanhar(idCamada) {
@@ -2108,11 +2126,11 @@ function estudio() {
     while (!['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) {
       await new Promise((ok) => setTimeout(ok, espera)); espera = Math.min(12000, espera + 1000);
       try {
-        const s = await apiRift('gerar?id=' + encodeURIComponent(g.id));
+        const s = await apiHf('/gerar?id=' + encodeURIComponent(g.id));
         const mudouEstado = s.estado !== g.estado;
-        Object.assign(g, { estado: s.estado, url: s.url, erro: s.erro });
+        Object.assign(g, { estado: s.estado, url: s.urls?.[0] || null, erro: s.erro });
         if (mudouEstado && $('#gfT') && $('.andamento')) mostrarAndamento(idCamada);
-      } catch (e) { if (e.status === 401 || e.status === 409 || e.status === 404) { Object.assign(g, { estado: 'falhou', erro: e.message }); break; } }
+      } catch (e) { if ([401, 403, 404, 409].includes(e.status)) { Object.assign(g, { estado: 'falhou', erro: e.message }); break; } }
     }
     if (g.estado === 'pronto' && g.url) await trazerVideo(idCamada, g);
     else { toast(g.erro || NOME_ESTADO[g.estado] || 'A geração não terminou.'); if ($('.andamento')) mostrarAndamento(idCamada); }

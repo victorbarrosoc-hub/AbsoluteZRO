@@ -34,5 +34,6 @@ test('a volta fica no site, com o hash do painel; outro endereço vira o oficial
   assert.equal(z.origemPermitida(pedido('/', 'rift-motion-xyz.vercel.app')), 'https://rift.absolutezro.com')
   assert.equal(z.retorno(z.SITE), 'https://rift.absolutezro.com/api/zro/callback')
   assert.deepEqual([z.COOKIE_IDA, z.COOKIE_CONTA, z.COOKIE_HUB], ['rf_zro', 'rf_conta', 'rf_hub'])
-  assert.equal(z.ESCOPOS, 'openid email profile org offline_access')
+  assert.equal(z.ESCOPOS, 'openid email profile org offline_access zro.higgsfield')
+  assert.equal(z.ESCOPOS_SEM_HF, 'openid email profile org offline_access')
 })

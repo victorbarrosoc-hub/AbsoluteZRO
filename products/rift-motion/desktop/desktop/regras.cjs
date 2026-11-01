@@ -2,17 +2,15 @@
 //
 // A janela mostra o Rift Motion (https://rift.absolutezro.com) e, para o login único, só as telas de entrar da Absolute ZRO
 // (https://absolutezro.com: /oauth/authorize, /entrar, /criar-conta…) e a página de contas do Google ("Entrar com o
-// Google" do HUB), e o login da Higgsfield (conectar a conta para gerar com IA: higgsfield.ai e os subdomínios dela,
-// só https; o retorno volta para o Rift na mesma partição). O resto do HUB e qualquer outro site abrem no navegador
-// padrão, e só se forem https. E-mail
-// (mailto:) vai para o app de e-mail. O link rift://caminho abre uma rota do Rift Motion e nada além disso.
+// Google" do HUB). A Higgsfield é conectada na conta Absolute ZRO (absolutezro.com/conexoes, no navegador), não aqui.
+// O resto do HUB e qualquer outro site abrem no navegador padrão, e só se forem https. E-mail (mailto:) vai para o app
+// de e-mail. O link rift://caminho abre uma rota do Rift Motion e nada além disso.
 
 const RIFT_PADRAO = 'https://rift.absolutezro.com'
 const HUB_PADRAO = 'https://absolutezro.com'
 const ESQUEMA = 'rift'
 
 const GOOGLE_LOGIN = new Set(['accounts.google.com'])
-const HIGGSFIELD = 'higgsfield.ai'
 
 // Telas do login único da Absolute ZRO que ficam na janela (o resto do HUB vai para o navegador).
 const LOGIN_DO_HUB = [
@@ -80,23 +78,10 @@ function ehLoginGoogle(url) {
   return !!u && u.protocol === 'https:' && GOOGLE_LOGIN.has(u.hostname) && !u.port && !u.username && !u.password
 }
 
-/** O login da Higgsfield (https, higgsfield.ai ou um subdomínio dela, porta padrão)? */
-function ehLoginHiggsfield(url) {
-  const u = parse(url)
-  return (
-    !!u &&
-    u.protocol === 'https:' &&
-    (u.hostname === HIGGSFIELD || u.hostname.endsWith('.' + HIGGSFIELD)) &&
-    !u.port &&
-    !u.username &&
-    !u.password
-  )
-}
-
 /** A janela do app pode navegar para esta URL? */
 function podeNavegar(url, o) {
   if (ehDoApp(url, o)) return true
-  return ehLoginDoHub(url, o) || ehLoginGoogle(url) || ehLoginHiggsfield(url)
+  return ehLoginDoHub(url, o) || ehLoginGoogle(url)
 }
 
 /**
@@ -182,7 +167,6 @@ module.exports = {
   ehDoApp,
   ehLoginDoHub,
   ehLoginGoogle,
-  ehLoginHiggsfield,
   podeNavegar,
   linkExterno,
   destino,

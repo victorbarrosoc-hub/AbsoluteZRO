@@ -14,11 +14,12 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
-// offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) e falar com o Set
-// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set. A Absolute ZRO de antes do
-// Set recusa o escopo (invalid_scope): o callback refaz o pedido com ESCOPOS_SEM_SET e o login segue, sem o Set.
-export const ESCOPOS = 'openid email profile org offline_access'
-export const ESCOPOS_SEM_SET = 'openid email profile org offline_access'
+// offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) e falar com a Absolute ZRO.
+// zro.higgsfield: criar imagem e vídeo com a Higgsfield das Conexões da conta, pelo repasse /api/zro/higgsfield
+// (api/_higgsfield.js). A Absolute ZRO de antes recusa o escopo (invalid_scope): o callback refaz o pedido com
+// ESCOPOS_SEM_HF e o login segue, sem criar com IA.
+export const ESCOPOS = 'openid email profile org offline_access zro.higgsfield'
+export const ESCOPOS_SEM_HF = 'openid email profile org offline_access'
 export const SITE = 'https://rift.absolutezro.com'
 export const COOKIE_IDA = 'rf_zro'
 export const COOKIE_CONTA = 'rf_conta'

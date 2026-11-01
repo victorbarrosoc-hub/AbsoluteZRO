@@ -92,15 +92,20 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
 
 - **A Z manda, a Higgsfield executa.** A pessoa conecta a própria Higgsfield; a Z (que conhece a cena) traduz o pedido em
   ações no estúdio e, para animar uma imagem, abre "Gerar com IA" já preenchido. Gastar crédito só com o toque da pessoa.
-- **Duas portas:** a **conta** (preferida: login OAuth com PKCE no servidor de login da Higgsfield, registro dinâmico do
-  Rift como app, e as ferramentas do MCP `mcp.higgsfield.ai` com o token da pessoa, créditos do plano) e a **chave da API**
-  (id:segredo, saldo em dólar separado do plano). Credenciais só cifradas (AES-256-GCM) em `rift.conexoes`.
+- **A Higgsfield é da central** (pedido do titular, 01/11/2026: "entra o Higgsfield na central mesmo, aí vale pra
+  qualquer plataforma", [ADR 0037](0037-higgsfield-nas-conexoes.md)): a pessoa conecta a conta uma vez em
+  `absolutezro.com/conexoes` e o Rift pede pelo repasse `/api/zro/higgsfield` (`products/rift-motion/api/_higgsfield.js`)
+  para `/api/v1/higgsfield*` do HUB com o token da sessão (escopo `zro.higgsfield`; login de antes do escopo cai em
+  `sem_hf`). O Rift não guarda credencial da Higgsfield; a conexão própria (conta por OAuth/MCP e chave da API em
+  `rift.conexoes`) saiu. O HUB confere preço e saldo antes de gerar e registra o uso em `zro.ia_geracoes`. Para isso o
+  Rift entrou no catálogo (migration `0054` do HUB): o cliente `rift-web` é o app `rift-motion` e o gate de lançamento
+  vale para o login, a API e a Z (fechado: só o papel de plataforma `admin`).
 - **A Z no Rift só para o titular** até a fase 2 (`RIFT_Z_LIBERADOS`), com teto por dia (`RIFT_Z_LIMITE_DIA`; sem teto =
   desligada) e o uso em `rift.z_uso`. É a **Z do HUB** (pedido do titular, 01/11/2026, "a mesma chave"): o servidor do
   Rift chama `POST /api/v1/ia/rift` servidor a servidor (Basic do cliente confidencial `rift-web`) e o Rift não guarda
   chave do Claude. O HUB confere de novo (cliente certo, conta em `IA_RIFT_LIBERADOS`, ativa e que já entrou no Rift),
   checa o teto do dia da Z antes de gastar e registra o uso nos Custos (`packages/core/src/z-rift.ts`). Por token de app
-  o papel de plataforma não vem, por isso a lista explícita em vez de "admin".
+  o papel de plataforma não vem, por isso a lista explícita, e o gate do Rift fecha para quem não é admin.
 
 ## Nome e marca
 
@@ -125,6 +130,6 @@ quadro." (no lugar de "Beyond the frame"). Conferir "Rift" no INPI (classes 9 e 
 - Navegador primeiro ou app de computador junto (o ProRes depende do computador). Decidido em 01/11/2026: o app de computador, quando
   vier, instala e atualiza só pela central Absolute ZRO (id `rift-motion`, sem autoatualização própria nem botão de
   instalador no site). Feito em 01/11/2026 (`products/rift-motion/desktop`, cópia da moldura do Relay): o site numa
-  janela, login único e o da Higgsfield dentro dela, aviso de versão que abre `absolutezro://apps/rift-motion`.
+  janela, login único dentro dela (a Higgsfield é conectada na central, no navegador), aviso de versão que abre `absolutezro://apps/rift-motion`.
 - Plano e preço: a pesquisa mostra que cobrar por resolução ou por alfa irrita; a proposta é liberar a exportação
   completa e cobrar por recurso.
