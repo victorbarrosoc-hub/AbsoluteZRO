@@ -2,6 +2,15 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026, ramo `sobedesce-avatar-zro`)
+
+- ✅ App do celular: o avatar do topo (e a folha "Conta e ajustes", que agora começa pela conta) mostra nome e foto da
+  conta Absolute ZRO, não do Drive conectado; o Drive fica rotulado "Google Drive" com o e-mail e a foto dele.
+  `/api/eu` devolve `usuario.fotoUrl` (claim `picture`, só `/api/v1/foto/…` do emissor, gravada a cada login em
+  `contas_zro.foto`, migração `0020_foto_da_conta_zro`; sem foto, as iniciais). 🟡 A foto entra no próximo login de
+  quem já estava ligado; o nome ainda é o `usuarios.nome` (não relê o perfil da Absolute ZRO como o Relay). ⬜ App de
+  computador sem mudança: o chip da barra lateral é o seletor de contas do Google (Drive).
+
 ## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026, ramo `sobedesce-recuperar-colecoes`)
 
 - ✅ A raiz "SOBEDESCE Referências" do app antigo é achada pelo nome e reaproveitada (nada de raiz nova vazia ao lado);

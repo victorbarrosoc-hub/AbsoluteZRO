@@ -72,7 +72,8 @@ const ARQUIVOS = [
   { id: 'f2', name: 'trilha.wav', mimeType: 'audio/wav', size: '45678901', md5Checksum: 'b'.repeat(32), modifiedTime: '2026-10-27T12:00:00Z' },
 ]
 
-async function contexto(w: number, h: number) {
+/** `eu`/`about`: troca a resposta de /api/eu e o `user` do /about do Drive (o resto fica igual). */
+async function contexto(w: number, h: number, o: { eu?: Record<string, unknown>; about?: Record<string, unknown> } = {}) {
   const ctx = await navegador.newContext({
     ...pw.devices['iPhone 15 Pro'],
     viewport: { width: w, height: h },
@@ -86,7 +87,7 @@ async function contexto(w: number, h: number) {
     const u = new URL(r.request().url()).pathname
     if (u.endsWith('/api/eu'))
       return r.fulfill({
-        json: {
+        json: o.eu ?? {
           usuario: { id: 'u1', nome: 'Pessoa Teste', email: 'pessoa@exemplo.com' },
           contas: [{ id: 'g1', email: 'pessoa@exemplo.com', nome: 'Pessoa', fotoUrl: null, estado: 'ok' }],
           recursos: {},
@@ -100,7 +101,7 @@ async function contexto(w: number, h: number) {
       json: {
         storageQuota: { limit: '2199023255552', usage: '612000000000' },
         files: ARQUIVOS,
-        user: { emailAddress: 'pessoa@exemplo.com', displayName: 'Pessoa' },
+        user: o.about ?? { emailAddress: 'pessoa@exemplo.com', displayName: 'Pessoa' },
       },
     }),
   )
@@ -194,3 +195,47 @@ for (const [w, h] of [
     assert.deepEqual(erros, [])
   })
 }
+
+// Bug do titular (01/11/2026): o avatar do topo mostrava a inicial do Drive conectado (o /about do Google), não a da
+// conta. O "você" é sempre a conta Absolute ZRO (nome e foto da conta); o Drive aparece só onde se fala dele.
+test('o avatar do topo é a conta Absolute ZRO, não o Drive conectado', { skip: pular }, async () => {
+  const ctx = await contexto(393, 852, {
+    eu: {
+      usuario: { id: 'u1', nome: 'Rita Zero', email: 'rita@exemplo.com', fotoUrl: null },
+      contas: [{ id: 'g1', email: 'contato@produtora.exemplo', nome: 'Contato Produtora', fotoUrl: null, estado: 'ok' }],
+      recursos: {},
+      zro: { ligada: true, pedir: false },
+    },
+    about: { emailAddress: 'contato@produtora.exemplo', displayName: 'Contato Produtora' },
+  })
+  const p = await ctx.newPage()
+  const erros: string[] = []
+  p.on('pageerror', (e: Error) => erros.push(e.message))
+  try {
+    await p.goto(`${base}/app/`)
+    await p.locator('.tabbar').waitFor({ timeout: 60_000 })
+    const avatar = p.locator('.topbar .avatar-btn .avatar')
+    // espera o /about do Drive chegar (o espaço aparece): é ele que antes tomava o lugar da conta
+    await p.locator('.ini-ola h1', { hasText: 'Rita' }).waitFor()
+    await p.waitForFunction(() => (globalThis as any).document.querySelector('.topbar .avatar-btn .avatar')?.textContent.trim().length > 0)
+    await p.waitForTimeout(600)
+    assert.equal((await avatar.textContent())?.trim(), 'RZ', 'iniciais da conta (Rita Zero), não do Drive (Contato Produtora)')
+    if (process.env.SOBEDESCE_CAPTURA) {
+      await p.waitForTimeout(1500)
+      await p.screenshot({ path: process.env.SOBEDESCE_CAPTURA })
+    }
+
+    // A folha que o avatar abre começa pela conta; o Drive vem depois, rotulado como Drive e com o e-mail dele.
+    await p.locator('.topbar .avatar-btn').click()
+    const conta = p.locator('.settings-conta')
+    await conta.waitFor()
+    assert.match((await conta.locator('h2').textContent()) ?? '', /Rita Zero/)
+    assert.equal((await conta.locator('.avatar').first().textContent())?.trim(), 'RZ')
+    const drive = p.locator('.k-passo', { hasText: 'contato@produtora.exemplo' }).first()
+    assert.match((await drive.locator('h2').textContent()) ?? '', /^Google Drive/)
+    assert.equal((await drive.locator('.avatar').first().textContent())?.trim(), 'CP')
+  } finally {
+    await ctx.close()
+  }
+  assert.deepEqual(erros, [])
+})

@@ -76,9 +76,18 @@ export type PerfilZro = {
   email: string;
   emailVerificado: boolean;
   nome: string | null;
+  /** Foto da conta (claim `picture`): só o endereço público de fotos da Absolute ZRO (/api/v1/foto/…); sem foto, null. */
+  foto: string | null;
   organizacao: string | null;
   produtos: string[];
 };
+
+/** A foto vai num <img> do app: só vale o endereço de fotos do emissor configurado, sem nada estranho no meio. */
+export function fotoDaConta(v: unknown): string | null {
+  if (typeof v !== "string" || v.length > 300) return null;
+  const prefixo = `${emissor()}/api/v1/foto/`;
+  return v.startsWith(prefixo) && /^[A-Za-z0-9_-]{8,128}$/.test(v.slice(prefixo.length)) ? v : null;
+}
 
 /** Chave pública da Absolute ZRO pelo `kid` (JWKS com cache de 10 min; chave desconhecida busca de novo). */
 export async function chavePublica(kid: string): Promise<JsonWebKey | null> {
@@ -129,6 +138,7 @@ export async function conferirIdToken(idToken: string, nonce: string, agora = Da
     email: dados.email.trim().toLowerCase(),
     emailVerificado: dados.email_verified === true,
     nome: typeof dados.name === "string" && dados.name.trim() ? dados.name.trim() : null,
+    foto: fotoDaConta(dados.picture),
     organizacao: org && typeof org.name === "string" ? org.name : null,
     produtos,
   };

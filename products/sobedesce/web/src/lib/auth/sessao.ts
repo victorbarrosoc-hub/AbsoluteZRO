@@ -93,6 +93,8 @@ export type Autenticado = {
    * para ligar a Absolute ZRO (lib/zro/ligar.ts); a API nunca bloqueia por isso.
    */
   ligadoZro: boolean;
+  /** Foto da conta Absolute ZRO ligada (contas_zro.foto); null sem vínculo ou sem foto. É a foto do "você" nos apps. */
+  fotoZro: string | null;
 };
 
 export async function criarSessao(
@@ -192,6 +194,7 @@ export async function autenticar(credenciais: {
       },
       usuario: { id: usuarios.id, email: usuarios.email, nome: usuarios.nome },
       produtosZro: contasZro.produtos,
+      fotoZro: contasZro.foto,
     })
     .from(sessoes)
     .innerJoin(usuarios, eq(usuarios.id, sessoes.usuarioId))
@@ -227,6 +230,7 @@ export async function autenticar(credenciais: {
     via,
     liberado: liberadoPelaZro(linha.produtosZro),
     ligadoZro: linha.produtosZro !== null,
+    fotoZro: linha.fotoZro ?? null,
   };
 }
 

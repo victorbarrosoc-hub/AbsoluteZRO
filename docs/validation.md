@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
+
+Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
+(`state.account`, de `/api/eu`, com `fotoUrl` da Absolute ZRO). Migração nova `0020_foto_da_conta_zro`.
+
+- `products/sobedesce/web`: `npm run typecheck`, `lint` e `build` ok; `npm test` 387/388 (falha só
+  `zro-relay-ciclo.test.mts`, que precisa do `undici` de `products/sobedesce`, sem `node_modules` neste ambiente).
+  Novos: `zro.test.mts` (foto da conta em `usuario.fotoUrl`, some quando a conta tira a foto, foto de fora do emissor
+  recusada, conta sem vínculo com `null`) e `celular-app.test.mts` (iPhone 393: conta "Rita Zero" e Drive "Contato
+  Produtora", o topo mostra RZ; a folha começa pela conta e o Drive vem rotulado com o e-mail e as iniciais dele).
+- Raiz: `npx prettier@3.9.10 --check .` ok; `node scripts/scan-secrets.mjs` sem segredos.
+
 ## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026)
 
 Ramo `sobedesce-recuperar-colecoes`. Drive desconectado na migração levou `colecoes` em cascata; as pastas ficaram.
