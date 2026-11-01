@@ -15,6 +15,27 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Revisão dos apps de computador (01/11/2026)
+
+Branch `revisao-desktop`. Linux com Xvfb, Electron 44.5.1 (o mesmo dos 7 apps). Mac e Windows reais não estavam
+disponíveis: instalação de DMG/NSIS, quarentena, bandeja do Windows e a barra de menus do Mac não foram provadas aqui.
+
+- Central (`apps/hub-desktop`): `node --test test/*.test.mjs` **74/74** (novos: `downloadPermitido`, download maior que
+  o catálogo, recusa de redirecionamento, queda de rede sem `.parte`, aviso lembrado entre aberturas, marca flat);
+  `electron . --smoke` **SMOKE OK**. No Electron de verdade, com servidores locais: o `session.fetch` segue
+  redirecionamento com `response.url` vazio (a regra "só https" antiga não conferia nada) e recusa `redirect: 'manual'`;
+  o `download.cjs` novo (net.request) baixou direto e com redirecionamento interno, levou o cookie da partição, recusou
+  redirecionamento para http de outro host, para https fora do GitHub e endereço inicial fora do HUB, e o cancelamento
+  no meio não deixou arquivo.
+- TPeasy: `node --test` **23/23**; smoke OK; com `TPEASY_URL` local e `--use-fake-device-for-media-stream`, a página
+  pediu `getUserMedia`: áudio **ok**, vídeo e áudio+vídeo **NotAllowedError** (antes, o áudio também era negado).
+- SOBEDESCE: `test/desktop.test.js` **10/10**; `test:fast` 784/785 (a que falha pede o `onnxruntime-node` opcional, não
+  instalado aqui); smoke OK; o menu montado no Electron mostra tudo em português (antes: "Quit", "Undo", "Minimize"…).
+- Maestro 52/52, Relay 23/23, Carro do Freela 27/27, Synquei 149/149; smoke OK em todos.
+- Releases (`*-versao-de-teste`, `synquei-app-desktop`, `hub-desktop`) × `GET /api/v1/desktop/apps` ao vivo: versão,
+  build, nome, tamanho e SHA-256 batem nos 7; o SHA-256 real de 14 instaladores (Mac e Windows de cada um), baixados em
+  fluxo sem salvar, bate com o `digest` do GitHub e com o catálogo.
+
 ## iPhone sem zoom sozinho (01/11/2026)
 
 Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava

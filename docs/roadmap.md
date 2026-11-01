@@ -784,6 +784,19 @@ Branch `central-unica`. Todo app de computador se instala e se atualiza só pela
 - ⬜ AEON na central: o Release dele precisa dos nomes com versão e build.
 - ⛔ Publicar a 1.4.0 e ligar no ar: merge na main (dispara o workflow da central) com autorização do titular.
 
+### Revisão dos apps de computador (01/11/2026, branch `revisao-desktop`)
+
+- ✅ Central: download do instalador confere cada redirecionamento (só `/baixar/` do HUB, o Release no GitHub de
+  `victorbarrosoc-hub` e o servidor de arquivos do GitHub; `desktop/download.cjs`), para no meio se passar do tamanho
+  do catálogo e não deixa `.parte` para trás; "uma vez por versão" vale entre aberturas; "Sem conexão" com o wordmark
+  flat (saiu o `marca.webp` do feixe de luz).
+- ✅ TPeasy: microfone (só áudio, só a origem do TPeasy) para "Rolar com a voz", `NSMicrophoneUsageDescription` no Mac;
+  saiu o `fileSystem` copiado do Relay.
+- ✅ SOBEDESCE: menu todo em português (os papéis prontos traziam "Undo", "Quit"…); "Mostrar" só abre pasta de verdade.
+- ✅ Releases conferidos contra o catálogo ao vivo: os 7 (versão, build, nome, tamanho e SHA-256 real de Mac e Windows).
+- ⬜ Provar em Mac e Windows reais: instalar/atualizar pela central (DMG, quarentena, NSIS silencioso), deep link
+  vindo de cada app, microfone do TPeasy no Mac.
+
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 
 - ✅ **Dólar automático** (HUB, migração `0030`, adendo ao [ADR 0028](decisions/0028-custos-do-ecossistema.md)): PTAX de
