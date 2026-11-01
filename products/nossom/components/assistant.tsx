@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useId } from 'react';
 import AIMotion from './ai-motion';
+import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
 import { useConversation } from '@elevenlabs/react';
 import {
@@ -182,22 +183,31 @@ export default function Assistant({
             </button>
           )}
         </header>
-        <AIMotion
-          compact
-          state={
-            error
-              ? 'error'
-              : conversation.isSpeaking
-                ? 'speaking'
-                : connected
-                  ? 'listening'
-                  : thinking || disabled
-                    ? 'thinking'
-                    : 'idle'
-          }
-        />
+        {/* No Início do estúdio o símbolo pequeno assina a tela (titular, 01/11/2026: sem o 3D, a ação sobe); o
+            movimento grande fica no assistente aberto, onde mostra ouvindo e pensando. */}
+        {embedded ? (
+          <span className="assistant-simbolo" aria-hidden="true">
+            <Brand compact />
+          </span>
+        ) : (
+          <AIMotion
+            compact
+            state={
+              error
+                ? 'error'
+                : conversation.isSpeaking
+                  ? 'speaking'
+                  : connected
+                    ? 'listening'
+                    : thinking || disabled
+                      ? 'thinking'
+                      : 'idle'
+            }
+          />
+        )}
         <Title id={id + '-title'}>
-          Seu áudio, <span className="text-gradient">melhor.</span>
+          Seu áudio,{' '}
+          {embedded ? <strong>melhor.</strong> : <span className="text-gradient">melhor.</span>}
         </Title>
         <p>
           {embedded ? (
