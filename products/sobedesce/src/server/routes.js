@@ -1152,7 +1152,7 @@ export function createApi(ctx) {
     return mobileState()
   })
 
-  // ── versão nova (src/version.js): "Atualizar" no app empacotado (src/updater.js) ou "Baixar" no navegador
+  // ── versão nova (src/version.js): o app só avisa; quem atualiza é a central Absolute ZRO (src/central.js)
   const versao = () => {
     if (!ctx.versao) throw new HttpProblem(404, 'O aviso de versão nova não está disponível.')
     return ctx.versao
@@ -1167,21 +1167,6 @@ export function createApi(ctx) {
     if (body.build !== undefined && !(Number.isSafeInteger(body.build) && body.build > 0)) throw new HttpProblem(400, 'Versão inválida.')
     // dismiss() lança Error com status 400/409 e mensagem em PT-BR (toProblem repassa).
     return { versao: await v.dismiss(body.build) }
-  })
-
-  // "Tentar de novo" o download automático da versão nova (sem trocar no fim).
-  route('POST', '/api/versao/baixar', async () => ({ versao: await versao().baixar() }))
-
-  // Atualizar fecha o app no fim: transferências em andamento pausam (e continuam ao abrir de novo).
-  // Com alguma andando, só segue com { pausar: true } (a interface pergunta antes).
-  route('POST', '/api/versao/atualizar', async ({ body }) => {
-    const v = versao()
-    if (body.pausar !== undefined && typeof body.pausar !== 'boolean') throw new HttpProblem(400, 'Pedido inválido.')
-    const ativas = ctx.manager?.activeCount?.() ?? 0
-    if (ativas > 0 && body.pausar !== true) {
-      throw new HttpProblem(409, 'Há transferências em andamento. Atualizar agora vai pausá-las.')
-    }
-    return { versao: await v.update() }
   })
 
   // ── mostrar no Finder/Explorer

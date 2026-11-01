@@ -14,7 +14,6 @@ import { TransferManager } from './engine/manager.js'
 import { startServer, DEFAULT_PORT } from './server/app.js'
 import { MobileReceiver } from './mobile/receiver.js'
 import { VersionChecker } from './version.js'
-import { Updater } from './updater.js'
 import { ReferenciasService } from './referencias/service.js'
 import { PedidosProxy } from './engine/pedidos-proxy.js'
 import { PedidosFrames } from './engine/pedidos-frames.js'
@@ -139,17 +138,15 @@ function banner(url, root) {
  * Sobe tudo: ajustes, contas, MD5, fila e servidor. Usado pelo `npm start`, pelo demo, pelos testes e pelo desktop.
  * @param {{ home?: string, port?: number, open?: boolean, desktop?: boolean, quiet?: boolean,
  *   managerOptions?: object, serverOptions?: object, mobileOptions?: object, cloudOptions?: object, versionOptions?: object,
- *   updaterOptions?: object, referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object, pedidosRelayOptions?: object }} [opts]
+ *   referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object, pedidosRelayOptions?: object }} [opts]
  *   `managerOptions`/`serverOptions`/`mobileOptions`/`cloudOptions`/`versionOptions` (opcionais) vão para o
  *   TransferManager/startServer/MobileReceiver/CloudAuth/VersionChecker (os testes trocam peças, ex.: mobileOptions { port: 0, host: '127.0.0.1' }).
- *   `updaterOptions` vai para o Updater (src/updater.js), que só existe com `handoff` (o app de desktop empacotado
- *   passa: é o processo principal do Electron quem roda a troca e fecha o app).
  *   `segredos`: guarda do sistema para tokens e sessão (src/util/segredos.js); o app de desktop passa a do safeStorage
  *   do Electron (desktop/engine.js). Sem ela, JSON 0600 como sempre.
  * @returns {Promise<{ url: string, port: number, manager: TransferManager, auth: AuthManager, settings: Settings,
  *   hasher: Hasher, paths: object, server: object, mobile: MobileReceiver, versao: VersionChecker, shutdown(): Promise<void> }>}
  */
-export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, updaterOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {}, pedidosRelayOptions = {} } = {}) {
+export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {}, pedidosRelayOptions = {} } = {}) {
   const root = home ? path.resolve(home) : dataDir()
   fs.mkdirSync(root, { recursive: true, mode: 0o700 })
   const paths = dataPaths(root)
@@ -185,9 +182,8 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     // Recepção do celular pelo Wi-Fi: liga/desliga sozinha conforme o ajuste mobileReceive.
     mobile = new MobileReceiver({ settings, auth, manager, hasher, paths, ...mobileOptions })
     // Aviso de versão nova: pergunta ao mesmo site da conta SOBEDESCE (só nos builds do GitHub Actions; ver src/version.js).
-    // "Atualizar" pelo próprio app: só no app de desktop empacotado (desktop/engine.js passa o handoff).
-    const updater = updaterOptions.handoff ? new Updater({ stateDir: root, log: (...a) => console.warn('[sobedesce]', ...a), ...updaterOptions }) : null
-    versao = new VersionChecker({ settings, baseUrl: auth.cloud?.baseUrl, log: (...a) => console.warn('[sobedesce]', ...a), updater, ...versionOptions })
+    // Quem atualiza é a central Absolute ZRO: o app só avisa (src/version.js, src/central.js).
+    versao = new VersionChecker({ settings, baseUrl: auth.cloud?.baseUrl, log: (...a) => console.warn('[sobedesce]', ...a), ...versionOptions })
     const wanted = port ?? (Number(process.env.SOBEDESCE_PORT) || DEFAULT_PORT)
     server = await startServer({ port: wanted, settings, auth, manager, hasher, paths, desktop, mobile, versao, referencias, ...serverOptions })
     // Frames pedido pelo celular: o serviço do Frames vem com o servidor (src/server/frames.js; src/engine/pedidos-frames.js).

@@ -2,7 +2,6 @@
 // Assim um pico de trabalho do motor nunca trava a interface, e um travamento do motor não derruba a janela.
 import { startApp } from '../src/index.js'
 import { guardaPorMensagens } from '../src/util/segredos.js'
-import { lerGerenciado } from '../src/gerenciado.js'
 
 const parent = process.parentPort
 
@@ -64,15 +63,10 @@ async function rodarSmoke({ exigirBinarios = false, exigirCofre = false } = {}) 
 
 try {
   // Sem o aviso de terminal ("aperte Ctrl+C"): aqui a saída vai só para o motor.log.
-  // "Atualizar" (src/updater.js): só no app empacotado, que passa o caminho e o PID do processo principal.
-  // A troca é entregue ao processo principal, que roda o script solto e fecha o app.
-  const appExe = process.env.SOBEDESCE_APP_EXE || ''
-  const appPid = Number(process.env.SOBEDESCE_APP_PID) || 0
-  const updaterOptions = appExe && appPid ? { appExe, appPid, handoff: ({ script }) => parent.postMessage({ type: 'update-handoff', script }) } : {}
-  // Instalado pela central do Absolute ZRO: ela atualiza o app (src/gerenciado.js); o aviso próprio fica quieto.
-  const arquivoCentral = process.env.SOBEDESCE_CENTRAL_ARQUIVO || ''
-  const versionOptions = arquivoCentral ? { gerenciado: () => lerGerenciado(arquivoCentral) } : {}
-  app = await startApp({ open: false, desktop: true, quiet: true, segredos: guarda, updaterOptions, versionOptions })
+  app = await startApp({ open: false, desktop: true, quiet: true, segredos: guarda })
+  // Versão nova (src/version.js): a notificação do sistema sai pelo processo principal, uma vez por build. Quem
+  // atualiza é a central Absolute ZRO (o clique abre absolutezro://apps/sobedesce?acao=atualizar).
+  app.versao?.on('avisar', ({ build }) => parent.postMessage({ type: 'versao-nova', build }))
   app.referencias?.setCookieProvider(pedirCookies)
   console.log(`[motor] pronto em ${app.url} · dados em ${app.paths.root}`)
   parent.postMessage({ type: 'ready', url: app.url, port: app.port })
