@@ -32,7 +32,7 @@ module.exports = function registrar(ctx) {
   /** uma guilda com dono e membros, pronta: devolve os cookies, a guilda e a sala */
   async function montar(nome, tag, nMembros) {
     const { entrar } = ctx();
-    const dono = pessoa('dono' + tag.toLowerCase(), { recursos: [FUNDACAO] });
+    const dono = pessoa('dono' + tag.toLowerCase());   /* fundar é grátis (01/11): a conta não precisa de nada */
     const cd = await entrar(dono);
     const r = await G(cd, { nome, tag });
     assert.equal(r.status, 201, 'fundou ' + nome);
@@ -59,14 +59,16 @@ module.exports = function registrar(ctx) {
   };
   const xpDe = async gid => (await SQL('select coalesce(sum(pontos), 0)::int as xp from carro_do_freela.guilda_xp where guilda_id = $1', [gid]))[0].xp;
 
-  test('sede: com a fase 1 a rota da sede e a das imagens respondem 404 para todos', async () => {
-    FASES.fixarParaTeste(1);
+  test('sede: com a guilda fora do ar (fase 0) a rota da sede e a das imagens respondem 404 para todos', async () => {
+    FASES.fixarParaTeste(0);
     const c = await ctx().entrar(pessoa('fase'));
     assert.equal((await S(c)).status, 404);
     assert.equal((await S(c, { acao: 'mensagem', canal: crypto.randomUUID(), texto: 'oi' })).status, 404);
     assert.equal((await S(undefined)).status, 404);
     assert.equal((await imagem(c, 'logo', Buffer.from('x'))).status, 404);
-    FASES.fixarParaTeste(2);
+    FASES.fixarParaTeste(null);   /* daqui em diante, a fase de verdade (1): a Sede inteira roda nela */
+    assert.equal(FASES.faseAtual(), 1);
+    assert.notEqual((await json(await S(c))).erro, 'nao_encontrado', 'na fase 1 a rota da sede existe');
   });
 
   test('sede: o chat — sala, menção, reação, apagar, fixar, telefone recusado, freio, e uma guilda não alcança a outra', async () => {
@@ -348,16 +350,15 @@ module.exports = function registrar(ctx) {
     }
   });
 
-  test('sede: lugares — +5 e +15 somam na guilda do dono; quem saiu da guilda fica nos créditos com "saiu"', async () => {
+  test('sede: lugares — 15 grátis, sinais de pacote ignorados (a venda está desligada); quem saiu fica nos créditos com "saiu"', async () => {
     const { entrar } = ctx();
     const A = await montar('Lugar', 'LGR', 2);
     const [m1, m2] = A.membros;
-    let g = await minha(await entrar(Object.assign({}, A.dono, { recursos: [FUNDACAO, 'carro-do-freela.guilda_espaco_extra_15'] })));
-    assert.deepEqual([g.vagas.extra, g.vagas.total], [15, 30]);
     const r = await G(await entrar(Object.assign({}, A.dono, { recursos: [FUNDACAO, 'carro-do-freela.guilda_espaco_extra', 'carro-do-freela.guilda_espaco_extra_15'] })));
     const j = await r.json();
-    assert.deepEqual([j.minha.vagas.extra, j.minha.vagas.total, j.pacotes.sort((a, b) => a - b)], [20, 35, [5, 15]]);
-    assert.match(j.pedir_url, /\/perfil\/plano$/, 'o pedido de plano vai ao HUB (nada é cobrado aqui)');
+    assert.deepEqual([j.venda, j.minha.vagas.extra, j.minha.vagas.total, j.pacotes], [false, 0, 15, []], 'nada de pacote pago: 15 lugares');
+    assert.ok(!('pedir_url' in j), 'sem pedido de plano');
+    assert.deepEqual([(await G(A.cd, { acao: 'comprar', pacote: 15 })).status, (await G(A.cd, { acao: 'lugares' })).status], [403, 403], 'compra recusada no servidor');
     /* o job e quem saiu */
     const hoje = new Date().toISOString().slice(0, 10);
     await proposta(m1.ck, m2.p, m2.ck, hoje, { funcao: 'Drone' });
@@ -375,13 +376,13 @@ module.exports = function registrar(ctx) {
     const cv = await entrar(v);
     const ordem = async () => { livre(); return (await (await pedir('/api/zro/pessoas', { cookies: cv })).json()).pessoas.map(p => p.arroba) };
     const antes = await ordem();
-    const cc = await entrar(Object.assign({}, c, { recursos: [FUNDACAO, 'carro-do-freela.guilda_espaco_extra_15'] }));
+    const cc = await entrar(Object.assign({}, c, { recursos: [FUNDACAO, 'carro-do-freela.guilda_espaco_extra_15'] }));   /* sinais ignorados */
     assert.equal((await G(cc, { nome: 'Os Fortes', tag: 'FRT' })).status, 201);
     const gid = (await minha(cc)).guilda.id;
     await SQL('insert into carro_do_freela.guilda_jobs (guilda_id, proposta_id, de_sub, para_sub) select $1, gen_random_uuid(), gen_random_uuid(), gen_random_uuid() from generate_series(1, 40)', [gid]);
     await G(cc, { acao: 'personalizar', paleta: 'propria', cor: '#FF0000' });
     assert.ok((await minha(cc)).nivel.atual >= 15);
-    assert.deepEqual(await ordem(), antes, 'a mesma ordem com XP alto, 30 lugares e cor própria');
+    assert.deepEqual(await ordem(), antes, 'a mesma ordem com XP alto, nível 15 e cor própria');
     zro.estado.comunidade = [];
   });
 

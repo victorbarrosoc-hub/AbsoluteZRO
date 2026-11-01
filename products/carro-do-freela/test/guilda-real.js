@@ -1,13 +1,15 @@
-/* A GUILDA NO SITE REAL — a SEDE (fase 2) contra /api/zro/guildas, /api/zro/sede e /api/zro/sede-imagem (fetch trocado,
- * como na suíte site-real). O servidor de verdade (banco, RLS, XP, imagens) é provado no `test:banco` (_sede-testes.js).
+/* A GUILDA NO SITE REAL — a SEDE (fase 1, GRÁTIS, desde 01/11/2026) contra /api/zro/guildas, /api/zro/sede e
+ * /api/zro/sede-imagem (fetch trocado, como na suíte site-real). O servidor de verdade (banco, RLS, XP, imagens) é provado
+ * no `test:banco` (_guilda-testes.js e _sede-testes.js).
  *
- * A fase do lançamento é UMA constante (db/fase.js → FASE_LANCAMENTO, escrita no site pelo build). Esta suíte constrói
- * o site real duas vezes, com a constante em 2 e em 1 (CDF_TESTE_FASE só existe para isto), e jura:
- *   - fase 1: a guilda não existe (nem aba, nem menu, nem show(), nem um pedido ao servidor);
- *   - fase 2: a Sede aparece (painel, chat, quadro, memória) com o que o servidor manda, na cor da casa;
- *     o chat faz poll com ETag (304 = nada muda), manda mensagem, confirma o call sheet; o quadro e a memória vêm do
- *     servidor; personalizar é só do dono; fundar sem a fundação na conta leva o pedido à conta Absolute ZRO (nada é
- *     cobrado aqui) e, com ela, cria; convidar, tirar, cancelar, sair e o link ?guilda= seguem pedidos ao servidor;
+ * O portão é db/fase.js (recursos por fase, escritos no site pelo build). Esta suíte constrói o site real duas vezes:
+ * na fase 1 (a de verdade) e na fase 0 (CDF_TESTE_FASE só existe para isto: nenhum recurso de lançamento), e jura:
+ *   - fase 0: a guilda não existe (nem aba, nem menu, nem show(), nem a home, nem um pedido ao servidor): o portão vale;
+ *   - fase 1: a Sede aparece (painel, chat, quadro, memória) com o que o servidor manda, na cor da casa, e a home tem a
+ *     guilda entre os destaques; NADA de compra: sem preço, sem "Aumentar lugares", sem pedido de plano, só o limite
+ *     honesto ("15 lugares"); fundar é grátis; o chat faz poll com ETag (304 = nada muda), manda mensagem, confirma o
+ *     call sheet; o quadro e a memória vêm do servidor; personalizar é só do dono; convidar, tirar, cancelar, sair e o
+ *     link ?guilda= seguem pedidos ao servidor;
  *   - a conta da cor própria é a mesma do servidor (db/regras.js);
  *   - a ordem da busca (filtrar) é a mesma com e sem guilda, nível, lugares e cor, e o código de filtrar() não a conhece. */
 const path = require('path');
@@ -35,7 +37,7 @@ const MINHA = (dono = true) => ({
   membros: [{ sub: SUB.toLowerCase(), nome: 'Conta Teste', arroba: 'conta.teste', foto: null, papel: dono ? 'dono' : 'membro', eu: true, online: true },
     { sub: UM, nome: 'Pessoa Um', arroba: 'pessoa.um', foto: null, papel: dono ? 'membro' : 'dono', eu: false, online: true }],
   nivel: { atual: 7, xp: 2680, de: 2400, ate: 2800, por_nivel: 400, faltam: 1, jobs: 4 },
-  vagas: { base: 15, bonus_de_nivel: 0, extra: 5, total: 20, ocupadas: 2, livres: 18 },
+  vagas: { base: 15, bonus_de_nivel: 0, extra: 0, total: 15, ocupadas: 2, livres: 13 },
   beneficios: [],
   placa: { sequencia: 9, semanas: [false, false, false, true, true, true, true, true, true, true, true, true],
     credenciais: [{ codigo: 'primeiro', titulo: 'Primeiro job', detalhe: 'o primeiro job fechado', ico: 'estrela', n: 1, meta: 1, ok: true },
@@ -53,7 +55,8 @@ const MINHA = (dono = true) => ({
     ultimas: [{ id: 'm1', autor: { sub: UM, nome: 'Pessoa Um' }, tipo: 'texto', texto: 'Cliente aprovou o roteiro final.', dados: {}, criado_em: '2026-10-31T10:00:00Z', reacoes: [{ e: '🙌', n: 6, eu: true }] }] },
   convites: dono ? [{ id: 'c1', tipo: 'link', para: null, expira_em: '2026-11-08T10:00:00Z' }] : [],
 });
-const GUILDA = (extra = {}) => Object.assign({ fase: 2, pode_fundar: false, pedir_url: 'https://absolutezro.com/perfil/plano', pacotes: [5], recebidos: [], carencia_ate: null, minha: MINHA() }, extra);
+/* o que o servidor manda na fase 1: venda desligada, todo mundo funda, nenhum pacote, nenhum pedir_url */
+const GUILDA = (extra = {}) => Object.assign({ fase: 1, venda: false, pode_fundar: true, pacotes: [], recebidos: [], carencia_ate: null, minha: MINHA() }, extra);
 const CHAT = v => ({ v, canal: { id: SALA, tipo: 'sala', nome: 'geral', dia: null }, completo: v === 10, digitando: v === 10 ? [] : ['Pessoa Um'], agora: { n: 2, subs: [SUB.toLowerCase(), UM] },
   fixadas: [{ id: 'm2', tipo: 'chamada', texto: null, titulo: 'Campanha Verão', hora: '06:00', local: 'Redinha' }],
   canais: [{ id: SALA, tipo: 'sala', nome: 'geral', nao_lidas: 0 }, { id: CJOB, tipo: 'job', nome: 'Clipe “Maré Cheia”', nao_lidas: 1 }],
@@ -110,9 +113,10 @@ const PREPARAR = `async (estado) => {
 }`;
 
 (async () => {
-  const f2 = construir(2, 'real-guilda-f2.html');
   const f1 = construir(1, 'real-guilda-f1.html');
-  t(require('../db/fase.js').FASE_LANCAMENTO === 1, 'o padrão do lançamento é a fase 1 (db/fase.js): a guilda nasce escondida');
+  const f0 = construir(0, 'real-guilda-f0.html');
+  const FASES = require('../db/fase.js');
+  t(FASES.FASE_LANCAMENTO === 1 && FASES.noAr('guilda', 1) && !FASES.noAr('venda_guilda', 1), 'o lançamento é a fase 1 (db/fase.js): guilda no ar, venda fora');
 
   const b = await require('./_navegador.js').abrir();
   const abrir = async (arquivo, viewport, tema) => {
@@ -128,8 +132,8 @@ const PREPARAR = `async (estado) => {
   };
   const ESTADO = { servidor: GUILDA(), criada: MINHA(), chat11: CHAT(11) };
 
-  /* ---------------- fase 1: a guilda não existe ---------------- */
-  let p = await abrir(f1.arquivo);
+  /* ---------------- fase 0 (só no teste): com o recurso fora do ar, a guilda não existe ---------------- */
+  let p = await abrir(f0.arquivo);
   let m = await p.evaluate(async ({ prep, est }) => {
     await eval(prep)(est);
     const vis = e => !!e && !e.hidden && !e.closest('[hidden]') && e.getBoundingClientRect().width > 0;
@@ -137,20 +141,26 @@ const PREPARAR = `async (estado) => {
     await new Promise(r => setTimeout(r, 500));
     show('guildas');
     const abas = [...document.querySelectorAll('[data-tab="guildas"]')].filter(vis).length;
+    realHome();
     return { fase: FASE_LANCAMENTO, real: REAL, abas, tab: S.tab, menu: MENU.some(x => x[0] === 'guildas'), sd: !!document.getElementById('sd'),
-      naFase: naFase('guildas'), pedidos: window.__pedidos.filter(x => /guildas|sede/.test(x)) };
+      naFase: naFase('guildas'), home: [...document.querySelectorAll('[data-guilda]')].every(e => e.hidden),
+      pedidos: window.__pedidos.filter(x => /guildas|sede/.test(x)) };
   }, { prep: PREPARAR, est: ESTADO });
-  t(m.real && m.fase === 1, 'o site real nasce com FASE_LANCAMENTO = 1');
-  t(m.abas === 0 && !m.menu && !m.naFase && m.tab !== 'guildas' && !m.sd, 'fase 1: sem aba, sem item de menu, sem a Sede, e show("guildas") não abre (' + JSON.stringify({ abas: m.abas, tab: m.tab }) + ')');
-  t(m.pedidos.length === 0, 'fase 1: a página nunca fala com /api/zro/guildas nem com /api/zro/sede');
-  t(p.errs.length === 0, 'fase 1: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
+  t(m.real && m.fase === 0, 'o site real de teste nasce com FASE_LANCAMENTO = 0');
+  t(m.abas === 0 && !m.menu && !m.naFase && m.tab !== 'guildas' && !m.sd, 'fase 0: sem aba, sem item de menu, sem a Sede, e show("guildas") não abre (' + JSON.stringify({ abas: m.abas, tab: m.tab }) + ')');
+  t(m.home, 'fase 0: a home não fala da guilda');
+  t(m.pedidos.length === 0, 'fase 0: a página nunca fala com /api/zro/guildas nem com /api/zro/sede');
+  t(p.errs.length === 0, 'fase 0: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
   await p.context().close();
 
-  /* ---------------- fase 2: o painel ---------------- */
-  p = await abrir(f2.arquivo);
+  /* ---------------- fase 1: a home com a guilda e o painel ---------------- */
+  p = await abrir(f1.arquivo);
   m = await p.evaluate(async ({ prep, est }) => {
     await eval(prep)(est);
     const vis = e => !!e && !e.hidden && !e.closest('[hidden]') && e.getBoundingClientRect().width > 0;
+    realHome();
+    const hb = document.getElementById('hb-guilda'), pc = document.querySelector('#h-praca [data-guilda]');
+    const home = { bento: !!hb && !hb.hidden, praca: !!pc && !pc.hidden, txt: (hb ? hb.textContent : '') + (pc ? pc.textContent : '') };
     realCarregar();
     await new Promise(r => setTimeout(r, 500));
     show('meu');
@@ -161,18 +171,21 @@ const PREPARAR = `async (estado) => {
     return { fase: FASE_LANCAMENTO, abas, menu: MENU.some(x => x[0] === 'guildas'), naFase: naFase('guildas'), salao: naFase('salao'),
       txt: sd ? sd.innerText : '', amb: sd && getComputedStyle(sd).getPropertyValue('--sd-amb').trim(), velho: vis(document.getElementById('gl-rank')) || vis(document.getElementById('gl-fundar')),
       convidar: !!document.getElementById('rg-convidar'), cartazes: document.querySelectorAll('#sd .sd-cartaz').length, h1: document.querySelector('#sd .sd-heroi h1').textContent,
-      dinheiro: /R\$|VIP|ranking/i.test(sd.innerText), pedidos: window.__pedidos.filter(x => /guildas|sede/.test(x)) };
+      dinheiro: /R\$|VIP|ranking|pacote|comprar|\/mês/i.test(sd.innerText), aumentar: !!document.querySelector('[data-sd-lugares]'), home,
+      pedidos: window.__pedidos.filter(x => /guildas|sede/.test(x)) };
   }, { prep: PREPARAR, est: ESTADO });
-  t(m.fase === 2 && m.naFase && m.menu && m.abas >= 1, 'fase 2: a aba Guilda aparece e está no menu (' + JSON.stringify({ abas: m.abas }) + ')');
+  t(m.home.bento && m.home.praca && /guilda/i.test(m.home.txt) && !/R\$|grátis|pago|preço/i.test(m.home.txt), 'fase 1: a home tem a guilda entre os destaques (o bento e a praça), sem preço');
+  t(m.fase === 1 && m.naFase && m.menu && m.abas >= 1, 'fase 1: a aba Guilda aparece e está no menu (' + JSON.stringify({ abas: m.abas }) + ')');
   t(!m.salao, 'o salão do protótipo (chat e mural de mentira) continua fora do site real');
   t(m.h1 === 'Panelinha' && /Natal\/RN/.test(m.txt) && /Clipe e publicidade/.test(m.txt), 'o herói da Sede vem do servidor: nome, praça e o que a guilda roda');
   t(/2\.680/.test(m.txt) && /2\.800 XP/.test(m.txt) && /falta 1 job/.test(m.txt) && /9\s*semanas seguidas/.test(m.txt), 'a placa: nível, XP, quanto falta e a sequência de semanas');
-  t(/2\s*de 20/.test(m.txt) && /pacote de 5/.test(m.txt) && /1 convite/.test(m.txt), 'os lugares: ocupados, total e o pacote; o convite aberto');
+  t(/2\s*de 15/.test(m.txt) && /15 da sede/.test(m.txt) && /1 convite/.test(m.txt), 'os lugares: o limite honesto (2 de 15, 15 da sede) e o convite aberto');
+  t(!m.aumentar, 'sem "Aumentar lugares": nada de compra na Sede');
   t(/2\s*jobs juntos/.test(m.txt) && m.cartazes >= 2 && /Vítor Sales/.test(m.txt) && /saiu da guilda/.test(m.txt), 'a memória em pôsteres e os créditos (quem saiu continua, marcado)');
   t(/2 na sede agora/.test(m.txt) && /Cliente aprovou/.test(m.txt), 'quem está na sede agora e o chat ao vivo');
   t(m.amb.toUpperCase() === '#F062B8', 'a casa veste a paleta da guilda (Gel magenta, ' + m.amb + ')');
   t(!m.velho && m.convidar, 'sem ranking entre guildas; o dono vê Convidar');
-  t(!m.dinheiro, 'nada de preço, VIP nem ranking no painel');
+  t(!m.dinheiro, 'nada de preço, pacote, VIP nem ranking no painel');
   t(m.pedidos[0] === 'GET /api/zro/guildas', 'a tela pede ao servidor');
 
   /* ---------------- o chat: poll com ETag, mensagem, call sheet ---------------- */
@@ -272,32 +285,29 @@ const PREPARAR = `async (estado) => {
   });
   t(m.ped[0] === 'POST /api/zro/guildas {"acao":"sair"}' && /Abra a sede/i.test(m.txt) && m.fundar, 'sair é pedido ao servidor, e a tela volta à porta da sede com Fundar');
 
-  /* fundar: sem a fundação na conta, nada é criado e o pedido vai à conta Absolute ZRO; com ela, cria */
+  /* fundar: GRÁTIS (01/11). A folha mostra só o limite honesto (15 lugares), sem preço, pacote nem pedido de plano */
   m = await p.evaluate(async () => {
     const esperar = ms => new Promise(r => setTimeout(r, ms));
-    window.__pedidos.length = 0;
+    window.__pedidos.length = 0; window.__aberto = undefined;
     document.getElementById('rg-fundar').click();
     document.getElementById('sd-f-ok').click();
     const erro1 = document.querySelector('.sd-veu .sd-erro').textContent;
+    const passos = document.querySelector('.sd-veu .sd-passos').innerText;
     document.getElementById('sd-f-nome').value = 'Panelinha'; document.getElementById('sd-f-tag').value = 'pnl';
     document.getElementById('sd-f-ok').click(); await esperar(100);
     const folha = document.querySelector('.sd-veu').innerText;
-    const fundarSemDireito = !!document.getElementById('sd-f-fundar');
-    document.getElementById('sd-f-pedir').click(); await esperar(100);
-    const aberto = window.__aberto, ped1 = window.__pedidos.filter(x => x.startsWith('POST'));
-    sdFecharFolha();
-    window.__estado.pode_fundar = true;
-    await realGuildaCarregar();
-    document.getElementById('rg-fundar').click();
-    document.getElementById('sd-f-nome').value = 'Panelinha'; document.getElementById('sd-f-tag').value = 'pnl';
-    document.getElementById('sd-f-ok').click(); await esperar(100);
+    const pedir = !!document.getElementById('sd-f-pedir'), packs = document.querySelectorAll('.sd-veu [data-sd-pack]').length, conta = !!document.getElementById('sd-conta');
     document.getElementById('sd-f-fundar').click(); await esperar(600);
-    return { erro1, folha, fundarSemDireito, aberto, ped1, ped: window.__pedidos.filter(x => x.startsWith('POST')), txt: document.getElementById('sd').innerText };
+    sdLugaresFolha(); await esperar(100);
+    return { erro1, passos, folha, pedir, packs, conta, aberto: window.__aberto, lugares: !!document.getElementById('sd-veu'),
+      ped: window.__pedidos.filter(x => x.startsWith('POST')), txt: document.getElementById('sd').innerText };
   });
   t(/nome/i.test(m.erro1), 'fundar sem nome é recusado na tela');
-  t(/R\$ 189/.test(m.folha) && /14,90/.test(m.folha) && /34,90/.test(m.folha) && /nada é cobrado aqui/.test(m.folha) && !/Pix|Cartão/.test(m.folha), 'a folha de fundar: R$ 189 uma vez, +5 e +15 por mês, e diz que nada é cobrado aqui (sem Pix nem cartão de mentira)');
-  t(!m.fundarSemDireito && m.aberto === 'https://absolutezro.com/perfil/plano' && m.ped1.length === 0, 'sem a fundação na conta: nada é criado, e o pedido abre na conta Absolute ZRO');
-  t(m.ped[0] === 'POST /api/zro/guildas {"nome":"Panelinha","tag":"PNL","cor":"#F062B8","sobre":null}' && /Panelinha/.test(m.txt), 'com a fundação na conta: fundar manda nome, tag, cor e sobre; nada de preço nem de dono vindo da tela');
+  t(!/Pedir|Lugares/.test(m.passos) && /Abrir/.test(m.passos), 'os passos de fundar: nome e brasão, abrir (sem passo de compra)');
+  t(/15/.test(m.folha) && /lugares/.test(m.folha) && /De graça/.test(m.folha) && !/R\$|14,90|34,90|189|\/mês|Pix|Cartão|Pedir|pacote/i.test(m.folha), 'a folha de fundar: grátis e o limite honesto (15 lugares), sem preço, pacote nem pedido');
+  t(!m.pedir && m.packs === 0 && !m.conta && m.aberto === undefined, 'nenhum botão de compra, nenhum pacote, nenhuma conta, e nada abre na conta Absolute ZRO');
+  t(m.ped[0] === 'POST /api/zro/guildas {"nome":"Panelinha","tag":"PNL","cor":"#F062B8","sobre":null}' && /Panelinha/.test(m.txt), 'fundar manda nome, tag, cor e sobre (nada de preço nem de dono vindo da tela) e a sede abre');
+  t(!m.lugares, 'a folha de lugares pagos não abre (a venda está desligada)');
 
   /* convite recebido, e o link ?guilda= pergunta antes */
   m = await p.evaluate(async () => {
@@ -337,12 +347,12 @@ const PREPARAR = `async (estado) => {
   });
   t(m.sem === m.com && m.sem.length > 0, 'a ordem da busca é idêntica com e sem guilda, nível, XP, lugares e cor');
   t(!/guilda|GUILDA|slots|espaco|sd[A-Z]|SD\./.test(m.fonte), 'filtrar() (e a ordenação) não conhecem guilda, XP nem espaço extra');
-  t(p.errs.length === 0, 'fase 2: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
+  t(p.errs.length === 0, 'fase 1: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
   await p.context().close();
 
   /* iPhone, escuro e claro: a guilda tem porta na barra de baixo, e nenhuma sala rola de lado */
   for (const tema of ['dark', 'light']) {
-    p = await abrir(f2.arquivo, { width: 393, height: 852 }, tema);
+    p = await abrir(f1.arquivo, { width: 393, height: 852 }, tema);
     m = await p.evaluate(async ({ prep, est }) => {
       await eval(prep)(est);
       realCarregar(); await new Promise(r => setTimeout(r, 500));
@@ -362,7 +372,7 @@ const PREPARAR = `async (estado) => {
     await p.context().close();
   }
 
-  for (const f of ['real-guilda-f1.html', 'real-guilda-f2.html']) try { fs.unlinkSync(path.join(PUB, f)) } catch (e) {}
+  for (const f of ['real-guilda-f0.html', 'real-guilda-f1.html']) try { fs.unlinkSync(path.join(PUB, f)) } catch (e) {}
   console.log('GUILDA NO SITE REAL — A SEDE');
   ok.forEach(x => console.log('  ✓ ' + x));
   bad.forEach(x => console.log('  ✗ ' + x));

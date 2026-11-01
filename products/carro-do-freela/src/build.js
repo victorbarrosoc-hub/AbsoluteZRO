@@ -215,6 +215,7 @@ if (real) crew = [{ id: 1, nome: '', func: [], principal: [], cidade: '', extras
 
 /* o template também cita mídia por "midia:<nome>" (os ícones da família
    Absolute ZRO no menu, 26/out): mesma regra, nome que falta reprova */
+const faseLancamento = /^\d+$/.test(process.env.CDF_TESTE_FASE || '') ? Number(process.env.CDF_TESTE_FASE) : require('../db/fase.js').FASE_LANCAMENTO;
 const html = comMidia(tpl, 'template.html')
   .replace('/*__FONTS__*/', faces)
   .replace('/*__FRAMES__*/{}', () => semBase64(frames, 'quadro'))
@@ -232,8 +233,10 @@ const html = comMidia(tpl, 'template.html')
      dele, e public/ chegava a 70 MB). Cada página diz a sua fase numa
      <meta name="cdf-fase"> e o script lê no arranque. */
   .replace('/*__FASE__*/0', '+((document.querySelector(\'meta[name="cdf-fase"]\')||{}).content||0)')
-  /* a fase do lançamento (db/fase.js, o mesmo número que o servidor lê). CDF_TESTE_FASE só serve às suítes. */
-  .replace('/*__FASE_LANCAMENTO__*/1', () => String(Number(process.env.CDF_TESTE_FASE) || require('../db/fase.js').FASE_LANCAMENTO))
+  /* a fase do lançamento e o que está no ar nela (db/fase.js, o mesmo arquivo que o servidor lê). CDF_TESTE_FASE só
+     serve às suítes (aceita 0: "nenhum recurso de lançamento", para provar o portão). */
+  .replace('/*__FASE_LANCAMENTO__*/1', () => String(faseLancamento))
+  .replace('/*__RECURSOS_LANCAMENTO__*/{}', () => JSON.stringify(require('../db/fase.js').recursosDa(faseLancamento)))
   .replace('/*__WEB3FORMS_KEY__*/""', () => comoJS(deFora.web3forms))
   .replace('/*__SUPABASE_URL__*/""', () => comoJS(deFora.supabaseUrl))
   .replace('/*__SUPABASE_ANON_KEY__*/""', () => comoJS(deFora.supabaseKey));

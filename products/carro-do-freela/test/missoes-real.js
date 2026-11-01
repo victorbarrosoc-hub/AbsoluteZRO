@@ -1,13 +1,17 @@
-/* O QUADRO DE MISSÕES NO SITE REAL (0006, fase 2) — montar o job na Sede com gente da guilda, contra um servidor de
- * mentira (fetch trocado, como guilda-real.js). O servidor de verdade (banco, RLS, gatilhos) é provado no `test:banco`
- * (_missoes-testes.js). Esta suíte constrói o site real com a constante em 2 e em 1 e jura:
- *   - fase 1: nada de missão (nem faixa, nem barra, nem pedido);
- *   - "Montar job" liga o modo de escolha: a faixa da Sede vira a grade de rostos (sem a própria pessoa), a lista de
- *     membros ganha o toque, e a barra fixa embaixo conta os escolhidos (e some ao cancelar);
- *   - a folha do job pede o dia ao servidor (quem está livre), sugere os livres, e ao montar manda a missão à sede e
- *     UMA proposta por pessoa pelo POST /api/zro/propostas de sempre, com `missao` — sem valor, sem telefone;
+/* O QUADRO DE MISSÕES NO SITE REAL (0006; fase 1, grátis, desde 01/11/2026) — montar o job na Sede com gente da guilda,
+ * contra um servidor de mentira (fetch trocado, como guilda-real.js). O servidor de verdade (banco, RLS, gatilhos) é
+ * provado no `test:banco` (_missoes-testes.js). Esta suíte constrói o site real na fase 1 (a de verdade) e na fase 0 (só
+ * no teste: nenhum recurso de lançamento) e jura:
+ *   - fase 0: nada de missão (nem faixa, nem barra, nem pedido): o portão vale;
+ *   - "Montar job" abre a folha no passo 1: A DATA E O HORÁRIO PRIMEIRO (01/11, titular); o passo 2 mostra só quem está
+ *     livre NAQUELE horário (o servidor diz), com os ocupados e os sem agenda numa linha recolhida no fim (ocupado não
+ *     se marca; sem agenda só com confirmação); o passo 3 é o resto da folha; ao montar manda a missão à sede e UMA
+ *     proposta por pessoa pelo POST /api/zro/propostas de sempre, com `missao` — sem valor, sem telefone; se o servidor
+ *     disser que alguém ficou ocupado no meio-tempo, a folha volta ao passo 2 com o aviso;
+ *   - os rostos da Sede (o atalho, pela lista de membros) contam na barra fixa; ao abrir a folha, pede o horário e tira
+ *     da seleção quem está ocupado, com aviso ("Caio está ocupado nesse horário");
  *   - o quadro mostra os cartazes com a rodar / rodando / feito e o estado de cada pessoa (vai / pendente / não vai);
- *     o dono troca quem não vai (os livres do dia primeiro) e desmonta; quem está pendente vê "Responder";
+ *     o dono troca quem não vai (só os livres naquele horário) e desmonta; quem está pendente vê "Responder";
  *   - o selo do próximo job na lista de membros; a proposta da guilda na caixa de Propostas;
  *   - movimento: o cartaz prega e a vaga que mudou pulsa, e nada disso com "reduzir movimento";
  *   - no iPhone, claro e escuro, nada rola de lado. */
@@ -56,7 +60,8 @@ const MINHA = () => ({
   chat: { sala: 'cccccccc-0000-4000-8000-000000000000', nao_lidas: 0, digitando: [], canais: [{ id: 'cccccccc-0000-4000-8000-000000000000', tipo: 'sala', nome: 'geral', nao_lidas: 0 }], ultimas: [] },
   convites: [], missoes: MISSOES(), proximos: PROX,
 });
-const DIA = { [EU]: 'no_job', [P(1)]: 'livre', [P(2)]: 'ocupado', [P(3)]: 'livre', [P(4)]: 'sem_agenda', [P(5)]: 'sem_agenda', [P(6)]: 'livre' };
+/* o que o servidor diria NAQUELE horário (estado:motivo); quem pergunta não vem na lista */
+const DIA = { [P(1)]: 'livre', [P(2)]: 'ocupado:agenda', [P(3)]: 'livre', [P(4)]: 'sem_agenda', [P(5)]: 'sem_agenda', [P(6)]: 'livre' };
 
 const PREPARAR = `async (estado) => {
   window.__pedidos = [];
@@ -64,11 +69,12 @@ const PREPARAR = `async (estado) => {
     const met = (o && o.method) || 'GET';
     window.__pedidos.push(met + ' ' + u + (o && o.body ? ' ' + o.body : ''));
     const J = (s, j) => new Response(JSON.stringify(j), { status: s, headers: { 'Content-Type': 'application/json' } });
-    if (u === '/api/zro/guildas') return J(200, { fase: 2, pode_fundar: false, pedir_url: 'https://absolutezro.com/perfil/plano', pacotes: [], recebidos: [], carencia_ate: null, minha: window.__minha });
-    if (u.startsWith('/api/zro/sede?ver=dia')) return J(200, { dia: '', pessoas: Object.entries(window.__dia).map(([sub, estado]) => ({ sub, estado })) });
+    if (u === '/api/zro/guildas') return J(200, { fase: 1, venda: false, pode_fundar: true, pacotes: [], recebidos: [], carencia_ate: null, minha: window.__minha });
+    if (u.startsWith('/api/zro/sede?ver=dia')) return J(200, { dia: '', pessoas: Object.entries(window.__dia).map(([sub, e]) => ({ sub, estado: e.split(':')[0], motivo: e.split(':')[1] || null })) });
     if (u.startsWith('/api/zro/sede?ver=')) return J(200, { posts: [], cartazes: [] });
     if (u.startsWith('/api/zro/sede?canal=')) return J(200, { v: 1, canal: { id: 'x', tipo: 'job', nome: 'job' }, mensagens: [], completo: true, digitando: [], agora: { n: 1, subs: [] }, fixadas: [], canais: [] });
     if (u === '/api/zro/sede') { const c = JSON.parse(o.body);
+      if (c.acao === 'missao' && window.__ocupar) { const q = window.__ocupar; window.__ocupar = null; window.__dia[q] = 'ocupado:agenda'; return J(409, { erro: 'ocupado', quem: q }) }
       if (c.acao === 'missao') return J(201, { missao: { id: 'mmmmmmmm-0000-4000-8000-000000000009', canal: 'cccccccc-0000-4000-8000-000000000009', chamada: c.chamada ? 'k1' : null } });
       return new Response(null, { status: 204 }); }
     if (u === '/api/zro/propostas' && met === 'POST') return J(201, { proposta: { id: 'pp' } });
@@ -85,8 +91,8 @@ const PREPARAR = `async (estado) => {
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
-  const f2 = construir(2, 'real-missoes-f2.html');
   const f1 = construir(1, 'real-missoes-f1.html');
+  const f0 = construir(0, 'real-missoes-f0.html');
   const b = await require('./_navegador.js').abrir();
   const abrir = async (arquivo, viewport, tema, movimento) => {
     const ctx = await b.newContext({ viewport: viewport || { width: 1280, height: 900 }, reducedMotion: movimento ? 'no-preference' : 'reduce' });
@@ -101,24 +107,31 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
     return p;
   };
 
-  /* ---------------- fase 1: nada de missão ---------------- */
-  let p = await abrir(f1);
+  /* ---------------- fase 0 (só no teste): nada de missão ---------------- */
+  let p = await abrir(f0);
   let m = await p.evaluate(async () => {
     show('guildas'); await new Promise(r => setTimeout(r, 500));
     return { fase: FASE_LANCAMENTO, faixa: !!document.querySelector('.mq-faixa,#mq-barra,.mq-c'), ped: window.__pedidos.filter(x => /guildas|sede|missao/.test(x)) };
   });
-  t(m.fase === 1 && !m.faixa && m.ped.length === 0, 'fase 1: nem faixa, nem barra, nem cartaz, e nenhum pedido de guilda ou missão');
-  t(p.errs.length === 0, 'fase 1: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
+  t(m.fase === 0 && !m.faixa && m.ped.length === 0, 'fase 0: nem faixa, nem barra, nem cartaz, e nenhum pedido de guilda ou missão');
+  t(p.errs.length === 0, 'fase 0: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
   await p.context().close();
 
-  /* ---------------- fase 2: a faixa na Sede e o modo Montar job ---------------- */
-  p = await abrir(f2);
+  /* ---------------- fase 1: a faixa na Sede e o modo Montar job ---------------- */
+  p = await abrir(f1);
   m = await p.evaluate(async () => {
     show('guildas'); await new Promise(r => setTimeout(r, 700));
     const f = document.getElementById('mq-faixa');
     const r = { faixa: f && f.innerText, mini: f ? f.querySelectorAll('.mq-c').length : 0, feitoNaFaixa: f ? !!f.querySelector('.mq-c[data-e="feito"]') : true,
       salas: [...document.querySelectorAll('.sd-salas button')].map(x => x.innerText.replace(/\s+/g, ' ').trim()) };
+    /* "Montar job" abre a folha no passo 1 (o horário primeiro), sem rostos nem barra; fechar desiste */
     document.querySelector('[data-mq-montar]').click(); await new Promise(r => setTimeout(r, 300));
+    const veu = document.getElementById('sd-veu');
+    r.direto = { dia: !!(veu && veu.querySelector('#mq-f-dia')) && !!veu.querySelector('#mq-f-ini') && !!veu.querySelector('#mq-f-fim'), livres: !!document.getElementById('mq-f-livres'),
+      passo: veu && veu.querySelector('.sd-passos [aria-current="step"]').innerText.trim(), h1: veu && veu.querySelector('h1').innerText, bar: !!document.getElementById('mq-barra'), so: !!(SD.montar && SD.montar.soFolha) };
+    sdFecharFolha(); r.direto.depois = SD.montar;
+    /* o atalho dos rostos (a lista de membros liga o mesmo modo) */
+    sdMontar(true); await new Promise(r => setTimeout(r, 300));
     const g = document.getElementById('mq-faixa'), bar = document.getElementById('mq-barra');
     r.montar = g.hasAttribute('data-montar'); r.rostos = [...g.querySelectorAll('[data-sd-escolher]')].map(x => x.innerText.split('\n')[0]);
     r.bar0 = bar && bar.innerText.replace(/\s+/g, ' ').trim(); r.ok0 = document.getElementById('mq-b-ok').disabled;
@@ -142,52 +155,94 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
   t(m.salas.some(x => /^Missões/.test(x)) && m.salas.length === 5, 'a Sede ganha a sala Missões (' + m.salas.join(' | ') + ')');
   t(m.salas.some(x => /^Missões 1$/.test(x)), 'a sala Missões mostra quantos cartazes esperam a minha resposta');
   t(/Quadro de missões/.test(m.faixa) && m.mini >= 1 && m.mini <= 3 && !m.feitoNaFaixa, 'a faixa da Sede: até 3 cartazes do que vem, sem o que já foi feito');
-  t(m.montar && m.rostos.length === 6 && !m.rostos.includes('Conta'), '"Montar job" vira a faixa na grade de rostos, sem a própria pessoa (' + m.rostos.join(',') + ')');
+  t(m.direto.dia && !m.direto.livres && /Quando/.test(m.direto.passo) && /Quando é o job/.test(m.direto.h1) && !m.direto.bar && m.direto.so, '"Montar job" abre a folha no passo 1: dia, início e fim primeiro, ninguém para escolher ainda');
+  t(m.direto.depois === null, 'fechar a folha aberta direto desiste da escolha');
+  t(m.montar && m.rostos.length === 6 && !m.rostos.includes('Conta'), 'o atalho: a faixa vira a grade de rostos, sem a própria pessoa (' + m.rostos.join(',') + ')');
   t(/0 escolhidos/.test(m.bar0) && m.ok0, 'a barra fixa nasce com 0 escolhidos e a ação desligada');
   t(/2 escolhidos/.test(m.bar2) && m.press === 2, 'tocar marca a pessoa e a barra conta (' + m.bar2 + ')');
   t(m.mmontar === 'true' && m.esc === 6 && m.escOn === 2 && m.barVisivel && m.zbar > m.zveu, 'na lista de membros o mesmo modo: o toque de escolher, as marcas de antes, e a barra por cima da folha');
   t(/3 escolhidos/.test(m.bar3), 'escolher na lista conta na mesma barra');
   t(m.selos.some(x => /Campanha Café Potengi/.test(x)) && m.selos.some(x => /Clipe Maré Cheia/.test(x)), 'o selo do próximo job de cada pessoa na lista de membros (' + m.selos.join(' | ') + ')');
 
-  /* ---------------- a folha do job e o montar ---------------- */
+  /* ---------------- a folha do job: 1 quando → 2 quem está livre → 3 o job → montar ---------------- */
   m = await p.evaluate(async (diaJob) => {
     const esperar = ms => new Promise(r => setTimeout(r, ms));
     window.__pedidos.length = 0;
-    document.getElementById('mq-b-ok').click(); await esperar(200);
-    const r = { barEsc: document.getElementById('mq-barra').hidden, eq: document.querySelectorAll('#mq-f-eq .mq-er').length };
     const s = (id, val) => { const e = document.getElementById(id); e.value = val; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')) };
-    document.getElementById('mq-f-ok').click(); r.erro1 = document.querySelector('.sd-veu .sd-erro').textContent;
-    s('mq-f-tit', 'Clipe Maré Cheia 2'); s('mq-f-dia', diaJob); await esperar(300);
-    r.ag = [...document.querySelectorAll('#mq-f-eq .mq-ag')].map(x => x.textContent);
-    r.sug = [...document.querySelectorAll('#mq-f-eq [data-mq-add]')].map(x => x.textContent.trim());
-    document.querySelector('[data-mq-add]').click(); await esperar(100);
-    r.eq2 = document.querySelectorAll('#mq-f-eq .mq-er').length;
-    document.querySelector('[data-mq-tirar="aaaaaaaa-0000-4000-8000-000000000013"]').click(); await esperar(100);
+    const txt = sel => [...document.querySelectorAll(sel)].map(x => x.innerText.replace(/\s+/g, ' ').trim());
+    document.getElementById('mq-b-ok').click(); await esperar(200);
+    const r = { barEsc: document.getElementById('mq-barra').hidden, p1: !!document.getElementById('mq-f-dia') && !document.getElementById('mq-f-livres'), sel0: SD.montar.sel.length,
+      get0: window.__pedidos.filter(x => /ver=dia/.test(x)).length };
+    document.getElementById('mq-f-ir').click(); r.erro1 = document.querySelector('.sd-veu .sd-erro').textContent;
+    s('mq-f-dia', diaJob); document.getElementById('mq-f-ir').click(); r.erro2 = document.querySelector('.sd-veu .sd-erro').textContent;
+    s('mq-f-ini', '05:30'); s('mq-f-fim', '05:30'); document.getElementById('mq-f-ir').click(); r.erro3 = document.querySelector('.sd-veu .sd-erro').textContent;
+    s('mq-f-fim', '14:00'); s('mq-f-local', 'Forte dos Reis Magos');
+    document.getElementById('mq-f-ir').click(); await esperar(400);
+    /* passo 2 */
+    r.get = window.__pedidos.filter(x => /ver=dia/.test(x));
+    r.resumo = document.querySelector('.sd-veu .mq-resumo').innerText;
+    r.aviso = document.getElementById('mq-f-aviso').innerText;
+    r.sel1 = SD.montar.sel.slice();
+    r.livres = txt('#mq-livres .slm'); r.press = [...document.querySelectorAll('#mq-livres [aria-pressed="true"]')].length;
+    const d = document.getElementById('mq-fora');
+    r.resumoFora = d && d.querySelector('summary').innerText.trim(); r.fechado = d && !d.open;
+    d.open = true;
+    r.ocup = txt('#mq-fora [data-ocupado]'); r.botaoOcup = document.querySelectorAll('#mq-fora [data-ocupado] button').length;
+    r.sem = txt('#mq-fora .sd-p:not([data-ocupado])');
+    let perguntou = ''; window.confirm = q => { perguntou = q; return true };
+    document.querySelector('[data-mq-sem="aaaaaaaa-0000-4000-8000-000000000014"]').click(); await esperar(100);
+    r.perguntou = perguntou; window.confirm = () => true;
+    document.querySelector('[data-mq-livre="aaaaaaaa-0000-4000-8000-000000000013"]').click(); await esperar(100);
+    r.cont = document.getElementById('mq-f-ir').textContent; r.sel2 = SD.montar.sel.slice();
+    document.getElementById('mq-f-ir').click(); await esperar(200);
+    /* passo 3 */
+    r.p3 = !!document.getElementById('mq-f-tit'); r.resumo3 = document.querySelector('.sd-veu .mq-resumo').innerText;
+    r.eq = document.querySelectorAll('#mq-f-eq .mq-er').length;
+    document.getElementById('mq-f-ok').click(); r.erro4 = document.querySelector('.sd-veu .sd-erro').textContent;
+    s('mq-f-tit', 'Clipe Maré Cheia 2');
     document.querySelector('[data-mq-contr="fora"]').click(); s('mq-f-cli', 'Selo Potengi');
-    s('mq-f-ini', '05:30'); s('mq-f-fim', '14:00'); s('mq-f-local', 'Forte dos Reis Magos');
     const f = document.querySelectorAll('[data-mq-fun]'); f[0].value = 'Op. de câmera'; f[0].dispatchEvent(new Event('change'));
     const cs = document.getElementById('mq-f-cs'); cs.checked = true; cs.dispatchEvent(new Event('change'));
     r.hora = document.getElementById('mq-f-hora').value;
     r.prev = document.getElementById('mq-f-prev').innerText;
     r.botao = document.getElementById('mq-f-ok').textContent;
+    /* o servidor confere: Duda ficou ocupado no meio-tempo → volta ao passo 2 com o aviso, sem a Duda */
+    window.__ocupar = 'aaaaaaaa-0000-4000-8000-000000000013';
+    document.getElementById('mq-f-ok').click(); await esperar(500);
+    r.volta = { livres: !!document.getElementById('mq-f-livres'), aviso: document.getElementById('mq-f-aviso').innerText, sel: SD.montar.sel.slice(),
+      props: window.__pedidos.filter(x => x.startsWith('POST /api/zro/propostas')).length };
+    document.getElementById('mq-f-ir').click(); await esperar(200);
+    r.botao2 = document.getElementById('mq-f-ok').textContent;
+    window.__pedidos.length = 0;
     document.getElementById('mq-f-ok').click(); await esperar(900);
-    r.ped = window.__pedidos.filter(x => x.startsWith('POST')); r.get = window.__pedidos.filter(x => /ver=dia/.test(x));
+    r.ped = window.__pedidos.filter(x => x.startsWith('POST'));
     r.tela = SD.tela; r.bar = !!document.getElementById('mq-barra'); r.veu = !!document.getElementById('sd-veu'); r.montar = SD.montar;
     return r;
   }, dia(5));
-  t(m.barEsc && m.eq === 2, 'a folha abre com os 2 escolhidos, e a barra sai da frente');
-  t(/título/i.test(m.erro1), 'sem título a folha não manda nada');
-  t(m.get.length >= 1 && m.ag.join() === 'livre no dia,ocupado no dia', 'escolhido o dia, a folha pergunta à sede quem está livre e mostra a agenda de cada um (' + m.ag.join() + ')');
-  t(m.sug.length === 2 && /Duda/.test(m.sug[0]) && /Nina/.test(m.sug[1]), 'sugere quem da guilda está livre nesse dia (e só quem divulgou a agenda: ' + m.sug.join(',') + ')');
-  t(m.eq2 === 3, 'a sugestão entra na equipe com um toque');
+  t(m.barEsc && m.p1 && m.sel0 === 2 && m.get0 === 0, 'pelos rostos, a folha abre no passo 1 com os 2 escolhidos guardados, e nada é perguntado antes do horário');
+  t(/dia/i.test(m.erro1) && /início e o fim/.test(m.erro2) && /diferente/.test(m.erro3), 'sem dia, sem início/fim ou com início = fim a folha não segue');
+  t(m.get.length === 1 && /ver=dia&dia=\d{4}-\d{2}-\d{2}&ini=05%3A30&fim=14%3A00/.test(m.get[0]), 'o passo 2 pergunta à sede quem está livre NAQUELE dia e horário (' + m.get[0] + ')');
+  t(/05:30–14:00/.test(m.resumo) && /Forte dos Reis Magos/.test(m.resumo), 'o passo 2 lembra o dia, o horário e o local');
+  t(m.aviso === 'Caio está ocupado nesse horário.' && m.sel1.join() === P(1), 'quem veio dos rostos e está ocupado sai da seleção, com aviso (' + m.aviso + ')');
+  t(m.livres.length === 3 && /Lia Moura livre nesse horário$/.test(m.livres[0]) && /Duda/.test(m.livres[1]) && /Nina/.test(m.livres[2]) && m.press === 1, 'a lista principal tem só quem está livre (' + m.livres.join(' | ') + ')');
+  t(m.resumoFora === '1 ocupado · 2 sem agenda' && m.fechado, 'ocupados e sem agenda numa linha recolhida no fim (' + m.resumoFora + ')');
+  t(m.ocup.length === 1 && /Caio Bezerra ocupado$/.test(m.ocup[0]) && m.botaoOcup === 0, 'aberta: quem está ocupado aparece só como "ocupado", sem dar para marcar (' + m.ocup.join() + ')');
+  t(m.sem.length === 2 && m.sem.every(x => /sem agenda divulgada/.test(x) && /Chamar mesmo assim/.test(x)), 'quem não divulgou a agenda: "Chamar mesmo assim"');
+  t(/Rafa não divulgou a agenda\. Convidar mesmo assim\?/.test(m.perguntou), 'chamar sem agenda pede a confirmação do dono');
+  t(m.cont === 'Continuar · 3' && m.sel2.join() === [P(1), P(4), P(3)].join(), 'marcar conta no botão do passo 2');
+  t(m.p3 && /05:30–14:00/.test(m.resumo3) && m.eq === 3, 'o passo 3: o resto da folha, com a equipe escolhida');
+  t(/título/i.test(m.erro4), 'sem título a folha não manda nada');
   t(m.hora === '05:30', 'o call sheet nasce na hora do início');
   t(/Clipe Maré Cheia 2/.test(m.prev) && /Selo Potengi/.test(m.prev) && /Op\. de câmera/.test(m.prev), 'a prévia do cartaz acompanha a folha');
-  t(m.botao === 'Mandar 2 propostas', 'o botão diz quantas propostas vão');
+  t(m.botao === 'Mandar 3 propostas', 'o botão diz quantas propostas vão');
+  t(m.volta.livres && m.volta.aviso === 'Duda ficou ocupado nesse horário.' && m.volta.sel.join() === [P(1), P(4)].join() && m.volta.props === 0,
+    'o servidor recusou (Duda ficou ocupada no meio-tempo): a folha volta ao passo 2 com o aviso, sem a Duda, e nenhuma proposta sai (' + JSON.stringify(m.volta) + ')');
+  t(m.botao2 === 'Mandar 2 propostas', 'de volta ao passo 3 com os 2 que seguem livres');
   const missao = m.ped.find(x => x.startsWith('POST /api/zro/sede '));
   const corpo = missao && JSON.parse(missao.slice('POST /api/zro/sede '.length));
-  t(corpo && JSON.stringify(corpo) === JSON.stringify({ acao: 'missao', titulo: 'Clipe Maré Cheia 2', contratante: 'fora', dia: dia(5),
-    equipe: [{ sub: P(1), funcao: 'Op. de câmera' }, { sub: P(2) }], cliente: 'Selo Potengi', ini: '05:30', fim: '14:00', local: 'Forte dos Reis Magos', chamada: { hora: '05:30' } }),
-  'montar manda à sede título, contratante, dia, horário, local, a função de cada um e o call sheet — nada de valor (' + (missao || 'nada') + ')');
+  t(corpo && JSON.stringify(corpo) === JSON.stringify({ acao: 'missao', titulo: 'Clipe Maré Cheia 2', contratante: 'fora', dia: dia(5), ini: '05:30', fim: '14:00',
+    equipe: [{ sub: P(1), funcao: 'Op. de câmera' }, { sub: P(4), sem_agenda: true }], cliente: 'Selo Potengi', local: 'Forte dos Reis Magos', chamada: { hora: '05:30' } }),
+  'montar manda à sede título, contratante, dia, horário, local, a função de cada um, a confirmação do sem agenda e o call sheet — nada de valor (' + (missao || 'nada') + ')');
   const props = m.ped.filter(x => x.startsWith('POST /api/zro/propostas'));
   t(props.length === 2 && props.every(x => /"missao":"mmmmmmmm-0000-4000-8000-000000000009"/.test(x) && /"mensagem":"Job da guilda Panelinha: Clipe Maré Cheia 2"/.test(x) && !/valor|dia|local/.test(x.replace(/"mensagem":"[^"]*"/, ''))),
     'e UMA proposta por pessoa pelo POST /api/zro/propostas de sempre, com a marca `missao` (dia e local vêm da missão)');
@@ -211,6 +266,8 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
     window.__pedidos.length = 0;
     document.querySelector('[data-mq-trocar]').click(); await esperar(400);
     r.cand = [...document.querySelectorAll('#mq-t-lista .slm')].map(x => x.innerText.replace(/\s+/g, ' ').trim());
+    r.tget = window.__pedidos.filter(x => /ver=dia/.test(x));
+    r.tfora = (document.querySelector('#mq-t-lista #mq-fora summary') || {}).innerText;
     document.querySelector('[data-mq-entra]').click(); await esperar(500);
     r.ped = window.__pedidos.filter(x => x.startsWith('POST'));
     window.__pedidos.length = 0;
@@ -228,7 +285,8 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
   t(!m.preco, 'nada de preço no quadro');
   t(m.novo === 0, 'com "reduzir movimento" nenhum cartaz prega nem pulsa');
   t(m.feito.join() === 'Casamento na Redinha', 'o filtro Feito mostra só o que já foi');
-  t(/Nina Prado livre no dia/.test(m.cand[0]) && /Téo Galvão agenda não divulgada/.test(m.cand[1]) && m.cand.length === 2, 'trocar sugere os livres do dia primeiro, entre quem ainda não está no job (' + m.cand.join(' | ') + ')');
+  t(m.cand.length === 1 && /Nina Prado livre nesse horário/.test(m.cand[0]) && /1 sem agenda/.test(m.tfora || ''), 'trocar mostra só quem está livre naquele horário, entre quem ainda não está no job; o sem agenda fica recolhido (' + m.cand.join(' | ') + ')');
+  t(/ini=06%3A00&fim=18%3A00/.test(m.tget[0] || ''), 'trocar pergunta pelo horário do job (' + m.tget[0] + ')');
   t(/"acao":"missao_trocar"/.test(m.ped[0]) && /"sai":"aaaaaaaa-0000-4000-8000-000000000013"/.test(m.ped[0]) && /"funcao":"Op. de drone"/.test(m.ped[0]) && /^POST \/api\/zro\/propostas .*"missao":"mmmmmmmm-0000-4000-8000-000000000002"/.test(m.ped[1] || ''),
     'trocar: a vaga passa a quem entrou, com a função, e a proposta vai pela caixa de sempre');
   t(m.mandou.length === 1 && /"para":"aaaaaaaa-0000-4000-8000-000000000014","missao":"mmmmmmmm-0000-4000-8000-000000000002"/.test(m.mandou[0]), 'Mandar refaz a proposta que não foi');
@@ -254,11 +312,11 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
   t(m.n === 1 && /Job da guilda Panelinha · Doc das dunas · 2 na equipe/.test(m.txt), 'a proposta da guilda chega na caixa de sempre com a marca da guilda (e a de fora, sem marca)');
   t(m.aceitar && m.patch[0] === 'PATCH /api/zro/propostas?id=p1 {"estado":"aceita","motivo":null}', 'aceitar é o mesmo PATCH de sempre');
   t(m.tab === 'guildas' && m.tela === 'missoes', '"Ver a equipe" leva ao quadro de missões');
-  t(p.errs.length === 0, 'fase 2: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
+  t(p.errs.length === 0, 'fase 1: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
   await p.context().close();
 
   /* ---------------- movimento: o cartaz prega, a vaga que mudou pulsa ---------------- */
-  p = await abrir(f2, null, null, true);
+  p = await abrir(f1, null, null, true);
   m = await p.evaluate(async () => {
     show('guildas'); await new Promise(r => setTimeout(r, 600));
     SD.missaoNova = 'mmmmmmmm-0000-4000-8000-000000000002'; sdIr('missoes'); await new Promise(r => setTimeout(r, 200));
@@ -275,7 +333,7 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
 
   /* ---------------- iPhone, claro e escuro ---------------- */
   for (const tema of ['dark', 'light']) {
-    p = await abrir(f2, { width: 393, height: 852 }, tema);
+    p = await abrir(f1, { width: 393, height: 852 }, tema);
     m = await p.evaluate(async () => {
       const esperar = ms => new Promise(r => setTimeout(r, ms));
       show('guildas'); await esperar(500);
@@ -286,17 +344,21 @@ const esperar = ms => new Promise(r => setTimeout(r, ms));
       const baixo = document.getElementById('bottombar').getBoundingClientRect();
       sdMissaoFolha(); await esperar(300); larg.folha = document.documentElement.scrollWidth;
       const folha = document.querySelector('.sd-folha').getBoundingClientRect();
+      const s = (id, val) => { const e = document.getElementById(id); e.value = val; e.dispatchEvent(new Event('change')) };
+      s('mq-f-dia', new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10)); s('mq-f-ini', '08:00'); s('mq-f-fim', '12:00');
+      document.getElementById('mq-f-ir').click(); await esperar(400); document.getElementById('mq-fora').open = true; await esperar(100);
+      larg.passo2 = document.documentElement.scrollWidth; larg.folha2 = Math.round(document.querySelector('.sd-folha').scrollWidth - document.querySelector('.sd-folha').clientWidth);
       sdFecharFolha(); sdMontar(false); await esperar(300);
       return { larg, jan: innerWidth, barDentro: bar.left >= 0 && bar.right <= innerWidth, barAcima: bar.bottom <= baixo.top + 1, folhaLarg: folha.width, sobrou: !!document.getElementById('mq-barra') };
     });
-    t(Object.values(m.larg).every(x => x <= m.jan), tema + ': no iPhone nada rola de lado (' + JSON.stringify(m.larg) + ')');
+    t(Object.entries(m.larg).every(([k, x]) => (k === 'folha2' ? x <= 0 : x <= m.jan)), tema + ': no iPhone nada rola de lado, nem o passo 2 (' + JSON.stringify(m.larg) + ')');
     t(m.barDentro && m.barAcima, tema + ': a barra de Montar job cabe na tela e fica acima da barra de baixo');
     t(m.folhaLarg <= m.jan && !m.sobrou, tema + ': a folha do job é folha de baixo, e cancelar tira a barra');
     t(p.errs.length === 0, tema + ' iPhone: zero erro de console' + (p.errs[0] ? ' — ' + p.errs[0] : ''));
     await p.context().close();
   }
 
-  for (const f of ['real-missoes-f1.html', 'real-missoes-f2.html']) try { fs.unlinkSync(path.join(PUB, f)) } catch (e) {}
+  for (const f of ['real-missoes-f0.html', 'real-missoes-f1.html']) try { fs.unlinkSync(path.join(PUB, f)) } catch (e) {}
   console.log('O QUADRO DE MISSÕES NO SITE REAL');
   ok.forEach(x => console.log('  ✓ ' + x));
   bad.forEach(x => console.log('  ✗ ' + x));

@@ -4,7 +4,8 @@
  *   GET  /api/zro/sede?canal=<id>&desde=<v>  → { v, canal, mensagens, fixadas, digitando, agora, canais }  (ETag/304)
  *   GET  /api/zro/sede?ver=mural             → { posts: [...] }
  *   GET  /api/zro/sede?ver=memoria           → { cartazes: [...] }   (todos os jobs juntos, com os créditos)
- *   GET  /api/zro/sede?ver=dia&dia=AAAA-MM-DD → { dia, pessoas: [{ sub, estado }] }   (quem da guilda está livre: 0006)
+ *   GET  /api/zro/sede?ver=dia&dia=AAAA-MM-DD&ini=HH:MM&fim=HH:MM → { dia, ini, fim, pessoas: [{ sub, estado, motivo }] }
+ *        (quem da guilda, menos quem pergunta, está livre NAQUELE horário: livre | ocupado | sem_agenda; 0007)
  *   POST /api/zro/sede {acao, ...}           → mensagem · chamada · reagir · apagar · fixar · responder · presenca ·
  *                                              canal_job · nomear · lido · digitando · post · post_apagar · post_fixar · post_reagir ·
  *                                              missao · missao_trocar · missao_cancelar   (o quadro de missões, 0006)
@@ -150,7 +151,7 @@ const ACOES = {
   },
   async missao_trocar(c, corpo) {
     const v = R.missaoTrocarDe(corpo);
-    await c.query('select carro_do_freela.guilda_missao_trocar($1, $2, $3, $4)', [v.missao, v.sai, v.entra, v.funcao]);
+    await c.query('select carro_do_freela.guilda_missao_trocar($1, $2, $3, $4, $5)', [v.missao, v.sai, v.entra, v.funcao, v.sem_agenda]);
   },
   async missao_cancelar(c, corpo) { await c.query('select carro_do_freela.guilda_missao_cancelar($1)', [R.missaoIdDe(corpo)]) },
   async post_reagir(c, corpo) { const v = R.reagirDe(corpo, R.EMOJIS.concat('quero')); await c.query('select carro_do_freela.guilda_post_reagir($1, $2, $3)', [v.id, v.emoji, v.ligar]) },
@@ -177,9 +178,9 @@ async function sede(req, res) {
         return json(res, 200, r.corpo, Object.assign({ ETag: r.etag, 'Cache-Control': 'no-cache' }, extra));
       }
       if (q.get('ver') === 'dia') {
-        const dia = R.diaDe(String(q.get('dia') || ''));
-        const l = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.guilda_missao_dia($1::date)', [dia])).rows);
-        return json(res, 200, { dia, pessoas: l.map(x => ({ sub: x.sub, estado: x.estado })) }, extra);
+        const v = R.disponibilidadeDe(q);
+        const l = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.guilda_disponibilidade($1::date, $2::time, $3::time)', [v.dia, v.ini, v.fim])).rows);
+        return json(res, 200, { dia: v.dia, ini: v.ini, fim: v.fim, pessoas: l.map(x => ({ sub: x.sub, estado: x.estado, motivo: x.motivo })) }, extra);
       }
       if (q.get('ver') === 'mural') return json(res, 200, { posts: await db.asUser(sub, c => mural(c, sub)) }, extra);
       if (q.get('ver') === 'memoria') {

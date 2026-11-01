@@ -181,6 +181,29 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 01/nov — a guilda entra na FASE 1, GRÁTIS (branch `guilda-fase1`; `_guilda-testes.js`, `test/guilda-real.js`)
+
+Titular: *"a guilda do Carro do Freela entra na fase 1 do lançamento, GRÁTIS"*. O que está abaixo (31/out) segue valendo,
+com estas trocas:
+- ⚠️ **`db/fase.js` tem recursos por fase** (`RECURSOS`): `guilda: 1`, `venda_guilda: null` (sem fase = desligado em
+  qualquer fase). Servidor: `FASES.guildaNoAr()` / `FASES.vendaDaGuildaNoAr()`. Site: o build escreve `FASE_LANCAMENTO` e
+  `RECURSOS_LANCAMENTO` (`guildaReal()`, `vendaGuildaReal()`). Recurso desconhecido em `noAr()` é erro. `CDF_TESTE_FASE=0`
+  (só nas suítes) = nenhum recurso, para provar o portão; `fixarParaTeste(n, { venda_guilda: 1 })` prova o código guardado.
+- ⚠️ **Nada é vendido.** Com a venda desligada: qualquer conta funda (sem 402), extra = 0 mesmo com sinal de pacote na
+  claim, sem `pedir_url`, `pacotes: []`, e `acao` de compra (`comprar`, `fundacao`, `pacote`, `espaco_extra`, `lugares`) →
+  403 `sem_venda`. Na Sede: "15 da sede", sem "Aumentar lugares", a folha de fundar em 2 passos ("De graça. 15 lugares"),
+  sem preço nem pedido. O código da venda fica guardado atrás de `vendaGuildaReal()`; os planos do HUB (antes 0043/0044)
+  estão só em `docs/carro-guilda-venda-rascunho.md`. Bônus do nível 10 (+2) continua, grátis.
+- Home do site real: o bento `#hb-guilda` e a linha da praça com `data-guilda` (somem se a guilda estiver fora do ar).
+- ⚠️ **Montar job: a data e o horário vêm PRIMEIRO** (`0007_disponibilidade`). `guilda_estado_em` diz, por pessoa e
+  horário [início, fim): `ocupado` (motivo `missao`: job aberto da guilda que cruza, inclusive vaga sem proposta/pendente e
+  quem montou; motivo `agenda`: dia declarado ou proposta aceita que cruza), `sem_agenda` (não divulgou: nada dele é dito)
+  ou `livre`. Encostar não cruza; sem hora = dia todo; fim ≤ início = até 24:00. `GET /sede?ver=dia&dia&ini&fim`;
+  `guilda_missao_criar` exige início e fim e recusa `ocupado`/`sem_agenda` (409 com `quem`); sem agenda só com
+  `sem_agenda: true` (a confirmação do dono); `guilda_missao_trocar` ganhou `p_sem_agenda`. Trava por guilda.
+  Tela: `sdMontarJob()` abre `sdMissaoFolha` no passo 1 (Quando) → 2 (Quem está livre; `#mq-fora` recolhido com
+  ocupados e sem agenda) → 3 (o job). Os rostos (`sdMontar`) seguem como atalho: no passo 2 sai quem está ocupado, com aviso.
+
 ## 31/out — a guilda da fase 2 (branch `fase2-guilda`; `test/guilda-real.js`, `test:banco`)
 
 Pedido do titular: guilda e espaço extra são da fase 2 (`docs/lancamento-fases.md`). Pronta, guardada e sem deploy.

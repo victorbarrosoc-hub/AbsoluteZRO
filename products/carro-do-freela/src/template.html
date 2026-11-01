@@ -6074,7 +6074,7 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
   .ml-sd iframe{height:calc(100dvh - 236px);min-height:400px}
 }
 /* ============ A SEDE DA GUILDA (31/out, fase 2; desenho "Sede" aprovado pelo titular, Gel magenta) ============
-   Só existe no site real com FASE_LANCAMENTO >= 2 (o bloco #sd nasce no realGuildaPintar). Linguagem do estúdio à
+   Só existe no site real com a guilda no ar (db/fase.js, fase 1 desde 01/11) (o bloco #sd nasce no realGuildaPintar). Linguagem do estúdio à
    noite: luz que vaza do alto, claquete, call sheet, crachá de credencial e a estante de pôsteres. O acento é a cor da
    CASA da guilda (--sd-amb, das 5 paletas ou da cor própria com guarda de contraste); o ciano continua sendo a ação do
    Carro. Títulos em Figtree (fino × pesado, sem degradê); números em mono. Estados por atributo (data-*, aria-*), nunca
@@ -6890,6 +6890,20 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
 .mq-ag[data-ag="ocupado"],.mq-ag[data-ag="no_job"]{color:var(--sd-aviso)}
 .sd-membros .sd-p .mq-ag{display:block}
 .mq-sug{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+/* (01/11) a folha do job em passos: o horário primeiro, quem está livre, e o resto recolhido no fim */
+.mq-resumo{font-family:var(--sd-mono);font-size:13px;color:var(--sd-ink2)}
+.mq-mudar{border:0;background:none;color:var(--sd-amb);font:inherit;font-family:Figtree,system-ui,sans-serif;font-weight:650;font-size:13px;cursor:pointer;padding:0 0 0 6px}
+.mq-aviso{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:var(--sd-bg2);box-shadow:inset 0 0 0 1px var(--sd-line);font-size:13px;color:var(--sd-ink);line-height:1.4}
+.mq-fora{margin-top:14px;border-radius:14px}
+@media (max-width:720px){.mq-passos{padding-right:56px}}
+.mq-fora summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--sd-ink3);padding:6px 2px;width:max-content}
+.mq-fora summary::-webkit-details-marker{display:none}
+.mq-fora summary .sd-ico{width:14px;height:14px;transform:rotate(90deg);transition:transform .2s}
+.mq-fora[open] summary .sd-ico{transform:rotate(-90deg)}
+.mq-fora .sd-membros{margin-top:6px}
+.mq-fora .sd-p{opacity:.86}
+.mq-fora .sd-p[data-ocupado] b{color:var(--sd-ink2)}
+@media (prefers-reduced-motion:reduce){.mq-fora summary .sd-ico{transition:none}}
 .mq-sug small{font-size:12px;color:var(--sd-ink3);margin-right:4px}
 .mq-sug .sd-chip{padding:0 10px 0 4px}
 .mq-sug .sd-chip .sd-ico{width:14px;height:14px}
@@ -7823,6 +7837,11 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
           <img class="bn-obj" data-obj="envelope" alt="" decoding="async">
           <div class="bn-tx"><h3>Propostas e jobs.</h3><p>A proposta chega aqui, o job fica registrado. Seu telefone nunca aparece.</p></div>
         </article>
+        <!-- (01/11) a guilda na fase 1, grátis: só aparece com o recurso no ar (db/fase.js → guildaReal()), sem preço -->
+        <article class="bn-t" id="hb-guilda" hidden data-so-real data-guilda>
+          <img class="bn-obj" data-obj="escudo" alt="" decoding="async">
+          <div class="bn-tx"><h3>A sua guilda.</h3><p>O time de sempre com sede própria: chat, quadro e a memória dos jobs.</p></div>
+        </article>
         <article class="bn-t" id="hb-malas" hidden data-so-real>
           <img class="bn-obj" data-obj="mala" alt="" decoding="async">
           <div class="bn-tx"><h3>Porta-malas.</h3><p>O material do job no seu Drive, com o Sobedesce. Sobe e desce conferido.</p></div>
@@ -7936,6 +7955,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <ul class="pc-lista">
           <li><button class="pc-it entrar-cta"><i data-capa="edicao" aria-hidden="true"></i><span><b>Feed do set</b><small>Quem entregou o quê, e quem precisa de gente.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
           <li data-fase="4"><button class="pc-it entrar-cta"><i data-capa="foto" aria-hidden="true"></i><span><b>Guildas</b><small>Quem sempre roda junto, com time em comum.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
+          <li hidden data-so-real data-guilda><button class="pc-it entrar-cta"><i data-capa="guilda" aria-hidden="true"></i><span><b>Guilda</b><small>Quem sempre roda junto, com sede, chat e memória.</small></span></button></li>
           <li hidden data-so-real><button class="pc-it entrar-cta"><i data-capa="foto" aria-hidden="true"></i><span><b>Brechó do set</b><small>Venda e compre equipamento de quem é do meio.</small></span></button></li>
           <li hidden data-so-real><button class="pc-it entrar-cta"><i data-capa="som" aria-hidden="true"></i><span><b>Equipe que se acha</b><small>Ache gente pelo @, pela função e pela data.</small></span></button></li>
           <li data-sem-real><button class="pc-it entrar-cta"><i data-capa="drone" aria-hidden="true"></i><span><b>Coletivos</b><small>Grupos que se organizam. Entra quem quiser.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
@@ -10742,11 +10762,15 @@ const REAL=!!document.querySelector('meta[name="cdf-real"]');
 const FORA_DO_REAL=new Set(["planos","aprender","passar","orcar"]);
 /* (0003) autores e donos que vêm do servidor e não estão no CREW (gente que posta ou anuncia sem divulgar a agenda) */
 var REAL_AUTORES={};
-/* ⚠️ A FASE DO LANÇAMENTO (31/out): a guilda é da fase 2 e o ÚNICO portão é esta constante, escrita pelo build a partir
-   de db/fase.js (o servidor lê o mesmo arquivo: com a fase 1 /api/zro/guildas responde 404). Fase 1 = sem guilda.
-   "Libera fase 2" = trocar o número em db/fase.js. Não é interruptor de tela. Só vale no site real. */
+/* ⚠️ A FASE DO LANÇAMENTO (31/out; recursos por fase em 01/11): o ÚNICO portão é db/fase.js, escrito aqui pelo build
+   (a fase e o mapa do que está no ar nela; o servidor lê o mesmo arquivo e responde 404 ao que está fora).
+   01/11 (titular): a GUILDA entra na fase 1, GRÁTIS; a VENDA da guilda (fundação paga, +5 e +15 lugares) segue sem fase:
+   nada de preço nem de botão de compra na tela. Não é interruptor de tela. Só vale no site real. */
 const FASE_LANCAMENTO=/*__FASE_LANCAMENTO__*/1;
-const guildaReal=()=>REAL&&FASE_LANCAMENTO>=2;
+const RECURSOS_LANCAMENTO=/*__RECURSOS_LANCAMENTO__*/{};
+const guildaReal=()=>REAL&&RECURSOS_LANCAMENTO.guilda===true;
+/* a venda da guilda (fundação paga e lugares extras): desligada até a cobrança ser ligada */
+const vendaGuildaReal=()=>guildaReal()&&RECURSOS_LANCAMENTO.venda_guilda===true;
 if(REAL) document.documentElement.classList.add("real");
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
@@ -21661,15 +21685,16 @@ function realCarregar(){
     realSocial();
   });
 }
-/* ============ A SEDE DA GUILDA NO SERVIDOR (0004 + 0005, fase 2: só com FASE_LANCAMENTO >= 2) ============
+/* ============ A SEDE DA GUILDA NO SERVIDOR (0004 + 0005 + 0006; na fase 1, grátis, desde 01/11: guildaReal()) ============
    O painel aprovado pelo titular (31/out, desenho "Sede", Gel magenta): a recepção (herói com o brasão, placa, lugares,
    memória em pôsteres e o chat ao vivo), o CHAT (uma sala por guilda + um canal por job, menção, reação, fixado, call
    sheet com confirmação e presença, quem digita, quem está na sede, não lidas), o QUADRO com a placa (XP, sequência,
    credenciais) e a MEMÓRIA (a estante de pôsteres e os créditos que sobem). Fundar, aumentar lugares e personalizar
    (cor e logo) são folhas. Tudo vem de /api/zro/guildas, /api/zro/sede e /api/zro/sede-imagem; nada mora no aparelho.
    ⚠️ A guilda muda só o que a PRÓPRIA guilda vê: nada aqui entra em filtrar() nem na ordem da busca; XP, nível,
-   lugares e cor não saem da guilda. Sem ranking entre guildas. Fundar e lugares são pagos, mas nada é cobrado aqui:
-   os planos são rascunho no HUB e a folha leva o pedido à conta Absolute ZRO (pedir_url). O tempo real é poll com ETag
+   lugares e cor não saem da guilda. Sem ranking entre guildas. 01/11 (titular): fundar é GRÁTIS e a sede tem 15 lugares
+   (+2 no nível 10); a venda (fundação paga, +5 e +15) só aparece com vendaGuildaReal(), que hoje é falso: sem preço,
+   sem "Aumentar lugares" e sem pedido de plano. O código da venda fica guardado para quando a cobrança for ligada. O tempo real é poll com ETag
    (304 quando nada mudou), só com a tela aberta. Movimento só com propósito, e nenhum com "reduzir movimento" (sdMov).
    Só var e function no topo (o TDZ de 19/out · 2). */
 var REAL_GUILDA=null, REAL_GUILDA_PESSOAS=null, REAL_GUILDA_BUSCA="";
@@ -21682,12 +21707,12 @@ var ERRO_GUILDA={ja_em_guilda:"Você já está numa guilda.",carencia:"Você sai
   ja_convidado:"Essa pessoa já foi convidada.",limite_convites:"Convites demais abertos. Cancele algum.",bloqueado:"Não dá para convidar essa pessoa.",
   so_dono:"Só quem fundou a guilda faz isso.",dono_nao_sai:"Tire os outros membros antes de sair.",convite_invalido:"Esse convite não vale mais.",
   convite_expirado:"Esse convite venceu. Peça outro.",nao_achado:"Não achei.",tag:"A tag são 2 ou 3 letras.",nome:"Dê um nome com pelo menos 3 letras.",
-  devagar:"Calma: muitas mensagens seguidas. Tente em um minuto.",fundacao:"Fundar a sede pede a fundação na sua conta.",
+  devagar:"Calma: muitas mensagens seguidas. Tente em um minuto.",fundacao:"Fundar a sede pede a fundação na sua conta.",sem_venda:"A guilda é grátis: não há nada para comprar.",
   so_quem_fez:"Só quem fez o job (ou quem fundou) faz isso.",chamada_futura:"A presença se marca no dia da chamada.",
   chamada_passou:"Essa chamada já passou.",limite_fixados:"Já tem coisa demais fixada. Solte uma.",cota:"A guilda chegou ao limite de imagens.",
   grande:"Imagem grande demais.",formato:"Use PNG, JPEG ou WebP.",invalida:"Não consegui ler essa imagem.",telefone:"Contato não vai aqui: tire o número.",
   titulo:"Dê um título.",local:"Diga a locação.",
-  missao:"Esse job mudou. Atualize o quadro.",missao_dia:"Você já tem um job montado nesse dia.",equipe:"Escolha gente da guilda (sem você).",hora:"Hora da chamada inválida.",dia:"Escolha o dia.",link:"Use um link https.",chamada:"Confira o call sheet."};
+  missao:"Esse job mudou. Atualize o quadro.",ocupado:"Alguém ficou ocupado nesse horário.",sem_agenda:"Confirme quem não divulgou a agenda.",missao_dia:"Você já tem um job montado nesse dia.",equipe:"Escolha gente da guilda (sem você).",hora:"Hora da chamada inválida.",dia:"Escolha o dia.",link:"Use um link https.",chamada:"Confira o call sheet."};
 var SD_PALETAS={"gel-magenta":{nome:"Gel magenta",d:"#F062B8",l:"#B0307A",ink:"#1F0716"},tungstenio:{nome:"Tungstênio",d:"#F0A85E",l:"#B8691E",ink:"#1A1208"},
   "luz-do-dia":{nome:"Luz do dia",d:"#7CC4FF",l:"#1F6FB8",ink:"#06121F"},bordo:{nome:"Bordô",d:"#E8697D",l:"#A8283D",ink:"#1F0609"},
   jade:{nome:"Jade",d:"#3FD3B0",l:"#0F7D66",ink:"#04150F"}};
@@ -21978,9 +22003,9 @@ function sdPainelHtml(m){
   /* os lugares */
   var outros=m.membros.filter(function(x){return !x.eu}).slice(0,4);
   h+='<div class="sd-ficha"><div class="sd-rot">'+sdIco("lugar")+'Lugares</div>'+sdLugares(vg.total,vg.ocupadas,base)+
-    '<div class="sd-lugtxt"><b>'+vg.ocupadas+'<small> de '+vg.total+'</small></b>'+vg.base+' da fundação'+(vg.bonus_de_nivel?' + '+vg.bonus_de_nivel+' do nível':"")+(vg.extra?' + pacote de '+vg.extra:"")+'</div>'+
+    '<div class="sd-lugtxt"><b>'+vg.ocupadas+'<small> de '+vg.total+'</small></b>'+vg.base+(vendaGuildaReal()?' da fundação':' da sede')+(vg.bonus_de_nivel?' + '+vg.bonus_de_nivel+' do nível':"")+(vg.extra?' + pacote de '+vg.extra:"")+'</div>'+
     '<button class="sd-ocup" data-sd-membros>'+sdAvs(outros,24)+'<span>'+(vg.ocupadas>outros.length+1?'+'+(vg.ocupadas-outros.length-1)+' · ':"")+(m.convites.length?'<b>'+pl_(m.convites.length,"convite")+'</b> '+(m.convites.length===1?"aberto":"abertos"):'membros')+'</span></button>'+
-    (sdDono()?'<button class="sd-btn" data-sm data-sd-lugares>'+sdIco("plus")+'Aumentar lugares</button>':"")+'</div>';
+    (sdDono()&&vendaGuildaReal()?'<button class="sd-btn" data-sm data-sd-lugares>'+sdIco("plus")+'Aumentar lugares</button>':"")+'</div>';
   /* a memória */
   h+='<div class="sd-ficha sd-fmem"><div class="sd-rot">'+sdIco("livro")+'Memória<button class="sd-mais" data-sd-ir2="memoria" aria-label="Ver a memória">'+sdIco("chev")+'</button></div>'+
     '<div class="sd-memconta"><b>'+mem.jobs+'</b>'+(mem.jobs===1?"job junto":"jobs juntos")+'<i>·</i><b>'+mem.contratantes+'</b>'+(mem.contratantes===1?"contratante":"contratantes")+'</div>';
@@ -22036,7 +22061,7 @@ function sdChatHtml(m){
     '<label class="sd-busca">'+sdIco("busca")+'<input id="sd-busca" placeholder="Buscar canal" value="'+esc(SD.busca)+'" autocomplete="off"></label>'+
     '<div class="sd-lista" id="sd-lista">'+sdCanaisLista(m)+'</div>'+
     '<div class="sd-rodape"><div class="sd-l1"><span>Lugares</span><b>'+vg.ocupadas+'/'+vg.total+'</b></div>'+sdLugares(vg.total,vg.ocupadas,vg.base+vg.bonus_de_nivel)+
-    (sdDono()?'<button type="button" data-sd-lugares>Aumentar lugares</button>':"")+'</div></aside>';
+    (sdDono()&&vendaGuildaReal()?'<button type="button" data-sd-lugares>Aumentar lugares</button>':"")+'</div></aside>';
   h+='<main class="sd-conv"><div class="sd-ccab"><button type="button" class="sd-voltar sd-icb" data-sd-ir2="painel" aria-label="Voltar para a sede">'+sdIco("voltar")+'</button>'+
     '<div><h2>'+(c.tipo==="sala"?sdIco("hash"):'<i class="sd-job" style="width:10px;height:10px;border-radius:3px;background:var(--sd-amb);flex:none"></i>')+'<span id="sd-cnome">'+esc(c.nome)+'</span></h2>'+
     '<small id="sd-csub">'+(c.tipo==="sala"?"A sala da guilda · "+pl(m.membros.length,"membro"):"Canal do job")+'</small></div>'+
@@ -22503,7 +22528,9 @@ function sdFolha(html,curta){
   return o;
 }
 function sdEsc(e){ if(e.key==="Escape") sdFecharFolha() }
-function sdFecharFolha(){ var o=v("sd-veu"); if(o) o.remove(); document.body.style.overflow=""; document.removeEventListener("keydown",sdEsc); var b=v("mq-barra"); if(b) b.hidden=false }
+function sdFecharFolha(){ var o=v("sd-veu"); if(o) o.remove(); document.body.style.overflow=""; document.removeEventListener("keydown",sdEsc); var b=v("mq-barra"); if(b) b.hidden=false;
+  /* a folha do job aberta direto (sem os rostos): fechar é desistir da escolha */
+  if(SD.montar&&SD.montar.soFolha){ SD.montar=null; SD.folhaJob=null } }
 function sdErro(o,msg){ var e=o.querySelector(".sd-erro"); if(e) e.textContent=msg||"" }
 var SD_PRECO={fundacao:18900,p5:1490,p15:3490};
 /** a conta da folha: fundação (uma vez) + o pacote escolhido (1º mês) = hoje; depois, só o pacote por mês */
@@ -22526,11 +22553,12 @@ function sdPacksHtml(sel,fundar){
 /* a ação final das folhas pagas: com o direito na conta, faz de verdade; sem ele, leva o pedido à conta Absolute ZRO
    (o fluxo de pedido de plano do HUB). Nada é cobrado aqui, e a folha diz isso. */
 function sdPedirPlano(){
+  if(!vendaGuildaReal()) return;
   var u=(REAL_GUILDA&&REAL_GUILDA.pedir_url)||"";
   if(/^https:\/\/|^http:\/\/(localhost|127\.0\.0\.1)/.test(u)) window.open(u,"_blank","noopener");
 }
 function sdFundar(){
-  var j=REAL_GUILDA||{}, st={passo:1,nome:"",tag:"",sobre:"",cor:"gel-magenta",propria:"#F062B8",pack:"0"};
+  var j=REAL_GUILDA||{}, st={passo:1,nome:"",tag:"",sobre:"",cor:"gel-magenta",propria:"#F062B8",pack:"0"}, venda=vendaGuildaReal();
   SD.cor=st.cor;
   var pinta=function(){
     var p=sdPaleta(st.cor,st.propria), g={nome:st.nome||"Sua guilda",tag:(st.tag||"???").toUpperCase(),logo:null};
@@ -22538,13 +22566,20 @@ function sdFundar(){
       '<div class="sd-prev"><img src="'+esc(sdMidia(SD_CAPA.luz,500))+'" alt=""><i class="sd-claq"></i><div class="sd-ttl">Prévia da sua sede</div>'+sdBrasao(g,170)+'<h2>'+esc(g.nome)+'</h2>'+
       '<div class="sd-cores" role="radiogroup" aria-label="Cor da casa">'+Object.keys(SD_PALETAS).map(function(k){ return '<button type="button" data-sd-cor="'+k+'" style="background:'+SD_PALETAS[k].d+'" title="'+SD_PALETAS[k].nome+'" aria-label="'+SD_PALETAS[k].nome+'" aria-pressed="'+(st.cor===k)+'"></button>' }).join("")+
       '<label title="Cor própria"'+(st.cor==="propria"?" data-on":"")+'><input type="color" id="sd-f-propria" value="'+esc(st.propria)+'" aria-label="Cor própria"></label></div></div>'+
-      '<div class="sd-form"><div class="sd-passos">'+[["Nome e brasão",1],["Lugares",2],["Pedir",3]].map(function(x,i){
+      '<div class="sd-form"><div class="sd-passos">'+(venda?[["Nome e brasão",1],["Lugares",2],["Pedir",3]]:[["Nome e brasão",1],["Abrir",2]]).map(function(x,i){
         return (i?'<span class="sd-tr"></span>':"")+'<span'+(st.passo>x[1]?" data-ok":"")+(st.passo===x[1]?' aria-current="step"':"")+'><i>'+(st.passo>x[1]?sdIco("check"):x[1])+'</i>'+x[0]+'</span>' }).join("")+'</div>'+
       (st.passo===1?'<h1>Dê nome à <b>sede</b>.</h1><div class="sd-apoio">O brasão nasce das iniciais. O logo vem depois, se quiser.</div>'+
         '<label class="sd-campo">Nome da guilda<input id="sd-f-nome" maxlength="24" value="'+esc(st.nome)+'" placeholder="ex.: Maresia"></label>'+
         '<div class="sd-linha2"><label class="sd-campo">Tag (2 ou 3 letras)<input id="sd-f-tag" maxlength="3" value="'+esc(st.tag)+'" placeholder="MRS" style="text-transform:uppercase;font-family:var(--sd-mono)"></label>'+
         '<label class="sd-campo">O que a guilda roda<input id="sd-f-sobre" maxlength="90" value="'+esc(st.sobre)+'" placeholder="Clipe, publicidade e casamento"></label></div>'+
         '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" data-ink id="sd-f-ok">Continuar</button></div>'
+      /* (01/11) a guilda é grátis na fase 1: o passo 2 só mostra o limite honesto, sem preço e sem compra */
+      :!venda?'<h1>Abra a <b>sede</b>.</h1><div class="sd-apoio">De graça. 15 lugares para o time de sempre.</div>'+
+        '<div class="sd-fund"><div class="sd-ic">'+sdIco("guilda")+'</div><div><b>Sede da guilda</b><small>chat, quadro, placa e memória</small></div><div class="sd-pr"><b>15</b><small>lugares</small></div></div>'+
+        '<div class="sd-inclui">'+[["chat","Chat com canais"],["pin","Quadro"],["estrela","Placa e credenciais"],["livro","Memória dos jobs"]].map(function(x){ return '<span>'+sdIco(x[0])+x[1]+'</span>' }).join("")+'</div>'+
+        '<div class="sd-regrap">'+sdIco("lugar")+'No nível 10, a sede ganha mais 2 lugares.</div>'+
+        '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="sd-f-volta">Voltar</button><button type="button" class="sd-btn" data-ink id="sd-f-fundar">Fundar a sede</button></div>'+
+        '<div class="sd-nota">'+sdIco("cadeado")+'Lugares e nível não mudam ninguém na busca do Carro.</div>'
       :'<h1>Abra a <b>sede</b>.</h1><div class="sd-apoio">Paga uma vez para fundar. Lugar extra só se a guilda crescer.</div>'+
         '<div class="sd-fund"><div class="sd-ic">'+sdIco("guilda")+'</div><div><b>Fundação da sede</b><small>15 lugares, chat, quadro, placa e memória</small></div><div class="sd-pr"><b>R$ 189</b><small>uma vez</small></div></div>'+
         sdPacksHtml(st.pack,true)+
@@ -22573,7 +22608,7 @@ function sdFundar(){
         var depois=function(){ sdFecharFolha(); som("claquete"); SD.tela="painel"; realGuildaCarregar().then(function(){ sdPintar(true); sdLaco() }) };
         if(st.cor!=="gel-magenta") cfbPedir("POST","/api/zro/guildas",{acao:"personalizar",paleta:st.cor,cor:st.cor==="propria"?st.propria:null,sobre:st.sobre||null}).then(depois);
         else depois();
-        if(st.pack!=="0"&&(REAL_GUILDA.pacotes||[]).indexOf(+st.pack)<0) sdPedirPlano();
+        if(venda&&st.pack!=="0"&&(REAL_GUILDA.pacotes||[]).indexOf(+st.pack)<0) sdPedirPlano();
       });
     };
   };
@@ -22581,7 +22616,7 @@ function sdFundar(){
   pinta();
 }
 function sdLugaresFolha(){
-  var m=sdMinha(); if(!m) return; var vg=m.vagas, st={pack:"5"};
+  var m=sdMinha(); if(!m||!vendaGuildaReal()) return;   /* sem a venda ligada não há pacote para pedir */ var vg=m.vagas, st={pack:"5"};
   var pinta=function(){
     var mais=st.pack==="15"?15:5;
     var o=sdFolha('<div class="sd-prev"><img src="'+esc(sdMidia(SD_HEROI,600))+'" alt=""><i class="sd-claq"></i><div class="sd-ttl">Lugares da sede</div>'+sdBrasao(m.guilda,120,m.nivel.atual)+
@@ -22723,13 +22758,14 @@ function sdNomearFolha(c){
 var SD_MEST={a_rodar:"A rodar",rodando:"Rodando",feito:"Feito"};
 var SD_VEST={vai:"vai",pendente:"pendente",nao_vai:"não vai"};
 var SD_SEM=["dom","seg","ter","qua","qui","sex","sáb"];
-var SD_AGENDA={livre:"livre no dia",ocupado:"ocupado no dia",negociando:"negociando o dia",no_job:"já num job da guilda",sem_agenda:"agenda não divulgada"};
+/* a disponibilidade NAQUELE horário (0007): livre, ocupado (sem dizer com o quê; "num job da guilda" é dado da casa) ou sem agenda */
+var SD_AGENDA={livre:"livre nesse horário",ocupado:"ocupado",sem_agenda:"sem agenda divulgada"};
 function sdMissoes(){ var m=sdMinha(); return (m&&m.missoes)||[] }
 function sdProximos(){ var m=sdMinha(); return (m&&m.proximos)||{} }
 /** quantos cartazes esperam a MINHA resposta (o selo da sala) */
 function sdMinhaVez(){ var eu=sdEu(); return sdMissoes().filter(function(x){ return x.estado!=="feito"&&x.equipe.some(function(q){ return q.sub===eu&&q.estado==="pendente"&&q.enviada }) }).length }
 function sdDiaCurto(d){ var x=sdD(d); return x?SD_SEM[x.getDay()]+" "+String(x.getDate()).padStart(2,"0")+" "+SD_MES[x.getMonth()]:"" }
-function mqAgendaSelo(e){ return e&&SD_AGENDA[e]?'<small class="mq-ag" data-ag="'+e+'">'+SD_AGENDA[e]+'</small>':"" }
+function mqAgendaSelo(e,motivo){ return e&&SD_AGENDA[e]?'<small class="mq-ag" data-ag="'+e+'">'+(e==="ocupado"&&motivo==="missao"?"num job da guilda":SD_AGENDA[e])+'</small>':"" }
 function mqProxSelo(p){
   if(!p) return "";
   return '<span class="mq-prox" data-e="'+esc(p.estado)+'" title="Próximo job: '+esc(p.titulo)+'">'+(p.estado==="vai"?sdIco("check"):p.estado==="monta"?sdIco("estrela"):'<i></i>')+
@@ -22795,7 +22831,8 @@ function sdLigarMissoes(sd){
   sdLigarCartazes(sd);
 }
 function sdLigarCartazes(raiz){
-  raiz.querySelectorAll("[data-mq-montar]").forEach(function(b){ b.onclick=function(){ sdMontar(true) } });
+  /* "Montar job" abre a folha no passo 1 (a data e o horário primeiro); os rostos da Sede ficam como atalho (lista de membros) */
+  raiz.querySelectorAll("[data-mq-montar]").forEach(function(b){ b.onclick=function(){ sdMontarJob() } });
   raiz.querySelectorAll("[data-mq-canal]").forEach(function(b){ b.onclick=function(){ sdIr("chat",b.dataset.mqCanal) } });
   raiz.querySelectorAll("[data-mq-resp]").forEach(function(b){ b.onclick=function(){ show("propostas") } });
   raiz.querySelectorAll("[data-mq-trocar]").forEach(function(b){ b.onclick=function(){ var p=b.dataset.mqTrocar.split("|"); sdTrocarFolha(p[0],p[1]) } });
@@ -22860,12 +22897,48 @@ function sdBarra(){
   v("mq-b-ok").onclick=function(){ if(SD.montar&&SD.montar.sel.length) sdMissaoFolha() };
 }
 
-/* ---- a folha do job: título, contratante, dia, início e fim, local e a função de cada escolhido ---- */
-function sdMissaoFolha(){
-  var m=sdMinha(); if(!m||!SD.montar) return;
+/* ---- a folha do job (01/11, titular): A DATA E O HORÁRIO VÊM PRIMEIRO ----
+   passo 1 Quando (dia, início, fim e local opcional) → passo 2 Quem está livre (só quem está livre NAQUELE horário, pela
+   agenda do Carro e pelos jobs da guilda; quem está ocupado ou não divulgou a agenda fica numa linha recolhida no fim,
+   e o sem agenda só entra com a confirmação do dono) → passo 3 o job (título, contratante, funções, call sheet) → montar.
+   O servidor confere de novo ao montar (0007): quem ficou ocupado no meio-tempo volta para o passo 2 com o aviso.
+   Os rostos da Sede continuam como atalho: a seleção chega aqui e, no passo 2, sai dela quem está ocupado (com aviso). */
+function mqHorario(st){ return sdDiaCurto(st.dia)+" · "+st.ini+"–"+st.fim+(st.local?" · "+st.local:"") }
+function mqNomes(subs){
+  var n=subs.map(function(s){ var p=sdMembro(s); return p?sdPrimeiro(p.nome):"Alguém" });
+  return n.length>1?n.slice(0,-1).join(", ")+" e "+n[n.length-1]:n[0]||"";
+}
+/** o erro do servidor com o nome de quem (ocupado no horário, sem agenda sem confirmação) */
+function mqMsgErro(r){
+  var j=r&&r.j;
+  if(j&&j.quem&&j.erro==="ocupado") return mqNomes([j.quem])+" ficou ocupado nesse horário.";
+  if(j&&j.quem&&j.erro==="sem_agenda") return mqNomes([j.quem])+" não divulgou a agenda: confirme antes de chamar.";
+  return rgMsg(r);
+}
+/** a linha recolhida do fim: quantos ocupados e quantos sem agenda; aberta, quem e por quê (só "ocupado", nada privado) */
+function mqForaHtml(ocup,sem,motivo,sel,semOk,aberta){
+  if(!ocup.length&&!sem.length) return "";
+  var t=[ocup.length?ocup.length+" "+(ocup.length===1?"ocupado":"ocupados"):"",sem.length?sem.length+" sem agenda":""].filter(Boolean).join(" · ");
+  return '<details class="mq-fora" id="mq-fora"'+(aberta?" open":"")+'><summary>'+esc(t)+sdIco("chev")+'</summary><div class="sd-membros">'+
+    ocup.map(function(x){ return '<div class="sd-p" data-ocupado>'+sdAv(x,32)+'<div><b>'+esc(x.nome)+'</b>'+mqAgendaSelo("ocupado",motivo[x.sub])+'</div></div>' }).join("")+
+    sem.map(function(x){ var on=sel.indexOf(x.sub)>=0&&semOk[x.sub];
+      return '<div class="sd-p">'+sdAv(x,32)+'<div><b>'+esc(x.nome)+'</b>'+mqAgendaSelo("sem_agenda")+'</div>'+
+        (on?'<button type="button" class="mq-esc" data-mq-sem="'+esc(x.sub)+'" aria-pressed="true" aria-label="Tirar '+esc(x.nome)+'">'+sdIco("check")+'</button>'
+          :'<button type="button" class="sd-btn" data-sm data-mq-sem="'+esc(x.sub)+'">Chamar mesmo assim</button>')+'</div>' }).join("")+'</div></details>';
+}
+function sdMontarJob(){ SD.folhaJob=null; if(SD.montar) sdMontar(false); sdMissaoFolha(true) }
+function sdMissaoFolha(direto){
+  var m=sdMinha(); if(!m||(!direto&&!SD.montar)) return;
   var hoje=key(new Date());
-  var st=SD.folhaJob||(SD.folhaJob={titulo:"",contratante:"casa",cliente:"",dia:"",ini:"",fim:"",local:"",cs:false,hora:"",obs:"",fun:{}});
-  var agenda=null, enviando=false;
+  var st=SD.folhaJob||(SD.folhaJob={passo:1,titulo:"",contratante:"casa",cliente:"",dia:"",ini:"",fim:"",local:"",cs:false,hora:"",obs:"",fun:{},semOk:{}});
+  if(!direto) st.passo=st.dia&&st.ini&&st.fim?Math.max(2,st.passo===3?2:st.passo):1;
+  var agenda=null, motivo={}, enviando=false, aviso="", quemSrv="", foraAberta=false, visto="";
+  var o=sdFolha('<div class="sd-prev" data-mprev><img src="'+esc(sdMidia(SD_CAPA.camera,500))+'" alt=""><i class="sd-claq"></i><div class="sd-ttl">O cartaz no quadro</div><div class="mq-prevc" id="mq-f-prev"></div></div>'+
+    '<div class="sd-form" id="mq-f-corpo"></div>');
+  if(direto) SD.montar={sel:[],soFolha:true};
+  var bar=v("mq-barra"); if(bar) bar.hidden=true;
+  var corpoEl=v("mq-f-corpo");
+  var sel=function(){ return SD.montar?SD.montar.sel:[] };
   var guardar=function(){
     [["titulo","mq-f-tit"],["cliente","mq-f-cli"],["dia","mq-f-dia"],["ini","mq-f-ini"],["fim","mq-f-fim"],["local","mq-f-local"],["hora","mq-f-hora"],["obs","mq-f-obs"]].forEach(function(p){ var e=v(p[1]); if(e) st[p[0]]=e.value.trim() });
     var c=v("mq-f-cs"); if(c) st.cs=c.checked;
@@ -22873,116 +22946,194 @@ function sdMissaoFolha(){
   var fake=function(){
     return {id:"prev",titulo:st.titulo||"Novo job",contratante:st.contratante,cliente:st.cliente,dia:st.dia||hoje,ini:st.ini,fim:st.fim,local:st.local,estado:st.dia===hoje?"rodando":"a_rodar",
       dono:{sub:sdEu(),nome:(m.membros.find(function(x){ return x.eu })||{}).nome},eu_dono:true,
-      equipe:SD.montar.sel.map(function(s){ var p=sdMembro(s)||{nome:"?"}; return {sub:s,nome:p.nome,funcao:st.fun[s]||null,estado:"pendente",enviada:false} }),conta:{vai:0,pendente:0,nao_vai:0}};
+      equipe:sel().map(function(s){ var p=sdMembro(s)||{nome:"?"}; return {sub:s,nome:p.nome,funcao:st.fun[s]||null,estado:"pendente",enviada:false} }),conta:{vai:0,pendente:0,nao_vai:0}};
   };
   var prevPintar=function(){ var p=v("mq-f-prev"); if(p) p.innerHTML=mqCartazHtml(fake(),0,true) };
-  var contar=function(){ var b=v("mq-f-ok"); if(b&&!enviando) b.textContent="Mandar "+pl(SD.montar.sel.length,"proposta","propostas") };
+  var passos=function(){
+    return '<div class="sd-passos mq-passos">'+[["Quando",1],["Quem está livre",2],["O job",3]].map(function(x,i){
+      return (i?'<span class="sd-tr"></span>':"")+'<span'+(st.passo>x[1]?" data-ok":"")+(st.passo===x[1]?' aria-current="step"':"")+'><i>'+(st.passo>x[1]?sdIco("check"):x[1])+'</i>'+x[0]+'</span>' }).join("")+'</div>';
+  };
+  var pinta=function(){
+    if(st.passo===1) passo1(); else if(st.passo===2) passo2(); else passo3();
+    prevPintar();
+    var f=corpoEl.querySelector("input:not([type=checkbox])"); if(f&&innerWidth>720&&st.passo!==2) setTimeout(function(){ f.focus() },60);
+  };
+  /* ---- 1 · quando ---- */
+  var passo1=function(){
+    corpoEl.innerHTML=passos()+'<h1>Quando é o <b>job</b>?</h1><div class="sd-apoio">Primeiro o dia e o horário. Depois, quem está livre.</div>'+
+      '<div class="sd-linha3"><label class="sd-campo">Dia<input id="mq-f-dia" type="date" min="'+hoje+'" value="'+esc(st.dia)+'"></label><label class="sd-campo">Início<input id="mq-f-ini" type="time" value="'+esc(st.ini)+'"></label>'+
+        '<label class="sd-campo">Fim<input id="mq-f-fim" type="time" value="'+esc(st.fim)+'"></label></div>'+
+      '<label class="sd-campo">Local (opcional)<input id="mq-f-local" maxlength="120" value="'+esc(st.local)+'" placeholder="Forte dos Reis Magos"></label>'+
+      '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="mq-f-volta">Cancelar</button><button type="button" class="sd-btn" data-ink id="mq-f-ir">Ver quem está livre</button></div>';
+    ["mq-f-dia","mq-f-ini","mq-f-fim","mq-f-local"].forEach(function(id){ v(id).oninput=v(id).onchange=function(){ guardar(); prevPintar() } });
+    v("mq-f-volta").onclick=function(){ guardar(); sdFecharFolha() };
+    v("mq-f-ir").onclick=function(){
+      guardar();
+      if(!st.dia) return sdErro(o,ERRO_GUILDA.dia);
+      if(st.dia<hoje) return sdErro(o,"Escolha hoje ou um dia que vem.");
+      if(!st.ini||!st.fim) return sdErro(o,"Diga o início e o fim.");
+      if(st.ini===st.fim) return sdErro(o,"O fim precisa ser diferente do início.");
+      st.passo=2; som("passo"); pinta();
+    };
+  };
+  /* ---- 2 · quem está livre naquele horário ---- */
+  var passo2=function(){
+    corpoEl.innerHTML=passos()+'<h1>Quem está <b>livre</b>.</h1><div class="sd-apoio mq-resumo">'+esc(mqHorario(st))+'</div>'+
+      '<p class="mq-aviso" id="mq-f-aviso" role="status"'+(aviso?"":" hidden")+'>'+esc(aviso)+'</p>'+
+      '<div id="mq-f-livres"><p class="sd-nota">Olhando a agenda…</p></div>'+
+      '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="mq-f-volta">Voltar</button><button type="button" class="sd-btn" data-ink id="mq-f-ir" disabled>Continuar</button></div>';
+    v("mq-f-volta").onclick=function(){ aviso=""; quemSrv=""; st.passo=1; pinta() };
+    v("mq-f-ir").onclick=function(){ if(!sel().length) return sdErro(o,ERRO_GUILDA.equipe); aviso=""; quemSrv=""; st.passo=3; som("passo"); pinta() };
+    var chave=st.dia+"|"+st.ini+"|"+st.fim;
+    var lista=function(){
+      var el=v("mq-f-livres"); if(!el||!agenda) return;
+      var outros=m.membros.filter(function(x){ return !x.eu });
+      var livres=outros.filter(function(x){ return agenda[x.sub]==="livre" }), ocup=outros.filter(function(x){ return agenda[x.sub]==="ocupado" }),
+        sem=outros.filter(function(x){ return agenda[x.sub]==="sem_agenda" });
+      el.innerHTML=(livres.length?'<div class="sd-membros" id="mq-livres">'+livres.map(function(x){ var on=sel().indexOf(x.sub)>=0;
+          return '<div class="sd-p slm">'+sdAv(x,36)+'<div><b>'+esc(x.nome)+'</b>'+mqAgendaSelo("livre")+'</div>'+
+            '<button type="button" class="mq-esc" data-mq-livre="'+esc(x.sub)+'" aria-pressed="'+on+'" aria-label="Escolher '+esc(x.nome)+'">'+sdIco("check")+'</button></div>' }).join("")+'</div>'
+        :'<div class="sd-vazio"><b>Ninguém livre nesse horário.</b>Tente outro dia ou horário.</div>')+
+        mqForaHtml(ocup,sem,motivo,sel(),st.semOk,foraAberta);
+      var n=sel().length, b=v("mq-f-ir"); b.disabled=!n; b.textContent=n?"Continuar · "+n:"Continuar";
+      var d=v("mq-fora"); if(d) d.ontoggle=function(){ foraAberta=d.open };
+      el.querySelectorAll("[data-mq-livre]").forEach(function(b){ b.onclick=function(){ var s=b.dataset.mqLivre, i=sel().indexOf(s);
+        if(i>=0) sel().splice(i,1); else sel().push(s); som(i>=0?"passo":"toque"); lista(); prevPintar() } });
+      el.querySelectorAll("[data-mq-sem]").forEach(function(b){ b.onclick=function(){ var s=b.dataset.mqSem, i=sel().indexOf(s);
+        if(i>=0){ sel().splice(i,1); som("passo") }
+        else{ if(!window.confirm(mqNomes([s])+" não divulgou a agenda. Convidar mesmo assim?")) return; st.semOk[s]=true; sel().push(s); som("toque") }
+        lista(); prevPintar() } });
+    };
+    if(agenda&&visto===chave) return lista();
+    cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(st.dia)+"&ini="+encodeURIComponent(st.ini)+"&fim="+encodeURIComponent(st.fim)).then(function(r){
+      if(st.passo!==2) return;
+      if(r.status!==200||!r.j){ var el=v("mq-f-livres"); if(el) el.innerHTML='<p class="sd-nota">Não consegui olhar a agenda agora. Tente de novo.</p>'; return }
+      agenda={}; motivo={}; visto=chave;
+      (r.j.pessoas||[]).forEach(function(p){ agenda[p.sub]=p.estado; if(p.motivo) motivo[p.sub]=p.motivo });
+      /* quem veio escolhido (pelos rostos, ou de outro horário) e não está livre agora sai da seleção, com aviso */
+      var tirOc=[], tirSem=[];
+      sel().slice().forEach(function(s){
+        var e=agenda[s];
+        if(e==="livre"||(e==="sem_agenda"&&st.semOk[s])) return;
+        sel().splice(sel().indexOf(s),1);
+        if(e==="sem_agenda") tirSem.push(s); else tirOc.push(s);
+      });
+      var av=[aviso];
+      tirOc=tirOc.filter(function(s){ return s!==quemSrv });   /* quem o servidor já apontou não se repete no aviso */
+      if(tirOc.length) av.push(mqNomes(tirOc)+(tirOc.length===1?" está ocupado":" estão ocupados")+" nesse horário.");
+      if(tirSem.length){ av.push(mqNomes(tirSem)+(tirSem.length===1?" não divulgou":" não divulgaram")+" a agenda: confirme no fim da lista."); foraAberta=true }
+      aviso=av.filter(Boolean).join(" ");
+      var a=v("mq-f-aviso"); if(a){ a.textContent=aviso; a.hidden=!aviso }
+      lista(); prevPintar();
+    });
+  };
+  /* ---- 3 · o job: título, contratante, funções e o call sheet ---- */
+  var contar=function(){ var b=v("mq-f-ok"); if(b&&!enviando) b.textContent="Mandar "+pl(sel().length,"proposta","propostas") };
   var eqPintar=function(){
     var el=v("mq-f-eq"); if(!el) return;
-    var sel=SD.montar.sel.map(function(s){ return sdMembro(s) }).filter(Boolean);
-    var h=sel.map(function(x){
-      return '<div class="mq-er">'+sdAv(x,34)+'<div class="mq-ern"><b>'+esc(x.nome)+'</b>'+mqAgendaSelo(agenda&&agenda[x.sub])+'</div>'+
+    el.innerHTML=sel().map(function(s){ return sdMembro(s) }).filter(Boolean).map(function(x){
+      return '<div class="mq-er">'+sdAv(x,34)+'<div class="mq-ern"><b>'+esc(x.nome)+'</b>'+mqAgendaSelo(agenda&&agenda[x.sub]==="sem_agenda"?"sem_agenda":"livre")+'</div>'+
         '<select data-mq-fun="'+esc(x.sub)+'" aria-label="Função de '+esc(x.nome)+'"><option value="">Função</option>'+FUNCOES.map(function(f){ return '<option'+(st.fun[x.sub]===f?" selected":"")+'>'+esc(f)+'</option>' }).join("")+'</select>'+
         '<button type="button" class="sd-icb" data-mq-tirar="'+esc(x.sub)+'" aria-label="Tirar '+esc(x.nome)+'" title="Tirar">'+sdIco("fechar")+'</button></div>' }).join("");
-    var livres=agenda?m.membros.filter(function(x){ return !x.eu&&SD.montar.sel.indexOf(x.sub)<0&&agenda[x.sub]==="livre" }):[];
-    if(livres.length) h+='<div class="mq-sug"><small>Livres nesse dia</small>'+livres.map(function(x){ return '<button type="button" class="sd-chip" data-mq-add="'+esc(x.sub)+'">'+sdAv(x,22)+esc(sdPrimeiro(x.nome))+sdIco("plus")+'</button>' }).join("")+'</div>';
-    el.innerHTML=h;
     el.querySelectorAll("[data-mq-fun]").forEach(function(s){ s.onchange=function(){ st.fun[s.dataset.mqFun]=s.value; prevPintar() } });
-    el.querySelectorAll("[data-mq-tirar]").forEach(function(b){ b.onclick=function(){ var i=SD.montar.sel.indexOf(b.dataset.mqTirar); if(i>=0) SD.montar.sel.splice(i,1); som("passo");
-      if(!SD.montar.sel.length){ guardar(); sdFecharFolha(); return } eqPintar(); prevPintar(); contar() } });
-    el.querySelectorAll("[data-mq-add]").forEach(function(b){ b.onclick=function(){ SD.montar.sel.push(b.dataset.mqAdd); som("toque"); eqPintar(); prevPintar(); contar() } });
+    el.querySelectorAll("[data-mq-tirar]").forEach(function(b){ b.onclick=function(){ var i=sel().indexOf(b.dataset.mqTirar); if(i>=0) sel().splice(i,1); som("passo");
+      if(!sel().length){ guardar(); st.passo=2; return pinta() } eqPintar(); prevPintar(); contar() } });
   };
-  var carregarDia=function(){
-    if(!st.dia){ agenda=null; return eqPintar() }
-    cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(st.dia)).then(function(r){
-      if(r.status!==200||!r.j) return;
-      agenda={}; (r.j.pessoas||[]).forEach(function(p){ agenda[p.sub]=p.estado }); eqPintar();
-    });
+  var passo3=function(){
+    corpoEl.innerHTML=passos()+'<h1>Montar o <b>job</b>.</h1><div class="sd-apoio mq-resumo">'+esc(mqHorario(st))+' <button type="button" class="mq-mudar" id="mq-f-mudar">Mudar</button></div>'+
+      '<label class="sd-campo">Título<input id="mq-f-tit" maxlength="60" value="'+esc(st.titulo)+'" placeholder="Clipe “Maré Cheia”"></label>'+
+      '<div class="sd-campo">Contratante<div class="mq-seg" role="radiogroup" aria-label="Contratante">'+[["casa","Da casa"],["fora","De fora"]].map(function(c){
+        return '<button type="button" class="sd-chip" role="radio" data-mq-contr="'+c[0]+'" aria-checked="'+(st.contratante===c[0])+'" aria-pressed="'+(st.contratante===c[0])+'">'+c[1]+'</button>' }).join("")+
+        '<input id="mq-f-cli" maxlength="60" value="'+esc(st.cliente)+'" placeholder="Nome do cliente (opcional)" aria-label="Cliente"'+(st.contratante==="fora"?"":" hidden")+'></div></div>'+
+      '<div class="sd-campo">Equipe<div class="mq-eq" id="mq-f-eq"></div></div>'+
+      '<label class="mq-cs"><input type="checkbox" id="mq-f-cs"'+(st.cs?" checked":"")+'><span><b>Call sheet no canal do job</b><small>A equipe confirma ali mesmo.</small></span></label>'+
+      '<div class="sd-linha2" id="mq-f-csd"'+(st.cs?"":" hidden")+'><label class="sd-campo">Chamada<input id="mq-f-hora" type="time" value="'+esc(st.hora||st.ini||"06:00")+'"></label>'+
+        '<label class="sd-campo">Observação<input id="mq-f-obs" maxlength="200" value="'+esc(st.obs)+'" placeholder="Maré baixa até 9h"></label></div>'+
+      '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="mq-f-volta">Voltar</button><button type="button" class="sd-btn" data-ink id="mq-f-ok">Mandar</button></div>'+
+      '<div class="sd-nota">'+sdIco("cadeado")+'Sem preço no quadro: o valor fica entre os dois lados.</div>';
+    corpoEl.querySelectorAll("[data-mq-contr]").forEach(function(b){ b.onclick=function(){ guardar(); st.contratante=b.dataset.mqContr;
+      corpoEl.querySelectorAll("[data-mq-contr]").forEach(function(x){ var on=x===b; x.setAttribute("aria-checked",String(on)); x.setAttribute("aria-pressed",String(on)) });
+      v("mq-f-cli").hidden=st.contratante!=="fora"; prevPintar() } });
+    ["mq-f-tit","mq-f-cli"].forEach(function(id){ v(id).oninput=function(){ guardar(); prevPintar() } });
+    /* a chamada nasce no início do job (dá para mudar) */
+    v("mq-f-cs").onchange=function(){ guardar(); v("mq-f-csd").hidden=!st.cs; var hh=v("mq-f-hora"); if(st.cs&&(!st.horaMexida||!hh.value)) hh.value=st.ini||hh.value||"06:00"; guardar() };
+    v("mq-f-hora").oninput=function(){ st.horaMexida=true };
+    v("mq-f-mudar").onclick=function(){ guardar(); st.passo=1; pinta() };
+    v("mq-f-volta").onclick=function(){ guardar(); st.passo=2; pinta() };
+    v("mq-f-ok").onclick=function(){
+      guardar();
+      if([...st.titulo].length<2) return sdErro(o,ERRO_GUILDA.titulo);
+      if(st.cs&&!st.local) return sdErro(o,ERRO_GUILDA.local);
+      if(st.cs&&!st.hora) return sdErro(o,ERRO_GUILDA.hora);
+      var eq=sel().slice(); if(!eq.length) return sdErro(o,ERRO_GUILDA.equipe);
+      var corpo={acao:"missao",titulo:st.titulo,contratante:st.contratante,dia:st.dia,ini:st.ini,fim:st.fim,equipe:eq.map(function(s){
+        var x={sub:s}; if(st.fun[s]) x.funcao=st.fun[s]; if(agenda&&agenda[s]==="sem_agenda"&&st.semOk[s]) x.sem_agenda=true; return x })};
+      if(st.contratante==="fora"&&st.cliente) corpo.cliente=st.cliente;
+      if(st.local) corpo.local=st.local;
+      if(st.cs){ corpo.chamada={hora:st.hora}; if(st.obs) corpo.chamada.obs=st.obs }
+      var bt=this; bt.disabled=true; enviando=true; bt.textContent="Montando…"; sdErro(o,"");
+      sdPedirSede(corpo,true).then(function(r){
+        enviando=false;
+        if(!r.ok){
+          /* alguém ficou ocupado no meio-tempo (o servidor conferiu): volta ao passo 2, com a agenda de agora */
+          if(r.j&&r.j.quem&&(r.j.erro==="ocupado"||r.j.erro==="sem_agenda")){ aviso=mqMsgErro({j:r.j,status:r.status}); quemSrv=r.j.quem;
+            if(r.j.erro==="sem_agenda") delete st.semOk[r.j.quem]; agenda=null; visto=""; st.passo=2; return pinta() }
+          bt.disabled=false; contar(); return sdErro(o,mqMsgErro({j:r.j,status:r.status}));
+        }
+        var mis=r.j.missao, feitas=0;
+        var fim=function(){
+          SD.folhaJob=null; SD.montar=null; sdBarra(); sdFecharFolha(); som("claquete");
+          SD.missaoNova=mis.id; SD.filtroM="tudo";
+          avisar({t:feitas===eq.length?"Job montado":feitas+" de "+eq.length+" propostas foram",
+            sub:feitas===eq.length?pl(feitas,"proposta foi","propostas foram")+" para a caixa de cada um.":"Mande de novo pelo cartaz.",icone:"✓"});
+          realGuildaCarregar().then(function(){ sdIr("missoes") });
+        };
+        var uma=function(i){
+          if(i>=eq.length) return fim();
+          bt.textContent="Mandando "+(i+1)+" de "+eq.length+"…";
+          cfbPedir("POST","/api/zro/propostas",{para:eq[i],missao:mis.id,mensagem:("Job da guilda "+m.guilda.nome+": "+st.titulo).slice(0,1000)}).then(function(x){ if(x.status===201) feitas++; uma(i+1) });
+        };
+        uma(0);
+      });
+    };
+    eqPintar(); contar();
   };
-  var o=sdFolha('<div class="sd-prev" data-mprev><img src="'+esc(sdMidia(SD_CAPA.camera,500))+'" alt=""><i class="sd-claq"></i><div class="sd-ttl">O cartaz no quadro</div><div class="mq-prevc" id="mq-f-prev"></div></div>'+
-    '<div class="sd-form"><h1>Montar o <b>job</b>.</h1><div class="sd-apoio">Cada um recebe a proposta na caixa de Propostas.</div>'+
-    '<label class="sd-campo">Título<input id="mq-f-tit" maxlength="60" value="'+esc(st.titulo)+'" placeholder="Clipe “Maré Cheia”"></label>'+
-    '<div class="sd-campo">Contratante<div class="mq-seg" role="radiogroup" aria-label="Contratante">'+[["casa","Da casa"],["fora","De fora"]].map(function(c){
-      return '<button type="button" class="sd-chip" role="radio" data-mq-contr="'+c[0]+'" aria-checked="'+(st.contratante===c[0])+'" aria-pressed="'+(st.contratante===c[0])+'">'+c[1]+'</button>' }).join("")+
-      '<input id="mq-f-cli" maxlength="60" value="'+esc(st.cliente)+'" placeholder="Nome do cliente (opcional)" aria-label="Cliente"'+(st.contratante==="fora"?"":" hidden")+'></div></div>'+
-    '<div class="sd-linha3"><label class="sd-campo">Dia<input id="mq-f-dia" type="date" min="'+hoje+'" value="'+esc(st.dia)+'"></label><label class="sd-campo">Início<input id="mq-f-ini" type="time" value="'+esc(st.ini)+'"></label>'+
-      '<label class="sd-campo">Fim<input id="mq-f-fim" type="time" value="'+esc(st.fim)+'"></label></div>'+
-    '<label class="sd-campo">Local<input id="mq-f-local" maxlength="120" value="'+esc(st.local)+'" placeholder="Forte dos Reis Magos"></label>'+
-    '<div class="sd-campo">Equipe<div class="mq-eq" id="mq-f-eq"></div></div>'+
-    '<label class="mq-cs"><input type="checkbox" id="mq-f-cs"'+(st.cs?" checked":"")+'><span><b>Call sheet no canal do job</b><small>A equipe confirma ali mesmo.</small></span></label>'+
-    '<div class="sd-linha2" id="mq-f-csd"'+(st.cs?"":" hidden")+'><label class="sd-campo">Chamada<input id="mq-f-hora" type="time" value="'+esc(st.hora||st.ini||"06:00")+'"></label>'+
-      '<label class="sd-campo">Observação<input id="mq-f-obs" maxlength="200" value="'+esc(st.obs)+'" placeholder="Maré baixa até 9h"></label></div>'+
-    '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="mq-f-volta">Voltar</button><button type="button" class="sd-btn" data-ink id="mq-f-ok">Mandar</button></div>'+
-    '<div class="sd-nota">'+sdIco("cadeado")+'Sem preço no quadro: o valor fica entre os dois lados.</div></div>');
-  var bar=v("mq-barra"); if(bar) bar.hidden=true;
-  o.querySelectorAll("[data-mq-contr]").forEach(function(b){ b.onclick=function(){ guardar(); st.contratante=b.dataset.mqContr;
-    o.querySelectorAll("[data-mq-contr]").forEach(function(x){ var on=x===b; x.setAttribute("aria-checked",String(on)); x.setAttribute("aria-pressed",String(on)) });
-    v("mq-f-cli").hidden=st.contratante!=="fora"; prevPintar() } });
-  ["mq-f-tit","mq-f-cli","mq-f-ini","mq-f-fim","mq-f-local"].forEach(function(id){ v(id).oninput=function(){ guardar(); prevPintar() } });
-  v("mq-f-dia").onchange=function(){ guardar(); prevPintar(); carregarDia() };
-  /* a chamada nasce no início do job (dá para mudar) */
-  v("mq-f-cs").onchange=function(){ guardar(); v("mq-f-csd").hidden=!st.cs; var hh=v("mq-f-hora"); if(st.cs&&(!st.horaMexida||!hh.value)) hh.value=st.ini||hh.value||"06:00"; guardar() };
-  v("mq-f-hora").oninput=function(){ st.horaMexida=true };
-  v("mq-f-volta").onclick=function(){ guardar(); sdFecharFolha() };
-  v("mq-f-ok").onclick=function(){
-    guardar();
-    if([...st.titulo].length<2) return sdErro(o,ERRO_GUILDA.titulo);
-    if(!st.dia) return sdErro(o,ERRO_GUILDA.dia);
-    if(st.dia<hoje) return sdErro(o,"Escolha hoje ou um dia que vem.");
-    if(st.cs&&!st.local) return sdErro(o,ERRO_GUILDA.local);
-    if(st.cs&&!st.hora) return sdErro(o,ERRO_GUILDA.hora);
-    var sel=SD.montar.sel.slice(); if(!sel.length) return sdErro(o,ERRO_GUILDA.equipe);
-    var corpo={acao:"missao",titulo:st.titulo,contratante:st.contratante,dia:st.dia,equipe:sel.map(function(s){ return st.fun[s]?{sub:s,funcao:st.fun[s]}:{sub:s} })};
-    if(st.contratante==="fora"&&st.cliente) corpo.cliente=st.cliente;
-    if(st.ini) corpo.ini=st.ini; if(st.fim) corpo.fim=st.fim; if(st.local) corpo.local=st.local;
-    if(st.cs){ corpo.chamada={hora:st.hora}; if(st.obs) corpo.chamada.obs=st.obs }
-    var bt=this; bt.disabled=true; enviando=true; bt.textContent="Montando…"; sdErro(o,"");
-    sdPedirSede(corpo,true).then(function(r){
-      if(!r.ok){ bt.disabled=false; enviando=false; contar(); return sdErro(o,rgMsg({j:r.j,status:r.status})) }
-      var mis=r.j.missao, feitas=0;
-      var fim=function(){
-        SD.folhaJob=null; SD.montar=null; sdBarra(); sdFecharFolha(); som("claquete");
-        SD.missaoNova=mis.id; SD.filtroM="tudo";
-        avisar({t:feitas===sel.length?"Job montado":feitas+" de "+sel.length+" propostas foram",
-          sub:feitas===sel.length?pl(feitas,"proposta foi","propostas foram")+" para a caixa de cada um.":"Mande de novo pelo cartaz.",icone:"✓"});
-        realGuildaCarregar().then(function(){ sdIr("missoes") });
-      };
-      var uma=function(i){
-        if(i>=sel.length) return fim();
-        bt.textContent="Mandando "+(i+1)+" de "+sel.length+"…";
-        cfbPedir("POST","/api/zro/propostas",{para:sel[i],missao:mis.id,mensagem:("Job da guilda "+m.guilda.nome+": "+st.titulo).slice(0,1000)}).then(function(x){ if(x.status===201) feitas++; uma(i+1) });
-      };
-      uma(0);
-    });
-  };
-  prevPintar(); eqPintar(); contar();
-  if(st.dia) carregarDia();
+  pinta();
 }
 
-/* ---- recusou? o dono do job chama outra pessoa da guilda, sugerindo quem está livre no dia (pela agenda) ---- */
+/* ---- recusou? o dono do job chama outra pessoa da guilda: só aparece quem está livre NAQUELE horário (a mesma regra) ---- */
 function sdTrocarFolha(mid,sai){
   var m=sdMinha(), x=sdMissoes().find(function(y){ return y.id===mid }); if(!m||!x) return;
-  var q=x.equipe.find(function(y){ return y.sub===sai })||{nome:""};
-  var o=sdFolha('<div class="sd-form"><h1>Quem entra no <b>lugar</b>?</h1><div class="sd-apoio">'+esc(sdPrimeiro(q.nome))+' não vai em '+esc(x.titulo)+', '+esc(sdDiaCurto(x.dia))+'.</div>'+
-    '<div class="sd-membros" id="mq-t-lista"><p class="sd-nota">Olhando a agenda do dia…</p></div><p class="sd-erro" role="alert"></p></div>',true);
-  var ordem={livre:0,sem_agenda:1,negociando:2,ocupado:3,no_job:4};
-  cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(x.dia)).then(function(r){
-    var est={}; ((r.j&&r.j.pessoas)||[]).forEach(function(p){ est[p.sub]=p.estado });
-    var n=function(s){ return ordem[est[s]]===undefined?1:ordem[est[s]] };
-    var cand=m.membros.filter(function(p){ return !p.eu&&!x.equipe.some(function(y){ return y.sub===p.sub }) }).sort(function(a,b){ return n(a.sub)-n(b.sub) });
-    var lista=v("mq-t-lista"); if(!lista) return;
-    lista.innerHTML=cand.length?cand.map(function(p){ return '<div class="sd-p slm">'+sdAv(p,36)+'<div><b>'+esc(p.nome)+'</b>'+mqAgendaSelo(est[p.sub])+'</div>'+
-      '<button type="button" class="sd-btn" data-sm'+(est[p.sub]==="livre"?" data-ink":"")+' data-mq-entra="'+esc(p.sub)+'">Chamar</button></div>' }).join("")
-      :'<p class="sd-nota">Todo mundo da guilda já está neste job.</p>';
-    lista.querySelectorAll("[data-mq-entra]").forEach(function(b){ b.onclick=function(){
-      b.disabled=true;
-      var corpo={acao:"missao_trocar",missao:mid,sai:sai,entra:b.dataset.mqEntra}; if(q.funcao) corpo.funcao=q.funcao;
-      sdPedirSede(corpo,true).then(function(t){
-        if(!t.ok){ b.disabled=false; return sdErro(o,rgMsg({j:t.j,status:t.status})) }
-        sdMandarProposta(mid,b.dataset.mqEntra).then(function(){
-          sdFecharFolha(); som("claquete"); realGuildaCarregar().then(function(){ sdPintar(false) }) });
-      }) } });
-  });
+  var q=x.equipe.find(function(y){ return y.sub===sai })||{nome:""}, aviso="", aberta=false;
+  var o=sdFolha('<div class="sd-form"><h1>Quem entra no <b>lugar</b>?</h1><div class="sd-apoio">'+esc(sdPrimeiro(q.nome))+' não vai em '+esc(x.titulo)+', '+esc(sdDiaCurto(x.dia))+(x.ini&&x.fim?" · "+esc(x.ini)+"–"+esc(x.fim):"")+'.</div>'+
+    '<p class="mq-aviso" id="mq-t-aviso" role="status" hidden></p><div id="mq-t-lista"><p class="sd-nota">Olhando a agenda…</p></div><p class="sd-erro" role="alert"></p></div>',true);
+  var carregar=function(){
+    cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(x.dia)+(x.ini&&x.fim?"&ini="+encodeURIComponent(x.ini)+"&fim="+encodeURIComponent(x.fim):"")).then(function(r){
+      var est={}, mot={}; ((r.j&&r.j.pessoas)||[]).forEach(function(p){ est[p.sub]=p.estado; if(p.motivo) mot[p.sub]=p.motivo });
+      var cand=m.membros.filter(function(p){ return !p.eu&&!x.equipe.some(function(y){ return y.sub===p.sub }) });
+      var livres=cand.filter(function(p){ return est[p.sub]==="livre" }), ocup=cand.filter(function(p){ return est[p.sub]==="ocupado" }), sem=cand.filter(function(p){ return est[p.sub]==="sem_agenda" });
+      var lista=v("mq-t-lista"); if(!lista) return;
+      var a=v("mq-t-aviso"); if(a){ a.textContent=aviso; a.hidden=!aviso }
+      lista.innerHTML=(livres.length?'<div class="sd-membros">'+livres.map(function(p){ return '<div class="sd-p slm">'+sdAv(p,36)+'<div><b>'+esc(p.nome)+'</b>'+mqAgendaSelo("livre")+'</div>'+
+          '<button type="button" class="sd-btn" data-sm data-ink data-mq-entra="'+esc(p.sub)+'">Chamar</button></div>' }).join("")+'</div>'
+        :'<div class="sd-vazio"><b>'+(cand.length?"Ninguém livre nesse horário.":"Todo mundo da guilda já está neste job.")+'</b></div>')+
+        mqForaHtml(ocup,sem,mot,[],{},aberta);
+      var d=v("mq-fora"); if(d) d.ontoggle=function(){ aberta=d.open };
+      var chamar=function(b,semAg){
+        b.disabled=true;
+        var corpo={acao:"missao_trocar",missao:mid,sai:sai,entra:b.dataset.mqEntra||b.dataset.mqSem}; if(q.funcao) corpo.funcao=q.funcao; if(semAg) corpo.sem_agenda=true;
+        sdPedirSede(corpo,true).then(function(t){
+          if(!t.ok){ b.disabled=false; if(t.j&&t.j.erro==="ocupado"){ aviso=mqMsgErro({j:t.j,status:t.status}); return carregar() } return sdErro(o,mqMsgErro({j:t.j,status:t.status})) }
+          sdMandarProposta(mid,corpo.entra).then(function(){
+            sdFecharFolha(); som("claquete"); realGuildaCarregar().then(function(){ sdPintar(false) }) });
+        });
+      };
+      lista.querySelectorAll("[data-mq-entra]").forEach(function(b){ b.onclick=function(){ chamar(b,false) } });
+      lista.querySelectorAll("[data-mq-sem]").forEach(function(b){ b.onclick=function(){
+        if(!window.confirm(mqNomes([b.dataset.mqSem])+" não divulgou a agenda. Chamar mesmo assim?")) return; chamar(b,true) } });
+    });
+  };
+  carregar();
 }
 
 /* ---------------- convite: pelo @ (a comunidade da Absolute ZRO) ou por link. Nada sai por e-mail nem WhatsApp. ---------------- */
@@ -28457,7 +28608,7 @@ function pintarArte3D(){
   const cap=FOTOS.capas||{}, pf=v("pc-foto");
   const fundo=HERO_ARTE.coletivos||cap.camera;
   if(pf&&fundo&&!pf.style.backgroundImage) pf.style.backgroundImage="url("+fundo+")";
-  const MINI={edicao:HERO_ARTE.feed,foto:HERO_ARTE.guildas,drone:HERO_ARTE.coletivos};
+  const MINI={edicao:HERO_ARTE.feed,foto:HERO_ARTE.guildas,guilda:HERO_ARTE.guildas,drone:HERO_ARTE.coletivos};
   document.querySelectorAll("#h-praca [data-capa]").forEach(i=>{
     const u=MINI[i.dataset.capa]||cap[i.dataset.capa]; if(u&&!i.style.backgroundImage) i.style.backgroundImage="url("+u+")";
   });
@@ -28482,7 +28633,7 @@ let hjEscala=[];
 function realHome(){
   if(!REAL) return;
   document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
-  document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=false });
+  document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=!!e.hasAttribute("data-guilda")&&!guildaReal() });
 }
 /* a Z na home: fechado, ela está "chegando"; aberto (o lançamento), ela já está aqui */
 function pintarSeloZ(){

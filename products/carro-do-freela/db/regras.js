@@ -475,9 +475,24 @@ function muralDe(corpo) {
   };
 }
 
-/* ---------------- o quadro de missões (0006, fase 2) ---------------- */
-/** POST /api/zro/sede {acao:"missao"} — montar o job com gente da guilda: título, contratante, dia, horário, local e a
- *  função de cada escolhido (do catálogo: ninguém digita). Sem valor (o quadro não tem preço) e sem telefone. */
+/* ---------------- o quadro de missões (0006 + a disponibilidade da 0007) ---------------- */
+/** o horário de um job: início e fim obrigatórios e diferentes (fim antes do início = vira a noite) */
+function faixaDe(ini, fim, obrigatorio) {
+  const a = horaDe(ini, 'ini'), b = horaDe(fim, 'fim');
+  if (obrigatorio && !a) throw new Recusa('obrigatorio', 'ini');
+  if (obrigatorio && !b) throw new Recusa('obrigatorio', 'fim');
+  if ((a && !b) || (!a && b)) throw new Recusa('obrigatorio', a ? 'fim' : 'ini');
+  if (a && a === b) throw new Recusa('igual', 'fim');
+  return { ini: a, fim: b };
+}
+/** GET /api/zro/sede?ver=dia&dia=&ini=&fim= — quem está livre naquele dia e horário (sem horário = o dia todo) */
+function disponibilidadeDe(q) {
+  const dia = diaDe(String(q.get('dia') || ''));
+  return Object.assign({ dia }, faixaDe(q.get('ini'), q.get('fim'), false));
+}
+/** POST /api/zro/sede {acao:"missao"} — montar o job com gente da guilda: título, contratante, dia, início e fim
+ *  (obrigatórios: a data e o horário vêm primeiro), local e a função de cada escolhido (do catálogo: ninguém digita).
+ *  `sem_agenda: true` numa pessoa = o dono confirmou chamar quem não divulgou a agenda. Sem valor e sem telefone. */
 function missaoDe(corpo) {
   objeto(corpo);
   soEstes(corpo, ['acao', 'titulo', 'contratante', 'cliente', 'dia', 'ini', 'fim', 'local', 'equipe', 'chamada']);
@@ -492,13 +507,14 @@ function missaoDe(corpo) {
   const vistos = new Set();
   const equipe = corpo.equipe.map(x => {
     objeto(x);
-    soEstes(x, ['sub', 'funcao']);
+    soEstes(x, ['sub', 'funcao', 'sem_agenda']);
     const sub = uuidDe(x.sub, 'equipe');
     if (vistos.has(sub)) throw new Recusa('repetido', 'equipe');
     vistos.add(sub);
     const funcao = texto(x.funcao, 'funcao', 60);
     if (funcao !== null && !FUNCOES.includes(funcao)) throw new Recusa('catalogo', 'funcao');
-    return { sub, funcao };
+    if (x.sem_agenda !== undefined && typeof x.sem_agenda !== 'boolean') throw new Recusa('tipo', 'sem_agenda');
+    return x.sem_agenda === true ? { sub, funcao, sem_agenda: true } : { sub, funcao };
   });
   const local = texto(corpo.local, 'local', 120);
   let chamada = null;
@@ -510,18 +526,20 @@ function missaoDe(corpo) {
     if (local === null) throw new Recusa('obrigatorio', 'local');
     chamada = { hora, obs: texto(corpo.chamada.obs, 'obs', 200) };
   }
-  return { titulo, contratante, cliente, dia: diaDe(corpo.dia), ini: horaDe(corpo.ini, 'ini'), fim: horaDe(corpo.fim, 'fim'), local, equipe, chamada };
+  const dia = diaDe(corpo.dia), { ini, fim } = faixaDe(corpo.ini, corpo.fim, true);
+  return { titulo, contratante, cliente, dia, ini, fim, local, equipe, chamada };
 }
 /** {acao:"missao_trocar"} — quem não vai (ou ficou sem proposta) dá lugar a outra pessoa da guilda */
 function missaoTrocarDe(corpo) {
   objeto(corpo);
-  soEstes(corpo, ['acao', 'missao', 'sai', 'entra', 'funcao']);
+  soEstes(corpo, ['acao', 'missao', 'sai', 'entra', 'funcao', 'sem_agenda']);
   const funcao = texto(corpo.funcao, 'funcao', 60);
   if (funcao !== null && !FUNCOES.includes(funcao)) throw new Recusa('catalogo', 'funcao');
-  return { missao: uuidDe(corpo.missao, 'missao'), sai: uuidDe(corpo.sai, 'sai'), entra: uuidDe(corpo.entra, 'entra'), funcao };
+  if (corpo.sem_agenda !== undefined && typeof corpo.sem_agenda !== 'boolean') throw new Recusa('tipo', 'sem_agenda');
+  return { missao: uuidDe(corpo.missao, 'missao'), sai: uuidDe(corpo.sai, 'sai'), entra: uuidDe(corpo.entra, 'entra'), funcao, sem_agenda: corpo.sem_agenda === true };
 }
 function missaoIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'missao']); return uuidDe(corpo.missao, 'missao') }
 
-module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
+module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, disponibilidadeDe, faixaDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
   sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
   guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

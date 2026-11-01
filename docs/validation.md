@@ -3873,6 +3873,31 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
 - Fotos com dados fictícios (computador e iPhone, claro e escuro: Montar job com a barra, a folha do job, o quadro, o selo
   do próximo job, a proposta da guilda): `sede-missoes/` no rascunho da sessão (não versionadas).
 
+## Carro do Freela: a guilda na fase 1, grátis, e o Montar job com o horário primeiro (01/11/2026)
+
+Branch `guilda-fase1` (de `fase2-guilda` + main). `FASE_LANCAMENTO = 1` (o de verdade), Postgres 16 local, Chromium 1243.
+
+- Carro `test:banco`: 50/50 (+3 de tela com o site construído = 53). Novos: o portão por recurso (fase 1 abre, fase 0 = 404 e
+  nada criado; `recursosDa(1)` e `(2)` com a venda fora; recurso sem fase é erro); GRÁTIS (qualquer conta funda, 15
+  lugares; `comprar`/`fundacao`/`pacote`/`espaco_extra`/`lugares` = 403 `sem_venda`; `pacote`/`espaco_extra` na criação = 400;
+  todos os sinais pagos da claim ignorados: extra 0, `pacotes: []`, sem `pedir_url`); o código guardado da venda ainda
+  funciona quando ligado só no teste (402 sem a fundação, +5 +15 = 35). Vagas: a 16ª pessoa espera lugar até o nível 10
+  (+2, grátis). A Sede e as missões rodam inteiras na fase 1. **Disponibilidade (0007)**: borda início = fim não cruza
+  (manhã até 12:00, job a partir de 14:00, missão até 12:00 → 12:00–14:00 livre), cruzar 11:00–15:00 (agenda declarada, job
+  aceito, vaga PENDENTE de outra missão e quem montou), dia todo, noite 22:00–04:00, sem agenda nunca dito; montar recusa
+  sem início/fim e início = fim, ocupado (409 com `quem`), pendente, sem agenda sem confirmação; quem ficou ocupado no
+  meio-tempo é recusado; livres + sem agenda confirmado montam; a vaga nova já ocupa; troca recusa ocupado e sem agenda
+  sem confirmação. `test:api` 48/48.
+- `test/guilda-real.js` 64/64 (fase 0 sem guilda nem na home; fase 1 com a guilda na home, Sede "2 de 15 · 15 da sede",
+  sem "Aumentar lugares", sem preço/pacote; fundar em 2 passos, "De graça", sem pedido de plano; a folha de lugares não abre).
+  `test/missoes-real.js` 61/61 (passo 1 → 2 → 3; o pedido leva `ini`/`fim`; só livres na lista; "1 ocupado · 2 sem
+  agenda" recolhido; ocupado sem botão; sem agenda com confirmação; dos rostos sai quem está ocupado, com aviso; 409 do
+  servidor volta ao passo 2 sem a pessoa; troca só com livres). `site-real` 41/41 (a guilda no bento e na praça).
+- Bateria do Carro (`npm test`): 93 de 93 (`conta-zro` e `sem-zoom` caíram por tempo na rodada paralela e passaram sozinhas).
+- HUB: as migrações `0043_carro_guilda_espaco_extra` e `0044_carro_sede_planos` e os 2 testes delas saíram (SQL guardado em
+  `docs/carro-guilda-venda-rascunho.md`). `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Fotos (computador e iPhone, claro): `guilda-fase1/` no rascunho da sessão (não versionadas).
+
 ## SOBEDESCE celular: Transferências como no computador (31/10/2026)
 
 - `products/sobedesce/web`: `tests/transferencias-celular.test.mts` 19/19 (prioridade, cancelar com DELETE na sessão,

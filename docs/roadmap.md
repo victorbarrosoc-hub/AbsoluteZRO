@@ -1225,13 +1225,26 @@ do card... não consigo localizar o job que quero achar".
   do Carro `0003_propostas_feed_brecho` (RLS pelo `sub` da Absolute ZRO), rotas `/api/zro/propostas|feed|brecho|denuncia`:
   a consulta chega na caixa do freela dentro do Carro (sem e-mail nem WhatsApp), aceitar vira job, feed e brechó com
   apagar o próprio e denúncia guardada; o que estava no aparelho só sobe se a pessoa tocar em "Enviar para a sua conta".
-- 🟡 **Guilda do Carro (fase 2 do lançamento), pronta e GUARDADA no branch `fase2-guilda`** (31/10/2026; só entra no ar
-  com o "libera fase 2" do titular). Migração do Carro `0004_guildas` (RLS, regras no banco: vagas, bloqueio, carência de
+- ✅ **A guilda do Carro entra na FASE 1 do lançamento, GRÁTIS** (decisão do titular, 01/11/2026; branch `guilda-fase1`,
+  publicação com o titular). `products/carro-do-freela/db/fase.js` passa a ter recursos por fase: `guilda: 1` (criar,
+  entrar, convidar, Sede, chat, mural, memória, XP, cor/logo, missões, a marca nas propostas) e `venda_guilda: null` (sem
+  fase). Com a venda desligada o servidor deixa qualquer conta fundar, ignora os sinais de pacote da claim (extra = 0), não
+  manda `pedir_url` e recusa compra com 403 `sem_venda`; a Sede mostra só o limite ("15 lugares", +2 no nível 10, grátis),
+  sem preço, sem "Aumentar lugares" e sem pedido de plano. A home do site real ganha a guilda entre os destaques (o bento
+  e a praça). As migrações do HUB `0043_carro_guilda_espaco_extra` e `0044_carro_sede_planos` saíram (colidiam com a main
+  e eram de venda): o SQL fica em [docs/carro-guilda-venda-rascunho.md](carro-guilda-venda-rascunho.md) para quando a
+  cobrança for ligada. No deploy do Carro rodam `0004_guildas`, `0005_sede`, `0006_missoes` e `0007_disponibilidade`.
+- ✅ **Montar job: a data e o horário vêm primeiro** (pedido do titular, 01/11/2026). Migração do Carro
+  `0007_disponibilidade`: quem está livre NAQUELE horário (intervalo [início, fim), encostar não é cruzar; agenda declarada
+  com manhã/tarde, job aceito, vaga de missão sem proposta, pendente ou aceita, e quem montou); quem não divulgou a agenda
+  é "sem agenda" (nada dele é dito). O servidor confere ao montar e ao trocar (409 `ocupado`/`sem_agenda` com `quem`; sem
+  agenda só com a confirmação do dono), com trava por guilda. Na folha: passo 1 dia/início/fim/local → passo 2 só os
+  livres, com "N ocupados · N sem agenda" recolhido no fim → passo 3 o resto → montar; a troca mostra só os livres.
+- 🟡 **Guilda do Carro, como foi construída no branch `fase2-guilda`** (31/10/2026; desde 01/11 na fase 1, grátis, acima). Migração do Carro `0004_guildas` (RLS, regras no banco: vagas, bloqueio, carência de
   7 dias, convite que vence), rota `/api/zro/guildas` e a tela do site real. Criar, convidar pelo @ ou por link, aceitar,
   sair, tirar, memória dos jobs fechados (nasce da proposta aceita) e nível (3 jobs por nível). Vagas: 15 de base, +2 no
-  nível 10, +5 do adicional. O portão é UMA constante, `FASE_LANCAMENTO` em `products/carro-do-freela/db/fase.js` (padrão 1:
-  rota 404 e guilda escondida). HUB `0043_carro_guilda_espaco_extra`: adicional "Espaço extra na guilda" (R$ 14,90/mês, +5
-  vagas) em RASCUNHO, não aplicado em produção. Sem cobrança (a taxa de 5% do nível 15 fica como dado, inativa).
+  nível 10 (o adicional pago de +5 ficou para quando houver cobrança). O portão é `products/carro-do-freela/db/fase.js`.
+  O adicional "Espaço extra na guilda" do HUB saiu do branch (rascunho em docs/carro-guilda-venda-rascunho.md). Sem cobrança (a taxa de 5% do nível 15 fica como dado, inativa).
   Fora: gov.br e contrato; e-mail e WhatsApp; ranking entre guildas.
 - 🟡 **A Sede da guilda (painel aprovado, Gel magenta), no mesmo branch e atrás da mesma constante** (31/10/2026). Migração
   do Carro `0005_sede`: chat (sala + canal por job, menção, reação, fixado, call sheet com "vou"/"não vou" e presença,
@@ -1242,9 +1255,8 @@ do card... não consigo localizar o job que quero achar".
   créditos (quem saiu fica, marcado; contratante de fora sem nome); personalização só do dono (5 paletas + cor própria com
   guarda de contraste 4,5:1 nos dois temas) e logo/foto do set reencodados em WebP pelo sharp, no banco, com cota de 50 MB
   por guilda e bytes só pela porta `guilda_imagem`. Rotas `/api/zro/sede` e `/api/zro/sede-imagem` (o sharp vai copiado
-  para a função na Vercel). Fundar agora pede a fundação na conta (402 sem ela). HUB `0044_carro_sede_planos`: fundação
-  (R$ 189, sem periodicidade: o HUB não tem cobrança única, lacuna anotada) e +15 lugares (R$ 34,90/mês), em RASCUNHO; a
-  folha de compra leva o pedido ao fluxo de pedido de plano do HUB, nada é cobrado. Fora: Pix/cartão, notificação por
+  para a função na Vercel). Desde 01/11 fundar é grátis; a fundação paga e o +15 (código guardado atrás de
+  `venda_guilda`, planos só no rascunho de docs) voltam quando a cobrança for ligada. Fora: Pix/cartão, notificação por
   e-mail/WhatsApp, mensagem direta, áudio, ranking e temporada pública.
 - 🟡 **O quadro de missões da Sede: montar o job com gente da guilda** (31/10/2026, pedido do titular: "selecionar os
   membros e criar o job dali… e ver quem vai participar e de que job"; a ideia geral de quadro de missões de guilda, sem

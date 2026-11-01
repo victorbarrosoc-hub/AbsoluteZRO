@@ -92,7 +92,10 @@ function responderErro(res, e, extra) {
   if (e instanceof R.Recusa) return json(res, 400, { erro: e.erro, campo: e.campo }, extra);
   if (e && e.code === '23514') return json(res, 400, { erro: /Limite/.test(e.message) ? 'limite' : 'regra' }, extra);
   /* regras da guilda levantadas pelo banco (db/migrations/0004): o texto da exceção é o código curto */
-  if (e && e.code === 'P0001' && ERROS_GUILDA[e.message]) return json(res, ERROS_GUILDA[e.message], { erro: e.message }, extra);
+  if (e && e.code === 'P0001' && ERROS_GUILDA[e.message]) {
+    const quem = typeof e.detail === 'string' && /^[0-9a-f-]{36}$/i.test(e.detail) ? { quem: e.detail.toLowerCase() } : {};
+    return json(res, ERROS_GUILDA[e.message], Object.assign({ erro: e.message }, quem), extra);
+  }
   if (e && e.code === '42501') return json(res, 403, { erro: 'proibido' }, extra);
   if (e && e.code === '22P02') return json(res, 400, { erro: 'pedido' }, extra);
   if (e && e.code === '22023') return json(res, 400, { erro: 'janela' }, extra);
@@ -494,19 +497,21 @@ async function denuncia(req, res) {
   }
 }
 
-/* ---------------- guilda (0004 + a Sede da 0005, fase 2) ----------------
- * GET  /api/zro/guildas                → { fase, pode_fundar, pedir_url, pacotes, minha: {...}|null, recebidos: [...], carencia_ate }
+/* ---------------- guilda (0004 + a Sede da 0005 + as missões da 0006; fase 1, GRÁTIS, desde 01/11/2026) ----------------
+ * GET  /api/zro/guildas                → { fase, venda, pode_fundar, pedir_url?, pacotes, minha: {...}|null, recebidos: [...], carencia_ate }
  *      (minha = o painel da Sede: guilda com cores e logo, nível e XP, placa, lugares, memória em pôsteres, quem está
  *      na sede agora e o resumo do chat; só para quem é da guilda — RLS)
- * POST /api/zro/guildas                → 201 { guilda }            (acao "criar", o padrão; pede a FUNDAÇÃO na conta)
+ * POST /api/zro/guildas                → 201 { guilda }            (acao "criar", o padrão; grátis enquanto a venda estiver desligada)
  * POST /api/zro/guildas {acao:"convidar", para?}  → 201 { convite, link? }  (sem `para` = convite por link)
  * POST ... {acao:"ver", token} · {acao:"aceitar", id|token} · {acao:"recusar", id, bloquear?}
  *      · {acao:"cancelar", id} · {acao:"sair"} · {acao:"remover", sub} · {acao:"personalizar", paleta, cor?, sobre?, praca?}
- * ⚠️ O portão é db/fase.js: com a fase 1 a rota responde 404, antes de qualquer outra coisa.
+ * ⚠️ O portão é db/fase.js (recurso `guilda`, fase 1): fora do ar a rota responde 404, antes de qualquer outra coisa.
  * Nome, @ e foto de quem entra vêm da CONTA (sessão conferida), nunca do pedido. Vagas, bloqueio, carência e convite
- * vencido são conferidos no banco. Os adicionais (fundação, +5 e +15 lugares) são lidos da claim `zro_features` do DONO:
- * o HUB guarda os planos em RASCUNHO (infra/migrations/0043 e 0044), então ninguém os compra ainda; a tela leva o pedido
- * ao fluxo de pedido de plano do HUB (/perfil/plano), sem cobrança nenhuma aqui. */
+ * vencido são conferidos no banco.
+ * ⚠️ A VENDA (recurso `venda_guilda`, sem fase): desligada, fundar é grátis para qualquer conta, a sede tem 15 lugares
+ * (+ o bônus de nível, que é grátis), os sinais de pacote da claim `zro_features` são IGNORADOS (extra = 0), não há
+ * pedir_url e as ações de compra respondem 403 `sem_venda`. Ligada (quando a cobrança existir), volta o desenho de
+ * 31/10: a fundação e os pacotes +5/+15 lidos da claim do DONO (planos do HUB em docs/carro-guilda-venda-rascunho.md). */
 const FASES = require('../../db/fase.js');
 const crypto = require('crypto');
 const ERROS_GUILDA = { ja_em_guilda: 409, carencia: 409, nome_em_uso: 409, cheia: 409, ja_membro: 409, ja_convidado: 409, limite_convites: 429,
@@ -515,15 +520,20 @@ const ERROS_GUILDA = { ja_em_guilda: 409, carencia: 409, nome_em_uso: 409, cheia
   devagar: 429, pedido: 400, chamada: 400, chamada_passou: 409, chamada_futura: 409, limite_fixados: 409, so_quem_fez: 403,
   limite_canais: 409, cota: 413,
   /* o quadro de missões (0006) */
-  missao: 409, missao_dia: 409, equipe: 400, dia: 400 };
+  missao: 409, missao_dia: 409, equipe: 400, dia: 400,
+  /* a disponibilidade (0007): ocupado no horário, ou sem agenda divulgada sem a confirmação do dono (o `sub` vai em `quem`) */
+  ocupado: 409, sem_agenda: 409, hora: 400 };
 /* os sinais dos adicionais na claim: presença, não quantidade (o HUB não guarda quantos). Cada pacote é UM sinal. */
 const SINAL_FUNDACAO = 'carro-do-freela.guilda_fundacao';
 const PACOTES = { 'carro-do-freela.guilda_espaco_extra': 5, 'carro-do-freela.guilda_espaco_extra_15': 15 };
 const hashToken = t => crypto.createHash('sha256').update(t).digest('hex');
 const sinais = quem => (quem && Array.isArray(quem.recursos) ? quem.recursos : []);
-/** vagas extras que a conta tem: a soma dos pacotes presentes na claim (+5 e +15) */
-const extraDaConta = quem => sinais(quem).reduce((n, s) => n + (PACOTES[s] || 0), 0);
-const podeFundar = quem => sinais(quem).includes(SINAL_FUNDACAO);
+/** vagas extras que a conta tem: a soma dos pacotes presentes na claim (+5 e +15); com a venda desligada, nenhuma */
+const extraDaConta = quem => (FASES.vendaDaGuildaNoAr() ? sinais(quem).reduce((n, s) => n + (PACOTES[s] || 0), 0) : 0);
+/** com a venda desligada, fundar é grátis para todo mundo; ligada, pede a fundação na conta */
+const podeFundar = quem => !FASES.vendaDaGuildaNoAr() || sinais(quem).includes(SINAL_FUNDACAO);
+/** pedidos de compra que chegam aqui (fundação paga, pacotes de lugares): com a venda desligada, recusa clara */
+const ACOES_VENDA = new Set(['comprar', 'fundacao', 'pacote', 'espaco_extra', 'lugares']);
 const XP_NIVEL = 400, XP_JOB = 120;
 const LOGO_URL = l => '/api/zro/sede-imagem?id=' + l.id + '&sha=' + l.sha256;
 const semanaDe = d => { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10) };
@@ -720,20 +730,22 @@ async function guildas(req, res) {
         return { minha, recebidos, sai };
       });
       const ate = r.sai ? new Date(r.sai.getTime() + 7 * 864e5) : null;
-      return json(res, 200, {
-        fase: FASES.faseAtual(), pode_fundar: podeFundar(quem), pedir_url: Z.config().issuer + '/perfil/plano',
-        pacotes: Object.keys(PACOTES).filter(s => sinais(quem).includes(s)).map(s => PACOTES[s]),
+      const venda = FASES.vendaDaGuildaNoAr();
+      return json(res, 200, Object.assign({
+        fase: FASES.faseAtual(), venda, pode_fundar: podeFundar(quem),
+        pacotes: venda ? Object.keys(PACOTES).filter(s => sinais(quem).includes(s)).map(s => PACOTES[s]) : [],
         minha: r.minha,
         recebidos: r.recebidos.map(x => ({ id: x.id, nome: x.nome, tag: x.tag, cor: x.cor, de_nome: x.de_nome, expira_em: iso(x.expira_em) })),
         carencia_ate: ate && ate > new Date() ? ate.toISOString() : null,
-      }, extra);
+      }, venda ? { pedir_url: Z.config().issuer + '/perfil/plano' } : {}), extra);
     }
     const corpo = await corpoDe(req, res, extra);
     if (corpo === undefined) return;
     const acao = corpo && corpo.acao !== undefined ? corpo.acao : 'criar';
+    if (ACOES_VENDA.has(acao) && !FASES.vendaDaGuildaNoAr()) return json(res, 403, { erro: 'sem_venda' }, extra);
     if (acao === 'criar') {
       const v = R.guildaDe(corpo);
-      /* fundar é pago (só quem funda paga): sem a fundação na conta, nada é criado. O plano ainda é rascunho no HUB. */
+      /* grátis com a venda desligada (01/11); ligada, só quem tem a fundação na conta cria */
       if (!podeFundar(quem)) return json(res, 402, { erro: 'fundacao' }, extra);
       const g = await db.asUser(sub, async c => {
         const id = (await c.query('select carro_do_freela.guilda_criar($1, $2, $3, $4, $5, $6, $7) as id', [v.nome, v.tag, v.cor, v.sobre, nome, arroba, foto])).rows[0].id;
