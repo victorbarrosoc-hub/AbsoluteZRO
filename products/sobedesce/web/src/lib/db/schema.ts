@@ -95,6 +95,13 @@ export const contasGoogle = pgTable(
     emailVerificado: boolean().notNull().default(false),
     /** Pasta "SOBEDESCE Referências" deste Drive (achada ou criada na primeira coleção). */
     referenciasPastaId: text(),
+    /**
+     * Última conferência das coleções que já estão no Drive e sumiram do banco (recuperarColecoes): no máximo uma a
+     * cada 10 min por Drive ao abrir Referências; conectar de novo confere na hora.
+     */
+    referenciasConferidasEm: quando(),
+    /** Pastas de coleção que a pessoa tirou da plataforma sem apagar do Drive: a conferência não traz de volta. */
+    referenciasIgnoradas: text().array().notNull().default(sql`'{}'::text[]`),
     criadoEm: agora(),
     atualizadoEm: agora(),
   },
@@ -520,6 +527,8 @@ export const contasZro = pgTable("contas_zro", {
     .references(() => usuarios.id, { onDelete: "cascade" }),
   zroSub: text().notNull().unique(),
   email: text().notNull(),
+  /** Foto da conta Absolute ZRO (claim `picture` do último login, /api/v1/foto/…). Null = sem foto (o app mostra as iniciais). */
+  foto: text(),
   /** Produtos contratados pela organização ativa no último login (zro_products), separados por espaço. */
   produtos: text().notNull().default(""),
   organizacao: text(),

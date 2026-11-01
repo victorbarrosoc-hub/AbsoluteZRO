@@ -7,7 +7,7 @@
 
 import { duracao } from '../linha.js'
 import { racional, racionalFracao } from '../tempo.js'
-import { caminhoDa, caminhoDoSom, efeitosExportados, esc, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao } from './comum.js'
+import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao } from './comum.js'
 import { PRODUTO } from '../produto.js'
 
 export function paraFcpxml(p) {
@@ -25,6 +25,15 @@ export function paraFcpxml(p) {
     .map((m, i) => `    <asset id="s${i + 1}" name="${esc(m.nome.replace(/\.[^.]+$/, ''))}" start="0s" duration="${racional(Math.max(1, Math.round((m.duracao * f.n) / f.d)), f)}" hasAudio="1" audioSources="1" audioChannels="${m.canais || 2}" audioRate="${m.taxa || 48000}">\n      <media-rep kind="original-media" src="${esc(fileUrl(caminhoDoSom(m)))}"/>\n    </asset>`)
     .join('\n')
   const refSom = new Map(sons.map((m, i) => [m.id, `s${i + 1}`]))
+  // voz e instrumental (NOSSOM): um asset por arquivo; cada pedaço conectado embaixo do clipe, com a função de áudio
+  // "dialogue" (voz) e "music" (instrumental), e o som original do clipe calado
+  const arquivosF = arquivosDeFaixas(p)
+  const assetsFaixa = arquivosF
+    .map((a, i) => `    <asset id="f${i + 1}" name="${esc(a.arquivo.replace(/\.wav$/, ''))}" start="0s" duration="${racional(a.quadros, f)}" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100">\n      <media-rep kind="original-media" src="${esc(fileUrl(a.arquivo))}"/>\n    </asset>`)
+    .join('\n')
+  const refFaixa = new Map(arquivosF.map((a, i) => [a.arquivo, `f${i + 1}`]))
+  const pedacos = faixasExportadas(p)
+  const lanesFx = efeitosExportados(p).reduce((n, x) => Math.max(n, x.faixa + 1), 0)
   const efeitos = efeitosExportados(p)
   const ref = new Map(p.midias.map((m, i) => [m.id, `a${i + 1}`]))
   const nome = new Map(p.midias.map((m) => [m.id, m.nome]))
@@ -47,7 +56,7 @@ export function paraFcpxml(p) {
         filhos.push(`<adjust-transform position="${((tr.cx / p.altura) * 100).toFixed(3)} ${((-tr.cy / p.altura) * 100).toFixed(3)}" scale="${e} ${e}"/>`)
       }
       if (s.ajustes.opacidade !== 1) filhos.push(`<adjust-blend amount="${s.ajustes.opacidade}"/>`)
-      if (!s.som) filhos.push(`<adjust-volume amount="-96dB"/>`)
+      if (!s.som || s.faixas) filhos.push(`<adjust-volume amount="-96dB"/>`)
       else if (s.ajustes.volume !== 0) filhos.push(`<adjust-volume amount="${s.ajustes.volume}dB"/>`)
       // efeitos que começam neste clipe: conectados embaixo, no tempo do clipe (ajustado pela velocidade, como o marcador)
       for (const x of efeitos.filter((e) => e.seg?.linha === s.linha)) {
@@ -55,7 +64,11 @@ export function paraFcpxml(p) {
         const at = `ref="${refSom.get(x.som.id)}" lane="-${x.faixa + 1}" offset="${offset}" name="${esc(x.som.nome.replace(/\.[^.]+$/, ''))}" start="0s" duration="${racional(x.quadros, f)}" audioRole="effects"`
         filhos.push(x.efeito.volume ? `<asset-clip ${at}>\n                <adjust-volume amount="${x.efeito.volume}dB"/>\n              </asset-clip>` : `<asset-clip ${at}/>`)
       }
-      for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${ajustado(k.q)}" duration="${racional(1, f)}" value="${esc(k.nome)}"/>`)
+      for (const x of pedacos.filter((y) => y.seg.linha === s.linha)) {
+        const at = `ref="${refFaixa.get(x.arquivo)}" lane="-${lanesFx + (x.parte === 'voz' ? 1 : 2)}" offset="${racional(s.ini, f)}" name="${esc(x.arquivo.replace(/\.wav$/, ''))}" start="${racional(x.desde, f)}" duration="${racional(s.saida, f)}" audioRole="${x.parte === 'voz' ? 'dialogue' : 'music'}"`
+        filhos.push(x.volume ? `<asset-clip ${at}>\n                <adjust-volume amount="${x.volume}dB"/>\n              </asset-clip>` : `<asset-clip ${at}/>`)
+      }
+      for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${ajustado(k.q)}" duration="${racional(1, f)}" value="${esc(k.nome)}"${k.nota ? ` note="${esc(k.nota)}"` : ''}/>`)
       // etiqueta vira palavra-chave do clipe (o Final Cut não tem cor de clipe)
       if (s.etiqueta) filhos.push(`<keyword start="${ajustado(s.ini)}" duration="${racional(s.saida, f)}" value="${esc(s.etiqueta)}"/>`)
       if (!filhos.length) return `            <asset-clip ${attrs}/>`
@@ -68,7 +81,7 @@ export function paraFcpxml(p) {
 <fcpxml version="1.10">
   <resources>
     <format id="r1" frameDuration="${racional(1, f)}" width="${p.largura}" height="${p.altura}"/>
-${assets}${assetsSom ? '\n' + assetsSom : ''}
+${assets}${assetsSom ? '\n' + assetsSom : ''}${assetsFaixa ? '\n' + assetsFaixa : ''}
   </resources>
   <library>
     <event name="${esc(`${PRODUTO.nome} · ${p.nome}`)}">

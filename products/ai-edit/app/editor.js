@@ -6,7 +6,7 @@ import { PRODUTO } from '../src/produto.js'
 import { simbolo, wordmark } from '../src/marca.js'
 import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, acelerar, retempo, estabilizar, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
-import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
+import { removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, momentos, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
 import { filtrarZro, idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca, versaoZro } from '../src/sonoplasta.js'
@@ -15,15 +15,15 @@ import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
 import { trechosParaTranscrever } from '../src/analise/trechos.js'
 import { agrupar } from '../src/legenda.js'
-import { paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
+import { fpsNumero, paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
 import { pacote } from '../src/exportar/index.js'
-import { arquivoDoSom, nomeArquivo, segmentos, sonsUsados } from '../src/exportar/comum.js'
+import { arquivoDoSom, arquivosDeFaixas, nomeArquivo, segmentos, sonsUsados } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
 import { MODELOS } from '../src/modelos.js'
 import { extrairAudio, lerInfo, miniatura, MB } from './midia.js'
 import { Player } from './player.js'
 import { LinhaUI } from './linha-ui.js'
-import { renderizar, codecsDaMaquina } from './render.js'
+import { renderizar, codecsDaMaquina, imagensEm, audioDoTrecho } from './render.js'
 import { carregarFluxo } from './fluxo.js'
 import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
@@ -41,6 +41,18 @@ import { PADRAO as CHROMA_PADRAO, recortar } from '../src/chroma.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 import { montarSet } from './set.js'
+import { PainelMarcadores } from './marcadores-ui.js'
+import { marcar, secoes } from '../src/marcadores.js'
+import { nomeSeguro, planoDePecas, relatorio } from '../src/pecas.js'
+import { PainelPecas } from './pecas-ui.js'
+import { montarFaixas } from './faixas-ui.js'
+import * as discoFaixas from './faixas-disco.js'
+import * as nossom from './nossom.js'
+import { FolhaCriar } from './criar-ui.js'
+import { imagemParaClipe } from './parada.js'
+import * as discoCriadas from './criadas-disco.js'
+import { inserirNaLinha, SEGUNDOS_PARADA } from '../src/criar.js'
+import { adicionarSeparacao, ajustarFaixas, desligarFaixas, faixasForaDoTrecho, MIX_TUDO, minutosDoPedido, separacaoPorId, STEMS, trechoParaSeparar, wav16 } from '../src/faixas.js'
 
 const $ = (id) => document.getElementById(id)
 // As etapas do editor no dock; a Z por último, fora do dock (ícone da barra), nunca a primeira (titular, 29/10/2026)
@@ -78,6 +90,12 @@ if (conta.estado !== 'logado' || conta.acesso === false) {
 }
 document.documentElement.dataset.conta = 'ok'
 S.conta = conta.pessoa || null
+// a separação de voz e instrumental pela NOSSOM: só para quem a NOSSOM atende (o gate dela no HUB)
+S.nossom = Boolean(conta.irmaos?.nossom)
+// faixas separadas decodificadas (separação → Promise de { voz, instrumental }); as que não estão neste navegador
+S.faixas = new Map()
+S.faixasFaltando = new Set()
+S.separando = null
 
 // ───────── começo ─────────
 
@@ -140,8 +158,20 @@ const linha = new LinhaUI($('linha'), {
   aoAcao: acaoLinha,
   aoSelecionar: () => desenharInspector(),
 })
+player.obterFaixas = (id) => carregarFaixas(id)
+const marcadoresUI = new PainelMarcadores($('marcadores'), {
+  projeto: P,
+  fazer: (novo, rotulo) => fazer(novo, rotulo),
+  irPara: (t) => player.irPara(t),
+  agora: () => player.t,
+  aviso: (t) => aviso(t),
+  quadros: (ids) => exportarQuadros(ids),
+  baixar: (nome, texto, tipo) => ponte.baixar(new Blob([texto], { type: `${tipo};charset=utf-8` }), nome),
+})
+const pecasUI = new PainelPecas({ projeto: P, aviso: (t) => aviso(t), criarProjeto: (novo) => criarProjetoJunto(novo) })
 player.aoMudar(() => {
   linha.tempo(player.t)
+  marcadoresUI.tempo()
   $('tempo').textContent = `${relogio(player.t)} / ${relogio(player.duracao)}`
   $('tocar').innerHTML = `<svg><use href="#i-${player.tocando ? 'pausa' : 'play'}"/></svg>`
   $('tocar').ariaLabel = player.tocando ? 'Pausar' : 'Tocar'
@@ -329,6 +359,9 @@ function desenharTudo() {
   desenharInspector()
   if (S.pagina === 'edicao') desenharLinha(blocos)
   desenharSons()
+  marcadoresUI.desenhar()
+  pecasUI.desenhar()
+  prepararFaixas(p)
 }
 
 function opcoesPlayer(p, blocos = blocosDaLegenda(p)) {
@@ -801,9 +834,17 @@ function acaoLinha(tipo, ...a) {
     if (novo.linha === p.linha) return aviso('Já tem um corte aqui.')
     fazer(novo, 'dividir')
   } else if (tipo === 'marcar') {
-    const novo = adicionarMarcador(p, paraQuadros(player.t, p.fps))
-    if (novo === p) return aviso('Já tem um marcador aqui.')
-    fazer(novo, 'marcador')
+    // M marca o ponto; M de novo em cima de um marcador abre o nome dele (como no Premiere)
+    const r = marcar(p, paraQuadros(player.t, p.fps))
+    if (r.projeto === p) {
+      aba('marcadores')
+      return marcadoresUI.editar(r.id)
+    }
+    fazer(r.projeto, 'marcador')
+    marcadoresUI.escolher(r.id, { ir: false })
+  } else if (tipo === 'escolherMarcador') {
+    aba('marcadores')
+    marcadoresUI.escolher(a[0])
   } else if (tipo === 'desmarcar') fazer(removerMarcador(p, a[0]), 'apagar marcador')
   else if (tipo === 'remover') fazer({ ...p, linha: remover(p.linha, a[0]) }, 'apagar clipe')
   else if (tipo === 'som') $('arquivoSom').click()
@@ -1080,10 +1121,41 @@ function montarInspector() {
     },
   })
   $('inspRedefinir').before(chromaUI.el)
+  // voz e instrumental pela NOSSOM (src/faixas.js, app/nossom.js)
+  faiUI = montarFaixas(sec.querySelector('.insp-clipe'), {
+    obter: () => {
+      const { p, clipe, midia } = selecionado()
+      let faltam = false
+      let trecho = null
+      if (clipe?.faixas) faltam = faixasForaDoTrecho(p, clipe) ? 'trecho' : S.faixasFaltando.has(clipe.faixas.sep) ? 'disco' : false
+      else if (clipe) {
+        const t = trechoParaSeparar(p, clipe)
+        trecho = t.erro ? t : { minutos: minutosDoPedido(t.fim - t.ini) }
+      }
+      return { p, clipe, midia, liberado: S.nossom, andamento: S.separando && S.separando.clipe === clipe?.id ? S.separando : null, faltam, trecho }
+    },
+    separar: () => separarClipe(),
+    cancelar: () => S.separando?.ctrl.abort(),
+    ajustar: (mix, gravar) => {
+      const p = P()
+      if (!p || !linha.sel) return
+      const novo = { ...p, linha: ajustarFaixas(p.linha, linha.sel, mix) }
+      if (novo.linha === p.linha) return
+      if (gravar) fazer(novo, 'voz e instrumental')
+      else player.carregar(novo, opcoesPlayer(novo))
+    },
+    desligar: () => {
+      const p = P()
+      if (p && linha.sel) fazer({ ...p, linha: desligarFaixas(p.linha, linha.sel) }, 'som original')
+    },
+  })
+  // de som: logo depois dos controles (perto do Volume), um clique sem rolar
+  sec.querySelector('.insp-controles').after(faiUI.el)
 }
 let velUI = null
 let estUI = null
 let chromaUI = null
+let faiUI = null
 montarInspector()
 
 function desenharInspector() {
@@ -1142,6 +1214,7 @@ function desenharInspector() {
   velUI.desenhar(c)
   estUI.desenhar()
   chromaUI.desenhar()
+  faiUI.desenhar()
 }
 
 /** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */
@@ -1632,7 +1705,12 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   const faltam = []
   for (const m of [...p.midias, ...(p.sons || [])]) {
     if (m.caminho && ponte.desktop) S.entradas.set(m.id, await ponte.entradaDoCaminho(m.caminho, m.nome))
-    else if (!DESCEM.has(m.origem?.tipo)) faltam.push(m)
+    else if (m.origem?.tipo === 'higgsfield') {
+      // criada com IA: o arquivo ficou no disco deste navegador (app/criadas-disco.js)
+      const b = await discoCriadas.ler(m.id).catch(() => null)
+      if (b) S.entradas.set(m.id, await ponte.entradaDe(new File([b], m.nome, { type: b.type || 'video/mp4' })))
+      else faltam.push(m)
+    } else if (!DESCEM.has(m.origem?.tipo)) faltam.push(m)
   }
   S.h = new Historico(p)
   S.salvo = true
@@ -1640,6 +1718,11 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   autosalvar()
   if (faltam.length) aviso(`Escolha de novo: ${faltam.map((m) => m.nome).join(', ')}.`)
   desenharTudo()
+  for (const m of p.midias)
+    if (m.origem?.tipo === 'higgsfield' && S.entradas.has(m.id))
+      miniatura(S.entradas.get(m.id))
+        .then((c) => c && (S.miniaturas.set(m.id, c), desenharMidia()))
+        .catch(() => {})
   rebaixarSons(p)
   ir(p.propostas.length ? 'revisar' : 'midia')
 }
@@ -1690,6 +1773,9 @@ async function fecharProjeto() {
   S.entradas.clear()
   S.dbs.clear()
   S.miniaturas.clear()
+  S.faixas.clear()
+  S.faixasFaltando.clear()
+  player.faixasProntas.clear()
   S.selProposta = null
   ir('midia')
   desenharTudo()
@@ -1771,6 +1857,7 @@ $('exportar').onclick = () => exportar()
 async function exportar({ marcados } = {}) {
   const p = P()
   if (!p) return aviso('Nada para exportar ainda.')
+  if (pecasUI.ativo) return exportarPecas({ marcados })
   const quer = new Set(marcados || [...$('destinos').querySelectorAll('input:checked')].map((x) => x.value))
   if (!quer.size) return aviso('Escolha pelo menos um destino.')
   const base = nomeArquivo(p.nome)
@@ -1788,6 +1875,9 @@ async function exportar({ marcados } = {}) {
       const e = !som.caminho && S.entradas.get(som.id)
       if (e?.arquivo) arquivos.push({ name: arquivoDoSom(som), data: new Uint8Array(await e.arquivo.arrayBuffer()) })
     }
+    // voz e instrumental separados pela NOSSOM: o WAV de cada um, ao lado do XML
+    const faltaFaixa = await juntarFaixas(p, arquivos)
+    if (faltaFaixa) return aviso(faltaFaixa)
     const r = await ponte.gravarPacote(base, arquivos, zip)
     if (!r) return
     resultado.pasta = r.pasta
@@ -1816,6 +1906,7 @@ async function exportar({ marcados } = {}) {
       }
       const r = await renderizar(p, {
         fluxo,
+        faixas: await faixasDoRender(p),
         entradas: S.entradas,
         destino: alvo,
         blocos,
@@ -1856,6 +1947,369 @@ async function exportar({ marcados } = {}) {
 }
 S.exportar = exportar
 
+// ───────── voz e instrumental pela NOSSOM ─────────
+
+/**
+ * As faixas de uma separação, do disco do navegador: a voz e o instrumental (a soma das outras quatro) em AudioBuffer a
+ * 44,1 kHz, com o ganho da NOSSOM desfeito. Decodifica uma faixa por vez (só uma na memória além das duas). null se não
+ * estão neste navegador.
+ */
+function carregarFaixas(id) {
+  if (!S.faixas.has(id))
+    S.faixas.set(
+      id,
+      (async () => {
+        const blobs = await discoFaixas.ler(id, STEMS)
+        if (!blobs) return null
+        const ctx = new OfflineAudioContext(2, 1, 44100)
+        let voz = null
+        let instrumental = null
+        for (const [i, b] of blobs.entries()) {
+          const ab = await ctx.decodeAudioData(await b.arrayBuffer())
+          if (i === 0) {
+            voz = ab
+            continue
+          }
+          instrumental ??= new AudioBuffer({ length: ab.length, numberOfChannels: 2, sampleRate: ab.sampleRate })
+          for (let c = 0; c < 2; c++) {
+            const d = instrumental.getChannelData(c)
+            const o = ab.getChannelData(Math.min(c, ab.numberOfChannels - 1))
+            for (let k = 0, n = Math.min(d.length, o.length); k < n; k++) d[k] += o[k]
+          }
+        }
+        const k = 10 ** (-(separacaoPorId(P(), id)?.ganhoDb || 0) / 20)
+        if (k !== 1)
+          for (const buf of [voz, instrumental])
+            for (let c = 0; c < 2; c++) {
+              const d = buf.getChannelData(c)
+              for (let i = 0; i < d.length; i++) d[i] *= k
+            }
+        return { voz, instrumental }
+      })().catch((err) => {
+        console.error(err)
+        return null
+      }),
+    )
+  return S.faixas.get(id)
+}
+
+/** Começa a carregar as faixas que a linha usa; quando chegam, a prévia passa a tocar voz e instrumental. */
+function prepararFaixas(p) {
+  for (const id of new Set(p.linha.clipes.map((c) => c.faixas?.sep).filter(Boolean))) {
+    if (player.faixasProntas.has(id) || S.faixasFaltando.has(id) || S.faixas.has(id)) continue
+    carregarFaixas(id).then((fx) => {
+      if (fx) player.faixasProntas.add(id)
+      else S.faixasFaltando.add(id)
+      const atual = P()
+      if (atual) {
+        player.carregar(atual, opcoesPlayer(atual))
+        desenharInspector()
+      }
+    })
+  }
+}
+
+/** As faixas que o render usa (só as que estão aqui; sem elas, o clipe sai com o som original). */
+async function faixasDoRender(p) {
+  const m = new Map()
+  for (const id of new Set(p.linha.clipes.map((c) => c.faixas?.sep).filter(Boolean))) {
+    const fx = await carregarFaixas(id)
+    if (fx) m.set(id, fx)
+  }
+  return m
+}
+
+/**
+ * Os WAV de voz e instrumental que a linha do tempo dos editores usa, ao lado do XML. Devolve o aviso se alguma faixa
+ * não está neste navegador (o XML apontaria para um arquivo que não vem), ou null.
+ */
+async function juntarFaixas(p, arquivos) {
+  for (const a of arquivosDeFaixas(p)) {
+    const fx = await carregarFaixas(a.sep.id)
+    if (!fx) return 'As faixas separadas de um clipe não estão neste computador: separe de novo ou volte ao som original.'
+    const buf = fx[a.parte]
+    arquivos.push({ name: a.arquivo, data: wav16([buf.getChannelData(0), buf.getChannelData(1)], buf.sampleRate) })
+  }
+  return null
+}
+
+/** Pergunta numa folha (sim/não): Promise<boolean>. */
+function perguntar({ titulo, texto, sim, nao = 'Cancelar' }) {
+  return new Promise((ok) => {
+    const f = Object.assign(document.createElement('dialog'), { className: 'folha folha-pergunta' })
+    f.innerHTML = '<h2 class="titulo-p"></h2><p class="apoio"></p><div class="acoes"><button type="button" class="glass-btn" value="nao"></button><button type="button" class="glass-btn glass-btn--ink" value="sim"></button></div>'
+    f.querySelector('h2').textContent = titulo
+    f.querySelector('p').textContent = texto
+    f.querySelector('[value="nao"]').textContent = nao
+    f.querySelector('[value="sim"]').textContent = sim
+    let r = false
+    f.querySelector('[value="nao"]').onclick = () => f.close()
+    f.querySelector('[value="sim"]').onclick = () => {
+      r = true
+      f.close()
+    }
+    f.addEventListener('close', () => {
+      f.remove()
+      ok(r)
+    })
+    document.body.append(f)
+    f.showModal()
+  })
+}
+
+const PEDIDO_NOSSOM = 'aeon.nossom.pedido'
+const lerPedido = () => {
+  try {
+    return JSON.parse(localStorage.getItem(PEDIDO_NOSSOM) || 'null')
+  } catch {
+    return null
+  }
+}
+const guardarPedido = (x) => {
+  try {
+    if (x) localStorage.setItem(PEDIDO_NOSSOM, JSON.stringify(x))
+    else localStorage.removeItem(PEDIDO_NOSSOM)
+  } catch {}
+}
+
+/**
+ * Separar voz e instrumental do clipe escolhido, pela NOSSOM: confere a conta lá, pergunta (com os minutos do plano),
+ * manda o som do trecho, acompanha, guarda as cinco faixas neste navegador, liga no clipe e libera a cópia da NOSSOM.
+ */
+async function separarClipe() {
+  const p = P()
+  const c = p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null
+  if (!c || S.separando) return
+  const m = midiaPorId(p, c.midia)
+  const t = trechoParaSeparar(p, c)
+  if (t.erro) return aviso(t.erro)
+  const entrada = S.entradas.get(m.id)
+  if (!ponte.urlTocavel(entrada)) return aviso(`Escolha "${m.nome}" de novo na Mídia para separar.`)
+  const ctrl = new AbortController()
+  const andar = (texto, frac = -1) => {
+    if (!S.separando) return
+    S.separando.texto = texto
+    S.separando.frac = frac
+    desenharInspector()
+  }
+  S.separando = { clipe: c.id, texto: 'Conferindo o Quasar…', frac: -1, ctrl }
+  desenharInspector()
+  try {
+    const cn = await nossom.conta()
+    const dur = t.fim - t.ini
+    if (cn.estado === 'entrar') {
+      S.separando = null
+      desenharInspector()
+      if (await perguntar({ titulo: 'Entre no Quasar', texto: 'Uma vez só, com a mesma conta Absolute ZRO. Depois volte aqui e toque em Separar.', sim: 'Entrar no Quasar', nao: 'Agora não' }))
+        open(`${nossom.NOSSOM}/entrar?next=${encodeURIComponent('/studio')}`, '_blank', 'noopener')
+      return
+    }
+    if (cn.estado === 'sem-franquia') throw new Error('A franquia do seu plano Quasar acabou este mês.')
+    if (cn.estado !== 'ok') throw new Error(cn.erro || 'O Quasar não respondeu agora.')
+    const min = minutosDoPedido(dur)
+    if (cn.restante !== null && cn.restante < Math.max(60, Math.ceil(dur))) throw new Error(`Faltam minutos no seu plano Quasar: este trecho usa ${min} min.`)
+    const resta = cn.restante === null ? '' : ` (restam ${Math.floor(cn.restante / 60)} min)`
+    andar('Esperando você confirmar…')
+    const sim = await perguntar({ titulo: 'Separar voz e instrumental', texto: `O som deste trecho (${relogio(dur)}) sobe para o Quasar, separa na nuvem e volta alinhado ao clipe. Usa ${min} min do seu plano${resta}.`, sim: 'Separar' })
+    if (!sim) return
+    andar('Preparando o som…')
+    const som = await audioDoTrecho(entrada, t.ini, dur)
+    const wav = new Blob([wav16([som.getChannelData(0), som.getChannelData(1)], som.sampleRate)], { type: 'audio/wav' })
+    const guardado = lerPedido()
+    const retomar = guardado && guardado.midia === m.id && guardado.ini === t.ini && guardado.fim === t.fim ? guardado.id : null
+    const r = await nossom.separar(wav, dur, {
+      sinal: ctrl.signal,
+      retomar,
+      aoPedido: (id) => guardarPedido({ id, midia: m.id, ini: t.ini, fim: t.fim }),
+      aoEstado: (x) => andar(x, S.separando?.frac ?? -1),
+      aoProgresso: (f) => andar(S.separando?.texto || '', f),
+    })
+    andar('Guardando as faixas…')
+    const atual = P()
+    const ainda = atual?.linha.clipes.some((x) => x.id === c.id)
+    const nova = adicionarSeparacao(atual, { midia: m.id, ini: t.ini, fim: t.fim, ganhoDb: r.ganhoDb, pedido: r.id }, ainda ? [c.id] : [], MIX_TUDO)
+    await discoFaixas.guardar(nova.id, Object.fromEntries(STEMS.map((n, i) => [n, r.faixas[i]])))
+    guardarPedido(null)
+    S.separando = null
+    fazer(nova.projeto, 'separar voz e instrumental')
+    nossom.liberar(r.id).catch(() => {})
+    aviso('Voz e instrumental prontos, alinhados ao clipe.')
+  } catch (err) {
+    if (err?.name === 'AbortError') aviso('Separação cancelada. O som original segue no clipe.')
+    else {
+      console.error(err)
+      aviso(err.message)
+    }
+  } finally {
+    S.separando = null
+    desenharInspector()
+  }
+}
+
+/** "Juntar em outra ordem" (Entrega em peças): o projeto novo abre no lugar deste, que fica guardado em Seus universos. */
+async function criarProjetoJunto(base) {
+  await autosalvar()
+  const novo = { ...base, id: globalThis.crypto?.randomUUID?.() || `p${Date.now().toString(36)}` }
+  delete novo.semNome
+  S.h = new Historico(novo)
+  mudou()
+  desenharTudo()
+  ir('edicao')
+  aviso('Projeto novo, com as seções na nova ordem. O anterior está em Seus universos.')
+}
+
+/**
+ * Entrega em peças: cada seção (de um marcador ao próximo) em cada formato escolhido vira arquivos à parte numa pasta:
+ * o vídeo e, se pedido, a linha do tempo para o editor (numa subpasta com o nome da peça). No fim, entrega.csv com o
+ * que saiu de cada uma. Uma peça que falha não para as outras; cancelar para tudo (o relatório diz até onde foi).
+ */
+async function exportarPecas({ marcados } = {}) {
+  const p = P()
+  const quer = new Set(marcados || [...$('destinos').querySelectorAll('input:checked')].map((x) => x.value))
+  if (!quer.size) return aviso('Escolha pelo menos um destino.')
+  const plano = planoDePecas(p, pecasUI.opcoes())
+  if (!plano.length) return aviso('Escolha pelo menos uma seção.')
+  if (quer.has('video')) {
+    const faltam = midiasFaltando(p)
+    if (faltam.length) return aviso(`Escolha de novo ${faltam.length === 1 ? `"${faltam[0].nome}"` : `${faltam.length} arquivos`} na Mídia para gravar as peças.`)
+  }
+  const formatos = new Set()
+  if (quer.has('xmeml')) formatos.add('xmeml')
+  if (quer.has('fcpxml') || quer.has('resolve')) formatos.add('fcpxml')
+  if (quer.has('resolve')) formatos.add('edl')
+  const pasta = await ponte.pastaDeSaida(`${nomeArquivo(p.nome)} · peças`, zip)
+  if (!pasta) return null
+  $('entregaFim').hidden = true
+  renderAtual = new AbortController()
+  const sinal = renderAtual.signal
+  $('render').hidden = false
+  $('exportar').disabled = true
+  const itens = []
+  const texto = (t) => ($('renderTexto').textContent = t)
+  let parou = null
+  try {
+    await document.fonts.load('800 40px Figtree')
+    // o motor de fluxo óptico uma vez só, se alguma peça tiver câmera lenta com fluxo
+    let fluxo = null
+    if (quer.has('video') && plano.some((x) => segmentos(x.projeto).some((s) => s.v < 1 && s.modo === 'fluxo'))) {
+      texto('Preparando o fluxo óptico…')
+      try {
+        fluxo = await carregarFluxo({ aoBaixar: (f, t) => texto(`Baixando o motor de fluxo óptico · ${Math.round((f / t) * 100)}%`) })
+      } catch (err) {
+        aviso(`${err.message} A câmera lenta sai com o quadro mais próximo.`)
+      }
+    }
+    for (const [i, peca] of plano.entries()) {
+      if (sinal.aborted) throw new DOMException('cancelado', 'AbortError')
+      const arquivos = []
+      const passo = `Peça ${i + 1} de ${plano.length} · ${peca.nome}`
+      try {
+        if (formatos.size) {
+          texto(passo)
+          const doPacote = pacote(peca.projeto, S.preset.legenda, new Date(), [...formatos])
+          const faltaFaixa = await juntarFaixas(peca.projeto, doPacote)
+          if (faltaFaixa) throw new Error(faltaFaixa)
+          for (const a of doPacote) {
+            await pasta.gravar(`${peca.nome}/${a.name}`, a.data)
+            arquivos.push(`${peca.nome}/${a.name}`)
+          }
+          for (const som of sonsUsados(peca.projeto)) {
+            const e = !som.caminho && S.entradas.get(som.id)
+            if (e?.arquivo) {
+              await pasta.gravar(`${peca.nome}/${arquivoDoSom(som)}`, new Uint8Array(await e.arquivo.arrayBuffer()))
+              arquivos.push(`${peca.nome}/${arquivoDoSom(som)}`)
+            }
+          }
+        }
+        if (quer.has('video')) {
+          const nomeV = `${peca.nome}.mp4`
+          const fl = await pasta.fluxo(nomeV)
+          const alvo = fl ? new MB.StreamTarget(fl, { chunked: true }) : new MB.BufferTarget()
+          await renderizar(peca.projeto, {
+            fluxo,
+            faixas: await faixasDoRender(peca.projeto),
+            entradas: S.entradas,
+            destino: alvo,
+            blocos: blocosDaLegenda(peca.projeto),
+            legenda: { ligada: peca.projeto.legenda.ligada, estilo: peca.projeto.legenda.estilo, posicaoY: S.preset.legenda.posicao_y },
+            sinal,
+            aoProgresso: (f) => {
+              $('renderBarra').style.transform = `scaleX(${(i + f) / plano.length})`
+              texto(`${passo} · ${Math.round(f * 100)}%`)
+            },
+          })
+          if (!fl) await pasta.gravar(nomeV, new Uint8Array(alvo.buffer))
+          arquivos.push(nomeV)
+        }
+        itens.push({ peca, arquivos, ok: true })
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          itens.push({ peca, arquivos, ok: false, erro: 'cancelado' })
+          throw err
+        }
+        console.error(err)
+        itens.push({ peca, arquivos, ok: false, erro: err.message })
+      }
+      $('renderBarra').style.transform = `scaleX(${(i + 1) / plano.length})`
+    }
+  } catch (err) {
+    parou = err?.name === 'AbortError' ? 'cancelado' : err.message
+    if (err?.name !== 'AbortError') console.error(err)
+  } finally {
+    try {
+      await pasta.gravar('entrega.csv', relatorio(p, itens))
+      await pasta.fechar()
+    } catch (err) {
+      console.error(err)
+    }
+    renderAtual = null
+    $('render').hidden = true
+    $('exportar').disabled = false
+  }
+  const ok = itens.filter((x) => x.ok).length
+  $('entregaFim').hidden = false
+  $('entregaFim').textContent = parou === 'cancelado' ? `Cancelado: ${ok} de ${plano.length} peças prontas.` : parou ? `Parou: ${parou}` : `Pronto: ${ok} de ${plano.length} ${plano.length === 1 ? 'peça' : 'peças'}${ok < plano.length ? ' (veja entrega.csv)' : ''}.`
+  if (pasta.pasta && ponte.desktop) {
+    const b = Object.assign(document.createElement('button'), { className: 'link', textContent: 'Mostrar na pasta' })
+    b.onclick = () => ponte.abrirPasta(pasta.pasta)
+    $('entregaFim').append(' ', b)
+  }
+  return { itens, pasta: pasta.nome }
+}
+
+/** Mídias da linha que ainda não foram escolhidas de novo neste navegador (projeto reaberto): sem elas não há imagem. */
+function midiasFaltando(p) {
+  const ids = new Set(p.linha.clipes.map((c) => c.midia))
+  return p.midias.filter((m) => ids.has(m.id) && m.temVideo && !ponte.urlTocavel(S.entradas.get(m.id)))
+}
+
+/** Uma imagem PNG em cada marcador (a aba Marcadores): o quadro que o vídeo final teria ali, com a legenda. */
+async function exportarQuadros(ids) {
+  const p = P()
+  if (!p) return
+  const naLinha = new Set(secoes(p).map((x) => x.marcador.id))
+  const ms = (p.marcadores || []).filter((m) => ids.includes(m.id) && naLinha.has(m.id))
+  if (!ms.length) return aviso('Esses marcadores ficaram depois do fim do vídeo.')
+  const faltam = midiasFaltando(p)
+  if (faltam.length) return aviso(`Escolha de novo ${faltam.length === 1 ? `"${faltam[0].nome}"` : `${faltam.length} arquivos`} na Mídia para tirar as imagens.`)
+  aviso(`Tirando ${ms.length} ${ms.length === 1 ? 'imagem' : 'imagens'}…`)
+  try {
+    await document.fonts.load('800 40px Figtree')
+    const imgs = await imagensEm(p, ms.map((m) => m.q), { entradas: S.entradas, blocos: blocosDaLegenda(p), legenda: { ligada: p.legenda.ligada, estilo: p.legenda.estilo, posicaoY: S.preset.legenda.posicao_y } })
+    const arquivos = []
+    for (const [i, x] of imgs.entries()) {
+      const m = ms[i]
+      const t = relogio(paraSegundos(m.q, p.fps)).replace(/:/g, '-')
+      arquivos.push({ name: `${String(i + 1).padStart(2, '0')}_${nomeSeguro(m.nome || 'marcador')}_${t}.png`, data: new Uint8Array(await x.blob.arrayBuffer()) })
+    }
+    const r = await ponte.gravarPacote(`${nomeArquivo(p.nome)} · imagens`, arquivos, zip)
+    if (r) aviso(`${arquivos.length} ${arquivos.length === 1 ? 'imagem pronta' : 'imagens prontas'}.`)
+  } catch (err) {
+    console.error(err)
+    aviso(`As imagens não saíram: ${err.message}`)
+  }
+}
+
 // o app abre na Mídia (os projetos e o vídeo): a tarefa vem primeiro (titular, 29/10/2026; Plano de Integração §7–8).
 // A Z fica no ícone discreto da barra e em /app/#z (link direto); nunca abre sozinha.
 ir(location.hash === '#z' ? 'z' : 'midia', false)
@@ -1874,4 +2328,65 @@ function aviso(texto) {
   a.classList.add('visivel')
   clearTimeout(avisoTimer)
   avisoTimer = setTimeout(() => a.classList.remove('visivel'), 4200)
+}
+
+// ───────── Criar com IA: a Higgsfield das Conexões da Absolute ZRO, pelo HUB (app/criar-ui.js) ─────────
+// Só na web por enquanto (o app de computador não foi publicado). O resultado entra na Mídia (não na linha): a imagem
+// como clipe parado de SEGUNDOS_PARADA s, o vídeo como veio. O arquivo fica no disco deste navegador.
+
+async function porNaMidiaCriada(arquivo, { saida, id: pedido }) {
+  const p = P()
+  if (!p) throw new Error('abra um projeto antes')
+  const e = await ponte.entradaDe(arquivo)
+  const info = await lerInfo(e)
+  if (!info.temVideo) throw new Error('o arquivo não tem imagem')
+  const id = crypto.randomUUID()
+  S.entradas.set(id, e)
+  await discoCriadas.guardar(id, arquivo).catch(() => aviso('Este navegador não guardou o arquivo criado: ele some ao fechar o projeto.'))
+  const m = {
+    cor: corDaMidia(p.midias.length),
+    id,
+    nome: arquivo.name,
+    caminho: null,
+    ...info,
+    quadros: paraQuadros(info.duracao, p.fps),
+    origem: { tipo: 'higgsfield', saida, ...(pedido ? { pedido } : {}) },
+  }
+  fazer({ ...p, midias: [...p.midias, m] }, 'criar com IA')
+  miniatura(e)
+    .then((c) => c && (S.miniaturas.set(id, c), desenharMidia()))
+    .catch(() => {})
+  mudou()
+  desenharTudo()
+  return id
+}
+
+const folhaCriar = new FolhaCriar($('folhaCriar'), {
+  projeto: () => P(),
+  async quadroAtual() {
+    const p = P()
+    if (!p?.linha.clipes.length) return null
+    const q = Math.max(0, Math.min(paraQuadros(player.t, p.fps), paraQuadros(player.duracao, p.fps) - 1))
+    const [x] = await imagensEm(p, [q], { entradas: S.entradas })
+    return x?.blob || null
+  },
+  porNaMidia: porNaMidiaCriada,
+  porNaLinha(midiaId) {
+    const p = P()
+    const m = p && midiaPorId(p, midiaId)
+    if (!m) return aviso('Essa mídia não está mais no projeto.')
+    fazer({ ...p, linha: inserirNaLinha(p.linha, m, paraQuadros(player.t, p.fps)) }, 'pôr na linha')
+    mudou()
+    desenharTudo()
+    aviso(`${m.nome} entrou na linha.`)
+  },
+  paraClipe: (blob, nome) => imagemParaClipe(blob, nome, { segundos: SEGUNDOS_PARADA, fps: Math.round(fpsNumero(P().fps)) || 30 }),
+  perguntar,
+  aviso,
+})
+for (const b of [$('criarIA'), $('criarDoQuadro')]) b.hidden = ponte.desktop
+$('criarIA').onclick = () => folhaCriar.abrir()
+$('criarDoQuadro').onclick = () => {
+  player.pausar()
+  folhaCriar.abrir({ doQuadro: true })
 }

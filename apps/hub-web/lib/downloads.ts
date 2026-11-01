@@ -18,8 +18,12 @@ export type Os = 'mac' | 'windows' | 'mobile' | 'web'
  */
 export const SO_PARA_ADMIN: ReadonlySet<string> = new Set(['ai-edit', 'finishing', 'nossom', 'rift-motion'])
 
-/** Admin de plataforma (papel `admin`; suporte e financeiro não). */
-export const ehAdmin = (auth: { user: { platformRole?: string | null } } | null | undefined) => auth?.user.platformRole === 'admin'
+/**
+ * Admin de plataforma (papel `admin`; suporte e financeiro não), com e-mail confirmado: a mesma regra de
+ * papelNoConsole e de zro.release_admin (0049).
+ */
+export const ehAdmin = (auth: { user: { platformRole?: string | null; emailVerified?: boolean } } | null | undefined) =>
+  auth?.user.platformRole === 'admin' && auth.user.emailVerified === true
 
 /** Instalação da Absolute ZRO pelo Terminal (public/instalar.sh e instalar.ps1: baixam, conferem o SHA-256 e instalam). */
 export const HUB_TERMINAL = {
@@ -85,23 +89,23 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'synquei',
-    site: 'https://synquei.vercel.app',
+    site: 'https://synquei.absolutezro.com',
     status: 'stable',
     options: [
       ...NO_COMPUTADOR('synquei'),
-      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.vercel.app/app/', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.absolutezro.com/app/', format: 'Sem instalar' },
     ],
-    moreUrl: 'https://synquei.vercel.app/#baixar',
+    moreUrl: 'https://synquei.absolutezro.com/#baixar',
   },
   {
     productId: 'nossom',
-    site: 'https://nossom.absolutezro.com',
+    site: 'https://quasar.absolutezro.com',
     status: 'test',
     options: [
       ...NO_COMPUTADOR('nossom'),
-      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom.absolutezro.com/studio', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://quasar.absolutezro.com/studio', format: 'Sem instalar' },
     ],
-    moreUrl: 'https://nossom.absolutezro.com/apps',
+    moreUrl: 'https://quasar.absolutezro.com/apps',
   },
   {
     productId: 'tpeasy',

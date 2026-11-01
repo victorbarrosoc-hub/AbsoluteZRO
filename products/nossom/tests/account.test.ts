@@ -14,7 +14,7 @@ import {
   accountSessionOwner,
 } from '../lib/server/account';
 import { safeReturnPath } from '../lib/accounts';
-import { authEnvironment, testUser, testCookie } from './helpers/auth';
+import { allowedClaims, authEnvironment, testUser, testCookie } from './helpers/auth';
 test('Supabase session is encrypted, HttpOnly, expiring and rejects tampering or legacy demo receipts', () => {
   const restore = authEnvironment();
   try {
@@ -36,7 +36,7 @@ test('Supabase session is encrypted, HttpOnly, expiring and rejects tampering or
     restore();
   }
 });
-test('admin privileges require the exact email and verified Supabase identity; metadata cannot grant admin', () => {
+test('admin never comes from the e-mail or metadata: only from the platform admin on the Absolute ZRO link', () => {
   assert.equal(
     accountFromUser({
       ...testUser,
@@ -44,16 +44,47 @@ test('admin privileges require the exact email and verified Supabase identity; m
     }).isAdmin,
     false,
   );
-  assert.equal(
-    accountFromUser({ ...testUser, email: 'victorbarrosoc@gmail.com', email_confirmed_at: null })
-      .isAdmin,
-    false,
-  );
-  assert.equal(accountFromUser({ ...testUser, email: 'victorbarrosoc@gmail.com' }).isAdmin, true);
-  assert.equal(
-    accountFromUser({ ...testUser, email: 'victorbarrosoc+fake@gmail.com' }).isAdmin,
-    false,
-  );
+  // Nem o e-mail do titular faz alguém ADM.
+  assert.equal(accountFromUser({ ...testUser, email: 'victor@absolutezro.com' }).isAdmin, false);
+  const restore = authEnvironment();
+  try {
+    const token = (claims: Parameters<typeof testCookie>[2]) =>
+      testCookie(testUser, undefined, claims).split('=')[1];
+    // Vínculo com a Absolute ZRO e admin da plataforma: ADM.
+    assert.equal(
+      accountFromToken(
+        token({
+          ...allowedClaims,
+          zro: { email: 'a@example.test', organization: null, admin: true },
+        }),
+      )?.isAdmin,
+      true,
+    );
+    // Vínculo sem o papel, ou papel sem vínculo: não.
+    assert.equal(
+      accountFromToken(
+        token({ ...allowedClaims, zro: { email: 'a@example.test', organization: null } }),
+      )?.isAdmin,
+      false,
+    );
+    assert.equal(
+      accountFromToken(token({ zro: { email: 'a@example.test', organization: null, admin: true } }))
+        ?.isAdmin,
+      false,
+    );
+    // Sessão com um `admin` que não é o booleano true é recusada inteira.
+    assert.equal(
+      accountFromToken(
+        token({
+          ...allowedClaims,
+          zro: { email: 'a@example.test', organization: null, admin: 'yes' as unknown as true },
+        }),
+      ),
+      null,
+    );
+  } finally {
+    restore();
+  }
 });
 test('login uses GoTrue, verified identity, and never returns provider credentials to the interface', async () => {
   const restore = authEnvironment(),

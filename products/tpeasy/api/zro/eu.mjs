@@ -1,4 +1,6 @@
 // GET /api/zro/eu — quem está no app: 200 com o perfil, 401 sem sessão, 503 sem configuração. Nunca vai para cache.
+// ?visitante=1 (o app de agora, app/js/zro.js): sem sessão vem 200 { entrou: false } em vez de 401, para não deixar
+// erro no console de quem só abriu o app (revisão de 01/11/2026); sem o parâmetro, o 401 de sempre.
 // `acesso` diz se a organização ativa liberou o TPeasy (zro_products).
 //
 // Perfil único (docs/integration-contracts/perfil-unico.md): a cada abertura do app (no máximo uma vez por minuto) relê
@@ -32,8 +34,9 @@ export default async function eu(req, res) {
     return json(res, 405, { erro: 'metodo' })
   }
   if (!configurado()) return json(res, 503, { configurado: false })
+  const fora = new URL(req.url || '/', 'http://x').searchParams.get('visitante') === '1' ? 200 : 401
   let s = abrir(lerCookie(req, COOKIE_SESSAO), 'sessao')
-  if (!s || typeof s.sub !== 'string' || typeof s.email !== 'string') return json(res, 401, { entrou: false })
+  if (!s || typeof s.sub !== 'string' || typeof s.email !== 'string') return json(res, fora, { entrou: false })
 
   const secure = seguro(req)
   const cookies = []
@@ -47,7 +50,7 @@ export default async function eu(req, res) {
       cookies.push(serializarCookie(COOKIE_HUB, cifrar({ sub: s.sub, ...tokens }), { path: '/api/zro', secure, maxAge: DURACAO_SESSAO_S }))
     } catch (e) {
       if (e instanceof ZroError && e.codigo === 'revogado') {
-        return json(res, 401, { entrou: false }, [
+        return json(res, fora, { entrou: false }, [
           serializarCookie(COOKIE_SESSAO, '', { path: '/', secure, maxAge: 0 }),
           serializarCookie(COOKIE_HUB, '', { path: '/api/zro', secure, maxAge: 0 }),
         ])

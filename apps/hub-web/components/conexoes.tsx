@@ -44,7 +44,17 @@ function Estado({ state, js }: { state: FormState; js: boolean }) {
   )
 }
 
-export function Desconectar({ action, conta }: { action: Acao; conta: string }) {
+export function Desconectar({
+  action,
+  conta,
+  aviso = 'Os apps deixam de ver sua agenda.',
+  dica,
+}: {
+  action: Acao
+  conta: string
+  aviso?: string
+  dica?: string
+}) {
   const [state, formAction] = useActionState(action, null)
   const [certeza, setCerteza] = useState(false)
   if (!certeza)
@@ -55,8 +65,8 @@ export function Desconectar({ action, conta }: { action: Acao; conta: string }) 
     )
   return (
     <form action={formAction} className="conexao__desconectar" aria-label="Confirmar desconexão">
-      <span className="zro-mute" title={`Os apps deixam de ver a agenda de ${conta}. O acesso é revogado no Google.`}>
-        Os apps deixam de ver sua agenda.
+      <span className="zro-mute" title={dica ?? `Os apps deixam de ver a agenda de ${conta}. O acesso é revogado no Google.`}>
+        {aviso}
       </span>
       <span className="row">
         <button type="button" className="glass-btn" onClick={() => setCerteza(false)}>

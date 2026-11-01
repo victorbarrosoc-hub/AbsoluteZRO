@@ -476,7 +476,9 @@ async function callback(req, res) {
   return ir(res, 303, comMarca(volta, 'entrou'), [limpar, cookie(COOKIE_SESSAO, sessao, { path: '/', maxAge: SESSAO_S, seguro: seguro(origem) }), cookieHub]);
 }
 
-/** GET /api/zro/eu — quem está na sessão SEGUNDO O HUB AGORA, ou 401/403 (e `release`, o estado deste deploy) */
+/** GET /api/zro/eu — quem está na sessão SEGUNDO O HUB AGORA, ou 401/403 (e `release`, o estado deste deploy).
+ *  Quem chega sem cookie de sessão nenhum (o visitante) recebe 200 { entrou: false }: não é erro, e um 401 a cada
+ *  visita só sujava o console (revisão de 01/11/2026). Sessão que existe e não vale continua 401. */
 async function eu(req, res) {
   if (req.method !== 'GET') return json(res, 405, { erro: 'metodo' }, { Allow: 'GET' });
   const cfg = config();
@@ -484,7 +486,9 @@ async function eu(req, res) {
   if (!cfg.ligado) return json(res, 503, { erro: 'desligado', release: estado });
   const origem = origemDe(req);
   const apagar = { 'Set-Cookie': apagarCookies(origem) };
-  const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
+  const bruto = lerCookie(req, COOKIE_SESSAO);
+  if (!bruto) return json(res, 200, { entrou: false, release: estado });
+  const s = abrir(bruto, cfg.clientSecret, COOKIE_SESSAO);
   if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao', release: estado });
   /* ⚠️ O COOKIE DE 30 DIAS NÃO DECIDE NADA (28/out): a claim é RELIDA no HUB
      a cada pedido, com o token guardado. Sessão de antes disso (sem o token)

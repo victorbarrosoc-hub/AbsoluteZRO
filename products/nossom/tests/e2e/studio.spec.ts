@@ -1,4 +1,4 @@
-import { test, expect, onlyWhenOpen } from './fixtures';
+import { test, expect, onlyWhenOpen, definirTema } from './fixtures';
 function waveFixture(seconds = 4, stereo = false) {
   const rate = 48000,
     channels = stereo ? 2 : 1,
@@ -47,7 +47,7 @@ test('landing, responsive navigation, functional demonstration and assistant', a
   await page.screenshot({ path: 'test-results/landing-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Ouvir demonstração' }).click();
   await expect(page.getByRole('button', { name: 'Pausar demonstração' })).toBeVisible();
-  await page.getByRole('button', { name: 'NOSSOM', exact: true }).click();
+  await page.getByRole('button', { name: 'Quasar', exact: true }).click();
   await page.getByRole('button', { name: 'Pausar demonstração' }).click();
   await page.route('**/api/ai/status', (r) =>
     r.fulfill({ json: { configured: false, authorized: true } }),
@@ -275,19 +275,22 @@ test('studio themes persist, responsive layouts fit and reduced motion pauses de
   page,
 }) => {
   await page.goto('/studio/inicio');
-  await page.getByLabel('Tema do estúdio').selectOption('dark');
-  await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', 'dark');
+  await definirTema(page, 'light');
   await page.reload();
-  await expect(page.getByLabel('Tema do estúdio')).toHaveValue('dark');
+  await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByRole('button', { name: 'Tema claro', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   const { default: AxeBuilder } = await import('@axe-core/playwright');
   for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByLabel('Tema do estúdio').selectOption(theme);
+    await definirTema(page, theme as 'light' | 'dark');
     // Audit settled colors, after the existing 200 ms theme transition.
     // nth(2): Meus projetos (Z e Início vêm antes).
     await expect(page.locator('.studio-sidebar nav > button').nth(2)).toHaveCSS(
       'color',
-      theme === 'light' ? 'rgb(101, 101, 107)' : 'rgb(180, 180, 186)',
+      theme === 'light' ? 'rgb(101, 101, 107)' : 'rgb(185, 198, 218)',
     );
     for (const width of [1440, 1000, 390]) {
       await page.setViewportSize({ width, height: 900 });

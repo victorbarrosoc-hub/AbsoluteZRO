@@ -75,6 +75,17 @@ async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, neg
 }
 
 describe('entrar', () => {
+  test('/eu sem sessão: 401 de sempre; com ?visitante=1 (o app), 200 entrou:false, sem pessoa', async () => {
+    const r = await pedir('/api/zro/eu')
+    assert.equal(r.status, 401)
+    const v = await pedir('/api/zro/eu?visitante=1')
+    assert.equal(v.status, 200)
+    const j = await v.json()
+    assert.equal(j.entrou, false)
+    assert.equal(j.configurado, true)
+    assert.equal(j.pessoa, undefined)
+  })
+
   test('entra, volta para o app e /eu mostra a pessoa (sem token da Absolute ZRO)', async () => {
     const r = await fluxo({ volta: '/app/#/ajustes' })
     assert.equal(r.destino, '/app/?zro=ok#/ajustes')
@@ -124,7 +135,7 @@ describe('conta única e direito de uso', () => {
   test('criar conta fora do endereço oficial leva o criar=1 junto', async () => {
     const r = await pedir('/api/zro/entrar?volta=/app/&criar=1', { headers: { 'x-forwarded-host': 'synquei-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
     assert.equal(r.status, 307)
-    assert.equal(r.headers.get('location'), 'https://synquei.vercel.app/api/zro/entrar?volta=%2Fapp%2F&criar=1')
+    assert.equal(r.headers.get('location'), 'https://synquei.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F&criar=1')
   })
 
   test('synquei fora de zro_products: entra, mas /eu diz sem acesso e aponta a Absolute ZRO', async () => {
@@ -234,7 +245,15 @@ describe('sessão', () => {
   test('endereço fora da lista: entrar manda para o site oficial antes de começar', async () => {
     const r = await pedir('/api/zro/entrar?volta=/app/', { headers: { 'x-forwarded-host': 'synquei-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
     assert.equal(r.status, 307)
-    assert.equal(r.headers.get('location'), 'https://synquei.vercel.app/api/zro/entrar?volta=%2Fapp%2F')
+    assert.equal(r.headers.get('location'), 'https://synquei.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F')
+  })
+
+  test('cada endereço cadastrado volta para o próprio retorno: o oficial e o de antes (o app instalado nele)', async () => {
+    for (const [host, origem] of [['synquei.absolutezro.com', 'https://synquei.absolutezro.com'], ['synquei.vercel.app', 'https://synquei.vercel.app']]) {
+      const r = await pedir('/api/zro/entrar?volta=/app/', { headers: { 'x-forwarded-host': host, 'x-forwarded-proto': 'https' } })
+      assert.equal(r.status, 302, host)
+      assert.equal(new URL(r.headers.get('location')).searchParams.get('redirect_uri'), `${origem}/api/zro/callback`, host)
+    }
   })
 })
 

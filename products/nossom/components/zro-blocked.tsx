@@ -29,7 +29,7 @@ export default function ZroBlocked({ email }: { email: string }) {
   }
   return (
     <main className="account-page zro-blocked-page">
-      <Link className="account-home" href="/" aria-label="NOSSOM página inicial">
+      <Link className="account-home" href="/" aria-label="Quasar página inicial">
         <Brand />
       </Link>
       <section className="account-form-panel">
@@ -37,7 +37,7 @@ export default function ZroBlocked({ email }: { email: string }) {
           <span className="account-avatar">
             <LockKeyhole size={22} />
           </span>
-          <h1>Sua conta Absolute ZRO ainda não tem acesso ao NOSSOM.</h1>
+          <h1>Sua conta Absolute ZRO ainda não tem acesso ao Quasar.</h1>
           <p>Peça a liberação a quem administra a sua organização. Depois, entre de novo.</p>
           <a className="button primary" href={ZRO_TOOLS_URL}>
             Ver na Absolute ZRO

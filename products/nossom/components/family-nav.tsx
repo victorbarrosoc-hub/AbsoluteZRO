@@ -1,4 +1,5 @@
-// Família Absolute ZRO no menu do estúdio: cada app com o próprio ícone e nome.
+// Família Absolute ZRO no menu do estúdio: cada app com o próprio ícone e nome, só o que está no ar (app não lançado
+// não aparece; Revela fica de fora até lançar).
 // Os ícones moram em /public (cada app publica sozinho). Abre em outra aba para não
 // interromper gravação nem tratamento em andamento; no app de Mac/Windows abre no navegador.
 
@@ -20,7 +21,7 @@ const FAMILY = [
   ...(MAESTRO_NA_FAMILIA
     ? [{ href: 'https://maestro.absolutezro.com', name: 'Maestro', icon: '/familia/maestro.svg' }]
     : []),
-  { href: 'https://revela.absolutezro.com', name: 'Revela', icon: '/familia/revela.svg' },
+  { href: 'https://relay.absolutezro.com', name: 'Relay', icon: '/familia/relay.svg' },
   { href: 'https://sobedesce.vercel.app', name: 'Sobedesce', icon: '/familia/sobedesce.svg' },
   { href: 'https://synquei.vercel.app', name: 'Synquei', icon: '/familia/synquei.svg' },
   { href: 'https://tpeasy.absolutezro.com', name: 'TPEasy', icon: '/familia/tpeasy.svg' },

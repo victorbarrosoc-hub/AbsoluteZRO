@@ -28,12 +28,14 @@ export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // zro.ia: o token também fala com a Z (a IA do ecossistema, /api/v1/ia), pelo repasse em api/zro/ia/*
 // zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set (api/_set.js).
 // zro.sons: os efeitos sonoros livres da Sonoplasta, pelo repasse /api/zro/sons/* (api/_sons.js).
+// zro.higgsfield: criar imagem e vídeo com a Higgsfield das Conexões, pelo repasse /api/zro/higgsfield (api/_higgsfield.js).
 // A Absolute ZRO de antes de um escopo recusa (invalid_scope): o callback refaz o pedido sem os mais novos, um passo por
-// vez (sem_sons, depois sem_set, por fim sem_ia). O login nunca quebra por causa de um escopo novo.
-export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set zro.sons'
+// vez (sem_hf, sem_sons, depois sem_set, por fim sem_ia). O login nunca quebra por causa de um escopo novo.
+export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set zro.sons zro.higgsfield'
 /** Os escopos do pedido, sem os que a Absolute ZRO recusou (cada passo tira também os mais novos). */
-export const escoposDo = ({ semSons = false, semSet = false, semIa = false } = {}) =>
-  ESCOPOS.replace(semSons || semSet || semIa ? / ?zro\.sons/ : '', '')
+export const escoposDo = ({ semHf = false, semSons = false, semSet = false, semIa = false } = {}) =>
+  ESCOPOS.replace(semHf || semSons || semSet || semIa ? / ?zro\.higgsfield/ : '', '')
+    .replace(semSons || semSet || semIa ? / ?zro\.sons/ : '', '')
     .replace(semSet || semIa ? / ?zro\.set/ : '', '')
     .replace(semIa ? / ?zro\.ia/ : '', '')
 export const SITE = 'https://aeon.absolutezro.com'
@@ -289,11 +291,13 @@ export function pessoaDosClaims(dados) {
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 30).map((p) => p.slice(0, 60)) : [],
     // o gate de lançamento do HUB para este produto (api/_release.js): 'allowed', 'released', 'closed' ou null
     release: estadoDaClaim(dados.zro_release),
+    // o mesmo gate para a NOSSOM: liga a separação de voz e instrumental (src/faixas.js) só para quem ela atende
+    nossom: estadoDaClaim(dados.zro_release, 'nossom'),
   }
 }
 
 /** O que vai para a sessão do app (cookie assinado): a cópia do perfil, sem token. */
-export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos, release: p.release ?? null })
+export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos, release: p.release ?? null, nossom: p.nossom ?? null })
 
 const tokensDe = (corpo) =>
   typeof corpo?.access_token === 'string' && corpo.access_token.length < 2048

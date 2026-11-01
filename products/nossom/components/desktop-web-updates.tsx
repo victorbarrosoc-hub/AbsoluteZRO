@@ -74,7 +74,7 @@ export default function DesktopWebUpdates({ blocked }: { blocked: boolean }) {
   if (!pending) return null;
   return (
     <aside className="desktop-web-update" role="status">
-      <strong>Uma melhoria da NOSSOM está pronta.</strong>
+      <strong>Uma melhoria do Quasar está pronta.</strong>
       <p>
         {blocked
           ? 'Vamos esperar sua gravação ou tratamento terminar.'

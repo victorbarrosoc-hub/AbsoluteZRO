@@ -342,7 +342,7 @@ export function Quadro(props: Props) {
                 onChange={(e) => setFiltro({ ...filtro, cliente: e.currentTarget.value })}
                 data-ativo={filtro.cliente !== "todos" || undefined}
               >
-                <option value="todos">Todos os clientes</option>
+                <option value="todos">Clientes</option>
                 <option value="sem">Sem cliente</option>
                 {clientes.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -358,7 +358,7 @@ export function Quadro(props: Props) {
                 onChange={(e) => setFiltro({ ...filtro, resp: e.currentTarget.value })}
                 data-ativo={filtro.resp !== "todos" || undefined}
               >
-                <option value="todos">Todas as pessoas</option>
+                <option value="todos">Pessoas</option>
                 <option value="meus">Meus cards</option>
                 <option value="ninguem">Sem responsável</option>
                 {pessoas.map((p) => (

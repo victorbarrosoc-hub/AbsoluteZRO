@@ -1,10 +1,11 @@
-// Monta publico/ para a Vercel (aeon.absolutezro.com). Fechado ao público (api/_release.js, o padrão): só o site
-// institucional (página inicial, entrar, "Em desenvolvimento", site/, marca/, vendor/ e os módulos que desenham a
-// marca em src/); o editor (app/, o resto de src/, presets/) fica fora do estático e só sai pela função api/app.js para
-// a conta liberada; instalar.sh e instalar.ps1 viram um recado (sem download). Com RELEASE=released, tudo como antes e a
-// página inicial do lançamento: os trechos marcados com <!-- lancamento:X --> no index.html trocam pelas peças de
-// lancamento/pagina.html (Baixar no topo, a seção #baixar no lugar de "Em desenvolvimento", a Z "No AEON", Quanto custa).
-// Só arquivos de site: nada de desktop/, testes, scripts ou node_modules. Rode depois do npm run vendor.
+// Monta publico/ para a Vercel (aeon.absolutezro.com). Fechado ao público (api/_release.js, o padrão): só a página
+// neutra (no lugar da inicial, da entrada e do 404) e vendor/ (bibliotecas de terceiros, fonte, tokens e a Z, sem marca
+// do app); site/, marca/, o editor (app/, src/, presets/) ficam fora do estático e só saem pela função api/app.js para a
+// conta liberada (revisão de 01/11/2026: nada de nome ou arte do AEON para o público); instalar.sh e instalar.ps1 viram
+// um recado (sem download). Com RELEASE=released, tudo como antes e a página inicial do lançamento: os trechos marcados
+// com <!-- lancamento:X --> no index.html trocam pelas peças de lancamento/pagina.html (Baixar no topo, a seção #baixar no
+// lugar de "Em desenvolvimento", a Z "No AEON", Quanto custa). Só arquivos de site: nada de desktop/, testes, scripts ou
+// node_modules. Rode depois do npm run vendor.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,6 +15,10 @@ import { desktopAberto, release } from '../api/_release.js'
 export const SITE = ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'site', 'marca', 'vendor']
 /** Os módulos com que o site desenha a marca (src/marca.js e o que ele importa). Nada do editor. */
 export const MARCA = ['src/produto.js', 'src/marca.js', 'src/letras.js', 'src/familia.js']
+/** Fechado, só o que não tem marca do app: a página neutra e as bibliotecas de terceiros. */
+export const FECHADO = ['em-desenvolvimento.html', 'vendor']
+/** O 404 do site (a Vercel serve publico/404.html para o que não existe): a página neutra, aberto ou fechado. */
+export const PAGINA_404 = '404.html'
 /** Só com RELEASE=released: o editor no navegador e os instaladores pelo Terminal. */
 export const ABERTO = ['instalar.sh', 'instalar.ps1', 'app', 'src', 'presets']
 
@@ -63,7 +68,7 @@ export const RECADO_WEB = {
   'instalar.ps1': `# AEON (by Absolute ZRO): o app de computador chega em breve. Este comando ainda não instala nada.\nWrite-Host 'O app de computador do AEON chega em breve.'\nWrite-Host 'Use no navegador (Chrome ou Edge): https://aeon.absolutezro.com/app/'\n`,
 }
 
-export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...SITE, ...MARCA])
+export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...FECHADO])
 
 /** Copia os itens do estado para `saida` (apagada antes). Devolve o estado e a lista. */
 export function publicar({ raiz = new URL('..', import.meta.url), saida = new URL('publico/', raiz), estado = release(), computador = desktopAberto() } = {}) {
@@ -77,9 +82,10 @@ export function publicar({ raiz = new URL('..', import.meta.url), saida = new UR
     if (statSync(de).isFile()) mkdirSync(dirname(fileURLToPath(para)), { recursive: true })
     cpSync(de, para, { recursive: true })
   }
+  const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
+  writeFileSync(new URL(PAGINA_404, saida), neutra)
   if (estado !== 'released') {
     for (const [nome, texto] of Object.entries(RECADO)) writeFileSync(new URL(nome, saida), texto)
-    const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
     for (const nome of NEUTRAS) writeFileSync(new URL(nome, saida), neutra)
   } else {
     const pecas = pecasDoLancamento(readFileSync(new URL('lancamento/pagina.html', raiz), 'utf8'), { computador })

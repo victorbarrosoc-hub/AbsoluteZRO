@@ -35,7 +35,7 @@ export const linkEntrar = (criar = false) => `/api/zro/entrar?volta=${encodeURIC
 /** Resposta de /api/zro/eu → estado da conta. */
 export function lerEu(status, j) {
   if (status === 200 && j && j.ok && j.pessoa) Object.assign(C, { estado: 'logado', pessoa: j.pessoa, acesso: j.acesso === true })
-  else if (status === 401 && j && j.configurado) Object.assign(C, { estado: 'anonimo', pessoa: null, acesso: false })
+  else if ((status === 401 || (status === 200 && j && j.entrou === false)) && j && j.configurado) Object.assign(C, { estado: 'anonimo', pessoa: null, acesso: false })
   else Object.assign(C, { estado: 'sem', pessoa: null, acesso: false })
   return C
 }
@@ -43,7 +43,9 @@ export function lerEu(status, j) {
 /** Relê /api/zro/eu (no desktop, o app relê o perfil na Absolute ZRO) e mostra o recado da volta do login. */
 async function lerConta(aviso) {
   try {
-    const r = await fetch('/api/zro/eu', { cache: 'no-store', credentials: 'same-origin', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) })
+    // ?visitante=1: sem sessão o site responde 200 { entrou: false } (nada de 401 no console); o desktop e o site de
+    // antes respondem 401, e os dois valem
+    const r = await fetch('/api/zro/eu?visitante=1', { cache: 'no-store', credentials: 'same-origin', headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) })
     lerEu(r.status, (r.headers.get('content-type') || '').includes('application/json') ? await r.json() : null)
   } catch {
     lerEu(0, null)

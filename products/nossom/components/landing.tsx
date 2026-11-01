@@ -19,6 +19,7 @@ import {
   MessageSquare,
   CircleCheck,
   Sparkle,
+  AudioLines,
 } from 'lucide-react';
 import CinematicRibbon from './cinematic-ribbon';
 import { Brand } from './brand';
@@ -27,6 +28,7 @@ import DemoPlayer from './demo-player';
 import PlanCards from './plan-cards';
 import InstallApp from './install-app';
 import AccountMenu from './account-menu';
+import StudioLink from './studio-link';
 import DesktopUpdates from './desktop-updates';
 import SiteMotion from './site-motion';
 import SoundToggle from './sound-toggle';
@@ -102,9 +104,9 @@ const faqs = [
   ],
 ];
 /**
- * Página inicial. Com `closed` (NOSSOM fechado ao público, 28/10/2026) ela só apresenta o projeto: nada de
- * abrir, entrar, baixar, instalar ou assinar ("Conhecer o projeto" leva à seção de como funciona), a Z fica
- * "chegando" e sem link, e planos e preços somem.
+ * Página inicial. Com `closed` (NOSSOM fechado ao público) só a conta liberada no HUB chega aqui (o proxy manda o
+ * resto para a Absolute ZRO), então a página age como nos outros apps: a conta no topo e "Abrir o estúdio". Planos,
+ * download e instalação ficam de fora até o lançamento.
  */
 export default function Landing({
   zroIa = false,
@@ -135,7 +137,7 @@ export default function Landing({
       <header className="ns-header">
         <div className="ns-wrap ns-nav lg">
           <span className="nav-progress" aria-hidden="true" />
-          <Link href="/" aria-label="NOSSOM início">
+          <Link href="/" aria-label="Quasar início">
             <Brand />
           </Link>
           <LayoutGroup id="site-nav">
@@ -168,6 +170,11 @@ export default function Landing({
                   {label}
                 </a>
               ))}
+              {closed && (
+                <StudioLink href="/studio" className="nav-apps" onClick={() => setMenu(false)}>
+                  <AudioLines size={15} /> Abrir o estúdio
+                </StudioLink>
+              )}
               {!closed && (
                 <Link
                   href="/apps"
@@ -195,18 +202,10 @@ export default function Landing({
           </LayoutGroup>
           <div className="ns-nav-actions">
             <DesktopUpdates />
-            {closed ? (
-              <a href="#produto" className="button primary small">
-                Conhecer o projeto <ArrowRight size={14} />
-              </a>
-            ) : (
-              <>
-                <AccountMenu />
-                <Link href="/studio" className="button primary small">
-                  Começar grátis <ArrowRight size={14} />
-                </Link>
-              </>
-            )}
+            <AccountMenu familia />
+            <StudioLink href="/studio" className="button primary small">
+              {closed ? 'Abrir o estúdio' : 'Começar grátis'} <ArrowRight size={14} />
+            </StudioLink>
             <button
               className="icon-button ns-menu"
               onClick={() => setMenu(!menu)}
@@ -236,15 +235,9 @@ export default function Landing({
               </h1>
               <p>Um estúdio de áudio inteiro, com IA quando você quiser.</p>
               <div className="ns-actions">
-                {closed ? (
-                  <a href="#produto" className="button primary">
-                    Conhecer o projeto <ArrowRight size={17} />
-                  </a>
-                ) : (
-                  <Link href="/studio" className="button primary">
-                    Abrir o estúdio
-                  </Link>
-                )}
+                <StudioLink href="/studio" className="button primary">
+                  Abrir o estúdio
+                </StudioLink>
                 <a href="#experimente" className="home-listen-link">
                   <span>
                     <Play size={13} fill="currentColor" />
@@ -252,12 +245,6 @@ export default function Landing({
                   Ouvir a diferença
                 </a>
               </div>
-              {closed && (
-                <div className="home-hero-proof">
-                  <Sparkle size={15} />
-                  <span>Em desenvolvimento. Em breve, no Absolute ZRO.</span>
-                </div>
-              )}
             </Reveal>
           </div>
           {/* Proposta 2 (titular, 01/11/2026): as linhas de luz atravessam a página, embaixo do título. */}
@@ -282,7 +269,7 @@ export default function Landing({
         )}
         {!closed && (
           <section className="home-downloads ns-wrap" id="baixar" aria-labelledby="baixar-title">
-            <h2 id="baixar-title">Leve o NOSSOM com você.</h2>
+            <h2 id="baixar-title">Leve o Quasar com você.</h2>
             <p>No computador ou no celular, com a mesma conta.</p>
             {/* Central de apps da Absolute ZRO: o jeito recomendado de instalar; o download direto continua abaixo. */}
             <div className="lg zro-central">
@@ -290,7 +277,7 @@ export default function Landing({
               <div>
                 <strong>Instale pelo Absolute ZRO</strong>
                 <small>
-                  Um app só para instalar, abrir e atualizar o NOSSOM e as outras ferramentas, com a
+                  Um app só para instalar, abrir e atualizar o Quasar e as outras ferramentas, com a
                   mesma conta.
                 </small>
               </div>
@@ -298,7 +285,7 @@ export default function Landing({
                 Baixar o Absolute ZRO
               </a>
             </div>
-            <p className="zro-central-ou">Ou baixe só o NOSSOM:</p>
+            <p className="zro-central-ou">Ou baixe só o Quasar:</p>
             <div className="home-downloads-grid">
               <Link href="/apps" className="lg home-download">
                 <Laptop size={26} />
@@ -325,7 +312,7 @@ export default function Landing({
             </div>
           </section>
         )}
-        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado (e o NOSSOM aberto), ela
+        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado (e o Quasar aberto), ela
             abre a aba da Z no estúdio (repasse em /api/zro/ia); fechado ao público ou sem o login, a seção diz
             que está chegando, sem link nenhum. */}
         <section className="home-z ns-wrap" id="z" aria-labelledby="z-title">
@@ -351,7 +338,7 @@ export default function Landing({
             <div className="home-z-copy">
               <p className="z-selo">
                 <i aria-hidden="true" />
-                {zroIa ? 'Já no NOSSOM' : 'Chegando ao NOSSOM'}
+                {zroIa ? 'Já no Quasar' : 'Chegando ao Quasar'}
               </p>
               <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
               <p>
@@ -413,7 +400,7 @@ export default function Landing({
       </main>
       <footer className="ns-footer ns-wrap">
         <div>
-          <Link href="/" aria-label="NOSSOM início">
+          <Link href="/" aria-label="Quasar início">
             <Brand />
           </Link>
           <p>Tudo acontece no som.</p>
@@ -432,7 +419,7 @@ export default function Landing({
               Abrir estúdio <ArrowUpRight size={13} />
             </Link>
           )}
-          <span>© {new Date().getFullYear()} NOSSOM</span>
+          <span>© {new Date().getFullYear()} Quasar</span>
         </nav>
       </footer>
     </div>

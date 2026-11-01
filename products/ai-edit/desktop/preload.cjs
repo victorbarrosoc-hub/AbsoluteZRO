@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('aiEditDesktop', {
   permitir: chamar('midia:permitir'),
   sobedesce: chamar('sobedesce:abrir'),
   escolherPasta: chamar('saida:pasta'),
+  arquivoNaPasta: chamar('saida:arquivoNaPasta'),
   gravar: chamar('saida:gravar'),
   escolherArquivo: chamar('saida:arquivo'),
   arquivo: { abrir: chamar('arquivo:abrir'), escrever: chamar('arquivo:escrever'), fechar: chamar('arquivo:fechar') },

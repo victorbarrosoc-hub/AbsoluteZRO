@@ -1,6 +1,6 @@
 import { origemDoPedido } from "@/lib/http";
 import { erroGoogle, exigirReferencias, falha, MSG, ok } from "@/lib/referencias/api";
-import { criarColecao, ErroColecao, listarColecoes, publica } from "@/lib/referencias/colecoes";
+import { criarColecao, ErroColecao, listarColecoes, publica, recuperarAoListar } from "@/lib/referencias/colecoes";
 import { validarNome } from "@/lib/referencias/texto";
 import { lerJson } from "@/lib/http";
 import { origemPublica } from "@/lib/site";
@@ -10,6 +10,8 @@ export async function GET(req: Request) {
   const atual = await exigirReferencias(req, { mutacao: false });
   if (atual instanceof Response) return atual;
   const origem = origemPublica(origemDoPedido(req.headers, req.url));
+  // Coleções que estão no Drive e sumiram do banco (Drive desconectado e ligado de novo) voltam sozinhas.
+  await recuperarAoListar(atual.usuario.id);
   const { linhas, porColecao, raiz, raizes } = await listarColecoes(atual.usuario.id);
   return ok({ raiz, raizes, colecoes: linhas.map((l) => publica(l, origem, porColecao.get(l.id) ?? 0)) });
 }

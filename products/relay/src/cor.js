@@ -146,7 +146,7 @@ export function assarParaFfmpeg(receita, look = null, faixa = 'tv', pontos = PON
   const leCodigo = Boolean(receita?.entrada) || receita?.look?.sobre === 'log'
   const codigo = faixa === 'pc' || !leCodigo ? (v) => v : (v) => (v * 876 + 64) / 1023
   const lut = assar((r, g, b) => f(codigo(r), codigo(g), codigo(b)), pontos)
-  return escreverCube(lut, `Relay · ${descreverReceita(receita)}`, ['Relay: receita de cor da Revela, RGB de entrada já na faixa cheia'])
+  return escreverCube(lut, `Relay · ${descreverReceita(receita)}`, ['Relay: receita de cor, RGB de entrada já na faixa cheia'])
 }
 
 /** Lê o .cube de um look (texto). Erros em português, com o motivo. */

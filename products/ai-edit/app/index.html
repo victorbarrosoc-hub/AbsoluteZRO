@@ -44,6 +44,15 @@
         <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
         <symbol id="i-apps" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18" cy="12" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></symbol>
         <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
+        <symbol id="i-voltar" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6" /></symbol>
+        <symbol id="i-avancar" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6" /></symbol>
+        <symbol id="i-clipes" viewBox="0 0 24 24"><rect x="3" y="8" width="7" height="8" rx="1.5" /><rect x="14" y="8" width="7" height="8" rx="1.5" /><path d="M5 3.5h3v2.5l-1.5 1.5L5 6zM16 3.5h3v2.5l-1.5 1.5L16 6z" /></symbol>
+        <symbol id="i-capitulos" viewBox="0 0 24 24"><path d="M4 6.5h2M9 6.5h11M4 12h2M9 12h11M4 17.5h2M9 17.5h11" /></symbol>
+        <symbol id="i-ia" viewBox="0 0 24 24"><path d="M12 3.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5z" /><path d="M18.5 15.5c.25 1.6 1.05 2.4 2.5 2.6-1.45.25-2.25 1.05-2.5 2.5-.25-1.45-1.05-2.25-2.5-2.5 1.45-.2 2.25-1 2.5-2.6z" /></symbol>
+        <symbol id="i-foto" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="9" cy="10" r="1.6" /><path d="M4.5 17l5-4.5 3.5 3 2.5-2 4 3.5" /></symbol>
+        <symbol id="i-tabela" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M3.5 9.5h17M3.5 14.5h17M10 9.5v10" /></symbol>
+        <symbol id="i-separar" viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 2-7 2 4h6" /><path d="M14 5.5h6M14 18.5h6" /></symbol>
+        <symbol id="i-pecas" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5" /><rect x="3" y="15" width="5" height="5" rx="1.2" /><rect x="9.5" y="15" width="5" height="5" rx="1.2" /><rect x="16" y="15" width="5" height="5" rx="1.2" /><path d="M5.5 9v6M12 9v6M18.5 9v6" /></symbol>
       </defs>
     </svg>
 
@@ -112,6 +121,7 @@
                 <button role="radio" data-valor="preciso" aria-checked="false">Preciso</button>
               </div>
               <button class="glass-btn" id="selecionarMidia">Selecionar</button>
+              <button class="glass-btn" id="criarIA" hidden title="Imagens e vídeos com a Higgsfield, direto na Mídia"><svg><use href="#i-ia" /></svg> Criar com IA</button>
               <button class="glass-btn" id="maisMidia">Adicionar</button>
               <button class="glass-btn glass-btn--ink" id="analisar">Analisar</button>
               <span class="contagem-sel" id="contaSel" aria-live="polite" hidden></span>
@@ -164,6 +174,7 @@
                 <button role="tab" data-aba="inspector" aria-selected="true">Inspector</button>
                 <button role="tab" data-aba="texto" aria-selected="false">Texto</button>
                 <button role="tab" data-aba="sons" aria-selected="false">Sons</button>
+                <button role="tab" data-aba="marcadores" aria-selected="false">Marcadores</button>
                 <button role="tab" data-aba="historico" aria-selected="false">Histórico</button>
               </div>
               <section class="aba" data-aba="inspector" id="inspector" aria-label="Inspector"></section>
@@ -199,6 +210,7 @@
                 <ol class="sons-lista" id="sonsLista" aria-live="polite"></ol>
                 <p class="apoio sons-rodape" id="sonsRodape" title="Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.">Sons livres para uso comercial, com crédito.</p>
               </section>
+              <section class="aba" data-aba="marcadores" id="marcadores" hidden aria-label="Marcadores"></section>
               <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
             </aside>
           </div>
@@ -210,6 +222,19 @@
       <section class="pagina" data-pagina="entrega" aria-label="Entrega">
         <div class="entrega">
           <h1 class="titulo"><span class="fino">Leve para o seu editor.</span> <span class="forte">Ou saia com o vídeo pronto.</span></h1>
+          <div class="modo-entrega" id="modoEntrega" role="radiogroup" aria-label="Como entregar" hidden>
+            <button type="button" role="radio" data-modo="inteiro" aria-checked="true">Inteiro</button>
+            <button type="button" role="radio" data-modo="pecas" aria-checked="false" title="Uma peça por marcador, até o próximo">Em peças</button>
+          </div>
+          <div class="pecas" id="pecas" hidden>
+            <ol class="pecas-lista" id="pecasLista" aria-label="Seções"></ol>
+            <div class="pecas-formatos" id="pecasFormatos" role="group" aria-label="Formatos"></div>
+            <div class="pecas-opcoes">
+              <label class="campo pecas-nome"><span>Nome</span><input type="text" id="pecasModelo" maxlength="80" spellcheck="false" autocomplete="off" title="{n} número · {nome} da seção · {formato} · {projeto} · {duracao}" /></label>
+              <label class="campo pecas-margem"><span>Margem</span><select id="pecasMargem" title="Um pouco antes e depois de cada seção"><option value="0">Sem</option><option value="0.5">½ s</option><option value="1">1 s</option><option value="2">2 s</option></select></label>
+            </div>
+            <div class="pecas-rodape"><span class="apoio" id="pecasResumo"></span><button type="button" class="link" id="pecasJuntar">Juntar em outra ordem</button></div>
+          </div>
           <div class="destinos" id="destinos">
             <label class="destino"><input type="checkbox" value="xmeml" checked /><span class="destino-nome">Premiere Pro</span><span class="destino-ext">.xml</span></label>
             <label class="destino"><input type="checkbox" value="fcpxml" checked /><span class="destino-nome">Final Cut Pro</span><span class="destino-ext">.fcpxml</span></label>
@@ -246,6 +271,7 @@
         <div class="controles">
           <button class="icone-btn" id="tocar" title="Tocar (espaço)" aria-label="Tocar"><svg><use href="#i-play" /></svg></button>
           <span class="tempo" id="tempo">0:00 / 0:00</span>
+          <button class="icone-btn" id="criarDoQuadro" hidden title="Criar com IA a partir deste quadro" aria-label="Criar com IA a partir deste quadro"><svg><use href="#i-ia" /></svg></button>
         </div>
       </div>
     </div>
@@ -286,6 +312,8 @@
         </div>
       </form>
     </dialog>
+
+    <dialog class="folha folha-criar" id="folhaCriar" aria-labelledby="criarTitulo"></dialog>
 
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
     <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />

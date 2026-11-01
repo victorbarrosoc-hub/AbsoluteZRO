@@ -36,10 +36,11 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
               </Link>
             ) : (
               <>
-                <Link className="capsule__login" href="/entrar">
+                {/* Entrar em vidro claro e Criar conta em vidro escuro, também no celular (pedido do titular, 01/11/2026) */}
+                <Link className="glass-btn glass-btn--small capsule__login" href="/entrar">
                   Entrar
                 </Link>
-                <Link className="zro-btn zro-btn--primary zro-btn--small" href="/criar-conta">
+                <Link className="glass-btn glass-btn--ink glass-btn--small capsule__criar" href="/criar-conta">
                   Criar conta
                 </Link>
               </>

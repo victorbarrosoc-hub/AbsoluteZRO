@@ -18,6 +18,13 @@ test('sem login neste lugar (desktop, offline): nada de conta', () => {
   assert.equal(cartaoConta(), '')
 })
 
+test('visitante (200 entrou:false, o /eu?visitante=1) é o mesmo "sem sessão" do 401', () => {
+  lerEu(200, { ok: false, configurado: true, entrou: false })
+  assert.equal(C.estado, 'anonimo')
+  lerEu(200, { ok: false, entrou: false })
+  assert.equal(C.estado, 'sem', 'sem configurado: sem conta, como antes')
+})
+
 test('sem sessão: Entrar com Absolute ZRO e Criar conta (prompt=create)', () => {
   lerEu(401, { ok: false, configurado: true })
   for (const html of [linhaConta(), cartaoConta()]) {

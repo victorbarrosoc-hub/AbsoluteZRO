@@ -139,7 +139,7 @@ export const Z_APPS = [
   { id: 'relay', nome: 'Relay' },
   { id: 'finishing', nome: 'Revela' },
   { id: 'ai-edit', nome: 'AEON' },
-  { id: 'nossom', nome: 'NOSSOM' },
+  { id: 'nossom', nome: 'Quasar Audio Lab' },
   { id: 'carro-do-freela', nome: 'Carro do Freela' },
 ] as const
 export type ZAppId = (typeof Z_APPS)[number]['id']
@@ -340,6 +340,12 @@ export async function gastoDoLab(db: Database, auth: Authenticated | null): Prom
 }
 
 /**
+ * Chegou ao teto? O limite já bloqueia (`>=`, revisão P4): com teto 0 nada passa, e quem chega exatamente ao teto não
+ * faz mais uma chamada. Folga de 1e-9 para o arredondamento. A mesma conta no laboratório e nos apps da família.
+ */
+const chegouAoTeto = (g: ZGasto, estimativa = 0) => g.teto != null && g.hoje + estimativa >= g.teto - 1e-9
+
+/**
  * Antes de qualquer chamada paga. Sem teto = bloqueado (regra das quotas). `estimativa`: o custo previsto desta
  * chamada (quando dá para saber antes, como voz e transcrição); a resposta do Claude conta depois, pelo uso real.
  */
@@ -347,7 +353,7 @@ export async function conferirTeto(db: Database, auth: Authenticated | null, est
   const a = adminDoLab(auth)
   const gasto = await comoAdmin(db, a, lerGasto)
   if (gasto.teto == null) throw new DomainError('quota_not_configured', 'Defina o teto de gasto por dia do laboratório antes de testar.')
-  if (gasto.hoje + estimativa > gasto.teto + 1e-9)
+  if (chegouAoTeto(gasto, estimativa))
     throw new DomainError('quota_exceeded', 'O teto de hoje do laboratório acabou. Ele volta amanhã, ou suba o teto.', {
       hoje: Number(gasto.hoje.toFixed(4)),
       teto: gasto.teto,
@@ -368,7 +374,7 @@ export async function registrarUso(db: Database, a: ZLabAdmin, u: ZUso): Promise
 export async function conferirTetoDoSistema(db: Database): Promise<ZGasto> {
   const gasto = await db.asSystem('z: teto do dia (app da família)', lerGasto)
   if (gasto.teto == null) throw new DomainError('quota_not_configured', 'O teto de gasto por dia da Z não foi definido.')
-  if (gasto.hoje > gasto.teto + 1e-9) throw new DomainError('quota_exceeded', 'A Z chegou ao teto de gasto de hoje. Ela volta amanhã.')
+  if (chegouAoTeto(gasto)) throw new DomainError('quota_exceeded', 'A Z chegou ao teto de gasto de hoje. Ela volta amanhã.')
   return gasto
 }
 

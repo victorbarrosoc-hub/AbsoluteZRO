@@ -23,7 +23,10 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   (Looks do Relay: abre o Comparar com a pasta dos looks e a do Drive; o link nunca traz caminho). Mudou o formato, mude o leitor do outro lado
   e o teste dos dois (`products/synquei`, `packages/integrations`).
 - Número de velocidade na página ou no anúncio só com medição (`scripts/prova-velocidade.mjs`, docs/PROVA-VELOCIDADE.md).
-- Conta nova só pela Absolute ZRO (`prompt=create`); o Google é só a conexão do Drive.
+- Conta nova só pela Absolute ZRO (`prompt=create`); o Google é só a conexão do Drive. **/entrar só tem "Entrar com
+  Absolute ZRO"** (titular, 01/11/2026): o Google de entrar e o e-mail e senha da conta antiga só aparecem com
+  `?erro=zro_email_em_uso` (conta de antes, mesmo e-mail, sem vínculo: `lib/zro/contas.ts` nunca liga pelo e-mail
+  sozinha) ou erro de senha/Google (`pedeContaAntiga`), para a pessoa entrar uma vez e ligar. As rotas antigas ficam.
 - **Embutido nas plataformas** (30/10/2026): `/app/?no=carro` (porta-malas do Carro do Freela), `/app/?no=maestro`
   (aba Arquivos do Maestro) e `/app/?no=relay&modo=escolher` ("Escolher no Drive" do Relay: o toque no vídeo vira
   `escolhido`, e `lib/embutido-relay.js` atende `ler`/`enviar` pelo canal que o Relay manda; protocolo em
@@ -42,6 +45,8 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   volte com ele): `src/version.js` só confere `/baixar/versao` e avisa ("Atualização disponível · Atualizar na Absolute
   ZRO", notificação uma vez por build), e `src/central.js` abre `absolutezro://apps/sobedesce?acao=atualizar` (sem a
   central, `https://absolutezro.com/baixar`). O site não oferece instalador: "Use no computador com a Absolute ZRO"
-  (`web/src/components/central-zro.tsx`); `/baixar/*` e `instalar.*` seguem no ar, fora da interface.
+  (`web/src/components/central-zro.tsx`). Desde 01/11/2026 `/baixar/mac` e `/baixar/windows` levam para
+  `https://absolutezro.com/baixar` (só o `?build=N` do "Atualizar" dos apps antigos ainda baixa) e `instalar.*` viraram
+  um recado sem download (no navegador, vão para a central); `/baixar/versao` continua (é o aviso dos apps).
 - O build do desktop baixa o SDK da Blackmagic com o segredo `BRAW_SDK_CADASTRO`; se a Blackmagic recusar (400), é o
   cadastro, não o código.

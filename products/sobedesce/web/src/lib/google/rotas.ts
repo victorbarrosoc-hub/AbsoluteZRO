@@ -7,13 +7,14 @@ import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/li
 import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
+import { recuperarColecoes } from "@/lib/referencias/colecoes";
 import { cookieSeguro } from "@/lib/site";
 import { ESCOPOS_ENTRAR, googleConfigurado, redirectUri, type ModoDrive } from "./config";
 import { donoDaContaGoogle, vincularConta } from "./contas";
 import { chaveConfigurada } from "./cripto";
 import { abrirEstado, COOKIE_OAUTH, DURACAO_OAUTH_S, novoState, selarEstado, stateConfere, type ModoGoogle } from "./estado";
-import { acessoDoEscopo, perfil, pkce, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
-import { pedidoParaConectar, registrarSeTotal } from "./vagas";
+import { acessoDoEscopo, perfil, pkce, revogar, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
+import { driveInteiroPermitido, pedidoParaConectar, recusarDriveInteiro, registrarSeTotal } from "./vagas";
 
 /** Junta um parâmetro a um caminho interno que talvez já tenha "?". */
 export function comParametro(caminho: string, chave: string, valor: string): string {
@@ -104,11 +105,19 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual || atual.usuario.id !== estado.usuarioId) return ir(comParametro("/entrar", "volta", volta));
     if (!acesso) return falhar("google_sem_drive");
+    // `drive` que não foi pedido (escopo trocado na URL do Google) ou de conta Google nova depois da vaga usada: não
+    // guarda o token, não dá vaga à pessoa e devolve a concessão ao Google (revisão M1/M2).
+    if (acesso === "total" && !(await driveInteiroPermitido(atual.usuario.id, quem.sub, estado.pedido)))
+      return falhar(await recusarDriveInteiro(atual.usuario.id, quem.sub, quem.email, tokens.refresh ?? tokens.acesso, revogar));
     if (!tokens.refresh) return falhar("google_erro");
     const r = await vincularConta(atual.usuario.id, quem, { ...tokens, refresh: tokens.refresh });
     // O Google já contou a vaga quando deu o `drive`, gravando ou não aqui.
     await registrarSeTotal(tokens.escopo, quem.sub, quem.email, r.ok ? atual.usuario.id : null);
     if (!r.ok) return falhar(r.erro);
+    // Drive (re)conectado: as coleções que já estão nele voltam para as Referências, sem segurar o redirect.
+    const usuarioId = atual.usuario.id;
+    const contaGoogleId = r.conta.id;
+    depois(() => recuperarColecoes(usuarioId, { contaGoogleId, forcar: true }));
     // Pediu o Drive inteiro e voltou só com drive.file: conectou, mas em Arquivos escolhidos (a tela diz).
     if ((estado.pedido ?? "total") === "total" && acesso === "arquivos") return ir(comParametro(volta, "google", "escolhidos"));
     return ir(comParametro(volta, "google", "ok"));

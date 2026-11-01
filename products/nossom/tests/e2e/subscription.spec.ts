@@ -1,4 +1,4 @@
-import { test, expect, signInExisting, onlyWhenOpen } from './fixtures';
+import { test, expect, signInExisting, onlyWhenOpen, definirTema } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 // Runs against the local Stripe double in scripts/test-server.mjs: Checkout, signed webhooks
 // and the customer portal. No real payment provider is contacted.
@@ -7,7 +7,7 @@ test('a person subscribes by card, sees the plan only after Stripe confirms, and
 }) => {
   onlyWhenOpen();
   await page.goto('/studio/planos');
-  const plans = page.getByRole('region', { name: 'Planos da NOSSOM' });
+  const plans = page.getByRole('region', { name: 'Planos do Quasar' });
   await expect(plans.getByText(/Planos pagos são cobrados todo mês no cartão/)).toBeVisible();
   await expect(plans.getByRole('link', { name: /Solicitar ativação/ })).toHaveCount(0);
   await plans.getByRole('button', { name: 'Assinar Essencial' }).click();
@@ -45,7 +45,7 @@ test('the homepage sends paid plans to the account, where checkout starts after 
   const page = await browser.newPage();
   await page.goto('/');
   const link = page
-    .getByRole('region', { name: 'Planos da NOSSOM' })
+    .getByRole('region', { name: 'Planos do Quasar' })
     .getByRole('link', { name: 'Assinar Studio' });
   await expect(link).toHaveAttribute('href', '/studio/planos?plano=studio');
   await link.click();
@@ -65,7 +65,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
   await expect(page.locator('.plan-summary')).toContainText('min disponíveis neste mês');
   await expect(
     page
-      .getByRole('region', { name: 'Planos da NOSSOM' })
+      .getByRole('region', { name: 'Planos do Quasar' })
       .getByRole('button', { name: 'Assinar Studio' }),
   ).toBeVisible();
   // So do the sidebar, the account menu and the account settings.
@@ -88,7 +88,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
   await expect(page.locator('.plan-summary')).toBeVisible();
   // Readable in both themes.
   for (const theme of ['light', 'dark']) {
-    await page.getByLabel('Tema do estúdio', { exact: true }).selectOption(theme);
+    await definirTema(page, theme as 'light' | 'dark');
     expect(
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
         .violations,
@@ -103,7 +103,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
 test('the administrator also reaches the plans, as customers see them, without losing unlimited access', async ({
   page,
 }) => {
-  const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
+  const credentials = { email: 'adm@example.test', password: 'test-only-password', admin: true };
   await signInExisting(page.request, { ...credentials, name: 'Administrador' });
   await page.goto('/studio/projetos');
   await page
@@ -113,7 +113,7 @@ test('the administrator also reaches the plans, as customers see them, without l
   await expect(page).toHaveURL(/\/studio\/planos$/);
   await expect(page.locator('.plan-summary')).toContainText('ADM · Ilimitado');
   await expect(page.getByText(/Visão do cliente/)).toBeVisible();
-  const plans = page.getByRole('region', { name: 'Planos da NOSSOM' });
+  const plans = page.getByRole('region', { name: 'Planos do Quasar' });
   await expect(plans.locator('.plan-choice')).toHaveCount(3);
   await expect(plans.getByText('Seu plano')).toHaveCount(0);
   await page.goto('/studio/conta');

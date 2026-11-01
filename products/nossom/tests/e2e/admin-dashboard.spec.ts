@@ -7,7 +7,7 @@ test('administrator manages a plan in a wide, responsive dashboard; ordinary use
   await expect(page.getByText('Acesso restrito ao administrador.', { exact: true })).toBeVisible();
   expect((await page.request.get('/api/admin')).status()).toBe(403);
   expect((await page.request.get('/api/admin/billing')).status()).toBe(403);
-  const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
+  const credentials = { email: 'adm@example.test', password: 'test-only-password', admin: true };
   await signInExisting(page.request, { ...credentials, name: 'Administrador' });
   const data = {
     plans: [

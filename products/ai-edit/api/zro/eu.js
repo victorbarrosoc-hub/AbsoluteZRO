@@ -8,7 +8,7 @@
 // regrava a cópia da sessão. Nome, e-mail e foto se editam só na conta (`conta`, que abre fora do app). A releitura
 // traz também a claim zro_release: liberação tirada no HUB vira 403 na abertura seguinte.
 
-import { HUB_INICIO, liberado, PAGINA_FECHADO } from '../_release.js'
+import { HUB_INICIO, liberado, nossomAberta, PAGINA_FECHADO } from '../_release.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_TOKENS, CONTA_S, decifrar, emissor, enderecoDaZro, FERRAMENTAS, json, lerCookie, relerPerfil, selar, sessaoDe, temAcesso, ZroErro } from '../_zro.js'
 
 export default async function eu(req, res) {
@@ -52,6 +52,8 @@ export default async function eu(req, res) {
     {
       ok: true,
       acesso: temAcesso(produtos),
+      // a separação de voz e instrumental pela NOSSOM aparece só para quem a NOSSOM atende (o gate dela no HUB)
+      irmaos: { nossom: nossomAberta(c) },
       ferramentas: FERRAMENTAS,
       conta: enderecoDaZro(c.conta, '/') || `${emissor()}/perfil`,
       pessoa: { nome: c.nome || null, email: c.email || null, foto: enderecoDaZro(c.foto, '/api/v1/foto/'), organizacao: org, produtos },

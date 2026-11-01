@@ -77,6 +77,69 @@ export async function destinoDoVideo(nome) {
   return { fluxo: null, caminho: nome }
 }
 
+/**
+ * Uma pasta para muitos arquivos (as peças): { nome, gravar(nome, dados), fluxo(nome) → WritableStream ou null, fechar() }.
+ * Desktop: a pasta escolhida no diálogo (subpasta vira prefixo no nome). Chrome/Edge: o seletor de pasta, com
+ * subpastas, e cada vídeo vai direto para o disco. Sem nenhum dos dois: tudo num .zip no fim (fluxo devolve null e o
+ * vídeo passa pela memória). null se a pessoa cancelar.
+ */
+export async function pastaDeSaida(nomeBase, zipar) {
+  const bytes = (d) => (typeof d === 'string' ? new TextEncoder().encode(d) : d)
+  if (D) {
+    const pasta = await D.escolherPasta(nomeBase)
+    if (!pasta) return null
+    const plano = (n) => n.split('/').join(' · ')
+    return {
+      nome: pasta,
+      pasta,
+      gravar: (n, d) => D.gravar(pasta, plano(n), bytes(d)),
+      fluxo: async (n) => {
+        const caminho = await D.arquivoNaPasta(pasta, plano(n))
+        const id = await D.arquivo.abrir(caminho)
+        return new WritableStream({ write: (c) => D.arquivo.escrever(id, c.position, c.data), close: () => D.arquivo.fechar(id), abort: () => D.arquivo.fechar(id, true) })
+      },
+      fechar: async () => {},
+    }
+  }
+  if (globalThis.showDirectoryPicker) {
+    let raiz
+    try {
+      raiz = await showDirectoryPicker({ id: 'aeon-pecas', mode: 'readwrite' })
+    } catch (e) {
+      if (e?.name === 'AbortError') return null
+      raiz = null
+    }
+    if (raiz) {
+      const dir = await raiz.getDirectoryHandle(nomeBase.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'pecas', { create: true })
+      const lugar = async (n) => {
+        const partes = n.split('/')
+        let d = dir
+        for (const x of partes.slice(0, -1)) d = await d.getDirectoryHandle(x, { create: true })
+        return d.getFileHandle(partes.at(-1), { create: true })
+      }
+      return {
+        nome: `${raiz.name}/${dir.name}`,
+        pasta: null,
+        gravar: async (n, d) => {
+          const w = await (await lugar(n)).createWritable()
+          await w.write(bytes(d))
+          await w.close()
+        },
+        fluxo: async (n) => (await lugar(n)).createWritable(),
+        fechar: async () => {},
+      }
+    }
+  }
+  const arquivos = []
+  return {
+    nome: `${nomeBase}.zip`,
+    pasta: null,
+    gravar: async (n, d) => arquivos.push({ name: `${nomeBase}/${n}`, data: bytes(d) }),
+    fluxo: async () => null,
+    fechar: async () => arquivos.length && baixar(new Blob([zipar(arquivos)], { type: 'application/zip' }), `${nomeBase}.zip`),
+  }
+}
+
 export function baixar(blob, nome) {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)

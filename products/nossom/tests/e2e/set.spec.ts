@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
-import { allowedAccount, signIn } from './fixtures';
+import { allowedAccount, signIn, definirTema } from './fixtures';
 
 /**
  * O Set da Absolute ZRO (presença e conversas, ADR 0032 de lá) no estúdio: "Set" no fim da navegação (lateral e barra
@@ -106,7 +106,7 @@ test('Set closes the studio navigation right before the Z, shows up when the Set
   await page.keyboard.press('Escape');
   await expect(set).toHaveAttribute('aria-expanded', 'false');
   // Tema claro do estúdio: a folha acompanha.
-  await page.getByLabel('Tema do estúdio').selectOption('light');
+  await definirTema(page, 'light');
   await expect(page.locator('zro-set')).toHaveAttribute('tema', 'claro');
   await set.click();
   await expect(folha).toBeVisible();

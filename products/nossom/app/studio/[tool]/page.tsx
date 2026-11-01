@@ -7,7 +7,7 @@ const titles: Record<string, string> = {
   inicio: 'Seu estúdio',
   ...Object.fromEntries(operations.map((o) => [toolSlugs[o.id], o.label])),
   projetos: 'Meus projetos',
-  ia: 'Inteligência NOSSOM',
+  ia: 'Inteligência Quasar',
   conta: 'Minha conta',
   planos: 'Meu plano',
   admin: 'Administração',

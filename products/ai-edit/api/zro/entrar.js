@@ -15,9 +15,11 @@ export default async function entrar(req, res) {
   const semSet = semIa || q.get('sem_set') === '1'
   // sem_sons=1: a Absolute ZRO recusou o escopo dos sons (de antes da Sonoplasta); entra com a Z e o Set
   const semSons = semSet || q.get('sem_sons') === '1'
+  // sem_hf=1: a Absolute ZRO recusou o escopo da Higgsfield (de antes das Conexões dela); entra com o resto
+  const semHf = semSons || q.get('sem_hf') === '1'
   // A Absolute ZRO volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemPermitida(req)
-  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${semIa ? '&sem_ia=1' : semSet ? '&sem_set=1' : semSons ? '&sem_sons=1' : ''}`)
+  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${semIa ? '&sem_ia=1' : semSet ? '&sem_set=1' : semSons ? '&sem_sons=1' : semHf ? '&sem_hf=1' : ''}`)
   if (!configurado()) return redirecionar(res, 303, comAviso(volta, 'config'))
 
   const state = novoValor()
@@ -29,7 +31,7 @@ export default async function entrar(req, res) {
     u.searchParams.set('response_type', 'code')
     u.searchParams.set('client_id', clientId())
     u.searchParams.set('redirect_uri', retorno(origem))
-    u.searchParams.set('scope', escoposDo({ semSons, semSet, semIa }))
+    u.searchParams.set('scope', escoposDo({ semHf, semSons, semSet, semIa }))
     u.searchParams.set('state', state)
     u.searchParams.set('nonce', nonce)
     u.searchParams.set('code_challenge', desafioPkce(verificador))
@@ -39,6 +41,6 @@ export default async function entrar(req, res) {
   } catch {
     return redirecionar(res, 303, comAviso(volta, 'erro'))
   }
-  const ida = selar(COOKIE_IDA, { state, nonce, verificador, volta, origem, ia: !semIa, set: !semSet, sons: !semSons, ...(criar ? { criar: true } : {}) }, IDA_S)
+  const ida = selar(COOKIE_IDA, { state, nonce, verificador, volta, origem, ia: !semIa, set: !semSet, sons: !semSons, hf: !semHf, ...(criar ? { criar: true } : {}) }, IDA_S)
   return redirecionar(res, 302, destino, [cookie(COOKIE_IDA, ida, { maxAge: IDA_S, path: '/api/zro' })])
 }

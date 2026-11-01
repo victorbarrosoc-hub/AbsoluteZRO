@@ -24,6 +24,28 @@ import { EMBUTIDO, GRANDE } from '../lib/embutido.js'
 
 const FINISHED_UI = new Set(['done', 'skipped'])
 
+/** Só a foto da conta Absolute ZRO (https, /api/v1/foto/…): o servidor já conferiu que é do emissor. */
+export function fotoDaConta(v) {
+  try {
+    const u = new URL(v)
+    return u.protocol === 'https:' && u.pathname.startsWith('/api/v1/foto/') ? u.href : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * O "você" do topo é a conta Absolute ZRO (nome e foto da conta, como o Apple ID), nunca o Drive conectado: o Drive
+ * aparece só onde se fala dele (Ajustes › Google Drive, Trocar de Drive), com o e-mail dele.
+ */
+export function contaComoUser(account) {
+  if (!account) return null
+  return { displayName: account.nome || account.email || '', emailAddress: account.email || '', photoLink: fotoDaConta(account.fotoUrl) }
+}
+
+/** Quem aparece no avatar: a conta; no modo Wi-Fi (sem conta neste aparelho), a conta do computador. */
+const useVoce = () => useApp((s) => (LAN ? s.user : contaComoUser(s.account) || s.user))
+
 export function Avatar({ user, size = 32 }) {
   const [broken, setBroken] = useState(false)
   const photo = !DEV && !broken ? user?.photoLink : null
@@ -45,22 +67,22 @@ export function ZBotao() {
 }
 
 /** O Set, a Z e a conta, à direita da barra do topo (o Set só aparece quando responde, components/set.js). */
-function TopoAcoes({ user }) {
+function TopoAcoes() {
+  const voce = useVoce()
   return html`<div class="topbar-acoes">
     ${EMBUTIDO ? null : html`<${SetBotao} /><${ZBotao} />`}
     <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
-      <${Avatar} user=${user} size=${32} />
+      <${Avatar} user=${voce} size=${32} />
     </button>
   </div>`
 }
 
 /** A barra do topo (marca e conta) nas abas sem barra própria (Referências, Criar), igual à do Início. */
 export function TopoMarca() {
-  const user = useApp((s) => s.user)
   return html`<header class="topbar">
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <${TopoAcoes} user=${user} />
+      <${TopoAcoes} />
     </div>
   </header>`
 }
@@ -130,14 +152,14 @@ function useAccount() {
   return user
 }
 
-function Header({ user, sum, items, waiting, awake }) {
+function Header({ sum, items, waiting, awake }) {
   const active = sum.pending + sum.paused > 0
   const allPaused = sum.pending === 0 && sum.paused > 0
   const label = allPaused ? 'Pausado' : sum.speed > 0 ? speed(sum.speed) : waiting ? 'Esperando a conta' : 'Preparando…'
   return html`<header class=${cx('topbar', active && 'is-active')}>
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <${TopoAcoes} user=${user} />
+      <${TopoAcoes} />
     </div>
     ${active
       ? html`<div class="meter" aria-label="Progresso total">
@@ -360,7 +382,7 @@ export function MainScreen() {
   const waiting = issue === 'rede'
   const reconnect = issue === 'reconectar'
   return html`<div class=${cx('screen', 'main', waiting && 'has-tap-pill')}>
-    <${Header} user=${user} sum=${sum} items=${items} waiting=${waiting} awake=${awake} />
+    <${Header} sum=${sum} items=${items} waiting=${waiting} awake=${awake} />
     <main class=${cx('main-body', compact && 'is-compact', inicio && 'is-inicio')}>
       ${inicio ? html`<${Saudacao} user=${user} />` : null}
       ${LAN || EMBUTIDO ? null : html`<${ComputerCard} />`}

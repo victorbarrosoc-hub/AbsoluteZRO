@@ -11,6 +11,7 @@ test('compact navigation exposes six destinations, Início first and the Z last,
   await expect(destinos).toHaveCount(5);
   await expect(destinos.first()).toHaveText('Início');
   await expect(destinos.last()).toHaveText('Z');
+  // sem áudio aberto, os passos estão no trilho; com áudio, ficam na folha embaixo da onda (Comando + Console)
   const passos = navigation.getByRole('group', { name: 'Passos do estúdio' });
   await expect(passos.getByRole('button')).toHaveText(['Tratar', 'Ajustar', 'Criar', 'Entregar']);
   await expect(passos.getByRole('button', { name: 'Tratar' })).toHaveAttribute(
@@ -81,15 +82,15 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
   );
   await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
     'content',
-    'NOSSOM',
+    'Quasar',
   );
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
     'href',
-    '/pwa/icon-180.png?v=4',
+    '/pwa/icon-180.png?v=5',
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     'content',
-    /^https:\/\/nossom\.absolutezro\.com\/opengraph-image/,
+    /^https:\/\/quasar\.absolutezro\.com\/opengraph-image/,
   );
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     'content',
@@ -154,7 +155,7 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
     'Absolute ZRO',
     'Carro do Freela',
     'Maestro',
-    'Revela',
+    'Relay',
     'Sobedesce',
     'Synquei',
     'TPEasy',
@@ -166,7 +167,7 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
     await expect(link).toHaveAttribute('href', /^https:\/\//);
     await expect(link).toHaveAttribute('target', '_blank');
   }
-  await expect(family.getByRole('link', { name: 'NOSSOM' })).toHaveCount(0);
+  await expect(family.getByRole('link', { name: 'Quasar' })).toHaveCount(0);
   await expect
     .poll(() =>
       family

@@ -7,3 +7,5 @@ tests/fixtures/
 infra/migrations/
 docs/integration-contracts/schemas/
 apps/hub-desktop/dist/
+# gerado dos .svg de apps/hub-web/marca-fechada (tests/integration/marca-fechada.test.ts confere byte a byte)
+apps/hub-web/lib/marca-fechada.ts

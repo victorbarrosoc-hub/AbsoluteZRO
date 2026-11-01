@@ -7,8 +7,8 @@ import { DOWNLOADS, downloadsLiberados, ehAdmin, hasDesktopInstaller, HUB_TERMIN
 
 const OFFICIAL = new Set([
   'sobedesce.com',
-  'synquei.vercel.app',
-  'nossom.absolutezro.com',
+  'synquei.absolutezro.com',
+  'quasar.absolutezro.com',
   'tpeasy.absolutezro.com',
   'carro.absolutezro.com',
   'aeon.absolutezro.com',
@@ -65,7 +65,9 @@ describe('downloads', () => {
 
   it('não lançados (AEON, Revela, NOSSOM, Rift Motion) só para admin de plataforma', () => {
     expect([...SO_PARA_ADMIN].sort()).toEqual(['ai-edit', 'finishing', 'nossom', 'rift-motion'])
-    expect(ehAdmin({ user: { platformRole: 'admin' } })).toBe(true)
+    expect(ehAdmin({ user: { platformRole: 'admin', emailVerified: true } })).toBe(true)
+    expect(ehAdmin({ user: { platformRole: 'admin', emailVerified: false } })).toBe(false)
+    expect(ehAdmin({ user: { platformRole: 'admin' } })).toBe(false)
     expect(ehAdmin({ user: { platformRole: 'support' } })).toBe(false)
     expect(ehAdmin(null)).toBe(false)
   })

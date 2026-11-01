@@ -134,7 +134,7 @@ export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
           </span>
           <div>
             <strong>Uma gravação real. Ouça a mudança.</strong>
-            <small>Teste real autorizado · NOSSOM Restore D</small>
+            <small>Teste real autorizado · Quasar Restore D</small>
           </div>
         </div>
         <div className="voice-player-switch" role="group" aria-label="Comparar versões da voz">
@@ -142,7 +142,7 @@ export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
             Original
           </button>
           <button aria-pressed={version === 'treated'} onClick={() => choose('treated')}>
-            <Sparkles size={14} /> NOSSOM
+            <Sparkles size={14} /> Quasar
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
             ))}
           </span>
           <div>
-            <strong>{version === 'original' ? 'Antes do tratamento' : 'Tratamento NOSSOM'}</strong>
+            <strong>{version === 'original' ? 'Antes do tratamento' : 'Tratamento Quasar'}</strong>
             <span>
               {version === 'original'
                 ? 'Gravação original · volumes igualados'

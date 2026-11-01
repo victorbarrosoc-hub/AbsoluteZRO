@@ -98,9 +98,14 @@ export class LinhaUI {
       const m = e.target.closest('.marcador')
       if (m) this.aoAcao('desmarcar', m.dataset.id)
     })
+    // clicar num marcador: vai até ele e mostra na aba Marcadores
+    this.marcas.addEventListener('click', (e) => {
+      const m = e.target.closest('.marcador')
+      if (m && e.detail === 1) this.aoAcao('escolherMarcador', m.dataset.id)
+    })
     // clicar na régua ou num espaço vazio: vai até ali
     this.conteudo.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.clipe, .efeito')) return
+      if (e.target.closest('.clipe, .efeito, .marcador')) return
       const buscar = (ev) => {
         const t = Math.max(0, this.#xParaT(ev.clientX))
         this.aoBuscar(ev.altKey ? t : this.#imantar(t, false))
@@ -252,7 +257,7 @@ export class LinhaUI {
       if (!d) {
         d = el('div', 'clipe')
         d.dataset.id = clipe.id
-        d.append(el('span', 'clipe-nome', { innerHTML: '<span class="clipe-etiqueta"></span><span class="clipe-arquivo"></span>' }), el('span', 'clipe-vel'), el('i', 'borda borda-ini'), el('i', 'borda borda-fim'))
+        d.append(el('span', 'clipe-nome', { innerHTML: '<span class="clipe-etiqueta"></span><span class="clipe-arquivo"></span>' }), el('span', 'clipe-vel'), el('span', 'clipe-faixas', { innerHTML: '<i data-f="voz"></i><i data-f="instrumental"></i>' }), el('i', 'borda borda-ini'), el('i', 'borda borda-fim'))
         this.#arrastavel(d)
         this.trilhaV.append(d)
         if (animar && !reduzir()) d.animate([{ opacity: 0, transform: 'scaleY(0.6)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' })
@@ -269,6 +274,10 @@ export class LinhaUI {
       const pts = clipe.velocidade?.pontos
       vel.hidden = !pts
       if (pts) vel.textContent = pts.every(([, v]) => v === pts[0][1]) ? `${Math.round(pts[0][1] * 100)}%` : `Rampa · ${Math.round(velocidadeMedia(clipe) * 100)}%`
+      // voz e instrumental separados (NOSSOM): duas faixas finas alinhadas embaixo do clipe; a muda fica apagada
+      const fx = d.querySelector('.clipe-faixas')
+      fx.hidden = !clipe.faixas
+      if (clipe.faixas) for (const i of fx.children) i.classList.toggle('muda', clipe.faixas[i.dataset.f] === null)
       const cor = corDoClipe(p, clipe)
       if (cor) d.dataset.cor = cor
       else delete d.dataset.cor
@@ -323,8 +332,9 @@ export class LinhaUI {
     this.trilhaZ.replaceChildren(...marcas)
     this.marcas.replaceChildren(
       ...(p.marcadores || []).map((m) => {
-        const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))} (dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
+        const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))}${m.nota ? `\n${m.nota}` : ''}\n(dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
         d.dataset.id = m.id
+        if (m.cor) d.style.background = `var(--cor-${m.cor})`
         d.style.left = `${paraSegundos(m.q, p.fps) * e}px`
         return d
       }),

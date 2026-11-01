@@ -57,7 +57,8 @@ describe("criar conta, entrar e sair", () => {
     const corpo = await res.json();
     // zro.pedir só com a Absolute ZRO configurada (aqui não está): conta antiga sem vínculo, nada a pedir.
     assert.deepEqual(corpo, {
-      usuario: { id: r.usuario.id, email: "victor@exemplo.com", nome: "Victor" },
+      // fotoUrl: a foto da conta Absolute ZRO (conta sem vínculo: null; o Drive nunca entra aqui)
+      usuario: { id: r.usuario.id, email: "victor@exemplo.com", nome: "Victor", fotoUrl: null },
       contas: [],
       recursos: { referencias: true },
       zro: { ligada: false, pedir: false, ligar: "/api/zro/entrar?modo=vincular&volta=%2Fconta" },

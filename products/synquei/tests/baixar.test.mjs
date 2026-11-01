@@ -1,5 +1,5 @@
-// /baixar/* (api/baixar.js) com um GitHub falso: escolhe o instalador conferido pelo versao.json, respeita ?build=N
-// e cai em /#baixar quando ainda não há instalador.
+// /baixar/* (api/baixar.js) com um GitHub falso: sem ?build vai para a central Absolute ZRO (o app se instala só por
+// ela, 01/11/2026); ?build=N (o "Atualizar" dos apps antigos) entrega exatamente aquele build, e /baixar/versao segue.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -32,12 +32,14 @@ async function load(assets) {
   return (await import(`../api/baixar.js?${Math.random()}`)).default
 }
 
-test('mac sem build vai para o instalador do versao.json', async () => {
+test('mac e windows sem build (o navegador): a central Absolute ZRO, nunca o instalador avulso', async () => {
   const h = await load(ASSETS)
-  const res = fakeRes()
-  await h({ query: { p: 'mac' } }, res)
-  assert.equal(res.code, 302)
-  assert.equal(res.loc, 'https://gh/b8.dmg')
+  for (const query of [{ p: 'mac' }, { p: 'windows' }, { p: 'linux' }, { p: 'mac', build: 'abc' }]) {
+    const res = fakeRes()
+    await h({ query }, res)
+    assert.equal(res.code, 307, JSON.stringify(query))
+    assert.equal(res.loc, 'https://absolutezro.com/baixar', JSON.stringify(query))
+  }
 })
 
 test('?build=7 entrega exatamente o build 7; build que sumiu dá 404', async () => {
@@ -59,11 +61,12 @@ test('versao devolve os SHA-256', async () => {
   assert.equal(res.body.sha256Windows, 'b'.repeat(64))
 })
 
-test('sem instalador ainda: volta para a seção Baixar do site', async () => {
+test('sem o instalador do build pedido: 404 (o app nunca recebe a página no lugar do arquivo)', async () => {
   const h = await load([])
   const res = fakeRes()
-  await h({ query: { p: 'windows' } }, res)
-  assert.equal(res.loc, '/?baixar=indisponivel#baixar')
+  await h({ query: { p: 'windows', build: '8' } }, res)
+  assert.equal(res.code, 404)
+  assert.equal(res.loc, null)
 })
 
 test('diag diz o motivo sem mostrar o token', async () => {
@@ -110,7 +113,7 @@ const NOVO = [
 test('sem Release no AbsoluteZRO ainda: entrega o do repositório antigo', async () => {
   const { h } = await loadDuas(null, ASSETS)
   const mac = fakeRes()
-  await h({ query: { p: 'mac' } }, mac)
+  await h({ query: { p: 'mac', build: '8' } }, mac)
   assert.equal(mac.loc, 'https://gh/b8.dmg')
   const v = fakeRes()
   await h({ query: { p: 'versao' } }, v)
@@ -120,7 +123,7 @@ test('sem Release no AbsoluteZRO ainda: entrega o do repositório antigo', async
 test('com Release no AbsoluteZRO: ele vale; build antigo pedido ainda sai do repositório antigo', async () => {
   const { h, pedidos } = await loadDuas(NOVO, ASSETS)
   const mac = fakeRes()
-  await h({ query: { p: 'mac' } }, mac)
+  await h({ query: { p: 'mac', build: '1001' } }, mac)
   assert.equal(mac.loc, 'https://novo/b1001.dmg')
   assert.ok(!pedidos.some((u) => u.includes('/victorbarrosoc-hub/synquei/')), 'não consulta o antigo sem precisar')
   const v = fakeRes()

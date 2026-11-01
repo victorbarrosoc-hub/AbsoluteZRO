@@ -6,7 +6,7 @@
   "outputDirectory": "publico",
   "functions": {
     "api/app.js": {
-      "includeFiles": "{app/**,src/**,presets/**,em-desenvolvimento.html}"
+      "includeFiles": "{app/**,src/**,presets/**,site/**,marca/**,em-desenvolvimento.html}"
     }
   },
   "headers": [
@@ -15,7 +15,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com; worker-src 'self' blob:; connect-src 'self' blob: data: https://huggingface.co https://*.huggingface.co https://*.hf.co; media-src 'self' blob:; img-src 'self' blob: data: https://absolutezro.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com; worker-src 'self' blob:; connect-src 'self' blob: data: https://huggingface.co https://*.huggingface.co https://*.hf.co https://nossom.absolutezro.com https://*.supabase.co https://upload.higgsfield.ai https://cdn.higgsfield.ai https://*.cloudfront.net https://*.amazonaws.com; media-src 'self' blob:; img-src 'self' blob: data: https://absolutezro.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
         },
         {
           "key": "Cross-Origin-Opener-Policy",
@@ -36,15 +36,6 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
-        }
-      ]
-    },
-    {
-      "source": "/marca/home/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400"
         }
       ]
     },
@@ -89,6 +80,8 @@
     { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
     { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
     { "source": "/presets/:caminho*", "destination": "/api/app?caminho=presets/:caminho*" },
+    { "source": "/site/:caminho*", "destination": "/api/app?caminho=site/:caminho*" },
+    { "source": "/marca/:caminho*", "destination": "/api/app?caminho=marca/:caminho*" },
     { "source": "/baixar/:sistema", "destination": "/api/baixar?sistema=:sistema" }
   ]
 }

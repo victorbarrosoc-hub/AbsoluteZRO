@@ -19,7 +19,8 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
   // Tela de Início do iPhone: abre como app (sem a barra do Safari), com ícone, nome e tela de abertura.
   appleWebApp: { capable: true, title: SITE_NOME, statusBarStyle: "default", startupImage: telasDeAbertura() },
-  icons: { apple: [{ url: "/app/icons/apple-touch-icon.png", sizes: "180x180" }] },
+  // o ícone da aba (revisão de 01/11/2026: sem ele o navegador pedia /favicon.ico, que dava 404)
+  icons: { icon: [{ url: "/app/icons/favicon.svg", type: "image/svg+xml" }], apple: [{ url: "/app/icons/apple-touch-icon.png", sizes: "180x180" }] },
   formatDetection: { telephone: false },
   // Search Console (propriedade https://sobedesce.com): prova de domínio para a verificação da marca no Google.
   verification: { google: "giXZfVbQNx2xVm0WFIBViblaoQltp7JlmstrKC0GiKc" },

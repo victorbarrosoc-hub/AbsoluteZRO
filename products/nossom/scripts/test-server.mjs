@@ -15,6 +15,8 @@ const users = new Map(),
   portalReturns = new Map(),
   // Vínculo com a Absolute ZRO (nossom_private.zro_links): user_id → { sub, products, ... }.
   zroLinks = new Map();
+// ADM = admin da plataforma Absolute ZRO guardado no vínculo e e-mail confirmado (nossom_private.is_admin).
+const platformAdmin = (user) => zroLinks.get(user.id)?.admin === true && !!user.email_confirmed_at;
 const app = 'http://localhost:3000',
   webhookSecret = 'whsec_e2e_placeholder';
 const plansCatalog = [
@@ -268,6 +270,7 @@ const server = createServer(async (req, res) => {
       if (found) {
         found.products = products;
         found.release = release;
+        found.admin = data.admin === true;
       }
       return send({ userId: found?.userId ?? null });
     }
@@ -287,6 +290,7 @@ const server = createServer(async (req, res) => {
               organization: row.organization,
               products: row.products,
               release: row.release,
+              admin: row.admin === true,
               createdByZro: row.createdByZro,
               linkedAt: row.linkedAt,
               lastLoginAt: null,
@@ -301,6 +305,8 @@ const server = createServer(async (req, res) => {
         organization: data.organization || null,
         products,
         release,
+        // claim `zro_admin` (migração 202611010001): só o booleano true conta.
+        admin: data.admin === true,
         createdByZro: data.createdByZro === true,
         linkedAt: row?.linkedAt ?? new Date().toISOString(),
       });
@@ -340,7 +346,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/rpc/nossom_plan_usage') {
     if (!user) return send({ code: '28000' }, 401);
     const used = uses.get(user.id) || 0;
-    const unlimited = user.email === 'victorbarrosoc@gmail.com' && !!user.email_confirmed_at;
+    const unlimited = platformAdmin(user);
     const plan = plansCatalog.find((p) => p.id === (memberships.get(user.id) || 'free')),
       limit = plan.monthly_seconds;
     return send({
@@ -361,7 +367,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/rpc/nossom_audio_usage') {
     if (!user) return send({ code: '28000' }, 401);
     const used = uses.get(user.id) || 0,
-      unlimited = user.email === 'victorbarrosoc@gmail.com' && !!user.email_confirmed_at;
+      unlimited = platformAdmin(user);
     const allowed = unlimited || used < 10;
     const count = body.p_request_id && allowed ? used + 1 : used;
     uses.set(user.id, count);

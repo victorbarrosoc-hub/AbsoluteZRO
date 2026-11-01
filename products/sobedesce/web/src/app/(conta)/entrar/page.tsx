@@ -3,6 +3,7 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Aviso } from "@/components/conta/aviso";
+import { pedeContaAntiga } from "@/components/conta/conta-antiga";
 import { OpcoesEntrar } from "@/components/conta/opcoes-entrar";
 import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
@@ -49,7 +50,7 @@ export default async function Entrar({ searchParams }: Props) {
         </Aviso>
       ) : null}
 
-      <OpcoesEntrar volta={volta} formulario={<FormEntrar volta={volta} />} abrirFormulario={erro === "senha" || erro === "credenciais"} />
+      <OpcoesEntrar volta={volta} formulario={<FormEntrar volta={volta} />} abrirFormulario={erro === "senha" || erro === "credenciais"} contaAntiga={pedeContaAntiga(erro)} />
 
       <p className="mt-12 text-center text-[15px] text-ink-2">
         Ainda não tem conta?{" "}

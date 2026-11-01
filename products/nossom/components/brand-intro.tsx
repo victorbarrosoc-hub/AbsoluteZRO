@@ -54,7 +54,7 @@ export default function BrandIntro() {
             />
           </svg>
           <span className="brand-intro-name">
-            {'NOSSOM'.split('').map((letter, i) => (
+            {'QUASAR'.split('').map((letter, i) => (
               <span key={i} style={{ animationDelay: `${0.62 + i * 0.05}s` }}>
                 {letter}
               </span>

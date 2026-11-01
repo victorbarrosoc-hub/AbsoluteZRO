@@ -461,8 +461,8 @@ function menu() {
 function protegerSessao() {
   const ses = session.fromPartition(PARTICAO)
   ses.setUserAgent(regras.agenteLimpo(ses.getUserAgent()))
-  ses.setPermissionRequestHandler((wc, permissao, cb, detalhes) => cb(regras.permitir(permissao, (detalhes && detalhes.requestingUrl) || wc.getURL(), O)))
-  ses.setPermissionCheckHandler((_wc, permissao, origem) => regras.permitir(permissao, origem, O))
+  ses.setPermissionRequestHandler((wc, permissao, cb, detalhes) => cb(regras.permitir(permissao, (detalhes && detalhes.requestingUrl) || wc.getURL(), O, detalhes)))
+  ses.setPermissionCheckHandler((_wc, permissao, origem, detalhes) => regras.permitir(permissao, origem, O, detalhes))
   ses.setDevicePermissionHandler(() => false)
   // a moldura (barra de título) não pede nada
   session.defaultSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false))

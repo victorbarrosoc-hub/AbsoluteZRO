@@ -462,6 +462,13 @@ function ipc() {
     await fsp.rename(alvo + '.tmp', alvo)
     return alvo
   })
+  // um arquivo dentro de uma pasta de saída já escolhida (as peças: cada vídeo direto para o disco)
+  handle('saida:arquivoNaPasta', async (pasta, nome) => {
+    if (!pastasDeSaida.has(pasta)) throw new Error('pasta não escolhida')
+    const caminho = path.join(pasta, nomeSeguro(nome))
+    arquivosDeSaida.add(caminho)
+    return caminho
+  })
   handle('saida:arquivo', async (nome) => {
     const r = await dialog.showSaveDialog(win, { title: 'Salvar o vídeo', defaultPath: nomeSeguro(nome), filters: [{ name: 'Vídeo MP4', extensions: ['mp4'] }] })
     if (r.canceled || !r.filePath) return null

@@ -1401,3 +1401,17 @@ html.js .reveal.in {
     justify-content: center;
   }
 }
+
+/* Toque de 44 px no iPhone (Apple HIG; revisão do titular, 01/11/2026): a marca, os links do rodapé e os botões
+   pequenos do topo mantêm o desenho, e a área de toque cresce até 44 × 44 por um ::after invisível centralizado. */
+@media (pointer: coarse) {
+  :where(.brand, .nav a, .foot nav a, .btn) {
+    position: relative;
+  }
+  :is(.brand, .nav a, .foot nav a, .btn)::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
+}
+

@@ -1,13 +1,13 @@
 // Quem atualiza cada ferramenta (ADR 0018, adendo de 28/10/2026): a central grava, na pasta de dados do Absolute ZRO,
-// a lista das ferramentas que ela mantém em dia neste computador. O SOBEDESCE e o Synquei leem esse arquivo e, se
-// estão na lista, desligam o atualizador próprio: nada de duas atualizações disputando o mesmo app.
+// a lista das ferramentas que ela mantém em dia neste computador.
 //
 //   <pasta de dados do sistema>/Absolute ZRO/apps-gerenciados.json
 //   { "versao": 1, "visto": "<ISO>", "apps": { "sobedesce": { "desde": "<ISO>" } } }
 //
-// `visto` é renovado a cada conferência da central (na abertura e a cada poucas horas). Se a central sumir (foi
-// removida ou não abre há VALIDADE_DIAS), as ferramentas voltam a se atualizar sozinhas. A leitura no produto é a
-// mesma função `eGerenciado` (cópia curta em products/sobedesce/src/gerenciado.js e products/synquei/desktop/gerenciado.cjs).
+// `visto` é renovado a cada conferência da central (na abertura e a cada poucas horas). Até a 1.3 o SOBEDESCE e o
+// Synquei liam este arquivo para desligar o atualizador próprio. Desde a central única (ADR 0036, 01/11/2026) nenhum
+// app se atualiza sozinho (o src/gerenciado.js e o desktop/gerenciado.cjs deles saíram): o arquivo segue gravado só
+// para as versões antigas desses apps que ainda estejam instaladas.
 
 const path = require('node:path')
 

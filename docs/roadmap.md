@@ -2,6 +2,45 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026, ramo `sobedesce-avatar-zro`)
+
+- ✅ App do celular: o avatar do topo (e a folha "Conta e ajustes", que agora começa pela conta) mostra nome e foto da
+  conta Absolute ZRO, não do Drive conectado; o Drive fica rotulado "Google Drive" com o e-mail e a foto dele.
+  `/api/eu` devolve `usuario.fotoUrl` (claim `picture`, só `/api/v1/foto/…` do emissor, gravada a cada login em
+  `contas_zro.foto`, migração `0020_foto_da_conta_zro`; sem foto, as iniciais). 🟡 A foto entra no próximo login de
+  quem já estava ligado; o nome ainda é o `usuarios.nome` (não relê o perfil da Absolute ZRO como o Relay). ⬜ App de
+  computador sem mudança: o chip da barra lateral é o seletor de contas do Google (Drive).
+
+## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026, ramo `sobedesce-recuperar-colecoes`)
+
+- ✅ A raiz "SOBEDESCE Referências" do app antigo é achada pelo nome e reaproveitada (nada de raiz nova vazia ao lado);
+  as coleções que estão no Drive e sumiram do banco voltam ao abrir Referências (no máximo a cada 10 min por Drive) e
+  logo depois de conectar o Drive. Migração `0019_referencias_recuperar`. ⬜ Não voltam: link pra IA (token novo), fila
+  antiga e, no link pra IA, os arquivos salvos pelo app antigo (a marca deles é privada do app antigo).
+
+## Revisão dos sites em produção (01/11/2026, ramo `revisao-sites`)
+
+- ✅ Revela e AEON fechados sem vazar marca: manifesto, OG, `marca/`, `site/` e `app/` só pela função, para a conta
+  liberada; qualquer 404 é a página neutra em português (`publico/404.html` e a função).
+- ✅ Família única com os domínios oficiais (Carro do Freela, Maestro, Relay, SOBEDESCE em sobedesce.com, Synquei em
+  synquei.absolutezro.com, TPeasy) em Relay, TPeasy, Synquei, Carro e SOBEDESCE; a régua da raiz
+  (`familia-menus.test.ts`) cobre o Relay e o Carro e recusa `*.vercel.app`. Ícones de apps fechados saíram das cópias.
+- ✅ Carro: HTML publicado sem comentário, canonical/og em carro.absolutezro.com, favicon, só "Entrar com Absolute ZRO"
+  no domínio (decisão do titular), vídeo só com o quadro parado em Save-Data/2G. 🟡 O peso do vídeo da home (14,4 MB
+  AV1) ficou: a regra do titular no `CLAUDE.md` do Carro proíbe reduzir a qualidade (pede decisão dele).
+- ✅ SOBEDESCE e Synquei sem instalador avulso: `/baixar/mac|windows` vão para absolutezro.com/baixar (o `?build=N` dos
+  apps antigos e `/baixar/versao` seguem), `instalar.*` viram recado. SOBEDESCE `/entrar` só com a Absolute ZRO; as
+  portas da conta antiga só aparecem com `zro_email_em_uso` ou erro de senha (o SOBEDESCE não liga pelo e-mail).
+- ✅ Synquei em synquei.absolutezro.com (login, og, canonical; migration 0051 cadastra o retorno e o Abrir do HUB) e 308
+  do synquei.vercel.app, menos o app e a API (os projetos do app instalado moram no endereço antigo).
+- ✅ Cabeçalhos de segurança no TPeasy e no Synquei; CSP mínima no Maestro (a com `script-src` em tudo pede nonce: ⬜).
+- ✅ HUB: marca dos fechados fora de `public/` (rota `/marca/<produto>` com `zro.release_visible`), @ reservados e selos
+  só no servidor, Entrar no celular, `/privacidade` em português, 308 de absolutezro.vercel.app, `/cadastro` e
+  `/contato`, canonical. Visitante sem 401 no console (`/eu?visitante=1` no SOBEDESCE, Synquei e TPeasy; `/eu` do Carro).
+- ⬜ Fica para depois: as cores `--p-nossom`, `--p-ai-edit` e `--p-finishing` em `packages/ui/src/tokens.css` (o CSS do
+  HUB as leva; o arquivo é copiado pelos apps de computador), a CSP completa do Maestro e o 401px da `/calculadora`
+  do SOBEDESCE (não reproduziu: 375 e 393 px sem nada passando da tela, local e em produção).
+
 ## Fase 0 — Auditoria
 
 - ✅ Inventário das cinco origens com commit, licença, stack, serviços e riscos ([source-inventory](architecture/source-inventory.md)).
@@ -52,6 +91,17 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (calculadora e console) e TPeasy (saiu o `maximum-scale=1`). Carro do Freela já estava certo. Teste
   `tests/e2e/iphone-telas.spec.ts` (WebKit e Chromium, 375/393/430 px, admin e conta comum). Falta: conferir num iPhone
   de verdade depois de publicar (autorização do titular).
+- ✅ Apps no iPhone (01/11/2026, branch `apps-celular`, "pode revisar os outros apps de celular?"): as telas logadas
+  de Maestro, Carro do Freela, SOBEDESCE (app do celular), Synquei, TPeasy e Relay no WebKit a 375/393/430 px e deitado.
+  Toque de 44 × 44 em todo botão à vista (a área cresce por um `::after` invisível em tela de toque, o desenho não
+  muda; seletor que rola de lado nasce do tamanho certo); Maestro: a pílula do cronômetro deixava o "+" do Roteiro e
+  do Fluxo por baixo dela, tocar no tempo do card não abria o card (o número animado ficava por cima do botão), os
+  selos-seletores do Roteiro com 24 px, filtros do Quadro cortados ("Clientes"/"Pessoas") e o Quadro deitado com metade
+  da tela de cabeçalho; Synquei: a tabela de clipes da Mídia cortada na borda (vira lista no iPhone), busca e tipo do
+  aparelho espremidos e a página que alargava 13 px na troca de tela; TPeasy, Relay e Carro do Freela: só toque. Testes
+  novos por produto (Maestro `e2e/celular.spec.ts`; TPeasy, Synquei e SOBEDESCE `tests/celular*.test.mjs|mts`; Relay
+  em `test/tela.test.js`; Carro `test/toque-44.js`). Falta: a Sede/"Montar job" do site real do Carro (precisa do
+  banco e da Absolute ZRO falsa), as páginas Next do SOBEDESCE e conferir num iPhone de verdade depois de publicar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
@@ -389,6 +439,26 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   menos texto em toda a tela, home preta só com as linhas de luz e o player em forma de **ilha** (pílula de vidro com
   capa, nome, onda viva e tocar; um toque abre tempo, ±10 s e volume). Falta: validar com a conta do titular; a
   separação de voz em grito longo (modo Fala por padrão e o modelo de música) espera o teste dele.
+- 🟡 NOSSOM logado (01/11/2026, retorno do titular): fechado ao público, a home só chega à conta liberada, então agora
+  age como nos outros apps (conta no topo com os apps da Absolute ZRO no menu, "Abrir o estúdio" no topo, no título e
+  no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
+  escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
+  família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar Audio Lab (01/11/2026, pedido do titular): o NOSSOM passa a se chamar Quasar Audio Lab ("é subproduto,
+  todos são Absolute ZRO"). Marca: a Coroa sonora (eclipse fino em azul-aço, a borda vibra como onda do lado da luz,
+  clarão no ponto), QUASAR na letra expandida (Archivo Expanded ExtraBold) e AUDIO LAB num selo de vidro de borda
+  grossa. Ícones, cartão de compartilhamento, título, manifesto e textos trocados; no HUB, o nome no catálogo (0053) e
+  o ícone. Identificadores internos seguem `nossom` (produto, OIDC, schema, banco do aparelho, instaladores), para
+  nenhuma conta, cota ou projeto se perder. Segue fechado ao público (0049). Endereço novo
+  `quasar.absolutezro.com` (autorizado pelo titular, 01/11/2026): domínio no projeto Vercel `nossom`, retorno OIDC e
+  Abrir do HUB na 0053; `nossom.absolutezro.com` passa a redirecionar (308) depois do merge, mantido no OIDC.
+- 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
+  grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
+  rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos
+  da versão, ferramentas sobre o trecho selecionado e, logo abaixo, a folha de vidro com os passos, a lista do passo e
+  os ajustes em botões giratórios (por baixo, o `input range` nativo: teclado e leitor de tela seguem iguais).
+  Recolhida a folha, o campo "Peça algo ao seu áudio" (⌘K) abre o assistente. Início: símbolo em cromo azulado no lugar
+  do 3D, Enviar áudio e Gravar, atalhos por passo e Recentes. Fora do ar como todo o NOSSOM (0049).
 - ✅ NOSSOM no iPhone (01/11/2026, retorno do titular): "O navegador não conseguiu guardar este áudio" ao importar no
   Safari. O IndexedDB do WebKit às vezes recusa o Blob mesmo copiado para a memória e perde a conexão com a aba em
   segundo plano. `lib/storage.ts` agora abre outra conexão e tenta de novo; por último guarda os mesmos bytes
@@ -424,6 +494,25 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (frameSampling) e o Premiere (Mistura de quadros). Demonstrações com takes de 50 e 60 qps de verdade (Coverr). Falta:
   fluxo na placa de vídeo (esperar o ONNX Runtime com a correção da convolução de 15 canais e conferir contra a CPU) e
   hospedar o modelo numa conta própria.
+- 🟡 AEON, marcadores que fazem coisas (01/11/2026, pedido do titular, inspirado no Markers Command Center): aba
+  **Marcadores** na Edição (tempo, nome, nota, cor e duração até o próximo; buscar, filtrar por cor, teclado inteiro),
+  seleção que pinta, anda 1 s ou 1 quadro, tira o trecho da linha e apaga; colar notas com tempo (revisão do cliente,
+  capítulos, comentários), SRT e planilha, sem IA (exato, sem crédito); capítulos do YouTube conferidos pelas regras de
+  lá; uma imagem em cada marcador (a conta do render); CSV; nota e cor no Premiere, Final Cut, OTIO e EDL. Falta: pedir
+  à Z em linguagem natural ("capítulo a cada mudança de assunto") com ferramentas de marcador no HUB, e conferir os
+  marcadores importados num Premiere e num Final Cut de verdade.
+- 🟡 AEON, entrega em peças (01/11/2026, inspirado no Piecework): **Inteiro** ou **Em peças** na Entrega; cada seção
+  (de um marcador ao próximo) vira vídeo e linha do tempo à parte em 16:9, 9:16, 1:1 e 4:5 (preenchendo o quadro), com
+  modelo de nome, margem e `entrega.csv`; numa pasta (Chrome/Edge escrevem cada vídeo direto no disco) ou num .zip;
+  **Juntar em outra ordem** cria um projeto novo. O original nunca muda. Falta: enquadramento por peça no 9:16 (hoje
+  centralizado) e a fila de render por peça no app de computador (precisa do build novo).
+- 🟡 AEON + NOSSOM, voz e instrumental (01/11/2026, inspirado no VocalSplitter): **Separar** no Inspector do clipe; o
+  navegador da pessoa chama a NOSSOM direto (app irmão: CORS com credenciais só para aeon.absolutezro.com, só
+  `stems-v1`; sessão, gate, franquia e um pedido por conta seguem na NOSSOM), as cinco faixas voltam, ficam no disco do
+  navegador e viram **Voz** e **Instrumental** alinhadas ao clipe, com Solo, Mudo, volume e Tudo/Só voz/Só
+  instrumental; prévia, vídeo final e editores (WAV ao lado do XML, trilhas próprias, som original calado). Só aparece
+  para quem a NOSSOM atende (o gate dela no HUB). Falta: publicar a NOSSOM (proxy e rota) antes do AEON, conferir com
+  conta real e GPU de verdade, e o remix das cinco faixas dentro do AEON.
 - 🟡 AEON, estabilização (31/10/2026): **por imagem** pronta (rastreio de cantos, Lucas-Kanade piramidal, RANSAC de
   similaridade, suavização gaussiana e zoom fixo que esconde a borda; análise num worker, guardada na mídia; prévia e
   render com a mesma correção). **Giroscópio** (GoPro, Sony, DJI, Insta360, como o Gyroflow e o DaVinci) é o próximo
@@ -787,6 +876,20 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   deploy. Não testado contra o Google de verdade (aviso de app não verificado esperado).
 - ⬜ Z, "Hoje" do HUB e Carro do Freela pelo mesmo contrato.
 
+## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, [ADR 0037](decisions/0037-higgsfield-nas-conexoes.md))
+
+- ✅ HUB: a Higgsfield conectada uma vez em `/conexoes` (OAuth com PKCE e registro dinâmico, tokens cifrados), cartão com
+  saldo, plano, medidor do que os apps usaram no mês, "Usado por" e desconectar; só aparece se um app que usa a
+  Higgsfield existe para a pessoa. Migration `0052` (`zro.ia_geracoes`, `zro.apps_oauth_externos`, provedor
+  `higgsfield`, escopo `zro.higgsfield`).
+- ✅ API `/api/v1/higgsfield` (painel com preço de tudo antes) e `/api/v1/higgsfield/gerar` (envio, telas, animar,
+  andamento), só AEON e Rift Motion; sem preço ou saldo que cubra, não gera.
+- ✅ AEON: "Criar com IA" na Mídia e no player (a partir do quadro atual): créditos com medidor, passo 1 com 1/2/4 telas
+  e o preço, passo 2 com as três opções e a duração, confirmação antes do vídeo, resultado na Mídia (a imagem como clipe
+  parado de 5 s), guardado no navegador, "Pôr na linha" no cursor e retomada do pedido depois de recarregar. Só web.
+- ⛔ Em produção: migration `0052` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
+- ⬜ Rift Motion trocar a conexão própria pela do HUB (sessão do Rift avisada).
+
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 
 - ✅ `/admin/custos` (papel admin e, desde 31/10/2026, Financeiro; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$
@@ -833,6 +936,19 @@ Branch `central-unica`. Todo app de computador se instala e se atualiza só pela
 - ⬜ Lado dos produtos (outra pessoa): cada app desliga o atualizador próprio e abre o deep link quando há versão nova.
 - ⬜ AEON na central: o Release dele precisa dos nomes com versão e build.
 - ⛔ Publicar a 1.4.0 e ligar no ar: merge na main (dispara o workflow da central) com autorização do titular.
+
+### Revisão dos apps de computador (01/11/2026, branch `revisao-desktop`)
+
+- ✅ Central: download do instalador confere cada redirecionamento (só `/baixar/` do HUB, o Release no GitHub de
+  `victorbarrosoc-hub` e o servidor de arquivos do GitHub; `desktop/download.cjs`), para no meio se passar do tamanho
+  do catálogo e não deixa `.parte` para trás; "uma vez por versão" vale entre aberturas; "Sem conexão" com o wordmark
+  flat (saiu o `marca.webp` do feixe de luz).
+- ✅ TPeasy: microfone (só áudio, só a origem do TPeasy) para "Rolar com a voz", `NSMicrophoneUsageDescription` no Mac;
+  saiu o `fileSystem` copiado do Relay.
+- ✅ SOBEDESCE: menu todo em português (os papéis prontos traziam "Undo", "Quit"…); "Mostrar" só abre pasta de verdade.
+- ✅ Releases conferidos contra o catálogo ao vivo: os 7 (versão, build, nome, tamanho e SHA-256 real de Mac e Windows).
+- ⬜ Provar em Mac e Windows reais: instalar/atualizar pela central (DMG, quarentena, NSIS silencioso), deep link
+  vindo de cada app, microfone do TPeasy no Mac.
 
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 
@@ -1497,3 +1613,10 @@ do card... não consigo localizar o job que quero achar".
    Vercel `aeon` e `revela` só depois de o HUB negar a emissão aos clientes fechados; quando for abrir, mudar os dois
    lados (HUB e `RELEASE=released` nos projetos).
 9. Google sem CASA (31/10/2026): rodar o teste de `drive.file` do SOBEDESCE em `absolutezro.com/admin/teste-drive` (configurar antes as três variáveis `NEXT_PUBLIC_GOOGLE_*` e as APIs; passos em [google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)) e fazer a verificação de marca e de Agenda ([google-verificacao](operations/google-verificacao.md)). `/privacidade` e `/termos` já estão no HUB.
+10. ADM do NOSSOM pelo papel de plataforma (01/11/2026): aplicar à mão no Supabase do NOSSOM a migração
+    `products/nossom/supabase/migrations/202611010001_admin_da_plataforma.sql` junto com o deploy do NOSSOM e entrar de
+    novo pela Absolute ZRO (o HUB manda `zro_admin`). Sem ela o código novo não reconhece ADM nenhum.
+11. Drive do SOBEDESCE (revisão M1, 01/11/2026): com a vaga já usada, o Conectar Drive pede `drive.file`. Um Drive
+    cujo `drive` foi revogado (Acesso total desligado e ligado de novo, ou o Drive removido) volta em Arquivos
+    escolhidos; devolver o inteiro a essa conta pede uma decisão (pedir `drive` com a conta indicada arrisca gastar vaga
+    se a pessoa escolher outra conta na tela do Google).

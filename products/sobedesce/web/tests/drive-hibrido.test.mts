@@ -104,7 +104,10 @@ describe("escopo decidido antes de ir ao Google", () => {
     assert.equal(r.destino, "/conta?google=ok");
     assert.equal((await drivesDe(p.token))[0].modo, "total");
     const outra = await conectarDrive(p.token, g);
-    assert.equal(outra.pedido.get("scope"), `${BASICOS} ${DRIVE}`, "reconectar continua no acesso total");
+    assert.equal(outra.pedido.get("scope"), `${BASICOS} ${DRIVE_FILE}`, "vaga usada: nunca pede o inteiro de novo");
+    assert.equal(outra.pedido.get("include_granted_scopes"), "true", "o `drive` já dado volta somado");
+    assert.equal(outra.destino, "/conta?google=ok");
+    assert.equal((await drivesDe(p.token))[0].modo, "total", "reconectar continua no acesso total");
     assert.equal((await vagas.resumoVagas()).usadas, 1, "a mesma conta Google não gasta outra vaga");
   });
 
@@ -148,10 +151,10 @@ describe("vagas: contador e trava no limite", () => {
     // A já conectou com `drive` (gastou a vaga), B ainda não: no limite, um Drive novo de A não gasta vaga a mais.
     await conectarDrive(a.token, conta("ana"));
     assert.deepEqual(await vagas.resumoVagas(db, 2), { limite: 2, usadas: 1, liberadasSemUso: 1, livres: 0 });
-    const proximo = await vagas.pedidoParaConectar(a.id, 2);
+    const proximo = await vagas.pedidoParaConectar(a.id);
     assert.equal(proximo.escopo, `${BASICOS} ${DRIVE_FILE}`, "sem vaga para outra conta Google: drive.file");
     assert.equal(proximo.somarConcedidos, true, "o Drive que já usou vaga volta com o inteiro");
-    assert.equal((await vagas.pedidoParaConectar(b.id, 2)).modo, "total", "B tem a vaga reservada");
+    assert.equal((await vagas.pedidoParaConectar(b.id)).modo, "total", "B tem a vaga reservada");
   });
 
   test("o limite padrão é 90 (folga sob os 100 do Google)", () => {
@@ -233,13 +236,48 @@ describe("callback: o escopo que veio de fato", () => {
     assert.equal((await vagas.resumoVagas()).usadas, 0, "sem `drive`, sem vaga");
   });
 
-  test("pediu drive.file e veio o inteiro mesmo assim: a vaga conta, mas o modo segue o do admin", async () => {
+  test("pediu drive.file e veio o inteiro (escopo trocado na URL do Google): recusa, revoga, não guarda nem dá vaga", async () => {
     await zerarVagas();
     const p = await pessoa("Hugo");
+    const antes = amb.google.contadores.revogacoes;
     const r = await conectarDrive(p.token, conta("hugo"), `${BASICOS} ${DRIVE}`);
-    assert.equal(r.destino, "/conta?google=ok");
-    assert.equal((await vagas.resumoVagas()).usadas, 1, "o Google contou: aqui também conta");
-    assert.equal((await drivesDe(p.token))[0].modo, "arquivos");
+    assert.equal(r.pedido.get("scope"), `${BASICOS} ${DRIVE_FILE}`);
+    assert.equal(r.destino, "/conta?erro=google_erro");
+    assert.equal(amb.google.contadores.revogacoes, antes + 1, "a concessão volta para o Google");
+    assert.equal((await drivesDe(p.token)).length, 0, "nenhum token guardado");
+    assert.equal(await vagas.vagasUsadasPor(p.id), 0, "a pessoa não ganha vaga");
+    assert.equal((await vagas.resumoVagas()).usadas, 1, "o Google contou: o contador também, sem dono");
+  });
+
+  test("acesso total com a vaga usada: conta Google nova pede drive.file e não gasta outra vaga (M1)", async () => {
+    await zerarVagas();
+    const p = await pessoa("Jade");
+    await ligarDireto(p.id);
+    const primeira = conta("jade");
+    await conectarDrive(p.token, primeira);
+    assert.equal(await vagas.vagasUsadasPor(p.id), 1);
+    assert.ok((await vagas.resumoVagas()).livres > 0, "ainda há vaga livre no projeto, mesmo assim não gasta");
+
+    const segunda = conta("jade-2");
+    const nova = await conectarDrive(p.token, segunda);
+    assert.equal(nova.pedido.get("scope"), `${BASICOS} ${DRIVE_FILE}`);
+    assert.equal(nova.destino, "/conta?google=ok");
+    assert.equal(await vagas.vagasUsadasPor(p.id), 1, "uma vaga por pessoa");
+    assert.equal((await vagas.resumoVagas()).usadas, 1);
+
+    // Trocando o escopo na URL do Google para o inteiro numa terceira conta: recusado e revogado.
+    const antes = amb.google.contadores.revogacoes;
+    const trocada = await conectarDrive(p.token, conta("jade-3"), `${BASICOS} ${DRIVE}`);
+    assert.equal(trocada.destino, "/conta?erro=google_erro");
+    assert.equal(amb.google.contadores.revogacoes, antes + 1);
+    assert.equal(await vagas.vagasUsadasPor(p.id), 1, "nem com o escopo trocado");
+
+    // A conta que usou a vaga continua no Drive inteiro, inclusive ao reconectar.
+    const modos = Object.fromEntries((await drivesDe(p.token)).map((d) => [d.email, d.modo]));
+    assert.deepEqual(modos, { [primeira.email]: "total", [segunda.email]: "arquivos" });
+    const de1 = await conectarDrive(p.token, primeira);
+    assert.equal(de1.destino, "/conta?google=ok");
+    assert.equal((await drivesDe(p.token)).find((d) => d.email === primeira.email)?.modo, "total");
   });
 
   test("entrar com Google não troca o `drive` guardado por um token menor", async () => {

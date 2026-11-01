@@ -4220,3 +4220,33 @@
   width: 100%;
   margin-top: 8px;
 }
+/* Os apps da Absolute ZRO no menu da conta da página inicial: ícones numa grade, como nos outros apps. */
+.account-menu-familia .family-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+.account-menu-familia .family-nav-title {
+  grid-column: 1 / -1;
+  padding: 0 4px 4px;
+}
+.account-menu-familia .family-nav > a {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
+  padding: 6px 2px;
+  font-size: 11px;
+  text-align: center;
+}
+.account-menu-familia .family-nav img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.account-menu-familia .family-nav > a > span {
+  max-width: 100%;
+}

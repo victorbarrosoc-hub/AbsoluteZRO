@@ -192,6 +192,37 @@ describe("criar conta", () => {
   });
 });
 
+describe("o você é a conta Absolute ZRO", () => {
+  test("/api/eu: nome e foto da conta Absolute ZRO em `usuario`; o Drive fica em `contas`", async () => {
+    const BIA: PessoaZro = { sub: "zro-foto", email: "bia@produtora.com", nome: "Bia Foto", foto: "/api/v1/foto/fotoDaBia_123", produtos: ["sobedesce"] };
+    const r = await fluxo({ modo: "criar", pessoa: BIA });
+    const token = r.cookies.get("sd_sessao");
+    assert.ok(token);
+    const eu = await (await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }))).json();
+    assert.equal(eu.usuario.nome, "Bia Foto");
+    assert.equal(eu.usuario.fotoUrl, `${zro.url}/api/v1/foto/fotoDaBia_123`);
+    assert.deepEqual(eu.contas, [], "nenhum Drive conectado: a foto não vem do Google");
+
+    // Tirou a foto na Absolute ZRO: o próximo login apaga daqui (o app volta às iniciais).
+    await fluxo({ pessoa: { ...BIA, foto: undefined } });
+    assert.equal((await (await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }))).json()).usuario.fotoUrl, null);
+
+    // Foto de fora da Absolute ZRO (ou de outro caminho) nunca vira o <img> do app.
+    for (const foto of ["https://outro.exemplo/api/v1/foto/fotoDaBia_123", "/api/v1/arquivos/fotoDaBia_123", "/api/v1/foto/../segredo"]) {
+      await fluxo({ pessoa: { ...BIA, foto } });
+      assert.equal((await (await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }))).json()).usuario.fotoUrl, null, foto);
+    }
+  });
+
+  test("conta antiga sem vínculo: sem foto da Absolute ZRO (fotoUrl null)", async () => {
+    const c = await contas.criarConta({ nome: "Sem Foto", email: "semfoto@exemplo.com", senha: "senha da sem foto!", ip: "6.6.6.6" });
+    assert.ok(c.ok);
+    const eu = await (await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: c.token } }))).json();
+    assert.equal(eu.usuario.nome, "Sem Foto");
+    assert.equal(eu.usuario.fotoUrl, null);
+  });
+});
+
 describe("direito de uso (zro_products)", () => {
   const SEM: PessoaZro = { sub: "zro-sem-produto", email: "caio@outra.com", nome: "Caio", org: "Outra", produtos: ["synquei"] };
 

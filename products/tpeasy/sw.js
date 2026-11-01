@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v22";
+const CACHE = "tpeasy-v23";
 const FILES = [
   "/",
   "/site.css",
@@ -34,6 +34,7 @@ const FILES = [
   "/icons/z/anel.webp",
   "/icons/z/estrela.webp",
   "/icons/familia/absolute-zro.webp",
+  "/icons/familia/carro-do-freela.png",
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",
   "/icons/familia/maestro.svg",
