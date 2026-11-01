@@ -2,6 +2,29 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Revisão dos sites em produção (01/11/2026, ramo `revisao-sites`)
+
+- ✅ Revela e AEON fechados sem vazar marca: manifesto, OG, `marca/`, `site/` e `app/` só pela função, para a conta
+  liberada; qualquer 404 é a página neutra em português (`publico/404.html` e a função).
+- ✅ Família única com os domínios oficiais (Carro do Freela, Maestro, Relay, SOBEDESCE em sobedesce.com, Synquei em
+  synquei.absolutezro.com, TPeasy) em Relay, TPeasy, Synquei, Carro e SOBEDESCE; a régua da raiz
+  (`familia-menus.test.ts`) cobre o Relay e o Carro e recusa `*.vercel.app`. Ícones de apps fechados saíram das cópias.
+- ✅ Carro: HTML publicado sem comentário, canonical/og em carro.absolutezro.com, favicon, só "Entrar com Absolute ZRO"
+  no domínio (decisão do titular), vídeo só com o quadro parado em Save-Data/2G. 🟡 O peso do vídeo da home (14,4 MB
+  AV1) ficou: a regra do titular no `CLAUDE.md` do Carro proíbe reduzir a qualidade (pede decisão dele).
+- ✅ SOBEDESCE e Synquei sem instalador avulso: `/baixar/mac|windows` vão para absolutezro.com/baixar (o `?build=N` dos
+  apps antigos e `/baixar/versao` seguem), `instalar.*` viram recado. SOBEDESCE `/entrar` só com a Absolute ZRO; as
+  portas da conta antiga só aparecem com `zro_email_em_uso` ou erro de senha (o SOBEDESCE não liga pelo e-mail).
+- ✅ Synquei em synquei.absolutezro.com (login, og, canonical; migration 0051 cadastra o retorno e o Abrir do HUB) e 308
+  do synquei.vercel.app, menos o app e a API (os projetos do app instalado moram no endereço antigo).
+- ✅ Cabeçalhos de segurança no TPeasy e no Synquei; CSP mínima no Maestro (a com `script-src` em tudo pede nonce: ⬜).
+- ✅ HUB: marca dos fechados fora de `public/` (rota `/marca/<produto>` com `zro.release_visible`), @ reservados e selos
+  só no servidor, Entrar no celular, `/privacidade` em português, 308 de absolutezro.vercel.app, `/cadastro` e
+  `/contato`, canonical. Visitante sem 401 no console (`/eu?visitante=1` no SOBEDESCE, Synquei e TPeasy; `/eu` do Carro).
+- ⬜ Fica para depois: as cores `--p-nossom`, `--p-ai-edit` e `--p-finishing` em `packages/ui/src/tokens.css` (o CSS do
+  HUB as leva; o arquivo é copiado pelos apps de computador), a CSP completa do Maestro e o 401px da `/calculadora`
+  do SOBEDESCE (não reproduziu: 375 e 393 px sem nada passando da tela, local e em produção).
+
 ## Fase 0 — Auditoria
 
 - ✅ Inventário das cinco origens com commit, licença, stack, serviços e riscos ([source-inventory](architecture/source-inventory.md)).

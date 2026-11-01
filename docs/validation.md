@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Revisão dos sites em produção (01/11/2026)
+
+Ramo `revisao-sites`, a partir da revisão só de leitura dos sites no ar (dados em scratchpad, fora do repositório).
+
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` 568 testes em 66 arquivos (uma falha da régua da
+  família, que esperava o HUB na órbita do Relay, corrigida e conferida de novo com `familia-menus`, `marca-fechada`,
+  `synquei-subdominio`, `downloads`, `legal` e `perfis`: 44/44); `npm run build` ok e nenhum chunk de
+  `.next/static/*.js` cita NOSSOM, AEON, Revela ou os ids técnicos (só o CSS dos tokens, ver roadmap);
+  `npx playwright test tests/e2e/hub.spec.ts tests/e2e/iphone-telas.spec.ts` **18/18** (5,6 min no iPhone) e os dois
+  testes novos (cabeçalho no celular em 375/390/430; `/cadastro`, `/contato`, `/marca/*` 404 para anônimo, canonical,
+  privacidade) **2/2**. Captura do topo em 375 px, claro e escuro: Entrar e Criar conta cabem na cápsula.
+- Revela `npm test` **180/180**; AEON `npm test` **196/196** (`fechado.test.js`: marca, site/ e 404 neutros).
+- Carro: `npm run test:api` **48/48**; `npm run build:vercel` ok (HTML 229 KB, era 265 KB com os comentários);
+  suítes `conta-zro` 149/0 (rodada sozinha: em paralelo ela estoura os 240 s da máquina), `seguranca` 49/0, `entrar`
+  103/0, `site-real`, `mapa` 72/0, `porta-malas-real`, `tela-de-inicio`, `fase1-sem-dinheiro`, `versoes`,
+  `cartao-do-link` ok. `abertura` cai em "o piso encolhe" (~1 s, régua 900 ms) também na `main`: tempo da máquina.
+- Relay `npm test` 123/125 e as duas que caíram (a família agora com o Carro) corrigidas: `inicio` e `tela` 24/24;
+  SOBEDESCE web `lint` e `typecheck` ok, `npm test` 354/356 e as duas corrigidas (`instalar`, `zro-outra-conta`) 20/20, motor
+  `npm run test:fast` **785/785**; Synquei `npm test` **151/151**; TPeasy `node --test tests/*.test.mjs` **78/78**;
+  Maestro `npm test` **714/714**, `typecheck` e `lint` ok.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Apps de computador tocados (geram versão nova quando chegarem à `main`): SOBEDESCE (`src/relay/plano.js`,
+  `src/relay/personalizado.js`, `public/components/sidebar.js`) e Synquei (`app/**`, a família e o contador do menu).
+
 ## iPhone sem zoom sozinho (01/11/2026)
 
 Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava
