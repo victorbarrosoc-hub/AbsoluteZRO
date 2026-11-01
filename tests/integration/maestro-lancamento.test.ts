@@ -21,7 +21,7 @@ const NO_AR = readFileSync(new URL('../../infra/migrations/0039_maestro_relay_no
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
 
 describe('Maestro no ar (0027 + 0039)', () => {
-  it('catálogo e gate: active, endereço público, released com web, api e sso abertos a qualquer um (computador e download ficam para depois)', async () => {
+  it('catálogo e gate: active, endereço público, released com web, api e sso abertos a qualquer um (computador e download abertos na 0048)', async () => {
     const [p] = await db.sql`select stage, external_url, sso_start_url, description from zro.products where id = 'maestro'`
     expect(p).toMatchObject({
       stage: 'active',
@@ -31,12 +31,12 @@ describe('Maestro no ar (0027 + 0039)', () => {
     expect(p!.description).toMatch(/^A gestão da sua produtora/)
     expect(p!.description).not.toMatch(/desenvolvimento|fechado/i)
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
-    expect(s.maestro).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
+    expect(s.maestro).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: true, api: true, download: true, sso: true } })
     // o Relay também está no ar: site e, desde a 0042, o app de computador (sem API nem login único)
     const [r] = await db.sql`select stage from zro.products where id = 'relay'`
     expect(r).toMatchObject({ stage: 'active' })
     expect(s.relay).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: true, api: false, download: true, sso: false } })
-    for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(ch !== 'desktop' && ch !== 'download')
+    for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(true) // desde a 0048 o computador e o download também
   })
 
   it('conta comum, só com o grátis e fora de qualquer lista: contratada, autorizada e no login único', async () => {
