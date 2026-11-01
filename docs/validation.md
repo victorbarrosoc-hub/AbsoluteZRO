@@ -3826,6 +3826,28 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   conceder e o pedido de plano recusa), o sinal chega por `zro_features` quando concedido.
 - Fotos do site real com a fase 2 e o banco local semeado: `sede-real/` no rascunho da sessão (não versionadas).
 
+## Carro do Freela: o quadro de missões da Sede, no branch `fase2-guilda` (31/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 50/50 (com o site construído, as 3 de tela também). Seis testes
+  novos da 0006 (`test/api/_missoes-testes.js`): fase 1 = sede 404 e a marca `missao` recusada na proposta (a saída da
+  proposta de sempre não muda); montar (só gente da guilda, sem a própria pessoa, sem repetir, função do catálogo, sem
+  telefone, sem valor, uma missão aberta por dono por dia, canal do job e call sheet com a equipe inteira); RLS entre
+  guildas direto no papel do app (nem ler, nem escrever); a marca na proposta (só quem montou, só vaga sem proposta, dia e
+  função da missão, imutável depois); aceitar/recusar pelo mesmo PATCH mudam o quadro, o motivo não sobe; o próximo job de
+  cada pessoa; quem está livre no dia (livre / ocupado / sem agenda / já num job); trocar só quem não vai e só o dono;
+  fechar leva o nome do job ao pôster e soma XP (240 = duas duplas da casa); desmontar tira propostas, XP e memória; os
+  três estados pelo dia da praça; a rota da busca não conhece missão. `test:api` 48/48.
+- Carro `test/missoes-real.js`: 48/48 (site real com a constante em 2 e em 1): fase 1 sem faixa, barra nem pedido; o modo
+  Montar job (grade de rostos sem a própria pessoa, barra 0→2→3 escolhidos, o mesmo toque na lista de membros, a barra
+  por cima da folha); a folha (agenda do dia, sugestão dos livres, prévia do cartaz, call sheet na hora do início) manda a
+  missão e UMA proposta por pessoa com `missao`, sem valor; o quadro (a rodar, rodando, feito; vai / pendente / não vai;
+  Trocar, Mandar e Desmontar só do dono; Responder de quem está pendente; filtro); a marca "Job da guilda" na caixa de
+  Propostas e o mesmo PATCH; o cartaz prega e a vaga que mudou pulsa, nada com "reduzir movimento"; iPhone claro e escuro
+  sem rolar de lado. `test/guilda-real.js` segue 59/59. Bateria do Carro (`npm test`): 93 suítes; 91 na rodada e as duas que
+  caíram (`versoes`, porque o template mudou no meio; `porta-malas-real`, o iframe do Sobedesce sob carga) passam sozinhas.
+- Fotos com dados fictícios (computador e iPhone, claro e escuro: Montar job com a barra, a folha do job, o quadro, o selo
+  do próximo job, a proposta da guilda): `sede-missoes/` no rascunho da sessão (não versionadas).
+
 ## SOBEDESCE celular: Transferências como no computador (31/10/2026)
 
 - `products/sobedesce/web`: `tests/transferencias-celular.test.mts` 19/19 (prioridade, cancelar com DELETE na sessão,

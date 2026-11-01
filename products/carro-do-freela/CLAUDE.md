@@ -213,6 +213,23 @@ folhas (`sdFolha`, no `body`, com os tokens da casa) para fundar, lugares, perso
   O job vira UM evento na sala (o mesmo contratante no mesmo dia), com o XP somado. Contratante de fora não tem nome na memória.
 - Harness de fotos fora do repo; para olhar: banco local + Absolute ZRO falsa + rotas, como `test/api/banco-tela.test.js`.
 
+## 31/out · 3 — o quadro de missões: montar o job na Sede (`0006_missoes`, `test/missoes-real.js`, `_missoes-testes.js`)
+
+Titular: *"selecionar os membros e criar o job dali… e ver quem vai participar da guild e que job"* (a ideia geral de
+quadro de missões de guilda de anime/RPG; nada de nome, marca ou arte de obra nenhuma). Prefixo `mq-` (tela) e `sdMissoes*`.
+- ⚠️ **A proposta é a de sempre.** A missão (`guilda_missoes` + `guilda_missao_vagas`) só junta as vagas; cada pessoa recebe
+  UMA proposta pelo `POST /api/zro/propostas` com o campo opcional `missao` (marca `missao_id`, imutável). O gatilho confere
+  (só quem montou, só vaga sem proposta) e preenche dia, horário e local da missão. Aceitar/recusar = o PATCH de sempre, e
+  o gatilho escreve o estado da vaga (vai / pendente / não vai). Na fase 1 o campo é recusado (`campo: missao`).
+- **Fechar = proposta aceita**, como já era: memória e XP pelos gatilhos da 0004/0005 (mesma antifarra); a 0006 só dá o
+  título da missão ao pôster. O canal do job é o mesmo que a memória abriria (dono do job + dia): uma missão aberta por dono
+  por dia.
+- **Sem preço no quadro** (missão e vaga não têm valor) e o motivo da recusa não sobe. "Livre no dia" só de quem divulgou a
+  agenda (perfil visível + agenda em uso); o resto é "agenda não divulgada", nunca "livre".
+- Tela: `sdMontar` (modo de escolha, `SD.montar.sel`), `#mq-barra` no `body` (fora do `#sd`, que é container e prenderia o
+  fixed; os tokens valem para `.mq-barra`), `sdMissaoFolha`, `sdMissoesHtml` (sala Missões), `sdTrocarFolha`. O quadro vem
+  em `minha.missoes`/`minha.proximos` do `GET /guildas`. Motion: `data-novo` (prega) e `data-mudou` (pulsa), só com `sdMov()`.
+
 ## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
 
 Titular: *"O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do

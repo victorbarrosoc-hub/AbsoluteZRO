@@ -6085,20 +6085,20 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
 body:has(#v-guildas[data-sede]:not([hidden])) .toptit{display:none}
 /* no chat o botão de sugestões sairia em cima do enviar */
 html[data-sd-chat] #fbk-btn{display:none}
-#sd,.sd-veu,.sd-subiu{--sd-bg:var(--grafite);--sd-bg2:#17171A;--sd-bg3:#1E1E22;--sd-bg4:#2A2A30;--sd-ink:#F5F5F7;--sd-ink2:#AEAEB2;--sd-ink3:#8E8E93;
+#sd,.sd-veu,.sd-subiu,.mq-barra{--sd-bg:var(--grafite);--sd-bg2:#17171A;--sd-bg3:#1E1E22;--sd-bg4:#2A2A30;--sd-ink:#F5F5F7;--sd-ink2:#AEAEB2;--sd-ink3:#8E8E93;
   --sd-line:rgba(255,255,255,.08);--sd-line2:rgba(255,255,255,.14);--sd-ciano:#17D1E8;--sd-ciano-ink:#0E0E10;--sd-ok:#3DDC97;--sd-aviso:#FFB547;
   --sd-papel:#1A1918;--sd-papel2:#211F1D;--sd-vidro:rgba(28,28,32,.62);--sd-vidro-borda:rgba(255,255,255,.12);--sd-sombra-cor:#000;
   --sd-mola:cubic-bezier(.34,1.56,.64,1);--sd-suave:cubic-bezier(.22,1,.36,1);--sd-mono:var(--mono);
   --sd-amb:var(--sd-d-amb,#F062B8);--sd-amb2:var(--sd-d-amb2,#F8B1DB);--sd-ambt:var(--sd-d-ambt,rgba(240,98,184,.13));--sd-ambink:var(--sd-d-ambink,#1F0716);
   color:var(--sd-ink);font-family:"Figtree",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.4;
   -webkit-font-smoothing:antialiased}
-:root.app-light :is(#sd,.sd-veu,.sd-subiu){--sd-bg2:#FFFFFF;--sd-bg3:#EEEEF1;--sd-bg4:#E2E2E7;--sd-ink:#1D1D1F;--sd-ink2:#5E5E63;--sd-ink3:#6E6E73;
+:root.app-light :is(#sd,.sd-veu,.sd-subiu,.mq-barra){--sd-bg2:#FFFFFF;--sd-bg3:#EEEEF1;--sd-bg4:#E2E2E7;--sd-ink:#1D1D1F;--sd-ink2:#5E5E63;--sd-ink3:#6E6E73;
   --sd-line:rgba(0,0,0,.08);--sd-line2:rgba(0,0,0,.14);--sd-ciano:#0B7F96;--sd-ciano-ink:#FFFFFF;--sd-ok:#14915C;--sd-aviso:#B26B00;
   --sd-papel:#FFFFFF;--sd-papel2:#FBF8F4;--sd-vidro:rgba(255,255,255,.72);--sd-vidro-borda:rgba(0,0,0,.08);--sd-sombra-cor:var(--sd-cor-sombra,#3C1430);
   --sd-amb:var(--sd-l-amb,#B0307A);--sd-amb2:var(--sd-l-amb2,#842460);--sd-ambt:var(--sd-l-ambt,rgba(176,48,122,.1));--sd-ambink:var(--sd-l-ambink,#FFFFFF)}
 #sd{container:sd/inline-size;position:relative;overflow-x:clip}
-:where(#sd,.sd-veu,.sd-subiu) *{box-sizing:border-box}
-:where(#sd,.sd-veu) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:where(#sd,.sd-veu,.sd-subiu,.mq-barra) *{box-sizing:border-box}
+:where(#sd,.sd-veu,.mq-barra) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
 :where(#sd,.sd-veu) img{display:block;max-width:100%}
 :where(#sd,.sd-veu) :where(h1,h2,h3,h4,h5,p){margin:0;font-family:inherit}
 .sd-mono{font-family:var(--sd-mono);font-feature-settings:"tnum";letter-spacing:-.02em}
@@ -6134,9 +6134,9 @@ html[data-sd-chat] #fbk-btn{display:none}
 .sd-btn[disabled]{opacity:.45;cursor:default}
 .sd-btn[data-ink]{--gf:rgba(245,245,247,.94);--gi:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),var(--gf);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 8px 22px rgba(0,0,0,.35)}
-:root.app-light :is(#sd,.sd-veu,.sd-subiu) .sd-btn{--gf:rgba(255,255,255,.66);--gi:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),var(--gf);
+:root.app-light :is(#sd,.sd-veu,.sd-subiu,.mq-barra) .sd-btn{--gf:rgba(255,255,255,.66);--gi:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),var(--gf);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.08),0 6px 18px rgba(0,0,0,.07)}
-:root.app-light :is(#sd,.sd-veu,.sd-subiu) .sd-btn[data-ink]{--gf:rgba(29,29,31,.92);--gi:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 50%),var(--gf);
+:root.app-light :is(#sd,.sd-veu,.sd-subiu,.mq-barra) .sd-btn[data-ink]{--gf:rgba(29,29,31,.92);--gi:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 50%),var(--gf);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1px rgba(0,0,0,.5),0 8px 22px rgba(0,0,0,.2)}
 /* sobre a foto do herói o vidro é sempre o do escuro */
 :root.app-light :is(#sd,.sd-veu,.sd-subiu) .sd-heroi .sd-btn{--gf:rgba(255,255,255,.12);--gi:#f5f5f7;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%),var(--gf);
@@ -6751,6 +6751,176 @@ button.sd-cartaz:hover:not([data-sel]){transform:translateY(-5px)}
 .sd-xpvoa{position:fixed;z-index:330;font-family:var(--sd-mono);font-weight:500;font-size:15px;color:var(--sd-cor-ink);background:linear-gradient(160deg,var(--sd-cor-claro),var(--sd-cor));
   padding:5px 10px;border-radius:999px;box-shadow:0 8px 24px color-mix(in srgb,var(--sd-cor) 50%,transparent);pointer-events:none}
 .sd-burst{position:fixed;pointer-events:none;z-index:330;font-size:20px;will-change:transform,opacity}
+
+/* ---- O QUADRO DE MISSÕES (0006): cartazes pregados com a equipe e o estado de cada pessoa; o modo "Montar job" ----
+   A tachinha e a borda do cartaz levam a cor da casa (--sd-amb); o estado da pessoa é forma (✓, reticências, ×), não
+   só cor. Movimento: o cartaz "prega" ao nascer (data-novo) e a vaga que mudou de estado pulsa uma vez (data-mudou);
+   a barra sobe com mola. Tudo some com "reduzir movimento" (a trava global e sdMov()). */
+.mq-faixa{position:relative;z-index:1;margin-top:18px;border-radius:24px;padding:22px 22px 20px;background:linear-gradient(180deg,var(--sd-papel2),var(--sd-papel));
+  box-shadow:inset 0 0 0 1px var(--sd-line)}
+:root.app-light #sd .mq-faixa{box-shadow:0 1px 0 rgba(0,0,0,.04),0 12px 30px color-mix(in srgb,var(--sd-sombra-cor) 8%,transparent)}
+.mq-faixa[data-montar]{box-shadow:inset 0 0 0 2px var(--sd-amb),0 18px 50px color-mix(in srgb,var(--sd-amb) 18%,transparent)}
+.mq-fh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mq-fh h2{font-size:30px;font-weight:300;letter-spacing:-.04em;line-height:1.05}
+.mq-fh h2 b{font-weight:800}
+.mq-fh p{font-size:14px;color:var(--sd-ink2);margin-top:4px}
+.mq-fh .sd-bts{display:flex;gap:8px;flex-wrap:wrap}
+.mq-rostos{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px;margin-top:18px}
+.mq-rosto{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px 12px;border-radius:18px;background:var(--sd-bg2);
+  box-shadow:inset 0 0 0 1px var(--sd-line);transition:box-shadow .25s var(--sd-suave),transform .25s var(--sd-mola)}
+.mq-rosto b{font-size:14px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mq-rosto small{font-size:11.5px;color:var(--sd-ink3);white-space:nowrap}
+.mq-rosto[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--sd-amb),0 10px 26px color-mix(in srgb,var(--sd-amb) 22%,transparent);transform:translateY(-2px)}
+.mq-ck{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px var(--sd-line2);color:transparent;
+  transition:background .2s,color .2s}
+.mq-ck .sd-ico{width:14px;height:14px;stroke-width:3}
+.mq-rosto[aria-pressed="true"] .mq-ck{background:var(--sd-amb);color:var(--sd-ambink);box-shadow:none}
+/* o quadro: cortiça escura no escuro, linho no claro, com os cartazes um pouco tortos, como pregados à mão */
+.mq-cab{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 20px}
+.mq-cab h1{font-size:44px;font-weight:300;letter-spacing:-.05em;line-height:1;margin-right:auto}
+.mq-cab h1 b{font-weight:800}
+.mq-cab .sd-filt{display:flex;gap:6px}
+.mq-quadro{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:26px 22px;padding:30px 24px 28px;border-radius:26px;position:relative;
+  background:radial-gradient(120% 90% at 20% 0%,rgba(255,255,255,.035),transparent 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 2px,transparent 2px 5px),#151412;
+  box-shadow:inset 0 0 0 1px var(--sd-line),inset 0 18px 40px rgba(0,0,0,.35)}
+:root.app-light #sd .mq-quadro{background:radial-gradient(120% 90% at 20% 0%,rgba(255,255,255,.7),transparent 60%),repeating-linear-gradient(45deg,rgba(0,0,0,.018) 0 2px,transparent 2px 5px),#EFEAE3;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),inset 0 14px 30px rgba(0,0,0,.05)}
+.mq-quadro[data-mini]{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;padding:26px 18px 18px}
+.mq-quadro[data-vazio]{display:block;padding:70px 24px}
+.mq-c{--r:0deg;position:relative;display:flex;flex-direction:column;gap:10px;padding:22px 18px 16px;border-radius:6px 6px 14px 14px;transform:rotate(var(--r));
+  background:linear-gradient(180deg,#26241F,#1D1B18);color:#F5F2EC;box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 18px 30px -12px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);
+  border-top:4px solid var(--sd-amb);transition:transform .35s var(--sd-mola),box-shadow .35s}
+.mq-c:hover{transform:rotate(0deg) translateY(-3px)}
+:root.app-light #sd .mq-c{background:linear-gradient(180deg,#FFFFFF,#FBF8F3);color:#1D1D1F;box-shadow:0 1px 0 #fff inset,0 16px 26px -12px color-mix(in srgb,var(--sd-sombra-cor) 40%,transparent),0 0 0 1px rgba(0,0,0,.05)}
+.mq-c[data-e="feito"]{filter:saturate(.55)}
+.mq-c[data-e="feito"] h3{opacity:.8}
+.mq-tacha{position:absolute;top:-11px;left:50%;width:18px;height:18px;margin-left:-9px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--sd-amb2),var(--sd-amb) 60%,color-mix(in srgb,var(--sd-amb) 60%,#000));box-shadow:0 3px 5px rgba(0,0,0,.45)}
+.mq-tacha::after{content:"";position:absolute;left:50%;top:15px;width:2px;height:6px;margin-left:-1px;background:rgba(0,0,0,.35);border-radius:1px}
+.mq-ch{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mq-dt{display:flex;align-items:center;gap:9px}
+.mq-dt b{font-size:40px;font-weight:500;line-height:.9;letter-spacing:-.06em}
+.mq-dt span{font-size:11.5px;font-weight:650;line-height:1.25;opacity:.7;text-transform:lowercase}
+.mq-est{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:750;letter-spacing:.01em;
+  background:rgba(255,255,255,.08);color:inherit;white-space:nowrap}
+:root.app-light #sd .mq-est{background:rgba(0,0,0,.05)}
+:root.app-light #sd .mq-est[data-e="rodando"],.mq-est[data-e="rodando"]{background:var(--sd-amb);color:var(--sd-ambink)}
+.mq-est i{width:7px;height:7px;border-radius:50%;background:var(--sd-amb)}
+.mq-est[data-e="rodando"] i{background:currentColor;animation:mq-noar 1.6s ease-in-out infinite}
+.mq-est[data-e="feito"] .sd-ico{width:13px;height:13px;stroke-width:3}
+@keyframes mq-noar{50%{opacity:.25}}
+.mq-c h3{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1.15;overflow-wrap:anywhere}
+.mq-meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;opacity:.72}
+.mq-eqp{list-style:none;margin:2px 0 0;padding:10px 0 0;display:flex;flex-direction:column;gap:7px;border-top:1px dashed rgba(255,255,255,.12)}
+:root.app-light #sd .mq-eqp{border-top-color:rgba(0,0,0,.12)}
+.mq-v{display:flex;align-items:center;gap:9px;min-width:0}
+.mq-vn{flex:1;min-width:0;display:flex;flex-direction:column}
+.mq-vn b{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mq-vn small{font-size:11.5px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mq-vs{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;grid-auto-flow:column;gap:2px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
+:root.app-light #sd .mq-vs{box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.16)}
+.mq-vs .sd-ico{width:14px;height:14px;stroke-width:3}
+.mq-vs i{width:3px;height:3px;border-radius:50%;background:var(--sd-aviso)}
+.mq-v[data-e="vai"] .mq-vs{background:var(--sd-ok);color:#0E0E10;box-shadow:none}
+.mq-v[data-e="nao_vai"] .mq-vs{color:inherit;opacity:.6}
+.mq-v[data-e="nao_vai"] .mq-vn b{text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.6}
+.mq-v[data-e="nao_vai"] .sd-av{opacity:.45;filter:grayscale(1)}
+.mq-v[data-mudou]{animation:mq-troca .7s var(--sd-mola)}
+.mq-v[data-mudou] .mq-vs{animation:mq-pulo .6s var(--sd-mola)}
+@keyframes mq-troca{0%{background:color-mix(in srgb,var(--sd-amb) 22%,transparent)}100%{background:transparent}}
+@keyframes mq-pulo{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:none}}
+.mq-tr{height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--sd-ambink);background:var(--sd-amb);flex:none}
+.mq-cf{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px;flex-wrap:wrap}
+.mq-conta{font-size:12px;font-weight:650;opacity:.7;margin-right:auto}
+.mq-x{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;opacity:.6}
+.mq-x:hover{opacity:1}
+.mq-x .sd-ico{width:16px;height:16px}
+.mq-c[data-novo]{animation:mq-pregar .9s var(--sd-mola) both}
+.mq-c[data-novo] .mq-tacha{animation:mq-tachar .5s .55s var(--sd-mola) both}
+@keyframes mq-pregar{0%{opacity:0;transform:translateY(-46px) rotate(calc(var(--r) - 7deg)) scale(1.06)}55%{opacity:1;transform:translateY(4px) rotate(calc(var(--r) + 1deg)) scale(1)}
+  100%{transform:rotate(var(--r))}}
+@keyframes mq-tachar{0%{transform:translateY(-14px) scale(1.6);opacity:0}100%{transform:none;opacity:1}}
+/* a barra fixa embaixo: quantos escolhidos e a ação */
+.mq-barra{position:fixed;left:50%;bottom:calc(var(--barra-baixo,0px) + 14px);z-index:310;width:min(560px,calc(100vw - 24px));transform:translate(-50%,var(--sobra-baixo,0px));
+  animation:mq-sobe .55s var(--sd-mola) both;font-family:"Figtree",system-ui,-apple-system,sans-serif;color:var(--sd-ink)}
+.mq-barra[hidden]{display:none}
+.mq-barra[data-sai]{animation:mq-desce .26s ease-in both}
+@keyframes mq-sobe{from{opacity:0;transform:translate(-50%,calc(var(--sobra-baixo,0px) + 120%))}to{opacity:1;transform:translate(-50%,var(--sobra-baixo,0px))}}
+@keyframes mq-desce{to{opacity:0;transform:translate(-50%,calc(var(--sobra-baixo,0px) + 120%))}}
+.mq-bi{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:999px;background:var(--sd-vidro);
+  -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 0 0 1px var(--sd-vidro-borda),0 18px 50px rgba(0,0,0,.45)}
+:root.app-light .mq-barra .mq-bi{background:rgba(255,255,255,.86);box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(0,0,0,.08),0 18px 44px rgba(0,0,0,.16)}
+.mq-bv{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--sd-bg3);color:var(--sd-ink2)}
+.mq-bv .sd-ico{width:17px;height:17px}
+.mq-bt{font-size:15px;font-weight:650;color:var(--sd-ink2);margin-right:auto;white-space:nowrap}
+.mq-bt b{color:var(--sd-ink);font-size:17px}
+.mq-bi .sd-btn{height:44px;padding:0 20px;font-size:15px}
+html[data-sd-montar] #fbk-btn{display:none}
+html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
+/* na lista de membros: o selo do próximo job e o toque de escolher */
+.mq-mcab{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mq-prox{display:inline-flex;align-items:center;gap:5px;margin-top:4px;max-width:100%;height:22px;padding:0 8px 0 6px;border-radius:999px;font-size:11.5px;font-weight:650;
+  color:var(--sd-ink2);background:var(--sd-bg3)}
+.mq-prox span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mq-prox .sd-ico{width:12px;height:12px;stroke-width:2.6;flex:none}
+.mq-prox i{width:6px;height:6px;border-radius:50%;background:var(--sd-aviso);flex:none}
+.mq-prox[data-e="vai"]{color:var(--sd-ok)}
+.mq-prox[data-e="monta"] .sd-ico{color:var(--sd-amb)}
+.mq-esc{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;color:transparent;box-shadow:inset 0 0 0 1.5px var(--sd-line2);transition:background .2s,color .2s}
+.mq-esc .sd-ico{width:15px;height:15px;stroke-width:3}
+.mq-esc[aria-pressed="true"]{background:var(--sd-amb);color:var(--sd-ambink);box-shadow:none}
+/* a folha do job */
+.mq-prevc{width:min(300px,100%);padding-top:12px}
+.mq-prevc .mq-c{--r:-1.2deg;text-align:left}
+.mq-seg{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mq-seg .sd-chip[aria-pressed="true"]{background:var(--sd-ink);color:var(--sd-bg);box-shadow:none}
+.mq-seg input{flex:1;min-width:180px;height:38px;border-radius:12px;border:0;background:var(--sd-bg2);color:var(--sd-ink);font:inherit;font-size:15px;padding:0 12px;
+  box-shadow:inset 0 0 0 1px var(--sd-line2);outline:none}
+.mq-seg input[hidden]{display:none}
+.mq-eq{display:flex;flex-direction:column;gap:8px}
+.mq-er{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 10px;border-radius:14px;background:var(--sd-bg2);box-shadow:inset 0 0 0 1px var(--sd-line)}
+.mq-ern{flex:1;min-width:0;display:flex;flex-direction:column}
+.mq-ern b{font-size:14px;color:var(--sd-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mq-er select{width:150px;height:36px;border-radius:10px;border:0;background:var(--sd-bg3);color:var(--sd-ink);font:inherit;font-size:13.5px;font-weight:600;padding:0 8px;flex:none}
+.mq-er .sd-icb{width:32px;height:32px}
+.mq-er .sd-icb .sd-ico{width:15px;height:15px}
+.mq-ag{font-size:11.5px;font-weight:600;color:var(--sd-ink3)}
+.mq-ag[data-ag="livre"]{color:var(--sd-ok)}
+.mq-ag[data-ag="ocupado"],.mq-ag[data-ag="no_job"]{color:var(--sd-aviso)}
+.sd-membros .sd-p .mq-ag{display:block}
+.mq-sug{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+.mq-sug small{font-size:12px;color:var(--sd-ink3);margin-right:4px}
+.mq-sug .sd-chip{padding:0 10px 0 4px}
+.mq-sug .sd-chip .sd-ico{width:14px;height:14px}
+.mq-cs{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--sd-bg2);box-shadow:inset 0 0 0 1px var(--sd-line);cursor:pointer}
+.mq-cs input{width:20px;height:20px;accent-color:var(--sd-ciano);flex:none}
+.mq-cs b{display:block;font-size:14.5px;font-weight:700}
+.mq-cs small{font-size:12.5px;color:var(--sd-ink3)}
+@container sd (max-width:1040px){ .mq-quadro[data-mini]{grid-template-columns:repeat(2,minmax(0,1fr))} .mq-quadro[data-mini] .mq-c:nth-child(3){display:none} }
+@media (max-width:720px){
+  .mq-faixa{padding:16px;margin-top:12px;border-radius:20px}
+  .mq-fh h2{font-size:24px}
+  .mq-fh .sd-bts{width:100%}
+  .mq-fh .sd-bts .sd-btn{flex:1}
+  .mq-rostos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .mq-rosto{padding:12px 4px 10px}
+  .mq-rosto .sd-av{--s:52px!important}
+  .mq-quadro,.mq-quadro[data-mini]{grid-template-columns:minmax(0,1fr);padding:24px 14px 16px;gap:22px;margin-left:-6px;margin-right:-6px}
+  .mq-quadro[data-mini] .mq-c:nth-child(n+2){display:none}
+  .mq-cab h1{font-size:34px;width:100%}
+  .mq-cab .sd-filt{order:3}
+  .mq-cab>.sd-btn{width:100%}
+  .sd-prev[data-mprev]{display:none}
+  .mq-er{flex-wrap:wrap}
+  .mq-er select{order:3;width:100%}
+  .mq-barra{width:calc(100vw - 20px)}
+  .mq-bi{padding:8px 8px 8px 12px;gap:8px}
+  .mq-bi .sd-avs{display:none}
+  .mq-bi .sd-btn{padding:0 16px}
+  .sd-salas{gap:2px}
+  .sd-salas button{padding:0 3px;font-size:12.5px}
+}
 
 /* ---- quando a sede é estreita (computador com a lateral aberta) e no celular ---- */
 @container sd (max-width:1180px){
@@ -16015,6 +16185,9 @@ function cardProposta(pr){
   if(abaixo)   h+='<div class="pflag baixo"><span>◆</span><span>'+brl(base-pr.valor)+' abaixo da sua diária ('+brl(base)+'). Não fecha? Recuse por “valor abaixo da minha tabela”.</span></div>';
   if(aberta && pr.gar && faseTem(2)) h+='<div class="pflag info"><span>◈</span><span>Sinal de '+GARANTIA.sinal+'% já reservado. O resto cai no dia seguinte à entrega.</span></div>';
   if(pr.alvo) h+='<div class="pflag info"><span>◈</span><span>Consulta que você enviou para <b>'+esc(pr.alvo)+'</b>.</span></div>';
+  /* a proposta que nasceu de um job montado na Sede (0006): a marca da guilda, o job e o tamanho da equipe */
+  if(pr.guilda) h+='<div class="pflag info" data-gui><span>◈</span><span><b>Job da guilda'+(pr.guilda.nome?' '+esc(pr.guilda.nome):"")+'</b>'+(pr.guilda.titulo?' · '+esc(pr.guilda.titulo):"")+
+    (pr.guilda.equipe?' · '+pl(pr.guilda.equipe,"na equipe","na equipe"):"")+'. <button type="button" class="linkc" data-pp-quadro>Ver a equipe</button></span></div>';
   if(pr.chamadaId && aberta) h+='<div class="pflag aviso2"><span>▲</span><span><b>Chamada de última hora — o primeiro que aceitar leva.</b> Foi para '+pr.concorrentes+' pessoas livres.</span></div>';
 
   if(aberta){
@@ -21501,7 +21674,9 @@ function realCarregar(){
    Só var e function no topo (o TDZ de 19/out · 2). */
 var REAL_GUILDA=null, REAL_GUILDA_PESSOAS=null, REAL_GUILDA_BUSCA="";
 var SD={tela:"painel",canal:null,info:null,msgs:[],v:0,etag:null,timer:null,mural:null,memoria:null,sel:0,filtro:"tudo",ano:"",
-  digEm:0,carregou:false,pintou:0,anexo:null,busca:"",ultimoPainel:0};
+  digEm:0,carregou:false,pintou:0,anexo:null,busca:"",ultimoPainel:0,
+  /* o quadro de missões (0006): o modo de escolha, o filtro, o cartaz que acabou de pregar e o estado já visto de cada vaga */
+  montar:null,folhaJob:null,filtroM:"tudo",missaoNova:null,vistos:{}};
 var ERRO_GUILDA={ja_em_guilda:"Você já está numa guilda.",carencia:"Você saiu de uma guilda há pouco: espere os 7 dias.",
   nome_em_uso:"Já existe uma guilda com esse nome ou essa tag.",cheia:"A guilda está sem lugares.",ja_membro:"Essa pessoa já está na guilda.",
   ja_convidado:"Essa pessoa já foi convidada.",limite_convites:"Convites demais abertos. Cancele algum.",bloqueado:"Não dá para convidar essa pessoa.",
@@ -21511,7 +21686,8 @@ var ERRO_GUILDA={ja_em_guilda:"Você já está numa guilda.",carencia:"Você sai
   so_quem_fez:"Só quem fez o job (ou quem fundou) faz isso.",chamada_futura:"A presença se marca no dia da chamada.",
   chamada_passou:"Essa chamada já passou.",limite_fixados:"Já tem coisa demais fixada. Solte uma.",cota:"A guilda chegou ao limite de imagens.",
   grande:"Imagem grande demais.",formato:"Use PNG, JPEG ou WebP.",invalida:"Não consegui ler essa imagem.",telefone:"Contato não vai aqui: tire o número.",
-  titulo:"Dê um título.",local:"Diga a locação.",hora:"Hora da chamada inválida.",dia:"Escolha o dia.",link:"Use um link https.",chamada:"Confira o call sheet."};
+  titulo:"Dê um título.",local:"Diga a locação.",
+  missao:"Esse job mudou. Atualize o quadro.",missao_dia:"Você já tem um job montado nesse dia.",equipe:"Escolha gente da guilda (sem você).",hora:"Hora da chamada inválida.",dia:"Escolha o dia.",link:"Use um link https.",chamada:"Confira o call sheet."};
 var SD_PALETAS={"gel-magenta":{nome:"Gel magenta",d:"#F062B8",l:"#B0307A",ink:"#1F0716"},tungstenio:{nome:"Tungstênio",d:"#F0A85E",l:"#B8691E",ink:"#1A1208"},
   "luz-do-dia":{nome:"Luz do dia",d:"#7CC4FF",l:"#1F6FB8",ink:"#06121F"},bordo:{nome:"Bordô",d:"#E8697D",l:"#A8283D",ink:"#1F0609"},
   jade:{nome:"Jade",d:"#3FD3B0",l:"#0F7D66",ink:"#04150F"}};
@@ -21673,6 +21849,7 @@ function sdPintar(entrada){
   if(tela==="chat") h+=sdChatHtml(m);
   else if(tela==="mural") h+=sdMuralHtml(m);
   else if(tela==="memoria") h+=sdMemoriaHtml(m);
+  else if(tela==="missoes") h+=sdMissoesHtml(m);
   else h+=sdPainelHtml(m);
   sd.innerHTML=h;
   var t=sd.querySelector(".sd-tela"); if(t&&entrada&&sdMov()) t.classList.add("sd-entra");
@@ -21680,14 +21857,17 @@ function sdPintar(entrada){
   if(tela==="chat") sdLigarChat(sd,m);
   else if(tela==="mural") sdLigarMural(sd,m);
   else if(tela==="memoria") sdLigarMemoria(sd,m);
+  else if(tela==="missoes") sdLigarMissoes(sd,m);
   else sdLigarPainel(sd,m);
+  sdBarra();
 }
 function sdTopo(m){
   var nl=m.chat.nao_lidas;
-  var salas=[["painel","Sede"],["chat","Chat"],["mural","Quadro"],["memoria","Memória"]];
+  var salas=[["painel","Sede"],["missoes","Missões"],["chat","Chat"],["mural","Quadro"],["memoria","Memória"]], vez=sdMinhaVez();
   return '<header class="sd-topo"><div class="sd-onde">'+sdIco("guilda")+'<span>Guilda</span><span style="opacity:.4">/</span><b>'+esc(m.guilda.nome)+'</b></div>'+
     '<nav class="sd-salas" aria-label="Salas da sede">'+salas.map(function(s){
-      return '<button type="button" data-sd-ir="'+s[0]+'" aria-current="'+(SD.tela===s[0])+'">'+s[1]+(s[0]==="chat"&&nl&&SD.tela!=="chat"?'<span class="sd-bd">'+nl+'</span>':"")+'</button>' }).join("")+'</nav>'+
+      return '<button type="button" data-sd-ir="'+s[0]+'" aria-current="'+(SD.tela===s[0])+'">'+s[1]+(s[0]==="chat"&&nl&&SD.tela!=="chat"?'<span class="sd-bd">'+nl+'</span>':"")+
+        (s[0]==="missoes"&&vez&&SD.tela!=="missoes"?'<span class="sd-bd" title="Esperando a sua resposta">'+vez+'</span>':"")+'</button>' }).join("")+'</nav>'+
     '<button type="button" class="sd-icb" data-sd-membros title="Membros e lugares" aria-label="Membros e lugares">'+sdIco("equipe")+'</button>'+
     (sdDono()?'<button type="button" class="sd-icb" data-sd-personalizar title="Personalizar a sede" aria-label="Personalizar a sede">'+sdIco("pincel")+'</button>':"")+'</header>';
 }
@@ -21711,10 +21891,10 @@ function sdIr(tela,canal){
 function sdLaco(){
   clearTimeout(SD.timer);
   SD.timer=setTimeout(function(){
-    if(S.tab!=="guildas"||!REAL_GUILDA||!REAL_GUILDA.minha||!v("sd")){ document.documentElement.removeAttribute("data-sd-chat"); return }
+    if(S.tab!=="guildas"||!REAL_GUILDA||!REAL_GUILDA.minha||!v("sd")){ document.documentElement.removeAttribute("data-sd-chat"); sdBarra(); return }
     if(document.hidden){ sdLaco(); return }
     if(SD.tela==="chat") sdPollChat(false).then(sdLaco);
-    else if(Date.now()-SD.ultimoPainel>25000) realGuildaCarregar().then(function(){ if(SD.tela==="painel") sdPintar(false); sdLaco() });
+    else if(Date.now()-SD.ultimoPainel>(SD.tela==="missoes"?10000:25000)) realGuildaCarregar().then(function(){ if((SD.tela==="painel"||SD.tela==="missoes")&&!v("sd-veu")) sdPintar(false); sdLaco() });
     else sdLaco();
   },SD.tela==="chat"?2500:5000);
 }
@@ -21821,7 +22001,7 @@ function sdPainelHtml(m){
       (x.reacoes&&x.reacoes.length?'<div class="sd-reacs">'+x.reacoes.map(function(r){ return '<span class="sd-reac"'+(r.eu?" data-eu":"")+'>'+r.e+' <b>'+r.n+'</b></span>' }).join("")+'</div>':"")+'</div></button>' }).join("");
   else h+='<div class="sd-vazio"><b>A sala está quieta.</b>Diga oi para a guilda.</div>';
   h+='<div class="sd-digl">'+(ch.digitando.length?'<span class="sd-dig"><i></i><i></i><i></i></span>'+esc(sdPrimeiro(ch.digitando[0]))+(ch.digitando.length>1?" e mais "+(ch.digitando.length-1):"")+' digitando':"")+'</div></div>';
-  return h+'</div></div>';
+  return h+'</div>'+sdMissoesFaixa(m)+'</div>';
 }
 function pl_(n,u){ return pl(n,u) }
 function sdLigarPainel(sd){
@@ -21830,6 +22010,7 @@ function sdLigarPainel(sd){
   var b=v("rg-convidar"); if(b) b.onclick=rgConvidar;
   sd.querySelectorAll("[data-sd-membros]").forEach(function(x){ x.onclick=sdMembros });
   b=sd.querySelector("[data-sd-lugares]"); if(b) b.onclick=function(){ sdLugaresFolha() };
+  var f=v("mq-faixa"); if(f){ sdLigarCartazes(f); sdLigarEscolha(f) }
 }
 
 /* ---------------- CHAT ---------------- */
@@ -22322,7 +22503,7 @@ function sdFolha(html,curta){
   return o;
 }
 function sdEsc(e){ if(e.key==="Escape") sdFecharFolha() }
-function sdFecharFolha(){ var o=v("sd-veu"); if(o) o.remove(); document.body.style.overflow=""; document.removeEventListener("keydown",sdEsc) }
+function sdFecharFolha(){ var o=v("sd-veu"); if(o) o.remove(); document.body.style.overflow=""; document.removeEventListener("keydown",sdEsc); var b=v("mq-barra"); if(b) b.hidden=false }
 function sdErro(o,msg){ var e=o.querySelector(".sd-erro"); if(e) e.textContent=msg||"" }
 var SD_PRECO={fundacao:18900,p5:1490,p15:3490};
 /** a conta da folha: fundação (uma vez) + o pacote escolhido (1º mês) = hoje; depois, só o pacote por mês */
@@ -22448,17 +22629,22 @@ function sdPersonalizar(){
   pinta();
 }
 function sdMembros(){
-  var m=sdMinha(); if(!m) return; var dono=sdDono(), vg=m.vagas;
-  var o=sdFolha('<div class="sd-form"><h1><b>'+vg.ocupadas+'</b> de '+vg.total+' lugares.</h1><div class="sd-apoio">Quem está na '+esc(m.guilda.nome)+'.</div>'+
-    '<div class="sd-membros" id="rg-time">'+m.membros.map(function(x){
-      return '<div class="sd-p slm">'+sdAv(x,36)+'<div><b>'+esc(x.nome)+'</b><small>'+(x.arroba?'@'+esc(x.arroba)+' · ':"")+(x.papel==="dono"?"fundou a guilda":"membro")+'</small></div>'+
-        (x.eu?'<span class="sd-st">você</span>':dono?'<button type="button" class="sd-btn" data-sm data-rg-tirar="'+esc(x.sub)+'" data-rg-nome="'+esc(x.nome)+'">Tirar</button>':"")+'</div>' }).join("")+'</div>'+
+  var m=sdMinha(); if(!m) return; var dono=sdDono(), vg=m.vagas, px=sdProximos(), mt=!!SD.montar;
+  var o=sdFolha('<div class="sd-form"><h1><b>'+vg.ocupadas+'</b> de '+vg.total+' lugares.</h1><div class="sd-apoio mq-mcab"><span>Quem está na '+esc(m.guilda.nome)+'.</span>'+
+      (m.membros.length>1?'<button type="button" class="sd-chip" id="mq-m-montar" aria-pressed="'+mt+'">'+sdIco("equipe")+'Montar job</button>':"")+'</div>'+
+    '<div class="sd-membros" id="rg-time"'+(mt?" data-montar":"")+'>'+m.membros.map(function(x){
+      var on=mt&&SD.montar.sel.indexOf(x.sub)>=0;
+      return '<div class="sd-p slm">'+sdAv(x,36)+'<div><b>'+esc(x.nome)+'</b><small>'+(x.arroba?'@'+esc(x.arroba)+' · ':"")+(x.papel==="dono"?"fundou a guilda":"membro")+'</small>'+mqProxSelo(px[x.sub])+'</div>'+
+        (x.eu?'<span class="sd-st">você</span>':mt?'<button type="button" class="mq-esc" data-sd-escolher="'+esc(x.sub)+'" aria-pressed="'+on+'" aria-label="Escolher '+esc(x.nome)+'">'+sdIco("check")+'</button>'
+          :dono?'<button type="button" class="sd-btn" data-sm data-rg-tirar="'+esc(x.sub)+'" data-rg-nome="'+esc(x.nome)+'">Tirar</button>':"")+'</div>' }).join("")+'</div>'+
     (dono&&m.convites.length?'<h4 style="font-size:13px;color:var(--sd-ink2);margin-top:18px">Convites abertos</h4><div class="sd-membros">'+m.convites.map(function(c){
       return '<div class="sd-p"><div><b>'+(c.tipo==="link"?"Convite por link":"Convite pelo @")+'</b><small>vence em '+esc(rgDia(c.expira_em.slice(0,10)))+'</small></div><button type="button" class="sd-btn" data-sm data-rg-cancelar="'+esc(c.id)+'">Cancelar</button></div>' }).join("")+'</div>':"")+
     '<div class="sd-pagar">'+(dono?'<button type="button" class="sd-btn" data-ink id="sd-m-convidar">'+sdIco("plus")+'Convidar</button>':"")+
     '<button type="button" class="sd-btn" id="rg-sair" style="margin-left:'+(dono?"0":"auto")+'">'+sdIco("sair")+'Sair da guilda</button></div>'+
     '<div class="sd-nota">Sair custa 7 dias até entrar em outra; o que a guilda já fechou fica.</div></div>',true);
   o.querySelectorAll("[data-rg-tirar]").forEach(function(x){ x.onclick=function(){ if(window.confirm("Tirar "+x.dataset.rgNome+" da guilda?")) rgPedir({acao:"remover",sub:x.dataset.rgTirar}).then(sdMembrosDeNovo) } });
+  sdLigarEscolha(o);
+  var mm=v("mq-m-montar"); if(mm) mm.onclick=function(){ sdMontar(!SD.montar) };
   o.querySelectorAll("[data-rg-cancelar]").forEach(function(x){ x.onclick=function(){ rgPedir({acao:"cancelar",id:x.dataset.rgCancelar}).then(sdMembrosDeNovo) } });
   var b=v("sd-m-convidar"); if(b) b.onclick=function(){ sdFecharFolha(); rgConvidar() };
   v("rg-sair").onclick=function(){
@@ -22526,6 +22712,277 @@ function sdNomearFolha(c){
     var corpo={acao:"nomear",job:c.id,titulo:v("sd-n-tit").value.trim()}, t=v("sd-n-tipo").value; if(t) corpo.tipo=t;
     sdPedirSede(corpo,true).then(function(r){ if(!r.ok) return sdErro(o,rgMsg({j:r.j,status:r.status})); sdFecharFolha(); som("toque"); sdCarregarMemoria(); realGuildaCarregar() });
   };
+}
+
+/* ---------------- O QUADRO DE MISSÕES (0006): montar o job com gente da guilda ----------------
+   "Montar job" liga um modo de escolha (SD.montar): na Sede a faixa de missões vira a grade de rostos, e na lista de
+   membros cada linha ganha o seu toque; a barra fixa embaixo (#mq-barra) diz quantos e leva à folha do job. Ao montar, o
+   servidor cria a missão (vagas, canal do job e, se pedido, o call sheet nele) e a tela manda UMA proposta por pessoa pelo
+   POST /api/zro/propostas de sempre, com `missao`. Aceitar e recusar são o PATCH de sempre, na caixa de Propostas; o
+   quadro mostra o estado que o BANCO escreveu. Sem preço no quadro, sem telefone. Estados por data-* e aria-*. */
+var SD_MEST={a_rodar:"A rodar",rodando:"Rodando",feito:"Feito"};
+var SD_VEST={vai:"vai",pendente:"pendente",nao_vai:"não vai"};
+var SD_SEM=["dom","seg","ter","qua","qui","sex","sáb"];
+var SD_AGENDA={livre:"livre no dia",ocupado:"ocupado no dia",negociando:"negociando o dia",no_job:"já num job da guilda",sem_agenda:"agenda não divulgada"};
+function sdMissoes(){ var m=sdMinha(); return (m&&m.missoes)||[] }
+function sdProximos(){ var m=sdMinha(); return (m&&m.proximos)||{} }
+/** quantos cartazes esperam a MINHA resposta (o selo da sala) */
+function sdMinhaVez(){ var eu=sdEu(); return sdMissoes().filter(function(x){ return x.estado!=="feito"&&x.equipe.some(function(q){ return q.sub===eu&&q.estado==="pendente"&&q.enviada }) }).length }
+function sdDiaCurto(d){ var x=sdD(d); return x?SD_SEM[x.getDay()]+" "+String(x.getDate()).padStart(2,"0")+" "+SD_MES[x.getMonth()]:"" }
+function mqAgendaSelo(e){ return e&&SD_AGENDA[e]?'<small class="mq-ag" data-ag="'+e+'">'+SD_AGENDA[e]+'</small>':"" }
+function mqProxSelo(p){
+  if(!p) return "";
+  return '<span class="mq-prox" data-e="'+esc(p.estado)+'" title="Próximo job: '+esc(p.titulo)+'">'+(p.estado==="vai"?sdIco("check"):p.estado==="monta"?sdIco("estrela"):'<i></i>')+
+    '<span>'+esc(sdDiaCurto(p.dia))+' · '+esc(p.titulo)+'</span></span>';
+}
+function mqConta(c){
+  return [c.vai?c.vai+" "+(c.vai===1?"vai":"vão"):"",c.pendente?c.pendente+" "+(c.pendente===1?"pendente":"pendentes"):"",c.nao_vai?c.nao_vai+" não "+(c.nao_vai===1?"vai":"vão"):""].filter(Boolean).join(" · ");
+}
+/** um cartaz do quadro: a data, o estado, o job e a equipe com o estado de cada pessoa. prev = a prévia da folha */
+function mqCartazHtml(x,i,prev){
+  var d=sdD(x.dia)||new Date(), eu=sdEu(), dono=!!x.eu_dono&&!prev, rot=[-1.6,1.1,-.6,1.4,-1.1,.7][i%6];
+  var novo=!prev&&SD.missaoNova===x.id&&sdMov();
+  var eq=x.equipe.map(function(q){
+    var ch=x.id+":"+q.sub, ant=SD.vistos[ch], mudou=!prev&&ant&&ant!==q.estado&&sdMov(); if(!prev) SD.vistos[ch]=q.estado;
+    var p=sdMembro(q.sub)||{sub:q.sub,nome:q.nome};
+    var acao=dono&&x.estado!=="feito"?(q.estado==="nao_vai"?'<button type="button" class="mq-tr" data-mq-trocar="'+esc(x.id+"|"+q.sub)+'">Trocar</button>'
+      :!q.enviada?'<button type="button" class="mq-tr" data-mq-mandar="'+esc(x.id+"|"+q.sub)+'">Mandar</button>':""):"";
+    return '<li class="mq-v" data-e="'+q.estado+'"'+(mudou?" data-mudou":"")+'>'+sdAv(p,28)+'<span class="mq-vn"><b>'+esc(sdPrimeiro(q.nome))+(q.sub===eu?" · você":"")+'</b><small>'+esc(q.funcao||"Equipe")+'</small></span>'+acao+
+      '<span class="mq-vs" title="'+SD_VEST[q.estado]+'">'+(q.estado==="vai"?sdIco("check"):q.estado==="nao_vai"?sdIco("fechar"):'<i></i><i></i><i></i>')+'<span class="sd-sr">'+SD_VEST[q.estado]+'</span></span></li>';
+  }).join("");
+  var minha=x.equipe.find(function(q){ return q.sub===eu });
+  var quem=x.contratante==="fora"?(x.cliente?"De fora · "+x.cliente:"Contratante de fora"):"Da casa · "+sdPrimeiro(x.dono&&x.dono.nome);
+  return '<article class="mq-c" data-e="'+x.estado+'" data-mq="'+esc(x.id)+'" style="--r:'+rot+'deg"'+(novo?" data-novo":"")+'>'+
+    '<i class="mq-tacha" aria-hidden="true"></i>'+
+    '<header class="mq-ch"><div class="mq-dt"><b class="sd-mono">'+String(d.getDate()).padStart(2,"0")+'</b><span>'+SD_MES[d.getMonth()]+'<br>'+SD_SEM[d.getDay()]+'</span></div>'+
+      '<span class="mq-est" data-e="'+x.estado+'">'+(x.estado==="feito"?sdIco("check"):'<i></i>')+SD_MEST[x.estado]+'</span></header>'+
+    '<h3>'+esc(x.titulo)+'</h3>'+
+    '<div class="mq-meta"><span>'+esc(quem)+'</span>'+(x.ini?'<span class="sd-mono">'+esc(x.ini)+(x.fim?"–"+esc(x.fim):"")+'</span>':"")+(x.local?'<span>'+esc(x.local)+'</span>':"")+'</div>'+
+    '<ul class="mq-eqp" aria-label="Equipe">'+(eq||'<li class="mq-v" data-e="pendente"><span class="mq-vn"><small>Escolha quem vai</small></span></li>')+'</ul>'+
+    (prev?"":'<footer class="mq-cf"><span class="mq-conta">'+esc(mqConta(x.conta))+'</span>'+
+      (minha&&minha.estado==="pendente"&&minha.enviada&&x.estado!=="feito"?'<button type="button" class="sd-btn" data-sm data-ink data-mq-resp>Responder</button>':"")+
+      (x.canal?'<button type="button" class="sd-btn" data-sm data-mq-canal="'+esc(x.canal)+'" aria-label="Canal do job">'+sdIco("hash")+'Canal</button>':"")+
+      (dono&&x.estado!=="feito"?'<button type="button" class="mq-x" data-mq-desmontar="'+esc(x.id)+'" title="Desmontar o job" aria-label="Desmontar o job">'+sdIco("lixo")+'</button>':"")+'</footer>')+
+    '</article>';
+}
+/* a faixa da Sede: os próximos cartazes — ou, montando, a grade de rostos para escolher quem vai */
+function sdMissoesFaixa(m){
+  var outros=m.membros.filter(function(x){ return !x.eu }), px=sdProximos();
+  if(SD.montar) return '<section class="mq-faixa" id="mq-faixa" data-montar><div class="mq-fh"><div><h2>Quem vai nesse <b>job</b>?</h2><p>Toque em quem você quer na equipe.</p></div></div>'+
+    (outros.length?'<div class="mq-rostos">'+outros.map(function(x){ var on=SD.montar.sel.indexOf(x.sub)>=0;
+      return '<button type="button" class="mq-rosto" data-sd-escolher="'+esc(x.sub)+'" aria-pressed="'+on+'" aria-label="'+esc(x.nome)+'">'+sdAv(x,60)+'<span class="mq-ck">'+sdIco("check")+'</span><b>'+esc(sdPrimeiro(x.nome))+'</b>'+
+        (px[x.sub]?'<small>'+esc(sdDiaCurto(px[x.sub].dia))+'</small>':'<small>sem job no quadro</small>')+'</button>' }).join("")+'</div>'
+      :'<div class="sd-vazio"><b>A guilda é só você por enquanto.</b>Convide gente para montar a equipe.</div>')+'</section>';
+  var ms=sdMissoes().filter(function(x){ return x.estado!=="feito" });
+  return '<section class="mq-faixa" id="mq-faixa"><div class="mq-fh"><div><h2>Quadro de <b>missões</b></h2><p>'+(ms.length?pl(ms.length,"job a rodar","jobs a rodar"):"Escolha a equipe e monte o primeiro job.")+'</p></div>'+
+    '<div class="sd-bts"><button type="button" class="sd-btn" data-sm data-ink data-mq-montar>'+sdIco("equipe")+'Montar job</button>'+(ms.length?'<button type="button" class="sd-btn" data-sm data-sd-ir2="missoes">Ver o quadro</button>':"")+'</div></div>'+
+    (ms.length?'<div class="mq-quadro" data-mini>'+ms.slice(0,3).map(function(x,i){ return mqCartazHtml(x,i) }).join("")+'</div>':"")+'</section>';
+}
+/* a sala: o quadro inteiro, com os três estados */
+function sdMissoesHtml(m){
+  var fs=[["tudo","Tudo"],["a_rodar","A rodar"],["rodando","Rodando"],["feito","Feito"]], todas=sdMissoes();
+  var lista=todas.filter(function(x){ return SD.filtroM==="tudo"||x.estado===SD.filtroM });
+  var h='<div class="sd-tela"><div class="mq-cab"><h1>O quadro de <b>missões</b></h1><div class="sd-filt">'+fs.map(function(f){
+      var n=f[0]==="tudo"?todas.length:todas.filter(function(x){ return x.estado===f[0] }).length;
+      return '<button type="button" class="sd-chip" data-mq-filtro="'+f[0]+'" aria-pressed="'+(SD.filtroM===f[0])+'">'+f[1]+(n?' <b class="sd-mono">'+n+'</b>':"")+'</button>' }).join("")+'</div>'+
+    '<button type="button" class="sd-btn" data-ink data-mq-montar>'+sdIco("equipe")+'Montar job</button></div>';
+  if(!lista.length) h+='<div class="mq-quadro" data-vazio><div class="sd-vazio"><b>'+(todas.length?"Nada nesse estado.":"O quadro está vazio.")+'</b>'+(todas.length?"Troque o filtro.":"Escolha a equipe e monte o primeiro job da guilda.")+'</div></div>';
+  else h+='<div class="mq-quadro" id="mq-quadro">'+lista.map(function(x,i){ return mqCartazHtml(x,i) }).join("")+'</div>';
+  return h+'<div class="sd-regra" style="margin-top:22px">'+sdIco("cadeado")+'<div><b>Sem preço no quadro.</b> Cada um responde na caixa de Propostas; o valor fica entre os dois lados. <b>Nada disso mexe na busca do Carro.</b></div></div></div>';
+}
+function sdLigarMissoes(sd){
+  sd.querySelectorAll("[data-mq-filtro]").forEach(function(b){ b.onclick=function(){ SD.filtroM=b.dataset.mqFiltro; som("passo"); sdPintar(false) } });
+  sdLigarCartazes(sd);
+}
+function sdLigarCartazes(raiz){
+  raiz.querySelectorAll("[data-mq-montar]").forEach(function(b){ b.onclick=function(){ sdMontar(true) } });
+  raiz.querySelectorAll("[data-mq-canal]").forEach(function(b){ b.onclick=function(){ sdIr("chat",b.dataset.mqCanal) } });
+  raiz.querySelectorAll("[data-mq-resp]").forEach(function(b){ b.onclick=function(){ show("propostas") } });
+  raiz.querySelectorAll("[data-mq-trocar]").forEach(function(b){ b.onclick=function(){ var p=b.dataset.mqTrocar.split("|"); sdTrocarFolha(p[0],p[1]) } });
+  raiz.querySelectorAll("[data-mq-mandar]").forEach(function(b){ b.onclick=function(){ var p=b.dataset.mqMandar.split("|"); b.disabled=true;
+    sdMandarProposta(p[0],p[1]).then(function(ok){ if(!ok){ b.disabled=false; return } som("toque"); realGuildaCarregar().then(function(){ sdPintar(false) }) }) } });
+  raiz.querySelectorAll("[data-mq-desmontar]").forEach(function(b){ b.onclick=function(){
+    if(!window.confirm("Desmontar este job? As propostas saem da caixa de quem foi chamado.")) return;
+    sdPedirSede({acao:"missao_cancelar",missao:b.dataset.mqDesmontar}).then(function(r){ if(!r.ok) return; som("nao"); realGuildaCarregar().then(function(){ sdPintar(false) }) }) } });
+  if(SD.missaoNova) setTimeout(function(){ SD.missaoNova=null },1400);
+}
+/** UMA proposta para quem está na vaga, pelo POST de sempre (a marca da guilda é `missao`; dia, horário e local vêm dela) */
+function sdMandarProposta(mid,sub){
+  var m=sdMinha(), x=sdMissoes().find(function(y){ return y.id===mid });
+  var corpo={para:sub,missao:mid,mensagem:("Job da guilda "+(m?m.guilda.nome:"")+": "+(x?x.titulo:"")).slice(0,1000)};
+  return cfbPedir("POST","/api/zro/propostas",corpo).then(function(r){
+    if(r.status===201) return true;
+    avisar({t:"A proposta não foi",sub:rgMsg(r),tipo:"chama",icone:"⚠"}); return false;
+  });
+}
+
+/* ---- o modo "Montar job" e a barra fixa embaixo ---- */
+function sdMontar(on){
+  if(on){
+    if(!SD.montar) SD.montar={sel:[]};
+    som("passo");
+    if(v("sd-veu")&&v("rg-time")){ sdMembros(); sdBarra(); return }
+    SD.tela="painel"; sdPintar(false); sdBarra(); sdLaco();
+    var f=v("mq-faixa"); if(f) f.scrollIntoView({block:"center",behavior:sdMov()?"smooth":"instant"});
+    return;
+  }
+  SD.montar=null; SD.folhaJob=null;
+  var b=v("mq-barra");
+  if(b&&sdMov()){ b.setAttribute("data-sai",""); setTimeout(function(){ b.remove() },260) } else if(b) b.remove();
+  document.documentElement.removeAttribute("data-sd-montar");
+  if(v("sd-veu")&&v("rg-time")) sdMembros();
+  if(SD.tela==="painel") sdPintar(false);
+}
+function sdEscolher(sub){
+  if(!SD.montar||sub===sdEu()) return;
+  var i=SD.montar.sel.indexOf(sub);
+  if(i>=0) SD.montar.sel.splice(i,1); else SD.montar.sel.push(sub);
+  var on=i<0; som(on?"toque":"passo");
+  document.querySelectorAll("[data-sd-escolher]").forEach(function(x){ if(x.dataset.sdEscolher===sub) x.setAttribute("aria-pressed",String(on)) });
+  sdBarra();
+}
+function sdLigarEscolha(raiz){
+  raiz.querySelectorAll("[data-sd-escolher]").forEach(function(b){ b.onclick=function(){ sdEscolher(b.dataset.sdEscolher) } });
+}
+function sdBarra(){
+  var b=v("mq-barra"), m=sdMinha();
+  if(!SD.montar||!m||S.tab!=="guildas"){ if(b) b.remove(); document.documentElement.removeAttribute("data-sd-montar"); return }
+  if(!b){ b=document.createElement("div"); b.id="mq-barra"; b.className="mq-barra"; b.setAttribute("role","region"); b.setAttribute("aria-label","Montar job"); document.body.appendChild(b) }
+  b.hidden=false; b.removeAttribute("data-sai");
+  b.setAttribute("style",sdTons(m.guilda.paleta));
+  document.documentElement.setAttribute("data-sd-montar","");
+  var sel=SD.montar.sel.map(function(s){ return sdMembro(s) }).filter(Boolean), n=sel.length;
+  b.innerHTML='<div class="mq-bi">'+(n?sdAvs(sel.slice(0,4),30):'<span class="mq-bv">'+sdIco("equipe")+'</span>')+
+    '<span class="mq-bt" aria-live="polite"><b class="sd-mono">'+n+'</b> '+(n===1?"escolhido":"escolhidos")+'</span>'+
+    '<button type="button" class="sd-icb" id="mq-b-x" aria-label="Cancelar" title="Cancelar">'+sdIco("fechar")+'</button>'+
+    '<button type="button" class="sd-btn" data-ink id="mq-b-ok"'+(n?"":" disabled")+'>Montar job</button></div>';
+  v("mq-b-x").onclick=function(){ sdMontar(false) };
+  v("mq-b-ok").onclick=function(){ if(SD.montar&&SD.montar.sel.length) sdMissaoFolha() };
+}
+
+/* ---- a folha do job: título, contratante, dia, início e fim, local e a função de cada escolhido ---- */
+function sdMissaoFolha(){
+  var m=sdMinha(); if(!m||!SD.montar) return;
+  var hoje=key(new Date());
+  var st=SD.folhaJob||(SD.folhaJob={titulo:"",contratante:"casa",cliente:"",dia:"",ini:"",fim:"",local:"",cs:false,hora:"",obs:"",fun:{}});
+  var agenda=null, enviando=false;
+  var guardar=function(){
+    [["titulo","mq-f-tit"],["cliente","mq-f-cli"],["dia","mq-f-dia"],["ini","mq-f-ini"],["fim","mq-f-fim"],["local","mq-f-local"],["hora","mq-f-hora"],["obs","mq-f-obs"]].forEach(function(p){ var e=v(p[1]); if(e) st[p[0]]=e.value.trim() });
+    var c=v("mq-f-cs"); if(c) st.cs=c.checked;
+  };
+  var fake=function(){
+    return {id:"prev",titulo:st.titulo||"Novo job",contratante:st.contratante,cliente:st.cliente,dia:st.dia||hoje,ini:st.ini,fim:st.fim,local:st.local,estado:st.dia===hoje?"rodando":"a_rodar",
+      dono:{sub:sdEu(),nome:(m.membros.find(function(x){ return x.eu })||{}).nome},eu_dono:true,
+      equipe:SD.montar.sel.map(function(s){ var p=sdMembro(s)||{nome:"?"}; return {sub:s,nome:p.nome,funcao:st.fun[s]||null,estado:"pendente",enviada:false} }),conta:{vai:0,pendente:0,nao_vai:0}};
+  };
+  var prevPintar=function(){ var p=v("mq-f-prev"); if(p) p.innerHTML=mqCartazHtml(fake(),0,true) };
+  var contar=function(){ var b=v("mq-f-ok"); if(b&&!enviando) b.textContent="Mandar "+pl(SD.montar.sel.length,"proposta","propostas") };
+  var eqPintar=function(){
+    var el=v("mq-f-eq"); if(!el) return;
+    var sel=SD.montar.sel.map(function(s){ return sdMembro(s) }).filter(Boolean);
+    var h=sel.map(function(x){
+      return '<div class="mq-er">'+sdAv(x,34)+'<div class="mq-ern"><b>'+esc(x.nome)+'</b>'+mqAgendaSelo(agenda&&agenda[x.sub])+'</div>'+
+        '<select data-mq-fun="'+esc(x.sub)+'" aria-label="Função de '+esc(x.nome)+'"><option value="">Função</option>'+FUNCOES.map(function(f){ return '<option'+(st.fun[x.sub]===f?" selected":"")+'>'+esc(f)+'</option>' }).join("")+'</select>'+
+        '<button type="button" class="sd-icb" data-mq-tirar="'+esc(x.sub)+'" aria-label="Tirar '+esc(x.nome)+'" title="Tirar">'+sdIco("fechar")+'</button></div>' }).join("");
+    var livres=agenda?m.membros.filter(function(x){ return !x.eu&&SD.montar.sel.indexOf(x.sub)<0&&agenda[x.sub]==="livre" }):[];
+    if(livres.length) h+='<div class="mq-sug"><small>Livres nesse dia</small>'+livres.map(function(x){ return '<button type="button" class="sd-chip" data-mq-add="'+esc(x.sub)+'">'+sdAv(x,22)+esc(sdPrimeiro(x.nome))+sdIco("plus")+'</button>' }).join("")+'</div>';
+    el.innerHTML=h;
+    el.querySelectorAll("[data-mq-fun]").forEach(function(s){ s.onchange=function(){ st.fun[s.dataset.mqFun]=s.value; prevPintar() } });
+    el.querySelectorAll("[data-mq-tirar]").forEach(function(b){ b.onclick=function(){ var i=SD.montar.sel.indexOf(b.dataset.mqTirar); if(i>=0) SD.montar.sel.splice(i,1); som("passo");
+      if(!SD.montar.sel.length){ guardar(); sdFecharFolha(); return } eqPintar(); prevPintar(); contar() } });
+    el.querySelectorAll("[data-mq-add]").forEach(function(b){ b.onclick=function(){ SD.montar.sel.push(b.dataset.mqAdd); som("toque"); eqPintar(); prevPintar(); contar() } });
+  };
+  var carregarDia=function(){
+    if(!st.dia){ agenda=null; return eqPintar() }
+    cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(st.dia)).then(function(r){
+      if(r.status!==200||!r.j) return;
+      agenda={}; (r.j.pessoas||[]).forEach(function(p){ agenda[p.sub]=p.estado }); eqPintar();
+    });
+  };
+  var o=sdFolha('<div class="sd-prev" data-mprev><img src="'+esc(sdMidia(SD_CAPA.camera,500))+'" alt=""><i class="sd-claq"></i><div class="sd-ttl">O cartaz no quadro</div><div class="mq-prevc" id="mq-f-prev"></div></div>'+
+    '<div class="sd-form"><h1>Montar o <b>job</b>.</h1><div class="sd-apoio">Cada um recebe a proposta na caixa de Propostas.</div>'+
+    '<label class="sd-campo">Título<input id="mq-f-tit" maxlength="60" value="'+esc(st.titulo)+'" placeholder="Clipe “Maré Cheia”"></label>'+
+    '<div class="sd-campo">Contratante<div class="mq-seg" role="radiogroup" aria-label="Contratante">'+[["casa","Da casa"],["fora","De fora"]].map(function(c){
+      return '<button type="button" class="sd-chip" role="radio" data-mq-contr="'+c[0]+'" aria-checked="'+(st.contratante===c[0])+'" aria-pressed="'+(st.contratante===c[0])+'">'+c[1]+'</button>' }).join("")+
+      '<input id="mq-f-cli" maxlength="60" value="'+esc(st.cliente)+'" placeholder="Nome do cliente (opcional)" aria-label="Cliente"'+(st.contratante==="fora"?"":" hidden")+'></div></div>'+
+    '<div class="sd-linha3"><label class="sd-campo">Dia<input id="mq-f-dia" type="date" min="'+hoje+'" value="'+esc(st.dia)+'"></label><label class="sd-campo">Início<input id="mq-f-ini" type="time" value="'+esc(st.ini)+'"></label>'+
+      '<label class="sd-campo">Fim<input id="mq-f-fim" type="time" value="'+esc(st.fim)+'"></label></div>'+
+    '<label class="sd-campo">Local<input id="mq-f-local" maxlength="120" value="'+esc(st.local)+'" placeholder="Forte dos Reis Magos"></label>'+
+    '<div class="sd-campo">Equipe<div class="mq-eq" id="mq-f-eq"></div></div>'+
+    '<label class="mq-cs"><input type="checkbox" id="mq-f-cs"'+(st.cs?" checked":"")+'><span><b>Call sheet no canal do job</b><small>A equipe confirma ali mesmo.</small></span></label>'+
+    '<div class="sd-linha2" id="mq-f-csd"'+(st.cs?"":" hidden")+'><label class="sd-campo">Chamada<input id="mq-f-hora" type="time" value="'+esc(st.hora||st.ini||"06:00")+'"></label>'+
+      '<label class="sd-campo">Observação<input id="mq-f-obs" maxlength="200" value="'+esc(st.obs)+'" placeholder="Maré baixa até 9h"></label></div>'+
+    '<p class="sd-erro" role="alert"></p><div class="sd-pagar"><button type="button" class="sd-btn" id="mq-f-volta">Voltar</button><button type="button" class="sd-btn" data-ink id="mq-f-ok">Mandar</button></div>'+
+    '<div class="sd-nota">'+sdIco("cadeado")+'Sem preço no quadro: o valor fica entre os dois lados.</div></div>');
+  var bar=v("mq-barra"); if(bar) bar.hidden=true;
+  o.querySelectorAll("[data-mq-contr]").forEach(function(b){ b.onclick=function(){ guardar(); st.contratante=b.dataset.mqContr;
+    o.querySelectorAll("[data-mq-contr]").forEach(function(x){ var on=x===b; x.setAttribute("aria-checked",String(on)); x.setAttribute("aria-pressed",String(on)) });
+    v("mq-f-cli").hidden=st.contratante!=="fora"; prevPintar() } });
+  ["mq-f-tit","mq-f-cli","mq-f-ini","mq-f-fim","mq-f-local"].forEach(function(id){ v(id).oninput=function(){ guardar(); prevPintar() } });
+  v("mq-f-dia").onchange=function(){ guardar(); prevPintar(); carregarDia() };
+  /* a chamada nasce no início do job (dá para mudar) */
+  v("mq-f-cs").onchange=function(){ guardar(); v("mq-f-csd").hidden=!st.cs; var hh=v("mq-f-hora"); if(st.cs&&(!st.horaMexida||!hh.value)) hh.value=st.ini||hh.value||"06:00"; guardar() };
+  v("mq-f-hora").oninput=function(){ st.horaMexida=true };
+  v("mq-f-volta").onclick=function(){ guardar(); sdFecharFolha() };
+  v("mq-f-ok").onclick=function(){
+    guardar();
+    if([...st.titulo].length<2) return sdErro(o,ERRO_GUILDA.titulo);
+    if(!st.dia) return sdErro(o,ERRO_GUILDA.dia);
+    if(st.dia<hoje) return sdErro(o,"Escolha hoje ou um dia que vem.");
+    if(st.cs&&!st.local) return sdErro(o,ERRO_GUILDA.local);
+    if(st.cs&&!st.hora) return sdErro(o,ERRO_GUILDA.hora);
+    var sel=SD.montar.sel.slice(); if(!sel.length) return sdErro(o,ERRO_GUILDA.equipe);
+    var corpo={acao:"missao",titulo:st.titulo,contratante:st.contratante,dia:st.dia,equipe:sel.map(function(s){ return st.fun[s]?{sub:s,funcao:st.fun[s]}:{sub:s} })};
+    if(st.contratante==="fora"&&st.cliente) corpo.cliente=st.cliente;
+    if(st.ini) corpo.ini=st.ini; if(st.fim) corpo.fim=st.fim; if(st.local) corpo.local=st.local;
+    if(st.cs){ corpo.chamada={hora:st.hora}; if(st.obs) corpo.chamada.obs=st.obs }
+    var bt=this; bt.disabled=true; enviando=true; bt.textContent="Montando…"; sdErro(o,"");
+    sdPedirSede(corpo,true).then(function(r){
+      if(!r.ok){ bt.disabled=false; enviando=false; contar(); return sdErro(o,rgMsg({j:r.j,status:r.status})) }
+      var mis=r.j.missao, feitas=0;
+      var fim=function(){
+        SD.folhaJob=null; SD.montar=null; sdBarra(); sdFecharFolha(); som("claquete");
+        SD.missaoNova=mis.id; SD.filtroM="tudo";
+        avisar({t:feitas===sel.length?"Job montado":feitas+" de "+sel.length+" propostas foram",
+          sub:feitas===sel.length?pl(feitas,"proposta foi","propostas foram")+" para a caixa de cada um.":"Mande de novo pelo cartaz.",icone:"✓"});
+        realGuildaCarregar().then(function(){ sdIr("missoes") });
+      };
+      var uma=function(i){
+        if(i>=sel.length) return fim();
+        bt.textContent="Mandando "+(i+1)+" de "+sel.length+"…";
+        cfbPedir("POST","/api/zro/propostas",{para:sel[i],missao:mis.id,mensagem:("Job da guilda "+m.guilda.nome+": "+st.titulo).slice(0,1000)}).then(function(x){ if(x.status===201) feitas++; uma(i+1) });
+      };
+      uma(0);
+    });
+  };
+  prevPintar(); eqPintar(); contar();
+  if(st.dia) carregarDia();
+}
+
+/* ---- recusou? o dono do job chama outra pessoa da guilda, sugerindo quem está livre no dia (pela agenda) ---- */
+function sdTrocarFolha(mid,sai){
+  var m=sdMinha(), x=sdMissoes().find(function(y){ return y.id===mid }); if(!m||!x) return;
+  var q=x.equipe.find(function(y){ return y.sub===sai })||{nome:""};
+  var o=sdFolha('<div class="sd-form"><h1>Quem entra no <b>lugar</b>?</h1><div class="sd-apoio">'+esc(sdPrimeiro(q.nome))+' não vai em '+esc(x.titulo)+', '+esc(sdDiaCurto(x.dia))+'.</div>'+
+    '<div class="sd-membros" id="mq-t-lista"><p class="sd-nota">Olhando a agenda do dia…</p></div><p class="sd-erro" role="alert"></p></div>',true);
+  var ordem={livre:0,sem_agenda:1,negociando:2,ocupado:3,no_job:4};
+  cfbPedir("GET","/api/zro/sede?ver=dia&dia="+encodeURIComponent(x.dia)).then(function(r){
+    var est={}; ((r.j&&r.j.pessoas)||[]).forEach(function(p){ est[p.sub]=p.estado });
+    var n=function(s){ return ordem[est[s]]===undefined?1:ordem[est[s]] };
+    var cand=m.membros.filter(function(p){ return !p.eu&&!x.equipe.some(function(y){ return y.sub===p.sub }) }).sort(function(a,b){ return n(a.sub)-n(b.sub) });
+    var lista=v("mq-t-lista"); if(!lista) return;
+    lista.innerHTML=cand.length?cand.map(function(p){ return '<div class="sd-p slm">'+sdAv(p,36)+'<div><b>'+esc(p.nome)+'</b>'+mqAgendaSelo(est[p.sub])+'</div>'+
+      '<button type="button" class="sd-btn" data-sm'+(est[p.sub]==="livre"?" data-ink":"")+' data-mq-entra="'+esc(p.sub)+'">Chamar</button></div>' }).join("")
+      :'<p class="sd-nota">Todo mundo da guilda já está neste job.</p>';
+    lista.querySelectorAll("[data-mq-entra]").forEach(function(b){ b.onclick=function(){
+      b.disabled=true;
+      var corpo={acao:"missao_trocar",missao:mid,sai:sai,entra:b.dataset.mqEntra}; if(q.funcao) corpo.funcao=q.funcao;
+      sdPedirSede(corpo,true).then(function(t){
+        if(!t.ok){ b.disabled=false; return sdErro(o,rgMsg({j:t.j,status:t.status})) }
+        sdMandarProposta(mid,b.dataset.mqEntra).then(function(){
+          sdFecharFolha(); som("claquete"); realGuildaCarregar().then(function(){ sdPintar(false) }) });
+      }) } });
+  });
 }
 
 /* ---------------- convite: pelo @ (a comunidade da Absolute ZRO) ou por link. Nada sai por e-mail nem WhatsApp. ---------------- */
@@ -22638,7 +23095,7 @@ function realPropostas(){
       var pr={id:realNum(p.id),srv:p.id,srvTipo:p.tipo,de:p.de_nome,contato:"pelo Carro",data:p.dia||key(HOJE),ini:p.ini||"",fim:p.fim||"",
         func:p.funcao||(p.tipo==="brecho"?"Brechó":""),tipo:p.tipo==="brecho"?"Interesse no brechó":"Consulta",local:p.local||"",
         desc:p.mensagem||"",equip:false,fora:false,valor:(p.valor_cents||0)/100,gar:false,status:REAL_EST[p.estado]||"novo",
-        motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0};
+        motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0,guilda:p.guilda||null};
       PROPOSTAS.push(pr);
       if(p.tipo==="job"&&p.estado==="aceita") JOBS.push({id:realNum("job:"+p.id),srv:p.id,data:pr.data,cliente:pr.de,func:pr.func,valor:pr.valor,hold:false,pago:false,gar:false});
     });
@@ -22656,7 +23113,7 @@ function realPintarEnviadas(){
   var ROT={nova:"esperando resposta",aceita:"aceitou",recusada:"recusou",cancelada:"cancelada"};
   el.innerHTML='<span class="lab">Você chamou</span>'+REAL_ENVIADAS.map(function(p){
     return '<div class="li" style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:13.5px">'+
-      '<span>'+esc(realNomeDe(p.para))+' · '+esc(p.tipo==="brecho"?"brechó":(p.funcao||"consulta"))+(p.dia?' · '+esc(p.dia.split("-").reverse().slice(0,2).join("/")):"")+'</span>'+
+      '<span>'+esc(realNomeDe(p.para))+' · '+esc(p.tipo==="brecho"?"brechó":(p.funcao||"consulta"))+(p.dia?' · '+esc(p.dia.split("-").reverse().slice(0,2).join("/")):"")+(p.guilda?' · job da guilda':"")+'</span>'+
       '<b style="color:var(--cal)">'+esc(ROT[p.estado]||p.estado)+(p.motivo?' — '+esc(p.motivo):"")+'</b></div>'}).join("");
 }
 function realResponder(pr,estado,motivo){
@@ -22706,6 +23163,10 @@ function realPublicar(){
     som("toque"); realFeed();
   });
 }
+document.addEventListener("click",function(e){
+  var q=e.target.closest&&e.target.closest("[data-pp-quadro]"); if(!q||!guildaReal()) return;
+  SD.tela="missoes"; show("guildas");
+});
 document.addEventListener("click",function(e){
   var b=e.target.closest&&e.target.closest("[data-fdapaga]"); if(!b) return;
   var pt=POSTS.find(function(x){return x.id===+b.dataset.fdapaga}); if(!pt||!pt.srv) return;

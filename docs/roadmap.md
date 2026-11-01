@@ -1213,6 +1213,20 @@ do card... não consigo localizar o job que quero achar".
   (R$ 189, sem periodicidade: o HUB não tem cobrança única, lacuna anotada) e +15 lugares (R$ 34,90/mês), em RASCUNHO; a
   folha de compra leva o pedido ao fluxo de pedido de plano do HUB, nada é cobrado. Fora: Pix/cartão, notificação por
   e-mail/WhatsApp, mensagem direta, áudio, ranking e temporada pública.
+- 🟡 **O quadro de missões da Sede: montar o job com gente da guilda** (31/10/2026, pedido do titular: "selecionar os
+  membros e criar o job dali… e ver quem vai participar e de que job"; a ideia geral de quadro de missões de guilda, sem
+  nome, marca nem arte de obra nenhuma). Mesmo branch, mesma constante. Migração do Carro `0006_missoes`: missão e vagas
+  (RLS só da guilda, mudança só por função), a marca `missao_id` na proposta (opcional, imutável, conferida por gatilho: só
+  quem montou, só vaga sem proposta, dia/horário/local vêm da missão), o estado de cada vaga escrito pelo banco a partir da
+  proposta (aceitar = vai; recusar/cancelar = não vai), trocar quem não vai, desmontar (cancela as propostas pelo caminho
+  de sempre) e quem está livre no dia (só diz "livre" de quem divulgou a agenda). Na tela: "Montar job" com a grade de
+  rostos na Sede e o toque na lista de membros, a barra fixa "N escolhidos · Montar job", a folha do job (título,
+  contratante da casa ou de fora, dia, início e fim, local, função de cada um, call sheet opcional no canal do job),
+  UMA proposta por pessoa pelo `POST /api/zro/propostas` de sempre; a sala **Missões** com os cartazes pregados (a rodar,
+  rodando, feito) e o estado de cada pessoa; o selo do próximo job na lista de membros; a marca "Job da guilda" na caixa
+  de Propostas (o mesmo PATCH, a mesma notificação do app de computador, que não mudou). Fechar = a proposta aceita, como
+  já era: o pôster da memória ganha o nome do job e o XP sai do `guilda_xp` com a mesma antifarra. Sem preço no quadro,
+  sem telefone, nada na busca. Fora: recusar com "sugira outro" automático, missão recorrente e lembrete por e-mail.
 - ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
   separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 
