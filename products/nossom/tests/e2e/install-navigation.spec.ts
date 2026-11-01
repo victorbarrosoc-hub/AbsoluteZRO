@@ -154,7 +154,7 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
     'Absolute ZRO',
     'Carro do Freela',
     'Maestro',
-    'Revela',
+    'Relay',
     'Sobedesce',
     'Synquei',
     'TPEasy',

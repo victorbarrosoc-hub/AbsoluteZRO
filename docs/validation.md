@@ -4168,6 +4168,15 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## NOSSOM · home logada, tema e família no celular (01/11/2026)
+
+- `tests/e2e/home-logada.spec.ts` (novo): sem "Em desenvolvimento"; conta e "Abrir o estúdio" no topo; menu da conta
+  com os atalhos e os apps (sem Revela); no celular (390) a conta no topo e o estúdio pelo menu e pelo título. No
+  estúdio a 390: sol/lua troca claro e escuro e o menu mostra o nome de cada app.
+- Testes de tema (studio, subscription, set, zro-ia) usam o botão novo (`definirTema` em `tests/e2e/fixtures.ts`);
+  `install-navigation` com Relay no lugar de Revela.
+- `tsc` OK, `npm run build` OK, `home-logada` 2/2. A suíte e2e completa não rodou aqui (interrompida); fica para o CI.
+
 ## NOSSOM · estúdio escuro (Proposta 2) e player da plataforma (01/11/2026)
 
 - `products/nossom`: `tsc --noEmit` OK; `npm test` 124/124; `npm run build` OK.

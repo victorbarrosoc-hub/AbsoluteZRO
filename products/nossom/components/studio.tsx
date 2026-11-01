@@ -51,6 +51,8 @@ import {
   Folder,
   House,
   Circle,
+  Moon,
+  Sun,
   Sparkles,
   SlidersHorizontal,
   Layers,
@@ -1535,18 +1537,21 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </button>
             )}
             <AccountMenu account={account} usage={usage} disabled={!!busy || recording} />
-            <label className="theme-control">
-              <span className="sr-only">Tema do estúdio</span>
-              <select
-                aria-label="Tema do estúdio"
-                value={theme}
-                onChange={(e) => changeTheme(e.target.value as 'system' | 'light' | 'dark')}
-              >
-                <option value="system">Tema do aparelho</option>
-                <option value="light">Claro</option>
-                <option value="dark">Escuro</option>
-              </select>
-            </label>
+            {/* claro ou escuro num toque, no computador e no celular; "Tema do aparelho" fica em Conta */}
+            <button
+              type="button"
+              className="icon-button theme-toggle"
+              aria-label="Tema claro"
+              aria-pressed={theme === 'light'}
+              title={theme === 'light' ? 'Voltar ao tema escuro' : 'Tema claro'}
+              onClick={() => changeTheme(theme === 'light' ? 'dark' : 'light')}
+            >
+              {theme === 'light' ? (
+                <Moon size={17} strokeWidth={1.7} />
+              ) : (
+                <Sun size={17} strokeWidth={1.7} />
+              )}
+            </button>
             <button
               className="assistant-top"
               aria-label="Assistente NOSSOM"

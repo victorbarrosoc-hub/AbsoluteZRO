@@ -19,6 +19,7 @@ import {
   MessageSquare,
   CircleCheck,
   Sparkle,
+  AudioLines,
 } from 'lucide-react';
 import CinematicRibbon from './cinematic-ribbon';
 import { Brand } from './brand';
@@ -27,6 +28,7 @@ import DemoPlayer from './demo-player';
 import PlanCards from './plan-cards';
 import InstallApp from './install-app';
 import AccountMenu from './account-menu';
+import StudioLink from './studio-link';
 import DesktopUpdates from './desktop-updates';
 import SiteMotion from './site-motion';
 import SoundToggle from './sound-toggle';
@@ -102,9 +104,9 @@ const faqs = [
   ],
 ];
 /**
- * Página inicial. Com `closed` (NOSSOM fechado ao público, 28/10/2026) ela só apresenta o projeto: nada de
- * abrir, entrar, baixar, instalar ou assinar ("Conhecer o projeto" leva à seção de como funciona), a Z fica
- * "chegando" e sem link, e planos e preços somem.
+ * Página inicial. Com `closed` (NOSSOM fechado ao público) só a conta liberada no HUB chega aqui (o proxy manda o
+ * resto para a Absolute ZRO), então a página age como nos outros apps: a conta no topo e "Abrir o estúdio". Planos,
+ * download e instalação ficam de fora até o lançamento.
  */
 export default function Landing({
   zroIa = false,
@@ -168,6 +170,11 @@ export default function Landing({
                   {label}
                 </a>
               ))}
+              {closed && (
+                <StudioLink href="/studio" className="nav-apps" onClick={() => setMenu(false)}>
+                  <AudioLines size={15} /> Abrir o estúdio
+                </StudioLink>
+              )}
               {!closed && (
                 <Link
                   href="/apps"
@@ -195,18 +202,10 @@ export default function Landing({
           </LayoutGroup>
           <div className="ns-nav-actions">
             <DesktopUpdates />
-            {closed ? (
-              <a href="#produto" className="button primary small">
-                Conhecer o projeto <ArrowRight size={14} />
-              </a>
-            ) : (
-              <>
-                <AccountMenu />
-                <Link href="/studio" className="button primary small">
-                  Começar grátis <ArrowRight size={14} />
-                </Link>
-              </>
-            )}
+            <AccountMenu familia />
+            <StudioLink href="/studio" className="button primary small">
+              {closed ? 'Abrir o estúdio' : 'Começar grátis'} <ArrowRight size={14} />
+            </StudioLink>
             <button
               className="icon-button ns-menu"
               onClick={() => setMenu(!menu)}
@@ -236,15 +235,9 @@ export default function Landing({
               </h1>
               <p>Um estúdio de áudio inteiro, com IA quando você quiser.</p>
               <div className="ns-actions">
-                {closed ? (
-                  <a href="#produto" className="button primary">
-                    Conhecer o projeto <ArrowRight size={17} />
-                  </a>
-                ) : (
-                  <Link href="/studio" className="button primary">
-                    Abrir o estúdio
-                  </Link>
-                )}
+                <StudioLink href="/studio" className="button primary">
+                  Abrir o estúdio
+                </StudioLink>
                 <a href="#experimente" className="home-listen-link">
                   <span>
                     <Play size={13} fill="currentColor" />
@@ -252,12 +245,6 @@ export default function Landing({
                   Ouvir a diferença
                 </a>
               </div>
-              {closed && (
-                <div className="home-hero-proof">
-                  <Sparkle size={15} />
-                  <span>Em desenvolvimento. Em breve, no Absolute ZRO.</span>
-                </div>
-              )}
             </Reveal>
           </div>
           {/* Proposta 2 (titular, 01/11/2026): as linhas de luz atravessam a página, embaixo do título. */}

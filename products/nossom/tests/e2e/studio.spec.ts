@@ -1,4 +1,4 @@
-import { test, expect, onlyWhenOpen } from './fixtures';
+import { test, expect, onlyWhenOpen, definirTema } from './fixtures';
 function waveFixture(seconds = 4, stereo = false) {
   const rate = 48000,
     channels = stereo ? 2 : 1,
@@ -275,14 +275,17 @@ test('studio themes persist, responsive layouts fit and reduced motion pauses de
   page,
 }) => {
   await page.goto('/studio/inicio');
-  await page.getByLabel('Tema do estúdio').selectOption('dark');
-  await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', 'dark');
+  await definirTema(page, 'light');
   await page.reload();
-  await expect(page.getByLabel('Tema do estúdio')).toHaveValue('dark');
+  await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByRole('button', { name: 'Tema claro', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   const { default: AxeBuilder } = await import('@axe-core/playwright');
   for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByLabel('Tema do estúdio').selectOption(theme);
+    await definirTema(page, theme as 'light' | 'dark');
     // Audit settled colors, after the existing 200 ms theme transition.
     // nth(2): Meus projetos (Z e Início vêm antes).
     await expect(page.locator('.studio-sidebar nav > button').nth(2)).toHaveCSS(

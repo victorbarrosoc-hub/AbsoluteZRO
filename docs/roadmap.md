@@ -354,6 +354,11 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   menos texto em toda a tela, home preta só com as linhas de luz e o player em forma de **ilha** (pílula de vidro com
   capa, nome, onda viva e tocar; um toque abre tempo, ±10 s e volume). Falta: validar com a conta do titular; a
   separação de voz em grito longo (modo Fala por padrão e o modelo de música) espera o teste dele.
+- 🟡 NOSSOM logado (01/11/2026, retorno do titular): fechado ao público, a home só chega à conta liberada, então agora
+  age como nos outros apps (conta no topo com os apps da Absolute ZRO no menu, "Abrir o estúdio" no topo, no título e
+  no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
+  escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
+  família tira o Revela (não lançado) e ganha o Relay.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron
