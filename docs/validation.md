@@ -4168,6 +4168,16 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## Quasar Audio Lab · novo nome e marca (01/11/2026)
+
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 126/126, `npm run build` OK, e2e completo 69 passaram,
+  0 falharam (26 pulados por `RELEASE=closed`). Testes ajustados ao nome novo (menu, planos, Z, atualizações, ícone).
+- Corrigido no caminho: o selo AUDIO LAB herdava regras antigas de `.brand > span` e cobria o botão de fechar o menu
+  no celular (`workspace` › menu do celular).
+- HUB: `npm run typecheck` OK, `npm run lint` OK, `npm test` 561/561 (64 arquivos), com a migração 0051 aplicada no
+  banco de teste; `nao-lancados` confere que "Quasar" também não vaza para quem não é admin.
+- Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
+
 ## NOSSOM · estúdio Comando + Console (01/11/2026)
 
 - `products/nossom`: `tsc` OK, `format:check` OK, `npm test` OK, `npm run build` OK; e2e completo 68 passaram,

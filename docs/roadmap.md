@@ -359,6 +359,13 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar Audio Lab (01/11/2026, pedido do titular): o NOSSOM passa a se chamar Quasar Audio Lab ("é subproduto,
+  todos são Absolute ZRO"). Marca: a Coroa sonora (eclipse fino em azul-aço, a borda vibra como onda do lado da luz,
+  clarão no ponto), QUASAR na letra expandida (Archivo Expanded ExtraBold) e AUDIO LAB num selo de vidro de borda
+  grossa. Ícones, cartão de compartilhamento, título, manifesto e textos trocados; no HUB, o nome no catálogo (0051) e
+  o ícone. Identificadores internos seguem `nossom` (produto, OIDC, schema, banco do aparelho, instaladores), para
+  nenhuma conta, cota ou projeto se perder. Segue fechado ao público (0049). Falta: o endereço
+  `quasar.absolutezro.com` (precisa da autorização do titular para o domínio).
 - 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
   grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
   rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos

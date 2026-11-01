@@ -508,12 +508,14 @@
 .brand .coroa {
   flex: none;
 }
-.brand > .brand-nome {
+.brand > span.brand-nome,
+.studio-sidebar .brand > span.brand-nome,
+.ns-nav .brand > span.brand-nome {
   font-family: 'Archivo Variable', 'Archivo', var(--font-sans, system-ui), sans-serif !important;
   font-stretch: 125%;
   font-weight: 800 !important;
   letter-spacing: 0.04em !important;
-  font-size: 15px;
+  font-size: 15px !important;
   text-transform: uppercase;
 }
 .assistant-marca .coroa-luz {
@@ -521,19 +523,23 @@
   height: auto;
   filter: drop-shadow(0 0 30px rgb(80 140 255 / 30%));
 }
-/* AUDIO LAB: selo de vidro de borda grossa (Liquid Glass) */
-.brand > .brand-selo {
+/* AUDIO LAB: selo de vidro de borda grossa (Liquid Glass). Mais específico que as regras antigas de `.brand > span`. */
+.brand > span.brand-selo,
+.studio-sidebar .brand > span.brand-selo,
+.ns-nav .brand > span.brand-selo {
   display: inline-flex;
   align-items: center;
-  height: 16px;
-  padding: 0 7px;
+  height: 16px !important;
+  padding: 0 7px !important;
   margin-left: 1px;
+  line-height: 1 !important;
+  flex: none;
   border-radius: 999px;
   font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
   font-stretch: 125%;
   font-weight: 700;
-  font-size: 6.5px;
-  letter-spacing: 0.14em;
+  font-size: 6.5px !important;
+  letter-spacing: 0.14em !important;
   white-space: nowrap;
   color: #fff;
   background: linear-gradient(180deg, rgb(255 255 255 / 16%), rgb(255 255 255 / 4%));
@@ -547,8 +553,8 @@
   backdrop-filter: blur(8px) saturate(200%) brightness(1.2);
   text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
 }
-.studio-shell[data-theme='light'] .brand > .brand-selo,
-.ns-site:not(.home-p2) .brand > .brand-selo {
+.studio-shell[data-theme='light'] .brand > span.brand-selo,
+.ns-site:not(.home-p2) .brand > span.brand-selo {
   color: #1d1d1f;
   text-shadow: none;
   background: linear-gradient(180deg, #fff, #eef1f6);
