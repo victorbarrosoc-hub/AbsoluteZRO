@@ -1,7 +1,7 @@
 {
   "name": "relay-desktop",
   "productName": "Relay",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Relay para computador: o conversor de vídeo da Absolute ZRO numa janela própria, no Mac e no Windows.",
   "private": true,
   "main": "desktop/main.cjs",

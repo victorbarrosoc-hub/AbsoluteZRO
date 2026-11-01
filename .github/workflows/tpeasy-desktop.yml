@@ -15,7 +15,6 @@ on:
       - 'products/tpeasy/desktop/**'
       - '!products/tpeasy/desktop/**/*.md'
       # o que o app usa igual ao Absolute ZRO para computador (scripts/compartilhado.mjs) e o ícone oficial
-      - 'apps/hub-desktop/desktop/atualizador.cjs'
       - 'apps/hub-desktop/desktop/janela.cjs'
       - 'apps/hub-desktop/desktop/preload-barra.cjs'
       - 'apps/hub-desktop/desktop/paginas/offline.css'

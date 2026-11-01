@@ -1,4 +1,4 @@
-// O que o Maestro para computador usa igual ao Absolute ZRO para computador (apps/hub-desktop): o motor do "Atualizar",
+// O que o Maestro para computador usa igual ao Absolute ZRO para computador (apps/hub-desktop):
 // a memória da janela, a ponte da barra do Mac, o estilo da tela "Sem conexão" e a Figtree local.
 // (O wordmark é o flat de apps/hub-web/public/brand/absolute-zro-grafite.svg, em desktop/paginas/marca.svg.)
 // Cópias idênticas (o app empacotado não alcança outra pasta do repositório); test/compartilhado.test.mjs confere.
@@ -16,7 +16,6 @@ export const ORIGEM = path.resolve(RAIZ, '..', '..', '..', 'apps', 'hub-desktop'
 
 /** Caminhos relativos, iguais nos dois apps. */
 export const COMPARTILHADOS = [
-  'desktop/atualizador.cjs',
   'desktop/janela.cjs',
   'desktop/preload-barra.cjs',
   'desktop/paginas/offline.css',

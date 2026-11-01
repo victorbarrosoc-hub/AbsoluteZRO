@@ -1,7 +1,7 @@
 {
   "name": "carro-desktop",
   "productName": "Carro do Freela",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Carro do Freela para computador: a agenda do audiovisual numa janela própria, no Mac e no Windows.",
   "private": true,
   "main": "desktop/main.cjs",
