@@ -1254,9 +1254,9 @@ function desenharFonte() {
   $('sonsPastas').classList.toggle('sons-categorias', zro)
   $('sonsTermo').placeholder = zro ? 'Buscar nos sons da ZRO' : banco ? 'Buscar nesta pasta' : 'whoosh, impacto, clique…'
   const r = $('sonsRodape')
-  r.textContent = zro ? 'Sons originais da Absolute ZRO. Sem crédito.' : banco ? 'Da sua pasta no Drive, pelo SOBEDESCE. A licença é sua.' : 'Sons livres para uso comercial, com crédito.'
+  r.textContent = zro ? 'Banco de áudios da Absolute ZRO. Sem crédito.' : banco ? 'Da sua pasta no Drive, pelo SOBEDESCE. A licença é sua.' : 'Sons livres para uso comercial, com crédito.'
   r.title = zro
-    ? 'Feitos pela Absolute ZRO para a plataforma, com 4 versões de cada. Entram no vídeo sem crédito.'
+    ? 'O banco de áudios da Absolute ZRO: sons originais da plataforma, com 4 versões de cada. Entram no vídeo sem crédito.'
     : banco
       ? 'Os sons descem da sua pasta no Google Drive pela conexão do SOBEDESCE. Nada é movido nem apagado no Drive.'
       : 'Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.'
