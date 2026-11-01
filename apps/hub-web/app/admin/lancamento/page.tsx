@@ -81,8 +81,11 @@ export default async function Lancamento({ searchParams }: Props) {
         </p>
       </header>
       {!isAdmin && <Notice title="Só leitura">Mudar estado e conceder acesso exige papel admin.</Notice>}
-      <p className="adm-hint" title="A lista de acesso é por conta. Quem administra a plataforma e não está nela vê 'Em desenvolvimento' como todo mundo.">
-        Ser admin não abre app fechado: só a lista de acesso entra.
+      <p
+        className="adm-hint"
+        title="Fechado não aparece em lugar nenhum para o público, nem como 'Em desenvolvimento'. O papel admin passa em todos os canais (migração 0049); suporte e financeiro, só pela lista de acesso."
+      >
+        Fechado some para o público. O papel admin vê e usa tudo; os outros, só pela lista de acesso.
       </p>
 
       <ul className="rel-cards" id="estado">

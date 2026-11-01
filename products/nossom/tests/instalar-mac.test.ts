@@ -14,7 +14,9 @@ const script = readFileSync(new URL('../scripts/instalar-mac.sh', import.meta.ur
 test('instalar.sh servido: sintaxe válida, tudo dentro de main, só a mensagem e exit 1', () => {
   execFileSync('sh', ['-n', 'public/instalar.sh'], { cwd: root });
   assert.match(stub.trimEnd(), /\nmain "\$@"$/);
-  assert.match(stub, /em desenvolvimento/i);
+  assert.match(stub, /Indisponível/);
+  // fechado, o recado não diz o nome nem explica o app (titular, 01/11/2026)
+  assert.doesNotMatch(stub, /NOSSOM|desenvolvimento/i);
   assert.match(stub, /exit 1/);
   // Fora dos comentários, nenhum comando que baixe ou instale.
   const code = stub

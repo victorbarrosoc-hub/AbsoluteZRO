@@ -1,15 +1,14 @@
 import '@fontsource-variable/figtree';
-import { Brand } from './brand';
 import { ZroSymbol } from './zro-symbol';
 
-/** Para onde a pessoa volta: o HUB da Absolute ZRO. */
-export const HUB_URL = 'https://absolutezro.com/inicio';
+/** Para onde a pessoa vai: a Absolute ZRO. */
+export const HUB_URL = 'https://absolutezro.com';
 
 /**
- * Página institucional "Em desenvolvimento" (PRD §5 e §6, Etapa B, 28/10/2026): o que qualquer rota negada do
- * NOSSOM mostra enquanto o produto está fechado ao público. Símbolo da Absolute ZRO pequeno (assinatura), o NOSSOM,
- * título curto em Figtree Light × ExtraBold, uma linha de apoio e "Voltar ao HUB" em vidro escuro. Tema claro por
- * padrão, escuro pelo sistema. Sempre HTTP 200 e sem nenhum dado interno (nem o e-mail de quem entrou).
+ * Página neutra (titular, 01/11/2026: app não lançado não aparece em lugar nenhum, nem como "em desenvolvimento"): o
+ * que o estúdio mostra, no mesmo endereço, a uma conta sem acesso enquanto o produto está fechado. Sem marca, nome ou
+ * explicação do app: o símbolo da Absolute ZRO pequeno, "Página indisponível.", uma linha e a ida para a Absolute ZRO.
+ * As páginas do site nem chegam aqui: o proxy manda para absolutezro.com. Sempre HTTP 200 e sem dado interno.
  */
 export default function EmDesenvolvimento({
   entrar,
@@ -26,15 +25,12 @@ export default function EmDesenvolvimento({
         <a className="zro-dev__zro" href="https://absolutezro.com" aria-label="Absolute ZRO">
           <ZroSymbol size={22} />
         </a>
-        <span className="zro-dev__nossom">
-          <Brand />
-        </span>
         <h1 className="zro-dev__titulo" id="zro-dev-titulo">
-          <span>Em</span> <strong>desenvolvimento.</strong>
+          <span>Página</span> <strong>indisponível.</strong>
         </h1>
-        <p className="zro-dev__apoio">O NOSSOM ainda não está aberto. Em breve, no Absolute ZRO.</p>
+        <p className="zro-dev__apoio">O que você procura não está aqui.</p>
         <a className="glass-btn glass-btn--ink" href={HUB_URL}>
-          Voltar ao HUB
+          Ir para a Absolute ZRO
         </a>
         {entrar && (
           <a className="zro-dev__entrar" href={entrar}>

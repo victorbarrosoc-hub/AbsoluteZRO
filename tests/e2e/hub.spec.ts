@@ -34,10 +34,11 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   await signupAndOrg(page, 'Org grátis')
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
-  // Os lançados vêm contratados pelo plano grátis; os fechados por lançamento (ADR 0023) aparecem como closed, nunca contratados.
-  // O AEON abriu na web (0043) e vem no grátis como os outros.
-  for (const id of ['sobedesce', 'synquei', 'tpeasy', 'maestro', 'carro-do-freela', 'ai-edit']) expect(access(id), id).toBe('contracted')
-  for (const id of ['nossom', 'finishing']) expect(access(id), id).toBe('closed')
+  // Os lançados vêm contratados pelo plano grátis; os não lançados (AEON, Revela, NOSSOM; 0049) nem aparecem.
+  const ids = ent.products.map((p: { productId: string }) => p.productId)
+  for (const id of ['sobedesce', 'synquei', 'tpeasy', 'maestro', 'carro-do-freela']) expect(access(id), id).toBe('contracted')
+  for (const id of ['nossom', 'finishing', 'ai-edit']) expect(ids, id).not.toContain(id)
+  expect(JSON.stringify(ent)).not.toMatch(/AEON|Revela|NOSSOM/)
   // Com o Carro do Freela no ar (0041), o Início oferece o projeto "de um job".
   await expect(page.locator('.quick')).toContainText('Do zero ou de um job')
 })
@@ -110,12 +111,10 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
-  await expect(list.getByRole('listitem')).toHaveCount(9) // com o Relay (0031), a exportação no fim do ciclo
-  // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
+  await expect(list.getByRole('listitem')).toHaveCount(6) // só as seis no ar (0049): AEON, NOSSOM e Revela nem aparecem
+  // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
-  await expect(list.getByRole('listitem').filter({ hasText: 'Revela' })).toContainText('Indisponível')
-  // o Relay (0032) e o AEON (0043) abriram: sem plano, ficam como as outras ferramentas lançadas
-  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Bloqueado por assinatura')
+  await expect(page.locator('main')).not.toContainText(/AEON|Revela|NOSSOM/)
   await expect(list.getByRole('listitem').filter({ hasText: 'Relay' })).toContainText('Bloqueado por assinatura')
 })
 
@@ -186,8 +185,8 @@ test('webhook de cobrança: assinatura errada 400, provedor desconhecido 404, ev
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   expect(ent.products.find((p: { productId: string }) => p.productId === 'synquei').access).toBe('contracted')
   expect(ent.products.find((p: { productId: string }) => p.productId === 'tpeasy').access).toBe('available')
-  // NOSSOM está fechado por lançamento (ADR 0023): nunca "disponível para contratar"
-  expect(ent.products.find((p: { productId: string }) => p.productId === 'nossom').access).toBe('closed')
+  // NOSSOM não lançado (0049): nem aparece, nunca "disponível para contratar"
+  expect(ent.products.find((p: { productId: string }) => p.productId === 'nossom')).toBeUndefined()
 })
 
 test('console de administração não existe para quem não é da plataforma', async ({ page }) => {
@@ -196,13 +195,13 @@ test('console de administração não existe para quem não é da plataforma', a
   expect(r?.status()).toBe(404)
 })
 
-test('páginas públicas não divulgam Revela nem NOSSOM enquanto não estão no ar', async ({ page }) => {
+test('páginas públicas não divulgam AEON, Revela nem NOSSOM enquanto não estão no ar', async ({ page }) => {
   for (const largura of [1440, 390]) {
     await page.setViewportSize({ width: largura, height: 900 })
     for (const path of ['/', '/baixar', '/planos']) {
       await page.goto(path)
       const texto = await page.locator('main').innerText()
-      expect(texto, `${path} ${largura}px`).not.toMatch(/Revela|NOSSOM/i)
+      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM/i)
       // nem o selo de fechado ("Em breve" / "Em desenvolvimento")
       await expect(page.locator('main .selo-dev'), `${path} ${largura}px`).toHaveCount(0)
       // nem o ícone (ProductMark) nem o título escondido
@@ -210,7 +209,7 @@ test('páginas públicas não divulgam Revela nem NOSSOM enquanto não estão no
         .locator('main [aria-label], main [title], main img[src]')
         .evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label') ?? ''} ${e.getAttribute('title') ?? ''} ${e.getAttribute('src') ?? ''}`))
       expect(
-        marcas.filter((m) => /Revela|NOSSOM|(products\/|produto-)(finishing|nossom)/i.test(m)),
+        marcas.filter((m) => /AEON|Revela|NOSSOM|(products\/|produto-)(finishing|nossom|ai-edit)/i.test(m)),
         `${path} ${largura}px`,
       ).toEqual([])
     }
@@ -234,34 +233,34 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   // Gate de lançamento (ADR 0023): produto fechado não aparece como incluído
   await expect(page.getByRole('button', { name: 'NOSSOM' })).toHaveCount(0)
   await expect(page.locator('.tier__apps li[title="NOSSOM"], .tier__apps li[title="Revela"]')).toHaveCount(0)
-  // o AEON abriu na web (0043): entra como os lançados
-  await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(1)
+  // o AEON voltou a fechar (0049): não aparece
+  await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
 })
 
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
-  const FECHADOS = /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|revela\.absolutezro\.com/
+  const FECHADOS = /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|revela\.absolutezro\.com|aeon\.absolutezro\.com/
   await page.goto('/')
   // só o que está no ar, sem "Em breve" (titular, 30/10/2026: "Quando for pro ar, aí divulga")
   const strip = page.locator('.pstrip__list')
   await expect(strip.locator('.selo-dev')).toHaveCount(0)
-  await expect(strip.locator('.pstrip__name')).toHaveText(['Carro do Freela', 'TPeasy', 'SOBEDESCE', 'Synquei', 'AEON', 'Maestro', 'Relay'])
+  await expect(strip.locator('.pstrip__name')).toHaveText(['Carro do Freela', 'TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay'])
   // o Carro do Freela (0041) entra pelo subdomínio, com o ícone dele
   await expect(strip.locator('a.pstrip__card[href="https://carro.absolutezro.com"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href="https://maestro.absolutezro.com"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href="https://relay.absolutezro.com"]')).toHaveCount(1)
-  await expect(strip.locator('a.pstrip__card[href="https://aeon.absolutezro.com"]')).toHaveCount(1)
+  await expect(strip.locator('a.pstrip__card[href="https://aeon.absolutezro.com"]')).toHaveCount(0)
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
   // a órbita da Z só tem os do ar
-  await expect(page.locator('.pz__orbita li')).toHaveCount(7)
-  await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="Revela"]')).toHaveCount(0)
-  await expect(page.locator('.pz__orbita li[title="Maestro"], .pz__orbita li[title="Relay"], .pz__orbita li[title="AEON"]')).toHaveCount(3)
+  await expect(page.locator('.pz__orbita li')).toHaveCount(6)
+  await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="Revela"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
+  await expect(page.locator('.pz__orbita li[title="Maestro"], .pz__orbita li[title="Relay"]')).toHaveCount(2)
   // o fluxo: da pauta (Maestro) à aprovação do cliente (Maestro), só com etapas que existem
   await expect(page.locator('#fluxo-title')).toHaveText(/Do roteiro\s*à entrega\./)
-  // com o AEON no ar (0043), a Edição volta ao fluxo
-  await expect(page.locator('.pfluxo__etapa')).toHaveText(['Pauta', 'Equipe', 'Gravação', 'Cópia', 'Sincronia', 'Edição', 'Entrega', 'Aprovação'])
-  await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 8/)
+  // sem o AEON (0049), a Edição sai do fluxo
+  await expect(page.locator('.pfluxo__etapa')).toHaveText(['Pauta', 'Equipe', 'Gravação', 'Cópia', 'Sincronia', 'Entrega', 'Aprovação'])
+  await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 7/)
 
   await page.goto('/baixar')
   // na página pública, o que está fechado nem aparece; o Maestro (no ar, com o app de computador desde a 0048) abre no navegador e baixa
@@ -275,11 +274,8 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(2)
   await page.getByRole('button', { name: 'Relay' }).click()
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
-  // o AEON (0043) no ar só na web: o editor no navegador, sem instalador nem Terminal até o app de computador abrir
-  await page.getByRole('button', { name: 'AEON' }).click()
-  await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://aeon.absolutezro.com/app/')
-  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
-  await expect(painel.getByText('instalar.sh')).toHaveCount(0)
+  // o AEON não lançado (0049) nem aparece
+  await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
   const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
   // Maestro e AEON sem o app de computador (download fechado): nada deles na central nem nas rotas
@@ -352,8 +348,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   // Plano grátis lista todas, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): SOBEDESCE, Synquei,
-  // TPeasy, o Maestro (0027/0039), o Relay (0032), o Carro do Freela (0041) e o AEON (0043, na web).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(7)
+  // TPeasy, o Maestro (0027/0039), o Relay (0032) e o Carro do Freela (0041); os não lançados nem aparecem (0049).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(6)
+  await expect(page.locator('.access-org__apps')).not.toContainText(/AEON|Revela|NOSSOM/)
 })
 
 test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {

@@ -8,7 +8,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { HUB_INICIO, desktopAberto, release } from '../api/_release.js'
+import { desktopAberto, release } from '../api/_release.js'
 
 /** O site institucional (vale fechado e aberto). vendor/ é só biblioteca de terceiros, fonte, tokens e a Z. */
 export const SITE = ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'site', 'marca', 'vendor']
@@ -17,11 +17,18 @@ export const MARCA = ['src/produto.js', 'src/marca.js', 'src/letras.js', 'src/fa
 /** Só com RELEASE=released: o editor no navegador e os instaladores pelo Terminal. */
 export const ABERTO = ['instalar.sh', 'instalar.ps1', 'app', 'src', 'presets']
 
-/** O que `curl … | bash` e `irm … | iex` recebem enquanto fechado: um recado, sem download e sem instalar nada. */
+/** O que `curl … | bash` e `irm … | iex` recebem enquanto fechado: nada a instalar, sem nome nem explicação do app. */
 export const RECADO = {
-  'instalar.sh': `#!/bin/sh\n# AEON (by Absolute ZRO): em desenvolvimento. Este comando ainda não instala nada.\nprintf '%s\\n' 'O AEON está em desenvolvimento. Ele chega com a sua conta Absolute ZRO.' 'Volte ao HUB: ${HUB_INICIO}' >&2\nexit 1\n`,
-  'instalar.ps1': `# AEON (by Absolute ZRO): em desenvolvimento. Este comando ainda não instala nada.\nWrite-Host 'O AEON está em desenvolvimento. Ele chega com a sua conta Absolute ZRO.'\nWrite-Host 'Volte ao HUB: ${HUB_INICIO}'\n`,
+  'instalar.sh': `#!/bin/sh\nprintf '%s\\n' 'Indisponível.' 'https://absolutezro.com' >&2\nexit 1\n`,
+  'instalar.ps1': `Write-Host 'Indisponível.'\nWrite-Host 'https://absolutezro.com'\n`,
 }
+
+/**
+ * Fechado, as páginas do site institucional saem como a página neutra (em-desenvolvimento.html): nada de marca,
+ * nome ou explicação do app para quem chega sem acesso (titular, 01/11/2026). O editor segue pela função, para a conta
+ * liberada.
+ */
+export const NEUTRAS = ['index.html', 'entrar.html']
 
 /**
  * As peças do lançamento: { nome: html } de cada <template data-parte="nome">. Uma peça com data-quando="web" vale só
@@ -70,8 +77,11 @@ export function publicar({ raiz = new URL('..', import.meta.url), saida = new UR
     if (statSync(de).isFile()) mkdirSync(dirname(fileURLToPath(para)), { recursive: true })
     cpSync(de, para, { recursive: true })
   }
-  if (estado !== 'released') for (const [nome, texto] of Object.entries(RECADO)) writeFileSync(new URL(nome, saida), texto)
-  else {
+  if (estado !== 'released') {
+    for (const [nome, texto] of Object.entries(RECADO)) writeFileSync(new URL(nome, saida), texto)
+    const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
+    for (const nome of NEUTRAS) writeFileSync(new URL(nome, saida), neutra)
+  } else {
     const pecas = pecasDoLancamento(readFileSync(new URL('lancamento/pagina.html', raiz), 'utf8'), { computador })
     writeFileSync(new URL('index.html', saida), paginaAberta(readFileSync(new URL('index.html', raiz), 'utf8'), pecas))
     // só na web: os comandos do Terminal mandam para o navegador (sem instalar nada)

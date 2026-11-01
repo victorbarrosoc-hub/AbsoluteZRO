@@ -32,13 +32,15 @@ export async function homePaineis(auth: Authenticated) {
       await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 6`
     const [counts] = await tx`
       select (select count(*)::int from zro.projects where org_id = ${actor.orgId} and status <> 'archived') as projects,
-             (select count(*)::int from zro.project_steps where org_id = ${actor.orgId} and state in ('needs_review', 'failed')) as attention,
+             (select count(*)::int from zro.project_steps where org_id = ${actor.orgId} and state in ('needs_review', 'failed')
+               and zro.release_visible(step_key, zro.current_user_id())) as attention,
              (select count(*)::int from zro.workflow_runs where org_id = ${actor.orgId} and status in ('queued', 'running')) as running,
              (select count(*)::int from zro.workflow_runs where org_id = ${actor.orgId} and status in ('failed', 'dead_letter', 'requires_review', 'blocked')) as stuck`
     const attention = await tx`
       select s.project_id, p.title, s.step_key, s.state, s.updated_at, pr.name as step_name
       from zro.project_steps s join zro.projects p on p.id = s.project_id join zro.products pr on pr.id = s.step_key
-      where s.org_id = ${actor.orgId} and s.state in ('needs_review', 'failed') order by s.updated_at desc limit 8`
+      where s.org_id = ${actor.orgId} and s.state in ('needs_review', 'failed') and zro.release_visible(s.step_key, zro.current_user_id())
+      order by s.updated_at desc limit 8`
     const runs = await tx`
       select r.id, r.handler, r.status, r.updated_at, p.title as project_title, r.project_id
       from zro.workflow_runs r left join zro.projects p on p.id = r.project_id
@@ -62,7 +64,8 @@ export async function subscriptionData(auth: Authenticated) {
     const entitlements = await tx`
       select e.id, e.product_id, pr.name, e.source, e.ends_at, e.features, e.limits
       from zro.entitlements e join zro.products pr on pr.id = e.product_id
-      where e.org_id = ${actor.orgId} and e.status = 'active' and (e.ends_at is null or e.ends_at > now()) order by pr.step_order`
+      where e.org_id = ${actor.orgId} and e.status = 'active' and (e.ends_at is null or e.ends_at > now())
+        and zro.release_visible(e.product_id, zro.current_user_id()) order by pr.step_order`
     const { start, end } = quotaPeriod()
     const quotas = await tx`select metric, used, limit_value from zro.quotas where org_id = ${actor.orgId} and period_start = ${start} order by metric`
     const access = await productAccessFor(tx, actor.orgId)
@@ -149,7 +152,7 @@ export async function profileData(auth: Authenticated) {
   )
 }
 
-/** Perfil › Apps com acesso (RLS: só os consentimentos da própria pessoa). */
+/** Perfil › Apps com acesso (RLS: só os consentimentos da própria pessoa; app que não existe para ela não aparece). */
 export async function connectedAppsData(auth: Authenticated) {
   return db().asUser(
     { userId: auth.user.id, orgId: auth.session.activeOrgId },
@@ -157,7 +160,8 @@ export async function connectedAppsData(auth: Authenticated) {
     select c.client_id, c.scopes, c.granted_at, cl.name, cl.product_id, a.first_login_at, a.last_login_at from zro.oauth_consents c
     join zro.oauth_clients cl on cl.id = c.client_id
     left join zro.app_accounts a on a.user_id = c.user_id and a.client_id = c.client_id
-    where c.user_id = ${auth.user.id} and c.revoked_at is null order by c.granted_at desc`,
+    where c.user_id = ${auth.user.id} and c.revoked_at is null
+      and (cl.product_id is null or zro.release_visible(cl.product_id, zro.current_user_id())) order by c.granted_at desc`,
   )
 }
 
@@ -198,11 +202,13 @@ export async function accountSummary(auth: Authenticated) {
   return db().asUser({ userId: auth.user.id, orgId: auth.session.activeOrgId }, async (tx) => {
     const [r] = await tx`
       select (select count(*)::int from zro.sessions where user_id = ${auth.user.id} and revoked_at is null and expires_at > now()) as sessions,
-             (select count(*)::int from zro.oauth_consents where user_id = ${auth.user.id} and revoked_at is null) as apps,
+             (select count(*)::int from zro.oauth_consents c join zro.oauth_clients cl on cl.id = c.client_id
+               where c.user_id = ${auth.user.id} and c.revoked_at is null
+                 and (cl.product_id is null or zro.release_visible(cl.product_id, zro.current_user_id()))) as apps,
              (select count(*)::int from zro.memberships m join zro.organizations o on o.id = m.org_id
                where m.user_id = ${auth.user.id} and m.status = 'active' and o.status = 'active') as orgs,
              (select count(*)::int from zro.entitlements e where e.org_id = ${auth.session.activeOrgId} and e.status = 'active'
-               and (e.ends_at is null or e.ends_at > now())) as tools`
+               and (e.ends_at is null or e.ends_at > now()) and zro.release_visible(e.product_id, zro.current_user_id())) as tools`
     return r! as { sessions: number; apps: number; orgs: number; tools: number }
   })
 }

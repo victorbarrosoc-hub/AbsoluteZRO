@@ -26,7 +26,7 @@ const reply = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: privateHeaders });
 // Fechado ao público (28/10/2026): nada à venda. Checkout, troca e portal não abrem, mesmo para a conta
 // autorizada; o webhook assinado continua espelhando o que a Stripe já tem.
-const CLOSED = 'O NOSSOM está em desenvolvimento. Ainda não há planos à venda.';
+const CLOSED = 'Indisponível.';
 const view = (s: Subscription | null) =>
   s?.subscription_id
     ? {

@@ -12,11 +12,19 @@ export const PRODUTO = 'ai-edit'
 /** Valores que a claim pode ter; qualquer outra coisa vale como ausente. */
 export const ESTADOS = Object.freeze(['released', 'closed', 'allowed'])
 export const HUB_INICIO = 'https://absolutezro.com/inicio'
-/** A página "Em desenvolvimento" deste site (HTTP 200, sem dado interno). */
+/** A página neutra deste site (HTTP 200, sem marca, nome ou explicação do app; o arquivo guarda o nome antigo). */
 export const PAGINA_FECHADO = '/em-desenvolvimento.html'
 
-/** O estado local: 'closed' (padrão) ou 'released' (RELEASE=released no ambiente). */
-export const release = () => (String(process.env.RELEASE || '').trim() === 'released' ? 'released' : 'closed')
+/**
+ * Trava do titular (01/11/2026: "AEON, Revela, NOSSOM e Rift Motion não podem aparecer em lugar nenhum para usuários").
+ * Enquanto `LANCADO` for false, o site fica fechado mesmo com RELEASE=released no projeto Vercel (que ficou assim desde a
+ * 0043): só a conta que o HUB marca como `allowed` (a administração da plataforma, migração 0049) usa o editor, e o resto
+ * vê a página neutra. Lançar de novo = true aqui, junto com a migração do HUB que abre o gate.
+ */
+export const LANCADO = false
+
+/** O estado local: 'closed' (padrão) ou 'released' (LANCADO e RELEASE=released no ambiente). */
+export const release = () => (LANCADO && String(process.env.RELEASE || '').trim() === 'released' ? 'released' : 'closed')
 export const fechado = () => release() === 'closed'
 /**
  * O app de computador aberto? Só com o site aberto e RELEASE_DESKTOP=released (decisão do titular, 31/10/2026: a web

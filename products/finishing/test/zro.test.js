@@ -365,7 +365,7 @@ describe('fechada ao público: o gate de lançamento (api/_release.js)', () => {
     assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).status, 200)
   })
 
-  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para "Em desenvolvimento"', async () => {
+  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para a página neutra', async () => {
     for (const release of [undefined, { finishing: 'closed' }, { finishing: 'released' }, { 'ai-edit': 'allowed' }]) {
       const r = await fluxo({ pessoa: { ...LIA, release } })
       assert.equal(r.destino, '/em-desenvolvimento', JSON.stringify(release))
