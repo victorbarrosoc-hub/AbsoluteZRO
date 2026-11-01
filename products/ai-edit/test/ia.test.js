@@ -215,9 +215,13 @@ describe('cliente ainda sem o escopo da Z', () => {
       assert.match(z.headers.get('location'), /error=invalid_scope/)
       const volta = await pedir(z.headers.get('location').replace(SITE, ''), { cookies: { [`${PREFIXO}_zro`]: cookiesDe(ida).get(`${PREFIXO}_zro`) } })
       assert.equal(volta.status, 303)
-      // primeiro sem os sons, depois sem o Set (Absolute ZRO de antes deles); recusou de novo, sem a Z também
-      assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_sons=1')
-      const idaSemSons = await pedir(volta.headers.get('location'))
+      // primeiro sem a Higgsfield, depois sem os sons e sem o Set (Absolute ZRO de antes deles); recusou de novo, sem a Z também
+      assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_hf=1')
+      const idaSemHf = await pedir(volta.headers.get('location'))
+      const zSemHf = await fetch(new URL(idaSemHf.headers.get('location')), { redirect: 'manual' })
+      const voltaSemHf = await pedir(zSemHf.headers.get('location').replace(SITE, ''), { cookies: { [`${PREFIXO}_zro`]: cookiesDe(idaSemHf).get(`${PREFIXO}_zro`) } })
+      assert.equal(voltaSemHf.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_sons=1')
+      const idaSemSons = await pedir(voltaSemHf.headers.get('location'))
       const zSemSons = await fetch(new URL(idaSemSons.headers.get('location')), { redirect: 'manual' })
       const voltaSemSons = await pedir(zSemSons.headers.get('location').replace(SITE, ''), { cookies: { [`${PREFIXO}_zro`]: cookiesDe(idaSemSons).get(`${PREFIXO}_zro`) } })
       assert.equal(voltaSemSons.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_set=1')

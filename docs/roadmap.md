@@ -442,6 +442,25 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (frameSampling) e o Premiere (Mistura de quadros). Demonstrações com takes de 50 e 60 qps de verdade (Coverr). Falta:
   fluxo na placa de vídeo (esperar o ONNX Runtime com a correção da convolução de 15 canais e conferir contra a CPU) e
   hospedar o modelo numa conta própria.
+- 🟡 AEON, marcadores que fazem coisas (01/11/2026, pedido do titular, inspirado no Markers Command Center): aba
+  **Marcadores** na Edição (tempo, nome, nota, cor e duração até o próximo; buscar, filtrar por cor, teclado inteiro),
+  seleção que pinta, anda 1 s ou 1 quadro, tira o trecho da linha e apaga; colar notas com tempo (revisão do cliente,
+  capítulos, comentários), SRT e planilha, sem IA (exato, sem crédito); capítulos do YouTube conferidos pelas regras de
+  lá; uma imagem em cada marcador (a conta do render); CSV; nota e cor no Premiere, Final Cut, OTIO e EDL. Falta: pedir
+  à Z em linguagem natural ("capítulo a cada mudança de assunto") com ferramentas de marcador no HUB, e conferir os
+  marcadores importados num Premiere e num Final Cut de verdade.
+- 🟡 AEON, entrega em peças (01/11/2026, inspirado no Piecework): **Inteiro** ou **Em peças** na Entrega; cada seção
+  (de um marcador ao próximo) vira vídeo e linha do tempo à parte em 16:9, 9:16, 1:1 e 4:5 (preenchendo o quadro), com
+  modelo de nome, margem e `entrega.csv`; numa pasta (Chrome/Edge escrevem cada vídeo direto no disco) ou num .zip;
+  **Juntar em outra ordem** cria um projeto novo. O original nunca muda. Falta: enquadramento por peça no 9:16 (hoje
+  centralizado) e a fila de render por peça no app de computador (precisa do build novo).
+- 🟡 AEON + NOSSOM, voz e instrumental (01/11/2026, inspirado no VocalSplitter): **Separar** no Inspector do clipe; o
+  navegador da pessoa chama a NOSSOM direto (app irmão: CORS com credenciais só para aeon.absolutezro.com, só
+  `stems-v1`; sessão, gate, franquia e um pedido por conta seguem na NOSSOM), as cinco faixas voltam, ficam no disco do
+  navegador e viram **Voz** e **Instrumental** alinhadas ao clipe, com Solo, Mudo, volume e Tudo/Só voz/Só
+  instrumental; prévia, vídeo final e editores (WAV ao lado do XML, trilhas próprias, som original calado). Só aparece
+  para quem a NOSSOM atende (o gate dela no HUB). Falta: publicar a NOSSOM (proxy e rota) antes do AEON, conferir com
+  conta real e GPU de verdade, e o remix das cinco faixas dentro do AEON.
 - 🟡 AEON, estabilização (31/10/2026): **por imagem** pronta (rastreio de cantos, Lucas-Kanade piramidal, RANSAC de
   similaridade, suavização gaussiana e zoom fixo que esconde a borda; análise num worker, guardada na mídia; prévia e
   render com a mesma correção). **Giroscópio** (GoPro, Sony, DJI, Insta360, como o Gyroflow e o DaVinci) é o próximo
@@ -804,6 +823,20 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: `ZRO_CONEXOES_KEY` no projeto `absolutezro` (titular) e as migrations `0026` (HUB) e `0021` (Maestro) no
   deploy. Não testado contra o Google de verdade (aviso de app não verificado esperado).
 - ⬜ Z, "Hoje" do HUB e Carro do Freela pelo mesmo contrato.
+
+## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, [ADR 0037](decisions/0037-higgsfield-nas-conexoes.md))
+
+- ✅ HUB: a Higgsfield conectada uma vez em `/conexoes` (OAuth com PKCE e registro dinâmico, tokens cifrados), cartão com
+  saldo, plano, medidor do que os apps usaram no mês, "Usado por" e desconectar; só aparece se um app que usa a
+  Higgsfield existe para a pessoa. Migration `0052` (`zro.ia_geracoes`, `zro.apps_oauth_externos`, provedor
+  `higgsfield`, escopo `zro.higgsfield`).
+- ✅ API `/api/v1/higgsfield` (painel com preço de tudo antes) e `/api/v1/higgsfield/gerar` (envio, telas, animar,
+  andamento), só AEON e Rift Motion; sem preço ou saldo que cubra, não gera.
+- ✅ AEON: "Criar com IA" na Mídia e no player (a partir do quadro atual): créditos com medidor, passo 1 com 1/2/4 telas
+  e o preço, passo 2 com as três opções e a duração, confirmação antes do vídeo, resultado na Mídia (a imagem como clipe
+  parado de 5 s), guardado no navegador, "Pôr na linha" no cursor e retomada do pedido depois de recarregar. Só web.
+- ⛔ Em produção: migration `0052` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
+- ⬜ Rift Motion trocar a conexão própria pela do HUB (sessão do Rift avisada).
 
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 

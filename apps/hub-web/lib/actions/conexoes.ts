@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { alternarAppDaConexao, chaveDasConexoes, desconectarGoogle, escolherCalendarios } from '@zro/core'
+import { alternarAppDaConexao, alternarAppHiggsfield, chaveDasConexoes, desconectarGoogle, desconectarHiggsfield, escolherCalendarios } from '@zro/core'
 import type { FormState } from '@/components/action-form'
 import { ambienteAgenda, googleAgendaConfig } from '../conexoes'
 import { db, getAuth } from '../session'
@@ -52,4 +52,25 @@ export async function desconectarGoogleAction(_: FormState, __: FormData): Promi
     return toFormError(e)
   }
   redirect('/conexoes?ok=desconectado')
+}
+
+export async function alternarAppHiggsfieldAction(_: FormState, fd: FormData): Promise<FormState> {
+  const auth = await pessoa()
+  try {
+    await alternarAppHiggsfield(db(), auth, String(fd.get('app') ?? ''), fd.get('ativo') === 'on')
+  } catch (e) {
+    return toFormError(e)
+  }
+  revalidatePath('/conexoes')
+  return { ok: 'Salvo.' }
+}
+
+export async function desconectarHiggsfieldAction(_: FormState, __: FormData): Promise<FormState> {
+  const auth = await pessoa()
+  try {
+    await desconectarHiggsfield(db(), auth)
+  } catch (e) {
+    return toFormError(e)
+  }
+  redirect('/conexoes?ok=higgsfield-desconectada')
 }

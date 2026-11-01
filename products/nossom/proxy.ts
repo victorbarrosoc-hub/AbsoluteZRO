@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCOUNT_COOKIE, refreshAccount, sessionCookie } from './lib/server/account';
 import { nossomClosed } from './lib/server/release';
+import { cabecalhosIrmao, caminhoIrmao, origemIrma, preVoo } from './lib/server/irmaos';
 
 /** Rotas de conta que continuam respondendo com o NOSSOM fechado: entrar, sair, quem sou, ligar/desligar a Absolute ZRO. */
 const ACCOUNT_API = /^\/api\/(?:account(?:\/|$)|zro\/(?:entrar|conta)$)/;
@@ -28,6 +29,16 @@ const paraFora = (before?: string) => {
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  // App irmão (o AEON) pedindo a separação de faixas pelo navegador da pessoa (lib/server/irmaos.ts): o pré-voo do
+  // CORS responde aqui, sem sessão; as respostas de verdade (inclusive o 403 de fechado) levam o CORS dele.
+  if (request.method === 'OPTIONS') return preVoo(request, path);
+  const irma = caminhoIrmao(path) ? origemIrma(request) : null;
+  const response = await responder(request, path);
+  if (irma) for (const [k, v] of Object.entries(cabecalhosIrmao(irma))) response.headers.set(k, v);
+  return response;
+}
+
+async function responder(request: NextRequest, path: string) {
   const api = path.startsWith('/api/');
   const studio = path === '/studio' || path.startsWith('/studio/');
   // Página do site (não API nem estúdio): aberto, segue como sempre (pública).
