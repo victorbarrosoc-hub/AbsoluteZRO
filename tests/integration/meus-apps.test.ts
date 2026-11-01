@@ -99,6 +99,8 @@ describe('meus apps (GET /api/v1/desktop/meus-apps)', () => {
       ).not.toContain(id)
     expect(await acessoAoDownload(db, o.auth, 'nossom', 'NOSSOM-0.2.2-win-x64.exe', await liberados(o.userId), PAGO)).toBe('fechado')
     expect(await acessoAoDownload(db, o.auth, 'rift-motion', 'mac', await liberados(o.userId), PAGO)).toBe('fechado')
+    // nem o aviso de versão nova (revisão P1)
+    expect(await acessoAoDownload(db, o.auth, 'nossom', 'versao.json', await liberados(o.userId), PAGO)).toBe('fechado')
   })
 
   it('admin de plataforma: vê e instala tudo, inclusive o que não está lançado nem no plano', async () => {
@@ -111,6 +113,14 @@ describe('meus apps (GET /api/v1/desktop/meus-apps)', () => {
     const lib = liberadosParaBaixar(auth, await liberados(o.userId))
     expect(await acessoAoDownload(db, auth, 'nossom', 'NOSSOM-0.2.2-win-x64.exe', lib, PAGO)).toBe('ok')
     expect(await acessoAoDownload(db, auth, 'sobedesce', EXE, lib, PAGO)).toBe('ok')
+    // admin sem e-mail confirmado não é admin aqui (a regra do console e da 0049; revisão P2)
+    await db.asSystem('teste', (tx) => tx`update zro.users set email_verified_at = null where id = ${o.userId}`)
+    const semEmail = await refresh(db, o.token)
+    expect((await meusApps(db, semEmail, PAGO)).apps.map((a) => a.id)).not.toContain('nossom')
+    expect(await acessoAoDownload(db, semEmail, 'nossom', 'NOSSOM-0.2.2-win-x64.exe', liberadosParaBaixar(semEmail, await liberados(o.userId)), PAGO)).toBe(
+      'fechado',
+    )
+    await db.asSystem('teste', (tx) => tx`update zro.users set email_verified_at = now() where id = ${o.userId}`)
     // suporte não é admin
     await db.asSystem('teste', (tx) => tx`update zro.users set platform_role = 'support' where id = ${o.userId}`)
     expect((await meusApps(db, await refresh(db, o.token), PAGO)).apps.map((a) => a.id)).not.toContain('nossom')

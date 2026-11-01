@@ -21,7 +21,13 @@ const texto = (corpo: string, status: number) =>
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string; arquivo: string }> }) {
   const { id, arquivo } = await params
-  const nome = decodeURIComponent(arquivo)
+  // Escape quebrado no nome (ex.: %25E0%25A4%25A, que o Next entrega como %E0%A4%A): 404, nunca 500.
+  let nome: string
+  try {
+    nome = decodeURIComponent(arquivo)
+  } catch {
+    return texto('Arquivo indisponível.', 404)
+  }
   const auth = await getAuth()
   const liberados = liberadosParaBaixar(auth, await liberadosPara(auth?.user.id ?? null, 'download'))
   const acesso = await acessoAoDownload(db(), auth, id, nome, liberados)

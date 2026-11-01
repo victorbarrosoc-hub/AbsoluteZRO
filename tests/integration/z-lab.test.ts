@@ -142,6 +142,9 @@ describe('Laboratório da Z: teto e uso', () => {
   it('sem teto = bloqueado; com teto, conta o uso uma vez só e bloqueia ao passar', async () => {
     await definirTeto(db, admin.auth, { teto: null })
     await expectCode(conferirTeto(db, admin.auth), 'quota_not_configured')
+    // teto 0: no limite já bloqueia, nada passa
+    await definirTeto(db, admin.auth, { teto: 0 })
+    await expectCode(conferirTeto(db, admin.auth), 'quota_exceeded')
     await definirTeto(db, admin.auth, { teto: 0.05 })
     const antes = (await gastoDoLab(db, admin.auth)).hoje
     const a = await conferirTeto(db, admin.auth, 0.001)
