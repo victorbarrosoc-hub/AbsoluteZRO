@@ -73,14 +73,13 @@ describe('Ciclo do O ponta a ponta', () => {
     expect(await runOnce(db, { handlers: HANDLERS, routes: ROUTES, log })).toBe(1)
     const p = await getProject(db, o.auth, projectId)
     const step = (k: string) => p.steps.find((s) => s.stepKey === k)!
+    const tem = (k: string) => p.steps.some((s) => s.stepKey === k)
     expect(step('carro-do-freela').displayState).toBe('done')
     expect(step('tpeasy').displayState).toBe('done')
     expect(step('sobedesce').displayState).toBe('done')
     expect(step('synquei').displayState).toBe('needs_review')
-    // o AEON está no ar na web (0043): a etapa fica disponível, ainda não começada; a Revela segue fechada por
-    // lançamento (ADR 0023): a etapa aparece indisponível mesmo com o plano que a lista.
-    expect(step('ai-edit').displayState).toBe('not_started')
-    expect(step('finishing').displayState).toBe('unavailable')
+    // AEON, Revela e NOSSOM não lançados (0049): as etapas nem aparecem para a pessoa, mesmo com o plano que as lista.
+    for (const id of ['ai-edit', 'finishing', 'nossom']) expect(tem(id), id).toBe(false)
     const run = p.runs.find((r) => r.handler === 'synquei.organization-plan')!
     expect(run.status).toBe('succeeded')
     const plan = (run.result as { plan: { assets: { asset_id: string }[]; moves: unknown[] } }).plan

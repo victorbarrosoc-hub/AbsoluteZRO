@@ -73,9 +73,11 @@ test('Entrar com Absolute ZRO: cadastro, permissão, código e tokens', async ({
     zro_org: { name: 'Produtora SSO', role: 'owner' },
     // Organização nova entra no plano grátis (0007), mas o login único só traz o que está lançado (gate, ADR 0023).
     zro_products: expect.arrayContaining(['sobedesce', 'synquei', 'tpeasy']),
-    zro_release: expect.objectContaining({ sobedesce: 'released', nossom: 'closed', 'carro-do-freela': 'released' }),
+    zro_release: expect.objectContaining({ sobedesce: 'released', 'carro-do-freela': 'released' }),
   })
   expect(claims.zro_products).not.toContain('nossom')
+  // não lançado nem aparece na claim (0049)
+  for (const id of ['nossom', 'ai-edit', 'finishing']) expect(claims.zro_release).not.toHaveProperty(id)
 
   // Segunda vez: já autorizado, volta direto ao app sem a tela de permissão.
   const again = await page.request.get(`/oauth/authorize?${q}`, { maxRedirects: 0 })
@@ -135,10 +137,7 @@ test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso f
   await expect(page.locator('#apps').getByText('Synquei (teste)').first()).toBeVisible()
 })
 
-test('app em desenvolvimento (NOSSOM): sem código, a pessoa vê "Em desenvolvimento" e volta ao HUB; prompt=none devolve access_denied', async ({
-  page,
-  request,
-}) => {
+test('app não lançado (NOSSOM): sem código, a pessoa vê a página neutra e vai para o HUB; prompt=none devolve access_denied', async ({ page, request }) => {
   const clientId = `e2e-dev-${randomUUID().slice(0, 8)}`
   const sql = postgres(DB, { max: 1, onnotice: () => {} })
   await sql`insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, trusted)
@@ -167,10 +166,11 @@ test('app em desenvolvimento (NOSSOM): sem código, a pessoa vê "Em desenvolvim
   await page.getByLabel('Nome').fill('Produtora Dev')
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
 
-  // Nada de código: a porta fechada, com o app e o caminho de volta. Sem dado interno na tela.
+  // Nada de código: a porta neutra (titular, 01/11/2026), sem nome, ícone nem explicação do app não lançado.
   await page.waitForURL('**/oauth/authorize**')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Em desenvolvimento.')
-  await expect(page.getByText('NOSSOM', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Página indisponível.')
+  await expect(page.locator('main')).not.toContainText('NOSSOM')
+  await expect(page.locator('main')).not.toContainText('desenvolvimento')
   const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   expect(axe.violations.map((v) => v.id)).toEqual([])
   expect(landed).toBeNull()
@@ -186,12 +186,16 @@ test('app em desenvolvimento (NOSSOM): sem código, a pessoa vê "Em desenvolvim
   expect(back.searchParams.get('error')).toBe('access_denied')
   expect(back.searchParams.get('code')).toBeNull()
 
-  await page.getByRole('link', { name: 'Voltar ao HUB' }).click()
+  await page.getByRole('link', { name: 'Ir para a Absolute ZRO' }).click()
   await page.waitForURL('**/inicio')
 
-  // A mesma porta fechada tem endereço público; produto que não existe é 404 e produto lançado manda para o HUB.
-  expect((await request.get('/em-desenvolvimento/nossom')).status()).toBe(200)
-  expect((await request.get('/em-desenvolvimento/nao-existe')).status()).toBe(404)
+  // O endereço antigo da porta fechada não mostra mais nada do app: não lançado (ou inexistente) vai para a página
+  // inicial; produto lançado manda para o HUB.
+  for (const produto of ['nossom', 'nao-existe']) {
+    const r = await request.get(`/em-desenvolvimento/${produto}`, { maxRedirects: 0 })
+    expect([303, 307]).toContain(r.status())
+    expect(new URL(r.headers().location!, 'http://x').pathname).toBe('/')
+  }
   const aberto = await request.get('/em-desenvolvimento/sobedesce', { maxRedirects: 0 })
   expect([303, 307]).toContain(aberto.status())
   expect(aberto.headers().location).toContain('/inicio')

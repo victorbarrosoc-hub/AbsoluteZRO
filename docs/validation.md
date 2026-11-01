@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Apps não lançados fora de vista (01/11/2026)
+
+Branch `esconder-nao-lancados`, migração `0049` (decisão do titular: AEON, Revela, NOSSOM e Rift Motion não aparecem
+para usuários; o papel `admin` vê e usa tudo).
+
+- `tests/integration/nao-lancados.test.ts` (novo): gate fechado em todos os canais e divulgação só dos seis no ar;
+  0049 idempotente sem apagar catálogo, planos nem entitlements; conta comum sem os três em `productAccessFor`, claims,
+  `authorize` (inclusive `download`) e no retrato da Z; admin passa em web, desktop, api, download e sso e vê tudo;
+  Set mostra "Absolute ZRO" para quem não é admin (NOSSOM, AEON e app inexistente) e o nome para o admin e para app no
+  ar; selo "Usa NOSSOM" some para quem vê e para a própria pessoa, o admin vê.
+- `release-gate`, `aeon-web`, `oidc`, `accounts`, `flow`, `ia`, `divulgacao`, `carro-lancamento`, `maestro-lancamento`
+  e `packages/core/test/core.test.ts` atualizados: não lançado nem aparece (sem `closed` na claim); admin passa;
+  suporte e financeiro não.
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **544/544** em 61 arquivos; `npm run build` ok.
+- E2E (`hub.spec`, `sso.spec`, `z-entrada.spec`): 22/23. A que falha (`gate de lançamento: anônimo…`, linha 274) já
+  falha na main desde a 0048 (Maestro com app de computador em `/baixar`), sem relação com este ramo.
+- AEON (`products/ai-edit`): `fechado`, `zro`, `ia`, `set`, `sons` 76/76 com a trava `LANCADO = false` (RELEASE=released
+  não abre; a conta `allowed` entra). `tela.test.js` (página neutra) atualizado, não rodado aqui.
+- Revela (`products/finishing`): `fechado`, `zro`, `ia`, `set` 68/68.
+- NOSSOM (`products/nossom`): `npm test` 124/124 e `tsc` ok; proxy manda as páginas do site para absolutezro.com.
+  `tests/e2e/zro-access.spec.ts` atualizado, não rodado aqui (pede o servidor de teste com o Supabase falso).
+- Capturas no iPhone (claro): página inicial, Início, Ferramentas, projeto, Set com "na Absolute ZRO", login único e o
+  site do AEON com a página neutra.
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma

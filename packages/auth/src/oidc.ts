@@ -49,7 +49,7 @@ export const ID_TTL_S = 600
 export const REFRESH_TTL_MS = 30 * 24 * 3_600_000
 export const FAMILY_MAX_MS = 90 * 24 * 3_600_000
 /** Texto único para "produto fechado" em todas as respostas do login único (o app pode mostrar como está). */
-export const RELEASE_CLOSED_DESCRIPTION = 'Este app ainda está em desenvolvimento.'
+export const RELEASE_CLOSED_DESCRIPTION = 'Este app não está disponível para a sua conta.'
 
 export class OAuthError extends Error {
   constructor(
