@@ -9,6 +9,11 @@ const cabecalhos = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // A CSP de todas as telas (revisão de 01/11/2026): só o que não limita script, estilo nem conexão, então não quebra
+  // nada (o X-Frame-Options já negava o quadro). As telas de revisão e os links públicos somam a CSP completa delas
+  // abaixo (duas CSPs valem juntas). Uma CSP com script-src em todas as telas pede nonce no script inline do Next:
+  // fica para depois, medida tela por tela.
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'none'; object-src 'none'" },
 ];
 
 /**
