@@ -43,6 +43,15 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
   Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0034). Falta: conferir num iPhone de verdade e regerar
   a foto do app para computador quando o Relay entrar.
+- ✅ iPhone sem zoom sozinho (01/11/2026, relato do titular no Console > Pessoas): a página ficava mais larga que a tela
+  (a coluna de `.page`, dos cartões e das listas crescia com o conteúdo mais largo: abas, chips, nome sem quebra) e todo
+  campo tinha 13–15 px (o Safari amplia ao tocar e não volta). Agora a coluna nunca passa da tela, abas e chips rolam
+  por dentro (os chips de app de borda a borda), campos com 16 px no celular e em tela de toque, `viewport-fit=cover`
+  com as margens seguras no topo do console e do HUB, sem travar o zoom. Produtos: Maestro (todo campo com 16 px no
+  celular; o detector de corte acusa campo menor), Relay (folha do conversor), Synquei (app e Formatos), SOBEDESCE web
+  (calculadora e console) e TPeasy (saiu o `maximum-scale=1`). Carro do Freela já estava certo. Teste
+  `tests/e2e/iphone-telas.spec.ts` (WebKit e Chromium, 375/393/430 px, admin e conta comum). Falta: conferir num iPhone
+  de verdade depois de publicar (autorização do titular).
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
