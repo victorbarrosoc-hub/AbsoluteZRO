@@ -1,40 +1,49 @@
-// O Quasar como IA (lib/quasar-ia.ts): parado, o clarão espera na pose da logo, dá uma volta e volta à pose; pensando,
-// gira sem pausa; ao parar de pensar, freia até a pose; reduzir movimento fica na pose.
+// O Quasar como IA (lib/quasar-ia.ts): a onda corre pela borda o tempo todo, pensando ela cresce e acelera, a chegada
+// acende em 1,4 s e reduzir movimento fica na pose da logo, já acesa.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { MOV_QUASAR, MotorQuasar } from '../lib/quasar-ia';
+import { MOV_QUASAR, MotorQuasar, RITMOS, raioQuasar } from '../lib/quasar-ia';
 
 const rodar = (m: MotorQuasar, s: number, dt = 1 / 30) => {
   for (let t = 0; t < s; t += dt) m.passo(dt);
 };
 
-test('em repouso: pausa na pose da logo, uma volta inteira e de volta à pose', () => {
+test('a onda corre pela borda e a chegada acende', () => {
   const m = new MotorQuasar();
-  rodar(m, MOV_QUASAR.pausa - 0.2);
-  assert.equal(m.theta, 0);
-  rodar(m, 0.2 + MOV_QUASAR.volta / 2);
-  assert.ok(m.theta > 1 && m.theta < 2 * Math.PI - 1, `no meio da volta: ${m.theta}`);
-  rodar(m, MOV_QUASAR.volta / 2 + 0.1);
-  assert.ok(Math.abs(m.theta) < 1e-6, `voltou à pose: ${m.theta}`);
+  const fase = m.fase;
+  rodar(m, 1);
+  assert.ok(m.fase > fase, 'a onda andou');
+  assert.ok(m.entrada < 1);
+  rodar(m, MOV_QUASAR.entrada);
+  assert.equal(m.entrada, 1);
 });
 
-test('pensando gira sem pausa e, ao parar, freia até a pose', () => {
+test('pensando, a onda cresce e acelera; ao parar, volta ao repouso', () => {
   const m = new MotorQuasar();
-  m.mudar('thinking');
+  rodar(m, 2);
+  const f0 = m.fase;
   rodar(m, 1);
-  const a = m.theta;
-  rodar(m, 0.5);
-  assert.ok(m.theta > a + 1, 'continua girando');
+  const repouso = m.fase - f0;
+  m.mudar('thinking');
+  rodar(m, 3);
+  const f1 = m.fase;
+  rodar(m, 1);
+  assert.ok(m.fase - f1 > repouso * 2, 'acelerou');
+  assert.ok(m.amp > RITMOS.idle.amp * 1.4, `cresceu: ${m.amp}`);
   m.mudar('idle');
-  rodar(m, 3.5);
-  assert.ok(Math.abs(m.theta) < 1e-6, `parou na pose: ${m.theta}`);
+  rodar(m, 4);
+  assert.ok(Math.abs(m.amp - RITMOS.idle.amp) < 0.05, `voltou: ${m.amp}`);
 });
 
 test('estático (reduzir movimento) é a pose da logo, já acesa', () => {
   const m = new MotorQuasar();
-  m.mudar('thinking');
   rodar(m, 2);
   m.estatico();
-  assert.equal(m.theta, 0);
+  assert.equal(m.fase, 0.6);
   assert.equal(m.entrada, 1);
+});
+
+test('o anel cabe na altura e deixa espaço para o feixe à direita', () => {
+  assert.equal(raioQuasar(760, 400), 132);
+  assert.ok(raioQuasar(358, 300) * 2 < 358 / 1.7);
 });

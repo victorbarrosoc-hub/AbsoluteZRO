@@ -1,9 +1,10 @@
 /**
- * O Quasar como IA (titular, 01/11/2026: "o símbolo da quasar como se fosse uma IA, estilo a Z"). A Coroa sonora vira
- * presença: o eclipse escuro, a borda que vibra como onda e o clarão, que dá uma volta inteira pela borda e repousa na
- * pose da logo (às 3 horas), como a estrela do Z volta à pose dela. A onda corre pela borda o tempo todo, mais forte do
- * lado da luz, e anéis de som saem do eclipse. Pensando, o clarão gira sem pausa e a onda acelera; falando, a onda
- * pulsa como voz.
+ * O Quasar como IA (titular, 01/11/2026: "o símbolo da quasar como se fosse uma IA, estilo a Z"; depois: "mais limpo,
+ * pode deixar a parte do meio vazada, dá movimento de ondas à parte das ondas e um brilho de feixe de luz horizontal").
+ * A Coroa sonora vazada: só o anel, com a onda do lado da luz correndo pela borda, e o clarão às 3 horas (a pose da
+ * logo) com um feixe horizontal que atravessa a borda. O clarão e o feixe nunca giram: só brilham mais e menos
+ * (titular). Pensando, a onda cresce e acelera e o brilho pulsa; falando, a onda pulsa como voz. A cadência é a do
+ * cinema, 23,976 quadros por segundo, como o Z.
  *
  * Tudo é desenhado num canvas, um quadro por vez, fora do React e sem mexer em `d` de SVG. Quem chama decide quando
  * animar (aba visível, na tela e sem "reduzir movimento"); parado, `estatico()` deixa a pose da logo.
@@ -16,74 +17,59 @@ type Ritmo = {
   amp: number;
   /** Velocidade da onda correndo pela borda, em rad/s. */
   onda: number;
-  /** Segundos entre um anel de som e o próximo (0 = sem anéis). */
-  aneis: number;
-  /** Força do halo e do clarão. */
+  /** Força do halo, do clarão e do feixe. */
   brilho: number;
-  /** Giro contínuo do clarão em rad/s (0 = volta e pausa na pose da logo). */
-  giro: number;
 };
 
 const VOLTA = Math.PI * 2;
 export const RITMOS: Record<EstadoQuasar, Ritmo> = {
-  idle: { amp: 1, onda: 1.5, aneis: 3.6, brilho: 1, giro: 0 },
-  thinking: { amp: 1.6, onda: 4.6, aneis: 1.3, brilho: 1.3, giro: VOLTA / 1.6 },
-  listening: { amp: 1.25, onda: 2.4, aneis: 2.2, brilho: 1.15, giro: 0 },
-  speaking: { amp: 1.8, onda: 3.4, aneis: 1.1, brilho: 1.35, giro: 0 },
-  error: { amp: 0.35, onda: 0.6, aneis: 0, brilho: 0.55, giro: 0 },
+  idle: { amp: 1, onda: 1.6, brilho: 1 },
+  thinking: { amp: 1.7, onda: 4.8, brilho: 1.3 },
+  listening: { amp: 1.25, onda: 2.4, brilho: 1.12 },
+  speaking: { amp: 1.8, onda: 3.4, brilho: 1.3 },
+  error: { amp: 0.35, onda: 0.6, brilho: 0.55 },
 };
-/** Uma volta do clarão em 5,2 s e 2,8 s de pausa na pose da logo. */
-export const MOV_QUASAR = { volta: 5.2, pausa: 2.8, entrada: 1.4 } as const;
-/** Raio do eclipse em fração do lado do canvas (sobra espaço para o halo e os anéis). */
-export const RAIO_QUASAR = 0.215;
+/** Quadros por segundo, como o Z do HUB (pedido do titular). */
+export const QUADROS_POR_SEGUNDO = 23.976;
+/** A chegada: a onda cresce e o clarão acende em 1,4 s. */
+export const MOV_QUASAR = { entrada: 1.4 } as const;
 /** Quantas ondas cabem numa volta da borda. */
 const ONDAS = 30;
 
 const suave = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const freia = (t: number) => 1 - Math.pow(1 - t, 3);
 const limita = (x: number) => Math.min(1, Math.max(0, x));
 
-type Orbita = {
-  de: number;
-  ate: number;
-  inicio: number;
-  dur: number;
-  curva: (t: number) => number;
-};
+/** Raio do anel para um canvas de w × h: cabe na altura e deixa espaço para o feixe à direita. */
+export const raioQuasar = (w: number, h: number) => Math.min(h * 0.33, w * 0.27);
 
 export class MotorQuasar {
   /** Relógio do motor, em segundos. */
   t = 0;
-  /** Ângulo do clarão (0 = às 3 horas, sentido horário). */
-  theta = 0;
+  /** Onde a onda está na borda (corre com o tempo). */
   fase = 0.6;
-  private vel = 0;
-  private ritmo: Ritmo = { ...RITMOS.idle };
-  private alvo: EstadoQuasar = 'idle';
-  private orbita: Orbita | null = null;
-  private repouso = 0;
-  private aneisRelogio = 0;
-  private aneisForca = 1;
   /** 0 → 1 na chegada: a onda cresce e o clarão acende. */
   entrada = 0;
+  private ritmo: Ritmo = { ...RITMOS.idle };
+  private alvo: EstadoQuasar = 'idle';
 
   get estado() {
     return this.alvo;
+  }
+
+  get amp() {
+    return this.ritmo.amp;
   }
 
   mudar(estado: EstadoQuasar) {
     this.alvo = estado;
   }
 
-  /** A pose da logo, sem movimento (reduzir movimento ou antes do primeiro quadro). */
+  /** A pose da logo, sem movimento (reduzir movimento). */
   estatico() {
-    this.theta = 0;
+    this.t = 0;
     this.fase = 0.6;
-    this.vel = 0;
-    this.orbita = null;
     this.entrada = 1;
-    this.aneisForca = 0;
-    this.ritmo = { ...RITMOS[this.alvo], giro: 0 };
+    this.ritmo = { ...RITMOS[this.alvo] };
   }
 
   passo(dt: number) {
@@ -96,53 +82,13 @@ export class MotorQuasar {
     r.amp += (alvo.amp - r.amp) * k;
     r.onda += (alvo.onda - r.onda) * k;
     r.brilho += (alvo.brilho - r.brilho) * k;
-    r.aneis = alvo.aneis || r.aneis;
-    this.aneisForca += ((alvo.aneis ? 1 : 0) - this.aneisForca) * k;
     this.fase += r.onda * dt;
-    if (r.aneis) this.aneisRelogio += dt / r.aneis;
-
-    if (alvo.giro > 0) {
-      // girando sem pausa: acelera até o giro do estado
-      this.orbita = null;
-      this.repouso = 0;
-      this.vel += (alvo.giro - this.vel) * (1 - Math.exp(-dt * 4));
-      this.theta += this.vel * dt;
-      return;
-    }
-    if (this.orbita) {
-      const o = this.orbita;
-      const p = limita((this.t - o.inicio) / o.dur);
-      const antes = this.theta;
-      this.theta = o.de + (o.ate - o.de) * o.curva(p);
-      this.vel = dt > 0 ? (this.theta - antes) / dt : 0;
-      if (p >= 1) {
-        this.theta = o.ate % VOLTA;
-        this.orbita = null;
-        this.repouso = 0;
-        this.vel = 0;
-      }
-      return;
-    }
-    const resto = ((this.theta % VOLTA) + VOLTA) % VOLTA;
-    if (resto > 1e-3 && VOLTA - resto > 1e-3) {
-      // saiu de um giro fora da pose: termina a volta freando até a pose da logo
-      const falta = VOLTA - resto;
-      const dur = Math.min(3, Math.max(0.8, (3 * falta) / Math.max(this.vel, 1)));
-      this.theta = resto;
-      this.orbita = { de: resto, ate: VOLTA, inicio: this.t, dur, curva: freia };
-      return;
-    }
-    this.theta = 0;
-    this.vel = 0;
-    this.repouso += dt;
-    if (this.repouso >= MOV_QUASAR.pausa)
-      this.orbita = { de: 0, ate: VOLTA, inicio: this.t, dur: MOV_QUASAR.volta, curva: suave };
   }
 
   /** Altura da onda neste instante, com a respiração do repouso e o pulso da fala. */
   private ampAgora() {
     const t = this.t;
-    let a = this.ritmo.amp * (0.86 + 0.14 * Math.sin(t * 1.3));
+    let a = this.ritmo.amp * (0.84 + 0.16 * Math.sin(t * 1.3));
     if (this.alvo === 'speaking')
       a *= 0.75 + 0.45 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.9 + 1));
     if (this.alvo === 'listening') a *= 0.9 + 0.12 * Math.sin(t * 5.1);
@@ -150,129 +96,105 @@ export class MotorQuasar {
   }
 
   desenhar(ctx: CanvasRenderingContext2D, w: number, h: number, claro: boolean) {
-    const S = Math.min(w, h);
     const cx = w / 2;
     const cy = h / 2;
-    const R = S * RAIO_QUASAR;
+    const R = raioQuasar(w, h);
     const brilho = this.ritmo.brilho;
     const acende = suave(this.entrada);
     const amp = this.ampAgora();
-    const theta = this.theta;
+    const t = this.t;
     ctx.clearRect(0, 0, w, h);
 
-    // halo em volta do eclipse, mais forte do lado da luz
-    const halo = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 2.3);
+    // o anel de luz em volta (o meio fica vazado)
+    const halo = ctx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R * 1.9);
+    halo.addColorStop(0, 'rgba(70,130,255,0)');
     halo.addColorStop(
-      0,
-      claro ? `rgba(47,107,255,${0.16 * brilho})` : `rgba(70,130,255,${0.34 * brilho})`,
-    );
-    halo.addColorStop(
-      0.45,
-      claro ? `rgba(47,107,255,${0.05 * brilho})` : `rgba(60,110,230,${0.1 * brilho})`,
+      0.18,
+      claro ? `rgba(47,107,255,${0.1 * brilho})` : `rgba(80,140,255,${0.22 * brilho})`,
     );
     halo.addColorStop(1, 'rgba(47,107,255,0)');
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, w, h);
-    const fx = cx + Math.cos(theta) * R * 1.03;
-    const fy = cy + Math.sin(theta) * R * 1.03;
-    const lado = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 1.25);
-    lado.addColorStop(0, `rgba(150,190,255,${(claro ? 0.22 : 0.3) * brilho * acende})`);
+    const fx = cx + R * 1.02;
+    const fy = cy;
+    const lado = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 1.1);
+    lado.addColorStop(0, `rgba(150,190,255,${(claro ? 0.2 : 0.28) * brilho * acende})`);
     lado.addColorStop(1, 'rgba(150,190,255,0)');
     ctx.fillStyle = lado;
     ctx.fillRect(0, 0, w, h);
 
-    // anéis de som saindo do eclipse
-    if (this.aneisForca > 0.01) {
-      ctx.lineWidth = Math.max(1, S / 360);
-      for (let i = 0; i < 3; i++) {
-        const q = (((this.aneisRelogio + i / 3) % 1) + 1) % 1;
-        const a = (1 - q) * (1 - q) * 0.26 * this.aneisForca * acende;
-        ctx.strokeStyle = claro ? `rgba(47,107,255,${a})` : `rgba(170,200,255,${a})`;
-        ctx.beginPath();
-        ctx.arc(cx, cy, R * (1.08 + q * 1.15), 0, VOLTA);
-        ctx.stroke();
-      }
-    }
-
-    // o eclipse, iluminado de leve do lado do clarão
-    const disco = ctx.createRadialGradient(
-      cx + Math.cos(theta) * R * 0.45,
-      cy + Math.sin(theta) * R * 0.45,
-      R * 0.1,
-      cx,
-      cy,
-      R,
-    );
-    disco.addColorStop(0, '#0d1528');
-    disco.addColorStop(0.7, '#060a14');
-    disco.addColorStop(1, '#03050a');
-    ctx.fillStyle = disco;
+    // a borda: a onda corre do lado da luz e respira; do outro lado, quase lisa
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 0.985, 0, VOLTA);
-    ctx.fill();
-
-    // a borda que vibra: onda correndo, mais alta perto do clarão
-    ctx.beginPath();
-    const pontos = 300;
+    const pontos = 360;
     for (let i = 0; i <= pontos; i++) {
       const a = (i / pontos) * VOLTA;
-      const env = Math.pow(Math.max(0, Math.cos(a - theta)), 1.3);
-      const r =
-        R * 1.02 +
-        R *
-          0.07 *
-          amp *
-          (env * Math.sin(a * ONDAS - this.fase) + 0.1 * Math.sin(a * 5 + this.fase * 0.7));
+      const env = Math.pow(Math.max(0, Math.cos(a)), 1.25);
+      const onda =
+        Math.sin(a * ONDAS - this.fase) * 0.8 + Math.sin(a * ONDAS * 0.5 + this.fase * 0.6) * 0.2;
+      const r = R + R * 0.075 * amp * (env * onda + 0.08 * Math.sin(a * 4 + this.fase * 0.5));
       const x = cx + r * Math.cos(a);
       const y = cy + r * Math.sin(a);
       if (i) ctx.lineTo(x, y);
       else ctx.moveTo(x, y);
     }
     ctx.closePath();
-    const cor = this.corDaBorda(ctx, cx, cy, theta, claro);
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = cor;
+    ctx.strokeStyle = this.corDaBorda(ctx, cx, cy, claro);
     ctx.globalAlpha = 0.16 * brilho;
-    ctx.lineWidth = R * 0.11;
+    ctx.lineWidth = R * 0.1;
     ctx.stroke();
     ctx.globalAlpha = 0.5;
-    ctx.lineWidth = R * 0.04;
+    ctx.lineWidth = R * 0.035;
     ctx.stroke();
     ctx.globalAlpha = 1;
-    ctx.lineWidth = Math.max(1.2, R * 0.017);
+    ctx.lineWidth = Math.max(1.3, R * 0.016);
     ctx.stroke();
 
-    // o clarão, com o brilho de quatro pontas da família ZRO, bem discreto
-    const pulso = (0.86 + 0.14 * Math.sin(this.t * 2.3)) * brilho * acende;
-    const flare = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 0.42);
+    // o feixe horizontal atravessando a borda no clarão: fica parado, só aumenta e diminui o brilho
+    const pulso = (0.82 + 0.18 * Math.sin(t * 2.1)) * brilho * acende;
+    const esq = Math.min(R * 1.25, fx - cx + R * 0.6);
+    const dir = Math.min(R * 1.6, w - fx - 2);
+    const cor = claro ? '120,160,255' : '255,255,255';
+    // faixa larga e suave
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.scale(1, 0.06);
+    const faixa = ctx.createRadialGradient(0, 0, 0, 0, 0, dir);
+    faixa.addColorStop(0, `rgba(190,215,255,${0.55 * pulso})`);
+    faixa.addColorStop(0.5, `rgba(120,165,255,${0.18 * pulso})`);
+    faixa.addColorStop(1, 'rgba(120,165,255,0)');
+    ctx.fillStyle = faixa;
+    ctx.beginPath();
+    ctx.arc(0, 0, dir, 0, VOLTA);
+    ctx.fill();
+    ctx.restore();
+    // o traço fino
+    const traco = ctx.createLinearGradient(fx - esq, fy, fx + dir, fy);
+    const meio = esq / (esq + dir);
+    traco.addColorStop(0, `rgba(${cor},0)`);
+    traco.addColorStop(meio * 0.55, `rgba(${cor},${0.35 * pulso})`);
+    traco.addColorStop(meio, `rgba(255,255,255,${Math.min(1, pulso)})`);
+    traco.addColorStop(meio + (1 - meio) * 0.45, `rgba(${cor},${0.35 * pulso})`);
+    traco.addColorStop(1, `rgba(${cor},0)`);
+    ctx.strokeStyle = traco;
+    ctx.lineWidth = Math.max(1, R * 0.011);
+    ctx.beginPath();
+    ctx.moveTo(fx - esq, fy);
+    ctx.lineTo(fx + dir, fy);
+    ctx.stroke();
+    // o clarão
+    const flare = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 0.36);
     flare.addColorStop(0, `rgba(255,255,255,${Math.min(1, pulso)})`);
     flare.addColorStop(0.14, `rgba(220,235,255,${0.85 * pulso})`);
-    flare.addColorStop(0.4, `rgba(111,157,255,${0.4 * pulso})`);
+    flare.addColorStop(0.42, `rgba(111,157,255,${0.36 * pulso})`);
     flare.addColorStop(1, 'rgba(47,107,255,0)');
     ctx.fillStyle = flare;
     ctx.beginPath();
-    ctx.arc(fx, fy, R * 0.42, 0, VOLTA);
+    ctx.arc(fx, fy, R * 0.36, 0, VOLTA);
     ctx.fill();
-    for (const [ang, comp, forca] of [
-      [theta, 0.42, 0.9],
-      [theta + Math.PI / 2, 0.22, 0.45],
-    ] as const) {
-      const dx = Math.cos(ang) * R * comp;
-      const dy = Math.sin(ang) * R * comp;
-      const raio = ctx.createLinearGradient(fx - dx, fy - dy, fx + dx, fy + dy);
-      raio.addColorStop(0, 'rgba(255,255,255,0)');
-      raio.addColorStop(0.5, `rgba(255,255,255,${Math.min(1, forca * pulso)})`);
-      raio.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.strokeStyle = raio;
-      ctx.lineWidth = Math.max(1, R * 0.012);
-      ctx.beginPath();
-      ctx.moveTo(fx - dx, fy - dy);
-      ctx.lineTo(fx + dx, fy + dy);
-      ctx.stroke();
-    }
     ctx.fillStyle = `rgba(255,255,255,${Math.min(1, pulso)})`;
     ctx.beginPath();
-    ctx.arc(fx, fy, Math.max(1.4, R * 0.03), 0, VOLTA);
+    ctx.arc(fx, fy, Math.max(1.6, R * 0.028), 0, VOLTA);
     ctx.fill();
   }
 
@@ -280,18 +202,18 @@ export class MotorQuasar {
     ctx: CanvasRenderingContext2D,
     cx: number,
     cy: number,
-    theta: number,
     claro: boolean,
   ): CanvasGradient | string {
     if (typeof ctx.createConicGradient !== 'function') return claro ? '#3b74f0' : '#8fb2ec';
-    const g = ctx.createConicGradient(theta - Math.PI, cx, cy);
-    const fundo = claro ? '#24489c' : '#2a4f9e';
+    // começa às 9 horas (o lado escuro) e passa pelo clarão às 3
+    const g = ctx.createConicGradient(Math.PI, cx, cy);
+    const fundo = claro ? '#6f93e0' : '#c9dafa';
     g.addColorStop(0, fundo);
-    g.addColorStop(0.3, claro ? '#2f6bff' : '#4f7fe0');
+    g.addColorStop(0.3, claro ? '#2f6bff' : '#6f98ec');
     g.addColorStop(0.45, claro ? '#7fa7ff' : '#b9d2ff');
     g.addColorStop(0.5, '#ffffff');
     g.addColorStop(0.55, claro ? '#7fa7ff' : '#b9d2ff');
-    g.addColorStop(0.7, claro ? '#2f6bff' : '#4f7fe0');
+    g.addColorStop(0.7, claro ? '#2f6bff' : '#6f98ec');
     g.addColorStop(1, fundo);
     return g;
   }

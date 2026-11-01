@@ -23,7 +23,7 @@ test('home is the assistant, attaches an audio file, sends measurements and open
     });
   });
   await page.goto('/studio/inicio');
-  await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Início do Quasar' })).toBeVisible();
   await page
     .getByLabel('Importar arquivo de áudio', { exact: true })
     .setInputFiles('tests/fixtures/synthetic-speech.wav');

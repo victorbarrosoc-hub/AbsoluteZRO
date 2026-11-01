@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CoroaLuz } from './brand';
 import { useAmbientMotion } from './use-ambient-motion';
-import { MotorQuasar, type EstadoQuasar } from '@/lib/quasar-ia';
+import { MotorQuasar, QUADROS_POR_SEGUNDO, type EstadoQuasar } from '@/lib/quasar-ia';
 
 /**
  * O Quasar como IA no Início: a Coroa sonora viva (lib/quasar-ia.ts). Anima só com a aba visível, na tela e sem
@@ -28,6 +28,7 @@ export default function QuasarIA({ estado }: { estado: EstadoQuasar }) {
     let altura = 0;
     let quadro = 0;
     let anterior = 0;
+    let ultimo = 0;
     const claro = () => el.closest('[data-theme]')?.getAttribute('data-theme') === 'light';
     const desenhar = () => {
       if (!largura || !altura) return;
@@ -54,11 +55,18 @@ export default function QuasarIA({ estado }: { estado: EstadoQuasar }) {
     const tema = new MutationObserver(() => !running && desenhar());
     const raiz = el.closest('[data-theme]');
     if (raiz) tema.observe(raiz, { attributes: true, attributeFilter: ['data-theme'] });
+    // 23,976 quadros por segundo, pelo relógio: só a cadência muda, o movimento segue o tempo real
+    const intervalo = 1000 / QUADROS_POR_SEGUNDO;
     const animar = (agora: number) => {
-      const intervalo = largura < 320 ? 1000 / 24 : 1000 / 30;
-      if (!anterior || agora - anterior >= intervalo) {
-        m.passo(anterior ? (agora - anterior) / 1000 : 0);
+      if (!anterior) {
         anterior = agora;
+        ultimo = agora;
+        m.passo(0);
+        desenhar();
+      } else if (agora - anterior >= intervalo - 1) {
+        m.passo((agora - ultimo) / 1000);
+        ultimo = agora;
+        anterior = agora - ((agora - anterior) % intervalo);
         desenhar();
       }
       quadro = requestAnimationFrame(animar);

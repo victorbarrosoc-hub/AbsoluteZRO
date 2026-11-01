@@ -216,9 +216,7 @@ export default function Assistant({
                 : 'Ouvindo…'
               : 'Pronta para ajudar'
           : authenticated
-            ? embedded
-              ? 'Modo básico · IA indisponível agora'
-              : 'Ajuda básica · IA temporariamente indisponível'
+            ? 'Ajuda básica · IA temporariamente indisponível'
             : 'Entre na sua conta para conversar'}
     </div>
   );
@@ -242,28 +240,21 @@ export default function Assistant({
           )}
         </header>
         {embedded ? (
-          // Início (titular, 01/11/2026): o Quasar é a IA, como o Z no HUB. A Coroa viva gira o clarão e repousa na pose
-          // da logo; pensa, ouve e fala junto com o assistente.
+          // Início (titular, 01/11/2026): o Quasar é a IA, como o Z no HUB. A Coroa vazada e viva, maior, com a onda
+          // correndo pela borda e o feixe horizontal no clarão; pensa, ouve e fala junto com o assistente.
           <>
             <div className={`assistant-marca state-${estado}`} aria-hidden="true">
               <QuasarIA estado={estado} />
             </div>
-            {modo}
+            {/* no Início, o estado só aparece com a IA ligada (titular: tira o "modo básico") */}
+            {cloud && !loading && modo}
           </>
         ) : (
           <AIMotion compact state={estado} />
         )}
-        <Title id={id + '-title'}>
-          {embedded ? (
-            <>
-              Seu áudio, <br />
-              <strong>melhor.</strong>
-            </>
-          ) : (
-            <>
-              Seu áudio, <span className="text-gradient">melhor.</span>
-            </>
-          )}
+        {/* sem frase de efeito (titular, 01/11/2026): no Início o título é só para leitor de tela */}
+        <Title id={id + '-title'} className={embedded ? 'sr-only' : undefined}>
+          {embedded ? 'Início do Quasar' : 'Peça ao Quasar'}
         </Title>
         {embedded && onUpload && (
           <div className="assistant-acoes">
