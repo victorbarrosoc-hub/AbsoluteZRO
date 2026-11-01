@@ -1,7 +1,8 @@
 # ADR 0035 — Motion 2D e 3D: o setor de animação da Absolute ZRO
 
-**Status:** proposta (01/11/2026, pedido do titular). Nome a definir; id técnico provisório `motion`, domínio
-`<nome>.absolutezro.com` (ADR 0025). Protótipo de desenho (página inicial, login e estúdio) publicado como Artifact
+**Status:** proposta (01/11/2026, pedido do titular). Nome: **Rift Motion** (titular, 01/11/2026), pasta
+`products/rift-motion/` (marca e protótipo), domínio proposto `rift.absolutezro.com` (ADR 0025), depois de conferir o
+INPI. Protótipo de desenho (página inicial, login e estúdio) publicado como Artifact
 privado do titular; nada aqui está implementado.
 
 ## Contexto
@@ -84,12 +85,16 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
 - Padrão Apple com **escuro por padrão** (pedido do titular, 01/11/2026: ferramenta de trabalho, como o AEON) e o
   seletor sol/lua para o claro, lembrado em `zro-tema`; Figtree fino × pesado, Liquid Glass, pouco texto. A página inicial é o próprio
   produto em movimento: formas planas que quicam, dobram em 3D e voltam ao plano, com timecode ao vivo.
-- Cor do produto provisória: tangerina `#ff6b2c` / `#ffb68f` (livre na família). Ícone provisório: keyframe com arco de
-  movimento.
+- Cor do produto: o laranja da marca `#EA6426` (livre na família). Ícone: o R da Rift Motion.
 
-## Nomes em avaliação
+## Nome e marca
 
-Eixo (X, Y e Z: 2D e 3D; o Z conversa com a ZRO), Ginga, Mova, Dobra, Curva, Pulso. Falta conferir INPI.
+**Rift Motion** (titular, 01/11/2026; antes avaliados Eixo, Ginga, Mova, Dobra, Curva, Pulso). Marca a partir da arte
+do titular, redesenhada em vetor em `products/rift-motion/marca/` (gerador `vetorizar.py`): RIFT de letras largas com o
+F e o T ligados e a fenda no I e no R, MOTION fino e espaçado, o R como ícone com a luz laranja. Paleta: laranja
+`#EA6426`, areia `#E1CDBC`, lilás `#9A9CD0`, grafite `#29272A`, preto `#0B0B0C`. A dobra (superfície escura com o verso
+laranja) é o herói, animada ao vivo em 3D, não imagem parada. Frases em português: "Do plano ao espaço." e "Rompa o
+quadro." (no lugar de "Beyond the frame"). Conferir "Rift" no INPI (classes 9 e 42; lembra o Oculus Rift).
 
 ## Fases sugeridas
 
