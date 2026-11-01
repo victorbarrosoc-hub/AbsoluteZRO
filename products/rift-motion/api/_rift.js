@@ -20,7 +20,7 @@ export function pessoaDe(req) {
 }
 
 const LIMITE = 300_000
-async function lerCorpo(req) {
+export async function lerCorpo(req) {
   if (!/^application\/json\b/i.test(String(req.headers['content-type'] || ''))) throw new Recusa(415, 'Mande JSON.')
   if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) return req.body
   let texto = typeof req.body === 'string' ? req.body : Buffer.isBuffer(req.body) ? req.body.toString('utf8') : ''
@@ -65,6 +65,31 @@ export function rota(metodos) {
       if (e instanceof Recusa) return json(res, e.status, { ok: false, erro: e.message })
       if (e && e.code === '23505') return json(res, 409, { ok: false, erro: 'Já existe.' })
       if (e && (e.code === '23514' || e.code === '22P02' || e.code === '22003')) return json(res, 400, { ok: false, erro: 'Dados fora do formato.' })
+      console.error('rift api', e?.code || '', e?.message || e)
+      return json(res, 500, { ok: false, erro: 'Não deu agora. Tente de novo.' })
+    }
+  }
+}
+
+/** Rota sem transação aberta (chama serviços de fora): `fn({ corpo, q, pessoa, req, res })`; o banco é aberto pela
+ * própria rota com `comoPessoa`, só nos trechos que precisam. Mesmas portas: login, sessão, Origin, JSON. */
+export function rotaSolta(metodos) {
+  return async (req, res) => {
+    const fn = metodos[req.method]
+    if (!fn) {
+      res.setHeader('Allow', Object.keys(metodos).join(', '))
+      return json(res, 405, { ok: false })
+    }
+    if (!configurado()) return json(res, 503, { ok: false, motivo: 'login' })
+    if (!nuvemLigada()) return json(res, 503, { ok: false, nuvem: false })
+    const pessoa = pessoaDe(req)
+    if (!pessoa) return json(res, 401, { ok: false })
+    if (req.method !== 'GET' && req.headers.origin !== origemDoPedido(req)) return json(res, 403, { ok: false })
+    try {
+      const corpo = req.method === 'POST' || req.method === 'PATCH' ? await lerCorpo(req) : null
+      return json(res, 200, { ok: true, ...(await fn({ corpo, q: consulta(req), pessoa, req, res })) })
+    } catch (e) {
+      if (e && typeof e.status === 'number' && e.message) return json(res, e.status, { ok: false, erro: e.message, ...(e.status === 401 ? { reconectar: true } : {}) })
       console.error('rift api', e?.code || '', e?.message || e)
       return json(res, 500, { ok: false, erro: 'Não deu agora. Tente de novo.' })
     }

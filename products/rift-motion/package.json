@@ -9,6 +9,7 @@
     "migrar": "node scripts/migrar.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0",
     "postgres": "^3.4.9"
   }
 }

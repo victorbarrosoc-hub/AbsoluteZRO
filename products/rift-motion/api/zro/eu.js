@@ -6,6 +6,7 @@
 // /oauth/userinfo com o token do cofre (rf_hub) e regrava a sessão. Absolute ZRO fora do ar: vale a última cópia.
 // Absolute ZRO recusou (acesso ao app removido no Perfil, conta inativa): a sessão acaba.
 
+import { zLiberado } from '../_z.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_HUB, CONTA_S, decifrar, emissor, FERRAMENTAS, idLocal, json, lerCookie, lerPerfil, REVER_S, selar, sessaoDe, temAcesso, ZroRevogado } from '../_zro.js'
 
 export default async function eu(req, res) {
@@ -40,6 +41,8 @@ export default async function eu(req, res) {
     {
       ok: true,
       acesso: temAcesso(produtos),
+      // a Z no Rift: só para quem está liberado (fase 2 para todos)
+      z: zLiberado(c.sub),
       ferramentas: FERRAMENTAS,
       // id: resumo do sub, só para separar o histórico de cada conta no aparelho (app/historico.js)
       pessoa: { id: idLocal(c.sub), nome: c.nome || null, email: c.email || null, foto: c.foto || null, conta: c.conta || `${emissor()}/perfil`, organizacao: org, produtos },

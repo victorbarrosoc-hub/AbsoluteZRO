@@ -88,6 +88,16 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
   produto em movimento: formas planas que quicam, dobram em 3D e voltam ao plano, com timecode ao vivo.
 - Cor do produto: o laranja da marca `#EA6426` (livre na família). Ícone: o R da Rift Motion.
 
+### IA: Higgsfield da pessoa e a Z (01/11/2026, decisão do titular)
+
+- **A Z manda, a Higgsfield executa.** A pessoa conecta a própria Higgsfield; a Z (que conhece a cena) traduz o pedido em
+  ações no estúdio e, para animar uma imagem, abre "Gerar com IA" já preenchido. Gastar crédito só com o toque da pessoa.
+- **Duas portas:** a **conta** (preferida: login OAuth com PKCE no servidor de login da Higgsfield, registro dinâmico do
+  Rift como app, e as ferramentas do MCP `mcp.higgsfield.ai` com o token da pessoa, créditos do plano) e a **chave da API**
+  (id:segredo, saldo em dólar separado do plano). Credenciais só cifradas (AES-256-GCM) em `rift.conexoes`.
+- **A Z no Rift só para o titular** até a fase 2 (`RIFT_Z_LIBERADOS`), com teto por dia (`RIFT_Z_LIMITE_DIA`; sem teto =
+  desligada) e o uso em `rift.z_uso`. Modelo `claude-opus-5-5`, esforço baixo, com a reserva automática do servidor.
+
 ## Nome e marca
 
 **Rift Motion** (titular, 01/11/2026; antes avaliados Eixo, Ginga, Mova, Dobra, Curva, Pulso). Marca a partir da arte

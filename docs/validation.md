@@ -29,6 +29,15 @@ Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rif
   depois de limpar o aparelho e reabrir, as duas voltam do IndexedDB; num navegador novo aparece "não está neste
   aparelho" no lugar; os dois arquivos entram na Biblioteca. Corrigido: a camada escolhida no quadro herdava o estilo do
   seletor (`.sel`, pílula de 32 px). Não testado: Safari e vídeo grande.
+- IA no Rift (01/11/2026): `npm test` **11/11** (6 novos em `test/ia.test.js`, Postgres de verdade e Higgsfield simulada):
+  chave conferida sem gastar e guardada cifrada (o banco não tem a chave em claro; `rift_app` não lê `apps_oauth`); gerar
+  com a chave (envio pré-assinado, idempotência, na fila → gerando → pronto, pronto não pergunta de novo, outra pessoa não
+  vê); gerar com a conta pelo MCP em SSE (sessão, `media_upload` → `media_confirm` → `generate_video` com
+  `use_unlim: false` e sem som → `jobs_wait`); token vencido renova, renovação recusada desconecta; a Z só para quem está
+  liberado e, sem chave ou teto, diz que não está ligada. No Chromium com o CSP de produção: chave errada recusada, chave
+  certa conectada, a imagem sobe como JPEG (PUT), o vídeo desce da CDN e entra como camada "(IA)" no lugar da imagem
+  (escondida). Migração 0001 aplicada no Supabase (dono `rift`, RLS). Não testado: login real da Higgsfield (o registro
+  do Rift como app acontece no primeiro "Entrar com a Higgsfield") e uma geração real (gasta crédito).
 - Painel modelo A (01/11/2026): no Chromium a 390 px, projeto novo abre vazio com Mídia/Texto/Modelo e a barra de
   baixo; Texto abre a gaveta na aba Movimento; Entrar + Sair geram keyframes de x e opacidade (acesos no Ajuste fino); ✕
   fecha; 3D + Quicar gera y e opacidade; a linha do tempo abre pelo botão; sem rolagem lateral; depois de reabrir, o

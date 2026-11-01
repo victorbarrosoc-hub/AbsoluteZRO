@@ -23,7 +23,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; img-src 'self' data: blob: https://absolutezro.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'self'; img-src 'self' data: blob: https://absolutezro.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' https://upload.higgsfield.ai https://*.cloudfront.net https://*.amazonaws.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Cross-Origin-Opener-Policy",

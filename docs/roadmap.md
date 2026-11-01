@@ -89,7 +89,12 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   arquivo de novo) e entram na Biblioteca. Painel modelo A "Toque e anime" (01/11/2026, escolha do titular entre três):
   projeto novo começa vazio (Mídia, Texto ou Modelo), barra de adicionar embaixo no celular, tocar numa camada abre a
   gaveta com Movimento (Entrar, Quicar, Girar, Aparecer, Crescer, Sair, duração), Estilo e Ajuste fino (keyframes);
-  os movimentos viram keyframes de verdade. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
+  os movimentos viram keyframes de verdade. IA (01/11/2026): "Gerar movimento com IA" anima uma camada de imagem pela
+  Higgsfield da pessoa, por duas portas: a conta (login OAuth da Higgsfield + MCP, créditos do plano; preferida) ou a
+  chave da API (saldo em dólar). O arquivo vai do aparelho direto para a Higgsfield, o vídeo volta como camada no lugar
+  da imagem; credenciais só cifradas no banco (`rift.conexoes`, migração 0001). A Z no Rift (barra "Peça à Z", ações
+  com desfazer) só para o titular (`RIFT_Z_LIBERADOS`, teto `RIFT_Z_LIMITE_DIA`); ⬜ falta a chave da Claude no projeto
+  `rift-motion`. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo

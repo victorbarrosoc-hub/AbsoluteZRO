@@ -295,9 +295,32 @@ button { font: inherit; color: inherit; }
 .mov-tempo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 0.76rem; color: var(--mute); margin-top: 4px; }
 .mov-tempo input { width: 100%; accent-color: var(--p); }
 .mov-tempo output { font-family: var(--font-mono); color: var(--ink); min-width: 3.4em; text-align: right; }
-.vazio { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; color: #f5f5f7; text-align: center; padding: 12px; background: radial-gradient(60% 60% at 50% 50%, rgb(20 20 22 / 0.55), transparent); }
-.vazio strong { font-family: var(--font-title); font-size: clamp(1.1rem, 3vw, 1.7rem); letter-spacing: -0.03em; font-weight: 800; }
-.vazio__btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.st-vazio { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; color: #f5f5f7; text-align: center; padding: 12px; background: radial-gradient(60% 60% at 50% 50%, rgb(20 20 22 / 0.55), transparent); }
+.st-vazio strong { font-family: var(--font-title); font-size: clamp(1.1rem, 3vw, 1.7rem); letter-spacing: -0.03em; font-weight: 800; }
+.st-vazio__btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.gerar-ia { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; margin-top: 2px; border: 0; border-radius: 12px; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--ink); background: linear-gradient(var(--surface-2), var(--surface-2)) padding-box, linear-gradient(120deg, var(--p), #9A9CD0) border-box; border: 1.5px solid transparent; }
+.gerar-ia:hover { filter: brightness(1.08); }
+.gf { display: grid; gap: 12px; }
+.gf label { display: grid; gap: 6px; font-size: 0.8rem; color: var(--mute); }
+.gf textarea, .gf input, .gf select { width: 100%; border: 0; border-radius: 12px; padding: 10px 12px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 0.9rem; box-shadow: 0 0 0 1px var(--line); }
+.gf textarea { min-height: 84px; resize: vertical; }
+.gf .linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.gf .nota { margin: 0; font-size: 0.78rem; color: var(--mute); }
+.gf .conectada { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--mute); }
+.gf .conectada b { color: var(--ink); font-weight: 600; }
+.gf .acoes { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.gf .andamento { display: grid; gap: 10px; justify-items: center; text-align: center; padding: 18px 0; }
+.gf .andamento strong { font-family: var(--font-title); font-size: 1.1rem; }
+.gf .barra-viva { width: min(280px, 100%); height: 4px; border-radius: 9px; background: var(--surface-2); overflow: hidden; }
+.gf .barra-viva i { display: block; width: 35%; height: 100%; border-radius: 9px; background: var(--p); animation: viva 1.4s ease-in-out infinite; }
+@keyframes viva { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.z-btn { width: 32px; padding: 0; font-weight: 800; font-family: var(--font-title); }
+.z-btn[aria-pressed="true"] { box-shadow: 0 0 0 1.5px var(--p); }
+.z-barra { position: absolute; z-index: 6; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgb(0 0 0 / 0.3); }
+.z-barra input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 0.88rem; outline: none; }
+.z-marca { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-title); font-weight: 800; font-size: 0.8rem; color: #fff; background: linear-gradient(140deg, var(--p), #9A9CD0); flex: none; }
+.z-barra.pensando .z-marca { animation: zPensa 1s ease-in-out infinite alternate; }
+@keyframes zPensa { to { opacity: 0.45; transform: scale(0.9); } }
 
 .timeline { grid-column: 1 / -1; display: grid; grid-template-columns: 220px minmax(0, 1fr); grid-template-rows: 34px auto; max-height: 300px; overflow: auto; user-select: none; -webkit-user-select: none; }
 .tl-ctrl { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 3; }
@@ -352,7 +375,7 @@ button { font: inherit; color: inherit; }
 
 
 /* estúdio: camadas 2D no quadro, inspetor editável */
-.camadas2d { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.camadas2d { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
 .camadas2d .c2d { pointer-events: auto; }
 .c2d { position: absolute; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .c2d:active { cursor: grabbing; }
@@ -735,6 +758,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       <span class="spacer"></span>
       <label class="meta" for="stFps">Cadência</label>
       <select class="sel mono" id="stFps" aria-label="Cadência do projeto"></select>
+      <button class="glass-btn glass-btn--sm z-btn" id="zBtn" hidden title="Peça à Z" aria-label="Peça à Z">Z</button>
       <button class="glass-btn glass-btn--sm" id="soundBtn">Som com NOSSOM</button>
       <button class="glass-btn glass-btn--ink glass-btn--sm" id="exportBtn"><span class="so-largo">Exportar com o Relay</span><span class="so-curto">Exportar</span></button>
     </div>
@@ -758,13 +782,14 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
         <button aria-pressed="false" data-vp="orbit">Órbita livre</button>
         <button aria-pressed="false" data-vp="flat">Só 2D</button>
       </div>
+      <form class="z-barra" id="zBarra" hidden autocomplete="off"><span class="z-marca" aria-hidden="true">Z</span><input id="zPedido" maxlength="1000" placeholder="Peça à Z. Ex.: faz o título entrar quicando" aria-label="Pedido para a Z"><button class="glass-btn glass-btn--ink glass-btn--sm" id="zEnviar">Enviar</button></form>
       <div class="canvas-frame" id="frame">
         <canvas id="stCanvas"></canvas>
         <div class="camadas2d" id="camadas2d"></div>
         <div class="vp-grid"></div>
-        <div class="vazio" id="stVazio" hidden>
+        <div class="st-vazio" id="stVazio" hidden>
           <strong>Comece por aqui.</strong>
-          <div class="vazio__btns">
+          <div class="st-vazio__btns">
             <button class="glass-btn glass-btn--ink glass-btn--sm" data-add="midia">Mídia</button>
             <button class="glass-btn glass-btn--sm" data-add="texto">Texto</button>
             <button class="glass-btn glass-btn--sm" id="usarModelo" title="Abre uma cena pronta para você trocar o que quiser">Modelo</button>
@@ -1284,9 +1309,9 @@ function estudio() {
     if (olho) { const c = camada(olho.dataset.olho); lembrar(); c.visivel = !c.visivel; return mudou({ estrutura: true }); }
     const b = e.target.closest('.layer'); if (b) select(b.dataset.id);
   });
-  function adicionar(tipo, forma, meta) {
+  function adicionar(tipo, forma, meta, quieto = false) {
     if (tipo === 'midia' && !meta) { trocarMidiaDe = null; return midiaArq.click(); }
-    lembrar();
+    if (!quieto) lembrar();
     const conta = cena.camadas.filter((c) => c.tipo === tipo).length + 1;
     const c = { id: novoIdC(), tipo, nome: tipo === 'midia' ? meta.nome.replace(/\.[^.]+$/, '').slice(0, 60) || 'Mídia' : tipo === 'texto' ? `Texto ${conta}` : tipo === 'forma' ? `Forma ${conta}` : `Objeto ${conta}`, cor: tipo === 'texto' ? '#f5f5f7' : tipo === 'forma' ? '#EA6426' : '#9A9CD0', visivel: true, props: { ...PADRAO[tipo] }, trilhas: {} };
     const passo = (conta - 1) % 4; // cada camada nova entra um pouco ao lado da anterior, sem cobrir o que já existe
@@ -1297,8 +1322,11 @@ function estudio() {
     if (FORMAS[tipo]) c.forma = forma || FORMAS[tipo][0][0];
     const i = cena.camadas.findIndex((x) => x.tipo !== 'camera');
     cena.camadas.splice(i < 0 ? cena.camadas.length : i, 0, c); // entra na frente
-    sel = c.id; abaInsp = 'mov'; mudou({ estrutura: true }); abrirGaveta();
+    sel = c.id; abaInsp = 'mov';
+    if (quieto) return c;
+    mudou({ estrutura: true }); abrirGaveta();
     if (!estreito()) toast(`${c.nome} entrou. Escolha um movimento à direita.`);
+    return c;
   }
   $$('[data-add]').forEach((b) => b.addEventListener('click', () => adicionar(b.dataset.add)));
 
@@ -1432,7 +1460,7 @@ function estudio() {
     const formas = FORMAS[c.tipo], an = c.anim || {};
     insp.innerHTML = `
       ${c.tipo !== 'camera' ? `<div data-painel="mov"><div class="movs">${MOVS.map(([k, n]) => `<button class="mov" data-mov="${k}" aria-pressed="${k === 'sair' ? !!an.saida : an.entrada === k}"><span class="mini m-${k}"><b></b></span>${n}</button>`).join('')}</div>
-        <label class="mov-tempo" for="movDur"><span>Duração</span><input id="movDur" type="range" min="0.3" max="3" step="0.1" value="${an.dur || 0.8}"><output id="movDurV">${String(an.dur || 0.8).replace('.', ',')} s</output></label></div>` : ''}
+        <label class="mov-tempo" for="movDur"><span>Duração</span><input id="movDur" type="range" min="0.3" max="3" step="0.1" value="${an.dur || 0.8}"><output id="movDurV">${String(an.dur || 0.8).replace('.', ',')} s</output></label>${c.tipo === 'midia' && c.midia.tipo === 'imagem' ? '<button class="gerar-ia" id="gerarIa" title="Vira vídeo com a sua Higgsfield">✦ Gerar movimento com IA</button>' : ''}</div>` : ''}
       <div data-painel="estilo">
       <label class="insp-campo"><span>Nome</span><input id="inNome" maxlength="60" value="${escH(c.nome)}"></label>
       ${c.tipo === 'texto' ? `<label class="insp-campo"><span>Texto</span><textarea id="inTexto" rows="2" maxlength="500">${escH(c.texto)}</textarea></label><label class="insp-campo"><span>Peso</span><select id="inPeso">${PESOS.map(([k, n]) => `<option value="${k}" ${k === c.peso ? 'selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
@@ -1447,6 +1475,7 @@ function estudio() {
       </div>`;
     mostrarAba();
     $$('[data-mov]', insp).forEach((b) => b.addEventListener('click', () => aplicarMov(c, b.dataset.mov)));
+    $('#gerarIa')?.addEventListener('click', () => abrirGerar(c.id));
     const dur = $('#movDur');
     if (dur) {
       dur.addEventListener('input', () => { $('#movDurV').textContent = dur.value.replace('.', ',') + ' s'; });
@@ -1760,6 +1789,202 @@ function estudio() {
     $$('[data-d]', host).forEach((b) => (b.onclick = () => { dest = b.dataset.d; sheet(); }));
     $('#shGo').focus();
   }
+  // ---------- Gerar com IA (Higgsfield da pessoa) ----------
+  // O arquivo vai do aparelho direto para a Higgsfield e o vídeo volta direto para o aparelho; o servidor do Rift só
+  // guarda a conexão e acompanha o pedido. Gastar crédito só no toque em "Gerar". O resultado vira camada de vídeo.
+  async function apiRift(caminho, { metodo = 'GET', corpo } = {}) {
+    let r;
+    try { r = await fetch('/api/rift/' + caminho, { method: metodo, credentials: 'same-origin', headers: corpo ? { 'content-type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined }); }
+    catch (e) { throw new Error('Sem conexão com o Rift agora.'); }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw Object.assign(new Error(d.erro || (r.status === 401 ? 'Entre com a sua conta Absolute ZRO.' : r.status === 503 ? 'Gerar com IA precisa da sua conta no rift.absolutezro.com.' : 'Não deu agora. Tente de novo.')), { status: r.status, reconectar: !!d.reconectar });
+    return d;
+  }
+  const geracoes = new Map(); // id da camada de origem → { id, estado }
+  const fecharFolha = () => { $('#sheetHost').innerHTML = ''; };
+  const xFolha = '<button class="icon-btn" id="gfX" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>';
+  function folhaGerar(corpo) {
+    const host = $('#sheetHost');
+    host.innerHTML = `<div class="sheet-veil" id="gfVeu"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gfT"><div class="sheet__head"><div><h3 id="gfT">Gerar movimento com IA</h3><p>Pela sua Higgsfield</p></div>${xFolha}</div><div class="gf">${corpo}</div></div></div>`;
+    $('#gfX', host).addEventListener('click', fecharFolha);
+    $('#gfVeu', host).addEventListener('click', (e) => { if (e.target.id === 'gfVeu') fecharFolha(); });
+    return host;
+  }
+  async function abrirGerar(idCamada, promptInicial = '') {
+    const c = camada(idCamada);
+    if (!c || c.tipo !== 'midia' || c.midia.tipo !== 'imagem') return toast('Escolha uma camada de imagem para gerar.');
+    const g = geracoes.get(c.id);
+    if (g && !['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) return mostrarAndamento(c.id);
+    folhaGerar('<p class="nota">Conferindo a sua conexão…</p>');
+    let st;
+    try { st = await apiRift('higgsfield'); } catch (e) { return folhaGerar(`<p class="nota">${escH(e.message)}</p>`); }
+    if (!st.conectado) return telaConectar(c.id, promptInicial);
+    const m0 = st.modelos[0];
+    const host = folhaGerar(`
+      <div class="conectada"><span>Conectada: <b>${escH(st.rotulo || 'Higgsfield')}</b></span><button class="chip" id="gfSair" style="margin-left:auto;height:28px">Desconectar</button></div>
+      <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(promptInicial)}</textarea></label>
+      <div class="linha"><label for="gfModelo" style="flex:1;min-width:160px">Modelo<select id="gfModelo">${st.modelos.map((m) => `<option value="${escH(m.id)}">${escH(m.nome)}</option>`).join('')}</select></label>
+      <div><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração">${m0.duracoes.map((d, i) => `<button class="chip" data-d="${d}" aria-pressed="${i === 0}">${d} s</button>`).join('')}</div></div></div>
+      <p class="nota">${st.tipo === 'conta' ? 'Gasta créditos do seu plano da Higgsfield.' : 'Usa o saldo em dólar da sua chave da API.'} Sem som: o som vem do NOSSOM.</p>
+      <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar">Gerar</button></div>`);
+    const durs = () => st.modelos.find((m) => m.id === $('#gfModelo', host).value)?.duracoes || [5];
+    $('#gfModelo', host).addEventListener('change', () => { $('#gfDur', host).innerHTML = durs().map((d, i) => `<button class="chip" data-d="${d}" aria-pressed="${i === 0}">${d} s</button>`).join(''); });
+    $('#gfDur', host).addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; $$('[data-d]', host).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); });
+    $('#gfCancelar', host).addEventListener('click', fecharFolha);
+    $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c.id, $('#gfPrompt', host).value); } catch (e) { toast(e.message); } });
+    $('#gfGerar', host).addEventListener('click', () => {
+      const prompt = $('#gfPrompt', host).value.trim();
+      if (!prompt) { $('#gfPrompt', host).focus(); return toast('Diga como a imagem deve se mexer.'); }
+      gerar(c.id, { prompt, modelo: $('#gfModelo', host).value, duracao: Number($('[data-d][aria-pressed="true"]', host)?.dataset.d || durs()[0]) });
+    });
+    $('#gfPrompt', host).focus();
+  }
+  function telaConectar(idCamada, promptInicial) {
+    const host = folhaGerar(`
+      <p class="nota" style="font-size:0.9rem;color:var(--ink)">Conecte a sua Higgsfield para transformar a imagem em vídeo.</p>
+      <a class="glass-btn glass-btn--ink" id="gfEntrar" href="/api/higgsfield/entrar?volta=${encodeURIComponent('/#estudio')}" style="justify-content:center">Entrar com a Higgsfield</a>
+      <p class="nota" style="text-align:center">Usa os créditos do seu plano.</p>
+      <details><summary class="nota" style="cursor:pointer">Prefiro usar uma chave da API</summary>
+        <div class="gf" style="margin-top:10px"><label for="gfChave">Chave (id:segredo, do console.higgsfield.ai)<input id="gfChave" autocomplete="off" spellcheck="false" placeholder="id:segredo"></label>
+        <p class="nota">A chave fica cifrada no servidor e nunca volta para a tela. Usa o saldo em dólar da API, separado do plano.</p>
+        <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfSalvar">Salvar chave</button></div></div></details>`);
+    $('#gfEntrar', host).addEventListener('click', () => { try { sessionStorage.setItem('rift-gerar', JSON.stringify({ camada: idCamada, prompt: promptInicial })); } catch (e) {} });
+    $('#gfSalvar', host).addEventListener('click', async () => {
+      const b = $('#gfSalvar', host); b.disabled = true; b.textContent = 'Conferindo…';
+      try { await apiRift('higgsfield', { metodo: 'POST', corpo: { chave: $('#gfChave', host).value } }); toast('Chave conectada.'); abrirGerar(idCamada, promptInicial); }
+      catch (e) { toast(e.message); b.disabled = false; b.textContent = 'Salvar chave'; }
+    });
+  }
+  // a imagem vai como JPEG de até 2048 px (o que a Higgsfield aceita e sobe rápido)
+  async function imagemParaEnvio(c) {
+    const arq = await lerArquivo(c.midia.id);
+    if (!arq) throw new Error(`${c.midia.nome} não está neste aparelho. Escolha o arquivo de novo.`);
+    const bmp = await createImageBitmap(arq);
+    const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height));
+    const tela = document.createElement('canvas'); tela.width = Math.round(bmp.width * k); tela.height = Math.round(bmp.height * k);
+    const ctx = tela.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, tela.width, tela.height); ctx.drawImage(bmp, 0, 0, tela.width, tela.height);
+    return await new Promise((ok, erro) => tela.toBlob((b) => (b ? ok(b) : erro(new Error('Não deu para preparar a imagem.'))), 'image/jpeg', 0.92));
+  }
+  const NOME_ESTADO = { enviado: 'Enviando…', na_fila: 'Na fila da Higgsfield…', gerando: 'Gerando o vídeo…', pronto: 'Pronto.', falhou: 'Não deu certo.', recusado: 'A Higgsfield recusou essa imagem ou pedido.', cancelado: 'Cancelado.' };
+  function mostrarAndamento(idCamada, erro) {
+    const g = geracoes.get(idCamada) || {};
+    const fim = erro || ['falhou', 'recusado', 'cancelado'].includes(g.estado);
+    const host = folhaGerar(`<div class="andamento"><strong>${escH(erro || NOME_ESTADO[g.estado] || 'Enviando…')}</strong>${fim ? (g.erro ? `<p class="nota">${escH(g.erro)}</p>` : '') : '<div class="barra-viva"><i></i></div><p class="nota">Pode fechar e continuar editando. O vídeo entra como camada quando ficar pronto.</p>'}</div>
+      <div class="acoes">${fim ? '<button class="glass-btn glass-btn--sm" id="gfDeNovo">Tentar de novo</button>' : ''}<button class="glass-btn glass-btn--ink glass-btn--sm" id="gfOk">${fim ? 'Fechar' : 'Continuar editando'}</button></div>`);
+    $('#gfOk', host).addEventListener('click', fecharFolha);
+    $('#gfDeNovo', host)?.addEventListener('click', () => { geracoes.delete(idCamada); abrirGerar(idCamada, g.prompt || ''); });
+  }
+  const folhaDe = (idCamada) => $('#gfT') && geracoes.get(idCamada)?.aberta !== false;
+  async function gerar(idCamada, { prompt, modelo, duracao }) {
+    const c = camada(idCamada); if (!c) return;
+    const g = { estado: 'enviado', prompt };
+    geracoes.set(idCamada, g); mostrarAndamento(idCamada);
+    try {
+      const img = await imagemParaEnvio(c);
+      const p = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'preparar', conteudo: 'image/jpeg' } });
+      const up = await fetch(p.upload_url, { method: 'PUT', headers: p.headers || { 'Content-Type': 'image/jpeg' }, body: img }).catch(() => null);
+      if (!up || !up.ok) throw new Error('A imagem não subiu para a Higgsfield. Tente de novo.');
+      const i = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'iniciar', ref: p.ref, prompt, modelo, duracao } });
+      Object.assign(g, { id: i.id, estado: i.estado });
+      if (folhaDe(idCamada)) mostrarAndamento(idCamada);
+      acompanhar(idCamada);
+    } catch (e) {
+      Object.assign(g, { estado: 'falhou', erro: e.message });
+      if ($('#gfT')) mostrarAndamento(idCamada, e.reconectar ? 'Conecte a Higgsfield de novo.' : e.message);
+    }
+  }
+  async function acompanhar(idCamada) {
+    const g = geracoes.get(idCamada); if (!g?.id) return;
+    let espera = 4000;
+    while (!['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) {
+      await new Promise((ok) => setTimeout(ok, espera)); espera = Math.min(12000, espera + 1000);
+      try {
+        const s = await apiRift('gerar?id=' + encodeURIComponent(g.id));
+        const mudouEstado = s.estado !== g.estado;
+        Object.assign(g, { estado: s.estado, url: s.url, erro: s.erro });
+        if (mudouEstado && $('#gfT') && $('.andamento')) mostrarAndamento(idCamada);
+      } catch (e) { if (e.status === 401 || e.status === 409 || e.status === 404) { Object.assign(g, { estado: 'falhou', erro: e.message }); break; } }
+    }
+    if (g.estado === 'pronto' && g.url) await trazerVideo(idCamada, g);
+    else { toast(g.erro || NOME_ESTADO[g.estado] || 'A geração não terminou.'); if ($('.andamento')) mostrarAndamento(idCamada); }
+  }
+  async function trazerVideo(idCamada, g) {
+    try {
+      const r = await fetch(g.url); if (!r.ok) throw new Error();
+      const blob = await r.blob();
+      const arq = new File([blob], `ia-${g.id}.mp4`, { type: blob.type && blob.type.startsWith('video/') ? blob.type : 'video/mp4' });
+      const { w, h } = await medir(arq);
+      const idm = 'm' + Math.random().toString(36).slice(2, 11);
+      await guardarArquivo(idm, arq); urlsMidia.set(idm, URL.createObjectURL(arq));
+      const orig = camada(idCamada);
+      lembrar();
+      const c = { id: novoIdC(), tipo: 'midia', nome: `${orig ? orig.nome : 'Imagem'} (IA)`.slice(0, 60), cor: '#9A9CD0', visivel: true, props: { ...PADRAO.midia, ...(orig ? { x: orig.props.x, y: orig.props.y, largura: orig.props.largura, escala: orig.props.escala, giro: orig.props.giro } : {}) }, trilhas: {}, midia: { id: idm, nome: arq.name, tipo: 'video', w, h } };
+      const i = orig ? cena.camadas.indexOf(orig) : cena.camadas.findIndex((x) => x.tipo !== 'camera');
+      cena.camadas.splice(Math.max(0, i), 0, c);
+      if (orig) orig.visivel = false;
+      sel = c.id; abaInsp = 'mov'; mudou({ estrutura: true });
+      ganchos.entrouMidia?.(arq);
+      if ($('.andamento')) fecharFolha();
+      toast('Pronto. O vídeo da IA entrou no lugar da imagem (⌘Z desfaz).');
+    } catch (e) { toast('O vídeo ficou pronto, mas não desceu agora. Veja na sua Higgsfield.'); }
+  }
+  // volta do "Entrar com a Higgsfield": reabre o pedido onde a pessoa estava
+  ganchos.voltouHiggsfield = () => {
+    let p = null; try { p = JSON.parse(sessionStorage.getItem('rift-gerar') || 'null'); sessionStorage.removeItem('rift-gerar'); } catch (e) {}
+    if (p && camada(p.camada)) setTimeout(() => abrirGerar(p.camada, p.prompt || ''), 600);
+  };
+
+  // ---------- a Z (só para quem está liberado) ----------
+  const zBtn = $('#zBtn'), zBarra = $('#zBarra'), zPedido = $('#zPedido');
+  ganchos.mostrarZ = (sim) => { zBtn.hidden = !sim; if (!sim) zBarra.hidden = true; };
+  zBtn.addEventListener('click', () => { zBarra.hidden = !zBarra.hidden; zBtn.setAttribute('aria-pressed', String(!zBarra.hidden)); if (!zBarra.hidden) zPedido.focus(); });
+  const resumoCena = () => ({ duracao: D, tempo: Math.round(agora() * 100) / 100, selecionada: sel, camadas: cena.camadas.map((c) => ({ id: c.id, tipo: c.tipo, nome: c.nome, texto: c.texto, forma: c.forma, cor: c.cor, visivel: c.visivel, valores: c.props, movimento: c.anim ? (c.anim.entrada || '') + (c.anim.saida ? '+sair' : '') : null, midia: c.midia ? c.midia.tipo : undefined, keyframes: Object.keys(c.trilhas) })) });
+  function movimentoZ(c, mov, dur) {
+    if (!c || c.tipo === 'camera') return;
+    const antigo = c.anim ? { ...c.anim } : null;
+    const a = (c.anim ||= { entrada: null, saida: false, dur: 0.8, ini: 0 });
+    if (dur) a.dur = dur;
+    if (mov === 'sair') a.saida = true; else if (mov === 'nenhum') a.entrada = null; else a.entrada = mov;
+    gerarAnim(c, antigo);
+    if (!a.entrada && !a.saida) delete c.anim;
+  }
+  function aplicarZ(acoes) {
+    if (!acoes.length) return;
+    lembrar();
+    let gerarDepois = null;
+    for (const a of acoes) {
+      if (a.tipo === 'aplicar_movimento') movimentoZ(camada(a.camada), a.movimento, a.duracao);
+      else if (a.tipo === 'ajustar_camada') {
+        const c = camada(a.camada); if (!c) continue;
+        for (const [p, v] of Object.entries(a.valores || {})) if (PROPS[c.tipo].some(([k]) => k === p)) definir(c, p, v);
+        if (typeof a.texto === 'string' && c.tipo === 'texto') c.texto = a.texto;
+        if (a.cor && c.tipo !== 'camera' && c.tipo !== 'midia') c.cor = a.cor;
+        if (a.nome) c.nome = a.nome;
+        if (typeof a.visivel === 'boolean' && c.tipo !== 'camera') c.visivel = a.visivel;
+        if (c.tipo === '3d') sincronizar3d(true);
+      } else if (a.tipo === 'adicionar_camada') {
+        const c = adicionar(a.camadaTipo, null, null, true);
+        if (c && a.texto && c.tipo === 'texto') { c.texto = a.texto; c.nome = a.texto.split('\n')[0].slice(0, 40) || c.nome; }
+        if (c && a.cor) c.cor = a.cor;
+        if (c && a.movimento && a.movimento !== 'nenhum') movimentoZ(c, a.movimento);
+      } else if (a.tipo === 'apagar_camada') { if (camada(a.camada) && a.camada !== 'camera') { cena.camadas.splice(cena.camadas.findIndex((c) => c.id === a.camada), 1); if (sel === a.camada) sel = null; } }
+      else if (a.tipo === 'gerar_motion') gerarDepois = a;
+    }
+    sincronizar3d(); mudou({ estrutura: true });
+    if (gerarDepois) abrirGerar(gerarDepois.camada, gerarDepois.prompt);
+  }
+  zBarra.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pedido = zPedido.value.trim(); if (!pedido || zBarra.classList.contains('pensando')) return;
+    zBarra.classList.add('pensando'); $('#zEnviar').disabled = true;
+    try {
+      const r = await apiRift('z', { metodo: 'POST', corpo: { pedido, cena: resumoCena() } });
+      aplicarZ(r.acoes || []); zPedido.value = '';
+      toast(r.resposta);
+    } catch (err) { toast(err.message); }
+    finally { zBarra.classList.remove('pensando'); $('#zEnviar').disabled = false; }
+  });
+
   $('#exportBtn').addEventListener('click', () => { efps = fpsI; sheet(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#sheetHost').innerHTML = ''; });
 }
@@ -2026,7 +2251,7 @@ function painel() {
       const r = await fetch('/api/zro/eu', { headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' });
       if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw new Error('sem servidor');
       const d = await r.json();
-      if (d.ok) return { modo: 'conta', pessoa: d.pessoa };
+      if (d.ok) return { modo: 'conta', pessoa: d.pessoa, z: d.z === true };
       if (d.configurado) return { modo: 'entrar' };
       return { modo: 'demo', motivo: 'O login da Absolute ZRO liga assim que o segredo do app estiver na Vercel.' };
     } catch (e) {
@@ -2037,13 +2262,15 @@ function painel() {
     conta = c.modo === 'demo' ? { ...c, pessoa: { id: 'demo', nome: 'Você', email: null, foto: null, conta: 'https://absolutezro.com/perfil' } } : c;
     if (c.modo === 'conta') { $('#navEntrar').textContent = 'Painel'; $('#navEntrar').href = '#app'; }
     if (c.modo === 'demo') { $('#btnEntrar').href = '#app'; $('#btnCriar').href = '#app'; }
+    ganchos.mostrarZ?.(c.modo === 'conta' && c.z === true);
     return conta;
   });
   // aviso de volta do login (?zro=ok, expirou, erro, recusado, config)
   const aviso = new URLSearchParams(location.search).get('zro');
   if (aviso) {
-    const msg = { ok: 'Você entrou com a Absolute ZRO.', expirou: 'O login demorou demais. Tente de novo.', recusado: 'Você não autorizou o acesso.', config: 'O login do Rift ainda não está ligado.', erro: 'Não deu para entrar agora. Tente de novo.' }[aviso];
+    const msg = { ok: 'Você entrou com a Absolute ZRO.', expirou: 'O login demorou demais. Tente de novo.', recusado: 'Você não autorizou o acesso.', config: 'O login do Rift ainda não está ligado.', erro: 'Não deu para entrar agora. Tente de novo.' , 'hf-ok': 'Higgsfield conectada.', 'hf-erro': 'Não deu para conectar a Higgsfield agora.', 'hf-cancelado': 'Você não autorizou a Higgsfield.', 'hf-config': 'Gerar com IA precisa da sua conta no rift.absolutezro.com.' }[aviso];
     if (msg) setTimeout(() => toast(msg), 400);
+    if (aviso === 'hf-ok' || aviso === 'hf-cancelado') ganchos.esperarProjeto = () => ganchos.voltouHiggsfield?.();
     history.replaceState(null, '', location.pathname + location.hash);
   }
 
@@ -2139,6 +2366,7 @@ function painel() {
       try { const d = await api('projetos?id=' + encodeURIComponent(pr.id)); pr = { ...pr, cena: d.projeto.cena ?? null }; cache.projetos = cache.projetos.map((p) => (p.id === pr.id ? pr : p)); } catch (e) { /* abre a cena de exemplo */ }
     }
     ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id);
+    if (ganchos.esperarProjeto) { const f = ganchos.esperarProjeto; ganchos.esperarProjeto = null; f(); }
   };
   ganchos.mudouCadencia = (i) => { const idp = ler('aberto', null); if (idp) mudarProjeto(idp, { fps: i }); };
   let esperaCena = null;
