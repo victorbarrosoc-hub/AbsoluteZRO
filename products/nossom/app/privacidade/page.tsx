@@ -13,7 +13,7 @@ export default function Privacy() {
         com clareza.
       </h1>
       <p>
-        A NOSSOM exige uma conta Supabase para entrar no estúdio. Contas e cotas ficam na nuvem;
+        O Quasar exige uma conta Supabase para entrar no estúdio. Contas e cotas ficam na nuvem;
         seus projetos e originais ficam neste dispositivo. A restauração avançada com IA envia uma
         cópia temporária do arquivo para processamento na nuvem.
       </p>
@@ -86,7 +86,7 @@ export default function Privacy() {
         antes do despacho; falhas e cancelamentos confirmados devolvem essa reserva. EQ, efeitos,
         masterização local, reprodução e downloads não gastam minutos. Um despacho com resultado de
         rede incerto não é repetido automaticamente. Planos pagos são assinados com cartão pela
-        Stripe, na página de pagamento dela: a NOSSOM não recebe nem guarda dados do cartão, só os
+        Stripe, na página de pagamento dela: o Quasar não recebe nem guarda dados do cartão, só os
         identificadores de cliente e assinatura, plano, situação do pagamento e data de renovação.
         Cancelamento, troca de cartão e faturas ficam na página da Stripe; o plano vale até o fim do
         período pago. Enquanto a assinatura não estiver disponível, o administrador ativa planos

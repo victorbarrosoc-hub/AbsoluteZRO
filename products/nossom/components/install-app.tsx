@@ -106,7 +106,7 @@ export default function InstallApp({
                   <Smartphone size={30} />
                   <h2 id="install-title">Seu som, a um toque.</h2>
                   <p id="install-description">
-                    Adicione a NOSSOM à Tela de Início para abrir direto no estúdio, em modo
+                    Adicione o Quasar à Tela de Início para abrir direto no estúdio, em modo
                     aplicativo.
                   </p>
                   <ol>
@@ -127,7 +127,7 @@ export default function InstallApp({
                     <li>
                       <Smartphone size={20} />
                       <span>
-                        Confirme o nome <strong>NOSSOM</strong> e toque em{' '}
+                        Confirme o nome <strong>Quasar</strong> e toque em{' '}
                         <strong>Adicionar</strong>.
                       </span>
                     </li>

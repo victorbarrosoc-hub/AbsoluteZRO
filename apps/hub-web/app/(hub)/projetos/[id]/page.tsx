@@ -445,9 +445,9 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
       )}
 
       {tem('nossom') && (
-        <Card id="som" title="Som" eyebrow="NOSSOM">
+        <Card id="som" title="Som" eyebrow="Quasar">
           <p className="zro-mute">
-            O NOSSOM trata o áudio no próprio dispositivo; o áudio não passa pelo HUB. A passagem da timeline e das marcações segue o contrato
+            O Quasar trata o áudio no próprio dispositivo; o áudio não passa pelo HUB. A passagem da timeline e das marcações segue o contrato
             edit.timeline.ready.
           </p>
           <StepAccess step={step('nossom')} />

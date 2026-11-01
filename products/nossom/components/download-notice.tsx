@@ -9,7 +9,7 @@ export default function DownloadNotice() {
   if (!unavailable) return null;
   return (
     <p className="apps-note" role="status">
-      O download não saiu agora. Tente de novo em alguns minutos ou use o NOSSOM pelo navegador.
+      O download não saiu agora. Tente de novo em alguns minutos ou use o Quasar pelo navegador.
     </p>
   );
 }

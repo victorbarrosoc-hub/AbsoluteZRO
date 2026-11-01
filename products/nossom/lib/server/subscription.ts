@@ -112,7 +112,7 @@ export async function productFor(plan: Plan) {
   } catch {
     await stripe(
       '/v1/products',
-      { id, name: 'NOSSOM ' + plan.name, metadata: { plan: plan.id } },
+      { id, name: 'Quasar ' + plan.name, metadata: { plan: plan.id } },
       'product:' + id,
     );
   }

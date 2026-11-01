@@ -24,7 +24,7 @@ test('creating an account goes to the Absolute ZRO and the sign-up form is gone'
   onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar?modo=criar&next=%2Fstudio%2Fia');
-  await expect(page.getByText('A conta do NOSSOM é a sua conta Absolute ZRO.')).toBeVisible();
+  await expect(page.getByText('A conta do Quasar é a sua conta Absolute ZRO.')).toBeVisible();
   const create = page.getByRole('link', { name: 'Criar conta com a Absolute ZRO', exact: true });
   await expect(create).toHaveAttribute('href', '/api/zro/entrar?modo=criar&volta=%2Fstudio%2Fia');
   for (const label of ['Nome', 'Senha'])

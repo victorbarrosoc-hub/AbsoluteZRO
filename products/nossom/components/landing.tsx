@@ -137,7 +137,7 @@ export default function Landing({
       <header className="ns-header">
         <div className="ns-wrap ns-nav lg">
           <span className="nav-progress" aria-hidden="true" />
-          <Link href="/" aria-label="NOSSOM início">
+          <Link href="/" aria-label="Quasar início">
             <Brand />
           </Link>
           <LayoutGroup id="site-nav">
@@ -269,7 +269,7 @@ export default function Landing({
         )}
         {!closed && (
           <section className="home-downloads ns-wrap" id="baixar" aria-labelledby="baixar-title">
-            <h2 id="baixar-title">Leve o NOSSOM com você.</h2>
+            <h2 id="baixar-title">Leve o Quasar com você.</h2>
             <p>No computador ou no celular, com a mesma conta.</p>
             {/* Central de apps da Absolute ZRO: o jeito recomendado de instalar; o download direto continua abaixo. */}
             <div className="lg zro-central">
@@ -277,7 +277,7 @@ export default function Landing({
               <div>
                 <strong>Instale pelo Absolute ZRO</strong>
                 <small>
-                  Um app só para instalar, abrir e atualizar o NOSSOM e as outras ferramentas, com a
+                  Um app só para instalar, abrir e atualizar o Quasar e as outras ferramentas, com a
                   mesma conta.
                 </small>
               </div>
@@ -285,7 +285,7 @@ export default function Landing({
                 Baixar o Absolute ZRO
               </a>
             </div>
-            <p className="zro-central-ou">Ou baixe só o NOSSOM:</p>
+            <p className="zro-central-ou">Ou baixe só o Quasar:</p>
             <div className="home-downloads-grid">
               <Link href="/apps" className="lg home-download">
                 <Laptop size={26} />
@@ -312,7 +312,7 @@ export default function Landing({
             </div>
           </section>
         )}
-        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado (e o NOSSOM aberto), ela
+        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado (e o Quasar aberto), ela
             abre a aba da Z no estúdio (repasse em /api/zro/ia); fechado ao público ou sem o login, a seção diz
             que está chegando, sem link nenhum. */}
         <section className="home-z ns-wrap" id="z" aria-labelledby="z-title">
@@ -338,7 +338,7 @@ export default function Landing({
             <div className="home-z-copy">
               <p className="z-selo">
                 <i aria-hidden="true" />
-                {zroIa ? 'Já no NOSSOM' : 'Chegando ao NOSSOM'}
+                {zroIa ? 'Já no Quasar' : 'Chegando ao Quasar'}
               </p>
               <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
               <p>
@@ -400,7 +400,7 @@ export default function Landing({
       </main>
       <footer className="ns-footer ns-wrap">
         <div>
-          <Link href="/" aria-label="NOSSOM início">
+          <Link href="/" aria-label="Quasar início">
             <Brand />
           </Link>
           <p>Tudo acontece no som.</p>
@@ -419,7 +419,7 @@ export default function Landing({
               Abrir estúdio <ArrowUpRight size={13} />
             </Link>
           )}
-          <span>© {new Date().getFullYear()} NOSSOM</span>
+          <span>© {new Date().getFullYear()} Quasar</span>
         </nav>
       </footer>
     </div>
