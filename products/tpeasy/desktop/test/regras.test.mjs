@@ -116,12 +116,18 @@ test('deep link tpeasy://: só rotas do TPeasy, nunca a API', () => {
 test('permissões: só o permitido, e só para o TPeasy', () => {
   assert.equal(r.permitir('clipboard-sanitized-write', `${M}/`, O), true)
   assert.equal(r.permitir('fullscreen', `${M}/`, O), true)
-  assert.equal(r.permitir('fileSystem', `${M}/converter`, O), true) // pasta de saída das conversões
-  for (const p of ['media', 'geolocation', 'notifications', 'midi', 'clipboard-read', 'openExternal', 'pointerLock'])
+  // "Rolar com a voz": só o microfone, só para o TPeasy (câmera, tela ou pedido sem dizer o quê ficam negados)
+  assert.equal(r.permitir('media', `${M}/app/`, O, { mediaTypes: ['audio'] }), true)
+  assert.equal(r.permitir('media', `${M}/app/`, O, { mediaType: 'audio' }), true)
+  assert.equal(r.permitir('media', `${M}/app/`, O, { mediaTypes: ['audio', 'video'] }), false)
+  assert.equal(r.permitir('media', `${M}/app/`, O, { mediaTypes: ['video'] }), false)
+  assert.equal(r.permitir('media', `${M}/app/`, O, { mediaType: 'unknown' }), false)
+  assert.equal(r.permitir('media', `${M}/app/`, O), false)
+  assert.equal(r.permitir('media', `${HUB}/entrar`, O, { mediaTypes: ['audio'] }), false)
+  for (const p of ['fileSystem', 'geolocation', 'notifications', 'midi', 'clipboard-read', 'openExternal', 'pointerLock'])
     assert.equal(r.permitir(p, `${M}/`, O), false, p)
   assert.equal(r.permitir('fullscreen', `${HUB}/entrar`, O), false)
   assert.equal(r.permitir('clipboard-sanitized-write', 'https://accounts.google.com/', O), false)
-  assert.equal(r.permitir('fileSystem', `${HUB}/entrar`, O), false)
 })
 
 test('erros de rede e agente de usuário limpo', () => {
