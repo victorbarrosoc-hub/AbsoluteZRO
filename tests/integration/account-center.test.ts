@@ -1,6 +1,6 @@
 // Central da conta (26/10/2026): troca de e-mail confirmada, foto do perfil, pedidos de plano e resumo de acessos.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { authenticate, confirmEmailChange, requestEmailChange, requestPasswordReset, signIn } from '@zro/auth'
+import { authenticate, confirmEmailChange, requestEmailChange, requestPasswordReset, resetPassword, signIn } from '@zro/auth'
 import {
   accessOverview,
   avatarVersion,
@@ -63,6 +63,17 @@ describe('troca de e-mail', () => {
     await confirmEmailChange(db, r.token)
     const [t] = await db.sql`select used_at from zro.auth_tokens where user_id = ${u.userId} and purpose = 'reset_password'`
     expect(t!.used_at).not.toBeNull()
+  })
+
+  it('conta só com Google cria a primeira senha pelo "Esqueci a senha" e entra com ela', async () => {
+    const u = await newUser(db, 'senha-google')
+    await db.sql`delete from zro.auth_credentials where user_id = ${u.userId}`
+    const reset = await requestPasswordReset(db, u.email)
+    await resetPassword(db, reset!.token, 'senha-nova-do-google-123')
+    const [c] = await db.sql`select count(*)::int as n from zro.auth_credentials where user_id = ${u.userId}`
+    expect(c!.n).toBe(1)
+    const s = await signIn(db, { email: u.email, password: 'senha-nova-do-google-123' })
+    expect(s.userId).toBe(u.userId)
   })
 
   it('conta só com Google precisa criar senha antes', async () => {

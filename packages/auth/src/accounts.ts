@@ -163,7 +163,10 @@ export async function resetPassword(db: Database, token: string, newPassword: st
       returning user_id`
     if (!t) throw new DomainError('invalid_input', 'Link inválido ou vencido.')
     const userId = t.user_id as string
-    await tx`update zro.auth_credentials set password_hash = ${hash}, updated_at = now() where user_id = ${userId}`
+    // quem só entrava pelo Google ainda não tem senha: o link cria a primeira (antes, o update não achava linha, o link
+    // era gasto e a senha nova não valia)
+    await tx`insert into zro.auth_credentials (user_id, password_hash) values (${userId}, ${hash})
+             on conflict (user_id) do update set password_hash = excluded.password_hash, updated_at = now()`
     await revokeOtherSessions(tx, userId, null)
     await audit(tx, { actorUserId: userId, action: 'account.password_reset', targetType: 'user', targetId: userId })
   })
