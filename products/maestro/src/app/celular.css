@@ -180,7 +180,8 @@ select {
     border-block: 10px solid transparent;
     margin-block: -10px;
     border-radius: 6px / 16px;
-    background-clip: padding-box;
+    /* !important: as regras de cor de cada selo usam o atalho `background`, que volta o clip para a borda */
+    background-clip: padding-box !important;
   }
 }
 
