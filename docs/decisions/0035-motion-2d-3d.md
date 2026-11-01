@@ -81,7 +81,8 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
 - Login só com a Absolute ZRO (OIDC + PKCE, cliente `motion-web`); "Criar conta" abre o cadastro da Absolute ZRO.
 - Schema próprio e papel próprio no Supabase `AbsoluteZRO` (`motion`, `motion_app`), com RLS e teste de isolamento.
   Projeto é JSON versionado (cena, camadas, trilhas); mídia pesada fica no aparelho ou no Drive da pessoa.
-- Padrão Apple: claro por padrão, Figtree fino × pesado, Liquid Glass, pouco texto. A página inicial é o próprio
+- Padrão Apple com **escuro por padrão** (pedido do titular, 01/11/2026: ferramenta de trabalho, como o AEON) e o
+  seletor sol/lua para o claro, lembrado em `zro-tema`; Figtree fino × pesado, Liquid Glass, pouco texto. A página inicial é o próprio
   produto em movimento: formas planas que quicam, dobram em 3D e voltam ao plano, com timecode ao vivo.
 - Cor do produto provisória: tangerina `#ff6b2c` / `#ffb68f` (livre na família). Ícone provisório: keyframe com arco de
   movimento.
