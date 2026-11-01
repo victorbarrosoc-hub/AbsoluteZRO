@@ -3536,3 +3536,274 @@ html:not([data-conta]) body {
   color: var(--surface);
   font-weight: 600;
 }
+
+/* ───────── Criar com IA (app/criar-ui.js): créditos no topo, dois passos, resultado na Mídia ───────── */
+.folha-criar {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
+}
+.criar-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.criar-cab .titulo-p {
+  margin: 0;
+}
+.criar-cab .icone-btn {
+  margin-left: auto;
+}
+.criar-creditos {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+.criar-saldo {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.criar-saldo strong {
+  font-family: var(--font-display, inherit);
+  font-size: 34px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.criar-creditos p {
+  margin: 0;
+}
+.criar-medidor {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.criar-medidor span {
+  display: block;
+  height: 100%;
+  background: var(--text-strong);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 0.6s var(--mola);
+}
+.criar-aviso {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.criar-aviso p {
+  margin: 0;
+}
+.criar-corpo {
+  display: grid;
+  gap: 18px;
+}
+.criar-passo {
+  display: grid;
+  gap: 10px;
+}
+.criar-passo-cab {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.criar-passo-cab h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.criar-num {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.criar-texto {
+  width: 100%;
+  resize: vertical;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.criar-texto:focus-visible {
+  outline: 2px solid var(--produto-2);
+  outline-offset: 1px;
+}
+.criar-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.criar-linha > .glass-btn {
+  margin-left: auto;
+}
+.criar-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.criar-ref .chave {
+  display: inline-block;
+}
+.criar-ref[hidden] {
+  display: none;
+}
+.criar-estado {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.criar-estado[hidden] {
+  display: none;
+}
+.criar-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.criar-grade:empty {
+  display: none;
+}
+.criar-tela {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-3);
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--line);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.35s var(--mola);
+}
+.criar-tela img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.criar-tela[aria-checked='true'] {
+  box-shadow: 0 0 0 2px var(--text-strong);
+}
+.criar-tela:focus-visible {
+  outline: 2px solid var(--produto-2);
+  outline-offset: 2px;
+}
+.criar-por {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.criar-por:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.criar-opcoes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.criar-opcao {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease;
+}
+.criar-opcao strong {
+  font-size: 13.5px;
+}
+.criar-opcao .criar-preco {
+  font-size: 20px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+.criar-opcao .criar-preco::after {
+  content: ' créditos';
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.criar-opcao[aria-checked='true'] {
+  box-shadow: inset 0 0 0 2px var(--text-strong);
+}
+.criar-feitos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.criar-feitos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-strong);
+}
+.criar-feitos li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.criar-feitos svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+@media (max-width: 560px) {
+  .criar-opcoes {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .criar-medidor span,
+  .criar-tela {
+    transition: none;
+  }
+}

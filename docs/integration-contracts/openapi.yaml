@@ -641,6 +641,75 @@ paths:
           '429': { $ref: '#/components/responses/Error' },
           '503': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/higgsfield:
+    get:
+      security: [{ appToken: [zro.higgsfield] }]
+      summary: 'Higgsfield nas Conexões (migration 0051): saldo e plano da pessoa, o gasto do mês, o que os apps registraram e o preço agora das telas (1, 2 e 4) e das três opções de vídeo, sem gerar nada'
+      parameters:
+        - { name: duracao, in: query, required: false, schema: { type: string, enum: [curto, longo] } }
+        - { name: proporcao, in: query, required: false, schema: { type: string, enum: ['16:9', '9:16', '1:1', '4:5'] } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ conectada, conta, plano, saldo, usoMes, usoApp: { mes, pedidos, total }, usoApps, imagens: [{ quantidade, creditos }], opcoes: [{ id, nome, desc, segundos, creditos }] }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409':
+            {
+              description: 'sem_conexao (details.motivo nenhuma | reconectar, details.conectar)',
+              content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/higgsfield/gerar:
+    get:
+      security: [{ appToken: [zro.higgsfield] }]
+      summary: O andamento de um pedido (o que a Higgsfield informa, sem porcentagem); pronto traz os endereços do resultado
+      parameters:
+        - { name: id, in: query, required: true, schema: { type: string, pattern: '^[a-z0-9]{12}$' } }
+      responses:
+        {
+          '200': { description: '{ estado: na_fila | gerando | pronto | falhou | recusado | cancelado, saida: imagem | video, urls, erro }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ appToken: [zro.higgsfield] }]
+      summary: 'acao envio (abre o envio direto de uma imagem de referência), telas (1, 2 ou 4 imagens antes do vídeo) ou animar (uma das três opções). Preço e saldo conferidos na Higgsfield antes; sem saldo que cubra, 429 quota_exceeded'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [acao]
+              properties:
+                acao: { type: string, enum: [envio, telas, animar] }
+                tipo: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                prompt: { type: string, maxLength: 2000 }
+                quantidade: { type: integer, enum: [1, 2, 4] }
+                proporcao: { type: string, enum: ['16:9', '9:16', '1:1', '4:5'] }
+                opcao: { type: string, enum: [rapido, equilibrado, maximo] }
+                duracao: { type: string, enum: [curto, longo] }
+                ref: { type: string, format: uuid }
+      responses:
+        {
+          '200': { description: 'envio: { upload_url, headers, ref } · telas e animar: { id, estado, creditos }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/sons/buscar:
     get:
       security: [{ appToken: [zro.sons] }, { session: [] }]

@@ -1510,3 +1510,177 @@ test('entrar.html com a conta fechada pelo HUB (403): "Em desenvolvimento", Volt
   await pagina.waitForURL(/em-desenvolvimento\.html$/)
   await pagina.close()
 })
+
+/** A Higgsfield das Conexões, pelo HUB (o repasse /api/zro/higgsfield*), o envio e a CDN dela, de mentira. */
+async function simularHiggsfield(pagina, { png, mp4, conectada = true }) {
+  const r = { pedidos: [], enviados: [], baixados: [] }
+  const h = { saldo: 120, usado: 0, pedidos: [] }
+  const opcoes = (longo) => [
+    { id: 'rapido', nome: 'Rápido', desc: 'Prévia ágil para testar a ideia', segundos: longo ? 10 : 5, creditos: longo ? 8 : 4 },
+    { id: 'equilibrado', nome: 'Equilibrado', desc: 'Movimento de cinema, ótimo custo', segundos: longo ? 10 : 5, creditos: longo ? 20 : 10 },
+    { id: 'maximo', nome: 'Máxima qualidade', desc: 'Mais detalhe, física e acabamento', segundos: longo ? 10 : 5, creditos: longo ? 44 : 22 },
+  ]
+  await pagina.route('**/api/zro/higgsfield**', async (rota) => {
+    const q = rota.request()
+    const u = new URL(q.url())
+    const json = (corpo, status = 200) => rota.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) })
+    r.pedidos.push({ metodo: q.method(), caminho: u.pathname, busca: u.search, corpo: q.method() === 'POST' ? q.postDataJSON() : null })
+    if (!conectada) return json({ error: 'sem_conexao', message: 'Conecte a Higgsfield na sua conta Absolute ZRO.', details: { motivo: 'nenhuma', conectar: 'https://absolutezro.com/conexoes', provedor: 'higgsfield' } }, 409)
+    if (u.pathname === '/api/zro/higgsfield') {
+      return json({ conectada: true, conta: 'lia@higgsfield.test', plano: 'creator', saldo: h.saldo, usoMes: h.usado, usoApp: { mes: h.usado, pedidos: h.pedidos.length, total: h.usado }, usoApps: h.usado, imagens: [1, 2, 4].map((n) => ({ quantidade: n, creditos: 1.5 * n })), opcoes: opcoes(u.searchParams.get('duracao') === 'longo') })
+    }
+    if (q.method() === 'GET') {
+      const x = h.pedidos.find((p) => p.id === u.searchParams.get('id'))
+      x.leituras++
+      const pronto = x.leituras >= 2
+      return json({ estado: pronto ? 'pronto' : 'gerando', saida: x.saida, urls: pronto ? Array.from({ length: x.n }, (_, i) => `https://d1.cloudfront.net/aeon/${x.id}-${i}.${x.saida === 'video' ? 'mp4' : 'png'}`) : [], erro: null })
+    }
+    const d = q.postDataJSON()
+    if (d.acao === 'envio') return json({ upload_url: 'https://upload.higgsfield.ai/aeon/ref.jpg?assinado=1', headers: { 'Content-Type': d.tipo }, ref: '0b9d7f3e-1c2a-4e5b-8f6a-7d8c9e0f1a2b' })
+    const custo = d.acao === 'telas' ? 1.5 * d.quantidade : opcoes(d.duracao === 'longo').find((o) => o.id === d.opcao).creditos
+    h.saldo -= custo
+    h.usado += custo
+    const id = `p${String(h.pedidos.length + 1).padStart(11, '0')}`
+    h.pedidos.push({ id, saida: d.acao === 'telas' ? 'imagem' : 'video', n: d.acao === 'telas' ? d.quantidade : 1, leituras: 0 })
+    return json({ id, estado: 'na_fila', creditos: custo })
+  })
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, PUT', 'access-control-allow-headers': 'content-type' }
+  await pagina.route('https://upload.higgsfield.ai/**', async (rota) => {
+    const q = rota.request()
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 200, headers: cors })
+    r.enviados.push({ tipo: q.headers()['content-type'], bytes: q.postDataBuffer() })
+    return rota.fulfill({ status: 200, headers: cors, body: '' })
+  })
+  await pagina.route('https://d1.cloudfront.net/**', async (rota) => {
+    const u = rota.request().url()
+    r.baixados.push(u)
+    const video = u.endsWith('.mp4')
+    return rota.fulfill({ status: 200, headers: { ...cors, 'content-type': video ? 'video/mp4' : 'image/png' }, body: video ? mp4 : png })
+  })
+  return r
+}
+
+test('Criar com IA (Higgsfield): créditos, telas antes, a tela na Mídia, animar o quadro atual e pôr na linha', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  const mp4 = Buffer.from(bytes)
+  writeFileSync(join(dir, 'criar.mp4'), mp4)
+  const pngArq = join(dir, 'tela.png')
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0x3a6ea5:s=640x360', '-frames:v', '1', pngArq])
+  const hf = await simularHiggsfield(pagina, { png: readFileSync(pngArq), mp4 })
+  await pagina.setInputFiles('#arquivo', join(dir, 'criar.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+
+  // a folha abre pela Mídia com os créditos: saldo, plano, o medidor do mês e o preço das três opções
+  assert.equal(await pagina.locator('#criarIA').isVisible(), true)
+  await pagina.click('#criarIA')
+  const folha = pagina.locator('#folhaCriar')
+  await folha.locator('[data-saldo]').filter({ hasText: '120' }).waitFor()
+  assert.match(await folha.locator('[data-plano]').innerText(), /créditos · creator/)
+  assert.match(await folha.locator('[data-uso]').innerText(), /0 usados no AEON este mês/)
+  assert.deepEqual(await folha.locator('.criar-opcao .criar-preco').allInnerTexts(), ['4', '10', '22'])
+  const painel = hf.pedidos.find((p) => p.caminho === '/api/zro/higgsfield')
+  assert.equal(new URLSearchParams(painel.busca).get('proporcao'), '16:9')
+
+  // passo 1: sem descrição não gera; 1 tela mostra o preço no botão; a tela chega e já fica escolhida
+  const gerarTelas = folha.locator('[data-acao="telas"]')
+  assert.equal(await gerarTelas.isDisabled(), true)
+  await folha.locator('[data-prompt]').fill('Rua de neon à noite, chuva fina')
+  await folha.locator('[data-qtd] [data-n="1"]').click()
+  assert.equal(await gerarTelas.innerText(), 'Gerar 1 tela · 1,5')
+  await gerarTelas.click()
+  await folha.locator('.criar-tela img').waitFor()
+  const telas = hf.pedidos.find((p) => p.corpo?.acao === 'telas')
+  assert.deepEqual(telas.corpo, { acao: 'telas', prompt: 'Rua de neon à noite, chuva fina', quantidade: 1, proporcao: '16:9' })
+  assert.equal(await folha.locator('.criar-tela').getAttribute('aria-checked'), 'true')
+  // o saldo de agora volta da Higgsfield depois do pedido, e o uso do AEON sobe
+  await folha.locator('[data-saldo]').filter({ hasText: '118,5' }).waitFor()
+  assert.match(await folha.locator('[data-uso]').innerText(), /1,5 usados no AEON este mês/)
+
+  // a tela vai para a Mídia como clipe parado de 5 s (não para a linha), guardada no disco do navegador
+  const linhaAntes = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.length)
+  await folha.locator('[data-por="0"]').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.midias.length === 2, null, { timeout: 60_000 })
+  const parada = await pagina.evaluate(async () => {
+    const m = globalThis.__editor.h.atual.midias[1]
+    const { ler } = await import('/app/criadas-disco.js')
+    const b = await ler(m.id)
+    return { nome: m.nome, duracao: m.duracao, temVideo: m.temVideo, temAudio: m.temAudio, origem: m.origem, largura: m.largura, guardado: b?.size || 0, linha: globalThis.__editor.h.atual.linha.clipes.length }
+  })
+  assert.equal(parada.nome, 'IA · Rua de neon à noite, chuva fina.mp4')
+  assert.ok(Math.abs(parada.duracao - 5) < 0.1, `parada de ${parada.duracao} s`)
+  assert.deepEqual([parada.temVideo, parada.temAudio, parada.largura, parada.origem.tipo, parada.origem.saida], [true, false, 640, 'higgsfield', 'imagem'])
+  assert.ok(parada.guardado > 1000)
+  assert.equal(parada.linha, linhaAntes)
+  assert.equal(await folha.locator('[data-por="0"]').innerText(), 'Na Mídia')
+  await folha.locator('[data-acao="fechar"]').click()
+
+  // passo 2 pela Edição: o botão do player parte do quadro atual; o vídeo pergunta antes de gastar
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.click('#criarDoQuadro')
+  await folha.locator('[data-saldo]').filter({ hasText: '118,5' }).waitFor()
+  assert.equal(await folha.locator('[data-ref]').isChecked(), true)
+  await folha.locator('[data-base-dica]').filter({ hasText: 'A partir do quadro atual' }).waitFor()
+  const animar = folha.locator('[data-acao="animar"]')
+  await folha.locator('[data-movimento]').fill('A câmera sobe devagar')
+  await folha.locator('.criar-opcao[data-opcao="rapido"]').click()
+  assert.equal(await animar.innerText(), 'Animar · 4')
+  await animar.click()
+  const pergunta = pagina.locator('dialog.folha-pergunta')
+  await pergunta.waitFor()
+  assert.match(await pergunta.innerText(), /Animar em Rápido\?[\s\S]*5 s de vídeo\. Usa 4 dos seus 118,5 créditos da Higgsfield\./)
+  await pergunta.getByRole('button', { name: 'Animar' }).click()
+  await pagina.waitForFunction(() => /O vídeo entrou na Mídia/.test(document.getElementById('aviso').textContent), null, { timeout: 60_000 })
+  // o quadro subiu direto para o envio da Higgsfield, em JPEG; o pedido levou a referência dele
+  assert.equal(hf.enviados.length, 1)
+  assert.equal(hf.enviados[0].tipo, 'image/jpeg')
+  assert.equal(hf.enviados[0].bytes.subarray(0, 2).toString('hex'), 'ffd8')
+  const pedidoVideo = hf.pedidos.find((p) => p.corpo?.acao === 'animar')
+  assert.deepEqual(pedidoVideo.corpo, { acao: 'animar', prompt: 'A câmera sobe devagar', opcao: 'rapido', duracao: 'curto', ref: '0b9d7f3e-1c2a-4e5b-8f6a-7d8c9e0f1a2b' })
+  const video = await pagina.evaluate(() => globalThis.__editor.h.atual.midias[2])
+  assert.deepEqual([video.nome, video.origem.saida, video.temVideo], ['IA · A câmera sobe devagar.mp4', 'video', true])
+
+  // pôr na linha: entra no cursor, e o Desfazer devolve
+  const antes = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.map((c) => c.midia))
+  await folha.locator('[data-feitos] button').filter({ hasText: 'Pôr na linha' }).click()
+  const depois = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.map((c) => c.midia))
+  assert.equal(depois.length >= antes.length + 1, true)
+  assert.ok(depois.includes(video.id))
+  // nada fora da Higgsfield foi baixado
+  assert.ok(hf.baixados.every((u) => u.startsWith('https://d1.cloudfront.net/aeon/')))
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Criar com IA sem a Higgsfield nas Conexões: a folha diz para conectar na conta Absolute ZRO, sem gastar nada', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'criar2.mp4'), Buffer.from(bytes))
+  const hf = await simularHiggsfield(pagina, { png: Buffer.alloc(0), mp4: Buffer.alloc(0), conectada: false })
+  await pagina.setInputFiles('#arquivo', join(dir, 'criar2.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('#criarIA')
+  const folha = pagina.locator('#folhaCriar')
+  await folha.locator('.criar-aviso:not([hidden])').waitFor()
+  assert.equal(await folha.locator('[data-aviso]').innerText(), 'Conecte a Higgsfield na sua conta Absolute ZRO.')
+  const conectar = folha.locator('[data-acao="conectar"]')
+  assert.equal(await conectar.innerText(), 'Conectar')
+  assert.equal(await conectar.getAttribute('href'), 'https://absolutezro.com/conexoes')
+  assert.equal(await folha.locator('.criar-corpo').isHidden(), true)
+  assert.ok(hf.pedidos.every((p) => p.metodo === 'GET'))
+  // "Já conectei" lê de novo
+  const n = hf.pedidos.length
+  await folha.locator('[data-acao="recarregar"]').click()
+  await pagina.waitForFunction((k) => true, n)
+  assert.ok(hf.pedidos.length >= n)
+  assert.deepEqual(erros.filter((e) => !/409/.test(e)), [])
+  await pagina.close()
+})

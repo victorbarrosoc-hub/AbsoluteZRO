@@ -48,6 +48,7 @@
         <symbol id="i-avancar" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6" /></symbol>
         <symbol id="i-clipes" viewBox="0 0 24 24"><rect x="3" y="8" width="7" height="8" rx="1.5" /><rect x="14" y="8" width="7" height="8" rx="1.5" /><path d="M5 3.5h3v2.5l-1.5 1.5L5 6zM16 3.5h3v2.5l-1.5 1.5L16 6z" /></symbol>
         <symbol id="i-capitulos" viewBox="0 0 24 24"><path d="M4 6.5h2M9 6.5h11M4 12h2M9 12h11M4 17.5h2M9 17.5h11" /></symbol>
+        <symbol id="i-ia" viewBox="0 0 24 24"><path d="M12 3.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5z" /><path d="M18.5 15.5c.25 1.6 1.05 2.4 2.5 2.6-1.45.25-2.25 1.05-2.5 2.5-.25-1.45-1.05-2.25-2.5-2.5 1.45-.2 2.25-1 2.5-2.6z" /></symbol>
         <symbol id="i-foto" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="9" cy="10" r="1.6" /><path d="M4.5 17l5-4.5 3.5 3 2.5-2 4 3.5" /></symbol>
         <symbol id="i-tabela" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M3.5 9.5h17M3.5 14.5h17M10 9.5v10" /></symbol>
         <symbol id="i-separar" viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 2-7 2 4h6" /><path d="M14 5.5h6M14 18.5h6" /></symbol>
@@ -120,6 +121,7 @@
                 <button role="radio" data-valor="preciso" aria-checked="false">Preciso</button>
               </div>
               <button class="glass-btn" id="selecionarMidia">Selecionar</button>
+              <button class="glass-btn" id="criarIA" hidden title="Imagens e vídeos com a Higgsfield, direto na Mídia"><svg><use href="#i-ia" /></svg> Criar com IA</button>
               <button class="glass-btn" id="maisMidia">Adicionar</button>
               <button class="glass-btn glass-btn--ink" id="analisar">Analisar</button>
               <span class="contagem-sel" id="contaSel" aria-live="polite" hidden></span>
@@ -269,6 +271,7 @@
         <div class="controles">
           <button class="icone-btn" id="tocar" title="Tocar (espaço)" aria-label="Tocar"><svg><use href="#i-play" /></svg></button>
           <span class="tempo" id="tempo">0:00 / 0:00</span>
+          <button class="icone-btn" id="criarDoQuadro" hidden title="Criar com IA a partir deste quadro" aria-label="Criar com IA a partir deste quadro"><svg><use href="#i-ia" /></svg></button>
         </div>
       </div>
     </div>
@@ -309,6 +312,8 @@
         </div>
       </form>
     </dialog>
+
+    <dialog class="folha folha-criar" id="folhaCriar" aria-labelledby="criarTitulo"></dialog>
 
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
     <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />

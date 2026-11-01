@@ -747,6 +747,20 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   deploy. Não testado contra o Google de verdade (aviso de app não verificado esperado).
 - ⬜ Z, "Hoje" do HUB e Carro do Freela pelo mesmo contrato.
 
+## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, [ADR 0037](decisions/0037-higgsfield-nas-conexoes.md))
+
+- ✅ HUB: a Higgsfield conectada uma vez em `/conexoes` (OAuth com PKCE e registro dinâmico, tokens cifrados), cartão com
+  saldo, plano, medidor do que os apps usaram no mês, "Usado por" e desconectar; só aparece se um app que usa a
+  Higgsfield existe para a pessoa. Migration `0051` (`zro.ia_geracoes`, `zro.apps_oauth_externos`, provedor
+  `higgsfield`, escopo `zro.higgsfield`).
+- ✅ API `/api/v1/higgsfield` (painel com preço de tudo antes) e `/api/v1/higgsfield/gerar` (envio, telas, animar,
+  andamento), só AEON e Rift Motion; sem preço ou saldo que cubra, não gera.
+- ✅ AEON: "Criar com IA" na Mídia e no player (a partir do quadro atual): créditos com medidor, passo 1 com 1/2/4 telas
+  e o preço, passo 2 com as três opções e a duração, confirmação antes do vídeo, resultado na Mídia (a imagem como clipe
+  parado de 5 s), guardado no navegador, "Pôr na linha" no cursor e retomada do pedido depois de recarregar. Só web.
+- ⛔ Em produção: migration `0051` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
+- ⬜ Rift Motion trocar a conexão própria pela do HUB (sessão do Rift avisada).
+
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 
 - ✅ `/admin/custos` (papel admin e, desde 31/10/2026, Financeiro; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$

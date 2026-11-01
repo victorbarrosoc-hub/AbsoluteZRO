@@ -15,6 +15,32 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, ADR 0037)
+
+Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a migration dos sons da main ficou com o 0050; a da
+Higgsfield é a `0051`).
+
+- HUB: `tests/integration/higgsfield.test.ts` **11/11** contra uma Higgsfield falsa (`tests/fixtures/higgsfield-falsa.ts`,
+  OAuth com registro dinâmico e PKCE, MCP em JSON e SSE): registro uma vez por endereço, só do sistema; cancelar, state
+  trocado, outra pessoa e PKCE errado; tokens só cifrados e RLS por pessoa; o cartão só com um app visível pelo gate;
+  saldo, plano, desligar app e desconectar; painel com o preço de tudo sem gerar; telas com referência, andamento até o
+  resultado (guardado, sem perguntar de novo); animar com as três opções, sem saldo (429 com a frase) e sem preço
+  informado (não gera, nunca vira 0); token vencido renova e refresh recusado vira "reconectar"; só AEON e Rift (o
+  Maestro com o escopo é recusado); `zro.ia_geracoes` sem leitura, mudança, gravação em nome de outra pessoa nem apagar.
+- HUB inteiro: `npx vitest run` **567/567** em 64 arquivos (Postgres 16 local); `npm run typecheck`, `npm run lint`,
+  `npm run format:check` e `npm run build` ok; segredos: nenhum em 4071 arquivos. `npm run test:e2e`: **57/57 no
+  Chromium**; os 6 de WebKit não abrem neste container (o WebKit do Playwright não está instalado aqui), rodam no CI.
+- AEON: `npm test` **240/240** e `xvfb-run -a npx electron . --smoke` ok (no computador a entrada fica escondida). Novos: `test/criar.test.js` (14: formato, medidor, preço, nome, URLs aceitas, erros,
+  pôr na linha; o repasse só com os caminhos, métodos e parâmetros do contrato, token no Authorization e nunca o cookie,
+  origem e JSON conferidos, 413, 409 sem conexão, produto fechado, e o login que volta sem `zro.higgsfield` num HUB
+  antigo) e duas telas no Chromium: créditos, 1 tela com o preço no botão, a tela na Mídia como clipe parado de 5 s
+  (640 px, sem som, guardado no IndexedDB, fora da linha), animar a partir do quadro atual (JPEG direto para o envio,
+  pergunta com o preço), o vídeo na Mídia e "Pôr na linha"; e a folha sem conexão mostrando "Conectar" para
+  `/conexoes`, sem gastar nada.
+- Conferido de verdade (01/11/2026): a CDN (`*.cloudfront.net`, `cdn.higgsfield.ai`) e o envio (`upload.higgsfield.ai`)
+  da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
+  a geração contra a Higgsfield de verdade a partir do HUB.
+
 ## Apps de computador só pela central (01/11/2026)
 
 Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se

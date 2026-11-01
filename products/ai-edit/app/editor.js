@@ -15,7 +15,7 @@ import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
 import { trechosParaTranscrever } from '../src/analise/trechos.js'
 import { agrupar } from '../src/legenda.js'
-import { paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
+import { fpsNumero, paraQuadros, paraSegundos, relogio } from '../src/tempo.js'
 import { pacote } from '../src/exportar/index.js'
 import { arquivoDoSom, arquivosDeFaixas, nomeArquivo, segmentos, sonsUsados } from '../src/exportar/comum.js'
 import { zip } from '../src/exportar/zip.js'
@@ -45,6 +45,10 @@ import { PainelPecas } from './pecas-ui.js'
 import { montarFaixas } from './faixas-ui.js'
 import * as discoFaixas from './faixas-disco.js'
 import * as nossom from './nossom.js'
+import { FolhaCriar } from './criar-ui.js'
+import { imagemParaClipe } from './parada.js'
+import * as discoCriadas from './criadas-disco.js'
+import { inserirNaLinha, SEGUNDOS_PARADA } from '../src/criar.js'
 import { adicionarSeparacao, ajustarFaixas, desligarFaixas, faixasForaDoTrecho, MIX_TUDO, minutosDoPedido, separacaoPorId, STEMS, trechoParaSeparar, wav16 } from '../src/faixas.js'
 
 const $ = (id) => document.getElementById(id)
@@ -1670,7 +1674,12 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   const faltam = []
   for (const m of [...p.midias, ...(p.sons || [])]) {
     if (m.caminho && ponte.desktop) S.entradas.set(m.id, await ponte.entradaDoCaminho(m.caminho, m.nome))
-    else if (!DESCEM.has(m.origem?.tipo)) faltam.push(m)
+    else if (m.origem?.tipo === 'higgsfield') {
+      // criada com IA: o arquivo ficou no disco deste navegador (app/criadas-disco.js)
+      const b = await discoCriadas.ler(m.id).catch(() => null)
+      if (b) S.entradas.set(m.id, await ponte.entradaDe(new File([b], m.nome, { type: b.type || 'video/mp4' })))
+      else faltam.push(m)
+    } else if (!DESCEM.has(m.origem?.tipo)) faltam.push(m)
   }
   S.h = new Historico(p)
   S.salvo = true
@@ -1678,6 +1687,11 @@ async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   autosalvar()
   if (faltam.length) aviso(`Escolha de novo: ${faltam.map((m) => m.nome).join(', ')}.`)
   desenharTudo()
+  for (const m of p.midias)
+    if (m.origem?.tipo === 'higgsfield' && S.entradas.has(m.id))
+      miniatura(S.entradas.get(m.id))
+        .then((c) => c && (S.miniaturas.set(m.id, c), desenharMidia()))
+        .catch(() => {})
   rebaixarSons(p)
   ir(p.propostas.length ? 'revisar' : 'midia')
 }
@@ -2283,4 +2297,65 @@ function aviso(texto) {
   a.classList.add('visivel')
   clearTimeout(avisoTimer)
   avisoTimer = setTimeout(() => a.classList.remove('visivel'), 4200)
+}
+
+// ───────── Criar com IA: a Higgsfield das Conexões da Absolute ZRO, pelo HUB (app/criar-ui.js) ─────────
+// Só na web por enquanto (o app de computador não foi publicado). O resultado entra na Mídia (não na linha): a imagem
+// como clipe parado de SEGUNDOS_PARADA s, o vídeo como veio. O arquivo fica no disco deste navegador.
+
+async function porNaMidiaCriada(arquivo, { saida, id: pedido }) {
+  const p = P()
+  if (!p) throw new Error('abra um projeto antes')
+  const e = await ponte.entradaDe(arquivo)
+  const info = await lerInfo(e)
+  if (!info.temVideo) throw new Error('o arquivo não tem imagem')
+  const id = crypto.randomUUID()
+  S.entradas.set(id, e)
+  await discoCriadas.guardar(id, arquivo).catch(() => aviso('Este navegador não guardou o arquivo criado: ele some ao fechar o projeto.'))
+  const m = {
+    cor: corDaMidia(p.midias.length),
+    id,
+    nome: arquivo.name,
+    caminho: null,
+    ...info,
+    quadros: paraQuadros(info.duracao, p.fps),
+    origem: { tipo: 'higgsfield', saida, ...(pedido ? { pedido } : {}) },
+  }
+  fazer({ ...p, midias: [...p.midias, m] }, 'criar com IA')
+  miniatura(e)
+    .then((c) => c && (S.miniaturas.set(id, c), desenharMidia()))
+    .catch(() => {})
+  mudou()
+  desenharTudo()
+  return id
+}
+
+const folhaCriar = new FolhaCriar($('folhaCriar'), {
+  projeto: () => P(),
+  async quadroAtual() {
+    const p = P()
+    if (!p?.linha.clipes.length) return null
+    const q = Math.max(0, Math.min(paraQuadros(player.t, p.fps), paraQuadros(player.duracao, p.fps) - 1))
+    const [x] = await imagensEm(p, [q], { entradas: S.entradas })
+    return x?.blob || null
+  },
+  porNaMidia: porNaMidiaCriada,
+  porNaLinha(midiaId) {
+    const p = P()
+    const m = p && midiaPorId(p, midiaId)
+    if (!m) return aviso('Essa mídia não está mais no projeto.')
+    fazer({ ...p, linha: inserirNaLinha(p.linha, m, paraQuadros(player.t, p.fps)) }, 'pôr na linha')
+    mudou()
+    desenharTudo()
+    aviso(`${m.nome} entrou na linha.`)
+  },
+  paraClipe: (blob, nome) => imagemParaClipe(blob, nome, { segundos: SEGUNDOS_PARADA, fps: Math.round(fpsNumero(P().fps)) || 30 }),
+  perguntar,
+  aviso,
+})
+for (const b of [$('criarIA'), $('criarDoQuadro')]) b.hidden = ponte.desktop
+$('criarIA').onclick = () => folhaCriar.abrir()
+$('criarDoQuadro').onclick = () => {
+  player.pausar()
+  folhaCriar.abrir({ doQuadro: true })
 }
