@@ -67,11 +67,48 @@
 }
 
 /* A área de download do app de computador na página inicial (só aparece com instalador publicado). */
+/* No computador, só pela Absolute ZRO (01/11/2026): os três passos e o botão para a central. */
 .idesktop {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+.idesktop__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+.idesktop__passos {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: 10px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+.idesktop__passos li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  counter-increment: passo;
+  color: var(--text);
+}
+.idesktop__passos li::before {
+  content: counter(passo);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--text-mute);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 .idesktop small {
   color: var(--text-mute);

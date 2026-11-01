@@ -68,12 +68,15 @@ export const CONTATO_EMAIL = "contato@absolutezro.com";
 /** Data da última revisão da Política de Privacidade e dos Termos. */
 export const LEGAL_ATUALIZADO_EM = "17 de outubro de 2026";
 
-/** Instaladores do app de computador (as rotas redirecionam para o arquivo da versão atual). */
-export const DOWNLOAD_MAC = "/baixar/mac";
-export const DOWNLOAD_WINDOWS = "/baixar/windows";
+/**
+ * O app de computador é instalado e atualizado só pela central Absolute ZRO (pedido do titular, 01/11/2026): o site
+ * mostra "Use no computador com a Absolute ZRO" e manda para esta página. As rotas /baixar/mac, /baixar/windows,
+ * /baixar/versao e os instalar.* continuam respondendo (quem já tem o app), mas saíram da interface.
+ */
+export const CENTRAL_ZRO = "https://absolutezro.com/baixar";
 
 /**
- * Instalar pelo Terminal (Mac) e pelo PowerShell (Windows): public/instalar.sh e public/instalar.ps1.
+ * Instalar pelo Terminal (Mac) e pelo PowerShell (Windows): public/instalar.sh e public/instalar.ps1. Fora da interface.
  * O arquivo baixado assim não ganha a marca de "veio da internet", então não aparece o aviso de app não verificado.
  * Sempre o endereço oficial (os scripts baixam dele), também nas prévias.
  */

@@ -8,7 +8,7 @@ import { JsonFile } from './util/store.js'
 
 export const APP_NAME = 'SOBEDESCE'
 export const APP_ID = 'sobedesce'
-export const APP_VERSION = '0.3.0'
+export const APP_VERSION = '0.3.2'
 /**
  * O que este app sabe fazer, dito ao site em todo pedido (cabeçalho x-sobedesce-capacidades, src/google/cloud-auth.js).
  * "relay": pega e converte as versões do Relay pedidas pelo Maestro (src/engine/pedidos-relay.js), desde a 0.2.0. O
@@ -140,6 +140,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   theme: 'system',
   /** Aviso de versão nova: o build que a pessoa deixou para depois (0 = nenhum). Só um build mais novo avisa de novo. */
   versaoDispensada: 0,
+  /** Aviso de versão nova: o último build que já ganhou a notificação do sistema (uma vez por build; 0 = nenhum). */
+  versaoAvisada: 0,
 
   // ── Celular ──
   /**
@@ -191,6 +193,7 @@ const LIMITS = {
   mobilePort: [1024, 65535],
   lanPorta: [1024, 65535],
   versaoDispensada: [0, Number.MAX_SAFE_INTEGER],
+  versaoAvisada: [0, Number.MAX_SAFE_INTEGER],
 }
 const ENUMS = {
   downloadConflict: ['skip', 'rename', 'overwrite'],

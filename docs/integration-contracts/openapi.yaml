@@ -1231,7 +1231,28 @@ paths:
   /api/v1/desktop/apps:
     get:
       summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.
+      description: |
+        Só o gate de lançamento (canal desktop). A central 1.4+ lê /api/v1/desktop/meus-apps; este fica para a 1.3.
       responses: { '200': { description: ok } }
+  /api/v1/desktop/meus-apps:
+    get:
+      summary: Os apps de computador da conta (central "Absolute ZRO", ADR 0036), pela sessão do HUB
+      description: |
+        Gate de lançamento (canal desktop), organização ativa e entitlement conferidos no servidor (authorize, PRD §5.2).
+        `apps`: o que a conta pode instalar, no formato do catálogo (`id`, `nome`, `mac: { bundle, arquivos[] }`,
+        `windows: { exe, nomeNoSistema, arquivo }`; cada arquivo com `arquivo`, `sha256`, `tamanho`, `versao`, `build`,
+        `arch`); produto no plano da organização ou de uso livre (plano grátis vigente). `bloqueados`: lançado, mas fora do
+        plano: `{ id, nome, plano, planos, mac: { bundle }, windows: { exe, nomeNoSistema } }`, sem arquivos (a central
+        mostra "Incluso no plano X · Ver planos" e não atualiza; nada é apagado do computador). Produto fechado para a
+        pessoa não aparece. O instalador de app pago em /baixar/app/<id>/<arquivo> também pede a sessão e o direito
+        (401 sem sessão, 403 sem o produto no plano, 404 fechado).
+      responses:
+        {
+          '200': { description: '{ versao: 2, apps: [...], bloqueados: [...] }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/entitlements:
     get: { summary: Situação de cada ferramenta para a organização ativa, responses: { '200': { description: ok } } }
   /api/v1/runs:

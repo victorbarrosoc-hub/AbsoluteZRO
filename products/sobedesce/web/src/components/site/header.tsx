@@ -7,7 +7,7 @@ const LINKS = [
   { href: "/#recursos", label: "Recursos" },
   { href: "/#entre-aparelhos", label: "Entre aparelhos" },
   { href: "/#novidades", label: "Para criar" },
-  { href: "/#baixar", label: "Plataformas" },
+  { href: "/#plataformas", label: "Plataformas" },
   { href: "/precos", label: "Preços" },
   { href: "/privacidade", label: "Privacidade" },
 ];

@@ -1,10 +1,8 @@
-# Absolute ZRO · instalador do app de computador para Windows, sem o aviso "O Windows protegeu o computador".
+# Absolute ZRO · instala a central de apps no Windows, numa linha (ela instala e atualiza todos os outros apps).
 #
 #   irm https://absolutezro.com/instalar.ps1 | iex
 #
-# Por que funciona: o aviso (SmartScreen) vem da marca "veio da internet" que o navegador põe no arquivo baixado.
-# O PowerShell não põe (e o script ainda tira com Unblock-File, por garantia).
-# O que este script faz, nesta ordem:
+# O que este script faz, nesta ordem (o arquivo baixado já sai pronto para abrir: Unblock-File, em silêncio):
 #   1. lê a versão mais nova e o SHA-256 do instalador em /baixar/hub/versao;
 #   2. baixa o instalador de /baixar/hub/windows e confere o SHA-256 (não bateu = não instala nada);
 #   3. fecha o Absolute ZRO, se estiver aberto;
@@ -107,7 +105,7 @@
       $exe = Join-Path $env:LOCALAPPDATA 'Programs\absolute-zro-desktop\Absolute ZRO.exe'
       if (Test-Path -LiteralPath $exe) { Start-Process -FilePath $exe } else { Nota 'Abra o Absolute ZRO pelo menu Iniciar.' }
     }
-    Nota 'Dentro do app você entra com a conta Absolute ZRO e instala as ferramentas em Apps. Para atualizar, rode este mesmo comando.'
+    Nota 'Entre com a sua conta: seus apps aparecem lá, prontos para instalar. Daqui em diante a Absolute ZRO se atualiza sozinha.'
   } catch {
     Write-Host ''
     Write-Host ('Erro: ' + $_.Exception.Message) -ForegroundColor Red

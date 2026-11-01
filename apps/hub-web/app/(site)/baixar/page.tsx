@@ -4,6 +4,7 @@ import { DownloadPicker } from '@/components/download-picker'
 import { InstalarHub } from '@/components/instalar-hub'
 import { OsHint } from '@/components/os-hint'
 import { liberadosPara, publicCatalog } from '@/lib/data/catalog'
+import { ehAdmin } from '@/lib/downloads'
 import { disponibilidade } from '@/lib/hub-desktop-release'
 import { getAuth } from '@/lib/session'
 
@@ -29,9 +30,10 @@ export default async function Baixar({ searchParams }: { searchParams: Promise<{
       <DownloadPicker
         apps={appsParaBaixar(
           products.map((p) => ({ id: p.id, name: p.name, role: p.role_in_flow })),
-          liberados,
+          // admin de plataforma vê tudo (lançado OU admin, titular, 01/11/2026)
+          ehAdmin(auth) ? new Set(products.map((p) => p.id)) : liberados,
           undefined,
-          { naWeb, soDisponiveis: true },
+          { naWeb, soDisponiveis: true, admin: ehAdmin(auth) },
         )}
       />
     </section>

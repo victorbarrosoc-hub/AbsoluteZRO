@@ -3,7 +3,7 @@ import { ZroSymbol, ZroWordmark } from '@zro/ui'
 import { Avatar } from '@/components/avatar'
 import { logoutAppAction } from '@/lib/actions/auth'
 
-type Aba = 'apps' | 'z'
+type Aba = 'apps' | 'z' | 'ajustes'
 
 /** O anel da Z, fino (o mesmo desenho da entrada da Z nos apps da família). */
 function AnelZ({ size = 18 }: { size?: number }) {
@@ -41,6 +41,10 @@ export function PainelLado({ ativo, userId, nome, email, avatar }: { ativo: Aba;
         </Link>
         <Link className="painel__item" href="/perfil">
           <span aria-hidden="true">○</span> Conta
+        </Link>
+        {/* Ajustes deste computador (Atualizar sozinho por app): só no app Absolute ZRO para computador */}
+        <Link className={`${item('ajustes')} painel__item--no-app`} href="/app/ajustes" aria-current={atual('ajustes')}>
+          <span aria-hidden="true">⚙︎</span> Ajustes
         </Link>
       </nav>
       <Link className={`painel__z${ativo === 'z' ? ' painel__z--ativo' : ''}`} href="/app/ia" aria-current={atual('z')} title="Z, a IA da Absolute ZRO">

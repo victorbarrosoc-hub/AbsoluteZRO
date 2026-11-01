@@ -149,15 +149,15 @@ export function emailComputadorConectado(
 export function emailAtualizarMac(para: string, nome: string, macs: string[]): Email {
   const qual = macs.length === 1 ? `no ${macs[0]}` : "nos seus Macs";
   return montar(para, "Atualize o SOBEDESCE no Mac (uma vez só)", {
-    previa: "O botão Atualizar pode estar dando erro. Instalando a versão nova uma vez, ele volta a funcionar.",
+    previa: "O botão Atualizar pode estar dando erro. A versão nova chega pela Absolute ZRO.",
     titulo: "Atualize o app no Mac",
     paragrafos: [
       `Oi, ${primeiroNome(nome)}. O botão Atualizar do SOBEDESCE ${qual} pode estar dando erro, com uma mensagem que começa com "ENOTEMPTY".`,
-      "O erro é nosso e já foi corrigido. Para a correção chegar, instale a versão nova uma vez: baixe, abra o arquivo e arraste o SOBEDESCE para Aplicativos, escolhendo Substituir.",
+      "O erro é nosso e já foi corrigido. Para a correção chegar, use a Absolute ZRO: baixe a Absolute ZRO, entre com a sua conta e instale o SOBEDESCE por ela.",
     ],
     detalhes: macs.length > 1 ? [{ rotulo: "Computadores", valor: macs.join(", ") }] : undefined,
-    depois: ["A conta, os ajustes e a fila continuam como estão. Depois disso, as próximas versões chegam sozinhas de novo."],
-    botao: { texto: "Baixar para Mac", url: `${siteUrl()}/baixar/mac` },
+    depois: ["A conta, os ajustes e a fila continuam como estão. Daqui em diante, as atualizações chegam pela Absolute ZRO."],
+    botao: { texto: "Baixar a Absolute ZRO", url: "https://absolutezro.com/baixar" },
     rodape: "Se o app já atualizou sem erro, pode ignorar este e-mail.",
   });
 }

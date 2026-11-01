@@ -3,9 +3,10 @@ import { LogOut, Shield, Upload } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { LinkZ } from "./abas";
 import { BotaoSet } from "./aba-set";
+import { CENTRAL_ZRO } from "@/lib/site";
 
 /**
- * Ações da área logada, à direita do cabeçalho: enviar (o uso principal), baixar o app e sair. `admin`: link para /admin.
+ * Ações da área logada, à direita do cabeçalho: enviar (o uso principal), usar no computador (pela Absolute ZRO) e sair. `admin`: link para /admin.
  * `sair`: false onde a página já tem o próprio "Sair da conta" (em /conta), para não ter dois.
  */
 export function MenuConta({ admin = false, sair = true, naZ = false }: { admin?: boolean; sair?: boolean; naZ?: boolean } = {}) {
@@ -25,9 +26,9 @@ export function MenuConta({ admin = false, sair = true, naZ = false }: { admin?:
         </Link>
       ) : null}
       <span className="hidden sm:contents">
-        <Link href="/#baixar" className={buttonClasses({ variant: "ghost", size: "sm" })}>
-          Baixar app
-        </Link>
+        <a href={CENTRAL_ZRO} className={buttonClasses({ variant: "ghost", size: "sm" })} title="Use no computador com a Absolute ZRO">
+          No computador
+        </a>
       </span>
       {sair ? (
         <Link href="/sair" className={buttonClasses({ variant: "ghost", size: "sm", className: "px-3" })} aria-label="Sair">

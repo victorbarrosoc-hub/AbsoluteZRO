@@ -4,14 +4,13 @@
 //
 // `--smoke` (CI, depois do build): abre o app, monta o projeto de exemplo, sincroniza, exporta e escreve "SMOKE OK".
 
-const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain, safeStorage } = require('electron')
+const { app, BrowserWindow, Menu, Notification, protocol, shell, session, dialog, ipcMain, safeStorage } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
-const { spawn } = require('node:child_process')
 const { Readable } = require('node:stream')
-const { Atualizador, readBuildInfo, handoffCommand, isHandoffScript } = require('./atualizador.cjs')
-const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
+const { AvisoDeVersao, readBuildInfo, PRODUTO } = require('./versao.cjs')
+const central = require('./central.cjs')
 const { Organizador } = require('./organizador.cjs')
 const { Ponte, pastaTroca } = require('./davinci.cjs')
 const { Biblioteca } = require('./sfx-biblioteca.cjs')
@@ -378,52 +377,39 @@ async function receberLink(link) {
   }
 }
 
-// ───────── atualização pelo próprio app (desktop/atualizador.cjs) ─────────
+// ───────── versão nova: quem atualiza é a Absolute ZRO (desktop/versao.cjs e central.cjs) ─────────
+// Desde 01/11/2026 os apps de computador são instalados e atualizados só pela central Absolute ZRO: o Synquei não baixa
+// nem instala nada. Ele confere o site e, com versão nova, mostra o aviso discreto (barra lateral e Ajustes) e uma
+// notificação do sistema uma vez por build; os dois abrem a central (sem ela, a página de baixar).
 let atu = null
+let notificacaoDeVersao = null
 
-/** O atualizador preparou a troca: roda o script solto (ele espera o app fechar, troca e abre de novo) e fecha. */
-function runUpdateHandoff({ script }) {
-  return new Promise((resolve, reject) => {
-    const command = isHandoffScript(script) ? handoffCommand(process.platform, script) : null
-    if (!command) return reject(new Error('script de atualização inválido'))
-    let child
-    try {
-      child = spawn(command.cmd, command.args, { detached: true, stdio: 'ignore', windowsHide: true })
-    } catch (err) {
-      return reject(err)
-    }
-    child.once('error', reject)
-    // só fecha depois que o script de fato começou (senão o app fecharia sem ninguém para abrir de novo)
-    child.once('spawn', () => {
-      child.unref()
-      resolve()
-      setTimeout(() => app.quit(), 150)
-    })
-  })
+// A central atende absolutezro://? Sem ela, o aviso leva para a página de baixar a central.
+const temCentral = () => {
+  try {
+    return !!app.getApplicationNameForProtocol(`${central.ESQUEMA_DA_CENTRAL}://`)
+  } catch {
+    return false
+  }
 }
+const atualizarNaCentral = () => central.abrirNaCentral(PRODUTO, { temCentral, abrir: (url) => shell.openExternal(url) })
 
-function iniciarAtualizador() {
-  atu = new Atualizador({
-    // só para testar o aviso fora do Mac/Windows (nunca no app empacotado)
-    platform: (!app.isPackaged && process.env.SYNQUEI_ATU_PLATAFORMA) || process.platform,
-    appExe: app.isPackaged ? process.execPath : '',
-    appPid: app.isPackaged ? process.pid : 0,
+function iniciarAviso() {
+  atu = new AvisoDeVersao({
     stateDir: app.getPath('userData'),
     buildInfo: readBuildInfo(path.join(__dirname, 'build-info.json')),
-    handoff: runUpdateHandoff,
-    // instalado pela central do Absolute ZRO: quem atualiza é ela (desktop/gerenciado.cjs, ADR 0018)
-    gerenciado: app.isPackaged ? () => lerGerenciado(arquivoDaCentral(app.getPath('appData'))) : () => false,
-    log: (...a) => console.log('[atualização]', ...a),
+    log: (...a) => console.log('[versão]', ...a),
   })
-  atu.on('change', (st) => {
-    if (win && !win.isDestroyed()) win.webContents.send('synquei:atualizacao', st)
+  atu.on('change', (st) => enviar('synquei:atualizacao', st))
+  atu.on('avisar', () => {
+    if (!Notification.isSupported()) return
+    notificacaoDeVersao = new Notification({ title: 'Atualização disponível', body: 'Atualizar na Absolute ZRO' })
+    notificacaoDeVersao.on('click', () => atualizarNaCentral().catch(() => {}))
+    notificacaoDeVersao.show()
   })
   handle('atu:status', () => atu.status())
   handle('atu:verificar', () => atu.check())
-  handle('atu:aplicar', () => atu.aplicarAgora())
-  handle('atu:depois', () => atu.depois())
-  handle('atu:tentar', () => atu.tentar())
-  handle('atu:baixar', () => shell.openExternal(atu.status().baixarUrl))
+  handle('atu:central', () => atualizarNaCentral())
   atu.start()
 }
 
@@ -482,7 +468,7 @@ app.whenReady().then(() => {
   createWindow()
   if (SMOKE) smoke()
   else {
-    iniciarAtualizador()
+    iniciarAviso()
     iniciarOrganizar()
   }
   app.on('activate', () => {

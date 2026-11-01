@@ -17,7 +17,7 @@ import { ehAdmin } from "@/lib/admin";
 import { podeUsar } from "@/lib/recursos";
 import { listarComputadores } from "@/lib/acompanhar/status";
 import { macsParaAtualizar } from "@/lib/atualizar-mac";
-import { DOWNLOAD_MAC } from "@/lib/site";
+import { CENTRAL_ZRO } from "@/lib/site";
 import { googleDeEntrar, listarContas, temAcessoTotal } from "@/lib/google/contas";
 import { LinhaModoDrive } from "@/components/conta/modo-drive";
 import { zroConfigurado } from "@/lib/zro/config";
@@ -135,16 +135,15 @@ export default async function Conta({ searchParams }: Props) {
       ) : null}
 
       {macs.length ? (
-        // Até o build 299 o Atualizar do Mac podia travar (lib/atualizar-mac.ts): só o instalador resolve, uma vez.
+        // Até o build 299 o Atualizar do Mac podia travar (lib/atualizar-mac.ts): a versão nova entra pela Absolute ZRO.
         <Aviso tom="info" className="mb-6">
           <p>
-            <strong className="font-semibold">{macs.length === 1 ? `Atualize o app no ${macs[0]} à mão, uma vez só.` : "Atualize o app nos seus Macs à mão, uma vez só."}</strong> O botão
-            Atualizar pode dar erro nessa versão. Baixe, abra o arquivo e arraste o SOBEDESCE para Aplicativos, escolhendo Substituir. Depois, as próximas
-            versões chegam sozinhas.
+            <strong className="font-semibold">{macs.length === 1 ? `Atualize o app no ${macs[0]} pela Absolute ZRO.` : "Atualize o app nos seus Macs pela Absolute ZRO."}</strong> Baixe
+            a Absolute ZRO, entre com a sua conta e instale o SOBEDESCE por ela. Daqui em diante, as atualizações chegam por lá.
           </p>
           <p>
-            <a href={DOWNLOAD_MAC} className="font-medium underline underline-offset-2">
-              Baixar para Mac
+            <a href={CENTRAL_ZRO} className="font-medium underline underline-offset-2">
+              Baixar a Absolute ZRO
             </a>
           </p>
         </Aviso>

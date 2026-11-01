@@ -572,7 +572,7 @@ function abrirMaxima() {
       { className: 'folha-meio folha-meio--uma' },
       el('div', { className: 'fichas' }, ...levados.map((n) => ficha(n, 'ficha--sinal'))),
       fora.length ? el('p', { className: 'apoio', textContent: `Fica só aqui no navegador: ${fora.join(', ')}.` }) : null,
-      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://sobedesce.vercel.app', target: '_blank', rel: 'noopener', textContent: 'Baixar o SOBEDESCE' }), '.'),
+      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://absolutezro.com/baixar', target: '_blank', rel: 'noopener', textContent: 'Use no computador com a Absolute ZRO' }), '.'),
     ),
     el('div', { className: 'folha-acoes' }, el('span', { className: 'espaco' }), cancelar, abrir),
   )

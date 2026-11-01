@@ -1,11 +1,17 @@
-// Atualização das ferramentas em segundo plano (pedido do titular, 28/10/2026): o Absolute ZRO confere o catálogo do
-// HUB ao abrir e a cada INTERVALO_MS. Ferramenta instalada com versão nova:
+// Atualização das ferramentas em segundo plano (pedido do titular, 28/10/2026; central única, 01/11/2026, ADR 0036): o
+// Absolute ZRO confere os apps da conta no HUB ao abrir e a cada INTERVALO_MS. Ferramenta instalada com versão nova:
 //
+//   0. padrão ("Atualizar sozinho" desligado nos Ajustes): fica 'disponivel' e avisa uma vez por versão com uma
+//      notificação nativa ("Maestro 0.3.0 disponível"; várias: "3 atualizações disponíveis"). A pessoa atualiza uma
+//      (`atualizar(id)`: baixa com progresso na página, confere o SHA-256 e instala) ou todas (`atualizarTudo`).
+//   Com "Atualizar sozinho" ligado para o app (ou a pedido da pessoa):
 //   1. baixa e confere o SHA-256 sem incomodar (central.prebaixar);
 //   2. fechada: instala na hora e avisa com uma notificação curta ("SOBEDESCE atualizado");
 //   3. aberta: fica "atualiza ao fechar" (notificação uma vez, item "Reiniciar e atualizar" na bandeja). A agenda
 //      espiona a cada ESPERA_MS e instala assim que a ferramenta fechar. "Reiniciar e atualizar" pede para ela sair
 //      (do jeito educado; ela pode perguntar antes), instala e abre de novo. Nunca força o fechamento.
+//
+// App fora do plano (bloqueado) não vem com arquivo: nunca é atualizado, e o que está no computador fica.
 //
 // Só mexe no que a central pode trocar sozinha (central.gerenciavel) e grava essa lista para as ferramentas não se
 // atualizarem por conta própria ao mesmo tempo (gerenciados.cjs). O catálogo já vem com o gate de lançamento do HUB:
@@ -20,11 +26,22 @@ const INTERVALO_MS = 4 * 60 * 60_000
 const ESPERA_MS = 2 * 60_000
 const FECHAR_MS = 60_000
 const PASSO_FECHAR_MS = 1_000
+const OCUPADAS = new Set(['baixando', 'instalando', 'fechando'])
 
 /** O que fazer com uma ferramenta agora: 'nada', 'instalar' (está fechada) ou 'esperar' (está aberta). */
 function decidir(situacao, aberta) {
-  if (!situacao || !situacao.instalado || !situacao.atualizar || !situacao.gerenciavel || !situacao.disponivel) return 'nada'
+  if (!situacao || situacao.bloqueado || !situacao.instalado || !situacao.atualizar || !situacao.gerenciavel || !situacao.disponivel) return 'nada'
   return aberta ? 'esperar' : 'instalar'
+}
+
+/** A notificação das versões novas avisadas agora: uma (com o nome e a versão) ou o total. null = nada a avisar. */
+function avisoDeDisponiveis(novas) {
+  if (!novas.length) return null
+  if (novas.length === 1) {
+    const p = novas[0]
+    return { id: p.id, acao: 'atualizar', titulo: `${p.nome} ${p.versao} disponível`, corpo: 'Clique para atualizar.' }
+  }
+  return { acao: 'atualizar-tudo', titulo: `${novas.length} atualizações disponíveis`, corpo: novas.map((p) => `${p.nome} ${p.versao}`).join(' · ') }
 }
 
 /** Quando conferir de novo: INTERVALO_MS depois da última, nunca antes de `minimoMs` a partir de agora. */
@@ -46,13 +63,17 @@ const relogioDoSistema = {
 
 /**
  * Evento 'mudou' com estado() a cada mudança. estado() = { apps: [{ id, nome, versao }] (instaladas),
- * pendentes: [{ id, nome, versao, fase: 'baixando'|'ao-fechar'|'fechando'|'instalando'|'erro', erro? }],
- * procurando, conferidaEm }
+ * pendentes: [{ id, nome, versao, fase: 'disponivel'|'baixando'|'ao-fechar'|'fechando'|'instalando'|'erro', erro? }],
+ * procurando, conferidaEm, semLogin }
+ *
+ * `atualizarSozinho(id)`: o app se atualiza sem perguntar? (Ajustes; padrão desligado.) `notificar({ id?, acao?,
+ * titulo, corpo })`: `acao` 'atualizar' ou 'atualizar-tudo' diz o que o clique (ou o botão) da notificação faz.
  */
 class AgendaDeApps extends EventEmitter {
   constructor({
     central,
     notificar = () => {},
+    atualizarSozinho = () => false,
     marcarGerenciados = () => {},
     relogio = relogioDoSistema,
     log = () => {},
@@ -64,6 +85,7 @@ class AgendaDeApps extends EventEmitter {
     super()
     this.central = central
     this.notificar = notificar
+    this.atualizarSozinho = atualizarSozinho
     this.marcarGerenciados = marcarGerenciados
     this.relogio = relogio
     this.log = log
@@ -86,6 +108,7 @@ class AgendaDeApps extends EventEmitter {
       pendentes: [...this.pendentes.values()].map((p) => ({ ...p })),
       procurando: !!this.procurando,
       conferidaEm: this.conferidaEm,
+      semLogin: !!this.central.semLogin,
     }
   }
 
@@ -133,6 +156,7 @@ class AgendaDeApps extends EventEmitter {
         this.conferidaEm = new Date(this.ultimaMs).toISOString()
         this.#lerLista(lista)
         for (const s of lista) await this.#cuidar(s)
+        this.#avisarDisponiveis()
       } catch (e) {
         this.log('[apps] não deu para conferir:', e && e.message)
       } finally {
@@ -165,13 +189,29 @@ class AgendaDeApps extends EventEmitter {
     }
   }
 
-  async #cuidar(s) {
+  /** Uma notificação para as versões novas ainda não avisadas (uma vez por versão). */
+  #avisarDisponiveis() {
+    const novas = [...this.pendentes.values()].filter((p) => p.fase === 'disponivel' && !p.avisado)
+    for (const p of novas) p.avisado = true
+    const aviso = avisoDeDisponiveis(novas)
+    if (aviso) this.notificar(aviso)
+  }
+
+  /** `forcar`: a pessoa pediu (Atualizar): baixa e instala mesmo com "Atualizar sozinho" desligado. */
+  async #cuidar(s, { forcar = false } = {}) {
     if (decidir(s, false) === 'nada') return
     const atual = this.pendentes.get(s.id)
-    if (atual && ['baixando', 'instalando', 'fechando'].includes(atual.fase)) return
+    if (atual && OCUPADAS.has(atual.fase)) return
     // já baixada e esperando o app fechar: só confere de novo se ele fechou (sem baixar outra vez)
     if (atual && atual.fase === 'ao-fechar' && atual.versao === s.disponivel.versao) {
       await this.#tentarInstalar(s.id)
+      return
+    }
+    // padrão: avisa e espera a pessoa tocar em Atualizar (uma vez por versão)
+    if (!forcar && !this.atualizarSozinho(s.id)) {
+      if (atual && atual.fase === 'disponivel' && atual.versao === s.disponivel.versao) return
+      this.pendentes.set(s.id, { id: s.id, nome: s.nome, versao: s.disponivel.versao, fase: 'disponivel', avisado: false })
+      this.#mudou()
       return
     }
     const p = {
@@ -274,28 +314,51 @@ class AgendaDeApps extends EventEmitter {
   async atualizarAoFechar(id) {
     const s = (await this.central.listar()).find((x) => x.id === id)
     if (decidir(s, false) === 'nada') return null
-    if (!this.pendentes.has(id) || this.pendentes.get(id).fase === 'erro') await this.#cuidar(s)
+    const p = this.pendentes.get(id)
+    if (!p || p.fase === 'erro' || p.fase === 'disponivel') await this.#cuidar(s, { forcar: true })
     return this.situacao(id)
   }
 
-  /** "Atualizar tudo": instala o que estiver fechado, reinicia o que estiver aberto e tenta de novo o que deu erro. */
+  /**
+   * "Atualizar" pedido pela pessoa (página, bandeja, notificação ou deep link): fechada, baixa com o progresso na página,
+   * confere o SHA-256 e instala agora; aberta, baixa e confere já e instala quando ela fechar ("Reiniciar e atualizar").
+   * Devolve a situação ({ fase, versao }), { fase: 'pronto', versao } ou null (nada a atualizar, ou bloqueado).
+   */
+  async atualizar(id) {
+    const atual = this.pendentes.get(id)
+    if (atual && (OCUPADAS.has(atual.fase) || atual.fase === 'ao-fechar')) return this.situacao(id)
+    const s = (await this.central.listar()).find((x) => x.id === id)
+    if (decidir(s, false) === 'nada') return null
+    if (await this.central.aberto(id).catch(() => false)) return this.atualizarAoFechar(id)
+    const p = { id, nome: s.nome, versao: s.disponivel.versao, fase: 'instalando', avisado: true }
+    this.pendentes.set(id, p)
+    this.#mudou()
+    try {
+      await this.central.instalar(id)
+    } catch (e) {
+      // abriu no meio do caminho: fica para quando fechar
+      if (e && e.codigo === 'aberto') {
+        this.pendentes.delete(id)
+        return this.atualizarAoFechar(id)
+      }
+      Object.assign(p, { fase: 'erro', erro: (e && e.message) || 'Não deu para atualizar agora.' })
+      this.#mudou()
+      throw e
+    }
+    this.pendentes.delete(id)
+    this.notificar({ id, titulo: `${p.nome} atualizado`, corpo: `Versão ${p.versao}.` })
+    await this.relistar()
+    return { fase: 'pronto', versao: p.versao }
+  }
+
+  /** "Atualizar tudo": um de cada vez; o que está aberto reinicia (do jeito educado) e o que deu erro tenta de novo. */
   async atualizarTudo() {
     for (const p of [...this.pendentes.values()]) {
       if (p.fase === 'ao-fechar') await this.reiniciarEAtualizar(p.id)
-      else if (p.fase === 'erro') {
-        p.fase = 'baixando'
-        this.#mudou()
-        try {
-          await this.central.prebaixar(p.id)
-          await this.#tentarInstalar(p.id)
-        } catch (e) {
-          Object.assign(p, { fase: 'erro', erro: (e && e.message) || 'Não deu para baixar agora.' })
-          this.#mudou()
-        }
-      }
+      else if (p.fase === 'disponivel' || p.fase === 'erro') await this.atualizar(p.id).catch(() => {})
     }
     return this.estado()
   }
 }
 
-module.exports = { AgendaDeApps, decidir, proximaConferencia, PRIMEIRA_MS, INTERVALO_MS, ESPERA_MS, FECHAR_MS }
+module.exports = { AgendaDeApps, decidir, avisoDeDisponiveis, proximaConferencia, PRIMEIRA_MS, INTERVALO_MS, ESPERA_MS, FECHAR_MS }

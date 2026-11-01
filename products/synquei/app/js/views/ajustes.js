@@ -25,19 +25,20 @@ const defaults = () => {
 function versaoApp() {
   const v = estadoAtualizacao()
   const atual = v ? buildLabel(v.atual) : '…'
-  const nova = v && v.ultima && v.ultima.build > v.atual.build
+  const nova = !!(v && v.nova)
   const sub = !v
     ? ''
     : !v.atual.build
-      ? 'Versão de desenvolvimento: não procura atualizações.'
+      ? 'Versão de desenvolvimento.'
       : nova
-        ? `Versão ${v.ultima.build} disponível${v.fase === 'pronto' ? ', baixada e pronta para instalar' : ''}.`
+        ? `Versão ${v.ultima.build} disponível.`
         : v.verificadaEm
           ? `Você está com a versão mais nova. Conferido ${new Date(v.verificadaEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
-          : 'Confere sozinho ao abrir o app e a cada hora.'
+          : ''
+  // as atualizações chegam pela central Absolute ZRO (o app não baixa nem instala nada sozinho)
   return `<section class="card"><header class="card-head"><h2>Atualizações</h2></header><div class="card-pad">
-    <div class="set-row"><div><b>Synquei ${h(atual)}</b><small>${h(sub)}</small></div><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${nova && v.fase === 'pronto' ? '<button class="btn btn-primary btn-sm" data-act="atu-agora">Atualizar agora</button>' : ''}<button class="btn btn-secondary btn-sm" data-act="atu-verificar" ${v && v.atual.build ? '' : 'disabled'}>${icon('sync')}Procurar atualização</button></span></div>
-    <div class="set-row"><div><b>Como funciona</b><small>Quando sai uma versão nova, o app baixa e confere em segundo plano. Aí aparece "Atualizar agora" na barra lateral: ele fecha, troca e abre de novo, com seus projetos no lugar. Para isso ele só pergunta ao site qual é a versão mais nova; nada dos seus projetos sai do computador.</small></div></div>
+    <div class="set-row"><div><b>Synquei ${h(atual)}</b><small>${h(sub)}</small></div></div>
+    <div class="set-row"><div><b>As atualizações chegam pela Absolute ZRO</b></div><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ${nova ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="atu-central">Atualizar na Absolute ZRO</button></span></div>
   </div></section>`
 }
 
@@ -83,9 +84,8 @@ export default {
         <div class="set-row"><div><b>Trocar de aba</b><small>Z, Início, Mídia, Sincronizar, Linha do tempo, Exportar.</small></div><span><span class="kbd">1</span> … <span class="kbd">6</span></span></div>
       </div></section>
       ${temAtualizador() ? versaoApp() : ''}
-      ${window.synqueiDesktop ? '' : `<section class="card"><header class="card-head"><h2>App de desktop</h2></header><div class="card-pad">
-        <div class="set-row"><div><b>Synquei para Mac e Windows</b><small>No desktop, cada clipe vai com o caminho completo para o editor e o áudio de celular e GoPro funciona em qualquer máquina.</small></div><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="btn btn-secondary btn-sm" href="/baixar/mac">${icon('download')}Mac</a><a class="btn btn-secondary btn-sm" href="/baixar/windows">${icon('download')}Windows</a></span></div>
-        <div class="set-row"><div><b>Como instalar</b><small>Passo a passo e instalação sem aviso pelo Terminal.</small></div><a class="btn btn-ghost btn-sm" href="/#baixar" target="_blank" rel="noopener">Ver no site</a></div>
+      ${window.synqueiDesktop ? '' : `<section class="card"><header class="card-head"><h2>No computador</h2></header><div class="card-pad">
+        <div class="set-row"><div><b>Use no computador com a Absolute ZRO</b><small>Baixe a Absolute ZRO, entre com a sua conta e instale o Synquei por ela.</small></div><a class="btn btn-secondary btn-sm" href="https://absolutezro.com/baixar" target="_blank" rel="noopener">Baixar a Absolute ZRO</a></div>
       </div></section>`}
       <section class="card"><header class="card-head"><h2>Privacidade</h2></header><div class="card-pad" style="padding:16px 20px;display:grid;gap:10px">
         <div class="info-box">${icon('lock')}<div>O Synquei roda inteiro no seu computador. Os arquivos são lidos direto do disco e nunca são enviados para servidor nenhum. Não há rastreador nem análise de uso. A conta Absolute ZRO é opcional e não vê seus arquivos.</div></div>

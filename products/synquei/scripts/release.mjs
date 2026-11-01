@@ -9,12 +9,12 @@
 //       (a pasta vem do Release: gh release download synquei-app-desktop -p 'Synquei-sha256-*') junta os dois SHA-256 no versao.json que o site serve em /baixar/versao (os instaladores de uma linha conferem).
 //   node scripts/release.mjs build-info
 //       grava desktop/build-info.json (vai dentro do app): o build deste app, que o aviso de versão nova compara com o
-//       versao.json do site (desktop/atualizador.cjs). Sem GITHUB_RUN_NUMBER fica 0 = versão de desenvolvimento.
+//       versao.json do site (o aviso de versão nova, desktop/versao.cjs). Sem GITHUB_RUN_NUMBER fica 0 = versão de desenvolvimento.
 //   node scripts/release.mjs limpar [build]
 //       tira do Release os instaladores de builds antigos (fica o atual e os dois anteriores).
 //
 // Build = GITHUB_RUN_NUMBER + SYNQUEI_BUILD_BASE. No repositório antigo os builds iam até 25; no AbsoluteZRO a contagem
-// recomeça, então o workflow soma 1000 para o número só crescer (o atualizador do app compara builds).
+// recomeça, então o workflow soma 1000 para o número só crescer (o aviso de versão nova do app e a central comparam builds).
 
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'

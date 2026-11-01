@@ -198,11 +198,17 @@ describe("cabeçalhos e endereços (A12 e site)", () => {
     assert.match(csp(regras.find((r) => r.source === "/:path*")), /frame-ancestors 'none'/);
   });
 
-  test("/instalar leva para a seção de baixar da home (o id existe)", async () => {
+  test("/instalar leva para Plataformas da home (o id existe): no computador, pela Absolute ZRO", async () => {
     const r = (await nextConfig.redirects!()).find((x) => x.source === "/instalar");
     assert.ok(r);
-    assert.equal(r.destination, "/#baixar");
+    assert.equal(r.destination, "/#plataformas");
     const secao = fs.readFileSync(new URL("../src/components/home/platforms-section.tsx", import.meta.url), "utf8");
-    assert.match(secao, /<section id="baixar"/);
+    assert.match(secao, /<section id="plataformas"/);
+    assert.match(secao, /<CentralZro/);
+    const central = fs.readFileSync(new URL("../src/components/central-zro.tsx", import.meta.url), "utf8");
+    assert.match(central, /Use no computador com a Absolute ZRO/);
+    assert.match(central, /CENTRAL_ZRO/);
+    // nada de instalador na interface (as rotas /baixar/* e instalar.* seguem para quem já tem o app)
+    assert.doesNotMatch(secao + central, /DOWNLOAD_|INSTALAR_|\.dmg|\.exe/);
   });
 });

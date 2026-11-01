@@ -87,9 +87,13 @@ const RAIZ = path.resolve(__dirname, '..');
   /* o convite do app de computador: só o que ele faz, aponta para a página de baixar da Absolute ZRO e some dentro do app */
   m = await p.evaluate(() => { const h = document.getElementById('h-app'); const antes = getComputedStyle(h).display;
     document.documentElement.classList.add('carro-desktop'); const dentro = getComputedStyle(h).display; document.documentElement.classList.remove('carro-desktop');
-    return { antes, dentro, href: h.querySelector('.happ-ir').href, itens: h.querySelectorAll('.happ-lista li').length } });
+    return { antes, dentro, href: h.querySelector('.happ-ir').href, itens: h.querySelectorAll('.happ-lista li').length,
+      passos: [...h.querySelectorAll('.happ-passos li')].map(li => li.textContent), botao: h.querySelector('.happ-ir').textContent.trim(),
+      instalador: /\.dmg|\.exe|baixar\/app\//.test(h.innerHTML) } });
   t(m.antes !== 'none' && m.dentro === 'none' && m.href === 'https://absolutezro.com/baixar' && m.itens === 3,
     '⟶⟶ "Melhor no computador": três coisas que o app faz, o botão leva à página de baixar, e o convite some dentro do app');
+  t(m.passos.join('|') === 'Baixe a Absolute ZRO|Entre com a sua conta|Instale o Carro do Freela por ela' && m.botao === 'Baixar a Absolute ZRO' && !m.instalador,
+    '⟶⟶ no computador, só pela Absolute ZRO: os três passos e o botão da central, sem instalador (' + m.passos.join(' · ') + ')');
 
   /* da linha B ficam o escuro fosco do ecossistema e os títulos finos × pesados sem degradê (topo e entrada) */
   m = await p.evaluate(() => {

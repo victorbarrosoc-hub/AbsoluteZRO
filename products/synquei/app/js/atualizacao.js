@@ -1,11 +1,11 @@
-// Aviso "Nova versão do Synquei" na barra lateral (só no app de desktop), no mesmo esquema do SOBEDESCE: o app
-// confere o site, já baixa e confere a versão nova em segundo plano (desktop/atualizador.cjs) e, no fim, aparece
-// "Atualizar agora" (o app fecha, troca e abre de novo). "Baixar" fica de alternativa; "Depois" esconde este build.
+// Aviso "Atualização disponível" na barra lateral (só no app de computador). Desde 01/11/2026 quem instala e atualiza
+// os apps de computador é a central Absolute ZRO: o Synquei não baixa nem instala nada. O app confere o site
+// (desktop/versao.cjs) e, com versão nova, mostra este aviso discreto; "Atualizar na Absolute ZRO" abre
+// absolutezro://apps/synquei?acao=atualizar (sem a central no computador, a página de baixar a central).
 
-import { h, icon, bytes, toast } from './util.js'
+import { h, icon, toast } from './util.js'
 
 const api = globalThis.synqueiDesktop && globalThis.synqueiDesktop.atualizacao
-const BAIXANDO = new Set(['baixando', 'conferindo', 'preparando'])
 let st = null
 
 export const temAtualizador = () => !!api
@@ -19,86 +19,18 @@ export function buildLabel(info) {
   return quando ? `versão ${info.build} · ${quando}` : `versão ${info.build}`
 }
 
-function progresso(a) {
-  if (!a || !a.fase) return null
-  if (a.fase === 'erro') return { label: a.erro || 'Algo deu errado ao atualizar. Use Baixar.', f: null, erro: true }
-  if (a.fase === 'baixando') {
-    const total = Number(a.total) || 0
-    const got = Number(a.recebido) || 0
-    if (!total) return { label: got ? `Baixando a versão nova… ${bytes(got)}` : 'Baixando a versão nova…', f: null }
-    const f = Math.min(1, got / total)
-    return { label: `Baixando… ${Math.floor(f * 100)}% · ${bytes(got)} de ${bytes(total)}`, f }
-  }
-  if (a.fase === 'conferindo') return { label: 'Conferindo o arquivo…', f: 1 }
-  if (a.fase === 'preparando') return { label: 'Preparando a troca…', f: 1 }
-  if (a.fase === 'pronto') return { label: 'Versão nova baixada e conferida.', f: 1 }
-  if (a.fase === 'reiniciando') return { label: 'Abrindo a versão nova…', f: 1 }
-  return null
-}
-
-const barra = (f) => `<div class="atu-barra ${typeof f === 'number' ? '' : 'is-indef'}" role="progressbar" aria-valuemin="0" aria-valuemax="100" ${typeof f === 'number' ? `aria-valuenow="${Math.round(f * 100)}"` : ''}><span ${typeof f === 'number' ? `style="width:${(f * 100).toFixed(1)}%"` : ''}></span></div>`
-
-/** O cartão da barra lateral (vazio quando não há nada a mostrar). */
+/** O cartão da barra lateral (vazio sem versão nova). */
 export function cartaoHtml(v = st) {
-  if (!v) return ''
-  const andando = v.fase === 'reiniciando' || (BAIXANDO.has(v.fase) && v.aplicar)
-  const sozinho = BAIXANDO.has(v.fase) && !v.aplicar
-  const pronto = v.fase === 'pronto'
-  const erroAnterior = v.fase === 'erro' && !v.ultima
-  if (!v.nova && !andando && !erroAnterior) return ''
-  const p = progresso(v)
-  const titulo = andando ? 'Atualizando o Synquei' : pronto ? 'Versão nova pronta' : 'Nova versão do Synquei'
-  let corpo
-  if (andando || sozinho) {
-    corpo = `<div class="atu-prog" aria-live="polite">${barra(p && p.f)}<p>${h(p ? p.label : '')}</p>${sozinho ? '<p class="atu-sub">Quando terminar, é só tocar em Atualizar agora.</p>' : ''}</div>${sozinho ? '<div class="atu-acoes"><button class="btn btn-ghost btn-sm" data-act="atu-depois">Depois</button></div>' : ''}`
-  } else {
-    const dica = pronto ? 'O app fecha, troca pela versão nova e abre de novo.' : v.podeAtualizar ? 'O app baixa a versão nova, troca e abre de novo sozinho.' : v.plataforma === 'windows' ? 'Baixe e rode o instalador.' : 'Baixe e substitua o app em Aplicativos.'
-    const principal = pronto
-      ? '<button class="btn btn-primary btn-sm" data-act="atu-agora">Atualizar agora</button>'
-      : v.podeAtualizar && p && p.erro
-        ? '<button class="btn btn-primary btn-sm" data-act="atu-tentar">Tentar de novo</button>'
-        : v.podeAtualizar
-          ? '<button class="btn btn-primary btn-sm" data-act="atu-agora">Atualizar</button>'
-          : `<button class="btn btn-primary btn-sm" data-act="atu-baixar">${icon('download')}Baixar</button>`
-    corpo = `<p>${p && p.erro ? `<span class="atu-erro">${h(p.label)}</span>` : h(v.motivo && !v.podeAtualizar ? v.motivo : dica)}</p>
-      <div class="atu-acoes">${principal}${v.nova ? '<button class="btn btn-ghost btn-sm" data-act="atu-depois">Depois</button>' : ''}</div>
-      ${v.podeAtualizar || pronto ? '<button type="button" class="atu-alt" data-act="atu-baixar">Ou baixe o instalador</button>' : ''}`
-  }
-  return `<section class="atu" aria-labelledby="atuTitulo" ${andando || sozinho ? 'aria-busy="true"' : ''}>
-    <div class="atu-topo"><span class="atu-marca" aria-hidden="true">${icon('download')}</span><b id="atuTitulo">${titulo}</b>${v.ultima ? `<span class="atu-build">versão ${v.ultima.build}</span>` : ''}</div>
-    ${corpo}
+  if (!v || !v.nova) return ''
+  return `<section class="atu" aria-labelledby="atuTitulo">
+    <div class="atu-topo"><span class="atu-marca" aria-hidden="true">${icon('download')}</span><b id="atuTitulo">Atualização disponível</b>${v.ultima ? `<span class="atu-build">versão ${h(String(v.ultima.build))}</span>` : ''}</div>
+    <div class="atu-acoes"><button class="btn btn-primary btn-sm" data-act="atu-central">Atualizar na Absolute ZRO</button></div>
   </section>`
 }
 
-/** O cartão sem os números do progresso: se só eles mudaram, o cartão continua o mesmo. */
-const formaDoCartao = (v) => (v && v.fase ? cartaoHtml({ ...v, recebido: v.total ? 0 : null, fase: BAIXANDO.has(v.fase) ? 'baixando' : v.fase }) : cartaoHtml(v))
-
-/**
- * Desenha o cartão em `box`. Enquanto baixa, o progresso chega até 4 vezes por segundo: trocar o HTML a cada evento
- * recriava o cartão, a entrada (`rise`) recomeçava e o aviso piscava. Agora, se a forma é a mesma, só a barra e o
- * texto mudam no lugar. Devolve 'progresso' (mudou no lugar), 'novo' (HTML trocado) ou 'igual'.
- */
+/** Desenha o cartão em `box`. Devolve 'novo' (HTML trocado) ou 'igual'. */
 export function aplicarCartao(box, v = st) {
-  const forma = formaDoCartao(v)
-  const barraEl = box.querySelector('.atu-barra')
-  const texto = box.querySelector('.atu-prog p')
-  if (box.dataset.forma === forma && barraEl && texto) {
-    const p = progresso(v)
-    const f = p && typeof p.f === 'number' ? p.f : null
-    const label = p ? p.label : ''
-    if (texto.textContent !== label) texto.textContent = label
-    if (f !== null) {
-      const largura = `${(f * 100).toFixed(1)}%`
-      const span = barraEl.querySelector('span')
-      if (span && span.style.width !== largura) {
-        span.style.width = largura
-        barraEl.setAttribute('aria-valuenow', String(Math.round(f * 100)))
-      }
-    }
-    return 'progresso'
-  }
   const html = cartaoHtml(v)
-  box.dataset.forma = forma
   if (box.innerHTML === html) return 'igual'
   box.innerHTML = html
   return 'novo'
@@ -107,8 +39,7 @@ export function aplicarCartao(box, v = st) {
 function desenhar() {
   const box = document.getElementById('atuCard')
   const r = box ? aplicarCartao(box) : 'novo'
-  // Ajustes não mostra o progresso: não precisa se redesenhar a cada pedaço baixado
-  if (r !== 'progresso') document.dispatchEvent(new CustomEvent('synquei:atualizacao-mudou'))
+  if (r !== 'igual') document.dispatchEvent(new CustomEvent('synquei:atualizacao-mudou'))
 }
 
 export function iniciarAtualizacao() {
@@ -128,30 +59,14 @@ export function iniciarAtualizacao() {
 
 /** Ações dos botões (data-act="atu-…"), ligadas no main.js. */
 export const acoesAtualizacao = {
-  async 'atu-agora'() {
-    try {
-      st = await api.aplicar()
-      desenhar()
-    } catch (err) {
-      toast((err && err.message ? err.message : String(err)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), { icon: 'warn' })
-    }
-  },
-  async 'atu-depois'() {
-    st = await api.depois()
-    desenhar()
-  },
-  async 'atu-tentar'() {
-    st = await api.tentar()
-    desenhar()
-  },
-  'atu-baixar'() {
-    api.baixar()
+  'atu-central'() {
+    api.central().catch(() => {})
   },
   async 'atu-verificar'(el) {
     if (el) el.disabled = true
     st = await api.verificar()
     desenhar()
     if (el) el.disabled = false
-    if (st && !st.nova && !(st.ultima && st.ultima.build > st.atual.build)) toast('Você já está com a versão mais nova')
+    if (st && !st.nova) toast(st.falhou ? 'Não deu para conferir agora. Tente de novo daqui a pouco.' : 'Você já está com a versão mais nova')
   },
 }
