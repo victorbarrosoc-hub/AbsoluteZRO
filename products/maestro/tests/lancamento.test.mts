@@ -78,6 +78,18 @@ describe("app de computador na página inicial", () => {
   });
 });
 
+describe("no computador, só pela Absolute ZRO (01/11/2026)", () => {
+  test("a página inicial não leva a instalador: mostra os passos e o botão da central", async () => {
+    const { CENTRAL_ZRO } = await import("../src/lib/desktop");
+    assert.equal(CENTRAL_ZRO, "https://absolutezro.com/baixar");
+    const pagina = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
+    assert.match(pagina, /Use no computador com a Absolute ZRO/);
+    assert.match(pagina, /Instale o Maestro por ela/);
+    assert.match(pagina, /href=\{CENTRAL_ZRO\}/);
+    assert.doesNotMatch(pagina, /d\.href|\.dmg|\.exe|downloads\.map/);
+  });
+});
+
 describe("app na Tela de Início", () => {
   test("manifesto: abre no /app, sem barra do navegador, com os ícones que existem", () => {
     const m = manifest();

@@ -2,7 +2,7 @@
 // Versões fixas (commit do Hugging Face) e SHA-256 conferido: arquivo que não bate é apagado e baixa de novo.
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { downloadTo } from '../updater.js'
+import { downloadTo } from '../net/baixar-arquivo.js'
 
 const ST = 'https://huggingface.co/sentence-transformers/clip-ViT-B-32-multilingual-v1/resolve/58edf8cada9e398793dca955574a48cbb7f18be2'
 const XV = 'https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/d15189d7028b43f1d3e65039190477f6af591c2a'

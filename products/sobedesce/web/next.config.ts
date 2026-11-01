@@ -121,8 +121,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/", has: antigo, destination: "https://sobedesce.com/", permanent: true },
       { source: "/:pagina(privacidade|termos)", has: antigo, destination: "https://sobedesce.com/:pagina", permanent: true },
-      // /instalar (sem .sh/.ps1) não é página: leva para a seção de baixar da página inicial (id="baixar").
-      { source: "/instalar", destination: "/#baixar", permanent: false },
+      // /instalar (sem .sh/.ps1) não é página: leva para "Plataformas" da página inicial (id="plataformas": no computador, pela Absolute ZRO).
+      { source: "/instalar", destination: "/#plataformas", permanent: false },
       // "/app" sem barra → "/app/". O Next aceita uma barra opcional no fim de toda origem; o (?!/) evita o laço.
       { source: "/:app(app(?!/))", destination: "/app/", permanent: true },
       // O padrão do Next (barra no fim → sem barra), menos em /app/.

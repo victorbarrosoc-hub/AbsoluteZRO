@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('sobedesce', {
   setProgress: (fraction, activeCount, proxies) => ipcRenderer.send('sobedesce:progress', { fraction, activeCount, proxies }),
   notify: (title, body) => ipcRenderer.send('sobedesce:notify', { title, body }),
   openExternal: url => ipcRenderer.invoke('sobedesce:open-external', url),
+  // Versão nova: quem atualiza é a central Absolute ZRO (absolutezro://apps/sobedesce?acao=atualizar; sem ela, a página).
+  abrirCentral: () => ipcRenderer.invoke('sobedesce:abrir-central'),
   reveal: path => ipcRenderer.invoke('sobedesce:reveal', path),
   // macOS: abre Ajustes do Sistema na Rede Local ou no Firewall (o Wi-Fi com o celular precisa dos dois liberados).
   abrirAjustesRede: qual => ipcRenderer.invoke('sobedesce:abrir-ajustes-rede', qual === 'firewall' ? 'firewall' : 'rede-local'),

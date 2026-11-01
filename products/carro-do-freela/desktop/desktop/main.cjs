@@ -11,23 +11,37 @@
 // `--smoke` (CI, depois do build): abre a janela com a tela "Sem conexão" local (sem rede), confere a ponte e as
 // regras e escreve "SMOKE OK" (também em CARRO_SMOKE_SAIDA, se definido).
 
-const { app, BrowserWindow, WebContentsView, Menu, shell, session, ipcMain, dialog, screen, nativeTheme, clipboard, systemPreferences, Tray, Notification, nativeImage, globalShortcut } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  Menu,
+  shell,
+  session,
+  ipcMain,
+  dialog,
+  screen,
+  nativeTheme,
+  clipboard,
+  systemPreferences,
+  Tray,
+  Notification,
+  nativeImage,
+  globalShortcut,
+} = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
-const { spawn } = require('node:child_process')
 const regras = require('./regras.cjs')
 const janela = require('./janela.cjs')
-const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
-const { Atualizador, baixarPara, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
-const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
+const { AvisoDeVersao, lerBuildInfo, PRODUTO } = require('./versao.cjs')
+const central = require('./central.cjs')
 const { Pulso, NOME_ESTADO, ESTADOS } = require('./pulso.cjs')
 
 const NOME = 'Carro do Freela'
 const SMOKE = process.argv.includes('--smoke')
 const SMOKE_SAIDA = process.env.CARRO_SMOKE_SAIDA || null
 const MAC = process.platform === 'darwin'
-const PLATAFORMA = MAC ? 'mac' : process.platform === 'win32' ? 'windows' : 'linux'
 const PAGINAS = path.join(__dirname, 'paginas')
 const PARTICAO = 'persist:carro'
 // fundo do tema escuro do Carro do Freela (o padrão do site; o claro é opção): a janela já nasce nessa cor, sem flash
@@ -50,7 +64,8 @@ if (!SMOKE && !app.requestSingleInstanceLock()) {
 let win = null
 let view = null
 let aviso = null
-let atualizador = null
+let novaVersao = null
+let notificacaoDeVersao = null
 let ultimaUrl = INICIO
 let deepLinkPendente = regras.deepLinkDosArgs(process.argv, O)
 let zoom = 0
@@ -66,9 +81,10 @@ const estadoBarra = () => {
     carregando: wc.isLoading(),
     focada: win.isFocused(),
     telaCheia: win.isFullScreen(),
+    atualizacao: !!novaVersao,
   }
   if (MAC) win.webContents.send('barra:estado', estado)
-  win.setTitle(estado.titulo)
+  win.setTitle(!MAC && novaVersao ? `${estado.titulo} · Atualização disponível` : estado.titulo)
 }
 
 function posicionarView() {
@@ -266,6 +282,7 @@ ipcMain.handle('barra:acao', (e, acao) => {
   else if (acao === 'avancar' && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward()
   else if (acao === 'recarregar') recarregar(false)
   else if (acao === 'inicio') wc.loadURL(INICIO).catch(() => {})
+  else if (acao === 'atualizar') atualizarNaCentral().catch(() => {})
   else if (acao === 'duplo-clique' && MAC) {
     const pref = systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string')
     if (pref === 'Minimize') win.minimize()
@@ -275,87 +292,61 @@ ipcMain.handle('barra:acao', (e, acao) => {
   return true
 })
 
-// ───────── aviso de versão nova e "Atualizar" (baixa, confere, fecha e abre já atualizado) ─────────
-// Pela partição do app: os cookies do login vão junto e a Absolute ZRO confere o gate de lançamento.
+// ───────── aviso de versão nova: quem atualiza é a Absolute ZRO (central.cjs) ─────────
+// Desde 01/11/2026 os apps de computador são instalados e atualizados só pela central Absolute ZRO: este app não baixa
+// nem instala nada. Pela partição do app: os cookies do login vão junto e a Absolute ZRO confere o gate de lançamento.
 const fetchDoApp = (url, opts = {}) => session.fromPartition(PARTICAO).fetch(url, { credentials: 'include', ...opts })
 
-async function avisar(nova) {
-  const podeTrocar = !!atualizador && atualizador.podeInstalar(nova.build)
-  const versao = nova.versao ? `A versão ${nova.versao} (build ${nova.build})` : `O build ${nova.build}`
+// A central atende absolutezro://? Sem ela, o aviso leva para a página de baixar a central.
+const temCentral = () => {
+  try {
+    return !!app.getApplicationNameForProtocol(`${central.ESQUEMA_DA_CENTRAL}://`)
+  } catch {
+    return false
+  }
+}
+const atualizarNaCentral = () => central.abrirNaCentral(PRODUTO, { temCentral, abrir: (url) => shell.openExternal(url) })
+
+// O aviso discreto: o botão na barra do Mac, o item no menu e, no Windows, o título da janela.
+function mostrarNovaVersao(nova) {
+  novaVersao = nova
+  estadoBarra()
+  menu()
+}
+
+// Uma vez por build (versao.cjs lembra): a notificação do sistema; o clique abre a central.
+function notificarNovaVersao() {
+  if (!Notification.isSupported()) return
+  notificacaoDeVersao = new Notification({ title: 'Atualização disponível', body: 'Atualizar na Absolute ZRO' })
+  notificacaoDeVersao.on('click', () => atualizarNaCentral().catch(() => {}))
+  notificacaoDeVersao.show()
+}
+
+// "Atualizações…" no menu: confere agora e diz que as atualizações chegam pela Absolute ZRO.
+async function verAtualizacoes() {
+  const r = aviso ? await aviso.conferir() : { estado: 'desenvolvimento' }
+  const qual = r.remoto && r.remoto.versao ? `A versão ${r.remoto.versao}` : `O build ${r.remoto && r.remoto.build}`
+  const detail =
+    {
+      nova: `${qual} já está disponível.`,
+      'em-dia': `Você está na versão mais nova: ${NOME} ${app.getVersion()} (build ${BUILD.build}).`,
+      desenvolvimento: 'Esta é uma versão de desenvolvimento.',
+    }[r.estado] || 'A Absolute ZRO mostra quando houver versão nova.'
   const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
     type: 'info',
-    buttons: [podeTrocar ? 'Atualizar' : 'Baixar', 'Depois'],
-    defaultId: 0,
+    buttons: ['Atualizar na Absolute ZRO', 'OK'],
+    defaultId: r.estado === 'nova' ? 0 : 1,
     cancelId: 1,
-    message: 'Nova versão do Carro do Freela',
-    detail: podeTrocar
-      ? `${versao} está pronta. O app baixa, fecha e abre de novo já atualizado. Seu login continua.`
-      : `${versao} já está disponível. ${atualizador && atualizador.motivo ? `${atualizador.motivo} ` : ''}Baixe e instale por cima desta: seu login continua.`,
+    message: 'As atualizações chegam pela Absolute ZRO',
+    detail,
   })
-  if (response !== 0) return 'depois'
-  return podeTrocar ? 'atualizar' : 'baixar'
+  if (response === 0) await atualizarNaCentral()
 }
 
-// Progresso sem piscar: a barra no ícone do Dock/barra de tarefas e o título da janela mudam no lugar.
-function mostrarAtualizacao(st) {
-  if (!win || win.isDestroyed()) return
-  if (st.fase === 'baixando') {
-    const frac = st.total ? Math.min(1, st.recebido / st.total) : 2 // 2 = indeterminado
-    win.setProgressBar(frac)
-    win.setTitle(st.total ? `Atualizando o Carro do Freela · ${Math.round(frac * 100)}%` : 'Atualizando o Carro do Freela…')
-  } else if (st.fase === 'conferindo' || st.fase === 'preparando' || st.fase === 'reiniciando') {
-    win.setProgressBar(2)
-    win.setTitle(st.fase === 'reiniciando' ? 'Reabrindo o Carro do Freela…' : 'Preparando a atualização…')
-  } else {
-    win.setProgressBar(-1)
-    estadoBarra()
-  }
-}
-
-async function atualizar(nova) {
-  if (!atualizador) return
-  try {
-    const st = nova.url
-      ? await atualizador.instalar({ ...nova, recheck: () => aviso.remoto() })
-      : { fase: 'erro', erro: 'O instalador deste sistema ainda não foi publicado.' }
-    if (st.fase === 'erro') {
-      const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
-        type: 'warning',
-        buttons: ['Baixar pelo site', 'Fechar'],
-        defaultId: 0,
-        cancelId: 1,
-        message: 'Não deu para atualizar agora',
-        detail: st.erro || 'Algo deu errado ao atualizar.',
-      })
-      if (response === 0) abrirFora(aviso.baixarUrl)
-    }
-  } catch (e) {
-    console.log('[atualizar]', e && e.message)
-    abrirFora(aviso.baixarUrl)
-  }
-}
-
-// Entrega a troca: roda o script preparado, solto do app, e fecha. O script espera o app sair, troca e abre de novo.
-function entregarTroca({ script }) {
-  if (!ehScriptDaTroca(script)) throw new Error('script de troca fora do lugar')
-  const c = comandoDaTroca(process.platform, script)
-  if (!c) throw new Error('sistema sem troca')
-  const filho = spawn(c.cmd, c.args, { detached: true, stdio: 'ignore', windowsHide: true })
-  filho.unref()
-  setTimeout(() => app.quit(), 300)
-}
-
-async function procurarVersao() {
-  if (!aviso) return
-  const r = await aviso.conferir({ manual: true })
-  const textos = {
-    desenvolvimento: ['Versão de desenvolvimento', 'Este app não veio de um instalador oficial, então não confere versões novas.'],
-    gerenciado: ['O Absolute ZRO cuida disto', 'O app Absolute ZRO para computador mantém o Carro do Freela em dia neste computador.'],
-    'sem-resposta': ['Não deu para conferir agora', 'Sem resposta da Absolute ZRO. Tente de novo daqui a pouco.'],
-    'em-dia': ['Você está na versão mais nova', `Carro do Freela ${app.getVersion()} (build ${BUILD.build}).`],
-  }[r.estado]
-  if (textos) await dialog.showMessageBox(win || undefined, { type: 'info', buttons: ['OK'], message: textos[0], detail: textos[1] })
-}
+const itemDeAtualizacao = () =>
+  novaVersao
+    ? { label: 'Atualização disponível · Atualizar na Absolute ZRO', click: () => atualizarNaCentral().catch(() => {}) }
+    : { label: 'Atualizações…', click: () => verAtualizacoes().catch(() => {}) }
 
 function sobre() {
   const build = BUILD.build > 0 ? `build ${BUILD.build}${BUILD.commit ? ` · ${BUILD.commit}` : ''}` : 'desenvolvimento'
@@ -386,7 +377,7 @@ function menu() {
             label: NOME,
             submenu: [
               { label: 'Sobre o Carro do Freela', click: sobre },
-              { label: 'Procurar atualizações…', click: () => procurarVersao().catch(() => {}) },
+              itemDeAtualizacao(),
               { type: 'separator' },
               { role: 'services', label: 'Serviços' },
               { type: 'separator' },
@@ -461,13 +452,7 @@ function menu() {
       submenu: [
         { label: 'Carro do Freela no navegador', click: () => abrirFora(O.carro + '/') },
         { label: 'Sua conta Absolute ZRO', click: () => abrirFora(O.hub + '/perfil') },
-        ...(MAC
-          ? []
-          : [
-              { type: 'separator' },
-              { label: 'Procurar atualizações…', click: () => procurarVersao().catch(() => {}) },
-              { label: 'Sobre o Carro do Freela', click: sobre },
-            ]),
+        ...(MAC ? [] : [{ type: 'separator' }, itemDeAtualizacao(), { label: 'Sobre o Carro do Freela', click: sobre }]),
       ],
     },
   ]
@@ -538,12 +523,17 @@ async function smoke() {
       [regras.deepLink('carrodofreela://painel', O), M + '/painel'],
       [regras.deepLink('carrodofreela://evil.example.com@x', O), null],
     ]
+    // atualização só pela Absolute ZRO: o aviso abre a central (sem ela, a página de baixar); nada de atualizador aqui
+    casos.push([central.linkDaCentral(PRODUTO), `absolutezro://apps/${PRODUTO}?acao=atualizar`])
+    casos.push([fs.existsSync(path.join(__dirname, 'atualizador.cjs')), false])
     const regrasOk = casos.every(([a, b]) => a === b)
     log(`regras de navegação e deep link: ${regrasOk ? 'ok' : 'FALHOU'}`)
     let barraOk = true
     if (MAC) {
       await new Promise((ok) => (win.webContents.isLoading() ? win.webContents.once('did-finish-load', ok) : ok()))
-      barraOk = await win.webContents.executeJavaScript(`!!(window.zroBarra && document.getElementById('voltar'))`)
+      barraOk = await win.webContents.executeJavaScript(
+        `!!(window.zroBarra && document.getElementById('voltar') && document.getElementById('atualizar') && document.getElementById('atualizar').hidden)`,
+      )
       log(`barra de título: ${barraOk ? 'ok' : 'FALHOU'}`)
     }
     const fundoOk = r.fundo === 'rgb(14, 14, 16)'
@@ -583,7 +573,8 @@ async function buscarNoCarro(metodo, caminho, corpo) {
 function irPara(tela) {
   focar()
   const wc = view && view.webContents
-  if (wc && String(wc.getURL()).startsWith(O.carro + '/')) wc.executeJavaScript(`typeof show === 'function' && show(${JSON.stringify(tela)})`, true).catch(() => {})
+  if (wc && String(wc.getURL()).startsWith(O.carro + '/'))
+    wc.executeJavaScript(`typeof show === 'function' && show(${JSON.stringify(tela)})`, true).catch(() => {})
 }
 
 function iconeBandeja() {
@@ -696,41 +687,13 @@ app.whenReady().then(() => {
   criarJanela()
   if (SMOKE) return smoke()
   ligarPulso()
-  if (app.isPackaged) {
-    atualizador = new Atualizador({
-      nome: NOME,
-      appExe: app.getPath('exe'),
-      appPid: process.pid,
-      pasta: app.getPath('userData'),
-      entregar: entregarTroca,
-      // o instalador vem pela Absolute ZRO (gate de lançamento), com os cookies do login
-      baixar: (url, arquivo, aoProgresso) => baixarPara(url, arquivo, { fetch: fetchDoApp, aoProgresso }),
-      log: (...a) => console.log(...a),
-    })
-    atualizador.on('mudou', mostrarAtualizacao)
-    if (atualizador.falhaAnterior)
-      setTimeout(() => {
-        dialog
-          .showMessageBox(win && !win.isDestroyed() ? win : undefined, {
-            type: 'warning',
-            buttons: ['OK'],
-            message: 'A última atualização não terminou',
-            detail: `${atualizador.falhaAnterior} O app continua na versão de antes. Na próxima versão nova, use Baixar.`,
-          })
-          .catch(() => {})
-      }, 4000)
-  }
   aviso = new AvisoDeVersao({
     hub: O.hub,
-    plataforma: PLATAFORMA,
     build: BUILD.build,
     pasta: app.getPath('userData'),
     fetch: fetchDoApp,
-    // instalado pela central do Absolute ZRO: quem atualiza é ela (gerenciado.cjs, ADR 0018)
-    gerenciado: app.isPackaged ? () => lerGerenciado(arquivoDaCentral(app.getPath('appData'))) : () => false,
-    avisar,
-    abrir: abrirFora,
-    atualizar,
+    mostrar: mostrarNovaVersao,
+    notificar: notificarNovaVersao,
     log: (...a) => console.log(...a),
   })
   aviso.start()

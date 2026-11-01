@@ -6036,6 +6036,12 @@ html.real #v-malas>.wrap{padding-top:28px;padding-bottom:28px}
 .happ h2 b{font-weight:800}
 .happ-tx p{color:var(--cal-fraco);font-size:17px;margin:14px 0 22px;max-width:34ch}
 .happ-so{display:block;margin-top:12px;color:var(--cal-tenue);font-size:13px}
+.happ-tx .happ-zro{margin:0 0 12px;color:var(--cal);font-size:16px;font-weight:600;max-width:none}
+.happ-passos{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:8px;counter-reset:passo}
+.happ-passos li{display:flex;align-items:center;gap:10px;color:var(--cal-fraco);font-size:15px;counter-increment:passo}
+.happ-passos li::before{content:counter(passo);display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;
+  border:1px solid rgba(255,255,255,.16);color:var(--cal);font-size:12px;font-weight:600}
+html.app-light .happ-passos li::before{border-color:rgba(0,0,0,.14)}
 .happ-ir{text-decoration:none;font-family:"Figtree",system-ui,sans-serif;font-weight:600;color:#1D1D1F;border:0;border-radius:999px;
   background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}
@@ -7892,14 +7898,17 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
 
   <!-- O APP DE COMPUTADOR (31/out, titular: "um app que instigue as pessoas a baixar"). Só no site real, só no
        computador (no celular não há o que baixar) e nunca dentro do próprio app (window.carroDesktop). Só o que o app
-       faz de verdade (products/carro-do-freela/desktop/desktop/pulso.cjs). -->
+       faz de verdade (products/carro-do-freela/desktop/desktop/pulso.cjs). Desde 01/nov o app de computador é só pela
+       central Absolute ZRO: nada de instalador aqui, os três passos e o botão para a página da central. -->
   <div class="sec rvsec hsec" id="h-app" hidden data-so-real>
     <div class="wrap">
       <div class="happ">
         <div class="happ-tx">
           <h2>Melhor no <b>computador.</b></h2>
           <p>O app do Carro avisa a proposta na hora e deixa a sua semana na barra do computador.</p>
-          <a class="btn happ-ir" href="https://absolutezro.com/baixar" target="_blank" rel="noopener">Baixar o app</a>
+          <p class="happ-zro">Use no computador com a Absolute ZRO</p>
+          <ol class="happ-passos"><li>Baixe a Absolute ZRO</li><li>Entre com a sua conta</li><li>Instale o Carro do Freela por ela</li></ol>
+          <a class="btn happ-ir" href="https://absolutezro.com/baixar" target="_blank" rel="noopener">Baixar a Absolute ZRO</a>
           <small class="happ-so">Mac e Windows · a mesma conta Absolute ZRO</small>
         </div>
         <ul class="happ-lista">

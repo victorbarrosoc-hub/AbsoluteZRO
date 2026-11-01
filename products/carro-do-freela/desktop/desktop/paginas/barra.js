@@ -4,7 +4,7 @@
   const barra = window.zroBarra
   if (!barra) return
   const el = (id) => document.getElementById(id)
-  for (const id of ['voltar', 'avancar', 'recarregar', 'inicio']) el(id).addEventListener('click', () => barra.acao(id))
+  for (const id of ['voltar', 'avancar', 'recarregar', 'inicio', 'atualizar']) el(id).addEventListener('click', () => barra.acao(id))
   // clique duplo na barra: o mesmo do resto do Mac (ampliar ou minimizar, conforme o Ajuste do Sistema)
   document.querySelector('.barra').addEventListener('dblclick', (e) => {
     if (!e.target.closest('button')) barra.acao('duplo-clique')
@@ -13,6 +13,8 @@
     el('titulo').textContent = s.titulo || 'Carro do Freela'
     el('voltar').disabled = !s.voltar
     el('avancar').disabled = !s.avancar
+    // versão nova: a pílula discreta que abre a Absolute ZRO (quem atualiza o app)
+    el('atualizar').hidden = !s.atualizacao
     document.body.classList.toggle('carregando', !!s.carregando)
     document.body.classList.toggle('desfocada', !s.focada)
     document.body.classList.toggle('tela-cheia', !!s.telaCheia)

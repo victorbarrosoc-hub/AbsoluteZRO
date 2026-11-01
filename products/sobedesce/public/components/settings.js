@@ -14,9 +14,9 @@ import { Icon } from './icons.js'
 import { Avatar, Button, LinkButton, Pill, Select, Slider, Stepper, Switch } from './common.js'
 import { useLocalRoots } from './local-picker.js'
 import { CloudAccountRows } from './cloud.js'
-import { buildLabel, checkUpdate, downloadingAlone, downloadUpdate, installHint, installUpdate, retryUpdate, updateProgress, updateReady, updating } from '../lib/versao.js'
+import { atualizarNaCentral, buildLabel, checkUpdate } from '../lib/versao.js'
 import { PreviaRow } from './previa.js'
-import { Barra, BotaoGrande, Destaque, Item, Opcoes, Pagina, Passo, Pilulas } from './kit.js'
+import { Destaque, Item, Opcoes, Pagina, Passo, Pilulas } from './kit.js'
 
 const MiB = 1048576
 const CHUNKS = [
@@ -107,8 +107,8 @@ function BandejaRow({ platform }) {
 // ───── Versão ─────
 
 /**
- * Atualizações: o build deste app num cartão colorido (com a barra enquanto baixa), o que está acontecendo e as ações:
- * "Atualizar" (o app se troca sozinho), "Baixar" (instalador no navegador) e "Procurar atualização".
+ * Atualizações: o build deste app num cartão e "As atualizações chegam pela Absolute ZRO" (desde 01/11/2026 quem
+ * instala e atualiza os apps de computador é a central). O botão abre a central (sem ela, a página de baixar).
  */
 function Versao() {
   const v = useStore((s) => s.versao)
@@ -116,55 +116,35 @@ function Versao() {
   const [busy, setBusy] = useState(false)
   const atual = v?.atual
   const dev = !atual?.build
-  const andando = updating(v)
-  const baixando = downloadingAlone(v)
-  const pronto = updateReady(v)
-  const prog = updateProgress(v?.atualizacao)
-  const check = async () => {
+  // confere ao abrir a seção (só a resposta do site; nada é baixado)
+  const conferir = async () => {
     setBusy(true)
     const st = await checkUpdate()
     setBusy(false)
     if (st) setChecked(true)
   }
   let note = null
-  if (andando || baixando) note = prog?.label
-  else if (pronto) note = `O build ${v.atualizacao.build} já foi baixado e conferido. Atualizar agora fecha o app, troca e abre de novo.`
-  else if (prog?.erro) note = prog.label
-  else if (v?.disponivel) note = `Saiu o build ${v.ultima.build}. ${installHint(v.plataforma, v.podeAtualizar)}`
-  // Instalado pelo Absolute ZRO: quem procura e instala a versão nova é ele (src/gerenciado.js), não este app.
-  else if (v?.gerenciado) note = 'Quem atualiza este app é o Absolute ZRO. Abra o Absolute ZRO para ver se saiu versão nova.'
-  else if (checked && dev) note = 'A versão de desenvolvimento não procura atualização.'
-  else if (checked && v?.falhou) note = 'Não consegui verificar agora. Confira a internet e tente de novo.'
-  else if (checked) note = 'Você está na versão mais nova.'
+  if (v?.disponivel) note = `Build ${v.ultima.build} disponível.`
+  else if (checked && v?.falhou) note = 'Não deu para conferir agora. Tente de novo daqui a pouco.'
+  else if (checked && !dev) note = 'Você está na versão mais nova.'
 
   // "build 42 · 15 de out. de 2026" → número grande + a data
   const quando = buildLabel(atual).split(' · ')[1] || ''
-  const tom = prog?.erro && !andando && !baixando ? 'erro' : checked && !v?.disponivel && !v?.gerenciado && !dev && !v?.falhou ? 'ok' : 'grad'
-  const mostrarBarra = andando || baixando
-  const titulo = andando ? 'Atualizando agora' : baixando ? 'Baixando a versão nova' : pronto ? 'Versão nova pronta' : 'Versão deste computador'
+  const tom = v?.disponivel ? 'grad' : checked && !dev && !v?.falhou ? 'ok' : 'grad'
 
   return html`<div class="aj-versao">
     <${Destaque}
-      titulo=${titulo}
-      numero=${pronto || baixando || andando ? v?.atualizacao?.build || v?.ultima?.build || atual?.build || '—' : dev ? 'dev' : atual.build}
-      unidade=${dev && !(pronto || baixando || andando) ? 'versão de desenvolvimento' : pronto || baixando || andando ? `build novo · você está no ${atual?.build ?? 'dev'}` : `build${quando ? ` · ${quando}` : ''}`}
+      titulo=${v?.disponivel ? 'Atualização disponível' : 'Versão deste computador'}
+      numero=${dev ? 'dev' : atual.build}
+      unidade=${dev ? 'versão de desenvolvimento' : `build${quando ? ` · ${quando}` : ''}`}
       tom=${tom}
-      vivo=${mostrarBarra}
     >
-      ${mostrarBarra ? html`<${Barra} p=${typeof prog?.fraction === 'number' ? prog.fraction : null} vivo label="Progresso da atualização" />` : null}
+      <span class="k-destaque-linha">As atualizações chegam pela Absolute ZRO</span>
       ${note ? html`<span class="k-destaque-linha" aria-live="polite">${note}</span>` : null}
     </${Destaque}>
     <div class="aj-versao-acoes">
-      ${pronto && v?.podeAtualizar && !andando
-        ? html`<${BotaoGrande} icone="refresh" cheio=${false} onClick=${installUpdate}>Atualizar agora</${BotaoGrande}>`
-        : null}
-      ${v?.disponivel && !andando && v.podeAtualizar && !baixando && !pronto
-        ? prog?.erro
-          ? html`<${Button} variant="primary" icon="refresh" onClick=${retryUpdate}>Tentar de novo</${Button}>`
-          : html`<${Button} variant="primary" icon="refresh" onClick=${installUpdate}>Atualizar</${Button}>`
-        : null}
-      ${v?.disponivel && !andando ? html`<${Button} variant=${v.podeAtualizar ? 'secondary' : 'primary'} icon="download" onClick=${downloadUpdate}>Baixar</${Button}>` : null}
-      ${andando || v?.gerenciado ? null : html`<${Button} variant="ghost" icon="search" loading=${busy} onClick=${check}>Procurar atualização</${Button}>`}
+      <${Button} variant=${v?.disponivel ? 'primary' : 'secondary'} icon="refresh" onClick=${() => atualizarNaCentral()}>Atualizar na Absolute ZRO</${Button}>
+      ${dev ? null : html`<${Button} variant="ghost" icon="search" loading=${busy} onClick=${conferir} title="Conferir se saiu versão nova">Conferir</${Button}>`}
     </div>
     ${atual?.commit ? html`<p class="k-nota aj-commit" title=${`commit ${atual.commit}`}>commit ${String(atual.commit).slice(0, 7)}</p>` : null}
   </div>`
@@ -838,9 +818,9 @@ export function SettingsScreen({ route } = {}) {
           title="Atualizações"
           icon="circle-down"
           tone="down"
-          frase="O app avisa quando sai uma versão nova e já baixa sozinho."
+          frase="O app avisa quando sai uma versão nova."
           extra=${html`<${Versao} />`}
-          foot="Atualizar baixa, confere e troca o app sozinho; Baixar abre o instalador no navegador. Seus ajustes e a fila continuam."
+          foot="As atualizações chegam pela Absolute ZRO. Seus ajustes e a fila continuam."
         />
 
         <details class="k-passo aj-bloco aj-avancado k-entra" style="--i:12" id="avancado">

@@ -1,5 +1,5 @@
 // Ponte mínima entre o app e o sistema: o caminho completo de um arquivo escolhido ou arrastado (para as exportações),
-// a plataforma (para o visual da janela), se o app tem a conta Absolute ZRO, o aviso de versão nova (desktop/atualizador.cjs) e o Organizar
+// a plataforma (para o visual da janela), se o app tem a conta Absolute ZRO, o aviso de versão nova (desktop/versao.cjs) e o Organizar
 // (desktop/organizador.cjs e davinci.cjs). Nada mais do Node chega à página.
 
 const { contextBridge, webUtils, ipcRenderer } = require('electron')
@@ -59,10 +59,8 @@ contextBridge.exposeInMainWorld('synqueiDesktop', {
   atualizacao: {
     status: () => ipcRenderer.invoke('atu:status'),
     verificar: () => ipcRenderer.invoke('atu:verificar'),
-    aplicar: () => ipcRenderer.invoke('atu:aplicar'),
-    depois: () => ipcRenderer.invoke('atu:depois'),
-    tentar: () => ipcRenderer.invoke('atu:tentar'),
-    baixar: () => ipcRenderer.invoke('atu:baixar'),
+    // quem atualiza é a central Absolute ZRO: abre absolutezro://apps/synquei?acao=atualizar (sem ela, a página)
+    central: () => ipcRenderer.invoke('atu:central'),
     on(cb) {
       const f = (_e, st) => cb(st)
       ipcRenderer.on('synquei:atualizacao', f)

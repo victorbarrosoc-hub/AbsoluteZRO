@@ -1,7 +1,7 @@
 {
   "name": "maestro-desktop",
   "productName": "Maestro",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Maestro para computador: a pauta, a aprovação do cliente e a produtora numa janela própria, no Mac e no Windows.",
   "private": true,
   "main": "desktop/main.cjs",

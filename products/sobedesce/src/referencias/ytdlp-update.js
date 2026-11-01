@@ -12,7 +12,7 @@ import { EventEmitter } from 'node:events'
 import { execFile } from 'node:child_process'
 import { fetch as undiciFetch } from 'undici'
 import { dispatcherFor } from '../net/http.js'
-import { downloadTo } from '../updater.js'
+import { downloadTo } from '../net/baixar-arquivo.js'
 import { readJSON, writeJSONAtomic } from '../util/store.js'
 import { compararVersao, isFile, lerVersaoArquivo, versaoValida, ytdlpAsset, ytdlpCandidates, ytdlpExe } from './binarios.js'
 
