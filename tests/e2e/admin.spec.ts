@@ -8,7 +8,7 @@ import { criarConta } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 const PORTA_PTAX = Number(process.env.E2E_PTAX_PORT || 3297)
-const CONSOLE = ['/admin', '/admin/pessoas', '/admin/planos', '/admin/custos', '/admin/lancamento', '/admin/apps']
+const CONSOLE = ['/admin', '/admin/agora', '/admin/pessoas', '/admin/planos', '/admin/custos', '/admin/lancamento', '/admin/apps']
 
 async function signupAndOrg(page: Page, name: string, org: string) {
   const address = `adm-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
@@ -56,6 +56,12 @@ test('admin vê online agora, acha a pessoa por segmento, troca o plano, exporta
   const online = await (await page.request.get('/admin/online')).json()
   expect(online.total).toBeGreaterThanOrEqual(1) // a própria sessão
   await expect(page.locator('.adm-online__n')).toHaveText(String(online.total))
+  // Tocar no número abre quem está online e onde: a própria pessoa, no HUB, com o aparelho.
+  await page.locator('a.adm-online').click()
+  await page.waitForURL('**/admin/agora')
+  await expect(page.getByRole('heading', { level: 1, name: /online/ })).toBeVisible()
+  await expect(page.locator('.online-lista__onde').first()).toContainText('HUB')
+  await page.goto('/admin')
 
   await page.getByRole('navigation', { name: 'Console' }).getByRole('link', { name: 'Pessoas' }).click()
   await page.waitForURL('**/admin/pessoas')

@@ -1245,6 +1245,11 @@ do card... não consigo localizar o job que quero achar".
   embutido ganha o Picker. App do celular 2.8.61 (`sobedesce-app-v76`). Falta: merge na main (gera o instalador) e
   conferir o Picker num Drive de verdade.
 
+## Console: online agora (31/10/2026)
+
+- ✅ Ramo `console-online-quem`: tocar no "Online agora" abre `/admin/agora`, com quem está online e onde (HUB com o
+  aparelho, apps pelo nome), atualizando sozinha a cada 15 s.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

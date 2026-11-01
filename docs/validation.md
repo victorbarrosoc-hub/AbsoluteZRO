@@ -15,6 +15,16 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Console: quem está online e onde (31/10/2026)
+
+Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
+regra de 15 minutos), no HUB com o aparelho da sessão (navegador · sistema, nunca o IP) e/ou nos apps pelo nome e
+ícone; atualiza sozinho a cada 15 s com a aba visível.
+
+- `tests/integration/people.test.ts` (`onlineAgora`): HUB com o aparelho, app pelo nome e produto, parado há 20 min e
+  suspenso ficam de fora.
+- `tests/e2e/admin.spec.ts`: o número leva à lista, a própria sessão aparece no HUB, e `/admin/agora` passa no axe.
+
 ## Acesso total do Drive do SOBEDESCE no console (31/10/2026)
 
 Branch `console-acesso-drive`. Sem rede: o SOBEDESCE do lado do HUB é um servidor falso local; do lado do SOBEDESCE, a
