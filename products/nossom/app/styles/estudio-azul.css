@@ -521,3 +521,44 @@
   height: auto;
   filter: drop-shadow(0 0 30px rgb(80 140 255 / 30%));
 }
+/* AUDIO LAB: selo de vidro de borda grossa (Liquid Glass) */
+.brand > .brand-selo {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 7px;
+  margin-left: 1px;
+  border-radius: 999px;
+  font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  font-stretch: 125%;
+  font-weight: 700;
+  font-size: 6.5px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: #fff;
+  background: linear-gradient(180deg, rgb(255 255 255 / 16%), rgb(255 255 255 / 4%));
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 45%),
+    inset 0 0 0 1.5px rgb(255 255 255 / 22%),
+    inset 0 1.5px 1px rgb(255 255 255 / 85%),
+    inset 0 -1.5px 1px rgb(255 255 255 / 30%),
+    0 6px 16px rgb(0 0 0 / 40%);
+  -webkit-backdrop-filter: blur(8px) saturate(200%) brightness(1.2);
+  backdrop-filter: blur(8px) saturate(200%) brightness(1.2);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
+}
+.studio-shell[data-theme='light'] .brand > .brand-selo,
+.ns-site:not(.home-p2) .brand > .brand-selo {
+  color: #1d1d1f;
+  text-shadow: none;
+  background: linear-gradient(180deg, #fff, #eef1f6);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 10%),
+    inset 0 1.5px 1px #fff,
+    0 6px 14px rgb(0 0 0 / 10%);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}

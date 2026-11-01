@@ -76,12 +76,24 @@ export function CoroaLuz({ size = 200 }: { size?: number }) {
     </svg>
   );
 }
-/** A marca: a Coroa e QUASAR na letra expandida (Archivo Expanded). Compacta, só a Coroa. */
+/**
+ * A marca (titular, 01/11/2026): a Coroa, QUASAR na letra expandida (Archivo Expanded) e AUDIO LAB num selo de vidro
+ * de borda grossa, como os botões de vidro do ecossistema. Compacta, só a Coroa.
+ */
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <span className="brand">
+    <span className="brand" aria-label={compact ? undefined : 'Quasar Audio Lab'}>
       <Coroa size={30} />
-      {!compact && <span className="brand-nome">QUASAR</span>}
+      {!compact && (
+        <>
+          <span className="brand-nome" aria-hidden="true">
+            QUASAR
+          </span>
+          <span className="brand-selo" aria-hidden="true">
+            AUDIO LAB
+          </span>
+        </>
+      )}
     </span>
   );
 }
