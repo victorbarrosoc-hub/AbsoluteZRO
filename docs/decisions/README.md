@@ -35,3 +35,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0032](0032-set-presenca-e-conversas.md)         | Set: presença e conversas do ecossistema                       | aceita                |
 | [0033](0033-laboratorio-da-z.md)                 | Laboratório da Z: voz, ditado, anexos e configuração, só admin | aceita                |
 | [0034](0034-console-financeiro-e-correio.md)     | Papel Financeiro e Correio (caixas do iCloud) no console       | aceita                |
+| [0035](0035-motion-2d-3d.md)                     | Motion 2D e 3D: setor de animação (nome a definir)             | proposta              |
