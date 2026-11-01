@@ -40,6 +40,9 @@ mac:
   icon: build/icon.icns
   darkModeSupport: true
   minimumSystemVersion: '11.0'
+  # "Rolar com a voz" usa o microfone: sem esta frase no Info.plist o macOS nega o microfone sem perguntar.
+  extendInfo:
+    NSMicrophoneUsageDescription: O TPeasy usa o microfone só para saber se você está falando e rolar o texto com a sua voz. Nada é gravado.
   # Sem certificado da Apple por enquanto: assinatura ad-hoc (na primeira vez o macOS pede "Abrir Mesmo Assim").
   identity: '-'
   hardenedRuntime: false

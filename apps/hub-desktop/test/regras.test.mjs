@@ -133,3 +133,30 @@ test('erros de rede e agente de usuário', () => {
   assert.doesNotMatch(limpo, /Electron|absolute-zro/i)
   assert.match(limpo, /Chrome\/140\.0\.0\.0 Safari\/537\.36$/)
 })
+
+test('download da central: só o HUB (/baixar/), o Release no GitHub do dono e o servidor de arquivos do GitHub', () => {
+  const ok = (u) => r.downloadPermitido(u, HUB)
+  assert.equal(ok(HUB + '/baixar/app/maestro/Maestro-0.2.1-b9-mac-universal.dmg'), true)
+  assert.equal(ok('https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/maestro-versao-de-teste/Maestro-0.2.1-b9-mac-universal.dmg'), true)
+  assert.equal(ok('https://release-assets.githubusercontent.com/github-production-release-asset/1/abc?sp=r&sig=x'), true)
+  assert.equal(ok('https://objects.githubusercontent.com/github-production-release-asset-2e65be/1/abc'), true)
+  // fora da regra
+  assert.equal(ok(HUB + '/api/v1/desktop/apps'), false)
+  assert.equal(ok('http://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/x/y.dmg'), false)
+  assert.equal(ok('https://github.com/outra-pessoa/AbsoluteZRO/releases/download/x/y.dmg'), false)
+  assert.equal(ok('https://github.com/victorbarrosoc-hub/AbsoluteZRO/archive/main.zip'), false)
+  assert.equal(ok('https://release-assets.githubusercontent.com:8443/x'), false)
+  assert.equal(ok('https://evil.example.com/AbsoluteZRO-1.4.0-mac-universal.dmg'), false)
+  assert.equal(ok('https://user:senha@github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/x/y.dmg'), false)
+  assert.equal(ok('file:///tmp/x.dmg'), false)
+  assert.equal(ok('não é url'), false)
+})
+
+test('marca flat na tela "Sem conexão": o wordmark oficial do HUB, nada do feixe de luz antigo', async () => {
+  const fs = await import('node:fs')
+  const raiz = new URL('../', import.meta.url)
+  const ler = (p) => fs.readFileSync(new URL(p, raiz))
+  assert.ok(ler('desktop/paginas/marca.svg').equals(ler('../hub-web/public/brand/absolute-zro-grafite.svg')))
+  assert.equal(fs.existsSync(new URL('desktop/paginas/marca.webp', raiz)), false)
+  assert.match(ler('desktop/paginas/offline.html').toString(), /src="marca\.svg"/)
+})

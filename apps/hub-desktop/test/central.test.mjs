@@ -197,6 +197,31 @@ test('download: confere o SHA-256; arquivo diferente é apagado e nada é instal
   )
 })
 
+test('download: maior que o catálogo para no meio; redirecionamento recusado e queda de rede não deixam pedaço no disco', async () => {
+  const { raiz } = ambiente({ plataforma: 'mac' })
+  const grande = Buffer.concat([conteudo, conteudo])
+  await assert.rejects(
+    baixar({ url: 'https://x', destino: path.join(raiz, 'g.dmg'), sha256: sha, tamanho: conteudo.length, deps: { fs, fetch: async () => resposta(grande) } }),
+    (e) => e.codigo === 'conferencia',
+  )
+  assert.equal(fs.existsSync(path.join(raiz, 'g.dmg.parte')), false)
+  // fetchDeDownload (download.cjs) recusa um salto fora da regra: a mensagem chega como está
+  const recusa = Object.assign(new Error('Endereço de download recusado.'), { recusado: true })
+  await assert.rejects(
+    baixar({
+      url: 'https://x',
+      destino: path.join(raiz, 'r.dmg'),
+      sha256: sha,
+      deps: { fs, fetch: async () => resposta(conteudo), fetchDeDownload: async () => Promise.reject(recusa) },
+    }),
+    (e) => e.codigo === 'download' && /recusado/.test(e.message),
+  )
+  // a rede cai no meio do arquivo
+  const quebrado = { ok: true, url: 'https://x', headers: { get: () => null }, body: new ReadableStream({ pull: (c) => c.error(new Error('rede caiu')) }) }
+  await assert.rejects(baixar({ url: 'https://x', destino: path.join(raiz, 'q.dmg'), sha256: sha, deps: { fs, fetch: async () => quebrado } }), /rede caiu/)
+  assert.equal(fs.existsSync(path.join(raiz, 'q.dmg.parte')), false)
+})
+
 test('Mac: monta o .dmg, copia o app sem pedir senha, tira a quarentena e desmonta', async () => {
   const { central, chamadas, avisos, pastasMac } = ambiente({ plataforma: 'mac' })
   await central.instalar('synquei')

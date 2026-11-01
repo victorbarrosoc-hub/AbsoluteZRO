@@ -133,12 +133,22 @@ function deepLinkDosArgs(argv, o) {
   return null
 }
 
-// Permissões que a página do TPeasy pode ter: copiar e tela cheia, e a pasta que a pessoa escolhe para salvar as conversões (fileSystem).
-// Câmera, microfone, localização, notificações, MIDI, USB etc. ficam negados. O HUB e o Google não pedem nada.
-const PERMITIDAS = new Set(['clipboard-sanitized-write', 'fullscreen', 'fileSystem'])
+// Permissões que a página do TPeasy pode ter: copiar, tela cheia e o microfone ("Rolar com a voz", app/js/voice.js:
+// só mede SE a pessoa está falando). Câmera, tela, localização, notificações, MIDI, USB etc. ficam negados. O HUB e o
+// Google não pedem nada.
+const PERMITIDAS = new Set(['clipboard-sanitized-write', 'fullscreen'])
 
-function permitir(permissao, urlQuePede, o) {
-  return PERMITIDAS.has(permissao) && ehDoApp(urlQuePede, o)
+/**
+ * `detalhes`: o que o Electron passa ao pedido (`mediaTypes`: ['audio'] …) ou à consulta (`mediaType`: 'audio' …).
+ * 'media' só passa quando é só áudio: pedido com câmera (ou sem dizer o quê) é negado.
+ */
+function permitir(permissao, urlQuePede, o, detalhes) {
+  if (!ehDoApp(urlQuePede, o)) return false
+  if (permissao === 'media') {
+    const tipos = detalhes && Array.isArray(detalhes.mediaTypes) ? detalhes.mediaTypes : detalhes && detalhes.mediaType ? [detalhes.mediaType] : []
+    return tipos.length > 0 && tipos.every((t) => t === 'audio')
+  }
+  return PERMITIDAS.has(permissao)
 }
 
 // Erros de rede do Chromium que mostram a tela "Sem conexão" (os outros mostram "O TPeasy não respondeu").
