@@ -275,11 +275,12 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
   await page.getByRole('button', { name: 'Relay' }).click()
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
-  // o AEON (0043) no ar só na web: o editor no navegador, sem instalador nem Terminal até o app de computador abrir
-  await page.getByRole('button', { name: 'AEON' }).click()
-  await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://aeon.absolutezro.com/app/')
-  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
-  await expect(painel.getByText('instalar.sh')).toHaveCount(0)
+  // central única (ADR 0035): AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma; o resto instala pela
+  // Absolute ZRO (um download só, no topo, com o passo a passo e a linha do Terminal)
+  await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
+  await expect(page.locator('#absolute-zro')).toBeVisible()
+  await expect(page.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
+  await expect(page.getByText('instalar.sh')).toHaveCount(0)
   const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
   // Maestro e AEON sem o app de computador (download fechado): nada deles na central nem nas rotas
@@ -452,7 +453,9 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await page.getByRole('button', { name: 'Synquei' }).click()
   await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
   await expect(page.locator('.app-actions')).toHaveCount(0)
-  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
+  // no computador, o app instala pela Absolute ZRO (o instalador avulso saiu, ADR 0035)
+  await expect(page.locator('#app-synquei .dl-opt--central')).toHaveAttribute('href', '#absolute-zro')
+  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toHaveCount(0)
 })
 
 /**
