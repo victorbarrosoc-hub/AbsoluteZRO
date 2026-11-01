@@ -7,7 +7,8 @@
  * - faixa com rolagem de lado que não foi marcada como faixa de propósito (`data-rolagem`);
  * - rótulo curto de botão, aba ou segmento ("15 dias") quebrado em duas linhas;
  * - placeholder de campo que não cabe (o select corta com reticências do sistema; só conta se passar da caixa);
- * - textos sobrepostos dentro do player (`[data-player]`) e a barra nativa do <video> sobre a imagem no toque.
+ * - textos sobrepostos dentro do player (`[data-player]`) e a barra nativa do <video> sobre a imagem no toque;
+ * - no celular, campo (input, select, textarea) com fonte abaixo de 16 px, que faz o Safari ampliar a página sozinho.
  *
  * Reticências (`text-overflow: ellipsis`) são corte de propósito; o resto é bug.
  */
@@ -16,7 +17,8 @@ import type { Page } from "@playwright/test";
 export async function achadosDeCorte(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const achados: string[] = [];
-    const vw = document.documentElement.clientWidth;
+    // No celular, uma página larga demais alarga a área de layout (é o zoom sozinho do Safari): a tela é o limite.
+    const vw = Math.min(document.documentElement.clientWidth, window.screen.width || Infinity);
     const TOL = 1;
     const descrever = (el: Element) => {
       const cls = typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : "";
@@ -45,6 +47,15 @@ export async function achadosDeCorte(page: Page): Promise<string[]> {
     })();
 
     if (document.documentElement.scrollWidth > vw + TOL) achados.push(`página rola de lado (${document.documentElement.scrollWidth} > ${vw})`);
+    // Campo com fonte abaixo de 16 px: no iPhone o Safari amplia a página ao tocar nele e não volta sozinho.
+    if (window.matchMedia("(max-width: 1024px), (pointer: coarse)").matches)
+      for (const c of Array.from(document.querySelectorAll("input, select, textarea"))) {
+        const tipo = (c as HTMLInputElement).type;
+        if (["hidden", "checkbox", "radio", "range", "file", "color", "submit", "button", "image", "reset"].includes(tipo)) continue;
+        if (!visivel(c)) continue;
+        const px = parseFloat(getComputedStyle(c).fontSize);
+        if (px < 16) achados.push(`campo com fonte de ${px}px (o Safari amplia ao tocar): ${descrever(c)}`);
+      }
 
     const todos = Array.from(document.body.querySelectorAll("*"));
     const vistos = new Set<Element>();

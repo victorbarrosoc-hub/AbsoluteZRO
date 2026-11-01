@@ -1726,6 +1726,12 @@ html.js .reveal.in {
   font: inherit;
   font-size: 15px;
 }
+/* 16 px no celular: abaixo disso o Safari do iPhone amplia a página ao tocar na busca */
+@media (max-width: 1024px), (pointer: coarse) {
+  .fmt-tools input {
+    font-size: 16px;
+  }
+}
 .fmt-tools input:focus {
   outline: none;
   border-color: var(--blue);

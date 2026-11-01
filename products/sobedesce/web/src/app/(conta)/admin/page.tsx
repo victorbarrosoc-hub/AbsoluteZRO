@@ -81,7 +81,7 @@ function Plano({ p }: { p: PessoaUso }) {
         id={`plano-${p.id}`}
         name="plano"
         defaultValue={p.plano}
-        className="h-11 rounded-full bg-surface-2 pr-2 pl-3 sm:h-8 text-[13px] font-medium ring-1 ring-line outline-none focus:ring-2 focus:ring-up"
+        className="h-11 rounded-full bg-surface-2 pr-2 pl-3 sm:h-8 text-[16px] sm:text-[13px] font-medium ring-1 ring-line outline-none focus:ring-2 focus:ring-up"
       >
         {PLANOS.map((pl) => (
           <option key={pl} value={pl}>

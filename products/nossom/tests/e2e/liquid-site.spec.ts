@@ -31,7 +31,7 @@ test('glass navigation follows the pointer and the section, shrinks on scroll an
   // Sounds are synthesized after a click and stop once the person turns them off.
   const sounds = () =>
     page.evaluate(() => (window as unknown as { uiSounds: string[] }).uiSounds.length);
-  await nav.getByRole('link', { name: 'Como funciona', exact: true }).click();
+  await nav.getByRole('link', { name: 'Ferramentas', exact: true }).click();
   await nav.getByRole('link', { name: 'Planos', exact: true }).click();
   await expect.poll(sounds).toBeGreaterThan(0);
   const toggle = page.getByRole('button', { name: 'Sons da interface' });
@@ -39,7 +39,7 @@ test('glass navigation follows the pointer and the section, shrinks on scroll an
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   const before = await sounds();
-  await nav.getByRole('link', { name: 'Como funciona', exact: true }).click();
+  await nav.getByRole('link', { name: 'Ferramentas', exact: true }).click();
   await page.waitForTimeout(200);
   expect(await sounds()).toBe(before);
   await page.reload();

@@ -103,6 +103,44 @@ Branch `claude/motion-2d-3d`. Neste ambiente (Linux, Node 22, ffmpeg com libvpx-
   imutável e o shader WebGL2 no Chromium igual à conta (alfa ±0,02).
 - Não medido: Mac e Windows de verdade, SSIM das bordas do chroma e o recorte num take real de fundo verde.
 
+## Esqueci a senha em conta só com Google (01/11/2026)
+
+- Bug real em produção: quem só entrava pelo Google não tinha linha em `zro.auth_credentials`; o "Esqueci a senha"
+  gastava o link (`used_at`) e o `update` não achava linha, então a senha nova não valia. `resetPassword`
+  (`packages/auth/src/accounts.ts`) agora cria a primeira senha (`insert … on conflict do update`).
+- `tests/integration/account-center.test.ts`: conta só com Google pede o link, define a senha e entra com ela; falha sem
+  a correção e passa com ela. `accounts.test.ts` e `account-center.test.ts` 22/22.
+
+## iPhone sem zoom sozinho (01/11/2026)
+
+Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava
+e reduzia sozinho).
+
+- Causas: a coluna implícita de `.page`, `.zro-card`, `.list-rows` e `.people` crescia até o conteúdo mais largo (as
+  abas de segmento com `width: fit-content`, os chips de app, título de projeto sem quebra), e a página passava de 541 px
+  num iPhone de 393; campos com 13,6–15,2 px (`.zro-input` herdava 15 px do corpo, `.zro-textarea` 0.85rem, seletor de
+  organização 0.85rem, Laboratório da Z), que fazem o Safari ampliar ao tocar.
+- `tests/e2e/iphone-telas.spec.ts` (novo): admin da plataforma e conta comum, WebKit e Chromium (celular), 375/393/430
+  px, 8 páginas públicas, 22 do HUB (com projeto e perfil público) e 19 do console (com a ficha da pessoa e um e-mail
+  comprido na lista): nada mais largo que a tela (a régua é a largura pedida, não `innerWidth`, que cresce junto com a
+  página no celular) e nenhum campo visível abaixo de 16 px. Antes: Pessoas e o segmento Ecossistema a 541 px em todas
+  as larguras, Início a 383 px em 375 e 399 campos abaixo de 16 px por navegador; depois: **1/1** (5,6 min).
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **552/552** em 62 arquivos; `npm run build` ok;
+  `npm run test:e2e` 62/64 na rodada inteira, as duas que caíram (`sso` axe `document-title` e `z-lab-voz-celular`
+  WebKit, "element is not stable" no cadastro) passaram sozinhas logo depois (8/8), máquina carregada.
+- Maestro: `e2e/corte.ts` acusa campo visível abaixo de 16 px no celular e mede contra a tela (`screen.width`);
+  `sem-corte.spec.ts` **8/8** (Chromium e WebKit, 375 e 393, claro e escuro) com a regra nova de `celular.css`.
+- Relay: `test/tela.test.js` "celular" agora com `isMobile`, `/painel`, campos (até os fechados) com 16 px ou mais e a
+  meta viewport sem trava; pegou o `#mb` com 14 px. `npm test` 124/125 (a que falha é `vendor.test.js`, sem
+  `node_modules` neste ambiente).
+- Synquei `npm test` 148/148; TPeasy `node --test tests/*.test.mjs` 78/78; SOBEDESCE web typecheck ok e `npm test`
+  370/371 (a que cai é `zro-relay-ciclo`, sem o `undici` do app de computador neste ambiente).
+- Carro do Freela: sem mudança (já tinha campos com 16 px no celular e o `viewport-fit=cover` só no app instalado, por
+  decisão documentada em `src/build.js`); auditoria do `real.html` a 375/393/430 px sem achado. Maestro também mantém o
+  viewport sem `cover` por decisão do `CLAUDE.md` dele.
+- `node scripts/scan-secrets.mjs`: nenhum segredo. Capturas (WebKit 393 px, claro) antes e depois no scratchpad da
+  sessão (`iphone-zoom/antes`, `iphone-zoom/depois`: `console/`, `hub/`, `publico/`, e dos produtos estáticos).
+
 ## Z do HUB no Rift Motion (01/11/2026)
 
 Branch `claude/z-rift-hub` (só a parte do HUB do PR #80, para a main). `POST /api/v1/ia/rift`: o servidor do Rift pede
@@ -4167,7 +4205,9 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   crédito. Tela no Chromium: a aba abre na ZRO com as categorias, o catálogo desce uma vez, a categoria filtra, a melhor
   versão vem marcada, escolher a 1 troca o som, Colocar grava a origem `zro`, Inspector "Som original da Absolute ZRO",
   o arquivo vai na entrega sem crédito.
-- Não validado: os 360 arquivos em produção (envio pendente da confirmação no Supabase) e o uso com a conta real.
+- Produção: os 360 arquivos subiram por uma função temporária do Supabase (desligada depois: recusa tudo); no banco,
+  360 versões, 90 sons, 9 categorias, 90 melhores, 18,1 MB e nenhum sha256 divergente do áudio guardado.
+- Não validado: o uso com a conta real.
 
 ## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
 
@@ -4215,6 +4255,36 @@ SOBEDESCE de computador, que disparam os instaladores).
   baixar da Absolute ZRO) some no celular e dentro do próprio app.
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
+
+## NOSSOM · importar no Safari do iPhone (01/11/2026)
+
+- `tests/storage.test.ts` (novo): o projeto em bytes não guarda Blob e volta igual (original, versões e faixas
+  separadas, com o tipo); projeto com Blobs passa sem mudança.
+- `tests/e2e/safari-storage.spec.ts` (novo): o `put` do IndexedDB recusa Blob como o WebKit ("Error preparing
+  Blob/File data"); o áudio entra, recarrega e toca. Com o `lib/storage.ts` da `main` o mesmo teste falha.
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 126/126, `npm run build` OK, e2e completo 67 passaram,
+  0 falharam (26 pulados por `RELEASE=closed`).
+- Não validado: o Safari real do iPhone (sem WebKit aqui); o titular testa no aparelho.
+
+## NOSSOM · estúdio escuro (Proposta 2) e player da plataforma (01/11/2026)
+
+- `products/nossom`: `tsc --noEmit` OK; `npm test` 124/124; `npm run build` OK.
+- `tests/e2e/player.spec.ts` (novo): home com "Do ruído ao pronto." e a grade de ferramentas; importar, tocar na onda,
+  a barra aparece com o título; trocar de ferramenta pelo seletor e pelos passos da lateral (Ajustar → Melhorar voz,
+  Nivelar volumes) sem parar o som; pausar na barra pausa a onda; recarregar volta pausado no mesmo ponto e toca de novo
+  lendo o som do aparelho; no celular (390) a barra fica acima das abas sem rolagem lateral; fechar esquece o áudio.
+- Suítes que tocam som ou mexem na navegação, com o build novo: studio, destinations-effects, homepage-demo,
+  design-review, studio-speed, account-menu, remix, cloud-restoration, install-navigation (navegação e família),
+  studio (temas e contraste com axe) passando. Atualizados de propósito: a contagem da navegação (seis destinos e os
+  quatro passos), a cor do texto de apoio no tema escuro (grafite) e o título da home.
+- Falham também na `main` sem esta mudança (conferido com o build da main): `install-navigation` › manifest (a rota
+  devolve HTML) e `liquid-site` › cápsula abaixo da área segura do iPhone (tempo esgotado).
+- Segunda rodada (layout da Proposta 2, painel limpo, player ilha): `tests/e2e/player.spec.ts` cobre a ilha (abrir,
+  Esc recolhe, fechar), os passos no trilho e a coluna de ferramentas; com o build novo passam também studio
+  (fluxo real, temas e contraste com axe, fundo preto da home), studio-speed, install-navigation (cinco destinos e os
+  quatro passos), design-review, cloud-restoration, destinations-effects (o aviso dos presets de entrega segue
+  visível), remix, homepage-demo e ai-motion-performance (sem o campo de sinais na home nova).
+- Não validado: a conta real do titular em produção (o NOSSOM segue fechado pela 0049).
 
 ## TPeasy para computador (31/10/2026)
 

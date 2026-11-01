@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BrandIntro from '@/components/brand-intro';
+import PlayerBar from '@/components/player-bar';
 export const metadata: Metadata = {
   metadataBase: new URL('https://nossom.absolutezro.com'),
   title: { default: 'NOSSOM — O som em outra escala.', template: '%s · NOSSOM' },
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <style>{'.ns-reveal { opacity: 1 !important; transform: none !important; }'}</style>
         </noscript>
         {children}
+        <PlayerBar />
       </body>
     </html>
   );

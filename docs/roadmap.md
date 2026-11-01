@@ -43,6 +43,15 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
   Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0034). Falta: conferir num iPhone de verdade e regerar
   a foto do app para computador quando o Relay entrar.
+- ✅ iPhone sem zoom sozinho (01/11/2026, relato do titular no Console > Pessoas): a página ficava mais larga que a tela
+  (a coluna de `.page`, dos cartões e das listas crescia com o conteúdo mais largo: abas, chips, nome sem quebra) e todo
+  campo tinha 13–15 px (o Safari amplia ao tocar e não volta). Agora a coluna nunca passa da tela, abas e chips rolam
+  por dentro (os chips de app de borda a borda), campos com 16 px no celular e em tela de toque, `viewport-fit=cover`
+  com as margens seguras no topo do console e do HUB, sem travar o zoom. Produtos: Maestro (todo campo com 16 px no
+  celular; o detector de corte acusa campo menor), Relay (folha do conversor), Synquei (app e Formatos), SOBEDESCE web
+  (calculadora e console) e TPeasy (saiu o `maximum-scale=1`). Carro do Freela já estava certo. Teste
+  `tests/e2e/iphone-telas.spec.ts` (WebKit e Chromium, 375/393/430 px, admin e conta comum). Falta: conferir num iPhone
+  de verdade depois de publicar (autorização do titular).
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
@@ -367,8 +376,23 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   categorias, 4 versões de cada, gerado com os créditos ElevenLabs do titular) é o banco **padrão** da aba Sons
   (**ZRO** · Livres · Meu banco), sem link para colar. Os arquivos ficam no banco privado (`zro.sons_zro`, migração
   0050; o repositório é público), lidos pelo HUB em `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` só com conta; categorias
-  em chips, busca em português, a melhor versão marcada e as outras a um toque; sem crédito no vídeo. Falta: subir os
-  360 arquivos em produção e validar com a conta do titular.
+  em chips, busca em português, a melhor versão marcada e as outras a um toque; sem crédito no vídeo. Os 360
+  arquivos estão no banco de produção (checksum conferido em todos). Falta: validar com a conta do titular.
+- 🟡 NOSSOM · estúdio escuro e player da plataforma (01/11/2026, pedido do titular; Proposta 2 das três apresentadas):
+  um player fixo embaixo, como o do Spotify (`lib/player.ts` + `components/player-bar.tsx`), em que o último áudio
+  tocado segue tocando ao trocar de ferramenta ou de página, volta pausado no mesmo ponto depois de recarregar (lido do
+  IndexedDB da conta) e some ao fechar; a onda do estúdio usa o mesmo motor (A·B, trecho e volume igualado seguem). Na
+  lateral, Estúdio abre os quatro passos (Tratar, Ajustar, Criar, Entregar) com as ferramentas do passo aberto; as versões
+  ficam em cadeia; paleta grafite no tema escuro; home com "Do ruído ao pronto." e a grade de ferramentas. Fora do ar
+  como todo o NOSSOM (0049). Depois do retorno do titular: o estúdio no layout da Proposta 2 de verdade (trilho de
+  ícones com os quatro passos, coluna com as ferramentas do passo aberto, a ferramenta num painel fixo à direita),
+  menos texto em toda a tela, home preta só com as linhas de luz e o player em forma de **ilha** (pílula de vidro com
+  capa, nome, onda viva e tocar; um toque abre tempo, ±10 s e volume). Falta: validar com a conta do titular; a
+  separação de voz em grito longo (modo Fala por padrão e o modelo de música) espera o teste dele.
+- ✅ NOSSOM no iPhone (01/11/2026, retorno do titular): "O navegador não conseguiu guardar este áudio" ao importar no
+  Safari. O IndexedDB do WebKit às vezes recusa o Blob mesmo copiado para a memória e perde a conexão com a aba em
+  segundo plano. `lib/storage.ts` agora abre outra conexão e tenta de novo; por último guarda os mesmos bytes
+  (`ArrayBuffer`), que voltam como Blob ao abrir. Leituras também repetem uma vez com conexão nova.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron

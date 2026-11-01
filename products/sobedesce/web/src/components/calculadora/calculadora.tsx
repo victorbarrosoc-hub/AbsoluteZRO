@@ -20,8 +20,9 @@ const lerNum = (s: string) => {
 };
 let seq = 0;
 const novaCamera = (): Cam => ({ id: `c${++seq}`, modo: modos[0]?.id || "manual", mbps: "", horas: "8" });
+// 16 px no celular: abaixo disso o Safari do iPhone amplia a página ao tocar no campo e não volta sozinho.
 const campo =
-  "h-11 w-full rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-line-strong outline-none transition-shadow placeholder:text-ink-3 focus:ring-2 focus:ring-down";
+  "h-11 w-full rounded-xl bg-surface px-3.5 text-[16px] sm:text-[15px] text-ink ring-1 ring-line-strong outline-none transition-shadow placeholder:text-ink-3 focus:ring-2 focus:ring-down";
 
 function Escolha<T extends string>({ valor, opcoes, onChange, rotulo }: { valor: T; opcoes: { v: T; t: string }[]; onChange: (v: T) => void; rotulo: string }) {
   return (

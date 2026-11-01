@@ -198,12 +198,24 @@ test('navegador que não lê H.264 de jeito nenhum: diz qual vídeo e qual naveg
   await p.close()
 })
 
-test('celular (375 px): nenhuma página rola para o lado', { skip: pular }, async () => {
-  for (const c of ['/', '/converter', '/marca/']) {
-    const p = await s.nova(c, { viewport: { width: 375, height: 800 } })
+test('celular (375 px): nenhuma página rola para o lado nem tem campo que faz o iPhone dar zoom', { skip: pular }, async () => {
+  for (const c of ['/', '/converter', '/painel', '/marca/']) {
+    // isMobile: uma página larga demais alarga a área de layout (é o zoom sozinho do Safari), então a régua é a tela
+    const p = await s.nova(c, { viewport: { width: 375, height: 800 }, isMobile: true, hasTouch: true })
     await p.waitForTimeout(400)
-    const [largura, tela] = await p.evaluate(() => [document.documentElement.scrollWidth, innerWidth])
-    assert.equal(largura, tela, `${c} rola para o lado`)
+    const largura = await p.evaluate(() => Math.max(document.documentElement.scrollWidth, innerWidth))
+    assert.ok(largura <= 375, `${c} rola para o lado (${largura} > 375)`)
+    // abaixo de 16 px o Safari amplia a página ao tocar no campo e não volta; vale também para os campos ainda fechados
+    const pequenos = await p.evaluate(() =>
+      [...document.querySelectorAll('input, select, textarea')]
+        .filter((c) => !['hidden', 'checkbox', 'radio', 'range', 'file', 'color', 'submit', 'button'].includes(c.type))
+        .map((c) => `${c.tagName.toLowerCase()}${c.className ? '.' + c.className : ''}${c.id ? '#' + c.id : ''} ${getComputedStyle(c).fontSize}`)
+        .filter((t) => parseFloat(t.split(' ').pop()) < 16),
+    )
+    assert.deepEqual(pequenos, [], `${c}: campo com fonte abaixo de 16 px`)
+    const meta = await p.getAttribute('meta[name="viewport"]', 'content')
+    assert.match(meta, /width=device-width, initial-scale=1, viewport-fit=cover/, `${c}: viewport`)
+    assert.doesNotMatch(meta, /maximum-scale|user-scalable/, `${c}: zoom travado`)
     await p.close()
   }
 })

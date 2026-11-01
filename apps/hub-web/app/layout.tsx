@@ -20,7 +20,9 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 }
 
-export const viewport: Viewport = { themeColor: '#f4f4f6', width: 'device-width', initialScale: 1 }
+// viewport-fit=cover: no app da Tela de Início e no iPhone deitado as barras usam env(safe-area-inset-*). Nada de travar o
+// zoom (maximum-scale/user-scalable): o zoom sozinho se resolve com campos de 16 px e página que não passa da tela.
+export const viewport: Viewport = { themeColor: '#f4f4f6', width: 'device-width', initialScale: 1, viewportFit: 'cover' }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const saved = (await cookies()).get('zro_theme')?.value
