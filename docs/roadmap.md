@@ -80,7 +80,8 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   protótipo de desenho (escuro por padrão, a dobra laranja em 3D ao vivo, entrar com o R animado, estúdio), **no ar em
   rift.absolutezro.com** (projeto Vercel `rift-motion`, autorizado pelo titular). Login único (cliente `rift-web` cadastrado no
   banco AbsoluteZRO-SP, `api/zro/*`) e painel interno (Início, Projetos, Modelos, Biblioteca, Exportações, estúdio por
-  projeto). ⬜ `ZRO_CLIENT_SECRET` na Vercel (liga o login), INPI, Rift no catálogo do HUB, banco do Rift, app de verdade
+  projeto). Login ligado (01/11/2026, `ZRO_CLIENT_SECRET` só na Vercel), app da família fora do
+  catálogo do HUB (não aparece no painel do ecossistema, a pedido do titular). ⬜ INPI, Rift no catálogo do HUB, banco do Rift, app de verdade
   (fase 1 do ADR).
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
