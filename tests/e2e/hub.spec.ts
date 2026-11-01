@@ -264,7 +264,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 8/)
 
   await page.goto('/baixar')
-  // na página pública, o que está fechado nem aparece; o Maestro (no ar, sem o app de computador) abre no navegador
+  // na página pública, o que está fechado nem aparece; o Maestro (no ar, com o app de computador desde a 0048) abre no navegador e baixa
   await expect(page.getByRole('button', { name: 'NOSSOM' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Synquei' }).locator('.selo-dev')).toHaveCount(0)
   await expect(page.locator('.selo-dev')).toHaveCount(0)
@@ -272,7 +272,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const painel = page.locator('#dl-painel')
   await expect(painel.getByText('Em desenvolvimento')).toHaveCount(0)
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://maestro.absolutezro.com/app')
-  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
+  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(2)
   await page.getByRole('button', { name: 'Relay' }).click()
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
   // o AEON (0043) no ar só na web: o editor no navegador, sem instalador nem Terminal até o app de computador abrir
