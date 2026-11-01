@@ -41,17 +41,24 @@ XR = 124.0  # centro do bojo
 RB = 31.5  # raio de fora do bojo (bojo com 63 de altura: barra, miolo, barra)
 RI = RB - SH  # raio do miolo
 YM = 2 * RB - SH  # topo da barra do meio (41)
-CANTO = 20.0  # canto arredondado entre a barra do meio e a haste
+CANTO = 27.0  # canto arredondado entre a barra do meio e a haste (quase a largura da haste, como na arte)
+FILETE = 6.0  # arredondado pequeno entre a barra do meio (embaixo) e a haste
+MIOLO_RECUO = 7.5  # o miolo do bojo termina antes: o lado direito do bojo é mais grosso que as barras
 W_PERNA = 24 * hypot(1, K)  # largura horizontal da perna (24 na perpendicular)
 
 
 def r_partes(x0=0.0):
     """Os pedaços do R (preenchidos, mesma direção: a união sai certa com nonzero). Devolve (caminhos, largura)."""
+    # contorno: a ponta de cima corta na diagonal (de x0 no alto até x0 + SH·K embaixo da barra), o bojo dá a volta
+    # com o lado direito mais grosso que as barras (o miolo fica à esquerda do centro), volta pela barra do meio, faz o
+    # arredondado pequeno na haste e sobe com o canto grande até a barra
+    xi = x0 + XR - MIOLO_RECUO
     bojo = (
-        f'M{f(x0 + SH * K)} 0 L{f(x0 + XR)} 0 A{f(RB)} {f(RB)} 0 0 1 {f(x0 + XR)} {f(2 * RB)} '
-        f'L{f(x0 + SV)} {f(2 * RB)} L{f(x0 + SV)} {f(H)} L{f(x0)} {f(H)} L{f(x0)} {f(YM + CANTO)} '
-        f'A{f(CANTO)} {f(CANTO)} 0 0 1 {f(x0 + CANTO)} {f(YM)} L{f(x0 + XR)} {f(YM)} '
-        f'A{f(RI)} {f(RI)} 0 0 0 {f(x0 + XR)} {f(SH)} L{f(x0 + SH * K)} {f(SH)} Z'
+        f'M{f(x0)} 0 L{f(x0 + XR)} 0 A{f(RB)} {f(RB)} 0 0 1 {f(x0 + XR)} {f(2 * RB)} '
+        f'L{f(x0 + SV + FILETE)} {f(2 * RB)} A{f(FILETE)} {f(FILETE)} 0 0 0 {f(x0 + SV)} {f(2 * RB + FILETE)} '
+        f'L{f(x0 + SV)} {f(H)} L{f(x0)} {f(H)} L{f(x0)} {f(YM + CANTO)} '
+        f'A{f(CANTO)} {f(CANTO)} 0 0 1 {f(x0 + CANTO)} {f(YM)} L{f(xi)} {f(YM)} '
+        f'A{f(RI)} {f(RI)} 0 0 0 {f(xi)} {f(SH)} L{f(x0 + SH * K)} {f(SH)} Z'
     )
     # a borda direita da perna sai do fim do bojo (XR + 4 no y = 63) e desce na inclinação K
     dir_meio = x0 + XR + 4
