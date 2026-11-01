@@ -5,17 +5,17 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const ler = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
-// Só as plataformas abertas (28/10/2026): NOSSOM, AEON, Revela e Carro do Freela estão fechados e não aparecem. O
-// Maestro entra no lançamento em Beta grátis, atrás de MAESTRO_NA_FAMILIA (docs/operations/lancamento-maestro.md).
-// O Relay está no ar desde a migration 0032 (30/10/2026).
-const APPS = ['Absolute ZRO', 'Relay', 'Synquei', 'TPeasy']
-const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|carro|maestro/i
+// Só as plataformas abertas (28/10/2026): NOSSOM, AEON e Revela estão fechados e não aparecem. O Maestro entra no
+// lançamento em Beta grátis, atrás de MAESTRO_NA_FAMILIA (docs/operations/lancamento-maestro.md). O Relay está no ar
+// desde a migration 0032 (30/10/2026) e o Carro do Freela desde a 0041 (entrou aqui na revisão de 01/11/2026).
+const APPS = ['Absolute ZRO', 'Carro do Freela', 'Relay', 'Synquei', 'TPeasy']
+const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|maestro/i
 
-/** O Maestro fora da lista fixa: chave única e a linha que o põe depois da Absolute ZRO (ordem alfabética), com o ícone dele. */
+/** O Maestro fora da lista fixa: chave única e a linha que o põe depois da Absolute ZRO e do Carro (ordem alfabética), com o ícone dele. */
 function maestro(src) {
   const chave = /^const MAESTRO_NA_FAMILIA = (true|false)$/m.exec(src)
   assert.ok(chave, 'MAESTRO_NA_FAMILIA')
-  const m = /if \(MAESTRO_NA_FAMILIA\) FAMILIA\.splice\(1, 0, \{ href: '([^']+)', nome: '([^']+)', img: '([^']+)' \}\)/.exec(src)
+  const m = /if \(MAESTRO_NA_FAMILIA\) FAMILIA\.splice\(2, 0, \{ href: '([^']+)', nome: '([^']+)', img: '([^']+)' \}\)/.exec(src)
   assert.ok(m, 'FAMILIA.splice do Maestro')
   return { aberto: chave[1] === 'true', href: m[1], nome: m[2], img: m[3] }
 }
@@ -51,7 +51,7 @@ test('celular: Ajustes lista a família com ícones de icons/familia/, guardados
     assert.ok(sw.includes(`'./${f.img}'`), `${f.img} no cache`)
     assert.doesNotMatch(`${f.href} ${f.nome}`, FECHADOS)
   }
-  assert.doesNotMatch(sw, /icons\/familia\/(nossom|revela|carro)/)
+  assert.doesNotMatch(sw, /icons\/familia\/(nossom|revela|aeon)/)
   const m = maestro(ler('../web/public/app/components/settings.js'))
   assert.deepEqual([m.href, m.nome, m.img], ['https://maestro.absolutezro.com', 'Maestro', 'icons/familia/maestro.svg'])
   assert.ok(fs.existsSync(new URL(`../web/public/app/${m.img}`, import.meta.url)), m.img)
