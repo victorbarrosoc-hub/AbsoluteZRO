@@ -477,6 +477,10 @@ describe('sessão', () => {
       assert.equal(eu.status, 401)
       assert.equal(eu.headers.get('cache-control'), 'no-store')
     }
+    // o app pergunta como visitante (?visitante=1): sem sessão é 200 { entrou: false }, sem 401 no console
+    const visitante = await ir('/api/zro/eu?visitante=1')
+    assert.equal(visitante.status, 200)
+    assert.deepEqual(await visitante.json(), { entrou: false })
     const vencido = lib.selar({ sub: 'zro-111', email: 'lia@produtora.com' }, 'sessao', 30, Date.now() - 60_000)
     assert.equal((await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(vencido)}` })).status, 401)
     // O cookie da ida não serve como sessão (chaves diferentes por finalidade).
@@ -883,13 +887,14 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v22/)
+    assert.match(sw, /tpeasy-v23/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
-    // a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)
+    // a família só lista plataformas abertas (NOSSOM, AEON e Revela estão fechados; o Carro do Freela entrou em 01/11/2026)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
-    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela/i)
     const nomes = [...fam.replace(/<!--maestro-familia ([\s\S]*?) maestro-familia-->/, '').matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1])
-    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Relay', 'SOBEDESCE', 'Synquei'])
+    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Carro do Freela', 'Relay', 'SOBEDESCE', 'Synquei'])
+    assert.ok(sw.includes('"/icons/familia/carro-do-freela.png"'), 'ícone do Carro no cache')
     // o Relay, com o ícone oficial no cache
     assert.match(fam, /href="https:\/\/relay\.absolutezro\.com"[^>]*><img src="\/icons\/familia\/relay\.svg"/)
     assert.ok(sw.includes('"/icons/familia/relay.svg"'))
