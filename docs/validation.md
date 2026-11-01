@@ -15,6 +15,14 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Esqueci a senha em conta só com Google (01/11/2026)
+
+- Bug real em produção: quem só entrava pelo Google não tinha linha em `zro.auth_credentials`; o "Esqueci a senha"
+  gastava o link (`used_at`) e o `update` não achava linha, então a senha nova não valia. `resetPassword`
+  (`packages/auth/src/accounts.ts`) agora cria a primeira senha (`insert … on conflict do update`).
+- `tests/integration/account-center.test.ts`: conta só com Google pede o link, define a senha e entra com ela; falha sem
+  a correção e passa com ela. `accounts.test.ts` e `account-center.test.ts` 22/22.
+
 ## iPhone sem zoom sozinho (01/11/2026)
 
 Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava
