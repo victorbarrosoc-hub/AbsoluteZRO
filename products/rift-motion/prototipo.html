@@ -142,15 +142,8 @@ button { font: inherit; color: inherit; }
 .ui-cursor { position: absolute; width: 18px; height: 18px; left: 0; top: 0; animation: cur 4s var(--ease) infinite; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.25)); }
 @keyframes cur { 0% { transform: translate(180px, 110px); } 35%, 46% { transform: translate(178px, 46px); } 58%, 70% { transform: translate(90px, 104px); } 100% { transform: translate(200px, 140px); } }
 /* 4. produto 3D (CSS 3D) */
-.phone3d { width: 26%; aspect-ratio: 9 / 19; position: relative; transform-style: preserve-3d; animation: spin 7s var(--ease) infinite; }
-.phone3d__f, .phone3d__b { position: absolute; inset: 0; border-radius: 18% / 8.5%; backface-visibility: hidden; }
-.phone3d__f { background: #1d1d1f; padding: 6%; box-shadow: inset 0 0 0 2px #3a3a3e; }
-.phone3d__f div { height: 100%; border-radius: 14% / 6.5%; background: linear-gradient(160deg, var(--p-2), var(--p) 45%, var(--lav)); }
-.phone3d__b { background: linear-gradient(150deg, #d9d9de, #a9a9b1); transform: rotateY(180deg); }
-.phone3d__b::after { content: ""; position: absolute; left: 12%; top: 5%; width: 30%; aspect-ratio: 1; border-radius: 28%; background: #c6c6cc; box-shadow: inset 0 0 0 2px #b2b2b8; }
-@keyframes spin { 0% { transform: rotateY(-25deg) rotateX(8deg); } 50% { transform: rotateY(155deg) rotateX(-6deg); } 100% { transform: rotateY(335deg) rotateX(8deg); } }
-.demo__art--3d { perspective: 700px; }
-.floor { position: absolute; bottom: 14%; width: 30%; height: 10px; border-radius: 50%; background: radial-gradient(closest-side, rgb(0 0 0 / 0.22), transparent); animation: floor 7s var(--ease) infinite; }
+.demo3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.demo__art--3d { background: radial-gradient(70% 60% at 50% 100%, rgb(234 100 38 / 0.12), transparent 70%), var(--surface-2); }
 @keyframes floor { 50% { transform: scaleX(0.7); opacity: 0.6; } }
 /* 5. sistema visual */
 .sys { display: grid; grid-template-columns: repeat(4, 34px); gap: 10px; }
@@ -422,7 +415,7 @@ button { font: inherit; color: inherit; }
         <div class="demo__foot"><div><h3>Interface animada</h3><p>Telas de produto e app</p></div><a class="glass-btn glass-btn--sm" href="#estudio">Abrir</a></div>
       </article>
       <article class="demo">
-        <div class="demo__art demo__art--3d"><div class="phone3d" aria-label="Produto em 3D girando"><div class="phone3d__f"><div></div></div><div class="phone3d__b"></div></div><div class="floor"></div></div>
+        <div class="demo__art demo__art--3d"><canvas class="demo3d" id="celular3d" aria-label="Celular em 3D girando, com luz e sombra"></canvas></div>
         <div class="demo__foot"><div><h3>Produto em 3D</h3><p>Luz, material e câmera</p></div><a class="glass-btn glass-btn--sm" href="#estudio">Abrir</a></div>
       </article>
       <article class="demo">
@@ -1097,7 +1090,78 @@ function estudio() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#sheetHost').innerHTML = ''; });
 }
 
-hero(); demos(); cadencia(); som(); login(); estudio();
+
+/* ================= PRODUTO EM 3D: um celular de verdade (corpo com espessura, tela, câmera) ================= */
+function produto3d() {
+  const canvas = $('#celular3d'); if (!canvas || !hasGL) return;
+  const caixa = canvas.parentElement;
+  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  r.setPixelRatio(Math.min(2, devicePixelRatio));
+  r.outputEncoding = THREE.sRGBEncoding;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(28, 4 / 3, 0.1, 50);
+  cam.position.set(0, 0.3, 11.5);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x221a16, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(4, 6, 7); scene.add(key);
+  const rim = new THREE.PointLight(0xEA6426, 3.2, 16); rim.position.set(-3.5, -2.5, -1.5); scene.add(rim);
+  const rim2 = new THREE.DirectionalLight(0xffffff, 0.6); rim2.position.set(-5, 3, -6); scene.add(rim2);
+  const ret = (w, h, rr) => { const sh = new THREE.Shape(); const x = -w / 2, y = -h / 2;
+    sh.moveTo(x + rr, y); sh.lineTo(x + w - rr, y); sh.quadraticCurveTo(x + w, y, x + w, y + rr); sh.lineTo(x + w, y + h - rr); sh.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    sh.lineTo(x + rr, y + h); sh.quadraticCurveTo(x, y + h, x, y + h - rr); sh.lineTo(x, y + rr); sh.quadraticCurveTo(x, y, x + rr, y); return sh; };
+  const W = 2.1, H = 4.4, P = 0.26, B = 0.07;
+  const corpoGeo = new THREE.ExtrudeGeometry(ret(W, H, 0.42), { depth: P, bevelEnabled: true, bevelThickness: B, bevelSize: B, bevelSegments: 6, curveSegments: 28 });
+  corpoGeo.translate(0, 0, -P / 2);
+  const aro = new THREE.MeshStandardMaterial({ color: 0x8a8580, metalness: 0.9, roughness: 0.28 }); // titânio
+  const celular = new THREE.Group();
+  celular.add(new THREE.Mesh(corpoGeo, aro));
+  // tela: uma tela do próprio app (gradiente da marca, timeline e keyframes)
+  const tc = document.createElement('canvas'); tc.width = 420; tc.height = 880; const g = tc.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 880); grad.addColorStop(0, '#F08A55'); grad.addColorStop(0.45, '#EA6426'); grad.addColorStop(1, '#9A9CD0');
+  g.fillStyle = '#0b0b0c'; g.fillRect(0, 0, 420, 880);
+  g.fillStyle = grad; g.beginPath(); g.roundRect(24, 120, 372, 420, 28); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.font = '800 54px Figtree, system-ui, sans-serif'; g.fillText('Rompa o', 52, 440); g.font = '300 54px Figtree, system-ui, sans-serif'; g.fillText('quadro.', 52, 500);
+  [[0.1, 0.7, '#EA6426'], [0.25, 0.9, '#9A9CD0'], [0.05, 0.45, '#E1CDBC'], [0.35, 0.8, '#EA6426']].forEach(([a, b, c], i) => { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(24, 590 + i * 54, 372, 36); g.fillStyle = c; g.beginPath(); g.roundRect(24 + a * 372, 594 + i * 54, (b - a) * 372, 28, 8); g.fill(); });
+  g.fillStyle = '#EA6426'; g.fillRect(250, 580, 3, 230);
+  g.fillStyle = '#fff'; g.beginPath(); g.roundRect(150, 34, 120, 34, 17); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.roundRect(152, 36, 116, 30, 15); g.fill();
+  const tex = new THREE.CanvasTexture(tc); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+  const telaGeo = new THREE.ShapeGeometry(ret(W - 0.16, H - 0.16, 0.34), 24);
+  // UV da tela: a forma vai de -w/2 a w/2; normaliza para 0–1
+  const uv = telaGeo.attributes.uv, pz = telaGeo.attributes.position;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pz.getX(i) / (W - 0.16) + 0.5, pz.getY(i) / (H - 0.16) + 0.5);
+  const tela = new THREE.Mesh(telaGeo, new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.32, roughness: 0.15, metalness: 0 }));
+  tela.position.z = P / 2 + B + 0.002;
+  celular.add(tela);
+  // verso de vidro e o módulo de câmera
+  const verso = new THREE.Mesh(new THREE.ShapeGeometry(ret(W - 0.1, H - 0.1, 0.36), 24), new THREE.MeshStandardMaterial({ color: 0x17161a, metalness: 0.35, roughness: 0.22 }));
+  verso.position.z = -(P / 2 + B + 0.002); verso.rotation.y = Math.PI; celular.add(verso);
+  const modulo = new THREE.Mesh(new THREE.ExtrudeGeometry(ret(0.9, 0.9, 0.24), { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 }), new THREE.MeshStandardMaterial({ color: 0x3a383c, metalness: 0.4, roughness: 0.3 }));
+  modulo.position.set(0.5, 1.55, -(P / 2 + B + 0.06)); celular.add(modulo);
+  const lente = new THREE.MeshStandardMaterial({ color: 0x0c0c0e, metalness: 0.8, roughness: 0.1 });
+  [[0.32, 1.73], [0.32, 1.37], [0.68, 1.55]].forEach(([x, y]) => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.08, 32), lente); l.rotation.x = Math.PI / 2; l.position.set(x, y, -(P / 2 + B + 0.11)); celular.add(l); });
+  scene.add(celular);
+  // sombra de contato
+  const sc = document.createElement('canvas'); sc.width = sc.height = 128; const sx = sc.getContext('2d');
+  const sg = sx.createRadialGradient(64, 64, 0, 64, 64, 64); sg.addColorStop(0, 'rgba(0,0,0,.55)'); sg.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = sg; sx.fillRect(0, 0, 128, 128);
+  const sombra = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
+  sombra.rotation.x = -Math.PI / 2; sombra.position.y = -2.75; scene.add(sombra);
+  function size() { const w = caixa.clientWidth, h = caixa.clientHeight; if (!w || !h) return; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  new ResizeObserver(size).observe(caixa); size();
+  let t = 0.9;
+  function render() {
+    celular.rotation.y = t * 0.7 - 0.6;
+    celular.rotation.x = Math.sin(t * 0.6) * 0.12 - 0.06;
+    celular.rotation.z = Math.sin(t * 0.4) * 0.05;
+    celular.position.y = Math.sin(t * 1.1) * 0.12;
+    sombra.material.opacity = 0.75 - celular.position.y * 0.8;
+    sombra.scale.x = 1 - celular.position.y * 0.3;
+    r.render(scene, cam);
+  }
+  render();
+  const l = addLoop((dt) => { t += dt; render(); }, caixa); viewLoops.inicio.push(l);
+}
+
+hero(); demos(); produto3d(); cadencia(); som(); login(); estudio();
 route();
 })();
 </script>
