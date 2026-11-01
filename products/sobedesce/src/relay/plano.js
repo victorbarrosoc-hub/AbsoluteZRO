@@ -25,7 +25,7 @@ export const RESOLUCOES = [
 ]
 
 /** Abaixo disso (bits por pixel por quadro, H.264), a imagem desmancha: o tamanho máximo baixa a resolução antes. */
-export const BPP_MINIMO = { avc: 0.075, hevc: 0.05 }
+export const BPP_MINIMO = { avc: 0.075, hevc: 0.05, vp9: 0.05 }
 
 /** Margem do tamanho máximo: contêiner (~1%) e o desvio dos codificadores de bitrate (os de hardware passam do alvo). */
 export const MARGEM_TAMANHO = 0.92
@@ -88,6 +88,8 @@ export function planejar(origem, p, opcoes = {}) {
   const trecho = t ? { inicio: inicio || null, fim: t.fim != null ? fimTrecho : null } : null
 
   // ─── só no computador ───
+  if (preset.soComputador && motor === 'navegador')
+    throw Object.assign(new Error(`${preset.nome} sai na Máxima qualidade (app de computador): o navegador não grava esse formato.`), { codigo: 'computador' })
   const comp = preset.computador ?? null
   const soComputador = comp ? ROTULOS_COMPUTADOR.filter(([k, , padrao]) => comp[k] != null && comp[k] !== padrao).map(([, nome]) => nome) : []
   if (motor === 'navegador' && soComputador.length) avisos.push(`${primeiraMaiuscula(lista(soComputador))}: só na Máxima qualidade (app do computador).`)
@@ -230,6 +232,15 @@ export function planejar(origem, p, opcoes = {}) {
     avisos.push('Arquivo HDR: sai em SDR sem conversão de tom, com as cores lavadas. Faça a versão SDR no editor.')
   else if (cor?.primaries && !['bt709', 'bt470bg', 'smpte170m'].includes(cor.primaries)) avisos.push(`Cor em ${cor.primaries}, não Rec.709: confira depois.`)
 
+  // ─── transparência ───
+  const alfa = Boolean(v.alfa)
+  const fundo = v.fundo ?? null
+  if ((alfa || fundo) && origem.transparente === false)
+    avisos.push(alfa ? 'Este arquivo não tem transparência: sai com o fundo dele.' : 'Este arquivo não tem transparência: o fundo chroma não aparece.')
+  if (alfa && encaixe === 'contain') avisos.push('As faixas saem transparentes.')
+  // ProRes 4444 não tem bitrate alvo: o tamanho vem da tabela da Apple (≈ 330 Mbit/s em 1080p a 30 fps)
+  if (v.codec === 'prores4444') bitrate = Math.round(330e6 * ((largura * altura) / (1920 * 1080)) * (fps / 29.97))
+
   const bytes = ((bitrate + (audio?.bitrate ?? 0)) * duracao) / 8
   return {
     entrada: corDeEntrada(origem),
@@ -257,6 +268,8 @@ export function planejar(origem, p, opcoes = {}) {
       gop: v.gop,
       crf: v.crf,
       teto: v.teto ?? null,
+      alfa,
+      fundo,
     },
     audio,
     cor: { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false },
@@ -306,8 +319,8 @@ export function corDeEntrada(origem) {
   return { matriz: marcada ?? (hd ? 'bt709' : 'bt601'), faixa: origem.cor?.fullRange ? 'pc' : 'tv' }
 }
 
-const NOME_CODEC = { avc: 'H.264 High', hevc: 'HEVC Main', aac: 'AAC-LC', mp3: 'MP3 (LAME)', 'pcm-s24': 'PCM 24 bits', 'pcm-s16': 'PCM 16 bits' }
-const CONTEINER = { mp4: 'MP4 (início rápido)', m4a: 'M4A', mp3: 'MP3', wav: 'WAV' }
+const NOME_CODEC = { avc: 'H.264 High', hevc: 'HEVC Main', vp9: 'VP9 com alfa', prores4444: 'ProRes 4444 com alfa', aac: 'AAC-LC', opus: 'Opus', mp3: 'MP3 (LAME)', 'pcm-s24': 'PCM 24 bits', 'pcm-s16': 'PCM 16 bits' }
+const CONTEINER = { mp4: 'MP4 (início rápido)', m4a: 'M4A', mp3: 'MP3', wav: 'WAV', webm: 'WebM', mov: 'QuickTime (MOV)' }
 
 /**
  * A ficha técnica do que vai sair, em linhas [rótulo, valor] (a tela mostra recolhida). `motor`: o que roda a
@@ -326,12 +339,15 @@ export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
     if (v.recorte) linhas.push(['Recorte', Object.entries(v.recorte).filter(([, n]) => n).map(([lado, n]) => `${lado} ${n}`).join(' · ') + ' px'])
     if (v.giro || v.espelhar) linhas.push(['Giro', [v.giro ? `${v.giro}°` : null, v.espelhar ? 'espelhado' : null].filter(Boolean).join(' · ')])
     linhas.push(['Cadência', v.conforme ? `${fmtFps(v.conforme.para)} fps interpretados (todos os quadros, ${fmtPct(100 / v.conforme.fator)} da velocidade)` : v.fps ? `${String(v.fps).replace('.', ',')} fps${v.fpsModo === 'constante' ? ' exatos' : ''}` : 'a do arquivo'])
+    if (v.alfa || v.fundo) linhas.push(['Fundo', v.alfa ? 'transparente (canal alfa)' : `${NOME_FUNDO[v.fundo.toUpperCase()] ?? 'cor'} chroma ${v.fundo.toUpperCase()}`])
     const mbps = (v.bitrate / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-    if (noComputador && !plano.tamanhoMax && !v.fixo) linhas.push(['Qualidade', `constante (x264 RF ${v.crf})${v.teto ? `, até ${(v.bitrate * v.teto * 1e-6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s` : ''}`])
+    if (v.codec === 'prores4444') linhas.push(['Qualidade', `intraquadro, ~${mbps} Mbit/s (perfil 4444)`])
+    else if (noComputador && v.codec === 'vp9') linhas.push(['Qualidade', `constante (VP9 CRF ${v.crf}), até ${mbps} Mbit/s`])
+    else if (noComputador && !plano.tamanhoMax && !v.fixo) linhas.push(['Qualidade', `constante (x264 RF ${v.crf})${v.teto ? `, até ${(v.bitrate * v.teto * 1e-6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s` : ''}`])
     else if (noComputador && v.cbr) linhas.push(['Bitrate', `${mbps} Mbit/s constante (CBR)`])
     else if (noComputador) linhas.push(['Bitrate', `${mbps} Mbit/s médio, 2 passadas`])
     else linhas.push(['Bitrate', `${mbps} Mbit/s ${v.modo === 'constante' ? 'constante' : 'variável'}${v.rf ? ` (RF ${v.crf} no computador)` : ''}`])
-    linhas.push(['Quadro-chave', `a cada ${String(v.gop).replace('.', ',')} s`])
+    if (v.codec !== 'prores4444') linhas.push(['Quadro-chave', `a cada ${String(v.gop).replace('.', ',')} s`])
     if (noComputador && c) {
       const x264 = [NOME_VELOCIDADE[c.velocidade] ?? null, c.ajuste ? NOME_AJUSTE[c.ajuste] : null].filter(Boolean)
       if (x264.length) linhas.push([v.codec === 'hevc' ? 'x265' : 'x264', x264.join(' · ')])
@@ -340,7 +356,7 @@ export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
     }
     const r = plano.receitaCor
     linhas.push(['Cor', r ? `${[r.entrada ? `${r.entradaNome ?? r.entrada} → Rec.709` : null, r.look ? `look ${r.look.nome}${r.look.sobre === 'log' ? ' sobre o log' : ''}` : null].filter(Boolean).join(' · ')} (Revela), sai 1-1-1` : 'Rec.709 SDR, faixa de TV (H.273 1-1-1)'])
-    linhas.push(['Redução', 'Lanczos-3'])
+    linhas.push(['Redução', noComputador || !(v.alfa || v.fundo) ? 'Lanczos-3' : 'alta qualidade do navegador (preserva o alfa)'])
   }
   const a = plano.audio
   linhas.push(['Áudio', a ? [NOME_CODEC[a.codec] ?? a.codec, a.bitrate ? `${Math.round(a.bitrate / 1000)} kbit/s` : null, a.taxa ? `${(a.taxa / 1000).toLocaleString('pt-BR')} kHz` : null, a.canais === 1 ? 'mono' : a.canais === 2 ? 'estéreo' : a.canais ? `${a.canais} canais` : null, a.ganho ? `${a.ganho > 0 ? '+' : ''}${String(a.ganho).replace('.', ',')} dB` : null].filter(Boolean).join(' · ') : 'sem áudio'])
@@ -353,11 +369,12 @@ export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
   return linhas
 }
 
+const NOME_FUNDO = { '#00B140': 'verde', '#0047BB': 'azul' }
 const NOME_VELOCIDADE = { veryslow: 'muito lenta', slower: 'mais lenta', slow: 'lenta', medium: 'média', fast: 'rápida', faster: 'mais rápida', veryfast: 'muito rápida' }
 const NOME_AJUSTE = { film: 'filme', grain: 'granulação', animation: 'animação' }
 
 /** Extensão do arquivo de saída. */
-export const extensao = (formato) => ({ mp4: 'mp4', mp3: 'mp3', wav: 'wav', m4a: 'm4a' })[formato] ?? 'mp4'
+export const extensao = (formato) => ({ mp4: 'mp4', mp3: 'mp3', wav: 'wav', m4a: 'm4a', webm: 'webm', mov: 'mov' })[formato] ?? 'mp4'
 
 /** "filme-master.mov" + YouTube 1080p → "filme-master (YouTube 1080p).mp4". */
 export function nomeSaida(nome, p) {

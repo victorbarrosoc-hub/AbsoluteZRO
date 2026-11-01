@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Transparência e chroma: Relay, SOBEDESCE e AEON (01/11/2026)
+
+Branch `claude/motion-2d-3d`. Neste ambiente (Linux, Node 22, ffmpeg com libvpx-vp9 e prores_ks, Chromium do Playwright
+1.63 com SwiftShader).
+
+- Relay `npm test`: **131/131**. Novo `test/transparencia.test.js`: plano e ficha dos quatro presets, ProRes 4444
+  recusado no navegador (`computador`), linhas do ffmpeg, e o resultado lido pixel a pixel. Navegador (WebM e ProRes
+  4444 de entrada): WebM com `alpha_mode=1`, alfa 255 na metade opaca e 0 na transparente; Fundo verde ≈ (0, 177, 62).
+  Computador: ProRes 4444 (`yuva444p12le`) e WebM com alfa 0 na metade transparente; Fundo verde dentro de ±12 de
+  #00B140 (a primeira versão saiu (0, 152, 62) pela matriz BT.601 na mistura; corrigido, ver
+  `products/relay/docs/QUALIDADE.md`).
+- SOBEDESCE `npm run test:fast`: 805 passam; `lan.test.js` "entre computadores" falhou uma vez na rodada inteira e passa
+  sozinho, com e sem estas mudanças (rede local do ambiente). Cópias do núcleo conferidas pelo `copias.test.js` do Relay.
+- AEON `npm test`: 197 de 198 na rodada inteira; a que faltou (estabilizar o take real) achou dois `.estab-resumo`
+  porque o bloco novo reaproveitava a classe da estabilização. Classes separadas, ela passa (rodada sozinha). Novo `test/chroma.test.js`: a conta (verde some,
+  sombra no fundo some, pele fica, borda meio a meio entre 0,3 e 0,7, reflexo verde baixa), cor medida na borda, linha
+  imutável e o shader WebGL2 no Chromium igual à conta (alfa ±0,02).
+- Não medido: Mac e Windows de verdade, SSIM das bordas do chroma e o recorte num take real de fundo verde.
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma

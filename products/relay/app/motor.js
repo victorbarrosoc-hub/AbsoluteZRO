@@ -29,6 +29,30 @@ const escalaAtual = () => (modoEscala === 'canvas' ? null : (escalas[modoEscala]
 let corAtual = null // a cor do arquivo em conversão (a escala sobe o quadro já com ela)
 MB.registerVideoSampleTransformer((amostra, d) => escalaAtual()?.transformar(amostra, d, (a) => comCor(a, corAtual, { fechar: false })) ?? null)
 
+/**
+ * Transparência e fundo chroma: o quadro (com alfa, I420A ou 4:4:4 de 10 bits com alfa do ProRes 4444) é desenhado
+ * num canvas do tamanho da saída, limpo (alfa) ou pintado com a cor chroma, com o encaixe do plano. A escala da placa
+ * do Relay trabalha em YUV sem alfa, então aqui o canvas do navegador (qualidade alta) faz a redução.
+ */
+export function compositor(v) {
+  const tela = new OffscreenCanvas(v.largura, v.altura)
+  const ctx = tela.getContext('2d', { alpha: Boolean(v.alfa) })
+  ctx.imageSmoothingQuality = 'high'
+  const encaixe = v.encaixe === 'cover' ? 'cover' : v.encaixe === 'fill' ? 'fill' : 'contain'
+  return async (amostra, cor) => {
+    const certa = await comCor(amostra, cor, { fechar: false })
+    if (v.fundo) {
+      ctx.fillStyle = v.fundo
+      ctx.fillRect(0, 0, v.largura, v.altura)
+    } else ctx.clearRect(0, 0, v.largura, v.altura)
+    certa.drawWithFit(ctx, { fit: encaixe })
+    const nova = new MB.VideoSample(tela, { timestamp: amostra.timestamp, duration: amostra.duration })
+    if (certa !== amostra) certa.close()
+    amostra.close()
+    return nova
+  }
+}
+
 // A cor da Revela tem a escala dela: na placa mesmo em WebGL de software (sem canvas de reserva: a LUT não existe lá)
 let escalaDaCor = null
 const escalaCor = () => (escalaDaCor ??= criarEscala(MB.VideoSample, { forcar: true }))
@@ -293,14 +317,15 @@ export async function lerArquivo(arquivo) {
     const duracao = await input.computeDuration()
     const info = { duracao, temVideo: Boolean(video), temAudio: Boolean(audio), formato: (await input.getFormat()).name }
     if (video) {
-      const [largura, altura, cor, estat, decodifica] = await Promise.all([
+      const [largura, altura, cor, estat, decodifica, transparente] = await Promise.all([
         video.getDisplayWidth(),
         video.getDisplayHeight(),
         video.getColorSpace(),
         video.computePacketStats(120),
         video.canDecode(),
+        video.canBeTransparent().catch(() => false),
       ])
-      Object.assign(info, { codec: video.codec, largura, altura, cor, fps: Math.round(estat.averagePacketRate * 1000) / 1000, decodifica })
+      Object.assign(info, { codec: video.codec, largura, altura, cor, fps: Math.round(estat.averagePacketRate * 1000) / 1000, decodifica, transparente })
       if (!decodifica) {
         info.decodifica = await lerDeOutroJeito(video)
         if (!info.decodifica) info.detalheCodec = await descreverVideo(video)
@@ -334,17 +359,18 @@ export async function miniatura(arquivo, tela, info) {
   }
 }
 
-/** Codecs que este aparelho grava: { avc, hevc, aac } (true/false). */
+/** Codecs que este aparelho grava: { avc, hevc, vp9, aac } (true/false). */
 export async function capacidades() {
-  const [avc, hevc, aac] = await Promise.all([MB.canEncodeVideo('avc'), MB.canEncodeVideo('hevc'), MB.canEncodeAudio('aac')])
-  return { avc, hevc, aac }
+  const [avc, hevc, vp9, aac] = await Promise.all([MB.canEncodeVideo('avc'), MB.canEncodeVideo('hevc'), MB.canEncodeVideo('vp9'), MB.canEncodeAudio('aac')])
+  return { avc, hevc, vp9, aac }
 }
 
-const MIME = { mp4: 'video/mp4', m4a: 'audio/mp4', mp3: 'audio/mpeg', wav: 'audio/wav' }
+const MIME = { mp4: 'video/mp4', m4a: 'audio/mp4', mp3: 'audio/mpeg', wav: 'audio/wav', webm: 'video/webm' }
 
 function formatoSaida(formato, emDisco) {
   if (formato === 'mp3') return new MB.Mp3OutputFormat()
   if (formato === 'wav') return new MB.WavOutputFormat()
+  if (formato === 'webm') return new MB.WebMOutputFormat()
   // M4A é MP4 só com áudio; início rápido (moov na frente) quando monta na memória
   return new MB.Mp4OutputFormat({ fastStart: emDisco ? false : 'in-memory' })
 }
@@ -365,7 +391,12 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
   escalaAtual()?.zerar()
 
   let codecVideo = null
-  if (plano.video) {
+  if (plano.video?.alfa) {
+    // transparência no navegador: só VP9 grava alfa (com um segundo fluxo para o canal); sem VP9, sem fingir
+    if (!(await MB.canEncodeVideo('vp9', { width: plano.video.largura, height: plano.video.altura })))
+      throw Object.assign(new Error('Este navegador não grava vídeo com transparência (VP9). Use Chrome, Edge ou o ProRes 4444 no app de computador.'), { codigo: 'codificar' })
+    codecVideo = 'vp9'
+  } else if (plano.video) {
     const tam = { width: plano.video.largura, height: plano.video.altura }
     codecVideo = (await MB.canEncodeVideo(plano.video.codec, tam)) ? plano.video.codec : await MB.getFirstEncodableVideoCodec(['avc', 'hevc'], tam)
     if (!codecVideo) throw Object.assign(new Error('Este aparelho não grava H.264 nem HEVC neste tamanho.'), { codigo: 'codificar' })
@@ -422,7 +453,17 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
         }
       : null
     let video = { discard: true }
-    if (v && etapasCor) {
+    if (v && (v.alfa || v.fundo)) {
+      // transparência e chroma: o decodificador entrega o alfa (alpha: 'keep') e o compositor monta o quadro de saída
+      const montar = compositor(v)
+      video = {
+        ...comum,
+        alpha: 'keep',
+        processedWidth: v.largura,
+        processedHeight: v.altura,
+        process: (amostra) => montar(retimar(amostra, v.conforme?.fator), corOrigem),
+      }
+    } else if (v && etapasCor) {
       // cor da Revela: o Relay faz giro, recorte, escala e LUT de uma vez na placa, do quadro decodificado (10 bits em
       // meia precisão) até o I420; o Mediabunny não mexe no quadro (o giro do arquivo é desfeito aqui e refeito lá)
       const escala = escalaCor()
@@ -513,7 +554,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     codecVideo,
     codecAudio,
     audioWasm: origemAudio === 'wasm',
-    escala: etapasCor ? 'lanczos' : (escalaAtual()?.usada() ?? 'canvas'),
+    escala: etapasCor ? 'lanczos' : plano.video?.alfa || plano.video?.fundo ? 'canvas' : (escalaAtual()?.usada() ?? 'canvas'),
     segundos: (performance.now() - inicio) / 1000,
   }
 }

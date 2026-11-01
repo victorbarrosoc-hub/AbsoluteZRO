@@ -51,6 +51,9 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
   no computador (ffmpeg, o jeito 3 do Relay ou o "Máxima qualidade" do SOBEDESCE). ProRes 4444 é o padrão de alfa para
   Resolve e Premiere; o WebM com alfa fica para a web.
 - Limite honesto: 4K a 120 fps passa do nível do H.264 e vai para HEVC; a ficha do Relay avisa.
+- **Fundo transparente ou chroma** (01/11/2026, já no Relay): "Transparente" (WebM VP9 com alfa), "ProRes 4444" (com
+  alfa, no computador), "Fundo verde" e "Fundo azul" (H.264 com a cor chroma atrás). O motion manda os quadros com alfa
+  e escolhe; o AEON recorta o verde num toque ("Remover fundo verde").
 
 ### Entrega no media pool (SOBEDESCE → Resolve)
 

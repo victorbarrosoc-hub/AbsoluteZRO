@@ -35,6 +35,9 @@ import { montarVelocidade } from './velocidade-ui.js'
 import { analisarMidia, montarEstabilizar } from './estabilizar-ui.js'
 import { PADRAO as ESTAB_PADRAO } from '../src/estabilizar/index.js'
 import { analiseDe } from '../src/estabilizar/aplicar.js'
+import { montarChroma } from './chroma-ui.js'
+import { medirCor } from './chroma.js'
+import { PADRAO as CHROMA_PADRAO, recortar } from '../src/chroma.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 import { montarSet } from './set.js'
@@ -1038,9 +1041,36 @@ function montarInspector() {
     },
   })
   $('inspRedefinir').before(estUI.el)
+  // remover fundo verde: a cor é medida na borda do quadro que está na tela (o clipe selecionado sob a agulha) e fica
+  // gravada no clipe, para a prévia e o render usarem a mesma
+  chromaUI = montarChroma(sec.querySelector('.insp-clipe'), {
+    obter: () => selecionado(),
+    disponivel: () => player.recorteDisponivel,
+    ligar: () => {
+      const { p, clipe } = selecionado()
+      if (!clipe) return
+      const q = player.quadroAtual()
+      const cor = q ? medirCor(q.fonte, q.largura, q.altura) : CHROMA_PADRAO.cor
+      if (!q) aviso('Toque no clipe para mostrar um quadro dele; por enquanto, vale o verde padrão.')
+      fazer({ ...p, linha: recortar(p.linha, clipe.id, { ...(clipe.chroma || CHROMA_PADRAO), cor }) }, 'remover fundo')
+    },
+    desligar: () => {
+      const p = P()
+      if (p && linha.sel) fazer({ ...p, linha: recortar(p.linha, linha.sel, null) }, 'devolver o fundo')
+    },
+    ajustar: (aj, gravar) => {
+      const p = P()
+      if (!p || !linha.sel) return
+      const novo = { ...p, linha: recortar(p.linha, linha.sel, aj) }
+      if (gravar) fazer(novo, 'ajustar o recorte')
+      else player.carregar(novo, opcoesPlayer(novo))
+    },
+  })
+  $('inspRedefinir').before(chromaUI.el)
 }
 let velUI = null
 let estUI = null
+let chromaUI = null
 montarInspector()
 
 function desenharInspector() {
@@ -1098,6 +1128,7 @@ function desenharInspector() {
   $('inspRedefinir').hidden = !c.ajustes
   velUI.desenhar(c)
   estUI.desenhar()
+  chromaUI.desenhar()
 }
 
 /** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */

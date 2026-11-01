@@ -4,10 +4,13 @@
 // canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js). Velocidade: o <video> toca na velocidade
 // da curva contínua do clipe (src/velocidade.js, a mesma do render) e fica mudo fora de 100%. Os efeitos sonoros tocam
 // pelo mesmo Web Audio, agendados a partir do ponto da linha a cada toque, busca ou edição, em qualquer velocidade.
+// Remover fundo verde: o <video> fica invisível e um canvas da placa (app/chroma.js, a conta do render) mostra o quadro
+// recortado no mesmo lugar, com o mesmo transform e a mesma opacidade.
 
 import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
-import { ganho, transformCssClipe, zoomEm } from '../src/quadro.js'
+import { ganho, posicionar, transformCssClipe, zoomEm } from '../src/quadro.js'
+import { Recorte } from './chroma.js'
 import { desenhar } from '../src/legenda.js'
 import { efeitosNaLinha } from '../src/efeitos.js'
 import { comSom, origemContinua, saidaContinua, velocidadeContinua } from '../src/velocidade.js'
@@ -26,6 +29,10 @@ export class Player {
       tela.append(v)
       return v
     })
+    this.telaChroma = document.createElement('canvas')
+    this.telaChroma.className = 'tela-chroma'
+    tela.append(this.telaChroma)
+    this.recorte = null
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'tela-legenda'
     tela.append(this.canvas)
@@ -271,6 +278,28 @@ export class Player {
     const dpr = Math.min(2, devicePixelRatio || 1)
     this.canvas.width = Math.max(1, Math.round(r.width * dpr))
     this.canvas.height = Math.max(1, Math.round(r.height * dpr))
+    this.telaChroma.width = this.canvas.width
+    this.telaChroma.height = this.canvas.height
+  }
+
+  /** O recorte de fundo roda neste computador? (WebGL2) */
+  get recorteDisponivel() {
+    this.recorte ??= new Recorte(this.telaChroma)
+    return this.recorte.pronto
+  }
+
+  /** O quadro que a tela mostra agora (para medir a cor do fundo): { fonte, largura, altura } ou null. */
+  quadroAtual() {
+    const v = this.videos[this.ativo]
+    return v && v.readyState >= 2 && v.videoWidth ? { fonte: v, largura: v.videoWidth, altura: v.videoHeight } : null
+  }
+
+  /** Desenha o quadro do vídeo recortado no canvas da placa, no retângulo em que o <video> o mostraria. */
+  #recortar(v, aj, p, cw, ch) {
+    if (v.readyState < 2 || !this.recorteDisponivel) return
+    const base = posicionar(p.largura, p.altura, cw, ch, {}, { escala: 1, foco: { x: 0.5, y: 0.5 } })
+    const k = this.telaChroma.width / p.largura
+    this.recorte.desenhar(v, aj, { x: base.x * k, y: base.y * k, w: base.w * k, h: base.h * k })
   }
 
   #quadro() {
@@ -318,12 +347,16 @@ export class Player {
     const css = [clipeCss === 'none' ? '' : clipeCss, est].filter(Boolean).join(' ') || 'none'
     // som só em 100% (a regra do AEON): fora disso o ganho vai a zero
     const mudo = !comSom(this.#velocidade(seg, this.t))
-    const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}|${mudo}`
+    const chroma = seg.clipe.chroma && this.recorteDisponivel ? seg.clipe.chroma : null
+    if (chroma) this.#recortar(v, chroma, p, cw, ch)
+    const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}|${mudo}|${Boolean(chroma)}`
     if (chave === this.ultimoZoom) return
     this.ultimoZoom = chave
     const outro = this.videos[1 - this.ativo]
     v.style.transform = css === 'none' ? '' : css
-    v.style.opacity = String(aj.opacidade)
+    v.style.opacity = chroma ? '0' : String(aj.opacidade)
+    this.telaChroma.style.transform = chroma && css !== 'none' ? css : ''
+    this.telaChroma.style.opacity = chroma ? String(aj.opacidade) : '0'
     outro.style.transform = ''
     outro.style.opacity = '0'
     const g = mudo ? 0 : ganho(aj.volume)

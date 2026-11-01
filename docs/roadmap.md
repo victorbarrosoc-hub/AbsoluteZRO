@@ -75,6 +75,11 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ TPeasy com conta única: "Criar conta" abre o cadastro da Absolute ZRO (`prompt=create`), o código por e-mail do Supabase vale só para contas antigas e o Google saiu do app; sem `tpeasy` em `zro_products`, a conta mostra "ainda não tem acesso" (o teleprompter continua aberto).
 - ✅ Perfil único no Synquei e no TPeasy (27/10/2026): foto e nome da conta Absolute ZRO, relidos a cada abertura em `/oauth/userinfo` (refresh token cifrado só em `/api/zro`), e **Editar na conta Absolute ZRO** no lugar de editar nome no app. ⬜ Validar contra o HUB de verdade depois do deploy.
 - ✅ Synquei de computador com a conta Absolute ZRO (27/10/2026): a mesma tela do site (entrar, foto e nome na barra e em Ajustes, editar na conta, sair) com o cliente público `synquei-desktop` (navegador do sistema + 127.0.0.1, PKCE). ⬜ Validar num Mac/Windows de verdade contra o absolutezro.com.
+- ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
+  WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
+  computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo
+  verde** no Inspector (cor medida na borda, recorte na placa, igual na prévia e no vídeo final). ⬜ Trilha de cima no
+  AEON (outro vídeo por baixo do recorte), o grupo no app do celular do SOBEDESCE e a medida em Mac e Windows.
 - ✅ TPeasy em tpeasy.absolutezro.com (31/10/2026): migração `0045` (catálogo e Abrir do HUB no subdomínio; retorno
   novo no cliente `tpeasy-web`, o antigo continua), login do TPeasy aceitando os dois endereços (o `tpeasy.vercel.app`
   segue valendo, sem redirecionar, porque os roteiros ficam presos ao endereço), OG, Downloads e menus da família na web.

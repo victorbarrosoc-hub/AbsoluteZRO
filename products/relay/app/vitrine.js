@@ -17,6 +17,9 @@ export function ficha(p) {
   if (p.ajustavel) return 'Você diz os MB'
   const tam = v.quadro ? `${v.quadro.largura}×${v.quadro.altura}` : v.ladoMenor ? `${v.ladoMenor}p` : 'Original'
   if (p.tamanhoMax) return `Até ${Math.round(p.tamanhoMax / 1e6)} MB`
+  if (v.codec === 'prores4444') return `${tam} · com alfa · no computador`
+  if (v.alfa) return `${tam} · com alfa · até ${v.fpsMax} fps`
+  if (v.fundo) return `${tam} · fundo ${v.fundo.toUpperCase() === '#00B140' ? 'verde' : 'azul'} chroma`
   const faixa = v.kbps[1080] ?? Object.values(v.kbps)[0]
   const mbps = `${Math.round(faixa[0] / 1000)} Mbit/s${!v.quadro && !v.ladoMenor ? ' em 1080p' : ''}`
   return `${tam} · ${v.fpsMax <= 30 ? '30 fps' : `até ${v.fpsMax} fps`} · ${mbps}`
