@@ -1,5 +1,6 @@
-// Public homepage only: no account is needed.
-import { onlyWhenOpen } from './fixtures';
+// The homepage. Open to the public, no account is needed; closed (titular, 01/11/2026) only the allowed account
+// sees it, so the checks that hold in both states use the fixture session (`comAcesso`).
+import { onlyWhenOpen, test as comAcesso } from './fixtures';
 import { test, expect } from '@playwright/test';
 
 test('glass navigation follows the pointer and the section, shrinks on scroll and keeps interface sounds optional', async ({
@@ -74,19 +75,20 @@ test('mobile plans swipe sideways without widening the page and step art rests u
   await link.click();
   await expect(page.getByRole('button', { name: 'Abrir menu', exact: true })).toBeVisible();
 });
-test('the floating capsule stays below the iPhone status bar safe area, at rest and while scrolling', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
-  // Chromium reports no safe area; emulate an iPhone status bar of 59 px.
-  await page.addStyleTag({ content: '.chrome-site .ns-header{--safe-top:59px}' });
-  const top = () => page.locator('.ns-nav').evaluate((el) => el.getBoundingClientRect().top);
-  expect(await top()).toBeGreaterThanOrEqual(59 + 8);
-  await page.evaluate(() => scrollTo({ top: 1600, behavior: 'instant' }));
-  await expect(page.locator('.ns-header')).toHaveClass(/is-scrolled/);
-  expect(await top()).toBeGreaterThanOrEqual(59 + 8);
-});
+comAcesso(
+  'the floating capsule stays below the iPhone status bar safe area, at rest and while scrolling',
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    // Chromium reports no safe area; emulate an iPhone status bar of 59 px.
+    await page.addStyleTag({ content: '.chrome-site .ns-header{--safe-top:59px}' });
+    const top = () => page.locator('.ns-nav').evaluate((el) => el.getBoundingClientRect().top);
+    expect(await top()).toBeGreaterThanOrEqual(59 + 8);
+    await page.evaluate(() => scrollTo({ top: 1600, behavior: 'instant' }));
+    await expect(page.locator('.ns-header')).toHaveClass(/is-scrolled/);
+    expect(await top()).toBeGreaterThanOrEqual(59 + 8);
+  },
+);
 test('the opening animation plays once per session, never blocks taps and respects reduced motion', async ({
   page,
 }) => {

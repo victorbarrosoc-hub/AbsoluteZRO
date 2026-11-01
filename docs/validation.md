@@ -112,6 +112,21 @@ para usuários; o papel `admin` vê e usa tudo).
 - Capturas no iPhone (claro): página inicial, Início, Ferramentas, projeto, Set com "na Absolute ZRO", login único e o
   site do AEON com a página neutra.
 
+### CI depois do fechamento (ramo `testes-nao-lancados`)
+
+Na main, "Revela · testes" e "NOSSOM · validar" ficaram vermelhos: os testes esperavam o que o fechamento tirou do
+público. A regra fica como está; os testes passam a descrevê-la.
+
+- Revela: `tela.test.js` confere a página neutra (`Absolute ZRO` no título, "Página indisponível.", só o símbolo, nenhuma
+  imagem, nada de "Revela", claro e escuro pelo sistema, sem rolagem lateral no celular). `npm test` **180/180**.
+- NOSSOM: `install-navigation` (manifest, ícones e imagem social), `liquid-site` (cápsula abaixo da barra do iPhone) e
+  `zro-ia` (selo da Z na página inicial) entram com a conta liberada (`allowed`). O teste do manifest também confere
+  que, sem sessão, `/manifest.webmanifest` e `/opengraph-image` vão para absolutezro.com (307): eles trazem o nome do
+  app, então seguem fechados. Fechado, a página inicial já não oferece instalar (`InstallApp` só aberto) e o Next só
+  manda o cookie no manifest em prévia da Vercel; abrir o produto devolve os dois ao público.
+- NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
+  puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma

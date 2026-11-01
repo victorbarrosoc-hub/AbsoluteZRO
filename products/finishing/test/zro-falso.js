@@ -174,6 +174,9 @@ export async function iniciarZroFalsa(cliente) {
       if (!sub || !(escoposDe.get(at) || []).includes('zro.sons') || barrada()) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
       if (url.pathname === '/api/v1/sons/buscar')
         return responder(res, 200, { sons: [{ id: 'eab8a6e2-0ac8-4615-9e0d-ebde30523783', origem: 'openverse', titulo: 'Deep Whoosh', autor: 'Kinoton', licenca: 'CC0 1.0', licencaUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', pagina: 'https://freesound.org/s/1', fonte: 'Freesound', duracao: 1.2, formato: 'mp3', bytes: 4 }], pagina: 1, paginas: 1 })
+      // os sons originais da Absolute ZRO: uma categoria com um som em duas versões
+      if (url.pathname === '/api/v1/sons/zro')
+        return responder(res, 200, { categorias: [{ nome: 'Impactos', total: 1 }], sons: [{ id: 'boom-grave', origem: 'zro', titulo: 'Boom grave', categoria: 'Impactos', versoes: [{ id: 'boom-grave-v2', versao: 2, duracao: 1.8, bytes: 4, formato: 'mp3', melhor: true }, { id: 'boom-grave-v1', versao: 1, duracao: 2.5, bytes: 4, formato: 'mp3', melhor: false }] }] })
       // o banco no Drive (pelo SOBEDESCE no HUB): uma subpasta e um som; pasta "1SemDriveConectado" = Drive não conectado
       if (url.pathname === '/api/v1/sons/banco') {
         const pasta = url.searchParams.get('pasta') || ''
