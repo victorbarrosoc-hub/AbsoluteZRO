@@ -1,14 +1,48 @@
 /**
- * Onde instalar cada ferramenta (página Downloads). Só links oficiais que existem: cada instalador foi conferido
- * com download real em 25/10/2026. Os arquivos ficam nos sites e releases de cada produto; o HUB não hospeda nem
- * repassa instaladores, e cada app continua com o próprio login.
+ * O que cada ferramenta oferece na página Downloads. Central única (ADR 0035, titular, 01/11/2026): no computador, todo
+ * app se instala e se atualiza SÓ pela Absolute ZRO (apps/hub-desktop); a página tem um download só, o dela. As opções
+ * `mac`/`windows` daqui dizem que o app tem versão para computador (o cartão mostra "Instale pela Absolute ZRO") e
+ * guardam as rotas antigas, que continuam no ar para os apps já instalados (não aparecem como botão). Navegador e
+ * celular continuam como links.
  *
  * Gate de lançamento (ADR 0023): `DOWNLOADS` é o que existe; o que cada pessoa vê sai de `downloadsLiberados`, com os
  * produtos liberados para ela no canal `download` (vindos do banco). Produto com o download fechado mas a web aberta
- * (o Maestro, no ar sem o app de computador) mostra só o jeito de abrir no navegador e no celular. Fechado nos dois
- * vira "Em desenvolvimento", sem instalador, sem Terminal e sem link (na página pública /baixar, nem aparece).
+ * mostra só o jeito de abrir no navegador e no celular. Fechado nos dois vira "Em desenvolvimento", sem link (na página
+ * pública /baixar, nem aparece). AEON, Revela, NOSSOM e Rift Motion só aparecem para admin de plataforma.
  */
 export type Os = 'mac' | 'windows' | 'mobile' | 'web'
+
+/**
+ * Não lançados (titular, 01/11/2026): na central e na página Downloads só aparecem para admin de plataforma, que vê e
+ * instala tudo. Para as outras contas, nem bloqueado, nem "Em desenvolvimento", nem cadeado.
+ */
+export const SO_PARA_ADMIN: ReadonlySet<string> = new Set(['ai-edit', 'finishing', 'nossom', 'rift-motion'])
+
+/** Admin de plataforma (papel `admin`; suporte e financeiro não). */
+export const ehAdmin = (auth: { user: { platformRole?: string | null } } | null | undefined) => auth?.user.platformRole === 'admin'
+
+/** Instalação da Absolute ZRO pelo Terminal (public/instalar.sh e instalar.ps1: baixam, conferem o SHA-256 e instalam). */
+export const HUB_TERMINAL = {
+  mac: 'curl -fsSL https://absolutezro.com/instalar.sh | bash',
+  windows: 'irm https://absolutezro.com/instalar.ps1 | iex',
+}
+
+/** O passo a passo de cada sistema (curto: o resto a própria Absolute ZRO conduz). `dica` aparece menor, embaixo. */
+export const PASSOS: Record<'mac' | 'windows', { texto: string; dica?: string }[]> = {
+  mac: [
+    { texto: 'Baixe a Absolute ZRO para Mac.' },
+    { texto: 'Abra o arquivo e arraste a Absolute ZRO para Aplicativos.' },
+    {
+      texto: 'Abra e entre com a sua conta. Seus apps aparecem lá.',
+      dica: 'Se o Mac pedir para confirmar: Ajustes do Sistema › Privacidade e Segurança › Abrir mesmo assim.',
+    },
+  ],
+  windows: [
+    { texto: 'Baixe a Absolute ZRO para Windows.' },
+    { texto: 'Abra o instalador. Ele termina sozinho.' },
+    { texto: 'Entre com a sua conta. Seus apps aparecem lá.', dica: 'Se o Windows pedir para confirmar: Mais informações › Executar assim mesmo.' },
+  ],
+}
 
 export type DownloadOption = {
   os: Os
@@ -22,31 +56,21 @@ export type DownloadOption = {
 export type DownloadEntry = {
   productId: string
   status: 'stable' | 'test' | 'web' | 'soon'
-  /** Aviso honesto sobre a versão (assinatura, atualização automática). */
+  /** Uma linha sobre como o app funciona (nunca sobre o que falta). */
   note?: string
   options: DownloadOption[]
-  /** Instalação pelo Terminal/PowerShell, que confere o arquivo e evita o aviso de app baixado. */
-  terminal?: { mac?: string; windows?: string }
-  firstOpen?: { mac?: string; windows?: string }
   moreUrl?: string
   /** Página da plataforma ("Conheça mais"). Produto fechado não tem. */
   site?: string
 }
 
-// Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
-// GITHUB_TOKEN e redireciona para o endereço assinado e temporário do arquivo.
-const NOSSOM_BAIXAR = 'https://nossom.absolutezro.com/baixar/'
-// Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
-const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
-// Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
-const RELAY_BAIXAR = 'https://absolutezro.com/baixar/app/relay/'
-const CARRO_BAIXAR = 'https://absolutezro.com/baixar/app/carro-do-freela/'
-// TPeasy para computador: a mesma rota e o mesmo gate (migração 0047).
-const TPEASY_BAIXAR = 'https://absolutezro.com/baixar/app/tpeasy/'
-const PRIMEIRA_VEZ = {
-  mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
-  windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
-}
+// Rotas da própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate e o plano. Os
+// repositórios são privados: nada aponta para o github.com.
+const BAIXAR = (id: string) => `https://absolutezro.com/baixar/app/${id}/`
+const NO_COMPUTADOR = (id: string): DownloadOption[] => [
+  { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: BAIXAR(id) + 'mac', format: 'Instalador .dmg' },
+  { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: BAIXAR(id) + 'windows', format: 'Instalador .exe' },
+]
 
 export const DOWNLOADS: DownloadEntry[] = [
   {
@@ -54,12 +78,9 @@ export const DOWNLOADS: DownloadEntry[] = [
     site: 'https://sobedesce.com',
     status: 'test',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://sobedesce.com/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://sobedesce.com/baixar/windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('sobedesce'),
       { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, pelo navegador', href: 'https://sobedesce.com/app/', format: 'Sem instalar' },
     ],
-    terminal: { mac: 'curl -fsSL https://sobedesce.com/instalar.sh | bash', windows: 'irm https://sobedesce.com/instalar.ps1 | iex' },
-    firstOpen: { mac: 'Na primeira vez: botão direito › Abrir › Abrir.', windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.' },
     moreUrl: 'https://sobedesce.com/#baixar',
   },
   {
@@ -67,37 +88,19 @@ export const DOWNLOADS: DownloadEntry[] = [
     site: 'https://synquei.vercel.app',
     status: 'stable',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'macOS 11 ou mais novo', href: 'https://synquei.vercel.app/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://synquei.vercel.app/baixar/windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('synquei'),
       { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.vercel.app/app/', format: 'Sem instalar' },
     ],
-    terminal: { mac: 'curl -fsSL https://synquei.vercel.app/instalar.sh | bash', windows: 'irm https://synquei.vercel.app/instalar.ps1 | iex' },
-    firstOpen: {
-      mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
-      windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
-    },
     moreUrl: 'https://synquei.vercel.app/#baixar',
   },
   {
     productId: 'nossom',
     site: 'https://nossom.absolutezro.com',
     status: 'test',
-    note: 'Prévia 0.2.2: sem notarização da Apple e sem atualização automática.',
     options: [
-      {
-        os: 'mac',
-        label: 'Mac · Apple Silicon',
-        detail: 'M1, M2, M3, M4 ou mais novo',
-        href: NOSSOM_BAIXAR + 'mac-arm64',
-        format: 'Instalador .dmg',
-      },
-      { os: 'mac', label: 'Mac · Intel', detail: 'Processador Intel', href: NOSSOM_BAIXAR + 'mac-x64', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11, 64 bits', href: NOSSOM_BAIXAR + 'windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('nossom'),
       { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom.absolutezro.com/studio', format: 'Sem instalar' },
     ],
-    // pelo Terminal o .dmg não fica em quarentena (o xattr depois falha no macOS novo sem Gerenciamento de Apps)
-    terminal: { mac: 'curl -fsSL https://nossom.absolutezro.com/instalar.sh | bash' },
-    firstOpen: { mac: 'Se o Mac bloquear, instale pelo Terminal (abaixo): o NOSSOM chega sem o bloqueio.' },
     moreUrl: 'https://nossom.absolutezro.com/apps',
   },
   {
@@ -106,8 +109,7 @@ export const DOWNLOADS: DownloadEntry[] = [
     status: 'test',
     note: 'No computador, o app; no iPhone e iPad, pela tela de início, sem loja.',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: TPEASY_BAIXAR + 'mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: TPEASY_BAIXAR + 'windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('tpeasy'),
       {
         os: 'mobile',
         label: 'iPhone e iPad',
@@ -116,18 +118,15 @@ export const DOWNLOADS: DownloadEntry[] = [
         format: 'App da web',
       },
     ],
-    firstOpen: PRIMEIRA_VEZ,
   },
   {
-    // Carro do Freela (products/carro-do-freela): no ar desde a 0041 e, com o app de computador, desde a 0042 (a mesma rota
-    // /baixar/app/carro-do-freela/<sistema>, com o gate). Com o download fechado só aparecem o navegador e o celular.
+    // Carro do Freela (products/carro-do-freela): no ar desde a 0041 e, com o app de computador, desde a 0042.
     productId: 'carro-do-freela',
     site: 'https://carro.absolutezro.com',
     status: 'test',
     note: 'Funciona no navegador, no computador e no celular.',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: CARRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: CARRO_BAIXAR + 'windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('carro-do-freela'),
       { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carro.absolutezro.com', format: 'Sem instalar' },
       {
         os: 'mobile',
@@ -137,24 +136,16 @@ export const DOWNLOADS: DownloadEntry[] = [
         format: 'App da web',
       },
     ],
-    firstOpen: PRIMEIRA_VEZ,
   },
   {
+    // AEON: no ar na web (0043). O app de computador entra na central quando o Release dele seguir os nomes com versão
+    // e build (apps/hub-desktop/README.md, "Um app novo na central"); até lá, só o navegador.
     productId: 'ai-edit',
     site: 'https://aeon.absolutezro.com',
-    status: 'test',
-    note: 'Com a conta Absolute ZRO. O app de computador avisa e se atualiza quando sai versão nova.',
-    options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://aeon.absolutezro.com/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://aeon.absolutezro.com/baixar/windows', format: 'Instalador .exe' },
-      { os: 'web', label: 'Navegador', detail: 'Chrome ou Edge', href: 'https://aeon.absolutezro.com/app/', format: 'Sem instalar' },
-    ],
-    terminal: { mac: 'curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash', windows: 'irm https://aeon.absolutezro.com/instalar.ps1 | iex' },
-    firstOpen: {
-      mac: 'Baixou o .dmg pelo navegador? Rode uma vez no Terminal: xattr -cr /Applications/AEON.app',
-      windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
-    },
-    moreUrl: 'https://aeon.absolutezro.com/#baixar',
+    status: 'web',
+    note: 'Com a conta Absolute ZRO.',
+    options: [{ os: 'web', label: 'Navegador', detail: 'Chrome ou Edge', href: 'https://aeon.absolutezro.com/app/', format: 'Sem instalar' }],
+    moreUrl: 'https://aeon.absolutezro.com',
   },
   {
     productId: 'finishing',
@@ -164,44 +155,34 @@ export const DOWNLOADS: DownloadEntry[] = [
     options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://revela.absolutezro.com', format: 'Sem instalar' }],
   },
   {
-    // Maestro (products/maestro/desktop): o instalador vem do Release "Maestro · versão de teste" pela rota da Absolute
-    // ZRO (/baixar/app/maestro/<sistema>), que confere o gate de novo e entrega o mais novo com SHA-256. Fechado
-    // (0024, download = false) aparece "Em desenvolvimento"; a 0027 do lançamento abre.
+    // Maestro (products/maestro/desktop): app de computador aberto a todos desde a 0048.
     productId: 'maestro',
     site: 'https://maestro.absolutezro.com',
     status: 'test',
     note: 'Com a conta Absolute ZRO. No iPhone: Safari › Compartilhar › Adicionar à Tela de Início.',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: MAESTRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: MAESTRO_BAIXAR + 'windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('maestro'),
       { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
       { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, na Tela de Início', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
     ],
-    firstOpen: {
-      mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
-      windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
-    },
   },
   {
-    // Relay (products/relay): converte no próprio aparelho, no navegador ou no app de computador (a mesma página numa
-    // janela, products/relay/desktop). O instalador passa pela rota da Absolute ZRO, com o gate (0042).
+    // Relay (products/relay): converte no próprio aparelho, no navegador ou no app de computador (0042).
     productId: 'relay',
     site: 'https://relay.absolutezro.com',
     status: 'test',
     note: 'Converte no próprio aparelho. Nada é enviado.',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: RELAY_BAIXAR + 'mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: RELAY_BAIXAR + 'windows', format: 'Instalador .exe' },
+      ...NO_COMPUTADOR('relay'),
       { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' },
     ],
-    firstOpen: PRIMEIRA_VEZ,
   },
 ]
 
 /** Como um produto fechado aparece: só o selo "Em desenvolvimento". */
 export const emDesenvolvimento = (productId: string): DownloadEntry => ({ productId, status: 'soon', options: [] })
 
-/** Só o que abre no navegador e no celular (sem instalador nem Terminal): download fechado com a web aberta. */
+/** Só o que abre no navegador e no celular (sem o app de computador): download fechado com a web aberta. */
 const soNaWeb = (d: DownloadEntry): DownloadEntry | null => {
   const options = d.options.filter((o) => o.os === 'web' || o.os === 'mobile')
   return options.length ? { productId: d.productId, status: 'web', note: d.note, options, site: d.site } : null

@@ -737,6 +737,25 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   autorizado.
 - ⬜ Conferir com a conta real se o iCloud põe Delivered-To/X-Original-To (mensagem só em Cco para um alias).
 
+## Central única de instalação (01/11/2026, [ADR 0035](decisions/0035-central-unica-de-instalacao.md))
+
+Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO (`apps/hub-desktop` 1.4.0).
+
+- ✅ `GET /api/v1/desktop/meus-apps` pela sessão do HUB: só o que a conta pode instalar (versão, tamanho, SHA-256) e os
+  bloqueados pelo plano, com o plano que inclui. `authorize` + gate + entitlement no servidor; uso livre = plano grátis.
+- ✅ `/baixar/app/<id>/<arquivo>`: instalador de app pago pede sessão (401) e o produto no plano (403); `versao.json` e
+  apps de uso livre como antes (os apps já instalados seguem se atualizando). As rotas saíram da interface pública.
+- ✅ Lançado OU admin: AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma (central, painel e Downloads).
+- ✅ Página Downloads com um download só (Mac e Windows), passo a passo e a linha do Terminal; cada app "Instale pela
+  Absolute ZRO". Painel `/app` com cartão bloqueado ("Incluso no plano X · Ver planos") e `/app/ajustes`.
+- ✅ Central 1.4.0: versão nova avisada por notificação nativa (um app ou "N atualizações disponíveis"), atualizar um ou
+  todos com progresso e SHA-256, "Atualizar sozinho" por app (padrão desligado), "Entrar na sua conta…" sem sessão,
+  deep link `absolutezro://apps/<id>?acao=atualizar|instalar` (contrato no README da central).
+- ✅ Rift Motion pronto no catálogo (aparece com produto, Release, gate e plano).
+- ⬜ Lado dos produtos (outra pessoa): cada app desliga o atualizador próprio e abre o deep link quando há versão nova.
+- ⬜ AEON na central: o Release dele precisa dos nomes com versão e build.
+- ⛔ Publicar a 1.4.0 e ligar no ar: merge na main (dispara o workflow da central) com autorização do titular.
+
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 
 - ✅ **Dólar automático** (HUB, migração `0030`, adendo ao [ADR 0028](decisions/0028-custos-do-ecossistema.md)): PTAX de

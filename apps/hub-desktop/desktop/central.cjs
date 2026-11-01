@@ -1,5 +1,5 @@
 // Central de apps (modelo Creative Cloud, pedido do titular em 26/10/2026): instala, abre, atualiza e remove as
-// ferramentas da Absolute ZRO a partir do catálogo do HUB (/api/v1/desktop/apps). Sem Electron aqui: o sistema
+// ferramentas da Absolute ZRO a partir dos apps da conta no HUB (/api/v1/desktop/meus-apps, ADR 0035). Sem Electron: o sistema
 // (comandos, arquivos, download) entra por `deps`, e os testes em test/central.test.mjs usam versões falsas.
 //
 // Regras:
@@ -47,8 +47,30 @@ function validarCatalogo(json) {
     }))
 }
 
+/**
+ * Apps que o plano da conta não inclui (`bloqueados` de /api/v1/desktop/meus-apps): só nome, plano e o que a central
+ * precisa para saber se estão neste computador. Nada de arquivo: bloqueado não instala nem atualiza (e nada é apagado).
+ */
+function validarBloqueados(json) {
+  const lista = Array.isArray(json && json.bloqueados) ? json.bloqueados : []
+  return lista
+    .filter((a) => a && ID.test(a.id) && typeof a.nome === 'string' && a.nome.length < 60)
+    .map((a) => ({
+      id: a.id,
+      nome: a.nome,
+      plano: typeof a.plano === 'string' && a.plano.length < 80 ? a.plano : null,
+      mac: a.mac && BUNDLE.test(a.mac.bundle) ? { bundle: a.mac.bundle, arquivos: [] } : null,
+      windows:
+        a.windows && EXE.test(a.windows.exe) && typeof a.windows.nomeNoSistema === 'string'
+          ? { exe: a.windows.exe, nomeNoSistema: a.windows.nomeNoSistema, arquivo: null }
+          : null,
+      bloqueado: true,
+    }))
+}
+
 /** O arquivo certo para este computador: no Mac, o da arquitetura (arm64/x64) ou o universal. */
 function arquivoPara(app, plataforma, arch) {
+  if (app.bloqueado) return null
   if (plataforma === 'windows') return app.windows ? app.windows.arquivo : null
   if (plataforma !== 'mac' || !app.mac) return null
   const lista = app.mac.arquivos
@@ -166,19 +188,45 @@ class Central {
   constructor(deps) {
     this.d = deps
     this.catalogo = null
+    this.bloqueados = []
+    /** true quando o HUB respondeu que não há sessão (a central pede para entrar e não atualiza nada). */
+    this.semLogin = false
     this.emAndamento = new Map()
   }
 
+  /**
+   * Os apps desta conta (ADR 0035): /api/v1/desktop/meus-apps, com a sessão do HUB (cookie da partição do app). Só vem
+   * o que a conta pode instalar, com versão e SHA-256, e o que o plano não inclui (bloqueados). Sem sessão (401):
+   * catálogo vazio e `semLogin`. HUB antigo, sem a rota (404): o catálogo público de antes.
+   */
   async carregarCatalogo() {
-    const r = await this.d.fetch(this.d.hub + '/api/v1/desktop/apps', { signal: AbortSignal.timeout(15_000) })
+    let r = await this.d.fetch(this.d.hub + '/api/v1/desktop/meus-apps', { signal: AbortSignal.timeout(15_000) })
+    if (r.status === 401) {
+      this.semLogin = true
+      this.catalogo = []
+      this.bloqueados = []
+      throw new ErroCentral('login', 'Entre na sua conta Absolute ZRO para ver seus apps.')
+    }
+    if (r.status === 404) r = await this.d.fetch(this.d.hub + '/api/v1/desktop/apps', { signal: AbortSignal.timeout(15_000) })
     if (!r.ok) throw new ErroCentral('catalogo', 'O catálogo de apps não respondeu. Tente de novo.')
-    this.catalogo = validarCatalogo(await r.json())
+    const json = await r.json()
+    this.semLogin = false
+    this.catalogo = validarCatalogo(json)
+    this.bloqueados = validarBloqueados(json).filter((b) => !this.catalogo.some((a) => a.id === b.id))
     return this.catalogo
   }
 
+  /** O app (do plano ou bloqueado) para detectar, abrir, fechar e remover. */
   app(id) {
-    const a = this.catalogo && this.catalogo.find((x) => x.id === id)
+    const a = (this.catalogo && this.catalogo.find((x) => x.id === id)) || this.bloqueados.find((x) => x.id === id)
     if (!a) throw new ErroCentral('app', 'Ferramenta não encontrada no catálogo.')
+    return a
+  }
+
+  /** O app que a conta pode instalar ou atualizar agora (bloqueado pelo plano não passa). */
+  appDoPlano(id) {
+    const a = this.app(id)
+    if (a.bloqueado) throw new ErroCentral('plano', `O ${a.nome} não está no seu plano. Veja os planos em absolutezro.com/planos.`)
     return a
   }
 
@@ -312,7 +360,7 @@ class Central {
     if (!this.catalogo) await this.carregarCatalogo()
     const registros = this.lerRegistros()
     const out = []
-    for (const app of this.catalogo) {
+    for (const app of [...this.catalogo, ...this.bloqueados]) {
       const disponivel = arquivoPara(app, this.d.plataforma, this.d.arch)
       const instalado = await this.detectar(app).catch(() => null)
       out.push({
@@ -323,6 +371,8 @@ class Central {
         atualizar: temAtualizacao(instalado, registros[app.id], disponivel),
         gerenciavel: this.gerenciavel(instalado),
         ocupado: this.emAndamento.has(app.id),
+        // fora do plano: a central mostra bloqueado e não atualiza; o que está no computador fica
+        bloqueado: app.bloqueado ? { plano: app.plano } : null,
       })
     }
     return out
@@ -387,7 +437,7 @@ class Central {
    */
   async prebaixar(id) {
     if (!this.catalogo) await this.carregarCatalogo()
-    const app = this.app(id)
+    const app = this.appDoPlano(id)
     const arquivo = arquivoPara(app, this.d.plataforma, this.d.arch)
     if (!arquivo) throw new ErroCentral('sistema', `O ${app.nome} ainda não tem instalador para este computador.`)
     if (this.emAndamento.has(id)) throw new ErroCentral('ocupado', 'Já estou cuidando dessa ferramenta.')
@@ -407,7 +457,7 @@ class Central {
   /** Instala ou atualiza. Uma operação por ferramenta de cada vez. */
   async instalar(id) {
     if (!this.catalogo) await this.carregarCatalogo()
-    const app = this.app(id)
+    const app = this.appDoPlano(id)
     const arquivo = arquivoPara(app, this.d.plataforma, this.d.arch)
     if (!arquivo) throw new ErroCentral('sistema', `O ${app.nome} ainda não tem instalador para este computador.`)
     if (this.emAndamento.has(id)) throw new ErroCentral('ocupado', 'Já estou cuidando dessa ferramenta.')
@@ -498,6 +548,7 @@ module.exports = {
   Central,
   ErroCentral,
   validarCatalogo,
+  validarBloqueados,
   arquivoPara,
   temAtualizacao,
   lerBuildInstalado,

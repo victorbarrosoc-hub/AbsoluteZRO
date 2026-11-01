@@ -97,6 +97,8 @@ function montar(apps, extra = {}) {
     central,
     relogio,
     notificar: (n) => avisos.push(n),
+    // os testes de antes cobrem o "Atualizar sozinho" ligado; o padrão (desligado) tem testes próprios no fim
+    atualizarSozinho: () => true,
     marcarGerenciados: (ids) => marcados.push(ids),
     primeiraMs: 20_000,
     intervaloMs: INTERVALO_MS,
@@ -267,4 +269,78 @@ test('conferir duas vezes ao mesmo tempo faz uma conferência só; erro do catá
   }
   const e = await agenda.conferir()
   assert.equal(e.procurando, false)
+})
+
+// Central única (ADR 0035): o padrão é avisar e esperar a pessoa; "Atualizar sozinho" é por app, nos Ajustes.
+test('padrão: versão nova não instala sozinha; avisa uma vez por versão ("Maestro 0.3.0 disponível") e espera', async () => {
+  const apps = { maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' } }
+  const { agenda, central, avisos } = montar(apps, { atualizarSozinho: () => false })
+  await agenda.conferir()
+  assert.deepEqual(
+    agenda.estado().pendentes.map((p) => [p.id, p.fase, p.versao]),
+    [['maestro', 'disponivel', '0.3.0']],
+  )
+  assert.equal(central.chamadas.filter((c) => c[0] === 'prebaixar' || c[0] === 'instalar').length, 0, 'nada baixa nem instala sozinho')
+  assert.deepEqual(avisos, [{ id: 'maestro', acao: 'atualizar', titulo: 'Maestro 0.3.0 disponível', corpo: 'Clique para atualizar.' }])
+  await agenda.conferir()
+  assert.equal(avisos.length, 1, 'a mesma versão não avisa de novo')
+  apps.maestro.nova = '0.3.1'
+  await agenda.conferir()
+  assert.equal(avisos.at(-1).titulo, 'Maestro 0.3.1 disponível')
+})
+
+test('padrão: várias versões novas viram uma notificação só, com Atualizar tudo', async () => {
+  const apps = {
+    maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' },
+    relay: { nome: 'Relay', instalada: '1.0.0', nova: '1.1.0' },
+  }
+  const { agenda, avisos } = montar(apps, { atualizarSozinho: () => false })
+  await agenda.conferir()
+  assert.deepEqual(avisos, [{ acao: 'atualizar-tudo', titulo: '2 atualizações disponíveis', corpo: 'Maestro 0.3.0 · Relay 1.1.0' }])
+  await agenda.atualizarTudo()
+  assert.deepEqual([apps.maestro.instalada, apps.relay.instalada], ['0.3.0', '1.1.0'])
+  assert.deepEqual(agenda.estado().pendentes, [])
+})
+
+test('Atualizar (um app): fechado instala agora com progresso pela central; aberto fica para quando fechar', async () => {
+  const apps = {
+    maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' },
+    relay: { nome: 'Relay', instalada: '1.0.0', nova: '1.1.0', aberto: true },
+  }
+  const { agenda, central, avisos } = montar(apps, { atualizarSozinho: () => false })
+  await agenda.conferir()
+  assert.deepEqual(await agenda.atualizar('maestro'), { fase: 'pronto', versao: '0.3.0' })
+  assert.equal(apps.maestro.instalada, '0.3.0')
+  assert.ok(central.chamadas.some((c) => c[0] === 'instalar' && c[1] === 'maestro'))
+  assert.equal(avisos.at(-1).titulo, 'Maestro atualizado')
+  assert.deepEqual(await agenda.atualizar('relay'), { fase: 'ao-fechar', versao: '1.1.0' })
+  assert.equal(apps.relay.instalada, '1.0.0', 'aberto não é trocado')
+})
+
+test('"Atualizar sozinho" por app: só o que está ligado se atualiza sem perguntar; bloqueado pelo plano nunca', async () => {
+  const apps = {
+    maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' },
+    relay: { nome: 'Relay', instalada: '1.0.0', nova: '1.1.0' },
+  }
+  const { agenda, central } = montar(apps, { atualizarSozinho: (id) => id === 'relay' })
+  await agenda.conferir()
+  assert.equal(apps.relay.instalada, '1.1.0')
+  assert.equal(apps.maestro.instalada, '0.2.0')
+  assert.deepEqual(
+    agenda.estado().pendentes.map((p) => [p.id, p.fase]),
+    [['maestro', 'disponivel']],
+  )
+  assert.equal(
+    decidir({ instalado: { versao: '1' }, atualizar: true, gerenciavel: true, disponivel: { versao: '2' }, bloqueado: { plano: 'X' } }, false),
+    'nada',
+  )
+  const listar = central.listar
+  central.listar = async () => (await listar()).map((s) => ({ ...s, bloqueado: { plano: 'Absolute ZRO Completo' } }))
+  assert.equal(await agenda.atualizar('maestro'), null)
+})
+
+test('sem sessão: o estado diz semLogin (a bandeja oferece Entrar)', async () => {
+  const { agenda, central } = montar({})
+  central.semLogin = true
+  assert.equal(agenda.estado().semLogin, true)
 })

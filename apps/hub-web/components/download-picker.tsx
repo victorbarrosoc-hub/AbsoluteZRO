@@ -1,15 +1,15 @@
 'use client'
 /**
- * Downloads em dois tempos: primeiro só os ícones das ferramentas; ao tocar num, abre embaixo a parte de download
- * dele (Mac, Windows, celular ou navegador, o jeito pelo Terminal e a primeira abertura) e o "Conheça mais", que leva
- * à página da plataforma. O endereço guarda a escolha (#app-<id>), então os links "absolutezro.com/baixar#app-synquei"
- * dos sites de cada app abrem direto no lugar certo. Dentro do app de computador, quem instala é a central (AppActions).
+ * Downloads em dois tempos: primeiro só os ícones das ferramentas; ao tocar num, abre embaixo a parte dele: "Instale
+ * pela Absolute ZRO" (no computador, todo app se instala e se atualiza pela central, ADR 0035), o navegador e o celular,
+ * e o "Conheça mais", que leva à página da plataforma. O endereço guarda a escolha (#app-<id>), então os links
+ * "absolutezro.com/baixar#app-synquei" dos sites de cada app abrem direto no lugar certo. Dentro do app de computador,
+ * quem instala é a central (AppActions).
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Pill, ProductMark } from '@zro/ui'
 import type { DownloadEntry, DownloadOption, Os } from '@/lib/downloads'
 import { AppActions } from './app-actions'
-import { CopyButton } from './copy-button'
 import { Icon, type IconName } from './icons'
 
 /** `liberado` só existe dentro do HUB logado: com ele, a central do app de computador instala por aqui. */
@@ -47,15 +47,23 @@ function Opcao({ o, name }: { o: DownloadOption; name: string }) {
   )
 }
 
-function Comando({ titulo, cmd, rotulo }: { titulo: string; cmd: string; rotulo: string }) {
+/** No computador, cada app se instala e se atualiza pela Absolute ZRO: o cartão leva ao download dela, no topo. */
+function PelaCentral({ name }: { name: string }) {
   return (
-    <div className="dl-cmd">
-      <span>{titulo}</span>
-      <div className="dl-cmd__row">
-        <code>{cmd}</code>
-        <CopyButton text={cmd} label={rotulo} />
-      </div>
-    </div>
+    <a className="dl-opt dl-opt--central" href="#absolute-zro">
+      <span className="dl-opt__icon" aria-hidden="true">
+        <img src="/brand/app-icon-mac-1024.png" alt="" width={28} height={28} />
+      </span>
+      <span className="dl-opt__text">
+        <strong>Instale pela Absolute ZRO</strong>
+        <span>Mac e Windows</span>
+      </span>
+      <span className="dl-opt__action">
+        <Icon name="download" size={16} />
+        <span>Baixar</span>
+      </span>
+      <span className="zro-sr-only">{`Instalar ${name} no computador pela Absolute ZRO`}</span>
+    </a>
   )
 }
 
@@ -84,7 +92,8 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
   }
 
   const app = apps.find((a) => a.productId === ativo) ?? null
-  const instaladores = app?.options.filter((o) => o.os === 'mac' || o.os === 'windows') ?? []
+  // o app tem versão para computador: instala pela Absolute ZRO (o instalador avulso saiu da página, ADR 0035)
+  const noComputador = !!app?.options.some((o) => o.os === 'mac' || o.os === 'windows')
   const outras = app?.options.filter((o) => o.os !== 'mac' && o.os !== 'windows') ?? []
   const st = app ? STATUS[app.status]! : null
 
@@ -125,53 +134,19 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
                 </div>
               </header>
               {app.note && <p className="dl-app__note">{app.note}</p>}
-              {app.liberado !== undefined && app.status !== 'soon' && instaladores.length > 0 && (
+              {app.liberado !== undefined && app.status !== 'soon' && noComputador && (
                 <AppActions id={app.productId} nome={app.name} liberado={app.liberado} web={null} />
               )}
               <div className="dl-opts dl-painel__opcoes">
-                {instaladores.map((o) => (
-                  <span key={o.href} className="dl-opts--instalador">
-                    <Opcao o={o} name={app.name} />
+                {noComputador && (
+                  <span className="dl-opts--instalador">
+                    <PelaCentral name={app.name} />
                   </span>
-                ))}
+                )}
                 {outras.map((o) => (
                   <Opcao key={o.href} o={o} name={app.name} />
                 ))}
               </div>
-              {(app.terminal || app.firstOpen) && (
-                <details className="dl-help">
-                  <summary>
-                    <Icon name="terminal" size={16} />
-                    Como instalar e abrir na primeira vez
-                  </summary>
-                  <div className="dl-help__body">
-                    {app.firstOpen?.mac && (
-                      <p>
-                        <strong>Mac:</strong> {app.firstOpen.mac}
-                      </p>
-                    )}
-                    {app.firstOpen?.windows && (
-                      <p>
-                        <strong>Windows:</strong> {app.firstOpen.windows}
-                      </p>
-                    )}
-                    {app.terminal?.mac && (
-                      <Comando
-                        titulo="Mac, pelo Terminal (confere o arquivo e evita o aviso)"
-                        cmd={app.terminal.mac}
-                        rotulo={`Copiar comando de instalação do ${app.name} para Mac`}
-                      />
-                    )}
-                    {app.terminal?.windows && (
-                      <Comando
-                        titulo="Windows, pelo PowerShell"
-                        cmd={app.terminal.windows}
-                        rotulo={`Copiar comando de instalação do ${app.name} para Windows`}
-                      />
-                    )}
-                  </div>
-                </details>
-              )}
               {app.site && (
                 <div className="dl-painel__fim">
                   <a className="glass-btn" href={app.site} target="_blank" rel="noopener noreferrer">

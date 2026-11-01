@@ -75,6 +75,29 @@ test('menu: "Atualizar tudo" quando há mais de uma (ou uma com erro); ocupado d
   assert.equal(modeloDoMenu({ apps, pendentes: [{ id: 'synquei', nome: 'Synquei', fase: 'baixando' }] }).find((i) => i.id === 'synquei').rotulo, 'Synquei')
 })
 
+test('menu (1.4): versão nova avisada vira "Atualizar <app> <versão>"; sem sessão, "Entrar na sua conta…"', () => {
+  const uma = modeloDoMenu({ apps, pendentes: [{ id: 'synquei', nome: 'Synquei', fase: 'disponivel', versao: '1.3.0' }] })
+  const a = uma.find((i) => i.acao === 'atualizar')
+  assert.deepEqual([a.id, a.rotulo], ['synquei', 'Atualizar Synquei 1.3.0'])
+  assert.equal(uma.find((i) => i.acao === 'abrir-app' && i.id === 'synquei').rotulo, 'Synquei · 1.3.0 disponível')
+  assert.equal(
+    uma.some((i) => i.acao === 'atualizar-tudo'),
+    false,
+  )
+  const duas = modeloDoMenu({
+    apps,
+    pendentes: [
+      { id: 'synquei', nome: 'Synquei', fase: 'disponivel', versao: '1.3.0' },
+      { id: 'sobedesce', nome: 'SOBEDESCE', fase: 'disponivel', versao: '0.3.0' },
+    ],
+  })
+  assert.ok(duas.some((i) => i.acao === 'atualizar-tudo'))
+  assert.equal(dica({ pendentes: [{ fase: 'disponivel' }, { fase: 'disponivel' }] }), 'Absolute ZRO · 2 atualizações disponíveis')
+  const sem = modeloDoMenu({ apps: [], semLogin: true })
+  assert.deepEqual(acoes(sem).slice(0, 2), ['abrir', 'entrar'])
+  assert.equal(dica({ semLogin: true }), 'Absolute ZRO · entre na sua conta')
+})
+
 test('dica do ícone', () => {
   assert.equal(dica({ pendentes: [] }), 'Absolute ZRO')
   assert.equal(dica({ pendentes: [{ fase: 'ao-fechar' }] }), 'Absolute ZRO · 1 atualização pronta')

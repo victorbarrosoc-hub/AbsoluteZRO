@@ -62,7 +62,8 @@ function resposta(buf, url = 'https://objects.githubusercontent.com/x') {
   }
 }
 
-function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execRespostas = {} }) {
+/** `meusApps`: o que /api/v1/desktop/meus-apps responde (objeto, 401 sem sessão ou 404 no HUB antigo). */
+function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execRespostas = {}, meusApps = catalogo }) {
   const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'zro-central-'))
   const chamadas = []
   const avisos = []
@@ -79,6 +80,8 @@ function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execResposta
     fs,
     fetch: async (url) => {
       chamadas.push(['fetch', url])
+      if (url.endsWith('/api/v1/desktop/meus-apps'))
+        return typeof meusApps === 'number' ? { ok: false, status: meusApps, json: async () => ({}) } : resposta(Buffer.from(JSON.stringify(meusApps)))
       if (url.endsWith('/api/v1/desktop/apps')) return resposta(Buffer.from(JSON.stringify(catalogo)))
       return resposta(arquivo)
     },
@@ -312,4 +315,50 @@ test('aberto e fechar: pede para sair do jeito educado (sem forçar)', async () 
   const kill = win.chamadas.find((c) => c[0] === 'taskkill')
   assert.deepEqual(kill, ['taskkill', '/IM', 'Synquei.exe'])
   assert.equal(kill.includes('/F'), false)
+})
+
+// Central única (ADR 0035): os apps da conta, pelo plano.
+test('meus apps: o que o plano não inclui vem bloqueado (sem arquivo), não instala e o que está no computador fica', async () => {
+  const comBloqueado = {
+    ...catalogo,
+    versao: 2,
+    bloqueados: [
+      {
+        id: 'maestro',
+        nome: 'Maestro',
+        plano: 'Absolute ZRO Completo',
+        mac: { bundle: 'Maestro.app' },
+        windows: { exe: 'Maestro.exe', nomeNoSistema: 'Maestro' },
+      },
+    ],
+  }
+  const { central, chamadas, pastasMac } = ambiente({ plataforma: 'mac', meusApps: comBloqueado })
+  fs.mkdirSync(path.join(pastasMac[0], 'Maestro.app', 'Contents'), { recursive: true })
+  fs.writeFileSync(path.join(pastasMac[0], 'Maestro.app', 'Contents', 'Info.plist'), 'plist')
+  const lista = await central.listar()
+  const m = lista.find((s) => s.id === 'maestro')
+  assert.deepEqual(m.bloqueado, { plano: 'Absolute ZRO Completo' })
+  assert.equal(m.disponivel, null)
+  assert.equal(m.atualizar, false)
+  assert.ok(m.instalado, 'continua instalado')
+  assert.equal(lista.find((s) => s.id === 'synquei').bloqueado, null)
+  await assert.rejects(central.instalar('maestro'), (e) => e.codigo === 'plano')
+  await assert.rejects(central.prebaixar('maestro'), (e) => e.codigo === 'plano')
+  assert.ok(fs.existsSync(path.join(pastasMac[0], 'Maestro.app')), 'nada é apagado')
+  assert.equal(chamadas.filter((c) => c[0] === 'fetch' && c[1].includes('/baixar/app/maestro')).length, 0)
+  assert.ok(chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/api/v1/desktop/meus-apps`))
+  assert.ok(!chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/api/v1/desktop/apps`))
+})
+
+test('meus apps: sem sessão (401) a central pede para entrar e não lista nada; HUB antigo (404) usa o catálogo de antes', async () => {
+  const sem = ambiente({ plataforma: 'mac', meusApps: 401 })
+  await assert.rejects(sem.central.carregarCatalogo(), (e) => e.codigo === 'login')
+  assert.equal(sem.central.semLogin, true)
+  assert.deepEqual(sem.central.catalogo, [])
+  const antigo = ambiente({ plataforma: 'mac', meusApps: 404 })
+  assert.deepEqual(
+    (await antigo.central.carregarCatalogo()).map((a) => a.id),
+    ['synquei', 'nossom'],
+  )
+  assert.equal(antigo.central.semLogin, false)
 })

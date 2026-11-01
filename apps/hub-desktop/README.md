@@ -5,7 +5,9 @@ tarefas, continua logado, mostra uma tela "Sem conexão" local quando falta inte
 É também a **central de apps** ([ADR 0018](../../docs/decisions/0018-central-de-apps.md)): instala, abre, atualiza e
 remove SOBEDESCE, Synquei, NOSSOM e o Maestro (quando liberado pelo gate) pela página Downloads do HUB. Desde a 1.3.0 é o **instalador do ecossistema** e roda
 em segundo plano, como o SOBEDESCE: símbolo na barra de menus (Mac) ou na bandeja (Windows), abre com o computador,
-mantém os apps instalados em dia sozinho e, na primeira abertura, pergunta quais apps instalar.
+mantém os apps instalados em dia sozinho e, na primeira abertura, pergunta quais apps instalar. Desde a **1.4.0** é a
+**central única** ([ADR 0035](../../docs/decisions/0035-central-unica-de-instalacao.md)): todo app de computador da
+Absolute ZRO se instala e se atualiza só por aqui, pela conta e pelo plano, como no Creative Cloud.
 
 Fora dos workspaces da raiz: tem `package.json` e `package-lock.json` próprios (Electron não entra no `npm ci` do HUB).
 
@@ -21,23 +23,23 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 
 ## Como é feito
 
-| Arquivo                      | O que faz                                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- |
-| `desktop/main.cjs`           | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`               |
-| `desktop/regras.cjs`         | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron)    |
-| `desktop/janela.cjs`         | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                   |
-| `desktop/versao.cjs`         | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                                |
-| `desktop/central.cjs`        | central de apps: catálogo do HUB, download conferido por SHA-256, instalar/abrir/atualizar/remover |
-| `desktop/agenda.cjs`         | atualização dos apps em segundo plano: 20 s depois de abrir e a cada 4 h; instala quando fechado   |
-| `desktop/bandeja.cjs`        | menu da barra de menus/bandeja (lista de itens), dica e ícone de cada sistema                      |
-| `desktop/inicio-sistema.cjs` | abrir com o computador (ligado na primeira vez, escondido) e `preferencias.json`                   |
-| `desktop/gerenciados.cjs`    | `apps-gerenciados.json`: quais apps a central atualiza (o SOBEDESCE e o Synquei leem)              |
-| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO (e do Maestro, cópia idêntica): baixa, confere, troca e abre   |
-| `desktop/paginas/`           | barra de título do Mac, "Sem conexão" e boas-vindas (HTML local, CSP fechada, Figtree local)       |
-| `scripts/bandeja.mjs`        | ícone da barra de menus (template) e da bandeja a partir de `absolute-zro-simbolo.svg`             |
-| `scripts/icons.mjs`          | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`                |
-| `scripts/release.mjs`        | build-info, nome com build, SHA-256 e `versao.json` do Release                                     |
-| `electron-builder.yml`       | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                       |
+| Arquivo                      | O que faz                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `desktop/main.cjs`           | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`             |
+| `desktop/regras.cjs`         | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron)  |
+| `desktop/janela.cjs`         | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                 |
+| `desktop/versao.cjs`         | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                              |
+| `desktop/central.cjs`        | central de apps: apps da conta (meus-apps), SHA-256 conferido, instalar/abrir/atualizar/remover  |
+| `desktop/agenda.cjs`         | versão nova: confere 20 s depois de abrir e a cada 4 h, avisa e atualiza (sozinho só se ligado)  |
+| `desktop/bandeja.cjs`        | menu da barra de menus/bandeja (lista de itens), dica e ícone de cada sistema                    |
+| `desktop/inicio-sistema.cjs` | abrir com o computador (ligado na primeira vez, escondido) e `preferencias.json`                 |
+| `desktop/gerenciados.cjs`    | `apps-gerenciados.json`: quais apps a central atualiza (o SOBEDESCE e o Synquei leem)            |
+| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO (e do Maestro, cópia idêntica): baixa, confere, troca e abre |
+| `desktop/paginas/`           | barra de título do Mac, "Sem conexão" e boas-vindas (HTML local, CSP fechada, Figtree local)     |
+| `scripts/bandeja.mjs`        | ícone da barra de menus (template) e da bandeja a partir de `absolute-zro-simbolo.svg`           |
+| `scripts/icons.mjs`          | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`              |
+| `scripts/release.mjs`        | build-info, nome com build, SHA-256 e `versao.json` do Release                                   |
+| `electron-builder.yml`       | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                     |
 
 - **Visual:** tema claro, o padrão da marca. A janela nasce com o papel `#fcfbfc` (sem flash), `hiddenInset` no Mac
   com barra própria (voltar, avançar, título, recarregar, início). A tela "Sem conexão" segue o site: símbolo pequeno,
@@ -84,15 +86,19 @@ Arquivos: `AbsoluteZRO-<versão>-mac-universal.dmg` e `AbsoluteZRO-<versão>-win
 `-b<build>` antes do sistema). O site entrega por `/baixar/hub/mac` e `/baixar/hub/windows`; o projeto Vercel
 `absolutezro` precisa de `GITHUB_TOKEN` ([downloads-privados](../../docs/operations/downloads-privados.md)).
 
-Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, no Mac, botão direito › Abrir › Abrir; no
-Windows, Mais informações › Executar assim mesmo.
+A página Downloads ensina a instalar (o passo a passo de cada sistema e a linha do Terminal, que baixa, confere o
+SHA-256 e instala: `apps/hub-web/public/instalar.sh` e `instalar.ps1`). Depois de instalada, a central se atualiza
+sozinha ("Nova versão", `desktop/atualizador.cjs`) e instala e atualiza todos os outros apps.
 
 ## Central de apps
 
-- A página Downloads do HUB (dentro do app) chama `window.zroDesktop.apps` (preload): `listar`, `instalar(id)`,
-  `abrir(id)`, `remover(id)`, `cancelar(id)` e `aoProgresso`. Só a página do HUB fala com a central, e só passa o id.
-- O processo principal lê `<HUB>/api/v1/desktop/apps`, baixa por `<HUB>/baixar/app/<id>/<arquivo>`, confere tamanho e
-  SHA-256 e só então instala. Arquivo que não confere é apagado.
+- O painel do HUB (`/app`, dentro do app) e a página Downloads chamam `window.zroDesktop.apps` (preload): `listar`,
+  `instalar(id)`, `atualizar(id)`, `atualizarTudo()`, `abrir(id)`, `remover(id)`, `cancelar(id)`, `aoProgresso`,
+  `ajustes()`, `definirAtualizarSozinho(id, ligado)` e `definirAbrirComSistema(ligado)`. Só a página do HUB fala com a
+  central, e só passa o id (e um booleano nos Ajustes).
+- O processo principal lê `<HUB>/api/v1/desktop/meus-apps` (1.4; o HUB antigo sem a rota cai em `/api/v1/desktop/apps`),
+  baixa por `<HUB>/baixar/app/<id>/<arquivo>`, confere tamanho e SHA-256 e só então instala. Arquivo que não confere
+  é apagado.
 - **Mac:** `hdiutil attach` (sem abrir janela), `ditto` do `.app` para `/Applications` (ou `~/Applications` se a conta
   não puder escrever lá), troca atômica do app antigo, `xattr -dr com.apple.quarantine`, `hdiutil detach`.
 - **Windows:** o instalador NSIS com `/S /currentuser` (sem administrador). O que está instalado sai do registro de
@@ -123,3 +129,63 @@ Windows, Mais informações › Executar assim mesmo.
   `instalar` com o app aberto devolve `'ao-fechar'` e `reiniciarEAtualizar(id)` reinicia e atualiza.
 - Testes: `test/agenda.test.mjs` (relógio falso), `test/bandeja.test.mjs`, `test/inicio-sistema.test.mjs`; o `--smoke`
   confere o ícone, o menu e a tela de boas-vindas (lista de exemplo, sem rede).
+
+## Central única (1.4.0)
+
+Pedido do titular (01/11/2026, [ADR 0035](../../docs/decisions/0035-central-unica-de-instalacao.md)): todo app de
+computador se instala e se atualiza **só** pela central, como no Adobe Creative Cloud.
+
+- **Conta:** a central é o HUB numa janela; o login é o do HUB (a mesma conversa do `/app/entrar`, com Google), e a
+  sessão fica no cookie `httpOnly` da partição `persist:absolutezro`, que o Chromium guarda cifrado com a chave do
+  sistema (Chaves do Mac / DPAPI no Windows, a mesma base do `safeStorage`). A página nunca lê a sessão; o processo
+  principal usa a partição para falar com o HUB. Sem sessão, `meus-apps` responde 401: a central não lista nem atualiza
+  nada, a bandeja mostra "Entrar na sua conta…" e, ao entrar, confere na hora.
+- **Plano:** `GET /api/v1/desktop/meus-apps` devolve `apps` (o que a conta pode instalar, com versão, tamanho e SHA-256)
+  e `bloqueados` (lançado, mas fora do plano: só nome, plano e o nome do `.app`/`.exe` para detectar). Bloqueado aparece
+  com "Incluso no plano X · Ver planos" (abre absolutezro.com/planos), **não instala nem atualiza e nada é apagado do
+  computador**. O instalador de app pago em `/baixar/app/<id>/…` confere o direito de novo no servidor. AEON, Revela,
+  NOSSOM e Rift Motion só aparecem para admin de plataforma, que instala tudo.
+- **Atualizações:** a agenda confere ao abrir (20 s), a cada 4 h e em "Procurar atualizações". Versão nova vira
+  `disponivel` e uma notificação nativa por versão ("Maestro 0.3.0 disponível"; várias: "3 atualizações disponíveis").
+  O clique abre o cartão do app oferecendo Atualizar; no Mac a notificação tem o botão Atualizar (ou Atualizar tudo).
+  Atualizar baixa com progresso no cartão, confere o SHA-256 e instala; app aberto fica "atualiza ao fechar" com
+  "Reiniciar e atualizar". **"Atualizar sozinho"** por app fica em Ajustes (`/app/ajustes`, padrão desligado,
+  `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
+- **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
+
+### Deep link (contrato com os apps)
+
+Os apps da família abrem este link quando têm atualização (ou para pedir a instalação de outro app). A central abre no
+cartão do app, em destaque, e **oferece** a ação; quem confirma é a pessoa (nenhum link instala ou atualiza sozinho).
+
+| Link                                              | O que a central faz                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| `absolutezro://apps/<id>?acao=atualizar`          | abre `/app?app=<id>&acao=atualizar`, cartão em destaque, Atualizar |
+| `absolutezro://apps/<id>?acao=instalar`           | abre `/app?app=<id>&acao=instalar`, cartão em destaque, Instalar   |
+| `absolutezro://apps/<id>`                         | abre o cartão do app                                               |
+| `absolutezro://<rota>` (ex.: `absolutezro://app`) | abre a rota do HUB (nunca `/api`, `/oauth` ou `/.well-known`)      |
+
+- `<id>` é o id do produto no HUB: `^[a-z0-9-]{2,40}$` (`maestro`, `relay`, `carro-do-freela`, `synquei`, `sobedesce`,
+  `tpeasy`, `rift-motion`…). `acao` só `atualizar` ou `instalar`; outra coisa é ignorada. Parâmetros a mais são
+  descartados. Regra em `desktop/regras.cjs` (`linkDeApp`, `deepLink`), testada em `test/regras.test.mjs`.
+- O protocolo é registrado no Mac (`CFBundleURLTypes`, pelo `protocols` do `electron-builder.yml`) e no Windows (o NSIS
+  grava `absolutezro` no registro; `app.setAsDefaultProtocolClient` também). Sem a central instalada, o sistema não
+  abre nada: o app deve oferecer, em seguida, `https://absolutezro.com/baixar#absolute-zro`.
+- Do lado do app (Electron): `shell.openExternal('absolutezro://apps/maestro?acao=atualizar')`. Os apps não se
+  atualizam mais sozinhos: a central é a única que troca o app (e grava `apps-gerenciados.json`, que eles leem).
+
+### Um app novo na central
+
+1. **Id e catálogo:** uma entrada em `apps/hub-web/lib/desktop-apps.ts` (`APPS_DESKTOP`) com o id do produto no HUB, o
+   nome, a fonte (`{ repo, tag }` do Release) e os padrões dos arquivos, que precisam de versão e build:
+   `<Nome>-<versão>-b<build>-mac-universal.dmg` e `<Nome>-<versão>-b<build>-windows-setup.exe`, mais o nome do `.app`
+   e do `.exe` (do `electron-builder` do app). `versaoJson: true` se o Release tem o `versao.json` do aviso próprio.
+2. **Release:** o workflow do app (`.github/workflows/<app>-desktop.yml`) publica os dois instaladores no Release da tag.
+   O GitHub informa o SHA-256 (`digest`) de cada arquivo; sem SHA-256 o arquivo não entra (a central nunca instala o que
+   não confere). Sem Release, o app aparece sem instalador ("Ainda sem versão para este computador").
+3. **Gate e plano:** o produto em `zro.products`, uma migração que abre `desktop` e `download` em `zro.product_release`
+   e o produto nos planos (`zro.plan_products`). Fora do plano grátis, o instalador pede a sessão e o direito.
+4. **Lançado OU admin:** enquanto não lançado, fica em `SO_PARA_ADMIN` (`apps/hub-web/lib/downloads.ts`); só admin vê.
+5. Testes: `tests/integration/desktop-apps.test.ts` e `meus-apps.test.ts`. O Rift Motion já tem a entrada (tag
+   `rift-motion-versao-de-teste`, arquivos `RiftMotion-…`, app "Rift Motion"): aparece quando o produto existir, com
+   Release, gate e plano.

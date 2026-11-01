@@ -2266,6 +2266,120 @@ details.disclosure[open] > summary {
   font-size: 0.8rem;
   scrollbar-width: none;
 }
+/* Central única (ADR 0035): o download da Absolute ZRO, o passo a passo de cada sistema e o Terminal. O botão do
+   sistema de quem vê vira a ação principal (vidro escuro); o passo a passo dele fica em primeiro plano. */
+:root[data-os='mac'] .dl-central__baixar[data-os='mac'],
+:root[data-os='windows'] .dl-central__baixar[data-os='windows'] {
+  --gb-fill: rgb(29 29 31 / 0.92);
+  --gb-ink: #fff;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%), var(--gb-fill);
+}
+:root[data-theme='dark'][data-os='mac'] .dl-central__baixar[data-os='mac'],
+:root[data-theme='dark'][data-os='windows'] .dl-central__baixar[data-os='windows'] {
+  --gb-fill: rgb(245 245 247 / 0.94);
+  --gb-ink: #1d1d1f;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 50%), var(--gb-fill);
+}
+.dl-central__baixar {
+  gap: 8px;
+}
+.dl-passos {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+.dl-passos__sistema,
+.dl-passos__terminal {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.dl-passos h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 700 0.95rem var(--font-apple);
+  color: var(--text-strong);
+}
+.dl-passos ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+.dl-passos li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 2px 10px;
+  counter-increment: passo;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.dl-passos li::before {
+  content: counter(passo);
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font: 700 0.75rem var(--font-apple);
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+.dl-passos li small {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+.dl-passos .dl-cmd,
+.dl-passos .dl-cmd__row {
+  min-width: 0;
+}
+.dl-passos__terminal p {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+:root[data-os='mac'] .dl-passos__sistema[data-os='mac'],
+:root[data-os='windows'] .dl-passos__sistema[data-os='windows'] {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-float);
+}
+/* No cartão de cada app: "Instale pela Absolute ZRO" leva ao download da central, no topo. */
+.dl-opt--central .dl-opt__icon {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+}
+.dl-opt--central .dl-opt__icon img {
+  width: 40px;
+  height: 40px;
+}
+:root[data-os='mac'] .dl-opt--central,
+:root[data-os='windows'] .dl-opt--central {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+:root[data-os='mac'] .dl-opt--central .dl-opt__action,
+:root[data-os='windows'] .dl-opt--central .dl-opt__action {
+  background: var(--btn-main-sheen), var(--btn-main-fill);
+  color: var(--btn-main-ink);
+  box-shadow: var(--btn-main-shadow, var(--btn-shadow));
+}
 .copy-btn {
   flex: none;
   display: inline-flex;
@@ -4760,6 +4874,115 @@ a.hbars__row:hover {
 }
 .app-actions__erro {
   margin: 0;
+}
+/* Fora do plano (ADR 0035): o cadeado e o plano que inclui, com "Ver planos". */
+.app-actions__plano {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.85rem var(--font-apple);
+  color: var(--text-mute);
+}
+.glass-btn.glass-btn--small {
+  min-height: 34px;
+  padding: 0 16px;
+  font-size: 0.86rem;
+}
+/* Ajustes da central só no app de computador (o preload marca o <html> com .zro-desktop). */
+:root:not(.zro-desktop) .painel__item--no-app {
+  display: none;
+}
+/* Deep link absolutezro://apps/<id>?acao=…: o cartão do app chega em destaque. */
+.pcard[data-destaque='sim'] {
+  box-shadow:
+    0 0 0 2px var(--text-strong),
+    var(--shadow-float);
+}
+.pcard {
+  scroll-margin: 90px;
+}
+/* Ajustes da central (/app/ajustes): uma linha por app com o interruptor "Atualizar sozinho". */
+.ajustes {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 720px;
+}
+.ajustes__grupo {
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.ajustes__linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+}
+.ajustes__linha + .ajustes__linha {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.ajustes__nome {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.ajustes__nome strong {
+  color: var(--text-strong);
+  font: 700 0.98rem var(--font-apple);
+}
+.ajustes__nome span {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+.ajustes__interruptor {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: var(--surface-3);
+  transition: background 0.25s var(--ease);
+}
+.ajustes__interruptor::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+  transition: transform 0.3s var(--spring);
+}
+.ajustes__interruptor[aria-checked='true'] {
+  background: var(--text-strong);
+}
+.ajustes__interruptor[aria-checked='true']::after {
+  transform: translateX(18px);
+}
+:root[data-theme='dark'] .ajustes__interruptor[aria-checked='true']::after {
+  background: #1d1d1f;
+}
+.ajustes__interruptor:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ajustes__interruptor,
+  .ajustes__interruptor::after {
+    transition: none;
+  }
 }
 .dl-direto > summary {
   cursor: pointer;

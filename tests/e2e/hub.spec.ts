@@ -271,18 +271,29 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const painel = page.locator('#dl-painel')
   await expect(painel.getByText('Em desenvolvimento')).toHaveCount(0)
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://maestro.absolutezro.com/app')
-  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(2)
+  // no computador, pela Absolute ZRO (ADR 0035): nada de instalador avulso no cartão
+  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
+  await expect(painel.locator('a.dl-opt--central')).toHaveAttribute('href', '#absolute-zro')
   await page.getByRole('button', { name: 'Relay' }).click()
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
-  // o AEON não lançado (0049) nem aparece
+  // central única (ADR 0035): AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma; o resto instala pela
+  // Absolute ZRO (um download só, no topo, com o passo a passo e a linha do Terminal)
   await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
+  await expect(page.locator('#absolute-zro')).toBeVisible()
+  await expect(page.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
+  await expect(page.getByText('instalar.sh')).toHaveCount(0)
   const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
-  // o AEON não lançado: nada dele na central nem nas rotas (o Maestro abriu o computador na 0048)
-  expect(hrefsBaixar.filter((h) => /aeon\.absolutezro\.com\/(baixar|instalar)/.test(h))).toEqual([])
+  // nenhum instalador avulso na página: no computador, tudo pela Absolute ZRO
+  expect(hrefsBaixar.filter((h) => /\/baixar\/app\/|aeon\.absolutezro\.com\/(baixar|instalar)/.test(h))).toEqual([])
 
+  // catálogo da central 1.3: o Maestro tem o app de computador (0048); os não lançados ficam de fora
   const desktop = await (await request.get('/api/v1/desktop/apps')).json()
-  expect(desktop.apps.map((a: { id: string }) => a.id)).not.toContain('nossom')
+  const ids = desktop.apps.map((a: { id: string }) => a.id)
+  expect(ids).toContain('maestro')
+  for (const id of ['nossom', 'ai-edit', 'finishing', 'rift-motion']) expect(ids).not.toContain(id)
+  // a central 1.4 lê os apps da conta: sem sessão, 401
+  expect((await request.get('/api/v1/desktop/meus-apps')).status()).toBe(401)
   expect((await request.get('/baixar/app/nossom/NOSSOM-0.2.2-win-x64.exe', { maxRedirects: 0 })).status()).toBe(404)
 })
 
@@ -446,7 +457,9 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await page.getByRole('button', { name: 'Synquei' }).click()
   await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
   await expect(page.locator('.app-actions')).toHaveCount(0)
-  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
+  // no computador, o app instala pela Absolute ZRO (o instalador avulso saiu, ADR 0035)
+  await expect(page.locator('#app-synquei .dl-opt--central')).toHaveAttribute('href', '#absolute-zro')
+  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toHaveCount(0)
 })
 
 /**
