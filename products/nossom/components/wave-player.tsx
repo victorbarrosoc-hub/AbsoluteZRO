@@ -254,7 +254,7 @@ export const WavePlayer = memo(function WavePlayer({
         </div>
         <label className="checkbox-label">
           <input type="checkbox" checked={match} onChange={(e) => setMatch(e.target.checked)} />{' '}
-          Igualar volume na comparação
+          Mesmo volume
         </label>
         <button
           className={`button small ${region ? 'selected' : 'secondary'}`}

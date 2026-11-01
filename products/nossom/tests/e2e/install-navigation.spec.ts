@@ -5,23 +5,23 @@ test('compact navigation exposes six destinations, Início first and the Z last,
 }) => {
   await page.goto('/studio/automatico');
   const navigation = page.getByRole('navigation', { name: 'Navegação do estúdio', exact: true });
-  // seis destinos; dentro de Estúdio, os quatro passos (Proposta 2, titular 01/11/2026), com as ferramentas do aberto
+  // cinco destinos e, no meio do trilho, os quatro passos (Proposta 2, titular 01/11/2026); as ferramentas do passo
+  // aberto ficam na coluna ao lado
   const destinos = page.locator('.studio-sidebar nav[aria-label="Navegação do estúdio"] > button');
-  await expect(destinos).toHaveCount(6);
+  await expect(destinos).toHaveCount(5);
   await expect(destinos.first()).toHaveText('Início');
   await expect(destinos.last()).toHaveText('Z');
   const passos = navigation.getByRole('group', { name: 'Passos do estúdio' });
-  await expect(passos.locator('.passo-titulo')).toHaveText([
-    /Tratar/,
-    /Ajustar/,
-    /Criar/,
-    /Entregar/,
-  ]);
-  await expect(passos.getByRole('button', { name: /Restaurar com IA/ })).toHaveAttribute(
+  await expect(passos.getByRole('button')).toHaveText(['Tratar', 'Ajustar', 'Criar', 'Entregar']);
+  await expect(passos.getByRole('button', { name: 'Tratar' })).toHaveAttribute(
     'aria-current',
-    'page',
+    'step',
   );
-  await expect(navigation.getByRole('button', { name: 'Estúdio', exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Ferramentas de Tratar' })
+      .getByRole('button', { name: /Restaurar com IA/ }),
+  ).toHaveAttribute('aria-current', 'page');
   await expect(navigation.getByRole('button', { name: 'Meu plano', exact: true })).toBeVisible();
   await expect(navigation.getByText('FERRAMENTAS', { exact: true })).toHaveCount(0);
   await page

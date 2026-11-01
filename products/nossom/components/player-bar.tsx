@@ -26,8 +26,8 @@ export default function PlayerBar() {
   return (
     <section className="player-global" aria-label="Player">
       <div className="pg-faixa">
-        <span className="pg-capa" aria-hidden="true">
-          <svg viewBox="0 0 110 56" width="30" height="16">
+        <span className={`pg-capa ${p.tocando ? 'tocando' : ''}`} aria-hidden="true">
+          <svg viewBox="0 0 110 56" width="32" height="17">
             <path
               d="M3 42C28 14 35 0 55 18S82 43 107 8C78 48 72 53 50 36S25 24 3 42Z"
               fill="currentColor"
@@ -97,6 +97,14 @@ export default function PlayerBar() {
         )}
       </div>
       <div className="pg-direita">
+        {!noProjeto && (
+          <Link
+            className="pg-abrir"
+            href={`/studio/inicio?project=${encodeURIComponent(f.projectId)}`}
+          >
+            Abrir no estúdio
+          </Link>
+        )}
         <button
           type="button"
           className="pg-icone"

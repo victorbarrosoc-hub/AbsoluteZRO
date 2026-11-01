@@ -13,7 +13,11 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Do ruído.*ao pronto/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Tudo o que o som pede/ })).toBeVisible();
-  await page.screenshot({ path: 'artifacts/home-p2-1440.png', fullPage: true, animations: 'disabled' });
+  await page.screenshot({
+    path: 'artifacts/home-p2-1440.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
   await page.goto('/studio/automatico');
   await expect(barra(page)).toHaveCount(0);
   await page
@@ -39,22 +43,23 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
     await expect.poll(() => tempo(page)).toBeGreaterThan(antes);
   }
 
-  // os quatro passos na lateral: abrir um passo leva à primeira ferramenta dele, com o som tocando
+  // os quatro passos no trilho e as ferramentas do passo aberto na coluna ao lado
   const lateral = page.getByRole('navigation', { name: 'Navegação do estúdio' });
   const passos = lateral.getByRole('group', { name: 'Passos do estúdio' });
   await expect(passos.getByRole('button', { name: /Entregar/ })).toHaveAttribute(
-    'aria-expanded',
-    'true',
+    'aria-current',
+    'step',
   );
   await passos.getByRole('button', { name: /Ajustar/ }).click();
   await expect(page).toHaveURL(/\/studio\/voz/);
   await expect(passos.getByRole('button', { name: /Ajustar/ })).toHaveAttribute(
-    'aria-expanded',
-    'true',
+    'aria-current',
+    'step',
   );
-  await passos.getByRole('button', { name: /Nivelar volumes/ }).click();
+  const lista = page.getByRole('region', { name: 'Ferramentas de Ajustar' });
+  await lista.getByRole('button', { name: /Nivelar volumes/ }).click();
   await expect(page).toHaveURL(/\/studio\/nivelamento/);
-  await expect(passos.getByRole('button', { name: /Nivelar volumes/ })).toHaveAttribute(
+  await expect(lista.getByRole('button', { name: /Nivelar volumes/ })).toHaveAttribute(
     'aria-current',
     'page',
   );

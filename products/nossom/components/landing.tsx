@@ -4,13 +4,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import {
-  AudioLines,
-  Mic2,
-  SlidersHorizontal,
   ArrowRight,
   ArrowUpRight,
   Play,
-  ShieldCheck,
   Menu,
   Download,
   Laptop,
@@ -25,7 +21,6 @@ import {
   Sparkle,
 } from 'lucide-react';
 import CinematicRibbon from './cinematic-ribbon';
-import SignalField from './signal-field';
 import { Brand } from './brand';
 import { ZroSymbol } from './zro-symbol';
 import DemoPlayer from './demo-player';
@@ -62,43 +57,6 @@ function useSectionInView(sections: readonly Section[]) {
   return active;
 }
 /** As três ações do estúdio: cartões que abrem a ferramenta; fechado ao público, só apresentam (sem link). */
-function Intent({
-  closed,
-  href,
-  intent,
-  label,
-  children,
-}: {
-  closed: boolean;
-  href: string;
-  intent: string;
-  label: string;
-  children: ReactNode;
-}) {
-  if (closed)
-    return (
-      <a className="lg" data-intent={intent}>
-        {children}
-      </a>
-    );
-  return (
-    <Link href={href} data-intent={intent} className="lg" aria-label={label}>
-      {children}
-      <ArrowRight size={18} />
-    </Link>
-  );
-}
-/** Navegação quando os cartões levam ao estúdio; só um bloco de apresentação quando fechado. */
-function IntentsWrap({ closed, children }: { closed: boolean; children: ReactNode }) {
-  const className = 'home-intents chrome-intents ns-wrap';
-  return closed ? (
-    <div className={className}>{children}</div>
-  ) : (
-    <nav className={className} aria-label="Escolha o que fazer com seu áudio">
-      {children}
-    </nav>
-  );
-}
 function Reveal({
   children,
   className = '',
@@ -169,7 +127,7 @@ export default function Landing({
     inView = useSectionInView(sections),
     lens = hover ?? inView;
   return (
-    <div className="ns-site home-v2 chrome-site">
+    <div className="ns-site home-v2 chrome-site home-p2">
       <SiteMotion />
       <a className="skip-link" href="#conteudo">
         Pular para o conteúdo
@@ -269,10 +227,8 @@ export default function Landing({
         </div>
       </header>
       <main id="conteudo">
-        <SignalField />
         <section className="home-hero">
-          <div className="home-hero-atmosphere" aria-hidden="true" />
-          <div className="ns-wrap home-hero-grid">
+          <div className="ns-wrap home-hero-centro">
             <Reveal className="home-hero-copy">
               <h1>
                 Do ruído
@@ -286,58 +242,28 @@ export default function Landing({
                   </a>
                 ) : (
                   <Link href="/studio" className="button primary">
-                    Começar grátis <ArrowUpRight size={17} />
+                    Abrir o estúdio
                   </Link>
                 )}
                 <a href="#experimente" className="home-listen-link">
                   <span>
                     <Play size={13} fill="currentColor" />
                   </span>
-                  Ouça a diferença
+                  Ouvir a diferença
                 </a>
               </div>
-              <div className="home-hero-proof">
-                {closed ? (
-                  <>
-                    <Sparkle size={15} />
-                    <span>Em desenvolvimento. Em breve, no Absolute ZRO.</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck size={15} />
-                    <span>5 minutos grátis de IA por mês. Seu original preservado.</span>
-                  </>
-                )}
-              </div>
+              {closed && (
+                <div className="home-hero-proof">
+                  <Sparkle size={15} />
+                  <span>Em desenvolvimento. Em breve, no Absolute ZRO.</span>
+                </div>
+              )}
             </Reveal>
-            <div className="home-hero-interface chrome-hero-art">
-              <CinematicRibbon priority />
-            </div>
           </div>
-          {/* Fechado ao público os três cartões só apresentam o que o estúdio faz: nada abre. */}
-          <IntentsWrap closed={closed}>
-            <Intent closed={closed} href="/studio/automatico" intent="auto" label="Limpar fala">
-              <AudioLines size={32} />
-              <span>
-                <strong>Limpar fala</strong>
-                <small>Reduza ruídos da gravação</small>
-              </span>
-            </Intent>
-            <Intent closed={closed} href="/studio/isolar-voz" intent="vocals" label="Isolar voz">
-              <Mic2 size={32} />
-              <span>
-                <strong>Isolar voz</strong>
-                <small>Sem música nem ruído de fundo</small>
-              </span>
-            </Intent>
-            <Intent closed={closed} href="/studio/efeitos" intent="effects" label="Criar efeitos">
-              <SlidersHorizontal size={32} />
-              <span>
-                <strong>Criar efeitos</strong>
-                <small>Transforme seu som</small>
-              </span>
-            </Intent>
-          </IntentsWrap>
+          {/* Proposta 2 (titular, 01/11/2026): as linhas de luz atravessam a página, embaixo do título. */}
+          <div className="home-hero-interface chrome-hero-art">
+            <CinematicRibbon priority />
+          </div>
         </section>
         <section className="home-listen ns-wrap" id="experimente">
           <div className="chrome-listen-heading">

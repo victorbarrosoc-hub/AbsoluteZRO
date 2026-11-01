@@ -38,7 +38,10 @@ test('studio navigation responds without server round trips, supports history an
     await expect(page.getByRole('heading', { name: 'Meus projetos.', exact: true })).toBeVisible({
       timeout: 1000,
     });
-    await navigation.getByRole('button', { name: 'Estúdio', exact: true }).click();
+    // no computador, o estúdio abre pelo passo (Proposta 2); no celular, pela aba Estúdio
+    await navigation
+      .getByRole('button', { name: width < 680 ? 'Estúdio' : 'Tratar', exact: true })
+      .click();
     await expect(page.getByRole('heading', { name: 'Original', exact: true })).toBeVisible({
       timeout: 1000,
     });

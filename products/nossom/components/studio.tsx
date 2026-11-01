@@ -82,7 +82,7 @@ import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
 import Assistant from './assistant';
 import { WavePlayer } from './wave-player';
-import PassosNav from './passos-nav';
+import { PassosLista, PassosTrilho } from './passos-nav';
 import { player } from '@/lib/player';
 import { restoreCloud, releaseCloudJob, cancelCloudJob } from '@/lib/cloud-audio';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
@@ -1283,169 +1283,180 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         >
           <X size={20} />
         </button>
-        <Link href="/" aria-label="NOSSOM página inicial">
-          <Brand />
-        </Link>
-        <div className="workspace-label">
-          <UserAvatar account={account} className="workspace-avatar" />
-          <div>
-            <strong className="workspace-name" title={account.name}>
-              {account.name}
-            </strong>
-            <span className="account-plan">{accountPlan(account, usage)}</span>
-            <small title={account.email}>{account.email}</small>
-          </div>
-          <span className="local-badge">{account.isAdmin ? 'ADM' : 'CONTA'}</span>
-        </div>
-        {!account.isAdmin && (
-          <div className="weekly-usage" role="status">
-            <span>{usage ? usageLabel(usage) : usageError || 'Consultando tratamentos…'}</span>
-            {usage && !usage.unlimited && (
-              <>
-                <progress
-                  max={Math.max(1, usage.limit ?? 300)}
-                  value={usage.used}
-                  aria-label="Minutos da franquia usados ou reservados neste mês"
-                />
-                <small>
-                  Renova dia{' '}
-                  {Number.isFinite(Date.parse(usage.resetAt))
-                    ? new Intl.DateTimeFormat('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        timeZone: 'America/Fortaleza',
-                      }).format(new Date(usage.resetAt))
-                    : '1 do próximo mês'}
-                  , à 0h · Brasília
-                </small>
-              </>
-            )}
-            {usageError && (
-              <button className="text-link" onClick={refreshUsage}>
-                Tentar novamente
+        <div className="trilho">
+          <Link href="/" aria-label="NOSSOM página inicial" className="trilho-marca">
+            <Brand />
+          </Link>
+          <nav aria-label="Navegação do estúdio">
+            <button
+              className={view === 'home' || view === 'ai' ? 'active' : ''}
+              onClick={() => navigate('home')}
+            >
+              <House size={18} /> Início
+            </button>
+            <button
+              className={view === 'projects' ? 'active' : ''}
+              onClick={() => navigate('projects')}
+              title={pending.projects.title || undefined}
+            >
+              <Folder size={18} /> Meus projetos
+              {pending.projects.count ? (
+                <NavBadge count={pending.projects.count} />
+              ) : (
+                <small>{projects.length}</small>
+              )}
+            </button>
+            <PassosTrilho
+              ferramenta={routeTool}
+              atual={operation}
+              desabilitado={!!busy || recording}
+              onFerramenta={chooseTool}
+            />
+            <button
+              className={view === 'account' ? 'active' : ''}
+              onClick={() => {
+                setSidebar(false);
+                if (!busy && !recording) visitStudio('/studio/conta');
+              }}
+            >
+              <UserRound size={18} /> Minha conta
+            </button>
+            <button
+              className={view === 'plans' ? 'active' : ''}
+              onClick={() => {
+                setSidebar(false);
+                if (!busy && !recording) visitStudio('/studio/planos');
+              }}
+            >
+              <Gem size={18} /> {account.isAdmin ? 'Planos' : 'Meu plano'}
+            </button>
+            {account.isAdmin && (
+              <button
+                className={view === 'admin' ? 'active' : ''}
+                disabled={!!busy || recording}
+                onClick={() => {
+                  setSidebar(false);
+                  visitStudio('/studio/admin');
+                }}
+              >
+                <Activity size={18} />
+                Administração
               </button>
             )}
-            {usage && (
-              <StudioLink
-                href="/studio/planos"
-                className="usage-upgrade"
-                onClick={() => setSidebar(false)}
+            {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
+            {setZro.visivel && (
+              <button
+                className={setZro.aberto ? 'active' : ''}
+                aria-haspopup="dialog"
+                aria-expanded={setZro.aberto}
+                aria-label={rotuloSet(setZro)}
+                title="Quem está online e as conversas"
+                data-set=""
+                onClick={() => {
+                  setSidebar(false);
+                  setZro.alternar();
+                }}
               >
-                {!usage.planId || usage.planId === 'free' ? 'Fazer upgrade' : 'Ver meu plano'}
-                <ArrowUpRight size={13} />
-              </StudioLink>
+                <UsersRound size={18} /> Set
+                {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
+              </button>
             )}
-          </div>
-        )}
-        <button
-          className="button primary new-project"
-          onClick={() => fileInput.current?.click()}
-          disabled={!!busy || recording}
-        >
-          <Plus size={17} /> Novo projeto
-        </button>
-        <nav aria-label="Navegação do estúdio">
-          <button
-            className={view === 'home' || view === 'ai' ? 'active' : ''}
-            onClick={() => navigate('home')}
-          >
-            <House size={18} /> Início
-          </button>
-          <button
-            className={view === 'projects' ? 'active' : ''}
-            onClick={() => navigate('projects')}
-            title={pending.projects.title || undefined}
-          >
-            <Folder size={18} /> Meus projetos
-            {pending.projects.count ? (
-              <NavBadge count={pending.projects.count} />
-            ) : (
-              <small>{projects.length}</small>
+            {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
+            {zroIa && (
+              <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+                <Circle size={18} strokeWidth={1.5} /> Z
+              </button>
             )}
-          </button>
-          <PassosNav
-            ferramenta={routeTool}
-            atual={operation}
-            desabilitado={!!busy || recording}
-            onEstudio={() => chooseTool(operation)}
-            onFerramenta={chooseTool}
-          />
-          <button
-            className={view === 'account' ? 'active' : ''}
-            onClick={() => {
-              setSidebar(false);
-              if (!busy && !recording) visitStudio('/studio/conta');
-            }}
-          >
-            <UserRound size={18} /> Minha conta
-          </button>
-          <button
-            className={view === 'plans' ? 'active' : ''}
-            onClick={() => {
-              setSidebar(false);
-              if (!busy && !recording) visitStudio('/studio/planos');
-            }}
-          >
-            <Gem size={18} /> {account.isAdmin ? 'Planos' : 'Meu plano'}
-          </button>
-          {account.isAdmin && (
-            <button
-              className={view === 'admin' ? 'active' : ''}
-              disabled={!!busy || recording}
-              onClick={() => {
-                setSidebar(false);
-                visitStudio('/studio/admin');
-              }}
-            >
-              <Activity size={18} />
-              Administração
-            </button>
-          )}
-          {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
-          {setZro.visivel && (
-            <button
-              className={setZro.aberto ? 'active' : ''}
-              aria-haspopup="dialog"
-              aria-expanded={setZro.aberto}
-              aria-label={rotuloSet(setZro)}
-              title="Quem está online e as conversas"
-              data-set=""
-              onClick={() => {
-                setSidebar(false);
-                setZro.alternar();
-              }}
-            >
-              <UsersRound size={18} /> Set
-              {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
-            </button>
-          )}
-          {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
-          {zroIa && (
-            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-              <Circle size={18} strokeWidth={1.5} /> Z
-            </button>
-          )}
-        </nav>
-        <FamilyNav onOpen={() => setSidebar(false)} />
-        <div className="sidebar-bottom">
-          <InstallApp onOpen={() => setSidebar(false)} />
-          <Link
-            href="/apps"
-            className="sidebar-apps-link"
-            aria-label="Aplicativos para Mac e Windows"
-          >
-            <Download size={18} />{' '}
-            <span>
-              Aplicativos<small>Mac e Windows</small>
-            </span>
-          </Link>
-          <div className="local-note">
-            <ShieldCheck size={17} />
-            <div>Originais preservados.</div>
+          </nav>
+        </div>
+        <div className="coluna">
+          <div className="workspace-label">
+            <UserAvatar account={account} className="workspace-avatar" />
+            <div>
+              <strong className="workspace-name" title={account.name}>
+                {account.name}
+              </strong>
+              <span className="account-plan">{accountPlan(account, usage)}</span>
+              <small title={account.email}>{account.email}</small>
+            </div>
+            <span className="local-badge">{account.isAdmin ? 'ADM' : 'CONTA'}</span>
           </div>
-          <Link href="/privacidade">
-            Privacidade <ArrowUpRight size={13} />
-          </Link>
+          {!account.isAdmin && (
+            <div className="weekly-usage" role="status">
+              <span>{usage ? usageLabel(usage) : usageError || 'Consultando tratamentos…'}</span>
+              {usage && !usage.unlimited && (
+                <>
+                  <progress
+                    max={Math.max(1, usage.limit ?? 300)}
+                    value={usage.used}
+                    aria-label="Minutos da franquia usados ou reservados neste mês"
+                  />
+                  <small>
+                    Renova dia{' '}
+                    {Number.isFinite(Date.parse(usage.resetAt))
+                      ? new Intl.DateTimeFormat('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          timeZone: 'America/Fortaleza',
+                        }).format(new Date(usage.resetAt))
+                      : '1 do próximo mês'}
+                    , à 0h · Brasília
+                  </small>
+                </>
+              )}
+              {usageError && (
+                <button className="text-link" onClick={refreshUsage}>
+                  Tentar novamente
+                </button>
+              )}
+              {usage && (
+                <StudioLink
+                  href="/studio/planos"
+                  className="usage-upgrade"
+                  onClick={() => setSidebar(false)}
+                >
+                  {!usage.planId || usage.planId === 'free' ? 'Fazer upgrade' : 'Ver meu plano'}
+                  <ArrowUpRight size={13} />
+                </StudioLink>
+              )}
+            </div>
+          )}
+          <button
+            className="button primary new-project"
+            onClick={() => fileInput.current?.click()}
+            disabled={!!busy || recording}
+          >
+            <Plus size={17} /> Novo projeto
+          </button>
+          {routeTool && (
+            <PassosLista
+              ferramenta={routeTool}
+              atual={operation}
+              desabilitado={!!busy || recording}
+              onFerramenta={chooseTool}
+            />
+          )}
+          <FamilyNav onOpen={() => setSidebar(false)} />
+          <div className="sidebar-bottom">
+            <InstallApp onOpen={() => setSidebar(false)} />
+            <Link
+              href="/apps"
+              className="sidebar-apps-link"
+              aria-label="Aplicativos para Mac e Windows"
+            >
+              <Download size={18} />{' '}
+              <span>
+                Aplicativos<small>Mac e Windows</small>
+              </span>
+            </Link>
+            <div className="local-note">
+              <ShieldCheck size={17} />
+              <div>Originais preservados.</div>
+            </div>
+            <Link href="/privacidade">
+              Privacidade <ArrowUpRight size={13} />
+            </Link>
+          </div>
         </div>
       </aside>
       <div className="studio-body" inert={mobile && sidebar}>

@@ -314,7 +314,8 @@ test('studio themes persist, responsive layouts fit and reduced motion pauses de
       .first()
       .evaluate((el) => getComputedStyle(el).animationName),
   ).toBe('none');
+  // a home da Proposta 2 (titular, 01/11/2026) é preta
   expect(await page.locator('body').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-    'rgb(8, 15, 27)',
+    'rgb(0, 0, 0)',
   );
 });
