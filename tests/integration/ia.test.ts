@@ -77,7 +77,9 @@ describe('IA do ecossistema', () => {
     // o retrato que a Z lê marca o que está fechado para a pessoa no canal da chamada (api): o NOSSOM abre (sem plano = disponível)
     const retrato = await retratoDoEcossistema(db, t.actor, 'nossom')
     const acesso = Object.fromEntries(retrato.ferramentas.map((f) => [f.id, f.acesso]))
-    expect(acesso).toMatchObject({ nossom: 'available', tpeasy: 'contracted', 'ai-edit': 'available', finishing: 'closed', 'carro-do-freela': 'available' })
+    expect(acesso).toMatchObject({ nossom: 'available', tpeasy: 'contracted', 'carro-do-freela': 'available' })
+    // os outros não lançados nem entram no retrato (0049): a Z não sabe que existem
+    for (const id of ['ai-edit', 'finishing']) expect(acesso, id).not.toHaveProperty(id)
   })
 
   it('conversa é pessoal: nem o dono da organização lê a de outra pessoa (RLS)', async () => {

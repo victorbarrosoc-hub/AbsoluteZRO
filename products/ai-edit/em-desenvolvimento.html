@@ -1,34 +1,33 @@
 <!doctype html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR">
+  <!-- Página neutra (titular, 01/11/2026: app não lançado não aparece em lugar nenhum): sem marca, nome ou explicação
+       do app. Vale para qualquer pessoa sem acesso, no lugar da página inicial, da entrada e do editor fechado. -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>AEON · Em desenvolvimento</title>
-    <meta name="description" content="O AEON, o editor de vídeo da Absolute ZRO, está em desenvolvimento." />
-    <meta name="robots" content="noindex" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#000000" />
-    <meta property="og:title" content="AEON · Em desenvolvimento" />
-    <meta property="og:image" content="https://aeon.absolutezro.com/marca/og.jpg" />
-    <!-- caminhos absolutos: esta página também é servida no lugar das rotas fechadas -->
-    <link rel="icon" href="/marca/aeon-favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/marca/apple-touch-icon.png" />
-    <link rel="preload" href="/vendor/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <script src="/site/tema.js"></script>
-    <link rel="stylesheet" href="/site/fechado.css" />
-    <script type="module" src="/site/fechado.js"></script>
+    <title>Absolute ZRO</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      :root { color-scheme: light dark; --fundo: #f5f5f7; --tinta: #1d1d1f; --apoio: #6e6e73; }
+      @media (prefers-color-scheme: dark) { :root { --fundo: #000; --tinta: #f5f5f7; --apoio: #a1a1a6; } }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--fundo); color: var(--tinta); font: 17px/1.45 -apple-system, BlinkMacSystemFont, 'Figtree', system-ui, sans-serif; text-align: center; }
+      main { display: grid; justify-items: center; gap: 14px; max-width: 420px; }
+      svg { width: 28px; height: 28px; color: var(--tinta); margin-bottom: 10px; }
+      h1 { margin: 0; font-size: clamp(30px, 7vw, 40px); line-height: 1.1; letter-spacing: -0.02em; }
+      h1 span { font-weight: 300; }
+      h1 b { font-weight: 800; }
+      p { margin: 0 0 10px; color: var(--apoio); }
+      a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 22px; border-radius: 999px; background: var(--tinta); color: var(--fundo); text-decoration: none; font-weight: 600; font-size: 15px; }
+    </style>
   </head>
-  <body class="pagina-fechado">
-    <header class="fechado-topo">
-      <a class="fechado-zro" href="https://absolutezro.com" aria-label="Absolute ZRO">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z" /><path fill="currentColor" fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z" /></svg>
-      </a>
-    </header>
-    <main class="fechado">
-      <div class="fechado-produto" style="--d: 0" role="img" aria-label="AEON"><span data-marca="simbolo"></span><span data-marca="nome"></span></div>
-      <h1 style="--d: 1"><span class="fino">Em</span> <span class="forte">desenvolvimento.</span></h1>
-      <p style="--d: 2">O AEON chega com a sua conta Absolute ZRO.</p>
-      <a class="glass-btn glass-btn--ink" style="--d: 3" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
+  <body>
+    <main>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Absolute ZRO"><path fill="currentColor" d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z" /><path fill="currentColor" fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z" /></svg>
+      <h1><span>Página </span><b>indisponível.</b></h1>
+      <p>O que você procura não está aqui.</p>
+      <a href="https://absolutezro.com">Ir para a Absolute ZRO</a>
     </main>
   </body>
 </html>

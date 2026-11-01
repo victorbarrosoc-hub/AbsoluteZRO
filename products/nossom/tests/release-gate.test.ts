@@ -182,12 +182,20 @@ test('closed proxy: anonymous visitors get 403 on product APIs, the login page f
   }
   for (const path of ['/api/account', '/api/account/avatar', '/api/zro/entrar', '/api/zro/conta'])
     assert.equal(passes(await proxy(nextRequest(path))), true, path);
-  const studio = await proxy(nextRequest('/studio/z?project=1'));
-  assert.equal(studio.status, 307);
-  assert.equal(
-    studio.headers.get('location'),
-    SITE + '/entrar?next=' + encodeURIComponent('/studio/z?project=1'),
-  );
+  // Fechado (titular, 01/11/2026): o estúdio e as páginas do site vão para a Absolute ZRO, sem nada do NOSSOM.
+  for (const path of [
+    '/studio/z?project=1',
+    '/',
+    '/apps',
+    '/entrar',
+    '/baixar',
+    '/em-desenvolvimento',
+    '/opengraph-image',
+  ]) {
+    const response = await proxy(nextRequest(path));
+    assert.equal(response.status, 307, path);
+    assert.equal(response.headers.get('location'), 'https://absolutezro.com/', path);
+  }
 });
 
 test('closed proxy: a signed-in account without "allowed" sees the dev page (200, same address) and 403 on APIs', async () => {
@@ -196,6 +204,12 @@ test('closed proxy: a signed-in account without "allowed" sees the dev page (200
     const response = await proxy(nextRequest(path, cookie));
     assert.equal(response.status, 200, path);
     assert.match(rewriteOf(response) ?? '', /\/em-desenvolvimento$/, path);
+  }
+  // as páginas do site vão para a Absolute ZRO
+  for (const path of ['/', '/apps', '/entrar']) {
+    const response = await proxy(nextRequest(path, cookie));
+    assert.equal(response.status, 307, path);
+    assert.equal(response.headers.get('location'), 'https://absolutezro.com/', path);
   }
   for (const path of ['/api/usage', '/api/plans', '/api/zro/ia/estado', '/api/audio/jobs'])
     assert.equal((await proxy(nextRequest(path, cookie))).status, 403, path);
@@ -223,7 +237,15 @@ test('closed proxy: the allowed account passes everywhere; the link is re-read o
   assert.equal(passes(first), true);
   const cookie = first.headers.get('set-cookie')!.split(';')[0];
   assert.match(cookie, /^nossom-account=/);
-  for (const path of ['/studio', '/studio/z', '/api/usage', '/api/plans', '/api/zro/ia/estado']) {
+  for (const path of [
+    '/studio',
+    '/studio/z',
+    '/api/usage',
+    '/api/plans',
+    '/api/zro/ia/estado',
+    '/',
+    '/apps',
+  ]) {
     const response = await proxy(nextRequest(path, cookie));
     assert.equal(passes(response), true, path);
     assert.equal(rewriteOf(response), null, path);
@@ -244,6 +266,9 @@ test('released proxy: accounts without a link pass as before and "closed" in the
   released();
   const cookie = testCookie();
   assert.equal(passes(await proxy(nextRequest('/studio', cookie))), true);
+  // aberto, as páginas do site são públicas como antes
+  for (const path of ['/', '/apps', '/entrar'])
+    assert.equal(passes(await proxy(nextRequest(path))), true, path);
   assert.equal(
     passes(await proxy(nextRequest('/api/plans'))),
     true,

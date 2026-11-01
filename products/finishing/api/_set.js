@@ -88,7 +88,7 @@ export async function repassarSet(req, res, caminho = caminhoDe(req)) {
   if (!configurado()) return negar(res, 401, SEM_LOGIN)
   const conta = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
   // fechado ao público: só a conta que o HUB liberou fala com o Set por aqui (nada sai para a Absolute ZRO)
-  if (conta && typeof conta.sub === 'string' && !liberado(conta)) return negar(res, 403, 'Em desenvolvimento.')
+  if (conta && typeof conta.sub === 'string' && !liberado(conta)) return negar(res, 403, 'Indisponível.')
   let t = conta && typeof conta.sub === 'string' ? decifrar(COOKIE_TOKENS, lerCookie(req, COOKIE_TOKENS)) : null
   if (!t) return negar(res, 401, SEM_LOGIN)
 

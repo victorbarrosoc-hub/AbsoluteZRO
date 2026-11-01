@@ -46,9 +46,10 @@ const lembrados = (() => {
 })()
 const pedido = new URLSearchParams(location.search).get('preset')
 
-// "Abrir no Relay" vindo de outra plataforma da família (docs/integration-contracts/relay.md): uma ficha discreta
-const FAMILIA = { sobedesce: 'SOBEDESCE', revela: 'Revela', aeon: 'AEON', nossom: 'NOSSOM', synquei: 'Synquei', maestro: 'Maestro', tpeasy: 'TPeasy', 'carro-do-freela': 'Carro do Freela', hub: 'Absolute ZRO' }
-const ICONE_FAMILIA = { sobedesce: 'sobedesce.svg', revela: 'revela.svg', aeon: 'aeon.svg', nossom: 'nossom.svg', synquei: 'synquei.svg', tpeasy: 'tpeasy.svg', 'carro-do-freela': 'carro-do-freela.png', hub: 'absolute-zro-o.webp' }
+// "Abrir no Relay" vindo de outra plataforma da família (docs/integration-contracts/relay.md): uma ficha discreta. Só
+// as plataformas no ar (titular, 01/11/2026: app não lançado não aparece em lugar nenhum); de outra, nada de ficha.
+const FAMILIA = { sobedesce: 'SOBEDESCE', synquei: 'Synquei', maestro: 'Maestro', tpeasy: 'TPeasy', 'carro-do-freela': 'Carro do Freela', hub: 'Absolute ZRO' }
+const ICONE_FAMILIA = { sobedesce: 'sobedesce.svg', synquei: 'synquei.svg', tpeasy: 'tpeasy.svg', 'carro-do-freela': 'carro-do-freela.png', hub: 'absolute-zro-o.webp' }
 const de = new URLSearchParams(location.search).get('de')
 if (FAMILIA[de]) {
   const vindo = document.createElement('p')

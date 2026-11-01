@@ -63,6 +63,6 @@ export function temAcesso(claims: AccessClaims | null | undefined): boolean {
 export class AccessClosedError extends Error {
   readonly code = 'product_closed';
   constructor() {
-    super('O NOSSOM está em desenvolvimento. Só contas autorizadas pela Absolute ZRO entram.');
+    super('Indisponível.');
   }
 }
