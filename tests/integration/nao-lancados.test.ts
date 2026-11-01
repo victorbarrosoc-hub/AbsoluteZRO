@@ -19,7 +19,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
-const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom']
+const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion']
 const NO_AR = ['maestro', 'carro-do-freela', 'synquei', 'sobedesce', 'relay', 'tpeasy']
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
 const MIGRATION = readFileSync(new URL('../../infra/migrations/0049_nao_lancados.sql', import.meta.url), 'utf8')
@@ -52,7 +52,7 @@ describe('gate (0049)', () => {
     const antes = await contar()
     await db.sql.unsafe(MIGRATION)
     expect(await contar()).toEqual(antes)
-    expect(antes.produtos).toBe(3)
+    expect(antes.produtos).toBe(4)
     expect(antes.planos).toBeGreaterThan(0)
     resetReleaseCache()
   })
@@ -82,7 +82,7 @@ describe('conta comum × admin da plataforma', () => {
     const actor = await authorize(db, o.auth)
     const retrato = await retratoDoEcossistema(db, actor, null)
     const texto = JSON.stringify(retrato)
-    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'ai-edit', 'finishing', 'nossom']) expect(texto, nome).not.toContain(nome)
+    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion']) expect(texto, nome).not.toContain(nome)
   })
 
   it('admin da plataforma: vê e acessa tudo, em todos os canais (web, computador e download inclusive)', async () => {
