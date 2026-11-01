@@ -181,6 +181,17 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 01/nov · 2 — toque de 44 px no iPhone (`test/toque-44.js`)
+
+Titular, depois de aprovar o HUB no iPhone: *"pode revisar os outros apps de celular?"*. Largura e campos já estavam
+certos (`sem-zoom.js`); o dedo é que errava: `.btn.sm` com 35 px, a barra do post com 31, "← Voltar" com 21, as setas
+do mês com 30, o tema com 27×24. O conserto é o último bloco da folha (`@media(pointer:coarse)`): a área de toque
+cresce até 44 × 44 por um `::after` invisível com `inset:min(0px,calc((100% - 44px) / 2))`, o desenho não muda e
+`:where` no `position` não briga com quem já é posicionado. ⚠️ **Classe nova de botão pequeno entra na lista** (as
+duas, a do `:where` e a do `::after`); a suíte mede as telas logadas dos dois lados a 375/393/430 e a home deitada, e
+só conta o que está por cima (o centro do botão é dele). ⚠️ Não vale para a Sede/"Montar job" do site real (precisa do
+banco e da Absolute ZRO falsa): fica para a próxima rodada de `missoes-real.js`.
+
 ## 01/nov — a guilda entra na FASE 1, GRÁTIS (branch `guilda-fase1`; `_guilda-testes.js`, `test/guilda-real.js`)
 
 Titular: *"a guilda do Carro do Freela entra na fase 1 do lançamento, GRÁTIS"*. O que está abaixo (31/out) segue valendo,

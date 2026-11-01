@@ -37,8 +37,8 @@ export default defineConfig({
   projects: [
     { name: "computador", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "iphone", use: { ...devices["iPhone 15 Pro"], browserName: "chromium" } },
-    // O Safari de verdade (WebKit) para o detector de corte, a troca de seção, os gestos do Quadro, o Set, o Relay e o deslizar para apagar.
-    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos|set|relay|criacao-apagar)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
+    // O Safari de verdade (WebKit) para o detector de corte, as telas de uso no iPhone (toque de 44 px), a troca de seção, os gestos do Quadro, o Set, o Relay e o deslizar para apagar.
+    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos|set|relay|criacao-apagar|celular)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
     // O Safari do Mac (WebKit) para arrastar o card com o mouse.
     { name: "computador-safari", testMatch: /arrastar\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
