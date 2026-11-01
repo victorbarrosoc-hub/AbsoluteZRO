@@ -52,6 +52,17 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (calculadora e console) e TPeasy (saiu o `maximum-scale=1`). Carro do Freela já estava certo. Teste
   `tests/e2e/iphone-telas.spec.ts` (WebKit e Chromium, 375/393/430 px, admin e conta comum). Falta: conferir num iPhone
   de verdade depois de publicar (autorização do titular).
+- ✅ Apps no iPhone (01/11/2026, branch `apps-celular`, "pode revisar os outros apps de celular?"): as telas logadas
+  de Maestro, Carro do Freela, SOBEDESCE (app do celular), Synquei, TPeasy e Relay no WebKit a 375/393/430 px e deitado.
+  Toque de 44 × 44 em todo botão à vista (a área cresce por um `::after` invisível em tela de toque, o desenho não
+  muda; seletor que rola de lado nasce do tamanho certo); Maestro: a pílula do cronômetro deixava o "+" do Roteiro e
+  do Fluxo por baixo dela, tocar no tempo do card não abria o card (o número animado ficava por cima do botão), os
+  selos-seletores do Roteiro com 24 px, filtros do Quadro cortados ("Clientes"/"Pessoas") e o Quadro deitado com metade
+  da tela de cabeçalho; Synquei: a tabela de clipes da Mídia cortada na borda (vira lista no iPhone), busca e tipo do
+  aparelho espremidos e a página que alargava 13 px na troca de tela; TPeasy, Relay e Carro do Freela: só toque. Testes
+  novos por produto (Maestro `e2e/celular.spec.ts`; TPeasy, Synquei e SOBEDESCE `tests/celular*.test.mjs|mts`; Relay
+  em `test/tela.test.js`; Carro `test/toque-44.js`). Falta: a Sede/"Montar job" do site real do Carro (precisa do
+  banco e da Absolute ZRO falsa), as páginas Next do SOBEDESCE e conferir num iPhone de verdade depois de publicar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela

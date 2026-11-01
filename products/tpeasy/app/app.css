@@ -2638,3 +2638,26 @@ html.kb-open .editor-bar {
   --zro-set-raio: var(--r-lg);
   --zro-set-fonte: var(--font);
 }
+
+/* ───────────── toque de 44 px (Apple HIG; revisão do iPhone, 01/11/2026) ─────────────
+   O desenho fica (o passo − +, os chips, o play e o ⋮ da lista, as marcações do editor, o seletor de cima), e a área de
+   toque cresce até 44 × 44 por um ::after invisível centralizado, como o .icon-btn. O inset usa a medida do próprio
+   botão (altura em cima e embaixo, largura nos lados); quem já tem 44 não muda. As faixas que rolam de lado ganham o
+   respiro de cima e de baixo para a área não ser cortada. tests/celular.test.mjs confere. */
+:where(.mini-stepper button, .speed button, .chip, .seg button, .item-play, .item-more, .marks button, .hud-btn, .nav-back) {
+  position: relative;
+}
+:is(.mini-stepper button, .speed button, .chip, .seg button, .item-play, .item-more, .marks button, .hud-btn, .nav-back)::after {
+  content: "";
+  position: absolute;
+  inset: min(0px, calc((100% - 44px) / 2));
+}
+.profiles {
+  padding-block: 6px;
+  margin-block: -4px -2px;
+}
+.target-chips {
+  padding-block: 8px;
+  margin-block: -4px 0;
+}
+

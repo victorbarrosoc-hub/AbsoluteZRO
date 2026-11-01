@@ -4909,3 +4909,99 @@ html:not(.is-desktop) .so-desktop {
     font-size: 16px;
   }
 }
+
+/* Toque de 44 px no iPhone (Apple HIG; revisão do titular, 01/11/2026). Em tela de toque, botões, campos e seletores
+   ganham a altura de um dedo; o que é pequeno de propósito (o seletor de cima, os chips, os links do painel, o ícone)
+   fica com o desenho e a área de toque cresce até 44 × 44 por um ::after invisível centralizado (o `inset` usa a medida
+   do próprio botão). tests/celular.test.mjs confere no WebKit. */
+@media (pointer: coarse) {
+  .btn:not(.btn-sm, .btn-xl),
+  .input,
+  .select {
+    height: 44px;
+  }
+  :where(.btn-sm, .seg button, .tipo-chip, .pn-link, .icon-btn) {
+    position: relative;
+  }
+  :is(.btn-sm, .seg button, .tipo-chip, .pn-link, .icon-btn)::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
+  /* o seletor rola de lado (e corta o que passa da borda): cada opção já nasce com 40 px e o toque cresce só os 2 px
+     do respiro da faixa */
+  .seg button {
+    height: 40px;
+  }
+}
+/* Mídia no iPhone: a busca ocupa a linha dela e o tipo do aparelho desce para baixo do nome (o nome e a descrição não
+   ficam espremidos numa coluna estreita) */
+@media (max-width: 860px) {
+  /* a tela que entra deslizando (enter-fwd, 22 px) não alarga a página do iPhone no meio do movimento */
+  .main {
+    overflow-x: clip;
+  }
+}
+@media (max-width: 600px) {
+  .toolbar .grow {
+    display: none;
+  }
+  .toolbar .search {
+    flex: 1 1 100%;
+  }
+  .toolbar .search input {
+    min-width: 0;
+  }
+  .dev-head {
+    flex-wrap: wrap;
+  }
+  .dev-head .select {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+  /* os clipes do aparelho viram linhas de lista (como no app Arquivos): nome em cima, formato embaixo, duração e
+     situação à direita; nada de tabela cortada na borda */
+  .dev .table,
+  .dev .table tbody {
+    display: block;
+  }
+  .dev .table thead {
+    display: none;
+  }
+  .dev .table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .dev .table tr:last-child {
+    border-bottom: 0;
+  }
+  .dev .table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .dev .table td:is(.hide-md, .hide-sm) {
+    display: none;
+  }
+  .dev .table td:first-child {
+    grid-column: 1 / -1;
+  }
+  .dev .table td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+  .dev .table td:nth-child(n + 3) {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .dev .table .clip-name b,
+  .dev .table .clip-name small {
+    max-width: none;
+  }
+}
+

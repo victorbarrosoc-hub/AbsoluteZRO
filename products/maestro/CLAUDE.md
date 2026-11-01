@@ -534,6 +534,15 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   (`generateViewport`). "No celular, como app." (`components/instalar.tsx`, `lancamento.css`) em Ajustes e na página
   inicial lançada: Safari › Compartilhar › Adicionar à Tela de Início; "Instalar" só com `beforeinstallprompt`; some
   aberto como app. `e2e/instalar.spec.ts`: manifesto, metas, a dica e o app aberto como instalado sem corte a 375/393 px.
+- **Toque de 44 px no iPhone** (titular, 01/11/2026): em tela de toque todo botão, link e aba à vista tem 44 × 44 de
+  toque; o desenho fica e a área cresce por um `::after` invisível (`inset: min(0px, calc((100% - 44px) / 2))`, lista
+  em `celular.css`; classe nova de botão pequeno entra nas duas listas). Seletor que rola de lado corta o `::after`: o
+  botão nasce do tamanho certo. Os selos-seletores do Roteiro ganham borda transparente com margem negativa (a linha
+  não cresce). O que flutua no rodapé (o "+" do Roteiro e do Fluxo, os controles do Fluxo, o "Apagado · Desfazer") sobe
+  acima da pílula do cronômetro (`tempo.css`), e o número que anda não recebe toque (o card abre). Deitado (altura até
+  500 px), o Quadro põe as ações e a busca numa linha e o título fica só para o leitor de tela. Teste:
+  `e2e/celular.spec.ts` (`e2e/toque.ts` + o detector de corte, 375/393/430 e 852 × 393, Chromium e WebKit; com
+  `CELULAR_SHOTS=<pasta>` guarda as capturas do 393).
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024; refeita em 30/10/2026 no ritmo da do
   SOBEDESCE): pública, só o que existe, "Em breve" para o resto; ferramentas num controle segmentado
   (`components/inicio/abas.tsx`, abas WAI-ARIA) e cartões de mexer com as regras puras do app

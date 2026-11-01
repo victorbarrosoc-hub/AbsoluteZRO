@@ -7061,6 +7061,15 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
   .sd-porta{padding:26px 22px;min-height:460px}
   .sd-linha3{grid-template-columns:1fr 1fr}
 }
+/* (01/nov) TOQUE DE 44 PX NO IPHONE (Apple HIG; revisão do titular: "pode revisar os outros apps de celular?").
+   Na tela de toque, o botão pequeno (os .btn.sm, os chips, a barra do post, voltar, o mês, os dias, as abas
+   segmentadas, a marca e o saldo do topo) mantém o desenho e a área de toque cresce até 44 × 44 por um ::after
+   invisível e centralizado: o `inset` usa a medida do próprio botão (altura em cima e embaixo, largura nos lados),
+   quem já tem 44 não muda. `:where` no position para não brigar com quem já é posicionado. test/toque-44.js confere. */
+@media(pointer:coarse){
+  :where(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz){position:relative}
+  :is(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz)::after{content:"";position:absolute;inset:min(0px,calc((100% - 44px) / 2))}
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>

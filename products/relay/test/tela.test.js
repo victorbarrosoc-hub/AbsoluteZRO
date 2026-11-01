@@ -220,6 +220,50 @@ test('celular (375 px): nenhuma página rola para o lado nem tem campo que faz o
   }
 })
 
+// Alvo de toque de 44 × 44 px (Apple HIG) no que está por cima; conta a área estendida por ::after (relay.css). Campo
+// de texto, rótulo e link no meio de uma frase ficam de fora (o campo é o alvo; a frase é o contexto).
+function alvosPequenos() {
+  const a = []
+  for (const el of document.querySelectorAll("button, a[href], select, summary, [role='tab'], [role='radio']")) {
+    const r = el.getBoundingClientRect()
+    if (r.width <= 2 || r.height <= 2 || r.bottom <= 0 || r.top >= innerHeight) continue
+    if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) || el.closest("[aria-hidden='true'], [inert]")) continue
+    const no = document.elementFromPoint(Math.min(innerWidth - 1, r.left + r.width / 2), Math.min(innerHeight - 1, r.top + r.height / 2))
+    if (!no || !(el.contains(no) || no.contains(el))) continue
+    if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && [...el.parentElement.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue
+    let [t, d, b, e] = [0, 0, 0, 0]
+    for (const p of ['::after', '::before']) {
+      const cs = getComputedStyle(el, p)
+      if (cs.content === 'none' || cs.position !== 'absolute') continue
+      t = Math.max(t, -parseFloat(cs.top) || 0)
+      b = Math.max(b, -parseFloat(cs.bottom) || 0)
+      e = Math.max(e, -parseFloat(cs.left) || 0)
+      d = Math.max(d, -parseFloat(cs.right) || 0)
+    }
+    const w = r.width + e + d
+    const h = r.height + t + b
+    if (w < 43.5 || h < 43.5) a.push(`${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}.${el.className} "${(el.getAttribute('aria-label') || el.textContent).trim().slice(0, 30)}" ${Math.round(w)}×${Math.round(h)}`)
+  }
+  return a
+}
+
+test('celular (375, 393 e 430 px): todo botão, aba e link com 44 × 44 de toque, também com um arquivo no conversor', { skip: pular }, async () => {
+  for (const largura of [375, 393, 430]) {
+    for (const c of ['/', '/converter', '/painel', '/marca/']) {
+      const p = await s.nova(c, { viewport: { width: largura, height: 852 }, isMobile: true, hasTouch: true })
+      await p.waitForTimeout(400)
+      assert.deepEqual(await p.evaluate(alvosPequenos), [], `${c} a ${largura} px`)
+      if (c === '/converter') {
+        await p.waitForFunction(() => window.relayPronto)
+        await p.setInputFiles('#arquivos', join(pasta, 'master.mov'))
+        await p.waitForSelector('.item[data-estado="pronto"]')
+        assert.deepEqual(await p.evaluate(alvosPequenos), [], `${c} com arquivo a ${largura} px`)
+      }
+      await p.close()
+    }
+  }
+})
+
 test('laboratório de aparelhos: gera, codifica, mede contra a referência e entrega o resultado para copiar', { skip: pular }, async () => {
   const p = await s.nova('/laboratorio?rapido')
   await p.waitForFunction(() => window.labPronto)
