@@ -95,6 +95,12 @@ test('rotas: cada pessoa vê, muda e apaga só os próprios projetos; o RLS segu
   assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena: { v: 2 } })).statusCode, 400)
   assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { nome: 'Abertura 2' })).corpo.projeto.nome, 'Abertura 2')
   assert.deepEqual((await chamar('projetos', 'GET', '/api/rift/projetos?id=anaproj1', ana)).corpo.projeto.cena, cena, 'mudar o nome não apaga a cena')
+  // cena do editor de camadas (v2): lista de camadas com id e tipo
+  const cena2 = { v: 2, duracao: 6, camadas: [{ id: 'k1', tipo: 'texto', nome: 'Título', texto: 'Oi', props: { x: 50 }, trilhas: { x: [[0, 10, 'suave'], [1, 50, 'mola']] } }] }
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena: cena2 })).statusCode, 200)
+  assert.deepEqual((await chamar('projetos', 'GET', '/api/rift/projetos?id=anaproj1', ana)).corpo.projeto.cena, cena2)
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena: { v: 2, camadas: [{ nome: 'sem id' }] } })).statusCode, 400)
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena: { v: 2, camadas: Array.from({ length: 101 }, (_, i) => ({ id: 'k' + i, tipo: 'forma' })) } })).statusCode, 400)
 
   // direto no banco, como rift_app e sem passar pela rota
   const sql = postgres(urlRift, { max: 1, onnotice: () => {} })

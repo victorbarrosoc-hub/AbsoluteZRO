@@ -4,7 +4,11 @@ import { CADENCIAS, data, FORMATOS, id, projetoDe, Recusa, rota, texto, umDe } f
 
 /** A cena do estúdio: um objeto { v: 1, camadas } de até 256 KB (o banco confere de novo). */
 function cenaValida(c) {
-  if (!c || typeof c !== 'object' || Array.isArray(c) || c.v !== 1 || !c.camadas || typeof c.camadas !== 'object') throw new Recusa(400, 'Cena fora do formato.')
+  const ok = c && typeof c === 'object' && !Array.isArray(c) && (
+    (c.v === 1 && c.camadas && typeof c.camadas === 'object' && !Array.isArray(c.camadas)) ||
+    (c.v === 2 && Array.isArray(c.camadas) && c.camadas.length <= 100 &&
+      c.camadas.every((k) => k && typeof k === 'object' && typeof k.id === 'string' && typeof k.tipo === 'string')))
+  if (!ok) throw new Recusa(400, 'Cena fora do formato.')
   if (JSON.stringify(c).length > 250_000) throw new Recusa(413, 'Cena grande demais.')
   return c
 }

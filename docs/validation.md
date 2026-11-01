@@ -19,6 +19,11 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
 
+- Estúdio com camadas de verdade (01/11/2026): no navegador (Chromium), com as rotas e um Postgres local, criar um
+  projeto, pôr texto, forma e 3D (3 → 6 camadas), arrastar a forma no quadro (120 × 40 px), marcar ◆, desfazer e
+  refazer, esconder a esfera e renomear; depois de limpar o aparelho e reabrir, as 6 camadas e o nome novo voltam do banco
+  (cena `v: 2`). Sem erros no console. O servidor aceita a cena v2 (lista de até 100 camadas com id e tipo) e recusa o
+  resto (teste novo em `banco.test.js`). Não testado: tela de toque.
 - `products/rift-motion` `npm test`: **6/6**. Login: sem cliente configurado, `/eu` diz "não configurado" e `/entrar`
   volta com `?zro=config`; a volta fica no site (o hash do painel passa, endereço externo vira `/#app`). Banco num
   Postgres de verdade montado como no Supabase (papel `rift` dono, `rift_app` sem login): migração não repete e recusa
