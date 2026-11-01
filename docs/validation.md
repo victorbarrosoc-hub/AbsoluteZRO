@@ -38,6 +38,12 @@ Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rif
   certa conectada, a imagem sobe como JPEG (PUT), o vídeo desce da CDN e entra como camada "(IA)" no lugar da imagem
   (escondida). Migração 0001 aplicada no Supabase (dono `rift`, RLS). Não testado: login real da Higgsfield (o registro
   do Rift como app acontece no primeiro "Entrar com a Higgsfield") e uma geração real (gasta crédito).
+- Créditos e opções de gasto (01/11/2026): `npm test` **11/11**: o painel traz saldo e plano, o uso do mês (gastos menos
+  devoluções, só do mês, pelo extrato) e as três opções com o custo de `get_cost` (conta) ou `/estimate` (chave); sem
+  saldo para a opção, recusa com 402 e não gera; o custo informado fica na geração e soma em "pelo Rift". No Chromium:
+  65,41 créditos, Plano Pro, barra usado/disponível, Rápido 5 · Equilibrado 5 · Máxima 30 créditos (longo: 10 · 10 ·
+  60), botão "Gerar · 5 créditos", "sobram 60,41". Migração 0002 aplicada no Supabase. Não testado: saldo e extrato
+  reais pela conta conectada (o formato foi conferido nas ferramentas da Higgsfield desta sessão).
 - Painel modelo A (01/11/2026): no Chromium a 390 px, projeto novo abre vazio com Mídia/Texto/Modelo e a barra de
   baixo; Texto abre a gaveta na aba Movimento; Entrar + Sair geram keyframes de x e opacidade (acesos no Ajuste fino); ✕
   fecha; 3D + Quicar gera y e opacidade; a linha do tempo abre pelo botão; sem rolagem lateral; depois de reabrir, o

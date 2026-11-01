@@ -75,16 +75,19 @@ test('gerar com a chave: prepara o envio, inicia com idempotência, acompanha at
   simulado = (url, o) => {
     vistos.push([o.method || 'GET', url, o.headers?.['idempotency-key']])
     if (url.endsWith('/files/generate-upload-url')) return resp(200, { upload_url: 'https://upload.exemplo/x', public_url: 'https://cdn.exemplo/in.jpg', upload_headers: { 'Content-Type': 'image/jpeg' } })
+    if (url.includes('/estimate/kling-video/v2.5-turbo/pro/')) return resp(200, { usd: '0.35' })
     if (url.includes('/kling-video/')) return resp(200, { status: 'queued', request_id: '11111111-2222-4333-8444-555555555555' })
     if (url.includes('/requests/11111111')) return resp(200, estado === 'completed' ? { status: 'completed', request_id: 'x', video: { url: 'https://cdn.exemplo/out.mp4' } } : { status: estado, request_id: 'x' })
     return resp(404, {})
   }
   const p = await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'preparar', conteudo: 'image/jpeg' })
   assert.equal(p.corpo.ref, 'https://cdn.exemplo/in.jpg')
-  assert.equal((await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'iniciar', ref: p.corpo.ref, prompt: '', modelo: 'kling-2.5-turbo', duracao: 5 })).statusCode, 400, 'sem pedido não gera')
-  const i = await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'iniciar', ref: p.corpo.ref, prompt: 'slow push in', modelo: 'kling-2.5-turbo', duracao: 7 })
+  assert.equal((await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'iniciar', ref: p.corpo.ref, prompt: '', opcao: 'maximo', duracao: 'curto' })).statusCode, 400, 'sem pedido não gera')
+  const i = await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'iniciar', ref: p.corpo.ref, prompt: 'slow push in', opcao: 'maximo', duracao: 'longo' })
   assert.equal(i.statusCode, 200)
-  assert.ok(vistos.find((v) => v[1].includes('/kling-video/'))[2], 'manda chave de idempotência')
+  assert.equal(i.corpo.usd, 0.35, 'o custo vem do /estimate da Higgsfield')
+  assert.ok(vistos.some((v) => v[1].endsWith('/kling-video/v2.5-turbo/pro/image-to-video')), 'Máxima qualidade usa o Kling Pro')
+  assert.ok(vistos.find((v) => v[1].startsWith('https://api.higgsfield.ai/kling-video/'))[2], 'manda chave de idempotência')
   estado = 'in_progress'
   assert.equal((await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, ana)).corpo.estado, 'gerando')
   estado = 'completed'
@@ -101,6 +104,7 @@ test('gerar com a conta (MCP): sessão MCP, envio, confirmação, job e resultad
   await conexao.guardarConexao(caio, { tipo: 'conta', rotulo: 'Conta caio@x.com', segredo: { access: 'tok-caio', refresh: 'ref', expira: Math.floor(Date.now() / 1000) + 3600, clientId: 'cli' } })
   const chamadas = []
   let pronto = false
+  let saldo = 20
   simulado = (url, o) => {
     if (!url.startsWith('https://mcp.higgsfield.ai/')) return resp(404, {})
     assert.equal(o.headers.authorization, 'Bearer tok-caio')
@@ -113,7 +117,9 @@ test('gerar com a conta (MCP): sessão MCP, envio, confirmação, job e resultad
     const resultado = {
       media_upload: { uploads: [{ upload_url: 'https://upload.higgsfield.ai/u', media_id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', content_type: 'image/png' }] },
       media_confirm: { ok: true },
-      generate_video: { jobs: [{ index: 0, job_id: 'cccccccc-dddd-4eee-8fff-000000000000', status: 'queued' }] },
+      generate_video: args.params?.get_cost ? { cost: { credits: { grok_video_v15_lite: 5, kling2_6: 5, kling3_0: 30 }[args.params.model], credits_exact: { grok_video_v15_lite: 5, kling2_6: 5, kling3_0: 30 }[args.params.model] } } : { jobs: [{ index: 0, job_id: 'cccccccc-dddd-4eee-8fff-000000000000', status: 'queued' }] },
+      balance: { credits: saldo, subscription_plan_type: 'pro' },
+      transactions: { items: [{ credits: -5, action: 'spend', created_at: new Date().toISOString() }, { credits: 2, action: 'refund', created_at: new Date().toISOString() }, { credits: -0.25, action: 'spend', created_at: new Date().toISOString() }, { credits: -99, action: 'spend', created_at: '2020-01-01T00:00:00Z' }], next_cursor: 4 },
       jobs_wait: pronto ? { all_terminal: true, jobs: [{ index: 0, status: 'completed', results: { rawUrl: 'https://d8j0ntlcm91z4.cloudfront.net/u/v.mp4' } }] } : { all_terminal: false, jobs: [{ index: 0, status: 'in_progress' }] },
     }[name]
     return new Response(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', id: m.id, result: { content: [{ type: 'text', text: JSON.stringify(resultado) }] } })}\n\n`, { status: 200, headers: { 'content-type': 'text/event-stream' } })
@@ -121,17 +127,28 @@ test('gerar com a conta (MCP): sessão MCP, envio, confirmação, job e resultad
   const s = sessao('caio')
   const p = await chamar('gerar', 'POST', '/api/rift/gerar', s, { acao: 'preparar', conteudo: 'image/png' })
   assert.equal(p.corpo.ref, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee')
-  const i = await chamar('gerar', 'POST', '/api/rift/gerar', s, { acao: 'iniciar', ref: p.corpo.ref, prompt: 'the logo spins', modelo: 'kling2_6', duracao: 10 })
+  const pn = await chamar('higgsfield', 'GET', '/api/rift/higgsfield?painel=longo', s)
+  assert.deepEqual(pn.corpo.saldo, { creditos: 20, plano: 'pro' })
+  assert.equal(pn.corpo.usoMes, 3.25, 'gastos do mês menos devoluções; o que é de antes do mês não conta')
+  assert.deepEqual(pn.corpo.opcoes.map((o) => [o.id, o.segundos, o.creditos]), [['rapido', 10, 5], ['equilibrado', 10, 5], ['maximo', 10, 30]])
+  const caro = await chamar('gerar', 'POST', '/api/rift/gerar', s, { acao: 'iniciar', ref: p.corpo.ref, prompt: 'the logo spins', opcao: 'maximo', duracao: 'longo' })
+  assert.equal(caro.statusCode, 402, 'não gera se o saldo não cobre')
+  assert.ok(!chamadas.some((c) => c[0] === 'generate_video' && !c[1].params.get_cost), 'nada foi gerado')
+  const i = await chamar('gerar', 'POST', '/api/rift/gerar', s, { acao: 'iniciar', ref: p.corpo.ref, prompt: 'the logo spins', opcao: 'equilibrado', duracao: 'longo' })
   assert.equal(i.statusCode, 200, JSON.stringify(i.corpo))
-  const gen = chamadas.find((c) => c[0] === 'generate_video')[1]
+  assert.equal(i.corpo.creditos, 5)
+  const gen = chamadas.find((c) => c[0] === 'generate_video' && !c[1].params.get_cost)[1]
   assert.equal(gen.params.use_unlim, false, 'nunca deixa a Higgsfield decidir o saldo sozinha')
   assert.equal(gen.params.sound, false)
   assert.deepEqual(gen.params.medias, [{ role: 'start_image', value: p.corpo.ref }])
-  assert.ok(chamadas.findIndex((c) => c[0] === 'media_confirm') < chamadas.findIndex((c) => c[0] === 'generate_video'))
+  assert.ok(chamadas.findIndex((c) => c[0] === 'media_confirm') < chamadas.findIndex((c) => c[0] === 'generate_video' && !c[1].params.get_cost), 'confirma o envio antes de gerar')
   assert.equal((await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, s)).corpo.estado, 'gerando')
   pronto = true
   const fim = await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, s)
   assert.deepEqual([fim.corpo.estado, fim.corpo.url], ['pronto', 'https://d8j0ntlcm91z4.cloudfront.net/u/v.mp4'])
+  const depois = await chamar('higgsfield', 'GET', '/api/rift/higgsfield?painel=curto', s)
+  assert.equal(depois.corpo.usoRift.creditos_mes, 5, 'o Rift soma o que gastou')
+  assert.equal(depois.corpo.usoRift.n_mes, 1)
 })
 
 test('conta vencida: renova o acesso; Higgsfield recusou a renovação: desconecta e pede para conectar de novo', { skip: pular }, async () => {

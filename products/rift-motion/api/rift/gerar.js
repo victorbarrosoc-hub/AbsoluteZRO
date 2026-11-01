@@ -1,13 +1,14 @@
 // /api/rift/gerar — "Gerar com IA": anima uma imagem da cena pela Higgsfield da pessoa (chave ou conta).
 //   POST { acao: "preparar", conteudo }            → { upload_url, headers, ref }: o aparelho envia o arquivo direto
-//   POST { acao: "iniciar", ref, prompt, modelo, duracao } → { id, estado }: o pedido nasce em rift.geracoes
+//   POST { acao: "iniciar", ref, prompt, opcao, duracao } → { id, estado, creditos|usd }: confere o custo na Higgsfield
+//        (e, na conta, se o saldo cobre) antes de gerar; o pedido nasce em rift.geracoes com o custo informado
 //   GET  ?id=…                                      → { estado, url, erro }: o andamento que a Higgsfield informa
 // Gastar créditos só acontece no "iniciar", que só a pessoa dispara (tocando em Gerar). Nunca reenvia sozinho.
 import { randomBytes } from 'node:crypto'
 import { comoPessoa } from '../_banco.js'
 import { rotaSolta, Recusa, id as validarId } from '../_rift.js'
 import { credencial } from '../_conexao.js'
-import { chaveIniciar, chavePreparar, chaveStatus, contaIniciar, contaPreparar, contaStatus, modeloDe, terminal } from '../_higgsfield.js'
+import { chaveCusto, chaveIniciar, chavePreparar, chaveStatus, contaCusto, contaIniciar, contaPreparar, contaSaldo, contaStatus, DURACOES, mcpAbrir, opcaoDe, terminal } from '../_higgsfield.js'
 
 const CONTEUDOS = ['image/jpeg', 'image/png', 'image/webp']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -28,17 +29,25 @@ export default rotaSolta({
     }
     if (corpo.acao === 'iniciar') {
       const c = await exigir(pessoa)
-      const m = modeloDe(c.tipo, corpo.modelo)
-      if (!m) throw new Recusa(400, 'Escolha um modelo da lista.')
+      const op = opcaoDe(c.tipo, corpo.opcao)
+      if (!op) throw new Recusa(400, 'Escolha uma das três opções.')
       const prompt = String(corpo.prompt || '').trim().slice(0, 2000)
       if (!prompt) throw new Recusa(400, 'Diga como a imagem deve se mexer.')
-      const duracao = m.duracoes.includes(Number(corpo.duracao)) ? Number(corpo.duracao) : m.duracoes[0]
+      const duracao = op.segundos[DURACOES.includes(corpo.duracao) ? corpo.duracao : 'curto']
+      let creditos = null
+      let usd = null
+      if (c.tipo === 'conta') {
+        const s = await mcpAbrir(c.access)
+        const [saldo, custo] = await Promise.all([contaSaldo(s), contaCusto(s, op, duracao)])
+        creditos = custo
+        if (custo != null && saldo.creditos != null && custo > saldo.creditos) throw new Recusa(402, `Faltam créditos: custa ${custo} e você tem ${saldo.creditos}.`)
+      } else usd = await chaveCusto(c.chave, op, duracao)
       const ref = String(corpo.ref || '')
       if (c.tipo === 'chave' ? !/^https:\/\/\S{8,2000}$/.test(ref) : !UUID.test(ref)) throw new Recusa(400, 'Envie a imagem antes de gerar.')
       const id = novoId()
-      const r = c.tipo === 'chave' ? await chaveIniciar(c.chave, { modelo: m.id, prompt, duracao, ref, idem: `rift-${pessoa.sub.slice(0, 40)}-${id}` }) : await contaIniciar(c.access, { modelo: m.id, prompt, duracao, ref })
-      await comoPessoa(pessoa, (tx) => tx`insert into rift.geracoes (user_sub, id, servico, tipo, modelo, prompt, duracao, pedido, estado) values (${pessoa.sub}, ${id}, 'higgsfield', ${c.tipo}, ${m.id}, ${prompt}, ${duracao}, ${r.pedido}, ${r.estado})`)
-      return { id, estado: r.estado }
+      const r = c.tipo === 'chave' ? await chaveIniciar(c.chave, { op, prompt, duracao, ref, idem: `rift-${pessoa.sub.slice(0, 40)}-${id}` }) : await contaIniciar(c.access, { op, prompt, duracao, ref })
+      await comoPessoa(pessoa, (tx) => tx`insert into rift.geracoes (user_sub, id, servico, tipo, modelo, opcao, prompt, duracao, pedido, estado, creditos, usd) values (${pessoa.sub}, ${id}, 'higgsfield', ${c.tipo}, ${op.modelo}, ${op.id}, ${prompt}, ${duracao}, ${r.pedido}, ${r.estado}, ${creditos}, ${usd})`)
+      return { id, estado: r.estado, creditos, usd }
     }
     throw new Recusa(400, 'Ação desconhecida.')
   },

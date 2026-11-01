@@ -314,6 +314,26 @@ button { font: inherit; color: inherit; }
 .gf .barra-viva { width: min(280px, 100%); height: 4px; border-radius: 9px; background: var(--surface-2); overflow: hidden; }
 .gf .barra-viva i { display: block; width: 35%; height: 100%; border-radius: 9px; background: var(--p); animation: viva 1.4s ease-in-out infinite; }
 @keyframes viva { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.cred { display: grid; gap: 8px; padding: 14px; border-radius: 16px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); }
+.cred__topo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cred__num { font-family: var(--font-title); font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); }
+.cred__num small { font-size: 0.8rem; font-weight: 500; color: var(--mute); letter-spacing: 0; }
+.cred__plano { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--p); }
+.cred__barra { height: 8px; border-radius: 9px; background: color-mix(in srgb, var(--p) 22%, var(--surface)); overflow: hidden; }
+.cred__barra i { display: block; height: 100%; border-radius: 9px; background: var(--mute); }
+.cred__legenda { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.76rem; color: var(--mute); }
+.cred__legenda b, .cred .nota b { color: var(--ink); font-weight: 600; }
+.cred__legenda i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.cred__legenda .u { background: var(--mute); } .cred__legenda .d { background: color-mix(in srgb, var(--p) 45%, var(--surface)); }
+.ops { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .ops { grid-template-columns: minmax(0, 1fr); } }
+.op { display: grid; gap: 4px; align-content: start; text-align: left; padding: 12px; border: 0; border-radius: 14px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--ink); cursor: pointer; font: inherit; }
+.op[aria-checked="true"] { box-shadow: 0 0 0 2px var(--p); }
+.op:disabled { opacity: 0.5; cursor: not-allowed; }
+.op__nome { font-size: 0.8rem; color: var(--mute); }
+.op__custo { font-family: var(--font-title); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+.op__desc { font-size: 0.74rem; color: var(--mute); line-height: 1.3; }
+.op__falta { font-size: 0.72rem; color: var(--p); }
 .z-btn { width: 32px; padding: 0; font-weight: 800; font-family: var(--font-title); }
 .z-btn[aria-pressed="true"] { box-shadow: 0 0 0 1.5px var(--p); }
 .z-barra { position: absolute; z-index: 6; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgb(0 0 0 / 0.3); }
@@ -1819,25 +1839,55 @@ function estudio() {
     let st;
     try { st = await apiRift('higgsfield'); } catch (e) { return folhaGerar(`<p class="nota">${escH(e.message)}</p>`); }
     if (!st.conectado) return telaConectar(c.id, promptInicial);
-    const m0 = st.modelos[0];
-    const host = folhaGerar(`
-      <div class="conectada"><span>Conectada: <b>${escH(st.rotulo || 'Higgsfield')}</b></span><button class="chip" id="gfSair" style="margin-left:auto;height:28px">Desconectar</button></div>
-      <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(promptInicial)}</textarea></label>
-      <div class="linha"><label for="gfModelo" style="flex:1;min-width:160px">Modelo<select id="gfModelo">${st.modelos.map((m) => `<option value="${escH(m.id)}">${escH(m.nome)}</option>`).join('')}</select></label>
-      <div><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração">${m0.duracoes.map((d, i) => `<button class="chip" data-d="${d}" aria-pressed="${i === 0}">${d} s</button>`).join('')}</div></div></div>
-      <p class="nota">${st.tipo === 'conta' ? 'Gasta créditos do seu plano da Higgsfield.' : 'Usa o saldo em dólar da sua chave da API.'} Sem som: o som vem do NOSSOM.</p>
-      <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar">Gerar</button></div>`);
-    const durs = () => st.modelos.find((m) => m.id === $('#gfModelo', host).value)?.duracoes || [5];
-    $('#gfModelo', host).addEventListener('change', () => { $('#gfDur', host).innerHTML = durs().map((d, i) => `<button class="chip" data-d="${d}" aria-pressed="${i === 0}">${d} s</button>`).join(''); });
-    $('#gfDur', host).addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b) return; $$('[data-d]', host).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); });
-    $('#gfCancelar', host).addEventListener('click', fecharFolha);
-    $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c.id, $('#gfPrompt', host).value); } catch (e) { toast(e.message); } });
-    $('#gfGerar', host).addEventListener('click', () => {
-      const prompt = $('#gfPrompt', host).value.trim();
-      if (!prompt) { $('#gfPrompt', host).focus(); return toast('Diga como a imagem deve se mexer.'); }
-      gerar(c.id, { prompt, modelo: $('#gfModelo', host).value, duracao: Number($('[data-d][aria-pressed="true"]', host)?.dataset.d || durs()[0]) });
-    });
-    $('#gfPrompt', host).focus();
+    const estado = { duracao: 'curto', opcao: 'equilibrado', prompt: promptInicial, painel: null };
+    const fmt = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+    const custoTxt = (o) => (o.creditos != null ? `${fmt(o.creditos)} ${o.creditos === 1 ? 'crédito' : 'créditos'}` : o.usd != null ? `US$ ${fmt(o.usd)}` : 'preço na Higgsfield');
+    function medidor(pn) {
+      const r = pn.usoRift || {};
+      const riftTxt = st.tipo === 'conta' ? `${fmt(r.creditos_mes || 0)} ${(r.creditos_mes || 0) === 1 ? 'crédito' : 'créditos'}` : `US$ ${fmt(r.usd_mes || 0)}`;
+      const riftLinha = `Pelo Rift este mês: <b>${riftTxt}</b> · ${r.n_mes || 0} ${(r.n_mes || 0) === 1 ? 'vídeo' : 'vídeos'}`;
+      if (st.tipo !== 'conta') return `<div class="cred"><div class="cred__topo"><span class="cred__num">Saldo da API</span><a class="nota" href="https://console.higgsfield.ai" target="_blank" rel="noopener">Ver no console da Higgsfield</a></div><p class="nota">${riftLinha}</p></div>`;
+      const saldo = pn.saldo?.creditos, usado = pn.usoMes;
+      const total = saldo != null && usado != null ? saldo + usado : null;
+      const pct = total ? Math.min(100, Math.round((usado / total) * 100)) : 0;
+      return `<div class="cred"><div class="cred__topo"><span class="cred__num">${saldo != null ? fmt(saldo) : '—'}<small> créditos</small></span>${pn.saldo?.plano ? `<span class="cred__plano">Plano ${escH(pn.saldo.plano.charAt(0).toUpperCase() + pn.saldo.plano.slice(1))}</span>` : ''}</div>
+        ${total ? `<div class="cred__barra" role="img" aria-label="Usado ${fmt(usado)} de ${fmt(total)} créditos este mês"><i style="width:${pct}%"></i></div>
+        <div class="cred__legenda"><span><i class="u"></i>Usados este mês: <b>${fmt(usado)}</b></span><span><i class="d"></i>Disponível: <b>${fmt(saldo)}</b></span></div>` : ''}
+        <p class="nota">${riftLinha}</p></div>`;
+    }
+    function pintar() {
+      const pn = estado.painel, saldo = pn?.saldo?.creditos;
+      const ops = pn?.opcoes || [];
+      const sel = ops.find((o) => o.id === estado.opcao) || ops[1] || ops[0];
+      const falta = (o) => st.tipo === 'conta' && saldo != null && o.creditos != null && o.creditos > saldo;
+      const host = folhaGerar(`
+        <div class="conectada"><span>Conectada: <b>${escH(st.rotulo || 'Higgsfield')}</b></span><button class="chip" id="gfSair" style="margin-left:auto;height:28px">Desconectar</button></div>
+        ${pn ? medidor(pn) : '<div class="cred"><p class="nota">Conferindo seus créditos…</p></div>'}
+        <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(estado.prompt)}</textarea></label>
+        <div class="linha"><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração"><button class="chip" data-d="curto" aria-pressed="${estado.duracao === 'curto'}">Curto</button><button class="chip" data-d="longo" aria-pressed="${estado.duracao === 'longo'}">Longo</button></div></div>
+        <div class="ops" role="radiogroup" aria-label="Quanto gastar">${pn ? ops.map((o) => `<button class="op" role="radio" data-op="${o.id}" aria-checked="${sel && o.id === sel.id}" ${falta(o) ? 'disabled' : ''}><span class="op__nome">${escH(o.nome)}</span><span class="op__custo">${custoTxt(o)}</span><span class="op__desc">${escH(o.desc)} · ${o.segundos} s</span>${falta(o) ? '<span class="op__falta">Faltam créditos</span>' : ''}</button>`).join('') : '<p class="nota">Calculando o preço das opções…</p>'}</div>
+        <p class="nota">${sel && st.tipo === 'conta' && saldo != null && sel.creditos != null ? `Depois de gerar, sobram <b>${fmt(Math.max(0, saldo - sel.creditos))}</b> créditos.` : st.tipo === 'chave' ? 'Cobrado do saldo em dólar da sua chave da API.' : ''} Sem som: o som vem do NOSSOM.</p>
+        <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar" ${!sel || falta(sel) ? 'disabled' : ''}>${sel ? `Gerar · ${custoTxt(sel)}` : 'Gerar'}</button></div>`);
+      const pr = $('#gfPrompt', host);
+      pr.addEventListener('input', () => { estado.prompt = pr.value; });
+      $('#gfDur', host).addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b || b.dataset.d === estado.duracao) return; estado.duracao = b.dataset.d; estado.painel = null; pintar(); carregar(); });
+      $$('[data-op]', host).forEach((b) => b.addEventListener('click', () => { estado.opcao = b.dataset.op; pintar(); }));
+      $('#gfCancelar', host).addEventListener('click', fecharFolha);
+      $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c.id, estado.prompt); } catch (e) { toast(e.message); } });
+      $('#gfGerar', host).addEventListener('click', () => {
+        const prompt = estado.prompt.trim();
+        if (!prompt) { pr.focus(); return toast('Diga como a imagem deve se mexer.'); }
+        gerar(c.id, { prompt, opcao: sel.id, duracao: estado.duracao });
+      });
+      if (!estado.prompt) pr.focus();
+    }
+    let pedido = 0;
+    async function carregar() {
+      const meu = ++pedido;
+      try { const pn = await apiRift('higgsfield?painel=' + estado.duracao); if (meu === pedido && $('#gfT')) { estado.painel = pn; pintar(); } }
+      catch (e) { if (meu === pedido && $('#gfT')) { if (e.reconectar) return telaConectar(c.id, estado.prompt); estado.painel = { opcoes: [], erro: e.message }; pintar(); toast(e.message); } }
+    }
+    pintar(); carregar();
   }
   function telaConectar(idCamada, promptInicial) {
     const host = folhaGerar(`
@@ -1875,7 +1925,7 @@ function estudio() {
     $('#gfDeNovo', host)?.addEventListener('click', () => { geracoes.delete(idCamada); abrirGerar(idCamada, g.prompt || ''); });
   }
   const folhaDe = (idCamada) => $('#gfT') && geracoes.get(idCamada)?.aberta !== false;
-  async function gerar(idCamada, { prompt, modelo, duracao }) {
+  async function gerar(idCamada, { prompt, opcao, duracao }) {
     const c = camada(idCamada); if (!c) return;
     const g = { estado: 'enviado', prompt };
     geracoes.set(idCamada, g); mostrarAndamento(idCamada);
@@ -1884,7 +1934,7 @@ function estudio() {
       const p = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'preparar', conteudo: 'image/jpeg' } });
       const up = await fetch(p.upload_url, { method: 'PUT', headers: p.headers || { 'Content-Type': 'image/jpeg' }, body: img }).catch(() => null);
       if (!up || !up.ok) throw new Error('A imagem não subiu para a Higgsfield. Tente de novo.');
-      const i = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'iniciar', ref: p.ref, prompt, modelo, duracao } });
+      const i = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'iniciar', ref: p.ref, prompt, opcao, duracao } });
       Object.assign(g, { id: i.id, estado: i.estado });
       if (folhaDe(idCamada)) mostrarAndamento(idCamada);
       acompanhar(idCamada);

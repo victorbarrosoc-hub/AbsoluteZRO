@@ -31,18 +31,23 @@ export class HfSemAcesso extends HfErro {
   }
 }
 
-/** O que dá para gerar em cada porta. Imagem → vídeo, sem som (o som do motion vem do NOSSOM). */
-export const MODELOS = {
-  chave: [
-    { id: 'kling-2.5-turbo', nome: 'Kling 2.5 Turbo', caminho: '/kling-video/v2.5-turbo/pro/image-to-video', duracoes: [5, 10] },
-    { id: 'hailuo-2.3', nome: 'Hailuo 2.3', caminho: '/minimax/hailuo-2.3/standard/image-to-video', duracoes: [6, 10] },
-  ],
+/** As três opções de gasto em cada porta (imagem → vídeo, sem som: o som do motion vem do NOSSOM). O custo de cada uma
+ * vem da Higgsfield na hora (conta: `get_cost`; chave: /estimate), nunca de uma tabela do Rift. "curto" e "longo" viram
+ * os segundos que cada modelo aceita. */
+export const OPCOES = {
   conta: [
-    { id: 'kling2_6', nome: 'Kling 2.6', duracoes: [5, 10], extra: { sound: false } },
-    { id: 'grok_video_v15_lite', nome: 'Grok 1.5 Lite (rápido)', duracoes: [5, 10], extra: {} },
+    { id: 'rapido', nome: 'Rápido', desc: 'Prévia ágil para testar a ideia', modelo: 'grok_video_v15_lite', segundos: { curto: 5, longo: 10 }, extra: {} },
+    { id: 'equilibrado', nome: 'Equilibrado', desc: 'Movimento de cinema, ótimo custo', modelo: 'kling2_6', segundos: { curto: 5, longo: 10 }, extra: { sound: false } },
+    { id: 'maximo', nome: 'Máxima qualidade', desc: 'Mais detalhe, física e acabamento', modelo: 'kling3_0', segundos: { curto: 5, longo: 10 }, extra: { mode: 'pro', sound: 'off' } },
+  ],
+  chave: [
+    { id: 'rapido', nome: 'Rápido', desc: 'Prévia ágil para testar a ideia', modelo: 'hailuo-2.3', caminho: '/minimax/hailuo-2.3/standard/image-to-video', segundos: { curto: 6, longo: 10 } },
+    { id: 'equilibrado', nome: 'Equilibrado', desc: 'Movimento de cinema, ótimo custo', modelo: 'kling-2.5-turbo-standard', caminho: '/kling-video/v2.5-turbo/standard/image-to-video', segundos: { curto: 5, longo: 10 } },
+    { id: 'maximo', nome: 'Máxima qualidade', desc: 'Mais detalhe, física e acabamento', modelo: 'kling-2.5-turbo-pro', caminho: '/kling-video/v2.5-turbo/pro/image-to-video', segundos: { curto: 5, longo: 10 } },
   ],
 }
-export const modeloDe = (tipo, id) => (MODELOS[tipo] || []).find((m) => m.id === id) || null
+export const opcaoDe = (tipo, id) => (OPCOES[tipo] || []).find((o) => o.id === id) || null
+export const DURACOES = ['curto', 'longo']
 
 const ESTADOS = { queued: 'na_fila', in_progress: 'gerando', processing: 'gerando', running: 'gerando', pending: 'na_fila', completed: 'pronto', succeeded: 'pronto', done: 'pronto', failed: 'falhou', error: 'falhou', nsfw: 'recusado', canceled: 'cancelado', cancelled: 'cancelado' }
 export const estadoDe = (s) => ESTADOS[String(s || '').toLowerCase()] || null
@@ -98,9 +103,20 @@ export async function chavePreparar(chave, conteudo) {
   return { upload_url: d.upload_url, headers: d.upload_headers || { 'Content-Type': conteudo }, ref: d.public_url }
 }
 
-export async function chaveIniciar(chave, { modelo, prompt, duracao, ref, idem }) {
-  const m = modeloDe('chave', modelo)
-  const { status, d } = await apiPedir(chave, 'POST', m.caminho, { prompt, image_url: ref, duration: duracao }, { 'idempotency-key': idem })
+/** Quanto a Higgsfield cobra (USD) por esta opção, sem gerar. null se ela não informar. */
+export async function chaveCusto(chave, op, segundos) {
+  try {
+    const { status, d } = await apiPedir(chave, 'POST', `/estimate${op.caminho}`, { prompt: 'estimate', image_url: 'https://d8j0ntlcm91z4.cloudfront.net/estimate.jpg', duration: segundos })
+    const usd = Number(d?.usd)
+    return status < 300 && Number.isFinite(usd) ? usd : null
+  } catch (e) {
+    if (e instanceof HfSemAcesso) throw e
+    return null
+  }
+}
+
+export async function chaveIniciar(chave, { op, prompt, duracao, ref, idem }) {
+  const { status, d } = await apiPedir(chave, 'POST', op.caminho, { prompt, image_url: ref, duration: duracao }, { 'idempotency-key': idem })
   if (status >= 300 || !d?.request_id) throw new HfErro(d?.detail || 'A Higgsfield recusou o pedido.', status >= 400 && status < 500 ? 400 : 502)
   return { pedido: d.request_id, estado: estadoDe(d.status) || 'na_fila' }
 }
@@ -212,12 +228,19 @@ async function rpc(access, sessao, corpo) {
   return { sid, msg }
 }
 
-/** Chama uma ferramenta do MCP da Higgsfield com o token da pessoa. Devolve o JSON do resultado. */
-export async function mcpFerramenta(access, nome, args) {
+/** Abre uma sessão no MCP da Higgsfield com o token da pessoa (várias ferramentas na mesma sessão). */
+export async function mcpAbrir(access) {
   const ini = await rpc(access, null, { jsonrpc: '2.0', id: ++rpcId, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'rift-motion', version: '1.0.0' } } })
   if (ini.msg?.error) throw new HfErro('A Higgsfield recusou a conexão.')
   await rpc(access, ini.sid, { jsonrpc: '2.0', method: 'notifications/initialized' })
-  const { msg } = await rpc(access, ini.sid, { jsonrpc: '2.0', id: ++rpcId, method: 'tools/call', params: { name: nome, arguments: args } })
+  return { access, sid: ini.sid }
+}
+
+/** Chama uma ferramenta do MCP da Higgsfield. Devolve o JSON do resultado. */
+export const mcpFerramenta = async (access, nome, args) => mcpChamar(await mcpAbrir(access), nome, args)
+
+export async function mcpChamar(sessao, nome, args) {
+  const { msg } = await rpc(sessao.access, sessao.sid, { jsonrpc: '2.0', id: ++rpcId, method: 'tools/call', params: { name: nome, arguments: args } })
   if (msg.error) throw new HfErro(String(msg.error.message || 'A Higgsfield recusou o pedido.').slice(0, 300))
   const res = msg.result || {}
   const texto = (res.content || [])
@@ -267,13 +290,48 @@ export async function contaPreparar(access, conteudo) {
   return { upload_url: up.upload_url, headers: { 'Content-Type': up.content_type || conteudo }, ref: up.media_id }
 }
 
-export async function contaIniciar(access, { modelo, prompt, duracao, ref }) {
-  const m = modeloDe('conta', modelo)
-  await mcpFerramenta(access, 'media_confirm', { type: 'image', media_id: ref })
-  const d = await mcpFerramenta(access, 'generate_video', {
-    context: 'Rift Motion: animar uma imagem da cena do motion.',
-    params: { model: m.id, prompt, duration: duracao, count: 1, use_unlim: false, medias: [{ role: 'start_image', value: ref }], ...m.extra },
-  })
+/** Saldo da conta: { creditos, plano }. */
+export async function contaSaldo(sessao) {
+  const d = await mcpChamar(sessao, 'balance', {})
+  const creditos = Number(d.credits ?? achar(d, (k, v) => /^credits$/i.test(k) && typeof v === 'number'))
+  return { creditos: Number.isFinite(creditos) ? creditos : null, plano: typeof d.subscription_plan_type === 'string' ? d.subscription_plan_type : null }
+}
+
+/** Créditos gastos na Higgsfield desde `desde` (gastos menos devoluções), lendo o extrato (até 500 lançamentos). */
+export async function contaUsoDesde(sessao, desde) {
+  let usado = 0
+  let cursor
+  for (let pagina = 0; pagina < 5; pagina++) {
+    const d = await mcpChamar(sessao, 'transactions', { size: 100, ...(cursor != null ? { cursor } : {}) })
+    const itens = Array.isArray(d.items) ? d.items : []
+    let antigo = false
+    for (const t of itens) {
+      if (new Date(t.created_at) < desde) {
+        antigo = true
+        break
+      }
+      const c = Number(t.credits)
+      if (Number.isFinite(c) && ['spend', 'deduct', 'refund'].includes(t.action)) usado -= c
+    }
+    if (antigo || d.next_cursor == null || !itens.length) break
+    cursor = d.next_cursor
+  }
+  return Math.max(0, Math.round(usado * 100) / 100)
+}
+
+const paramsConta = (op, segundos, prompt, ref) => ({ model: op.modelo, prompt, duration: segundos, count: 1, use_unlim: false, ...(ref ? { medias: [{ role: 'start_image', value: ref }] } : {}), ...op.extra })
+
+/** Quantos créditos a Higgsfield cobra por esta opção, sem gerar. */
+export async function contaCusto(sessao, op, segundos) {
+  const d = await mcpChamar(sessao, 'generate_video', { context: 'Rift Motion: preço antes de gerar.', params: { ...paramsConta(op, segundos, 'estimate'), get_cost: true } })
+  const c = Number(d.cost?.credits_exact ?? d.cost?.credits)
+  return Number.isFinite(c) ? c : null
+}
+
+export async function contaIniciar(access, { op, prompt, duracao, ref }) {
+  const sessao = await mcpAbrir(access)
+  await mcpChamar(sessao, 'media_confirm', { type: 'image', media_id: ref })
+  const d = await mcpChamar(sessao, 'generate_video', { context: 'Rift Motion: animar uma imagem da cena do motion.', params: paramsConta(op, duracao, prompt, ref) })
   const ehJob = (re) => (k, v) => re.test(k) && typeof v === 'string' && UUID.test(v) && v !== ref
   const job = achar(d, ehJob(/^job_?id$/i)) || achar(d.jobs || d.job || d, ehJob(/^id$/i))
   if (!job) throw new HfErro(String(achar(d, (k, v) => /^(message|error|detail|texto)$/i.test(k) && typeof v === 'string') || 'A Higgsfield não confirmou o pedido.').slice(0, 300))
