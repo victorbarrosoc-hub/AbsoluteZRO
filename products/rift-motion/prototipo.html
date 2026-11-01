@@ -142,7 +142,10 @@ button { font: inherit; color: inherit; }
 .ui-cursor { position: absolute; width: 18px; height: 18px; left: 0; top: 0; animation: cur 4s var(--ease) infinite; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.25)); }
 @keyframes cur { 0% { transform: translate(180px, 110px); } 35%, 46% { transform: translate(178px, 46px); } 58%, 70% { transform: translate(90px, 104px); } 100% { transform: translate(200px, 140px); } }
 /* 4. produto 3D (CSS 3D) */
-.demo3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.demo3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+.cores-cel { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; padding: 5px; border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 0 0 1px var(--line); }
+.cores-cel button { width: 16px; height: 16px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25); padding: 0; }
+.cores-cel button[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 2px; }
 .demo__art--3d { background: radial-gradient(70% 60% at 50% 100%, rgb(234 100 38 / 0.12), transparent 70%), var(--surface-2); }
 @keyframes floor { 50% { transform: scaleX(0.7); opacity: 0.6; } }
 /* 5. sistema visual */
@@ -415,7 +418,7 @@ button { font: inherit; color: inherit; }
         <div class="demo__foot"><div><h3>Interface animada</h3><p>Telas de produto e app</p></div><a class="glass-btn glass-btn--sm" href="#estudio">Abrir</a></div>
       </article>
       <article class="demo">
-        <div class="demo__art demo__art--3d"><canvas class="demo3d" id="celular3d" aria-label="Celular em 3D girando, com luz e sombra"></canvas></div>
+        <div class="demo__art demo__art--3d"><canvas class="demo3d" id="celular3d" aria-label="iPhone 18 Pro Max em 3D girando; toque para trocar a cor"></canvas></div>
         <div class="demo__foot"><div><h3>Produto em 3D</h3><p>Luz, material e câmera</p></div><a class="glass-btn glass-btn--sm" href="#estudio">Abrir</a></div>
       </article>
       <article class="demo">
@@ -1091,7 +1094,11 @@ function estudio() {
 }
 
 
-/* ================= PRODUTO EM 3D: um celular de verdade (corpo com espessura, tela, câmera) ================= */
+/* ================= PRODUTO EM 3D: iPhone 18 Pro Max em escala (mm, medidas da Apple) ================= */
+// 163,4 × 78,0 × 8,75 mm, corpo único de alumínio com laterais arredondadas, platô da câmera de lado a lado (2,8 mm acima
+// do verso), três lentes em triângulo à esquerda, flash e LiDAR à direita, vidro Ceramic Shield no verso abaixo do platô,
+// Dynamic Island de ~13,5 mm, botão lateral e Camera Control à direita, Ação e volume à esquerda. Sem logotipo.
+// As quatro cores oficiais (Preto, Prata, Glacier, Burgundy) trocam no toque.
 function produto3d() {
   const canvas = $('#celular3d'); if (!canvas || !hasGL) return;
   const caixa = canvas.parentElement;
@@ -1099,62 +1106,135 @@ function produto3d() {
   r.setPixelRatio(Math.min(2, devicePixelRatio));
   r.outputEncoding = THREE.sRGBEncoding;
   r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(28, 4 / 3, 0.1, 50);
-  cam.position.set(0, 0.3, 11.5);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x221a16, 0.55));
-  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(4, 6, 7); scene.add(key);
-  const rim = new THREE.PointLight(0xEA6426, 3.2, 16); rim.position.set(-3.5, -2.5, -1.5); scene.add(rim);
-  const rim2 = new THREE.DirectionalLight(0xffffff, 0.6); rim2.position.set(-5, 3, -6); scene.add(rim2);
-  const ret = (w, h, rr) => { const sh = new THREE.Shape(); const x = -w / 2, y = -h / 2;
-    sh.moveTo(x + rr, y); sh.lineTo(x + w - rr, y); sh.quadraticCurveTo(x + w, y, x + w, y + rr); sh.lineTo(x + w, y + h - rr); sh.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
-    sh.lineTo(x + rr, y + h); sh.quadraticCurveTo(x, y + h, x, y + h - rr); sh.lineTo(x, y + rr); sh.quadraticCurveTo(x, y, x + rr, y); return sh; };
-  const W = 2.1, H = 4.4, P = 0.26, B = 0.07;
-  const corpoGeo = new THREE.ExtrudeGeometry(ret(W, H, 0.42), { depth: P, bevelEnabled: true, bevelThickness: B, bevelSize: B, bevelSegments: 6, curveSegments: 28 });
-  corpoGeo.translate(0, 0, -P / 2);
-  const aro = new THREE.MeshStandardMaterial({ color: 0x8a8580, metalness: 0.9, roughness: 0.28 }); // titânio
+  const cam = new THREE.PerspectiveCamera(26, 4 / 3, 100, 1200);
+  cam.position.set(0, 4, 420);
+  // ambiente de estúdio (reflexo do metal): um degradê numa esfera, filtrado para o PBR
+  const pmrem = new THREE.PMREMGenerator(r);
+  const env = new THREE.Scene();
+  const ec = document.createElement('canvas'); ec.width = 16; ec.height = 256; const ex = ec.getContext('2d');
+  const eg = ex.createLinearGradient(0, 0, 0, 256); eg.addColorStop(0, '#ffffff'); eg.addColorStop(0.35, '#8a8a90'); eg.addColorStop(0.55, '#2a2a2e'); eg.addColorStop(0.8, '#3a2014'); eg.addColorStop(1, '#0b0b0c');
+  ex.fillStyle = eg; ex.fillRect(0, 0, 16, 256);
+  const et = new THREE.CanvasTexture(ec); et.encoding = THREE.sRGBEncoding;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), new THREE.MeshBasicMaterial({ map: et, side: THREE.BackSide })));
+  scene.environment = pmrem.fromScene(env, 0.02).texture;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x1a1412, 0.35));
+  const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(120, 200, 260); scene.add(key);
+  const laranja = new THREE.PointLight(0xEA6426, 2.2, 600); laranja.position.set(-140, -90, -60); scene.add(laranja);
+  const contra = new THREE.DirectionalLight(0xffffff, 0.7); contra.position.set(-200, 120, -220); scene.add(contra);
+
+  const ret = (w, h, rr, rb = rr) => { const sh = new THREE.Shape(); const x = -w / 2, y = -h / 2;
+    sh.moveTo(x + rb, y); sh.lineTo(x + w - rb, y); sh.quadraticCurveTo(x + w, y, x + w, y + rb); sh.lineTo(x + w, y + h - rr); sh.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    sh.lineTo(x + rr, y + h); sh.quadraticCurveTo(x, y + h, x, y + h - rr); sh.lineTo(x, y + rb); sh.quadraticCurveTo(x, y, x + rb, y); return sh; };
+  const W = 78.0, H = 163.4, D = 8.75, RC = 12.6, BV = 2.9;
+  const CORES = [
+    { nome: 'Prata', cor: 0xd9dadc, vidro: 0xcfd0d3 },
+    { nome: 'Preto', cor: 0x2c2d30, vidro: 0x232427 },
+    { nome: 'Glacier', cor: 0xbfd0dc, vidro: 0xd2dee7 },
+    { nome: 'Burgundy', cor: 0x5a2230, vidro: 0x6a2b3a },
+  ];
+  const aluminio = new THREE.MeshPhysicalMaterial({ color: CORES[0].cor, metalness: 0.9, roughness: 0.38, envMapIntensity: 1.1 });
+  const vidroVerso = new THREE.MeshPhysicalMaterial({ color: CORES[0].vidro, metalness: 0.15, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.15 });
   const celular = new THREE.Group();
-  celular.add(new THREE.Mesh(corpoGeo, aro));
-  // tela: uma tela do próprio app (gradiente da marca, timeline e keyframes)
-  const tc = document.createElement('canvas'); tc.width = 420; tc.height = 880; const g = tc.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, 0, 880); grad.addColorStop(0, '#F08A55'); grad.addColorStop(0.45, '#EA6426'); grad.addColorStop(1, '#9A9CD0');
-  g.fillStyle = '#0b0b0c'; g.fillRect(0, 0, 420, 880);
-  g.fillStyle = grad; g.beginPath(); g.roundRect(24, 120, 372, 420, 28); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.9)'; g.font = '800 54px Figtree, system-ui, sans-serif'; g.fillText('Rompa o', 52, 440); g.font = '300 54px Figtree, system-ui, sans-serif'; g.fillText('quadro.', 52, 500);
-  [[0.1, 0.7, '#EA6426'], [0.25, 0.9, '#9A9CD0'], [0.05, 0.45, '#E1CDBC'], [0.35, 0.8, '#EA6426']].forEach(([a, b, c], i) => { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(24, 590 + i * 54, 372, 36); g.fillStyle = c; g.beginPath(); g.roundRect(24 + a * 372, 594 + i * 54, (b - a) * 372, 28, 8); g.fill(); });
-  g.fillStyle = '#EA6426'; g.fillRect(250, 580, 3, 230);
-  g.fillStyle = '#fff'; g.beginPath(); g.roundRect(150, 34, 120, 34, 17); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.roundRect(152, 36, 116, 30, 15); g.fill();
-  const tex = new THREE.CanvasTexture(tc); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
-  const telaGeo = new THREE.ShapeGeometry(ret(W - 0.16, H - 0.16, 0.34), 24);
-  // UV da tela: a forma vai de -w/2 a w/2; normaliza para 0–1
-  const uv = telaGeo.attributes.uv, pz = telaGeo.attributes.position;
-  for (let i = 0; i < uv.count; i++) uv.setXY(i, pz.getX(i) / (W - 0.16) + 0.5, pz.getY(i) / (H - 0.16) + 0.5);
-  const tela = new THREE.Mesh(telaGeo, new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.32, roughness: 0.15, metalness: 0 }));
-  tela.position.z = P / 2 + B + 0.002;
-  celular.add(tela);
-  // verso de vidro e o módulo de câmera
-  const verso = new THREE.Mesh(new THREE.ShapeGeometry(ret(W - 0.1, H - 0.1, 0.36), 24), new THREE.MeshStandardMaterial({ color: 0x17161a, metalness: 0.35, roughness: 0.22 }));
-  verso.position.z = -(P / 2 + B + 0.002); verso.rotation.y = Math.PI; celular.add(verso);
-  const modulo = new THREE.Mesh(new THREE.ExtrudeGeometry(ret(0.9, 0.9, 0.24), { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3 }), new THREE.MeshStandardMaterial({ color: 0x3a383c, metalness: 0.4, roughness: 0.3 }));
-  modulo.position.set(0.5, 1.55, -(P / 2 + B + 0.06)); celular.add(modulo);
-  const lente = new THREE.MeshStandardMaterial({ color: 0x0c0c0e, metalness: 0.8, roughness: 0.1 });
-  [[0.32, 1.73], [0.32, 1.37], [0.68, 1.55]].forEach(([x, y]) => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.08, 32), lente); l.rotation.x = Math.PI / 2; l.position.set(x, y, -(P / 2 + B + 0.11)); celular.add(l); });
+  // corpo: extrusão com chanfro arredondado (as laterais curvas do corpo de alumínio)
+  const corpo = new THREE.ExtrudeGeometry(ret(W - 2 * BV, H - 2 * BV, RC - BV), { depth: D - 2 * BV, bevelEnabled: true, bevelThickness: BV, bevelSize: BV, bevelSegments: 10, curveSegments: 40 });
+  corpo.translate(0, 0, -(D - 2 * BV) / 2);
+  celular.add(new THREE.Mesh(corpo, aluminio));
+
+  // frente: vidro preto com a tela (bordas finas, Dynamic Island pequena)
+  const TW = W - 2.6, TH = H - 2.6;
+  const tc = document.createElement('canvas'); tc.width = 640; tc.height = Math.round(640 * TH / TW); const g = tc.getContext('2d');
+  const px = tc.width / TW;
+  g.fillStyle = '#000'; g.fillRect(0, 0, tc.width, tc.height);
+  const borda = 1.35 * px, raioTela = (RC - 2.6) * px;
+  g.save(); g.beginPath(); g.roundRect(borda, borda, tc.width - 2 * borda, tc.height - 2 * borda, raioTela); g.clip();
+  const fundo = g.createLinearGradient(0, 0, 0, tc.height); fundo.addColorStop(0, '#141416'); fundo.addColorStop(1, '#0b0b0c'); g.fillStyle = fundo; g.fillRect(0, 0, tc.width, tc.height);
+  g.fillStyle = '#f5f5f7'; g.font = `600 ${3.4 * px}px "Figtree Variable", Figtree, system-ui, sans-serif`; g.fillText('9:41', 8 * px, 8.6 * px);
+  g.fillRect(tc.width - 14 * px, 6 * px, 6.4 * px, 3 * px); g.fillRect(tc.width - 7.3 * px, 6.9 * px, 0.6 * px, 1.2 * px);
+  const card = g.createLinearGradient(0, 22 * px, 0, 86 * px); card.addColorStop(0, '#F08A55'); card.addColorStop(0.5, '#EA6426'); card.addColorStop(1, '#9A9CD0');
+  g.fillStyle = card; g.beginPath(); g.roundRect(5 * px, 20 * px, tc.width - 10 * px, 68 * px, 5 * px); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.95)'; g.font = `800 ${8.6 * px}px "Figtree Variable", Figtree, system-ui, sans-serif`; g.fillText('Rompa o', 10 * px, 72 * px);
+  g.font = `300 ${8.6 * px}px "Figtree Variable", Figtree, system-ui, sans-serif`; g.fillText('quadro.', 10 * px, 82 * px);
+  [[0.08, 0.62, '#EA6426'], [0.22, 0.9, '#9A9CD0'], [0.04, 0.4, '#E1CDBC'], [0.36, 0.82, '#EA6426']].forEach(([a, b2, c], i) => { const y = (96 + i * 8.5) * px; g.fillStyle = 'rgba(255,255,255,.07)'; g.fillRect(5 * px, y, tc.width - 10 * px, 6 * px); g.fillStyle = c; g.beginPath(); g.roundRect(5 * px + a * (tc.width - 10 * px), y + 0.6 * px, (b2 - a) * (tc.width - 10 * px), 4.8 * px, 1.6 * px); g.fill(); });
+  g.fillStyle = '#EA6426'; g.fillRect(tc.width * 0.58, 94 * px, 0.5 * px, 38 * px);
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.roundRect(tc.width / 2 - 17 * px, tc.height - 4 * px, 34 * px, 1.2 * px, 0.6 * px); g.fill();
+  g.restore();
+  // Dynamic Island: ~13,5 mm × 4,6 mm, centralizada, ~2,6 mm abaixo da borda da tela
+  g.fillStyle = '#000'; g.beginPath(); g.roundRect(tc.width / 2 - 6.75 * px, borda + 2.6 * px, 13.5 * px, 4.6 * px, 2.3 * px); g.fill();
+  const tex = new THREE.CanvasTexture(tc); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8;
+  const frenteGeo = new THREE.ShapeGeometry(ret(TW, TH, RC - 1.3), 32);
+  const uv = frenteGeo.attributes.uv, pz = frenteGeo.attributes.position;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pz.getX(i) / TW + 0.5, pz.getY(i) / TH + 0.5);
+  const frente = new THREE.Mesh(frenteGeo, new THREE.MeshPhysicalMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03 }));
+  frente.position.z = D / 2 + 0.12;
+  celular.add(frente);
+
+  // verso: o vidro Ceramic Shield abaixo do platô
+  const verso = new THREE.Mesh(new THREE.ShapeGeometry(ret(W - 9, 104, 7), 24), vidroVerso);
+  verso.rotation.y = Math.PI; verso.position.set(0, -H / 2 + 6 + 52, -D / 2 - 0.12);
+  celular.add(verso);
+  // platô da câmera: de lado a lado, no alto do verso, 2,8 mm acima dele
+  const PH = 46, PT = 2.8, PB = 1.2;
+  const plato = new THREE.ExtrudeGeometry(ret(W - 1.6 - 2 * PB, PH - 2 * PB, RC - 1.5, 5), { depth: PT - 2 * PB, bevelEnabled: true, bevelThickness: PB, bevelSize: PB, bevelSegments: 6, curveSegments: 32 });
+  const platoM = new THREE.Mesh(plato, aluminio);
+  platoM.position.set(0, H / 2 - PH / 2 - 0.8, -D / 2 - PT + PB);
+  celular.add(platoM);
+  const zPlato = -D / 2 - PT;
+  // lentes: anéis de safira e vidro escuro, um pouco mais altos que o platô
+  const anel = new THREE.MeshPhysicalMaterial({ color: 0x8c8d91, metalness: 1, roughness: 0.18 });
+  const vidroLente = new THREE.MeshPhysicalMaterial({ color: 0x07080a, metalness: 0.2, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0 });
+  const iris = new THREE.MeshPhysicalMaterial({ color: 0x1b2a4a, metalness: 0.6, roughness: 0.1, clearcoat: 1 });
+  const lente = (x, y) => {
+    const g1 = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(7.4, 7.6, 2.2, 48), anel); base.rotation.x = Math.PI / 2; g1.add(base);
+    const vid = new THREE.Mesh(new THREE.CylinderGeometry(6.1, 6.1, 2.3, 48), vidroLente); vid.rotation.x = Math.PI / 2; g1.add(vid);
+    const ir = new THREE.Mesh(new THREE.CircleGeometry(2.6, 32), iris); ir.position.z = -1.17; ir.rotation.y = Math.PI; g1.add(ir);
+    g1.position.set(x, y, zPlato - 1.1); celular.add(g1);
+  };
+  // olhando de trás, as lentes ficam à esquerda (no espaço do modelo, x positivo) e o flash à direita
+  const xL = W / 2 - 15.5, yT = H / 2 - 14.5;
+  lente(xL, yT); lente(xL, yT - 18.2); lente(xL - 16, yT - 9.1);
+  const pontinho = (x, y, rr, mat) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, 0.6, 32), mat); m.rotation.x = Math.PI / 2; m.position.set(x, y, zPlato - 0.3); celular.add(m); };
+  pontinho(-W / 2 + 14, yT - 2, 3.3, new THREE.MeshPhysicalMaterial({ color: 0xf2efe6, roughness: 0.3, clearcoat: 1 }));
+  pontinho(-W / 2 + 14, yT - 16, 3.1, vidroLente);
+  pontinho(-W / 2 + 8, yT - 9, 0.6, vidroLente);
+  // botões: direita (lateral e Camera Control de safira), esquerda (Ação e volume)
+  const botao = (lado, yCentro, comp, mat = aluminio, alto = 0.55) => {
+    const b2 = new THREE.Mesh(new THREE.BoxGeometry(alto * 2, comp, 3.2), mat);
+    b2.position.set(lado * (W / 2 + alto * 0.35), yCentro, 0); celular.add(b2);
+  };
+  botao(1, H / 2 - 52, 17);
+  botao(1, H / 2 - 108, 12.5, new THREE.MeshPhysicalMaterial({ color: 0x18181a, metalness: 0.3, roughness: 0.1, clearcoat: 1 }), 0.25);
+  botao(-1, H / 2 - 33, 6.5);
+  botao(-1, H / 2 - 50, 10);
+  botao(-1, H / 2 - 64, 10);
   scene.add(celular);
+
   // sombra de contato
   const sc = document.createElement('canvas'); sc.width = sc.height = 128; const sx = sc.getContext('2d');
-  const sg = sx.createRadialGradient(64, 64, 0, 64, 64, 64); sg.addColorStop(0, 'rgba(0,0,0,.55)'); sg.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = sg; sx.fillRect(0, 0, 128, 128);
-  const sombra = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
-  sombra.rotation.x = -Math.PI / 2; sombra.position.y = -2.75; scene.add(sombra);
+  const sg = sx.createRadialGradient(64, 64, 0, 64, 64, 64); sg.addColorStop(0, 'rgba(0,0,0,.6)'); sg.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = sg; sx.fillRect(0, 0, 128, 128);
+  const sombra = new THREE.Mesh(new THREE.PlaneGeometry(120, 30), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
+  sombra.rotation.x = -Math.PI / 2; sombra.position.y = -H / 2 - 16; scene.add(sombra);
+
+  // cores oficiais: bolinhas no canto, e tocar no celular passa para a próxima
+  let iCor = 0;
+  const bolinhas = document.createElement('div'); bolinhas.className = 'cores-cel'; bolinhas.setAttribute('role', 'group'); bolinhas.setAttribute('aria-label', 'Cor do iPhone');
+  bolinhas.innerHTML = CORES.map((c, i) => `<button type="button" aria-pressed="${i === 0}" title="${c.nome}" aria-label="${c.nome}" style="background:#${c.cor.toString(16).padStart(6, '0')}"></button>`).join('');
+  caixa.appendChild(bolinhas);
+  const pintar = (i) => { iCor = i; aluminio.color.setHex(CORES[i].cor); vidroVerso.color.setHex(CORES[i].vidro); [...bolinhas.children].forEach((b2, j) => b2.setAttribute('aria-pressed', String(j === i))); render(); };
+  bolinhas.addEventListener('click', (e) => { const b2 = e.target.closest('button'); if (b2) pintar([...bolinhas.children].indexOf(b2)); });
+  canvas.addEventListener('click', () => pintar((iCor + 1) % CORES.length));
+
   function size() { const w = caixa.clientWidth, h = caixa.clientHeight; if (!w || !h) return; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
   new ResizeObserver(size).observe(caixa); size();
-  let t = 0.9;
+  let t = 0.6;
   function render() {
-    celular.rotation.y = t * 0.7 - 0.6;
-    celular.rotation.x = Math.sin(t * 0.6) * 0.12 - 0.06;
-    celular.rotation.z = Math.sin(t * 0.4) * 0.05;
-    celular.position.y = Math.sin(t * 1.1) * 0.12;
-    sombra.material.opacity = 0.75 - celular.position.y * 0.8;
-    sombra.scale.x = 1 - celular.position.y * 0.3;
+    celular.rotation.y = t * 0.6 - 0.5;
+    celular.rotation.x = Math.sin(t * 0.55) * 0.1 - 0.05;
+    celular.rotation.z = Math.sin(t * 0.4) * 0.04;
+    celular.position.y = Math.sin(t * 1.1) * 4;
+    sombra.material.opacity = 0.8 - celular.position.y * 0.02;
     r.render(scene, cam);
   }
   render();
