@@ -4070,7 +4070,9 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   crédito. Tela no Chromium: a aba abre na ZRO com as categorias, o catálogo desce uma vez, a categoria filtra, a melhor
   versão vem marcada, escolher a 1 troca o som, Colocar grava a origem `zro`, Inspector "Som original da Absolute ZRO",
   o arquivo vai na entrega sem crédito.
-- Não validado: os 360 arquivos em produção (envio pendente da confirmação no Supabase) e o uso com a conta real.
+- Produção: os 360 arquivos subiram por uma função temporária do Supabase (desligada depois: recusa tudo); no banco,
+  360 versões, 90 sons, 9 categorias, 90 melhores, 18,1 MB e nenhum sha256 divergente do áudio guardado.
+- Não validado: o uso com a conta real.
 
 ## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
 
@@ -4118,6 +4120,21 @@ SOBEDESCE de computador, que disparam os instaladores).
   baixar da Absolute ZRO) some no celular e dentro do próprio app.
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
+
+## NOSSOM · estúdio escuro (Proposta 2) e player da plataforma (01/11/2026)
+
+- `products/nossom`: `tsc --noEmit` OK; `npm test` 124/124; `npm run build` OK.
+- `tests/e2e/player.spec.ts` (novo): home com "Do ruído ao pronto." e a grade de ferramentas; importar, tocar na onda,
+  a barra aparece com o título; trocar de ferramenta pelo seletor e pelos passos da lateral (Ajustar → Melhorar voz,
+  Nivelar volumes) sem parar o som; pausar na barra pausa a onda; recarregar volta pausado no mesmo ponto e toca de novo
+  lendo o som do aparelho; no celular (390) a barra fica acima das abas sem rolagem lateral; fechar esquece o áudio.
+- Suítes que tocam som ou mexem na navegação, com o build novo: studio, destinations-effects, homepage-demo,
+  design-review, studio-speed, account-menu, remix, cloud-restoration, install-navigation (navegação e família),
+  studio (temas e contraste com axe) passando. Atualizados de propósito: a contagem da navegação (seis destinos e os
+  quatro passos), a cor do texto de apoio no tema escuro (grafite) e o título da home.
+- Falham também na `main` sem esta mudança (conferido com o build da main): `install-navigation` › manifest (a rota
+  devolve HTML) e `liquid-site` › cápsula abaixo da área segura do iPhone (tempo esgotado).
+- Não validado: a conta real do titular em produção (o NOSSOM segue fechado pela 0049).
 
 ## TPeasy para computador (31/10/2026)
 

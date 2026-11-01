@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { avisarOutroSom } from '@/lib/player';
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { STEM_NAMES } from '@/lib/restoration';
 import {
@@ -48,8 +49,16 @@ export default function StemMixer({
     void current.context.close();
   }
 
+  // o player da plataforma começou a tocar: o mixer para
+  useEffect(() => {
+    const parar = () => stop();
+    window.addEventListener('nossom:player-tocou', parar);
+    return () => window.removeEventListener('nossom:player-tocou', parar);
+  });
+
   async function play() {
     if (playing) return stop();
+    avisarOutroSom();
     setLoading(true);
     try {
       const context = new AudioContext({ sampleRate: 44100 });

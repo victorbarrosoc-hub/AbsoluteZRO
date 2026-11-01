@@ -40,7 +40,7 @@ import InstallApp from './install-app';
 import FamilyNav from './family-nav';
 import NavBadge from './nav-badge';
 import { studioPending } from '@/lib/studio-pending';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   Gem,
@@ -82,6 +82,8 @@ import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
 import Assistant from './assistant';
 import { WavePlayer } from './wave-player';
+import PassosNav from './passos-nav';
+import { player } from '@/lib/player';
 import { restoreCloud, releaseCloudJob, cancelCloudJob } from '@/lib/cloud-audio';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import {
@@ -191,6 +193,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const pathname = usePathname(),
     searchParams = useSearchParams();
   const requestedProjectId = searchParams.get('project');
+  // o player da plataforma guarda o último áudio neste aparelho: se for de outra conta, esquece
+  useEffect(() => player.conferirDono(account.id), [account.id]);
   const routeTool = routeOperation(pathname);
   const [eqPreset, setEqPreset] = useState('neutral'),
     [eqGains, setEqGains] = useState<EqGains>([0, 0, 0, 0, 0]),
@@ -1359,13 +1363,13 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               <small>{projects.length}</small>
             )}
           </button>
-          <button
-            className={routeTool ? 'active' : ''}
-            onClick={() => chooseTool(operation)}
-            disabled={!!busy || recording}
-          >
-            <AudioLines size={18} /> Estúdio
-          </button>
+          <PassosNav
+            ferramenta={routeTool}
+            atual={operation}
+            desabilitado={!!busy || recording}
+            onEstudio={() => chooseTool(operation)}
+            onFerramenta={chooseTool}
+          />
           <button
             className={view === 'account' ? 'active' : ''}
             onClick={() => {
@@ -1953,6 +1957,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                     region={region}
                     onRegion={setRegion}
                     previewOnly={cloudOperation}
+                    projeto={{ id: project.id, nome: project.name, dono: account.id }}
                   />
                   {versionIndex > 0 &&
                     project.versions.some((v) => v.processing?.cloudRestoration) && (
@@ -2151,39 +2156,43 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                   </section>
                   <section className="history-panel">
                     <div className="subheading">
-                      <h2>O caminho do seu som.</h2>
+                      <h2>Versões</h2>
                       <span>
                         {project.versions.length}{' '}
                         {project.versions.length === 1 ? 'VERSÃO' : 'VERSÕES'}
                       </span>
                     </div>
-                    {project.versions.map((v, i) => (
-                      <button
-                        className={`version-row ${i === versionIndex ? 'active' : ''}`}
-                        key={v.id}
-                        disabled={!!busy}
-                        onClick={() => void selectVersion(i)}
-                      >
-                        <span className="version-marker">
-                          {i === 0 ? <ShieldCheck size={15} /> : <AudioLines size={15} />}
-                        </span>
-                        <span>
-                          <strong>{v.label}</strong>
-                          <small>
-                            {i === 0
-                              ? 'Original preservado'
-                              : (v.preset ?? 'Tratamento não destrutivo')}{' '}
-                            ·{' '}
-                            {new Date(v.createdAt).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </small>
-                        </span>
-                        <span>{metric(v.metrics.lufs, ' LUFS')}</span>
-                        {i === versionIndex ? <Check size={15} /> : <Undo2 size={14} />}
-                      </button>
-                    ))}
+                    <div className="versoes-cadeia">
+                      {project.versions.map((v, i) => (
+                        <Fragment key={v.id}>
+                          {i > 0 && <ChevronRight size={16} className="seta" aria-hidden="true" />}
+                          <button
+                            className={`version-row ${i === versionIndex ? 'active' : ''}`}
+                            disabled={!!busy}
+                            onClick={() => void selectVersion(i)}
+                          >
+                            <span className="version-marker">
+                              {i === 0 ? <ShieldCheck size={15} /> : <AudioLines size={15} />}
+                            </span>
+                            <span>
+                              <strong>{v.label}</strong>
+                              <small>
+                                {i === 0
+                                  ? 'Original preservado'
+                                  : (v.preset ?? 'Tratamento não destrutivo')}{' '}
+                                ·{' '}
+                                {new Date(v.createdAt).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </small>
+                            </span>
+                            <span>{metric(v.metrics.lufs, ' LUFS')}</span>
+                            {i === versionIndex ? <Check size={15} /> : <Undo2 size={14} />}
+                          </button>
+                        </Fragment>
+                      ))}
+                    </div>
                   </section>
                   <div className="export-strip">
                     <FileAudio size={19} />

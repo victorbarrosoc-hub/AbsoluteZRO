@@ -1,4 +1,5 @@
 'use client';
+import HomeFerramentas from './home-ferramentas';
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'motion/react';
@@ -36,7 +37,7 @@ import SiteMotion from './site-motion';
 import SoundToggle from './sound-toggle';
 const SECTIONS = [
   ['Ouça a diferença', 'experimente'],
-  ['Como funciona', 'produto'],
+  ['Ferramentas', 'produto'],
   ['Planos', 'planos'],
 ] as const;
 type Section = (typeof SECTIONS)[number];
@@ -96,81 +97,6 @@ function IntentsWrap({ closed, children }: { closed: boolean; children: ReactNod
     <nav className={className} aria-label="Escolha o que fazer com seu áudio">
       {children}
     </nav>
-  );
-}
-function StepArt({ kind }: { kind: 'send' | 'clean' | 'export' }) {
-  const bars = Array.from({ length: 11 }, (_, i) => i);
-  return (
-    <svg className="step-art" viewBox="0 0 190 56" aria-hidden="true">
-      <defs>
-        <linearGradient id={`step-${kind}`} x1="0" x2="1">
-          <stop stopColor="#5ab4ff" />
-          <stop offset=".55" stopColor="#e9f6ff" />
-          <stop offset="1" stopColor="#8fb3d6" />
-        </linearGradient>
-      </defs>
-      {kind === 'send' && (
-        <>
-          <rect
-            className="chip"
-            x="64"
-            y="10"
-            width="62"
-            height="36"
-            rx="11"
-            fill="#9fd6ff1a"
-            stroke={`url(#step-${kind})`}
-          />
-          {bars.slice(0, 7).map((i) => (
-            <rect
-              key={i}
-              x={76 + i * 6}
-              y={28 - [4, 9, 6, 12, 7, 10, 5][i]}
-              width="3"
-              height={[4, 9, 6, 12, 7, 10, 5][i] * 2}
-              rx="1.5"
-              fill={`url(#step-${kind})`}
-            />
-          ))}
-        </>
-      )}
-      {kind === 'clean' &&
-        bars.map((i) => {
-          const noisy = [8, 17, 5, 20, 11, 19, 6, 15, 9, 18, 7][i];
-          return (
-            <rect
-              key={i}
-              className="bar"
-              x={40 + i * 10}
-              y={28 - noisy}
-              width="4"
-              height={noisy * 2}
-              rx="2"
-              fill={`url(#step-${kind})`}
-              style={{
-                ['--from' as string]: 1,
-                ['--to' as string]: (6 + (i % 3) * 3) / noisy,
-                animationDelay: `${i * 70}ms`,
-              }}
-            />
-          );
-        })}
-      {kind === 'export' && (
-        <>
-          <path d="M60 40h70" stroke="#9fd6ff55" strokeWidth="2" strokeLinecap="round" />
-          <g className="arrow">
-            <path
-              d="M95 10v22m-8-8 8 8 8-8"
-              fill="none"
-              stroke={`url(#step-${kind})`}
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-        </>
-      )}
-    </svg>
   );
 }
 function Reveal({
@@ -349,10 +275,10 @@ export default function Landing({
           <div className="ns-wrap home-hero-grid">
             <Reveal className="home-hero-copy">
               <h1>
-                Seu som,
-                <span>em outra escala.</span>
+                Do ruído
+                <span>ao pronto.</span>
               </h1>
-              <p>Limpe sua voz. Isole vocais. Crie do seu jeito.</p>
+              <p>Um estúdio de áudio inteiro, com IA quando você quiser.</p>
               <div className="ns-actions">
                 {closed ? (
                   <a href="#produto" className="button primary">
@@ -422,28 +348,7 @@ export default function Landing({
             <DemoPlayer closed={closed} />
           </Reveal>
         </section>
-        <section className="home-quick ns-wrap" id="produto">
-          <h2>Do áudio ao resultado.</h2>
-          <div id="como-funciona" className="home-quick-steps">
-            <p className="lg">
-              <StepArt kind="send" />
-              <strong>1. Envie</strong> Sua voz, do celular ou computador.
-            </p>
-            <p className="lg">
-              <StepArt kind="clean" />
-              <strong>2. Melhore</strong> Limpe a voz e ajuste seu som.
-            </p>
-            <p className="lg">
-              <StepArt kind="export" />
-              <strong>3. Baixe</strong> Compare e exporte em WAV ou MP3.
-            </p>
-          </div>
-          {!closed && (
-            <Link href="/studio" className="button primary">
-              Experimentar grátis <ArrowRight size={16} />
-            </Link>
-          )}
-        </section>
+        <HomeFerramentas closed={closed} />
         {!closed && (
           <section className="ns-wrap" id="planos">
             <PlanCards />

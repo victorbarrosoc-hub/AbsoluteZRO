@@ -8,6 +8,8 @@
 @import './styles/liquid.css';
 @import './styles/intro.css';
 @import './styles/zro-dev.css';
+@import './styles/estudio-p2.css';
+@import './styles/player.css';
 * {
   box-sizing: border-box;
 }
