@@ -90,6 +90,31 @@ test('deep link absolutezro:// abre só rotas do HUB', () => {
   assert.equal(r.deepLinkDosArgs(['app', '--smoke'], HUB), null)
 })
 
+test('deep link de app (ADR 0035): absolutezro://apps/<id>?acao=atualizar|instalar abre o cartão do app e só oferece', () => {
+  assert.deepEqual(r.linkDeApp('absolutezro://apps/maestro?acao=atualizar'), { id: 'maestro', acao: 'atualizar' })
+  assert.deepEqual(r.linkDeApp('absolutezro://apps/rift-motion?acao=instalar'), { id: 'rift-motion', acao: 'instalar' })
+  assert.deepEqual(r.linkDeApp('absolutezro:apps/relay/'), { id: 'relay', acao: null })
+  assert.deepEqual(r.linkDeApp('absolutezro://apps/relay?acao=remover'), { id: 'relay', acao: null }, 'só atualizar e instalar')
+  for (const ruim of [
+    'absolutezro://apps/../api',
+    'absolutezro://apps/Maestro',
+    'absolutezro://apps/a',
+    'absolutezro://apps/x/y',
+    'https://apps/maestro',
+    'absolutezro://apps/%2e%2e',
+  ])
+    assert.equal(r.linkDeApp(ruim), null, ruim)
+  assert.equal(r.deepLink('absolutezro://apps/maestro?acao=atualizar', HUB), `${HUB}/app?app=maestro&acao=atualizar#app-maestro`)
+  assert.equal(r.deepLink('absolutezro://apps/rift-motion?acao=instalar&x=<script>', HUB), `${HUB}/app?app=rift-motion&acao=instalar#app-rift-motion`)
+  assert.equal(r.deepLink('absolutezro://apps/tpeasy', HUB), `${HUB}/app?app=tpeasy#app-tpeasy`)
+  // Windows passa o link na linha de comando; a segunda instância repassa a rota já convertida
+  assert.equal(
+    r.deepLinkDosArgs(['C:\\Absolute ZRO.exe', 'absolutezro://apps/synquei?acao=atualizar'], HUB),
+    `${HUB}/app?app=synquei&acao=atualizar#app-synquei`,
+  )
+  assert.equal(r.deepLink('absolutezro://app?app=synquei&acao=atualizar#app-synquei', HUB), `${HUB}/app?app=synquei&acao=atualizar#app-synquei`)
+})
+
 test('permissões: só copiar e tela cheia, e só para o HUB', () => {
   assert.equal(r.permitir('clipboard-sanitized-write', `${HUB}/inicio`, HUB), true)
   assert.equal(r.permitir('fullscreen', HUB, HUB), true)

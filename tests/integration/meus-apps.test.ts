@@ -1,4 +1,4 @@
-// Central única de instalação (ADR 0049): o que cada conta vê e baixa na central "Absolute ZRO", conferido no servidor.
+// Central única de instalação (ADR 0035): o que cada conta vê e baixa na central "Absolute ZRO", conferido no servidor.
 // Hoje todo app de computador está no plano grátis (uso livre); `usoLivre: new Set()` simula o app pago.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { releaseClaimsFor, resetReleaseCache } from '@zro/billing'

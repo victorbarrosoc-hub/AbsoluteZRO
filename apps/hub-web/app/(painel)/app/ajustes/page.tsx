@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Ajustes' }
 export const dynamic = 'force-dynamic'
 
 /**
- * Ajustes da central "Absolute ZRO" neste computador (ADR 0049): "Atualizar sozinho" por app (padrão desligado: a central
+ * Ajustes da central "Absolute ZRO" neste computador (ADR 0035): "Atualizar sozinho" por app (padrão desligado: a central
  * avisa e a pessoa toca em Atualizar) e "Abrir com o computador". As escolhas ficam no computador (preferencias.json da
  * central); só os apps que a conta pode atualizar entram (direitosDesktop, no servidor).
  */

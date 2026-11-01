@@ -4,7 +4,7 @@ import { ehAdmin, SO_PARA_ADMIN } from '@/lib/downloads'
 import { getAuth } from '@/lib/session'
 
 /**
- * Catálogo da central de apps da versão 1.3 (a 1.4 lê /api/v1/desktop/meus-apps, com o plano da conta; ADR 0049).
+ * Catálogo da central de apps da versão 1.3 (a 1.4 lê /api/v1/desktop/meus-apps, com o plano da conta; ADR 0035).
  * Gate de lançamento (ADR 0023): só os produtos com canal desktop aberto ao público ou liberados para a pessoa da
  * sessão; produto fechado não aparece. AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma, que vê tudo.
  * O download (/baixar/app/<id>/<arquivo>) confere o plano de novo.

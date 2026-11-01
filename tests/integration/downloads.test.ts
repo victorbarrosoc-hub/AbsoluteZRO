@@ -1,4 +1,4 @@
-// Página Downloads: só links oficiais, em HTTPS, e cada ferramenta do catálogo aparece uma vez. Central única (ADR 0049):
+// Página Downloads: só links oficiais, em HTTPS, e cada ferramenta do catálogo aparece uma vez. Central única (ADR 0035):
 // no computador, todo app instala pela Absolute ZRO; nenhum instalador avulso, Terminal por app ou aviso de "primeira vez".
 import { describe, expect, it } from 'vitest'
 

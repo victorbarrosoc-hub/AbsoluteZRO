@@ -1,7 +1,7 @@
 'use client'
 /**
  * Downloads em dois tempos: primeiro só os ícones das ferramentas; ao tocar num, abre embaixo a parte dele: "Instale
- * pela Absolute ZRO" (no computador, todo app se instala e se atualiza pela central, ADR 0049), o navegador e o celular,
+ * pela Absolute ZRO" (no computador, todo app se instala e se atualiza pela central, ADR 0035), o navegador e o celular,
  * e o "Conheça mais", que leva à página da plataforma. O endereço guarda a escolha (#app-<id>), então os links
  * "absolutezro.com/baixar#app-synquei" dos sites de cada app abrem direto no lugar certo. Dentro do app de computador,
  * quem instala é a central (AppActions).
@@ -92,7 +92,7 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
   }
 
   const app = apps.find((a) => a.productId === ativo) ?? null
-  // o app tem versão para computador: instala pela Absolute ZRO (o instalador avulso saiu da página, ADR 0049)
+  // o app tem versão para computador: instala pela Absolute ZRO (o instalador avulso saiu da página, ADR 0035)
   const noComputador = !!app?.options.some((o) => o.os === 'mac' || o.os === 'windows')
   const outras = app?.options.filter((o) => o.os !== 'mac' && o.os !== 'windows') ?? []
   const st = app ? STATUS[app.status]! : null
