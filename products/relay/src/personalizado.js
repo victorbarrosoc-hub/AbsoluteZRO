@@ -272,7 +272,7 @@ function resumo(p) {
   const v = p.video
   const tam = v.quadro ? `${v.quadro.largura}×${v.quadro.altura}` : v.ladoMenor ? `${v.ladoMenor}p` : 'Original'
   const q = p.tamanhoMax ? `até ${Math.round(p.tamanhoMax / 1e6)} MB` : v.rf ? `RF ${v.crf}` : `${(v.bitrateFixo / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s${v.cbr ? ' CBR' : ''}`
-  return [v.codec === 'hevc' ? 'HEVC' : 'H.264', tam, v.fpsExato ? `${virgula(v.fpsExato)} fps` : v.fpsConforme ? `interpretado a ${virgula(v.fpsConforme)} fps` : null, q, p.cor ? 'cor da Revela' : null, p.semAudio ? 'sem áudio' : null].filter(Boolean).join(' · ')
+  return [v.codec === 'hevc' ? 'HEVC' : 'H.264', tam, v.fpsExato ? `${virgula(v.fpsExato)} fps` : v.fpsConforme ? `interpretado a ${virgula(v.fpsConforme)} fps` : null, q, p.cor ? 'cor' : null, p.semAudio ? 'sem áudio' : null].filter(Boolean).join(' · ')
 }
 
 // ─────────── guardar e levar ───────────

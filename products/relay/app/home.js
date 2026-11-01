@@ -203,11 +203,13 @@ if (faixaLimite) {
 
 // ─────────── família: o Relay no centro, os apps em volta ───────────
 
-// só as plataformas no ar (decisão do titular, 30/10/2026); as outras entram quando abrirem
+// só as plataformas no ar (decisão do titular, 30/10/2026), nos endereços oficiais (a régua da raiz é
+// tests/integration/familia-menus.test.ts); as outras entram quando abrirem
 export const FAMILIA = [
   { nome: 'Maestro', img: 'marca/familia/maestro.svg', href: 'https://maestro.absolutezro.com', uso: 'Versões da entrega' },
-  { nome: 'SOBEDESCE', img: 'marca/familia/sobedesce.svg', href: 'https://sobedesce.vercel.app', uso: 'Converter do Drive' },
-  { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.vercel.app', uso: 'Pronto para editar' },
+  { nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png', href: 'https://carro.absolutezro.com', uso: 'Equipe para o job' },
+  { nome: 'SOBEDESCE', img: 'marca/familia/sobedesce.svg', href: 'https://sobedesce.com', uso: 'Converter do Drive' },
+  { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.absolutezro.com', uso: 'Pronto para editar' },
   { nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', href: 'https://tpeasy.absolutezro.com', uso: 'Gravação para a rede' },
 ]
 const orbita = $('[data-familia]')
@@ -232,7 +234,7 @@ if (RECURSOS.revela && bento)
       'article',
       { className: 'cartao bloco bloco--cor' },
       icone('cor'),
-      el('h3', { textContent: 'Cor da Revela' }),
+      el('h3', { textContent: 'Cor' }),
       el('p', { className: 'apoio', textContent: 'Log da câmera para Rec.709 e o seu look .cube, em lote.' }),
     ),
   )

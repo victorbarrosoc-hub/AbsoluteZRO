@@ -33,7 +33,7 @@ test('página inicial: destinos, exemplos calculados e nenhum erro', { skip: pul
   assert.equal(await p.locator('.destino').count(), PRESETS.length)
   const exemplos = await p.locator('[data-exemplo]').allTextContents()
   assert.ok(exemplos.every((t) => /\d/.test(t)), exemplos.join(' | '))
-  assert.equal(await p.locator('.orbita-app').count(), 4) // só as plataformas no ar: Maestro, SOBEDESCE, Synquei e TPeasy
+  assert.equal(await p.locator('.orbita-app').count(), 5) // só as plataformas no ar: Maestro, Carro do Freela, SOBEDESCE, Synquei e TPeasy
   assert.deepEqual(s.erros, [])
   await p.close()
 })
