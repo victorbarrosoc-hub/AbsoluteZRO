@@ -4043,6 +4043,20 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   no Drive", o arquivo na entrega e nenhum crédito para ele.
 - Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0044 aplicada).
 
+## Sonoplasta · sons originais da Absolute ZRO como banco padrão (01/11/2026)
+
+- HUB: migração `0050_sons_zro.sql` (tabela `zro.sons_zro` com o áudio, RLS só leitura para `zro_app`),
+  `packages/core/src/sons-zro.ts`, `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` (escopo `zro.sons`).
+  `tests/integration/sons-zro.test.ts` 4/4: catálogo por categoria na ordem do pack, versões com a melhor primeiro e sem o
+  áudio; arquivo com tipo, id e ETag; id inválido 422 e inexistente 404; sem conta 401; `zro_app` lê mas não insere,
+  altera nem apaga. OpenAPI conferido; `format:check`, `lint` e `scan-secrets` OK.
+- AEON: repasse `/api/zro/sons/zro*` no site e no desktop sem parâmetro nenhum (id fora do padrão é 404); `filtrarZro`
+  e `versaoZro` em `src/sonoplasta.js` (categoria, busca sem acento em português ou no termo do preset); origem `zro` sem
+  crédito. Tela no Chromium: a aba abre na ZRO com as categorias, o catálogo desce uma vez, a categoria filtra, a melhor
+  versão vem marcada, escolher a 1 troca o som, Colocar grava a origem `zro`, Inspector "Som original da Absolute ZRO",
+  o arquivo vai na entrega sem crédito.
+- Não validado: os 360 arquivos em produção (envio pendente da confirmação no Supabase) e o uso com a conta real.
+
 ## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
 
 Ramo `tpeasy-subdominio-login` sobre a main cba9ba9. Commit web (este) separado do commit de computador (Synquei e
