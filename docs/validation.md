@@ -4281,6 +4281,8 @@ SOBEDESCE de computador, que disparam os instaladores).
 - HUB: `npm run typecheck` OK, `npm run lint` OK, `npm test` 561/561 (64 arquivos), com a migração 0053 aplicada no
   banco de teste; `nao-lancados` confere que "Quasar" também não vaza para quem não é admin.
 - Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
+- Endereço: `quasar.absolutezro.com` adicionado ao projeto Vercel (verificado, DNS da Vercel sem conflito); metadados,
+  links do HUB (`lib/downloads.ts`) e testes (`downloads`, `install-navigation`) no endereço novo; e2e 69/0 de novo.
 
 ## NOSSOM · estúdio Comando + Console (01/11/2026)
 

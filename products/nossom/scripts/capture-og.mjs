@@ -2,7 +2,7 @@
 // Usage: node scripts/capture-og.mjs [url]   (default: production)
 // Navigation links, buttons and the proof line are hidden: a shared image cannot be clicked.
 import { chromium } from 'playwright';
-const url = process.argv[2] || 'https://nossom.absolutezro.com/';
+const url = process.argv[2] || 'https://quasar.absolutezro.com/';
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || undefined,
   ...(process.env.HTTPS_PROXY && url.startsWith('https:')

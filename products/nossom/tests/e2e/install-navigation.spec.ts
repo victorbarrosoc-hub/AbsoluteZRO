@@ -90,7 +90,7 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     'content',
-    /^https:\/\/nossom\.absolutezro\.com\/opengraph-image/,
+    /^https:\/\/quasar\.absolutezro\.com\/opengraph-image/,
   );
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     'content',

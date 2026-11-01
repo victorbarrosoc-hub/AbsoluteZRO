@@ -4,7 +4,7 @@ import './globals.css';
 import BrandIntro from '@/components/brand-intro';
 import PlayerBar from '@/components/player-bar';
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nossom.absolutezro.com'),
+  metadataBase: new URL('https://quasar.absolutezro.com'),
   title: { default: 'Quasar Audio Lab — Do ruído ao pronto.', template: '%s · Quasar' },
   description:
     'Do áudio gravado ao áudio pronto para entregar. Trate, mixe e finalize seu som em um estúdio que acompanha o seu fluxo.',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     title: 'Quasar Audio Lab — Do ruído ao pronto.',
     description:
       'Crie, trate e entregue seu áudio. Seu estúdio com inteligência artificial, em um só lugar.',
-    url: 'https://nossom.absolutezro.com',
+    url: 'https://quasar.absolutezro.com',
   },
   twitter: {
     card: 'summary_large_image',
