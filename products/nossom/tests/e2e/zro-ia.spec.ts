@@ -160,6 +160,9 @@ test('with the Z token the panel talks to the Absolute ZRO through the proxy, to
 test('the public home tells the truth about the Z: available with the Absolute ZRO login, coming without it', async ({
   page,
 }) => {
+  // Fechado ao público, a home só existe para a conta liberada (titular, 01/11/2026; anônimo vai para a Absolute ZRO,
+  // tests/e2e/zro-access.spec.ts). Aberto, ela é pública; a sessão não muda o selo.
+  await enter(page);
   // A home é estática: o selo depende das variáveis da Absolute ZRO no momento do build.
   await page.goto('/');
   const section = page.locator('#z');
