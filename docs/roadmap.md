@@ -354,6 +354,10 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   menos texto em toda a tela, home preta só com as linhas de luz e o player em forma de **ilha** (pílula de vidro com
   capa, nome, onda viva e tocar; um toque abre tempo, ±10 s e volume). Falta: validar com a conta do titular; a
   separação de voz em grito longo (modo Fala por padrão e o modelo de música) espera o teste dele.
+- ✅ NOSSOM no iPhone (01/11/2026, retorno do titular): "O navegador não conseguiu guardar este áudio" ao importar no
+  Safari. O IndexedDB do WebKit às vezes recusa o Blob mesmo copiado para a memória e perde a conexão com a aba em
+  segundo plano. `lib/storage.ts` agora abre outra conexão e tenta de novo; por último guarda os mesmos bytes
+  (`ArrayBuffer`), que voltam como Blob ao abrir. Leituras também repetem uma vez com conexão nova.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron

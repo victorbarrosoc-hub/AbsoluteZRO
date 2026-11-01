@@ -4168,6 +4168,16 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## NOSSOM · importar no Safari do iPhone (01/11/2026)
+
+- `tests/storage.test.ts` (novo): o projeto em bytes não guarda Blob e volta igual (original, versões e faixas
+  separadas, com o tipo); projeto com Blobs passa sem mudança.
+- `tests/e2e/safari-storage.spec.ts` (novo): o `put` do IndexedDB recusa Blob como o WebKit ("Error preparing
+  Blob/File data"); o áudio entra, recarrega e toca. Com o `lib/storage.ts` da `main` o mesmo teste falha.
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 126/126, `npm run build` OK, e2e completo 67 passaram,
+  0 falharam (26 pulados por `RELEASE=closed`).
+- Não validado: o Safari real do iPhone (sem WebKit aqui); o titular testa no aparelho.
+
 ## NOSSOM · estúdio escuro (Proposta 2) e player da plataforma (01/11/2026)
 
 - `products/nossom`: `tsc --noEmit` OK; `npm test` 124/124; `npm run build` OK.
