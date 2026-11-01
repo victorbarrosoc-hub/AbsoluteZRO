@@ -1139,7 +1139,7 @@ test('teste ao vivo: cortes, legenda, zoom e entrega reagem; Por dentro troca a 
   await pagina.close()
 })
 
-test('em-desenvolvimento.html: símbolo, marca do AEON, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {
+test('em-desenvolvimento.html: a página neutra (titular, 01/11/2026), sem marca nem nome do AEON, no computador e no celular', async () => {
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
@@ -1151,25 +1151,11 @@ test('em-desenvolvimento.html: símbolo, marca do AEON, título, uma linha e Vol
     const r = await pagina.goto(s.url + 'em-desenvolvimento.html')
     assert.equal(r.status(), 200)
     assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
-    await pagina.locator('.fechado-produto [data-marca="nome"] svg').waitFor()
-    assert.equal(await pagina.locator('.fechado-zro svg').count(), 1)
-    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Em desenvolvimento.')
-    assert.equal(await pagina.locator('.fechado p').count(), 1)
-    const botao = pagina.getByRole('link', { name: 'Voltar ao HUB' })
-    assert.equal(await botao.getAttribute('href'), 'https://absolutezro.com/inicio')
-    assert.ok(await botao.evaluate((b) => b.classList.contains('glass-btn--ink')))
-    // Figtree fino × pesado, só na cor do texto (nada azul, nada em degradê)
-    await pagina.evaluate(() => document.fonts.ready)
-    assert.ok(await pagina.evaluate(() => document.fonts.check('300 40px Figtree') && document.fonts.check('800 40px Figtree')))
-    const pesos = await pagina.evaluate(() => [getComputedStyle(document.querySelector('.fechado .fino')).fontWeight, getComputedStyle(document.querySelector('.fechado .forte')).fontWeight])
-    assert.deepEqual(pesos, ['300', '800'])
-    // o escuro é o ambiente do AEON (site/tema.js); o claro vem da escolha guardada
-    assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)')
-    await pagina.evaluate(() => localStorage.setItem('zro-tema', 'light'))
-    await pagina.reload()
+    assert.equal(await pagina.title(), 'Absolute ZRO')
+    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Página indisponível.')
+    assert.equal(await pagina.getByRole('link', { name: 'Ir para a Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com')
+    assert.doesNotMatch(await pagina.locator('body').innerText(), /AEON|desenvolvimento/i)
     assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
-    assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('h1')).color), 'rgb(29, 29, 31)')
-    await pagina.evaluate(() => localStorage.removeItem('zro-tema'))
     const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
     assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
     assert.deepEqual(erros, [])

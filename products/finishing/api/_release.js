@@ -12,7 +12,10 @@ export const PRODUTO = 'finishing'
 /** Valores que a claim pode ter; qualquer outra coisa vale como ausente. */
 export const ESTADOS = Object.freeze(['released', 'closed', 'allowed'])
 export const HUB_INICIO = 'https://absolutezro.com/inicio'
-/** A página "Em desenvolvimento" deste site (HTTP 200, sem dado interno; cleanUrls: sem .html). */
+/**
+ * A página neutra deste site (HTTP 200; cleanUrls: sem .html): "Página indisponível.", sem marca, nome ou explicação da
+ * Revela (titular, 01/11/2026: app não lançado não aparece em lugar nenhum). O arquivo guarda o nome antigo.
+ */
 export const PAGINA_FECHADO = '/em-desenvolvimento'
 
 /** O estado local: 'closed' (padrão) ou 'released' (RELEASE=released no ambiente). */

@@ -366,7 +366,7 @@ describe('fechado ao público: o gate de lançamento (api/_release.js)', () => {
     assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: r.conta } })).status, 200)
   })
 
-  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para "Em desenvolvimento"', async () => {
+  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para a página neutra', async () => {
     for (const release of [undefined, { 'ai-edit': 'closed' }, { 'ai-edit': 'released' }, { outro: 'allowed' }]) {
       const r = await fluxo({ pessoa: { ...LIA, release } })
       assert.equal(r.destino, '/em-desenvolvimento.html', JSON.stringify(release))
@@ -422,15 +422,16 @@ describe('fechado ao público: o gate de lançamento (api/_release.js)', () => {
     }
   })
 
-  test('RELEASE=released: sessão sem a claim entra; closed na claim continua fora (os dois lados têm que abrir)', async () => {
+  test('RELEASE=released não abre com a trava do titular (01/11/2026): só a conta allowed entra', async () => {
     process.env.RELEASE = 'released'
     try {
-      assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa() } })).status, 200)
-      assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa({ release: 'released' }) } })).status, 200)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa() } })).status, 403)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa({ release: 'released' }) } })).status, 403)
       assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa({ release: 'closed' }) } })).status, 403)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { ae_conta: sessaoFalsa({ release: 'allowed' }) } })).status, 200)
       const r = await fluxo({ pessoa: { ...LIA, release: undefined } })
-      assert.equal(r.destino, '/app/?zro=ok')
-      assert.ok(r.conta)
+      assert.equal(r.destino, '/em-desenvolvimento.html')
+      assert.ok(!r.conta, 'sem sessão')
     } finally {
       delete process.env.RELEASE
     }

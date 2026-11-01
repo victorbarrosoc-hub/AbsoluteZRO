@@ -32,9 +32,9 @@ const TIPOS = {
   '.md': 'text/markdown; charset=utf-8',
   '.py': 'text/x-python; charset=utf-8',
 }
-/** Se a página não veio no pacote, uma mínima com o mesmo recado (sem dado interno). */
+/** Se a página neutra não veio no pacote, uma mínima igual (sem marca nem nome do app). */
 const PAGINA_MINIMA =
-  '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Revela · Em desenvolvimento</title><body style="margin:0;min-height:100vh;display:grid;place-content:center;text-align:center;font:17px -apple-system,system-ui,sans-serif;color:#1d1d1f;background:#f5f5f7"><h1 style="font-weight:300;margin:0 0 10px">Em <b style="font-weight:800">desenvolvimento.</b></h1><p style="color:#6e6e73;margin:0 0 24px">A Revela chega com a sua conta Absolute ZRO.</p><a href="https://absolutezro.com/inicio" style="color:inherit">Voltar ao HUB</a></body></html>'
+  '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Absolute ZRO</title><body style="margin:0;min-height:100vh;display:grid;place-content:center;text-align:center;font:17px -apple-system,system-ui,sans-serif;color:#1d1d1f;background:#f5f5f7"><h1 style="font-weight:300;margin:0 0 10px">Página <b style="font-weight:800">indisponível.</b></h1><p style="color:#6e6e73;margin:0 0 24px">O que você procura não está aqui.</p><a href="https://absolutezro.com" style="color:inherit">Ir para a Absolute ZRO</a></body></html>'
 
 /** Caminho relativo seguro: uma das páginas das ferramentas ou um arquivo dentro de app/, src/ ou exemplos/; senão null. */
 export function caminhoSeguro(v) {
@@ -50,7 +50,7 @@ function negar(res, status) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
-  res.end(JSON.stringify({ ok: false, message: status === 403 ? 'Em desenvolvimento.' : status === 405 ? 'Método não permitido.' : 'Não encontrado.' }))
+  res.end(JSON.stringify({ ok: false, message: status === 403 ? 'Indisponível.' : status === 405 ? 'Método não permitido.' : 'Não encontrado.' }))
 }
 
 async function pagina(req, res) {

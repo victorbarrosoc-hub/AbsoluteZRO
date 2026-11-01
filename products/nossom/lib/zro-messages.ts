@@ -13,7 +13,7 @@ const messages: Record<string, string> = {
   zro_ja_ligada: 'Sua conta já está ligada a outra conta Absolute ZRO.',
   zro_unico_login:
     'A Absolute ZRO é o único jeito de entrar nesta conta, então ela continua ligada.',
-  zro_fechado: 'O NOSSOM está em desenvolvimento. Sua conta Absolute ZRO ainda não tem acesso.',
+  zro_fechado: 'Indisponível para esta conta.',
 };
 
 export function zroMessage(code: unknown) {

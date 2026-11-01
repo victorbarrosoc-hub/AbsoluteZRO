@@ -10,7 +10,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { caminhoSeguro } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, MARCA, RECADO, RECADO_WEB, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, MARCA, NEUTRAS, RECADO, RECADO_WEB, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
+import { LANCADO, release } from '../api/_release.js'
 import baixar, { INSTALADORES, destino } from '../api/baixar.js'
 import { iniciarZroFalsa } from './zro-falso.js'
 
@@ -61,14 +62,15 @@ describe('o que o site publica', () => {
       const tem = (saida, p) => existsSync(join(dir, saida, p))
       for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'site/home.js', 'marca/og.jpg', 'vendor/mediabunny.min.mjs', ...MARCA]) assert.ok(tem('fechado', p), `fechado tem ${p}`)
       for (const p of ['app', 'app/index.html', 'presets', 'src/linha.js', 'src/exportar', 'desktop', 'api', 'lancamento']) assert.ok(!tem('fechado', p), `fechado não tem ${p}`)
-      assert.match(readFileSync(join(dir, 'fechado', 'index.html'), 'utf8'), /Em desenvolvimento/)
-      // os instaladores existem, mas só com o recado: nada de Release, download ou instalação
+      // fechado, a página inicial e a entrada saem como a página neutra (titular, 01/11/2026): nada do AEON
+      for (const p of NEUTRAS) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
+      // os instaladores existem, mas só com o recado neutro: nada de Release, download, instalação ou nome do app
       for (const nome of ['instalar.sh', 'instalar.ps1']) {
         const texto = readFileSync(join(dir, 'fechado', nome), 'utf8')
         assert.equal(texto, RECADO[nome])
-        assert.doesNotMatch(texto, /github|releases|curl|Invoke-WebRequest|hdiutil|Start-Process/i)
-        assert.match(texto, /em desenvolvimento/i)
-        assert.match(texto, /absolutezro\.com\/inicio/)
+        assert.doesNotMatch(texto, /github|releases|curl|Invoke-WebRequest|hdiutil|Start-Process|AEON|desenvolvimento/i)
+        assert.match(texto, /Indisponível/)
+        assert.match(texto, /https:\/\/absolutezro\.com/)
       }
       assert.match(RECADO['instalar.sh'], /^#!\/bin\/sh\n/)
       assert.match(RECADO['instalar.sh'], /\nexit 1\n$/)
@@ -90,9 +92,14 @@ describe('o que o site publica', () => {
         assert.doesNotMatch(texto, /github|releases|curl|Invoke-WebRequest|hdiutil|Start-Process/i)
         assert.match(texto, /aeon\.absolutezro\.com\/app\//)
       }
-      // o padrão é fechado: sem RELEASE no ambiente, nada do editor
+      // o padrão é fechado: sem RELEASE no ambiente, nada do editor; e, com a trava do titular, nem com RELEASE=released
       delete process.env.RELEASE
       assert.deepEqual(itens(), [...SITE, ...MARCA])
+      process.env.RELEASE = 'released'
+      assert.equal(LANCADO, false)
+      assert.equal(release(), 'closed')
+      assert.deepEqual(itens(), [...SITE, ...MARCA])
+      delete process.env.RELEASE
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -135,12 +142,16 @@ describe('o que o site publica', () => {
     assert.throws(() => paginaAberta(ler('index.html'), semNav), /não tem a peça "nav"/)
   })
 
-  test('/baixar/<sistema> (api/baixar.js): fechado volta para "Em desenvolvimento"; só na web volta para a página; com o computador aberto vai ao Release', () => {
+  test('/baixar/<sistema> (api/baixar.js): fechado (e com a trava do titular, mesmo com RELEASE=released) volta para a página neutra', () => {
     const antes = process.env.RELEASE
     try {
       delete process.env.RELEASE
       for (const s of ['mac', 'windows', 'linux']) assert.equal(destino(s), '/#em-desenvolvimento')
       process.env.RELEASE = 'released'
+      process.env.RELEASE_DESKTOP = 'released'
+      for (const s of ['mac', 'windows', 'linux']) assert.equal(destino(s), '/#em-desenvolvimento')
+      if (!LANCADO) return
+      delete process.env.RELEASE_DESKTOP
       // só na web: o instalador ainda não sai; volta para a seção da página ("Em breve")
       for (const s of ['mac', 'windows']) assert.equal(destino(s), '/#baixar')
       process.env.RELEASE_DESKTOP = 'released'
@@ -188,26 +199,16 @@ describe('o que o site publica', () => {
     assert.match(html, /href="https:\/\/absolutezro\.com\/ia"[^>]*>Conhecer a Z</)
   })
 
-  test('em-desenvolvimento.html: símbolo pequeno, a marca, título fino × pesado, uma linha e Voltar ao HUB; sem dado interno', () => {
+  test('em-desenvolvimento.html: a página neutra (titular, 01/11/2026), sem marca, nome ou explicação do app', () => {
     const html = ler('em-desenvolvimento.html')
-    assert.match(html, /<meta name="robots" content="noindex"/)
-    assert.match(html, /class="fechado-zro" href="https:\/\/absolutezro\.com"/)
-    assert.match(html, /data-marca="simbolo"[\s\S]*data-marca="nome"/)
-    assert.match(html, /<h1[^>]*><span class="fino">Em<\/span> <span class="forte">desenvolvimento\.<\/span><\/h1>/)
+    assert.match(html, /<meta name="robots" content="noindex, nofollow"/)
+    assert.match(html, /<title>Absolute ZRO<\/title>/)
+    assert.match(html, /<h1><span>Página <\/span><b>indisponível\.<\/b><\/h1>/)
     assert.equal((html.match(/<p[\s>]/g) || []).length, 1, 'uma linha de apoio')
-    assert.match(html, /class="glass-btn glass-btn--ink"[^>]*href="https:\/\/absolutezro\.com\/inicio">Voltar ao HUB</)
-    assert.doesNotMatch(html, /api\/|app\/|\.json|process\.env|RELEASE/)
-    // só a folha e o script próprios: a página não depende do site (nem do editor)
-    assert.match(html, /"\/site\/tema\.js"/)
-    assert.match(html, /"\/site\/fechado\.css"/)
-    assert.match(html, /"\/site\/fechado\.js"/)
-    // a função entrega esta página em /app/, /src/* e /presets/*: tudo que ela carrega tem caminho absoluto
-    for (const u of [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !/^https?:/.test(u))) assert.ok(u.startsWith('/'), `${u} relativo`)
-    // claro e escuro na mesma folha, com os dois jeitos de marcar o tema (AEON e Revela)
-    const css = ler('site/fechado.css')
-    assert.match(css, /:root\[data-theme='dark'\] \.pagina-fechado,\n:root\[data-tema='escuro'\] \.pagina-fechado/)
-    assert.match(css, /\.glass-btn--ink/)
-    assert.match(css, /prefers-reduced-motion: no-preference/)
+    assert.match(html, /<a href="https:\/\/absolutezro\.com">Ir para a Absolute ZRO</)
+    assert.doesNotMatch(html, /AEON|desenvolvimento\.|em breve|Revela|NOSSOM|api\/|app\/|\.json|process\.env|RELEASE/i)
+    // tudo dentro da página (a função a entrega em /app/, /src/* e /presets/*): nada de folha, script ou imagem de fora
+    assert.doesNotMatch(html, /<script|<link|<img|src="/)
   })
 
   test('caminhoSeguro: só app/, src/ e presets/, sem subir pasta nem arquivo oculto', () => {
@@ -282,17 +283,18 @@ describe('api/app.js: o editor só para a conta liberada', () => {
       assert.match(r.headers.get('content-type'), /^text\/html/)
       assert.equal(r.headers.get('cache-control'), 'no-store')
       const html = await r.text()
-      assert.match(html, /desenvolvimento\./, rotulo)
+      assert.match(html, /indisponível\./, rotulo)
+      assert.doesNotMatch(html, /AEON/, rotulo)
       assert.doesNotMatch(html, /editor\.js|zro-tokens/, `${rotulo}: ${caminho} entregou o editor`)
     }
     for (const caminho of ['/app/editor.js', '/app/editor.css', '/src/linha.js', '/src/exportar/edl.js', '/presets/fala.v1.json', '/api/app?caminho=app/editor.js']) {
       const r = await pedir(caminho, { cookies })
       assert.equal(r.status, 403, `${rotulo}: ${caminho}`)
-      assert.deepEqual(await r.json(), { ok: false, message: 'Em desenvolvimento.' })
+      assert.deepEqual(await r.json(), { ok: false, message: 'Indisponível.' })
     }
   }
 
-  test('anônimo: "Em desenvolvimento" (200) no lugar do editor e 403 nos arquivos dele', async () => {
+  test('anônimo: a página neutra (200) no lugar do editor e 403 nos arquivos dele', async () => {
     await semEditor({}, 'anônimo')
     const cabeca = await pedir('/app/', { method: 'HEAD' })
     assert.equal(cabeca.status, 200)
@@ -340,15 +342,14 @@ describe('api/app.js: o editor só para a conta liberada', () => {
     assert.equal((await pedir('/app/', { method: 'POST', cookies })).status, 405)
   })
 
-  test('RELEASE=released: o editor é público (a função só repete o que o estático já teria)', async () => {
+  test('RELEASE=released não abre com a trava do titular (LANCADO = false): anônimo e closed seguem sem o editor', async () => {
     process.env.RELEASE = 'released'
     try {
-      const r = await pedir('/app/')
-      assert.equal(r.status, 200)
-      assert.equal(await r.text(), ler('app/index.html'))
-      assert.equal((await pedir('/src/linha.js')).status, 200)
-      // mesmo aberto, quem o HUB marcou como closed fica fora
+      assert.equal(LANCADO, false)
+      await semEditor({}, 'anônimo com RELEASE=released')
       await semEditor({ ae_conta: sessaoFalsa({ release: 'closed' }) }, 'closed com RELEASE=released')
+      // a conta allowed (a administração da plataforma, no HUB) continua entrando
+      assert.equal((await pedir('/app/', { cookies: { ae_conta: sessaoFalsa({ release: 'allowed' }) } })).status, 200)
     } finally {
       delete process.env.RELEASE
     }

@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { caminhoSeguro, PAGINAS } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, SITE, SITE_APP, itens, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, NEUTRAS, SITE, SITE_APP, itens, publicar } from '../scripts/publicar-site.mjs'
 import { iniciarZroFalsa } from './zro-falso.js'
 
 const RAIZ = new URL('..', import.meta.url)
@@ -50,6 +50,8 @@ describe('o que o site publica', () => {
       const tem = (saida, p) => existsSync(join(dir, saida, p))
       for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'manifest.webmanifest', 'og.jpg', 'marca/revela-icone.svg', 'fontes/f.woff2', 'vendor/mediabunny.min.mjs', ...SITE_APP]) assert.ok(tem('fechado', p), `fechada tem ${p}`)
       for (const p of [...PAGINAS, 'app/revela.js', 'app/menu.js', 'app/converter.js', 'src', 'exemplos', 'api', 'test', 'scripts', 'README.md', 'vercel.json']) assert.ok(!tem('fechado', p), `fechada não tem ${p}`)
+      // fechada, a página inicial e a entrada saem como a página neutra (titular, 01/11/2026): nada da Revela
+      for (const p of NEUTRAS) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
 
       const aberto = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'aberto')}/`), estado: 'released' })
       assert.deepEqual(aberto.itens, [...SITE, ...ABERTO])
@@ -70,7 +72,8 @@ describe('o que o site publica', () => {
         assert.ok(SITE_APP.includes(`app/${i.replace(/^\.\//, '')}`), `${f} importa ${i}, que não é publicado`)
       }
     }
-    for (const f of ['index.html', 'entrar.html', 'em-desenvolvimento.html']) {
+    // em-desenvolvimento.html é a página neutra: não carrega nada (teste abaixo)
+    for (const f of ['index.html', 'entrar.html']) {
       const usados = [...ler(f).matchAll(/(?:src|href)="\/?(app\/[^"]+)"/g)].map((x) => x[1])
       assert.ok(usados.length >= 2, `${f} carrega algo de app/`)
       for (const u of usados) assert.ok(SITE_APP.includes(u), `${f} usa ${u}, que não é publicado`)
@@ -99,23 +102,18 @@ describe('o que o site publica', () => {
     assert.doesNotMatch(JSON.stringify(m), /\/(lut|lab|looks|cst|entrega|converter|inicio)"/)
   })
 
-  test('em-desenvolvimento.html: símbolo pequeno, a logo, título fino × pesado, uma linha e Voltar ao HUB; sem dado interno', () => {
+  test('em-desenvolvimento.html: a página neutra (titular, 01/11/2026), sem marca, nome ou explicação da Revela; igual à do AEON', () => {
     const html = ler('em-desenvolvimento.html')
-    assert.match(html, /<meta name="robots" content="noindex"/)
-    assert.match(html, /class="fechado-zro" href="https:\/\/absolutezro\.com"/)
-    assert.match(html, /class="fechado-produto"[^>]*><img src="\/marca\/revela-logo-claro\.png" alt="Revela"/)
-    // a função entrega esta página em /lut, /cst, /entrega, /converter e /inicio: tudo que ela carrega tem caminho absoluto
-    for (const u of [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !/^https?:/.test(u))) assert.ok(u.startsWith('/'), `${u} relativo`)
-    assert.match(html, /<h1[^>]*><span class="fino">Em<\/span> <span class="forte">desenvolvimento\.<\/span><\/h1>/)
-    assert.equal((html.match(/<p[\s>]/g) || []).length, 1, 'uma linha de apoio')
-    assert.match(html, /class="glass-btn glass-btn--ink"[^>]*href="https:\/\/absolutezro\.com\/inicio">Voltar ao HUB</)
-    assert.doesNotMatch(html.replaceAll('https://absolutezro.com/inicio', ''), /api\/|\.json|process\.env|RELEASE|\b(lut|lab|looks|cst|entrega|converter|inicio)\b/)
-    assert.match(html, /"\/app\/tema\.js"/)
-    assert.match(html, /"\/app\/fechado\.css"/)
-    // a mesma folha do AEON (só o caminho da fonte muda): mesmo desenho nos dois apps
+    assert.equal(html, readFileSync(new URL('../../ai-edit/em-desenvolvimento.html', import.meta.url), 'utf8'))
+    assert.match(html, /<meta name="robots" content="noindex, nofollow"/)
+    assert.match(html, /<title>Absolute ZRO<\/title>/)
+    assert.match(html, /<h1><span>Página <\/span><b>indisponível\.<\/b><\/h1>/)
+    assert.match(html, /<a href="https:\/\/absolutezro\.com">Ir para a Absolute ZRO</)
+    assert.doesNotMatch(html, /Revela|revela|desenvolvimento\.|api\/|\.json|process\.env|RELEASE|\b(lut|lab|looks|cst|entrega|converter|inicio)\b/)
+    assert.doesNotMatch(html, /<script|<link|<img|src="/)
+    // a folha antiga da porta fechada segue igual à do AEON (as duas continuam no repositório)
     const css = ler('app/fechado.css')
     assert.equal(css.replace("'../fontes/", "'../vendor/fontes/"), readFileSync(new URL('../../ai-edit/site/fechado.css', import.meta.url), 'utf8'))
-    assert.match(css, /:root\[data-tema='escuro'\] \.pagina-fechado/)
   })
 
   test('os arquivos partilhados com o AEON são iguais (repasse da Z e Absolute ZRO falsa)', () => {
@@ -197,17 +195,18 @@ describe('api/app.js: as ferramentas só para a conta liberada', () => {
       assert.match(r.headers.get('content-type'), /^text\/html/)
       assert.equal(r.headers.get('cache-control'), 'no-store')
       const html = await r.text()
-      assert.match(html, /desenvolvimento\./, rotulo)
+      assert.match(html, /indisponível\./, rotulo)
+      assert.doesNotMatch(html, /Revela/, rotulo)
       assert.doesNotMatch(html, /revela\.js|cst\.js|entrega\.js|converter\.js|inicio\.js|zro-ia/, `${rotulo}: ${caminho} entregou a ferramenta`)
     }
     for (const caminho of ['/app/revela.js', '/app/menu.js', '/app/converter.js', '/src/cor/cube.js', '/src/entrega/destinos.js', '/exemplos/revela-look.jpg', '/api/app?caminho=app/cst.js']) {
       const r = await pedir(caminho, { cookies })
       assert.equal(r.status, 403, `${rotulo}: ${caminho}`)
-      assert.deepEqual(await r.json(), { ok: false, message: 'Em desenvolvimento.' })
+      assert.deepEqual(await r.json(), { ok: false, message: 'Indisponível.' })
     }
   }
 
-  test('anônimo: "Em desenvolvimento" (200) no lugar de cada ferramenta e 403 nos arquivos delas', async () => {
+  test('anônimo: a página neutra (200) no lugar de cada ferramenta e 403 nos arquivos delas', async () => {
     await semFerramentas({}, 'anônimo')
     const cabeca = await pedir('/lut', { method: 'HEAD' })
     assert.equal(cabeca.status, 200)
