@@ -85,13 +85,13 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'synquei',
-    site: 'https://synquei.vercel.app',
+    site: 'https://synquei.absolutezro.com',
     status: 'stable',
     options: [
       ...NO_COMPUTADOR('synquei'),
-      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.vercel.app/app/', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.absolutezro.com/app/', format: 'Sem instalar' },
     ],
-    moreUrl: 'https://synquei.vercel.app/#baixar',
+    moreUrl: 'https://synquei.absolutezro.com/#baixar',
   },
   {
     productId: 'nossom',

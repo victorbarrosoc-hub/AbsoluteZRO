@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 import { Legal, LegalSecao } from '@/components/legal'
 
-export const metadata: Metadata = { title: 'Privacidade', description: 'Que dados a Absolute ZRO usa, por quê e como você controla.' }
+export const metadata: Metadata = {
+  title: 'Privacidade',
+  description: 'Que dados a Absolute ZRO usa, por quê e como você controla.',
+  alternates: { canonical: '/privacidade' },
+}
 
 export default function Privacidade() {
   return (
@@ -50,22 +54,33 @@ export default function Privacidade() {
         </p>
       </LegalSecao>
       <LegalSecao titulo="Uso de dados do Google (Limited Use)">
-        <p lang="en">
-          Absolute ZRO&apos;s use and transfer to any other app of information received from Google APIs will adhere to the{' '}
+        <p>
+          O uso e a transferência, pela Absolute ZRO, de informações recebidas das APIs do Google para qualquer outro app seguem a{' '}
           <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noreferrer noopener" target="_blank">
-            Google API Services User Data Policy
+            Política de Dados do Usuário dos Serviços de API do Google
           </a>
-          , including the Limited Use requirements.
-        </p>
-        <p lang="en">
-          We use Google user data only to provide and improve the user-facing features you request. We do not transfer it to others except as needed to provide
-          those features, to comply with law, or as part of a merger or sale with notice to you. We do not use it for advertising, and we do not sell it. Humans
-          do not read it unless you ask for support, it is needed for security or legal reasons, or it is aggregated and anonymized.
+          , incluindo os requisitos de Uso Limitado.
         </p>
         <p>
-          Em português: usamos dados do Google só para entregar o que você pediu. Não vendemos, não usamos para anúncios e ninguém lê seu conteúdo sem sua
-          autorização.
+          Usamos dados do Google só para entregar e melhorar os recursos que você pede. Não passamos esses dados a ninguém, a não ser para entregar esses
+          recursos, cumprir a lei ou numa fusão ou venda, com aviso a você. Não usamos para anúncios e não vendemos. Ninguém lê seu conteúdo, a não ser que você
+          peça suporte, que seja preciso por segurança ou por lei, ou que os dados estejam agregados e anônimos.
         </p>
+        <details className="legal__original">
+          <summary>Texto exigido pelo Google (em inglês)</summary>
+          <p lang="en">
+            Absolute ZRO&apos;s use and transfer to any other app of information received from Google APIs will adhere to the{' '}
+            <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noreferrer noopener" target="_blank">
+              Google API Services User Data Policy
+            </a>
+            , including the Limited Use requirements.
+          </p>
+          <p lang="en">
+            We use Google user data only to provide and improve the user-facing features you request. We do not transfer it to others except as needed to
+            provide those features, to comply with law, or as part of a merger or sale with notice to you. We do not use it for advertising, and we do not sell
+            it. Humans do not read it unless you ask for support, it is needed for security or legal reasons, or it is aggregated and anonymized.
+          </p>
+        </details>
       </LegalSecao>
       <LegalSecao titulo="Seus direitos (LGPD)">
         <p>

@@ -7,7 +7,7 @@ import { DOWNLOADS, downloadsLiberados, ehAdmin, hasDesktopInstaller, HUB_TERMIN
 
 const OFFICIAL = new Set([
   'sobedesce.com',
-  'synquei.vercel.app',
+  'synquei.absolutezro.com',
   'nossom.absolutezro.com',
   'tpeasy.absolutezro.com',
   'carro.absolutezro.com',

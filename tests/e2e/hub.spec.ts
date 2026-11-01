@@ -237,6 +237,61 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
 })
 
+test('cabeçalho no celular: Entrar (vidro claro) ao lado de Criar conta (vidro escuro), cabendo em 375 px', async ({ page }) => {
+  for (const largura of [375, 390, 430]) {
+    await page.setViewportSize({ width: largura, height: 844 })
+    await page.goto('/')
+    const entrar = page.locator('.capsule__cta').getByRole('link', { name: 'Entrar', exact: true })
+    const criar = page.locator('.capsule__cta').getByRole('link', { name: 'Criar conta', exact: true })
+    await expect(entrar, `${largura}px`).toBeVisible()
+    await expect(criar, `${largura}px`).toBeVisible()
+    await expect(entrar).toHaveClass(/glass-btn/)
+    await expect(entrar).not.toHaveClass(/glass-btn--ink/)
+    await expect(criar).toHaveClass(/glass-btn--ink/)
+    const capsula = (await page.locator('.capsule').boundingBox())!
+    for (const b of [await entrar.boundingBox(), await criar.boundingBox()]) {
+      expect(b!.x, `${largura}px`).toBeGreaterThanOrEqual(capsula.x)
+      expect(b!.x + b!.width, `${largura}px`).toBeLessThanOrEqual(capsula.x + capsula.width + 0.5)
+    }
+    // a marca não encosta nos botões
+    const marca = (await page.locator('.capsule .wordmark').boundingBox())!
+    expect(marca.x + marca.width, `${largura}px`).toBeLessThanOrEqual((await page.locator('.capsule__cta').boundingBox())!.x)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `${largura}px`).toBeLessThanOrEqual(0)
+  }
+})
+
+test('endereços digitados e a marca dos apps fechados', async ({ page, request }) => {
+  // /cadastro leva a /criar-conta; /contato abre o e-mail
+  const cadastro = await request.get('/cadastro', { maxRedirects: 0 })
+  expect(cadastro.status()).toBe(308)
+  expect(cadastro.headers()['location']).toBe('/criar-conta')
+  const contato = await request.get('/contato', { maxRedirects: 0 })
+  expect(contato.headers()['location']).toBe('mailto:contato@absolutezro.com')
+  // o ícone de um app fechado não é público: nem em /products nem pela rota (anônimo = 404, sem dizer se existe)
+  for (const id of ['nossom', 'finishing', 'ai-edit']) {
+    expect((await request.get(`/products/${id}.svg`)).status(), id).toBe(404)
+    expect((await request.get(`/marca/${id}`)).status(), id).toBe(404)
+    expect((await request.get(`/brand/produto-${id}-claro.webp`)).status(), id).toBe(404)
+  }
+  expect((await request.get('/marca/nada-disso')).status()).toBe(404)
+  // canonical nas páginas públicas
+  for (const [caminho, canonico] of [
+    ['/', '/'],
+    ['/planos', '/planos'],
+    ['/privacidade', '/privacidade'],
+  ]) {
+    await page.goto(caminho)
+    const href = await page.locator('link[rel="canonical"]').getAttribute('href')
+    expect(new URL(href!).pathname, caminho).toBe(canonico)
+    expect(new URL(href!).search, caminho).toBe('')
+  }
+  // /privacidade em português; o texto que o Google exige fica recolhido, em inglês
+  await page.goto('/privacidade')
+  await expect(page.locator('details.legal__original summary')).toHaveText('Texto exigido pelo Google (em inglês)')
+  await expect(page.locator('details.legal__original')).not.toHaveAttribute('open')
+  await expect(page.getByText('incluindo os requisitos de Uso Limitado')).toBeVisible()
+})
+
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
   const FECHADOS = /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|revela\.absolutezro\.com|aeon\.absolutezro\.com/
   await page.goto('/')
@@ -455,7 +510,7 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await page.goto('/downloads')
   // só os ícones; o toque abre a parte de download do app, com o "Conheça mais"
   await page.getByRole('button', { name: 'Synquei' }).click()
-  await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
+  await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.absolutezro.com')
   await expect(page.locator('.app-actions')).toHaveCount(0)
   // no computador, o app instala pela Absolute ZRO (o instalador avulso saiu, ADR 0036)
   await expect(page.locator('#app-synquei .dl-opt--central')).toHaveAttribute('href', '#absolute-zro')

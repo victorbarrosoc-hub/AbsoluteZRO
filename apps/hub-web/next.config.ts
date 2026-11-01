@@ -25,6 +25,22 @@ const config: NextConfig = {
     // limpam o cache do roteador (lib/actions/ir.ts).
     staleTimes: { dynamic: 0, static: 60 },
   },
+  async redirects() {
+    return [
+      // O endereço oficial é absolutezro.com (revisão de 01/11/2026): o da Vercel leva as páginas para lá, com o mesmo
+      // caminho. API, login único (/oauth, .well-known) e os arquivos do Next ficam: webhook e cliente OIDC de servidor
+      // nem sempre seguem redirecionamento.
+      {
+        source: '/:caminho((?!api/|oauth/|\\.well-known/|_next/).*)',
+        has: [{ type: 'host', value: 'absolutezro.vercel.app' }],
+        destination: 'https://absolutezro.com/:caminho',
+        permanent: true,
+      },
+      // endereços que as pessoas digitam: a conta se cria em /criar-conta e o contato é por e-mail
+      { source: '/cadastro', destination: '/criar-conta', permanent: true },
+      { source: '/contato', destination: 'mailto:contato@absolutezro.com', permanent: false },
+    ]
+  },
   async headers() {
     return [
       { source: '/:path*', headers: security },
