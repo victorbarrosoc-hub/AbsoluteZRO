@@ -4897,3 +4897,15 @@ html:not(.is-desktop) .so-desktop {
   --zro-set-raio: var(--r-xl);
   --zro-set-fonte: var(--font);
 }
+
+/* iPhone: campo com fonte abaixo de 16 px faz o Safari ampliar a página ao tocar, e ela não volta sozinha. No celular
+   (e em qualquer tela de toque) todo campo fica com 16 px; nada de travar o zoom no viewport (acessibilidade). */
+@media (max-width: 1024px), (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']),
+  select,
+  textarea,
+  .input,
+  .select {
+    font-size: 16px;
+  }
+}

@@ -901,3 +901,14 @@
     height: 92vh;
   }
 }
+
+/* iPhone: campo com fonte abaixo de 16 px faz o Safari ampliar a página ao tocar, e ela não volta sozinha. No celular
+   (e em tela de toque) os campos da folha ficam com 16 px; nada de travar o zoom no viewport (acessibilidade). */
+@media (max-width: 1024px), (pointer: coarse) {
+  .folha select,
+  .folha input[type='number'],
+  .folha input.tempo,
+  .mb input {
+    font-size: 16px;
+  }
+}
