@@ -1,11 +1,14 @@
 // /baixar/mac, /baixar/windows e /baixar/versao (vercel.json reescreve para cá).
-// Lê o Release do app de desktop no GitHub e manda o visitante direto para o instalador: nada passa pela Vercel.
+// O app de computador se instala só pela central Absolute ZRO (titular, 01/11/2026): /baixar/mac e /baixar/windows sem
+// ?build levam para https://absolutezro.com/baixar. Com ?build=N (o "Atualizar" dos apps já instalados, de antes da
+// central) e em /baixar/versao (o aviso de versão nova dos apps), lê o Release do app de desktop no GitHub e manda
+// direto para o arquivo: nada passa pela Vercel.
 // Fontes, na ordem: o Release "synquei-app-desktop" do repositório AbsoluteZRO (fonte oficial desde 25/10/2026) e,
 // enquanto ele não tiver instalador, o Release "app-desktop" do repositório antigo victorbarrosoc-hub/synquei
 // (arquivado). O download nunca fica sem destino na virada.
 // Repositório privado: com GITHUB_TOKEN (só leitura de conteúdo) nas variáveis da Vercel, o GitHub devolve um endereço
 // assinado e temporário do arquivo. Repositório público: funciona sem token, pelo link normal.
-// `?build=N` (instaladores de uma linha e atualizador): o instalador exatamente daquele build, em qualquer das fontes.
+// `?build=N` (o atualizador dos apps antigos): o instalador exatamente daquele build, em qualquer das fontes.
 // /baixar/diag: diz por que o download não sai (sem token, token recusado, sem acesso), sem mostrar o token.
 
 const FONTES = [
@@ -13,6 +16,7 @@ const FONTES = [
   { repo: 'victorbarrosoc-hub/synquei', tag: 'app-desktop' },
 ]
 const CACHE_MS = 2 * 60_000
+export const CENTRAL = 'https://absolutezro.com/baixar'
 const cache = new Map()
 
 // colado no painel da Vercel às vezes vem com espaço ou quebra de linha no fim
@@ -120,43 +124,32 @@ export default async function handler(req, res) {
       if (!v) return res.status(503).json({ ok: false })
       return res.status(200).json({ ok: true, ...v, mac: '/baixar/mac', windows: '/baixar/windows' })
     }
-    if (!QUAL[p]) return res.redirect(302, '/#baixar')
     const pedido = req.query.build && /^\d{1,9}$/.test(String(req.query.build)) ? Number(req.query.build) : null
-    const { atual, todas } = await fonteAtual()
+    // o navegador (e o link antigo do "Nova versão"): a central Absolute ZRO, nunca o instalador avulso
+    if (pedido == null) return res.redirect(307, CENTRAL)
+    if (!QUAL[p]) return res.redirect(302, '/#baixar')
+    const { todas } = await fonteAtual()
     let alvo
-    if (pedido != null) {
-      // o build pedido pode estar em qualquer fonte (os do repositório antigo têm números menores)
-      for (const f of todas) {
-        alvo = f.assets.find((a) => QUAL[p](a.name) && buildDe(a.name) === pedido)
-        if (alvo) break
-      }
-      if (!alvo) {
-        for (const f of FONTES.slice(todas.length)) {
-          alvo = (await assetsDe(f).catch(() => [])).find((a) => QUAL[p](a.name) && buildDe(a.name) === pedido)
-          if (alvo) break
-        }
-      }
-    } else if (atual) {
-      // o que o versao.json aponta (conferido); sem ele, o de maior build
-      const lista = atual.assets.filter((a) => QUAL[p](a.name))
-      let nome = null
-      try {
-        const v = await versao(atual)
-        nome = v ? (p === 'mac' ? v.arquivoMac : v.arquivoWindows) : null
-      } catch {}
-      alvo = (nome && lista.find((a) => a.name === nome)) || lista.sort((a, b) => buildDe(b.name) - buildDe(a.name))[0]
+    // o build pedido pode estar em qualquer fonte (os do repositório antigo têm números menores)
+    for (const f of todas) {
+      alvo = f.assets.find((a) => QUAL[p](a.name) && buildDe(a.name) === pedido)
+      if (alvo) break
     }
     if (!alvo) {
-      if (pedido != null) return res.status(404).send('Instalador deste build não está mais no ar.')
-      return res.redirect(302, '/?baixar=indisponivel#baixar')
+      for (const f of FONTES.slice(todas.length)) {
+        alvo = (await assetsDe(f).catch(() => [])).find((a) => QUAL[p](a.name) && buildDe(a.name) === pedido)
+        if (alvo) break
+      }
     }
+    // o app nunca recebe a página do site no lugar do instalador: 404 e ele pergunta a versão de novo
+    if (!alvo) return res.status(404).send('Instalador deste build não está mais no ar.')
     const destino = await link(alvo)
-    if (!destino) return res.redirect(302, '/?baixar=indisponivel#baixar')
+    if (!destino) return res.status(404).send('Instalador deste build não está mais no ar.')
     res.setHeader('cache-control', 'no-store')
     return res.redirect(302, destino)
   } catch (e) {
     console.error('[baixar]', p, e && e.message)
     if (p === 'versao') return res.status(503).json({ ok: false })
-    return res.redirect(302, '/?baixar=indisponivel#baixar')
+    return res.status(503).send('Indisponível agora. Tente de novo em instantes.')
   }
 }

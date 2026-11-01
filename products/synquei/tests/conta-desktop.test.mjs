@@ -255,7 +255,7 @@ test('a tela de conta do site liga no desktop quando a ponte tem a conta', async
   }
   const { C, iniciarConta, linhaConta, cartaoConta } = await import('../app/js/conta.js')
   await iniciarConta()
-  assert.deepEqual(pedidos, ['/api/zro/eu'])
+  assert.deepEqual(pedidos, ['/api/zro/eu?visitante=1'])
   assert.equal(C.estado, 'logado')
   assert.ok(eventos.includes('synquei:conta-mudou'))
   assert.match(linhaConta(), /Lia Produtora/)
@@ -278,7 +278,7 @@ test('a tela de conta do site liga no desktop quando a ponte tem a conta', async
   assert.equal(parou, true)
   assert.equal(a.href, '/api/zro/entrar?volta=%2Fapp%2Findex.html%23%2Fajustes')
   for (let i = 0; i < 50 && pedidos.length < 3; i++) await new Promise((r) => setTimeout(r, 10))
-  assert.deepEqual(pedidos.slice(1), [a.href, '/api/zro/eu'])
+  assert.deepEqual(pedidos.slice(1), [a.href, '/api/zro/eu?visitante=1'])
 
   // desktop antigo (sem a conta na ponte): nada de conta, como antes
   globalThis.window = { synqueiDesktop: { isDesktop: true } }

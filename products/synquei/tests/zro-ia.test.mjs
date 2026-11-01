@@ -204,16 +204,17 @@ describe('painel do app', () => {
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v27/)
+    assert.match(sw, /synquei-v28/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })
-  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)', () => {
+  test('a família só lista plataformas abertas (NOSSOM, AEON e Revela estão fechados; o Carro do Freela entrou em 01/11/2026)', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela/i)
     const nomes = [...fam.replace(/<!--maestro-familia ([\s\S]*?) maestro-familia-->/, '').matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1])
-    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Relay', 'SOBEDESCE', 'TPeasy'])
+    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Carro do Freela', 'Relay', 'SOBEDESCE', 'TPeasy'])
+    assert.ok(sw.includes("'/app/familia/carro-do-freela.png'"), 'ícone do Carro no cache')
   })
   test('o Relay está na família, com o ícone oficial guardado pelo service worker', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
