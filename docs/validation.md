@@ -15,6 +15,32 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, ADR 0037)
+
+Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a main ficou com a 0050 dos sons e a 0051 do Synquei; a
+da Higgsfield é a `0052`).
+
+- HUB: `tests/integration/higgsfield.test.ts` **11/11** contra uma Higgsfield falsa (`tests/fixtures/higgsfield-falsa.ts`,
+  OAuth com registro dinâmico e PKCE, MCP em JSON e SSE): registro uma vez por endereço, só do sistema; cancelar, state
+  trocado, outra pessoa e PKCE errado; tokens só cifrados e RLS por pessoa; o cartão só com um app visível pelo gate;
+  saldo, plano, desligar app e desconectar; painel com o preço de tudo sem gerar; telas com referência, andamento até o
+  resultado (guardado, sem perguntar de novo); animar com as três opções, sem saldo (429 com a frase) e sem preço
+  informado (não gera, nunca vira 0); token vencido renova e refresh recusado vira "reconectar"; só AEON e Rift (o
+  Maestro com o escopo é recusado); `zro.ia_geracoes` sem leitura, mudança, gravação em nome de outra pessoa nem apagar.
+- HUB inteiro: `npx vitest run` **567/567** em 64 arquivos (Postgres 16 local); `npm run typecheck`, `npm run lint`,
+  `npm run format:check` e `npm run build` ok; segredos: nenhum em 4071 arquivos. `npm run test:e2e`: **57/57 no
+  Chromium**; os 6 de WebKit não abrem neste container (o WebKit do Playwright não está instalado aqui), rodam no CI.
+- AEON: `npm test` **240/240** e `xvfb-run -a npx electron . --smoke` ok (no computador a entrada fica escondida). Novos: `test/criar.test.js` (14: formato, medidor, preço, nome, URLs aceitas, erros,
+  pôr na linha; o repasse só com os caminhos, métodos e parâmetros do contrato, token no Authorization e nunca o cookie,
+  origem e JSON conferidos, 413, 409 sem conexão, produto fechado, e o login que volta sem `zro.higgsfield` num HUB
+  antigo) e duas telas no Chromium: créditos, 1 tela com o preço no botão, a tela na Mídia como clipe parado de 5 s
+  (640 px, sem som, guardado no IndexedDB, fora da linha), animar a partir do quadro atual (JPEG direto para o envio,
+  pergunta com o preço), o vídeo na Mídia e "Pôr na linha"; e a folha sem conexão mostrando "Conectar" para
+  `/conexoes`, sem gastar nada.
+- Conferido de verdade (01/11/2026): a CDN (`*.cloudfront.net`, `cdn.higgsfield.ai`) e o envio (`upload.higgsfield.ai`)
+  da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
+  a geração contra a Higgsfield de verdade a partir do HUB.
+
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
 
 Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
@@ -4203,6 +4229,33 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   de teste porque o teste não simulava o Set); agora simula, como os outros.
 - Não validado: abrir o FCPXML/XML com efeitos no Final Cut, Premiere e Resolve reais; prévia longa (sincronia do
   efeito com o vídeo depois de vários minutos).
+
+## AEON: marcadores, peças e voz e instrumental pela NOSSOM (01/11/2026)
+
+Três plugins de Premiere estudados nos vídeos que o titular mandou (Markers Command Center V2, Piecework e
+VocalSplitter) e trazidos para o AEON, sem copiar marca nem nome.
+
+- Marcadores (`src/marcadores.js`, `app/marcadores-ui.js`): `test/marcadores.test.js` 12/12 (cor e nota, deslocar sem
+  cair em cima de outro, seções, tempo escrito em cinco formatos, notas coladas com continuação de linha, SRT, CSV com
+  aspas e cor do Premiere, importar somando nota no mesmo quadro, capítulos do YouTube com as regras de lá, CSV de ida
+  e volta, marcar pelos clipes, tirar a seção levando os marcadores, corte em câmera lenta). Tela no Chromium: colar a
+  revisão, M renomeia, ↓ e 3 pintam, capítulos, tirar trecho e desfazer, imagens (.zip com três PNG 1280×720) e CSV.
+- Peças (`src/pecas.js`, `app/pecas-ui.js`): `test/pecas.test.js` 6/6 (modelo de nome, peça só com a seção e o
+  original intacto, margem, 9:16 e 1:1 cobrindo o quadro, nomes únicos, relatório, legenda e efeito sonoro seguem a
+  peça, juntar em outra ordem). Tela: duas seções em Original e 9:16 → quatro MP4 (o 9:16 em 1080×1920 com 3 s), o XML
+  de cada peça com a sequência no tamanho dela, `entrega.csv` com quatro "pronto"; juntar cria um projeto novo.
+- Voz e instrumental (`src/faixas.js`, `app/nossom.js`, `app/faixas-ui.js`, `app/faixas-disco.js`):
+  `test/faixas.test.js` 7/7 (trecho com folga e limite, separação que cobre o clipe e anda junto no corte, o pacote de
+  stems-v1 conferido e dividido, as cinco somando o original com o ganho desfeito, WAV de 16 bits, trilhas no xmeml e
+  no FCPXML com o som original calado, `xmllint`). Tela com uma NOSSOM falsa e cinco FLAC de verdade (ffmpeg): sobe um
+  WAV estéreo de 44,1 kHz do trecho, `prepare → submit:stems-v1 → release`, Só voz, e o vídeo final sai com a voz
+  (440 Hz) mais de 25 dB acima do instrumental (3 kHz); a entrega leva `show - Voz 0s.wav` e não o instrumental mudo.
+- NOSSOM (`lib/server/irmaos.ts`, `proxy.ts`, rota de pedidos): `tests/irmaos.test.ts` 4/4 (só a origem exata do AEON,
+  CORS nunca "*", pré-voo 204 só nos três caminhos, fechado o 403 chega com CORS, outra origem recusada, AEON só pede
+  stems-v1); `npm test` 128/128, `tsc` limpo e `next build` OK.
+- AEON: `npm test` 221/222 (1 pulado: Whisper real sem rede); `xvfb-run electron . --smoke` OK.
+- Não validado: a NOSSOM de verdade (GPU, franquia, cookie entre os subdomínios em produção); marcadores e peças abertos
+  num Premiere, Final Cut e Resolve reais; peças longas no app de computador.
 
 ## Sonoplasta · fase 2a: banco de sons livres pelo HUB e aba Sons no AEON (31/10/2026)
 

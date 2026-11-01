@@ -95,6 +95,19 @@ A/B iguala o volume de escuta sem alterar o export. As medições devem ser do W
 
 Estados: `uploading`, `submitting`, `queued`, `running`, `completed`, `failed`, `cancelled`, `released`. O preset confirmado é persistido no `report`; o caminho musical usa esse campo existente, sem nova migração dedicada.
 
+## Ponte com o AEON (app irmão, 01/11/2026)
+
+O AEON (aeon.absolutezro.com) separa voz e instrumental de um clipe sem sair da edição, usando este mesmo job remoto
+(`stems-v1`). O navegador da pessoa chama `/api/audio/jobs`, `/api/usage` e `/api/account` direto daqui: mesmo site
+(absolutezro.com), então o cookie de sessão SameSite=Lax vai junto; outra origem, então a NOSSOM responde com CORS com
+credenciais só para `https://aeon.absolutezro.com` (`lib/server/irmaos.ts`; o pré-voo responde no `proxy.ts`, sem
+sessão). A janela da NOSSOM não serve de ponte: os dois apps usam COOP same-origin, que corta o `window.opener`.
+
+Nada se afrouxa: sessão, portão de lançamento (fechado, o 403 `product_closed` chega ao AEON com CORS), franquia
+(mínimo de 60 s), um job por conta e despacho sem repetição valem igual. O app irmão só pode submeter `stems-v1`
+(qualquer outro preset, 403). O AEON pergunta antes de enviar (com os minutos que o pedido usa), confere o relatório e
+as cinco faixas como o estúdio, guarda no disco do navegador dele e só então libera os objetos daqui (`release`).
+
 ## Autenticação, autorização e IA
 
 Sessão Supabase em cookie HttpOnly criptografado AES-256-GCM; Secure em produção e SameSite=Lax. O login pela Absolute ZRO confere o id_token (JWKS ES256, iss, aud, exp, nonce), resolve a conta pelo vínculo `sub` ↔ usuário em `nossom_private.zro_links` e gera a mesma sessão Supabase no servidor (link mágico da Admin API + verify); e-mail já usado nunca é mesclado sozinho. As APIs revalidam identidade. `user_metadata`, nome, query string e corpo de requisição não concedem ADM. O e-mail administrativo precisa estar confirmado; veja a regra efetiva no servidor e nas migrações.

@@ -5,7 +5,7 @@
 // de verdade carregando no navegador. A transcrição do caminho de uso é falsa (um worker trocado pela rota), para o
 // teste não depender de fala gravada; a de verdade tem o teste próprio no fim (precisa de internet uma vez).
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
@@ -18,6 +18,8 @@ import { simularSet } from './set-falso.js'
 import { FAMILIA } from '../src/familia.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
+/** stderr de um comando (o volumedetect do ffmpeg escreve lá) */
+const estderr = (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8' }).stderr
 let s
 let navegador
 let dir
@@ -980,6 +982,296 @@ test('estabilizar: um take real tremido (o cavalo, com tremor de recorte) sai do
   await pagina.close()
 })
 
+/** Põe marcadores pela folha "Colar notas" da aba Marcadores (o caminho de quem cola a revisão do cliente). */
+async function colarNotas(pagina, texto) {
+  await pagina.locator('#abasPainel [data-aba="marcadores"]').click()
+  await pagina.locator('.mk-acoes [data-fazer="colar"]').click()
+  const folha = pagina.locator('dialog.mk-folha-colar')
+  await folha.locator('textarea').fill(texto)
+  await folha.locator('.mk-pintar [data-cor="azul"]').click()
+  await folha.locator('[value="por"]').click()
+  await folha.waitFor({ state: 'detached' })
+}
+
+test('marcadores: colar notas, M renomeia, cor pelo teclado, capítulos, tirar trecho, imagens e CSV', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  const marcadores = () => pagina.evaluate(() => globalThis.__editor.h.atual.marcadores.map(({ q, nome, nota, cor }) => ({ q, nome, nota: nota || '', cor: cor || null })))
+
+  // a revisão colada vira três marcadores azuis, na lista e na linha do tempo
+  await colarNotas(pagina, 'Notas da revisão\n0:00 Abertura\n[0:02] Onda grande, deixar mais tempo\n0:05 - Final')
+  const fps = await pagina.evaluate(() => globalThis.__editor.h.atual.fps)
+  const q = (s) => Math.round((s * fps.n) / fps.d)
+  assert.deepEqual(await marcadores(), [
+    { q: 0, nome: 'Abertura', nota: '', cor: 'azul' },
+    { q: q(2), nome: 'Onda grande, deixar mais tempo', nota: '', cor: 'azul' },
+    { q: q(5), nome: 'Final', nota: '', cor: 'azul' },
+  ])
+  assert.equal(await pagina.locator('.mk-item').count(), 3)
+  assert.equal(await pagina.locator('.trilha-marcas .marcador').count(), 3)
+  assert.match(await pagina.locator('.mk-item').nth(1).innerText(), /0:02[\s\S]*Onda grande[\s\S]*3 s/)
+
+  // M em cima de um marcador abre o nome dele: renomeia e grava no desfazer
+  await pagina.locator('.mk-lista').press('Escape')
+  await pagina.locator('body').press('m')
+  const campo = pagina.locator('.mk-editar')
+  await campo.waitFor()
+  await campo.fill('Começo')
+  await campo.press('Enter')
+  assert.equal((await marcadores())[0].nome, 'Começo')
+  assert.match(await pagina.locator('#historico').innerText(), /Nome do marcador/i)
+
+  // ↓ escolhe o seguinte e leva o vídeo junto; 3 pinta de verde
+  await pagina.locator('.mk-item').first().click()
+  await pagina.locator('.mk-lista').press('ArrowDown')
+  await pagina.locator('.mk-lista').press('3')
+  assert.equal((await marcadores())[1].cor, 'verde')
+
+  // capítulos do YouTube: o texto pronto e o aviso das regras de lá (cada um com 10 s)
+  await pagina.locator('.mk-acoes [data-fazer="capitulos"]').click()
+  const cap = pagina.locator('dialog.mk-folha-capitulos')
+  assert.equal(await cap.locator('textarea').inputValue(), '0:00 Começo\n0:02 Onda grande, deixar mais tempo\n0:05 Final')
+  assert.match(await cap.locator('.mk-problemas').innerText(), /menos de 10 s/)
+  await cap.locator('[value="fechar"]').click()
+
+  // tirar o trecho do segundo: 3 s a menos e o Final anda junto; desfazer volta
+  const dur = () => pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.reduce((n, c) => n + (c.fim - c.ini), 0))
+  const antes = await dur()
+  await pagina.locator('.mk-item').nth(1).click()
+  await pagina.locator('.mk-tirar').click()
+  assert.equal(antes - (await dur()), q(5) - q(2))
+  assert.deepEqual(
+    (await marcadores()).map((m) => [m.nome, m.q]),
+    [
+      ['Começo', 0],
+      ['Final', q(2)],
+    ],
+  )
+  await pagina.click('#desfazer')
+  assert.equal(await dur(), antes)
+
+  // imagens nos marcadores (um .zip com os PNG) e o CSV
+  await pagina.locator('.mk-lista').press('Escape')
+  const [imagens] = await Promise.all([pagina.waitForEvent('download', { timeout: 60_000 }), pagina.locator('.mk-acoes [data-fazer="quadros"]').click()])
+  const zip = join(dir, 'imagens.zip')
+  await imagens.saveAs(zip)
+  const nomes = execFileSync('zipinfo', ['-1', zip]).toString().trim().split('\n')
+  assert.deepEqual(nomes, ['01_Começo_0-00.png', '02_Onda grande, deixar mais tempo_0-02.png', '03_Final_0-05.png'])
+  execFileSync('unzip', ['-o', '-q', zip, '-d', join(dir, 'imagens')])
+  const [img] = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', join(dir, 'imagens', '02_Onda grande, deixar mais tempo_0-02.png')]).toString()).streams
+  assert.equal(`${img.width}×${img.height}`, '1280×720')
+  const [planilha] = await Promise.all([pagina.waitForEvent('download'), pagina.locator('.mk-acoes [data-fazer="csv"]').click()])
+  const csv = readFileSync(await planilha.path(), 'utf8')
+  assert.match(csv, /^Tempo,Nome,Nota,Cor,Duração\n00:00:00:00,Começo,,azul,00:00:02:00\n/)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('peças: duas seções em 16:9 e 9:16, nome pelo modelo, vídeo de cada uma e relatório; juntar em outra ordem', async () => {
+  const { pagina, erros } = await abrir()
+  // sem o seletor de pasta do Chrome (abriria uma janela): as peças saem num .zip
+  await pagina.evaluate(() => delete globalThis.showDirectoryPicker)
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  await colarNotas(pagina, '0:00 Chegada\n0:03 Onda\n0:06 Saída')
+
+  await pagina.click('.dock [data-ir="entrega"]')
+  await pagina.locator('#modoEntrega [data-modo="pecas"]').click()
+  assert.deepEqual(await pagina.locator('.peca-nome').allInnerTexts(), ['Chegada', 'Onda', 'Saída'])
+  await pagina.locator('.peca input[type=checkbox]').nth(2).uncheck()
+  // o 16:9 é o do projeto (Original 16:9); o 9:16 entra junto
+  assert.equal(await pagina.locator('.pecas-formato').first().innerText(), 'Original 16:9')
+  await pagina.locator('.pecas-formato[data-formato="9x16"]').click()
+  assert.equal(await pagina.locator('#pecasResumo').innerText(), '4 peças · 01_Chegada.mp4')
+  assert.equal(await pagina.locator('.pecas-formato[data-formato="16x9"]').count(), 0, 'a mesma proporção do projeto não repete')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="xmeml"]')
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 240_000 }), pagina.click('#exportar')])
+  const zip = join(dir, 'pecas.zip')
+  await baixado.saveAs(zip)
+  await pagina.locator('#entregaFim:not([hidden])').waitFor()
+  assert.match(await pagina.locator('#entregaFim').innerText(), /Pronto: 4 de 4 peças/)
+  const nomes = execFileSync('zipinfo', ['-1', zip]).toString().trim().split('\n').sort()
+  const base = 'onda · peças'
+  for (const n of ['01_Chegada.mp4', '01_Chegada_9x16.mp4', '02_Onda.mp4', '02_Onda_9x16.mp4', 'entrega.csv', '01_Chegada/01_Chegada.xml', '02_Onda_9x16/02_Onda_9x16.xml']) assert.ok(nomes.includes(`${base}/${n}`), `${n} em ${nomes.join(', ')}`)
+  const saida = join(dir, 'pecas')
+  execFileSync('unzip', ['-o', '-q', zip, '-d', saida])
+  const sonda = (f) => JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', join(saida, base, f)]).toString())
+  const v = sonda('02_Onda_9x16.mp4')
+  assert.equal(`${v.streams[0].width}×${v.streams[0].height}`, '1080×1920')
+  assert.ok(Math.abs(Number(v.format.duration) - 3) < 0.15, `duração ${v.format.duration}`)
+  const h = sonda('01_Chegada.mp4')
+  assert.equal(`${h.streams[0].width}×${h.streams[0].height}`, '1280×720')
+  const rel = readFileSync(join(saida, base, 'entrega.csv'), 'utf8')
+  assert.match(rel, /^Peça,Seção,Formato,Entrada,Saída,Duração,Arquivos,Situação\n01_Chegada,Chegada,Original,/)
+  assert.equal((rel.match(/,pronto$/gm) || []).length, 4)
+  // a peça vertical leva o XML com a sequência 9:16
+  assert.match(readFileSync(join(saida, base, '02_Onda_9x16', '02_Onda_9x16.xml'), 'utf8'), /<width>1080<\/width>\s*<height>1920<\/height>/)
+
+  // juntar em outra ordem: Onda antes de Chegada, num projeto novo (o de antes fica guardado)
+  const antes = await pagina.evaluate(() => globalThis.__editor.h.atual.id)
+  await pagina.locator('#pecasJuntar').click()
+  const folha = pagina.locator('dialog.pecas-juntar')
+  await folha.getByRole('button', { name: 'Descer Chegada' }).click()
+  await folha.locator('[value="criar"]').click()
+  await pagina.waitForFunction((id) => globalThis.__editor.h.atual.id !== id, antes)
+  const novo = await pagina.evaluate(() => {
+    const p = globalThis.__editor.h.atual
+    return { id: p.id, nome: p.nome, clipes: p.linha.clipes.map((c) => [c.ini, c.fim]), marcadores: p.marcadores.map((m) => [m.nome, m.q]) }
+  })
+  assert.notEqual(novo.id, antes)
+  assert.equal(novo.nome, 'onda · nova ordem')
+  assert.equal(novo.marcadores[0][0], 'Onda')
+  assert.equal(novo.marcadores[1][0], 'Chegada')
+  // a Onda (3 s da origem em diante) vem primeiro, depois a Chegada (do começo)
+  const q3 = await pagina.evaluate(() => Math.round((3 * globalThis.__editor.h.atual.fps.n) / globalThis.__editor.h.atual.fps.d))
+  assert.deepEqual(novo.clipes[0][0], q3)
+  assert.equal(novo.clipes.at(-1)[0], 0)
+  assert.equal(await pagina.evaluate(() => document.body.dataset.pagina), 'edicao')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+/**
+ * A NOSSOM falsa (nossom.absolutezro.com e o armazenamento dela): conta com franquia, preparar, receber o som em partes,
+ * fila → separando → pronto, as cinco faixas (FLAC de verdade) e liberar. Responde com o CORS da origem do AEON, como
+ * products/nossom/lib/server/irmaos.ts. Guarda o que recebeu para o teste conferir.
+ */
+async function simularNossom(pagina, faixas) {
+  const r = { enviados: [], acoes: [], status: 0 }
+  const tamanhos = faixas.map((b) => b.length)
+  const pacote = Buffer.concat(faixas)
+  const cors = (origem) => ({ 'access-control-allow-origin': origem, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'Content-Type', 'access-control-allow-methods': 'GET, POST, PUT', vary: 'Origin' })
+  await pagina.route('https://nossom.absolutezro.com/**', async (rota) => {
+    const q = rota.request()
+    const origem = q.headers().origin || s.url.replace(/\/$/, '')
+    const u = new URL(q.url())
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 204, headers: cors(origem) })
+    const json = (corpo, status = 200) => rota.fulfill({ status, headers: { ...cors(origem), 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
+    if (u.pathname === '/api/usage') return json({ allowed: true, unlimited: false, remainingSeconds: 3600, planName: 'Estúdio', used: 0, remaining: 3600, limit: 3600, resetAt: '2026-12-01' })
+    if (u.pathname === '/api/audio/jobs' && q.method() === 'POST') {
+      const corpo = q.postDataJSON()
+      r.acoes.push(corpo.action === 'submit' ? `submit:${corpo.preset}` : corpo.action)
+      if (corpo.action === 'prepare') return json({ id: '11111111-2222-4333-8444-555555555555', partBytes: 20 * 1024 * 1024, uploadUrls: ['https://teste.supabase.co/storage/v1/object/upload/sign/parte-0?token=x'] })
+      if (corpo.action === 'submit') return json({ status: 'queued' })
+      return json({ ok: true, status: 'cancelled' })
+    }
+    if (u.pathname === '/api/audio/jobs' && u.searchParams.get('id')) {
+      r.status++
+      if (r.status < 2) return json({ status: 'running' })
+      return json({
+        status: 'completed',
+        report: { preset: 'stems-v1', sampleRate: 44100, channels: 2, gainDb: 0, stems: ['voz', 'bateria', 'baixo', 'guitarra', 'outros'].map((name, i) => ({ name, bytes: tamanhos[i] })), totalBytes: pacote.length, chunks: [{ index: 0, bytes: pacote.length }] },
+        downloadUrls: ['https://teste.supabase.co/storage/v1/object/sign/pacote?token=y'],
+      })
+    }
+    return json({ error: 'não esperado' }, 404)
+  })
+  await pagina.route('https://teste.supabase.co/**', async (rota) => {
+    const q = rota.request()
+    const origem = q.headers().origin || '*'
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 204, headers: cors(origem) })
+    if (q.method() === 'PUT') {
+      r.enviados.push(q.postDataBuffer())
+      return rota.fulfill({ status: 200, headers: cors(origem), body: '{}' })
+    }
+    return rota.fulfill({ status: 200, headers: { ...cors(origem), 'content-type': 'application/octet-stream' }, body: pacote })
+  })
+  return r
+}
+
+test('voz e instrumental pelo Quasar (NOSSOM): separar o clipe, Só voz, prévia, vídeo final com a voz e as faixas na entrega', async () => {
+  // a pessoa que a NOSSOM atende (o gate dela no HUB)
+  const { pagina, erros } = await abrir()
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...PESSOA, irmaos: { nossom: true } }) }))
+  await pagina.reload()
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'show.mp4'), Buffer.from(bytes))
+  // as cinco faixas que a NOSSOM devolve: voz em 440 Hz e bateria em 3 kHz (o resto em silêncio), do tamanho do trecho
+  const info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', join(dir, 'show.mp4')]).toString())
+  const dur = Number(info.format.duration)
+  const flac = (nome, filtro) => {
+    const f = join(dir, `${nome}.flac`)
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `${filtro}:sample_rate=44100:duration=${dur}`, '-ac', '2', '-c:a', 'flac', f])
+    return readFileSync(f)
+  }
+  const faixas = [flac('voz', 'sine=frequency=440'), flac('bateria', 'sine=frequency=3000'), flac('baixo', 'anullsrc=channel_layout=stereo'), flac('guitarra', 'sine=frequency=3000'), flac('outros', 'sine=frequency=3000')]
+  const nossom = await simularNossom(pagina, faixas)
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'show.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const sec = pagina.locator('.insp-faixas')
+  await sec.waitFor()
+  assert.match(await sec.innerText(), /Voz e instrumental[\s\S]*Separar[\s\S]*1 min do seu plano Quasar/)
+
+  // separar: a folha diz o que sobe e quanto do plano usa; depois, as duas faixas no clipe
+  await sec.getByRole('button', { name: 'Separar' }).click()
+  const folha = pagina.locator('dialog.folha-pergunta')
+  await folha.waitFor()
+  assert.match(await folha.innerText(), /sobe para o Quasar[\s\S]*Usa 1 min do seu plano \(restam 60 min\)/)
+  await folha.getByRole('button', { name: 'Separar' }).click()
+  await pagina.waitForFunction(() => /Voz e instrumental prontos/.test(document.getElementById('aviso').textContent), null, { timeout: 60_000 })
+  // a cópia da NOSSOM é liberada logo depois de guardar as faixas aqui
+  for (let i = 0; i < 50 && !nossom.acoes.includes('release'); i++) await new Promise((r) => setTimeout(r, 100))
+  assert.deepEqual(nossom.acoes, ['prepare', 'submit:stems-v1', 'release'])
+  // o que subiu: um WAV estéreo de 16 bits a 44,1 kHz do trecho inteiro
+  const wav = Buffer.concat(nossom.enviados)
+  assert.equal(wav.toString('latin1', 0, 4), 'RIFF')
+  assert.equal(wav.readUInt32LE(24), 44100)
+  assert.ok(Math.abs((wav.length - 44) / (44100 * 4) - dur) < 0.05, `trecho de ${(wav.length - 44) / (44100 * 4)} s`)
+  const estado = () => pagina.evaluate(() => ({ sep: globalThis.__editor.h.atual.separacoes, faixas: globalThis.__editor.h.atual.linha.clipes[0].faixas }))
+  let e = await estado()
+  assert.equal(e.sep.length, 1)
+  assert.deepEqual({ voz: e.faixas.voz, instrumental: e.faixas.instrumental }, { voz: 0, instrumental: 0 })
+  await sec.locator('.faixa').first().waitFor()
+  assert.deepEqual(await sec.locator('.faixa-nome').allInnerTexts(), ['Voz', 'Instrumental'])
+
+  // Só voz: o instrumental fica mudo (o M aceso); desfazer volta; S no instrumental faz o contrário
+  await sec.getByRole('radio', { name: 'Só voz' }).click()
+  e = await estado()
+  assert.deepEqual({ voz: e.faixas.voz, instrumental: e.faixas.instrumental }, { voz: 0, instrumental: null })
+  assert.equal(await sec.locator('.faixa[data-faixa="instrumental"] [data-mudo]').getAttribute('aria-pressed'), 'true')
+  await pagina.click('#desfazer')
+  await pagina.click('#refazer')
+  // a prévia carrega as faixas do disco do navegador (a voz e o instrumental prontos para tocar)
+  await pagina.waitForFunction(() => globalThis.__editor.h && document.querySelector('.insp-faixas .faixas-aviso')?.hidden !== false)
+
+  // Entrega: o vídeo final sai com a voz (440 Hz) e sem o instrumental (3 kHz); o Premiere ganha o WAV da voz
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 120_000 })
+  const zipArq = join(dir, 'faixas.zip')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).saveAs(zipArq)
+  const nomes = execFileSync('zipinfo', ['-1', zipArq]).toString()
+  assert.match(nomes, /show - Voz 0s\.wav/)
+  assert.doesNotMatch(nomes, /Instrumental/, 'o instrumental mudo não vai')
+  const mp4 = join(dir, 'faixas.mp4')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.mp4')).saveAs(mp4)
+  const medir = (f) => Number(/mean_volume: (-?[\d.]+) dB/.exec(estderr('ffmpeg', ['-v', 'info', '-i', mp4, '-af', `bandpass=f=${f}:width_type=h:w=150,volumedetect`, '-f', 'null', '-']))[1])
+  const voz = medir(440)
+  const instrumental = medir(3000)
+  assert.ok(voz - instrumental > 25, `voz ${voz} dB, instrumental ${instrumental} dB`)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('reduzir movimento: páginas trocam sem deslize', async () => {
   const { pagina } = await abrir({ reducedMotion: 'reduce' })
   await pagina.click('.dock [data-ir="entrega"]')
@@ -1216,5 +1508,179 @@ test('entrar.html com a conta fechada pelo HUB (403): "Em desenvolvimento", Volt
   // o editor servido (como no app de computador ou no dev) manda para a página, sem montar nada
   await pagina.goto(s.url + 'app/')
   await pagina.waitForURL(/em-desenvolvimento\.html$/)
+  await pagina.close()
+})
+
+/** A Higgsfield das Conexões, pelo HUB (o repasse /api/zro/higgsfield*), o envio e a CDN dela, de mentira. */
+async function simularHiggsfield(pagina, { png, mp4, conectada = true }) {
+  const r = { pedidos: [], enviados: [], baixados: [] }
+  const h = { saldo: 120, usado: 0, pedidos: [] }
+  const opcoes = (longo) => [
+    { id: 'rapido', nome: 'Rápido', desc: 'Prévia ágil para testar a ideia', segundos: longo ? 10 : 5, creditos: longo ? 8 : 4 },
+    { id: 'equilibrado', nome: 'Equilibrado', desc: 'Movimento de cinema, ótimo custo', segundos: longo ? 10 : 5, creditos: longo ? 20 : 10 },
+    { id: 'maximo', nome: 'Máxima qualidade', desc: 'Mais detalhe, física e acabamento', segundos: longo ? 10 : 5, creditos: longo ? 44 : 22 },
+  ]
+  await pagina.route('**/api/zro/higgsfield**', async (rota) => {
+    const q = rota.request()
+    const u = new URL(q.url())
+    const json = (corpo, status = 200) => rota.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) })
+    r.pedidos.push({ metodo: q.method(), caminho: u.pathname, busca: u.search, corpo: q.method() === 'POST' ? q.postDataJSON() : null })
+    if (!conectada) return json({ error: 'sem_conexao', message: 'Conecte a Higgsfield na sua conta Absolute ZRO.', details: { motivo: 'nenhuma', conectar: 'https://absolutezro.com/conexoes', provedor: 'higgsfield' } }, 409)
+    if (u.pathname === '/api/zro/higgsfield') {
+      return json({ conectada: true, conta: 'lia@higgsfield.test', plano: 'creator', saldo: h.saldo, usoMes: h.usado, usoApp: { mes: h.usado, pedidos: h.pedidos.length, total: h.usado }, usoApps: h.usado, imagens: [1, 2, 4].map((n) => ({ quantidade: n, creditos: 1.5 * n })), opcoes: opcoes(u.searchParams.get('duracao') === 'longo') })
+    }
+    if (q.method() === 'GET') {
+      const x = h.pedidos.find((p) => p.id === u.searchParams.get('id'))
+      x.leituras++
+      const pronto = x.leituras >= 2
+      return json({ estado: pronto ? 'pronto' : 'gerando', saida: x.saida, urls: pronto ? Array.from({ length: x.n }, (_, i) => `https://d1.cloudfront.net/aeon/${x.id}-${i}.${x.saida === 'video' ? 'mp4' : 'png'}`) : [], erro: null })
+    }
+    const d = q.postDataJSON()
+    if (d.acao === 'envio') return json({ upload_url: 'https://upload.higgsfield.ai/aeon/ref.jpg?assinado=1', headers: { 'Content-Type': d.tipo }, ref: '0b9d7f3e-1c2a-4e5b-8f6a-7d8c9e0f1a2b' })
+    const custo = d.acao === 'telas' ? 1.5 * d.quantidade : opcoes(d.duracao === 'longo').find((o) => o.id === d.opcao).creditos
+    h.saldo -= custo
+    h.usado += custo
+    const id = `p${String(h.pedidos.length + 1).padStart(11, '0')}`
+    h.pedidos.push({ id, saida: d.acao === 'telas' ? 'imagem' : 'video', n: d.acao === 'telas' ? d.quantidade : 1, leituras: 0 })
+    return json({ id, estado: 'na_fila', creditos: custo })
+  })
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, PUT', 'access-control-allow-headers': 'content-type' }
+  await pagina.route('https://upload.higgsfield.ai/**', async (rota) => {
+    const q = rota.request()
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 200, headers: cors })
+    r.enviados.push({ tipo: q.headers()['content-type'], bytes: q.postDataBuffer() })
+    return rota.fulfill({ status: 200, headers: cors, body: '' })
+  })
+  await pagina.route('https://d1.cloudfront.net/**', async (rota) => {
+    const u = rota.request().url()
+    r.baixados.push(u)
+    const video = u.endsWith('.mp4')
+    return rota.fulfill({ status: 200, headers: { ...cors, 'content-type': video ? 'video/mp4' : 'image/png' }, body: video ? mp4 : png })
+  })
+  return r
+}
+
+test('Criar com IA (Higgsfield): créditos, telas antes, a tela na Mídia, animar o quadro atual e pôr na linha', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  const mp4 = Buffer.from(bytes)
+  writeFileSync(join(dir, 'criar.mp4'), mp4)
+  const pngArq = join(dir, 'tela.png')
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=0x3a6ea5:s=640x360', '-frames:v', '1', pngArq])
+  const hf = await simularHiggsfield(pagina, { png: readFileSync(pngArq), mp4 })
+  await pagina.setInputFiles('#arquivo', join(dir, 'criar.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+
+  // a folha abre pela Mídia com os créditos: saldo, plano, o medidor do mês e o preço das três opções
+  assert.equal(await pagina.locator('#criarIA').isVisible(), true)
+  await pagina.click('#criarIA')
+  const folha = pagina.locator('#folhaCriar')
+  await folha.locator('[data-saldo]').filter({ hasText: '120' }).waitFor()
+  assert.match(await folha.locator('[data-plano]').innerText(), /créditos · creator/)
+  assert.match(await folha.locator('[data-uso]').innerText(), /0 usados no AEON este mês/)
+  assert.deepEqual(await folha.locator('.criar-opcao .criar-preco').allInnerTexts(), ['4', '10', '22'])
+  const painel = hf.pedidos.find((p) => p.caminho === '/api/zro/higgsfield')
+  assert.equal(new URLSearchParams(painel.busca).get('proporcao'), '16:9')
+
+  // passo 1: sem descrição não gera; 1 tela mostra o preço no botão; a tela chega e já fica escolhida
+  const gerarTelas = folha.locator('[data-acao="telas"]')
+  assert.equal(await gerarTelas.isDisabled(), true)
+  await folha.locator('[data-prompt]').fill('Rua de neon à noite, chuva fina')
+  await folha.locator('[data-qtd] [data-n="1"]').click()
+  assert.equal(await gerarTelas.innerText(), 'Gerar 1 tela · 1,5')
+  await gerarTelas.click()
+  await folha.locator('.criar-tela img').waitFor()
+  const telas = hf.pedidos.find((p) => p.corpo?.acao === 'telas')
+  assert.deepEqual(telas.corpo, { acao: 'telas', prompt: 'Rua de neon à noite, chuva fina', quantidade: 1, proporcao: '16:9' })
+  assert.equal(await folha.locator('.criar-tela').getAttribute('aria-checked'), 'true')
+  // o saldo de agora volta da Higgsfield depois do pedido, e o uso do AEON sobe
+  await folha.locator('[data-saldo]').filter({ hasText: '118,5' }).waitFor()
+  assert.match(await folha.locator('[data-uso]').innerText(), /1,5 usados no AEON este mês/)
+
+  // a tela vai para a Mídia como clipe parado de 5 s (não para a linha), guardada no disco do navegador
+  const linhaAntes = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.length)
+  await folha.locator('[data-por="0"]').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.midias.length === 2, null, { timeout: 60_000 })
+  const parada = await pagina.evaluate(async () => {
+    const m = globalThis.__editor.h.atual.midias[1]
+    const { ler } = await import('/app/criadas-disco.js')
+    const b = await ler(m.id)
+    return { nome: m.nome, duracao: m.duracao, temVideo: m.temVideo, temAudio: m.temAudio, origem: m.origem, largura: m.largura, guardado: b?.size || 0, linha: globalThis.__editor.h.atual.linha.clipes.length }
+  })
+  assert.equal(parada.nome, 'IA · Rua de neon à noite, chuva fina.mp4')
+  assert.ok(Math.abs(parada.duracao - 5) < 0.1, `parada de ${parada.duracao} s`)
+  assert.deepEqual([parada.temVideo, parada.temAudio, parada.largura, parada.origem.tipo, parada.origem.saida], [true, false, 640, 'higgsfield', 'imagem'])
+  assert.ok(parada.guardado > 1000)
+  assert.equal(parada.linha, linhaAntes)
+  assert.equal(await folha.locator('[data-por="0"]').innerText(), 'Na Mídia')
+  await folha.locator('[data-acao="fechar"]').click()
+
+  // passo 2 pela Edição: o botão do player parte do quadro atual; o vídeo pergunta antes de gastar
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.click('#criarDoQuadro')
+  await folha.locator('[data-saldo]').filter({ hasText: '118,5' }).waitFor()
+  assert.equal(await folha.locator('[data-ref]').isChecked(), true)
+  await folha.locator('[data-base-dica]').filter({ hasText: 'A partir do quadro atual' }).waitFor()
+  const animar = folha.locator('[data-acao="animar"]')
+  await folha.locator('[data-movimento]').fill('A câmera sobe devagar')
+  await folha.locator('.criar-opcao[data-opcao="rapido"]').click()
+  assert.equal(await animar.innerText(), 'Animar · 4')
+  await animar.click()
+  const pergunta = pagina.locator('dialog.folha-pergunta')
+  await pergunta.waitFor()
+  assert.match(await pergunta.innerText(), /Animar em Rápido\?[\s\S]*5 s de vídeo\. Usa 4 dos seus 118,5 créditos da Higgsfield\./)
+  await pergunta.getByRole('button', { name: 'Animar' }).click()
+  await pagina.waitForFunction(() => /O vídeo entrou na Mídia/.test(document.getElementById('aviso').textContent), null, { timeout: 60_000 })
+  // o quadro subiu direto para o envio da Higgsfield, em JPEG; o pedido levou a referência dele
+  assert.equal(hf.enviados.length, 1)
+  assert.equal(hf.enviados[0].tipo, 'image/jpeg')
+  assert.equal(hf.enviados[0].bytes.subarray(0, 2).toString('hex'), 'ffd8')
+  const pedidoVideo = hf.pedidos.find((p) => p.corpo?.acao === 'animar')
+  assert.deepEqual(pedidoVideo.corpo, { acao: 'animar', prompt: 'A câmera sobe devagar', opcao: 'rapido', duracao: 'curto', ref: '0b9d7f3e-1c2a-4e5b-8f6a-7d8c9e0f1a2b' })
+  const video = await pagina.evaluate(() => globalThis.__editor.h.atual.midias[2])
+  assert.deepEqual([video.nome, video.origem.saida, video.temVideo], ['IA · A câmera sobe devagar.mp4', 'video', true])
+
+  // pôr na linha: entra no cursor, e o Desfazer devolve
+  const antes = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.map((c) => c.midia))
+  await folha.locator('[data-feitos] button').filter({ hasText: 'Pôr na linha' }).click()
+  const depois = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.map((c) => c.midia))
+  assert.equal(depois.length >= antes.length + 1, true)
+  assert.ok(depois.includes(video.id))
+  // nada fora da Higgsfield foi baixado
+  assert.ok(hf.baixados.every((u) => u.startsWith('https://d1.cloudfront.net/aeon/')))
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Criar com IA sem a Higgsfield nas Conexões: a folha diz para conectar na conta Absolute ZRO, sem gastar nada', async () => {
+  const { pagina, erros } = await abrir()
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'criar2.mp4'), Buffer.from(bytes))
+  const hf = await simularHiggsfield(pagina, { png: Buffer.alloc(0), mp4: Buffer.alloc(0), conectada: false })
+  await pagina.setInputFiles('#arquivo', join(dir, 'criar2.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('#criarIA')
+  const folha = pagina.locator('#folhaCriar')
+  await folha.locator('.criar-aviso:not([hidden])').waitFor()
+  assert.equal(await folha.locator('[data-aviso]').innerText(), 'Conecte a Higgsfield na sua conta Absolute ZRO.')
+  const conectar = folha.locator('[data-acao="conectar"]')
+  assert.equal(await conectar.innerText(), 'Conectar')
+  assert.equal(await conectar.getAttribute('href'), 'https://absolutezro.com/conexoes')
+  assert.equal(await folha.locator('.criar-corpo').isHidden(), true)
+  assert.ok(hf.pedidos.every((p) => p.metodo === 'GET'))
+  // "Já conectei" lê de novo
+  const n = hf.pedidos.length
+  await folha.locator('[data-acao="recarregar"]').click()
+  await pagina.waitForFunction((k) => true, n)
+  assert.ok(hf.pedidos.length >= n)
+  assert.deepEqual(erros.filter((e) => !/409/.test(e)), [])
   await pagina.close()
 })

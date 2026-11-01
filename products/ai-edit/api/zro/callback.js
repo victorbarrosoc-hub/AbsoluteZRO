@@ -27,7 +27,8 @@ export default async function callback(req, res) {
   if (!igual(q.get('state'), ida.state)) return falhar('expirou')
   const erro = q.get('error')
   // cliente ainda sem o escopo zro.ia na Absolute ZRO: o login não pode quebrar por causa da Z, entra sem ela
-  // primeiro sem os sons, depois sem o Set (Absolute ZRO de antes deles); por fim, sem a Z também
+  // primeiro sem a Higgsfield, depois sem os sons, sem o Set (Absolute ZRO de antes deles); por fim, sem a Z também
+  if (erro === 'invalid_scope' && ida.hf === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_hf=1`, [limpar])
   if (erro === 'invalid_scope' && ida.sons === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_sons=1`, [limpar])
   if (erro === 'invalid_scope' && ida.set === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_set=1`, [limpar])
   if (erro === 'invalid_scope' && ida.ia === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_ia=1`, [limpar])

@@ -19,6 +19,9 @@ entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
   numa variável e um teste confere com `src/produto.js`.
 - **Custo zero** (decisão do titular, 26/10/2026): nada de serviço pago, certificado, GPU na nuvem ou API de IA paga sem
   nova decisão. Transcrição local (Whisper na máquina), assinatura ad-hoc, distribuição pelo Release do GitHub.
+  Exceção decidida pelo titular (01/11/2026, [ADR 0037](../../docs/decisions/0037-higgsfield-nas-conexoes.md)): "Criar com
+  IA" usa a Higgsfield conectada nas Conexões do HUB, com os créditos do plano da própria pessoa (nunca da Absolute ZRO);
+  preço e saldo da Higgsfield antes de gerar, e o vídeo pergunta antes de gastar.
 - **Não fingir IA**: zoom e cortes são regras (energia do áudio + transcrição), e a tela diz isso. Progresso só de trabalho
   medido (pedaços transcritos, quadros gravados). Número de demo só medido (`npm run medir`, `--medir=`).
 - **Prompt nunca no código**: critérios editoriais em `presets/<nome>.v<N>.json`; versão publicada não muda.

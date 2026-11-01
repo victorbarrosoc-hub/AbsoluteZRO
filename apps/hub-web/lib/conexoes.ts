@@ -1,5 +1,5 @@
 import 'server-only'
-import { chaveDasConexoes, googleUrls, type AmbienteAgenda, type GoogleAgendaConfig } from '@zro/core'
+import { chaveDasConexoes, googleUrls, higgsfieldUrls, type AmbienteAgenda, type AmbienteHiggsfield, type GoogleAgendaConfig } from '@zro/core'
 import { appOrigin, isProduction } from './env'
 
 /**
@@ -26,8 +26,23 @@ export function ambienteAgenda(): AmbienteAgenda | null {
   return cfg && chave ? { cfg, chave } : null
 }
 
+/**
+ * Higgsfield (migration 0052): o HUB se registra sozinho na Higgsfield (registro dinâmico, sem segredo) com a volta
+ * /conexoes/higgsfield/retorno; só precisa da chave ZRO_CONEXOES_KEY. ZRO_HIGGSFIELD_TESTE_URL troca a Higgsfield por
+ * uma falsa, e só fora de produção (testes).
+ */
+export function ambienteHiggsfield(): AmbienteHiggsfield | null {
+  const chave = chaveDasConexoes()
+  if (!chave) return null
+  const teste = !isProduction ? process.env.ZRO_HIGGSFIELD_TESTE_URL?.trim() || null : null
+  const origem = appOrigin.replace(/\/$/, '')
+  return { chave, cfg: { redirectUri: `${origem}/conexoes/higgsfield/retorno`, conexoesUrl: `${origem}/conexoes`, ...higgsfieldUrls(teste) } }
+}
+
 export const CONEXAO_COOKIE = 'zro_conexao'
 export const conexaoCookieOptions = { httpOnly: true, secure: isProduction, sameSite: 'lax' as const, path: '/conexoes/google', maxAge: 600 }
+export const CONEXAO_HF_COOKIE = 'zro_conexao_hf'
+export const conexaoHfCookieOptions = { ...conexaoCookieOptions, path: '/conexoes/higgsfield' }
 
 /** Textos do `?erro=` que a volta do Google deixa em /conexoes. */
 export const CONEXAO_ERROS: Record<string, string> = {
@@ -38,6 +53,7 @@ export const CONEXAO_ERROS: Record<string, string> = {
   google: 'O Google não completou a conexão. Tente de novo.',
   indisponivel: 'As Conexões estão indisponíveis agora.',
   outra_conta: 'Este pedido foi aberto em outra conta. Tente de novo.',
+  higgsfield: 'A Higgsfield não completou a conexão. Tente de novo.',
 }
 
 /** URL do SOBEDESCE (Drive): a conta lá, onde a pessoa conecta o Google Drive. */

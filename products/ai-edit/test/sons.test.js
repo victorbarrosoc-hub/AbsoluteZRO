@@ -153,12 +153,14 @@ describe('repasse dos sons', () => {
 describe('login com zro.sons', () => {
   test('pede zro.sons junto com a Z e o Set', async () => {
     const ida = await pedir('/api/zro/entrar')
-    assert.equal(new URL(ida.headers.get('location')).searchParams.get('scope'), 'openid email profile org offline_access zro.ia zro.set zro.sons')
+    assert.equal(new URL(ida.headers.get('location')).searchParams.get('scope'), 'openid email profile org offline_access zro.ia zro.set zro.sons zro.higgsfield')
   })
 
   test('Absolute ZRO de antes da Sonoplasta (invalid_scope): entra de novo sem zro.sons, com a Z e o Set', async () => {
     zro.estado.recusarEscopoSons = true
-    const volta = await idaEVolta('/api/zro/entrar?volta=/x')
+    const volta0 = await idaEVolta('/api/zro/entrar?volta=/x')
+    assert.equal(volta0.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_hf=1')
+    const volta = await idaEVolta(volta0.headers.get('location'))
     assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fx&sem_sons=1')
     const fim = await idaEVolta(volta.headers.get('location'))
     assert.equal(zro.estado.escopo, 'openid email profile org offline_access zro.ia zro.set')

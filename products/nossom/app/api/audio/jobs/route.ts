@@ -1,5 +1,6 @@
 import { currentAccount } from '@/lib/server/account';
 import { allowRequest, privateHeaders, sameOrigin } from '@/lib/server/ai-access';
+import { origemIrma, PRESETS_IRMAOS } from '@/lib/server/irmaos';
 import { audioUsage } from '@/lib/server/usage';
 import {
   cancelJob,
@@ -130,7 +131,9 @@ export async function GET(request: Request) {
   }
 }
 export async function POST(request: Request) {
-  if (!sameOrigin(request))
+  // o AEON (app irmão, lib/server/irmaos.ts) também pede, pelo navegador da mesma pessoa, mas só separação de faixas
+  const irma = origemIrma(request);
+  if (!sameOrigin(request) && !irma)
     return Response.json(
       { error: 'Origem não autorizada.' },
       { status: 403, headers: privateHeaders },
@@ -188,6 +191,8 @@ export async function POST(request: Request) {
       });
     if (body.action === 'submit' && body.preset !== undefined && !isCloudPreset(body.preset))
       throw new RestorationError('Escolha um tratamento válido.', 400);
+    if (body.action === 'submit' && irma && !PRESETS_IRMAOS.includes(body.preset))
+      throw new RestorationError('Por este app, a NOSSOM só separa faixas.', 403);
     if (body.action === 'submit')
       return Response.json(
         await submitJob(request, account.id, body.id, body.preset ?? restorationD.id),

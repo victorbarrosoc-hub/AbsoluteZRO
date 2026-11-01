@@ -248,7 +248,7 @@ export function juntarContinuos(linha) {
   const clipes = []
   for (const c of linha.clipes) {
     const ant = clipes[clipes.length - 1]
-    if (ant && !ant.velocidade && !c.velocidade && JSON.stringify(ant.estabilizar || null) === JSON.stringify(c.estabilizar || null) && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
+    if (ant && !ant.velocidade && !c.velocidade && JSON.stringify(ant.estabilizar || null) === JSON.stringify(c.estabilizar || null) && JSON.stringify(ant.faixas || null) === JSON.stringify(c.faixas || null) && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
     else clipes.push(c)
   }
   return clipes.length === linha.clipes.length ? linha : { ...linha, clipes }

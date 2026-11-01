@@ -17,6 +17,7 @@ import { paraSegundos, fpsNumero } from '../src/tempo.js'
 import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
 import { efeitosNaLinha, misturarEfeitos } from '../src/efeitos.js'
+import { misturarTrecho, TAXA as TAXA_FAIXAS } from '../src/faixas.js'
 
 const RAMPA_S = 0.004
 
@@ -31,7 +32,7 @@ export async function codecsDaMaquina(largura, altura) {
  * Renderiza o projeto. entradas: Map(midia → entrada do midia.js); destino: Target do Mediabunny (BufferTarget ou
  * StreamTarget); blocos da legenda (ou []); legenda: { estilo, posicaoY }. aoProgresso(frac, info). sinal: AbortSignal.
  */
-export async function renderizar(p, { entradas, destino, blocos = [], legenda = {}, aoProgresso, sinal, largura, altura, fluxo = null }) {
+export async function renderizar(p, { entradas, destino, blocos = [], legenda = {}, aoProgresso, sinal, largura, altura, fluxo = null, faixas = null }) {
   const L = largura || p.largura
   const A = altura || p.altura
   const fps = fpsNumero(p.fps)
@@ -178,7 +179,13 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
       // som: o trecho exato, colado no anterior, com rampa nas pontas
       if (fonteAudio) {
         const dur = n / fps
-        const buf = s.som ? await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume)) : new AudioBuffer({ length: Math.max(1, Math.round(dur * taxaSaida)), numberOfChannels: 2, sampleRate: taxaSaida })
+        // voz e instrumental separados pela NOSSOM (src/faixas.js): o mix do clipe no lugar do som original
+        const fx = s.som && s.faixas ? faixas?.get(s.faixas.sep.id) : null
+        const buf = fx
+          ? await somDasFaixas(fx, s.faixas, iniS - s.faixas.sep.ini, dur, taxaSaida, ganho(s.ajustes.volume))
+          : s.som
+            ? await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume))
+            : new AudioBuffer({ length: Math.max(1, Math.round(dur * taxaSaida)), numberOfChannels: 2, sampleRate: taxaSaida })
         // os efeitos tocam por cima em qualquer velocidade (são da linha, não da mídia)
         misturarEfeitos(buf, efeitos, somFx, paraSegundos(s.linha, p.fps), p.fps)
         await fonteAudio.add(buf)
@@ -214,6 +221,48 @@ export function corteEntre(a, b, limite = 48) {
  * O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som).
  * rampa = false para o som inteiro de um efeito (ele já começa e acaba como foi feito).
  */
+/**
+ * O trecho das faixas separadas (fx: { voz, instrumental } em AudioBuffer a 44,1 kHz) com o mix do clipe, a partir de
+ * desloc s do começo da separação, com o volume do clipe e a mesma rampa do corte, na taxa de saída.
+ */
+async function somDasFaixas(fx, mix, desloc, dur, taxaSaida, g = 1) {
+  const taxa = TAXA_FAIXAS
+  const n = Math.max(1, Math.round(dur * taxa))
+  const dados = { voz: [0, 1].map((c) => fx.voz.getChannelData(c)), instrumental: [0, 1].map((c) => fx.instrumental.getChannelData(c)) }
+  const [l, r] = misturarTrecho(dados, mix, Math.round(desloc * taxa), n)
+  let buf = new AudioBuffer({ length: n, numberOfChannels: 2, sampleRate: taxa })
+  const rampa = Math.min(Math.floor(n / 2), Math.round(RAMPA_S * taxa))
+  for (const [c, d] of [l, r].entries()) {
+    for (let i = 0; i < n; i++) d[i] = Math.max(-1, Math.min(1, d[i] * g))
+    for (let i = 0; i < rampa; i++) {
+      d[i] *= i / rampa
+      d[n - 1 - i] *= i / rampa
+    }
+    buf.copyToChannel(d, c)
+  }
+  if (taxa !== taxaSaida) {
+    const off = new OfflineAudioContext(2, Math.max(1, Math.round(dur * taxaSaida)), taxaSaida)
+    const no = off.createBufferSource()
+    no.buffer = buf
+    no.connect(off.destination)
+    no.start()
+    buf = await off.startRendering()
+  }
+  return buf
+}
+
+/** O som estéreo de um trecho da mídia (s de origem), na taxa pedida, sem rampa: o que sobe para a NOSSOM separar. */
+export async function audioDoTrecho(entrada, ini, dur, taxa = TAXA_FAIXAS) {
+  const input = abrirInput(entrada)
+  try {
+    const a = await input.getPrimaryAudioTrack()
+    if (!a || !(await a.canDecode())) throw new Error('Não deu para ler o som deste arquivo.')
+    return await somDoTrecho({ audio: a, som: new MB.AudioBufferSink(a) }, ini, dur, taxa, 1, false)
+  } finally {
+    input.dispose?.()
+  }
+}
+
 async function somDoTrecho(o, ini, dur, taxaSaida, g = 1, rampa = true) {
   const taxa = o.audio?.sampleRate || taxaSaida
   const amostras = Math.max(1, Math.round(dur * taxa))
@@ -246,4 +295,59 @@ async function somDoTrecho(o, ini, dur, taxaSaida, g = 1, rampa = true) {
     buf = await off.startRendering()
   }
   return buf
+}
+
+/**
+ * Imagens PNG da linha nos quadros qs, com a mesma conta do vídeo final: ajustes do clipe, estabilização, zoom e
+ * legenda (a imagem do marcador é o quadro que o render gravaria ali). [{ q, blob }] na ordem de qs.
+ */
+export async function imagensEm(p, qs, { entradas, blocos = [], legenda = {}, largura, altura, sinal }) {
+  const L = largura || p.largura
+  const A = altura || p.altura
+  const fps = fpsNumero(p.fps)
+  const segs = segmentos(p)
+  const clipes = new Map(p.linha.clipes.map((c) => [c.id, c]))
+  const tela = new OffscreenCanvas(L, A)
+  const ctx = tela.getContext('2d', { alpha: false })
+  const abertos = new Map()
+  const abrir = async (id) => {
+    if (abertos.has(id)) return abertos.get(id)
+    const input = abrirInput(entradas.get(id))
+    const v = await input.getPrimaryVideoTrack()
+    const o = { input, canvas: v && (await v.canDecode()) ? new MB.CanvasSink(v, { poolSize: 1 }) : null }
+    abertos.set(id, o)
+    return o
+  }
+  const out = []
+  try {
+    for (const q of qs) {
+      if (sinal?.aborted) throw new DOMException('cancelado', 'AbortError')
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, L, A)
+      const s = segs.find((x) => q >= x.linha && q < x.linha + x.saida)
+      if (s) {
+        const o = await abrir(s.midia)
+        const c = clipes.get(s.clipe)
+        const m = p.midias.find((x) => x.id === s.midia)
+        const k0 = c?.velocidade ? Math.round(saidaNoClipe(c, s.ini)) : 0
+        const origem = c?.velocidade ? Math.min(c.fim - 0.01, Math.max(c.ini, origemContinua(c, k0 + (q - s.linha)))) : s.ini + (q - s.linha)
+        const instante = origem / fps + 1e-4
+        const r = o.canvas ? await o.canvas.getCanvas(instante) : null
+        if (r?.canvas) {
+          const img = r.canvas
+          const ret = posicionar(L, A, img.width, img.height, s.ajustes, { escala: s.escala, foco: s.foco })
+          ctx.save()
+          corrigirNoCanvas(ctx, ret, c?.estabilizar ? correcaoEm(p, c, m, instante) : null)
+          ctx.globalAlpha = s.ajustes.opacidade
+          ctx.drawImage(img, ret.x, ret.y, ret.w, ret.h)
+          ctx.restore()
+        }
+      }
+      if (blocos.length && legenda.ligada !== false) desenhar(ctx, blocos, paraSegundos(q, p.fps), L, A, legenda)
+      out.push({ q, blob: await tela.convertToBlob({ type: 'image/png' }) })
+    }
+  } finally {
+    for (const o of abertos.values()) o.input.dispose?.()
+  }
+  return out
 }
