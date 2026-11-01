@@ -191,8 +191,11 @@ if (!falhou) ok('m/ com ' + sobe.size + ' arquivos (' + (bytes / 1048576).toFixe
 function copiarPacote(nome, destino, vistos = new Set()) {
   /* o sharp em wasm é a reserva de quem não tem binário nativo: a função tem, e ele só pesaria */
   if (vistos.has(nome) || /wasm/.test(nome)) return 0;
-  let dirPkg;
-  try { dirPkg = path.dirname(require.resolve(nome + '/package.json', { paths: [RAIZ] })) } catch (e) { return 0 }
+  /* o sharp não exporta "./package.json" (ERR_PACKAGE_PATH_NOT_EXPORTED): procura a pasta direto em node_modules */
+  let dirPkg = path.join(RAIZ, 'node_modules', nome);
+  if (!fs.existsSync(path.join(dirPkg, 'package.json'))) {
+    try { dirPkg = path.dirname(require.resolve(nome + '/package.json', { paths: [RAIZ] })) } catch (e) { return 0 }
+  }
   vistos.add(nome);
   fs.cpSync(dirPkg, path.join(destino, nome), { recursive: true, dereference: true });
   const pkg = JSON.parse(fs.readFileSync(path.join(dirPkg, 'package.json'), 'utf8'));
