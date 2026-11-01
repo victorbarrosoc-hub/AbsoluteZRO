@@ -42,3 +42,43 @@ test('wave moves without DOM path morphing, pauses offscreen and respects reduce
   await page.waitForTimeout(300);
   expect(await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(reduced);
 });
+
+test('o Quasar do Início anima no canvas, pausa com a aba oculta e fica na pose com reduzir movimento', async ({
+  page,
+}) => {
+  await page.goto('/studio/inicio');
+  const ia = page.locator('.assistant-marca .quasar-ia');
+  await expect(ia).toHaveClass(/is-running/);
+  await expect(ia).toHaveClass(/is-ready/);
+  // a Coroa em SVG só aparece antes do primeiro quadro
+  await expect(ia.locator('.coroa-luz')).toBeHidden();
+  const canvas = ia.locator('canvas');
+  const primeiro = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  await page.waitForTimeout(250);
+  expect(await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL())).not.toBe(primeiro);
+  // nada de `d` mudando por quadro
+  const mudancas = await ia.evaluate(async (el) => {
+    let n = 0;
+    const o = new MutationObserver((r) => (n += r.length));
+    o.observe(el, { subtree: true, attributes: true, attributeFilter: ['d'] });
+    await new Promise((ok) => setTimeout(ok, 500));
+    o.disconnect();
+    return n;
+  });
+  expect(mudancas).toBe(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(ia).not.toHaveClass(/is-running/);
+  const oculta = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  await page.waitForTimeout(300);
+  expect(await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(oculta);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(ia).toHaveClass(/is-ready/);
+  await expect(ia).not.toHaveClass(/is-running/);
+  const parada = await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  await page.waitForTimeout(300);
+  expect(await canvas.evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(parada);
+});
