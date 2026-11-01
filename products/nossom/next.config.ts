@@ -3,6 +3,17 @@ const config: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
   // o cartão de compartilhamento mora fora de public/ (produto fechado); a rota que o lê precisa dele no pacote
   outputFileTracingIncludes: { '/opengraph-image': ['./marca-fechada/**'] },
+  // o endereço antigo leva ao novo (Quasar Audio Lab, 01/11/2026); o login segue o endereço de quem chega
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'nossom.absolutezro.com' }],
+        destination: 'https://quasar.absolutezro.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

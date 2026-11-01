@@ -416,7 +416,9 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   o ícone. Identificadores internos seguem `nossom` (produto, OIDC, schema, banco do aparelho, instaladores), para
   nenhuma conta, cota ou projeto se perder. Segue fechado ao público (0049). Endereço novo
   `quasar.absolutezro.com` (autorizado pelo titular, 01/11/2026): domínio no projeto Vercel `nossom`, retorno OIDC e
-  Abrir do HUB na 0053; `nossom.absolutezro.com` passa a redirecionar (308) depois do merge, mantido no OIDC.
+  Abrir do HUB na 0053 (no ar). `nossom.absolutezro.com` redireciona (308, mesmo caminho) pelo `next.config.ts`;
+  segue no OIDC. AEON e Revela já chamam o endereço novo. Projetos salvos no navegador no endereço antigo ficam lá
+  (o titular escolheu redirecionar já, ciente disso).
 - 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
   grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
   rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos
