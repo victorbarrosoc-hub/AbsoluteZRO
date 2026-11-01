@@ -121,6 +121,25 @@ describe('repasse dos sons', () => {
     assert.equal((await pedir('/api/zro/sons/banco/curto', { cookies: c })).status, 404)
   })
 
+  test('sons da Absolute ZRO: o catálogo e o arquivo de uma versão seguem sem parâmetro nenhum', async () => {
+    const c = await entrar()
+    f.zro = f.zro || (await import('../api/zro/sons/zro/index.js')).default
+    f.somZro = f.somZro || (await import('../api/zro/sons/zro/[id].js')).default
+    const lista = await pedir('/api/zro/sons/zro?x=1', { cookies: c })
+    assert.equal(lista.status, 200)
+    assert.equal(lista.headers.get('cache-control'), 'no-store')
+    assert.equal((await lista.json()).sons[0].versoes[0].id, 'boom-grave-v2')
+    assert.equal(zro.estado.sons.at(-1).caminho, '/zro')
+    assert.equal(zro.estado.sons.at(-1).consulta, '')
+    const som = await pedir('/api/zro/sons/zro/boom-grave-v1?y=2', { cookies: c })
+    assert.equal(som.status, 200)
+    assert.equal(som.headers.get('x-zro-som-id'), 'boom-grave-v1')
+    assert.equal(som.headers.get('cache-control'), 'private, max-age=86400')
+    assert.equal(zro.estado.sons.at(-1).consulta, '')
+    for (const ruim of ['/api/zro/sons/zro/Boom', '/api/zro/sons/zro/a', '/api/zro/sons/zro/a--b', '/api/zro/sons/zro/x-'])
+      assert.equal((await pedir(ruim, { cookies: c })).status, 404, ruim)
+  })
+
   test('fechado ao público: sessão que o HUB não liberou recebe 403 sem falar com a Absolute ZRO', async () => {
     const cookies = await entrar()
     zro.estado.sons = []

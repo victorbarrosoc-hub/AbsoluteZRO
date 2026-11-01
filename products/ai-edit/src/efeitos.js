@@ -17,8 +17,11 @@ export const SOM_MAX_S = 600
 export const VOLUME_MIN = -60
 export const VOLUME_MAX = 12
 
-/** De onde o som veio. 'arquivo' = do computador da pessoa e 'banco' = da pasta dela no Drive (a licença é dela). */
-export const ORIGENS = ['arquivo', 'banco', 'openverse', 'elevenlabs']
+/**
+ * De onde o som veio. 'arquivo' = do computador da pessoa e 'banco' = da pasta dela no Drive (a licença é dela); 'zro' =
+ * os sons originais da Absolute ZRO (licença da plataforma). Nos três, nada vai para os créditos.
+ */
+export const ORIGENS = ['arquivo', 'banco', 'zro', 'openverse', 'elevenlabs']
 
 let seq = 0
 const novoId = (pre) => `${pre}${Date.now().toString(36)}${(seq++).toString(36)}`
@@ -171,7 +174,7 @@ export function creditos(p) {
   const vistos = new Set()
   const out = []
   for (const { som } of efeitosNaLinha(p)) {
-    if (vistos.has(som.id) || som.origem?.tipo === 'arquivo' || som.origem?.tipo === 'banco') continue
+    if (vistos.has(som.id) || ['arquivo', 'banco', 'zro'].includes(som.origem?.tipo)) continue
     vistos.add(som.id)
     const o = som.origem || {}
     const titulo = o.titulo || som.nome.replace(/\.[^.]+$/, '')

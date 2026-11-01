@@ -1,4 +1,4 @@
-// Os sons da Sonoplasta pela Absolute ZRO: os livres (Openverse) e o banco da pessoa no Drive (pelo SOBEDESCE). A busca,
+// Os sons da Sonoplasta pela Absolute ZRO: os originais da plataforma (o banco padrão), os livres (Openverse) e o banco da pessoa no Drive (pelo SOBEDESCE). A busca,
 // a pasta e o arquivo de cada som passam pelo próprio app (/api/zro/sons/*:
 // na Vercel, api/_sons.js; no app de computador, desktop/main.cjs), com o token da conta da pessoa. Erro vira uma frase
 // para a tela (sem conta, limite do banco, fonte fora), nunca um som inventado.
@@ -29,6 +29,18 @@ export async function buscar(q, pagina = 1) {
   return r.json()
 }
 
+/** Os sons originais da Absolute ZRO: { categorias: [{ nome, total }], sons: [{ id, titulo, categoria, versoes }] }. */
+export async function listarZro() {
+  let r
+  try {
+    r = await fetch('/api/zro/sons/zro', { credentials: 'same-origin', cache: 'no-store' })
+  } catch {
+    throw new ErroSons('Sem conexão agora. Confira a internet e tente de novo.', 0)
+  }
+  if (!r.ok) throw await falha(r)
+  return r.json()
+}
+
 /** Uma página da pasta do banco no Drive: { pasta, conta, pastas, sons, proxima }. */
 export async function listarBanco(pasta, { q = '', conta = '', pagina = '' } = {}) {
   let r
@@ -47,6 +59,7 @@ export async function listarBanco(pasta, { q = '', conta = '', pagina = '' } = {
  */
 export function urlDoSom(s) {
   const tipo = s.origem && typeof s.origem === 'string' ? s.origem : s.tipo
+  if (tipo === 'zro') return `/api/zro/sons/zro/${encodeURIComponent(s.id)}`
   if (tipo === 'banco') return `/api/zro/sons/banco/${encodeURIComponent(s.id)}${s.conta ? `?${new URLSearchParams({ conta: s.conta })}` : ''}`
   return `/api/zro/sons/openverse/${encodeURIComponent(s.id)}`
 }

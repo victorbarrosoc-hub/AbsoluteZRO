@@ -712,6 +712,33 @@ paths:
           '429': { $ref: '#/components/responses/Error' },
           '503': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/sons/zro:
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: Os sons originais da Absolute ZRO (o banco padrão da plataforma), por categoria, com as versões de cada som; sem o áudio
+      responses:
+        {
+          '200':
+            {
+              description: '{ categorias: [{ nome, total }], sons: [{ id, origem: zro, titulo, categoria, versoes: [{ id, versao, duracao, bytes, formato, melhor }] }] } (a melhor versão primeiro)',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/sons/zro/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 100 }, description: 'Id da versão' }
+    get:
+      security: [{ appToken: [zro.sons] }, { session: [] }]
+      summary: O arquivo de uma versão de um som da Absolute ZRO (licença da plataforma, sem crédito no vídeo)
+      responses:
+        {
+          '200': { description: 'Áudio (audio/mpeg), com X-Zro-Som-Id, X-Zro-Som-Titulo e ETag' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/agenda/eventos:
     get:
       security: [{ appToken: [zro.agenda] }]

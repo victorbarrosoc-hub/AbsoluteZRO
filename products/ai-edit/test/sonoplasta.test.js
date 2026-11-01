@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
+import { filtrarZro, idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca, versaoZro } from '../src/sonoplasta.js'
 
 const PRESET = JSON.parse(readFileSync(new URL('../presets/sonoplasta.v1.json', import.meta.url), 'utf8'))
 
@@ -60,4 +60,34 @@ test('link da pasta do banco: Drive, link antigo, SOBEDESCE ou o id; o resto nã
     assert.equal(pastaDoLink(t), ID, t)
   for (const t of ['', 'curto', `http://drive.google.com/drive/folders/${ID}`, `https://evil.com/drive/folders/${ID}`, `https://drive.google.com/file/d/${ID}/view`, `https://x.com/app/#arquivo/${ID}`])
     assert.equal(pastaDoLink(t), null, t)
+})
+
+test('sons da Absolute ZRO: categoria, busca em português ou no termo do preset, e a versão escolhida', () => {
+  const v = (id, versao, melhor = false) => ({ id, versao, duracao: 1, bytes: 4, formato: 'mp3', melhor })
+  const catalogo = {
+    sons: [
+      { id: 'whoosh-rapido-de-ar', origem: 'zro', titulo: 'Whoosh rápido de ar', categoria: 'Whooshes e Transições', versoes: [v('whoosh-rapido-de-ar-v1', 1, true)] },
+      { id: 'impacto-metalico', origem: 'zro', titulo: 'Impacto metálico', categoria: 'Impactos', versoes: [v('impacto-metalico-v3', 3, true), v('impacto-metalico-v1', 1)] },
+      { id: 'boom-grave', origem: 'zro', titulo: 'Boom grave', categoria: 'Impactos', versoes: [v('boom-grave-v2', 2, true)] },
+    ],
+  }
+  const ids = (r) => r.map((s) => s.id)
+  assert.deepEqual(ids(filtrarZro(catalogo, {}, PRESET)), ['whoosh-rapido-de-ar', 'impacto-metalico', 'boom-grave'])
+  assert.deepEqual(ids(filtrarZro(catalogo, { categoria: 'Impactos' }, PRESET)), ['impacto-metalico', 'boom-grave'])
+  // sem acento, todas as palavras, no nome ou na categoria
+  assert.deepEqual(ids(filtrarZro(catalogo, { q: 'METALICO' }, PRESET)), ['impacto-metalico'])
+  assert.deepEqual(ids(filtrarZro(catalogo, { q: 'impactos grave' }, PRESET)), ['boom-grave'])
+  // "transição" vira "whoosh" pelo preset
+  assert.deepEqual(ids(filtrarZro(catalogo, { q: 'transição' }, PRESET)), ['whoosh-rapido-de-ar'])
+  assert.deepEqual(filtrarZro(null, { q: 'x' }, PRESET), [])
+
+  const som = catalogo.sons[1]
+  assert.deepEqual(versaoZro(som, 'impacto-metalico-v1'), { id: 'impacto-metalico-v1', origem: 'zro', titulo: 'Impacto metálico 1', formato: 'mp3', duracao: 1, bytes: 4 })
+  assert.equal(versaoZro(som, 'nao-existe').id, 'impacto-metalico-v3')
+  assert.equal(versaoZro(catalogo.sons[0]).titulo, 'Whoosh rápido de ar')
+  // vira som do projeto sem licença nem crédito
+  const r = somDoBanco(versaoZro(som, 'impacto-metalico-v1'), { duracao: 1, taxa: 48000, canais: 2 })
+  assert.equal(r.id, 'zro:impacto-metalico-v1')
+  assert.equal(r.nome, 'Impacto metálico 1.mp3')
+  assert.deepEqual(r.origem, { tipo: 'zro', id: 'impacto-metalico-v1', titulo: 'Impacto metálico 1', fonte: 'Absolute ZRO' })
 })
