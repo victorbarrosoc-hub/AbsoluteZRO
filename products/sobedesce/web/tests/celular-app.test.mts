@@ -82,7 +82,8 @@ async function contexto(w: number, h: number) {
   // o tsx (esbuild) põe `__name(...)` nas funções; a que vai para a página (achados) precisa dele lá também
   await ctx.addInitScript('globalThis.__name = (f) => f')
   await ctx.route(`${base}/api/**`, (r: any) => {
-    const u = r.request().url()
+    // o app pergunta como visitante (/api/eu?visitante=1): compara só o caminho
+    const u = new URL(r.request().url()).pathname
     if (u.endsWith('/api/eu'))
       return r.fulfill({
         json: {

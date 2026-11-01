@@ -279,7 +279,7 @@ test('endereços digitados e a marca dos apps fechados', async ({ page, request 
     ['/', '/'],
     ['/planos', '/planos'],
     ['/privacidade', '/privacidade'],
-  ]) {
+  ] as const) {
     await page.goto(caminho)
     const href = await page.locator('link[rel="canonical"]').getAttribute('href')
     expect(new URL(href!).pathname, caminho).toBe(canonico)
