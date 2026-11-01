@@ -50,5 +50,8 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 - **App de computador** (30/10/2026, `desktop/`, [README](desktop/README.md)): Electron com pacote próprio, o mesmo site
   numa janela (`/converter`), igual ao do Maestro; nada de conversão nativa por enquanto. Ícone = `marca/relay-icone.svg`
   (`npm run icones`). Release de teste `relay-versao-de-teste` pelo `.github/workflows/relay-desktop.yml`; HUB:
-  `APPS_DESKTOP`/`DOWNLOADS` e a migração `0042`. Mudou o site e ele precisa de outra permissão ou rota fora da janela? Ajuste
+  `APPS_DESKTOP`/`DOWNLOADS` e a migração `0042`. **Atualização só pela central Absolute ZRO** (titular, 01/11/2026): o
+  app não baixa nem instala versão nova; `desktop/versao.cjs` só avisa ("Atualização disponível · Atualizar na Absolute
+  ZRO", notificação uma vez por build) e `desktop/central.cjs` abre `absolutezro://apps/relay?acao=atualizar` (sem a
+  central, `https://absolutezro.com/baixar`). Nada de instalador no site. Mudou o site e ele precisa de outra permissão ou rota fora da janela? Ajuste
   `desktop/desktop/regras.cjs` e o teste.

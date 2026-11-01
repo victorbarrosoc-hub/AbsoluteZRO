@@ -36,9 +36,10 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   Maestro no grátis, no Completo e no Pro (o grátis nunca leva `maestro.marca_propria`); a vitrine vira com
   `MAESTRO_LANCADO` em `src/lib/site.ts` (`node scripts/lancamento-maestro.mjs --abrir` na raiz, junto com as listas
   da família dos outros apps). A página inicial lançada não mostra selo de "Beta" (no ar, titular 30/10/2026) nem "grátis" (posicionamento da marca, 29/10/2026); mostra "Criar conta"/"Entrar com
-  Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com instalador
-  publicado no catálogo da central do HUB, o app de computador (`src/lib/desktop.ts`; `MAESTRO_CATALOGO_DESKTOP=desligado`
-  no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página
+  Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com o app no
+  catálogo da central do HUB, "Use no computador com a Absolute ZRO" com os três passos e o botão para
+  `absolutezro.com/baixar` (nunca instalador: o computador é só pela central desde 01/11/2026; `src/lib/desktop.ts`;
+  `MAESTRO_CATALOGO_DESKTOP=desligado` no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página
   chama, além do layout: no Next 16 os dois renderizam em paralelo) e rotas de dados usam `exigirAcesso()`. Sem
   sessão 401, sem acesso 403; nunca só a tela. Outro produto (ex.: SOBEDESCE para Arquivos) só por `temProduto()`.
 - **Login único**: `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, `id_token` conferido pela
@@ -548,11 +549,14 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   raiz, como o `apps/hub-desktop`). Abre `/app` numa `WebContentsView` (partição `persist:maestro`, sandbox, sem Node);
   na janela só o Maestro, as telas de entrar da Absolute ZRO e `accounts.google.com` (`desktop/regras.cjs`); `/a`,
   `/o`, `/p`, o resto do HUB e outros sites vão para o navegador. Login = o fluxo normal do site, os cookies ficam
-  (Max-Age). Motor do "Atualizar", memória da janela e a "Sem conexão" são **cópias idênticas** do hub-desktop
-  (`npm run compartilhado`; o teste confere). Ícone = `src/app/icon.svg` (`npm run icones`). Aviso "Nova versão" e
-  download passam pela Absolute ZRO (`/baixar/app/maestro/{versao.json,mac,windows,<arquivo>}`, gate do canal
-  `download`; `APPS_DESKTOP` em `apps/hub-web/lib/desktop-apps.ts`, `DOWNLOADS` em `lib/downloads.ts`): fechado, só
-  a lista de acesso vê. Release de teste `maestro-versao-de-teste` pelo `.github/workflows/maestro-desktop.yml` a
+  (Max-Age). Memória da janela e a "Sem conexão" são **cópias idênticas** do hub-desktop
+  (`npm run compartilhado`; o teste confere). Ícone = `src/app/icon.svg` (`npm run icones`). **Atualização só pela
+  central Absolute ZRO** (titular, 01/11/2026): o app não baixa nem instala versão nova (o `atualizador.cjs` e o
+  `gerenciado.cjs` saíram; não volte com eles). `desktop/versao.cjs` confere `/baixar/app/maestro/versao.json` (gate do
+  canal `download`; fechado, só a lista de acesso vê) e, com versão nova, mostra a pílula "Atualização disponível" na
+  barra do Mac, o item no menu, o título no Windows e uma notificação por build ("Atualização disponível · Atualizar na
+  Absolute ZRO"), que abrem `absolutezro://apps/maestro?acao=atualizar` (`desktop/central.cjs`; sem a central,
+  `https://absolutezro.com/baixar`). Release de teste `maestro-versao-de-teste` pelo `.github/workflows/maestro-desktop.yml` a
   cada push na main que mexe em `desktop/`. Sem assinatura da Apple/Microsoft por enquanto. Rota nova que deve abrir
   no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste. **Cronômetro na barra** (0.2.0,
   titular 31/10/2026): `desktop/{tempo,cronometro,pomodoro,ocioso,atalho}.cjs` leem e mudam o tempo por `/api/tempo`
@@ -622,7 +626,7 @@ auditoria, HUB sem o TPeasy; `criacao-tpeasy.test.mts`), o roteiro com o cliente
 (`links-fluxo.test.mts`), "Gerar versões com o Relay" (cópia e tipos dos presets, folha e grupos, ponte com HUB e
 SOBEDESCE falsos, idempotência, estado só para a frente, Conferir no despacho ambíguo, sem plano, computador fechado,
 quem pede, duas organizações e acesso por cliente; `relay.test.mts`), o migrador com migração atrasada
-(`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
+(`migrador.test.mts`) e o lançamento (no computador só pela Absolute ZRO e só com o app no catálogo, manifesto e a chave da vitrine;
 `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
 administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`), achar o job no Quadro (selos, miniatura,
 cor do cliente, realce, capa com papéis, cota, duas organizações e acesso por cliente; `capas.test.mts`). E2E: `npm run build && npm run test:e2e`

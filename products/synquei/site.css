@@ -2525,6 +2525,11 @@ html.js .reveal.in {
 @media (max-width: 640px) {
   .zro-central {
     flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .zro-passos {
+    flex-direction: column;
   }
   .zro-central .btn {
     width: 100%;

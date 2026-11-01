@@ -8829,3 +8829,13 @@ navegador; nada nativo. Ícone = `public/icone-512.png` (`npm run icones` no `de
 Workflow `.github/workflows/carro-desktop.yml` (Release de teste `carro-versao-de-teste`; arquivos `CarroDoFreela-…`, o
 app instalado é "Carro do Freela"); HUB: `APPS_DESKTOP`/`DOWNLOADS` e a migração `0042`. ⚠️ O `carro-testes.yml` ignora
 `desktop/**`.
+
+## 01/nov — no computador, só pela Absolute ZRO
+
+Pedido do titular: os apps de computador são instalados e atualizados **só pela central Absolute ZRO**
+(`apps/hub-desktop`). O convite "Melhor no computador" (`#h-app`) diz "Use no computador com a Absolute ZRO" com os três
+passos (baixe a Absolute ZRO, entre com a sua conta, instale o Carro do Freela por ela) e o botão "Baixar a Absolute
+ZRO" (`https://absolutezro.com/baixar`); `test/site-real.js` confere e que não há instalador. O app (`desktop/`, 0.2.1)
+não baixa nem instala versão nova: o `atualizador.cjs` e o `gerenciado.cjs` saíram; `desktop/versao.cjs` só avisa
+(pílula "Atualização disponível" na barra do Mac, item no menu, título no Windows e uma notificação por build) e
+`desktop/central.cjs` abre `absolutezro://apps/carro-do-freela?acao=atualizar` (sem a central, a página).

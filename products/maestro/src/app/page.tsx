@@ -4,7 +4,7 @@ import Image from "next/image";
 import { temAcesso } from "@/lib/auth/acesso";
 import { sessaoDaPagina } from "@/lib/auth/pagina";
 import { COLUNAS } from "@/lib/quadro/metodo";
-import { downloadsDoMaestro } from "@/lib/desktop";
+import { CENTRAL_ZRO, downloadsDoMaestro } from "@/lib/desktop";
 import { CONTATO, CRIAR_CONTA_ZRO, ENTRAR_ZRO, HUB_URL, MAESTRO_LANCADO, ROTAS, SITE_FRASE, SITE_NOME } from "@/lib/site";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { Abas } from "@/components/inicio/abas";
@@ -144,7 +144,8 @@ function palavras(texto: string, de: number) {
  * real em aparelhos, números do produto, as ferramentas numa aba cada, uma foto de set, os detalhes em cartões de mexer
  * e a porta. Lançado (`MAESTRO_LANCADO`, no ar para toda conta Absolute ZRO; sem selo de Beta, decisão do titular de
  * 30/10/2026): "Criar conta" e "Entrar com Absolute ZRO"
- * direto no login único, o app no celular e, se houver instalador publicado, o de computador. Antes do lançamento:
+ * direto no login único, o app no celular e, se o app de computador estiver na central, "Use no computador com a
+ * Absolute ZRO" (desde 01/11/2026 o computador é só pela central: nada de instalador aqui). Antes do lançamento:
  * "Em teste fechado", "Quero acesso" (lista de espera) e "Entrar" para quem já está na lista do HUB. Quem entra é
  * sempre o gate do HUB (temAcesso), nunca esta página.
  */
@@ -166,7 +167,7 @@ export default async function Inicio() {
       Criar conta
     </a>
   );
-  // O que ainda não existe, com o selo "Em breve" (o app de computador sai daqui quando há instalador publicado).
+  // O que ainda não existe, com o selo "Em breve" (o app de computador sai daqui quando está na central).
   const chegando: { icone: NomeIcone; nome: string }[] = [
     ...(downloads.length ? [] : [{ icone: "computador" as const, nome: "App de computador" }]),
     { icone: "link", nome: "Domínio próprio" },
@@ -403,16 +404,22 @@ export default async function Inicio() {
               <InstalarNoCelular variante="pagina" />
             </div>
             {downloads.length ? (
-              <div className="isecao__cabeca revela">
+              <div className="isecao__cabeca revela" id="computador">
                 <h2 className="isecao__titulo">
                   No <strong>computador.</strong>
                 </h2>
                 <div className="idesktop">
-                  {downloads.map((d) => (
-                    <a key={d.sistema} className="glass-btn" href={d.href} title={d.versao ? `Versão ${d.versao}` : undefined}>
-                      <Icone nome="computador" size={18} /> {d.rotulo}
-                    </a>
-                  ))}
+                  <p className="idesktop__titulo">
+                    <ZroSimbolo size={20} /> Use no computador com a Absolute ZRO
+                  </p>
+                  <ol className="idesktop__passos">
+                    <li>Baixe a Absolute ZRO</li>
+                    <li>Entre com a sua conta</li>
+                    <li>Instale o Maestro por ela</li>
+                  </ol>
+                  <a className="glass-btn glass-btn--ink" href={CENTRAL_ZRO}>
+                    Baixar a Absolute ZRO
+                  </a>
                 </div>
               </div>
             ) : null}
