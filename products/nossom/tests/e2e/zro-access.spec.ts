@@ -12,19 +12,27 @@ const password = 'senha-de-teste';
 async function expectDevPage(page: Page, path: string) {
   const response = await page.goto(path);
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole('heading', { name: 'Em desenvolvimento.' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Voltar ao HUB', exact: true })).toHaveAttribute(
-    'href',
-    'https://absolutezro.com/inicio',
-  );
+  // a página neutra (titular, 01/11/2026): nada do NOSSOM
+  await expect(page.getByRole('heading', { name: 'Página indisponível.' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Ir para a Absolute ZRO', exact: true }),
+  ).toHaveAttribute('href', 'https://absolutezro.com');
+  await expect(page.locator('main')).not.toContainText('NOSSOM');
   await expect(page.locator('.studio-header')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
+async function expectFora(page: Page, path: string) {
+  const response = await page.request.get(path, { maxRedirects: 0 });
+  expect(response.status(), path).toBe(307);
+  expect(response.headers().location, path).toBe('https://absolutezro.com/');
+}
+
 /** Estúdio, APIs do produto, downloads e instalador negados no servidor. */
-async function expectProductDenied(page: Page) {
-  await expectDevPage(page, '/studio');
-  await expectDevPage(page, '/studio/z');
+async function expectProductDenied(page: Page, { sessao = false } = {}) {
+  // com sessão (sem acesso), o estúdio mostra a página neutra no mesmo endereço; sem sessão, vai para a Absolute ZRO
+  for (const path of ['/studio', '/studio/z'])
+    await (sessao ? expectDevPage(page, path) : expectFora(page, path));
   for (const path of [
     '/api/usage',
     '/api/plans',
@@ -34,27 +42,33 @@ async function expectProductDenied(page: Page) {
     '/api/zro/set/conversas',
   ])
     expect((await page.request.get(path)).status(), path).toBe(403);
-  for (const path of ['/baixar', '/baixar/mac', '/baixar/atualizacoes/latest.json'])
-    expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);
+  // as páginas do site e os downloads vão para a Absolute ZRO
+  for (const path of [
+    '/',
+    '/apps',
+    '/entrar',
+    '/baixar',
+    '/baixar/mac',
+    '/baixar/atualizacoes/latest.json',
+  ])
+    await expectFora(page, path);
   const install = await page.request.get('/instalar.sh');
   expect(await install.text()).toContain('exit 1');
 }
 
-test('anônimo: home sem CTA funcional, estúdio e entrar em "Em desenvolvimento", APIs e downloads negados', async ({
+test('anônimo: o site, o estúdio e os downloads vão para a Absolute ZRO; APIs negadas', async ({
   page,
 }) => {
-  const home = await page.goto('/');
-  expect(home?.status()).toBe(200);
-  await expect(page.getByRole('link', { name: /Conhecer o projeto/ }).first()).toBeVisible();
-  // Nada que abra, baixe, instale ou venda.
-  for (const href of ['/studio', '/apps', '/baixar', '/entrar'])
-    await expect(page.locator(`main a[href^="${href}"]`)).toHaveCount(0);
-  await expect(page.getByText('Chegando ao NOSSOM')).toBeVisible();
-  await expect(page.locator('#planos')).toHaveCount(0);
-
-  await expectDevPage(page, '/entrar');
-  await expectDevPage(page, '/apps');
-  await expectProductDenied(page);
+  // titular, 01/11/2026: o NOSSOM não lançado não aparece para quem não tem acesso, nem a página inicial
+  for (const path of ['/', '/apps', '/entrar', '/studio', '/studio/z', '/em-desenvolvimento'])
+    await expectFora(page, path);
+  for (const path of ['/api/usage', '/api/plans', '/api/audio/jobs', '/api/admin', '/api/zro/set'])
+    expect((await page.request.get(path)).status(), path).toBe(403);
+  for (const path of ['/baixar', '/baixar/mac', '/baixar/atualizacoes/latest.json'])
+    await expectFora(page, path);
+  const install = await page.request.get('/instalar.sh');
+  expect(await install.text()).toContain('exit 1');
+  expect(await install.text()).not.toContain('NOSSOM');
   expect((await page.request.get('/api/account')).status()).toBe(401);
 });
 
@@ -93,7 +107,7 @@ test('conta allowed: usa o estúdio; ao sair da lista a sessão aberta perde o a
   expect((await signIn(page.request, email, password)).status()).toBe(200);
   await page.goto('/studio');
   await expect(page.getByText(email, { exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Em desenvolvimento.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Página indisponível.' })).toHaveCount(0);
   expect((await page.request.get('/api/usage')).status()).toBe(200);
   expect(
     (await (await page.request.get('/api/account')).json()).account.zroBlocked,
@@ -104,7 +118,7 @@ test('conta allowed: usa o estúdio; ao sair da lista a sessão aberta perde o a
 
   // Sessão antiga: o proprietário tira a conta da lista. O vínculo é relido a cada pedido.
   await zroLink(page.request, id!, ['nossom'], { nossom: 'closed' });
-  await expectProductDenied(page);
+  await expectProductDenied(page, { sessao: true });
   const account = await (await page.request.get('/api/account')).json();
   expect(account.account.zroBlocked).toBe(true);
 

@@ -105,7 +105,7 @@ export default {
   render() {
     if (!O.ativo)
       return `<div class="page tela"><header class="page-head"><div><h1>Organizar</h1><p class="page-lead">SOBEDESCE › Synquei › DaVinci, sozinho a cada cartão.</p></div></header>
-        <div class="info-box">${icon('info')}<div>O Organizar vigia pastas do seu computador e fala com o DaVinci: só funciona no <b>app de desktop</b> do Synquei. <a href="/#baixar" target="_blank" rel="noopener" style="text-decoration:underline">Baixar para Mac ou Windows</a></div></div></div>`
+        <div class="info-box">${icon('info')}<div>O Organizar vigia pastas do seu computador e fala com o DaVinci: só funciona no <b>app de desktop</b> do Synquei. <a href="https://absolutezro.com/baixar" target="_blank" rel="noopener" style="text-decoration:underline">Use no computador com a Absolute ZRO</a></div></div></div>`
     return `<div class="page tela"><header class="page-head"><div><h1>Organizar</h1><p class="page-lead">Ligue a pasta de um projeto do Backup Automático do SOBEDESCE. Cada cartão que termina de passar entra sozinho: o Synquei sincroniza a diária e organiza tudo no DaVinci.</p></div><div class="page-actions"><button class="btn btn-primary" data-act="org-add">${icon('plus')}Ligar pasta do SOBEDESCE</button></div></header>
       ${fluxo()}
       ${agora()}

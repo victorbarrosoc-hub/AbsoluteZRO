@@ -75,14 +75,39 @@ function destino(url, origin) {
   return 'nada'
 }
 
+// Deep link de app (ADR 0036): absolutezro://apps/<id>?acao=atualizar|instalar. Os apps da família abrem este link
+// quando têm versão nova (ou para pedir a instalação de outro app); a central abre no cartão do app e já oferece a
+// ação, mas só a pessoa confirma. Nada acontece sozinho a partir de um link.
+const APP_ID = /^[a-z0-9-]{2,40}$/
+const ACOES_DE_APP = new Set(['atualizar', 'instalar'])
+
+/** absolutezro://apps/maestro?acao=atualizar → { id: 'maestro', acao: 'atualizar' } (acao null se faltar ou for outra). */
+function linkDeApp(url) {
+  const bruto = String(url || '').trim()
+  if (!bruto.toLowerCase().startsWith(`${ESQUEMA}:`) || bruto.length > 512) return null
+  let u
+  try {
+    u = new URL('https://x/' + bruto.slice(ESQUEMA.length + 1).replace(/^\/+/, ''))
+  } catch {
+    return null
+  }
+  const m = /^\/apps\/([^/]+)\/?$/.exec(u.pathname)
+  if (!m || !APP_ID.test(m[1])) return null
+  const acao = u.searchParams.get('acao')
+  return { id: m[1], acao: ACOES_DE_APP.has(acao) ? acao : null }
+}
+
 /**
  * absolutezro://projetos/123?aba=x → https://absolutezro.com/projetos/123?aba=x
+ * absolutezro://apps/<id>?acao=atualizar → https://absolutezro.com/app?app=<id>&acao=atualizar (o cartão do app)
  * Aceita também absolutezro:///projetos e absolutezro:projetos. Devolve null para o que não for rota do HUB.
  */
 function deepLink(url, origin) {
   const bruto = String(url || '').trim()
   if (!bruto.toLowerCase().startsWith(`${ESQUEMA}:`)) return null
   if (bruto.length > 2048) return null
+  const app = linkDeApp(bruto)
+  if (app) return `${origin}/app?app=${app.id}${app.acao ? `&acao=${app.acao}` : ''}#app-${app.id}`
   // tudo depois do "absolutezro:" vira caminho; barras repetidas no começo viram uma (nada de //outro-site)
   let resto = bruto.slice(ESQUEMA.length + 1).replace(/\\/g, '/')
   resto = '/' + resto.replace(/^\/+/, '')
@@ -143,6 +168,7 @@ module.exports = {
   linkExterno,
   destino,
   deepLink,
+  linkDeApp,
   deepLinkDosArgs,
   permitir,
   ehErroDeRede,

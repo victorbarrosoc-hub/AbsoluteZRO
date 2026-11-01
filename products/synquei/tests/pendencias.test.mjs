@@ -67,9 +67,11 @@ test('Organizar: cartões esperando a pessoa fechar o projeto e DaVinci esperand
   assert.equal(pendencias(base(null, { org: { esperando: false, fila: [{}], davinci: null } })).organizar, undefined, 'fila andando sozinha não é pendência')
 })
 
-test('Ajustes: versão nova pronta para instalar', () => {
-  assert.equal(pendencias(base(null, { atualizacao: { nova: true, fase: 'pronto' } })).ajustes.n, 1)
-  assert.equal(pendencias(base(null, { atualizacao: { nova: true, fase: 'baixando' } })).ajustes, undefined)
+test('Ajustes: atualização disponível (pela Absolute ZRO)', () => {
+  const r = pendencias(base(null, { atualizacao: { nova: true } }))
+  assert.equal(r.ajustes.n, 1)
+  assert.equal(r.ajustes.t, 'Atualização disponível')
+  assert.equal(pendencias(base(null, { atualizacao: { nova: false } })).ajustes, undefined)
 })
 
 test('número e rótulo do balão', () => {

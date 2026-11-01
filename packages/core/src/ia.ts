@@ -177,7 +177,8 @@ function tituloDe(texto: string): string {
 export async function retratoDoEcossistema(db: Database, actor: Actor, produto: string | null) {
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
-    // Gate de lançamento pelo canal da chamada (dentro de um app = api): o que está fechado para a pessoa vem como "closed".
+    // Gate de lançamento pelo canal da chamada (dentro de um app = api): o que está fechado para a pessoa vem como "closed";
+    // o que não existe para ela (não lançado, migração 0049) nem vem.
     const ferramentas = (await productAccessFor(tx, actor.orgId, { channel: channelOf(actor.auth) })).map((a) => ({
       id: a.productId,
       nome: a.name,
@@ -192,7 +193,8 @@ export async function retratoDoEcossistema(db: Database, actor: Actor, produto: 
     const atencao = await tx`
       select p.title as projeto, pr.name as ferramenta, s.state as estado, s.updated_at as quando
       from zro.project_steps s join zro.projects p on p.id = s.project_id join zro.products pr on pr.id = s.step_key
-      where s.org_id = ${actor.orgId} and s.state in ('needs_review', 'failed') order by s.updated_at desc limit 10`
+      where s.org_id = ${actor.orgId} and s.state in ('needs_review', 'failed') and zro.release_visible(s.step_key, zro.current_user_id())
+      order by s.updated_at desc limit 10`
     const execucoes = await tx`
       select r.handler as tarefa, r.status, r.updated_at as quando, p.title as projeto, r.last_error as erro
       from zro.workflow_runs r left join zro.projects p on p.id = r.project_id
@@ -234,7 +236,7 @@ export async function projetoParaIa(tx: Queryable, orgId: string, busca: string)
   if (!p) return null
   const etapas = await tx`
     select pr.name as ferramenta, s.state as estado, s.updated_at as quando from zro.project_steps s join zro.products pr on pr.id = s.step_key
-    where s.project_id = ${p.id as string} order by pr.step_order`
+    where s.project_id = ${p.id as string} and zro.release_visible(s.step_key, zro.current_user_id()) order by pr.step_order`
   const documentos = await tx`
     select distinct on (kind) kind as tipo, version as versao, title as titulo, left(body, 1500) as trecho, created_at as quando
     from zro.project_documents where project_id = ${p.id as string} order by kind, version desc`

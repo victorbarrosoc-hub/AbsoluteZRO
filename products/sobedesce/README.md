@@ -76,21 +76,18 @@ script está em `web/public/instalar.ps1`.
 
 ### Versão nova
 
-Quando sai um build novo, aparece **"Nova versão do SOBEDESCE"** na barra lateral (e em **Ajustes → Atualizações**):
+Desde 01/11/2026 (pedido do titular) o app de computador é instalado e atualizado **só pela central Absolute ZRO**
+(`apps/hub-desktop`). O SOBEDESCE não baixa nem instala nada sozinho. Quando sai um build novo:
 
-- **Atualizar agora** (Mac e Windows, app instalado): assim que sai, o próprio app já baixa a versão nova em segundo
-  plano (o aviso mostra o progresso) e confere o SHA-256. No fim aparece **Atualizar agora**: o app fecha, troca e
-  abre de novo, sem aviso da Apple nem do Windows. Se o download falhar (internet, versão ainda subindo), ele tenta de
-  novo sozinho. Se houver transferências andando, ele pergunta antes: elas pausam e
-  continuam de onde pararam quando o app abrir. No Mac, o app precisa estar numa pasta em que você pode gravar
-  (normalmente **Aplicativos**); aberto direto do `.dmg`, ou se algo der errado, o botão some e fica o **Baixar**.
-- **Baixar** abre o instalador certo no navegador (o jeito manual de cima). Rodar de novo o comando do Terminal ou do
-  PowerShell também atualiza.
-- **Depois** esconde o aviso até sair um build ainda mais novo.
+- a barra lateral mostra a pílula **"Atualização disponível"**; o cartão tem **Atualizar na Absolute ZRO** e **Depois**
+  (esconde a pílula até sair um build ainda mais novo);
+- uma notificação do sistema, uma vez por build: "Atualização disponível · Atualizar na Absolute ZRO";
+- **Ajustes → Atualizações** diz "As atualizações chegam pela Absolute ZRO", com o mesmo botão.
 
-Seus ajustes, contas e a fila ficam como estão. Em **Ajustes → Atualizações** aparece o build instalado e o botão **Procurar atualização**.
+O botão abre `absolutezro://apps/sobedesce?acao=atualizar` (`src/central.js`); sem a central no computador, abre
+`https://absolutezro.com/baixar`. No navegador (`npm start`), a página.
 
----
+**Novidades da 0.3.2:** atualizações pela Absolute ZRO; o app não baixa mais instalador sozinho.
 
 ## Entrar com a conta SOBEDESCE (o jeito simples)
 

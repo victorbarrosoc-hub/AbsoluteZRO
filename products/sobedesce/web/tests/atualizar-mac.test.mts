@@ -74,7 +74,9 @@ test("lista quem tem Mac antes do build 300 e manda o e-mail uma vez por conta",
   assert.match(email.subject, /Atualize o SOBEDESCE no Mac/);
   assert.match(email.text, /ENOTEMPTY/);
   assert.match(email.text, /MacBook Pro de Ana/);
-  assert.match(email.text, /\/baixar\/mac/);
+  // desde 01/11/2026 a versão nova entra pela central Absolute ZRO, nunca por instalador
+  assert.match(email.text, /https:\/\/absolutezro\.com\/baixar/);
+  assert.doesNotMatch(email.text, /\/baixar\/mac|Aplicativos/);
   assert.doesNotMatch(email.text, /!/);
 
   // Segundo clique: ninguém recebe de novo.

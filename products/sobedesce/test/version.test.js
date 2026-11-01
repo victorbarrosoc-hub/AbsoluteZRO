@@ -1,5 +1,8 @@
 // Aviso de versão nova (src/version.js) com um site falso: mais novo/igual/mais velho, build 0 nunca pergunta,
 // rede fora fica quieta, "Depois" fica gravado e um build ainda mais novo avisa de novo. Mais as rotas /api/versao.
+// Desde 01/11/2026 quem atualiza é a central Absolute ZRO: o aviso aponta para absolutezro://apps/sobedesce?acao=atualizar
+// (src/central.js; sem a central, https://absolutezro.com/baixar), a notificação sai uma vez por build e o app não
+// baixa instalador nenhum.
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
@@ -7,11 +10,14 @@ import http from 'node:http'
 import path from 'node:path'
 import { Settings } from '../src/config.js'
 import { VersionChecker, parseRemote, readBuildInfo } from '../src/version.js'
+import { abrirNaCentral, linkDaCentral, PAGINA_DA_CENTRAL } from '../src/central.js'
 import { startApp } from '../src/index.js'
 import { closeHttp } from '../src/net/http.js'
 import { makeTmpDir, waitFor } from './helpers.js'
 
 const SITE = 'https://sobedesce.exemplo'
+const LINK = 'absolutezro://apps/sobedesce?acao=atualizar'
+const RAIZ = new URL('../', import.meta.url)
 const remote = (build, extra = {}) => ({ ok: true, build, commit: 'abc1234', data: '2026-10-15T12:00:00.000Z', mac: '/baixar/mac', windows: '/baixar/windows', ...extra })
 
 /** fetch falso: responde o que estiver em `answer` (função ou valor) e conta as chamadas. */
@@ -81,7 +87,10 @@ test('mais novo, igual e mais velho', async () => {
   assert.equal(st.ultima.build, 41)
   assert.equal(st.atual.build, 40)
   assert.equal(st.plataforma, 'mac')
-  assert.equal(st.baixarUrl, `${SITE}/baixar/mac`)
+  assert.equal(st.link, LINK)
+  assert.equal(st.pagina, 'https://absolutezro.com/baixar')
+  assert.equal(st.baixarUrl, undefined, 'nada de instalador')
+  assert.equal(st.podeAtualizar, undefined)
   assert.equal(st.falhou, false)
   assert.ok(st.verificadaEm)
 
@@ -97,16 +106,14 @@ test('mais novo, igual e mais velho', async () => {
   v.stop()
 })
 
-test('Windows baixa o instalador do Windows; sistema sem instalador nunca avisa', async () => {
+test('Windows e Mac: o mesmo aviso, que aponta para a central (nenhum instalador)', async () => {
   const s = await freshSettings('plat')
-  const win = checker(s, fakeFetch(remote(41)), 40, { platform: 'win32' })
+  const win = checker(s, fakeFetch(remote(41, { sha256Windows: 'a'.repeat(64) })), 40, { platform: 'win32' })
   const st = await win.check()
   assert.equal(st.nova, true)
-  assert.equal(st.baixarUrl, `${SITE}/baixar/windows`)
-  const linux = checker(s, fakeFetch(remote(41)), 40, { platform: 'linux' })
-  const sl = await linux.check()
-  assert.equal(sl.nova, false)
-  assert.equal(sl.baixarUrl, null)
+  assert.equal(st.plataforma, 'windows')
+  assert.equal(st.link, LINK)
+  assert.equal(st.ultima.sha256, undefined, 'o hash do instalador não interessa mais')
 })
 
 test('build 0 (desenvolvimento) nunca pergunta ao site nem avisa', async () => {
@@ -294,7 +301,7 @@ test('rotas: /api/state, /api/versao, verificar, depois (com validação) e o ev
     r = await call(app, 'POST', '/api/versao/verificar')
     assert.equal(r.status, 200)
     assert.equal(r.json.versao.nova, true)
-    assert.equal(r.json.versao.baixarUrl, `${SITE}/baixar/windows`)
+    assert.equal(r.json.versao.link, LINK)
     assert.ok(sse.includes('versao'))
     off()
 
@@ -315,6 +322,11 @@ test('rotas: /api/state, /api/versao, verificar, depois (com validação) e o ev
 
     r = await call(app, 'GET', '/api/versao/verificar')
     assert.equal(r.status, 405)
+    // o app não se atualiza mais sozinho: as rotas de baixar/instalar saíram
+    for (const rota of ['/api/versao/atualizar', '/api/versao/baixar']) {
+      r = await call(app, 'POST', rota, {})
+      assert.equal(r.status, 404, rota)
+    }
     r = await call(app, 'PATCH', '/api/settings', { versaoDispensada: 'x' })
     assert.equal(r.status, 400)
   } finally {
@@ -323,38 +335,67 @@ test('rotas: /api/state, /api/versao, verificar, depois (com validação) e o ev
   }
 })
 
-test('instalado pela central do Absolute ZRO: não pergunta ao site, não baixa sozinho e recusa Atualizar', async () => {
-  const s = await freshSettings('central')
+test('notificação do sistema: uma vez por build, mesmo depois de reabrir; build mais novo avisa de novo', async () => {
+  const s1 = await freshSettings('avisar')
   const f = fakeFetch(remote(41))
-  let central = false
-  const v = checker(s, f, 40, { gerenciado: () => central })
-  let st = await v.check()
-  assert.equal(st.nova, true)
-  assert.equal(st.gerenciado, false)
-  // a central passou a cuidar do app com ele aberto: o aviso some e nada mais é perguntado
-  central = true
-  st = await v.check()
-  assert.equal(f.calls.length, 1)
-  assert.equal(st.gerenciado, true)
-  assert.equal(st.nova, false)
-  assert.equal(st.ultima, null)
-  await assert.rejects(v.update(), (e) => e.status === 409 && /Absolute ZRO/.test(e.message))
-  await assert.rejects(v.baixar(), (e) => e.status === 409)
+  const v = checker(s1, f)
+  const avisos = []
+  v.on('avisar', (a) => avisos.push(a))
+  await v.check()
+  await v.check()
+  assert.deepEqual(avisos, [{ build: 41, link: LINK }])
+  assert.equal(s1.get().versaoAvisada, 41)
   v.stop()
+  // "Depois" esconde a pílula, mas não faz a notificação voltar
+  const s2 = await freshSettings('avisar')
+  const v2 = checker(s2, f)
+  v2.on('avisar', (a) => avisos.push(a))
+  await v2.check()
+  assert.equal(avisos.length, 1)
+  f.answer = remote(43)
+  await v2.check()
+  assert.deepEqual(avisos.at(-1), { build: 43, link: LINK })
+  // em dia: nada
+  const v3 = checker(await freshSettings('avisar-em-dia'), fakeFetch(remote(40)))
+  v3.on('avisar', (a) => avisos.push(a))
+  await v3.check()
+  assert.equal(avisos.length, 2)
+  v2.stop()
 })
 
-test('arquivo da central: vale com o app na lista e a central viva há menos de 14 dias', async () => {
-  const { arquivoDaCentral, eGerenciado, lerGerenciado } = await import('../src/gerenciado.js')
-  assert.equal(arquivoDaCentral('/Users/v/Library/Application Support'), path.join('/Users/v/Library/Application Support', 'Absolute ZRO', 'apps-gerenciados.json'))
-  assert.equal(arquivoDaCentral(''), '')
-  const agora = Date.parse('2026-10-28T12:00:00Z')
-  const json = { versao: 1, visto: '2026-10-27T12:00:00.000Z', apps: { sobedesce: { desde: '2026-10-20T00:00:00.000Z' } } }
-  assert.equal(eGerenciado(json, 'sobedesce', agora), true)
-  assert.equal(eGerenciado(json, 'synquei', agora), false)
-  assert.equal(eGerenciado(json, 'sobedesce', agora + 15 * 86_400_000), false, 'central sumida: volta a se atualizar sozinho')
-  const arquivo = path.join(dir, 'apps-gerenciados.json')
-  await fs.writeFile(arquivo, JSON.stringify({ ...json, visto: new Date().toISOString() }))
-  assert.equal(lerGerenciado(arquivo), true)
-  assert.equal(lerGerenciado(path.join(dir, 'nao-existe.json')), false)
-  assert.equal(lerGerenciado(''), false)
+test('a central: deep link do contrato; sem a central (ou o sistema recusa), a página de baixar', async () => {
+  assert.equal(linkDaCentral(), LINK)
+  assert.equal(linkDaCentral('sobedesce', 'instalar'), 'absolutezro://apps/sobedesce?acao=instalar')
+  assert.throws(() => linkDaCentral('outro'))
+  assert.throws(() => linkDaCentral('sobedesce', 'apagar'))
+  assert.equal(PAGINA_DA_CENTRAL, 'https://absolutezro.com/baixar')
+  const abertos = []
+  const abrir = async (u) => abertos.push(u)
+  assert.equal(await abrirNaCentral({ temCentral: () => true, abrir }), 'central')
+  assert.equal(await abrirNaCentral({ temCentral: () => false, abrir }), 'pagina')
+  const recusa = async (u) => {
+    abertos.push(u)
+    if (u.startsWith('absolutezro:')) throw new Error('sem app para o protocolo')
+  }
+  assert.equal(await abrirNaCentral({ temCentral: () => true, abrir: recusa }), 'pagina')
+  assert.deepEqual(abertos, [LINK, PAGINA_DA_CENTRAL, LINK, PAGINA_DA_CENTRAL])
+})
+
+test('o app não baixa instalador sozinho: sem src/updater.js, sem troca no Electron e a interface aponta para a central', async () => {
+  const existe = (p) => fs.access(new URL(p, RAIZ)).then(() => true, () => false)
+  assert.equal(await existe('src/updater.js'), false)
+  assert.equal(await existe('src/gerenciado.js'), false)
+  const ler = (p) => fs.readFile(new URL(p, RAIZ), 'utf8')
+  const main = await ler('desktop/main.js')
+  assert.doesNotMatch(main, /child_process|handoff|update-handoff|SOBEDESCE_APP_EXE/)
+  assert.match(main, /'Atualização disponível'/)
+  assert.match(main, /'Atualizar na Absolute ZRO'/)
+  assert.match(main, /'sobedesce:abrir-central'/)
+  assert.match(await ler('desktop/preload.cjs'), /abrirCentral: \(\) => ipcRenderer\.invoke\('sobedesce:abrir-central'\)/)
+  assert.match(await ler('desktop/engine.js'), /type: 'versao-nova'/)
+  const ui = (await ler('public/components/versao.js')) + (await ler('public/lib/versao.js')) + (await ler('public/components/settings.js'))
+  assert.doesNotMatch(ui, /Atualizar agora|Ou baixe o instalador|Procurar atualização|\/api\/versao\/atualizar|\/api\/versao\/baixar|baixarUrl/)
+  assert.match(ui, /Atualização disponível/)
+  assert.match(ui, /Atualizar na Absolute ZRO/)
+  assert.match(ui, /As atualizações chegam pela Absolute ZRO/)
 })

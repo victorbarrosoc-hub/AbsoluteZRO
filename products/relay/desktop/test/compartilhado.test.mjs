@@ -7,7 +7,9 @@ import { test } from 'node:test'
 import { COMPARTILHADOS, diferentes, RAIZ } from '../scripts/compartilhado.mjs'
 
 test('cópias de apps/hub-desktop em dia', () => {
-  assert.ok(COMPARTILHADOS.includes('desktop/atualizador.cjs'))
+  // desde 01/11/2026 quem atualiza é a central Absolute ZRO: o motor do "Atualizar" não vem mais para cá
+  assert.ok(!COMPARTILHADOS.includes('desktop/atualizador.cjs'))
+  assert.equal(fs.existsSync(path.join(RAIZ, 'desktop/atualizador.cjs')), false)
   assert.deepEqual(diferentes(), [])
 })
 

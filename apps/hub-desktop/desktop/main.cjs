@@ -1,10 +1,12 @@
 // Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.com) numa janela própria,
 // com a sessão guardada (continua logado), menu em português, tela "Sem conexão" local e aviso de versão nova.
 //
-// É também o instalador e gerenciador do ecossistema (ADR 0018 e adendo de 28/10/2026): fica em segundo plano, com o
-// símbolo na barra de menus (Mac) ou na bandeja (Windows); fechar a janela não encerra. Abre com o computador
-// (escondido), confere o catálogo do HUB e mantém os apps instalados em dia (agenda.cjs), e na primeira abertura
-// pergunta quais apps instalar (paginas/boas-vindas.html).
+// É também o instalador e gerenciador do ecossistema (ADR 0018 e adendo de 28/10/2026) e, desde a 1.4.0, o ÚNICO jeito
+// de instalar e atualizar os apps de computador (central única, ADR 0036): fica em segundo plano, com o símbolo na
+// barra de menus (Mac) ou na bandeja (Windows); fechar a janela não encerra. Abre com o computador (escondido), lê os
+// apps da conta no HUB (/api/v1/desktop/meus-apps, com a sessão do HUB guardada na partição do app), avisa versão nova
+// com notificação nativa (agenda.cjs; "Atualizar sozinho" por app nos Ajustes) e na primeira abertura pergunta quais
+// apps instalar (paginas/boas-vindas.html). absolutezro://apps/<id>?acao=atualizar|instalar abre o cartão do app.
 //
 // Como a janela é montada: a BrowserWindow é a moldura. No Mac ela mostra a barra de título própria
 // (paginas/barra.html, com os três botões do sistema integrados); no Windows a moldura é a do sistema. O HUB roda numa
@@ -261,6 +263,8 @@ function criarJanela() {
   })
   wc.on('did-navigate', (_e, url) => {
     if (regras.ehDoHub(url, HUB)) ultimaUrl = url
+    // acabou de entrar na conta (a central estava sem sessão): confere os apps da conta agora
+    if (central && central.semLogin && agenda && regras.ehDoHub(url, HUB) && new URL(url).pathname === '/app') agenda.conferir().catch(() => {})
     wc.setZoomLevel(zoom)
     estadoBarra()
   })
@@ -378,7 +382,9 @@ function iniciarCentral() {
   })
   agenda = new AgendaDeApps({
     central,
-    notificar: ({ titulo, corpo }) => notificar(titulo, corpo),
+    notificar: (n) => notificarDaAgenda(n),
+    // Ajustes › "Atualizar sozinho" por app (padrão desligado: a central avisa e a pessoa atualiza; ADR 0036)
+    atualizarSozinho: (id) => !!(prefs().atualizarSozinho || {})[id],
     marcarGerenciados: (ids) => gerenciados.gravar(fs, app.getPath('userData'), ids),
     log: (...a) => console.log(...a),
   })
@@ -419,6 +425,8 @@ const acoesDaPagina = {
     return ok
   },
   'reiniciar-e-atualizar': (id) => (agenda ? agenda.reiniciarEAtualizar(id) : false),
+  // 1.4: atualizar pela agenda (fechado: agora, com progresso; aberto: quando fechar)
+  atualizar: (id) => (agenda ? agenda.atualizar(id) : central.instalar(id)),
 }
 for (const [acao, fn] of Object.entries(acoesDaPagina)) {
   ipcMain.handle(`central:${acao}`, (e, id) => {
@@ -427,6 +435,28 @@ for (const [acao, fn] of Object.entries(acoesDaPagina)) {
   })
 }
 ipcMain.handle('central:cancelar', (e, id) => (daPaginaDoHub(e) && central && idValido(id) ? { ok: central.cancelar(id) } : { ok: false }))
+ipcMain.handle('central:atualizar-tudo', (e) =>
+  daPaginaDoHub(e) && agenda ? responder(() => agenda.atualizarTudo().then(() => true)) : { ok: false, erro: 'indisponível' },
+)
+
+// Ajustes deste computador (página /app/ajustes do HUB): só leitura do que é da central e dois interruptores.
+ipcMain.handle('central:ajustes', (e) =>
+  daPaginaDoHub(e)
+    ? { ok: true, dados: { atualizarSozinho: { ...(prefs().atualizarSozinho || {}) }, abrirComSistema: ligadoComSistema() } }
+    : { ok: false, erro: 'indisponível' },
+)
+ipcMain.handle('central:definir-atualizar-sozinho', (e, id, ligado) => {
+  if (!daPaginaDoHub(e) || !idValido(id) || typeof ligado !== 'boolean') return { ok: false, erro: 'indisponível' }
+  gravarPrefs({ atualizarSozinho: { ...(prefs().atualizarSozinho || {}), [id]: ligado } })
+  // ligou com versão nova esperando: a agenda já cuida agora
+  if (ligado && agenda) agenda.conferir().catch(() => {})
+  return { ok: true, dados: true }
+})
+ipcMain.handle('central:definir-abrir-com-sistema', (e, ligado) => {
+  if (!daPaginaDoHub(e) || typeof ligado !== 'boolean') return { ok: false, erro: 'indisponível' }
+  definirAbrirComSistema(ligado)
+  return { ok: true, dados: true }
+})
 
 function recarregar(semCache) {
   if (!view) return
@@ -439,10 +469,18 @@ function recarregar(semCache) {
 
 // ───────── segundo plano: bandeja, notificações, abrir com o computador e boas-vindas ─────────
 const notificacoes = new Set()
-/** Notificação nativa curta; o clique abre a janela (ou faz `aoClicar`). */
-function notificar(titulo, corpo, aoClicar) {
+/**
+ * Notificação nativa curta; o clique abre a janela (ou faz `aoClicar`). `botao` ({ texto, fn }): no Mac, um botão na
+ * própria notificação (o Windows não tem botão sem um modelo de toast próprio; lá o clique leva ao cartão do app).
+ */
+function notificar(titulo, corpo, aoClicar, botao) {
   if (SMOKE || !Notification.isSupported()) return
-  const n = new Notification({ title: String(titulo), body: String(corpo || ''), silent: true })
+  const n = new Notification({
+    title: String(titulo),
+    body: String(corpo || ''),
+    silent: true,
+    ...(MAC && botao ? { actions: [{ type: 'button', text: botao.texto }] } : {}),
+  })
   notificacoes.add(n) // sem a referência, a notificação pode sumir antes do clique
   const soltar = () => notificacoes.delete(n)
   n.on('click', () => {
@@ -450,8 +488,31 @@ function notificar(titulo, corpo, aoClicar) {
     if (aoClicar) aoClicar()
     else focar()
   })
+  if (botao)
+    n.on('action', () => {
+      soltar()
+      Promise.resolve(botao.fn()).catch(() => {})
+    })
   n.on('close', soltar)
   n.show()
+}
+
+/** Abre a central no cartão do app (o mesmo caminho do deep link absolutezro://apps/<id>?acao=…). */
+function abrirCartao(id, acao) {
+  if (!idValido(id)) return
+  abrirDeepLink(`${regras.ESQUEMA}://apps/${id}${acao ? `?acao=${acao}` : ''}`)
+}
+
+/**
+ * Avisos da agenda. "Maestro 0.3.0 disponível": o clique abre o cartão do app já oferecendo Atualizar, e o botão
+ * Atualizar (Mac) atualiza direto, com o SHA-256 conferido. Várias: "3 atualizações disponíveis" com Atualizar tudo.
+ */
+function notificarDaAgenda({ id, acao, titulo, corpo }) {
+  if (acao === 'atualizar' && id)
+    return notificar(titulo, corpo, () => abrirCartao(id, 'atualizar'), { texto: 'Atualizar', fn: () => agenda && agenda.atualizar(id) })
+  if (acao === 'atualizar-tudo')
+    return notificar(titulo, corpo, () => abrirDeepLink(`${regras.ESQUEMA}://app`), { texto: 'Atualizar tudo', fn: () => agenda && agenda.atualizarTudo() })
+  return notificar(titulo, corpo)
 }
 
 const prefs = () => inicio.lerPreferencias(fs, app.getPath('userData'))
@@ -524,6 +585,8 @@ const acoesDaBandeja = {
   abrir: () => focar(),
   'abrir-app': (id) => central && central.abrir(id).catch((e) => notificar('Não deu para abrir', e && e.message)),
   procurar: () => procurarTudo(),
+  entrar: () => abrirDeepLink(`${regras.ESQUEMA}://app/entrar`),
+  atualizar: (id) => agenda && agenda.atualizar(id).catch((e) => notificar('Não deu para atualizar', e && e.message)),
   'reiniciar-e-atualizar': (id) => agenda && agenda.reiniciarEAtualizar(id),
   'atualizar-tudo': () => agenda && agenda.atualizarTudo(),
   'abrir-com-sistema': () => definirAbrirComSistema(!inicio.abrirComSistema(prefs())),
@@ -564,6 +627,9 @@ async function procurarTudo() {
   const [r] = await Promise.all([aviso ? aviso.conferir({ manual: true }) : { estado: 'desenvolvimento' }, agenda ? agenda.conferir() : null])
   if (r.estado === 'nova' || r.estado === 'avisando') return // o aviso do próprio app já apareceu
   if (r.estado === 'sem-resposta') return notificar('Não deu para conferir agora', 'O site do Absolute ZRO não respondeu. Tente daqui a pouco.')
+  // sem sessão a central não sabe quais são os seus apps (ADR 0036)
+  if (agenda && agenda.estado().semLogin)
+    return notificar('Entre na sua conta', 'Seus apps aparecem depois de entrar.', () => abrirDeepLink(`${regras.ESQUEMA}://app/entrar`))
   // cada app com versão nova já avisou por notificação e aparece na bandeja
   if (agenda && agenda.estado().pendentes.length) return
   notificar(
@@ -582,7 +648,8 @@ async function mostrarBoasVindas() {
   if (boas || !win || win.isDestroyed()) return null
   let lista = []
   try {
-    lista = SMOKE ? LISTA_SMOKE : (await central.listar()).filter((s) => s.disponivel || s.instalado)
+    // só o que o plano da conta inclui (bloqueado não entra nas boas-vindas)
+    lista = SMOKE ? LISTA_SMOKE : (await central.listar()).filter((s) => !s.bloqueado && (s.disponivel || s.instalado))
   } catch {
     return null // sem catálogo agora: pergunta na próxima abertura
   }
@@ -932,6 +999,7 @@ async function smoke() {
       [regras.destino('file:///etc/passwd', HUB), 'nada'],
       [regras.deepLink('absolutezro://projetos', HUB), HUB + '/projetos'],
       [regras.deepLink('absolutezro://evil.example.com@x', HUB), null],
+      [regras.deepLink('absolutezro://apps/maestro?acao=atualizar', HUB), HUB + '/app?app=maestro&acao=atualizar#app-maestro'],
     ]
     const regrasOk = casos.every(([a, b]) => a === b)
     log(`regras de navegação e deep link: ${regrasOk ? 'ok' : 'FALHOU'}`)
@@ -944,10 +1012,21 @@ async function smoke() {
     // bandeja: o ícone existe e o menu monta (sem rede)
     const icone = iconeDaBandeja(false)
     const itens = bandeja.modeloDoMenu({
-      apps: [{ id: 'sobedesce', nome: 'SOBEDESCE' }],
-      pendentes: [{ id: 'sobedesce', nome: 'SOBEDESCE', fase: 'ao-fechar' }],
+      apps: [
+        { id: 'sobedesce', nome: 'SOBEDESCE' },
+        { id: 'maestro', nome: 'Maestro' },
+      ],
+      pendentes: [
+        { id: 'sobedesce', nome: 'SOBEDESCE', fase: 'ao-fechar' },
+        { id: 'maestro', nome: 'Maestro', fase: 'disponivel', versao: '0.3.0' },
+      ],
     })
-    const bandejaOk = !icone.isEmpty() && itens.some((i) => i.acao === 'reiniciar-e-atualizar') && !!tray && !tray.isDestroyed()
+    const bandejaOk =
+      !icone.isEmpty() &&
+      itens.some((i) => i.acao === 'reiniciar-e-atualizar') &&
+      itens.some((i) => i.acao === 'atualizar' && i.id === 'maestro') &&
+      !!tray &&
+      !tray.isDestroyed()
     log(`bandeja: ${bandejaOk ? 'ok' : 'FALHOU'} (${icone.getSize().width}×${icone.getSize().height})`)
     // boas-vindas: a tela abre, a ponte responde e os apps aparecem
     const b = await Promise.race([mostrarBoasVindas(), new Promise((ok) => setTimeout(() => ok(null), 20000))])

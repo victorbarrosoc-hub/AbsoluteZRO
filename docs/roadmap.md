@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -146,6 +146,19 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   instalados pela central desligam o atualizador próprio (`apps-gerenciados.json`). Falta: build no Actions e Release
   `hub-desktop` (autorização do titular) e conferir num Mac e num Windows de verdade (barra de menus, login item,
   notificações, troca do app aberto).
+- ✅ Apps de computador só pela central (01/11/2026, pedido do titular; branch `apps-pela-central`): os sites dos
+  produtos não oferecem mais instalador (Mac/Windows, `.dmg`, `.exe`, `instalar.sh`/`instalar.ps1`): no lugar, "Use no
+  computador com a Absolute ZRO" com os três passos (baixe a Absolute ZRO, entre com a sua conta, instale o app por ela)
+  e o botão para `absolutezro.com/baixar` (SOBEDESCE, Synquei, Maestro, Carro do Freela; no Relay, o link da "Máxima
+  qualidade"). As rotas antigas (`/baixar/mac`, `/baixar/versao`, `instalar.*`) seguem respondendo para quem já tem o
+  app. Os apps de computador não se atualizam mais sozinhos: saíram os atualizadores (`src/updater.js` do SOBEDESCE,
+  `desktop/atualizador.cjs` do Synquei, Maestro, Relay, Carro e TPeasy) e o `gerenciado`; cada app confere o mesmo
+  `versao.json` e mostra um aviso discreto e uma notificação por build, "Atualização disponível · Atualizar na Absolute
+  ZRO", que abre `absolutezro://apps/<id>?acao=atualizar` (sem a central, `absolutezro.com/baixar`). Versões: SOBEDESCE
+  0.3.2, Synquei 1.0.1, Maestro 0.2.1, Relay 0.1.1, Carro do Freela 0.2.1, TPeasy 0.1.1. **Regra para app novo** (ex.:
+  Rift Motion, branch `claude/motion-2d-3d`, ainda fora da main): sem instalador no site, sem autoatualização, aviso que
+  abre `absolutezro://apps/rift-motion?acao=atualizar` (o `central.cjs` já aceita o id). Falta: o lado da central
+  (deep link e `/baixar`, outra frente) e conferir num Mac e num Windows de verdade.
 - ⬜ App para computador, próximas etapas: certificados Apple/Microsoft (decisão do titular: depois) para assinar a
   central e atualizar ela mesma sozinha; NOSSOM no catálogo (Release `nossom-v…` no AbsoluteZRO ou `GITHUB_TOKEN` no
   projeto `absolutezro`); ~~abrir o download público~~ (`HUB_DESKTOP_PUBLICO=1` ligado em 26/10/2026, com instalação pelo Terminal).
@@ -756,6 +769,25 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   autorizado.
 - ⬜ Conferir com a conta real se o iCloud põe Delivered-To/X-Original-To (mensagem só em Cco para um alias).
 
+## Central única de instalação (01/11/2026, [ADR 0036](decisions/0036-central-unica-de-instalacao.md))
+
+Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO (`apps/hub-desktop` 1.4.0).
+
+- ✅ `GET /api/v1/desktop/meus-apps` pela sessão do HUB: só o que a conta pode instalar (versão, tamanho, SHA-256) e os
+  bloqueados pelo plano, com o plano que inclui. `authorize` + gate + entitlement no servidor; uso livre = plano grátis.
+- ✅ `/baixar/app/<id>/<arquivo>`: instalador de app pago pede sessão (401) e o produto no plano (403); `versao.json` e
+  apps de uso livre como antes (os apps já instalados seguem se atualizando). As rotas saíram da interface pública.
+- ✅ Lançado OU admin: AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma (central, painel e Downloads).
+- ✅ Página Downloads com um download só (Mac e Windows), passo a passo e a linha do Terminal; cada app "Instale pela
+  Absolute ZRO". Painel `/app` com cartão bloqueado ("Incluso no plano X · Ver planos") e `/app/ajustes`.
+- ✅ Central 1.4.0: versão nova avisada por notificação nativa (um app ou "N atualizações disponíveis"), atualizar um ou
+  todos com progresso e SHA-256, "Atualizar sozinho" por app (padrão desligado), "Entrar na sua conta…" sem sessão,
+  deep link `absolutezro://apps/<id>?acao=atualizar|instalar` (contrato no README da central).
+- ✅ Rift Motion pronto no catálogo (aparece com produto, Release, gate e plano).
+- ⬜ Lado dos produtos (outra pessoa): cada app desliga o atualizador próprio e abre o deep link quando há versão nova.
+- ⬜ AEON na central: o Release dele precisa dos nomes com versão e build.
+- ⛔ Publicar a 1.4.0 e ligar no ar: merge na main (dispara o workflow da central) com autorização do titular.
+
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 
 - ✅ **Dólar automático** (HUB, migração `0030`, adendo ao [ADR 0028](decisions/0028-custos-do-ecossistema.md)): PTAX de
@@ -1315,6 +1347,25 @@ do card... não consigo localizar o job que quero achar".
 
 - ✅ Ramo `console-online-quem`: tocar no "Online agora" abre `/admin/agora`, com quem está online e onde (HUB com o
   aparelho, apps pelo nome), atualizando sozinha a cada 15 s.
+
+## Apps não lançados fora de vista (01/11/2026, decisão do titular)
+
+- ✅ Ramo `esconder-nao-lancados`, migração `0049`: AEON (`ai-edit`, que a 0043 tinha aberto na web), Revela, NOSSOM e
+  Rift Motion (se a linha existir) fechados em todos os canais. No ar só Maestro, Carro do Freela, Synquei, SOBEDESCE,
+  Relay e TPeasy. O gate decide sozinho: `zro.release_visible` (passa em algum canal) e o filtro em `productAccessFor`,
+  `releaseClaimsFor` (a claim `zro_release` já não leva os não lançados) e `releaseVisibleFor`; nada de lista à mão.
+- ✅ Admin da plataforma passa em todo canal (`zro.release_admin` dentro de `zro.release_allows`): vê e usa tudo, no HUB,
+  no login único, na central de computador e nos downloads.
+- ✅ HUB: projeto sem os cartões AEON/NOSSOM/Revela, Assinatura, Acessos, selos do perfil, Conexões, Z (retrato e
+  texto de sistema) e pendências sem os não lançados; login único e `/em-desenvolvimento/<app>` sem nome nem ícone
+  (página neutra "Página indisponível." ou a página inicial). Set: presença em app não visível sai como "Absolute ZRO",
+  no banco (`zro.set_pessoas`), para o HUB e para o Set dentro de cada app.
+- ✅ Sites dos não lançados: AEON com a trava `LANCADO = false` (fecha mesmo com `RELEASE=released` na Vercel) e
+  página neutra no lugar da inicial; Revela com a página neutra; NOSSOM manda as páginas do site para absolutezro.com.
+  Relay sem a ficha "Vindo do AEON/NOSSOM/Revela".
+- ⬜ Deploy dos projetos `aeon`, `revela` e `nossom` (o AEON segue no ar com a página de lançamento até o próximo
+  deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
+  SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.
 
 ## Fase 6 — Escala
 

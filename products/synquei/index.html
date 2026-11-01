@@ -23,7 +23,7 @@
     <link rel="manifest" href="/app/manifest.webmanifest" />
     <script>
       if (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) location.replace('/app/')
-      // plataforma antes da primeira pintura: o cartão de download certo já aparece em destaque
+      // plataforma antes da primeira pintura (celular, Mac, Windows)
       ;(function () {
         var ua = navigator.userAgent
         var d = document.documentElement
@@ -91,9 +91,9 @@
           <a href="#sobedesce">SOBEDESCE</a>
           <a href="#planos">Planos</a>
           <a href="/formatos/">Formatos</a>
-          <a href="#baixar">Baixar</a>
+          <a href="#computador">No computador</a>
         </nav>
-        <a class="btn btn-dark btn-sm" href="#baixar">Baixar</a>
+        <a class="btn btn-dark btn-sm" href="/app/">Abrir o Synquei</a>
       </div>
     </header>
 
@@ -107,7 +107,7 @@
             <h1 id="hero-titulo" class="rise" style="--d: 1">Solta o cartão. Sai sincronizado.</h1>
             <p class="hero-sub rise" style="--d: 2">Câmeras, celular e gravador no mesmo segundo, com precisão de amostra. Do videoclipe ao casamento, com multicâmera pronto para o seu editor.</p>
             <div class="cta rise" style="--d: 3">
-              <a class="btn btn-dark btn-lg" href="#baixar"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg><span class="only-mac">Baixar para Mac</span><span class="only-win">Baixar para Windows</span><span class="only-other">Baixar o Synquei</span></a>
+              <a class="btn btn-dark btn-lg" href="#computador">Usar no computador</a>
               <a class="btn btn-soft btn-lg" href="/app/"><svg class="icon" aria-hidden="true"><use href="#i-play" /></svg>Usar no navegador</a>
             </div>
             <p class="hero-note rise" style="--d: 4">Sem conta. Seus arquivos não saem do computador.</p>
@@ -217,7 +217,7 @@
               <p class="pl-nome">Grátis</p>
               <p class="pl-preco"><b>R$&nbsp;0</b></p>
               <p class="pl-sub">Sem conta e sem cadastro</p>
-              <a class="btn btn-soft btn-block" href="#baixar">Baixar o Synquei</a>
+              <a class="btn btn-soft btn-block" href="/app/">Começar agora</a>
               <ul>
                 <li><svg class="icon"><use href="#i-check" /></svg>Sincronia pelo som e pelo timecode</li>
                 <li><svg class="icon"><use href="#i-check" /></svg>Linha do tempo com monitor e tela cheia</li>
@@ -256,54 +256,24 @@
         </div>
       </section>
 
-      <!-- ═════════ Baixar ═════════ -->
-      <section class="sec sec-alt" id="baixar" aria-labelledby="baixar-titulo">
+      <!-- ═════════ No computador: só pela Absolute ZRO (01/11/2026) ═════════ -->
+      <section class="sec sec-alt" id="computador" aria-labelledby="computador-titulo">
+        <span id="baixar" class="ancora-antiga" aria-hidden="true"></span>
         <div class="wrap">
           <div class="sec-head reveal">
-            <p class="eyebrow eb-blue">Baixar</p>
-            <h2 id="baixar-titulo">No seu computador.</h2>
+            <p class="eyebrow eb-blue">No computador</p>
+            <h2 id="computador-titulo">Use no computador com a Absolute ZRO.</h2>
           </div>
-          <div class="baixar-aviso" id="baixarAviso" hidden><svg class="icon"><use href="#i-clock" /></svg><span>O instalador desta versão ainda está sendo gerado. Tente de novo em alguns minutos, ou use o Synquei no navegador enquanto isso.</span></div>
-          <!-- Central de apps da Absolute ZRO: o jeito recomendado de instalar (o download direto continua abaixo) -->
           <div class="card zro-central reveal">
             <svg class="zro-central-mark" width="40" height="40" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z" /><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z" /></svg>
-            <div><h3>Instale pelo Absolute ZRO</h3><p>Um app só para instalar, abrir e atualizar o Synquei e as outras ferramentas, com a mesma conta.</p></div>
-            <a class="btn btn-dark" href="https://absolutezro.com/baixar#app-synquei">Baixar o Absolute ZRO</a>
+            <ol class="zro-passos">
+              <li><b>Baixe a Absolute ZRO</b></li>
+              <li><b>Entre com a sua conta</b></li>
+              <li><b>Instale o Synquei por ela</b></li>
+            </ol>
+            <a class="btn btn-dark" href="https://absolutezro.com/baixar">Baixar a Absolute ZRO</a>
           </div>
-          <p class="zro-central-ou">Ou baixe só o Synquei:</p>
-          <div class="plats">
-            <article class="card plat reveal" data-p="mac">
-              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-apple" /></svg></span><div><h3>Mac</h3><p>macOS 11 ou mais novo</p></div></div>
-              <a class="btn btn-dark btn-block" href="/baixar/mac"><svg class="icon"><use href="#i-down" /></svg>Baixar para Mac</a>
-              <details class="cmd">
-                <summary><svg class="icon"><use href="#i-terminal" /></svg>Como instalar</summary>
-                <ol>
-                  <li>Abra o <b>Synquei.dmg</b> e arraste para <b>Aplicativos</b></li>
-                  <li>Na primeira vez: <b>botão direito › Abrir › Abrir</b></li>
-                </ol>
-                <p>Sem aviso, pelo Terminal (confere o arquivo antes de instalar):</p>
-                <div class="code"><code id="cmdMac">curl -fsSL https://synquei.vercel.app/instalar.sh | bash</code><button type="button" data-copy="cmdMac" aria-label="Copiar comando"><svg class="icon"><use href="#i-copy" /></svg><span>Copiar</span></button></div>
-              </details>
-            </article>
-            <article class="card plat reveal" data-p="windows" style="--d: 1">
-              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-windows" /></svg></span><div><h3>Windows</h3><p>Windows 10 e 11</p></div></div>
-              <a class="btn btn-dark btn-block" href="/baixar/windows"><svg class="icon"><use href="#i-down" /></svg>Baixar para Windows</a>
-              <details class="cmd">
-                <summary><svg class="icon"><use href="#i-terminal" /></svg>Como instalar</summary>
-                <ol>
-                  <li>Abra o <b>Synquei-setup.exe</b></li>
-                  <li>Se aparecer o aviso do Windows: <b>Mais informações › Executar assim mesmo</b></li>
-                </ol>
-                <p>Sem aviso, pelo PowerShell (confere o arquivo antes de instalar):</p>
-                <div class="code"><code id="cmdWin">irm https://synquei.vercel.app/instalar.ps1 | iex</code><button type="button" data-copy="cmdWin" aria-label="Copiar comando"><svg class="icon"><use href="#i-copy" /></svg><span>Copiar</span></button></div>
-              </details>
-            </article>
-            <article class="card plat reveal" data-p="outro" style="--d: 2">
-              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-globe" /></svg></span><div><h3>Navegador</h3><p>Chrome, Edge ou Safari</p></div></div>
-              <a class="btn btn-soft btn-block" href="/app/"><svg class="icon"><use href="#i-play" /></svg>Abrir no navegador</a>
-              <p class="plat-note">Sem instalar. Funciona sem internet depois da primeira visita.</p>
-            </article>
-          </div>
+          <p class="zro-central-ou">Mac e Windows. Ou use no navegador, sem instalar: <a href="/app/">abrir o Synquei</a>.</p>
         </div>
       </section>
 
@@ -314,7 +284,7 @@
           <span class="lock"><svg class="icon"><use href="#i-lock" /></svg>Seus arquivos não saem do seu computador</span>
           <h2 id="fim-titulo">A próxima diária já sai sincronizada.</h2>
           <div class="cta">
-            <a class="btn btn-white btn-lg" href="#baixar">Baixar o Synquei</a>
+            <a class="btn btn-white btn-lg" href="#computador">Usar no computador</a>
             <a class="btn btn-ghost btn-lg" href="/app/">Usar no navegador</a>
           </div>
         </div>
@@ -324,7 +294,7 @@
     <footer class="foot">
       <div class="wrap foot-in">
         <a class="brand" href="/"><svg class="brand-mark" aria-hidden="true"><use href="#logo" /></svg>Syn<span>quei</span></a>
-        <nav><a href="#baixar">Baixar</a><a href="#planos">Planos</a><a href="/app/">App</a><a href="/formatos/">Formatos</a></nav>
+        <nav><a href="#computador">No computador</a><a href="#planos">Planos</a><a href="/app/">App</a><a href="/formatos/">Formatos</a></nav>
         <p>Todas as câmeras no mesmo segundo.</p>
       </div>
     </footer>

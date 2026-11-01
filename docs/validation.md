@@ -15,6 +15,77 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Apps de computador só pela central (01/11/2026)
+
+Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se
+atualizar ("Atualização disponível · Atualizar na Absolute ZRO" → `absolutezro://apps/<id>?acao=atualizar`, sem a
+central `absolutezro.com/baixar`).
+
+- Maestro, Relay, Carro do Freela e TPeasy (`desktop/`): `npm test` 52/23/27/23, com `test/versao.test.mjs` novo em cada
+  um (aviso e notificação uma vez por build, deep link, sem central e protocolo recusado caem na página, nenhum
+  `atualizador.cjs`/`gerenciado.cjs`, a pílula da barra do Mac escondida até haver versão nova); `--smoke` (Electron
+  44.5.1, xvfb) SMOKE OK nos quatro, conferindo o deep link e a falta do atualizador. ESLint da raiz sem problema.
+- Synquei: `npm test` 148/148 (`tests/versao-central.test.mjs` novo; saíram `atualizador.test.mjs` e
+  `aviso-atualizacao.test.mjs`); `--smoke` SMOKE OK (exemplo 6/6 sincronizado, zip).
+- SOBEDESCE: `npm run test:fast` 784 ok (1 falha só deste ambiente, sem o `onnxruntime-node` opcional; igual na main),
+  com `test/version.test.js` (deep link, notificação uma vez por build, rotas de atualizar e baixar fora, interface sem
+  "Atualizar agora"/instalador) e `test/baixar-arquivo.test.js`; `--smoke` SMOKE OK. Site (`web/`): lint, typecheck e
+  `npm test` 371/371 (`seguranca.test.mts` confere a seção sem instalador; o e-mail do Mac travado aponta para a central).
+- Maestro (site): `tests/lancamento.test.mts` com a página inicial sem instalador; typecheck sem erro nos arquivos
+  tocados. Relay (site): `npm test` 125/125 (o link da "Máxima qualidade" agora é a central). Carro do Freela (site):
+  `node test/run.js site-real` 42 ok (os três passos e o botão da central, sem instalador); a bateria inteira 91/93
+  (`cadastro` e `conta-zro` estouram o tempo aqui, sem rede para o login; não tocam no convite do computador).
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas (iPhone e computador, claro) dos sites e do aviso dentro dos apps no scratchpad da sessão
+  (`apps-sem-instalador/`).
+
+## Central única de instalação (01/11/2026, ADR 0036)
+
+Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO 1.4.0.
+
+- `tests/integration/meus-apps.test.ts` (Postgres real, `usoLivre` vazio simula o app pago): sem sessão é 401; conta
+  sem o produto não vê para instalar (vem bloqueado com "Absolute ZRO Completo", sem arquivo) e não baixa (403; sem
+  sessão, 401); com o plano vê versão, arquivo e SHA-256 e baixa; plano cancelado volta a bloqueado; gate fechado
+  bloqueia mesmo com o plano; AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma (nem com a lista de acesso
+  do gate; suporte não é admin); uso livre baixa sem sessão como antes; `versao.json` continua público.
+- `tests/integration/downloads.test.ts`: app com versão para computador é app da central e usa a rota da Absolute ZRO;
+  sem Terminal nem "primeira vez" por app; passo a passo com no máximo 3 passos e sem palavra que assuste.
+- `apps/hub-desktop` (`npm test`, 70): central lê `meus-apps` (bloqueado não instala nem atualiza e o app fica no
+  computador; 401 = `semLogin`; HUB antigo cai no catálogo de antes); agenda avisa uma vez por versão ("Maestro 0.3.0
+  disponível" / "2 atualizações disponíveis"), não baixa nada sem pedido, Atualizar um (fechado agora; aberto ao
+  fechar) e todos, "Atualizar sozinho" por app; bandeja com "Atualizar <app> <versão>" e "Entrar na sua conta…"; deep
+  link `absolutezro://apps/<id>?acao=atualizar|instalar` (ids e ações fora do formato recusados). `npm run smoke` (Xvfb):
+  SMOKE OK, com o item novo da bandeja e o deep link de app.
+- `tests/e2e/hub.spec.ts`: `/baixar` sem instalador avulso, com `#absolute-zro`, Maestro com "Instale pela Absolute ZRO",
+  AEON fora; `/api/v1/desktop/meus-apps` sem sessão é 401; catálogo 1.3 sem os não lançados.
+- Capturas (scratchpad `central/`): Downloads no computador e no iPhone (claro e escuro, com o Release real do GitHub),
+  painel da central com instalados, disponível com Atualizar em destaque (deep link), bloqueado pelo plano, Ajustes e a
+  prévia fiel da notificação e da barra de menus (textos gerados pelo código da central).
+
+## Apps não lançados fora de vista (01/11/2026)
+
+Branch `esconder-nao-lancados`, migração `0049` (decisão do titular: AEON, Revela, NOSSOM e Rift Motion não aparecem
+para usuários; o papel `admin` vê e usa tudo).
+
+- `tests/integration/nao-lancados.test.ts` (novo): gate fechado em todos os canais e divulgação só dos seis no ar;
+  0049 idempotente sem apagar catálogo, planos nem entitlements; conta comum sem os três em `productAccessFor`, claims,
+  `authorize` (inclusive `download`) e no retrato da Z; admin passa em web, desktop, api, download e sso e vê tudo;
+  Set mostra "Absolute ZRO" para quem não é admin (NOSSOM, AEON e app inexistente) e o nome para o admin e para app no
+  ar; selo "Usa NOSSOM" some para quem vê e para a própria pessoa, o admin vê.
+- `release-gate`, `aeon-web`, `oidc`, `accounts`, `flow`, `ia`, `divulgacao`, `carro-lancamento`, `maestro-lancamento`
+  e `packages/core/test/core.test.ts` atualizados: não lançado nem aparece (sem `closed` na claim); admin passa;
+  suporte e financeiro não.
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **544/544** em 61 arquivos; `npm run build` ok.
+- E2E (`hub.spec`, `sso.spec`, `z-entrada.spec`): 22/23. A que falha (`gate de lançamento: anônimo…`, linha 274) já
+  falha na main desde a 0048 (Maestro com app de computador em `/baixar`), sem relação com este ramo.
+- AEON (`products/ai-edit`): `fechado`, `zro`, `ia`, `set`, `sons` 76/76 com a trava `LANCADO = false` (RELEASE=released
+  não abre; a conta `allowed` entra). `tela.test.js` (página neutra) atualizado, não rodado aqui.
+- Revela (`products/finishing`): `fechado`, `zro`, `ia`, `set` 68/68.
+- NOSSOM (`products/nossom`): `npm test` 124/124 e `tsc` ok; proxy manda as páginas do site para absolutezro.com.
+  `tests/e2e/zro-access.spec.ts` atualizado, não rodado aqui (pede o servidor de teste com o Supabase falso).
+- Capturas no iPhone (claro): página inicial, Início, Ferramentas, projeto, Set com "na Absolute ZRO", login único e o
+  site do AEON com a página neutra.
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma

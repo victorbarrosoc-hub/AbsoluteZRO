@@ -7,6 +7,9 @@
  *
  * - `releaseState(tx)`: o estado de cada produto, em cache de processo por 30 s (estados mudam raramente).
  * - `releaseAllows(tx, produto, pessoa, canal)`: por pedido, sem cache, para revogação valer na hora.
+ * - `releaseVisibleFor(tx, pessoa)`: os produtos que existem para a pessoa (passa em algum canal). O que não está aqui
+ *   não aparece em lista, menu, claim nem resposta de API (titular, 01/11/2026: app não lançado não aparece nem como
+ *   "Em desenvolvimento"). Admin da plataforma vê tudo (zro.release_allows, migração 0049).
  */
 import type { Queryable } from '@zro/db'
 import { DomainError } from '@zro/observability'
@@ -32,7 +35,7 @@ export type ReleaseInfo = {
 /** O que o login único conta a cada app: released = aberto ao público; allowed = fechado, mas esta conta entra; closed = fechado. */
 export type ReleaseClaim = 'released' | 'allowed' | 'closed'
 
-export const RELEASE_CLOSED_MESSAGE = 'Este app ainda está em desenvolvimento.'
+export const RELEASE_CLOSED_MESSAGE = 'Este app não está disponível para a sua conta.'
 export const RELEASE_CACHE_MS = 30_000
 
 export const isReleaseOpen = (state: ReleaseState | null | undefined): boolean => state === 'released' || state === 'public_beta'
@@ -86,11 +89,24 @@ export async function releaseAllows(tx: Queryable, productId: string, userId: st
   return !!r?.ok
 }
 
-/** Todos os produtos de uma vez (claim zro_release do login único e catálogo por pessoa). */
+/**
+ * Os produtos que existem para a pessoa: abertos ao público em algum canal, na lista de acesso dela ou (admin da
+ * plataforma) todos. Anônimo (`null`) = só o que está aberto ao público. Sem cache: revogação vale na hora.
+ */
+export async function releaseVisibleFor(tx: Queryable, userId: string | null): Promise<Set<string>> {
+  const rows = await tx`select p.id from zro.products p where zro.release_visible(p.id, ${userId}::uuid) order by p.step_order`
+  return new Set(rows.map((r) => r.id as string))
+}
+
+/**
+ * Os produtos visíveis para a pessoa, um valor por produto (claim zro_release do login único e catálogo por pessoa).
+ * Produto que não existe para ela (não lançado) nem entra: nada de "closed" com o id dele (o app lê ausente = fechado).
+ */
 export async function releaseClaimsFor(tx: Queryable, userId: string | null, channel: ReleaseChannel = 'sso'): Promise<Record<string, ReleaseClaim>> {
   const rows = await tx`
     select p.id, r.state, zro.release_allows(p.id, ${userId}::uuid, ${channel}) as allowed
-    from zro.products p left join zro.product_release r on r.product_id = p.id order by p.step_order`
+    from zro.products p left join zro.product_release r on r.product_id = p.id
+    where zro.release_visible(p.id, ${userId}::uuid) order by p.step_order`
   const out: Record<string, ReleaseClaim> = {}
   for (const r of rows) out[r.id as string] = r.allowed ? (isReleaseOpen(r.state as ReleaseState | null) ? 'released' : 'allowed') : 'closed'
   return out

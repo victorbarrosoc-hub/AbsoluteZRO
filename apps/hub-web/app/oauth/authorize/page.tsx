@@ -66,7 +66,8 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
     const productId = req.client.productId
     const fechado = await db().asSystem('oidc: gate de lançamento', async (tx) => {
       if (!(await productClosedFor(tx, req.client, auth.user.id, 'sso'))) return null
-      const [p] = await tx`select name from zro.products where id = ${productId}`
+      // App que não existe para a pessoa (não lançado, migração 0049): a porta neutra, sem nome nem ícone dele.
+      const [p] = await tx`select name, zro.release_visible(id, ${auth.user.id}::uuid) as visivel from zro.products where id = ${productId}`
       if (req.prompt !== 'none') {
         await audit(tx, {
           actorUserId: auth.user.id,
@@ -76,11 +77,11 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
           metadata: { client: req.client.id, channel: 'sso' },
         })
       }
-      return { id: productId, nome: (p?.name as string) ?? req.client.name }
+      return { produto: p?.visivel ? { id: productId, nome: (p.name as string) ?? req.client.name } : null }
     })
     if (fechado) {
       if (req.prompt === 'none') redirect(denyUrl(req, RELEASE_CLOSED_DESCRIPTION))
-      return <EmDesenvolvimento produto={fechado} />
+      return <EmDesenvolvimento produto={fechado.produto} />
     }
   }
   // O acesso às ferramentas vem do plano da organização: conta recém-criada passa por Boas-vindas e volta aqui.

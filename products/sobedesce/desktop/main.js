@@ -1,7 +1,6 @@
 // Processo principal do app de desktop: sobe o motor, abre a janela e cuida do que é nativo
 // (seletor de pastas, Dock/barra de tarefas, notificações, sair sem perder transferências).
 import { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, nativeTheme, powerSaveBlocker, safeStorage, session, shell, utilityProcess } from 'electron'
-import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -9,8 +8,7 @@ import { allowPermission, trustedSender } from './security.js'
 import { responderCofre } from './cofre.js'
 import { AVISO_COOKIES, marcarAvisado, migrarCookies, precisaAvisar } from './cookies-cifrados.js'
 import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from './navegador.js'
-import { handoffCommand, isHandoffScript } from '../src/updater.js'
-import { arquivoDaCentral } from '../src/gerenciado.js'
+import { abrirNaCentral, ESQUEMA_DA_CENTRAL } from '../src/central.js'
 import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
 import { lerLinkSobedesce } from './links.js'
@@ -115,16 +113,11 @@ function startEngine() {
       serviceName: 'SOBEDESCE Motor',
       stdio: 'pipe',
       // UV_THREADPOOL_SIZE: mais threads de disco para o motor (ver src/index.js).
-      // SOBEDESCE_APP_EXE/PID: só no app empacotado, liga o "Atualizar" (src/updater.js troca este app e reabre).
       env: {
         ...process.env,
         SOBEDESCE_NO_OPEN: '1',
         SOBEDESCE_DESKTOP: '1',
         UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || '16',
-        SOBEDESCE_APP_EXE: app.isPackaged ? process.execPath : '',
-        SOBEDESCE_APP_PID: app.isPackaged ? String(process.pid) : '',
-        // instalado pela central do Absolute ZRO: quem atualiza é ela (src/gerenciado.js, ADR 0018)
-        SOBEDESCE_CENTRAL_ARQUIVO: app.isPackaged ? arquivoDaCentral(app.getPath('appData')) : '',
       },
     })
     engine.stdout?.pipe(log)
@@ -134,8 +127,8 @@ function startEngine() {
       if (msg?.type === 'ready' && !settled) {
         settled = true
         resolve(msg.url)
-      } else if (msg?.type === 'update-handoff') {
-        runUpdateHandoff(msg.script)
+      } else if (msg?.type === 'versao-nova') {
+        notificarVersaoNova()
       } else if (msg?.type === 'cookies-pedido') {
         // Referências: o motor precisa dos cookies do navegador de referências para o yt-dlp (só os domínios do vídeo).
         responderCookies(msg)
@@ -167,28 +160,26 @@ function startEngine() {
   })
 }
 
-/**
- * "Atualizar": o motor baixou e conferiu a versão nova e gravou o script da troca (src/updater.js). Este processo roda
- * o script solto (ele espera o app fechar, troca e abre de novo) e fecha o app. As transferências pausam ao sair e
- * continuam na próxima abertura (o motor só chega aqui com nenhuma andando ou com a pessoa tendo confirmado).
- */
-function runUpdateHandoff(script) {
-  const command = isHandoffScript(script) ? handoffCommand(process.platform, script) : null
-  if (!command) return
-  const failed = err => dialog.showErrorBox('Não deu para atualizar', `${err?.message || err}\n\nUse Baixar no aviso de versão nova.`)
-  let child
+// ───────── versão nova: quem atualiza é a central Absolute ZRO (src/central.js) ─────────
+// Desde 01/11/2026 os apps de computador são instalados e atualizados só pela central: o SOBEDESCE não baixa nem
+// instala nada. O motor confere o site (src/version.js) e avisa uma vez por build; aqui sai a notificação do sistema
+// e o clique abre absolutezro://apps/sobedesce?acao=atualizar (sem a central, a página de baixar).
+let notificacaoDeVersao = null
+
+const temCentral = () => {
   try {
-    child = spawn(command.cmd, command.args, { detached: true, stdio: 'ignore', windowsHide: true })
-  } catch (err) {
-    return failed(err)
+    return !!app.getApplicationNameForProtocol(`${ESQUEMA_DA_CENTRAL}://`)
+  } catch {
+    return false
   }
-  child.once('error', failed)
-  // Só fecha depois que o script de fato começou (senão o app fecharia sem ninguém para abrir de novo).
-  child.once('spawn', () => {
-    child.unref()
-    quitConfirmed = true
-    app.quit()
-  })
+}
+const atualizarNaCentral = () => abrirNaCentral({ temCentral, abrir: url => shell.openExternal(url) })
+
+function notificarVersaoNova() {
+  if (!Notification.isSupported()) return
+  notificacaoDeVersao = new Notification({ title: 'Atualização disponível', body: 'Atualizar na Absolute ZRO' })
+  notificacaoDeVersao.on('click', () => atualizarNaCentral().catch(() => {}))
+  notificacaoDeVersao.show()
 }
 
 async function responderCookies(msg) {
@@ -558,6 +549,12 @@ ipcMain.handle('sobedesce:bandeja-definir', (event, ligado) => {
   if (!trustedSender(event, engineUrl) || typeof ligado !== 'boolean') return null
   gravarPrefs(app.getPath('userData'), { minimizar: ligado })
   return { disponivel: temBandeja(), minimizar: minimizarParaBandeja(), padrao: padraoMinimizar(process.platform) }
+})
+
+// "Atualizar na Absolute ZRO" (aviso de versão nova e Ajustes): só o deep link fixo da central, nunca um endereço da página.
+ipcMain.handle('sobedesce:abrir-central', async event => {
+  if (!trustedSender(event, engineUrl)) return null
+  return atualizarNaCentral()
 })
 
 ipcMain.handle('sobedesce:open-external', (event, url) => {

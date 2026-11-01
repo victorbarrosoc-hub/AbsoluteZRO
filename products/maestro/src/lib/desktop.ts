@@ -1,10 +1,15 @@
 import { emissor } from "@/lib/zro/config";
 
 /**
+ * Desde 01/11/2026 (pedido do titular) o app de computador é instalado e atualizado só pela central Absolute ZRO: a
+ * página inicial não mostra instalador, só "Use no computador com a Absolute ZRO" e o botão para esta página.
+ */
+export const CENTRAL_ZRO = "https://absolutezro.com/baixar";
+
+/**
  * O app do Maestro para computador, lido do catálogo da central de apps da Absolute ZRO (`GET <HUB>/api/v1/desktop/apps`,
- * que só lista instalador publicado num Release com SHA-256 e com o canal desktop aberto pelo gate). Sem instalador,
- * a página não mostra área de download nenhuma: nada de botão para arquivo que não existe. O download passa por
- * `<HUB>/baixar/app/maestro/<arquivo>`, que confere o canal e redireciona para o arquivo assinado. Sem "server-only":
+ * que só lista instalador publicado num Release com SHA-256 e com o canal desktop aberto pelo gate). Serve só para
+ * saber se o Maestro já está na central: sem ele, a página não fala de computador. Sem "server-only":
  * os testes chamam direto (só a página inicial, no servidor, usa).
  */
 export type DownloadMaestro = { sistema: "mac" | "windows"; rotulo: string; href: string; versao: string };

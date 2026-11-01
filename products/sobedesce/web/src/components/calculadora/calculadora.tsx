@@ -279,8 +279,8 @@ export function Calculadora() {
         )}
         <div className="rounded-2xl bg-surface p-4 text-[14px] text-pretty text-ink-2 ring-1 ring-line">
           No fim da diária, o app SOBEDESCE copia os cartões para os HDs e o Drive e confere cada arquivo.{" "}
-          <Link href="/#baixar" className="font-medium text-down-text hover:underline">
-            Baixar o app
+          <Link href="/#plataformas" className="font-medium text-down-text hover:underline">
+            Use no computador com a Absolute ZRO
           </Link>
         </div>
       </section>

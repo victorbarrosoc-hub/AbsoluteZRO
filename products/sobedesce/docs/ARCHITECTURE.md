@@ -84,7 +84,7 @@ src/
   server/app.js          servidor HTTP, segurança, estáticos, SSE
   server/routes.js       rotas da API
   version.js             VersionChecker (aviso de versão nova: pergunta ao site /baixar/versao)
-  updater.js             Updater ("Atualizar": baixa, confere o SHA-256 e troca o app empacotado)
+  central.js             "Atualizar na Absolute ZRO": absolutezro://apps/sobedesce?acao=atualizar (sem a central, a página)
 public/                  UI (Preact + htm sem build; vendor servido de node_modules)
 web/                     site com contas SOBEDESCE (Next.js); web/public/app = app do celular em /app/ (docs/CELULAR.md);
                          web/public/instalar.sh e instalar.ps1 = instaladores de uma linha (Mac e Windows)
@@ -982,7 +982,6 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | GET | `/api/versao` | | `{ versao: VersionStatus }` |
 | POST | `/api/versao/verificar` | | `{ versao }` (pergunta ao site agora; falha não dá erro, vira `falhou: true`) |
 | POST | `/api/versao/depois` | `{ build? }` (padrão: o mais novo conhecido) | `{ versao }` (grava `versaoDispensada`; 400 build inválido, 409 nenhuma versão conhecida) |
-| POST | `/api/versao/atualizar` | `{ pausar? }` | `{ versao }` (começa o "Atualizar" e volta logo; progresso pelo SSE `versao`. 409 com transferências andando sem `pausar: true`, sem versão nova ou sem Updater; 400 `pausar` não booleano) |
 | GET | `/api/events` | | SSE |
 
 SSE (`text/event-stream`, `event:` + `data:` JSON, ping a cada 15 s):
@@ -991,75 +990,31 @@ SSE (`text/event-stream`, `event:` + `data:` JSON, ping a cada 15 s):
 
 ### version.js — aviso de versão nova (`VersionChecker extends EventEmitter`)
 
-Descobre que há build mais novo e a interface mostra "Nova versão do SOBEDESCE" (barra lateral e Ajustes →
-Atualizações) com **Atualizar** (app empacotado no Mac/Windows: o motor baixa e troca o app; ver `updater.js` abaixo),
-**Baixar** (abre `<site>/baixar/mac|windows` no navegador do sistema) e **Depois**.
+Desde 01/11/2026 quem instala e atualiza o app de computador é a central Absolute ZRO (`apps/hub-desktop`): o motor não
+baixa nem instala nada (o antigo `updater.js` saiu; o `downloadTo` que as Cenas e o yt-dlp usam ficou em
+`net/baixar-arquivo.js`). O aviso: a pílula "Atualização disponível" na barra lateral, o cartão com **Atualizar na
+Absolute ZRO** e **Depois**, Ajustes → Atualizações ("As atualizações chegam pela Absolute ZRO") e a notificação do
+sistema uma vez por build.
 
 - **Identidade do build:** `src/build-info.json` `{ build, commit, data }`. No repositório fica `build: 0` (versão de
   desenvolvimento: nunca pergunta nada ao site). O GitHub Actions roda `node scripts/build-info.mjs` antes do `dist:*`
-  (build = `github.run_number`, commit curto, data do commit). Na main, cada job de app calcula o SHA-256 do seu
-  instalador (`node scripts/sha256.mjs mac|windows dist sha256` → artefato `sha256-<plataforma>`, 1 dia) e, só depois dos
-  dois instaladores no Release de teste, o job "Avisar versão nova" junta tudo
-  (`node scripts/build-info.mjs versao.json --sha256 sha256`, falha se faltar um) e sobe como `versao.json`.
-- **Site:** `GET /baixar/versao` (`web/src/app/baixar/versao/route.ts`, código comum com `/baixar/[plataforma]` em
-  `web/src/lib/release.ts`) devolve `{ ok, build, commit, data, mac: '/baixar/mac', windows: '/baixar/windows',
-  sha256Mac, sha256Windows }` (cache de 5 min; os `sha256*` são `null` num `versao.json` antigo), ou 503 `{ ok: false }`.
-  `mac`/`windows` continuam textos: apps antigos só leem `build`/`commit`/`data`.
-- **Motor:** com build > 0, confere ~10 s depois de abrir e a cada 1 h (tempo limite de 15 s; falha = silêncio). A base é
-  a mesma da conta SOBEDESCE (`cloud.baseUrl`). "Depois" grava o build em `settings.versaoDispensada`; só um build maior avisa de novo.
-  `startApp({ versionOptions })` troca peças nos testes (`buildInfo`, `baseUrl`, `platform`, `fetchJSON`, `firstDelayMs`, `everyMs`).
+  e sobe o `versao.json` no Release de teste depois dos dois instaladores (a central e os apps antigos leem dele).
+- **Site:** `GET /baixar/versao` (`web/src/app/baixar/versao/route.ts`) devolve `{ ok, build, commit, data, … }`. As
+  rotas `/baixar/mac`, `/baixar/windows` e os `instalar.*` continuam no ar para quem já tem o app, fora da interface.
+- **Motor:** com build > 0, confere ~10 s depois de abrir e a cada 1 h (tempo limite de 15 s; falha = silêncio). "Depois"
+  grava o build em `settings.versaoDispensada` (só esconde a pílula). A notificação sai pelo evento `avisar` uma vez por
+  build (`settings.versaoAvisada`): `desktop/engine.js` manda `{ type: 'versao-nova' }` ao processo principal, que mostra
+  a `Notification`; o clique e o botão (`sobedesce:abrir-central`, `window.sobedesce.abrirCentral`) chamam
+  `abrirNaCentral` (`src/central.js`): `absolutezro://apps/sobedesce?acao=atualizar` se
+  `app.getApplicationNameForProtocol('absolutezro://')` acha a central; senão (ou se o sistema recusar) a página
+  `https://absolutezro.com/baixar`.
 
 ```
-VersionStatus = { atual: { build, commit, data }, ultima: { build, commit, data, sha256: { mac, windows } } | null,
-  disponivel (build mais novo, mesmo dispensado), nova (disponível e não dispensado: mostra o aviso), dispensada,
-  plataforma: 'mac'|'windows'|null (sem instalador → nunca avisa), baixarUrl, site, verificando, verificadaEm, falhou,
-  podeAtualizar (há Updater, ele pode instalar este build e o versao.json trouxe o SHA-256 da plataforma),
-  atualizacao: { disponivel, motivo, fase, build, recebido, total, erro, bloqueado } | null }
+VersionStatus = { atual: { build, commit, data }, ultima: { build, commit, data } | null,
+  disponivel (build mais novo, mesmo dispensado), nova (disponível e não dispensado: mostra a pílula), dispensada,
+  plataforma: 'mac'|'windows'|null, site, link (o deep link da central), pagina (a página de baixar a central),
+  verificando, verificadaEm, falhou }
 ```
-
-### updater.js — "Atualizar" pelo próprio app (`Updater extends EventEmitter`)
-
-Sem assinatura da Apple/Microsoft, o que trava a instalação é a marca de "veio da internet" que o navegador põe no
-arquivo (quarentena do macOS, Mark-of-the-Web do Windows). Arquivo baixado pelo próprio motor não ganha essa marca.
-
-- **Só no app empacotado:** `desktop/main.js` passa `SOBEDESCE_APP_EXE` (`process.execPath`) e `SOBEDESCE_APP_PID` ao motor
-  quando `app.isPackaged`; `desktop/engine.js` cria o `handoff` e `startApp({ updaterOptions })` só monta o Updater com
-  ele. `npm start`, Linux e build 0 ficam só com o Baixar.
-- **Disponível?** Mac: o `.app` (subindo de `process.execPath`) e a pasta dele precisam aceitar gravação; aberto de
-  `/Volumes/…` (o `.dmg`) ou de `…/AppTranslocation/…` não dá (`motivo` diz o que fazer). Windows: a pasta do `.exe`.
-- **Fases:** `baixando` (`downloadTo`: undici com o proxy do sistema, segue o redirecionamento de `/baixar/<plataforma>?build=N`
-  para o GitHub, SHA-256 calculado no caminho, para se ficar 60 s sem dados, limite de 2 GiB) → `conferindo` (hash
-  diferente = erro) → `preparando` → `pronto` → `reiniciando` (handoff, no Atualizar agora) | `erro`.
-  - Mac: `hdiutil attach -nobrowse -noautoopen -readonly -mountpoint <tmp>`, `ditto` do `.app` para
-    `.<Nome>-atualizacao.app` ao lado do atual (mesmo disco: a troca é um `mv`), `hdiutil detach` (com `-force` se
-    precisar), `xattr -cr`, e grava `trocar.sh`.
-  - Windows: grava `trocar.ps1` (UTF-8 com BOM) para rodar o instalador NSIS com `/S --updated --force-run`.
-- **Handoff:** o motor manda `{ type: 'update-handoff', script }` ao processo principal, que confere o caminho
-  (`isHandoffScript`: `trocar.sh|ps1` dentro de `<tmp>/sobedesce-atualizacao-*`), roda o script solto
-  (`handoffCommand`: `/bin/sh` ou `powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File`) e, quando ele
-  começou, fecha o app sem perguntar (as transferências pausam no `shutdown` e voltam na próxima abertura).
-- **O script** espera o PID do app sair (até 2 min). Mac: renomeia o app para `.<Nome>-antigo.app`, põe o novo no
-  lugar, `xattr -cr`, apaga o antigo e `open`; se um `mv` falhar, o antigo volta e é aberto. Windows: roda o instalador
-  (espera só ele, não o app que ele abre) e abre `SOBEDESCE.exe` se o instalador não abriu. Falhou → grava
-  `atualizacao-falhou.json` na pasta de dados `{ build, motivo }`; na próxima abertura o Updater lê, apaga e mostra o
-  motivo, com o Atualizar desligado para aquele build.
-- **Sozinho em segundo plano** (`src/version.js`): ao ver um build novo não dispensado, o VersionChecker chama
-  `preparar()`, que baixa, confere e prepara e para na fase `pronto`. O aviso mostra o progresso e, no fim,
-  **Atualizar agora** (`trocar()`, o handoff). Atualizar no meio do download marca `aplicar` e troca assim que ficar
-  pronto. Saiu um build mais novo com outro já pronto: descarta o antigo e baixa o novo.
-- **Instalador por build:** o download pede `/baixar/<plataforma>?build=N`. O Release guarda instaladores com o build
-  no nome (`SOBEDESCE-0.1.0-b170-mac-universal.dmg`, `scripts/nome-instalador.mjs`, os 3 últimos builds;
-  `scripts/limpar-release.mjs`) e o `versao.json` diz o nome de cada um (`arquivoMac`/`arquivoWindows`). Assim o arquivo
-  entregue é sempre o do SHA-256 conferido. Antes, o build seguinte trocava o `.dmg` no Release antes do `versao.json`,
-  e a lista guardada pelo site apontava para o arquivo apagado ("indisponível": o app baixava a página do site).
-  Build que já saiu do Release → 404 (nunca a página).
-- **Erros que passam sozinhos** (rede, hash diferente porque a versão ainda está subindo) tentam de novo em 2, 4, 8…
-  até 30 min (`deNovo`). **Erros definitivos** (sem SHA-256, `hdiutil`/`ditto` falhou) desligam o Atualizar daquele
-  build (`bloqueado`): a interface volta para o Baixar.
-- **Transferências:** a interface pergunta ("Há transferências em andamento. Atualizar agora vai pausá-las.") e manda
-  `pausar: true`; a rota recusa (409) sem isso se `manager.activeCount()` > 0.
-- `updaterOptions` troca as peças nos testes: `platform`, `appExe`, `appPid`, `stateDir`, `tmpRoot`, `handoff`,
-  `download`, `run` (hdiutil/ditto/xattr), `canWrite`, `progressMs`.
 
 ### Instaladores de uma linha (site)
 

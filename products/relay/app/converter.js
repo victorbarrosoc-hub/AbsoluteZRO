@@ -46,9 +46,10 @@ const lembrados = (() => {
 })()
 const pedido = new URLSearchParams(location.search).get('preset')
 
-// "Abrir no Relay" vindo de outra plataforma da família (docs/integration-contracts/relay.md): uma ficha discreta
-const FAMILIA = { sobedesce: 'SOBEDESCE', revela: 'Revela', aeon: 'AEON', nossom: 'NOSSOM', synquei: 'Synquei', maestro: 'Maestro', tpeasy: 'TPeasy', 'carro-do-freela': 'Carro do Freela', hub: 'Absolute ZRO' }
-const ICONE_FAMILIA = { sobedesce: 'sobedesce.svg', revela: 'revela.svg', aeon: 'aeon.svg', nossom: 'nossom.svg', synquei: 'synquei.svg', tpeasy: 'tpeasy.svg', 'carro-do-freela': 'carro-do-freela.png', hub: 'absolute-zro-o.webp' }
+// "Abrir no Relay" vindo de outra plataforma da família (docs/integration-contracts/relay.md): uma ficha discreta. Só
+// as plataformas no ar (titular, 01/11/2026: app não lançado não aparece em lugar nenhum); de outra, nada de ficha.
+const FAMILIA = { sobedesce: 'SOBEDESCE', synquei: 'Synquei', maestro: 'Maestro', tpeasy: 'TPeasy', 'carro-do-freela': 'Carro do Freela', hub: 'Absolute ZRO' }
+const ICONE_FAMILIA = { sobedesce: 'sobedesce.svg', synquei: 'synquei.svg', tpeasy: 'tpeasy.svg', 'carro-do-freela': 'carro-do-freela.png', hub: 'absolute-zro-o.webp' }
 const de = new URLSearchParams(location.search).get('de')
 if (FAMILIA[de]) {
   const vindo = document.createElement('p')
@@ -570,7 +571,7 @@ function abrirMaxima() {
       { className: 'folha-meio folha-meio--uma' },
       el('div', { className: 'fichas' }, ...levados.map((n) => ficha(n, 'ficha--sinal'))),
       fora.length ? el('p', { className: 'apoio', textContent: `Fica só aqui no navegador: ${fora.join(', ')}.` }) : null,
-      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://sobedesce.vercel.app', target: '_blank', rel: 'noopener', textContent: 'Baixar o SOBEDESCE' }), '.'),
+      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://absolutezro.com/baixar', target: '_blank', rel: 'noopener', textContent: 'Use no computador com a Absolute ZRO' }), '.'),
     ),
     el('div', { className: 'folha-acoes' }, el('span', { className: 'espaco' }), cancelar, abrir),
   )

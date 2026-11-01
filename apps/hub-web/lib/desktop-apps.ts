@@ -105,7 +105,22 @@ export const APPS_DESKTOP: AppDesktop[] = [
     mac: { arquivos: [{ arch: 'universal', re: /^TPeasy-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'TPeasy.app' },
     windows: { re: /^TPeasy-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'TPeasy.exe', nomeNoSistema: 'TPeasy' },
   },
+  {
+    // Rift Motion para computador (products/rift-motion, titular, 01/11/2026): instalado e atualizado só pela central.
+    // Pronto antes do produto existir: enquanto `rift-motion` não estiver em zro.products, com o gate (desktop e
+    // download) aberto e no plano da conta, não aparece em lugar nenhum; sem o Release `rift-motion-versao-de-teste`
+    // (ou sem arquivo com SHA-256), aparece sem instalador. Arquivos RiftMotion-<versão>-b<build>-…, app "Rift Motion".
+    id: 'rift-motion',
+    nome: 'Rift Motion',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'rift-motion-versao-de-teste' }],
+    versaoJson: true,
+    mac: { arquivos: [{ arch: 'universal', re: /^RiftMotion-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'Rift Motion.app' },
+    windows: { re: /^RiftMotion-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'Rift Motion.exe', nomeNoSistema: 'Rift Motion' },
+  },
 ]
+
+/** A ferramenta de computador com este id (ou undefined). */
+export const appDesktop = (id: string) => APPS_DESKTOP.find((a) => a.id === id)
 
 export type Asset = { name: string; url: string; browser_download_url: string; size?: number; digest?: string | null }
 

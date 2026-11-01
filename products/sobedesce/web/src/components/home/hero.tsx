@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, Download, Smartphone } from "lucide-react";
+import { ArrowRight, Laptop, Smartphone } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
-import { DOWNLOAD_MAC, DOWNLOAD_WINDOWS, ROTAS } from "@/lib/site";
+import { ROTAS } from "@/lib/site";
 import { CompatStrip } from "./compat-strip";
 import { HeroStage } from "./hero-stage";
 
 /**
  * Topo da home. O botão principal muda conforme o sistema do visitante (data-plat no
- * contêiner da página, marcado antes da primeira pintura): só CSS, sem pular layout.
+ * contêiner da página, marcado antes da primeira pintura): só CSS, sem pular layout. No computador, "Usar no
+ * computador" leva aos passos da central Absolute ZRO (o site não tem mais instalador, 01/11/2026).
  * Celular e tablet: texto em cima, palco embaixo. Desktop (lg+): duas colunas que ocupam a altura da tela, título e palco
  * crescendo com a largura (clamp), para usar a tela toda de 1280 a 2560+.
  */
@@ -33,16 +34,10 @@ export function Hero() {
           </p>
 
           <div className="mt-9 flex animate-rise flex-wrap items-center justify-center gap-3 [animation-delay:240ms] lg:mt-12 lg:justify-start">
-            <span className="hidden group-data-[plat=mac]/plat:contents">
-              <a href={DOWNLOAD_MAC} className={primary}>
-                <Download aria-hidden="true" />
-                Baixar para Mac
-              </a>
-            </span>
-            <span className="hidden group-data-[plat=windows]/plat:contents">
-              <a href={DOWNLOAD_WINDOWS} className={primary}>
-                <Download aria-hidden="true" />
-                Baixar para Windows
+            <span className="hidden group-data-[plat=mac]/plat:contents group-data-[plat=windows]/plat:contents group-data-[plat=outro]/plat:contents">
+              <a href="#plataformas" className={primary}>
+                <Laptop aria-hidden="true" />
+                Usar no computador
               </a>
             </span>
             <span className="hidden group-data-[plat=ios]/plat:contents group-data-[plat=android]/plat:contents">
@@ -50,12 +45,6 @@ export function Hero() {
                 <Smartphone aria-hidden="true" />
                 Usar no celular
               </Link>
-            </span>
-            <span className="hidden group-data-[plat=outro]/plat:contents">
-              <a href="#baixar" className={primary}>
-                <Download aria-hidden="true" />
-                Baixar o app
-              </a>
             </span>
             <Link href={ROTAS.criarConta} className={secondary}>
               Criar conta

@@ -138,7 +138,7 @@ describe('repasse da Z', () => {
       const c = { ...cookies, [`${PREFIXO}_conta`]: sessao(extra) }
       const r = await pedir('/api/zro/ia/estado', { cookies: c })
       assert.equal(r.status, 403, JSON.stringify(extra))
-      assert.equal((await r.json()).message, 'Em desenvolvimento.')
+      assert.equal((await r.json()).message, 'Indisponível.')
       assert.equal((await pedir('/api/zro/ia/mensagens', { method: 'POST', cookies: c, headers: { 'content-type': 'application/json', origin: SITE }, body: '{"texto":"x"}' })).status, 403)
     }
     assert.equal(zro.estado.ia.length, n, 'nada saiu para a Absolute ZRO')

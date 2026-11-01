@@ -92,7 +92,7 @@ describe('a Z com o token de um app da família', () => {
     const o = await newOrgWithOwner(db, 'z-fechado')
     await giveLimits(db, o.orgId, 'nossom', { 'zro.ai_credits': 10 })
     const c = await cliente('nossom')
-    await expect(login(c, o.userId, o.orgId, 'openid org zro.ia')).rejects.toThrow('Este app ainda está em desenvolvimento.')
+    await expect(login(c, o.userId, o.orgId, 'openid org zro.ia')).rejects.toThrow('Este app não está disponível para a sua conta.')
     await allowRelease(db, 'nossom', o.userId, { channels: ['sso', 'web'] })
     const { t } = await login(c, o.userId, o.orgId, 'openid org zro.ia')
     expect(await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'zro.ia')).toBeNull()

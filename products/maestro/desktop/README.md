@@ -6,6 +6,11 @@ local quando falta internet e avisa quando sai versão nova. Mesma moldura do Ab
 (`apps/hub-desktop`), sem a central de apps: é só o Maestro, com o cronômetro na barra de menus (Mac) e na bandeja
 (Windows) desde a 0.2.0.
 
+## Novidades da 0.2.1: atualizações pela Absolute ZRO
+
+Quando sai versão nova, o Maestro avisa (discreto, e uma notificação por versão) e a atualização é feita pela
+central Absolute ZRO. O app não baixa mais instalador sozinho.
+
 ## Novidades da 0.2.0: o cronômetro na barra de menus e na bandeja
 
 Pedido do titular (31/10/2026), sobre o cronômetro do site (`/api/tempo`, painel ⌥T, Pomodoro, tipos de vídeo):
@@ -59,17 +64,17 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 
 ## Como é feito
 
-| Arquivo                                  | O que faz                                                                                       |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `desktop/main.cjs`                       | janela, menu em português, atalhos, sessão, deep link `maestro://`, aviso de versão e `--smoke` |
-| `desktop/regras.cjs`                     | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron) |
-| `desktop/versao.cjs`                     | "Nova versão do Maestro": `versao.json` pela Absolute ZRO, 15 s depois de abrir e a cada 6 h    |
-| `desktop/gerenciado.cjs`                 | instalado pela central do Absolute ZRO: quem atualiza é ela (o aviso fica quieto)               |
-| `desktop/paginas/`                       | barra de título do Mac (latão no carregando) e "Sem conexão" (HTML local, CSP fechada)          |
-| `desktop/atualizador.cjs`, `janela.cjs`… | **cópias idênticas** do `apps/hub-desktop` (`scripts/compartilhado.mjs`; o teste confere)       |
-| `scripts/icones.mjs`                     | desenha o ícone oficial no Chromium e gera `.icns`, `.ico` e PNGs (código do hub-desktop)       |
-| `scripts/release.mjs`                    | build-info, nome com build, SHA-256, `versao.json` e limpeza do Release                         |
-| `electron-builder.yml`                   | DMG universal e NSIS (x64 e ARM), fusíveis, `maestro://`                                        |
+| Arquivo                                    | O que faz                                                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `desktop/main.cjs`                         | janela, menu em português, atalhos, sessão, deep link `maestro://`, aviso de versão e `--smoke` |
+| `desktop/regras.cjs`                       | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron) |
+| `desktop/versao.cjs`                       | "Atualização disponível": `versao.json` pela Absolute ZRO, 15 s depois de abrir e a cada 6 h    |
+| `desktop/central.cjs`                      | "Atualizar na Absolute ZRO": `absolutezro://apps/maestro?acao=atualizar`, sem central a página  |
+| `desktop/paginas/`                         | barra de título do Mac (latão no carregando) e "Sem conexão" (HTML local, CSP fechada)          |
+| `desktop/janela.cjs`, `preload-barra.cjs`… | **cópias idênticas** do `apps/hub-desktop` (`scripts/compartilhado.mjs`; o teste confere)       |
+| `scripts/icones.mjs`                       | desenha o ícone oficial no Chromium e gera `.icns`, `.ico` e PNGs (código do hub-desktop)       |
+| `scripts/release.mjs`                      | build-info, nome com build, SHA-256, `versao.json` e limpeza do Release                         |
+| `electron-builder.yml`                     | DMG universal e NSIS (x64 e ARM), fusíveis, `maestro://`                                        |
 
 - **Na janela:** o Maestro (`maestro.absolutezro.com`, menos as páginas do cliente) e, para o login único, só as telas
   de entrar da Absolute ZRO (`/oauth/authorize`, `/entrar`, `/entrar/google`, `/criar-conta`, `/esqueci-a-senha`,
@@ -93,14 +98,23 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 - **Ícone:** o oficial (`products/maestro/src/app/icon.svg`, o gesto em latão sobre grafite), sem redesenho: no Mac no
   grid da Apple (corpo de 824 px com sombra), no Windows ocupando o quadro.
 
-## Versão nova e o gate de lançamento
+## Versão nova: atualiza pela Absolute ZRO
 
-O app pede `https://absolutezro.com/baixar/app/maestro/versao.json` com os cookies do login. A rota da Absolute ZRO
-confere o gate do Maestro (canal `download`) e redireciona para o `versao.json` do Release. Build maior que o do app:
-"Nova versão do Maestro" uma vez por build, com **Atualizar** (baixa `…/baixar/app/maestro/<arquivo do build>`,
-confere o SHA-256, fecha e abre já atualizado; motor compartilhado com o Absolute ZRO) ou **Baixar** (abre
-`absolutezro.com/baixar#maestro`), e **Depois**. "Procurar atualizações…" no menu. Enquanto o Maestro está fechado
-(0024), só a lista de acesso recebe o aviso e baixa; a 0027 do lançamento abre para todos.
+Desde 01/11/2026 (pedido do titular) os apps de computador são instalados e atualizados **só pela central Absolute ZRO**
+(`apps/hub-desktop`, como o Creative Cloud). O Maestro não baixa nem instala nada sozinho: não há mais motor do
+"Atualizar" aqui (`atualizador.cjs` e `gerenciado.cjs` saíram). Ele só confere, uns segundos depois de abrir e a cada 6 h,
+`https://absolutezro.com/baixar/app/maestro/versao.json` com os cookies do login (a rota confere o gate do produto, canal
+`download`, e redireciona para o `versao.json` do Release). Build maior que o do app (`desktop/versao.cjs`):
+
+- aviso discreto: a pílula "Atualização disponível" na barra do Mac, o item "Atualização disponível · Atualizar na
+  Absolute ZRO" no menu e, no Windows, o título da janela;
+- notificação do sistema uma vez por build: "Atualização disponível · Atualizar na Absolute ZRO".
+
+Os dois abrem `absolutezro://apps/maestro?acao=atualizar` (`desktop/central.cjs`); sem a central no computador (ninguém
+atende o protocolo), abrem `https://absolutezro.com/baixar`. "Atualizações…" no menu diz "As atualizações chegam pela
+Absolute ZRO", com o mesmo botão.
+
+Enquanto o Maestro está fechado (0024), só a lista de acesso recebe o aviso e baixa; a 0027 do lançamento abre para todos.
 
 ## Publicar
 
@@ -115,6 +129,4 @@ Arquivos: `Maestro-<versão>-b<build>-mac-universal.dmg` e `Maestro-<versão>-b<
 entrega por `/baixar/app/maestro/mac` e `/baixar/app/maestro/windows` (o mais novo, com SHA-256), e o catálogo da
 central (`/api/v1/desktop/apps`) lista o Maestro para o Absolute ZRO para computador instalar e atualizar.
 
-Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, no Mac, botão direito › Abrir › Abrir (ou
-`xattr -cr /Applications/Maestro.app`); no Windows, Mais informações › Executar assim mesmo. O "Atualizar" pelo app não
-passa por esse aviso (o arquivo baixado pelo próprio app não ganha a marca de "veio da internet").
+Instalar: só pela central Absolute ZRO (`absolutezro.com/baixar`), que baixa, confere e instala o Maestro.

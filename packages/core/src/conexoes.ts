@@ -446,6 +446,7 @@ export async function minhasConexoes(db: Database, auth: Authenticated): Promise
       select k.app, p.name as nome, coalesce(ca.ativo, true) as ativo, ca.usado_em
         from candidatos k join zro.products p on p.id = k.app
         left join zro.conexao_apps ca on ca.app = k.app and ca.conexao_id = ${google?.id ?? null}::uuid
+       where zro.release_visible(k.app, zro.current_user_id())
        order by p.name`
     return {
       google,

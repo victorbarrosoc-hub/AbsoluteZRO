@@ -6,6 +6,11 @@ conexão" local quando falta internet e avisa quando sai versão nova. Mesma mol
 (`products/maestro/desktop`) e do Absolute ZRO para computador (`apps/hub-desktop`), sem a central de apps e sem a bandeja:
 é só o Carro do Freela.
 
+## Novidades da 0.2.1: atualizações pela Absolute ZRO
+
+Quando sai versão nova, o Carro do Freela avisa (discreto, e uma notificação por versão) e a atualização é feita pela
+central Absolute ZRO. O app não baixa mais instalador sozinho.
+
 ## O que o app faz a mais que o site (0.2.0)
 
 Pedido do titular (31/10/2026): "um app no nível mais alto que o site, que instigue a baixar". Tudo pelas mesmas rotas do
@@ -52,12 +57,23 @@ Igual ao do Maestro (leia o [README dele](../../maestro/desktop/README.md)); aqu
   dois com os cantos do app (a arte oficial é uma placa quadrada).
 - **Abre em:** `/`.
 
-## Versão nova e o gate de lançamento
+## Versão nova: atualiza pela Absolute ZRO
 
-O app pede `https://absolutezro.com/baixar/app/carro-do-freela/versao.json` com os cookies do login; a rota confere o gate do produto
-(canal `download`) e redireciona para o `versao.json` do Release. Build maior que o do app: "Nova versão do Carro do Freela" uma vez por
-build, com **Atualizar** (baixa `…/baixar/app/carro-do-freela/<arquivo do build>`, confere o SHA-256, fecha e abre já atualizado) ou
-**Baixar** (`absolutezro.com/baixar#carro-do-freela`). Os canais `desktop` e `download` abrem na migração `0042` do HUB
+Desde 01/11/2026 (pedido do titular) os apps de computador são instalados e atualizados **só pela central Absolute ZRO**
+(`apps/hub-desktop`, como o Creative Cloud). O Carro do Freela não baixa nem instala nada sozinho: não há mais motor do
+"Atualizar" aqui (`atualizador.cjs` e `gerenciado.cjs` saíram). Ele só confere, uns segundos depois de abrir e a cada 6 h,
+`https://absolutezro.com/baixar/app/carro-do-freela/versao.json` com os cookies do login (a rota confere o gate do produto, canal
+`download`, e redireciona para o `versao.json` do Release). Build maior que o do app (`desktop/versao.cjs`):
+
+- aviso discreto: a pílula "Atualização disponível" na barra do Mac, o item "Atualização disponível · Atualizar na
+  Absolute ZRO" no menu e, no Windows, o título da janela;
+- notificação do sistema uma vez por build: "Atualização disponível · Atualizar na Absolute ZRO".
+
+Os dois abrem `absolutezro://apps/carro-do-freela?acao=atualizar` (`desktop/central.cjs`); sem a central no computador (ninguém
+atende o protocolo), abrem `https://absolutezro.com/baixar`. "Atualizações…" no menu diz "As atualizações chegam pela
+Absolute ZRO", com o mesmo botão.
+
+Os canais `desktop` e `download` abrem na migração `0042` do HUB
 (`infra/migrations/0042_relay_carro_desktop.sql`): aplique depois do primeiro build verde.
 
 ## Publicar
@@ -73,5 +89,4 @@ Arquivos: `CarroDoFreela-<versão>-b<build>-mac-universal.dmg` e `CarroDoFreela-
 `/baixar/app/carro-do-freela/mac` e `/baixar/app/carro-do-freela/windows` (o mais novo, com SHA-256), e o catálogo da central
 (`/api/v1/desktop/apps`) lista o Carro do Freela para o Absolute ZRO para computador instalar e atualizar.
 
-Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, no Mac, botão direito › Abrir › Abrir (ou
-`xattr -cr "/Applications/Carro do Freela.app"`); no Windows, Mais informações › Executar assim mesmo.
+Instalar: só pela central Absolute ZRO (`absolutezro.com/baixar`), que baixa, confere e instala o Carro do Freela.

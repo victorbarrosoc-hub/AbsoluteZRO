@@ -143,6 +143,8 @@ export type ProductAccess = {
  * Catálogo com a situação da organização (Ferramentas, Ciclo do O, Início), já com o gate de lançamento aplicado.
  * A pessoa é `who.userId` ou, numa transação asUser, a da própria transação (zro.current_user_id()); sem nenhuma das
  * duas, é anônimo: produto fechado aparece como `closed`. Canal padrão: web.
+ * Produto que não existe para a pessoa (não lançado, zro.release_visible, migração 0049) nem entra na lista; admin da
+ * plataforma vê todos.
  */
 export async function productAccessFor(
   tx: Queryable,
@@ -166,6 +168,7 @@ export async function productAccessFor(
         and (e.features is null or cardinality(e.features) > 0)
       order by e.ends_at desc nulls first limit 1
     ) e on true
+    where zro.release_visible(p.id, coalesce(${userId}::uuid, zro.current_user_id()))
     order by p.step_order`
   return rows.map((r) => {
     const state = (r.release_state as ReleaseState | null) ?? 'development'

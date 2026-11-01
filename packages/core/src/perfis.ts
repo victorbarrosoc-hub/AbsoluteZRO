@@ -104,7 +104,7 @@ export async function meuPerfil(db: Database, auth: Authenticated | null): Promi
     if (!r) throw new DomainError('not_found', 'Perfil não encontrado.')
     const apps = await tx`
       select distinct pr.id, pr.name, pr.step_order from zro.app_accounts aa join zro.products pr on pr.id = aa.product_id
-       where aa.user_id = ${userId} and pr.stage <> 'disabled' order by pr.step_order`
+       where aa.user_id = ${userId} and pr.stage <> 'disabled' and zro.release_visible(pr.id, ${userId}::uuid) order by pr.step_order`
     return {
       ...publico({ ...r, selos: r.efetivos }),
       funcoesMarcadas: (r.funcoes as FuncaoPerfil[]) ?? [],

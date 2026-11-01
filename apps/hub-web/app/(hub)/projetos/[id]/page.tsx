@@ -43,6 +43,9 @@ const STEP_SECTION: Record<string, string> = {
   finishing: 'finalizacao',
 }
 
+/** Seções que só existem com a etapa de uma ferramenta (as outras seções são do projeto e ficam sempre). */
+const SECAO_DE_ETAPA: Record<string, string> = { edicao: 'ai-edit', som: 'nossom' }
+
 const REPROCESSABLE = ['failed', 'dead_letter', 'requires_review', 'blocked']
 
 function StepAccess({ step }: { step: StepView }) {
@@ -81,6 +84,10 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
     })
   const canEdit = !!project.can_edit
   const step = (k: string) => steps.find((s) => s.stepKey === k)!
+  // As etapas vêm só das ferramentas que existem para a pessoa (gate, migração 0049): app não lançado não tem seção,
+  // cartão nem nome aqui; a administração da plataforma vê todas.
+  const tem = (k: string) => steps.some((s) => s.stepKey === k)
+  const secoes = SECTIONS.filter(([k]) => !SECAO_DE_ETAPA[k] || tem(SECAO_DE_ETAPA[k]))
   const brief = documents.find((d) => d.kind === 'brief')
   const script = documents.find((d) => d.kind === 'script')
   const done = steps.filter((s) => s.displayState === 'done').length
@@ -133,7 +140,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
       </Card>
 
       <nav className="subnav" aria-label="Seções do projeto">
-        {SECTIONS.map(([k, label]) => (
+        {secoes.map(([k, label]) => (
           <a key={k} href={`#${k}`}>
             {label}
           </a>
@@ -426,25 +433,29 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         )}
       </Card>
 
-      <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
-        <p className="zro-mute">
-          O AEON é o editor completo: você monta e corta na linha do tempo, com a IA sugerindo cortes, zoom e legenda quando quiser, e entrega o vídeo ou a
-          timeline para o seu editor. O HUB não processa nada aqui; a passagem segue os contratos <code>edit.selects.ready</code> e{' '}
-          <code>edit.timeline.ready</code>.
-        </p>
-        <StepAccess step={step('ai-edit')} />
-      </Card>
+      {tem('ai-edit') && (
+        <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
+          <p className="zro-mute">
+            O AEON é o editor completo: você monta e corta na linha do tempo, com a IA sugerindo cortes, zoom e legenda quando quiser, e entrega o vídeo ou a
+            timeline para o seu editor. O HUB não processa nada aqui; a passagem segue os contratos <code>edit.selects.ready</code> e{' '}
+            <code>edit.timeline.ready</code>.
+          </p>
+          <StepAccess step={step('ai-edit')} />
+        </Card>
+      )}
 
-      <Card id="som" title="Som" eyebrow="NOSSOM">
-        <p className="zro-mute">
-          O NOSSOM trata o áudio no próprio dispositivo; o áudio não passa pelo HUB. A passagem da timeline e das marcações segue o contrato
-          edit.timeline.ready.
-        </p>
-        <StepAccess step={step('nossom')} />
-      </Card>
+      {tem('nossom') && (
+        <Card id="som" title="Som" eyebrow="NOSSOM">
+          <p className="zro-mute">
+            O NOSSOM trata o áudio no próprio dispositivo; o áudio não passa pelo HUB. A passagem da timeline e das marcações segue o contrato
+            edit.timeline.ready.
+          </p>
+          <StepAccess step={step('nossom')} />
+        </Card>
+      )}
 
-      <Card id="finalizacao" title="Finalização e entregas" eyebrow="Revela">
-        <p className="zro-mute">A Revela cuida da cor no DaVinci Resolve: LUT a partir de uma referência e entregas por destino.</p>
+      <Card id="finalizacao" title="Finalização e entregas" eyebrow={tem('finishing') ? 'Revela' : undefined}>
+        {tem('finishing') && <p className="zro-mute">A Revela cuida da cor no DaVinci Resolve: LUT a partir de uma referência e entregas por destino.</p>}
         {entregas.length ? (
           <ul className="list-plain">
             {entregas.map((e) => (

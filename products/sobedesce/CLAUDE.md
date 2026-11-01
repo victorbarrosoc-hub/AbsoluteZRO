@@ -37,5 +37,11 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   abrindo a folha do `<zro-set modo="folha">` sem trocar de tela. Nem a Z nem o Set são a entrada (site: `/conta`;
   celular: Início). O repasse é `web/src/lib/zro/set.ts`, com os mesmos tokens da Z (`contas_zro.ia`, escopo
   `zro.set`); um 401 do Set não apaga os tokens. O app de computador ainda não tem o Set.
+- **Atualização só pela Absolute ZRO** (titular, 01/11/2026): o app de computador é instalado e atualizado só pela
+  central (`apps/hub-desktop`). Nada de baixar ou instalar versão nova de dentro do app (o `src/updater.js` saiu; não
+  volte com ele): `src/version.js` só confere `/baixar/versao` e avisa ("Atualização disponível · Atualizar na Absolute
+  ZRO", notificação uma vez por build), e `src/central.js` abre `absolutezro://apps/sobedesce?acao=atualizar` (sem a
+  central, `https://absolutezro.com/baixar`). O site não oferece instalador: "Use no computador com a Absolute ZRO"
+  (`web/src/components/central-zro.tsx`); `/baixar/*` e `instalar.*` seguem no ar, fora da interface.
 - O build do desktop baixa o SDK da Blackmagic com o segredo `BRAW_SDK_CADASTRO`; se a Blackmagic recusar (400), é o
   cadastro, não o código.

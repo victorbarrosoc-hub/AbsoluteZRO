@@ -4,11 +4,12 @@ import type { CSSProperties } from 'react'
 import { productAccessFor } from '@zro/billing'
 import { authorize, avatarVersion } from '@zro/core'
 import { Pill, ProductMark } from '@zro/ui'
-import { AppActions } from '@/components/app-actions'
+import { AppActions, DestaqueDoApp } from '@/components/app-actions'
 import { productColor } from '@/components/app-tile'
 import { PainelLado, PainelMovel } from '@/components/painel-lado'
 import { PainelResumo } from '@/components/painel-resumo'
-import { hasDesktopInstaller } from '@/lib/downloads'
+import { ehAdmin, SO_PARA_ADMIN } from '@/lib/downloads'
+import { direitosDesktop } from '@/lib/meus-apps'
 import { db, getAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Apps' }
@@ -41,21 +42,32 @@ const SITE: Record<string, string> = {
  * Sem sessão, vai para o login do próprio app (/app/entrar). Gate de lançamento (ADR 0023) por canal: Instalar só com o
  * canal desktop aberto; Abrir (na web) só com o canal web aberto. Fechado nos dois fica só com o selo "Em
  * desenvolvimento". App só da web no ar (Maestro e Relay, sem app de computador ainda) abre na web, sem selo.
+ *
+ * Central única (ADR 0036): o que instala e atualiza sai de `direitosDesktop` (gate + plano, no servidor). App que o
+ * plano não inclui fica bloqueado com "Incluso no plano X · Ver planos". O deep link absolutezro://apps/<id>?acao=…
+ * chega aqui como ?app=<id>&acao=atualizar|instalar: o cartão do app fica em destaque e já oferece a ação.
  */
-export default async function Painel() {
+export default async function Painel({ searchParams }: { searchParams: Promise<{ app?: string; acao?: string }> }) {
   const auth = await getAuth()
   if (!auth) redirect('/app/entrar')
   if (!auth.session.activeOrgId) redirect('/boas-vindas')
   const actor = await authorize(db(), auth)
-  const [access, naWeb, avatar] = await Promise.all([
+  const [access, naWeb, avatar, direitos, sp] = await Promise.all([
     db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'desktop' })),
     db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'web' })),
     avatarVersion(db(), auth),
+    direitosDesktop(db(), actor, { admin: ehAdmin(auth) }),
+    searchParams,
   ])
+  // AEON, Revela, NOSSOM e Rift Motion (não lançados) só aparecem para admin de plataforma (titular, 01/11/2026)
+  const lista = ehAdmin(auth) ? access : access.filter((a) => !SO_PARA_ADMIN.has(a.productId))
   const web = new Map(naWeb.map((w) => [w.productId, w]))
+  const direito = new Map(direitos.map((d) => [d.id, d]))
   const nome = auth.user.displayName || auth.user.email
   const primeiro = nome.split(/\s+/)[0]
-  const liberados = access.filter((a) => a.access === 'contracted' || web.get(a.productId)?.access === 'contracted').map((a) => a.productId)
+  const liberados = direitos.filter((d) => d.direito === 'liberado').map((d) => d.id)
+  const destaque = typeof sp.app === 'string' && direito.has(sp.app) ? sp.app : null
+  const oferta = sp.acao === 'atualizar' || sp.acao === 'instalar' ? sp.acao : undefined
 
   return (
     <div className="painel">
@@ -70,14 +82,22 @@ export default async function Painel() {
           <PainelResumo liberados={liberados} />
         </header>
 
+        {destaque && <DestaqueDoApp id={destaque} />}
         <ul className="painel__apps" aria-label="Ferramentas">
-          {access.map((a, i) => {
+          {lista.map((a, i) => {
             const fechadoNaWeb = (web.get(a.productId)?.access ?? 'closed') === 'closed'
             const fechado = a.access === 'closed' && fechadoNaWeb
-            const instalavel = a.access !== 'closed' && hasDesktopInstaller(a.productId, new Set([a.productId]))
+            const d = direito.get(a.productId)
+            const instalavel = !!d
             const abrir = fechadoNaWeb ? null : a.ssoStartUrl || a.externalUrl || SITE[a.productId] || null
             return (
-              <li key={a.productId} className="pcard" style={{ ...productColor(a.productId), '--i': i } as CSSProperties}>
+              <li
+                key={a.productId}
+                id={`app-${a.productId}`}
+                className="pcard"
+                data-destaque={destaque === a.productId ? 'sim' : undefined}
+                style={{ ...productColor(a.productId), '--i': i } as CSSProperties}
+              >
                 <span className="pcard__luz" aria-hidden="true" />
                 <ProductMark productId={a.productId} name={a.name} size={64} />
                 <div className="pcard__texto">
@@ -86,7 +106,16 @@ export default async function Painel() {
                 </div>
                 <div className="pcard__acoes">
                   {fechado && <Pill tone="faint">Em desenvolvimento</Pill>}
-                  {instalavel && <AppActions id={a.productId} nome={a.name} liberado={a.access === 'contracted'} web={abrir} />}
+                  {d && (
+                    <AppActions
+                      id={a.productId}
+                      nome={a.name}
+                      liberado={d.direito === 'liberado'}
+                      bloqueio={d.direito === 'bloqueado' ? { plano: d.plano } : undefined}
+                      oferta={destaque === a.productId ? oferta : undefined}
+                      web={abrir}
+                    />
+                  )}
                   {/* no navegador (sem a central) e para os apps da web: abrir o app, já com a conta quando há login único */}
                   {abrir && (
                     <a

@@ -158,3 +158,50 @@ body {
     background: rgb(200 150 47 / 0.6);
   }
 }
+
+/* "Atualização disponível": discreto, à direita; o clique abre a Absolute ZRO (quem atualiza os apps) */
+.pilula {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  margin-right: 4px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  color: #1d1d1f;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: default;
+  -webkit-app-region: no-drag;
+}
+
+.pilula[hidden] {
+  display: none;
+}
+
+.pilula::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.pilula:hover {
+  background: color-mix(in srgb, currentColor 11%, transparent);
+}
+
+.pilula:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.desfocada .pilula {
+  opacity: 0.55;
+}
