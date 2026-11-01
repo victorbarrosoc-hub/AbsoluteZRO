@@ -20,7 +20,7 @@ export async function iniciarZroFalsa(cliente) {
   const acessos = new Map()
   const escoposDe = new Map()
   const renovaveis = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], set: [], sons: [], gate: null }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], set: [], sons: [], gate: null, higgsfield: [], hf: null }
   let base = ''
   /** O gate do HUB barra esta pessoa? (produto fechado e a conta fora da lista) */
   const barrada = () => !!estado.gate && estado.pessoa?.release?.[estado.gate] !== 'allowed'
@@ -91,6 +91,9 @@ export async function iniciarZroFalsa(cliente) {
       const escopos = (q.get('scope') || '').split(' ')
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || !escopos.includes('openid')) {
         volta.searchParams.set('error', 'invalid_request')
+      } else if (estado.recusarEscopoHf && escopos.includes('zro.higgsfield')) {
+        // Absolute ZRO de antes da Higgsfield nas Conexões
+        volta.searchParams.set('error', 'invalid_scope')
       } else if (estado.recusarEscopoSons && escopos.includes('zro.sons')) {
         // Absolute ZRO de antes da Sonoplasta (zro.sons fora da lista do cliente)
         volta.searchParams.set('error', 'invalid_scope')
@@ -189,6 +192,54 @@ export async function iniciarZroFalsa(cliente) {
       res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': '4', 'x-zro-som-id': url.pathname.split('/').pop(), ...(url.pathname.startsWith('/api/v1/sons/banco/') ? {} : { 'x-zro-som-licenca': encodeURIComponent('CC0 1.0') }) })
       return res.end(Buffer.from([1, 2, 3, 4]))
     }
+    // a Higgsfield das Conexões (/api/v1/higgsfield): Bearer com o escopo zro.higgsfield, como no HUB (sem ele, 401).
+    // `estado.hf` é a conta: null = não conectada (409 sem_conexao); { saldo, precos, pedidos } conectada. Gerar desconta
+    // o preço e cria um pedido; `andamento` o leva de na_fila a pronto na segunda leitura, com resultados na "CDN"
+    // (https://d1.cloudfront.net/..., que o teste de tela atende). Guarda o que chegou em estado.higgsfield.
+    if (url.pathname === '/api/v1/higgsfield' || url.pathname === '/api/v1/higgsfield/gerar') {
+      const at = (req.headers.authorization || '').replace(/^Bearer /, '')
+      const sub = acessos.get(at)
+      let corpo = ''
+      for await (const c of req) corpo += c
+      estado.higgsfield.push({ metodo: req.method, caminho: url.pathname.slice('/api/v1/higgsfield'.length), busca: url.search, autorizacao: req.headers.authorization || null, cookie: req.headers.cookie || null, corpo })
+      if (!sub || !(escoposDe.get(at) || []).includes('zro.higgsfield') || barrada()) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
+      const h = estado.hf
+      if (!h) return responder(res, 409, { error: 'sem_conexao', message: 'Conecte a Higgsfield na sua conta Absolute ZRO.', details: { motivo: 'nenhuma', conectar: `${base}/conexoes`, provedor: 'higgsfield' } })
+      let pedido = {}
+      try {
+        pedido = req.method === 'POST' ? JSON.parse(corpo || '{}') : {}
+      } catch {
+        return responder(res, 422, { error: 'invalid_input', message: 'JSON inválido.' })
+      }
+      const longo = (req.method === 'POST' ? pedido.duracao : url.searchParams.get('duracao')) === 'longo'
+      const opcoes = [
+        { id: 'rapido', nome: 'Rápido', desc: 'Prévia ágil para testar a ideia', segundos: longo ? 10 : 5, creditos: h.precos.rapido * (longo ? 2 : 1) },
+        { id: 'equilibrado', nome: 'Equilibrado', desc: 'Movimento de cinema, ótimo custo', segundos: longo ? 10 : 5, creditos: h.precos.equilibrado * (longo ? 2 : 1) },
+        { id: 'maximo', nome: 'Máxima qualidade', desc: 'Mais detalhe, física e acabamento', segundos: longo ? 10 : 5, creditos: h.precos.maximo * (longo ? 2 : 1) },
+      ]
+      if (url.pathname === '/api/v1/higgsfield') {
+        const usado = h.pedidos.reduce((n, x) => n + x.creditos, 0)
+        return responder(res, 200, { conectada: true, conta: 'lia@higgsfield.test', plano: 'creator', saldo: h.saldo, usoMes: usado, usoApp: { mes: usado, pedidos: h.pedidos.length, total: usado }, usoApps: usado, imagens: [1, 2, 4].map((n) => ({ quantidade: n, creditos: h.precos.imagem * n })), opcoes })
+      }
+      if (req.method === 'GET') {
+        const x = h.pedidos.find((p) => p.id === url.searchParams.get('id'))
+        if (!x) return responder(res, 404, { error: 'not_found', message: 'Pedido não encontrado.' })
+        x.leituras++
+        const pronto = x.leituras >= 2
+        const urls = pronto ? Array.from({ length: x.quantidade }, (_, i) => `https://d1.cloudfront.net/aeon-teste/${x.id}-${i}.${x.saida === 'video' ? 'mp4' : 'png'}`) : []
+        return responder(res, 200, { estado: pronto ? 'pronto' : x.leituras === 1 ? 'na_fila' : 'gerando', saida: x.saida, urls, erro: null })
+      }
+      const d = pedido
+      if (d.acao === 'envio') return responder(res, 200, { upload_url: 'https://upload.higgsfield.ai/aeon-teste/ref.jpg?assinado=1', headers: { 'Content-Type': d.tipo }, ref: '0b9d7f3e-1c2a-4e5b-8f6a-7d8c9e0f1a2b' })
+      const custo = d.acao === 'telas' ? h.precos.imagem * Number(d.quantidade || 2) : opcoes.find((o) => o.id === d.opcao)?.creditos
+      if (custo == null) return responder(res, 422, { error: 'invalid_input', message: 'Escolha uma das três opções.' })
+      if (custo > h.saldo) return responder(res, 429, { error: 'quota_exceeded', message: `Faltam créditos: custa ${custo} e você tem ${h.saldo}.` })
+      h.saldo -= custo
+      const id = `p${String(h.pedidos.length + 1).padStart(11, '0')}`
+      h.pedidos.push({ id, saida: d.acao === 'telas' ? 'imagem' : 'video', quantidade: d.acao === 'telas' ? Number(d.quantidade || 2) : 1, creditos: custo, leituras: 0, pedido: d })
+      return responder(res, 200, { id, estado: 'na_fila', creditos: custo })
+    }
+
     // a API da Z (/api/v1/ia): Bearer com o escopo zro.ia, como no HUB (sem ele, 401). Guarda o que chegou.
     if (url.pathname.startsWith('/api/v1/ia/')) {
       const at = String(req.headers.authorization || '').replace(/^Bearer /, '')
