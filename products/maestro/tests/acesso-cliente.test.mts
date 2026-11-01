@@ -44,6 +44,7 @@ const TABELAS = [
   "fluxo_imagens",
   "card_capas",
   "entregaveis",
+  "tempo_registros",
 ] as const;
 
 const contar = async (ctx: { sub: string; orgId: string }, t: string) =>
@@ -87,6 +88,10 @@ before(async () => {
         sql`insert into maestro.comentarios (org_id, versao_id, card_id, autor_tipo, autor_sub, texto, idem_key) values (${A}, ${v}, ${card}, 'equipe', ${o.ANA}, 'oi', ${`idem-${k}-1234`})`,
       );
       await tx.execute(sql`insert into maestro.entregaveis (org_id, card_id, versao_id, preset) values (${A}, ${card}, ${v}, 'reels')`);
+      // cronômetro (0038): uma sessão da Eva em cada card (cada um vê o próprio tempo; o cliente restringe por cima)
+      await tx.execute(sql`
+        insert into maestro.tempo_registros (org_id, zro_sub, card_id, inicio, fim, origem, motivo)
+        values (${A}, ${o.equipe.sub}, ${card}, now() - interval '1 hour', now(), 'manual', 'semente')`);
       const lote = await um(sql`insert into maestro.lotes (org_id, client_id, title) values (${A}, ${c}, 'Lote') returning id`);
       await tx.execute(sql`insert into maestro.lote_cards (lote_id, org_id, card_id) values (${lote}, ${A}, ${card})`);
       const link = await um(

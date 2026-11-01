@@ -10,7 +10,25 @@
 // `--smoke` (CI, depois do build): abre a janela com a tela "Sem conexão" local (sem rede), confere a ponte e as
 // regras e escreve "SMOKE OK" (também em MAESTRO_SMOKE_SAIDA, se definido).
 
-const { app, BrowserWindow, WebContentsView, Menu, shell, session, ipcMain, dialog, screen, nativeTheme, clipboard, systemPreferences } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  Menu,
+  shell,
+  session,
+  ipcMain,
+  dialog,
+  screen,
+  nativeTheme,
+  clipboard,
+  systemPreferences,
+  Tray,
+  Notification,
+  nativeImage,
+  globalShortcut,
+  powerMonitor,
+} = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -20,6 +38,9 @@ const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, baixarPara, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
 const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
+const tempo = require('./tempo.cjs')
+const { Cronometro } = require('./cronometro.cjs')
+const { Atalho } = require('./atalho.cjs')
 
 const NOME = 'Maestro'
 const SMOKE = process.argv.includes('--smoke')
@@ -38,6 +59,17 @@ const INICIO = O.maestro + '/app'
 
 // O teste de fumaça usa uma pasta de dados descartável: não mexe na sessão de quem roda.
 if (SMOKE) app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-smoke-')))
+
+// Aberto sozinho ao ligar o computador ("Abrir ao ligar o computador", no menu do cronômetro): só a barra/bandeja.
+const abertoAoLigar = () => {
+  if (SMOKE) return false
+  if (process.argv.includes('--ao-ligar')) return true
+  try {
+    return MAC && !!app.getLoginItemSettings().wasOpenedAtLogin
+  } catch {
+    return false
+  }
+}
 
 // Um app só: abrir de novo (ou clicar num link maestro://) traz a janela que já existe para a frente.
 if (!SMOKE && !app.requestSingleInstanceLock()) {
@@ -501,6 +533,229 @@ app.on('web-contents-created', (_e, contents) => {
   })
 })
 
+// ───────── o cronômetro na barra de menus (Mac) e na bandeja (Windows) ─────────
+// Lógica em cronometro.cjs (rotas do site, Pomodoro, parado), contas e menu em tempo.cjs, atalho em atalho.cjs. Aqui só
+// o que é do sistema: o ícone, o texto ao lado dele, o menu, as notificações, o atalho global e a ponte com a página.
+const BANDEJA = path.join(__dirname, 'bandeja')
+let bandeja = null
+let cronometro = null
+let atalho = null
+let atalhoOcupado = false
+const notificacoes = new Set()
+const pintado = { titulo: null, icone: null, dica: null, tema: null }
+
+function imagemDaBandeja(tipo) {
+  if (MAC) {
+    const img = nativeImage.createFromPath(path.join(BANDEJA, tipo === 'rodando' ? 'bandejaRodandoTemplate.png' : 'bandejaTemplate.png'))
+    img.setTemplateImage(true)
+    return img
+  }
+  // a cor da barra de tarefas do Windows (não a do app); no Linux os painéis costumam ser escuros
+  const escuro = process.platform === 'win32' ? nativeTheme.shouldUseDarkColorsForSystemIntegratedUI : true
+  return nativeImage.createFromPath(path.join(BANDEJA, `bandeja-windows-${escuro ? 'escuro' : 'claro'}${tipo === 'rodando' ? '-rodando' : ''}.png`))
+}
+
+const doMaestroNaJanela = () => !!view && !view.webContents.isDestroyed() && regras.ehDoMaestro(view.webContents.getURL(), O)
+
+/** Manda à página do Maestro (na janela) o que o cronômetro do app mudou. */
+function avisarSite(canal, dados) {
+  if (doMaestroNaJanela()) view.webContents.send(`tempo:${canal}`, dados)
+}
+
+/** Abre (ou traz) a janela com o painel do cronômetro aberto. */
+function abrirPainel() {
+  focar()
+  const wc = view && view.webContents
+  if (!wc) return
+  const mandar = () => doMaestroNaJanela() && wc.send('tempo:abrir-painel')
+  if (wc.isLoading()) wc.once('did-finish-load', mandar)
+  else if (doMaestroNaJanela()) mandar()
+  else wc.loadURL(regras.ehDoMaestro(ultimaUrl, O) ? ultimaUrl : INICIO).then(mandar, () => {})
+}
+
+function abrirNoMaestro(caminho) {
+  focar()
+  if (caminho && view) view.webContents.loadURL(O.maestro + caminho).catch(() => {})
+}
+
+function notificar({ titulo, corpo, motivo, acoes }) {
+  if (SMOKE || !Notification.isSupported()) return
+  const n = new Notification({
+    title: titulo,
+    body: corpo,
+    silent: motivo === 'info',
+    icon: MAC ? undefined : path.join(__dirname, '..', 'build', 'icon-windows.png'),
+    // Mac: "Descartar" direto na notificação; "Manter" é fechar (no Windows, tocar abre o painel com a pergunta)
+    ...(MAC && motivo === 'parado' && acoes ? { actions: [{ type: 'button', text: acoes[0] }], closeButtonText: acoes[1] } : {}),
+  })
+  notificacoes.add(n)
+  const solta = () => notificacoes.delete(n)
+  n.on('click', () => {
+    solta()
+    if (motivo !== 'erro') abrirPainel()
+  })
+  n.on('action', (_e, i) => {
+    solta()
+    if (motivo === 'parado' && i === 0 && cronometro) cronometro.resolverParado(true).catch(() => {})
+  })
+  n.on('close', solta)
+  n.on('failed', solta)
+  n.show()
+}
+
+/** Ícone, texto e dica: só o que mudou (o relógio chama a cada segundo). */
+function pintarBandeja() {
+  if (!bandeja || bandeja.isDestroyed() || !cronometro) return
+  const r = cronometro.retrato()
+  const tipo = tempo.iconeDaBandeja(r.estado)
+  const tema = MAC ? 'mac' : String(nativeTheme.shouldUseDarkColorsForSystemIntegratedUI)
+  if (pintado.icone !== tipo || pintado.tema !== tema) {
+    bandeja.setImage(imagemDaBandeja(tipo))
+    pintado.icone = tipo
+    pintado.tema = tema
+  }
+  if (MAC) {
+    const titulo = tempo.textoDaBarra({ ...r, mostrar: r.ajustes.mostrarTempo })
+    if (pintado.titulo !== titulo) {
+      bandeja.setTitle(titulo ? ` ${titulo}` : '', { fontType: 'monospacedDigit' })
+      pintado.titulo = titulo
+    }
+  }
+  const dica = tempo.dicaDaBandeja(r)
+  if (pintado.dica !== dica) {
+    bandeja.setToolTip(dica)
+    pintado.dica = dica
+  }
+}
+
+/** O modelo puro do menu (tempo.cjs) → o menu do Electron, com cada ação ligada. */
+function menuDoCronometro() {
+  const r = cronometro.retrato({ plataforma: PLATAFORMA, atalhoOcupado, abrirAoLigar: abrirAoLigarAtivo() })
+  const fazer = (a) => () => {
+    const c = cronometro
+    if (a.tipo === 'pausar') c.pausar()
+    else if (a.tipo === 'iniciar') c.iniciar(a.card)
+    else if (a.tipo === 'parado') c.resolverParado(a.descartar)
+    else if (a.tipo === 'pomodoro') c.passoDoPomodoro(a.passo, a.card)
+    else if (a.tipo === 'painel') abrirPainel()
+    else if (a.tipo === 'abrir') abrirNoMaestro(a.caminho)
+    else if (a.tipo === 'mostrar-tempo') c.trocarAjustes({ mostrarTempo: !c.ajustes.mostrarTempo })
+    else if (a.tipo === 'atalho') trocarAtalho(a.id)
+    else if (a.tipo === 'abrir-ao-ligar') trocarAbrirAoLigar()
+    else if (a.tipo === 'sair') app.quit()
+  }
+  const mapear = (itens) =>
+    itens.map((i) => {
+      if (i.type === 'separator') return { type: 'separator' }
+      const m = { label: i.label, enabled: i.enabled !== false }
+      if (i.type) m.type = i.type
+      if (i.type === 'checkbox' || i.type === 'radio') m.checked = !!i.checked
+      if (i.accelerator) Object.assign(m, { accelerator: i.accelerator, registerAccelerator: false })
+      if (i.submenu) m.submenu = mapear(i.submenu)
+      if (i.acao) m.click = fazer(i.acao)
+      return m
+    })
+  return Menu.buildFromTemplate(mapear(tempo.montarMenu(r)))
+}
+
+function abrirMenuDaBandeja() {
+  if (!bandeja || bandeja.isDestroyed()) return
+  // o menu é montado na hora do clique: o tempo, o card e o Pomodoro de agora
+  bandeja.popUpContextMenu(menuDoCronometro())
+  cronometro.atualizar().catch(() => {})
+}
+
+function trocarAtalho(id) {
+  const r = atalho.aplicar(id)
+  atalhoOcupado = r.ocupado
+  cronometro.trocarAjustes({ atalho: id })
+}
+
+const abrirAoLigarAtivo = () => {
+  try {
+    return !!app.getLoginItemSettings(MAC ? undefined : { args: ['--ao-ligar'] }).openAtLogin
+  } catch {
+    return false
+  }
+}
+function trocarAbrirAoLigar() {
+  try {
+    app.setLoginItemSettings({ openAtLogin: !abrirAoLigarAtivo(), ...(MAC ? {} : { args: ['--ao-ligar'] }) })
+  } catch (e) {
+    console.log('[abrir ao ligar]', e && e.message)
+  }
+}
+
+function ligarCronometro() {
+  cronometro = new Cronometro({
+    base: O.maestro,
+    // pela partição do app: os cookies do login vão junto; o Origin do Maestro, como a página (a rota confere)
+    fetch: (url, init) => session.fromPartition(PARTICAO).fetch(url, init),
+    pasta: app.getPath('userData'),
+    ociosoMs: () => powerMonitor.getSystemIdleTime() * 1000,
+    aoMudar: pintarBandeja,
+    notificar,
+    avisarSite,
+    log: (...a) => console.log(...a),
+  })
+  bandeja = new Tray(imagemDaBandeja('parado'))
+  bandeja.setToolTip(NOME)
+  if (process.platform === 'linux') {
+    // Linux (só desenvolvimento): o painel não abre menu por clique; o menu fica preso ao ícone
+    bandeja.setContextMenu(menuDoCronometro())
+    setInterval(() => bandeja && !bandeja.isDestroyed() && bandeja.setContextMenu(menuDoCronometro()), 5000)
+  } else {
+    bandeja.on('click', abrirMenuDaBandeja)
+    bandeja.on('right-click', abrirMenuDaBandeja)
+    if (!MAC) bandeja.on('double-click', () => focar())
+  }
+  nativeTheme.on('updated', pintarBandeja)
+  atalho = new Atalho({ globalShortcut, aoTocar: () => cronometro.alternar().catch(() => {}) })
+  atalhoOcupado = atalho.aplicar(cronometro.ajustes.atalho).ocupado
+  for (const ev of ['suspend', 'lock-screen']) powerMonitor.on(ev, () => cronometro.suspendeu())
+  for (const ev of ['resume', 'unlock-screen']) powerMonitor.on(ev, () => cronometro.voltou())
+  // a janela mudou o tempo (o painel, o play do card): relê já, sem esperar os 30 s
+  let relendo = null
+  session.fromPartition(PARTICAO).webRequest.onCompleted({ urls: [`${O.maestro}/api/tempo*`] }, (d) => {
+    if (d.method !== 'POST' || !view || d.webContentsId !== view.webContents.id) return
+    clearTimeout(relendo)
+    relendo = setTimeout(() => cronometro.atualizar().catch(() => {}), 250)
+  })
+  cronometro.start()
+}
+
+// Novidades da versão: uma vez por versão instalada (no app de verdade), uma notificação curta dizendo o que chegou.
+const NOVIDADES = {
+  '0.2.0': MAC
+    ? ['O cronômetro na barra de menus', 'O tempo ao lado do ícone, pausar e retomar com ⌥⇧T e o Pomodoro, mesmo com a janela fechada.']
+    : ['O cronômetro na bandeja', 'Pausar e retomar com Alt+Shift+T e o Pomodoro, mesmo com a janela fechada.'],
+}
+function mostrarNovidades() {
+  const v = app.getVersion()
+  const marca = path.join(app.getPath('userData'), 'versao-vista')
+  let vista = ''
+  try {
+    vista = fs.readFileSync(marca, 'utf8').trim()
+  } catch {
+    // primeira vez neste computador
+  }
+  if (vista === v) return
+  try {
+    fs.writeFileSync(marca, v)
+  } catch {
+    // sem gravar, mostra de novo da próxima vez
+  }
+  const n = NOVIDADES[v]
+  if (n) setTimeout(() => notificar({ titulo: n[0], corpo: n[1], motivo: 'info' }), 3000)
+}
+
+// a página do Maestro (só ela, no quadro principal) conta ao app o que a pessoa fez no painel
+ipcMain.on('tempo:do-site', (e, canal, dados) => {
+  if (!cronometro || !daView(e) || !regras.ehDoMaestro(e.senderFrame.url, O)) return
+  if (!['pronto', 'pomodoro', 'parado-resolvido'].includes(canal)) return
+  cronometro.doSite(canal, canal === 'pomodoro' && dados && typeof dados === 'object' ? dados : null)
+})
+
 // ───────── teste de fumaça ─────────
 async function smoke() {
   const linhas = []
@@ -523,7 +778,9 @@ async function smoke() {
     log(`Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · ${process.platform}-${process.arch} · build ${BUILD.build}`)
     const r = await wc.executeJavaScript(`(async () => (await document.fonts.ready, {
       pronto: !!(window.__maestroOffline && window.__maestroOffline.pronto),
-      ponte: !!(window.maestroDesktop && window.maestroDesktop.isDesktop && typeof window.maestroDesktop.tentarDeNovo === 'function'),
+      ponte: !!(window.maestroDesktop && window.maestroDesktop.isDesktop && typeof window.maestroDesktop.tentarDeNovo === 'function'
+        && window.maestroDesktop.cronometro && typeof window.maestroDesktop.cronometro.aoMudar === 'function'
+        && typeof window.maestroDesktop.cronometro.aoAbrirPainel === 'function'),
       semNode: typeof require === 'undefined' && typeof process === 'undefined',
       titulo: document.title,
       simbolo: (() => { const i = document.querySelector('img.simbolo'); return !!(i && i.complete && i.naturalWidth > 0) })(),
@@ -553,6 +810,7 @@ async function smoke() {
       log(`barra de título: ${barraOk ? 'ok' : 'FALHOU'}`)
     }
     const fundoOk = r.fundo === 'rgb(247, 243, 238)'
+    const cronometroOk = await smokeCronometro(log)
     // MAESTRO_SMOKE_CAPTURA=arquivo.png: mostra a janela e salva a tela "Sem conexão" (para conferir o visual)
     if (process.env.MAESTRO_SMOKE_CAPTURA) {
       win.show()
@@ -561,11 +819,81 @@ async function smoke() {
       log(`captura: ${process.env.MAESTRO_SMOKE_CAPTURA}`)
     }
     clearTimeout(timer)
-    fim(r.pronto && r.ponte && r.semNode && r.simbolo && r.fonte && fundoOk && regrasOk && barraOk)
+    fim(r.pronto && r.ponte && r.semNode && r.simbolo && r.fonte && fundoOk && regrasOk && barraOk && cronometroOk)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)
     fim(false)
+  }
+}
+
+/**
+ * O cronômetro no app empacotado: os ícones da barra carregam (e o do Mac é de modelo), e o caminho inteiro até a rota
+ * funciona com um Maestro falso local (127.0.0.1): o fetch da sessão leva o cookie e o Origin, o estado é lido, o menu
+ * monta e "Pausar" chega ao servidor. O atalho global só é registrado e liberado (informativo: a máquina de CI pode não
+ * deixar).
+ */
+async function smokeCronometro(log) {
+  const http = require('node:http')
+  const icones = ['parado', 'rodando'].every((t) => {
+    const img = imagemDaBandeja(t)
+    return !img.isEmpty() && (!MAC || img.isTemplateImage())
+  })
+  const inicio = new Date(Date.now() - 65 * 60_000).toISOString()
+  const rodando = { id: 'r1', sub: 's', card: 'card-smoke', inicio, fim: null, origem: 'cronometro', modo: 'livre', motivo: null }
+  let estadoFalso = {
+    agora: new Date().toISOString(),
+    rodando,
+    hoje: [rodando],
+    totais: {},
+    cards: { 'card-smoke': { id: 'card-smoke', tema: 'Teste de fumaça', cliente: 'c1' } },
+    clientes: { c1: 'Cliente' },
+    time: false,
+    pode: true,
+  }
+  const vistos = []
+  const srv = http.createServer((req, res) => {
+    let corpo = ''
+    req.on('data', (c) => (corpo += c))
+    req.on('end', () => {
+      vistos.push({ metodo: req.method, origem: req.headers.origin || null, cookie: /mae_sessao=fumaca/.test(req.headers.cookie || ''), corpo })
+      res.setHeader('content-type', 'application/json')
+      if (!/mae_sessao=fumaca/.test(req.headers.cookie || '')) return res.writeHead(401).end('{"erro":"sem_sessao"}')
+      if (req.method === 'POST') {
+        estadoFalso = { ...estadoFalso, agora: new Date().toISOString(), rodando: null, hoje: [{ ...rodando, fim: new Date().toISOString() }] }
+        return res.end(JSON.stringify({ parado: rodando, estado: estadoFalso }))
+      }
+      res.end(JSON.stringify({ ...estadoFalso, agora: new Date().toISOString() }))
+    })
+  })
+  try {
+    await new Promise((ok) => srv.listen(0, '127.0.0.1', ok))
+    const base = `http://127.0.0.1:${srv.address().port}`
+    const ses = session.fromPartition(PARTICAO)
+    await ses.cookies.set({ url: base, name: 'mae_sessao', value: 'fumaca' })
+    const c = new Cronometro({ base, fetch: (url, init) => ses.fetch(url, init) })
+    cronometro = c
+    await c.atualizar()
+    const leu = c.situacao === 'ok' && !!c.estado.rodando && tempo.textoDaBarra({ ...c.retrato(), mostrar: true }).startsWith('01:0')
+    const menu = menuDoCronometro()
+    const menuOk = menu.items.length >= 6 && menu.items.some((i) => i.label === 'Pausar') && menu.items.some((i) => i.label === 'Abrir painel')
+    await c.pausar()
+    const post = vistos.find((v) => v.metodo === 'POST')
+    const pausou = !!post && post.origem === base && post.cookie && JSON.parse(post.corpo).op === 'pausar' && !c.estado.rodando
+    let atalhoTxt = 'não registrou (a máquina não deixou)'
+    const a = new Atalho({ globalShortcut, aoTocar: () => {} })
+    if (a.aplicar(tempo.ATALHO_PADRAO).ok) {
+      a.liberar()
+      atalhoTxt = globalShortcut.isRegistered(tempo.ATALHO_PADRAO) ? 'FICOU PRESO' : 'registrou e liberou'
+    }
+    log(`cronômetro: ícones ${icones} · leu o estado ${leu} · menu ${menuOk} · pausar com cookie e Origin ${pausou} · atalho ${atalhoTxt}`)
+    return icones && leu && menuOk && pausou && atalhoTxt !== 'FICOU PRESO'
+  } catch (e) {
+    log(`cronômetro: erro ${e && e.message}`)
+    return false
+  } finally {
+    cronometro = null
+    srv.close()
   }
 }
 
@@ -598,8 +926,11 @@ app.whenReady().then(() => {
   })
   protegerSessao()
   menu()
-  criarJanela()
+  // aberto sozinho ao ligar o computador: só o cronômetro na barra/bandeja; a janela abre quando a pessoa pedir
+  if (!abertoAoLigar()) criarJanela()
   if (SMOKE) return smoke()
+  ligarCronometro()
+  if (app.isPackaged) mostrarNovidades()
   if (app.isPackaged) {
     atualizador = new Atualizador({
       nome: NOME,
@@ -645,12 +976,25 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   if (aviso) aviso.stop()
+  if (cronometro) cronometro.stop()
+  if (atalho) atalho.liberar()
+  globalShortcut.unregisterAll()
   salvarJanela()
 })
 
-// Windows e Linux: fechar a última janela encerra. Mac: o app fica no Dock até Sair (como todo app do Mac).
+// Fechar a janela não encerra: o cronômetro segue na barra de menus (Mac, como todo app do Mac) e na bandeja (Windows),
+// até "Sair do Maestro". No Windows, a primeira vez avisa onde o app ficou.
 app.on('window-all-closed', () => {
-  if (SMOKE || !MAC) app.quit()
+  if (SMOKE || !bandeja) return app.quit()
+  if (MAC) return
+  const marca = path.join(app.getPath('userData'), 'bandeja-avisada')
+  if (fs.existsSync(marca)) return
+  try {
+    fs.writeFileSync(marca, '1')
+  } catch {
+    // sem gravar, avisa de novo da próxima vez
+  }
+  notificar({ titulo: 'O Maestro continua na bandeja', corpo: 'O cronômetro segue aqui. Para fechar de vez: Sair do Maestro, no ícone.', motivo: 'info' })
 })
 
 process.on('uncaughtException', (err) => {

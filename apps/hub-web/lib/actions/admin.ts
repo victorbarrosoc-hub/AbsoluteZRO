@@ -8,6 +8,7 @@ import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { db, getAuth } from '../session'
 import { stripeConfig } from '../stripe'
+import { mudarDriveDoSobedesce } from '../sobedesce-console'
 import { str, toFormError } from './helpers'
 
 function comMotivo(userId: string, fd: FormData) {
@@ -201,6 +202,18 @@ export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Pr
     })
     revalidatePath('/admin', 'layout')
     return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** SOBEDESCE: liga ou desliga o Drive inteiro de uma pessoa (só admin, com motivo; a vaga usada não volta). */
+export async function sobedesceAcessoDriveAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const ligar = str(fd, 'ligar') === '1'
+    const r = await mudarDriveDoSobedesce(db(), await getAuth(), { usuarioId: str(fd, 'usuarioId'), ligar, reason: str(fd, 'reason') })
+    revalidatePath('/admin/apps/sobedesce')
+    return { ok: r.acessoTotal ? `Acesso total ligado. ${r.vagas.livres} vagas livres.` : 'Acesso total desligado.' }
   } catch (e) {
     return toFormError(e)
   }

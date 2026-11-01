@@ -46,6 +46,21 @@ Não é área sensível: é um nível por papel, pronto para a frente Criação 
 
 Ajuste por pessoa para a Criação ainda não existe (quando pedirem, entra em `maestro.acessos` como as áreas).
 
+## Cronômetro e tempo por tipo (`drizzle/0038`)
+
+| O quê                                | Administração | Gestão | Equipe | Leitura |
+| ------------------------------------ | ------------- | ------ | ------ | ------- |
+| Cronometrar, Ajustar e Zerar (o seu) | sim           | sim    | sim    | não     |
+| Ver o próprio tempo                  | sim           | sim    | sim    | —       |
+| Ver o tempo do time (Semana, Tempo)  | sim           | sim    | não    | não     |
+| Mudar o tempo de outra pessoa        | não           | não    | não    | não     |
+| Criar, renomear e recolorir tipos    | sim           | sim    | sim    | não     |
+| Arquivar e restaurar tipos           | sim           | sim    | não    | não     |
+
+No banco: `tempo_registros_quem_ve` (select: o dono ou admin/gestão), `tempo_registros_so_o_seu*` (insert/update só do
+dono), `tempo_registros_cliente` (acesso por cliente pelo card), sem DELETE para `maestro_app`; `tipos_video_guarda`
+barra arquivar fora de admin/gestão. O típico que sugere o previsto é calculado com o que a pessoa vê.
+
 ## Freela (a área do freela, `/trabalhos`)
 
 Pedido do titular (30/10/2026): o freela ligado a uma conta (pelo @ ou pelo convite, `drizzle/0036`) entra no Maestro

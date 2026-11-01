@@ -9,6 +9,7 @@ import { codigoPg, getBanco, mensagemPg, PG, type Contexto, type Tx } from "@/li
 import { CAMPOS_EDITAVEIS, ID_CARD, NOME_DO_CAMPO, valorDoCampo, type CampoEditavel, type CardQ, type DadosCard } from "./metodo";
 import { seloDaLinha, type CapaDoCard, type LinhaSelo, type Selo, type Selos } from "./selos";
 import { prepararCapa } from "./capa";
+import type { TipoVideo } from "@/lib/tempo/tipos";
 
 export type Falha = { ok: false; status: number; erro: string; mensagem: string; campo?: string; card?: CardQ | null };
 export type Res<T extends object = object> = ({ ok: true } & T) | Falha;
@@ -50,6 +51,11 @@ async function conferirVinculos(tx: Tx, campos: Partial<Record<CampoEditavel, un
   if (typeof campos.projeto === "string") {
     const r = await tx.execute(sql`select client_id from maestro.projects where id = ${campos.projeto} and deleted_at is null`);
     if (!r.length) return falha(400, "projeto", "Esse projeto não existe nesta organização.");
+  }
+  if (typeof campos.tipo === "string") {
+    // o tipo de vídeo (drizzle/0038): vivo e da organização ativa (o RLS esconde os de outra)
+    const r = await tx.execute(sql`select 1 from maestro.tipos_video where id = ${campos.tipo} and arquivado_em is null`);
+    if (!r.length) return falha(400, "tipo", "Esse tipo de vídeo não existe nesta organização.");
   }
   if (typeof campos.resp === "string") {
     const r = await tx.execute(sql`select 1 from maestro.members where zro_sub = ${campos.resp} and status = 'active'`);
@@ -324,6 +330,8 @@ export type Referencias = {
   pessoas: { sub: string; nome: string; foto: string | null }[];
   clientes: { id: string; nome: string }[];
   projetos: { id: string; codigo: string; titulo: string; cliente: string | null }[];
+  /** Os tipos de vídeo da produtora (drizzle/0038), arquivados inclusive (card antigo segue com o dele). */
+  tipos: TipoVideo[];
 };
 
 export async function referenciasDoQuadro(ctx: Contexto): Promise<Referencias> {
@@ -337,6 +345,9 @@ export async function referenciasDoQuadro(ctx: Contexto): Promise<Referencias> {
     const projetos = (await tx.execute(
       sql`select id, code as codigo, title as titulo, client_id as cliente from maestro.projects where deleted_at is null and status in ('active', 'paused') order by code desc`,
     )) as unknown as Referencias["projetos"];
-    return { pessoas: [...pessoas], clientes: [...clientes], projetos: [...projetos] };
+    const tipos = (await tx.execute(
+      sql`select id, nome, cor, ordem, arquivado_em is not null as arquivado from maestro.tipos_video order by ordem, lower(nome)`,
+    )) as unknown as TipoVideo[];
+    return { pessoas: [...pessoas], clientes: [...clientes], projetos: [...projetos], tipos: [...tipos] };
   });
 }

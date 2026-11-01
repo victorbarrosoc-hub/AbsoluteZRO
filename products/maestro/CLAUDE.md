@@ -67,6 +67,26 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   card) e tem a proporção reservada (carregar não mexe no layout do arrasto). No computador "Mover para…" e o próximo
   passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. Busca: título, briefing, cliente e código do
   projeto, com realce (`pedacosDoRealce`), contagem e "Nada com …"; "/" foca a busca.
+- **Cronômetro de tarefas e tempo por tipo de vídeo** (titular 31/10/2026, inspirado no Ritto; `drizzle/0038_cronometro.sql`,
+  puro em `src/lib/tempo/{calculo,tipos}.ts`, banco em `servidor.ts`, rota `/api/tempo` em `rota.ts`, tela em
+  `src/components/tempo/**` + `src/app/tempo.css`, prefixo `tp-`): `maestro.tempo_registros` guarda cada sessão com o
+  início do **relógio do banco** (o gatilho força `now()` no play; a tela conta de `inicio` + o desvio do relógio do
+  servidor que vem em toda resposta, nunca do relógio da aba), um rodando por pessoa (índice `tempo_um_rodando`;
+  iniciar outro fecha o anterior na mesma transação; sessão de menos de 2 s some), até 24 h, à mão só com motivo,
+  Zerar/apagar = `apagado_em` (Desfazer tira), nada reabre e ninguém apaga linha. Quem vê: o próprio tempo; admin e
+  gestão o do time (`podeVerTempoDoTime`); quem grava: só o dono (políticas restritivas) e só quem escreve no Quadro;
+  `_cliente` pelo card. `maestro.tipos_video` (6 de fábrica por gatilho em `organizations`, cor de `CORES_COLUNA`,
+  arquivar só admin e gestão) e os campos `tipo`/`previsto` do card (em `CAMPOS_EDITAVEIS`; o servidor confere o tipo
+  vivo da organização). A loja do navegador (`components/tempo/loja.ts`, fora do React, `useSyncExternalStore`) é a
+  única fonte da pílula, do painel, do play e do selo (o card do Quadro não desenha de novo quando o tempo anda); poll
+  de 15 s com a aba à vista e no foco. O número que anda (`contador.tsx`) escreve no DOM e anima só o dígito que trocou
+  (Web Animations), nada por quadro no React. Pílula e painel por portal no `<body>` (montados no `Shell`); ⌥T/Alt+T;
+  título da aba "▶ hh:mm · tarefa"; parado (gesto ou batida de 15 s que falhou) pergunta "Manter/Descartar"
+  (`op: "parado"`). Pomodoro e preferências no localStorage do aparelho (`pomodoro.ts`): o foco é uma sessão do
+  cronômetro, a pausa é só da tela. Painel por tipo: só cards concluídos (Aprovado, Agendado, Entregue, pela hora do
+  `colunaEm`), média, p25–p75 e mediana (`quantil`, tipo 7) e tendência; o típico (mediana com 3+ vídeos) sugere o
+  previsto na ficha. Testes: `tests/cronometro.test.mts` e `e2e/cronometro.spec.ts` (semente `e2e/semente-cronometro.ts`;
+  `SHOTS_DIR` guarda `tp-*`, `TP_VIDEO=<pasta>` grava o passeio).
 - **Colunas do Quadro** (titular 29/10/2026, "como no Trello"; `drizzle/0024_colunas.sql`, `src/lib/quadro/colunas.ts`
   puro, `colunas-servidor.ts`, tela em `components/quadro/colunas.tsx`): `maestro.colunas` por organização (id, papel,
   nome 1–30, cor da paleta fechada `CORES_COLUNA`/`--cor-*`, ordem, arquivada). As 8 do método são de sistema: **id =
@@ -534,7 +554,14 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   `download`; `APPS_DESKTOP` em `apps/hub-web/lib/desktop-apps.ts`, `DOWNLOADS` em `lib/downloads.ts`): fechado, só
   a lista de acesso vê. Release de teste `maestro-versao-de-teste` pelo `.github/workflows/maestro-desktop.yml` a
   cada push na main que mexe em `desktop/`. Sem assinatura da Apple/Microsoft por enquanto. Rota nova que deve abrir
-  no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste.
+  no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste. **Cronômetro na barra** (0.2.0,
+  titular 31/10/2026): `desktop/{tempo,cronometro,pomodoro,ocioso,atalho}.cjs` leem e mudam o tempo por `/api/tempo`
+  pelo fetch da sessão no processo principal (cookies da janela + Origin do Maestro; nada de token na página),
+  funcionam com a janela fechada (fechar não encerra; "Sair do Maestro" encerra) e conduzem o Pomodoro e o parado
+  (ociosidade do sistema). Ponte `maestroDesktop.cronometro` no `preload.cjs`; do lado do site, `components/tempo/desktop.ts`
+  (`appCuida()`: no app o site não conduz Pomodoro nem pergunta o parado, só mostra o que o app manda e manda as
+  preferências). Mudou uma regra do Pomodoro ou do parado no site? Mude também em `desktop/pomodoro.cjs`/`ocioso.cjs`
+  (o teste confere padrões e limites). Ícones da barra em `desktop/bandeja/` (`npm run icones:bandeja`).
 - **Visual: C1 · Aurora** (escolha do titular, 28/10/2026; plano v2 §9): uma luz ambiente que segue a hora de quem
   vê (`src/components/ambiente.tsx` + `src/lib/hora.ts`): o servidor desenha a luz apagada e o relógio vazio; ao montar,
   o `<html>` ganha `data-hora` (`manha`, `tarde`, `fim`, `noite`) e o plano `.amb` acende. No claro, pêssego/rosa de

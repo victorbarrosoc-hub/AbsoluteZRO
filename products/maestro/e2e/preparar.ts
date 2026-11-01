@@ -28,6 +28,7 @@ export const ARQUIVO_SESSAO_LIXEIRA = "test-results/e2e-sessao-lixeira.json";
 export const ARQUIVO_SESSAO_CONVITE = "test-results/e2e-sessao-convite.json";
 
 export const ARQUIVO_SESSAO_ACHAR = "test-results/e2e-sessao-achar.json";
+export const ARQUIVO_SESSAO_CRONOMETRO = "test-results/e2e-sessao-cronometro.json";
 export const ARQUIVO_SESSAO_AREA_FREELA = "test-results/e2e-sessao-area-freela.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
@@ -562,6 +563,29 @@ export default async function preparar() {
     const sQa = await criarSessao({ orgId: orgQa, sub: SUB_QA, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sQaLe = await criarSessao({ orgId: orgQa, sub: SUB_QA_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_ACHAR, JSON.stringify({ token: sQa.token, leitura: sQaLe.token, org: orgQa }));
+
+    // O cronômetro de tarefas (e2e/cronometro.spec.ts, drizzle/0038): a demonstração inteira com tipos de vídeo e
+    // tempo fictício (12 semanas entregues e a semana atual), a Diana na administração e o Rafa na equipe.
+    const SUB_CRONO = "00000000-0000-4000-8000-00000000bb02";
+    const SUB_CRONO_EQ = "00000000-0000-4000-8000-00000000bb03";
+    const orgCrono = await getBanco().asSystem("e2e: semente do cronômetro", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-00000000bb01", name: "Cronômetro E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_CRONO, displayName: "Diana Lopes", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_CRONO_EQ, displayName: "Rafa Edição", hubRole: "editor", role: "equipe" },
+      ]);
+      return org.id;
+    });
+    const crono = await carregarDemonstracao({ sub: SUB_CRONO, orgId: orgCrono });
+    if (!crono.ok) throw new Error(crono.mensagem);
+    const { sementeDoCronometro } = await import("./semente-cronometro");
+    await sementeDoCronometro({ sub: SUB_CRONO, orgId: orgCrono }, SUB_CRONO_EQ);
+    const sCrono = await criarSessao({ orgId: orgCrono, sub: SUB_CRONO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sCronoEq = await criarSessao({ orgId: orgCrono, sub: SUB_CRONO_EQ, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_CRONOMETRO, JSON.stringify({ token: sCrono.token, equipe: sCronoEq.token, org: orgCrono }));
 
     // A área do freela (e2e/area-freela.spec.ts): duas produtoras, freelas ligados, um da equipe que também é freela.
     const { sementeDaAreaDoFreela } = await import("./semente-area-freela");

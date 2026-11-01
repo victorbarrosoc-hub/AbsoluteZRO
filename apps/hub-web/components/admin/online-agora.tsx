@@ -1,8 +1,10 @@
 'use client'
 /**
  * O número grande "online agora" da visão geral. Começa com o valor do servidor e pergunta de novo a cada 15 s
- * (só com a aba visível). A animação do ponto é CSS e some com "reduzir movimento".
+ * (só com a aba visível). Tocar abre quem está online e onde (/admin/agora). A animação do ponto é CSS e some com
+ * "reduzir movimento".
  */
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type Online = { total: number; hub: number; apps: number }
@@ -39,7 +41,7 @@ export function OnlineAgora({ initial }: { initial: Online }) {
   }, [])
 
   return (
-    <section className="adm-online" aria-labelledby="online-title">
+    <Link href="/admin/agora" className="adm-online adm-online--link">
       <p className="adm-online__label" id="online-title">
         <span className={`adm-dot${n.total ? ' adm-dot--live' : ''}`} aria-hidden="true" />
         Online agora
@@ -50,6 +52,6 @@ export function OnlineAgora({ initial }: { initial: Online }) {
       <p className="adm-online__sub" title="Movimento nos últimos 15 minutos: sessão do HUB em uso ou um app aberto renovando o acesso.">
         {n.hub.toLocaleString('pt-BR')} no HUB · {n.apps.toLocaleString('pt-BR')} nos apps{stale ? ' · sem atualizar agora' : ''}
       </p>
-    </section>
+    </Link>
   )
 }

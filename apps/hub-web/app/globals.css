@@ -2933,6 +2933,63 @@ details.disclosure[open] > summary {
   background: var(--surface);
   box-shadow: var(--pill-rim), var(--lift);
 }
+.adm-online--link {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.adm-online--link:hover {
+  transform: translateY(-2px);
+}
+.adm-online--link:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-online--link,
+  .adm-online--link:hover {
+    transition: none;
+    transform: none;
+  }
+}
+/* Online agora (/admin/agora): quem e onde */
+.online-lista__quem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.online-lista__nome {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.online-lista__onde {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.online-lista__onde > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: var(--pill-rim);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.online-lista__onde .zro-faint {
+  font-weight: 400;
+}
 .adm-online__label {
   display: flex;
   align-items: center;
@@ -3579,6 +3636,41 @@ a.hbars__row:hover {
 }
 .kv__pair {
   display: contents;
+}
+
+/* SOBEDESCE · Drive inteiro (/admin/apps/sobedesce) */
+.adm-head--row.adm-head--mark {
+  justify-content: flex-start;
+  align-items: center;
+}
+.vagas-drive {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+.vagas-drive__num {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.vagas-drive__num strong {
+  font-weight: 800;
+}
+.vagas-drive__num span {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--text-faint);
+}
+.vagas-drive__quem {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.app-card__link {
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 /* lançamento */

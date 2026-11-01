@@ -1097,6 +1097,39 @@ do card... não consigo localizar o job que quero achar".
 - ⛔ Em produção: migração `0035` do Maestro no próximo deploy autorizado.
 - ⬜ Miniatura do Drive pelo SOBEDESCE (`drive.miniatura` na ponte), se o titular quiser.
 
+## Maestro: cronômetro de tarefas e tempo por tipo de vídeo (31/10/2026, pedido do titular, inspirado no Ritto)
+
+- ✅ Migração **`drizzle/0038_cronometro.sql`**: `maestro.tempo_registros` (início e fim do relógio do banco, um
+  rodando por pessoa pelo índice `tempo_um_rodando`, até 24 h por sessão, tempo à mão só com motivo, Zerar = lápide com
+  Desfazer; cada um vê o seu, administração e gestão o do time, ninguém grava o tempo de outro, leitura não
+  cronometra, `_cliente` pelo card) e `maestro.tipos_video` (6 de fábrica por organização, nome e cor da paleta das
+  colunas, arquivar só administração e gestão). O card ganhou `tipo` e `previsto` (minutos) como campos do Quadro.
+- ✅ Play no card (no gesto no computador, à vista no toque) e na ficha; iniciar outro pausa o anterior. Selo discreto
+  "1h24 / 6h30" (estimado × real, tingido perto e passou do previsto).
+- ✅ Pílula de vidro em toda tela (tarefa + tempo + pausar; arrasta para os cantos no computador; no iPhone acima da
+  barra), título da aba "▶ 01:11 · tarefa", botão na cápsula e no topo, ⌥T/Alt+T, Esc e espaço no painel.
+- ✅ Painel (gaveta no computador, folha no iPhone): Agora (cronômetro grande com dígitos que sobem, Livre/Pomodoro com
+  foco/pausa/longa configuráveis, notificação do navegador e som curto, Ajustar, Zerar, o próximo passo do card),
+  Hoje (dias da semana, cards e Concluídas com "levou", Limpar) e Semana (total, dias, feitas, barras por dia, por
+  cliente, por tipo, tarefas; Eu/Time para quem gerencia).
+- ✅ Parado: sem gesto por N min (padrão 10, em Preferências) ou o computador dormiu → "Parado 12min · Manter /
+  Descartar" (descartar fecha no último gesto e segue contando).
+- ✅ Tela **Tempo** (`/app/tempo`, em Produção): por tipo de vídeo concluído, média, faixa típica p25–p75 e mediana numa
+  régua comum, nº de vídeos, horas e tendência por semana/mês; filtros de período, cliente e pessoa (só quem gerencia);
+  "Tipos" cria, renomeia, recolore e arquiva. A ficha sugere o previsto pelo típico do tipo ("Reels costuma levar
+  ~2h10 · Usar", 3+ vídeos).
+- ⛔ Em produção: migração `0038` do Maestro no próximo deploy autorizado.
+- ✅ App de computador 0.2.0 (titular, 31/10/2026; branch `maestro-cronometro-desktop`): o cronômetro na barra de
+  menus (Mac, ícone de modelo + "01:11" ao lado) e na bandeja (Windows, claro/escuro, ponto quando roda); menu com a
+  tarefa, o cliente e o tempo, Pausar/Retomar, os últimos cards do dia, Pomodoro, Abrir painel e Ajustes (mostrar o
+  tempo, atalho, abrir ao ligar). Lê e muda pelas rotas do site (`/api/tempo`, cookies da janela, Origin do Maestro),
+  conta do `inicio` do banco + desvio, relê a cada 30 s, ao acordar e quando a janela muda; funciona com a janela
+  fechada. Atalho global ⌥⇧T/Alt+Shift+T (configurável, lista fechada, nunca o ⌥T do site). Notificação nativa no
+  fim do foco/pausa e no parado (ociosidade do sistema, suspensão; Manter/Descartar = `op: "parado"`). No app o site
+  deixa Pomodoro e parado com o app (ponte `maestroDesktop.cronometro`); no navegador nada muda.
+- ⛔ Publicar o app 0.2.0: juntar com o site do cronômetro na `main` (o workflow gera os instaladores) — decisão do titular.
+- ⬜ Tempo na demonstração; lembrete de timer esquecido; exportar CSV.
+
 ## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
 
 - ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos
@@ -1238,6 +1271,7 @@ do card... não consigo localizar o job que quero achar".
 
 ## SOBEDESCE: Drive híbrido (31/10/2026)
 
+- ✅ Ramo `console-acesso-drive`: o "Acesso total" saiu do `/admin` do SOBEDESCE e foi para o console da Absolute ZRO (Apps › SOBEDESCE › Drive inteiro, `/admin/apps/sobedesce`): vagas e pessoas lidas do SOBEDESCE na hora, ligar/desligar só admin com motivo, pedido assinado `console.drive.*` (sem segredo novo), auditoria nos dois lados.
 - 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
 - 🔶 App de computador 0.3.0 no ramo `sobedesce-desktop-modo` (liberado pelo titular em 31/10/2026): diz ao site que
   entende o modo (`x-sobedesce-capacidades: drive-arquivos`) e só ele recebe o token `drive.file`; o 0.2.0 segue com 403. Mesma marca e regra do celular: pastas novas marcadas, Comparar (e Looks do Relay) e tamanho só nas pastas do
@@ -1245,6 +1279,11 @@ do card... não consigo localizar o job que quero achar".
   em Ajustes, "Escolher do Drive" pelo navegador (`/app/#escolher/<conta>`), celular pelo Wi-Fi com o modo. Relay
   embutido ganha o Picker. App do celular 2.8.61 (`sobedesce-app-v76`). Falta: merge na main (gera o instalador) e
   conferir o Picker num Drive de verdade.
+
+## Console: online agora (31/10/2026)
+
+- ✅ Ramo `console-online-quem`: tocar no "Online agora" abre `/admin/agora`, com quem está online e onde (HUB com o
+  aparelho, apps pelo nome), atualizando sozinha a cada 15 s.
 
 ## Fase 6 — Escala
 

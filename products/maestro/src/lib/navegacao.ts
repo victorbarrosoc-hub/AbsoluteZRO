@@ -21,6 +21,7 @@ export const GRUPOS: Grupo[] = [
       { href: "/app/criacao", nome: "Criação", icone: "criacao" },
       { href: "/app/arquivos", nome: "Arquivos", icone: "arquivos", sinal: "envios" },
       { href: "/app/agenda", nome: "Agenda", icone: "agenda" },
+      { href: "/app/tempo", nome: "Tempo", icone: "cronometro" },
     ],
   },
   {

@@ -63,13 +63,17 @@ export type DadosCard = {
   apagadoPor?: string;
   /** A capa enviada (drizzle/0035): só o servidor grava, junto com os bytes em `maestro.card_capas`. */
   capa?: { sha: string; l: number; a: number };
+  /** O tipo de vídeo (drizzle/0038, `maestro.tipos_video.id`): o painel "Tempo" mede quanto cada tipo leva. */
+  tipo?: string;
+  /** O tempo previsto, em minutos (5 a 200 h, de 5 em 5): o estimado × real no card. */
+  previsto?: number;
 };
 
 /** O card como a tela recebe: os dados, a versão do card e a versão de cada campo (para o conflito por campo). */
 export type CardQ = { id: string; dados: DadosCard; versao: number; versoes: Record<string, number> };
 
 /** Campos que a equipe muda pela tela (o resto é do servidor). */
-export const CAMPOS_EDITAVEIS = ["tema", "coluna", "ordem", "cliente", "projeto", "resp", "prazo", "prioridade", "briefing"] as const;
+export const CAMPOS_EDITAVEIS = ["tema", "coluna", "ordem", "cliente", "projeto", "resp", "prazo", "prioridade", "briefing", "tipo", "previsto"] as const;
 export type CampoEditavel = (typeof CAMPOS_EDITAVEIS)[number];
 export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   tema: "o título",
@@ -81,6 +85,8 @@ export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   prazo: "o prazo",
   prioridade: "a prioridade",
   briefing: "o briefing",
+  tipo: "o tipo de vídeo",
+  previsto: "o previsto",
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -106,7 +112,10 @@ export function valorDoCampo(campo: CampoEditavel, v: unknown): unknown {
     case "cliente":
     case "projeto":
     case "resp":
+    case "tipo":
       return typeof v === "string" && UUID.test(v) ? v.toLowerCase() : undefined;
+    case "previsto":
+      return typeof v === "number" && Number.isInteger(v) && v >= 5 && v <= 200 * 60 && v % 5 === 0 ? v : undefined;
     case "prazo":
       return typeof v === "string" && DATA.test(v) && !Number.isNaN(new Date(`${v}T12:00:00Z`).getTime()) ? v : undefined;
     case "prioridade":

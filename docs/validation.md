@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Console: quem está online e onde (31/10/2026)
+
+Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
+regra de 15 minutos), no HUB com o aparelho da sessão (navegador · sistema, nunca o IP) e/ou nos apps pelo nome e
+ícone; atualiza sozinho a cada 15 s com a aba visível.
+
+- `tests/integration/people.test.ts` (`onlineAgora`): HUB com o aparelho, app pelo nome e produto, parado há 20 min e
+  suspenso ficam de fora.
+- `tests/e2e/admin.spec.ts`: o número leva à lista, a própria sessão aparece no HUB, e `/admin/agora` passa no axe.
+
+## Acesso total do Drive do SOBEDESCE no console (31/10/2026)
+
+Branch `console-acesso-drive`. Sem rede: o SOBEDESCE do lado do HUB é um servidor falso local; do lado do SOBEDESCE, a
+Absolute ZRO falsa de `web/tests/zro-falso.mts`.
+
+- `tests/integration/sobedesce-console.test.ts` (6): sem papel e Financeiro barrados antes de chamar; suporte lê e não
+  muda; sem motivo ou id ruim recusado sem chamar; ligar assina `console.drive.acesso` em nome do admin e audita;
+  `sem_vaga`/`nao_encontrada` viram mensagem e ficam na auditoria; SOBEDESCE fora do ar nunca vira "ligado".
+- `products/sobedesce/web/tests/zro-console-drive.test.mts` (4): 401 sem token, com a ação trocada, de outro público e
+  reapresentado; 400/404; lê vagas e pessoas sem segredo; liga, desliga sem devolver vaga, 409 no limite, `auditoria_zro`.
+- `drive-hibrido.test.mts`: o `/admin` do SOBEDESCE não tem mais a ação nem o botão, só o link para o console.
+- Correção (31/10/2026): em produção a página mostrava "O SOBEDESCE não respondeu agora." porque o pedido saía com
+  `iss` = localhost (o emissor só era definido nas rotas do login). Página e ação agora passam por
+  `apps/hub-web/lib/sobedesce-console.ts`, que carrega `lib/oidc`; o teste confere esse caminho.
+
 ## Papel Financeiro e Correio no console (31/10/2026)
 
 Branch `console-financeiro-correio` (com a main mesclada, até `0045_tpeasy_subdominio`): migração `0046_papel_financeiro`
@@ -3978,3 +4003,50 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `products/tpeasy/desktop`: `npm test` 24/24; `npm run smoke` (xvfb) SMOKE OK.
 - HUB: `tests/integration/downloads.test.ts` e `desktop-apps.test.ts` 27/27 (o TPeasy no catálogo, Mac e Windows só com o
   download aberto). `release-gate.test.ts` tem 5 falhas que já existem na `main` sem esta mudança (o estado do Carro).
+
+## Maestro: cronômetro de tarefas e tempo por tipo de vídeo (31/10/2026)
+
+- Pesquisa (Toggl, Harvest, Clockify, ClickUp, monday/Asana/Linear, Session/Flow, Live Activities da Apple, Raycast)
+  aplicada: play no card, um rodando por vez, pílula tipo Live Activity, início no servidor, parado em duas escolhas,
+  Pomodoro como modo, previsto sugerido pelo histórico do tipo. Migração nova `products/maestro/drizzle/0038_cronometro.sql`.
+- `tests/cronometro.test.mts` 19/19: contas puras (relógio, dia e semana no fuso do Brasil com a sessão que passa da
+  meia-noite, quantis p25/mediana/p75, típico só com 3+ vídeos, parado, Pomodoro, previsto digitado), tipos de fábrica
+  iguais no SQL e no TS, papéis dos tipos, `tipo`/`previsto` no card (tipo de outra organização e arquivado recusados),
+  um rodando por pessoa (índice), início do relógio do banco, cada um vê o seu e a gestão o time, ninguém muda ou apaga
+  o tempo de outro, leitura não cronometra, outra organização, organização forjada e escopo do freela não veem nada,
+  Ajustar (motivo, futuro e 24 h), Zerar com Desfazer, parado com descartar e continuar, acesso por cliente, Semana e
+  painel por tipo por papel, rota `/api/tempo` (401, Origin, leitura 403). `tests/acesso-cliente.test.mts` ganhou
+  `tempo_registros`.
+- `npm test` do Maestro: 713 testes, 712 passaram; a falha é `relay.test.mts` ("copie de novo de
+  products/relay/src/plano.js"), que já falha na `main` (a cópia do Relay está desatualizada; nada desta frente).
+- Lint, Prettier, tipos e build ok; `node scripts/scan-secrets.mjs`: nenhum segredo.
+- E2E (Playwright, computador 1440×900 e iPhone 15 Pro, claro e escuro): `e2e/cronometro.spec.ts` 23/23 (play → pílula
+  → painel, um rodando por vez, título da aba, Livre/Pomodoro/Hoje/Semana, Eu/Time, ⌥T, Esc e espaço; Ajustar com
+  motivo, Zerar com Desfazer; parado com relógio falso; ficha com tipo, sugestão do típico e "Usar"; tela Tempo com
+  média, faixa, tendência, filtro de 12 meses e criar tipo; a equipe sem o time). Também passaram `inicio`, `quadro`,
+  `quadro-achar`, `colunas`, `arrastar`, `gestos`, `transicao` (84) e `inicio`, `sem-corte` (com `/app/tempo`) e
+  `visual` em computador, iPhone e iPhone Safari (32). `gestos` "segurar ergue em menos de 400 ms" oscilou uma vez sob
+  carga e passou ao repetir.
+- Capturas fictícias `tp-<computador|iphone>-<claro|escuro>-*.png` (Quadro rodando, painel Livre, Pomodoro, Hoje,
+  Semana, Ajustar, parado, ficha, Tempo, tipos) e o vídeo do passeio (`TP_VIDEO`), fora do repositório.
+
+## Maestro para computador 0.2.0: o cronômetro na barra de menus e na bandeja (31/10/2026)
+
+- `products/maestro/desktop`: `npm test` 53/53, com `test/cronometro.test.mjs` (formatador: relógio, curto da barra,
+  contagem do Pomodoro, duração; estado do servidor com o desvio do relógio e o que não tem forma fora; início rápido;
+  menu rodando, parado, sem sessão/acesso/leitura/conexão e com parado pendente; ajustes; atalho que não colide com o
+  ⌥T do site nem com o menu do app, troca, ocupado e liberar; o controlador contra um `/api/tempo` falso: GET com
+  credenciais, Origin só nas gravações, 401/403/rede, Pomodoro terminando com a janela fechada, parado pelo sistema →
+  Descartar = `op: "parado"`, preferências da página), `test/pomodoro.test.mjs` (padrões e limites iguais aos do site,
+  foco → pausa → longa, pausa no meio guardada pela hora gravada, parado só na volta e com a suspensão) e
+  `test/bandeja.test.mjs` (tamanhos 1x/1,5x/2x, Mac de modelo só preto, Windows grafite/branco, ponto do "rodando", a
+  ponte estreita).
+- `npm run smoke` (xvfb, Electron 44.5.1) SMOKE OK, agora com o cronômetro: ícones carregam, o estado vem de um Maestro
+  falso local pelo fetch da sessão (cookie e Origin), o menu monta e "Pausar" chega ao servidor; o atalho registra e
+  libera. O app de verdade (12 s contra um Maestro falso): a página recebe a ponte, manda "pronto" e as preferências
+  (foco de 30 min gravado em `cronometro.json`), e o POST da janela faz o app reler na hora; sem erro no log.
+- Lint da raiz em `products/maestro/desktop` limpo; Prettier do desktop limpo. Site (`src/components/tempo`): `tsc`
+  sem erro nos arquivos do cronômetro, ESLint e Prettier limpos. `node scripts/scan-secrets.mjs` limpo.
+- Prévia (fora do repositório): o menu gerado do modelo real com os ícones reais (Mac claro e escuro, Windows) e os
+  ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
+  isso a prévia em vez da captura do menu nativo.

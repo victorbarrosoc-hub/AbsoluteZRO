@@ -18,8 +18,8 @@ import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta } from "@/lib/depois";
 import { aprovar, buscarPedido, cancelar, lugarLegivel, normalizarCodigo } from "@/lib/dispositivo";
 import { avisarComputadorConectado } from "@/lib/email/avisos";
-import { removerConta, revogarRefresh, trocarGoogleDeEntrar } from "@/lib/google/contas";
-import { acessoTotalPeloAdmin, ehAdmin } from "@/lib/admin";
+import { removerConta, trocarGoogleDeEntrar } from "@/lib/google/contas";
+import { ehAdmin } from "@/lib/admin";
 import { avisarMacsTravados } from "@/lib/atualizar-mac";
 import { ehPlano, trocarPlano } from "@/lib/recursos";
 import { MENSAGEM_SEM_ACESSO } from "@/lib/zro/acesso";
@@ -217,24 +217,6 @@ export async function acaoAdminDesconectar(fd: FormData): Promise<void> {
   if (!usuarioId || !sessaoId || sessaoId === atual.sessao.id) return;
   await revogarSessaoDe(usuarioId, sessaoId);
   refresh();
-}
-
-/**
- * Admin, ficha da pessoa: liga ou desliga o "Acesso total" ao Drive (lib/google/vagas.ts). Ligar ocupa uma das vagas
- * do Google (vaga usada não volta) e para no limite; desligar revoga os Drives com o `drive` inteiro dela.
- */
-export async function acaoAcessoTotal(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
-  const atual = await sessaoDoSite();
-  const usuarioId = texto(fd, "usuarioId");
-  if (!atual || !usuarioId) return RECUSADO;
-  const ligar = texto(fd, "ligar") === "1";
-  const r = await acessoTotalPeloAdmin(atual.usuario, usuarioId, ligar, { revogar: revogarRefresh });
-  if (!r.ok) {
-    if (r.erro === "recusado") return RECUSADO;
-    return { erro: r.erro === "sem_vaga" ? `As ${r.resumo.limite} vagas já estão ocupadas.` : "Esta conta não existe mais." };
-  }
-  refresh();
-  return { ok: ligar ? "Acesso total liberado. Vale na próxima conexão do Drive." : "Acesso total desligado. A pessoa reconecta com os arquivos escolhidos." };
 }
 
 /** Sua conta › Absolute ZRO › Desligar. */

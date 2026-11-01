@@ -13,7 +13,7 @@ import { db, schema } from "@/lib/db";
 import type { Plataforma, Plano } from "@/lib/db/schema";
 import { versaoPublicada } from "@/lib/release";
 import type { ModoDrive } from "@/lib/google/config";
-import { modoEfetivo, trocarAcessoTotal, type ResultadoLiberar } from "@/lib/google/vagas";
+import { modoEfetivo } from "@/lib/google/vagas";
 
 const PADRAO = ["contato@dissesim.com.br"];
 
@@ -40,20 +40,6 @@ export async function ehAdmin(usuario: { id: string; email?: string }, admins = 
     )
     .limit(1);
   return drive.length > 0;
-}
-
-/**
- * O botão "Acesso total" da ficha: só um admin (ehAdmin) liga ou desliga. Quem não é recebe "recusado" e nada muda.
- * `revogar`: como revogar no Google os Drives com o `drive` inteiro quando desliga (a action passa o de verdade).
- */
-export async function acessoTotalPeloAdmin(
-  quem: { id: string; email?: string },
-  usuarioId: string,
-  ligar: boolean,
-  o: { limite?: number; revogar?: (refreshEnc: string, contaId: string) => Promise<void>; admins?: string[] } = {},
-): Promise<ResultadoLiberar | { ok: false; erro: "recusado" }> {
-  if (!(await ehAdmin(quem, o.admins))) return { ok: false, erro: "recusado" };
-  return trocarAcessoTotal(usuarioId, ligar, o);
 }
 
 export type DriveAdmin = { email: string; nome: string | null; fotoUrl: string | null; estado: "ok" | "reconectar"; criadoEm: Date; modo: ModoDrive };

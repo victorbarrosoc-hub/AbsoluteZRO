@@ -111,3 +111,21 @@ export const fmtBytes = (n: number | null | undefined) => {
   }
   return `${v.toLocaleString('pt-BR', { maximumFractionDigits: i ? 1 : 0 })} ${u[i]}`
 }
+
+/** "Safari · iOS", a partir do user agent da sessão (o console mostra o aparelho, nunca o IP). */
+export function deviceLabel(ua: string | null): string {
+  if (!ua) return 'Aparelho desconhecido'
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Navegador'
+  const os = /iPhone|iPad/.test(ua)
+    ? 'iOS'
+    : /Android/.test(ua)
+      ? 'Android'
+      : /Mac OS X/.test(ua)
+        ? 'macOS'
+        : /Windows/.test(ua)
+          ? 'Windows'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : ''
+  return os ? `${browser} · ${os}` : browser
+}
