@@ -853,7 +853,10 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   e o preço, passo 2 com as três opções e a duração, confirmação antes do vídeo, resultado na Mídia (a imagem como clipe
   parado de 5 s), guardado no navegador, "Pôr na linha" no cursor e retomada do pedido depois de recarregar. Só web.
 - ⛔ Em produção: migration `0052` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
-- ⬜ Rift Motion trocar a conexão própria pela do HUB (sessão do Rift avisada).
+- ✅ Rift Motion no catálogo para usar a mesma conexão (migration `0054`, 01/11/2026): produto `rift-motion` em
+  `coming_soon`, gate em `development` (só admin), fora dos planos até o lançamento; cliente `rift-web` vira o app
+  `rift-motion` com o escopo `zro.higgsfield`. O Rift deixa a conexão própria e passa a pedir por `/api/v1/higgsfield`
+  (PR #80). A Z sabe o que o Rift faz (filtrada pelo gate).
 
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 

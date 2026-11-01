@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rift Motion no catálogo para a Higgsfield das Conexões (01/11/2026, migration 0054)
+
+Branch `claude/rift-higgsfield-hub`, a partir da main com a `0052`.
+
+- `npm run lint`, `npm run format:check` e `npm run typecheck`: ok. `npm test`: tudo verde depois de dois ajustes
+  esperados: `nao-lancados.test.ts` (o Rift agora existe no catálogo: conta comum não vê, admin vê; a 0049 de novo não
+  muda nada, 4 produtos) e o guia da Z (`ia-plataformas.test.ts` pede a entrada `rift-motion` em `PLATAFORMAS`).
+- O Rift fica fora de `zro.plan_products` (`stripe.test.ts` confere as contas dos planos sem ele).
+- `z-rift.test.ts` segue verde: a Z do Rift continua só para admin enquanto o gate estiver fechado.
+- Não testado em produção: o deploy do HUB aplica a `0054`; a conta `victor@absolutezro.com` (admin) entra no Rift, a
+  do Gmail deixa de entrar até o lançamento (decisão do titular).
+
 ## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, ADR 0037)
 
 Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a main ficou com a 0050 dos sons e a 0051 do Synquei; a
