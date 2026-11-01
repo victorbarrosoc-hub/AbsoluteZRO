@@ -75,6 +75,9 @@ class AgendaDeApps extends EventEmitter {
     notificar = () => {},
     atualizarSozinho = () => false,
     marcarGerenciados = () => {},
+    // "uma vez por versão" também entre aberturas: a central abre com o computador todo dia
+    jaAvisou = () => false,
+    lembrarAviso = () => {},
     relogio = relogioDoSistema,
     log = () => {},
     primeiraMs = PRIMEIRA_MS,
@@ -87,6 +90,8 @@ class AgendaDeApps extends EventEmitter {
     this.notificar = notificar
     this.atualizarSozinho = atualizarSozinho
     this.marcarGerenciados = marcarGerenciados
+    this.jaAvisou = jaAvisou
+    this.lembrarAviso = lembrarAviso
     this.relogio = relogio
     this.log = log
     this.primeiraMs = primeiraMs
@@ -193,7 +198,10 @@ class AgendaDeApps extends EventEmitter {
   #avisarDisponiveis() {
     const novas = [...this.pendentes.values()].filter((p) => p.fase === 'disponivel' && !p.avisado)
     for (const p of novas) p.avisado = true
-    const aviso = avisoDeDisponiveis(novas)
+    // já avisada numa abertura anterior: fica na bandeja e na página, sem outra notificação
+    const avisar = novas.filter((p) => !this.jaAvisou(p.id, p.versao))
+    for (const p of avisar) this.lembrarAviso(p.id, p.versao)
+    const aviso = avisoDeDisponiveis(avisar)
     if (aviso) this.notificar(aviso)
   }
 

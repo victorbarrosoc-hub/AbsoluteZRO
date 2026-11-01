@@ -132,6 +132,21 @@ function deepLinkDosArgs(argv, origin) {
   return null
 }
 
+// Downloads da central (ADR 0036): o HUB (/baixar/…) redireciona para o Release no GitHub do dono da Absolute ZRO e
+// dali para o servidor de arquivos do GitHub. Nenhum outro destino, e fora do HUB só https na porta padrão.
+const GITHUB_RELEASE = /^\/victorbarrosoc-hub\/[A-Za-z0-9._-]+\/releases\/download\/[^/]+\/[^/]+$/
+const ARQUIVOS_DO_GITHUB = new Set(['release-assets.githubusercontent.com', 'objects.githubusercontent.com', 'github-releases.githubusercontent.com'])
+
+/** A central pode baixar deste endereço (ou seguir um redirecionamento para ele)? */
+function downloadPermitido(url, origin) {
+  const u = parse(url)
+  if (!u || u.username || u.password) return false
+  if (u.origin === origin) return u.pathname.startsWith('/baixar/')
+  if (u.protocol !== 'https:' || u.port) return false
+  if (u.hostname === 'github.com') return GITHUB_RELEASE.test(u.pathname)
+  return ARQUIVOS_DO_GITHUB.has(u.hostname)
+}
+
 // Permissões que a página do HUB pode ter. Câmera, microfone, localização, notificações, MIDI, USB etc. ficam
 // negados; copiar texto (botões "Copiar") e tela cheia de vídeo funcionam.
 const PERMITIDAS = new Set(['clipboard-sanitized-write', 'fullscreen'])
@@ -170,6 +185,7 @@ module.exports = {
   deepLink,
   linkDeApp,
   deepLinkDosArgs,
+  downloadPermitido,
   permitir,
   ehErroDeRede,
   agenteLimpo,
