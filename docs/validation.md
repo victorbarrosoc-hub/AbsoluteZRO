@@ -4168,6 +4168,25 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## NOSSOM · estúdio Comando + Console (01/11/2026)
+
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` OK, `npm run build` OK; e2e completo 68 passaram,
+  0 falharam (26 pulados por `RELEASE=closed`), antes de trazer a `main`.
+- Ajustados de propósito: passos na folha da ferramenta (`player`, `install-navigation`), o estado de "pensando" no
+  símbolo do Início (`assistant-flow`) e a cor do texto de apoio no escuro azul (`studio`, temas).
+- Telas reais conferidas em 1440 e 390: onda com medidores, ferramentas no trecho, folha com botões giratórios,
+  folha recolhida com o campo de pedir; sem rolagem lateral no celular.
+- Não validado: o Safari real do iPhone e a conta do titular em produção (o NOSSOM segue fechado pela 0049).
+
+## NOSSOM · home logada, tema e família no celular (01/11/2026)
+
+- `tests/e2e/home-logada.spec.ts` (novo): sem "Em desenvolvimento"; conta e "Abrir o estúdio" no topo; menu da conta
+  com os atalhos e os apps (sem Revela); no celular (390) a conta no topo e o estúdio pelo menu e pelo título. No
+  estúdio a 390: sol/lua troca claro e escuro e o menu mostra o nome de cada app.
+- Testes de tema (studio, subscription, set, zro-ia) usam o botão novo (`definirTema` em `tests/e2e/fixtures.ts`);
+  `install-navigation` com Relay no lugar de Revela.
+- `tsc` OK, `npm run build` OK, `home-logada` 2/2. A suíte e2e completa não rodou aqui (interrompida); fica para o CI.
+
 ## NOSSOM · importar no Safari do iPhone (01/11/2026)
 
 - `tests/storage.test.ts` (novo): o projeto em bytes não guarda Blob e volta igual (original, versões e faixas

@@ -16,7 +16,7 @@ test('mobile shortcuts open real tools even while AI is unavailable', async ({ p
     ['Preparar para publicar', 'masterizacao'],
   ]) {
     await page.goto('/studio/inicio');
-    await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Seu áudio,\s*melhor\./ })).toBeVisible();
     await expect(page.locator('.assistant-details')).not.toHaveAttribute('open');
     await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/studio/${path}$`));
@@ -40,7 +40,7 @@ test('a slow conversation can be cancelled and shortcuts remain available', asyn
   await page.goto('/studio/inicio');
   await page.getByLabel('Descreva seu objetivo').fill('Quero uma voz mais suave');
   await page.getByRole('button', { name: 'Encontrar tratamento', exact: true }).click();
-  await expect(page.locator('.assistant-panel .ai-motion')).toHaveClass(/state-thinking/);
+  await expect(page.locator('.assistant-panel .assistant-marca')).toHaveClass(/state-thinking/);
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   finish();
   await expect(page.getByLabel('Descreva seu objetivo')).toBeEnabled();
