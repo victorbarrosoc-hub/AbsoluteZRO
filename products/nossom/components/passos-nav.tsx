@@ -56,6 +56,13 @@ const CURTO: Record<Operation, string> = {
   transcribe: 'Cada fala no tempo',
 };
 
+/** O passo em minúsculas e sem acento, para a cor dele no CSS (`data-passo`): uma cor por função. */
+export const slugPasso = (label: string) =>
+  label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 /** O passo da ferramenta (o primeiro, se nenhuma). */
 export function passoDe(id: Operation) {
   return toolGroups.find((g) => g.tools.includes(id)) ?? toolGroups[0];
@@ -83,6 +90,7 @@ export function PassosTrilho({
         return (
           <button
             key={g.label}
+            data-passo={slugPasso(g.label)}
             className={`trilho-item ${aberto === g.label ? 'active' : ''}`}
             aria-current={aberto === g.label ? 'step' : undefined}
             disabled={desabilitado}
@@ -111,7 +119,11 @@ export function PassosLista({
 }) {
   const g = passoDe(ferramenta ?? atual);
   return (
-    <section className="passos-lista" aria-label={`Ferramentas de ${g.label}`}>
+    <section
+      className="passos-lista"
+      data-passo={slugPasso(g.label)}
+      aria-label={`Ferramentas de ${g.label}`}
+    >
       <h2>{g.label}</h2>
       <ul>
         {g.tools.map((id) => {

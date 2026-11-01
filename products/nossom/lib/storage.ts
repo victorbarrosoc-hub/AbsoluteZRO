@@ -42,6 +42,8 @@ export type Project = {
 export type ProjectSummary = Omit<Project, 'versions' | 'originalFile'> & {
   duration: number;
   versionCount: number;
+  /** A ferramenta da versão mais nova (a cor do passo nos Recentes); ausente no original. */
+  lastOperation?: string;
 };
 interface NossomDB extends DBSchema {
   projects: { key: string; value: Project };
@@ -79,6 +81,7 @@ export async function listProjects(owner: string): Promise<ProjectSummary[]> {
       originalName: p.originalName,
       duration: p.versions[0].info.duration,
       versionCount: p.versions.length,
+      lastOperation: p.versions[p.versions.length - 1]?.operation,
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }

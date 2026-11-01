@@ -1813,6 +1813,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             <AssistantHome
               onOpen={() => setAssistant(true)}
               onUpload={() => fileInput.current?.click()}
+              onRecord={() => void record()}
+              recentes={projects}
+              onAbrir={(id) => void open(id)}
               onDrop={(file) => {
                 if (!busy && !recording) void upload(file, undefined, true);
               }}

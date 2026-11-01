@@ -118,6 +118,8 @@ export const WavePlayer = memo(function WavePlayer({
           ))}
           {region && (
             <rect
+              className="wave-region"
+              rx="6"
               x={(region.start / duration) * 960}
               y="0"
               width={((region.end - region.start) / duration) * 960}
