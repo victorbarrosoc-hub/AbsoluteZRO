@@ -636,7 +636,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
   await pagina.close()
 })
 
-test('em desenvolvimento: símbolo, logo, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {
+test('em-desenvolvimento.html: a página neutra (titular, 01/11/2026), sem marca nem nome da Revela, nos dois temas e no celular', async () => {
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
@@ -648,25 +648,19 @@ test('em desenvolvimento: símbolo, logo, título, uma linha e Voltar ao HUB, no
     const r = await pagina.goto(endereco + 'em-desenvolvimento.html')
     assert.equal(r.status(), 200)
     assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
-    assert.equal(await pagina.locator('.fechado-zro svg').count(), 1)
-    await pagina.waitForFunction(() => document.querySelector('.fechado-produto img')?.complete)
-    assert.ok(await pagina.evaluate(() => document.querySelector('.fechado-produto img').naturalWidth > 0), 'logo da Revela não carregou')
-    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Em desenvolvimento.')
-    assert.equal(await pagina.locator('.fechado p').count(), 1)
-    const botao = pagina.getByRole('link', { name: 'Voltar ao HUB' })
-    assert.equal(await botao.getAttribute('href'), 'https://absolutezro.com/inicio')
-    assert.ok(await botao.evaluate((b) => b.classList.contains('glass-btn--ink')))
-    await pagina.evaluate(() => document.fonts.ready)
-    assert.ok(await pagina.evaluate(() => document.fonts.check('300 40px Figtree') && document.fonts.check('800 40px Figtree')))
-    const pesos = await pagina.evaluate(() => [getComputedStyle(document.querySelector('.fechado .fino')).fontWeight, getComputedStyle(document.querySelector('.fechado .forte')).fontWeight])
-    assert.deepEqual(pesos, ['300', '800'])
-    // claro por padrão; escuro pela escolha guardada (app/tema.js), com a logo de letras brancas
+    assert.equal(await pagina.title(), 'Absolute ZRO')
+    // só o símbolo da Absolute ZRO; nenhuma logo do app
+    assert.equal(await pagina.locator('main svg[aria-label="Absolute ZRO"]').count(), 1)
+    assert.equal(await pagina.locator('img').count(), 0)
+    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Página indisponível.')
+    assert.equal(await pagina.locator('main p').count(), 1)
+    assert.equal(await pagina.getByRole('link', { name: 'Ir para a Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com')
+    assert.doesNotMatch(await pagina.content(), /Revela|desenvolvimento|finishing/i)
+    // claro por padrão; o escuro segue o sistema
     assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
-    assert.match(await pagina.locator('.fechado-produto img').getAttribute('src'), /revela-logo-claro\.png$/)
-    await pagina.evaluate(() => window.revelaTema.alternar())
+    await pagina.emulateMedia({ colorScheme: 'dark' })
     assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)')
-    assert.match(await pagina.locator('.fechado-produto img').getAttribute('src'), /revela-logo\.png$/)
-    await pagina.evaluate(() => window.revelaTema.alternar())
+    await pagina.emulateMedia({ colorScheme: 'light' })
     const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
     assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
     assert.deepEqual(erros, [])

@@ -9,7 +9,7 @@ import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
 import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, momentos, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
-import { idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
+import { filtrarZro, idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca, versaoZro } from '../src/sonoplasta.js'
 import * as bancoSons from './sons.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
@@ -117,10 +117,22 @@ if (ponte.desktop) $('abrirSobedesce').hidden = false
 S.preset = prepararPreset(await fetch(new URL('../presets/fala.v1.json', import.meta.url)).then((r) => r.json()))
 // Sonoplasta: o que buscar em cada momento e como o português vira termo do banco (regras no preset, não no código)
 S.sonoplasta = await fetch(new URL('../presets/sonoplasta.v1.json', import.meta.url)).then((r) => r.json())
-/** Os sons que descem de novo sozinhos quando o projeto reabre: os livres e os do banco no Drive. */
-const DESCEM = new Set(['openverse', 'banco'])
-// fonte: 'livres' (Openverse) ou 'banco' (a pasta da pessoa no Drive, guardada só neste navegador)
-S.sons = { fonte: lerGuardado('aeon.sons.fonte') === 'banco' ? 'banco' : 'livres', alvo: null, resultados: [], estado: 'vazio', erro: null, ouvindo: null, banco: bancoDe(lerGuardado('aeon.sons.banco')), pedido: 0 }
+/** Os sons que descem de novo sozinhos quando o projeto reabre: os da Absolute ZRO, os livres e os do banco no Drive. */
+const DESCEM = new Set(['zro', 'openverse', 'banco'])
+// fonte: 'zro' (os sons originais da plataforma, o padrão), 'livres' (Openverse) ou 'banco' (a pasta da pessoa no Drive,
+// guardada só neste navegador). zro: o catálogo (lido uma vez), a categoria aberta e a versão escolhida de cada som.
+const FONTES_SONS = ['zro', 'livres', 'banco']
+S.sons = {
+  fonte: FONTES_SONS.includes(lerGuardado('aeon.sons.origem')) ? lerGuardado('aeon.sons.origem') : 'zro',
+  alvo: null,
+  resultados: [],
+  estado: 'vazio',
+  erro: null,
+  ouvindo: null,
+  banco: bancoDe(lerGuardado('aeon.sons.banco')),
+  zro: { catalogo: null, categoria: null, versoes: {} },
+  pedido: 0,
+}
 
 const player = new Player($('tela'), (id) => ponte.urlTocavel(S.entradas.get(id)))
 const linha = new LinhaUI($('linha'), {
@@ -918,7 +930,8 @@ $('abasPainel').onclick = (e) => {
 function aba(nome) {
   for (const b of $('abasPainel').children) b.setAttribute('aria-selected', String(b.dataset.aba === nome))
   for (const sec of document.querySelectorAll('.painel-lateral .aba')) sec.hidden = sec.dataset.aba !== nome
-  // o banco no Drive só é lido quando a pessoa abre a aba Sons
+  // os sons (da ZRO ou do banco no Drive) só são lidos quando a pessoa abre a aba Sons
+  if (nome === 'sons' && S.sons.fonte === 'zro' && S.sons.estado === 'vazio') mostrarZro()
   if (nome === 'sons' && S.sons.fonte === 'banco' && S.sons.banco && S.sons.estado === 'vazio') listarPasta()
 }
 
@@ -1086,7 +1099,7 @@ function desenharInspector() {
     const o = som?.origem || {}
     sec.querySelector('.insp-efeito strong').textContent = som?.nome.replace(/\.[^.]+$/, '') || 'Efeito'
     // de onde veio: do computador (licença da pessoa) ou de um banco (autor e licença para os créditos)
-    sec.querySelector('.insp-efeito .apoio').textContent = o.tipo === 'arquivo' ? 'Do seu computador' : o.tipo === 'banco' ? 'Do seu banco no Drive' : [o.autor, o.licenca].filter(Boolean).join(' · ') || 'Banco de sons'
+    sec.querySelector('.insp-efeito .apoio').textContent = o.tipo === 'arquivo' ? 'Do seu computador' : o.tipo === 'zro' ? 'Som original da Absolute ZRO' : o.tipo === 'banco' ? 'Do seu banco no Drive' : [o.autor, o.licenca].filter(Boolean).join(' · ') || 'Banco de sons'
     const i = $('fxVolume')
     if (document.activeElement !== i) i.value = String(fx.volume || 0)
     i.previousElementSibling.textContent = `${fx.volume > 0 ? '+' : ''}${String(fx.volume || 0).replace('.', ',')} dB`
@@ -1257,22 +1270,39 @@ function segundosLegiveis(s) {
   return s == null ? '' : s < 10 ? `${String(Math.round(s * 10) / 10).replace('.', ',')} s` : relogio(s)
 }
 
-/** O seletor Livres | Meu banco, o link da pasta, o caminho até a pasta aberta e as subpastas dela. */
+/** O seletor ZRO | Livres | Meu banco; na ZRO, as categorias; no banco, o link, o caminho até a pasta e as subpastas. */
 function desenharFonte() {
   const banco = S.sons.fonte === 'banco'
+  const zro = S.sons.fonte === 'zro'
   const b = S.sons.banco
+  const categorias = S.sons.zro.catalogo?.categorias || []
   for (const x of $('sonsFonte').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x.dataset.fonte === S.sons.fonte))
   $('sonsBancoForm').hidden = !banco || Boolean(b)
   $('sonsBusca').hidden = banco && !b
   $('sonsSugestoes').hidden = banco
   $('sonsPasta').hidden = !banco || !b
-  $('sonsPastas').hidden = !banco || !b?.pastas.length
-  $('sonsTermo').placeholder = banco ? 'Buscar nesta pasta' : 'whoosh, impacto, clique…'
+  $('sonsPastas').hidden = zro ? !categorias.length : !banco || !b?.pastas.length
+  $('sonsPastas').classList.toggle('sons-categorias', zro)
+  $('sonsTermo').placeholder = zro ? 'Buscar nos sons da ZRO' : banco ? 'Buscar nesta pasta' : 'whoosh, impacto, clique…'
   const r = $('sonsRodape')
-  r.textContent = banco ? 'Da sua pasta no Drive, pelo SOBEDESCE. A licença é sua.' : 'Sons livres para uso comercial, com crédito.'
-  r.title = banco
-    ? 'Os sons descem da sua pasta no Google Drive pela conexão do SOBEDESCE. Nada é movido nem apagado no Drive.'
-    : 'Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.'
+  r.textContent = zro ? 'Banco de áudios da Absolute ZRO. Sem crédito.' : banco ? 'Da sua pasta no Drive, pelo SOBEDESCE. A licença é sua.' : 'Sons livres para uso comercial, com crédito.'
+  r.title = zro
+    ? 'O banco de áudios da Absolute ZRO: sons originais da plataforma, com 4 versões de cada. Entram no vídeo sem crédito.'
+    : banco
+      ? 'Os sons descem da sua pasta no Google Drive pela conexão do SOBEDESCE. Nada é movido nem apagado no Drive.'
+      : 'Openverse: Freesound e Wikimedia, só CC0, CC BY e domínio público. O crédito de cada som sai no CREDITOS.txt da entrega.'
+  if (zro) {
+    const chip = (nome, valor, total) => {
+      const x = el('button', '', { type: 'button', textContent: nome, title: total ? `${total} sons` : 'Todas as categorias' })
+      x.setAttribute('aria-pressed', String(S.sons.zro.categoria === valor))
+      x.onclick = () => {
+        S.sons.zro = { ...S.sons.zro, categoria: valor }
+        mostrarZro()
+      }
+      return x
+    }
+    return $('sonsPastas').replaceChildren(chip('Todos', null), ...categorias.map((c) => chip(c.nome, c.nome, c.total)))
+  }
   if (!banco || !b) return
   const itens = []
   b.caminho.forEach((pasta, i) => {
@@ -1312,10 +1342,11 @@ $('sonsFonte').onclick = (e) => {
   const fonte = e.target.closest('[data-fonte]')?.dataset.fonte
   if (!fonte || fonte === S.sons.fonte) return
   S.sons = { ...S.sons, fonte, resultados: [], estado: 'vazio', erro: null }
-  guardar('aeon.sons.fonte', fonte)
+  guardar('aeon.sons.origem', fonte)
   desenharFonte()
   desenharResultados()
-  if (fonte === 'banco' && S.sons.banco) listarPasta()
+  if (fonte === 'zro') mostrarZro()
+  else if (fonte === 'banco' && S.sons.banco) listarPasta()
   else if (fonte === 'livres' && $('sonsTermo').value.trim()) buscarSons($('sonsTermo').value)
 }
 
@@ -1352,6 +1383,30 @@ async function listarPasta(q = '') {
     if (pedido !== S.sons.pedido) return
     S.sons = { ...S.sons, resultados: [], estado: 'erro', erro: err }
   }
+  desenharFonte()
+  desenharResultados()
+}
+
+/** Os sons da Absolute ZRO: lê o catálogo uma vez e mostra a categoria aberta (com `q`, só o que tem o termo). */
+async function mostrarZro(q = $('sonsTermo').value) {
+  if (!S.sons.zro.catalogo) {
+    const pedido = ++S.sons.pedido
+    S.sons = { ...S.sons, estado: 'buscando', erro: null }
+    desenharResultados()
+    try {
+      const catalogo = await bancoSons.listarZro()
+      if (pedido !== S.sons.pedido) return
+      S.sons.zro = { ...S.sons.zro, catalogo }
+    } catch (err) {
+      if (pedido !== S.sons.pedido) return
+      S.sons = { ...S.sons, resultados: [], estado: 'erro', erro: err }
+      desenharFonte()
+      return desenharResultados()
+    }
+  }
+  if (S.sons.fonte !== 'zro') return
+  const resultados = filtrarZro(S.sons.zro.catalogo, { categoria: S.sons.zro.categoria, q }, S.sonoplasta)
+  S.sons = { ...S.sons, resultados, estado: resultados.length ? 'pronto' : 'nada', consulta: q }
   desenharFonte()
   desenharResultados()
 }
@@ -1414,20 +1469,48 @@ function desenharResultados() {
   if (estado === 'nada')
     return ol.replaceChildren(
       el('li', 'apoio sons-estado', {
-        textContent: S.sons.fonte === 'banco' ? (S.sons.consulta ? 'Nenhum som com esse nome nesta pasta.' : 'Nenhum som nesta pasta.') : 'Nenhum som livre com esse nome. Tente outra palavra.',
+        textContent:
+          S.sons.fonte === 'zro'
+            ? 'Nenhum som da ZRO com esse nome. Tente outra palavra ou os Livres.'
+            : S.sons.fonte === 'banco'
+              ? (S.sons.consulta ? 'Nenhum som com esse nome nesta pasta.' : 'Nenhum som nesta pasta.') : 'Nenhum som livre com esse nome. Tente outra palavra.',
       }),
     )
   ol.replaceChildren(
-    ...resultados.map((s) => {
+    ...resultados.map((r) => {
+      // um som da ZRO aparece uma vez, com as versões para escolher (a melhor já vem marcada)
+      const escolhida = r.origem === 'zro' ? (S.sons.zro.versoes[r.id] ?? r.versoes[0]?.id) : null
+      const s = r.origem === 'zro' ? versaoZro(r, escolhida) : r
       const li = el('li', 'som-item')
       li.dataset.id = s.id
       const ouvir = el('button', 'icone-btn som-ouvir', { type: 'button', title: 'Ouvir', ariaLabel: `Ouvir ${s.titulo}`, innerHTML: '<svg><use href="#i-play"/></svg>' })
       ouvir.onclick = () => ouvirSom(s, ouvir)
       const info = el('span', 'som-info')
       const banco = s.origem === 'banco'
-      const detalhe = banco ? [s.formato?.toUpperCase(), tamanhoLegivel(s.bytes)] : [s.autor, s.licenca, segundosLegiveis(s.duracao)]
-      info.append(el('strong', '', { textContent: s.titulo }), el('span', 'apoio', { textContent: detalhe.filter(Boolean).join(' · ') }))
-      info.title = banco ? s.nome : `${s.titulo}${s.autor ? ` · ${s.autor}` : ''} · ${s.licenca} · ${s.fonte}`
+      const zro = s.origem === 'zro'
+      const detalhe = zro
+        ? [S.sons.zro.categoria ? '' : r.categoria, segundosLegiveis(s.duracao)]
+        : banco
+          ? [s.formato?.toUpperCase(), tamanhoLegivel(s.bytes)]
+          : [s.autor, s.licenca, segundosLegiveis(s.duracao)]
+      info.append(el('strong', '', { textContent: zro ? r.titulo : s.titulo }), el('span', 'apoio', { textContent: detalhe.filter(Boolean).join(' · ') }))
+      info.title = zro ? `${r.titulo} · ${r.categoria}` : banco ? s.nome : `${s.titulo}${s.autor ? ` · ${s.autor}` : ''} · ${s.licenca} · ${s.fonte}`
+      if (zro && r.versoes.length > 1) {
+        const versoes = el('span', 'som-versoes', { role: 'group', ariaLabel: `Versões de ${r.titulo}` })
+        for (const v of [...r.versoes].sort((a, b) => a.versao - b.versao)) {
+          const x = el('button', '', { type: 'button', textContent: String(v.versao), title: `Versão ${v.versao}${v.melhor ? ' · a melhor' : ''}` })
+          x.setAttribute('aria-pressed', String(v.id === escolhida))
+          x.onclick = () => {
+            S.sons.zro.versoes = { ...S.sons.zro.versoes, [r.id]: v.id }
+            desenharResultados()
+            // escolher já toca, para comparar de ouvido
+            const novo = $('sonsLista').querySelector(`[data-id="${CSS.escape(v.id)}"] .som-ouvir`)
+            if (novo && S.sons.ouvindo?.id !== v.id) ouvirSom(versaoZro(r, v.id), novo)
+          }
+          versoes.append(x)
+        }
+        info.append(versoes)
+      }
       const colocar = el('button', 'glass-btn som-colocar', { type: 'button', textContent: 'Colocar', title: S.sons.alvo ? `Colocar em ${S.sons.alvo.nome}` : 'Colocar no ponto' })
       colocar.onclick = () => colocarSomBuscado(s, colocar)
       li.append(ouvir, info, colocar)
@@ -1437,6 +1520,8 @@ function desenharResultados() {
 }
 
 async function buscarSons(texto) {
+  // nos sons da ZRO, filtra o catálogo já lido (em português ou no termo do preset)
+  if (S.sons.fonte === 'zro') return mostrarZro(String(texto).replace(/\s+/g, ' ').trim().slice(0, 80))
   // no banco da pessoa, o termo vai como ela escreveu (os nomes são dela), dentro da pasta aberta
   if (S.sons.fonte === 'banco') return listarPasta(String(texto).replace(/\s+/g, ' ').trim().slice(0, 80))
   const termo = termoDeBusca(texto, S.sonoplasta)

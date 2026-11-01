@@ -164,6 +164,21 @@ para usuários; o papel `admin` vê e usa tudo).
 - Capturas no iPhone (claro): página inicial, Início, Ferramentas, projeto, Set com "na Absolute ZRO", login único e o
   site do AEON com a página neutra.
 
+### CI depois do fechamento (ramo `testes-nao-lancados`)
+
+Na main, "Revela · testes" e "NOSSOM · validar" ficaram vermelhos: os testes esperavam o que o fechamento tirou do
+público. A regra fica como está; os testes passam a descrevê-la.
+
+- Revela: `tela.test.js` confere a página neutra (`Absolute ZRO` no título, "Página indisponível.", só o símbolo, nenhuma
+  imagem, nada de "Revela", claro e escuro pelo sistema, sem rolagem lateral no celular). `npm test` **180/180**.
+- NOSSOM: `install-navigation` (manifest, ícones e imagem social), `liquid-site` (cápsula abaixo da barra do iPhone) e
+  `zro-ia` (selo da Z na página inicial) entram com a conta liberada (`allowed`). O teste do manifest também confere
+  que, sem sessão, `/manifest.webmanifest` e `/opengraph-image` vão para absolutezro.com (307): eles trazem o nome do
+  app, então seguem fechados. Fechado, a página inicial já não oferece instalar (`InstallApp` só aberto) e o Next só
+  manda o cookie no manifest em prévia da Vercel; abrir o produto devolve os dois ao público.
+- NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
+  puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
@@ -4120,6 +4135,20 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
   "Meu banco", colar o link, subpasta, buscar nela, colocar o som (origem `banco` com a conta), Inspector "Do seu banco
   no Drive", o arquivo na entrega e nenhum crédito para ele.
 - Não validado: um Drive real em produção (falta publicar o HUB e o AEON com a 0044 aplicada).
+
+## Sonoplasta · sons originais da Absolute ZRO como banco padrão (01/11/2026)
+
+- HUB: migração `0050_sons_zro.sql` (tabela `zro.sons_zro` com o áudio, RLS só leitura para `zro_app`),
+  `packages/core/src/sons-zro.ts`, `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` (escopo `zro.sons`).
+  `tests/integration/sons-zro.test.ts` 4/4: catálogo por categoria na ordem do pack, versões com a melhor primeiro e sem o
+  áudio; arquivo com tipo, id e ETag; id inválido 422 e inexistente 404; sem conta 401; `zro_app` lê mas não insere,
+  altera nem apaga. OpenAPI conferido; `format:check`, `lint` e `scan-secrets` OK.
+- AEON: repasse `/api/zro/sons/zro*` no site e no desktop sem parâmetro nenhum (id fora do padrão é 404); `filtrarZro`
+  e `versaoZro` em `src/sonoplasta.js` (categoria, busca sem acento em português ou no termo do preset); origem `zro` sem
+  crédito. Tela no Chromium: a aba abre na ZRO com as categorias, o catálogo desce uma vez, a categoria filtra, a melhor
+  versão vem marcada, escolher a 1 troca o som, Colocar grava a origem `zro`, Inspector "Som original da Absolute ZRO",
+  o arquivo vai na entrega sem crédito.
+- Não validado: os 360 arquivos em produção (envio pendente da confirmação no Supabase) e o uso com a conta real.
 
 ## TPeasy em tpeasy.absolutezro.com e a conta à vista no celular (31/10/2026)
 

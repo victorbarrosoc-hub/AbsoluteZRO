@@ -359,6 +359,12 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   SOBEDESCE (`drive.listar` e `drive.token`, o token do Drive fica só no HUB); só leitura no Drive. Sem migration nova
   (vale o `zro.sons` da 0044). Falta: validar com um Drive real em produção. Próximo: fase 3 (ElevenLabs pela conta da
   pessoa).
+- 🟡 Sonoplasta · sons originais da Absolute ZRO (01/11/2026, pedido do titular): o pack da plataforma (90 sons em 9
+  categorias, 4 versões de cada, gerado com os créditos ElevenLabs do titular) é o banco **padrão** da aba Sons
+  (**ZRO** · Livres · Meu banco), sem link para colar. Os arquivos ficam no banco privado (`zro.sons_zro`, migração
+  0050; o repositório é público), lidos pelo HUB em `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` só com conta; categorias
+  em chips, busca em português, a melhor versão marcada e as outras a um toque; sem crédito no vídeo. Falta: subir os
+  360 arquivos em produção e validar com a conta do titular.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron
@@ -1375,6 +1381,9 @@ do card... não consigo localizar o job que quero achar".
 - ✅ Sites dos não lançados: AEON com a trava `LANCADO = false` (fecha mesmo com `RELEASE=released` na Vercel) e
   página neutra no lugar da inicial; Revela com a página neutra; NOSSOM manda as páginas do site para absolutezro.com.
   Relay sem a ficha "Vindo do AEON/NOSSOM/Revela".
+- ✅ CI de volta ao verde (ramo `testes-nao-lancados`): o teste de tela da Revela confere a página neutra; os e2e do
+  NOSSOM que olham a página inicial, o manifest e a imagem social entram com a conta liberada e conferem que, sem
+  sessão, esses endereços vão para absolutezro.com.
 - ⬜ Deploy dos projetos `aeon`, `revela` e `nossom` (o AEON segue no ar com a página de lançamento até o próximo
   deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
   SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.

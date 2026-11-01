@@ -488,7 +488,28 @@ test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar
   await pagina.keyboard.press('b')
   await pagina.locator('.clipe').nth(1).waitFor()
 
+  // os sons da Absolute ZRO são o padrão da aba: o catálogo vem uma vez, com categorias e as versões de cada som
+  const ZRO = { categorias: [{ nome: 'Whooshes e Transições', total: 1 }, { nome: 'Impactos', total: 1 }], sons: [
+    { id: 'whoosh-curto', origem: 'zro', titulo: 'Whoosh curto', categoria: 'Whooshes e Transições', versoes: [{ id: 'whoosh-curto-v1', versao: 1, duracao: 0.3, bytes: wav.length, formato: 'wav', melhor: true }] },
+    { id: 'boom-grave', origem: 'zro', titulo: 'Boom grave', categoria: 'Impactos', versoes: [
+      { id: 'boom-grave-v2', versao: 2, duracao: 0.3, bytes: wav.length, formato: 'wav', melhor: true },
+      { id: 'boom-grave-v1', versao: 1, duracao: 0.3, bytes: wav.length, formato: 'wav', melhor: false },
+    ] },
+  ] }
+  let catalogos = 0
+  await pagina.route('**/api/zro/sons/zro', (r) => {
+    catalogos++
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ZRO) })
+  })
+  await pagina.route('**/api/zro/sons/zro/*', (r) => {
+    const id = new URL(r.request().url()).pathname.split('/').pop()
+    r.fulfill({ status: 200, body: wav, headers: { 'content-type': 'audio/wav', 'x-zro-som-id': id, 'cross-origin-resource-policy': 'same-origin' } })
+  })
   await pagina.click('#abasPainel [data-aba="sons"]')
+  await pagina.locator('.som-item', { hasText: 'Boom grave' }).waitFor()
+  assert.equal(await pagina.locator('#sonsFonte [aria-pressed="true"]').innerText(), 'ZRO')
+  assert.deepEqual(await pagina.locator('#sonsPastas button').allInnerTexts(), ['Todos', 'Whooshes e Transições', 'Impactos'])
+  await pagina.click('#sonsFonte [data-fonte="livres"]')
   const momento = pagina.locator('.sons-momento', { hasText: 'Corte 1' })
   await momento.click()
   // o corte pede whoosh (preset) e a busca aparece com autor e licença
@@ -557,6 +578,25 @@ test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar
   assert.match(await pagina.locator('.insp-efeito').innerText(), /Do seu banco no Drive/)
   await pagina.click('#sonsFonte [data-fonte="livres"]')
 
+  // ZRO de novo: o catálogo não desce outra vez; a categoria filtra, a busca acha em português, a melhor versão vem
+  // marcada e a escolhida é a que entra (sem crédito)
+  await pagina.click('#sonsFonte [data-fonte="zro"]')
+  await pagina.locator('#sonsPastas button', { hasText: 'Impactos' }).click()
+  await pagina.waitForFunction(() => document.querySelectorAll('.som-item').length === 1)
+  assert.match(await pagina.locator('.som-item').innerText(), /Boom grave/)
+  await pagina.fill('#sonsTermo', 'boom')
+  await pagina.press('#sonsTermo', 'Enter')
+  assert.deepEqual(await pagina.locator('.som-versoes [aria-pressed="true"]').allInnerTexts(), ['2'])
+  await pagina.locator('.som-versoes button', { hasText: '1' }).click()
+  await pagina.waitForFunction(() => document.querySelector('.som-item')?.dataset.id === 'boom-grave-v1')
+  await pagina.locator('.som-item .som-colocar').click()
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.efeitos.length === 4)
+  const daZro = await pagina.evaluate(() => globalThis.__editor.h.atual.sons.find((x) => x.origem.tipo === 'zro'))
+  assert.deepEqual(daZro.origem, { tipo: 'zro', id: 'boom-grave-v1', titulo: 'Boom grave 1', fonte: 'Absolute ZRO' })
+  assert.match(await pagina.locator('.insp-efeito').innerText(), /Som original da Absolute ZRO/)
+  assert.equal(catalogos, 1)
+  await pagina.click('#sonsFonte [data-fonte="livres"]')
+
   // entrega: o arquivo do som vai junto, o XML aponta para ele e o crédito sai no CREDITOS.txt
   await pagina.click('.dock [data-ir="entrega"]')
   const downloads = []
@@ -569,6 +609,8 @@ test('Sonoplasta: o corte vira momento, a busca acha o som livre, ouvir, colocar
   assert.match(zip, /"Whoosh Rápido" por Ana · CC BY 4\.0 · https:\/\/freesound\.org\/s\/1/)
   assert.ok(zip.includes('Efeito - Whoosh grave.wav'), 'o som do banco também vai na entrega')
   assert.doesNotMatch(zip, /"Whoosh grave" (por|·)/, 'o som do banco da pessoa não pede crédito')
+  assert.ok(zip.includes('Efeito - Boom grave 1.wav'), 'o som da ZRO também vai na entrega')
+  assert.doesNotMatch(zip, /"Boom grave 1" (por|·)/, 'o som da Absolute ZRO não pede crédito')
   assert.deepEqual(erros, [])
   await pagina.close()
 })
