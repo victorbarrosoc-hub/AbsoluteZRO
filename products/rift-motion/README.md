@@ -12,8 +12,14 @@ Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
   e fora do catálogo do HUB, a pedido do titular: não aparece no painel do ecossistema. Sem o segredo, o painel abre em
   demonstração e diz isso.
   `npm test` confere.
-- Painel (`/#app`, `#projetos`, `#modelos`, `#biblioteca`, `#exportacoes`): projetos, biblioteca e exportações ficam no
-  aparelho, por conta (localStorage), até o Rift ter banco; o estúdio abre cada projeto com a cena de exemplo.
+- Banco próprio (01/11/2026): schema `rift` no Supabase AbsoluteZRO-SP, papel dono `rift` (login) e `rift_app` (sem
+  login, sem BYPASSRLS), RLS forçado em `projetos`, `biblioteca` (só nome, tipo e tamanho) e `exportacoes`. Migração
+  nova = arquivo novo em `db/migrations/` (`npm run migrar` com `RIFT_DATABASE_URL`; o sha256 é conferido). Rotas em
+  `api/rift/*` sempre por `comoPessoa` (`api/_banco.js`); `/api/rift/saude` confere a conexão. `npm test` sobe um
+  Postgres de verdade (isolamento pelas rotas e direto no banco).
+- Painel (`/#app`, `#projetos`, `#modelos`, `#biblioteca`, `#exportacoes`): com a conta, tudo na conta (abre em qualquer
+  aparelho; o que estava no aparelho sobe na primeira vez); sem banco, neste aparelho. O estúdio abre cada projeto com
+  a cena de exemplo.
 - `prototipo.html`: o protótipo publicado como Artifact (página inicial, entrar e estúdio). Sem `<!doctype>` de
   propósito: o Artifact põe o esqueleto. Nada nele exporta, entra ou salva de verdade.
 

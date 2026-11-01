@@ -15,6 +15,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rift Motion: login, painel e banco próprio (01/11/2026)
+
+Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
+
+- `products/rift-motion` `npm test`: **6/6**. Login: sem cliente configurado, `/eu` diz "não configurado" e `/entrar`
+  volta com `?zro=config`; a volta fica no site (o hash do painel passa, endereço externo vira `/#app`). Banco num
+  Postgres de verdade montado como no Supabase (papel `rift` dono, `rift_app` sem login): migração não repete e recusa
+  arquivo mudado; Ana não vê, muda nem apaga projeto do Beto pelas rotas (404); direto no banco, como `rift_app` com o
+  sub do Beto, o update no projeto da Ana não toca nada e o insert forjado em nome da Ana é recusado pelo RLS; nem o
+  dono do schema enxerga linhas (RLS forçado); exportação não prende em projeto alheio; sem sessão 401, outro site 403,
+  dado fora do formato 400.
+- Ponta a ponta local (site + rotas + Postgres, sessão assinada): criar projeto, exportar, limpar o armazenamento do
+  navegador e recarregar: projeto e exportação voltam do banco, saudação com o nome da conta, sem erros no console.
+- Produção: `/api/rift/saude` → `{ ok: true, migracoes: 1 }` pelo pooler de transação (aws-1-sa-east-1);
+  `/api/rift/projetos` sem sessão → 401; o HUB aceita o cliente `rift-web` e leva à tela de entrar. `anon` e
+  `authenticated` sem uso do schema `rift`. Não testado: o login completo com uma conta real.
+
 ## Transparência e chroma: Relay, SOBEDESCE e AEON (01/11/2026)
 
 Branch `claude/motion-2d-3d`. Neste ambiente (Linux, Node 22, ffmpeg com libvpx-vp9 e prores_ks, Chromium do Playwright
