@@ -1,41 +1,41 @@
-/* O player da plataforma (components/player-bar.tsx), em Liquid Glass (pedido do titular, 01/11/2026): uma cápsula
- * de vidro que flutua embaixo, como a do Spotify, com brilho de borda, desfoque com saturação e o azul do NOSSOM só no
- * progresso. No estúdio ela fica centrada na área de trabalho (--pg-esq / --pg-dir); no celular, compacta e acima das
- * abas. Respeita "reduzir movimento" e "reduzir transparência". */
+/* O player da plataforma em forma de ilha (components/player-bar.tsx; escolha do titular, 01/11/2026). Liquid Glass:
+ * vidro com brilho de borda, desfoque com saturação; azul do NOSSOM só no fio de progresso e na onda viva. Recolhida, é
+ * uma pílula com capa, nome, onda viva e tocar; aberta, mostra tempo, voltar/avançar e volume. No estúdio fica centrada
+ * na área de trabalho (--pg-esq / --pg-dir); no celular, acima das abas. Respeita "reduzir movimento" e "reduzir
+ * transparência". */
 .player-global {
-  --pg-altura: 76px;
   --pg-vidro: rgba(30, 32, 39, 0.74);
   position: fixed;
   left: var(--pg-esq, 0px);
   right: var(--pg-dir, 0px);
-  bottom: 16px;
+  bottom: 18px;
   z-index: 60;
-  width: min(1000px, calc(100% - var(--pg-esq, 0px) - var(--pg-dir, 0px) - 32px));
-  height: var(--pg-altura);
+  width: max-content;
+  max-width: calc(100% - var(--pg-esq, 0px) - var(--pg-dir, 0px) - 24px);
+  height: 58px;
   margin-inline: auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 1.4fr) minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 18px;
-  container-type: inline-size;
-  padding: 0 14px 0 12px;
-  border-radius: 28px;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 999px;
+  overflow: hidden;
   isolation: isolate;
   color: #f5f5f7;
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.17),
       rgba(255, 255, 255, 0.03) 55%,
-      rgba(255, 255, 255, 0.06)
+      rgba(255, 255, 255, 0.07)
     ),
     var(--pg-vidro);
   backdrop-filter: blur(40px) saturate(2) brightness(1.05);
   -webkit-backdrop-filter: blur(40px) saturate(2) brightness(1.05);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
     inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 22px 56px rgba(0, 0, 0, 0.52),
     0 4px 14px rgba(0, 0, 0, 0.3);
   animation: pg-entra 0.55s var(--spring) both;
 }
@@ -49,9 +49,9 @@
   padding: 1px;
   background: linear-gradient(
     150deg,
-    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.62),
     rgba(255, 255, 255, 0.08) 35%,
-    rgba(153, 194, 244, 0.2) 70%,
+    rgba(153, 194, 244, 0.22) 70%,
     rgba(255, 255, 255, 0.32)
   );
   -webkit-mask:
@@ -61,37 +61,49 @@
   mask-composite: exclude;
   pointer-events: none;
 }
-/* o reflexo suave do vidro */
-.player-global::after {
-  content: '';
-  position: absolute;
-  left: 6%;
-  right: 45%;
-  top: 0;
-  height: 55%;
-  z-index: -1;
-  border-radius: 28px 28px 50% 50%;
-  background: radial-gradient(80% 100% at 30% 0%, rgba(255, 255, 255, 0.13), transparent 70%);
-  pointer-events: none;
-}
 @keyframes pg-entra {
   from {
-    transform: translateY(24px) scale(0.98);
+    transform: translateY(24px) scale(0.96);
     opacity: 0;
   }
 }
-.pg-faixa {
+@keyframes pg-abre {
+  from {
+    transform: scale(0.94);
+    opacity: 0.6;
+  }
+}
+
+/* ── recolhida: a ilha ── */
+.pg-ilha {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  height: 100%;
+  padding: 0 6px 0 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pg-ilha strong {
+  max-width: 260px;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pg-capa {
   position: relative;
   flex: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -102,7 +114,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 8px 20px rgba(45, 111, 214, 0.35);
+    0 6px 16px rgba(45, 111, 214, 0.35);
 }
 .pg-capa svg {
   position: relative;
@@ -113,7 +125,7 @@
   content: '';
   position: absolute;
   inset: -40%;
-  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent 30%);
+  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.32), transparent 30%);
   animation: pg-gira 3.2s linear infinite;
 }
 @keyframes pg-gira {
@@ -121,16 +133,157 @@
     transform: rotate(360deg);
   }
 }
+/* a onda viva: cinco barras que dançam enquanto toca e param quando pausa */
+.pg-vivo {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+}
+.pg-vivo i {
+  width: 3px;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #cfe5ff, #5aa9ff);
+  transform: scaleY(0.3);
+  transform-origin: center;
+}
+.player-global.tocando .pg-vivo i {
+  animation: pg-danca 0.9s ease-in-out infinite;
+}
+.pg-vivo i:nth-child(2) {
+  animation-delay: -0.3s !important;
+}
+.pg-vivo i:nth-child(3) {
+  animation-delay: -0.6s !important;
+}
+.pg-vivo i:nth-child(4) {
+  animation-delay: -0.15s !important;
+}
+.pg-vivo i:nth-child(5) {
+  animation-delay: -0.45s !important;
+}
+@keyframes pg-danca {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* tocar: vidro claro, como o botão principal do ecossistema */
+.pg-play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  color: #0d0f14;
+  background: linear-gradient(180deg, #ffffff, #e4e8f0);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 4px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.22s var(--spring);
+}
+.pg-play:hover {
+  transform: scale(1.06);
+}
+.pg-play:active {
+  transform: scale(0.93);
+}
+.pg-play:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+/* o fio de progresso: na borda de baixo da ilha; na ilha aberta, a linha com o tempo */
+.pg-fio,
+.pg-volume {
+  --pg-pct: 0%;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, #9cc8ff, #5aa9ff) 0 0 / var(--pg-pct) 100% no-repeat,
+    rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+}
+.player-global:not(.aberta) .pg-fio {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background:
+    linear-gradient(90deg, #9cc8ff, #5aa9ff) 0 0 / var(--pg-pct) 100% no-repeat,
+    transparent;
+  filter: drop-shadow(0 0 4px rgba(90, 169, 255, 0.7));
+}
+.pg-fio::-webkit-slider-thumb,
+.pg-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 4px rgba(90, 169, 255, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.pg-fio::-moz-range-thumb,
+.pg-volume::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+.player-global:not(.aberta) .pg-fio::-webkit-slider-thumb {
+  width: 0;
+  box-shadow: none;
+}
+.pg-linha:hover .pg-fio::-webkit-slider-thumb,
+.pg-fio:focus-visible::-webkit-slider-thumb,
+.pg-volume:hover::-webkit-slider-thumb,
+.pg-volume:focus-visible::-webkit-slider-thumb {
+  opacity: 1;
+}
+
+/* ── aberta ── */
+.player-global.aberta {
+  width: min(540px, calc(100% - var(--pg-esq, 0px) - var(--pg-dir, 0px) - 24px));
+  height: auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-radius: 30px;
+  animation: pg-abre 0.38s var(--spring) both;
+}
+.pg-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
 .pg-textos {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 3px;
+  gap: 2px;
 }
 .pg-textos strong {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 650;
-  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -146,19 +299,30 @@
 .pg-textos a:hover {
   color: #fff;
 }
-.pg-centro {
+.pg-linha {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  gap: 10px;
+  font-size: 11.5px;
+  color: rgba(235, 238, 245, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.pg-linha .pg-fio {
+  flex: 1;
+  height: 5px;
 }
 .pg-botoes {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 18px;
+}
+.pg-botoes .pg-volume {
+  width: 90px;
+  height: 4px;
 }
 .pg-icone {
+  flex: none;
   display: grid;
   place-items: center;
   width: 36px;
@@ -176,100 +340,11 @@
   color: #fff;
   background: rgba(255, 255, 255, 0.1);
 }
-/* tocar: vidro claro, como o botão principal do ecossistema */
-.pg-play {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 50%;
-  color: #0d0f14;
-  background: linear-gradient(180deg, #ffffff, #e4e8f0);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    inset 0 -2px 4px rgba(0, 0, 0, 0.08),
-    0 6px 18px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  transition: transform 0.22s var(--spring);
-}
-.pg-play:hover {
-  transform: scale(1.07);
-}
-.pg-play:active {
-  transform: scale(0.93);
-}
-.pg-play:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-.pg-linha {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  font-size: 11.5px;
-  color: rgba(235, 238, 245, 0.6);
-  font-variant-numeric: tabular-nums;
-}
-.pg-linha input,
-.pg-volume {
-  --pg-pct: 0%;
-  flex: 1;
-  height: 5px;
-  margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  border-radius: 5px;
-  background:
-    linear-gradient(90deg, #9cc8ff, #5aa9ff) 0 0 / var(--pg-pct) 100% no-repeat,
-    rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-}
-.pg-linha input::-webkit-slider-thumb,
-.pg-volume::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow:
-    0 0 0 4px rgba(90, 169, 255, 0.25),
-    0 2px 6px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.pg-linha input::-moz-range-thumb,
-.pg-volume::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-}
-.pg-linha:hover input::-webkit-slider-thumb,
-.pg-direita:hover .pg-volume::-webkit-slider-thumb,
-.pg-linha input:focus-visible::-webkit-slider-thumb,
-.pg-volume:focus-visible::-webkit-slider-thumb {
-  opacity: 1;
-}
-.pg-direita {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-}
-.pg-volume {
-  flex: 0 1 108px;
-}
 .pg-abrir {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  height: 30px;
   padding: 0 12px;
-  margin-right: 4px;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
@@ -286,81 +361,48 @@
 }
 .pg-erro {
   margin: 0;
+  padding: 0 8px;
   font-size: 12px;
   color: #ffb1b9;
 }
-.pg-progresso {
-  display: none;
+.player-global:not(.aberta) .pg-erro {
+  position: absolute;
+  left: 64px;
+  bottom: 4px;
+  font-size: 11px;
 }
 .player-global :focus-visible {
   outline: 2px solid #9cc8ff;
   outline-offset: 2px;
 }
 
-/* espaço para a cápsula não cobrir o conteúdo; avisos sobem acima dela */
+/* espaço para a ilha não cobrir o conteúdo; avisos sobem acima dela */
 html.tem-player body {
-  padding-bottom: 108px;
+  padding-bottom: 96px;
 }
 html.tem-player .toast {
-  bottom: 108px;
+  bottom: 96px;
 }
 
-/* a cápsula se ajusta à própria largura (no estúdio ela fica só sobre a área de trabalho) */
-@container (max-width: 900px) {
+@media (max-width: 680px) {
+  .player-global {
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    max-width: calc(100% - 16px);
+  }
+  body:has(.studio-tabs) .player-global {
+    bottom: calc(64px + 10px + env(safe-area-inset-bottom));
+  }
+  .pg-ilha strong {
+    max-width: 46vw;
+  }
+  .player-global.aberta {
+    width: calc(100% - 16px);
+  }
   .pg-abrir {
     display: none;
   }
-}
-@container (max-width: 760px) {
-  .pg-volume {
-    display: none;
-  }
-}
-@media (max-width: 680px) {
-  .player-global {
-    --pg-altura: 64px;
-    left: 8px;
-    right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    width: auto;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 4px;
-    padding: 0 6px;
-    border-radius: 22px;
-    overflow: hidden;
-  }
-  body:has(.studio-tabs) .player-global {
-    bottom: calc(64px + 8px + env(safe-area-inset-bottom));
-  }
-  .pg-capa {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-  }
-  .pg-centro {
-    flex-direction: row;
-  }
-  .pg-linha,
-  .pg-botoes .pg-icone,
-  .pg-direita .pg-volume,
-  .pg-direita .pg-icone:first-child,
-  .pg-erro {
-    display: none;
-  }
-  .pg-progresso {
-    display: block;
-    position: absolute;
-    left: 14px;
-    bottom: 0;
-    height: 2px;
-    max-width: calc(100% - 28px);
-    border-radius: 2px;
-    background: linear-gradient(90deg, #9cc8ff, #5aa9ff);
-    box-shadow: 0 0 8px rgba(90, 169, 255, 0.7);
-    transition: width 0.25s linear;
-  }
   html.tem-player body {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
   }
   html.tem-player .toast {
     bottom: calc(90px + 72px + env(safe-area-inset-bottom));
@@ -368,16 +410,20 @@ html.tem-player .toast {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .player-global {
+  .player-global,
+  .player-global.aberta {
     animation: none;
   }
   .pg-capa.tocando::after {
     display: none;
     animation: none;
   }
+  .player-global.tocando .pg-vivo i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
   .pg-play,
-  .pg-icone,
-  .pg-progresso {
+  .pg-icone {
     transition: none;
   }
 }
@@ -387,4 +433,7 @@ html.tem-player .toast {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
+}
+html.tem-player body:has(.player-global.aberta) .toast {
+  bottom: 196px;
 }

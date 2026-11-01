@@ -30,7 +30,15 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
   await page.getByRole('button', { name: 'Reproduzir áudio' }).click();
   await expect(barra(page)).toBeVisible();
   await expect(barra(page).getByRole('button', { name: 'Pausar' })).toBeVisible();
-  await expect(barra(page).locator('.pg-textos strong')).toHaveText(/\S/);
+  // a ilha: capa, nome, onda viva e tocar; tocar nela abre o player inteiro, Esc recolhe
+  const ilha = barra(page).getByRole('button', { name: /^Abrir o player: / });
+  await expect(ilha).toBeVisible();
+  await ilha.click();
+  await expect(barra(page).getByRole('button', { name: 'Avançar 10 segundos' })).toBeVisible();
+  await expect(barra(page).getByRole('slider', { name: 'Volume' })).toBeVisible();
+  await page.screenshot({ path: 'artifacts/player-aberto-1440.png', animations: 'disabled' });
+  await page.keyboard.press('Escape');
+  await expect(ilha).toBeVisible();
   await expect.poll(() => tempo(page)).toBeGreaterThan(0.3);
 
   // trocar de ferramenta não para o som
@@ -93,6 +101,9 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
   await page.screenshot({ path: 'artifacts/player-1440.png', animations: 'disabled' });
 
   // fechar esquece o áudio, também depois de recarregar
+  await barra(page)
+    .getByRole('button', { name: /^Abrir o player: / })
+    .click();
   await barra(page).getByRole('button', { name: 'Fechar o player' }).click();
   await expect(barra(page)).toHaveCount(0);
   await page.reload();
