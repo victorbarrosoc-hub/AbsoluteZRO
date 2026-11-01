@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0049 · Sons originais da Absolute ZRO (pedido do titular em 01/11/2026).
+-- Absolute ZRO HUB · 0050 · Sons originais da Absolute ZRO (pedido do titular em 01/11/2026).
 -- O pack de efeitos da plataforma (gerado com os créditos ElevenLabs do titular) vira o banco padrão da aba Sons do AEON
 -- e de todo app da família: as mesmas categorias e as 4 versões de cada som, sem link para colar. Os arquivos ficam
 -- aqui, no banco privado (o repositório é público): só quem entra com a conta ouve e baixa, pelo HUB

@@ -3998,7 +3998,7 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 
 ## Sonoplasta · sons originais da Absolute ZRO como banco padrão (01/11/2026)
 
-- HUB: migração `0049_sons_zro.sql` (tabela `zro.sons_zro` com o áudio, RLS só leitura para `zro_app`),
+- HUB: migração `0050_sons_zro.sql` (tabela `zro.sons_zro` com o áudio, RLS só leitura para `zro_app`),
   `packages/core/src/sons-zro.ts`, `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` (escopo `zro.sons`).
   `tests/integration/sons-zro.test.ts` 4/4: catálogo por categoria na ordem do pack, versões com a melhor primeiro e sem o
   áudio; arquivo com tipo, id e ETag; id inválido 422 e inexistente 404; sem conta 401; `zro_app` lê mas não insere,

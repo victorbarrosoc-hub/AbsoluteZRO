@@ -318,7 +318,7 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 Sonoplasta · sons originais da Absolute ZRO (01/11/2026, pedido do titular): o pack da plataforma (90 sons em 9
   categorias, 4 versões de cada, gerado com os créditos ElevenLabs do titular) é o banco **padrão** da aba Sons
   (**ZRO** · Livres · Meu banco), sem link para colar. Os arquivos ficam no banco privado (`zro.sons_zro`, migração
-  0049; o repositório é público), lidos pelo HUB em `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` só com conta; categorias
+  0050; o repositório é público), lidos pelo HUB em `/api/v1/sons/zro` e `/api/v1/sons/zro/{id}` só com conta; categorias
   em chips, busca em português, a melhor versão marcada e as outras a um toque; sem crédito no vídeo. Falta: subir os
   360 arquivos em produção e validar com a conta do titular.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,

@@ -1,6 +1,6 @@
 /**
  * Sons originais da Absolute ZRO (pedido do titular em 01/11/2026): o pack de efeitos da plataforma, o banco padrão da
- * aba Sons do AEON e de todo app da família. Os arquivos ficam no banco (zro.sons_zro, migração 0049), leitura pelo
+ * aba Sons do AEON e de todo app da família. Os arquivos ficam no banco (zro.sons_zro, migração 0050), leitura pelo
  * papel zro_app (RLS); só quem entra com a conta (escopo `zro.sons`) lista, ouve e baixa. Licença da plataforma: sem
  * crédito no vídeo.
  */
