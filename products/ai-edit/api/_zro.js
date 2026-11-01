@@ -289,11 +289,13 @@ export function pessoaDosClaims(dados) {
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 30).map((p) => p.slice(0, 60)) : [],
     // o gate de lançamento do HUB para este produto (api/_release.js): 'allowed', 'released', 'closed' ou null
     release: estadoDaClaim(dados.zro_release),
+    // o mesmo gate para a NOSSOM: liga a separação de voz e instrumental (src/faixas.js) só para quem ela atende
+    nossom: estadoDaClaim(dados.zro_release, 'nossom'),
   }
 }
 
 /** O que vai para a sessão do app (cookie assinado): a cópia do perfil, sem token. */
-export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos, release: p.release ?? null })
+export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos, release: p.release ?? null, nossom: p.nossom ?? null })
 
 const tokensDe = (corpo) =>
   typeof corpo?.access_token === 'string' && corpo.access_token.length < 2048

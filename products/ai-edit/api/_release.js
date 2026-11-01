@@ -24,11 +24,17 @@ export const fechado = () => release() === 'closed'
  */
 export const desktopAberto = () => !fechado() && String(process.env.RELEASE_DESKTOP || '').trim() === 'released'
 
-/** O que o HUB disse sobre este produto para esta conta (claim zro_release), ou null quando não disse. */
-export function estadoDaClaim(zroRelease) {
-  const v = zroRelease && typeof zroRelease === 'object' ? zroRelease[PRODUTO] : undefined
+/** O que o HUB disse sobre um produto (este, sem dizer) para esta conta (claim zro_release), ou null quando não disse. */
+export function estadoDaClaim(zroRelease, produto = PRODUTO) {
+  const v = zroRelease && typeof zroRelease === 'object' ? zroRelease[produto] : undefined
   return typeof v === 'string' && ESTADOS.includes(v) ? v : null
 }
+
+/**
+ * A NOSSOM está aberta para esta conta (released ou allowed na claim)? É o que liga "Voz e instrumental" no Inspector;
+ * quem decide de verdade é a própria NOSSOM, a cada pedido (products/nossom/lib/server/irmaos.ts).
+ */
+export const nossomAberta = (sessao) => sessao?.nossom === 'released' || sessao?.nossom === 'allowed'
 
 /**
  * A sessão pode usar o AEON agora? Fechado (padrão): só a conta que o HUB marcou como `allowed`. Aberto

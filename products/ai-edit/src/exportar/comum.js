@@ -10,7 +10,8 @@ import { corDoClipe } from '../cores.js'
 import { modoDe, pedacos, saidaNoClipe } from '../velocidade.js'
 import { posicionar } from '../quadro.js'
 import { efeitosNaLinha, faixas } from '../efeitos.js'
-import { paraQuadros } from '../tempo.js'
+import { paraQuadros, paraSegundos } from '../tempo.js'
+import { faixasDoClipe } from '../faixas.js'
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c])
 
@@ -60,7 +61,7 @@ export function segmentos(p) {
     for (let i = 0; i < pts.length - 1; i++) {
       const z = zoomEm(zooms, c.midia, pts[i])
       for (const pc of pedacos(c, pts[i], pts[i + 1]))
-        out.push({ clipe: c.id, midia: c.midia, ini: pc.ini, fim: pc.fim, linha: t + Math.round(saidaNoClipe(c, pc.ini)), saida: pc.saida, v: pc.v, som: pc.som, modo: modoDe(c), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
+        out.push({ clipe: c.id, midia: c.midia, ini: pc.ini, fim: pc.fim, linha: t + Math.round(saidaNoClipe(c, pc.ini)), saida: pc.saida, v: pc.v, som: pc.som, modo: modoDe(c), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c), faixas: faixasDoClipe(p, c) })
     }
     t += tamanho(c)
   }
@@ -104,6 +105,36 @@ export function efeitosExportados(p) {
  */
 export const arquivoDoSom = (s) => `Efeito - ${nomeArquivo(s.nome)}`
 export const caminhoDoSom = (s) => s.caminho || arquivoDoSom(s)
+
+/** Arquivo WAV de uma faixa separada (voz ou instrumental) de uma separação, ao lado do XML na entrega. */
+export function arquivoDaFaixa(p, sep, parte) {
+  const m = p.midias.find((x) => x.id === sep.midia)
+  return `${nomeArquivo((m?.nome || 'som').replace(/\.[^.]+$/, ''))} - ${parte === 'voz' ? 'Voz' : 'Instrumental'} ${Math.round(sep.ini)}s.wav`
+}
+
+/**
+ * Voz e instrumental separados pela NOSSOM para os exportadores: um pedaço por segmento com faixas (em 100%, onde o
+ * som toca) e por faixa que não está muda. [{ seg, parte, sep, volume (dB, já com o do clipe), desde (quadros da
+ * separação até o começo do pedaço), arquivo }]. O som original desses segmentos vai calado (as duas somam ele).
+ */
+export function faixasExportadas(p) {
+  const out = []
+  for (const s of segmentos(p))
+    if (s.som && s.faixas)
+      for (const parte of ['voz', 'instrumental']) {
+        const v = s.faixas[parte]
+        if (v === null) continue
+        out.push({ seg: s, parte, sep: s.faixas.sep, volume: Math.round((v + s.ajustes.volume) * 10) / 10, desde: paraQuadros(paraSegundos(s.ini, p.fps) - s.faixas.sep.ini, p.fps), arquivo: arquivoDaFaixa(p, s.faixas.sep, parte) })
+      }
+  return out
+}
+
+/** Os arquivos de faixa que a entrega precisa: [{ sep, parte, arquivo, quadros }], um por separação e faixa usadas. */
+export function arquivosDeFaixas(p) {
+  const vistos = new Map()
+  for (const x of faixasExportadas(p)) if (!vistos.has(x.arquivo)) vistos.set(x.arquivo, { sep: x.sep, parte: x.parte, arquivo: x.arquivo, quadros: Math.max(1, paraQuadros(x.sep.fim - x.sep.ini, p.fps)) })
+  return [...vistos.values()]
+}
 
 /** Sons usados na linha, na ordem do projeto (cada um vira um arquivo/asset no exportador). */
 export const sonsUsados = (p) => {

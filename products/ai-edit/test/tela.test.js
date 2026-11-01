@@ -5,7 +5,7 @@
 // de verdade carregando no navegador. A transcrição do caminho de uso é falsa (um worker trocado pela rota), para o
 // teste não depender de fala gravada; a de verdade tem o teste próprio no fim (precisa de internet uma vez).
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
@@ -18,6 +18,8 @@ import { simularSet } from './set-falso.js'
 import { FAMILIA } from '../src/familia.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
+/** stderr de um comando (o volumedetect do ffmpeg escreve lá) */
+const estderr = (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8' }).stderr
 let s
 let navegador
 let dir
@@ -1090,6 +1092,140 @@ test('peças: duas seções em 16:9 e 9:16, nome pelo modelo, vídeo de cada uma
   assert.deepEqual(novo.clipes[0][0], q3)
   assert.equal(novo.clipes.at(-1)[0], 0)
   assert.equal(await pagina.evaluate(() => document.body.dataset.pagina), 'edicao')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+/**
+ * A NOSSOM falsa (nossom.absolutezro.com e o armazenamento dela): conta com franquia, preparar, receber o som em partes,
+ * fila → separando → pronto, as cinco faixas (FLAC de verdade) e liberar. Responde com o CORS da origem do AEON, como
+ * products/nossom/lib/server/irmaos.ts. Guarda o que recebeu para o teste conferir.
+ */
+async function simularNossom(pagina, faixas) {
+  const r = { enviados: [], acoes: [], status: 0 }
+  const tamanhos = faixas.map((b) => b.length)
+  const pacote = Buffer.concat(faixas)
+  const cors = (origem) => ({ 'access-control-allow-origin': origem, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'Content-Type', 'access-control-allow-methods': 'GET, POST, PUT', vary: 'Origin' })
+  await pagina.route('https://nossom.absolutezro.com/**', async (rota) => {
+    const q = rota.request()
+    const origem = q.headers().origin || s.url.replace(/\/$/, '')
+    const u = new URL(q.url())
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 204, headers: cors(origem) })
+    const json = (corpo, status = 200) => rota.fulfill({ status, headers: { ...cors(origem), 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
+    if (u.pathname === '/api/usage') return json({ allowed: true, unlimited: false, remainingSeconds: 3600, planName: 'Estúdio', used: 0, remaining: 3600, limit: 3600, resetAt: '2026-12-01' })
+    if (u.pathname === '/api/audio/jobs' && q.method() === 'POST') {
+      const corpo = q.postDataJSON()
+      r.acoes.push(corpo.action === 'submit' ? `submit:${corpo.preset}` : corpo.action)
+      if (corpo.action === 'prepare') return json({ id: '11111111-2222-4333-8444-555555555555', partBytes: 20 * 1024 * 1024, uploadUrls: ['https://teste.supabase.co/storage/v1/object/upload/sign/parte-0?token=x'] })
+      if (corpo.action === 'submit') return json({ status: 'queued' })
+      return json({ ok: true, status: 'cancelled' })
+    }
+    if (u.pathname === '/api/audio/jobs' && u.searchParams.get('id')) {
+      r.status++
+      if (r.status < 2) return json({ status: 'running' })
+      return json({
+        status: 'completed',
+        report: { preset: 'stems-v1', sampleRate: 44100, channels: 2, gainDb: 0, stems: ['voz', 'bateria', 'baixo', 'guitarra', 'outros'].map((name, i) => ({ name, bytes: tamanhos[i] })), totalBytes: pacote.length, chunks: [{ index: 0, bytes: pacote.length }] },
+        downloadUrls: ['https://teste.supabase.co/storage/v1/object/sign/pacote?token=y'],
+      })
+    }
+    return json({ error: 'não esperado' }, 404)
+  })
+  await pagina.route('https://teste.supabase.co/**', async (rota) => {
+    const q = rota.request()
+    const origem = q.headers().origin || '*'
+    if (q.method() === 'OPTIONS') return rota.fulfill({ status: 204, headers: cors(origem) })
+    if (q.method() === 'PUT') {
+      r.enviados.push(q.postDataBuffer())
+      return rota.fulfill({ status: 200, headers: cors(origem), body: '{}' })
+    }
+    return rota.fulfill({ status: 200, headers: { ...cors(origem), 'content-type': 'application/octet-stream' }, body: pacote })
+  })
+  return r
+}
+
+test('voz e instrumental pela NOSSOM: separar o clipe, Só voz, prévia, vídeo final com a voz e as faixas na entrega', async () => {
+  // a pessoa que a NOSSOM atende (o gate dela no HUB)
+  const { pagina, erros } = await abrir()
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...PESSOA, irmaos: { nossom: true } }) }))
+  await pagina.reload()
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  const { bytes } = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())] }
+  })
+  writeFileSync(join(dir, 'show.mp4'), Buffer.from(bytes))
+  // as cinco faixas que a NOSSOM devolve: voz em 440 Hz e bateria em 3 kHz (o resto em silêncio), do tamanho do trecho
+  const info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', join(dir, 'show.mp4')]).toString())
+  const dur = Number(info.format.duration)
+  const flac = (nome, filtro) => {
+    const f = join(dir, `${nome}.flac`)
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `${filtro}:sample_rate=44100:duration=${dur}`, '-ac', '2', '-c:a', 'flac', f])
+    return readFileSync(f)
+  }
+  const faixas = [flac('voz', 'sine=frequency=440'), flac('bateria', 'sine=frequency=3000'), flac('baixo', 'anullsrc=channel_layout=stereo'), flac('guitarra', 'sine=frequency=3000'), flac('outros', 'sine=frequency=3000')]
+  const nossom = await simularNossom(pagina, faixas)
+
+  await pagina.setInputFiles('#arquivo', join(dir, 'show.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').first().click()
+  const sec = pagina.locator('.insp-faixas')
+  await sec.waitFor()
+  assert.match(await sec.innerText(), /Voz e instrumental[\s\S]*Separar[\s\S]*1 min do seu plano NOSSOM/)
+
+  // separar: a folha diz o que sobe e quanto do plano usa; depois, as duas faixas no clipe
+  await sec.getByRole('button', { name: 'Separar' }).click()
+  const folha = pagina.locator('dialog.folha-pergunta')
+  await folha.waitFor()
+  assert.match(await folha.innerText(), /sobe para a NOSSOM[\s\S]*Usa 1 min do seu plano \(restam 60 min\)/)
+  await folha.getByRole('button', { name: 'Separar' }).click()
+  await pagina.waitForFunction(() => /Voz e instrumental prontos/.test(document.getElementById('aviso').textContent), null, { timeout: 60_000 })
+  // a cópia da NOSSOM é liberada logo depois de guardar as faixas aqui
+  for (let i = 0; i < 50 && !nossom.acoes.includes('release'); i++) await new Promise((r) => setTimeout(r, 100))
+  assert.deepEqual(nossom.acoes, ['prepare', 'submit:stems-v1', 'release'])
+  // o que subiu: um WAV estéreo de 16 bits a 44,1 kHz do trecho inteiro
+  const wav = Buffer.concat(nossom.enviados)
+  assert.equal(wav.toString('latin1', 0, 4), 'RIFF')
+  assert.equal(wav.readUInt32LE(24), 44100)
+  assert.ok(Math.abs((wav.length - 44) / (44100 * 4) - dur) < 0.05, `trecho de ${(wav.length - 44) / (44100 * 4)} s`)
+  const estado = () => pagina.evaluate(() => ({ sep: globalThis.__editor.h.atual.separacoes, faixas: globalThis.__editor.h.atual.linha.clipes[0].faixas }))
+  let e = await estado()
+  assert.equal(e.sep.length, 1)
+  assert.deepEqual({ voz: e.faixas.voz, instrumental: e.faixas.instrumental }, { voz: 0, instrumental: 0 })
+  await sec.locator('.faixa').first().waitFor()
+  assert.deepEqual(await sec.locator('.faixa-nome').allInnerTexts(), ['Voz', 'Instrumental'])
+
+  // Só voz: o instrumental fica mudo (o M aceso); desfazer volta; S no instrumental faz o contrário
+  await sec.getByRole('radio', { name: 'Só voz' }).click()
+  e = await estado()
+  assert.deepEqual({ voz: e.faixas.voz, instrumental: e.faixas.instrumental }, { voz: 0, instrumental: null })
+  assert.equal(await sec.locator('.faixa[data-faixa="instrumental"] [data-mudo]').getAttribute('aria-pressed'), 'true')
+  await pagina.click('#desfazer')
+  await pagina.click('#refazer')
+  // a prévia carrega as faixas do disco do navegador (a voz e o instrumental prontos para tocar)
+  await pagina.waitForFunction(() => globalThis.__editor.h && document.querySelector('.insp-faixas .faixas-aviso')?.hidden !== false)
+
+  // Entrega: o vídeo final sai com a voz (440 Hz) e sem o instrumental (3 kHz); o Premiere ganha o WAV da voz
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 120_000 })
+  const zipArq = join(dir, 'faixas.zip')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).saveAs(zipArq)
+  const nomes = execFileSync('zipinfo', ['-1', zipArq]).toString()
+  assert.match(nomes, /show - Voz 0s\.wav/)
+  assert.doesNotMatch(nomes, /Instrumental/, 'o instrumental mudo não vai')
+  const mp4 = join(dir, 'faixas.mp4')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.mp4')).saveAs(mp4)
+  const medir = (f) => Number(/mean_volume: (-?[\d.]+) dB/.exec(estderr('ffmpeg', ['-v', 'info', '-i', mp4, '-af', `bandpass=f=${f}:width_type=h:w=150,volumedetect`, '-f', 'null', '-']))[1])
+  const voz = medir(440)
+  const instrumental = medir(3000)
+  assert.ok(voz - instrumental > 25, `voz ${voz} dB, instrumental ${instrumental} dB`)
   assert.deepEqual(erros, [])
   await pagina.close()
 })

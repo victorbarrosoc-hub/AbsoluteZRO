@@ -3940,6 +3940,33 @@ Ramo `sobedesce-desktop-modo` sobre a main f022924.
 - Não validado: abrir o FCPXML/XML com efeitos no Final Cut, Premiere e Resolve reais; prévia longa (sincronia do
   efeito com o vídeo depois de vários minutos).
 
+## AEON: marcadores, peças e voz e instrumental pela NOSSOM (01/11/2026)
+
+Três plugins de Premiere estudados nos vídeos que o titular mandou (Markers Command Center V2, Piecework e
+VocalSplitter) e trazidos para o AEON, sem copiar marca nem nome.
+
+- Marcadores (`src/marcadores.js`, `app/marcadores-ui.js`): `test/marcadores.test.js` 12/12 (cor e nota, deslocar sem
+  cair em cima de outro, seções, tempo escrito em cinco formatos, notas coladas com continuação de linha, SRT, CSV com
+  aspas e cor do Premiere, importar somando nota no mesmo quadro, capítulos do YouTube com as regras de lá, CSV de ida
+  e volta, marcar pelos clipes, tirar a seção levando os marcadores, corte em câmera lenta). Tela no Chromium: colar a
+  revisão, M renomeia, ↓ e 3 pintam, capítulos, tirar trecho e desfazer, imagens (.zip com três PNG 1280×720) e CSV.
+- Peças (`src/pecas.js`, `app/pecas-ui.js`): `test/pecas.test.js` 6/6 (modelo de nome, peça só com a seção e o
+  original intacto, margem, 9:16 e 1:1 cobrindo o quadro, nomes únicos, relatório, legenda e efeito sonoro seguem a
+  peça, juntar em outra ordem). Tela: duas seções em Original e 9:16 → quatro MP4 (o 9:16 em 1080×1920 com 3 s), o XML
+  de cada peça com a sequência no tamanho dela, `entrega.csv` com quatro "pronto"; juntar cria um projeto novo.
+- Voz e instrumental (`src/faixas.js`, `app/nossom.js`, `app/faixas-ui.js`, `app/faixas-disco.js`):
+  `test/faixas.test.js` 7/7 (trecho com folga e limite, separação que cobre o clipe e anda junto no corte, o pacote de
+  stems-v1 conferido e dividido, as cinco somando o original com o ganho desfeito, WAV de 16 bits, trilhas no xmeml e
+  no FCPXML com o som original calado, `xmllint`). Tela com uma NOSSOM falsa e cinco FLAC de verdade (ffmpeg): sobe um
+  WAV estéreo de 44,1 kHz do trecho, `prepare → submit:stems-v1 → release`, Só voz, e o vídeo final sai com a voz
+  (440 Hz) mais de 25 dB acima do instrumental (3 kHz); a entrega leva `show - Voz 0s.wav` e não o instrumental mudo.
+- NOSSOM (`lib/server/irmaos.ts`, `proxy.ts`, rota de pedidos): `tests/irmaos.test.ts` 4/4 (só a origem exata do AEON,
+  CORS nunca "*", pré-voo 204 só nos três caminhos, fechado o 403 chega com CORS, outra origem recusada, AEON só pede
+  stems-v1); `npm test` 128/128, `tsc` limpo e `next build` OK.
+- AEON: `npm test` 221/222 (1 pulado: Whisper real sem rede); `xvfb-run electron . --smoke` OK.
+- Não validado: a NOSSOM de verdade (GPU, franquia, cookie entre os subdomínios em produção); marcadores e peças abertos
+  num Premiere, Final Cut e Resolve reais; peças longas no app de computador.
+
 ## Sonoplasta · fase 2a: banco de sons livres pelo HUB e aba Sons no AEON (31/10/2026)
 
 - HUB: `packages/core/src/sons.ts` e `/api/v1/sons/buscar` e `/api/v1/sons/openverse/{id}` (escopo `zro.sons`, migration

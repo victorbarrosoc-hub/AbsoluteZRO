@@ -3328,3 +3328,178 @@ html:not([data-conta]) body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ───────── Voz e instrumental pela NOSSOM (app/faixas-ui.js) ───────── */
+.insp-faixas {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft, rgb(255 255 255 / 0.08));
+}
+.insp-faixas[hidden],
+.insp-faixas [hidden] {
+  display: none;
+}
+.insp-faixas button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-strong);
+  background: var(--surface-2);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.insp-faixas button.ficha[aria-checked='true'] {
+  background: var(--active);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.insp-faixas button.ficha:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.faixas-selo {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+.faixas-antes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.faixas-andamento {
+  display: grid;
+  gap: 6px;
+}
+.faixas-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+/* a NOSSOM diz a etapa, não quanto falta: a barra anda sem número */
+.faixas-barra.andando {
+  width: 30%;
+  transform: none;
+  animation: faixas-andar 1.4s ease-in-out infinite;
+}
+@keyframes faixas-andar {
+  from {
+    margin-left: -30%;
+  }
+  to {
+    margin-left: 100%;
+  }
+}
+.faixas-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.faixa {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: 'n s m' 'v v o';
+  align-items: center;
+  gap: 4px 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  transition: opacity 0.2s;
+}
+.faixa.muda .faixa-nome,
+.faixa.muda input {
+  opacity: 0.45;
+}
+.faixa-nome {
+  grid-area: n;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.faixa [data-solo] {
+  grid-area: s;
+}
+.faixa [data-mudo] {
+  grid-area: m;
+}
+.faixa input {
+  grid-area: v;
+  width: 100%;
+}
+.faixa output {
+  grid-area: o;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 46px;
+  text-align: right;
+}
+.faixa-btn {
+  appearance: none;
+  width: 24px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-mute);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.faixa-btn[data-solo][aria-pressed='true'] {
+  background: var(--cor-amarelo);
+  color: #1d1d1f;
+}
+.faixa-btn[data-mudo][aria-pressed='true'] {
+  background: var(--cor-azul);
+  color: #fff;
+}
+.faixas-pe {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .faixas-barra.andando {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
+/* voz e instrumental na linha do tempo: duas faixas alinhadas embaixo do clipe */
+.clipe-faixas {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  display: grid;
+  gap: 2px;
+  pointer-events: none;
+}
+.clipe-faixas[hidden] {
+  display: none;
+}
+.clipe-faixas i {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--cor-amarelo);
+  opacity: 0.95;
+}
+.clipe-faixas i[data-f='instrumental'] {
+  background: var(--cor-menta);
+}
+.clipe-faixas i.muda {
+  opacity: 0.18;
+}
+.clipe:has(.clipe-faixas:not([hidden])) .clipe-vel {
+  bottom: 14px;
+}

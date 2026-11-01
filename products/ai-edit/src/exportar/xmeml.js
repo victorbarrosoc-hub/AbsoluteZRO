@@ -6,7 +6,7 @@
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { caminhoDa, caminhoDoSom, efeitosExportados, esc, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
+import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
 import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
@@ -60,7 +60,8 @@ export function paraXmeml(p) {
     const id = `clipitem-${tipo}${faixa}-${k + 1}`
     const lig = []
     if (m.temVideo) lig.push(['video', 1])
-    if (m.temAudio && s.som) lig.push(['audio', 1], ['audio', 2])
+    // com voz e instrumental separados, o som original não vai (vão as duas faixas, que somam ele)
+    if (m.temAudio && s.som && !s.faixas) lig.push(['audio', 1], ['audio', 2])
     const links = lig.length > 1 ? lig.map(([t, f]) => `\n${ind}  <link>\n${ind}    <linkclipref>clipitem-${t === 'video' ? 'v' : 'a'}${f}-${k + 1}</linkclipref>\n${ind}    <mediatype>${t}</mediatype>\n${ind}    <trackindex>${f}</trackindex>\n${ind}    <clipindex>${k + 1}</clipindex>${t === 'audio' ? `\n${ind}    <groupindex>1</groupindex>` : ''}\n${ind}  </link>`).join('') : ''
     return `${ind}<clipitem id="${id}">
 ${ind}  <masterclipid>masterclip-${p.midias.indexOf(m) + 1}</masterclipid>
@@ -76,7 +77,7 @@ ${fileXml(m, ind + '  ')}${s.cor ? `\n${ind}  <labels>\n${ind}    <label2>${corP
 ${ind}</clipitem>`
   }
   const comVideo = segs.map((s, k) => ({ s, k })).filter(({ s }) => p.midias.find((m) => m.id === s.midia)?.temVideo)
-  const comAudio = segs.map((s, k) => ({ s, k })).filter(({ s }) => s.som && p.midias.find((m) => m.id === s.midia)?.temAudio)
+  const comAudio = segs.map((s, k) => ({ s, k })).filter(({ s }) => s.som && !s.faixas && p.midias.find((m) => m.id === s.midia)?.temAudio)
   const trilha = (itens, ind, extra = '') => `${ind}<track>\n${itens.join('\n')}\n${ind}  <enabled>TRUE</enabled>\n${ind}  <locked>FALSE</locked>${extra}\n${ind}</track>`
   const v1 = trilha(comVideo.map(({ s, k }) => item(s, k, 'v', 1, I + '    ')), I + '  ')
   const a = [1, 2].map((f) => trilha(comAudio.map(({ s, k }) => item(s, k, 'a', f, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${f}</outputchannelindex>`)).join('\n')
@@ -113,6 +114,42 @@ ${ind}</clipitem>`
   const fx = Array.from({ length: nFaixas }, (_, f) =>
     [1, 2].map((lado) => trilha(efeitos.map((x, k) => ({ x, k })).filter(({ x }) => x.faixa === f).map(({ x, k }) => itemEfeito(x, k, lado, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n'),
   ).join('\n')
+  // voz e instrumental (NOSSOM): um par de faixas para cada, depois dos efeitos; o arquivo WAV vai ao lado do XML
+  const arquivosF = arquivosDeFaixas(p)
+  const pedacos = faixasExportadas(p)
+  const baseF = 3 + nFaixas * 2
+  const arquivoFaixa = (a, ind) => {
+    const id = `file-f${arquivosF.indexOf(a) + 1}`
+    if (arquivos.has(id)) return `${ind}<file id="${id}"/>`
+    arquivos.add(id)
+    return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(a.arquivo)}</name>`, `${ind}  <pathurl>${esc(pathUrl(a.arquivo))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${a.quadros}</duration>`, `${ind}  <media>`, `${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>44100</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>2</channelcount>\n${ind}    </audio>`, `${ind}  </media>`, `${ind}</file>`].join('\n')
+  }
+  const itemFaixa = (x, k, lado, ind) => {
+    const a = arquivosF.find((y) => y.arquivo === x.arquivo)
+    const par = x.parte === 'voz' ? 0 : 1
+    const id = (l) => `clipitem-f${par + 1}${l === 1 ? 'L' : 'R'}-${k + 1}`
+    const links = [1, 2].map((l) => `\n${ind}  <link>\n${ind}    <linkclipref>${id(l)}</linkclipref>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${baseF + par * 2 + l - 1}</trackindex>\n${ind}    <clipindex>${k + 1}</clipindex>\n${ind}    <groupindex>1</groupindex>\n${ind}  </link>`).join('')
+    return `${ind}<clipitem id="${id(lado)}">
+${ind}  <masterclipid>masterclip-f${arquivosF.indexOf(a) + 1}</masterclipid>
+${ind}  <name>${esc(a.arquivo)}</name>
+${ind}  <enabled>TRUE</enabled>
+${ind}  <duration>${a.quadros}</duration>
+${rate(ind + '  ')}
+${ind}  <start>${x.seg.linha}</start>
+${ind}  <end>${x.seg.linha + x.seg.saida}</end>
+${ind}  <in>${x.desde}</in>
+${ind}  <out>${x.desde + x.seg.saida}</out>
+${arquivoFaixa(a, ind + '  ')}
+${ind}  <sourcetrack>
+${ind}    <mediatype>audio</mediatype>
+${ind}    <trackindex>${lado}</trackindex>
+${ind}  </sourcetrack>${niveis({ ajustes: { volume: x.volume } }, ind + '  ')}${links}
+${ind}</clipitem>`
+  }
+  const trilhasF = ['voz', 'instrumental']
+    .filter((parte) => pedacos.some((x) => x.parte === parte))
+    .map((parte) => [1, 2].map((lado) => trilha(pedacos.filter((x) => x.parte === parte).map((x, k) => itemFaixa(x, k, lado, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n'))
+    .join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
@@ -134,7 +171,7 @@ ${v1}
       </video>
       <audio>
         <numOutputChannels>2</numOutputChannels>
-${a}${fx ? '\n' + fx : ''}
+${a}${fx ? '\n' + fx : ''}${trilhasF ? '\n' + trilhasF : ''}
       </audio>
     </media>
 ${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment>${esc(k.nota || '')}</comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}

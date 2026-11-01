@@ -12,6 +12,7 @@ import { desenhar } from '../src/legenda.js'
 import { efeitosNaLinha } from '../src/efeitos.js'
 import { comSom, origemContinua, saidaContinua, velocidadeContinua } from '../src/velocidade.js'
 import { correcaoEm, cssDaCorrecao } from '../src/estabilizar/aplicar.js'
+import { faixasDoClipe, ganhoDaFaixa } from '../src/faixas.js'
 
 export class Player {
   /** tela: elemento que recebe os dois vídeos e o canvas; urlDe(midiaId) → URL tocável */
@@ -44,6 +45,10 @@ export class Player {
     this.fx = []
     this.somFx = new Map()
     this.tocandoFx = []
+    // voz e instrumental separados pela NOSSOM (src/faixas.js): quem carrega as faixas (o editor, do disco do
+    // navegador) e quais separações já estão prontas aqui (sem elas o clipe toca o som original)
+    this.obterFaixas = null
+    this.faixasProntas = new Set()
     // estabilização: a correção segue o quadro que a tela mostrou (o tempo de mídia de cada quadro apresentado), não o
     // relógio da página, senão a correção chega um quadro atrasada e a prévia treme
     for (const v of this.videos)
@@ -95,12 +100,34 @@ export class Player {
     this.t = Math.min(this.t, this.duracao)
     this.ultimoZoom = ''
     this.fx = efeitosNaLinha(p).map((x) => ({ som: x.som.id, ini: paraSegundos(x.inicio, p.fps), dur: paraSegundos(x.quadros, p.fps), ganho: ganho(x.efeito.volume) }))
+    // o clipe com voz e instrumental toca as duas faixas (cada uma no seu volume) no lugar do som do vídeo; só em 100%
+    for (const seg of this.segs) {
+      const f = this.#faixas(seg)
+      if (!f) continue
+      const g = ganho(ajustesDe(seg.clipe).volume)
+      for (const parte of ['voz', 'instrumental']) {
+        const gp = ganhoDaFaixa(f[parte]) * g
+        if (gp > 0) this.fx.push({ som: `faixas:${f.sep.id}:${parte}`, ini: seg.linhaIni, dur: seg.dur, desloc: f.desloc, ganho: gp })
+      }
+    }
     if (!this.tocando) this.irPara(this.t)
     else this.#agendarFx()
   }
 
+  /** As faixas que valem no segmento agora (prontas neste navegador, clipe em 100%), ou null: toca o som do vídeo. */
+  #faixas(seg) {
+    if (!this.projeto || seg.clipe.velocidade) return null
+    const f = faixasDoClipe(this.projeto, seg.clipe)
+    return f && this.faixasProntas.has(f.sep.id) ? f : null
+  }
+
   /** Decodifica o som do efeito uma vez (pela mesma URL da mídia). null se não deu (o vídeo segue sem ele). */
   async #buffer(id) {
+    if (id.startsWith('faixas:')) {
+      const [, sep, parte] = id.split(':')
+      const fx = await this.obterFaixas?.(sep)?.catch(() => null)
+      return fx?.[parte] || null
+    }
     if (!this.somFx.has(id))
       this.somFx.set(
         id,
@@ -137,13 +164,16 @@ export class Player {
       // o tempo andou enquanto decodificava: agenda pelo relógio do áudio
       const agora = t0 + (this.ctxAudio.currentTime - c0)
       const desloc = Math.max(0, agora - x.ini)
-      if (desloc >= Math.min(x.dur, buf.duration)) continue
+      // faixa separada: começa no meio do arquivo dela (x.desloc = do começo da separação até o começo do clipe)
+      const base = x.desloc || 0
+      const cabe = Math.min(x.dur, buf.duration - base)
+      if (desloc >= cabe) continue
       const no = this.ctxAudio.createBufferSource()
       no.buffer = buf
       const g = this.ctxAudio.createGain()
       g.gain.value = x.ganho
       no.connect(g).connect(this.ctxAudio.destination)
-      no.start(this.ctxAudio.currentTime + Math.max(0, x.ini - agora), desloc, Math.min(x.dur, buf.duration) - desloc)
+      no.start(this.ctxAudio.currentTime + Math.max(0, x.ini - agora), base + desloc, cabe - desloc)
       this.tocandoFx.push(no)
     }
   }
@@ -317,7 +347,8 @@ export class Player {
     const est = seg.clipe.estabilizar ? cssDaCorrecao(p.largura, p.altura, cw, ch, correcaoEm(p, seg.clipe, p.midias.find((m) => m.id === seg.midia), v._tempoMidia ?? v.currentTime)) : ''
     const css = [clipeCss === 'none' ? '' : clipeCss, est].filter(Boolean).join(' ') || 'none'
     // som só em 100% (a regra do AEON): fora disso o ganho vai a zero
-    const mudo = !comSom(this.#velocidade(seg, this.t))
+    // (com voz e instrumental separados, o som vem das faixas: o do vídeo cala)
+    const mudo = !comSom(this.#velocidade(seg, this.t)) || Boolean(this.#faixas(seg))
     const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}|${mudo}`
     if (chave === this.ultimoZoom) return
     this.ultimoZoom = chave
