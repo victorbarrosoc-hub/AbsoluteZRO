@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { caminhoSeguro } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, MARCA, NEUTRAS, RECADO, RECADO_WEB, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, FECHADO, MARCA, NEUTRAS, PAGINA_404, RECADO, RECADO_WEB, SITE, itens, paginaAberta, pecasDoLancamento, publicar } from '../scripts/publicar-site.mjs'
 import { LANCADO, release } from '../api/_release.js'
 import baixar, { INSTALADORES, destino } from '../api/baixar.js'
 import { iniciarZroFalsa } from './zro-falso.js'
@@ -32,17 +32,22 @@ describe('o que o site publica', () => {
         ['/app/:caminho*', '/api/app?caminho=app/:caminho*'],
         ['/src/:caminho*', '/api/app?caminho=src/:caminho*'],
         ['/presets/:caminho*', '/api/app?caminho=presets/:caminho*'],
+        // o site do app (marca e folhas): fechado, só para a conta liberada
+        ['/site/:caminho*', '/api/app?caminho=site/:caminho*'],
+        ['/marca/:caminho*', '/api/app?caminho=marca/:caminho*'],
         // o instalador (api/baixar.js): fechado volta para "Em desenvolvimento"
         ['/baixar/:sistema', '/api/baixar?sistema=:sistema'],
       ],
     )
     const inclui = v.functions['api/app.js'].includeFiles
-    for (const p of ['app/**', 'src/**', 'presets/**', 'em-desenvolvimento.html']) assert.ok(inclui.includes(p), p)
+    for (const p of ['app/**', 'src/**', 'presets/**', 'site/**', 'marca/**', 'em-desenvolvimento.html']) assert.ok(inclui.includes(p), p)
+    // nenhum cache público em caminho que a função entrega só para a conta liberada
+    for (const h of v.headers) for (const x of h.headers) if (x.key === 'Cache-Control') assert.ok(!/^\/(marca|site|app|src|presets)/.test(h.source) || !/public/.test(x.value), h.source)
     assert.ok(v.headers.some((h) => h.source === '/api/(.*)' && h.headers.some((x) => x.key === 'Cache-Control' && x.value === 'no-store')))
     for (const nome of ['/instalar.sh', '/instalar.ps1']) assert.ok(v.headers.some((h) => h.source === nome && h.headers.some((x) => x.value.startsWith('text/plain'))), nome)
   })
 
-  test('publicar-site: fechado sai só o institucional (sem editor nem instalador de verdade); aberto sai tudo', () => {
+  test('publicar-site: fechado sai só a página neutra e vendor/ (sem marca, site/, editor nem instalador de verdade); aberto sai tudo', () => {
     const dir = mkdtempSync(join(tmpdir(), 'aeon-publico-'))
     try {
       const raiz = join(dir, 'raiz')
@@ -58,12 +63,13 @@ describe('o que o site publica', () => {
       writeFileSync(join(raiz, 'lancamento', 'pagina.html'), '<template data-parte="x"><a href="#baixar">Baixar</a></template>')
 
       const fechado = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'fechado')}/`), estado: 'closed' })
-      assert.deepEqual(fechado.itens, [...SITE, ...MARCA])
+      assert.deepEqual(fechado.itens, FECHADO)
       const tem = (saida, p) => existsSync(join(dir, saida, p))
-      for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'site/home.js', 'marca/og.jpg', 'vendor/mediabunny.min.mjs', ...MARCA]) assert.ok(tem('fechado', p), `fechado tem ${p}`)
-      for (const p of ['app', 'app/index.html', 'presets', 'src/linha.js', 'src/exportar', 'desktop', 'api', 'lancamento']) assert.ok(!tem('fechado', p), `fechado não tem ${p}`)
-      // fechado, a página inicial e a entrada saem como a página neutra (titular, 01/11/2026): nada do AEON
-      for (const p of NEUTRAS) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
+      for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', PAGINA_404, 'vendor/mediabunny.min.mjs']) assert.ok(tem('fechado', p), `fechado tem ${p}`)
+      // revisão de 01/11/2026: marca/ (ícone, OG), site/ e os módulos da marca não ficam públicos com ele fechado
+      for (const p of ['app', 'app/index.html', 'presets', 'src', 'site', 'marca', 'desktop', 'api', 'lancamento']) assert.ok(!tem('fechado', p), `fechado não tem ${p}`)
+      // fechado, a página inicial, a entrada e o 404 saem como a página neutra (titular, 01/11/2026): nada do AEON
+      for (const p of [...NEUTRAS, PAGINA_404]) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
       // os instaladores existem, mas só com o recado neutro: nada de Release, download, instalação ou nome do app
       for (const nome of ['instalar.sh', 'instalar.ps1']) {
         const texto = readFileSync(join(dir, 'fechado', nome), 'utf8')
@@ -77,7 +83,8 @@ describe('o que o site publica', () => {
 
       const aberto = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'aberto')}/`), estado: 'released', computador: true })
       assert.deepEqual(aberto.itens, [...SITE, ...ABERTO])
-      for (const p of ['app/editor.js', 'presets/fala.v1.json', 'src/linha.js', 'src/exportar/edl.js', 'instalar.sh']) assert.ok(tem('aberto', p), `aberto tem ${p}`)
+      for (const p of ['app/editor.js', 'presets/fala.v1.json', 'src/linha.js', 'src/exportar/edl.js', 'instalar.sh', 'site/home.js', 'marca/og.jpg', ...MARCA]) assert.ok(tem('aberto', p), `aberto tem ${p}`)
+      assert.equal(readFileSync(join(dir, 'aberto', PAGINA_404), 'utf8'), 'conteudo de em-desenvolvimento.html')
       assert.equal(readFileSync(join(dir, 'aberto', 'instalar.sh'), 'utf8'), 'conteudo de instalar.sh')
       for (const p of ['desktop', 'api', 'lancamento']) assert.ok(!tem('aberto', p), p)
       // a página do lançamento: o trecho marcado vira a peça
@@ -94,11 +101,11 @@ describe('o que o site publica', () => {
       }
       // o padrão é fechado: sem RELEASE no ambiente, nada do editor; e, com a trava do titular, nem com RELEASE=released
       delete process.env.RELEASE
-      assert.deepEqual(itens(), [...SITE, ...MARCA])
+      assert.deepEqual(itens(), FECHADO)
       process.env.RELEASE = 'released'
       assert.equal(LANCADO, false)
       assert.equal(release(), 'closed')
-      assert.deepEqual(itens(), [...SITE, ...MARCA])
+      assert.deepEqual(itens(), FECHADO)
       delete process.env.RELEASE
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -211,7 +218,9 @@ describe('o que o site publica', () => {
     assert.doesNotMatch(html, /<script|<link|<img|src="/)
   })
 
-  test('caminhoSeguro: só app/, src/ e presets/, sem subir pasta nem arquivo oculto', () => {
+  test('caminhoSeguro: só app/, src/, presets/, site/ e marca/, sem subir pasta nem arquivo oculto', () => {
+    assert.equal(caminhoSeguro('marca/aeon-icone.svg'), 'marca/aeon-icone.svg')
+    assert.equal(caminhoSeguro('site/site.css'), 'site/site.css')
     assert.equal(caminhoSeguro('app'), 'app/index.html')
     assert.equal(caminhoSeguro('app/'), 'app/index.html')
     assert.equal(caminhoSeguro('app/editor.js'), 'app/editor.js')
@@ -238,7 +247,7 @@ describe('api/app.js: o editor só para a conta liberada', () => {
       if (u.pathname === '/api/zro/entrar') return f.entrar(req, res)
       if (u.pathname === '/api/zro/callback') return f.callback(req, res)
       if (u.pathname === '/api/app') return f.app(req, res)
-      if (/^\/(app|src|presets)(\/|$)/.test(u.pathname)) {
+      if (/^\/(app|src|presets|site|marca)(\/|$)/.test(u.pathname)) {
         req.url = `/api/app?caminho=${encodeURIComponent(u.pathname.slice(1))}`
         return f.app(req, res)
       }
@@ -287,10 +296,14 @@ describe('api/app.js: o editor só para a conta liberada', () => {
       assert.doesNotMatch(html, /AEON/, rotulo)
       assert.doesNotMatch(html, /editor\.js|zro-tokens/, `${rotulo}: ${caminho} entregou o editor`)
     }
-    for (const caminho of ['/app/editor.js', '/app/editor.css', '/src/linha.js', '/src/exportar/edl.js', '/presets/fala.v1.json', '/api/app?caminho=app/editor.js']) {
+    // fora as páginas, 404 com a página neutra: nem o arquivo nem a marca aparecem (revisão de 01/11/2026)
+    for (const caminho of ['/app/editor.js', '/app/editor.css', '/src/linha.js', '/src/marca.js', '/src/exportar/edl.js', '/presets/fala.v1.json', '/api/app?caminho=app/editor.js', '/marca/aeon-icone.svg', '/marca/og.jpg', '/site/home.js', '/marca/nada.svg']) {
       const r = await pedir(caminho, { cookies })
-      assert.equal(r.status, 403, `${rotulo}: ${caminho}`)
-      assert.deepEqual(await r.json(), { ok: false, message: 'Indisponível.' })
+      assert.equal(r.status, 404, `${rotulo}: ${caminho}`)
+      assert.match(r.headers.get('content-type'), /^text\/html/, `${rotulo}: ${caminho}`)
+      const html = await r.text()
+      assert.match(html, /indisponível\./, `${rotulo}: ${caminho}`)
+      assert.doesNotMatch(html, /AEON/, `${rotulo}: ${caminho}`)
     }
   }
 
@@ -328,6 +341,8 @@ describe('api/app.js: o editor só para a conta liberada', () => {
       ['/src/exportar/edl.js', /^text\/javascript/, 'src/exportar/edl.js'],
       ['/presets/fala.v1.json', /^application\/json/, 'presets/fala.v1.json'],
       ['/api/app?caminho=app/z.js', /^text\/javascript/, 'app/z.js'],
+      ['/marca/aeon-icone.svg', /^image\/svg\+xml/, 'marca/aeon-icone.svg'],
+      ['/site/home.js', /^text\/javascript/, 'site/home.js'],
     ]) {
       const a = await pedir(caminho, { cookies })
       assert.equal(a.status, 200, caminho)
