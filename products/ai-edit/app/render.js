@@ -247,3 +247,58 @@ async function somDoTrecho(o, ini, dur, taxaSaida, g = 1, rampa = true) {
   }
   return buf
 }
+
+/**
+ * Imagens PNG da linha nos quadros qs, com a mesma conta do vídeo final: ajustes do clipe, estabilização, zoom e
+ * legenda (a imagem do marcador é o quadro que o render gravaria ali). [{ q, blob }] na ordem de qs.
+ */
+export async function imagensEm(p, qs, { entradas, blocos = [], legenda = {}, largura, altura, sinal }) {
+  const L = largura || p.largura
+  const A = altura || p.altura
+  const fps = fpsNumero(p.fps)
+  const segs = segmentos(p)
+  const clipes = new Map(p.linha.clipes.map((c) => [c.id, c]))
+  const tela = new OffscreenCanvas(L, A)
+  const ctx = tela.getContext('2d', { alpha: false })
+  const abertos = new Map()
+  const abrir = async (id) => {
+    if (abertos.has(id)) return abertos.get(id)
+    const input = abrirInput(entradas.get(id))
+    const v = await input.getPrimaryVideoTrack()
+    const o = { input, canvas: v && (await v.canDecode()) ? new MB.CanvasSink(v, { poolSize: 1 }) : null }
+    abertos.set(id, o)
+    return o
+  }
+  const out = []
+  try {
+    for (const q of qs) {
+      if (sinal?.aborted) throw new DOMException('cancelado', 'AbortError')
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, L, A)
+      const s = segs.find((x) => q >= x.linha && q < x.linha + x.saida)
+      if (s) {
+        const o = await abrir(s.midia)
+        const c = clipes.get(s.clipe)
+        const m = p.midias.find((x) => x.id === s.midia)
+        const k0 = c?.velocidade ? Math.round(saidaNoClipe(c, s.ini)) : 0
+        const origem = c?.velocidade ? Math.min(c.fim - 0.01, Math.max(c.ini, origemContinua(c, k0 + (q - s.linha)))) : s.ini + (q - s.linha)
+        const instante = origem / fps + 1e-4
+        const r = o.canvas ? await o.canvas.getCanvas(instante) : null
+        if (r?.canvas) {
+          const img = r.canvas
+          const ret = posicionar(L, A, img.width, img.height, s.ajustes, { escala: s.escala, foco: s.foco })
+          ctx.save()
+          corrigirNoCanvas(ctx, ret, c?.estabilizar ? correcaoEm(p, c, m, instante) : null)
+          ctx.globalAlpha = s.ajustes.opacidade
+          ctx.drawImage(img, ret.x, ret.y, ret.w, ret.h)
+          ctx.restore()
+        }
+      }
+      if (blocos.length && legenda.ligada !== false) desenhar(ctx, blocos, paraSegundos(q, p.fps), L, A, legenda)
+      out.push({ q, blob: await tela.convertToBlob({ type: 'image/png' }) })
+    }
+  } finally {
+    for (const o of abertos.values()) o.input.dispose?.()
+  }
+  return out
+}

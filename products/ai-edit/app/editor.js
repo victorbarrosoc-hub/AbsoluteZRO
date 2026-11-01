@@ -6,7 +6,7 @@ import { PRODUTO } from '../src/produto.js'
 import { simbolo, wordmark } from '../src/marca.js'
 import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, acelerar, retempo, estabilizar, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
-import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
+import { removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { adicionarSom, ajustarEfeito, colocarEfeito, foraDaLinha, momentos, moverEfeito, removerEfeitos, somPorId } from '../src/efeitos.js'
 import { idDoSomBuscado, pastaDoLink, somDoBanco, sugestaoDoMomento, termoDeBusca } from '../src/sonoplasta.js'
@@ -23,7 +23,7 @@ import { MODELOS } from '../src/modelos.js'
 import { extrairAudio, lerInfo, miniatura, MB } from './midia.js'
 import { Player } from './player.js'
 import { LinhaUI } from './linha-ui.js'
-import { renderizar, codecsDaMaquina } from './render.js'
+import { renderizar, codecsDaMaquina, imagensEm } from './render.js'
 import { carregarFluxo } from './fluxo.js'
 import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
@@ -38,6 +38,10 @@ import { analiseDe } from '../src/estabilizar/aplicar.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 import { montarSet } from './set.js'
+import { PainelMarcadores } from './marcadores-ui.js'
+import { marcar, secoes } from '../src/marcadores.js'
+import { nomeSeguro, planoDePecas, relatorio } from '../src/pecas.js'
+import { PainelPecas } from './pecas-ui.js'
 
 const $ = (id) => document.getElementById(id)
 // As etapas do editor no dock; a Z por último, fora do dock (ícone da barra), nunca a primeira (titular, 29/10/2026)
@@ -125,8 +129,19 @@ const linha = new LinhaUI($('linha'), {
   aoAcao: acaoLinha,
   aoSelecionar: () => desenharInspector(),
 })
+const marcadoresUI = new PainelMarcadores($('marcadores'), {
+  projeto: P,
+  fazer: (novo, rotulo) => fazer(novo, rotulo),
+  irPara: (t) => player.irPara(t),
+  agora: () => player.t,
+  aviso: (t) => aviso(t),
+  quadros: (ids) => exportarQuadros(ids),
+  baixar: (nome, texto, tipo) => ponte.baixar(new Blob([texto], { type: `${tipo};charset=utf-8` }), nome),
+})
+const pecasUI = new PainelPecas({ projeto: P, aviso: (t) => aviso(t), criarProjeto: (novo) => criarProjetoJunto(novo) })
 player.aoMudar(() => {
   linha.tempo(player.t)
+  marcadoresUI.tempo()
   $('tempo').textContent = `${relogio(player.t)} / ${relogio(player.duracao)}`
   $('tocar').innerHTML = `<svg><use href="#i-${player.tocando ? 'pausa' : 'play'}"/></svg>`
   $('tocar').ariaLabel = player.tocando ? 'Pausar' : 'Tocar'
@@ -314,6 +329,8 @@ function desenharTudo() {
   desenharInspector()
   if (S.pagina === 'edicao') desenharLinha(blocos)
   desenharSons()
+  marcadoresUI.desenhar()
+  pecasUI.desenhar()
 }
 
 function opcoesPlayer(p, blocos = blocosDaLegenda(p)) {
@@ -786,9 +803,17 @@ function acaoLinha(tipo, ...a) {
     if (novo.linha === p.linha) return aviso('Já tem um corte aqui.')
     fazer(novo, 'dividir')
   } else if (tipo === 'marcar') {
-    const novo = adicionarMarcador(p, paraQuadros(player.t, p.fps))
-    if (novo === p) return aviso('Já tem um marcador aqui.')
-    fazer(novo, 'marcador')
+    // M marca o ponto; M de novo em cima de um marcador abre o nome dele (como no Premiere)
+    const r = marcar(p, paraQuadros(player.t, p.fps))
+    if (r.projeto === p) {
+      aba('marcadores')
+      return marcadoresUI.editar(r.id)
+    }
+    fazer(r.projeto, 'marcador')
+    marcadoresUI.escolher(r.id, { ir: false })
+  } else if (tipo === 'escolherMarcador') {
+    aba('marcadores')
+    marcadoresUI.escolher(a[0])
   } else if (tipo === 'desmarcar') fazer(removerMarcador(p, a[0]), 'apagar marcador')
   else if (tipo === 'remover') fazer({ ...p, linha: remover(p.linha, a[0]) }, 'apagar clipe')
   else if (tipo === 'som') $('arquivoSom').click()
@@ -1655,6 +1680,7 @@ $('exportar').onclick = () => exportar()
 async function exportar({ marcados } = {}) {
   const p = P()
   if (!p) return aviso('Nada para exportar ainda.')
+  if (pecasUI.ativo) return exportarPecas({ marcados })
   const quer = new Set(marcados || [...$('destinos').querySelectorAll('input:checked')].map((x) => x.value))
   if (!quer.size) return aviso('Escolha pelo menos um destino.')
   const base = nomeArquivo(p.nome)
@@ -1739,6 +1765,166 @@ async function exportar({ marcados } = {}) {
   return resultado
 }
 S.exportar = exportar
+
+/** "Juntar em outra ordem" (Entrega em peças): o projeto novo abre no lugar deste, que fica guardado em Seus universos. */
+async function criarProjetoJunto(base) {
+  await autosalvar()
+  const novo = { ...base, id: globalThis.crypto?.randomUUID?.() || `p${Date.now().toString(36)}` }
+  delete novo.semNome
+  S.h = new Historico(novo)
+  mudou()
+  desenharTudo()
+  ir('edicao')
+  aviso('Projeto novo, com as seções na nova ordem. O anterior está em Seus universos.')
+}
+
+/**
+ * Entrega em peças: cada seção (de um marcador ao próximo) em cada formato escolhido vira arquivos à parte numa pasta:
+ * o vídeo e, se pedido, a linha do tempo para o editor (numa subpasta com o nome da peça). No fim, entrega.csv com o
+ * que saiu de cada uma. Uma peça que falha não para as outras; cancelar para tudo (o relatório diz até onde foi).
+ */
+async function exportarPecas({ marcados } = {}) {
+  const p = P()
+  const quer = new Set(marcados || [...$('destinos').querySelectorAll('input:checked')].map((x) => x.value))
+  if (!quer.size) return aviso('Escolha pelo menos um destino.')
+  const plano = planoDePecas(p, pecasUI.opcoes())
+  if (!plano.length) return aviso('Escolha pelo menos uma seção.')
+  if (quer.has('video')) {
+    const faltam = midiasFaltando(p)
+    if (faltam.length) return aviso(`Escolha de novo ${faltam.length === 1 ? `"${faltam[0].nome}"` : `${faltam.length} arquivos`} na Mídia para gravar as peças.`)
+  }
+  const formatos = new Set()
+  if (quer.has('xmeml')) formatos.add('xmeml')
+  if (quer.has('fcpxml') || quer.has('resolve')) formatos.add('fcpxml')
+  if (quer.has('resolve')) formatos.add('edl')
+  const pasta = await ponte.pastaDeSaida(`${nomeArquivo(p.nome)} · peças`, zip)
+  if (!pasta) return null
+  $('entregaFim').hidden = true
+  renderAtual = new AbortController()
+  const sinal = renderAtual.signal
+  $('render').hidden = false
+  $('exportar').disabled = true
+  const itens = []
+  const texto = (t) => ($('renderTexto').textContent = t)
+  let parou = null
+  try {
+    await document.fonts.load('800 40px Figtree')
+    // o motor de fluxo óptico uma vez só, se alguma peça tiver câmera lenta com fluxo
+    let fluxo = null
+    if (quer.has('video') && plano.some((x) => segmentos(x.projeto).some((s) => s.v < 1 && s.modo === 'fluxo'))) {
+      texto('Preparando o fluxo óptico…')
+      try {
+        fluxo = await carregarFluxo({ aoBaixar: (f, t) => texto(`Baixando o motor de fluxo óptico · ${Math.round((f / t) * 100)}%`) })
+      } catch (err) {
+        aviso(`${err.message} A câmera lenta sai com o quadro mais próximo.`)
+      }
+    }
+    for (const [i, peca] of plano.entries()) {
+      if (sinal.aborted) throw new DOMException('cancelado', 'AbortError')
+      const arquivos = []
+      const passo = `Peça ${i + 1} de ${plano.length} · ${peca.nome}`
+      try {
+        if (formatos.size) {
+          texto(passo)
+          for (const a of pacote(peca.projeto, S.preset.legenda, new Date(), [...formatos])) {
+            await pasta.gravar(`${peca.nome}/${a.name}`, a.data)
+            arquivos.push(`${peca.nome}/${a.name}`)
+          }
+          for (const som of sonsUsados(peca.projeto)) {
+            const e = !som.caminho && S.entradas.get(som.id)
+            if (e?.arquivo) {
+              await pasta.gravar(`${peca.nome}/${arquivoDoSom(som)}`, new Uint8Array(await e.arquivo.arrayBuffer()))
+              arquivos.push(`${peca.nome}/${arquivoDoSom(som)}`)
+            }
+          }
+        }
+        if (quer.has('video')) {
+          const nomeV = `${peca.nome}.mp4`
+          const fl = await pasta.fluxo(nomeV)
+          const alvo = fl ? new MB.StreamTarget(fl, { chunked: true }) : new MB.BufferTarget()
+          await renderizar(peca.projeto, {
+            fluxo,
+            entradas: S.entradas,
+            destino: alvo,
+            blocos: blocosDaLegenda(peca.projeto),
+            legenda: { ligada: peca.projeto.legenda.ligada, estilo: peca.projeto.legenda.estilo, posicaoY: S.preset.legenda.posicao_y },
+            sinal,
+            aoProgresso: (f) => {
+              $('renderBarra').style.transform = `scaleX(${(i + f) / plano.length})`
+              texto(`${passo} · ${Math.round(f * 100)}%`)
+            },
+          })
+          if (!fl) await pasta.gravar(nomeV, new Uint8Array(alvo.buffer))
+          arquivos.push(nomeV)
+        }
+        itens.push({ peca, arquivos, ok: true })
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          itens.push({ peca, arquivos, ok: false, erro: 'cancelado' })
+          throw err
+        }
+        console.error(err)
+        itens.push({ peca, arquivos, ok: false, erro: err.message })
+      }
+      $('renderBarra').style.transform = `scaleX(${(i + 1) / plano.length})`
+    }
+  } catch (err) {
+    parou = err?.name === 'AbortError' ? 'cancelado' : err.message
+    if (err?.name !== 'AbortError') console.error(err)
+  } finally {
+    try {
+      await pasta.gravar('entrega.csv', relatorio(p, itens))
+      await pasta.fechar()
+    } catch (err) {
+      console.error(err)
+    }
+    renderAtual = null
+    $('render').hidden = true
+    $('exportar').disabled = false
+  }
+  const ok = itens.filter((x) => x.ok).length
+  $('entregaFim').hidden = false
+  $('entregaFim').textContent = parou === 'cancelado' ? `Cancelado: ${ok} de ${plano.length} peças prontas.` : parou ? `Parou: ${parou}` : `Pronto: ${ok} de ${plano.length} ${plano.length === 1 ? 'peça' : 'peças'}${ok < plano.length ? ' (veja entrega.csv)' : ''}.`
+  if (pasta.pasta && ponte.desktop) {
+    const b = Object.assign(document.createElement('button'), { className: 'link', textContent: 'Mostrar na pasta' })
+    b.onclick = () => ponte.abrirPasta(pasta.pasta)
+    $('entregaFim').append(' ', b)
+  }
+  return { itens, pasta: pasta.nome }
+}
+
+/** Mídias da linha que ainda não foram escolhidas de novo neste navegador (projeto reaberto): sem elas não há imagem. */
+function midiasFaltando(p) {
+  const ids = new Set(p.linha.clipes.map((c) => c.midia))
+  return p.midias.filter((m) => ids.has(m.id) && m.temVideo && !ponte.urlTocavel(S.entradas.get(m.id)))
+}
+
+/** Uma imagem PNG em cada marcador (a aba Marcadores): o quadro que o vídeo final teria ali, com a legenda. */
+async function exportarQuadros(ids) {
+  const p = P()
+  if (!p) return
+  const naLinha = new Set(secoes(p).map((x) => x.marcador.id))
+  const ms = (p.marcadores || []).filter((m) => ids.includes(m.id) && naLinha.has(m.id))
+  if (!ms.length) return aviso('Esses marcadores ficaram depois do fim do vídeo.')
+  const faltam = midiasFaltando(p)
+  if (faltam.length) return aviso(`Escolha de novo ${faltam.length === 1 ? `"${faltam[0].nome}"` : `${faltam.length} arquivos`} na Mídia para tirar as imagens.`)
+  aviso(`Tirando ${ms.length} ${ms.length === 1 ? 'imagem' : 'imagens'}…`)
+  try {
+    await document.fonts.load('800 40px Figtree')
+    const imgs = await imagensEm(p, ms.map((m) => m.q), { entradas: S.entradas, blocos: blocosDaLegenda(p), legenda: { ligada: p.legenda.ligada, estilo: p.legenda.estilo, posicaoY: S.preset.legenda.posicao_y } })
+    const arquivos = []
+    for (const [i, x] of imgs.entries()) {
+      const m = ms[i]
+      const t = relogio(paraSegundos(m.q, p.fps)).replace(/:/g, '-')
+      arquivos.push({ name: `${String(i + 1).padStart(2, '0')}_${nomeSeguro(m.nome || 'marcador')}_${t}.png`, data: new Uint8Array(await x.blob.arrayBuffer()) })
+    }
+    const r = await ponte.gravarPacote(`${nomeArquivo(p.nome)} · imagens`, arquivos, zip)
+    if (r) aviso(`${arquivos.length} ${arquivos.length === 1 ? 'imagem pronta' : 'imagens prontas'}.`)
+  } catch (err) {
+    console.error(err)
+    aviso(`As imagens não saíram: ${err.message}`)
+  }
+}
 
 // o app abre na Mídia (os projetos e o vídeo): a tarefa vem primeiro (titular, 29/10/2026; Plano de Integração §7–8).
 // A Z fica no ícone discreto da barra e em /app/#z (link direto); nunca abre sozinha.

@@ -3,7 +3,7 @@
 // tem o que tocar (mídia sem som, degrau fora de 100%) entra um Gap do mesmo tamanho: as trilhas ficam alinhadas.
 // Efeitos sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro.
 
-import { caminhoDa, caminhoDoSom, efeitosExportados, fileUrl, segmentos } from './comum.js'
+import { caminhoDa, caminhoDoSom, COR_OTIO, efeitosExportados, fileUrl, segmentos } from './comum.js'
 import { fpsNumero } from '../tempo.js'
 import { PRODUTO } from '../produto.js'
 
@@ -35,7 +35,7 @@ export function paraOtio(p) {
     effects: [],
     markers:
       tipo === 'Video'
-        ? (p.marcadores || []).map((k) => ({ OTIO_SCHEMA: 'Marker.2', name: k.nome || 'Marcador', marked_range: range(k.q, 0, rate), color: 'PURPLE', comment: '', metadata: {} }))
+        ? (p.marcadores || []).map((k) => ({ OTIO_SCHEMA: 'Marker.2', name: k.nome || 'Marcador', marked_range: range(k.q, 0, rate), color: COR_OTIO[k.cor] || 'PURPLE', comment: k.nota || '', metadata: {} }))
         : [],
     enabled: true,
     metadata: {},

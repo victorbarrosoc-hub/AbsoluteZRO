@@ -98,9 +98,14 @@ export class LinhaUI {
       const m = e.target.closest('.marcador')
       if (m) this.aoAcao('desmarcar', m.dataset.id)
     })
+    // clicar num marcador: vai até ele e mostra na aba Marcadores
+    this.marcas.addEventListener('click', (e) => {
+      const m = e.target.closest('.marcador')
+      if (m && e.detail === 1) this.aoAcao('escolherMarcador', m.dataset.id)
+    })
     // clicar na régua ou num espaço vazio: vai até ali
     this.conteudo.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.clipe, .efeito')) return
+      if (e.target.closest('.clipe, .efeito, .marcador')) return
       const buscar = (ev) => {
         const t = Math.max(0, this.#xParaT(ev.clientX))
         this.aoBuscar(ev.altKey ? t : this.#imantar(t, false))
@@ -323,8 +328,9 @@ export class LinhaUI {
     this.trilhaZ.replaceChildren(...marcas)
     this.marcas.replaceChildren(
       ...(p.marcadores || []).map((m) => {
-        const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))} (dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
+        const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))}${m.nota ? `\n${m.nota}` : ''}\n(dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
         d.dataset.id = m.id
+        if (m.cor) d.style.background = `var(--cor-${m.cor})`
         d.style.left = `${paraSegundos(m.q, p.fps) * e}px`
         return d
       }),

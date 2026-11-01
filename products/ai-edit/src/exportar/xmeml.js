@@ -137,7 +137,7 @@ ${v1}
 ${a}${fx ? '\n' + fx : ''}
       </audio>
     </media>
-${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment></comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}
+${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment>${esc(k.nota || '')}</comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}
     <timecode>
 ${rate('      ')}
       <string>00:00:00:00</string>

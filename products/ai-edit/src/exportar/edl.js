@@ -36,7 +36,7 @@ export function paraEdl(p) {
     if (s.ajustes.escala !== 1 || s.ajustes.x || s.ajustes.y) linhas.push(`* ESCALA: ${Math.round(s.ajustes.escala * 100)}% POSICAO: ${Math.round(s.ajustes.x * 100)}% ${Math.round(s.ajustes.y * 100)}%`)
     linhas.push('')
   })
-  for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}`)
+  for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}${k.nota ? ` - ${ascii(k.nota)}` : ''}`)
   for (const x of efeitosNaLinha(p)) linhas.push(`* EFEITO ${tc(x.inicio)}: ${ascii(x.som.nome)}${x.efeito.volume ? ` ${x.efeito.volume} DB` : ''}`)
   return linhas.join('\r\n')
 }

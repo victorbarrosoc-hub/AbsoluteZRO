@@ -938,6 +938,162 @@ test('estabilizar: um take real tremido (o cavalo, com tremor de recorte) sai do
   await pagina.close()
 })
 
+/** Põe marcadores pela folha "Colar notas" da aba Marcadores (o caminho de quem cola a revisão do cliente). */
+async function colarNotas(pagina, texto) {
+  await pagina.locator('#abasPainel [data-aba="marcadores"]').click()
+  await pagina.locator('.mk-acoes [data-fazer="colar"]').click()
+  const folha = pagina.locator('dialog.mk-folha-colar')
+  await folha.locator('textarea').fill(texto)
+  await folha.locator('.mk-pintar [data-cor="azul"]').click()
+  await folha.locator('[value="por"]').click()
+  await folha.waitFor({ state: 'detached' })
+}
+
+test('marcadores: colar notas, M renomeia, cor pelo teclado, capítulos, tirar trecho, imagens e CSV', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  const marcadores = () => pagina.evaluate(() => globalThis.__editor.h.atual.marcadores.map(({ q, nome, nota, cor }) => ({ q, nome, nota: nota || '', cor: cor || null })))
+
+  // a revisão colada vira três marcadores azuis, na lista e na linha do tempo
+  await colarNotas(pagina, 'Notas da revisão\n0:00 Abertura\n[0:02] Onda grande, deixar mais tempo\n0:05 - Final')
+  const fps = await pagina.evaluate(() => globalThis.__editor.h.atual.fps)
+  const q = (s) => Math.round((s * fps.n) / fps.d)
+  assert.deepEqual(await marcadores(), [
+    { q: 0, nome: 'Abertura', nota: '', cor: 'azul' },
+    { q: q(2), nome: 'Onda grande, deixar mais tempo', nota: '', cor: 'azul' },
+    { q: q(5), nome: 'Final', nota: '', cor: 'azul' },
+  ])
+  assert.equal(await pagina.locator('.mk-item').count(), 3)
+  assert.equal(await pagina.locator('.trilha-marcas .marcador').count(), 3)
+  assert.match(await pagina.locator('.mk-item').nth(1).innerText(), /0:02[\s\S]*Onda grande[\s\S]*3 s/)
+
+  // M em cima de um marcador abre o nome dele: renomeia e grava no desfazer
+  await pagina.locator('.mk-lista').press('Escape')
+  await pagina.locator('body').press('m')
+  const campo = pagina.locator('.mk-editar')
+  await campo.waitFor()
+  await campo.fill('Começo')
+  await campo.press('Enter')
+  assert.equal((await marcadores())[0].nome, 'Começo')
+  assert.match(await pagina.locator('#historico').innerText(), /Nome do marcador/i)
+
+  // ↓ escolhe o seguinte e leva o vídeo junto; 3 pinta de verde
+  await pagina.locator('.mk-item').first().click()
+  await pagina.locator('.mk-lista').press('ArrowDown')
+  await pagina.locator('.mk-lista').press('3')
+  assert.equal((await marcadores())[1].cor, 'verde')
+
+  // capítulos do YouTube: o texto pronto e o aviso das regras de lá (cada um com 10 s)
+  await pagina.locator('.mk-acoes [data-fazer="capitulos"]').click()
+  const cap = pagina.locator('dialog.mk-folha-capitulos')
+  assert.equal(await cap.locator('textarea').inputValue(), '0:00 Começo\n0:02 Onda grande, deixar mais tempo\n0:05 Final')
+  assert.match(await cap.locator('.mk-problemas').innerText(), /menos de 10 s/)
+  await cap.locator('[value="fechar"]').click()
+
+  // tirar o trecho do segundo: 3 s a menos e o Final anda junto; desfazer volta
+  const dur = () => pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.reduce((n, c) => n + (c.fim - c.ini), 0))
+  const antes = await dur()
+  await pagina.locator('.mk-item').nth(1).click()
+  await pagina.locator('.mk-tirar').click()
+  assert.equal(antes - (await dur()), q(5) - q(2))
+  assert.deepEqual(
+    (await marcadores()).map((m) => [m.nome, m.q]),
+    [
+      ['Começo', 0],
+      ['Final', q(2)],
+    ],
+  )
+  await pagina.click('#desfazer')
+  assert.equal(await dur(), antes)
+
+  // imagens nos marcadores (um .zip com os PNG) e o CSV
+  await pagina.locator('.mk-lista').press('Escape')
+  const [imagens] = await Promise.all([pagina.waitForEvent('download', { timeout: 60_000 }), pagina.locator('.mk-acoes [data-fazer="quadros"]').click()])
+  const zip = join(dir, 'imagens.zip')
+  await imagens.saveAs(zip)
+  const nomes = execFileSync('zipinfo', ['-1', zip]).toString().trim().split('\n')
+  assert.deepEqual(nomes, ['01_Começo_0-00.png', '02_Onda grande, deixar mais tempo_0-02.png', '03_Final_0-05.png'])
+  execFileSync('unzip', ['-o', '-q', zip, '-d', join(dir, 'imagens')])
+  const [img] = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', join(dir, 'imagens', '02_Onda grande, deixar mais tempo_0-02.png')]).toString()).streams
+  assert.equal(`${img.width}×${img.height}`, '1280×720')
+  const [planilha] = await Promise.all([pagina.waitForEvent('download'), pagina.locator('.mk-acoes [data-fazer="csv"]').click()])
+  const csv = readFileSync(await planilha.path(), 'utf8')
+  assert.match(csv, /^Tempo,Nome,Nota,Cor,Duração\n00:00:00:00,Começo,,azul,00:00:02:00\n/)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('peças: duas seções em 16:9 e 9:16, nome pelo modelo, vídeo de cada uma e relatório; juntar em outra ordem', async () => {
+  const { pagina, erros } = await abrir()
+  // sem o seletor de pasta do Chrome (abriria uma janela): as peças saem num .zip
+  await pagina.evaluate(() => delete globalThis.showDirectoryPicker)
+  await pagina.setInputFiles('#arquivo', fileURLToPath(new URL('../marca/home/cenas/onda.mp4', import.meta.url)))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.click('.dock [data-ir="edicao"]')
+  await pagina.locator('.clipe').waitFor()
+  await colarNotas(pagina, '0:00 Chegada\n0:03 Onda\n0:06 Saída')
+
+  await pagina.click('.dock [data-ir="entrega"]')
+  await pagina.locator('#modoEntrega [data-modo="pecas"]').click()
+  assert.deepEqual(await pagina.locator('.peca-nome').allInnerTexts(), ['Chegada', 'Onda', 'Saída'])
+  await pagina.locator('.peca input[type=checkbox]').nth(2).uncheck()
+  // o 16:9 é o do projeto (Original 16:9); o 9:16 entra junto
+  assert.equal(await pagina.locator('.pecas-formato').first().innerText(), 'Original 16:9')
+  await pagina.locator('.pecas-formato[data-formato="9x16"]').click()
+  assert.equal(await pagina.locator('#pecasResumo').innerText(), '4 peças · 01_Chegada.mp4')
+  assert.equal(await pagina.locator('.pecas-formato[data-formato="16x9"]').count(), 0, 'a mesma proporção do projeto não repete')
+  for (const d of ['xmeml', 'fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="xmeml"]')
+  await pagina.check('#destinos input[value="video"]')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download', { timeout: 240_000 }), pagina.click('#exportar')])
+  const zip = join(dir, 'pecas.zip')
+  await baixado.saveAs(zip)
+  await pagina.locator('#entregaFim:not([hidden])').waitFor()
+  assert.match(await pagina.locator('#entregaFim').innerText(), /Pronto: 4 de 4 peças/)
+  const nomes = execFileSync('zipinfo', ['-1', zip]).toString().trim().split('\n').sort()
+  const base = 'onda · peças'
+  for (const n of ['01_Chegada.mp4', '01_Chegada_9x16.mp4', '02_Onda.mp4', '02_Onda_9x16.mp4', 'entrega.csv', '01_Chegada/01_Chegada.xml', '02_Onda_9x16/02_Onda_9x16.xml']) assert.ok(nomes.includes(`${base}/${n}`), `${n} em ${nomes.join(', ')}`)
+  const saida = join(dir, 'pecas')
+  execFileSync('unzip', ['-o', '-q', zip, '-d', saida])
+  const sonda = (f) => JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height:format=duration', '-of', 'json', join(saida, base, f)]).toString())
+  const v = sonda('02_Onda_9x16.mp4')
+  assert.equal(`${v.streams[0].width}×${v.streams[0].height}`, '1080×1920')
+  assert.ok(Math.abs(Number(v.format.duration) - 3) < 0.15, `duração ${v.format.duration}`)
+  const h = sonda('01_Chegada.mp4')
+  assert.equal(`${h.streams[0].width}×${h.streams[0].height}`, '1280×720')
+  const rel = readFileSync(join(saida, base, 'entrega.csv'), 'utf8')
+  assert.match(rel, /^Peça,Seção,Formato,Entrada,Saída,Duração,Arquivos,Situação\n01_Chegada,Chegada,Original,/)
+  assert.equal((rel.match(/,pronto$/gm) || []).length, 4)
+  // a peça vertical leva o XML com a sequência 9:16
+  assert.match(readFileSync(join(saida, base, '02_Onda_9x16', '02_Onda_9x16.xml'), 'utf8'), /<width>1080<\/width>\s*<height>1920<\/height>/)
+
+  // juntar em outra ordem: Onda antes de Chegada, num projeto novo (o de antes fica guardado)
+  const antes = await pagina.evaluate(() => globalThis.__editor.h.atual.id)
+  await pagina.locator('#pecasJuntar').click()
+  const folha = pagina.locator('dialog.pecas-juntar')
+  await folha.getByRole('button', { name: 'Descer Chegada' }).click()
+  await folha.locator('[value="criar"]').click()
+  await pagina.waitForFunction((id) => globalThis.__editor.h.atual.id !== id, antes)
+  const novo = await pagina.evaluate(() => {
+    const p = globalThis.__editor.h.atual
+    return { id: p.id, nome: p.nome, clipes: p.linha.clipes.map((c) => [c.ini, c.fim]), marcadores: p.marcadores.map((m) => [m.nome, m.q]) }
+  })
+  assert.notEqual(novo.id, antes)
+  assert.equal(novo.nome, 'onda · nova ordem')
+  assert.equal(novo.marcadores[0][0], 'Onda')
+  assert.equal(novo.marcadores[1][0], 'Chegada')
+  // a Onda (3 s da origem em diante) vem primeiro, depois a Chegada (do começo)
+  const q3 = await pagina.evaluate(() => Math.round((3 * globalThis.__editor.h.atual.fps.n) / globalThis.__editor.h.atual.fps.d))
+  assert.deepEqual(novo.clipes[0][0], q3)
+  assert.equal(novo.clipes.at(-1)[0], 0)
+  assert.equal(await pagina.evaluate(() => document.body.dataset.pagina), 'edicao')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('reduzir movimento: páginas trocam sem deslize', async () => {
   const { pagina } = await abrir({ reducedMotion: 'reduce' })
   await pagina.click('.dock [data-ir="entrega"]')

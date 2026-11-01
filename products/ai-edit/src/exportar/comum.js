@@ -80,8 +80,12 @@ export function transformacao(p, s) {
   return { escala: r.w / base.w, cx: r.x + r.w / 2 - p.largura / 2, cy: r.y + r.h / 2 - p.altura / 2 }
 }
 
-/** Marcadores que caem dentro de um segmento: [{ nome, q (quadro de origem) }]. */
-export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + s.saida).map((k) => ({ nome: k.nome || 'Marcador', q: s.ini + Math.round((k.q - s.linha) * s.v) }))
+/** Marcadores que caem dentro de um segmento: [{ nome, nota, cor, q (quadro de origem) }]. */
+export const marcadoresDe = (p, s) =>
+  (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + s.saida).map((k) => ({ nome: k.nome || 'Marcador', nota: k.nota || '', cor: k.cor || null, q: s.ini + Math.round((k.q - s.linha) * s.v) }))
+
+/** Cor do marcador no OpenTimelineIO (o enum de lá). */
+export const COR_OTIO = Object.freeze({ laranja: 'ORANGE', amarelo: 'YELLOW', verde: 'GREEN', menta: 'CYAN', azul: 'BLUE', roxo: 'PURPLE', rosa: 'PINK', areia: 'YELLOW' })
 
 /**
  * Efeitos sonoros para os exportadores: [{ ...x de efeitosNaLinha, faixa (0, 1, …), seg (segmento onde começa),

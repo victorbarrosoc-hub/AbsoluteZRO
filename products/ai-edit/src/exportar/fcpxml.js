@@ -55,7 +55,7 @@ export function paraFcpxml(p) {
         const at = `ref="${refSom.get(x.som.id)}" lane="-${x.faixa + 1}" offset="${offset}" name="${esc(x.som.nome.replace(/\.[^.]+$/, ''))}" start="0s" duration="${racional(x.quadros, f)}" audioRole="effects"`
         filhos.push(x.efeito.volume ? `<asset-clip ${at}>\n                <adjust-volume amount="${x.efeito.volume}dB"/>\n              </asset-clip>` : `<asset-clip ${at}/>`)
       }
-      for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${ajustado(k.q)}" duration="${racional(1, f)}" value="${esc(k.nome)}"/>`)
+      for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${ajustado(k.q)}" duration="${racional(1, f)}" value="${esc(k.nome)}"${k.nota ? ` note="${esc(k.nota)}"` : ''}/>`)
       // etiqueta vira palavra-chave do clipe (o Final Cut não tem cor de clipe)
       if (s.etiqueta) filhos.push(`<keyword start="${ajustado(s.ini)}" duration="${racional(s.saida, f)}" value="${esc(s.etiqueta)}"/>`)
       if (!filhos.length) return `            <asset-clip ${attrs}/>`
