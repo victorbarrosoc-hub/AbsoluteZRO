@@ -6,7 +6,7 @@ tarefas, continua logado, mostra uma tela "Sem conexão" local quando falta inte
 remove SOBEDESCE, Synquei, NOSSOM e o Maestro (quando liberado pelo gate) pela página Downloads do HUB. Desde a 1.3.0 é o **instalador do ecossistema** e roda
 em segundo plano, como o SOBEDESCE: símbolo na barra de menus (Mac) ou na bandeja (Windows), abre com o computador,
 mantém os apps instalados em dia sozinho e, na primeira abertura, pergunta quais apps instalar. Desde a **1.4.0** é a
-**central única** ([ADR 0035](../../docs/decisions/0035-central-unica-de-instalacao.md)): todo app de computador da
+**central única** ([ADR 0036](../../docs/decisions/0036-central-unica-de-instalacao.md)): todo app de computador da
 Absolute ZRO se instala e se atualiza só por aqui, pela conta e pelo plano, como no Creative Cloud.
 
 Fora dos workspaces da raiz: tem `package.json` e `package-lock.json` próprios (Electron não entra no `npm ci` do HUB).
@@ -132,7 +132,7 @@ sozinha ("Nova versão", `desktop/atualizador.cjs`) e instala e atualiza todos o
 
 ## Central única (1.4.0)
 
-Pedido do titular (01/11/2026, [ADR 0035](../../docs/decisions/0035-central-unica-de-instalacao.md)): todo app de
+Pedido do titular (01/11/2026, [ADR 0036](../../docs/decisions/0036-central-unica-de-instalacao.md)): todo app de
 computador se instala e se atualiza **só** pela central, como no Adobe Creative Cloud.
 
 - **Conta:** a central é o HUB numa janela; o login é o do HUB (a mesma conversa do `/app/entrar`, com Google), e a

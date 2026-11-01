@@ -2,7 +2,7 @@
 // com a sessão guardada (continua logado), menu em português, tela "Sem conexão" local e aviso de versão nova.
 //
 // É também o instalador e gerenciador do ecossistema (ADR 0018 e adendo de 28/10/2026) e, desde a 1.4.0, o ÚNICO jeito
-// de instalar e atualizar os apps de computador (central única, ADR 0035): fica em segundo plano, com o símbolo na
+// de instalar e atualizar os apps de computador (central única, ADR 0036): fica em segundo plano, com o símbolo na
 // barra de menus (Mac) ou na bandeja (Windows); fechar a janela não encerra. Abre com o computador (escondido), lê os
 // apps da conta no HUB (/api/v1/desktop/meus-apps, com a sessão do HUB guardada na partição do app), avisa versão nova
 // com notificação nativa (agenda.cjs; "Atualizar sozinho" por app nos Ajustes) e na primeira abertura pergunta quais
@@ -383,7 +383,7 @@ function iniciarCentral() {
   agenda = new AgendaDeApps({
     central,
     notificar: (n) => notificarDaAgenda(n),
-    // Ajustes › "Atualizar sozinho" por app (padrão desligado: a central avisa e a pessoa atualiza; ADR 0035)
+    // Ajustes › "Atualizar sozinho" por app (padrão desligado: a central avisa e a pessoa atualiza; ADR 0036)
     atualizarSozinho: (id) => !!(prefs().atualizarSozinho || {})[id],
     marcarGerenciados: (ids) => gerenciados.gravar(fs, app.getPath('userData'), ids),
     log: (...a) => console.log(...a),
@@ -627,7 +627,7 @@ async function procurarTudo() {
   const [r] = await Promise.all([aviso ? aviso.conferir({ manual: true }) : { estado: 'desenvolvimento' }, agenda ? agenda.conferir() : null])
   if (r.estado === 'nova' || r.estado === 'avisando') return // o aviso do próprio app já apareceu
   if (r.estado === 'sem-resposta') return notificar('Não deu para conferir agora', 'O site do Absolute ZRO não respondeu. Tente daqui a pouco.')
-  // sem sessão a central não sabe quais são os seus apps (ADR 0035)
+  // sem sessão a central não sabe quais são os seus apps (ADR 0036)
   if (agenda && agenda.estado().semLogin)
     return notificar('Entre na sua conta', 'Seus apps aparecem depois de entrar.', () => abrirDeepLink(`${regras.ESQUEMA}://app/entrar`))
   // cada app com versão nova já avisou por notificação e aparece na bandeja

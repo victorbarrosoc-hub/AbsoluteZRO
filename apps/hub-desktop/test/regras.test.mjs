@@ -90,7 +90,7 @@ test('deep link absolutezro:// abre só rotas do HUB', () => {
   assert.equal(r.deepLinkDosArgs(['app', '--smoke'], HUB), null)
 })
 
-test('deep link de app (ADR 0035): absolutezro://apps/<id>?acao=atualizar|instalar abre o cartão do app e só oferece', () => {
+test('deep link de app (ADR 0036): absolutezro://apps/<id>?acao=atualizar|instalar abre o cartão do app e só oferece', () => {
   assert.deepEqual(r.linkDeApp('absolutezro://apps/maestro?acao=atualizar'), { id: 'maestro', acao: 'atualizar' })
   assert.deepEqual(r.linkDeApp('absolutezro://apps/rift-motion?acao=instalar'), { id: 'rift-motion', acao: 'instalar' })
   assert.deepEqual(r.linkDeApp('absolutezro:apps/relay/'), { id: 'relay', acao: null })

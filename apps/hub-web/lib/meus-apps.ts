@@ -1,5 +1,5 @@
 /**
- * Central única de instalação (ADR 0035, titular, 01/11/2026): todo app de computador da Absolute ZRO se instala e se
+ * Central única de instalação (ADR 0036, titular, 01/11/2026): todo app de computador da Absolute ZRO se instala e se
  * atualiza só pela central "Absolute ZRO" (apps/hub-desktop), como no Creative Cloud. Este módulo decide, no servidor,
  * o que cada conta pode instalar e baixar. A tela só mostra o que daqui sai.
  *

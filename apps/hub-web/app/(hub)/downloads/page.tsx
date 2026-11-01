@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Downloads' }
 
 /**
  * Downloads dentro do HUB: o download da Absolute ZRO e os apps. Dentro do app de computador, cada cartão instala pela
- * central; o que a conta pode instalar vem de `direitosDesktop` (gate + plano, no servidor; ADR 0035).
+ * central; o que a conta pode instalar vem de `direitosDesktop` (gate + plano, no servidor; ADR 0036).
  */
 export default async function Downloads() {
   const auth = await requireOrgPage()

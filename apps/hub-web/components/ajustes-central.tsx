@@ -1,6 +1,6 @@
 'use client'
 /**
- * Ajustes da central (ADR 0035), lidos e gravados pela ponte do app (window.zroDesktop.apps, central 1.4+): um
+ * Ajustes da central (ADR 0036), lidos e gravados pela ponte do app (window.zroDesktop.apps, central 1.4+): um
  * interruptor "Atualizar sozinho" por app instalado (padrão desligado) e "Abrir com o computador". No navegador, só o
  * convite para instalar a Absolute ZRO.
  */

@@ -39,7 +39,7 @@ central `absolutezro.com/baixar`).
 - Capturas (iPhone e computador, claro) dos sites e do aviso dentro dos apps no scratchpad da sessão
   (`apps-sem-instalador/`).
 
-## Central única de instalação (01/11/2026, ADR 0035)
+## Central única de instalação (01/11/2026, ADR 0036)
 
 Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO 1.4.0.
 

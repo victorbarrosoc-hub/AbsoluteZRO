@@ -750,7 +750,7 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   autorizado.
 - ⬜ Conferir com a conta real se o iCloud põe Delivered-To/X-Original-To (mensagem só em Cco para um alias).
 
-## Central única de instalação (01/11/2026, [ADR 0035](decisions/0035-central-unica-de-instalacao.md))
+## Central única de instalação (01/11/2026, [ADR 0036](decisions/0036-central-unica-de-instalacao.md))
 
 Branch `central-unica`. Todo app de computador se instala e se atualiza só pela Absolute ZRO (`apps/hub-desktop` 1.4.0).
 

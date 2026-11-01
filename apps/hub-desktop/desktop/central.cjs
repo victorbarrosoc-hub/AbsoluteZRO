@@ -1,5 +1,5 @@
 // Central de apps (modelo Creative Cloud, pedido do titular em 26/10/2026): instala, abre, atualiza e remove as
-// ferramentas da Absolute ZRO a partir dos apps da conta no HUB (/api/v1/desktop/meus-apps, ADR 0035). Sem Electron: o sistema
+// ferramentas da Absolute ZRO a partir dos apps da conta no HUB (/api/v1/desktop/meus-apps, ADR 0036). Sem Electron: o sistema
 // (comandos, arquivos, download) entra por `deps`, e os testes em test/central.test.mjs usam versões falsas.
 //
 // Regras:
@@ -195,7 +195,7 @@ class Central {
   }
 
   /**
-   * Os apps desta conta (ADR 0035): /api/v1/desktop/meus-apps, com a sessão do HUB (cookie da partição do app). Só vem
+   * Os apps desta conta (ADR 0036): /api/v1/desktop/meus-apps, com a sessão do HUB (cookie da partição do app). Só vem
    * o que a conta pode instalar, com versão e SHA-256, e o que o plano não inclui (bloqueados). Sem sessão (401):
    * catálogo vazio e `semLogin`. HUB antigo, sem a rota (404): o catálogo público de antes.
    */

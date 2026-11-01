@@ -4,7 +4,7 @@ import { acessoAoDownload, liberadosParaBaixar } from '@/lib/meus-apps'
 import { db, getAuth } from '@/lib/session'
 
 /**
- * /baixar/app/<ferramenta>/<arquivo>: a central "Absolute ZRO" baixa daqui (ADR 0035). Só arquivos que o catálogo
+ * /baixar/app/<ferramenta>/<arquivo>: a central "Absolute ZRO" baixa daqui (ADR 0036). Só arquivos que o catálogo
  * reconhece; redireciona para o endereço assinado e temporário do GitHub (o arquivo não passa pela Vercel).
  * - Produto fechado (ADR 0023) é 404, salvo para quem está na lista de acesso do canal download, logado. AEON, Revela,
  *   NOSSOM e Rift Motion (não lançados) só baixam para admin de plataforma, que baixa tudo.

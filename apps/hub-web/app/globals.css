@@ -2266,7 +2266,7 @@ details.disclosure[open] > summary {
   font-size: 0.8rem;
   scrollbar-width: none;
 }
-/* Central única (ADR 0035): o download da Absolute ZRO, o passo a passo de cada sistema e o Terminal. O botão do
+/* Central única (ADR 0036): o download da Absolute ZRO, o passo a passo de cada sistema e o Terminal. O botão do
    sistema de quem vê vira a ação principal (vidro escuro); o passo a passo dele fica em primeiro plano. */
 :root[data-os='mac'] .dl-central__baixar[data-os='mac'],
 :root[data-os='windows'] .dl-central__baixar[data-os='windows'] {
@@ -4875,7 +4875,7 @@ a.hbars__row:hover {
 .app-actions__erro {
   margin: 0;
 }
-/* Fora do plano (ADR 0035): o cadeado e o plano que inclui, com "Ver planos". */
+/* Fora do plano (ADR 0036): o cadeado e o plano que inclui, com "Ver planos". */
 .app-actions__plano {
   display: inline-flex;
   align-items: center;

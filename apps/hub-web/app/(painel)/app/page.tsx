@@ -43,7 +43,7 @@ const SITE: Record<string, string> = {
  * canal desktop aberto; Abrir (na web) só com o canal web aberto. Fechado nos dois fica só com o selo "Em
  * desenvolvimento". App só da web no ar (Maestro e Relay, sem app de computador ainda) abre na web, sem selo.
  *
- * Central única (ADR 0035): o que instala e atualiza sai de `direitosDesktop` (gate + plano, no servidor). App que o
+ * Central única (ADR 0036): o que instala e atualiza sai de `direitosDesktop` (gate + plano, no servidor). App que o
  * plano não inclui fica bloqueado com "Incluso no plano X · Ver planos". O deep link absolutezro://apps/<id>?acao=…
  * chega aqui como ?app=<id>&acao=atualizar|instalar: o cartão do app fica em destaque e já oferece a ação.
  */

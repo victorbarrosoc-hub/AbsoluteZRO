@@ -1,5 +1,5 @@
 /**
- * O que cada ferramenta oferece na página Downloads. Central única (ADR 0035, titular, 01/11/2026): no computador, todo
+ * O que cada ferramenta oferece na página Downloads. Central única (ADR 0036, titular, 01/11/2026): no computador, todo
  * app se instala e se atualiza SÓ pela Absolute ZRO (apps/hub-desktop); a página tem um download só, o dela. As opções
  * `mac`/`windows` daqui dizem que o app tem versão para computador (o cartão mostra "Instale pela Absolute ZRO") e
  * guardam as rotas antigas, que continuam no ar para os apps já instalados (não aparecem como botão). Navegador e

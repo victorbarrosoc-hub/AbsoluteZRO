@@ -271,12 +271,12 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const painel = page.locator('#dl-painel')
   await expect(painel.getByText('Em desenvolvimento')).toHaveCount(0)
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://maestro.absolutezro.com/app')
-  // no computador, pela Absolute ZRO (ADR 0035): nada de instalador avulso no cartão
+  // no computador, pela Absolute ZRO (ADR 0036): nada de instalador avulso no cartão
   await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
   await expect(painel.locator('a.dl-opt--central')).toHaveAttribute('href', '#absolute-zro')
   await page.getByRole('button', { name: 'Relay' }).click()
   await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
-  // central única (ADR 0035): AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma; o resto instala pela
+  // central única (ADR 0036): AEON, Revela, NOSSOM e Rift Motion só para admin de plataforma; o resto instala pela
   // Absolute ZRO (um download só, no topo, com o passo a passo e a linha do Terminal)
   await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
   await expect(page.locator('#absolute-zro')).toBeVisible()
@@ -457,7 +457,7 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await page.getByRole('button', { name: 'Synquei' }).click()
   await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
   await expect(page.locator('.app-actions')).toHaveCount(0)
-  // no computador, o app instala pela Absolute ZRO (o instalador avulso saiu, ADR 0035)
+  // no computador, o app instala pela Absolute ZRO (o instalador avulso saiu, ADR 0036)
   await expect(page.locator('#app-synquei .dl-opt--central')).toHaveAttribute('href', '#absolute-zro')
   await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toHaveCount(0)
 })

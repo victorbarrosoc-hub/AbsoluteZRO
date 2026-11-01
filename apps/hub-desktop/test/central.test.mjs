@@ -317,7 +317,7 @@ test('aberto e fechar: pede para sair do jeito educado (sem forçar)', async () 
   assert.equal(kill.includes('/F'), false)
 })
 
-// Central única (ADR 0035): os apps da conta, pelo plano.
+// Central única (ADR 0036): os apps da conta, pelo plano.
 test('meus apps: o que o plano não inclui vem bloqueado (sem arquivo), não instala e o que está no computador fica', async () => {
   const comBloqueado = {
     ...catalogo,

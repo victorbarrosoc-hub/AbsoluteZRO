@@ -271,7 +271,7 @@ test('conferir duas vezes ao mesmo tempo faz uma conferência só; erro do catá
   assert.equal(e.procurando, false)
 })
 
-// Central única (ADR 0035): o padrão é avisar e esperar a pessoa; "Atualizar sozinho" é por app, nos Ajustes.
+// Central única (ADR 0036): o padrão é avisar e esperar a pessoa; "Atualizar sozinho" é por app, nos Ajustes.
 test('padrão: versão nova não instala sozinha; avisa uma vez por versão ("Maestro 0.3.0 disponível") e espera', async () => {
   const apps = { maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' } }
   const { agenda, central, avisos } = montar(apps, { atualizarSozinho: () => false })

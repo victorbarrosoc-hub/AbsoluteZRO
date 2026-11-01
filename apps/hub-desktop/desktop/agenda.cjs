@@ -1,4 +1,4 @@
-// Atualização das ferramentas em segundo plano (pedido do titular, 28/10/2026; central única, 01/11/2026, ADR 0035): o
+// Atualização das ferramentas em segundo plano (pedido do titular, 28/10/2026; central única, 01/11/2026, ADR 0036): o
 // Absolute ZRO confere os apps da conta no HUB ao abrir e a cada INTERVALO_MS. Ferramenta instalada com versão nova:
 //
 //   0. padrão ("Atualizar sozinho" desligado nos Ajustes): fica 'disponivel' e avisa uma vez por versão com uma

@@ -1,4 +1,4 @@
-# ADR 0035 — Central única de instalação
+# ADR 0036 — Central única de instalação
 
 **Status:** aceita (01/11/2026, pedido do titular)
 

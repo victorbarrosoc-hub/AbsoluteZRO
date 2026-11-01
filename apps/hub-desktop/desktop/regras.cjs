@@ -75,7 +75,7 @@ function destino(url, origin) {
   return 'nada'
 }
 
-// Deep link de app (ADR 0035): absolutezro://apps/<id>?acao=atualizar|instalar. Os apps da família abrem este link
+// Deep link de app (ADR 0036): absolutezro://apps/<id>?acao=atualizar|instalar. Os apps da família abrem este link
 // quando têm versão nova (ou para pedir a instalação de outro app); a central abre no cartão do app e já oferece a
 // ação, mas só a pessoa confirma. Nada acontece sozinho a partir de um link.
 const APP_ID = /^[a-z0-9-]{2,40}$/

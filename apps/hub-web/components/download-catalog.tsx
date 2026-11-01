@@ -1,5 +1,5 @@
 /**
- * Topo da página Downloads e a lista de ferramentas para o DownloadPicker. Central única (ADR 0035, titular,
+ * Topo da página Downloads e a lista de ferramentas para o DownloadPicker. Central única (ADR 0036, titular,
  * 01/11/2026): o único download é a Absolute ZRO (Mac e Windows), com o passo a passo e a linha do Terminal; cada app
  * se instala e se atualiza por ela. O sistema do visitante ganha destaque pelo atributo data-os do <html> (OsHint).
  */

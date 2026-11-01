@@ -1213,7 +1213,7 @@ paths:
       responses: { '200': { description: ok } }
   /api/v1/desktop/meus-apps:
     get:
-      summary: Os apps de computador da conta (central "Absolute ZRO", ADR 0035), pela sessão do HUB
+      summary: Os apps de computador da conta (central "Absolute ZRO", ADR 0036), pela sessão do HUB
       description: |
         Gate de lançamento (canal desktop), organização ativa e entitlement conferidos no servidor (authorize, PRD §5.2).
         `apps`: o que a conta pode instalar, no formato do catálogo (`id`, `nome`, `mac: { bundle, arquivos[] }`,

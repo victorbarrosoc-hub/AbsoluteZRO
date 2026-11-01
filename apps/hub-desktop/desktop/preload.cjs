@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('zroDesktop', {
   apps: {
     // 2: listar traz `atualizacao` ({ fase: 'ao-fechar'|…, versao }) e há reiniciarEAtualizar; instalar com a
     // ferramenta aberta devolve 'ao-fechar' (instala quando ela fechar)
-    // 3 (1.4, ADR 0035): listar traz `bloqueado` ({ plano } quando o plano não inclui o app) e `atualizacao.fase`
+    // 3 (1.4, ADR 0036): listar traz `bloqueado` ({ plano } quando o plano não inclui o app) e `atualizacao.fase`
     // 'disponivel'; há atualizar, atualizarTudo e os Ajustes ("Atualizar sozinho" por app e abrir com o computador)
     versao: 3,
     listar: () => ipcRenderer.invoke('central:listar'),

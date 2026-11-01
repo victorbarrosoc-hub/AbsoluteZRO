@@ -3,7 +3,7 @@
 // O main.cjs transforma a lista em Menu do Electron e liga cada `acao`.
 //
 // Menu curto, na ordem: Abrir Absolute ZRO · Entrar na sua conta (sem sessão) · apps instalados (abrir cada um) ·
-// Procurar atualizações · Atualizar <app> <versão> (versão nova avisada, ADR 0035) · Reiniciar e atualizar <app>
+// Procurar atualizações · Atualizar <app> <versão> (versão nova avisada, ADR 0036) · Reiniciar e atualizar <app>
 // (quando está "ao fechar") · Atualizar tudo (quando há mais de uma) · Abrir com o computador · Sair.
 
 const OCUPADO = new Set(['baixando', 'instalando', 'fechando'])
