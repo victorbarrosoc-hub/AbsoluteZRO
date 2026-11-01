@@ -3,9 +3,14 @@
  * continuam para leitor de tela (texto visualmente oculto, nunca apagado). */
 
 /* texto que fica só para o leitor de tela */
-.studio-shell .effect-toolbar > .button,
-.studio-sidebar .family-nav a span {
+.studio-shell .effect-toolbar > .button {
   font-size: 0;
+}
+/* a família vira fileira de ícones só no computador; no menu do celular cada app mostra o nome */
+@media (min-width: 681px) {
+  .studio-sidebar .family-nav a span {
+    font-size: 0;
+  }
 }
 .studio-shell .effect-toolbar > .button svg {
   width: 17px;

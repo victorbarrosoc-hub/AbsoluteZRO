@@ -388,6 +388,18 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   menos texto em toda a tela, home preta só com as linhas de luz e o player em forma de **ilha** (pílula de vidro com
   capa, nome, onda viva e tocar; um toque abre tempo, ±10 s e volume). Falta: validar com a conta do titular; a
   separação de voz em grito longo (modo Fala por padrão e o modelo de música) espera o teste dele.
+- 🟡 NOSSOM logado (01/11/2026, retorno do titular): fechado ao público, a home só chega à conta liberada, então agora
+  age como nos outros apps (conta no topo com os apps da Absolute ZRO no menu, "Abrir o estúdio" no topo, no título e
+  no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
+  escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
+  família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
+  grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
+  rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos
+  da versão, ferramentas sobre o trecho selecionado e, logo abaixo, a folha de vidro com os passos, a lista do passo e
+  os ajustes em botões giratórios (por baixo, o `input range` nativo: teclado e leitor de tela seguem iguais).
+  Recolhida a folha, o campo "Peça algo ao seu áudio" (⌘K) abre o assistente. Início: símbolo em cromo azulado no lugar
+  do 3D, Enviar áudio e Gravar, atalhos por passo e Recentes. Fora do ar como todo o NOSSOM (0049).
 - ✅ NOSSOM no iPhone (01/11/2026, retorno do titular): "O navegador não conseguiu guardar este áudio" ao importar no
   Safari. O IndexedDB do WebKit às vezes recusa o Blob mesmo copiado para a memória e perde a conexão com a aba em
   segundo plano. `lib/storage.ts` agora abre outra conexão e tenta de novo; por último guarda os mesmos bytes

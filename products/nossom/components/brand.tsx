@@ -73,3 +73,38 @@ export function SoundRibbon({ small = false }: { small?: boolean }) {
     </svg>
   );
 }
+
+/**
+ * O mesmo símbolo do NOSSOM (o traço de `Brand`) em cromo azulado, para quando ele é o protagonista da tela (o Início
+ * do estúdio, titular 01/11/2026: "tira o 3D, valoriza a logo"). Só muda o acabamento, nunca a forma.
+ */
+export function SimboloCromo({ width = 200 }: { width?: number }) {
+  const id = useId();
+  const forma = 'M3 42C28 14 35 0 55 18S82 43 107 8C78 48 72 53 50 36S25 24 3 42Z';
+  return (
+    <svg
+      className="simbolo-cromo"
+      width={width}
+      height={(width * 56) / 110}
+      viewBox="0 0 110 56"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={id + 'c'} x1="0" y1=".2" x2="1" y2=".8">
+          <stop stopColor="#f4f8ff" />
+          <stop offset=".25" stopColor="#9ec0ea" />
+          <stop offset=".5" stopColor="#ffffff" />
+          <stop offset=".75" stopColor="#4f84c9" />
+          <stop offset="1" stopColor="#cfe2fb" />
+        </linearGradient>
+        <linearGradient id={id + 'b'} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#fff" stopOpacity=".75" />
+          <stop offset=".45" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={forma} fill={`url(#${id}c)`} />
+      <path d={forma} fill={`url(#${id}b)`} opacity=".5" />
+      <path d={forma} fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth=".5" />
+    </svg>
+  );
+}

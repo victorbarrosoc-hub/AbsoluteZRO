@@ -128,3 +128,10 @@ export const test = base.extend({
     await use(page);
   },
 });
+
+/** Claro ou escuro pelo botão do topo do estúdio (sol/lua), conferido no atributo do estúdio. */
+export async function definirTema(page: import('@playwright/test').Page, tema: 'light' | 'dark') {
+  const botao = page.getByRole('button', { name: 'Tema claro', exact: true });
+  if ((await botao.getAttribute('aria-pressed')) !== String(tema === 'light')) await botao.click();
+  await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', tema);
+}

@@ -1,4 +1,4 @@
-import { test, expect, signInExisting, onlyWhenOpen } from './fixtures';
+import { test, expect, signInExisting, onlyWhenOpen, definirTema } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 // Runs against the local Stripe double in scripts/test-server.mjs: Checkout, signed webhooks
 // and the customer portal. No real payment provider is contacted.
@@ -88,7 +88,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
   await expect(page.locator('.plan-summary')).toBeVisible();
   // Readable in both themes.
   for (const theme of ['light', 'dark']) {
-    await page.getByLabel('Tema do estúdio', { exact: true }).selectOption(theme);
+    await definirTema(page, theme as 'light' | 'dark');
     expect(
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
         .violations,
