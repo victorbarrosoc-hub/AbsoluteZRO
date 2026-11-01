@@ -49,6 +49,16 @@ export const OPCOES = {
 export const opcaoDe = (tipo, id) => (OPCOES[tipo] || []).find((o) => o.id === id) || null
 export const DURACOES = ['curto', 'longo']
 
+/** Prévias em imagem (a "tela" antes do vídeo): o modelo mais barato de cada porta. Conta: GPT Image 2.5 Flare em
+ * qualidade baixa, que aceita a imagem da camada como referência; chave: Soul (só texto). */
+export const IMAGEM = {
+  conta: { modelo: 'gpt_image_2_5', extra: { variant: 'flare', quality: 'low' } },
+  chave: { modelo: 'soul-standard', caminho: '/higgsfield-ai/soul/standard' },
+}
+export const PROPORCOES = ['16:9', '9:16', '1:1', '4:5']
+const IMG_URL = /^https:\/\/\S+\.(png|jpe?g|webp)(\?\S*)?$/i
+const VID_URL = /^https:\/\/\S+\.(mp4|mov|webm)(\?\S*)?$/i
+
 const ESTADOS = { queued: 'na_fila', in_progress: 'gerando', processing: 'gerando', running: 'gerando', pending: 'na_fila', completed: 'pronto', succeeded: 'pronto', done: 'pronto', failed: 'falhou', error: 'falhou', nsfw: 'recusado', canceled: 'cancelado', cancelled: 'cancelado' }
 export const estadoDe = (s) => ESTADOS[String(s || '').toLowerCase()] || null
 export const terminal = (e) => ['pronto', 'falhou', 'recusado', 'cancelado'].includes(e)
@@ -124,7 +134,25 @@ export async function chaveIniciar(chave, { op, prompt, duracao, ref, idem }) {
 export async function chaveStatus(chave, pedido) {
   const { status, d } = await apiPedir(chave, 'GET', `/requests/${encodeURIComponent(pedido)}/status`)
   if (status >= 300 || !d) throw new HfErro('Não deu para ver o andamento agora.')
-  return { estado: estadoDe(d.status) || 'gerando', url: d.video?.url || null, erro: d.error || null }
+  const urls = Array.isArray(d.images) ? d.images.map((i) => i?.url).filter((u) => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 4) : []
+  return { estado: estadoDe(d.status) || 'gerando', url: d.video?.url || null, urls, erro: d.error || null }
+}
+
+export async function chaveCustoImagens(chave, quantidade, proporcao) {
+  try {
+    const { status, d } = await apiPedir(chave, 'POST', `/estimate${IMAGEM.chave.caminho}`, { prompt: 'estimate', num_images: quantidade, aspect_ratio: proporcao, resolution: '2K' })
+    const usd = Number(d?.usd)
+    return status < 300 && Number.isFinite(usd) ? usd : null
+  } catch (e) {
+    if (e instanceof HfSemAcesso) throw e
+    return null
+  }
+}
+
+export async function chaveIniciarImagens(chave, { prompt, quantidade, proporcao, idem }) {
+  const { status, d } = await apiPedir(chave, 'POST', IMAGEM.chave.caminho, { prompt, num_images: quantidade, aspect_ratio: proporcao, resolution: '2K' }, { 'idempotency-key': idem })
+  if (status >= 300 || !d?.request_id) throw new HfErro(d?.detail || 'A Higgsfield recusou o pedido.', status >= 400 && status < 500 ? 400 : 502)
+  return { pedido: d.request_id, estado: estadoDe(d.status) || 'na_fila' }
 }
 
 // ───────── conta (OAuth + MCP) ─────────
@@ -282,12 +310,64 @@ export function achar(obj, teste, prof = 0) {
   return undefined
 }
 
+/** Todos os valores (qualquer profundidade) que passam no teste, na ordem em que aparecem, sem repetir. */
+export function todos(obj, teste, prof = 0, saida = []) {
+  if (obj == null || prof > 8) return saida
+  if (Array.isArray(obj)) obj.forEach((v) => todos(v, teste, prof + 1, saida))
+  else if (typeof obj === 'object')
+    for (const [k, v] of Object.entries(obj)) {
+      if (teste(k, v) && !saida.includes(v)) saida.push(v)
+      else todos(v, teste, prof + 1, saida)
+    }
+  return saida
+}
+
 export async function contaPreparar(access, conteudo) {
   const ext = { 'image/png': 'png', 'image/webp': 'webp' }[conteudo] || 'jpg'
   const d = await mcpFerramenta(access, 'media_upload', { filename: `rift.${ext}`, content_type: conteudo })
   const up = Array.isArray(d.uploads) ? d.uploads[0] : d
   if (!up?.upload_url || !UUID.test(String(up.media_id || ''))) throw new HfErro('A Higgsfield não abriu o envio do arquivo.')
   return { upload_url: up.upload_url, headers: { 'Content-Type': up.content_type || conteudo }, ref: up.media_id }
+}
+
+/** Confirma o envio (uma segunda confirmação do mesmo arquivo não impede gerar). */
+async function confirmar(sessao, ref) {
+  try {
+    await mcpChamar(sessao, 'media_confirm', { type: 'image', media_id: ref })
+  } catch (e) {
+    if (e instanceof HfSemAcesso) throw e
+  }
+}
+
+const paramsImagem = (prompt, quantidade, proporcao, ref) => ({ model: IMAGEM.conta.modelo, prompt, count: quantidade, aspect_ratio: proporcao, use_unlim: false, ...(ref ? { medias: [{ role: 'image_references', value: ref }] } : {}), ...IMAGEM.conta.extra })
+
+export async function contaCustoImagens(sessao, quantidade, proporcao) {
+  const d = await mcpChamar(sessao, 'generate_image', { context: 'Rift Motion: preço das prévias.', params: { ...paramsImagem('estimate', quantidade, proporcao), get_cost: true } })
+  const c = Number(d.cost?.credits_exact ?? d.cost?.credits)
+  return Number.isFinite(c) ? c : null
+}
+
+/** Pede as prévias. Devolve os ids dos jobs (um por imagem ou um para todas, como a Higgsfield responder). */
+export async function contaIniciarImagens(access, { prompt, quantidade, proporcao, ref }) {
+  const sessao = await mcpAbrir(access)
+  if (ref) await confirmar(sessao, ref)
+  const d = await mcpChamar(sessao, 'generate_image', { context: 'Rift Motion: prévia da tela antes de animar.', params: paramsImagem(prompt, quantidade, proporcao, ref) })
+  let jobs = todos(d, (k, v) => /^job_?id$/i.test(k) && typeof v === 'string' && UUID.test(v) && v !== ref)
+  if (!jobs.length) jobs = todos(d.jobs || d.job || d, (k, v) => /^id$/i.test(k) && typeof v === 'string' && UUID.test(v) && v !== ref)
+  if (!jobs.length) throw new HfErro(String(achar(d, (k, v) => /^(message|error|detail|texto)$/i.test(k) && typeof v === 'string') || 'A Higgsfield não confirmou o pedido.').slice(0, 300))
+  return { pedido: jobs.slice(0, 4).join(','), estado: 'na_fila' }
+}
+
+export async function contaStatusImagens(access, pedido) {
+  const ids = String(pedido).split(',').filter((x) => UUID.test(x))
+  const d = await mcpFerramenta(access, 'jobs_wait', { jobs: ids.map((job_id, index) => ({ index, job_id })), timeout_seconds: 0 })
+  const estados = todos(d, (k, v) => /^status$/i.test(k) && typeof v === 'string').map(estadoDe).filter(Boolean)
+  let urls = todos(d, (k, v) => /^raw_?url$/i.test(k) && typeof v === 'string' && IMG_URL.test(v))
+  if (!urls.length) urls = todos(d, (k, v) => typeof v === 'string' && IMG_URL.test(v))
+  const aberto = estados.some((e) => !terminal(e))
+  const estado = aberto ? 'gerando' : urls.length ? 'pronto' : estados.find((e) => e !== 'pronto') || (estados.length ? 'falhou' : 'gerando')
+  const erro = terminal(estado) && estado !== 'pronto' ? String(achar(d, (k, v) => /^(error|message|detail|reason)$/i.test(k) && typeof v === 'string') || '').slice(0, 300) || null : null
+  return { estado, urls: estado === 'pronto' ? urls.slice(0, 4) : [], erro }
 }
 
 /** Saldo da conta: { creditos, plano }. */
@@ -330,7 +410,7 @@ export async function contaCusto(sessao, op, segundos) {
 
 export async function contaIniciar(access, { op, prompt, duracao, ref }) {
   const sessao = await mcpAbrir(access)
-  await mcpChamar(sessao, 'media_confirm', { type: 'image', media_id: ref })
+  await confirmar(sessao, ref)
   const d = await mcpChamar(sessao, 'generate_video', { context: 'Rift Motion: animar uma imagem da cena do motion.', params: paramsConta(op, duracao, prompt, ref) })
   const ehJob = (re) => (k, v) => re.test(k) && typeof v === 'string' && UUID.test(v) && v !== ref
   const job = achar(d, ehJob(/^job_?id$/i)) || achar(d.jobs || d.job || d, ehJob(/^id$/i))
@@ -341,7 +421,7 @@ export async function contaIniciar(access, { op, prompt, duracao, ref }) {
 export async function contaStatus(access, pedido) {
   const d = await mcpFerramenta(access, 'jobs_wait', { jobs: [{ index: 0, job_id: pedido }], timeout_seconds: 0 })
   const bruto = achar(d, (k, v) => /^status$/i.test(k) && typeof v === 'string')
-  const url = achar(d, (k, v) => typeof v === 'string' && /^https:\/\/\S+\.(mp4|mov|webm)(\?\S*)?$/i.test(v))
+  const url = achar(d, (k, v) => typeof v === 'string' && VID_URL.test(v))
   const estado = estadoDe(bruto) || (url ? 'pronto' : 'gerando')
   const erro = terminal(estado) && estado !== 'pronto' ? String(achar(d, (k, v) => /^(error|message|detail|reason)$/i.test(k) && typeof v === 'string') || '').slice(0, 300) || null : null
   return { estado, url: estado === 'pronto' ? url || null : null, erro }

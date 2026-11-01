@@ -58,7 +58,7 @@ after(async () => {
 
 test('migração: aplica como o dono do schema, não repete e recusa arquivo já aplicado que mudou', { skip: pular }, async () => {
   const { migrar, PASTA } = await import('../scripts/migrar.mjs')
-  assert.deepEqual(await migrar(urlRift), ['0000_fundacao.sql', '0001_ia.sql', '0002_custos.sql'])
+  assert.deepEqual(await migrar(urlRift), ['0000_fundacao.sql', '0001_ia.sql', '0002_custos.sql', '0003_imagens.sql'])
   assert.deepEqual(await migrar(urlRift), [])
   const outra = mkdtempSync(join(tmpdir(), 'rift-mig-'))
   cpSync(PASTA, outra, { recursive: true })

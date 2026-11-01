@@ -334,6 +334,16 @@ button { font: inherit; color: inherit; }
 .op__custo { font-family: var(--font-title); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
 .op__desc { font-size: 0.74rem; color: var(--mute); line-height: 1.3; }
 .op__falta { font-size: 0.72rem; color: var(--p); }
+.passos { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 12px; background: var(--surface-2); }
+.passos button { border: 0; background: transparent; height: 32px; border-radius: 9px; font-size: 0.8rem; color: var(--mute); cursor: pointer; }
+.passos button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.passos button:disabled { opacity: 0.45; cursor: not-allowed; }
+.previas { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.previa { padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); aspect-ratio: 16 / 9; max-height: 260px; }
+.previa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.previa[aria-checked="true"] { box-shadow: 0 0 0 3px var(--p); }
+.checa { display: flex !important; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--ink) !important; cursor: pointer; }
+.checa input { width: auto !important; box-shadow: none !important; accent-color: var(--p); }
 .z-btn { width: 32px; padding: 0; font-weight: 800; font-family: var(--font-title); }
 .z-btn[aria-pressed="true"] { box-shadow: 0 0 0 1.5px var(--p); }
 .z-barra { position: absolute; z-index: 6; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgb(0 0 0 / 0.3); }
@@ -561,7 +571,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
   .st-top .spacer, .so-largo { display: none; }
   .st-top .sel { height: 30px; padding: 0 8px; font-size: 0.76rem; }
   .vp-tools button { white-space: nowrap; height: 26px; padding: 0 9px; font-size: 0.72rem; }
-  .st-dock { display: grid; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+  .st-dock { display: grid; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
   .st-dock button { border: 0; background: transparent; display: grid; justify-items: center; gap: 4px; font-size: 0.7rem; color: var(--mute); cursor: pointer; }
   .st-dock i { width: 40px; height: 40px; border-radius: 13px; background: var(--surface-2); display: grid; place-items: center; color: var(--ink); }
   .st-dock i svg { width: 19px; height: 19px; }
@@ -792,6 +802,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
         <button data-add="forma" title="Retângulo, círculo ou pílula"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/></svg>Forma</button>
         <button data-add="3d" title="Esfera, cubo, anel, cilindro ou cone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9Z M12 12 20 7.5 M12 12v9 M12 12 4 7.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>3D</button>
         <button data-add="midia" title="Imagem ou vídeo do seu aparelho"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M10 9.5v5l4-2.5z" fill="currentColor"/></svg>Mídia</button>
+        <button data-ia title="Gere uma tela com a sua Higgsfield"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" fill="currentColor"/></svg>Com IA</button>
         <input type="file" id="midiaArq" accept="image/*,video/*" hidden>
       </div>
     </aside>
@@ -813,6 +824,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
             <button class="glass-btn glass-btn--ink glass-btn--sm" data-add="midia">Mídia</button>
             <button class="glass-btn glass-btn--sm" data-add="texto">Texto</button>
             <button class="glass-btn glass-btn--sm" id="usarModelo" title="Abre uma cena pronta para você trocar o que quiser">Modelo</button>
+            <button class="glass-btn glass-btn--sm" data-ia title="Gere a tela em imagem com a sua Higgsfield e depois anime">✦ Criar com IA</button>
           </div>
         </div>
       </div>
@@ -846,6 +858,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       <button data-add="texto"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M12 6v13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></i>Texto</button>
       <button data-add="forma"><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/></svg></i>Forma</button>
       <button data-add="3d"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9Z M12 12 20 7.5 M12 12v9 M12 12 4 7.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg></i>3D</button>
+      <button data-ia><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" fill="currentColor"/></svg></i>IA</button>
     </nav>
   </div>
 </main>
@@ -1182,6 +1195,7 @@ function login() {
 /* ================= ESTÚDIO ================= */
 function estudio() {
   // ---------- modelo da cena (v2): camadas com valores fixos (props) e trilhas de keyframes [tempo, valor, curva] ----------
+  let formatoProj = '16:9';
   let fpsI = 2, fps = FPS[fpsI].v, t = 1.8, playing = !reduce, sel = null, vpMode = 'cam', D = 6, nomeProjeto = 'Projeto';
   const TIPO = { camera: 'CÂM', texto: 'TXT', forma: '2D', '3d': '3D', midia: 'MÍD' };
   const PROPS = {
@@ -1752,7 +1766,7 @@ function estudio() {
   }
   // o painel abre um projeto: nome, tamanho, cadência e a cena dele (sem cena: a de exemplo ou um começo simples)
   ganchos.abrirProjeto = (pr) => {
-    nomeProjeto = pr.nome;
+    nomeProjeto = pr.nome; formatoProj = pr.formato || '16:9';
     $('#stNome').textContent = pr.nome;
     $('#stMeta').textContent = `${pr.largura} × ${pr.altura} · ${pr.duracao} s`;
     fpsI = pr.fps; fps = FPS[fpsI].v; fpsSel.value = String(fpsI);
@@ -1825,27 +1839,30 @@ function estudio() {
   const xFolha = '<button class="icon-btn" id="gfX" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>';
   function folhaGerar(corpo) {
     const host = $('#sheetHost');
-    host.innerHTML = `<div class="sheet-veil" id="gfVeu"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gfT"><div class="sheet__head"><div><h3 id="gfT">Gerar movimento com IA</h3><p>Pela sua Higgsfield</p></div>${xFolha}</div><div class="gf">${corpo}</div></div></div>`;
+    host.innerHTML = `<div class="sheet-veil" id="gfVeu"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gfT"><div class="sheet__head"><div><h3 id="gfT">Criar com IA</h3><p>Pela sua Higgsfield</p></div>${xFolha}</div><div class="gf">${corpo}</div></div></div>`;
     $('#gfX', host).addEventListener('click', fecharFolha);
     $('#gfVeu', host).addEventListener('click', (e) => { if (e.target.id === 'gfVeu') fecharFolha(); });
     return host;
   }
-  async function abrirGerar(idCamada, promptInicial = '') {
-    const c = camada(idCamada);
-    if (!c || c.tipo !== 'midia' || c.midia.tipo !== 'imagem') return toast('Escolha uma camada de imagem para gerar.');
-    const g = geracoes.get(c.id);
+  // Dois passos na mesma folha: 1) ver em imagem (prévias baratas, a "tela" antes do vídeo) e 2) animar.
+  // Sem camada de imagem (Criar com IA), começa no passo 1 e a prévia escolhida vira a camada que será animada.
+  async function abrirGerar(idCamada, promptInicial = '', passo = null) {
+    let c = idCamada ? camada(idCamada) : null;
+    if (idCamada && (!c || c.tipo !== 'midia' || c.midia.tipo !== 'imagem')) return toast('Escolha uma camada de imagem para gerar.');
+    const g = c && geracoes.get(c.id);
     if (g && !['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) return mostrarAndamento(c.id);
     folhaGerar('<p class="nota">Conferindo a sua conexão…</p>');
     let st;
     try { st = await apiRift('higgsfield'); } catch (e) { return folhaGerar(`<p class="nota">${escH(e.message)}</p>`); }
-    if (!st.conectado) return telaConectar(c.id, promptInicial);
-    const estado = { duracao: 'curto', opcao: 'equilibrado', prompt: promptInicial, painel: null };
+    if (!st.conectado) return telaConectar(idCamada, promptInicial);
+    const estado = { passo: passo || (c ? 'movimento' : 'imagem'), duracao: 'curto', opcao: 'equilibrado', prompt: promptInicial, painel: null,
+      img: { prompt: '', quantidade: 4, usarRef: !!c && st.tipo === 'conta', gerando: false, prontas: [], escolhida: -1, erro: null } };
     const fmt = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-    const custoTxt = (o) => (o.creditos != null ? `${fmt(o.creditos)} ${o.creditos === 1 ? 'crédito' : 'créditos'}` : o.usd != null ? `US$ ${fmt(o.usd)}` : 'preço na Higgsfield');
+    const custoTxt = (o) => (o && o.creditos != null ? `${fmt(o.creditos)} ${o.creditos === 1 ? 'crédito' : 'créditos'}` : o && o.usd != null ? `US$ ${fmt(o.usd)}` : 'preço na Higgsfield');
     function medidor(pn) {
       const r = pn.usoRift || {};
       const riftTxt = st.tipo === 'conta' ? `${fmt(r.creditos_mes || 0)} ${(r.creditos_mes || 0) === 1 ? 'crédito' : 'créditos'}` : `US$ ${fmt(r.usd_mes || 0)}`;
-      const riftLinha = `Pelo Rift este mês: <b>${riftTxt}</b> · ${r.n_mes || 0} ${(r.n_mes || 0) === 1 ? 'vídeo' : 'vídeos'}`;
+      const riftLinha = `Pelo Rift este mês: <b>${riftTxt}</b> · ${r.n_mes || 0} ${(r.n_mes || 0) === 1 ? 'geração' : 'gerações'}`;
       if (st.tipo !== 'conta') return `<div class="cred"><div class="cred__topo"><span class="cred__num">Saldo da API</span><a class="nota" href="https://console.higgsfield.ai" target="_blank" rel="noopener">Ver no console da Higgsfield</a></div><p class="nota">${riftLinha}</p></div>`;
       const saldo = pn.saldo?.creditos, usado = pn.usoMes;
       const total = saldo != null && usado != null ? saldo + usado : null;
@@ -1855,40 +1872,132 @@ function estudio() {
         <div class="cred__legenda"><span><i class="u"></i>Usados este mês: <b>${fmt(usado)}</b></span><span><i class="d"></i>Disponível: <b>${fmt(saldo)}</b></span></div>` : ''}
         <p class="nota">${riftLinha}</p></div>`;
     }
-    function pintar() {
+    const semSaldo = (custo) => st.tipo === 'conta' && estado.painel?.saldo?.creditos != null && custo?.creditos != null && custo.creditos > estado.painel.saldo.creditos;
+    function corpoImagem() {
+      const im = estado.img, pn = estado.painel;
+      const custo = pn?.imagens?.[im.quantidade];
+      return `
+        <label for="gfImgPrompt"><span>Descreva a tela que você quer ver${c ? ` (a partir de <b style="color:var(--ink)">${escH(c.nome)}</b>)` : ''}</span><textarea id="gfImgPrompt" maxlength="2000" placeholder="Ex.: o produto sobre mármore, luz de fim de tarde, câmera de frente">${escH(im.prompt)}</textarea></label>
+        <div class="linha">${c && st.tipo === 'conta' ? `<label class="checa"><input type="checkbox" id="gfRef" ${im.usarRef ? 'checked' : ''}> Partir da imagem da camada</label>` : ''}<span class="nota" style="margin-left:auto">Prévias</span><div class="linha" id="gfQtd" role="group" aria-label="Quantas prévias">${[2, 4].map((n) => `<button class="chip" data-q="${n}" aria-pressed="${im.quantidade === n}">${n}</button>`).join('')}</div></div>
+        ${im.gerando ? '<div class="andamento"><strong>Gerando as prévias…</strong><div class="barra-viva"><i></i></div></div>' : ''}
+        ${im.erro ? `<p class="nota" style="color:var(--p)">${escH(im.erro)}</p>` : ''}
+        ${im.prontas.length ? `<div class="previas" role="radiogroup" aria-label="Escolha uma prévia">${im.prontas.map((pv, k) => `<button class="previa" role="radio" data-pv="${k}" aria-checked="${k === im.escolhida}" style="aspect-ratio:${proporcaoProj().replace(':', ' / ')}"><img src="${pv.url}" alt="Prévia ${k + 1}"></button>`).join('')}</div>` : ''}
+        <p class="nota">Prévia em imagem custa bem menos que o vídeo. Escolha a melhor e só então anime.</p>
+        <div class="acoes">${im.prontas.length ? `<button class="glass-btn glass-btn--sm" id="gfSoImagem" ${im.escolhida < 0 ? 'disabled' : ''}>Só usar a imagem</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfUsar" ${im.escolhida < 0 ? 'disabled' : ''}>Usar e animar</button>` : ''}
+          <button class="glass-btn ${im.prontas.length ? '' : 'glass-btn--ink '}glass-btn--sm" id="gfPrevias" ${im.gerando || semSaldo(custo) ? 'disabled' : ''}>${im.prontas.length ? 'Gerar outras' : 'Gerar'} ${im.quantidade} prévias${pn ? ` · ${custoTxt(custo)}` : ''}</button></div>`;
+    }
+    function corpoMovimento() {
       const pn = estado.painel, saldo = pn?.saldo?.creditos;
       const ops = pn?.opcoes || [];
       const sel = ops.find((o) => o.id === estado.opcao) || ops[1] || ops[0];
-      const falta = (o) => st.tipo === 'conta' && saldo != null && o.creditos != null && o.creditos > saldo;
+      return { sel, html: `
+        <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(estado.prompt)}</textarea></label>
+        <div class="linha"><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração"><button class="chip" data-d="curto" aria-pressed="${estado.duracao === 'curto'}">Curto</button><button class="chip" data-d="longo" aria-pressed="${estado.duracao === 'longo'}">Longo</button></div></div>
+        <div class="ops" role="radiogroup" aria-label="Quanto gastar">${pn ? ops.map((o) => `<button class="op" role="radio" data-op="${o.id}" aria-checked="${sel && o.id === sel.id}" ${semSaldo(o) ? 'disabled' : ''}><span class="op__nome">${escH(o.nome)}</span><span class="op__custo">${custoTxt(o)}</span><span class="op__desc">${escH(o.desc)} · ${o.segundos} s</span>${semSaldo(o) ? '<span class="op__falta">Faltam créditos</span>' : ''}</button>`).join('') : '<p class="nota">Calculando o preço das opções…</p>'}</div>
+        <p class="nota">${sel && st.tipo === 'conta' && saldo != null && sel.creditos != null ? `Depois de gerar, sobram <b>${fmt(Math.max(0, saldo - sel.creditos))}</b> créditos.` : st.tipo === 'chave' ? 'Cobrado do saldo em dólar da sua chave da API.' : ''} Sem som: o som vem do NOSSOM.</p>
+        <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar" ${!sel || semSaldo(sel) ? 'disabled' : ''}>${sel ? `Gerar vídeo · ${custoTxt(sel)}` : 'Gerar vídeo'}</button></div>` };
+    }
+    function pintar() {
+      const pn = estado.painel;
+      const mov = estado.passo === 'movimento' && c ? corpoMovimento() : null;
       const host = folhaGerar(`
         <div class="conectada"><span>Conectada: <b>${escH(st.rotulo || 'Higgsfield')}</b></span><button class="chip" id="gfSair" style="margin-left:auto;height:28px">Desconectar</button></div>
         ${pn ? medidor(pn) : '<div class="cred"><p class="nota">Conferindo seus créditos…</p></div>'}
-        <label for="gfPrompt"><span>Como <b style="color:var(--ink)">${escH(c.nome)}</b> deve se mexer?</span><textarea id="gfPrompt" maxlength="2000" placeholder="Ex.: slow camera push-in, hair moving with the wind, soft light">${escH(estado.prompt)}</textarea></label>
-        <div class="linha"><span class="nota">Duração</span><div class="linha" id="gfDur" role="group" aria-label="Duração"><button class="chip" data-d="curto" aria-pressed="${estado.duracao === 'curto'}">Curto</button><button class="chip" data-d="longo" aria-pressed="${estado.duracao === 'longo'}">Longo</button></div></div>
-        <div class="ops" role="radiogroup" aria-label="Quanto gastar">${pn ? ops.map((o) => `<button class="op" role="radio" data-op="${o.id}" aria-checked="${sel && o.id === sel.id}" ${falta(o) ? 'disabled' : ''}><span class="op__nome">${escH(o.nome)}</span><span class="op__custo">${custoTxt(o)}</span><span class="op__desc">${escH(o.desc)} · ${o.segundos} s</span>${falta(o) ? '<span class="op__falta">Faltam créditos</span>' : ''}</button>`).join('') : '<p class="nota">Calculando o preço das opções…</p>'}</div>
-        <p class="nota">${sel && st.tipo === 'conta' && saldo != null && sel.creditos != null ? `Depois de gerar, sobram <b>${fmt(Math.max(0, saldo - sel.creditos))}</b> créditos.` : st.tipo === 'chave' ? 'Cobrado do saldo em dólar da sua chave da API.' : ''} Sem som: o som vem do NOSSOM.</p>
-        <div class="acoes"><button class="glass-btn glass-btn--sm" id="gfCancelar">Cancelar</button><button class="glass-btn glass-btn--ink glass-btn--sm" id="gfGerar" ${!sel || falta(sel) ? 'disabled' : ''}>${sel ? `Gerar · ${custoTxt(sel)}` : 'Gerar'}</button></div>`);
-      const pr = $('#gfPrompt', host);
-      pr.addEventListener('input', () => { estado.prompt = pr.value; });
-      $('#gfDur', host).addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b || b.dataset.d === estado.duracao) return; estado.duracao = b.dataset.d; estado.painel = null; pintar(); carregar(); });
-      $$('[data-op]', host).forEach((b) => b.addEventListener('click', () => { estado.opcao = b.dataset.op; pintar(); }));
-      $('#gfCancelar', host).addEventListener('click', fecharFolha);
-      $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c.id, estado.prompt); } catch (e) { toast(e.message); } });
-      $('#gfGerar', host).addEventListener('click', () => {
-        const prompt = estado.prompt.trim();
-        if (!prompt) { pr.focus(); return toast('Diga como a imagem deve se mexer.'); }
-        gerar(c.id, { prompt, opcao: sel.id, duracao: estado.duracao });
+        <div class="passos" role="tablist" aria-label="Passos"><button role="tab" data-passo="imagem" aria-selected="${!mov}">1 · Ver em imagem</button><button role="tab" data-passo="movimento" aria-selected="${!!mov}" ${c ? '' : 'disabled title="Escolha uma prévia primeiro"'}>2 · Animar</button></div>
+        ${mov ? mov.html : corpoImagem()}`);
+      $('#gfSair', host).addEventListener('click', async () => { try { await apiRift('higgsfield', { metodo: 'DELETE' }); toast('Higgsfield desconectada.'); telaConectar(c?.id || null, estado.prompt); } catch (e) { toast(e.message); } });
+      $$('[data-passo]', host).forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; estado.passo = b.dataset.passo; pintar(); }));
+      if (mov) {
+        const pr = $('#gfPrompt', host);
+        pr.addEventListener('input', () => { estado.prompt = pr.value; });
+        $('#gfDur', host).addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (!b || b.dataset.d === estado.duracao) return; estado.duracao = b.dataset.d; estado.painel = null; pintar(); carregar(); });
+        $$('[data-op]', host).forEach((b) => b.addEventListener('click', () => { estado.opcao = b.dataset.op; pintar(); }));
+        $('#gfCancelar', host).addEventListener('click', fecharFolha);
+        $('#gfGerar', host).addEventListener('click', () => {
+          const prompt = estado.prompt.trim();
+          if (!prompt) { pr.focus(); return toast('Diga como a imagem deve se mexer.'); }
+          gerar(c.id, { prompt, opcao: mov.sel.id, duracao: estado.duracao });
+        });
+        if (!estado.prompt) pr.focus();
+        return;
+      }
+      const im = estado.img, ip = $('#gfImgPrompt', host);
+      ip.addEventListener('input', () => { im.prompt = ip.value; });
+      $('#gfRef', host)?.addEventListener('change', (e) => { im.usarRef = e.target.checked; });
+      $('#gfQtd', host).addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (!b) return; im.quantidade = Number(b.dataset.q); pintar(); });
+      $$('[data-pv]', host).forEach((b) => b.addEventListener('click', () => { im.escolhida = Number(b.dataset.pv); pintar(); }));
+      $('#gfPrevias', host).addEventListener('click', () => {
+        if (!im.prompt.trim()) { ip.focus(); return toast('Descreva a tela que você quer ver.'); }
+        gerarPrevias();
       });
-      if (!estado.prompt) pr.focus();
+      $('#gfUsar', host)?.addEventListener('click', () => usarPrevia(true));
+      $('#gfSoImagem', host)?.addEventListener('click', () => usarPrevia(false));
+      if (!im.prompt && !im.gerando) ip.focus();
+    }
+    async function gerarPrevias() {
+      const im = estado.img;
+      Object.assign(im, { gerando: true, erro: null }); pintar();
+      try {
+        let ref = null;
+        if (c && im.usarRef && st.tipo === 'conta') {
+          const blob = await imagemParaEnvio(c);
+          const pp = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'preparar', conteudo: 'image/jpeg' } });
+          const up = await fetch(pp.upload_url, { method: 'PUT', headers: pp.headers || { 'Content-Type': 'image/jpeg' }, body: blob }).catch(() => null);
+          if (!up || !up.ok) throw new Error('A imagem não subiu para a Higgsfield. Tente de novo.');
+          ref = pp.ref;
+        }
+        const r = await apiRift('gerar', { metodo: 'POST', corpo: { acao: 'imagens', prompt: im.prompt.trim(), quantidade: im.quantidade, proporcao: proporcaoProj(), ref } });
+        let espera = 3000, s = { estado: r.estado };
+        while (!['pronto', 'falhou', 'recusado', 'cancelado'].includes(s.estado)) {
+          await new Promise((ok) => setTimeout(ok, espera)); espera = Math.min(8000, espera + 1000);
+          s = await apiRift('gerar?id=' + encodeURIComponent(r.id));
+        }
+        if (s.estado !== 'pronto' || !s.urls?.length) throw new Error(s.erro || NOME_ESTADO[s.estado] || 'As prévias não vieram.');
+        const prontas = [];
+        for (const url of s.urls) {
+          const resp = await fetch(url).catch(() => null);
+          if (!resp || !resp.ok) continue;
+          const blob = await resp.blob();
+          prontas.push({ blob, url: URL.createObjectURL(blob) });
+        }
+        if (!prontas.length) throw new Error('As prévias ficaram prontas, mas não desceram agora. Veja na sua Higgsfield.');
+        Object.assign(im, { prontas, escolhida: 0 });
+      } catch (e) { im.erro = e.reconectar ? 'Conecte a Higgsfield de novo.' : e.message; }
+      im.gerando = false;
+      if ($('#gfT')) pintar();
+      carregar(); // o saldo mudou
+    }
+    async function usarPrevia(animar) {
+      const im = estado.img, pv = im.prontas[im.escolhida]; if (!pv) return;
+      const tipoImg = pv.blob.type && pv.blob.type.startsWith('image/') ? pv.blob.type : 'image/png';
+      const arq = new File([pv.blob], `ia-previa.${tipoImg.split('/')[1] || 'png'}`, { type: tipoImg });
+      const { w, h } = await medir(arq);
+      const idm = 'm' + Math.random().toString(36).slice(2, 11);
+      await guardarArquivo(idm, arq); urlsMidia.set(idm, URL.createObjectURL(arq));
+      lembrar();
+      const orig = c;
+      const nova = adicionar('midia', null, { id: idm, nome: `${orig ? orig.nome : 'Tela'} (prévia)`, tipo: 'imagem', w, h }, true);
+      if (orig) {
+        Object.assign(nova.props, { x: orig.props.x, y: orig.props.y, largura: orig.props.largura, escala: orig.props.escala, giro: orig.props.giro });
+        cena.camadas.splice(cena.camadas.indexOf(nova), 1);
+        cena.camadas.splice(Math.max(0, cena.camadas.indexOf(orig)), 0, nova);
+        orig.visivel = false;
+      } else if (w >= h) { nova.props.largura = 100; nova.props.x = 50; nova.props.y = 50; }
+      sel = nova.id; mudou({ estrutura: true });
+      ganchos.entrouMidia?.(arq);
+      if (!animar) { fecharFolha(); return toast('A prévia entrou como camada (⌘Z desfaz).'); }
+      c = nova; estado.passo = 'movimento';
+      pintar();
     }
     let pedido = 0;
     async function carregar() {
       const meu = ++pedido;
-      try { const pn = await apiRift('higgsfield?painel=' + estado.duracao); if (meu === pedido && $('#gfT')) { estado.painel = pn; pintar(); } }
-      catch (e) { if (meu === pedido && $('#gfT')) { if (e.reconectar) return telaConectar(c.id, estado.prompt); estado.painel = { opcoes: [], erro: e.message }; pintar(); toast(e.message); } }
+      try { const pn = await apiRift(`higgsfield?painel=${estado.duracao}&prop=${encodeURIComponent(proporcaoProj())}`); if (meu === pedido && $('#gfT')) { estado.painel = pn; if (!estado.img.gerando) pintar(); } }
+      catch (e) { if (meu === pedido && $('#gfT')) { if (e.reconectar) return telaConectar(c?.id || null, estado.prompt); estado.painel = { opcoes: [] }; pintar(); toast(e.message); } }
     }
     pintar(); carregar();
   }
+  const proporcaoProj = () => ({ '16:9': '16:9', '9:16': '9:16', '1:1': '1:1', '4:5': '4:5', '4K': '16:9' }[formatoProj] || '16:9');
   function telaConectar(idCamada, promptInicial) {
     const host = folhaGerar(`
       <p class="nota" style="font-size:0.9rem;color:var(--ink)">Conecte a sua Higgsfield para transformar a imagem em vídeo.</p>
@@ -1978,10 +2087,11 @@ function estudio() {
       toast('Pronto. O vídeo da IA entrou no lugar da imagem (⌘Z desfaz).');
     } catch (e) { toast('O vídeo ficou pronto, mas não desceu agora. Veja na sua Higgsfield.'); }
   }
+  $$('[data-ia]').forEach((b) => b.addEventListener('click', () => { const atual = camada(sel); abrirGerar(atual && atual.tipo === 'midia' && atual.midia.tipo === 'imagem' ? atual.id : null, '', 'imagem'); }));
   // volta do "Entrar com a Higgsfield": reabre o pedido onde a pessoa estava
   ganchos.voltouHiggsfield = () => {
     let p = null; try { p = JSON.parse(sessionStorage.getItem('rift-gerar') || 'null'); sessionStorage.removeItem('rift-gerar'); } catch (e) {}
-    if (p && camada(p.camada)) setTimeout(() => abrirGerar(p.camada, p.prompt || ''), 600);
+    if (p && (p.camada == null || camada(p.camada))) setTimeout(() => abrirGerar(p.camada || null, p.prompt || ''), 600);
   };
 
   // ---------- a Z (só para quem está liberado) ----------

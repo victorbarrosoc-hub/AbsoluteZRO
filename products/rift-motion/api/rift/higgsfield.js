@@ -2,13 +2,14 @@
 //   GET                    { conectado, tipo, rotulo }   (nunca devolve a chave nem o token)
 //   GET ?painel=curto|longo  + { saldo, usoMes, usoRift, opcoes }: o saldo e o extrato da conta, o que já foi gasto
 //                          pelo Rift e as três opções de gasto com o custo que a Higgsfield informa agora (sem gerar)
+//   (com &prop=16:9|9:16|1:1|4:5, também o preço de 2 e de 4 prévias em imagem)
 //   POST { chave: "id:segredo" }  confere a chave na Higgsfield sem gastar nada e guarda cifrada
 //   DELETE                 desconecta (apaga a credencial do banco)
 // O login da conta (créditos do plano) é por /api/higgsfield/entrar.
 import { comoPessoa } from '../_banco.js'
 import { rotaSolta, Recusa } from '../_rift.js'
 import { apagarConexao, credencial, guardarConexao, lerConexao } from '../_conexao.js'
-import { chaveCusto, chaveLimpa, contaCusto, contaSaldo, contaUsoDesde, DURACOES, HfSemAcesso, mcpAbrir, OPCOES, testarChave } from '../_higgsfield.js'
+import { chaveCusto, chaveCustoImagens, chaveLimpa, contaCusto, contaCustoImagens, contaSaldo, contaUsoDesde, DURACOES, HfSemAcesso, mcpAbrir, OPCOES, PROPORCOES, testarChave } from '../_higgsfield.js'
 
 /** Começo do mês no fuso de Fortaleza (UTC−3, sem horário de verão). */
 export function inicioDoMes(agora = new Date()) {
@@ -20,7 +21,7 @@ const semFalha = (p) => p.catch((e) => {
   return null
 })
 
-async function painel(pessoa, duracao) {
+async function painel(pessoa, duracao, prop) {
   const c = await credencial(pessoa)
   if (!c) return {}
   const desde = inicioDoMes()
@@ -31,11 +32,11 @@ async function painel(pessoa, duracao) {
   const ops = OPCOES[c.tipo]
   if (c.tipo === 'conta') {
     const s = await mcpAbrir(c.access)
-    const [saldo, usoMes, ...custos] = await Promise.all([semFalha(contaSaldo(s)), semFalha(contaUsoDesde(s, desde)), ...ops.map((o) => semFalha(contaCusto(s, o, o.segundos[duracao])))])
-    return { saldo, usoMes, usoRift: rift, opcoes: ops.map((o, i) => ({ id: o.id, nome: o.nome, desc: o.desc, segundos: o.segundos[duracao], creditos: custos[i] })) }
+    const [saldo, usoMes, img2, img4, ...custos] = await Promise.all([semFalha(contaSaldo(s)), semFalha(contaUsoDesde(s, desde)), semFalha(contaCustoImagens(s, 2, prop)), semFalha(contaCustoImagens(s, 4, prop)), ...ops.map((o) => semFalha(contaCusto(s, o, o.segundos[duracao])))])
+    return { saldo, usoMes, usoRift: rift, imagens: { 2: { creditos: img2 }, 4: { creditos: img4 } }, opcoes: ops.map((o, i) => ({ id: o.id, nome: o.nome, desc: o.desc, segundos: o.segundos[duracao], creditos: custos[i] })) }
   }
-  const custos = await Promise.all(ops.map((o) => chaveCusto(c.chave, o, o.segundos[duracao])))
-  return { saldo: null, usoMes: null, usoRift: rift, opcoes: ops.map((o, i) => ({ id: o.id, nome: o.nome, desc: o.desc, segundos: o.segundos[duracao], usd: custos[i] })) }
+  const [img2, img4, ...custos] = await Promise.all([chaveCustoImagens(c.chave, 2, prop), chaveCustoImagens(c.chave, 4, prop), ...ops.map((o) => chaveCusto(c.chave, o, o.segundos[duracao]))])
+  return { saldo: null, usoMes: null, usoRift: rift, imagens: { 2: { usd: img2 }, 4: { usd: img4 } }, opcoes: ops.map((o, i) => ({ id: o.id, nome: o.nome, desc: o.desc, segundos: o.segundos[duracao], usd: custos[i] })) }
 }
 
 export default rotaSolta({
@@ -44,7 +45,7 @@ export default rotaSolta({
     if (!c) return { conectado: false }
     const base = { conectado: true, tipo: c.tipo, rotulo: c.rotulo }
     const d = q.get('painel')
-    return DURACOES.includes(d) ? { ...base, ...(await painel(pessoa, d)) } : base
+    return DURACOES.includes(d) ? { ...base, ...(await painel(pessoa, d, PROPORCOES.includes(q.get('prop')) ? q.get('prop') : '16:9')) } : base
   },
   async POST({ corpo, pessoa }) {
     const chave = chaveLimpa(corpo.chave)

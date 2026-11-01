@@ -38,6 +38,11 @@ Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rif
   certa conectada, a imagem sobe como JPEG (PUT), o vídeo desce da CDN e entra como camada "(IA)" no lugar da imagem
   (escondida). Migração 0001 aplicada no Supabase (dono `rift`, RLS). Não testado: login real da Higgsfield (o registro
   do Rift como app acontece no primeiro "Entrar com a Higgsfield") e uma geração real (gasta crédito).
+- Prévias em imagem (01/11/2026): `npm test` **12/12**: conta com referência (vários jobs, espera todos, pega o `rawUrl`
+  e não a miniatura), `use_unlim: false`, preço antes; chave pelo Soul só com texto (referência recusada); resultado só
+  da dona. No Chromium: projeto vazio → "Criar com IA" → passo 1 (passo 2 travado) → "Gerar 4 prévias · 1 crédito" →
+  4 prévias no formato do projeto → "Usar e animar" vira a camada "Tela (prévia)" e abre o passo 2 com as três opções.
+  Não testado: geração real (gasta crédito).
 - Créditos e opções de gasto (01/11/2026): `npm test` **11/11**: o painel traz saldo e plano, o uso do mês (gastos menos
   devoluções, só do mês, pelo extrato) e as três opções com o custo de `get_cost` (conta) ou `/estimate` (chave); sem
   saldo para a opção, recusa com 402 e não gera; o custo informado fica na geração e soma em "pelo Rift". No Chromium:

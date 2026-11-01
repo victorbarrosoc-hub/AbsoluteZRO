@@ -97,7 +97,9 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `rift-motion`. Créditos (01/11/2026): a folha mostra o saldo e o plano da conta, o medidor (usado no mês × disponível,
   pelo extrato da Higgsfield) e o que o Rift gastou, e três opções de gasto (Rápido, Equilibrado, Máxima qualidade;
   curto ou longo) com o preço que a Higgsfield informa antes de gerar; sem saldo, a opção fica travada (migração 0002).
-  ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
+  Prévias (01/11/2026): "Criar com IA" e o passo "1 · Ver em imagem" geram 2 ou 4 telas baratas (conta: GPT Image 2.5
+  Flare, a imagem da camada pode ir de referência; chave: Soul) no formato do projeto; a escolhida vira camada e segue
+  para "2 · Animar" (migração 0003). ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo

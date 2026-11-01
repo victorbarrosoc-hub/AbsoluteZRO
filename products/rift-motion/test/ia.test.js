@@ -172,3 +172,51 @@ test('Z: só para quem está liberado; sem chave ou sem teto fica desligada (nun
   assert.match(r.corpo.erro, /ainda não foi ligada/)
   assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('beto'), { pedido: 'oi' })).statusCode, 403)
 })
+
+test('prévias em imagem: conta com referência (vários jobs) e chave (Soul), com preço antes; resultado só da dona', { skip: pular }, async () => {
+  const eva = { sub: 'eva' }
+  await conexao.guardarConexao(eva, { tipo: 'conta', rotulo: 'x', segredo: { access: 'tok-eva', refresh: 'r', expira: Math.floor(Date.now() / 1000) + 3600, clientId: 'c' } })
+  const chamadas = []
+  let prontos = 0
+  const J = ['aaaaaaaa-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000002']
+  simulado = (url, o) => {
+    if (!url.startsWith('https://mcp.higgsfield.ai/')) return resp(404, {})
+    const m = JSON.parse(o.body)
+    if (m.method === 'initialize') return resp(200, { jsonrpc: '2.0', id: m.id, result: {} }, { 'mcp-session-id': 's' })
+    if (!m.id) return new Response(null, { status: 202 })
+    const { name, arguments: a } = m.params
+    chamadas.push([name, a])
+    const r = {
+      balance: { credits: 10, subscription_plan_type: 'pro' },
+      media_confirm: { ok: true },
+      generate_image: a.params?.get_cost ? { cost: { credits: a.params.count * 0.25 } } : { jobs: J.map((job_id, index) => ({ index, job_id })) },
+      jobs_wait: { jobs: J.map((job_id, i) => (i < prontos ? { index: i, status: 'completed', results: { rawUrl: `https://d8j0ntlcm91z4.cloudfront.net/u/${i}.png`, minUrl: `https://d8j0ntlcm91z4.cloudfront.net/u/${i}_min.webp` } } : { index: i, status: 'in_progress' })) },
+    }[name]
+    return resp(200, { jsonrpc: '2.0', id: m.id, result: { content: [{ type: 'text', text: JSON.stringify(r) }] } })
+  }
+  const s = sessao('eva')
+  const ref = 'bbbbbbbb-0000-4000-8000-000000000009'
+  const i = await chamar('gerar', 'POST', '/api/rift/gerar', s, { acao: 'imagens', prompt: 'produto no mármore', quantidade: 2, proporcao: '9:16', ref })
+  assert.equal(i.statusCode, 200, JSON.stringify(i.corpo))
+  assert.equal(i.corpo.creditos, 0.5)
+  const gen = chamadas.find((c) => c[0] === 'generate_image' && !c[1].params.get_cost)[1].params
+  assert.deepEqual([gen.model, gen.count, gen.aspect_ratio, gen.use_unlim, gen.medias], ['gpt_image_2_5', 2, '9:16', false, [{ role: 'image_references', value: ref }]])
+  prontos = 1
+  assert.equal((await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, s)).corpo.estado, 'gerando', 'espera todas as prévias')
+  prontos = 2
+  const fim = await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, s)
+  assert.deepEqual(fim.corpo, { ok: true, estado: 'pronto', urls: ['https://d8j0ntlcm91z4.cloudfront.net/u/0.png', 'https://d8j0ntlcm91z4.cloudfront.net/u/1.png'], erro: null })
+  assert.equal((await chamar('gerar', 'GET', `/api/rift/gerar?id=${i.corpo.id}`, sessao('ana'))).statusCode, 404)
+  // chave: Soul só com texto; referência é recusada
+  simulado = (url, o) => {
+    if (url.includes('/estimate/higgsfield-ai/soul/standard')) return resp(200, { usd: '0.06' })
+    if (url.endsWith('/higgsfield-ai/soul/standard')) return assert.equal(JSON.parse(o.body).num_images, 4) ?? resp(200, { status: 'queued', request_id: '22222222-2222-4222-8222-222222222222' })
+    if (url.includes('/requests/22222222')) return resp(200, { status: 'completed', request_id: 'x', images: [{ url: 'https://cdn.exemplo/a.png' }, { url: 'https://cdn.exemplo/b.png' }] })
+    return resp(404, {})
+  }
+  const ana = sessao('ana')
+  assert.equal((await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'imagens', prompt: 'x', quantidade: 4, ref })).statusCode, 400)
+  const k = await chamar('gerar', 'POST', '/api/rift/gerar', ana, { acao: 'imagens', prompt: 'logo em néon', quantidade: 4, proporcao: '1:1' })
+  assert.equal(k.corpo.usd, 0.06)
+  assert.deepEqual((await chamar('gerar', 'GET', `/api/rift/gerar?id=${k.corpo.id}`, ana)).corpo.urls, ['https://cdn.exemplo/a.png', 'https://cdn.exemplo/b.png'])
+})
