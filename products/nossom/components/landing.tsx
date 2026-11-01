@@ -403,7 +403,7 @@ export default function Landing({
           <Link href="/" aria-label="Quasar início">
             <Brand />
           </Link>
-          <p>Tudo acontece no som.</p>
+          <p>O som encontrando o seu espaço.</p>
         </div>
         <nav aria-label="Rodapé">
           {!closed && <InstallApp />}

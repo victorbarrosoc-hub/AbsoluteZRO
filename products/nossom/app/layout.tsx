@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Quasar Audio Lab — Do ruído ao pronto.',
-    description: 'Crie, trate e entregue seu áudio. Tudo acontece no som.',
+    description: 'Crie, trate e entregue seu áudio. O som encontrando o seu espaço.',
     images: ['/opengraph-image?v=6'],
   },
 };
