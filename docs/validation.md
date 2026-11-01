@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Apps de computador só pela central (01/11/2026)
+
+Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se
+atualizar ("Atualização disponível · Atualizar na Absolute ZRO" → `absolutezro://apps/<id>?acao=atualizar`, sem a
+central `absolutezro.com/baixar`).
+
+- Maestro, Relay, Carro do Freela e TPeasy (`desktop/`): `npm test` 52/23/27/23, com `test/versao.test.mjs` novo em cada
+  um (aviso e notificação uma vez por build, deep link, sem central e protocolo recusado caem na página, nenhum
+  `atualizador.cjs`/`gerenciado.cjs`, a pílula da barra do Mac escondida até haver versão nova); `--smoke` (Electron
+  44.5.1, xvfb) SMOKE OK nos quatro, conferindo o deep link e a falta do atualizador. ESLint da raiz sem problema.
+- Synquei: `npm test` 148/148 (`tests/versao-central.test.mjs` novo; saíram `atualizador.test.mjs` e
+  `aviso-atualizacao.test.mjs`); `--smoke` SMOKE OK (exemplo 6/6 sincronizado, zip).
+- SOBEDESCE: `npm run test:fast` 784 ok (1 falha só deste ambiente, sem o `onnxruntime-node` opcional; igual na main),
+  com `test/version.test.js` (deep link, notificação uma vez por build, rotas de atualizar e baixar fora, interface sem
+  "Atualizar agora"/instalador) e `test/baixar-arquivo.test.js`; `--smoke` SMOKE OK. Site (`web/`): lint, typecheck e
+  `npm test` 371/371 (`seguranca.test.mts` confere a seção sem instalador; o e-mail do Mac travado aponta para a central).
+- Maestro (site): `tests/lancamento.test.mts` com a página inicial sem instalador; typecheck sem erro nos arquivos
+  tocados. Relay (site): `npm test` 125/125 (o link da "Máxima qualidade" agora é a central). Carro do Freela (site):
+  `node test/run.js site-real` 42 ok (os três passos e o botão da central, sem instalador); a bateria inteira 91/93
+  (`cadastro` e `conta-zro` estouram o tempo aqui, sem rede para o login; não tocam no convite do computador).
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Capturas (iPhone e computador, claro) dos sites e do aviso dentro dos apps no scratchpad da sessão
+  (`apps-sem-instalador/`).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
