@@ -4173,6 +4173,11 @@ SOBEDESCE de computador, que disparam os instaladores).
   quatro passos), a cor do texto de apoio no tema escuro (grafite) e o título da home.
 - Falham também na `main` sem esta mudança (conferido com o build da main): `install-navigation` › manifest (a rota
   devolve HTML) e `liquid-site` › cápsula abaixo da área segura do iPhone (tempo esgotado).
+- Segunda rodada (layout da Proposta 2, painel limpo, player ilha): `tests/e2e/player.spec.ts` cobre a ilha (abrir,
+  Esc recolhe, fechar), os passos no trilho e a coluna de ferramentas; com o build novo passam também studio
+  (fluxo real, temas e contraste com axe, fundo preto da home), studio-speed, install-navigation (cinco destinos e os
+  quatro passos), design-review, cloud-restoration, destinations-effects (o aviso dos presets de entrega segue
+  visível), remix, homepage-demo e ai-motion-performance (sem o campo de sinais na home nova).
 - Não validado: a conta real do titular em produção (o NOSSOM segue fechado pela 0049).
 
 ## TPeasy para computador (31/10/2026)
