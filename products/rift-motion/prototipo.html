@@ -632,7 +632,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       <a class="mini-btn voltar" href="#projetos" aria-label="Voltar aos projetos" title="Projetos">‹</a>
       <span class="app-icon" style="width:26px;height:26px;border-radius:7px" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span>
       <h2 id="stNome">Abertura · Campanha Verão</h2>
-      <span class="meta mono" id="stMeta">1920 × 1080 · 6 s</span><span class="chip-exemplo" title="O estúdio ainda abre a mesma cena para todo projeto">cena de exemplo</span>
+      <span class="meta mono" id="stMeta">1920 × 1080 · 6 s</span><span class="chip-exemplo" title="As camadas são as da cena de exemplo; as curvas que você muda ficam salvas neste projeto">cena de exemplo</span>
       <span class="spacer"></span>
       <label class="meta" for="stFps">Cadência</label>
       <select class="sel mono" id="stFps" aria-label="Cadência do projeto"></select>
@@ -1031,6 +1031,24 @@ function estudio() {
     { id: 'forma', nome: 'Faixa', kind: '2D', cor: '#9A9CD0', tr: { 'Largura': [[2.2, 0], [3.0, 1, 'saida']] } },
   ];
   const byId = Object.fromEntries(L.map((l) => [l.id, l]));
+  // a cena de cada projeto: as trilhas (tempo, valor, curva) por camada; sem cena salva, a de exemplo
+  const BASE = JSON.stringify(Object.fromEntries(L.map((l) => [l.id, l.tr])));
+  const NOMES_CURVA = Object.keys(EASE);
+  function aplicarCena(cena) {
+    const base = JSON.parse(BASE);
+    const camadas = cena && cena.v === 1 && cena.camadas && typeof cena.camadas === 'object' ? cena.camadas : {};
+    for (const l of L) {
+      l.tr = base[l.id];
+      const salva = camadas[l.id];
+      if (!salva) continue;
+      for (const prop of Object.keys(l.tr)) {
+        const tr = salva[prop];
+        if (Array.isArray(tr) && tr.length === l.tr[prop].length)
+          l.tr[prop] = l.tr[prop].map((k, i) => [k[0], k[1], NOMES_CURVA.includes(tr[i]?.[2]) ? tr[i][2] : k[2]]);
+      }
+    }
+  }
+  const cenaAtual = () => ({ v: 1, camadas: Object.fromEntries(L.map((l) => [l.id, l.tr])) });
   const sample = (tr, tt) => {
     if (tt <= tr[0][0]) return tr[0][1];
     for (let i = 1; i < tr.length; i++) { const a = tr[i - 1], b = tr[i]; if (tt <= b[0]) return lerp(a[1], b[1], EASE[b[2] || 'suave']((tt - a[0]) / (b[0] - a[0]))); }
@@ -1109,6 +1127,7 @@ function estudio() {
     const b = e.target.closest('button'); if (!b) return;
     Object.values(byId[sel].tr).forEach((tr) => tr.forEach((k, i) => i && (k[2] = b.dataset.e)));
     drawEase(); update(); toast(`${byId[sel].nome}: curva ${EASE_NOME[b.dataset.e].toLowerCase()}.`);
+    ganchos.mudouCena?.(cenaAtual());
   });
   function curEase() { const tr = Object.values(byId[sel].tr)[0]; return (tr[1] && tr[1][2]) || 'suave'; }
   function drawEase() {
@@ -1187,6 +1206,7 @@ function estudio() {
     $('#stNome').textContent = pr.nome;
     $('#stMeta').textContent = `${pr.largura} × ${pr.altura} · ${pr.duracao} s`;
     fpsI = pr.fps; fps = FPS[fpsI].v; fpsSel.value = String(fpsI);
+    aplicarCena(pr.cena); select(sel);
     t = 0; drawRuler(); update();
   };
   fpsSel.addEventListener('change', () => ganchos.mudouCadencia?.(fpsI));
@@ -1474,7 +1494,7 @@ function painel() {
     const antes = cache.projetos.find((p) => p.id === idp); if (!antes) return;
     const depois = { ...antes, ...campos, editado: Date.now() };
     cache.projetos = cache.projetos.map((p) => (p.id === idp ? depois : p));
-    const corpo = {}; if (campos.nome) corpo.nome = campos.nome; if (campos.fps != null) corpo.cadencia = CADENCIAS[campos.fps];
+    const corpo = {}; if (campos.nome) corpo.nome = campos.nome; if (campos.fps != null) corpo.cadencia = CADENCIAS[campos.fps]; if (campos.cena) corpo.cena = campos.cena;
     const ok = await salvar(() => api('projetos?id=' + encodeURIComponent(idp), { metodo: 'PATCH', corpo }));
     if (!ok) cache.projetos = cache.projetos.map((p) => (p.id === idp ? antes : p));
   }
@@ -1610,10 +1630,16 @@ function painel() {
     if (conta.modo === 'entrar') { location.href = '/api/zro/entrar?volta=' + encodeURIComponent('/#projetos'); return; }
     await carregado();
     const id = ler('aberto', null);
-    const pr = projetos().find((p) => p.id === id) || projetos()[0];
-    if (pr) { ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id); }
+    let pr = projetos().find((p) => p.id === id) || projetos()[0];
+    if (!pr) return;
+    if (nuvem && pr.cena === undefined) {
+      try { const d = await api('projetos?id=' + encodeURIComponent(pr.id)); pr = { ...pr, cena: d.projeto.cena ?? null }; cache.projetos = cache.projetos.map((p) => (p.id === pr.id ? pr : p)); } catch (e) { /* abre a cena de exemplo */ }
+    }
+    ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id);
   };
   ganchos.mudouCadencia = (i) => { const idp = ler('aberto', null); if (idp) mudarProjeto(idp, { fps: i }); };
+  let esperaCena = null;
+  ganchos.mudouCena = (cena) => { const idp = ler('aberto', null); if (!idp) return; clearTimeout(esperaCena); esperaCena = setTimeout(() => mudarProjeto(idp, { cena }), 400); };
   ganchos.exportou = (x) => { const idp = ler('aberto', null); const pr = projetos().find((p) => p.id === idp); addExportacao({ id: novoId(), projetoId: pr?.id || null, projeto: pr?.nome || 'Projeto', ...x, estado: 'nao_renderizado', quando: Date.now() }); };
 
   // ---------- ações ----------

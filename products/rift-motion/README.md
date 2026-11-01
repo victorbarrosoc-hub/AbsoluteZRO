@@ -19,7 +19,7 @@ Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
   Postgres de verdade (isolamento pelas rotas e direto no banco).
 - Painel (`/#app`, `#projetos`, `#modelos`, `#biblioteca`, `#exportacoes`): com a conta, tudo na conta (abre em qualquer
   aparelho; o que estava no aparelho sobe na primeira vez); sem banco, neste aparelho. O estúdio abre cada projeto com
-  a cena de exemplo.
+  as camadas da cena de exemplo e as curvas salvas dele (`cena`, `GET /api/rift/projetos?id=`).
 - `prototipo.html`: o protótipo publicado como Artifact (página inicial, entrar e estúdio). Sem `<!doctype>` de
   propósito: o Artifact põe o esqueleto. Nada nele exporta, entra ou salva de verdade.
 
@@ -40,3 +40,4 @@ Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
 - Leitura conferida a 60, 100 e 160 px (RIFT) e a 16, 24 e 32 px (favicon). Abaixo de ~60 px a fenda do I some e o
   nome continua legível.
 - Falta: conferir no INPI (classes 9 e 42; "Rift" lembra o Oculus Rift da Meta) antes de registrar domínio e marca.
+- CI: `.github/workflows/rift-testes.yml` (testes com Postgres e o build do site).

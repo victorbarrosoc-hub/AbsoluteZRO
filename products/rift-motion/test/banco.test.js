@@ -85,6 +85,16 @@ test('rotas: cada pessoa vê, muda e apaga só os próprios projetos; o RLS segu
   assert.equal(r.statusCode, 404)
   r = await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { nome: 'Abertura 2', cadencia: '120' })
   assert.deepEqual([r.corpo.projeto.nome, r.corpo.projeto.cadencia], ['Abertura 2', '120'])
+  // a cena do estúdio: salva no PATCH, volta no GET ?id=, fora da lista; de outra pessoa, 404; formato errado, 400
+  const cena = { v: 1, camadas: { esfera: { X: [[0, -4.5], [1.2, -1.6, 'mola']] } } }
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena })).statusCode, 200)
+  r = await chamar('projetos', 'GET', '/api/rift/projetos?id=anaproj1', ana)
+  assert.deepEqual(r.corpo.projeto.cena, cena)
+  assert.equal((await chamar('projetos', 'GET', '/api/rift/projetos', ana)).corpo.projetos[0].cena, undefined)
+  assert.equal((await chamar('projetos', 'GET', '/api/rift/projetos?id=anaproj1', beto)).statusCode, 404)
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { cena: { v: 2 } })).statusCode, 400)
+  assert.equal((await chamar('projetos', 'PATCH', '/api/rift/projetos?id=anaproj1', ana, { nome: 'Abertura 2' })).corpo.projeto.nome, 'Abertura 2')
+  assert.deepEqual((await chamar('projetos', 'GET', '/api/rift/projetos?id=anaproj1', ana)).corpo.projeto.cena, cena, 'mudar o nome não apaga a cena')
 
   // direto no banco, como rift_app e sem passar pela rota
   const sql = postgres(urlRift, { max: 1, onnotice: () => {} })
