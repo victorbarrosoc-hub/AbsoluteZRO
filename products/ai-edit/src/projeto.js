@@ -51,14 +51,17 @@ export const midiaPorId = (p, id) => p.midias.find((m) => m.id === id)
 
 /**
  * Tira uma ou várias mídias do projeto (um passo só no Desfazer): some a mídia, os clipes dela na linha, os efeitos presos
- * a ela, a transcrição, as propostas e as correções da legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
+ * a ela, a trilha que toca essa mídia, a transcrição, as propostas e as correções da legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
  */
 export function removerMidia(p, ids) {
   const fora = new Set(Array.isArray(ids) ? ids : [ids])
   if (!p.midias.some((m) => fora.has(m.id))) return p
   const sem = (o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => !fora.has(k)))
+  // a trilha (src/trilha.js) sai junto com a música dela
+  const { trilha, ...resto } = p
   return {
-    ...p,
+    ...resto,
+    ...(trilha && !fora.has(trilha.midia) ? { trilha } : {}),
     midias: p.midias.filter((m) => !fora.has(m.id)),
     linha: { ...p.linha, clipes: p.linha.clipes.filter((c) => !fora.has(c.midia)) },
     efeitos: (p.efeitos || []).filter((e) => !fora.has(e.midia)),

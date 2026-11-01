@@ -3,7 +3,8 @@
 // opacidade) pelo transform e pela opacidade do elemento (placa de vídeo), volume por um ganho do Web Audio, legenda num
 // canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js). Velocidade: o <video> toca na velocidade
 // da curva contínua do clipe (src/velocidade.js, a mesma do render) e fica mudo fora de 100%. Os efeitos sonoros tocam
-// pelo mesmo Web Audio, agendados a partir do ponto da linha a cada toque, busca ou edição, em qualquer velocidade.
+// pelo mesmo Web Audio, agendados a partir do ponto da linha a cada toque, busca ou edição, em qualquer velocidade. A
+// trilha (src/trilha.js, a música do clipe musical) toca do mesmo jeito, do quadro 0 da linha, a partir do `desde` dela.
 
 import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
@@ -13,6 +14,7 @@ import { efeitosNaLinha } from '../src/efeitos.js'
 import { comSom, origemContinua, saidaContinua, velocidadeContinua } from '../src/velocidade.js'
 import { correcaoEm, cssDaCorrecao } from '../src/estabilizar/aplicar.js'
 import { faixasDoClipe, ganhoDaFaixa } from '../src/faixas.js'
+import { trilhaNaLinha } from '../src/trilha.js'
 
 export class Player {
   /** tela: elemento que recebe os dois vídeos e o canvas; urlDe(midiaId) → URL tocável */
@@ -110,6 +112,9 @@ export class Player {
         if (gp > 0) this.fx.push({ som: `faixas:${f.sep.id}:${parte}`, ini: seg.linhaIni, dur: seg.dur, desloc: f.desloc, ganho: gp })
       }
     }
+    // a trilha: a música inteira debaixo da linha, presa ao começo dela (não à imagem)
+    const tl = trilhaNaLinha(p)
+    if (tl) this.fx.push({ som: tl.midia.id, ini: 0, dur: tl.dur, desloc: tl.desde, ganho: ganho(tl.volume) })
     if (!this.tocando) this.irPara(this.t)
     else this.#agendarFx()
   }

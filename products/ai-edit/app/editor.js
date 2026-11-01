@@ -46,6 +46,8 @@ import { montarFaixas } from './faixas-ui.js'
 import * as discoFaixas from './faixas-disco.js'
 import * as nossom from './nossom.js'
 import { FolhaCriar } from './criar-ui.js'
+import { FolhaAuto, montarTroca, trocarPlano } from './auto-ui.js'
+import { prepararModo } from '../src/auto/modos.js'
 import { imagemParaClipe } from './parada.js'
 import * as discoCriadas from './criadas-disco.js'
 import { inserirNaLinha, SEGUNDOS_PARADA } from '../src/criar.js'
@@ -358,6 +360,7 @@ function desenharTudo() {
   desenharSons()
   marcadoresUI.desenhar()
   pecasUI.desenhar()
+  if (folhaAuto?.d.open) folhaAuto.desenhar()
   prepararFaixas(p)
 }
 
@@ -515,7 +518,7 @@ function desenharMidia() {
   const falta = p.midias.some((m) => m.temAudio && !p.transcricoes[m.id])
   $('analisar').textContent = falta ? 'Analisar' : 'Analisar de novo'
   const sel = S.selecao
-  for (const id of ['modelo', 'maisMidia', 'analisar']) $(id).hidden = Boolean(sel)
+  for (const id of ['modelo', 'maisMidia', 'analisar', 'autoEdicao']) $(id).hidden = Boolean(sel)
   $('contaSel').hidden = $('tirarSel').hidden = !sel
   $('selecionarMidia').textContent = sel ? 'Cancelar' : 'Selecionar'
   if (sel) {
@@ -1122,10 +1125,27 @@ function montarInspector() {
   })
   // de som: logo depois dos controles (perto do Volume), um clique sem rolar
   sec.querySelector('.insp-controles').after(faiUI.el)
+  // edição automática: as outras opções do mesmo trecho da música, logo abaixo do nome do clipe
+  trocaUI = montarTroca(sec.querySelector('.insp-clipe'), {
+    obter: () => {
+      const p = P()
+      return { p, clipe: p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null }
+    },
+    trocar: (alt) => {
+      const p = P()
+      if (!p || !linha.sel || !alt) return
+      const novo = trocarPlano(p, linha.sel, alt)
+      if (novo === p) return
+      fazer(novo, 'trocar plano')
+      aviso(`${alt.nome} entrou no lugar.`)
+    },
+  })
+  sec.querySelector('.insp-controles').before(trocaUI.el)
 }
 let velUI = null
 let estUI = null
 let faiUI = null
+let trocaUI = null
 montarInspector()
 
 function desenharInspector() {
@@ -1184,6 +1204,7 @@ function desenharInspector() {
   velUI.desenhar(c)
   estUI.desenhar()
   faiUI.desenhar()
+  trocaUI.desenhar()
 }
 
 /** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */
@@ -2355,6 +2376,37 @@ const folhaCriar = new FolhaCriar($('folhaCriar'), {
 })
 for (const b of [$('criarIA'), $('criarDoQuadro')]) b.hidden = ponte.desktop
 $('criarIA').onclick = () => folhaCriar.abrir()
+
+// ───────── edição automática (src/auto, src/musica): clipe, aftermovie e conteúdo ─────────
+
+const presetsAuto = new Map()
+var folhaAuto = new FolhaAuto($('folhaAuto'), {
+  projeto: () => P(),
+  fazer: (novo, rotulo) => fazer(novo, rotulo),
+  async preset(modo) {
+    if (!presetsAuto.has(modo.preset)) presetsAuto.set(modo.preset, fetch(new URL(`../presets/${modo.preset}`, import.meta.url)).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then(prepararModo))
+    return presetsAuto.get(modo.preset).catch((err) => {
+      presetsAuto.delete(modo.preset)
+      throw err
+    })
+  },
+  entrada: (id) => S.entradas.get(id) || null,
+  escolherMusica: () => $('arquivo').click(),
+  analisarFala: () => {
+    ir('midia')
+    analisar()
+  },
+  perguntar,
+  aviso,
+  aoMontar: () => {
+    ir('edicao')
+    player.irPara(0)
+  },
+})
+$('autoEdicao').onclick = () => {
+  if (!P()) return aviso('Abra ou crie um projeto primeiro.')
+  folhaAuto.abrir()
+}
 $('criarDoQuadro').onclick = () => {
   player.pausar()
   folhaCriar.abrir({ doQuadro: true })

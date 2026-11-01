@@ -37,3 +37,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0034](0034-console-financeiro-e-correio.md)     | Papel Financeiro e Correio (caixas do iCloud) no console          | aceita                |
 | [0036](0036-central-unica-de-instalacao.md)      | Central única: apps de computador só pela Absolute ZRO            | aceita                |
 | [0037](0037-higgsfield-nas-conexoes.md)          | Higgsfield nas Conexões: imagem e vídeo com os créditos da pessoa | aceita                |
+| [0038](0038-edicao-automatica.md)                | Edição automática no AEON: modos por tipo de vídeo, na máquina    | aceita                |

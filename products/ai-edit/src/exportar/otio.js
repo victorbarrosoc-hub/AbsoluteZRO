@@ -1,9 +1,10 @@
 // OpenTimelineIO (JSON .otio): a ponte aberta entre editores. Zoom e foco vão em metadata.zro de cada clipe. Velocidade:
 // LinearTimeWarp por degrau (o clipe ocupa `saida` quadros na trilha e consome saida × v da mídia). Onde uma trilha não
 // tem o que tocar (mídia sem som, degrau fora de 100%) entra um Gap do mesmo tamanho: as trilhas ficam alinhadas.
-// Efeitos sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro.
+// Efeitos sonoros em trilhas de áudio próprias (FX1, FX2…), com lacunas entre um efeito e outro. A trilha (a música do
+// clipe musical) numa trilha de áudio "Música", do começo da linha.
 
-import { caminhoDa, caminhoDoSom, COR_OTIO, efeitosExportados, fileUrl, segmentos } from './comum.js'
+import { caminhoDa, caminhoDoSom, COR_OTIO, efeitosExportados, fileUrl, segmentos, trilhaExportada } from './comum.js'
 import { fpsNumero } from '../tempo.js'
 import { PRODUTO } from '../produto.js'
 
@@ -62,12 +63,39 @@ export function paraOtio(p) {
     return { OTIO_SCHEMA: 'Track.1', name: `FX${f + 1}`, kind: 'Audio', children, effects: [], markers: [], enabled: true, metadata: { zro: { funcao: 'efeitos' } } }
   }
   const nFaixas = efeitos.reduce((n, x) => Math.max(n, x.faixa + 1), 0)
+  const tr = trilhaExportada(p)
+  const musica = tr
+    ? [
+        {
+          OTIO_SCHEMA: 'Track.1',
+          name: 'Música',
+          kind: 'Audio',
+          children: [
+            {
+              OTIO_SCHEMA: 'Clip.2',
+              name: tr.midia.nome,
+              source_range: range(tr.desde, tr.quadros, rate),
+              media_references: { DEFAULT_MEDIA: { OTIO_SCHEMA: 'ExternalReference.1', target_url: fileUrl(caminhoDa(tr.midia)), available_range: range(0, tr.midia.quadros, rate), metadata: { zro: { asset_id: tr.midia.id } } } },
+              active_media_reference_key: 'DEFAULT_MEDIA',
+              effects: [],
+              markers: [],
+              enabled: true,
+              metadata: { zro: { funcao: 'trilha', ...(tr.volume ? { volume: tr.volume } : {}) } },
+            },
+          ],
+          effects: [],
+          markers: [],
+          enabled: true,
+          metadata: { zro: { funcao: 'trilha' } },
+        },
+      ]
+    : []
   return JSON.stringify(
     {
       OTIO_SCHEMA: 'Timeline.1',
       name: p.nome,
       global_start_time: rt(0, rate),
-      tracks: { OTIO_SCHEMA: 'Stack.1', name: 'tracks', children: [trilha('Video'), trilha('Audio'), ...Array.from({ length: nFaixas }, (_, f) => trilhaEfeitos(f))], effects: [], markers: [], enabled: true, metadata: {} },
+      tracks: { OTIO_SCHEMA: 'Stack.1', name: 'tracks', children: [trilha('Video'), trilha('Audio'), ...Array.from({ length: nFaixas }, (_, f) => trilhaEfeitos(f)), ...musica], effects: [], markers: [], enabled: true, metadata: {} },
       metadata: { zro: { produced_by: PRODUTO.id, project_id: p.id } },
     },
     null,

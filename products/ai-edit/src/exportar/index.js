@@ -33,6 +33,7 @@ export function referencia(p, formato, arquivo, agora = new Date()) {
       'Zoom vai como escala e posição de cada clipe (na EDL, só como comentário).',
       'Legenda vai à parte em SRT e VTT.',
       ...((p.efeitos || []).length ? ['Efeitos sonoros em faixa própria (na EDL, só como comentário); créditos em CREDITOS.txt.'] : []),
+      ...(p.trilha ? ['A música vai numa faixa de áudio própria, do começo da linha (na EDL, só como comentário).'] : []),
     ],
   }
 }

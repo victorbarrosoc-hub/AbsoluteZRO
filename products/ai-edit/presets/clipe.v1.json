@@ -1,0 +1,30 @@
+{
+  "preset": "clipe",
+  "version": 1,
+  "status": "rascunho",
+  "descricao": "Clipe, DVD e EP: a música manda. As tomadas de performance entram em sincronia com a música, o corte cai na batida, o verso segura o plano e o refrão corta mais rápido; o B-roll entra na proporção pedida.",
+  "objectives": ["Primeiro corte pronto para ajustar, nunca fora de sincronia", "O artista no melhor plano de cada trecho", "Ritmo que segue a música"],
+  "priorities": ["Sincronia labial exata", "Plano nítido, bem exposto e firme", "Variar as tomadas sem repetir seguidas"],
+  "sincronia": { "confianca_min": 0.3, "destaque_min": 6, "sobreposicao_min_s": 4, "busca_fina_ms": 40 },
+  "analise": { "amostras_por_s": 2, "largura": 96, "altura": 54 },
+  "nota": { "pesos": { "nitidez": 0.45, "luz": 0.3, "firmeza": 0.25 }, "luz_ideal": [0.28, 0.72], "estouro_max": 0.08, "movimento_max": 0.12 },
+  "ritmo": {
+    "batidas_por_plano": { "intro": 8, "verso": 8, "pre": 4, "refrao": 4, "ponte": 8, "final": 8 },
+    "multiplicador": { "calmo": 2, "normal": 1, "rapido": 0.5 },
+    "min_batidas": 2,
+    "min_s": 0.4,
+    "variacao": 0.2
+  },
+  "broll": { "parte": { "pouco": 0.15, "muito": 0.35 }, "no_refrao": 0.5, "nunca_seguido": true },
+  "repeticao": { "mesma_tomada": 0.6, "uso": 0.4 },
+  "secoes": { "bloco_compassos": 4, "continua_min": 0.55, "repete_min": 0.6, "salto_db": 3, "refrao_db": 1.5 },
+  "zoom_na_batida": { "escala": 1.08, "batidas": 1, "partes": ["refrao"], "foco": { "x": 0.5, "y": 0.42 } },
+  "cores_partes": { "intro": "areia", "verso": "azul", "pre": "menta", "refrao": "rosa", "ponte": "roxo", "final": "areia" },
+  "review_criteria": [
+    "Toda performance em sincronia: o lábio bate com a música do começo ao fim",
+    "Nenhum corte fora da batida",
+    "A mesma tomada não aparece duas vezes seguidas",
+    "B-roll nunca seguido de outro B-roll",
+    "Verso respira, refrão corta mais rápido"
+  ]
+}

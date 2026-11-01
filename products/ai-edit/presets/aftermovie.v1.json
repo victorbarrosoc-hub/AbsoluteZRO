@@ -1,0 +1,30 @@
+{
+  "preset": "aftermovie",
+  "version": 1,
+  "status": "rascunho",
+  "descricao": "Aftermovie de festa e evento: só a música e o que foi filmado. O corte acelera quando a música sobe e o melhor material fica para o refrão e o drop; cada trecho entra uma vez só.",
+  "objectives": ["Energia da festa no ritmo da música", "O melhor momento no ponto mais forte", "Nada repetido"],
+  "priorities": ["Movimento com nitidez (pessoas dançando, luz, multidão)", "Cortes que aceleram na subida", "Nunca o mesmo trecho duas vezes"],
+  "so_broll": true,
+  "analise": { "amostras_por_s": 2, "largura": 96, "altura": 54 },
+  "nota": { "pesos": { "nitidez": 0.4, "luz": 0.25, "firmeza": 0.35 }, "luz_ideal": [0.18, 0.75], "estouro_max": 0.15, "movimento_bom": 0.06 },
+  "ritmo": {
+    "batidas_por_plano": { "intro": 8, "verso": 4, "pre": 2, "refrao": 4, "ponte": 4, "final": 8 },
+    "multiplicador": { "calmo": 2, "normal": 1, "rapido": 0.5 },
+    "min_batidas": 1,
+    "min_s": 0.3,
+    "variacao": 0.25,
+    "por_energia": 6
+  },
+  "broll": { "parte": { "pouco": 1, "muito": 1 }, "no_refrao": 1, "nunca_seguido": false },
+  "repeticao": { "mesma_tomada": 0.5, "uso": 0.6 },
+  "secoes": { "bloco_compassos": 4, "continua_min": 0.55, "repete_min": 0.6, "salto_db": 3, "refrao_db": 1.5 },
+  "zoom_na_batida": { "escala": 1.1, "batidas": 0.5, "partes": ["refrao", "pre"], "foco": { "x": 0.5, "y": 0.5 } },
+  "cores_partes": { "intro": "areia", "verso": "azul", "pre": "menta", "refrao": "rosa", "ponte": "roxo", "final": "areia" },
+  "review_criteria": [
+    "Nenhum trecho de vídeo aparece duas vezes",
+    "O corte acelera na subida e o plano mais forte cai no drop",
+    "Começo e fim respiram (planos mais longos)",
+    "Sem tela escura ou estourada"
+  ]
+}

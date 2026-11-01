@@ -13,11 +13,12 @@ import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
 import { origemContinua, saidaNoClipe } from '../src/velocidade.js'
 import { correcaoEm, corrigirNoCanvas } from '../src/estabilizar/aplicar.js'
-import { paraSegundos, fpsNumero } from '../src/tempo.js'
+import { paraQuadros, paraSegundos, fpsNumero } from '../src/tempo.js'
 import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
 import { efeitosNaLinha, misturarEfeitos } from '../src/efeitos.js'
 import { misturarTrecho, TAXA as TAXA_FAIXAS } from '../src/faixas.js'
+import { trilhaNaLinha } from '../src/trilha.js'
 
 const RAMPA_S = 0.004
 
@@ -46,7 +47,9 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   const saida = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: false }), target: destino })
   const fonteVideo = new MB.CanvasSource(tela, { codec: codecs.video, bitrate: MB.QUALITY_HIGH, keyFrameInterval: 2, latencyMode: 'quality' })
   saida.addVideoTrack(fonteVideo, { frameRate: fps })
-  const efeitos = efeitosNaLinha(p)
+  // a trilha (a música do clipe musical) entra como mais um som da linha, do quadro 0, no volume dela
+  const trilha = trilhaNaLinha(p)
+  const efeitos = [...efeitosNaLinha(p), ...(trilha ? [{ efeito: { id: 'trilha', volume: trilha.volume }, som: { id: `trilha:${trilha.midia.id}`, nome: trilha.midia.nome }, inicio: 0, quadros: paraQuadros(trilha.dur, p.fps), trilha }] : [])]
   const temAudio = (p.midias.some((m) => m.temAudio) || efeitos.length > 0) && codecs.audio
   const fonteAudio = temAudio ? new MB.AudioBufferSource({ codec: codecs.audio, bitrate: 192_000 }) : null
   if (fonteAudio) saida.addAudioTrack(fonteAudio)
@@ -75,8 +78,13 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
   // cada som de efeito decodificado uma vez, em estéreo na taxa de saída
   const somFx = new Map()
   if (fonteAudio)
-    for (const { som } of efeitos) {
+    for (const { som, trilha: t } of efeitos) {
       if (somFx.has(som.id)) continue
+      if (t) {
+        if (!entradas.get(t.midia.id)) throw new Error(`A música "${t.midia.nome}" não está neste computador. Escolha o arquivo de novo.`)
+        somFx.set(som.id, await somDoTrecho(await abrir(t.midia.id), t.desde, t.dur, taxaSaida, 1, false))
+        continue
+      }
       const entrada = entradas.get(som.id)
       if (!entrada) throw new Error(`O som "${som.nome}" não está neste computador. Escolha o arquivo de novo ou tire o efeito.`)
       const o = await abrir(som.id)
