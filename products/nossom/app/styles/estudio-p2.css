@@ -1,0 +1,560 @@
+/* Estúdio · Proposta 2 (escolhida pelo titular em 01/11/2026): escuro de trabalho em grafite, azul do NOSSOM só nas
+ * formas (onda, progresso, passo aberto), a lateral organizada em quatro passos (components/passos-nav.tsx) e as
+ * versões em cadeia logo abaixo da onda. Vale para o tema escuro (o padrão) e para o "sistema" em aparelho escuro. */
+.studio-shell[data-theme='dark'] {
+  --bg: #0b0b0d;
+  --surface: #131315;
+  --surface-2: #0f0f11;
+  --surface-3: #1c1c20;
+  --text: #f5f5f7;
+  --text-2: #b4b4ba;
+  --text-3: #8e8e93;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+  --sidebar-bg: rgba(17, 17, 19, 0.97);
+  --glass: rgba(11, 11, 13, 0.9);
+}
+@media (prefers-color-scheme: dark) {
+  .studio-shell[data-theme='system'] {
+    --bg: #0b0b0d;
+    --surface: #131315;
+    --surface-2: #0f0f11;
+    --surface-3: #1c1c20;
+    --text: #f5f5f7;
+    --text-2: #b4b4ba;
+    --text-3: #8e8e93;
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-strong: rgba(255, 255, 255, 0.16);
+    --sidebar-bg: rgba(17, 17, 19, 0.97);
+    --glass: rgba(11, 11, 13, 0.9);
+  }
+}
+
+/* ── A lateral da Proposta 2: trilho de ícones + coluna com as ferramentas do passo aberto ── */
+.studio-sidebar .trilho,
+.studio-sidebar .coluna {
+  display: flex;
+  flex-direction: column;
+}
+.passos-trilho {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trilho-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.trilho-item:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.trilho-item.active {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--hairline);
+}
+.trilho-item:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.passos-lista h2 {
+  margin: 4px 8px 10px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.passos-lista ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.passos-lista li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.passos-lista li button:hover {
+  background: var(--surface-3);
+}
+.passos-lista .ferr-icone {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.passos-lista .ferr-textos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.passos-lista .ferr-textos strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.passos-lista .ferr-textos small {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.passos-lista li button.active {
+  background: rgba(90, 169, 255, 0.12);
+  border-color: rgba(90, 169, 255, 0.38);
+}
+.passos-lista li button.active .ferr-icone {
+  background: #5aa9ff;
+  color: #04121f;
+}
+.passos-lista li button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (min-width: 681px) {
+  .studio-shell {
+    --sidebar-w: 324px;
+  }
+  .studio-shell .studio-sidebar {
+    width: var(--sidebar-w);
+    padding: 0;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .studio-shell.nav-collapsed .studio-sidebar {
+    left: calc(-1 * var(--sidebar-w) - 20px);
+  }
+  /* o trilho: ícones com o nome embaixo */
+  .studio-sidebar .trilho {
+    align-items: center;
+    gap: 4px;
+    padding: 18px 0 14px;
+    border-right: 1px solid var(--hairline);
+    background: var(--surface-2);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .studio-sidebar .trilho-marca {
+    padding: 0 !important;
+    margin: 0 0 14px;
+  }
+  .studio-sidebar .trilho-marca .brand > span {
+    display: none;
+  }
+  .studio-sidebar .trilho nav {
+    flex: 1;
+    width: 100%;
+    margin: 0;
+    padding: 0 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .studio-sidebar .trilho nav > button,
+  .studio-sidebar .trilho-item {
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 2px 8px;
+    border-radius: 14px;
+    font-size: 10.5px;
+    line-height: 1.15;
+    text-align: center;
+    color: var(--text-2);
+  }
+  .studio-sidebar .trilho nav > button::before {
+    display: none !important;
+  }
+  .studio-sidebar .trilho nav > button svg,
+  .studio-sidebar .trilho-item svg {
+    width: 21px;
+    height: 21px;
+  }
+  .studio-sidebar .trilho nav > button > small {
+    display: none;
+  }
+  .studio-sidebar .trilho nav > button.active,
+  .studio-sidebar .trilho-item.active {
+    color: var(--text);
+    background: var(--surface-3);
+    border-color: transparent;
+  }
+  .studio-sidebar .trilho nav > button:hover,
+  .studio-sidebar .trilho-item:hover {
+    color: var(--text);
+    background: var(--surface-3);
+  }
+  .studio-sidebar .passos-trilho {
+    margin: 6px 0;
+    padding: 6px 0;
+    border-block: 1px solid var(--hairline);
+  }
+  /* a coluna: novo projeto, as ferramentas do passo e, embaixo, o plano */
+  .studio-sidebar .coluna {
+    gap: 12px;
+    padding: 18px 12px 16px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  /* quem está logado: compacto, embaixo da coluna, logo acima do plano */
+  .studio-sidebar .coluna .workspace-label {
+    order: 4;
+    margin: auto 0 0;
+    padding: 10px 8px;
+    border-top: 1px solid var(--hairline);
+  }
+  .studio-sidebar .coluna .workspace-label .account-plan,
+  .studio-sidebar .coluna .workspace-label .local-badge {
+    display: none;
+  }
+  .studio-sidebar .coluna .new-project {
+    order: -1;
+    width: 100%;
+    margin: 0;
+  }
+  .studio-sidebar .coluna .passos-lista {
+    order: 0;
+  }
+  .studio-sidebar .coluna .weekly-usage {
+    order: 5;
+    margin: 0;
+    border-radius: 16px;
+    background: var(--surface-3);
+    border-color: transparent;
+  }
+  .studio-sidebar .coluna .family-nav {
+    order: 6;
+  }
+  .studio-sidebar .coluna .sidebar-bottom {
+    order: 7;
+    margin-top: 0;
+  }
+}
+@media (max-width: 680px) {
+  .studio-sidebar .trilho-marca {
+    display: block;
+  }
+  .studio-sidebar .trilho nav {
+    margin-top: 18px;
+  }
+  .studio-sidebar .coluna {
+    margin-top: 12px;
+  }
+}
+
+/* as versões em cadeia, logo abaixo da onda */
+.editor-main .history-panel .versoes-cadeia {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+}
+.editor-main .history-panel .versoes-cadeia > .seta {
+  align-self: center;
+  color: var(--text-3);
+  flex: none;
+}
+.editor-main .history-panel .versoes-cadeia .version-row {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 190px;
+  max-width: 240px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-3);
+  text-align: left;
+}
+.editor-main .history-panel .versoes-cadeia .version-row > span:nth-child(2) {
+  min-width: 0;
+}
+.editor-main .history-panel .versoes-cadeia .version-row strong,
+.editor-main .history-panel .versoes-cadeia .version-row small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.editor-main .history-panel .versoes-cadeia .version-row > span:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.editor-main .history-panel .versoes-cadeia .version-row > svg:last-child {
+  grid-column: 3;
+  grid-row: 1;
+}
+.editor-main .history-panel .versoes-cadeia .version-row.active {
+  border-color: rgba(90, 169, 255, 0.55);
+  background: rgba(90, 169, 255, 0.1);
+}
+
+/* Home · "Tudo o que o som pede. Num lugar só." (components/home-ferramentas.tsx) */
+.home-ferramentas {
+  padding-block: clamp(72px, 9vw, 120px);
+  text-align: center;
+}
+.home-ferramentas h2 {
+  font-size: clamp(36px, 5vw, 60px);
+  line-height: 1.04;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.home-ferramentas h2 span {
+  display: block;
+  font-weight: 300;
+}
+.hf-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: clamp(36px, 5vw, 56px) 0 36px;
+  text-align: left;
+}
+.hf-cartao {
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+  padding: 26px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #161618, #0e0e10);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f5f5f7;
+  text-decoration: none;
+  transition:
+    transform 0.35s var(--spring),
+    border-color 0.25s;
+}
+a.hf-cartao:hover {
+  transform: translateY(-3px);
+  border-color: rgba(153, 194, 244, 0.35);
+}
+.hf-grande {
+  grid-column: span 2;
+}
+.hf-forma {
+  flex: 1;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+}
+.hf-cartao h3 {
+  margin: 22px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.hf-cartao p {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: #8e8e93;
+}
+.hf-onda {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 90px;
+}
+.hf-onda i {
+  flex: 1;
+  border-radius: 2px;
+}
+.hf-faixas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.hf-faixa {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #c7c7cc;
+}
+.hf-faixa .hf-onda {
+  min-height: 24px;
+  height: 24px;
+}
+.hf-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+  height: 100px;
+}
+.hf-eq i {
+  flex: 1;
+  border-radius: 6px;
+  background: #2c2c31;
+}
+.hf-eq i.on {
+  background: #5aa9ff;
+}
+.hf-falas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #c7c7cc;
+}
+.hf-falas strong {
+  color: #fff;
+}
+.hf-lufs {
+  width: 100%;
+  text-align: center;
+  color: #8e8e93;
+}
+.hf-lufs b {
+  font-size: 56px;
+  font-weight: 800;
+  color: #fff;
+  margin-right: 6px;
+}
+@media (max-width: 960px) {
+  .hf-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .hf-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hf-grande {
+    grid-column: auto;
+  }
+  .hf-cartao {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hf-cartao {
+    transition: none;
+  }
+}
+
+/* ── O editor da Proposta 2: a ferramenta num painel fixo à direita, de cima a baixo; no centro, a onda, as medidas
+ * e as versões em cadeia ── */
+@media (min-width: 1181px) {
+  .tool-editor {
+    --inspetor: 360px;
+  }
+  .tool-editor .studio-main {
+    padding-right: calc(var(--inspetor) + 28px);
+  }
+  .tool-editor .editor-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+  .studio-shell.tool-editor .treatment-panel {
+    position: fixed;
+    top: 66px;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    width: var(--inspetor);
+    max-height: none;
+    margin: 0;
+    padding: 26px 24px 120px;
+    overflow-y: auto;
+    border: 0;
+    border-left: 1px solid var(--hairline);
+    border-radius: 0;
+    background: var(--surface);
+    box-shadow: none;
+    scrollbar-width: thin;
+  }
+  html.tem-player .studio-shell.tool-editor .treatment-panel {
+    padding-bottom: 130px;
+  }
+}
+/* a cápsula do player fica sobre a área de trabalho, entre as colunas */
+@media (min-width: 681px) {
+  html.tem-player body:has(.studio-shell:not(.nav-collapsed)) .player-global {
+    --pg-esq: var(--sidebar-w-fixa, 324px);
+  }
+}
+@media (min-width: 1181px) {
+  html.tem-player body:has(.studio-shell.tool-editor) .player-global {
+    --pg-dir: 360px;
+  }
+}
+
+/* ── O topo da Proposta 2: faixa escura e fina ── */
+@media (min-width: 681px) {
+  .studio-shell[data-theme='dark'] .studio-header {
+    height: 66px;
+    background: rgba(17, 17, 19, 0.92);
+    border-bottom: 1px solid var(--hairline);
+  }
+}
+
+/* ── As medidas viram três cartões grandes, como na imagem ── */
+.tool-editor .analysis-panel,
+.tool-editor .editor-player,
+.tool-editor .history-panel,
+.tool-editor .export-strip {
+  border-radius: 20px;
+  background: var(--surface);
+  border-color: var(--hairline);
+}
+@media (min-width: 681px) {
+  .studio-shell .studio-header {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+  }
+}
+.tool-editor .editor-heading > .button {
+  white-space: nowrap;
+}

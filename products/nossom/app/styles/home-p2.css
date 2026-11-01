@@ -1,0 +1,135 @@
+/* Home · Proposta 2 (titular, 01/11/2026): fundo preto, título centrado em Light × ExtraBold, as linhas de luz do
+ * NOSSOM atravessando a página embaixo do título (sem o cromo nem a névoa azul), seções em grafite. */
+.ns-site.home-p2 {
+  background: #000;
+}
+.home-p2 .signal-field,
+.home-p2 .home-hero-atmosphere {
+  display: none;
+}
+.home-p2 .home-hero {
+  position: relative;
+  min-height: 0;
+  padding: clamp(56px, 9vw, 120px) 0 0;
+  background: #000;
+  overflow: hidden;
+}
+.home-p2 .home-hero-centro {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+.home-p2 .home-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 900px;
+}
+.home-p2 .home-hero-copy h1 {
+  margin: 0;
+  font-size: clamp(54px, 8.4vw, 116px);
+  line-height: 0.96;
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  color: #fff;
+}
+.home-p2 .home-hero-copy h1 span {
+  display: block;
+  font-weight: 800;
+  color: #fff;
+  background: none;
+  -webkit-text-fill-color: #fff;
+}
+.home-p2 .home-hero-copy > p {
+  margin: 22px 0 0;
+  font-size: clamp(17px, 1.6vw, 21px);
+  color: #8e8e93;
+}
+.home-p2 .home-hero-copy .ns-actions {
+  justify-content: center;
+  margin-top: 32px;
+  gap: 12px;
+}
+.home-p2 .home-hero-proof {
+  justify-content: center;
+  color: #8e8e93;
+}
+.home-p2 .home-hero .chrome-hero-art {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  height: clamp(300px, 36vw, 520px);
+  margin: clamp(-20px, -2vw, 0px) 0 0;
+  transform: none;
+  opacity: 1;
+}
+.home-p2 .chrome-hero-art .cinematic-ribbon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.home-p2 .ribbon-chrome,
+.home-p2 .ribbon-halo,
+.home-p2 .ribbon-ground {
+  display: none;
+}
+/* as demais seções em grafite sobre o preto */
+.home-p2 .home-listen,
+.home-p2 .home-ferramentas,
+.home-p2 .ns-faq,
+.home-p2 .home-z,
+.home-p2 #planos,
+.home-p2 .home-downloads {
+  background: transparent;
+}
+.home-p2 .ns-footer {
+  background: #000;
+}
+body:has(.home-p2),
+.home-p2 main {
+  background: #000;
+}
+.home-p2 h2 span {
+  color: #fff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.home-p2 .home-ferramentas h2 span {
+  color: #fff;
+}
+/* o menu: vidro neutro, sem o azul */
+.home-p2 .ns-nav,
+.home-p2 .ns-header.is-scrolled .ns-nav {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(20, 20, 24, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 14px 40px rgba(0, 0, 0, 0.45);
+}
+.home-p2 .ns-nav::before,
+.home-p2 .ns-nav::after {
+  background: none;
+}
+/* a demonstração em grafite */
+.home-p2 .home-listen .demo-player,
+.home-p2 .home-listen [class*='demo'] {
+  background-color: #111113;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+/* o vidro da home sem o azulado: neutro como o do ecossistema */
+.ns-site.home-p2 {
+  --lg-fill: linear-gradient(
+    165deg,
+    rgb(255 255 255 / 12%),
+    rgb(255 255 255 / 3%) 42%,
+    rgb(255 255 255 / 5%)
+  );
+  --lg-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 22%), inset 0 -10px 24px rgb(255 255 255 / 3%),
+    0 22px 60px rgb(0 0 0 / 50%);
+}

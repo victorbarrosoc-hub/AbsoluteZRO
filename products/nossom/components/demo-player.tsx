@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { avisarOutroSom } from '@/lib/player';
 import { useState, useRef, useEffect, useId } from 'react';
 import { Headphones, Sparkles, Play, Pause, ArrowUpRight, Volume2 } from 'lucide-react';
 import demo from '@/lib/demo-waveform.json';
@@ -37,6 +38,15 @@ export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
     setPlaying(false);
     setError('Não foi possível tocar o exemplo. Tente novamente.');
   }
+  // o player da plataforma começou a tocar: a demonstração pausa
+  useEffect(() => {
+    const pausar = () => {
+      tracks.current[active.current]?.pause();
+      setPlaying(false);
+    };
+    window.addEventListener('nossom:player-tocou', pausar);
+    return () => window.removeEventListener('nossom:player-tocou', pausar);
+  }, []);
   async function toggle() {
     const audio = tracks.current[active.current];
     if (!audio) return;
@@ -48,6 +58,7 @@ export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
     }
     try {
       if (audio.ended) audio.currentTime = 0;
+      avisarOutroSom();
       await audio.play();
     } catch {
       failure();

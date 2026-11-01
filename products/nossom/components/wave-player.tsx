@@ -1,5 +1,6 @@
 'use client';
 import { memo, useEffect, useRef, useState } from 'react';
+import { player, usePlayer } from '@/lib/player';
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Repeat2 } from 'lucide-react';
 import type { Version } from '@/lib/storage';
 import { formatTime } from '@/lib/audio';
@@ -9,23 +10,20 @@ export const WavePlayer = memo(function WavePlayer({
   region,
   onRegion,
   previewOnly = false,
+  projeto,
 }: {
   original: Version;
   version: Version;
   region: { start: number; end: number } | null;
   onRegion: (region: { start: number; end: number } | null) => void;
   previewOnly?: boolean;
+  /** O projeto e a conta: o som toca no player da plataforma e continua ao trocar de página. */
+  projeto: { id: string; nome: string; dono: string };
 }) {
   const [mode, setMode] = useState<'original' | 'result'>('result'),
-    [playing, setPlaying] = useState(false),
-    [time, setTime] = useState(0),
-    [muted, setMuted] = useState(false),
-    [match, setMatch] = useState(true),
-    [error, setError] = useState('');
-  const audioRef = useRef<HTMLAudioElement | null>(null),
-    timeRef = useRef(0),
-    playingRef = useRef(false),
-    regionRef = useRef(region);
+    [localTime, setLocalTime] = useState(0),
+    [match, setMatch] = useState(true);
+  const regionRef = useRef(region);
   const drag = useRef<{ edge: string; anchor: number } | null>(null);
   function setSelection(start: number, end: number) {
     const next = {
@@ -37,79 +35,54 @@ export const WavePlayer = memo(function WavePlayer({
   }
   const active = mode === 'original' ? original : version;
   const duration = active.info.duration;
+  // O player da plataforma está com este projeto (a versão aberta ou o original)? Então a onda mostra e manda nele.
+  const p = usePlayer();
+  const dono =
+    !!p.faixa &&
+    p.faixa.projectId === projeto.id &&
+    (p.faixa.chave === original.id || p.faixa.chave === version.id);
+  const time = dono ? p.tempo : localTime;
+  const playing = dono && p.tocando;
+  const muted = p.mudo;
+  const error = dono ? p.erro : '';
+  const faixa = (v: Version) => ({
+    chave: v.id,
+    titulo: v === original ? 'Arquivo original' : v.label,
+    projeto: projeto.nome,
+    projectId: projeto.id,
+    dono: projeto.dono,
+    duracao: v.info.duration,
+  });
   useEffect(() => {
     regionRef.current = region;
-  }, [region]);
+    if (dono) player.definirTrecho(region);
+  }, [region, dono]);
+  useEffect(() => () => player.definirTrecho(null), []);
+  // A · B: trocar de lado com o player nesta onda troca o som no mesmo ponto, tocando ou não
   useEffect(() => {
-    const previousTime = timeRef.current,
-      wasPlaying = playingRef.current;
-    const url = URL.createObjectURL(active.blob),
-      audio = new Audio(url);
-    audioRef.current = audio;
-    audio.onloadedmetadata = () => {
-      audio.currentTime = Math.min(previousTime, Math.max(0, duration - 0.01));
-      if (wasPlaying)
-        audio.play().catch(() => {
-          setPlaying(false);
-          playingRef.current = false;
-        });
-    };
-    audio.ontimeupdate = () => {
-      const r = regionRef.current;
-      if (r && audio.currentTime >= r.end) {
-        audio.pause();
-        audio.currentTime = r.start;
-        setPlaying(false);
-        playingRef.current = false;
-      }
-      setTime(audio.currentTime);
-      timeRef.current = audio.currentTime;
-    };
-    audio.onended = () => {
-      setPlaying(false);
-      playingRef.current = false;
-    };
-    audio.onerror = () =>
-      setError('Não foi possível reproduzir esta versão. Tente exportar e abrir o arquivo.');
-    return () => {
-      timeRef.current = audio.currentTime;
-      audio.pause();
-      URL.revokeObjectURL(url);
-    };
-  }, [active.blob, duration]);
+    if (!dono || !p.faixa || p.faixa.chave === active.id) return;
+    player.carregar(faixa(active), active.blob, { em: p.tempo, tocar: p.tocando });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dono, active.id]);
   useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    a.muted = muted;
+    if (!dono) return;
     const min = Math.min(original.metrics.lufs ?? -16, version.metrics.lufs ?? -16);
-    a.volume =
+    player.definirGanho(
       match && active.metrics.lufs !== null
         ? Math.min(1, Math.pow(10, (min - active.metrics.lufs) / 20))
-        : 1;
-  }, [mode, active, match, muted, original.metrics.lufs, version.metrics.lufs]);
+        : 1,
+    );
+  }, [dono, p.faixa?.chave, mode, active, match, original.metrics.lufs, version.metrics.lufs]);
   async function toggle() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (playing) {
-      audio.pause();
-      setPlaying(false);
-      playingRef.current = false;
-    } else {
-      if (region && (audio.currentTime < region.start || audio.currentTime >= region.end))
-        audio.currentTime = region.start;
-      try {
-        await audio.play();
-        setPlaying(true);
-        playingRef.current = true;
-      } catch {
-        setError('Clique novamente para permitir a reprodução.');
-      }
-    }
+    if (dono && p.faixa?.chave === active.id) return player.alternar();
+    const em =
+      region && (localTime < region.start || localTime >= region.end) ? region.start : localTime;
+    await player.carregar(faixa(active), active.blob, { em, tocar: true });
+    player.definirTrecho(regionRef.current);
   }
   function seek(value: number) {
-    if (audioRef.current) audioRef.current.currentTime = value;
-    setTime(value);
-    timeRef.current = value;
+    if (dono) player.buscar(value);
+    setLocalTime(value);
   }
   return (
     <div className="editor-player">
@@ -273,7 +246,7 @@ export const WavePlayer = memo(function WavePlayer({
           </button>
           <button
             className="icon-button"
-            onClick={() => setMuted(!muted)}
+            onClick={() => player.definirMudo(!muted)}
             aria-label={muted ? 'Ativar som' : 'Silenciar'}
           >
             {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -281,7 +254,7 @@ export const WavePlayer = memo(function WavePlayer({
         </div>
         <label className="checkbox-label">
           <input type="checkbox" checked={match} onChange={(e) => setMatch(e.target.checked)} />{' '}
-          Igualar volume na comparação
+          Mesmo volume
         </label>
         <button
           className={`button small ${region ? 'selected' : 'secondary'}`}
