@@ -1414,14 +1414,87 @@ function painel() {
   const chave = (k) => `rift:${k}:${conta?.pessoa?.id || 'demo'}`;
   const ler = (k, padrao) => { try { const v = JSON.parse(localStorage.getItem(chave(k)) || 'null'); return v ?? padrao; } catch (e) { return padrao; } };
   const gravar = (k, v) => { try { localStorage.setItem(chave(k), JSON.stringify(v)); } catch (e) { toast('Este navegador não deixou guardar (janela privada?).'); } };
-  const novoId = () => Math.random().toString(36).slice(2, 10);
+  const novoId = () => (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).slice(0, 16);
   const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const quando = (ms) => { const s = (Date.now() - ms) / 1000; if (s < 60) return 'agora'; if (s < 3600) return `há ${Math.round(s / 60)} min`; if (s < 86400) return `há ${Math.round(s / 3600)} h`; const d = Math.round(s / 86400); return d === 1 ? 'ontem' : `há ${d} dias`; };
   const tamanhoArq = (b) => b >= 1e9 ? `${(b / 1e9).toFixed(1).replace('.', ',')} GB` : b >= 1e6 ? `${Math.round(b / 1e6)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
-  const projetos = () => ler('projetos', null);
-  function semear() {
-    if (projetos()) return;
-    gravar('projetos', [{ id: novoId(), nome: 'Abertura · Campanha Verão', formato: '16:9', largura: 1920, altura: 1080, fps: 2, duracao: 6, criado: Date.now() - 86400e3 * 2, editado: Date.now() - 3600e3 * 5, exemplo: true, g: 'linear-gradient(140deg,#3a1a0a,#0b0b0c)' }]);
+  // ---------- dados: na conta (banco do Rift, /api/rift/*) ou, sem banco, neste aparelho ----------
+  const CADENCIAS = ['12', '15', '23.976', '24', '29.97', '30', '60', '120'];
+  let cache = { projetos: [], biblioteca: [], exportacoes: [] }, nuvem = false, carregando2 = null;
+  const projetos = () => cache.projetos;
+  const comCor = (pr) => ({ ...pr, g: (pr.modelo && MODELOS.find((m) => m.id === pr.modelo)?.g) || `linear-gradient(140deg, hsl(${pr.tom ?? 20} 60% 16%), #0b0b0c)` });
+  const deNuvem = (pr) => comCor({ ...pr, fps: Math.max(0, CADENCIAS.indexOf(pr.cadencia)) });
+  const paraNuvem = (pr) => ({ id: pr.id, nome: pr.nome, formato: pr.formato, cadencia: CADENCIAS[pr.fps] || '24', duracao: pr.duracao, modelo: pr.modelo || null, tom: pr.tom ?? 20, exemplo: !!pr.exemplo, criado: pr.criado, editado: pr.editado });
+  async function api(caminho, { metodo = 'GET', corpo } = {}) {
+    const r = await fetch('/api/rift/' + caminho, { method: metodo, credentials: 'same-origin', headers: corpo ? { 'content-type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw Object.assign(new Error(d.erro || 'Não salvou na sua conta. Tente de novo.'), { status: r.status });
+    return d;
+  }
+  const guardarLocal = () => { gravar('projetos', cache.projetos); gravar('biblioteca', cache.biblioteca); gravar('exportacoes', cache.exportacoes); };
+  async function salvar(op) {
+    if (!nuvem) { guardarLocal(); return true; }
+    try { await op(); return true; } catch (e) { toast(e.message); return false; }
+  }
+  async function carregar() {
+    const local = { projetos: (ler('projetos', []) || []).map(comCor), biblioteca: ler('biblioteca', []) || [], exportacoes: ler('exportacoes', []) || [] };
+    if (conta.modo === 'conta') {
+      try {
+        const [pj, bb, ex] = await Promise.all([api('projetos'), api('biblioteca'), api('exportacoes')]);
+        nuvem = true;
+        cache = { projetos: pj.projetos.map(deNuvem), biblioteca: bb.itens, exportacoes: ex.itens };
+        // primeira vez com o banco: o que estava neste aparelho sobe para a conta
+        const subir = local.projetos.filter((p) => !p.exemplo && !cache.projetos.some((c) => c.id === p.id));
+        if (!ler('subiu', false) && subir.length) {
+          for (const p of subir) await api('projetos', { metodo: 'POST', corpo: paraNuvem({ ...p, tom: p.tom ?? 20 }) }).then((d) => cache.projetos.push(deNuvem(d.projeto))).catch(() => {});
+          if (local.biblioteca.length) await api('biblioteca', { metodo: 'POST', corpo: { itens: local.biblioteca.slice(0, 50) } }).then((d) => (cache.biblioteca = [...d.itens, ...cache.biblioteca])).catch(() => {});
+          cache.projetos.sort((a, b) => b.editado - a.editado);
+          toast('Os projetos deste aparelho foram para a sua conta.');
+        }
+        gravar('subiu', true);
+      } catch (e) {
+        if (e.status !== 503) toast('Não deu para ler a sua conta agora: mostrando o que está neste aparelho.');
+        cache = local;
+      }
+    } else cache = local;
+    if (!cache.projetos.length && !ler('semeado', false)) {
+      gravar('semeado', true);
+      await criarProjeto({ id: novoId(), nome: 'Abertura · Campanha Verão', formato: '16:9', largura: 1920, altura: 1080, fps: 2, duracao: 6, criado: Date.now() - 86400e3 * 2, editado: Date.now() - 3600e3 * 5, exemplo: true, modelo: 'logo', tom: 20 });
+    }
+  }
+  const carregado = () => (carregando2 ??= carregar());
+  async function criarProjeto(pr) {
+    pr = comCor({ tom: Math.round(Math.random() * 40 + 10), ...pr });
+    cache.projetos.unshift(pr);
+    const ok = await salvar(() => api('projetos', { metodo: 'POST', corpo: paraNuvem(pr) }));
+    if (!ok) cache.projetos = cache.projetos.filter((p) => p !== pr);
+    return ok;
+  }
+  async function mudarProjeto(idp, campos = {}) {
+    const antes = cache.projetos.find((p) => p.id === idp); if (!antes) return;
+    const depois = { ...antes, ...campos, editado: Date.now() };
+    cache.projetos = cache.projetos.map((p) => (p.id === idp ? depois : p));
+    const corpo = {}; if (campos.nome) corpo.nome = campos.nome; if (campos.fps != null) corpo.cadencia = CADENCIAS[campos.fps];
+    const ok = await salvar(() => api('projetos?id=' + encodeURIComponent(idp), { metodo: 'PATCH', corpo }));
+    if (!ok) cache.projetos = cache.projetos.map((p) => (p.id === idp ? antes : p));
+  }
+  async function apagarProjeto(idp) {
+    const antes = cache.projetos;
+    cache.projetos = cache.projetos.filter((p) => p.id !== idp);
+    if (!(await salvar(() => api('projetos?id=' + encodeURIComponent(idp), { metodo: 'DELETE' })))) cache.projetos = antes;
+  }
+  async function addBiblioteca(itens) {
+    cache.biblioteca = [...itens, ...cache.biblioteca];
+    if (!(await salvar(() => api('biblioteca', { metodo: 'POST', corpo: { itens } })))) cache.biblioteca = cache.biblioteca.filter((x) => !itens.includes(x));
+  }
+  async function tirarBiblioteca(idb) {
+    const antes = cache.biblioteca;
+    cache.biblioteca = cache.biblioteca.filter((x) => x.id !== idb);
+    if (!(await salvar(() => api('biblioteca?id=' + encodeURIComponent(idb), { metodo: 'DELETE' })))) cache.biblioteca = antes;
+  }
+  async function addExportacao(x) {
+    cache.exportacoes = [x, ...cache.exportacoes].slice(0, 100);
+    await salvar(() => api('exportacoes', { metodo: 'POST', corpo: x }));
   }
 
   // ---------- sessão ----------
@@ -1497,17 +1570,17 @@ function painel() {
       </div></section>`;
     },
     projetos() {
-      return `${avisoDemo()}${topo('Seus', 'projetos.', BTN_NOVO)}<div class="busca"><input class="campo" id="buscaProj" type="search" placeholder="Buscar pelo nome" aria-label="Buscar projetos"><select class="sel" id="ordemProj" aria-label="Ordem"><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="criados">Criados</option></select></div><div id="listaProj"></div><p style="margin:0;color:var(--mute);font-size:.8rem">Os projetos ficam neste aparelho, na sua conta. A nuvem do Rift vem com o app.</p>`;
+      return `${avisoDemo()}${topo('Seus', 'projetos.', BTN_NOVO)}<div class="busca"><input class="campo" id="buscaProj" type="search" placeholder="Buscar pelo nome" aria-label="Buscar projetos"><select class="sel" id="ordemProj" aria-label="Ordem"><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="criados">Criados</option></select></div><div id="listaProj"></div><p style="margin:0;color:var(--mute);font-size:.8rem">${nuvem ? 'Guardados na sua conta Absolute ZRO: abrem em qualquer aparelho.' : 'Guardados neste aparelho.'}</p>`;
     },
     modelos() {
       return `${avisoDemo()}${topo('Comece pelo', 'movimento.')}<div class="grade">${MODELOS.map(cartaoModelo).join('')}</div>`;
     },
     biblioteca() {
-      const itens = ler('biblioteca', []);
+      const itens = cache.biblioteca;
       return `${avisoDemo()}${topo('Sua', 'biblioteca.')}<label class="solta" id="solta"><input type="file" id="arquivos" multiple hidden accept="video/*,image/*,audio/*,.json,.lottie,.glb,.gltf,.svg"><strong>Solte aqui vídeo, imagem, áudio, Lottie ou modelo 3D</strong><span>O arquivo fica no seu computador: o Rift só guarda o nome e lê dali quando você usa no projeto.</span></label>${itens.length ? `<div class="lista">${itens.map((it) => `<div class="linha"><span class="ic">${esc(it.ext)}</span><span style="min-width:0"><strong>${esc(it.nome)}</strong><small>${esc(it.tipo)} · ${tamanhoArq(it.tamanho)} · ${quando(it.quando)}</small></span><span class="estado">neste aparelho</span><button class="proj__mais" data-tirar="${it.id}" aria-label="Tirar ${esc(it.nome)} da biblioteca">✕</button></div>`).join('')}</div>` : ''}`;
     },
     exportacoes() {
-      const itens = ler('exportacoes', []);
+      const itens = cache.exportacoes;
       return `${avisoDemo()}${topo('Suas', 'exportações.')}${itens.length ? `<div class="lista">${itens.map((x) => `<div class="linha"><span class="ic" style="background:#0c0c0e"><i style="width:14px;height:14px;border-radius:50%;background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i></span><span style="min-width:0"><strong>${esc(x.projeto)}</strong><small>${esc(x.formato)} · ${esc(x.fps)} fps · ${esc(x.tamanho)} · ${esc(x.destino)} · ${quando(x.quando)}</small></span><span class="estado" title="O motor de exportação (Relay) ainda não renderiza a partir do Rift">não renderizado</span><span></span></div>`).join('')}</div>` : `<div class="vazio"><h2 class="t"><span>Nada</span> <b>exportado ainda.</b></h2><p>No estúdio, "Exportar com o Relay" manda o projeto para cá.</p><a class="glass-btn" href="#projetos">Abrir um projeto</a></div>`}`;
     },
   };
@@ -1524,7 +1597,7 @@ function painel() {
     $$('[data-sec]').forEach((a) => (a.dataset.sec === secaoAtual ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     await pronto;
     if (conta.modo === 'entrar') { location.href = '/api/zro/entrar?volta=' + encodeURIComponent('/' + (location.hash || '#app')); return; }
-    semear(); pintarConta();
+    await carregado(); pintarConta();
     carregando.hidden = true; conteudo.hidden = false;
     conteudo.innerHTML = SECAO[secaoAtual]();
     conteudo.style.display = 'grid'; conteudo.style.gap = '30px';
@@ -1535,18 +1608,18 @@ function painel() {
   ganchos.estudio = async () => {
     await pronto;
     if (conta.modo === 'entrar') { location.href = '/api/zro/entrar?volta=' + encodeURIComponent('/#projetos'); return; }
-    semear();
+    await carregado();
     const id = ler('aberto', null);
     const pr = projetos().find((p) => p.id === id) || projetos()[0];
     if (pr) { ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id); }
   };
-  ganchos.mudouCadencia = (i) => { const id = ler('aberto', null); if (!id) return; gravar('projetos', projetos().map((p) => (p.id === id ? { ...p, fps: i, editado: Date.now() } : p))); };
-  ganchos.exportou = (x) => { const id = ler('aberto', null); const pr = projetos().find((p) => p.id === id); gravar('exportacoes', [{ id: novoId(), projeto: pr?.nome || 'Projeto', ...x, quando: Date.now() }, ...ler('exportacoes', [])].slice(0, 100)); };
+  ganchos.mudouCadencia = (i) => { const idp = ler('aberto', null); if (idp) mudarProjeto(idp, { fps: i }); };
+  ganchos.exportou = (x) => { const idp = ler('aberto', null); const pr = projetos().find((p) => p.id === idp); addExportacao({ id: novoId(), projetoId: pr?.id || null, projeto: pr?.nome || 'Projeto', ...x, estado: 'nao_renderizado', quando: Date.now() }); };
 
   // ---------- ações ----------
   conteudo.addEventListener('click', (e) => {
     const abrir = e.target.closest('[data-abrir]');
-    if (abrir) { gravar('aberto', abrir.dataset.abrir); gravar('projetos', projetos().map((p) => (p.id === abrir.dataset.abrir ? { ...p, editado: Date.now() } : p))); return; }
+    if (abrir) { gravar('aberto', abrir.dataset.abrir); mudarProjeto(abrir.dataset.abrir); return; }
     if (e.target.closest('[data-novo]')) return folhaNovo();
     const m = e.target.closest('[data-modelo]');
     if (m) { const mod = MODELOS.find((x) => x.id === m.dataset.modelo); return folhaNovo(mod); }
@@ -1560,13 +1633,13 @@ function painel() {
       return;
     }
     const tirar = e.target.closest('[data-tirar]');
-    if (tirar) { gravar('biblioteca', ler('biblioteca', []).filter((x) => x.id !== tirar.dataset.tirar)); mostrar('biblioteca'); }
+    if (tirar) { tirarBiblioteca(tirar.dataset.tirar).then(() => mostrar('biblioteca')); }
   });
   function acaoProjeto(a, id) {
     const pr = projetos().find((p) => p.id === id); if (!pr) return;
     if (a === 'abrir') { gravar('aberto', id); location.hash = '#estudio'; }
     if (a === 'renomear') folhaNome(pr);
-    if (a === 'duplicar') { gravar('projetos', [{ ...pr, id: novoId(), nome: `${pr.nome} (cópia)`, exemplo: false, criado: Date.now(), editado: Date.now() }, ...projetos()]); toast('Projeto duplicado.'); mostrar(secaoAtual); }
+    if (a === 'duplicar') criarProjeto({ ...pr, id: novoId(), nome: `${pr.nome} (cópia)`.slice(0, 80), exemplo: false, criado: Date.now(), editado: Date.now() }).then((ok) => { if (ok) toast('Projeto duplicado.'); mostrar(secaoAtual); });
     if (a === 'apagar') folhaApagar(pr);
   }
 
@@ -1591,27 +1664,28 @@ function painel() {
       $('#novoNome', host).focus(); $('#novoNome', host).select();
       $('#novoCriar', host).addEventListener('click', () => {
         const nome = $('#novoNome', host).value.trim() || 'Projeto sem nome';
-        const pr = { id: novoId(), nome, formato: fmt.id, largura: fmt.l, altura: fmt.a, fps: fpsN, duracao: dur, criado: Date.now(), editado: Date.now(), modelo: modelo?.id || null, g: modelo?.g || `linear-gradient(140deg, hsl(${Math.round(Math.random() * 40 + 10)} 60% 16%), #0b0b0c)` };
-        gravar('projetos', [pr, ...projetos()]); gravar('aberto', pr.id); fechar(); location.hash = '#estudio';
+        const pr = { id: novoId(), nome, formato: fmt.id, largura: fmt.l, altura: fmt.a, fps: fpsN, duracao: dur, criado: Date.now(), editado: Date.now(), modelo: modelo?.id || null };
+        $('#novoCriar', host).disabled = true;
+        criarProjeto(pr).then((ok) => { $('#novoCriar', host).disabled = false; if (!ok) return; gravar('aberto', pr.id); fechar(); location.hash = '#estudio'; });
       });
     });
   }
   function folhaNome(pr) {
     folha(`<div class="sheet__head"><div><h3>Renomear</h3><p>${esc(pr.nome)}</p></div><button class="icon-btn" data-fechar aria-label="Fechar">✕</button></div><input class="campo" id="nomeNovo" value="${esc(pr.nome)}" maxlength="80" aria-label="Novo nome"><div class="sheet__foot"><button class="glass-btn" data-fechar>Cancelar</button><button class="glass-btn glass-btn--ink" id="nomeOk">Salvar</button></div>`, (host, fechar) => {
-      const salvar = () => { const n = $('#nomeNovo', host).value.trim(); if (n) gravar('projetos', projetos().map((p) => (p.id === pr.id ? { ...p, nome: n, editado: Date.now() } : p))); fechar(); mostrar(secaoAtual); };
-      $('#nomeOk', host).addEventListener('click', salvar); $('#nomeNovo', host).addEventListener('keydown', (e) => e.key === 'Enter' && salvar()); $('#nomeNovo', host).select();
+      const renomear = async () => { const n = $('#nomeNovo', host).value.trim().slice(0, 80); fechar(); if (n) await mudarProjeto(pr.id, { nome: n }); mostrar(secaoAtual); };
+      $('#nomeOk', host).addEventListener('click', renomear); $('#nomeNovo', host).addEventListener('keydown', (e) => e.key === 'Enter' && renomear()); $('#nomeNovo', host).select();
     });
   }
   function folhaApagar(pr) {
     folha(`<div class="sheet__head"><div><h3>Apagar "${esc(pr.nome)}"?</h3><p>Some deste aparelho. As exportações feitas continuam na lista.</p></div></div><div class="sheet__foot"><button class="glass-btn" data-fechar>Cancelar</button><button class="glass-btn glass-btn--ink" id="apagarOk" style="--gb-fill:rgb(214 64 52 / .95);--gb-ink:#fff">Apagar</button></div>`, (host, fechar) => {
-      $('#apagarOk', host).addEventListener('click', () => { gravar('projetos', projetos().filter((p) => p.id !== pr.id)); fechar(); toast('Projeto apagado.'); mostrar(secaoAtual); });
+      $('#apagarOk', host).addEventListener('click', async () => { fechar(); await apagarProjeto(pr.id); toast('Projeto apagado.'); mostrar(secaoAtual); });
     });
   }
   function ligarBiblioteca() {
     const solta = $('#solta'), input = $('#arquivos');
     const add = (files) => {
       const novos = [...files].slice(0, 50).map((f) => ({ id: novoId(), nome: f.name, tamanho: f.size, tipo: f.type.split('/')[0] === 'video' ? 'Vídeo' : f.type.split('/')[0] === 'image' ? 'Imagem' : f.type.split('/')[0] === 'audio' ? 'Áudio' : /\.(glb|gltf)$/i.test(f.name) ? 'Modelo 3D' : /\.(json|lottie)$/i.test(f.name) ? 'Lottie' : 'Arquivo', ext: (f.name.split('.').pop() || '').slice(0, 4).toUpperCase(), quando: Date.now() }));
-      if (novos.length) { gravar('biblioteca', [...novos, ...ler('biblioteca', [])].slice(0, 300)); toast(`${novos.length} ${novos.length === 1 ? 'item entrou' : 'itens entraram'} na biblioteca.`); mostrar('biblioteca'); }
+      if (novos.length) addBiblioteca(novos).then(() => { toast(`${novos.length} ${novos.length === 1 ? 'item entrou' : 'itens entraram'} na biblioteca.`); mostrar('biblioteca'); });
     };
     input.addEventListener('change', () => add(input.files));
     ['dragenter', 'dragover'].forEach((ev) => solta.addEventListener(ev, (e) => { e.preventDefault(); solta.classList.add('sobre'); }));
