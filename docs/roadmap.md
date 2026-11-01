@@ -1350,6 +1350,9 @@ do card... não consigo localizar o job que quero achar".
 - ✅ Sites dos não lançados: AEON com a trava `LANCADO = false` (fecha mesmo com `RELEASE=released` na Vercel) e
   página neutra no lugar da inicial; Revela com a página neutra; NOSSOM manda as páginas do site para absolutezro.com.
   Relay sem a ficha "Vindo do AEON/NOSSOM/Revela".
+- ✅ CI de volta ao verde (ramo `testes-nao-lancados`): o teste de tela da Revela confere a página neutra; os e2e do
+  NOSSOM que olham a página inicial, o manifest e a imagem social entram com a conta liberada e conferem que, sem
+  sessão, esses endereços vão para absolutezro.com.
 - ⬜ Deploy dos projetos `aeon`, `revela` e `nossom` (o AEON segue no ar com a página de lançamento até o próximo
   deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
   SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.

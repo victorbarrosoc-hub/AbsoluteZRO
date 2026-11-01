@@ -1,4 +1,4 @@
-import { test, expect, onlyWhenOpen } from './fixtures';
+import { test, expect, onlyWhenOpen, OPEN } from './fixtures';
 import { mkdir, writeFile } from 'node:fs/promises';
 test('compact navigation exposes six destinations, Início first and the Z last, and switches tools without losing the project', async ({
   page,
@@ -41,13 +41,21 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
   page,
   request,
 }) => {
-  const response = await request.get('/manifest.webmanifest');
+  // Fechado ao público (titular, 01/11/2026), o manifest e a imagem social trazem o nome do app: sem sessão vão
+  // para a Absolute ZRO, como as páginas do site. A conta liberada (a sessão do fixture) os recebe.
+  if (!OPEN)
+    for (const path of ['/manifest.webmanifest', '/opengraph-image']) {
+      const fora = await request.get(path, { maxRedirects: 0 });
+      expect(fora.status(), path).toBe(307);
+      expect(fora.headers().location, path).toBe('https://absolutezro.com/');
+    }
+  const response = await page.request.get('/manifest.webmanifest');
   expect(response.ok()).toBeTruthy();
   const manifest = await response.json();
   expect(manifest.display).toBe('standalone');
   expect(manifest.start_url).toBe('/studio');
   for (const icon of manifest.icons) {
-    const response = await request.get(icon.src),
+    const response = await page.request.get(icon.src),
       bytes = await response.body();
     expect(response.ok()).toBeTruthy();
     expect(response.headers()['content-type']).toContain('image/png');
@@ -74,7 +82,7 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
     'content',
     'summary_large_image',
   );
-  const social = await request.get('/opengraph-image'),
+  const social = await page.request.get('/opengraph-image'),
     png = await social.body();
   expect(social.ok()).toBeTruthy();
   expect(social.headers()['content-type']).toContain('image/png');
