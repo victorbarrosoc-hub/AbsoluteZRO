@@ -2,6 +2,15 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026, ramo `sobedesce-avatar-zro`)
+
+- ✅ App do celular: o avatar do topo (e a folha "Conta e ajustes", que agora começa pela conta) mostra nome e foto da
+  conta Absolute ZRO, não do Drive conectado; o Drive fica rotulado "Google Drive" com o e-mail e a foto dele.
+  `/api/eu` devolve `usuario.fotoUrl` (claim `picture`, só `/api/v1/foto/…` do emissor, gravada a cada login em
+  `contas_zro.foto`, migração `0020_foto_da_conta_zro`; sem foto, as iniciais). 🟡 A foto entra no próximo login de
+  quem já estava ligado; o nome ainda é o `usuarios.nome` (não relê o perfil da Absolute ZRO como o Relay). ⬜ App de
+  computador sem mudança: o chip da barra lateral é o seletor de contas do Google (Drive).
+
 ## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026, ramo `sobedesce-recuperar-colecoes`)
 
 - ✅ A raiz "SOBEDESCE Referências" do app antigo é achada pelo nome e reaproveitada (nada de raiz nova vazia ao lado);
@@ -400,6 +409,14 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar Audio Lab (01/11/2026, pedido do titular): o NOSSOM passa a se chamar Quasar Audio Lab ("é subproduto,
+  todos são Absolute ZRO"). Marca: a Coroa sonora (eclipse fino em azul-aço, a borda vibra como onda do lado da luz,
+  clarão no ponto), QUASAR na letra expandida (Archivo Expanded ExtraBold) e AUDIO LAB num selo de vidro de borda
+  grossa. Ícones, cartão de compartilhamento, título, manifesto e textos trocados; no HUB, o nome no catálogo (0053) e
+  o ícone. Identificadores internos seguem `nossom` (produto, OIDC, schema, banco do aparelho, instaladores), para
+  nenhuma conta, cota ou projeto se perder. Segue fechado ao público (0049). Endereço novo
+  `quasar.absolutezro.com` (autorizado pelo titular, 01/11/2026): domínio no projeto Vercel `nossom`, retorno OIDC e
+  Abrir do HUB na 0053; `nossom.absolutezro.com` passa a redirecionar (308) depois do merge, mantido no OIDC.
 - 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
   grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
   rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos

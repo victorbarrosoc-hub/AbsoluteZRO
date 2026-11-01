@@ -230,7 +230,7 @@ export default function AccountSettings({
         <div className="account-summary-actions">
           <span>
             <ShieldCheck size={16} />
-            {account.isAdmin ? 'Administrador' : 'Conta NOSSOM'}
+            {account.isAdmin ? 'Administrador' : 'Conta Quasar'}
           </span>
           {account.isAdmin && (
             <StudioLink className="button secondary" href="/studio/admin">
@@ -327,7 +327,7 @@ export default function AccountSettings({
               </>
             ) : (
               <>
-                <p>Ligue sua conta Absolute ZRO para entrar na NOSSOM com um clique.</p>
+                <p>Ligue sua conta Absolute ZRO para entrar no Quasar com um clique.</p>
                 <a
                   className="button primary"
                   href={'/api/zro/entrar?modo=ligar&volta=' + encodeURIComponent('/studio/conta')}

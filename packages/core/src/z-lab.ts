@@ -139,7 +139,7 @@ export const Z_APPS = [
   { id: 'relay', nome: 'Relay' },
   { id: 'finishing', nome: 'Revela' },
   { id: 'ai-edit', nome: 'AEON' },
-  { id: 'nossom', nome: 'NOSSOM' },
+  { id: 'nossom', nome: 'Quasar Audio Lab' },
   { id: 'carro-do-freela', nome: 'Carro do Freela' },
 ] as const
 export type ZAppId = (typeof Z_APPS)[number]['id']

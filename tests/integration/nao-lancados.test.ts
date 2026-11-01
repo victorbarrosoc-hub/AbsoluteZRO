@@ -82,7 +82,8 @@ describe('conta comum × admin da plataforma', () => {
     const actor = await authorize(db, o.auth)
     const retrato = await retratoDoEcossistema(db, actor, null)
     const texto = JSON.stringify(retrato)
-    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion']) expect(texto, nome).not.toContain(nome)
+    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Quasar', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion'])
+      expect(texto, nome).not.toContain(nome)
   })
 
   it('admin da plataforma: vê e acessa tudo, em todos os canais (web, computador e download inclusive)', async () => {
@@ -120,8 +121,8 @@ describe('Set: presença em app não lançado sai como "Absolute ZRO"', () => {
     await presenca('nossom')
     const visto = await naLista(colegaAuth)
     expect(visto).toMatchObject({ estado: 'online', app: { id: 'hub', nome: 'Absolute ZRO' } })
-    expect(JSON.stringify(await estadoSet(db, colegaAuth))).not.toMatch(/nossom|NOSSOM/)
-    expect(await naLista(chefeAuth)).toMatchObject({ estado: 'online', app: { id: 'nossom', nome: 'NOSSOM' } })
+    expect(JSON.stringify(await estadoSet(db, colegaAuth))).not.toMatch(/nossom|NOSSOM|Quasar/)
+    expect(await naLista(chefeAuth)).toMatchObject({ estado: 'online', app: { id: 'nossom', nome: 'Quasar Audio Lab' } })
     // o mesmo vale direto no banco (o que a API do Set de cada app lê)
     const [linha] = await db.asUser(
       { userId: colega.userId, orgId: titular.orgId },
@@ -143,7 +144,7 @@ describe('Set: presença em app não lançado sai como "Absolute ZRO"', () => {
 })
 
 describe('perfil: selo de app não lançado não aparece', () => {
-  it('"Usa NOSSOM" some para quem vê e para a própria pessoa (não admin); o admin vê', async () => {
+  it('"Usa Quasar" some para quem vê e para a própria pessoa (não admin); o admin vê', async () => {
     const dono = await newOrgWithOwner(db, 'nl-selo')
     const outro = await newOrgWithOwner(db, 'nl-selo-outro')
     const chefe = await newOrgWithOwner(db, 'nl-selo-chefe')

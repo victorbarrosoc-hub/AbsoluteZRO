@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     if (body.action === 'register')
       return Response.json(
         {
-          error: 'A conta do NOSSOM é a sua conta Absolute ZRO. Crie a sua por lá.',
+          error: 'A conta do Quasar é a sua conta Absolute ZRO. Crie a sua por lá.',
           code: 'zro_only',
           createWith: '/api/zro/entrar?modo=criar',
         },

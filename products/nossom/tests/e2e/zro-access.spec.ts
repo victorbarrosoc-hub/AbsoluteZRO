@@ -18,6 +18,7 @@ async function expectDevPage(page: Page, path: string) {
     page.getByRole('link', { name: 'Ir para a Absolute ZRO', exact: true }),
   ).toHaveAttribute('href', 'https://absolutezro.com');
   await expect(page.locator('main')).not.toContainText('NOSSOM');
+  await expect(page.locator('main')).not.toContainText('Quasar');
   await expect(page.locator('.studio-header')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
@@ -69,6 +70,9 @@ test('anônimo: o site, o estúdio e os downloads vão para a Absolute ZRO; APIs
   const install = await page.request.get('/instalar.sh');
   expect(await install.text()).toContain('exit 1');
   expect(await install.text()).not.toContain('NOSSOM');
+  expect(await install.text()).not.toContain('Quasar');
+  // o cartão com o nome mora fora de public/: não se baixa direto
+  expect((await page.request.get('/brand/og-site.png')).status()).toBe(404);
   expect((await page.request.get('/api/account')).status()).toBe(401);
 });
 

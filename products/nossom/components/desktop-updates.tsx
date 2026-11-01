@@ -7,13 +7,13 @@ import { Bell, Download, Check, LoaderCircle, RefreshCw, X } from 'lucide-react'
 import type { UpdateState } from '@/lib/desktop';
 const headings: Record<UpdateState['status'], string> = {
   unavailable: 'Atualizações do aplicativo',
-  idle: 'Seu aplicativo NOSSOM',
+  idle: 'Seu aplicativo Quasar',
   checking: 'Buscando novidades…',
   current: 'Você está em dia.',
-  available: 'Uma nova NOSSOM chegou.',
+  available: 'Um novo Quasar chegou.',
   downloading: 'Sua atualização está chegando.',
   downloaded: 'Tudo pronto para atualizar.',
-  installing: 'Reiniciando a NOSSOM…',
+  installing: 'Reiniciando o Quasar…',
   error: 'Vamos tentar de novo.',
 };
 export default function DesktopUpdates({
@@ -124,7 +124,7 @@ export default function DesktopUpdates({
             <motion.section
               className="desktop-update-notice"
               role="region"
-              aria-label="Atualização NOSSOM"
+              aria-label="Atualização Quasar"
               initial={reduced ? false : { opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}

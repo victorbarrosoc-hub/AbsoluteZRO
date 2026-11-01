@@ -95,7 +95,7 @@ export const SELO_TEXTO: Record<string, string> = {
   synquei: 'Usa Synquei',
   tpeasy: 'Usa TPeasy',
   'ai-edit': 'Usa AEON',
-  nossom: 'Usa NOSSOM',
+  nossom: 'Usa Quasar',
   finishing: 'Usa Revela',
   maestro: 'Usa Maestro',
 }

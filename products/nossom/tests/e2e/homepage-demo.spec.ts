@@ -22,7 +22,7 @@ test('human voice demo plays real files, preserves time on A/B, seeks and contro
     .locator('audio')
     .first()
     .evaluate((el: HTMLAudioElement) => el.currentTime);
-  await page.getByRole('button', { name: 'NOSSOM', exact: true }).click();
+  await page.getByRole('button', { name: 'Quasar', exact: true }).click();
   const result = await page.locator('audio').evaluateAll((els: HTMLAudioElement[]) =>
     els.map((el) => ({
       time: el.currentTime,
@@ -156,7 +156,7 @@ test('current plan is highlighted under the name and desktop update completes wi
   await page.goto('/studio/automatico');
   await expect(page.locator('.workspace-label .account-plan')).toHaveText('Plano Grátis');
   await expect(
-    page.getByRole('heading', { name: 'Uma nova NOSSOM chegou.', exact: true }),
+    page.getByRole('heading', { name: 'Um novo Quasar chegou.', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Atualizar agora', exact: true }).click();
   await page.getByRole('button', { name: 'Gravar uma ideia', exact: true }).click();
@@ -169,7 +169,7 @@ test('current plan is highlighted under the name and desktop update completes wi
   expect(await page.evaluate(() => (window as any).__desktopActions)).toEqual(['download']);
   await page.getByRole('button', { name: /^Finalizar ·/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Reiniciando a NOSSOM…', exact: true }),
+    page.getByRole('heading', { name: 'Reiniciando o Quasar…', exact: true }),
   ).toBeVisible({ timeout: 90000 });
   expect(await page.evaluate(() => (window as any).__desktopActions)).toEqual([
     'download',

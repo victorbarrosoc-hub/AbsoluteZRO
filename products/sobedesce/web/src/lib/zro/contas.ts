@@ -23,7 +23,8 @@ export const CRIAR_SO_PELA_ZRO = "A conta do SOBEDESCE é a sua conta Absolute Z
 /** Marca de conta criada pela Absolute ZRO: não é hash, nenhuma senha confere até a pessoa criar uma. */
 export const SEM_SENHA_ZRO = "zro";
 
-const camposDoPerfil = (p: PerfilZro) => ({ email: p.email, produtos: p.produtos.join(" "), organizacao: p.organizacao, ultimoLoginEm: new Date() });
+// A foto acompanha a conta Absolute ZRO a cada login (trocou lá, troca aqui; tirou lá, some aqui).
+const camposDoPerfil = (p: PerfilZro) => ({ email: p.email, foto: p.foto, produtos: p.produtos.join(" "), organizacao: p.organizacao, ultimoLoginEm: new Date() });
 
 export async function donoDaContaZro(p: PerfilZro): Promise<string | null> {
   const l = await db.query.contasZro.findFirst({ where: eq(contasZro.zroSub, p.sub) });

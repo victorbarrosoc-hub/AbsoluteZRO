@@ -33,5 +33,8 @@ export async function GET(req: Request) {
   // Conta antiga sem vínculo com a Absolute ZRO (lib/zro/ligar.ts): os apps mostram uma vez a tela de ligar. Só avisa,
   // nunca bloqueia. `ligar`: o caminho do vincular de sempre (o app do computador abre no navegador do sistema).
   const zro = { ligada: atual.ligadoZro, pedir: precisaLigarZro(atual), ligar: caminhoLigarZro("/conta") };
-  return json({ usuario: atual.usuario, contas, recursos, zro }, 200, extras);
+  // `usuario` é a conta da pessoa (a Absolute ZRO, como o Apple ID): nome e foto do "você" no topo dos apps. A foto do
+  // Google fica em `contas` (o Drive conectado), nunca aqui.
+  const usuario = { ...atual.usuario, fotoUrl: atual.fotoZro };
+  return json({ usuario, contas, recursos, zro }, 200, extras);
 }

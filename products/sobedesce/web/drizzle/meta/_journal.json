@@ -141,6 +141,13 @@
       "when": 1793567488654,
       "tag": "0019_referencias_recuperar",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793569217029,
+      "tag": "0020_foto_da_conta_zro",
+      "breakpoints": true
     }
   ]
 }

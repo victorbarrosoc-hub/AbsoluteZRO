@@ -168,13 +168,13 @@ test('the public home tells the truth about the Z: available with the Absolute Z
   const section = page.locator('#z');
   // Fechado ao público: a Z volta a "Chegando ao NOSSOM", sem link nenhum.
   if (!OPEN) {
-    await expect(section.getByText('Chegando ao NOSSOM')).toBeVisible();
+    await expect(section.getByText('Chegando ao Quasar')).toBeVisible();
     await expect(section.getByRole('link')).toHaveCount(0);
     return;
   }
   await expect(section.getByRole('link', { name: 'Conhecer a Z' })).toBeVisible();
-  const ready = await section.getByText('Já no NOSSOM').count();
-  await expect(section.getByText(ready ? 'Já no NOSSOM' : 'Chegando ao NOSSOM')).toBeVisible();
+  const ready = await section.getByText('Já no Quasar').count();
+  await expect(section.getByText(ready ? 'Já no Quasar' : 'Chegando ao Quasar')).toBeVisible();
   await expect(section.getByRole('link', { name: 'Conversar com a Z' })).toHaveCount(ready);
   if (ready)
     await expect(section.getByRole('link', { name: 'Conversar com a Z' })).toHaveAttribute(

@@ -9,7 +9,7 @@ guest(
     await page.goto('/');
     const trigger = page.getByRole('button', { name: 'Entrar na sua conta', exact: true });
     await trigger.click();
-    const dialog = page.getByRole('dialog', { name: 'SEU ESPAÇO NOSSOM', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'SEU ESPAÇO QUASAR', exact: true });
     await expect(dialog).toBeVisible();
     const close = dialog.getByRole('button', { name: 'Fechar menu da conta', exact: true });
     await expect(close).toBeFocused();

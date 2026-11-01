@@ -195,7 +195,7 @@ export async function askManagedAgent(
       },
       environment_id: config.environmentId,
       budget: { type: 'limit', max_list_cost: { amount: '100', currency: 'USD' } },
-      title: 'NOSSOM · orientação de áudio',
+      title: 'Quasar · orientação de áudio',
     });
     if (!/^sesn_[a-zA-Z0-9]{8,100}$/.test(session.id))
       throw new Error('A Anthropic retornou uma sessão inválida.');

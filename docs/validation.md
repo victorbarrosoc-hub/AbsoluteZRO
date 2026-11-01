@@ -53,6 +53,18 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
+
+Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
+(`state.account`, de `/api/eu`, com `fotoUrl` da Absolute ZRO). Migração nova `0020_foto_da_conta_zro`.
+
+- `products/sobedesce/web`: `npm run typecheck`, `lint` e `build` ok; `npm test` 387/388 (falha só
+  `zro-relay-ciclo.test.mts`, que precisa do `undici` de `products/sobedesce`, sem `node_modules` neste ambiente).
+  Novos: `zro.test.mts` (foto da conta em `usuario.fotoUrl`, some quando a conta tira a foto, foto de fora do emissor
+  recusada, conta sem vínculo com `null`) e `celular-app.test.mts` (iPhone 393: conta "Rita Zero" e Drive "Contato
+  Produtora", o topo mostra RZ; a folha começa pela conta e o Drive vem rotulado com o e-mail e as iniciais dele).
+- Raiz: `npx prettier@3.9.10 --check .` ok; `node scripts/scan-secrets.mjs` sem segredos.
+
 ## SOBEDESCE: coleções de Referências voltam sozinhas (01/11/2026)
 
 Ramo `sobedesce-recuperar-colecoes`. Drive desconectado na migração levou `colecoes` em cascata; as pastas ficaram.
@@ -4351,6 +4363,18 @@ SOBEDESCE de computador, que disparam os instaladores).
   baixar da Absolute ZRO) some no celular e dentro do próprio app.
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
+
+## Quasar Audio Lab · novo nome e marca (01/11/2026)
+
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 126/126, `npm run build` OK, e2e completo 69 passaram,
+  0 falharam (26 pulados por `RELEASE=closed`). Testes ajustados ao nome novo (menu, planos, Z, atualizações, ícone).
+- Corrigido no caminho: o selo AUDIO LAB herdava regras antigas de `.brand > span` e cobria o botão de fechar o menu
+  no celular (`workspace` › menu do celular).
+- HUB: `npm run typecheck` OK, `npm run lint` OK, `npm test` 561/561 (64 arquivos), com a migração 0053 aplicada no
+  banco de teste; `nao-lancados` confere que "Quasar" também não vaza para quem não é admin.
+- Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
+- Endereço: `quasar.absolutezro.com` adicionado ao projeto Vercel (verificado, DNS da Vercel sem conflito); metadados,
+  links do HUB (`lib/downloads.ts`) e testes (`downloads`, `install-navigation`) no endereço novo; e2e 69/0 de novo.
 
 ## NOSSOM · estúdio Comando + Console (01/11/2026)
 

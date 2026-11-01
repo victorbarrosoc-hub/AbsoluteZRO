@@ -644,9 +644,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       '/studio/planos': 'Meu plano',
       '/studio/projetos': 'Meus projetos',
       '/studio/admin': 'Administração',
-      '/studio/ia': 'Inteligência NOSSOM',
+      '/studio/ia': 'Inteligência Quasar',
     };
-    document.title = `${names[pathname] ?? operations.find((o) => o.id === routeOperation(pathname))?.label ?? 'Estúdio'} · NOSSOM`;
+    document.title = `${names[pathname] ?? operations.find((o) => o.id === routeOperation(pathname))?.label ?? 'Estúdio'} · Quasar`;
   }, [pathname]);
   useEffect(() => {
     listProjects(account.id)
@@ -1125,7 +1125,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   function report() {
     if (!project || !version) return;
     const body = {
-      product: 'NOSSOM',
+      product: 'Quasar',
       reportVersion: '2.0',
       activeVersionId: version.id,
       algorithm: 'FFmpeg loudnorm / EBU R128 measurement',
@@ -1322,7 +1322,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <X size={20} />
         </button>
         <div className="trilho">
-          <Link href="/" aria-label="NOSSOM página inicial" className="trilho-marca">
+          <Link href="/" aria-label="Quasar página inicial" className="trilho-marca">
             <Brand />
           </Link>
           <nav aria-label="Navegação do estúdio">
@@ -1590,11 +1590,11 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             </button>
             <button
               className="assistant-top"
-              aria-label="Assistente NOSSOM"
+              aria-label="Assistente Quasar"
               onClick={() => setAssistant(true)}
             >
               <AudioLines size={17} />
-              <span>Assistente NOSSOM</span>
+              <span>Assistente Quasar</span>
               <span className="keycap">↗</span>
             </button>
           </div>
@@ -2741,7 +2741,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                 onClick={() => setDenoiseMode('studio')}
                               >
                                 <Sparkles size={18} />
-                                <strong>NOSSOM Voice</strong>
+                                <strong>Quasar Voice</strong>
                                 <span>DeepFilterNet3 · qualidade</span>
                               </button>
                               <button
@@ -3276,7 +3276,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         </main>
         <footer className="studio-footer">
           <span>
-            NOSSOM <span>·</span> Tudo acontece no som.
+            Quasar <span>·</span> Tudo acontece no som.
           </span>
           <span>
             <ShieldCheck size={12} /> IA na nuvem · acabamento no dispositivo

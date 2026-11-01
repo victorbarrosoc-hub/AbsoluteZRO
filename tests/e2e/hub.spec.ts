@@ -201,7 +201,7 @@ test('páginas públicas não divulgam AEON, Revela nem NOSSOM enquanto não est
     for (const path of ['/', '/baixar', '/planos']) {
       await page.goto(path)
       const texto = await page.locator('main').innerText()
-      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM/i)
+      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM|Quasar/i)
       // nem o selo de fechado ("Em breve" / "Em desenvolvimento")
       await expect(page.locator('main .selo-dev'), `${path} ${largura}px`).toHaveCount(0)
       // nem o ícone (ProductMark) nem o título escondido
@@ -209,7 +209,7 @@ test('páginas públicas não divulgam AEON, Revela nem NOSSOM enquanto não est
         .locator('main [aria-label], main [title], main img[src]')
         .evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label') ?? ''} ${e.getAttribute('title') ?? ''} ${e.getAttribute('src') ?? ''}`))
       expect(
-        marcas.filter((m) => /AEON|Revela|NOSSOM|(products\/|produto-)(finishing|nossom|ai-edit)/i.test(m)),
+        marcas.filter((m) => /AEON|Revela|NOSSOM|Quasar|(products\/|produto-)(finishing|nossom|ai-edit)/i.test(m)),
         `${path} ${largura}px`,
       ).toEqual([])
     }

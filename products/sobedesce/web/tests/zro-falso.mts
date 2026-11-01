@@ -10,7 +10,8 @@ import { createHash, generateKeyPairSync, randomBytes, sign } from "node:crypto"
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 
-export type PessoaZro = { sub: string; email: string; nome: string; verificado?: boolean; org?: string | null; produtos?: string[] };
+/** `foto`: o `picture` do id_token, inteiro ("/api/v1/foto/…" vira endereço desta ZRO falsa). */
+export type PessoaZro = { sub: string; email: string; nome: string; foto?: string; verificado?: boolean; org?: string | null; produtos?: string[] };
 type Codigo = { desafio: string; redirectUri: string; pessoa: PessoaZro; nonce: string; usado: boolean; escopo: string };
 export type PedidoIa = { metodo: string; caminho: string; autorizacao: string | null; corpo: string };
 
@@ -133,6 +134,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
           email: c.pessoa.email,
           email_verified: c.pessoa.verificado !== false,
           name: c.pessoa.nome,
+          ...(c.pessoa.foto ? { picture: c.pessoa.foto.startsWith("/") ? `${base}${c.pessoa.foto}` : c.pessoa.foto } : {}),
           zro_org: c.pessoa.org ? { id: "org-1", name: c.pessoa.org, role: "owner" } : null,
           zro_products: c.pessoa.produtos ?? [],
         },

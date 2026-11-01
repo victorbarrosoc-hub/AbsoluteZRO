@@ -1,7 +1,7 @@
 /** The configuration selected by the owner in the paired Portuguese speech test. */
 export const restorationD = {
   id: 'resemble-d-v1',
-  label: 'NOSSOM Restore · D',
+  label: 'Quasar Restore · D',
   lambd: 0.5,
   tau: 0.1,
   solver: 'midpoint',
@@ -18,7 +18,7 @@ export const vocalSeparation = {
 /** Speech from any recording: music, noise and crowd removed. Mono 48 kHz. */
 export const voiceIsolator = {
   id: 'voice-isolator-v1',
-  label: 'NOSSOM Isolar voz',
+  label: 'Quasar Isolar voz',
   model: 'Mel-Band RoFormer + MossFormer2 SE 48K',
   sampleRate: 48000,
 } as const;

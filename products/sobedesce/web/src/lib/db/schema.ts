@@ -527,6 +527,8 @@ export const contasZro = pgTable("contas_zro", {
     .references(() => usuarios.id, { onDelete: "cascade" }),
   zroSub: text().notNull().unique(),
   email: text().notNull(),
+  /** Foto da conta Absolute ZRO (claim `picture` do último login, /api/v1/foto/…). Null = sem foto (o app mostra as iniciais). */
+  foto: text(),
   /** Produtos contratados pela organização ativa no último login (zro_products), separados por espaço. */
   produtos: text().notNull().default(""),
   organizacao: text(),

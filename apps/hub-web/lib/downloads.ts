@@ -99,13 +99,13 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'nossom',
-    site: 'https://nossom.absolutezro.com',
+    site: 'https://quasar.absolutezro.com',
     status: 'test',
     options: [
       ...NO_COMPUTADOR('nossom'),
-      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom.absolutezro.com/studio', format: 'Sem instalar' },
+      { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://quasar.absolutezro.com/studio', format: 'Sem instalar' },
     ],
-    moreUrl: 'https://nossom.absolutezro.com/apps',
+    moreUrl: 'https://quasar.absolutezro.com/apps',
   },
   {
     productId: 'tpeasy',

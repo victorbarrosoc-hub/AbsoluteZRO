@@ -3,6 +3,7 @@
  * `colecoes` em cascata, mas as pastas "SOBEDESCE Referências/<nome>" ficaram. A raiz antiga (do cliente OAuth antigo,
  * sem a marca que este app enxerga) é achada pelo nome e reaproveitada; abrir Referências e reconectar o Drive trazem
  * as coleções de volta, sem duplicar; nome já usado e pasta tirada da plataforma ficam de fora; drive.file não acha nada.
+ * Também o formato "Absolute ZRO/SOBEDESCE/Referências/<coleção>", com a "Referências" de outra pessoa (compartilhada).
  */
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
@@ -59,6 +60,28 @@ function driveAntigo(sub: string, nomes: string[], quando = "2026-03-01T10:00:00
     amb.google.adicionarArquivo(sub, { name, mimeType: PASTA, parents: [raiz.id], foraDoApp: true, createdTime: `2026-04-0${i + 1}T10:00:00.000Z` }),
   );
   return { raiz, pastas };
+}
+
+/**
+ * O formato de alguns Drives do app antigo: "Absolute ZRO" › "SOBEDESCE" › "Referências" › <coleções>. A pasta
+ * "Referências" é de outra pessoa, compartilhada com esta conta (para editar, ou `somenteLeitura`).
+ */
+function driveSobedesce(sub: string, nomes: string[], o: { avo?: boolean; somenteLeitura?: boolean } = {}) {
+  const avo = o.avo === false ? null : amb.google.adicionarArquivo(sub, { name: "Absolute ZRO", mimeType: PASTA, parents: ["root"], foraDoApp: true });
+  const sobedesce = amb.google.adicionarArquivo(sub, { name: "SOBEDESCE", mimeType: PASTA, parents: [avo?.id ?? "root"], foraDoApp: true });
+  const referencias = amb.google.adicionarArquivo(sub, {
+    name: "Referências",
+    mimeType: PASTA,
+    parents: [sobedesce.id],
+    foraDoApp: true,
+    deOutraPessoa: true,
+    somenteLeitura: o.somenteLeitura,
+    createdTime: "2026-01-10T10:00:00.000Z",
+  });
+  const pastas = nomes.map((name, i) =>
+    amb.google.adicionarArquivo(sub, { name, mimeType: PASTA, parents: [referencias.id], foraDoApp: true, deOutraPessoa: true, somenteLeitura: o.somenteLeitura, createdTime: `2026-02-0${i + 1}T10:00:00.000Z` }),
+  );
+  return { avo, sobedesce, referencias, pastas };
 }
 
 const raizesNoDrive = (sub: string) => [...amb.google.driveDe(sub).values()].filter((f) => f.name === "SOBEDESCE Referências" && f.mimeType === PASTA && !f.trashed);
@@ -227,5 +250,84 @@ describe("reconectar o Drive", () => {
     await Promise.all(tarefas);
     const linhas = await db.select().from(schema.colecoes).where(drizzle.eq(schema.colecoes.usuarioId, quem.id));
     assert.deepEqual(linhas.map((l) => l.nome).sort(), ["Clipes antigos", "Making of"]);
+  });
+});
+
+describe("SOBEDESCE/Referências (pasta compartilhada do app antigo)", () => {
+  test("a conferência acha as coleções em Absolute ZRO/SOBEDESCE/Referências, mesmo já conferida antes sem achar", async () => {
+    const quem = await novaPessoa("Compartilhada", "compartilhada@exemplo.com");
+    const g: ContaFalsa = { sub: "s-1", email: "contato.s1@exemplo.com", name: "Compartilhada" };
+    const { referencias, pastas } = driveSobedesce(g.sub, ["Clipes", "Moodboard"]);
+    // "Referências" com pai de outro nome, e uma solta no Meu Drive: não são raiz de coleções.
+    const projetos = amb.google.adicionarArquivo(g.sub, { name: "Projetos", mimeType: PASTA, parents: ["root"], foraDoApp: true });
+    const outra = amb.google.adicionarArquivo(g.sub, { name: "Referências", mimeType: PASTA, parents: [projetos.id], foraDoApp: true, createdTime: "2025-01-01T00:00:00.000Z" });
+    amb.google.adicionarArquivo(g.sub, { name: "Não é coleção", mimeType: PASTA, parents: [outra.id], foraDoApp: true });
+    const solta = amb.google.adicionarArquivo(g.sub, { name: "Referências", mimeType: PASTA, parents: ["root"], foraDoApp: true });
+    amb.google.adicionarArquivo(g.sub, { name: "Também não", mimeType: PASTA, parents: [solta.id], foraDoApp: true });
+    await ligarDrive(quem, g, "gs-1");
+    // Como o titular: a versão de antes já conferiu (sem achar) e passou o prazo de 10 min.
+    const { db, schema } = amb.banco;
+    await db.update(schema.contasGoogle).set({ referenciasConferidasEm: new Date(Date.now() - 11 * 60_000) }).where(drizzle.eq(schema.contasGoogle.id, "gs-1"));
+
+    const l = await listar(quem);
+    assert.deepEqual(nomes(l), ["Clipes", "Moodboard"]);
+    const clipes = l.colecoes.find((c: { nome: string }) => c.nome === "Clipes");
+    assert.equal(clipes.driveFolderId, pastas[0].id);
+    assert.deepEqual(l.raiz, { contaGoogleId: "gs-1", driveFolderId: referencias.id }, "a Referências compartilhada vira a raiz");
+    assert.equal(raizesNoDrive(g.sub).length, 0, "nenhuma \"SOBEDESCE Referências\" nova");
+    const buscaReferencias = amb.google.ultimasBuscas.find((b) => b.get("q")?.startsWith("name = 'Referências'"));
+    assert.equal(buscaReferencias?.get("corpora"), "allDrives");
+    assert.equal(buscaReferencias?.get("includeItemsFromAllDrives"), "true");
+    assert.equal(buscaReferencias?.get("supportsAllDrives"), "true");
+
+    assert.deepEqual(await colecoesLib.recuperarColecoes(quem.id, { forcar: true }), { contas: 1, criadas: 0, falhas: 0 }, "não duplica");
+    assert.equal((await db.select().from(schema.colecoes).where(drizzle.eq(schema.colecoes.usuarioId, quem.id))).length, 2);
+
+    const nova = await corpo(await rColecoes.POST(pedido("/api/referencias/colecoes", comCookie(quem, { corpo: { nome: "Nova" } }))));
+    assert.deepEqual(amb.google.driveDe(g.sub).get(nova.colecao.driveFolderId)!.parents, [referencias.id], "a coleção nova vai para a raiz achada");
+    assert.equal(raizesNoDrive(g.sub).length, 0);
+  });
+
+  test("criar coleção antes de qualquer conferência usa SOBEDESCE/Referências (sem o avô) em vez de criar outra raiz", async () => {
+    const quem = await novaPessoa("Sem avô", "semavo@exemplo.com");
+    const g: ContaFalsa = { sub: "s-2", email: "semavo.drive@exemplo.com", name: "Sem avô" };
+    const { referencias } = driveSobedesce(g.sub, ["Antiga"], { avo: false });
+    await ligarDrive(quem, g, "gs-2");
+    const res = await rColecoes.POST(pedido("/api/referencias/colecoes", comCookie(quem, { corpo: { nome: "Primeira" } })));
+    assert.equal(res.status, 201);
+    const { colecao } = await corpo(res);
+    assert.deepEqual(amb.google.driveDe(g.sub).get(colecao.driveFolderId)!.parents, [referencias.id]);
+    assert.equal(raizesNoDrive(g.sub).length, 0);
+    const [linha] = await amb.banco.db.select().from(amb.banco.schema.contasGoogle).where(drizzle.eq(amb.banco.schema.contasGoogle.id, "gs-2"));
+    assert.equal(linha.referenciasPastaId, referencias.id);
+  });
+
+  test("Referências só para ver: as coleções voltam, e a nova vai para uma \"SOBEDESCE Referências\" própria", async () => {
+    const quem = await novaPessoa("Só ver", "sover@exemplo.com");
+    const g: ContaFalsa = { sub: "s-3", email: "sover.drive@exemplo.com", name: "Só ver" };
+    const { referencias, pastas } = driveSobedesce(g.sub, ["Clipes"], { somenteLeitura: true });
+    await ligarDrive(quem, g, "gs-3");
+    assert.deepEqual(nomes(await listar(quem)), ["Clipes"]);
+
+    const res = await rColecoes.POST(pedido("/api/referencias/colecoes", comCookie(quem, { corpo: { nome: "Minha" } })));
+    assert.equal(res.status, 201);
+    const { colecao } = await corpo(res);
+    const propria = raizesNoDrive(g.sub);
+    assert.equal(propria.length, 1);
+    assert.deepEqual(propria[0].parents, ["root"]);
+    assert.deepEqual(amb.google.driveDe(g.sub).get(colecao.driveFolderId)!.parents, [propria[0].id]);
+    assert.equal(amb.google.driveDe(g.sub).get(referencias.id)!.appProperties, undefined, "a pasta de outra pessoa não é tocada");
+    const [linha] = await amb.banco.db.select().from(amb.banco.schema.contasGoogle).where(drizzle.eq(amb.banco.schema.contasGoogle.id, "gs-3"));
+    assert.equal(linha.referenciasPastaId, propria[0].id);
+
+    // A seguinte vai direto para a própria; a conferência continua olhando as duas raízes, sem duplicar.
+    const outra = await corpo(await rColecoes.POST(pedido("/api/referencias/colecoes", comCookie(quem, { corpo: { nome: "Outra" } }))));
+    assert.deepEqual(amb.google.driveDe(g.sub).get(outra.colecao.driveFolderId)!.parents, [propria[0].id]);
+    amb.google.adicionarArquivo(g.sub, { name: "Chegou depois", mimeType: PASTA, parents: [referencias.id], foraDoApp: true, deOutraPessoa: true });
+    assert.deepEqual(await colecoesLib.recuperarColecoes(quem.id, { forcar: true }), { contas: 1, criadas: 1, falhas: 0 });
+    const linhas = await amb.banco.db.select().from(amb.banco.schema.colecoes).where(drizzle.eq(amb.banco.schema.colecoes.usuarioId, quem.id));
+    assert.deepEqual(linhas.map((x) => x.nome).sort(), ["Chegou depois", "Clipes", "Minha", "Outra"]);
+    assert.equal(linhas.find((x) => x.nome === "Clipes")!.driveFolderId, pastas[0].id);
+    assert.equal(raizesNoDrive(g.sub).length, 1);
   });
 });

@@ -1,5 +1,5 @@
-// Conta e Ajustes: qual Drive recebe, espaço nele, a conta SOBEDESCE e o tipo de rede (que define quantos arquivos
-// sobem juntos e o tamanho do pedaço).
+// Conta e Ajustes: a conta (a Absolute ZRO: nome e foto da conta, o "você" do topo), qual Drive recebe (com o
+// e-mail e a foto do Drive), o espaço nele e o tipo de rede (que define quantos arquivos sobem juntos e o pedaço).
 import { html, useState } from '../vendor/preact-htm.js'
 import { ACCOUNT, CHUNK_AUTO, DEV, LAN, VERSION, getSettings, saveSettings } from '../lib/config.js'
 import { bytes, percent } from '../lib/format.js'
@@ -9,7 +9,7 @@ import { engine } from '../lib/uploader.js'
 import { Icon } from './icons.js'
 import { SheetHead } from './ui.js'
 import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
-import { Avatar } from './main.js'
+import { Avatar, contaComoUser } from './main.js'
 import { AceitarOutros } from './p2p.js'
 import { DICA_MODO, NOME_MODO, modoDe } from '../lib/modo-drive.js'
 
@@ -88,6 +88,23 @@ function pcSummary(pcs = []) {
   return 'Acompanhe o app do computador'
 }
 
+/** Você: a conta Absolute ZRO (nome e foto da conta), no topo da folha que o avatar abre. Drives e sair ficam nela. */
+function Conta({ account, drives }) {
+  const voce = contaComoUser(account)
+  return html`<${Passo} icone="user" cor="up" titulo=${voce?.displayName || 'Sua conta'} frase=${account?.email || 'Drives, computadores e sair ficam na sua conta.'} i=${0}
+    class="settings-conta" acao=${html`<${Avatar} user=${voce} size=${40} />`}
+  >
+    <${Linhas}>
+      <a class="k-linha is-botao" href=${ACCOUNT.manage}>
+        <span class="k-linha-ic" style="--c:var(--up)"><${Icon} name="user" size=${17} strokeWidth=${1.8} /></span>
+        <span class="k-linha-txt"><b>Minha conta</b><span>Drives, computadores e sair</span></span>
+        <span class="k-linha-ctl"><${Icon} name="chevron-right" size=${16} class="k-seta" /></span>
+      </a>
+      <${Linha} icone="drive" titulo=${drives.length > 1 ? 'Trocar de Google Drive' : 'Google Drive'} onClick=${() => openSheet('drives')} />
+    </${Linhas}>
+  </${Passo}>`
+}
+
 export function SettingsSheet() {
   const { user, quota, lan, account, drives, pcs, drive } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive }))
   const [settings, setSettings] = useState(getSettings())
@@ -105,14 +122,16 @@ export function SettingsSheet() {
       right=${html`<button type="button" class="link-btn is-strong" onClick=${closeSheet}>OK</button>`}
     />
     <div class="sheet-body sheet-scroll settings k-folha">
-      <${Passo} icone=${LAN ? 'wifi' : 'drive'} cor="down" titulo=${user?.displayName || 'Google Drive'} frase=${user?.emailAddress || (LAN ? `Pelo ${LAN.label} “${lan?.mac || LAN.mac}”` : 'O Drive que recebe os envios')} i=${0}
+      ${LAN ? null : html`<${Conta} account=${account} drives=${drives} />`}
+
+      <${Passo} icone=${LAN ? 'wifi' : 'drive'} cor="down" titulo=${LAN ? user?.displayName || 'Google Drive' : 'Google Drive'} frase=${user?.emailAddress || (LAN ? `Pelo ${LAN.label} “${lan?.mac || LAN.mac}”` : 'O Drive que recebe os envios')} i=${LAN ? 0 : 1}
         acao=${html`<${Avatar} user=${user} size=${40} />`}
       >
         ${quota ? html`<${Storage} quota=${quota} />` : null}
         ${LAN ? null : html`<${ModoDoDrive} drive=${drive} />`}
       </${Passo}>
 
-      <${Passo} icone="bolt" cor="up" titulo="Envio" frase=${NETWORKS[network].help} i=${1}>
+      <${Passo} icone="bolt" cor="up" titulo="Envio" frase=${NETWORKS[network].help} i=${2}>
         <${Opcoes}
           label="Sua rede"
           valor=${network}
@@ -129,23 +148,13 @@ export function SettingsSheet() {
               se trocam no computador, em Ajustes → Celular.
             </p>
           </${Passo}>`
-        : html`<${Passo} icone="laptop" cor="down" titulo="No computador" i=${2}>
+        : html`<${Passo} icone="laptop" cor="down" titulo="No computador" i=${3}>
             <${Linhas}>
               <${Linha} icone="transfers" titulo="Transferências do computador" sub=${pcSummary(pcs)} onClick=${() => openSheet('computador')} />
             </${Linhas}>
           </${Passo}>
-          <${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${3}>
+          <${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${4}>
             <${AceitarOutros} />
-          </${Passo}>
-          <${Passo} icone="user" cor="up" titulo="Conta SOBEDESCE" frase="Drives, computadores conectados e sair ficam na sua conta." i=${4}>
-            <${Linhas}>
-              <${Linha} icone="drive" titulo=${drives.length > 1 ? 'Trocar de Google Drive' : 'Google Drive'} onClick=${() => openSheet('drives')} />
-              <a class="k-linha is-botao" href=${ACCOUNT.manage}>
-                <span class="k-linha-ic" style="--c:var(--up)"><${Icon} name="user" size=${17} strokeWidth=${1.8} /></span>
-                <span class="k-linha-txt"><b>Minha conta</b>${account?.email ? html`<span>${account.email}</span>` : null}</span>
-                <span class="k-linha-ctl"><${Icon} name="chevron-right" size=${16} class="k-seta" /></span>
-              </a>
-            </${Linhas}>
           </${Passo}>`}
 
       <${Familia} />
