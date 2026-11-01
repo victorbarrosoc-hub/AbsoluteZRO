@@ -1,5 +1,5 @@
 // A separação de faixas da NOSSOM, chamada daqui (app irmão, products/nossom/lib/server/irmaos.ts). O navegador da
-// pessoa fala direto com nossom.absolutezro.com levando a sessão dela na NOSSOM (mesmo site, cookie SameSite=Lax); a
+// pessoa fala direto com quasar.absolutezro.com levando a sessão dela na NOSSOM (mesmo site, cookie SameSite=Lax); a
 // NOSSOM confere tudo do lado dela (sessão, portão de lançamento, franquia, um pedido por conta) e só aceita separar
 // faixas (stems-v1). O caminho é o mesmo do estúdio da NOSSOM (lib/cloud-audio.ts): preparar, enviar em partes direto
 // para o armazenamento privado dela, confirmar, acompanhar, receber as cinco faixas, conferir e liberar a cópia de lá.
@@ -7,7 +7,7 @@
 
 import { PRESET_NOSSOM, partesDoPacote, relatorioValido, STEMS } from '../src/faixas.js'
 
-export const NOSSOM = 'https://nossom.absolutezro.com'
+export const NOSSOM = 'https://quasar.absolutezro.com'
 const ESPERA_MS = 2500
 const PRAZO_MS = 35 * 60_000
 

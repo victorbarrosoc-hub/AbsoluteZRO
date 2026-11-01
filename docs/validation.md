@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rift Motion no catálogo para a Higgsfield das Conexões (01/11/2026, migration 0054)
+
+Branch `claude/rift-higgsfield-hub`, a partir da main com a `0052`.
+
+- `npm run lint`, `npm run format:check` e `npm run typecheck`: ok. `npm test`: tudo verde depois de dois ajustes
+  esperados: `nao-lancados.test.ts` (o Rift agora existe no catálogo: conta comum não vê, admin vê; a 0049 de novo não
+  muda nada, 4 produtos) e o guia da Z (`ia-plataformas.test.ts` pede a entrada `rift-motion` em `PLATAFORMAS`).
+- O Rift fica fora de `zro.plan_products` (`stripe.test.ts` confere as contas dos planos sem ele).
+- `z-rift.test.ts` segue verde: a Z do Rift continua só para admin enquanto o gate estiver fechado.
+- Não testado em produção: o deploy do HUB aplica a `0054`; a conta `victor@absolutezro.com` (admin) entra no Rift, a
+  do Gmail deixa de entrar até o lançamento (decisão do titular).
+
 ## Rift Motion: Higgsfield pela central (01/11/2026)
 
 Branch `claude/motion-2d-3d`. Depende da migration `0054` do HUB (PR `claude/rift-higgsfield-hub`).
@@ -4464,6 +4476,13 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
 - Endereço: `quasar.absolutezro.com` adicionado ao projeto Vercel (verificado, DNS da Vercel sem conflito); metadados,
   links do HUB (`lib/downloads.ts`) e testes (`downloads`, `install-navigation`) no endereço novo; e2e 69/0 de novo.
+- Produção depois do merge: deploys do HUB e do Quasar READY; 0053 aplicada (nome, `external_url`, `sso_start_url` e o
+  retorno `https://quasar.absolutezro.com/api/zro/callback` no `nossom-web`, mantidos os antigos).
+- Redirecionamento: `redirects()` no `next.config.ts` só para o host `nossom.absolutezro.com` (teste
+  `tests/endereco.test.ts`); no build local, `Host: nossom.absolutezro.com` em `/studio?x=1` → 308 para
+  `https://quasar.absolutezro.com/studio?x=1`. O retorno do login usa a origem de quem chega (`zroRedirectUri`), e o
+  app de computador usa `nossom-teal.vercel.app`, fora da regra. AEON (`app/nossom.js`, CSP, família) e Revela
+  (família) no endereço novo: `npm test` do AEON 240/240, da Revela 180/180, do Quasar 131/131.
 
 ## NOSSOM · estúdio Comando + Console (01/11/2026)
 
