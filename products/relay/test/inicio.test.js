@@ -136,7 +136,7 @@ describe('página inicial no Chromium', () => {
     assert.equal(await p.locator('.destino').count(), PRESETS.length)
     assert.equal(await p.locator('[data-destinos-abas] [role="tab"]').count(), GRUPOS.length)
     assert.equal(await p.textContent('.numeros [data-contar="destinos"]'), String(PRESETS.length))
-    assert.deepEqual(await p.locator('.orbita-app span').allTextContents(), ['Maestro', 'SOBEDESCE', 'Synquei', 'TPeasy'])
+    assert.deepEqual(await p.locator('.orbita-app span').allTextContents(), ['Maestro', 'Carro do Freela', 'SOBEDESCE', 'Synquei', 'TPeasy'])
     const tudo = await p.evaluate(
       () => document.body.innerText + [...document.querySelectorAll('*')].flatMap((n) => [...n.attributes].map((a) => a.value)).join(' '),
     )

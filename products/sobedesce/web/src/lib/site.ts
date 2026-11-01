@@ -70,18 +70,11 @@ export const LEGAL_ATUALIZADO_EM = "17 de outubro de 2026";
 
 /**
  * O app de computador é instalado e atualizado só pela central Absolute ZRO (pedido do titular, 01/11/2026): o site
- * mostra "Use no computador com a Absolute ZRO" e manda para esta página. As rotas /baixar/mac, /baixar/windows,
- * /baixar/versao e os instalar.* continuam respondendo (quem já tem o app), mas saíram da interface.
+ * mostra "Use no computador com a Absolute ZRO" e manda para esta página. Desde a revisão de 01/11/2026 /baixar/mac e
+ * /baixar/windows levam para cá (só o `?build=N` do "Atualizar" dos apps antigos ainda baixa o instalador daquele
+ * build) e os instalar.* viraram um recado (no navegador, vêm para cá). /baixar/versao continua: é o aviso dos apps.
  */
 export const CENTRAL_ZRO = "https://absolutezro.com/baixar";
-
-/**
- * Instalar pelo Terminal (Mac) e pelo PowerShell (Windows): public/instalar.sh e public/instalar.ps1. Fora da interface.
- * O arquivo baixado assim não ganha a marca de "veio da internet", então não aparece o aviso de app não verificado.
- * Sempre o endereço oficial (os scripts baixam dele), também nas prévias.
- */
-export const INSTALAR_MAC = `curl -fsSL ${SITE_OFICIAL}/instalar.sh | bash`;
-export const INSTALAR_WINDOWS = `irm ${SITE_OFICIAL}/instalar.ps1 | iex`;
 
 export const ROTAS = {
   entrar: "/entrar",

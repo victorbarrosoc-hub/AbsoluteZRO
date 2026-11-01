@@ -127,10 +127,10 @@ test('computador: velocidade, ajuste, perfil e filtros no ffmpeg; no navegador, 
 test('cor da Revela: a receita viaja no preset e no .relay.json, o ffmpeg exige a LUT e o Máxima fica fora', () => {
   const p = meu({ cor: { entrada: 'sony-slog3-cine', entradaNome: 'S-Log3 / S-Gamut3.Cine', tom: 'suave', look: { id: 'look-abc123', nome: 'Verão' } } })
   assert.deepEqual(p.cor, { entrada: 'sony-slog3-cine', entradaNome: 'S-Log3 / S-Gamut3.Cine', tom: 'suave', look: { id: 'look-abc123', nome: 'Verão' } })
-  assert.equal(p.resumo, 'H.264 · 1080p · 8 Mbit/s · cor da Revela'.replace('8 Mbit/s', `${(p.video.bitrateFixo / 1000).toLocaleString('pt-BR')} Mbit/s`))
+  assert.equal(p.resumo, 'H.264 · 1080p · 8 Mbit/s · cor'.replace('8 Mbit/s', `${(p.video.bitrateFixo / 1000).toLocaleString('pt-BR')} Mbit/s`))
   const plano = planejar(origem, p, { motor: 'computador' })
   assert.deepEqual(plano.receitaCor, p.cor)
-  assert.equal(fichaTecnica(plano).find(([r]) => r === 'Cor')[1], 'S-Log3 / S-Gamut3.Cine → Rec.709 · look Verão (Revela), sai 1-1-1')
+  assert.equal(fichaTecnica(plano).find(([r]) => r === 'Cor')[1], 'S-Log3 / S-Gamut3.Cine → Rec.709 · look Verão, sai 1-1-1')
   assert.throws(() => vf(plano), /LUT assada/)
   assert.match(vf(plano, '/tmp/x.cube'), /scale=in_color_matrix=bt709:in_range=tv:out_range=pc:flags=accurate_rnd\+full_chroma_int,format=gbrpf32le,lut3d=file='\/tmp\/x.cube':interp=tetrahedral,scale=1920:1080:flags=lanczos\+accurate_rnd\+full_chroma_int:out_color_matrix=bt709:out_range=tv/)
   assert.match(vf(plano, 'C:\\Temp\\a.cube'), /lut3d=file='C\\:\/Temp\/a.cube'/)

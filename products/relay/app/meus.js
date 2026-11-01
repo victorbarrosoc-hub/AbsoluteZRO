@@ -301,8 +301,8 @@ export function editar(p, origem, looks = null) {
 
     /** Cor da Revela: log da câmera → Rec.709 e um look (.cube) guardado no aparelho. */
     function grupoCor() {
-      const corpoCor = el('div', { className: 'grupo-corpo', textContent: 'Carregando a cor da Revela…' })
-      const d = el('details', { className: 'grupo grupo--revela', open: abertos.has('cor') }, el('summary', {}, 'Cor', el('span', { className: 'marca-revela', textContent: 'Revela' })), corpoCor)
+      const corpoCor = el('div', { className: 'grupo-corpo', textContent: 'Carregando a cor…' })
+      const d = el('details', { className: 'grupo grupo--revela', open: abertos.has('cor') }, el('summary', {}, 'Cor'), corpoCor)
       d.ontoggle = () => (d.open ? abertos.add('cor') : abertos.delete('cor'))
       ;(async () => {
         modulosCor ??= await import('../src/cor.js')

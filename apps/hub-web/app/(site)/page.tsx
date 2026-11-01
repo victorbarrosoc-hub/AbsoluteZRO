@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { EVENT_PAYLOADS, EVENT_PRODUCER } from '@zro/media-contracts'
@@ -13,6 +14,8 @@ import { divulgado, publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = { alternates: { canonical: '/' } }
 
 /** Uma linha por ferramenta, curta, na faixa logo abaixo do topo. */
 const LINE: Record<string, string> = {

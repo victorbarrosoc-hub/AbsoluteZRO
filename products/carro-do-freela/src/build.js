@@ -14,7 +14,8 @@ const ROOT = path.resolve(__dirname, '..');
    mostra DUAS linhas e corta o resto. Duas frases de 92 caracteres podem
    uma caber e a outra não, dependendo de onde as palavras quebram — quem
    mede é `test/cartao-do-link.js`, abrindo um navegador. */
-const SITE = 'https://carrodofreela.com.br';
+/* o endereço oficial (ADR 0025; carrodofreela.com.br leva para cá com 308): canonical, og:url e og:image */
+const SITE = 'https://carro.absolutezro.com';
 const TITULO_OG = 'Carro do Freela — a agenda do audiovisual de Natal';
 const OG_IMG = '/og.jpg?v=3';   /* v=3 em 19/out · 2: o carro do emblema passou para fora do anel */
 /* ⚠️ 86 CARACTERES DAVAM TRÊS LINHAS, e o WhatsApp mostra duas. A versão
@@ -289,6 +290,7 @@ const META = [
   '<meta property="og:type" content="website">',
   '<meta property="og:site_name" content="Carro do Freela">',
   '<meta property="og:locale" content="pt_BR">',
+  '<link rel="canonical" href="' + SITE + '/">',
   '<meta property="og:url" content="' + SITE + '/">',
   '<meta property="og:title" content="' + TITULO_OG + '">',
   '<meta property="og:description" content="' + DESC + '">',
@@ -327,7 +329,11 @@ const META = [
      cabe inteiro — o ícone carrega o resto da identidade. */
   '<meta name="apple-mobile-web-app-title" content="Carro">',
   '<link rel="manifest" href="/app.webmanifest">'
-].join('\n');
+].concat(real ? [
+  /* o ícone da aba (revisão de 01/11/2026), só na página do domínio (servida em /; relativo, para o file:// da suíte achar public/): o do
+     app, em arquivo; /favicon.ico serve o mesmo (rotasVercel) */
+  '<link rel="icon" type="image/png" sizes="192x192" href="icone-192.png">'
+] : []).join('\n');
 
 /* ================= O HTML LEVE (26/out) =================
    Victor: "deixar a plataforma leve sem perder qualidade". O HTML levava
@@ -349,8 +355,14 @@ if (iScript < fStyle || fScript < iScript) throw new Error('template sem o <scri
 const min = (codigo, loader) => process.env.CDF_SEM_MIN ? codigo : esbuild.transformSync(codigo, { loader, minify: true, legalComments: 'none', charset: 'utf8' }).code;
 const CSS = paraM('app', '.css', Buffer.from(min(html.slice(iStyle + 7, fStyle), 'css')));
 const JS = paraM('app', '.js', Buffer.from(min(html.slice(iScript + 8, fScript), 'js')));
-const titulo = html.slice(0, iStyle).trim();
-const corpo = html.slice(fStyle + 8, iScript).trim();
+/* ⚠️ SEM COMENTÁRIO NO HTML PUBLICADO (revisão de 01/11/2026): o template conversa consigo mesmo em <!-- --> (decisões,
+   nomes de apps que ainda não lançaram), e isso ia inteiro para quem abre o código da página. O build tira os
+   comentários do markup; o que mora dentro de <script>, <style>, <textarea> e <pre> fica como está (o script do fim e a
+   folha já saem minificados, sem comentário). Nenhum código lê nó de comentário. */
+const semComentarios = h => h.split(/(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>|<textarea\b[\s\S]*?<\/textarea>|<pre\b[\s\S]*?<\/pre>)/i)
+  .map((parte, i) => i % 2 ? parte : parte.replace(/<!--[\s\S]*?-->/g, '')).join('');
+const titulo = semComentarios(html.slice(0, iStyle)).trim();
+const corpo = semComentarios(html.slice(fStyle + 8, iScript)).trim();
 const metaFase = '<meta name="cdf-fase" content="' + fase + '">' + (real ? '\n<meta name="cdf-real" content="1">' : '');
 const folha = '<link rel="stylesheet" href="' + CSS + '">';
 const script = '<script src="' + JS + '"></script>';

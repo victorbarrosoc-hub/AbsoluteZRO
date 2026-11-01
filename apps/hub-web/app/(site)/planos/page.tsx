@@ -6,7 +6,7 @@ import { AvulsoSeletor } from '@/components/avulso-seletor'
 import { publicCatalog, releaseOpen } from '@/lib/data/catalog'
 import { stripeConfig } from '@/lib/stripe'
 
-export const metadata: Metadata = { title: 'Planos' }
+export const metadata: Metadata = { title: 'Planos', alternates: { canonical: '/planos' } }
 export const dynamic = 'force-dynamic'
 
 type Row = Record<string, unknown> & {

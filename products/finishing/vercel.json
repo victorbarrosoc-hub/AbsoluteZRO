@@ -7,7 +7,7 @@
   "cleanUrls": true,
   "functions": {
     "api/app.js": {
-      "includeFiles": "{inicio.html,lut.html,lab.html,looks.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,app/**,src/**,exemplos/**}"
+      "includeFiles": "{inicio.html,lut.html,lab.html,looks.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,manifest.webmanifest,og.jpg,app/**,src/**,exemplos/**,marca/**}"
     }
   },
   "headers": [
@@ -61,7 +61,10 @@
     { "source": "/converter", "destination": "/api/app?caminho=converter.html" },
     { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
     { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
-    { "source": "/exemplos/:caminho*", "destination": "/api/app?caminho=exemplos/:caminho*" }
+    { "source": "/exemplos/:caminho*", "destination": "/api/app?caminho=exemplos/:caminho*" },
+    { "source": "/marca/:caminho*", "destination": "/api/app?caminho=marca/:caminho*" },
+    { "source": "/manifest.webmanifest", "destination": "/api/app?caminho=manifest.webmanifest" },
+    { "source": "/og.jpg", "destination": "/api/app?caminho=og.jpg" }
   ],
   "redirects": [
     {

@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 import { after, before, describe, test } from "node:test";
 import { cookiesDe, pedido, prepararAmbiente, SITE } from "./ambiente.mjs";
 import { iniciarZroFalsa, type PessoaZro } from "./zro-falso.mjs";
+import { pedeContaAntiga } from "../src/components/conta/conta-antiga";
+
 
 const raiz = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CLIENTE = { clientId: "sobedesce-web", clientSecret: "zk_segredo_de_teste" };
@@ -243,8 +245,17 @@ describe("as telas", () => {
   const rodar = (script: string, ...args: string[]) =>
     execFileSync(process.execPath, ["--import", "tsx", path.join(raiz, "tests", script), ...args], { cwd: raiz, encoding: "utf8" });
 
-  test("/entrar: Absolute ZRO principal, Usar outra conta, depois Google e e-mail e senha (secundários)", () => {
+  test("/entrar: só a Absolute ZRO e Usar outra conta (os logins antigos saíram da tela, 01/11/2026)", () => {
     const html = rodar("opcoes-entrar-render.mts", "/conta");
+    assert.ok(html.indexOf(">Entrar com Absolute ZRO<") > 0 && html.indexOf(">Usar outra conta<") > 0, html);
+    assert.doesNotMatch(html, /Entrar com Google|Entrar com e-mail e senha|Conta antiga|api\/google\/conectar|data-formulario-senha/);
+    assert.equal((html.match(/bg-primary /g) ?? []).length, 1, "uma ação principal só");
+  });
+
+  test("/entrar com a conta de antes sem vínculo (zro_email_em_uso, erro de senha): as portas antigas, secundárias, para ligar", () => {
+    for (const e of ["zro_email_em_uso", "senha", "credenciais", "google_nao_e_login"]) assert.equal(pedeContaAntiga(e), true, e);
+    for (const e of [undefined, "", "zro_recusado", "google_recusado", "google_sem_conta", "zro_sem_acesso", "zro_erro"]) assert.equal(pedeContaAntiga(e), false, String(e));
+    const html = rodar("opcoes-entrar-render.mts", "/conta", "0", "1");
     const zroI = html.indexOf(">Entrar com Absolute ZRO<");
     const outraI = html.indexOf(">Usar outra conta<");
     const googleI = html.indexOf(">Entrar com Google<");
@@ -257,7 +268,7 @@ describe("as telas", () => {
     assert.equal((html.match(/bg-primary /g) ?? []).length, 1, "uma ação principal só");
     assert.match(html, /<details[^>]*data-entrada="senha"[^>]*>[\s\S]*data-formulario-senha/, "e-mail e senha continuam ali");
     assert.doesNotMatch(html, /<details[^>]*open/, "recolhido até o toque");
-    assert.match(rodar("opcoes-entrar-render.mts", "/z", "1"), /<details[^>]*open/, "aberto com erro de senha");
+    assert.match(rodar("opcoes-entrar-render.mts", "/z", "1", "1"), /<details[^>]*open/, "aberto com erro de senha");
   });
 
   test("erro com selo: Entrar nessa conta vira a ação principal (POST sem campos) e Usar outra conta fica", () => {

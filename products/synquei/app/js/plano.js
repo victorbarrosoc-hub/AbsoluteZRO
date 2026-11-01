@@ -5,7 +5,7 @@
 import { h, icon } from './util.js'
 import { linhaConta } from './conta.js'
 
-const SITE_PLANOS = 'https://synquei.vercel.app/#planos'
+const SITE_PLANOS = 'https://synquei.absolutezro.com/#planos'
 const SOBEDESCE = 'https://sobedesce.com'
 
 export const PLANOS = [

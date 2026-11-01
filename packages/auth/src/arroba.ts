@@ -1,7 +1,9 @@
 /**
  * Regras do @ e do perfil profissional (migração 0029, ADR 0029). Puro, sem dependência de servidor: a tela de criar
- * conta e o editor do perfil usam o mesmo arquivo (`@zro/auth/arroba`). As listas são iguais às do banco
- * (`zro.arroba_reservada`, check de `zro.perfis.funcoes`); tests/integration/perfis.test.ts confere.
+ * conta e o editor do perfil usam este arquivo (`@zro/auth/arroba`), que vai para o navegador. Por isso a lista de @
+ * reservados e os selos dos apps (com nomes de apps que ainda não lançaram) moram em `./arroba-reservadas`, só no
+ * servidor (`@zro/auth`). As listas são iguais às do banco (`zro.arroba_reservada`, check de `zro.perfis.funcoes`);
+ * tests/integration/perfis.test.ts confere.
  */
 
 export const ARROBA_MIN = 3
@@ -14,74 +16,6 @@ export const PORTFOLIO_MAX = 300
 export const TROCAS_POR_MES = 2
 /** Por quanto tempo um @ antigo ainda leva ao perfil (e fica guardado para a pessoa). */
 export const DIAS_ARROBA_ANTIGA = 90
-
-/** Comparadas sem ponto e sem sublinhado ("absolute.zro" = "absolutezro"). */
-export const ARROBAS_RESERVADAS = [
-  'absolutezro',
-  'absolute',
-  'zro',
-  'admin',
-  'administrador',
-  'administracao',
-  'adm',
-  'root',
-  'sistema',
-  'system',
-  'suporte',
-  'support',
-  'ajuda',
-  'help',
-  'contato',
-  'oficial',
-  'official',
-  'staff',
-  'equipe',
-  'team',
-  'moderacao',
-  'seguranca',
-  'security',
-  'privacidade',
-  'termos',
-  'financeiro',
-  'billing',
-  'cobranca',
-  'noreply',
-  'postmaster',
-  'abuse',
-  'api',
-  'hub',
-  'app',
-  'apps',
-  'www',
-  'mail',
-  'email',
-  'perfil',
-  'conta',
-  'contas',
-  'login',
-  'entrar',
-  'sair',
-  'cadastro',
-  'convite',
-  'convites',
-  'busca',
-  'pessoas',
-  'null',
-  'undefined',
-  'anonimo',
-  'ia',
-  'maestro',
-  'sobedesce',
-  'synquei',
-  'nossom',
-  'tpeasy',
-  'revela',
-  'aeon',
-  'carrodofreela',
-  'carro',
-  'freela',
-  'freelas',
-] as const
 
 /** Funções do audiovisual (lista fixa, decisão do titular) + "Outra" com texto livre. */
 export const FUNCOES_PERFIL = [
@@ -101,36 +35,22 @@ export type FuncaoPerfil = (typeof FUNCOES_PERFIL)[number]['chave']
 export const ehFuncaoPerfil = (v: unknown): v is FuncaoPerfil => typeof v === 'string' && FUNCOES_PERFIL.some((f) => f.chave === v)
 export const nomeDaFuncao = (k: string) => FUNCOES_PERFIL.find((f) => f.chave === k)?.nome ?? k
 
-/** Selo de cada app no perfil (só aparece quando a pessoa liga E já usa o app). */
-export const SELO_TEXTO: Record<string, string> = {
-  'carro-do-freela': 'Freela no Carro do Freela',
-  sobedesce: 'Usa SOBEDESCE',
-  synquei: 'Usa Synquei',
-  tpeasy: 'Usa TPeasy',
-  'ai-edit': 'Usa AEON',
-  nossom: 'Usa NOSSOM',
-  finishing: 'Usa Revela',
-  maestro: 'Usa Maestro',
-}
-export const textoDoSelo = (produto: string, nome?: string) => SELO_TEXTO[produto] ?? `Usa ${nome ?? produto}`
-
 /** O que a pessoa digitou → como o @ é guardado: sem o "@", sem espaço nas pontas, minúsculas. */
 export function normalizarArroba(raw: string): string {
   return raw.normalize('NFKC').trim().replace(/^@+/, '').trim().toLowerCase()
 }
 
-export function arrobaReservada(a: string): boolean {
-  return (ARROBAS_RESERVADAS as readonly string[]).includes(a.replace(/[._]/g, ''))
-}
-
-/** null = válido. A mensagem é a que a tela mostra. */
-export function validarArroba(a: string): string | null {
+/**
+ * A forma do @ (null = válido; a mensagem é a que a tela mostra). Sem a lista de reservados: ela fica no servidor
+ * (`./arroba-reservadas`, revisão de 01/11/2026: a tela de criar conta não leva nomes de apps que não lançaram). O
+ * servidor confere tudo com `validarArroba`.
+ */
+export function validarFormaArroba(a: string): string | null {
   if (a.length < ARROBA_MIN) return `Use pelo menos ${ARROBA_MIN} caracteres.`
   if (a.length > ARROBA_MAX) return `Use no máximo ${ARROBA_MAX} caracteres.`
   if (!/^[a-z0-9._]+$/.test(a)) return 'Use só letras sem acento, números, ponto e sublinhado.'
   if (/^\.|\.$|\.\./.test(a)) return 'O ponto não pode ficar no começo, no fim nem dobrado.'
   if (!/[a-z]/.test(a)) return 'Use pelo menos uma letra.'
-  if (arrobaReservada(a)) return 'Esse @ é reservado. Escolha outro.'
   return null
 }
 
@@ -143,16 +63,20 @@ const tirarAcento = (t: string) =>
     })
     .join('')
 
-/** A mesma conta do banco (zro.sugerir_arroba), sem a parte de "já está ocupado": "João da Silva" → joao.da.silva. */
-export function sugerirArroba(nome: string, email = ''): string {
+/**
+ * A mesma conta do banco (zro.sugerir_arroba), sem a parte de "já está ocupado": "João da Silva" → joao.da.silva.
+ * `reservada`: a regra dos reservados (o servidor passa a dele, `./arroba-reservadas`); a tela não conhece a lista, e o
+ * servidor recusa o reservado com a mensagem de sempre.
+ */
+export function sugerirArrobaCom(nome: string, email = '', reservada: (a: string) => boolean = () => false): string {
   for (const fonte of [nome, email.split('@')[0] ?? '', 'pessoa']) {
     let b = tirarAcento(fonte)
       .replace(/[^a-z0-9]+/g, '.')
       .replace(/^\.+|\.+$/g, '')
       .slice(0, 24)
       .replace(/\.+$/, '')
-    if (arrobaReservada(b)) b = `${b.slice(0, 20)}.pro`
-    if (!validarArroba(b)) return b
+    if (reservada(b)) b = `${b.slice(0, 20)}.pro`
+    if (!validarFormaArroba(b) && !reservada(b)) return b
   }
   return 'pessoa'
 }

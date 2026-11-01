@@ -1,13 +1,14 @@
 /**
- * Instaladores de uma linha (public/instalar.sh e public/instalar.ps1): sintaxe do sh, o que cada um confere
- * (SHA-256 do /baixar/versao), cabeçalhos de texto UTF-8 e os comandos mostrados no site.
+ * Os instaladores de uma linha saíram (01/11/2026, decisão do titular: o app se instala só pela central Absolute ZRO):
+ * public/instalar.sh e public/instalar.ps1 são um recado que não baixa nem instala nada, com sintaxe válida (curl | bash e
+ * irm | iex continuam rodando sem erro de shell), texto UTF-8, e o navegador vai para https://absolutezro.com/baixar.
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import { describe, test } from "node:test";
 import nextConfig from "../next.config";
-import { INSTALAR_MAC, INSTALAR_WINDOWS, SITE_OFICIAL } from "../src/lib/site";
+import { CENTRAL_ZRO } from "../src/lib/site";
 
 const sh = fs.readFileSync(new URL("../public/instalar.sh", import.meta.url), "utf8");
 const ps1 = fs.readFileSync(new URL("../public/instalar.ps1", import.meta.url), "utf8");
@@ -20,38 +21,23 @@ describe("instalar.sh (Mac)", () => {
     }
   });
 
-  test("só roda inteiro: a função main é chamada na última linha", () => {
-    const linhas = sh.trimEnd().split("\n");
-    assert.equal(linhas.at(-1), 'main "$@"');
-    assert.match(sh, /^main\(\) \{\n {2}set -eu$/m);
-  });
-
-  test("confere o SHA-256 do versao.json antes de instalar e tira a quarentena", () => {
-    assert.match(sh, /\$SITE\/baixar\/versao/);
-    assert.match(sh, /"sha256Mac"/);
-    assert.match(sh, /\$SITE\/baixar\/mac/);
-    assert.match(sh, /shasum -a 256/);
-    assert.ok(sh.indexOf('[ "$GOT" != "$SHA" ]') < sh.indexOf("hdiutil attach"), "confere antes de abrir o .dmg");
-    assert.match(sh, /xattr -cr "\$DEST"/);
-    assert.match(sh, /trap limpar EXIT/);
+  test("é só o recado: aponta para a central e não baixa nem instala nada", () => {
+    const r = spawnSync("sh", ["public/instalar.sh"], { cwd: new URL("..", import.meta.url), encoding: "utf8" });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /https:\/\/absolutezro\.com\/baixar/);
+    assert.equal(sh.trimEnd().split("\n").at(-1), 'main "$@"');
+    const codigo = sh.split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n");
+    assert.doesNotMatch(codigo, /curl|hdiutil|xattr|baixar\/(mac|versao)|github/);
   });
 });
 
 describe("instalar.ps1 (Windows)", () => {
-  test("um bloco só, sem exit (com | iex fecharia a janela do PowerShell)", () => {
+  test("um bloco só, sem exit (com | iex fecharia a janela do PowerShell), só o recado", () => {
     assert.match(ps1, /^& \{$/m);
     assert.equal(ps1.trimEnd().at(-1), "}");
     assert.doesNotMatch(ps1, /^\s*exit\b/im);
-  });
-
-  test("confere o SHA-256 do versao.json e instala em silêncio", () => {
-    assert.match(ps1, /\$site\/baixar\/versao/);
-    assert.match(ps1, /sha256Windows/);
-    assert.match(ps1, /\$site\/baixar\/windows/);
-    assert.match(ps1, /Get-FileHash -LiteralPath \$setup -Algorithm SHA256/);
-    assert.ok(ps1.indexOf("$got -ne $sha") < ps1.indexOf("Start-Process -FilePath $setup"), "confere antes de rodar o instalador");
-    assert.match(ps1, /'\/S', '--force-run'/);
-    assert.match(ps1, /Unblock-File/);
+    assert.match(ps1, /https:\/\/absolutezro\.com\/baixar/);
+    assert.doesNotMatch(ps1.split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n"), /irm |Invoke-WebRequest|Start-Process|baixar\/(windows|versao)|github/);
   });
 });
 
@@ -66,10 +52,14 @@ describe("site", () => {
     }
   });
 
-  test("os comandos mostrados apontam para o site oficial", () => {
-    assert.equal(INSTALAR_MAC, `curl -fsSL ${SITE_OFICIAL}/instalar.sh | bash`);
-    assert.equal(INSTALAR_WINDOWS, `irm ${SITE_OFICIAL}/instalar.ps1 | iex`);
-    assert.match(sh, new RegExp(`SOBEDESCE_SITE:-${SITE_OFICIAL.replace(/[./]/g, "\\$&")}`));
-    assert.ok(ps1.includes(`'${SITE_OFICIAL}'`));
+  test("no navegador (Accept: text/html), os dois levam para a central Absolute ZRO", async () => {
+    const regras = await nextConfig.redirects!();
+    for (const source of ["/instalar.sh", "/instalar.ps1"]) {
+      const r = regras.find((x) => x.source === source);
+      assert.ok(r, source);
+      assert.equal(r.destination, CENTRAL_ZRO);
+      assert.equal(r.permanent, false);
+      assert.deepEqual(r.has, [{ type: "header", key: "accept", value: ".*text/html.*" }]);
+    }
   });
 });

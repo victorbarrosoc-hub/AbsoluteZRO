@@ -9,9 +9,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import http from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { caminhoSeguro, PAGINAS } from '../api/app.js'
+import { caminhoSeguro, MARCA_RAIZ, PAGINAS } from '../api/app.js'
 import { selar } from '../api/_zro.js'
-import { ABERTO, NEUTRAS, SITE, SITE_APP, itens, publicar } from '../scripts/publicar-site.mjs'
+import { ABERTO, FECHADO, NEUTRAS, PAGINA_404, SITE, SITE_APP, itens, publicar } from '../scripts/publicar-site.mjs'
 import { iniciarZroFalsa } from './zro-falso.js'
 
 const RAIZ = new URL('..', import.meta.url)
@@ -26,15 +26,16 @@ describe('o que o site publica', () => {
     assert.equal(v.cleanUrls, true)
     const reescritas = Object.fromEntries(v.rewrites.map((r) => [r.source, r.destination]))
     for (const f of FERRAMENTAS) assert.equal(reescritas[`/${f}`], `/api/app?caminho=${f}.html`)
-    for (const p of ['app', 'src', 'exemplos']) assert.equal(reescritas[`/${p}/:caminho*`], `/api/app?caminho=${p}/:caminho*`)
+    for (const p of ['app', 'src', 'exemplos', 'marca']) assert.equal(reescritas[`/${p}/:caminho*`], `/api/app?caminho=${p}/:caminho*`)
+    for (const p of MARCA_RAIZ) assert.equal(reescritas[`/${p}`], `/api/app?caminho=${p}`)
     const inclui = v.functions['api/app.js'].includeFiles
-    for (const p of [...PAGINAS, 'em-desenvolvimento.html', 'app/**', 'src/**', 'exemplos/**']) assert.ok(inclui.includes(p), p)
+    for (const p of [...PAGINAS, ...MARCA_RAIZ, 'em-desenvolvimento.html', 'app/**', 'src/**', 'exemplos/**', 'marca/**']) assert.ok(inclui.includes(p), p)
     assert.ok(v.headers.some((h) => h.source === '/api/(.*)' && h.headers.some((x) => x.key === 'Cache-Control' && x.value === 'no-store')))
     assert.deepEqual(v.redirects, [{ source: '/:caminho*', has: [{ type: 'host', value: 'revela-zro.vercel.app' }], destination: 'https://revela.absolutezro.com/:caminho*', permanent: true }])
     assert.match(ler('.vercelignore'), /^publico\/$/m)
   })
 
-  test('publicar-site: fechada sai só o institucional (sem ferramenta, src/ nem exemplos/); aberta sai tudo', () => {
+  test('publicar-site: fechada sai só a página neutra, fontes/ e vendor/ (sem marca, manifesto, OG nem app/); aberta sai tudo', () => {
     const dir = mkdtempSync(join(tmpdir(), 'revela-publico-'))
     try {
       const raiz = join(dir, 'raiz')
@@ -46,19 +47,22 @@ describe('o que o site publica', () => {
       for (const p of [...PAGINAS, ...SITE_APP, 'app/revela.js', 'app/menu.js', 'app/converter.js', 'src/cor/cube.js', 'exemplos/x.jpg', 'test/x.test.js', 'scripts/vendor.mjs']) arquivo(p)
 
       const fechado = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'fechado')}/`), estado: 'closed' })
-      assert.deepEqual(fechado.itens, [...SITE, ...SITE_APP])
+      assert.deepEqual(fechado.itens, FECHADO)
       const tem = (saida, p) => existsSync(join(dir, saida, p))
-      for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'manifest.webmanifest', 'og.jpg', 'marca/revela-icone.svg', 'fontes/f.woff2', 'vendor/mediabunny.min.mjs', ...SITE_APP]) assert.ok(tem('fechado', p), `fechada tem ${p}`)
-      for (const p of [...PAGINAS, 'app/revela.js', 'app/menu.js', 'app/converter.js', 'src', 'exemplos', 'api', 'test', 'scripts', 'README.md', 'vercel.json']) assert.ok(!tem('fechado', p), `fechada não tem ${p}`)
-      // fechada, a página inicial e a entrada saem como a página neutra (titular, 01/11/2026): nada da Revela
-      for (const p of NEUTRAS) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
+      for (const p of ['index.html', 'entrar.html', 'em-desenvolvimento.html', PAGINA_404, 'fontes/f.woff2', 'vendor/mediabunny.min.mjs']) assert.ok(tem('fechado', p), `fechada tem ${p}`)
+      // revisão de 01/11/2026: manifesto (nome "Revela"), OG e marca/ não ficam públicos com ela fechada
+      for (const p of [...PAGINAS, 'manifest.webmanifest', 'og.jpg', 'marca', 'app', 'src', 'exemplos', 'api', 'test', 'scripts', 'README.md', 'vercel.json']) assert.ok(!tem('fechado', p), `fechada não tem ${p}`)
+      // fechada, a página inicial, a entrada e o 404 saem como a página neutra (titular, 01/11/2026): nada da Revela
+      for (const p of [...NEUTRAS, PAGINA_404]) assert.equal(readFileSync(join(dir, 'fechado', p), 'utf8'), 'conteudo de em-desenvolvimento.html', p)
 
       const aberto = publicar({ raiz: new URL(`file://${raiz}/`), saida: new URL(`file://${join(dir, 'aberto')}/`), estado: 'released' })
       assert.deepEqual(aberto.itens, [...SITE, ...ABERTO])
-      for (const p of [...PAGINAS, 'app/revela.js', 'app/tema.js', 'src/cor/cube.js', 'exemplos/x.jpg']) assert.ok(tem('aberto', p), `aberta tem ${p}`)
+      for (const p of [...PAGINAS, 'app/revela.js', 'app/tema.js', 'src/cor/cube.js', 'exemplos/x.jpg', 'manifest.webmanifest', 'og.jpg', 'marca/revela-icone.svg']) assert.ok(tem('aberto', p), `aberta tem ${p}`)
       for (const p of ['api', 'test', 'scripts']) assert.ok(!tem('aberto', p), p)
+      assert.equal(readFileSync(join(dir, 'aberto', PAGINA_404), 'utf8'), 'conteudo de em-desenvolvimento.html')
+      assert.equal(readFileSync(join(dir, 'aberto', 'index.html'), 'utf8'), 'conteudo de index.html')
       delete process.env.RELEASE
-      assert.deepEqual(itens(), [...SITE, ...SITE_APP])
+      assert.deepEqual(itens(), FECHADO)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -125,7 +129,9 @@ describe('o que o site publica', () => {
     assert.equal(caminhoSeguro('app/revela.js'), 'app/revela.js')
     assert.equal(caminhoSeguro('src/cor/cube.js'), 'src/cor/cube.js')
     assert.equal(caminhoSeguro('exemplos/revela-look.jpg'), 'exemplos/revela-look.jpg')
-    for (const ruim of ['', 'index.html', 'entrar.html', 'em-desenvolvimento.html', 'api/_zro.js', 'app', 'app/', 'src/', 'app/../package.json', '../lut.html', 'app/./../api/_zro.js', 'src/.env', 'app/x\\y', 'app/%2e%2e/x', 'vercel.json', 'vendor/mediabunny.min.mjs', 'a'.repeat(301)]) assert.equal(caminhoSeguro(ruim), null, ruim)
+    assert.equal(caminhoSeguro('marca/revela-icone.svg'), 'marca/revela-icone.svg')
+    for (const p of MARCA_RAIZ) assert.equal(caminhoSeguro(p), p)
+    for (const ruim of ['', 'index.html', 'entrar.html', 'em-desenvolvimento.html', 'api/_zro.js', 'app', 'app/', 'src/', 'app/../package.json', '../lut.html', 'app/./../api/_zro.js', 'src/.env', 'app/x\\y', 'app/%2e%2e/x', 'vercel.json', 'vendor/mediabunny.min.mjs', 'marca', 'marca/', 'package.json', 'a'.repeat(301)]) assert.equal(caminhoSeguro(ruim), null, ruim)
   })
 })
 
@@ -151,7 +157,7 @@ describe('api/app.js: as ferramentas só para a conta liberada', () => {
         req.url = `/api/app?caminho=${ferramenta[1]}.html`
         return f.app(req, res)
       }
-      if (/^\/(app|src|exemplos)(\/|$)/.test(u.pathname)) {
+      if (/^\/(manifest\.webmanifest|og\.jpg)$/.test(u.pathname) || /^\/(app|src|exemplos|marca)(\/|$)/.test(u.pathname)) {
         req.url = `/api/app?caminho=${encodeURIComponent(u.pathname.slice(1))}`
         return f.app(req, res)
       }
@@ -199,10 +205,14 @@ describe('api/app.js: as ferramentas só para a conta liberada', () => {
       assert.doesNotMatch(html, /Revela/, rotulo)
       assert.doesNotMatch(html, /revela\.js|cst\.js|entrega\.js|converter\.js|inicio\.js|zro-ia/, `${rotulo}: ${caminho} entregou a ferramenta`)
     }
-    for (const caminho of ['/app/revela.js', '/app/menu.js', '/app/converter.js', '/src/cor/cube.js', '/src/entrega/destinos.js', '/exemplos/revela-look.jpg', '/api/app?caminho=app/cst.js']) {
+    // fora as ferramentas, 404 com a página neutra: nem o arquivo nem a marca aparecem (revisão de 01/11/2026)
+    for (const caminho of ['/app/revela.js', '/app/menu.js', '/app/converter.js', '/app/home.js', '/app/', '/app', '/src/cor/cube.js', '/src/entrega/destinos.js', '/exemplos/revela-look.jpg', '/api/app?caminho=app/cst.js', '/manifest.webmanifest', '/og.jpg', '/marca/revela-icone.svg', '/marca/app/revela-192.png', '/marca/nada.svg']) {
       const r = await pedir(caminho, { cookies })
-      assert.equal(r.status, 403, `${rotulo}: ${caminho}`)
-      assert.deepEqual(await r.json(), { ok: false, message: 'Indisponível.' })
+      assert.equal(r.status, 404, `${rotulo}: ${caminho}`)
+      assert.match(r.headers.get('content-type'), /^text\/html/, `${rotulo}: ${caminho}`)
+      const html = await r.text()
+      assert.match(html, /indisponível\./, `${rotulo}: ${caminho}`)
+      assert.doesNotMatch(html, /Revela/, `${rotulo}: ${caminho}`)
     }
   }
 
@@ -241,6 +251,9 @@ describe('api/app.js: as ferramentas só para a conta liberada', () => {
       ['/src/cor/cube.js', /^text\/javascript/, 'src/cor/cube.js'],
       ['/exemplos/revela-look.jpg', /^image\/jpeg/, 'exemplos/revela-look.jpg'],
       ['/api/app?caminho=app/converter.js', /^text\/javascript/, 'app/converter.js'],
+      ['/manifest.webmanifest', /^application\/manifest\+json/, 'manifest.webmanifest'],
+      ['/og.jpg', /^image\/jpeg/, 'og.jpg'],
+      ['/marca/revela-icone.svg', /^image\/svg\+xml/, 'marca/revela-icone.svg'],
     ]) {
       const a = await pedir(caminho, { cookies })
       assert.equal(a.status, 200, caminho)

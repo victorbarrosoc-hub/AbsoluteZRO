@@ -8,7 +8,7 @@ import { respondendoAcao, safeNext } from '@/lib/actions/helpers'
 import { googleErro } from '@/lib/google'
 import { getAuth } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Entrar' }
+export const metadata: Metadata = { title: 'Entrar', alternates: { canonical: '/entrar' } }
 
 /**
  * Entrar como conversa: e-mail, senha, conferindo, pronto (components/conversa-conta.tsx). `outra=1`: um app pediu
