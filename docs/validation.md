@@ -4278,7 +4278,7 @@ SOBEDESCE de computador, que disparam os instaladores).
   0 falharam (26 pulados por `RELEASE=closed`). Testes ajustados ao nome novo (menu, planos, Z, atualizações, ícone).
 - Corrigido no caminho: o selo AUDIO LAB herdava regras antigas de `.brand > span` e cobria o botão de fechar o menu
   no celular (`workspace` › menu do celular).
-- HUB: `npm run typecheck` OK, `npm run lint` OK, `npm test` 561/561 (64 arquivos), com a migração 0051 aplicada no
+- HUB: `npm run typecheck` OK, `npm run lint` OK, `npm test` 561/561 (64 arquivos), com a migração 0053 aplicada no
   banco de teste; `nao-lancados` confere que "Quasar" também não vaza para quem não é admin.
 - Telas reais conferidas: topo da home (coroa + QUASAR + selo), Início do estúdio (Coroa em luz) a 1440 e 390.
 

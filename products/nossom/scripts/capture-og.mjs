@@ -1,4 +1,4 @@
-// Captures the homepage hero as the 1200 × 630 social card (public/brand/og-site.png).
+// Captures the homepage hero as the 1200 × 630 social card (marca-fechada/og-site.png).
 // Usage: node scripts/capture-og.mjs [url]   (default: production)
 // Navigation links, buttons and the proof line are hidden: a shared image cannot be clicked.
 import { chromium } from 'playwright';
@@ -21,6 +21,6 @@ await page.addStyleTag({
 });
 // Let the light lines settle into a full frame.
 await page.waitForTimeout(3500);
-await page.screenshot({ path: 'public/brand/og-site.png', scale: 'css' });
+await page.screenshot({ path: 'marca-fechada/og-site.png', scale: 'css' });
 await browser.close();
-console.log('Saved public/brand/og-site.png');
+console.log('Saved marca-fechada/og-site.png');

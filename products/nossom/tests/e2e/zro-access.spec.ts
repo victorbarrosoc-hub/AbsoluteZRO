@@ -71,6 +71,8 @@ test('anônimo: o site, o estúdio e os downloads vão para a Absolute ZRO; APIs
   expect(await install.text()).toContain('exit 1');
   expect(await install.text()).not.toContain('NOSSOM');
   expect(await install.text()).not.toContain('Quasar');
+  // o cartão com o nome mora fora de public/: não se baixa direto
+  expect((await page.request.get('/brand/og-site.png')).status()).toBe(404);
   expect((await page.request.get('/api/account')).status()).toBe(401);
 });
 

@@ -396,7 +396,7 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 Quasar Audio Lab (01/11/2026, pedido do titular): o NOSSOM passa a se chamar Quasar Audio Lab ("é subproduto,
   todos são Absolute ZRO"). Marca: a Coroa sonora (eclipse fino em azul-aço, a borda vibra como onda do lado da luz,
   clarão no ponto), QUASAR na letra expandida (Archivo Expanded ExtraBold) e AUDIO LAB num selo de vidro de borda
-  grossa. Ícones, cartão de compartilhamento, título, manifesto e textos trocados; no HUB, o nome no catálogo (0051) e
+  grossa. Ícones, cartão de compartilhamento, título, manifesto e textos trocados; no HUB, o nome no catálogo (0053) e
   o ícone. Identificadores internos seguem `nossom` (produto, OIDC, schema, banco do aparelho, instaladores), para
   nenhuma conta, cota ou projeto se perder. Segue fechado ao público (0049). Falta: o endereço
   `quasar.absolutezro.com` (precisa da autorização do titular para o domínio).

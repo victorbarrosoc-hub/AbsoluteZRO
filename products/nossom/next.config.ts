@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
+  // o cartão de compartilhamento mora fora de public/ (produto fechado); a rota que o lê precisa dele no pacote
+  outputFileTracingIncludes: { '/opengraph-image': ['./marca-fechada/**'] },
   async headers() {
     return [
       {
