@@ -1,7 +1,7 @@
 # Carro do Freela — contexto para retomar o trabalho
 
 Protótipo de **agenda e contratação de freelas do audiovisual**, mercado de
-Natal/RN. Dono do produto: **Victor Barroso** (`victorbarrosoc@gmail.com`), que
+Natal/RN. Dono do produto: **o titular**, que
 trabalha no set — as decisões de produto são dele e costumam vir de experiência
 direta do mercado, não de teoria. Quando ele contraria uma sugestão técnica,
 normalmente é porque conhece um detalhe do mercado que não está no código.

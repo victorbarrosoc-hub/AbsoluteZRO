@@ -1447,3 +1447,10 @@ do card... não consigo localizar o job que quero achar".
    Vercel `aeon` e `revela` só depois de o HUB negar a emissão aos clientes fechados; quando for abrir, mudar os dois
    lados (HUB e `RELEASE=released` nos projetos).
 9. Google sem CASA (31/10/2026): rodar o teste de `drive.file` do SOBEDESCE em `absolutezro.com/admin/teste-drive` (configurar antes as três variáveis `NEXT_PUBLIC_GOOGLE_*` e as APIs; passos em [google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)) e fazer a verificação de marca e de Agenda ([google-verificacao](operations/google-verificacao.md)). `/privacidade` e `/termos` já estão no HUB.
+10. ADM do NOSSOM pelo papel de plataforma (01/11/2026): aplicar à mão no Supabase do NOSSOM a migração
+    `products/nossom/supabase/migrations/202611010001_admin_da_plataforma.sql` junto com o deploy do NOSSOM e entrar de
+    novo pela Absolute ZRO (o HUB manda `zro_admin`). Sem ela o código novo não reconhece ADM nenhum.
+11. Drive do SOBEDESCE (revisão M1, 01/11/2026): com a vaga já usada, o Conectar Drive pede `drive.file`. Um Drive
+    cujo `drive` foi revogado (Acesso total desligado e ligado de novo, ou o Drive removido) volta em Arquivos
+    escolhidos; devolver o inteiro a essa conta pede uma decisão (pedir `drive` com a conta indicada arrisca gastar vaga
+    se a pessoa escolher outra conta na tela do Google).

@@ -15,6 +15,44 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Revisão de segurança: SOBEDESCE web, HUB e ADM do NOSSOM (01/11/2026)
+
+Branch `revisao-correcoes`. Nada publicado, nenhuma migração aplicada em banco remoto.
+
+- **G1** SOBEDESCE web: `next` e `eslint-config-next` 16.3.8 → 16.4.3 (a versão do HUB), lockfile regerado com npm;
+  `npm audit` sem crítica (restam 20 moderadas de ferramentas de lint).
+- **M1/M2** SOBEDESCE web (`src/lib/google/vagas.ts`, `rotas.ts`): com a vaga já usada, Conectar Drive pede
+  `drive.file` somando o já concedido (o Drive que usou a vaga volta com o inteiro; conta Google nova não gasta outra).
+  `drive` que não foi pedido, ou de conta nova depois da vaga usada, é recusado (`google_erro`), revogado no Google e
+  não guarda token; a vaga que o Google já contou entra no contador sem dono (a pessoa não ganha nada). O Google falso
+  dos testes agora soma o já concedido com `include_granted_scopes`.
+- **P5** SOBEDESCE web: uso único do `jti` do pedido da Absolute ZRO em transação com trava pela chave (`usarUmaVez`);
+  cinco pedidos iguais ao mesmo tempo, só um passa. Sem migração.
+- **P1/P2/P3** HUB: `versao.json` de app não lançado só para admin; `ehAdmin` exige e-mail confirmado (regra de
+  `papelNoConsole` e `zro.release_admin`); escape quebrado no nome do arquivo de `/baixar/app/<id>/<arquivo>` é 404.
+  `%E0%A4%A` cru no caminho cai antes da rota, no roteador do Next (500 dele ao montar a página 400); o teste usa
+  `%25E0%25A4%25A`, que o Next entrega como `%E0%A4%A`.
+- **P4** HUB: a Z no Rift passa pelo gate do `rift-motion` no canal api (`release_allows` ou `release_admin`, porque o
+  Rift ainda não tem linha no catálogo); o teto do dia bloqueia no limite (`>=`, teto 0 = nada passa), igual no
+  laboratório. Sem reserva atômica do gasto: pedidos simultâneos podem passar do teto por uma resposta cada.
+- **P6** NOSSOM: ADM deixa de ser e-mail fixo. O HUB manda `zro_admin: true` no id_token e no userinfo só para admin
+  da plataforma (papel admin, conta ativa, e-mail confirmado); o NOSSOM guarda no vínculo a cada login pela Absolute
+  ZRO e a sessão relê a cada pedido. Migração nova `products/nossom/supabase/migrations/202611010001_admin_da_plataforma.sql`
+  (coluna `platform_admin`, `nossom_private.is_admin` e as funções de cota, painel e IA com a regra nova) **precisa ser
+  aplicada à mão** no Supabase do NOSSOM; até lá o código novo não reconhece ADM nenhum, e depois dela o titular vira
+  ADM ao entrar de novo pela Absolute ZRO.
+
+| Verificação                                                                   | Resultado                                                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Raiz: lint, format:check, typecheck                                           | ok                                                                                   |
+| Raiz: `npm test` (Postgres 16 local)                                          | 561/561 em 64 arquivos                                                               |
+| Raiz: `npm run build` + `npx playwright test tests/e2e/hub.spec.ts`           | ok, 17/17                                                                            |
+| SOBEDESCE web: typecheck, lint, `npm test`, build                             | ok; 373 testes, todos passam (o zro-relay-ciclo pede `products/sobedesce` instalado) |
+| NOSSOM: typecheck, format:check, `npm test`                                   | ok; 124/124                                                                          |
+| NOSSOM: `tests/quota-postgres.integration.ts` (Postgres 16 local, sem Docker) | 12/12, com a migração nova                                                           |
+| NOSSOM: e2e de ADM (admin-dashboard, usage, subscription, design-review)      | 7/7 (4 já pulados)                                                                   |
+| `node scripts/scan-secrets.mjs`                                               | nenhum segredo em 4063 arquivos                                                      |
+
 ## iPhone sem zoom sozinho (01/11/2026)
 
 Branch `iphone-zoom` (relato do titular: no Console > Pessoas a página ficava mais larga que a tela e o Safari ampliava

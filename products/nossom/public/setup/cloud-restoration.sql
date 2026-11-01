@@ -1,5 +1,7 @@
 -- NOSSOM: cloud restoration, monthly plans and owner dashboard
 -- Run after the existing accounts migration.
+-- Exemplo histórico: 'adm@exemplo.invalid' é um marcador. Em produção o ADM é o admin da plataforma Absolute ZRO
+-- (supabase/migrations/202611010001_admin_da_plataforma.sql, que redefine estas funções); nada de e-mail fixo.
 
 begin;
 create schema if not exists nossom_private;
@@ -130,7 +132,7 @@ declare
   v_reset timestamptz; v_used integer; v_limit integer; v_existing boolean:=false; v_allowed boolean;
 begin
   if v_user is null then raise exception 'Authentication required' using errcode='28000'; end if;
-  select lower(email)='victorbarrosoc@gmail.com' and email_confirmed_at is not null into v_admin from auth.users where id=v_user;
+  select lower(email)='adm@exemplo.invalid' and email_confirmed_at is not null into v_admin from auth.users where id=v_user;
   if not found then raise exception 'Authentication required' using errcode='28000'; end if;
   v_admin:=coalesce(v_admin,false);
   perform pg_advisory_xact_lock(hashtextextended('minutes:'||v_user::text,0));
@@ -175,7 +177,7 @@ declare
   v_users jsonb; v_days jsonb; v_total integer; v_search text:=left(coalesce(p_data->>'search',''),100);
   v_page integer:=greatest(0,least(10000,coalesce((p_data->>'page')::integer,0)));
 begin
-  if not exists(select 1 from auth.users where id=v_actor and lower(email)='victorbarrosoc@gmail.com' and email_confirmed_at is not null) then raise exception 'Admin required' using errcode='42501'; end if;
+  if not exists(select 1 from auth.users where id=v_actor and lower(email)='adm@exemplo.invalid' and email_confirmed_at is not null) then raise exception 'Admin required' using errcode='42501'; end if;
   if p_action='set_member' then
     v_target:=(p_data->>'userId')::uuid; v_plan:=p_data->>'planId';
     v_override:=(p_data->>'secondsOverride')::integer; v_expires:=(p_data->>'expiresAt')::timestamptz;
@@ -205,7 +207,7 @@ begin
   select count(*)::integer into v_total from auth.users u where position(lower(v_search) in lower(coalesce(u.email,'')||' '||coalesce(u.raw_user_meta_data->>'name',''))) > 0;
   select coalesce(jsonb_agg(t),'[]'::jsonb) into v_users from (
     select u.id,u.email,coalesce(u.raw_user_meta_data->>'name',split_part(u.email,'@',1)) as name,u.created_at,
-      lower(u.email)='victorbarrosoc@gmail.com' and u.email_confirmed_at is not null as is_admin,
+      lower(u.email)='adm@exemplo.invalid' and u.email_confirmed_at is not null as is_admin,
       p.id as plan_id,p.name as plan_name,coalesce(m.blocked,false) as blocked,
       case when coalesce(m.blocked,false) then 0 when p.id=m.plan_id then coalesce(m.seconds_override,p.monthly_seconds) else p.monthly_seconds end as limit_seconds,
       m.seconds_override,m.expires_at,m.plan_id as assigned_plan_id,

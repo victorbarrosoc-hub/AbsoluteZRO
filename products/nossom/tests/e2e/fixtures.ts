@@ -61,6 +61,7 @@ export async function zroLink(
   products: string[],
   release: Release = {},
   email = 'zro@example.test',
+  admin = false,
 ) {
   const response = await request.post(SUPABASE_DOUBLE + '/rest/v1/rpc/nossom_zro_link', {
     headers: SERVICE,
@@ -68,7 +69,7 @@ export async function zroLink(
       p_action: 'link',
       p_user: userId,
       p_sub: 'zro-' + userId,
-      p_data: { email, organization: 'Produtora', products, release },
+      p_data: { email, organization: 'Produtora', products, release, admin },
     },
   });
   expect(response.status()).toBe(200);
@@ -86,11 +87,12 @@ export async function zroUnlink(request: APIRequestContext, userId: string) {
 /** Conta já existente, ligada à Absolute ZRO e na lista do proprietário (`allowed`). Devolve o id. */
 export async function allowedAccount(
   request: APIRequestContext,
-  o: { email: string; password: string; name?: string },
+  o: { email: string; password: string; name?: string; admin?: boolean },
 ): Promise<string> {
   const id = (await existingAccount(request, o)) ?? (await accountIdByEmail(request, o.email));
   expect(id).toBeTruthy();
-  await zroLink(request, id!, ['nossom'], ALLOWED);
+  // `admin`: admin da plataforma na Absolute ZRO (claim `zro_admin` guardada no vínculo), o único jeito de ser ADM.
+  await zroLink(request, id!, ['nossom'], ALLOWED, undefined, o.admin === true);
   return id!;
 }
 
@@ -107,7 +109,7 @@ export async function signIn(request: APIRequestContext, email: string, password
 /** Conta autorizada já existente + login (o caso do administrador nos testes). Devolve o id. */
 export async function signInExisting(
   request: APIRequestContext,
-  o: { email: string; password: string; name?: string },
+  o: { email: string; password: string; name?: string; admin?: boolean },
 ) {
   const id = await allowedAccount(request, o);
   const response = await signIn(request, o.email, o.password);

@@ -205,6 +205,7 @@ export function discovery(issuer: string) {
       'zro_products',
       'zro_release',
       'zro_features',
+      'zro_admin',
       'auth_time',
       'nonce',
     ],
@@ -543,6 +544,16 @@ export function profileClaims(iss: string, u: Record<string, unknown>) {
   }
 }
 
+/**
+ * Claim zro_admin: `true` só para admin da plataforma (papel `admin`, conta ativa, e-mail confirmado:
+ * zro.release_admin, a mesma regra do console e do gate, 0049). Ausente para todo o resto. Os apps da família leem daqui
+ * quem administra (nunca por e-mail fixo no código).
+ */
+async function adminClaim(tx: Queryable, userId: string): Promise<{ zro_admin?: true }> {
+  const [r] = await tx`select zro.release_admin(${userId}::uuid) as ok`
+  return r?.ok ? { zro_admin: true } : {}
+}
+
 async function buildTokens(
   s: Signer,
   tx: Queryable,
@@ -558,6 +569,7 @@ async function buildTokens(
   // zro_release vai sempre (é da pessoa, não da organização); zro_org e zro_products só com o escopo org.
   const comOrg = g.scopes.includes('org')
   const claims = await loadClaims(tx, g.userId, comOrg ? g.orgId : null)
+  const admin = await adminClaim(tx, g.userId)
   const access_token = signJwt(
     s,
     {
@@ -586,6 +598,7 @@ async function buildTokens(
     ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
     ...(comOrg ? { zro_org: claims.org, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
     zro_release: claims.release,
+    ...admin,
   })
   const out: TokenResponse = { access_token, token_type: 'Bearer', expires_in: ACCESS_TTL_S, id_token, scope: g.scopes.join(' ') }
   if (g.scopes.includes('offline_access')) {
@@ -696,6 +709,7 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
     const c = await loadClaims(tx, u.id as string, comOrg ? ((p.zro_org as string) ?? null) : null)
     if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products, zro_features: featuresForClient(client, c.features) })
     out.zro_release = c.release
+    Object.assign(out, await adminClaim(tx, u.id as string))
     return out
   })
 }

@@ -1320,7 +1320,8 @@ paths:
         Tokens levam `zro_release` (`{ "<product_id>": "released" | "allowed" | "closed" }`: aberto ao público, fechado
         mas esta conta está na lista, fechado sem acesso) e, com o escopo org, `zro_org` e `zro_products` (só produtos
         contratados e abertos para a pessoa) e `zro_features` (sinais de recurso da organização só do produto do app,
-        ex.: `["maestro.marca_propria"]`; lista vazia sem sinal). Produto fechado para a conta: `invalid_grant` com
+        ex.: `["maestro.marca_propria"]`; lista vazia sem sinal). O id_token (e o userinfo) leva `zro_admin: true` só para
+        admin da plataforma (papel admin, conta ativa, e-mail confirmado); ausente para o resto. Produto fechado para a conta: `invalid_grant` com
         `error_description=Este app ainda está em desenvolvimento.`, no code e no refresh.
       requestBody: { content: { application/x-www-form-urlencoded: { schema: { type: object } } } }
       responses:
@@ -1331,7 +1332,7 @@ paths:
         }
   /oauth/userinfo:
     get:
-      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_features, zro_release) pelo access token Bearer
+      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_features, zro_release, zro_admin) pelo access token Bearer
       responses: { '200': { description: claims }, '401': { description: 'invalid_token (token inválido, app desativado ou produto fechado para a conta)' } }
   /oauth/jwks:
     get:
