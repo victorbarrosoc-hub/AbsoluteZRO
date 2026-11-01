@@ -2061,7 +2061,7 @@ async function separarClipe() {
     S.separando.frac = frac
     desenharInspector()
   }
-  S.separando = { clipe: c.id, texto: 'Conferindo a NOSSOM…', frac: -1, ctrl }
+  S.separando = { clipe: c.id, texto: 'Conferindo o Quasar…', frac: -1, ctrl }
   desenharInspector()
   try {
     const cn = await nossom.conta()
@@ -2069,17 +2069,17 @@ async function separarClipe() {
     if (cn.estado === 'entrar') {
       S.separando = null
       desenharInspector()
-      if (await perguntar({ titulo: 'Entre na NOSSOM', texto: 'Uma vez só, com a mesma conta Absolute ZRO. Depois volte aqui e toque em Separar.', sim: 'Entrar na NOSSOM', nao: 'Agora não' }))
+      if (await perguntar({ titulo: 'Entre no Quasar', texto: 'Uma vez só, com a mesma conta Absolute ZRO. Depois volte aqui e toque em Separar.', sim: 'Entrar no Quasar', nao: 'Agora não' }))
         open(`${nossom.NOSSOM}/entrar?next=${encodeURIComponent('/studio')}`, '_blank', 'noopener')
       return
     }
-    if (cn.estado === 'sem-franquia') throw new Error('A franquia do seu plano NOSSOM acabou este mês.')
-    if (cn.estado !== 'ok') throw new Error(cn.erro || 'A NOSSOM não respondeu agora.')
+    if (cn.estado === 'sem-franquia') throw new Error('A franquia do seu plano Quasar acabou este mês.')
+    if (cn.estado !== 'ok') throw new Error(cn.erro || 'O Quasar não respondeu agora.')
     const min = minutosDoPedido(dur)
-    if (cn.restante !== null && cn.restante < Math.max(60, Math.ceil(dur))) throw new Error(`Faltam minutos no seu plano NOSSOM: este trecho usa ${min} min.`)
+    if (cn.restante !== null && cn.restante < Math.max(60, Math.ceil(dur))) throw new Error(`Faltam minutos no seu plano Quasar: este trecho usa ${min} min.`)
     const resta = cn.restante === null ? '' : ` (restam ${Math.floor(cn.restante / 60)} min)`
     andar('Esperando você confirmar…')
-    const sim = await perguntar({ titulo: 'Separar voz e instrumental', texto: `O som deste trecho (${relogio(dur)}) sobe para a NOSSOM, separa na nuvem e volta alinhado ao clipe. Usa ${min} min do seu plano${resta}.`, sim: 'Separar' })
+    const sim = await perguntar({ titulo: 'Separar voz e instrumental', texto: `O som deste trecho (${relogio(dur)}) sobe para o Quasar, separa na nuvem e volta alinhado ao clipe. Usa ${min} min do seu plano${resta}.`, sim: 'Separar' })
     if (!sim) return
     andar('Preparando o som…')
     const som = await audioDoTrecho(entrada, t.ini, dur)

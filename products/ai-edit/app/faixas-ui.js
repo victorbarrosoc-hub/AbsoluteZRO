@@ -14,7 +14,7 @@ const db = (v) => (v === null ? 'mudo' : `${v > 0 ? '+' : ''}${String(v).replace
 export function montarFaixas(caixa, o) {
   const sec = document.createElement('div')
   sec.className = 'insp-faixas'
-  sec.innerHTML = `<div class="vel-cabeca"><span class="insp-rotulo">Voz e instrumental</span><span class="faixas-selo" title="Separado pela NOSSOM, com o seu plano">NOSSOM</span></div>
+  sec.innerHTML = `<div class="vel-cabeca"><span class="insp-rotulo">Voz e instrumental</span><span class="faixas-selo" title="Separado no Quasar Audio Lab, com o seu plano">Quasar</span></div>
 <div class="faixas-antes"><button type="button" class="ficha" data-acao="separar">Separar</button><span class="vel-dica faixas-dica"></span></div>
 <div class="faixas-andamento" hidden><div class="barra-progresso"><div class="faixas-barra"></div></div><div class="faixas-linha"><span class="apoio faixas-estado" aria-live="polite"></span><button type="button" class="link" data-acao="cancelar">Cancelar</button></div></div>
 <div class="faixas-depois" hidden>
@@ -71,7 +71,7 @@ export function montarFaixas(caixa, o) {
     sec.querySelector('.faixas-andamento').hidden = !andamento
     sec.querySelector('.faixas-depois').hidden = !ligado || Boolean(andamento)
     const dica = sec.querySelector('.faixas-dica')
-    dica.textContent = trecho?.erro || (trecho ? `${trecho.minutos} min do seu plano NOSSOM` : '')
+    dica.textContent = trecho?.erro || (trecho ? `${trecho.minutos} min do seu plano Quasar` : '')
     sec.querySelector('[data-acao="separar"]').disabled = Boolean(trecho?.erro)
     if (andamento) {
       sec.querySelector('.faixas-estado').textContent = andamento.texto

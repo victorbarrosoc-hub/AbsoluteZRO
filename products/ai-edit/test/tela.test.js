@@ -1186,7 +1186,7 @@ async function simularNossom(pagina, faixas) {
   return r
 }
 
-test('voz e instrumental pela NOSSOM: separar o clipe, Só voz, prévia, vídeo final com a voz e as faixas na entrega', async () => {
+test('voz e instrumental pelo Quasar (NOSSOM): separar o clipe, Só voz, prévia, vídeo final com a voz e as faixas na entrega', async () => {
   // a pessoa que a NOSSOM atende (o gate dela no HUB)
   const { pagina, erros } = await abrir()
   await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...PESSOA, irmaos: { nossom: true } }) }))
@@ -1215,13 +1215,13 @@ test('voz e instrumental pela NOSSOM: separar o clipe, Só voz, prévia, vídeo 
   await pagina.locator('.clipe').first().click()
   const sec = pagina.locator('.insp-faixas')
   await sec.waitFor()
-  assert.match(await sec.innerText(), /Voz e instrumental[\s\S]*Separar[\s\S]*1 min do seu plano NOSSOM/)
+  assert.match(await sec.innerText(), /Voz e instrumental[\s\S]*Separar[\s\S]*1 min do seu plano Quasar/)
 
   // separar: a folha diz o que sobe e quanto do plano usa; depois, as duas faixas no clipe
   await sec.getByRole('button', { name: 'Separar' }).click()
   const folha = pagina.locator('dialog.folha-pergunta')
   await folha.waitFor()
-  assert.match(await folha.innerText(), /sobe para a NOSSOM[\s\S]*Usa 1 min do seu plano \(restam 60 min\)/)
+  assert.match(await folha.innerText(), /sobe para o Quasar[\s\S]*Usa 1 min do seu plano \(restam 60 min\)/)
   await folha.getByRole('button', { name: 'Separar' }).click()
   await pagina.waitForFunction(() => /Voz e instrumental prontos/.test(document.getElementById('aviso').textContent), null, { timeout: 60_000 })
   // a cópia da NOSSOM é liberada logo depois de guardar as faixas aqui

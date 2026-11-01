@@ -31,12 +31,12 @@ async function json(caminho, { metodo = 'GET', corpo, sinal } = {}) {
     })
   } catch (e) {
     if (e?.name === 'AbortError') throw new Cancelado()
-    throw Object.assign(new Error('A NOSSOM não respondeu. Confira a internet e tente de novo.'), { estado: 'fora' })
+    throw Object.assign(new Error('O Quasar não respondeu. Confira a internet e tente de novo.'), { estado: 'fora' })
   }
   const dados = await r.json().catch(() => ({}))
-  if (r.status === 401) throw Object.assign(new Error('Entre na NOSSOM com a sua conta Absolute ZRO.'), { estado: 'entrar' })
-  if (r.status === 403 && dados.code === 'product_closed') throw Object.assign(new Error('A NOSSOM ainda não abriu para a sua conta.'), { estado: 'fechada' })
-  if (!r.ok) throw Object.assign(new Error(dados.error || 'A NOSSOM não conseguiu agora. Tente de novo em instantes.'), { estado: 'erro', status: r.status })
+  if (r.status === 401) throw Object.assign(new Error('Entre no Quasar com a sua conta Absolute ZRO.'), { estado: 'entrar' })
+  if (r.status === 403 && dados.code === 'product_closed') throw Object.assign(new Error('O Quasar ainda não abriu para a sua conta.'), { estado: 'fechada' })
+  if (!r.ok) throw Object.assign(new Error(dados.error || 'O Quasar não conseguiu agora. Tente de novo em instantes.'), { estado: 'erro', status: r.status })
   return dados
 }
 
@@ -109,9 +109,9 @@ export async function separar(audio, duracao, { sinal, aoEstado = () => {}, aoPr
     while (Date.now() - desde < PRAZO_MS) {
       st = await json(`/api/audio/jobs?id=${encodeURIComponent(id)}`, { sinal })
       if (st.status === 'completed') break
-      if (['failed', 'cancelled', 'released'].includes(st.status)) throw new Error('A NOSSOM não conseguiu separar este trecho. O original segue no clipe.')
+      if (['failed', 'cancelled', 'released'].includes(st.status)) throw new Error('O Quasar não conseguiu separar este trecho. O original segue no clipe.')
       const s = Math.floor((Date.now() - desde) / 1000)
-      aoEstado(st.status === 'running' ? 'Separando voz e instrumental…' : `Na fila da NOSSOM${s >= 60 ? ` há ${Math.floor(s / 60)} min` : ''}`)
+      aoEstado(st.status === 'running' ? 'Separando voz e instrumental…' : `Na fila do Quasar${s >= 60 ? ` há ${Math.floor(s / 60)} min` : ''}`)
       aoProgresso(-1)
       await dormir(ESPERA_MS, sinal)
     }
