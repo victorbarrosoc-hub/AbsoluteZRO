@@ -96,7 +96,11 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
   Rift como app, e as ferramentas do MCP `mcp.higgsfield.ai` com o token da pessoa, créditos do plano) e a **chave da API**
   (id:segredo, saldo em dólar separado do plano). Credenciais só cifradas (AES-256-GCM) em `rift.conexoes`.
 - **A Z no Rift só para o titular** até a fase 2 (`RIFT_Z_LIBERADOS`), com teto por dia (`RIFT_Z_LIMITE_DIA`; sem teto =
-  desligada) e o uso em `rift.z_uso`. Modelo `claude-opus-5-5`, esforço baixo, com a reserva automática do servidor.
+  desligada) e o uso em `rift.z_uso`. É a **Z do HUB** (pedido do titular, 01/11/2026, "a mesma chave"): o servidor do
+  Rift chama `POST /api/v1/ia/rift` servidor a servidor (Basic do cliente confidencial `rift-web`) e o Rift não guarda
+  chave do Claude. O HUB confere de novo (cliente certo, conta em `IA_RIFT_LIBERADOS`, ativa e que já entrou no Rift),
+  checa o teto do dia da Z antes de gastar e registra o uso nos Custos (`packages/core/src/z-rift.ts`). Por token de app
+  o papel de plataforma não vem, por isso a lista explícita em vez de "admin".
 
 ## Nome e marca
 

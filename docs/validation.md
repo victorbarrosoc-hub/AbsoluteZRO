@@ -19,6 +19,12 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
 
+- Z do HUB no Rift (01/11/2026): `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista,
+  conta da lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem
+  teto = bloqueado, passou do teto = bloqueado, uso idempotente; a tela só recebe as cinco ações, com valores limpos.
+  Rift `npm test` 13/13 (novo: repassa ao HUB com o Basic do `rift-web`, filtra ação desconhecida, HUB sem teto vira
+  "desligada", HUB recusando a lista vira 403, limite do dia do Rift). Sem chave do Claude no Rift (SDK removido).
+
 - Estúdio com camadas de verdade (01/11/2026): no navegador (Chromium), com as rotas e um Postgres local, criar um
   projeto, pôr texto, forma e 3D (3 → 6 camadas), arrastar a forma no quadro (120 × 40 px), marcar ◆, desfazer e
   refazer, esconder a esfera e renomear; depois de limpar o aparelho e reabrir, as 6 camadas e o nome novo voltam do banco

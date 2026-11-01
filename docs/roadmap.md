@@ -93,8 +93,9 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Higgsfield da pessoa, por duas portas: a conta (login OAuth da Higgsfield + MCP, créditos do plano; preferida) ou a
   chave da API (saldo em dólar). O arquivo vai do aparelho direto para a Higgsfield, o vídeo volta como camada no lugar
   da imagem; credenciais só cifradas no banco (`rift.conexoes`, migração 0001). A Z no Rift (barra "Peça à Z", ações
-  com desfazer) só para o titular (`RIFT_Z_LIBERADOS`, teto `RIFT_Z_LIMITE_DIA`); ⬜ falta a chave da Claude no projeto
-  `rift-motion`. Créditos (01/11/2026): a folha mostra o saldo e o plano da conta, o medidor (usado no mês × disponível,
+  com desfazer) só para o titular (`RIFT_Z_LIBERADOS`, teto `RIFT_Z_LIMITE_DIA`) é a Z do HUB: o Rift pede em
+  `POST /api/v1/ia/rift` com a credencial do cliente `rift-web`, a chave do Claude fica só no HUB, o HUB confere a lista
+  dele (`IA_RIFT_LIBERADOS`) e o gasto entra no teto do dia da Z e nos Custos. Créditos (01/11/2026): a folha mostra o saldo e o plano da conta, o medidor (usado no mês × disponível,
   pelo extrato da Higgsfield) e o que o Rift gastou, e três opções de gasto (Rápido, Equilibrado, Máxima qualidade;
   curto ou longo) com o preço que a Higgsfield informa antes de gerar; sem saldo, a opção fica travada (migração 0002).
   Prévias (01/11/2026): "Criar com IA" e o passo "1 · Ver em imagem" geram 2 ou 4 telas baratas (conta: GPT Image 2.5

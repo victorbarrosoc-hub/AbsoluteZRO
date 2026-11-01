@@ -173,6 +173,32 @@ test('Z: só para quem está liberado; sem chave ou sem teto fica desligada (nun
   assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('beto'), { pedido: 'oi' })).statusCode, 403)
 })
 
+test('Z do HUB: o Rift repassa com a credencial do app, filtra as ações e conta o uso; sem chave do Claude aqui', { skip: pular }, async () => {
+  process.env.RIFT_Z_LIBERADOS = 'ana'
+  process.env.RIFT_Z_LIMITE_DIA = '2'
+  const vistos = []
+  let resposta = () => resp(200, { resposta: 'Pronto, quicando.', acoes: [{ tipo: 'aplicar_movimento', camada: 'c1', movimento: 'quicar' }, { tipo: 'rodar_comando' }] })
+  simulado = (url, o) => {
+    vistos.push({ url, auth: o.headers.authorization, corpo: JSON.parse(o.body) })
+    return resposta()
+  }
+  const r = await chamar('z', 'POST', '/api/rift/z', sessao('ana'), { pedido: 'faz o título quicar', cena: { v: 2, camadas: [{ id: 'c1' }] } })
+  assert.equal(r.statusCode, 200)
+  assert.deepEqual({ resposta: r.corpo.resposta, acoes: r.corpo.acoes }, { resposta: 'Pronto, quicando.', acoes: [{ tipo: 'aplicar_movimento', camada: 'c1', movimento: 'quicar' }] })
+  assert.equal(vistos[0].url, 'https://absolutezro.com/api/v1/ia/rift')
+  assert.equal(vistos[0].auth, `Basic ${Buffer.from('rift-web:segredo-de-teste-que-so-existe-aqui').toString('base64')}`)
+  assert.deepEqual(vistos[0].corpo, { sub: 'ana', pedido: 'faz o título quicar', cena: { v: 2, camadas: [{ id: 'c1' }] } })
+  resposta = () => resp(403, { error: 'quota_not_configured', message: 'x' })
+  assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('ana'), { pedido: 'oi' })).statusCode, 503, 'HUB sem teto: desligada')
+  resposta = () => resp(403, { error: 'action_not_allowed', message: 'x' })
+  assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('ana'), { pedido: 'oi' })).statusCode, 403, 'o HUB também confere a lista')
+  resposta = () => resp(200, { resposta: '', acoes: [] })
+  assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('ana'), { pedido: 'oi' })).corpo.resposta, 'Não entendi. Pode dizer de outro jeito?')
+  assert.equal((await chamar('z', 'POST', '/api/rift/z', sessao('ana'), { pedido: 'oi' })).statusCode, 429, 'limite do dia do Rift (2 respostas)')
+  simulado = null
+  delete process.env.RIFT_Z_LIMITE_DIA
+})
+
 test('prévias em imagem: conta com referência (vários jobs) e chave (Soul), com preço antes; resultado só da dona', { skip: pular }, async () => {
   const eva = { sub: 'eva' }
   await conexao.guardarConexao(eva, { tipo: 'conta', rotulo: 'x', segredo: { access: 'tok-eva', refresh: 'r', expira: Math.floor(Date.now() / 1000) + 3600, clientId: 'c' } })

@@ -112,6 +112,29 @@ paths:
       security: [{ session: [] }, { appToken: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
       responses: { '204': { description: apagada }, '404': { $ref: '#/components/responses/Error' } }
+  /api/v1/ia/rift:
+    post:
+      security: [{ appClient: [] }]
+      summary: 'A Z dentro do Rift Motion com a chave do HUB, só servidor a servidor (Basic do cliente confidencial rift-web). Só contas de IA_RIFT_LIBERADOS que já entraram no Rift; gasto no teto do dia da Z (sem teto = bloqueado). Devolve uma frase e as ações para o aparelho aplicar com desfazer'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sub, pedido]
+              properties:
+                sub: { type: string, format: uuid }
+                pedido: { type: string, maxLength: 1000 }
+                cena: { type: object, description: 'A cena do estúdio (até 60 mil caracteres em JSON)' }
+      responses:
+        {
+          '200': { description: '{ resposta, acoes[] } (aplicar_movimento, ajustar_camada, adicionar_camada, apagar_camada, gerar_motion)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/ia/mensagens:
     post:
       summary: Pergunta à IA do ecossistema. Resposta em streaming NDJSON (conversa, lendo, texto, fim | erro). Gasta 1 crédito zro.ai_credits por resposta

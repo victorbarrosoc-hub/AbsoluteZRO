@@ -283,7 +283,7 @@ function tokensDe(corpo, agora = Date.now()) {
   return { at: corpo.access_token, atExp, rt: typeof corpo.refresh_token === 'string' ? corpo.refresh_token : null }
 }
 
-const basicAuth = () => `Basic ${Buffer.from(`${encodeURIComponent(clientId())}:${encodeURIComponent(segredo())}`).toString('base64')}`
+export const basicAuth = () => `Basic ${Buffer.from(`${encodeURIComponent(clientId())}:${encodeURIComponent(segredo())}`).toString('base64')}`
 
 /** Troca o código (client_secret_basic + PKCE), confere o id_token e devolve a pessoa e os tokens (para o cofre). */
 export async function trocarCodigo(code, verificador, nonce, redirectUri) {
