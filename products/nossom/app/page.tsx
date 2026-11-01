@@ -5,8 +5,8 @@ import { zroConfigured } from '@/lib/server/zro/config';
 export function generateMetadata(): Metadata {
   return {
     description: nossomClosed()
-      ? 'NOSSOM, o estúdio de áudio da Absolute ZRO: limpeza de voz, separação de vocais e finalização. Em desenvolvimento.'
-      : 'Envie seu áudio para a IA da NOSSOM. Limpeza neural, equalização, masterização, efeitos e presets de entrega. Comece com 5 minutos de restauração grátis por mês.',
+      ? 'Quasar, o estúdio de áudio da Absolute ZRO: limpeza de voz, separação de vocais e finalização. Em desenvolvimento.'
+      : 'Envie seu áudio para a IA do Quasar. Limpeza neural, equalização, masterização, efeitos e presets de entrega. Comece com 5 minutos de restauração grátis por mês.',
   };
 }
 export default function Page() {

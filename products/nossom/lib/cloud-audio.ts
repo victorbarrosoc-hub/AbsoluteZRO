@@ -18,7 +18,7 @@ import { parseTranscript } from './transcript';
 import type { AudioUsage } from './usage';
 
 const engines: Record<CloudPreset, string> = {
-  [restorationD.id]: 'Resemble Enhance · NOSSOM Restore D',
+  [restorationD.id]: 'Resemble Enhance · Quasar Restore D',
   [vocalSeparation.id]: 'Demucs · HTDemucs vocals',
   [voiceIsolator.id]: 'Mel-Band RoFormer + MossFormer2 SE 48K',
   [singingSeparation.id]: 'Mel-Band RoFormer · vocals',

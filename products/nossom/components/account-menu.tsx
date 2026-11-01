@@ -171,7 +171,7 @@ export default function AccountMenu({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <header className="account-menu-heading">
-                    <h2 id={id + '-title'}>{account ? 'Sua conta' : 'SEU ESPAÇO NOSSOM'}</h2>
+                    <h2 id={id + '-title'}>{account ? 'Sua conta' : 'SEU ESPAÇO QUASAR'}</h2>
                     <button
                       className="account-menu-close"
                       aria-label="Fechar menu da conta"
@@ -207,7 +207,7 @@ export default function AccountMenu({
                           ) : (
                             <span className="account-profile-badge">
                               <ShieldCheck size={12} />
-                              {account.isAdmin ? 'Administrador' : 'Conta NOSSOM'}
+                              {account.isAdmin ? 'Administrador' : 'Conta Quasar'}
                             </span>
                           )}
                         </div>

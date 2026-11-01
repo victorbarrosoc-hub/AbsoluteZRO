@@ -82,11 +82,11 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
   );
   await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
     'content',
-    'NOSSOM',
+    'Quasar',
   );
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
     'href',
-    '/pwa/icon-180.png?v=4',
+    '/pwa/icon-180.png?v=5',
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     'content',
@@ -167,7 +167,7 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
     await expect(link).toHaveAttribute('href', /^https:\/\//);
     await expect(link).toHaveAttribute('target', '_blank');
   }
-  await expect(family.getByRole('link', { name: 'NOSSOM' })).toHaveCount(0);
+  await expect(family.getByRole('link', { name: 'Quasar' })).toHaveCount(0);
   await expect
     .poll(() =>
       family

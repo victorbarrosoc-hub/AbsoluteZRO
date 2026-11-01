@@ -85,8 +85,8 @@ export function AccountForm({
       <h1>{mode === 'register' ? 'Crie sua conta.' : 'Que bom ter você aqui.'}</h1>
       <p>
         {mode === 'register'
-          ? 'A conta do NOSSOM é a sua conta Absolute ZRO.'
-          : 'Entre para continuar seus projetos e conversar com a IA da NOSSOM.'}
+          ? 'A conta do Quasar é a sua conta Absolute ZRO.'
+          : 'Entre para continuar seus projetos e conversar com a IA do Quasar.'}
       </p>
       {expandable && !expanded && (
         <button
@@ -244,17 +244,17 @@ export default function AccountAccess({
         <AIMotion />
       </div>
       <DesktopUpdates floating />
-      <Link className="account-home" href="/" aria-label="NOSSOM página inicial">
+      <Link className="account-home" href="/" aria-label="Quasar página inicial">
         <Brand />
       </Link>
-      <section className="account-story" aria-label="NOSSOM">
+      <section className="account-story" aria-label="Quasar">
         <div>
           <h2>
             O seu som.
             <br />
             <span>O seu lugar.</span>
           </h2>
-          <p>Trate, crie e entregue. O assistente NOSSOM já está pronto para acompanhar você.</p>
+          <p>Trate, crie e entregue. O assistente Quasar já está pronto para acompanhar você.</p>
         </div>
         <small>
           <ShieldCheck size={15} /> Seus arquivos continuam no seu dispositivo.

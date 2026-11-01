@@ -47,7 +47,7 @@ test('landing, responsive navigation, functional demonstration and assistant', a
   await page.screenshot({ path: 'test-results/landing-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Ouvir demonstração' }).click();
   await expect(page.getByRole('button', { name: 'Pausar demonstração' })).toBeVisible();
-  await page.getByRole('button', { name: 'NOSSOM', exact: true }).click();
+  await page.getByRole('button', { name: 'Quasar', exact: true }).click();
   await page.getByRole('button', { name: 'Pausar demonstração' }).click();
   await page.route('**/api/ai/status', (r) =>
     r.fulfill({ json: { configured: false, authorized: true } }),

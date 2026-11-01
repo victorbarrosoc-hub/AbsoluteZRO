@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useId } from 'react';
 import AIMotion from './ai-motion';
-import { SimboloCromo } from './brand';
+import { CoroaLuz } from './brand';
 import { passoDe, slugPasso } from './passos-nav';
 import type { ProjectSummary } from '@/lib/storage';
 import { useDialog } from '@/lib/use-dialog';
@@ -230,9 +230,9 @@ export default function Assistant({
               <i />
               <i />
             </span>
-            <SimboloCromo width={220} />
+            <CoroaLuz size={210} />
             <span className="rotulo rotulo-esq">Fig. 01 · Estúdio</span>
-            <span className="rotulo rotulo-dir">NOSSOM</span>
+            <span className="rotulo rotulo-dir">Quasar</span>
           </div>
         ) : (
           <AIMotion compact state={estado} />

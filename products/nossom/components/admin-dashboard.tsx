@@ -186,7 +186,7 @@ export default function AdminDashboard() {
     <section className="admin-dashboard">
       <div className="admin-heading">
         <div>
-          <span className="eyebrow">ADMINISTRAÇÃO NOSSOM</span>
+          <span className="eyebrow">ADMINISTRAÇÃO QUASAR</span>
           <h1>Seu negócio, em sintonia.</h1>
           <p>Planos, franquias e processamento de todos os usuários.</p>
         </div>
@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                   {data.users.map((user) => (
                     <tr key={user.id}>
                       <td>
-                        <strong>{user.name || 'Conta NOSSOM'}</strong>
+                        <strong>{user.name || 'Conta Quasar'}</strong>
                         <span>{user.email}</span>
                       </td>
                       <td>

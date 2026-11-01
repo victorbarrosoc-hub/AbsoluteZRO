@@ -317,7 +317,7 @@ export function BroadcastControls({
       </div>
       <p className="field-hint">
         Crossover Linkwitz–Riley de 4ª ordem e compressores RMS. Os plugins Adobe usam curvas
-        internas próprias: este preset reproduz os controles informados, com implementação NOSSOM. O
+        internas próprias: este preset reproduz os controles informados, com implementação Quasar. O
         teto é de pico amostral; confira o true peak medido antes da entrega.
       </p>
     </section>

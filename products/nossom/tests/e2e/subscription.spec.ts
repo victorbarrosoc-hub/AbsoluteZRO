@@ -7,7 +7,7 @@ test('a person subscribes by card, sees the plan only after Stripe confirms, and
 }) => {
   onlyWhenOpen();
   await page.goto('/studio/planos');
-  const plans = page.getByRole('region', { name: 'Planos da NOSSOM' });
+  const plans = page.getByRole('region', { name: 'Planos do Quasar' });
   await expect(plans.getByText(/Planos pagos são cobrados todo mês no cartão/)).toBeVisible();
   await expect(plans.getByRole('link', { name: /Solicitar ativação/ })).toHaveCount(0);
   await plans.getByRole('button', { name: 'Assinar Essencial' }).click();
@@ -45,7 +45,7 @@ test('the homepage sends paid plans to the account, where checkout starts after 
   const page = await browser.newPage();
   await page.goto('/');
   const link = page
-    .getByRole('region', { name: 'Planos da NOSSOM' })
+    .getByRole('region', { name: 'Planos do Quasar' })
     .getByRole('link', { name: 'Assinar Studio' });
   await expect(link).toHaveAttribute('href', '/studio/planos?plano=studio');
   await link.click();
@@ -65,7 +65,7 @@ test('after signing in, the plan and the upgrade are one tap away from the sideb
   await expect(page.locator('.plan-summary')).toContainText('min disponíveis neste mês');
   await expect(
     page
-      .getByRole('region', { name: 'Planos da NOSSOM' })
+      .getByRole('region', { name: 'Planos do Quasar' })
       .getByRole('button', { name: 'Assinar Studio' }),
   ).toBeVisible();
   // So do the sidebar, the account menu and the account settings.
@@ -113,7 +113,7 @@ test('the administrator also reaches the plans, as customers see them, without l
   await expect(page).toHaveURL(/\/studio\/planos$/);
   await expect(page.locator('.plan-summary')).toContainText('ADM · Ilimitado');
   await expect(page.getByText(/Visão do cliente/)).toBeVisible();
-  const plans = page.getByRole('region', { name: 'Planos da NOSSOM' });
+  const plans = page.getByRole('region', { name: 'Planos do Quasar' });
   await expect(plans.locator('.plan-choice')).toHaveCount(3);
   await expect(plans.getByText('Seu plano')).toHaveCount(0);
   await page.goto('/studio/conta');

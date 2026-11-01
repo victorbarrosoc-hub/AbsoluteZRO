@@ -6,10 +6,10 @@ const messages: Record<string, string> = {
   zro_erro: 'Não deu para falar com a Absolute ZRO agora. Tente de novo.',
   zro_devagar: 'Muitas tentativas. Aguarde alguns minutos.',
   zro_email_nao_verificado:
-    'Confirme seu e-mail na Absolute ZRO antes de criar a conta NOSSOM por ela.',
+    'Confirme seu e-mail na Absolute ZRO antes de criar a conta Quasar por ela.',
   zro_email_em_uso:
-    'Este e-mail já tem conta NOSSOM. Entre com sua senha e ligue a Absolute ZRO em Minha conta.',
-  zro_outra_conta: 'Esta conta Absolute ZRO já está ligada a outra conta NOSSOM.',
+    'Este e-mail já tem conta Quasar. Entre com sua senha e ligue a Absolute ZRO em Minha conta.',
+  zro_outra_conta: 'Esta conta Absolute ZRO já está ligada a outra conta Quasar.',
   zro_ja_ligada: 'Sua conta já está ligada a outra conta Absolute ZRO.',
   zro_unico_login:
     'A Absolute ZRO é o único jeito de entrar nesta conta, então ela continua ligada.',

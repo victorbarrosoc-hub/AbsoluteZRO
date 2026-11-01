@@ -131,7 +131,7 @@ export default function PlanCards({
       return (
         <a
           className="button primary"
-          href={`mailto:contato@absolutezro.com?subject=${encodeURIComponent('Ativação NOSSOM · ' + plan.name)}`}
+          href={`mailto:contato@absolutezro.com?subject=${encodeURIComponent('Ativação Quasar · ' + plan.name)}`}
         >
           Solicitar ativação <ArrowUpRight size={16} />
         </a>
@@ -195,7 +195,7 @@ export default function PlanCards({
             : ''
       : '';
   return (
-    <section className="plans-section" aria-label="Planos da NOSSOM" ref={section}>
+    <section className="plans-section" aria-label="Planos do Quasar" ref={section}>
       {intro && (
         <div className="plans-intro">
           <h2>Um plano para o seu ritmo.</h2>
@@ -258,7 +258,7 @@ export default function PlanCards({
         Franquia renovada no dia 1, à 0h de Brasília, sem acumular saldo. Cada restauração desconta
         no mínimo 1 minuto; áudios maiores usam a duração em segundos. Até 10 minutos por arquivo.{' '}
         {enabled
-          ? 'Planos pagos são cobrados todo mês no cartão, pela Stripe; a NOSSOM não guarda dados do cartão. Cancele quando quiser: o plano vale até o fim do período pago.'
+          ? 'Planos pagos são cobrados todo mês no cartão, pela Stripe; o Quasar não guarda dados do cartão. Cancele quando quiser: o plano vale até o fim do período pago.'
           : 'Planos pagos são ativados pelo administrador após contato; não há cobrança automática de cartão nesta etapa.'}
       </p>
     </section>

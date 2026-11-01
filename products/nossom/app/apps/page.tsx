@@ -7,8 +7,8 @@ import DownloadNotice from '@/components/download-notice';
 import { desktopInstallers } from '@/lib/desktop-releases';
 import { nossomClosed } from '@/lib/server/release';
 export const metadata = {
-  title: 'Aplicativos NOSSOM',
-  description: 'NOSSOM no Mac, Windows e na tela de início do seu celular.',
+  title: 'Aplicativos Quasar',
+  description: 'Quasar no Mac, Windows e na tela de início do seu celular.',
 };
 function download(value: string | undefined) {
   try {
@@ -59,14 +59,14 @@ export default async function Apps() {
   ];
   return (
     <main className="apps-page container">
-      <Link href="/" aria-label="NOSSOM página inicial">
+      <Link href="/" aria-label="Quasar página inicial">
         <Brand />
       </Link>
       <Link className="text-link" href="/studio">
         <ArrowLeft size={16} />
         Voltar ao estúdio
       </Link>
-      <h1>NOSSOM no seu dispositivo.</h1>
+      <h1>Quasar no seu dispositivo.</h1>
       <p>Escolha como abrir seu espaço. Sua conta e a IA são as mesmas em todas as versões.</p>
       <DownloadNotice />
       <div className="apps-grid">
@@ -106,14 +106,14 @@ export default async function Apps() {
         <h2 id="mac-install-title">Para instalar no Mac</h2>
         <ol>
           <li>Baixe a versão do seu Mac e abra o arquivo .dmg.</li>
-          <li>Arraste o NOSSOM para a pasta Aplicativos. Depois, ejete o instalador.</li>
-          <li>Abra o NOSSOM pela pasta Aplicativos.</li>
+          <li>Arraste o Quasar para a pasta Aplicativos. Depois, ejete o instalador.</li>
+          <li>Abra o Quasar pela pasta Aplicativos.</li>
         </ol>
         <details>
           <summary>O Mac bloqueou a abertura?</summary>
           <p>
             Depois de tentar abrir, vá a Ajustes do Sistema → Privacidade e Segurança. Na mensagem
-            sobre o NOSSOM, escolha Abrir Mesmo Assim e confirme.
+            sobre o Quasar, escolha Abrir Mesmo Assim e confirme.
           </p>
           <p>
             Se você baixou a versão 0.1.0 e viu “aplicativo danificado”, substitua o aplicativo pela
@@ -121,13 +121,13 @@ export default async function Apps() {
           </p>
           <p>
             Se continuar bloqueado, instale pelo Terminal. O arquivo baixado pelo Terminal não fica
-            em quarentena, então o Mac abre o NOSSOM sem o aviso:
+            em quarentena, então o Mac abre o Quasar sem o aviso:
           </p>
           <pre>
             <code>curl -fsSL https://nossom.absolutezro.com/instalar.sh | bash</code>
           </pre>
           <p>
-            Ele escolhe a versão do seu Mac (Apple Silicon ou Intel), coloca o NOSSOM em Aplicativos
+            Ele escolhe a versão do seu Mac (Apple Silicon ou Intel), coloca o Quasar em Aplicativos
             e abre. Para atualizar, rode o mesmo comando. Você também pode continuar pelo navegador
             abaixo.
           </p>
