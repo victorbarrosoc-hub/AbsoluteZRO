@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AccountForm } from './account-access';
 import UserAvatar from './user-avatar';
+import FamilyNav from './family-nav';
 import { ZroSymbol } from './zro-symbol';
 import { useDialog } from '@/lib/use-dialog';
 import { accountPlan, type Account } from '@/lib/accounts';
@@ -26,10 +27,13 @@ export default function AccountMenu({
   account: initialAccount,
   usage,
   disabled = false,
+  familia = false,
 }: {
   account?: Account;
   usage?: AudioUsage | null;
   disabled?: boolean;
+  /** Os apps da Absolute ZRO no menu (na página inicial; no estúdio eles ficam na lateral). */
+  familia?: boolean;
 }) {
   const [account, setAccount] = useState<Account | null>(initialAccount || null),
     [loading, setLoading] = useState(!initialAccount),
@@ -292,6 +296,11 @@ export default function AccountMenu({
                           <ArrowRight size={14} />
                         </a>
                       ) : null}
+                      {familia && (
+                        <div className="account-menu-familia">
+                          <FamilyNav onOpen={() => setOpen(false)} />
+                        </div>
+                      )}
                       {error && (
                         <p className="account-menu-error" role="alert">
                           {error}

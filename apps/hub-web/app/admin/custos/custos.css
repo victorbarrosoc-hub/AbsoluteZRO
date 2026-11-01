@@ -803,8 +803,8 @@
 }
 @media (max-width: 640px) {
   .cst-folha {
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     margin: auto 0 0;
     max-height: 92dvh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;

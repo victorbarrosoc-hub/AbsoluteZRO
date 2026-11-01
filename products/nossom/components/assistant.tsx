@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect, useRef, useId } from 'react';
 import AIMotion from './ai-motion';
+import { SimboloCromo } from './brand';
+import { passoDe, slugPasso } from './passos-nav';
+import type { ProjectSummary } from '@/lib/storage';
 import { useDialog } from '@/lib/use-dialog';
 import { useConversation } from '@elevenlabs/react';
 import {
@@ -13,9 +16,28 @@ import {
   X,
   Sparkles,
   ArrowRight,
+  Plus,
 } from 'lucide-react';
 import { toolPath } from '@/lib/studio-routes';
 import { inferPlan, operations, type Operation } from '@/lib/presets';
+/** Barrinhas decorativas de cada projeto nos Recentes (fixas pelo id, não são a onda real do áudio). */
+function barras(id: string) {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return Array.from({ length: 28 }, (_, i) => {
+    h = (h * 1103515245 + 12345) >>> 0;
+    return 30 + (Math.abs(Math.sin(i * 0.7 + (h % 7))) * 50 + (h % 21)) * 0.9;
+  });
+}
+const relogio = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+/** "há 6 minutos", "ontem", "há 3 dias". */
+function quando(ms: number) {
+  const min = Math.round((ms - Date.now()) / 60000);
+  if (Math.abs(min) < 60) return relogio.format(min, 'minute');
+  const horas = Math.round(min / 60);
+  if (Math.abs(horas) < 24) return relogio.format(horas, 'hour');
+  return relogio.format(Math.round(horas / 24), 'day');
+}
 export default function Assistant({
   onClose = () => {},
   onPlan,
@@ -24,12 +46,20 @@ export default function Assistant({
   onUpload,
   fileName,
   disabled = false,
+  onRecord,
+  recentes,
+  onAbrir,
 }: {
   onClose?: () => void;
   embedded?: boolean;
   onUpload?: () => void;
   fileName?: string;
   disabled?: boolean;
+  /** Início do estúdio: "Gravar" ao lado de "Enviar áudio". */
+  onRecord?: () => void;
+  /** Início do estúdio: os projetos mais recentes deste aparelho, cada um com a cor do passo em que parou. */
+  recentes?: ProjectSummary[];
+  onAbrir?: (id: string) => void;
   onPlan?: (operation: Operation, intensity?: number, eqPreset?: string) => void;
   context?: Record<string, number | null>;
 }) {
@@ -163,6 +193,15 @@ export default function Assistant({
       );
     }
   }
+  const estado = error
+    ? 'error'
+    : conversation.isSpeaking
+      ? 'speaking'
+      : connected
+        ? 'listening'
+        : thinking || disabled
+          ? 'thinking'
+          : 'idle';
   return (
     <div
       className={embedded ? 'assistant-embedded' : 'modal-backdrop'}
@@ -182,24 +221,52 @@ export default function Assistant({
             </button>
           )}
         </header>
-        <AIMotion
-          compact
-          state={
-            error
-              ? 'error'
-              : conversation.isSpeaking
-                ? 'speaking'
-                : connected
-                  ? 'listening'
-                  : thinking || disabled
-                    ? 'thinking'
-                    : 'idle'
-          }
-        />
+        {embedded ? (
+          // Início (titular, 01/11/2026): o símbolo em cromo é o protagonista, sem o 3D; ele pulsa enquanto a IA pensa.
+          <div className={`assistant-marca state-${estado}`} aria-hidden="true">
+            <span className="cantos">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <SimboloCromo width={220} />
+            <span className="rotulo rotulo-esq">Fig. 01 · Estúdio</span>
+            <span className="rotulo rotulo-dir">NOSSOM</span>
+          </div>
+        ) : (
+          <AIMotion compact state={estado} />
+        )}
         <Title id={id + '-title'}>
-          Seu áudio, <span className="text-gradient">melhor.</span>
+          {embedded ? (
+            <>
+              Seu áudio, <br />
+              <strong>melhor.</strong>
+            </>
+          ) : (
+            <>
+              Seu áudio, <span className="text-gradient">melhor.</span>
+            </>
+          )}
         </Title>
-        <p>
+        {embedded && onUpload && (
+          <div className="assistant-acoes">
+            <button
+              type="button"
+              className="glass-btn glass-btn--ink"
+              onClick={onUpload}
+              disabled={disabled}
+            >
+              <Plus size={17} /> Enviar áudio
+            </button>
+            {onRecord && (
+              <button type="button" className="glass-btn" onClick={onRecord} disabled={disabled}>
+                <Mic size={17} /> Gravar
+              </button>
+            )}
+          </div>
+        )}
+        <p className="assistant-sub">
           {embedded ? (
             'O que você quer fazer com seu áudio?'
           ) : (
@@ -271,26 +338,30 @@ export default function Assistant({
             <ArrowUp size={18} />
           </button>
         </form>
-        <div className="suggestion-chips">
+        <div className={`suggestion-chips ${embedded ? 'atalhos' : ''}`}>
           {(
             [
               {
                 label: 'Limpar minha fala',
+                curto: 'Limpar fala',
                 operation: 'auto',
                 description: 'Reduzir ruído da gravação',
               },
               {
                 label: 'Isolar voz',
+                curto: 'Isolar voz',
                 operation: 'vocals',
                 description: 'Tirar música e ruído de fundo',
               },
               {
                 label: 'Nivelar volumes',
+                curto: 'Nivelar',
                 operation: 'level',
                 description: 'Equilibrar trechos baixos e altos',
               },
               {
                 label: 'Preparar para publicar',
+                curto: 'Publicar',
                 operation: 'master',
                 description: 'Finalizar o volume para entrega',
               },
@@ -299,6 +370,7 @@ export default function Assistant({
             <button
               key={shortcut.operation}
               data-intent={shortcut.operation}
+              data-passo={slugPasso(passoDe(shortcut.operation).label)}
               aria-label={shortcut.label}
               aria-describedby={id + shortcut.operation}
               disabled={disabled}
@@ -312,11 +384,45 @@ export default function Assistant({
                 } else location.href = toolPath(shortcut.operation);
               }}
             >
-              <strong>{shortcut.label}</strong>
+              {embedded && <i className="ponto" aria-hidden="true" />}
+              <strong>{embedded ? shortcut.curto : shortcut.label}</strong>
               <span id={id + shortcut.operation}>{shortcut.description}</span>
             </button>
           ))}
         </div>
+        {embedded && recentes && recentes.length > 0 && onAbrir && (
+          <section className="assistant-recentes" aria-labelledby={id + '-recentes'}>
+            <h2 id={id + '-recentes'} className="rotulo">
+              Recentes
+            </h2>
+            <div>
+              {recentes.slice(0, 6).map((p) => {
+                const op = operations.find((o) => o.id === p.lastOperation)?.id;
+                const passo = op ? passoDe(op).label : null;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    data-passo={passo ? slugPasso(passo) : undefined}
+                    onClick={() => onAbrir(p.id)}
+                    disabled={disabled}
+                  >
+                    <span className="recente-onda" aria-hidden="true">
+                      {barras(p.id).map((h, i) => (
+                        <i key={i} style={{ height: `${h}%` }} />
+                      ))}
+                    </span>
+                    <strong>{p.name}</strong>
+                    <small>
+                      {passo ? `${passo} · ` : ''}
+                      {quando(p.updatedAt)}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
         {thinking && (
           <p className="field-hint" role="status">
             Pensando no seu áudio…{' '}

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { allowedAccount, OPEN, signIn } from './fixtures';
+import { allowedAccount, OPEN, signIn, definirTema } from './fixtures';
 import { sealIaTokens } from '../../lib/server/zro/ia';
 
 /**
@@ -106,7 +106,7 @@ test('the Z opens only when asked: top icon or /studio/z link, asks to connect w
   const zBox = (await z.boundingBox())!;
   expect(zBox.height).toBeGreaterThan(600);
   // O tema do estúdio chega ao painel.
-  await page.getByLabel('Tema do estúdio').selectOption('light');
+  await definirTema(page, 'light');
   await expect(z).toHaveAttribute('tema', 'claro');
   // O Início volta a ser só o assistente do NOSSOM com o envio de áudio.
   await nav.getByRole('button', { name: 'Início', exact: true }).click();

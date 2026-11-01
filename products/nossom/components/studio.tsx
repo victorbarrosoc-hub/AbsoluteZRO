@@ -40,7 +40,7 @@ import InstallApp from './install-app';
 import FamilyNav from './family-nav';
 import NavBadge from './nav-badge';
 import { studioPending } from '@/lib/studio-pending';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   Gem,
@@ -51,6 +51,8 @@ import {
   Folder,
   House,
   Circle,
+  Moon,
+  Sun,
   Sparkles,
   SlidersHorizontal,
   Layers,
@@ -82,6 +84,8 @@ import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
 import Assistant from './assistant';
 import { WavePlayer } from './wave-player';
+import { PassosLista, PassosTrilho, passoDe, slugPasso } from './passos-nav';
+import { player } from '@/lib/player';
 import { restoreCloud, releaseCloudJob, cancelCloudJob } from '@/lib/cloud-audio';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import {
@@ -135,6 +139,24 @@ function metric(value: number | null, suffix = '') {
 function date(value: number) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(value);
 }
+/** Com um trecho selecionado na onda, estas aparecem sobre ele. */
+const FERRAMENTAS_TRECHO = [
+  { id: 'auto', label: 'Restaurar', passo: 'tratar' },
+  { id: 'level', label: 'Nivelar', passo: 'ajustar' },
+  { id: 'effects', label: 'Efeito', passo: 'criar' },
+];
+/** Os atalhos do campo de pedir, um de cada passo. */
+const ATALHOS_COMANDO: { id: Operation; label: string }[] = [
+  { id: 'auto', label: 'Limpar fala' },
+  { id: 'level', label: 'Nivelar' },
+  { id: 'mix', label: 'Trilha' },
+  { id: 'master', label: 'Entregar' },
+];
+/**
+ * Um ajuste do estúdio como botão giratório de metal (titular, 01/11/2026: "toques do Console"). Por baixo segue um
+ * `input range` nativo, transparente sobre o botão: arrastar para os lados gira, setas e Page Up/Down funcionam e o
+ * leitor de tela lê o valor como antes.
+ */
 function RangeControl({
   label,
   value,
@@ -154,14 +176,22 @@ function RangeControl({
   disabled: boolean;
   onChange: (value: number) => void;
 }) {
+  const fracao = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
   return (
-    <label className="audio-range">
-      <span>
-        {label}
-        <output>
-          {value}
-          {unit}
-        </output>
+    <label className={`audio-range botao-giratorio ${disabled ? 'is-disabled' : ''}`}>
+      <span className="giro" aria-hidden="true" style={{ '--giro': fracao } as React.CSSProperties}>
+        <svg viewBox="0 0 100 100">
+          <path className="giro-trilho" d="M17.5 82.5 A46 46 0 1 1 82.5 82.5" pathLength={100} />
+          <path
+            className="giro-valor"
+            d="M17.5 82.5 A46 46 0 1 1 82.5 82.5"
+            pathLength={100}
+            strokeDasharray={`${fracao * 100} 100`}
+          />
+        </svg>
+        <span className="giro-metal">
+          <i />
+        </span>
       </span>
       <input
         type="range"
@@ -174,15 +204,12 @@ function RangeControl({
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-      <span className="range-scale">
-        <small>
-          {min}
+      <span className="giro-rotulo">
+        {label}
+        <output>
+          {value}
           {unit}
-        </small>
-        <small>
-          {max}
-          {unit}
-        </small>
+        </output>
       </span>
     </label>
   );
@@ -191,6 +218,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const pathname = usePathname(),
     searchParams = useSearchParams();
   const requestedProjectId = searchParams.get('project');
+  // o player da plataforma guarda o último áudio neste aparelho: se for de outra conta, esquece
+  useEffect(() => player.conferirDono(account.id), [account.id]);
   const routeTool = routeOperation(pathname);
   const [eqPreset, setEqPreset] = useState('neutral'),
     [eqGains, setEqGains] = useState<EqGains>([0, 0, 0, 0, 0]),
@@ -259,6 +288,18 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [highpass, setHighpass] = useState(140);
   const [analysisNote, setAnalysisNote] = useState('');
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('dark');
+  // A folha da ferramenta (o Console embaixo da onda). Recolhida, fica só a onda e o campo de pedir.
+  const [folha, setFolha] = useState(true);
+  useEffect(() => {
+    const atalho = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setAssistant(true);
+      }
+    };
+    window.addEventListener('keydown', atalho);
+    return () => window.removeEventListener('keydown', atalho);
+  }, []);
   // o Set, a aba em comum do ecossistema: some sem a conta Absolute ZRO com o escopo dele
   const { set: setZro, elemento: setElemento } = useSetZro(zroIa, theme);
   useEffect(() => {
@@ -1253,8 +1294,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   );
   return (
     <div
-      className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''}`}
+      className={`studio-shell palco ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''} ${folha ? '' : 'folha-recolhida'}`}
       data-theme={theme}
+      data-passo={slugPasso(passoDe(operation).label)}
     >
       {setElemento}
       <a className="skip-link" href="#studio-main">
@@ -1279,169 +1321,180 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         >
           <X size={20} />
         </button>
-        <Link href="/" aria-label="NOSSOM página inicial">
-          <Brand />
-        </Link>
-        <div className="workspace-label">
-          <UserAvatar account={account} className="workspace-avatar" />
-          <div>
-            <strong className="workspace-name" title={account.name}>
-              {account.name}
-            </strong>
-            <span className="account-plan">{accountPlan(account, usage)}</span>
-            <small title={account.email}>{account.email}</small>
-          </div>
-          <span className="local-badge">{account.isAdmin ? 'ADM' : 'CONTA'}</span>
-        </div>
-        {!account.isAdmin && (
-          <div className="weekly-usage" role="status">
-            <span>{usage ? usageLabel(usage) : usageError || 'Consultando tratamentos…'}</span>
-            {usage && !usage.unlimited && (
-              <>
-                <progress
-                  max={Math.max(1, usage.limit ?? 300)}
-                  value={usage.used}
-                  aria-label="Minutos da franquia usados ou reservados neste mês"
-                />
-                <small>
-                  Renova dia{' '}
-                  {Number.isFinite(Date.parse(usage.resetAt))
-                    ? new Intl.DateTimeFormat('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        timeZone: 'America/Fortaleza',
-                      }).format(new Date(usage.resetAt))
-                    : '1 do próximo mês'}
-                  , à 0h · Brasília
-                </small>
-              </>
-            )}
-            {usageError && (
-              <button className="text-link" onClick={refreshUsage}>
-                Tentar novamente
+        <div className="trilho">
+          <Link href="/" aria-label="NOSSOM página inicial" className="trilho-marca">
+            <Brand />
+          </Link>
+          <nav aria-label="Navegação do estúdio">
+            <button
+              className={view === 'home' || view === 'ai' ? 'active' : ''}
+              onClick={() => navigate('home')}
+            >
+              <House size={18} /> Início
+            </button>
+            <button
+              className={view === 'projects' ? 'active' : ''}
+              onClick={() => navigate('projects')}
+              title={pending.projects.title || undefined}
+            >
+              <Folder size={18} /> Meus projetos
+              {pending.projects.count ? (
+                <NavBadge count={pending.projects.count} />
+              ) : (
+                <small>{projects.length}</small>
+              )}
+            </button>
+            <PassosTrilho
+              ferramenta={routeTool}
+              atual={operation}
+              desabilitado={!!busy || recording}
+              onFerramenta={chooseTool}
+            />
+            <button
+              className={view === 'account' ? 'active' : ''}
+              onClick={() => {
+                setSidebar(false);
+                if (!busy && !recording) visitStudio('/studio/conta');
+              }}
+            >
+              <UserRound size={18} /> Minha conta
+            </button>
+            <button
+              className={view === 'plans' ? 'active' : ''}
+              onClick={() => {
+                setSidebar(false);
+                if (!busy && !recording) visitStudio('/studio/planos');
+              }}
+            >
+              <Gem size={18} /> {account.isAdmin ? 'Planos' : 'Meu plano'}
+            </button>
+            {account.isAdmin && (
+              <button
+                className={view === 'admin' ? 'active' : ''}
+                disabled={!!busy || recording}
+                onClick={() => {
+                  setSidebar(false);
+                  visitStudio('/studio/admin');
+                }}
+              >
+                <Activity size={18} />
+                Administração
               </button>
             )}
-            {usage && (
-              <StudioLink
-                href="/studio/planos"
-                className="usage-upgrade"
-                onClick={() => setSidebar(false)}
+            {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
+            {setZro.visivel && (
+              <button
+                className={setZro.aberto ? 'active' : ''}
+                aria-haspopup="dialog"
+                aria-expanded={setZro.aberto}
+                aria-label={rotuloSet(setZro)}
+                title="Quem está online e as conversas"
+                data-set=""
+                onClick={() => {
+                  setSidebar(false);
+                  setZro.alternar();
+                }}
               >
-                {!usage.planId || usage.planId === 'free' ? 'Fazer upgrade' : 'Ver meu plano'}
-                <ArrowUpRight size={13} />
-              </StudioLink>
+                <UsersRound size={18} /> Set
+                {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
+              </button>
             )}
+            {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
+            {zroIa && (
+              <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+                <Circle size={18} strokeWidth={1.5} /> Z
+              </button>
+            )}
+          </nav>
+        </div>
+        <div className="coluna">
+          <div className="workspace-label">
+            <UserAvatar account={account} className="workspace-avatar" />
+            <div>
+              <strong className="workspace-name" title={account.name}>
+                {account.name}
+              </strong>
+              <span className="account-plan">{accountPlan(account, usage)}</span>
+              <small title={account.email}>{account.email}</small>
+            </div>
+            <span className="local-badge">{account.isAdmin ? 'ADM' : 'CONTA'}</span>
           </div>
-        )}
-        <button
-          className="button primary new-project"
-          onClick={() => fileInput.current?.click()}
-          disabled={!!busy || recording}
-        >
-          <Plus size={17} /> Novo projeto
-        </button>
-        <nav aria-label="Navegação do estúdio">
+          {!account.isAdmin && (
+            <div className="weekly-usage" role="status">
+              <span>{usage ? usageLabel(usage) : usageError || 'Consultando tratamentos…'}</span>
+              {usage && !usage.unlimited && (
+                <>
+                  <progress
+                    max={Math.max(1, usage.limit ?? 300)}
+                    value={usage.used}
+                    aria-label="Minutos da franquia usados ou reservados neste mês"
+                  />
+                  <small>
+                    Renova dia{' '}
+                    {Number.isFinite(Date.parse(usage.resetAt))
+                      ? new Intl.DateTimeFormat('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          timeZone: 'America/Fortaleza',
+                        }).format(new Date(usage.resetAt))
+                      : '1 do próximo mês'}
+                    , à 0h · Brasília
+                  </small>
+                </>
+              )}
+              {usageError && (
+                <button className="text-link" onClick={refreshUsage}>
+                  Tentar novamente
+                </button>
+              )}
+              {usage && (
+                <StudioLink
+                  href="/studio/planos"
+                  className="usage-upgrade"
+                  onClick={() => setSidebar(false)}
+                >
+                  {!usage.planId || usage.planId === 'free' ? 'Fazer upgrade' : 'Ver meu plano'}
+                  <ArrowUpRight size={13} />
+                </StudioLink>
+              )}
+            </div>
+          )}
           <button
-            className={view === 'home' || view === 'ai' ? 'active' : ''}
-            onClick={() => navigate('home')}
-          >
-            <House size={18} /> Início
-          </button>
-          <button
-            className={view === 'projects' ? 'active' : ''}
-            onClick={() => navigate('projects')}
-            title={pending.projects.title || undefined}
-          >
-            <Folder size={18} /> Meus projetos
-            {pending.projects.count ? (
-              <NavBadge count={pending.projects.count} />
-            ) : (
-              <small>{projects.length}</small>
-            )}
-          </button>
-          <button
-            className={routeTool ? 'active' : ''}
-            onClick={() => chooseTool(operation)}
+            className="button primary new-project"
+            onClick={() => fileInput.current?.click()}
             disabled={!!busy || recording}
           >
-            <AudioLines size={18} /> Estúdio
+            <Plus size={17} /> Novo projeto
           </button>
-          <button
-            className={view === 'account' ? 'active' : ''}
-            onClick={() => {
-              setSidebar(false);
-              if (!busy && !recording) visitStudio('/studio/conta');
-            }}
-          >
-            <UserRound size={18} /> Minha conta
-          </button>
-          <button
-            className={view === 'plans' ? 'active' : ''}
-            onClick={() => {
-              setSidebar(false);
-              if (!busy && !recording) visitStudio('/studio/planos');
-            }}
-          >
-            <Gem size={18} /> {account.isAdmin ? 'Planos' : 'Meu plano'}
-          </button>
-          {account.isAdmin && (
-            <button
-              className={view === 'admin' ? 'active' : ''}
-              disabled={!!busy || recording}
-              onClick={() => {
-                setSidebar(false);
-                visitStudio('/studio/admin');
-              }}
+          {routeTool && (
+            <PassosLista
+              ferramenta={routeTool}
+              atual={operation}
+              desabilitado={!!busy || recording}
+              onFerramenta={chooseTool}
+            />
+          )}
+          <FamilyNav onOpen={() => setSidebar(false)} />
+          <div className="sidebar-bottom">
+            <InstallApp onOpen={() => setSidebar(false)} />
+            <Link
+              href="/apps"
+              className="sidebar-apps-link"
+              aria-label="Aplicativos para Mac e Windows"
             >
-              <Activity size={18} />
-              Administração
-            </button>
-          )}
-          {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
-          {setZro.visivel && (
-            <button
-              className={setZro.aberto ? 'active' : ''}
-              aria-haspopup="dialog"
-              aria-expanded={setZro.aberto}
-              aria-label={rotuloSet(setZro)}
-              title="Quem está online e as conversas"
-              data-set=""
-              onClick={() => {
-                setSidebar(false);
-                setZro.alternar();
-              }}
-            >
-              <UsersRound size={18} /> Set
-              {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
-            </button>
-          )}
-          {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
-          {zroIa && (
-            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-              <Circle size={18} strokeWidth={1.5} /> Z
-            </button>
-          )}
-        </nav>
-        <FamilyNav onOpen={() => setSidebar(false)} />
-        <div className="sidebar-bottom">
-          <InstallApp onOpen={() => setSidebar(false)} />
-          <Link
-            href="/apps"
-            className="sidebar-apps-link"
-            aria-label="Aplicativos para Mac e Windows"
-          >
-            <Download size={18} />{' '}
-            <span>
-              Aplicativos<small>Mac e Windows</small>
-            </span>
-          </Link>
-          <div className="local-note">
-            <ShieldCheck size={17} />
-            <div>Originais preservados.</div>
+              <Download size={18} />{' '}
+              <span>
+                Aplicativos<small>Mac e Windows</small>
+              </span>
+            </Link>
+            <div className="local-note">
+              <ShieldCheck size={17} />
+              <div>Originais preservados.</div>
+            </div>
+            <Link href="/privacidade">
+              Privacidade <ArrowUpRight size={13} />
+            </Link>
           </div>
-          <Link href="/privacidade">
-            Privacidade <ArrowUpRight size={13} />
-          </Link>
         </div>
       </aside>
       <div className="studio-body" inert={mobile && sidebar}>
@@ -1520,18 +1573,21 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </button>
             )}
             <AccountMenu account={account} usage={usage} disabled={!!busy || recording} />
-            <label className="theme-control">
-              <span className="sr-only">Tema do estúdio</span>
-              <select
-                aria-label="Tema do estúdio"
-                value={theme}
-                onChange={(e) => changeTheme(e.target.value as 'system' | 'light' | 'dark')}
-              >
-                <option value="system">Tema do aparelho</option>
-                <option value="light">Claro</option>
-                <option value="dark">Escuro</option>
-              </select>
-            </label>
+            {/* claro ou escuro num toque, no computador e no celular; "Tema do aparelho" fica em Conta */}
+            <button
+              type="button"
+              className="icon-button theme-toggle"
+              aria-label="Tema claro"
+              aria-pressed={theme === 'light'}
+              title={theme === 'light' ? 'Voltar ao tema escuro' : 'Tema claro'}
+              onClick={() => changeTheme(theme === 'light' ? 'dark' : 'light')}
+            >
+              {theme === 'light' ? (
+                <Moon size={17} strokeWidth={1.7} />
+              ) : (
+                <Sun size={17} strokeWidth={1.7} />
+              )}
+            </button>
             <button
               className="assistant-top"
               aria-label="Assistente NOSSOM"
@@ -1793,6 +1849,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             <AssistantHome
               onOpen={() => setAssistant(true)}
               onUpload={() => fileInput.current?.click()}
+              onRecord={() => void record()}
+              recentes={projects}
+              onAbrir={(id) => void open(id)}
               onDrop={(file) => {
                 if (!busy && !recording) void upload(file, undefined, true);
               }}
@@ -1953,6 +2012,12 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                     region={region}
                     onRegion={setRegion}
                     previewOnly={cloudOperation}
+                    projeto={{ id: project.id, nome: project.name, dono: account.id }}
+                    ferramentas={FERRAMENTAS_TRECHO}
+                    onFerramenta={(id) => {
+                      chooseTool(id as Operation);
+                      setFolha(true);
+                    }}
                   />
                   {versionIndex > 0 &&
                     project.versions.some((v) => v.processing?.cloudRestoration) && (
@@ -2151,39 +2216,43 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                   </section>
                   <section className="history-panel">
                     <div className="subheading">
-                      <h2>O caminho do seu som.</h2>
+                      <h2>Versões</h2>
                       <span>
                         {project.versions.length}{' '}
                         {project.versions.length === 1 ? 'VERSÃO' : 'VERSÕES'}
                       </span>
                     </div>
-                    {project.versions.map((v, i) => (
-                      <button
-                        className={`version-row ${i === versionIndex ? 'active' : ''}`}
-                        key={v.id}
-                        disabled={!!busy}
-                        onClick={() => void selectVersion(i)}
-                      >
-                        <span className="version-marker">
-                          {i === 0 ? <ShieldCheck size={15} /> : <AudioLines size={15} />}
-                        </span>
-                        <span>
-                          <strong>{v.label}</strong>
-                          <small>
-                            {i === 0
-                              ? 'Original preservado'
-                              : (v.preset ?? 'Tratamento não destrutivo')}{' '}
-                            ·{' '}
-                            {new Date(v.createdAt).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </small>
-                        </span>
-                        <span>{metric(v.metrics.lufs, ' LUFS')}</span>
-                        {i === versionIndex ? <Check size={15} /> : <Undo2 size={14} />}
-                      </button>
-                    ))}
+                    <div className="versoes-cadeia">
+                      {project.versions.map((v, i) => (
+                        <Fragment key={v.id}>
+                          {i > 0 && <ChevronRight size={16} className="seta" aria-hidden="true" />}
+                          <button
+                            className={`version-row ${i === versionIndex ? 'active' : ''}`}
+                            disabled={!!busy}
+                            onClick={() => void selectVersion(i)}
+                          >
+                            <span className="version-marker">
+                              {i === 0 ? <ShieldCheck size={15} /> : <AudioLines size={15} />}
+                            </span>
+                            <span>
+                              <strong>{v.label}</strong>
+                              <small>
+                                {i === 0
+                                  ? 'Original preservado'
+                                  : (v.preset ?? 'Tratamento não destrutivo')}{' '}
+                                ·{' '}
+                                {new Date(v.createdAt).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </small>
+                            </span>
+                            <span>{metric(v.metrics.lufs, ' LUFS')}</span>
+                            {i === versionIndex ? <Check size={15} /> : <Undo2 size={14} />}
+                          </button>
+                        </Fragment>
+                      ))}
+                    </div>
                   </section>
                   <div className="export-strip">
                     <FileAudio size={19} />
@@ -2232,896 +2301,975 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                     )}
                   </div>
                 </div>
-                <aside className="treatment-panel">
-                  <div className="panel-heading">
-                    <Sparkles size={18} />
-                    <h2>{selectedTool.label}</h2>
-                  </div>
-                  <p className="panel-subtitle">{selectedTool.description}</p>
-                  {speechTool && operation !== 'auto' && (
-                    <div className="automatic-card">
-                      <div>
-                        <Sparkles size={22} />
-                        <h3>{autoEnabled ? 'A IA cuida dos ajustes.' : 'Ajustes manuais'}</h3>
-                      </div>
-                      <p>
-                        {cloudOperation || autoEnabled
-                          ? 'Analisamos a gravação original e adaptamos a limpeza à sua voz, preservando o timbre e o estéreo. O volume e os picos são verificados no resultado.'
-                          : 'Personalize o tratamento ou volte à análise automática.'}
-                      </p>
-                      <button
-                        className="text-link"
-                        disabled={!!busy}
-                        onClick={() => setAutomatic(!automatic)}
-                      >
-                        {autoEnabled ? 'Ajustar manualmente' : 'Usar análise automática'}
-                      </button>
-                    </div>
-                  )}
-                  {operation === 'transcribe' && transcriptCues && project.transcript && (
-                    <div className="transcript-card">
-                      <div className="transcript-meta">
-                        <strong>{transcriptCues.length} legendas</strong>
-                        <span>
-                          {project.transcript.words.length} palavras
-                          {project.transcript.language
-                            ? ` · ${project.transcript.language.toUpperCase()}`
-                            : ''}
-                        </span>
-                      </div>
-                      <ol className="transcript-cues" aria-label="Prévia das legendas">
-                        {transcriptCues.slice(0, 60).map((cue, i) => (
-                          <li key={i}>
-                            <time>{formatTime(cue.start)}</time>
-                            <span>{cue.text}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      <div className="transcript-actions" role="group" aria-label="Baixar legendas">
-                        {(['srt', 'vtt', 'txt'] as const).map((format) => (
-                          <button
-                            key={format}
-                            className={`button ${format === 'srt' ? 'primary' : 'secondary'} small`}
-                            disabled={!!busy}
-                            onClick={() => exportTranscript(format)}
-                          >
-                            <Download size={14} /> {format.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {operation === 'remix' && project.stems && (
-                    <StemMixer
-                      files={project.stems.files}
-                      gainDb={project.stems.gainDb}
-                      busy={!!busy}
-                      onRender={(settings) => void renderRemix(settings)}
+                <section
+                  className="folha-ferramenta"
+                  data-passo={slugPasso(passoDe(operation).label)}
+                  aria-label="Ferramenta"
+                >
+                  <div className="folha-topo">
+                    <PassosTrilho
+                      ferramenta={routeTool}
+                      atual={operation}
+                      desabilitado={!!busy || recording}
+                      onFerramenta={chooseTool}
                     />
-                  )}
-                  {operation === 'vocals' && !pendingJob && (
-                    <div
-                      className="preset-grid voice-modes"
-                      role="group"
-                      aria-label="Tipo de áudio"
+                    <button
+                      type="button"
+                      className="icon-button folha-fechar"
+                      aria-label="Recolher a ferramenta"
+                      aria-expanded={folha}
+                      onClick={() => setFolha(false)}
                     >
-                      <button
-                        className={voiceMode === 'speech' ? 'active' : ''}
-                        aria-pressed={voiceMode === 'speech'}
-                        disabled={!!busy}
-                        onClick={() => setVoiceMode('speech')}
-                      >
-                        <strong>Fala</strong>
-                        <span>Podcast, vídeo, entrevista.</span>
-                      </button>
-                      <button
-                        className={voiceMode === 'singing' ? 'active' : ''}
-                        aria-pressed={voiceMode === 'singing'}
-                        disabled={!!busy}
-                        onClick={() => setVoiceMode('singing')}
-                      >
-                        <strong>Música</strong>
-                        <span>Só o vocal da canção, em estéreo.</span>
-                      </button>
-                    </div>
-                  )}
-                  {cloudOperation && (
-                    <div className="cloud-restoration-note">
-                      <strong>
-                        {pendingJob
-                          ? (
-                              {
-                                uploading: 'Envio incompleto',
-                                submitting: 'Confirmando envio',
-                                queued: 'Na fila',
-                                running:
-                                  operation === 'transcribe'
-                                    ? 'Escrevendo'
-                                    : operation === 'remix'
-                                      ? 'Separando'
-                                      : 'Restaurando',
-                                completed: 'Resultado pronto',
-                              } as Record<string, string>
-                            )[pendingJob.status] || 'Em andamento'
-                          : cloudReady === null
-                            ? 'Preparando…'
-                            : cloudReady
-                              ? operation === 'remix'
-                                ? project.stems
-                                  ? 'Faixas prontas'
-                                  : 'Pronto para separar os instrumentos'
-                                : operation === 'transcribe'
-                                  ? 'Pronto para escrever o que foi dito'
-                                  : operation === 'vocals'
-                                    ? voiceMode === 'speech'
-                                      ? 'Pronto para isolar sua voz'
-                                      : 'Pronto para separar o cantor'
-                                    : 'Pronto para melhorar sua voz'
-                              : 'A melhoria com IA está temporariamente indisponível'}
-                      </strong>
-                      {!pendingJob && (
-                        <p>
-                          {operation === 'vocals' && voiceMode === 'singing'
-                            ? 'Uma cópia vai para a IA. Pode sobrar um pouco dos instrumentos.'
-                            : operation === 'remix'
-                              ? 'Uma cópia vai para a IA. Pode sobrar um pouco de um instrumento no outro.'
-                              : operation === 'transcribe'
-                                ? 'Uma cópia do som vai para a IA. Revise nomes antes de publicar.'
-                                : 'Uma cópia vai para a IA. Seu original fica salvo.'}
-                        </p>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="folha-corpo">
+                    <PassosLista
+                      ferramenta={routeTool}
+                      atual={operation}
+                      desabilitado={!!busy || recording}
+                      onFerramenta={chooseTool}
+                    />
+                    <aside className="treatment-panel">
+                      <div className="panel-heading">
+                        <Sparkles size={18} />
+                        <h2>{selectedTool.label}</h2>
+                      </div>
+                      <p className="panel-subtitle">{selectedTool.description}</p>
+                      {speechTool && operation !== 'auto' && (
+                        <div className="automatic-card">
+                          <div>
+                            <Sparkles size={22} />
+                            <h3>{autoEnabled ? 'A IA cuida dos ajustes.' : 'Ajustes manuais'}</h3>
+                          </div>
+                          <p>
+                            {cloudOperation || autoEnabled
+                              ? 'Analisamos a gravação original e adaptamos a limpeza à sua voz, preservando o timbre e o estéreo. O volume e os picos são verificados no resultado.'
+                              : 'Personalize o tratamento ou volte à análise automática.'}
+                          </p>
+                          <button
+                            className="text-link"
+                            disabled={!!busy}
+                            onClick={() => setAutomatic(!automatic)}
+                          >
+                            {autoEnabled ? 'Ajustar manualmente' : 'Usar análise automática'}
+                          </button>
+                        </div>
                       )}
-                      {!cloudReady && operation !== 'vocals' && (
-                        <button
-                          className="text-link"
-                          disabled={!!busy}
-                          onClick={() => chooseTool('denoise')}
+                      {operation === 'transcribe' && transcriptCues && project.transcript && (
+                        <div className="transcript-card">
+                          <div className="transcript-meta">
+                            <strong>{transcriptCues.length} legendas</strong>
+                            <span>
+                              {project.transcript.words.length} palavras
+                              {project.transcript.language
+                                ? ` · ${project.transcript.language.toUpperCase()}`
+                                : ''}
+                            </span>
+                          </div>
+                          <ol className="transcript-cues" aria-label="Prévia das legendas">
+                            {transcriptCues.slice(0, 60).map((cue, i) => (
+                              <li key={i}>
+                                <time>{formatTime(cue.start)}</time>
+                                <span>{cue.text}</span>
+                              </li>
+                            ))}
+                          </ol>
+                          <div
+                            className="transcript-actions"
+                            role="group"
+                            aria-label="Baixar legendas"
+                          >
+                            {(['srt', 'vtt', 'txt'] as const).map((format) => (
+                              <button
+                                key={format}
+                                className={`button ${format === 'srt' ? 'primary' : 'secondary'} small`}
+                                disabled={!!busy}
+                                onClick={() => exportTranscript(format)}
+                              >
+                                <Download size={14} /> {format.toUpperCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {operation === 'remix' && project.stems && (
+                        <StemMixer
+                          files={project.stems.files}
+                          gainDb={project.stems.gainDb}
+                          busy={!!busy}
+                          onRender={(settings) => void renderRemix(settings)}
+                        />
+                      )}
+                      {operation === 'vocals' && !pendingJob && (
+                        <div
+                          className="preset-grid voice-modes"
+                          role="group"
+                          aria-label="Tipo de áudio"
                         >
-                          Experimentar outra limpeza <ArrowRight size={15} />
-                        </button>
+                          <button
+                            className={voiceMode === 'speech' ? 'active' : ''}
+                            aria-pressed={voiceMode === 'speech'}
+                            disabled={!!busy}
+                            onClick={() => setVoiceMode('speech')}
+                          >
+                            <strong>Fala</strong>
+                            <span>Podcast, vídeo, entrevista.</span>
+                          </button>
+                          <button
+                            className={voiceMode === 'singing' ? 'active' : ''}
+                            aria-pressed={voiceMode === 'singing'}
+                            disabled={!!busy}
+                            onClick={() => setVoiceMode('singing')}
+                          >
+                            <strong>Música</strong>
+                            <span>Só o vocal da canção, em estéreo.</span>
+                          </button>
+                        </div>
                       )}
-                      {pendingJob && (
-                        <div className="cloud-pending">
-                          {(pendingJob.createdAt || pendingJob.duration) && (
-                            <p className="cloud-pending-meta">
-                              {[
-                                pendingJob.createdAt &&
-                                  new Date(pendingJob.createdAt).toLocaleString('pt-BR', {
-                                    timeZone: 'America/Fortaleza',
-                                    dateStyle: 'short',
-                                    timeStyle: 'short',
-                                  }),
-                                pendingJob.duration &&
-                                  `${Math.floor(pendingJob.duration / 60)}min ${Math.round(pendingJob.duration % 60)}s`,
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </p>
-                          )}
-                          {pendingJob.projectId !== project.id && (
+                      {cloudOperation && (
+                        <div className="cloud-restoration-note">
+                          <strong>
+                            {pendingJob
+                              ? (
+                                  {
+                                    uploading: 'Envio incompleto',
+                                    submitting: 'Confirmando envio',
+                                    queued: 'Na fila',
+                                    running:
+                                      operation === 'transcribe'
+                                        ? 'Escrevendo'
+                                        : operation === 'remix'
+                                          ? 'Separando'
+                                          : 'Restaurando',
+                                    completed: 'Resultado pronto',
+                                  } as Record<string, string>
+                                )[pendingJob.status] || 'Em andamento'
+                              : cloudReady === null
+                                ? 'Preparando…'
+                                : cloudReady
+                                  ? operation === 'remix'
+                                    ? project.stems
+                                      ? 'Faixas prontas'
+                                      : 'Pronto para separar os instrumentos'
+                                    : operation === 'transcribe'
+                                      ? 'Pronto para escrever o que foi dito'
+                                      : operation === 'vocals'
+                                        ? voiceMode === 'speech'
+                                          ? 'Pronto para isolar sua voz'
+                                          : 'Pronto para separar o cantor'
+                                        : 'Pronto para melhorar sua voz'
+                                  : 'A melhoria com IA está temporariamente indisponível'}
+                          </strong>
+                          {!pendingJob && (
                             <p>
-                              {pendingJob.projectId
-                                ? 'Este pedido é de outro projeto.'
-                                : 'Pedido iniciado em outro aparelho. Recupere o original para acompanhar.'}
+                              {operation === 'vocals' && voiceMode === 'singing'
+                                ? 'Uma cópia vai para a IA. Pode sobrar um pouco dos instrumentos.'
+                                : operation === 'remix'
+                                  ? 'Uma cópia vai para a IA. Pode sobrar um pouco de um instrumento no outro.'
+                                  : operation === 'transcribe'
+                                    ? 'Uma cópia do som vai para a IA. Revise nomes antes de publicar.'
+                                    : 'Uma cópia vai para a IA. Seu original fica salvo.'}
                             </p>
                           )}
-                          {pendingJob.status === 'submitting' && (
-                            <p>Ainda sem confirmação de que o tratamento começou.</p>
-                          )}
-                          {pendingJob.projectId && pendingJob.projectId !== project.id && (
-                            <StudioLink
-                              className="text-link"
-                              href={toolPath(
-                                presetOperation(pendingJob.preset),
-                                pendingJob.projectId,
-                              )}
-                            >
-                              Abrir áudio em andamento
-                            </StudioLink>
-                          )}
-                          {!pendingJob.projectId && (
+                          {!cloudReady && operation !== 'vocals' && (
                             <button
-                              className="button secondary"
-                              disabled={!!busy || pendingJob.status === 'uploading'}
-                              onClick={() => void recoverPendingAudio()}
+                              className="text-link"
+                              disabled={!!busy}
+                              onClick={() => chooseTool('denoise')}
                             >
-                              Recuperar áudio deste pedido <ArrowRight size={15} />
+                              Experimentar outra limpeza <ArrowRight size={15} />
                             </button>
                           )}
-                          {!pendingJob.projectId && pendingJob.status === 'uploading' && (
-                            <p>
-                              Para concluir o envio, volte ao navegador onde começou. O arquivo
-                              ainda não foi enviado por completo.
-                            </p>
-                          )}
-                          {!busy && (
-                            <div className="cloud-pending-actions">
-                              <button
-                                className="text-link"
-                                onClick={async () => {
-                                  try {
-                                    const cancellation = await cancelCloudJob(pendingJob.id);
-                                    if (cancellation.status === 'submitting')
-                                      throw new Error(
-                                        'O envio ainda está sem confirmação. Não foi possível confirmar o cancelamento; verifique o andamento novamente.',
-                                      );
-                                    const r = await fetch(`/api/audio/jobs?id=${pendingJob.id}`, {
-                                      cache: 'no-store',
-                                    });
-                                    const data = await r.json();
-                                    if (['failed', 'cancelled', 'completed'].includes(data.status))
-                                      await releaseCloudJob(pendingJob.id);
-                                    await refreshCloud();
-                                    await refreshUsage();
-                                    notify(
-                                      'Cancelamento solicitado. Seu áudio original continua salvo.',
-                                    );
-                                  } catch (error) {
-                                    setError(
-                                      error instanceof Error
-                                        ? error.message
-                                        : 'Não foi possível confirmar o cancelamento. Tente novamente.',
-                                    );
-                                  }
-                                }}
-                              >
-                                Cancelar
-                              </button>
-                              <button className="text-link" onClick={() => void refreshCloud()}>
-                                Atualizar
-                              </button>
+                          {pendingJob && (
+                            <div className="cloud-pending">
+                              {(pendingJob.createdAt || pendingJob.duration) && (
+                                <p className="cloud-pending-meta">
+                                  {[
+                                    pendingJob.createdAt &&
+                                      new Date(pendingJob.createdAt).toLocaleString('pt-BR', {
+                                        timeZone: 'America/Fortaleza',
+                                        dateStyle: 'short',
+                                        timeStyle: 'short',
+                                      }),
+                                    pendingJob.duration &&
+                                      `${Math.floor(pendingJob.duration / 60)}min ${Math.round(pendingJob.duration % 60)}s`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                </p>
+                              )}
+                              {pendingJob.projectId !== project.id && (
+                                <p>
+                                  {pendingJob.projectId
+                                    ? 'Este pedido é de outro projeto.'
+                                    : 'Pedido iniciado em outro aparelho. Recupere o original para acompanhar.'}
+                                </p>
+                              )}
+                              {pendingJob.status === 'submitting' && (
+                                <p>Ainda sem confirmação de que o tratamento começou.</p>
+                              )}
+                              {pendingJob.projectId && pendingJob.projectId !== project.id && (
+                                <StudioLink
+                                  className="text-link"
+                                  href={toolPath(
+                                    presetOperation(pendingJob.preset),
+                                    pendingJob.projectId,
+                                  )}
+                                >
+                                  Abrir áudio em andamento
+                                </StudioLink>
+                              )}
+                              {!pendingJob.projectId && (
+                                <button
+                                  className="button secondary"
+                                  disabled={!!busy || pendingJob.status === 'uploading'}
+                                  onClick={() => void recoverPendingAudio()}
+                                >
+                                  Recuperar áudio deste pedido <ArrowRight size={15} />
+                                </button>
+                              )}
+                              {!pendingJob.projectId && pendingJob.status === 'uploading' && (
+                                <p>
+                                  Para concluir o envio, volte ao navegador onde começou. O arquivo
+                                  ainda não foi enviado por completo.
+                                </p>
+                              )}
+                              {!busy && (
+                                <div className="cloud-pending-actions">
+                                  <button
+                                    className="text-link"
+                                    onClick={async () => {
+                                      try {
+                                        const cancellation = await cancelCloudJob(pendingJob.id);
+                                        if (cancellation.status === 'submitting')
+                                          throw new Error(
+                                            'O envio ainda está sem confirmação. Não foi possível confirmar o cancelamento; verifique o andamento novamente.',
+                                          );
+                                        const r = await fetch(
+                                          `/api/audio/jobs?id=${pendingJob.id}`,
+                                          {
+                                            cache: 'no-store',
+                                          },
+                                        );
+                                        const data = await r.json();
+                                        if (
+                                          ['failed', 'cancelled', 'completed'].includes(data.status)
+                                        )
+                                          await releaseCloudJob(pendingJob.id);
+                                        await refreshCloud();
+                                        await refreshUsage();
+                                        notify(
+                                          'Cancelamento solicitado. Seu áudio original continua salvo.',
+                                        );
+                                      } catch (error) {
+                                        setError(
+                                          error instanceof Error
+                                            ? error.message
+                                            : 'Não foi possível confirmar o cancelamento. Tente novamente.',
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button className="text-link" onClick={() => void refreshCloud()}>
+                                    Atualizar
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       )}
-                    </div>
-                  )}
-                  <div className={`treatment-controls ${autoEnabled ? 'automatic-controls' : ''}`}>
-                    {operation === 'effects' && (
-                      <>
-                        <div
-                          className="preset-grid effect-presets"
-                          role="group"
-                          aria-label="Presets de efeitos"
-                        >
-                          {effectPresets.map((p) => (
-                            <button
-                              key={p.id}
-                              className={effect === p.id ? 'active' : ''}
-                              aria-pressed={effect === p.id}
-                              disabled={!!busy}
-                              onClick={() => selectEffect(p.id)}
+                      <div
+                        className={`treatment-controls ${autoEnabled ? 'automatic-controls' : ''}`}
+                      >
+                        {operation === 'effects' && (
+                          <>
+                            <div
+                              className="preset-grid effect-presets"
+                              role="group"
+                              aria-label="Presets de efeitos"
                             >
-                              <strong>{p.label}</strong>
-                              <span>{p.description}</span>
-                            </button>
-                          ))}
-                        </div>
-                        <RangeControl
-                          label="Intensidade do efeito"
-                          value={effectMix}
-                          min={0}
-                          max={100}
-                          unit="%"
-                          disabled={!!busy || effect === 'none'}
-                          onChange={setEffectMix}
-                        />
-                        <p className="field-hint">
-                          Trocar o efeito parte da mesma versão de origem, sem acumular
-                          reverberação. A cauda é preservada na exportação.
-                        </p>
-                        {version.operation === 'effects' && (
-                          <button
-                            className="button secondary small"
+                              {effectPresets.map((p) => (
+                                <button
+                                  key={p.id}
+                                  className={effect === p.id ? 'active' : ''}
+                                  aria-pressed={effect === p.id}
+                                  disabled={!!busy}
+                                  onClick={() => selectEffect(p.id)}
+                                >
+                                  <strong>{p.label}</strong>
+                                  <span>{p.description}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <RangeControl
+                              label="Intensidade do efeito"
+                              value={effectMix}
+                              min={0}
+                              max={100}
+                              unit="%"
+                              disabled={!!busy || effect === 'none'}
+                              onChange={setEffectMix}
+                            />
+                            <p className="field-hint">
+                              Trocar o efeito parte da mesma versão de origem, sem acumular
+                              reverberação. A cauda é preservada na exportação.
+                            </p>
+                            {version.operation === 'effects' && (
+                              <button
+                                className="button secondary small"
+                                disabled={!!busy}
+                                onClick={() => {
+                                  const index = project.versions.findIndex(
+                                    (v) => v.id === version.parentId,
+                                  );
+                                  if (index >= 0) {
+                                    selectEffect('none');
+                                    void selectVersion(index);
+                                  }
+                                }}
+                              >
+                                Remover efeito
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {operation === 'eq' && (
+                          <EqualizerControls
+                            gains={eqGains}
+                            highpass={eqHighpass}
+                            preset={eqPreset}
+                            onPreset={selectEq}
+                            onGains={(g) => {
+                              setEqGains(g);
+                              setEqPreset('custom');
+                            }}
+                            onHighpass={setEqHighpass}
                             disabled={!!busy}
-                            onClick={() => {
-                              const index = project.versions.findIndex(
-                                (v) => v.id === version.parentId,
-                              );
-                              if (index >= 0) {
-                                selectEffect('none');
-                                void selectVersion(index);
+                          />
+                        )}
+                        {operation === 'clarity' && (
+                          <div
+                            className="preset-grid voice-presets"
+                            role="group"
+                            aria-label="Presets de voz"
+                          >
+                            {voicePresets.map((p) => (
+                              <button
+                                key={p.id}
+                                className={voicePreset === p.id ? 'active' : ''}
+                                aria-pressed={voicePreset === p.id}
+                                disabled={!!busy}
+                                onClick={() => selectVoice(p.id)}
+                              >
+                                <strong>{p.label}</strong>
+                                <span>{p.description}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {operation === 'master' && (
+                          <>
+                            <div
+                              className="preset-grid master-presets"
+                              role="group"
+                              aria-label="Presets de masterização"
+                            >
+                              <button
+                                className={masterRecipe === 'broadcast' ? 'active' : ''}
+                                aria-pressed={masterRecipe === 'broadcast'}
+                                disabled={!!busy}
+                                onClick={() => selectMaster('broadcast')}
+                              >
+                                <strong>Transmissão + Limite −3 dB</strong>
+                                <span>
+                                  Sua cadeia do Premiere, com quatro bandas e dois limitadores.
+                                </span>
+                              </button>
+                              <button
+                                className={masterRecipe === studioVoice.id ? 'active' : ''}
+                                aria-pressed={masterRecipe === studioVoice.id}
+                                disabled={!!busy}
+                                onClick={() => selectMaster(studioVoice.id)}
+                              >
+                                <strong>{studioVoice.label}</strong>
+                                <span>
+                                  Graves limpos, presença, de-esser leve e {studioVoice.lufs} LUFS ·{' '}
+                                  {studioVoice.peak} dBTP
+                                </span>
+                              </button>
+                              {deliveryPresets.map((p) => (
+                                <button
+                                  key={p.id}
+                                  disabled={!!busy}
+                                  className={masterRecipe === p.id ? 'active' : ''}
+                                  aria-pressed={masterRecipe === p.id}
+                                  onClick={() => selectMaster(p.id)}
+                                >
+                                  <strong>{p.label}</strong>
+                                  <span>
+                                    {p.lufs} LUFS · {p.peak} dBTP
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                            {masterRecipe === 'broadcast' && (
+                              <BroadcastControls
+                                settings={broadcast}
+                                onChange={setBroadcast}
+                                disabled={!!busy}
+                              />
+                            )}
+                          </>
+                        )}
+
+                        {(operation === 'denoise' || operation === 'clarity') && (
+                          <>
+                            <span className="field-label">MODO DE LIMPEZA</span>
+                            <div
+                              className="audio-mode-options"
+                              role="group"
+                              aria-label="Modo de limpeza"
+                            >
+                              <button
+                                aria-pressed={denoiseMode === 'studio'}
+                                className={denoiseMode === 'studio' ? 'active' : ''}
+                                disabled={!!busy}
+                                onClick={() => setDenoiseMode('studio')}
+                              >
+                                <Sparkles size={18} />
+                                <strong>NOSSOM Voice</strong>
+                                <span>DeepFilterNet3 · qualidade</span>
+                              </button>
+                              <button
+                                aria-pressed={denoiseMode === 'voice'}
+                                className={denoiseMode === 'voice' ? 'active' : ''}
+                                disabled={!!busy}
+                                onClick={() => setDenoiseMode('voice')}
+                              >
+                                <Mic size={18} />
+                                <strong>Voz · IA local</strong>
+                                <span>Modelo neural para fala</span>
+                              </button>
+                              <button
+                                aria-pressed={denoiseMode === 'general'}
+                                className={denoiseMode === 'general' ? 'active' : ''}
+                                disabled={!!busy}
+                                onClick={() => setDenoiseMode('general')}
+                              >
+                                <AudioLines size={18} />
+                                <strong>Áudio geral</strong>
+                                <span>Redução espectral</span>
+                              </button>
+                            </div>
+                            <p className="field-hint">
+                              {denoiseMode === 'studio'
+                                ? 'Restauração neural em banda completa, a 48 kHz. Modelo DeepFilterNet3 executado localmente. O primeiro uso baixa cerca de 33 MB.'
+                                : denoiseMode === 'voice'
+                                  ? 'O modelo RNNoise distingue fala de ruído. Para música e instrumentos, use Áudio geral.'
+                                  : 'Atenua ruído contínuo preservando conteúdo musical. Ajuste o piso para o seu ambiente.'}
+                            </p>
+                          </>
+                        )}
+                        {denoiseMode === 'studio' &&
+                          (operation === 'denoise' || operation === 'clarity') && (
+                            <RangeControl
+                              label="Supressão neural máxima"
+                              value={neuralAttenuation}
+                              min={0}
+                              max={80}
+                              unit=" dB"
+                              disabled={!!busy}
+                              onChange={setNeuralAttenuation}
+                            />
+                          )}
+                        {operation !== 'effects' && !cloudOperation && (
+                          <>
+                            <RangeControl
+                              label={
+                                operation === 'master'
+                                  ? masterRecipe === 'broadcast'
+                                    ? 'Mistura do preset'
+                                    : 'Controle de dinâmica'
+                                  : operation === 'mix'
+                                    ? 'Redução da trilha durante a fala'
+                                    : 'Intensidade do tratamento'
                               }
+                              value={intensity}
+                              min={0}
+                              max={100}
+                              unit="%"
+                              disabled={!!busy}
+                              onChange={setIntensity}
+                            />
+                            <div
+                              className="intensity-selector"
+                              role="group"
+                              aria-label="Atalhos de intensidade"
+                            >
+                              {[
+                                [30, 'Suave'],
+                                [65, 'Equilibrado'],
+                                [100, 'Máximo'],
+                              ].map(([value, label]) => (
+                                <button
+                                  key={value}
+                                  disabled={!!busy}
+                                  className={intensity === value ? 'active' : ''}
+                                  onClick={() => setIntensity(Number(value))}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                            <p className="field-hint">
+                              {operation === 'master'
+                                ? masterRecipe === 'broadcast'
+                                  ? 'Mistura o sinal original com a cadeia de transmissão. Em 100%, utiliza somente o resultado tratado.'
+                                  : 'Controla a faixa dinâmica pedida ao normalizador. Confira o resultado nas medições abaixo.'
+                                : operation === 'mix'
+                                  ? 'Quanto maior, mais a trilha recua enquanto há sinal na voz.'
+                                  : intensity === 0
+                                    ? 'Sem tratamento adicional.'
+                                    : intensity > 85
+                                      ? 'Tratamento intenso. Compare com o original para conferir se os detalhes continuam naturais.'
+                                      : 'Ajuste livremente, aplique e compare o resultado com o original.'}
+                            </p>
+                          </>
+                        )}
+                        {['denoise', 'clarity', 'wind'].includes(operation) &&
+                          (denoiseMode === 'general' || operation === 'wind') && (
+                            <>
+                              <RangeControl
+                                label="Redução máxima de ruído"
+                                value={noiseReduction}
+                                min={0}
+                                max={48}
+                                unit=" dB"
+                                disabled={!!busy}
+                                onChange={setNoiseReduction}
+                              />
+                              <RangeControl
+                                label="Piso de ruído"
+                                value={noiseFloor ?? version.info.noiseFloor ?? -50}
+                                min={-80}
+                                max={-20}
+                                unit=" dB"
+                                disabled={!!busy}
+                                onChange={setNoiseFloor}
+                              />
+                              <button
+                                className="text-link analyze-noise"
+                                disabled={!!busy}
+                                onClick={() =>
+                                  void run(async () => {
+                                    setBusy('Analisando os trechos mais silenciosos…');
+                                    const buffer = await decode(version.blob);
+                                    const profile = estimateNoiseFloor(
+                                      buffer.getChannelData(0),
+                                      buffer.sampleRate,
+                                    );
+                                    setNoiseFloor(profile.floorDb);
+                                    setAnalysisNote(
+                                      profile.confidence === 'estimated'
+                                        ? `Piso estimado: ${profile.floorDb} dB. Ajuste pela escuta antes de aplicar.`
+                                        : 'Não encontrei uma pausa clara para estimar o ruído. Mantive −50 dB como ponto de partida.',
+                                    );
+                                  })
+                                }
+                              >
+                                <Activity size={14} /> Estimar pelo áudio
+                              </button>
+                              {analysisNote && (
+                                <p className="field-hint" role="status">
+                                  {analysisNote}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        {operation === 'clarity' && (
+                          <>
+                            <RangeControl
+                              label="Controle de sibilância"
+                              value={deess}
+                              min={0}
+                              max={100}
+                              unit="%"
+                              disabled={!!busy}
+                              onChange={setDeess}
+                            />
+                            <label className="field-label" htmlFor="hum-mode">
+                              HUM DE REDE
+                            </label>
+                            <select
+                              id="hum-mode"
+                              value={hum}
+                              disabled={!!busy}
+                              onChange={(e) => setHum(Number(e.target.value))}
+                            >
+                              <option value={0}>Desligado</option>
+                              <option value={50}>50 Hz + harmônicos</option>
+                              <option value={60}>60 Hz + harmônicos</option>
+                            </select>
+                          </>
+                        )}
+                        {operation === 'clarity' && (
+                          <RangeControl
+                            label="Presença da voz"
+                            value={presence}
+                            min={0}
+                            max={9}
+                            step={0.5}
+                            unit=" dB"
+                            disabled={!!busy}
+                            onChange={setPresence}
+                          />
+                        )}
+                        {(operation === 'clarity' || operation === 'level') && (
+                          <RangeControl
+                            label="Compressão"
+                            value={compression}
+                            min={1}
+                            max={8}
+                            step={0.5}
+                            unit=":1"
+                            disabled={!!busy}
+                            onChange={setCompression}
+                          />
+                        )}
+                        {operation === 'wind' && (
+                          <RangeControl
+                            label="Corte de graves"
+                            value={highpass}
+                            min={30}
+                            max={300}
+                            step={5}
+                            unit=" Hz"
+                            disabled={!!busy}
+                            onChange={setHighpass}
+                          />
+                        )}
+                      </div>
+                      {operation === 'master' && masterRecipe !== 'broadcast' && (
+                        <>
+                          <label className="field-label" htmlFor="destination">
+                            ONDE ESSE SOM VAI CHEGAR?
+                          </label>
+                          <select
+                            id="destination"
+                            value={preset}
+                            disabled={!!busy}
+                            onChange={(e) => {
+                              setMasterRecipe(e.target.value);
+                              const p = deliveryPresets.find((p) => p.id === e.target.value)!;
+                              setPreset(p.id);
+                              setTarget(p.lufs);
+                              setPeak(p.peak);
                             }}
                           >
-                            Remover efeito
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {operation === 'eq' && (
-                      <EqualizerControls
-                        gains={eqGains}
-                        highpass={eqHighpass}
-                        preset={eqPreset}
-                        onPreset={selectEq}
-                        onGains={(g) => {
-                          setEqGains(g);
-                          setEqPreset('custom');
-                        }}
-                        onHighpass={setEqHighpass}
-                        disabled={!!busy}
-                      />
-                    )}
-                    {operation === 'clarity' && (
-                      <div
-                        className="preset-grid voice-presets"
-                        role="group"
-                        aria-label="Presets de voz"
-                      >
-                        {voicePresets.map((p) => (
-                          <button
-                            key={p.id}
-                            className={voicePreset === p.id ? 'active' : ''}
-                            aria-pressed={voicePreset === p.id}
+                            {deliveryPresets.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="field-hint">
+                            {deliveryPresets.find((p) => p.id === preset)?.note}
+                          </p>
+                          <RangeControl
+                            label="Volume final"
+                            value={target}
+                            min={-30}
+                            max={-10}
+                            step={0.5}
+                            unit=" LUFS"
                             disabled={!!busy}
-                            onClick={() => selectVoice(p.id)}
-                          >
-                            <strong>{p.label}</strong>
-                            <span>{p.description}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {operation === 'master' && (
-                      <>
-                        <div
-                          className="preset-grid master-presets"
-                          role="group"
-                          aria-label="Presets de masterização"
-                        >
-                          <button
-                            className={masterRecipe === 'broadcast' ? 'active' : ''}
-                            aria-pressed={masterRecipe === 'broadcast'}
-                            disabled={!!busy}
-                            onClick={() => selectMaster('broadcast')}
-                          >
-                            <strong>Transmissão + Limite −3 dB</strong>
-                            <span>
-                              Sua cadeia do Premiere, com quatro bandas e dois limitadores.
-                            </span>
-                          </button>
-                          <button
-                            className={masterRecipe === studioVoice.id ? 'active' : ''}
-                            aria-pressed={masterRecipe === studioVoice.id}
-                            disabled={!!busy}
-                            onClick={() => selectMaster(studioVoice.id)}
-                          >
-                            <strong>{studioVoice.label}</strong>
-                            <span>
-                              Graves limpos, presença, de-esser leve e {studioVoice.lufs} LUFS ·{' '}
-                              {studioVoice.peak} dBTP
-                            </span>
-                          </button>
-                          {deliveryPresets.map((p) => (
-                            <button
-                              key={p.id}
-                              disabled={!!busy}
-                              className={masterRecipe === p.id ? 'active' : ''}
-                              aria-pressed={masterRecipe === p.id}
-                              onClick={() => selectMaster(p.id)}
-                            >
-                              <strong>{p.label}</strong>
-                              <span>
-                                {p.lufs} LUFS · {p.peak} dBTP
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                        {masterRecipe === 'broadcast' && (
-                          <BroadcastControls
-                            settings={broadcast}
-                            onChange={setBroadcast}
-                            disabled={!!busy}
+                            onChange={setTarget}
                           />
-                        )}
-                      </>
-                    )}
-
-                    {(operation === 'denoise' || operation === 'clarity') && (
-                      <>
-                        <span className="field-label">MODO DE LIMPEZA</span>
-                        <div
-                          className="audio-mode-options"
-                          role="group"
-                          aria-label="Modo de limpeza"
-                        >
-                          <button
-                            aria-pressed={denoiseMode === 'studio'}
-                            className={denoiseMode === 'studio' ? 'active' : ''}
+                          <RangeControl
+                            label="Teto de pico"
+                            value={peak}
+                            min={-6}
+                            max={-1}
+                            step={0.1}
+                            unit=" dBTP"
                             disabled={!!busy}
-                            onClick={() => setDenoiseMode('studio')}
-                          >
-                            <Sparkles size={18} />
-                            <strong>NOSSOM Voice</strong>
-                            <span>DeepFilterNet3 · qualidade</span>
-                          </button>
-                          <button
-                            aria-pressed={denoiseMode === 'voice'}
-                            className={denoiseMode === 'voice' ? 'active' : ''}
-                            disabled={!!busy}
-                            onClick={() => setDenoiseMode('voice')}
-                          >
-                            <Mic size={18} />
-                            <strong>Voz · IA local</strong>
-                            <span>Modelo neural para fala</span>
-                          </button>
-                          <button
-                            aria-pressed={denoiseMode === 'general'}
-                            className={denoiseMode === 'general' ? 'active' : ''}
-                            disabled={!!busy}
-                            onClick={() => setDenoiseMode('general')}
-                          >
-                            <AudioLines size={18} />
-                            <strong>Áudio geral</strong>
-                            <span>Redução espectral</span>
-                          </button>
-                        </div>
-                        <p className="field-hint">
-                          {denoiseMode === 'studio'
-                            ? 'Restauração neural em banda completa, a 48 kHz. Modelo DeepFilterNet3 executado localmente. O primeiro uso baixa cerca de 33 MB.'
-                            : denoiseMode === 'voice'
-                              ? 'O modelo RNNoise distingue fala de ruído. Para música e instrumentos, use Áudio geral.'
-                              : 'Atenua ruído contínuo preservando conteúdo musical. Ajuste o piso para o seu ambiente.'}
-                        </p>
-                      </>
-                    )}
-                    {denoiseMode === 'studio' &&
-                      (operation === 'denoise' || operation === 'clarity') && (
-                        <RangeControl
-                          label="Supressão neural máxima"
-                          value={neuralAttenuation}
-                          min={0}
-                          max={80}
-                          unit=" dB"
-                          disabled={!!busy}
-                          onChange={setNeuralAttenuation}
-                        />
+                            onChange={setPeak}
+                          />
+                          <div className="target-preview">
+                            <span>
+                              Atual
+                              <strong>
+                                {metric(version.metrics.lufs)} <small>LUFS</small>
+                              </strong>
+                            </span>
+                            <ArrowRight size={16} />
+                            <span>
+                              Alvo
+                              <strong>
+                                {target} <small>LUFS</small>
+                              </strong>
+                            </span>
+                          </div>
+                        </>
                       )}
-                    {operation !== 'effects' && !cloudOperation && (
-                      <>
-                        <RangeControl
-                          label={
-                            operation === 'master'
-                              ? masterRecipe === 'broadcast'
-                                ? 'Mistura do preset'
-                                : 'Controle de dinâmica'
-                              : operation === 'mix'
-                                ? 'Redução da trilha durante a fala'
-                                : 'Intensidade do tratamento'
-                          }
-                          value={intensity}
-                          min={0}
-                          max={100}
-                          unit="%"
-                          disabled={!!busy}
-                          onChange={setIntensity}
-                        />
-                        <div
-                          className="intensity-selector"
-                          role="group"
-                          aria-label="Atalhos de intensidade"
-                        >
-                          {[
-                            [30, 'Suave'],
-                            [65, 'Equilibrado'],
-                            [100, 'Máximo'],
-                          ].map(([value, label]) => (
-                            <button
-                              key={value}
-                              disabled={!!busy}
-                              className={intensity === value ? 'active' : ''}
-                              onClick={() => setIntensity(Number(value))}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="field-hint">
-                          {operation === 'master'
-                            ? masterRecipe === 'broadcast'
-                              ? 'Mistura o sinal original com a cadeia de transmissão. Em 100%, utiliza somente o resultado tratado.'
-                              : 'Controla a faixa dinâmica pedida ao normalizador. Confira o resultado nas medições abaixo.'
-                            : operation === 'mix'
-                              ? 'Quanto maior, mais a trilha recua enquanto há sinal na voz.'
-                              : intensity === 0
-                                ? 'Sem tratamento adicional.'
-                                : intensity > 85
-                                  ? 'Tratamento intenso. Compare com o original para conferir se os detalhes continuam naturais.'
-                                  : 'Ajuste livremente, aplique e compare o resultado com o original.'}
-                        </p>
-                      </>
-                    )}
-                    {['denoise', 'clarity', 'wind'].includes(operation) &&
-                      (denoiseMode === 'general' || operation === 'wind') && (
+                      {operation === 'mix' && (
                         <>
-                          <RangeControl
-                            label="Redução máxima de ruído"
-                            value={noiseReduction}
+                          <label className="field-label">SUA TRILHA</label>
+                          <button
+                            className="music-upload"
+                            onClick={() => musicInput.current?.click()}
+                            disabled={!!busy}
+                          >
+                            <Plus size={19} />
+                            <span>{music?.name ?? 'Adicionar faixa de música'}</span>
+                          </button>
+                          <label className="field-label" htmlFor="music-volume">
+                            NÍVEL DA TRILHA · {Math.round(musicGain * 100)}%
+                          </label>
+                          <input
+                            id="music-volume"
+                            type="range"
                             min={0}
-                            max={48}
-                            unit=" dB"
+                            max={1}
+                            step={0.01}
+                            value={musicGain}
+                            onChange={(e) => setMusicGain(Number(e.target.value))}
                             disabled={!!busy}
-                            onChange={setNoiseReduction}
                           />
-                          <RangeControl
-                            label="Piso de ruído"
-                            value={noiseFloor ?? version.info.noiseFloor ?? -50}
-                            min={-80}
-                            max={-20}
-                            unit=" dB"
+                          <p className="field-hint">
+                            A trilha se repete até o fim do áudio e abaixa automaticamente quando há
+                            sinal na faixa principal.
+                          </p>
+                        </>
+                      )}
+                      {!autoEnabled && !cloudOperation && (
+                        <>
+                          <PresetLibrary
+                            operation={operation}
+                            owner={account.id}
                             disabled={!!busy}
-                            onChange={setNoiseFloor}
+                            onLoad={loadSavedPreset}
+                            current={{
+                              operation,
+                              intensity,
+                              mode: denoiseMode,
+                              target,
+                              peak,
+                              musicGain,
+                              settings: {
+                                automatic: false,
+                                noiseFloor: noiseFloor ?? version.info.noiseFloor,
+                                noiseReduction,
+                                neuralAttenuation,
+                                presence,
+                                compression,
+                                highpass: operation === 'eq' ? eqHighpass : highpass,
+                                eq: operation === 'eq' ? eqGains : undefined,
+                                masterPreset: operation === 'master' ? masterRecipe : undefined,
+                                broadcast:
+                                  operation === 'master' && masterRecipe === 'broadcast'
+                                    ? broadcast
+                                    : undefined,
+                                deess: operation === 'clarity' ? deess : undefined,
+                                hum: operation === 'clarity' ? hum : undefined,
+                                effect: operation === 'effects' ? effect : undefined,
+                                effectMix: operation === 'effects' ? effectMix : undefined,
+                              },
+                            }}
                           />
                           <button
-                            className="text-link analyze-noise"
-                            disabled={!!busy}
-                            onClick={() =>
-                              void run(async () => {
-                                setBusy('Analisando os trechos mais silenciosos…');
-                                const buffer = await decode(version.blob);
-                                const profile = estimateNoiseFloor(
-                                  buffer.getChannelData(0),
-                                  buffer.sampleRate,
-                                );
-                                setNoiseFloor(profile.floorDb);
-                                setAnalysisNote(
-                                  profile.confidence === 'estimated'
-                                    ? `Piso estimado: ${profile.floorDb} dB. Ajuste pela escuta antes de aplicar.`
-                                    : 'Não encontrei uma pausa clara para estimar o ruído. Mantive −50 dB como ponto de partida.',
-                                );
-                              })
-                            }
+                            className="advanced-toggle"
+                            onClick={() => setAdvanced(!advanced)}
+                            aria-expanded={advanced}
                           >
-                            <Activity size={14} /> Estimar pelo áudio
+                            <Settings2 size={14} /> Detalhes avançados <Plus size={13} />
                           </button>
-                          {analysisNote && (
-                            <p className="field-hint" role="status">
-                              {analysisNote}
-                            </p>
+                          {advanced && (
+                            <div className="advanced-panel">
+                              {operation === 'master' ? (
+                                <>
+                                  <label>
+                                    Loudness alvo (LUFS)
+                                    <input
+                                      type="number"
+                                      min={-30}
+                                      max={-10}
+                                      value={target}
+                                      disabled={!!busy}
+                                      onChange={(e) =>
+                                        setTarget(
+                                          Math.max(-30, Math.min(-10, Number(e.target.value))),
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    Teto de true peak (dBTP)
+                                    <input
+                                      type="number"
+                                      min={-6}
+                                      max={-1}
+                                      step={0.1}
+                                      value={peak}
+                                      disabled={!!busy}
+                                      onChange={(e) =>
+                                        setPeak(Math.max(-6, Math.min(-1, Number(e.target.value))))
+                                      }
+                                    />
+                                  </label>
+                                  <p>
+                                    Normalização EBU R128 por FFmpeg loudnorm, com medição
+                                    pós-renderização. Perfis de cinema e ATSC exigem especificações
+                                    próprias.
+                                  </p>
+                                </>
+                              ) : (
+                                <p>
+                                  {operation === 'denoise'
+                                    ? 'RNNoise neural para fala ou afftdn espectral adaptativo. Intensidade contínua, alinhamento temporal preservado e processamento local.'
+                                    : operation === 'clarity'
+                                      ? 'Limpeza neural ou espectral, corte em 70 Hz, redução de graves médios, presença em 3 kHz, compressor e limitador.'
+                                      : operation === 'wind'
+                                        ? 'Corte de graves ajustável de 30 a 300 Hz com redução espectral de ruído.'
+                                        : operation === 'level'
+                                          ? 'Compressor: threshold 0,12; ratio 2 / 3 / 4; ataque 10 ms; release 220 ms. Limiter de pico amostral em −1 dBFS.'
+                                          : 'Sidechain compressor: threshold 0,02; ratio 6:1; ataque 20 ms; release 500 ms. Não usa detecção semântica de fala.'}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </>
                       )}
-                    {operation === 'clarity' && (
-                      <>
-                        <RangeControl
-                          label="Controle de sibilância"
-                          value={deess}
-                          min={0}
-                          max={100}
-                          unit="%"
-                          disabled={!!busy}
-                          onChange={setDeess}
-                        />
-                        <label className="field-label" htmlFor="hum-mode">
-                          HUM DE REDE
-                        </label>
-                        <select
-                          id="hum-mode"
-                          value={hum}
-                          disabled={!!busy}
-                          onChange={(e) => setHum(Number(e.target.value))}
-                        >
-                          <option value={0}>Desligado</option>
-                          <option value={50}>50 Hz + harmônicos</option>
-                          <option value={60}>60 Hz + harmônicos</option>
-                        </select>
-                      </>
-                    )}
-                    {operation === 'clarity' && (
-                      <RangeControl
-                        label="Presença da voz"
-                        value={presence}
-                        min={0}
-                        max={9}
-                        step={0.5}
-                        unit=" dB"
-                        disabled={!!busy}
-                        onChange={setPresence}
-                      />
-                    )}
-                    {(operation === 'clarity' || operation === 'level') && (
-                      <RangeControl
-                        label="Compressão"
-                        value={compression}
-                        min={1}
-                        max={8}
-                        step={0.5}
-                        unit=":1"
-                        disabled={!!busy}
-                        onChange={setCompression}
-                      />
-                    )}
-                    {operation === 'wind' && (
-                      <RangeControl
-                        label="Corte de graves"
-                        value={highpass}
-                        min={30}
-                        max={300}
-                        step={5}
-                        unit=" Hz"
-                        disabled={!!busy}
-                        onChange={setHighpass}
-                      />
-                    )}
-                  </div>
-                  {operation === 'master' && masterRecipe !== 'broadcast' && (
-                    <>
-                      <label className="field-label" htmlFor="destination">
-                        ONDE ESSE SOM VAI CHEGAR?
-                      </label>
-                      <select
-                        id="destination"
-                        value={preset}
-                        disabled={!!busy}
-                        onChange={(e) => {
-                          setMasterRecipe(e.target.value);
-                          const p = deliveryPresets.find((p) => p.id === e.target.value)!;
-                          setPreset(p.id);
-                          setTarget(p.lufs);
-                          setPeak(p.peak);
-                        }}
-                      >
-                        {deliveryPresets.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="field-hint">
-                        {deliveryPresets.find((p) => p.id === preset)?.note}
-                      </p>
-                      <RangeControl
-                        label="Volume final"
-                        value={target}
-                        min={-30}
-                        max={-10}
-                        step={0.5}
-                        unit=" LUFS"
-                        disabled={!!busy}
-                        onChange={setTarget}
-                      />
-                      <RangeControl
-                        label="Teto de pico"
-                        value={peak}
-                        min={-6}
-                        max={-1}
-                        step={0.1}
-                        unit=" dBTP"
-                        disabled={!!busy}
-                        onChange={setPeak}
-                      />
-                      <div className="target-preview">
-                        <span>
-                          Atual
-                          <strong>
-                            {metric(version.metrics.lufs)} <small>LUFS</small>
-                          </strong>
-                        </span>
-                        <ArrowRight size={16} />
-                        <span>
-                          Alvo
-                          <strong>
-                            {target} <small>LUFS</small>
-                          </strong>
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  {operation === 'mix' && (
-                    <>
-                      <label className="field-label">SUA TRILHA</label>
+                      {operation !== 'auto' &&
+                        autoEnabled &&
+                        version.processing?.restoration?.automatic && (
+                          <div className="automatic-result" role="status">
+                            <Check size={17} />{' '}
+                            <span>
+                              Análise concluída · limpeza adaptada, estéreo preservado e picos
+                              verificados.
+                              <small>
+                                Supressão escolhida: {version.processing.restoration.attenuationDb}{' '}
+                                dB. Os ajustes usados estão no relatório.
+                              </small>
+                              {version.processing.clippingRepair && (
+                                <small>
+                                  {version.processing.clippingRepair.status === 'reconstructed'
+                                    ? 'Picos saturados identificados e reconstruídos. Compare os trechos distorcidos com o original.'
+                                    : version.processing.clippingRepair.status === 'limited'
+                                      ? 'Saturação extensa: a restauração local não reconstrói esta gravação com segurança. A distorção pode permanecer.'
+                                      : 'Sem teto de saturação identificável. Distorção de captação ou de compressão ainda pode estar presente.'}
+                                </small>
+                              )}
+                            </span>
+                          </div>
+                        )}
                       <button
-                        className="music-upload"
-                        onClick={() => musicInput.current?.click()}
-                        disabled={!!busy}
+                        className="button primary process-button"
+                        onClick={applyTreatment}
+                        disabled={
+                          !!busy ||
+                          (cloudOperation && !cloudReady) ||
+                          (cloudOperation &&
+                            usage !== null &&
+                            !usage.unlimited &&
+                            usage.remaining === 0 &&
+                            !pendingJob)
+                        }
                       >
-                        <Plus size={19} />
-                        <span>{music?.name ?? 'Adicionar faixa de música'}</span>
-                      </button>
-                      <label className="field-label" htmlFor="music-volume">
-                        NÍVEL DA TRILHA · {Math.round(musicGain * 100)}%
-                      </label>
-                      <input
-                        id="music-volume"
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={musicGain}
-                        onChange={(e) => setMusicGain(Number(e.target.value))}
-                        disabled={!!busy}
-                      />
-                      <p className="field-hint">
-                        A trilha se repete até o fim do áudio e abaixa automaticamente quando há
-                        sinal na faixa principal.
-                      </p>
-                    </>
-                  )}
-                  {!autoEnabled && !cloudOperation && (
-                    <>
-                      <PresetLibrary
-                        operation={operation}
-                        owner={account.id}
-                        disabled={!!busy}
-                        onLoad={loadSavedPreset}
-                        current={{
-                          operation,
-                          intensity,
-                          mode: denoiseMode,
-                          target,
-                          peak,
-                          musicGain,
-                          settings: {
-                            automatic: false,
-                            noiseFloor: noiseFloor ?? version.info.noiseFloor,
-                            noiseReduction,
-                            neuralAttenuation,
-                            presence,
-                            compression,
-                            highpass: operation === 'eq' ? eqHighpass : highpass,
-                            eq: operation === 'eq' ? eqGains : undefined,
-                            masterPreset: operation === 'master' ? masterRecipe : undefined,
-                            broadcast:
-                              operation === 'master' && masterRecipe === 'broadcast'
-                                ? broadcast
-                                : undefined,
-                            deess: operation === 'clarity' ? deess : undefined,
-                            hum: operation === 'clarity' ? hum : undefined,
-                            effect: operation === 'effects' ? effect : undefined,
-                            effectMix: operation === 'effects' ? effectMix : undefined,
-                          },
-                        }}
-                      />
-                      <button
-                        className="advanced-toggle"
-                        onClick={() => setAdvanced(!advanced)}
-                        aria-expanded={advanced}
-                      >
-                        <Settings2 size={14} /> Detalhes avançados <Plus size={13} />
-                      </button>
-                      {advanced && (
-                        <div className="advanced-panel">
-                          {operation === 'master' ? (
-                            <>
-                              <label>
-                                Loudness alvo (LUFS)
-                                <input
-                                  type="number"
-                                  min={-30}
-                                  max={-10}
-                                  value={target}
-                                  disabled={!!busy}
-                                  onChange={(e) =>
-                                    setTarget(Math.max(-30, Math.min(-10, Number(e.target.value))))
-                                  }
-                                />
-                              </label>
-                              <label>
-                                Teto de true peak (dBTP)
-                                <input
-                                  type="number"
-                                  min={-6}
-                                  max={-1}
-                                  step={0.1}
-                                  value={peak}
-                                  disabled={!!busy}
-                                  onChange={(e) =>
-                                    setPeak(Math.max(-6, Math.min(-1, Number(e.target.value))))
-                                  }
-                                />
-                              </label>
-                              <p>
-                                Normalização EBU R128 por FFmpeg loudnorm, com medição
-                                pós-renderização. Perfis de cinema e ATSC exigem especificações
-                                próprias.
-                              </p>
-                            </>
-                          ) : (
-                            <p>
-                              {operation === 'denoise'
-                                ? 'RNNoise neural para fala ou afftdn espectral adaptativo. Intensidade contínua, alinhamento temporal preservado e processamento local.'
-                                : operation === 'clarity'
-                                  ? 'Limpeza neural ou espectral, corte em 70 Hz, redução de graves médios, presença em 3 kHz, compressor e limitador.'
-                                  : operation === 'wind'
-                                    ? 'Corte de graves ajustável de 30 a 300 Hz com redução espectral de ruído.'
-                                    : operation === 'level'
-                                      ? 'Compressor: threshold 0,12; ratio 2 / 3 / 4; ataque 10 ms; release 220 ms. Limiter de pico amostral em −1 dBFS.'
-                                      : 'Sidechain compressor: threshold 0,02; ratio 6:1; ataque 20 ms; release 500 ms. Não usa detecção semântica de fala.'}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {operation !== 'auto' &&
-                    autoEnabled &&
-                    version.processing?.restoration?.automatic && (
-                      <div className="automatic-result" role="status">
-                        <Check size={17} />{' '}
-                        <span>
-                          Análise concluída · limpeza adaptada, estéreo preservado e picos
-                          verificados.
-                          <small>
-                            Supressão escolhida: {version.processing.restoration.attenuationDb} dB.
-                            Os ajustes usados estão no relatório.
-                          </small>
-                          {version.processing.clippingRepair && (
-                            <small>
-                              {version.processing.clippingRepair.status === 'reconstructed'
-                                ? 'Picos saturados identificados e reconstruídos. Compare os trechos distorcidos com o original.'
-                                : version.processing.clippingRepair.status === 'limited'
-                                  ? 'Saturação extensa: a restauração local não reconstrói esta gravação com segurança. A distorção pode permanecer.'
-                                  : 'Sem teto de saturação identificável. Distorção de captação ou de compressão ainda pode estar presente.'}
-                            </small>
-                          )}
-                        </span>
-                      </div>
-                    )}
-                  <button
-                    className="button primary process-button"
-                    onClick={applyTreatment}
-                    disabled={
-                      !!busy ||
-                      (cloudOperation && !cloudReady) ||
-                      (cloudOperation &&
-                        usage !== null &&
-                        !usage.unlimited &&
-                        usage.remaining === 0 &&
-                        !pendingJob)
-                    }
-                  >
-                    {busy ? <LoaderCircle size={17} className="spin" /> : <Sparkles size={17} />}{' '}
-                    {busy
-                      ? 'Processando…'
-                      : cloudOperation && usage && !usage.unlimited && usage.remaining === 0
-                        ? 'Franquia mensal utilizada'
-                        : cloudOperation
-                          ? pendingJob?.projectId === project.id
-                            ? operation === 'vocals'
-                              ? 'Retomar separação'
-                              : operation === 'transcribe' || operation === 'remix'
-                                ? operation === 'remix'
+                        {busy ? (
+                          <LoaderCircle size={17} className="spin" />
+                        ) : (
+                          <Sparkles size={17} />
+                        )}{' '}
+                        {busy
+                          ? 'Processando…'
+                          : cloudOperation && usage && !usage.unlimited && usage.remaining === 0
+                            ? 'Franquia mensal utilizada'
+                            : cloudOperation
+                              ? pendingJob?.projectId === project.id
+                                ? operation === 'vocals'
                                   ? 'Retomar separação'
-                                  : 'Retomar legendas'
-                                : 'Retomar restauração'
-                            : operation === 'remix'
-                              ? project.stems
-                                ? 'Separar de novo'
-                                : 'Separar instrumentos'
-                              : operation === 'transcribe'
-                                ? project.transcript
-                                  ? 'Gerar de novo'
-                                  : 'Gerar legendas'
-                                : operation === 'vocals'
-                                  ? voiceMode === 'speech'
-                                    ? 'Isolar voz'
-                                    : 'Separar vocal'
-                                  : 'Restaurar com IA'
-                          : autoEnabled
-                            ? 'Analisar e tratar'
-                            : 'Aplicar tratamento'}{' '}
-                    {!busy && <ArrowRight size={15} />}
-                  </button>
-                  {!usage?.unlimited && (
-                    <p className="usage-apply-hint">Usa seus minutos de IA (mínimo 1 min).</p>
-                  )}
-                  {!cloudOperation && (
-                    <span className="treatment-footnote">
-                      <ShieldCheck size={12} />{' '}
-                      {autoEnabled
-                        ? 'Sempre a partir do original. Suas versões continuam salvas.'
-                        : 'Uma nova versão. Seu original intacto.'}
-                    </span>
-                  )}
-                  <div className="panel-help">
-                    <AudioLines size={21} />
-                    <h3>Não sabe por onde começar?</h3>
-                    <p>Descreva a sua ideia e encontre um tratamento.</p>
-                    <button className="text-link" onClick={() => setAssistant(true)}>
-                      Conversar com o assistente <ArrowUpRight size={13} />
-                    </button>
+                                  : operation === 'transcribe' || operation === 'remix'
+                                    ? operation === 'remix'
+                                      ? 'Retomar separação'
+                                      : 'Retomar legendas'
+                                    : 'Retomar restauração'
+                                : operation === 'remix'
+                                  ? project.stems
+                                    ? 'Separar de novo'
+                                    : 'Separar instrumentos'
+                                  : operation === 'transcribe'
+                                    ? project.transcript
+                                      ? 'Gerar de novo'
+                                      : 'Gerar legendas'
+                                    : operation === 'vocals'
+                                      ? voiceMode === 'speech'
+                                        ? 'Isolar voz'
+                                        : 'Separar vocal'
+                                      : 'Restaurar com IA'
+                              : autoEnabled
+                                ? 'Analisar e tratar'
+                                : 'Aplicar tratamento'}{' '}
+                        {!busy && <ArrowRight size={15} />}
+                      </button>
+                      {!usage?.unlimited && (
+                        <p className="usage-apply-hint">Usa seus minutos de IA (mínimo 1 min).</p>
+                      )}
+                      {!cloudOperation && (
+                        <span className="treatment-footnote">
+                          <ShieldCheck size={12} />{' '}
+                          {autoEnabled
+                            ? 'Sempre a partir do original. Suas versões continuam salvas.'
+                            : 'Uma nova versão. Seu original intacto.'}
+                        </span>
+                      )}
+                      <div className="panel-help">
+                        <AudioLines size={21} />
+                        <h3>Não sabe por onde começar?</h3>
+                        <p>Descreva a sua ideia e encontre um tratamento.</p>
+                        <button className="text-link" onClick={() => setAssistant(true)}>
+                          Conversar com o assistente <ArrowUpRight size={13} />
+                        </button>
+                      </div>
+                    </aside>
                   </div>
-                </aside>
+                </section>
+                {!folha && (
+                  <div className="comando">
+                    <button
+                      type="button"
+                      className="comando-campo"
+                      onClick={() => setAssistant(true)}
+                      aria-keyshortcuts="Meta+K Control+K"
+                    >
+                      <Sparkles size={18} />
+                      <span>Peça algo ao seu áudio…</span>
+                      <kbd>⌘ K</kbd>
+                    </button>
+                    <div className="comando-atalhos" role="group" aria-label="Atalhos">
+                      {ATALHOS_COMANDO.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          data-passo={slugPasso(passoDe(a.id).label)}
+                          disabled={!!busy || recording}
+                          onClick={() => {
+                            chooseTool(a.id);
+                            setFolha(true);
+                          }}
+                        >
+                          <i className="ponto" aria-hidden="true" />
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

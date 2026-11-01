@@ -8,6 +8,10 @@
 @import './styles/liquid.css';
 @import './styles/intro.css';
 @import './styles/zro-dev.css';
+@import './styles/estudio-p2.css';
+@import './styles/estudio-limpo.css';
+@import './styles/home-p2.css';
+@import './styles/player.css';
 * {
   box-sizing: border-box;
 }
@@ -195,3 +199,5 @@ p {
     transform: none !important;
   }
 }
+@import './styles/estudio-azul.css';
+@import './styles/estudio-palco.css';

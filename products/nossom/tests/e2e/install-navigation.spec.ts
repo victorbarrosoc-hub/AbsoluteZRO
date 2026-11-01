@@ -5,10 +5,24 @@ test('compact navigation exposes six destinations, Início first and the Z last,
 }) => {
   await page.goto('/studio/automatico');
   const navigation = page.getByRole('navigation', { name: 'Navegação do estúdio', exact: true });
-  await expect(navigation.getByRole('button')).toHaveCount(6);
-  await expect(navigation.getByRole('button').first()).toHaveText('Início');
-  await expect(navigation.getByRole('button').last()).toHaveText('Z');
-  await expect(navigation.getByRole('button', { name: 'Estúdio', exact: true })).toBeVisible();
+  // cinco destinos e, no meio do trilho, os quatro passos (Proposta 2, titular 01/11/2026); as ferramentas do passo
+  // aberto ficam na coluna ao lado
+  const destinos = page.locator('.studio-sidebar nav[aria-label="Navegação do estúdio"] > button');
+  await expect(destinos).toHaveCount(5);
+  await expect(destinos.first()).toHaveText('Início');
+  await expect(destinos.last()).toHaveText('Z');
+  // sem áudio aberto, os passos estão no trilho; com áudio, ficam na folha embaixo da onda (Comando + Console)
+  const passos = navigation.getByRole('group', { name: 'Passos do estúdio' });
+  await expect(passos.getByRole('button')).toHaveText(['Tratar', 'Ajustar', 'Criar', 'Entregar']);
+  await expect(passos.getByRole('button', { name: 'Tratar' })).toHaveAttribute(
+    'aria-current',
+    'step',
+  );
+  await expect(
+    page
+      .getByRole('region', { name: 'Ferramentas de Tratar' })
+      .getByRole('button', { name: /Restaurar com IA/ }),
+  ).toHaveAttribute('aria-current', 'page');
   await expect(navigation.getByRole('button', { name: 'Meu plano', exact: true })).toBeVisible();
   await expect(navigation.getByText('FERRAMENTAS', { exact: true })).toHaveCount(0);
   await page
@@ -141,7 +155,7 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
     'Absolute ZRO',
     'Carro do Freela',
     'Maestro',
-    'Revela',
+    'Relay',
     'Sobedesce',
     'Synquei',
     'TPEasy',

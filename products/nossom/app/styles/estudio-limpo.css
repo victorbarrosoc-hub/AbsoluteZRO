@@ -1,0 +1,99 @@
+/* Estúdio limpo (pedido do titular, 01/11/2026: "muito texto, não tá clean, confunde"). Uma linha de apoio no máximo;
+ * as explicações longas saem da tela (a dica fica no title ou na Z), ícone no lugar de texto onde o ícone basta. Os nomes
+ * continuam para leitor de tela (texto visualmente oculto, nunca apagado). */
+
+/* texto que fica só para o leitor de tela */
+.studio-shell .effect-toolbar > .button {
+  font-size: 0;
+}
+/* a família vira fileira de ícones só no computador; no menu do celular cada app mostra o nome */
+@media (min-width: 681px) {
+  .studio-sidebar .family-nav a span {
+    font-size: 0;
+  }
+}
+.studio-shell .effect-toolbar > .button svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* topo: sem "Meu espaço ›", o assistente vira ícone */
+.studio-header > div:first-child > span,
+.studio-header > div:first-child > svg {
+  display: none;
+}
+.studio-header .assistant-top > span {
+  display: none;
+}
+
+/* cabeçalho do editor: nome da ferramenta e do arquivo, só */
+.tool-editor .editor-heading .saved,
+.tool-editor .effect-toolbar > span {
+  display: none;
+}
+
+/* medidas: três números, sem parágrafos; o aviso só aparece quando há problema */
+.tool-editor .analysis-panel .subheading h2,
+.tool-editor .metrics-grid p,
+.tool-editor .metrics-grid span svg,
+.tool-editor .analysis-verdict:not(.warning) {
+  display: none;
+}
+
+/* a onda: sem a nota de volume embaixo */
+.tool-editor .editor-player .inline-note {
+  display: none;
+}
+
+/* painel da ferramenta: título e controles; dicas longas saem */
+.tool-editor .panel-subtitle,
+.tool-editor .automatic-card > p,
+.tool-editor:not(.tool-master) .field-hint:not([role]),
+.tool-editor .usage-apply-hint,
+.tool-editor .treatment-footnote,
+.tool-editor .panel-help,
+.tool-editor .preset-library > div > p,
+.tool-editor .cloud-restoration-note p {
+  display: none;
+}
+
+/* coluna da lateral: o plano numa linha; a família vira uma fileira de ícones */
+@media (min-width: 681px) {
+  .studio-sidebar .coluna .weekly-usage small,
+  .studio-sidebar .coluna .sidebar-bottom .local-note,
+  .studio-sidebar .coluna .sidebar-apps-link small {
+    display: none;
+  }
+  .studio-sidebar .coluna .family-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+  .studio-sidebar .coluna .family-nav .family-nav-title {
+    flex-basis: 100%;
+    margin-bottom: 2px;
+  }
+  .studio-sidebar .coluna .family-nav a {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--surface-3);
+  }
+  .studio-sidebar .coluna .family-nav a img {
+    width: 20px;
+    height: 20px;
+  }
+}
+@media (min-width: 681px) {
+  .studio-sidebar .coluna nav.family-nav {
+    flex-direction: row;
+    align-items: center;
+  }
+  .studio-sidebar .coluna .sidebar-bottom {
+    display: none;
+  }
+}
