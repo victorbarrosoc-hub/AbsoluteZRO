@@ -359,6 +359,17 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 NOSSOM · estúdio Comando + Console (01/11/2026, aprovado pelo titular): azul profundo no escuro (sai o
+  grafite), vidro nas superfícies e uma cor por passo (Tratar em vidro branco, Ajustar violeta, Criar âmbar, Entregar
+  rosa). Na ferramenta: trilho fino de ícones, a onda na largura toda com medidores de LED do volume e do pico medidos
+  da versão, ferramentas sobre o trecho selecionado e, logo abaixo, a folha de vidro com os passos, a lista do passo e
+  os ajustes em botões giratórios (por baixo, o `input range` nativo: teclado e leitor de tela seguem iguais).
+  Recolhida a folha, o campo "Peça algo ao seu áudio" (⌘K) abre o assistente. Início: símbolo em cromo azulado no lugar
+  do 3D, Enviar áudio e Gravar, atalhos por passo e Recentes. Fora do ar como todo o NOSSOM (0049).
+- ✅ NOSSOM no iPhone (01/11/2026, retorno do titular): "O navegador não conseguiu guardar este áudio" ao importar no
+  Safari. O IndexedDB do WebKit às vezes recusa o Blob mesmo copiado para a memória e perde a conexão com a aba em
+  segundo plano. `lib/storage.ts` agora abre outra conexão e tenta de novo; por último guarda os mesmos bytes
+  (`ArrayBuffer`), que voltam como Blob ao abrir. Leituras também repetem uma vez com conexão nova.
 - ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
   Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
   ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron
