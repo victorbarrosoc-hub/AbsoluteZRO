@@ -1,5 +1,5 @@
-// Repasse dos sons da Sonoplasta pela Absolute ZRO: os livres (/api/zro/sons/buscar?q&pagina e /openverse/<id>) e o
-// banco da pessoa no Drive (/api/zro/sons/banco?pasta&q&pagina&conta e /banco/<id>?conta) → <emissor>/api/v1/sons/…,
+// Repasse dos sons da Sonoplasta pela Absolute ZRO: os originais da plataforma (/api/zro/sons/zro e /zro/<id>), os
+// livres (/api/zro/sons/buscar?q&pagina e /openverse/<id>) e o banco da pessoa no Drive (/api/zro/sons/banco?pasta&q&pagina&conta e /banco/<id>?conta) → <emissor>/api/v1/sons/…,
 // com o access token da sessão no Authorization. A página fala
 // só com este site (cookie da sessão, mesma origem); o token fica no cookie cifrado que só /api/zro recebe.
 // Só leitura (GET) e só estes caminhos, com os parâmetros conferidos; o arquivo de som passa aos poucos, com o tipo e
@@ -12,6 +12,7 @@ import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_TOKENS, CONTA_
 
 const OPENVERSE = /^\/openverse\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const BANCO = /^\/banco\/[A-Za-z0-9_-]{10,200}$/
+const ZRO = /^\/zro\/(?=.{3,100}$)[a-z0-9]+(-[a-z0-9]+)*$/
 const PASSAM = ['content-type', 'content-length', 'x-zro-som-id', 'x-zro-som-titulo', 'x-zro-som-autor', 'x-zro-som-licenca']
 const PRAZO_MS = 30_000
 const agoraS = () => Math.floor(Date.now() / 1000)
@@ -34,7 +35,7 @@ export function consultaDe(caminho, q) {
     return so({ pasta: DRIVE_ID.test(q.get('pasta') || '') ? q.get('pasta') : 'x', q: String(q.get('q') || '').slice(0, 80), pagina: pagina.length <= 2000 ? pagina : '', conta })
   }
   if (BANCO.test(caminho)) return so({ conta })
-  if (OPENVERSE.test(caminho)) return ''
+  if (OPENVERSE.test(caminho) || caminho === '/zro' || ZRO.test(caminho)) return ''
   return null
 }
 
@@ -43,7 +44,7 @@ const negar = (res, status, message, cookies = []) => json(res, status, { ok: fa
 export async function repassarSons(req, res, caminho = caminhoDe(req)) {
   const consulta = consultaDe(caminho, new URL(req.url || '/', 'https://site.invalid').searchParams)
   if (consulta === null) return negar(res, 404, 'Não encontrado.')
-  const lista = caminho === '/buscar' || caminho === '/banco'
+  const lista = caminho === '/buscar' || caminho === '/banco' || caminho === '/zro'
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return negar(res, 405, 'Método não permitido.')
@@ -81,7 +82,7 @@ export async function repassarSons(req, res, caminho = caminhoDe(req)) {
   }
   res.statusCode = r.status
   for (const k of PASSAM) if (r.headers.get(k)) res.setHeader(k, r.headers.get(k))
-  res.setHeader('Cache-Control', lista || BANCO.test(caminho) ? 'no-store' : 'private, max-age=3600')
+  res.setHeader('Cache-Control', lista || BANCO.test(caminho) ? 'no-store' : ZRO.test(caminho) ? 'private, max-age=86400' : 'private, max-age=3600')
   if (cookies.length) res.setHeader('Set-Cookie', cookies)
   try {
     if (r.body) for await (const pedaco of r.body) res.write(pedaco)

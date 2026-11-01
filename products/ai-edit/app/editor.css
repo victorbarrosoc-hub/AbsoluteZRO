@@ -2830,7 +2830,7 @@ html:not([data-conta]) body {
 /* De onde vêm os sons: os livres ou o banco da pessoa no Drive */
 .sons-fonte {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   padding: 2px;
   border-radius: 999px;
   background: var(--surface-2);
@@ -3502,4 +3502,37 @@ html:not([data-conta]) body {
 }
 .clipe:has(.clipe-faixas:not([hidden])) .clipe-vel {
   bottom: 14px;
+}
+/* nos sons da ZRO os chips são categorias (sem ícone de pasta), e a aberta fica marcada */
+.sons-categorias button::before {
+  content: none;
+}
+.sons-categorias button[aria-pressed='true'] {
+  border-color: var(--text-strong);
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.som-versoes {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.som-versoes button {
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.som-versoes button[aria-pressed='true'] {
+  background: var(--text-strong);
+  border-color: var(--text-strong);
+  color: var(--surface);
+  font-weight: 600;
 }
