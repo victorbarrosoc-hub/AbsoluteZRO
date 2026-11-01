@@ -40,6 +40,8 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
 - `CRON_SECRET` (openssl rand -hex 32, Production; sem espaço nem quebra de linha no fim, ou a Vercel recusa o build): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
   PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
 - A Z (Claude): `IA_ANTHROPIC_KEY` (e `IA_MODELO`, padrão `claude-opus-5-5`). Sem ela, a Z fica desligada.
+- A Z no Rift Motion: `IA_RIFT_LIBERADOS` (ids das contas, separados por vírgula; vazio = ninguém). O Rift chama
+  `POST /api/v1/ia/rift` com o Basic do cliente `rift-web`; o gasto entra no teto do dia da Z.
 - Laboratório da Z (ADR 0033, migração `0036`): `ELEVENLABS_API_KEY` no projeto `absolutezro` (Production; o titular já
   adicionou em 30/10/2026). Voz, ditado e transcrição só para o admin da plataforma em `/admin/laboratorio`. Sem a
   chave, o laboratório mostra "Conecte a chave" com o nome da variável; a chave nunca vai para o navegador nem para o
