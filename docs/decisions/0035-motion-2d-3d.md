@@ -108,6 +108,8 @@ quadro." (no lugar de "Beyond the frame"). Conferir "Rift" no INPI (classes 9 e 
 ## O que falta decidir
 
 - Nome (e INPI).
-- Navegador primeiro ou app de computador junto (o ProRes depende do computador).
+- Navegador primeiro ou app de computador junto (o ProRes depende do computador). Decidido em 01/11/2026: o app de computador, quando
+  vier, instala e atualiza só pela central Absolute ZRO (id `rift-motion`, sem autoatualização própria nem botão de
+  instalador no site).
 - Plano e preço: a pesquisa mostra que cobrar por resolução ou por alfa irrita; a proposta é liberar a exportação
   completa e cobrar por recurso.

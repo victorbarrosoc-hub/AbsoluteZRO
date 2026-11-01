@@ -84,7 +84,9 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   catálogo do HUB (não aparece no painel do ecossistema, a pedido do titular). Banco próprio no ar (schema `rift`, RLS forçado, testes de isolamento). O estúdio edita camadas de
   verdade (01/11/2026): texto, forma e objeto 3D novos, arrastar no quadro (3D por clique), keyframe ◆ por propriedade,
   arrastar keyframe na timeline, desfazer/refazer (⌘Z), mostrar/esconder, duplicar, ordenar e apagar; a cena (v2) fica
-  salva por projeto no banco. ⬜ INPI, mídia (imagem e vídeo), editor de curvas em gráfico, exportar de verdade pelo Relay.
+  salva por projeto no banco. Mídia (01/11/2026): imagem e vídeo viram camada (o arquivo fica no aparelho, em
+  IndexedDB; a cena guarda só nome e tamanho; o vídeo anda com a timeline, sem som; em outro aparelho a camada pede o
+  arquivo de novo) e entram na Biblioteca. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo

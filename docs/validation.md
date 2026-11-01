@@ -24,6 +24,11 @@ Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rif
   refazer, esconder a esfera e renomear; depois de limpar o aparelho e reabrir, as 6 camadas e o nome novo voltam do banco
   (cena `v: 2`). Sem erros no console. O servidor aceita a cena v2 (lista de até 100 camadas com id e tipo) e recusa o
   resto (teste novo em `banco.test.js`). Não testado: tela de toque.
+- Mídia no estúdio (01/11/2026): no Chromium, com o CSP de produção (`media-src 'self' blob:` novo), escolher um PNG
+  e um WebM pelo botão Mídia cria 2 camadas no tamanho certo; tocando, o vídeo anda junto com a timeline (sem pausa);
+  depois de limpar o aparelho e reabrir, as duas voltam do IndexedDB; num navegador novo aparece "não está neste
+  aparelho" no lugar; os dois arquivos entram na Biblioteca. Corrigido: a camada escolhida no quadro herdava o estilo do
+  seletor (`.sel`, pílula de 32 px). Não testado: Safari e vídeo grande.
 - `products/rift-motion` `npm test`: **6/6**. Login: sem cliente configurado, `/eu` diz "não configurado" e `/entrar`
   volta com `?zro=config`; a volta fica no site (o hash do painel passa, endereço externo vira `/#app`). Banco num
   Postgres de verdade montado como no Supabase (papel `rift` dono, `rift_app` sem login): migração não repete e recusa

@@ -323,7 +323,7 @@ button { font: inherit; color: inherit; }
 .camadas2d { position: absolute; inset: 0; overflow: hidden; }
 .c2d { position: absolute; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .c2d:active { cursor: grabbing; }
-.c2d.sel { outline: 1.5px dashed var(--p); outline-offset: 4px; }
+.c2d.c2d--ativa { outline: 1.5px dashed var(--p); outline-offset: 4px; }
 .c2d--texto { font-family: var(--font-title); line-height: 1.02; letter-spacing: -0.04em; white-space: nowrap; transform-origin: 0 50%; }
 .c2d--texto span { display: block; }
 .c2d--texto .fino { font-weight: 300; }
@@ -332,6 +332,9 @@ button { font: inherit; color: inherit; }
 .c2d--retangulo { border-radius: 2px; }
 .c2d--circulo { border-radius: 50%; }
 .c2d--pilula { border-radius: 999px; }
+.c2d--midia { transform-origin: 50% 50%; }
+.c2d--midia img, .c2d--midia video { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; border-radius: 2px; }
+.c2d--midia .falta { display: grid; place-items: center; width: 100%; height: 100%; border: 1.5px dashed var(--line, #555); border-radius: 6px; color: var(--muted, #8e8e93); font-size: 12px; text-align: center; padding: 6px; background: rgba(0,0,0,.25); }
 .layer { display: flex; align-items: center; gap: 9px; }
 .layer .layer-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .layer .olho { border: 0; background: transparent; color: var(--mute); cursor: pointer; font-size: 0.7rem; width: 22px; height: 22px; border-radius: 6px; flex: none; }
@@ -685,7 +688,8 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
         <button data-add="texto" title="Texto na tela"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M12 6v13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Texto</button>
         <button data-add="forma" title="Retângulo, círculo ou pílula"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/></svg>Forma</button>
         <button data-add="3d" title="Esfera, cubo, anel, cilindro ou cone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9Z M12 12 20 7.5 M12 12v9 M12 12 4 7.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>3D</button>
-        <button data-toast="Vídeo e imagem no estúdio chegam junto com a Biblioteca ligada aos projetos."><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M10 9.5v5l4-2.5z" fill="currentColor"/></svg>Mídia</button>
+        <button data-add="midia" title="Imagem ou vídeo do seu aparelho"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M10 9.5v5l4-2.5z" fill="currentColor"/></svg>Mídia</button>
+        <input type="file" id="midiaArq" accept="image/*,video/*" hidden>
       </div>
     </aside>
 
@@ -1059,11 +1063,12 @@ function login() {
 function estudio() {
   // ---------- modelo da cena (v2): camadas com valores fixos (props) e trilhas de keyframes [tempo, valor, curva] ----------
   let fpsI = 2, fps = FPS[fpsI].v, t = 1.8, playing = !reduce, sel = null, vpMode = 'cam', D = 6, nomeProjeto = 'Projeto';
-  const TIPO = { camera: 'CÂM', texto: 'TXT', forma: '2D', '3d': '3D' };
+  const TIPO = { camera: 'CÂM', texto: 'TXT', forma: '2D', '3d': '3D', midia: 'MÍD' };
   const PROPS = {
     camera: [['orbita', 'Órbita', 1], ['altura', 'Altura', 0.1]],
     texto: [['x', 'X %', 0.5], ['y', 'Y %', 0.5], ['tamanho', 'Tamanho', 0.5], ['escala', 'Escala', 0.05], ['giro', 'Giro °', 1], ['opacidade', 'Opacidade', 0.05], ['espaco', 'Espaço', 0.01]],
     forma: [['x', 'X %', 0.5], ['y', 'Y %', 0.5], ['largura', 'Largura %', 0.5], ['altura', 'Altura %', 0.5], ['escala', 'Escala', 0.05], ['giro', 'Giro °', 1], ['opacidade', 'Opacidade', 0.05]],
+    midia: [['x', 'X %', 0.5], ['y', 'Y %', 0.5], ['largura', 'Largura %', 0.5], ['escala', 'Escala', 0.05], ['giro', 'Giro °', 1], ['opacidade', 'Opacidade', 0.05]],
     '3d': [['x', 'X', 0.05], ['y', 'Y', 0.05], ['z', 'Z', 0.05], ['escala', 'Escala', 0.05], ['giroX', 'Giro X °', 1], ['giroY', 'Giro Y °', 1], ['opacidade', 'Opacidade', 0.05]],
   };
   const PADRAO = {
@@ -1071,6 +1076,7 @@ function estudio() {
     texto: { x: 50, y: 50, tamanho: 9, escala: 1, giro: 0, opacidade: 1, espaco: 0 },
     forma: { x: 50, y: 50, largura: 24, altura: 24, escala: 1, giro: 0, opacidade: 1 },
     '3d': { x: 0, y: 0.2, z: 0, escala: 1, giroX: 0, giroY: 0, opacidade: 1 },
+    midia: { x: 50, y: 50, largura: 40, escala: 1, giro: 0, opacidade: 1 },
   };
   const FORMAS = { forma: [['retangulo', 'Retângulo'], ['circulo', 'Círculo'], ['pilula', 'Pílula']], '3d': [['esfera', 'Esfera'], ['cubo', 'Cubo'], ['anel', 'Anel'], ['cilindro', 'Cilindro'], ['cone', 'Cone']] };
   const PESOS = [['fino-grosso', 'Fino e grosso'], ['grosso', 'Grosso'], ['fino', 'Fino']];
@@ -1110,6 +1116,7 @@ function estudio() {
       const n = { id: String(c.id || novoIdC()).slice(0, 24), tipo: c.tipo, nome: String(c.nome || 'Camada').slice(0, 60), cor: corOk(c.cor), visivel: c.visivel !== false, props, trilhas };
       if (c.tipo === 'texto') { n.texto = String(c.texto ?? '').slice(0, 500); n.peso = PESOS.some(([k]) => k === c.peso) ? c.peso : 'grosso'; }
       if (FORMAS[c.tipo]) n.forma = FORMAS[c.tipo].some(([k]) => k === c.forma) ? c.forma : FORMAS[c.tipo][0][0];
+      if (c.tipo === 'midia') { const m = c.midia || {}; n.midia = { id: String(m.id || '').slice(0, 24), nome: String(m.nome || 'Arquivo').slice(0, 120), tipo: m.tipo === 'video' ? 'video' : 'imagem', w: clamp(Number(m.w) || 16, 1, 20000), h: clamp(Number(m.h) || 9, 1, 20000) }; }
       return n;
     });
     return { v: 2, duracao: clamp(Number(cena.duracao) || dur || 6, 1, 3600), camadas };
@@ -1165,14 +1172,16 @@ function estudio() {
     if (olho) { const c = camada(olho.dataset.olho); lembrar(); c.visivel = !c.visivel; return mudou({ estrutura: true }); }
     const b = e.target.closest('.layer'); if (b) select(b.dataset.id);
   });
-  function adicionar(tipo, forma) {
+  function adicionar(tipo, forma, meta) {
+    if (tipo === 'midia' && !meta) { trocarMidiaDe = null; return midiaArq.click(); }
     lembrar();
     const conta = cena.camadas.filter((c) => c.tipo === tipo).length + 1;
-    const c = { id: novoIdC(), tipo, nome: tipo === 'texto' ? `Texto ${conta}` : tipo === 'forma' ? `Forma ${conta}` : `Objeto ${conta}`, cor: tipo === 'texto' ? '#f5f5f7' : tipo === 'forma' ? '#EA6426' : '#9A9CD0', visivel: true, props: { ...PADRAO[tipo] }, trilhas: {} };
+    const c = { id: novoIdC(), tipo, nome: tipo === 'midia' ? meta.nome.replace(/\.[^.]+$/, '').slice(0, 60) || 'Mídia' : tipo === 'texto' ? `Texto ${conta}` : tipo === 'forma' ? `Forma ${conta}` : `Objeto ${conta}`, cor: tipo === 'texto' ? '#f5f5f7' : tipo === 'forma' ? '#EA6426' : '#9A9CD0', visivel: true, props: { ...PADRAO[tipo] }, trilhas: {} };
     const passo = (conta - 1) % 4; // cada camada nova entra um pouco ao lado da anterior, sem cobrir o que já existe
     if (tipo === 'texto') { c.texto = 'Seu texto'; c.peso = 'grosso'; c.props.x = 10; c.props.y = 22 + passo * 12; c.props.tamanho = 7; }
     if (tipo === 'forma') { c.props.x = 62 + passo * 6; c.props.y = 30 + passo * 10; }
     if (tipo === '3d') { c.props.x = -1.8 + passo * 1.2; c.props.z = 0.8; c.props.escala = 0.7; }
+    if (tipo === 'midia') { c.midia = meta; c.props.largura = meta.w >= meta.h ? 46 : 22; c.props.x = 50 + passo * 4; c.props.y = 50 + passo * 4; }
     if (FORMAS[tipo]) c.forma = forma || FORMAS[tipo][0][0];
     const i = cena.camadas.findIndex((x) => x.tipo !== 'camera');
     cena.camadas.splice(i < 0 ? cena.camadas.length : i, 0, c); // entra na frente
@@ -1299,7 +1308,8 @@ function estudio() {
       <label class="insp-campo"><span>Nome</span><input id="inNome" maxlength="60" value="${escH(c.nome)}"></label>
       ${c.tipo === 'texto' ? `<label class="insp-campo"><span>Texto</span><textarea id="inTexto" rows="2" maxlength="500">${escH(c.texto)}</textarea></label><label class="insp-campo"><span>Peso</span><select id="inPeso">${PESOS.map(([k, n]) => `<option value="${k}" ${k === c.peso ? 'selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
       ${formas ? `<label class="insp-campo"><span>Forma</span><select id="inForma">${formas.map(([k, n]) => `<option value="${k}" ${k === c.forma ? 'selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
-      ${c.tipo !== 'camera' ? `<label class="insp-campo"><span>Cor</span><input id="inCor" type="color" value="${c.cor}"></label>` : ''}
+      ${c.tipo === 'midia' ? `<div class="insp-campo"><span>${c.midia.tipo === 'video' ? 'Vídeo' : 'Imagem'}</span><button class="chip" id="inTrocar" title="${escH(c.midia.nome)}">Trocar arquivo</button></div>` : ''}
+      ${c.tipo !== 'camera' && c.tipo !== 'midia' ? `<label class="insp-campo"><span>Cor</span><input id="inCor" type="color" value="${c.cor}"></label>` : ''}
       <div class="insp-sep"></div>
       ${PROPS[c.tipo].map(([p, nome, passo]) => `<div class="insp-row insp-row--k"><label for="pv-${p}">${nome}</label><input class="num mono" id="pv-${p}" type="number" step="${passo}" data-p="${p}"><button class="kbtn" data-k="${p}" aria-pressed="false" title="Keyframe aqui (marca ou tira)" aria-label="Keyframe de ${nome}">◆</button></div>`).join('')}
       ${c.tipo !== 'camera' ? `<div class="insp-acoes"><button class="chip" data-acao="subir" title="Para a frente">↑</button><button class="chip" data-acao="descer" title="Para trás">↓</button><button class="chip" data-acao="duplicar">Duplicar</button><button class="chip perigo" data-acao="apagar">Apagar</button></div>` : '<p class="insp-vazio">A câmera gira em volta da cena. Marque keyframes de órbita e altura.</p>'}`;
@@ -1311,6 +1321,7 @@ function estudio() {
     $('#inForma')?.addEventListener('change', (e) => { lembrar(); c.forma = e.target.value; sincronizar3d(true); mudou(); });
     $('#inCor')?.addEventListener('input', (e) => { c.cor = e.target.value; montarCamadas(); update(); salvar(); });
     $('#inCor')?.addEventListener('focus', lembrar, { once: true });
+    $('#inTrocar')?.addEventListener('click', () => { trocarMidiaDe = c.id; midiaArq.click(); });
     $$('.num', insp).forEach((inp) => {
       inp.addEventListener('focus', lembrar);
       inp.addEventListener('input', () => { const v0 = parseFloat(String(inp.value).replace(',', '.')); if (Number.isFinite(v0)) { definir(c, inp.dataset.p, v0); montarTimeline(); update(); salvar(); } });
@@ -1377,23 +1388,77 @@ function estudio() {
     }
     for (const [id, m] of malhas) if (!ids.has(id)) { scene.remove(m); m.material.dispose(); malhas.delete(id); }
   }
+  // ---------- mídia: o arquivo fica neste aparelho (IndexedDB); a cena guarda só o nome e o tamanho ----------
+  const urlsMidia = new Map(), memMidia = new Map();
+  const abrirBanco = () => new Promise((ok, erro) => { const q = indexedDB.open('rift-midia', 1); q.onupgradeneeded = () => q.result.createObjectStore('arquivos'); q.onsuccess = () => ok(q.result); q.onerror = () => erro(q.error); });
+  async function guardarArquivo(id, arq) {
+    memMidia.set(id, arq);
+    try { const db = await abrirBanco(); await new Promise((ok, erro) => { const tx = db.transaction('arquivos', 'readwrite'); tx.objectStore('arquivos').put(arq, id); tx.oncomplete = ok; tx.onerror = () => erro(tx.error); }); return true; }
+    catch (e) { return false; }
+  }
+  async function lerArquivo(id) {
+    if (memMidia.has(id)) return memMidia.get(id);
+    try { const db = await abrirBanco(); return await new Promise((ok) => { const q = db.transaction('arquivos').objectStore('arquivos').get(id); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); }
+    catch (e) { return null; }
+  }
+  function montarMidia(el, c) {
+    const id = c.midia.id;
+    if (el.dataset.midia === id) return;
+    el.dataset.midia = id; el.textContent = '';
+    const pronto = (url) => {
+      if (el.dataset.midia !== id) return;
+      el.textContent = '';
+      if (!url) { const f = document.createElement('div'); f.className = 'falta'; f.textContent = `${c.midia.nome} não está neste aparelho. Escolha de novo no painel da direita.`; el.appendChild(f); return; }
+      const m = document.createElement(c.midia.tipo === 'video' ? 'video' : 'img');
+      if (c.midia.tipo === 'video') { m.muted = true; m.playsInline = true; m.preload = 'auto'; m.loop = true; m.addEventListener('loadedmetadata', () => update()); } else m.alt = '';
+      m.src = url; el.appendChild(m);
+    };
+    if (urlsMidia.has(id)) return pronto(urlsMidia.get(id));
+    lerArquivo(id).then((arq) => { const url = arq ? URL.createObjectURL(arq) : null; if (url) urlsMidia.set(id, url); pronto(url); });
+  }
+  const midiaArq = $('#midiaArq'); let trocarMidiaDe = null;
+  function medir(arq) {
+    return new Promise((ok) => {
+      const url = URL.createObjectURL(arq), video = arq.type.startsWith('video/');
+      const m = document.createElement(video ? 'video' : 'img');
+      const fim = (w, h) => { URL.revokeObjectURL(url); ok({ w: w || 16, h: h || 9, video }); };
+      if (video) { m.preload = 'metadata'; m.onloadedmetadata = () => fim(m.videoWidth, m.videoHeight); m.onerror = () => fim(0, 0); }
+      else { m.onload = () => fim(m.naturalWidth, m.naturalHeight); m.onerror = () => fim(0, 0); }
+      m.src = url;
+    });
+  }
+  midiaArq.addEventListener('change', async () => {
+    const arq = midiaArq.files[0]; midiaArq.value = ''; if (!arq) return;
+    if (!/^(image|video)\//.test(arq.type)) return toast('Escolha uma imagem ou um vídeo.');
+    const { w, h, video } = await medir(arq);
+    const idm = 'm' + Math.random().toString(36).slice(2, 11);
+    const ok = await guardarArquivo(idm, arq);
+    const meta = { id: idm, nome: arq.name.slice(0, 120), tipo: video ? 'video' : 'imagem', w, h };
+    urlsMidia.set(idm, URL.createObjectURL(arq));
+    const alvo = trocarMidiaDe && camada(trocarMidiaDe); trocarMidiaDe = null;
+    if (alvo) { lembrar(); alvo.midia = meta; mudou({ estrutura: true }); toast(`${alvo.nome}: arquivo trocado.`); }
+    else adicionar('midia', null, meta);
+    ganchos.entrouMidia?.(arq);
+    if (!ok) toast('Este navegador não deixou guardar o arquivo: ele some ao fechar a aba (janela privada?).');
+  });
   function sincronizar2d() {
     const ids = new Set();
     cena.camadas.forEach((c, i) => {
-      if (c.tipo !== 'texto' && c.tipo !== 'forma') return;
+      if (c.tipo !== 'texto' && c.tipo !== 'forma' && c.tipo !== 'midia') return;
       ids.add(c.id);
       let el = c2d.querySelector(`[data-id="${CSS.escape(c.id)}"]`);
       if (!el) { el = document.createElement('div'); el.dataset.id = c.id; c2d.appendChild(el); }
-      el.className = `c2d c2d--${c.tipo}${c.tipo === 'forma' ? ' c2d--' + c.forma : ''}${c.tipo === 'texto' ? ' c2d--peso-' + c.peso : ''}${c.id === sel ? ' sel' : ''}`;
+      el.className = `c2d c2d--${c.tipo}${c.tipo === 'forma' ? ' c2d--' + c.forma : ''}${c.tipo === 'texto' ? ' c2d--peso-' + c.peso : ''}${c.id === sel ? ' c2d--ativa' : ''}`;
       el.style.zIndex = String(1000 - i);
       el.hidden = !c.visivel;
+      if (c.tipo === 'midia') montarMidia(el, c);
     });
     $$('.c2d', c2d).forEach((el) => { if (!ids.has(el.dataset.id)) el.remove(); });
   }
   function pintar2d(tq) {
     const fh = frame.clientHeight || 1;
     for (const c of cena.camadas) {
-      if (c.tipo !== 'texto' && c.tipo !== 'forma') continue;
+      if (c.tipo !== 'texto' && c.tipo !== 'forma' && c.tipo !== 'midia') continue;
       const el = c2d.querySelector(`[data-id="${CSS.escape(c.id)}"]`); if (!el) continue;
       const x = val(c, 'x', tq), y = val(c, 'y', tq), es = val(c, 'escala', tq), gi = val(c, 'giro', tq);
       el.style.left = x + '%'; el.style.top = y + '%'; el.style.opacity = String(val(c, 'opacidade', tq));
@@ -1404,6 +1469,15 @@ function estudio() {
         if (el.dataset.texto !== c.texto + c.peso) {
           el.dataset.texto = c.texto + c.peso; el.textContent = '';
           String(c.texto || ' ').split('\n').forEach((linha, i) => { const s = document.createElement('span'); s.textContent = linha || ' '; s.className = c.peso === 'fino-grosso' ? (i === 0 ? 'fino' : 'grosso') : c.peso; el.appendChild(s); });
+        }
+      } else if (c.tipo === 'midia') {
+        el.style.transform = `translate(-50%, -50%) rotate(${gi}deg) scale(${es})`;
+        el.style.width = Math.max(0, val(c, 'largura', tq)) + '%'; el.style.height = 'auto'; el.style.aspectRatio = `${c.midia.w} / ${c.midia.h}`;
+        const v = el.querySelector('video');
+        if (v && v.readyState >= 1 && v.duration) {
+          const alvo = tq % v.duration; // o vídeo anda junto com a timeline (sem som: o som vem do NOSSOM)
+          if (playing && el.offsetParent) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - alvo) > 0.3) v.currentTime = alvo; }
+          else { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - alvo) > 0.02) v.currentTime = alvo; }
         }
       } else {
         el.style.transform = `translate(-50%, -50%) rotate(${gi}deg) scale(${es})`;
@@ -1990,10 +2064,12 @@ function painel() {
       $('#apagarOk', host).addEventListener('click', async () => { fechar(); await apagarProjeto(pr.id); toast('Projeto apagado.'); mostrar(secaoAtual); });
     });
   }
+  const itemBiblioteca = (f) => ({ id: novoId(), nome: f.name, tamanho: f.size, tipo: f.type.split('/')[0] === 'video' ? 'Vídeo' : f.type.split('/')[0] === 'image' ? 'Imagem' : f.type.split('/')[0] === 'audio' ? 'Áudio' : /\.(glb|gltf)$/i.test(f.name) ? 'Modelo 3D' : /\.(json|lottie)$/i.test(f.name) ? 'Lottie' : 'Arquivo', ext: (f.name.split('.').pop() || '').slice(0, 4).toUpperCase(), quando: Date.now() });
+  ganchos.entrouMidia = (arq) => addBiblioteca([itemBiblioteca(arq)]).catch(() => {});
   function ligarBiblioteca() {
     const solta = $('#solta'), input = $('#arquivos');
     const add = (files) => {
-      const novos = [...files].slice(0, 50).map((f) => ({ id: novoId(), nome: f.name, tamanho: f.size, tipo: f.type.split('/')[0] === 'video' ? 'Vídeo' : f.type.split('/')[0] === 'image' ? 'Imagem' : f.type.split('/')[0] === 'audio' ? 'Áudio' : /\.(glb|gltf)$/i.test(f.name) ? 'Modelo 3D' : /\.(json|lottie)$/i.test(f.name) ? 'Lottie' : 'Arquivo', ext: (f.name.split('.').pop() || '').slice(0, 4).toUpperCase(), quando: Date.now() }));
+      const novos = [...files].slice(0, 50).map(itemBiblioteca);
       if (novos.length) addBiblioteca(novos).then(() => { toast(`${novos.length} ${novos.length === 1 ? 'item entrou' : 'itens entraram'} na biblioteca.`); mostrar('biblioteca'); });
     };
     input.addEventListener('change', () => add(input.files));
