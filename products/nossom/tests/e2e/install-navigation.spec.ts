@@ -11,6 +11,7 @@ test('compact navigation exposes six destinations, Início first and the Z last,
   await expect(destinos).toHaveCount(5);
   await expect(destinos.first()).toHaveText('Início');
   await expect(destinos.last()).toHaveText('Z');
+  // sem áudio aberto, os passos estão no trilho; com áudio, ficam na folha embaixo da onda (Comando + Console)
   const passos = navigation.getByRole('group', { name: 'Passos do estúdio' });
   await expect(passos.getByRole('button')).toHaveText(['Tratar', 'Ajustar', 'Criar', 'Entregar']);
   await expect(passos.getByRole('button', { name: 'Tratar' })).toHaveAttribute(

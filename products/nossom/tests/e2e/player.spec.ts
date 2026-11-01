@@ -52,8 +52,9 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
   }
 
   // os quatro passos no trilho e as ferramentas do passo aberto na coluna ao lado
-  const lateral = page.getByRole('navigation', { name: 'Navegação do estúdio' });
-  const passos = lateral.getByRole('group', { name: 'Passos do estúdio' });
+  // os passos ficam na folha da ferramenta, embaixo da onda (Comando + Console)
+  const folha = page.getByRole('region', { name: 'Ferramenta', exact: true });
+  const passos = folha.getByRole('group', { name: 'Passos do estúdio' });
   await expect(passos.getByRole('button', { name: /Entregar/ })).toHaveAttribute(
     'aria-current',
     'step',

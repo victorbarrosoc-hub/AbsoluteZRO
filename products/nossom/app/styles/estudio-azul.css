@@ -338,9 +338,10 @@
   flex-wrap: nowrap;
   gap: 8px;
   justify-content: flex-start !important;
-  margin: 16px -20px 0 0;
-  padding: 2px 20px 4px 0;
+  margin: 16px 0 0;
+  padding: 2px 0 4px;
   overflow-x: auto;
+  max-width: 100%;
   scrollbar-width: none;
   grid-template-columns: none !important;
 }
@@ -348,6 +349,7 @@
   display: none;
 }
 .suggestion-chips.atalhos button {
+  position: relative;
   flex: none;
   display: inline-flex !important;
   flex-direction: row !important;
@@ -376,6 +378,8 @@
 }
 .suggestion-chips.atalhos button > span {
   position: absolute;
+  left: 0;
+  top: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -401,9 +405,9 @@
 .assistant-recentes > div {
   display: flex;
   gap: 10px;
-  margin-right: -20px;
-  padding: 2px 20px 6px 0;
+  padding: 2px 0 6px;
   overflow-x: auto;
+  max-width: 100%;
   scrollbar-width: none;
 }
 .assistant-recentes > div::-webkit-scrollbar {

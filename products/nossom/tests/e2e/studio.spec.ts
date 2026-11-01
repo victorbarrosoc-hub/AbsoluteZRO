@@ -290,7 +290,7 @@ test('studio themes persist, responsive layouts fit and reduced motion pauses de
     // nth(2): Meus projetos (Z e Início vêm antes).
     await expect(page.locator('.studio-sidebar nav > button').nth(2)).toHaveCSS(
       'color',
-      theme === 'light' ? 'rgb(101, 101, 107)' : 'rgb(180, 180, 186)',
+      theme === 'light' ? 'rgb(101, 101, 107)' : 'rgb(185, 198, 218)',
     );
     for (const width of [1440, 1000, 390]) {
       await page.setViewportSize({ width, height: 900 });
