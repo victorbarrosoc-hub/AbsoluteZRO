@@ -1,6 +1,8 @@
 # Rift Motion
 
-Motion design 2D e 3D da Absolute ZRO. **Ainda não é app:** esta pasta guarda a marca em vetor e o protótipo de desenho.
+Motion design 2D e 3D da Absolute ZRO. **Ainda não é app:** esta pasta guarda a marca em vetor e o protótipo de desenho,
+no ar em **https://rift.absolutezro.com** (projeto Vercel `rift-motion`, Root Directory = esta pasta; autorizado pelo
+titular em 01/11/2026). O build é `node publicar.mjs` (monta `publico/`); mudou o protótipo, o site muda junto.
 Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
 
 - `marca/`: o logo (RIFT, RIFT MOTION, o R), o ícone do app e o favicon, gerados por `marca/vetorizar.py` (a geometria

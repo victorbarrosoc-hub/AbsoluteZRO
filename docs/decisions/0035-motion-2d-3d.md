@@ -1,8 +1,9 @@
 # ADR 0035 — Motion 2D e 3D: o setor de animação da Absolute ZRO
 
 **Status:** proposta (01/11/2026, pedido do titular). Nome: **Rift Motion** (titular, 01/11/2026), pasta
-`products/rift-motion/` (marca e protótipo), domínio proposto `rift.absolutezro.com` (ADR 0025), depois de conferir o
-INPI. Protótipo de desenho (página inicial, login e estúdio) publicado como Artifact
+`products/rift-motion/` (marca e protótipo). **No ar em `rift.absolutezro.com`** (titular autorizou, 01/11/2026): projeto
+Vercel `rift-motion`, Root Directory `products/rift-motion`, site estático do protótipo (`publicar.mjs`). INPI ainda a
+conferir. Protótipo de desenho (página inicial, login e estúdio) publicado como Artifact
 privado do titular; nada aqui está implementado.
 
 ## Contexto
