@@ -104,7 +104,7 @@ export function criarPasta(usuarioId: string, contaId: string, nome: string, pai
   });
 }
 
-export function atualizarArquivo(usuarioId: string, contaId: string, id: string, mudancas: { name?: string; trashed?: boolean }): Promise<ArquivoDrive> {
+export function atualizarArquivo(usuarioId: string, contaId: string, id: string, mudancas: { name?: string; trashed?: boolean; appProperties?: Record<string, string | null> }): Promise<ArquivoDrive> {
   return chamarDrive<ArquivoDrive>(usuarioId, contaId, `/files/${encodeURIComponent(id)}`, { method: "PATCH", query: { fields: "id,name,trashed" }, body: mudancas });
 }
 

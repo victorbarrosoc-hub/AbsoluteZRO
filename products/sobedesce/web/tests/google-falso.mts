@@ -4,7 +4,8 @@
  * Fiel nas partes que importam: código de uso único, client_secret exigido, redirect_uri conferida,
  * invalid_grant para refresh revogado.
  * Também um Drive v3 mínimo (Referências): files.list com `q` ('X' in parents, trashed, mimeType, name,
- * appProperties has {...}), files.create, files.get e files.update (nome, lixeira), por conta Google.
+ * appProperties has {...}, 'me' in owners), files.create, files.get e files.update (nome, lixeira, appProperties), por
+ * conta Google. Token só com drive.file não enxerga o que é `foraDoApp` (o que o SOBEDESCE antigo criou).
  */
 import { createHash, randomBytes } from "node:crypto";
 import http from "node:http";
@@ -37,6 +38,13 @@ export type ArquivoFalso = {
   webContentLink?: string;
   iconLink?: string;
   size?: string;
+  /**
+   * Criado por outro cliente OAuth (o SOBEDESCE antigo) ou pela pessoa: um token só com `drive.file` não enxerga.
+   * As appProperties que o app antigo gravou são privadas dele: nos testes, um arquivo assim vem sem elas.
+   */
+  foraDoApp?: boolean;
+  /** De outra pessoa (compartilhado comigo): não passa em `'me' in owners`. */
+  deOutraPessoa?: boolean;
 };
 
 /** Quebra a consulta do Drive nos "and" de fora (fora de aspas e chaves). */
@@ -77,6 +85,7 @@ function condicao(parte: string): (f: ArquivoFalso) => boolean {
     const pai = tirarEscape(m[1]);
     return (f) => f.parents.includes(pai);
   }
+  if (/^'me'\s+in\s+owners$/.test(parte)) return (f) => !f.deOutraPessoa;
   if ((m = /^trashed\s*=\s*(true|false)$/.exec(parte))) {
     const v = m[1] === "true";
     return (f) => f.trashed === v;
@@ -238,7 +247,11 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
         const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1] ?? "";
         const a = acessos.get(token);
         if (!a || a.revogado || a.expira < Date.now()) return enviar(res, 401, { error: { code: 401, message: "Invalid Credentials", errors: [{ reason: "authError" }] } });
-        const drive = driveDe(a.conta.sub);
+        const tudo = driveDe(a.conta.sub);
+        // drive.file sem o drive inteiro: só o que este app criou (ou a pessoa escolheu no Picker).
+        const escopoDoToken = (a.refresh ? refreshes.get(a.refresh)?.escopo : "") ?? "";
+        const soDoApp = !escopoDoToken.split(/\s+/).includes("https://www.googleapis.com/auth/drive");
+        const drive = soDoApp ? new Map([...tudo].filter(([, f]) => !f.foraDoApp)) : tudo;
         const id = decodeURIComponent(url.pathname.slice("/drive/v3/files".length).replace(/^\//, ""));
         const naoAchou = () => enviar(res, 404, { error: { code: 404, message: "File not found", errors: [{ reason: "notFound" }] } });
         const lerCorpo = async () => {
@@ -307,6 +320,14 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
           if (typeof b.name === "string") f.name = b.name;
           if (typeof b.trashed === "boolean") f.trashed = b.trashed;
           if (typeof b.description === "string") f.description = b.description;
+          if (b.appProperties && typeof b.appProperties === "object") {
+            const ap: Record<string, string> = { ...(f.appProperties ?? {}) };
+            for (const [k, v] of Object.entries(b.appProperties as Record<string, unknown>)) {
+              if (v === null) delete ap[k];
+              else ap[k] = String(v);
+            }
+            f.appProperties = ap;
+          }
           f.modifiedTime = new Date().toISOString();
           return enviar(res, 200, f);
         }
