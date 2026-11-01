@@ -95,6 +95,13 @@ export const contasGoogle = pgTable(
     emailVerificado: boolean().notNull().default(false),
     /** Pasta "SOBEDESCE Referências" deste Drive (achada ou criada na primeira coleção). */
     referenciasPastaId: text(),
+    /**
+     * Última conferência das coleções que já estão no Drive e sumiram do banco (recuperarColecoes): no máximo uma a
+     * cada 10 min por Drive ao abrir Referências; conectar de novo confere na hora.
+     */
+    referenciasConferidasEm: quando(),
+    /** Pastas de coleção que a pessoa tirou da plataforma sem apagar do Drive: a conferência não traz de volta. */
+    referenciasIgnoradas: text().array().notNull().default(sql`'{}'::text[]`),
     criadoEm: agora(),
     atualizadoEm: agora(),
   },

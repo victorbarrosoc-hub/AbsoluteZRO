@@ -1,0 +1,2 @@
+ALTER TABLE "contas_google" ADD COLUMN "referencias_conferidas_em" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "contas_google" ADD COLUMN "referencias_ignoradas" text[] DEFAULT '{}'::text[] NOT NULL;
