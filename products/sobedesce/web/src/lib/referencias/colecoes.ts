@@ -1,6 +1,6 @@
 /**
  * Coleções de referências (docs/REFERENCIAS.md §2–3). Cada coleção é uma pasta em
- * "SOBEDESCE Referências/<nome>" num Drive da pessoa; o banco guarda o nome, a pasta e o token do link pra IA.
+ * "SOBEDESCE Referências/<nome>" (ou, do app antigo, "SOBEDESCE/Referências/<nome>") num Drive da pessoa; o banco guarda o nome, a pasta e o token do link pra IA.
  */
 import { randomBytes } from "node:crypto";
 import { and, asc, eq, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
@@ -95,7 +95,7 @@ export async function acharPorIdOuNome(usuarioId: string, valor: string): Promis
 
 export class ErroColecao extends Error {
   constructor(
-    public codigo: "duplicada" | "sem_drive" | "nao_encontrada",
+    public codigo: "duplicada" | "sem_drive" | "nao_encontrada" | "sem_permissao",
     public status: number,
     mensagem: string,
   ) {
@@ -133,22 +133,60 @@ async function guardadaValida(usuarioId: string, contaId: string, pasta: string 
   }
 }
 
+/** Formato do app antigo em alguns Drives: "SOBEDESCE/Referências/<coleção>" (com ou sem "Absolute ZRO" por cima). */
+export const NOME_SUBPASTA = "Referências";
+export const NOME_PAI_SUBPASTA = "SOBEDESCE";
+/** Pais olhados (files.get) por busca de "Referências": é um nome comum. */
+const MAX_PAIS_OLHADOS = 25;
+const CAMPOS_RAIZ = "id,name,createdTime,appProperties,parents";
+/** Meu Drive, compartilhados comigo e Drives compartilhados (com includeItemsFromAllDrives, que listarTudo já manda). */
+const TODOS_OS_DRIVES = { corpora: "allDrives" };
+const PASTA_VIVA = `mimeType = '${PASTA_MIME}' and trashed = false`;
+const maisAntigaPrimeiro = (a: ArquivoDrive, b: ArquivoDrive) => String(a.createdTime ?? "").localeCompare(String(b.createdTime ?? ""));
+
+/** Uma pasta pelo id, ou null se não existe para esta conta (404) ou ela não pode ver (403). Outros erros sobem. */
+async function lerPasta(usuarioId: string, contaId: string, id: string): Promise<ArquivoDrive | null> {
+  try {
+    return await lerArquivo(usuarioId, contaId, id, "id,name,mimeType,trashed");
+  } catch (e) {
+    if (e instanceof ErroDrive && (e.status === 404 || e.status === 403)) return null;
+    throw e;
+  }
+}
+
+/** Das pastas "Referências", só as que estão dentro de uma pasta "SOBEDESCE" (fora da lixeira). */
+async function dentroDoSobedesce(usuarioId: string, contaId: string, pastas: ArquivoDrive[]): Promise<ArquivoDrive[]> {
+  const nomePai = chaveNome(NOME_PAI_SUBPASTA);
+  const candidatas = pastas.filter((f) => chaveNome(f.name) === chaveNome(NOME_SUBPASTA) && f.parents?.length);
+  const ids = [...new Set(candidatas.flatMap((f) => f.parents ?? []))].slice(0, MAX_PAIS_OLHADOS);
+  const pais = await Promise.all(ids.map((id) => lerPasta(usuarioId, contaId, id)));
+  const sobedesce = new Set(pais.filter((p) => p && p.mimeType === PASTA_MIME && !p.trashed && chaveNome(p.name) === nomePai).map((p) => p!.id));
+  return candidatas.filter((f) => f.parents!.some((id) => sobedesce.has(id)));
+}
+
 /**
- * Pastas "SOBEDESCE Referências" que já existem neste Drive, a mais antiga primeiro. Não cria nada.
- * - As com a marca deste app (appProperties sobedesce=referencias), mesmo se a pessoa mudou de nome ou de lugar.
- * - As da pessoa com o nome certo: as do cliente OAuth antigo têm a marca dele, e appProperties só o app que gravou
- *   enxerga, então só o nome acha. `'me' in owners` deixa de fora pasta de outra pessoa com o mesmo nome.
+ * Raízes de coleções que já existem neste Drive, na ordem de preferência (em cada grupo, a mais antiga primeiro). Não
+ * cria nada. Busca em tudo o que a conta enxerga (Meu Drive, compartilhados comigo, Drives compartilhados).
+ * 1. As com a marca deste app (appProperties sobedesce=referencias), mesmo se a pessoa mudou de nome ou de lugar.
+ * 2. As da pessoa chamadas "SOBEDESCE Referências": as do cliente OAuth antigo têm a marca dele, e appProperties só o
+ *    app que gravou enxerga, então só o nome acha. `'me' in owners` deixa de fora pasta de outra pessoa com esse nome.
+ * 3. (sem `soMinhas`) As chamadas "Referências" dentro de uma pasta "SOBEDESCE" (o pai é conferido; o avô "Absolute
+ *    ZRO", se houver, não é exigido). Pode ser de outra pessoa, compartilhada com esta conta: o nome do pai já restringe.
  * Com `drive.file` o Google só mostra o que este app criou: as antigas não aparecem (sem erro).
  */
-async function raizesExistentes(usuarioId: string, contaId: string): Promise<ArquivoDrive[]> {
-  const campos = "id,name,createdTime,appProperties";
-  const [marcadas, porNome] = await Promise.all([
-    listarTudo(usuarioId, contaId, `appProperties has { key='sobedesce' and value='${MARCA_RAIZ}' } and mimeType = '${PASTA_MIME}' and trashed = false`, campos, {}, 1),
-    listarTudo(usuarioId, contaId, `name = ${aspas(NOME_RAIZ)} and mimeType = '${PASTA_MIME}' and trashed = false and 'me' in owners`, campos, {}, 1),
+async function raizesExistentes(usuarioId: string, contaId: string, o: { soMinhas?: boolean } = {}): Promise<ArquivoDrive[]> {
+  const minhas = o.soMinhas ? " and 'me' in owners" : "";
+  const [marcadas, porNome, referencias] = await Promise.all([
+    listarTudo(usuarioId, contaId, `appProperties has { key='sobedesce' and value='${MARCA_RAIZ}' } and ${PASTA_VIVA}${minhas}`, CAMPOS_RAIZ, TODOS_OS_DRIVES, 1),
+    listarTudo(usuarioId, contaId, `name = ${aspas(NOME_RAIZ)} and ${PASTA_VIVA} and 'me' in owners`, CAMPOS_RAIZ, TODOS_OS_DRIVES, 1),
+    o.soMinhas ? Promise.resolve([]) : listarTudo(usuarioId, contaId, `name = ${aspas(NOME_SUBPASTA)} and ${PASTA_VIVA}`, CAMPOS_RAIZ, TODOS_OS_DRIVES, 1),
   ]);
+  const doSobedesce = referencias.length ? await dentroDoSobedesce(usuarioId, contaId, referencias) : [];
   const unicas = new Map<string, ArquivoDrive>();
-  for (const f of [...marcadas, ...porNome]) unicas.set(f.id, f);
-  return [...unicas.values()].sort((a, b) => String(a.createdTime ?? "").localeCompare(String(b.createdTime ?? "")));
+  for (const grupo of [marcadas, porNome, doSobedesce]) {
+    for (const f of [...grupo].sort(maisAntigaPrimeiro)) if (!unicas.has(f.id)) unicas.set(f.id, f);
+  }
+  return [...unicas.values()];
 }
 
 /** Guarda a raiz achada na conta e põe a marca deste app nela (melhor esforço), para as próximas buscas. */
@@ -160,13 +198,14 @@ async function adotarRaiz(usuarioId: string, contaId: string, raiz: ArquivoDrive
 }
 
 /**
- * Pasta "SOBEDESCE Referências" deste Drive: a guardada (se ainda existe e não está na lixeira), a que já existe
- * (com a marca deste app ou, a da pessoa, pelo nome: a mais antiga) ou, só se não houver nenhuma, uma nova na raiz
- * do Meu Drive. Assim a raiz do app antigo é reaproveitada em vez de nascer outra vazia ao lado.
+ * Raiz das coleções deste Drive, na ordem: a guardada (se ainda existe e não está na lixeira), a que já existe
+ * (`raizesExistentes`: com a marca, "SOBEDESCE Referências" da pessoa, "SOBEDESCE/Referências") ou, só se não houver
+ * nenhuma, uma "SOBEDESCE Referências" nova na raiz do Meu Drive. Assim a raiz do app antigo é reaproveitada em vez de
+ * nascer outra vazia ao lado. `soMinhas`: só as da própria pessoa (a de outra pessoa não deixou criar a pasta).
  */
-export async function garantirRaiz(usuarioId: string, conta: { id: string; pasta: string | null }): Promise<string> {
-  if (await guardadaValida(usuarioId, conta.id, conta.pasta)) return conta.pasta!;
-  const [achada] = await raizesExistentes(usuarioId, conta.id);
+export async function garantirRaiz(usuarioId: string, conta: { id: string; pasta: string | null }, o: { soMinhas?: boolean } = {}): Promise<string> {
+  if (!o.soMinhas && (await guardadaValida(usuarioId, conta.id, conta.pasta))) return conta.pasta!;
+  const [achada] = await raizesExistentes(usuarioId, conta.id, o);
   if (achada) {
     await adotarRaiz(usuarioId, conta.id, achada);
     return achada.id;
@@ -174,6 +213,14 @@ export async function garantirRaiz(usuarioId: string, conta: { id: string; pasta
   const id = (await criarPasta(usuarioId, conta.id, NOME_RAIZ, "root", MARCA_RAIZ)).id;
   await db.update(contasGoogle).set({ referenciasPastaId: id }).where(eq(contasGoogle.id, conta.id));
   return id;
+}
+
+/**
+ * 403 da pasta (a conta só pode ver a raiz, de outra pessoa). Não é o 403 do escopo (`insufficientPermissions`, que
+ * vira "reconectar") nem o de limite de uso.
+ */
+function semPermissao(e: unknown): boolean {
+  return e instanceof ErroDrive && e.status === 403 && /insufficientFilePermissions|cannotAddChild/i.test(e.motivo ?? "");
 }
 
 /** Conferência das coleções no Drive: no máximo uma a cada 10 min por Drive (fora o conectar, que força). */
@@ -228,7 +275,7 @@ export async function recuperarColecoes(usuarioId: string, o: { contaGoogleId?: 
       const ignoradas = new Set(conta.ignoradas ?? []);
       for (const raiz of raizes) {
         if (restam <= 0) break;
-        const subpastas = await listarTudo(usuarioId, conta.id, `${aspas(raiz.id)} in parents and mimeType = '${PASTA_MIME}' and trashed = false`, "id,name,createdTime", {}, 1);
+        const subpastas = await listarTudo(usuarioId, conta.id, `${aspas(raiz.id)} in parents and ${PASTA_VIVA}`, "id,name,createdTime", TODOS_OS_DRIVES, 1);
         subpastas.sort((a, b) => String(a.createdTime ?? "").localeCompare(String(b.createdTime ?? "")));
         for (const f of subpastas) {
           if (restam <= 0) break;
@@ -290,15 +337,36 @@ async function nomeOcupado(usuarioId: string, nome: string, menos?: string): Pro
 }
 
 const DUPLICADA = () => new ErroColecao("duplicada", 409, "Você já tem uma coleção com esse nome.");
+const SEM_PERMISSAO = () => new ErroColecao("sem_permissao", 409, "O Google Drive não deixou criar a pasta da coleção. Confira se esta conta pode editar a pasta.");
 
-/** Cria a coleção: pasta no Drive (ou aproveita uma pasta com o mesmo nome dentro da raiz) e a linha no banco. */
+/** Pasta da coleção dentro da raiz: a que já tem esse nome ou uma nova. */
+async function pastaNaRaiz(usuarioId: string, contaId: string, raiz: string, nome: string): Promise<{ pasta: ArquivoDrive; existente: boolean }> {
+  const achadas = await listarTudo(usuarioId, contaId, `${aspas(raiz)} in parents and name = ${aspas(nome)} and ${PASTA_VIVA}`, "id,name", TODOS_OS_DRIVES, 1);
+  const achada = achadas.find((f) => f.name === nome);
+  if (achada) return { pasta: achada, existente: true };
+  return { pasta: await criarPasta(usuarioId, contaId, nome, raiz, MARCA_COLECAO), existente: false };
+}
+
+/**
+ * Cria a coleção: pasta no Drive (ou aproveita uma pasta com o mesmo nome dentro da raiz) e a linha no banco.
+ * Raiz de outra pessoa que esta conta só pode ver (403 ao criar a pasta): a coleção vai para uma "SOBEDESCE
+ * Referências" da própria pessoa (achada ou criada), que passa a ser a raiz guardada.
+ */
 export async function criarColecao(usuarioId: string, nome: string, contaGoogleId?: string): Promise<Linha> {
   if (await nomeOcupado(usuarioId, nome)) throw DUPLICADA();
   const conta = await contaPara(usuarioId, contaGoogleId);
-  const raiz = await garantirRaiz(usuarioId, conta);
-  const existentes = await listarTudo(usuarioId, conta.id, `${aspas(raiz)} in parents and name = ${aspas(nome)} and mimeType = '${PASTA_MIME}' and trashed = false`, "id,name", {}, 1);
-  const existente = existentes.find((f) => f.name === nome);
-  const pasta = existente ?? (await criarPasta(usuarioId, conta.id, nome, raiz, MARCA_COLECAO));
+  let achou: { pasta: ArquivoDrive; existente: boolean };
+  try {
+    achou = await pastaNaRaiz(usuarioId, conta.id, await garantirRaiz(usuarioId, conta), nome);
+  } catch (e) {
+    if (!semPermissao(e)) throw e;
+    try {
+      achou = await pastaNaRaiz(usuarioId, conta.id, await garantirRaiz(usuarioId, conta, { soMinhas: true }), nome);
+    } catch (e2) {
+      throw semPermissao(e2) ? SEM_PERMISSAO() : e2;
+    }
+  }
+  const { pasta, existente } = achou;
   const agora = new Date();
   const inserida = await db
     .insert(colecoes)

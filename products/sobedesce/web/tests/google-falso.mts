@@ -5,7 +5,7 @@
  * invalid_grant para refresh revogado.
  * Também um Drive v3 mínimo (Referências): files.list com `q` ('X' in parents, trashed, mimeType, name,
  * appProperties has {...}, 'me' in owners), files.create, files.get e files.update (nome, lixeira, appProperties), por
- * conta Google. Token só com drive.file não enxerga o que é `foraDoApp` (o que o SOBEDESCE antigo criou).
+ * conta Google; pasta `somenteLeitura` (compartilhada só para ver) dá 403 ao criar dentro ou mudar. Token só com drive.file não enxerga o que é `foraDoApp` (o que o SOBEDESCE antigo criou).
  */
 import { createHash, randomBytes } from "node:crypto";
 import http from "node:http";
@@ -45,6 +45,8 @@ export type ArquivoFalso = {
   foraDoApp?: boolean;
   /** De outra pessoa (compartilhado comigo): não passa em `'me' in owners`. */
   deOutraPessoa?: boolean;
+  /** Compartilhado só para ver: criar pasta dentro ou mudar dá 403 insufficientFilePermissions. */
+  somenteLeitura?: boolean;
 };
 
 /** Quebra a consulta do Drive nos "and" de fora (fora de aspas e chaves). */
@@ -253,6 +255,8 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
         const soDoApp = !escopoDoToken.split(/\s+/).includes("https://www.googleapis.com/auth/drive");
         const drive = soDoApp ? new Map([...tudo].filter(([, f]) => !f.foraDoApp)) : tudo;
         const id = decodeURIComponent(url.pathname.slice("/drive/v3/files".length).replace(/^\//, ""));
+        const semPermissao = () =>
+          enviar(res, 403, { error: { code: 403, message: "The user does not have sufficient permissions for this file.", errors: [{ reason: "insufficientFilePermissions" }] } });
         const naoAchou = () => enviar(res, 404, { error: { code: 404, message: "File not found", errors: [{ reason: "notFound" }] } });
         const lerCorpo = async () => {
           const partes: Buffer[] = [];
@@ -283,6 +287,7 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
           if (!b.name || !Array.isArray(b.parents)) return enviar(res, 400, { error: { code: 400, message: "Bad Request" } });
           const pai = b.parents[0];
           if (pai !== "root" && !drive.has(pai)) return naoAchou();
+          if (pai !== "root" && drive.get(pai)!.somenteLeitura) return semPermissao();
           return enviar(res, 200, novoArquivo(a.conta.sub, { name: b.name, mimeType: b.mimeType ?? "application/octet-stream", parents: b.parents, appProperties: b.appProperties, description: b.description }));
         }
         // Permissões: /files/<id>/permissions[/<pid>] (list, create, get, delete).
@@ -316,6 +321,7 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
         }
         if (req.method === "PATCH") {
           contadoresDrive.update++;
+          if (f.somenteLeitura) return semPermissao();
           const b = await lerCorpo();
           if (typeof b.name === "string") f.name = b.name;
           if (typeof b.trashed === "boolean") f.trashed = b.trashed;

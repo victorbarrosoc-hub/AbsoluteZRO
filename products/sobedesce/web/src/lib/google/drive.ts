@@ -69,6 +69,8 @@ export type ArquivoDrive = {
   id: string;
   name: string;
   mimeType: string;
+  /** Só vem se pedido em `fields` (e se a conta enxerga o pai). */
+  parents?: string[];
   description?: string;
   appProperties?: Record<string, string>;
   createdTime?: string;

@@ -38,18 +38,30 @@ página pública /r/<token> (HTML, .json, .md) ◀── lê a pasta pelo servid
 A linha da coleção some quando a conta Google sai (cascata), mas a pasta fica no Drive. Foi o que aconteceu na
 migração para o projeto Google novo. Por isso (`web/src/lib/referencias/colecoes.ts`):
 
-- **Raiz** (`garantirRaiz`): a guardada; senão a que já existe, com a marca deste app **ou pelo nome**
-  (`name = 'SOBEDESCE Referências'`, pasta, fora da lixeira, `'me' in owners`; a mais antiga). As `appProperties` são
-  privadas do cliente OAuth que gravou, então a raiz do app antigo só aparece pelo nome. Achada, é guardada e ganha a
-  marca deste app. Só sem nenhuma nasce uma nova.
-- **Conferência** (`recuperarColecoes`, idempotente): para cada Drive em estado ok, acha as raízes (sem criar), lista
-  as subpastas diretas fora da lixeira (até 200 por vez) e cria a linha das que faltam, com a data da pasta. Pula a
+- **Raiz** (`garantirRaiz`), nesta ordem (pasta fora da lixeira; em cada grupo, a mais antiga):
+  1. a guardada (`referenciasPastaId`);
+  2. a com a marca deste app (`appProperties sobedesce=referencias`);
+  3. `name = 'SOBEDESCE Referências'` com `'me' in owners`. As `appProperties` são privadas do cliente OAuth que
+     gravou, então a raiz do app antigo só aparece pelo nome;
+  4. uma pasta `Referências` cujo pai (conferido com `files.get`) se chama `SOBEDESCE` (o formato
+     "Absolute ZRO › SOBEDESCE › Referências" de alguns Drives; o avô não é exigido). Aqui vale pasta de outra pessoa
+     compartilhada com a conta: o nome do pai já restringe. `Referências` com pai de outro nome não conta.
+
+  As buscas usam `corpora=allDrives` + `includeItemsFromAllDrives` + `supportsAllDrives` (Meu Drive, compartilhados
+  comigo e Drives compartilhados). Achada, a raiz é guardada e ganha a marca deste app (se a conta puder editar). Só
+  sem nenhuma nasce uma `SOBEDESCE Referências` nova no Meu Drive. Raiz de outra pessoa que a conta só pode ver
+  (`403 insufficientFilePermissions` ao criar a coleção): a coleção nova vai para uma `SOBEDESCE Referências` da
+  própria pessoa (achada ou criada), que passa a ser a guardada; se nem isso der, `409 sem_permissao`.
+- **Conferência** (`recuperarColecoes`, idempotente): para cada Drive em estado ok, acha **todas** as raízes da lista
+  acima (sem criar; sem repetir id), lista as subpastas diretas fora da lixeira (até 200 por vez) e cria a linha das
+  que faltam, com a data da pasta. Pula a
   pasta que já é coleção, a que está em `referenciasIgnoradas`, nome que não serve (`validarNome`) e nome já usado por
   outra coleção da pessoa. Erro de um Drive vai para o log e o próximo segue. Com `drive.file` o Google não mostra as
   pastas do app antigo: não acha nada, sem erro.
 - **Quando:** ao abrir Referências (`GET /api/referencias/colecoes`), no máximo uma vez a cada 10 min por Drive (espera
   até 8 s; Drive lento termina depois da resposta e aparece na próxima abertura); e logo depois de conectar ou
-  reconectar um Drive (callback do Google, depois do redirect).
+  reconectar um Drive (callback do Google, depois do redirect). O carimbo só segura 10 min: um Drive já conferido
+  pela versão anterior (sem achar nada) é conferido de novo na primeira abertura depois disso, sem migração.
 - **Tirar da plataforma** (`DELETE` sem `apagarNoDrive`) põe a pasta em `referenciasIgnoradas`; criar de novo uma
   coleção com o mesmo nome aproveita a pasta e tira de lá.
 - **O que volta:** a coleção e os arquivos (o celular e o computador listam a pasta do Drive). Não voltam: o link pra
@@ -76,7 +88,7 @@ Formato = "mp4" | "mp4-1080" | "mp4-720" | "mp3-320" | "wav" | "m4a" | "jpg"   /
 | Método e caminho | Entrada | Saída |
 |---|---|---|
 | `GET /api/referencias/colecoes` | | `{ ok, raiz: { contaGoogleId, driveFolderId } \| null, raizes: [mesmo formato, uma por Drive], colecoes: Colecao[] }` (mais novas primeiro) |
-| `POST /api/referencias/colecoes` | `{ nome, contaGoogleId? }` | `201 { ok, colecao }` · `400 nome` · `404 nao_encontrada` (Drive que não é da pessoa) · `409 duplicada` · `409 sem_drive` |
+| `POST /api/referencias/colecoes` | `{ nome, contaGoogleId? }` | `201 { ok, colecao }` · `400 nome` · `404 nao_encontrada` (Drive que não é da pessoa) · `409 duplicada` · `409 sem_drive` · `409 sem_permissao` (o Drive não deixou criar a pasta nem na raiz própria) |
 | `PATCH /api/referencias/colecoes/:id` | `{ nome?, link?: "ligar" \| "desligar" \| "trocar" }` | `{ ok, colecao }` · `404` · `409 duplicada` |
 | `DELETE /api/referencias/colecoes/:id[?apagarNoDrive=1]` | | `{ ok, apagadaNoDrive }` (sem o parâmetro a pasta fica no Drive; com ele vai para a lixeira) |
 | `POST /api/referencias/fila` | `{ url, colecaoId, nota?, formatos? }` | `201 { ok, item, novo: true }` · mesmo link já `pendente`/`baixando` na mesma coleção: `200 { ok, item, novo: false }` (formatos novos somados enquanto `pendente`) · `400 url` · `400 entrada` (formato desconhecido) · `404` |
