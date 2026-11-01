@@ -76,8 +76,9 @@ export function PainelResumo({ liberados }: { liberados: string[] }) {
     const api = window.zroDesktop?.apps
     if (!api) return
     setAtualizando(true)
-    // um de cada vez: a central baixa e instala em sequência, com o progresso em cada cartão
-    for (const s of novas) await api.instalar(s.id)
+    // um de cada vez: a central baixa, confere e instala em sequência, com o progresso em cada cartão (a 1.4 atualiza
+    // pela agenda: o que está aberto fica para quando fechar)
+    for (const s of novas) await (api.atualizar ?? api.instalar)(s.id)
     setAtualizando(false)
   }
   return (
