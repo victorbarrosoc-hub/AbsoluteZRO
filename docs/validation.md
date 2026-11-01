@@ -15,6 +15,15 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Z do HUB no Rift Motion (01/11/2026)
+
+Branch `claude/z-rift-hub` (só a parte do HUB do PR #80, para a main). `POST /api/v1/ia/rift`: o servidor do Rift pede
+servidor a servidor (Basic do cliente `rift-web`) e a chave do Claude fica só no HUB.
+
+- `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista (`IA_RIFT_LIBERADOS`), conta da
+  lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem teto =
+  bloqueado, passou do teto = bloqueado, uso idempotente nos Custos; a tela só recebe as cinco ações, com valores limpos.
+
 ## Apps de computador só pela central (01/11/2026)
 
 Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se
