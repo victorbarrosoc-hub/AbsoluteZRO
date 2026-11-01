@@ -409,6 +409,12 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Início com o símbolo como IA (01/11/2026, aprovado pelo titular): a Coroa sonora vazada e maior, desenhada
+  num canvas (`lib/quasar-ia.ts`, a 23,976 quadros por segundo como o Z), com a onda girando pela borda como quem
+  processa; o clarão e o feixe horizontal ficam parados e só aumentam e diminuem o brilho. Pensando, a onda cresce e
+  acelera; falando, pulsa. Sem frase de efeito (o título fica para leitor de tela), sem moldura, pílula de estado só
+  com a IA ligada, ações e atalhos centrados e discretos (2 × 2 no celular). Slogan novo: "O som encontrando o seu
+  espaço." Corrigidos a lateral espremida no tema claro e o nome cortado no trilho.
 - 🟡 Quasar Audio Lab (01/11/2026, pedido do titular): o NOSSOM passa a se chamar Quasar Audio Lab ("é subproduto,
   todos são Absolute ZRO"). Marca: a Coroa sonora (eclipse fino em azul-aço, a borda vibra como onda do lado da luz,
   clarão no ponto), QUASAR na letra expandida (Archivo Expanded ExtraBold) e AUDIO LAB num selo de vidro de borda

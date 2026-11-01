@@ -4352,6 +4352,15 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## Quasar · Início com o símbolo como IA (01/11/2026)
+
+- `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 134/134 (novo `tests/quasar-ia.test.ts`: a onda corre,
+  pensando cresce e acelera e volta ao repouso, reduzir movimento fica na pose), `npm run build` OK, e2e completo
+  70 passaram, 0 falharam (26 pulados por `RELEASE=closed`).
+- Novo e2e em `ai-motion-performance`: o Quasar do Início anima no canvas, não muda `d` de SVG, pausa com a aba oculta
+  e fica parado com reduzir movimento. Testes que procuravam o título antigo agora procuram "Início do Quasar".
+- Telas conferidas a 1440 e 390, claro e escuro; vídeo da animação gravado quadro a quadro pelo navegador.
+
 ## Quasar Audio Lab · novo nome e marca (01/11/2026)
 
 - `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 126/126, `npm run build` OK, e2e completo 69 passaram,
