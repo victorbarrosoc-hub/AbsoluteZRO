@@ -29,6 +29,12 @@ Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rif
   depois de limpar o aparelho e reabrir, as duas voltam do IndexedDB; num navegador novo aparece "não está neste
   aparelho" no lugar; os dois arquivos entram na Biblioteca. Corrigido: a camada escolhida no quadro herdava o estilo do
   seletor (`.sel`, pílula de 32 px). Não testado: Safari e vídeo grande.
+- Painel modelo A (01/11/2026): no Chromium a 390 px, projeto novo abre vazio com Mídia/Texto/Modelo e a barra de
+  baixo; Texto abre a gaveta na aba Movimento; Entrar + Sair geram keyframes de x e opacidade (acesos no Ajuste fino); ✕
+  fecha; 3D + Quicar gera y e opacidade; a linha do tempo abre pelo botão; sem rolagem lateral; depois de reabrir, o
+  movimento e as trilhas voltam do banco. A 1360 px: abas no painel da direita, sem ✕. Modelo pronto num projeto vazio
+  põe as 6 camadas. Corrigido: as camadas 2D cobriam o quadro e o toque não chegava aos objetos 3D. Não testado: iPhone
+  de verdade (Safari).
 - `products/rift-motion` `npm test`: **6/6**. Login: sem cliente configurado, `/eu` diz "não configurado" e `/entrar`
   volta com `?zro=config`; a volta fica no site (o hash do painel passa, endereço externo vira `/#app`). Banco num
   Postgres de verdade montado como no Supabase (papel `rift` dono, `rift_app` sem login): migração não repete e recusa
