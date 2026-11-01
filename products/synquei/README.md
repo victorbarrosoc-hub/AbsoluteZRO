@@ -2,7 +2,7 @@
 
 **Sincronia de câmeras, celulares e gravadores pelo som, direto no navegador.** Solta as pastas dos cartões, o Synquei reconhece cada arquivo, separa por aparelho, acha onde cada clipe entra e exporta o projeto para o seu editor.
 
-- **Site:** [synquei.vercel.app](https://synquei.vercel.app) · **App:** [/app/](https://synquei.vercel.app/app/) · **Formatos:** [/formatos/](https://synquei.vercel.app/formatos/)
+- **Site:** [synquei.absolutezro.com](https://synquei.absolutezro.com) · **App:** [/app/](https://synquei.absolutezro.com/app/) · **Formatos:** [/formatos/](https://synquei.absolutezro.com/formatos/). O synquei.vercel.app leva o site para lá (308); o app (`/app/`), o login e a API continuam nele, porque o app instalado ali guarda os projetos no próprio endereço.
 - Sem build e sem dependências: HTML, CSS e módulos ES. É só servir a pasta.
 - Nada sai do computador: os arquivos são lidos direto do disco pelo navegador.
 - Mora em `products/synquei` do repositório [AbsoluteZRO](https://github.com/victorbarrosoc-hub/AbsoluteZRO) (fonte oficial desde 25/10/2026, ver `ORIGEM.md`). Na Vercel, o projeto `synquei` usa **Root Directory = `products/synquei`**.
@@ -190,7 +190,7 @@ Variáveis na Vercel (projeto `synquei`, Production):
 | `ZRO_CLIENT_SECRET` | o segredo do cliente `synquei-web` no console da Absolute ZRO (sensível) |
 | `ZRO_ISSUER` | opcional; padrão `https://absolutezro.com` |
 
-No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
+No console da Absolute ZRO, o cliente `synquei-web` precisa dos retornos `https://synquei.absolutezro.com/api/zro/callback` (o oficial, migration 0051) e `https://synquei.vercel.app/api/zro/callback` (o app instalado no endereço antigo), e o produto Synquei do endereço de entrada `https://synquei.absolutezro.com/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 
 **Onde fica a conta.** No computador (e na janela larga), no pé da barra lateral e em Ajustes. No celular a barra lateral
 some: a conta fica no canto do Início, antes do Set e da Z (`atalhoConta` em `app/js/conta.js`): **Entrar** para quem

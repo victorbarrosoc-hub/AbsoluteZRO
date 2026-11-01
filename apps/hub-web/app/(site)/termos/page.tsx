@@ -2,7 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Legal, LegalSecao } from '@/components/legal'
 
-export const metadata: Metadata = { title: 'Termos de uso', description: 'As regras simples para usar a conta e as ferramentas da Absolute ZRO.' }
+export const metadata: Metadata = {
+  title: 'Termos de uso',
+  description: 'As regras simples para usar a conta e as ferramentas da Absolute ZRO.',
+  alternates: { canonical: '/termos' },
+}
 
 export default function Termos() {
   return (

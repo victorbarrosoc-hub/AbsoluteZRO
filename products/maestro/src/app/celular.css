@@ -68,3 +68,178 @@ select {
     }
   }
 }
+
+/* Toque de 44 px no iPhone (Apple HIG; revisão do titular, 01/11/2026): os ícones do topo, os botões da pílula do
+   cronômetro, as setas e os botões pequenos mantêm o desenho, e a área de toque cresce por um ::after invisível até
+   44 × 44, centralizado (quem já tem 44 não muda). O `inset` usa a medida do próprio botão: altura em cima e embaixo,
+   largura nos lados. `:where` no `position` para não passar por cima de quem já é posicionado. Só em tela de toque; no
+   computador nada muda. O e2e/celular.spec.ts confere. */
+@media (pointer: coarse) {
+  :where(
+    .topo__z,
+    .topo__marca,
+    .tp-botao,
+    .tema button,
+    .conta,
+    .q-icone-btn,
+    .hoje-painel__mais,
+    .hoje-agenda__mais,
+    .voltar,
+    .tp-pilula__abrir,
+    .tp-pilula__acao,
+    .tp-pilula__fechar,
+    .q-barra__colunas,
+    .glass-btn,
+    .selo--demo,
+    .q-limpar,
+    .q-abas button,
+    .tp-play,
+    .q-card__passo,
+    .tp-link,
+    .q-perigo,
+    .tp-passo,
+    .tp-prefs summary,
+    .tp-mais,
+    .secao__link,
+    .q-segmentos > *,
+    .tp-abas > button,
+    .tp-modos > button,
+    .tp-quem > button,
+    .tp-seg > button,
+    .pilulas > a,
+    .abas > a,
+    .q-pilulas > button,
+    .q-prazo__atalhos > button,
+    .q-ficha__links a,
+    .cr-cabeca__ligacao a,
+    .cr-icone,
+    .cr-alca,
+    .cr-tipo
+  ) {
+    position: relative;
+  }
+  :is(
+    .topo__z,
+    .topo__marca,
+    .tp-botao,
+    .tema button,
+    .conta,
+    .q-icone-btn,
+    .hoje-painel__mais,
+    .hoje-agenda__mais,
+    .voltar,
+    .tp-pilula__abrir,
+    .tp-pilula__acao,
+    .tp-pilula__fechar,
+    .q-barra__colunas,
+    .glass-btn,
+    .selo--demo,
+    .q-limpar,
+    .q-abas button,
+    .tp-play,
+    .q-card__passo,
+    .tp-link,
+    .q-perigo,
+    .tp-passo,
+    .tp-prefs summary,
+    .tp-mais,
+    .secao__link,
+    .q-segmentos > *,
+    .tp-abas > button,
+    .tp-modos > button,
+    .tp-quem > button,
+    .tp-seg > button,
+    .pilulas > a,
+    .abas > a,
+    .q-pilulas > button,
+    .q-prazo__atalhos > button,
+    .q-ficha__links a,
+    .cr-cabeca__ligacao a,
+    .cr-icone,
+    .cr-alca,
+    .cr-tipo
+  )::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
+  /* busca e filtros do Quadro com a altura de um toque */
+  .q-busca,
+  .q-filtro select,
+  .form__campo select {
+    min-height: 44px;
+  }
+  /* os selos-seletores do Roteiro (PG, TRILHA, quem fala, EXT) ficam do tamanho do selo e ganham 10 px de toque em
+     cima e embaixo por uma borda transparente (o fundo fica no selo; o raio 6 px / 16 px dá 6 px por dentro); a margem
+     negativa devolve o espaço, a linha não cresce */
+  .cr-sel,
+  .cr-cena__lugar .cr-sel,
+  .cr-quem:not(.cr-quem--nova) {
+    min-width: 44px;
+    min-height: 44px;
+    border-block: 10px solid transparent;
+    margin-block: -10px;
+    border-radius: 6px / 16px;
+    /* !important: as regras de cor de cada selo usam o atalho `background`, que volta o clip para a borda */
+    background-clip: padding-box !important;
+  }
+}
+
+/* iPhone deitado (uns 390 px de altura): título, topo e respiros encolhem para o trabalho caber na tela; o Quadro
+   deixa de gastar metade da tela com o cabeçalho. */
+@media (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
+  .atitle {
+    font-size: 1.75rem;
+  }
+  .conteudo {
+    padding-top: 14px;
+  }
+  .pagina {
+    gap: 14px;
+  }
+  .topo {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  /* Quadro: as ações e a busca numa linha só, o título grande fica para o leitor de tela (a aba "Quadro" da barra já
+     diz onde se está, como o título pequeno do iOS deitado); "Colunas" vira só o ícone */
+  .q:has(.q-barra) {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 14px;
+  }
+  .q:has(.q-barra) > * {
+    grid-column: 1 / -1;
+  }
+  .q:has(.q-barra) > .q-cabeca {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .q:has(.q-barra) > .q-barra {
+    grid-column: 2;
+    grid-row: 1;
+    flex-wrap: nowrap;
+  }
+  .q:has(.q-barra) .q-cabeca .atitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .q:has(.q-barra) .q-cabeca__colunas {
+    width: 44px;
+    padding: 0;
+  }
+  .q:has(.q-barra) .q-cabeca__colunas span {
+    display: none;
+  }
+  .q-barra .q-busca {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .q-barra .q-filtro select {
+    max-width: 128px;
+  }
+}

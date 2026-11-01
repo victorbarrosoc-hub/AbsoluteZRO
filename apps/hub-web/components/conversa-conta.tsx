@@ -6,7 +6,7 @@
  * Animação em CSS (globals.css, "Conversa de conta") e o Z (components/ia/simbolo-z.tsx); "reduzir movimento" deixa tudo parado.
  */
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
-import { normalizarArroba, sugerirArroba, validarArroba } from '@zro/auth/arroba'
+import { normalizarArroba, sugerirArrobaCom, validarFormaArroba } from '@zro/auth/arroba'
 import { CampoSenha } from '@zro/ui/senha'
 import type { FormState } from './action-form'
 import { PalcoZ, Z, type CenaZ, type MovimentoZ } from './ia/simbolo-z'
@@ -93,7 +93,7 @@ export function ConversaConta({
   const estado: Estado = destino ? 'pronto' : pending ? 'conferindo' : foco ? 'ouvindo' : 'absolute-zro'
 
   function irPara(p: Passo, mensagem: string | null = null) {
-    if (p === 'arroba' && !arrobaMexida) setValores((v) => ({ ...v, arroba: sugerirArroba(v.nome, v.email) }))
+    if (p === 'arroba' && !arrobaMexida) setValores((v) => ({ ...v, arroba: sugerirArrobaCom(v.nome, v.email) }))
     setPasso(p)
     setErro(mensagem)
     setFocoPedido((n) => n + 1)
@@ -101,7 +101,7 @@ export function ConversaConta({
 
   function invalido(p: Passo): string | null {
     const c = refs[p].current
-    if (p === 'arroba' && c) return c.value.trim() ? validarArroba(normalizarArroba(c.value)) : 'Escolha seu @.'
+    if (p === 'arroba' && c) return c.value.trim() ? validarFormaArroba(normalizarArroba(c.value)) : 'Escolha seu @.'
     if (!c || c.checkValidity()) return null
     if (p === 'email') return c.value ? 'Confira o e-mail.' : 'Digite seu e-mail.'
     if (p === 'nome') return 'Diga como podemos te chamar.'

@@ -1,7 +1,7 @@
 # Carro do Freela — contexto para retomar o trabalho
 
 Protótipo de **agenda e contratação de freelas do audiovisual**, mercado de
-Natal/RN. Dono do produto: **Victor Barroso** (`victorbarrosoc@gmail.com`), que
+Natal/RN. Dono do produto: **o titular**, que
 trabalha no set — as decisões de produto são dele e costumam vir de experiência
 direta do mercado, não de teoria. Quando ele contraria uma sugestão técnica,
 normalmente é porque conhece um detalhe do mercado que não está no código.
@@ -180,6 +180,34 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   a sua conta" (`realEnviarLocais`); proposta e job locais não têm destinatário e não sobem. `REAL_AUTORES` resolve
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
+
+## 01/nov · 3 — revisão dos sites e os logins antigos aposentados (`conta-zro` §9, `npm run test:api`)
+
+- ⚠️ **No domínio a única porta é "Entrar com Absolute ZRO"** (decisão do titular, 01/11/2026). O formulário de e-mail
+  e senha e o "Continuar com Google" eram só deste aparelho (nada no servidor) e saíram da tela (`pintarZro`: `antigo`
+  é sempre falso); o cartão de entrar não fica mais compacto ("Entrar ▾") no domínio (`preso()` com `ZRO_PRONTO`). O
+  perfil que já estava no aparelho continua: `entrarNaConta` só zera quem nunca entrou aqui (`ENTROU_KEY`). Fora do
+  domínio (prévia, suítes) o formulário segue igual.
+- **O HTML publicado sai sem comentário** (`semComentarios` no `build.js`; script, style, textarea e pre ficam como
+  estão). Os comentários do template continuam valendo como documentação.
+- `canonical`, `og:url` e `og:image` em **carro.absolutezro.com**; ícone da aba (`<link rel="icon">` só no `--real`,
+  relativo) e `/favicon.ico` servindo o `icone-192.png` (`rotasVercel`).
+- `/api/zro/eu` sem cookie de sessão nenhum responde **200 `{ entrou: false, release }`** (era 401 a cada visita, no
+  console); cookie que não vale continua 401. O template trata os dois como "sem sessão".
+- Vídeo da home e do login: **com Save-Data, `prefers-reduced-data` ou rede 2G, só o quadro parado** (`poupaDados()`).
+  ⚠️ O peso do vídeo (14,4 MB AV1 no computador) **não** foi reduzido: a regra do titular é que a qualidade não cai.
+- Família: SOBEDESCE em `https://sobedesce.com` e Synquei em `https://synquei.absolutezro.com`.
+
+## 01/nov · 2 — toque de 44 px no iPhone (`test/toque-44.js`)
+
+Titular, depois de aprovar o HUB no iPhone: *"pode revisar os outros apps de celular?"*. Largura e campos já estavam
+certos (`sem-zoom.js`); o dedo é que errava: `.btn.sm` com 35 px, a barra do post com 31, "← Voltar" com 21, as setas
+do mês com 30, o tema com 27×24. O conserto é o último bloco da folha (`@media(pointer:coarse)`): a área de toque
+cresce até 44 × 44 por um `::after` invisível com `inset:min(0px,calc((100% - 44px) / 2))`, o desenho não muda e
+`:where` no `position` não briga com quem já é posicionado. ⚠️ **Classe nova de botão pequeno entra na lista** (as
+duas, a do `:where` e a do `::after`); a suíte mede as telas logadas dos dois lados a 375/393/430 e a home deitada, e
+só conta o que está por cima (o centro do botão é dele). ⚠️ Não vale para a Sede/"Montar job" do site real (precisa do
+banco e da Absolute ZRO falsa): fica para a próxima rodada de `missoes-real.js`.
 
 ## 01/nov — a guilda entra na FASE 1, GRÁTIS (branch `guilda-fase1`; `_guilda-testes.js`, `test/guilda-real.js`)
 

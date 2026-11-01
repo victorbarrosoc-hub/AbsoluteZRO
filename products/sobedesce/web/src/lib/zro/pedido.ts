@@ -8,7 +8,7 @@
  * vencido, `zro_pedido` = a ação pedida e `jti` de uso único (reapresentado dentro da validade é recusado).
  */
 import { createPublicKey, verify } from "node:crypto";
-import { dentroDoLimite, registrarTentativa } from "@/lib/auth/limite";
+import { usarUmaVez } from "@/lib/auth/limite";
 import { credenciaisZro, emissor } from "./config";
 import { chavePublica } from "./oidc";
 
@@ -52,9 +52,7 @@ export async function conferirPedidoZro(autorizacao: string | null, acao: string
   if (dados.exp <= s - FOLGA_S) throw new PedidoRecusado("vencido");
   if (dados.zro_pedido !== acao) throw new PedidoRecusado("ação");
   if (typeof dados.sub !== "string" || !dados.sub || typeof dados.jti !== "string" || !/^[A-Za-z0-9_-]{8,80}$/.test(dados.jti)) throw new PedidoRecusado("sub ou jti");
-  // Uso único: o jti fica na tabela de tentativas pela validade (e a folga) do pedido.
-  const chave = `pedido-zro:${dados.jti}`;
-  if (!(await dentroDoLimite(chave, { max: 1, janelaMs: (VIDA_MAX_S + 2 * FOLGA_S) * 1000 }))) throw new PedidoRecusado("reapresentado");
-  await registrarTentativa(chave);
+  // Uso único: o jti fica na tabela de tentativas pela validade (e a folga) do pedido; conferir e gravar é atômico.
+  if (!(await usarUmaVez(`pedido-zro:${dados.jti}`, (VIDA_MAX_S + 2 * FOLGA_S) * 1000))) throw new PedidoRecusado("reapresentado");
   return { sub: dados.sub, jti: dados.jti };
 }

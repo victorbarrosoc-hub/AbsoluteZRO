@@ -1,4 +1,4 @@
-// Repasse da Higgsfield pela Absolute ZRO (as Conexões do HUB, migration 0051): /api/zro/higgsfield → <emissor>/api/v1/
+// Repasse da Higgsfield pela Absolute ZRO (as Conexões do HUB, migration 0052): /api/zro/higgsfield → <emissor>/api/v1/
 // higgsfield (o painel de créditos) e /api/zro/higgsfield/gerar → <emissor>/api/v1/higgsfield/gerar (envio, telas,
 // animar e andamento), com o access token da sessão no Authorization. A página fala só com este site (cookie da
 // sessão, mesma origem); o token fica no cookie cifrado que só /api/zro recebe. A conta da Higgsfield e os créditos

@@ -8,7 +8,7 @@ import { signupAction } from '@/lib/actions/auth'
 import { respondendoAcao, safeNext } from '@/lib/actions/helpers'
 import { getAuth } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Criar conta' }
+export const metadata: Metadata = { title: 'Criar conta', alternates: { canonical: '/criar-conta' } }
 
 /** Criar conta como conversa: e-mail, nome, senha, pronto (components/conversa-conta.tsx). */
 export default async function CriarConta({ searchParams }: { searchParams: Promise<{ next?: string }> }) {

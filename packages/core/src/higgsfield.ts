@@ -1,5 +1,5 @@
 /**
- * Higgsfield nas Conexões (pedido do titular, 01/11/2026; migration 0051). Como o Google Agenda (ADR 0026): a pessoa
+ * Higgsfield nas Conexões (pedido do titular, 01/11/2026; migration 0052). Como o Google Agenda (ADR 0026): a pessoa
  * conecta a conta da Higgsfield UMA vez na conta Absolute ZRO e os apps da família (AEON, Rift Motion) geram imagem e
  * vídeo com os créditos do plano dela, pelo HUB, com o token da pessoa (escopo `zro.higgsfield`). O desenho vem do Rift
  * Motion (products/rift-motion/api/_higgsfield.js): três opções de gasto com o preço que a Higgsfield informa antes,

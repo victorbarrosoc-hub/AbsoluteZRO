@@ -36,7 +36,8 @@ Igual ao do Maestro (leia o [README dele](../../maestro/desktop/README.md)); aqu
 - **Login:** o fluxo normal do site (OIDC com PKCE, cliente `tpeasy-web`), dentro da janela. Partição `persist:tpeasy`.
   Agente de usuário sem "Electron" (o Google recusa navegador embutido).
 - **Segurança:** `contextIsolation`, `sandbox`, sem `nodeIntegration`, sem `<webview>`, sem janelas novas; permissões negadas,
-  menos copiar e tela cheia, e a pasta que a pessoa escolhe para salvar as conversões (`fileSystem`). Fusíveis do Electron como no Maestro. Uma instância só.
+  menos copiar, tela cheia e o microfone só de áudio para o TPeasy ("Rolar com a voz"; no Mac o Info.plist traz
+  `NSMicrophoneUsageDescription`). Câmera e tela, nunca. Fusíveis do Electron como no Maestro. Uma instância só.
   `TPEASY_URL`/`ZRO_HUB_URL` só fora do app instalado.
 - **Visual:** fundo claro `#f5f5f7` desde o primeiro quadro (a cor do site); no Mac, `hiddenInset` com a barra própria (voltar,
   avançar, título com o ícone, recarregar, início). "Sem conexão" no mesmo tema, com o wordmark flat da Absolute ZRO no pé.

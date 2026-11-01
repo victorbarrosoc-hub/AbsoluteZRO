@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const log = createLogger('conexoes')
 
 /**
- * GET /conexoes/higgsfield — começa a conexão da Higgsfield (migration 0051): o HUB se registra na Higgsfield na
+ * GET /conexoes/higgsfield — começa a conexão da Higgsfield (migration 0052): o HUB se registra na Higgsfield na
  * primeira vez, e o state e o PKCE S256 vão num cookie cifrado de 10 min, só em /conexoes/higgsfield, preso à conta
  * que começou. Sem app que use a Higgsfield visível para a pessoa, volta para /conexoes.
  */

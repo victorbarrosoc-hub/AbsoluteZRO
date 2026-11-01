@@ -98,7 +98,7 @@ test('profile updates use authenticated identity, ignore roles, and require the 
         action: 'profile',
         name: 'Novo nome',
         isAdmin: true,
-        email: 'victorbarrosoc@gmail.com',
+        email: 'adm@example.test',
       }),
     );
     assert.equal(profile.status, 200);

@@ -24,7 +24,7 @@ export function FormEntrar({ volta }: { volta: string }) {
       <Field label="Senha" htmlFor="senha">
         <InputSenha id="senha" name="senha" autoComplete="current-password" required />
       </Field>
-      <Link href="/esqueci-a-senha" className="toque -mt-2 justify-self-end rounded-full text-[14px] text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+      <Link href="/esqueci-a-senha" aria-label="Esqueci a senha" className="toque -mt-2 justify-self-end rounded-full text-[14px] text-ink-2 underline-offset-4 hover:text-ink hover:underline">
         Esqueci a senha
       </Link>
       <Enviar variant="secondary" size="lg" className="mt-2 w-full" ocupado="Entrando…">

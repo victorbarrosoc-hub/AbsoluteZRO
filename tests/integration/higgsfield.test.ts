@@ -1,4 +1,4 @@
-// Higgsfield nas Conexões (migration 0051): a conta conectada uma vez no HUB e usada pelos apps da família (AEON, Rift
+// Higgsfield nas Conexões (migration 0052): a conta conectada uma vez no HUB e usada pelos apps da família (AEON, Rift
 // Motion) pelo HUB. Contra uma Higgsfield falsa (tests/fixtures/higgsfield-falsa.ts): registro dinâmico, ida e volta com
 // PKCE, tokens cifrados e renovação (invalid_grant vira "reconectar"), o painel de créditos (saldo, uso do mês, preço das
 // telas e das três opções), telas antes de animar, animar, andamento, sem saldo que cubra, app desligado, sem conexão,

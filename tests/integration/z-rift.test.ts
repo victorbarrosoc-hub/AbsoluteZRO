@@ -70,6 +70,13 @@ describe('Z no Rift: quem pode', () => {
     // Beto entrou no Rift mas não está na lista
     await expectCode(pedidoDaZNoRift(db, app, { ...corpo, sub: beto.userId }, opts), 'action_not_allowed')
 
+    // na lista e já entrou, mas o Rift Motion não está lançado para ela: o gate fecha (revisão P4)
+    await expectCode(pedidoDaZNoRift(db, app, corpo, opts), 'product_closed')
+    // admin da plataforma sem e-mail confirmado também não passa
+    await db.asSystem('teste', (tx) => tx`update zro.users set platform_role = 'admin', email_verified_at = null where id = ${ana.userId}`)
+    await expectCode(pedidoDaZNoRift(db, app, corpo, opts), 'product_closed')
+    await db.asSystem('teste', (tx) => tx`update zro.users set email_verified_at = now() where id = ${ana.userId}`)
+
     const ok = await pedidoDaZNoRift(db, app, corpo, opts)
     expect(ok).toEqual({ userId: ana.userId, pedido: 'anima o título', cena: JSON.stringify(corpo.cena) })
 
@@ -97,6 +104,9 @@ describe('Z no Rift: teto e uso', () => {
     const g = await conferirTetoDoSistema(db)
     expect(g.hoje).toBeGreaterThanOrEqual(1)
     await teto(0.5)
+    await expectCode(conferirTetoDoSistema(db), 'quota_exceeded')
+    // no limite já bloqueia: teto 0 = nada passa
+    await teto(0)
     await expectCode(conferirTetoDoSistema(db), 'quota_exceeded')
     await expectCode(registrarUsoDoSistema(db, eva.userId, { ...uso, chave: 'ruim' }), 'invalid_input')
   })

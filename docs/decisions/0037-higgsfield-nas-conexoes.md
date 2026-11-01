@@ -15,7 +15,7 @@ contra o comportamento de ecossistema (uma conta, os apps se reconhecem, nada du
 - **A Higgsfield é uma Conexão do HUB**, como o Google Agenda (ADR 0026): a pessoa conecta uma vez em `/conexoes` e os
   apps usam por ali. Só a porta "conta" (OAuth com PKCE S256 no login da Higgsfield, registro dinâmico do HUB pela
   RFC 7591, sem segredo), com os créditos do plano da própria pessoa. Nada de chave de API guardada.
-- **Guarda** (`infra/migrations/0051_higgsfield.sql`): a conexão é uma linha de `zro.conexoes` (provedor `higgsfield`,
+- **Guarda** (`infra/migrations/0052_higgsfield.sql`): a conexão é uma linha de `zro.conexoes` (provedor `higgsfield`,
   tokens só cifrados com `ZRO_CONEXOES_KEY`, coluna `cliente` com o client_id), o mesmo "Usado por" de
   `zro.conexao_apps`, `zro.apps_oauth_externos` (o registro do HUB na Higgsfield, só o sistema lê) e `zro.ia_geracoes`
   (cada pedido de um app: saída, modelo, opção, custo informado antes, estado e resultados; RLS por pessoa, sem apagar).
@@ -39,6 +39,6 @@ contra o comportamento de ecossistema (uma conta, os apps se reconhecem, nada du
 ## Consequências
 
 - O Rift Motion troca a conexão própria pela do HUB (mesma API, mesmas opções); a sessão do Rift foi avisada.
-- Em produção precisa da migration `0051` no deploy e de `ZRO_CONEXOES_KEY` (já existe pelo Google Agenda). Não testado
+- Em produção precisa da migration `0052` no deploy e de `ZRO_CONEXOES_KEY` (já existe pelo Google Agenda). Não testado
   contra a Higgsfield de verdade a partir do HUB: o registro dinâmico e o MCP seguem o que o Rift usa.
 - Trocar `ZRO_CONEXOES_KEY` obriga a conectar de novo (como o Google Agenda).

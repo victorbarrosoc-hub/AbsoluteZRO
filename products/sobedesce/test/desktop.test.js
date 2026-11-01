@@ -127,3 +127,34 @@ test('zoom da pessoa: passos do menu, Tamanho real e arquivo estragado', async (
     await fs.rm(dir, { recursive: true, force: true })
   }
 })
+
+// ─────────── menu (desktop/menu.js) ───────────
+import { modeloDoMenu } from '../desktop/menu.js'
+
+test('menu todo em português: nenhum papel que monta menu inteiro em inglês, todo item com rótulo', () => {
+  const INGLES = /\b(Undo|Redo|Cut|Copy|Paste|Select All|Close|Quit|Hide|Minimize|Window|Edit|File|View|Help|About|Reload|Toggle)\b/
+  for (const isMac of [true, false]) {
+    const itens = []
+    const andar = lista => {
+      for (const i of lista) {
+        itens.push(i)
+        if (i.submenu) andar(i.submenu)
+      }
+    }
+    andar(modeloDoMenu({ isMac, zoom: () => null, abrirLogs() {}, abrirNoNavegador() {} }))
+    for (const i of itens) {
+      assert.ok(!['appMenu', 'fileMenu', 'editMenu', 'viewMenu', 'windowMenu'].includes(i.role), `${i.role} traz os itens em inglês`)
+      if (i.type === 'separator') continue
+      assert.equal(typeof i.label, 'string', JSON.stringify(i))
+      assert.doesNotMatch(i.label, INGLES, i.label)
+    }
+    assert.ok(itens.some(i => i.role === 'quit'), 'tem Sair')
+  }
+})
+
+test('main.js usa o menu em português e "Mostrar" só abre pasta de verdade', async () => {
+  const main = await fs.readFile(new URL('../desktop/main.js', import.meta.url), 'utf8')
+  assert.match(main, /modeloDoMenu\(/)
+  assert.doesNotMatch(main, /role: '(appMenu|fileMenu|editMenu|windowMenu)'/)
+  assert.match(main, /ehPastaComum\(path\.dirname\(target\)\)/)
+})

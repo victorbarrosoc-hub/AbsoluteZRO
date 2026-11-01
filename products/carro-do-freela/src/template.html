@@ -7061,6 +7061,15 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
   .sd-porta{padding:26px 22px;min-height:460px}
   .sd-linha3{grid-template-columns:1fr 1fr}
 }
+/* (01/nov) TOQUE DE 44 PX NO IPHONE (Apple HIG; revisão do titular: "pode revisar os outros apps de celular?").
+   Na tela de toque, o botão pequeno (os .btn.sm, os chips, a barra do post, voltar, o mês, os dias, as abas
+   segmentadas, a marca e o saldo do topo) mantém o desenho e a área de toque cresce até 44 × 44 por um ::after
+   invisível e centralizado: o `inset` usa a medida do próprio botão (altura em cima e embaixo, largura nos lados),
+   quem já tem 44 não muda. `:where` no position para não brigar com quem já é posicionado. test/toque-44.js confere. */
+@media(pointer:coarse){
+  :where(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz){position:relative}
+  :is(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz)::after{content:"";position:absolute;inset:min(0px,calc((100% - 44px) / 2))}
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -7147,8 +7156,8 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <!-- Maestro na família: fica comentado até o lançamento (docs/operations/lancamento-maestro.md); vira com node scripts/lancamento-maestro.mjs -->
         <!--maestro-familia--><a class="fam" href="https://maestro.absolutezro.com" rel="noopener" title="Maestro"><img src="midia:familia-maestro.svg" alt="" width="22" height="22" decoding="async"><span>Maestro</span></a><!--/maestro-familia-->
         <a class="fam" href="https://relay.absolutezro.com" rel="noopener" title="Relay"><img src="midia:familia-relay.svg" alt="" width="22" height="22" decoding="async"><span>Relay</span></a>
-        <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="SOBEDESCE"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>SOBEDESCE</span></a>
-        <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+        <a class="fam" href="https://sobedesce.com" rel="noopener" title="SOBEDESCE"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>SOBEDESCE</span></a>
+        <a class="fam" href="https://synquei.absolutezro.com" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
         <a class="fam" href="https://tpeasy.absolutezro.com" rel="noopener" title="TPeasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPeasy</span></a>
       </div>
       <!-- o pé da lateral (17/out · 6), da referência SOBEDESCE: lá ele mostra
@@ -7250,8 +7259,8 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
       <!-- Maestro na família: fica comentado até o lançamento (docs/operations/lancamento-maestro.md); vira com node scripts/lancamento-maestro.mjs -->
       <!--maestro-familia--><a class="fam" href="https://maestro.absolutezro.com" rel="noopener" title="Maestro"><img src="midia:familia-maestro.svg" alt="" width="22" height="22" decoding="async"><span>Maestro</span></a><!--/maestro-familia-->
       <a class="fam" href="https://relay.absolutezro.com" rel="noopener" title="Relay"><img src="midia:familia-relay.svg" alt="" width="22" height="22" decoding="async"><span>Relay</span></a>
-      <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="SOBEDESCE"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>SOBEDESCE</span></a>
-      <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+      <a class="fam" href="https://sobedesce.com" rel="noopener" title="SOBEDESCE"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>SOBEDESCE</span></a>
+      <a class="fam" href="https://synquei.absolutezro.com" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
       <a class="fam" href="https://tpeasy.absolutezro.com" rel="noopener" title="TPeasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPeasy</span></a>
     </div>
     <div class="mn-g mn-fim">
@@ -14361,8 +14370,8 @@ function ligarVideoLogin(){
     if(LOGIN_VIDEO.poster){ cena.style.backgroundImage="url("+LOGIN_VIDEO.poster+")"; vd.poster=LOGIN_VIDEO.poster }
     cena.classList.add("com-video");
   }
-  /* movimento reduzido: o quadro parado, sem vídeo nenhum */
-  if(matchMedia("(prefers-reduced-motion:reduce)").matches){ vd.hidden=true; return }
+  /* movimento reduzido ou economia de dados: o quadro parado, sem vídeo nenhum */
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches||poupaDados()){ vd.hidden=true; return }
   if(!naTela(cena,ligarVideoLogin)) return;
   if(!lgVideoUrl){
     lgVideoUrl=videoBlob("login",LOGIN_VIDEO.mp4); if(!lgVideoUrl) return;
@@ -14386,7 +14395,9 @@ const lgCartao=(function(){
   const mq=matchMedia("(min-width:821px) and (hover:hover) and (pointer:fine)");
   const PERTO=120, LONGE=210;
   let px=-1e5, py=-1e5, tm=0;
-  const preso=()=>cx.matches(":focus-within")||!!(v("lg-email").value||v("lg-senha").value)||LG_MODO==="criar"||!v("lg-erro").hidden||cx.classList.contains("bloq");
+  /* no domínio (ZRO_PRONTO) a porta é só "Entrar com Absolute ZRO": o cartão fica aberto, sem a pílula "Entrar ▾"
+     escondendo o botão (01/11/2026) */
+  const preso=()=>ZRO_PRONTO||cx.matches(":focus-within")||!!(v("lg-email").value||v("lg-senha").value)||LG_MODO==="criar"||!v("lg-erro").hidden||cx.classList.contains("bloq");
   /* o vidro compacto: a altura vai até o fim da linha da pílula, mais o
      respiro de baixo; e ele DESCE (18/out · 6) até o centro dele ficar perto
      do meio da janela, sem passar do fim do cartão. Tudo medido na TELA e
@@ -28573,6 +28584,16 @@ const homeParado=()=>HOME_VIDEO.parado||HOME_VIDEO.poster;
    voltando de dentro do app). Agora quem dá a partida é a cena aparecer
    (IntersectionObserver); antes disso fica o pôster, e o <video> nasce com
    preload="none". Sem o observador (navegador antigo), é como era. */
+/* ⚠️ ECONOMIA DE DADOS (revisão de 01/11/2026): quem pediu para gastar menos (Save-Data, prefers-reduced-data) ou
+   está numa rede 2G não baixa vídeo nenhum — fica o quadro parado, como no movimento reduzido. A qualidade de quem
+   baixa não muda (regra do titular: a leveza vem da arquitetura, nunca de comprimir mais). */
+function poupaDados(){
+  try{
+    const c=navigator.connection;
+    if(c&&(c.saveData||/(^|-)2g$/.test(c.effectiveType||""))) return true;
+    return matchMedia("(prefers-reduced-data:reduce)").matches;
+  }catch(e){ return false }
+}
 function naTela(el,ligar){
   if(!el||!("IntersectionObserver" in window)) return true;
   /* o mapa mora na própria função (e não num const do lado): a tela de
@@ -28595,7 +28616,7 @@ function homeDescansa(){
 function ligarVideoHome(){
   const cena=v("hp-cena"), vd=v("hp-video"); if(!cena||!HOME_VIDEO) return;
   const quieto=matchMedia("(prefers-reduced-motion:reduce)").matches;
-  const semVideo=quieto||!vd||!HOME_VIDEO.mp4;
+  const semVideo=quieto||poupaDados()||!vd||!HOME_VIDEO.mp4;
   if(!cena.style.backgroundImage){ const q=semVideo?homeParado():(HOME_VIDEO.poster||homeParado()); if(q) cena.style.backgroundImage="url("+q+")" }
   if(semVideo||v("v-home").hidden) return;
   if(!naTela(cena,ligarVideoHome)) return;
@@ -31347,6 +31368,8 @@ function pintarZro(){
   const b=v("lg-zro"); if(!b) return;
   const cx=v("lg-cx"), criar=LG_MODO==="criar";
   b.hidden=!ZRO_PRONTO;
+  /* o lgCartao nasce depois (const): antes dele, nada a abrir */
+  if(ZRO_PRONTO) try{ lgCartao.abre() }catch(e){}
   b.title=ZRO_CONTA&&ZRO_CONTA.email?"Entrar como "+ZRO_CONTA.email:"";
   const n=document.querySelector("#lg-nota span");
   if(n&&n.dataset.orig===undefined) n.dataset.orig=n.textContent;
@@ -31356,9 +31379,11 @@ function pintarZro(){
   /* a porta principal sobe para logo abaixo das abas, e o "ou" vem depois */
   const form=v("lg-form"), ou=cx.querySelector(".div");
   if(!b.classList.contains("prim")){ b.classList.add("prim"); form.parentNode.insertBefore(b,form); if(ou) form.parentNode.insertBefore(ou,form) }
-  /* o formulário antigo só para quem já tinha conta neste aparelho, só para
-     ENTRAR, e só sem sessão Absolute ZRO (com ela, a conta é a da ZRO) */
-  const antigo=!criar&&!ZRO_CONTA&&lgJaEntrou();
+  /* ⚠️ OS LOGINS ANTIGOS SAÍRAM (01/11/2026, decisão do titular): no domínio a única porta é a Absolute ZRO. O
+     formulário e o Google eram só deste aparelho (nada no servidor: "e-mail e senha não ficam guardados"), e o
+     perfil local continua: entrarNaConta não zera quem já tinha entrado aqui (ENTROU_KEY), seja qual for a porta.
+     Fora do domínio (prévia, suítes) o formulário segue como era, porque lá este trecho nem roda. */
+  const antigo=false;
   form.hidden=!antigo; if(ou) ou.hidden=!antigo;
   const g=document.querySelector("#lg-cx [data-login=\"Google\"]"); if(g) g.hidden=!antigo;
   v("lg-zro-t").textContent=ZRO_CONTA?"Continuar como "+(ZRO_CONTA.nome||ZRO_CONTA.email||"você")
@@ -31563,8 +31588,9 @@ v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); marc
           hub:j.hub===true};
         ZRO_PRONTO=true;
       } else {
-        /* 401 = sem sessão; 403 = a sessão foi descartada: o Carro está fechado para esta conta */
-        ZRO_PRONTO=r.status===401||r.status===403;
+        /* 200 { entrou:false } = visitante, sem sessão; 401 = sessão que não vale; 403 = a sessão foi descartada: o
+           Carro está fechado para esta conta */
+        ZRO_PRONTO=r.status===401||r.status===403||(r.status===200&&!!j&&j.entrou===false);
         if(r.status===403&&j&&j.erro==="fechado"&&!marca) marca="fechado";
       }
       ZRO_LIBERADO=!!(ZRO_CONTA&&ZRO_CONTA.liberado);

@@ -289,6 +289,27 @@ test('padrão: versão nova não instala sozinha; avisa uma vez por versão ("Ma
   assert.equal(avisos.at(-1).titulo, 'Maestro 0.3.1 disponível')
 })
 
+test('padrão: a versão já avisada numa abertura anterior não notifica de novo (continua na lista)', async () => {
+  const apps = { maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' } }
+  const lembrados = {}
+  const memoria = { jaAvisou: (id, v) => lembrados[id] === v, lembrarAviso: (id, v) => (lembrados[id] = v) }
+  const primeira = montar(apps, { atualizarSozinho: () => false, ...memoria })
+  await primeira.agenda.conferir()
+  assert.equal(primeira.avisos.length, 1)
+  assert.deepEqual(lembrados, { maestro: '0.3.0' })
+  // a central fechou e abriu de novo (o computador reiniciou)
+  const segunda = montar(apps, { atualizarSozinho: () => false, ...memoria })
+  await segunda.agenda.conferir()
+  assert.equal(segunda.avisos.length, 0, 'a mesma versão não avisa de novo')
+  assert.deepEqual(
+    segunda.agenda.estado().pendentes.map((p) => [p.id, p.fase]),
+    [['maestro', 'disponivel']],
+  )
+  apps.maestro.nova = '0.3.1'
+  await segunda.agenda.conferir()
+  assert.equal(segunda.avisos.at(-1).titulo, 'Maestro 0.3.1 disponível')
+})
+
 test('padrão: várias versões novas viram uma notificação só, com Atualizar tudo', async () => {
   const apps = {
     maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0' },

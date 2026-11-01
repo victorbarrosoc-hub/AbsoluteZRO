@@ -2,6 +2,29 @@
 
 Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Revisão dos sites em produção (01/11/2026, ramo `revisao-sites`)
+
+- ✅ Revela e AEON fechados sem vazar marca: manifesto, OG, `marca/`, `site/` e `app/` só pela função, para a conta
+  liberada; qualquer 404 é a página neutra em português (`publico/404.html` e a função).
+- ✅ Família única com os domínios oficiais (Carro do Freela, Maestro, Relay, SOBEDESCE em sobedesce.com, Synquei em
+  synquei.absolutezro.com, TPeasy) em Relay, TPeasy, Synquei, Carro e SOBEDESCE; a régua da raiz
+  (`familia-menus.test.ts`) cobre o Relay e o Carro e recusa `*.vercel.app`. Ícones de apps fechados saíram das cópias.
+- ✅ Carro: HTML publicado sem comentário, canonical/og em carro.absolutezro.com, favicon, só "Entrar com Absolute ZRO"
+  no domínio (decisão do titular), vídeo só com o quadro parado em Save-Data/2G. 🟡 O peso do vídeo da home (14,4 MB
+  AV1) ficou: a regra do titular no `CLAUDE.md` do Carro proíbe reduzir a qualidade (pede decisão dele).
+- ✅ SOBEDESCE e Synquei sem instalador avulso: `/baixar/mac|windows` vão para absolutezro.com/baixar (o `?build=N` dos
+  apps antigos e `/baixar/versao` seguem), `instalar.*` viram recado. SOBEDESCE `/entrar` só com a Absolute ZRO; as
+  portas da conta antiga só aparecem com `zro_email_em_uso` ou erro de senha (o SOBEDESCE não liga pelo e-mail).
+- ✅ Synquei em synquei.absolutezro.com (login, og, canonical; migration 0051 cadastra o retorno e o Abrir do HUB) e 308
+  do synquei.vercel.app, menos o app e a API (os projetos do app instalado moram no endereço antigo).
+- ✅ Cabeçalhos de segurança no TPeasy e no Synquei; CSP mínima no Maestro (a com `script-src` em tudo pede nonce: ⬜).
+- ✅ HUB: marca dos fechados fora de `public/` (rota `/marca/<produto>` com `zro.release_visible`), @ reservados e selos
+  só no servidor, Entrar no celular, `/privacidade` em português, 308 de absolutezro.vercel.app, `/cadastro` e
+  `/contato`, canonical. Visitante sem 401 no console (`/eu?visitante=1` no SOBEDESCE, Synquei e TPeasy; `/eu` do Carro).
+- ⬜ Fica para depois: as cores `--p-nossom`, `--p-ai-edit` e `--p-finishing` em `packages/ui/src/tokens.css` (o CSS do
+  HUB as leva; o arquivo é copiado pelos apps de computador), a CSP completa do Maestro e o 401px da `/calculadora`
+  do SOBEDESCE (não reproduziu: 375 e 393 px sem nada passando da tela, local e em produção).
+
 ## Fase 0 — Auditoria
 
 - ✅ Inventário das cinco origens com commit, licença, stack, serviços e riscos ([source-inventory](architecture/source-inventory.md)).
@@ -52,6 +75,17 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (calculadora e console) e TPeasy (saiu o `maximum-scale=1`). Carro do Freela já estava certo. Teste
   `tests/e2e/iphone-telas.spec.ts` (WebKit e Chromium, 375/393/430 px, admin e conta comum). Falta: conferir num iPhone
   de verdade depois de publicar (autorização do titular).
+- ✅ Apps no iPhone (01/11/2026, branch `apps-celular`, "pode revisar os outros apps de celular?"): as telas logadas
+  de Maestro, Carro do Freela, SOBEDESCE (app do celular), Synquei, TPeasy e Relay no WebKit a 375/393/430 px e deitado.
+  Toque de 44 × 44 em todo botão à vista (a área cresce por um `::after` invisível em tela de toque, o desenho não
+  muda; seletor que rola de lado nasce do tamanho certo); Maestro: a pílula do cronômetro deixava o "+" do Roteiro e
+  do Fluxo por baixo dela, tocar no tempo do card não abria o card (o número animado ficava por cima do botão), os
+  selos-seletores do Roteiro com 24 px, filtros do Quadro cortados ("Clientes"/"Pessoas") e o Quadro deitado com metade
+  da tela de cabeçalho; Synquei: a tabela de clipes da Mídia cortada na borda (vira lista no iPhone), busca e tipo do
+  aparelho espremidos e a página que alargava 13 px na troca de tela; TPeasy, Relay e Carro do Freela: só toque. Testes
+  novos por produto (Maestro `e2e/celular.spec.ts`; TPeasy, Synquei e SOBEDESCE `tests/celular*.test.mjs|mts`; Relay
+  em `test/tela.test.js`; Carro `test/toque-44.js`). Falta: a Sede/"Montar job" do site real do Carro (precisa do
+  banco e da Absolute ZRO falsa), as páginas Next do SOBEDESCE e conferir num iPhone de verdade depois de publicar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
@@ -787,14 +821,14 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 - ✅ HUB: a Higgsfield conectada uma vez em `/conexoes` (OAuth com PKCE e registro dinâmico, tokens cifrados), cartão com
   saldo, plano, medidor do que os apps usaram no mês, "Usado por" e desconectar; só aparece se um app que usa a
-  Higgsfield existe para a pessoa. Migration `0051` (`zro.ia_geracoes`, `zro.apps_oauth_externos`, provedor
+  Higgsfield existe para a pessoa. Migration `0052` (`zro.ia_geracoes`, `zro.apps_oauth_externos`, provedor
   `higgsfield`, escopo `zro.higgsfield`).
 - ✅ API `/api/v1/higgsfield` (painel com preço de tudo antes) e `/api/v1/higgsfield/gerar` (envio, telas, animar,
   andamento), só AEON e Rift Motion; sem preço ou saldo que cubra, não gera.
 - ✅ AEON: "Criar com IA" na Mídia e no player (a partir do quadro atual): créditos com medidor, passo 1 com 1/2/4 telas
   e o preço, passo 2 com as três opções e a duração, confirmação antes do vídeo, resultado na Mídia (a imagem como clipe
   parado de 5 s), guardado no navegador, "Pôr na linha" no cursor e retomada do pedido depois de recarregar. Só web.
-- ⛔ Em produção: migration `0051` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
+- ⛔ Em produção: migration `0052` no deploy do HUB. Não testado contra a Higgsfield de verdade a partir do HUB.
 - ⬜ Rift Motion trocar a conexão própria pela do HUB (sessão do Rift avisada).
 
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
@@ -843,6 +877,19 @@ Branch `central-unica`. Todo app de computador se instala e se atualiza só pela
 - ⬜ Lado dos produtos (outra pessoa): cada app desliga o atualizador próprio e abre o deep link quando há versão nova.
 - ⬜ AEON na central: o Release dele precisa dos nomes com versão e build.
 - ⛔ Publicar a 1.4.0 e ligar no ar: merge na main (dispara o workflow da central) com autorização do titular.
+
+### Revisão dos apps de computador (01/11/2026, branch `revisao-desktop`)
+
+- ✅ Central: download do instalador confere cada redirecionamento (só `/baixar/` do HUB, o Release no GitHub de
+  `victorbarrosoc-hub` e o servidor de arquivos do GitHub; `desktop/download.cjs`), para no meio se passar do tamanho
+  do catálogo e não deixa `.parte` para trás; "uma vez por versão" vale entre aberturas; "Sem conexão" com o wordmark
+  flat (saiu o `marca.webp` do feixe de luz).
+- ✅ TPeasy: microfone (só áudio, só a origem do TPeasy) para "Rolar com a voz", `NSMicrophoneUsageDescription` no Mac;
+  saiu o `fileSystem` copiado do Relay.
+- ✅ SOBEDESCE: menu todo em português (os papéis prontos traziam "Undo", "Quit"…); "Mostrar" só abre pasta de verdade.
+- ✅ Releases conferidos contra o catálogo ao vivo: os 7 (versão, build, nome, tamanho e SHA-256 real de Mac e Windows).
+- ⬜ Provar em Mac e Windows reais: instalar/atualizar pela central (DMG, quarentena, NSIS silencioso), deep link
+  vindo de cada app, microfone do TPeasy no Mac.
 
 ## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
 
@@ -1507,3 +1554,10 @@ do card... não consigo localizar o job que quero achar".
    Vercel `aeon` e `revela` só depois de o HUB negar a emissão aos clientes fechados; quando for abrir, mudar os dois
    lados (HUB e `RELEASE=released` nos projetos).
 9. Google sem CASA (31/10/2026): rodar o teste de `drive.file` do SOBEDESCE em `absolutezro.com/admin/teste-drive` (configurar antes as três variáveis `NEXT_PUBLIC_GOOGLE_*` e as APIs; passos em [google-drive-sobedesce-teste](operations/google-drive-sobedesce-teste.md)) e fazer a verificação de marca e de Agenda ([google-verificacao](operations/google-verificacao.md)). `/privacidade` e `/termos` já estão no HUB.
+10. ADM do NOSSOM pelo papel de plataforma (01/11/2026): aplicar à mão no Supabase do NOSSOM a migração
+    `products/nossom/supabase/migrations/202611010001_admin_da_plataforma.sql` junto com o deploy do NOSSOM e entrar de
+    novo pela Absolute ZRO (o HUB manda `zro_admin`). Sem ela o código novo não reconhece ADM nenhum.
+11. Drive do SOBEDESCE (revisão M1, 01/11/2026): com a vaga já usada, o Conectar Drive pede `drive.file`. Um Drive
+    cujo `drive` foi revogado (Acesso total desligado e ligado de novo, ou o Drive removido) volta em Arquivos
+    escolhidos; devolver o inteiro a essa conta pede uma decisão (pedir `drive` com a conta indicada arrisca gastar vaga
+    se a pessoa escolher outra conta na tela do Google).

@@ -1,10 +1,10 @@
-// GET /api/app?caminho=app/editor.js — o editor no navegador (app/, src/, presets/), só para a conta que o HUB liberou
-// enquanto o AEON está fechado ao público (api/_release.js). Esses arquivos ficam fora do site estático
-// (scripts/publicar-site.mjs) e vêm no pacote desta função (includeFiles no vercel.json); o vercel.json reescreve
-// /app/*, /src/* e /presets/* para cá quando o caminho não existe no estático (os módulos da marca em src/ existem).
-// Sem sessão liberada: a página "Em desenvolvimento" (200) no lugar de um HTML e 403 para qualquer outro arquivo.
-// Nada é listado; caminho fora dessas pastas ou com ".." é 404. Com RELEASE=released os arquivos vão para o estático e
-// esta função só os repete.
+// GET /api/app?caminho=app/editor.js — o editor no navegador (app/, src/, presets/) e o site do app (site/, marca/), só
+// para a conta que o HUB liberou enquanto o AEON está fechado ao público (api/_release.js). Esses arquivos ficam fora do
+// site estático (scripts/publicar-site.mjs) e vêm no pacote desta função (includeFiles no vercel.json); o vercel.json
+// reescreve /app/*, /src/*, /presets/*, /site/* e /marca/* para cá quando o caminho não existe no estático. Sem sessão
+// liberada: a página neutra (200) no lugar de um HTML e 404 com a página neutra para qualquer outro arquivo (nada diz
+// que ele existe; revisão de 01/11/2026). Nada é listado; caminho fora dessas pastas ou com ".." é 404. Com
+// RELEASE=released os arquivos vão para o estático e esta função só os repete.
 
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
@@ -12,8 +12,8 @@ import { liberado } from './_release.js'
 import { abrir, configurado, COOKIE_CONTA, lerCookie } from './_zro.js'
 
 const RAIZ = new URL('..', import.meta.url)
-/** Só o editor: nada de desktop/, scripts/, test/ ou api/. */
-export const PASTAS = ['app', 'src', 'presets']
+/** Só o editor e o site do app: nada de desktop/, scripts/, test/ ou api/. */
+export const PASTAS = ['app', 'src', 'presets', 'site', 'marca']
 const PAGINA = 'em-desenvolvimento.html'
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
@@ -25,6 +25,7 @@ const TIPOS = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.mp4': 'video/mp4',
   '.woff2': 'font/woff2',
   '.wasm': 'application/wasm',
   '.txt': 'text/plain; charset=utf-8',
@@ -44,16 +45,18 @@ export function caminhoSeguro(v) {
   return partes.join('/')
 }
 
-function negar(res, status) {
+async function negar(req, res, status) {
+  // 404 é a página neutra (o mesmo do 404 do estático): nada de JSON em branco nem pista de que o arquivo existe
+  if (status === 404) return pagina(req, res, 404)
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
-  res.end(JSON.stringify({ ok: false, message: status === 403 ? 'Indisponível.' : status === 405 ? 'Método não permitido.' : 'Não encontrado.' }))
+  res.end(JSON.stringify({ ok: false, message: status === 405 ? 'Método não permitido.' : 'Indisponível.' }))
 }
 
-async function pagina(req, res) {
+async function pagina(req, res, status = 200) {
   const corpo = await readFile(new URL(PAGINA, RAIZ), 'utf8').catch(() => PAGINA_MINIMA)
-  res.statusCode = 200
+  res.statusCode = status
   res.setHeader('Content-Type', TIPOS['.html'])
   res.setHeader('Cache-Control', 'no-store')
   res.end(req.method === 'HEAD' ? undefined : corpo)
@@ -62,18 +65,18 @@ async function pagina(req, res) {
 export default async function app(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD')
-    return negar(res, 405)
+    return negar(req, res, 405)
   }
   const caminho = caminhoSeguro(new URL(req.url || '/', 'https://aeon.invalid').searchParams.get('caminho'))
-  if (!caminho) return negar(res, 404)
+  if (!caminho) return negar(req, res, 404)
   const ext = extname(caminho).toLowerCase()
   const conta = configurado() ? abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA)) : null
-  if (!liberado(conta && typeof conta.sub === 'string' ? conta : null)) return ext === '.html' ? pagina(req, res) : negar(res, 403)
+  if (!liberado(conta && typeof conta.sub === 'string' ? conta : null)) return ext === '.html' ? pagina(req, res) : negar(req, res, 404)
   let corpo
   try {
     corpo = await readFile(new URL(caminho, RAIZ))
   } catch {
-    return negar(res, 404)
+    return negar(req, res, 404)
   }
   res.statusCode = 200
   res.setHeader('Content-Type', TIPOS[ext] || 'application/octet-stream')

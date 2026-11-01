@@ -9,7 +9,12 @@ import { caminhoLigarZro, precisaLigarZro } from "@/lib/zro/ligar";
 /** Quem sou eu, quais Drives tenho e quais recursos a conta usa (cookie do site ou Bearer do computador). */
 export async function GET(req: Request) {
   const atual = await usuarioDaRequisicao(req);
-  if (!atual) return SEM_SESSAO();
+  if (!atual) {
+    // O app do celular pergunta como visitante (?visitante=1, lib/auth.js): sem sessão é a resposta normal, não erro, e
+    // um 401 a cada abertura só sujava o console. Sem o parâmetro (o app do computador, apps de antes), 401 de sempre.
+    if (new URL(req.url).searchParams.get("visitante") === "1") return json({ entrou: false }, 200);
+    return SEM_SESSAO();
+  }
   // Conta ligada à Absolute ZRO sem a SOBEDESCE liberada: 403 sem_acesso_zro (o app mostra o aviso; a sessão fica).
   const bloqueio = semAcesso(atual);
   if (bloqueio) return bloqueio;

@@ -11,6 +11,7 @@ import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from '.
 import { abrirNaCentral, ESQUEMA_DA_CENTRAL } from '../src/central.js'
 import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
+import { modeloDoMenu } from './menu.js'
 import { lerLinkSobedesce } from './links.js'
 import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, detalheSair, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
 
@@ -612,44 +613,32 @@ function avisarCookies(janela) {
 // Barra do navegador de referências (preload-navegador.cjs): a mesma regra de origem da ponte principal.
 registrarCanais(ipcMain, event => trustedSender(event, engineUrl))
 
+/** Pasta de verdade (não um pacote .app/.bundle do Mac, que o Finder trata como programa). */
+function ehPastaComum(p) {
+  try {
+    return fs.statSync(p).isDirectory() && !/\.(app|bundle|framework|pkg|mpkg)$/i.test(p)
+  } catch {
+    return false
+  }
+}
+
 ipcMain.handle('sobedesce:reveal', (event, target) => {
   if (!trustedSender(event, engineUrl)) return false
   if (typeof target !== 'string' || !path.isAbsolute(target)) return false
   if (fs.existsSync(target)) shell.showItemInFolder(target)
-  else if (fs.existsSync(path.dirname(target))) shell.openPath(path.dirname(target))
+  // só abre a pasta de cima se ela for mesmo uma pasta (openPath num .exe ou num .app abriria o programa)
+  else if (ehPastaComum(path.dirname(target))) shell.openPath(path.dirname(target))
   else return false
   return true
 })
 
 function buildMenu() {
-  const template = [
-    ...(isMac ? [{ role: 'appMenu', label: 'SOBEDESCE' }] : []),
-    { role: 'fileMenu', label: 'Arquivo' },
-    { role: 'editMenu', label: 'Editar' },
-    {
-      label: 'Visualizar',
-      submenu: [
-        { role: 'reload', label: 'Recarregar' },
-        { role: 'toggleDevTools', label: 'Ferramentas do desenvolvedor' },
-        { type: 'separator' },
-        { label: 'Tamanho real', accelerator: 'CmdOrCtrl+0', click: () => zoom?.tamanhoReal() },
-        { label: 'Aumentar', accelerator: 'CmdOrCtrl+=', click: () => zoom?.aumentar() },
-        { label: 'Aumentar', accelerator: 'CmdOrCtrl+Plus', click: () => zoom?.aumentar(), visible: false, acceleratorWorksWhenHidden: true },
-        { label: 'Diminuir', accelerator: 'CmdOrCtrl+-', click: () => zoom?.diminuir() },
-        { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Tela cheia' },
-      ],
-    },
-    { role: 'windowMenu', label: 'Janela' },
-    {
-      role: 'help',
-      label: 'Ajuda',
-      submenu: [
-        { label: 'Abrir pasta de logs', click: () => shell.openPath(app.getPath('logs')) },
-        { label: 'Abrir no navegador', click: () => engineUrl && shell.openExternal(engineUrl) },
-      ],
-    },
-  ]
+  const template = modeloDoMenu({
+    isMac,
+    zoom: () => zoom,
+    abrirLogs: () => shell.openPath(app.getPath('logs')),
+    abrirNoNavegador: () => engineUrl && shell.openExternal(engineUrl),
+  })
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 

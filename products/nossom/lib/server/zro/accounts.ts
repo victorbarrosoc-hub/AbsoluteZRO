@@ -48,6 +48,8 @@ const profileData = (p: ZroProfile, createdByZro = false) => ({
   products: p.products,
   // Estado do lançamento por produto (`zro_release`), relido a cada login pela Absolute ZRO.
   release: p.release,
+  // Admin da plataforma (claim `zro_admin`), relido a cada login; o banco usa o mesmo (nossom_private.is_admin).
+  admin: p.admin,
   createdByZro,
 });
 
@@ -159,6 +161,8 @@ export type ZroLink = {
   products: string[];
   /** `zro_release` guardada (migração 202610280001); ausente no banco anterior a ela. */
   release?: unknown;
+  /** Admin da plataforma guardado do último login pela Absolute ZRO (migração 202611010001). */
+  admin?: unknown;
   createdByZro: boolean;
   linkedAt: string;
   lastLoginAt: string | null;
@@ -180,6 +184,8 @@ export type ZroLinkSummary = {
   products: string[];
   /** Estado do lançamento por produto; `{}` quando o vínculo é anterior à claim (vale como fechado). */
   release: ZroRelease;
+  /** Admin da plataforma na Absolute ZRO (claim `zro_admin` do último login). */
+  admin: boolean;
   email: string;
   organization: string | null;
 };
@@ -196,6 +202,7 @@ export async function zroLinkSummary(userId: string): Promise<ZroLinkSummary | n
       ? link.products.filter((p): p is string => typeof p === 'string')
       : [],
     release: readZroRelease(link.release),
+    admin: link.admin === true,
     email: typeof link.email === 'string' ? link.email.slice(0, 254) : '',
     organization:
       typeof link.organization === 'string' && link.organization

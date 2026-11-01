@@ -36,15 +36,16 @@ const NAV_BAIXO = [
 // sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
+  { href: 'https://carro.absolutezro.com', nome: 'Carro do Freela', img: '/familia/carro-do-freela.png' },
   { href: 'https://relay.absolutezro.com', nome: 'Relay', img: '/familia/relay.svg' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: '/familia/synquei.svg' },
   { href: 'https://tpeasy.absolutezro.com', nome: 'TPeasy', img: '/familia/tpeasy.svg' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
 const MAESTRO_NA_FAMILIA = true
-// em ordem alfabética, logo depois da Absolute ZRO
-if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: '/familia/maestro.svg' })
+// em ordem alfabética, depois da Absolute ZRO e do Carro do Freela
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(2, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: '/familia/maestro.svg' })
 
 /**
  * Os apps da família numa linha só ("Absolute ZRO", ícone de grade); o clique abre a lista num

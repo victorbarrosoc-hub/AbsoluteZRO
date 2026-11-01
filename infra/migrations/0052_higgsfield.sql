@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0051 · Higgsfield nas Conexões (pedido do titular, 01/11/2026). Como o Google Agenda na 0026: a
+-- Absolute ZRO HUB · 0052 · Higgsfield nas Conexões (pedido do titular, 01/11/2026). Como o Google Agenda na 0026: a
 -- pessoa conecta a conta da Higgsfield UMA vez na conta Absolute ZRO (/conexoes) e os apps da família (AEON, Rift
 -- Motion) geram imagem e vídeo com os créditos do plano dela, pelo HUB (API /api/v1/higgsfield/*, escopo
 -- `zro.higgsfield`). Contrato: packages/core/src/higgsfield.ts.

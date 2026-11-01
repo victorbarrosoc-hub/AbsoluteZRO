@@ -611,3 +611,22 @@ h3 {
     display: none;
   }
 }
+
+/* Toque de 44 px no iPhone (Apple HIG; revisão do titular, 01/11/2026): a marca, os links e botões do topo, as abas,
+   os segmentos, o "personalizar" do preset e os links do rodapé mantêm o desenho, e a área de toque cresce até 44 × 44
+   por um ::after invisível centralizado (o `inset` usa a medida do próprio botão). As faixas que rolam de lado cortam
+   no respiro delas, então o segmento do conversor nasce com 38 px (+ 3 px de cada lado = 44). test/tela.test.js confere. */
+@media (pointer: coarse) {
+  :where(.marca, .topo a, .vidro, .rodape a, .porque summary, .aba, .segmentos button, .personalizar) {
+    position: relative;
+  }
+  :is(.marca, .topo a, .vidro, .rodape a, .porque summary, .aba, .segmentos button, .personalizar)::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
+  .segmentos button {
+    min-height: 38px;
+  }
+}
+

@@ -1,5 +1,5 @@
 /**
- * Higgsfield de mentira para as Conexões (migration 0051), nos testes de integração: OAuth (registro dinâmico,
+ * Higgsfield de mentira para as Conexões (migration 0052), nos testes de integração: OAuth (registro dinâmico,
  * autorizar, token com PKCE, refresh) e o pedaço do MCP que o HUB usa (initialize, balance, transactions,
  * generate_image e generate_video com get_cost, media_upload, media_confirm, jobs_wait). Tudo em memória; nada sai
  * para a rede.

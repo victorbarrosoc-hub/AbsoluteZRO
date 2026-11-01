@@ -27,7 +27,7 @@ export function ambienteAgenda(): AmbienteAgenda | null {
 }
 
 /**
- * Higgsfield (migration 0051): o HUB se registra sozinho na Higgsfield (registro dinâmico, sem segredo) com a volta
+ * Higgsfield (migration 0052): o HUB se registra sozinho na Higgsfield (registro dinâmico, sem segredo) com a volta
  * /conexoes/higgsfield/retorno; só precisa da chave ZRO_CONEXOES_KEY. ZRO_HIGGSFIELD_TESTE_URL troca a Higgsfield por
  * uma falsa, e só fora de produção (testes).
  */

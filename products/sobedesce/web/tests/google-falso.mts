@@ -169,7 +169,13 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
           volta.searchParams.set("error", "access_denied");
         } else {
           const code = aleatorio("4/falso-");
-          const escopo = proximo.escopo ?? escopoPedido;
+          let escopo = proximo.escopo ?? escopoPedido;
+          // include_granted_scopes: o token novo também traz o que esta conta Google já tinha dado (e não foi revogado).
+          if (proximo.escopo == null && q.get("include_granted_scopes") === "true") {
+            const juntos = new Set(escopo.split(" "));
+            for (const r of refreshes.values()) if (!r.revogado && r.conta.sub === proximo.conta.sub) for (const e of r.escopo.split(/\s+/)) if (e) juntos.add(e);
+            escopo = [...juntos].join(" ");
+          }
           codigos.set(code, { desafio: q.get("code_challenge")!, redirectUri, conta: proximo.conta, escopo, usado: false, expira: Date.now() + 600_000 });
           volta.searchParams.set("code", code);
           volta.searchParams.set("scope", escopo);

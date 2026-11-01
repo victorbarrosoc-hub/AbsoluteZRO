@@ -121,7 +121,8 @@ function chrome() {
   if (ob) {
     const n = ORG.fila.length + (ORG.atual ? 1 : 0)
     ob.hidden = !n
-    ob.textContent = n
+    // sem texto quando escondido: um "0" ficava colado no nome do link ("Organizar0") para quem lê o texto da página
+    ob.textContent = n ? String(n) : ''
     ob.classList.toggle('is-live', !!ORG.atual)
   }
   const mb = $('[data-badge="midia"]')
@@ -129,7 +130,7 @@ function chrome() {
   if (mb) {
     const n = p ? p.clips.length : 0
     mb.hidden = !n
-    mb.textContent = S.probe.active ? `${S.probe.done}/${S.probe.total}` : n
+    mb.textContent = S.probe.active ? `${S.probe.done}/${S.probe.total}` : n ? String(n) : ''
     mb.classList.toggle('is-live', S.probe.active)
   }
   if (sb) {

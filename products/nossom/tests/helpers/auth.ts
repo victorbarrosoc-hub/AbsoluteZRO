@@ -24,7 +24,12 @@ export const allowedClaims = {
 export function testCookie(
   user = testUser,
   sid = randomUUID(),
-  claims: { zroProducts?: string[]; zroRelease?: ZroRelease } = {},
+  claims: {
+    zroProducts?: string[];
+    zroRelease?: ZroRelease;
+    /** Identidade guardada do vínculo; `admin` = admin da plataforma (claim `zro_admin`). */
+    zro?: { email: string; organization: string | null; manage?: string; admin?: true };
+  } = {},
 ) {
   return sessionCookie(
     encodeSession({

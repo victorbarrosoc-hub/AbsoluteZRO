@@ -17,8 +17,8 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 ## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, ADR 0037)
 
-Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a migration dos sons da main ficou com o 0050; a da
-Higgsfield é a `0051`).
+Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a main ficou com a 0050 dos sons e a 0051 do Synquei; a
+da Higgsfield é a `0052`).
 
 - HUB: `tests/integration/higgsfield.test.ts` **11/11** contra uma Higgsfield falsa (`tests/fixtures/higgsfield-falsa.ts`,
   OAuth com registro dinâmico e PKCE, MCP em JSON e SSE): registro uma vez por endereço, só do sistema; cancelar, state
@@ -40,6 +40,110 @@ Higgsfield é a `0051`).
 - Conferido de verdade (01/11/2026): a CDN (`*.cloudfront.net`, `cdn.higgsfield.ai`) e o envio (`upload.higgsfield.ai`)
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
+
+## Revisão dos sites em produção (01/11/2026)
+
+Ramo `revisao-sites`, a partir da revisão só de leitura dos sites no ar (dados em scratchpad, fora do repositório).
+
+- Root: `npm run lint`, `format:check`, `typecheck` ok; `npm test` 568 testes em 66 arquivos (uma falha da régua da
+  família, que esperava o HUB na órbita do Relay, corrigida e conferida de novo com `familia-menus`, `marca-fechada`,
+  `synquei-subdominio`, `downloads`, `legal` e `perfis`: 44/44); `npm run build` ok e nenhum chunk de
+  `.next/static/*.js` cita NOSSOM, AEON, Revela ou os ids técnicos (só o CSS dos tokens, ver roadmap);
+  `npx playwright test tests/e2e/hub.spec.ts tests/e2e/iphone-telas.spec.ts` **18/18** (5,6 min no iPhone) e os dois
+  testes novos (cabeçalho no celular em 375/390/430; `/cadastro`, `/contato`, `/marca/*` 404 para anônimo, canonical,
+  privacidade) **2/2**. Captura do topo em 375 px, claro e escuro: Entrar e Criar conta cabem na cápsula.
+- Revela `npm test` **180/180**; AEON `npm test` **196/196** (`fechado.test.js`: marca, site/ e 404 neutros).
+- Carro: `npm run test:api` **48/48**; `npm run build:vercel` ok (HTML 229 KB, era 265 KB com os comentários);
+  suítes `conta-zro` 149/0 (rodada sozinha: em paralelo ela estoura os 240 s da máquina), `seguranca` 49/0, `entrar`
+  103/0, `site-real`, `mapa` 72/0, `porta-malas-real`, `tela-de-inicio`, `fase1-sem-dinheiro`, `versoes`,
+  `cartao-do-link` ok. `abertura` cai em "o piso encolhe" (~1 s, régua 900 ms) também na `main`: tempo da máquina.
+- Relay `npm test` 123/125 e as duas que caíram (a família agora com o Carro) corrigidas: `inicio` e `tela` 24/24;
+  SOBEDESCE web `lint` e `typecheck` ok, `npm test` 354/356 e as duas corrigidas (`instalar`, `zro-outra-conta`) 20/20, motor
+  `npm run test:fast` **785/785**; Synquei `npm test` **151/151**; TPeasy `node --test tests/*.test.mjs` **78/78**;
+  Maestro `npm test` **714/714**, `typecheck` e `lint` ok.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Apps de computador tocados (geram versão nova quando chegarem à `main`): SOBEDESCE (`src/relay/plano.js`,
+  `src/relay/personalizado.js`, `public/components/sidebar.js`) e Synquei (`app/**`, a família e o contador do menu).
+
+## Apps no iPhone (01/11/2026)
+
+Branch `apps-celular` (titular, depois de aprovar o HUB no iPhone: "pode revisar os outros apps de celular?"). Telas
+logadas de cada app no WebKit (descritor iPhone 15 Pro) a 375, 393 e 430 px e deitado (852 × 393): página nunca mais
+larga que a tela, campo com 16 px ou mais e alvo de toque de 44 × 44 em tudo o que está por cima (conta a área
+estendida por `::after`; link no meio de frase e campo de texto ficam de fora).
+
+| App                        | O que estava errado                                                                                                                                                                                                                                                                                                                                                                   | Verificação                                                                                                                                                                                                 | Resultado                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Maestro                    | ícones do topo com 24–36 px, play e passo do card com 28, abas, segmentos e pílulas com 32–36, a pílula do cronômetro com 34; a pílula cobria o "+" do Roteiro (e do Fluxo); tocar no tempo do card não abria o card (o número animado ficava por cima do botão); selos-seletores do Roteiro com 21–26 px; filtros do Quadro cortados; Quadro deitado com metade da tela de cabeçalho | `e2e/celular.spec.ts` (novo) + `sem-corte`, `cronometro`, `quadro`, `gestos`, `criacao-roteiro`, `colunas`, `transicao`, `visual`, `instalar`, `criacao-apagar`, `quadro-achar`, `criacao-fluxo`            | **137 ok**, 54 pulados de propósito (computador/celular), 31,5 min; lint, format e typecheck ok                           |
+| Carro do Freela            | `.btn.sm` com 35 px, barra do post 31, "← Voltar" 21, setas do mês 30, tema 27×24, links da home deitada 21                                                                                                                                                                                                                                                                           | `test/toque-44.js` (novo; telas logadas dos dois lados e a home deitada) e `node test/run.js` com `sem-zoom`, `colisao`, `movimento`, `contraste`, `tela-de-inicio`, `densidade`, `feed`, `busca`, `agenda` | **12 de 12** suítes                                                                                                       |
+| SOBEDESCE (app do celular) | nada: largura, campos e toque já certos (Início, Trocar destino, Drive, arquivo do Drive, Aparelhos, Criar)                                                                                                                                                                                                                                                                           | `web/tests/celular-app.test.mts` (novo, conta e Drive de mentira)                                                                                                                                           | **4/4**; `npm test` 374/375 (cai `zro-relay-ciclo`, sem o `undici` do app de computador, como antes); lint e typecheck ok |
+| Synquei                    | botões, campos e seletores com 28–34 px; a tabela de clipes da Mídia cortada na borda; busca e tipo do aparelho espremidos; a tela que entra deslizando alargava a página 13 px                                                                                                                                                                                                       | `tests/celular.test.mjs` (novo, site + app com o exemplo) e `npm test`                                                                                                                                      | **152/152** (4 novos)                                                                                                     |
+| TPeasy                     | passo − + com 32×30, segmentos 38, chips 28–32, play e ⋮ da lista 38/36, marcações do editor 32, velocidade da leitura 38                                                                                                                                                                                                                                                             | `tests/celular.test.mjs` (novo; site, abas, Mais ajustes, editor, leitura, controle remoto) e `node --test tests/*.test.mjs`                                                                                | **82/82** (4 novos)                                                                                                       |
+| Relay                      | marca 28, tema 36, abas 37, segmentos 31, "personalizar" do preset 28, links do rodapé 19                                                                                                                                                                                                                                                                                             | `test/tela.test.js` "celular (375, 393 e 430 px)…" (novo, também com um arquivo no conversor)                                                                                                               | `npm test` **126/126**                                                                                                    |
+
+- Raiz: `npm run lint` e `npm run format:check` ok; `node scripts/scan-secrets.mjs` sem segredo.
+- Capturas antes/depois (WebKit 393, claro) no scratchpad da sessão (`apps-celular/antes`, `apps-celular/depois`).
+- Fora: a Sede/"Montar job" do site real do Carro (precisa do banco e da Absolute ZRO falsa, `missoes-real.js`), as
+  páginas Next do SOBEDESCE (`/entrar`, conta, comparar/backup do console) e um iPhone de verdade.
+
+## Revisão dos apps de computador (01/11/2026)
+
+Branch `revisao-desktop`. Linux com Xvfb, Electron 44.5.1 (o mesmo dos 7 apps). Mac e Windows reais não estavam
+disponíveis: instalação de DMG/NSIS, quarentena, bandeja do Windows e a barra de menus do Mac não foram provadas aqui.
+
+- Central (`apps/hub-desktop`): `node --test test/*.test.mjs` **74/74** (novos: `downloadPermitido`, download maior que
+  o catálogo, recusa de redirecionamento, queda de rede sem `.parte`, aviso lembrado entre aberturas, marca flat);
+  `electron . --smoke` **SMOKE OK**. No Electron de verdade, com servidores locais: o `session.fetch` segue
+  redirecionamento com `response.url` vazio (a regra "só https" antiga não conferia nada) e recusa `redirect: 'manual'`;
+  o `download.cjs` novo (net.request) baixou direto e com redirecionamento interno, levou o cookie da partição, recusou
+  redirecionamento para http de outro host, para https fora do GitHub e endereço inicial fora do HUB, e o cancelamento
+  no meio não deixou arquivo.
+- TPeasy: `node --test` **23/23**; smoke OK; com `TPEASY_URL` local e `--use-fake-device-for-media-stream`, a página
+  pediu `getUserMedia`: áudio **ok**, vídeo e áudio+vídeo **NotAllowedError** (antes, o áudio também era negado).
+- SOBEDESCE: `test/desktop.test.js` **10/10**; `test:fast` 784/785 (a que falha pede o `onnxruntime-node` opcional, não
+  instalado aqui); smoke OK; o menu montado no Electron mostra tudo em português (antes: "Quit", "Undo", "Minimize"…).
+- Maestro 52/52, Relay 23/23, Carro do Freela 27/27, Synquei 149/149; smoke OK em todos.
+- Releases (`*-versao-de-teste`, `synquei-app-desktop`, `hub-desktop`) × `GET /api/v1/desktop/apps` ao vivo: versão,
+  build, nome, tamanho e SHA-256 batem nos 7; o SHA-256 real de 14 instaladores (Mac e Windows de cada um), baixados em
+  fluxo sem salvar, bate com o `digest` do GitHub e com o catálogo.
+
+## Revisão de segurança: SOBEDESCE web, HUB e ADM do NOSSOM (01/11/2026)
+
+Branch `revisao-correcoes`. Nada publicado, nenhuma migração aplicada em banco remoto.
+
+- **G1** SOBEDESCE web: `next` e `eslint-config-next` 16.3.8 → 16.4.3 (a versão do HUB), lockfile regerado com npm;
+  `npm audit` sem crítica (restam 20 moderadas de ferramentas de lint).
+- **M1/M2** SOBEDESCE web (`src/lib/google/vagas.ts`, `rotas.ts`): com a vaga já usada, Conectar Drive pede
+  `drive.file` somando o já concedido (o Drive que usou a vaga volta com o inteiro; conta Google nova não gasta outra).
+  `drive` que não foi pedido, ou de conta nova depois da vaga usada, é recusado (`google_erro`), revogado no Google e
+  não guarda token; a vaga que o Google já contou entra no contador sem dono (a pessoa não ganha nada). O Google falso
+  dos testes agora soma o já concedido com `include_granted_scopes`.
+- **P5** SOBEDESCE web: uso único do `jti` do pedido da Absolute ZRO em transação com trava pela chave (`usarUmaVez`);
+  cinco pedidos iguais ao mesmo tempo, só um passa. Sem migração.
+- **P1/P2/P3** HUB: `versao.json` de app não lançado só para admin; `ehAdmin` exige e-mail confirmado (regra de
+  `papelNoConsole` e `zro.release_admin`); escape quebrado no nome do arquivo de `/baixar/app/<id>/<arquivo>` é 404.
+  `%E0%A4%A` cru no caminho cai antes da rota, no roteador do Next (500 dele ao montar a página 400); o teste usa
+  `%25E0%25A4%25A`, que o Next entrega como `%E0%A4%A`.
+- **P4** HUB: a Z no Rift passa pelo gate do `rift-motion` no canal api (`release_allows` ou `release_admin`, porque o
+  Rift ainda não tem linha no catálogo); o teto do dia bloqueia no limite (`>=`, teto 0 = nada passa), igual no
+  laboratório. Sem reserva atômica do gasto: pedidos simultâneos podem passar do teto por uma resposta cada.
+- **P6** NOSSOM: ADM deixa de ser e-mail fixo. O HUB manda `zro_admin: true` no id_token e no userinfo só para admin
+  da plataforma (papel admin, conta ativa, e-mail confirmado); o NOSSOM guarda no vínculo a cada login pela Absolute
+  ZRO e a sessão relê a cada pedido. Migração nova `products/nossom/supabase/migrations/202611010001_admin_da_plataforma.sql`
+  (coluna `platform_admin`, `nossom_private.is_admin` e as funções de cota, painel e IA com a regra nova) **precisa ser
+  aplicada à mão** no Supabase do NOSSOM; até lá o código novo não reconhece ADM nenhum, e depois dela o titular vira
+  ADM ao entrar de novo pela Absolute ZRO.
+
+| Verificação                                                                   | Resultado                                                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Raiz: lint, format:check, typecheck                                           | ok                                                                                   |
+| Raiz: `npm test` (Postgres 16 local)                                          | 561/561 em 64 arquivos                                                               |
+| Raiz: `npm run build` + `npx playwright test tests/e2e/hub.spec.ts`           | ok, 17/17                                                                            |
+| SOBEDESCE web: typecheck, lint, `npm test`, build                             | ok; 373 testes, todos passam (o zro-relay-ciclo pede `products/sobedesce` instalado) |
+| NOSSOM: typecheck, format:check, `npm test`                                   | ok; 124/124                                                                          |
+| NOSSOM: `tests/quota-postgres.integration.ts` (Postgres 16 local, sem Docker) | 12/12, com a migração nova                                                           |
+| NOSSOM: e2e de ADM (admin-dashboard, usage, subscription, design-review)      | 7/7 (4 já pulados)                                                                   |
+| `node scripts/scan-secrets.mjs`                                               | nenhum segredo em 4063 arquivos                                                      |
 
 ## Esqueci a senha em conta só com Google (01/11/2026)
 
