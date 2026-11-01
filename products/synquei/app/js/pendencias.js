@@ -40,9 +40,9 @@ export function pendencias({ project: p, probe, sync, temMidia, org, atualizacao
       out.organizar = { n: cartoes + dv, t: t[0].toUpperCase() + t.slice(1) }
     }
   }
-  // Ajustes: versão nova baixada e conferida, só falta "Atualizar agora"
+  // Ajustes: versão nova (quem atualiza é a central Absolute ZRO)
   const a = atualizacao
-  if (a && a.nova && a.fase === 'pronto') out.ajustes = { n: 1, t: 'Versão nova pronta para instalar' }
+  if (a && a.nova) out.ajustes = { n: 1, t: 'Atualização disponível' }
   return out
 }
 

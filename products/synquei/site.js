@@ -159,32 +159,6 @@ if (stage) {
   })
 }
 
-// ───────────── baixar: copiar o comando e aviso de instalador ainda sendo gerado ─────────────
-for (const b of $$('[data-copy]')) {
-  b.addEventListener('click', async () => {
-    const txt = document.getElementById(b.dataset.copy).textContent
-    try {
-      await navigator.clipboard.writeText(txt)
-    } catch {
-      const r = document.createRange()
-      r.selectNodeContents(document.getElementById(b.dataset.copy))
-      getSelection().removeAllRanges()
-      getSelection().addRange(r)
-      document.execCommand('copy')
-    }
-    b.classList.add('ok')
-    b.lastChild.textContent = 'Copiado'
-    setTimeout(() => {
-      b.classList.remove('ok')
-      b.lastChild.textContent = 'Copiar'
-    }, 1800)
-  })
-}
-if (new URLSearchParams(location.search).get('baixar') === 'indisponivel') {
-  const a = $('#baixarAviso')
-  if (a) a.hidden = false
-}
-
 // ───────────── SOBEDESCE + Synquei: o cartão vai do leitor ao DaVinci ─────────────
 const cd = $('#comboDemo')
 if (cd) {

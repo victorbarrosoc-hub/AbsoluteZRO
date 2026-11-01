@@ -94,18 +94,20 @@ O mesmo app, empacotado com Electron (`desktop/main.cjs`). Vantagens sobre o nav
 - **Caminho completo** de cada arquivo vai para as exportações: o editor acha a mídia sem revincular (a pasta da mídia nem aparece).
 - **AAC e H.264 sempre**: o Chromium do Electron traz os decodificadores (áudio de celular e GoPro, miniaturas).
 - Menu em português, atalhos (⌘N, ⌘O, ⌘1–7), janela integrada à barra lateral no Mac.
-- **Atualiza sozinho** (`desktop/atualizador.cjs`, mesmo esquema do SOBEDESCE): confere `/baixar/versao` ao abrir e a cada hora, baixa o instalador do build novo em segundo plano, confere o SHA-256 e mostra "Atualizar agora" na barra lateral; um script espera o app fechar, troca (Mac: `.dmg` montado e `ditto`; Windows: NSIS em silêncio) e abre de novo. Se a troca falhar, o app antigo volta e o aviso oferece o Baixar. O build do app vem de `desktop/build-info.json`, gravado pelo CI (`node scripts/release.mjs build-info`).
+- **Atualiza pela Absolute ZRO** (01/11/2026, pedido do titular): os apps de computador são instalados e atualizados só pela central Absolute ZRO (`apps/hub-desktop`). O Synquei não baixa nem instala nada (o `desktop/atualizador.cjs` saiu): `desktop/versao.cjs` confere `/baixar/versao` ao abrir e a cada hora e, com build novo, mostra "Atualização disponível" na barra lateral (e o balão em Ajustes) e uma notificação do sistema uma vez por build, "Atualização disponível · Atualizar na Absolute ZRO". O botão abre `absolutezro://apps/synquei?acao=atualizar` (`desktop/central.cjs`); sem a central no computador, `https://absolutezro.com/baixar`. Ajustes › Atualizações diz "As atualizações chegam pela Absolute ZRO", com o mesmo botão. O build do app vem de `desktop/build-info.json`, gravado pelo CI (`node scripts/release.mjs build-info`).
+
+**Novidades da 1.0.1:** atualizações pela Absolute ZRO; o app não baixa mais instalador sozinho.
 
 Distribuição (mesmo modelo do SOBEDESCE):
 
 1. `.github/workflows/synquei-desktop.yml` (na raiz do AbsoluteZRO) gera o `.dmg` (universal, Apple Silicon e Intel) num Mac e o `.exe` (x64 e ARM) num Windows do GitHub, roda o teste de fumaça do app empacotado (`--smoke`: monta o exemplo, sincroniza, exporta) e publica no Release **"Synquei · app de desktop"** (tag `synquei-app-desktop`), com o build no nome (número da execução + 1000, para ficar acima dos builds do repositório antigo, que iam até 25) e um `versao.json` com o SHA-256 de cada instalador.
 2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. Procura primeiro no Release `synquei-app-desktop` do AbsoluteZRO; enquanto ele não tiver instalador, usa o Release `app-desktop` do repositório antigo `victorbarrosoc-hub/synquei` (arquivado). `?build=N` acha o build em qualquer dos dois. Os dois repositórios são privados (25/10/2026): o projeto Vercel `synquei` precisa da variável `GITHUB_TOKEN` (token fino, só leitura de *Contents*, com acesso a AbsoluteZRO e synquei; ver `docs/operations/downloads-privados.md` na raiz). `/baixar/diag` diz de onde está entregando.
    Tags `synquei-v*` também disparam o build e a publicação.
-3. `instalar.sh` e `instalar.ps1`: instalação de uma linha, sem os avisos do macOS/Windows, conferindo o SHA-256:
+3. `instalar.sh` e `instalar.ps1`: instalação de uma linha, conferindo o SHA-256. **Fora da interface desde 01/11/2026** (o site manda para a Absolute ZRO); as rotas continuam respondendo para quem já tem o app:
    - Mac: `curl -fsSL https://synquei.vercel.app/instalar.sh | bash`
    - Windows: `irm https://synquei.vercel.app/instalar.ps1 | iex`
 
-Sem assinatura da Apple/Microsoft por enquanto (ad-hoc no Mac). O site ensina a abrir na primeira vez.
+O site não oferece mais instalador: a seção "No computador" (`#computador`) ensina a usar pela Absolute ZRO (baixe a Absolute ZRO, entre com a sua conta, instale o Synquei por ela) e aponta para `https://absolutezro.com/baixar`. `/baixar/mac`, `/baixar/windows`, `/baixar/versao` e os `instalar.*` seguem no ar, fora da interface.
 
 ```sh
 npm install
