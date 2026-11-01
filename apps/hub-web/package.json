@@ -25,7 +25,7 @@
     "@zro/media-contracts": "*",
     "@zro/observability": "*",
     "@zro/ui": "*",
-    "imapflow": "2.5.2",
+    "imapflow": "2.10.0",
     "mailparser": "3.9.47",
     "next": "16.4.3",
     "nodemailer": "10.1.7",
