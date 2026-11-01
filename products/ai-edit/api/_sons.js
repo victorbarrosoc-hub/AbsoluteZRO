@@ -51,7 +51,7 @@ export async function repassarSons(req, res, caminho = caminhoDe(req)) {
   }
   if (!configurado()) return negar(res, 503, 'O login com a Absolute ZRO não está ligado aqui.')
   const conta = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
-  if (conta && typeof conta.sub === 'string' && !liberado(conta)) return negar(res, 403, 'Em desenvolvimento.')
+  if (conta && typeof conta.sub === 'string' && !liberado(conta)) return negar(res, 403, 'Indisponível.')
   let t = conta && typeof conta.sub === 'string' ? decifrar(COOKIE_TOKENS, lerCookie(req, COOKIE_TOKENS)) : null
   if (!t) return negar(res, 401, 'Entre com a conta Absolute ZRO para buscar sons.')
   const cookies = []

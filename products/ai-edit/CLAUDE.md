@@ -25,15 +25,15 @@ entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
 - **Mídia**: o app só lê o que a pessoa escolheu (ou o projeto do SOBEDESCE que ela abriu) e nunca move, renomeia ou apaga.
   Grava só onde ela mandou (diálogos de salvar).
 - **Publicar o app** (Release `ai-edit-app-desktop`) só pelo botão do workflow, com autorização do titular.
-- **No ar na web, app de computador fechado** (titular, 31/10/2026; antes, fechado desde 28/10; PRD §5–§6): no HUB a
-  migration `0043`; no projeto Vercel, `RELEASE=released` e sem `RELEASE_DESKTOP` (sem instalador nem `/baixar` para o
-  Release até o titular pedir). Sem `RELEASE`, tudo volta a fechar: `api/_release.js` com `RELEASE=closed` por padrão. O editor
-  no navegador, os instaladores e as APIs (`/api/zro/eu`, `/api/zro/ia/*`) só para a conta `allowed` na claim
-  `zro_release` do HUB; o resto vê `em-desenvolvimento.html` (200) ou 403. Não abrir sem o titular, e abrir pede os
-  dois lados (HUB e `RELEASE=released` no projeto Vercel). Nada de link para Release do GitHub no site. A página do
-  lançamento já existe: os trechos `<!-- lancamento:X -->` do `index.html` trocam pelas peças de `lancamento/pagina.html`
-  só com `RELEASE=released` (`scripts/publicar-site.mjs`); `/baixar/*` passa por `api/baixar.js`. Roteiro:
-  `docs/operations/lancamento-aeon.md`.
+- **Não lançado** (titular, 01/11/2026: "AEON, Revela, NOSSOM e Rift Motion não podem aparecer em lugar nenhum para
+  usuários"; antes, no ar na web pela 0043): no HUB a migration `0049` fecha o gate em todos os canais e só o papel de
+  plataforma `admin` passa (claim `zro_release` = `allowed`). Aqui, a trava `LANCADO = false` em `api/_release.js` deixa
+  o site fechado mesmo com `RELEASE=released` no projeto Vercel. Quem não tem acesso vê a página neutra
+  (`em-desenvolvimento.html`: "Página indisponível.", sem marca, nome ou explicação do AEON), que também sai no lugar de
+  `index.html` e `entrar.html` na publicação; APIs respondem 403 "Indisponível."; os instaladores pelo Terminal só dizem
+  "Indisponível.". O editor no navegador segue pela função `api/app.js` para a conta `allowed`. Lançar de novo pede os
+  dois lados (migration do HUB e `LANCADO = true`), com o titular. A página do lançamento continua pronta em
+  `lancamento/pagina.html`. Roteiro antigo: `docs/operations/lancamento-aeon.md`.
 - Repositório público: nada de chave, token, áudio ou vídeo de pessoa real. `node scripts/scan-secrets.mjs` na raiz.
 
 ## Implementação

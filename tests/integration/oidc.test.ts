@@ -151,14 +151,16 @@ describe('código + PKCE', () => {
     expect(id).toMatchObject({ sub: o.userId, aud: c.clientId, nonce: 'n-1', email: o.email, email_verified: true })
     expect((id.zro_org as { id: string }).id).toBe(o.orgId)
     expect(id.zro_products).toEqual(['sobedesce'])
-    // zro_release (ADR 0023): lançado para o público e fechado para esta conta, em todos os tokens e no userinfo
-    expect(id.zro_release).toMatchObject({ sobedesce: 'released', synquei: 'released', nossom: 'closed', 'carro-do-freela': 'released' })
+    // zro_release (ADR 0023): lançado para o público, em todos os tokens e no userinfo; o não lançado nem aparece (0049)
+    expect(id.zro_release).toMatchObject({ sobedesce: 'released', synquei: 'released', 'carro-do-freela': 'released' })
+    for (const naoLancado of ['nossom', 'ai-edit', 'finishing']) expect(id.zro_release).not.toHaveProperty(naoLancado)
     const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
     expect(at.aud).toBe(c.clientId)
     expect((at.zro_release as Record<string, string>).sobedesce).toBe('released')
     expect(t.refresh_token).toMatch(/^zt_/)
     const info = await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)
-    expect(info).toMatchObject({ sub: o.userId, email: o.email, zro_products: ['sobedesce'], zro_release: expect.objectContaining({ nossom: 'closed' }) })
+    expect(info).toMatchObject({ sub: o.userId, email: o.email, zro_products: ['sobedesce'], zro_release: expect.objectContaining({ sobedesce: 'released' }) })
+    expect(info.zro_release).not.toHaveProperty('nossom')
   })
 
   it('recusa verifier errado, segredo errado e código reapresentado', async () => {
@@ -283,14 +285,14 @@ describe('gate de lançamento (ADR 0023)', () => {
       loadOidcClaims,
     )
 
-  it('cliente de produto fechado: conta fora da lista não recebe código (access_denied), mesmo com plano e papel de admin', async () => {
+  it('cliente de produto fechado: conta fora da lista não recebe código (access_denied), mesmo com plano e papel de suporte', async () => {
     const o = await newOrgWithOwner(db, 'gate-fechado', { freePlan: true })
-    await db.sql`update zro.users set platform_role = 'admin' where id = ${o.userId}`
+    await db.sql`update zro.users set platform_role = 'support' where id = ${o.userId}`
     const c = await closedClient()
     const { challenge } = pkce()
     await expect(login(c.clientId, o.userId, o.orgId, challenge)).rejects.toMatchObject({
       error: 'access_denied',
-      description: 'Este app ainda está em desenvolvimento.',
+      description: 'Este app não está disponível para a sua conta.',
     })
     // nada ficou para trás: nem conta no app
     const [acc] = await db.sql`select 1 from zro.app_accounts where user_id = ${o.userId} and client_id = ${c.clientId}`
@@ -309,7 +311,8 @@ describe('gate de lançamento (ADR 0023)', () => {
     const t = await exchange(c, code, verifier)
     const signer = await loadSigner(db)
     const id = verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!
-    expect(id.zro_release).toMatchObject({ nossom: 'allowed', sobedesce: 'released', 'ai-edit': 'released', finishing: 'closed' })
+    expect(id.zro_release).toMatchObject({ nossom: 'allowed', sobedesce: 'released' })
+    expect(id.zro_release).not.toHaveProperty('finishing')
     expect(id.zro_products).toContain('nossom')
     const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
     expect((at.zro_release as Record<string, string>).nossom).toBe('allowed')
@@ -324,7 +327,7 @@ describe('gate de lançamento (ADR 0023)', () => {
     await db.sql`update zro.product_release_access set revoked_at = now() where product_id = 'nossom' and user_id = ${o.userId}`
     await expect(
       exchangeToken(db, parseTokenRequest(form({ grant_type: 'refresh_token', refresh_token: t2.refresh_token! }), basic(c)), loadOidcClaims),
-    ).rejects.toMatchObject({ error: 'invalid_grant', description: 'Este app ainda está em desenvolvimento.' })
+    ).rejects.toMatchObject({ error: 'invalid_grant', description: 'Este app não está disponível para a sua conta.' })
     await expect(userInfo(db, `Bearer ${t2.access_token}`, loadOidcClaims)).rejects.toMatchObject({ error: 'invalid_token', status: 401 })
     expect(await authenticateAccessToken(db, `Bearer ${t2.access_token}`, 'org')).toBeNull()
     // o cliente de um produto lançado continua funcionando para a mesma pessoa

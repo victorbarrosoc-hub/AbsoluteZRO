@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -1302,6 +1302,25 @@ do card... não consigo localizar o job que quero achar".
 
 - ✅ Ramo `console-online-quem`: tocar no "Online agora" abre `/admin/agora`, com quem está online e onde (HUB com o
   aparelho, apps pelo nome), atualizando sozinha a cada 15 s.
+
+## Apps não lançados fora de vista (01/11/2026, decisão do titular)
+
+- ✅ Ramo `esconder-nao-lancados`, migração `0049`: AEON (`ai-edit`, que a 0043 tinha aberto na web), Revela, NOSSOM e
+  Rift Motion (se a linha existir) fechados em todos os canais. No ar só Maestro, Carro do Freela, Synquei, SOBEDESCE,
+  Relay e TPeasy. O gate decide sozinho: `zro.release_visible` (passa em algum canal) e o filtro em `productAccessFor`,
+  `releaseClaimsFor` (a claim `zro_release` já não leva os não lançados) e `releaseVisibleFor`; nada de lista à mão.
+- ✅ Admin da plataforma passa em todo canal (`zro.release_admin` dentro de `zro.release_allows`): vê e usa tudo, no HUB,
+  no login único, na central de computador e nos downloads.
+- ✅ HUB: projeto sem os cartões AEON/NOSSOM/Revela, Assinatura, Acessos, selos do perfil, Conexões, Z (retrato e
+  texto de sistema) e pendências sem os não lançados; login único e `/em-desenvolvimento/<app>` sem nome nem ícone
+  (página neutra "Página indisponível." ou a página inicial). Set: presença em app não visível sai como "Absolute ZRO",
+  no banco (`zro.set_pessoas`), para o HUB e para o Set dentro de cada app.
+- ✅ Sites dos não lançados: AEON com a trava `LANCADO = false` (fecha mesmo com `RELEASE=released` na Vercel) e
+  página neutra no lugar da inicial; Revela com a página neutra; NOSSOM manda as páginas do site para absolutezro.com.
+  Relay sem a ficha "Vindo do AEON/NOSSOM/Revela".
+- ⬜ Deploy dos projetos `aeon`, `revela` e `nossom` (o AEON segue no ar com a página de lançamento até o próximo
+  deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
+  SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.
 
 ## Fase 6 — Escala
 

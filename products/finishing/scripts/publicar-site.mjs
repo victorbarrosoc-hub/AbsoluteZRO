@@ -3,7 +3,7 @@
 // que a página inicial usa); as ferramentas (inicio, lut, lab, looks, cst, entrega, converter, com o resto de app/, src/ e
 // exemplos/) ficam fora do estático e só saem pela função api/app.js para a conta liberada. Com RELEASE=released,
 // tudo como antes. Só arquivos de site: nada de api/, testes, scripts ou node_modules.
-import { cpSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { release } from '../api/_release.js'
@@ -14,6 +14,13 @@ export const SITE = ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'ma
 export const SITE_APP = ['app/tema.js', 'app/revela.css', 'app/home.css', 'app/home.js', 'app/conta.js', 'app/visual.js', 'app/entrar.js', 'app/entrar.css', 'app/fechado.css']
 /** Só com RELEASE=released: as ferramentas e tudo que elas carregam. */
 export const ABERTO = ['inicio.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'app', 'src', 'exemplos']
+
+/**
+ * Fechada, a página inicial e a entrada saem como a página neutra (em-desenvolvimento.html): nada de marca, nome ou
+ * explicação da Revela para quem chega sem acesso (titular, 01/11/2026). As ferramentas seguem pela função, para a conta
+ * liberada (a administração da plataforma, no HUB).
+ */
+export const NEUTRAS = ['index.html', 'entrar.html']
 
 export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...SITE, ...SITE_APP])
 
@@ -28,6 +35,10 @@ export function publicar({ raiz = new URL('..', import.meta.url), saida = new UR
     const para = new URL(i, saida)
     if (statSync(de).isFile()) mkdirSync(dirname(fileURLToPath(para)), { recursive: true })
     cpSync(de, para, { recursive: true })
+  }
+  if (estado !== 'released') {
+    const neutra = readFileSync(new URL('em-desenvolvimento.html', raiz), 'utf8')
+    for (const nome of NEUTRAS) writeFileSync(new URL(nome, saida), neutra)
   }
   return { estado, itens: lista }
 }
