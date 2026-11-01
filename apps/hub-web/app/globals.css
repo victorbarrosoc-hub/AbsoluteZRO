@@ -2342,6 +2342,10 @@ details.disclosure[open] > summary {
   color: var(--text-faint);
   font-size: 0.78rem;
 }
+.dl-passos .dl-cmd,
+.dl-passos .dl-cmd__row {
+  min-width: 0;
+}
 .dl-passos__terminal p {
   margin: 0;
   color: var(--text-faint);
