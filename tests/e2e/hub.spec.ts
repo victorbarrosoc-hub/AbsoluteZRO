@@ -40,7 +40,7 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   for (const id of ['nossom', 'finishing', 'ai-edit']) expect(ids, id).not.toContain(id)
   expect(JSON.stringify(ent)).not.toMatch(/AEON|Revela|NOSSOM/)
   // Com o Carro do Freela no ar (0041), o Início oferece o projeto "de um job".
-  await expect(page.locator('.quick')).toContainText('Do zero ou de um job')
+  await expect(page.locator('nav.quick')).toContainText('Do zero ou de um job')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -278,15 +278,12 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
   const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
-  // Maestro e AEON sem o app de computador (download fechado): nada deles na central nem nas rotas
-  expect(hrefsBaixar.filter((h) => /\/baixar\/app\/maestro\/|aeon\.absolutezro\.com\/(baixar|instalar)/.test(h))).toEqual([])
+  // o AEON não lançado: nada dele na central nem nas rotas (o Maestro abriu o computador na 0048)
+  expect(hrefsBaixar.filter((h) => /aeon\.absolutezro\.com\/(baixar|instalar)/.test(h))).toEqual([])
 
   const desktop = await (await request.get('/api/v1/desktop/apps')).json()
   expect(desktop.apps.map((a: { id: string }) => a.id)).not.toContain('nossom')
-  expect(desktop.apps.map((a: { id: string }) => a.id)).not.toContain('maestro')
   expect((await request.get('/baixar/app/nossom/NOSSOM-0.2.2-win-x64.exe', { maxRedirects: 0 })).status()).toBe(404)
-  for (const arquivo of ['mac', 'windows', 'versao.json', 'Maestro-0.1.0-b1-mac-universal.dmg'])
-    expect((await request.get(`/baixar/app/maestro/${arquivo}`, { maxRedirects: 0 })).status(), arquivo).toBe(404)
 })
 
 test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {
