@@ -78,8 +78,10 @@ Atualizado em 31/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 Rift Motion (01/11/2026, [ADR 0035](decisions/0035-motion-2d-3d.md)): nome escolhido pelo titular, marca em vetor
   (`products/rift-motion/marca/`, gerada por `vetorizar.py`: RIFT, RIFT MOTION, o R, ícone do app e favicon) e o
   protótipo de desenho (escuro por padrão, a dobra laranja em 3D ao vivo, entrar com o R animado, estúdio), **no ar em
-  rift.absolutezro.com** (projeto Vercel `rift-motion`, autorizado pelo titular). ⬜ INPI, Rift no catálogo do HUB, app
-  de verdade (fase 1 do ADR).
+  rift.absolutezro.com** (projeto Vercel `rift-motion`, autorizado pelo titular). Login único (cliente `rift-web` cadastrado no
+  banco AbsoluteZRO-SP, `api/zro/*`) e painel interno (Início, Projetos, Modelos, Biblioteca, Exportações, estúdio por
+  projeto). ⬜ `ZRO_CLIENT_SECRET` na Vercel (liga o login), INPI, Rift no catálogo do HUB, banco do Rift, app de verdade
+  (fase 1 do ADR).
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo
