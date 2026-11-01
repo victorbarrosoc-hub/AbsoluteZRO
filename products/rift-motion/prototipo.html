@@ -317,6 +317,112 @@ button { font: inherit; color: inherit; }
 .toast { position: fixed; z-index: 90; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 0.86rem; box-shadow: 0 12px 40px rgb(0 0 0 / 0.25); animation: toast 0.4s var(--spring) both; max-width: calc(100vw - 32px); text-align: center; }
 @keyframes toast { from { transform: translate(-50%, 16px); opacity: 0; } }
 
+
+/* ---------- Painel (área logada) ---------- */
+body[data-area="app"] .nav, body[data-area="app"] .proto-tag { display: none; }
+body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
+.shell { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; }
+.side { position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; gap: 4px; padding: 18px 14px calc(14px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); border-right: 1px solid var(--line); background: var(--bg); }
+.side__brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; color: var(--ink); text-decoration: none; }
+.side__brand .rift-wm { height: 15px; }
+.side__nav { display: grid; gap: 2px; }
+.side__item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 0.92rem; font-weight: 500; border: 0; background: transparent; cursor: pointer; text-align: left; width: 100%; }
+.side__item svg { width: 18px; height: 18px; flex: none; }
+.side__item:hover { color: var(--ink); background: var(--surface-2); }
+.side__item[aria-current="page"] { color: var(--ink); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+.side__sec { margin: 18px 10px 6px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
+.side__eco { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 0.86rem; }
+.side__eco:hover { color: var(--ink); background: var(--surface-2); }
+.side__eco i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.side__fim { margin-top: auto; display: grid; gap: 6px; }
+.conta-chip { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; border: 0; background: transparent; cursor: pointer; text-align: left; width: 100%; color: var(--ink); }
+.conta-chip:hover, .conta-chip[aria-expanded="true"] { background: var(--surface-2); }
+.avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-family: var(--font-title); font-weight: 700; font-size: 0.86rem; color: #fff; background: linear-gradient(145deg, var(--p-2), var(--p)); overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.conta-chip span { display: grid; min-width: 0; }
+.conta-chip strong { font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conta-chip small { font-size: 0.74rem; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conta-menu { display: grid; gap: 2px; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.conta-menu a, .conta-menu button { display: block; padding: 9px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-size: 0.88rem; border: 0; background: transparent; text-align: left; cursor: pointer; width: 100%; }
+.conta-menu a:hover, .conta-menu button:hover { background: var(--surface-2); }
+.miolo { min-width: 0; padding: clamp(20px, 3.4vw, 40px) max(16px, clamp(20px, 3.4vw, 44px)) calc(96px + env(safe-area-inset-bottom, 0px)); display: grid; align-content: start; gap: 30px; }
+.miolo__topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.miolo__topo .t { font-size: clamp(1.8rem, 3.6vw, 2.6rem); }
+.miolo__acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.aviso-demo { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); color: var(--mute); font-size: 0.86rem; }
+.aviso-demo b { color: var(--ink); font-weight: 600; }
+.aviso-demo i { width: 8px; height: 8px; border-radius: 50%; background: var(--p); flex: none; }
+.bloco { display: grid; gap: 14px; }
+.bloco__topo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.bloco__topo h2 { margin: 0; font-family: var(--font-title); font-size: 1.12rem; letter-spacing: -0.015em; }
+.bloco__topo a, .bloco__topo button.link { color: var(--mute); font-size: 0.86rem; text-decoration: none; background: none; border: 0; cursor: pointer; }
+.bloco__topo a:hover { color: var(--ink); }
+.grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 16px; }
+.proj { position: relative; display: grid; border-radius: 18px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); overflow: hidden; text-decoration: none; color: var(--ink); transition: transform 0.35s var(--spring), box-shadow 0.35s; }
+.proj:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--line-2), var(--shadow); }
+.proj__capa { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-2); }
+.proj__capa .moldura { position: absolute; inset: 14% 22%; border-radius: 6px; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12); background: var(--g, linear-gradient(140deg, #2a1a12, #0b0b0c)); }
+.proj__capa .trilha { position: absolute; left: 10%; right: 10%; bottom: 12%; height: 2px; background: rgb(255 255 255 / 0.12); }
+.proj__capa .trilha::after { content: ""; position: absolute; top: -4px; width: 9px; height: 9px; border-radius: 2px; background: var(--p); transform: rotate(45deg); animation: kfAnda 3.6s var(--ease) infinite alternate; }
+@keyframes kfAnda { from { left: 0; } to { left: calc(100% - 9px); } }
+.proj__capa .bola { position: absolute; width: 18%; aspect-ratio: 1; border-radius: 50%; left: 30%; top: 30%; background: radial-gradient(circle at 35% 30%, #fff8, transparent 40%), var(--p); animation: bolaAnda 3.6s var(--ease) infinite alternate; }
+@keyframes bolaAnda { from { transform: translate(-30%, 10%) scale(0.85); } to { transform: translate(110%, -10%) scale(1.05); } }
+.proj__info { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 12px 14px; }
+.proj__info > a { flex: 1; min-width: 0; overflow: hidden; }
+.proj__info strong { display: block; font-size: 0.94rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proj__info small { color: var(--mute); font-size: 0.78rem; }
+.proj__mais { width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--mute); cursor: pointer; display: grid; place-items: center; flex: none; }
+.proj__mais:hover { background: var(--surface-2); color: var(--ink); }
+.proj__selo { position: absolute; top: 10px; left: 10px; font-size: 0.7rem; padding: 3px 8px; border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 0 0 1px var(--line); color: var(--ink); }
+.proj-menu { position: absolute; right: 10px; bottom: 54px; z-index: 5; display: grid; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow); min-width: 160px; }
+.proj-menu button { padding: 8px 10px; border: 0; background: transparent; border-radius: 9px; text-align: left; cursor: pointer; color: var(--ink); font-size: 0.86rem; }
+.proj-menu button:hover { background: var(--surface-2); }
+.proj-menu button.perigo { color: #ff6b5e; }
+.vazio { display: grid; justify-items: center; gap: 12px; text-align: center; padding: clamp(32px, 6vw, 64px) 16px; border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.vazio .t { font-size: 1.5rem; }
+.vazio p { margin: 0; color: var(--mute); max-width: 40ch; }
+.modelo { display: grid; gap: 0; border-radius: 18px; overflow: hidden; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.modelo__capa { aspect-ratio: 16 / 10; display: grid; place-items: center; background: var(--surface-2); position: relative; overflow: hidden; font-family: var(--font-title); }
+.modelo__info { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 12px 12px 14px; }
+.modelo__info strong { display: block; font-size: 0.94rem; }
+.modelo__info small { color: var(--mute); font-size: 0.78rem; }
+.eco { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.eco a { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); text-decoration: none; color: var(--ink); }
+.eco a:hover { box-shadow: 0 0 0 1px var(--line-2); }
+.eco i { width: 34px; height: 34px; border-radius: 10px; flex: none; }
+.eco strong { display: block; font-size: 0.92rem; }
+.eco small { color: var(--mute); font-size: 0.78rem; }
+.busca { display: flex; gap: 10px; flex-wrap: wrap; }
+.campo { height: 40px; min-width: 0; flex: 1 1 220px; border-radius: 12px; border: 0; padding: 0 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); color: var(--ink); font: inherit; }
+.campo:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+.solta { display: grid; justify-items: center; gap: 10px; padding: 34px 16px; border-radius: 20px; border: 1.5px dashed var(--line-2); color: var(--mute); text-align: center; cursor: pointer; }
+.solta.sobre { border-color: var(--p); color: var(--ink); background: rgb(234 100 38 / 0.06); }
+.solta strong { color: var(--ink); font-family: var(--font-title); font-size: 1.1rem; }
+.lista { display: grid; border-radius: 18px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); overflow: hidden; }
+.linha { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.linha:first-child { border-top: 0; }
+.linha .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--mute); font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); }
+.linha strong { display: block; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linha small { color: var(--mute); font-size: 0.78rem; }
+.estado { font-size: 0.74rem; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--mute); white-space: nowrap; }
+.carregando { display: grid; place-items: center; min-height: 60vh; color: var(--mute); gap: 14px; }
+.carregando .app-icon { width: 56px; height: 56px; border-radius: 16px; animation: respira 1.6s var(--ease) infinite; }
+@keyframes respira { 50% { transform: scale(0.94); opacity: 0.7; } }
+.tabbar { display: none; }
+.st-top .voltar { text-decoration: none; font-size: 1.2rem; }
+.chip-exemplo { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; box-shadow: 0 0 0 1px var(--line); color: var(--mute); }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .tabbar { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid var(--line); }
+  .tabbar a { display: grid; justify-items: center; gap: 3px; padding: 6px 2px; color: var(--mute); text-decoration: none; font-size: 0.66rem; font-weight: 500; }
+  .tabbar a svg { width: 22px; height: 22px; }
+  .tabbar a[aria-current="page"] { color: var(--ink); }
+  .topo-cel { display: flex !important; }
+}
+.topo-cel { display: none; align-items: center; justify-content: space-between; gap: 10px; }
+.topo-cel .rift-wm { height: 15px; }
+
 @media (max-width: 960px) {
   .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .studio { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; height: auto; min-height: 0; }
@@ -353,8 +459,7 @@ button { font: inherit; color: inherit; }
     </a>
     <nav class="nav__links" aria-label="Principal">
       <a href="#inicio" class="hide-sm" data-route="inicio">Início</a>
-      <a href="#estudio" data-route="estudio">Estúdio</a>
-      <a href="#entrar" data-route="entrar">Entrar</a>
+      <a href="#entrar" data-route="entrar" id="navEntrar">Entrar</a>
       <button class="icon-btn" id="themeBtn" aria-label="Usar o tema claro" title="Claro / escuro"></button>
     </nav>
   </div>
@@ -367,7 +472,7 @@ button { font: inherit; color: inherit; }
     <h1 class="t"><span>Do plano</span><br><b>ao espaço.</b></h1>
     <p class="sub">Anime em 2D e 3D na mesma timeline. Som com o NOSSOM, exportação com o Relay.</p>
     <div class="hero__ctas">
-      <a class="glass-btn glass-btn--ink" href="#estudio">Abrir o estúdio</a>
+      <a class="glass-btn glass-btn--ink" href="#app">Abrir o Rift</a>
       <a class="glass-btn" href="#exemplos">Ver o que dá pra fazer</a>
     </div>
   </section>
@@ -496,7 +601,7 @@ button { font: inherit; color: inherit; }
 
   <section class="wrap closing">
     <h2 class="t"><span>Rompa o</span> <b>quadro.</b></h2>
-    <div class="hero__ctas"><a class="glass-btn glass-btn--ink" href="#entrar">Entrar com Absolute ZRO</a><a class="glass-btn" href="#estudio">Testar o estúdio</a></div>
+    <div class="hero__ctas"><a class="glass-btn glass-btn--ink" href="#entrar">Entrar com Absolute ZRO</a><a class="glass-btn" href="#app">Abrir o painel</a></div>
   </section>
   <footer class="footer"><div class="wrap"><span class="zro-sign"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z"/><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0 -68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0 -51.4 0Z"/></svg>Absolute ZRO</span><span>Rift Motion · protótipo de desenho · 01/11/2026</span></div></footer>
 </main>
@@ -510,10 +615,10 @@ button { font: inherit; color: inherit; }
       <h1 class="t"><span>Entrar no</span><br><b class="login__name" id="loginName">Rift</b></h1>
       <p class="sub" style="font-size:.95rem">Uma conta para todo o ecossistema.</p>
       <div class="login__btns">
-        <button class="glass-btn glass-btn--ink" data-toast="Aqui abre o login da Absolute ZRO (OIDC + PKCE).">
+        <a class="glass-btn glass-btn--ink" id="btnEntrar" href="/api/zro/entrar?volta=%2F%23app">
           <svg width="16" height="16" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z"/><path fill="currentColor" fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0 -68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0 -51.4 0Z"/></svg>
-          Entrar com Absolute ZRO</button>
-        <button class="glass-btn" data-toast="Aqui abre o cadastro da Absolute ZRO (prompt=create).">Criar conta</button>
+          Entrar com Absolute ZRO</a>
+        <a class="glass-btn" id="btnCriar" href="/api/zro/entrar?criar=1&amp;volta=%2F%23app">Criar conta</a>
       </div>
       <p class="login__fine">Já usa NOSSOM, SOBEDESCE ou Relay? É a mesma conta.</p>
     </div>
@@ -524,9 +629,10 @@ button { font: inherit; color: inherit; }
 <main class="view" id="v-estudio" hidden>
   <div class="studio">
     <div class="st-top">
+      <a class="mini-btn voltar" href="#projetos" aria-label="Voltar aos projetos" title="Projetos">‹</a>
       <span class="app-icon" style="width:26px;height:26px;border-radius:7px" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span>
-      <h2>Abertura · Campanha Verão</h2>
-      <span class="meta mono">1920 × 1080 · 6 s</span>
+      <h2 id="stNome">Abertura · Campanha Verão</h2>
+      <span class="meta mono" id="stMeta">1920 × 1080 · 6 s</span><span class="chip-exemplo" title="O estúdio ainda abre a mesma cena para todo projeto">cena de exemplo</span>
       <span class="spacer"></span>
       <label class="meta" for="stFps">Cadência</label>
       <select class="sel mono" id="stFps" aria-label="Cadência do projeto"></select>
@@ -580,6 +686,32 @@ button { font: inherit; color: inherit; }
       <div class="tl-lanes" id="tlLanes"><div class="tl-ph" id="tlPh"></div></div>
     </section>
   </div>
+</main>
+
+
+<!-- ================= PAINEL ================= -->
+<main class="view" id="v-app" hidden>
+  <div class="shell">
+    <aside class="side" aria-label="Menu do Rift">
+      <a class="side__brand" href="#app" aria-label="Rift Motion, início"><span class="app-icon" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span><svg class="rift-wm" viewBox="-2 -2 480.1 104" role="img" aria-label="Rift Motion"><defs><mask id="riftFenda2" maskUnits="userSpaceOnUse" x="-10" y="-10" width="496.1" height="120"><rect x="-10" y="-10" width="496.1" height="120" fill="#fff"/><path d="M58.44 41 L61.64 41 L90.24 63 L87.04 63 Z" fill="#000"/><path d="M184.1 84 C198.1 76, 210.1 30, 230.1 14" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round"/></mask></defs><g fill="currentColor" mask="url(#riftFenda2)"><path d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/><path d="M192.1 0 L220.1 0 L220.1 100 L192.1 100 Z"/><path d="M252.1 0 L476.1 0 L476.1 22 L252.1 22 Z"/><path d="M252.1 0 L280.1 0 L280.1 100 L252.1 100 Z"/><path d="M252.1 42 L346.1 42 L346.1 64 L252.1 64 Z"/><path d="M391.1 0 L419.1 0 L419.1 100 L391.1 100 Z"/></g></svg></a>
+      <nav class="side__nav"><a class="side__item" href="#app" data-sec="app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>Início</a><a class="side__item" href="#projetos" data-sec="projetos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a><a class="side__item" href="#modelos" data-sec="modelos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a><a class="side__item" href="#biblioteca" data-sec="biblioteca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Biblioteca</a><a class="side__item" href="#exportacoes" data-sec="exportacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Exportações</a></nav>
+      <p class="side__sec">Ecossistema</p>
+      <a class="side__eco" href="https://relay.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i>Relay</a>
+      <a class="side__eco" href="https://nossom.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#5aa9ff,#dcefff)"></i>NOSSOM</a>
+      <a class="side__eco" href="https://sobedesce.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#0a84ff,#7c5cff)"></i>SOBEDESCE</a>
+      <a class="side__eco" href="https://aeon.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d4d5db,#6a6b73)"></i>AEON</a>
+      <div class="side__fim">
+        <div class="conta-menu" id="contaMenu" hidden></div>
+        <button class="conta-chip" id="contaChip" aria-haspopup="menu" aria-expanded="false"><span class="avatar" id="contaAvatar">·</span><span><strong id="contaNome">Entrando…</strong><small id="contaEmail"></small></span></button>
+      </div>
+    </aside>
+    <div class="miolo" id="miolo">
+      <div class="topo-cel"><a href="#app" style="display:flex;gap:9px;align-items:center;color:var(--ink);text-decoration:none"><span class="app-icon" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span><svg class="rift-wm" viewBox="-2 -2 480.1 104" role="img" aria-label="Rift Motion"><defs><mask id="riftFenda3" maskUnits="userSpaceOnUse" x="-10" y="-10" width="496.1" height="120"><rect x="-10" y="-10" width="496.1" height="120" fill="#fff"/><path d="M58.44 41 L61.64 41 L90.24 63 L87.04 63 Z" fill="#000"/><path d="M184.1 84 C198.1 76, 210.1 30, 230.1 14" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round"/></mask></defs><g fill="currentColor" mask="url(#riftFenda3)"><path d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/><path d="M192.1 0 L220.1 0 L220.1 100 L192.1 100 Z"/><path d="M252.1 0 L476.1 0 L476.1 22 L252.1 22 Z"/><path d="M252.1 0 L280.1 0 L280.1 100 L252.1 100 Z"/><path d="M252.1 42 L346.1 42 L346.1 64 L252.1 64 Z"/><path d="M391.1 0 L419.1 0 L419.1 100 L391.1 100 Z"/></g></svg></a><button class="avatar" id="contaAvatarCel" style="border:0;cursor:pointer" aria-label="Sua conta">·</button></div>
+      <div class="carregando" id="painelCarregando"><span class="app-icon" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span><span>Entrando com a Absolute ZRO…</span></div>
+      <div id="painelConteudo" hidden></div>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Menu do Rift"><a href="#app" data-sec="app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#projetos" data-sec="projetos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a><a href="#modelos" data-sec="modelos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a><a href="#biblioteca" data-sec="biblioteca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Biblioteca</a><a href="#exportacoes" data-sec="exportacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Exportações</a></nav>
 </main>
 
 <div class="proto-tag">Protótipo de desenho · nada é exportado</div>
@@ -676,17 +808,24 @@ document.addEventListener('visibilitychange', () => loops.forEach(upd));
 if (!reduce) raf = requestAnimationFrame(tick);
 
 /* ---------- Router ---------- */
-const views = { inicio: $('#v-inicio'), entrar: $('#v-entrar'), estudio: $('#v-estudio') };
-const viewLoops = { inicio: [], entrar: [], estudio: [] };
+const views = { inicio: $('#v-inicio'), entrar: $('#v-entrar'), estudio: $('#v-estudio'), app: $('#v-app') };
+const viewLoops = { inicio: [], entrar: [], estudio: [], app: [] };
+const SECOES = ['app', 'projetos', 'modelos', 'biblioteca', 'exportacoes'];
+const ganchos = {};
 function route() {
   let h = location.hash.replace('#', '');
+  const secao = SECOES.includes(h) ? h : null;
+  if (secao) h = 'app';
   if (!views[h]) { const target = h && document.getElementById(h); h = target && views.inicio.contains(target) ? 'inicio' : 'inicio'; }
+  document.body.dataset.area = h === 'app' || h === 'estudio' ? 'app' : 'site';
+  if (h === 'app') ganchos.secao?.(secao);
+  if (h === 'estudio') ganchos.estudio?.();
   Object.entries(views).forEach(([k, el]) => (el.hidden = k !== h));
   $$('[data-route]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.route === h));
   if (a11y(h)) a11y(h);
   Object.entries(viewLoops).forEach(([k, arr]) => arr.forEach((l) => { l.visible = k === h; upd(l); }));
   if (h === 'entrar') letrasLogin();
-  if (views[location.hash.replace('#', '')]) window.scrollTo(0, 0);
+  if (views[location.hash.replace('#', '')] || secao) window.scrollTo(0, 0);
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 }
 function a11y() { return false; }
@@ -1043,6 +1182,14 @@ function estudio() {
     if (tr.length > 1) { let seg = 1; while (seg < tr.length - 1 && tq > tr[seg][0]) seg++; const a = tr[seg - 1][0], b = tr[seg][0]; const u = clamp((tq - a) / (b - a), 0, 1); const dot = $('#easeDot'); dot.setAttribute('cx', 10 + u * 180); dot.setAttribute('cy', 100 - e(u) * 75); }
   }
   select('esfera');
+  // o painel abre um projeto: nome, tamanho e cadência dele (a cena ainda é a de exemplo)
+  ganchos.abrirProjeto = (pr) => {
+    $('#stNome').textContent = pr.nome;
+    $('#stMeta').textContent = `${pr.largura} × ${pr.altura} · ${pr.duracao} s`;
+    fpsI = pr.fps; fps = FPS[fpsI].v; fpsSel.value = String(fpsI);
+    t = 0; drawRuler(); update();
+  };
+  fpsSel.addEventListener('change', () => ganchos.mudouCadencia?.(fpsI));
   const l = addLoop((dt) => { free += dt * 0.4; if (playing) { t = (t + dt) % D; update(); } else if (vpMode === 'orbit') update(); }, $('#v-estudio'));
   viewLoops.estudio.push(l);
   themeListeners.push(() => { drawRuler(); });
@@ -1082,7 +1229,7 @@ function estudio() {
     const close = () => (host.innerHTML = '');
     $('#veil').addEventListener('click', (e) => { if (e.target.id === 'veil') close(); });
     $('#shX').onclick = close; $('#shCancel').onclick = close;
-    $('#shGo').onclick = () => { close(); toast('Protótipo: nada foi exportado. No app, o Relay renderiza e o SOBEDESCE entrega.'); };
+    $('#shGo').onclick = () => { close(); ganchos.exportou?.({ formato: f.n, fps: ff.l, tamanho: { '1080': '1920 × 1080', '2160': '3840 × 2160', vert: '1080 × 1920', quad: '1080 × 1080' }[res], destino: DEST.find((x) => x.id === dest).n }); toast('Na lista de Exportações. Protótipo: o Relay ainda não renderiza daqui.'); };
     $$('[data-f]', host).forEach((b) => (b.onclick = () => { fmt = b.dataset.f; sheet(); }));
     $$('[data-fps]', host).forEach((b) => (b.onclick = () => { efps = +b.dataset.fps; sheet(); }));
     $$('[data-res]', host).forEach((b) => (b.onclick = () => { res = b.dataset.res; sheet(); }));
@@ -1241,6 +1388,239 @@ function produto3d() {
   const l = addLoop((dt) => { t += dt; render(); }, caixa); viewLoops.inicio.push(l);
 }
 
+/* ================= PAINEL: a área logada (conta Absolute ZRO) ================= */
+// A sessão vem de /api/zro/eu (o login único, api/zro/*). Sem servidor (o Artifact) ou com o login ainda desligado, o
+// painel abre em demonstração e diz isso. Com o login ligado e sem sessão, vai para /api/zro/entrar e volta aqui.
+// Projetos, biblioteca e exportações ficam neste aparelho (localStorage, por conta): ainda não há banco do Rift.
+function painel() {
+  const conteudo = $('#painelConteudo'), carregando = $('#painelCarregando');
+  let conta = null, secaoAtual = 'app';
+  const FORMATOS = [
+    { id: '16:9', nome: 'Horizontal', l: 1920, a: 1080 },
+    { id: '9:16', nome: 'Vertical', l: 1080, a: 1920 },
+    { id: '1:1', nome: 'Quadrado', l: 1080, a: 1080 },
+    { id: '4:5', nome: 'Feed', l: 1080, a: 1350 },
+    { id: '4K', nome: '4K', l: 3840, a: 2160 },
+  ];
+  const DURACOES = [6, 10, 15, 30];
+  const MODELOS = [
+    { id: 'tipo', nome: 'Tipografia cinética', d: 'Peso, largura e ritmo', g: 'linear-gradient(140deg,#2a160c,#0b0b0c)', ic: 'Aa' },
+    { id: 'decode', nome: 'Texto decodificado', d: 'Para ganchos de abertura', g: 'linear-gradient(140deg,#1b1b22,#0b0b0c)', ic: '▚▞' },
+    { id: 'ui', nome: 'Interface animada', d: 'Telas de produto e app', g: 'linear-gradient(140deg,#1d1a26,#0b0b0c)', ic: '▭' },
+    { id: 'produto', nome: 'Produto em 3D', d: 'Luz, material e câmera', g: 'linear-gradient(140deg,#30160a,#0b0b0c)', ic: '◆' },
+    { id: 'sistema', nome: 'Sistema visual', d: 'Formas em grade', g: 'linear-gradient(140deg,#18202a,#0b0b0c)', ic: '●' },
+    { id: 'logo', nome: 'Revelação de logo', d: 'A marca entrando com a dobra', g: 'linear-gradient(140deg,#3a1a0a,#0b0b0c)', ic: 'R' },
+  ];
+  const chave = (k) => `rift:${k}:${conta?.pessoa?.id || 'demo'}`;
+  const ler = (k, padrao) => { try { const v = JSON.parse(localStorage.getItem(chave(k)) || 'null'); return v ?? padrao; } catch (e) { return padrao; } };
+  const gravar = (k, v) => { try { localStorage.setItem(chave(k), JSON.stringify(v)); } catch (e) { toast('Este navegador não deixou guardar (janela privada?).'); } };
+  const novoId = () => Math.random().toString(36).slice(2, 10);
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const quando = (ms) => { const s = (Date.now() - ms) / 1000; if (s < 60) return 'agora'; if (s < 3600) return `há ${Math.round(s / 60)} min`; if (s < 86400) return `há ${Math.round(s / 3600)} h`; const d = Math.round(s / 86400); return d === 1 ? 'ontem' : `há ${d} dias`; };
+  const tamanhoArq = (b) => b >= 1e9 ? `${(b / 1e9).toFixed(1).replace('.', ',')} GB` : b >= 1e6 ? `${Math.round(b / 1e6)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
+  const projetos = () => ler('projetos', null);
+  function semear() {
+    if (projetos()) return;
+    gravar('projetos', [{ id: novoId(), nome: 'Abertura · Campanha Verão', formato: '16:9', largura: 1920, altura: 1080, fps: 2, duracao: 6, criado: Date.now() - 86400e3 * 2, editado: Date.now() - 3600e3 * 5, exemplo: true, g: 'linear-gradient(140deg,#3a1a0a,#0b0b0c)' }]);
+  }
+
+  // ---------- sessão ----------
+  async function lerConta() {
+    try {
+      const r = await fetch('/api/zro/eu', { headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' });
+      if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw new Error('sem servidor');
+      const d = await r.json();
+      if (d.ok) return { modo: 'conta', pessoa: d.pessoa };
+      if (d.configurado) return { modo: 'entrar' };
+      return { modo: 'demo', motivo: 'O login da Absolute ZRO liga assim que o segredo do app estiver na Vercel.' };
+    } catch (e) {
+      return { modo: 'demo', motivo: 'No rift.absolutezro.com você entra com a sua conta Absolute ZRO.' };
+    }
+  }
+  const pronto = lerConta().then((c) => {
+    conta = c.modo === 'demo' ? { ...c, pessoa: { id: 'demo', nome: 'Você', email: null, foto: null, conta: 'https://absolutezro.com/perfil' } } : c;
+    if (c.modo === 'conta') { $('#navEntrar').textContent = 'Painel'; $('#navEntrar').href = '#app'; }
+    if (c.modo === 'demo') { $('#btnEntrar').href = '#app'; $('#btnCriar').href = '#app'; }
+    return conta;
+  });
+  // aviso de volta do login (?zro=ok, expirou, erro, recusado, config)
+  const aviso = new URLSearchParams(location.search).get('zro');
+  if (aviso) {
+    const msg = { ok: 'Você entrou com a Absolute ZRO.', expirou: 'O login demorou demais. Tente de novo.', recusado: 'Você não autorizou o acesso.', config: 'O login do Rift ainda não está ligado.', erro: 'Não deu para entrar agora. Tente de novo.' }[aviso];
+    if (msg) setTimeout(() => toast(msg), 400);
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+
+  function pintarConta() {
+    const p = conta.pessoa;
+    const iniciais = (p.nome || p.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0].toUpperCase()).join('');
+    const av = p.foto ? `<img src="${esc(p.foto)}" alt="">` : esc(iniciais);
+    $('#contaAvatar').innerHTML = av; $('#contaAvatarCel').innerHTML = av;
+    $('#contaNome').textContent = p.nome || p.email || 'Sua conta';
+    $('#contaEmail').textContent = conta.modo === 'demo' ? 'Demonstração' : (p.email || p.organizacao?.nome || '');
+    $('#contaMenu').innerHTML = `${conta.modo === 'conta' ? `<a href="${esc(p.conta)}" target="_blank" rel="noopener">Sua conta Absolute ZRO</a>` : ''}<button type="button" data-acao="tema">Tema claro ou escuro</button><a href="#inicio">Página inicial</a>${conta.modo === 'conta' ? '<button type="button" data-acao="sair">Sair</button>' : `<a href="#entrar">Entrar</a>`}`;
+  }
+  const abrirMenu = (abrir) => { $('#contaMenu').hidden = !abrir; $('#contaChip').setAttribute('aria-expanded', String(abrir)); };
+  $('#contaChip').addEventListener('click', (e) => { e.stopPropagation(); abrirMenu($('#contaMenu').hidden); });
+  $('#contaAvatarCel').addEventListener('click', (e) => { e.stopPropagation(); location.hash = '#app'; abrirMenu(true); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#contaMenu, #contaChip, #contaAvatarCel')) abrirMenu(false); if (!e.target.closest('.proj-menu, .proj__mais')) $$('.proj-menu').forEach((m) => m.remove()); });
+  $('#contaMenu').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-acao]'); if (!b) return;
+    if (b.dataset.acao === 'tema') $('#themeBtn').click();
+    if (b.dataset.acao === 'sair') {
+      await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+      location.href = '/';
+    }
+  });
+
+  // ---------- peças ----------
+  const capa = (pr) => `<div class="proj__capa"><div class="moldura" style="--g:${pr.g};${pr.altura > pr.largura ? 'inset:10% 38%' : pr.altura === pr.largura ? 'inset:12% 30%' : ''}"></div><div class="bola"></div><div class="trilha"></div>${pr.exemplo ? '<span class="proj__selo">Exemplo</span>' : ''}</div>`;
+  const cartaoProjeto = (pr) => `<article class="proj" data-id="${pr.id}"><a href="#estudio" data-abrir="${pr.id}" style="color:inherit;text-decoration:none" aria-label="Abrir ${esc(pr.nome)}">${capa(pr)}</a><div class="proj__info"><a href="#estudio" data-abrir="${pr.id}" style="color:inherit;text-decoration:none;min-width:0"><strong>${esc(pr.nome)}</strong><small>${pr.largura} × ${pr.altura} · ${FPS[pr.fps].l} fps · ${quando(pr.editado)}</small></a><button class="proj__mais" data-mais="${pr.id}" aria-label="Mais ações de ${esc(pr.nome)}">•••</button></div></article>`;
+  const cartaoModelo = (m) => `<article class="modelo"><div class="modelo__capa" style="background:${m.g}"><span style="font-size:2.4rem;font-weight:800;color:#f5f5f7;opacity:.9">${esc(m.ic)}</span></div><div class="modelo__info"><div><strong>${esc(m.nome)}</strong><small>${esc(m.d)}</small></div><button class="glass-btn glass-btn--sm" data-modelo="${m.id}">Usar</button></div></article>`;
+  const avisoDemo = () => conta.modo === 'demo' ? `<div class="aviso-demo"><i></i><span><b>Demonstração.</b> ${esc(conta.motivo)}</span></div>` : '';
+  const topo = (fino, grosso, acoes = '') => `<div class="miolo__topo"><h1 class="t"><span>${fino}</span> <b>${grosso}</b></h1><div class="miolo__acoes">${acoes}</div></div>`;
+  const BTN_NOVO = '<button class="glass-btn glass-btn--ink" data-novo>Novo projeto</button>';
+  const saudacao = () => { const h = new Date().getHours(); return h < 5 ? 'Boa noite,' : h < 12 ? 'Bom dia,' : h < 18 ? 'Boa tarde,' : 'Boa noite,'; };
+
+  const SECAO = {
+    app() {
+      const lista = projetos().slice().sort((a, b) => b.editado - a.editado);
+      const nome = (conta.pessoa.nome || '').split(' ')[0] || 'tudo bem?';
+      return `${avisoDemo()}${topo(saudacao(), esc(nome) + (conta.pessoa.nome ? '.' : ''), BTN_NOVO + '<a class="glass-btn" href="#modelos">Ver modelos</a>')}
+      <section class="bloco"><div class="bloco__topo"><h2>Recentes</h2><a href="#projetos">Todos os projetos</a></div>${lista.length ? `<div class="grade">${lista.slice(0, 6).map(cartaoProjeto).join('')}</div>` : vazioProjetos()}</section>
+      <section class="bloco"><div class="bloco__topo"><h2>Comece por um modelo</h2><a href="#modelos">Todos</a></div><div class="grade">${MODELOS.slice(0, 3).map(cartaoModelo).join('')}</div></section>
+      <section class="bloco"><div class="bloco__topo"><h2>Do ecossistema</h2></div><div class="eco">
+        <a href="https://relay.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i><span><strong>Relay</strong><small>Exporta em qualquer formato</small></span></a>
+        <a href="https://nossom.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#5aa9ff,#dcefff)"></i><span><strong>NOSSOM</strong><small>O som do seu motion</small></span></a>
+        <a href="https://sobedesce.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#0a84ff,#7c5cff)"></i><span><strong>SOBEDESCE</strong><small>Leva para o Drive e o Resolve</small></span></a>
+        <a href="https://aeon.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d4d5db,#6a6b73)"></i><span><strong>AEON</strong><small>Na timeline da edição</small></span></a>
+      </div></section>`;
+    },
+    projetos() {
+      return `${avisoDemo()}${topo('Seus', 'projetos.', BTN_NOVO)}<div class="busca"><input class="campo" id="buscaProj" type="search" placeholder="Buscar pelo nome" aria-label="Buscar projetos"><select class="sel" id="ordemProj" aria-label="Ordem"><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="criados">Criados</option></select></div><div id="listaProj"></div><p style="margin:0;color:var(--mute);font-size:.8rem">Os projetos ficam neste aparelho, na sua conta. A nuvem do Rift vem com o app.</p>`;
+    },
+    modelos() {
+      return `${avisoDemo()}${topo('Comece pelo', 'movimento.')}<div class="grade">${MODELOS.map(cartaoModelo).join('')}</div>`;
+    },
+    biblioteca() {
+      const itens = ler('biblioteca', []);
+      return `${avisoDemo()}${topo('Sua', 'biblioteca.')}<label class="solta" id="solta"><input type="file" id="arquivos" multiple hidden accept="video/*,image/*,audio/*,.json,.lottie,.glb,.gltf,.svg"><strong>Solte aqui vídeo, imagem, áudio, Lottie ou modelo 3D</strong><span>O arquivo fica no seu computador: o Rift só guarda o nome e lê dali quando você usa no projeto.</span></label>${itens.length ? `<div class="lista">${itens.map((it) => `<div class="linha"><span class="ic">${esc(it.ext)}</span><span style="min-width:0"><strong>${esc(it.nome)}</strong><small>${esc(it.tipo)} · ${tamanhoArq(it.tamanho)} · ${quando(it.quando)}</small></span><span class="estado">neste aparelho</span><button class="proj__mais" data-tirar="${it.id}" aria-label="Tirar ${esc(it.nome)} da biblioteca">✕</button></div>`).join('')}</div>` : ''}`;
+    },
+    exportacoes() {
+      const itens = ler('exportacoes', []);
+      return `${avisoDemo()}${topo('Suas', 'exportações.')}${itens.length ? `<div class="lista">${itens.map((x) => `<div class="linha"><span class="ic" style="background:#0c0c0e"><i style="width:14px;height:14px;border-radius:50%;background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i></span><span style="min-width:0"><strong>${esc(x.projeto)}</strong><small>${esc(x.formato)} · ${esc(x.fps)} fps · ${esc(x.tamanho)} · ${esc(x.destino)} · ${quando(x.quando)}</small></span><span class="estado" title="O motor de exportação (Relay) ainda não renderiza a partir do Rift">não renderizado</span><span></span></div>`).join('')}</div>` : `<div class="vazio"><h2 class="t"><span>Nada</span> <b>exportado ainda.</b></h2><p>No estúdio, "Exportar com o Relay" manda o projeto para cá.</p><a class="glass-btn" href="#projetos">Abrir um projeto</a></div>`}`;
+    },
+  };
+  function vazioProjetos() { return `<div class="vazio"><h2 class="t"><span>Nenhum</span> <b>projeto ainda.</b></h2><p>Comece do zero ou por um modelo.</p><div class="miolo__acoes">${BTN_NOVO}<a class="glass-btn" href="#modelos">Ver modelos</a></div></div>`; }
+  function pintarLista() {
+    const q = ($('#buscaProj')?.value || '').trim().toLowerCase(), ordem = $('#ordemProj')?.value || 'recentes';
+    let l = projetos().filter((p) => p.nome.toLowerCase().includes(q));
+    l.sort(ordem === 'nome' ? (a, b) => a.nome.localeCompare(b.nome, 'pt-BR') : ordem === 'criados' ? (a, b) => b.criado - a.criado : (a, b) => b.editado - a.editado);
+    $('#listaProj').innerHTML = l.length ? `<div class="grade">${l.map(cartaoProjeto).join('')}</div>` : q ? `<div class="vazio"><p>Nenhum projeto com "${esc(q)}".</p></div>` : vazioProjetos();
+  }
+
+  async function mostrar(secao) {
+    secaoAtual = secao || 'app';
+    $$('[data-sec]').forEach((a) => (a.dataset.sec === secaoAtual ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+    await pronto;
+    if (conta.modo === 'entrar') { location.href = '/api/zro/entrar?volta=' + encodeURIComponent('/' + (location.hash || '#app')); return; }
+    semear(); pintarConta();
+    carregando.hidden = true; conteudo.hidden = false;
+    conteudo.innerHTML = SECAO[secaoAtual]();
+    conteudo.style.display = 'grid'; conteudo.style.gap = '30px';
+    if (secaoAtual === 'projetos') { pintarLista(); $('#buscaProj').addEventListener('input', pintarLista); $('#ordemProj').addEventListener('change', pintarLista); }
+    if (secaoAtual === 'biblioteca') ligarBiblioteca();
+  }
+  ganchos.secao = (s2) => { mostrar(s2); };
+  ganchos.estudio = async () => {
+    await pronto;
+    if (conta.modo === 'entrar') { location.href = '/api/zro/entrar?volta=' + encodeURIComponent('/#projetos'); return; }
+    semear();
+    const id = ler('aberto', null);
+    const pr = projetos().find((p) => p.id === id) || projetos()[0];
+    if (pr) { ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id); }
+  };
+  ganchos.mudouCadencia = (i) => { const id = ler('aberto', null); if (!id) return; gravar('projetos', projetos().map((p) => (p.id === id ? { ...p, fps: i, editado: Date.now() } : p))); };
+  ganchos.exportou = (x) => { const id = ler('aberto', null); const pr = projetos().find((p) => p.id === id); gravar('exportacoes', [{ id: novoId(), projeto: pr?.nome || 'Projeto', ...x, quando: Date.now() }, ...ler('exportacoes', [])].slice(0, 100)); };
+
+  // ---------- ações ----------
+  conteudo.addEventListener('click', (e) => {
+    const abrir = e.target.closest('[data-abrir]');
+    if (abrir) { gravar('aberto', abrir.dataset.abrir); gravar('projetos', projetos().map((p) => (p.id === abrir.dataset.abrir ? { ...p, editado: Date.now() } : p))); return; }
+    if (e.target.closest('[data-novo]')) return folhaNovo();
+    const m = e.target.closest('[data-modelo]');
+    if (m) { const mod = MODELOS.find((x) => x.id === m.dataset.modelo); return folhaNovo(mod); }
+    const mais = e.target.closest('[data-mais]');
+    if (mais) {
+      e.stopPropagation(); $$('.proj-menu').forEach((x) => x.remove());
+      const card = mais.closest('.proj'); const menu = document.createElement('div'); menu.className = 'proj-menu';
+      menu.innerHTML = '<button data-a="abrir">Abrir</button><button data-a="renomear">Renomear</button><button data-a="duplicar">Duplicar</button><button data-a="apagar" class="perigo">Apagar</button>';
+      card.appendChild(menu);
+      menu.addEventListener('click', (ev) => { const a = ev.target.closest('[data-a]')?.dataset.a; const id = card.dataset.id; menu.remove(); acaoProjeto(a, id); });
+      return;
+    }
+    const tirar = e.target.closest('[data-tirar]');
+    if (tirar) { gravar('biblioteca', ler('biblioteca', []).filter((x) => x.id !== tirar.dataset.tirar)); mostrar('biblioteca'); }
+  });
+  function acaoProjeto(a, id) {
+    const pr = projetos().find((p) => p.id === id); if (!pr) return;
+    if (a === 'abrir') { gravar('aberto', id); location.hash = '#estudio'; }
+    if (a === 'renomear') folhaNome(pr);
+    if (a === 'duplicar') { gravar('projetos', [{ ...pr, id: novoId(), nome: `${pr.nome} (cópia)`, exemplo: false, criado: Date.now(), editado: Date.now() }, ...projetos()]); toast('Projeto duplicado.'); mostrar(secaoAtual); }
+    if (a === 'apagar') folhaApagar(pr);
+  }
+
+  // ---------- folhas ----------
+  function folha(html, aoMontar) {
+    const host = $('#sheetHost');
+    host.innerHTML = `<div class="sheet-veil" id="veil"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+    const fechar = () => (host.innerHTML = '');
+    $('#veil').addEventListener('click', (e) => { if (e.target.id === 'veil' || e.target.closest('[data-fechar]')) fechar(); });
+    aoMontar?.(host, fechar);
+  }
+  function folhaNovo(modelo) {
+    let fmt = FORMATOS[0], fpsN = 2, dur = 10;
+    folha(`<div class="sheet__head"><span class="app-icon" style="width:40px;height:40px;border-radius:11px">${$('.side__brand .app-icon').innerHTML}</span><div><h3>Novo projeto</h3><p>${modelo ? `A partir de: ${esc(modelo.nome)}` : 'Do zero'}</p></div><button class="icon-btn" data-fechar aria-label="Fechar">✕</button></div>
+      <label class="opt-group"><span>Nome</span><input class="campo" id="novoNome" value="${esc(modelo ? modelo.nome : 'Projeto sem nome')}" maxlength="80"></label>
+      <div class="opt-group"><span>Formato</span><div class="fps__chips" style="justify-content:flex-start" id="novoFmt">${FORMATOS.map((f, i) => `<button class="chip" data-i="${i}" aria-pressed="${i === 0}">${f.nome} <span class="mono" style="opacity:.7">${f.l}×${f.a}</span></button>`).join('')}</div></div>
+      <div class="opt-group"><span>Cadência</span><div class="fps__chips" style="justify-content:flex-start" id="novoFps">${FPS.map((f, i) => `<button class="chip mono" data-i="${i}" aria-pressed="${i === fpsN}">${f.l}</button>`).join('')}</div></div>
+      <div class="opt-group"><span>Duração</span><div class="fps__chips" style="justify-content:flex-start" id="novoDur">${DURACOES.map((d) => `<button class="chip mono" data-d="${d}" aria-pressed="${d === dur}">${d} s</button>`).join('')}</div></div>
+      <div class="sheet__foot"><button class="glass-btn" data-fechar>Cancelar</button><button class="glass-btn glass-btn--ink" id="novoCriar">Criar e abrir</button></div>`, (host, fechar) => {
+      const grupo = (sel, fn) => $(sel, host).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $$('button', $(sel, host)).forEach((x) => x.setAttribute('aria-pressed', String(x === b))); fn(b); });
+      grupo('#novoFmt', (b) => (fmt = FORMATOS[+b.dataset.i])); grupo('#novoFps', (b) => (fpsN = +b.dataset.i)); grupo('#novoDur', (b) => (dur = +b.dataset.d));
+      $('#novoNome', host).focus(); $('#novoNome', host).select();
+      $('#novoCriar', host).addEventListener('click', () => {
+        const nome = $('#novoNome', host).value.trim() || 'Projeto sem nome';
+        const pr = { id: novoId(), nome, formato: fmt.id, largura: fmt.l, altura: fmt.a, fps: fpsN, duracao: dur, criado: Date.now(), editado: Date.now(), modelo: modelo?.id || null, g: modelo?.g || `linear-gradient(140deg, hsl(${Math.round(Math.random() * 40 + 10)} 60% 16%), #0b0b0c)` };
+        gravar('projetos', [pr, ...projetos()]); gravar('aberto', pr.id); fechar(); location.hash = '#estudio';
+      });
+    });
+  }
+  function folhaNome(pr) {
+    folha(`<div class="sheet__head"><div><h3>Renomear</h3><p>${esc(pr.nome)}</p></div><button class="icon-btn" data-fechar aria-label="Fechar">✕</button></div><input class="campo" id="nomeNovo" value="${esc(pr.nome)}" maxlength="80" aria-label="Novo nome"><div class="sheet__foot"><button class="glass-btn" data-fechar>Cancelar</button><button class="glass-btn glass-btn--ink" id="nomeOk">Salvar</button></div>`, (host, fechar) => {
+      const salvar = () => { const n = $('#nomeNovo', host).value.trim(); if (n) gravar('projetos', projetos().map((p) => (p.id === pr.id ? { ...p, nome: n, editado: Date.now() } : p))); fechar(); mostrar(secaoAtual); };
+      $('#nomeOk', host).addEventListener('click', salvar); $('#nomeNovo', host).addEventListener('keydown', (e) => e.key === 'Enter' && salvar()); $('#nomeNovo', host).select();
+    });
+  }
+  function folhaApagar(pr) {
+    folha(`<div class="sheet__head"><div><h3>Apagar "${esc(pr.nome)}"?</h3><p>Some deste aparelho. As exportações feitas continuam na lista.</p></div></div><div class="sheet__foot"><button class="glass-btn" data-fechar>Cancelar</button><button class="glass-btn glass-btn--ink" id="apagarOk" style="--gb-fill:rgb(214 64 52 / .95);--gb-ink:#fff">Apagar</button></div>`, (host, fechar) => {
+      $('#apagarOk', host).addEventListener('click', () => { gravar('projetos', projetos().filter((p) => p.id !== pr.id)); fechar(); toast('Projeto apagado.'); mostrar(secaoAtual); });
+    });
+  }
+  function ligarBiblioteca() {
+    const solta = $('#solta'), input = $('#arquivos');
+    const add = (files) => {
+      const novos = [...files].slice(0, 50).map((f) => ({ id: novoId(), nome: f.name, tamanho: f.size, tipo: f.type.split('/')[0] === 'video' ? 'Vídeo' : f.type.split('/')[0] === 'image' ? 'Imagem' : f.type.split('/')[0] === 'audio' ? 'Áudio' : /\.(glb|gltf)$/i.test(f.name) ? 'Modelo 3D' : /\.(json|lottie)$/i.test(f.name) ? 'Lottie' : 'Arquivo', ext: (f.name.split('.').pop() || '').slice(0, 4).toUpperCase(), quando: Date.now() }));
+      if (novos.length) { gravar('biblioteca', [...novos, ...ler('biblioteca', [])].slice(0, 300)); toast(`${novos.length} ${novos.length === 1 ? 'item entrou' : 'itens entraram'} na biblioteca.`); mostrar('biblioteca'); }
+    };
+    input.addEventListener('change', () => add(input.files));
+    ['dragenter', 'dragover'].forEach((ev) => solta.addEventListener(ev, (e) => { e.preventDefault(); solta.classList.add('sobre'); }));
+    ['dragleave', 'drop'].forEach((ev) => solta.addEventListener(ev, (e) => { e.preventDefault(); solta.classList.remove('sobre'); }));
+    solta.addEventListener('drop', (e) => add(e.dataTransfer.files));
+  }
+}
+
+painel();
 hero(); demos(); produto3d(); cadencia(); som(); login(); estudio();
 route();
 })();
