@@ -19,6 +19,12 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
 
+- App de computador do Rift, feito para computador (01/11/2026, pedido do titular: "não é pra ser uma cópia do web"):
+  menus de programa (Arquivo, Editar, Camada, Reproduzir, IA, Atalhos), arrastar do Finder para o estúdio, barra de
+  progresso no Dock e notificação quando a IA termina, sem a página de apresentação, título = projeto. No Chromium com a
+  ponte do app simulada (1440 × 900): `/` vira `#app`; Novo projeto pelo menu; Texto, Forma, Duplicar, Desfazer e
+  Refazer mudam a cena (3 → 4 → 3 → 4 camadas); soltar um PNG mostra "Solte para entrar no projeto" e cria a camada;
+  Atalhos com 15 linhas; sem erro no console. `npm test` do app 27/27 (novo `test/comandos.test.mjs`); `--smoke` OK.
 - App de computador do Rift (01/11/2026, `products/rift-motion/desktop`): `npm test` 24/24 (regras com o login da
   Higgsfield na janela e parecidos recusados, deep link `rift://`, aviso de versão `rift-motion`, cópias do hub-desktop,
   ícones e nomes `RiftMotion-…` iguais ao catálogo do HUB); `--smoke` (Electron 44.5.1, xvfb) SMOKE OK com a tela "Sem

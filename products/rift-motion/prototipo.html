@@ -536,6 +536,11 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
 @keyframes respira { 50% { transform: scale(0.94); opacity: 0.7; } }
 .tabbar { display: none; }
 .st-top .voltar { text-decoration: none; font-size: 1.2rem; }
+#v-estudio.soltando::after { content: 'Solte para entrar no projeto'; position: fixed; inset: 14px; z-index: 70; display: grid; place-items: center; border: 2px dashed var(--p); border-radius: 22px; background: color-mix(in srgb, var(--bg) 78%, transparent); color: var(--ink); font-weight: 600; font-size: 1.05rem; pointer-events: none; }
+.atalhos { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 16px; margin: 18px 0 4px; align-items: center; }
+.atalhos dt { margin: 0; text-align: right; }
+.atalhos dd { margin: 0; color: var(--mute); font-size: 0.88rem; }
+.atalhos kbd { display: inline-block; min-width: 28px; padding: 3px 8px; border-radius: 7px; background: var(--surface-2); box-shadow: inset 0 -1px 0 var(--line-2), 0 0 0 1px var(--line); font: 600 0.78rem/1.3 var(--font-body, system-ui); color: var(--ink); text-align: center; }
 .chip-exemplo { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; box-shadow: 0 0 0 1px var(--line); color: var(--mute); }
 @media (max-width: 860px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
@@ -987,14 +992,49 @@ const views = { inicio: $('#v-inicio'), entrar: $('#v-entrar'), estudio: $('#v-e
 const viewLoops = { inicio: [], entrar: [], estudio: [], app: [] };
 const SECOES = ['app', 'projetos', 'modelos', 'biblioteca', 'exportacoes'];
 const ganchos = {};
+// ---------- app de computador (products/rift-motion/desktop): a ponte window.riftDesktop do preload ----------
+// No navegador nada disto aparece. No app: os menus mandam comandos (evento rift:comando), a geração com IA mostra a
+// barra de progresso no Dock/barra de tarefas e avisa com uma notificação do sistema quando termina com a janela atrás.
+const APP_PC = window.riftDesktop?.isDesktop === true;
+const MOD = (window.riftDesktop?.plataforma || (/Mac|iPhone|iPad/.test(navigator.platform) ? 'mac' : 'outro')) === 'mac' ? '⌘' : 'Ctrl+';
+const ATALHOS = [
+  [`${MOD}N`, 'Novo projeto'], [`${MOD}I`, 'Importar imagem ou vídeo (ou arraste para o estúdio)'], [`${MOD}E`, 'Exportar'],
+  ['Espaço', 'Tocar e pausar'], ['← →', 'Um quadro para trás ou para a frente'], ['Home', 'Voltar ao início'],
+  [`${MOD}Z`, 'Desfazer'], [`${MOD}⇧Z`, 'Refazer'], [`${MOD}D`, 'Duplicar a camada'], ['⌫', 'Apagar a camada (ou o keyframe no tempo atual)'],
+  [`${MOD}T`, 'Texto'], [`${MOD}⇧F`, 'Forma'], [`${MOD}⇧3`, 'Objeto 3D'], [`${MOD}G`, 'Gerar com IA'], [`${MOD}K`, 'Peça à Z'],
+];
+const computador = (() => {
+  let ativas = 0;
+  return {
+    gerando(d) { ativas = Math.max(0, ativas + d); if (APP_PC) window.riftDesktop.progresso?.(ativas ? 2 : -1); },
+    avisar(titulo, texto) { if (APP_PC) window.riftDesktop.avisar?.(String(titulo).slice(0, 80), String(texto).slice(0, 160)); },
+  };
+})();
+window.addEventListener('rift:comando', (e) => {
+  const n = String(e.detail || '');
+  const ativo = document.activeElement;
+  const editando = ativo && (ativo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName));
+  if ((n === 'desfazer' || n === 'refazer') && editando) return document.execCommand(n === 'desfazer' ? 'undo' : 'redo');
+  if (n === 'novo') return ganchos.novoProjeto?.();
+  if (n === 'projetos') { location.hash = '#projetos'; return; }
+  if (n === 'atalhos') return ganchos.atalhos?.();
+  if (views.estudio.hidden || $('#sheetHost').innerHTML) {
+    if (['importar', 'texto', 'forma', '3d', 'exportar', 'gerar', 'duplicar'].includes(n)) toast('Abra um projeto no estúdio para isso.');
+    return;
+  }
+  ganchos.comandoEstudio?.(n);
+});
 function route() {
   let h = location.hash.replace('#', '');
   const secao = SECOES.includes(h) ? h : null;
   if (secao) h = 'app';
   if (!views[h]) { const target = h && document.getElementById(h); h = target && views.inicio.contains(target) ? 'inicio' : 'inicio'; }
+  // no app de computador não existe a página de apresentação: começa no painel
+  if (APP_PC && h === 'inicio') { location.replace('#app'); return; }
   document.body.dataset.area = h === 'app' || h === 'estudio' ? 'app' : 'site';
   if (h === 'app') ganchos.secao?.(secao);
   if (h === 'estudio') ganchos.estudio?.();
+  else if (APP_PC) document.title = 'Rift Motion';
   Object.entries(views).forEach(([k, el]) => (el.hidden = k !== h));
   $$('[data-route]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.route === h));
   if (a11y(h)) a11y(h);
@@ -1344,7 +1384,7 @@ function estudio() {
     const b = e.target.closest('.layer'); if (b) select(b.dataset.id);
   });
   function adicionar(tipo, forma, meta, quieto = false) {
-    if (tipo === 'midia' && !meta) { trocarMidiaDe = null; return midiaArq.click(); }
+    if (tipo === 'midia' && !meta) { trocarMidiaDe = null; midiaArq.multiple = true; return midiaArq.click(); }
     if (!quieto) lembrar();
     const conta = cena.camadas.filter((c) => c.tipo === tipo).length + 1;
     const c = { id: novoIdC(), tipo, nome: tipo === 'midia' ? meta.nome.replace(/\.[^.]+$/, '').slice(0, 60) || 'Mídia' : tipo === 'texto' ? `Texto ${conta}` : tipo === 'forma' ? `Forma ${conta}` : `Objeto ${conta}`, cor: tipo === 'texto' ? '#f5f5f7' : tipo === 'forma' ? '#EA6426' : '#9A9CD0', visivel: true, props: { ...PADRAO[tipo] }, trilhas: {} };
@@ -1450,6 +1490,7 @@ function estudio() {
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); return e.shiftKey ? refazer() : desfazer(); }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); return refazer(); }
     if (e.code === 'Space') { e.preventDefault(); playing = !playing; setPlayIc(); return; }
+    if (e.key === 'Home') { e.preventDefault(); playing = false; setPlayIc(); t = 0; return update(); }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); playing = false; setPlayIc(); t = clamp(agora() + (e.key === 'ArrowRight' ? 1 : -1) / fps, 0, D - 1e-4); return update(); }
     if ((e.key === 'Delete' || e.key === 'Backspace') && sel) {
       e.preventDefault();
@@ -1523,7 +1564,7 @@ function estudio() {
     $('#inForma')?.addEventListener('change', (e) => { lembrar(); c.forma = e.target.value; sincronizar3d(true); mudou(); });
     $('#inCor')?.addEventListener('input', (e) => { c.cor = e.target.value; montarCamadas(); update(); salvar(); });
     $('#inCor')?.addEventListener('focus', lembrar, { once: true });
-    $('#inTrocar')?.addEventListener('click', () => { trocarMidiaDe = c.id; midiaArq.click(); });
+    $('#inTrocar')?.addEventListener('click', () => { trocarMidiaDe = c.id; midiaArq.multiple = false; midiaArq.click(); });
     $$('.num', insp).forEach((inp) => {
       inp.addEventListener('focus', lembrar);
       inp.addEventListener('input', () => { const v0 = parseFloat(String(inp.value).replace(',', '.')); if (Number.isFinite(v0)) { definir(c, inp.dataset.p, v0); montarTimeline(); update(); salvar(); } });
@@ -1637,7 +1678,10 @@ function estudio() {
     });
   }
   midiaArq.addEventListener('change', async () => {
-    const arq = midiaArq.files[0]; midiaArq.value = ''; if (!arq) return;
+    const arqs = [...midiaArq.files]; midiaArq.value = ''; if (!arqs.length) return;
+    for (const arq of arqs) await entrarMidia(arq);
+  });
+  async function entrarMidia(arq) {
     if (!/^(image|video)\//.test(arq.type)) return toast('Escolha uma imagem ou um vídeo.');
     const { w, h, video } = await medir(arq);
     const idm = 'm' + Math.random().toString(36).slice(2, 11);
@@ -1649,7 +1693,7 @@ function estudio() {
     else adicionar('midia', null, meta);
     ganchos.entrouMidia?.(arq);
     if (!ok) toast('Este navegador não deixou guardar o arquivo: ele some ao fechar a aba (janela privada?).');
-  });
+  }
   function sincronizar2d() {
     const ids = new Set();
     cena.camadas.forEach((c, i) => {
@@ -2054,6 +2098,12 @@ function estudio() {
   }
   async function acompanhar(idCamada) {
     const g = geracoes.get(idCamada); if (!g?.id) return;
+    computador.gerando(+1);
+    try { await acompanharAte(idCamada, g); } finally { computador.gerando(-1); }
+    if (g.estado === 'pronto') computador.avisar('Seu motion ficou pronto', `${camada(idCamada)?.nome || 'A camada'} já está animada no projeto.`);
+    else computador.avisar('A geração não terminou', g.erro || NOME_ESTADO[g.estado] || 'Abra o Rift para ver.');
+  }
+  async function acompanharAte(idCamada, g) {
     let espera = 4000;
     while (!['pronto', 'falhou', 'recusado', 'cancelado'].includes(g.estado)) {
       await new Promise((ok) => setTimeout(ok, espera)); espera = Math.min(12000, espera + 1000);
@@ -2098,6 +2148,43 @@ function estudio() {
   const zBtn = $('#zBtn'), zBarra = $('#zBarra'), zPedido = $('#zPedido');
   ganchos.mostrarZ = (sim) => { zBtn.hidden = !sim; if (!sim) zBarra.hidden = true; };
   zBtn.addEventListener('click', () => { zBarra.hidden = !zBarra.hidden; zBtn.setAttribute('aria-pressed', String(!zBarra.hidden)); if (!zBarra.hidden) zPedido.focus(); });
+
+  // ---------- arrastar do Finder/Explorer para o estúdio (no navegador e no app) ----------
+  const estudioEl = views.estudio;
+  const temArquivo = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  ['dragenter', 'dragover'].forEach((ev) => estudioEl.addEventListener(ev, (e) => { if (!temArquivo(e) || $('#sheetHost').innerHTML) return; e.preventDefault(); estudioEl.classList.add('soltando'); }));
+  estudioEl.addEventListener('dragleave', (e) => { if (!e.relatedTarget || !estudioEl.contains(e.relatedTarget)) estudioEl.classList.remove('soltando'); });
+  estudioEl.addEventListener('drop', async (e) => {
+    if (!temArquivo(e)) return;
+    e.preventDefault(); estudioEl.classList.remove('soltando');
+    const arqs = [...e.dataTransfer.files].filter((a) => /^(image|video)\//.test(a.type));
+    if (!arqs.length) return toast('Solte uma imagem ou um vídeo.');
+    for (const arq of arqs) await entrarMidia(arq);
+  });
+
+  // ---------- comandos dos menus do app de computador (Arquivo, Editar, Camada, Reproduzir, IA) ----------
+  ganchos.comandoEstudio = (n) => {
+    const c = camada(sel), temCamada = c && c.tipo !== 'camera';
+    const acao = (a) => { if (!temCamada) return toast('Escolha uma camada primeiro.'); insp.querySelector(`[data-acao="${a}"]`)?.click(); };
+    const passo = (d) => { playing = false; setPlayIc(); t = clamp(agora() + d / fps, 0, D - 1e-4); update(); };
+    switch (n) {
+      case 'importar': trocarMidiaDe = null; midiaArq.multiple = true; return midiaArq.click();
+      case 'texto': case 'forma': case '3d': return adicionar(n);
+      case 'desfazer': return desfazer();
+      case 'refazer': return refazer();
+      case 'duplicar': return acao('duplicar');
+      case 'apagar': return acao('apagar');
+      case 'frente': return acao('subir');
+      case 'tras': return acao('descer');
+      case 'tocar': playing = !playing; setPlayIc(); return;
+      case 'inicio': playing = false; setPlayIc(); t = 0; return update();
+      case 'quadro-anterior': return passo(-1);
+      case 'quadro-seguinte': return passo(1);
+      case 'exportar': return $('#exportBtn').click();
+      case 'z': return zBtn.hidden ? toast('A Z ainda não está liberada para esta conta.') : zBtn.click();
+      case 'gerar': return abrirGerar(c && c.tipo === 'midia' ? c.id : null);
+    }
+  };
   const resumoCena = () => ({ duracao: D, tempo: Math.round(agora() * 100) / 100, selecionada: sel, camadas: cena.camadas.map((c) => ({ id: c.id, tipo: c.tipo, nome: c.nome, texto: c.texto, forma: c.forma, cor: c.cor, visivel: c.visivel, valores: c.props, movimento: c.anim ? (c.anim.entrada || '') + (c.anim.saida ? '+sair' : '') : null, midia: c.midia ? c.midia.tipo : undefined, keyframes: Object.keys(c.trilhas) })) });
   function movimentoZ(c, mov, dur) {
     if (!c || c.tipo === 'camera') return;
@@ -2526,11 +2613,15 @@ function painel() {
       try { const d = await api('projetos?id=' + encodeURIComponent(pr.id)); pr = { ...pr, cena: d.projeto.cena ?? null }; cache.projetos = cache.projetos.map((p) => (p.id === pr.id ? pr : p)); } catch (e) { /* abre a cena de exemplo */ }
     }
     ganchos.abrirProjeto?.(pr); gravar('aberto', pr.id);
+    document.title = `${pr.nome} · Rift Motion`; // no app de computador, vira o título da janela
     if (ganchos.esperarProjeto) { const f = ganchos.esperarProjeto; ganchos.esperarProjeto = null; f(); }
   };
   ganchos.mudouCadencia = (i) => { const idp = ler('aberto', null); if (idp) mudarProjeto(idp, { fps: i }); };
   let esperaCena = null;
   ganchos.mudouCena = (cena) => { const idp = ler('aberto', null); if (!idp) return; clearTimeout(esperaCena); esperaCena = setTimeout(() => mudarProjeto(idp, { cena }), 400); };
+  ganchos.novoProjeto = () => folhaNovo();
+  ganchos.atalhos = () => folha(`<div class="sheet__head"><div><h3>Atalhos</h3><p>No app de computador, também nos menus.</p></div><button class="icon-btn" data-fechar aria-label="Fechar">✕</button></div>
+      <dl class="atalhos">${ATALHOS.map(([k, d]) => `<dt><kbd>${k}</kbd></dt><dd>${d}</dd>`).join('')}</dl>`);
   ganchos.exportou = (x) => { const idp = ler('aberto', null); const pr = projetos().find((p) => p.id === idp); addExportacao({ id: novoId(), projetoId: pr?.id || null, projeto: pr?.nome || 'Projeto', ...x, estado: 'nao_renderizado', quando: Date.now() }); };
 
   // ---------- ações ----------

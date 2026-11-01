@@ -11,11 +11,25 @@ Pacote próprio (fora do site): `package.json` e `package-lock.json` só com Ele
 cd products/rift-motion/desktop
 npm ci
 npm run desktop                 # abre o app (RIFT_URL=http://localhost:4300 e ZRO_HUB_URL=… apontam para locais)
-npm test                        # regras, aviso de versão, cópias do hub-desktop, ícones e nomes do Release
+npm test                        # regras, comandos dos menus, aviso de versão, cópias, ícones e nomes do Release
 npm run smoke                   # tela "Sem conexão" e regras; escreve SMOKE OK (no Linux: xvfb-run -a … --no-sandbox)
 npm run icones                  # build/ a partir de products/rift-motion/marca/rift-icone.svg (Linux: xvfb-run -a npm run icones)
 npm run compartilhado           # copia de apps/hub-desktop o que é igual (o teste confere)
 ```
+
+## Feito para computador (não é o site numa janela)
+
+- **Menus de programa:** Arquivo (Novo projeto ⌘N, Abrir projeto ⌘O, Importar imagem ou vídeo ⌘I, Exportar ⌘E),
+  Editar (⌘Z desfaz a cena no estúdio e o texto num campo), Camada (Texto ⌘T, Forma ⇧⌘F, Objeto 3D ⇧⌘3, Duplicar ⌘D,
+  frente e trás, Apagar ⌫), Reproduzir (Espaço, Home, ← →), IA (Gerar com IA ⌘G, Peça à Z ⌘K) e Ajuda › Atalhos (⌘/).
+  O menu manda o comando para a página (`rift:comando`); teclas sozinhas aparecem no menu sem roubar a digitação.
+  `test/comandos.test.mjs` confere que todo comando tem quem trate na página.
+- **Arrastar do Finder ou do Explorer** para o estúdio: imagens e vídeos entram como camadas (vários de uma vez).
+- **Geração com IA:** barra de progresso no ícone do Dock ou da barra de tarefas enquanto gera e notificação do sistema
+  quando termina com a janela atrás ("Seu motion ficou pronto"); clicar traz o Rift para a frente.
+- **Sem a página de apresentação:** o app começa no painel; o título da janela é o nome do projeto aberto.
+- **Barra do Mac de programa:** título, Painel e o aviso de versão. Voltar, avançar e recarregar ficam no menu
+  Visualizar.
 
 ## Como é feito
 
@@ -29,7 +43,7 @@ Igual ao do Relay ([README](../../relay/desktop/README.md)); aqui só o que muda
 - **Segurança:** `contextIsolation`, `sandbox`, sem `nodeIntegration`, sem `<webview>`, sem janelas novas; permissões
   negadas, menos copiar, tela cheia e a pasta que a pessoa escolhe para salvar. Fusíveis do Electron. Uma instância só.
 - **Ícone:** o oficial (`products/rift-motion/marca/rift-icone.svg`), sem redesenho.
-- **Abre em:** `/#app` (o painel). Menu: Início, Painel (⌘1) e Estúdio (⌘2).
+- **Abre em:** `/#app` (o painel). Painel ⌘1, Estúdio ⌘2.
 
 ## Instalar e atualizar: só pela Absolute ZRO
 

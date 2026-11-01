@@ -4,15 +4,15 @@
   const barra = window.zroBarra
   if (!barra) return
   const el = (id) => document.getElementById(id)
-  for (const id of ['voltar', 'avancar', 'recarregar', 'inicio', 'atualizar']) el(id).addEventListener('click', () => barra.acao(id))
+  // no estúdio a barra é de programa, não de navegador: o título, o Painel e o aviso de versão (voltar e recarregar
+  // ficam no menu Visualizar)
+  for (const id of ['inicio', 'atualizar']) el(id).addEventListener('click', () => barra.acao(id))
   // clique duplo na barra: o mesmo do resto do Mac (ampliar ou minimizar, conforme o Ajuste do Sistema)
   document.querySelector('.barra').addEventListener('dblclick', (e) => {
     if (!e.target.closest('button')) barra.acao('duplo-clique')
   })
   barra.onEstado((s) => {
     el('titulo').textContent = s.titulo || 'Rift Motion'
-    el('voltar').disabled = !s.voltar
-    el('avancar').disabled = !s.avancar
     // versão nova: a pílula discreta que abre a Absolute ZRO (quem atualiza o app)
     el('atualizar').hidden = !s.atualizacao
     document.body.classList.toggle('carregando', !!s.carregando)

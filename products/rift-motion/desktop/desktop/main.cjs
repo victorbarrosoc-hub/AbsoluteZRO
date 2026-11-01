@@ -22,7 +22,6 @@ const {
   dialog,
   screen,
   nativeTheme,
-  clipboard,
   systemPreferences,
   Notification,
 } = require('electron')
@@ -271,6 +270,22 @@ ipcMain.handle('rift:abrir-no-navegador', (e) => {
   abrirFora(ultimaUrl)
   return true
 })
+// A geração com IA mostra a barra no Dock/barra de tarefas e avisa quando termina (página do Rift, nunca outra).
+ipcMain.on('rift:progresso', (e, p) => {
+  if (!daView(e) || !win || !regras.ehDoApp(e.senderFrame.url, O)) return
+  const n = Number(p)
+  win.setProgressBar(Number.isFinite(n) && n >= 0 ? Math.min(n, 2) : -1)
+})
+ipcMain.on('rift:avisar', (e, titulo, texto) => {
+  if (!daView(e) || !win || !regras.ehDoApp(e.senderFrame.url, O) || !Notification.isSupported()) return
+  if (win.isFocused() && !win.isMinimized()) return
+  const aviso = new Notification({ title: String(titulo || '').slice(0, 80) || NOME, body: String(texto || '').slice(0, 160), silent: false })
+  aviso.on('click', focar)
+  aviso.show()
+  if (MAC) app.dock?.bounce('informational')
+  else win.flashFrame(true)
+})
+
 ipcMain.handle('barra:acao', (e, acao) => {
   if (!daBarra(e) || !view) return false
   const wc = view.webContents
@@ -366,6 +381,15 @@ function menu() {
           .catch(() => {})
       : focar()
   const zoomItem = (label, accelerator, delta, extra = {}) => ({ label, accelerator, click: () => aplicarZoom(delta === 0 ? 0 : zoom + delta), ...extra })
+  // Comando para o estúdio (a página trata em rift:comando). userGesture: o "Importar" abre o seletor de arquivos.
+  const cmd = (nome) => () => {
+    focar()
+    const v = wc()
+    if (!v || !regras.ehDoApp(v.getURL(), O)) return
+    v.executeJavaScript(`window.dispatchEvent(new CustomEvent('rift:comando', { detail: ${JSON.stringify(nome)} }))`, true).catch(() => {})
+  }
+  // Teclas sozinhas (Espaço, setas, ⌫) aparecem no menu mas não são registradas: a página trata, e digitar continua normal.
+  const so = (label, accelerator, nome) => ({ label, accelerator, registerAccelerator: false, click: cmd(nome) })
   const template = [
     ...(MAC
       ? [
@@ -389,12 +413,16 @@ function menu() {
     {
       label: 'Arquivo',
       submenu: [
-        { label: 'Início', accelerator: 'CmdOrCtrl+Shift+H', click: ir('/') },
+        { label: 'Novo projeto…', accelerator: 'CmdOrCtrl+N', click: cmd('novo') },
+        { label: 'Abrir projeto…', accelerator: 'CmdOrCtrl+O', click: cmd('projetos') },
+        { type: 'separator' },
+        { label: 'Importar imagem ou vídeo…', accelerator: 'CmdOrCtrl+I', click: cmd('importar') },
+        { label: 'Exportar…', accelerator: 'CmdOrCtrl+E', click: cmd('exportar') },
+        { type: 'separator' },
         { label: 'Painel', accelerator: 'CmdOrCtrl+1', click: ir('/#app') },
         { label: 'Estúdio', accelerator: 'CmdOrCtrl+2', click: ir('/#estudio') },
         { type: 'separator' },
         { label: 'Abrir no navegador', accelerator: 'CmdOrCtrl+Shift+O', click: () => abrirFora(ultimaUrl) },
-        { label: 'Copiar endereço da página', accelerator: 'CmdOrCtrl+Shift+C', click: () => clipboard.writeText(ultimaUrl) },
         { type: 'separator' },
         MAC ? { role: 'close', label: 'Fechar janela' } : { role: 'quit', label: 'Sair', accelerator: 'Ctrl+Q' },
       ],
@@ -402,8 +430,9 @@ function menu() {
     {
       label: 'Editar',
       submenu: [
-        { role: 'undo', label: 'Desfazer' },
-        { role: 'redo', label: 'Refazer' },
+        // no estúdio desfaz a cena; num campo de texto, o texto (a página decide)
+        { label: 'Desfazer', accelerator: 'CmdOrCtrl+Z', click: cmd('desfazer') },
+        { label: 'Refazer', accelerator: MAC ? 'Shift+Cmd+Z' : 'Ctrl+Y', click: cmd('refazer') },
         { type: 'separator' },
         { role: 'cut', label: 'Recortar' },
         { role: 'copy', label: 'Copiar' },
@@ -411,6 +440,36 @@ function menu() {
         { role: 'pasteAndMatchStyle', label: 'Colar sem formatação' },
         { role: 'delete', label: 'Apagar' },
         { role: 'selectAll', label: 'Selecionar tudo' },
+      ],
+    },
+    {
+      label: 'Camada',
+      submenu: [
+        { label: 'Texto', accelerator: 'CmdOrCtrl+T', click: cmd('texto') },
+        { label: 'Forma', accelerator: 'CmdOrCtrl+Shift+F', click: cmd('forma') },
+        { label: 'Objeto 3D', accelerator: 'CmdOrCtrl+Shift+3', click: cmd('3d') },
+        { label: 'Imagem ou vídeo…', click: cmd('importar') },
+        { type: 'separator' },
+        { label: 'Duplicar', accelerator: 'CmdOrCtrl+D', click: cmd('duplicar') },
+        { label: 'Trazer para a frente', accelerator: 'CmdOrCtrl+Shift+]', click: cmd('frente') },
+        { label: 'Mandar para trás', accelerator: 'CmdOrCtrl+Shift+[', click: cmd('tras') },
+        so('Apagar', 'Backspace', 'apagar'),
+      ],
+    },
+    {
+      label: 'Reproduzir',
+      submenu: [
+        so('Tocar ou pausar', 'Space', 'tocar'),
+        so('Voltar ao início', 'Home', 'inicio'),
+        so('Quadro anterior', 'Left', 'quadro-anterior'),
+        so('Quadro seguinte', 'Right', 'quadro-seguinte'),
+      ],
+    },
+    {
+      label: 'IA',
+      submenu: [
+        { label: 'Gerar com IA…', accelerator: 'CmdOrCtrl+G', click: cmd('gerar') },
+        { label: 'Peça à Z', accelerator: 'CmdOrCtrl+K', click: cmd('z') },
       ],
     },
     {
@@ -448,6 +507,8 @@ function menu() {
       label: 'Ajuda',
       role: 'help',
       submenu: [
+        { label: 'Atalhos do teclado', accelerator: 'CmdOrCtrl+/', click: cmd('atalhos') },
+        { type: 'separator' },
         { label: 'Rift Motion no navegador', click: () => abrirFora(O.rift + '/') },
         { label: 'Sua conta Absolute ZRO', click: () => abrirFora(O.hub + '/perfil') },
         ...(MAC ? [] : [{ type: 'separator' }, itemDeAtualizacao(), { label: 'Sobre o Rift Motion', click: sobre }]),
@@ -530,7 +591,7 @@ async function smoke() {
     if (MAC) {
       await new Promise((ok) => (win.webContents.isLoading() ? win.webContents.once('did-finish-load', ok) : ok()))
       barraOk = await win.webContents.executeJavaScript(
-        `!!(window.zroBarra && document.getElementById('voltar') && document.getElementById('atualizar') && document.getElementById('atualizar').hidden)`,
+        `!!(window.zroBarra && document.getElementById('inicio') && !document.getElementById('voltar') && document.getElementById('atualizar') && document.getElementById('atualizar').hidden)`,
       )
       log(`barra de título: ${barraOk ? 'ok' : 'FALHOU'}`)
     }
