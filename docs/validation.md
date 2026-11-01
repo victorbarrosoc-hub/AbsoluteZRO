@@ -103,6 +103,15 @@ Branch `claude/motion-2d-3d`. Neste ambiente (Linux, Node 22, ffmpeg com libvpx-
   imutável e o shader WebGL2 no Chromium igual à conta (alfa ±0,02).
 - Não medido: Mac e Windows de verdade, SSIM das bordas do chroma e o recorte num take real de fundo verde.
 
+## Z do HUB no Rift Motion (01/11/2026)
+
+Branch `claude/z-rift-hub` (só a parte do HUB do PR #80, para a main). `POST /api/v1/ia/rift`: o servidor do Rift pede
+servidor a servidor (Basic do cliente `rift-web`) e a chave do Claude fica só no HUB.
+
+- `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista (`IA_RIFT_LIBERADOS`), conta da
+  lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem teto =
+  bloqueado, passou do teto = bloqueado, uso idempotente nos Custos; a tela só recebe as cinco ações, com valores limpos.
+
 ## Apps de computador só pela central (01/11/2026)
 
 Branch `apps-pela-central`. Sites sem instalador ("Use no computador com a Absolute ZRO") e apps que avisam em vez de se
