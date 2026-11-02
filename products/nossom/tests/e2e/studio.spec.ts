@@ -35,7 +35,9 @@ test('landing, responsive navigation, functional demonstration and assistant', a
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Do ruído.*ao pronto/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /O som encontrando.*o seu espaço/ }),
+  ).toBeVisible();
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 600) {
       window.scrollTo({ top: y, behavior: 'instant' });

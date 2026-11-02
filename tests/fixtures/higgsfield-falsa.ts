@@ -12,7 +12,7 @@ export type HiggsfieldFalsa = Awaited<ReturnType<typeof iniciarHiggsfieldFalsa>>
 
 const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url')
 
-export async function iniciarHiggsfieldFalsa() {
+export async function iniciarHiggsfieldFalsa(o: { porta?: number } = {}) {
   const estado = {
     /** Próxima autorização: o que a "pessoa" faz na tela da Higgsfield. */
     decisao: 'aceitar' as 'aceitar' | 'negar',
@@ -28,7 +28,10 @@ export async function iniciarHiggsfieldFalsa() {
     creditos: 120,
     plano: 'creator',
     precos: { imagem: 1.5, rapido: 4, equilibrado: 10, maximo: 22 } as Record<string, number>,
-    transacoes: [] as { created_at: string; action: string; credits: number }[],
+    /** o extrato, do mais antigo ao mais novo (a Higgsfield devolve o mais novo primeiro, em páginas por cursor) */
+    transacoes: [] as { created_at: string; action: string; credits: number; display_name?: string }[],
+    /** páginas pedidas ao extrato (para conferir que a varredura para cedo) */
+    paginasExtrato: 0,
     envios: [] as string[],
     confirmados: [] as string[],
     /** job_id → como está; o teste muda à vontade */
@@ -62,8 +65,14 @@ export async function iniciarHiggsfieldFalsa() {
     switch (nome) {
       case 'balance':
         return { d: { credits: estado.creditos, subscription_plan_type: estado.plano } }
-      case 'transactions':
-        return { d: { items: [...estado.transacoes].reverse(), next_cursor: null } }
+      case 'transactions': {
+        estado.paginasExtrato++
+        const tamanho = Math.min(100, Math.max(1, Number(a.size ?? 20)))
+        const desde = Number(a.cursor ?? 0)
+        const todos = [...estado.transacoes].reverse()
+        const fim = desde + tamanho
+        return { d: { items: todos.slice(desde, fim), next_cursor: fim < todos.length ? String(fim) : null } }
+      }
       case 'media_upload': {
         const media_id = randomUUID()
         estado.envios.push(media_id)
@@ -81,7 +90,7 @@ export async function iniciarHiggsfieldFalsa() {
         if (p.get_cost) return { d: { cost: { credits: preco, credits_exact: preco } } }
         if (preco > estado.creditos) return { d: { error: 'Not enough credits' }, erro: true }
         estado.creditos -= preco
-        estado.transacoes.push({ created_at: new Date().toISOString(), action: 'spend', credits: -preco })
+        estado.transacoes.push({ created_at: new Date().toISOString(), action: 'spend', credits: -preco, display_name: nome })
         estado.geracoes.push({ tool: nome, params: p })
         const qtd = video ? 1 : Number(p.count ?? 1)
         const jobs = Array.from({ length: qtd }, () => {
@@ -170,7 +179,7 @@ export async function iniciarHiggsfieldFalsa() {
       enviar(res, 500, { error: 'falha' })
     }
   })
-  await new Promise<void>((ok) => server.listen(0, '127.0.0.1', ok))
+  await new Promise<void>((ok) => server.listen(o.porta ?? 0, '127.0.0.1', ok))
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
   return {
     url,

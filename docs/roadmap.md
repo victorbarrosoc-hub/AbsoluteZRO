@@ -467,6 +467,11 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Página inicial atualizada (02/11/2026, pedido do titular): o topo e a onda de luz ficam; no centro, o
+  slogan em duas linhas só, em qualquer tela ("O som encontrando / o seu espaço."), no lugar de "Do ruído ao pronto.".
+  Os cartões mostram o que mudou: mesa de faixas, Melhorar com a Z, trilha e efeitos e Quasar Presence (os da Z com o
+  roxo dela), além de Remixar, Legendas, Equalização e Preparar entrega. A seção da Z e as dúvidas falam da Presence,
+  da trilha e dos efeitos; o selo da Z continua "Já no Quasar" só com a conversa ligada.
 - 🟡 Quasar · Cor da Z (02/11/2026, opção 2 escolhida pelo titular entre três propostas): a marca segue azul (ícones,
   cartão de compartilhamento, abertura); quando a Z pensa, o halo, o clarão e o feixe da Coroa passam suavemente para o
   violeta dela (#a274ff) e voltam ao azul quando ela termina (`violeta` em `RITMOS`, `lib/quasar-ia.ts`). O trabalho
@@ -948,6 +953,12 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `coming_soon`, gate em `development` (só admin), fora dos planos até o lançamento; cliente `rift-web` vira o app
   `rift-motion` com o escopo `zro.higgsfield`. O Rift deixa a conexão própria e passa a pedir por `/api/v1/higgsfield`
   (PR #80). A Z sabe o que o Rift faz (filtrada pelo gate).
+- ✅ Cartão da Higgsfield com o ciclo do plano (02/11/2026, branch `higgsfield-renovacao`): "disponíveis · pro · renova
+  em 18/11" e o medidor pelo disponível sobre o que entrou no ciclo (assinatura + pacotes), com a parte dos apps em tom
+  mais claro dentro do gasto; legenda "de 800 no ciclo · N usados pelos apps". O `balance` só traz saldo e plano: a data
+  vem do último crédito "Subscription Credits" do extrato (+1 mês, mesmo dia e hora; passou sem crédito novo = sem
+  data). Uma varredura do extrato só (até 10 páginas ou 40 dias) dá o uso do mês e o ciclo; sem crédito de assinatura,
+  o medidor fica no saldo puro. O painel dos apps (`/api/v1/higgsfield`) ganha `ciclo`.
 
 ## AEON com a cara do AEON (02/11/2026)
 

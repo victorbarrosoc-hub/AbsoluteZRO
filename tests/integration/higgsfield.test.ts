@@ -32,6 +32,7 @@ import {
   inicioConexaoHiggsfield,
   inicioDoMes,
   loadOidcClaims,
+  maisUmMes,
   minhaHiggsfield,
   painelHiggsfield,
   saldoHiggsfield,
@@ -214,7 +215,8 @@ describe('o cartão em /conexoes', () => {
   it('saldo e plano da conta; desligar um app; desconectar apaga a conexão', async () => {
     const p = await pessoaComApp('hf-cartao')
     await conectar(p.auth)
-    expect(await saldoHiggsfield(db, amb, p.auth)).toEqual({ creditos: hf.estado.creditos, plano: 'creator' })
+    // extrato vazio: sem ciclo, o medidor fica no saldo puro
+    expect(await saldoHiggsfield(db, amb, p.auth)).toEqual({ creditos: hf.estado.creditos, plano: 'creator', ciclo: null, usoApps: 0 })
     await alternarAppHiggsfield(db, p.auth, 'ai-edit', false)
     const m = await minhaHiggsfield(db, p.auth)
     expect(m.apps.find((x) => x.app === 'ai-edit')).toMatchObject({ ativo: false })
@@ -224,6 +226,40 @@ describe('o cartão em /conexoes', () => {
     expect((await minhaHiggsfield(db, p.auth)).conexao).toBeNull()
     const e = await expectCode(painelHiggsfield(db, amb, p.app), 'sem_conexao')
     expect((e as unknown as { details: { motivo: string; conectar: string } }).details).toMatchObject({ motivo: 'nenhuma', conectar: cfg.conexoesUrl })
+  })
+
+  it('o ciclo pelo extrato: renovação, franquia e pacotes numa varredura só, que para quando passa de 40 dias', async () => {
+    const p = await pessoaComApp('hf-ciclo')
+    await conectar(p.auth)
+    const agora = new Date()
+    const ha = (dias: number) => new Date(agora.getTime() - dias * 86_400_000).toISOString()
+    const antes = hf.estado.transacoes
+    hf.estado.transacoes = [
+      ...Array.from({ length: 250 }, () => ({ created_at: ha(50), action: 'spend', credits: -1, display_name: 'Antigo' })),
+      { created_at: ha(10), action: 'grant', credits: 600, display_name: 'Subscription Credits' },
+      { created_at: ha(5), action: 'grant', credits: 200, display_name: 'Credit Package' },
+      { created_at: ha(4), action: 'refund', credits: 10, display_name: 'Kling 3.0' },
+      ...Array.from({ length: 150 }, () => ({ created_at: ha(1), action: 'spend', credits: -1, display_name: 'Kling 3.0' })),
+    ]
+    try {
+      const paginas = hf.estado.paginasExtrato
+      const s = await saldoHiggsfield(db, amb, p.auth, agora)
+      // 150 + 3 + 250 lançamentos: a 2ª página já passa de 40 dias, as outras duas nem são pedidas
+      expect(hf.estado.paginasExtrato - paginas).toBe(2)
+      expect(s).toMatchObject({ creditos: hf.estado.creditos, plano: 'creator', usoApps: 0 })
+      expect(s!.ciclo).toEqual({
+        inicioCiclo: new Date(ha(10)),
+        renovaEm: maisUmMes(new Date(ha(10))),
+        franquia: 600,
+        extras: 200,
+        gastoNoCiclo: 140,
+      })
+      // o painel dos apps lê o mesmo ciclo na mesma varredura do uso do mês
+      const painel = await painelHiggsfield(db, amb, p.app)
+      expect(painel.ciclo).toMatchObject({ franquia: 600, extras: 200 })
+    } finally {
+      hf.estado.transacoes = antes
+    }
   })
 })
 
