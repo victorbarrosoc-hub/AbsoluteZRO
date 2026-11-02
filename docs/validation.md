@@ -4805,4 +4805,3 @@ SOBEDESCE de computador, que disparam os instaladores).
 
 - `test/demo-real.js` 18/18 (selo na lateral, sem ☰ no computador, a conta abre "conta e ajustes" sem repetir as telas).
 - `menu-recolhivel` 52/52, `mapa` 72/72, `doca` 39/39, `site-real` 42/42, `guia-portas` 33/33, `identidade` 19/19.
-
