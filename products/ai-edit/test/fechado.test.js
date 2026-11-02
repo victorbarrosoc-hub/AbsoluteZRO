@@ -29,6 +29,8 @@ describe('o que o site publica', () => {
       [
         // o repasse do Set (api/_set.js, que confere a liberação como a Z)
         ['/api/zro/set/:caminho*', '/api/zro/set?c=:caminho*'],
+        // /app/ (com a barra, a volta do login) não casa com :caminho* na Vercel: vai explícito
+        ['/app/', '/api/app?caminho=app/index.html'],
         ['/app/:caminho*', '/api/app?caminho=app/:caminho*'],
         ['/src/:caminho*', '/api/app?caminho=src/:caminho*'],
         ['/presets/:caminho*', '/api/app?caminho=presets/:caminho*'],
