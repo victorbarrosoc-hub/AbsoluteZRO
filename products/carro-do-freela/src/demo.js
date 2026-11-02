@@ -19,8 +19,10 @@
   };
   try { Object.defineProperty(window, 'localStorage', { value: memoria(), configurable: true }) } catch (e) {}
   try { Object.defineProperty(window, 'sessionStorage', { value: memoria(), configurable: true }) } catch (e) {}
+  /* (02/nov · 3) /demo?novo=1 é a conta que acabou de chegar: sem perfil, ela passa pela entrada em perguntas */
+  var NOVO = /[?&]novo=1\b/.test(location.search);
   /* a conta da demonstração já passou pela porta (não zera o perfil nem pede cadastro) */
-  try { window.localStorage.setItem('cdf-entrou', '1') } catch (e) {}
+  if (!NOVO) try { window.localStorage.setItem('cdf-entrou', '1') } catch (e) {}
   var seed = 20261102;
   var rnd = function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 };
@@ -70,7 +72,8 @@
   var euAgenda = {};
   euAgenda[dia(2)] = { e: 'fechado', p: 'dia' }; euAgenda[dia(5)] = { e: 'negociando', p: 'dia' }; euAgenda[dia(9)] = { e: 'fechado', p: 'manha' };
   var perfil = { nome: 'Você (demonstração)', cidade: 'Natal', uf: 'RN', funcoes: ['Op. de câmera', 'Editor'], nichos: ['Publicidade', 'Clipe'],
-    bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'publico', arroba: 'voce.demo', atualizado_em: quando(2) };
+    bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'contratantes', arroba: 'voce.demo', atualizado_em: quando(2) };
+  if (NOVO) perfil = null;
   var inventario = [
     { id: uuid('11111111', 1), categoria: 'camera', marca: 'Sony', modelo: 'FX3', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
     { id: uuid('11111111', 2), categoria: 'lente', marca: 'Sigma', modelo: '24-70 f/2.8 Art', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
@@ -87,6 +90,10 @@
   proposta(3, P(27).id, EU_ID, P(27).nome, 'Op. de câmera', 12, '14:00', '23:00', 'Pipa', 'Casamento na praia, segunda câmera.', 'pendente', 20);
   proposta(4, P(40).id, EU_ID, P(40).nome, 'Op. de câmera', -4, '08:00', '18:00', 'Redinha', null, 'aceita', 120);
   proposta(5, EU_ID, P(8).id, 'Você (demonstração)', 'Op. de drone', 6, '06:00', '10:00', 'Forte dos Reis Magos', 'Nascer do sol, voo de 2h.', 'pendente', 3);
+  proposta(6, P(19).id, EU_ID, P(19).nome, 'Op. de câmera', 8, '14:00', '23:00', 'Pipa', 'Casamento em Pipa, segunda câmera.', 'aceita', 30);
+  proposta(7, P(33).id, EU_ID, P(33).nome, 'Editor', 16, '08:00', '18:00', 'Redinha', 'Show na Redinha — corte do aftermovie.', 'aceita', 52);
+  proposta(8, P(52).id, EU_ID, P(52).nome, 'Op. de câmera', -11, '07:00', '17:00', 'Genipabu', 'Institucional nas dunas.', 'aceita', 300);
+  if (NOVO) propostas = [];
 
   /* o feed do set */
   var TEXTOS = {
@@ -111,6 +118,12 @@
   var brecho = ANUNCIOS.map(function (x, k) { var d = P(k * 5 + 2);
     return { id: uuid('bbbbbbbb', k + 1), dono: { sub: d.id, nome: d.nome }, eu: false, titulo: x[0], categoria: x[1], estado_item: x[2],
       descricao: null, cidade: d.cidade, preco_cents: x[3], situacao: 'disponivel', criado_em: quando(k * 9 + 4) } });
+  /* um anúncio da própria conta, com alguém interessado (a proposta de brechó chega na caixa) */
+  var meuAnuncio = { id: uuid('bbbbbbbb', 99), dono: { sub: EU_ID, nome: 'Você (demonstração)' }, eu: true, titulo: 'Canon C70', categoria: 'camera',
+    estado_item: 'Usado, bom estado', descricao: null, cidade: 'Natal/RN', preco_cents: 2350000, situacao: 'disponivel', criado_em: quando(40) };
+  if (!NOVO) { brecho.splice(3, 0, meuAnuncio);
+    propostas.push({ id: uuid('pppppppp', 9), recebida: true, de: P(61).id, para: EU_ID, de_nome: P(61).nome, tipo: 'brecho', anuncio: meuAnuncio.id, dia: null,
+      ini: null, fim: null, funcao: null, local: null, mensagem: 'Tenho interesse: Canon C70', valor_cents: null, estado: 'pendente', motivo: null, criado_em: quando(6) }) }
 
   /* a guilda: fase 1, grátis, 15 lugares */
   var membros = [{ sub: EU_ID, nome: 'Você (demonstração)', arroba: 'voce.demo', foto: null, papel: 'dono', eu: true, online: true }];
@@ -163,11 +176,12 @@
   var original = window.fetch ? window.fetch.bind(window) : null;
   var J = function (s, j) { return Promise.resolve(new Response(j === undefined ? null : JSON.stringify(j), { status: s, headers: { 'Content-Type': 'application/json' } })) };
   var corpo = function (o) { try { return o && typeof o.body === 'string' ? JSON.parse(o.body) : {} } catch (e) { return {} } };
-  var nova = 0;
+  var nova = 0, pedidos = [];
   window.fetch = function (u, o) {
     var url = new URL(typeof u === 'string' ? u : u.url, location.href);
     if (url.origin !== location.origin || url.pathname.indexOf('/api/zro/') !== 0) return original ? original(u, o) : J(404, {});
     var r = url.pathname.slice(9), met = ((o && o.method) || 'GET').toUpperCase(), q = url.searchParams, c = met === 'GET' ? {} : corpo(o);
+    pedidos.push(met + ' ' + r);
     if (r === 'eu') return J(200, { entrou: true, sub: EU_ID, nome: 'Você (demonstração)', email: '', arroba: 'voce.demo', organizacao: 'Demonstração', liberado: true, hub: false, release: 'open' });
     if (r === 'pessoas') return J(200, { pessoas: pessoas, de: q.get('de'), ate: q.get('ate'), agendas: true });
     if (r === 'perfil') { if (met === 'PUT') perfil = Object.assign({}, perfil, c, { atualizado_em: new Date().toISOString() }); return J(200, { perfil: perfil }) }
@@ -235,7 +249,9 @@
       'font:500 12.5px/1.2 "Figtree",system-ui,sans-serif;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.35);white-space:nowrap;max-width:calc(100vw - 24px)}' +
       '#demo-selo b{color:#17D1E8;font-weight:800}#demo-selo span{color:#AEAEB2}' +
       '#demo-selo a{color:#1D1D1F;background:rgba(245,245,247,.94);border-radius:999px;padding:6px 12px;font-weight:700;text-decoration:none}' +
-      '@media(max-width:520px){#demo-selo span{display:none}}';
+      '@media(max-width:520px){#demo-selo span{display:none}}' +
+      /* a entrada em perguntas ocupa a tela toda: no celular o selo não pode cobrir a barra de progresso */
+      '@media(max-width:820px){.ob-esq{padding-top:calc(64px + env(safe-area-inset-top,0px))!important}}';
     document.head.appendChild(st);
     document.body.appendChild(s);
   };
@@ -248,6 +264,7 @@
       if (typeof ZRO_PRONTO === 'undefined' || !ZRO_PRONTO || !ZRO_CONTA || typeof zroEntrar !== 'function') return;
       clearInterval(entrar);
       /* o perfil da conta de demonstração já vem pronto (sem passar pelo cadastro) e o feed abre na praça inteira */
+      if (NOVO) { zroEntrar(false); return }
       if (typeof EU === 'object' && EU) { EU.nome = EU.nome || 'Você (demonstração)'; if (!(EU.func || []).length) EU.func = ['Op. de câmera', 'Editor']; EU.cidade = EU.cidade || 'Natal/RN' }
       try { FDP_ABA = 'praca' } catch (e) {}
       zroEntrar(false);
@@ -257,5 +274,5 @@
       }, 300);
     } catch (e) { clearInterval(entrar) }
   }, 100);
-  window.CDF_DEMO = { pessoas: pessoas.length };
+  window.CDF_DEMO = { pessoas: pessoas.length, novo: NOVO, pedidos: pedidos, perfil: function () { return perfil } };
 })();

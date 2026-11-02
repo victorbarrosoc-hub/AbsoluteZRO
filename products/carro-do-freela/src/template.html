@@ -7085,6 +7085,459 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
   :where(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz){position:relative}
   :is(.btn.sm,.btn.gh,.chip,.fdb,.fdseg,.fdmais,.fdau,.back,.linkc,.brand,.cart-top,.wd,.mc,.hp-dia,.hj-chip,.subaba,.sg-dm,.star,.clr,.segm>button,.tema>button,.mnav>button,.fim-links>a,.hlinks>a,.fim-prev,.avz)::after{content:"";position:absolute;inset:min(0px,calc((100% - 44px) / 2))}
 }
+/* ============ AS TELAS NOVAS DO SITE REAL (02/nov · 3; desenho aprovado pelo titular) ============
+   A entrada em perguntas (#ob), Meu perfil, Propostas, Agenda, Jobs e Brechó. Só existem com html.real: o bloco nx-*
+   nasce no começo da seção e o .wrap antigo some. Grafite fosco, cartões #17171B/#1F1F25, ciano no detalhe, o anel
+   neon nos rostos e os botões de vidro da família. Estados por data-* e aria-* (nunca classe modificadora). */
+html.real #v-propostas>.wrap,html.real #v-agenda>.wrap,html.real #v-jobs>.wrap,html.real #v-brecho>.wrap,html.real #v-meu>.wrap{display:none!important}
+.nx,.ob,.nx-folha{--nx-c1:#17171B;--nx-c2:#1F1F25;--nx-l:rgba(255,255,255,.07);--nx-l2:rgba(255,255,255,.12);--nx-ok:#3DD17E;--nx-esp:#F2C14E;
+  --nx-anel:conic-gradient(from 210deg,#17D1E8,#3B8CFF 28%,#B04CFF 52%,#FF3D9A 70%,#17D1E8);font-family:"Figtree",system-ui,sans-serif;color:var(--cal)}
+html.app-light .nx,html.app-light .ob,html.app-light .nx-folha{--nx-c1:#FFFFFF;--nx-c2:#F2EFEA;--nx-l:rgba(0,0,0,.08);--nx-l2:rgba(0,0,0,.14);--nx-ok:#0F7A3D;--nx-esp:#8A6100}
+.nx{padding:clamp(20px,3vw,40px) clamp(16px,3vw,44px) 72px}
+.nx button{font-family:inherit}
+.nx-h1{margin:0;font-family:"Figtree",system-ui,sans-serif;font-weight:800;font-size:clamp(30px,3.2vw,44px);letter-spacing:-.04em;line-height:1.02;color:var(--cal)}
+.nx-h1 span{font-weight:300;font-size:.62em;letter-spacing:-.02em;color:var(--cal-fraco)}
+.nx-sub{margin:6px 0 0;color:var(--cal-fraco);font-size:15px;line-height:1.45}
+.nx-rot{display:block;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-ac{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.nx .glass-btn,.ob .glass-btn,.nx-folha .glass-btn{min-height:48px}
+:root.app-light .nx .glass-btn:not(.glass-btn--ink),:root.app-light .nx-folha .glass-btn:not(.glass-btn--ink){--gb-ink:#1d1d1f}
+.nx-largo{width:100%}
+.nx-mini{min-height:44px!important;padding:0 16px!important;font-size:14px!important}
+.nx-dica{margin:10px 0 0;color:var(--cal-tenue);font-size:13px}
+/* o rosto: o anel neon do selo, o disco escuro e as iniciais */
+.nx-av{--t:44px;display:inline-block;flex:none;width:var(--t);height:var(--t);border-radius:50%;padding:max(2px,calc(var(--t) * .045));background:var(--nx-anel)}
+.nx-av>span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--grafite) center/cover no-repeat;
+  font-weight:800;font-size:calc(var(--t) * .34);letter-spacing:-.02em;color:var(--cal)}
+.nx-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;
+  background:color-mix(in srgb,var(--cal-tenue) 18%,transparent);color:var(--cal-fraco)}
+.nx-pill[data-tom="ok"]{background:color-mix(in srgb,var(--nx-ok) 16%,transparent);color:var(--nx-ok)}
+.nx-pill[data-tom="esp"]{background:color-mix(in srgb,var(--nx-esp) 16%,transparent);color:var(--nx-esp)}
+.nx-ponto{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ciano)}
+.nx-chips{display:flex;flex-wrap:wrap;gap:8px}
+.nx-chips span{padding:6px 12px;border-radius:999px;background:var(--nx-c2);color:var(--cal);font-size:13.5px}
+.nx-vazio{display:grid;justify-items:center;text-align:center;gap:6px;padding:56px 20px;color:var(--cal-fraco)}
+.nx-vazio b{color:var(--cal);font-size:18px}
+.nx-vazio p{margin:0 0 12px}
+.nx-vazio-ic{display:grid;place-items:center;width:56px;height:56px;border-radius:18px;background:var(--nx-c2);color:var(--ciano);font-size:24px;margin-bottom:8px}
+.nx-redondo{display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--nx-l2);background:transparent;
+  color:var(--cal);font-size:16px;font-weight:600;cursor:pointer}
+.nx-redondo:hover{background:var(--nx-c1)}
+.nx-redondo[aria-current="true"]{border-color:var(--ciano)}
+/* o interruptor (role=switch): verde ligado */
+.nx-tog{position:relative;flex:none;width:52px;height:32px;border:0;border-radius:999px;padding:0;cursor:pointer;background:var(--nx-l2);transition:background .2s}
+.nx-tog::before{content:"";position:absolute;inset:-6px}
+.nx-tog i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:transform .25s var(--mola,ease)}
+.nx-tog[aria-checked="true"]{background:#34C759}
+.nx-tog[aria-checked="true"] i{transform:translateX(20px)}
+.nx-tog:disabled{opacity:.6}
+.nx-linha{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-radius:18px;background:var(--nx-c1);border:1px solid var(--nx-l)}
+.nx-linha b{display:block;font-size:15.5px}
+.nx-linha small{display:block;color:var(--cal-fraco);font-size:13px;margin-top:2px}
+/* o cartão "Assim quem contrata vê você" */
+.nx-cartao{display:grid;gap:16px;padding:24px;border-radius:26px;background:var(--nx-c1);border:1px solid var(--nx-l);box-shadow:0 30px 60px -30px rgba(0,0,0,.7)}
+.nx-cartao-top{display:flex;align-items:center;gap:16px;min-width:0}
+.nx-cartao-id{min-width:0}
+.nx-cartao-nome{display:block;font-weight:800;font-size:clamp(20px,2vw,26px);letter-spacing:-.03em;line-height:1.1;overflow-wrap:anywhere}
+.nx-cartao-sub{display:block;margin-top:4px;color:var(--cal-fraco);font-size:14.5px}
+.nx-cartao-port{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:14px;background:var(--nx-c2);font-size:14px;min-width:0}
+.nx-cartao-port b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-cartao-port span{color:var(--cal-tenue);font-size:12.5px}
+.nx-cartao-st{margin:0;color:var(--cal-tenue);font-size:13px}
+.nx-cartao-st[data-on="true"]{color:var(--nx-ok)}
+.nx-cartao-st[data-on="true"]::before,.nx-livre i{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--nx-ok);margin-right:8px;vertical-align:middle}
+.nx-livre{margin:0;color:var(--nx-ok);font-size:14px}
+.nx-oco{display:flex;gap:8px}
+.nx-oco i{height:26px;width:64px;border-radius:999px;background:var(--nx-c2)}
+.nx-oco-l i{height:44px;width:60%;border-radius:14px}
+.nx-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.nx-thumbs span{aspect-ratio:4/3;border-radius:16px;background:var(--nx-c2) center/cover no-repeat}
+/* ---------- a entrada em perguntas ---------- */
+.ob{position:fixed;inset:0;z-index:2147482000;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);background:var(--grafite);overflow:hidden}
+.ob[hidden]{display:none}
+body[data-ob]{overflow:hidden}
+.ob-esq{display:flex;flex-direction:column;min-height:0;overflow:auto;padding:clamp(22px,3.4vw,48px) clamp(22px,6vw,104px) clamp(22px,3.4vw,48px)}
+.ob-topo{display:flex;align-items:center;gap:clamp(16px,2.4vw,36px)}
+.ob-marca{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px;letter-spacing:-.02em;white-space:nowrap}
+.ob-marca .zselo{display:inline-block!important}
+.ob-prog{display:flex;gap:6px;flex:1;max-width:300px}
+.ob-prog i{position:relative;flex:1;height:4px;border-radius:4px;background:var(--nx-l2);overflow:hidden}
+.ob-prog i::after{content:"";position:absolute;inset:0;border-radius:4px;background:var(--ciano);transform:scaleX(var(--p,0));transform-origin:left;transition:transform .5s ease}
+.ob-volta{margin-left:auto;min-height:44px;min-width:44px;padding:0 6px;border:0;background:none;color:var(--cal-fraco);font-size:15px;cursor:pointer}
+.ob-volta:hover{color:var(--cal)}
+.ob-corpo{flex:1;display:flex;flex-direction:column;justify-content:center;padding:36px 0 28px;max-width:640px}
+.ob-ola{font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cal-tenue)}
+.ob-tit{margin:10px 0 0;font-family:"Figtree",system-ui,sans-serif;font-weight:300;font-size:clamp(36px,4.4vw,62px);letter-spacing:-.045em;line-height:1.02;color:var(--cal);outline:0}
+.ob-tit b{font-weight:800}
+.ob-sub{margin:14px 0 0;color:var(--cal-fraco);font-size:clamp(15px,1.3vw,18px);line-height:1.45;max-width:46ch}
+.ob-campo{margin-top:28px;display:grid;gap:18px}
+.ob-rot{display:block;margin-top:6px;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue)}
+.ob-in{width:100%;min-height:52px;padding:0 18px;border-radius:16px;border:1px solid var(--nx-l2);background:var(--nx-c1);color:var(--cal);font:inherit;font-size:17px;outline:0}
+.ob-in:focus{border-color:var(--ciano);box-shadow:0 0 0 4px color-mix(in srgb,var(--ciano) 18%,transparent)}
+textarea.ob-in{padding:14px 18px;min-height:120px;resize:vertical;line-height:1.45}
+select.ob-in{appearance:auto}
+.ob-busca{position:relative;display:flex;align-items:center}
+.ob-busca>svg{position:absolute;left:16px;color:var(--cal-tenue);pointer-events:none}
+.ob-busca>svg~.ob-in{padding-left:46px}
+.ob-link .ob-arroba{position:absolute;left:18px;color:var(--cal-tenue);font-size:17px;pointer-events:none}
+.ob-link .ob-in{padding-left:42px;padding-right:46%}
+.ob-prev{position:absolute;right:16px;max-width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--cal-tenue);font-size:13.5px;pointer-events:none}
+.ob-prev[data-ok="true"]{color:var(--nx-ok)}
+.ob-chips{display:flex;flex-wrap:wrap;gap:10px}
+.ob-chips.nx-col{flex-direction:column;align-items:stretch}
+.ob-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;background:var(--nx-c2);color:var(--cal);font:inherit;font-size:15.5px;cursor:pointer;transition:background .15s,border-color .15s}
+.ob-chip:hover{border-color:var(--nx-l2)}
+.ob-chip[aria-pressed="true"]{border-color:color-mix(in srgb,var(--ciano) 70%,transparent);background:color-mix(in srgb,var(--ciano) 13%,transparent);color:var(--ciano)}
+.ob-chip[data-estrela]{background:var(--ciano);border-color:var(--ciano);color:#062A30;font-weight:600}
+:root.app-light .ob-chip[data-estrela]{color:#fff}
+.ob-estrela{font-size:.95em}
+.ob-ops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ob-op{display:grid;justify-items:start;gap:6px;text-align:left;padding:22px;min-height:150px;border-radius:22px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);cursor:pointer;font:inherit;transition:border-color .2s,box-shadow .2s}
+.ob-op b{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:8px}
+.ob-op small{color:var(--cal-fraco);font-size:14px;line-height:1.4}
+.ob-op-ic{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--nx-c2);color:var(--cal)}
+.ob-op[aria-pressed="true"]{border-color:var(--ciano);box-shadow:0 0 0 4px color-mix(in srgb,var(--ciano) 12%,transparent),0 20px 40px -20px color-mix(in srgb,var(--ciano) 45%,transparent)}
+.ob-viaja{display:flex;align-items:center;gap:12px;font-size:15.5px}
+.ob-viaja label{cursor:pointer}
+.ob-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;border-radius:20px;border:1.5px solid var(--nx-l2);background:var(--nx-c1)}
+.ob-linha:has([aria-checked="true"]){border-color:var(--nx-ok)}
+.ob-linha b{display:block;font-size:16.5px}
+.ob-linha small{display:block;color:var(--cal-fraco);font-size:13.5px;margin-top:3px}
+.ob-pe{display:flex;align-items:center;flex-wrap:wrap;gap:14px}
+.ob-ir{min-width:150px}
+.ob-nota{color:var(--cal-tenue);font-size:13.5px}
+.ob-nota[data-erro="true"],.nx-st[data-erro="true"]{color:#FF6B8B}
+:root.app-light .ob-nota[data-erro="true"],:root.app-light .nx-st[data-erro="true"]{color:#B4234B}
+.ob-mini{display:none}
+.ob-dir{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(32px,4vw,64px);border-left:1px solid var(--nx-l);
+  background:radial-gradient(60% 45% at 78% 12%,rgba(176,76,255,.24),transparent 70%),radial-gradient(55% 45% at 18% 92%,rgba(23,209,232,.16),transparent 70%),var(--grafite)}
+.ob-dir-lab{position:absolute;top:clamp(40px,6vh,72px);left:0;right:0;text-align:center;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--cal-tenue)}
+.ob-dir-cartao{width:min(440px,100%)}
+.ob[data-fim="true"]{grid-template-columns:minmax(0,1fr);place-items:center;
+  background:radial-gradient(50% 40% at 70% 15%,rgba(176,76,255,.22),transparent 70%),radial-gradient(50% 40% at 25% 90%,rgba(23,209,232,.14),transparent 70%),var(--grafite)}
+.ob-fim{display:grid;justify-items:center;text-align:center;gap:6px;padding:32px 22px;max-width:640px;overflow:auto;max-height:100%}
+.ob-fim .ob-sub{margin-left:auto;margin-right:auto}
+.ob-fim-av{margin-bottom:10px}
+.ob-fim-ac{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:26px}
+.ob-feitos{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;list-style:none;margin:20px 0 0;padding:0}
+.ob-feitos li{padding:6px 12px;border-radius:999px;background:var(--nx-c1);border:1px solid var(--nx-l);color:var(--cal-fraco);font-size:13px}
+@media(prefers-reduced-motion:no-preference){
+  .ob-corpo,.ob-fim{animation:ob-entra .45s cubic-bezier(.2,.8,.2,1) both}
+  .ob-dir-cartao{transition:transform .4s}
+  @keyframes ob-entra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+}
+@media(max-width:820px){
+  .ob{grid-template-columns:minmax(0,1fr)}
+  .ob-dir{display:none}
+  .ob-esq{padding:calc(14px + env(safe-area-inset-top,0px)) 20px 0}
+  .ob-marca{display:none}
+  .ob-topo{gap:6px}
+  .ob-prog{max-width:none;order:2}
+  .ob-volta{order:1;margin-left:-6px;font-size:0}
+  .ob-volta span{font-size:26px}
+  .ob-corpo{justify-content:flex-start;padding:22px 0 18px}
+  .ob-tit{font-size:clamp(34px,10vw,44px)}
+  .ob-sub{font-size:15px}
+  .ob-campo{margin-top:22px;gap:14px}
+  .ob-ops{grid-template-columns:minmax(0,1fr)}
+  .ob-op{min-height:0;padding:18px}
+  .ob-chip{font-size:15px;padding:0 15px}
+  .ob-link .ob-in{padding-right:18px}
+  .ob-prev{position:static;display:block;max-width:none;margin-top:8px}
+  .ob-link{flex-wrap:wrap}
+  .ob-mini{display:block;margin-top:22px}
+  .ob-mini .nx-cartao{padding:16px;gap:12px;border-radius:20px}
+  .ob-mini .nx-av{--t:44px!important}
+  .ob-mini .nx-cartao-nome{font-size:17px}
+  .ob-mini .nx-chips,.ob-mini .nx-oco,.ob-mini .nx-thumbs{display:none}
+  .ob-pe{position:sticky;bottom:0;margin:0 -20px;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--grafite) 22px)}
+  .ob-pe .ob-ir{flex:1;min-height:56px}
+  .ob-pe .ob-nota{flex-basis:100%;text-align:center}
+}
+/* ---------- a folha (um campo só) ---------- */
+.nx-folha{position:fixed;inset:0;z-index:2147482500;display:grid;place-items:center;padding:24px}
+.nx-folha-fundo{position:absolute;inset:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.nx-folha-p{position:relative;width:min(560px,100%);max-height:min(86dvh,760px);display:flex;flex-direction:column;border-radius:28px;background:var(--grafite);border:1px solid var(--nx-l2);box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}
+.nx-folha-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px 6px 24px}
+.nx-folha-cab b{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.nx-x{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:0;background:var(--nx-c2);color:var(--cal);cursor:pointer}
+.nx-folha-p:focus{outline:0}
+.nx-folha-c{display:grid;gap:16px;padding:12px 24px 0;overflow:auto}
+.nx-folha-c>:last-child{margin-bottom:24px}
+.nx-folha-d{margin:0;color:var(--cal-fraco);font-size:14.5px}
+.nx-folha-c>.nx-folha-pe{position:sticky;bottom:0;display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 0;padding:12px 0 24px;background:linear-gradient(transparent,var(--grafite) 12px)}
+.nx-st{color:var(--cal-tenue);font-size:13.5px}
+.nx-conta{justify-self:end;color:var(--cal-tenue);font-size:12.5px;margin-top:-8px}
+.nx-eq{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.nx-eq li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:16px;background:var(--nx-c1)}
+.nx-eq b{display:block;font-size:15px}
+.nx-eq small{display:block;color:var(--cal-fraco);font-size:13px;margin-top:2px}
+.nx-eq-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nx-ops{display:grid;gap:8px}
+.nx-op{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-height:52px;padding:12px 18px;border-radius:16px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);font:inherit;font-size:16px;text-align:left;cursor:pointer}
+.nx-op small{color:var(--cal-tenue);font-size:13px}
+.nx-op[aria-pressed="true"]{border-color:var(--ciano)}
+@media(max-width:820px){
+  .nx-folha{place-items:end stretch;padding:0}
+  .nx-folha-p{width:100%;max-height:92dvh;border-radius:26px 26px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .nx-folha-c{padding:10px 20px 0}
+  .nx-eq-form{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:no-preference){.nx-folha-p{animation:ob-entra .3s cubic-bezier(.2,.8,.2,1) both}}
+/* ---------- Meu perfil ---------- */
+.nx-meu{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(24px,4vw,56px);align-items:start;max-width:1240px}
+.nx-meu-esq{position:sticky;top:90px}
+.nx-meu-cartao .nx-cartao{position:relative;overflow:hidden;padding:clamp(24px,2.6vw,36px);border-radius:32px;
+  background:radial-gradient(70% 50% at 100% 0%,rgba(176,76,255,.22),transparent 70%),radial-gradient(60% 50% at 0% 100%,rgba(23,209,232,.12),transparent 70%),var(--nx-c1)}
+.nx-meu-cartao .nx-rot{position:relative;z-index:1;margin:0 0 -6px clamp(24px,2.6vw,36px);transform:translateY(clamp(24px,2.6vw,36px))}
+.nx-meu-cartao .nx-cartao{padding-top:calc(clamp(24px,2.6vw,36px) + 30px)}
+.nx-meu-cartao .nx-cartao-nome{font-size:clamp(24px,2.4vw,32px)}
+.nx-lista{list-style:none;margin:22px 0 0;padding:0;border-radius:24px;background:var(--nx-c1);border:1px solid var(--nx-l);overflow:hidden}
+.nx-lista li+li{border-top:1px solid var(--nx-l)}
+.nx-li{display:flex;align-items:center;gap:16px;width:100%;min-height:72px;padding:14px 20px;border:0;background:none;color:var(--cal);text-align:left;font:inherit;cursor:pointer}
+button.nx-li:hover{background:var(--nx-c2)}
+.nx-li-ic{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:12px;background:var(--nx-c2);color:var(--cal-fraco)}
+.nx-li-tx{flex:1;min-width:0}
+.nx-li-tx b{display:block;font-size:16px;font-weight:600}
+.nx-li-tx small{display:block;margin-top:2px;color:var(--cal-fraco);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-li-tx small[data-falta]{color:var(--nx-esp)}
+.nx-li-seta{color:var(--cal-tenue);font-size:22px}
+/* ---------- Propostas: a caixa ---------- */
+.nx-so-cel{display:none}
+#nx-prop{padding:0}
+.nx-pp{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);min-height:calc(100dvh - 62px)}
+.nx-pp-col{border-right:1px solid var(--nx-l);min-width:0}
+.nx-pp-cab{padding:clamp(22px,3vw,36px) 28px 18px}
+.nx-seg{display:inline-flex;gap:4px;padding:4px;margin-top:18px;border-radius:999px;background:var(--nx-c1);border:1px solid var(--nx-l)}
+.nx-seg button{min-height:40px;padding:0 18px;border:0;border-radius:999px;background:none;color:var(--cal-fraco);font-size:15px;font-weight:600;cursor:pointer}
+.nx-seg button[aria-selected="true"]{background:rgba(245,245,247,.94);color:#1d1d1f}
+:root.app-light .nx-seg button[aria-selected="true"]{background:#1d1d1f;color:#fff}
+.nx-pp-lista{list-style:none;margin:0;padding:0}
+.nx-pp-lista li{border-top:1px solid var(--nx-l)}
+.nx-pp-it{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;width:100%;min-height:84px;padding:14px 28px;border:0;background:none;color:var(--cal);text-align:left;font:inherit;cursor:pointer}
+.nx-pp-it:hover{background:var(--nx-c1)}
+.nx-pp-it[aria-current="true"]{background:color-mix(in srgb,var(--ciano) 8%,var(--nx-c1))}
+.nx-pp-it[aria-current="true"]::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ciano)}
+.nx-pp-tx{min-width:0}
+.nx-pp-tx b{display:block;font-size:16px}
+.nx-pp-tx small{display:block;margin-top:3px;color:var(--cal-fraco);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-pp-meta{display:grid;justify-items:end;gap:8px}
+.nx-pp-meta small{color:var(--cal-tenue);font-size:12.5px}
+.nx-pp-det{display:flex;flex-direction:column;min-width:0}
+.nx-pd-cab{display:flex;align-items:center;gap:clamp(18px,2.4vw,32px);padding:clamp(24px,3vw,40px) clamp(22px,3vw,44px);
+  background:radial-gradient(60% 120% at 100% 0%,rgba(176,76,255,.2),transparent 70%),radial-gradient(40% 90% at 0% 100%,rgba(23,209,232,.14),transparent 70%)}
+.nx-data{display:grid;justify-items:center;flex:none;min-width:104px;padding:12px 16px;border-radius:24px;background:var(--grafite);border:1px solid var(--nx-l2)}
+.nx-data span{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-fraco)}
+.nx-data b{font-size:56px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.nx-data small{color:var(--cal-fraco);font-size:13px}
+.nx-pd-tit{min-width:0}
+.nx-pd-tit h2{margin:6px 0 0;font-family:"Figtree",system-ui,sans-serif;font-weight:800;font-size:clamp(28px,3.4vw,52px);letter-spacing:-.045em;line-height:1.02;color:var(--cal)}
+.nx-pd-tit p{margin:8px 0 0;color:var(--cal-fraco);font-size:16px}
+.nx-fichas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--nx-l);border-bottom:1px solid var(--nx-l)}
+.nx-fichas>div{padding:16px clamp(18px,2.4vw,36px);min-width:0}
+.nx-fichas>div+div{border-left:1px solid var(--nx-l)}
+.nx-fichas span{display:block;font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-fichas b{display:block;margin-top:6px;font-size:17px;overflow-wrap:anywhere}
+.nx-pd-corpo{display:grid;gap:12px;padding:clamp(20px,2.6vw,36px) clamp(22px,3vw,44px);flex:1;align-content:start}
+.nx-msg{margin:0;max-width:720px;padding:16px 20px;border-radius:20px 20px 20px 6px;background:var(--nx-c1);font-size:16px;line-height:1.45}
+.nx-msg-meta{margin:0;color:var(--cal-tenue);font-size:13px}
+.nx-pd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:12px}
+.nx-card{display:grid;gap:14px;align-content:start;padding:20px;border-radius:22px;background:var(--nx-c1);border:1px solid var(--nx-l)}
+.nx-quem{display:flex;align-items:center;gap:14px}
+.nx-quem b{display:block;font-size:16px}
+.nx-quem small{display:block;color:var(--cal-fraco);font-size:13.5px;margin-top:2px}
+.nx-dia-st{display:flex;align-items:center;gap:10px;margin:0;color:var(--cal-fraco);font-size:14.5px}
+.nx-faixa{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.nx-faixa span{display:grid;place-items:center;height:44px;border-radius:12px;background:var(--nx-c2);font-weight:700;font-size:14px}
+.nx-faixa [data-est="livre"]{color:var(--nx-ok)}
+.nx-faixa [data-est="ocupado"]{color:var(--cal-tenue);background:repeating-linear-gradient(135deg,var(--nx-c2) 0 6px,transparent 6px 12px)}
+.nx-faixa [data-est="segura"]{color:var(--nx-esp)}
+.nx-faixa [data-est="passou"]{opacity:.4}
+.nx-faixa [data-sel]{outline:2px solid var(--ciano);outline-offset:-2px;color:var(--ciano)}
+.nx-pd-pe{position:sticky;bottom:0;display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:18px 92px 18px clamp(22px,3vw,44px);border-top:1px solid var(--nx-l);
+  background:color-mix(in srgb,var(--grafite) 88%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.nx-pe-nota{margin-left:auto;color:var(--cal-tenue);font-size:13.5px}
+.nx-pd-pe .nx-pe-nota:only-child{margin-left:0}
+.nx-pp-prox{margin:0 16px 16px;padding:18px;border-radius:26px;border:1px solid var(--nx-l);
+  background:radial-gradient(70% 60% at 100% 0%,rgba(176,76,255,.24),transparent 70%),radial-gradient(60% 60% at 0% 100%,rgba(23,209,232,.14),transparent 70%),var(--nx-c1)}
+.nx-prox-cab{display:flex;align-items:center;gap:14px}
+.nx-prox-cab .nx-data{min-width:74px;padding:8px 10px;border-radius:18px}
+.nx-prox-cab .nx-data b{font-size:36px}
+.nx-prox-t{display:block;font-size:22px;font-weight:800;letter-spacing:-.03em}
+.nx-prox-cab small{display:block;color:var(--cal-fraco);font-size:13.5px;margin-top:2px}
+.nx-pp-prox .nx-msg{margin-top:14px;padding:12px 14px;font-size:15px;background:color-mix(in srgb,var(--grafite) 70%,transparent)}
+.nx-prox-ac{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+/* ---------- Agenda: o mês inteiro ---------- */
+.nx-ag{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:clamp(20px,3vw,44px);align-items:start}
+.nx-ag-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.nx-ag-nav{display:flex;gap:8px}
+.nx-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-top:20px}
+.nx-cal>span{padding:0 10px 2px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-dia{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:clamp(88px,11vh,124px);padding:10px;border-radius:18px;border:1.5px solid transparent;
+  background:var(--nx-c1);color:var(--cal);font:inherit;text-align:left;cursor:pointer;overflow:hidden;min-width:0}
+.nx-dia:hover:not(:disabled){border-color:var(--nx-l2)}
+.nx-dia>b{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.nx-dia[data-est="livre"]>b{color:var(--nx-ok)}
+.nx-dia-ponto{position:absolute;top:14px;right:14px;width:7px;height:7px;border-radius:50%;background:var(--nx-ok)}
+.nx-dia[data-est="ocupado"]{background:repeating-linear-gradient(135deg,var(--nx-c2) 0 8px,var(--nx-c1) 8px 16px)}
+.nx-dia[data-est="segura"]>b{color:var(--nx-esp)}
+.nx-dia[data-est="passou"]{background:transparent;cursor:default}
+.nx-dia[data-est="passou"]>b{color:var(--cal-tenue);font-weight:500}
+.nx-dia[data-fora]{opacity:.45}
+.nx-dia[data-hoje]{border-color:var(--ciano);box-shadow:0 0 0 3px color-mix(in srgb,var(--ciano) 18%,transparent)}
+.nx-dia[data-bloq]{border-color:#FF6B8B;background:color-mix(in srgb,#FF6B8B 12%,var(--nx-c1))}
+.nx-dj{max-width:100%;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--ciano) 16%,transparent);color:var(--ciano);font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-dl{color:var(--cal-tenue);font-size:12.5px}
+.nx-trilho{display:grid;gap:14px;align-content:start;position:sticky;top:90px}
+.nx-livres{margin:-4px 0 0;color:var(--cal-fraco);font-size:20px;letter-spacing:-.02em}
+.nx-livres b{font-size:56px;font-weight:800;letter-spacing:-.05em;color:var(--cal)}
+.nx-barra{height:8px;border-radius:8px;background:var(--nx-c2);overflow:hidden}
+.nx-barra i{display:block;height:100%;border-radius:8px;background:var(--nx-ok)}
+.nx-cheg-l{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.nx-cheg{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:10px;border-radius:18px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);text-align:left;font:inherit;cursor:pointer}
+.nx-cheg:hover{border-color:var(--nx-l2)}
+.nx-cheg[data-int]{border-color:color-mix(in srgb,var(--ciano) 60%,transparent)}
+.nx-cheg b{display:block;font-size:15px}
+.nx-cheg small{display:block;color:var(--cal-fraco);font-size:13px;margin-top:2px}
+.nx-cheg[data-int] small{color:var(--ciano)}
+.nx-cheg-vz{padding:14px;border-radius:16px;background:var(--nx-c1);color:var(--cal-tenue);font-size:14px}
+.nx-capa{position:relative;display:block;flex:none;width:56px;height:56px;border-radius:14px;
+  background:radial-gradient(60% 60% at 70% 25%,rgba(23,209,232,.35),transparent 70%),radial-gradient(50% 50% at 20% 90%,rgba(255,61,154,.28),transparent 70%),#1C2230;background-size:cover;background-position:center}
+.nx-bloq-ac{display:grid;grid-template-columns:1fr auto;gap:8px}
+.nx-minical{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
+.nx-minical>span{text-align:center;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-mini-d{display:grid;place-items:center;aspect-ratio:1;min-height:44px;border-radius:12px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:0}
+.nx-mini-d[data-fora]{background:none}
+.nx-mini-d[data-est="ocupado"]{color:var(--cal-tenue);background:repeating-linear-gradient(135deg,var(--nx-c2) 0 6px,var(--nx-c1) 6px 12px)}
+.nx-mini-d[data-est="segura"]{color:var(--nx-esp)}
+.nx-mini-d[data-est="passou"]{background:none;color:var(--cal-tenue);font-weight:500}
+.nx-mini-d[data-job]{background:color-mix(in srgb,var(--ciano) 22%,var(--nx-c1));color:var(--ciano)}
+.nx-mini-d[data-hoje]{border-color:var(--ciano)}
+.nx-mini-d[data-bloq]{border-color:#FF6B8B}
+/* ---------- Jobs ---------- */
+#nx-jb{padding:0}
+.nx-jb-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:32px;align-items:start;padding:clamp(28px,4vw,56px) clamp(20px,4vw,64px);
+  background:radial-gradient(50% 90% at 100% 0%,rgba(176,76,255,.26),transparent 70%),radial-gradient(40% 90% at 0% 100%,rgba(23,209,232,.18),transparent 70%),var(--nx-c1);border-bottom:1px solid var(--nx-l)}
+.nx-jb-hero[data-vazio="true"]{grid-template-columns:minmax(0,1fr)}
+.nx-jb-h{margin:12px 0 0;font-family:"Figtree",system-ui,sans-serif;font-weight:800;font-size:clamp(44px,6.4vw,96px);letter-spacing:-.055em;line-height:.95;color:var(--cal);max-width:12ch}
+.nx-jb-hero[data-vazio="true"] .nx-jb-h{font-weight:300;font-size:clamp(36px,4.4vw,60px);max-width:none}
+.nx-jb-hero[data-vazio="true"] .nx-jb-h b{font-weight:800}
+.nx-jb-quando{display:flex;flex-wrap:wrap;gap:6px 24px;margin:18px 0 0;color:var(--cal-fraco);font-size:18px}
+.nx-equipe{padding:20px 22px;border-radius:26px;background:color-mix(in srgb,var(--grafite) 70%,transparent);border:1px solid var(--nx-l2)}
+.nx-equipe ul{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:12px}
+.nx-equipe li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+.nx-equipe b{font-size:15.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-equipe small{color:var(--cal-tenue);font-size:13px}
+.nx-jb-av{display:flex;margin-top:14px}
+.nx-jb-av .nx-av+.nx-av{margin-left:-8px}
+.nx-tl-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:28px clamp(20px,4vw,64px) 0}
+.nx-tl{list-style:none;margin:0;padding:18px clamp(20px,4vw,64px) 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;position:relative}
+.nx-tl::before{content:"";position:absolute;left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);top:46px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,#17D1E8,#3B8CFF 40%,#B04CFF 75%,transparent)}
+.nx-tl-i{display:grid;gap:14px;min-width:0}
+.nx-tl-d{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-tl-o{width:18px;height:18px;border-radius:50%;border:2px solid var(--ciano);background:var(--grafite);position:relative;z-index:1}
+.nx-tl-vz{grid-column:1/-1;padding-top:30px;color:var(--cal-tenue)}
+.nx-jcard{display:flex;flex-direction:column;width:100%;padding:0;border-radius:24px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);text-align:left;font:inherit;cursor:pointer;overflow:hidden}
+.nx-jcard:hover{border-color:var(--nx-l2)}
+.nx-jcard .nx-capa{width:100%;height:auto;aspect-ratio:4/3;border-radius:0;display:flex;align-items:flex-end;padding:14px}
+.nx-jcard .nx-capa small{color:rgba(255,255,255,.8);font-size:13px}
+.nx-jcard-tx{display:grid;gap:4px;justify-items:start;padding:14px 18px 18px}
+.nx-jcard-tx b{font-size:17px}
+.nx-jcard-tx small{color:var(--cal-fraco);font-size:14px}
+.nx-jcard-tx .nx-pill{margin-top:4px}
+.nx-hist{list-style:none;margin:24px clamp(20px,4vw,64px) 0;padding:0;border-radius:22px;background:var(--nx-c1);border:1px solid var(--nx-l);overflow:hidden}
+.nx-hist li{display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:center;padding:14px 20px}
+.nx-hist li+li{border-top:1px solid var(--nx-l)}
+.nx-hist span,.nx-hist small{color:var(--cal-tenue);font-size:13.5px}
+/* ---------- Brechó: a vitrine ---------- */
+.nx-br{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:clamp(20px,3vw,44px);align-items:start}
+.nx-br-cab{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.nx-br-cab .nx-h1{margin-right:auto}
+.nx-br-busca{position:relative;display:flex;align-items:center;flex:1;min-width:220px;max-width:460px}
+.nx-br-busca svg{position:absolute;left:16px;color:var(--cal-tenue)}
+.nx-br-busca input{width:100%;min-height:48px;padding:0 18px 0 44px;border-radius:999px;border:1px solid var(--nx-l);background:var(--nx-c1);color:var(--cal);font:inherit;font-size:16px;outline:0}
+.nx-br-busca input:focus{border-color:var(--ciano)}
+.nx-pilulas{display:flex;gap:8px;margin-top:18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.nx-pilulas::-webkit-scrollbar{display:none}
+.nx-pilulas button{flex:none;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--nx-c1);color:var(--cal);font-size:15px;cursor:pointer}
+.nx-pilulas button[aria-pressed="true"]{background:rgba(245,245,247,.94);color:#1d1d1f;font-weight:600}
+:root.app-light .nx-pilulas button[aria-pressed="true"]{background:#1d1d1f;color:#fff}
+.nx-br-grade{list-style:none;margin:20px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;grid-auto-flow:dense}
+.nx-br-grade li[data-destaque]{grid-column:span 2;grid-row:span 2}
+.nx-an{display:flex;flex-direction:column;width:100%;height:100%;padding:0;border-radius:22px;border:1.5px solid transparent;background:var(--nx-c1);color:var(--cal);text-align:left;font:inherit;cursor:pointer;overflow:hidden}
+.nx-an:hover{border-color:var(--nx-l2)}
+.nx-an-capa{position:relative;display:flex;align-items:flex-end;flex:1;min-height:150px;padding:14px;background:#1C2230 center/cover no-repeat}
+.nx-an-capa small{color:rgba(255,255,255,.82);font-size:12.5px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.nx-an-tx{display:grid;gap:4px;padding:14px 18px 16px}
+.nx-an-tx b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-an-tx span{font-weight:800;font-size:18px;letter-spacing:-.02em}
+li[data-destaque] .nx-an-tx b{font-size:22px}
+li[data-destaque] .nx-an-tx span{font-size:22px}
+@media(max-width:1180px){.nx-br-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* ---------- o celular ---------- */
+@media(max-width:1100px){
+  .nx-ag,.nx-br{grid-template-columns:minmax(0,1fr)}
+  .nx-trilho{position:static}
+  .nx-meu{grid-template-columns:minmax(0,1fr)}
+  .nx-meu-esq{position:static}
+  .nx-tl{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nx-tl::before{display:none}
+}
+@media(max-width:820px){
+  .nx-so-pc{display:none!important}
+  .nx-so-cel{display:block}
+  .nx{padding:18px 16px 40px}
+  .nx-h1{font-size:34px}
+  .nx-pp{grid-template-columns:minmax(0,1fr);min-height:0}
+  .nx-pp-col{border-right:0}
+  .nx-pp-cab{padding:18px 16px 16px}
+  .nx-pp-lista li[data-prox]{display:none}
+  .nx-pp-it{padding:12px 16px;min-height:76px}
+  .nx-pp-it[aria-current="true"]{background:none}
+  .nx-pp-it[aria-current="true"]::before{display:none}
+  .nx-folha .nx-pd-cab{padding:6px 0 18px;background:none}
+  .nx-folha .nx-pd-tit h2{font-size:30px}
+  .nx-folha .nx-data{min-width:80px}
+  .nx-folha .nx-data b{font-size:40px}
+  .nx-folha .nx-fichas{grid-template-columns:1fr 1fr;border:1px solid var(--nx-l);border-radius:18px}
+  .nx-folha .nx-fichas>div{padding:12px 14px}
+  .nx-folha .nx-fichas>div:nth-child(3){border-left:0}
+  .nx-folha .nx-fichas>div:nth-child(n+3){border-top:1px solid var(--nx-l)}
+  .nx-folha .nx-pd-corpo{padding:16px 0}
+  .nx-folha .nx-pd-pe{position:static;padding:14px 0 0;background:none}
+  .nx-folha .nx-pd-pe .glass-btn{flex:1}
+  .nx-ag-cab .nx-h1{font-size:30px}
+  .nx-ag-nav .nx-hoje{display:none}
+  .nx-trilho{margin-top:6px}
+  .nx-jb-hero{grid-template-columns:minmax(0,1fr);margin:12px 16px 0;padding:24px 20px;border-radius:28px;border:1px solid var(--nx-l)}
+  .nx-jb-h{font-size:clamp(40px,12vw,56px)}
+  .nx-jb-quando{font-size:15px;gap:4px 14px}
+  .nx-jb-hero .nx-ac .glass-btn{flex:1}
+  .nx-jb-av{display:flex}
+  .nx-tl-cab{padding:22px 16px 0}
+  .nx-tl{padding:14px 16px 0;gap:12px}
+  .nx-tl-d,.nx-tl-o{display:none}
+  .nx-jcard{border-radius:20px}
+  .nx-jcard .nx-capa{aspect-ratio:16/10}
+  .nx-jcard-tx{padding:12px 14px 14px}
+  .nx-jcard-tx b{font-size:15.5px}
+  .nx-hist{margin:18px 16px 0}
+  .nx-hist li{grid-template-columns:minmax(0,1fr);gap:2px;padding:12px 16px}
+  .nx-br-cab{gap:12px}
+  .nx-br-cab .glass-btn{min-height:44px;padding:0 18px}
+  .nx-br-busca{order:3;flex-basis:100%;max-width:none}
+  .nx-br-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .nx-br-grade li[data-destaque]{grid-column:auto;grid-row:auto}
+  li[data-destaque] .nx-an-tx b,li[data-destaque] .nx-an-tx span{font-size:inherit}
+  .nx-an-capa{min-height:120px}
+  .nx-an-tx{padding:10px 12px 12px}
+  .nx-an-tx b{font-size:14.5px}
+  .nx-an-tx span{font-size:16px}
+  .nx-meu-cartao .nx-cartao{border-radius:26px}
+  .nx-li{padding:12px 16px}
+}
+@media(prefers-reduced-motion:reduce){.nx-tog i,.ob-prog i::after{transition:none}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -12907,6 +13360,7 @@ function show(t){
   else { const vd=v("lg-video"); if(vd&&!vd.paused) vd.pause() }
   if(t!=="ajuda") S.voltaAjuda=t;
   medirAbas();
+  if(REAL) nxPintar(t);   /* as telas novas do site real (02/nov · 3) */
   window.scrollTo({top:0,behavior:"instant"});
 }
 document.querySelectorAll(".tab,.bt,.ztop").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -14615,7 +15069,10 @@ function entrarNaConta(prov,criar){
      tem de mais próximo de "o que aconteceu comigo". */
   /* ⚠️ CRIAR CONTA LEVA AO PERFIL, sempre: quem acabou de criar quer
      montar o perfil, mesmo que este aparelho já tenha passado pela porta. */
-  if(criar&&MODO!=="contratante") abrirCadastro("entrar");
+  /* (02/nov · 3) no site real a primeira vez é a entrada em perguntas (freela e quem contrata); quem já tem perfil cai
+     no feed. obTalvez() olha antes o perfil da conta no servidor: outro aparelho não pergunta de novo. */
+  if(REAL){ if(perfilProntoDoLado()) show(naFase("feed")?"feed":"propostas"); else obTalvez() }
+  else if(criar&&MODO!=="contratante") abrirCadastro("entrar");
   else if(criar){ pintarProd&&pintarProd(); show("minhaprod") }
   /* a tarefa primeiro: a Z nunca é a tela de entrada (29/out, titular;
      Plano de Integração §7–8). Ela fica no fim da lateral e no anel do topo. */
@@ -16125,7 +16582,7 @@ function drawJobs(){
     if(j.hold) j.hold=false; else j.pago=!j.pago;
     tocou();drawAgenda();render()});
 }
-function drawAgenda(){drawKPIs();drawCustodia();drawSemana();drawMes();drawDetalhe();drawJobs()}
+function drawAgenda(){drawKPIs();drawCustodia();drawSemana();drawMes();drawDetalhe();drawJobs();if(REAL)nxPintar()}
 v("ag-prev").onclick=()=>{S.mesRef=new Date(S.mesRef.getFullYear(),S.mesRef.getMonth()-1,1);drawAgenda()};
 v("ag-next").onclick=()=>{S.mesRef=new Date(S.mesRef.getFullYear(),S.mesRef.getMonth()+1,1);drawAgenda()};
 v("ag-gcal").onclick=()=>{gcal=!gcal;drawAgenda()};
@@ -17581,6 +18038,7 @@ function drawPropostas(){
   el.querySelectorAll("[data-ac]").forEach(b=>b.onclick=()=>aceitar(+b.dataset.ac));
   el.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>formRecusa(+b.dataset.rc));
   drawBadge();
+  if(REAL) nxPintar();
 }
 function viraJob(pr){
   JOBS.push({id:Date.now()+Math.random(),data:pr.data,cliente:pr.de,func:pr.func,
@@ -18580,7 +19038,10 @@ function registrarConsentimento(mostrar){
   usoGravar();
 }
 const perfilAutorizado=c=>!!(c&&c.consentimento&&c.consentimento.mostrar);
-function concluirCadastro(){
+function concluirCadastro(op){
+  /* (02/nov · 3) a entrada em perguntas do site real chama este mesmo caminho, "calado": a tela de pronto dela é a
+     boas-vindas, então sem o guia e sem o aviso por cima */
+  const calado=!!(op&&op.calado);
   registrarConsentimento(!!(v("cd-consente")&&v("cd-consente").checked));
   enviarCadastroAoPerfil();
   EU.cadReceber=true; recalcular(); nuvemPasso("cadastro");
@@ -18594,8 +19055,8 @@ function concluirCadastro(){
        dizem a mesma coisa — "pronto, você está dentro" — e empilhados o
        aviso cobria o pé do guia, que é onde ficam os botões de dispensar.
        Quem já viu o guia continua recebendo a confirmação. */
-    const vaiGuia=!guiaJa();
-    if(!vaiGuia) avisar({t:"Perfil criado",sub:"o resto do perfil você completa quando quiser, em Meu perfil",
+    const vaiGuia=!guiaJa()&&!calado;
+    if(!vaiGuia&&!calado) avisar({t:"Perfil criado",sub:"o resto do perfil você completa quando quiser, em Meu perfil",
       tipo:"bom",icone:"✓"});
     /* ⚠️ O GUIA VEM AQUI, e só aqui: é o instante que o testador apontou —
        cadastro terminado, plataforma inteira aparecendo de uma vez. Um
@@ -23343,12 +23804,13 @@ function realPropostas(){
       var pr={id:realNum(p.id),srv:p.id,srvTipo:p.tipo,de:p.de_nome,contato:"pelo Carro",data:p.dia||key(HOJE),ini:p.ini||"",fim:p.fim||"",
         func:p.funcao||(p.tipo==="brecho"?"Brechó":""),tipo:p.tipo==="brecho"?"Interesse no brechó":"Consulta",local:p.local||"",
         desc:p.mensagem||"",equip:false,fora:false,valor:(p.valor_cents||0)/100,gar:false,status:REAL_EST[p.estado]||"novo",
-        motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0,guilda:p.guilda||null};
+        motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0,guilda:p.guilda||null,
+        deSub:p.de||null,criado:p.criado_em||null,anuncio:p.anuncio||null};
       PROPOSTAS.push(pr);
       if(p.tipo==="job"&&p.estado==="aceita") JOBS.push({id:realNum("job:"+p.id),srv:p.id,data:pr.data,cliente:pr.de,func:pr.func,valor:pr.valor,hold:false,pago:false,gar:false});
     });
     REAL_ENVIADAS=r.j.enviadas||[];
-    try{ drawPropostas(); realPintarEnviadas(); drawAgenda(); render(); drawBadge() }catch(e){ console.warn("real: propostas",e) }
+    try{ drawPropostas(); realPintarEnviadas(); drawAgenda(); render(); drawBadge(); nxPintar() }catch(e){ console.warn("real: propostas",e) }
   });
 }
 /* o que EU mandei: uma lista curta embaixo da caixa, com o estado que a outra pessoa deu */
@@ -23600,7 +24062,8 @@ function cfbDesenhar(){
   var nv=v("cfb-novo"); if(nv) nv.onclick=function(){ CFB.editando="novo"; cfbDesenhar() };
   el.querySelectorAll("[data-cfb-ed]").forEach(function(b){ b.onclick=function(){ CFB.editando=b.dataset.cfbEd; cfbDesenhar() } });
   el.querySelectorAll("[data-cfb-rm]").forEach(function(b){ b.onclick=function(){ cfbRemover(b.dataset.cfbRm,b) } });
-  if(CFB.editando){ v("cfb-isalvar").onclick=cfbSalvarItem; v("cfb-icanc").onclick=function(){ CFB.editando=null; cfbDesenhar() }; v("cfb-imod").focus() }
+  if(CFB.editando){ v("cfb-isalvar").onclick=cfbSalvarItem; v("cfb-icanc").onclick=function(){ CFB.editando=null; cfbDesenhar() }; if(!REAL) v("cfb-imod").focus() }
+  if(REAL) nxPintar();
 }
 function cfbFormItem(){
   var i=CFB.editando==="novo"?{categoria:"camera",marca:"",modelo:"",quantidade:1,observacao:"",diaria_cents:null,ativo:true}
@@ -23652,6 +24115,729 @@ function cfbRemover(id,b){
     if(r.status===204||r.status===404){ CFB.itens=CFB.itens.filter(function(x){return x.id!==id}); cfbDesenhar() }
     else { b.disabled=false; cfbStatus("cfb-ist",cfbMsg(r),true) }
   });
+}
+/* ======================= AS TELAS NOVAS DO SITE REAL (02/nov · 3) =======================
+   O titular aprovou um desenho novo para o site real: a entrada em perguntas (uma por tela, com o cartão "Assim quem
+   contrata vê você" enchendo ao lado), Meu perfil como o cartão + uma lista curta (cada linha abre uma folha com um
+   campo só), Propostas como caixa de entrada, a Agenda do mês inteiro, Jobs com o próximo job em destaque e o Brechó
+   como vitrine. ⚠️ SÓ NO REAL: cada tela ganha um bloco `nx-*` no começo da seção e o .wrap antigo some pelo CSS
+   (`html.real #v-x>.wrap`). Os dados são os de sempre (EU, PROPOSTAS, JOBS, AGENDA, ANUNCIOS, REAL_ENVIADAS, CFB) e
+   as ações chamam as funções de sempre (aceitar, realResponder, declarar, liberarDia, cfbPedir, concluirCadastro,
+   abrirAnuncio…): nada de segundo caminho para o servidor. A prévia e as suítes de sempre não veem nada disto.
+   Estados por data-* e aria-*, nunca classe modificadora (test/colisao.js). ⚠️ Só var e function (o TDZ de 19/out · 2). */
+var NX_PRONTO=false, NX_PERFIL=null, OB=null;
+var NX={pp:"receb",ppSel:null,agMes:null,agBloq:null,br:{cat:"",q:""},jbFeitos:false,folhaVolta:null};
+var NX_TELAS={propostas:"nx-prop",agenda:"nx-ag",jobs:"nx-jb",brecho:"nx-br",meu:"nx-meu"};
+function nxNorm(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim() }
+function nxD(k){ return new Date(String(k||"")+"T00:00:00") }
+function nxAv(nome,t,foto){
+  return '<span class="nx-av" style="--t:'+t+'px" aria-hidden="true"><span'+(foto?' style="background-image:url('+cssUrl(foto)+')"':'')+'>'+
+    (foto?'':esc(iniciais(nome||"?")))+'</span></span>';
+}
+function nxDiaCurto(k){ var d=nxD(k); if(isNaN(d)) return ""; return DIAS[d.getDay()]+" "+pad(d.getDate()) }
+function nxDiaLongo(k){ var d=nxD(k); if(isNaN(d)) return ""; return DIAS[d.getDay()]+", "+fmt(d) }
+function nxHa(iso){
+  if(!iso) return ""; var d=new Date(iso), h=(Date.now()-d)/36e5; if(isNaN(h)) return "";
+  if(h<1) return "agora"; if(h<20) return Math.round(h)+" h";
+  var o=new Date(d); o.setHours(0,0,0,0); var dd=Math.round((HOJE-o)/864e5);
+  if(dd<=1) return "ontem"; if(dd<7) return DIAS[d.getDay()]; return pad(d.getDate())+"/"+pad(d.getMonth()+1);
+}
+function nxEm(k){ var n=Math.round((nxD(k)-HOJE)/864e5); return n===0?"hoje":n===1?"amanhã":n>1?"em "+n+" dias":"" }
+function nxHora(a,b){ return a&&b?a+"–"+b:a?"a partir das "+a:"" }
+function nxPortCurto(u){ return String(u||"").replace(/^https?:\/\//i,"").replace(/^www\./i,"").replace(/\/$/,"") }
+function nxFuncoes(){ return FUNCOES.filter(function(f){return f&&f!=="Não informado"}) }
+function nxTog(id,on,rot){ return '<button type="button" class="nx-tog" role="switch" id="'+id+'" aria-checked="'+(!!on)+'"'+(rot?' aria-label="'+esc(rot)+'"':'')+'><i></i></button>' }
+/* ---------- a folha: um campo só por vez (no celular sobe de baixo; no computador, no centro) ---------- */
+function nxFolha(tit,html,montar){
+  nxFolhaFechar(true);
+  var f=document.createElement("div"); f.id="nx-folha"; f.className="nx-folha";
+  f.innerHTML='<div class="nx-folha-fundo" data-nx="folha-x"></div><div class="nx-folha-p" role="dialog" aria-modal="true" aria-labelledby="nx-folha-t">'+
+    '<div class="nx-folha-cab"><b id="nx-folha-t">'+esc(tit)+'</b><button type="button" class="nx-x" data-nx="folha-x" aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>'+
+    '<div class="nx-folha-c">'+html+'</div></div>';
+  NX.folhaVolta=document.activeElement;
+  document.body.appendChild(f);
+  if(montar) montar(f);
+  var foco=f.querySelector(".nx-folha-c input,.nx-folha-c textarea"), pn=f.querySelector(".nx-folha-p");
+  pn.tabIndex=-1;
+  if(foco&&!matchMedia("(pointer:coarse)").matches) foco.focus(); else pn.focus({preventScroll:true});
+  return f;
+}
+function nxFolhaFechar(trocando){
+  var f=v("nx-folha"); if(!f) return; f.remove();
+  if(!trocando&&NX.folhaVolta&&NX.folhaVolta.focus&&document.contains(NX.folhaVolta)) NX.folhaVolta.focus();
+}
+function nxStatus(id,txt,erro){ var s=v(id); if(!s) return; s.textContent=txt||""; s.setAttribute("data-erro",String(!!erro)) }
+/* ---------- o perfil da conta: o do servidor quando há, senão o que está no aparelho ---------- */
+function nxPerfil(){
+  var p=(CFB&&CFB.carregado&&CFB.perfil)||NX_PERFIL;
+  if(p) return p;
+  var c=perfilDoCadastro();
+  return c||{nome:(ZRO_CONTA&&ZRO_CONTA.nome)||(vazio(EU.nome)?"":titulo(EU.nome)),cidade:"",uf:"",funcoes:[],nichos:[],bio:"",portfolio:"",visibilidade:"privado"};
+}
+function nxPraca(p){ return p&&p.cidade?p.cidade+(p.uf?"/"+p.uf:""):(!vazio(EU.cidade)?EU.cidade:"") }
+function nxVisivel(){ var p=(CFB&&CFB.carregado&&CFB.perfil)||NX_PERFIL; return p?p.visibilidade!=="privado":perfilAutorizado(EU) }
+/* muda um pedaço do perfil e manda o perfil INTEIRO (o PUT é do perfil inteiro; campo desconhecido é recusado) */
+function nxPerfilSalvar(patch,feito){
+  var junta=function(base){
+    var c={nome:base.nome||(ZRO_CONTA&&ZRO_CONTA.nome)||titulo(EU.nome||""),cidade:base.cidade||"",uf:base.uf||"",funcoes:base.funcoes||[],
+      nichos:base.nichos||[],bio:base.bio||"",portfolio:base.portfolio||"",visibilidade:base.visibilidade==="contratantes"?"contratantes":"privado"};
+    Object.keys(patch).forEach(function(k){ c[k]=patch[k] });
+    return c;
+  };
+  var noAparelho=function(c){
+    if("cidade" in patch) EU.cidade=c.cidade?c.cidade+(c.uf?"/"+c.uf:""):EU.cidade;
+    if("funcoes" in patch) EU.func=c.funcoes.slice();
+    if("nichos" in patch) EU.nicho=c.nichos.slice();
+    if("portfolio" in patch) EU.port=c.portfolio;
+    if("visibilidade" in patch) registrarConsentimento(c.visibilidade==="contratantes");
+    recalcular(); usoGravar();
+  };
+  if(!zroPodeEnviar()){ var c0=junta(nxPerfil()); NX_PERFIL=Object.assign({},nxPerfil(),c0); noAparelho(c0); feito(true); return }
+  var atual=(CFB&&CFB.carregado&&CFB.perfil)||NX_PERFIL;
+  (atual?Promise.resolve(atual):cfbPedir("GET","/api/zro/perfil").then(function(r){ return (r.status===200&&r.j&&r.j.perfil)||perfilDoCadastro()||{} }))
+  .then(function(base){
+    var c=junta(base);
+    return cfbPedir("PUT","/api/zro/perfil",c).then(function(r){
+      if(r.status===200&&r.j&&r.j.perfil){
+        NX_PERFIL=r.j.perfil; if(CFB&&CFB.carregado) CFB.perfil=r.j.perfil;
+        noAparelho(c); feito(true);
+      } else feito(false,cfbMsg(r));
+    });
+  });
+}
+function nxMostrar(on,b){
+  if(b){ b.setAttribute("aria-checked",String(on)); b.disabled=true }
+  nxPerfilSalvar({visibilidade:on?"contratantes":"privado"},function(ok,msg){
+    if(b) b.disabled=false;
+    if(!ok){ if(b) b.setAttribute("aria-checked",String(!on)); avisar({t:"Não deu para mudar agora",sub:msg,tipo:"chama",icone:"⚠"}); return }
+    avisar({t:on?"Você aparece na busca":"Você saiu da busca",sub:on?"Nos dias livres. O telefone nunca aparece.":"O seu perfil fica só com você.",icone:"✓"});
+    nxPintar();
+  });
+}
+/* ---------- peças em comum: praças, funções com a estrela, nichos e o cartão ---------- */
+function nxPracasHtml(q,sel){
+  var n=nxNorm(q), base=["Natal/RN","Parnamirim/RN","São Gonçalo do Amarante/RN","Mossoró/RN","João Pessoa/PB"];
+  var lista=n?PRACAS_REAL.filter(function(p){return nxNorm(p).indexOf(n)>=0}).slice(0,10):base.slice();
+  if(sel&&lista.indexOf(sel)<0) lista.unshift(sel);
+  if(!lista.length) return '<p class="ob-nota">Nenhuma praça com esse nome.</p>';
+  return lista.map(function(p){return '<button type="button" class="ob-chip" data-praca="'+esc(p)+'" aria-pressed="'+(p===sel)+'">'+esc(p)+'</button>'}).join("");
+}
+function nxFuncHtml(sel){
+  return nxFuncoes().map(function(f){ var i=sel.indexOf(f);
+    return '<button type="button" class="ob-chip" data-func="'+esc(f)+'" aria-pressed="'+(i>=0)+'"'+(i===0?' data-estrela="1" title="Sua função principal"':'')+'>'+esc(f)+(i===0?'<span class="ob-estrela" aria-label=", principal">★</span>':'')+'</button>' }).join("");
+}
+/* tocar: marca; tocar numa marcada: vira a principal (★); tocar na principal: desmarca */
+function nxFuncToque(sel,f){
+  var i=sel.indexOf(f);
+  if(i<0){ if(sel.length>=12) return "Até 12 funções."; sel.push(f); return "" }
+  if(i===0){ sel.splice(0,1); return "" }
+  sel.splice(i,1); sel.unshift(f); return "";
+}
+function nxNichoHtml(sel,todos){
+  var lista=todos?TIPOS:TIPOS.slice(0,6), extra=TIPOS.filter(function(t,i){return i>=6&&sel.indexOf(t)>=0});
+  if(!todos) lista=lista.concat(extra);
+  return lista.map(function(t){return '<button type="button" class="ob-chip" data-nicho="'+esc(t)+'" aria-pressed="'+(sel.indexOf(t)>=0)+'">'+esc(t)+'</button>'}).join("")+
+    (!todos&&TIPOS.length>lista.length?'<button type="button" class="ob-chip" data-nichos-mais="1" aria-label="Mostrar mais tipos de trabalho">+ '+(TIPOS.length-lista.length)+'</button>':'');
+}
+function nxCartaoHtml(o){
+  var chips=(o.chips||[]).filter(Boolean), mais=chips.length>7?chips.length-6:0;
+  return '<div class="nx-cartao">'+
+    '<div class="nx-cartao-top">'+nxAv(o.nome,o.t||64,o.foto)+'<div class="nx-cartao-id"><b class="nx-cartao-nome">'+esc(o.nome||"Seu nome")+'</b>'+
+      '<span class="nx-cartao-sub">'+esc(o.sub||"")+'</span></div></div>'+
+    (o.livre?'<p class="nx-livre"><i></i>'+esc(o.livre)+'</p>':'')+
+    (chips.length?'<div class="nx-chips">'+(mais?chips.slice(0,6):chips).map(function(c){return '<span>'+esc(c)+'</span>'}).join("")+(mais?'<span>+'+mais+'</span>':'')+'</div>'
+      :(o.semVaga?'':'<div class="nx-oco" aria-hidden="true"><i></i><i></i></div>'))+
+    (o.thumbs&&o.thumbs.length?'<div class="nx-thumbs">'+o.thumbs.slice(0,3).map(function(t){return '<span style="background-image:url('+cssUrl(t)+')"></span>'}).join("")+'</div>':'')+
+    (o.port?'<div class="nx-cartao-port"><b>'+esc(nxPortCurto(o.port))+'</b><span>portfólio</span></div>':(o.semVaga?'':'<div class="nx-oco nx-oco-l" aria-hidden="true"><i></i></div>'))+
+    (o.st===undefined?'':'<p class="nx-cartao-st" data-on="'+(!!o.st)+'">'+(o.st?'Aparece na busca por data':'Ainda não aparece na busca')+'</p>')+
+  '</div>';
+}
+
+/* ======================= A ENTRADA EM PERGUNTAS (primeiro login) ======================= */
+/* Antes de perguntar, o servidor: quem já tem perfil na conta (outro aparelho) não responde de novo. */
+function obTalvez(){
+  var abre=function(){ obAbrir() };
+  if(!zroPodeEnviar()) return abre();
+  cfbPedir("GET","/api/zro/perfil").then(function(r){
+    var p=r.status===200&&r.j&&r.j.perfil;
+    if(MODO!=="contratante"&&p&&p.nome&&(p.funcoes||[]).length){
+      NX_PERFIL=p;
+      if(vazio(EU.nome)) EU.nome=p.nome;
+      if(p.cidade) EU.cidade=p.cidade+(p.uf?"/"+p.uf:"");
+      EU.func=p.funcoes.filter(function(f){return FUNCOES.indexOf(f)>=0}); EU.nicho=(p.nichos||[]).slice();
+      if(p.portfolio) EU.port=p.portfolio;
+      if(p.visibilidade!=="privado") registrarConsentimento(true);
+      recalcular(); usoGravar();
+      if(perfilPronto()){ drawFeed(); show(naFase("feed")?"feed":"propostas"); return }
+    }
+    abre();
+  },abre);
+}
+function obAbrir(){
+  if(vazio(EU.nome)&&ZRO_CONTA) EU.nome=ZRO_CONTA.nome||ZRO_CONTA.arroba||"";
+  var c=!vazio(EU.cidade)?EU.cidade:"";
+  OB={passo:1,modo:(MODO==="contratante"||LG_TIPO==="contratante")?"contratante":"freela",q:"",cidade:PRACAS_REAL.indexOf(c)>=0?c:"",
+    viaja:!!EU.viaja,func:(EU.func||[]).filter(function(f){return nxFuncoes().indexOf(f)>=0}).slice(0,12),nicho:(EU.nicho||[]).slice(0,12),
+    nichosTodos:false,port:EU.port||"",mostrar:perfilAutorizado(EU),tipo:PROD.tipo||"",nome:vazio(EU.nome)?"":titulo(EU.nome),erro:""};
+  var el=v("ob");
+  if(!el){ el=document.createElement("div"); el.id="ob"; el.className="ob"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true");
+    el.setAttribute("aria-label","Bem-vindo ao Carro do Freela"); document.body.appendChild(el) }
+  el.hidden=false; document.body.setAttribute("data-ob","1");
+  obDesenhar();
+}
+function obFechar(){ var el=v("ob"); if(el) el.hidden=true; document.body.removeAttribute("data-ob"); OB=null }
+function obPassos(){ return OB.modo==="contratante"?[1,2,5,6]:[1,2,3,4,5,6] }
+function obPrimeiroNome(){ return String(OB.nome||"").split(/\s+/)[0]||"" }
+function obCartao(){
+  if(OB.modo==="contratante"){
+    return nxCartaoHtml({nome:OB.nome,sub:[OB.tipo,OB.cidade].filter(Boolean).join(" · ")||"Quem chama",chips:[],semVaga:true,t:64});
+  }
+  var sub=[OB.func[0]||"",OB.cidade?OB.cidade+(OB.viaja?" · viaja":""):""].filter(Boolean).join(" · ");
+  return nxCartaoHtml({nome:OB.nome,foto:EU.foto,sub:sub,chips:OB.func.concat(OB.nicho),port:linkPortfolio(OB.port),st:OB.passo>=5&&OB.mostrar,t:64});
+}
+var OB_TIT={
+  1:function(){return '<span class="ob-ola">'+(obPrimeiroNome()?'Olá, '+esc(obPrimeiroNome()):'Bem-vindo')+'</span><h1 class="ob-tit" tabindex="-1">Você está aqui <b>para quê?</b></h1><p class="ob-sub">Dá para trocar depois.</p>'},
+  2:function(){return '<h1 class="ob-tit" tabindex="-1">Onde você <b>trabalha?</b></h1><p class="ob-sub">Quem contrata busca por perto primeiro.</p>'},
+  3:function(){return '<h1 class="ob-tit" tabindex="-1">O que você <b>faz?</b></h1><p class="ob-sub">Marque o que você opera. A estrela é a principal.</p>'},
+  4:function(){return '<h1 class="ob-tit" tabindex="-1">Onde está o <b>seu trabalho?</b></h1><p class="ob-sub">Um @ ou um link já basta.</p>'},
+  5:function(){return OB.modo==="contratante"
+    ?'<h1 class="ob-tit" tabindex="-1">Você contrata <b>como?</b></h1><p class="ob-sub">É o que o freela lê antes de aceitar.</p>'
+    :'<h1 class="ob-tit" tabindex="-1">Quer aparecer <b>na busca?</b></h1><p class="ob-sub">Quem contrata vê seu cartão nos dias em que você está livre. O telefone nunca aparece: a chamada chega em Propostas.</p>'}
+};
+var OB_PORT={instagram:["Instagram","@seuperfil"],site:["Site","seusite.com.br"],vimeo:["Vimeo","vimeo.com/voce"],youtube:["YouTube","youtube.com/@voce"],behance:["Behance","behance.net/voce"]};
+function obPortLink(t){ return linkPortfolio(t) }
+function obPortOk(t){ var u=obPortLink(t); return !u||/^https:\/\/[^\s/]+\.[^\s/.]{2,}(\/\S*)?$/i.test(u) }
+function obCampo(){
+  var p=OB.passo;
+  if(p===1) return (OB.nome?'':'<label class="ob-rot" for="ob-nome">Seu nome</label><input class="ob-in" id="ob-nome" maxlength="80" autocomplete="name">')+
+    '<div class="ob-ops">'+
+    '<button type="button" class="ob-op" data-ob-modo="freela" aria-pressed="'+(OB.modo==="freela")+'"><span class="ob-op-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m15.5 10.5 5-3v9l-5-3"/></svg></span><b>Sou freela</b><small>Quero receber chamadas de job e mostrar meu trabalho.</small></button>'+
+    '<button type="button" class="ob-op" data-ob-modo="contratante" aria-pressed="'+(OB.modo==="contratante")+'"><span class="ob-op-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/></svg></span><b>Quero contratar</b><small>Quero achar gente livre na data do meu job.</small></button></div>';
+  if(p===2) return '<div class="ob-busca"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14"/><path d="m16 16 4 4"/></svg>'+
+      '<input class="ob-in" id="ob-q" type="search" placeholder="Sua cidade" aria-label="Buscar sua praça" autocomplete="off" value="'+esc(OB.q)+'"></div>'+
+    '<div class="ob-chips" id="ob-pracas" role="group" aria-label="Praças">'+nxPracasHtml(OB.q,OB.cidade)+'</div>'+
+    (OB.modo==="contratante"?'':'<div class="ob-viaja">'+nxTog("ob-viaja",OB.viaja)+'<label for="ob-viaja">Topo viajar</label></div>');
+  if(p===3) return '<div class="ob-chips" id="ob-func" role="group" aria-label="Funções">'+nxFuncHtml(OB.func)+'</div>'+
+    '<span class="ob-rot">Que trabalho você atende</span><div class="ob-chips" id="ob-nicho" role="group" aria-label="Tipos de trabalho">'+nxNichoHtml(OB.nicho,OB.nichosTodos)+'</div>';
+  if(p===4){ var u=obPortLink(OB.port);
+    return '<div class="ob-busca ob-link"><span class="ob-arroba" aria-hidden="true">@</span><input class="ob-in" id="ob-port" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="300" placeholder="@seuperfil ou seusite.com.br" aria-label="Seu @ ou link" value="'+esc(OB.port)+'">'+
+      '<span class="ob-prev" id="ob-prev" aria-live="polite" data-ok="'+(!!u&&obPortOk(OB.port))+'">'+(u?esc(nxPortCurto(u))+(obPortOk(OB.port)?' ✓':''):'')+'</span></div>'+
+      '<div class="ob-chips" role="group" aria-label="Onde">'+Object.keys(OB_PORT).map(function(k){return '<button type="button" class="ob-chip" data-ob-port="'+k+'">'+OB_PORT[k][0]+'</button>'}).join("")+'</div>';
+  }
+  if(p===5&&OB.modo==="contratante") return '<div class="ob-chips" role="group" aria-label="Como você contrata">'+["Produtora","Agência","Marca","Veículo","Selo musical","Órgão público","Pessoa física"].map(function(t){
+    return '<button type="button" class="ob-chip" data-ob-tipo="'+esc(t)+'" aria-pressed="'+(OB.tipo===t)+'">'+esc(t)+'</button>'}).join("")+'</div>';
+  if(p===5) return '<div class="ob-linha"><span><b>Mostrar meu perfil para quem contrata</b><small>Nome, praça, funções e portfólio</small></span>'+nxTog("ob-mostrar",OB.mostrar,"Mostrar meu perfil para quem contrata")+'</div>';
+  return "";
+}
+function obNota(){
+  var p=OB.passo;
+  if(p===1) return "Nome e e-mail já vieram da sua conta Absolute ZRO.";
+  if(p===3) return OB.func.length?OB.func.length+" de até 12 · toque de novo para a estrela":"Até 12.";
+  if(p===4) return "Dá para colocar depois.";
+  if(p===5&&OB.modo!=="contratante") return "Equipamento, bio e diária você completa depois.";
+  return "";
+}
+function obDesenhar(){
+  var el=v("ob"); if(!el||!OB) return;
+  var ps=obPassos(), i=ps.indexOf(OB.passo), fim=OB.passo===6, tot=ps.length-1;
+  el.setAttribute("data-fim",String(fim));
+  if(fim){ obFimDesenhar(el); return }
+  var prog='<div class="ob-prog" role="progressbar" aria-label="Progresso" aria-valuemin="0" aria-valuemax="'+tot+'" aria-valuenow="'+(i+1)+'">'+
+    ps.slice(0,tot).map(function(n,j){return '<i style="--p:'+(j<i?1:j===i?.5:0)+'"></i>'}).join("")+'</div>';
+  var ultimo=i===tot-1;
+  el.innerHTML='<div class="ob-esq"><div class="ob-topo">'+
+      '<span class="ob-marca">'+nxSeloHtml(30)+'<b>Carro do Freela</b></span>'+prog+
+      (i>0?'<button type="button" class="ob-volta" data-ob="volta"><span aria-hidden="true">‹</span> Voltar</button>':'<span class="ob-volta" aria-hidden="true"></span>')+
+    '</div>'+
+    '<div class="ob-corpo" data-passo="'+OB.passo+'">'+OB_TIT[OB.passo]()+'<div class="ob-campo">'+obCampo()+'</div>'+
+      '<div class="ob-mini">'+(OB.passo>=3?obCartao():'')+'</div></div>'+
+    '<div class="ob-pe"><button type="button" class="glass-btn glass-btn--ink ob-ir" data-ob="ir">'+(ultimo?"Concluir":"Continuar")+'</button>'+
+      (OB.passo===4?'<button type="button" class="glass-btn ob-pular" data-ob="pular">Pular</button>':'')+
+      '<span class="ob-nota" id="ob-nota" role="status" data-erro="'+(!!OB.erro)+'">'+esc(OB.erro||obNota())+'</span></div>'+
+  '</div>'+
+  '<div class="ob-dir"><span class="ob-dir-lab">'+(OB.modo==="contratante"?"Assim o freela vê você":"Assim quem contrata vê você")+'</span><div class="ob-dir-cartao">'+obCartao()+'</div></div>';
+  OB.erro="";
+  obLigar(el);
+  var t=el.querySelector(".ob-tit"); if(t) t.focus({preventScroll:true});
+  el.querySelector(".ob-esq").scrollTop=0;
+}
+function nxSeloHtml(t){
+  var s=document.querySelector(".top .brand .zselo");
+  if(s){ var c=s.cloneNode(true); c.hidden=false; c.style.setProperty("--t",t+"px"); c.removeAttribute("id"); return c.outerHTML.replace(/id="selo-g\d+"/,'id="selo-gob'+t+'"').replace(/url\(#selo-g\d+\)/,"url(#selo-gob"+t+")") }
+  return "";
+}
+function obPrevia(){ var d=v("ob")&&v("ob").querySelector(".ob-dir-cartao"), m=v("ob")&&v("ob").querySelector(".ob-mini");
+  if(d) d.innerHTML=obCartao(); if(m&&OB.passo>=3) m.innerHTML=obCartao() }
+function obLigar(el){
+  el.querySelectorAll("[data-ob-modo]").forEach(function(b){ b.onclick=function(){ OB.modo=b.dataset.obModo;
+    el.querySelectorAll("[data-ob-modo]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}); obPrevia(); obDesenhar() } });
+  var nm=v("ob-nome"); if(nm) nm.oninput=function(){ OB.nomeDigitado=nm.value };
+  var q=v("ob-q");
+  if(q) q.oninput=function(){ OB.q=q.value; v("ob-pracas").innerHTML=nxPracasHtml(OB.q,OB.cidade) };
+  var pr=v("ob-pracas");
+  if(pr) pr.onclick=function(e){ var b=e.target.closest("[data-praca]"); if(!b) return;
+    OB.cidade=b.dataset.praca; pr.querySelectorAll("[data-praca]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}); obPrevia() };
+  var vj=v("ob-viaja"); if(vj) vj.onclick=function(){ OB.viaja=!OB.viaja; vj.setAttribute("aria-checked",String(OB.viaja)); obPrevia() };
+  var fu=v("ob-func");
+  if(fu) fu.onclick=function(e){ var b=e.target.closest("[data-func]"); if(!b) return;
+    var m=nxFuncToque(OB.func,b.dataset.func); fu.innerHTML=nxFuncHtml(OB.func);
+    var x=fu.querySelector('[data-func="'+CSS.escape(b.dataset.func)+'"]'); if(x) x.focus();
+    nxStatus("ob-nota",m||obNota(),!!m); obPrevia() };
+  var ni=v("ob-nicho");
+  if(ni) ni.onclick=function(e){
+    if(e.target.closest("[data-nichos-mais]")){ OB.nichosTodos=true; ni.innerHTML=nxNichoHtml(OB.nicho,true); return }
+    var b=e.target.closest("[data-nicho]"); if(!b) return; var t=b.dataset.nicho, k=OB.nicho.indexOf(t);
+    if(k<0){ if(OB.nicho.length>=12) return nxStatus("ob-nota","Até 12 tipos de trabalho.",true); OB.nicho.push(t) } else OB.nicho.splice(k,1);
+    b.setAttribute("aria-pressed",String(k<0)); obPrevia() };
+  var po=v("ob-port");
+  if(po){ var pinta=function(){ var u=obPortLink(OB.port), ok=obPortOk(OB.port), s=v("ob-prev");
+      s.textContent=u?nxPortCurto(u)+(ok?" ✓":""):""; s.setAttribute("data-ok",String(!!u&&ok)) };
+    po.oninput=function(){ OB.port=po.value.trim(); pinta(); obPrevia() };
+    el.querySelectorAll("[data-ob-port]").forEach(function(b){ b.onclick=function(){ var k=b.dataset.obPort;
+      po.placeholder=OB_PORT[k][1];
+      var nome=OB.port.replace(/^@/,"").replace(/^https?:\/\/[^/]+\/@?/i,"").replace(/^[^/]*\.[a-z]{2,}\/@?/i,"");
+      if(nome&&k!=="site") OB.port=k==="instagram"?"@"+nome:OB_PORT[k][1].replace(/voce$/,nome);
+      po.value=OB.port; pinta(); obPrevia(); po.focus() } });
+  }
+  el.querySelectorAll("[data-ob-tipo]").forEach(function(b){ b.onclick=function(){ OB.tipo=b.dataset.obTipo;
+    el.querySelectorAll("[data-ob-tipo]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}); obPrevia() } });
+  var mo=v("ob-mostrar"); if(mo) mo.onclick=function(){ OB.mostrar=!OB.mostrar; mo.setAttribute("aria-checked",String(OB.mostrar)); obPrevia() };
+  el.querySelectorAll("[data-ob]").forEach(function(b){ b.onclick=function(){ obAcao(b.dataset.ob) } });
+  el.onkeydown=function(e){ if(e.key==="Enter"&&e.target.matches("input")&&!e.isComposing){ e.preventDefault(); obAcao("ir") } };
+}
+function obAcao(a){
+  var ps=obPassos(), i=ps.indexOf(OB.passo);
+  if(a==="volta"){ if(i>0){ OB.passo=ps[i-1]; obDesenhar() } return }
+  if(a==="pular"){ OB.port=""; OB.passo=ps[i+1]; obDesenhar(); return }
+  var falta="";
+  if(OB.passo===1&&!OB.nome){ var n=(OB.nomeDigitado||"").trim(); if(n.length<2) falta="Escreva o seu nome."; else OB.nome=n }
+  if(OB.passo===2&&!OB.cidade) falta="Escolha a sua praça.";
+  if(OB.passo===3&&!OB.func.length) falta="Marque ao menos uma função.";
+  if(OB.passo===4&&!obPortOk(OB.port)) falta="Confira o link (ex.: @seuperfil ou seusite.com.br).";
+  if(OB.passo===5&&OB.modo==="contratante"&&!OB.tipo) falta="Escolha uma opção.";
+  if(falta){ nxStatus("ob-nota",falta,true); return }
+  if(OB.passo===1&&MODO!==OB.modo){ MODO=OB.modo; LG_TIPO=OB.modo; aplicarModo() }
+  if(ps[i+1]===6) return obConcluir();
+  OB.passo=ps[i+1]; obDesenhar();
+}
+/* o fim é o caminho de sempre: concluirCadastro() registra o consentimento e manda o perfil ao servidor
+   (enviarCadastroAoPerfil); só não abre o guia nem o aviso, porque a tela de pronto é a boas-vindas */
+function obConcluir(){
+  if(vazio(EU.nome)&&OB.nome) EU.nome=OB.nome;
+  if(OB.modo==="contratante"){
+    if(vazio(PROD.nome)) PROD.nome=OB.nome||titulo(EU.nome||"");
+    PROD.cidade=OB.cidade; PROD.tipo=OB.tipo; EU.cidade=EU.cidade&&!vazio(EU.cidade)?EU.cidade:OB.cidade;
+    usoGravar(); try{ pintarProd() }catch(e){}
+    drawFeed(); show(naFase("feed")?"feed":"buscar");
+  } else {
+    EU.cidade=OB.cidade; EU.viaja=OB.viaja; EU.func=OB.func.slice(); EU.nicho=OB.nicho.slice(); EU.todosTipos=false;
+    EU.port=OB.port; recalcular();
+    var cs=v("cd-consente"); if(cs) cs.checked=OB.mostrar;
+    S.voltaDe="entrar"; cadTodo=false;
+    concluirCadastro({calado:true});
+  }
+  OB.passo=6; obDesenhar();
+}
+function obFimDesenhar(el){
+  var c=OB.modo==="contratante", praca=String(OB.cidade||"").split("/")[0];
+  var feitos=c?["Praça",OB.tipo]:["Praça",pl(OB.func.length,"função","funções"),OB.port?"Portfólio":"",OB.mostrar?"Na busca":""];
+  el.innerHTML='<div class="ob-fim"><div class="ob-fim-av">'+nxAv(OB.nome,112,c?null:EU.foto)+'</div>'+
+    '<h1 class="ob-tit" tabindex="-1">Você está <b>no Carro.</b></h1>'+
+    '<p class="ob-sub">'+esc(c?"Quem você chamar vê quem chama."+(praca?" Comece achando gente livre em "+praca+".":"")
+      :OB.mostrar?"Seu perfil já aparece para quem contrata"+(praca?" em "+praca:"")+". Comece pela sua semana na agenda."
+      :"Seu perfil fica só com você até ligar a busca. Comece pela sua semana na agenda.")+'</p>'+
+    '<div class="ob-fim-ac"><button type="button" class="glass-btn glass-btn--ink" data-ob-fim="'+(c?"buscar":"agenda")+'">'+(c?"Achar quem está livre":"Marcar minha semana")+'</button>'+
+      '<button type="button" class="glass-btn" data-ob-fim="feed">Ir para o feed</button></div>'+
+    '<ul class="ob-feitos" aria-label="Pronto">'+feitos.filter(Boolean).map(function(f){return '<li>✓ '+esc(f)+'</li>'}).join("")+'</ul></div>';
+  el.querySelectorAll("[data-ob-fim]").forEach(function(b){ b.onclick=function(){ var ir=b.dataset.obFim; obFechar();
+    if(ir==="feed") show(naFase("feed")?"feed":"propostas"); else show(ir) } });
+  var t=el.querySelector(".ob-tit"); if(t) t.focus({preventScroll:true});
+}
+
+/* ======================= MEU PERFIL: o cartão e a lista curta ======================= */
+function nxMeu(){
+  var el=v("nx-meu"); if(!el) return;
+  var p=nxPerfil(), praca=nxPraca(p), fun=(p.funcoes&&p.funcoes.length?p.funcoes:EU.func)||[], nic=(p.nichos&&p.nichos.length?p.nichos:EU.nicho)||[];
+  var port=p.portfolio||linkPortfolio(EU.port||""), vis=nxVisivel(), itens=CFB&&CFB.carregado?CFB.itens:null;
+  var livres=0; for(var i=0;i<7;i++) if(statusEu(dateAt(i))==="livre") livres++;
+  var th=trabalhosDe(EU).map(function(t){return t.img}).filter(Boolean);
+  var linha=function(k,ic,tit,sub,falta,dir){
+    return '<li><button type="button" class="nx-li" data-nx="meu-'+k+'"><span class="nx-li-ic" aria-hidden="true">'+ic+'</span>'+
+      '<span class="nx-li-tx"><b>'+tit+'</b><small'+(falta?' data-falta="1"':'')+'>'+esc(sub)+'</small></span>'+(dir||'<span class="nx-li-seta" aria-hidden="true">›</span>')+'</button></li>' };
+  var IC={fun:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m15.5 10.5 5-3v9l-5-3"/></svg>',
+    onde:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
+    port:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+    bio:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
+    eq:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="12" rx="3"/><circle cx="12" cy="13" r="3.2"/><path d="M8.5 7l1.5-2.5h4L15.5 7"/></svg>',
+    ver:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>'};
+  el.innerHTML='<div class="nx-meu">'+
+    '<div class="nx-meu-esq"><div class="nx-meu-cartao"><span class="nx-rot">Como quem contrata vê</span>'+
+      nxCartaoHtml({nome:p.nome||titulo(EU.nome||""),foto:EU.foto,sub:[praca,fun[0]].filter(Boolean).join(" · "),livre:livres?"Livre esta semana":"",
+        chips:fun.concat(nic),thumbs:th,port:th.length?"":port,semVaga:true,t:104})+'</div>'+
+      '<div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="meu-trab">Adicionar trabalho</button>'+
+      '<button type="button" class="glass-btn" data-nx="meu-ver">Ver como quem contrata vê</button></div></div>'+
+    '<div class="nx-meu-dir"><h1 class="nx-h1">Seu perfil</h1><p class="nx-sub">Cada linha abre um campo só.</p>'+
+      '<ul class="nx-lista">'+
+        linha("fun",IC.fun,"O que eu faço",fun.length?pl(fun.length,"função","funções")+" · "+pl(nic.length,"nicho","nichos"):"Falta marcar",!fun.length)+
+        linha("onde",IC.onde,"Onde trabalho",praca?praca+(EU.viaja?" · topo viajar":""):"Falta a praça",!praca)+
+        linha("port",IC.port,"Portfólio",port?nxPortCurto(port):"Falta o link",!port)+
+        linha("bio",IC.bio,"Bio",p.bio?"“"+p.bio+"”":"Falta a bio",!p.bio)+
+        linha("eq",IC.eq,"Equipamento",itens===null?"—":itens.length?pl(itens.length,"item","itens"):"Nenhum ainda",false)+
+        '<li><div class="nx-li"><span class="nx-li-ic" aria-hidden="true">'+IC.ver+'</span><span class="nx-li-tx"><b id="nx-meu-vis-r">Aparecer para quem contrata</b><small>Na busca por data</small></span>'+
+          nxTog("nx-meu-vis",vis,"Aparecer para quem contrata")+'</div></li>'+
+      '</ul></div></div>';
+  var t=v("nx-meu-vis"); if(t) t.onclick=function(){ nxMostrar(t.getAttribute("aria-checked")!=="true",t) };
+}
+function nxMeuFolha(k){
+  var p=nxPerfil();
+  var pe=function(){ return '<div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" id="nx-f-ok">Salvar</button><span class="nx-st" id="nx-f-st" role="status"></span></div>' };
+  var salvar=function(patch,depois){ var b=v("nx-f-ok"); b.disabled=true; nxStatus("nx-f-st","Salvando…");
+    nxPerfilSalvar(patch,function(ok,msg){ b.disabled=false; if(!ok) return nxStatus("nx-f-st",msg,true); if(depois) depois(); nxFolhaFechar(); nxPintar() }) };
+  if(k==="fun"){
+    var sel=(p.funcoes&&p.funcoes.length?p.funcoes:EU.func||[]).filter(function(f){return nxFuncoes().indexOf(f)>=0}).slice(0,12), nic=(p.nichos||EU.nicho||[]).slice(0,12), todos=false;
+    nxFolha("O que eu faço",'<p class="nx-folha-d">A estrela é a principal. Até 12.</p><div class="ob-chips" id="nx-f-fun">'+nxFuncHtml(sel)+'</div><span class="ob-rot">Que trabalho você atende</span><div class="ob-chips" id="nx-f-nic">'+nxNichoHtml(nic,false)+'</div>'+pe(),function(f){
+      v("nx-f-fun").onclick=function(e){ var b=e.target.closest("[data-func]"); if(!b) return; var m=nxFuncToque(sel,b.dataset.func); v("nx-f-fun").innerHTML=nxFuncHtml(sel); nxStatus("nx-f-st",m,!!m) };
+      v("nx-f-nic").onclick=function(e){ if(e.target.closest("[data-nichos-mais]")){ todos=true; v("nx-f-nic").innerHTML=nxNichoHtml(nic,true); return }
+        var b=e.target.closest("[data-nicho]"); if(!b) return; var i=nic.indexOf(b.dataset.nicho);
+        if(i<0){ if(nic.length>=12) return nxStatus("nx-f-st","Até 12 nichos.",true); nic.push(b.dataset.nicho) } else nic.splice(i,1);
+        b.setAttribute("aria-pressed",String(i<0)) };
+      v("nx-f-ok").onclick=function(){ if(!sel.length) return nxStatus("nx-f-st","Marque ao menos uma função.",true); salvar({funcoes:sel,nichos:nic}) };
+    });
+  } else if(k==="onde"){
+    var cid=nxPraca(p), q="", vj=!!EU.viaja;
+    nxFolha("Onde trabalho",'<div class="ob-busca"><input class="ob-in" id="nx-f-q" type="search" placeholder="Sua cidade" aria-label="Buscar praça" autocomplete="off"></div><div class="ob-chips" id="nx-f-pr">'+nxPracasHtml("",cid)+'</div>'+
+      '<div class="ob-viaja">'+nxTog("nx-f-vj",vj)+'<label for="nx-f-vj">Topo viajar</label></div>'+pe(),function(){
+      v("nx-f-q").oninput=function(){ q=v("nx-f-q").value; v("nx-f-pr").innerHTML=nxPracasHtml(q,cid) };
+      v("nx-f-pr").onclick=function(e){ var b=e.target.closest("[data-praca]"); if(!b) return; cid=b.dataset.praca;
+        v("nx-f-pr").querySelectorAll("[data-praca]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}) };
+      v("nx-f-vj").onclick=function(){ vj=!vj; v("nx-f-vj").setAttribute("aria-checked",String(vj)) };
+      v("nx-f-ok").onclick=function(){ var m=/^(.+)\/([A-Z]{2})$/.exec(cid||""); if(!m) return nxStatus("nx-f-st","Escolha a sua praça.",true);
+        salvar({cidade:m[1],uf:m[2]},function(){ EU.viaja=vj; usoGravar() }) };
+    });
+  } else if(k==="port"){
+    var atual=p.portfolio||EU.port||"";
+    nxFolha("Portfólio",'<div class="ob-busca ob-link"><span class="ob-arroba" aria-hidden="true">@</span><input class="ob-in" id="nx-f-port" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="300" placeholder="@seuperfil ou seusite.com.br" aria-label="Seu @ ou link" value="'+esc(atual)+'"><span class="ob-prev" id="nx-f-prev" aria-live="polite"></span></div>'+pe(),function(){
+      var i=v("nx-f-port"), pinta=function(){ var u=linkPortfolio(i.value), ok=obPortOk(i.value); v("nx-f-prev").textContent=u?nxPortCurto(u)+(ok?" ✓":""):""; v("nx-f-prev").setAttribute("data-ok",String(!!u&&ok)) };
+      i.oninput=pinta; pinta();
+      v("nx-f-ok").onclick=function(){ if(!obPortOk(i.value)) return nxStatus("nx-f-st",CFB_CAMPO.portfolio,true); salvar({portfolio:linkPortfolio(i.value)}) };
+    });
+  } else if(k==="bio"){
+    nxFolha("Bio",'<textarea class="ob-in nx-bio" id="nx-f-bio" maxlength="280" rows="4" aria-label="Bio curta" placeholder="Uma linha sobre o seu trabalho">'+esc(p.bio||"")+'</textarea><span class="nx-conta" id="nx-f-n"></span>'+pe(),function(){
+      var t=v("nx-f-bio"), n=function(){ v("nx-f-n").textContent=t.value.length+"/280" }; t.oninput=n; n();
+      v("nx-f-ok").onclick=function(){ salvar({bio:t.value.trim()}) };
+    });
+  } else if(k==="eq") nxEquipFolha();
+}
+function nxEquipFolha(novo){
+  var it=CFB&&CFB.carregado?CFB.itens:[];
+  var lista=it.length?'<ul class="nx-eq">'+it.map(function(i){
+      var sub=[CFB_CAT[i.categoria]||"Outro"]; if(i.quantidade>1) sub.push(i.quantidade+"×"); if(i.diaria_cents!==null&&i.diaria_cents!==undefined) sub.push("diária "+cfbReais(i.diaria_cents)); if(!i.ativo) sub.push("fora de uso");
+      return '<li><span><b>'+esc([i.marca,i.modelo].filter(Boolean).join(" "))+'</b><small>'+esc(sub.join(" · "))+'</small></span><button type="button" class="glass-btn nx-mini" data-nx-rm="'+esc(i.id)+'">Remover</button></li>'}).join("")+'</ul>'
+    :'<p class="nx-folha-d">Nenhum equipamento ainda.</p>';
+  var form='<div class="nx-eq-form"><select class="ob-in" id="nx-f-cat" aria-label="Categoria">'+Object.keys(CFB_CAT).map(function(k){return '<option value="'+k+'">'+CFB_CAT[k]+'</option>'}).join("")+'</select>'+
+    '<input class="ob-in" id="nx-f-mar" maxlength="60" placeholder="Marca" aria-label="Marca"><input class="ob-in" id="nx-f-mod" maxlength="120" placeholder="Modelo" aria-label="Modelo">'+
+    '<input class="ob-in" id="nx-f-dia" inputmode="decimal" placeholder="Diária (opcional)" aria-label="Diária, opcional"></div>';
+  nxFolha("Equipamento",lista+(CFB&&CFB.carregado?form+'<div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" id="nx-f-ok">Adicionar</button><span class="nx-st" id="nx-f-st" role="status"></span></div>':''),function(f){
+    f.querySelectorAll("[data-nx-rm]").forEach(function(b){ b.onclick=function(){
+      if(b.dataset.certo!=="1"){ b.dataset.certo="1"; b.textContent="Remover mesmo?"; return }
+      b.disabled=true;
+      cfbPedir("DELETE","/api/zro/inventario?id="+encodeURIComponent(b.dataset.nxRm)).then(function(r){
+        if(r.status===204||r.status===404){ CFB.itens=CFB.itens.filter(function(x){return x.id!==b.dataset.nxRm}); nxEquipFolha(); nxPintar() }
+        else { b.disabled=false; nxStatus("nx-f-st",cfbMsg(r),true) } }) } });
+    var ok=v("nx-f-ok"); if(!ok) return;
+    ok.onclick=function(){
+      var dia=v("nx-f-dia").value.trim().replace(/^R\$\s*/,"").replace(/\./g,"").replace(",",".");
+      var cents=dia===""?null:Math.round(parseFloat(dia)*100);
+      if(dia!==""&&!(cents>=0)) return nxStatus("nx-f-st","Confira a diária.",true);
+      if(!v("nx-f-mod").value.trim()) return nxStatus("nx-f-st","Escreva o modelo.",true);
+      ok.disabled=true; nxStatus("nx-f-st","Salvando…");
+      cfbPedir("POST","/api/zro/inventario",{categoria:v("nx-f-cat").value,marca:v("nx-f-mar").value,modelo:v("nx-f-mod").value,quantidade:1,observacao:"",diaria_cents:cents,ativo:true}).then(function(r){
+        ok.disabled=false;
+        if((r.status===200||r.status===201)&&r.j&&r.j.item){ CFB.itens.push(r.j.item); nxEquipFolha(); nxPintar() }
+        else nxStatus("nx-f-st",cfbMsg(r),true);
+      });
+    };
+  });
+}
+
+/* ======================= PROPOSTAS: a caixa de entrada ======================= */
+function nxEnviadas(){
+  return (REAL_ENVIADAS||[]).map(function(p){ return {id:"e:"+p.id,env:true,de:realNomeDe(p.para),deSub:p.para,data:p.dia||"",ini:p.ini||"",fim:p.fim||"",
+    func:p.tipo==="brecho"?"Brechó":(p.funcao||"Consulta"),local:p.local||"",desc:p.mensagem||"",status:REAL_EST[p.estado]||"novo",motivo:p.motivo,
+    criado:p.criado_em,srvTipo:p.tipo,equip:false} });
+}
+function nxRecebidas(){
+  var o={novo:0,aceita:1,recusada:2,perdida:3};
+  return PROPOSTAS.slice().sort(function(a,b){return (o[a.status]||0)-(o[b.status]||0)||String(a.data).localeCompare(String(b.data))});
+}
+function nxPropTit(pr){ return pr.srvTipo==="brecho"?"Interesse no brechó":(pr.func||pr.tipo||"Consulta") }
+function nxAnuncioDe(pr){ return pr.srvTipo==="brecho"&&pr.anuncio?ANUNCIOS.find(function(a){return a.srv===pr.anuncio}):null }
+function nxPropLinha(pr){
+  if(pr.srvTipo==="brecho"){ var a=nxAnuncioDe(pr); return "Brechó"+(a?" · "+a.t:"") }
+  return [pr.func,nxDiaCurto(pr.data),pr.local].filter(Boolean).join(" · ");
+}
+function nxPill(pr){
+  if(pr.status==="aceita") return '<span class="nx-pill" data-tom="ok">'+(pr.env?"aceitou":"aceita")+'</span>';
+  if(pr.status==="recusada"||pr.status==="perdida") return '<span class="nx-pill" data-tom="neu">'+(pr.env?"recusou":pr.status==="perdida"?"perdida":"recusada")+'</span>';
+  return pr.env?'<span class="nx-pill" data-tom="esp">esperando</span>':'<i class="nx-ponto" aria-label="nova"></i>';
+}
+function nxQuem(pr){ return pr.deSub?CREW.find(function(c){return c.sub===pr.deSub}):null }
+function nxPropDet(pr){
+  var br=pr.srvTipo==="brecho", an=nxAnuncioDe(pr);
+  var d=nxD(pr.data), ok=!isNaN(d)&&!br, quem=nxQuem(pr), juntos=JOBS.filter(function(j){return j.cliente===pr.de}).length-(pr.status==="aceita"&&!pr.env?1:0);
+  var st=ok?statusEu(d):"livre", jd=ok?jobsEm(pr.data).filter(function(j){return pr.status==="aceita"||j.srv!==pr.srv}):[];
+  var stTxt=st==="livre"?"nada marcado na agenda":jd.length?"job: "+jd.map(function(j){return j.cliente}).join(", "):st==="segura"?"segurando na agenda":"ocupado na agenda";
+  var faixa=""; if(ok){ for(var i=-3;i<=3;i++){ var x=addD(d,i); faixa+='<span data-est="'+(x<HOJE?"passou":statusEu(x))+'"'+(i===0?' data-sel="1"':'')+'>'+x.getDate()+'</span>' } }
+  var ficha=function(r,val){ return '<div><span>'+r+'</span><b>'+esc(val||"—")+'</b></div>' };
+  var acoes=pr.env?'<span class="nx-pe-nota">'+(pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>'
+    :pr.status==="novo"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="pp-aceita" data-id="'+pr.id+'">Aceitar</button><button type="button" class="glass-btn" data-nx="pp-recusa" data-id="'+pr.id+'">Recusar</button>'+
+      (quem?'<button type="button" class="glass-btn nx-so-pc" data-nx="pp-perfil" data-id="'+quem.id+'">Ver perfil</button>':'')+'<span class="nx-pe-nota nx-so-pc">O acerto é direto com quem contrata.</span>'
+    :pr.status==="aceita"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="agenda">Ver na agenda</button><span class="nx-pe-nota">Aceita. Quem chamou já vê.</span>'
+    :'<span class="nx-pe-nota">'+(pr.status==="perdida"?"Outra pessoa pegou antes.":"Recusada"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>';
+  return '<div class="nx-pd-cab">'+
+      (ok?'<div class="nx-data"><span>'+DIAS[d.getDay()]+'</span><b>'+pad(d.getDate())+'</b><small>'+MESL[d.getMonth()]+'</small></div>':'')+
+      '<div class="nx-pd-tit">'+(pr.status==="novo"&&!pr.env&&ok&&nxEm(pr.data)?'<span class="nx-pill" data-tom="esp">'+esc(nxEm(pr.data))+'</span>':'')+
+      '<h2>'+esc(nxPropTit(pr))+'</h2><p>'+esc([pr.env?"Você chamou "+pr.de:pr.de].filter(Boolean).join(" · "))+'</p></div></div>'+
+    '<div class="nx-fichas">'+(br?ficha("Anúncio",an?an.t:"—")+ficha("Preço",an?brl(an.preco):"—")+ficha("Cidade",an&&an.cidade?String(an.cidade).split("/")[0]:"—")+ficha("Tipo","Brechó")
+      :ficha("Horário",nxHora(pr.ini,pr.fim)||"a combinar")+ficha("Local",pr.local||"a combinar")+ficha("Tipo",pr.tipo==="Consulta"?"Job":pr.tipo)+ficha("Equipamento",pr.equip?"Usa o seu":"Não usa o seu"))+'</div>'+
+    '<div class="nx-pd-corpo">'+
+      (pr.desc?'<p class="nx-msg">'+esc(pr.desc)+'</p><p class="nx-msg-meta">'+esc([pr.env?"Você":String(pr.de||"").split(" ")[0],nxHa(pr.criado),"pelo Carro"].filter(Boolean).join(" · "))+'</p>':'')+
+      '<div class="nx-pd-cards">'+
+        '<div class="nx-card"><span class="nx-rot">'+(pr.env?"Quem você chamou":br?"Quem tem interesse":"Quem chama")+'</span><div class="nx-quem">'+nxAv(pr.de,52,quem&&quem.foto)+'<span><b>'+esc(pr.de||"")+'</b><small>'+
+          esc(quem?[(quem.principal||quem.func||[])[0],quem.cidade].filter(Boolean).join(" · "):"Conta Absolute ZRO")+'</small></span></div>'+
+          ((juntos>0||pr.guilda)?'<div class="nx-chips">'+(juntos>0?'<span>'+pl(juntos,"job junto","jobs juntos")+'</span>':'')+(pr.guilda?'<span>job da guilda</span>':'')+'</div>':'')+'</div>'+
+        (ok&&!pr.env&&d>=HOJE?'<div class="nx-card"><span class="nx-rot">Seu dia '+pad(d.getDate())+'</span><p class="nx-dia-st"><span class="nx-pill" data-tom="'+(st==="livre"?"ok":st==="segura"?"esp":"neu")+'">'+(st==="livre"?"livre":st==="segura"?"segurando":"ocupado")+'</span>'+esc(stTxt)+'</p><div class="nx-faixa">'+faixa+'</div></div>':'')+
+      '</div></div>'+
+    '<div class="nx-pd-pe">'+acoes+'</div>';
+}
+function nxPropostas(){
+  var el=v("nx-prop"); if(!el) return;
+  if(NX.ppAuto!==MODO){ NX.ppAuto=MODO; NX.pp=MODO==="contratante"?"env":"receb" }
+  var rec=nxRecebidas(), env=nxEnviadas(), lista=NX.pp==="env"?env:rec, nN=rec.filter(function(x){return x.status==="novo"}).length;
+  var sel=lista.find(function(x){return String(x.id)===String(NX.ppSel)})||lista[0]||null;
+  if(sel) NX.ppSel=sel.id;
+  var prox=NX.pp==="receb"?(rec.find(function(x){return x.status==="novo"&&x.srvTipo!=="brecho"})||rec.find(function(x){return x.status==="novo"})):null;
+  var it=function(pr){ return '<li'+(prox&&pr.id===prox.id?' data-prox="1"':'')+'><button type="button" class="nx-pp-it" data-nx="pp-sel" data-id="'+pr.id+'" aria-current="'+(sel&&pr.id===sel.id)+'">'+nxAv(pr.de,44,(nxQuem(pr)||{}).foto)+
+    '<span class="nx-pp-tx"><b>'+esc(pr.de||"")+'</b><small>'+esc(nxPropLinha(pr))+'</small></span><span class="nx-pp-meta"><small>'+esc(nxHa(pr.criado)||nxDiaCurto(pr.data))+'</small>'+nxPill(pr)+'</span></button></li>' };
+  var vazio=NX.pp==="env"
+    ?'<div class="nx-vazio"><span class="nx-vazio-ic" aria-hidden="true">↗</span><b>Você ainda não chamou ninguém.</b><p>Ache gente livre na data do seu job.</p><button type="button" class="glass-btn" data-nx="ir" data-ir="buscar">Achar gente livre</button></div>'
+    :'<div class="nx-vazio"><span class="nx-vazio-ic" aria-hidden="true">✉</span><b>Nenhuma proposta ainda.</b><p>Quando alguém chamar, aparece aqui.</p><button type="button" class="glass-btn" data-nx="ir" data-ir="agenda">Marcar minha semana</button></div>';
+  el.innerHTML='<div class="nx-pp" data-vazio="'+(!lista.length)+'">'+
+    '<div class="nx-pp-col"><div class="nx-pp-cab"><h1 class="nx-h1">Propostas</h1>'+
+      '<div class="nx-seg" role="tablist" aria-label="Propostas"><button type="button" role="tab" data-nx="pp-aba" data-aba="receb" aria-selected="'+(NX.pp==="receb")+'">Para você'+(nN?' · '+nN:'')+'</button>'+
+      '<button type="button" role="tab" data-nx="pp-aba" data-aba="env" aria-selected="'+(NX.pp==="env")+'">Você enviou</button></div></div>'+
+      (prox?'<div class="nx-pp-prox nx-so-cel">'+nxProxHtml(prox)+'</div>':'')+
+      (lista.length?'<ul class="nx-pp-lista">'+lista.map(it).join("")+'</ul>':vazio)+'</div>'+
+    '<div class="nx-pp-det nx-so-pc" aria-live="polite">'+(sel?nxPropDet(sel):'')+'</div></div>';
+}
+function nxProxHtml(pr){
+  var d=nxD(pr.data), ok=!isNaN(d)&&pr.srvTipo!=="brecho";
+  return '<div class="nx-prox-cab">'+(ok?'<div class="nx-data"><span>'+DIAS[d.getDay()]+'</span><b>'+pad(d.getDate())+'</b></div>':'')+
+    '<div><b class="nx-prox-t">'+esc(nxPropTit(pr))+'</b><small>'+esc([nxHora(pr.ini,pr.fim),pr.local].filter(Boolean).join(" · "))+'</small><small>'+esc(pr.de||"")+'</small></div></div>'+
+    (pr.desc?'<p class="nx-msg">'+esc(pr.desc)+'</p>':'')+
+    '<div class="nx-prox-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="pp-aceita" data-id="'+pr.id+'">Aceitar</button><button type="button" class="glass-btn" data-nx="pp-recusa" data-id="'+pr.id+'">Recusar</button></div>';
+}
+function nxRecusar(pr){
+  var m=MOTIVOS[0];
+  nxFolha("Recusar",'<p class="nx-folha-d">O motivo vai para quem chamou.</p><div class="ob-chips nx-col" id="nx-f-mot">'+MOTIVOS.map(function(x,i){return '<button type="button" class="ob-chip" data-mot="'+esc(x)+'" aria-pressed="'+(i===0)+'">'+esc(x)+'</button>'}).join("")+'</div>'+
+    '<div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" id="nx-f-ok">Enviar recusa</button></div>',function(){
+    v("nx-f-mot").onclick=function(e){ var b=e.target.closest("[data-mot]"); if(!b) return; m=b.dataset.mot; v("nx-f-mot").querySelectorAll("[data-mot]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}) };
+    v("nx-f-ok").onclick=function(){ nxFolhaFechar();
+      if(pr.srv){ realResponder(pr,"recusada",m); return }
+      registrarResposta(pr); pr.motivo=m; pr.status="recusada"; drawPropostas() };
+  });
+}
+
+/* ======================= AGENDA: o mês inteiro ======================= */
+function nxAgenda(){
+  var el=v("nx-ag"); if(!el) return;
+  var M=NX.agMes||new Date(HOJE.getFullYear(),HOJE.getMonth(),1), y=M.getFullYear(), m=M.getMonth();
+  var ini=new Date(y,m,1), off=(ini.getDay()+6)%7, ult=new Date(y,m+1,0).getDate(), celulas=Math.ceil((off+ult)/7)*7;
+  var bloq=NX.agBloq, cel="", mini="";
+  for(var i=0;i<celulas;i++){
+    var d=addD(ini,i-off), k=key(d), fora=d.getMonth()!==m, passou=d<HOJE, st=passou?"passou":statusEu(d), js=jobsEm(k), dec=decDe(k);
+    var conteudo=js.map(function(j){ var pr=j.srv&&PROPOSTAS.find(function(x){return x.srv===j.srv});
+        return '<span class="nx-dj">'+esc([nxJobTit({desc:pr&&pr.desc,func:j.func}),pr&&pr.ini?pr.ini.slice(0,2)+"h":""].filter(Boolean).join(" · "))+'</span>' }).join("")+
+      (!js.length&&dec&&!passou?'<span class="nx-dl">'+(dec.e==="negociando"?"segurando":dec.p==="dia"?"ocupado":dec.p==="manha"?"manhã ocupada":"tarde ocupada")+'</span>':'');
+    var rot=d.getDate()+" de "+MESL[d.getMonth()]+", "+(passou?"já passou":st==="livre"?"livre":st==="segura"?"segurando":"ocupado")+(js.length?", "+pl(js.length,"job","jobs"):"");
+    cel+='<button type="button" class="nx-dia" data-nx="ag-dia" data-k="'+k+'" data-est="'+st+'"'+(fora?' data-fora="1"':'')+(k===key(HOJE)?' data-hoje="1"':'')+
+      (bloq&&bloq.has(k)?' data-bloq="1"':'')+(passou?' disabled':'')+' aria-label="'+esc(rot)+'"><b>'+pad(d.getDate())+'</b>'+(st==="livre"&&!fora?'<i class="nx-dia-ponto"></i>':'')+conteudo+'</button>';
+    mini+=fora?'<span class="nx-mini-d" data-fora="1"></span>':'<button type="button" class="nx-mini-d" data-nx="ag-dia" data-k="'+k+'" data-est="'+st+'"'+(js.length?' data-job="1"':'')+(k===key(HOJE)?' data-hoje="1"':'')+(bloq&&bloq.has(k)?' data-bloq="1"':'')+(passou?' disabled':'')+' aria-label="'+esc(rot)+'">'+d.getDate()+'</button>';
+  }
+  var resta=0, livres=0, bloqueados=0, jobsMes=JOBS.filter(function(j){var x=nxD(j.data);return x.getMonth()===m&&x.getFullYear()===y}).length;
+  for(var n=1;n<=ult;n++){ var dd=new Date(y,m,n); if(dd<HOJE) continue; resta++; var s=statusEu(dd); if(s==="livre") livres++; else if(!jobsEm(key(dd)).length) bloqueados++ }
+  var chegando=nxJobsLista().filter(function(j){return nxD(j.data)>=HOJE}).slice(0,3);
+  var cheg=chegando.length?chegando.map(function(j){ return '<li><button type="button" class="nx-cheg" data-nx="ir" data-ir="jobs"><span class="nx-capa" aria-hidden="true"></span><span><b>'+esc(nxJobTit(j))+'</b><small>'+esc([nxDiaCurto(j.data),j.local].filter(Boolean).join(" · "))+'</small></span></button></li>' }).join("")
+    :'<li class="nx-cheg-vz">Nenhum job chegando.</li>';
+  var vis=nxVisivel(), atual=y===HOJE.getFullYear()&&m===HOJE.getMonth();
+  el.innerHTML='<div class="nx-ag"><div class="nx-ag-mes">'+
+      '<div class="nx-ag-cab"><h1 class="nx-h1">'+MESL[m].charAt(0).toUpperCase()+MESL[m].slice(1)+' <span>'+y+'</span></h1>'+
+        '<div class="nx-ag-nav"><button type="button" class="nx-redondo" data-nx="ag-mes" data-d="-1" aria-label="Mês anterior">‹</button><button type="button" class="nx-redondo nx-hoje" data-nx="ag-mes" data-d="0"'+(atual?' aria-current="true"':'')+'>Hoje</button><button type="button" class="nx-redondo" data-nx="ag-mes" data-d="1" aria-label="Próximo mês">›</button></div></div>'+
+      '<div class="nx-cal nx-so-pc" role="group" aria-label="'+MESL[m]+' de '+y+'"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span>'+cel+'</div>'+
+      '<div class="nx-minical nx-so-cel"><span>s</span><span>t</span><span>q</span><span>q</span><span>s</span><span>s</span><span>d</span>'+mini+'</div>'+
+    '</div>'+
+    '<aside class="nx-trilho">'+
+      (resta?'<span class="nx-rot">Este mês</span><p class="nx-livres"><b>'+livres+'</b> '+(livres===1?"dia livre":"dias livres")+'</p><div class="nx-barra" role="img" aria-label="'+livres+' de '+resta+' dias livres"><i style="width:'+Math.round(livres/resta*100)+'%"></i></div>'+
+        '<p class="nx-sub">'+pl(jobsMes,"job","jobs")+' · '+pl(bloqueados,"dia bloqueado","dias bloqueados")+'</p>':'<span class="nx-rot">'+MESL[m]+'</span><p class="nx-sub">Este mês já passou.</p>')+
+      '<span class="nx-rot">Chegando</span><ul class="nx-cheg-l">'+cheg+'</ul>'+
+      '<div class="nx-linha"><span><b>Aparecer na busca</b><small>nos dias livres</small></span>'+nxTog("nx-ag-vis",vis,"Aparecer na busca")+'</div>'+
+      (bloq?'<div class="nx-bloq-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="ag-bloq-ok"'+(bloq.size?'':' aria-disabled="true"')+'>'+(bloq.size?"Bloquear "+pl(bloq.size,"dia","dias"):"Toque nos dias")+'</button><button type="button" class="glass-btn" data-nx="ag-bloq-x">Cancelar</button></div>'
+        :'<button type="button" class="glass-btn glass-btn--ink nx-largo" data-nx="ag-bloq">Bloquear dias</button>')+
+      '<p class="nx-dica">'+(bloq?"Toque nos dias que você não pode.":"Toque num dia para marcar livre ou ocupado.")+'</p>'+
+    '</aside></div>';
+  var t=v("nx-ag-vis"); if(t) t.onclick=function(){ nxMostrar(t.getAttribute("aria-checked")!=="true",t) };
+}
+function nxDiaFolha(k){
+  var d=nxD(k), dec=decDe(k), js=jobsEm(k), at=!dec?"livre":dec.e==="negociando"?"segura":dec.p==="dia"?"dia":dec.p;
+  var op=function(id,t,s){ return '<button type="button" class="nx-op" data-dia-op="'+id+'" aria-pressed="'+(at===id)+'"><b>'+t+'</b>'+(s?'<small>'+s+'</small>':'')+'</button>' };
+  nxFolha(nxDiaLongo(k),(js.length?'<ul class="nx-eq">'+js.map(function(j){return '<li><span><b>'+esc(j.cliente||"Job")+'</b><small>'+esc(j.func||"")+'</small></span></li>'}).join("")+'</ul>':'')+
+    '<div class="nx-ops">'+op("livre","Livre","aparece na busca")+op("dia","Ocupado","o dia todo")+op("manha","Manhã ocupada","livre à tarde")+op("tarde","Tarde ocupada","livre de manhã")+op("segura","Segurando","negociando")+'</div>',function(f){
+    f.querySelectorAll("[data-dia-op]").forEach(function(b){ b.onclick=function(){ var o=b.dataset.diaOp;
+      if(o==="livre") liberarDia(k); else if(o==="segura") declarar(k,"negociando","dia",null); else declarar(k,"fechado",o,null);
+      tocou(); drawAgenda(); render(); nxFolhaFechar() } });
+  });
+}
+
+/* ======================= JOBS: o próximo em destaque e a linha do tempo ======================= */
+function nxJobTit(j){
+  var t=String(j.desc||"").split(/\s[—–-]\s|[.!?,;:]/)[0].trim();
+  if(t.length>42) t=t.slice(0,40).replace(/\s+\S*$/,"")+"…";
+  return t||j.func||"Job";
+}
+function nxJobsLista(){
+  var L=[];
+  JOBS.forEach(function(j){ var pr=j.srv?PROPOSTAS.find(function(x){return x.srv===j.srv}):PROPOSTAS.find(function(x){return x.de===j.cliente&&x.data===j.data});
+    L.push({id:"j"+j.id,data:j.data,func:j.func||"",quem:j.cliente||"",quemSub:pr&&pr.deSub,ini:(pr&&pr.ini)||"",fim:(pr&&pr.fim)||"",local:(pr&&pr.local)||"",desc:(pr&&pr.desc)||"",pr:pr}) });
+  var g={};
+  (REAL_ENVIADAS||[]).filter(function(p){return p.estado==="aceita"&&p.tipo!=="brecho"&&p.dia}).forEach(function(p){ var k=p.dia+"|"+(p.local||""); (g[k]=g[k]||[]).push(p) });
+  Object.keys(g).forEach(function(k){ var ps=g[k], p=ps[0];
+    L.push({id:"e"+p.id,data:p.dia,func:"Sua equipe",quem:"Você",ini:p.ini||"",fim:p.fim||"",local:p.local||"",desc:p.mensagem||"",meu:true,
+      equipe:ps.map(function(x){return {nome:realNomeDe(x.para),papel:x.funcao||""}})}) });
+  return L.sort(function(a,b){return String(a.data).localeCompare(String(b.data))});
+}
+function nxJobs(){
+  var el=v("nx-jb"); if(!el) return;
+  var todos=nxJobsLista(), vem=todos.filter(function(j){return nxD(j.data)>=HOJE}), feitos=todos.filter(function(j){return nxD(j.data)<HOJE});
+  var h=vem[0];
+  if(!h&&!feitos.length){
+    el.innerHTML='<div class="nx-jb"><div class="nx-jb-hero" data-vazio="true"><div class="nx-jb-tx"><span class="nx-rot">Jobs</span><h1 class="nx-jb-h">Nenhum job <b>marcado.</b></h1>'+
+      '<p class="nx-sub">Quando você aceitar uma proposta, ela vira job aqui.</p><div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="propostas">Ver propostas</button>'+
+      '<button type="button" class="glass-btn" data-nx="jb-fora">Fui chamado por fora</button></div></div></div></div>';
+    return;
+  }
+  var equipe=h?(h.equipe?[{nome:"Você",papel:"quem chama",eu:true}].concat(h.equipe):[{nome:h.quem,papel:"quem chama"},{nome:"Você",papel:h.func,eu:true}]):[];
+  var d=h?nxD(h.data):null, em=h?nxEm(h.data):"";
+  var card=function(j){ var x=nxD(j.data);
+    return '<li class="nx-tl-i"><span class="nx-tl-d">'+(DIAS[x.getDay()]+" "+x.getDate()+" "+MES[x.getMonth()])+'</span><i class="nx-tl-o" aria-hidden="true"></i>'+
+      '<button type="button" class="nx-jcard" data-nx="jb-ver" data-id="'+esc(j.id)+'"><span class="nx-capa" aria-hidden="true"><small>'+esc(j.func)+'</small></span><span class="nx-jcard-tx"><b>'+esc(nxJobTit(j))+'</b>'+
+      '<small>'+esc([j.meu?pl(j.equipe.length,"pessoa","pessoas"):j.quem,nxHora(j.ini,j.fim)].filter(Boolean).join(" · "))+'</small><span class="nx-pill" data-tom="ok">confirmado</span></span></button></li>' };
+  var outros=vem.slice(1,4);
+  el.innerHTML='<div class="nx-jb">'+
+    (h?'<div class="nx-jb-hero"><div class="nx-jb-tx"><span class="nx-rot">Próximo job'+(em?' · '+esc(em):'')+'</span><h1 class="nx-jb-h">'+esc(nxJobTit(h))+'</h1>'+
+      '<p class="nx-jb-quando"><span>'+esc(DIAS[d.getDay()]+" "+pad(d.getDate())+" "+MES[d.getMonth()])+'</span>'+(nxHora(h.ini,h.fim)?'<span>'+esc(nxHora(h.ini,h.fim))+'</span>':'')+(h.local?'<span>'+esc(h.local)+'</span>':'')+'</p>'+
+      '<div class="nx-jb-av nx-so-cel">'+equipe.map(function(p){return nxAv(p.nome,36)}).join("")+'</div>'+
+      '<div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="jb-ver" data-id="'+esc(h.id)+'">Ver o job</button>'+
+        (h.local?'<a class="glass-btn nx-so-pc" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h.local)+'" target="_blank" rel="noopener">Como chegar</a>':'')+'</div></div>'+
+      '<div class="nx-equipe nx-so-pc"><span class="nx-rot">Equipe · '+equipe.length+'</span><ul>'+equipe.map(function(p){return '<li>'+nxAv(p.nome,40)+'<b>'+esc(p.nome)+'</b><small>'+esc(p.papel||"")+'</small></li>'}).join("")+'</ul></div></div>'
+     :'<div class="nx-jb-hero" data-vazio="true"><div class="nx-jb-tx"><span class="nx-rot">Jobs</span><h1 class="nx-jb-h">Nenhum job <b>chegando.</b></h1><div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="propostas">Ver propostas</button></div></div></div>')+
+    '<div class="nx-tl-cab"><span class="nx-rot">Depois</span><button type="button" class="glass-btn nx-mini" data-nx="jb-fora">Fui chamado por fora</button></div>'+
+    '<ol class="nx-tl">'+outros.map(card).join("")+
+      (feitos.length?'<li class="nx-tl-i"><span class="nx-tl-d">Feitos</span><i class="nx-tl-o" aria-hidden="true"></i><button type="button" class="nx-jcard" data-nx="jb-feitos" aria-expanded="'+NX.jbFeitos+'"><span class="nx-capa" aria-hidden="true"><small>'+esc(MESL[nxD(feitos[feitos.length-1].data).getMonth()])+'</small></span>'+
+        '<span class="nx-jcard-tx"><b>'+pl(feitos.length,"job feito","jobs feitos")+'</b><small>'+pl(new Set(feitos.map(function(j){return j.quem})).size,"contratante","contratantes diferentes")+'</small><span class="nx-pill" data-tom="neu">'+(NX.jbFeitos?"fechar":"ver histórico")+'</span></span></button></li>':'')+
+      (!outros.length&&!feitos.length?'<li class="nx-tl-vz">Nada depois deste.</li>':'')+
+    '</ol>'+
+    (NX.jbFeitos&&feitos.length?'<ul class="nx-hist">'+feitos.slice().reverse().map(function(j){return '<li><span>'+esc(nxDiaCurto(j.data)+" "+MES[nxD(j.data).getMonth()])+'</span><b>'+esc(nxJobTit(j))+'</b><small>'+esc(j.quem)+'</small></li>'}).join("")+'</ul>':'')+
+  '</div>';
+}
+function nxJobVer(id){
+  var j=nxJobsLista().find(function(x){return x.id===id}); if(!j) return;
+  if(j.pr){ NX.ppAuto=MODO; NX.pp="receb"; NX.ppSel=j.pr.id; show("propostas"); return }
+  if(j.meu){ NX.ppAuto=MODO; NX.pp="env"; NX.ppSel="e:"+String(j.id).slice(1); show("propostas"); return }
+  NX.agMes=new Date(nxD(j.data).getFullYear(),nxD(j.data).getMonth(),1); show("agenda");
+}
+
+/* ======================= BRECHÓ: a vitrine ======================= */
+function nxBrFiltro(){
+  var q=nxNorm(NX.br.q);
+  return ANUNCIOS.filter(function(a){ return a.estadoVenda!=="vendido"&&(!NX.br.cat||a.cat===NX.br.cat)&&
+    (!q||nxNorm([a.t,CATS[a.cat]&&CATS[a.cat].nome,a.cidade].join(" ")).indexOf(q)>=0) });
+}
+function nxBrGrade(){
+  var L=nxBrFiltro();
+  if(!L.length) return '<div class="nx-vazio"><span class="nx-vazio-ic" aria-hidden="true">◎</span><b>'+(NX.br.q||NX.br.cat?"Nada com esse filtro.":"Nenhum anúncio ainda.")+'</b><p>'+(NX.br.q||NX.br.cat?"Tente outra categoria.":"Seja a primeira pessoa a anunciar.")+'</p></div>';
+  return '<ul class="nx-br-grade">'+L.map(function(a,i){
+    return '<li'+(i===0&&L.length>4?' data-destaque="1"':'')+'><button type="button" class="nx-an" data-nx="br-abre" data-id="'+a.id+'">'+
+      '<span class="nx-an-capa" style="background-image:url('+cssUrl(a.img||stillProd(a.cat,a.id*31+5,520,390))+')"><small>'+esc([CATS[a.cat]?CATS[a.cat].nome:"",String(a.cidade||"").split("/")[0]].filter(Boolean).join(" · "))+'</small></span>'+
+      '<span class="nx-an-tx"><b>'+esc(a.t)+'</b><span>'+esc(brl(a.preco))+'</span></span></button></li>' }).join("")+'</ul>';
+}
+function nxBrecho(){
+  var el=v("nx-br"); if(!el) return;
+  var meus=ANUNCIOS.filter(function(a){return a.dono===EU.id});
+  var inter=function(a){ return PROPOSTAS.filter(function(p){return p.srvTipo==="brecho"&&p.anuncio&&p.anuncio===a.srv&&p.status==="novo"}).length };
+  var minha=String(EU.cidade||"").split("/")[0], perto=minha?ANUNCIOS.filter(function(a){return a.estadoVenda!=="vendido"&&String(a.cidade||"").split("/")[0]===minha}).length:0;
+  var cats=[["","Tudo"]].concat(Object.keys(CATS).filter(function(k){return ANUNCIOS.some(function(a){return a.cat===k})}).map(function(k){return [k,CATS[k].nome]}));
+  var nInt=meus.reduce(function(s,a){return s+inter(a)},0);
+  el.innerHTML='<div class="nx-br"><div class="nx-br-main">'+
+      '<div class="nx-br-cab"><h1 class="nx-h1">Brechó</h1><div class="nx-br-busca"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14"/><path d="m16 16 4 4"/></svg><input type="search" id="nx-br-q" placeholder="Buscar câmera, lente, marca…" aria-label="Buscar no brechó" autocomplete="off" value="'+esc(NX.br.q)+'"></div>'+
+        '<button type="button" class="glass-btn glass-btn--ink" data-nx="br-novo">Anunciar</button></div>'+
+      '<div class="nx-pilulas" role="group" aria-label="Categorias">'+cats.map(function(c){return '<button type="button" data-nx="br-cat" data-cat="'+c[0]+'" aria-pressed="'+(NX.br.cat===c[0])+'">'+esc(c[1])+'</button>'}).join("")+'</div>'+
+      '<div id="nx-br-grade">'+nxBrGrade()+'</div></div>'+
+    '<aside class="nx-trilho nx-br-trilho"><span class="nx-rot">Seus anúncios</span>'+
+      (meus.length?'<ul class="nx-cheg-l">'+meus.map(function(a){ var n=inter(a);
+        return '<li><button type="button" class="nx-cheg" data-nx="br-abre" data-id="'+a.id+'"'+(n?' data-int="1"':'')+'><span class="nx-capa" style="background-image:url('+cssUrl(a.img||stillProd(a.cat,a.id*31+5,520,390))+')" aria-hidden="true"></span><span><b>'+esc(a.t)+'</b><small>'+
+          (a.vendido?"vendido":n?pl(n,"interessado","interessados"):"sem interessados ainda")+'</small></span></button></li>'}).join("")+'</ul>'+
+        (nInt?'<button type="button" class="glass-btn nx-largo" data-nx="ir" data-ir="propostas">Responder interessados</button>':'')
+       :'<p class="nx-sub">Nada anunciado ainda.</p>')+
+      (perto?'<span class="nx-rot">Perto de você</span><p class="nx-sub">'+pl(perto,"anúncio","anúncios")+' em '+esc(minha)+'.</p>':'')+
+    '</aside></div>';
+  var q=v("nx-br-q"); if(q) q.oninput=function(){ NX.br.q=q.value; v("nx-br-grade").innerHTML=nxBrGrade() };
+}
+
+/* ======================= a cola: pintar, clicar ======================= */
+function nxPintar(t){
+  if(!REAL||!NX_PRONTO) return;
+  t=t||S.tab;
+  try{
+    if(t==="propostas") nxPropostas(); else if(t==="agenda") nxAgenda(); else if(t==="jobs") nxJobs();
+    else if(t==="brecho") nxBrecho(); else if(t==="meu") nxMeu();
+  }catch(e){ console.warn("telas novas",e) }
+}
+function nxAcao(a,b){
+  var id=b.dataset.id;
+  if(a==="folha-x") return nxFolhaFechar();
+  if(a==="ir"){ nxFolhaFechar(true); return show(b.dataset.ir) }
+  if(a==="pp-aba"){ NX.pp=b.dataset.aba; NX.ppSel=null; return nxPropostas() }
+  if(a==="pp-sel"){ NX.ppSel=id; var L=NX.pp==="env"?nxEnviadas():nxRecebidas(), pr=L.find(function(x){return String(x.id)===String(id)});
+    if(matchMedia("(max-width:820px)").matches&&pr){ nxFolha(pr.de||"Proposta",'<div class="nx-pp-det">'+nxPropDet(pr)+'</div>'); return }
+    return nxPropostas() }
+  if(a==="pp-aceita"){ nxFolhaFechar(true); som("toque"); return aceitar(+id) }
+  if(a==="pp-recusa"){ var p=PROPOSTAS.find(function(x){return x.id===+id}); if(p) nxRecusar(p); return }
+  if(a==="pp-perfil"){ nxFolhaFechar(true); return abrirPerfil(+id) }
+  if(a==="ag-mes"){ var dd=+b.dataset.d; NX.agMes=dd?new Date((NX.agMes||HOJE).getFullYear(),(NX.agMes||HOJE).getMonth()+dd,1):null; return nxAgenda() }
+  if(a==="ag-dia"){ var k=b.dataset.k;
+    if(NX.agBloq){ if(NX.agBloq.has(k)) NX.agBloq.delete(k); else NX.agBloq.add(k); nxAgenda(); var x=document.querySelector('#nx-ag [data-k="'+k+'"]:not([hidden])'); if(x&&x.offsetParent) x.focus(); return }
+    return nxDiaFolha(k) }
+  if(a==="ag-bloq"){ NX.agBloq=new Set(); return nxAgenda() }
+  if(a==="ag-bloq-x"){ NX.agBloq=null; return nxAgenda() }
+  if(a==="ag-bloq-ok"){ if(!NX.agBloq||!NX.agBloq.size) return; var n=NX.agBloq.size;
+    NX.agBloq.forEach(function(k){ declarar(k,"fechado","dia",null) }); NX.agBloq=null; tocou(); drawAgenda(); render();
+    avisar({t:pl(n,"dia bloqueado","dias bloqueados"),sub:"Quem contrata não te acha nesses dias.",icone:"✓"}); return }
+  if(a==="jb-ver") return nxJobVer(id);
+  if(a==="jb-feitos"){ NX.jbFeitos=!NX.jbFeitos; return nxJobs() }
+  if(a==="jb-fora"){ som("toque"); return abrirConvite() }
+  if(a==="br-cat"){ NX.br.cat=b.dataset.cat; return nxBrecho() }
+  if(a==="br-abre") return abrirAnuncio(+id);
+  if(a==="br-novo") return abrirNovoAnuncio();
+  if(a==="meu-trab") return abrirEditorTrab(null);
+  if(a==="meu-ver") return abrirPerfil(EU.id);
+  if(a.indexOf("meu-")===0) return nxMeuFolha(a.slice(4));
+}
+if(REAL){
+  Object.keys(NX_TELAS).forEach(function(t){ var s=v("v-"+t); if(!s||v(NX_TELAS[t])) return;
+    var d=document.createElement("div"); d.id=NX_TELAS[t]; d.className="nx"; s.insertBefore(d,s.firstChild) });
+  document.addEventListener("click",function(e){ var b=e.target.closest&&e.target.closest("[data-nx]"); if(!b||b.disabled||b.getAttribute("aria-disabled")==="true") return; nxAcao(b.dataset.nx,b) });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&v("nx-folha")) nxFolhaFechar() });
+  NX_PRONTO=true;
 }
 function contaZroDe(x){
   const c=CREW.find(y=>y.id===x.quem);
@@ -23765,6 +24951,7 @@ function drawJobs(){
   if(z) z.onclick=()=>{zapJobs[z.dataset.zap]=!zapJobs[z.dataset.zap];som("claquete");drawJobs()};
   ligarAcoesJob(v("jb-det"),list.find(e=>e.id===jobAberto));
   posicionarDetJob();
+  if(REAL) nxPintar();
 }
 /* ============ o detalhe abre EMBAIXO do card tocado (29/ago) ============
    Victor: "na hora que seleciono o card do job, ele precisa abrir embaixo
@@ -26769,6 +27956,7 @@ function drawBrecho(){
   el.innerHTML=list.map(a=>cardAnuncio(a)).join("");
   el.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>abrirAnuncio(+b.dataset.a));
   drawVendas(); drawCatGrid(); drawOport(); drawAchados();
+  if(REAL) nxPintar();
 }
 function cardAnuncio(a,extra){
   {
@@ -31108,7 +32296,7 @@ function ligarTituloTopo(){
   const tt=v("top-tit"); if(!tt) return;
   if(_titObs){ _titObs.disconnect(); _titObs=null }
   document.body.classList.remove("tit-topo");
-  const sec=v("v-"+S.tab), h=sec&&sec.querySelector(".pghero h1, .bhead h1");
+  const sec=v("v-"+S.tab), h=sec&&!(REAL&&sec.querySelector(":scope>.nx"))&&sec.querySelector(".pghero h1, .bhead h1");
   if(!h||!("IntersectionObserver" in window)){ tt.dataset.t=""; return }
   tt.dataset.t=h.textContent.replace(/\s+/g," ").trim();
   _titObs=new IntersectionObserver(es=>es.forEach(e=>{

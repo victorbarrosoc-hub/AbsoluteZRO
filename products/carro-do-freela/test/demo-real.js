@@ -52,7 +52,7 @@ const { CHROME, ARGS } = require('./_navegador');
   t(/Demonstração/.test(st.selo) && /fictícios/.test(st.selo), 'o selo diz que é demonstração com perfis fictícios');
   t(st.link === 'https://carro.absolutezro.com/', '⟶⟶ e leva ao site de verdade');
   // site real no computador (02/11): o selo neon é a marca da lateral, e há um menu só (sem o ☰; a conta abre "conta e ajustes")
-  const m = await p.evaluate(() => ({ hb: getComputedStyle(document.getElementById('menu-bt')).display,
+  let m = await p.evaluate(() => ({ hb: getComputedStyle(document.getElementById('menu-bt')).display,
     selo: !!document.querySelector('.top .brand .zselo:not([hidden])') && getComputedStyle(document.querySelector('.top .brand .mk-marca')).display === 'none' }));
   t(m.selo, 'a lateral mostra o selo neon, não o "///"');
   t(m.hb === 'none', 'no computador não há ☰: a lateral é o menu');
@@ -100,6 +100,75 @@ const { CHROME, ARGS } = require('./_navegador');
   t(!telas.length, 'nas telas dos dois lados, nada de dinheiro, plano, contrato ou WhatsApp' + (telas.length ? ' (' + telas.slice(0, 4).join(' | ') + ')' : ''));
   t(await p.evaluate(() => !CAD_PERG.some(q => /WhatsApp/.test(q.t)) && !ITENS.some(i => i.k === 'fone')), 'o cadastro não pergunta o WhatsApp (o número não teria para onde ir)');
   t(!api.length, 'nenhum pedido chega ao servidor (' + api.slice(0, 3).join(', ') + ')');
+  /* 02/11 · 3 · AS TELAS NOVAS DO SITE REAL (desenho aprovado pelo titular): cada tela nova pinta o seu bloco e o
+     antigo some; a caixa de propostas abre na primeira, a agenda é o mês inteiro, o brechó é vitrine */
+  await p.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick() });
+  const telasNovas = [];
+  for (const [tela, sel] of [['propostas', '#nx-prop .nx-pp-it'], ['agenda', '#nx-ag .nx-cal .nx-dia'], ['jobs', '#nx-jb .nx-jb-hero'], ['brecho', '#nx-br .nx-an'], ['meu', '#nx-meu .nx-lista .nx-li']]) {
+    await p.evaluate(x => show(x), tela); await p.waitForTimeout(400);
+    telasNovas.push(await p.evaluate(([tela, sel]) => { const e = document.querySelector(sel), w = document.querySelector('#v-' + tela + '>.wrap');
+      return { tela, ok: !!e && !!e.offsetParent, antigo: !!w && !!w.offsetParent } }, [tela, sel]));
+  }
+  t(telasNovas.every(x => x.ok && !x.antigo), 'Propostas, Agenda, Jobs, Brechó e Meu perfil são as telas novas, e as antigas somem (' +
+    telasNovas.filter(x => !x.ok || x.antigo).map(x => x.tela).join(', ') + ')');
+  m = await p.evaluate(async () => { show('propostas'); await new Promise(r => setTimeout(r, 200));
+    const novas = PROPOSTAS.filter(x => x.status === 'novo').length;
+    const pr = PROPOSTAS.find(x => x.status === 'novo' && x.srvTipo === 'job');
+    document.querySelector('#nx-prop [data-nx="pp-sel"][data-id="' + pr.id + '"]').click(); await new Promise(r => setTimeout(r, 100));
+    const det = document.querySelector('#nx-prop .nx-pp-det'), tinha = /Aceitar/.test(det.innerText);
+    document.querySelector('#nx-prop .nx-pp-det [data-nx="pp-aceita"]').click(); await new Promise(r => setTimeout(r, 400));
+    return { det: !!det && /Seu dia/.test(det.innerText), tinha, aceita: PROPOSTAS.find(x => x.id === pr.id).status, job: JOBS.some(j => j.srv === pr.srv), novas,
+      pedidos: CDF_DEMO.pedidos.filter(x => /^PATCH propostas/.test(x)).length };
+  });
+  t(m.det && m.tinha && m.aceita === 'aceita' && m.job && m.pedidos === 1, '⟶⟶ a caixa mostra o detalhe com "Seu dia", e Aceitar vai ao servidor e vira job (' + JSON.stringify(m) + ')');
+  m = await p.evaluate(async () => { show('agenda'); await new Promise(r => setTimeout(r, 200));
+    const k = key(dateAt(20)); document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').click(); await new Promise(r => setTimeout(r, 100));
+    const folha = !!document.getElementById('nx-folha'); document.querySelector('#nx-folha [data-dia-op="dia"]').click(); await new Promise(r => setTimeout(r, 200));
+    return { folha, dec: AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p, est: document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').dataset.est,
+      put: CDF_DEMO.pedidos.filter(x => x === 'PUT agenda').length };
+  });
+  t(m.folha && m.dec === 'fechado/dia' && m.est === 'ocupado' && m.put >= 1, '⟶⟶ na agenda, tocar num dia abre a folha e marcar ocupado vai ao servidor (' + JSON.stringify(m) + ')');
+
+  /* 02/11 · 3 · A ENTRADA EM PERGUNTAS: a conta que acabou de chegar (/demo?novo=1) não cai no cadastro antigo; responde
+     uma pergunta por tela, e o fim é o caminho de sempre (concluirCadastro → PUT /api/zro/perfil) */
+  const pn = await ctx.newPage(); const errosN = []; pn.on('pageerror', e => errosN.push(e.message));
+  await pn.goto('https://carro.absolutezro.com/demo?novo=1');
+  await pn.waitForFunction(() => { const o = document.getElementById('ob'); return o && !o.hidden }, null, { timeout: 15000 }).catch(() => {});
+  const passosOb = [];
+  const passoOb = async () => passosOb.push(await pn.evaluate(() => { const o = document.getElementById('ob'); return o && !o.hidden ? (o.querySelector('.ob-tit') || {}).textContent : '(sem #ob)' }));
+  const irOb = () => pn.click('#ob [data-ob="ir"]');
+  await passoOb();
+  m = await pn.evaluate(() => ({ cad: S.tab === 'cadastro', ops: document.querySelectorAll('#ob [data-ob-modo]').length, cartao: /Assim quem contrata vê você/.test(document.getElementById('ob').textContent) }));
+  await irOb(); await passoOb();
+  await pn.fill('#ob-q', 'parna'); await pn.click('#ob [data-praca="Parnamirim/RN"]'); await pn.click('#ob-viaja');
+  const viajaRot = await pn.evaluate(() => document.querySelector('label[for="ob-viaja"]').textContent);
+  await irOb(); await passoOb();
+  await irOb(); const semFuncao = await pn.evaluate(() => document.getElementById('ob-nota').textContent);
+  for (const f of ['Op. de câmera', 'Editor', 'Editor']) await pn.click('#ob-func [data-func="' + f + '"]');
+  const estrela = await pn.evaluate(() => [OB.func.join(','), (document.querySelector('#ob-func [data-estrela]') || {}).dataset.func]);
+  await irOb(); await passoOb();
+  await pn.fill('#ob-port', '@voce.demo'); const prev = await pn.evaluate(() => document.getElementById('ob-prev').textContent);
+  await irOb(); await passoOb();
+  await pn.click('#ob-mostrar'); await irOb(); await pn.waitForTimeout(500); await passoOb();
+  const fim = await pn.evaluate(() => ({ pedidos: CDF_DEMO.pedidos.slice(), perfil: CDF_DEMO.perfil(), tab: S.tab, eu: [EU.cidade, EU.func.join(','), EU.port, !!EU.viaja],
+    txt: document.getElementById('ob').innerText }));
+  t(passosOb[0] !== '(sem #ob)' && !m.cad && m.ops === 2 && m.cartao, 'a conta nova cai na entrada em perguntas (não no cadastro antigo), com o cartão "Assim quem contrata vê você" ao lado');
+  t(passosOb.join(' | ') === 'Você está aqui para quê? | Onde você trabalha? | O que você faz? | Onde está o seu trabalho? | Quer aparecer na busca? | Você está no Carro.',
+    '⟶⟶ uma pergunta por tela, cinco e o pronto (' + passosOb.join(' | ') + ')');
+  t(viajaRot === 'Topo viajar' && /função/.test(semFuncao), '⟶⟶ "Topo viajar", e sem função não passa (' + semFuncao + ')');
+  t(estrela[0] === 'Editor,Op. de câmera' && estrela[1] === 'Editor', '⟶⟶ tocar de novo numa função marcada faz dela a principal (★) (' + estrela.join(' / ') + ')');
+  t(/instagram\.com\/voce\.demo/.test(prev), '⟶⟶ o @ vira o link na hora (' + prev + ')');
+  t(fim.pedidos.includes('PUT perfil') && fim.perfil && fim.perfil.cidade === 'Parnamirim' && fim.perfil.uf === 'RN' && fim.perfil.funcoes.join(',') === 'Editor,Op. de câmera' &&
+    fim.perfil.portfolio === 'https://instagram.com/voce.demo' && fim.perfil.visibilidade === 'contratantes',
+    '⟶⟶ concluir manda o perfil ao servidor (PUT /api/zro/perfil) com praça, funções, portfólio e a busca ligada (' + JSON.stringify(fim.perfil) + ')');
+  t(/Marcar minha semana/.test(fim.txt) && /Ir para o feed/.test(fim.txt) && fim.eu[0] === 'Parnamirim/RN' && fim.eu[3], '⟶⟶ o pronto oferece a agenda e o feed, e o aparelho fica com o mesmo perfil (' + fim.eu.join(' · ') + ')');
+  t(!/WhatsApp|diária|equipamento que/i.test(passosOb.join(' ')) && !/\(\d{2}\)\s?\d|\d{4,5}-\d{4}/.test(fim.txt), '⟶⟶ sem WhatsApp, sem telefone e sem tabela de diária na entrada');
+  await pn.click('#ob [data-ob-fim="agenda"]'); await pn.waitForTimeout(400);
+  m = await pn.evaluate(() => ({ tab: S.tab, ob: document.getElementById('ob').hidden, pronto: perfilPronto() }));
+  t(m.tab === 'agenda' && m.ob && m.pronto, '⟶⟶ "Marcar minha semana" fecha a entrada e abre a agenda (' + JSON.stringify(m) + ')');
+  t(!errosN.length, '⟶⟶ zero erro de página na conta nova' + (errosN.length ? ': ' + errosN.join(' | ') : ''));
+  await pn.close();
+
   const p2 = await ctx.newPage(); await p2.goto('https://carro.absolutezro.com/nada');
   const lsReal = await p2.evaluate(() => ({ uso: localStorage.getItem('cdf-uso'), entrou: localStorage.getItem('cdf-entrou') }));
   t(lsReal.uso === 'conta-real' && lsReal.entrou === null, 'o localStorage do domínio fica intocado (' + JSON.stringify(lsReal) + ')');
