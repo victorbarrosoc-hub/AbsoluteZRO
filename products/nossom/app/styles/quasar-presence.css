@@ -1,0 +1,87 @@
+/* Quasar Presence e IA avançada (titular, 02/11/2026: "pode usar o roxo como nas anexadas"). O roxo marca a cadeia
+   de presença; texto continua neutro. */
+.studio-shell {
+  --presence: #8b5cf6;
+  --presence-luz: #a274ff;
+  --presence-fundo: rgba(139, 92, 246, 0.1);
+}
+.presence-switch {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: var(--presence-fundo);
+  cursor: pointer;
+  position: relative;
+}
+.presence-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.presence-switch-track {
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(127, 127, 140, 0.35);
+  position: relative;
+  transition: background 0.2s ease;
+}
+.presence-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+.presence-switch input:checked + .presence-switch-track {
+  background: linear-gradient(135deg, var(--presence), var(--presence-luz));
+}
+.presence-switch input:checked + .presence-switch-track::after {
+  transform: translateX(16px);
+}
+.presence-switch input:focus-visible + .presence-switch-track {
+  outline: 2px solid var(--presence-luz);
+  outline-offset: 2px;
+}
+.presence-switch input:disabled + .presence-switch-track {
+  opacity: 0.5;
+}
+.presence-switch-text {
+  display: grid;
+  gap: 2px;
+}
+.presence-switch-text strong {
+  font-size: 14px;
+}
+.presence-switch-text small {
+  font-size: 12px;
+  opacity: 0.72;
+}
+.studio-shell .advanced-redo {
+  width: 100%;
+  margin-top: 8px;
+  border-color: rgba(139, 92, 246, 0.45);
+}
+.studio-shell .advanced-redo svg {
+  color: var(--presence-luz);
+}
+.studio-shell .advanced-redo:hover:not(:disabled) {
+  background: var(--presence-fundo);
+}
+@media (prefers-reduced-motion: reduce) {
+  .presence-switch-track,
+  .presence-switch-track::after {
+    transition: none;
+  }
+}

@@ -125,13 +125,28 @@ test('cloud D restores once, preserves float import, saves before cleanup, then 
   });
   expect(original.format).toBe(3);
   expect(original.peak).toBeGreaterThan(0);
-  await page.getByRole('button', { name: 'Restaurar com IA', exact: true }).click();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Agora, deixe do seu jeito.', exact: true }),
   ).toBeVisible({ timeout: 90000 });
   expect(prepared).toBe(1);
   expect(submitted).toBe(1);
   expect(released).toBe(1);
+  // a Quasar Presence entra sozinha depois da IA, como uma versão a mais
+  const saved = await page.evaluate(async () => {
+    const request = indexedDB.open('nossom-studio');
+    const db = await new Promise<IDBDatabase>(
+      (resolve) => (request.onsuccess = () => resolve(request.result)),
+    );
+    const q = db.transaction('projects').objectStore('projects').getAll();
+    const list: any[] = await new Promise((resolve) => (q.onsuccess = () => resolve(q.result)));
+    return list[0].versions.map((v: any) => ({ preset: v.preset, parent: v.parentId }));
+  });
+  expect(saved.map((v: { preset?: string }) => v.preset)).toEqual([
+    undefined,
+    'Voz melhorada com a Z',
+    'Quasar Presence',
+  ]);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.finish-panel').scrollIntoViewIfNeeded();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -141,14 +156,17 @@ test('cloud D restores once, preserves float import, saves before cleanup, then 
     .withTags(['wcag2a', 'wcag2aa'])
     .analyze();
   expect(accessibility.violations).toEqual([]);
-  await page.getByRole('button', { name: /Encorpar · Premiere/ }).click();
+  await page
+    .locator('.finish-panel')
+    .getByRole('button', { name: /Quasar Presence/ })
+    .click();
   await expect(page).toHaveURL(/\/studio\/masterizacao\?project=/);
   await expect(
-    page.getByRole('button', { name: /Transmissão \+ Limite −3 dB/ }).first(),
+    page
+      .getByRole('group', { name: 'Presets de masterização' })
+      .getByRole('button', { name: /Quasar Presence/ }),
   ).toHaveAttribute('aria-pressed', 'true');
-  await expect(
-    page.getByText('Sua cadeia do Premiere, com quatro bandas e dois limitadores.'),
-  ).toBeVisible();
+  await expect(page.getByText('Quatro bandas e dois limitadores, como no Premiere.')).toBeVisible();
   expect(prepared).toBe(1);
   expect(submitted).toBe(1);
   await page.getByRole('button', { name: /Equalizar do meu jeito/ }).click();
@@ -168,9 +186,9 @@ test('unconfigured cloud restoration is explicit and keeps local tools available
   await expect(page.getByRole('heading', { name: 'Original', exact: true })).toBeVisible({
     timeout: 90000,
   });
-  await expect(page.getByRole('button', { name: 'Restaurar com IA', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Melhorar com a Z', exact: true })).toBeDisabled();
   await expect(
-    page.getByText('A melhoria com IA está temporariamente indisponível', { exact: true }),
+    page.getByText('A Z está temporariamente indisponível', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: /Experimentar outra limpeza/ }).click();
   await expect(page).toHaveURL(/\/studio\/limpeza\?project=/);
@@ -364,14 +382,106 @@ test('queued audio has no invented percentage and a confirmed cancellation permi
     .locator('input[type=file]')
     .first()
     .setInputFiles({ name: 'fila.wav', mimeType: 'audio/wav', buffer: wav(48000, 2) });
-  await page.getByRole('button', { name: 'Restaurar com IA', exact: true }).click();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
   const banner = page.locator('.processing-banner');
   await expect(banner).toContainText('O tratamento ainda não começou.');
   await expect(banner).not.toContainText('20%');
   await expect(banner.locator('progress')).not.toHaveAttribute('value', /.+/);
   await banner.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(banner).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Restaurar com IA', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Melhorar com a Z', exact: true })).toBeEnabled();
   await expect(page.getByText(/Pedido encerrado. O original foi preservado/)).toBeVisible();
   expect(cancellation).toBe(1);
+});
+
+test('when our engine fails, the advanced AI tries once with the same minutes and Presence still follows', async ({
+  page,
+}) => {
+  const duration = 2,
+    output = wav(48000, duration);
+  const ids = ['88888888-8888-4888-8888-888888888881', '88888888-8888-4888-8888-888888888882'];
+  const presets: string[] = [];
+  let prepared = 0;
+  await page.route('https://nossom-test.supabase.co/**', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+      body: route.request().method() === 'PUT' ? Buffer.from('{}') : output,
+    }),
+  );
+  await page.route('**/api/audio/jobs*', async (route) => {
+    const request = route.request();
+    if (request.method() === 'GET') {
+      const id = new URL(request.url()).searchParams.get('id');
+      if (id === ids[0]) return route.fulfill({ json: { id, status: 'failed' } });
+      if (id === ids[1])
+        return route.fulfill({
+          json: {
+            id,
+            status: 'completed',
+            downloadUrls: ['https://nossom-test.supabase.co/result'],
+            report: {
+              preset: 'ia-avancada-v1',
+              chunks: [{ index: 0, bytes: output.length }],
+              totalBytes: output.length,
+            },
+          },
+        });
+      return route.fulfill({ json: { configured: true, advanced: true, pending: null } });
+    }
+    const body = request.postDataJSON();
+    if (body.action === 'prepare')
+      return route.fulfill({
+        json: {
+          id: ids[prepared++],
+          partBytes: 20 * 1024 * 1024,
+          uploadUrls: ['https://nossom-test.supabase.co/source'],
+        },
+      });
+    if (body.action === 'submit') {
+      presets.push(body.preset);
+      return route.fulfill({ json: { id: body.id, status: 'queued' } });
+    }
+    if (body.action === 'release') return route.fulfill({ json: { ok: true } });
+    throw new Error('Unexpected cloud action');
+  });
+  await page.goto('/studio/automatico');
+  await page
+    .getByLabel('Importar arquivo de áudio', { exact: true })
+    .setInputFiles({ name: 'reserva.wav', mimeType: 'audio/wav', buffer: wav(48000, duration) });
+  await expect(page.getByRole('heading', { name: 'Original', exact: true })).toBeVisible({
+    timeout: 90000,
+  });
+  await expect(page.getByRole('switch', { name: /Quasar Presence depois da Z/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Agora, deixe do seu jeito.', exact: true }),
+  ).toBeVisible({ timeout: 90000 });
+  expect(presets).toEqual(['resemble-d-v1', 'ia-avancada-v1']);
+  const saved = await page.evaluate(async () => {
+    const request = indexedDB.open('nossom-studio');
+    const db = await new Promise<IDBDatabase>(
+      (resolve) => (request.onsuccess = () => resolve(request.result)),
+    );
+    const q = db.transaction('projects').objectStore('projects').getAll();
+    const list: any[] = await new Promise((resolve) => (q.onsuccess = () => resolve(q.result)));
+    return list[0].versions.map((v: any) => ({
+      preset: v.preset,
+      advanced: v.processing?.iaAvancada === true,
+      duration: v.info.duration,
+    }));
+  });
+  expect(saved.map((v: { preset?: string }) => v.preset)).toEqual([
+    undefined,
+    'Voz melhorada com a Z avançada',
+    'Quasar Presence',
+  ]);
+  expect(saved[1].advanced).toBe(true);
+  expect(Math.abs(saved[1].duration - duration)).toBeLessThan(0.01);
+  // a IA avançada já foi usada: não oferece refazer com ela de novo
+  await expect(page.getByRole('button', { name: /Refazer com a Z avançada/ })).toHaveCount(0);
 });
