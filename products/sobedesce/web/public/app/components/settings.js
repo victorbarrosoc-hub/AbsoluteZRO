@@ -10,7 +10,6 @@ import { Icon } from './icons.js'
 import { SheetHead } from './ui.js'
 import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
 import { Avatar, contaComoUser } from './main.js'
-import { AceitarOutros } from './p2p.js'
 import { DICA_MODO, NOME_MODO, modoDe } from '../lib/modo-drive.js'
 
 /** Drive híbrido: o modo deste Drive numa linha, com o que muda recolhido (os mesmos textos de Sua conta no site). */
@@ -152,9 +151,6 @@ export function SettingsSheet() {
             <${Linhas}>
               <${Linha} icone="transfers" titulo="Transferências do computador" sub=${pcSummary(pcs)} onClick=${() => openSheet('computador')} />
             </${Linhas}>
-          </${Passo}>
-          <${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${4}>
-            <${AceitarOutros} />
           </${Passo}>`}
 
       <${Familia} />

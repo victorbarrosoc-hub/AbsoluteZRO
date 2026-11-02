@@ -19,7 +19,6 @@ import { InstallHint } from './install-hint.js'
 import { isIOS } from '../lib/platform.js'
 import { ComputerCard } from './computador.js'
 import { Atalhos, Espaco, Recentes, Saudacao } from './inicio.js'
-import { P2pAndamentoCompacto } from './p2p.js'
 import { EMBUTIDO, GRANDE } from '../lib/embutido.js'
 
 const FINISHED_UI = new Set(['done', 'skipped'])
@@ -391,7 +390,6 @@ export function MainScreen() {
             <${Icon} name="upload" size=${16} /><span>Arquivo grande vai mais firme pelo <b>app do computador</b>.</span>
           </a>`
         : null}
-      ${!LAN && compact ? html`<${P2pAndamentoCompacto} />` : null}
       ${compact
         ? html`<div class="sendbar">
             <${Destination} dest=${dest} compact />
@@ -401,7 +399,7 @@ export function MainScreen() {
       ${reconnect ? html`<${ReconnectNotice} drive=${drive} message=${authError} />` : null}
       ${compact ? null : html`<div class="ini-entra" style="--i:2"><${Picker} dest=${lan?.noAccount || reconnect ? null : dest} account=${user?.emailAddress} /></div>`}
       ${LAN ? null : html`<${TransfersCard} />`}
-      ${inicio ? html`<${Atalhos} /><${P2pAndamentoCompacto} /><${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
+      ${inicio ? html`<${Atalhos} /><${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
       ${LAN ? html`<${LanNotices} lan=${lan} sum=${sum} />` : null}
 
       ${engine.notice

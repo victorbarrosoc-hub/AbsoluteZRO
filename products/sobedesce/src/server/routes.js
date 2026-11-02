@@ -26,7 +26,7 @@ import { registerFrames } from './frames.js'
 import { registerCenas } from './cenas.js'
 import { registerDiscos } from './discos.js'
 import { registerLan } from './lan.js'
-import { registerCelular } from './celular.js'
+import { registerRede } from './rede.js'
 import { registerBackup } from './backup.js'
 import { EntregaError, comprovanteDeEntrega, pastaDoLote } from '../engine/entrega.js'
 import { PreparoError, PreparoSynquei } from '../engine/preparo-synquei.js'
@@ -470,8 +470,8 @@ export function createApi(ctx) {
       discos: discos.view(),
       // Entre computadores: recepção pela rede (ligada?, recebendo) e o envio atual.
       lan: lan.view(),
-      // Celular pelo Wi-Fi: celulares online, o ajuste e o que está passando.
-      celular: celular.view(),
+      // Rede Local e Firewall do macOS (Entre computadores).
+      rede: rede.view(),
       // Backup Automático: o projeto aberto, os cartões espetados, a descarga de agora e a última.
       backup: backup.view(),
     }
@@ -551,8 +551,8 @@ export function createApi(ctx) {
   const discos = registerDiscos({ route, ctx, HttpProblem, servico: ctx.discosServico })
   // Entre computadores (src/server/lan.js): manda e recebe arquivos pela rede local, entre computadores da mesma conta.
   const lan = registerLan({ route, ctx, account, HttpProblem, receptor: ctx.lanReceptor, enviador: ctx.lanEnviador })
-  // Celular ↔ computador pelo Wi-Fi (src/server/celular.js): o celular da conta manda e recebe direto, por WebRTC.
-  const celular = registerCelular({ route, ctx, HttpProblem, baseHeaders, wifi: ctx.celularWifi })
+  // Rede Local e Firewall do macOS (src/server/rede.js), para o Entre computadores. O Wi-Fi com o celular saiu em 02/11/2026.
+  const rede = registerRede({ route, ctx })
   // Backup Automático (src/server/backup.js): Cartões → Projetos; cada cartão espetado é descarregado sozinho.
   const backup = registerBackup({ route, ctx, HttpProblem, servico: ctx.backupServico })
 
@@ -1244,7 +1244,7 @@ export function createApi(ctx) {
       cenas.close()
       discos.close()
       lan.close()
-      celular.close()
+      rede.close()
       backup.close()
     },
   }

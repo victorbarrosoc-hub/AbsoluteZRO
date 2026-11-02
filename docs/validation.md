@@ -626,6 +626,20 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: Wi-Fi celular ↔ aparelhos descontinuado (02/11/2026)
+
+Branch `sobedesce-wifi-espera` (PR #113). Primeiro espaçava a espera, depois uma chave; por fim o titular cancelou o
+recurso. Fica só "Entre computadores".
+
+- `web/tests/p2p.test.mts`: espera, aparelhos e sinal respondem 503 `p2p_descontinuado` com `Retry-After: 120` e
+  `proxima_em` 120 s, sem login, em menos de 0,5 s; as rotas não importam banco nem sessão.
+- `test/celular-p2p-antigo.test.js`: os laços dos apps antigos (cópia em `test/fixtures/p2p-antigo.js`) contra o 503:
+  computador recua 2 s, 4 s… até 60 s, celular até 30 s; ninguém sai da conta.
+- Entre computadores segue: `web/tests/lan.test.mts` (`/api/lan/presenca`, `/computadores` e `/proximos` respondem com o
+  p2p em 503) e `test/lan.test.js` (envio de ponta a ponta; `src/lan` não usa `/api/p2p` nem `src/celular`).
+- `test/app-sw.test.js`: app do celular 2.8.66 (cache v81), sem os arquivos do p2p na lista do cache.
+- `test/entrada-celular.test.js`: o teste do topo acompanha `af19f231` (estava vermelho na main).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma
