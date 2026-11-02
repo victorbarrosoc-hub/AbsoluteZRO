@@ -6,8 +6,8 @@ import { AccountFrame } from '@/components/account-frame'
 import { ActionForm } from '@/components/action-form'
 import { cancelPlanRequestAction, checkoutAction, planRequestAction, portalAction } from '@/lib/actions/account'
 import { priceLabel } from '@/lib/data/catalog'
-import { planCenterData } from '@/lib/data/hub'
-import { fmtDay } from '@/lib/labels'
+import { planCenterData, planoDaPessoa } from '@/lib/data/hub'
+import { fmtDay, planoTexto } from '@/lib/labels'
 import { db, requireOrgPage } from '@/lib/session'
 import { stripeConfig } from '@/lib/stripe'
 
@@ -36,7 +36,7 @@ function groupPlans(plans: PlanRow[]) {
 
 export default async function Plano({ searchParams }: { searchParams: Promise<{ assinatura?: string }> }) {
   const auth = await requireOrgPage()
-  const [avatar, d, sp] = await Promise.all([avatarVersion(db(), auth), planCenterData(auth), searchParams])
+  const [avatar, d, sp, plano] = await Promise.all([avatarVersion(db(), auth), planCenterData(auth), searchParams, planoDaPessoa(auth)])
   const online = stripeConfig() !== null
   const currentCodes = new Set(d.subscriptions.filter((s) => s.provider !== 'trial').map((s) => String(s.code).replace(/-anual$/, '')))
   const paid = d.subscriptions.filter((s) => s.kind !== 'free')
@@ -46,7 +46,14 @@ export default async function Plano({ searchParams }: { searchParams: Promise<{ 
   return (
     <AccountFrame auth={auth} avatar={avatar} title="Plano">
       <p className="zro-mute account-lede">
-        {d.org.name} ·{' '}
+        {d.org.name}
+        {plano ? (
+          <>
+            {' '}
+            · <strong className="plan-chip">{planoTexto(plano)}</strong>
+          </>
+        ) : null}{' '}
+        ·{' '}
         <Link href="/assinatura" className="zro-mute">
           ver consumo e limites
         </Link>
@@ -110,9 +117,9 @@ export default async function Plano({ searchParams }: { searchParams: Promise<{ 
                     <h3>{p.name as string}</h3>
                     <p className="plan-option__price">{priceLabel(p as never)}</p>
                     {monthly && yearly && <p className="zro-faint">ou {priceLabel(yearly as never)}</p>}
-                    <p className="zro-faint" title="Uso comum é livre. Só IA e processamento em GPU gastam créditos.">
+                    <p className="zro-faint" title="Cada mensagem da Z conta uma. Acabou o mês, a franquia renova.">
                       {String(p.products)} {p.products === 1 ? 'ferramenta' : 'ferramentas'}
-                      {p.ai_credits ? ` · ${Number(p.ai_credits).toLocaleString('pt-BR')} créditos de IA/mês` : ''}
+                      {p.ai_credits ? ` · ${Number(p.ai_credits).toLocaleString('pt-BR')} mensagens da Z/mês` : ''}
                     </p>
                     {online ? (
                       <div className="row">

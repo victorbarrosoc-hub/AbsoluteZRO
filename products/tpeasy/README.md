@@ -24,6 +24,8 @@ Visual claro com modo escuro automático; o TP é sempre escuro.
 
 **TP:** área calibrada arrastando as bordas, palavras por minuto, **rolar com a voz** (o texto anda enquanto você fala; só mede volume), espelho, linha de leitura com foco, contagem com bip opcional de sincronia, pinça para a letra, arrasto para voltar, ← → pulam de bloco no controle Bluetooth, tela sempre acesa.
 
+**Registro de leituras:** cada vez que o texto anda no TP vira uma leitura com a hora do bip e os blocos que passaram (`app/js/leituras.js`, contrato `tpeasy.leituras/1` em `docs/integration-contracts/tpeasy-leituras.md` na raiz). **Ajustes › Exportar leituras** gera o `.jsonl` para a pasta do material; o Synquei e o AEON vão usar para dar o nome do bloco a cada take. Fica só no aparelho (últimas 1.000).
+
 ## Entrar com Absolute ZRO
 
 A conta do TPeasy é a mesma da Absolute ZRO (login único do HUB, ADR 0012). Os roteiros **continuam salvos só no

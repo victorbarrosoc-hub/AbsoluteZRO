@@ -1,16 +1,21 @@
-// Parte de conta do app (app/js/conta.js): sem login aparecem "Entrar com Absolute ZRO" e "Criar conta" (prompt=create);
+// Parte de conta do app (app/js/conta.js): sem login aparecem "Entrar com Absolute ZRO", "Criar conta" (prompt=create) e
+// "Usar outra conta" (prompt=login);
 // conta sem o Synquei em zro_products mostra o aviso e "Ver na Absolute ZRO"; conta liberada mostra a organização.
 // No desktop/offline (sem função) nada aparece. Só gera HTML: roda no Node, sem navegador.
 
 import { beforeEach, test } from 'node:test'
 import assert from 'node:assert/strict'
 
-globalThis.location = { pathname: '/app/', hash: '#/ajustes', search: '', protocol: 'https:' }
-const { C, atalhoConta, cartaoConta, lerEu, linhaConta } = await import('../app/js/conta.js')
+const idas = []
+globalThis.location = { pathname: '/app/', hash: '#/ajustes', search: '', protocol: 'https:', replace: (u) => idas.push(u) }
+const { C, atalhoConta, cartaoConta, exigirConta, lerEu, linhaConta } = await import('../app/js/conta.js')
 
 const LIA = { nome: 'Lia Produtora', email: 'lia@produtora.com', organizacao: { nome: 'Produtora Lia', papel: 'owner' }, produtos: ['synquei'] }
 
-beforeEach(() => lerEu(0, null))
+beforeEach(() => {
+  lerEu(0, null)
+  idas.length = 0
+})
 
 test('sem login neste lugar (desktop, offline): nada de conta', () => {
   assert.equal(C.estado, 'sem')
@@ -25,13 +30,16 @@ test('visitante (200 entrou:false, o /eu?visitante=1) é o mesmo "sem sessão" d
   assert.equal(C.estado, 'sem', 'sem configurado: sem conta, como antes')
 })
 
-test('sem sessão: Entrar com Absolute ZRO e Criar conta (prompt=create)', () => {
+test('sem sessão: Entrar com Absolute ZRO, Criar conta (prompt=create) e Usar outra conta (prompt=login)', () => {
   lerEu(401, { ok: false, configurado: true })
   for (const html of [linhaConta(), cartaoConta()]) {
     assert.match(html, /Entrar com Absolute ZRO/)
     assert.match(html, /Criar conta/)
     assert.ok(html.includes('href="/api/zro/entrar?volta=%2Fapp%2F%23%2Fajustes"'))
     assert.ok(html.includes('href="/api/zro/entrar?volta=%2Fapp%2F%23%2Fajustes&amp;criar=1"'))
+    // "Usar outra conta" embaixo de Entrar: prompt=login na Absolute ZRO (sem isto reaproveita calado a conta aberta lá)
+    assert.match(html, /<a class="conta-outra" data-entrar="outra" href="\/api\/zro\/entrar\?volta=%2Fapp%2F%23%2Fajustes&amp;outra=1">Usar outra conta<\/a>/)
+    assert.ok(html.indexOf('Usar outra conta') > html.indexOf('Entrar com Absolute ZRO'))
     assert.ok(!/senha|Google/i.test(html), 'sem cadastro próprio')
   }
 })
@@ -112,4 +120,50 @@ test('o Início leva o canto da conta e o app redesenha quando a conta muda', as
   assert.match(inicio, /data-conta-atalho>\$\{atalhoConta\(\)\}/)
   const main = await readFile(new URL('../app/js/main.js', import.meta.url), 'utf8')
   assert.match(main, /querySelectorAll\('\[data-conta-atalho\]'\)\) el\.innerHTML = atalhoConta\(\)/)
+})
+
+// O site pede a conta (decisão do titular, 02/11/2026): fora dela, /entrar/ e volta para a mesma tela.
+test('fora da conta no site: vai para /entrar/ com a volta (e o recado do login); sem login aqui ou dentro, segue aberto', () => {
+  assert.equal(exigirConta(), false, 'sem login neste lugar (offline, arquivo, site sem a configuração): não derruba ninguém')
+  lerEu(503, { ok: false })
+  assert.equal(exigirConta(), false)
+  lerEu(200, { ok: true, acesso: true, pessoa: LIA })
+  assert.equal(exigirConta(), false)
+  lerEu(200, { ok: true, acesso: false, pessoa: LIA })
+  assert.equal(exigirConta(), false, 'conta sem o Synquei liberado continua no aviso de Ajustes')
+  assert.deepEqual(idas, [])
+  lerEu(200, { ok: false, configurado: true, entrou: false })
+  assert.equal(exigirConta(), true)
+  lerEu(401, { ok: false, configurado: true })
+  assert.equal(exigirConta('recusado'), true)
+  assert.deepEqual(idas, ['/entrar/?volta=%2Fapp%2F%23%2Fajustes', '/entrar/?volta=%2Fapp%2F%23%2Fajustes&zro=recusado'])
+})
+
+test('no app de computador a conta não é exigida aqui (ele chega pela central da Absolute ZRO)', () => {
+  globalThis.window = { synqueiDesktop: { conta: true } }
+  try {
+    lerEu(401, { ok: false, configurado: true })
+    assert.equal(exigirConta(), false)
+    assert.deepEqual(idas, [])
+  } finally {
+    delete globalThis.window
+  }
+})
+
+test('a página inicial leva a Entrar e não promete mais "sem conta"', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const site = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+  assert.match(site, /<a class="btn btn-soft btn-lg" href="\/entrar\/">Entrar<\/a>/)
+  assert.doesNotMatch(site, /Sem conta/)
+  const plano = await readFile(new URL('../app/js/plano.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(plano, /Sem conta/)
+})
+
+test('o 308 do endereço antigo deixa /entrar/ no lugar (o app e os projetos de lá entram por ele)', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const cfg = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'))
+  const r = cfg.redirects.find((x) => x.source.startsWith('/:caminho(') && x.has?.[0]?.value === 'synquei.vercel.app')
+  const re = new RegExp('^/' + r.source.slice('/:caminho'.length) + '$')
+  for (const fica of ['/entrar/', '/entrar', '/app/', '/api/zro/entrar']) assert.doesNotMatch(fica, re, fica)
+  for (const vai of ['/formatos/', '/entrarx', '/site.css']) assert.match(vai, re, vai)
 })

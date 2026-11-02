@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Entrar · Relay</title>
+    <meta name="description" content="Entre no Relay com a sua conta Absolute ZRO." />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta property="og:title" content="Relay · Entrar" />
+    <meta property="og:image" content="https://relay.absolutezro.com/marca/og.png" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="app/relay.css" />
+    <link rel="stylesheet" href="app/entrar.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/entrar.js"></script>
+  </head>
+  <body class="pagina-entrar">
+    <a class="entrar-voltar marca" href="./" aria-label="Relay, início"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+    <main class="entrar">
+      <span class="rele rele--entrar" aria-hidden="true"></span>
+      <!-- fora da conta -->
+      <section id="fora" class="entrar-bloco" hidden>
+        <h1><span class="fino">Entre no</span> <span class="pesado">Relay.</span></h1>
+        <p class="apoio">Com a sua conta Absolute ZRO.</p>
+        <div class="acoes">
+          <a id="entrar" class="vidro vidro--tinta vidro--grande" href="/api/zro/entrar?volta=%2Fpainel">Entrar com Absolute ZRO</a>
+          <a id="criar" class="vidro vidro--grande" href="/api/zro/entrar?criar=1&amp;volta=%2Fpainel">Criar conta</a>
+        </div>
+        <a id="outra" class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fpainel" data-outra>Usar outra conta</a>
+      </section>
+      <!-- dentro -->
+      <section id="dentro" class="entrar-bloco" hidden>
+        <span id="avatar" class="avatar avatar--grande" aria-hidden="true"></span>
+        <h1 id="ola"></h1>
+        <p id="quem" class="apoio"></p>
+        <div class="acoes">
+          <a id="abrir" class="vidro vidro--tinta vidro--grande" href="/painel">Abrir o Relay</a>
+          <button class="vidro vidro--grande" type="button" data-sair>Sair</button>
+        </div>
+        <a class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fpainel" data-outra>Usar outra conta</a>
+      </section>
+      <!-- login não ligado neste endereço -->
+      <section id="desligado" class="entrar-bloco" hidden>
+        <h1><span class="fino">Entrar</span> <span class="pesado">chega em breve.</span></h1>
+        <p class="apoio">O Relay abre com a sua conta Absolute ZRO.</p>
+      </section>
+      <p id="aviso" class="entrar-aviso" role="status" aria-live="polite"></p>
+      <div class="familia-mini" aria-label="Uma conta para toda a família Absolute ZRO">
+        <span>Uma conta para</span>
+        <img src="marca/familia/maestro.svg" alt="Maestro" width="28" height="28" />
+        <img src="marca/familia/sobedesce.svg" alt="SOBEDESCE" width="28" height="28" />
+        <img src="marca/familia/synquei.svg" alt="Synquei" width="28" height="28" />
+        <img src="marca/familia/tpeasy.svg" alt="TPeasy" width="28" height="28" />
+        <img src="marca/familia/carro-do-freela.png" alt="Carro do Freela" width="28" height="28" />
+        <img src="marca/familia/absolute-zro-o.webp" alt="Absolute ZRO" width="28" height="28" />
+      </div>
+    </main>
+  </body>
+</html>

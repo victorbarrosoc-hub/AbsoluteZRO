@@ -1,4 +1,5 @@
-// 0020: o plano grátis traz 50 créditos de IA por mês (decisão do titular, 28/10/2026).
+// 0020: o plano grátis trazia 50 créditos de IA por mês; desde a 0055 a conta nova nasce no Zero, com 10 mensagens da Z
+// (quem já tinha os 50 continua com eles: planos-b.test.ts).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
@@ -10,8 +11,8 @@ beforeAll(() => {
 })
 afterAll(() => db.close())
 
-describe('créditos de IA no plano grátis', () => {
-  it('conta nova no grátis nasce com 50 créditos de IA por mês', async () => {
+describe('mensagens da Z no plano grátis', () => {
+  it('conta nova no Zero nasce com 10 mensagens da Z por mês', async () => {
     const o = await newOrgWithOwner(db, 'creditos-gratis', { freePlan: true })
     const [r] = await db.asSystem(
       'teste',
@@ -19,6 +20,6 @@ describe('créditos de IA no plano grátis', () => {
       select max((e.limits ->> 'zro.ai_credits')::bigint)::int as lim
       from zro.entitlements e where e.org_id = ${o.orgId} and e.status = 'active'`,
     )
-    expect(r?.lim).toBe(50)
+    expect(r?.lim).toBe(10)
   })
 })

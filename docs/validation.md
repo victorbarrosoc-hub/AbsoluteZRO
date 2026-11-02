@@ -22,6 +22,81 @@ Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei
 `products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
 Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
 
+## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ADR 0039)
+
+Branch `planos-b`, migração `0055_planos_zero_orbita_absoluto.sql`. Rodado com banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_planosb_test`: outra sessão no mesmo Postgres recriava o `zro_test` no meio da bateria).
+
+- `npm test`: **602/602** em 68 arquivos. Novo `tests/integration/planos-b.test.ts` (22): preços e planos antigos como
+  legado; catálogo de limites (null = sem limite) sem apps fechados; nível efetivo (conta nova no Zero, **conta antiga
+  não perde nada**, avulso, Órbita, admin com Absoluto em tudo, sem vínculo = Zero, claims `zro_nivel`/`zro_teste_ate`);
+  Z franquia → recarga (vencida não conta, idempotente, `providerRef` único); campanha (desligada por padrão, ligar dá
+  às contas do Zero que já existiam e não às antigas nem às sem e-mail, conta nova ganha ao criar a organização ou ao
+  confirmar o e-mail, uma vez só, e-mail normalizado repetido, descartável e 4º do mesmo IP recusados e contados,
+  estender/encerrar com auditoria, Z do teste no período inteiro, desligar mantém quem está em teste, campanha vencida);
+  migração das contas antigas (desligada recusa, ligada migra com auditoria); RLS (limites: todos leem, só admin muda;
+  testes, recargas, campanha e sinais isolados).
+- Testes antigos ajustados ao catálogo novo: planos de 0011/0025/0027/0041/0043 seguem no banco como `retired`; os
+  backfills simulam conta antiga com `legacyFreeOrg` (o grátis antigo); `givePlan` dá plano antigo como assinatura
+  manual direta; Ligar vendas recusa.
+- `npm run test:e2e` (banco e porta próprios): **67/67** em 16 arquivos. Novos: a conta nova vê "Zero" no Início e no
+  Perfil, `nivel`/`teste_ate` em `/api/v1/entitlements`, `/api/v1/me/limites` e o cache público de `/api/v1/limites`
+  (o `no-store` geral de `/api` não vale para ele, `next.config.ts`); `/planos` com R$ 109,90 e R$ 299,90, sem
+  R$ 149,90, sem "fase" nem "em breve"; console › Planos com o teste desligado, os limites por nível e o axe.
+- `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm run build`: ok. `node scripts/scan-secrets.mjs`:
+  nenhum segredo.
+
+## TPeasy: registro de leituras tpeasy.leituras/1 (02/11/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` → **83/83** (linha com fuso, blocos em ordem, origem e versão do
+  Maestro, toque de menos de 1,5 s fora, últimas 1.000, JSONL; SW `tpeasy-v24`).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **593/593** em 69 arquivos (o schema aceita as linhas geradas
+  pelo `leituras.js` real e recusa campo a mais, tempo fora de ordem, bloco depois do fim e versão sem origem);
+  `npm run test:e2e` **61/68**: 6 são WebKit e não abriram neste ambiente (`Executable doesn't exist`); a
+  outra é `iphone-telas` (`/admin/lancamento`, "Revogar e encerrar sessões" passa da largura), vermelha no `main` também.
+- CI vermelho herdado do `main` (`iphone-telas`, `/admin/lancamento`): com o `<details class="adm-confirm">` fechado, o
+  formulário ficava espremido em 24 px ao lado do botão e o campo e o botão (223 px) passavam da borda. Corrigido em
+  `globals.css` (`.adm-confirm:not([open]) > :not(summary) { display: none }`): reproduzido e conferido com uma pessoa
+  na lista de acesso (375/393/430, fechado e aberto: o form aberto fica em 40–328 de 375) e o teste inteiro passou
+  no Chromium (WebKit não abre neste ambiente; o CI confere).
+- Fumaça no Chromium (iPhone 13), app servido como estático: roteiro `# Gancho` / `# Oferta` a 320 ppm, uma leitura de
+  6 s grava os dois blocos (Oferta aos 3,4 s), Ajustes mostra 1, nenhum erro no console.
+
+## Higgsfield: renovação e medidor do ciclo nas Conexões (02/11/2026)
+
+Branch `higgsfield-renovacao`.
+
+- `npm run lint`, `npm run format:check`, `npm run typecheck`: ok. `npm test`: **590/590** em 68 arquivos,
+  com `packages/core/test/higgsfield-ciclo.test.ts` (com e sem crédito de assinatura, pacote do ciclo e do anterior,
+  devolução, data vencida sem crédito novo, virada de mês e de ano, 31/01 → 28/02 e 29/02, sinal do gasto, medidor) e
+  o caso novo em `tests/integration/higgsfield.test.ts` (extrato de 403 lançamentos em páginas: a varredura para na 2ª
+  página, a que passa de 40 dias; o painel dos apps traz o mesmo ciclo).
+- `npm run build`: ok. E2E novo `tests/e2e/higgsfield.spec.ts` (Higgsfield falsa na porta 3295,
+  `ZRO_HIGGSFIELD_TESTE_URL`): conectar, saldo puro sem crédito de assinatura e, com ele, "renova em", "de 800 no
+  ciclo · 120 usados pelos apps", o medidor (`aria-valuetext` "65,41 de 800", apps em 15%), sem rolagem lateral, em
+  1440 e 393: **2/2**. Capturas claro e escuro conferidas.
+- Não testado contra a Higgsfield de verdade a partir do HUB: o formato do extrato (`display_name`, `action`, `credits`,
+  `created_at`, `next_cursor`) segue o que a Higgsfield devolveu na conta do titular.
+
+## Synquei: o site pede a conta Absolute ZRO (02/11/2026)
+
+Branch `claude/synquei-pede-conta`, em `products/synquei`.
+
+- `tests/entrar.test.mjs` (6): `/entrar/` fora (Entrar e Criar conta com a volta e o recado do login), o 401 antigo,
+  dentro (volta direto; sem volta, quem é, Abrir e Sair), sem rede ou sem login ligado (app aberto) e a volta segura.
+- `tests/conta-ui.test.mjs`: fora da conta o app vai para `/entrar/?volta=` (com `&zro=`); sem login no lugar, dentro,
+  sem acesso ao Synquei e no app de computador, não; a inicial sem "Sem conta"; o 308 do endereço antigo deixa
+  `/entrar/` e o `/app/` no lugar.
+- Cache do app em `synquei-v29`.
+
+## Quasar: página inicial com o slogan (02/11/2026)
+
+- Medido em 1440, 390 e 320 px:
+  - o slogan ocupa duas linhas de texto;
+  - a onda aparece inteira;
+  - sem rolagem lateral.
+- E2E do estúdio, player, destinos, Z e acesso fechado passando, com os títulos atualizados.
+
 ## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
 
 - `tests/quasar-ia.test.ts` (5) cobre a cor:
@@ -4749,6 +4824,13 @@ SOBEDESCE de computador, que disparam os instaladores).
   ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
   isso a prévia em vez da captura do menu nativo.
 
+## Relay: entrar com a conta Absolute ZRO (02/11/2026)
+
+- `test/painel.test.js`: fora da conta, `/painel` e `/converter?preset=reels` levam para `/entrar?volta=…`, com
+  "Entrar com Absolute ZRO" e "Criar conta" voltando para a mesma página; a página inicial leva a `/entrar`.
+  `test/inicio.test.js`: o herói mostra "Entrar" fora e "Seu painel" dentro. Login desligado no endereço (local,
+  testes): o conversor segue aberto. Relay `npm test`: 132/132.
+
 ## Carro do Freela: modo demonstração em /demo (02/11/2026)
 
 - `products/carro-do-freela/test/demo-real.js` 15/15: noindex, canonical no próprio /demo, sem AEON/Revela/NOSSOM/Rift, só o /demo carrega o modo, nenhum perfil do protótipo,
@@ -4756,3 +4838,40 @@ SOBEDESCE de computador, que disparam os instaladores).
   servidor, `localStorage` do domínio intocado, zero erro de página.
 - `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
   (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.
+
+## "Usar outra conta" no login dos apps (02/11/2026)
+
+- Causa conferida no banco de produção: os códigos do Carro de 02/11 12:26 saíram para a conta aberta no navegador; a
+  outra conta só abriu sessão às 12:27–12:28 e nenhum código do Carro saiu para ela (o entitlement do Carro estava
+  ativo).
+- Carro: `npm run test:api` 49/49 (`prompt=login` com `outra=1`; outro valor ignorado; criar vence) e `conta-zro`
+  152/152 (o link à vista, leva a `entrar?outra=1`, some no modo criar).
+- Relay `npm test` 133/133. Synquei `npm test` 163 ok, 10 pulados (WebKit, luajit, root), com a página `/entrar/` nova da `main` (`tests/entrar.test.mjs` 7/7). TPeasy
+  `node --test tests/*.test.mjs` 80 ok, 4 pulados (WebKit).
+- Maestro: typecheck, lint, format e build ok; `tests/zro.test.mts` 29/29 (inclui o `invalid_scope` mantendo
+  `outra=1`); `tests/relay.test.mts` 37/37 depois do merge da `main` (a cópia do Relay já atualizada lá).
+- `scan-secrets`: nenhum segredo.
+
+## AEON: /app/ com a barra abre o editor depois do login (02/11/2026)
+
+- Causa: a volta do login é `/app/?zro=ok`, e na Vercel `/app/:caminho*` não casa com `/app/` (barra no fim, nada
+  depois). O pedido caía no 404 estático, a página neutra, mesmo para a conta liberada. `/app` e `/app/index.html`
+  chegavam à função.
+- Correção: reescrita explícita `/app/` → `/api/app?caminho=app/index.html` antes da regra curinga (`vercel.json`), e o
+  teste `test/fechado.test.js` confere a lista.
+- `npm test` do AEON 261/261; `node scripts/scan-secrets.mjs` sem segredo.
+
+## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026)
+
+- `test/demo-real.js` 18/18 (selo na lateral, sem ☰ no computador, a conta abre "conta e ajustes" sem repetir as telas).
+- `menu-recolhivel` 52/52, `mapa` 72/72, `doca` 39/39, `site-real` 42/42, `guia-portas` 33/33, `identidade` 19/19.
+
+## AEON: BRAW pelo proxy (02/11/2026)
+
+- `src/proxy.js` (puro) pareia RAW e proxy pelo nome-base. A subpasta `Proxy` vem primeiro, o proxy pareado não entra
+  solto e os `._` do Mac ficam de fora. `test/proxy.test.js` 4/4: pareio, pasta do cartão, `accept` do seletor e FCPXML
+  apontando para o `.braw` (e não para o `.mp4`).
+- Tela (Chromium): `.braw` com proxy entra como "B001_C001.braw" com a ficha "proxy". O `.braw` sem proxy abre a folha,
+  e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
+- `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
+- Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).

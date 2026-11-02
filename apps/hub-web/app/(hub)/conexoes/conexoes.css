@@ -181,7 +181,7 @@
   gap: 6px;
 }
 
-/* Higgsfield: o saldo grande, o medidor do que os apps usaram no mês e uma linha de apoio. */
+/* Higgsfield: o saldo grande, o medidor do disponível no ciclo (com o que os apps usaram) e uma linha de apoio. */
 .conexao__creditos {
   display: grid;
   gap: var(--space-2);
@@ -195,18 +195,29 @@
   color: var(--text-strong);
 }
 .conexao__medidor {
+  display: flex;
   height: 8px;
   border-radius: 999px;
   background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--line);
   overflow: hidden;
 }
+/* cheia = muito saldo; a parte clara logo depois é o que os apps usaram, dentro do que já foi gasto */
 .conexao__medidor span {
   display: block;
+  flex: none;
   height: 100%;
-  border-radius: inherit;
   background: var(--text-strong);
   transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.conexao__medidor span:last-child {
+  border-radius: 0 999px 999px 0;
+}
+.conexao__medidor .conexao__medidor-apps {
+  background: color-mix(in srgb, var(--text-strong) 28%, transparent);
+}
+.conexao__renova {
+  white-space: nowrap;
 }
 .conexao__creditos p.zro-faint {
   margin: 0;

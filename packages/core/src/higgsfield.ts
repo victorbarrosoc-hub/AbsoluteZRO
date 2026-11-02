@@ -499,33 +499,110 @@ async function saldo(s: SessaoHiggsfield): Promise<{ creditos: number | null; pl
   }
 }
 
-/** Créditos gastos na Higgsfield desde `desde` (gastos menos devoluções), pelo extrato (até 500 lançamentos). */
-async function usoDesde(s: SessaoHiggsfield, desde: Date): Promise<number> {
-  let usado = 0
-  let cursor: unknown
-  for (let pagina = 0; pagina < 5; pagina++) {
-    const d = await s.chamar('transactions', { size: 100, ...(cursor != null ? { cursor } : {}) })
-    const itens = Array.isArray(d.items) ? (d.items as Record<string, unknown>[]) : []
-    let antigo = false
-    for (const t of itens) {
-      if (new Date(String(t.created_at)) < desde) {
-        antigo = true
-        break
-      }
-      const c = Number(t.credits)
-      if (Number.isFinite(c) && ['spend', 'deduct', 'refund'].includes(String(t.action))) usado -= c
-    }
-    if (antigo || d.next_cursor == null || !itens.length) break
-    cursor = d.next_cursor
-  }
-  return Math.max(0, Math.round(usado * 100) / 100)
-}
-
 const semFalha = <T>(p: Promise<T>): Promise<T | null> =>
   p.catch((e) => {
     if (e instanceof Recusada) throw e
     return null
   })
+
+/** Um lançamento do extrato da Higgsfield, já lido (o que não tem data ou número fica de fora). */
+export type LancamentoHiggsfield = { nome: string; acao: string; creditos: number; em: Date }
+
+export function lancamentoHiggsfield(t: unknown): LancamentoHiggsfield | null {
+  if (!t || typeof t !== 'object') return null
+  const r = t as Record<string, unknown>
+  const em = new Date(String(r.created_at ?? ''))
+  const creditos = Number(r.credits)
+  if (Number.isNaN(em.getTime()) || r.credits == null || r.credits === '' || !Number.isFinite(creditos)) return null
+  return { nome: typeof r.display_name === 'string' ? r.display_name.trim() : '', acao: String(r.action ?? '').toLowerCase(), creditos, em }
+}
+
+const ehAssinatura = (t: LancamentoHiggsfield) => t.acao === 'grant' && /^subscription credits$/i.test(t.nome)
+const ehPacote = (t: LancamentoHiggsfield) => t.acao === 'grant' && /^credit package$/i.test(t.nome)
+const centavos = (n: number) => Math.round(n * 100) / 100
+const DIA = 86_400_000
+
+/** Gasto desde `desde`: gastos e descontos menos devoluções (pelo valor, venha com o sinal que vier). */
+export function gastoDesde(itens: readonly LancamentoHiggsfield[], desde: Date): number {
+  let usado = 0
+  for (const t of itens) {
+    if (t.em < desde) continue
+    if (t.acao === 'spend' || t.acao === 'deduct') usado += Math.abs(t.creditos)
+    else if (t.acao === 'refund') usado -= Math.abs(t.creditos)
+  }
+  return Math.max(0, centavos(usado))
+}
+
+/** Um mês depois, no mesmo dia e hora (UTC); 31/01 vira o último dia de fevereiro. */
+export function maisUmMes(d: Date): Date {
+  const mes = d.getUTCMonth() + 1
+  const ultimo = new Date(Date.UTC(d.getUTCFullYear(), mes + 1, 0)).getUTCDate()
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), mes, Math.min(d.getUTCDate(), ultimo), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()),
+  )
+}
+
+/**
+ * O ciclo do plano na Higgsfield, pelo extrato (o `balance` só traz saldo e plano): começa no último crédito de
+ * assinatura ("Subscription Credits") e renova um mês depois, no mesmo dia e hora.
+ */
+export type CicloHiggsfield = {
+  inicioCiclo: Date
+  /** null quando a data já passou sem crédito de assinatura novo (não inventa) */
+  renovaEm: Date | null
+  /** os créditos daquele crédito de assinatura */
+  franquia: number
+  /** pacotes avulsos ("Credit Package") desde o início do ciclo */
+  extras: number
+  /** gastos e descontos menos devoluções desde o início do ciclo, em todos os lugares */
+  gastoNoCiclo: number
+}
+
+/** O ciclo pelos lançamentos (em qualquer ordem). Sem crédito de assinatura no extrato = null. */
+export function resumoDoCiclo(itens: readonly LancamentoHiggsfield[], agora = new Date()): CicloHiggsfield | null {
+  let grant: LancamentoHiggsfield | null = null
+  for (const t of itens) if (ehAssinatura(t) && t.em <= agora && (!grant || t.em > grant.em)) grant = t
+  if (!grant) return null
+  const inicio = grant.em
+  const renova = maisUmMes(inicio)
+  const extras = itens.filter((t) => ehPacote(t) && t.em >= inicio && t.em <= agora).reduce((s, t) => s + Math.abs(t.creditos), 0)
+  return {
+    inicioCiclo: inicio,
+    renovaEm: renova > agora ? renova : null,
+    franquia: centavos(Math.abs(grant.creditos)),
+    extras: centavos(extras),
+    gastoNoCiclo: gastoDesde(itens, inicio),
+  }
+}
+
+/**
+ * O extrato recente numa varredura só (o uso do mês e o ciclo saem dela): páginas de 100, mais novo primeiro, até ter o
+ * último crédito de assinatura e o começo do mês, até 40 dias para trás ou até 10 páginas.
+ */
+async function extrato(s: SessaoHiggsfield, agora = new Date()): Promise<LancamentoHiggsfield[]> {
+  const mes = inicioDoMes(agora).getTime()
+  const limite = agora.getTime() - 40 * DIA
+  const itens: LancamentoHiggsfield[] = []
+  let assinatura = false
+  let cursor: unknown
+  for (let pagina = 0; pagina < 10; pagina++) {
+    const d = await s.chamar('transactions', { size: 100, ...(cursor != null ? { cursor } : {}) })
+    const lista = (Array.isArray(d.items) ? d.items : []).map(lancamentoHiggsfield).filter((t): t is LancamentoHiggsfield => t != null)
+    itens.push(...lista)
+    assinatura ||= lista.some(ehAssinatura)
+    if (!lista.length || d.next_cursor == null) break
+    const antigo = Math.min(...lista.map((t) => t.em.getTime()))
+    if (antigo < limite || (assinatura && antigo < mes)) break
+    cursor = d.next_cursor
+  }
+  return itens
+}
+
+/** O uso do mês e o ciclo, de uma varredura do extrato só. null se a Higgsfield não mandou o extrato agora. */
+async function contas(s: SessaoHiggsfield, agora = new Date()): Promise<{ usoMes: number; ciclo: CicloHiggsfield | null } | null> {
+  const itens = await semFalha(extrato(s, agora))
+  return itens ? { usoMes: gastoDesde(itens, inicioDoMes(agora)), ciclo: resumoDoCiclo(itens, agora) } : null
+}
 
 // ───────────── os apps (token com zro.higgsfield) ─────────────
 
@@ -618,6 +695,8 @@ export type PainelHiggsfield = {
   saldo: number | null
   /** gasto na Higgsfield neste mês, pelo extrato dela (todos os lugares, inclusive fora da Absolute ZRO) */
   usoMes: number | null
+  /** o ciclo do plano pelo extrato (renovação, franquia, pacotes e gasto); null sem crédito de assinatura no extrato */
+  ciclo: CicloHiggsfield | null
   /** o que os apps registraram neste mês: este app e todos */
   usoApp: { mes: number; pedidos: number; total: number }
   usoApps: number
@@ -642,9 +721,9 @@ export async function painelHiggsfield(
   const [conta] = await db.asUser(p.ctx, (tx) => tx`select conta_email from zro.conexoes where provedor = 'higgsfield'`)
   const uso = await usoNoEcossistema(db, p)
   const r = await comSessao(db, amb!, p.ctx, async (s) => {
-    const [sd, usoMes, ...custos] = await Promise.all([
+    const [sd, ct, ...custos] = await Promise.all([
       semFalha(saldo(s)),
-      semFalha(usoDesde(s, inicioDoMes())),
+      contas(s),
       ...QUANTIDADES_IMAGEM.map((n) =>
         semFalha(
           s
@@ -666,14 +745,15 @@ export async function painelHiggsfield(
         ),
       ),
     ])
-    return { sd: sd as Awaited<ReturnType<typeof saldo>> | null, usoMes: usoMes as number | null, custos: custos as (number | null)[] }
+    return { sd: sd as Awaited<ReturnType<typeof saldo>> | null, ct: ct as Awaited<ReturnType<typeof contas>>, custos: custos as (number | null)[] }
   })
   return {
     conectada: true,
     conta: (conta?.conta_email as string) ?? 'Conta Higgsfield',
     plano: r.sd?.plano ?? null,
     saldo: r.sd?.creditos ?? null,
-    usoMes: r.usoMes,
+    usoMes: r.ct?.usoMes ?? null,
+    ciclo: r.ct?.ciclo ?? null,
     usoApp: { mes: uso.appMes, pedidos: uso.pedidosMes, total: uso.appTotal },
     usoApps: uso.todosMes,
     imagens: QUANTIDADES_IMAGEM.map((n, i) => ({ quantidade: n, creditos: r.custos[i] ?? null })),
@@ -934,14 +1014,49 @@ export async function minhaHiggsfield(
   })
 }
 
-/** O saldo e o plano na Higgsfield para a tela da conta (a pessoa, sem app). null se não deu para ler agora. */
-export async function saldoHiggsfield(
-  db: Database,
-  amb: AmbienteHiggsfield,
-  auth: Authenticated,
-): Promise<{ creditos: number | null; plano: string | null } | null> {
+export type SaldoHiggsfield = {
+  creditos: number | null
+  plano: string | null
+  /** o ciclo pelo extrato; null sem crédito de assinatura (ou sem extrato agora): o medidor fica só no saldo */
+  ciclo: CicloHiggsfield | null
+  /** o que os apps da Absolute ZRO registraram desde o início do ciclo (sem ciclo, desde o começo do mês) */
+  usoApps: number
+}
+
+/**
+ * O medidor do cartão: o disponível sobre o que entrou no ciclo (franquia + pacotes), com a parte que os apps usaram
+ * dentro do que foi gasto. Sem ciclo, cai no saldo puro (disponível + o que os apps usaram no mês). Frações de 0 a 1.
+ */
+export function medidorHiggsfield(s: Pick<SaldoHiggsfield, 'creditos' | 'ciclo' | 'usoApps'>): {
+  total: number
+  noCiclo: boolean
+  disponivel: number
+  apps: number
+} {
+  const saldo = Math.max(0, s.creditos ?? 0)
+  const noCiclo = !!s.ciclo && s.ciclo.franquia + s.ciclo.extras > 0
+  const total = noCiclo ? centavos(s.ciclo!.franquia + s.ciclo!.extras) : centavos(saldo + s.usoApps)
+  if (total <= 0) return { total: 0, noCiclo, disponivel: 0, apps: 0 }
+  const gasto = Math.max(0, total - saldo)
+  return { total, noCiclo, disponivel: Math.min(1, saldo / total), apps: Math.min(gasto, Math.max(0, s.usoApps)) / total }
+}
+
+/**
+ * O saldo, o plano e o ciclo na Higgsfield para a tela da conta (a pessoa, sem app), com o que os apps usaram no
+ * ciclo. null se não deu para ler o saldo agora.
+ */
+export async function saldoHiggsfield(db: Database, amb: AmbienteHiggsfield, auth: Authenticated, agora = new Date()): Promise<SaldoHiggsfield | null> {
+  const ctx = ctxDe(auth)
   try {
-    return await comSessao(db, amb, ctxDe(auth), (s) => saldo(s))
+    const [sd, ct] = await comSessao(db, amb, ctx, (s) => Promise.all([saldo(s), contas(s, agora)]))
+    const ciclo = ct?.ciclo ?? null
+    const desde = ciclo?.inicioCiclo ?? inicioDoMes(agora)
+    const [u] = await db.asUser(
+      ctx,
+      (tx) =>
+        tx`select coalesce(sum(creditos), 0)::float as uso from zro.ia_geracoes where criada_em >= ${desde} and estado not in ('falhou', 'recusado', 'cancelado')`,
+    )
+    return { ...sd, ciclo, usoApps: Number(u?.uso ?? 0) }
   } catch (e) {
     if (e instanceof DomainError && e.code === 'sem_conexao') throw e
     return null

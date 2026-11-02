@@ -127,6 +127,19 @@
 .greet .zro-mute {
   font-size: 1.02rem;
 }
+/* O plano na saudação (Início) e no Perfil: discreto, como assinatura ("Absoluto · teste até 17/11"). */
+.greet__plano {
+  color: inherit;
+  text-decoration: none;
+}
+.greet__plano:hover,
+.greet__plano:focus-visible {
+  text-decoration: underline;
+}
+.plan-chip {
+  font-weight: 500;
+  color: var(--text-strong);
+}
 
 .grid {
   display: grid;
@@ -3566,6 +3579,36 @@ a.hbars__row:hover {
 .adm-rows > li + li {
   border-top: 1px solid var(--line);
 }
+/* Limites por nível (console › Planos): uma tabela por app, números alinhados, cabe no celular. */
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-3) 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+.adm-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 6px;
+}
+.adm-table th,
+.adm-table td {
+  padding: 8px 6px;
+  border-top: 1px solid var(--line);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.adm-table th[scope='row'],
+.adm-table thead th:first-child {
+  text-align: left;
+  font-weight: 400;
+}
+.adm-table thead th {
+  color: var(--text-mute);
+  font-weight: 500;
+  border-top: 0;
+}
 .adm-inline-form .zro-input {
   width: 180px;
   max-width: 100%;
@@ -3586,6 +3629,11 @@ a.hbars__row:hover {
 }
 .adm-confirm[open] > summary {
   opacity: 0.6;
+}
+/* fechado, o formulário sai do layout: senão o navegador ainda mede a caixa (espremida ao lado do botão) e o
+   conteúdo dela passa da borda no iPhone */
+.adm-confirm:not([open]) > :not(summary) {
+  display: none;
 }
 .adm-confirm > form {
   justify-self: stretch;

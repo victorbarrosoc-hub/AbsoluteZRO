@@ -74,6 +74,36 @@ paths:
     post: { summary: Sair (revoga a sessão), responses: { '200': { description: ok } } }
   /api/v1/me:
     get: { summary: Pessoa, organização ativa e organizações, responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/me/limites:
+    get:
+      summary: Nível e limites efetivos da pessoa em cada app (planos Zero/Órbita/Absoluto, ADR 0039)
+      description: |
+        Pela sessão do HUB ou pelo token do login único de um app (escopo `org`, organização do token; CORS liberado
+        só com Bearer). Sem cache. `nivel` é igual à claim `zro_nivel`; `teste_ate` (ISO) só com o teste do Absoluto em
+        andamento. Por app: `nivel`, `origem` (zero | assinatura | avulso | teste | concessao | legado | admin), `ate` e
+        `limites` (`null` = sem limite; recurso: 1 = sim, 0 = não). Conta antiga (`origem: legado`): Absoluto nos apps
+        que já tinha, sem os limites novos (todo número `null`). App fechado para a pessoa não aparece.
+        `z`: `franquia` (mensagens da Z no mês; null = sem organização), `usadas`, `renova_em` e `recarga` (saldo que
+        vale 12 meses e só é gasto depois da franquia).
+      security: [{ session: [] }, { appToken: [] }]
+      responses:
+        {
+          '200':
+            {
+              description: '{ nivel: { maestro: "zero" }, teste_ate: null, produtos: { maestro: { nivel, origem, ate, limites: { clientes_ativos: 3 } } }, z: { franquia: 10, usadas: 0, renova_em, recarga: 0 } }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/limites:
+    get:
+      security: []
+      summary: Catálogo público dos limites por nível (Zero, Órbita, Absoluto) e da Z. Sem dado de pessoa, cacheável (5 min)
+      description: |
+        `produtos.<app>.<chave>` = `{ rotulo, tipo: quantidade | recurso, periodo: mes | null, unidade, valores: { zero,
+        orbita, absoluto } }` (`null` = sem limite; recurso 1/0). O Avulso de um app é o Absoluto naquele app. Só apps
+        abertos ao público. `z` = `{ mensagens_por_mes: { zero, orbita, absoluto, avulso }, teste_no_periodo, recargas:
+        [{ code, mensagens, preco_centavos, moeda, validade_meses }] }`.
+      responses: { '200': { description: '{ niveis, produtos, z }' } }
   /api/v1/users/{id}/avatar:
     get:
       summary: Foto do perfil (a própria ou de quem está na organização ativa; muda de endereço com ?v=)
@@ -675,7 +705,7 @@ paths:
         {
           '200':
             {
-              description: '{ conectada, conta, plano, saldo, usoMes, usoApp: { mes, pedidos, total }, usoApps, imagens: [{ quantidade, creditos }], opcoes: [{ id, nome, desc, segundos, creditos }] }',
+              description: '{ conectada, conta, plano, saldo, usoMes, ciclo: { inicioCiclo, renovaEm, franquia, extras, gastoNoCiclo } | null, usoApp: { mes, pedidos, total }, usoApps, imagens: [{ quantidade, creditos }], opcoes: [{ id, nome, desc, segundos, creditos }] }',
             },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
@@ -1350,7 +1380,9 @@ paths:
           '409': { $ref: '#/components/responses/Error' },
         }
   /api/v1/entitlements:
-    get: { summary: Situação de cada ferramenta para a organização ativa, responses: { '200': { description: ok } } }
+    get:
+      summary: Situação de cada ferramenta para a organização ativa, com o nível por app (nivel) e teste_ate (ADR 0039)
+      responses: { '200': { description: '{ organization_id, role, products, nivel: { "<product_id>": "zero" | "orbita" | "absoluto" }, teste_ate }' } }
   /api/v1/runs:
     get: { summary: Execuções da fila, responses: { '200': { description: ok } } }
   /api/v1/runs/{id}/reprocess:
@@ -1389,7 +1421,10 @@ paths:
         Tokens levam `zro_release` (`{ "<product_id>": "released" | "allowed" | "closed" }`: aberto ao público, fechado
         mas esta conta está na lista, fechado sem acesso) e, com o escopo org, `zro_org` e `zro_products` (só produtos
         contratados e abertos para a pessoa) e `zro_features` (sinais de recurso da organização só do produto do app,
-        ex.: `["maestro.marca_propria"]`; lista vazia sem sinal). O id_token (e o userinfo) leva `zro_admin: true` só para
+        ex.: `["maestro.marca_propria"]`; lista vazia sem sinal). Também com o escopo org (ADR 0039): `zro_nivel`
+        (`{ "<product_id>": "zero" | "orbita" | "absoluto" }`, um por app que existe para a pessoa; conta antiga =
+        "absoluto" nos apps que já tinha; admin = "absoluto" em tudo) e `zro_teste_ate` (ISO, só com o teste do Absoluto
+        em andamento). Os números de cada nível: GET /api/v1/limites; os da pessoa: GET /api/v1/me/limites. O id_token (e o userinfo) leva `zro_admin: true` só para
         admin da plataforma (papel admin, conta ativa, e-mail confirmado); ausente para o resto. Produto fechado para a conta: `invalid_grant` com
         `error_description=Este app ainda está em desenvolvimento.`, no code e no refresh.
       requestBody: { content: { application/x-www-form-urlencoded: { schema: { type: object } } } }
@@ -1401,7 +1436,7 @@ paths:
         }
   /oauth/userinfo:
     get:
-      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_features, zro_release, zro_admin) pelo access token Bearer
+      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_features, zro_nivel, zro_teste_ate, zro_release, zro_admin) pelo access token Bearer
       responses: { '200': { description: claims }, '401': { description: 'invalid_token (token inválido, app desativado ou produto fechado para a conta)' } }
   /oauth/jwks:
     get:

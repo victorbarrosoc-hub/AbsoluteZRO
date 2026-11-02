@@ -1,4 +1,4 @@
-// Home · Proposta 2 (titular, 01/11/2026): "Tudo o que o som pede. Num lugar só." Cada cartão mostra a forma do que a
+// Home · Proposta 2 (titular, 01/11/2026; atualizada em 02/11 com a mesa, a Z, a trilha e a Presence): "Tudo o que o som pede. Num lugar só." Cada cartão mostra a forma do que a
 // ferramenta faz (faixas, onda tratada, curva, falas no tempo, volume de entrega), sem parágrafo. Os desenhos são
 // fixos (sem animação por quadro); quem abre o estúdio cai direto na ferramenta.
 import Link from 'next/link';
@@ -34,6 +34,13 @@ function Onda({
     </span>
   );
 }
+
+/** A mesa de faixas: o original e cada passo, nas cores do estúdio (Z em ciano, Presence em roxo). */
+const MESA = [
+  { nome: 'Original', cor: '#7f9bc7', semente: 4 },
+  { nome: 'Z · voz limpa', cor: '#3fd0ff', semente: 9 },
+  { nome: 'Quasar Presence', cor: '#a274ff', semente: 6 },
+];
 
 const FAIXAS = [
   { nome: 'Voz', cor: '#5aa9ff', semente: 2 },
@@ -84,13 +91,13 @@ export default function HomeFerramentas({ closed }: { closed: boolean }) {
       <div className="hf-grade">
         <Cartao
           closed={closed}
-          href="/studio/remixar"
+          href="/studio/automatico"
           className="hf-grande"
-          titulo="Remixar"
-          apoio="Escolha o que fica. Cinco faixas separadas."
+          titulo="Mesa de faixas"
+          apoio="Cada passo do tratamento, lado a lado."
         >
           <span className="hf-faixas">
-            {FAIXAS.map((f) => (
+            {MESA.map((f) => (
               <span key={f.nome} className="hf-faixa">
                 <small>{f.nome}</small>
                 <Onda n={90} semente={f.semente} cor={f.cor} />
@@ -101,20 +108,45 @@ export default function HomeFerramentas({ closed }: { closed: boolean }) {
         <Cartao
           closed={closed}
           href="/studio/automatico"
+          className="hf-z"
           titulo="Melhorar com a Z"
           apoio="Voz limpa e clara."
         >
-          <Onda n={40} semente={3} cor="#5aa9ff" cor2="#3a3a3c" corte={0.5} />
+          <Onda n={40} semente={3} cor="#a274ff" cor2="#3a3a3c" corte={0.5} />
         </Cartao>
         <Cartao
           closed={closed}
-          href="/studio/equalizacao"
-          titulo="Equalização"
-          apoio="Uma assinatura de voz."
+          href="/studio/mixagem"
+          className="hf-z"
+          titulo="Trilha e efeitos"
+          apoio="Descreva. A Z cria."
         >
-          <span className="hf-eq" aria-hidden="true">
-            {[30, 55, 90, 70, 40].map((h, i) => (
-              <i key={i} style={{ height: `${h}%` }} className={i === 2 ? 'on' : ''} />
+          <span className="hf-pedidos" aria-hidden="true">
+            <span>lo-fi calmo com piano</span>
+            <span>whoosh rápido</span>
+            <span>chuva leve</span>
+          </span>
+        </Cartao>
+        <Cartao
+          closed={closed}
+          href="/studio/masterizacao"
+          className="hf-z"
+          titulo="Quasar Presence"
+          apoio="Corpo e presença na voz."
+        >
+          <span className="hf-eq hf-presence" aria-hidden="true">
+            {[62, 48, 80, 56].map((h, i) => (
+              <i key={i} style={{ height: `${h}%` }} />
+            ))}
+          </span>
+        </Cartao>
+        <Cartao closed={closed} href="/studio/remixar" titulo="Remixar" apoio="Escolha o que fica.">
+          <span className="hf-faixas hf-faixas-mini">
+            {FAIXAS.slice(0, 3).map((f) => (
+              <span key={f.nome} className="hf-faixa">
+                <small>{f.nome}</small>
+                <Onda n={40} semente={f.semente} cor={f.cor} />
+              </span>
             ))}
           </span>
         </Cartao>
@@ -128,6 +160,18 @@ export default function HomeFerramentas({ closed }: { closed: boolean }) {
             <span>00:12 Bom dia, gente.</span>
             <strong>00:15 Hoje a conversa é sobre som.</strong>
             <span>00:19 E sobre como deixar…</span>
+          </span>
+        </Cartao>
+        <Cartao
+          closed={closed}
+          href="/studio/equalizacao"
+          titulo="Equalização"
+          apoio="Uma assinatura de voz."
+        >
+          <span className="hf-eq" aria-hidden="true">
+            {[30, 55, 90, 70, 40].map((h, i) => (
+              <i key={i} style={{ height: `${h}%` }} className={i === 2 ? 'on' : ''} />
+            ))}
           </span>
         </Cartao>
         <Cartao

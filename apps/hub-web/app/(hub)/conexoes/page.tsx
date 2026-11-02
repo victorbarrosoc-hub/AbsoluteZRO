@@ -1,5 +1,14 @@
 import type { Metadata } from 'next'
-import { avatarVersion, calendariosGoogle, minhaHiggsfield, minhasConexoes, saldoHiggsfield, type Calendario } from '@zro/core'
+import {
+  avatarVersion,
+  calendariosGoogle,
+  medidorHiggsfield,
+  minhaHiggsfield,
+  minhasConexoes,
+  saldoHiggsfield,
+  type Calendario,
+  type SaldoHiggsfield,
+} from '@zro/core'
 import { isDomainError } from '@zro/observability'
 import { Notice, ProductMark } from '@zro/ui'
 import { AccountFrame } from '@/components/account-frame'
@@ -26,6 +35,8 @@ const OK: Record<string, string> = {
   'higgsfield-desconectada': 'Higgsfield desconectada.',
 }
 const creditos = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+const diaMes = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Fortaleza' })
+const pct = (f: number) => `${Math.round(f * 1000) / 10}%`
 
 /**
  * Conexões (ADR 0026): como o Apple ID com o iCloud. A pessoa conecta o Google Agenda uma vez e os apps da família
@@ -41,7 +52,7 @@ export default async function Conexoes({ searchParams }: PageProps<'/conexoes'>)
   const g = minhas.google
   const h = hf.visivel ? hf.conexao : null
   let estadoHf = h?.estado ?? null
-  let saldo: { creditos: number | null; plano: string | null } | null = null
+  let saldo: SaldoHiggsfield | null = null
   if (h && estadoHf === 'ativa' && ambHf) {
     try {
       saldo = await saldoHiggsfield(db(), ambHf, auth)
@@ -49,8 +60,8 @@ export default async function Conexoes({ searchParams }: PageProps<'/conexoes'>)
       if (isDomainError(e) && e.code === 'sem_conexao') estadoHf = 'reconectar'
     }
   }
-  const usadoHf = h?.usoMes ?? 0
-  const totalHf = (saldo?.creditos ?? 0) + usadoHf
+  const ciclo = saldo?.ciclo ?? null
+  const medidor = saldo ? medidorHiggsfield(saldo) : null
   let estado = g?.estado ?? null
   let calendarios: Calendario[] | null = null
   let erroAgendas = false
@@ -211,22 +222,46 @@ export default async function Conexoes({ searchParams }: PageProps<'/conexoes'>)
                   ) : (
                     <div
                       className="conexao__creditos"
-                      title="Saldo e plano informados pela Higgsfield; o uso é o que os apps da Absolute ZRO pediram neste mês"
+                      title={
+                        medidor?.noCiclo
+                          ? `Saldo e plano informados pela Higgsfield. A barra é o disponível do que entrou no ciclo (assinatura e pacotes); a parte clara é o que os apps da Absolute ZRO usaram. Gasto no ciclo: ${creditos(ciclo!.gastoNoCiclo)}.`
+                          : 'Saldo e plano informados pela Higgsfield; a parte clara da barra é o que os apps da Absolute ZRO usaram neste mês'
+                      }
                     >
                       <p className="conexao__saldo">
-                        <strong>{creditos(saldo.creditos)}</strong> <span className="zro-mute">disponíveis{saldo.plano ? ` · ${saldo.plano}` : ''}</span>
+                        <strong>{creditos(saldo.creditos)}</strong>{' '}
+                        <span className="zro-mute">
+                          disponíveis{saldo.plano ? ` · ${saldo.plano}` : ''}
+                          {ciclo?.renovaEm && (
+                            <span
+                              className="conexao__renova"
+                              title={`A data vem do último crédito de assinatura da Higgsfield (${diaMes.format(ciclo.inicioCiclo)}): renova um mês depois.`}
+                            >
+                              {' · renova em '}
+                              <time dateTime={ciclo.renovaEm.toISOString()}>{diaMes.format(ciclo.renovaEm)}</time>
+                            </span>
+                          )}
+                        </span>
                       </p>
-                      <div
-                        className="conexao__medidor"
-                        role="meter"
-                        aria-label="Créditos usados pelos apps neste mês"
-                        aria-valuemin={0}
-                        aria-valuemax={totalHf || 1}
-                        aria-valuenow={usadoHf}
-                      >
-                        <span style={{ width: `${totalHf ? Math.min(100, (usadoHf / totalHf) * 100) : 0}%` }} />
-                      </div>
-                      <p className="zro-faint">{creditos(usadoHf)} usados pelos apps neste mês</p>
+                      {medidor && (
+                        <div
+                          className="conexao__medidor"
+                          role="meter"
+                          aria-label={medidor.noCiclo ? 'Créditos disponíveis no ciclo' : 'Créditos disponíveis'}
+                          aria-valuemin={0}
+                          aria-valuemax={medidor.total || 1}
+                          aria-valuenow={Math.min(saldo.creditos, medidor.total || 1)}
+                          aria-valuetext={`${creditos(saldo.creditos)} de ${creditos(medidor.total)}`}
+                        >
+                          <span className="conexao__medidor-livre" style={{ width: pct(medidor.disponivel) }} />
+                          {medidor.apps > 0 && <span className="conexao__medidor-apps" style={{ width: pct(medidor.apps) }} />}
+                        </div>
+                      )}
+                      <p className="zro-faint">
+                        {medidor?.noCiclo
+                          ? `de ${creditos(medidor.total)} no ciclo · ${creditos(saldo.usoApps)} usados pelos apps`
+                          : `${creditos(saldo.usoApps)} usados pelos apps neste mês`}
+                      </p>
                     </div>
                   )}
                 </section>

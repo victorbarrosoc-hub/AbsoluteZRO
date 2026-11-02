@@ -91,3 +91,9 @@ chamam.
 Antes do passo 1, basta apagar esta ADR. Depois dele, a Revela volta a ter o conversor, a cópia do
 SOBEDESCE volta a conferir contra a Revela e o produto sai do catálogo com migration nova. A fila e as quotas da
 plataforma nova ficam sem uso e saem do jeito de sempre: migration nova, nunca editando uma aplicada.
+
+## Revisão (02/11/2026)
+
+O titular decidiu que o Relay pede a conta Absolute ZRO para usar, no padrão das outras plataformas: a página
+`/entrar` (Entrar com Absolute ZRO / Criar conta) e o conversor e o painel levando para ela quem está fora. A
+conversão continua no aparelho, sem quota nem custo de servidor; a conta abre caminho para os planos do ecossistema.

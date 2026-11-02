@@ -1,6 +1,6 @@
 import { sair } from "@/lib/zro/rotas";
 
-/** Encerra a sessão do Maestro, avisa a Absolute ZRO e volta à página inicial. */
+/** Encerra a sessão do Maestro, avisa a Absolute ZRO e volta à página inicial (com ?outra=1, ao login com outra conta). */
 export function POST(req: Request) {
   return sair(req);
 }

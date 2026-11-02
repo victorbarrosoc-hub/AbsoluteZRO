@@ -14,7 +14,7 @@ O Relay é o setor da Absolute ZRO que **converte e exporta**: codec, contêiner
 Ele recebe um arquivo e entrega a versão certa para um destino (YouTube 1080p, YouTube 4K, Reels · No Compress,
 TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy, Discord, E-mail, Tamanho exato, MP3, AAC, WAV).
 
-- **Aberto**, para trazer gente nova ao ecossistema: converter no aparelho não pede conta. A conta Absolute ZRO só
+- **Com a conta Absolute ZRO** (decisão do titular, 02/11/2026: o Relay pede a conta Absolute ZRO, como as outras plataformas; /entrar). Antes, aberto: converter no aparelho não pedia conta. A conta Absolute ZRO só
   entra no que toca a conta (Drive, o computador da pessoa, histórico).
 - **Qualidade medida:** no computador, o x264 em `slow` e qualidade constante (duas passadas no tamanho exato); no
   navegador, redução em Lanczos na placa de vídeo, cor marcada BT.709 e bitrate com folga para os codificadores de
@@ -265,7 +265,7 @@ Para o motion (ADR 0035) e para quem entrega arte com fundo transparente. Grupo 
   computador ligada a um projeto). Payload mínimo: projeto, id do arquivo de origem e do resultado no Drive, preset,
   MD5. Rota em `packages/integrations/src/handlers.ts` e teste de ciclo (`findEventCycle`) passando. O pedido em si é
   uma chamada à API do Relay, não um evento.
-- **Conta e acesso:** converter no aparelho não pede conta nem consome quota (nenhum custo de servidor). Fila do
+- **Conta e acesso:** converter no aparelho pede a conta (decisão do titular, 02/11/2026: o Relay pede a conta Absolute ZRO, como as outras plataformas; /entrar), mas não consome quota (nenhum custo de servidor). Fila do
   computador e Drive pedem a conta Absolute ZRO e passam por `authorize()` com o produto `relay`. Se um dia houver
   conversão em servidor, ela entra com `consumeQuota` (chave = id do pedido) e limite por plano.
 - **Painel da conta** (`/painel`, 30/10/2026): `GET/POST/PUT/DELETE /api/relay/painel` (sessão do Relay; schema

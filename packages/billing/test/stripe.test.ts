@@ -12,7 +12,6 @@ import {
   isFeatureFlag,
   productAccessFor,
   launchSales,
-  recomputeEntitlements,
   salesStatus,
   stripeEventToBillingEvent,
   stripeForm,
@@ -47,9 +46,11 @@ const subEvent = (over: Record<string, unknown> = {}, meta: Record<string, strin
   },
 })
 
-describe('preços à venda', () => {
+describe('preços antigos (0011), fora da venda desde a 0055', () => {
   it('avulso R$ 59,90/mês ou R$ 449/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou R$ 2.999; créditos de IA por plano', async () => {
-    const rows = await db.sql`select code, price_cents, billing_interval from zro.plans where status = 'active' and kind <> 'free' order by code`
+    // Saíram da venda (retired, legado) sem apagar: quem já tem segue com eles.
+    const rows =
+      await db.sql`select code, price_cents, billing_interval from zro.plans where legado and status = 'retired' and kind <> 'free' and price_cents is not null order by code, version`
     const by = Object.fromEntries(rows.map((r) => [r.code as string, r]))
     expect(by['ciclo-do-o']).toMatchObject({ price_cents: 14990, billing_interval: 'month' })
     expect(by['ciclo-do-o-anual']).toMatchObject({ price_cents: 149900, billing_interval: 'year' })
@@ -61,7 +62,7 @@ describe('preços à venda', () => {
     }
     const credits = await db.sql`
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
-      where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
+      where (p.code, p.version) in (('individual-nossom', 2), ('ciclo-do-o', 2), ('absolute-zro-pro', 1), ('absolute-zro-pro-anual', 1)) group by p.code order by p.code`
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
       // o Maestro (0027) e o Relay (0031) entram nos planos sem mexer nos créditos
       'absolute-zro-pro:9:2000',
@@ -75,17 +76,17 @@ describe('preços à venda', () => {
 })
 
 describe('Maestro com a sua marca (0025)', () => {
-  it('adicional R$ 89,90/mês ou R$ 899/ano e o Pro v2 com o sinal, tudo em rascunho; o Pro publicado não ganha o sinal', async () => {
+  it('adicional R$ 89,90/mês ou R$ 899/ano e o Pro v2 com o sinal, nunca publicados (fora da venda desde a 0055); o Pro publicado não ganha o sinal', async () => {
     const rows = await db.sql`
       select p.code, p.version, p.status, p.price_cents, p.billing_interval, pp.features, pp.limits
       from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = 'maestro'
       where (p.code like 'maestro-marca-propria%' or p.code like 'absolute-zro-pro%') and pp.limits ? 'maestro.marca_propria'
       order by p.code, p.version`
     expect(rows.map((r) => `${r.code}@${r.version}:${r.status}:${r.price_cents}:${r.billing_interval}`)).toEqual([
-      'absolute-zro-pro@2:draft:29990:month',
-      'absolute-zro-pro-anual@2:draft:299900:year',
-      'maestro-marca-propria@1:draft:8990:month',
-      'maestro-marca-propria-anual@1:draft:89900:year',
+      'absolute-zro-pro@2:retired:29990:month',
+      'absolute-zro-pro-anual@2:retired:299900:year',
+      'maestro-marca-propria@1:retired:8990:month',
+      'maestro-marca-propria-anual@1:retired:89900:year',
     ])
     for (const r of rows) {
       // o adicional é só o sinal; o Pro v2 abre o Maestro inteiro (0027) e leva o sinal junto
@@ -221,73 +222,12 @@ describe('Stripe: formulário, assinatura e tradução', () => {
   })
 })
 
-describe('ligar vendas', () => {
-  /** Tudo numa transação desfeita no fim: ligar vendas mexe em estado global (planos e ajustes). */
-  async function rolledBack(fn: (tx: Parameters<Parameters<Database['asSystem']>[1]>[0]) => Promise<void>) {
-    const STOP = new Error('rollback')
+describe('ligar vendas (aposentado pela 0055)', () => {
+  it('recusa: os planos agora são Zero, Órbita e Absoluto, e o teste é a campanha do console', async () => {
+    const adminId = await admin(db)
     await expect(
-      db.asSystem('teste: ligar vendas', async (tx) => {
-        await fn(tx)
-        throw STOP
-      }),
-    ).rejects.toBe(STOP)
-  }
-
-  it('conta antiga segue liberada até o corte; conta nova ganha 7 dias do Completo, sem cartão', async () => {
-    const antiga = await newOrgWithOwner(db, 'antiga', { freePlan: true })
-    const adminId = await admin(db)
-    const cutoff = new Date(Date.now() + 30 * 86_400_000)
-    await rolledBack(async (tx) => {
-      expect(await salesStatus(tx)).toEqual({ launched: false })
-      const r = await launchSales(tx, { userId: adminId, reason: 'lançamento' }, { cutoff, trialDays: 7 })
-      expect(r.grandfathered).toBeGreaterThan(0)
-      expect(await salesStatus(tx)).toMatchObject({ launched: true, trialDays: 7 })
-
-      const [old] = await tx`select s.current_period_end from zro.subscriptions s where s.org_id = ${antiga.orgId} and s.provider = 'free'`
-      expect((old!.current_period_end as Date).getTime()).toBe(cutoff.getTime())
-      const [e] = await tx`select max(ends_at) as ends from zro.entitlements where org_id = ${antiga.orgId} and status = 'active'`
-      expect((e!.ends as Date).getTime()).toBe(cutoff.getTime())
-
-      // Conta nova criada depois de ligar: grátis sem ferramentas + teste do Completo.
-      const [u] =
-        await tx`insert into zro.users (email, display_name, email_verified_at) values (${`nova-${randomUUID().slice(0, 8)}@teste.local`}, 'Nova', now()) returning id`
-      await tx`select set_config('zro.user_id', ${u!.id as string}, true)`
-      const [org] = await tx`select zro.create_organization('Nova', ${'nova-' + randomUUID().slice(0, 8)}, 'team') as id`
-      const subs =
-        await tx`select s.status, s.provider, s.current_period_end, p.code, p.version from zro.subscriptions s join zro.plans p on p.id = s.plan_id where s.org_id = ${org!.id as string} order by s.provider`
-      expect(subs.map((s) => `${s.provider}:${s.code}@${s.version}:${s.status}`)).toEqual(['free:conta-absolute-zro@3:active', 'trial:ciclo-do-o@2:trialing'])
-      const days = ((subs[1]!.current_period_end as Date).getTime() - Date.now()) / 86_400_000
-      expect(days).toBeGreaterThan(6.9)
-      expect(days).toBeLessThan(7.1)
-      for (const p of ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'nossom']) {
-        expect((await checkEntitlement(tx, org!.id as string, p, null)).ok, p).toBe(true)
-      }
-      // O teste tem poucos créditos de IA, inclusive depois de recalcular os acessos.
-      const ai = async () =>
-        Number(
-          (await tx`select max((limits ->> 'zro.ai_credits')::int) as n from zro.entitlements where org_id = ${org!.id as string} and status = 'active'`)[0]!.n,
-        )
-      expect(await ai()).toBe(50)
-      await recomputeEntitlements(tx, org!.id as string)
-      expect(await ai()).toBe(50)
-      // Chamar de novo não move a data de corte.
-      await launchSales(tx, { userId: adminId, reason: 'ajuste' }, { cutoff: new Date(Date.now() + 90 * 86_400_000), trialDays: 14 })
-      const [again] = await tx`select s.current_period_end from zro.subscriptions s where s.org_id = ${antiga.orgId} and s.provider = 'free'`
-      expect((again!.current_period_end as Date).getTime()).toBe(cutoff.getTime())
-    })
-    // Fora da transação nada mudou.
+      db.asSystem('t', (tx) => launchSales(tx, { userId: adminId, reason: 'lançamento' }, { cutoff: new Date(Date.now() + 86_400_000), trialDays: 7 })),
+    ).rejects.toMatchObject({ code: 'conflict' })
     expect(await db.asSystem('t', (tx) => salesStatus(tx))).toEqual({ launched: false })
-  })
-
-  it('pede motivo, corte no futuro e teste entre 0 e 30 dias', async () => {
-    const adminId = await admin(db)
-    const future = new Date(Date.now() + 86_400_000)
-    await rolledBack(async (tx) => {
-      await expect(launchSales(tx, { userId: adminId, reason: ' ' }, { cutoff: future, trialDays: 7 })).rejects.toMatchObject({ code: 'invalid_input' })
-      await expect(launchSales(tx, { userId: adminId, reason: 'x' }, { cutoff: new Date(Date.now() - 1000), trialDays: 7 })).rejects.toMatchObject({
-        code: 'invalid_input',
-      })
-      await expect(launchSales(tx, { userId: adminId, reason: 'x' }, { cutoff: future, trialDays: 31 })).rejects.toMatchObject({ code: 'invalid_input' })
-    })
   })
 })

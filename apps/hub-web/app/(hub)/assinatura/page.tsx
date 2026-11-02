@@ -23,7 +23,7 @@ const SOURCE: Record<string, string> = { subscription: 'Assinatura', trial: 'Tes
 
 /** Nome humano de cada métrica medida (as chaves vêm dos limites dos planos). */
 const METRICA: Record<string, { nome: string; unidade: string }> = {
-  'zro.ai_credits': { nome: 'Créditos de IA e GPU', unidade: 'créditos' },
+  'zro.ai_credits': { nome: 'Mensagens da Z', unidade: 'mensagens' },
   'sobedesce.manifest_imports': { nome: 'Importações de descarga · SOBEDESCE', unidade: 'importações' },
   'synquei.organization_plans': { nome: 'Planos de organização · Synquei', unidade: 'planos' },
 }
@@ -68,7 +68,7 @@ export default async function Assinatura() {
         </Link>
       </div>
 
-      {/* o principal: créditos de IA e GPU */}
+      {/* o principal: mensagens da Z (franquia do mês) */}
       <section
         className="uso-hero"
         aria-labelledby="uso-creditos"
@@ -77,9 +77,9 @@ export default async function Assinatura() {
         <Anel used={credito?.used ?? 0} limit={credito?.limit ?? null} rotulo="restantes" />
         <div className="uso-hero__texto">
           <p className="uso-hero__rotulo">Este mês</p>
-          <h2 id="uso-creditos">Créditos de IA e GPU</h2>
-          <p className="uso-hero__apoio" title="Usar as ferramentas no dia a dia é livre. Só o que roda IA ou processa em GPU gasta créditos.">
-            {credito ? `${credito.used.toLocaleString('pt-BR')} usados` : 'Nenhum crédito no plano'} · uso comum é livre
+          <h2 id="uso-creditos">Mensagens da Z</h2>
+          <p className="uso-hero__apoio" title="Cada mensagem da Z conta uma. Usar os apps no dia a dia não gasta mensagens.">
+            {credito ? `${credito.used.toLocaleString('pt-BR')} usadas` : 'Nenhuma mensagem no plano'} · uso comum é livre
           </p>
           <Contagem ate={fimDoMes} className="uso-renova" />
         </div>

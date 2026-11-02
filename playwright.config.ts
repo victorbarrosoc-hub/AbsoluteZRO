@@ -30,6 +30,8 @@ export default defineConfig({
       ZRO_GOOGLE_TESTE_CLIENT_SECRET: 'segredo-google-e2e',
       ZRO_GOOGLE_TESTE_URL: `http://127.0.0.1:${Number(process.env.E2E_GOOGLE_PORT || 3298)}`,
       ZRO_CONEXOES_KEY: Buffer.alloc(32, 9).toString('base64'),
+      // A Higgsfield falsa de tests/fixtures/higgsfield-falsa.ts (sobe em tests/e2e/higgsfield.spec.ts), nunca a de verdade.
+      ZRO_HIGGSFIELD_TESTE_URL: `http://127.0.0.1:${Number(process.env.E2E_HF_PORT || 3295)}`,
       // Dólar automático dos Custos: o Banco Central falso de tests/e2e/admin.spec.ts e o segredo do agendamento.
       ZRO_PTAX_URL: `http://127.0.0.1:${Number(process.env.E2E_PTAX_PORT || 3297)}`,
       CRON_SECRET: 'segredo-cron-e2e',

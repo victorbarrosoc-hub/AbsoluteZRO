@@ -180,3 +180,51 @@
   font-size: 16px;
   cursor: pointer;
 }
+/* Home: os cartões do que a Z faz levam o roxo dela na borda e na forma. */
+.hf-cartao.hf-z {
+  border-color: rgba(162, 116, 255, 0.28);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(162, 116, 255, 0.14), transparent 60%),
+    linear-gradient(180deg, #161618, #0e0e10);
+}
+.hf-grande .hf-faixa {
+  grid-template-columns: 124px minmax(0, 1fr);
+}
+.hf-faixas-mini .hf-faixa {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+.hf-presence i {
+  background: linear-gradient(0deg, #7b4fe0, #a274ff);
+}
+.hf-pedidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hf-pedidos span {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(162, 116, 255, 0.4);
+  background: rgba(162, 116, 255, 0.1);
+  color: #e4dcff;
+  font-size: 13px;
+}
+.hf-pedidos span::before {
+  content: '✦ ';
+  color: #a274ff;
+}
+/* O slogan no centro da home: duas linhas, como era "Do ruído / ao pronto.", sem quebrar no meio da frase. */
+.home-p2 .home-hero-copy h1.home-slogan {
+  font-size: clamp(42px, 6.4vw, 96px);
+  max-width: none;
+}
+.home-p2 .home-hero-copy h1.home-slogan,
+.home-p2 .home-hero-copy h1.home-slogan span {
+  white-space: nowrap;
+}
+/* No celular, a fonte acompanha a largura para as duas linhas caberem (titular: "duas linhas só"). */
+@media (max-width: 699px) {
+  .home-p2 .home-hero-copy h1.home-slogan {
+    font-size: 9.6vw;
+  }
+}

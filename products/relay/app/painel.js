@@ -6,7 +6,7 @@ import { GRUPOS, PRESETS, preset as presetDoRelay } from '../src/presets.js'
 import { tamanhoLegivel } from '../src/plano.js'
 import { duracaoCurta, numeros, porProjeto, projeto as validarProjeto, quando } from '../src/painel.js'
 import { icone, icones } from './icones.js'
-import { lerConta, linkEntrar, preencherAvatar, primeiroNome } from './conta.js'
+import { exigirConta, linkEntrar, preencherAvatar, primeiroNome } from './conta.js'
 import { montarSet } from './set.js'
 import * as Historico from './historico.js'
 import * as Meus from './meus.js'
@@ -267,7 +267,7 @@ $('limpar').addEventListener('click', async () => {
   desenharProjetos()
 })
 
-const c = await lerConta()
+const c = await exigirConta()
 $('carregando').remove()
 $('painel').removeAttribute('aria-busy')
 if (c.estado !== 'dentro' || !c.pessoa?.id) {

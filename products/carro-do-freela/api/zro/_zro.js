@@ -401,6 +401,8 @@ async function entrar(req, res) {
   const volta = voltaSegura(url.searchParams.get('volta'));
   /* "Criar conta" no Carro = criar a conta Absolute ZRO, lá no HUB */
   const criar = url.searchParams.get('criar') === '1';
+  /* "Usar outra conta": prompt=login faz o HUB pedir a conta de novo, mesmo com uma sessão aberta lá (02/11/2026) */
+  const outra = !criar && url.searchParams.get('outra') === '1';
   /* o HUB recusou o escopo de jobs (ainda não o conhece): entra sem ele */
   const basico = url.searchParams.get('basico') === '1';
   /* o HUB recusou só o escopo do Set (de antes dele): entra com jobs e a Z */
@@ -424,6 +426,7 @@ async function entrar(req, res) {
   u.searchParams.set('code_challenge', desafio);
   u.searchParams.set('code_challenge_method', 'S256');
   if (criar) u.searchParams.set('prompt', 'create');
+  else if (outra) u.searchParams.set('prompt', 'login');
   const exp = Math.floor(Date.now() / 1000) + IDA_S;
   const ida = selar({ state, nonce, verificador, volta, origem, basico, semSet, criar, exp }, cfg.clientSecret, COOKIE_IDA);
   return ir(res, 302, u.toString(), [cookie(COOKIE_IDA, ida, { path: '/api/zro', maxAge: IDA_S, seguro: seguro(origem) })]);

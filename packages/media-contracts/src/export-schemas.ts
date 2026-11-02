@@ -17,6 +17,7 @@ import {
 import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
 import { FreelaInventarioSchema } from './freela'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
+import { TpeasyLeituraSchema } from './tpeasy'
 import { ZroMediaManifestSchema } from './manifest'
 import { OrganizationPlanSchema } from './organization'
 import {
@@ -64,6 +65,7 @@ export function buildSchemas(): Record<string, unknown> {
     'carro-do-freela.job.v1': s(CarroJobSchema, 'carro-do-freela.job.v1', 'Job do Carro do Freela v1'),
     'carro-do-freela.crew.v1': s(CarroCrewSchema, 'carro-do-freela.crew.v1', 'Equipe escalada num job do Carro do Freela v1'),
     'tpeasy.backup.v1': s(TpeasyBackupSchema, 'tpeasy.backup.v1', 'Backup do TPeasy v1'),
+    'tpeasy.leituras.v1': s(TpeasyLeituraSchema, 'tpeasy.leituras.v1', 'Leitura no TPeasy (uma linha do registro de leituras) v1'),
     'sobedesce.descarga-drive.v2': s(
       DriveDownloadSchema,
       'sobedesce.descarga-drive.v2',

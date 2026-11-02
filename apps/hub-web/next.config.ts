@@ -45,6 +45,11 @@ const config: NextConfig = {
     return [
       { source: '/:path*', headers: security },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+      // Catálogo público dos limites por nível (ADR 0039): sem dado de pessoa, cacheável. Vem depois da regra geral, vence.
+      {
+        source: '/api/v1/limites',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600' }],
+      },
       // Laboratório da Z (ADR 0033, só admin): o microfone vale nesta tela (voz e ditado), e só nela. Vem depois da regra
       // geral, então vence.
       {

@@ -27,6 +27,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
+// Conta nova nasce no Zero (0055): os seis apps no ar e, como no grátis antigo, os fechados (o gate esconde).
 const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'relay', 'sobedesce', 'synquei', 'tpeasy']
 
 describe('plano grátis da organização nova', () => {
@@ -37,7 +38,7 @@ describe('plano grátis da organização nova', () => {
       join zro.subscriptions s on s.id = e.source_id join zro.plans p on p.id = s.plan_id
       where e.org_id = ${o.orgId} and e.status = 'active' order by e.product_id`
     expect(rows.map((r) => r.product_id)).toEqual(APPS)
-    expect(rows.every((r) => r.provider === 'free' && r.code === 'conta-absolute-zro' && r.version === 2)).toBe(true)
+    expect(rows.every((r) => r.provider === 'free' && r.code === 'zero' && r.version === 1)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
     // No login único só entram os abertos (gate de lançamento, ADR 0023): os lançados, o Maestro (0027/0039), o
     // Carro do Freela (0041); os não lançados (AEON, Revela, NOSSOM; 0049) nem entram em zro_release.

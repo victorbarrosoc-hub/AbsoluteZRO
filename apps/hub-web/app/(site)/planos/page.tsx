@@ -47,7 +47,8 @@ export default async function Planos() {
   const avulsoAno = anos.length ? Math.min(...anos) : null
   const avulsoCreditos = Math.max(0, ...singles.map((p) => p.ai_credits ?? 0))
   const pacotes = monthly.filter((x) => x.kind === 'bundle').sort((a, b) => (a.price_cents as number) - (b.price_cents as number))
-  const completo = pacotes.find((p) => p.code === 'ciclo-do-o') ?? null
+  // O avulso é o Absoluto num app: passando do preço dele, o Absoluto leva todos.
+  const completo = pacotes.find((p) => p.code === 'absoluto') ?? null
   const economia = (mes: number, ano: number | null) => (ano ? Math.round(((mes * 12 - ano) / (mes * 12)) * 100) : 0)
   const melhor = Math.max(0, avulsoMes ? economia(avulsoMes, avulsoAno) : 0, ...pacotes.map((p) => economia(p.price_cents as number, yearOf(p.code))))
   const free = all.find((p) => p.kind === 'free')
@@ -65,7 +66,7 @@ export default async function Planos() {
       </div>
       {!vendas && (
         <p className="pricing__livre" role="note">
-          <strong>Por enquanto, tudo liberado.</strong> Escolha e baixe.
+          <strong>Comece no Zero.</strong> Todos os apps, de graça.
         </p>
       )}
 
@@ -87,7 +88,7 @@ export default async function Planos() {
                   <p className="tier__tag">Só os apps que você escolher.</p>
                 </header>
                 <AvulsoSeletor
-                  apps={disponiveis.map((id) => ({ id, name: nomeDe(id), color: productColor(id) }))}
+                  apps={disponiveis.filter((id) => singlePrice[id] != null).map((id) => ({ id, name: nomeDe(id), color: productColor(id) }))}
                   mes={avulsoMes}
                   ano={avulsoAno}
                   completoMes={completo?.price_cents ?? null}
@@ -103,7 +104,7 @@ export default async function Planos() {
               const ano = yearOf(p.code)
               const apps = p.products.map((x) => x.product_id).filter((id) => lancados.has(id))
               const soma = apps.reduce((s, id) => s + (singlePrice[id] ?? avulsoMes ?? 0), 0)
-              const destaque = p.code === 'ciclo-do-o'
+              const destaque = p.code === 'orbita'
               const nome = p.name.replace(/^Absolute ZRO\s+/, '')
               return (
                 <article key={p.code} className={`tier${destaque ? ' tier--featured' : ''}`} aria-labelledby={`tier-${p.code}`}>
@@ -138,9 +139,9 @@ export default async function Planos() {
                   </p>
 
                   {(p.ai_credits ?? 0) > 0 && (
-                    <p className="tier__credits" title="Uso comum é livre. Só IA e processamento em GPU gastam créditos, que renovam todo mês.">
+                    <p className="tier__credits" title="Cada mensagem da Z conta uma. A franquia renova todo mês.">
                       <strong>{(p.ai_credits ?? 0).toLocaleString('pt-BR')}</strong>
-                      <span>créditos de IA e GPU por mês</span>
+                      <span>mensagens da Z por mês</span>
                     </p>
                   )}
 
@@ -185,11 +186,8 @@ export default async function Planos() {
       )}
 
       <details className="pricing__more">
-        <summary>Como funcionam os créditos</summary>
-        <p>
-          Usar as ferramentas no dia a dia é livre. Só o que roda IA ou processa em GPU gasta créditos. Eles renovam todo mês, e cada plano mostra o quanto
-          inclui.
-        </p>
+        <summary>Como funciona a Z</summary>
+        <p>Cada plano traz mensagens da Z por mês, e elas renovam todo mês. Usar os apps no dia a dia não gasta mensagens.</p>
       </details>
     </section>
   )
