@@ -90,7 +90,8 @@ async function contexto(w: number, h: number, o: { eu?: Record<string, unknown>;
         json: o.eu ?? {
           usuario: { id: 'u1', nome: 'Pessoa Teste', email: 'pessoa@exemplo.com' },
           contas: [{ id: 'g1', email: 'pessoa@exemplo.com', nome: 'Pessoa', fotoUrl: null, estado: 'ok' }],
-          recursos: {},
+          // A aba Aparelhos só existe com o Wi-Fi ligado no site (desligado até a fase 3): aqui confere o desenho dela.
+          recursos: { wifi: true },
         },
       })
     if (u.endsWith('/api/drive/token')) return r.fulfill({ json: { accessToken: 'ya29.teste', expiraEm: Date.now() + 3600e3, email: 'pessoa@exemplo.com' } })
