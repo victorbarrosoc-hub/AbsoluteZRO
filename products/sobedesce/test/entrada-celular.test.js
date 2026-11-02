@@ -33,5 +33,6 @@ test('a Z fica no anel discreto do topo, ao lado da conta', () => {
   const main = ler('components/main.js')
   assert.match(main, /export function ZBotao\(\)[\s\S]*?onClick=\$\{\(\) => setTab\('z'\)\}/)
   assert.match(main, /function TopoAcoes[\s\S]*?<\$\{ZBotao\} \/>/)
-  assert.equal((main.match(/<\$\{TopoAcoes\} user=\$\{user\} \/>/g) || []).length, 2, 'Início e as abas sem barra própria')
+  // Desde af19f231 o topo lê a conta do estado (state.account), sem receber `user`.
+  assert.equal((main.match(/<\$\{TopoAcoes\} \/>/g) || []).length, 2, 'Início e as abas sem barra própria')
 })
