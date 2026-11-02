@@ -6220,6 +6220,113 @@ a.pstrip__card:focus-visible .pstrip__go {
   opacity: 0.45;
   pointer-events: none;
 }
+
+/* ───── Oferta Zero/Órbita/Absoluto/Avulso e recargas da Z (ADR 0040) ───── */
+.tiers--quatro {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+.recargas {
+  max-width: 820px;
+  margin-inline: auto;
+}
+.recargas__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recargas__lista li {
+  display: grid;
+  justify-items: center;
+  min-width: 104px;
+  padding: 10px 18px;
+  border-radius: 18px;
+  background: rgb(127 127 127 / 0.08);
+}
+.recargas__lista strong {
+  font-family: var(--font-apple);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+.recargas__lista span {
+  font-size: 0.85rem;
+  color: var(--text-mute, #6e6e73);
+}
+.pricing__compare {
+  max-width: 860px;
+  width: 100%;
+}
+.compare {
+  display: grid;
+  gap: 18px;
+  margin-top: 16px;
+}
+.compare__app {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+}
+.compare__nome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.compare__tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.compare__tabela th,
+.compare__tabela td {
+  padding: 7px 6px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.compare__tabela thead th {
+  border-top: 0;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.compare__tabela tbody th {
+  font-weight: 400;
+  text-align: left;
+  color: var(--text);
+}
+.compare__tabela td {
+  color: var(--text-mute, #6e6e73);
+}
+@media (max-width: 520px) {
+  .compare__tabela {
+    font-size: 0.8rem;
+  }
+  .compare__tabela th,
+  .compare__tabela td {
+    padding: 6px 3px;
+  }
+}
+.cobranca--small label {
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+}
+.plan-shop {
+  gap: var(--space-3);
+}
+.plan-shop .plan-option .zro-form {
+  gap: 8px;
+}
+.plan-options--recargas {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
 @media (prefers-reduced-motion: no-preference) {
   .tier__amount {
     transition: opacity 0.2s var(--ease);

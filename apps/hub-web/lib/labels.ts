@@ -83,6 +83,10 @@ const ddmmFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-dig
 export const fmtDdMm = (d: Date | string) => ddmmFmt.format(new Date(d))
 
 /** O plano em poucas palavras: "Zero", "Órbita" ou, no teste, "Absoluto · teste até 17/11". */
+/** Real sem centavos quando o valor é redondo (R$ 799, R$ 1.099), como numa etiqueta de preço. */
+export const brl = (cents: number) =>
+  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })
+
 export const planoTexto = (p: { nome: string; testeAte: Date | null } | null) =>
   p ? (p.testeAte ? `${p.nome} · teste até ${fmtDdMm(p.testeAte)}` : p.nome) : null
 /** "agora", "há 5 min", "há 3 h", "ontem", "há 4 dias"; mais de 30 dias vira a data. */

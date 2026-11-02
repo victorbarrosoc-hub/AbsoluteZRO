@@ -1,5 +1,14 @@
 import 'server-only'
-import { releaseClaimsFor, releaseState, salesStatus, type ReleaseChannel, type ReleaseChannels, type ReleaseState } from '@zro/billing'
+import {
+  catalogoLimites,
+  ofertaAtual,
+  releaseClaimsFor,
+  releaseState,
+  salesStatus,
+  type ReleaseChannel,
+  type ReleaseChannels,
+  type ReleaseState,
+} from '@zro/billing'
 import { db } from '../session'
 
 /** Estado de lançamento de um produto no catálogo público (ADR 0023). Sem linha no banco = development, canais fechados. */
@@ -49,6 +58,17 @@ export async function publicCatalog() {
       from zro.plans p left join zro.plan_products pp on pp.plan_id = p.id left join zro.products pr on pr.id = pp.product_id
       where p.status = 'active' group by p.id order by case p.kind when 'free' then 0 when 'bundle' then 1 else 2 end, p.name`
     return { products, plans, sales: await salesStatus(tx) }
+  })
+}
+
+/**
+ * A oferta à venda (ADR 0040) para /planos e Sua conta › Plano: preços dos planos versionados, recargas da Z, o
+ * catálogo de limites por nível (só apps abertos ao público) e o nome de cada app. Sem dado de pessoa.
+ */
+export async function ofertaPublica() {
+  return db().asSystem('site: oferta', async (tx) => {
+    const nomes = Object.fromEntries((await tx`select id, name from zro.products`).map((r) => [r.id as string, r.name as string]))
+    return { oferta: await ofertaAtual(tx), limites: await catalogoLimites(tx, null), nomes }
   })
 }
 

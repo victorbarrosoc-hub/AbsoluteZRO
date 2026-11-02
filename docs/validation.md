@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Stripe para os planos novos e as recargas da Z (02/11/2026, ADR 0040, pausado)
+
+Ramo local `stripe-planos`, com banco de teste próprio (`TEST_DATABASE_URL=…/zro_stripe_test`). Nada foi publicado e o
+Stripe de verdade não foi chamado (fetch falso nos testes).
+
+- `npm test`: **630/631** em 71 arquivos. A falha era a ordem de duas linhas da auditoria gravadas na mesma transação
+  (mesmo horário); o teste foi corrigido e os arquivos afetados (`packages/billing/test/stripe.test.ts`,
+  `tests/integration/stripe-checkout.test.ts`, `openapi`, `planos-b` e `account-center`) passaram depois: **63/63**.
+  Novos: oferta do banco (preços, Z, avulsos sem TPeasy nem apps fechados, recargas), pedido → código do plano, não
+  vender o que já paga, checkout de assinatura e da recarga com o Stripe falso (preço, metadados, idempotência, papel e
+  e-mail confirmado), webhook (assinatura, duplicado, mais velho e mesmo segundo ignorados, Órbita e Avulso concedem o
+  nível, cancelado volta ao Zero, conta antiga não perde nada, recarga uma vez só, inclusive em corrida, valor errado
+  vai para revisão).
+- `npm run lint`, `npm run typecheck` e `npm run build`: ok. `npm run format:check`: os arquivos mexidos passaram pelo
+  Prettier.
+- `npm run test:e2e` (porta 3261, banco próprio): **26 passaram**, 1 falha em `admin.spec.ts` ("troca o plano"), ainda
+  não analisada. Novo `tests/e2e/stripe.spec.ts`: o webhook do Stripe pela rota de verdade (só com
+  `STRIPE_WEBHOOK_SECRET`, venda fechada) e `GET /api/v1/planos`.
+
 ## Synquei: leituras do TPeasy viram blocos nos takes (02/11/2026)
 
 - `products/synquei`: `npm test` → **174/174** (10 pulados, como antes). Novo `tests/tpeasy.test.mjs` (11): leituras

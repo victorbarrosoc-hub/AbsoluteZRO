@@ -50,10 +50,12 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   `ZRO_ANTHROPIC_URL`, `ZRO_ELEVENLABS_URL` e `ZRO_ELEVENLABS_WS_URL` são só do e2e: nunca configure em produção.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
-- Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).
-  Webhook do Stripe em `https://absolutezro.com/api/v1/billing/webhooks/stripe` com `customer.subscription.created`,
-  `.updated` e `.deleted`; portal do cliente salvo uma vez no painel do Stripe. Depois, Administração → Vendas →
-  "Ligar vendas" com a data de corte do grátis antigo.
+- Cobrança pelo Stripe (ADR 0019, oferta na ADR 0040): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto
+  `absolutezro` (Production). **As duas juntas abrem a venda** (Órbita, Absoluto, Avulso e recargas da Z); sem elas fica
+  fechada. Endpoint do webhook no painel do Stripe: `https://absolutezro.com/api/v1/billing/webhooks/stripe`, com os
+  eventos `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`,
+  `checkout.session.completed` e `checkout.session.async_payment_succeeded`. Portal do cliente salvo uma vez no painel
+  (cancelamento no fim do período, cartão e notas). Nada a cadastrar de produto ou preço no Stripe: o preço sai do banco.
 
 ## 4. Produção
 

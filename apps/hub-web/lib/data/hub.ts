@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import type { Authenticated } from '@zro/auth'
-import { isFeatureFlag, planoAtual, productAccessFor, quotaPeriod } from '@zro/billing'
+import { isFeatureFlag, planoAtual, productAccessFor, quotaPeriod, saldoRecarga } from '@zro/billing'
 import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
@@ -187,27 +187,19 @@ export async function planCenterData(auth: Authenticated) {
     const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
     const subscriptions = canManage
       ? await tx`
-          select s.id, s.status, s.provider, s.current_period_end, s.cancel_at_period_end, s.grace_until, p.id as plan_id, p.code, p.name, p.kind
+          select s.id, s.status, s.provider, s.current_period_end, s.cancel_at_period_end, s.grace_until, p.id as plan_id, p.code, p.name, p.kind, p.nivel, p.legado
           from zro.subscriptions s join zro.plans p on p.id = s.plan_id
           where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due')
             and (s.current_period_end is null or s.current_period_end > now() or s.grace_until > now()) order by s.created_at desc`
       : []
-    // Só ferramentas abertas ao público contam e só planos com alguma delas aparecem (gate de lançamento, ADR 0023):
-    // produto em construção não é oferecido nem somado ("7 ferramentas" virava propaganda do que não abre).
-    const plans = await tx`
-      with abertos as (select r.product_id from zro.product_release r where r.state in ('released', 'public_beta'))
-      select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,
-             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos)) as products,
-             (select max((pp.limits ->> 'zro.ai_credits')::int) from zro.plan_products pp where pp.plan_id = p.id) as ai_credits
-      from zro.plans p where p.status = 'active' and p.kind <> 'free'
-        and exists (select 1 from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos))
-      order by case p.kind when 'bundle' then 0 else 1 end, p.name`
     const requests = canManage
       ? await tx`
-          select r.id, r.kind, r.created_at, p.name as plan from zro.plan_requests r left join zro.plans p on p.id = r.plan_id
+          select r.id, r.kind, r.created_at, p.name as plan, p.code from zro.plan_requests r left join zro.plans p on p.id = r.plan_id
           where r.org_id = ${actor.orgId} and r.status = 'open' order by r.created_at desc`
       : []
-    return { actor, canManage, org: org!, subscriptions, plans, requests }
+    // Saldo de recarga da Z (RLS: só quem é da organização vê as recargas dela).
+    const recarga = canManage ? await saldoRecarga(tx, actor.orgId) : 0
+    return { actor, canManage, org: org!, subscriptions, requests, recarga }
   })
 }
 

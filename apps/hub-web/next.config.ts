@@ -50,6 +50,11 @@ const config: NextConfig = {
         source: '/api/v1/limites',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600' }],
       },
+      // A oferta à venda (ADR 0040): preços públicos, cacheável como os limites.
+      {
+        source: '/api/v1/planos',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600' }],
+      },
       // Laboratório da Z (ADR 0033, só admin): o microfone vale nesta tela (voz e ditado), e só nela. Vem depois da regra
       // geral, então vence.
       {

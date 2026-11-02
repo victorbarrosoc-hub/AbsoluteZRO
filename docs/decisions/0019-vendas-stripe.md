@@ -2,6 +2,10 @@
 
 Data: 26/10/2026 · Decisão do titular
 
+> A oferta abaixo saiu da venda (0039). Os planos e as recargas à venda pelo Stripe estão na
+> [ADR 0040](0040-stripe-planos-e-recargas.md); provedor, checkout por `price_data`, webhook neutro e portal seguem
+> valendo.
+
 ## Contexto
 
 Com o domínio `absolutezro.com` e o plano Pro da Vercel, o titular pediu para tornar tudo vendável. Até aqui a

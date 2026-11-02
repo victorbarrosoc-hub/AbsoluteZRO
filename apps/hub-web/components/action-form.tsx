@@ -16,6 +16,7 @@ export function ActionForm({
   variant = 'primary',
   inlineSubmit = false,
   showData = false,
+  submitClass,
 }: {
   action: (prev: FormState, data: FormData) => Promise<FormState>
   children: ReactNode
@@ -25,13 +26,15 @@ export function ActionForm({
   inlineSubmit?: boolean
   /** Mostra o retorno da ação: lista de avisos ({level, message}) ou JSON. */
   showData?: boolean
+  /** Classe do botão no lugar de `zro-btn` (ex.: `glass-btn glass-btn--ink` nas telas de plano). */
+  submitClass?: string
 }) {
   const [state, formAction] = useActionState(action, null)
   return (
     <form action={formAction} className={className}>
       {children}
       <div className={inlineSubmit ? 'row' : 'stack'}>
-        <Submit label={submit} variant={variant} />
+        <Submit label={submit} className={submitClass ?? `zro-btn zro-btn--${variant}`} />
         {state?.error && (
           <p className="zro-field__error" role="alert">
             {state.error}
@@ -53,10 +56,10 @@ export function ActionForm({
   )
 }
 
-function Submit({ label, variant }: { label: string; variant: string }) {
+function Submit({ label, className }: { label: string; className: string }) {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" className={`zro-btn zro-btn--${variant}`} disabled={pending} aria-busy={pending}>
+    <button type="submit" className={className} disabled={pending} aria-busy={pending}>
       {pending ? 'Enviando…' : label}
     </button>
   )

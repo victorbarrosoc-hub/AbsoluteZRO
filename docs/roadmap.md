@@ -2,6 +2,28 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Stripe para os planos novos e as recargas da Z (02/11/2026, ramo `stripe-planos`, ADR 0040)
+
+> **Pausado pelo titular (02/11/2026).** O ramo `stripe-planos` ficou só local, sem merge nem deploy. Falta: rodar a
+> bateria inteira de novo depois do último ajuste de teste (a anterior deu 630/631, e o que falhou era a ordem da
+> auditoria, já corrigida e conferida sozinha), conferir a única falha do e2e (`admin.spec.ts` "troca o plano", que
+> pode ou não ter a ver com esta mudança), revisar as telas no celular e no tema escuro, e a decisão do titular de
+> ligar a venda.
+
+- ✅ Checkout de assinatura para Órbita, Absoluto e Avulso (escolha do app), mensal ou anual: o formulário manda só
+  `{ plano, ciclo, app }`; preço por `price_data` do plano versionado no banco (0055, sem migração nova). Não vende o
+  que a organização já paga (mesmo plano em outro ciclo, pacote igual ou menor, avulso coberto pelo Absoluto).
+- ✅ Checkout de pagamento único das recargas da Z (+100 R$ 14,90, +500 R$ 49,90); webhook `checkout.session.completed`
+  e `async_payment_succeeded` → `concederRecarga` com `providerRef = stripe:<sessão>` (uma vez só, mesmo em corrida;
+  valor diferente do pacote vai para revisão).
+- ✅ Webhook `customer.subscription.*` pelo contrato neutro: concede e retira o nível, idempotente, auditado, e no mesmo
+  segundo não anda para trás (`incomplete` depois de `active`). Portal do Stripe continua.
+- ✅ /planos com Zero, Órbita, Absoluto, Avulso e recargas, mensal/anual, e "O que muda em cada app" (catálogo de
+  limites); Sua conta › Plano com "Mudar de plano" e "Recargas da Z". `GET /api/v1/planos` para os apps.
+- ✅ Sem `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` a venda segue fechada ("Pedir este plano" para a equipe).
+- ⛔ Ligar a venda: o titular põe as duas chaves na Vercel e cria o endpoint do webhook no Stripe (eventos na ADR 0040).
+- ⬜ Troca de plano com proração no portal (pede preços cadastrados no Stripe); nota fiscal, termos e LGPD (como na 0019).
+
 ## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026, ramo `claude/carro-menu`)
 
 - ✅ Pedido do titular: a lateral e a gaveta do site real mostram o selo neon (anel), não o "///". No computador o ☰ saiu
@@ -21,7 +43,7 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   pessoa, e-mail confirmado e normalizado, sem descartável, 3 por IP/dia; recusas contadas.
 - ✅ Console › Planos: campanha (ligar/desligar, em teste, recusados), estender/encerrar o teste de uma pessoa, limites
   por nível (editar só admin), recargas, contas antigas (migrar para o Zero, desligado). Início e Perfil mostram o plano.
-- ⬜ Stripe: checkout dos planos novos e das recargas, webhook das recargas (`concederRecarga` com `providerRef`).
+- ✅ Stripe: checkout dos planos novos e das recargas, webhook das recargas (ADR 0040, ramo `stripe-planos`).
 - ⬜ Cada app ler `zro_nivel` e aplicar os números do catálogo (hoje só o HUB mede a Z e as duas operações dele).
 - ⛔ Ligar a campanha e migrar contas antigas: decisão do titular (nada ligado em produção).
 

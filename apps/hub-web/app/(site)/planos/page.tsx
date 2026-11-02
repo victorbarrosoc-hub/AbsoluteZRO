@@ -1,68 +1,104 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import type { LimiteDoCatalogo, OfertaPacote, Preco } from '@zro/billing'
 import { ProductMark } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
 import { AvulsoSeletor } from '@/components/avulso-seletor'
-import { publicCatalog, releaseOpen } from '@/lib/data/catalog'
+import { ofertaPublica } from '@/lib/data/catalog'
+import { brl } from '@/lib/labels'
 import { stripeConfig } from '@/lib/stripe'
 
 export const metadata: Metadata = { title: 'Planos', alternates: { canonical: '/planos' } }
 export const dynamic = 'force-dynamic'
 
-type Row = Record<string, unknown> & {
-  code: string
-  name: string
-  kind: string
-  price_cents: number | null
-  currency: string | null
-  billing_interval: string | null
-  description: string
-  ai_credits: number | null
-  products: { product_id: string }[]
+const NIVEIS = [
+  ['zero', 'Zero'],
+  ['orbita', 'Órbita'],
+  ['absoluto', 'Absoluto'],
+] as const
+
+/** Um número do catálogo como etiqueta: sem limite, sim/não, ou o número com a unidade. */
+function valor(l: LimiteDoCatalogo, v: number | null) {
+  if (l.tipo === 'recurso') return v ? '✓' : '—'
+  if (v == null) return 'Sem limite'
+  return `${v.toLocaleString('pt-BR')}${l.unidade ?? ''}${l.periodo === 'mes' ? '/mês' : ''}`
 }
 
-/** Real sem centavos quando o valor é redondo (R$ 449, R$ 1.499), como numa etiqueta de preço. */
-const brl = (cents: number) =>
-  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })
+/** Preço do ciclo: o anual mostra o que dá por mês e quanto economiza. */
+function Precos({ mes, ano }: { mes: Preco | null; ano: Preco | null }) {
+  return (
+    <>
+      <div className="tier__price when-month">
+        {mes ? (
+          <>
+            <span className="tier__amount">{brl(mes.centavos)}</span>
+            <span className="tier__per">/mês</span>
+          </>
+        ) : (
+          <span className="tier__per">Só anual</span>
+        )}
+      </div>
+      <div className="tier__price when-year">
+        {ano ? (
+          <>
+            <span className="tier__amount">{brl(ano.centavos)}</span>
+            <span className="tier__per">/ano</span>
+          </>
+        ) : (
+          <span className="tier__per">Só mensal</span>
+        )}
+      </div>
+      <p className="tier__sub when-month">{mes && ano ? `ou ${brl(ano.centavos)} por ano` : ' '}</p>
+      <p className="tier__sub when-year">
+        {mes && ano ? (
+          <>
+            {brl(Math.round(ano.centavos / 12))}/mês · <strong>economize {brl(mes.centavos * 12 - ano.centavos)}</strong>
+          </>
+        ) : (
+          ' '
+        )}
+      </p>
+    </>
+  )
+}
+
+function Z({ n }: { n: number | null }) {
+  if (n == null) return null
+  return (
+    <p className="tier__credits" title="Cada mensagem da Z conta uma. A franquia renova todo mês.">
+      <strong>{n.toLocaleString('pt-BR')}</strong>
+      <span>mensagens da Z por mês</span>
+    </p>
+  )
+}
 
 /**
- * Planos sem truque: o Avulso é uma janela só, em que a pessoa marca um ou mais apps e o valor vai somando; ao lado,
- * os pacotes. Enquanto as vendas não abrem (decisão do titular, 26/10/2026), tudo está liberado e os botões levam a
- * baixar; com as vendas, a assinar. Mensal/Anual é um par de rádios só em CSS (globals.css, .pricing).
+ * Planos (ADR 0039/0040): Zero grátis, Órbita e Absoluto em todos os apps lançados, o Avulso (Absoluto num app) e as
+ * recargas da Z. Mensal/Anual é um par de rádios só em CSS (globals.css, .pricing). Com as chaves do Stripe, os botões
+ * levam a assinar em Sua conta › Plano; sem elas, a venda fica fechada e o caminho é começar no Zero.
+ * O que muda em cada app sai do catálogo de limites (o mesmo de GET /api/v1/limites). As fases não aparecem.
  */
 export default async function Planos() {
-  const { products, plans, sales } = await publicCatalog()
-  const all = plans as unknown as Row[]
-  const vendas = stripeConfig() !== null && sales.launched
-  const productName = Object.fromEntries(products.map((p) => [p.id as string, p.name as string]))
-  // Gate de lançamento (ADR 0023): produto fechado ao público não aparece como incluído, nem no Avulso nem nos pacotes.
-  const lancados = new Set(products.filter((p) => releaseOpen(p.release)).map((p) => p.id))
-  const disponiveis = products.filter((p) => lancados.has(p.id) && (p.stage === 'active' || p.stage === 'beta')).map((p) => p.id as string)
-  const yearOf = (code: string) => all.find((p) => p.code === `${code}-anual` && p.price_cents != null)?.price_cents ?? null
-  const monthly = all.filter((p) => p.price_cents != null && p.billing_interval === 'month')
-  const singles = monthly.filter((p) => p.kind === 'individual' && p.products.some((x) => lancados.has(x.product_id)))
-  const singlePrice = Object.fromEntries(singles.flatMap((p) => p.products.map((x) => [x.product_id, p.price_cents as number])))
-  const avulsoMes = singles.length ? Math.min(...singles.map((p) => p.price_cents as number)) : null
-  const anos = singles.map((p) => yearOf(p.code)).filter((v): v is number => v != null)
-  const avulsoAno = anos.length ? Math.min(...anos) : null
-  const avulsoCreditos = Math.max(0, ...singles.map((p) => p.ai_credits ?? 0))
-  const pacotes = monthly.filter((x) => x.kind === 'bundle').sort((a, b) => (a.price_cents as number) - (b.price_cents as number))
-  // O avulso é o Absoluto num app: passando do preço dele, o Absoluto leva todos.
-  const completo = pacotes.find((p) => p.code === 'absoluto') ?? null
-  const economia = (mes: number, ano: number | null) => (ano ? Math.round(((mes * 12 - ano) / (mes * 12)) * 100) : 0)
-  const melhor = Math.max(0, avulsoMes ? economia(avulsoMes, avulsoAno) : 0, ...pacotes.map((p) => economia(p.price_cents as number, yearOf(p.code))))
-  const free = all.find((p) => p.kind === 'free')
-  const nomeDe = (id: string) => productName[id] ?? id
+  const { oferta, limites, nomes } = await ofertaPublica()
+  const vendas = stripeConfig() !== null
+  const nomeDe = (id: string) => nomes[id] ?? id
+  const economia = (p: { mes: Preco | null; ano: Preco | null }) =>
+    p.mes && p.ano ? Math.round(((p.mes.centavos * 12 - p.ano.centavos) / (p.mes.centavos * 12)) * 100) : 0
+  const melhor = Math.max(0, ...oferta.pacotes.map(economia), ...oferta.avulsos.map(economia))
+  const gratis = oferta.anual_em_meses && oferta.anual_em_meses < 12 ? 12 - oferta.anual_em_meses : 0
+  const avulso = oferta.avulsos[0] ?? null
+  const appsDoCatalogo = Object.keys(limites)
+  const assinar = (p: OfertaPacote, ciclo: 'mes' | 'ano') => (vendas ? `/perfil/plano?plano=${p.plano}&ciclo=${ciclo}#assinar` : '/criar-conta')
 
   return (
     <section className="section section--page section--center pricing" aria-labelledby="planos-title">
       <div className="section__head section__head--wide">
         <p className="zro-eyebrow">Planos</p>
         <h1 id="planos-title" className="display-2 atitle">
-          <span className="atitle__thin">Escolha seus apps.</span>
-          <span className="atitle__bold">Ou leve todos.</span>
+          <span className="atitle__thin">Comece do zero.</span>
+          <span className="atitle__bold">Vá até o Absoluto.</span>
         </h1>
-        <p>Uma conta abre tudo. Você paga só o que usa.</p>
+        <p>Uma conta, todos os apps. Mude quando quiser.</p>
       </div>
       {!vendas && (
         <p className="pricing__livre" role="note">
@@ -70,125 +106,152 @@ export default async function Planos() {
         </p>
       )}
 
-      {(avulsoMes || pacotes.length > 0) && (
-        <>
-          <fieldset className="cobranca">
-            <legend className="zro-sr-only">Cobrança</legend>
-            <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-mensal" defaultChecked />
-            <label htmlFor="ciclo-mensal">Mensal</label>
-            <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-anual" />
-            <label htmlFor="ciclo-anual">Anual{melhor > 0 && <span className="cobranca__save">até −{melhor}%</span>}</label>
-          </fieldset>
+      <fieldset className="cobranca">
+        <legend className="zro-sr-only">Cobrança</legend>
+        <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-mensal" defaultChecked />
+        <label htmlFor="ciclo-mensal">Mensal</label>
+        <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-anual" />
+        <label htmlFor="ciclo-anual">
+          Anual
+          {gratis > 0 ? <span className="cobranca__save">{gratis} meses grátis</span> : melhor > 0 && <span className="cobranca__save">até −{melhor}%</span>}
+        </label>
+      </fieldset>
 
-          <div className="tiers">
-            {avulsoMes && (
-              <article className="tier tier--avulso" aria-labelledby="tier-avulso">
-                <header className="tier__head">
-                  <h2 id="tier-avulso">Avulso</h2>
-                  <p className="tier__tag">Só os apps que você escolher.</p>
-                </header>
-                <AvulsoSeletor
-                  apps={disponiveis.filter((id) => singlePrice[id] != null).map((id) => ({ id, name: nomeDe(id), color: productColor(id) }))}
-                  mes={avulsoMes}
-                  ano={avulsoAno}
-                  completoMes={completo?.price_cents ?? null}
-                  completoAno={completo ? yearOf(completo.code) : null}
-                  creditos={avulsoCreditos}
-                  vendas={vendas}
-                />
-              </article>
-            )}
+      <div className="tiers tiers--quatro">
+        {oferta.zero && (
+          <article className="tier" aria-labelledby="tier-zero">
+            <header className="tier__head">
+              <h2 id="tier-zero">{oferta.zero.nome}</h2>
+              <p className="tier__tag">{oferta.zero.descricao}</p>
+            </header>
+            <div className="tier__price">
+              <span className="tier__amount">R$ 0</span>
+              <span className="tier__per">para sempre</span>
+            </div>
+            <p className="tier__sub"> </p>
+            <Z n={oferta.zero.z} />
+            <AppsIcones apps={oferta.zero.apps} nomeDe={nomeDe} />
+            <Link className="glass-btn tier__cta" href="/criar-conta">
+              Criar conta
+            </Link>
+          </article>
+        )}
 
-            {pacotes.map((p) => {
-              const mes = p.price_cents as number
-              const ano = yearOf(p.code)
-              const apps = p.products.map((x) => x.product_id).filter((id) => lancados.has(id))
-              const soma = apps.reduce((s, id) => s + (singlePrice[id] ?? avulsoMes ?? 0), 0)
-              const destaque = p.code === 'orbita'
-              const nome = p.name.replace(/^Absolute ZRO\s+/, '')
-              return (
-                <article key={p.code} className={`tier${destaque ? ' tier--featured' : ''}`} aria-labelledby={`tier-${p.code}`}>
-                  <header className="tier__head">
-                    <h2 id={`tier-${p.code}`}>{nome}</h2>
-                    <p className="tier__tag">{p.description}</p>
-                  </header>
+        {oferta.pacotes.map((p) => {
+          const destaque = p.plano === 'orbita'
+          return (
+            <article key={p.plano} className={`tier${destaque ? ' tier--featured' : ''}`} aria-labelledby={`tier-${p.plano}`}>
+              <header className="tier__head">
+                <h2 id={`tier-${p.plano}`}>{p.nome}</h2>
+                <p className="tier__tag">{p.descricao}</p>
+              </header>
+              <Precos mes={p.mes} ano={p.ano} />
+              <Z n={p.z} />
+              <AppsIcones apps={p.apps} nomeDe={nomeDe} />
+              {(['mes', 'ano'] as const).map((ciclo) => (
+                <Link
+                  key={ciclo}
+                  className={`glass-btn tier__cta ${ciclo === 'mes' ? 'when-month' : 'when-year'}${destaque ? ' glass-btn--ink' : ''}`}
+                  href={assinar(p, ciclo)}
+                >
+                  {vendas ? `Assinar ${p.nome}` : 'Começar no Zero'}
+                </Link>
+              ))}
+            </article>
+          )
+        })}
 
-                  <div className="tier__price when-month">
-                    <span className="tier__amount">{brl(mes)}</span>
-                    <span className="tier__per">/mês</span>
-                  </div>
-                  <div className="tier__price when-year">
-                    {ano ? (
-                      <>
-                        <span className="tier__amount">{brl(ano)}</span>
-                        <span className="tier__per">/ano</span>
-                      </>
-                    ) : (
-                      <span className="tier__per">Só mensal</span>
-                    )}
-                  </div>
-                  <p className="tier__sub when-month">{ano ? `ou ${brl(ano)} por ano` : ' '}</p>
-                  <p className="tier__sub when-year">
-                    {ano ? (
-                      <>
-                        {brl(Math.round(ano / 12))}/mês · <strong>economize {brl(mes * 12 - ano)}</strong>
-                      </>
-                    ) : (
-                      ' '
-                    )}
-                  </p>
+        {avulso?.mes && (
+          <article className="tier tier--avulso" aria-labelledby="tier-avulso">
+            <header className="tier__head">
+              <h2 id="tier-avulso">Avulso</h2>
+              <p className="tier__tag">Só o app que você usa, inteiro.</p>
+            </header>
+            <AvulsoSeletor
+              apps={oferta.avulsos.map((a) => ({ id: a.app, name: a.nome, color: productColor(a.app) }))}
+              mes={avulso.mes.centavos}
+              ano={avulso.ano?.centavos ?? null}
+              z={avulso.z}
+              vendas={vendas}
+            />
+          </article>
+        )}
+      </div>
 
-                  {(p.ai_credits ?? 0) > 0 && (
-                    <p className="tier__credits" title="Cada mensagem da Z conta uma. A franquia renova todo mês.">
-                      <strong>{(p.ai_credits ?? 0).toLocaleString('pt-BR')}</strong>
-                      <span>mensagens da Z por mês</span>
-                    </p>
-                  )}
-
-                  <div className="tier__apps">
-                    <p className="tier__label">{apps.length} ferramentas</p>
-                    <ul aria-label="Ferramentas incluídas">
-                      {apps.map((id) => (
-                        <li key={id} title={nomeDe(id)}>
-                          <ProductMark productId={id} name={nomeDe(id)} size={34} />
-                          <span className="zro-sr-only">{nomeDe(id)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {apps.length > 1 && soma > mes && (
-                    <p className="tier__note">
-                      Os {apps.length} avulsos somariam {brl(soma)}/mês.
-                    </p>
-                  )}
-
-                  <Link className={`glass-btn tier__cta${destaque ? ' glass-btn--ink' : ''}`} href={vendas ? '/perfil/plano' : '/baixar#absolute-zro'}>
-                    {vendas ? 'Assinar' : 'Baixar tudo'}
-                  </Link>
-                </article>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {free && (
-        <div className="tier-free">
+      {oferta.recargas.length > 0 && (
+        <div className="tier-free recargas" aria-labelledby="recargas-title">
           <div>
-            <h2>{free.name}</h2>
-            <p className="zro-mute">{free.description}</p>
+            <h2 id="recargas-title">Mais Z quando precisar</h2>
+            <p className="zro-mute">Valem 12 meses. Só gastam depois da franquia do mês.</p>
           </div>
-          <Link className="glass-btn" href="/criar-conta">
-            Criar conta
-          </Link>
+          <ul className="recargas__lista" aria-label="Recargas da Z">
+            {oferta.recargas.map((r) => (
+              <li key={r.code}>
+                <strong>+{r.mensagens.toLocaleString('pt-BR')}</strong>
+                <span>{brl(r.centavos)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <details className="pricing__more">
-        <summary>Como funciona a Z</summary>
-        <p>Cada plano traz mensagens da Z por mês, e elas renovam todo mês. Usar os apps no dia a dia não gasta mensagens.</p>
-      </details>
+      {appsDoCatalogo.length > 0 && (
+        <details className="pricing__more pricing__compare">
+          <summary>O que muda em cada app</summary>
+          <div className="compare">
+            {appsDoCatalogo.map((app) => (
+              <section key={app} className="compare__app" aria-labelledby={`cmp-${app}`}>
+                <h3 id={`cmp-${app}`} className="compare__nome">
+                  <ProductMark productId={app} name={nomeDe(app)} size={28} />
+                  {nomeDe(app)}
+                </h3>
+                <table className="compare__tabela">
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        <span className="zro-sr-only">Recurso</span>
+                      </th>
+                      {NIVEIS.map(([id, nome]) => (
+                        <th key={id} scope="col">
+                          {nome}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(limites[app]!).map(([chave, l]) => (
+                      <tr key={chave}>
+                        <th scope="row">{l.rotulo}</th>
+                        {NIVEIS.map(([id]) => (
+                          <td key={id}>{valor(l, l.valores[id])}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            ))}
+          </div>
+          <p>O Avulso é o Absoluto no app escolhido.</p>
+        </details>
+      )}
     </section>
+  )
+}
+
+function AppsIcones({ apps, nomeDe }: { apps: string[]; nomeDe: (id: string) => string }) {
+  if (!apps.length) return null
+  return (
+    <div className="tier__apps">
+      <p className="tier__label">{apps.length} apps</p>
+      <ul aria-label="Apps incluídos">
+        {apps.map((id) => (
+          <li key={id} title={nomeDe(id)}>
+            <ProductMark productId={id} name={nomeDe(id)} size={34} />
+            <span className="zro-sr-only">{nomeDe(id)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

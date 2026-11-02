@@ -10,6 +10,7 @@ import {
   excluirConta,
   removeAvatar,
   startCheckout,
+  startRecargaCheckout,
   requestPlanChange,
   setAvatar,
   updateDisplayName,
@@ -90,13 +91,29 @@ export async function planRequestAction(_: FormState, fd: FormData): Promise<For
   }
 }
 
-/** Assinar: leva ao checkout do Stripe. Sem as chaves do Stripe no ambiente, a venda online fica fechada. */
+/**
+ * Assinar (Órbita, Absoluto ou Avulso de um app; mensal ou anual): leva ao checkout do Stripe. O formulário manda só
+ * { plano, ciclo, app }; preço e organização saem do servidor. Sem as chaves do Stripe no ambiente, a venda fica fechada.
+ */
 export async function checkoutAction(_: FormState, fd: FormData): Promise<FormState> {
   const cfg = stripeConfig()
   if (!cfg) return { error: 'Pagamento online ainda fechado.' }
   let url: string
   try {
-    url = await startCheckout(db(), await getAuth(), cfg, { planId: str(fd, 'planId'), origin: appOrigin })
+    url = await startCheckout(db(), await getAuth(), cfg, { plano: str(fd, 'plano'), ciclo: str(fd, 'ciclo'), app: str(fd, 'app') || null, origin: appOrigin })
+  } catch (e) {
+    return toFormError(e)
+  }
+  redirect(url)
+}
+
+/** Recarga da Z (+100 ou +500 mensagens, pagamento único): leva ao checkout do Stripe. */
+export async function recargaCheckoutAction(_: FormState, fd: FormData): Promise<FormState> {
+  const cfg = stripeConfig()
+  if (!cfg) return { error: 'Pagamento online ainda fechado.' }
+  let url: string
+  try {
+    url = await startRecargaCheckout(db(), await getAuth(), cfg, { pacote: str(fd, 'pacote'), origin: appOrigin })
   } catch (e) {
     return toFormError(e)
   }

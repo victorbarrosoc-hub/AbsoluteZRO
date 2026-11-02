@@ -220,38 +220,50 @@ export async function changeOrgPlan(
 
 /**
  * Recarga da Z para uma organização (0055): mensagens extras que valem `validade_meses` do pacote e só são gastas
- * depois da franquia do mês. Hoje só por concessão do console; a compra (Stripe) chama isto com `providerRef`
- * (o mesmo pagamento nunca vira duas recargas).
+ * depois da franquia do mês. Pelo console (concessão) ou pela compra (webhook do Stripe, `origem: 'compra'`, ator
+ * `provider`, `providerRef` = o pagamento): o mesmo pagamento nunca vira duas recargas, nem com dois webhooks ao mesmo
+ * tempo (`on conflict`). A compra vale mesmo que o pacote tenha saído da venda depois do pagamento.
  */
 export async function concederRecarga(
   tx: Queryable,
-  actor: Actor,
+  actor: { userId: string | null; reason: string; kind?: 'admin' | 'provider' },
   input: { orgId: string; pacote: string; origem?: 'compra' | 'concessao'; providerRef?: string | null },
   now = new Date(),
 ): Promise<{ id: string; duplicate: boolean }> {
   if (!actor.reason.trim()) throw new DomainError('invalid_input', 'Informe o motivo da recarga.')
-  const [p] = await tx`select code, mensagens, validade_meses from zro.z_recarga_pacotes where code = ${input.pacote} and status = 'active'`
+  const compra = input.origem === 'compra'
+  const [p] = await tx`select code, mensagens, validade_meses from zro.z_recarga_pacotes
+                       where code = ${input.pacote} and (status = 'active' or (${compra} and status = 'retired'))`
   if (!p) throw new DomainError('invalid_input', 'Pacote de recarga não encontrado.')
-  if (input.providerRef) {
-    const [ja] = await tx`select id from zro.z_recargas where provider_ref = ${input.providerRef}`
-    if (ja) return { id: ja.id as string, duplicate: true }
-  }
+  const ja = async () =>
+    input.providerRef ? ((await tx`select id from zro.z_recargas where provider_ref = ${input.providerRef}`)[0]?.id as string | undefined) : undefined
+  const antes = await ja()
+  if (antes) return { id: antes, duplicate: true }
   const expira = new Date(now)
   expira.setUTCMonth(expira.getUTCMonth() + Number(p.validade_meses))
   const [r] = await tx`
     insert into zro.z_recargas (org_id, pacote, mensagens, expira_em, origem, provider_ref, criado_por)
-    values (${input.orgId}, ${p.code as string}, ${p.mensagens as number}, ${expira}, ${input.origem ?? 'concessao'}, ${input.providerRef ?? null}, ${actor.userId})
+    values (${input.orgId}, ${p.code as string}, ${p.mensagens as number}, ${expira}, ${input.origem ?? 'concessao'}, ${input.providerRef ?? null},
+            (select id from zro.users where id = ${actor.userId}::uuid))
+    on conflict (provider_ref) do nothing
     returning id`
+  if (!r) return { id: (await ja())!, duplicate: true }
   await audit(tx, {
     orgId: input.orgId,
-    actorUserId: actor.userId,
-    actorKind: 'admin',
-    action: 'billing.recarga_concedida',
+    actorUserId: actor.kind === 'provider' ? null : actor.userId,
+    actorKind: actor.kind ?? 'admin',
+    action: compra ? 'billing.recarga_comprada' : 'billing.recarga_concedida',
     targetType: 'z_recarga',
-    targetId: r!.id as string,
-    metadata: { pacote: p.code, mensagens: p.mensagens, expira: expira.toISOString(), reason: actor.reason },
+    targetId: r.id as string,
+    metadata: {
+      pacote: p.code,
+      mensagens: p.mensagens,
+      expira: expira.toISOString(),
+      reason: actor.reason,
+      ...(compra && actor.userId ? { comprador: actor.userId } : {}),
+    },
   })
-  return { id: r!.id as string, duplicate: false }
+  return { id: r.id as string, duplicate: false }
 }
 
 /**

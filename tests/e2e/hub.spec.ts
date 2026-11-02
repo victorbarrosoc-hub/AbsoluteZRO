@@ -176,7 +176,9 @@ test('webhook de cobrança: assinatura errada 400, provedor desconhecido 404, ev
     },
   }
   const body = JSON.stringify(ev)
-  expect((await request.post('/api/v1/billing/webhooks/stripe', { data: body, headers: { 'content-type': 'application/json' } })).status()).toBe(404)
+  // O Stripe exige a assinatura dele (Stripe-Signature); o provedor desconhecido não existe.
+  expect((await request.post('/api/v1/billing/webhooks/stripe', { data: body, headers: { 'content-type': 'application/json' } })).status()).toBe(400)
+  expect((await request.post('/api/v1/billing/webhooks/pagarme', { data: body, headers: { 'content-type': 'application/json' } })).status()).toBe(404)
   expect(
     (
       await request.post('/api/v1/billing/webhooks/manual', {
@@ -243,10 +245,23 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await expect(page.getByText('R$ 299,90').first()).toBeVisible()
   await expect(page.getByText('R$ 149,90')).toHaveCount(0)
   await expect(page.getByText(/fase \d|em breve/i)).toHaveCount(0)
-  // Avulso numa janela só: marcar dois apps soma o valor e o botão vira "Baixar 2 apps"
+  // Mensal/anual (ADR 0040): o anual mostra R$ 1.099 e R$ 2.999; o Avulso é um app só (R$ 79,90 ou R$ 799).
+  await page.locator('label[for="ciclo-anual"]').click()
+  await expect(page.getByText('R$ 1.099', { exact: true })).toBeVisible()
+  await expect(page.getByText('R$ 2.999', { exact: true })).toBeVisible()
+  await expect(page.getByText('R$ 799', { exact: true })).toBeVisible()
+  await page.locator('label[for="ciclo-mensal"]').click()
+  await expect(page.getByText('R$ 79,90', { exact: true })).toBeVisible()
+  await expect(page.getByText('+100', { exact: true })).toBeVisible()
+  await expect(page.getByText('R$ 14,90', { exact: true })).toBeVisible()
+  // Avulso: tocar num app leva a ele; tocar em outro troca
   await page.getByRole('button', { name: 'SOBEDESCE' }).click()
   await page.getByRole('button', { name: 'Synquei' }).click()
-  await expect(page.getByRole('link', { name: 'Baixar 2 apps' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Baixar Synquei' })).toHaveAttribute('href', '/baixar?apps=synquei#absolute-zro')
+  await expect(page.getByRole('button', { name: 'SOBEDESCE' })).toHaveAttribute('aria-pressed', 'false')
+  // O que muda em cada app sai do catálogo de limites
+  await page.getByText('O que muda em cada app').click()
+  await expect(page.locator('.compare__app').filter({ hasText: 'Relay' }).getByText('Resolução máxima')).toBeVisible()
   // Gate de lançamento (ADR 0023): produto fechado não aparece como incluído
   await expect(page.getByRole('button', { name: 'NOSSOM' })).toHaveCount(0)
   await expect(page.locator('.tier__apps li[title="NOSSOM"], .tier__apps li[title="Revela"]')).toHaveCount(0)

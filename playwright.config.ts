@@ -24,6 +24,8 @@ export default defineConfig({
       ZRO_APP_ORIGIN: `http://localhost:${PORT}`,
       ZRO_BILLING_PROVIDERS: 'manual',
       ZRO_BILLING_WEBHOOK_SECRET_MANUAL: 'segredo-e2e',
+      // Webhook do Stripe (tests/e2e/stripe.spec.ts) com um segredo só de teste. Sem STRIPE_SECRET_KEY: a venda segue fechada.
+      STRIPE_WEBHOOK_SECRET: 'whsec_e2e_falso',
       NEXT_TELEMETRY_DISABLED: '1',
       // Conexões (ADR 0026): o Google falso de tests/fixtures/google-falso.ts (sobe no próprio teste) e uma chave só de teste.
       ZRO_GOOGLE_TESTE_CLIENT_ID: 'google-e2e',

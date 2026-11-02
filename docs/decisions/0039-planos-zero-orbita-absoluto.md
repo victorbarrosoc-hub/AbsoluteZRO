@@ -72,7 +72,7 @@ A página /planos mostra os preços novos, sem botão de compra. "Ligar vendas" 
 
 - Os apps leem o nível da claim e os números de `/api/v1/limites`; cada app aplica o limite dele (o HUB só mede a Z e
   as duas operações do HUB). Enquanto um app não lê, nada muda nele.
-- A assinatura online, o checkout das recargas e a migração das contas antigas ficam para a etapa do Stripe e para uma
-  decisão do titular. `concederRecarga(..., { providerRef })` já é idempotente para o webhook.
+- A assinatura online e o checkout das recargas: [ADR 0040](0040-stripe-planos-e-recargas.md). A migração das contas
+  antigas segue uma decisão do titular.
 - Teste que cruza o mês: o limite do mês é o maior entre o que sobra do teste e a franquia do Zero (10), então o total
   pode passar de 50 em até 10 mensagens.

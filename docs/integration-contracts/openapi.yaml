@@ -94,6 +94,25 @@ paths:
             },
           '401': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/planos:
+    get:
+      security: []
+      summary: A oferta à venda (Zero, Órbita, Absoluto, Avulso por app e recargas da Z), mensal e anual. Sem dado de pessoa, cacheável (5 min)
+      description: |
+        Preços dos planos versionados no banco (ADR 0040), só com apps abertos ao público. `pacotes[]` =
+        `{ plano: orbita | absoluto, nome, descricao, mes, ano, z, apps }` (`mes`/`ano` = `{ id, code, version, centavos,
+        moeda }` ou null; `z` = mensagens da Z por mês); `avulsos[]` = `{ app, nome, mes, ano, z }` (o Absoluto naquele
+        app); `zero` = `{ nome, descricao, z, apps }`; `recargas[]` = `{ code, mensagens, centavos, moeda, validade_meses }`;
+        `anual_em_meses` (hoje 10). `vendas` = pagamento online aberto (chaves do Stripe no ambiente); `assinar` = página
+        do HUB onde a pessoa assina (`?plano=orbita|absoluto|avulso&ciclo=mes|ano&app=<id>`). Os números de cada nível:
+        GET /api/v1/limites.
+      responses:
+        {
+          '200':
+            {
+              description: '{ vendas: false, assinar, zero, pacotes: [{ plano: "orbita", mes: { centavos: 10990 }, ano: { centavos: 109900 }, z: 100 }], avulsos, recargas, anual_em_meses: 10 }',
+            },
+        }
   /api/v1/limites:
     get:
       security: []
@@ -1394,6 +1413,15 @@ paths:
     post:
       security: [{ providerSignature: [] }]
       summary: Evento de cobrança assinado (stripe com Stripe-Signature e STRIPE_WEBHOOK_SECRET; outros em ZRO_BILLING_PROVIDERS)
+      description: |
+        stripe (ADR 0040), eventos assinados no painel: `customer.subscription.created|updated|deleted` (concede ou
+        retira o nível do plano dos metadados `org_id`, `plan_code`, `plan_version`) e `checkout.session.completed` /
+        `checkout.session.async_payment_succeeded` (recarga da Z paga, metadados `tipo: recarga_z`, `org_id`, `pacote`;
+        a recarga usa o id da sessão como referência e nunca é dada duas vezes). Outros eventos e checkouts sem
+        pagamento: `ignored`. Contrato neutro (provedor manual): `subscription.updated|deleted` e `recarga.paga`
+        (`{ org_id, pacote, payment_ref, amount_cents, currency, user_id? }`). Mesmo evento = `duplicate`; evento mais
+        velho que o estado ou do mesmo segundo andando para trás = `ignored`; valor pago diferente do pacote = `failed`
+        (revisão, nada é concedido).
       parameters: [{ name: provider, in: path, required: true, schema: { type: string } }]
       responses:
         {

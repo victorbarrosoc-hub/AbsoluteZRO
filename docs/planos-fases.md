@@ -15,5 +15,6 @@ Modelo e contrato: [ADR 0039](decisions/0039-planos-zero-orbita-absoluto.md).
 
 ## Depois
 
-- Assinatura online (Stripe), recargas da Z à venda e voz da Z no Absoluto quando existir.
+- Assinatura online (Stripe) e recargas da Z à venda: prontas (ADR 0040), abrem quando as chaves do Stripe entram na
+  Vercel. Voz da Z no Absoluto quando existir.
 - Os números do catálogo mudam no console (Limites por nível), sem migração.
