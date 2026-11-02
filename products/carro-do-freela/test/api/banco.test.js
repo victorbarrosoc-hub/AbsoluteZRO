@@ -435,7 +435,8 @@ test('rotas: nenhum campo de telefone entra — nem como campo, nem escondido no
   await recusa({ nome: 'X (84) 3222-1111' }, 'telefone', 'nome');
   await recusa({ nome: 'X', portfolio: 'https://wa.me/5584999990000' }, 'telefone', 'portfolio');
   await recusa({ nome: 'X', portfolio: 'https://api.whatsapp.com/send' }, 'proibido', 'portfolio');
-  await recusa({ nome: 'X', portfolio: 'http://inseguro.exemplo' }, 'link', 'portfolio');
+  await recusa({ nome: 'X', portfolio: 'ftp://inseguro.exemplo' }, 'link', 'portfolio');
+  await recusa({ nome: 'X', portfolio: 'javascript:alert(1)' }, 'link', 'portfolio');
   await recusa({ nome: 'X', sub: crypto.randomUUID() }, 'campo', 'sub');
   await recusa({ nome: 'X', funcoes: ['Som direto'] }, 'catalogo', 'funcoes');
   await recusa({ nome: 'X', uf: 'XX' }, 'uf', 'uf');

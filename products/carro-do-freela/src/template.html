@@ -6006,6 +6006,10 @@ html.real .homenav .hn-criar{background:linear-gradient(180deg,rgba(255,255,255,
 html.real .homenav .brand .mk-marca,html.real #v-entrar .lgn-logo>svg{display:none}
 /* o selo neon é a marca do Carro em todo lugar do site real (02/11, titular): na lateral e na gaveta também */
 html.real .top .brand .mk-marca,html.real .mn-marca>svg{display:none}
+/* rodapé da home e a página "Em desenvolvimento" também (02/11, titular: "a logo lá embaixo tá desatualizada") */
+html.real .fim-mk,html.real .fim-marca>svg,html.real .fc-marca>svg{display:none}
+html.real .fim-selo{align-self:start}
+@media(max-width:820px){html.real .fim-selo{position:absolute;right:24px;top:24px;--t:56px!important}}
 /* ⚠️ UM MENU SÓ NO COMPUTADOR (02/11, titular: "tem dois menus"): a lateral já é o menu; o ☰ abria a gaveta com as
    mesmas telas de novo. Aqui o ☰ sai e a gaveta vira "conta e ajustes" (conta, ajuda, ajustes, tema e som), aberta
    pelo cartão da conta no pé da lateral (#eu-bt). No celular nada muda: lá a gaveta é o menu. */
@@ -8131,10 +8135,10 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
             <button class="btn gh entrar-cta" data-lg="freela">Sou freela</button>
           </div>
         </div>
-        <svg class="fim-mk" viewBox="0 0 100 100" aria-hidden="true"><use href="#mk"/></svg>
+        <svg class="fim-mk" viewBox="0 0 100 100" aria-hidden="true"><use href="#mk"/></svg><span class="zselo fim-selo" style="--t:92px" hidden data-so-real aria-hidden="true"><i class="zselo-luz"></i><i class="zselo-anel"></i><i class="zselo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g6)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i><svg class="zselo-carro" viewBox="0 0 24 14"><path d="M3.2 9.6V7.4c0-.7.4-1.3 1-1.5l2.6-1 2-2.6c.4-.5 1-.8 1.6-.8h4.5c.6 0 1.2.3 1.6.8l2.2 2.7 1.9.5c.8.2 1.4.9 1.4 1.8v2.3c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9z" fill="#17D1E8"/><path d="M8.3 5.5 9.9 3.4h3v2.1zM14 5.5V3.4h1.5l1.7 2.1z" fill="#0E1B1E" opacity=".75"/><circle cx="7.4" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/><circle cx="17" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/></svg></span>
       </div>
       <div class="fim-pe">
-        <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
+        <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><span class="zselo sem-carro" style="--t:26px" hidden data-so-real aria-hidden="true"><i class="zselo-luz"></i><i class="zselo-anel"></i><i class="zselo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g7)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i></span><b>Carro do Freela</b></span>
         <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos" data-sem-real>Planos</a><a href="#h-praca" hidden data-so-real>Comunidade</a><button class="fim-prev" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button></nav>
       </div>
     </div>
@@ -8254,7 +8258,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
 <section id="v-fechado" hidden>
   <div class="fc">
     <span class="fc-zro" aria-label="Absolute ZRO"><svg viewBox="0 0 100 100" width="26" height="26" fill="currentColor" aria-hidden="true" focusable="false"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg></span>
-    <span class="fc-marca"><svg viewBox="0 0 100 100" width="40" height="40" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
+    <span class="fc-marca"><svg viewBox="0 0 100 100" width="40" height="40" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><span class="zselo sem-carro" style="--t:42px" hidden data-so-real aria-hidden="true"><i class="zselo-luz"></i><i class="zselo-anel"></i><i class="zselo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g8" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g8)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i></span><b>Carro do Freela</b></span>
     <h1 class="fc-tit"><span class="fc-fino">Em</span> <span class="fc-forte">desenvolvimento.</span></h1>
     <p class="fc-sub" id="fc-sub">Estamos construindo o Carro do Freela. Em breve, na Absolute ZRO.</p>
     <div class="fc-acoes">
@@ -14634,7 +14638,17 @@ function sincronizarData(){
   if(S.tab==="passar"){CHAMADA=null;drawPassar()}
   trancarPassar();
 }
-const cidades=[...new Set(CREW.map(c=>c.cidade))].sort((a,b)=>a.localeCompare(b,"pt"));
+/* ⚠️ NO SITE REAL O CREW SÓ TEM A PRÓPRIA CONTA (02/11, titular: "pergunta de onde eu sou, não aparece nenhuma
+   opção"): a lista de praças vinha do CREW e saía vazia. Lá ela é fixa: as cidades do RN e vizinhas onde a praça
+   começa, e as capitais. Formato "Cidade/UF", o mesmo do cadastro e do servidor (cidade + uf). */
+const PRACAS_REAL=["Natal/RN","Parnamirim/RN","São Gonçalo do Amarante/RN","Macaíba/RN","Extremoz/RN","Ceará-Mirim/RN",
+  "São José de Mipibu/RN","Nísia Floresta/RN","Goianinha/RN","Tibau do Sul/RN","Santa Cruz/RN","João Câmara/RN",
+  "Currais Novos/RN","Caicó/RN","Assu/RN","Mossoró/RN","Pau dos Ferros/RN","João Pessoa/PB","Campina Grande/PB",
+  "Recife/PE","Fortaleza/CE","Maceió/AL","Aracaju/SE","Salvador/BA","Teresina/PI","São Luís/MA","Belém/PA",
+  "Manaus/AM","Macapá/AP","Boa Vista/RR","Porto Velho/RO","Rio Branco/AC","Palmas/TO","Brasília/DF","Goiânia/GO",
+  "Cuiabá/MT","Campo Grande/MS","Belo Horizonte/MG","Vitória/ES","Rio de Janeiro/RJ","São Paulo/SP","Curitiba/PR",
+  "Florianópolis/SC","Porto Alegre/RS"];
+const cidades=REAL?PRACAS_REAL.slice():[...new Set(CREW.map(c=>c.cidade))].sort((a,b)=>a.localeCompare(b,"pt"));
 function initFiltros(){
   const fc=v("f-func");
   FUNCOES.forEach(f=>{const b=document.createElement("button");
@@ -18523,6 +18537,7 @@ function registrarConsentimento(mostrar){
 const perfilAutorizado=c=>!!(c&&c.consentimento&&c.consentimento.mostrar);
 function concluirCadastro(){
   registrarConsentimento(!!(v("cd-consente")&&v("cd-consente").checked));
+  enviarCadastroAoPerfil();
   EU.cadReceber=true; recalcular(); nuvemPasso("cadastro");
   /* ⚠️ Vindo de "entrar", o fim do cadastro cai no FEED — a mesma primeira
      tela de quem já tem perfil. Antes caía em Praças, que é tela de
@@ -23441,7 +23456,21 @@ function realAcoesAnuncio(a,meu){
     ANUNCIOS=ANUNCIOS.filter(function(x){return x.id!==a.id}); drawBrecho();
   };
 }
-function cfbMsg(r){ var e=r&&r.j&&r.j.erro; return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
+/* o servidor diz QUAL campo recusou: "Texto longo demais." sozinho fazia a pessoa mexer no campo errado (02/11) */
+var CFB_CAMPO={funcoes:"Marque até 12 funções.",nichos:"Marque até 12 nichos.",bio:"A bio vai até 280 letras.",
+  nome:"Confira o nome (até 80 letras).",cidade:"Confira a cidade.",uf:"Escolha o estado.",
+  portfolio:"Confira o link do portfólio (ex.: seusite.com.br ou @instagram)."};
+function cfbMsg(r){ var j=r&&r.j, e=j&&j.erro, c=j&&j.campo;
+  if(c&&CFB_CAMPO[c]&&e!=="telefone"&&e!=="proibido") return CFB_CAMPO[c];
+  return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
+/* o link do portfólio como a pessoa escreve: "@fulano" é o Instagram, "site.com" ganha https:// (o servidor só guarda https) */
+function linkPortfolio(t){
+  t=String(t||"").trim(); if(!t) return "";
+  var m=/^@([A-Za-z0-9._]{1,30})$/.exec(t); if(m) return "https://instagram.com/"+m[1];
+  if(/^http:\/\//i.test(t)) return "https://"+t.slice(7);
+  if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(t)) return "https://"+t.replace(/^\/+/,"");
+  return t;
+}
 function cfbReais(c){ return "R$ "+(c/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function cfbPintar(){
   var el=v("cfb");
@@ -23459,13 +23488,37 @@ function cfbPintar(){
     CFB.perfil=rs[0].j.perfil; CFB.itens=rs[1].j.itens||[]; CFB.carregado=true; cfbDesenhar();
   });
 }
+/* ⚠️ O CADASTRO DO COMEÇO É O PERFIL (02/11, titular: "preenchi no começo do cadastro e não veio pra cá"). O
+   cadastro guarda em EU (no aparelho); o perfil da conta mora no servidor. Ao concluir o cadastro, no domínio, o que
+   cabe no perfil vai junto (nome, praça, funções, nichos, portfólio, mostrar para quem contrata). WhatsApp nunca vai:
+   o servidor recusa telefone. Sem perfil no servidor, o bloco "Meu perfil" já abre com o que o cadastro tem. */
+function perfilDoCadastro(){
+  if(typeof EU!=="object"||!EU||vazio(EU.nome)) return null;
+  var pr=String(EU.cidade||""), m=/^(.+)\/([A-Z]{2})$/.exec(pr);
+  var fun=(EU.func||[]).filter(function(f){return FUNCOES.indexOf(f)>=0&&f!=="Não informado"}).slice(0,12);
+  var nic=(EU.nicho||[]).filter(function(t){return TIPOS.indexOf(t)>=0}).slice(0,12);
+  var c=EU.consentimento;
+  return {nome:titulo(EU.nome).slice(0,80),cidade:m?m[1]:"",uf:m&&CFB_UF.indexOf(m[2])>=0?m[2]:"",funcoes:fun,nichos:nic,
+    bio:"",portfolio:linkPortfolio(EU.port||""),visibilidade:c&&c.mostrar?"contratantes":"privado"};
+}
+function enviarCadastroAoPerfil(){
+  if(!REAL||typeof zroPodeEnviar!=="function"||!zroPodeEnviar()) return;
+  var corpo=perfilDoCadastro(); if(!corpo) return;
+  cfbPedir("GET","/api/zro/perfil").then(function(r){
+    /* o que já está no servidor vence o que está vazio no cadastro: só preenche o que falta */
+    var atual=r.status===200&&r.j&&r.j.perfil;
+    if(atual){ ["cidade","uf","bio","portfolio"].forEach(function(k){ if(!corpo[k]&&atual[k]) corpo[k]=atual[k] });
+      if(!corpo.funcoes.length&&atual.funcoes) corpo.funcoes=atual.funcoes; if(!corpo.nichos.length&&atual.nichos) corpo.nichos=atual.nichos }
+    return cfbPedir("PUT","/api/zro/perfil",corpo);
+  }).then(function(r){ if(r&&r.status===200&&r.j&&r.j.perfil&&CFB){ CFB.perfil=r.j.perfil; cfbDesenhar() } });
+}
 function cfbChips(id,lista,marcados){
   return '<div class="cfb-chips" id="'+id+'">'+lista.map(function(f){
     return '<button type="button" class="chip" aria-pressed="'+(marcados.indexOf(f)>=0)+'" data-v="'+esc(f)+'">'+esc(f)+'</button>'}).join("")+'</div>';
 }
 function cfbDesenhar(){
   var el=v("cfb"); if(!el||!CFB||!CFB.carregado) return;
-  var p=CFB.perfil||{nome:(ZRO_CONTA&&ZRO_CONTA.nome)||"",cidade:"",uf:"",funcoes:[],nichos:[],bio:"",portfolio:"",visibilidade:"privado"};
+  var p=CFB.perfil||perfilDoCadastro()||{nome:(ZRO_CONTA&&ZRO_CONTA.nome)||"",cidade:"",uf:"",funcoes:[],nichos:[],bio:"",portfolio:"",visibilidade:"privado"};
   var fun=FUNCOES.filter(function(f){return f!=="Não informado"});
   var it=CFB.itens;
   el.innerHTML=
@@ -23477,7 +23530,7 @@ function cfbDesenhar(){
       '<div class="frow cfb-cheio"><span class="lab">Funções</span>'+cfbChips("cfb-fun",fun,p.funcoes||[])+'</div>'+
       '<div class="frow cfb-cheio"><span class="lab">Nichos</span>'+cfbChips("cfb-nic",TIPOS,p.nichos||[])+'</div>'+
       '<div class="frow cfb-cheio"><span class="lab">Bio curta</span><textarea class="fld" id="cfb-bio" maxlength="280">'+esc(p.bio||"")+'</textarea></div>'+
-      '<div class="frow cfb-cheio"><span class="lab">Portfólio</span><input class="fld" id="cfb-port" type="url" maxlength="300" placeholder="https://" value="'+esc(p.portfolio||"")+'"></div>'+
+      '<div class="frow cfb-cheio"><span class="lab">Portfólio</span><input class="fld" id="cfb-port" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="300" placeholder="seusite.com.br ou @instagram" value="'+esc(p.portfolio||"")+'"></div>'+
     '</div>'+
     '<label class="cfb-vis" title="Nome, cidade, funções, nichos, bio e portfólio. Telefone nunca."><input type="checkbox" id="cfb-vis"'+(p.visibilidade==="contratantes"?' checked':'')+'> Mostrar meu perfil para quem contrata</label>'+
     '<div class="cfb-ac"><button class="btn sm" id="cfb-salvar">Salvar perfil</button><span class="cfb-st" id="cfb-pst" role="status"></span></div>'+
@@ -23493,7 +23546,10 @@ function cfbDesenhar(){
     (CFB.editando?cfbFormItem():'<div class="cfb-ac"><button class="btn sm gh" id="cfb-novo">Adicionar equipamento</button><span class="cfb-st" id="cfb-ist" role="status"></span></div>');
   el.hidden=false;
   ["cfb-fun","cfb-nic"].forEach(function(id){
-    v(id).querySelectorAll(".chip").forEach(function(b){ b.onclick=function(){ b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")==="true"?"false":"true") } });
+    v(id).querySelectorAll(".chip").forEach(function(b){ b.onclick=function(){
+      var liga=b.getAttribute("aria-pressed")!=="true";
+      if(liga&&v(id).querySelectorAll('.chip[aria-pressed="true"]').length>=12){ cfbStatus("cfb-pst",id==="cfb-fun"?"Até 12 funções.":"Até 12 nichos.",true); return }
+      b.setAttribute("aria-pressed",String(liga)) } });
   });
   v("cfb-salvar").onclick=cfbSalvarPerfil;
   var nv=v("cfb-novo"); if(nv) nv.onclick=function(){ CFB.editando="novo"; cfbDesenhar() };
@@ -23520,7 +23576,7 @@ function cfbMarcados(id){ return [].map.call(v(id).querySelectorAll('.chip[aria-
 function cfbSalvarPerfil(){
   var b=v("cfb-salvar"); if(b.disabled) return; b.disabled=true; cfbStatus("cfb-pst","Salvando…");
   cfbPedir("PUT","/api/zro/perfil",{nome:v("cfb-nome").value,cidade:v("cfb-cidade").value,uf:v("cfb-uf").value,
-    funcoes:cfbMarcados("cfb-fun"),nichos:cfbMarcados("cfb-nic"),bio:v("cfb-bio").value,portfolio:v("cfb-port").value,
+    funcoes:cfbMarcados("cfb-fun"),nichos:cfbMarcados("cfb-nic"),bio:v("cfb-bio").value,portfolio:linkPortfolio(v("cfb-port").value),
     visibilidade:v("cfb-vis").checked?"contratantes":"privado"}).then(function(r){
     b.disabled=false;
     if(r.status===200&&r.j&&r.j.perfil){ CFB.perfil=r.j.perfil; cfbStatus("cfb-pst","Salvo.") }

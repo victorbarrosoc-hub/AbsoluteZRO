@@ -79,6 +79,13 @@ function perfilDe(corpo) {
   const uf = corpo.uf === undefined || corpo.uf === null || corpo.uf === '' ? null : String(corpo.uf).toUpperCase();
   if (uf !== null && (typeof corpo.uf !== 'string' || !UFS.includes(uf))) throw new Recusa('uf', 'uf');
   let portfolio = texto(corpo.portfolio, 'portfolio', 300);
+  /* como a pessoa escreve (02/11): "@fulano" é o Instagram; sem esquema ganha https://; http:// vira https:// */
+  if (portfolio !== null) {
+    const arroba = /^@([A-Za-z0-9._]{1,30})$/.exec(portfolio);
+    if (arroba) portfolio = 'https://instagram.com/' + arroba[1];
+    else if (/^http:\/\//i.test(portfolio)) portfolio = 'https://' + portfolio.slice(7);
+    else if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(portfolio)) portfolio = 'https://' + portfolio.replace(/^\/+/, '');
+  }
   if (portfolio !== null) {
     let u;
     try { u = new URL(portfolio) } catch (e) { throw new Recusa('link', 'portfolio') }
