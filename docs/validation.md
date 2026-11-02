@@ -4742,6 +4742,13 @@ SOBEDESCE de computador, que disparam os instaladores).
   ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
   isso a prévia em vez da captura do menu nativo.
 
+## Relay: entrar com a conta Absolute ZRO (02/11/2026)
+
+- `test/painel.test.js`: fora da conta, `/painel` e `/converter?preset=reels` levam para `/entrar?volta=…`, com
+  "Entrar com Absolute ZRO" e "Criar conta" voltando para a mesma página; a página inicial leva a `/entrar`.
+  `test/inicio.test.js`: o herói mostra "Entrar" fora e "Seu painel" dentro. Login desligado no endereço (local,
+  testes): o conversor segue aberto. Relay `npm test`: 132/132.
+
 ## Carro do Freela: modo demonstração em /demo (02/11/2026)
 
 - `products/carro-do-freela/test/demo-real.js` 15/15: noindex, canonical no próprio /demo, sem AEON/Revela/NOSSOM/Rift, só o /demo carrega o modo, nenhum perfil do protótipo,

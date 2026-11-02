@@ -99,15 +99,20 @@ describe('painel no Chromium', () => {
     return p
   }
 
-  test('fora da conta: o painel pede para entrar e volta para ele', { skip: pular }, async () => {
+  test('fora da conta: o painel e o conversor levam para /entrar, que volta para eles', { skip: pular }, async () => {
     logado = false
     const ctx = await navegador.newContext()
     const p = await nova(ctx, '/painel')
+    await p.waitForURL(/\/entrar\?volta=%2Fpainel$/)
     await p.waitForSelector('#fora:not([hidden])')
-    assert.equal(await p.getAttribute('#fora-entrar', 'href'), '/api/zro/entrar?volta=%2Fpainel')
+    assert.equal(await p.getAttribute('#entrar', 'href'), '/api/zro/entrar?volta=%2Fpainel')
+    assert.equal(await p.getAttribute('#criar', 'href'), '/api/zro/entrar?criar=1&volta=%2Fpainel')
+    const c = await nova(ctx, '/converter?preset=reels')
+    await c.waitForURL(/\/entrar\?volta=%2Fconverter%3Fpreset%3Dreels$/)
+    assert.equal(await c.getAttribute('#entrar', 'href'), '/api/zro/entrar?volta=%2Fconverter%3Fpreset%3Dreels')
     const inicio = await nova(ctx, '/')
     await inicio.waitForSelector('[data-entrar]')
-    assert.equal(await inicio.getAttribute('[data-entrar]', 'href'), '/api/zro/entrar?volta=%2Fpainel', 'da página inicial, entrar leva ao painel')
+    assert.equal(await inicio.getAttribute('[data-entrar]', 'href'), '/entrar?volta=%2Fpainel', 'da página inicial, entrar leva ao painel')
     await ctx.close()
     logado = true
   })

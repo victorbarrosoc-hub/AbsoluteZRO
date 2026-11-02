@@ -1,6 +1,6 @@
 // Relay · o Set da Absolute ZRO (ADR 0032 de lá): quem da equipe e dos contatos está online, em qual app, e as
 // conversas (diretas e do projeto). É a aba em comum de todas as plataformas: aqui, "Set" no fim das páginas do topo.
-// O Relay continua aberto (converter não pede conta): sem sessão, o topo mostra "Entrar" (com a Absolute ZRO, volta
+// O Relay pede a conta (02/11/2026; o conversor e o painel levam para /entrar): sem sessão, o topo mostra "Entrar" (com a Absolute ZRO, volta
 // para a mesma página; da inicial, para o painel). Com sessão: "Painel", a foto da conta com o menu (Painel, Sua conta,
 // Sair; app/conta.js) e o "Set", que só aparece quando o Set responde (pedido do titular, 30/10/2026), e
 // abre a folha, o <zro-set modo="folha"> da Absolute ZRO (lateral no computador, tela cheia no iPhone), vestida com a

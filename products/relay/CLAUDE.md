@@ -32,7 +32,7 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
   topo, o repasse `/api/zro/set/*` com o token no servidor e a foto da conta com o menu (Painel, Sua conta, Sair;
   `app/conta.js`). O **painel** (`/painel`, `app/painel.js`) guarda no aparelho (`app/historico.js`) e na conta
   (`app/nuvem.js` ↔ `api/relay/painel.js`, schema `relay`): só nomes e números das conversões, projetos e presets,
-  nunca o arquivo. Converter continua sem conta, e com o site fechado (sem `RELEASE=released`) o login fica desligado
+  nunca o arquivo. Converter pede a conta Absolute ZRO desde 02/11/2026 (`exigirConta` em `app/conta.js` leva a `/entrar`), e com o site fechado (sem `RELEASE=released`) o login fica desligado
   (`siteFechado()` em `api/_zro.js`).
 - **Banco (schema `relay`, papel `relay_app`):** migração nova = arquivo novo em `db/migrations/`
   (`scripts/migrar.mjs` recusa editar uma aplicada). Toda operação da pessoa passa por `comoPessoa` (`api/_banco.js`):
