@@ -7307,6 +7307,11 @@ button.nx-li:hover{background:var(--nx-c2)}
 #nx-prop{padding:0}
 .nx-pp{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);min-height:calc(100dvh - 62px)}
 .nx-pp-col{border-right:1px solid var(--nx-l);min-width:0}
+.nx-pp[data-vazio="true"]{grid-template-columns:minmax(0,1fr)}
+.nx-pp[data-vazio="true"] .nx-pp-det{display:none}
+.nx-pp[data-vazio="true"] .nx-pp-col{border-right:0}
+.nx-pp[data-vazio="true"] .nx-vazio{padding-top:12vh}
+.nx-jb-hero .nx-sub{margin-top:14px;font-size:16px}
 .nx-pp-cab{padding:clamp(22px,3vw,36px) 28px 18px}
 .nx-seg{display:inline-flex;gap:4px;padding:4px;margin-top:18px;border-radius:999px;background:var(--nx-c1);border:1px solid var(--nx-l)}
 .nx-seg button{min-height:40px;padding:0 18px;border:0;border-radius:999px;background:none;color:var(--cal-fraco);font-size:15px;font-weight:600;cursor:pointer}
@@ -24736,7 +24741,7 @@ function nxJobs(){
   var card=function(j){ var x=nxD(j.data);
     return '<li class="nx-tl-i"><span class="nx-tl-d">'+(DIAS[x.getDay()]+" "+x.getDate()+" "+MES[x.getMonth()])+'</span><i class="nx-tl-o" aria-hidden="true"></i>'+
       '<button type="button" class="nx-jcard" data-nx="jb-ver" data-id="'+esc(j.id)+'"><span class="nx-capa" aria-hidden="true"><small>'+esc(j.func)+'</small></span><span class="nx-jcard-tx"><b>'+esc(nxJobTit(j))+'</b>'+
-      '<small>'+esc([j.meu?pl(j.equipe.length,"pessoa","pessoas"):j.quem,nxHora(j.ini,j.fim)].filter(Boolean).join(" · "))+'</small><span class="nx-pill" data-tom="ok">confirmado</span></span></button></li>' };
+      '<small>'+esc([j.meu?pl(j.equipe.length,"pessoa","pessoas"):j.quem,j.ini&&j.fim?j.ini.slice(0,2)+"h–"+j.fim.slice(0,2)+"h":""].filter(Boolean).join(" · "))+'</small><span class="nx-pill" data-tom="ok">confirmado</span></span></button></li>' };
   var outros=vem.slice(1,4);
   el.innerHTML='<div class="nx-jb">'+
     (h?'<div class="nx-jb-hero"><div class="nx-jb-tx"><span class="nx-rot">Próximo job'+(em?' · '+esc(em):'')+'</span><h1 class="nx-jb-h">'+esc(nxJobTit(h))+'</h1>'+
