@@ -15,6 +15,16 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
+
+- `tests/quasar-ia.test.ts` (5) cobre a cor:
+  - em repouso e no trabalho local fica azul;
+  - pensando, a transição é suave e chega ao violeta;
+  - volta ao azul;
+  - com "reduzir movimento", já fica no violeta.
+- Conferido em captura do motor real: repouso, começo da transição, Z pensando e volta ao azul.
+- E2E do motor (desempenho), assistente, estúdio e criar com a Z passando.
+
 ## Quasar: trilha e efeitos com a Z (02/11/2026)
 
 Branch `claude/quasar-trilha-efeitos`, em `products/nossom`.

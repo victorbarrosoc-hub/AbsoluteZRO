@@ -409,6 +409,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [usage, setUsage] = useState<AudioUsage | null>(null);
   const [usageError, setUsageError] = useState('');
   const [cloudReady, setCloudReady] = useState<boolean | null>(null);
+  // A Z está trabalhando (nuvem, trilha ou efeito): a Coroa do aviso fica violeta; no trabalho local, azul.
+  const [zAgindo, setZAgindo] = useState(false);
   // Reserva do Melhorar com a Z (IA avançada) e a Quasar Presence logo depois da IA, ligada por padrão.
   const [advancedReady, setAdvancedReady] = useState(false);
   const [presenceAfterAI, setPresenceAfterAI] = useState(true);
@@ -733,6 +735,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setProgress(0);
       operationLock.current = false;
       cloudAbort.current = null;
+      setZAgindo(false);
       void refreshCloud();
       void refreshUsage();
     }
@@ -904,6 +907,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           );
         const controller = new AbortController();
         cloudAbort.current = controller;
+        setZAgindo(true);
         const original = project.versions[0];
         const sendSource = () => {
           if (project.hasVideo || isVideoFile(project.originalFile))
@@ -1120,6 +1124,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     await run(async () => {
       const controller = new AbortController();
       cloudAbort.current = controller;
+      setZAgindo(true);
       const segundos =
         tipo === 'trilha'
           ? Math.min(300, Math.max(10, Math.round(pedidoZ.segundosTrilha || duracao)))
@@ -1787,7 +1792,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             <div className="processing-banner" role="status">
               {/* a Coroa viva pensando no lugar da onda 3D antiga e do giro (titular, 02/11/2026) */}
               <div className="processing-quasar" aria-hidden="true">
-                <QuasarIA estado="thinking" />
+                <QuasarIA estado={zAgindo ? 'thinking' : 'working'} />
               </div>
               <div>
                 <strong>{busy}</strong>

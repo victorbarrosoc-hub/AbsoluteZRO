@@ -450,6 +450,11 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Cor da Z (02/11/2026, opção 2 escolhida pelo titular entre três propostas): a marca segue azul (ícones,
+  cartão de compartilhamento, abertura); quando a Z pensa, o halo, o clarão e o feixe da Coroa passam suavemente para o
+  violeta dela (#a274ff) e voltam ao azul quando ela termina (`violeta` em `RITMOS`, `lib/quasar-ia.ts`). O trabalho
+  local usa o novo estado `working` e fica azul; o ponto vivo do Início também fica violeta com a Z pensando. A capa
+  do player passa a ser o ícone do app (a onda antiga do NOSSOM saiu).
 - 🟡 Quasar · Trilha e efeitos com a Z (02/11/2026, escolha do titular entre as funções de áudio do parceiro): na
   ferramenta Trilha, a pessoa descreve e a Z cria uma trilha instrumental (do tamanho do áudio, 30 s, 1 ou 2 min; até
   5 min) ou um efeito (1 a 30 s). O efeito entra no começo do trecho selecionado e o segundo pode ser ajustado; a
