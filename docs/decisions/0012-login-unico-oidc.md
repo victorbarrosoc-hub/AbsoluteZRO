@@ -47,3 +47,10 @@ Pedido do titular: funcionar como uma central de apps. Migration `0005_family_ap
 - Clientes cadastrados (confidenciais, segredo só como sha256 no HUB e como env sensível no projeto Vercel do app):
   `sobedesce-web`, `nossom-web`, `synquei-web`, `tpeasy-web`, `carrodofreela-web`. Retorno sempre
   `https://<domínio do app>/api/zro/callback`.
+
+## Adendo (02/11/2026): o Synquei pede a conta
+
+Decisão do titular, no padrão do Relay: o site do Synquei leva para `/entrar/` (Entrar com Absolute ZRO / Criar conta)
+quem abre o app fora da conta e volta para a mesma tela. Sem login ligado no endereço, ou sem rede, o app segue aberto
+(quem já entrou continua com os projetos do navegador). O app de computador já chega pela central da Absolute ZRO com a
+conta e não muda.
