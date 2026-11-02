@@ -4697,7 +4697,7 @@ SOBEDESCE de computador, que disparam os instaladores).
 
 ## Carro do Freela: modo demonstração em /demo (02/11/2026)
 
-- `products/carro-do-freela/test/demo-real.js` 12/12: noindex, só o /demo carrega o modo, nenhum perfil do protótipo,
+- `products/carro-do-freela/test/demo-real.js` 15/15: noindex, canonical no próprio /demo, sem AEON/Revela/NOSSOM/Rift, só o /demo carrega o modo, nenhum perfil do protótipo,
   entra sozinha no feed com 101 pessoas, selo e link ao site real, propostas e guilda de exemplo, zero pedido ao
   servidor, `localStorage` do domínio intocado, zero erro de página.
 - `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador

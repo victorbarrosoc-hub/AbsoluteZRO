@@ -394,8 +394,13 @@ fs.writeFileSync(base + '.html', pagina);
 if (real) {
   const DEMO_JS = paraM('demo', '.js', Buffer.from(min(fs.readFileSync(path.join(ROOT, 'src/demo.js'), 'utf8'), 'js')));
   if (!pagina.includes('<meta charset="utf-8">\n')) throw new Error('demo: a página sem o charset no começo');
+  const CANON = '<link rel="canonical" href="https://carro.absolutezro.com/">';
+  if (!pagina.includes(CANON)) throw new Error('demo: a página sem o canonical da home');
+  /* canonical e og:url no próprio /demo: noindex com canonical apontando para a home é sinal trocado */
   fs.writeFileSync(path.join(DIR_SAIDA, 'demo.html'), pagina.replace('<meta charset="utf-8">\n',
-    '<meta charset="utf-8">\n<script src="' + DEMO_JS + '"></script>\n<meta name="robots" content="noindex, nofollow">\n<meta name="cdf-demo" content="1">\n'));
+    '<meta charset="utf-8">\n<script src="' + DEMO_JS + '"></script>\n<meta name="robots" content="noindex, nofollow">\n<meta name="cdf-demo" content="1">\n')
+    .replace(CANON, '<link rel="canonical" href="https://carro.absolutezro.com/demo">')
+    .replace('<meta property="og:url" content="https://carro.absolutezro.com/">', '<meta property="og:url" content="https://carro.absolutezro.com/demo">'));
 }
 if (!real) fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), artifact);
 
