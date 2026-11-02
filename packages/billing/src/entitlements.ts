@@ -56,16 +56,20 @@ export async function recomputeEntitlements(tx: Queryable, orgId: string, now = 
     const w = subscriptionWindow(sub)
     if (!w || (w.until && w.until <= now)) continue
     // Ferramentas em desenvolvimento ficam de fora mesmo que algum plano as liste (PRD §4.3).
+    // Nível e legado vêm do plano (0055). Teste do Absoluto (zro.testes): a Z do teste vale para o período inteiro.
     const rows = await tx`
-      insert into zro.entitlements (org_id, product_id, features, limits, source, source_id, starts_at, ends_at)
+      with teste as (select t.z_mensagens from zro.testes t where t.subscription_id = ${sub.id})
+      insert into zro.entitlements (org_id, product_id, features, limits, source, source_id, starts_at, ends_at, nivel, legado, limite_no_periodo)
       select ${orgId}, pp.product_id, pp.features,
-             -- Teste de conta nova: as ferramentas do plano com os créditos de IA e GPU do teste (migração 0011).
              case when ${sub.provider === 'trial'} and pp.limits ? 'zro.ai_credits'
-               then pp.limits || jsonb_build_object('zro.ai_credits',
-                 coalesce((select (s.value ->> 'ai_credits')::int from zro.platform_settings s where s.key = 'signup_trial'), 50))
+               then pp.limits || jsonb_build_object('zro.ai_credits', coalesce(
+                 (select z_mensagens from teste),
+                 -- teste antigo das vendas (0011), se algum dia foi ligado
+                 (select (s.value ->> 'ai_credits')::int from zro.platform_settings s where s.key = 'signup_trial'), 50))
                else pp.limits end,
-             'subscription', ${sub.id}, ${w.from}, ${w.until}
-      from zro.plan_products pp join zro.products p on p.id = pp.product_id
+             'subscription', ${sub.id}, ${w.from}, ${w.until}, pl.nivel, pl.legado,
+             ${sub.provider === 'trial'} and exists (select 1 from teste)
+      from zro.plan_products pp join zro.products p on p.id = pp.product_id join zro.plans pl on pl.id = pp.plan_id
       where pp.plan_id = ${sub.plan_id} and p.stage in ('active', 'beta')
       returning id`
     created += rows.length

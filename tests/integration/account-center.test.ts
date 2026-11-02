@@ -133,7 +133,7 @@ describe('nome e foto do perfil', () => {
 describe('pedidos de plano', () => {
   it('upgrade: só quem cuida da cobrança pede, um aberto por plano, e o console atende', async () => {
     const o = await newOrgWithOwner(db, 'pedido')
-    const ciclo = await planId(db, 'ciclo-do-o')
+    const ciclo = await planId(db, 'orbita')
     const id = await requestPlanChange(db, o.auth, { kind: 'upgrade', planId: ciclo })
     await expectCode(requestPlanChange(db, o.auth, { kind: 'upgrade', planId: ciclo }), 'conflict')
     // Plano grátis não é upgrade.
@@ -161,7 +161,7 @@ describe('pedidos de plano', () => {
 
   it('editor não pede nem vê pedidos; outra organização também não', async () => {
     const o = await newOrgWithOwner(db, 'pedido-papel')
-    const ciclo = await planId(db, 'ciclo-do-o')
+    const ciclo = await planId(db, 'orbita')
     await requestPlanChange(db, o.auth, { kind: 'upgrade', planId: ciclo })
     const editor = await newUser(db, 'pedido-editor')
     await db.sql`insert into zro.memberships (org_id, user_id, role, status) values (${o.orgId}, ${editor.userId}, 'editor', 'active')`

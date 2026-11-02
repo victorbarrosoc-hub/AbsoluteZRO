@@ -9,7 +9,7 @@ import { authorize, loadOidcClaims } from '@zro/core'
 import type { Database, Tx } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { divulgado } from '../../apps/hub-web/lib/divulgacao'
-import { newOrgWithOwner } from './helpers'
+import { newOrgWithOwner, legacyFreeOrg } from './helpers'
 
 let db: Database
 beforeAll(() => {
@@ -40,11 +40,11 @@ describe('Carro do Freela no ar (0041)', () => {
     expect(divulgado({ state: s[ID]!.state, canais: s[ID]!.channels })).toBe(true)
   })
 
-  it('planos: o mesmo modelo do Maestro e do Relay — o grátis vigente, o Completo, o Pro e os avulsos trazem o Carro inteiro', async () => {
+  it('planos: o mesmo modelo do Maestro e do Relay — o grátis antigo, o Completo, o Pro e os avulsos trazem o Carro inteiro (fora da venda desde a 0055)', async () => {
     const rows = await db.sql`
       select p.code, p.version, p.status, pp.features, pp.limits
       from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = ${ID}
-      where p.status = 'active' order by p.code, p.version`
+      where p.status in ('active', 'retired') order by p.code, p.version`
     const by = Object.fromEntries(rows.map((r) => [`${r.code}@${r.version}`, r]))
     for (const k of [
       'conta-absolute-zro@2',
@@ -76,7 +76,7 @@ describe('Carro do Freela no ar (0041)', () => {
   })
 
   it('backfill idempotente: conta de antes do lançamento ganha o Carro uma vez; rodar a 0041 de novo não muda nada', async () => {
-    const o = await newOrgWithOwner(db, 'carro-lanc-antiga', { freePlan: true })
+    const o = await legacyFreeOrg(db, 'carro-lanc-antiga')
     await sys((tx) => tx`delete from zro.entitlements where org_id = ${o.orgId} and product_id = ${ID}`)
     const contar = async () => {
       const [r] = await db.sql`

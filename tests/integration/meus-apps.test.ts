@@ -48,7 +48,7 @@ describe('meus apps (GET /api/v1/desktop/meus-apps)', () => {
     expect(r.versao).toBe(2)
     expect(r.apps.map((a) => a.id)).not.toContain('sobedesce')
     const b = r.bloqueados.find((x) => x.id === 'sobedesce')!
-    expect(b).toMatchObject({ nome: 'SOBEDESCE', plano: 'Absolute ZRO Completo', planos: 'https://absolutezro.com/planos', mac: { bundle: 'SOBEDESCE.app' } })
+    expect(b).toMatchObject({ nome: 'SOBEDESCE', plano: 'Órbita', planos: 'https://absolutezro.com/planos', mac: { bundle: 'SOBEDESCE.app' } })
     expect(JSON.stringify(b)).not.toContain('sha256')
     const lib = await liberados(o.userId)
     expect(await acessoAoDownload(db, o.auth, 'sobedesce', EXE, lib, PAGO)).toBe('sem-direito')

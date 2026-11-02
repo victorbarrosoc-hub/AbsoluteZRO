@@ -12,8 +12,9 @@ import {
   SESSION_COOKIE,
   signIn,
   signUp,
-  verifyEmail,
+  verifyEmailFor,
 } from '@zro/auth'
+import { talvezIniciarTeste } from '@zro/core'
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { clearSessionCookie, db, getAuth, requestMeta, setSessionCookie } from '../session'
@@ -123,8 +124,11 @@ export async function resetAction(_: FormState, fd: FormData): Promise<FormState
 }
 
 export async function verifyEmailAction(_: FormState, fd: FormData): Promise<FormState> {
-  const ok = await verifyEmail(db(), str(fd, 'token'))
-  return ok ? { ok: 'E-mail confirmado.' } : { error: 'Link inválido, já usado ou vencido.' }
+  const userId = await verifyEmailFor(db(), str(fd, 'token'))
+  if (!userId) return { error: 'Link inválido, já usado ou vencido.' }
+  // Campanha do teste do Absoluto ligada: o teste começa com o e-mail confirmado (ADR 0039).
+  await talvezIniciarTeste(db(), { userId, ipHash: (await requestMeta()).ipHash })
+  return { ok: 'E-mail confirmado.' }
 }
 
 export async function resendVerifyAction(): Promise<FormState> {

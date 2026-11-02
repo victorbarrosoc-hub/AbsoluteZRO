@@ -375,16 +375,16 @@ describe('no banco', () => {
 
   it('receita e assinantes vêm só de assinatura paga ativa; planos do banco', async () => {
     const antes = await db.asSystem('teste', (tx) => dadosFinanceiros(tx))
-    expect(antes.planos.map((p) => p.nome)).toEqual(expect.arrayContaining(['Avulso (1 app)', 'Absolute ZRO Completo', 'Absolute ZRO Pro']))
-    expect(antes.planos.find((p) => p.nome === 'Absolute ZRO Completo')!.precoMensal).toBe(149.9)
+    expect(antes.planos.map((p) => p.nome)).toEqual(expect.arrayContaining(['Avulso (1 app)', 'Órbita', 'Absoluto']))
+    expect(antes.planos.find((p) => p.nome === 'Órbita')!.precoMensal).toBe(109.9)
     const org = await newOrgWithOwner(db, 'custos-receita')
-    const [plano] = await db.sql`select id from zro.plans where code = 'ciclo-do-o' and status = 'active' order by version desc limit 1`
+    const [plano] = await db.sql`select id from zro.plans where code = 'orbita' and status = 'active' order by version desc limit 1`
     await db.sql`insert into zro.subscriptions (org_id, plan_id, status, provider) values (${org.orgId}, ${plano!.id}, 'active', 'manual')`
     expect((await db.asSystem('teste', (tx) => dadosFinanceiros(tx))).receita.assinantes).toBe(antes.receita.assinantes) // manual não é receita
     await db.sql`insert into zro.subscriptions (org_id, plan_id, status, provider) values (${org.orgId}, ${plano!.id}, 'active', 'stripe')`
     const depois = await db.asSystem('teste', (tx) => dadosFinanceiros(tx))
     expect(depois.receita.assinantes).toBe(antes.receita.assinantes + 1)
-    expect(depois.receita.mensalBRL).toBeCloseTo(antes.receita.mensalBRL + 149.9)
+    expect(depois.receita.mensalBRL).toBeCloseTo(antes.receita.mensalBRL + 109.9)
     expect(depois.contasAtivas).toBeGreaterThan(0)
     await db.sql`delete from zro.subscriptions where org_id = ${org.orgId} and provider in ('manual', 'stripe')`
   })
