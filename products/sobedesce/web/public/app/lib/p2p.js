@@ -54,8 +54,20 @@ const setP2p = (patch) => setState((s) => ({ p2p: { ...s.p2p, ...(typeof patch =
 
 // ───── espera longa e lista de computadores ─────
 
+/** O site liga o Wi-Fi entre aparelhos em /api/eu (`recursos.wifi`; desligado até a fase 3, lib/p2p/ligado.ts). */
+export const wifiLigado = (st = getState()) => st.recursos?.wifi === true
+
 function ativo() {
-  return started && !desligado && !LAN && document.visibilityState === 'visible' && getState().auth.status === 'signedIn'
+  return started && !desligado && !LAN && wifiLigado() && document.visibilityState === 'visible' && getState().auth.status === 'signedIn'
+}
+
+/** O site respondeu que o Wi-Fi está desligado: esconde tudo e para (sem aviso de erro). */
+async function desligouNoSite(res) {
+  if (res.status !== 503) return false
+  const d = await lerJson(res)
+  if (d?.erro !== 'wifi_desligado') return false
+  setState((s) => ({ recursos: { ...s.recursos, wifi: false } }))
+  return true
 }
 
 const dormir = (ms) => new Promise((ok) => setTimeout(ok, ms))
@@ -94,6 +106,7 @@ async function rodarEspera() {
           desligado = true
           break
         }
+        if (await desligouNoSite(res)) break
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const d = await lerJson(res)
         falhas = 0
@@ -114,10 +127,11 @@ async function rodarEspera() {
 }
 
 export async function atualizarAparelhos() {
-  if (LAN || getState().auth.status !== 'signedIn') return
+  if (LAN || !wifiLigado() || getState().auth.status !== 'signedIn') return
   try {
     const res = await fetch(API.aparelhos, { headers: HEADERS, cache: 'no-store', credentials: 'same-origin' })
     if (res.status === 401) return setP2p({ aparelhos: [] })
+    if (await desligouNoSite(res)) return setP2p({ aparelhos: [] })
     if (!res.ok) return
     const d = await lerJson(res)
     const lista = (Array.isArray(d.aparelhos) ? d.aparelhos : []).filter((a) => a?.id && (a.tipo === 'computador' || a.tipo === 'celular'))
@@ -164,10 +178,18 @@ export function startP2p() {
     document.addEventListener('visibilitychange', acordar)
     // Abriu a aba Aparelhos ou começou um envio/recebimento: a pausa da consulta curta acaba e vem a espera longa.
     let longaAntes = precisaEsperaLonga()
+    let wifiAntes = wifiLigado()
     subscribe(() => {
       const longa = precisaEsperaLonga()
       if (longa && !longaAntes) cutucar?.()
       longaAntes = longa
+      // O site ligou o Wi-Fi (fase 3) depois de o app abrir: começa agora; desligou: a pausa acaba e o laço sai.
+      const wifi = wifiLigado()
+      if (wifi !== wifiAntes) {
+        wifiAntes = wifi
+        if (wifi) acordar()
+        else cutucar?.()
+      }
     })
     limparSobras()
   }

@@ -2,6 +2,7 @@
 // que chega (OPFS ou memória, com o limite), nomes e tipos dos arquivos, velocidade e mensagens de erro.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { DICA_MAC, candidatosDaSdp, esperaLonga, pausaCurta, LIMITE_MEMORIA, Medidor, mensagemDe, nomeAparelho, nomeSeguro, ondeGuardar, resumoConexao, textoConexao, tipoDe } from '../web/public/app/lib/p2p-util.js'
 
 test('nome do aparelho pelo user-agent', () => {
@@ -96,4 +97,18 @@ test('ritmo da espera: longa só com o Wi-Fi em uso; fora disso, o ritmo do site
   assert.equal(pausaCurta(undefined), 30_000)
   assert.equal(pausaCurta(10), 5_000, 'nunca menos de 5 s')
   assert.equal(pausaCurta(10 * 60_000), 120_000, 'nunca mais de 2 min')
+})
+
+test('Wi-Fi desligado no site (até a fase 3): o celular não começa a espera e esconde Aparelhos e o "No Wi-Fi"', () => {
+  const ler = (f) => fs.readFileSync(new URL(`../web/public/app/${f}`, import.meta.url), 'utf8')
+  const p2p = ler('lib/p2p.js')
+  assert.match(p2p, /export const wifiLigado = \(st = getState\(\)\) => st\.recursos\?\.wifi === true/)
+  assert.match(p2p, /function ativo\(\) \{\n {2}return started && !desligado && !LAN && wifiLigado\(\)/, 'sem o recurso, o laço nem começa')
+  assert.match(p2p, /if \(await desligouNoSite\(res\)\) break/, '503 wifi_desligado: para e esconde')
+  assert.match(p2p, /falhas\+\+\n\s+await dormir\(Math\.min\(30_000/, 'qualquer outra falha: recua até 30 s (o mesmo do app antigo)')
+  const tabs = ler('components/tabs.js')
+  assert.match(tabs, /wifiOn: s\.recursos\?\.wifi === true/)
+  assert.match(tabs, /\$\{wifiOn\n\s+\? html`<button type="button" class=\$\{cx\('tab', 'tab-ap'/, 'a aba Aparelhos só com o recurso')
+  assert.match(tabs, /\(saved === 'ap' && !wifiOn\) \? 'send'/, '#aparelhos sem o recurso cai no Início')
+  assert.match(ler('components/settings.js'), /\$\{wifiOn\n\s+\? html`<\$\{Passo\} icone="users" cor="warn" titulo="No Wi-Fi"/)
 })

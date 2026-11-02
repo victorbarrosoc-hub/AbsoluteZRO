@@ -19,6 +19,8 @@ let COOKIE: string;
 
 before(async () => {
   amb = await prepararAmbiente();
+  process.env.P2P_WIFI_LIGADO = "1"; // os testes do recurso rodam com ele ligado; o desligado tem o próprio bloco
+
   contas = await import("../src/lib/auth/contas");
   sessao = await import("../src/lib/auth/sessao");
   banco = await import("../src/lib/db");
@@ -29,7 +31,37 @@ before(async () => {
 });
 
 after(async () => {
+  delete process.env.P2P_WIFI_LIGADO;
   await amb?.fechar();
+});
+
+describe("p2p desligado (padrão até a fase 3)", () => {
+  test("espera, aparelhos e sinal: 503 na hora, sem sessão nem banco, com Retry-After e proxima_em de 2 min", async () => {
+    delete process.env.P2P_WIFI_LIGADO;
+    try {
+      const inicio = Date.now();
+      // Sem login nenhum: se a rota tocasse a sessão, seria 401. É 503 de cara.
+      for (const r of [
+        await rEspera.GET(pedido("/api/p2p/espera")),
+        await rEspera.GET(pedido("/api/p2p/espera?curto=1")),
+        await rAparelhos.GET(pedido("/api/p2p/aparelhos")),
+        await rSinal.POST(pedido("/api/p2p/sinal", { corpo: { tipo: "oferta" } })),
+      ]) {
+        assert.equal(r.status, 503);
+        assert.equal(r.headers.get("retry-after"), "120");
+        const b = await corpo(r);
+        assert.equal(b.erro, "wifi_desligado");
+        assert.equal(b.proxima_em, 120_000);
+      }
+      assert.ok(Date.now() - inicio < 1000, "não segura a função");
+      const ligado = await import("../src/lib/p2p/ligado");
+      assert.equal(ligado.p2pWifiLigado({}), false, "sem a variável: desligado");
+      assert.equal(ligado.p2pWifiLigado({ P2P_WIFI_LIGADO: "1" }), true);
+      assert.equal(ligado.p2pWifiLigado({ P2P_WIFI_LIGADO: "0" }), false);
+    } finally {
+      process.env.P2P_WIFI_LIGADO = "1";
+    }
+  });
 });
 
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";

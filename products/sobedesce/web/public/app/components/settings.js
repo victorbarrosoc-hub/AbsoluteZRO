@@ -106,7 +106,7 @@ function Conta({ account, drives }) {
 }
 
 export function SettingsSheet() {
-  const { user, quota, lan, account, drives, pcs, drive } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive }))
+  const { user, quota, lan, account, drives, pcs, drive, wifiOn } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive, wifiOn: s.recursos?.wifi === true }))
   const [settings, setSettings] = useState(getSettings())
   const network = networkOf(settings)
 
@@ -153,9 +153,11 @@ export function SettingsSheet() {
               <${Linha} icone="transfers" titulo="Transferências do computador" sub=${pcSummary(pcs)} onClick=${() => openSheet('computador')} />
             </${Linhas}>
           </${Passo}>
-          <${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${4}>
-            <${AceitarOutros} />
-          </${Passo}>`}
+          ${wifiOn
+            ? html`<${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${4}>
+                <${AceitarOutros} />
+              </${Passo}>`
+            : null}`}
 
       <${Familia} />
 

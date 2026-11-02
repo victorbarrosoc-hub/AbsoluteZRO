@@ -1,5 +1,14 @@
 # Celular ↔ computador ↔ celular pelo Wi-Fi
 
+> **Desligado até a fase 3** (titular, 02/11/2026, por custo da Vercel). A chave é `P2P_WIFI_LIGADO` no projeto da
+> Vercel (padrão desligado; `1` religa), em `web/src/lib/p2p/ligado.ts`. Desligado: `/api/p2p/espera`, `/aparelhos` e
+> `/sinal` respondem **503** `{ erro: "wifi_desligado", proxima_em: 120000 }` com `Retry-After: 120`, na hora, antes da
+> sessão e do banco. `/api/eu` manda `recursos.wifi: false`: o celular não começa a espera e esconde a aba Aparelhos e
+> o "No Wi-Fi" dos Ajustes; o computador para a espera e a lista no primeiro 503 e some com o "Do celular" em
+> Dispositivos (computador ↔ computador segue). Apps antigos tratam o 503 como falha e recuam (celular até 30 s,
+> computador até 60 s), sem laço apertado e sem sair da conta. Código e testes ficam; religar é só trocar a chave.
+
+
 Celulares (app em `/app/`, com a conta) e o app do computador trocam arquivos direto pela rede de casa ou do
 escritório, como o AirDrop: sem QR code, sem passar pela internet e sem subir pro Drive. Em qualquer combinação
 (iPhone, Android, Mac, Windows), nos dois sentidos.

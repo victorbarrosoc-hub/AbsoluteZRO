@@ -249,7 +249,7 @@ function EsteComputador({ lan, settings, cel, home }) {
             </${Linhas}>`
         : null}
     </div>
-    <div class="dv-canal">
+    ${cel?.desligado ? null : html`<div class="dv-canal">
       <div class="dv-canal-topo">
         <span class=${cx('dv-canal-ic', celOn && 'is-on')}><${Icon} name="phone" size=${17} strokeWidth=${1.8} /></span>
         <div class="dv-canal-txt">
@@ -269,7 +269,7 @@ function EsteComputador({ lan, settings, cel, home }) {
               </${Linha}>
             </${Linhas}>`
         : null}
-    </div>
+    </div>`}
   </${Resumo}>`
 }
 
@@ -307,7 +307,9 @@ function useVelocidadeRede({ lanEnvio, lan, cel }) {
 
 export function ComputadoresScreen() {
   const lan = useStore((s) => s.lan)
-  const cel = useStore((s) => s.celular)
+  // Wi-Fi entre aparelhos desligado no site (até a fase 3): some tudo do celular aqui; computador ↔ computador segue.
+  const celSite = useStore((s) => s.celular)
+  const cel = celSite?.desligado ? null : celSite
   const settings = useStore((s) => s.settings)
   const cloud = useStore((s) => s.cloud)
   const accountId = useStore((s) => s.activeAccountId)
@@ -452,11 +454,11 @@ export function ComputadoresScreen() {
         </${Resumo}>`
       : null}
     <${Agora} pontos=${pontos} lanEnvio=${e} lan=${lan} cel=${cel} />
-    <${EsteComputador} lan=${lan} settings=${settings} cel=${cel} home=${roots?.home} />
+    <${EsteComputador} lan=${lan} settings=${settings} cel=${celSite} home=${roots?.home} />
   `
 
   if (!conectado) {
-    return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" lado=${html`<${EsteComputador} lan=${lan} settings=${settings} cel=${cel} home=${roots?.home} />`}>
+    return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" lado=${html`<${EsteComputador} lan=${lan} settings=${settings} cel=${celSite} home=${roots?.home} />`}>
       <section class="k-passo k-entra" style="--i:1">
         <${Vazio} icone="laptop" titulo="Entre com a sua conta Absolute ZRO" acoes=${html`<${BotaoGrande} icone="user" cheio=${false} onClick=${() => navigate('ajustes')}>Abrir Ajustes</${BotaoGrande}>`}>
           Os aparelhos se acham pela sua conta. Entre nela neste computador e no outro aparelho (no celular, em sobedesce.com/app).

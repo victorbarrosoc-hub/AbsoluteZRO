@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { p2pWifiLigado, respostaWifiDesligado } from "@/lib/p2p/ligado";
 import { exigirNaApi } from "@/lib/auth/requisicao";
 import { ipDe, json } from "@/lib/http";
 import { ESPERA_MS, esperar, limpar, nomeDoAparelho, proximaConsultaMs } from "@/lib/p2p/sinais";
@@ -14,6 +15,8 @@ export const maxDuration = 40;
  * espera longa de sempre, para os apps antigos não entrarem em laço apertado.
  */
 export async function GET(req: Request) {
+  // Desligado até a fase 3 (lib/p2p/ligado.ts): responde na hora, antes da sessão e do banco.
+  if (!p2pWifiLigado()) return respostaWifiDesligado();
   const atual = await exigirNaApi(req, { mutacao: false });
   if (atual instanceof Response) return atual;
   const url = new URL(req.url);

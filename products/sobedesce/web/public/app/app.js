@@ -116,7 +116,7 @@ if (!LAN) {
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
   window.addEventListener('hashchange', () => {
     if (location.hash === '#referencias') setState({ tab: 'refs' })
-    if (location.hash === '#aparelhos') setState({ tab: 'ap' })
+    if (location.hash === '#aparelhos') setState({ tab: 'ap' }) // sem o Wi-Fi ligado (recursos.wifi), Tabs mostra o Início
     if (location.hash === '#z') setState({ tab: 'z' })
     if (location.hash === '#computador') openComputer()
     // /app/#drive/<pasta>, #arquivo/<id>, #baixar/<id> (botões Abrir e Baixar da Z) com o app já aberto.

@@ -626,6 +626,18 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: Wi-Fi entre aparelhos desligado até a fase 3 (02/11/2026)
+
+Mesmo branch `sobedesce-wifi-espera`. Chave `P2P_WIFI_LIGADO` (padrão desligado).
+
+- `web/tests/p2p.test.mts` ("p2p desligado"): espera (longa e curta), aparelhos e sinal respondem 503
+  `wifi_desligado` com `Retry-After: 120` e `proxima_em` 120 s, sem login (não tocam a sessão), em menos de 1 s.
+- `web/tests/referencias.test.mts`: `/api/eu` manda `recursos.wifi: false`.
+- `test/celular-wifi-motor.test.js`: o computador para depois do primeiro 503 `wifi_desligado` (uma pergunta só, nem a
+  lista) e a tela recebe `desligado`; um 503 qualquer (o caminho do app antigo) só recua, sem laço.
+- `test/celular-wifi-app.test.js`: sem `recursos.wifi`, o celular não começa a espera e esconde a aba Aparelhos,
+  `#aparelhos` cai no Início e o "No Wi-Fi" dos Ajustes some; outra falha recua até 30 s.
+
 ## SOBEDESCE: espera do Wi-Fi só quando usada (02/11/2026)
 
 Branch `sobedesce-wifi-espera`. A espera longa (`/api/p2p/espera`) segurava uma função da Vercel o dia todo por app

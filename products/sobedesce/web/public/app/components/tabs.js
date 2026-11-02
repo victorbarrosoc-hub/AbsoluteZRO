@@ -27,7 +27,7 @@ import { useSet } from './set.js'
 import { TransfersScreen } from './transferencias.js'
 import { ABAS_EMBUTIDO, EMBUTIDO } from '../lib/embutido.js'
 
-function TabBar({ tab, refsOn }) {
+function TabBar({ tab, refsOn, wifiOn }) {
   useEngine()
   const sum = summarize(engine.items)
   const busy = sum.pending > 0
@@ -47,7 +47,7 @@ function TabBar({ tab, refsOn }) {
         <span class="tab-label">Drive</span>
       </button>
     </nav>`
-  return html`<nav class=${cx('tabbar', refsOn && 'n-6')} aria-label="Seções">
+  return html`<nav class=${cx('tabbar', refsOn && wifiOn && 'n-6')} aria-label="Seções">
     <button type="button" class=${cx('tab', 'tab-up', inicio && 'is-on')} aria-current=${inicio ? 'page' : undefined} onClick=${() => setTab('send')}>
       <span class="tab-icon">
         <${Icon} name="home" size=${24} strokeWidth=${inicio ? 2 : 1.7} />
@@ -59,13 +59,15 @@ function TabBar({ tab, refsOn }) {
       <span class="tab-icon"><${Icon} name="drive" size=${24} strokeWidth=${tab === 'drive' ? 2 : 1.7} /></span>
       <span class="tab-label">Drive</span>
     </button>
-    <button type="button" class=${cx('tab', 'tab-ap', tab === 'ap' && 'is-on')} aria-current=${tab === 'ap' ? 'page' : undefined} onClick=${() => setTab('ap')}>
+    ${wifiOn
+      ? html`<button type="button" class=${cx('tab', 'tab-ap', tab === 'ap' && 'is-on')} aria-current=${tab === 'ap' ? 'page' : undefined} onClick=${() => setTab('ap')}>
       <span class="tab-icon">
         <span class="tab-ap-pilula"><${Icon} name="wifi" size=${22} strokeWidth=${2.1} /></span>
         ${aviso ? html`<span class=${cx('tab-dot', aviso === 'pedido' && 'is-pedido')} aria-label=${aviso === 'pedido' ? 'Alguém quer mandar arquivos' : 'Passando pelo Wi-Fi'}></span>` : null}
       </span>
       <span class="tab-label">Aparelhos</span>
-    </button>
+    </button>`
+      : null}
     ${refsOn
       ? html`<button type="button" class=${cx('tab', 'tab-refs', tab === 'refs' && 'is-on')} aria-current=${tab === 'refs' ? 'page' : undefined} onClick=${() => setTab('refs')}>
           <span class="tab-icon"><${Icon} name="bookmark" size=${24} strokeWidth=${tab === 'refs' ? 2 : 1.7} /></span>
@@ -84,8 +86,9 @@ function TabBar({ tab, refsOn }) {
  * monta quando a pessoa abre (anel do topo ou /app/#z): nada dela carrega ao abrir o app (titular, 29/10/2026).
  */
 export function Tabs({ pronto = true }) {
-  const { saved, refsOn } = useApp((s) => ({ saved: s.tab, refsOn: Boolean(s.recursos?.referencias) }))
-  const tab = EMBUTIDO ? (ABAS_EMBUTIDO.includes(saved) ? saved : 'send') : saved === 'refs' && !refsOn ? 'send' : saved
+  // Aparelhos (Wi-Fi entre aparelhos) só com o recurso ligado no site (recursos.wifi; desligado até a fase 3).
+  const { saved, refsOn, wifiOn } = useApp((s) => ({ saved: s.tab, refsOn: Boolean(s.recursos?.referencias), wifiOn: s.recursos?.wifi === true }))
+  const tab = EMBUTIDO ? (ABAS_EMBUTIDO.includes(saved) ? saved : 'send') : (saved === 'refs' && !refsOn) || (saved === 'ap' && !wifiOn) ? 'send' : saved
   const seen = useRef({})
   seen.current[tab] = true
   useSet()
@@ -93,16 +96,16 @@ export function Tabs({ pronto = true }) {
     return html`<div class="tabs">
       ${seen.current.z ? html`<div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>` : null}
       <div class="tab-pane" hidden=${tab === 'z'}><${AccountScreen} /></div>
-      <${TabBar} tab=${tab} refsOn=${refsOn} />
+      <${TabBar} tab=${tab} refsOn=${refsOn} wifiOn=${wifiOn} />
     </div>`
   return html`<div class="tabs">
     ${seen.current.z ? html`<div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>` : null}
     <div class="tab-pane" hidden=${tab !== 'send'}><${MainScreen} /></div>
     ${seen.current.transferencias ? html`<div class="tab-pane" hidden=${tab !== 'transferencias'}><${TransfersScreen} /></div>` : null}
     ${seen.current.drive ? html`<div class="tab-pane" hidden=${tab !== 'drive'}><${DriveScreen} active=${tab === 'drive'} /></div>` : null}
-    ${seen.current.ap ? html`<div class="tab-pane" hidden=${tab !== 'ap'}><${AparelhosScreen} active=${tab === 'ap'} /></div>` : null}
+    ${seen.current.ap && wifiOn ? html`<div class="tab-pane" hidden=${tab !== 'ap'}><${AparelhosScreen} active=${tab === 'ap'} /></div>` : null}
     ${seen.current.refs && refsOn ? html`<div class="tab-pane" hidden=${tab !== 'refs'}><${RefsScreen} active=${tab === 'refs'} /></div>` : null}
     ${seen.current.criar ? html`<div class="tab-pane" hidden=${tab !== 'criar'}><${CriarScreen} active=${tab === 'criar'} Calculadora=${Calculadora} /></div>` : null}
-    <${TabBar} tab=${tab} refsOn=${refsOn} />
+    <${TabBar} tab=${tab} refsOn=${refsOn} wifiOn=${wifiOn} />
   </div>`
 }

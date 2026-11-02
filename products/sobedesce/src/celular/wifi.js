@@ -150,6 +150,8 @@ export class CelularWifi {
     this.janelaEm = 0
     this.pedidos = new Map() // oferta de outra pessoa esperando Aceitar/Recusar: id → { sinal, timer }
     this.quenteAte = 0 // até quando a espera é longa depois de um sinal
+    // O site desligou o Wi-Fi entre aparelhos (503 wifi_desligado, até a fase 3): sem espera, sem lista, a tela esconde.
+    this.desligadoNoSite = false
     this.cutucar = null // encerra a pausa entre consultas curtas
     this.onStatus = () => this.#acordar()
   }
@@ -195,7 +197,7 @@ export class CelularWifi {
   }
 
   #acordar() {
-    if (!this.rodando || this.esperando || !this.cloud()?.signedIn) return
+    if (!this.rodando || this.esperando || this.desligadoNoSite || !this.cloud()?.signedIn) return
     this.esperando = true
     this.atualizarAparelhos().catch(() => {})
     this.#laco().finally(() => {
@@ -246,6 +248,7 @@ export class CelularWifi {
         if (!sinais.length && this.rodando && (!longa || Number(data?.proxima_em) > 0) && !this.precisaEsperaLonga()) await this.#pausa(pausaCurta(data?.proxima_em))
       } catch (err) {
         if (err?.kind === 'reauth' || err?.reason === 'cloudSignedOut') return
+        if (this.#desligou(err)) return
         this.log('celular: espera', err?.message || err)
         await sleep(espera)
         espera = Math.min(BACKOFF_MAX_MS, espera * 2)
@@ -253,7 +256,22 @@ export class CelularWifi {
     }
   }
 
+  /** 503 `wifi_desligado` do site: para tudo e avisa a tela (sem erro), até o app abrir de novo. */
+  #desligou(err) {
+    if (err?.status !== 503 || err?.body?.erro !== 'wifi_desligado') return false
+    if (!this.desligadoNoSite) {
+      this.desligadoNoSite = true
+      this.celulares = []
+      clearInterval(this.timer)
+      this.timer = null
+      this.log('celular: o Wi-Fi entre aparelhos está desligado no site (volta na fase 3)')
+      this.#avisar()
+    }
+    return true
+  }
+
   async atualizarAparelhos() {
+    if (this.desligadoNoSite) return this.celulares
     const c = this.cloud()
     if (!c?.signedIn) {
       if (this.celulares.length) (this.celulares = []), this.#avisar()
@@ -584,6 +602,8 @@ export class CelularWifi {
     for (const [id, t] of this.transfers) if (!ATIVO.has(t.estado) && agora - (t.fim || t.inicio) > GUARDA_MS) this.transfers.delete(id)
     const lista = [...this.transfers.values()].sort((a, b) => b.inicio - a.inicio).slice(0, MAX_HISTORICO)
     return {
+      // O site desligou o Wi-Fi entre aparelhos (até a fase 3): a tela esconde tudo do celular.
+      desligado: this.desligadoNoSite,
       receber: !!st.celularReceber,
       pasta: st.celularPasta,
       conectado: !!this.cloud()?.signedIn,

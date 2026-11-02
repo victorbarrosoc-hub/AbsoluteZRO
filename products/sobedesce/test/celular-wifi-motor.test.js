@@ -42,10 +42,14 @@ function siteFalso({ aparelhos = [], esperas = [] } = {}) {
       }
       if (caminho.startsWith('/api/p2p/espera')) {
         const proxima = esperas.shift()
+        if (proxima instanceof Error) throw proxima
         if (proxima) return r(200, Array.isArray(proxima) ? { sinais: proxima } : proxima)
         return new Promise(() => {}) // fica esperando, como o site
       }
-      if (caminho === '/api/p2p/aparelhos') return r(200, { aparelhos })
+      if (caminho === '/api/p2p/aparelhos') {
+        if (aparelhos instanceof Error) throw aparelhos
+        return r(200, { aparelhos })
+      }
       if (caminho === '/api/p2p/sinal') {
         enviados.push(body)
         return r(201, { id: `sin${enviados.length}` }) // o site responde 201
@@ -320,5 +324,33 @@ test('ritmo da espera: parado consulta curto no ritmo do site; depois de um sina
   assert.equal(esperas()[1], 'GET /api/p2p/espera?nome=Mac', 'aquecido: espera longa')
   assert.ok(hub.eventos.some(([ev, s]) => ev === 'celular-oferta' && s.id === 'of9'))
   assert.equal(esperas()[2], 'GET /api/p2p/espera?nome=Mac', 'depois de um sinal: continua longa')
+  await w.close()
+})
+
+const erro503 = (erro) => Object.assign(new Error('HTTP 503'), { name: 'HttpError', status: 503, body: { erro, mensagem: 'x', proxima_em: 120_000 } })
+
+test('Wi-Fi desligado no site (503 wifi_desligado): para a espera e a lista, e a tela esconde o celular', async () => {
+  const site = siteFalso({ esperas: [erro503('wifi_desligado')], aparelhos: erro503('wifi_desligado') })
+  const w = new CelularWifi({ settings: ajustes({ celularPasta: tmp() }), cloud: site, hub: hubFalso(), nome: () => 'Mac', aparelhosMs: 20 })
+  w.start()
+  await new Promise((ok) => setTimeout(ok, 150))
+  const esperas = site.pedidos.filter((p) => p.startsWith('GET /api/p2p/espera'))
+  assert.equal(esperas.length, 1, 'uma pergunta só, e para')
+  assert.equal(w.view().desligado, true)
+  const antes = site.pedidos.length
+  await w.atualizarAparelhos()
+  await new Promise((ok) => setTimeout(ok, 80))
+  assert.equal(site.pedidos.length, antes, 'nem a lista pergunta mais')
+  await w.close()
+})
+
+test('503 qualquer (o que um app antigo recebe do site desligado): recua, sem laço apertado', async () => {
+  const site = siteFalso({ esperas: [erro503('outro'), erro503('outro'), erro503('outro')] })
+  const w = new CelularWifi({ settings: ajustes({ celularPasta: tmp() }), cloud: site, hub: hubFalso(), nome: () => 'Mac' })
+  w.start()
+  await new Promise((ok) => setTimeout(ok, 300))
+  const esperas = site.pedidos.filter((p) => p.startsWith('GET /api/p2p/espera'))
+  assert.equal(esperas.length, 1, 'depois do erro, espera o recuo (2 s, 4 s… até 60 s) antes de tentar de novo')
+  assert.equal(w.view().desligado, false)
   await w.close()
 })
