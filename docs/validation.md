@@ -4854,6 +4854,11 @@ SOBEDESCE de computador, que disparam os instaladores).
   teste `test/fechado.test.js` confere a lista.
 - `npm test` do AEON 261/261; `node scripts/scan-secrets.mjs` sem segredo.
 
+## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026)
+
+- `test/demo-real.js` 18/18 (selo na lateral, sem ☰ no computador, a conta abre "conta e ajustes" sem repetir as telas).
+- `menu-recolhivel` 52/52, `mapa` 72/72, `doca` 39/39, `site-real` 42/42, `guia-portas` 33/33, `identidade` 19/19.
+
 ## AEON: BRAW pelo proxy (02/11/2026)
 
 - `src/proxy.js` (puro) pareia RAW e proxy pelo nome-base. A subpasta `Proxy` vem primeiro, o proxy pareado não entra

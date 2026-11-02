@@ -2,6 +2,12 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026, ramo `claude/carro-menu`)
+
+- ✅ Pedido do titular: a lateral e a gaveta do site real mostram o selo neon (anel), não o "///". No computador o ☰ saiu
+  (a lateral já é o menu); a gaveta virou "conta e ajustes" (conta, Ajuda, Ajustes, tema e som), aberta pelo cartão da
+  conta no pé da lateral. No celular a gaveta continua sendo o menu.
+
 ## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ramo `planos-b`, ADR 0039)
 
 - ✅ Migração `0055`: Zero (grátis), Órbita (R$ 109,90/mês ou R$ 1.099/ano), Absoluto (R$ 299,90 ou R$ 2.999) e Avulso
