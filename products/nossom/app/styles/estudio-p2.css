@@ -140,7 +140,9 @@
 }
 
 @media (min-width: 681px) {
-  .studio-shell {
+  /* com [data-theme] também: senão o tema claro (tokens.css) volta a lateral para 232px e espreme a coluna */
+  .studio-shell,
+  .studio-shell[data-theme] {
     --sidebar-w: 324px;
   }
   .studio-shell .studio-sidebar {

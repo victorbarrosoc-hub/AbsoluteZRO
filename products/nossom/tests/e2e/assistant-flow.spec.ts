@@ -16,7 +16,7 @@ test('mobile shortcuts open real tools even while AI is unavailable', async ({ p
     ['Preparar para publicar', 'masterizacao'],
   ]) {
     await page.goto('/studio/inicio');
-    await expect(page.getByRole('heading', { name: /Seu áudio,\s*melhor\./ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Início do Quasar' })).toBeVisible();
     await expect(page.locator('.assistant-details')).not.toHaveAttribute('open');
     await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/studio/${path}$`));

@@ -150,7 +150,7 @@ test('without the Set scope (older login) there is no Set entry and the studio s
 }) => {
   await enter(page, { logado: false });
   await page.goto('/studio/inicio');
-  await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Início do Quasar' })).toBeVisible();
   await page.waitForTimeout(800);
   await expect(page.locator('[data-set]')).toHaveCount(0);
 });

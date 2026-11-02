@@ -3276,7 +3276,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         </main>
         <footer className="studio-footer">
           <span>
-            Quasar <span>·</span> Tudo acontece no som.
+            Quasar <span>·</span> O som encontrando o seu espaço.
           </span>
           <span>
             <ShieldCheck size={12} /> IA na nuvem · acabamento no dispositivo

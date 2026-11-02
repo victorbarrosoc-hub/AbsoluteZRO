@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useId } from 'react';
 import AIMotion from './ai-motion';
-import { CoroaLuz } from './brand';
+import QuasarIA from './quasar-ia';
 import { passoDe, slugPasso } from './passos-nav';
 import type { ProjectSummary } from '@/lib/storage';
 import { useDialog } from '@/lib/use-dialog';
@@ -202,6 +202,24 @@ export default function Assistant({
         : thinking || disabled
           ? 'thinking'
           : 'idle';
+  const modo = (
+    <div className="assistant-mode" data-estado={estado} data-ia={cloud ? 'on' : 'off'}>
+      {embedded ? <i className="assistant-vivo" aria-hidden="true" /> : <Sparkles size={13} />}{' '}
+      {loading
+        ? 'Preparando seu assistente…'
+        : cloud
+          ? thinking && embedded
+            ? 'Pensando…'
+            : connected && embedded
+              ? conversation.isSpeaking
+                ? 'Falando…'
+                : 'Ouvindo…'
+              : 'Pronta para ajudar'
+          : authenticated
+            ? 'Ajuda básica · IA temporariamente indisponível'
+            : 'Entre na sua conta para conversar'}
+    </div>
+  );
   return (
     <div
       className={embedded ? 'assistant-embedded' : 'modal-backdrop'}
@@ -222,32 +240,21 @@ export default function Assistant({
           )}
         </header>
         {embedded ? (
-          // Início (titular, 01/11/2026): o símbolo em cromo é o protagonista, sem o 3D; ele pulsa enquanto a IA pensa.
-          <div className={`assistant-marca state-${estado}`} aria-hidden="true">
-            <span className="cantos">
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
-            <CoroaLuz size={210} />
-            <span className="rotulo rotulo-esq">Fig. 01 · Estúdio</span>
-            <span className="rotulo rotulo-dir">Quasar</span>
-          </div>
+          // Início (titular, 01/11/2026): o Quasar é a IA, como o Z no HUB. A Coroa vazada e viva, maior, com a onda
+          // correndo pela borda e o feixe horizontal no clarão; pensa, ouve e fala junto com o assistente.
+          <>
+            <div className={`assistant-marca state-${estado}`} aria-hidden="true">
+              <QuasarIA estado={estado} />
+            </div>
+            {/* no Início, o estado só aparece com a IA ligada (titular: tira o "modo básico") */}
+            {cloud && !loading && modo}
+          </>
         ) : (
           <AIMotion compact state={estado} />
         )}
-        <Title id={id + '-title'}>
-          {embedded ? (
-            <>
-              Seu áudio, <br />
-              <strong>melhor.</strong>
-            </>
-          ) : (
-            <>
-              Seu áudio, <span className="text-gradient">melhor.</span>
-            </>
-          )}
+        {/* sem frase de efeito (titular, 01/11/2026): no Início o título é só para leitor de tela */}
+        <Title id={id + '-title'} className={embedded ? 'sr-only' : undefined}>
+          {embedded ? 'Início do Quasar' : 'Peça ao Quasar'}
         </Title>
         {embedded && onUpload && (
           <div className="assistant-acoes">
@@ -277,16 +284,7 @@ export default function Assistant({
             </>
           )}
         </p>
-        <div className="assistant-mode">
-          <Sparkles size={13} />{' '}
-          {loading
-            ? 'Preparando seu assistente…'
-            : cloud
-              ? 'Pronta para ajudar'
-              : authenticated
-                ? 'Ajuda básica · IA temporariamente indisponível'
-                : 'Entre na sua conta para conversar'}
-        </div>
+        {!embedded && modo}
         {!loading && !authenticated && (
           <a className="button primary" href="/entrar?next=%2Fstudio%2Fia">
             Entrar para conversar
@@ -325,7 +323,7 @@ export default function Assistant({
             id={id + '-text'}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Ou conte sua ideia…"
+            placeholder={embedded ? 'Ou peça ao Quasar…' : 'Ou conte sua ideia…'}
             maxLength={1500}
             disabled={thinking || loading || !authenticated || disabled}
             required

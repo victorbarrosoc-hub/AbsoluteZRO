@@ -60,7 +60,7 @@ test('/studio lands on the studio home (the task), never on the Z; the Z is a di
     // Quem entra em /studio (site, PWA, app de computador) cai no Início do estúdio; a busca fica.
     await page.goto('/studio?zro=ok');
     await expect(page).toHaveURL(/\/studio\?zro=ok$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Seu áudio, melhor.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Início do Quasar' })).toBeVisible();
     await expect(page.locator('zro-ia')).toHaveCount(0);
     // A Z é o ícone discreto do topo, apagado.
     const top = page.locator('.studio-header .z-top');
@@ -101,7 +101,7 @@ test('the Z opens only when asked: top icon or /studio/z link, asks to connect w
     page.getByText('Conecte sua conta Absolute ZRO para conversar com a Z.'),
   ).toBeVisible();
   // Tela só da Z: sem o assistente nem o envio de áudio embaixo, sem rodapé.
-  await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Início do Quasar' })).toHaveCount(0);
   await expect(page.locator('.studio-footer')).toBeHidden();
   const zBox = (await z.boundingBox())!;
   expect(zBox.height).toBeGreaterThan(600);
@@ -112,7 +112,7 @@ test('the Z opens only when asked: top icon or /studio/z link, asks to connect w
   await nav.getByRole('button', { name: 'Início', exact: true }).click();
   await expect(page).toHaveURL(/\/studio\/inicio$/);
   await expect(page.locator('zro-ia')).toHaveCount(0);
-  await expect(page.getByRole('heading', { level: 1, name: 'Seu áudio, melhor.' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Início do Quasar' })).toBeVisible();
   await page.locator('.studio-header .z-top').click();
   await expect(page).toHaveURL(/\/studio\/z$/);
   await expect(page.locator('zro-ia')).toHaveCount(1);
@@ -192,6 +192,6 @@ test('if the Z panel cannot load, its tab says so and the studio home stays as b
   await expect(page.getByText('A Z não carregou agora.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
   await page.goto('/studio/inicio');
-  await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Início do Quasar' })).toBeVisible();
   await expect(page.locator('zro-ia')).toHaveCount(0);
 });

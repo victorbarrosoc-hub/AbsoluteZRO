@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: '/',
     name: 'Quasar Audio Lab',
     short_name: 'Quasar',
-    description: 'Crie, trate e entregue seu áudio. Tudo acontece no som.',
+    description: 'Crie, trate e entregue seu áudio. O som encontrando o seu espaço.',
     lang: 'pt-BR',
     start_url: '/studio',
     scope: '/',
