@@ -9,17 +9,26 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX, X } from 'lucide-react';
 import { formatTime } from '@/lib/audio';
 import { player, usePlayer } from '@/lib/player';
+import { coroaPath } from './brand';
 
 const SEM_BARRA = ['/entrar', '/auth', '/em-desenvolvimento', '/privacidade'];
 
+// A capa é o ícone do app (titular, 02/11/2026: "logo antiga no player"): a Coroa vazada com o feixe e o clarão.
+const CAPA = coroaPath(40);
 function Capa({ tocando }: { tocando: boolean }) {
   return (
     <span className={`pg-capa ${tocando ? 'tocando' : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 110 56" width="26" height="14">
+      <svg viewBox="-6 0 106 100" width="34" height="34">
+        <path d={CAPA} fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
         <path
-          d="M3 42C28 14 35 0 55 18S82 43 107 8C78 48 72 53 50 36S25 24 3 42Z"
-          fill="currentColor"
+          d="M66 50 L104 50"
+          stroke="#fff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          opacity=".85"
         />
+        <circle cx="86" cy="50" r="7" fill="#dcebff" opacity=".35" />
+        <circle cx="86" cy="50" r="3.2" fill="#fff" />
       </svg>
     </span>
   );
