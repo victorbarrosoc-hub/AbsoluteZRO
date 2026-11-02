@@ -15,6 +15,35 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Edição automática no AEON (01/11/2026, ADR 0038)
+
+Branch `claude/aeon-clipe-musical`, a partir da main de 01/11/2026 (já com o #95 do Rift).
+
+- `products/ai-edit/test/auto.test.js` **17/17**, com música sintética gerada por semente (`test/musica-sintetica.js`):
+  - **sincronia:** a tomada cai no ponto certo com erro abaixo de 2 ms, inclusive começando antes da música; outra
+    música, ruído e silêncio ficam como B-roll;
+  - **batida e compasso:** andamento certo de 80 a 160 BPM; compasso a até 20 ms do certo;
+  - **partes:** intro, verso, refrão, verso, refrão e final nos lugares certos (até 30 ms);
+  - **nota:** nítido > borrado, exposto > escuro, firme > tremido, e o aftermovie prefere movimento;
+  - **cortes:** só na batida, troca de parte é corte, refrão mais curto que verso;
+  - **quem entra:** performance só onde cobre e em sincronia, nunca a mesma tomada seguida, B-roll nunca seguido e sem
+    trecho repetido, tudo determinado pela semente;
+  - **aftermovie:** só B-roll, sem repetição, acelera no forte;
+  - **montagem no projeto:** a linha dura a música, trilha posta, câmeras caladas, marcadores das partes, sincronia
+    abaixo de meio quadro;
+  - **troca de plano, zoom na batida, correções antes de montar, trilha e modos:** cobertos;
+  - **exportadores:** XML bem formado (xmllint), a música na faixa própria com entrada e duração certas, e nada disso
+    sem trilha.
+- Tela no Chromium (`test/tela.test.js`, "edição automática"): música WAV de 41 s e três vídeos H.264 com Opus (duas
+  tomadas de performance e um B-roll; o som das câmeras leva um apito de 5 kHz que a música não tem).
+  - **Análise:** sincronizou as tomadas em −1,000 s e 8,000 s, achou o B-roll, 120 BPM e as 5 partes, em 2 s.
+  - **Folha:** corrigir uma parte com um toque funcionou. Montar perguntou antes de trocar a linha; a linha saiu do
+    tamanho exato da música, com trilha, câmeras caladas, marcadores e zoom proposto no refrão.
+  - **Inspector:** trocar plano mantém o tamanho e o Desfazer volta.
+  - **Entrega:** o XML do Premiere com a música do quadro 0. O vídeo final tem a duração da música, a música a −45 dB
+    ou mais e, em 5 kHz, só o chimbal da música (o apito das câmeras não vazou).
+- AEON inteiro, com a main mesclada (o fundo verde do Rift): `npm test` **261/261** (com todas as telas) e `xvfb-run -a npx electron . --smoke` ok.
+
 ## Rift Motion no catálogo para a Higgsfield das Conexões (01/11/2026, migration 0054)
 
 Branch `claude/rift-higgsfield-hub`, a partir da main com a `0052`.

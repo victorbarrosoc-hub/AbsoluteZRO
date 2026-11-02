@@ -12,6 +12,8 @@ import { posicionar } from '../quadro.js'
 import { efeitosNaLinha, faixas } from '../efeitos.js'
 import { paraQuadros, paraSegundos } from '../tempo.js'
 import { faixasDoClipe } from '../faixas.js'
+import { trilhaNaLinha } from '../trilha.js'
+import { duracao } from '../linha.js'
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c])
 
@@ -140,4 +142,13 @@ export function arquivosDeFaixas(p) {
 export const sonsUsados = (p) => {
   const usados = new Set(efeitosNaLinha(p).map((x) => x.som.id))
   return (p.sons || []).filter((s) => usados.has(s.id))
+}
+
+/**
+ * A trilha (src/trilha.js) para os exportadores: { midia, desde (quadros da música no começo da linha), quadros (na
+ * linha), volume (dB) } ou null. Vai numa faixa de áudio própria, do quadro 0 da linha, com a função "music".
+ */
+export function trilhaExportada(p) {
+  const t = trilhaNaLinha(p)
+  return t ? { midia: t.midia, desde: paraQuadros(t.desde, p.fps), quadros: Math.max(1, Math.min(duracao(p.linha), paraQuadros(t.dur, p.fps))), volume: t.volume } : null
 }

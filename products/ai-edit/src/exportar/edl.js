@@ -3,7 +3,7 @@
 // em cada degrau; fora de 100% o evento vai só com imagem (a regra do AEON: som só em 100%).
 
 import { fpsNominal, timecode } from '../tempo.js'
-import { segmentos } from './comum.js'
+import { segmentos, trilhaExportada } from './comum.js'
 import { efeitosNaLinha } from '../efeitos.js'
 
 const ascii = (t) =>
@@ -37,6 +37,8 @@ export function paraEdl(p) {
     linhas.push('')
   })
   for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}${k.nota ? ` - ${ascii(k.nota)}` : ''}`)
+  const tr = trilhaExportada(p)
+  if (tr) linhas.push(`* MUSICA ${tc(0)}: ${ascii(tr.midia.nome)} DESDE ${tc(tr.desde)}${tr.volume ? ` ${tr.volume} DB` : ''}`)
   for (const x of efeitosNaLinha(p)) linhas.push(`* EFEITO ${tc(x.inicio)}: ${ascii(x.som.nome)}${x.efeito.volume ? ` ${x.efeito.volume} DB` : ''}`)
   return linhas.join('\r\n')
 }

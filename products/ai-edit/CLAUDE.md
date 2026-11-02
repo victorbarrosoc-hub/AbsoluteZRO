@@ -46,6 +46,10 @@ entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
 - Prévia e render usam as mesmas contas (`src/quadro.js`, `src/legenda.js › desenhar`): o que se vê é o que sai.
 - `vendor/` é gerado (`npm run vendor`): Mediabunny, Transformers.js, ONNX Runtime, tokens e fonte da Absolute ZRO.
 - Contrato de saída: `ZroTimelineRef` v0.1 (`zro-timeline-ref.json`), conferido contra o JSON Schema do contrato.
+- Edição automática ([ADR 0038](../../docs/decisions/0038-edicao-automatica.md)): o motor de música é puro, em `src/musica/`
+  (sincronia, batida, partes, nota e montagem), e a ligação com o projeto fica em `src/auto/`. A análise roda em
+  `app/auto-worker.js` e a folha em `app/auto-ui.js`. Cada modo tem o seu preset em `presets/`, e a tela só mostra o modo
+  que funciona. A música do clipe é a trilha (`src/trilha.js`), que toca na prévia, no vídeo final e nos exportadores.
 - Interface: Padrão Apple da raiz; escuro é o ambiente de trabalho; cor só em forma (clipe, marca, ícone), nunca em texto;
   motion com mola e respeitando "reduzir movimento".
 

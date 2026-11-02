@@ -2,11 +2,12 @@
 // um, ligados; efeitos sonoros em pares de faixas depois (A3/A4, A5/A6… sem sobreposição em cada par); zoom vai no
 // efeito Movimento (Basic Motion: escala e centro); a cor vira o rótulo do Premiere e a etiqueta, o comentário do clipe.
 // Velocidade: Time Remap constante em cada degrau (o Premiere não lê rampa suave por XML, só velocidade constante);
-// fora de 100% o degrau vai sem som (a regra do AEON).
+// fora de 100% o degrau vai sem som (a regra do AEON). A trilha (a música do clipe musical) vai no último par de faixas,
+// do quadro 0 da linha.
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, pathUrl, segmentos, sonsUsados, transformacao } from './comum.js'
+import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, pathUrl, segmentos, sonsUsados, transformacao, trilhaExportada } from './comum.js'
 import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
@@ -150,6 +151,31 @@ ${ind}</clipitem>`
     .filter((parte) => pedacos.some((x) => x.parte === parte))
     .map((parte) => [1, 2].map((lado) => trilha(pedacos.filter((x) => x.parte === parte).map((x, k) => itemFaixa(x, k, lado, I + '    ')), I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n'))
     .join('\n')
+  // a trilha: um clipe por lado no último par de faixas, do começo da linha, ligados
+  const tr = trilhaExportada(p)
+  const baseT = baseF + (trilhasF ? 2 * ['voz', 'instrumental'].filter((parte) => pedacos.some((x) => x.parte === parte)).length : 0)
+  const itemTrilha = (lado, ind) => {
+    const m = tr.midia
+    const id = (l) => `clipitem-t${l === 1 ? 'L' : 'R'}-1`
+    const links = [1, 2].map((l) => `\n${ind}  <link>\n${ind}    <linkclipref>${id(l)}</linkclipref>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${baseT + l - 1}</trackindex>\n${ind}    <clipindex>1</clipindex>\n${ind}    <groupindex>1</groupindex>\n${ind}  </link>`).join('')
+    return `${ind}<clipitem id="${id(lado)}">
+${ind}  <masterclipid>masterclip-${p.midias.indexOf(m) + 1}</masterclipid>
+${ind}  <name>${esc(m.nome)}</name>
+${ind}  <enabled>TRUE</enabled>
+${ind}  <duration>${m.quadros}</duration>
+${rate(ind + '  ')}
+${ind}  <start>0</start>
+${ind}  <end>${tr.quadros}</end>
+${ind}  <in>${tr.desde}</in>
+${ind}  <out>${tr.desde + tr.quadros}</out>
+${fileXml(m, ind + '  ')}
+${ind}  <sourcetrack>
+${ind}    <mediatype>audio</mediatype>
+${ind}    <trackindex>${lado}</trackindex>
+${ind}  </sourcetrack>${niveis({ ajustes: { volume: tr.volume } }, ind + '  ')}${links}
+${ind}</clipitem>`
+  }
+  const trilhaT = tr ? [1, 2].map((lado) => trilha([itemTrilha(lado, I + '    ')], I + '  ', `\n${I}    <outputchannelindex>${lado}</outputchannelindex>`)).join('\n') : ''
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
@@ -171,7 +197,7 @@ ${v1}
       </video>
       <audio>
         <numOutputChannels>2</numOutputChannels>
-${a}${fx ? '\n' + fx : ''}${trilhasF ? '\n' + trilhasF : ''}
+${a}${fx ? '\n' + fx : ''}${trilhasF ? '\n' + trilhasF : ''}${trilhaT ? '\n' + trilhaT : ''}
       </audio>
     </media>
 ${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment>${esc(k.nota || '')}</comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}

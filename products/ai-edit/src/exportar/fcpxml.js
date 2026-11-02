@@ -3,11 +3,12 @@
 // começo da mídia (0s → 0s), com start = entrada ÷ velocidade, como o próprio Final Cut grava (o DaVinci lê a partir
 // do quadro certo assim). Fora de 100% o som do degrau vai a −96 dB (a regra do AEON: som só em 100%). Efeitos sonoros
 // vão como clipes conectados embaixo (lane negativa), com a função de áudio "effects", presos ao clipe em que começam:
-// no Final Cut eles andam junto com a imagem.
+// no Final Cut eles andam junto com a imagem. A trilha (a música do clipe musical) vai conectada ao primeiro clipe, embaixo
+// de tudo, do começo ao fim da linha, com a função de áudio "music".
 
 import { duracao } from '../linha.js'
 import { racional, racionalFracao } from '../tempo.js'
-import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao } from './comum.js'
+import { arquivosDeFaixas, caminhoDa, caminhoDoSom, efeitosExportados, esc, faixasExportadas, fileUrl, marcadoresDe, segmentos, sonsUsados, transformacao, trilhaExportada } from './comum.js'
 import { PRODUTO } from '../produto.js'
 
 export function paraFcpxml(p) {
@@ -37,8 +38,9 @@ export function paraFcpxml(p) {
   const efeitos = efeitosExportados(p)
   const ref = new Map(p.midias.map((m, i) => [m.id, `a${i + 1}`]))
   const nome = new Map(p.midias.map((m) => [m.id, m.nome]))
+  const trilha = trilhaExportada(p)
   const clipes = segmentos(p)
-    .map((s) => {
+    .map((s, k) => {
       const len = s.fim - s.ini
       const acelerado = s.v !== 1
       // no tempo do clipe ajustado pela velocidade: quadro de origem q → q ÷ v = q · saida ÷ len
@@ -67,6 +69,10 @@ export function paraFcpxml(p) {
       for (const x of pedacos.filter((y) => y.seg.linha === s.linha)) {
         const at = `ref="${refFaixa.get(x.arquivo)}" lane="-${lanesFx + (x.parte === 'voz' ? 1 : 2)}" offset="${racional(s.ini, f)}" name="${esc(x.arquivo.replace(/\.wav$/, ''))}" start="${racional(x.desde, f)}" duration="${racional(s.saida, f)}" audioRole="${x.parte === 'voz' ? 'dialogue' : 'music'}"`
         filhos.push(x.volume ? `<asset-clip ${at}>\n                <adjust-volume amount="${x.volume}dB"/>\n              </asset-clip>` : `<asset-clip ${at}/>`)
+      }
+      if (trilha && k === 0) {
+        const at = `ref="${ref.get(trilha.midia.id)}" lane="-${lanesFx + 3}" offset="${ajustado(s.ini)}" name="${esc(trilha.midia.nome.replace(/\.[^.]+$/, ''))}" start="${racional(trilha.desde, f)}" duration="${racional(trilha.quadros, f)}" audioRole="music"`
+        filhos.push(trilha.volume ? `<asset-clip ${at}>\n                <adjust-volume amount="${trilha.volume}dB"/>\n              </asset-clip>` : `<asset-clip ${at}/>`)
       }
       for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${ajustado(k.q)}" duration="${racional(1, f)}" value="${esc(k.nome)}"${k.nota ? ` note="${esc(k.nota)}"` : ''}/>`)
       // etiqueta vira palavra-chave do clipe (o Final Cut não tem cor de clipe)

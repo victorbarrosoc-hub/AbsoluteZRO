@@ -901,6 +901,32 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `rift-motion` com o escopo `zro.higgsfield`. O Rift deixa a conexão própria e passa a pedir por `/api/v1/higgsfield`
   (PR #80). A Z sabe o que o Rift faz (filtrada pelo gate).
 
+## Edição automática no AEON (01/11/2026, [ADR 0038](decisions/0038-edicao-automatica.md))
+
+- ✅ "Edição automática" na Mídia, com os modos em cartões e um preset versionado por modo (`presets/clipe.v1.json`,
+  `presets/aftermovie.v1.json`; Conteúdo usa o `fala.v1.json`). Tudo na máquina, sem upload nem hora de análise.
+- ✅ Clipe (clipe, DVD e EP):
+  - escolhe a música e as tomadas;
+  - sincroniza cada tomada pelo som, ao milissegundo; a tomada sem a música vira B-roll e a ambígua sai "Confira";
+  - mede a batida, o compasso e as partes da música, e a pessoa corrige com um toque (×2/÷2 no andamento, o nome da
+    parte, performance ou B-roll, um quadro antes ou depois);
+  - Montar: o corte cai na batida, o verso segura o plano e o refrão corta rápido, o B-roll entra nunca seguido, a
+    música vira trilha, as câmeras calam e as partes viram marcadores;
+  - o zoom na batida sai como proposta e "Outra versão" monta de novo com outra semente.
+- ✅ Aftermovie: só a música e o que foi filmado. O corte acelera onde a música é mais forte, o melhor material vai para
+  o refrão e o drop, e nenhum trecho se repete.
+- ✅ Trocar plano no Inspector: as outras opções do mesmo trecho da música, em sincronia e do mesmo tamanho.
+- ✅ Trilha do projeto (`src/trilha.js`) na prévia, no vídeo final e nos exportadores: Final Cut e Resolve (função
+  "music"), Premiere (último par de faixas), OTIO (faixa "Música") e EDL (comentário).
+- ⬜ Casamento:
+  - partes do dia;
+  - sincronia de várias câmeras e do gravador pelo motor do Synquei;
+  - falas dos votos por cima da música, com a música abaixando;
+  - filme, teaser 16:9 e 9:16, e "O dia" com capítulos.
+- ⬜ Documentário: montagem pela entrevista (falas inteiras, pausas naturais, B-roll nos tópicos, trilha baixa sob a fala).
+- ⬜ DVD ao vivo com vários ângulos pelo som da mesa; EP com uma peça por música; Conteúdo refinado (gancho).
+- ⬜ Validar com clipes reais de artistas (os testes usam música sintética).
+
 ## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
 
 - ✅ `/admin/custos` (papel admin e, desde 31/10/2026, Financeiro; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$

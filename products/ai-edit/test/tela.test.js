@@ -16,6 +16,7 @@ import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
 import { simularZ } from './z-falso.js'
 import { simularSet } from './set-falso.js'
 import { FAMILIA } from '../src/familia.js'
+import { musica as musicaSintetica, tomada as tomadaSintetica } from './musica-sintetica.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
 /** stderr de um comando (o volumedetect do ffmpeg escreve lá) */
@@ -1682,5 +1683,151 @@ test('Criar com IA sem a Higgsfield nas Conexões: a folha diz para conectar na 
   await pagina.waitForFunction((k) => true, n)
   assert.ok(hf.pedidos.length >= n)
   assert.deepEqual(erros.filter((e) => !/409/.test(e)), [])
+  await pagina.close()
+})
+
+/** WAV PCM 16-bit mono de um Float32Array (a música sintética, em 16 kHz). */
+function wav(pcm, taxa) {
+  const b = Buffer.alloc(44 + pcm.length * 2)
+  b.write('RIFF', 0, 'latin1')
+  b.writeUInt32LE(36 + pcm.length * 2, 4)
+  b.write('WAVEfmt ', 8, 'latin1')
+  b.writeUInt32LE(16, 16)
+  b.writeUInt16LE(1, 20)
+  b.writeUInt16LE(1, 22)
+  b.writeUInt32LE(taxa, 24)
+  b.writeUInt32LE(taxa * 2, 28)
+  b.writeUInt16LE(2, 32)
+  b.writeUInt16LE(16, 34)
+  b.write('data', 36, 'latin1')
+  b.writeUInt32LE(pcm.length * 2, 40)
+  for (let i = 0; i < pcm.length; i++) b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, pcm[i])) * 32767), 44 + 2 * i)
+  return b
+}
+
+test('edição automática: Clipe acha a música, sincroniza as tomadas, monta na batida, troca plano e entrega com a música', async () => {
+  const { pagina, erros } = await abrir()
+  // a música: intro, verso, refrão, verso, refrão a 120 BPM (40 s); duas tomadas de performance e um B-roll. O som das
+  // câmeras leva um apito de 5 kHz que a música não tem: o vídeo final não pode ter apito (câmeras caladas)
+  const partes = [
+    { tipo: 'intro', compassos: 4, acordes: ['Am'], forca: 0.35 },
+    { tipo: 'verso', compassos: 4, acordes: ['C', 'G', 'Am', 'F'], forca: 0.6 },
+    { tipo: 'refrao', compassos: 4, acordes: ['F', 'G', 'E', 'Am'], forca: 1, chimbal: true },
+    { tipo: 'verso', compassos: 4, acordes: ['C', 'G', 'Am', 'F'], forca: 0.6 },
+    { tipo: 'refrao', compassos: 4, acordes: ['F', 'G', 'E', 'Am'], forca: 1, chimbal: true },
+  ]
+  const m = musicaSintetica({ bpm: 120, partes, semente: 11 })
+  writeFileSync(join(dir, 'cancao.wav'), wav(m.pcm, m.taxa))
+  const camera = (nome, pcm, padrao) => {
+    const a = join(dir, `${nome}.wav`)
+    writeFileSync(a, wav(pcm, m.taxa))
+    const dur = pcm.length / m.taxa
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `${padrao}=size=320x180:rate=25`, '-i', a, '-f', 'lavfi', '-i', `sine=frequency=5000:sample_rate=48000:duration=${dur}`, '-filter_complex', '[1:a]aresample=48000[m];[m][2:a]amix=inputs=2:normalize=0[s]', '-map', '0:v', '-map', '[s]', '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'libopus', '-b:a', '96k', join(dir, `${nome}.mp4`)])
+  }
+  camera('tomadaA', tomadaSintetica(m, { de: 0, dur: m.duracao - 0.5, antes: 1, semente: 4 }), 'testsrc2')
+  camera('tomadaB', tomadaSintetica(m, { de: 8, dur: 20, semente: 5 }), 'smptebars')
+  const r = (() => {
+    let x = 7
+    return () => ((x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1
+  })()
+  camera('broll', Float32Array.from({ length: m.taxa * 16 }, () => r() * 0.05), 'mandelbrot')
+  await pagina.setInputFiles('#arquivo', ['cancao.wav', 'tomadaA.mp4', 'tomadaB.mp4', 'broll.mp4'].map((n) => join(dir, n)))
+  await pagina.locator('.cartao-midia').nth(3).waitFor()
+
+  // os modos em cartões: Clipe, Aftermovie e Conteúdo (só o que funciona)
+  await pagina.click('#autoEdicao')
+  const folha = pagina.locator('#folhaAuto')
+  await folha.locator('.auto-modo').first().waitFor()
+  assert.deepEqual(await folha.locator('.auto-modo strong').allInnerTexts(), ['Clipe', 'Aftermovie', 'Conteúdo'])
+  await folha.locator('[data-modo="clipe"]').click()
+  assert.match(await folha.locator('[data-musica] option:checked').innerText(), /cancao\.wav/)
+  assert.equal(await folha.locator('.auto-tomada').count(), 3)
+  await folha.locator('[data-acao="analisar"]').click()
+  await folha.locator('[data-resultado]:not([hidden])').waitFor({ timeout: 180_000 })
+  const auto = () => pagina.evaluate(() => globalThis.__editor.h.atual.auto)
+  const a = await auto()
+  const porNome = async (nome) => (await pagina.evaluate((n) => globalThis.__editor.h.atual.midias.find((x) => x.nome === n).id, nome))
+  const [A, B, R] = [await porNome('tomadaA.mp4'), await porNome('tomadaB.mp4'), await porNome('broll.mp4')]
+  assert.equal(a.tomadas[A].tipo, 'performance')
+  assert.equal(a.tomadas[B].tipo, 'performance')
+  assert.equal(a.tomadas[R].tipo, 'broll')
+  assert.ok(Math.abs(a.tomadas[A].inicio + 1) < 0.02, `A entra em ${a.tomadas[A].inicio}`)
+  assert.ok(Math.abs(a.tomadas[B].inicio - 8) < 0.02, `B entra em ${a.tomadas[B].inicio}`)
+  assert.ok(Math.abs(a.bpm - 120) < 2)
+  assert.deepEqual(
+    a.partes.map((x) => x.tipo),
+    ['intro', 'verso', 'refrao', 'verso', 'refrao'],
+  )
+  assert.equal(await folha.locator('.auto-parte').count(), 5)
+  assert.match(await folha.locator('[data-bpm]').innerText(), /120 BPM · 5 partes/)
+  // corrigir uma parte com um toque (e desfazer pelo Histórico depois)
+  await folha.locator('.auto-parte').first().click()
+  assert.equal((await auto()).partes[0].tipo, 'verso')
+  await folha.locator('.auto-parte').first().click({ clickCount: 1 })
+  for (let i = 0; i < 4; i++) await folha.locator('.auto-parte').first().click()
+  assert.equal((await auto()).partes[0].tipo, 'intro')
+
+  // Montar troca a linha (pergunta antes: a linha tinha os clipes de cada mídia)
+  await folha.locator('[data-r="rapido"]').click()
+  await folha.locator('[data-acao="montar"]').click()
+  const pergunta = pagina.locator('dialog.folha-pergunta')
+  await pergunta.waitFor()
+  await pergunta.getByRole('button', { name: 'Montar' }).click()
+  await pagina.waitForFunction(() => document.body.dataset.pagina === 'edicao')
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  const mus = p.midias.find((x) => x.nome === 'cancao.wav')
+  assert.deepEqual(p.trilha, { midia: mus.id, desde: 0, volume: 0 })
+  const total = p.linha.clipes.reduce((s2, c) => s2 + (c.fim - c.ini), 0)
+  assert.equal(total, mus.quadros)
+  assert.ok(p.linha.clipes.length >= 8, `${p.linha.clipes.length} planos`)
+  assert.ok(p.linha.clipes.every((c) => c.ajustes?.volume === -60 && c.midia !== mus.id))
+  assert.deepEqual(
+    p.marcadores.map((k) => k.nome),
+    ['Intro', 'Verso 1', 'Refrão 1', 'Verso 2', 'Refrão 2'],
+  )
+  assert.ok(p.propostas.some((x) => x.tipo === 'zoom' && x.estado === 'pendente' && /Refrão/.test(x.motivo)))
+  assert.deepEqual(p.auto.ajustes.ritmo, 'rapido')
+  assert.match(await pagina.locator('#aviso').innerText(), /planos, \d+ em sincronia/)
+
+  // trocar plano no Inspector: as outras opções do mesmo trecho; o tamanho e a música não mudam
+  await pagina.locator('.clipe').nth(3).click()
+  const troca = pagina.locator('.insp-troca:not([hidden])')
+  await troca.waitFor()
+  const antes = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes[3])
+  const opcoes = await troca.locator('.troca-opcao').count()
+  assert.ok(opcoes >= 1)
+  await troca.locator('.troca-opcao').first().click()
+  const depois = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes[3])
+  assert.notDeepEqual([depois.midia, depois.ini], [antes.midia, antes.ini])
+  assert.equal(depois.fim - depois.ini, antes.fim - antes.ini)
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.proximoDesfazer), 'trocar plano')
+  await pagina.click('#desfazer')
+  assert.deepEqual(await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes[3]), antes)
+
+  // Entrega: o XML do Premiere leva a música do quadro 0; o vídeo final tem a música e não o apito das câmeras
+  await pagina.click('.dock [data-ir="entrega"]')
+  for (const d of ['fcpxml', 'resolve']) await pagina.uncheck(`#destinos input[value="${d}"]`)
+  await pagina.check('#destinos input[value="video"]')
+  const downloads = []
+  pagina.on('download', (d) => downloads.push(d))
+  await pagina.click('#exportar')
+  await pagina.locator('#entregaFim:not([hidden])').waitFor({ timeout: 240_000 })
+  const zipArq = join(dir, 'auto.zip')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.zip')).saveAs(zipArq)
+  const xml = execFileSync('unzip', ['-p', zipArq, '*.xml']).toString()
+  assert.match(xml, /<clipitem id="clipitem-tL-1">[\s\S]*?<name>cancao\.wav<\/name>[\s\S]*?<start>0<\/start>/)
+  const mp4 = join(dir, 'auto.mp4')
+  await downloads.find((d) => d.suggestedFilename().endsWith('.mp4')).saveAs(mp4)
+  const info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', mp4]).toString())
+  assert.ok(Math.abs(Number(info.format.duration) - mus.duracao) < 0.2, `vídeo de ${info.format.duration} s`)
+  const medirFaixa = (arq, filtro) => Number(/mean_volume: (-?[\d.]+) dB/.exec(estderr('ffmpeg', ['-v', 'info', '-i', arq, '-af', `${filtro}volumedetect`, '-f', 'null', '-']))[1])
+  const musicaDb = medirFaixa(mp4, 'bandpass=f=60:width_type=h:w=40,')
+  assert.ok(musicaDb > -45, `música em ${musicaDb} dB`)
+  // em 5 kHz o vídeo tem só o chimbal da música (o da música original, mais o ruído do codificador); o apito, com a
+  // câmera aberta, daria uns −21 dB, bem acima
+  const apito = medirFaixa(mp4, 'bandpass=f=5000:width_type=h:w=100,')
+  const naMusica = medirFaixa(join(dir, 'cancao.wav'), 'bandpass=f=5000:width_type=h:w=100,')
+  assert.ok(apito < naMusica + 8 && apito < -35, `5 kHz no vídeo ${apito} dB × na música ${naMusica} dB: o apito das câmeras vazou`)
+  assert.deepEqual(erros, [])
   await pagina.close()
 })
