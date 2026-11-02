@@ -17,6 +17,20 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 ## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ADR 0039)
 
+- `products/tpeasy`: `node --test tests/*.test.mjs` → **83/83** (linha com fuso, blocos em ordem, origem e versão do
+  Maestro, toque de menos de 1,5 s fora, últimas 1.000, JSONL; SW `tpeasy-v24`).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **593/593** em 69 arquivos (o schema aceita as linhas geradas
+  pelo `leituras.js` real e recusa campo a mais, tempo fora de ordem, bloco depois do fim e versão sem origem);
+  `npm run test:e2e` **61/68**: 6 são WebKit e não abriram neste ambiente (`Executable doesn't exist`); a
+  outra é `iphone-telas` (`/admin/lancamento`, "Revogar e encerrar sessões" passa da largura), vermelha no `main` também.
+- CI vermelho herdado do `main` (`iphone-telas`, `/admin/lancamento`): com o `<details class="adm-confirm">` fechado, o
+  formulário ficava espremido em 24 px ao lado do botão e o campo e o botão (223 px) passavam da borda. Corrigido em
+  `globals.css` (`.adm-confirm:not([open]) > :not(summary) { display: none }`): reproduzido e conferido com uma pessoa
+  na lista de acesso (375/393/430, fechado e aberto: o form aberto fica em 40–328 de 375) e o teste inteiro passou
+  no Chromium (WebKit não abre neste ambiente; o CI confere).
+- Fumaça no Chromium (iPhone 13), app servido como estático: roteiro `# Gancho` / `# Oferta` a 320 ppm, uma leitura de
+  6 s grava os dois blocos (Oferta aos 3,4 s), Ajustes mostra 1, nenhum erro no console.
+
 Branch `planos-b`, migração `0055_planos_zero_orbita_absoluto.sql`. Rodado com banco de teste próprio
 (`TEST_DATABASE_URL=…/zro_planosb_test`: outra sessão no mesmo Postgres recriava o `zro_test` no meio da bateria).
 

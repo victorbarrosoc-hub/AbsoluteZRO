@@ -3630,6 +3630,11 @@ a.hbars__row:hover {
 .adm-confirm[open] > summary {
   opacity: 0.6;
 }
+/* fechado, o formulário sai do layout: senão o navegador ainda mede a caixa (espremida ao lado do botão) e o
+   conteúdo dela passa da borda no iPhone */
+.adm-confirm:not([open]) > :not(summary) {
+  display: none;
+}
 .adm-confirm > form {
   justify-self: stretch;
   padding: var(--space-3);
