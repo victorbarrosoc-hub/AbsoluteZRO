@@ -4530,6 +4530,9 @@ SOBEDESCE de computador, que disparam os instaladores).
   Só CSS; uma vez por sessão; pulada com reduzir movimento e em automação.
 - `products/nossom`: `format:check` OK, `npm test` 135/135, `npm run build` OK, e2e `liquid-site`, `workspace`,
   `assistant-flow` e `home-logada` 8 passaram (5 pulados por `RELEASE=closed`). Quadros da abertura conferidos a 390.
+- No caminho: o campo "De" do trecho mostrava o número cru do arraste (`1.0000397…`) e derrubava às vezes o e2e
+  `cloud-restoration` › seleção na onda; agora arredonda a 2 casas como o "Até" já fazia. `cloud-restoration` e
+  `player` repetidos 3 vezes: 18 passaram.
 
 ## Quasar · Início com o símbolo como IA (01/11/2026)
 

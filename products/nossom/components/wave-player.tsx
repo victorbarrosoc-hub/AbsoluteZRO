@@ -358,9 +358,9 @@ export const WavePlayer = memo(function WavePlayer({
               aria-label="Início do trecho em segundos"
               type="number"
               min={0}
-              max={region.end - 0.1}
+              max={Number((region.end - 0.1).toFixed(2))}
               step={0.1}
-              value={region.start}
+              value={Number(region.start.toFixed(2))}
               onChange={(e) =>
                 onRegion({
                   start: Math.max(0, Math.min(region.end - 0.1, Number(e.target.value))),
@@ -375,7 +375,7 @@ export const WavePlayer = memo(function WavePlayer({
             <input
               aria-label="Fim do trecho em segundos"
               type="number"
-              min={region.start + 0.1}
+              min={Number((region.start + 0.1).toFixed(2))}
               max={duration}
               step={0.1}
               value={Number(region.end.toFixed(2))}
