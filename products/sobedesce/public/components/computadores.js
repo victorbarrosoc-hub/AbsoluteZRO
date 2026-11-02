@@ -1,8 +1,8 @@
-// Tela Dispositivos (docs/LAN.md e docs/CELULAR-WIFI.md), no padrão do kit (docs/UI-KIT.md): manda arquivos direto
-// pela rede para os seus computadores e celulares, ou para quem está do lado (outra conta, sempre aceitando), cifrado e
+// Tela Dispositivos (docs/LAN.md), no padrão do kit (docs/UI-KIT.md): manda arquivos direto pela rede para os seus
+// computadores, ou para o de quem está do lado (outra conta, sempre aceitando), cifrado e
 // conferido, sem passar pela internet. Fluxo em três passos (Para quem → O quê → Como) e o botão grande ao lado; os
 // pedidos de outras pessoas no topo; ao lado, o que está passando agora (com o gráfico) e o que este computador aceita
-// receber. Computador ↔ computador vai pela rede local (/api/lan/*); celular pelo WebRTC (/api/celular/*).
+// receber, pela rede local (/api/lan/*). O Wi-Fi com o celular foi descontinuado em 02/11/2026 (docs/CELULAR-WIFI.md).
 import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js'
 import { useStore, setSettings } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
@@ -15,10 +15,10 @@ import { Icon } from './icons.js'
 import { Button, Spinner, Switch } from './common.js'
 import { useLocalRoots } from './local-picker.js'
 import { duracao } from './discos.js'
-import { AvisoFirewall, AvisoRedeLocal, CEL_ATIVO, FalhaCelular, PedidoCelular, estadoCelular, mandarParaCelular, quemCelular, useCelularesAbertos } from './celular-wifi.js'
+import { AvisoFirewall, AvisoRedeLocal } from './aviso-rede.js'
 import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, Opcoes, Pagina, Passo, Resumo, Stats, Vazio } from './kit.js'
 
-const FRASE = 'Mande direto pela rede para os seus computadores e celulares, ou para quem está do lado. Cifrado e conferido, sem passar pela internet.'
+const FRASE = 'Mande direto pela rede para os seus computadores ou para o de quem está do lado. Cifrado e conferido, sem passar pela internet.'
 const LAN_ATIVO = new Set(['preparando', 'aguardando', 'enviando'])
 const nomePlataforma = (p) => (p === 'windows' ? 'Windows' : p === 'mac' ? 'Mac' : 'Computador')
 
@@ -29,7 +29,7 @@ const salvarAjuste = async (patch) => {
 
 // ───── para quem ─────
 
-/** Um aparelho para onde mandar: computador ou celular, seu ou de quem está por perto. */
+/** Um computador para onde mandar: seu ou de quem está por perto. */
 function Aparelho({ a, on, onEscolher, i }) {
   return html`<button
     type="button"
@@ -145,42 +145,23 @@ function EnvioLan({ e, pontos, onCancelar, onNovo }) {
 
 // ───── recentes ─────
 
-function Recentes({ lan, cel, i }) {
+function Recentes({ lan, i }) {
   const itens = [
     ...(lan?.recebendo || []).map((o) => ({ tipo: 'lan', t: o.criadaEm || 0, o })),
-    ...(cel?.transferencias || []).map((o) => ({ tipo: 'cel', t: o.inicio || 0, o })),
   ].sort((a, b) => b.t - a.t)
   if (!itens.length) return null
-  const podeLimpar = (cel?.transferencias || []).some((t) => !CEL_ATIVO.has(t.estado))
-  return html`<${Passo} icone="clock" cor="down" titulo="Recentes" frase="O que chegou aqui e o que foi para o celular." acao=${podeLimpar ? html`<${Button} size="sm" onClick=${() => attempt(api.post('/api/celular/limpar', {}))}>Limpar celular</${Button}>` : null} i=${i}>
+  return html`<${Passo} icone="clock" cor="down" titulo="Recentes" frase="O que chegou aqui de outros computadores." i=${i}>
     <div class="k-itens">
-      ${itens.slice(0, 12).map(({ tipo, o }) => {
-        if (tipo === 'lan') {
-          const frac = o.bytes ? Math.min(1, o.recebidos / o.bytes) : o.estado === 'recebendo' ? 0 : 1
-          const andando = o.estado === 'recebendo'
-          return html`<${Item}
-            icone="arrow-down"
-            tom=${o.estado === 'pronta' ? 'ok' : andando ? 'down' : o.erros ? 'erro' : 'neutro'}
-            titulo=${`${o.pasta}`}
-            sub=${`de ${o.pessoa ? `${o.pessoa} (${o.de})` : o.de} · ${plural(o.arquivos, 'arquivo', 'arquivos')} · ${bytes(o.bytes)}${o.drive ? ` · ${o.drive.estado?.startsWith('erro') ? 'Drive: não deu' : o.drive.estado ? 'Drive: na fila' : 'depois sobe pro Drive'}` : ''}`}
-            fim=${html`<span class="dv-estado">${andando ? `${Math.floor(frac * 100)}%` : o.estado === 'pronta' ? 'Chegou tudo' : o.estado === 'cancelada' ? 'Cancelado' : `${o.prontos} de ${o.arquivos}`}</span>${!andando ? html`<${Button} size="sm" onClick=${() => revealPath(o.caminho)}>${revealLabel()}</${Button}>` : null}`}
-          ><${Barra} p=${frac} tom=${o.estado === 'pronta' ? 'ok' : o.erros ? 'erro' : undefined} vivo=${andando} label=${`Recebendo ${o.pasta}`} /></${Item}>`
-        }
-        const t = o
-        const ativo = CEL_ATIVO.has(t.estado)
-        const frac = t.estado === 'pronto' ? 1 : t.total ? Math.min(1, t.feitos / t.total) : 0
-        const nomes = t.nomes?.length ? ` · ${t.nomes.join(', ')}${t.arquivos > t.nomes.length ? '…' : ''}` : ''
+      ${itens.slice(0, 12).map(({ o }) => {
+        const frac = o.bytes ? Math.min(1, o.recebidos / o.bytes) : o.estado === 'recebendo' ? 0 : 1
+        const andando = o.estado === 'recebendo'
         return html`<${Item}
-          icone=${t.direcao === 'recebendo' ? 'arrow-down' : 'arrow-up'}
-          tom=${t.estado === 'pronto' ? 'ok' : ativo ? (t.direcao === 'recebendo' ? 'down' : 'up') : t.estado === 'cancelado' ? 'neutro' : 'erro'}
-          titulo=${t.direcao === 'recebendo' ? `Do ${quemCelular(t)}` : `Para o ${quemCelular(t)}`}
-          sub=${`${plural(t.arquivos, 'arquivo', 'arquivos')} · ${bytes(t.total)}${nomes}`}
-          fim=${html`<span class="dv-estado">${estadoCelular(t)}</span>${ativo
-            ? html`<${Button} size="sm" icon="x" onClick=${() => attempt(api.post(`/api/celular/cancelar/${t.id}`, {}))}>Cancelar</${Button}>`
-            : t.direcao === 'recebendo' && t.estado === 'pronto'
-              ? html`<${Button} size="sm" onClick=${() => revealPath(t.primeiro || t.pasta)}>${revealLabel()}</${Button}>`
-              : null}`}
-        ><${Barra} p=${frac} tom=${t.estado === 'pronto' ? 'ok' : !ativo && t.estado !== 'cancelado' ? 'erro' : undefined} vivo=${ativo} label=${`Transferência com ${t.aparelho}`} /></${Item}>`
+          icone="arrow-down"
+          tom=${o.estado === 'pronta' ? 'ok' : andando ? 'down' : o.erros ? 'erro' : 'neutro'}
+          titulo=${`${o.pasta}`}
+          sub=${`de ${o.pessoa ? `${o.pessoa} (${o.de})` : o.de} · ${plural(o.arquivos, 'arquivo', 'arquivos')} · ${bytes(o.bytes)}${o.drive ? ` · ${o.drive.estado?.startsWith('erro') ? 'Drive: não deu' : o.drive.estado ? 'Drive: na fila' : 'depois sobe pro Drive'}` : ''}`}
+          fim=${html`<span class="dv-estado">${andando ? `${Math.floor(frac * 100)}%` : o.estado === 'pronta' ? 'Chegou tudo' : o.estado === 'cancelada' ? 'Cancelado' : `${o.prontos} de ${o.arquivos}`}</span>${!andando ? html`<${Button} size="sm" onClick=${() => revealPath(o.caminho)}>${revealLabel()}</${Button}>` : null}`}
+        ><${Barra} p=${frac} tom=${o.estado === 'pronta' ? 'ok' : o.erros ? 'erro' : undefined} vivo=${andando} label=${`Recebendo ${o.pasta}`} /></${Item}>`
       })}
     </div>
   </${Passo}>`
@@ -188,19 +169,17 @@ function Recentes({ lan, cel, i }) {
 
 // ───── lado: agora e este computador ─────
 
-function Agora({ pontos, lanEnvio, lan, cel }) {
-  const celAtivas = (cel?.transferencias || []).filter((t) => CEL_ATIVO.has(t.estado))
+function Agora({ pontos, lanEnvio, lan }) {
   const lanRec = (lan?.recebendo || []).filter((o) => o.estado === 'recebendo')
   const lanEnv = lanEnvio && LAN_ATIVO.has(lanEnvio.fase) ? lanEnvio : null
-  if (!celAtivas.length && !lanRec.length && !lanEnv) return null
+  if (!lanRec.length && !lanEnv) return null
   let feito = 0
   let total = 0
-  for (const t of celAtivas) (feito += t.feitos || 0), (total += t.total || 0)
   for (const o of lanRec) (feito += o.recebidos || 0), (total += o.bytes || 0)
   if (lanEnv) (feito += lanEnv.enviados || 0), (total += lanEnv.bytes || 0)
   const frac = total ? Math.min(1, feito / total) : null
   const ultimo = pontos.at(-1) || { up: 0, down: 0 }
-  const n = celAtivas.length + lanRec.length + (lanEnv ? 1 : 0)
+  const n = lanRec.length + (lanEnv ? 1 : 0)
   return html`<${Resumo} titulo="Agora">
     <${Destaque} titulo=${n === 1 ? 'Passando pela rede' : `${n} passando pela rede`} numero=${frac == null ? '…' : Math.floor(frac * 100)} unidade=${frac == null ? 'conectando' : `% de ${bytes(total)}`} progresso=${frac} vivo=${true} />
     <div class="k-caixa">
@@ -224,9 +203,8 @@ function Pasta({ caminho, home, titulo, onTrocar }) {
   </div>`
 }
 
-function EsteComputador({ lan, settings, cel, home }) {
+function EsteComputador({ lan, settings, home }) {
   const lanOn = !!settings?.lanReceber
-  const celOn = !!settings?.celularReceber
   return html`<${Resumo} titulo="Este computador recebe">
     <div class="dv-canal">
       <div class="dv-canal-topo">
@@ -249,48 +227,24 @@ function EsteComputador({ lan, settings, cel, home }) {
             </${Linhas}>`
         : null}
     </div>
-    ${cel?.desligado ? null : html`<div class="dv-canal">
-      <div class="dv-canal-topo">
-        <span class=${cx('dv-canal-ic', celOn && 'is-on')}><${Icon} name="phone" size=${17} strokeWidth=${1.8} /></span>
-        <div class="dv-canal-txt">
-          <b>Do celular</b>
-          <span>${celOn ? (bridge && cel?.pronto ? 'Ligado · pelo Wi-Fi, fica só aqui' : 'Ligado · só no app do computador') : 'Desligado: o celular não manda para cá'}</span>
-        </div>
-        <${Switch} checked=${celOn} label="Receber do celular" onChange=${(on) => salvarAjuste({ celularReceber: on })} />
-      </div>
-      ${celOn
-        ? html`<${Pasta} titulo="Chega em" caminho=${settings.celularPasta} home=${home} onTrocar=${async () => {
-              const p = await pickFolderPath({ title: 'Onde chegam os arquivos do celular?', defaultPath: settings.celularPasta })
-              if (p) salvarAjuste({ celularPasta: p })
-            }} />
-            <${Linhas}>
-              <${Linha} titulo="Aceitar de outras pessoas" sub="Celulares de outra conta, na mesma rede. Sempre pergunta antes.">
-                <${Switch} checked=${!!settings.celularOutros} label="Aceitar celulares de outras pessoas" onChange=${(on) => salvarAjuste({ celularOutros: on })} />
-              </${Linha}>
-            </${Linhas}>`
-        : null}
-    </div>`}
   </${Resumo}>`
 }
 
-/** Velocidade pela rede a cada segundo, enquanto algo passa: ↑ envios (computador e celular), ↓ o que chega. */
-function useVelocidadeRede({ lanEnvio, lan, cel }) {
+/** Velocidade pela rede a cada segundo, enquanto algo passa: ↑ o envio, ↓ o que chega. */
+function useVelocidadeRede({ lanEnvio, lan }) {
   const [pontos, setPontos] = useState([])
-  const ref = useRef({ lanEnvio, lan, cel, rec: null })
+  const ref = useRef({ lanEnvio, lan, rec: null })
   ref.current.lanEnvio = lanEnvio
   ref.current.lan = lan
-  ref.current.cel = cel
   const ativo =
     (lanEnvio && LAN_ATIVO.has(lanEnvio.fase)) ||
-    (cel?.transferencias || []).some((t) => CEL_ATIVO.has(t.estado)) ||
     (lan?.recebendo || []).some((o) => o.estado === 'recebendo')
   useEffect(() => {
     if (!ativo) return undefined
     const t = setInterval(() => {
-      const { lanEnvio: e, lan: l, cel: c } = ref.current
-      let up = e?.fase === 'enviando' ? e.velocidade || 0 : 0
+      const { lanEnvio: e, lan: l } = ref.current
+      const up = e?.fase === 'enviando' ? e.velocidade || 0 : 0
       let down = 0
-      for (const x of c?.transferencias || []) if (x.estado === 'andando') x.direcao === 'recebendo' ? (down += x.velocidade || 0) : (up += x.velocidade || 0)
       // O que chega de outro computador não traz velocidade: sai da diferença do que já chegou.
       const rec = (l?.recebendo || []).filter((o) => o.estado === 'recebendo').reduce((s, o) => s + (o.recebidos || 0), 0)
       const antes = ref.current.rec
@@ -307,15 +261,14 @@ function useVelocidadeRede({ lanEnvio, lan, cel }) {
 
 export function ComputadoresScreen() {
   const lan = useStore((s) => s.lan)
-  // Wi-Fi entre aparelhos desligado no site (até a fase 3): some tudo do celular aqui; computador ↔ computador segue.
-  const celSite = useStore((s) => s.celular)
-  const cel = celSite?.desligado ? null : celSite
+  // Rede Local e Firewall do macOS (src/server/rede.js): sem eles, outro computador não conecta neste.
+  const rede = useStore((s) => s.rede)
   const settings = useStore((s) => s.settings)
   const cloud = useStore((s) => s.cloud)
   const accountId = useStore((s) => s.activeAccountId)
   const roots = useLocalRoots()
   const [pcs, setPcs] = useState(null)
-  const [para, setPara] = usePersistentState('disp.para', null) // "pc:<id>" | "cel:<id>"
+  const [para, setPara] = usePersistentState('disp.para', null) // "pc:<id>"
   const [origens, setOrigens] = useState([])
   const [pasta, setPasta] = useState('')
   const [drive, setDrive] = usePersistentState('lan.drive', null) // { ligado, folder: { id, name, path } }
@@ -323,8 +276,7 @@ export function ComputadoresScreen() {
   const [sobre, setSobre] = useState(false)
   const e = lan?.envio
   const conectado = !!cloud?.conectado
-  useCelularesAbertos()
-  const pontos = useVelocidadeRede({ lanEnvio: e, lan, cel })
+  const pontos = useVelocidadeRede({ lanEnvio: e, lan })
 
   // Os computadores da conta e os de outras contas por perto: de novo a cada 15 s enquanto a tela está aberta.
   useEffect(() => {
@@ -343,7 +295,6 @@ export function ComputadoresScreen() {
     }
   }, [conectado])
 
-  const celPronto = !!bridge && !!cel?.pronto
   const aparelhos = [
     ...(pcs || []).map((c) => ({
       key: `pc:${c.id}`,
@@ -355,18 +306,6 @@ export function ComputadoresScreen() {
       icone: c.plataforma === 'windows' ? 'desktop' : 'laptop',
       sub: (c.tipo === 'outro' && c.dono ? `de ${c.dono} · ` : '') + `${nomePlataforma(c.plataforma)} · visto ${relTime(Date.parse(c.vistoEm))}`,
       mesmaRede: false,
-    })),
-    ...(cel?.celulares || []).map((c) => ({
-      key: `cel:${c.id}`,
-      kind: 'cel',
-      id: c.id,
-      nome: c.nome,
-      outra: c.conta === 'outra',
-      dono: c.dono || null,
-      icone: 'phone',
-      sub: c.conta === 'outra' ? `de ${c.dono || 'alguém'} · aceita no celular` : 'Celular · app aberto',
-      mesmaRede: !!c.mesmaRede,
-      indisponivel: celPronto ? null : 'Só no app SOBEDESCE do computador. Se ele já está aberto, feche e abra de novo.',
     })),
   ]
   const seus = aparelhos.filter((a) => !a.outra)
@@ -396,10 +335,7 @@ export function ComputadoresScreen() {
   const mandar = async () => {
     if (!destino || !origens.length) return
     setMandando(true)
-    if (destino.kind === 'cel') {
-      const r = await mandarParaCelular(destino.id, origens)
-      if (r) setOrigens([])
-    } else {
+    {
       await attempt(
         api.post('/api/lan/enviar', {
           para: destino.id,
@@ -419,7 +355,6 @@ export function ComputadoresScreen() {
 
   const pedidos = [
     ...(lan?.pedidos || []).map((p) => ({ tipo: 'lan', p })),
-    ...(cel?.pedidos || []).map((p) => ({ tipo: 'cel', p })),
   ]
   const envioLanVisivel = !!e
   const dica = !destino
@@ -428,9 +363,7 @@ export function ComputadoresScreen() {
       ? 'Escolha o que mandar.'
       : destino.outra
         ? html`<b>${destino.dono || 'A pessoa'}</b> recebe um pedido e escolhe aceitar.`
-        : destino.kind === 'cel'
-          ? html`Chega no <b>${destino.nome}</b>, com Salvar em cada arquivo.`
-          : html`Chega em <b>${destino.nome} › Recebidos › ${pasta.trim() || nomePadrao}</b>.`
+        : html`Chega em <b>${destino.nome} › Recebidos › ${pasta.trim() || nomePadrao}</b>.`
 
   const lado = html`
     ${conectado && !envioLanVisivel
@@ -445,7 +378,7 @@ export function ComputadoresScreen() {
             colunas=${2}
             itens=${[
               { icone: 'doc', valor: count(origens.length), rotulo: origens.length === 1 ? 'item escolhido' : 'itens escolhidos', tom: origens.length ? 'up' : 'neutro' },
-              { icone: destino?.kind === 'cel' ? 'phone' : 'laptop', valor: destino ? (destino.kind === 'cel' ? 'Celular' : 'Computador') : '—', rotulo: destino ? (destino.outra ? `${destino.nome} · ${destino.dono || 'por perto'}` : destino.nome) : 'para quem', tom: destino ? (destino.outra ? 'up' : 'down') : 'neutro' },
+              { icone: 'laptop', valor: destino ? 'Computador' : '—', rotulo: destino ? (destino.outra ? `${destino.nome} · ${destino.dono || 'por perto'}` : destino.nome) : 'para quem', tom: destino ? (destino.outra ? 'up' : 'down') : 'neutro' },
             ]}
           />
           <${BotaoGrande} icone="arrow-right" onClick=${mandar} disabled=${!destino || !origens.length || mandando} dica=${dica}>
@@ -453,25 +386,24 @@ export function ComputadoresScreen() {
           </${BotaoGrande}>
         </${Resumo}>`
       : null}
-    <${Agora} pontos=${pontos} lanEnvio=${e} lan=${lan} cel=${cel} />
-    <${EsteComputador} lan=${lan} settings=${settings} cel=${celSite} home=${roots?.home} />
+    <${Agora} pontos=${pontos} lanEnvio=${e} lan=${lan} />
+    <${EsteComputador} lan=${lan} settings=${settings} home=${roots?.home} />
   `
 
   if (!conectado) {
-    return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" lado=${html`<${EsteComputador} lan=${lan} settings=${settings} cel=${celSite} home=${roots?.home} />`}>
+    return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" lado=${html`<${EsteComputador} lan=${lan} settings=${settings} home=${roots?.home} />`}>
       <section class="k-passo k-entra" style="--i:1">
         <${Vazio} icone="laptop" titulo="Entre com a sua conta Absolute ZRO" acoes=${html`<${BotaoGrande} icone="user" cheio=${false} onClick=${() => navigate('ajustes')}>Abrir Ajustes</${BotaoGrande}>`}>
-          Os aparelhos se acham pela sua conta. Entre nela neste computador e no outro aparelho (no celular, em sobedesce.com/app).
+          Os aparelhos se acham pela sua conta. Entre nela neste computador e no outro.
         </${Vazio}>
       </section>
     </${Pagina}>`
   }
 
   return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" larga lado=${lado}>
-    ${cel?.redeLocal === 'bloqueada' ? html`<${AvisoRedeLocal} i=${1} />` : null}
-    ${cel?.firewall?.atrapalha ? html`<${AvisoFirewall} fw=${cel.firewall} i=${1} />` : null}
-    ${cel?.ultimaFalha && cel?.redeLocal !== 'bloqueada' && !cel?.firewall?.atrapalha ? html`<${FalhaCelular} f=${cel.ultimaFalha} i=${1} />` : null}
-    ${pedidos.map(({ tipo, p }, i) => (tipo === 'lan' ? html`<${PedidoLan} key=${`l${p.id}`} p=${p} accountId=${accountId} i=${i + 1} />` : html`<${PedidoCelular} key=${`c${p.id}`} p=${p} i=${i + 1} />`))}
+    ${rede?.redeLocal === 'bloqueada' ? html`<${AvisoRedeLocal} i=${1} />` : null}
+    ${rede?.firewall?.atrapalha ? html`<${AvisoFirewall} fw=${rede.firewall} i=${1} />` : null}
+    ${pedidos.map(({ p }, i) => html`<${PedidoLan} key=${`l${p.id}`} p=${p} accountId=${accountId} i=${i + 1} />`)}
 
     ${envioLanVisivel
       ? html`<${EnvioLan} e=${e} pontos=${pontos} onCancelar=${() => attempt(api.post('/api/lan/cancelar', {}))} onNovo=${novo} />`
@@ -481,7 +413,7 @@ export function ComputadoresScreen() {
               ? html`<div class="dv-procurando"><span class="dv-radar" aria-hidden="true"><i></i><i></i></span>Procurando os seus aparelhos…</div>`
               : !aparelhos.length
                 ? html`<${Vazio} icone="users" titulo="Nenhum aparelho por perto agora">
-                    No outro computador, abra o SOBEDESCE e ligue “Dos computadores” em Dispositivos. No celular, abra sobedesce.com/app com a sua conta, no mesmo Wi-Fi.
+                    No outro computador, abra o SOBEDESCE e ligue “Dos computadores” em Dispositivos.
                   </${Vazio}>`
                 : html`${[
                     ['Seus aparelhos', seus],
@@ -518,13 +450,8 @@ export function ComputadoresScreen() {
             </div>
           </${Passo}>
 
-          <${Passo} n=${3} titulo="Como" frase=${destino?.kind === 'cel' ? 'No celular, cada arquivo chega com Salvar (Fotos ou Arquivos).' : 'O nome da pasta lá e se sobe pro Drive junto.'} i=${3}>
-            ${destino?.kind === 'cel'
-              ? html`<div class="dv-cel-nota">
-                  <span class="dv-cel-nota-ic"><${Icon} name="phone" size=${18} strokeWidth=${1.8} /></span>
-                  <span>Mantenha o app aberto no ${destino.nome} enquanto passa. ${destino.outra ? `${destino.dono || 'A pessoa'} toca em Aceitar antes.` : 'Da sua conta, o pedido aparece e é só aceitar.'}</span>
-                </div>`
-              : html`<div class="dv-nome">
+          <${Passo} n=${3} titulo="Como" frase="O nome da pasta lá e se sobe pro Drive junto." i=${3}>
+            ${html`<div class="dv-nome">
                     <label class="k-rot" for="dv-pasta">Pasta no destino</label>
                     <input id="dv-pasta" class="input" type="text" maxlength="120" placeholder=${nomePadrao || 'Nome da pasta'} value=${pasta} onInput=${(ev) => setPasta(ev.currentTarget.value)} />
                   </div>
@@ -547,6 +474,6 @@ export function ComputadoresScreen() {
           </${Passo}>
         `}
 
-    <${Recentes} lan=${lan} cel=${cel} i=${4} />
+    <${Recentes} lan=${lan} i=${4} />
   </${Pagina}>`
 }

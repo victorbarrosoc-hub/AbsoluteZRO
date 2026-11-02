@@ -1,12 +1,15 @@
 # Celular ↔ computador ↔ celular pelo Wi-Fi
 
-> **Desligado até a fase 3** (titular, 02/11/2026, por custo da Vercel). A chave é `P2P_WIFI_LIGADO` no projeto da
-> Vercel (padrão desligado; `1` religa), em `web/src/lib/p2p/ligado.ts`. Desligado: `/api/p2p/espera`, `/aparelhos` e
-> `/sinal` respondem **503** `{ erro: "wifi_desligado", proxima_em: 120000 }` com `Retry-After: 120`, na hora, antes da
-> sessão e do banco. `/api/eu` manda `recursos.wifi: false`: o celular não começa a espera e esconde a aba Aparelhos e
-> o "No Wi-Fi" dos Ajustes; o computador para a espera e a lista no primeiro 503 e some com o "Do celular" em
-> Dispositivos (computador ↔ computador segue). Apps antigos tratam o 503 como falha e recuam (celular até 30 s,
-> computador até 60 s), sem laço apertado e sem sair da conta. Código e testes ficam; religar é só trocar a chave.
+> **Descontinuado em 02/11/2026** (titular, por custo da Vercel; sem data para voltar). Fica só "Entre computadores"
+> (docs/LAN.md). Saíram do produto: a aba Aparelhos, o "Mandar para…" e o "No Wi-Fi" do celular; o motor
+> (`src/celular/wifi.js`), as rotas locais (`src/server/celular.js`), a janela oculta do WebRTC (`public/celular/*`) e a
+> parte de celular em Dispositivos e no painel do computador; e o código do site (`lib/p2p/sinais.ts`). As rotas
+> `/api/p2p/espera`, `/aparelhos` e `/sinal` ficam só para os apps antigos: **503** `{ erro: "p2p_descontinuado",
+> proxima_em: 120000 }` com `Retry-After: 120`, na hora, sem sessão nem banco (`web/src/lib/p2p/descontinuado.ts`). O
+> app antigo trata como falha e recua (celular até 30 s, computador até 60 s), sem laço e sem sair da conta
+> (`test/celular-p2p-antigo.test.js`). Ficam porque o Entre computadores usa: `src/celular/rede-local.js` e
+> `firewall.js` (agora em `src/server/rede.js`, avisos em Dispositivos). As tabelas `p2p_aparelhos` e `p2p_sinais`
+> ficam no banco, sem uso. O resto deste documento é o registro de como funcionava.
 
 
 Celulares (app em `/app/`, com a conta) e o app do computador trocam arquivos direto pela rede de casa ou do

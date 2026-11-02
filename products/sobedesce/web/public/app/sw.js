@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v80'
+const CACHE = 'sobedesce-app-v81'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -56,10 +56,6 @@ const SHELL = [
   './lib/ligar-zro.js',
   './lib/midia-conta.js',
   './lib/midia-modos.js',
-  './lib/p2p.js',
-  './lib/p2p-canal.js',
-  './lib/p2p-gravar.js',
-  './lib/p2p-util.js',
   './lib/now-playing.js',
   './lib/picker.js',
   './lib/platform.js',
@@ -78,7 +74,6 @@ const SHELL = [
   './lib/uploader.js',
   './lib/wakelock.js',
   './components/account.js',
-  './components/aparelhos.js',
   './components/browser.js',
   './components/calculadora.js',
   './components/computador.js',
@@ -92,7 +87,6 @@ const SHELL = [
   './components/ligar-zro.js',
   './components/install-hint.js',
   './components/main.js',
-  './components/p2p.js',
   './components/player.js',
   './components/preview.js',
   './components/proxies.js',

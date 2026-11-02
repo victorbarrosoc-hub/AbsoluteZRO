@@ -15,7 +15,6 @@ import { HistSheet } from './components/transferencias.js'
 import { SheetHost, Toasts, useEngine } from './components/ui.js'
 import { LigarZroFaixa, LigarZroTela } from './components/ligar-zro.js'
 import { filaAndando, modoLigar } from './lib/ligar-zro.js'
-import { useP2pAviso } from './components/p2p.js'
 import { engine, summarize } from './lib/uploader.js'
 import { startBridge } from './lib/stream.js'
 import { RefAtalhoSheet, RefDeleteSheet, RefItemSheet, RefLinkSheet, RefMenuSheet, RefNameSheet, RefSaveSheet } from './components/referencias.js'
@@ -29,8 +28,6 @@ import { ProxySheet } from './components/proxies.js'
 import { RelaySheet } from './components/relay.js'
 import { CopySheet } from './components/copiar.js'
 import { FramesPostSheet } from './components/criar.js'
-import { P2pEnvioSheet, P2pReceberSheet } from './components/p2p.js'
-import { startP2p } from './lib/p2p.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
 import { linkDoHash } from './lib/drive-link.js'
@@ -57,8 +54,6 @@ const SHEETS = {
   relay: RelaySheet,
   copiar: CopySheet,
   framesPost: FramesPostSheet,
-  p2pEnvio: P2pEnvioSheet,
-  p2pReceber: P2pReceberSheet,
 }
 
 // Android (share_target nos manifestos): /app/?compartilhar=1&title=&text=&url=. O navegador pode trocar a query
@@ -116,7 +111,6 @@ if (!LAN) {
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
   window.addEventListener('hashchange', () => {
     if (location.hash === '#referencias') setState({ tab: 'refs' })
-    if (location.hash === '#aparelhos') setState({ tab: 'ap' }) // sem o Wi-Fi ligado (recursos.wifi), Tabs mostra o Início
     if (location.hash === '#z') setState({ tab: 'z' })
     if (location.hash === '#computador') openComputer()
     // /app/#drive/<pasta>, #arquivo/<id>, #baixar/<id> (botões Abrir e Baixar da Z) com o app já aberto.
@@ -128,7 +122,6 @@ if (!LAN) {
   subscribe((st) => {
     if (st.auth.status !== 'signedIn') return
     startPc()
-    startP2p() // celular ↔ computador pelo Wi-Fi (docs/CELULAR-WIFI.md)
     if (wantComputer) {
       wantComputer = false
       openComputer()
@@ -164,14 +157,13 @@ takeZroErro()
 
 /**
  * Conta antiga sem vínculo com a Absolute ZRO (lib/ligar-zro.js): a tela inteira no lugar das abas; com envio andando
- * (fila ou Wi-Fi), só a faixa em cima e as abas continuam. Só este pedaço acompanha a fila, e só enquanto pede.
+ * (fila), só a faixa em cima e as abas continuam. Só este pedaço acompanha a fila, e só enquanto pede.
  */
 function ComLigarZro({ children }) {
   useEngine()
-  const p2p = useP2pAviso()
   const temDrive = useApp((s) => (s.drives || []).length > 0)
   const zroErro = useApp((s) => s.zroErro)
-  const modo = modoLigar(getState(), filaAndando(engine.items) || p2p === 'andando')
+  const modo = modoLigar(getState(), filaAndando(engine.items))
   if (modo === 'tela') return html`<${LigarZroTela} temDrive=${temDrive} erro=${zroErro} />`
   return html`<${LigarZroFaixa} />${children}`
 }

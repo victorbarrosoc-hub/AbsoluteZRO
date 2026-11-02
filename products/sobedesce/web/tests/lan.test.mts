@@ -38,23 +38,16 @@ describe("entre computadores (presença na rede)", () => {
   });
   after(() => amb.fechar());
 
-  test("com o Wi-Fi do celular desligado (P2P_WIFI_LIGADO sem valor), entre computadores segue ligado", async () => {
-    const antes = process.env.P2P_WIFI_LIGADO;
-    delete process.env.P2P_WIFI_LIGADO;
-    try {
-      const ligado = await import("../src/lib/p2p/ligado");
-      assert.equal(ligado.p2pWifiLigado(), false);
+  test("com o Wi-Fi do celular descontinuado (/api/p2p/* em 503), entre computadores segue ligado", async () => {
+    {
       const rEspera = await import("../src/app/api/p2p/espera/route");
-      assert.equal((await rEspera.GET(pedido("/api/p2p/espera"))).status, 503, "o p2p do celular está desligado");
+      assert.equal(rEspera.GET().status, 503, "o p2p do celular está descontinuado");
       const lia = await pessoa("Lia", "lia@exemplo.com");
       const ok = await rPresenca.POST(pedido("/api/lan/presenca", { bearer: lia.mac, corpo: { v: 1, enderecos: ["192.168.0.30"], porta: 4320, chave: CHAVE } }));
       assert.equal(ok.status, 200, "/api/lan/presenca responde");
       const doPc = await corpo(await rComp.GET(pedido("/api/lan/computadores", { bearer: lia.pc })));
       assert.equal(doPc.computadores.length, 1, "/api/lan/computadores lista o Mac");
       assert.notEqual((await rPerto.GET(pedido("/api/lan/proximos", { bearer: lia.pc }))).status, 503, "/api/lan/proximos não é desligado");
-    } finally {
-      if (antes === undefined) delete process.env.P2P_WIFI_LIGADO;
-      else process.env.P2P_WIFI_LIGADO = antes;
     }
   });
 

@@ -151,7 +151,7 @@ describe("recurso liberado", () => {
     assert.equal(recursos.betaAberto({ SOBEDESCE_BETA_ABERTO: "1" }), true);
     const r = await rColecoes.GET(pedido("/api/referencias/colecoes", comCookie(ana)));
     assert.equal(r.status, 200);
-    assert.deepEqual((await corpo(await eu.GET(pedido("/api/eu", comCookie(ana))))).recursos, { referencias: true, wifi: false });
+    assert.deepEqual((await corpo(await eu.GET(pedido("/api/eu", comCookie(ana))))).recursos, { referencias: true });
   });
 
   test("beta fechado: 403 { ok: false, motivo: 'plano' } até ter o plano Produtora ou ser admin", async () => {
@@ -164,7 +164,7 @@ describe("recurso liberado", () => {
       assert.equal(c.ok, false);
       assert.equal(c.motivo, "plano");
       assert.equal((await rFila.GET(pedido("/api/referencias/fila", { bearer: ana.mac }))).status, 403);
-      assert.deepEqual((await corpo(await eu.GET(pedido("/api/eu", comCookie(ana))))).recursos, { referencias: false, wifi: false });
+      assert.deepEqual((await corpo(await eu.GET(pedido("/api/eu", comCookie(ana))))).recursos, { referencias: false });
 
       assert.equal(await recursos.trocarPlano(ana.id, "pro"), true);
       assert.equal((await rColecoes.GET(pedido("/api/referencias/colecoes", comCookie(ana)))).status, 403, "Pro não tem Referências");

@@ -3,7 +3,6 @@ import { semAcesso, usuarioDaRequisicao, SEM_SESSAO } from "@/lib/auth/requisica
 import { listarContas } from "@/lib/google/contas";
 import { json, lerCookie, origemDoPedido, serializarCookie } from "@/lib/http";
 import { recursosDe } from "@/lib/recursos";
-import { p2pWifiLigado } from "@/lib/p2p/ligado";
 import { cookieSeguro } from "@/lib/site";
 import { caminhoLigarZro, precisaLigarZro } from "@/lib/zro/ligar";
 
@@ -37,6 +36,5 @@ export async function GET(req: Request) {
   // `usuario` é a conta da pessoa (a Absolute ZRO, como o Apple ID): nome e foto do "você" no topo dos apps. A foto do
   // Google fica em `contas` (o Drive conectado), nunca aqui.
   const usuario = { ...atual.usuario, fotoUrl: atual.fotoZro };
-  // `wifi`: o envio entre aparelhos pelo Wi-Fi (desligado até a fase 3): o app não começa a espera nem mostra a aba.
-  return json({ usuario, contas, recursos: { ...recursos, wifi: p2pWifiLigado() }, zro }, 200, extras);
+  return json({ usuario, contas, recursos, zro }, 200, extras);
 }

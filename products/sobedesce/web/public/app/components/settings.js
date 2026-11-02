@@ -10,7 +10,6 @@ import { Icon } from './icons.js'
 import { SheetHead } from './ui.js'
 import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
 import { Avatar, contaComoUser } from './main.js'
-import { AceitarOutros } from './p2p.js'
 import { DICA_MODO, NOME_MODO, modoDe } from '../lib/modo-drive.js'
 
 /** Drive híbrido: o modo deste Drive numa linha, com o que muda recolhido (os mesmos textos de Sua conta no site). */
@@ -106,7 +105,7 @@ function Conta({ account, drives }) {
 }
 
 export function SettingsSheet() {
-  const { user, quota, lan, account, drives, pcs, drive, wifiOn } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive, wifiOn: s.recursos?.wifi === true }))
+  const { user, quota, lan, account, drives, pcs, drive } = useApp((s) => ({ user: s.user, quota: s.quota, lan: s.lan, account: s.account, drives: s.drives, pcs: s.pc.computadores, drive: s.drive }))
   const [settings, setSettings] = useState(getSettings())
   const network = networkOf(settings)
 
@@ -152,12 +151,7 @@ export function SettingsSheet() {
             <${Linhas}>
               <${Linha} icone="transfers" titulo="Transferências do computador" sub=${pcSummary(pcs)} onClick=${() => openSheet('computador')} />
             </${Linhas}>
-          </${Passo}>
-          ${wifiOn
-            ? html`<${Passo} icone="users" cor="warn" titulo="No Wi-Fi" i=${4}>
-                <${AceitarOutros} />
-              </${Passo}>`
-            : null}`}
+          </${Passo}>`}
 
       <${Familia} />
 
