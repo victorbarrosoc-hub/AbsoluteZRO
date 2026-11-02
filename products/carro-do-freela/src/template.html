@@ -2117,6 +2117,7 @@ body.sem-rodape{padding-bottom:0}
    geometria de scripts/marca/vetor (27/out: saiu o feixe de luz antigo) */
 .lgzro .ic svg{display:block}
 .lgn-troca{text-align:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),14px) 0 0;font-size:14px;color:var(--cal-fraco)}
+.lgn-troca.lgn-outra{margin-top:4px;font-size:13px}
 .lgn-nota{display:flex;gap:8px;align-items:flex-start;justify-content:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),12px) 0 0;
   font-size:12.5px;line-height:1.4;color:var(--cal-tenue);text-align:left}
 .lgn-nota svg{flex:none;margin-top:1px;color:var(--livre,#3FCB7E)}
@@ -8212,6 +8213,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <span id="lg-zro-t">Continuar com Absolute ZRO</span>
       </button>
       <p class="lgn-troca" data-lgi style="--i:6"><span id="lg-pergunta">Ainda não tem conta?</span> <button type="button" class="lgn-link" id="lg-cad">Criar conta</button></p>
+      <p class="lgn-troca lgn-outra" data-lgi style="--i:6" id="lg-outra-l" hidden><button type="button" class="lgn-link" id="lg-outra">Usar outra conta</button></p>
       <p class="lgn-nota" data-lgi style="--i:7" id="lg-nota"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.6 12.2l2.3 2.3 4.6-4.8" stroke-linecap="round"/></svg><span>Nesta prévia, e-mail e senha não ficam guardados.</span></p>
       <!-- ⚠️ SEM DIREITO DE USO (25/out · 2): quem entrou com a Absolute ZRO
            mas não tem o Carro liberado para a organização vê só isto. Quem
@@ -31386,6 +31388,8 @@ function pintarZro(){
   const antigo=false;
   form.hidden=!antigo; if(ou) ou.hidden=!antigo;
   const g=document.querySelector("#lg-cx [data-login=\"Google\"]"); if(g) g.hidden=!antigo;
+  /* "Usar outra conta" (02/11/2026, titular): sem isto o Carro reaproveita calado a conta aberta na Absolute ZRO */
+  const ol=v("lg-outra-l"); if(ol) ol.hidden=criar;
   v("lg-zro-t").textContent=ZRO_CONTA?"Continuar como "+(ZRO_CONTA.nome||ZRO_CONTA.email||"você")
     :(criar?"Criar conta Absolute ZRO":"Entrar com Absolute ZRO");
   if(n) n.textContent=ZRO_CONTA&&ZRO_CONTA.email?"Conta Absolute ZRO: "+ZRO_CONTA.email
@@ -31415,6 +31419,16 @@ v("lg-zro").onclick=()=>{
   location.href="/api/zro/entrar?volta="+encodeURIComponent(volta)+(criar?"&criar=1":"");
 };
 v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
+/* sai da conta deste site (o /sair revoga o acesso ao HUB) e pede a conta de novo ao HUB, mesmo com sessão aberta lá */
+function zroOutraConta(){
+  const q=new URLSearchParams();
+  if(LG_TIPO==="contratante") q.set("lado","contratante");
+  const volta=location.pathname+(q.toString()?"?"+q:"");
+  const ir=()=>{ location.href="/api/zro/entrar?outra=1&volta="+encodeURIComponent(volta) };
+  ZRO_CONTA=null;
+  fetch("/api/zro/sair",{method:"POST",credentials:"same-origin",cache:"no-store"}).then(ir,ir);
+}
+v("lg-outra").onclick=zroOutraConta;
 /* ======================= EM DESENVOLVIMENTO (28/out) =======================
    O portão do lançamento na TELA. Fechado (build do domínio com
    cdf-release=closed, ou /api/zro/eu dizendo release:"closed") e sem a conta
