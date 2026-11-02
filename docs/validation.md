@@ -22,6 +22,36 @@ Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei
 `products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
 Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
 
+## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
+
+- `tests/quasar-ia.test.ts` (5) cobre a cor:
+  - em repouso e no trabalho local fica azul;
+  - pensando, a transição é suave e chega ao violeta;
+  - volta ao azul;
+  - com "reduzir movimento", já fica no violeta.
+- Conferido em captura do motor real: repouso, começo da transição, Z pensando e volta ao azul.
+- E2E do motor (desempenho), assistente, estúdio e criar com a Z passando.
+
+## Quasar: trilha e efeitos com a Z (02/11/2026)
+
+Branch `claude/quasar-trilha-efeitos`, em `products/nossom`.
+
+- `tests/mixagem.test.ts` (4):
+  - só trilha: o grafo de antes;
+  - trilha e efeitos: cada efeito no seu ponto;
+  - só efeitos: a voz passa direto;
+  - sem nada, não há mixagem.
+- `tests/ia-avancada.test.ts` cobre a trilha e o efeito no servidor:
+  - texto e duração validados;
+  - minutos reservados;
+  - não aparecem como tratamento em andamento;
+  - corpo enviado ao parceiro (trilha instrumental, efeito com duração);
+  - nada vai à GPU.
+- E2E `criar-com-z.spec.ts`:
+  - cria a trilha e um efeito no trecho de 1,5 s e libera os dois pedidos;
+  - mixa voz + trilha + efeito sem erro.
+- Não testado com o parceiro real: a chave só existe em produção.
+
 ## Quasar: mesa de faixas (02/11/2026)
 
 Branch `claude/quasar-mesa`, em `products/nossom`.

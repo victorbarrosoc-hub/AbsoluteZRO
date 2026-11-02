@@ -1,6 +1,8 @@
 import { inspect, decode, encaixarDuracao, encodeWav, measure } from './audio';
 import {
+  efeitoZ,
   iaAvancada,
+  trilhaZ,
   validAdvancedReport,
   isCloudPreset,
   isVoiceToolPreset,
@@ -318,4 +320,74 @@ export async function releaseCloudJob(id: string) {
 }
 export async function cancelCloudJob(id: string) {
   return api({ action: 'cancel', id });
+}
+
+/**
+ * A Z cria um som por texto (trilha instrumental ou efeito). Usa os minutos do plano; se falhar, o servidor devolve.
+ * Devolve o som conferido (decodifica antes de entregar) e libera o pedido.
+ */
+export async function criarComZ(
+  tipo: 'trilha' | 'efeito',
+  texto: string,
+  segundos: number,
+  options: {
+    signal: AbortSignal;
+    onStatus: (message: string) => void;
+    onUsage: (usage: AudioUsage) => void;
+  },
+) {
+  const preset = tipo === 'trilha' ? trilhaZ.id : efeitoZ.id;
+  options.onStatus(
+    tipo === 'trilha' ? 'A Z está compondo a trilha…' : 'A Z está criando o efeito…',
+  );
+  const started = await api({ action: 'gerar', tipo, texto, segundos }, options.signal);
+  if (started.usage) options.onUsage(started.usage);
+  const id: string = started.id;
+  let encerrado = false;
+  try {
+    let status: Record<string, unknown> | undefined;
+    const deadline = Date.now() + 9 * 60000;
+    while (Date.now() < deadline) {
+      if (options.signal.aborted) throw new CloudCancelled();
+      const response = await fetch(`/api/audio/jobs?id=${id}`, {
+        signal: options.signal,
+        cache: 'no-store',
+      });
+      status = await response.json();
+      if (!response.ok) throw new Error(String(status?.error || 'Não foi possível consultar a Z.'));
+      if (status?.status === 'completed') break;
+      if (['failed', 'cancelled', 'released'].includes(String(status?.status))) {
+        encerrado = true;
+        throw new Error('A Z não conseguiu criar este som. Seus minutos foram devolvidos.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    if (
+      status?.status !== 'completed' ||
+      !validAdvancedReport(status.report) ||
+      status.report.preset !== preset ||
+      !Array.isArray(status.downloadUrls)
+    )
+      throw new Error('A Z ainda está criando. Tente de novo em instantes.');
+    options.onStatus('Recebendo o som…');
+    const response = await fetch(String(status.downloadUrls[0]), {
+      signal: options.signal,
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Não foi possível baixar o som criado.');
+    const blob = new Blob([await response.blob()], { type: 'audio/mpeg' });
+    if (blob.size !== status.report.totalBytes) throw new Error('O som chegou incompleto.');
+    const buffer = await decode(blob).catch(() => null);
+    if (!buffer || buffer.duration < 0.3) throw new Error('O som criado não é um áudio válido.');
+    encerrado = true;
+    return { blob, duracao: buffer.duration };
+  } catch (error) {
+    if (options.signal.aborted && !encerrado) {
+      await cancelCloudJob(id).catch(() => {});
+      throw new CloudCancelled('Pedido cancelado. Seus minutos foram devolvidos.');
+    }
+    throw error;
+  } finally {
+    if (encerrado) await releaseCloudJob(id).catch(() => {});
+  }
 }

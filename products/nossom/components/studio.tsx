@@ -88,7 +88,13 @@ import { WavePlayer } from './wave-player';
 import MesaFaixas from './mesa-faixas';
 import { PassosLista, PassosTrilho, passoDe, slugPasso } from './passos-nav';
 import { player } from '@/lib/player';
-import { restoreCloud, releaseCloudJob, cancelCloudJob, CloudFailed } from '@/lib/cloud-audio';
+import {
+  restoreCloud,
+  releaseCloudJob,
+  cancelCloudJob,
+  CloudFailed,
+  criarComZ,
+} from '@/lib/cloud-audio';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import {
   operations,
@@ -382,6 +388,14 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [region, setRegion] = useState<{ start: number; end: number } | null>(null),
     [music, setMusic] = useState<{ blob: Blob; name: string } | null>(null),
     [musicGain, setMusicGain] = useState(0.25),
+    // Trilha e efeitos criados pela Z (titular, 02/11/2026). Efeitos entram na mixagem, cada um no seu segundo.
+    [efeitos, setEfeitos] = useState<{ id: string; blob: Blob; nome: string; em: number }[]>([]),
+    [pedidoZ, setPedidoZ] = useState({
+      trilha: '',
+      segundosTrilha: 0,
+      efeito: '',
+      segundosEfeito: 3,
+    }),
     [recording, setRecording] = useState(false),
     [recordSeconds, setRecordSeconds] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null),
@@ -395,6 +409,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [usage, setUsage] = useState<AudioUsage | null>(null);
   const [usageError, setUsageError] = useState('');
   const [cloudReady, setCloudReady] = useState<boolean | null>(null);
+  // A Z está trabalhando (nuvem, trilha ou efeito): a Coroa do aviso fica violeta; no trabalho local, azul.
+  const [zAgindo, setZAgindo] = useState(false);
   // Reserva do Melhorar com a Z (IA avançada) e a Quasar Presence logo depois da IA, ligada por padrão.
   const [advancedReady, setAdvancedReady] = useState(false);
   const [presenceAfterAI, setPresenceAfterAI] = useState(true);
@@ -719,6 +735,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setProgress(0);
       operationLock.current = false;
       cloudAbort.current = null;
+      setZAgindo(false);
       void refreshCloud();
       void refreshUsage();
     }
@@ -868,8 +885,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         throw new Error(
           'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
         );
-      if (operation === 'mix' && !music)
-        throw new Error('Envie uma faixa de música antes de mixar.');
+      if (operation === 'mix' && !music && !efeitos.length)
+        throw new Error('Adicione uma trilha ou um efeito antes de mixar.');
       if (operation === 'mix' && region)
         throw new Error('Para mixar, desative a seleção de trecho. A mixagem usa o áudio inteiro.');
       const effectBase =
@@ -890,6 +907,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           );
         const controller = new AbortController();
         cloudAbort.current = controller;
+        setZAgindo(true);
         const original = project.versions[0];
         const sendSource = () => {
           if (project.hasVideo || isVideoFile(project.originalFile))
@@ -1004,6 +1022,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           peak,
           music: music?.blob,
           musicGain,
+          efeitos:
+            operation === 'mix' ? efeitos.map((e) => ({ blob: e.blob, em: e.em })) : undefined,
           region: region ?? undefined,
           onStatus: setBusy,
           onProgress: setProgress,
@@ -1092,6 +1112,37 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                 : 'Voz melhorada. Ouça e escolha o acabamento abaixo.',
         );
       } else notify('Nova versão salva. Compare com o original.');
+    });
+  }
+  async function criarSomComZ(tipo: 'trilha' | 'efeito') {
+    if (!project || !version) return;
+    const texto = (tipo === 'trilha' ? pedidoZ.trilha : pedidoZ.efeito).trim();
+    if (texto.length < 3) return;
+    const duracao = version.info.duration;
+    // O efeito entra onde começa o trecho selecionado; a seleção sai para a mixagem usar o áudio inteiro.
+    const em = Math.max(0, Math.min(region?.start ?? 0, Math.max(0, duracao - 0.1)));
+    await run(async () => {
+      const controller = new AbortController();
+      cloudAbort.current = controller;
+      setZAgindo(true);
+      const segundos =
+        tipo === 'trilha'
+          ? Math.min(300, Math.max(10, Math.round(pedidoZ.segundosTrilha || duracao)))
+          : pedidoZ.segundosEfeito;
+      const som = await criarComZ(tipo, texto, segundos, {
+        signal: controller.signal,
+        onStatus: setBusy,
+        onUsage: setUsage,
+      });
+      const nome = texto.length > 32 ? texto.slice(0, 31) + '…' : texto;
+      if (tipo === 'trilha') {
+        setMusic({ blob: som.blob, name: `Trilha da Z · ${nome}` });
+        notify('Trilha criada. Ajuste o nível e mixe.');
+      } else {
+        setEfeitos((lista) => [...lista, { id: crypto.randomUUID(), blob: som.blob, nome, em }]);
+        setRegion(null);
+        notify(`Efeito criado em ${formatTime(em)}. Mixe quando quiser.`);
+      }
     });
   }
   async function addMusic(file: File) {
@@ -1741,7 +1792,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             <div className="processing-banner" role="status">
               {/* a Coroa viva pensando no lugar da onda 3D antiga e do giro (titular, 02/11/2026) */}
               <div className="processing-quasar" aria-hidden="true">
-                <QuasarIA estado="thinking" />
+                <QuasarIA estado={zAgindo ? 'thinking' : 'working'} />
               </div>
               <div>
                 <strong>{busy}</strong>
@@ -3105,6 +3156,127 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             A trilha se repete até o fim do áudio e abaixa automaticamente quando há
                             sinal na faixa principal.
                           </p>
+                          {advancedReady && (
+                            <div className="z-criar" role="group" aria-label="Criar com a Z">
+                              <label className="field-label" htmlFor="z-trilha">
+                                CRIAR TRILHA COM A Z
+                              </label>
+                              <input
+                                id="z-trilha"
+                                className="z-criar-texto"
+                                placeholder="Ex.: lo-fi calmo com piano"
+                                maxLength={300}
+                                value={pedidoZ.trilha}
+                                disabled={!!busy}
+                                onChange={(e) => setPedidoZ({ ...pedidoZ, trilha: e.target.value })}
+                              />
+                              <div className="z-criar-linha">
+                                <select
+                                  aria-label="Duração da trilha"
+                                  value={pedidoZ.segundosTrilha}
+                                  disabled={!!busy}
+                                  onChange={(e) =>
+                                    setPedidoZ({
+                                      ...pedidoZ,
+                                      segundosTrilha: Number(e.target.value),
+                                    })
+                                  }
+                                >
+                                  <option value={0}>Do tamanho do áudio</option>
+                                  <option value={30}>30 s</option>
+                                  <option value={60}>1 min</option>
+                                  <option value={120}>2 min</option>
+                                </select>
+                                <button
+                                  className="button secondary small z-criar-botao"
+                                  disabled={!!busy || pedidoZ.trilha.trim().length < 3}
+                                  onClick={() => void criarSomComZ('trilha')}
+                                >
+                                  <Sparkles size={14} /> Criar trilha
+                                </button>
+                              </div>
+                              <label className="field-label" htmlFor="z-efeito">
+                                EFEITO COM A Z
+                              </label>
+                              <input
+                                id="z-efeito"
+                                className="z-criar-texto"
+                                placeholder="Ex.: whoosh rápido, aplausos, chuva leve"
+                                maxLength={300}
+                                value={pedidoZ.efeito}
+                                disabled={!!busy}
+                                onChange={(e) => setPedidoZ({ ...pedidoZ, efeito: e.target.value })}
+                              />
+                              <div className="z-criar-linha">
+                                <select
+                                  aria-label="Duração do efeito"
+                                  value={pedidoZ.segundosEfeito}
+                                  disabled={!!busy}
+                                  onChange={(e) =>
+                                    setPedidoZ({
+                                      ...pedidoZ,
+                                      segundosEfeito: Number(e.target.value),
+                                    })
+                                  }
+                                >
+                                  {[1, 3, 5, 10, 20, 30].map((n) => (
+                                    <option key={n} value={n}>
+                                      {n} s
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  className="button secondary small z-criar-botao"
+                                  disabled={!!busy || pedidoZ.efeito.trim().length < 3}
+                                  onClick={() => void criarSomComZ('efeito')}
+                                >
+                                  <Sparkles size={14} /> Criar efeito
+                                </button>
+                              </div>
+                              {efeitos.length > 0 && (
+                                <ul className="z-efeitos" aria-label="Efeitos na mixagem">
+                                  {efeitos.map((e) => (
+                                    <li key={e.id}>
+                                      <span>{e.nome}</span>
+                                      <label>
+                                        em
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          step={0.1}
+                                          max={Math.max(0, version.info.duration - 0.1)}
+                                          value={e.em}
+                                          disabled={!!busy}
+                                          aria-label={`Segundo em que ${e.nome} entra`}
+                                          onChange={(ev) => {
+                                            const em = Math.max(0, Number(ev.target.value) || 0);
+                                            setEfeitos((lista) =>
+                                              lista.map((x) => (x.id === e.id ? { ...x, em } : x)),
+                                            );
+                                          }}
+                                        />
+                                        s
+                                      </label>
+                                      <button
+                                        className="z-efeito-tirar"
+                                        aria-label={`Tirar ${e.nome}`}
+                                        disabled={!!busy}
+                                        onClick={() =>
+                                          setEfeitos((lista) => lista.filter((x) => x.id !== e.id))
+                                        }
+                                      >
+                                        ×
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              <p className="field-hint">
+                                Selecione um trecho na onda para o efeito entrar ali. Cada pedido
+                                usa seus minutos da Z (mínimo 1 min).
+                              </p>
+                            </div>
+                          )}
                         </>
                       )}
                       {!autoEnabled && !cloudOperation && (

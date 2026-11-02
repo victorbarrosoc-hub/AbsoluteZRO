@@ -3,7 +3,14 @@
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET, POST } from '../app/api/audio/jobs/route';
-import { iaAvancada, outputParts, validAdvancedReport, validJobReport } from '../lib/restoration';
+import {
+  efeitoZ,
+  iaAvancada,
+  outputParts,
+  trilhaZ,
+  validAdvancedReport,
+  validJobReport,
+} from '../lib/restoration';
 import { nomeDoAudio, segundoPlano } from '../lib/server/ia-avancada';
 import { encaixarDuracao } from '../lib/audio';
 import { authEnvironment, testCookie, testUser } from './helpers/auth';
@@ -70,6 +77,8 @@ function ambiente(parceiro: (init?: RequestInit) => Response | Promise<Response>
     guardado: null as Blob | null,
     tarefas: [] as Promise<void>[],
     cabecalho: '',
+    endereco: '',
+    corpo: '',
   };
   segundoPlano.rodar = (tarefa) => {
     estado.tarefas.push(tarefa());
@@ -118,6 +127,8 @@ function ambiente(parceiro: (init?: RequestInit) => Response | Promise<Response>
     if (url.startsWith('https://api.elevenlabs.io/')) {
       estado.chamadas++;
       estado.cabecalho = new Headers(init?.headers).get('xi-api-key') ?? '';
+      estado.endereco = url;
+      estado.corpo = typeof init?.body === 'string' ? init.body : '';
       return parceiro(init);
     }
     if (url.includes('api.runpod.ai')) {
@@ -228,6 +239,64 @@ test('IA avançada: sem chave, o pedido nem começa; passou do prazo, encerra', 
     assert.equal((await status(novo.id)).status, 'running');
     estado.job.updated_at = new Date(Date.now() - 9 * 60000).toISOString();
     assert.equal((await status(novo.id)).status, 'failed');
+  } finally {
+    desfazer();
+  }
+});
+
+test('a Z cria trilha e efeito no servidor, com os minutos do plano e sem aparecer como tratamento', async () => {
+  const { estado, desfazer } = ambiente(
+    () => new Response(new Uint8Array(500).fill(3), { headers: { 'Content-Type': 'audio/mpeg' } }),
+  );
+  try {
+    for (const [tipo, corpoInvalido] of [
+      ['trilha', { segundos: 5 }],
+      ['efeito', { segundos: 31 }],
+    ] as const)
+      assert.equal(
+        (await POST(pedido({ action: 'gerar', tipo, texto: 'chuva leve', ...corpoInvalido })))
+          .status,
+        400,
+      );
+    assert.equal(
+      (await POST(pedido({ action: 'gerar', tipo: 'trilha', texto: 'ok', segundos: 30 }))).status,
+      400,
+    );
+    const trilha = await POST(
+      pedido({ action: 'gerar', tipo: 'trilha', texto: '  lo-fi   calmo  ', segundos: 30 }),
+    );
+    assert.equal(trilha.status, 200);
+    const { id, usage } = await trilha.json();
+    assert.equal(usage.used, 60, 'reservou os minutos');
+    // em andamento, a trilha não aparece como tratamento do projeto
+    assert.equal((await (await GET(pedido())).json()).pending, null);
+    await Promise.all(estado.tarefas);
+    assert.equal(estado.gpu, 0);
+    assert.ok(estado.endereco.startsWith('https://api.elevenlabs.io/v1/music?'));
+    assert.deepEqual(JSON.parse(estado.corpo), {
+      prompt: 'lo-fi calmo',
+      music_length_ms: 30000,
+      force_instrumental: true,
+    });
+    const pronta = await status(id);
+    assert.equal(pronta.status, 'completed');
+    assert.equal(pronta.report.preset, trilhaZ.id);
+    assert.equal(pronta.downloadUrls.length, 1);
+
+    estado.job = null;
+    const efeito = await POST(
+      pedido({ action: 'gerar', tipo: 'efeito', texto: 'whoosh rápido', segundos: 3 }),
+    );
+    assert.equal(efeito.status, 200);
+    await Promise.all(estado.tarefas);
+    assert.ok(estado.endereco.startsWith('https://api.elevenlabs.io/v1/sound-generation?'));
+    assert.deepEqual(JSON.parse(estado.corpo), {
+      text: 'whoosh rápido',
+      duration_seconds: 3,
+      prompt_influence: 0.5,
+    });
+    assert.equal((await status((await efeito.json()).id)).report.preset, efeitoZ.id);
+    assert.equal(estado.chamadas, 2);
   } finally {
     desfazer();
   }

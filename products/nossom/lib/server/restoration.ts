@@ -3,12 +3,17 @@ import { supabaseConfig } from './supabase';
 import { audioUsage } from './usage';
 import {
   IA_AVANCADA_PRAZO_MS,
+  gerarSom,
   iaAvancadaConfigurada,
   isolarVoz,
   segundoPlano,
 } from './ia-avancada';
 import {
+  efeitoZ,
   iaAvancada,
+  isServerPreset,
+  trilhaZ,
+  type ServerPreset,
   type AdvancedReport,
   CLOUD_PART_BYTES,
   type CloudReport,
@@ -31,7 +36,12 @@ export type RestorationJob = {
   duration: number;
   provider_id: string | null;
   report:
-    CloudReport | TranscriptReport | StemsReport | AdvancedReport | { preset: CloudPreset } | null;
+    | CloudReport
+    | TranscriptReport
+    | StemsReport
+    | AdvancedReport
+    | { preset: CloudPreset | ServerPreset }
+    | null;
   created_at: string;
   updated_at?: string;
 };
@@ -171,6 +181,89 @@ async function processarAvancado(job: RestorationJob) {
     await jobAction('fail', job.user_id, job.id).catch(() => {});
   }
 }
+/** A Z cria o som pedido e guarda o resultado. Falhou, encerra e devolve os minutos. */
+async function processarGeracao(
+  job: RestorationJob,
+  tipo: 'trilha' | 'efeito',
+  texto: string,
+  segundos: number,
+) {
+  const inicio = Date.now();
+  try {
+    const som = await gerarSom(tipo, texto, segundos);
+    await storageObject(job, 'output', 0, som);
+    const report: AdvancedReport = {
+      preset: tipo === 'trilha' ? trilhaZ.id : efeitoZ.id,
+      chunks: [{ index: 0, bytes: som.size }],
+      totalBytes: som.size,
+    };
+    await jobAction('update', job.user_id, job.id, { status: 'completed', report });
+    await service('/rest/v1/rpc/nossom_job_runtime', 'POST', {
+      p_id: job.id,
+      p_user: job.user_id,
+      p_runtime: Math.min(3600000, Date.now() - inicio),
+    }).catch(() => {});
+  } catch (error) {
+    console.warn(
+      'Quasar job ' +
+        job.id +
+        ' ' +
+        tipo +
+        ' failed' +
+        (error instanceof Error ? ': ' + error.message.slice(0, 60) : ''),
+    );
+    await jobAction('fail', job.user_id, job.id).catch(() => {});
+  }
+}
+/**
+ * Pedido de som da Z: sem envio de arquivo, mas com a mesma fila, os mesmos minutos do plano (mínimo 1 min por pedido),
+ * o mesmo limite diário e a mesma devolução quando falha.
+ */
+export async function gerarComZ(
+  request: Request,
+  user: string,
+  tipo: 'trilha' | 'efeito',
+  texto: string,
+  segundos: number,
+) {
+  if (!iaAvancadaConfigurada())
+    throw new RestorationError('A Z ainda não está pronta para criar sons.', 503);
+  const id = randomUUID();
+  const prepared = await jobAction('prepare', user, id, {
+    input_bytes: 45,
+    duration: segundos,
+    input_parts: 1,
+  });
+  if (!prepared.job && (prepared as { limited?: boolean }).limited)
+    throw new RestorationError('Você atingiu o limite de pedidos de hoje. Tente amanhã.', 429);
+  if (!prepared.job)
+    throw new RestorationError(
+      'Você já tem um áudio em processamento. Aguarde a conclusão ou cancele o pedido anterior.',
+      409,
+    );
+  const { job, claimed } = await jobAction('claim', user, id);
+  if (!job || !claimed) throw new RestorationError('Não foi possível iniciar o pedido.', 409);
+  try {
+    const usage = await audioUsage(request, id, 'auto');
+    if (!usage.allowed)
+      throw new RestorationError(
+        'A franquia mensal não cobre este pedido. Faça upgrade ou aguarde a renovação no dia 1.',
+        429,
+      );
+    const preset: ServerPreset = tipo === 'trilha' ? trilhaZ.id : efeitoZ.id;
+    const running = await jobAction('update', user, id, {
+      status: 'running',
+      provider_id: 'z-' + tipo,
+      report: { preset },
+    });
+    const started = running.job ?? job;
+    segundoPlano.rodar(() => processarGeracao(started, tipo, texto, segundos));
+    return { id, status: 'running', usage };
+  } catch (error) {
+    await jobAction('fail', user, id).catch(() => {});
+    throw error;
+  }
+}
 async function runpod(path: string, method = 'GET', body?: unknown, timeout = 25000) {
   const c = config();
   if (!c) throw new RestorationError('O motor de restauração ainda não está conectado.');
@@ -306,7 +399,7 @@ export async function submitJob(
 }
 export async function jobStatus(user: string, id: string) {
   let job = await ownedJob(user, id);
-  if (job.report?.preset === iaAvancada.id) {
+  if (isServerPreset(job.report?.preset)) {
     // Sem fila externa para consultar: o trabalho corre no servidor. Passou do prazo, a função caiu; encerra.
     const desde = Date.parse(job.updated_at ?? job.created_at);
     if (job.status === 'running' && Date.now() - desde > IA_AVANCADA_PRAZO_MS)
@@ -396,7 +489,7 @@ export async function clearJob(job: RestorationJob) {
 }
 export async function cancelJob(user: string, id: string) {
   const job = await ownedJob(user, id);
-  if (job.report?.preset === iaAvancada.id && ['submitting', 'running'].includes(job.status)) {
+  if (isServerPreset(job.report?.preset) && ['submitting', 'running'].includes(job.status)) {
     // O parceiro não cancela no meio; o resultado que chegar depois é descartado pela limpeza diária.
     await jobAction('fail', user, id);
     return { id, status: 'cancelled' };

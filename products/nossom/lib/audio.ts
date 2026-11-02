@@ -11,6 +11,7 @@ import {
 import { estimateNoiseFloor } from './noise-profile';
 import { denoiseVoice, cancelNeural, type RestorationAnalysis } from './neural';
 import { freshBroadcast } from './broadcast';
+import { filtroMixagem } from './mixagem';
 import { renderEffect } from './effects';
 import { clippingRepairFilter, denseClipping } from './declip';
 import { CLOUD_MAX_BYTES } from './restoration';
@@ -503,6 +504,8 @@ export type ProcessOptions = {
   peak: number;
   music?: Blob;
   musicGain?: number;
+  /** Efeitos da Z na mixagem, cada um no seu ponto (segundos). */
+  efeitos?: { blob: Blob; em: number; ganho?: number }[];
   region?: { start: number; end: number };
   mode?: DenoiseMode;
   settings?: FilterSettings;
@@ -633,15 +636,26 @@ export async function processAudio(blob: Blob, options: ProcessOptions) {
       options.onStatus?.('Tratando seu áudio…');
       let args = ['-i', 'source.wav'];
       if (options.operation === 'mix') {
-        if (!options.music) throw new Error('Adicione a faixa de música para fazer a mixagem.');
-        await ff.writeFile('music.wav', new Uint8Array(await options.music.arrayBuffer()));
+        const efeitos = options.efeitos ?? [];
+        if (options.music) {
+          await ff.writeFile('music.wav', new Uint8Array(await options.music.arrayBuffer()));
+          args.push('-stream_loop', '-1', '-i', 'music.wav');
+        }
+        for (const [i, e] of efeitos.entries()) {
+          const nome = `efeito-${i}.bin`;
+          files.push(nome);
+          await ff.writeFile(nome, new Uint8Array(await e.blob.arrayBuffer()));
+          args.push('-i', nome);
+        }
         args.push(
-          '-stream_loop',
-          '-1',
-          '-i',
-          'music.wav',
           '-filter_complex',
-          `[0:a]asplit=2[voice][side];[1:a]volume=${options.musicGain ?? 0.25}[music];[music][side]sidechaincompress=threshold=0.02:ratio=${(1 + (strength / 100) * 15).toFixed(2)}:attack=15:release=400[duck];[voice][duck]amix=inputs=2:duration=first:normalize=0,${preserveDuration('alimiter=limit=0.8913:level=0:latency=1', source.length, 2)}[out]`,
+          filtroMixagem({
+            trilha: !!options.music,
+            ganhoTrilha: options.musicGain,
+            forca: strength,
+            efeitos,
+            fim: preserveDuration('alimiter=limit=0.8913:level=0:latency=1', source.length, 2),
+          }),
           '-map',
           '[out]',
         );

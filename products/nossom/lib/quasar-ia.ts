@@ -6,11 +6,15 @@
  * (titular). Pensando, a onda cresce e acelera e o brilho pulsa; falando, a onda pulsa como voz. A cadência é a do
  * cinema, 23,976 quadros por segundo, como o Z.
  *
+ * Cor (titular, 02/11/2026, opção 2): a Coroa é azul; quando a Z pensa, o halo, o clarão e o feixe passam suavemente
+ * para o violeta da Z e voltam ao azul quando ela termina. Ícones e cartão de compartilhamento seguem azuis.
+ *
  * Tudo é desenhado num canvas, um quadro por vez, fora do React e sem mexer em `d` de SVG. Quem chama decide quando
  * animar (aba visível, na tela e sem "reduzir movimento"); parado, `estatico()` deixa a pose da logo.
  */
 
-export type EstadoQuasar = 'idle' | 'thinking' | 'listening' | 'speaking' | 'error';
+/** `working`: o estúdio trabalhando sem a Z (ritmo de quem processa, cor azul). */
+export type EstadoQuasar = 'idle' | 'thinking' | 'working' | 'listening' | 'speaking' | 'error';
 
 type Ritmo = {
   /** Altura da onda na borda (1 = a da logo). */
@@ -19,15 +23,18 @@ type Ritmo = {
   onda: number;
   /** Força do halo, do clarão e do feixe. */
   brilho: number;
+  /** 0 = azul do Quasar; 1 = violeta da Z (a Z está pensando). */
+  violeta: number;
 };
 
 const VOLTA = Math.PI * 2;
 export const RITMOS: Record<EstadoQuasar, Ritmo> = {
-  idle: { amp: 1, onda: 1.6, brilho: 1 },
-  thinking: { amp: 1.7, onda: 4.8, brilho: 1.3 },
-  listening: { amp: 1.25, onda: 2.4, brilho: 1.12 },
-  speaking: { amp: 1.8, onda: 3.4, brilho: 1.3 },
-  error: { amp: 0.35, onda: 0.6, brilho: 0.55 },
+  idle: { amp: 1, onda: 1.6, brilho: 1, violeta: 0 },
+  thinking: { amp: 1.7, onda: 4.8, brilho: 1.3, violeta: 1 },
+  working: { amp: 1.7, onda: 4.8, brilho: 1.3, violeta: 0 },
+  listening: { amp: 1.25, onda: 2.4, brilho: 1.12, violeta: 0 },
+  speaking: { amp: 1.8, onda: 3.4, brilho: 1.3, violeta: 0.5 },
+  error: { amp: 0.35, onda: 0.6, brilho: 0.55, violeta: 0 },
 };
 /** Quadros por segundo, como o Z do HUB (pedido do titular). */
 export const QUADROS_POR_SEGUNDO = 23.976;
@@ -35,6 +42,11 @@ export const QUADROS_POR_SEGUNDO = 23.976;
 export const MOV_QUASAR = { entrada: 1.4 } as const;
 /** Quantas ondas cabem numa volta da borda. */
 const ONDAS = 30;
+
+type Rgb = [number, number, number];
+/** Mistura do azul do Quasar com o violeta da Z, em "r,g,b". */
+export const misturar = (azul: Rgb, violeta: Rgb, v: number) =>
+  azul.map((c, i) => Math.round(c + (violeta[i] - c) * limita(v))).join(',');
 
 const suave = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const limita = (x: number) => Math.min(1, Math.max(0, x));
@@ -60,6 +72,11 @@ export class MotorQuasar {
     return this.ritmo.amp;
   }
 
+  /** Quanto a Coroa está no violeta da Z agora (0 a 1). */
+  get violeta() {
+    return this.ritmo.violeta;
+  }
+
   mudar(estado: EstadoQuasar) {
     this.alvo = estado;
   }
@@ -82,6 +99,8 @@ export class MotorQuasar {
     r.amp += (alvo.amp - r.amp) * k;
     r.onda += (alvo.onda - r.onda) * k;
     r.brilho += (alvo.brilho - r.brilho) * k;
+    // a cor muda mais devagar que o ritmo: entra e sai em cerca de 1 s
+    r.violeta += (alvo.violeta - r.violeta) * (1 - Math.exp(-dt * 2.2));
     this.fase += r.onda * dt;
   }
 
@@ -103,23 +122,28 @@ export class MotorQuasar {
     const acende = suave(this.entrada);
     const amp = this.ampAgora();
     const t = this.t;
+    const v = this.ritmo.violeta;
+    const c = (azul: Rgb, violeta: Rgb) => misturar(azul, violeta, v);
     ctx.clearRect(0, 0, w, h);
 
     // o anel de luz em volta (o meio fica vazado)
     const halo = ctx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R * 1.9);
-    halo.addColorStop(0, 'rgba(70,130,255,0)');
+    halo.addColorStop(0, `rgba(${c([70, 130, 255], [162, 116, 255])},0)`);
     halo.addColorStop(
       0.18,
-      claro ? `rgba(47,107,255,${0.1 * brilho})` : `rgba(80,140,255,${0.22 * brilho})`,
+      claro
+        ? `rgba(${c([47, 107, 255], [124, 77, 230])},${(0.1 + 0.06 * v) * brilho})`
+        : `rgba(${c([80, 140, 255], [162, 116, 255])},${(0.22 + 0.12 * v) * brilho})`,
     );
-    halo.addColorStop(1, 'rgba(47,107,255,0)');
+    halo.addColorStop(1, `rgba(${c([47, 107, 255], [124, 77, 230])},0)`);
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, w, h);
     const fx = cx + R * 1.02;
     const fy = cy;
     const lado = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 1.1);
-    lado.addColorStop(0, `rgba(150,190,255,${(claro ? 0.2 : 0.28) * brilho * acende})`);
-    lado.addColorStop(1, 'rgba(150,190,255,0)');
+    const ladoCor = c([150, 190, 255], [200, 170, 255]);
+    lado.addColorStop(0, `rgba(${ladoCor},${(claro ? 0.2 : 0.28) * brilho * acende})`);
+    lado.addColorStop(1, `rgba(${ladoCor},0)`);
     ctx.fillStyle = lado;
     ctx.fillRect(0, 0, w, h);
 
@@ -154,15 +178,15 @@ export class MotorQuasar {
     const pulso = (0.82 + 0.18 * Math.sin(t * 2.1)) * brilho * acende;
     const esq = Math.min(R * 1.25, fx - cx + R * 0.6);
     const dir = Math.min(R * 1.6, w - fx - 2);
-    const cor = claro ? '120,160,255' : '255,255,255';
+    const cor = claro ? c([120, 160, 255], [150, 110, 240]) : c([255, 255, 255], [225, 205, 255]);
     // faixa larga e suave
     ctx.save();
     ctx.translate(fx, fy);
     ctx.scale(1, 0.06);
     const faixa = ctx.createRadialGradient(0, 0, 0, 0, 0, dir);
-    faixa.addColorStop(0, `rgba(190,215,255,${0.55 * pulso})`);
-    faixa.addColorStop(0.5, `rgba(120,165,255,${0.18 * pulso})`);
-    faixa.addColorStop(1, 'rgba(120,165,255,0)');
+    faixa.addColorStop(0, `rgba(${c([190, 215, 255], [215, 195, 255])},${0.55 * pulso})`);
+    faixa.addColorStop(0.5, `rgba(${c([120, 165, 255], [162, 116, 255])},${0.18 * pulso})`);
+    faixa.addColorStop(1, `rgba(${c([120, 165, 255], [162, 116, 255])},0)`);
     ctx.fillStyle = faixa;
     ctx.beginPath();
     ctx.arc(0, 0, dir, 0, VOLTA);
@@ -185,9 +209,9 @@ export class MotorQuasar {
     // o clarão
     const flare = ctx.createRadialGradient(fx, fy, 0, fx, fy, R * 0.36);
     flare.addColorStop(0, `rgba(255,255,255,${Math.min(1, pulso)})`);
-    flare.addColorStop(0.14, `rgba(220,235,255,${0.85 * pulso})`);
-    flare.addColorStop(0.42, `rgba(111,157,255,${0.36 * pulso})`);
-    flare.addColorStop(1, 'rgba(47,107,255,0)');
+    flare.addColorStop(0.14, `rgba(${c([220, 235, 255], [234, 220, 255])},${0.85 * pulso})`);
+    flare.addColorStop(0.42, `rgba(${c([111, 157, 255], [162, 116, 255])},${0.36 * pulso})`);
+    flare.addColorStop(1, `rgba(${c([47, 107, 255], [124, 77, 230])},0)`);
     ctx.fillStyle = flare;
     ctx.beginPath();
     ctx.arc(fx, fy, R * 0.36, 0, VOLTA);

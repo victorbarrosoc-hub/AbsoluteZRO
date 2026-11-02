@@ -92,6 +92,19 @@
 .assistant-mode[data-estado='listening'] .assistant-vivo::after {
   animation-duration: 1s;
 }
+/* opção 2 da cor: a Z pensando ou falando deixa o ponto vivo no violeta dela */
+.assistant-mode[data-ia='on'][data-estado='thinking'] .assistant-vivo,
+.assistant-mode[data-ia='on'][data-estado='speaking'] .assistant-vivo {
+  background: #a274ff;
+  box-shadow: 0 0 10px #a274ff;
+  transition:
+    background 0.6s ease,
+    box-shadow 0.6s ease;
+}
+.assistant-mode[data-ia='on'][data-estado='thinking'] .assistant-vivo::after,
+.assistant-mode[data-ia='on'][data-estado='speaking'] .assistant-vivo::after {
+  border-color: #a274ff;
+}
 @keyframes vivo-pulso {
   0% {
     transform: scale(0.6);
