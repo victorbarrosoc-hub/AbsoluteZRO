@@ -635,6 +635,9 @@ Mesmo branch `sobedesce-wifi-espera`. Chave `P2P_WIFI_LIGADO` (padrão desligado
 - `web/tests/referencias.test.mts`: `/api/eu` manda `recursos.wifi: false`.
 - `test/celular-wifi-motor.test.js`: o computador para depois do primeiro 503 `wifi_desligado` (uma pergunta só, nem a
   lista) e a tela recebe `desligado`; um 503 qualquer (o caminho do app antigo) só recua, sem laço.
+- Entre computadores segue ligado: `web/tests/lan.test.mts` (`/api/lan/presenca`, `/computadores` e `/proximos`
+  respondem com o p2p desligado) e `test/lan.test.js` (envio de ponta a ponta entre computadores; `src/lan` não usa
+  `/api/p2p` nem `src/celular`).
 - `test/celular-wifi-app.test.js`: sem `recursos.wifi`, o celular não começa a espera e esconde a aba Aparelhos,
   `#aparelhos` cai no Início e o "No Wi-Fi" dos Ajustes some; outra falha recua até 30 s.
 

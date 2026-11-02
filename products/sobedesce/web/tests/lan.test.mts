@@ -38,6 +38,26 @@ describe("entre computadores (presença na rede)", () => {
   });
   after(() => amb.fechar());
 
+  test("com o Wi-Fi do celular desligado (P2P_WIFI_LIGADO sem valor), entre computadores segue ligado", async () => {
+    const antes = process.env.P2P_WIFI_LIGADO;
+    delete process.env.P2P_WIFI_LIGADO;
+    try {
+      const ligado = await import("../src/lib/p2p/ligado");
+      assert.equal(ligado.p2pWifiLigado(), false);
+      const rEspera = await import("../src/app/api/p2p/espera/route");
+      assert.equal((await rEspera.GET(pedido("/api/p2p/espera"))).status, 503, "o p2p do celular está desligado");
+      const lia = await pessoa("Lia", "lia@exemplo.com");
+      const ok = await rPresenca.POST(pedido("/api/lan/presenca", { bearer: lia.mac, corpo: { v: 1, enderecos: ["192.168.0.30"], porta: 4320, chave: CHAVE } }));
+      assert.equal(ok.status, 200, "/api/lan/presenca responde");
+      const doPc = await corpo(await rComp.GET(pedido("/api/lan/computadores", { bearer: lia.pc })));
+      assert.equal(doPc.computadores.length, 1, "/api/lan/computadores lista o Mac");
+      assert.notEqual((await rPerto.GET(pedido("/api/lan/proximos", { bearer: lia.pc }))).status, 503, "/api/lan/proximos não é desligado");
+    } finally {
+      if (antes === undefined) delete process.env.P2P_WIFI_LIGADO;
+      else process.env.P2P_WIFI_LIGADO = antes;
+    }
+  });
+
   test("endereço da rede local: privados sim, públicos não", () => {
     for (const ip of ["192.168.0.12", "10.1.2.3", "172.20.0.5", "169.254.10.1", "fe80::1c2b:3aff:fe4d:1", "fd12:3456::1"]) assert.ok(presenca.enderecoLocal(ip), ip);
     for (const ip of ["8.8.8.8", "172.32.0.1", "200.1.2.3", "256.1.1.1", "2001:4860::8888", "localhost", "127.0.0.1"]) assert.ok(!presenca.enderecoLocal(ip), ip);
