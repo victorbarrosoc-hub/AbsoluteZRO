@@ -2,6 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { supabaseConfig } from './supabase';
 import { audioUsage } from './usage';
 import {
+  IA_AVANCADA_PRAZO_MS,
+  iaAvancadaConfigurada,
+  isolarVoz,
+  segundoPlano,
+} from './ia-avancada';
+import {
+  iaAvancada,
+  type AdvancedReport,
   CLOUD_PART_BYTES,
   type CloudReport,
   type TranscriptReport,
@@ -22,8 +30,10 @@ export type RestorationJob = {
   input_bytes: number;
   duration: number;
   provider_id: string | null;
-  report: CloudReport | TranscriptReport | StemsReport | { preset: CloudPreset } | null;
+  report:
+    CloudReport | TranscriptReport | StemsReport | AdvancedReport | { preset: CloudPreset } | null;
   created_at: string;
+  updated_at?: string;
 };
 export class RestorationError extends Error {
   constructor(
@@ -104,6 +114,63 @@ async function readURL(job: RestorationJob, kind: 'source' | 'output', part: num
     data.signedURL.startsWith('/storage/v1/') ? data.signedURL : '/storage/v1' + data.signedURL,
   );
 }
+/** Leitura e escrita direta no armazenamento privado, só para o trabalho da IA avançada no servidor. */
+async function storageObject(
+  job: RestorationJob,
+  kind: 'source' | 'output',
+  part: number,
+  body?: Blob,
+) {
+  const c = config();
+  if (!c) throw new RestorationError('O armazenamento não está configurado.');
+  const response = await fetch(
+    storageURL(`/storage/v1/object/${bucket}/${objectPath(job, kind, part)}`),
+    {
+      method: body ? 'POST' : 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(120000),
+      headers: {
+        apikey: c.service,
+        Authorization: `Bearer ${c.service}`,
+        ...(body ? { 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' } : {}),
+      },
+      ...(body ? { body } : {}),
+    },
+  );
+  if (!response.ok) throw new RestorationError('O armazenamento não respondeu.');
+  return body ? null : response.blob();
+}
+/** A IA avançada: baixa o original, limpa a voz no parceiro e guarda o resultado. Falhou, encerra e devolve os minutos. */
+async function processarAvancado(job: RestorationJob) {
+  const inicio = Date.now();
+  try {
+    const partes: Blob[] = [];
+    for (let i = 0; i < job.input_parts; i++)
+      partes.push((await storageObject(job, 'source', i)) as Blob);
+    const limpo = await isolarVoz(new Blob(partes));
+    await storageObject(job, 'output', 0, limpo);
+    const report: AdvancedReport = {
+      preset: iaAvancada.id,
+      chunks: [{ index: 0, bytes: limpo.size }],
+      totalBytes: limpo.size,
+    };
+    await jobAction('update', job.user_id, job.id, { status: 'completed', report });
+    await service('/rest/v1/rpc/nossom_job_runtime', 'POST', {
+      p_id: job.id,
+      p_user: job.user_id,
+      p_runtime: Math.min(3600000, Date.now() - inicio),
+    }).catch(() => {});
+  } catch (error) {
+    console.warn(
+      'Quasar job ' +
+        job.id +
+        ' advanced failed' +
+        (error instanceof Error ? ': ' + error.message.slice(0, 60) : ''),
+    );
+    // Encerrar é seguro aqui: o pedido não volta para fila nenhuma. Os minutos voltam pelo gatilho de falha.
+    await jobAction('fail', job.user_id, job.id).catch(() => {});
+  }
+}
 async function runpod(path: string, method = 'GET', body?: unknown, timeout = 25000) {
   const c = config();
   if (!c) throw new RestorationError('O motor de restauração ainda não está conectado.');
@@ -183,6 +250,19 @@ export async function submitJob(
         'A franquia mensal não cobre este áudio. Faça upgrade ou aguarde a renovação no dia 1.',
         429,
       );
+    if (preset === iaAvancada.id) {
+      if (!iaAvancadaConfigurada())
+        throw new RestorationError('A IA avançada ainda não está disponível.', 503);
+      dispatched = true;
+      const running = await jobAction('update', user, id, {
+        status: 'running',
+        provider_id: 'ia-avancada',
+        report: { preset },
+      });
+      const started = running.job ?? job;
+      segundoPlano.rodar(() => processarAvancado(started));
+      return { id, status: 'running', usage };
+    }
     const [inputUrls, outputUrls] = await Promise.all([
       Promise.all(Array.from({ length: job.input_parts }, (_, i) => readURL(job, 'source', i))),
       Promise.all(
@@ -226,7 +306,12 @@ export async function submitJob(
 }
 export async function jobStatus(user: string, id: string) {
   let job = await ownedJob(user, id);
-  if (['queued', 'running'].includes(job.status) && job.provider_id) {
+  if (job.report?.preset === iaAvancada.id) {
+    // Sem fila externa para consultar: o trabalho corre no servidor. Passou do prazo, a função caiu; encerra.
+    const desde = Date.parse(job.updated_at ?? job.created_at);
+    if (job.status === 'running' && Date.now() - desde > IA_AVANCADA_PRAZO_MS)
+      job = (await jobAction('fail', user, id)).job ?? job;
+  } else if (['queued', 'running'].includes(job.status) && job.provider_id) {
     const result = await runpod(`status/${job.provider_id}`);
     if (
       ['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT'].includes(result.status) &&
@@ -311,6 +396,11 @@ export async function clearJob(job: RestorationJob) {
 }
 export async function cancelJob(user: string, id: string) {
   const job = await ownedJob(user, id);
+  if (job.report?.preset === iaAvancada.id && ['submitting', 'running'].includes(job.status)) {
+    // O parceiro não cancela no meio; o resultado que chegar depois é descartado pela limpeza diária.
+    await jobAction('fail', user, id);
+    return { id, status: 'cancelled' };
+  }
   if (job.provider_id && ['queued', 'running'].includes(job.status)) {
     const result = await runpod(`cancel/${job.provider_id}`, 'POST');
     if (['CANCELLED', 'FAILED', 'TIMED_OUT'].includes(result.status)) {
@@ -336,6 +426,7 @@ export async function restorationHealth() {
     serviceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     storage: !!supabaseConfig(),
     cleanupSecret: (process.env.CRON_SECRET?.length || 0) >= 32,
+    advanced: iaAvancadaConfigurada(),
   };
   if (!config())
     return {

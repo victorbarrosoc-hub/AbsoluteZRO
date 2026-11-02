@@ -9,6 +9,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { visitStudio } from '@/lib/studio-navigation';
 import StudioLink from './studio-link';
 import {
+  iaAvancada,
   restorationD,
   singingSeparation,
   stemSeparation,
@@ -86,7 +87,7 @@ import Assistant from './assistant';
 import { WavePlayer } from './wave-player';
 import { PassosLista, PassosTrilho, passoDe, slugPasso } from './passos-nav';
 import { player } from '@/lib/player';
-import { restoreCloud, releaseCloudJob, cancelCloudJob } from '@/lib/cloud-audio';
+import { restoreCloud, releaseCloudJob, cancelCloudJob, CloudFailed } from '@/lib/cloud-audio';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import {
   operations,
@@ -393,6 +394,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [usage, setUsage] = useState<AudioUsage | null>(null);
   const [usageError, setUsageError] = useState('');
   const [cloudReady, setCloudReady] = useState<boolean | null>(null);
+  // Reserva do Melhorar com IA (IA avançada) e a Quasar Presence logo depois da IA, ligada por padrão.
+  const [advancedReady, setAdvancedReady] = useState(false);
+  const [presenceAfterAI, setPresenceAfterAI] = useState(true);
   const [pendingJob, setPendingJob] = useState<{
     id: string;
     status: string;
@@ -408,6 +412,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       const response = await fetch('/api/audio/jobs', { cache: 'no-store' });
       const data = await response.json();
       setCloudReady(response.ok && data.configured === true);
+      setAdvancedReady(response.ok && data.advanced === true);
       let saved;
       try {
         saved = JSON.parse(localStorage.getItem('nossom-cloud:' + account.id) || 'null');
@@ -850,10 +855,15 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       .catch(() => {});
     setPendingJob(null);
   }
-  async function applyTreatment() {
+  async function applyTreatment(options: { advanced?: boolean } = {}) {
     if (!project || !version) return;
+    const withPresence = operation === 'auto' && presenceAfterAI;
     await run(async () => {
-      if (operation !== 'transcribe' && operation !== 'remix' && project.versions.length >= 9)
+      if (
+        operation !== 'transcribe' &&
+        operation !== 'remix' &&
+        project.versions.length >= (withPresence ? 8 : 9)
+      )
         throw new Error(
           'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
         );
@@ -885,32 +895,43 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             setBusy('Separando o áudio do vídeo para enviar só o som…');
           return cloudSource(project.originalFile, original.blob, original.info.peak);
         };
-        const cloud = await restoreCloud(sendSource, original.info.duration, {
-          preset: cloudPreset,
-          resumeId: pendingJob?.id,
-          signal: controller.signal,
-          onStatus: setBusy,
-          onProgress: setProgress,
-          onUsage: setUsage,
-          onJob: (id) => {
-            if (id) {
-              localStorage.setItem(
-                'nossom-cloud:' + account.id,
-                JSON.stringify({
-                  id,
-                  projectId: project.id,
-                  preset: cloudPreset,
-                }),
-              );
-              setPendingJob({
-                id,
-                projectId: project.id,
-                status: 'queued',
-                preset: cloudPreset,
-              });
-            }
-          },
-        });
+        const send = (preset: CloudPreset, resumeId?: string) =>
+          restoreCloud(sendSource, original.info.duration, {
+            preset,
+            resumeId,
+            signal: controller.signal,
+            onStatus: setBusy,
+            onProgress: setProgress,
+            onUsage: setUsage,
+            onJob: (id) => {
+              if (id) {
+                localStorage.setItem(
+                  'nossom-cloud:' + account.id,
+                  JSON.stringify({ id, projectId: project.id, preset }),
+                );
+                setPendingJob({ id, projectId: project.id, status: 'queued', preset });
+              }
+            },
+          });
+        const firstPreset =
+          operation === 'auto' && options.advanced && !pendingJob ? iaAvancada.id : cloudPreset;
+        let cloud;
+        try {
+          cloud = await send(firstPreset, pendingJob?.id);
+        } catch (error) {
+          // Falha confirmada do nosso motor (minutos já devolvidos): a IA avançada tenta uma vez, sem repetir.
+          if (
+            !(error instanceof CloudFailed) ||
+            operation !== 'auto' ||
+            !advancedReady ||
+            firstPreset === iaAvancada.id ||
+            (pendingJob?.preset ?? firstPreset) === iaAvancada.id
+          )
+            throw error;
+          setPendingJob(null);
+          setBusy('Nosso motor não deu conta. Tentando a IA avançada…');
+          cloud = await send(iaAvancada.id);
+        }
         cloudId = cloud.id;
         cloudAbort.current = null;
         if (cloud.kind === 'transcript') {
@@ -999,10 +1020,12 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               ? 'Voz isolada'
               : 'Vocais separados da música'
             : operation === 'auto'
-              ? 'Voz restaurada com IA'
+              ? result.processing?.iaAvancada
+                ? 'Voz melhorada com IA avançada'
+                : 'Voz melhorada com IA'
               : operation === 'master'
                 ? masterRecipe === 'broadcast'
-                  ? 'Transmissão + Limite −3 dB'
+                  ? 'Quasar Presence'
                   : masterRecipe === studioVoice.id
                     ? `${studioVoice.label} / alvo ${target} LUFS / pico ${peak} dBTP / ${studioVoice.version}`
                     : `${preset} / alvo ${target} LUFS / pico ${peak} dBTP / v2`
@@ -1015,11 +1038,39 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       : undefined,
         ...result,
       };
+      // Quasar Presence (a cadeia do Premiere do titular) direto na voz tratada, como uma versão a mais.
+      let presenceVersion: Version | null = null;
+      if (withPresence && cloudId) {
+        try {
+          const presence = await processAudio(newVersion.blob, {
+            operation: 'master',
+            intensity: 100,
+            mode: denoiseMode,
+            settings: { masterPreset: 'broadcast', broadcast: freshBroadcast() },
+            target,
+            peak,
+            onStatus: setBusy,
+            onProgress: setProgress,
+          });
+          presenceVersion = {
+            id: crypto.randomUUID(),
+            parentId: newVersion.id,
+            label: `Quasar Presence · V${project.versions.length + 1}`,
+            createdAt: Date.now(),
+            operation: 'master',
+            preset: 'Quasar Presence',
+            ...presence,
+          };
+        } catch {
+          /* A voz tratada fica salva mesmo se a Presence não terminar. */
+        }
+      }
+      const added = presenceVersion ? [newVersion, presenceVersion] : [newVersion];
       const updated = {
         ...project,
         updatedAt: Date.now(),
-        versions: [...project.versions, newVersion],
-        activeVersionId: newVersion.id,
+        versions: [...project.versions, ...added],
+        activeVersionId: added[added.length - 1].id,
         redoVersionIds: [],
       };
       await saveProject(updated, account.id);
@@ -1033,7 +1084,11 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             ? result.processing?.vocalSeparation?.preset === voiceIsolator.id
               ? 'Voz isolada. Compare com o original e baixe.'
               : 'Vocal separado. Compare com a música e baixe.'
-            : 'Voz restaurada. Ouça e escolha o acabamento abaixo.',
+            : presenceVersion
+              ? 'Voz melhorada, com Quasar Presence. Compare com o original.'
+              : withPresence
+                ? 'Voz melhorada. A Quasar Presence não terminou; aplique em Preparar entrega.'
+                : 'Voz melhorada. Ouça e escolha o acabamento abaixo.',
         );
       } else notify('Nova versão salva. Compare com o original.');
     });
@@ -2020,12 +2075,14 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                     }}
                   />
                   {versionIndex > 0 &&
-                    project.versions.some((v) => v.processing?.cloudRestoration) && (
+                    project.versions.some(
+                      (v) => v.processing?.cloudRestoration || v.processing?.iaAvancada,
+                    ) && (
                       <section
                         className="finish-panel"
                         aria-label="Acabamento depois da restauração"
                       >
-                        <span className="eyebrow">A VOZ RESTAURADA É SEU PONTO DE PARTIDA</span>
+                        <span className="eyebrow">A VOZ MELHORADA É SEU PONTO DE PARTIDA</span>
                         <h2>Agora, deixe do seu jeito.</h2>
                         <p>
                           Escolha um acabamento para a versão que está ouvindo. Os controles abrem
@@ -2066,8 +2123,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             }}
                           >
                             <Activity size={22} />
-                            <strong>Encorpar · Premiere</strong>
-                            <span>Seu multibanda + limite −3 dB. Ajuste cada banda.</span>
+                            <strong>Quasar Presence</strong>
+                            <span>Corpo e presença: multibanda + limite −3 dB.</span>
                           </button>
                           <button
                             disabled={!!busy}
@@ -2684,10 +2741,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                 disabled={!!busy}
                                 onClick={() => selectMaster('broadcast')}
                               >
-                                <strong>Transmissão + Limite −3 dB</strong>
-                                <span>
-                                  Sua cadeia do Premiere, com quatro bandas e dois limitadores.
-                                </span>
+                                <strong>Quasar Presence</strong>
+                                <span>Quatro bandas e dois limitadores, como no Premiere.</span>
                               </button>
                               <button
                                 className={masterRecipe === studioVoice.id ? 'active' : ''}
@@ -3168,9 +3223,25 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             </span>
                           </div>
                         )}
+                      {operation === 'auto' && !pendingJob && (
+                        <label className="presence-switch">
+                          <input
+                            type="checkbox"
+                            role="switch"
+                            checked={presenceAfterAI}
+                            disabled={!!busy}
+                            onChange={(e) => setPresenceAfterAI(e.target.checked)}
+                          />
+                          <span className="presence-switch-track" aria-hidden="true" />
+                          <span className="presence-switch-text">
+                            <strong>Quasar Presence depois da IA</strong>
+                            <small>Multibanda + limite −3 dB</small>
+                          </span>
+                        </label>
+                      )}
                       <button
                         className="button primary process-button"
-                        onClick={applyTreatment}
+                        onClick={() => void applyTreatment()}
                         disabled={
                           !!busy ||
                           (cloudOperation && !cloudReady) ||
@@ -3211,12 +3282,29 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                       ? voiceMode === 'speech'
                                         ? 'Isolar voz'
                                         : 'Separar vocal'
-                                      : 'Restaurar com IA'
+                                      : 'Melhorar com IA'
                               : autoEnabled
                                 ? 'Analisar e tratar'
                                 : 'Aplicar tratamento'}{' '}
                         {!busy && <ArrowRight size={15} />}
                       </button>
+                      {operation === 'auto' &&
+                        advancedReady &&
+                        !pendingJob &&
+                        project.versions.some(
+                          (v) => v.operation === 'auto' && !v.processing?.iaAvancada,
+                        ) && (
+                          <button
+                            className="button secondary advanced-redo"
+                            disabled={
+                              !!busy ||
+                              (usage !== null && !usage.unlimited && usage.remaining === 0)
+                            }
+                            onClick={() => void applyTreatment({ advanced: true })}
+                          >
+                            <Sparkles size={15} /> Refazer com IA avançada
+                          </button>
+                        )}
                       {!usage?.unlimited && (
                         <p className="usage-apply-hint">Usa seus minutos de IA (mínimo 1 min).</p>
                       )}
@@ -3233,7 +3321,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                         <h3>Não sabe por onde começar?</h3>
                         <p>Descreva a sua ideia e encontre um tratamento.</p>
                         <button className="text-link" onClick={() => setAssistant(true)}>
-                          Conversar com o assistente <ArrowUpRight size={13} />
+                          Peça à Z <ArrowUpRight size={13} />
                         </button>
                       </div>
                     </aside>

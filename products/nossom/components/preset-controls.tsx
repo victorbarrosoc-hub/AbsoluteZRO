@@ -154,7 +154,7 @@ export function BroadcastControls({
     <section className="broadcast-controls">
       <div className="preset-explanation">
         <div>
-          <strong>Transmissão + Limite −3 dB</strong>
+          <strong>Quasar Presence</strong>
           <p>
             Valores das suas capturas. Quatro bandas, limitador multibanda e limitador final em modo
             pico, com canais vinculados.

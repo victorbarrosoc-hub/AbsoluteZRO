@@ -21,7 +21,7 @@ test('compact navigation exposes six destinations, Início first and the Z last,
   await expect(
     page
       .getByRole('region', { name: 'Ferramentas de Tratar' })
-      .getByRole('button', { name: /Restaurar com IA/ }),
+      .getByRole('button', { name: /Melhorar com IA/ }),
   ).toHaveAttribute('aria-current', 'page');
   await expect(navigation.getByRole('button', { name: 'Meu plano', exact: true })).toBeVisible();
   await expect(navigation.getByText('FERRAMENTAS', { exact: true })).toHaveCount(0);

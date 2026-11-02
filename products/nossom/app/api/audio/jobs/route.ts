@@ -2,6 +2,7 @@ import { currentAccount } from '@/lib/server/account';
 import { allowRequest, privateHeaders, sameOrigin } from '@/lib/server/ai-access';
 import { origemIrma, PRESETS_IRMAOS } from '@/lib/server/irmaos';
 import { audioUsage } from '@/lib/server/usage';
+import { iaAvancadaConfigurada } from '@/lib/server/ia-avancada';
 import {
   cancelJob,
   clearJob,
@@ -18,7 +19,8 @@ import {
 } from '@/lib/server/restoration';
 import { CLOUD_MAX_BYTES, CLOUD_MAX_SECONDS, restorationD, isCloudPreset } from '@/lib/restoration';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+// 300 s: a IA avançada termina depois da resposta (lib/server/ia-avancada.ts), dentro do tempo da função.
+export const maxDuration = 300;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function failure(error: unknown) {
   return Response.json(
@@ -123,7 +125,12 @@ export async function GET(request: Request) {
       }
     }
     return Response.json(
-      { configured: configured && ready, preset: restorationD, pending },
+      {
+        configured: configured && ready,
+        advanced: configured && ready && iaAvancadaConfigurada(),
+        preset: restorationD,
+        pending,
+      },
       { headers: privateHeaders },
     );
   } catch (error) {

@@ -450,6 +450,15 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Melhorar com IA + Quasar Presence (02/11/2026, pedido do titular): "Restaurar com IA" vira "Melhorar
+  com IA" e, com a chave "Quasar Presence depois da IA" (ligada por padrão), a cadeia do Premiere do titular
+  (multibanda de quatro bandas + limite −3 dB, `lib/broadcast.ts`) entra sozinha na voz tratada, como uma versão a
+  mais. A receita aparece como Quasar Presence, em roxo. Quando o nosso motor falha de forma confirmada (minutos já
+  devolvidos), a IA avançada tenta uma vez: um parceiro de nuvem limpa a voz no servidor (`lib/server/ia-avancada.ts`,
+  preset `ia-avancada-v1`), com os mesmos minutos do plano, prazo de 8 min e falha que devolve os minutos; nunca
+  repete sozinha nem trata despacho ambíguo como falha. "Refazer com IA avançada" fica no painel. A interface não
+  nomeia o parceiro; a privacidade descreve o envio. O assistente vira a Z ("Peça à Z"), com o símbolo do Quasar.
+  Falta a tela de faixas e mixer (prévias aprovadas).
 - 🟡 Quasar · Início com o símbolo como IA (01/11/2026, aprovado pelo titular): a Coroa sonora vazada e maior, desenhada
   num canvas (`lib/quasar-ia.ts`, a 23,976 quadros por segundo como o Z), com a onda girando pela borda como quem
   processa; o clarão e o feixe horizontal ficam parados e só aumentam e diminuem o brilho. Pensando, a onda cresce e

@@ -36,15 +36,21 @@ export default function Privacy() {
         tratamentos usam memória e processamento locais. Esta versão aceita arquivos mono ou
         estéreo, de até 10 minutos (áudio até 500 MB; vídeo até 2 GB, lido no próprio aparelho).
       </p>
-      <h2>Restauração com IA na nuvem</h2>
+      <h2>Melhoria com IA na nuvem</h2>
       <p>
-        Ao escolher Restaurar com IA ou Isolar voz, uma cópia do áudio é enviada a um bucket privado
+        Ao escolher Melhorar com IA ou Isolar voz, uma cópia do áudio é enviada a um bucket privado
         do Supabase e processada por uma GPU da RunPod. Em vídeos e arquivos grandes, só o som sai
         do aparelho, em FLAC sem perda; a imagem não é enviada. Os links são temporários e restritos
         aos objetos desse trabalho. Não enviamos sua chave de conta ou a chave administrativa ao
-        worker. Restaurar com IA usa Resemble Enhance (preset D), que gera a voz de novo: revise a
+        worker. Melhorar com IA usa Resemble Enhance (preset D), que gera a voz de novo: revise a
         fala e a pronúncia antes de publicar. Isolar voz usa Mel-Band RoFormer e MossFormer2, que só
         tiram o que não é voz.
+      </p>
+      <p>
+        Quando o nosso motor não conclui a melhoria, ou quando você escolhe Refazer com IA avançada,
+        o servidor envia a mesma cópia do áudio a um parceiro de IA de áudio na nuvem, que devolve
+        só a voz limpa. O envio parte do servidor, com a chave da plataforma, e segue as mesmas
+        regras de remoção abaixo. O parceiro trata o áudio segundo as próprias políticas.
       </p>
       <p>
         Depois de baixar e salvar a versão local, solicitamos a remoção dos objetos temporários. Um

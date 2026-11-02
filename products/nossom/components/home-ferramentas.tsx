@@ -101,7 +101,7 @@ export default function HomeFerramentas({ closed }: { closed: boolean }) {
         <Cartao
           closed={closed}
           href="/studio/automatico"
-          titulo="Restaurar com IA"
+          titulo="Melhorar com IA"
           apoio="Voz limpa e clara."
         >
           <Onda n={40} semente={3} cor="#5aa9ff" cor2="#3a3a3c" corte={0.5} />

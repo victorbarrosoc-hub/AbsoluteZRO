@@ -50,7 +50,16 @@ export const stemSeparation = {
 export const STEM_NAMES = ['voz', 'bateria', 'baixo', 'guitarra', 'outros'] as const;
 /** Five stereo 24-bit FLAC stems of 10 minutes fit even when nothing compresses. */
 export const STEMS_PARTS = 40;
-export type CloudPreset = AudioPreset | typeof transcription.id | typeof stemSeparation.id;
+/**
+ * Reserva do "Melhorar com IA" (titular, 02/11/2026): quando o nosso motor não dá conta, um parceiro de nuvem limpa a
+ * voz no servidor. Um arquivo só, comprimido; o navegador decodifica, acerta a duração e salva em WAV.
+ */
+export const iaAvancada = {
+  id: 'ia-avancada-v1',
+  label: 'IA avançada',
+} as const;
+export type CloudPreset =
+  AudioPreset | typeof transcription.id | typeof stemSeparation.id | typeof iaAvancada.id;
 const presetSpecs: Record<AudioPreset, { sampleRate: number; channels: number; parts: number }> = {
   [restorationD.id]: { sampleRate: 44100, channels: 1, parts: 6 },
   [vocalSeparation.id]: { sampleRate: 44100, channels: 2, parts: 11 },
@@ -61,7 +70,12 @@ function isAudioPreset(value: unknown): value is AudioPreset {
   return typeof value === 'string' && Object.hasOwn(presetSpecs, value);
 }
 export function isCloudPreset(value: unknown): value is CloudPreset {
-  return isAudioPreset(value) || value === transcription.id || value === stemSeparation.id;
+  return (
+    isAudioPreset(value) ||
+    value === transcription.id ||
+    value === stemSeparation.id ||
+    value === iaAvancada.id
+  );
 }
 /** Presets handled by the voice tool (`vocals`), new and legacy. */
 export function isVoiceToolPreset(preset: unknown) {
@@ -73,7 +87,7 @@ export function presetSpec(preset: AudioPreset) {
   return presetSpecs[preset];
 }
 export function outputParts(preset: CloudPreset) {
-  return preset === transcription.id
+  return preset === transcription.id || preset === iaAvancada.id
     ? 1
     : preset === stemSeparation.id
       ? STEMS_PARTS
@@ -206,8 +220,33 @@ export function validStemsReport(value: unknown): value is StemsReport {
     validChunks(r.chunks, r.totalBytes, STEMS_PARTS)
   );
 }
+/** O áudio da IA avançada: um arquivo comprimido; a duração é conferida depois de decodificar. */
+export type AdvancedReport = {
+  preset: typeof iaAvancada.id;
+  chunks: [{ index: 0; bytes: number }];
+  totalBytes: number;
+};
+export function validAdvancedReport(value: unknown): value is AdvancedReport {
+  if (!value || typeof value !== 'object') return false;
+  const r = value as AdvancedReport;
+  return (
+    r.preset === iaAvancada.id &&
+    Number.isInteger(r.totalBytes) &&
+    r.totalBytes > 0 &&
+    r.totalBytes <= CLOUD_PART_BYTES &&
+    Array.isArray(r.chunks) &&
+    r.chunks.length === 1 &&
+    r.chunks[0].index === 0 &&
+    r.chunks[0].bytes === r.totalBytes
+  );
+}
 export function validJobReport(
   value: unknown,
-): value is CloudReport | TranscriptReport | StemsReport {
-  return validCloudReport(value) || validTranscriptReport(value) || validStemsReport(value);
+): value is CloudReport | TranscriptReport | StemsReport | AdvancedReport {
+  return (
+    validCloudReport(value) ||
+    validTranscriptReport(value) ||
+    validStemsReport(value) ||
+    validAdvancedReport(value)
+  );
 }
