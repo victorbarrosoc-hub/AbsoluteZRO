@@ -15,7 +15,7 @@
 
 const path = require('node:path')
 const { createHash } = require('node:crypto')
-const { pathToFileURL } = require('node:url')
+const { pathToFileURL, fileURLToPath } = require('node:url')
 
 const ID = /^[a-z0-9-]{2,40}$/
 const NOME_ARQUIVO = /^[A-Za-z0-9._-]{1,120}$/
@@ -166,10 +166,44 @@ function itemDoDock(caminho) {
   )
 }
 
-/** O app já está no Dock? `saida` = `defaults read com.apple.dock persistent-apps`. */
-function estaNoDock(saida, caminho) {
-  const s = String(saida || '')
-  return s.includes(`"${urlDoDock(caminho)}"`) || s.includes(`"${caminho}"`) || s.includes(`"${caminho}/"`)
+/** Endereço do Dock (file://…) ou caminho solto → caminho decodificado, sem barra final. null se não for um arquivo local. */
+function caminhoDoDock(valor) {
+  let v = String(valor || '').trim()
+  if (!v) return null
+  if (/^file:/i.test(v)) {
+    try {
+      v = fileURLToPath(v)
+    } catch {
+      return null
+    }
+  }
+  if (!path.isAbsolute(v)) return null
+  v = path.normalize(v)
+  return v.length > 1 ? v.replace(/[\\/]+$/, '') || '/' : v
+}
+
+/** Os caminhos de todos os itens da saída de `defaults read com.apple.dock persistent-apps` (decodificados). */
+function caminhosDoDock(saida) {
+  const out = []
+  const re = /"?_CFURLString"?\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^;\s]+))\s*;/g
+  let m
+  while ((m = re.exec(String(saida || '')))) {
+    const c = caminhoDoDock((m[1] ?? m[2]).replace(/\\(.)/g, '$1'))
+    if (c) out.push(c)
+  }
+  return out
+}
+
+/**
+ * O app já está no Dock? `saida` = `defaults read com.apple.dock persistent-apps`. Compara o caminho exato, decodificado
+ * e normalizado (nunca por pedaço de texto): um item antigo com o mesmo nome em outro lugar não conta.
+ * `insensivel`: o disco ignora maiúsculas (o padrão do Mac).
+ */
+function estaNoDock(saida, caminho, insensivel = false) {
+  const alvo = caminhoDoDock(caminho)
+  if (!alvo) return false
+  const f = (c) => (insensivel ? c.toLowerCase() : c)
+  return caminhosDoDock(saida).some((c) => f(c) === f(alvo))
 }
 
 /** Baixa para `destino`, conferindo tamanho e SHA-256. Se não bater, apaga e falha. */
@@ -233,6 +267,9 @@ class Central {
     /** true quando o HUB respondeu que não há sessão (a central pede para entrar e não atualiza nada). */
     this.semLogin = false
     this.emAndamento = new Map()
+    /** Fila única do Dock (um app por vez) e o reinício agrupado do Dock. */
+    this.filaDock = Promise.resolve()
+    this.timerDock = null
   }
 
   /**
@@ -451,10 +488,62 @@ class Central {
   situacaoDoAtalho(app, instalado, dock) {
     const tipo = this.tipoDeAtalho()
     if (!tipo || !instalado || !instalado.caminho) return null
-    if (tipo === 'dock') return { tipo, feito: estaNoDock(dock, instalado.caminho) }
+    if (tipo === 'dock') return { tipo, feito: estaNoDock(dock, instalado.caminho, this.dockInsensivel(instalado.caminho)) }
     if (!app.windows) return null
     const { areaDeTrabalho } = this.lugaresDoAtalho(app)
     return { tipo, feito: !!areaDeTrabalho && this.d.fs.existsSync(areaDeTrabalho) }
+  }
+
+  /** O disco ignora maiúsculas? (padrão do Mac): confere trocando a caixa do caminho do próprio app. */
+  dockInsensivel(caminho) {
+    try {
+      const base = path.basename(caminho)
+      const outra = path.join(path.dirname(caminho), base === base.toUpperCase() ? base.toLowerCase() : base.toUpperCase())
+      return outra !== caminho && this.d.fs.existsSync(outra)
+    } catch {
+      return false
+    }
+  }
+
+  esperar(ms) {
+    return this.d.esperar ? this.d.esperar(ms) : new Promise((r) => setTimeout(r, ms))
+  }
+
+  /**
+   * Põe o app no Dock e só diz que deu certo depois de reler o Dock e ver o caminho exato. Se a gravação sumir (o
+   * cfprefsd ou o próprio Dock regravam a lista), tenta de novo, até 3 vezes. Reinício do Dock: uma vez, agrupado.
+   */
+  async porNoDock(app, instalado) {
+    const insensivel = this.dockInsensivel(instalado.caminho)
+    const confere = async () => estaNoDock(await this.lerDock(), instalado.caminho, insensivel)
+    const TENTATIVAS = 3
+    for (let i = 0; i <= TENTATIVAS; i++) {
+      if (await confere()) {
+        if (i > 0) this.agendarReinicioDoDock()
+        return { tipo: 'dock', feito: true }
+      }
+      if (i === TENTATIVAS) break
+      try {
+        await this.d.exec('defaults', ['write', 'com.apple.dock', 'persistent-apps', '-array-add', itemDoDock(instalado.caminho)], { timeout: 15_000 })
+      } catch (e) {
+        this.log('[central] Dock:', e && e.message)
+      }
+      await this.esperar(this.d.dockEsperaMs ?? 400)
+    }
+    this.log('[central] Dock: o item não apareceu depois de', TENTATIVAS, 'gravações:', instalado.caminho)
+    throw new ErroCentral('atalho', `Não deu para pôr o ${app.nome} no Dock.`)
+  }
+
+  /** O Dock só relê as preferências ao reiniciar: um `killall Dock` só, ~1,5 s depois da última gravação confirmada. */
+  agendarReinicioDoDock() {
+    if (this.timerDock) clearTimeout(this.timerDock)
+    this.timerDock = setTimeout(() => this.reiniciarDock(), this.d.dockReinicioMs ?? 1500)
+  }
+
+  async reiniciarDock() {
+    if (this.timerDock) clearTimeout(this.timerDock)
+    this.timerDock = null
+    await this.d.exec('killall', ['Dock'], { timeout: 15_000 }).catch(() => {})
   }
 
   /**
@@ -470,17 +559,10 @@ class Central {
     const instalado = await this.detectar(app).catch(() => null)
     if (!instalado || !instalado.caminho) throw new ErroCentral('ausente', `O ${app.nome} não está instalado.`)
     if (tipo === 'dock') {
-      if (!estaNoDock(await this.lerDock(), instalado.caminho)) {
-        try {
-          await this.d.exec('defaults', ['write', 'com.apple.dock', 'persistent-apps', '-array-add', itemDoDock(instalado.caminho)], { timeout: 15_000 })
-        } catch (e) {
-          this.log('[central] Dock:', e && e.message)
-          throw new ErroCentral('atalho', `Não deu para pôr o ${app.nome} no Dock.`)
-        }
-        // o Dock só relê as preferências ao reiniciar (some e volta em um segundo)
-        await this.d.exec('killall', ['Dock'], { timeout: 15_000 }).catch(() => {})
-      }
-      return { tipo, feito: true }
+      // um app por vez: o `defaults write -array-add` lê, acrescenta e grava a lista inteira (duas ao mesmo tempo se pisam)
+      const vez = this.filaDock.then(() => this.porNoDock(app, instalado))
+      this.filaDock = vez.catch(() => {})
+      return vez
     }
     const lugares = this.lugaresDoAtalho(app)
     const opcoes = { target: instalado.caminho, description: app.nome, icon: instalado.caminho, iconIndex: 0 }
@@ -703,6 +785,8 @@ module.exports = {
   caminhoDoComando,
   baixar,
   urlDoDock,
+  caminhoDoDock,
+  caminhosDoDock,
   itemDoDock,
   estaNoDock,
 }

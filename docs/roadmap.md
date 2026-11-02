@@ -2,6 +2,15 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Central 1.4.3: "Manter no Dock" confiável (02/11/2026, ramo `dock-confiavel`)
+
+- ✅ Bug do Mac: SYNQUEI e CARRO DO FREELA mostravam "No Dock" sem entrar no Dock. Causa: gravações seguidas de
+  `defaults write -array-add` sem fila, `killall Dock` por app e retorno `feito: true` sem reler o Dock.
+- ✅ Fila única, releitura do Dock com comparação do caminho exato (decodificado), até 3 gravações, erro claro se não
+  entrar, um `killall Dock` agrupado (~1,5 s) e a tela só mostra "No Dock" com a central confirmando.
+- ⬜ Conferir num Mac de verdade: instalar vários apps e tocar em "Manter no Dock" em sequência; todos no Dock. Publicar
+  a 1.4.3.
+
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ramo `login-google-navegador`, ADR 0041)
 
 - ✅ Causa: `regras.destino('https://accounts.google.com/…')` devolvia `'app'` e a janela do Electron abria o Google, que

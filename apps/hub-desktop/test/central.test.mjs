@@ -21,6 +21,7 @@ const {
   urlDoDock,
   itemDoDock,
   estaNoDock,
+  caminhosDoDock,
 } = require('../desktop/central.cjs')
 
 const HUB = 'https://absolutezro.com'
@@ -115,6 +116,8 @@ function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execResposta
   fs.mkdirSync(pastasMac[0], { recursive: true })
   const deps = {
     hub: HUB,
+    esperar: async () => {},
+    dockReinicioMs: 30,
     plataforma,
     arch,
     home: path.join(raiz, 'home'),
@@ -388,6 +391,27 @@ test('Dock: endereço e item no formato das preferências do Dock; reconhece o a
   assert.equal(estaNoDock('', '/Applications/Relay.app'), false)
 })
 
+const itemSaida = (url) =>
+  ` {\n "tile-data" = {\n "file-data" = {\n "_CFURLString" = "${url}";\n "_CFURLStringType" = 15;\n };\n };\n "tile-type" = "file-tile";\n }`
+const saidaDock = (...urls) => `(\n${urls.map(itemSaida).join(',\n')}\n)`
+const instaladosFalsos = (central, pastas) => {
+  central.detectar = async (app) => ({ caminho: path.join(pastas[0], app.mac.bundle), versao: '1.0.0' })
+}
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms))
+
+test('Dock: compara caminho decodificado e normalizado, nunca por pedaço de texto', () => {
+  const dock = saidaDock('file:///Applications/Carro%20do%20Freela.app/', 'file:///Applications/Old/Synquei.app/', 'file:///Applications/Synquei.app.bak/')
+  assert.deepEqual(caminhosDoDock(dock), ['/Applications/Carro do Freela.app', '/Applications/Old/Synquei.app', '/Applications/Synquei.app.bak'])
+  assert.equal(estaNoDock(dock, '/Applications/Carro do Freela.app'), true)
+  assert.equal(estaNoDock(dock, '/Applications/Carro do Freela.app/'), true, 'barra final não conta')
+  assert.equal(estaNoDock(dock, '/Applications/Synquei.app'), false, 'mesmo nome em outra pasta ou nome parcial não é "já está"')
+  assert.equal(estaNoDock(dock, '/Users/x/Applications/Carro do Freela.app'), false)
+  assert.equal(estaNoDock(dock, '/applications/carro do freela.app'), false)
+  assert.equal(estaNoDock(dock, '/applications/carro do freela.app', true), true, 'disco que ignora maiúsculas')
+  assert.equal(estaNoDock(saidaDock('file://localhost/Applications/Relay.app/'), '/Applications/Relay.app'), true)
+  assert.equal(estaNoDock('"_CFURLString" = "file:///Applications/Relay.app/" ;', '/Applications/Relay.app'), true)
+})
+
 test('Mac: "Manter no Dock" só com o toque, acrescenta ao Dock e reinicia; já no Dock, não repete', async () => {
   let dock = '(\n)'
   const { central, chamadas, pastasMac } = ambiente({
@@ -412,22 +436,118 @@ test('Mac: "Manter no Dock" só com o toque, acrescenta ao Dock e reinicia; já 
   const escrita = chamadas.find((c) => c[0] === 'defaults' && c[1] === 'write')
   assert.deepEqual(escrita.slice(1, 5), ['write', 'com.apple.dock', 'persistent-apps', '-array-add'])
   assert.equal(escrita[5], itemDoDock(path.join(pastasMac[0], 'Synquei.app')))
+  await dorme(80)
   assert.ok(chamadas.some((c) => c[0] === 'killall' && c[1] === 'Dock'))
   s = (await central.listar()).find((x) => x.id === 'synquei')
   assert.deepEqual(s.atalho, { tipo: 'dock', feito: true })
   await central.criarAtalho('synquei')
   assert.equal(chamadas.filter((c) => c[0] === 'defaults' && c[1] === 'write').length, 1, 'já no Dock: não acrescenta de novo')
+  await dorme(80)
   assert.equal(chamadas.filter((c) => c[0] === 'killall').length, 1)
 })
 
-test('Mac: app não instalado ou Dock recusou: erro claro', async () => {
-  const { central } = ambiente({
+test('Mac: app não instalado: erro; Dock que recusa a gravação: erro claro depois de 3 tentativas, sem killall', async () => {
+  const { central, chamadas } = ambiente({
     plataforma: 'mac',
     execRespostas: { defaults: (args) => (args[0] === 'write' ? Promise.reject(new Error('x')) : { stdout: '' }) },
   })
   await assert.rejects(central.criarAtalho('synquei'), /não está instalado/)
   await central.instalar('synquei')
   await assert.rejects(central.criarAtalho('synquei'), /Não deu para pôr o Synquei no Dock/)
+  assert.equal(chamadas.filter((c) => c[0] === 'defaults' && c[1] === 'write').length, 3)
+  await dorme(80)
+  assert.equal(
+    chamadas.some((c) => c[0] === 'killall'),
+    false,
+    'sem gravação confirmada, não reinicia o Dock',
+  )
+})
+
+// Dock falso: guarda a lista; `engolir` = quantas gravações "somem" (o write devolve sem erro, mas a leitura não traz o item)
+function dockFalso({ engolir = 0, inicial = [], atraso = 0 } = {}) {
+  const estado = { itens: [...inicial], gravacoes: 0, emGravacao: 0, maxSimultaneas: 0 }
+  const exec = async (args) => {
+    if (args[0] === 'write') {
+      estado.emGravacao++
+      estado.maxSimultaneas = Math.max(estado.maxSimultaneas, estado.emGravacao)
+      if (atraso) await dorme(atraso)
+      estado.gravacoes++
+      if (estado.gravacoes > engolir) estado.itens.push(args[4].match(/<string>(file:[^<]+)<\/string>/)[1])
+      estado.emGravacao--
+      return { stdout: '' }
+    }
+    return { stdout: estado.itens.length ? saidaDock(...estado.itens) : '(\n)' }
+  }
+  return { estado, exec }
+}
+
+test('Mac: a primeira gravação some, a segunda entra: confirma relendo o Dock e reinicia uma vez', async () => {
+  const dock = dockFalso({ engolir: 1 })
+  const { central, chamadas } = ambiente({ plataforma: 'mac', execRespostas: { defaults: dock.exec } })
+  await central.instalar('synquei')
+  assert.deepEqual(await central.criarAtalho('synquei'), { tipo: 'dock', feito: true })
+  assert.equal(dock.estado.gravacoes, 2)
+  assert.equal(dock.estado.itens.length, 1)
+  await dorme(80)
+  assert.equal(chamadas.filter((c) => c[0] === 'killall').length, 1)
+  assert.equal((await central.listar()).find((x) => x.id === 'synquei').atalho.feito, true)
+})
+
+test('Mac: gravação que nunca entra mostra erro (nunca "feito") e a lista continua dizendo que não está no Dock', async () => {
+  const dock = dockFalso({ engolir: 99 })
+  const { central } = ambiente({ plataforma: 'mac', execRespostas: { defaults: dock.exec } })
+  await central.instalar('synquei')
+  await assert.rejects(central.criarAtalho('synquei'), /Não deu para pôr o Synquei no Dock/)
+  assert.equal(dock.estado.gravacoes, 3)
+  assert.equal((await central.listar()).find((x) => x.id === 'synquei').atalho.feito, false)
+})
+
+test('Mac: duas chamadas ao mesmo tempo entram na fila (um app por vez) e o Dock reinicia uma vez só', async () => {
+  const dock = dockFalso({ atraso: 20 })
+  const { central, chamadas, pastasMac } = ambiente({ plataforma: 'mac', execRespostas: { defaults: dock.exec } })
+  await central.carregarCatalogo()
+  instaladosFalsos(central, pastasMac)
+  const r = await Promise.all([central.criarAtalho('synquei'), central.criarAtalho('nossom')])
+  assert.deepEqual(r, [
+    { tipo: 'dock', feito: true },
+    { tipo: 'dock', feito: true },
+  ])
+  assert.equal(dock.estado.maxSimultaneas, 1, 'nunca duas gravações ao mesmo tempo')
+  assert.equal(dock.estado.itens.length, 2)
+  await dorme(120)
+  assert.equal(chamadas.filter((c) => c[0] === 'killall').length, 1, 'um killall Dock para o lote')
+})
+
+test('Mac: um erro na fila não trava o app seguinte', async () => {
+  const dock = dockFalso({ engolir: 3 })
+  const { central, pastasMac } = ambiente({ plataforma: 'mac', execRespostas: { defaults: dock.exec } })
+  await central.carregarCatalogo()
+  instaladosFalsos(central, pastasMac)
+  const r = await Promise.allSettled([central.criarAtalho('synquei'), central.criarAtalho('nossom')])
+  assert.equal(r[0].status, 'rejected')
+  assert.equal(r[1].status, 'fulfilled')
+})
+
+test('Mac: caminho com espaço (Carro do Freela.app) entra e é reconhecido; item antigo quebrado não conta como "já está"', async () => {
+  const antigo = 'file:///Users/velho/Applications/Carro%20do%20Freela.app/'
+  const dock = dockFalso({ inicial: [antigo] })
+  const { central, pastasMac } = ambiente({
+    plataforma: 'mac',
+    meusApps: { apps: catalogo.apps.map((a) => (a.id === 'nossom' ? { ...a, nome: 'Carro do Freela', mac: { ...a.mac, bundle: 'Carro do Freela.app' } } : a)) },
+    execRespostas: { defaults: dock.exec },
+  })
+  await central.carregarCatalogo()
+  const app = central.app('nossom')
+  const caminho = path.join(pastasMac[0], 'Carro do Freela.app')
+  central.detectar = async () => ({ caminho, versao: '1.0.0' })
+  assert.equal((await central.listar()).find((x) => x.id === 'nossom').atalho.feito, false, 'só o item antigo, de outro caminho')
+  assert.deepEqual(await central.criarAtalho(app.id), { tipo: 'dock', feito: true })
+  assert.equal(dock.estado.gravacoes, 1, 'o antigo não impediu a gravação')
+  assert.ok(dock.estado.itens.includes(urlDoDock(caminho)))
+  assert.match(dock.estado.itens[1], /Carro%20do%20Freela\.app\/$/)
+  assert.equal((await central.listar()).find((x) => x.id === 'nossom').atalho.feito, true)
+  await central.criarAtalho(app.id)
+  assert.equal(dock.estado.gravacoes, 1, 'já com o mesmo caminho: não repete')
 })
 
 test('Windows: "Criar atalho" na Área de Trabalho e no Menu Iniciar (sem fingir que fixa na barra de tarefas)', async () => {

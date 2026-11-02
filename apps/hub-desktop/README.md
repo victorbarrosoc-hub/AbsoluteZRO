@@ -181,6 +181,19 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `shell.writeShortcutLink` na Área de Trabalho e, se o instalador não criou, no Menu Iniciar. Fixar na barra de
   tarefas não tem API pública: o texto diz "Criar atalho".
 
+## 1.4.3: "Manter no Dock" que confere
+
+- **Bug (Mac):** depois de "Manter no Dock" em vários apps, o botão virava "No Dock" em todos, mas alguns (SYNQUEI e
+  CARRO DO FREELA) não apareciam. A 1.4.2 rodava `defaults write … -array-add` e `killall Dock` por app, sem fila, e
+  devolvia `feito: true` sem reler o Dock. `-array-add` lê a lista, acrescenta e grava tudo (duas ao mesmo tempo se
+  pisam) e cada `killall Dock` reinicia o Dock no meio da gravação seguinte.
+- **Agora:** uma fila só (um app por vez); depois de gravar, a central relê `defaults read com.apple.dock
+persistent-apps` e só confirma com o caminho exato do app (URL `file://` decodificada e normalizada, não por pedaço de
+  texto; maiúsculas só contam se o disco as ignora). Se o item não aparecer, regrava (até 3 vezes, com espera curta);
+  se continuar faltando, erro "Não deu para pôr o X no Dock." e nada de selo. O `killall Dock` roda uma vez só, ~1,5 s
+  depois da última gravação confirmada. Item velho com o mesmo nome em outro caminho não conta como "já está".
+- **Tela:** "No Dock" só aparece quando a central confirmou e a lista (que lê o Dock de verdade) diz `feito`.
+
 ### Deep link (contrato com os apps)
 
 Os apps da família abrem este link quando têm atualização (ou para pedir a instalação de outro app). A central abre no

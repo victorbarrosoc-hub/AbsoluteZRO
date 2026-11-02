@@ -46,6 +46,16 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   lê nem grava `z_lab_uso` (RLS); painel soma por modelo e por nível.
 - Migração `0056_z_custo_por_plano.sql` aplicada só no banco de teste (nada em produção).
 
+## Central 1.4.3: "Manter no Dock" confiável (02/11/2026)
+
+- Causa mais provável, pelo código da 1.4.2 (`criarAtalho`, tipo `dock`): `defaults write -array-add` sem fila e
+  `killall Dock` por app, retorno `{ feito: true }` sem reler o Dock; a UI tratava o retorno como confirmação.
+- `apps/hub-desktop`: `npm test` com os novos: gravação que some e entra na segunda; nunca entra (erro, sem selo e sem
+  killall); duas chamadas simultâneas na fila (no máximo uma gravação por vez, um `killall`); erro não trava a fila;
+  `Carro do Freela.app` (espaço/%20) e item antigo de outro caminho; comparação por caminho decodificado.
+- Não provável sem um Mac real: o comportamento do `cfprefsd` e do Dock ao reiniciar (se regrava a lista com o
+  conteúdo em memória), o formato exato do `defaults read` por versão do macOS e a sensibilidade a maiúsculas do disco.
+
 ## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026)
 
 - Causa do "Não deu para instalar. Tente de novo." (SOBEDESCE, Synquei e Relay no Mac), provada no Electron 44.5.1 de

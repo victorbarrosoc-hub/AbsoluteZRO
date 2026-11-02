@@ -174,7 +174,8 @@ export function AppActions({
     if (!api?.atalho) return
     setErro(null)
     const r = await api.atalho(id)
-    if (!r.ok) return setErro(r.erro ?? 'Algo deu errado.')
+    // só vira "No Dock" quando a central releu o Dock e confirmou (feito: true); nunca por otimismo
+    if (!r.ok || r.dados?.feito !== true) return setErro(r.erro ?? 'Não deu para concluir. Tente de novo.')
     setAtalhoFeito(tipo)
     atualizarTodos(api)
   }
@@ -269,7 +270,7 @@ export function AppActions({
             </button>
           )
         )}
-        {recem && s.atalho && api.atalho && (s.atalho.feito || atalhoFeito)
+        {recem && s.atalho && api.atalho && s.atalho.feito
           ? atalhoFeito && (
               <span className="app-actions__feito">
                 <Icon name="check" size={14} />
