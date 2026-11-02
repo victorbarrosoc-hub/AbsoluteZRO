@@ -172,7 +172,7 @@ export default async function Lancamento({ searchParams }: Props) {
                   {isAdmin && (
                     <details className="adm-confirm">
                       <summary className="zro-btn zro-btn--small">Revogar…</summary>
-                      <ActionForm action={revokeReleaseAccessAction} submit="Revogar e encerrar sessões" variant="danger" className="row" inlineSubmit>
+                      <ActionForm action={revokeReleaseAccessAction} submit="Revogar e encerrar sessões" variant="danger" className="stack">
                         <input type="hidden" name="productId" value={a.productId} />
                         <input type="hidden" name="userId" value={a.userId} />
                         <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo para revogar ${a.userName}`} />

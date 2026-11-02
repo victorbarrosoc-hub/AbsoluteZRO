@@ -33,6 +33,14 @@ export async function verificarZro() {
 export const linkEntrar = (volta = "/app/#ajustes") => `/api/zro/entrar?volta=${encodeURIComponent(volta)}`;
 // "Criar conta": o cadastro é sempre na Absolute ZRO (prompt=create); a pessoa volta para cá já logada.
 export const linkCriarConta = (volta = "/app/#ajustes") => `${linkEntrar(volta)}&criar=1`;
+// "Usar outra conta" (02/11/2026): prompt=login, a Absolute ZRO pede a conta de novo mesmo com uma sessão aberta lá
+// (sem isto o TPeasy reaproveita calado a conta aberta na Absolute ZRO).
+export const linkOutraConta = (volta = "/app/#ajustes") => `${linkEntrar(volta)}&outra=1`;
+/** Sai da conta deste site (o /sair revoga o acesso) e pede a conta de novo; se o /sair falhar, segue mesmo assim. */
+export function usarOutraConta(volta) {
+  const ir = () => location.assign(linkOutraConta(volta));
+  return fetch("/api/zro/sair", { method: "POST", credentials: "same-origin", cache: "no-store" }).then(ir, ir);
+}
 // Onde o admin libera o TPeasy para a organização.
 export const HUB_FERRAMENTAS = "https://absolutezro.com/ferramentas";
 export const PERFIL_ZRO = "https://absolutezro.com/perfil";

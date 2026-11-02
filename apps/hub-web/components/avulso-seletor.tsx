@@ -1,7 +1,7 @@
 'use client'
 /**
  * Avulso numa janela só: a pessoa marca um ou mais apps e o valor vai somando (mensal e anual; o par de rádios da
- * página escolhe qual aparece). Passando do preço do Completo, avisa que o Completo sai mais barato. Enquanto as
+ * página escolhe qual aparece). Passando do preço do Absoluto (o avulso é o Absoluto num app), avisa que ele sai mais barato. Enquanto as
  * vendas não abrem, o botão leva para baixar os apps escolhidos; com as vendas, para assinar.
  */
 import { useState, type CSSProperties } from 'react'
@@ -27,7 +27,7 @@ export function AvulsoSeletor({
   ano: number | null
   completoMes: number | null
   completoAno: number | null
-  /** créditos de IA e GPU por app avulso, por mês */
+  /** mensagens da Z por mês no avulso */
   creditos: number
   /** vendas ligadas: o botão vai para assinar */
   vendas: boolean
@@ -60,9 +60,9 @@ export function AvulsoSeletor({
       <p className="tier__sub">{n === 0 ? `${brl(mes)} por app. Escolha abaixo.` : `${n} ${n === 1 ? 'app' : 'apps'} · ${brl(mes)} cada`}</p>
 
       {creditos > 0 && (
-        <p className="tier__credits" title="Uso comum é livre. Só IA e processamento em GPU gastam créditos, que renovam todo mês.">
+        <p className="tier__credits" title="Cada mensagem da Z conta uma. A franquia renova todo mês.">
           <strong>{creditos.toLocaleString('pt-BR')}</strong>
-          <span>créditos de IA e GPU por mês</span>
+          <span>mensagens da Z por mês</span>
         </p>
       )}
 
@@ -86,7 +86,7 @@ export function AvulsoSeletor({
 
       {(completoMelhorMes || completoMelhorAno) && (
         <p className="tier__note avulso__dica">
-          <span className={completoMelhorMes ? 'when-month' : 'when-year'}>Com {n} apps, o Completo sai mais barato e leva todos.</span>
+          <span className={completoMelhorMes ? 'when-month' : 'when-year'}>Com {n} apps, o Absoluto sai mais barato e leva todos.</span>
         </p>
       )}
 

@@ -48,6 +48,17 @@
   gap: 12px;
   margin-top: 8px;
 }
+/* "Usar outra conta": link discreto embaixo das ações, não um terceiro botão */
+.entrar-outra {
+  color: var(--mudo);
+  font-size: 14px;
+  text-decoration: none;
+}
+.entrar-outra:hover,
+.entrar-outra:focus-visible {
+  color: var(--texto);
+  text-decoration: underline;
+}
 .avatar--grande {
   width: 72px;
   height: 72px;

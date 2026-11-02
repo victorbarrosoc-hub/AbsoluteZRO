@@ -228,6 +228,54 @@ describe("entrar", () => {
     }
   });
 
+  // "Usar outra conta" (02/11/2026): prompt=login faz a Absolute ZRO pedir a conta mesmo com sessão aberta lá.
+  const IP_OUTRA = "203.0.113.77";
+  const promptDa = async (q: string) =>
+    new URL((await rotas.entrar(pedido(`/api/zro/entrar?${q}`, { ip: IP_OUTRA }))).headers.get("location")!).searchParams.get("prompt");
+
+  test("Usar outra conta manda prompt=login; Criar conta continua prompt=create; outro valor não vira prompt", async () => {
+    assert.equal(await promptDa("outra=1&volta=%2Fapp"), "login");
+    assert.equal(await promptDa("outra=1&modo=criar"), "create", "criar vence");
+    assert.equal(await promptDa("outra=sim"), null, "só o valor 1");
+    assert.equal(await promptDa("outra=0"), null);
+    assert.equal(await promptDa("volta=%2Fapp"), null, "entrar sozinho não pede a conta de novo");
+  });
+
+  test("Usar outra conta entra com a conta escolhida na Absolute ZRO e volta para onde ia", async () => {
+    Object.assign(zro.estado.proximo, { pessoa: MAX, adulterar: null, negar: false });
+    const ida = await rotas.entrar(pedido("/api/zro/entrar?outra=1&volta=/app/quadro", { ip: IP_OUTRA }));
+    assert.equal(ida.status, 302);
+    const z = await fetch(ida.headers.get("location")!, { redirect: "manual" });
+    assert.equal(zro.estado.ultimoPrompt, "login");
+    const volta = await rotas.callback(pedido(z.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(ida).get("mae_zro") } }));
+    assert.equal(volta.status, 303);
+    assert.equal(new URL(volta.headers.get("location")!).pathname, "/app/quadro");
+    const j = await (await eu(cookiesDe(volta).get("mae_sessao"))).json();
+    assert.equal(j.pessoa.email, MAX.email);
+  });
+
+  test("Usar outra conta segue pedindo a conta quando a Absolute ZRO recusa um escopo e a ida recomeça", async () => {
+    zro.estado.recusarSet = true;
+    try {
+      Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
+      const ida = await rotas.entrar(pedido("/api/zro/entrar?outra=1&volta=/app/z", { ip: IP_OUTRA }));
+      const z = await fetch(ida.headers.get("location")!, { redirect: "manual" });
+      const r = await rotas.callback(pedido(z.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(ida).get("mae_zro") } }));
+      const deNovo = new URL(r.headers.get("location")!);
+      assert.equal(deNovo.pathname, "/api/zro/entrar");
+      assert.equal(deNovo.searchParams.get("nivel"), "sem_set");
+      assert.equal(deNovo.searchParams.get("outra"), "1");
+      assert.equal(await promptDa(deNovo.searchParams.toString()), "login");
+      // Criar conta que recomeça não ganha o outra.
+      const criar = await rotas.entrar(pedido("/api/zro/entrar?modo=criar&outra=1", { ip: IP_OUTRA }));
+      const zc = await fetch(criar.headers.get("location")!, { redirect: "manual" });
+      const rc = await rotas.callback(pedido(zc.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(criar).get("mae_zro") } }));
+      assert.equal(new URL(rc.headers.get("location")!).searchParams.get("outra"), null);
+    } finally {
+      zro.estado.recusarSet = false;
+    }
+  });
+
   test("state errado, token adulterado e cookie mexido são recusados", async () => {
     const casos: Parameters<typeof fluxo>[0][] = [
       { trocarState: true },
@@ -402,6 +450,33 @@ describe("sair e sessão", () => {
     assert.equal(cookiesDe(s).get("mae_sessao"), "");
     assert.equal(zro.estado.revogados, antes + 1);
     assert.equal((await eu(r.sessao)).status, 401);
+  });
+
+  test("Usar outra conta: sai do Maestro (revoga na Absolute ZRO) e segue para o login pedindo a conta", async () => {
+    const r = await fluxo();
+    const antes = zro.estado.revogados;
+    const s = await rotas.sair(pedido("/api/zro/sair?outra=1&volta=%2Fapp%2Fquadro", { method: "POST", cookies: { mae_sessao: r.sessao } }));
+    assert.equal(s.status, 303);
+    const destino = new URL(s.headers.get("location")!);
+    assert.equal(destino.origin, SITE);
+    assert.equal(destino.pathname, "/api/zro/entrar");
+    assert.equal(destino.searchParams.get("outra"), "1");
+    assert.equal(destino.searchParams.get("volta"), "/app/quadro");
+    assert.equal(cookiesDe(s).get("mae_sessao"), "");
+    assert.equal(zro.estado.revogados, antes + 1);
+    assert.equal((await eu(r.sessao)).status, 401);
+    // Sem sessão (a tela Entrar) vai do mesmo jeito; volta para fora do site vira /app; outro valor é o sair de sempre.
+    const sem = await rotas.sair(pedido("/api/zro/sair?outra=1&volta=https%3A%2F%2Fmal.exemplo", { method: "POST" }));
+    assert.equal(new URL(sem.headers.get("location")!).searchParams.get("volta"), "/app");
+    const comum = await rotas.sair(pedido("/api/zro/sair?outra=sim", { method: "POST" }));
+    assert.equal(new URL(comum.headers.get("location")!).pathname, "/");
+  });
+
+  test("Usar outra conta por POST de outra origem é recusado (a sessão fica)", async () => {
+    const r = await fluxo();
+    const s = await rotas.sair(pedido("/api/zro/sair?outra=1", { method: "POST", cookies: { mae_sessao: r.sessao }, origin: "https://mal.exemplo" }));
+    assert.equal(s.status, 403);
+    assert.equal((await eu(r.sessao)).status, 200);
   });
 
   test("sair por POST de outra origem é recusado", async () => {

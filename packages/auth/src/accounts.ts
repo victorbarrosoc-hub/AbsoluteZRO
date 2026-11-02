@@ -110,16 +110,21 @@ export async function signIn(
 }
 
 export async function verifyEmail(db: Database, token: string): Promise<boolean> {
-  if (!TOKEN_FORMAT.verify.test(token)) return false
+  return (await verifyEmailFor(db, token)) !== null
+}
+
+/** Confirma o e-mail e devolve de quem é (null = link inválido, usado ou vencido). */
+export async function verifyEmailFor(db: Database, token: string): Promise<string | null> {
+  if (!TOKEN_FORMAT.verify.test(token)) return null
   return db.asSystem('auth: confirmar e-mail', async (tx) => {
     const [t] = await tx`
       update zro.auth_tokens set used_at = now()
       where token_hash = ${hashToken(token)} and purpose = 'verify_email' and used_at is null and expires_at > now()
       returning user_id`
-    if (!t) return false
+    if (!t) return null
     await tx`update zro.users set email_verified_at = coalesce(email_verified_at, now()) where id = ${t.user_id as string}`
     await audit(tx, { actorUserId: t.user_id as string, action: 'account.email_verified', targetType: 'user', targetId: t.user_id as string })
-    return true
+    return t.user_id as string
   })
 }
 

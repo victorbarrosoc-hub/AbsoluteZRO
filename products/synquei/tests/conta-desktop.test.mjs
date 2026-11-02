@@ -139,7 +139,7 @@ test('sem cofre do sistema: o refresh token fica só na memória; sair revoga', 
   assert.equal(zro.estado.revogados, n + 1)
 })
 
-test('recusas: state trocado, pessoa negou, nonce adulterado; criar conta pede prompt=create', async () => {
+test('recusas: state trocado, pessoa negou, nonce adulterado; criar conta pede prompt=create, outra conta prompt=login', async () => {
   zro.estado.pessoa = LIA
   const c = criarConta({ pasta, abrirNavegador: navegador(true) })
   assert.equal(await c.entrar(), 'expirou')
@@ -152,6 +152,13 @@ test('recusas: state trocado, pessoa negou, nonce adulterado; criar conta pede p
   assert.equal(c.eu(), null, 'nada foi guardado')
   const novo = criarConta({ pasta, abrirNavegador: navegador(false) })
   assert.equal(await novo.entrar({ criar: true }), 'ok')
+  assert.equal(zro.estado.prompt, 'create')
+  novo.sair()
+  // "Usar outra conta": prompt=login (a Absolute ZRO pede a conta de novo); criar conta vence
+  assert.equal(await novo.entrar({ outra: true }), 'ok')
+  assert.equal(zro.estado.prompt, 'login')
+  novo.sair()
+  assert.equal(await novo.entrar({ outra: true, criar: true }), 'ok')
   assert.equal(zro.estado.prompt, 'create')
   novo.sair()
 })
@@ -279,6 +286,16 @@ test('a tela de conta do site liga no desktop quando a ponte tem a conta', async
   assert.equal(a.href, '/api/zro/entrar?volta=%2Fapp%2Findex.html%23%2Fajustes')
   for (let i = 0; i < 50 && pedidos.length < 3; i++) await new Promise((r) => setTimeout(r, 10))
   assert.deepEqual(pedidos.slice(1), [a.href, '/api/zro/eu?visitante=1'])
+
+  // "Usar outra conta": sai da conta daqui primeiro e depois pede a conta de novo (outra=1 → prompt=login)
+  pedidos.length = 0
+  parou = false
+  const o = { dataset: { entrar: 'outra' }, href: '', getAttribute: () => o.href }
+  ouvintes.click({ target: { closest: () => o }, preventDefault: () => (parou = true) })
+  assert.equal(parou, true)
+  assert.equal(o.href, '/api/zro/entrar?volta=%2Fapp%2Findex.html%23%2Fajustes&outra=1')
+  for (let i = 0; i < 50 && pedidos.length < 3; i++) await new Promise((r) => setTimeout(r, 10))
+  assert.deepEqual(pedidos, ['/api/zro/sair', o.href, '/api/zro/eu?visitante=1'])
 
   // desktop antigo (sem a conta na ponte): nada de conta, como antes
   globalThis.window = { synqueiDesktop: { isDesktop: true } }

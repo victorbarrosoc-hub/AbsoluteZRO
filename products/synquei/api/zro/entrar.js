@@ -2,6 +2,8 @@
 // por aqui: quem já está logado na Absolute ZRO volta ao app logado, sem tela de permissão (app da família).
 // GET /api/zro/entrar?criar=1 — "Criar conta": o mesmo fluxo com prompt=create. A conta nasce na Absolute ZRO (o
 // Synquei não tem cadastro próprio) e a pessoa volta ao app já logada.
+// GET /api/zro/entrar?outra=1 — "Usar outra conta": prompt=login faz a Absolute ZRO pedir a conta de novo, mesmo com
+// uma sessão aberta lá (02/11/2026). Criar conta vence (prompt=create); outro valor não vira prompt.
 // GET /api/zro/entrar?sem_set=1 — o mesmo pedido sem o escopo do Set (a Absolute ZRO recusou zro.set; ver callback).
 
 import { clientId, comAviso, configurado, consulta, cookie, COOKIE_IDA, desafioPkce, descobrir, ESCOPOS, ESCOPOS_SEM_SET, IDA_S, novoValor, origemDoPedido, origemPermitida, redirecionar, retorno, selar, voltaSegura } from '../_zro.js'
@@ -10,10 +12,11 @@ export default async function entrar(req, res) {
   const q = consulta(req)
   const volta = voltaSegura(q.get('volta'))
   const criar = q.get('criar') === '1'
+  const outra = !criar && q.get('outra') === '1'
   const semSet = q.get('sem_set') === '1'
   // A Absolute ZRO volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemPermitida(req)
-  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${semSet ? '&sem_set=1' : ''}`)
+  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${outra ? '&outra=1' : ''}${semSet ? '&sem_set=1' : ''}`)
   if (!configurado()) return redirecionar(res, 303, comAviso(volta, 'config'))
 
   const state = novoValor()
@@ -31,6 +34,7 @@ export default async function entrar(req, res) {
     u.searchParams.set('code_challenge', desafioPkce(verificador))
     u.searchParams.set('code_challenge_method', 'S256')
     if (criar) u.searchParams.set('prompt', 'create')
+    else if (outra) u.searchParams.set('prompt', 'login')
     destino = u.toString()
   } catch {
     return redirecionar(res, 303, comAviso(volta, 'erro'))

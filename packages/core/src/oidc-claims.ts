@@ -7,9 +7,11 @@
  *   conta está na lista; closed = fechado e sem acesso. O app mostra a tela certa sem perguntar ao HUB de novo.
  * - zro_features: sinais de recurso da organização (ex.: `maestro.marca_propria`, migração 0025), só de produto aberto
  *   para a pessoa; o token de cada app leva só os do produto dele (packages/auth/src/oidc.ts).
+ * - zro_nivel: { produto: zero | orbita | absoluto } (0055, ADR 0039) e zro_teste_ate (ISO) com o teste do Absoluto
+ *   em andamento. Sem organização: nada (o nível depende da organização).
  */
 import type { ClaimsLoader } from '@zro/auth'
-import { featureFlagsFor, productAccessFor, releaseClaimsFor } from '@zro/billing'
+import { featureFlagsFor, nivelClaim, niveisEfetivos, productAccessFor, releaseClaimsFor, testeAtivoAte } from '@zro/billing'
 
 export const loadOidcClaims: ClaimsLoader = async (tx, userId, orgId) => {
   const release = await releaseClaimsFor(tx, userId, 'sso')
@@ -24,5 +26,7 @@ export const loadOidcClaims: ClaimsLoader = async (tx, userId, orgId) => {
     products: access.filter((a) => a.access === 'contracted').map((a) => a.productId),
     release,
     features: await featureFlagsFor(tx, orgId, { userId, channel: 'sso' }),
+    nivel: nivelClaim(await niveisEfetivos(tx, userId, orgId)),
+    testeAte: (await testeAtivoAte(tx, userId, orgId))?.toISOString() ?? null,
   }
 }

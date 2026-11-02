@@ -41,6 +41,19 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   expect(JSON.stringify(ent)).not.toMatch(/AEON|Revela|NOSSOM/)
   // Com o Carro do Freela no ar (0041), o Início oferece o projeto "de um job".
   await expect(page.locator('nav.quick')).toContainText('Do zero ou de um job')
+  // Planos Zero/Órbita/Absoluto (0055): conta nova nasce no Zero; sem campanha, ninguém fala em teste.
+  expect(ent.nivel).toMatchObject({ maestro: 'zero', sobedesce: 'zero', relay: 'zero' })
+  expect(ent.teste_ate).toBeNull()
+  await expect(page.locator('.greet__plano')).toHaveText('Zero')
+  await expect(page.getByText(/teste até|fase \d|em breve/i)).toHaveCount(0)
+  const me = await (await page.request.get('/api/v1/me/limites')).json()
+  expect(me.produtos.maestro.limites.clientes_ativos).toBe(3)
+  expect(me.z).toMatchObject({ franquia: 10, usadas: 0, recarga: 0 })
+  const cat = await page.request.get('/api/v1/limites')
+  expect(cat.headers()['cache-control']).toContain('public')
+  expect((await cat.json()).produtos.relay.resolucao_maxima.valores).toEqual({ zero: 1080, orbita: 2160, absoluto: null })
+  await page.goto('/perfil/plano')
+  await expect(page.locator('.plan-chip')).toHaveText('Zero')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -224,8 +237,12 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
     expect(overflow, path).toBeLessThanOrEqual(0)
   }
   await page.goto('/planos')
-  await expect(page.getByText('Por enquanto, tudo liberado.')).toBeVisible()
-  await expect(page.getByText('R$ 149,90').first()).toBeVisible()
+  // Planos Zero/Órbita/Absoluto (0055): os preços novos, sem botão de compra (o Stripe vem depois).
+  await expect(page.getByText('Comece no Zero.')).toBeVisible()
+  await expect(page.getByText('R$ 109,90').first()).toBeVisible()
+  await expect(page.getByText('R$ 299,90').first()).toBeVisible()
+  await expect(page.getByText('R$ 149,90')).toHaveCount(0)
+  await expect(page.getByText(/fase \d|em breve/i)).toHaveCount(0)
   // Avulso numa janela só: marcar dois apps soma o valor e o botão vira "Baixar 2 apps"
   await page.getByRole('button', { name: 'SOBEDESCE' }).click()
   await page.getByRole('button', { name: 'Synquei' }).click()

@@ -50,6 +50,19 @@
   var volta = voltaSegura(pedida)
   $('entrar').href = '/api/zro/entrar?volta=' + encodeURIComponent(volta)
   $('criar').href = '/api/zro/entrar?criar=1&volta=' + encodeURIComponent(volta)
+  // "Usar outra conta" (02/11/2026): sai da conta deste site (o /sair revoga o acesso) e pede a conta de novo com
+  // prompt=login, mesmo com outra sessão aberta na Absolute ZRO; se o /sair falhar, segue mesmo assim.
+  var outra = '/api/zro/entrar?outra=1&volta=' + encodeURIComponent(volta)
+  Array.prototype.forEach.call(document.querySelectorAll('[data-outra]'), function (a) {
+    a.href = outra
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault()
+      var ir = function () {
+        location.assign(outra)
+      }
+      fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin', cache: 'no-store' }).then(ir, ir)
+    })
+  })
   $('abrir').href = volta
   $('abrir-sem').href = volta
   if (AVISOS[q.get('zro')]) $('aviso').textContent = AVISOS[q.get('zro')]

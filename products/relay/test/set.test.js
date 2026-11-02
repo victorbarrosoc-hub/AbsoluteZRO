@@ -71,6 +71,14 @@ describe('conta (só para o Set; converter segue sem conta)', () => {
     assert.equal(volta.headers.get('location'), '/painel?zro=ok')
   })
 
+  test('usar outra conta = prompt=login na Absolute ZRO (pede a conta mesmo com sessão aberta lá); criar vence', async () => {
+    const pr = async (q) => new URL((await pedir('/api/zro/entrar?' + q)).headers.get('location')).searchParams.get('prompt')
+    assert.equal(await pr('outra=1&volta=%2Fpainel'), 'login')
+    assert.equal(await pr('outra=sim'), null, 'outro valor não vira prompt')
+    assert.equal(await pr('volta=%2Fpainel'), null)
+    assert.equal(await pr('outra=1&criar=1'), 'create', 'criar conta continua sendo prompt=create')
+  })
+
   test('Absolute ZRO de antes do Set (invalid_scope): entra sem zro.set', async () => {
     zro.estado.recusarSet = true
     const { cookies } = await entrar()

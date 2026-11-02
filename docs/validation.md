@@ -15,6 +15,46 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ADR 0039)
+
+Branch `planos-b`, migração `0055_planos_zero_orbita_absoluto.sql`. Rodado com banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_planosb_test`: outra sessão no mesmo Postgres recriava o `zro_test` no meio da bateria).
+
+- `npm test`: **602/602** em 68 arquivos. Novo `tests/integration/planos-b.test.ts` (22): preços e planos antigos como
+  legado; catálogo de limites (null = sem limite) sem apps fechados; nível efetivo (conta nova no Zero, **conta antiga
+  não perde nada**, avulso, Órbita, admin com Absoluto em tudo, sem vínculo = Zero, claims `zro_nivel`/`zro_teste_ate`);
+  Z franquia → recarga (vencida não conta, idempotente, `providerRef` único); campanha (desligada por padrão, ligar dá
+  às contas do Zero que já existiam e não às antigas nem às sem e-mail, conta nova ganha ao criar a organização ou ao
+  confirmar o e-mail, uma vez só, e-mail normalizado repetido, descartável e 4º do mesmo IP recusados e contados,
+  estender/encerrar com auditoria, Z do teste no período inteiro, desligar mantém quem está em teste, campanha vencida);
+  migração das contas antigas (desligada recusa, ligada migra com auditoria); RLS (limites: todos leem, só admin muda;
+  testes, recargas, campanha e sinais isolados).
+- Testes antigos ajustados ao catálogo novo: planos de 0011/0025/0027/0041/0043 seguem no banco como `retired`; os
+  backfills simulam conta antiga com `legacyFreeOrg` (o grátis antigo); `givePlan` dá plano antigo como assinatura
+  manual direta; Ligar vendas recusa.
+- `npm run test:e2e` (banco e porta próprios): **67/67** em 16 arquivos. Novos: a conta nova vê "Zero" no Início e no
+  Perfil, `nivel`/`teste_ate` em `/api/v1/entitlements`, `/api/v1/me/limites` e o cache público de `/api/v1/limites`
+  (o `no-store` geral de `/api` não vale para ele, `next.config.ts`); `/planos` com R$ 109,90 e R$ 299,90, sem
+  R$ 149,90, sem "fase" nem "em breve"; console › Planos com o teste desligado, os limites por nível e o axe.
+- `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm run build`: ok. `node scripts/scan-secrets.mjs`:
+  nenhum segredo.
+
+## TPeasy: registro de leituras tpeasy.leituras/1 (02/11/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` → **83/83** (linha com fuso, blocos em ordem, origem e versão do
+  Maestro, toque de menos de 1,5 s fora, últimas 1.000, JSONL; SW `tpeasy-v24`).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **593/593** em 69 arquivos (o schema aceita as linhas geradas
+  pelo `leituras.js` real e recusa campo a mais, tempo fora de ordem, bloco depois do fim e versão sem origem);
+  `npm run test:e2e` **61/68**: 6 são WebKit e não abriram neste ambiente (`Executable doesn't exist`); a
+  outra é `iphone-telas` (`/admin/lancamento`, "Revogar e encerrar sessões" passa da largura), vermelha no `main` também.
+- CI vermelho herdado do `main` (`iphone-telas`, `/admin/lancamento`): com o `<details class="adm-confirm">` fechado, o
+  formulário ficava espremido em 24 px ao lado do botão e o campo e o botão (223 px) passavam da borda. Corrigido em
+  `globals.css` (`.adm-confirm:not([open]) > :not(summary) { display: none }`): reproduzido e conferido com uma pessoa
+  na lista de acesso (375/393/430, fechado e aberto: o form aberto fica em 40–328 de 375) e o teste inteiro passou
+  no Chromium (WebKit não abre neste ambiente; o CI confere).
+- Fumaça no Chromium (iPhone 13), app servido como estático: roteiro `# Gancho` / `# Oferta` a 320 ppm, uma leitura de
+  6 s grava os dois blocos (Oferta aos 3,4 s), Ajustes mostra 1, nenhum erro no console.
+
 ## Higgsfield: renovação e medidor do ciclo nas Conexões (02/11/2026)
 
 Branch `higgsfield-renovacao`.
@@ -4792,6 +4832,19 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
   (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.
 
+## "Usar outra conta" no login dos apps (02/11/2026)
+
+- Causa conferida no banco de produção: os códigos do Carro de 02/11 12:26 saíram para a conta aberta no navegador; a
+  outra conta só abriu sessão às 12:27–12:28 e nenhum código do Carro saiu para ela (o entitlement do Carro estava
+  ativo).
+- Carro: `npm run test:api` 49/49 (`prompt=login` com `outra=1`; outro valor ignorado; criar vence) e `conta-zro`
+  152/152 (o link à vista, leva a `entrar?outra=1`, some no modo criar).
+- Relay `npm test` 133/133. Synquei `npm test` 163 ok, 10 pulados (WebKit, luajit, root), com a página `/entrar/` nova da `main` (`tests/entrar.test.mjs` 7/7). TPeasy
+  `node --test tests/*.test.mjs` 80 ok, 4 pulados (WebKit).
+- Maestro: typecheck, lint, format e build ok; `tests/zro.test.mts` 29/29 (inclui o `invalid_scope` mantendo
+  `outra=1`); `tests/relay.test.mts` 37/37 depois do merge da `main` (a cópia do Relay já atualizada lá).
+- `scan-secrets`: nenhum segredo.
+
 ## AEON: /app/ com a barra abre o editor depois do login (02/11/2026)
 
 - Causa: a volta do login é `/app/?zro=ok`, e na Vercel `/app/:caminho*` não casa com `/app/` (barra no fim, nada
@@ -4805,3 +4858,13 @@ SOBEDESCE de computador, que disparam os instaladores).
 
 - `test/demo-real.js` 18/18 (selo na lateral, sem ☰ no computador, a conta abre "conta e ajustes" sem repetir as telas).
 - `menu-recolhivel` 52/52, `mapa` 72/72, `doca` 39/39, `site-real` 42/42, `guia-portas` 33/33, `identidade` 19/19.
+
+## AEON: BRAW pelo proxy (02/11/2026)
+
+- `src/proxy.js` (puro) pareia RAW e proxy pelo nome-base. A subpasta `Proxy` vem primeiro, o proxy pareado não entra
+  solto e os `._` do Mac ficam de fora. `test/proxy.test.js` 4/4: pareio, pasta do cartão, `accept` do seletor e FCPXML
+  apontando para o `.braw` (e não para o `.mp4`).
+- Tela (Chromium): `.braw` com proxy entra como "B001_C001.braw" com a ficha "proxy". O `.braw` sem proxy abre a folha,
+  e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
+- `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
+- Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).

@@ -8,6 +8,30 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (a lateral já é o menu); a gaveta virou "conta e ajustes" (conta, Ajuda, Ajustes, tema e som), aberta pelo cartão da
   conta no pé da lateral. No celular a gaveta continua sendo o menu.
 
+## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ramo `planos-b`, ADR 0039)
+
+- ✅ Migração `0055`: Zero (grátis), Órbita (R$ 109,90/mês ou R$ 1.099/ano), Absoluto (R$ 299,90 ou R$ 2.999) e Avulso
+  de um app (R$ 79,90 ou R$ 799; Maestro, SOBEDESCE, Synquei, Relay, Carro). Planos antigos fora da venda, como legado;
+  **ninguém que já existe muda** (Absoluto legado nos apps que já tinha, sem os limites novos). Conta nova nasce no Zero.
+- ✅ Catálogo de limites por nível (`zro.plan_limits`), público em `GET /api/v1/limites`; nível efetivo por app
+  (`zro.niveis_efetivos`) na claim `zro_nivel` (+ `zro_teste_ate`), em `/api/v1/entitlements` e em
+  `GET /api/v1/me/limites`.
+- ✅ Z por nível em mensagens (10/100/300, avulso 50, teste 50 no período) com recarga de 12 meses depois da franquia.
+- ✅ Teste de 15 dias do Absoluto como campanha, **desligado**: o admin liga com data de fim no console; uma vez por
+  pessoa, e-mail confirmado e normalizado, sem descartável, 3 por IP/dia; recusas contadas.
+- ✅ Console › Planos: campanha (ligar/desligar, em teste, recusados), estender/encerrar o teste de uma pessoa, limites
+  por nível (editar só admin), recargas, contas antigas (migrar para o Zero, desligado). Início e Perfil mostram o plano.
+- ⬜ Stripe: checkout dos planos novos e das recargas, webhook das recargas (`concederRecarga` com `providerRef`).
+- ⬜ Cada app ler `zro_nivel` e aplicar os números do catálogo (hoje só o HUB mede a Z e as duas operações dele).
+- ⛔ Ligar a campanha e migrar contas antigas: decisão do titular (nada ligado em produção).
+
+## "Usar outra conta" no login dos apps (02/11/2026, ramo `claude/outra-conta`)
+
+- ✅ Carro do Freela, Relay, Synquei (web, `/entrar/` e computador), TPeasy e Maestro (Entrar e Sem acesso): link "Usar outra conta"
+  embaixo de "Entrar com Absolute ZRO". Sai da conta do app (revoga o acesso ao HUB) e pede a conta de novo com
+  `prompt=login`, mesmo com outra sessão aberta na Absolute ZRO. Pedido do titular: o app reaproveitava calado a conta
+  aberta e não deixava entrar com outra. O SOBEDESCE já tinha.
+
 ## Carro do Freela: modo demonstração em /demo (02/11/2026, ramo `claude/carro-demo`)
 
 - ✅ `carro.absolutezro.com/demo`: o site real com cerca de 100 perfis fictícios (praça, agenda de 42 dias, propostas,
@@ -975,6 +999,15 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   régua não batia com os clipes.
 - ⬜ Mídia em pastas com miniaturas e forma de onda da música, e dois visualizadores (fonte e linha), como na proposta.
 
+## AEON: BRAW e outros RAW de câmera pelo proxy (02/11/2026)
+
+- ✅ O seletor e o arrastar aceitam `.braw`, `.r3d`, `.ari`, `.arx`, `.crm` e `.nev`. O navegador não decodifica RAW,
+  então o AEON edita pelo proxy de mesmo nome-base: o escolhido junto ou o da subpasta `Proxy`, o mesmo padrão do
+  SOBEDESCE. A mídia fica com o nome e o caminho do RAW, e XML, FCPXML, OTIO e EDL apontam para o original.
+- ✅ Sem proxy, a folha pede a pasta do cartão e acha os proxies sozinha. Se não houver nenhum, aponta o SOBEDESCE ou o
+  "Gerar mídia proxy" do DaVinci.
+- ⬜ Abrir o .braw direto no app de computador, com o SDK da Blackmagic, como o SOBEDESCE já faz para a miniatura.
+
 ## Edição automática no AEON (01/11/2026, [ADR 0038](decisions/0038-edicao-automatica.md))
 
 - ✅ "Edição automática" na Mídia, com os modos em cartões e um preset versionado por modo (`presets/clipe.v1.json`,
@@ -1645,6 +1678,17 @@ do card... não consigo localizar o job que quero achar".
 - ⬜ Deploy dos projetos `aeon`, `revela` e `nossom` (o AEON segue no ar com a página de lançamento até o próximo
   deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
   SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.
+
+## TPeasy: registro de leituras para o Synquei e o AEON (02/11/2026, [contrato](integration-contracts/tpeasy-leituras.md))
+
+- ✅ `tpeasy.leituras/1`: cada vez que o texto anda no TP vira uma linha com a hora do bip e os blocos (`# …`; do Maestro,
+  as cenas) que passaram; roteiro do Maestro leva a origem e a versão. **Ajustes › Exportar leituras** gera o `.jsonl`.
+  Schema em `packages/media-contracts`, linhas do teste geradas pelo código real do app. SW `tpeasy-v24`, app 2.3.
+  Substitui o PR #66 (anterior à caixa de entrada do Maestro e à `0045`).
+- ✅ `CLAUDE.md` e `AGENTS.md` do TPeasy.
+- ⬜ Synquei: ler o `.jsonl`, achar o bip no áudio do clipe e propor o nome do bloco (prévia + confirmação; ambíguo →
+  revisar). AEON: bloco como etiqueta do clipe. Depois, o registro pelo HUB.
+- ⬜ Vídeo 9:16 em uso real com um número medido (do próprio registro) e ficha de compatibilidade com aparelhos testados.
 
 ## Fase 6 — Escala
 
