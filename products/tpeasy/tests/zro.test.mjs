@@ -887,7 +887,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v23/)
+    assert.match(sw, /tpeasy-v24/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON e Revela estão fechados; o Carro do Freela entrou em 01/11/2026)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]

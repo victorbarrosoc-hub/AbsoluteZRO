@@ -1,8 +1,9 @@
 // Dados do app: roteiros, perfis de TP, sessões de leitura e preferências.
 // Tudo fica no aparelho; o sync.js espelha na nuvem quando há conta.
 import { store, uid, esc } from "./util.js";
+import { acrescentar } from "./leituras.js";
 
-const KEY = { scripts: "tpeasy.scripts.v1", prefs: "tpeasy.prefs.v1", ui: "tpeasy.ui.v1", sessions: "tpeasy.sessions.v1" };
+const KEY = { scripts: "tpeasy.scripts.v1", prefs: "tpeasy.prefs.v1", ui: "tpeasy.ui.v1", sessions: "tpeasy.sessions.v1", leituras: "tpeasy.leituras.v1" };
 
 // ───────────── eventos ─────────────
 const listeners = {};
@@ -214,6 +215,17 @@ export function weekStats() {
 export function lastSessionOf(id) {
   for (let i = sessions.length - 1; i >= 0; i--) if (sessions[i].scriptId === id) return sessions[i];
   return null;
+}
+
+// ───────────── registro de leituras (tpeasy.leituras/1, leituras.js) ─────────────
+let leituras = store.get(KEY.leituras, []);
+if (!Array.isArray(leituras)) leituras = [];
+export const allLeituras = () => leituras;
+export function registrarLeitura(linha) {
+  if (!linha) return;
+  leituras = acrescentar(leituras, linha);
+  store.set(KEY.leituras, leituras);
+  emit("leituras");
 }
 
 // ───────────── preferências do app ─────────────

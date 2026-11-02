@@ -1640,6 +1640,17 @@ do card... não consigo localizar o job que quero achar".
   deploy) e, opcional, `RELEASE` fora do projeto Vercel `aeon`. Versão de computador: a mensagem "cor da Revela" do
   SOBEDESCE (`src/engine/pedidos-relay.js`) e o ícone sem uso `products/synquei/app/familia/revela.svg`.
 
+## TPeasy: registro de leituras para o Synquei e o AEON (02/11/2026, [contrato](integration-contracts/tpeasy-leituras.md))
+
+- ✅ `tpeasy.leituras/1`: cada vez que o texto anda no TP vira uma linha com a hora do bip e os blocos (`# …`; do Maestro,
+  as cenas) que passaram; roteiro do Maestro leva a origem e a versão. **Ajustes › Exportar leituras** gera o `.jsonl`.
+  Schema em `packages/media-contracts`, linhas do teste geradas pelo código real do app. SW `tpeasy-v24`, app 2.3.
+  Substitui o PR #66 (anterior à caixa de entrada do Maestro e à `0045`).
+- ✅ `CLAUDE.md` e `AGENTS.md` do TPeasy.
+- ⬜ Synquei: ler o `.jsonl`, achar o bip no áudio do clipe e propor o nome do bloco (prévia + confirmação; ambíguo →
+  revisar). AEON: bloco como etiqueta do clipe. Depois, o registro pelo HUB.
+- ⬜ Vídeo 9:16 em uso real com um número medido (do próprio registro) e ficha de compatibilidade com aparelhos testados.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

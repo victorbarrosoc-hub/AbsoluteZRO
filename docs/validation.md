@@ -15,6 +15,17 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## TPeasy: registro de leituras tpeasy.leituras/1 (02/11/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` → **83/83** (linha com fuso, blocos em ordem, origem e versão do
+  Maestro, toque de menos de 1,5 s fora, últimas 1.000, JSONL; SW `tpeasy-v24`).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **593/593** em 69 arquivos (o schema aceita as linhas geradas
+  pelo `leituras.js` real e recusa campo a mais, tempo fora de ordem, bloco depois do fim e versão sem origem);
+  `npm run test:e2e` **61/68**: as 7 que faltam são WebKit e não abriram neste ambiente (`Executable doesn't exist`);
+  Chromium todo verde.
+- Fumaça no Chromium (iPhone 13), app servido como estático: roteiro `# Gancho` / `# Oferta` a 320 ppm, uma leitura de
+  6 s grava os dois blocos (Oferta aos 3,4 s), Ajustes mostra 1, nenhum erro no console.
+
 ## Higgsfield: renovação e medidor do ciclo nas Conexões (02/11/2026)
 
 Branch `higgsfield-renovacao`.
