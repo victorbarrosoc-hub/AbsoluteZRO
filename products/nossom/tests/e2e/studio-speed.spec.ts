@@ -54,7 +54,7 @@ test('studio navigation responds without server round trips, supports history an
     ).toBeVisible({ timeout: 1000 });
     await page.goBack();
     await expect(
-      page.getByRole('heading', { name: 'Melhorar com IA', exact: true, level: 1 }),
+      page.getByRole('heading', { name: 'Melhorar com a Z', exact: true, level: 1 }),
     ).toBeVisible({ timeout: 1000 });
     await page.goForward();
     await expect(

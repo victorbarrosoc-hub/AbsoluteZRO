@@ -1,4 +1,4 @@
-// IA avançada (lib/server/ia-avancada.ts): a reserva do Melhorar com IA roda no servidor, usa os mesmos minutos do
+// IA avançada (lib/server/ia-avancada.ts): a reserva do Melhorar com a Z roda no servidor, usa os mesmos minutos do
 // plano, nunca chama a GPU, não expõe a chave e, se falhar ou passar do prazo, encerra o pedido (minutos devolvidos).
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';

@@ -26,7 +26,7 @@ const engines: Record<CloudPreset, string> = {
   [singingSeparation.id]: 'Mel-Band RoFormer · vocals',
   [transcription.id]: 'Whisper large-v3-turbo',
   [stemSeparation.id]: 'Mel-Band RoFormer + HTDemucs 6s',
-  [iaAvancada.id]: 'Quasar IA avançada',
+  [iaAvancada.id]: 'Z avançada',
 };
 const runningLabels: Record<CloudPreset, string> = {
   [restorationD.id]: 'Melhorando sua voz…',
@@ -35,7 +35,7 @@ const runningLabels: Record<CloudPreset, string> = {
   [singingSeparation.id]: 'Separando a voz dos instrumentos…',
   [transcription.id]: 'Escrevendo o que foi dito…',
   [stemSeparation.id]: 'Separando voz, bateria, baixo e guitarra…',
-  [iaAvancada.id]: 'Limpando sua voz com a IA avançada…',
+  [iaAvancada.id]: 'A Z avançada está limpando sua voz…',
 };
 
 export class CloudCancelled extends Error {

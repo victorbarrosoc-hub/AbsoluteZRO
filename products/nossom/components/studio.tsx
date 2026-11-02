@@ -394,7 +394,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [usage, setUsage] = useState<AudioUsage | null>(null);
   const [usageError, setUsageError] = useState('');
   const [cloudReady, setCloudReady] = useState<boolean | null>(null);
-  // Reserva do Melhorar com IA (IA avançada) e a Quasar Presence logo depois da IA, ligada por padrão.
+  // Reserva do Melhorar com a Z (IA avançada) e a Quasar Presence logo depois da IA, ligada por padrão.
   const [advancedReady, setAdvancedReady] = useState(false);
   const [presenceAfterAI, setPresenceAfterAI] = useState(true);
   const [pendingJob, setPendingJob] = useState<{
@@ -929,7 +929,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           )
             throw error;
           setPendingJob(null);
-          setBusy('Nosso motor não deu conta. Tentando a IA avançada…');
+          setBusy('A Z está tentando o modo avançado…');
           cloud = await send(iaAvancada.id);
         }
         cloudId = cloud.id;
@@ -1021,8 +1021,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               : 'Vocais separados da música'
             : operation === 'auto'
               ? result.processing?.iaAvancada
-                ? 'Voz melhorada com IA avançada'
-                : 'Voz melhorada com IA'
+                ? 'Voz melhorada com a Z avançada'
+                : 'Voz melhorada com a Z'
               : operation === 'master'
                 ? masterRecipe === 'broadcast'
                   ? 'Quasar Presence'
@@ -1849,7 +1849,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                     <li>
                       <span>2</span>
                       <div>
-                        <strong>Deixe a IA cuidar do som</strong>
+                        <strong>Deixe a Z cuidar do som</strong>
                         <p>Comece pelo tratamento completo e compare com o original.</p>
                       </div>
                     </li>
@@ -2397,7 +2397,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                         <div className="automatic-card">
                           <div>
                             <Sparkles size={22} />
-                            <h3>{autoEnabled ? 'A IA cuida dos ajustes.' : 'Ajustes manuais'}</h3>
+                            <h3>{autoEnabled ? 'A Z cuida dos ajustes.' : 'Ajustes manuais'}</h3>
                           </div>
                           <p>
                             {cloudOperation || autoEnabled
@@ -2516,17 +2516,17 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                           ? 'Pronto para isolar sua voz'
                                           : 'Pronto para separar o cantor'
                                         : 'Pronto para melhorar sua voz'
-                                  : 'A melhoria com IA está temporariamente indisponível'}
+                                  : 'A Z está temporariamente indisponível'}
                           </strong>
                           {!pendingJob && (
                             <p>
                               {operation === 'vocals' && voiceMode === 'singing'
-                                ? 'Uma cópia vai para a IA. Pode sobrar um pouco dos instrumentos.'
+                                ? 'Uma cópia vai para a Z. Pode sobrar um pouco dos instrumentos.'
                                 : operation === 'remix'
-                                  ? 'Uma cópia vai para a IA. Pode sobrar um pouco de um instrumento no outro.'
+                                  ? 'Uma cópia vai para a Z. Pode sobrar um pouco de um instrumento no outro.'
                                   : operation === 'transcribe'
-                                    ? 'Uma cópia do som vai para a IA. Revise nomes antes de publicar.'
-                                    : 'Uma cópia vai para a IA. Seu original fica salvo.'}
+                                    ? 'Uma cópia do som vai para a Z. Revise nomes antes de publicar.'
+                                    : 'Uma cópia vai para a Z. Seu original fica salvo.'}
                             </p>
                           )}
                           {!cloudReady && operation !== 'vocals' && (
@@ -2806,7 +2806,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                 onClick={() => setDenoiseMode('voice')}
                               >
                                 <Mic size={18} />
-                                <strong>Voz · IA local</strong>
+                                <strong>Voz · Z no aparelho</strong>
                                 <span>Modelo neural para fala</span>
                               </button>
                               <button
@@ -3234,7 +3234,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                           />
                           <span className="presence-switch-track" aria-hidden="true" />
                           <span className="presence-switch-text">
-                            <strong>Quasar Presence depois da IA</strong>
+                            <strong>Quasar Presence depois da Z</strong>
                             <small>Multibanda + limite −3 dB</small>
                           </span>
                         </label>
@@ -3282,7 +3282,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                       ? voiceMode === 'speech'
                                         ? 'Isolar voz'
                                         : 'Separar vocal'
-                                      : 'Melhorar com IA'
+                                      : 'Melhorar com a Z'
                               : autoEnabled
                                 ? 'Analisar e tratar'
                                 : 'Aplicar tratamento'}{' '}
@@ -3302,11 +3302,11 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             }
                             onClick={() => void applyTreatment({ advanced: true })}
                           >
-                            <Sparkles size={15} /> Refazer com IA avançada
+                            <Sparkles size={15} /> Refazer com a Z avançada
                           </button>
                         )}
                       {!usage?.unlimited && (
-                        <p className="usage-apply-hint">Usa seus minutos de IA (mínimo 1 min).</p>
+                        <p className="usage-apply-hint">Usa seus minutos da Z (mínimo 1 min).</p>
                       )}
                       {!cloudOperation && (
                         <span className="treatment-footnote">
@@ -3367,7 +3367,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             Quasar <span>·</span> O som encontrando o seu espaço.
           </span>
           <span>
-            <ShieldCheck size={12} /> IA na nuvem · acabamento no dispositivo
+            <ShieldCheck size={12} /> Z na nuvem · acabamento no dispositivo
           </span>
         </footer>
       </div>

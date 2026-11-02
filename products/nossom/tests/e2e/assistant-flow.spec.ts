@@ -60,7 +60,7 @@ test('mobile homepage keeps demo, plans and FAQ in a shorter page', async ({ pag
   // Seis seções do NOSSOM e a da Z, a IA da Absolute ZRO.
   expect(await page.locator('main > section').count()).toBe(7);
   await page.locator('.ns-faq').scrollIntoViewIfNeeded();
-  await page.getByRole('button', { name: 'Meu áudio é enviado à IA?' }).click();
+  await page.getByRole('button', { name: 'Meu áudio é enviado à Z?' }).click();
   await expect(page.locator('#faq-2')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: 'artifacts/home-short-mobile.png', fullPage: true });

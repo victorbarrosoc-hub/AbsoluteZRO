@@ -125,7 +125,7 @@ test('cloud D restores once, preserves float import, saves before cleanup, then 
   });
   expect(original.format).toBe(3);
   expect(original.peak).toBeGreaterThan(0);
-  await page.getByRole('button', { name: 'Melhorar com IA', exact: true }).click();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Agora, deixe do seu jeito.', exact: true }),
   ).toBeVisible({ timeout: 90000 });
@@ -144,7 +144,7 @@ test('cloud D restores once, preserves float import, saves before cleanup, then 
   });
   expect(saved.map((v: { preset?: string }) => v.preset)).toEqual([
     undefined,
-    'Voz melhorada com IA',
+    'Voz melhorada com a Z',
     'Quasar Presence',
   ]);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -186,9 +186,9 @@ test('unconfigured cloud restoration is explicit and keeps local tools available
   await expect(page.getByRole('heading', { name: 'Original', exact: true })).toBeVisible({
     timeout: 90000,
   });
-  await expect(page.getByRole('button', { name: 'Melhorar com IA', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Melhorar com a Z', exact: true })).toBeDisabled();
   await expect(
-    page.getByText('A melhoria com IA está temporariamente indisponível', { exact: true }),
+    page.getByText('A Z está temporariamente indisponível', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: /Experimentar outra limpeza/ }).click();
   await expect(page).toHaveURL(/\/studio\/limpeza\?project=/);
@@ -382,14 +382,14 @@ test('queued audio has no invented percentage and a confirmed cancellation permi
     .locator('input[type=file]')
     .first()
     .setInputFiles({ name: 'fila.wav', mimeType: 'audio/wav', buffer: wav(48000, 2) });
-  await page.getByRole('button', { name: 'Melhorar com IA', exact: true }).click();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
   const banner = page.locator('.processing-banner');
   await expect(banner).toContainText('O tratamento ainda não começou.');
   await expect(banner).not.toContainText('20%');
   await expect(banner.locator('progress')).not.toHaveAttribute('value', /.+/);
   await banner.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await expect(banner).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Melhorar com IA', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Melhorar com a Z', exact: true })).toBeEnabled();
   await expect(page.getByText(/Pedido encerrado. O original foi preservado/)).toBeVisible();
   expect(cancellation).toBe(1);
 });
@@ -456,8 +456,8 @@ test('when our engine fails, the advanced AI tries once with the same minutes an
   await expect(page.getByRole('heading', { name: 'Original', exact: true })).toBeVisible({
     timeout: 90000,
   });
-  await expect(page.getByRole('switch', { name: /Quasar Presence depois da IA/ })).toBeChecked();
-  await page.getByRole('button', { name: 'Melhorar com IA', exact: true }).click();
+  await expect(page.getByRole('switch', { name: /Quasar Presence depois da Z/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Melhorar com a Z', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Agora, deixe do seu jeito.', exact: true }),
   ).toBeVisible({ timeout: 90000 });
@@ -477,11 +477,11 @@ test('when our engine fails, the advanced AI tries once with the same minutes an
   });
   expect(saved.map((v: { preset?: string }) => v.preset)).toEqual([
     undefined,
-    'Voz melhorada com IA avançada',
+    'Voz melhorada com a Z avançada',
     'Quasar Presence',
   ]);
   expect(saved[1].advanced).toBe(true);
   expect(Math.abs(saved[1].duration - duration)).toBeLessThan(0.01);
   // a IA avançada já foi usada: não oferece refazer com ela de novo
-  await expect(page.getByRole('button', { name: /Refazer com IA avançada/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Refazer com a Z avançada/ })).toHaveCount(0);
 });

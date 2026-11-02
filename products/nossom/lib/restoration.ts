@@ -51,12 +51,12 @@ export const STEM_NAMES = ['voz', 'bateria', 'baixo', 'guitarra', 'outros'] as c
 /** Five stereo 24-bit FLAC stems of 10 minutes fit even when nothing compresses. */
 export const STEMS_PARTS = 40;
 /**
- * Reserva do "Melhorar com IA" (titular, 02/11/2026): quando o nosso motor não dá conta, um parceiro de nuvem limpa a
+ * Reserva do "Melhorar com a Z" (titular, 02/11/2026): quando o nosso motor não dá conta, um parceiro de nuvem limpa a
  * voz no servidor. Um arquivo só, comprimido; o navegador decodifica, acerta a duração e salva em WAV.
  */
 export const iaAvancada = {
   id: 'ia-avancada-v1',
-  label: 'IA avançada',
+  label: 'Z avançada',
 } as const;
 export type CloudPreset =
   AudioPreset | typeof transcription.id | typeof stemSeparation.id | typeof iaAvancada.id;

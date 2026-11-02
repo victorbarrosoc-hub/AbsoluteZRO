@@ -6,7 +6,7 @@ export function generateMetadata(): Metadata {
   return {
     description: nossomClosed()
       ? 'Quasar, o estúdio de áudio da Absolute ZRO: limpeza de voz, separação de vocais e finalização. Em desenvolvimento.'
-      : 'Envie seu áudio para a IA do Quasar. Limpeza neural, equalização, masterização, efeitos e presets de entrega. Comece com 5 minutos de restauração grátis por mês.',
+      : 'Envie seu áudio para a Z. Limpeza neural, equalização, masterização, efeitos e presets de entrega. Comece com 5 minutos de restauração grátis por mês.',
   };
 }
 export default function Page() {

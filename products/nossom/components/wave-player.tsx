@@ -390,7 +390,7 @@ export const WavePlayer = memo(function WavePlayer({
           </label>
           <span>
             {previewOnly
-              ? 'Arraste na onda para ouvir um trecho. A restauração com IA trata o áudio inteiro.'
+              ? 'Arraste na onda para ouvir um trecho. A Z trata o áudio inteiro.'
               : 'Arraste na onda ou ajuste os tempos. O tratamento afeta apenas o trecho; o restante é preservado.'}
           </span>
         </div>

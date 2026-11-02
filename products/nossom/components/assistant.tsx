@@ -215,7 +215,7 @@ export default function Assistant({
                 : 'Ouvindo…'
               : 'Pronta para ajudar'
           : authenticated
-            ? 'Ajuda básica · IA temporariamente indisponível'
+            ? 'Ajuda básica · Z temporariamente indisponível'
             : 'Entre na sua conta para conversar'}
     </div>
   );

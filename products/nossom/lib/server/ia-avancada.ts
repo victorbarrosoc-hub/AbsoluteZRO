@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { CLOUD_PART_BYTES } from '../restoration';
 
-// IA avançada (titular, 02/11/2026): a reserva do "Melhorar com IA" quando o nosso motor não dá conta. Um parceiro de
+// IA avançada (titular, 02/11/2026): a reserva do "Melhorar com a Z" quando o nosso motor não dá conta. Um parceiro de
 // nuvem isola a voz; a interface não diz quem é. Roda no servidor, nunca no navegador, e a chave não sai daqui.
 const ENDERECO = 'https://api.elevenlabs.io/v1/audio-isolation';
 /** Sem resultado neste prazo, o pedido é encerrado e os minutos voltam para a pessoa. */

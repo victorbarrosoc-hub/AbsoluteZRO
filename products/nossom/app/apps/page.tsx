@@ -67,7 +67,7 @@ export default async function Apps() {
         Voltar ao estúdio
       </Link>
       <h1>Quasar no seu dispositivo.</h1>
-      <p>Escolha como abrir seu espaço. Sua conta e a IA são as mesmas em todas as versões.</p>
+      <p>Escolha como abrir seu espaço. Sua conta e a Z são as mesmas em todas as versões.</p>
       <DownloadNotice />
       <div className="apps-grid">
         {builds.map((build) => (
