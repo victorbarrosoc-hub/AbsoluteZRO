@@ -4711,3 +4711,11 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Prévia (fora do repositório): o menu gerado do modelo real com os ícones reais (Mac claro e escuro, Windows) e os
   ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
   isso a prévia em vez da captura do menu nativo.
+
+## Carro do Freela: modo demonstração em /demo (02/11/2026)
+
+- `products/carro-do-freela/test/demo-real.js` 15/15: noindex, canonical no próprio /demo, sem AEON/Revela/NOSSOM/Rift, só o /demo carrega o modo, nenhum perfil do protótipo,
+  entra sozinha no feed com 101 pessoas, selo e link ao site real, propostas e guilda de exemplo, zero pedido ao
+  servidor, `localStorage` do domínio intocado, zero erro de página.
+- `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
+  (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.

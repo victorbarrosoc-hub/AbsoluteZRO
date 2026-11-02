@@ -20,6 +20,7 @@ public/m/
 public/index.html
 public/artifact.html
 public/real.html
+public/demo.html
 public/fase-*.html
 landing/index.html
 # saída do build da Vercel (src/vercel-build.js)
