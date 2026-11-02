@@ -27,6 +27,20 @@ Branch `claude/rift-higgsfield-hub`, a partir da main com a `0052`.
 - Não testado em produção: o deploy do HUB aplica a `0054`; a conta `victor@absolutezro.com` (admin) entra no Rift, a
   do Gmail deixa de entrar até o lançamento (decisão do titular).
 
+## Rift Motion: visual A, estilo DaVinci Resolve (02/11/2026)
+
+Branch `claude/motion-2d-3d`, a partir da main.
+
+- `products/rift-motion`: `npm test` 12/12, com o teste novo dos apps do ecossistema: só os que vêm `released` ou
+  `allowed` no claim `zro_release`; sem o claim, `null`, e o painel mostra só os lançados para todos.
+- Desktop: `npm test` 27/27. O script da página passa no `node --check`.
+- Telas conferidas no Chromium com a API simulada:
+  - estúdio a 1440 × 900 (Mídia, Camadas, transporte, Inspector com as três abas, trilhas V6…V1 + A1, barra de páginas);
+  - painel com a ficha do projeto e o ecossistema (Relay, Quasar, SOBEDESCE e AEON, só com os quatro no `apps`);
+  - celular a 390 × 844 (visor sem faixas vazias e a linha do tempo aberta).
+    Nenhum erro no console.
+- Não testado: num Mac ou PC de verdade pelo app de computador, e as telas com o tema claro.
+
 ## Rift Motion: Higgsfield pela central (01/11/2026)
 
 Branch `claude/motion-2d-3d`. Depende da migration `0054` do HUB (PR `claude/rift-higgsfield-hub`).

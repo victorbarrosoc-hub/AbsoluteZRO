@@ -37,3 +37,11 @@ test('a volta fica no site, com o hash do painel; outro endereço vira o oficial
   assert.equal(z.ESCOPOS, 'openid email profile org offline_access zro.higgsfield')
   assert.equal(z.ESCOPOS_SEM_HF, 'openid email profile org offline_access')
 })
+
+test('apps do ecossistema: só os que a Absolute ZRO diz que a pessoa vê (zro_release); sem o claim, null', async () => {
+  const z = await import('../api/_zro.js')
+  const p = z.perfilDeClaims({ sub: 'a', zro_release: { relay: 'released', nossom: 'allowed', 'ai-edit': 'closed', 'X y': 'released', sobedesce: 'released' } })
+  assert.deepEqual(p.apps, ['relay', 'nossom', 'sobedesce'])
+  assert.equal(z.perfilDeClaims({ sub: 'a' }).apps, null)
+  assert.deepEqual(z.sessaoDe(p).apps, ['relay', 'nossom', 'sobedesce'])
+})
