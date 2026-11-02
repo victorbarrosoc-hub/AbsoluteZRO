@@ -25,7 +25,7 @@ import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
 import ZroIaPanel from './zro-ia-panel';
 import { rotuloSet, useSetZro } from './set-zro';
-import AIMotion from './ai-motion';
+import QuasarIA from './quasar-ia';
 import UserAvatar from './user-avatar';
 import AdminDashboard from './admin-dashboard';
 import { accountPlan, type Account } from '@/lib/accounts';
@@ -1683,10 +1683,10 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           )}
           {busy && (
             <div className="processing-banner" role="status">
-              <div className="processing-wave" aria-hidden="true">
-                <AIMotion state="thinking" compact />
+              {/* a Coroa viva pensando no lugar da onda 3D antiga e do giro (titular, 02/11/2026) */}
+              <div className="processing-quasar" aria-hidden="true">
+                <QuasarIA estado="thinking" />
               </div>
-              <LoaderCircle className="spin" size={19} />
               <div>
                 <strong>{busy}</strong>
                 <small>

@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useRef, useId } from 'react';
-import AIMotion from './ai-motion';
 import QuasarIA from './quasar-ia';
 import { passoDe, slugPasso } from './passos-nav';
 import type { ProjectSummary } from '@/lib/storage';
@@ -250,7 +249,12 @@ export default function Assistant({
             {cloud && !loading && modo}
           </>
         ) : (
-          <AIMotion compact state={estado} />
+          <div
+            className={`assistant-marca assistant-marca--janela state-${estado}`}
+            aria-hidden="true"
+          >
+            <QuasarIA estado={estado} />
+          </div>
         )}
         {/* sem frase de efeito (titular, 01/11/2026): no Início o título é só para leitor de tela */}
         <Title id={id + '-title'} className={embedded ? 'sr-only' : undefined}>

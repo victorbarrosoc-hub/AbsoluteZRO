@@ -4525,6 +4525,11 @@ SOBEDESCE de computador, que disparam os instaladores).
 
 ## Quasar · abertura com a marca nova (02/11/2026)
 
+- A onda 3D antiga (`components/ai-motion.tsx`, removido) ainda aparecia no aviso de processamento ("Seu áudio está na
+  fila"), na janela do assistente e no fundo da tela de conta: agora é a Coroa viva (`QuasarIA`), pensando no aviso.
+  e2e `cloud-restoration`, `studio`, `assistant-flow`, `agent`, `login-page`, `account` e `ai-motion-performance`:
+  16 passaram (8 pulados por `RELEASE=closed`); aviso conferido a 1440 e 390.
+
 - A abertura (`components/brand-intro.tsx`, `app/styles/intro.css`) ainda mostrava o traço antigo do NOSSOM: agora a
   Coroa vazada se desenha, o clarão acende com o feixe horizontal e QUASAR (Archivo Expanded) entra com o selo AUDIO LAB.
   Só CSS; uma vez por sessão; pulada com reduzir movimento e em automação.
