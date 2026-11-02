@@ -1,6 +1,14 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Carro do Freela: modo demonstração em /demo (02/11/2026, ramo `claude/carro-demo`)
+
+- ✅ `carro.absolutezro.com/demo`: o site real com cerca de 100 perfis fictícios (praça, agenda de 42 dias, propostas,
+  feed, brechó e a guilda "Panelinha"), sem login, para qualquer pessoa com o link ver como funciona. Selo fixo
+  "Demonstração · perfis fictícios · nada é salvo", com "Usar de verdade". `src/demo.js` responde `/api/zro/*` da
+  memória (nada vai ao servidor) e troca o `localStorage` por um da memória (a conta real do domínio fica intocada).
+  `noindex`; a página principal não carrega o script.
 
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026, ramo `sobedesce-avatar-zro`)
 
