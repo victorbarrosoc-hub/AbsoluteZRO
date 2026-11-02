@@ -514,6 +514,15 @@ describe('conta única da Absolute ZRO', () => {
     assert.equal(previa.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?criar=1')
   })
 
+  test('usar outra conta = prompt=login no HUB (pede a conta mesmo com sessão aberta lá); criar vence', async () => {
+    const pr = async (q) => new URL((await ir('/api/zro/entrar?' + q)).headers.get('location')).searchParams.get('prompt')
+    assert.equal(await pr('outra=1&volta=%2Fapp%2F%23ajustes'), 'login')
+    assert.equal(await pr('outra=sim'), null, 'outro valor não vira prompt')
+    assert.equal(await pr('outra=1&criar=1'), 'create', 'criar conta continua sendo prompt=create')
+    const previa = await ir('/api/zro/entrar?outra=1', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
+    assert.equal(previa.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?outra=1', 'fora do site oficial, o outra=1 segue junto')
+  })
+
   test('criar conta volta ao app já logado', async () => {
     zro.prompts = []
     const r = await fluxo({ volta: '/app/#ajustes', criar: true })
@@ -887,7 +896,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v23/)
+    assert.match(sw, /tpeasy-v24/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON e Revela estão fechados; o Carro do Freela entrou em 01/11/2026)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]

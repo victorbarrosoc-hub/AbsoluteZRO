@@ -57,3 +57,27 @@ test('Roteiros tem o lugar da conta e ele redesenha junto com Ajustes', async ()
   const views = await readFile(new URL('../app/js/views.js', import.meta.url), 'utf8')
   assert.match(views, /renderContaTopo\(\);\n  renderBaloes\(\);/)
 })
+
+// "Usar outra conta" (02/11/2026): sem isto o TPeasy reaproveita calado a conta aberta na Absolute ZRO.
+test('Ajustes, fora da conta: "Usar outra conta" embaixo de Entrar, pede a conta de novo (outra=1 → prompt=login)', async () => {
+  assert.equal(Zro.linkOutraConta(), '/api/zro/entrar?volta=%2Fapp%2F%23ajustes&outra=1')
+  const views = await readFile(new URL('../app/js/views.js', import.meta.url), 'utf8')
+  const fora = /\} else if \(Zro\.zro\.estado === "fora"\) \{\n\s*conta = `(.*)`;/.exec(views)[1]
+  assert.match(fora, /<a class="account-outra" id="zroOutra" href="\$\{Zro\.linkOutraConta\(\)\}">Usar outra conta<\/a>/)
+  assert.ok(fora.indexOf('Usar outra conta') > fora.indexOf('Entrar com Absolute ZRO'), 'embaixo de Entrar')
+  assert.match(views, /closest\("#zroOutra"\)\) \{\n\s*e\.preventDefault\(\);\n\s*return Zro\.usarOutraConta\(\);/)
+  // sai da conta daqui primeiro (POST /api/zro/sair) e depois vai ao HUB; se o /sair falhar, vai mesmo assim
+  for (const falha of [false, true]) {
+    const pedidos = []
+    let foi = null
+    globalThis.fetch = async (url, init) => {
+      pedidos.push(`${init.method} ${url}`)
+      if (falha) throw new Error('rede')
+      return { ok: true }
+    }
+    globalThis.location.assign = (u) => (foi = u)
+    await Zro.usarOutraConta()
+    assert.deepEqual(pedidos, ['POST /api/zro/sair'])
+    assert.equal(foi, '/api/zro/entrar?volta=%2Fapp%2F%23ajustes&outra=1')
+  }
+})

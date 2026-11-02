@@ -132,6 +132,13 @@ test('criar conta = criar a conta Absolute ZRO: prompt=create no HUB, e volta j�
   assert.equal(new URL(r.headers.get('location')).searchParams.get('prompt'), null);
 });
 
+test('usar outra conta = prompt=login no HUB (pede a conta mesmo com sessão aberta lá); criar vence', async () => {
+  const pr = async q => new URL((await pedir('/api/zro/entrar?' + q)).headers.get('location')).searchParams.get('prompt');
+  assert.equal(await pr('outra=1&volta=%2F'), 'login');
+  assert.equal(await pr('outra=sim'), null, 'outro valor não vira prompt');
+  assert.equal(await pr('outra=1&criar=1'), 'create', 'criar conta continua sendo prompt=create');
+});
+
 test('direito de uso: conta na lista (allowed) sem "carro-do-freela" em zro_products entra, mas /eu diz liberado:false', async () => {
   for (const [produtos, liberado] of [[['nossom', 'synquei'], false], [[], false], [['carro-do-freela', 'nossom'], true]]) {
     const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos }) });

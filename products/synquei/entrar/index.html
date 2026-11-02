@@ -75,6 +75,17 @@
         gap: 12px;
         margin-top: 8px;
       }
+      .entrar-outra {
+        color: var(--ink-2);
+        font-size: 14px;
+        text-decoration: none;
+        padding: 12px 8px;
+      }
+      .entrar-outra:hover,
+      .entrar-outra:focus-visible {
+        color: var(--ink);
+        text-decoration: underline;
+      }
       .entrar-av {
         display: grid;
         place-items: center;
@@ -123,6 +134,7 @@
           <a id="entrar" class="btn btn-dark btn-lg" href="/api/zro/entrar?volta=%2Fapp%2F">Entrar com Absolute ZRO</a>
           <a id="criar" class="btn btn-soft btn-lg" href="/api/zro/entrar?criar=1&amp;volta=%2Fapp%2F">Criar conta</a>
         </div>
+        <a id="outra" class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fapp%2F" data-outra>Usar outra conta</a>
       </section>
       <!-- dentro -->
       <section id="dentro" class="entrar-bloco" hidden>
@@ -133,6 +145,7 @@
           <a id="abrir" class="btn btn-dark btn-lg" href="/app/">Abrir o Synquei</a>
           <button id="sair" class="btn btn-soft btn-lg" type="button">Sair</button>
         </div>
+        <a class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fapp%2F" data-outra>Usar outra conta</a>
       </section>
       <!-- login não ligado neste endereço, ou sem rede -->
       <section id="desligado" class="entrar-bloco" hidden>

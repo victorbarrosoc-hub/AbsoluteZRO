@@ -190,8 +190,21 @@ function montarSaida(o = {}) {
     t(r.texto === 'Entrar com Absolute ZRO', 'com o texto combinado (' + r.texto + ')');
     t(/\bblogin\b/.test(r.classe) && /\bprim\b/.test(r.classe) && r.altura >= 47 && r.altura <= 55, 'é a porta principal, na altura de botão da tela (' + r.altura + 'px)');
     t(!r.form && !r.google, '⟶⟶ conta única: quem chega agora não vê formulário próprio nem Google');
+    const outra = await p.evaluate(() => { const b = document.getElementById('lg-outra'); return { vis: !!(b && b.offsetParent), txt: b && b.textContent.trim() } });
+    t(outra.vis && outra.txt === 'Usar outra conta', '⟶⟶ "Usar outra conta" à vista, embaixo da porta (' + outra.txt + ')');
+    {
+      const ida = p.waitForRequest(r => /\/api\/zro\/entrar\?/.test(r.url()), { timeout: 8000 }).catch(() => null);
+      await p.route('**/api/zro/entrar?**', r => r.fulfill({ status: 204, body: '' }));
+      await p.locator('#lg-outra').click();
+      const rq = await ida;
+      t(!!rq && /[?&]outra=1(&|$)/.test(rq.url()), '⟶⟶ e leva ao HUB pedindo outra conta (' + (rq && rq.url().replace(/^https?:\/\/[^/]+/, '')) + ')');
+      await p.unroute('**/api/zro/entrar?**');
+      await p.goto(DOMINIO, { waitUntil: 'load' }); await p.waitForFunction(() => !document.getElementById('splash'), null, { timeout: 20000 }).catch(() => {});
+      await p.waitForTimeout(400); await telaEntrar(p);
+    }
     await p.evaluate(() => { LG_MODO = 'criar'; pintarLogin() });
     const rc = await botao(p);
+    t(await p.evaluate(() => document.getElementById('lg-outra-l').hidden), 'no modo criar, "Usar outra conta" some');
     t(rc.texto === 'Criar conta Absolute ZRO' && !rc.form && !rc.google, 'no modo criar, só a conta Absolute ZRO (' + rc.texto + ')');
     await p.evaluate(() => { LG_MODO = 'entrar'; pintarLogin() });
     await p.locator('[data-lgtipo="contratante"]').click();

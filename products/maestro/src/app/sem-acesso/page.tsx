@@ -4,13 +4,15 @@ import { exigirSessaoNaPagina } from "@/lib/auth/pagina";
 import { produtorasDoFreela } from "@/lib/freelas/area";
 import { FERRAMENTAS_ZRO, HUB_URL, ROTAS } from "@/lib/site";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
+import { UsarOutraConta } from "@/components/outra-conta";
 import { Avatar, BotaoSair } from "@/components/shell";
 
 export const metadata = { title: "Sem acesso" };
 
 /**
  * A pessoa entrou, mas a organização dela ainda não tem o Maestro (zro_products). Uma saída: pedir na Absolute ZRO.
- * Com o gate de lançamento, esta é a tela de "ainda fechado" também (temAcesso decide, lib/auth/acesso.ts).
+ * Com o gate de lançamento, esta é a tela de "ainda fechado" também (temAcesso decide, lib/auth/acesso.ts). Quem entrou
+ * com a conta errada (a Absolute ZRO reaproveitou a que estava aberta lá) tem "Usar outra conta".
  */
 export default async function SemAcesso() {
   const sessao = await exigirSessaoNaPagina(ROTAS.semAcesso);
@@ -42,6 +44,7 @@ export default async function SemAcesso() {
         <a className="sutil" href={`/api/zro/entrar?volta=${encodeURIComponent(ROTAS.app)}`}>
           Já liberaram? Entrar de novo
         </a>
+        <UsarOutraConta volta={ROTAS.app} />
       </main>
       <footer className="abertura__rodape">
         <a href={HUB_URL}>

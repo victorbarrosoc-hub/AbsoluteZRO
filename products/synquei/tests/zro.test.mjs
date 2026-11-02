@@ -138,6 +138,15 @@ describe('conta única e direito de uso', () => {
     assert.equal(r.headers.get('location'), 'https://synquei.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F&criar=1')
   })
 
+  test('usar outra conta = prompt=login na Absolute ZRO (pede a conta mesmo com sessão aberta lá); criar vence', async () => {
+    const pr = async (q) => new URL((await pedir('/api/zro/entrar?' + q)).headers.get('location')).searchParams.get('prompt')
+    assert.equal(await pr('outra=1&volta=%2Fapp%2F'), 'login')
+    assert.equal(await pr('outra=sim'), null, 'outro valor não vira prompt')
+    assert.equal(await pr('outra=1&criar=1'), 'create', 'criar conta continua sendo prompt=create')
+    const r = await pedir('/api/zro/entrar?volta=/app/&outra=1', { headers: { 'x-forwarded-host': 'synquei-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
+    assert.equal(r.headers.get('location'), 'https://synquei.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F&outra=1', 'fora do endereço oficial leva o outra=1 junto')
+  })
+
   test('synquei fora de zro_products: entra, mas /eu diz sem acesso e aponta a Absolute ZRO', async () => {
     const r = await fluxo({ pessoa: { ...LIA, sub: 'zro-222', produtos: ['sobedesce'] } })
     assert.equal(r.destino, '/app/?zro=ok')
