@@ -5020,3 +5020,30 @@ html:not(.is-desktop) .so-desktop {
   }
 }
 
+
+/* TPeasy: os blocos lidos em cada take (Mídia › clipe) */
+.tp-painel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+.tp-painel .btn {
+  justify-self: start;
+}
+.tp-blocos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.tp-blocos .mono {
+  color: var(--text-2);
+  margin-right: 6px;
+}
+.tp-aviso {
+  align-items: center;
+}

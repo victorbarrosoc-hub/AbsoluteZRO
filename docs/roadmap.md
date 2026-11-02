@@ -1688,8 +1688,12 @@ do card... não consigo localizar o job que quero achar".
   Schema em `packages/media-contracts`, linhas do teste geradas pelo código real do app. SW `tpeasy-v24`, app 2.3.
   Substitui o PR #66 (anterior à caixa de entrada do Maestro e à `0045`).
 - ✅ `CLAUDE.md` e `AGENTS.md` do TPeasy.
-- ⬜ Synquei: ler o `.jsonl`, achar o bip no áudio do clipe e propor o nome do bloco (prévia + confirmação; ambíguo →
-  revisar). AEON: bloco como etiqueta do clipe. Depois, o registro pelo HUB.
+- ✅ **Synquei lê as leituras** (`products/synquei/app/js/tpeasy.js`): o `.jsonl` solto com os cartões vai para o
+  projeto (e `.jsonl` deixou de virar clipe fantasma); depois da sincronia acha o bip no áudio de 4 kHz, casa pela
+  diferença de relógio que se repete nos takes do aparelho e propõe os blocos; Mídia mostra o resumo, o bloco de cada
+  clipe e **Usar os blocos**, que vira marcador na exportação. Revisar: um take só, ambíguo, sem bip. SW `synquei-v30`.
+- ⬜ AEON: bloco como etiqueta do clipe. Depois, o registro pelo HUB (sem arquivo) e contagens de volta ao Maestro.
+- ⬜ Conferir com gravação real: iPhone tocando o bip a uns metros da câmera, câmera com relógio errado.
 - ⬜ Vídeo 9:16 em uso real com um número medido (do próprio registro) e ficha de compatibilidade com aparelhos testados.
 
 ## Fase 6 — Escala

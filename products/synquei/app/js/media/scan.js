@@ -1,6 +1,7 @@
 // Do que foi arrastado para a lista de clipes: tira o que não é mídia, junta sequências de quadros (DNG, ARRIRAW,
 // EXR…) e pedaços de R3D num clipe só, e anota os XML da Sony que acompanham cada clipe.
 
+import { ehArquivoDeLeituras } from '../tpeasy.js'
 import { ignoredReason, extInfo } from './formats.js'
 
 const SEQ_EXT = new Set(['dng', 'ari', 'arx', 'exr', 'dpx', 'tif', 'tiff', 'cin'])
@@ -11,11 +12,12 @@ const stemOf = (n) => (n.includes('.') ? n.slice(0, n.lastIndexOf('.')) : n)
 
 /**
  * entries: [{ file, path }]
- * @returns {{ media: Array<{ file, relPath, name, size, lastModified, seq?, spans?, sidecar? }>, ignored: Array<{ relPath, why }> }}
+ * @returns {{ media: Array<{ file, relPath, name, size, lastModified, seq?, spans?, sidecar? }>, ignored: Array<{ relPath, why }>, leituras: Array<{ file, relPath }> }}
  */
 export function scanEntries(entries) {
   const media = []
   const ignored = []
+  const leituras = []
   const xmls = new Map()
   const seqs = new Map()
   const r3d = new Map()
@@ -27,6 +29,12 @@ export function scanEntries(entries) {
     if (ext === 'xml' && /M01\.XML$/i.test(name) && !name.startsWith('._')) {
       xmls.set(`${dirOf(rel)}/${name.replace(/M01\.XML$/i, '').toLowerCase()}`, file)
       ignored.push({ relPath: rel, why: 'Metadado da Sony (lido junto com o clipe)' })
+      continue
+    }
+    // registro de leituras do TPeasy (tpeasy.js): lido à parte, para dar nome aos takes
+    if (ehArquivoDeLeituras(name) && !name.startsWith('._')) {
+      leituras.push({ file, relPath: rel })
+      ignored.push({ relPath: rel, why: 'Registro de leituras do TPeasy (lido à parte)' })
       continue
     }
     const why = ignoredReason(rel)
@@ -87,7 +95,7 @@ export function scanEntries(entries) {
     if (sc) m.sidecar = sc
   }
   media.sort((a, b) => a.relPath.localeCompare(b.relPath, undefined, { numeric: true }))
-  return { media, ignored }
+  return { media, ignored, leituras }
 }
 
 /** Lê pastas arrastadas (DataTransferItem → FileSystemEntry), mantendo o caminho relativo. */
