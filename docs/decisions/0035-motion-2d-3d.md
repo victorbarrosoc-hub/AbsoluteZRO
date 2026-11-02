@@ -107,6 +107,13 @@ motion: edição (AEON), cor (Revela), som (NOSSOM), codec e entrega (Relay), c�
   checa o teto do dia da Z antes de gastar e registra o uso nos Custos (`packages/core/src/z-rift.ts`). Por token de app
   o papel de plataforma não vem, por isso a lista explícita, e o gate do Rift fecha para quem não é admin.
 
+### Visual A, estilo DaVinci Resolve (02/11/2026, escolha do titular)
+
+O titular pediu três propostas "mais parecido com o DaVinci Resolve" e escolheu a A, o escuro clássico: grafite, painéis
+densos com rótulos pequenos, transporte embaixo do visor, trilhas V/A com clipes sólidos e a barra de páginas no rodapé.
+No Rift o escuro segue como padrão: é ferramenta de trabalho, como o AEON, e o claro continua no seletor. A barra mostra
+só as páginas que existem (Projetos, Modelos, Mídia, Animar, Entregar); Nós e Som entram quando existirem de verdade.
+
 ## Nome e marca
 
 **Rift Motion** (titular, 01/11/2026; antes avaliados Eixo, Ginga, Mova, Dobra, Curva, Pulso). Marca a partir da arte

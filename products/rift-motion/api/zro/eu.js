@@ -43,6 +43,8 @@ export default async function eu(req, res) {
       acesso: temAcesso(produtos),
       // a Z no Rift: só para quem está liberado (fase 2 para todos)
       z: zLiberado(c.sub),
+      // os apps que a pessoa vê no ecossistema (null: ainda sem a informação, o painel mostra só os lançados)
+      apps: Array.isArray(c.apps) ? c.apps : null,
       ferramentas: FERRAMENTAS,
       // id: resumo do sub, só para separar o histórico de cada conta no aparelho (app/historico.js)
       pessoa: { id: idLocal(c.sub), nome: c.nome || null, email: c.email || null, foto: c.foto || null, conta: c.conta || `${emissor()}/perfil`, organizacao: org, produtos },

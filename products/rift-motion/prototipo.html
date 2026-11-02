@@ -542,6 +542,131 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
 .atalhos dd { margin: 0; color: var(--mute); font-size: 0.88rem; }
 .atalhos kbd { display: inline-block; min-width: 28px; padding: 3px 8px; border-radius: 7px; background: var(--surface-2); box-shadow: inset 0 -1px 0 var(--line-2), 0 0 0 1px var(--line); font: 600 0.78rem/1.3 var(--font-body, system-ui); color: var(--ink); text-align: center; }
 .chip-exemplo { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; box-shadow: 0 0 0 1px var(--line); color: var(--mute); }
+
+/* ================= Visual A (titular, 02/11/2026: "mais parecido com o DaVinci Resolve") =================
+   Grafite em vez de preto, painéis densos com rótulos pequenos, transporte embaixo do visor, trilhas V/A com clipes
+   sólidos e a barra de páginas no rodapé. O claro continua no seletor. */
+:root:not([data-tema="claro"]) body[data-area="app"] { --bg: #161618; --surface: #1f1f22; --surface-2: #28282c; --line: rgb(255 255 255 / 0.07); --line-2: rgb(255 255 255 / 0.13); --mute: #8e8e96; --track: #1f1f22; }
+body[data-area="app"] .panel h4, body[data-area="app"] .side__sec { font-family: var(--font-text); font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; color: var(--mute); }
+.paginas { display: none; }
+.st-transport { display: none; }
+.tl-id { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700; color: var(--mute); width: 20px; flex: none; }
+.tc--tl { display: none; }
+/* mídia do projeto */
+.mpool { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pool__item { border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; color: var(--mute); display: grid; gap: 3px; min-width: 0; }
+.pool__th { position: relative; aspect-ratio: 16 / 10; border-radius: 5px; overflow: hidden; background: var(--surface-2); display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--line); }
+.pool__th img, .pool__th video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pool__th small { position: absolute; left: 4px; bottom: 3px; font-family: var(--font-mono); font-size: 0.56rem; color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / 0.7); }
+.pool__th svg { width: 18px; height: 18px; color: var(--mute); }
+.pool__nome { font-size: 0.66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pool__item[aria-pressed="true"] .pool__th { box-shadow: 0 0 0 2px var(--p); }
+.pool__item:hover .pool__nome, .pool__add:hover svg { color: var(--ink); }
+.pool__add .pool__th { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+/* clipes da timeline */
+.tl-lane .clip { position: absolute; left: 0; right: 0; top: 4px; bottom: 4px; border-radius: 4px; background: var(--c); overflow: hidden; display: flex; align-items: center; padding: 0 8px; pointer-events: none; }
+.tl-lane .clip::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgb(0 0 0 / 0.2); }
+.tl-lane .clip span { font-size: 0.68rem; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 1; }
+.tl-lane .clip--oculto { opacity: 0.32; }
+.tl-lane.sel .clip { box-shadow: inset 0 0 0 1.5px #fff; }
+.tl-lane .k { background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); z-index: 1; width: 9px; height: 9px; }
+.tl-lane .bar { display: none; }
+
+@media (min-width: 961px) {
+  body[data-area="app"] .studio { grid-template-columns: 290px minmax(0, 1fr) 320px; grid-template-rows: 40px minmax(0, 1fr) 40px minmax(150px, 300px) 46px; height: 100vh; height: 100dvh; min-height: 640px; }
+  .st-top { padding: 0 12px; gap: 10px; flex-wrap: nowrap; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .st-top h2 { font-size: 0.86rem; font-weight: 600; letter-spacing: 0; }
+  .st-top .meta { font-size: 0.74rem; }
+  .st-top .app-icon { display: none; }
+  .st-top .sel { height: 26px; font-size: 0.74rem; }
+  .st-top .glass-btn--sm { height: 28px; font-size: 0.78rem; }
+  .st-layers { grid-row: 2 / 4; background: var(--surface); padding: 0 0 12px; gap: 0; align-content: start; }
+  .st-layers h4 { margin: 0; height: 30px; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  .st-layers h4[style] { margin-top: 10px !important; border-top: 1px solid var(--line); }
+  .st-layers .mpool { padding: 10px 12px; }
+  .st-layers .add-row { grid-template-columns: repeat(4, 1fr) !important; }
+  .st-layers .add-row [data-add="midia"] { display: none; }
+  #layerList { padding: 4px 0; }
+  .st-layers .layer { border-radius: 0; padding: 6px 12px; font-size: 0.8rem; }
+  .st-layers .layer[aria-selected="true"] { background: var(--surface-2); box-shadow: none; }
+  .st-layers .add-row { padding: 10px 12px 0; grid-template-columns: repeat(3, 1fr); }
+  .st-layers .add-row button { height: 48px; border-radius: 7px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); font-size: 0.68rem; }
+  .viewport { grid-column: 2; grid-row: 2; padding: 14px; background: #0b0b0c; }
+  .st-transport { grid-column: 2; grid-row: 3; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line); position: relative; }
+  .st-transport .tc { position: absolute; right: 14px; font-size: 1rem; color: var(--ink); }
+  .st-transport .tr-zoom { position: absolute; left: 14px; font-size: 0.72rem; color: var(--mute); }
+  .st-transport .mini-btn { width: 32px; height: 28px; }
+  .st-transport .tr-play { color: var(--p); }
+  .st-transport .tr-play svg { width: 16px; height: 16px; }
+  .st-insp { grid-column: 3; grid-row: 2 / 4; background: var(--surface); padding: 0 0 12px; gap: 0; }
+  .st-insp .insp-head { height: 30px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  .st-insp .insp-head h4 { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.8rem; color: var(--ink); text-align: right; }
+  .st-insp .insp-head::before { content: "Inspector"; font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; color: var(--mute); }
+  .st-insp .insp-abas { margin: 8px 12px; grid-auto-columns: max-content; gap: 4px; background: transparent; padding: 0; }
+  .st-insp .insp-abas button { height: 24px; padding: 0 10px; border-radius: 5px; background: var(--surface-2); font-size: 0.72rem; }
+  .st-insp .insp-abas button[aria-selected="true"] { background: var(--p); color: #fff; box-shadow: none; }
+  .st-insp .insp-group { margin: 0 12px; border-radius: 8px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .st-insp #curvaBox h4 { margin: 12px 12px 6px; }
+  .timeline { grid-row: 4; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: 28px auto; max-height: none; background: var(--surface-2); }
+  .tl-ctrl { background: var(--surface); }
+  .tl-ctrl .tc--tl { display: inline; margin-left: auto; color: var(--p); font-size: 0.82rem; }
+  .tl-ruler { height: 28px; background: var(--surface); }
+  .tl-names { background: var(--surface); }
+  .tl-name { height: 30px; font-size: 0.78rem; padding: 0 10px; gap: 6px; }
+  .tl-name small { display: none; }
+  .tl-lane { height: 30px; }
+  .tl-ph::before { top: -28px; }
+  .paginas--estudio { grid-column: 1 / -1; grid-row: 5; }
+  .paginas { display: flex; align-items: center; justify-content: center; gap: 4px; position: relative; background: var(--surface); border-top: 1px solid var(--line); height: 46px; }
+  .paginas a { width: 84px; height: 40px; display: grid; justify-items: center; align-content: center; gap: 2px; color: var(--mute); font-size: 0.68rem; text-decoration: none; border-radius: 8px; position: relative; }
+  .paginas a svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .paginas a:hover { color: var(--ink); }
+  .paginas a[aria-current="page"] { color: var(--ink); }
+  .paginas a[aria-current="page"] svg { stroke: var(--p); }
+  .paginas a[aria-current="page"]::after { content: ""; position: absolute; bottom: 2px; width: 18px; height: 2px; border-radius: 2px; background: var(--p); }
+  .paginas__marca { position: absolute; left: 14px; display: flex; align-items: center; gap: 8px; color: var(--mute); font-size: 0.72rem; }
+  .paginas__marca .r-mark { width: 18px; fill: currentColor; }
+  .paginas__fim { position: absolute; right: 14px; color: var(--mute); font-size: 0.72rem; }
+}
+
+/* painel no visual A: gerenciador de projetos */
+.ficha { display: none; }
+@media (min-width: 961px) {
+  body[data-area="app"] #v-app { display: grid; grid-template-rows: minmax(0, 1fr) 46px; height: 100vh; height: 100dvh; }
+  body[data-area="app"] #v-app .shell { min-height: 0; height: 100%; }
+  body[data-area="app"] #v-app .side { position: static; height: 100%; background: var(--surface); padding: 14px 0; gap: 0; }
+  body[data-area="app"] #v-app .side__brand { padding: 2px 14px 14px; }
+  body[data-area="app"] #v-app .side__item { border-radius: 0; padding: 7px 14px; font-size: 0.82rem; }
+  body[data-area="app"] #v-app .side__item svg { width: 16px; height: 16px; }
+  body[data-area="app"] #v-app .side__item[aria-current="page"] { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--p); }
+  body[data-area="app"] #v-app .side__sec { margin: 16px 0 4px; padding: 8px 14px 6px; border-top: 1px solid var(--line); }
+  body[data-area="app"] #v-app .side__eco { border-radius: 0; padding: 6px 14px; font-size: 0.8rem; }
+  body[data-area="app"] #v-app .side__fim { padding: 0 8px; }
+  body[data-area="app"] #v-app .miolo { overflow: auto; padding: 22px 26px 28px; gap: 24px; }
+  body[data-area="app"] #v-app .miolo__topo .t { font-size: 1.9rem; }
+  body[data-area="app"] #v-app .bloco__topo h2 { font-family: var(--font-text); font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
+  body[data-area="app"] #v-app .grade { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  body[data-area="app"] #v-app .proj, body[data-area="app"] #v-app .modelo, body[data-area="app"] #v-app .eco a, body[data-area="app"] #v-app .lista, body[data-area="app"] #v-app .vazio { border-radius: 9px; }
+  body[data-area="app"] #v-app .proj:hover { transform: none; }
+  body[data-area="app"] #v-app .proj.escolhido { box-shadow: 0 0 0 1.5px var(--p); }
+  body[data-area="app"] #v-app .proj__info { padding: 9px 10px 10px 12px; }
+  body[data-area="app"] #v-app .proj__info strong, body[data-area="app"] #v-app .modelo__info strong { font-size: 0.84rem; }
+  body[data-area="app"] #v-app .proj__info small { display: block; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body[data-area="app"] #v-app .miolo__acoes .glass-btn { height: 32px; padding: 0 14px; font-size: 0.82rem; }
+  body[data-area="app"] #v-app .paginas--painel { grid-row: 2; }
+}
+@media (min-width: 1200px) {
+  .shell.com-ficha { grid-template-columns: 244px minmax(0, 1fr) 300px; }
+  .ficha { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 12px; background: var(--surface); border-left: 1px solid var(--line); padding: 0 0 16px; overflow: auto; min-height: 0; }
+  .ficha[hidden] { display: none !important; }
+  .ficha h4 { margin: 0; height: 40px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--line); font-size: 0.66rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
+  .ficha__capa { margin: 4px 14px 0; border-radius: 9px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); display: block; }
+  .ficha__capa .proj__capa { width: 100%; display: block; }
+  .ficha__dados { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 7px 10px; margin: 6px 14px 0; font-size: 0.8rem; }
+  .ficha__dados dt { color: var(--mute); }
+  .ficha__dados dd { margin: 0; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ficha__acoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 14px 0; }
+}
 @media (max-width: 860px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
   .side { display: none; }
@@ -570,7 +695,23 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
   .tl-ctrl .tl-abrir { display: grid; }
   .so-curto { display: inline; }
   .tl-abrir[aria-expanded="true"] { color: var(--p); }
-  .studio, body[data-area="app"] .studio { grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; height: 100dvh; background: var(--bg); padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .studio, body[data-area="app"] .studio { grid-template-rows: auto auto auto minmax(0, 1fr); height: 100vh; height: 100dvh; background: var(--bg); padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  /* celular: visor do tamanho da imagem, transporte embaixo e a linha do tempo aberta no resto (sem faixas vazias) */
+  .viewport { background: #0b0b0c; }
+  .st-transport { display: flex; align-items: center; justify-content: center; gap: 4px; height: 44px; position: relative; border-top: 1px solid var(--line); background: var(--surface); }
+  .st-transport .tr-zoom { display: none; }
+  .st-transport .tc { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); font-size: 0.86rem; }
+  .st-transport .tr-play { color: var(--p); }
+  .st-transport .mini-btn { width: 40px; height: 36px; }
+  .timeline:not(.aberta) .tl-names, .timeline:not(.aberta) .tl-lanes { display: block; }
+  .timeline:not(.aberta) .tl-ruler { grid-column: 2; }
+  .tl-ctrl .tl-abrir { display: none !important; }
+  .tl-name small { display: none; }
+  .timeline { grid-template-rows: 40px 30px auto; align-content: start; }
+  .tl-ruler { grid-row: 2; height: 30px; }
+  .tl-names { grid-column: 1; grid-row: 3; }
+  .tl-lanes { grid-column: 2; grid-row: 3; }
+  .tl-ph::before { top: -30px; }
   .st-top { flex-wrap: nowrap; gap: 8px; }
   .st-top h2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .st-top .spacer, .so-largo { display: none; }
@@ -788,18 +929,21 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
     <div class="st-top">
       <a class="mini-btn voltar" href="#projetos" aria-label="Voltar aos projetos" title="Projetos">‹</a>
       <span class="app-icon" style="width:26px;height:26px;border-radius:7px" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span>
+      <span class="spacer"></span>
       <h2 id="stNome">Abertura · Campanha Verão</h2>
       <span class="meta mono" id="stMeta">1920 × 1080 · 6 s</span>
       <span class="spacer"></span>
       <label class="meta" for="stFps">Cadência</label>
       <select class="sel mono" id="stFps" aria-label="Cadência do projeto"></select>
       <button class="glass-btn glass-btn--sm z-btn" id="zBtn" hidden title="Peça à Z" aria-label="Peça à Z">Z</button>
-      <button class="glass-btn glass-btn--sm" id="soundBtn">Som com NOSSOM</button>
+      <button class="glass-btn glass-btn--sm" id="soundBtn" hidden>Som com Quasar</button>
       <button class="glass-btn glass-btn--ink glass-btn--sm" id="exportBtn"><span class="so-largo">Exportar com o Relay</span><span class="so-curto">Exportar</span></button>
     </div>
 
-    <aside class="panel st-layers" aria-label="Camadas">
-      <h4>Camadas</h4>
+    <aside class="panel st-layers" aria-label="Mídia e camadas">
+      <h4>Mídia</h4>
+      <div class="mpool" id="midiaPool" aria-label="Mídia do projeto"></div>
+      <h4 style="margin-top:10px">Camadas</h4>
       <div id="layerList" role="listbox" aria-label="Camadas da cena"></div>
       <h4 style="margin-top:14px">Adicionar</h4>
       <div class="add-row">
@@ -835,6 +979,15 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       </div>
     </section>
 
+    <div class="st-transport" role="group" aria-label="Reprodução">
+      <span class="tr-zoom mono" id="trInfo"></span>
+      <button class="mini-btn" id="toStart" aria-label="Voltar ao início (Home)" title="Início"><svg viewBox="0 0 16 16"><path d="M3 3v10M13 3 5 8l8 5Z" fill="currentColor" stroke="currentColor" stroke-width="1.2"/></svg></button>
+      <button class="mini-btn" data-cmd="quadro-anterior" aria-label="Quadro anterior (←)" title="Quadro anterior"><svg viewBox="0 0 16 16"><path d="M11 3 5 8l6 5Z" fill="currentColor"/></svg></button>
+      <button class="mini-btn tr-play" id="playBtn" aria-label="Tocar ou pausar (espaço)"><svg viewBox="0 0 16 16" id="playIc"><path d="M4 2.5v11l9-5.5Z" fill="currentColor"/></svg></button>
+      <button class="mini-btn" data-cmd="quadro-seguinte" aria-label="Próximo quadro (→)" title="Próximo quadro"><svg viewBox="0 0 16 16"><path d="M5 3l6 5-6 5Z" fill="currentColor"/></svg></button>
+      <span class="tc mono" id="stTc">00:00:00:00</span>
+    </div>
+
     <aside class="panel st-insp" aria-label="Propriedades">
       <div class="insp-head"><span class="puxa" aria-hidden="true"></span><h4 id="inspName">Esfera</h4><button class="mini-btn insp-fechar" id="inspFechar" aria-label="Fechar">✕</button></div>
       <div class="insp-abas" id="inspAbas" role="tablist" aria-label="O que ajustar"></div>
@@ -849,15 +1002,22 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
     <section class="timeline" id="timeline" aria-label="Timeline">
       <div class="tl-ctrl">
         <button class="mini-btn" id="btnDesfazer" aria-label="Desfazer (⌘Z)" title="Desfazer (⌘Z)"><svg viewBox="0 0 16 16"><path d="M5 4 2 7l3 3M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="mini-btn" id="btnRefazer" aria-label="Refazer (⇧⌘Z)" title="Refazer (⇧⌘Z)"><svg viewBox="0 0 16 16"><path d="M11 4l3 3-3 3M13.5 7H6a3.5 3.5 0 0 0 0 7h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button class="mini-btn" id="toStart" aria-label="Voltar ao início"><svg viewBox="0 0 16 16"><path d="M3 3v10M13 3 5 8l8 5Z" fill="currentColor" stroke="currentColor" stroke-width="1.2"/></svg></button>
-        <button class="mini-btn" id="playBtn" aria-label="Tocar ou pausar (espaço)"><svg viewBox="0 0 16 16" id="playIc"><path d="M4 2.5v11l9-5.5Z" fill="currentColor"/></svg></button>
-        <span class="tc mono" id="stTc">00:00:00:00</span>
+        <span class="tc tc--tl mono" id="stTc2" aria-hidden="true">00:00:00:00</span>
         <button class="mini-btn tl-abrir" id="tlAbrir" aria-label="Mostrar a linha do tempo inteira" aria-expanded="false" title="Linha do tempo"><svg viewBox="0 0 16 16"><path d="M2 4h12M2 8h12M2 12h8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       </div>
       <div class="tl-ruler" id="ruler"><canvas id="rulerCanvas"></canvas></div>
       <div class="tl-names" id="tlNames"></div>
       <div class="tl-lanes" id="tlLanes"><div class="tl-ph" id="tlPh"></div></div>
     </section>
+<nav class="paginas paginas--estudio" aria-label="Páginas do Rift">
+      <span class="paginas__marca" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg>Rift Motion</span>
+      <a href="#projetos" data-pag="projetos"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a>
+      <a href="#modelos" data-pag="modelos"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a>
+      <a href="#biblioteca" data-pag="biblioteca"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-4 4 3 3-2 6 4"/></svg>Mídia</a>
+      <a href="#estudio" data-pag="estudio"><svg viewBox="0 0 24 24"><path d="M3 17c3 0 4-10 9-10s6 10 9 10"/><circle cx="12" cy="7" r="1.6"/></svg>Animar</a>
+      <a href="#exportacoes" data-pag="exportacoes"><svg viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Entregar</a>
+      <span class="paginas__fim mono" data-salvo></span>
+    </nav>
     <nav class="st-dock" aria-label="Adicionar">
       <button class="forte" data-add="midia"><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M10 9.5v5l4-2.5z" fill="currentColor"/></svg></i>Mídia</button>
       <button data-add="texto"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M12 6v13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></i>Texto</button>
@@ -876,10 +1036,7 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       <a class="side__brand" href="#app" aria-label="Rift Motion, início"><span class="app-icon" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span><svg class="rift-wm" viewBox="-2 -2 480.1 104" role="img" aria-label="Rift Motion"><defs><mask id="riftFenda2" maskUnits="userSpaceOnUse" x="-10" y="-10" width="496.1" height="120"><rect x="-10" y="-10" width="496.1" height="120" fill="#fff"/><path d="M58.44 41 L61.64 41 L90.24 63 L87.04 63 Z" fill="#000"/><path d="M184.1 84 C198.1 76, 210.1 30, 230.1 14" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round"/></mask></defs><g fill="currentColor" mask="url(#riftFenda2)"><path d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/><path d="M192.1 0 L220.1 0 L220.1 100 L192.1 100 Z"/><path d="M252.1 0 L476.1 0 L476.1 22 L252.1 22 Z"/><path d="M252.1 0 L280.1 0 L280.1 100 L252.1 100 Z"/><path d="M252.1 42 L346.1 42 L346.1 64 L252.1 64 Z"/><path d="M391.1 0 L419.1 0 L419.1 100 L391.1 100 Z"/></g></svg></a>
       <nav class="side__nav"><a class="side__item" href="#app" data-sec="app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>Início</a><a class="side__item" href="#projetos" data-sec="projetos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a><a class="side__item" href="#modelos" data-sec="modelos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a><a class="side__item" href="#biblioteca" data-sec="biblioteca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Biblioteca</a><a class="side__item" href="#exportacoes" data-sec="exportacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Exportações</a></nav>
       <p class="side__sec">Ecossistema</p>
-      <a class="side__eco" href="https://relay.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i>Relay</a>
-      <a class="side__eco" href="https://nossom.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#5aa9ff,#dcefff)"></i>NOSSOM</a>
-      <a class="side__eco" href="https://sobedesce.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#0a84ff,#7c5cff)"></i>SOBEDESCE</a>
-      <a class="side__eco" href="https://aeon.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d4d5db,#6a6b73)"></i>AEON</a>
+      <div id="ecoSide"></div>
       <div class="side__fim">
         <div class="conta-menu" id="contaMenu" hidden></div>
         <button class="conta-chip" id="contaChip" aria-haspopup="menu" aria-expanded="false"><span class="avatar" id="contaAvatar">·</span><span><strong id="contaNome">Entrando…</strong><small id="contaEmail"></small></span></button>
@@ -890,7 +1047,17 @@ body[data-area="app"] .studio { height: 100vh; height: 100dvh; }
       <div class="carregando" id="painelCarregando"><span class="app-icon" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104" aria-hidden="true"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg></span><span>Entrando com a Absolute ZRO…</span></div>
       <div id="painelConteudo" hidden></div>
     </div>
+    <aside class="ficha" id="ficha" aria-label="Projeto selecionado" hidden></aside>
   </div>
+  <nav class="paginas paginas--painel" aria-label="Páginas do Rift">
+      <span class="paginas__marca" aria-hidden="true"><svg class="r-mark" viewBox="-2 -2 180.1 104"><path class="r-bojo" d="M0 0 L124 0 A31.5 31.5 0 0 1 124 63 L34 63 A6 6 0 0 0 28 69 L28 100 L0 100 L0 68 A27 27 0 0 1 27 41 L116.5 41 A9.5 9.5 0 0 0 116.5 22 L28.6 22 Z"/><path class="r-perna" d="M60.04 41 L99.4 41 L176.1 100 L136.74 100 Z"/></svg>Rift Motion</span>
+      <a href="#projetos" data-pag="projetos"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a>
+      <a href="#modelos" data-pag="modelos"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a>
+      <a href="#biblioteca" data-pag="biblioteca"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-4 4 3 3-2 6 4"/></svg>Mídia</a>
+      <a href="#estudio" data-pag="estudio"><svg viewBox="0 0 24 24"><path d="M3 17c3 0 4-10 9-10s6 10 9 10"/><circle cx="12" cy="7" r="1.6"/></svg>Animar</a>
+      <a href="#exportacoes" data-pag="exportacoes"><svg viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Entregar</a>
+      <span class="paginas__fim mono" data-salvo></span>
+    </nav>
   <nav class="tabbar" aria-label="Menu do Rift"><a href="#app" data-sec="app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#projetos" data-sec="projetos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Projetos</a><a href="#modelos" data-sec="modelos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.4 5.6 5.6 2.4-5.6 2.4L12 19.5l-2.4-5.6L4 11.5l5.6-2.4z"/></svg>Modelos</a><a href="#biblioteca" data-sec="biblioteca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Biblioteca</a><a href="#exportacoes" data-sec="exportacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg>Exportações</a></nav>
 </main>
 
@@ -1037,6 +1204,9 @@ function route() {
   else if (APP_PC) document.title = 'Rift Motion';
   Object.entries(views).forEach(([k, el]) => (el.hidden = k !== h));
   $$('[data-route]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.route === h));
+  // barra de páginas (como no Resolve): a página atual acesa; Início conta como Projetos
+  const pag = h === 'estudio' ? 'estudio' : h === 'app' ? (secao && secao !== 'app' ? secao : 'projetos') : '';
+  $$('[data-pag]').forEach((a) => (a.dataset.pag === pag ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   if (a11y(h)) a11y(h);
   Object.entries(viewLoops).forEach(([k, arr]) => arr.forEach((l) => { l.visible = k === h; upd(l); }));
   if (h === 'entrar') letrasLogin();
@@ -1377,7 +1547,23 @@ function estudio() {
   function montarCamadas() {
     list.innerHTML = cena.camadas.map((c) => `<div class="layer" role="option" data-id="${escH(c.id)}" aria-selected="${c.id === sel}"><span class="dot" style="background:${c.cor}"></span><span class="layer-nome">${escH(c.nome)}</span><span class="kind">${TIPO[c.tipo]}</span>${c.tipo === 'camera' ? '' : `<button class="olho" data-olho="${escH(c.id)}" aria-label="${c.visivel ? 'Esconder' : 'Mostrar'} ${escH(c.nome)}" aria-pressed="${!c.visivel}">${c.visivel ? '●' : '○'}</button>`}</div>`).join('');
     $('#stVazio').hidden = cena.camadas.some((c) => c.tipo !== 'camera');
+    montarPool();
   }
+  // Mídia: as imagens e vídeos que estão no projeto (ficam no aparelho) e o botão de importar
+  function montarPool() {
+    let urls = null;
+    try { urls = urlsMidia; } catch (e) { /* ainda montando o estúdio */ }
+    const midias = cena.camadas.filter((c) => c.tipo === 'midia');
+    $('#midiaPool').innerHTML = midias.map((c) => {
+      const u = urls && urls.get(c.midia.id);
+      const prev = !u ? '' : c.midia.tipo === 'video' ? `<video src="${u}" muted preload="metadata"></video>` : `<img src="${u}" alt="">`;
+      return `<button class="pool__item" data-pool="${escH(c.id)}" aria-pressed="${c.id === sel}" title="${escH(c.midia.nome || c.nome)}"><span class="pool__th">${prev}<small>${c.midia.tipo === 'video' ? 'VÍD' : 'IMG'}</small></span><span class="pool__nome">${escH(c.midia.nome || c.nome)}</span></button>`;
+    }).join('') + `<button class="pool__item pool__add" title="Imagem ou vídeo do seu aparelho"><span class="pool__th"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="pool__nome">Importar</span></button>`;
+  }
+  $('#midiaPool').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pool]'); if (b && camada(b.dataset.pool)) return select(b.dataset.pool);
+    if (e.target.closest('.pool__add')) adicionar('midia');
+  });
   list.addEventListener('click', (e) => {
     const olho = e.target.closest('[data-olho]');
     if (olho) { const c = camada(olho.dataset.olho); lembrar(); c.visivel = !c.visivel; return mudou({ estrutura: true }); }
@@ -1408,23 +1594,24 @@ function estudio() {
   const names = $('#tlNames'), lanes = $('#tlLanes'), ph = $('#tlPh');
   function montarTimeline() {
     names.innerHTML = ''; $$('.tl-lane', lanes).forEach((x) => x.remove());
-    cena.camadas.forEach((c) => {
-      const n = document.createElement('div'); n.className = 'tl-name'; n.dataset.id = c.id; n.innerHTML = `<span class="dot" style="background:${c.cor}"></span><span class="layer-nome">${escH(c.nome)}</span><small>${TIPO[c.tipo]}</small>`;
+    cena.camadas.forEach((c, i) => {
+      const n = document.createElement('div'); n.className = 'tl-name'; n.dataset.id = c.id; n.innerHTML = `<span class="tl-id">V${cena.camadas.length - i}</span><span class="dot" style="background:${c.cor}"></span><span class="layer-nome">${escH(c.nome)}</span><small>${TIPO[c.tipo]}</small>`;
       n.addEventListener('click', () => select(c.id)); names.appendChild(n);
       const lane = document.createElement('div'); lane.className = 'tl-lane'; lane.dataset.id = c.id;
-      if (c.id === sel) lane.style.background = 'var(--surface-2)';
+      if (c.id === sel) lane.classList.add('sel');
       const tempos = [...new Set(Object.values(c.trilhas).flat().map((k) => Math.round(k[0] * 1000) / 1000))].sort((a, b) => a - b);
-      if (tempos.length > 1) lane.insertAdjacentHTML('beforeend', `<div class="bar" style="left:${(tempos[0] / D) * 100}%;width:${((tempos[tempos.length - 1] - tempos[0]) / D) * 100}%;background:${c.cor}"></div>`);
+      // o clipe ocupa o tempo em que a camada existe (o projeto inteiro); escondida, fica apagada
+      lane.insertAdjacentHTML('beforeend', `<div class="clip${c.visivel === false ? ' clip--oculto' : ''}" style="--c:${c.cor}"><span>${escH(c.tipo === 'texto' && c.texto ? c.texto.split('\n')[0] : c.nome)}</span></div>`);
       tempos.forEach((k) => lane.insertAdjacentHTML('beforeend', `<i class="k" data-t="${k}" style="left:${(Math.min(k, D) / D) * 100}%" title="${k.toFixed(2).replace('.', ',')} s"></i>`));
       lanes.appendChild(lane);
     });
-    const n = document.createElement('div'); n.className = 'tl-name'; n.innerHTML = `<span class="dot" style="background:#5aa9ff"></span>Som<small>em breve</small>`; names.appendChild(n);
+    const n = document.createElement('div'); n.className = 'tl-name tl-name--audio'; n.innerHTML = `<span class="tl-id">A1</span><span class="dot" style="background:#5aa9ff"></span>Som<small>em breve</small>`; names.appendChild(n);
     const lane = document.createElement('div'); lane.className = 'tl-lane'; lane.innerHTML = '<canvas id="tlWave"></canvas>'; lanes.appendChild(lane);
     drawWave();
   }
   function drawWave() {
     const c = $('#tlWave'); if (!c) return; const d = Math.min(2, devicePixelRatio), w = c.clientWidth, h = c.clientHeight; if (!w) return;
-    c.width = w * d; c.height = h * d; const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.fillStyle = '#5aa9ff'; x.globalAlpha = 0.35; // só as marcas dos keyframes: o som de verdade vem do NOSSOM
+    c.width = w * d; c.height = h * d; const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.fillStyle = '#5aa9ff'; x.globalAlpha = 0.35; // só as marcas dos keyframes: o som de verdade virá do Quasar
     const hits = [...new Set(cena.camadas.flatMap((cc) => Object.values(cc.trilhas).flat().map((k) => k[0])))];
     for (let i = 0; i < w / 3; i++) { const tt = (i * 3 / w) * D; let a = 0.06; hits.forEach((hh) => { const dd = tt - hh; if (dd > -0.05 && dd < 0.6) a = Math.max(a, dd < 0 ? (dd + 0.05) / 0.05 : Math.exp(-dd * 6)); }); const bh = Math.max(1, a * h); x.globalAlpha = 0.5; x.fillRect(i * 3, h / 2 - bh / 2, 2, bh); }
   }
@@ -1478,7 +1665,11 @@ function estudio() {
     const mv = (ev) => scrub(ev), up = () => { ruler.removeEventListener('pointermove', mv); ruler.removeEventListener('pointerup', up); };
     ruler.addEventListener('pointermove', mv); ruler.addEventListener('pointerup', up);
   });
-  const playBtn = $('#playBtn');
+  const playBtn = $('#playBtn'), trInfo = $('#trInfo');
+  // transporte: quadro anterior e seguinte pelos mesmos comandos do menu do app de computador
+  $$('.st-transport [data-cmd]').forEach((b) => b.addEventListener('click', () => ganchos.comandoEstudio?.(b.dataset.cmd)));
+  // Entregar, dentro do estúdio, abre a folha de exportação do projeto aberto
+  $('.paginas--estudio [data-pag="exportacoes"]').addEventListener('click', (e) => { e.preventDefault(); $('#exportBtn').click(); });
   function setPlayIc() { $('#playIc').innerHTML = playing ? '<path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/>' : '<path d="M4 2.5v11l9-5.5Z" fill="currentColor"/>'; }
   playBtn.addEventListener('click', () => { playing = !playing; setPlayIc(); });
   $('#toStart').addEventListener('click', () => { t = 0; update(); });
@@ -1777,7 +1968,9 @@ function estudio() {
   function update() {
     const tq = agora();
     ph.style.left = (tq / D) * 100 + '%';
-    $('#stTc').textContent = timecode(tq, fps);
+    const tcTxt = timecode(tq, fps);
+    $('#stTc').textContent = tcTxt; $('#stTc2').textContent = tcTxt;
+    const info = `${FPS[fpsI].l} fps`; if (trInfo.textContent !== info) trInfo.textContent = info;
     sincronizar2d(); pintar2d(tq);
     if (r) {
       sincronizar3d();
@@ -1826,7 +2019,7 @@ function estudio() {
   themeListeners.push(() => { drawRuler(); });
 
   // ---- som
-  $('#soundBtn').addEventListener('click', () => toast('O NOSSOM recebe os keyframes e devolve whoosh, impacto e clique no tempo de cada um.'));
+  $('#soundBtn').addEventListener('click', () => toast('O Quasar vai receber os keyframes e devolver whoosh, impacto e clique no tempo de cada um.'));
 
   // ---- exportação
   const FORMATOS = [
@@ -2516,7 +2709,7 @@ function painel() {
       const r = await fetch('/api/zro/eu', { headers: { accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' });
       if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw new Error('sem servidor');
       const d = await r.json();
-      if (d.ok) return { modo: 'conta', pessoa: d.pessoa, z: d.z === true };
+      if (d.ok) return { modo: 'conta', pessoa: d.pessoa, z: d.z === true, apps: Array.isArray(d.apps) ? d.apps : null };
       if (d.configurado) return { modo: 'entrar' };
       return { modo: 'demo', motivo: 'O login da Absolute ZRO liga assim que o segredo do app estiver na Vercel.' };
     } catch (e) {
@@ -2528,6 +2721,7 @@ function painel() {
     if (c.modo === 'conta') { $('#navEntrar').textContent = 'Painel'; $('#navEntrar').href = '#app'; }
     if (c.modo === 'demo') { $('#btnEntrar').href = '#app'; $('#btnCriar').href = '#app'; }
     ganchos.mostrarZ?.(c.modo === 'conta' && c.z === true);
+    pintarEco();
     return conta;
   });
   // aviso de volta do login (?zro=ok, expirou, erro, recusado, config)
@@ -2539,6 +2733,19 @@ function painel() {
     history.replaceState(null, '', location.pathname + location.hash);
   }
 
+  // Ecossistema: só os apps que a pessoa vê (gate de lançamento do HUB, claim zro_release). Sem a informação, só os
+  // lançados para todos. O Quasar (antigo NOSSOM) e o AEON só aparecem para quem tem acesso.
+  const ECO = [
+    { id: 'relay', n: 'Relay', d: 'Exporta em qualquer formato', url: 'https://relay.absolutezro.com', g: 'linear-gradient(140deg,#d8f76a,#2fd9ae)', publico: true },
+    { id: 'nossom', n: 'Quasar', d: 'O som do seu motion', url: 'https://quasar.absolutezro.com', g: 'linear-gradient(140deg,#5aa9ff,#dcefff)' },
+    { id: 'sobedesce', n: 'SOBEDESCE', d: 'Leva para o Drive e o Resolve', url: 'https://sobedesce.absolutezro.com', g: 'linear-gradient(140deg,#0a84ff,#7c5cff)', publico: true },
+    { id: 'ai-edit', n: 'AEON', d: 'Na timeline da edição', url: 'https://aeon.absolutezro.com', g: 'linear-gradient(140deg,#d4d5db,#6a6b73)' },
+  ];
+  const ecoVisivel = () => ECO.filter((a) => (Array.isArray(conta?.apps) ? conta.apps.includes(a.id) : a.publico));
+  function pintarEco() {
+    $('#ecoSide').innerHTML = ecoVisivel().map((a) => `<a class="side__eco" href="${a.url}" target="_blank" rel="noopener"><i style="background:${a.g}"></i>${a.n}</a>`).join('');
+    $('#soundBtn').hidden = !ecoVisivel().some((a) => a.id === 'nossom');
+  }
   function pintarConta() {
     const p = conta.pessoa;
     const iniciais = (p.nome || p.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0].toUpperCase()).join('');
@@ -2577,12 +2784,7 @@ function painel() {
       return `${avisoDemo()}${topo(saudacao(), esc(nome) + (conta.pessoa.nome ? '.' : ''), BTN_NOVO + '<a class="glass-btn" href="#modelos">Ver modelos</a>')}
       <section class="bloco"><div class="bloco__topo"><h2>Recentes</h2><a href="#projetos">Todos os projetos</a></div>${lista.length ? `<div class="grade">${lista.slice(0, 6).map(cartaoProjeto).join('')}</div>` : vazioProjetos()}</section>
       <section class="bloco"><div class="bloco__topo"><h2>Comece por um modelo</h2><a href="#modelos">Todos</a></div><div class="grade">${MODELOS.slice(0, 3).map(cartaoModelo).join('')}</div></section>
-      <section class="bloco"><div class="bloco__topo"><h2>Do ecossistema</h2></div><div class="eco">
-        <a href="https://relay.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i><span><strong>Relay</strong><small>Exporta em qualquer formato</small></span></a>
-        <a href="https://nossom.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#5aa9ff,#dcefff)"></i><span><strong>NOSSOM</strong><small>O som do seu motion</small></span></a>
-        <a href="https://sobedesce.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#0a84ff,#7c5cff)"></i><span><strong>SOBEDESCE</strong><small>Leva para o Drive e o Resolve</small></span></a>
-        <a href="https://aeon.absolutezro.com" target="_blank" rel="noopener"><i style="background:linear-gradient(140deg,#d4d5db,#6a6b73)"></i><span><strong>AEON</strong><small>Na timeline da edição</small></span></a>
-      </div></section>`;
+      <section class="bloco bloco--eco"><div class="bloco__topo"><h2>Do ecossistema</h2></div><div class="eco">${ecoVisivel().map((a) => `<a href="${a.url}" target="_blank" rel="noopener"><i style="background:${a.g}"></i><span><strong>${a.n}</strong><small>${a.d}</small></span></a>`).join('')}</div></section>`;
     },
     projetos() {
       return `${avisoDemo()}${topo('Seus', 'projetos.', BTN_NOVO)}<div class="busca"><input class="campo" id="buscaProj" type="search" placeholder="Buscar pelo nome" aria-label="Buscar projetos"><select class="sel" id="ordemProj" aria-label="Ordem"><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="criados">Criados</option></select></div><div id="listaProj"></div><p style="margin:0;color:var(--mute);font-size:.8rem">${nuvem ? 'Guardados na sua conta Absolute ZRO: abrem em qualquer aparelho.' : 'Guardados neste aparelho.'}</p>`;
@@ -2599,12 +2801,35 @@ function painel() {
       return `${avisoDemo()}${topo('Suas', 'exportações.')}${itens.length ? `<div class="lista">${itens.map((x) => `<div class="linha"><span class="ic" style="background:#0c0c0e"><i style="width:14px;height:14px;border-radius:50%;background:linear-gradient(140deg,#d8f76a,#2fd9ae)"></i></span><span style="min-width:0"><strong>${esc(x.projeto)}</strong><small>${esc(x.formato)} · ${esc(x.fps)} fps · ${esc(x.tamanho)} · ${esc(x.destino)} · ${quando(x.quando)}</small></span><span class="estado" title="O motor de exportação (Relay) ainda não renderiza a partir do Rift">não renderizado</span><span></span></div>`).join('')}</div>` : `<div class="vazio"><h2 class="t"><span>Nada</span> <b>exportado ainda.</b></h2><p>No estúdio, "Exportar com o Relay" manda o projeto para cá.</p><a class="glass-btn" href="#projetos">Abrir um projeto</a></div>`}`;
     },
   };
+  // ficha do projeto selecionado (telas largas): um clique escolhe, dois cliques (ou Abrir) abrem
+  let escolhido = null;
+  const largo = () => matchMedia('(min-width: 1200px)').matches;
+  function pintarFicha() {
+    const ficha = $('#ficha');
+    const mostra = largo() && (secaoAtual === 'app' || secaoAtual === 'projetos') && projetos().length;
+    ficha.hidden = !mostra; $('.shell').classList.toggle('com-ficha', !!mostra);
+    if (!mostra) return;
+    const lista = projetos().slice().sort((a, b) => b.editado - a.editado);
+    const pr = lista.find((x) => x.id === escolhido) || lista[0]; escolhido = pr.id;
+    $$('.proj', conteudo).forEach((c) => c.classList.toggle('escolhido', c.dataset.id === pr.id));
+    const formato = pr.formato || (pr.altura > pr.largura ? '9:16' : pr.altura === pr.largura ? '1:1' : '16:9');
+    const campos = [['Nome', esc(pr.nome)], ['Formato', `${esc(formato)} · ${pr.largura} × ${pr.altura}`], ['Cadência', `${FPS[pr.fps].l} fps`], ['Duração', `${pr.duracao} s`], ['Editado', quando(pr.editado)], ['Criado', quando(pr.criado)]];
+    ficha.innerHTML = `<h4>Projeto</h4><div class="ficha__capa">${capa(pr)}</div><dl class="ficha__dados">${campos.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+      <div class="ficha__acoes"><a class="glass-btn glass-btn--ink glass-btn--sm" href="#estudio" data-abrir="${pr.id}">Abrir</a><button class="glass-btn glass-btn--sm" data-ficha="duplicar">Duplicar</button><button class="glass-btn glass-btn--sm" data-ficha="renomear">Renomear</button></div>`;
+  }
+  $('#ficha').addEventListener('click', (e) => {
+    const abrir = e.target.closest('[data-abrir]');
+    if (abrir) { gravar('aberto', abrir.dataset.abrir); mudarProjeto(abrir.dataset.abrir); return; }
+    const a = e.target.closest('[data-ficha]'); if (a && escolhido) acaoProjeto(a.dataset.ficha, escolhido);
+  });
+  matchMedia('(min-width: 1200px)').addEventListener?.('change', () => pintarFicha());
   function vazioProjetos() { return `<div class="vazio"><h2 class="t"><span>Nenhum</span> <b>projeto ainda.</b></h2><p>Comece do zero ou por um modelo.</p><div class="miolo__acoes">${BTN_NOVO}<a class="glass-btn" href="#modelos">Ver modelos</a></div></div>`; }
   function pintarLista() {
     const q = ($('#buscaProj')?.value || '').trim().toLowerCase(), ordem = $('#ordemProj')?.value || 'recentes';
     let l = projetos().filter((p) => p.nome.toLowerCase().includes(q));
     l.sort(ordem === 'nome' ? (a, b) => a.nome.localeCompare(b.nome, 'pt-BR') : ordem === 'criados' ? (a, b) => b.criado - a.criado : (a, b) => b.editado - a.editado);
     $('#listaProj').innerHTML = l.length ? `<div class="grade">${l.map(cartaoProjeto).join('')}</div>` : q ? `<div class="vazio"><p>Nenhum projeto com "${esc(q)}".</p></div>` : vazioProjetos();
+    pintarFicha();
   }
 
   async function mostrar(secao) {
@@ -2618,6 +2843,7 @@ function painel() {
     conteudo.style.display = 'grid'; conteudo.style.gap = '30px';
     if (secaoAtual === 'projetos') { pintarLista(); $('#buscaProj').addEventListener('input', pintarLista); $('#ordemProj').addEventListener('change', pintarLista); }
     if (secaoAtual === 'biblioteca') ligarBiblioteca();
+    pintarFicha();
   }
   ganchos.secao = (s2) => { mostrar(s2); };
   ganchos.estudio = async () => {
@@ -2643,8 +2869,13 @@ function painel() {
   ganchos.exportou = (x) => { const idp = ler('aberto', null); const pr = projetos().find((p) => p.id === idp); addExportacao({ id: novoId(), projetoId: pr?.id || null, projeto: pr?.nome || 'Projeto', ...x, estado: 'nao_renderizado', quando: Date.now() }); };
 
   // ---------- ações ----------
+  conteudo.addEventListener('dblclick', (e) => {
+    const card = e.target.closest('.proj[data-id]'); if (!card || !largo()) return;
+    gravar('aberto', card.dataset.id); mudarProjeto(card.dataset.id); location.hash = '#estudio';
+  });
   conteudo.addEventListener('click', (e) => {
     const abrir = e.target.closest('[data-abrir]');
+    if (abrir && largo() && !$('#ficha').hidden && abrir.closest('.proj')) { e.preventDefault(); escolhido = abrir.dataset.abrir; return pintarFicha(); }
     if (abrir) { gravar('aberto', abrir.dataset.abrir); mudarProjeto(abrir.dataset.abrir); return; }
     if (e.target.closest('[data-novo]')) return folhaNovo();
     const m = e.target.closest('[data-modelo]');
