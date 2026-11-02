@@ -15,6 +15,22 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Higgsfield: renovação e medidor do ciclo nas Conexões (02/11/2026)
+
+Branch `higgsfield-renovacao`.
+
+- `npm run lint`, `npm run format:check`, `npm run typecheck`: ok. `npm test`: **590/590** em 68 arquivos,
+  com `packages/core/test/higgsfield-ciclo.test.ts` (com e sem crédito de assinatura, pacote do ciclo e do anterior,
+  devolução, data vencida sem crédito novo, virada de mês e de ano, 31/01 → 28/02 e 29/02, sinal do gasto, medidor) e
+  o caso novo em `tests/integration/higgsfield.test.ts` (extrato de 403 lançamentos em páginas: a varredura para na 2ª
+  página, a que passa de 40 dias; o painel dos apps traz o mesmo ciclo).
+- `npm run build`: ok. E2E novo `tests/e2e/higgsfield.spec.ts` (Higgsfield falsa na porta 3295,
+  `ZRO_HIGGSFIELD_TESTE_URL`): conectar, saldo puro sem crédito de assinatura e, com ele, "renova em", "de 800 no
+  ciclo · 120 usados pelos apps", o medidor (`aria-valuetext` "65,41 de 800", apps em 15%), sem rolagem lateral, em
+  1440 e 393: **2/2**. Capturas claro e escuro conferidas.
+- Não testado contra a Higgsfield de verdade a partir do HUB: o formato do extrato (`display_name`, `action`, `credits`,
+  `created_at`, `next_cursor`) segue o que a Higgsfield devolveu na conta do titular.
+
 ## Synquei: o site pede a conta Absolute ZRO (02/11/2026)
 
 Branch `claude/synquei-pede-conta`, em `products/synquei`.

@@ -946,6 +946,12 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `coming_soon`, gate em `development` (só admin), fora dos planos até o lançamento; cliente `rift-web` vira o app
   `rift-motion` com o escopo `zro.higgsfield`. O Rift deixa a conexão própria e passa a pedir por `/api/v1/higgsfield`
   (PR #80). A Z sabe o que o Rift faz (filtrada pelo gate).
+- ✅ Cartão da Higgsfield com o ciclo do plano (02/11/2026, branch `higgsfield-renovacao`): "disponíveis · pro · renova
+  em 18/11" e o medidor pelo disponível sobre o que entrou no ciclo (assinatura + pacotes), com a parte dos apps em tom
+  mais claro dentro do gasto; legenda "de 800 no ciclo · N usados pelos apps". O `balance` só traz saldo e plano: a data
+  vem do último crédito "Subscription Credits" do extrato (+1 mês, mesmo dia e hora; passou sem crédito novo = sem
+  data). Uma varredura do extrato só (até 10 páginas ou 40 dias) dá o uso do mês e o ciclo; sem crédito de assinatura,
+  o medidor fica no saldo puro. O painel dos apps (`/api/v1/higgsfield`) ganha `ciclo`.
 
 ## AEON com a cara do AEON (02/11/2026)
 
