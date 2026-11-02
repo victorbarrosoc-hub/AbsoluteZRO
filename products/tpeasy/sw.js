@@ -25,6 +25,7 @@ const FILES = [
   "/app/js/pendencias.js",
   "/app/js/maestro.js",
   "/app/js/entregas.js",
+  "/app/js/leituras.js",
   "/app/js/remote.js",
   "/app/remote.html",
   "/icons/favicon.svg",
