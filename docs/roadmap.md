@@ -2,6 +2,23 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ramo `planos-b`, ADR 0039)
+
+- ✅ Migração `0055`: Zero (grátis), Órbita (R$ 109,90/mês ou R$ 1.099/ano), Absoluto (R$ 299,90 ou R$ 2.999) e Avulso
+  de um app (R$ 79,90 ou R$ 799; Maestro, SOBEDESCE, Synquei, Relay, Carro). Planos antigos fora da venda, como legado;
+  **ninguém que já existe muda** (Absoluto legado nos apps que já tinha, sem os limites novos). Conta nova nasce no Zero.
+- ✅ Catálogo de limites por nível (`zro.plan_limits`), público em `GET /api/v1/limites`; nível efetivo por app
+  (`zro.niveis_efetivos`) na claim `zro_nivel` (+ `zro_teste_ate`), em `/api/v1/entitlements` e em
+  `GET /api/v1/me/limites`.
+- ✅ Z por nível em mensagens (10/100/300, avulso 50, teste 50 no período) com recarga de 12 meses depois da franquia.
+- ✅ Teste de 15 dias do Absoluto como campanha, **desligado**: o admin liga com data de fim no console; uma vez por
+  pessoa, e-mail confirmado e normalizado, sem descartável, 3 por IP/dia; recusas contadas.
+- ✅ Console › Planos: campanha (ligar/desligar, em teste, recusados), estender/encerrar o teste de uma pessoa, limites
+  por nível (editar só admin), recargas, contas antigas (migrar para o Zero, desligado). Início e Perfil mostram o plano.
+- ⬜ Stripe: checkout dos planos novos e das recargas, webhook das recargas (`concederRecarga` com `providerRef`).
+- ⬜ Cada app ler `zro_nivel` e aplicar os números do catálogo (hoje só o HUB mede a Z e as duas operações dele).
+- ⛔ Ligar a campanha e migrar contas antigas: decisão do titular (nada ligado em produção).
+
 ## Carro do Freela: modo demonstração em /demo (02/11/2026, ramo `claude/carro-demo`)
 
 - ✅ `carro.absolutezro.com/demo`: o site real com cerca de 100 perfis fictícios (praça, agenda de 42 dias, propostas,

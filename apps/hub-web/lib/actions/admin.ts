@@ -1,13 +1,27 @@
 'use server'
 import { revalidatePath } from 'next/cache'
-import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, launchSales, publishPlanVersion, revokeEntitlement } from '@zro/billing'
+import {
+  assignPlan,
+  cancelManualSubscription,
+  concederRecarga,
+  createPlanVersion,
+  desligarCampanha,
+  encerrarTeste,
+  estenderTeste,
+  grantEntitlement,
+  ligarCampanha,
+  ligarMigracaoLegado,
+  migrarParaZero,
+  migrarTodasParaZero,
+  publishPlanVersion,
+  revokeEntitlement,
+} from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requireConsole, requirePlatformAdmin, resolvePlanRequest, resolverDenunciaSet } from '@zro/core'
+import { atualizarLimite, requireConsole, requirePlatformAdmin, resolvePlanRequest, resolverDenunciaSet } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { db, getAuth } from '../session'
-import { stripeConfig } from '../stripe'
 import { mudarDriveDoSobedesce } from '../sobedesce-console'
 import { str, toFormError } from './helpers'
 
@@ -96,6 +110,7 @@ export async function grantAction(_: FormState, fd: FormData): Promise<FormState
           : null,
         limits: withAiCredits(parseLimits(String(fd.get('limits') ?? '')), str(fd, 'aiCredits')),
         endsAt: date(str(fd, 'until')),
+        nivel: (['zero', 'orbita', 'absoluto'] as const).find((n) => n === str(fd, 'nivel')) ?? null,
       }),
     )
     revalidatePath('/admin', 'layout')
@@ -230,17 +245,129 @@ export async function resolvePlanRequestAction(_: FormState, fd: FormData): Prom
   }
 }
 
-/** Ligar as vendas: teste do Completo para conta nova e data de corte do grátis antigo (só admin, com motivo). */
-export async function launchSalesAction(_: FormState, fd: FormData): Promise<FormState> {
+/** Teste do Absoluto, contas antigas e catálogo de limites (ADR 0039): só o papel admin. */
+async function soAdmin(fd: FormData) {
+  return comMotivo(requirePlatformAdmin(await getAuth(), ['admin']).userId, fd)
+}
+
+const inteiro = (raw: string, campo: string, min: number, max: number) => {
+  const n = Number(raw)
+  if (!raw || !Number.isInteger(n) || n < min || n > max) throw new DomainError('invalid_input', `${campo}: um número de ${min} a ${max}.`)
+  return n
+}
+
+export async function ligarCampanhaAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    const dia = str(fd, 'fimDia')
+    if (!dia) throw new DomainError('invalid_input', 'Escolha até quando vale a campanha.')
+    const fim = new Date(`${dia}T${str(fd, 'fimHora') || '23:59'}:59-03:00`)
+    if (Number.isNaN(fim.getTime())) throw new DomainError('invalid_input', 'Data inválida.')
+    const r = await db().asSystem('admin: ligar campanha do teste', (tx) =>
+      ligarCampanha(tx, actor, {
+        fim,
+        dias: inteiro(str(fd, 'dias') || '15', 'Dias de teste', 1, 60),
+        zMensagens: inteiro(str(fd, 'z') || '50', 'Mensagens da Z', 0, 10000),
+        limiteIpDia: inteiro(str(fd, 'ip') || '3', 'Testes por IP no dia', 1, 100),
+        incluirExistentes: fd.get('existentes') === 'on',
+      }),
+    )
+    revalidatePath('/admin', 'layout')
+    return { ok: `Campanha ligada. ${r.iniciados} contas ganharam o teste agora.` }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function desligarCampanhaAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    const ok = await db().asSystem('admin: desligar campanha do teste', (tx) => desligarCampanha(tx, actor))
+    revalidatePath('/admin', 'layout')
+    return ok ? { ok: 'Campanha desligada. Quem está em teste segue até o fim.' } : { error: 'Não havia campanha ligada.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function estenderTesteAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    const dias = inteiro(str(fd, 'dias') || '7', 'Dias', 1, 60)
+    await db().asSystem('admin: estender teste', (tx) => estenderTeste(tx, actor, str(fd, 'userId'), dias))
+    revalidatePath('/admin', 'layout')
+    return { ok: `Teste estendido em ${dias} dias.` }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function encerrarTesteAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    await db().asSystem('admin: encerrar teste', (tx) => encerrarTeste(tx, actor, str(fd, 'userId')))
+    revalidatePath('/admin', 'layout')
+    return { ok: 'Teste encerrado.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function atualizarLimiteAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const raw = str(fd, 'valor')
+    const valor = raw === '' || raw === '∞' ? null : Number(raw)
+    if (valor !== null && (!Number.isSafeInteger(valor) || valor < 0)) throw new DomainError('invalid_input', 'Use um número inteiro (vazio = sem limite).')
+    const nivel = str(fd, 'nivel')
+    if (!['zero', 'orbita', 'absoluto'].includes(nivel)) throw new DomainError('invalid_input', 'Nível inválido.')
+    // O console manda "produto:chave" num campo só (alvo).
+    const [productId = '', chave = ''] = str(fd, 'alvo').split(':')
+    await atualizarLimite(db(), await getAuth(), {
+      nivel: nivel as 'zero' | 'orbita' | 'absoluto',
+      productId,
+      chave,
+      valor,
+      reason: str(fd, 'reason'),
+    })
+    revalidatePath('/admin/planos')
+    return { ok: 'Limite salvo.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function migracaoLegadoAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    const ligada = str(fd, 'ligada') === 'sim'
+    await db().asSystem('admin: migração das contas antigas', (tx) => ligarMigracaoLegado(tx, actor, ligada))
+    revalidatePath('/admin/planos')
+    return { ok: ligada ? 'Migração ligada.' : 'Migração desligada.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function migrarParaZeroAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await soAdmin(fd)
+    const org = str(fd, 'orgId')
+    const n = await db().asSystem('admin: migrar para o Zero', async (tx) =>
+      org === 'todas' ? migrarTodasParaZero(tx, actor) : (await migrarParaZero(tx, actor, org)) ? 1 : 0,
+    )
+    revalidatePath('/admin', 'layout')
+    return { ok: n ? `${n} ${n === 1 ? 'organização foi' : 'organizações foram'} para o Zero.` : 'Nada a migrar.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function concederRecargaAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     const actor = await planosActor(fd)
-    if (!stripeConfig()) throw new DomainError('conflict', 'Coloque STRIPE_SECRET_KEY e STRIPE_WEBHOOK_SECRET na Vercel antes.')
-    const cutoff = new Date(`${str(fd, 'cutoff')}T23:59:59-03:00`)
-    if (Number.isNaN(cutoff.getTime())) throw new DomainError('invalid_input', 'Escolha a data de corte.')
-    const trialDays = Number(str(fd, 'trialDays') || '7')
-    const r = await db().asSystem('admin: ligar vendas', (tx) => launchSales(tx, actor, { cutoff, trialDays }))
+    await db().asSystem('admin: recarga da Z', (tx) => concederRecarga(tx, actor, { orgId: str(fd, 'orgId'), pacote: str(fd, 'pacote') }))
     revalidatePath('/admin', 'layout')
-    return { ok: `Vendas ligadas. ${r.grandfathered} organizações seguem liberadas até a data de corte.` }
+    return { ok: 'Recarga concedida.' }
   } catch (e) {
     return toFormError(e)
   }

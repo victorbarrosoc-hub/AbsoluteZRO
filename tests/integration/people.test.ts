@@ -34,7 +34,7 @@ describe('trocar plano da organização (changeOrgPlan)', () => {
   it('grátis → manual: encerra o grátis, concede o novo, recalcula acessos e audita', async () => {
     const o = await newOrgWithOwner(db, 'troca', { freePlan: true })
     const adm = await admin(db)
-    const synquei = await planId(db, 'individual-synquei')
+    const synquei = await planId(db, 'avulso-synquei')
     const r = await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'Troca no painel' }, { orgId: o.orgId, planId: synquei }))
     expect(r.canceled).toBe(1)
     const subs = await db.sql`select provider, status, plan_id from zro.subscriptions where org_id = ${o.orgId} order by created_at`
@@ -55,25 +55,25 @@ describe('trocar plano da organização (changeOrgPlan)', () => {
   it('volta para o plano grátis como assinatura manual e recusa o mesmo plano de novo', async () => {
     const o = await newOrgWithOwner(db, 'volta', { freePlan: true })
     const adm = await admin(db)
-    const free = await planId(db, 'conta-absolute-zro', 2)
+    const free = await planId(db, 'zero', 1)
     await expectCode(
       sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: free })),
       'conflict',
     )
-    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: await planId(db, 'individual-synquei') }))
+    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: await planId(db, 'avulso-synquei') }))
     await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: free }))
     const active = await db.sql`select provider from zro.subscriptions where org_id = ${o.orgId} and status = 'active'`
     expect(active.map((s) => s.provider)).toEqual(['manual'])
-    expect((await sys(async (tx) => checkEntitlement(tx, o.orgId, 'nossom', null))).ok).toBe(true)
+    expect((await sys(async (tx) => checkEntitlement(tx, o.orgId, 'maestro', null))).ok).toBe(true)
   })
 
   it('assinatura de provedor externo (Stripe) não é trocada à mão', async () => {
     const o = await newOrgWithOwner(db, 'stripe')
     const adm = await admin(db)
     await db.sql`insert into zro.subscriptions (org_id, plan_id, status, current_period_start, provider, provider_subscription_id)
-                 values (${o.orgId}, ${await planId(db, 'individual-synquei')}, 'active', now(), 'stripe', ${'sub_' + randomBytes(6).toString('hex')})`
+                 values (${o.orgId}, ${await planId(db, 'avulso-synquei')}, 'active', now(), 'stripe', ${'sub_' + randomBytes(6).toString('hex')})`
     const err = await expectCode(
-      sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: await planId(db, 'conta-absolute-zro', 2) })),
+      sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'x' }, { orgId: o.orgId, planId: await planId(db, 'zero', 1) })),
       'conflict',
     )
     expect((err as unknown as Error).message).toContain('Pago pelo Stripe')
@@ -85,7 +85,7 @@ describe('trocar plano da organização (changeOrgPlan)', () => {
     const o = await newOrgWithOwner(db, 'motivo')
     const adm = await admin(db)
     await expectCode(
-      sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: ' ' }, { orgId: o.orgId, planId: await planId(db, 'individual-synquei') })),
+      sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: ' ' }, { orgId: o.orgId, planId: await planId(db, 'avulso-synquei') })),
       'invalid_input',
     )
     await expectCode(
@@ -170,10 +170,10 @@ describe('consultas do painel', () => {
     const row = byName.rows.find((r) => r.id === o.userId)!
     expect(row.orgs).toHaveLength(1)
     expect(row.orgs[0]!.role).toBe('owner')
-    expect(row.orgs[0]!.plans.map((p) => [p.planCode, p.provider])).toEqual([['conta-absolute-zro', 'free']])
+    expect(row.orgs[0]!.plans.map((p) => [p.planCode, p.provider])).toEqual([['zero', 'free']])
     expect(row.hubLastSeenAt).toBeInstanceOf(Date)
 
-    const free = await sys(async (tx) => listPeople(tx, filter({ q: tag, plano: 'conta-absolute-zro' })))
+    const free = await sys(async (tx) => listPeople(tx, filter({ q: tag, plano: 'zero' })))
     expect(free.rows.map((r) => r.id)).toEqual([o.userId])
     const noPlan = await sys(async (tx) => listPeople(tx, filter({ q: tag, plano: 'sem-plano' })))
     expect(noPlan.rows.map((r) => r.id)).toEqual([solo.userId])
@@ -203,7 +203,7 @@ describe('consultas do painel', () => {
     const csv = peopleCsv(recent.rows)
     expect(csv.startsWith('﻿nome,email')).toBe(true)
     expect(csv).toContain(o.email)
-    expect(csv).toContain('Conta Absolute ZRO (Grátis)')
+    expect(csv).toContain('Zero (Grátis)')
     expect(csv).not.toContain(o.token)
   })
 
@@ -244,7 +244,7 @@ describe('consultas do painel', () => {
   it('página da pessoa: organizações, assinaturas, acessos, sessões e linha do tempo', async () => {
     const o = await newOrgWithOwner(db, 'detalhe', { freePlan: true })
     const adm = await admin(db)
-    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'cortesia' }, { orgId: o.orgId, planId: await planId(db, 'individual-synquei') }))
+    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'cortesia' }, { orgId: o.orgId, planId: await planId(db, 'avulso-synquei') }))
     const d = (await sys(async (tx) => personDetail(tx, o.userId)))!
     expect(d.person.email).toBe(o.email)
     expect(d.person.orgs[0]!.plans.map((p) => p.provider)).toEqual(['manual'])
@@ -252,7 +252,7 @@ describe('consultas do painel', () => {
       ['manual', 'active'],
       ['free', 'canceled'],
     ])
-    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei', 'relay']) // o Relay entra em todo plano (0031)
+    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei']) // o avulso novo (0055) é só o app dele
     expect(d.sessions).toHaveLength(1)
     expect(d.timeline.map((t) => t.action)).toContain('billing.plan_changed')
     expect(d.timeline.find((t) => t.action === 'billing.plan_changed')!.reason).toBe('cortesia')
@@ -268,8 +268,8 @@ describe('segmentos, online, arquivos e páginas', () => {
     const avulso = await newOrgWithOwner(db, `seg-avulso-${tag}`, { freePlan: true })
     const gratis = await newOrgWithOwner(db, `seg-gratis-${tag}`, { freePlan: true })
     const nada = await newUser(db, `seg-nada-${tag}`)
-    const completo = await planId(db, 'ciclo-do-o', 2)
-    const synquei = await planId(db, 'individual-synquei')
+    const completo = await planId(db, 'absoluto', 1)
+    const synquei = await planId(db, 'avulso-synquei')
     // Os outros arquivos de teste rodam ao mesmo tempo no mesmo banco (e excluem contas): antes e depois numa transação
     // só, em leitura repetível, a contagem vê só o que este teste mudou.
     const { before, after } = await sys(async (tx) => {
@@ -411,7 +411,7 @@ describe('segmentos, online, arquivos e páginas', () => {
     expect(after.series).toHaveLength(30)
     expect(after.ai.credits30).toBe(before.ai.credits30 + 7)
     expect(after.series.at(-1)!.aiCredits).toBeGreaterThanOrEqual(7)
-    expect(after.plans.find((p) => p.name === 'Conta Absolute ZRO')!.people).toBeGreaterThanOrEqual(1)
+    expect(after.plans.find((p) => p.name === 'Zero')!.people).toBeGreaterThanOrEqual(1)
     expect(after.products.map((p) => p.id)).toContain('synquei')
     expect(after.segments.todas).toBeGreaterThanOrEqual(after.accounts)
     expect(after.online.total).toBeGreaterThanOrEqual(1) // a sessão recém-criada conta

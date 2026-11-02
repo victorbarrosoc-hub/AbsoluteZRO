@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { notFound } from 'next/navigation'
-import { providerLabel, salesStatus } from '@zro/billing'
+import { campanhaAtual, catalogoLimites, contarLegado, migracaoLegadoLigada, NIVEIS, NIVEL_NOME, providerLabel, resumoTestes, testesAtivos } from '@zro/billing'
 import { papelNoConsole, podeMudar, podeVer, requireConsole } from '@zro/core'
 import { Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
@@ -11,15 +11,21 @@ import {
   assignPlanAction,
   cancelSubscriptionAction,
   createPlanVersionAction,
+  atualizarLimiteAction,
+  concederRecargaAction,
+  desligarCampanhaAction,
+  encerrarTesteAction,
+  estenderTesteAction,
   grantAction,
-  launchSalesAction,
+  ligarCampanhaAction,
+  migracaoLegadoAction,
+  migrarParaZeroAction,
   publishPlanAction,
   resolvePlanRequestAction,
   revokeGrantAction,
 } from '@/lib/actions/admin'
 import { fmtAgo, fmtDate, fmtDay, LIMIT_LABEL, limitText } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
-import { stripeConfig } from '@/lib/stripe'
 
 export const metadata: Metadata = { title: 'Planos · Console', robots: { index: false, follow: false } }
 
@@ -30,6 +36,14 @@ const STATUS: Record<string, { label: string; tone: 'ok' | 'warn' | 'faint' }> =
   retired: { label: 'Fora de venda', tone: 'faint' },
 }
 const SUB_STATUS: Record<string, string> = { active: 'ativa', trialing: 'em teste', past_due: 'em atraso' }
+const MOTIVO: Record<string, string> = { email_repetido: 'e-mail repetido', email_descartavel: 'e-mail descartável', limite_ip: 'IP' }
+
+/** Um número do catálogo: vazio = sem limite; recurso = sim/não. */
+function valorLimite(tipo: string, v: number | null, unidade: string | null) {
+  if (tipo === 'recurso') return v ? 'sim' : 'não'
+  if (v == null) return '∞'
+  return `${v.toLocaleString('pt-BR')}${unidade ?? ''}`
+}
 
 const brl = (cents: number | null) =>
   cents == null ? 'Preço a definir' : (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: cents % 100 ? 2 : 0 })
@@ -42,8 +56,9 @@ export default async function Planos() {
   const papel = papelNoConsole(auth)
   if (!auth || !podeVer(papel, 'planos')) notFound()
   requireConsole(auth, 'planos')
-  // Admin e Financeiro mudam planos e cobranças; o suporte só lê.
+  // Admin e Financeiro mudam planos e cobranças; o suporte só lê. Teste, limites e contas antigas: só o admin.
   const isAdmin = podeMudar(papel, 'planos')
+  const soAdmin = papel === 'admin'
   const d = await db().asSystem('admin: planos', async (tx) => ({
     orgs: await tx`select id, name from zro.organizations where status = 'active' order by lower(name) limit 1000`,
     subs: await tx`
@@ -61,7 +76,15 @@ export default async function Planos() {
            from zro.plan_products pp join zro.products pr on pr.id = pp.product_id where pp.plan_id = p.id) as products
       from zro.plans p order by p.status, p.kind, p.name, p.billing_interval nulls first, p.version desc`,
     products: await tx`select id, name from zro.products order by step_order`,
-    sales: await salesStatus(tx),
+    testes: await resumoTestes(tx),
+    emTeste: await testesAtivos(tx),
+    campanha: await campanhaAtual(tx),
+    limites: await catalogoLimites(tx, null),
+    recargas: await tx`select code, mensagens, price_cents, validade_meses from zro.z_recarga_pacotes where status = 'active' order by mensagens`,
+    legado: { orgs: await contarLegado(tx), ligada: await migracaoLegadoLigada(tx) },
+    orgsLegado: await tx`
+      select distinct o.id, o.name from zro.entitlements e join zro.organizations o on o.id = e.org_id
+      where e.status = 'active' and e.legado and o.status = 'active' order by o.name limit 500`,
     requests: await tx`
       select r.id, r.kind, r.created_at, o.name as org, u.display_name as who, u.email, p.name as plan
       from zro.plan_requests r join zro.organizations o on o.id = r.org_id join zro.users u on u.id = r.requested_by
@@ -88,39 +111,93 @@ export default async function Planos() {
 
       <div className="adm-status-row">
         <div className="adm-status">
-          <span className={`adm-dot${d.sales.launched ? ' adm-dot--ok' : ''}`} aria-hidden="true" />
+          <span className={`adm-dot${d.campanha?.ativa ? ' adm-dot--ok' : ''}`} aria-hidden="true" />
           <span>
-            <strong>{d.sales.launched ? 'Vendas ligadas' : 'Vendas desligadas'}</strong>
+            <strong>{d.campanha?.ativa ? 'Teste do Absoluto ligado' : 'Teste do Absoluto desligado'}</strong>
             <span className="zro-faint">
-              {d.sales.launched
-                ? ` · desde ${fmtDay(new Date(d.sales.at))} · ${d.sales.trialDays} dias de teste`
-                : !stripeConfig()
-                  ? ' · faltam as chaves do Stripe'
-                  : ' · contas novas entram no grátis'}
+              {d.campanha?.ativa ? ` · ${fmtDate(d.campanha.inicio)} até ${fmtDate(d.campanha.fim)} · ${d.campanha.dias} dias` : ' · conta nova entra no Zero'}
             </span>
           </span>
         </div>
+        <span className="adm-chip" title="Testes em andamento">
+          {d.testes.ativos} em teste
+        </span>
+        <span className="adm-chip" title="Recusados por abuso: e-mail repetido, descartável ou IP">
+          {d.testes.recusados} recusados
+        </span>
         <span className="adm-chip">{(d.freeCount[0]?.n as number) ?? 0} organizações no grátis</span>
       </div>
 
-      {!d.sales.launched && stripeConfig() && isAdmin && (
-        <Fold title="Ligar vendas" meta="Stripe">
-          <ActionForm action={launchSalesAction} submit="Ligar vendas" className="zro-form">
-            <p className="zro-mute">Conta nova ganha dias de teste do Completo. Quem já usava segue liberado até a data de corte.</p>
-            <div className="zro-form-row">
-              <Field label="Grátis antigo vale até" htmlFor="vendas-corte">
-                <input className="zro-input" id="vendas-corte" type="date" name="cutoff" required />
+      <Fold id="teste" title="Teste do Absoluto" meta={d.campanha?.ativa ? <Pill tone="ok">Ligado</Pill> : <Pill tone="faint">Desligado</Pill>}>
+        <p className="zro-mute">
+          Uma vez por pessoa, com e-mail confirmado. Conta antiga não entra.
+          {d.testes.recusados > 0 &&
+            ` Recusas: ${Object.entries(d.testes.porMotivo)
+              .map(([k, v]) => `${MOTIVO[k] ?? k} ${v}`)
+              .join(' · ')}.`}
+        </p>
+        {soAdmin &&
+          (d.campanha?.ativa ? (
+            <ActionForm action={desligarCampanhaAction} submit="Desligar" variant="danger" className="row adm-inline-form" inlineSubmit>
+              <input className="zro-input" name="reason" placeholder="Motivo" required aria-label="Motivo: desligar a campanha" />
+            </ActionForm>
+          ) : (
+            <ActionForm action={ligarCampanhaAction} submit="Ligar campanha" className="zro-form">
+              <div className="zro-form-row">
+                <Field label="Até" htmlFor="camp-dia">
+                  <input className="zro-input" id="camp-dia" type="date" name="fimDia" required />
+                </Field>
+                <Field label="Hora" htmlFor="camp-hora">
+                  <input className="zro-input" id="camp-hora" type="time" name="fimHora" defaultValue="23:59" />
+                </Field>
+                <Field label="Dias" htmlFor="camp-dias">
+                  <input className="zro-input" id="camp-dias" type="number" name="dias" min={1} max={60} defaultValue={15} />
+                </Field>
+                <Field label="Z no teste" htmlFor="camp-z">
+                  <input className="zro-input" id="camp-z" type="number" name="z" min={0} max={10000} defaultValue={50} />
+                </Field>
+                <Field label="Por IP/dia" htmlFor="camp-ip">
+                  <input className="zro-input" id="camp-ip" type="number" name="ip" min={1} max={100} defaultValue={3} />
+                </Field>
+              </div>
+              <label className="row">
+                <input type="checkbox" name="existentes" defaultChecked /> Contas do Zero que já existem ganham agora
+              </label>
+              <Field label="Motivo" htmlFor="camp-motivo" hint="Fica na auditoria.">
+                <input className="zro-input" id="camp-motivo" name="reason" required />
               </Field>
-              <Field label="Dias de teste" htmlFor="vendas-teste">
-                <input className="zro-input" id="vendas-teste" type="number" name="trialDays" min={0} max={30} defaultValue={7} required />
-              </Field>
-            </div>
-            <Field label="Motivo" htmlFor="vendas-motivo" hint="Fica na auditoria.">
-              <input className="zro-input" id="vendas-motivo" name="reason" required />
-            </Field>
-          </ActionForm>
-        </Fold>
-      )}
+            </ActionForm>
+          ))}
+        {d.emTeste.length > 0 && (
+          <ul className="adm-rows">
+            {d.emTeste.map((t) => (
+              <li key={t.user_id as string} className="adm-rows__wide">
+                <span>
+                  <strong>{t.display_name as string}</strong>
+                  <span className="zro-faint" title={t.email as string}>
+                    {' '}
+                    · {t.org as string} · até {fmtDay(t.fim as Date)}
+                  </span>
+                </span>
+                {soAdmin && (
+                  <details className="adm-confirm">
+                    <summary className="zro-btn zro-btn--small">Mudar…</summary>
+                    <ActionForm action={estenderTesteAction} submit="Estender" variant="ghost" className="row" inlineSubmit>
+                      <input type="hidden" name="userId" value={t.user_id as string} />
+                      <input className="zro-input" name="dias" type="number" min={1} max={60} defaultValue={7} aria-label="Dias a mais" />
+                      <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo: estender ${t.display_name as string}`} />
+                    </ActionForm>
+                    <ActionForm action={encerrarTesteAction} submit="Encerrar" variant="danger" className="row" inlineSubmit>
+                      <input type="hidden" name="userId" value={t.user_id as string} />
+                      <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo: encerrar ${t.display_name as string}`} />
+                    </ActionForm>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Fold>
 
       <Fold
         id="pedidos"
@@ -161,6 +238,153 @@ export default async function Planos() {
           ))}
         </ul>
       </section>
+
+      <Fold id="limites" title="Limites por nível" meta={`${Object.keys(d.limites).length} apps`}>
+        <p className="zro-mute">O Avulso é o Absoluto no app dele. ∞ = sem limite.</p>
+        {Object.entries(d.limites).map(([produto, chaves]) => (
+          <table key={produto} className="adm-table">
+            <caption>
+              <span className="row">
+                <ProductMark productId={produto} name={nameOf.get(produto) ?? produto} size={20} /> {nameOf.get(produto) ?? produto}
+              </span>
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Limite</th>
+                {NIVEIS.map((n) => (
+                  <th key={n} scope="col">
+                    {NIVEL_NOME[n]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(chaves).map(([chave, l]) => (
+                <tr key={chave}>
+                  <th scope="row" title={chave}>
+                    {l.rotulo}
+                    {l.periodo === 'mes' ? <span className="zro-faint"> /mês</span> : null}
+                  </th>
+                  {NIVEIS.map((n) => (
+                    <td key={n}>{valorLimite(l.tipo, l.valores[n], l.unidade)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+        {soAdmin && (
+          <details className="disclosure">
+            <summary>Mudar um número</summary>
+            <ActionForm action={atualizarLimiteAction} submit="Salvar" className="zro-form">
+              <div className="zro-form-row">
+                <Field label="Limite" htmlFor="lim-alvo">
+                  <select className="zro-select" id="lim-alvo" name="alvo" required>
+                    {Object.entries(d.limites).flatMap(([produto, chaves]) =>
+                      Object.entries(chaves).map(([chave, l]) => (
+                        <option key={`${produto}:${chave}`} value={`${produto}:${chave}`}>
+                          {nameOf.get(produto) ?? produto} · {l.rotulo}
+                        </option>
+                      )),
+                    )}
+                  </select>
+                </Field>
+                <Field label="Nível" htmlFor="lim-nivel">
+                  <select className="zro-select" id="lim-nivel" name="nivel">
+                    {NIVEIS.map((n) => (
+                      <option key={n} value={n}>
+                        {NIVEL_NOME[n]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Valor" htmlFor="lim-valor" hint="Vazio = sem limite. Sim/não: 1 ou 0.">
+                  <input className="zro-input" id="lim-valor" name="valor" inputMode="numeric" pattern="[0-9]*" />
+                </Field>
+              </div>
+              <Field label="Motivo" htmlFor="lim-motivo">
+                <input className="zro-input" id="lim-motivo" name="reason" required />
+              </Field>
+            </ActionForm>
+          </details>
+        )}
+      </Fold>
+
+      <Fold title="Recargas da Z" meta={`${d.recargas.length} pacotes`}>
+        <ul className="adm-rows">
+          {d.recargas.map((r) => (
+            <li key={r.code as string}>
+              <span>
+                <strong>+{Number(r.mensagens).toLocaleString('pt-BR')} mensagens</strong>
+                <span className="zro-faint">
+                  {' '}
+                  · {brl(r.price_cents as number)} · valem {String(r.validade_meses)} meses
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        {isAdmin && (
+          <ActionForm action={concederRecargaAction} submit="Dar recarga" className="zro-form">
+            <div className="zro-form-row">
+              <Field label="Organização" htmlFor="rc-org">
+                <select className="zro-select" id="rc-org" name="orgId" required>
+                  {d.orgs.map((o) => (
+                    <option key={o.id as string} value={o.id as string}>
+                      {o.name as string}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Pacote" htmlFor="rc-pacote">
+                <select className="zro-select" id="rc-pacote" name="pacote">
+                  {d.recargas.map((r) => (
+                    <option key={r.code as string} value={r.code as string}>
+                      +{String(r.mensagens)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Field label="Motivo" htmlFor="rc-motivo">
+              <input className="zro-input" id="rc-motivo" name="reason" required />
+            </Field>
+          </ActionForm>
+        )}
+      </Fold>
+
+      {soAdmin && (
+        <Fold title="Contas antigas" meta={`${d.legado.orgs}`}>
+          <p className="zro-mute">Seguem com o que tinham antes dos planos novos. Passar para o Zero é aqui, quando quiser.</p>
+          <ActionForm
+            action={migracaoLegadoAction}
+            submit={d.legado.ligada ? 'Desligar migração' : 'Ligar migração'}
+            variant="ghost"
+            className="row adm-inline-form"
+            inlineSubmit
+          >
+            <input type="hidden" name="ligada" value={d.legado.ligada ? 'nao' : 'sim'} />
+            <input className="zro-input" name="reason" placeholder="Motivo" required aria-label="Motivo: migração das contas antigas" />
+          </ActionForm>
+          {d.legado.ligada && d.orgsLegado.length > 0 && (
+            <ActionForm action={migrarParaZeroAction} submit="Passar para o Zero" variant="danger" className="zro-form">
+              <Field label="Organização" htmlFor="lg-org">
+                <select className="zro-select" id="lg-org" name="orgId" required>
+                  <option value="todas">Todas ({d.orgsLegado.length})</option>
+                  {d.orgsLegado.map((o) => (
+                    <option key={o.id as string} value={o.id as string}>
+                      {o.name as string}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Motivo" htmlFor="lg-motivo">
+                <input className="zro-input" id="lg-motivo" name="reason" required />
+              </Field>
+            </ActionForm>
+          )}
+        </Fold>
+      )}
 
       <Fold title="Dado à mão" meta={`${d.subs.length + d.grants.length}`}>
         <h3 className="adm-sub">Assinaturas</h3>
@@ -284,7 +508,16 @@ export default async function Planos() {
                   ))}
                 </select>
               </Field>
-              <Field label="Créditos de IA por mês (opcional)" htmlFor="g-ai">
+              <Field label="Nível no app" htmlFor="g-nivel">
+                <select className="zro-select" id="g-nivel" name="nivel" defaultValue="absoluto">
+                  {NIVEIS.map((n) => (
+                    <option key={n} value={n}>
+                      {NIVEL_NOME[n]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Mensagens da Z por mês (opcional)" htmlFor="g-ai">
                 <input className="zro-input" id="g-ai" name="aiCredits" inputMode="numeric" pattern="[0-9]*" />
               </Field>
               <Field label="Até (opcional)" htmlFor="g-until">
@@ -327,10 +560,10 @@ export default async function Planos() {
               <p className="zro-mute">Plano publicado não muda: quem já assinou fica na versão que recebeu.</p>
               <div className="zro-form-row">
                 <Field label="Código" htmlFor="pv-code" hint="Mesmo código = nova versão.">
-                  <input className="zro-input" id="pv-code" name="code" required pattern="[a-z0-9-]+" defaultValue="ciclo-do-o" />
+                  <input className="zro-input" id="pv-code" name="code" required pattern="[a-z0-9-]+" defaultValue="orbita" />
                 </Field>
                 <Field label="Nome" htmlFor="pv-name">
-                  <input className="zro-input" id="pv-name" name="name" required defaultValue="Absolute ZRO Completo" />
+                  <input className="zro-input" id="pv-name" name="name" required defaultValue="Órbita" />
                 </Field>
                 <Field label="Tipo" htmlFor="pv-kind">
                   <select className="zro-select" id="pv-kind" name="kind" defaultValue="bundle">
@@ -359,7 +592,7 @@ export default async function Planos() {
                   <input className="zro-input" id="pv-grace" name="graceDays" inputMode="numeric" defaultValue="0" />
                 </Field>
               </div>
-              <Field label="Apps e limites (JSON)" htmlFor="pv-products" hint='[{"productId":"synquei","features":null,"limits":{"zro.ai_credits":600}}]'>
+              <Field label="Apps e limites (JSON)" htmlFor="pv-products" hint='[{"productId":"synquei","features":null,"limits":{"zro.ai_credits":100}}]'>
                 <textarea className="zro-textarea" id="pv-products" name="products" required defaultValue="[]" />
               </Field>
               <Field label="Motivo" htmlFor="pv-reason">

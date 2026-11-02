@@ -46,6 +46,21 @@ test('console não existe para quem não é da plataforma', async ({ page }) => 
   }
 })
 
+test('planos: o teste do Absoluto começa desligado e os limites por nível estão na tela (0055)', async ({ page }) => {
+  const address = await signupAndOrg(page, 'Admin Planos', 'Org planos')
+  await promote(address)
+  await page.goto('/admin/planos')
+  await expect(page.getByText('Teste do Absoluto desligado')).toBeVisible()
+  await expect(page.getByText('0 em teste')).toBeVisible()
+  await page.getByText('Limites por nível').click()
+  const maestro = page.locator('table.adm-table').filter({ hasText: 'Clientes ativos' })
+  await expect(maestro.getByRole('row', { name: /Clientes ativos/ })).toContainText('3')
+  await expect(maestro.getByRole('row', { name: /Clientes ativos/ })).toContainText('∞')
+  await expect(page.getByRole('heading', { name: 'À venda' })).toBeVisible()
+  await expect(page.locator('.plan-card__name').filter({ hasText: 'Órbita' }).first()).toBeVisible()
+  await axe(page, '/admin/planos')
+})
+
 test('admin vê online agora, acha a pessoa por segmento, troca o plano, exporta e a tela passa no axe', async ({ page, context, baseURL }) => {
   const address = await signupAndOrg(page, 'Admin E2E', 'Org do admin')
   await promote(address)
@@ -71,7 +86,7 @@ test('admin vê online agora, acha a pessoa por segmento, troca o plano, exporta
   await page.waitForURL(/q=/)
   const row = page.locator('.person').filter({ hasText: address })
   await expect(row).toHaveCount(1)
-  await expect(row).toContainText('Conta Absolute ZRO')
+  await expect(row).toContainText('Zero')
   await expect(row).toContainText('Online')
 
   // Segmento Grátis tem a pessoa; Avulso ainda não.
@@ -177,7 +192,7 @@ async function custos(page: Page, bcb: { fora: boolean }) {
   await expect(page.locator('.cst-hero__n')).toHaveText('R$ 1.331')
   await expect(page.locator('.cst-hero__sub')).toContainText('US$ 242')
   await expect(page.locator('.cst-dolar__origem')).toHaveText(/^Valor manual, \d\d\/\d\d$/)
-  await expect(page.locator('.cst-eq__planos')).toContainText('Absolute ZRO Completo')
+  await expect(page.locator('.cst-eq__planos')).toContainText('Órbita')
 
   // Metas na folha própria.
   await page.getByRole('button', { name: 'Definir metas' }).click()

@@ -7,7 +7,7 @@ import { EsqueletoPaineis } from '@/components/esqueleto'
 import { Icon, type IconName } from '@/components/icons'
 import { MotionGate } from '@/components/motion-gate'
 import { homePaineis, homeTopo } from '@/lib/data/hub'
-import { fmtDate, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
+import { fmtDate, planoTexto, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
 import { requireOrgPage } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Início' }
@@ -34,6 +34,7 @@ export default async function Inicio() {
   const d = await homeTopo(auth)
   const first = auth.user.displayName.split(' ')[0] || 'tudo bem'
   const latest = d.latest
+  const plano = planoTexto(d.plano)
   // Contratadas primeiro; fechadas pelo gate de lançamento (ADR 0023) por último, só com o selo, e fora da órbita.
   const peso = (a: (typeof d.access)[number]) => (a.access === 'contracted' ? 0 : a.access === 'closed' ? 2 : 1)
   const apps = [...d.access].sort((a, b) => peso(a) - peso(b) || a.stepOrder - b.stepOrder)
@@ -46,6 +47,14 @@ export default async function Inicio() {
       <header className="greet">
         <p className="zro-eyebrow">
           {greeting()} · {d.org?.name as string}
+          {plano && (
+            <>
+              {' · '}
+              <Link href="/perfil/plano" className="greet__plano">
+                {plano}
+              </Link>
+            </>
+          )}
         </p>
         <h1>
           <span className="atitle__thin">Olá,</span> {first}.

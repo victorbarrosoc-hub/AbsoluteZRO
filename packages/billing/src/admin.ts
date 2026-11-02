@@ -55,15 +55,24 @@ export async function cancelManualSubscription(tx: Queryable, actor: Actor, inpu
 export async function grantEntitlement(
   tx: Queryable,
   actor: Actor,
-  input: { orgId: string; productId: string; features: string[] | null; limits: Record<string, number>; endsAt: Date | null },
+  input: {
+    orgId: string
+    productId: string
+    features: string[] | null
+    limits: Record<string, number>
+    endsAt: Date | null
+    /** Nível que a concessão dá no app (0055). Sem nível = não muda o nível (conta como Zero). */
+    nivel?: 'zero' | 'orbita' | 'absoluto' | null
+  },
 ): Promise<string> {
   if (!actor.reason.trim()) throw new DomainError('invalid_input', 'Informe o motivo da concessão.')
+  if (input.nivel && !['zero', 'orbita', 'absoluto'].includes(input.nivel)) throw new DomainError('invalid_input', 'Nível inválido.')
   for (const [k, v] of Object.entries(input.limits)) {
     if (!/^[a-z0-9-]+\.[a-z0-9_]+$/.test(k) || !Number.isSafeInteger(v) || v < 0) throw new DomainError('invalid_input', `Limite inválido: ${k}`)
   }
   const [row] = await tx`
-    insert into zro.entitlements (org_id, product_id, features, limits, source, ends_at, reason, created_by)
-    values (${input.orgId}, ${input.productId}, ${input.features}, ${tx.json(input.limits)}, 'admin_grant', ${input.endsAt}, ${actor.reason}, ${actor.userId})
+    insert into zro.entitlements (org_id, product_id, features, limits, source, ends_at, reason, created_by, nivel)
+    values (${input.orgId}, ${input.productId}, ${input.features}, ${tx.json(input.limits)}, 'admin_grant', ${input.endsAt}, ${actor.reason}, ${actor.userId}, ${input.nivel ?? null})
     returning id`
   await audit(tx, {
     orgId: input.orgId,
@@ -72,7 +81,7 @@ export async function grantEntitlement(
     action: 'billing.entitlement_granted',
     targetType: 'entitlement',
     targetId: row!.id as string,
-    metadata: { product: input.productId, limits: input.limits, until: input.endsAt?.toISOString() ?? null, reason: actor.reason },
+    metadata: { product: input.productId, limits: input.limits, nivel: input.nivel ?? null, until: input.endsAt?.toISOString() ?? null, reason: actor.reason },
   })
   return row!.id as string
 }
@@ -207,4 +216,60 @@ export async function changeOrgPlan(
     metadata: { from: current.map((s) => `${s.code}@${s.version}`), to: `${plan.code}@${plan.version}`, reason: actor.reason },
   })
   return { subscriptionId, canceled: current.length }
+}
+
+/**
+ * Recarga da Z para uma organização (0055): mensagens extras que valem `validade_meses` do pacote e só são gastas
+ * depois da franquia do mês. Hoje só por concessão do console; a compra (Stripe) chama isto com `providerRef`
+ * (o mesmo pagamento nunca vira duas recargas).
+ */
+export async function concederRecarga(
+  tx: Queryable,
+  actor: Actor,
+  input: { orgId: string; pacote: string; origem?: 'compra' | 'concessao'; providerRef?: string | null },
+  now = new Date(),
+): Promise<{ id: string; duplicate: boolean }> {
+  if (!actor.reason.trim()) throw new DomainError('invalid_input', 'Informe o motivo da recarga.')
+  const [p] = await tx`select code, mensagens, validade_meses from zro.z_recarga_pacotes where code = ${input.pacote} and status = 'active'`
+  if (!p) throw new DomainError('invalid_input', 'Pacote de recarga não encontrado.')
+  if (input.providerRef) {
+    const [ja] = await tx`select id from zro.z_recargas where provider_ref = ${input.providerRef}`
+    if (ja) return { id: ja.id as string, duplicate: true }
+  }
+  const expira = new Date(now)
+  expira.setUTCMonth(expira.getUTCMonth() + Number(p.validade_meses))
+  const [r] = await tx`
+    insert into zro.z_recargas (org_id, pacote, mensagens, expira_em, origem, provider_ref, criado_por)
+    values (${input.orgId}, ${p.code as string}, ${p.mensagens as number}, ${expira}, ${input.origem ?? 'concessao'}, ${input.providerRef ?? null}, ${actor.userId})
+    returning id`
+  await audit(tx, {
+    orgId: input.orgId,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.recarga_concedida',
+    targetType: 'z_recarga',
+    targetId: r!.id as string,
+    metadata: { pacote: p.code, mensagens: p.mensagens, expira: expira.toISOString(), reason: actor.reason },
+  })
+  return { id: r!.id as string, duplicate: false }
+}
+
+/**
+ * Muda um número do catálogo de limites. `tx` é uma transação asUser (papel zro_app): o RLS só deixa a administração
+ * da plataforma gravar, e em nome próprio. Devolve o valor anterior (para a auditoria, gravada por quem chama).
+ */
+export async function atualizarLimitePlano(
+  tx: Queryable,
+  userId: string,
+  input: { nivel: 'zero' | 'orbita' | 'absoluto'; productId: string; chave: string; valor: number | null },
+): Promise<{ antes: number | null }> {
+  if (input.valor !== null && (!Number.isSafeInteger(input.valor) || input.valor < 0))
+    throw new DomainError('invalid_input', 'Use um número inteiro (ou vazio = sem limite).')
+  const [antes] = await tx`select valor from zro.plan_limits where nivel = ${input.nivel} and product_id = ${input.productId} and chave = ${input.chave}`
+  const rows = await tx`
+    update zro.plan_limits set valor = ${input.valor}, atualizado_em = now(), atualizado_por = ${userId}
+    where nivel = ${input.nivel} and product_id = ${input.productId} and chave = ${input.chave} returning 1`
+  if (!rows.length)
+    throw new DomainError(antes ? 'platform_role_required' : 'not_found', antes ? 'Só a administração muda os limites.' : 'Limite não encontrado.')
+  return { antes: antes?.valor == null ? null : Number(antes.valor) }
 }

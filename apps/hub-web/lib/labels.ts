@@ -78,6 +78,13 @@ const dateFmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle
 const dayFmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeZone: 'America/Fortaleza' })
 export const fmtDate = (d: Date | string | null | undefined) => (d ? dateFmt.format(new Date(d)) : '—')
 export const fmtDay = (d: Date | string | null | undefined) => (d ? dayFmt.format(new Date(d)) : '—')
+const ddmmFmt = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Fortaleza' })
+/** "17/11": o dia curto, como no selo do teste. */
+export const fmtDdMm = (d: Date | string) => ddmmFmt.format(new Date(d))
+
+/** O plano em poucas palavras: "Zero", "Órbita" ou, no teste, "Absoluto · teste até 17/11". */
+export const planoTexto = (p: { nome: string; testeAte: Date | null } | null) =>
+  p ? (p.testeAte ? `${p.nome} · teste até ${fmtDdMm(p.testeAte)}` : p.nome) : null
 /** "agora", "há 5 min", "há 3 h", "ontem", "há 4 dias"; mais de 30 dias vira a data. */
 export function fmtAgo(d: Date | string | null | undefined, now = Date.now()): string {
   if (!d) return 'nunca'
@@ -94,7 +101,7 @@ export function fmtAgo(d: Date | string | null | undefined, now = Date.now()): s
 
 /** Limites de plano e concessão em palavras (a chave técnica fica no title). */
 export const LIMIT_LABEL: Record<string, string> = {
-  'zro.ai_credits': 'créditos de IA por mês',
+  'zro.ai_credits': 'mensagens da Z por mês',
   'sobedesce.manifest_imports': 'manifestos do SOBEDESCE',
   'synquei.organization_plans': 'planos no Synquei',
 }

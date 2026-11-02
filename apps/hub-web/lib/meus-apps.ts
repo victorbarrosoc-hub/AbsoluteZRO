@@ -6,7 +6,7 @@
  * - Gate de lançamento (ADR 0023) primeiro: produto fechado para a pessoa no canal (`desktop` para listar, `download`
  *   para baixar) não aparece nem baixa (404), com qualquer plano.
  * - Depois o direito (PRD §5.2, `authorize`): identidade → organização ativa → vínculo → entitlement vigente do produto.
- *   Produto de **uso livre** (está no plano grátis vigente, "Conta Absolute ZRO") vale para toda conta e baixa sem
+ *   Produto de **uso livre** (está no plano grátis vigente, o Zero desde a 0055) vale para toda conta e baixa sem
  *   sessão, como antes (os apps já instalados se atualizam por essas rotas). Os outros pedem a sessão da central e o
  *   produto no plano da organização; sem ele, o app aparece bloqueado com o plano que o inclui.
  * - Plano cancelado: o entitlement acaba, o app vira bloqueado (a central não atualiza) e nada é apagado do computador.
@@ -34,12 +34,12 @@ export const PLANOS_URL = 'https://absolutezro.com/planos'
 export async function produtosDeUsoLivre(tx: Queryable): Promise<Set<string>> {
   const rows = await tx`
     select distinct pp.product_id from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
-    where p.kind = 'free' and p.status = 'active' and p.code = 'conta-absolute-zro'
+    where p.kind = 'free' and p.status = 'active'
       and (pp.features is null or cardinality(pp.features) > 0)`
   return new Set(rows.map((r) => r.product_id as string))
 }
 
-/** O plano à venda que inclui cada produto: o pacote mais em conta primeiro ("Absolute ZRO Completo"), depois o avulso. */
+/** O plano à venda que inclui cada produto: o pacote mais em conta primeiro ("Órbita"), depois o avulso. */
 export async function planosQueIncluem(tx: Queryable, ids: string[]): Promise<Map<string, string>> {
   if (!ids.length) return new Map()
   const rows = await tx`
@@ -94,7 +94,7 @@ export async function direitosDesktop(
 export type AppBloqueado = {
   id: string
   nome: string
-  /** Nome do plano que inclui o app ("Absolute ZRO Completo"); null = nenhum à venda agora. */
+  /** Nome do plano que inclui o app ("Órbita"); null = nenhum à venda agora. */
   plano: string | null
   planos: string
   /** Só para a central saber se o app está neste computador (mostra bloqueado, não apaga). Sem arquivos. */

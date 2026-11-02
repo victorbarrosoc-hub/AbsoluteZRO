@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { authenticate, signUp, type Authenticated } from '@zro/auth'
-import { assignPlan, grantEntitlement, grantReleaseAccess } from '@zro/billing'
+import { assignPlan, grantEntitlement, grantReleaseAccess, recomputeEntitlements } from '@zro/billing'
 import { createOrganization } from '@zro/core'
 import type { Database } from '@zro/db'
 
@@ -52,10 +52,24 @@ export async function admin(db: Database): Promise<string> {
   return u.userId
 }
 
+/**
+ * Plano à venda: pela concessão do console (assignPlan). Plano antigo, fora da venda desde a 0055 (Completo, avulsos de
+ * R$ 59,90...): como quem já o tinha antes, uma assinatura manual direta (assignPlan só aceita planos ativos).
+ */
 export async function givePlan(db: Database, orgId: string, code: string, periodEnd: Date | null = new Date(Date.now() + 30 * 86_400_000)) {
   const adminId = await admin(db)
   const pid = await planId(db, code)
-  return db.asSystem('teste: conceder plano', (tx) => assignPlan(tx, { userId: adminId, reason: 'teste' }, { orgId, planId: pid, periodEnd }))
+  const [p] = await db.sql`select status from zro.plans where id = ${pid}`
+  if (p!.status === 'active') {
+    return db.asSystem('teste: conceder plano', (tx) => assignPlan(tx, { userId: adminId, reason: 'teste' }, { orgId, planId: pid, periodEnd }))
+  }
+  return db.asSystem('teste: plano antigo', async (tx) => {
+    const [sub] = await tx`
+      insert into zro.subscriptions (org_id, plan_id, status, current_period_start, current_period_end, provider, provider_subscription_id, provider_updated_at)
+      values (${orgId}, ${pid}, 'active', now(), ${periodEnd}, 'manual', ${'manual-' + randomUUID()}, now()) returning id`
+    await recomputeEntitlements(tx, orgId)
+    return sub!.id as string
+  })
 }
 
 /** Limites explícitos por concessão administrativa (o catálogo neutro não traz limite). */
@@ -94,4 +108,19 @@ export async function expectCode(p: Promise<unknown>, code: string) {
   if (!err) throw new Error(`esperava erro ${code}, mas deu certo`)
   if ((err as { code?: string }).code !== code) throw new Error(`esperava ${code}, veio ${(err as { code?: string }).code ?? err}`)
   return err as { code: string; status: number }
+}
+
+/**
+ * Conta de antes dos planos Zero/Órbita/Absoluto (0055): o grátis antigo "Conta Absolute ZRO" (v2), que libera todos
+ * os apps. Continua igual para quem já tinha; é com ela que os testes das migrations antigas simulam "conta de antes".
+ */
+export async function legacyFreeOrg(db: Database, label = 'antiga') {
+  const o = await newOrgWithOwner(db, label)
+  const free = await planId(db, 'conta-absolute-zro', 2)
+  await db.asSystem('teste: grátis antigo', async (tx) => {
+    await tx`insert into zro.subscriptions (org_id, plan_id, status, current_period_start, provider, provider_subscription_id, provider_updated_at)
+             values (${o.orgId}, ${free}, 'active', now(), 'free', ${'free-' + o.orgId}, now())`
+    await recomputeEntitlements(tx, o.orgId)
+  })
+  return o
 }
