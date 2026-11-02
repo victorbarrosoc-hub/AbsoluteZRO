@@ -153,6 +153,22 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.1: troca do app já instalado e "Manter no Dock"
+
+- **Bug do Mac (1.4.0):** atualizar ou instalar por cima de um app que já estava em Aplicativos dava "Não deu para
+  instalar. Tente de novo." (SOBEDESCE, Synquei e Relay, que o titular já tinha; instalar do zero passava). Depois de
+  pôr o app novo no lugar, a central apagava o antigo (`.<App>.app.zro-antigo`) com o `fs` do processo principal do
+  Electron, que lê o `app.asar` como uma pasta: o `rm` recursivo entra nele e falha com `ENOTEMPTY` (conferido no
+  Electron 44.5.1). O `.zro-antigo` ficava e travava a troca seguinte (`rename` sobre pasta não vazia). Agora os
+  pacotes `.app` passam pelo `original-fs` (`fsApps` no `main.cjs`), sobras de uma troca interrompida são apagadas
+  antes, o app antigo volta se o novo não entrar no lugar e falha só na limpeza não derruba a instalação. A causa real
+  de erro genérico vai para o log (`[central] <id>: não instalou:`).
+- **Manter no Dock / Criar atalho** (`window.zroDesktop.apps.versao` 4): `listar` traz `atalho` (tipo `dock` ou
+  `atalho` e `feito`) com o app instalado e há `atalho(id)`, só com o toque da pessoa. Mac: `defaults write` em
+  `com.apple.dock persistent-apps` (`-array-add`) e `killall Dock` (já no Dock, não repete). Windows:
+  `shell.writeShortcutLink` na Área de Trabalho e, se o instalador não criou, no Menu Iniciar. Fixar na barra de
+  tarefas não tem API pública: o texto diz "Criar atalho".
+
 ### Deep link (contrato com os apps)
 
 Os apps da família abrem este link quando têm atualização (ou para pedir a instalação de outro app). A central abre no

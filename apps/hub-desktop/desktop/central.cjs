@@ -15,6 +15,7 @@
 
 const path = require('node:path')
 const { createHash } = require('node:crypto')
+const { pathToFileURL } = require('node:url')
 
 const ID = /^[a-z0-9-]{2,40}$/
 const NOME_ARQUIVO = /^[A-Za-z0-9._-]{1,120}$/
@@ -147,6 +148,30 @@ function caminhoDoComando(cmd) {
   return m ? m[1] : null
 }
 
+// ───── "Manter no Dock" (Mac) e "Criar atalho" (Windows): opcional, só com o toque da pessoa ─────
+
+/** Como o Dock guarda o endereço do app ("_CFURLString"): file:///Applications/Carro%20do%20Freela.app/ */
+function urlDoDock(caminho) {
+  return pathToFileURL(caminho).href.replace(/\/?$/, '/')
+}
+
+const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+/** O item que `defaults write com.apple.dock persistent-apps -array-add` acrescenta (um app no Dock). */
+function itemDoDock(caminho) {
+  return (
+    '<dict><key>tile-data</key><dict><key>file-data</key><dict>' +
+    `<key>_CFURLString</key><string>${xml(urlDoDock(caminho))}</string><key>_CFURLStringType</key><integer>15</integer>` +
+    '</dict></dict><key>tile-type</key><string>file-tile</string></dict>'
+  )
+}
+
+/** O app já está no Dock? `saida` = `defaults read com.apple.dock persistent-apps`. */
+function estaNoDock(saida, caminho) {
+  const s = String(saida || '')
+  return s.includes(`"${urlDoDock(caminho)}"`) || s.includes(`"${caminho}"`) || s.includes(`"${caminho}/"`)
+}
+
 /** Baixa para `destino`, conferindo tamanho e SHA-256. Se não bater, apaga e falha. */
 async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps }) {
   // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
@@ -196,7 +221,9 @@ async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps
 
 class Central {
   /**
-   * deps: { hub, plataforma ('mac'|'windows'), arch, home, temp, registro (arquivo .json), fetch, fs, exec(cmd, args,
+   * deps: { hub, plataforma ('mac'|'windows'), arch, home, temp, registro (arquivo .json), fetch, fs, fsApps? (fs sem
+   * a leitura de .asar, para apagar e trocar pacotes .app: o `original-fs` no Electron), log?, criarAtalho?(lnk,
+   * opções) e pastasAtalho? ({ areaDeTrabalho, menuIniciar }, Windows), exec(cmd, args,
    * opts) → Promise<{ stdout }>, abrirCaminho(p), lixeira(p), avisar(evento), pastasMac? (testes) }
    */
   constructor(deps) {
@@ -374,9 +401,11 @@ class Central {
     if (!this.catalogo) await this.carregarCatalogo()
     const registros = this.lerRegistros()
     const out = []
+    let dock = null
     for (const app of [...this.catalogo, ...this.bloqueados]) {
       const disponivel = arquivoPara(app, this.d.plataforma, this.d.arch)
       const instalado = await this.detectar(app).catch(() => null)
+      if (instalado && this.d.plataforma === 'mac' && dock === null) dock = await this.lerDock()
       out.push({
         id: app.id,
         nome: app.nome,
@@ -387,9 +416,86 @@ class Central {
         ocupado: this.emAndamento.has(app.id),
         // fora do plano: a central mostra bloqueado e não atualiza; o que está no computador fica
         bloqueado: app.bloqueado ? { plano: app.plano } : null,
+        // "Manter no Dock" (Mac) ou "Criar atalho" (Windows): { tipo, feito } com o app instalado; null sem suporte
+        atalho: instalado ? this.situacaoDoAtalho(app, instalado, dock) : null,
       })
     }
     return out
+  }
+
+  /** 'dock' no Mac; 'atalho' no Windows (fixar na barra de tarefas não tem API pública: só atalho). */
+  tipoDeAtalho() {
+    if (this.d.plataforma === 'mac') return 'dock'
+    if (this.d.plataforma === 'windows' && this.d.criarAtalho && this.d.pastasAtalho) return 'atalho'
+    return null
+  }
+
+  async lerDock() {
+    try {
+      return (await this.d.exec('defaults', ['read', 'com.apple.dock', 'persistent-apps'], { timeout: 15_000 })).stdout || ''
+    } catch {
+      return ''
+    }
+  }
+
+  /** Onde fica o atalho do app no Windows: Área de Trabalho e Menu Iniciar (pastas do usuário). */
+  lugaresDoAtalho(app) {
+    const { areaDeTrabalho, menuIniciar } = this.d.pastasAtalho || {}
+    const nome = `${app.windows.nomeNoSistema}.lnk`
+    return {
+      areaDeTrabalho: areaDeTrabalho ? path.join(areaDeTrabalho, nome) : null,
+      menuIniciar: menuIniciar ? path.join(menuIniciar, nome) : null,
+    }
+  }
+
+  situacaoDoAtalho(app, instalado, dock) {
+    const tipo = this.tipoDeAtalho()
+    if (!tipo || !instalado || !instalado.caminho) return null
+    if (tipo === 'dock') return { tipo, feito: estaNoDock(dock, instalado.caminho) }
+    if (!app.windows) return null
+    const { areaDeTrabalho } = this.lugaresDoAtalho(app)
+    return { tipo, feito: !!areaDeTrabalho && this.d.fs.existsSync(areaDeTrabalho) }
+  }
+
+  /**
+   * "Manter no Dock" (Mac): acrescenta o app às preferências do Dock e reinicia o Dock (como arrastar o ícone para lá).
+   * "Criar atalho" (Windows): atalho na Área de Trabalho e, se o instalador não criou, no Menu Iniciar. Só com o toque
+   * da pessoa; já feito, não repete. Devolve { tipo, feito: true }.
+   */
+  async criarAtalho(id) {
+    if (!this.catalogo) await this.carregarCatalogo()
+    const app = this.app(id)
+    const tipo = this.tipoDeAtalho()
+    if (!tipo) throw new ErroCentral('atalho', 'Atalho indisponível neste computador.')
+    const instalado = await this.detectar(app).catch(() => null)
+    if (!instalado || !instalado.caminho) throw new ErroCentral('ausente', `O ${app.nome} não está instalado.`)
+    if (tipo === 'dock') {
+      if (!estaNoDock(await this.lerDock(), instalado.caminho)) {
+        try {
+          await this.d.exec('defaults', ['write', 'com.apple.dock', 'persistent-apps', '-array-add', itemDoDock(instalado.caminho)], { timeout: 15_000 })
+        } catch (e) {
+          this.log('[central] Dock:', e && e.message)
+          throw new ErroCentral('atalho', `Não deu para pôr o ${app.nome} no Dock.`)
+        }
+        // o Dock só relê as preferências ao reiniciar (some e volta em um segundo)
+        await this.d.exec('killall', ['Dock'], { timeout: 15_000 }).catch(() => {})
+      }
+      return { tipo, feito: true }
+    }
+    const lugares = this.lugaresDoAtalho(app)
+    const opcoes = { target: instalado.caminho, description: app.nome, icon: instalado.caminho, iconIndex: 0 }
+    let algum = false
+    for (const lnk of [lugares.areaDeTrabalho, lugares.menuIniciar]) {
+      if (!lnk) continue
+      if (this.d.fs.existsSync(lnk)) {
+        algum = true
+        continue
+      }
+      if (this.d.criarAtalho(lnk, opcoes)) algum = true
+      else this.log('[central] atalho não criado:', lnk)
+    }
+    if (!algum) throw new ErroCentral('atalho', `Não deu para criar o atalho do ${app.nome}.`)
+    return { tipo, feito: true }
   }
 
   avisar(id, fase, extra = {}) {
@@ -489,6 +595,7 @@ class Central {
       this.avisar(id, 'pronto')
       return true
     } catch (e) {
+      if (!(e instanceof ErroCentral)) this.log(`[central] ${id}: não instalou:`, e && (e.code || ''), e && e.message)
       const msg = controle.signal.aborted ? 'Download cancelado.' : e instanceof ErroCentral ? e.message : 'Não deu para instalar. Tente de novo.'
       this.avisar(id, 'erro', { mensagem: msg })
       throw e instanceof ErroCentral ? e : new ErroCentral('instalar', msg)
@@ -503,23 +610,48 @@ class Central {
     return !!c
   }
 
+  /**
+   * fs para mexer em pacotes .app inteiros (apagar, renomear). No Electron, o `fs` comum lê o app.asar como uma pasta:
+   * o `rm` recursivo de um .app entra no app.asar, não consegue apagar o que "está dentro" e falha com ENOTEMPTY (ou o
+   * pacote fica pela metade). Por isso o main.cjs passa o `original-fs` aqui. Nos testes, o fs do Node.
+   */
+  fsApps() {
+    return this.d.fsApps || this.d.fs
+  }
+
+  log(...a) {
+    if (this.d.log) this.d.log(...a)
+  }
+
   async instalarMac(app, dmg) {
+    const fsa = this.fsApps()
     const ponto = await this.d.fs.promises.mkdtemp(path.join(this.d.temp, 'zro-dmg-'))
     await this.d.exec('hdiutil', ['attach', dmg, '-nobrowse', '-readonly', '-noautoopen', '-mountpoint', ponto])
     try {
       const origem = path.join(ponto, app.mac.bundle)
       if (!this.d.fs.existsSync(origem)) throw new ErroCentral('instalar', `O instalador do ${app.nome} não tem o app esperado.`)
       const pasta = this.pastaDeAppsMac()
-      await this.d.fs.promises.mkdir(pasta, { recursive: true })
+      await fsa.promises.mkdir(pasta, { recursive: true })
       const final = path.join(pasta, app.mac.bundle)
       const novo = path.join(pasta, `.${app.mac.bundle}.zro-novo`)
       const antigo = path.join(pasta, `.${app.mac.bundle}.zro-antigo`)
-      await this.d.fs.promises.rm(novo, { recursive: true, force: true })
+      // sobras de uma tentativa que parou no meio (antes da 1.4.1, o .zro-antigo ficava e travava a próxima troca)
+      await fsa.promises.rm(novo, { recursive: true, force: true })
+      await fsa.promises.rm(antigo, { recursive: true, force: true })
       // ditto preserva assinatura, links e atributos do bundle
       await this.d.exec('ditto', [origem, novo])
-      if (this.d.fs.existsSync(final)) await this.d.fs.promises.rename(final, antigo)
-      await this.d.fs.promises.rename(novo, final)
-      await this.d.fs.promises.rm(antigo, { recursive: true, force: true })
+      const tinha = fsa.existsSync(final)
+      if (tinha) await fsa.promises.rename(final, antigo)
+      try {
+        await fsa.promises.rename(novo, final)
+      } catch (e) {
+        // não deu para pôr o novo no lugar: o antigo volta, nada se perde
+        if (tinha) await fsa.promises.rename(antigo, final).catch(() => {})
+        await fsa.promises.rm(novo, { recursive: true, force: true }).catch(() => {})
+        throw e
+      }
+      // o app novo já está no lugar: apagar o antigo é limpeza (se falhar, a próxima instalação apaga)
+      await fsa.promises.rm(antigo, { recursive: true, force: true }).catch((e) => this.log('[central] não apaguei o app antigo:', e && e.message))
       await this.d.exec('xattr', ['-dr', 'com.apple.quarantine', final]).catch(() => {})
     } finally {
       await this.d.exec('hdiutil', ['detach', ponto, '-force']).catch(() => {})
@@ -570,4 +702,7 @@ module.exports = {
   lerRegistro,
   caminhoDoComando,
   baixar,
+  urlDoDock,
+  itemDoDock,
+  estaNoDock,
 }

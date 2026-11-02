@@ -22,7 +22,9 @@ contextBridge.exposeInMainWorld('zroDesktop', {
     // ferramenta aberta devolve 'ao-fechar' (instala quando ela fechar)
     // 3 (1.4, ADR 0036): listar traz `bloqueado` ({ plano } quando o plano não inclui o app) e `atualizacao.fase`
     // 'disponivel'; há atualizar, atualizarTudo e os Ajustes ("Atualizar sozinho" por app e abrir com o computador)
-    versao: 3,
+    // 4 (1.4.1): listar traz `atalho` ({ tipo: 'dock'|'atalho', feito }) e há atalho(id): "Manter no Dock" no Mac,
+    // "Criar atalho" no Windows
+    versao: 4,
     listar: () => ipcRenderer.invoke('central:listar'),
     instalar: (id) => ipcRenderer.invoke('central:instalar', String(id)),
     atualizar: (id) => ipcRenderer.invoke('central:atualizar', String(id)),
@@ -30,6 +32,7 @@ contextBridge.exposeInMainWorld('zroDesktop', {
     reiniciarEAtualizar: (id) => ipcRenderer.invoke('central:reiniciar-e-atualizar', String(id)),
     abrir: (id) => ipcRenderer.invoke('central:abrir', String(id)),
     remover: (id) => ipcRenderer.invoke('central:remover', String(id)),
+    atalho: (id) => ipcRenderer.invoke('central:atalho', String(id)),
     cancelar: (id) => ipcRenderer.invoke('central:cancelar', String(id)),
     ajustes: () => ipcRenderer.invoke('central:ajustes'),
     definirAtualizarSozinho: (id, ligado) => ipcRenderer.invoke('central:definir-atualizar-sozinho', String(id), ligado === true),
