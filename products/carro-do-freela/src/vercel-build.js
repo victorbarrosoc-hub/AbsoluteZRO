@@ -120,10 +120,12 @@ fs.rmSync(SAIDA, { recursive: true, force: true });
 fs.mkdirSync(STATIC, { recursive: true });
 node(['src/build.js', '--real', '--release=' + RELEASE]);
 fs.copyFileSync(path.join(RAIZ, 'public/real.html'), path.join(STATIC, 'index.html'));
+/* o modo demonstração (02/nov): a mesma página com o servidor de mentira, em /demo (src/demo.js) */
+fs.copyFileSync(path.join(RAIZ, 'public/demo.html'), path.join(STATIC, 'demo.html'));
 
 /* confere o que acabou de ser escrito, no arquivo mesmo — não na intenção */
 const VERSAO = (fs.readFileSync(path.join(RAIZ, 'src/template.html'), 'utf8').match(/const VERSAO="([^"]+)"/) || [, '?'])[1];
-const alvos = ['index'];
+const alvos = ['index', 'demo'];
 /* os nomes da base fictícia (a de convocação, selada): nenhum pode estar na página do domínio */
 const BASE_FICTICIA = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src/crew.json'), 'utf8')).filter(c => !c.me).map(c => c.nome);
 const scripts = [];

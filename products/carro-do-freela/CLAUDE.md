@@ -181,6 +181,20 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 02/nov — o modo demonstração em `/demo` (`test/demo-real.js`)
+
+Pedido do Victor: "simular como se tivesse uns 100 usuários usando a plataforma… em um endereço separado, qualquer
+pessoa com o link vê como funciona". O `build.js --real` gera também `public/demo.html`: a mesma página com
+`src/demo.js` antes de tudo, `noindex` e `<meta name="cdf-demo">`.
+
+- `demo.js` gera ~100 pessoas com semente fixa e responde `/api/zro/*` da memória; rota desconhecida dá 404
+  `{erro:"demonstracao"}`. Nada vai ao servidor.
+- ⚠️ O `localStorage` e o `sessionStorage` viram da memória: o /demo divide a origem com o site real, e a porta
+  (`cdf-entrou`, `zerarPerfil`) apagaria o perfil de quem usa de verdade no mesmo navegador.
+- ⚠️ Não declare `EU`, `S`, `show` dentro do `demo.js`: o IIFE sombreia os globais do app (um `var EU` com o uuid
+  fazia o perfil de exemplo nunca ser preenchido e a entrada cair no cadastro).
+- Selo fixo no topo e "Usar de verdade". Perfis, nomes e números são inventados; nunca telefone nem diária de alguém real.
+
 ## 01/nov · 3 — revisão dos sites e os logins antigos aposentados (`conta-zro` §9, `npm run test:api`)
 
 - ⚠️ **No domínio a única porta é "Entrar com Absolute ZRO"** (decisão do titular, 01/11/2026). O formulário de e-mail

@@ -22,6 +22,23 @@ Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei
 `products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
 Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
 
+## Quasar: mesa de faixas (02/11/2026)
+
+Branch `claude/quasar-mesa`, em `products/nossom`.
+
+- `tests/mesa.test.ts` (4):
+  - a cadeia vai do original até a versão aberta, sem ramos e sem travar em ciclo;
+  - papel, nome e nome curto de cada faixa;
+  - o resumo da Z só com medidas;
+  - as bandas da Presence seguem os cortes.
+- E2E: depois de melhorar, a mesa tem 3 faixas, 4 canais e o resumo da Z, e passa no axe (WCAG 2.1 A/AA).
+- Conferido em captura (1440 px e 390 px):
+  - a agulha acompanha o som;
+  - "Ouvir" troca a faixa no mesmo ponto;
+  - sem rolagem lateral no celular.
+- Corrigido antes de entregar: a onda crescia sem parar porque o canvas realimentava a altura. Agora ele fica por cima
+  da caixa da faixa.
+
 ## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
 
 Branch `claude/quasar-presence-ia`, em `products/nossom`.
@@ -4701,3 +4718,11 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Prévia (fora do repositório): o menu gerado do modelo real com os ícones reais (Mac claro e escuro, Windows) e os
   ícones ampliados; a janela "Sem conexão" pelo `MAESTRO_SMOKE_CAPTURA`. A bandeja do Linux não abre menu no xvfb, por
   isso a prévia em vez da captura do menu nativo.
+
+## Carro do Freela: modo demonstração em /demo (02/11/2026)
+
+- `products/carro-do-freela/test/demo-real.js` 15/15: noindex, canonical no próprio /demo, sem AEON/Revela/NOSSOM/Rift, só o /demo carrega o modo, nenhum perfil do protótipo,
+  entra sozinha no feed com 101 pessoas, selo e link ao site real, propostas e guilda de exemplo, zero pedido ao
+  servidor, `localStorage` do domínio intocado, zero erro de página.
+- `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
+  (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.
