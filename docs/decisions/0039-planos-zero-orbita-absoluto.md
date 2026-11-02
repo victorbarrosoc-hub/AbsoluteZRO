@@ -68,6 +68,8 @@ nível próprio (padrão Absoluto na tela).
 DD/MM". As fases de lançamento não aparecem em tela nenhuma (mapa interno em [planos-fases.md](../planos-fases.md)).
 A página /planos mostra os preços novos, sem botão de compra. "Ligar vendas" (0011) saiu: `launchSales` recusa.
 
+**Modelo da Z por nível, custo real e teto diário em dólar:** [ADR 0040](0040-z-custo-e-modelo-por-plano.md) (Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5).
+
 ## Consequências
 
 - Os apps leem o nível da claim e os números de `/api/v1/limites`; cada app aplica o limite dele (o HUB só mede a Z e

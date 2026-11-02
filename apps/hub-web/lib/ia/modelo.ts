@@ -14,8 +14,10 @@ import {
   DRIVE_FORMATOS,
   DRIVE_ORDENS,
   driveParaIa,
+  IA_MODELOS,
   maestroParaIa,
   MAESTRO_PRODUTO,
+  modeloDoNivel,
   pedirAoComputadorAuditado,
   projetoParaIa,
   retratoDoEcossistema,
@@ -34,7 +36,14 @@ import type { Database } from '@zro/db'
 import { zroEnv } from '@zro/observability'
 import { guiaDasPlataformas, nomesDasPlataformas } from './plataformas'
 
-export const iaModelo = () => process.env.IA_MODELO || 'claude-opus-5-5'
+/**
+ * Modelo do Laboratório da Z e do Rift (IA_MODELO troca o padrão). A Z dos CLIENTES não usa este: o modelo dela segue o
+ * plano (modeloDoNivel, em @zro/core z-plano.ts). Os ids ficam só em IA_MODELOS.
+ */
+export const iaModelo = () => process.env.IA_MODELO || IA_MODELOS.opus
+
+/** O modelo da Z de um cliente: pelo nível do turno (Zero → Haiku; Órbita e Absoluto → Sonnet; sem nível → Sonnet). */
+export const modeloDoTurno = (turno: Turno) => modeloDoNivel(turno.plano?.nivel)
 export const iaLigada = () => !!process.env.IA_ANTHROPIC_KEY
 
 /**
@@ -217,6 +226,11 @@ export type IaEvento = { tipo: 'conversa'; id: string; titulo: string } | { tipo
 export type RespostaOpcoes = {
   modelo?: string
   maxTokens?: number
+  /**
+   * Acumulador de uso entregue por quem chama: preenchido a cada volta, para o gasto de uma resposta que abortou ou deu
+   * erro no meio não se perder (o chat grava no finally). Sem ele, o uso só volta no retorno.
+   */
+  uso?: IaUso
   /** Personalidade do rascunho ou de uma versão. `null` = padrão do código, sem ler a versão publicada. */
   personalizacao?: ZPersonalizacao | null
   /** Mensagens prontas (o laboratório manda anexos). Sem isto, o histórico do turno em texto. */
@@ -243,14 +257,16 @@ export async function responder(
   // O guia só leva as plataformas abertas para a pessoa (o retrato já vem com o gate de lançamento aplicado).
   // O Maestro só entra para quem o tem aberto e contratado (o core confere de novo antes de chamar).
   const maestro = retrato.ferramentas.some((f) => f.id === MAESTRO_PRODUTO && f.acesso === 'contracted')
-  let { personalizacao, modelo = iaModelo(), maxTokens = 4000 } = opcoes
+  // Laboratório: o modelo vem nas opções. Cliente: o do plano. Administração da plataforma: a versão publicada, se houver.
+  let { personalizacao, modelo = modeloDoTurno(turno), maxTokens = 4000 } = opcoes
   if (personalizacao === undefined) {
     // Versão publicada no laboratório (só a publicada, pela função do banco). Sem ela, o padrão do código.
     // Qualquer falha na leitura (banco sem a migração 0036, por exemplo) cai no padrão: a Z dos clientes nunca para por isso.
     const pub = await db.asUser({ userId: turno.actor.userId, orgId: turno.actor.orgId }, zConfigPublicada).catch(() => null)
     personalizacao = pub ? personalizacaoDe(pub, turno.conversa.produto, pub.conhecimento_textos) : null
     if (pub) {
-      modelo = pub.modelo.id
+      // O tamanho da resposta publicado vale para todos; o modelo publicado só para quem administra a plataforma.
+      if (turno.actor.auth.user.platformRole === 'admin' && !opcoes.modelo) modelo = pub.modelo.id
       maxTokens = Z_RESPOSTAS[pub.modelo.resposta].maxTokens
     }
   }
@@ -269,7 +285,8 @@ export async function responder(
   })
 
   let texto = ''
-  const uso: IaUso = { modelo, entrada: 0, saida: 0, cache: 0 }
+  const uso: IaUso = opcoes.uso ?? { modelo, entrada: 0, saida: 0, cache: 0 }
+  uso.modelo = modelo
   for (let volta = 0; volta < 4; volta++) {
     const stream = client.messages.stream(
       {
@@ -289,7 +306,19 @@ export async function responder(
       texto += t
       emitir({ tipo: 'texto', t })
     })
-    const msg = await stream.finalMessage()
+    let msg: Anthropic.Message
+    try {
+      msg = await stream.finalMessage()
+    } catch (err) {
+      // Aborto ou erro no meio da volta: o que o provedor já contou até aqui (início da mensagem e o que gerou) é gasto.
+      const parcial = stream.currentMessage?.usage
+      if (parcial) {
+        uso.entrada += (parcial.input_tokens ?? 0) + (parcial.cache_creation_input_tokens ?? 0)
+        uso.saida += parcial.output_tokens ?? 0
+        uso.cache += parcial.cache_read_input_tokens ?? 0
+      }
+      throw err
+    }
     uso.modelo = msg.model || uso.modelo
     uso.entrada += (msg.usage.input_tokens ?? 0) + (msg.usage.cache_creation_input_tokens ?? 0)
     uso.saida += msg.usage.output_tokens ?? 0

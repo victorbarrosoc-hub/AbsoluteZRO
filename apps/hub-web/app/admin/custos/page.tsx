@@ -14,6 +14,7 @@ import {
   hojeNoFuso,
   lerConfigCustos,
   lerGastoDoLab,
+  lerGastoDosClientes,
   listarCustos,
   mensalDoItem,
   pontoDeEquilibrio,
@@ -26,6 +27,7 @@ import {
   type Custo,
   type Recomendacao,
 } from '@zro/core'
+import { NIVEL_NOME } from '@zro/billing'
 import { ContaAte } from '@/components/admin/custos/conta-ate'
 import { ConfigCustos } from '@/components/admin/custos/config'
 import { DolarCustos } from '@/components/admin/custos/dolar'
@@ -66,6 +68,8 @@ export default async function Custos() {
     produtos: (await tx`select id, name from zro.products order by step_order`).map((p) => ({ id: p.id as string, name: p.name as string })),
     // Laboratório da Z (ADR 0033): o uso de cada chamada paga, registrado com o custo estimado.
     lab: await lerGastoDoLab(tx),
+    // A Z dos clientes (ADR 0040): o custo real de cada resposta do chat, por modelo e por nível.
+    clientes: await lerGastoDosClientes(tx),
   }))
   const hoje = hojeNoFuso()
   // Dólar do Banco Central com mais de 24 h: busca depois de responder (a página não espera). O próximo acesso já vê.
@@ -275,6 +279,51 @@ export default async function Custos() {
             </span>
           </div>
         </div>
+      </section>
+
+      <section className="adm-card" aria-labelledby="z-clientes">
+        <h2 id="z-clientes">
+          Z dos clientes <span className="adm-card__aside">gasto real, US$</span>
+        </h2>
+        <div className="cst-lab">
+          <div className="kpi">
+            <span className="kpi__label">Hoje</span>
+            <span className="kpi__value">{fmtMoeda(d.clientes.hoje, 'USD')}</span>
+            <span className="kpi__hint">teto {fmtMoeda(d.clientes.tetos.globalDiaUsd, 'USD')}/dia</span>
+          </div>
+          <div className="kpi">
+            <span className="kpi__label">Este mês</span>
+            <span className="kpi__value">{fmtMoeda(d.clientes.mes, 'USD')}</span>
+            <span className="kpi__hint">
+              {d.clientes.respostasMes} {d.clientes.respostasMes === 1 ? 'resposta' : 'respostas'}
+              {d.clientes.respostasMes > 0 ? ` · ${fmtMoeda(d.clientes.mes / d.clientes.respostasMes, 'USD')} cada` : ''}
+            </span>
+          </div>
+        </div>
+        {d.clientes.respostasMes === 0 ? (
+          <p className="adm-empty">Nenhuma resposta este mês.</p>
+        ) : (
+          <div className="adm-grid">
+            <ul className="cst-eq__planos" aria-label="Por modelo">
+              {d.clientes.porModelo.map((m) => (
+                <li key={m.modelo} title={`${m.modelo}: ${m.respostas} respostas`}>
+                  <strong className="cst-eq__n">{fmtMoeda(m.custo, 'USD')}</strong>
+                  <span className="cst-eq__nome">{m.modelo.replace('claude-', '')}</span>
+                  <span className="cst-eq__preco">{m.respostas} resp.</span>
+                </li>
+              ))}
+            </ul>
+            <ul className="cst-eq__planos" aria-label="Por nível">
+              {d.clientes.porNivel.map((n) => (
+                <li key={n.nivel ?? 'sem'} title={`${n.respostas} respostas`}>
+                  <strong className="cst-eq__n">{fmtMoeda(n.custo, 'USD')}</strong>
+                  <span className="cst-eq__nome">{n.nivel ? NIVEL_NOME[n.nivel] : 'Sem nível'}</span>
+                  <span className="cst-eq__preco">{n.respostas} resp.</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <CustosItens

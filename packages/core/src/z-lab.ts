@@ -30,14 +30,19 @@ import {
   type ZAprendizado,
   type ZAprendizadoTipo,
 } from './z-aprendizados'
+import { IA_MODELOS } from './z-plano'
+import { inserirUso, type ZServico, type ZUso } from './z-uso'
 
 // ───────────── catálogo: modelos, vozes e preços ─────────────
 
-/** Modelos que o laboratório oferece. O primeiro é o da Z hoje (IA_MODELO no ambiente pode trocar o padrão). */
+/**
+ * Modelos que o laboratório oferece (os ids vêm de IA_MODELOS, o único lugar com a string). O primeiro é o padrão do
+ * laboratório e do Rift (IA_MODELO no ambiente pode trocar); a Z dos clientes segue o plano (z-plano.ts).
+ */
 export const Z_MODELOS = [
-  { id: 'claude-opus-5-5', nome: 'Opus 5.5', nota: 'O da Z hoje' },
-  { id: 'claude-sonnet-5-5', nome: 'Sonnet 5.5', nota: 'Mais rápido' },
-  { id: 'claude-haiku-5-5', nome: 'Haiku 5.5', nota: 'O mais rápido, bom para voz' },
+  { id: IA_MODELOS.opus, nome: 'Opus 5.5', nota: 'O da Z hoje' },
+  { id: IA_MODELOS.sonnet, nome: 'Sonnet 5.5', nota: 'Mais rápido' },
+  { id: IA_MODELOS.haiku, nome: 'Haiku 5.5', nota: 'O mais rápido, bom para voz' },
 ] as const
 export type ZModeloId = (typeof Z_MODELOS)[number]['id']
 
@@ -64,7 +69,7 @@ export const custoVozUsd = (caracteres: number, modelo: string) =>
   (Math.max(0, caracteres) / 1000) * (Z_VOZ_MODELOS.find((m) => m.id === modelo)?.usdPorMilCaracteres ?? 0.08)
 export const custoTranscricaoUsd = (segundos: number) => (Math.max(0, segundos) / 3600) * Z_PRECO_TRANSCRICAO_HORA
 export const custoEscutaUsd = (segundos: number) => (Math.max(0, segundos) / 3600) * Z_PRECO_ESCUTA_HORA
-export const custoClaudeUsd = custoIaUsd
+export const custoClaudeUsd = (modelo: string | null, t: { entrada: number; saida: number; cache: number }) => custoIaUsd(modelo, t)
 
 /**
  * Quanto custa, em média, um minuto de conversa por voz (para mostrar no laboratório e no relatório). Premissas: a
@@ -80,7 +85,7 @@ export function custoMinutoDeVoz(p: { modelo?: string; vozModelo?: string; turno
   const turnos = p.turnos ?? 4
   const escuta = custoEscutaUsd(60)
   const voz = custoVozUsd(30 * 15, p.vozModelo ?? 'eleven_flash_v2_5')
-  const claude = turnos * custoIaUsd(p.modelo ?? 'claude-opus-5-5', { entrada: p.entradaNova ?? 1500, saida: p.saida ?? 120, cache: p.cache ?? 12000 })
+  const claude = turnos * custoIaUsd(p.modelo ?? IA_MODELOS.opus, { entrada: p.entradaNova ?? 1500, saida: p.saida ?? 120, cache: p.cache ?? 12000 })
   return { escuta, voz, claude, total: escuta + voz + claude }
 }
 
@@ -204,7 +209,7 @@ export type ZConfig = z.infer<typeof ZConfigSchema>
  * tokens), com a personalidade feminina proposta (`Z_IDENTIDADE_LAB`). A Z dos clientes não usa isto: sem versão
  * publicada, ela segue o texto do código.
  */
-export function zConfigPadrao(modelo: string = 'claude-opus-5-5'): ZConfig {
+export function zConfigPadrao(modelo: string = IA_MODELOS.opus): ZConfig {
   return {
     identidade: Z_IDENTIDADE_LAB,
     regras: Z_REGRAS_PADRAO,
@@ -212,7 +217,7 @@ export function zConfigPadrao(modelo: string = 'claude-opus-5-5'): ZConfig {
     apps: {},
     conhecimento: [],
     voz: { id: null, nome: null, modelo: 'eleven_flash_v2_5', velocidade: 1, estabilidade: 0.5, saudacao: Z_SAUDACAO_PADRAO },
-    modelo: { id: (Z_MODELOS.some((m) => m.id === modelo) ? modelo : 'claude-opus-5-5') as ZModeloId, resposta: 'media' },
+    modelo: { id: (Z_MODELOS.some((m) => m.id === modelo) ? modelo : IA_MODELOS.opus) as ZModeloId, resposta: 'media' },
     aprendizados: [],
   }
 }
@@ -294,20 +299,6 @@ const auditar = (tx: Queryable, a: ZLabAdmin, action: string, metadata: Record<s
 
 // ───────────── teto e uso ─────────────
 
-export type ZServico = 'claude' | 'voz' | 'transcricao' | 'escuta' | 'design'
-export type ZUso = {
-  servico: ZServico
-  modelo?: string | null
-  tokensEntrada?: number
-  tokensSaida?: number
-  tokensCache?: number
-  caracteres?: number
-  segundos?: number
-  custoUsd: number
-  /** Idempotência: a mesma chamada nunca conta duas vezes. */
-  chave: string
-}
-
 export type ZGasto = { hoje: number; mes: number; teto: number | null; porServico: Record<ZServico, number> }
 
 const num = (v: unknown) => (v == null ? 0 : Number(v))
@@ -319,6 +310,7 @@ async function lerGasto(tx: Queryable): Promise<ZGasto> {
       coalesce(sum(custo_usd) filter (where dia = (now() at time zone 'America/Fortaleza')::date), 0)::float8 as hoje,
       coalesce(sum(custo_usd), 0)::float8 as mes
     from zro.z_lab_uso where dia >= date_trunc('month', now() at time zone 'America/Fortaleza')::date
+      and origem is distinct from 'chat' -- o chat dos clientes tem teto e painel próprios (z-plano.ts)
     group by servico`
   const porServico: Record<ZServico, number> = { claude: 0, voz: 0, transcricao: 0, escuta: 0, design: 0 }
   let hoje = 0
@@ -376,18 +368,6 @@ export async function conferirTetoDoSistema(db: Database): Promise<ZGasto> {
   if (gasto.teto == null) throw new DomainError('quota_not_configured', 'O teto de gasto por dia da Z não foi definido.')
   if (chegouAoTeto(gasto)) throw new DomainError('quota_exceeded', 'A Z chegou ao teto de gasto de hoje. Ela volta amanhã.')
   return gasto
-}
-
-export const registrarUsoDoSistema = (db: Database, userId: string, u: ZUso) => db.asSystem('z: uso (app da família)', (tx) => inserirUso(tx, userId, u))
-
-async function inserirUso(tx: Queryable, userId: string, u: ZUso): Promise<boolean> {
-  if (!/^[a-z]+:[A-Za-z0-9_.:-]{6,110}$/.test(u.chave)) throw new DomainError('invalid_input', 'Chave de uso inválida.')
-  const r = await tx`
-      insert into zro.z_lab_uso (user_id, servico, modelo, tokens_entrada, tokens_saida, tokens_cache, caracteres, segundos, custo_usd, chave)
-      values (${userId}, ${u.servico}, ${u.modelo ?? null}, ${Math.round(u.tokensEntrada ?? 0)}, ${Math.round(u.tokensSaida ?? 0)},
-        ${Math.round(u.tokensCache ?? 0)}, ${Math.round(u.caracteres ?? 0)}, ${Number((u.segundos ?? 0).toFixed(2))}, ${Number(u.custoUsd.toFixed(6))}, ${u.chave})
-      on conflict (chave) do nothing returning id`
-  return r.length > 0
 }
 
 /** Escuta ao vivo: a sessão abre com custo zero e fecha com os segundos que o navegador contou (até 15 min). */

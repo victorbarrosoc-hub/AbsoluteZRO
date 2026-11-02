@@ -8,9 +8,13 @@
 import type { Authenticated } from '@zro/auth'
 import { consumeQuota, FEATURE_FLAGS, productAccessFor, quotaPeriod } from '@zro/billing'
 import type { Database, Queryable } from '@zro/db'
-import { DomainError } from '@zro/observability'
+import { createLogger, DomainError } from '@zro/observability'
 import { z } from 'zod'
 import { authorize, channelOf, type Actor, type Need } from './authz'
+import { conferirTetoDosClientes, IA_MODELOS, planoDaZ, type ZPlano } from './z-plano'
+import { registrarUsoDoSistema } from './z-uso'
+
+const log = createLogger('ia')
 
 export const IA_METRICA = 'zro.ai_credits'
 export const IA_CREDITOS_POR_RESPOSTA = 1
@@ -95,6 +99,8 @@ export type Turno = {
   /** Histórico (até as 40 últimas mensagens), já com a pergunta nova no fim. */
   historico: IaMensagem[]
   perguntaId: string
+  /** Nível que decide o modelo e o rótulo do custo (z-plano.ts). Sem ele (turno do Laboratório): não resolvido. */
+  plano?: ZPlano
 }
 
 /**
@@ -107,7 +113,10 @@ export async function iniciarTurno(db: Database, auth: Authenticated | null, raw
   const { texto } = parsed.data
   const actor = await authorize(db, auth, { ...gateDoApp(auth), quota: { metric: IA_METRICA, amount: IA_CREDITOS_POR_RESPOSTA } })
   const produto = produtoDaChamada(auth)
-  return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+  // Teto do dia em dólar (por pessoa e global), antes de criar conversa ou gastar com o modelo. A franquia por créditos
+  // e as recargas seguem como são: o teto só segura o gasto real, e a mensagem diz que volta amanhã.
+  await conferirTetoDosClientes(db, actor.userId)
+  const turno: Turno = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     let c: Record<string, unknown> | undefined
     if (parsed.data.conversa) {
       ;[c] = await tx`
@@ -135,12 +144,44 @@ export async function iniciarTurno(db: Database, auth: Authenticated | null, raw
       perguntaId: m!.id as string,
     }
   })
+  // O produto de origem é o da conversa (uma conversa continuada de outro app mantém o app em que nasceu).
+  turno.plano = await planoDaZ(db, actor.userId, actor.orgId, turno.conversa.produto)
+  return turno
 }
 
 /** Guarda a resposta e gasta o crédito (idempotente pela pergunta: a mesma pergunta nunca conta duas vezes). */
 export type IaUso = { modelo: string; entrada: number; saida: number; cache: number }
 
+/**
+ * Registra o custo real da resposta em `zro.z_lab_uso` (servico 'claude', origem 'chat'), idempotente pela pergunta:
+ * `claude:<perguntaId>`. Nunca lança: falhar ao registrar não derruba a resposta (só vai para o log). Sem tokens, nada.
+ * Devolve se gravou agora (false = já estava gravado, sem uso ou falha).
+ */
+export async function registrarUsoDoTurno(db: Database, turno: Turno, uso: IaUso | null): Promise<boolean> {
+  if (!uso || uso.entrada + uso.saida + uso.cache <= 0) return false
+  try {
+    return await registrarUsoDoSistema(db, turno.actor.userId, {
+      servico: 'claude',
+      modelo: uso.modelo || null,
+      tokensEntrada: uso.entrada,
+      tokensSaida: uso.saida,
+      tokensCache: uso.cache,
+      custoUsd: custoIaUsd(uso.modelo, uso),
+      chave: `claude:${turno.perguntaId}`,
+      orgId: turno.actor.orgId,
+      produto: turno.conversa.produto,
+      nivel: turno.plano?.nivel ?? null,
+      origem: 'chat',
+    })
+  } catch (err) {
+    log.error('ia.uso_nao_registrado', { error: err, perguntaId: turno.perguntaId })
+    return false
+  }
+}
+
 export async function concluirTurno(db: Database, turno: Turno, resposta: string, uso: IaUso | null = null): Promise<{ mensagemId: string; creditos: number }> {
+  // O custo vem primeiro: os tokens já foram gastos, tenha a resposta texto ou não.
+  await registrarUsoDoTurno(db, turno, uso)
   const texto = resposta.trim().slice(0, 40000)
   if (!texto) throw new DomainError('upstream_unavailable', 'A IA não respondeu. Tente de novo.')
   const { actor } = turno
@@ -257,12 +298,20 @@ export async function projetoParaIa(tx: Queryable, orgId: string, busca: string)
  * provedor; aqui é a soma dos tokens que ele informou em cada resposta. Modelo fora da tabela usa o preço do Opus.
  */
 export const IA_PRECOS: Record<string, { entrada: number; saida: number; cache: number }> = {
-  'claude-opus-5-5': { entrada: 4, saida: 20, cache: 0.2 },
-  'claude-sonnet-5-5': { entrada: 2, saida: 10, cache: 0.2 },
-  'claude-haiku-5-5': { entrada: 0.1, saida: 0.5, cache: 0.01 },
+  [IA_MODELOS.opus]: { entrada: 4, saida: 20, cache: 0.2 },
+  [IA_MODELOS.sonnet]: { entrada: 2, saida: 10, cache: 0.2 },
+  [IA_MODELOS.haiku]: { entrada: 0.1, saida: 0.5, cache: 0.01 },
+}
+
+/** O preço do modelo. O provedor pode devolver o id com data (`claude-haiku-5-5-20261001`): vale o do prefixo. */
+function precoDoModelo(modelo: string | null) {
+  if (!modelo) return undefined
+  if (IA_PRECOS[modelo]) return IA_PRECOS[modelo]
+  const base = Object.keys(IA_PRECOS).find((k) => modelo.startsWith(`${k}-`))
+  return base ? IA_PRECOS[base] : undefined
 }
 
 export function custoIaUsd(modelo: string | null, t: { entrada: number; saida: number; cache: number }): number {
-  const p = (modelo && IA_PRECOS[modelo]) || IA_PRECOS['claude-opus-5-5']!
+  const p = precoDoModelo(modelo) || IA_PRECOS[IA_MODELOS.opus]!
   return (t.entrada * p.entrada + t.saida * p.saida + t.cache * p.cache) / 1_000_000
 }
