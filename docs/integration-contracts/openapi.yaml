@@ -675,7 +675,7 @@ paths:
         {
           '200':
             {
-              description: '{ conectada, conta, plano, saldo, usoMes, usoApp: { mes, pedidos, total }, usoApps, imagens: [{ quantidade, creditos }], opcoes: [{ id, nome, desc, segundos, creditos }] }',
+              description: '{ conectada, conta, plano, saldo, usoMes, ciclo: { inicioCiclo, renovaEm, franquia, extras, gastoNoCiclo } | null, usoApp: { mes, pedidos, total }, usoApps, imagens: [{ quantidade, creditos }], opcoes: [{ id, nome, desc, segundos, creditos }] }',
             },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
