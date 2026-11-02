@@ -4523,6 +4523,28 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## Quasar · abertura com a marca nova (02/11/2026)
+
+- Ícones (`public/pwa/icon-*.png`, usados também pelo app de computador e pelo iPhone, `public/icon.svg`, o novo
+  `public/apple-touch-icon.png`) e o cartão de compartilhamento (`marca-fechada/og-site.png`) redesenhados com a Coroa
+  vazada e o feixe, pelo novo `scripts/gerar-marca.cjs` (desenha com o motor do Início; substitui `capture-og.mjs`).
+  Cache dos ícones em `?v=6`, cartão em `?v=7`; título e descrições com o slogan "O som encontrando o seu espaço.".
+  e2e `install-navigation`, `zro-access`, `liquid-site` e `homepage-demo`: 9 passaram (7 pulados por `RELEASE=closed`).
+
+- A onda 3D antiga (`components/ai-motion.tsx`, removido) ainda aparecia no aviso de processamento ("Seu áudio está na
+  fila"), na janela do assistente e no fundo da tela de conta: agora é a Coroa viva (`QuasarIA`), pensando no aviso.
+  e2e `cloud-restoration`, `studio`, `assistant-flow`, `agent`, `login-page`, `account` e `ai-motion-performance`:
+  16 passaram (8 pulados por `RELEASE=closed`); aviso conferido a 1440 e 390.
+
+- A abertura (`components/brand-intro.tsx`, `app/styles/intro.css`) ainda mostrava o traço antigo do NOSSOM: agora a
+  Coroa vazada se desenha, o clarão acende com o feixe horizontal e QUASAR (Archivo Expanded) entra com o selo AUDIO LAB.
+  Só CSS; uma vez por sessão; pulada com reduzir movimento e em automação.
+- `products/nossom`: `format:check` OK, `npm test` 135/135, `npm run build` OK, e2e `liquid-site`, `workspace`,
+  `assistant-flow` e `home-logada` 8 passaram (5 pulados por `RELEASE=closed`). Quadros da abertura conferidos a 390.
+- No caminho: o campo "De" do trecho mostrava o número cru do arraste (`1.0000397…`) e derrubava às vezes o e2e
+  `cloud-restoration` › seleção na onda; agora arredonda a 2 casas como o "Até" já fazia. `cloud-restoration` e
+  `player` repetidos 3 vezes: 18 passaram.
+
 ## Quasar · Início com o símbolo como IA (01/11/2026)
 
 - `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 134/134 (novo `tests/quasar-ia.test.ts`: a onda corre,

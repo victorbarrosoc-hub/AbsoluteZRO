@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { ArrowRight, LoaderCircle, ShieldCheck, UserRound } from 'lucide-react';
 import { Brand } from './brand';
 import { ZroSymbol } from './zro-symbol';
-import AIMotion from './ai-motion';
+import QuasarIA from './quasar-ia';
 import { PasswordField } from './password-field';
 export function AccountForm({
   next,
@@ -241,7 +241,7 @@ export default function AccountAccess({
   return (
     <main className="account-page">
       <div className="account-wave-background" aria-hidden="true">
-        <AIMotion />
+        <QuasarIA estado="idle" />
       </div>
       <DesktopUpdates floating />
       <Link className="account-home" href="/" aria-label="Quasar página inicial">
