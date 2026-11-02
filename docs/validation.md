@@ -4525,6 +4525,12 @@ SOBEDESCE de computador, que disparam os instaladores).
 
 ## Quasar · abertura com a marca nova (02/11/2026)
 
+- Ícones (`public/pwa/icon-*.png`, usados também pelo app de computador e pelo iPhone, `public/icon.svg`, o novo
+  `public/apple-touch-icon.png`) e o cartão de compartilhamento (`marca-fechada/og-site.png`) redesenhados com a Coroa
+  vazada e o feixe, pelo novo `scripts/gerar-marca.cjs` (desenha com o motor do Início; substitui `capture-og.mjs`).
+  Cache dos ícones em `?v=6`, cartão em `?v=7`; título e descrições com o slogan "O som encontrando o seu espaço.".
+  e2e `install-navigation`, `zro-access`, `liquid-site` e `homepage-demo`: 9 passaram (7 pulados por `RELEASE=closed`).
+
 - A onda 3D antiga (`components/ai-motion.tsx`, removido) ainda aparecia no aviso de processamento ("Seu áudio está na
   fila"), na janela do assistente e no fundo da tela de conta: agora é a Coroa viva (`QuasarIA`), pensando no aviso.
   e2e `cloud-restoration`, `studio`, `assistant-flow`, `agent`, `login-page`, `account` e `ai-motion-performance`:
