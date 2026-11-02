@@ -15,6 +15,29 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026)
+
+- Causa do "Não deu para instalar. Tente de novo." (SOBEDESCE, Synquei e Relay no Mac), provada no Electron 44.5.1 de
+  verdade (Xvfb): a `central.cjs` da 1.4.0 (igual à do `app.asar` do `AbsoluteZRO-1.4.0-b32-mac-universal.dmg`
+  publicado, conferido arquivo a arquivo), com o `fs` do processo principal, atualizando um `Relay.app` já instalado
+  com o `app.asar` real do Relay 0.1.1: **falha** e deixa `.Relay.app.zro-antigo`; a segunda tentativa falha de novo.
+  O mesmo `fs.promises.rm` recursivo dá `ENOTEMPTY ... rmdir '.../Contents/Resources'`; com `original-fs` (ou
+  `process.noAsar`) apaga. A central corrigida, no mesmo teste: instala, sem sobras, e instala de novo.
+- Descartado com prova: os `.dmg` de SOBEDESCE 0.3.2 b1082, Synquei 1.0.1 b1064 e Relay 0.1.1 b2003 baixados por
+  `/baixar/app/…` têm o SHA-256 do catálogo, HFS+ com `SOBEDESCE.app`/`Synquei.app`/`Relay.app` na raiz (= `bundle`
+  de `desktop-apps.ts`), sem licença (SLA) que travaria o `hdiutil attach`, e a mesma forma do TPeasy 0.1.1 b2005 (que
+  instala); os redirecionamentos (HUB → github.com/victorbarrosoc-hub/AbsoluteZRO → release-assets) são iguais nos seis
+  apps e passam em `downloadPermitido`.
+- `apps/hub-desktop`: `npm test` **83/83** (novos: troca com o `fs` do Electron simulado, a mesma troca sem
+  `original-fs` falhando como na 1.4.0, sobra `.zro-antigo`/`.zro-novo` limpa, app antigo de volta se o novo não entra,
+  `main.cjs` com `original-fs`, item do Dock, "Manter no Dock" só com o toque e sem repetir, erro claro, atalho no
+  Windows na Área de Trabalho sem refazer o do Menu Iniciar). `npm run smoke` (Xvfb): SMOKE OK.
+- Raiz: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **614/614** (70 arquivos); `npm run build` ok;
+  `npm run test:e2e` **68/69**; o que falhou é `admin.spec.ts:64` (admin online/segmento/plano/axe), estouro de
+  60 s da tela de admin, sem relação com a central (os 2 testes de "central de apps", com o "Manter no Dock", passam).
+- Não conferido aqui: `hdiutil`, `ditto`, `defaults`/`killall Dock` e `shell.writeShortcutLink` num Mac e num Windows
+  de verdade (os testes simulam os comandos; o Linux não tem Dock nem atalho `.lnk`).
+
 ## Synquei: leituras do TPeasy viram blocos nos takes (02/11/2026)
 
 - `products/synquei`: `npm test` → **174/174** (10 pulados, como antes). Novo `tests/tpeasy.test.mjs` (11): leituras

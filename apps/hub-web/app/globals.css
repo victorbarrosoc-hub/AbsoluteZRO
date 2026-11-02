@@ -4960,6 +4960,17 @@ a.hbars__row:hover {
 .app-actions__erro {
   margin: 0;
 }
+/* Depois de instalar: "Manter no Dock" (Mac) / "Criar atalho" (Windows), opcional, em vidro; feito, só o selo. */
+.app-actions__atalho {
+  gap: 6px;
+}
+.app-actions__feito {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.85rem var(--font-apple);
+  color: var(--text-mute);
+}
 /* Fora do plano (ADR 0036): o cadeado e o plano que inclui, com "Ver planos". */
 .app-actions__plano {
   display: inline-flex;

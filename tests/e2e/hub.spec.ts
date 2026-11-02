@@ -461,7 +461,7 @@ test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a f
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {
   // Ponte falsa no lugar do preload do Electron (desktop/preload.cjs): mesma forma de window.zroDesktop.apps.
   await page.addInitScript(() => {
-    const estado: Record<string, { instalado: { versao: string } | null; atualizar: boolean }> = {
+    const estado: Record<string, { instalado: { versao: string } | null; atualizar: boolean; noDock?: boolean }> = {
       synquei: { instalado: null, atualizar: false },
       sobedesce: { instalado: { versao: '0.0.9' }, atualizar: true },
       nossom: { instalado: null, atualizar: false },
@@ -469,6 +469,7 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
     const ouvintes: ((ev: unknown) => void)[] = []
     const emitir = (ev: unknown) => ouvintes.forEach((f) => f(ev))
     ;(window as unknown as { __abertos: string[] }).__abertos = []
+    ;(window as unknown as { __dock: string[] }).__dock = []
     ;(window as unknown as { zroDesktop: unknown }).zroDesktop = {
       isDesktop: true,
       plataforma: 'mac',
@@ -483,6 +484,7 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
             instalado: s.instalado,
             atualizar: s.atualizar,
             ocupado: false,
+            atalho: s.instalado ? { tipo: 'dock', feito: !!s.noDock } : null,
           })),
         }),
         instalar: async (id: string) => {
@@ -499,6 +501,11 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
           return { ok: true, dados: true }
         },
         remover: async () => ({ ok: true, dados: true }),
+        atalho: async (id: string) => {
+          ;(window as unknown as { __dock: string[] }).__dock.push(id)
+          estado[id] = { ...estado[id]!, noDock: true }
+          return { ok: true, dados: { tipo: 'dock', feito: true } }
+        },
         cancelar: async () => ({ ok: true }),
         aoProgresso: (fn: (ev: unknown) => void) => {
           ouvintes.push(fn)
@@ -515,11 +522,18 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
   await expect(synquei.getByRole('progressbar')).toBeVisible()
   await expect(synquei.getByText('50%')).toBeVisible()
   await expect(synquei.getByRole('button', { name: 'Abrir' })).toBeVisible()
+  // logo depois de instalar: "Manter no Dock", opcional, um toque
+  await synquei.getByRole('button', { name: 'Manter no Dock' }).click()
+  await expect(synquei.getByText('No Dock', { exact: true })).toBeVisible()
+  await expect(synquei.getByRole('button', { name: 'Manter no Dock' })).toHaveCount(0)
+  expect(await page.evaluate(() => (window as unknown as { __dock: string[] }).__dock)).toEqual(['synquei'])
   await synquei.getByRole('button', { name: 'Abrir' }).click()
   expect(await page.evaluate(() => (window as unknown as { __abertos: string[] }).__abertos)).toEqual(['synquei'])
   // Instalado com versão antiga: Atualizar aparece. No app, o instalador avulso some.
   await page.getByRole('button', { name: 'SOBEDESCE' }).click()
   await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toBeVisible()
+  // já instalado antes (não acabou de instalar): sem o convite do Dock
+  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Manter no Dock' })).toHaveCount(0)
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="mac"]')).toBeHidden()
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="windows"]')).toBeHidden()
 })

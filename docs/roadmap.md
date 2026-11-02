@@ -2,6 +2,20 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026, ramo `central-instalar`)
+
+- ✅ Bug: no Mac, SOBEDESCE, Synquei e Relay davam "Não deu para instalar. Tente de novo." (Maestro, Carro e TPeasy
+  instalavam). Causa: a troca do app que **já estava** em Aplicativos apagava o `.<App>.app.zro-antigo` com o `fs` do
+  Electron, que lê o `app.asar` como pasta; o `rm` recursivo falhava com `ENOTEMPTY` e a sobra travava a troca
+  seguinte. Agora os pacotes `.app` passam pelo `original-fs`, sobras são limpas antes, o antigo volta se o novo não
+  entrar e a causa real vai para o log. Download, redirecionamentos, SHA-256 e conteúdo dos `.dmg` estavam certos.
+- ✅ Depois de instalar, "Manter no Dock" (Mac: preferências do Dock + `killall Dock`) ou "Criar atalho" (Windows:
+  Área de Trabalho e Menu Iniciar com `shell.writeShortcutLink`), opcional, um toque, em vidro. Fixar na barra de
+  tarefas não tem API pública: não é prometido.
+- ⬜ Publicar a 1.4.1 (o workflow da central gera `.dmg`/`.exe` na `main`); quem tem a 1.4.0 recebe pelo "Nova versão".
+- ⬜ Conferir num Mac de verdade: atualizar o Relay instalado antes, "Manter no Dock" e a sobra `.Relay.app.zro-antigo`
+  apagada; no Windows, o atalho na Área de Trabalho.
+
 ## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026, ramo `claude/carro-menu`)
 
 - ✅ Pedido do titular: a lateral e a gaveta do site real mostram o selo neon (anel), não o "///". No computador o ☰ saiu

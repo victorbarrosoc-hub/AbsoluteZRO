@@ -9,7 +9,19 @@ import { ReadableStream } from 'node:stream/web'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { Central, validarCatalogo, arquivoPara, temAtualizacao, lerBuildInstalado, lerRegistro, caminhoDoComando, baixar } = require('../desktop/central.cjs')
+const {
+  Central,
+  validarCatalogo,
+  arquivoPara,
+  temAtualizacao,
+  lerBuildInstalado,
+  lerRegistro,
+  caminhoDoComando,
+  baixar,
+  urlDoDock,
+  itemDoDock,
+  estaNoDock,
+} = require('../desktop/central.cjs')
 
 const HUB = 'https://absolutezro.com'
 const conteudo = Buffer.from('instalador de teste '.repeat(500))
@@ -63,7 +75,39 @@ function resposta(buf, url = 'https://objects.githubusercontent.com/x') {
 }
 
 /** `meusApps`: o que /api/v1/desktop/meus-apps responde (objeto, 401 sem sessão ou 404 no HUB antigo). */
-function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execRespostas = {}, meusApps = catalogo }) {
+/**
+ * O `fs` como o processo principal do Electron o vê: o app.asar é lido como uma pasta. O `rm` recursivo de um .app
+ * entra no app.asar, não apaga o que "está dentro" e falha com ENOTEMPTY (conferido no Electron 44.5.1 de verdade; o
+ * `original-fs` e o `process.noAsar` apagam). Com isso a troca de um app já instalado falhava na 1.4.0.
+ */
+function fsDoElectron() {
+  const temAsar = (p) => {
+    try {
+      if (!fs.lstatSync(p).isDirectory()) return p.endsWith('.asar')
+      return fs.readdirSync(p).some((n) => temAsar(path.join(p, n)))
+    } catch {
+      return false
+    }
+  }
+  const rm = async (p, o) => {
+    if (o && o.recursive && temAsar(p)) {
+      const e = new Error(`ENOTEMPTY: directory not empty, rmdir '${path.join(p, 'Contents', 'Resources')}'`)
+      e.code = 'ENOTEMPTY'
+      throw e
+    }
+    return fs.promises.rm(p, o)
+  }
+  return { ...fs, promises: { ...fs.promises, rm } }
+}
+
+/** Um .app no formato do electron-builder (Info.plist e app.asar). */
+function criarBundle(caminho, build = 39) {
+  fs.mkdirSync(path.join(caminho, 'Contents', 'Resources'), { recursive: true })
+  fs.writeFileSync(path.join(caminho, 'Contents', 'Info.plist'), 'plist')
+  fs.writeFileSync(path.join(caminho, 'Contents', 'Resources', 'app.asar'), `asar b${build}`)
+}
+
+function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execRespostas = {}, meusApps = catalogo, electron = false, atalhos = false }) {
   const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'zro-central-'))
   const chamadas = []
   const avisos = []
@@ -77,7 +121,20 @@ function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execResposta
     temp: path.join(raiz, 'tmp'),
     registro: path.join(raiz, 'dados', 'central.json'),
     pastasMac,
-    fs,
+    // electron: o fs com o app.asar lido como pasta (como no main.cjs) e o original-fs para os pacotes .app
+    fs: electron ? fsDoElectron() : fs,
+    ...(electron ? { fsApps: fs } : {}),
+    ...(atalhos
+      ? {
+          pastasAtalho: { areaDeTrabalho: path.join(raiz, 'Desktop'), menuIniciar: path.join(raiz, 'Programs') },
+          criarAtalho: (lnk, opcoes) => {
+            chamadas.push(['atalho', lnk, opcoes])
+            fs.mkdirSync(path.dirname(lnk), { recursive: true })
+            fs.writeFileSync(lnk, JSON.stringify(opcoes))
+            return true
+          },
+        }
+      : {}),
     fetch: async (url) => {
       chamadas.push(['fetch', url])
       if (url.endsWith('/api/v1/desktop/meus-apps'))
@@ -89,8 +146,7 @@ function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execResposta
       chamadas.push([cmd, ...args])
       if (cmd === 'hdiutil' && args[0] === 'attach') {
         const ponto = args[args.indexOf('-mountpoint') + 1]
-        fs.mkdirSync(path.join(ponto, 'Synquei.app', 'Contents'), { recursive: true })
-        fs.writeFileSync(path.join(ponto, 'Synquei.app', 'Contents', 'Info.plist'), 'plist')
+        criarBundle(path.join(ponto, 'Synquei.app'), 40)
       }
       if (cmd === 'ditto') fs.cpSync(args[0], args[1], { recursive: true })
       const r = execRespostas[cmd]
@@ -251,6 +307,160 @@ test('Mac: sem permissão em /Applications, instala em ~/Applications', async ()
   fs.rmSync(pastasMac[0], { recursive: true })
   await central.instalar('synquei')
   assert.ok(fs.existsSync(path.join(pastasMac[1], 'Synquei.app')))
+})
+
+test('Mac: atualiza o app já instalado (com app.asar) no fs do Electron e não deixa o antigo para trás', async () => {
+  // 1.4.0: depois de trocar, o rm recursivo do .zro-antigo passava pelo fs do Electron e falhava (ENOTEMPTY no
+  // app.asar) → "Não deu para instalar. Tente de novo."; o .zro-antigo ficava e travava toda troca seguinte. Só falhava
+  // com o app já no Mac (SOBEDESCE, Synquei e Relay, instalados antes da central); instalar do zero passava.
+  const { central, pastasMac, avisos } = ambiente({ plataforma: 'mac', electron: true })
+  const final = path.join(pastasMac[0], 'Synquei.app')
+  criarBundle(final, 39)
+  await central.instalar('synquei')
+  assert.equal(fs.readFileSync(path.join(final, 'Contents', 'Resources', 'app.asar'), 'utf8'), 'asar b40')
+  assert.deepEqual(
+    fs.readdirSync(pastasMac[0]).filter((n) => n.includes('zro-')),
+    [],
+    'nem .zro-novo nem .zro-antigo ficam na pasta de apps',
+  )
+  assert.equal(avisos.at(-1).fase, 'pronto')
+  assert.equal(JSON.parse(fs.readFileSync(central.d.registro, 'utf8')).synquei.build, 40)
+})
+
+test('Mac: sem o original-fs (como na 1.4.0), a mesma troca falhava com "Não deu para instalar"', async () => {
+  const { central, pastasMac } = ambiente({ plataforma: 'mac', electron: true })
+  delete central.d.fsApps
+  criarBundle(path.join(pastasMac[0], 'Synquei.app'), 39)
+  criarBundle(path.join(pastasMac[0], '.Synquei.app.zro-antigo'), 38)
+  await assert.rejects(central.instalar('synquei'), /Não deu para instalar\. Tente de novo\./)
+})
+
+test('Mac: sobra .zro-antigo de uma troca que parou no meio (1.4.0) não trava a próxima', async () => {
+  const { central, pastasMac } = ambiente({ plataforma: 'mac', electron: true })
+  const final = path.join(pastasMac[0], 'Synquei.app')
+  criarBundle(final, 40)
+  criarBundle(path.join(pastasMac[0], '.Synquei.app.zro-antigo'), 39)
+  criarBundle(path.join(pastasMac[0], '.Synquei.app.zro-novo'), 40)
+  await central.instalar('synquei')
+  assert.ok(fs.existsSync(path.join(final, 'Contents', 'Info.plist')))
+  assert.deepEqual(
+    fs.readdirSync(pastasMac[0]).filter((n) => n.includes('zro-')),
+    [],
+  )
+})
+
+test('Mac: não deu para pôr o novo no lugar: o app antigo volta inteiro', async () => {
+  const { central, pastasMac } = ambiente({ plataforma: 'mac', electron: true })
+  const final = path.join(pastasMac[0], 'Synquei.app')
+  criarBundle(final, 39)
+  const renomear = fs.promises.rename
+  central.d.fsApps = {
+    ...fs,
+    promises: {
+      ...fs.promises,
+      rename: async (de, para) => {
+        if (de.endsWith('.zro-novo')) throw Object.assign(new Error('EPERM: operation not permitted'), { code: 'EPERM' })
+        return renomear(de, para)
+      },
+    },
+  }
+  await assert.rejects(central.instalar('synquei'), /Não deu para instalar/)
+  assert.equal(fs.readFileSync(path.join(final, 'Contents', 'Resources', 'app.asar'), 'utf8'), 'asar b39')
+  assert.deepEqual(
+    fs.readdirSync(pastasMac[0]).filter((n) => n.includes('zro-')),
+    [],
+  )
+})
+
+test('main.cjs: os pacotes .app passam pelo original-fs (sem o app.asar lido como pasta)', () => {
+  const main = fs.readFileSync(new URL('../desktop/main.cjs', import.meta.url), 'utf8')
+  assert.match(main, /fsApps:\s*require\('original-fs'\)/)
+})
+
+test('Dock: endereço e item no formato das preferências do Dock; reconhece o app que já está lá', () => {
+  assert.equal(urlDoDock('/Applications/Carro do Freela.app'), 'file:///Applications/Carro%20do%20Freela.app/')
+  const item = itemDoDock('/Users/a&b/Applications/Relay.app')
+  assert.match(item, /<key>_CFURLString<\/key><string>file:\/\/\/Users\/a&amp;b\/Applications\/Relay\.app\/<\/string>/)
+  assert.match(item, /<key>tile-type<\/key><string>file-tile<\/string>/)
+  const dock = '(\n {\n "tile-data" = {\n "file-data" = {\n "_CFURLString" = "file:///Applications/Relay.app/";\n "_CFURLStringType" = 15;\n };\n };\n }\n)'
+  assert.equal(estaNoDock(dock, '/Applications/Relay.app'), true)
+  assert.equal(estaNoDock(dock, '/Applications/Synquei.app'), false)
+  assert.equal(estaNoDock('', '/Applications/Relay.app'), false)
+})
+
+test('Mac: "Manter no Dock" só com o toque, acrescenta ao Dock e reinicia; já no Dock, não repete', async () => {
+  let dock = '(\n)'
+  const { central, chamadas, pastasMac } = ambiente({
+    plataforma: 'mac',
+    execRespostas: {
+      defaults: (args) => {
+        if (args[0] === 'write') dock = `( { "tile-data" = { "file-data" = { "_CFURLString" = "${urlDoDock(path.join(pastasMac[0], 'Synquei.app'))}"; }; }; } )`
+        return { stdout: dock }
+      },
+    },
+  })
+  await central.instalar('synquei')
+  assert.equal(
+    chamadas.some((c) => c[0] === 'defaults' && c[1] === 'write'),
+    false,
+    'instalar não mexe no Dock',
+  )
+  let s = (await central.listar()).find((x) => x.id === 'synquei')
+  assert.deepEqual(s.atalho, { tipo: 'dock', feito: false })
+  assert.equal((await central.listar()).find((x) => x.id === 'nossom').atalho, null, 'sem app instalado, sem atalho')
+  assert.deepEqual(await central.criarAtalho('synquei'), { tipo: 'dock', feito: true })
+  const escrita = chamadas.find((c) => c[0] === 'defaults' && c[1] === 'write')
+  assert.deepEqual(escrita.slice(1, 5), ['write', 'com.apple.dock', 'persistent-apps', '-array-add'])
+  assert.equal(escrita[5], itemDoDock(path.join(pastasMac[0], 'Synquei.app')))
+  assert.ok(chamadas.some((c) => c[0] === 'killall' && c[1] === 'Dock'))
+  s = (await central.listar()).find((x) => x.id === 'synquei')
+  assert.deepEqual(s.atalho, { tipo: 'dock', feito: true })
+  await central.criarAtalho('synquei')
+  assert.equal(chamadas.filter((c) => c[0] === 'defaults' && c[1] === 'write').length, 1, 'já no Dock: não acrescenta de novo')
+  assert.equal(chamadas.filter((c) => c[0] === 'killall').length, 1)
+})
+
+test('Mac: app não instalado ou Dock recusou: erro claro', async () => {
+  const { central } = ambiente({
+    plataforma: 'mac',
+    execRespostas: { defaults: (args) => (args[0] === 'write' ? Promise.reject(new Error('x')) : { stdout: '' }) },
+  })
+  await assert.rejects(central.criarAtalho('synquei'), /não está instalado/)
+  await central.instalar('synquei')
+  await assert.rejects(central.criarAtalho('synquei'), /Não deu para pôr o Synquei no Dock/)
+})
+
+test('Windows: "Criar atalho" na Área de Trabalho e no Menu Iniciar (sem fingir que fixa na barra de tarefas)', async () => {
+  const reg = [
+    'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\abc',
+    '    DisplayName    REG_SZ    Synquei 1.2.0',
+    '    DisplayVersion    REG_SZ    1.2.0',
+    '    InstallLocation    REG_SZ    C:\\Programas\\synquei',
+  ].join('\r\n')
+  const { central, chamadas, raiz } = ambiente({ plataforma: 'windows', atalhos: true, execRespostas: { reg } })
+  let s = (await central.listar()).find((x) => x.id === 'synquei')
+  assert.deepEqual(s.atalho, { tipo: 'atalho', feito: false })
+  // o instalador já criou o do Menu Iniciar: fica como está
+  fs.mkdirSync(path.join(raiz, 'Programs'), { recursive: true })
+  fs.writeFileSync(path.join(raiz, 'Programs', 'Synquei.lnk'), 'do instalador')
+  assert.deepEqual(await central.criarAtalho('synquei'), { tipo: 'atalho', feito: true })
+  const criados = chamadas.filter((c) => c[0] === 'atalho')
+  assert.equal(criados.length, 1)
+  assert.equal(path.basename(criados[0][1]), 'Synquei.lnk')
+  assert.equal(path.dirname(criados[0][1]), path.join(raiz, 'Desktop'))
+  assert.deepEqual(criados[0][2], {
+    target: 'C:\\Programas\\synquei\\Synquei.exe',
+    description: 'Synquei',
+    icon: 'C:\\Programas\\synquei\\Synquei.exe',
+    iconIndex: 0,
+  })
+  assert.equal(fs.readFileSync(path.join(raiz, 'Programs', 'Synquei.lnk'), 'utf8'), 'do instalador')
+  s = (await central.listar()).find((x) => x.id === 'synquei')
+  assert.deepEqual(s.atalho, { tipo: 'atalho', feito: true })
+  // sem a ponte do shell: nada de atalho
+  const semPonte = ambiente({ plataforma: 'windows', execRespostas: { reg } })
+  assert.equal((await semPonte.central.listar()).find((x) => x.id === 'synquei').atalho, null)
+  await assert.rejects(semPonte.central.criarAtalho('synquei'), /Atalho indisponível/)
 })
 
 test('Windows: instalador em silêncio, para o usuário atual; atualizar com o app aberto pede para fechar', async () => {
