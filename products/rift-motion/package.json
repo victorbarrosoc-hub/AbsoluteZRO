@@ -1,0 +1,14 @@
+{
+  "name": "rift-motion",
+  "private": true,
+  "type": "module",
+  "description": "Rift Motion: site, marca e o login da Absolute ZRO (api/).",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node publicar.mjs",
+    "migrar": "node scripts/migrar.mjs"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
+  }
+}

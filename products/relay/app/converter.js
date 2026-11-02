@@ -23,7 +23,7 @@ const el = (tag, props = {}, ...filhos) => {
   return n
 }
 const ficha = (texto, extra = '') => el('span', { className: `ficha ${extra}`.trim(), textContent: texto })
-const NOMES_CODEC = { prores: 'ProRes', avc: 'H.264', hevc: 'HEVC', vp9: 'VP9', av1: 'AV1', vp8: 'VP8', aac: 'AAC', mp3: 'MP3', opus: 'Opus', flac: 'FLAC' }
+const NOMES_CODEC = { prores: 'ProRes', prores4444: 'ProRes 4444', avc: 'H.264', hevc: 'HEVC', vp9: 'VP9', av1: 'AV1', vp8: 'VP8', aac: 'AAC', mp3: 'MP3', opus: 'Opus', flac: 'FLAC' }
 const nomeCodec = (c) => NOMES_CODEC[c] ?? (String(c).startsWith('pcm') ? 'PCM' : String(c ?? '').toUpperCase())
 
 // ─────────── estado ───────────
@@ -102,7 +102,8 @@ function cartaoPreset(p) {
     desenharAbas()
     atualizarTudo()
   }
-  const personalizar = p.daEquipe ? null : el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
+  // transparência e chroma não viram preset da pessoa (o editor só faz MP4 sem alfa: o fundo sumiria calado)
+  const personalizar = p.daEquipe || p.grupo === 'Transparência' ? null : el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
   if (personalizar) personalizar.onclick = (ev) => {
     ev.preventDefault()
     ev.stopPropagation()

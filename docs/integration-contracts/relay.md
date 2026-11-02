@@ -238,6 +238,27 @@ Lado do SOBEDESCE (30/10/2026): anfitrião `relay` em `web/public/app/lib/embuti
 pela fila de envios; o estado final é `enviado`, o Drive confirma o tamanho, não o MD5). No Relay o botão aparece com
 `RECURSOS.drive` (`DRIVE=released` no projeto `relay`; nas prévias e no `npm run dev`, já).
 
+## Transparência e fundo chroma (pedido do titular, 01/11/2026)
+
+Para o motion (ADR 0035) e para quem entrega arte com fundo transparente. Grupo **Transparência** nos presets:
+
+| Preset           | Sai                                                                   | Onde                                                                             |
+| ---------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Transparente     | WebM, VP9 com alfa (`alpha_mode=1`) e Opus                            | navegador (Chrome, Edge; o Safari não grava VP9 e o Relay diz isso) e computador |
+| ProRes 4444      | MOV, ProRes 4444 com alfa de 16 bits e PCM 24 bits                    | só computador (Máxima qualidade): no navegador o plano recusa com `computador`   |
+| Fundo verde/azul | MP4, H.264 com a transparência pintada de #00B140 ou #0047BB (chroma) | navegador e computador (no computador, sempre o x264, mistura em RGB e BT.709)   |
+
+- Entram arquivos com alfa que o Mediabunny reconhece: WebM com alfa e ProRes 4444/4444 XQ (`canBeTransparent`). Sem
+  alfa no arquivo, o plano avisa ("não tem transparência") e sai com o fundo dele.
+- Faixas de tela fixa saem transparentes (no chroma, da cor do fundo).
+- No navegador, transparência e chroma passam pelo compositor do motor (`compositor` em `app/motor.js`): o quadro com
+  alfa é desenhado num canvas do tamanho da saída, limpo ou pintado com a cor. A escala da placa (Lanczos) trabalha em
+  YUV sem alfa, então esses presets usam o canvas do navegador (a ficha diz "alta qualidade do navegador").
+- O Premiere não lê o alfa do WebM: para ele, ProRes 4444. O "Fundo verde" é para editor sem alfa; o AEON recorta com
+  "Remover fundo verde" no Inspector.
+- Os presets de transparência não viram preset da pessoa (o editor de presets só faz MP4 sem alfa). O SOBEDESCE de
+  computador mostra o grupo; o app do celular ainda não.
+
 ## Eventos e conta
 
 - **Evento** `media.conversion.completed` (fonte `relay`): só quando a primeira conversão passar pelo HUB (fila do
@@ -260,7 +281,9 @@ pela fila de envios; o estado final é `enviado`, o Drive confirma o tamanho, n�
 
 Redes: YouTube 1080p, YouTube 1440p (o truque da nitidez), YouTube 4K, YouTube Shorts, Reels · No Compress, Instagram
 Feed 4:5, TikTok, WhatsApp, LinkedIn, X. Trabalho: Vimeo, Apple HEVC, Slides, Vídeo de fundo, Proxy para edição. TV:
-Smart TV, Smart TV 4K. Tamanho: Discord (20 MB), E-mail (25 MB), Tamanho exato. Áudio: MP3 320, AAC 256, WAV 48 kHz.
+Smart TV, Smart TV 4K. Transparência: Transparente (WebM VP9 com alfa), ProRes 4444 (com alfa, só no computador), Fundo
+verde e Fundo azul (chroma em H.264). Tamanho: Discord (20 MB), E-mail (25 MB), Tamanho exato. Áudio: MP3 320, AAC
+256, WAV 48 kHz.
 
 **Presets da pessoa** (`src/personalizado.js`, ficha versão 2): codec; tamanho (lado menor ou tela fixa com faixas,
 preencher ou esticar); recorte; giro e espelho; cadência até um teto (divide por inteiro) ou exata (23,976, 29,97,
@@ -270,5 +293,6 @@ constante (RF do x264; no navegador, a tabela do preset de partida) ou tamanho m
 nitidez, volume normalizado em LUFS: só no "Máxima qualidade", e o navegador diz que ficaram de fora); cor da Revela.
 Fichas da versão 1 abrem iguais.
 
-Cada preset traz a fonte e a data da conferência (selo Oficial ou Mercado). No computador ainda virão ProRes, DNxHR e
-HDR 10 bits; no navegador eles não existem (o WebCodecs não grava ProRes nem DNxHR).
+Cada preset traz a fonte e a data da conferência (selo Oficial ou Mercado). No computador já sai ProRes 4444 (com
+alfa); ainda virão ProRes 422, DNxHR e HDR 10 bits. No navegador eles não existem (o WebCodecs não grava ProRes nem
+DNxHR).

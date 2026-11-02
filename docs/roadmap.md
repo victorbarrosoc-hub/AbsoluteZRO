@@ -134,6 +134,41 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ TPeasy com conta única: "Criar conta" abre o cadastro da Absolute ZRO (`prompt=create`), o código por e-mail do Supabase vale só para contas antigas e o Google saiu do app; sem `tpeasy` em `zro_products`, a conta mostra "ainda não tem acesso" (o teleprompter continua aberto).
 - ✅ Perfil único no Synquei e no TPeasy (27/10/2026): foto e nome da conta Absolute ZRO, relidos a cada abertura em `/oauth/userinfo` (refresh token cifrado só em `/api/zro`), e **Editar na conta Absolute ZRO** no lugar de editar nome no app. ⬜ Validar contra o HUB de verdade depois do deploy.
 - ✅ Synquei de computador com a conta Absolute ZRO (27/10/2026): a mesma tela do site (entrar, foto e nome na barra e em Ajustes, editar na conta, sair) com o cliente público `synquei-desktop` (navegador do sistema + 127.0.0.1, PKCE). ⬜ Validar num Mac/Windows de verdade contra o absolutezro.com.
+- 🟡 Rift Motion (01/11/2026, [ADR 0035](decisions/0035-motion-2d-3d.md)): nome escolhido pelo titular, marca em vetor
+  (`products/rift-motion/marca/`, gerada por `vetorizar.py`: RIFT, RIFT MOTION, o R, ícone do app e favicon) e o
+  protótipo de desenho (escuro por padrão, a dobra laranja em 3D ao vivo, entrar com o R animado, estúdio), **no ar em
+  rift.absolutezro.com** (projeto Vercel `rift-motion`, autorizado pelo titular). Login único (cliente `rift-web` cadastrado no
+  banco AbsoluteZRO-SP, `api/zro/*`) e painel interno (Início, Projetos, Modelos, Biblioteca, Exportações, estúdio por
+  projeto). Login ligado (01/11/2026, `ZRO_CLIENT_SECRET` só na Vercel), app da família fora do
+  catálogo do HUB (não aparece no painel do ecossistema, a pedido do titular). Banco próprio no ar (schema `rift`, RLS forçado, testes de isolamento). O estúdio edita camadas de
+  verdade (01/11/2026): texto, forma e objeto 3D novos, arrastar no quadro (3D por clique), keyframe ◆ por propriedade,
+  arrastar keyframe na timeline, desfazer/refazer (⌘Z), mostrar/esconder, duplicar, ordenar e apagar; a cena (v2) fica
+  salva por projeto no banco. Mídia (01/11/2026): imagem e vídeo viram camada (o arquivo fica no aparelho, em
+  IndexedDB; a cena guarda só nome e tamanho; o vídeo anda com a timeline, sem som; em outro aparelho a camada pede o
+  arquivo de novo) e entram na Biblioteca. Painel modelo A "Toque e anime" (01/11/2026, escolha do titular entre três):
+  projeto novo começa vazio (Mídia, Texto ou Modelo), barra de adicionar embaixo no celular, tocar numa camada abre a
+  gaveta com Movimento (Entrar, Quicar, Girar, Aparecer, Crescer, Sair, duração), Estilo e Ajuste fino (keyframes);
+  os movimentos viram keyframes de verdade. IA (01/11/2026): "Gerar movimento com IA" anima uma camada de imagem pela
+  Higgsfield conectada uma vez na conta Absolute ZRO (`/conexoes`, vale para todos os apps; desde 01/11/2026 o Rift
+  pede pelo repasse `/api/zro/higgsfield` ao HUB e não guarda credencial; a conexão própria por conta e por chave da
+  API saiu). O arquivo vai do aparelho direto para a Higgsfield, o vídeo volta como camada no lugar da imagem. A Z no Rift (barra "Peça à Z", ações
+  com desfazer) só para o titular (`RIFT_Z_LIBERADOS`, teto `RIFT_Z_LIMITE_DIA`) é a Z do HUB: o Rift pede em
+  `POST /api/v1/ia/rift` com a credencial do cliente `rift-web`, a chave do Claude fica só no HUB, o HUB confere a lista
+  dele (`IA_RIFT_LIBERADOS`) e o gasto entra no teto do dia da Z e nos Custos. Créditos (01/11/2026): a folha mostra o saldo e o plano da conta, o medidor (usado no mês × disponível,
+  pelo extrato da Higgsfield) e o que o Rift gastou, e três opções de gasto (Rápido, Equilibrado, Máxima qualidade;
+  curto ou longo) com o preço que a Higgsfield informa antes de gerar; sem saldo, a opção fica travada (migração 0002).
+  Prévias (01/11/2026): "Criar com IA" e o passo "1 · Ver em imagem" geram 2 ou 4 telas baratas (conta: GPT Image 2.5
+  Flare, a imagem da camada pode ir de referência) no formato do projeto; a escolhida vira camada e segue
+  para "2 · Animar" (migração 0003). App de computador (01/11/2026, `products/rift-motion/desktop`): o site numa janela
+  (Mac e Windows), na moldura do Relay mas feito para computador (menus de programa, arrastar do Finder, progresso
+  no Dock e aviso quando a IA termina, sem página de apresentação); instala e atualiza só pela central
+  (catálogo `rift-motion` já no HUB), Release `rift-motion-versao-de-teste` pelo `rift-motion-desktop.yml` quando
+  chegar à main. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay, primeiro build do app na main.
+- ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
+  WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
+  computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo
+  verde** no Inspector (cor medida na borda, recorte na placa, igual na prévia e no vídeo final). ⬜ Trilha de cima no
+  AEON (outro vídeo por baixo do recorte), o grupo no app do celular do SOBEDESCE e a medida em Mac e Windows.
 - ✅ TPeasy em tpeasy.absolutezro.com (31/10/2026): migração `0045` (catálogo e Abrir do HUB no subdomínio; retorno
   novo no cliente `tpeasy-web`, o antigo continua), login do TPeasy aceitando os dois endereços (o `tpeasy.vercel.app`
   segue valendo, sem redirecionar, porque os roteiros ficam presos ao endereço), OG, Downloads e menus da família na web.

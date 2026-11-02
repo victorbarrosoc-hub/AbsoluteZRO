@@ -7,7 +7,8 @@
 // quadro novo pelo movimento, app/fluxo.js; o padrão), mistura dos dois vizinhos ou o quadro mais próximo. Corte de cena
 // entre os dois vizinhos nunca é interpolado. Sem o motor de fluxo (não carregou), vai o quadro mais próximo, e o
 // resultado diz quantos quadros saíram de cada jeito. Os efeitos sonoros entram por cima, no quadro exato em que
-// começam (src/efeitos.js), com o volume de cada um, em qualquer velocidade.
+// começam (src/efeitos.js), com o volume de cada um, em qualquer velocidade. Remover fundo verde (src/chroma.js): o
+// quadro passa pelo recorte da placa (app/chroma.js) antes dos ajustes, e o que era fundo mostra o preto de baixo.
 
 import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
@@ -17,6 +18,7 @@ import { paraSegundos, fpsNumero } from '../src/tempo.js'
 import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
 import { efeitosNaLinha, misturarEfeitos } from '../src/efeitos.js'
+import { Recorte } from './chroma.js'
 import { misturarTrecho, TAXA as TAXA_FAIXAS } from '../src/faixas.js'
 
 const RAMPA_S = 0.004
@@ -84,6 +86,13 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
     }
 
   const clipes = new Map(p.linha.clipes.map((c) => [c.id, c]))
+  // remover fundo verde: um recorte na placa, criado só se algum clipe pede (sem WebGL2, o render para com o motivo)
+  let recorte = null
+  const recortado = (img, aj) => {
+    recorte ??= new Recorte(new OffscreenCanvas(img.width, img.height))
+    if (recorte.tela.width !== img.width || recorte.tela.height !== img.height) Object.assign(recorte.tela, { width: img.width, height: img.height })
+    return recorte.desenhar(img, aj)
+  }
   // quantos quadros da câmera lenta saíram de cada jeito (real = a origem tinha o quadro)
   const retempo = { real: 0, fluxo: 0, mistura: 0, proximo: 0, corte: 0 }
   const tela2 = new OffscreenCanvas(1, 1)
@@ -154,6 +163,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
           if (f >= 0.97 || f <= 0.03) retempo.real++
           else img = await entreQuadros(s.modo, r.canvas, r2.canvas, f)
         } else if (entre && img) retempo.real++
+        if (img && c?.chroma) img = recortado(img, c.chroma)
         if (img) {
           // ajustes do clipe (escala, posição) e depois o zoom do momento: a mesma conta da prévia (src/quadro.js); a
           // estabilização (src/estabilizar/aplicar.js) vem antes, no centro da imagem, pelo instante de origem

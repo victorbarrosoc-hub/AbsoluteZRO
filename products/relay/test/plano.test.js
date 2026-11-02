@@ -12,7 +12,7 @@ test('todo preset tem grupo, formato, fonte com data (ou é conta do Relay) e á
     assert.ok(!ids.has(p.id), `id repetido: ${p.id}`)
     ids.add(p.id)
     assert.ok(GRUPOS.includes(p.grupo), p.id)
-    assert.ok(['mp4', 'mp3', 'wav', 'm4a'].includes(p.formato), p.id)
+    assert.ok(['mp4', 'mp3', 'wav', 'm4a', 'webm', 'mov'].includes(p.formato), p.id)
     assert.ok(p.audio, p.id)
     for (const f of p.fontes) {
       assert.match(f.url, /^https:\/\//, p.id)
@@ -20,7 +20,7 @@ test('todo preset tem grupo, formato, fonte com data (ou é conta do Relay) e á
       assert.ok(['oficial', 'mercado'].includes(f.tipo))
     }
     if (!p.fontes.length) assert.ok(p.ajustavel, `${p.id} sem fonte`)
-    if (p.video && !p.tamanhoMax) assert.ok(p.video.kbps, `${p.id} sem tabela de bitrate`)
+    if (p.video && !p.tamanhoMax && p.video.codec !== 'prores4444') assert.ok(p.video.kbps, `${p.id} sem tabela de bitrate`)
   }
 })
 

@@ -27,6 +27,107 @@ Branch `claude/rift-higgsfield-hub`, a partir da main com a `0052`.
 - Não testado em produção: o deploy do HUB aplica a `0054`; a conta `victor@absolutezro.com` (admin) entra no Rift, a
   do Gmail deixa de entrar até o lançamento (decisão do titular).
 
+## Rift Motion: Higgsfield pela central (01/11/2026)
+
+Branch `claude/motion-2d-3d`. Depende da migration `0054` do HUB (PR `claude/rift-higgsfield-hub`).
+
+- `products/rift-motion`: `npm test` verde. `test/ia.test.js` com a Absolute ZRO simulada: o repasse
+  `/api/zro/higgsfield` leva só os parâmetros conferidos e o token da pessoa, devolve a resposta do HUB como veio (inclusive
+  `sem_conexao` com o link das Conexões), recusa sem sessão, tokens de outra pessoa, outra origem, método e caminho
+  errados sem chamar o HUB, renova o token vencido e regrava o cookie, e pede para entrar de novo com o refresh recusado.
+- Desktop: `npm test` 27/27 (a Higgsfield não abre mais dentro da janela).
+- Tela conferida no Chromium com a API simulada: "Conecte a sua Higgsfield na conta Absolute ZRO" com "Já conectei" e o
+  painel (saldo, plano, medidor, o que o Rift gastou no mês, prévias com preço), sem erro no console.
+- Não testado: gerar de verdade pela central com a conta do titular (depois do deploy do HUB com a `0054` e do Rift).
+
+## Rift Motion: login, painel e banco próprio (01/11/2026)
+
+Branch `claude/motion-2d-3d`, no ar em rift.absolutezro.com (projeto Vercel `rift-motion`).
+
+- App de computador do Rift, feito para computador (01/11/2026, pedido do titular: "não é pra ser uma cópia do web"):
+  menus de programa (Arquivo, Editar, Camada, Reproduzir, IA, Atalhos), arrastar do Finder para o estúdio, barra de
+  progresso no Dock e notificação quando a IA termina, sem a página de apresentação, título = projeto. No Chromium com a
+  ponte do app simulada (1440 × 900): `/` vira `#app`; Novo projeto pelo menu; Texto, Forma, Duplicar, Desfazer e
+  Refazer mudam a cena (3 → 4 → 3 → 4 camadas); soltar um PNG mostra "Solte para entrar no projeto" e cria a camada;
+  Atalhos com 15 linhas; sem erro no console. `npm test` do app 27/27 (novo `test/comandos.test.mjs`); `--smoke` OK.
+- App de computador do Rift (01/11/2026, `products/rift-motion/desktop`): `npm test` 24/24 (regras com o login da
+  Higgsfield na janela e parecidos recusados, deep link `rift://`, aviso de versão `rift-motion`, cópias do hub-desktop,
+  ícones e nomes `RiftMotion-…` iguais ao catálogo do HUB); `--smoke` (Electron 44.5.1, xvfb) SMOKE OK com a tela "Sem
+  conexão · Rift Motion" conferida na captura. Não medido: o `.dmg` e o `.exe` (saem no GitHub Actions na main).
+- Z do HUB no Rift (01/11/2026): `tests/integration/z-rift.test.ts` (novo, 4/4): outro cliente, conta fora da lista,
+  conta da lista que nunca entrou no Rift, conta suspensa, pedido vazio, sub inválido e cena grande são recusados; sem
+  teto = bloqueado, passou do teto = bloqueado, uso idempotente; a tela só recebe as cinco ações, com valores limpos.
+  Rift `npm test` 13/13 (novo: repassa ao HUB com o Basic do `rift-web`, filtra ação desconhecida, HUB sem teto vira
+  "desligada", HUB recusando a lista vira 403, limite do dia do Rift). Sem chave do Claude no Rift (SDK removido).
+
+- Estúdio com camadas de verdade (01/11/2026): no navegador (Chromium), com as rotas e um Postgres local, criar um
+  projeto, pôr texto, forma e 3D (3 → 6 camadas), arrastar a forma no quadro (120 × 40 px), marcar ◆, desfazer e
+  refazer, esconder a esfera e renomear; depois de limpar o aparelho e reabrir, as 6 camadas e o nome novo voltam do banco
+  (cena `v: 2`). Sem erros no console. O servidor aceita a cena v2 (lista de até 100 camadas com id e tipo) e recusa o
+  resto (teste novo em `banco.test.js`). Não testado: tela de toque.
+- Mídia no estúdio (01/11/2026): no Chromium, com o CSP de produção (`media-src 'self' blob:` novo), escolher um PNG
+  e um WebM pelo botão Mídia cria 2 camadas no tamanho certo; tocando, o vídeo anda junto com a timeline (sem pausa);
+  depois de limpar o aparelho e reabrir, as duas voltam do IndexedDB; num navegador novo aparece "não está neste
+  aparelho" no lugar; os dois arquivos entram na Biblioteca. Corrigido: a camada escolhida no quadro herdava o estilo do
+  seletor (`.sel`, pílula de 32 px). Não testado: Safari e vídeo grande.
+- IA no Rift (01/11/2026): `npm test` **11/11** (6 novos em `test/ia.test.js`, Postgres de verdade e Higgsfield simulada):
+  chave conferida sem gastar e guardada cifrada (o banco não tem a chave em claro; `rift_app` não lê `apps_oauth`); gerar
+  com a chave (envio pré-assinado, idempotência, na fila → gerando → pronto, pronto não pergunta de novo, outra pessoa não
+  vê); gerar com a conta pelo MCP em SSE (sessão, `media_upload` → `media_confirm` → `generate_video` com
+  `use_unlim: false` e sem som → `jobs_wait`); token vencido renova, renovação recusada desconecta; a Z só para quem está
+  liberado e, sem chave ou teto, diz que não está ligada. No Chromium com o CSP de produção: chave errada recusada, chave
+  certa conectada, a imagem sobe como JPEG (PUT), o vídeo desce da CDN e entra como camada "(IA)" no lugar da imagem
+  (escondida). Migração 0001 aplicada no Supabase (dono `rift`, RLS). Não testado: login real da Higgsfield (o registro
+  do Rift como app acontece no primeiro "Entrar com a Higgsfield") e uma geração real (gasta crédito).
+- Prévias em imagem (01/11/2026): `npm test` **12/12**: conta com referência (vários jobs, espera todos, pega o `rawUrl`
+  e não a miniatura), `use_unlim: false`, preço antes; chave pelo Soul só com texto (referência recusada); resultado só
+  da dona. No Chromium: projeto vazio → "Criar com IA" → passo 1 (passo 2 travado) → "Gerar 4 prévias · 1 crédito" →
+  4 prévias no formato do projeto → "Usar e animar" vira a camada "Tela (prévia)" e abre o passo 2 com as três opções.
+  Não testado: geração real (gasta crédito).
+- Créditos e opções de gasto (01/11/2026): `npm test` **11/11**: o painel traz saldo e plano, o uso do mês (gastos menos
+  devoluções, só do mês, pelo extrato) e as três opções com o custo de `get_cost` (conta) ou `/estimate` (chave); sem
+  saldo para a opção, recusa com 402 e não gera; o custo informado fica na geração e soma em "pelo Rift". No Chromium:
+  65,41 créditos, Plano Pro, barra usado/disponível, Rápido 5 · Equilibrado 5 · Máxima 30 créditos (longo: 10 · 10 ·
+  60), botão "Gerar · 5 créditos", "sobram 60,41". Migração 0002 aplicada no Supabase. Não testado: saldo e extrato
+  reais pela conta conectada (o formato foi conferido nas ferramentas da Higgsfield desta sessão).
+- Painel modelo A (01/11/2026): no Chromium a 390 px, projeto novo abre vazio com Mídia/Texto/Modelo e a barra de
+  baixo; Texto abre a gaveta na aba Movimento; Entrar + Sair geram keyframes de x e opacidade (acesos no Ajuste fino); ✕
+  fecha; 3D + Quicar gera y e opacidade; a linha do tempo abre pelo botão; sem rolagem lateral; depois de reabrir, o
+  movimento e as trilhas voltam do banco. A 1360 px: abas no painel da direita, sem ✕. Modelo pronto num projeto vazio
+  põe as 6 camadas. Corrigido: as camadas 2D cobriam o quadro e o toque não chegava aos objetos 3D. Não testado: iPhone
+  de verdade (Safari).
+- `products/rift-motion` `npm test`: **6/6**. Login: sem cliente configurado, `/eu` diz "não configurado" e `/entrar`
+  volta com `?zro=config`; a volta fica no site (o hash do painel passa, endereço externo vira `/#app`). Banco num
+  Postgres de verdade montado como no Supabase (papel `rift` dono, `rift_app` sem login): migração não repete e recusa
+  arquivo mudado; Ana não vê, muda nem apaga projeto do Beto pelas rotas (404); direto no banco, como `rift_app` com o
+  sub do Beto, o update no projeto da Ana não toca nada e o insert forjado em nome da Ana é recusado pelo RLS; nem o
+  dono do schema enxerga linhas (RLS forçado); exportação não prende em projeto alheio; sem sessão 401, outro site 403,
+  dado fora do formato 400.
+- Ponta a ponta local (site + rotas + Postgres, sessão assinada): criar projeto, exportar, limpar o armazenamento do
+  navegador e recarregar: projeto e exportação voltam do banco, saudação com o nome da conta, sem erros no console.
+- Produção: `/api/rift/saude` → `{ ok: true, migracoes: 1 }` pelo pooler de transação (aws-1-sa-east-1);
+  `/api/rift/projetos` sem sessão → 401; o HUB aceita o cliente `rift-web` e leva à tela de entrar. `anon` e
+  `authenticated` sem uso do schema `rift`. Não testado: o login completo com uma conta real.
+
+## Transparência e chroma: Relay, SOBEDESCE e AEON (01/11/2026)
+
+Branch `claude/motion-2d-3d`. Neste ambiente (Linux, Node 22, ffmpeg com libvpx-vp9 e prores_ks, Chromium do Playwright
+1.63 com SwiftShader).
+
+- Relay `npm test`: **131/131**. Novo `test/transparencia.test.js`: plano e ficha dos quatro presets, ProRes 4444
+  recusado no navegador (`computador`), linhas do ffmpeg, e o resultado lido pixel a pixel. Navegador (WebM e ProRes
+  4444 de entrada): WebM com `alpha_mode=1`, alfa 255 na metade opaca e 0 na transparente; Fundo verde ≈ (0, 177, 62).
+  Computador: ProRes 4444 (`yuva444p12le`) e WebM com alfa 0 na metade transparente; Fundo verde dentro de ±12 de
+  #00B140 (a primeira versão saiu (0, 152, 62) pela matriz BT.601 na mistura; corrigido, ver
+  `products/relay/docs/QUALIDADE.md`).
+- SOBEDESCE `npm run test:fast`: 805 passam; `lan.test.js` "entre computadores" falhou uma vez na rodada inteira e passa
+  sozinho, com e sem estas mudanças (rede local do ambiente). Cópias do núcleo conferidas pelo `copias.test.js` do Relay.
+- AEON `npm test`: 197 de 198 na rodada inteira; a que faltou (estabilizar o take real) achou dois `.estab-resumo`
+  porque o bloco novo reaproveitava a classe da estabilização. Classes separadas, ela passa (rodada sozinha). Novo `test/chroma.test.js`: a conta (verde some,
+  sombra no fundo some, pele fica, borda meio a meio entre 0,3 e 0,7, reflexo verde baixa), cor medida na borda, linha
+  imutável e o shader WebGL2 no Chromium igual à conta (alfa ±0,02).
+- Não medido: Mac e Windows de verdade, SSIM das bordas do chroma e o recorte num take real de fundo verde.
+
 ## Higgsfield nas Conexões e "Criar com IA" no AEON (01/11/2026, ADR 0037)
 
 Branch `claude/ai-edit-primeiro-recorte`, com a main mesclada (a main ficou com a 0050 dos sons e a 0051 do Synquei; a

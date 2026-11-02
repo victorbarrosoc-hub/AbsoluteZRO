@@ -22,7 +22,11 @@ rebranding troca tudo num lugar só.
    por clipe ("Gancho", "B-roll"…) com filtro. Legenda animada (Destaque, Pop, Limpa) e texto corrigível com dois
    cliques. **Faixa de efeitos sonoros** (FX): um som do computador entra no ponto (S ou o botão de onda), preso à
    imagem como o clipe conectado do Final Cut (cortar, aparar ou mover o trecho leva o efeito junto); arrastar com ímã,
-   volume no Inspector, ⌫ tira. Aba **Sons** (Sonoplasta): os cortes e marcadores viram momentos; tocar num momento
+   volume no Inspector, ⌫ tira. **Remover fundo verde** (Inspector, 01/11/2026): um toque mede a cor do fundo na borda do
+   quadro e recorta na placa de vídeo (WebGL2, `src/chroma.js` + `app/chroma.js`), com Tolerância, Suavidade da borda,
+   Tirar o verde da borda e as chaves Verde/Azul; na prévia e no vídeo final, com preto onde era fundo (a trilha de
+   cima, para pôr outro vídeo por baixo, ainda não existe). O recorte não vai nos XML/OTIO: o outro editor recebe o
+   clipe com o fundo. Aba **Sons** (Sonoplasta): os cortes e marcadores viram momentos; tocar num momento
    busca o som que combina (regras em [`presets/sonoplasta.v1.json`](presets/sonoplasta.v1.json)) no banco de sons
    livres pela Absolute ZRO (Openverse: CC0, CC BY e domínio público), em português; ouvir, colocar no momento com o
    crédito anotado. **Meu banco**: a pasta do Drive da pessoa com os sons dela (cola o link uma vez; pela conexão do

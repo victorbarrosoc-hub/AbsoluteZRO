@@ -112,3 +112,21 @@ faixas em código de S-Log3 / S-Gamut3.Cine (`test/carta.js`):
 O que pesa e não é da cor: o codificador H.264 do navegador já desvia ~3/255 no croma sem cor nenhuma, e o navegador
 de teste (SwiftShader) converte o YUV de 10 bits do ProRes em RGB com ~2/255 de diferença do ffmpeg no vermelho. A CST
 amplia isso nas cores saturadas (a curva de log é íngreme). Medir em Mac e Windows de verdade no laboratório.
+
+## Transparência e fundo chroma (01/11/2026)
+
+Medido em `test/transparencia.test.js`: um quadro 320×180 com a metade esquerda opaca (testsrc2) e a direita
+transparente, em WebM VP9 com alfa e em ProRes 4444 (10 bits com alfa). Cor lida pelo ffmpeg no primeiro quadro (média
+de 2×2 pixels).
+
+| Onde | Preset | Metade opaca | Metade transparente |
+| --- | --- | --- | --- |
+| Navegador (Chromium, WebM e ProRes de entrada) | Transparente (WebM) | alfa 255 | alfa 0 |
+| Navegador (Chromium, WebM e ProRes de entrada) | Fundo verde (H.264) | a imagem | verde ≈ (0, 176–177, 60–62); o alvo é (0, 177, 64) |
+| Computador (ffmpeg) | ProRes 4444 | alfa 255 | alfa 0 (`yuva444p12le` lido de volta) |
+| Computador (ffmpeg) | Transparente (WebM) | alfa 255 | alfa 0 |
+| Computador (ffmpeg) | Fundo verde | a imagem | verde dentro de ±12 do alvo |
+
+A primeira versão do chroma no ffmpeg saiu com o verde escuro (0, 152, 62): a mistura em YUV convertia com a matriz
+BT.601. Agora a mistura é em RGB e a volta para YUV tem a matriz BT.709 explícita, como no resto do Relay. Ainda não
+medido: SSIM das bordas e velocidade em Mac e Windows de verdade.
