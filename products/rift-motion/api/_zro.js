@@ -271,11 +271,13 @@ export function perfilDeClaims(dados) {
     atualizado: Number.isFinite(dados.updated_at) ? Math.floor(dados.updated_at) : null,
     organizacao: org ? { id: String(org.id || '').slice(0, 100), nome: org.name.slice(0, 120), papel: typeof org.role === 'string' ? org.role.slice(0, 40) : null } : null,
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 30).map((p) => p.slice(0, 60)) : [],
+    // os apps que a pessoa vê (gate de lançamento do HUB, claim zro_release): o ecossistema do painel mostra só estes
+    apps: dados.zro_release && typeof dados.zro_release === 'object' ? Object.entries(dados.zro_release).filter(([k, v]) => /^[a-z0-9-]{1,40}$/.test(k) && (v === 'released' || v === 'allowed')).map(([k]) => k).slice(0, 30) : null,
   }
 }
 
 /** O que a sessão (rl_conta) guarda da pessoa: só a cópia dos claims, com a hora da última leitura (`lido`). */
-export const sessaoDe = (p, agora = Date.now()) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, conta: p.conta, org: p.organizacao, produtos: p.produtos, lido: Math.floor(agora / 1000) })
+export const sessaoDe = (p, agora = Date.now()) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, conta: p.conta, org: p.organizacao, produtos: p.produtos, apps: p.apps ?? null, lido: Math.floor(agora / 1000) })
 
 /** Tokens que vão para o cofre: access token (10 min) e refresh token (roda a cada troca). */
 function tokensDe(corpo, agora = Date.now()) {

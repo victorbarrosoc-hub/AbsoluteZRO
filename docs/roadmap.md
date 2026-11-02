@@ -163,7 +163,13 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (Mac e Windows), na moldura do Relay mas feito para computador (menus de programa, arrastar do Finder, progresso
   no Dock e aviso quando a IA termina, sem página de apresentação); instala e atualiza só pela central
   (catálogo `rift-motion` já no HUB), Release `rift-motion-versao-de-teste` pelo `rift-motion-desktop.yml` quando
-  chegar à main. ⬜ INPI, editor de curvas em gráfico, exportar de verdade pelo Relay, primeiro build do app na main.
+  chegar à main. Visual A (02/11/2026, escolhido pelo titular entre três propostas "mais parecido com o DaVinci
+  Resolve"): grafite, estúdio com Mídia e Camadas à esquerda, transporte embaixo do visor com o timecode grande,
+  Inspector à direita, trilhas V/A com clipes sólidos e a barra de páginas no rodapé (Projetos, Modelos, Mídia, Animar,
+  Entregar; só as que existem), painel como gerenciador de projetos com a ficha do projeto à direita (um clique escolhe,
+  dois abrem); o ecossistema mostra só os apps que a pessoa vê (claim `zro_release`), com o Quasar no lugar do NOSSOM;
+  no celular o visor fica do tamanho da imagem e a linha do tempo aberta embaixo. ⬜ INPI, editor de curvas em gráfico,
+  exportar de verdade pelo Relay, primeiro build do app na main, páginas Nós e Som quando existirem.
 - ✅ Transparência e chroma (01/11/2026, pedido do titular): o Relay ganha o grupo **Transparência** (Transparente em
   WebM VP9 com alfa, ProRes 4444 com alfa só no computador, Fundo verde e Fundo azul em H.264), no navegador, no
   computador e no SOBEDESCE de computador ([contrato](integration-contracts/relay.md)). O AEON ganha **Remover fundo
