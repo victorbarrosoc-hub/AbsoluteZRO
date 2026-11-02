@@ -8,8 +8,6 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   embaixo de "Entrar com Absolute ZRO". Sai da conta do app (revoga o acesso ao HUB) e pede a conta de novo com
   `prompt=login`, mesmo com outra sessão aberta na Absolute ZRO. Pedido do titular: o app reaproveitava calado a conta
   aberta e não deixava entrar com outra. O SOBEDESCE já tinha.
-- ⬜ Maestro: a cópia de `presets.js`/`plano.js` do Relay está atrás da transparência/chroma (`f5163bca`); o teste
-  `tests/relay.test.mts` falha na `main` desde então. Recopiar muda o conversor do Maestro: fica para um PR próprio.
 
 ## Carro do Freela: modo demonstração em /demo (02/11/2026, ramo `claude/carro-demo`)
 

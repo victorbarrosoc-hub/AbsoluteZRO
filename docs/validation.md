@@ -4778,6 +4778,6 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Relay `npm test` 133/133. Synquei `npm test` 163 ok, 10 pulados (WebKit, luajit, root), com a página `/entrar/` nova da `main` (`tests/entrar.test.mjs` 7/7). TPeasy
   `node --test tests/*.test.mjs` 80 ok, 4 pulados (WebKit).
 - Maestro: typecheck, lint, format e build ok; `tests/zro.test.mts` 29/29 (inclui o `invalid_scope` mantendo
-  `outra=1`). `npm test` 718/719: a falha é a cópia do Relay (`tests/relay.test.mts`), que já falha na `main`.
+  `outra=1`); `tests/relay.test.mts` 37/37 depois do merge da `main` (a cópia do Relay já atualizada lá).
 - `scan-secrets`: nenhum segredo.
 
