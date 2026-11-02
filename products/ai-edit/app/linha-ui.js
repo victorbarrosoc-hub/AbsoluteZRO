@@ -3,9 +3,12 @@
 // onda são canvases do tamanho da janela, redesenhados na rolagem: a linha pode ter horas sem passar do limite de canvas.
 // Ímã: buscar na régua, aparar e arrastar efeito grudam nas bordas dos clipes, nos marcadores e no ponto (Alt solta o
 // ímã). O efeito se arrasta sozinho (não empurra nada): ele se prende à imagem que estiver embaixo quando soltar.
+// Com trilha (src/trilha.js, a música do clipe musical) entram duas faixas: as partes da música, acesas pela energia
+// (o refrão é a mais clara), e a música com a forma de onda, acesa até onde já tocou. À esquerda, o nome de cada faixa
+// e o timecode do ponto.
 
 import { posicoes, tamanho } from '../src/linha.js'
-import { paraSegundos, relogio } from '../src/tempo.js'
+import { paraQuadros, paraSegundos, relogio, timecode } from '../src/tempo.js'
 import { JANELA_S } from '../src/analise/silencio.js'
 import { CORES, corDoClipe, etiquetasDa } from '../src/cores.js'
 import { efeitosNaLinha } from '../src/efeitos.js'
@@ -16,6 +19,8 @@ const MAX_ESCALA = 600
 const el = (tag, cls, attrs = {}) => Object.assign(document.createElement(tag), cls ? { className: cls } : {}, attrs)
 const reduzir = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const IMA_PX = 8
+/** A luz de cada parte da música (cor só em forma, em tons de prata): quanto mais forte a parte, mais clara. */
+const LUZ_PARTE = { refrao: 1, pre: 0.78, verso: 0.55, ponte: 0.45, intro: 0.32, final: 0.32 }
 
 export class LinhaUI {
   constructor(raiz, { aoBuscar, aoAcao, aoSelecionar }) {
@@ -64,6 +69,19 @@ export class LinhaUI {
     this.btSom.onclick = () => this.aoAcao('som')
     this.zoom.oninput = () => this.#aproximar(this.#escalaDoDeslize(Number(this.zoom.value)), this.rolagem.clientWidth / 2)
 
+    // à esquerda: o timecode do ponto e o nome de cada faixa (fora da rolagem)
+    this.cabecalhos = el('div', 'linha-cabecalhos', { ariaHidden: 'true' })
+    this.tc = el('span', 'linha-tc', { textContent: '00:00:00:00' })
+    this.cabecalhos.append(this.tc)
+    for (const [cls, id, nome] of [
+      ['ct-partes', '', 'Partes'],
+      ['ct-v', 'V1', 'Planos'],
+      ['ct-a', 'A1', 'Som'],
+      ['ct-fx', 'FX', 'Efeitos'],
+      ['ct-m', 'A2', 'Música'],
+      ['ct-l', '', 'Legenda'],
+    ])
+      this.cabecalhos.append(el('span', `linha-cab ${cls}`, { innerHTML: `<b>${id}</b><span>${nome}</span>` }))
     this.rolagem = el('div', 'linha-rolagem')
     this.conteudo = el('div', 'linha-conteudo')
     this.regua = el('canvas', 'regua')
@@ -75,11 +93,22 @@ export class LinhaUI {
     this.cabeca = el('div', 'cabeca')
     this.marcas = el('div', 'trilha-marcas')
     const fundoA = el('div', 'trilha trilha-a')
-    this.conteudo.append(this.regua, this.trilhaV, fundoA, this.onda, this.trilhaFx, this.trilhaL, this.trilhaZ, this.marcas, this.cabeca)
+    // a trilha: as partes da música e a música (apagada inteira; a acesa só até o ponto)
+    this.trilhaP = el('div', 'trilha trilha-p', { role: 'group', ariaLabel: 'Partes da música' })
+    this.fundoM = el('div', 'trilha trilha-m')
+    this.ondaM = el('canvas', 'onda-m')
+    this.luzM = el('div', 'onda-m-luz')
+    this.ondaM2 = el('canvas', 'onda-m')
+    this.luzM.append(this.ondaM2)
+    this.conteudo.append(this.regua, this.trilhaP, this.trilhaV, fundoA, this.onda, this.trilhaFx, this.fundoM, this.ondaM, this.luzM, this.trilhaL, this.trilhaZ, this.marcas, this.cabeca)
     this.rolagem.append(this.conteudo)
-    raiz.append(barra, this.rolagem)
+    const corpo = el('div', 'linha-corpo')
+    corpo.append(this.cabecalhos, this.rolagem)
+    raiz.append(barra, corpo)
 
     this.rolagem.addEventListener('scroll', () => this.#desenharCanvases(), { passive: true })
+    // trocar o tema muda as cores dos canvases (régua, ondas): redesenha
+    new MutationObserver(() => this.#desenharCanvases()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     new ResizeObserver(() => {
       if (!this.ajustada && this.dados) this.#ajustar()
       this.#layout()
@@ -180,9 +209,10 @@ export class LinhaUI {
   }
 
   /** p = projeto; dbs = Map(midia → envelope); blocos da legenda (tempo da linha); zooms (com qIni/qFim de origem) */
-  mostrar(p, { dbs, blocos, zooms }) {
+  mostrar(p, { dbs, blocos, zooms, miniaturas = new Map() }) {
     const primeira = !this.dados
-    this.dados = { p, dbs, blocos, zooms }
+    this.dados = { p, dbs, blocos, zooms, miniaturas }
+    this.raiz.classList.toggle('com-trilha', Boolean(p.trilha))
     if (this.sel && !p.linha.clipes.some((c) => c.id === this.sel)) this.selecionar(null)
     if (this.selFx && !(p.efeitos || []).some((x) => x.id === this.selFx)) this.selecionarEfeito(null)
     if (primeira) this.ajustada = false
@@ -278,6 +308,10 @@ export class LinhaUI {
       const fx = d.querySelector('.clipe-faixas')
       fx.hidden = !clipe.faixas
       if (clipe.faixas) for (const i of fx.children) i.classList.toggle('muda', clipe.faixas[i.dataset.f] === null)
+      // a miniatura da mídia no começo do clipe (e no fim, se couber)
+      const mini = this.dados.miniaturas.get(clipe.midia)
+      if (mini) d.style.setProperty('--mini', `url("${mini}")`)
+      else d.style.removeProperty('--mini')
       const cor = corDoClipe(p, clipe)
       if (cor) d.dataset.cor = cor
       else delete d.dataset.cor
@@ -330,6 +364,21 @@ export class LinhaUI {
         marcas.push(d)
       }
     this.trilhaZ.replaceChildren(...marcas)
+    // as partes da música, no tempo da linha (a música começa no quadro 0, do instante `desde` dela)
+    const partes = p.trilha && p.auto?.musica === p.trilha.midia ? p.auto.partes || [] : []
+    const desde = p.trilha?.desde || 0
+    this.trilhaP.replaceChildren(
+      ...partes
+        .filter((x) => x.fim > desde)
+        .map((x) => {
+          const a = Math.max(0, x.ini - desde)
+          const d = el('div', 'parte', { textContent: x.nome, title: `${x.nome} · ${relogio(a)}–${relogio(x.fim - desde)}` })
+          d.style.left = `${a * e}px`
+          d.style.width = `${Math.max(2, (x.fim - desde - a) * e - 1)}px`
+          d.style.setProperty('--luz-parte', String(LUZ_PARTE[x.tipo] ?? 0.5))
+          return d
+        }),
+    )
     this.marcas.replaceChildren(
       ...(p.marcadores || []).map((m) => {
         const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))}${m.nota ? `\n${m.nota}` : ''}\n(dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
@@ -347,6 +396,8 @@ export class LinhaUI {
     this.t = t
     const x = t * this.escala
     this.cabeca.style.transform = `translateX(${x}px)`
+    if (this.dados) this.tc.textContent = timecode(paraQuadros(t, this.dados.p.fps), this.dados.p.fps)
+    this.luzM.style.width = `${Math.max(0, x - this.rolagem.scrollLeft)}px`
     // seguindo o ponto ao tocar: rola quando ele sai da área visível
     const r = this.rolagem
     if (x < r.scrollLeft || x > r.scrollLeft + r.clientWidth - 40) r.scrollLeft = Math.max(0, x - r.clientWidth * 0.2)
@@ -361,8 +412,12 @@ export class LinhaUI {
     const cor = getComputedStyle(this.raiz)
     const texto = cor.getPropertyValue('--text-faint').trim() || '#888'
     const onda = cor.getPropertyValue('--produto').trim() || '#d4d5db'
-    for (const c of [this.regua, this.onda]) {
-      c.style.left = `${x0}px`
+    this.luzM.style.left = `${x0}px`
+    this.luzM.style.width = `${Math.max(0, this.t * this.escala - x0)}px`
+    for (const c of [this.regua, this.onda, this.ondaM, this.ondaM2]) {
+      c.style.left = c === this.ondaM2 ? '0px' : `${x0}px`
+      // a largura da área visível em px (100% da linha inteira esticaria o desenho)
+      c.style.width = `${w}px`
       c.width = Math.round(w * dpr)
       c.height = Math.round(c.clientHeight * dpr)
     }
@@ -404,6 +459,34 @@ export class LinhaUI {
         const v = Math.max(0, Math.min(1, (m + 60) / 60))
         const alt = Math.max(1, v * (h - 6))
         o.fillRect(x, (h - alt) / 2, 1, alt)
+      }
+    }
+    // a música: a mesma forma de onda duas vezes, apagada (tudo) e acesa (só até o ponto, pela largura de luzM)
+    const tr = p.trilha
+    const dbm = tr ? dbs.get(tr.midia) : null
+    const musica = p.midias.find((m) => m.id === tr?.midia)
+    const hm = this.ondaM.clientHeight
+    const acesa = cor.getPropertyValue('--luz-onda').trim() || '#ffffff'
+    for (const [c, tinta, alfa] of [
+      [this.ondaM, texto, 0.45],
+      [this.ondaM2, acesa, 1],
+    ]) {
+      const g2 = c.getContext('2d')
+      g2.scale(dpr, dpr)
+      if (!dbm || !musica) continue
+      g2.fillStyle = tinta
+      g2.globalAlpha = alfa
+      const fim = (musica.duracao - tr.desde) * this.escala - x0
+      for (let x = 0; x < Math.min(w, fim); x += 2) {
+        const ts = tr.desde + (x + x0) / this.escala
+        const j0 = Math.floor(ts / JANELA_S)
+        const j1 = Math.max(j0 + 1, Math.floor((ts + 2 / this.escala) / JANELA_S))
+        let m = -100
+        for (let j = j0; j < j1 && j < dbm.length; j++) if (dbm[j] > m) m = dbm[j]
+        // mais contraste que a onda das câmeras: a música varia pouco em dB, e o forte tem que saltar
+        const v = Math.max(0, Math.min(1, (m + 46) / 40)) ** 1.6
+        const alt = Math.max(1, v * (hm - 8))
+        g2.fillRect(x, (hm - alt) / 2, 1.2, alt)
       }
     }
   }

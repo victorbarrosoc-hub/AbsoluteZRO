@@ -1788,6 +1788,12 @@ test('edição automática: Clipe acha a música, sincroniza as tomadas, monta n
   assert.ok(p.propostas.some((x) => x.tipo === 'zoom' && x.estado === 'pendente' && /Refrão/.test(x.motivo)))
   assert.deepEqual(p.auto.ajustes.ritmo, 'rapido')
   assert.match(await pagina.locator('#aviso').innerText(), /planos, \d+ em sincronia/)
+  // a linha do tempo com a trilha: os nomes das faixas, as partes acesas e a música (a forma de onda sai do som dela)
+  assert.equal(await pagina.locator('#linha.com-trilha').count(), 1)
+  assert.deepEqual(await pagina.locator('.trilha-p .parte').allInnerTexts(), ['Intro', 'Verso 1', 'Refrão 1', 'Verso 2', 'Refrão 2'])
+  assert.ok(await pagina.locator('.ct-m').isVisible())
+  assert.match(await pagina.locator('.linha-tc').innerText(), /^\d\d:\d\d:\d\d:\d\d$/)
+  await pagina.waitForFunction(() => globalThis.__editor.dbs.has(globalThis.__editor.h.atual.trilha.midia), null, { timeout: 30_000 })
 
   // trocar plano no Inspector: as outras opções do mesmo trecho; o tamanho e a música não mudam
   await pagina.locator('.clipe').nth(3).click()

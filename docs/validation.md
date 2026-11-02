@@ -15,6 +15,21 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## AEON com a cara do AEON (02/11/2026)
+
+Branch `claude/aeon-visual-pro`, sobre a edição automática.
+
+- Tela no Chromium, depois de montar um clipe:
+  - `#linha.com-trilha`, as cinco partes na faixa delas e a faixa da Música visível;
+  - o timecode no formato `00:00:00:00`;
+  - o envelope da música calculado na máquina para a forma de onda.
+- Conferido em captura (1440 × 900, escuro e claro):
+  - a agulha em 17 s cai no 0:17 da régua;
+  - a música acesa até a agulha e apagada depois;
+  - as partes alinhadas aos clipes;
+  - trocar o tema redesenha as ondas.
+- AEON inteiro: `npm test` **261/261** com as telas.
+
 ## Edição automática no AEON (01/11/2026, ADR 0038)
 
 Branch `claude/aeon-clipe-musical`, a partir da main de 01/11/2026 (já com o #95 do Rift).

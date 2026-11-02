@@ -895,6 +895,22 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `rift-motion` com o escopo `zro.higgsfield`. O Rift deixa a conexão própria e passa a pedir por `/api/v1/higgsfield`
   (PR #80). A Z sabe o que o Rift faz (filtrada pelo gate).
 
+## AEON com a cara do AEON (02/11/2026)
+
+- ✅ Visual E, escolhido pelo titular entre cinco propostas (canvas de design):
+  - preto e prata, como a marca, sem a cor de cada página;
+  - a agulha é um feixe de luz com a estrela de 4 pontas, e os marcadores viram estrelas;
+  - abas, dock e "Edição automática" em vidro com o fio aceso;
+  - tema claro conferido.
+- ✅ Linha do tempo como nos editores profissionais:
+  - os nomes das faixas e o timecode do ponto à esquerda;
+  - com trilha, entram a faixa das partes da música (acesa pela energia, o refrão mais claro) e a faixa da música, com a
+    forma de onda acesa até a agulha;
+  - a miniatura da mídia no começo e no fim de cada clipe, a cor da organização num fio em cima.
+- ✅ Corrigido: a régua e a forma de onda saíam esticadas (o canvas ocupava a linha inteira, não a área visível); a
+  régua não batia com os clipes.
+- ⬜ Mídia em pastas com miniaturas e forma de onda da música, e dois visualizadores (fonte e linha), como na proposta.
+
 ## Edição automática no AEON (01/11/2026, [ADR 0038](decisions/0038-edicao-automatica.md))
 
 - ✅ "Edição automática" na Mídia, com os modos em cartões e um preset versionado por modo (`presets/clipe.v1.json`,

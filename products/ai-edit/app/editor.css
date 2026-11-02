@@ -4117,3 +4117,236 @@ label.auto-ajuste {
 .folha-auto .criar-cab [data-acao='voltar'] {
   margin-left: -6px;
 }
+
+/* ───────── visual E: a cara do AEON (titular, 02/11/2026: "traga a personalidade da AEON nesses painéis") ─────────
+   Preto e prata como a marca (a salina e a estrela de 4 pontas): painéis em grafite com fio prateado, a cor só no
+   vídeo e nas formas; a agulha é um feixe de luz com a estrela; a música e as partes acendem pela energia. A linha do
+   tempo ganha os nomes das faixas e o timecode à esquerda, como nos editores profissionais. */
+:root:not([data-theme='light']) {
+  --bg: #050506;
+  --surface: #0e0e10;
+  --surface-2: #141417;
+  --surface-3: #1c1c20;
+  --line: rgb(212 213 219 / 0.1);
+  --line-strong: rgb(212 213 219 / 0.22);
+  --cabeca: #ffffff;
+  --luz-onda: #ffffff;
+  --luz: 255 255 255;
+}
+:root[data-theme='light'] {
+  --luz-onda: #1d1d1f;
+  --luz: 29 29 31;
+}
+.edicao {
+  grid-template-rows: minmax(0, 1fr) 288px;
+  gap: 10px;
+  padding: 14px 14px 12px;
+}
+.edicao:has(.linha.com-trilha) {
+  grid-template-rows: minmax(0, 1fr) 352px;
+}
+.linha {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: inset 0 1px 0 rgb(var(--luz) / 0.06);
+}
+.linha-corpo {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+}
+.linha-cabecalhos {
+  position: relative;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.linha-tc {
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  font: 600 13px/18px ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--text-strong);
+  text-shadow: 0 0 10px rgb(var(--luz) / 0.45);
+  font-variant-numeric: tabular-nums;
+}
+.linha-cab {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  border-top: 1px solid var(--line);
+}
+.linha-cab b {
+  width: 20px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.ct-partes,
+.ct-m {
+  display: none;
+}
+.ct-v { top: 30px; height: 74px; }
+.ct-a { top: 104px; height: 42px; }
+.ct-fx { top: 146px; height: 28px; }
+.ct-l { top: 174px; height: 32px; }
+.com-trilha .ct-partes { display: flex; top: 28px; height: 24px; }
+.com-trilha .ct-m { display: flex; top: 184px; height: 64px; }
+.com-trilha .ct-v { top: 52px; }
+.com-trilha .ct-a { top: 126px; height: 34px; }
+.com-trilha .ct-fx { top: 160px; height: 24px; }
+.com-trilha .ct-l { top: 248px; }
+.regua { height: 28px; }
+.trilha-v { top: 32px; height: 70px; }
+.trilha-a, .onda { top: 106px; height: 38px; }
+.trilha-fx { top: 148px; height: 24px; }
+.trilha-l { top: 180px; height: 18px; }
+.trilha-z { top: 202px; height: 6px; }
+.trilha-p, .trilha-m, .onda-m, .onda-m-luz { display: none; }
+.com-trilha .trilha-p { display: block; top: 31px; height: 18px; }
+.com-trilha .trilha-v { top: 54px; }
+.com-trilha .trilha-a, .com-trilha .onda { top: 128px; height: 30px; }
+.com-trilha .trilha-fx { top: 162px; height: 22px; }
+.com-trilha .trilha-m { display: block; top: 188px; height: 56px; border-radius: 6px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-3) 80%, transparent), color-mix(in srgb, var(--surface-2) 60%, transparent)); box-shadow: inset 0 1px 0 rgb(var(--luz) / 0.18); }
+.com-trilha .onda-m { display: block; position: absolute; top: 188px; height: 56px; width: 100%; pointer-events: none; }
+.com-trilha .onda-m-luz { display: block; position: absolute; top: 188px; height: 56px; overflow: hidden; pointer-events: none; filter: drop-shadow(0 0 4px rgb(var(--luz) / 0.35)); }
+.com-trilha .onda-m-luz .onda-m { top: 0; }
+.com-trilha .trilha-l { top: 252px; }
+.com-trilha .trilha-z { top: 274px; }
+.parte {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(var(--luz) / calc(var(--luz-parte) * 0.24)), rgb(var(--luz) / 0.03));
+  box-shadow: inset 0 -1.5px 0 rgb(var(--luz) / var(--luz-parte));
+  color: var(--text-strong);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* o clipe: grafite com fio prateado, a miniatura da mídia no começo e no fim, a cor da organização num fio em cima */
+.clipe {
+  border-radius: 6px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-3) 90%, transparent), color-mix(in srgb, var(--surface-2) 95%, transparent));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--luz) / 0.2),
+    inset 0 0 0 1px rgb(var(--luz) / 0.05);
+}
+.clipe::before,
+.clipe::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: min(72px, 46%);
+  background: var(--mini, none) center / cover no-repeat;
+  pointer-events: none;
+}
+.clipe::before {
+  left: 0;
+}
+.clipe::after {
+  right: 0;
+  opacity: 0.85;
+}
+.clipe-nome {
+  top: 4px;
+  left: 8px;
+  font-size: 11px;
+  color: var(--text-strong);
+  text-shadow: none;
+}
+.clipe[data-cor] {
+  box-shadow:
+    inset 0 2px 0 var(--c),
+    inset 0 0 0 1px rgb(var(--luz) / 0.05);
+}
+.clipe.selecionado {
+  box-shadow:
+    inset 0 0 0 1.5px rgb(var(--luz) / 1),
+    0 0 18px rgb(var(--luz) / 0.28);
+}
+.clipe.arrastando {
+  box-shadow:
+    0 10px 30px rgb(0 0 0 / 0.5),
+    inset 0 0 0 1.5px rgb(var(--luz) / 1);
+}
+.clipe-etiqueta {
+  background: rgb(var(--luz) / 0.12);
+}
+.trilha-a {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-radius: 5px;
+}
+/* a agulha: um feixe de luz com a estrela da marca na ponta */
+.cabeca {
+  width: 1px;
+  margin-left: 0;
+  background: linear-gradient(180deg, rgb(var(--luz) / 1), rgb(var(--luz) / 0.85) 60%, rgb(var(--luz) / 0.15));
+  box-shadow:
+    0 0 10px rgb(var(--luz) / 0.7),
+    0 0 28px rgb(var(--luz) / 0.25);
+}
+.cabeca::before {
+  top: -1px;
+  left: -8px;
+  width: 17px;
+  height: 17px;
+  border-radius: 0;
+  background: rgb(var(--luz) / 1);
+  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+  filter: drop-shadow(0 0 6px rgb(var(--luz) / 0.9));
+}
+/* marcadores e partes na régua: estrelas */
+.marcador {
+  top: 7px;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  background: rgb(var(--luz) / 0.85);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  filter: drop-shadow(0 0 4px rgb(var(--luz) / 0.6));
+}
+/* abas, deslizantes e dock: vidro e luz, sem a cor de cada página */
+.abas button[aria-selected='true'] {
+  background: linear-gradient(180deg, rgb(var(--luz) / 0.14), rgb(var(--luz) / 0.04));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--luz) / 0.3),
+    0 0 14px rgb(var(--luz) / 0.1);
+}
+.deslizar,
+.insp-controles input[type='range'] {
+  accent-color: var(--text-strong);
+}
+.dock button[aria-current] {
+  background: linear-gradient(180deg, rgb(var(--luz) / 0.14), rgb(var(--luz) / 0.03));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--luz) / 0.32),
+    0 0 18px rgb(var(--luz) / 0.12);
+}
+.dock button[data-ir][aria-current] svg {
+  color: var(--text-strong);
+  filter: drop-shadow(0 0 4px rgb(var(--luz) / 0.5));
+}
+/* Edição automática: a pílula de vidro com o fio prateado aceso */
+#autoEdicao {
+  border: 1px solid rgb(var(--luz) / 0.42);
+  background: linear-gradient(180deg, rgb(var(--luz) / 0.14), rgb(var(--luz) / 0.03));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--luz) / 0.35),
+    0 0 16px rgb(var(--luz) / 0.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cabeca::before {
+    filter: none;
+  }
+}
