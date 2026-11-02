@@ -1,9 +1,10 @@
-// GET /api/zro/eu — quem está logado no Synquei. 200 com a pessoa; 401 sem sessão (o app mostra "Entrar com Absolute
-// ZRO" e "Criar conta"); 503 se o login não está configurado neste site (o app segue como sempre, sem conta).
+// GET /api/zro/eu — quem está logado no Synquei. 200 com a pessoa; 401 sem sessão (o site pede a conta: o app leva para
+// /entrar/, com "Entrar com Absolute ZRO" e "Criar conta"); 503 se o login não está configurado neste site (o app segue
+// aberto, como offline).
 // ?visitante=1 (o app de agora, app/js/conta.js): sem sessão vem 200 { ok: false, entrou: false } em vez de 401, para
 // não deixar erro no console de quem só abriu o app (revisão de 01/11/2026); sem o parâmetro, o 401 de sempre.
 // `acesso` diz se a organização ativa tem o Synquei em zro_products: sem ele, a parte de conta do app mostra o aviso e
-// o link para a Absolute ZRO. O app em si continua aberto, como sem conta.
+// o link para a Absolute ZRO.
 //
 // Perfil único (docs/integration-contracts/perfil-unico.md): a cada abertura do app (no máximo uma vez por minuto) o
 // /eu relê nome, e-mail, foto, organização e produtos em /oauth/userinfo com o token do cofre (sq_hub) e regrava a
