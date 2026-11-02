@@ -51,6 +51,17 @@ const { CHROME, ARGS } = require('./_navegador');
   t(st.crew >= 100, '⟶⟶ com cerca de 100 pessoas na praça (' + st.crew + ')');
   t(/Demonstração/.test(st.selo) && /fictícios/.test(st.selo), 'o selo diz que é demonstração com perfis fictícios');
   t(st.link === 'https://carro.absolutezro.com/', '⟶⟶ e leva ao site de verdade');
+  // site real no computador (02/11): o selo neon é a marca da lateral, e há um menu só (sem o ☰; a conta abre "conta e ajustes")
+  const m = await p.evaluate(() => ({ hb: getComputedStyle(document.getElementById('menu-bt')).display,
+    selo: !!document.querySelector('.top .brand .zselo:not([hidden])') && getComputedStyle(document.querySelector('.top .brand .mk-marca')).display === 'none' }));
+  t(m.selo, 'a lateral mostra o selo neon, não o "///"');
+  t(m.hb === 'none', 'no computador não há ☰: a lateral é o menu');
+  await p.click('#eu-bt'); await p.waitForTimeout(600);
+  const g = await p.evaluate(() => ({ on: document.getElementById('gaveta').classList.contains('on'),
+    telas: [...document.querySelectorAll('#gaveta .mn-lista>.mn-g:not(.mn-fim)')].some(e => e.offsetParent !== null),
+    ajustes: !!document.querySelector('#gaveta [data-sanf="ajustes"]').offsetParent }));
+  t(g.on && !g.telas && g.ajustes, '⟶⟶ o cartão da conta abre "conta e ajustes", sem repetir as telas da lateral');
+  await p.evaluate(() => { const x = document.getElementById('g-x'); if (x) x.click() }); await p.waitForTimeout(400);
   await p.evaluate(() => show('propostas')); await p.waitForTimeout(800);
   t(await p.evaluate(() => /Esperando você/.test(document.getElementById('v-propostas').textContent)), 'propostas de exemplo esperando resposta');
   await p.evaluate(() => show('guildas')); await p.waitForTimeout(1200);

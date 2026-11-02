@@ -6003,6 +6003,16 @@ html.real .homenav .hn-criar{background:linear-gradient(180deg,rgba(255,255,255,
 /* a logo do Carro é o selo (anel, as três barras e o carrinho), no topo, no hero e na entrada; as barras soltas
    saem de onde o selo está (titular, 30/out · 6) */
 html.real .homenav .brand .mk-marca,html.real #v-entrar .lgn-logo>svg{display:none}
+/* o selo neon é a marca do Carro em todo lugar do site real (02/11, titular): na lateral e na gaveta também */
+html.real .top .brand .mk-marca,html.real .mn-marca>svg{display:none}
+/* ⚠️ UM MENU SÓ NO COMPUTADOR (02/11, titular: "tem dois menus"): a lateral já é o menu; o ☰ abria a gaveta com as
+   mesmas telas de novo. Aqui o ☰ sai e a gaveta vira "conta e ajustes" (conta, ajuda, ajustes, tema e som), aberta
+   pelo cartão da conta no pé da lateral (#eu-bt). No celular nada muda: lá a gaveta é o menu. */
+@media(min-width:821px){
+  html.real .top #menu-bt{display:none}
+  html.real .toptit,html.real.lado-min .toptit{left:calc(var(--lado) + 34px)}
+  html.real .gaveta .mn-lista>.mn-g:not(.mn-fim),html.real .gaveta .mn-faixa{display:none}
+}
 /* no computador a logo fica só no topo; no celular ela abre o hero (titular, 30/out · 6) */
 html.real .hprod .hp-texto .zselo{display:none!important}
 @media(max-width:720px){html.real .hprod .hp-texto .zselo{display:block!important;--t:76px!important;/* abaixo da barra flutuante do topo (que fica por cima no celular) */margin:calc(56px + env(safe-area-inset-top,0px)) auto 18px}}
@@ -7088,6 +7098,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
   <div class="wrap">
     <button class="brand brand-home" title="Ir para a página inicial">
       <svg viewBox="0 0 100 100" width="26" height="26" fill="var(--marca)" class="mk-marca"><use href="#mk"/></svg>
+      <span class="zselo sem-carro" style="--t:28px" hidden data-so-real aria-hidden="true"><i class="zselo-luz"></i><i class="zselo-anel"></i><i class="zselo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g4)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i></span>
       <b>Carro do Freela</b>
     </button>
     <span class="toptit" id="top-tit" aria-hidden="true"></span>
@@ -7222,7 +7233,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
        #g-mercado, #g-tema, #g-som...): é o que abre, fecha e o que as
        suítes conhecem. -->
   <div class="mn-cab">
-    <span class="mn-marca"><svg viewBox="0 0 100 100" width="24" height="24" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
+    <span class="mn-marca"><svg viewBox="0 0 100 100" width="24" height="24" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><span class="zselo sem-carro" style="--t:26px" hidden data-so-real aria-hidden="true"><i class="zselo-luz"></i><i class="zselo-anel"></i><i class="zselo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g5)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i></span><b>Carro do Freela</b></span>
     <button class="mn-tag" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button>
     <button class="gfecha" id="g-x" aria-label="Fechar menu"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></button>
   </div>
@@ -14586,7 +14597,11 @@ function entrarNaConta(prov,criar){
 }
 /* clicar em quem está logado leva ao próprio painel — trocar de conta é
    coisa de demonstração e foi para o menu lateral */
-v("eu-bt").onclick=()=>show(MODO==="contratante"?"minhaprod":"meu");
+/* no site real, no computador, o cartão da conta abre "conta e ajustes" (a gaveta sem as telas, que já estão na
+   lateral); no celular e na prévia, o painel de sempre */
+const contaEAjustes=()=>REAL&&matchMedia("(min-width:821px)").matches;
+v("eu-bt").onclick=()=>contaEAjustes()?abrirGaveta():show(MODO==="contratante"?"minhaprod":"meu");
+if(REAL) v("eu-bt").title="Conta e ajustes";
 
 const livresEm=i=>CREW.filter(c=>status(c,i)==="livre").length;
 function drawScrub(){
