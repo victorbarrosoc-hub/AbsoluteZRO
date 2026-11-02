@@ -26,6 +26,14 @@ Branch `claude/synquei-pede-conta`, em `products/synquei`.
   `/entrar/` e o `/app/` no lugar.
 - Cache do app em `synquei-v29`.
 
+## Quasar: página inicial com o slogan (02/11/2026)
+
+- Medido em 1440, 390 e 320 px:
+  - o slogan ocupa duas linhas de texto;
+  - a onda aparece inteira;
+  - sem rolagem lateral.
+- E2E do estúdio, player, destinos, Z e acesso fechado passando, com os títulos atualizados.
+
 ## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
 
 - `tests/quasar-ia.test.ts` (5) cobre a cor:
