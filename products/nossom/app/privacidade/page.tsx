@@ -53,6 +53,11 @@ export default function Privacy() {
         mesmas regras de remoção abaixo. O parceiro trata o áudio segundo as próprias políticas.
       </p>
       <p>
+        Ao criar uma trilha ou um efeito com a Z, só o texto que você escreve vai a esse parceiro,
+        pelo servidor; nenhum áudio seu sai do aparelho. O som criado volta pelo mesmo armazenamento
+        temporário, é baixado para o seu projeto e removido em seguida.
+      </p>
+      <p>
         Depois de baixar e salvar a versão local, solicitamos a remoção dos objetos temporários. Um
         processo diário, quando configurado na hospedagem, remove objetos abandonados com mais de 24
         horas. Falhas de conexão ou configuração podem atrasar essa remoção. Registramos o

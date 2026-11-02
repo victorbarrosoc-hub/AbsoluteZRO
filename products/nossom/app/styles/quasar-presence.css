@@ -85,3 +85,98 @@
     transition: none;
   }
 }
+/* Criar com a Z (trilha e efeitos): o roxo marca o que a Z faz. */
+.z-criar {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: var(--presence-fundo);
+}
+.z-criar .field-label {
+  margin: 4px 0 0;
+}
+.z-criar-texto {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 140, 0.35);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.z-criar-texto:focus-visible,
+.z-criar select:focus-visible {
+  outline: 2px solid var(--presence-luz);
+  outline-offset: 1px;
+}
+.z-criar-linha {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.z-criar select {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 140, 0.35);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.z-criar-botao svg {
+  color: var(--presence-luz);
+}
+.z-efeitos {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.z-efeitos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 140, 0.25);
+  font-size: 13px;
+}
+.z-efeitos span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.z-efeitos label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.z-efeitos input {
+  width: 58px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 140, 0.35);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.z-efeito-tirar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}

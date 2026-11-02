@@ -6,6 +6,7 @@ import { iaAvancadaConfigurada } from '@/lib/server/ia-avancada';
 import {
   cancelJob,
   clearJob,
+  gerarComZ,
   jobAction,
   jobStatus,
   jobSource,
@@ -17,7 +18,15 @@ import {
   submitJob,
   uploadPlan,
 } from '@/lib/server/restoration';
-import { CLOUD_MAX_BYTES, CLOUD_MAX_SECONDS, restorationD, isCloudPreset } from '@/lib/restoration';
+import {
+  CLOUD_MAX_BYTES,
+  CLOUD_MAX_SECONDS,
+  LIMITES_GERACAO,
+  efeitoZ,
+  isCloudPreset,
+  restorationD,
+  trilhaZ,
+} from '@/lib/restoration';
 export const runtime = 'nodejs';
 // 300 s: a IA avançada termina depois da resposta (lib/server/ia-avancada.ts), dentro do tempo da função.
 export const maxDuration = 300;
@@ -110,7 +119,11 @@ export async function GET(request: Request) {
           } catch {
             /* Keep the last confirmed state when the provider cannot be reached. */
           }
-          if (!['released', 'failed', 'cancelled'].includes(status))
+          // Sons criados pela Z não são um tratamento do projeto: não aparecem como pedido em andamento.
+          const geracao = ([trilhaZ.id, efeitoZ.id] as string[]).includes(
+            String(result.job.report?.preset),
+          );
+          if (!geracao && !['released', 'failed', 'cancelled'].includes(status))
             pending = {
               id: result.job.id,
               status,
@@ -190,6 +203,26 @@ export async function POST(request: Request) {
       return Response.json(await prepareJob(account.id, body.bytes, body.duration), {
         headers: privateHeaders,
       });
+    }
+    if (body.action === 'gerar') {
+      if (irma) throw new RestorationError('Por este app, a NOSSOM só separa faixas.', 403);
+      const tipo: 'trilha' | 'efeito' | null =
+        body.tipo === 'trilha' || body.tipo === 'efeito' ? body.tipo : null;
+      const texto = typeof body.texto === 'string' ? body.texto.replace(/\s+/g, ' ').trim() : '';
+      if (!tipo || texto.length < 3 || texto.length > 300)
+        throw new RestorationError('Descreva o som em até 300 caracteres.', 400);
+      const { min, max } = LIMITES_GERACAO[tipo];
+      if (!Number.isFinite(body.segundos) || body.segundos < min || body.segundos > max)
+        throw new RestorationError(
+          tipo === 'trilha'
+            ? 'A trilha pode ter de 10 segundos a 5 minutos.'
+            : 'O efeito pode ter de meio segundo a 30 segundos.',
+          400,
+        );
+      return Response.json(
+        await gerarComZ(request, account.id, tipo, texto, Math.round(body.segundos * 10) / 10),
+        { headers: privateHeaders },
+      );
     }
     if (!uuid.test(body.id ?? '')) throw new RestorationError('Pedido inválido.', 400);
     if (body.action === 'resume-upload')
