@@ -371,9 +371,46 @@ function opcoesPlayer(p, blocos = blocosDaLegenda(p)) {
   return { blocos, zooms: zoomsAprovados(p), legenda: { ligada: p.legenda.ligada, estilo: p.legenda.estilo, posicaoY: S.preset.legenda.posicao_y } }
 }
 
+/** A miniatura de cada mídia como imagem pequena (JPEG), para o começo dos clipes na linha. Feita uma vez por mídia. */
+const minisDaLinha = new Map()
+function miniaturasDaLinha(p) {
+  for (const m of p.midias) {
+    const c = S.miniaturas.get(m.id)
+    if (!c || minisDaLinha.get(m.id)?.c === c) continue
+    try {
+      const t = document.createElement('canvas')
+      t.width = 160
+      t.height = Math.max(1, Math.round((160 * c.height) / c.width))
+      t.getContext('2d').drawImage(c, 0, 0, t.width, t.height)
+      minisDaLinha.set(m.id, { c, url: t.toDataURL('image/jpeg', 0.7) })
+    } catch {
+      // canvas que não dá para ler (origem cruzada): o clipe fica sem miniatura
+    }
+  }
+  return new Map([...minisDaLinha].map(([id, x]) => [id, x.url]))
+}
+
+/** A forma de onda da trilha (a música): o envelope de energia sai do som da mídia uma vez, na máquina. */
+const envelopando = new Set()
+function envelopeDaTrilha(p) {
+  const id = p.trilha?.midia
+  const entrada = id && S.entradas.get(id)
+  if (!entrada || S.dbs.has(id) || envelopando.has(id)) return
+  envelopando.add(id)
+  extrairAudio(entrada)
+    .then(({ pcm, taxa }) => {
+      S.dbs.set(id, envelope(pcm, taxa))
+      if (P() && S.pagina === 'edicao') desenharLinha()
+    })
+    .catch(() => {})
+    .finally(() => envelopando.delete(id))
+}
+
 function desenharLinha(blocos) {
   const p = P()
-  if (p) linha.mostrar(p, { dbs: S.dbs, blocos: blocos || blocosDaLegenda(p), zooms: zoomsAprovados(p) })
+  if (!p) return
+  envelopeDaTrilha(p)
+  linha.mostrar(p, { dbs: S.dbs, blocos: blocos || blocosDaLegenda(p), zooms: zoomsAprovados(p), miniaturas: miniaturasDaLinha(p) })
 }
 
 // ───────── mídia ─────────
