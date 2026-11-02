@@ -147,6 +147,17 @@ test('cloud D restores once, preserves float import, saves before cleanup, then 
     'Voz melhorada com a Z',
     'Quasar Presence',
   ]);
+  // a mesa de faixas mostra o original, a voz limpa e a Presence, com o mixer e a cadeia
+  const mesa = page.getByRole('region', { name: 'Faixas do tratamento' });
+  await expect(mesa.locator('.mesa-faixa')).toHaveCount(3);
+  await expect(mesa.getByRole('button', { name: 'Ouvir Quasar Presence' })).toBeVisible();
+  await expect(mesa.getByRole('group', { name: 'Mixer' }).locator('.mesa-canal')).toHaveCount(4);
+  await expect(mesa.getByText('Limpei o fundo e deixei sua voz mais presente.')).toBeVisible();
+  const mesaAcessivel = await new AxeBuilder({ page })
+    .include('.mesa')
+    .withTags(['wcag2a', 'wcag2aa'])
+    .analyze();
+  expect(mesaAcessivel.violations).toEqual([]);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.finish-panel').scrollIntoViewIfNeeded();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
