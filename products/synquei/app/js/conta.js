@@ -1,11 +1,12 @@
-// Conta Absolute ZRO (opcional). /api/zro/eu diz quem está logado. No site, o login acontece nas funções da Vercel
-// (api/zro/*); no app de desktop, o próprio app responde as mesmas rotas (desktop/conta.cjs: o login abre o navegador da
-// pessoa e volta pelo 127.0.0.1). Offline ou aberto de arquivo, não há função: fica tudo como sempre, sem conta.
-// Conta única: quem não tem conta cria na Absolute ZRO ("Criar conta" = /api/zro/entrar?criar=1, prompt=create).
-// "Usar outra conta" (02/11/2026) = /api/zro/entrar?outra=1, prompt=login: a Absolute ZRO pede a conta de novo, mesmo
-// com uma sessão aberta lá (sem isto o Synquei reaproveita calado a conta aberta na Absolute ZRO).
+// Conta Absolute ZRO. /api/zro/eu diz quem está logado. No site, o login acontece nas funções da Vercel (api/zro/*); no
+// app de desktop, o próprio app responde as mesmas rotas (desktop/conta.cjs: o login abre o navegador da pessoa e volta
+// pelo 127.0.0.1). Conta única: quem não tem conta cria na Absolute ZRO ("Criar conta" = /api/zro/entrar?criar=1).
+// O site pede a conta (decisão do titular, 02/11/2026, no padrão do Relay): quem está fora vai para /entrar/ e volta
+// para a mesma tela. Sem login neste lugar (offline, aberto de arquivo, site sem a configuração) o app segue aberto,
+// então quem já entrou não cai sem rede e os projetos (localStorage) ficam onde estão. O app de computador já chega
+// pela central da Absolute ZRO, com a conta: aqui ele não muda.
 // O direito de uso vem do admin da Absolute ZRO (zro_products): sem o Synquei liberado, a parte de conta mostra o aviso
-// e o caminho para a Absolute ZRO. O app em si (local, sem login) continua aberto; os planos seguem em plano.js.
+// e o caminho para a Absolute ZRO; os planos seguem em plano.js.
 // Perfil único: nome, e-mail e foto são da conta Absolute ZRO (o /eu relê a cada abertura). O Synquei só mostra; para
 // mudar, "Editar na conta Absolute ZRO" abre o Perfil da Absolute ZRO fora do app.
 
@@ -38,6 +39,19 @@ const temFuncao = () => (noDesktop() ? window.synqueiDesktop.conta === true : /^
 export const linkEntrar = (modo = false) =>
   `/api/zro/entrar?volta=${encodeURIComponent(location.pathname + location.hash)}${modo === true || modo === 'criar' ? '&criar=1' : modo === 'outra' ? '&outra=1' : ''}`
 
+/** A página de entrada (/entrar/), que volta para a tela atual. `aviso`: o recado da volta do login (?zro=). */
+export const linkPaginaEntrar = (aviso) => `/entrar/?volta=${encodeURIComponent(location.pathname + location.hash)}${aviso ? `&zro=${encodeURIComponent(aviso)}` : ''}`
+
+/**
+ * O site pede a conta: confirmado que a pessoa está fora ('anonimo'), vai para /entrar/. Sem login neste lugar ('sem':
+ * offline, arquivo, site sem a configuração) e no app de computador, segue aberto. Devolve se mandou para /entrar/.
+ */
+export function exigirConta(aviso) {
+  if (C.estado !== 'anonimo' || noDesktop()) return false
+  location.replace(linkPaginaEntrar(aviso))
+  return true
+}
+
 /** Resposta de /api/zro/eu → estado da conta. */
 export function lerEu(status, j) {
   if (status === 200 && j && j.ok && j.pessoa) Object.assign(C, { estado: 'logado', pessoa: j.pessoa, acesso: j.acesso === true })
@@ -56,6 +70,8 @@ async function lerConta(aviso) {
   } catch {
     lerEu(0, null)
   }
+  // fora da conta, no site: o recado vai junto para /entrar/
+  if (exigirConta(aviso)) return
   // o recado da volta sai depois de saber se o Synquei está liberado na conta
   const a = aviso === 'ok' && C.estado === 'logado' && !C.acesso ? [SEM_ACESSO, 'warn'] : AVISOS[aviso]
   if (a) toast(a[0], { icon: a[1] })
@@ -130,6 +146,7 @@ export async function sair() {
     const r = await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' })
     if (!r.ok) throw new Error(String(r.status))
     Object.assign(C, { estado: 'anonimo', pessoa: null, acesso: false })
+    if (exigirConta()) return
     toast(noDesktop() ? 'Você saiu da conta neste computador.' : 'Você saiu da conta neste navegador.', { icon: 'check' })
     avisar()
   } catch {
@@ -211,7 +228,7 @@ export function cartaoConta() {
   }
   if (C.estado === 'anonimo') {
     return `<section class="card"><header class="card-head"><h2>Conta</h2></header><div class="card-pad">
-      <div class="set-row"><div><b>Absolute ZRO</b><small>Uma conta para todas as plataformas. Sem conta, o app continua igual.</small></div><div class="conta-acoes">${botoesEntrar('btn btn-secondary btn-sm')}</div></div>
+      <div class="set-row"><div><b>Absolute ZRO</b><small>Uma conta para todas as plataformas.</small></div><div class="conta-acoes">${botoesEntrar('btn btn-secondary btn-sm')}</div></div>
     </div></section>`
   }
   return ''

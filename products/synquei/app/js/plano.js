@@ -1,5 +1,5 @@
 // Plano do usuário: o cartão da barra lateral, o de Ajustes e a comparação dos planos (Fazer upgrade). Ainda não há
-// conta nem assinatura no app, então todo mundo está no Grátis e tudo continua liberado; os planos e preços são os
+// assinatura no app, então todo mundo está no Grátis e tudo continua liberado; os planos e preços são os
 // mesmos da seção Planos do site. A conta Absolute ZRO (conta.js) mostra quem é e se o Synquei está liberado: não muda o plano.
 
 import { h, icon } from './util.js'
@@ -13,7 +13,7 @@ export const PLANOS = [
     id: 'gratis',
     nome: 'Grátis',
     preco: 'R$ 0',
-    sub: 'Sem conta e sem cadastro',
+    sub: 'Com a conta Absolute ZRO',
     itens: ['Sincronia pelo som e pelo timecode', 'Linha do tempo com monitor e tela cheia', 'Exporta em camadas pra 5 editores', 'Mac, Windows e navegador'],
   },
   {
@@ -37,7 +37,7 @@ export const PLANOS = [
   },
 ]
 
-/** Sem conta no app ainda: todo mundo está no Grátis. */
+/** Sem assinatura no app ainda: todo mundo está no Grátis. */
 export const planoAtual = () => PLANOS[0]
 
 /** Cartão da barra lateral (aberta) e o botão compacto (recolhida). */

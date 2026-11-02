@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fbfbfd" />
+    <title>Entrar · Synquei</title>
+    <meta name="description" content="Entre no Synquei com a sua conta Absolute ZRO." />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://synquei.absolutezro.com/entrar/" />
+    <meta property="og:title" content="Synquei · Entrar" />
+    <meta property="og:image" content="https://synquei.absolutezro.com/og.png" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/site.css" />
+    <style>
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .entrar-topo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 18px 22px;
+        color: var(--ink);
+        font-weight: 600;
+        text-decoration: none;
+        width: max-content;
+      }
+      .entrar-topo img {
+        width: 26px;
+        height: 26px;
+      }
+      .entrar {
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 18px;
+        padding: 24px 20px 64px;
+        text-align: center;
+      }
+      .entrar-bloco {
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+      }
+      .entrar-bloco[hidden] {
+        display: none;
+      }
+      .entrar h1 {
+        margin: 0;
+        font-size: clamp(34px, 6vw, 52px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+      }
+      .entrar h1 .fino {
+        font-weight: 300;
+      }
+      .entrar h1 .pesado {
+        font-weight: 800;
+      }
+      .entrar .apoio {
+        margin: 0;
+        color: var(--ink-2);
+        font-size: 17px;
+      }
+      .entrar .acoes {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .entrar-outra {
+        color: var(--ink-2);
+        font-size: 14px;
+        text-decoration: none;
+        padding: 12px 8px;
+      }
+      .entrar-outra:hover,
+      .entrar-outra:focus-visible {
+        color: var(--ink);
+        text-decoration: underline;
+      }
+      .entrar-av {
+        display: grid;
+        place-items: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: var(--ink);
+        color: var(--bg, #fff);
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .entrar-av img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .entrar-aviso {
+        margin: 0;
+        min-height: 1.4em;
+        color: var(--ink-2);
+      }
+      .familia-mini {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        color: var(--ink-3);
+        font-size: 13px;
+      }
+      .familia-mini img {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="entrar-topo" href="/" aria-label="Synquei, início"><img src="/icons/favicon.svg" alt="" />Synquei</a>
+    <main class="entrar">
+      <!-- fora da conta -->
+      <section id="fora" class="entrar-bloco" hidden>
+        <h1><span class="fino">Entre no</span> <span class="pesado">Synquei.</span></h1>
+        <p class="apoio">Com a sua conta Absolute ZRO.</p>
+        <div class="acoes">
+          <a id="entrar" class="btn btn-dark btn-lg" href="/api/zro/entrar?volta=%2Fapp%2F">Entrar com Absolute ZRO</a>
+          <a id="criar" class="btn btn-soft btn-lg" href="/api/zro/entrar?criar=1&amp;volta=%2Fapp%2F">Criar conta</a>
+        </div>
+        <a id="outra" class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fapp%2F" data-outra>Usar outra conta</a>
+      </section>
+      <!-- dentro -->
+      <section id="dentro" class="entrar-bloco" hidden>
+        <span id="avatar" class="entrar-av" aria-hidden="true"></span>
+        <h1 id="ola"></h1>
+        <p id="quem" class="apoio"></p>
+        <div class="acoes">
+          <a id="abrir" class="btn btn-dark btn-lg" href="/app/">Abrir o Synquei</a>
+          <button id="sair" class="btn btn-soft btn-lg" type="button">Sair</button>
+        </div>
+        <a class="entrar-outra" href="/api/zro/entrar?outra=1&amp;volta=%2Fapp%2F" data-outra>Usar outra conta</a>
+      </section>
+      <!-- login não ligado neste endereço, ou sem rede -->
+      <section id="desligado" class="entrar-bloco" hidden>
+        <h1><span class="fino">Abra o</span> <span class="pesado">Synquei.</span></h1>
+        <p class="apoio">A entrada com a conta Absolute ZRO não respondeu agora.</p>
+        <div class="acoes"><a id="abrir-sem" class="btn btn-dark btn-lg" href="/app/">Abrir o Synquei</a></div>
+      </section>
+      <p id="aviso" class="entrar-aviso" role="status" aria-live="polite"></p>
+      <div class="familia-mini" aria-label="Uma conta para toda a família Absolute ZRO">
+        <span>Uma conta para</span>
+        <img src="/app/familia/maestro.svg" alt="Maestro" />
+        <img src="/app/familia/relay.svg" alt="Relay" />
+        <img src="/app/familia/sobedesce.svg" alt="SOBEDESCE" />
+        <img src="/app/familia/tpeasy.svg" alt="TPeasy" />
+        <img src="/app/familia/carro-do-freela.png" alt="Carro do Freela" />
+        <img src="/app/familia/absolute-zro.webp" alt="Absolute ZRO" />
+      </div>
+    </main>
+    <script src="/entrar/entrar.js"></script>
+  </body>
+</html>

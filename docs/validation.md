@@ -15,6 +15,17 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Synquei: o site pede a conta Absolute ZRO (02/11/2026)
+
+Branch `claude/synquei-pede-conta`, em `products/synquei`.
+
+- `tests/entrar.test.mjs` (6): `/entrar/` fora (Entrar e Criar conta com a volta e o recado do login), o 401 antigo,
+  dentro (volta direto; sem volta, quem é, Abrir e Sair), sem rede ou sem login ligado (app aberto) e a volta segura.
+- `tests/conta-ui.test.mjs`: fora da conta o app vai para `/entrar/?volta=` (com `&zro=`); sem login no lugar, dentro,
+  sem acesso ao Synquei e no app de computador, não; a inicial sem "Sem conta"; o 308 do endereço antigo deixa
+  `/entrar/` e o `/app/` no lugar.
+- Cache do app em `synquei-v29`.
+
 ## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
 
 - `tests/quasar-ia.test.ts` (5) cobre a cor:
@@ -4764,7 +4775,7 @@ SOBEDESCE de computador, que disparam os instaladores).
   ativo).
 - Carro: `npm run test:api` 49/49 (`prompt=login` com `outra=1`; outro valor ignorado; criar vence) e `conta-zro`
   152/152 (o link à vista, leva a `entrar?outra=1`, some no modo criar).
-- Relay `npm test` 133/133. Synquei `npm test` 152 ok, 10 pulados (WebKit, luajit, root). TPeasy
+- Relay `npm test` 133/133. Synquei `npm test` 163 ok, 10 pulados (WebKit, luajit, root), com a página `/entrar/` nova da `main` (`tests/entrar.test.mjs` 7/7). TPeasy
   `node --test tests/*.test.mjs` 80 ok, 4 pulados (WebKit).
 - Maestro: typecheck, lint, format e build ok; `tests/zro.test.mts` 29/29 (inclui o `invalid_scope` mantendo
   `outra=1`). `npm test` 718/719: a falha é a cópia do Relay (`tests/relay.test.mts`), que já falha na `main`.
