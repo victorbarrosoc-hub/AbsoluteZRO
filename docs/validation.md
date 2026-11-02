@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ADR 0039)
+
+Branch `planos-b`, migração `0055_planos_zero_orbita_absoluto.sql`. Rodado com banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_planosb_test`: outra sessão no mesmo Postgres recriava o `zro_test` no meio da bateria).
+
+- `npm test`: **602/602** em 68 arquivos. Novo `tests/integration/planos-b.test.ts` (22): preços e planos antigos como
+  legado; catálogo de limites (null = sem limite) sem apps fechados; nível efetivo (conta nova no Zero, **conta antiga
+  não perde nada**, avulso, Órbita, admin com Absoluto em tudo, sem vínculo = Zero, claims `zro_nivel`/`zro_teste_ate`);
+  Z franquia → recarga (vencida não conta, idempotente, `providerRef` único); campanha (desligada por padrão, ligar dá
+  às contas do Zero que já existiam e não às antigas nem às sem e-mail, conta nova ganha ao criar a organização ou ao
+  confirmar o e-mail, uma vez só, e-mail normalizado repetido, descartável e 4º do mesmo IP recusados e contados,
+  estender/encerrar com auditoria, Z do teste no período inteiro, desligar mantém quem está em teste, campanha vencida);
+  migração das contas antigas (desligada recusa, ligada migra com auditoria); RLS (limites: todos leem, só admin muda;
+  testes, recargas, campanha e sinais isolados).
+- Testes antigos ajustados ao catálogo novo: planos de 0011/0025/0027/0041/0043 seguem no banco como `retired`; os
+  backfills simulam conta antiga com `legacyFreeOrg` (o grátis antigo); `givePlan` dá plano antigo como assinatura
+  manual direta; Ligar vendas recusa.
+- `npm run test:e2e` (banco e porta próprios): **67/67** em 16 arquivos. Novos: a conta nova vê "Zero" no Início e no
+  Perfil, `nivel`/`teste_ate` em `/api/v1/entitlements`, `/api/v1/me/limites` e o cache público de `/api/v1/limites`
+  (o `no-store` geral de `/api` não vale para ele, `next.config.ts`); `/planos` com R$ 109,90 e R$ 299,90, sem
+  R$ 149,90, sem "fase" nem "em breve"; console › Planos com o teste desligado, os limites por nível e o axe.
+- `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm run build`: ok. `node scripts/scan-secrets.mjs`:
+  nenhum segredo.
+
 ## Synquei: o site pede a conta Absolute ZRO (02/11/2026)
 
 Branch `claude/synquei-pede-conta`, em `products/synquei`.
