@@ -7288,8 +7288,8 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
           <button class="gitem" data-ajuda="oque"><span>O que é o Carro do Freela</span></button>
           <button class="gitem" data-ajuda="como"><span>Como usar, em cinco passos</span></button>
           <button class="gitem" data-ajuda="faq"><span>Perguntas frequentes</span></button>
-          <button class="gitem" data-ajuda="moeda"><span>O take, a moeda da plataforma</span></button>
-          <button class="gitem" data-ajuda="taxas"><span>Taxas e como o dinheiro anda</span></button>
+          <button class="gitem" data-ajuda="moeda" data-sem-real><span>O take, a moeda da plataforma</span></button>
+          <button class="gitem" data-ajuda="taxas" data-sem-real><span>Taxas e como o dinheiro anda</span></button>
           <button class="gitem" data-ajuda="regras"><span>Regras do feed e den&#250;ncia</span></button>
           <!-- ⚠️ O guia precisa de porta de volta. Ele aparece uma vez e some
                no primeiro toque — sem esta linha, quem dispensou sem ler não
@@ -8322,7 +8322,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <label class="tog"><input type="checkbox" id="f-ver"> Só verificados</label>
         <label class="tog"><input type="checkbox" id="f-dia"> Agenda em dia</label>
       </div>
-      <div class="fgroup"><span class="lab">Como fecha</span>
+      <div class="fgroup" data-sem-real><span class="lab">Como fecha</span>
         <div class="segm" id="f-pagto" role="group" aria-label="Filtrar por forma de pagamento">
           <button data-pg="" aria-pressed="true">Todos</button>
           <button data-pg="gar" aria-pressed="false">Garantia</button>
@@ -8628,7 +8628,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
           <div class="falta" id="mp-falta"></div>
           <button class="btn" id="mp-ver" style="width:100%;margin-top:16px">Ver como o freela vê</button>
         </div>
-        <div class="card" style="margin-top:16px">
+        <div class="card" style="margin-top:16px" data-sem-real>
           <span class="lab">Por que isso importa</span>
           <p style="margin:9px 0 0;font-size:13.5px;color:var(--cal-fraco);line-height:1.6">Quando dois jobs caem no mesmo dia, o freela escolhe quem tem histórico e garantia.</p>
         </div>
@@ -8657,14 +8657,14 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
          porta", mesma correção. -->
     <button class="achbox" data-irorcar data-sem-real><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h3M14 11v6"/></svg><span>Orçar antes de escalar — a conta com as diárias da praça</span></button>
     <button class="achbox" data-irachar><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14"/><path d="m16 16 4 4"/></svg><span>Procurar alguém pelo nome</span></button>
-    <p class="note" style="margin:8px 0 14px">Aqui aparecem as pessoas que você segue e quem já trabalhou com você. Achar a pessoa é de graça; o que a Escuta vende é saber quem está <em>livre</em> em cada data.</p>
+    <p class="note" style="margin:8px 0 14px">Aqui aparecem as pessoas que você segue e quem já trabalhou com você. <span data-sem-real>Achar a pessoa é de graça; o que a Escuta vende é saber quem está <em>livre</em> em cada data.</span></p>
 
     <div id="e-trancado" hidden></div>
 
     <div class="jobcfg escalar" style="grid-template-columns:1.6fr 1fr 1fr">
       <div class="frow"><span class="lab">Nome do job</span><input class="fld" id="e-nome" value="Institucional Cooperativa"></div>
       <div class="frow"><span class="lab">Praça</span><select class="fld" id="e-cidade"></select></div>
-      <div class="frow"><span class="lab">Orçamento</span><input class="fld mono" id="e-orc" type="number" min="0" step="500" value="6000"></div>
+      <div class="frow" data-sem-real><span class="lab">Orçamento</span><input class="fld mono" id="e-orc" type="number" min="0" step="500" value="6000"></div>
     </div>
 
     <div class="grid2 escalar" style="padding-top:24px">
@@ -8680,7 +8680,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
           <span class="lab">Custo da escala</span>
           <div id="e-resumo" style="margin-top:12px"></div>
           <div id="e-saldo"></div>
-          <button class="btn" id="e-fechar" style="margin-top:16px;width:100%">Fechar escala e reservar o valor</button>
+          <button class="btn" id="e-fechar" style="margin-top:16px;width:100%">Fechar escala<span data-sem-real> e reservar o valor</span></button>
           <button class="btn mg gh" id="e-passar" data-sem-real style="margin-top:9px;width:100%"><i class="minicarro" aria-hidden="true"><svg viewBox="0 0 210 92" fill="none"><g fill="currentColor" opacity=".9"><rect x="2" y="40" width="16" height="4" rx="2" opacity=".28"/><rect x="7" y="50" width="26" height="4" rx="2" opacity=".5"/><rect x="0" y="60" width="20" height="4" rx="2" opacity=".34"/></g><rect x="86" y="18" width="52" height="9" rx="2" fill="currentColor" opacity=".35"/><path d="M44 66V52c0-4 3-7 7-7h11l14-16c2-2 4-3 7-3h33c3 0 5 1 7 3l13 16h18c5 0 9 4 9 9v12z" fill="currentColor"/><circle cx="72" cy="68" r="13" fill="currentColor" opacity=".55"/><circle cx="140" cy="68" r="13" fill="currentColor" opacity=".55"/></svg></i><span class="rot">Passar o carro nas vagas abertas</span></button>
           <p class="note" style="margin-top:10px">Valores de quem publicou tabela saem exatos. Os demais entram como <strong style="color:var(--cal)">faixa de referência da praça</strong> — é média de mercado por função, não o preço daquela pessoa.</p>
         </div>
@@ -8732,13 +8732,13 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
 <section id="v-agenda" data-area="trabalho" hidden>
   <div class="wrap" style="padding:42px 22px 72px">
     <span class="lab">Sua semana</span>
-    <h1>Minha agenda e diárias</h1>
-    <p class="lead explica" data-exp="agenda" data-lead="Seus jobs, suas diárias e o que você tem a receber." style="margin-top:12px">Aqui você registra os jobs, a diária combinada e o que tem a receber. Sua disponibilidade pública sai daqui sozinha — você mantém pelo seu dinheiro, não pela plataforma.</p>
+    <h1>Minha agenda<span data-sem-real> e diárias</span></h1>
+    <p class="lead explica" data-exp="agenda" data-lead="Seus jobs, suas diárias e o que você tem a receber." data-lead-real="Seus jobs e os dias em que você está livre." style="margin-top:12px">Aqui você registra os jobs, a diária combinada e o que tem a receber. Sua disponibilidade pública sai daqui sozinha — você mantém pelo seu dinheiro, não pela plataforma.</p>
 
     <div class="zap">
       <span class="lab" style="margin:0">Confirme sua semana</span>
       <div class="wk" id="ag-wk"></div>
-      <span class="note" style="margin:0;flex:1;min-width:200px">Um toque por dia. No produto real isso chega por WhatsApp toda quinta — você responde ali e nem abre o app.</span>
+      <span class="note" style="margin:0;flex:1;min-width:200px" data-sem-real>Um toque por dia. No produto real isso chega por WhatsApp toda quinta — você responde ali e nem abre o app.</span>
     </div>
 
     <div class="grid2" style="padding-top:22px">
@@ -8755,7 +8755,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <div style="margin-top:22px">
           <span class="lab" style="display:block;margin-bottom:10px">Jobs do mês</span>
           <div class="jobs" id="ag-jobs"></div>
-          <p class="note">Toque na etiqueta para marcar um acerto direto como recebido. Job com garantia libera sozinho — não tem o que tocar.</p>
+          <p class="note" data-sem-real>Toque na etiqueta para marcar um acerto direto como recebido. Job com garantia libera sozinho — não tem o que tocar.</p>
         </div>
       </div>
       <div>
@@ -8792,10 +8792,10 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
          antes do calendário, e no celular a agenda só aparecia na segunda
          tela. A agenda abre na semana e no mês; o dinheiro é o resumo. -->
     <div class="kpis" style="margin-top:34px">
-      <div class="kpi hot"><span class="lab">A receber</span><b id="k-receber">—</b><small id="k-receber-s"></small></div>
+      <div class="kpi hot" data-sem-real><span class="lab">A receber</span><b id="k-receber">—</b><small id="k-receber-s"></small></div>
       <div class="kpi gr" data-fase="2"><span class="lab">Em custódia</span><b id="k-cust">—</b><small id="k-cust-s"></small></div>
-      <div class="kpi"><span class="lab">Recebido no mês</span><b id="k-pago">—</b><small id="k-pago-s"></small></div>
-      <div class="kpi"><span class="lab">Segurando</span><b id="k-hold">—</b><small id="k-hold-s"></small></div>
+      <div class="kpi" data-sem-real><span class="lab">Recebido no mês</span><b id="k-pago">—</b><small id="k-pago-s"></small></div>
+      <div class="kpi" data-sem-real><span class="lab">Segurando</span><b id="k-hold">—</b><small id="k-hold-s"></small></div>
       <div class="kpi"><span class="lab">Agenda em dia</span><b id="k-streak">—</b><small>semanas seguidas atualizando</small></div>
     </div>
 
@@ -8831,7 +8831,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
          números viram o resumo embaixo delas. -->
     <div class="kpis">
       <div class="kpi hot"><span class="lab">Esperando você</span><b id="pp-novas">—</b><small id="pp-novas-s"></small></div>
-      <div class="kpi"><span class="lab">Valor em jogo</span><b id="pp-valor">—</b><small>somando as consultas de job sem resposta</small></div>
+      <div class="kpi" data-sem-real><span class="lab">Valor em jogo</span><b id="pp-valor">—</b><small>somando as consultas de job sem resposta</small></div>
       <div class="kpi gr"><span class="lab">Você responde em</span><b id="pp-resp">—</b><small>mediana do que já respondeu — é o número do seu perfil</small></div>
       <div class="kpi"><span class="lab">Fechadas por aqui</span><b id="pp-ok">—</b><small id="pp-ok-s"></small></div>
     </div>
@@ -9159,7 +9159,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
           <span class="lab">Como você recebe</span>
           <div class="mod" style="border-top:0" data-fase="2"><div>Aceitar pagamento garantido <small>20% de sinal na assinatura do contrato e o restante no dia seguinte à sua entrega</small></div><div><input type="checkbox" id="pr-gar" checked style="accent-color:var(--ciano);width:17px;height:17px"></div></div>
           <div class="mod" data-fase="2"><div>Só aceito job com garantia <small>consultas de acerto direto nem chegam até você</small></div><div><input type="checkbox" id="pr-exige" style="accent-color:var(--ciano);width:17px;height:17px"></div></div>
-          <p class="note">A taxa é paga por quem contrata. Você recebe o valor cheio que combinou — 20% de sinal quando a data fecha e o restante quando entregar e ele conferir. A garantia não sai do seu bolso.</p>
+          <p class="note" data-sem-real>A taxa é paga por quem contrata. Você recebe o valor cheio que combinou — 20% de sinal quando a data fecha e o restante quando entregar e ele conferir. A garantia não sai do seu bolso.</p>
         </div>
       </div>
       <div>
@@ -9214,10 +9214,10 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
             <label class="tog" style="margin-top:11px"><input type="checkbox" id="cd-viaja"> Topo viajar a trabalho — job fora da minha praça pode me chamar</label>
           </div>
           <div class="cdrow d2">
-            <div class="frow"><span class="lab">WhatsApp</span><input class="fld mono" id="cd-fone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(84) 90000-0000"></div>
+            <div class="frow" data-sem-real><span class="lab">WhatsApp</span><input class="fld mono" id="cd-fone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(84) 90000-0000"></div>
             <div class="frow"><span class="lab">Portfólio</span><input class="fld" id="cd-port" placeholder="@seuinstagram ou link"></div>
           </div>
-          <p class="note" style="margin-top:0">Seu telefone <strong style="color:var(--cal)">não aparece para ninguém</strong>. Ele serve para a chamada chegar no seu WhatsApp — quem contrata fala com você por dentro da plataforma.</p>
+          <p class="note" style="margin-top:0" data-sem-real>Seu telefone <strong style="color:var(--cal)">não aparece para ninguém</strong>. Ele serve para a chamada chegar no seu WhatsApp — quem contrata fala com você por dentro da plataforma.</p>
           <!-- ⚠️ CONSENTIMENTO (26/out · 3): nasce DESMARCADO e é a pessoa que
                marca — caixa pré-marcada não é consentimento. Ver
                registrarConsentimento(). -->
@@ -9615,7 +9615,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
     <p class="lead" style="margin-top:12px" id="jb-lead"></p>
     <div id="jb-fora" hidden>
       <button class="btn gh" id="jb-fora-bt">Fui chamado por fora</button>
-      <p class="note" style="margin:6px 0 0">Fechou no zap? Registre e mande o link — quem chamou confirma sem criar conta.</p>
+      <p class="note" style="margin:6px 0 0" data-sem-real>Fechou no zap? Registre e mande o link — quem chamou confirma sem criar conta.</p>
     </div>
     <div class="jgrid">
       <div id="jb-lista"></div>
@@ -9963,11 +9963,11 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
       <h2 id="fe-t">Fechar escala e pagar o sinal</h2>
       <p style="color:var(--cal-fraco);font-size:13.5px;margin:0 0 16px;line-height:1.55" id="fe-sub"></p>
       <div id="fe-lista"></div>
-      <button class="sw2" id="fe-toggle" aria-pressed="true" style="margin-top:12px">
+      <button class="sw2" id="fe-toggle" aria-pressed="true" style="margin-top:12px" data-sem-real>
         <span>Pagar com sinal e contrato quem aceita mas não exige</span><i></i></button>
       <div class="fedir" id="fe-direto" hidden><b id="fe-direto-n"></b><span id="fe-direto-v"></span>
         <p>Combinado direto com quem estava escalado, como sempre foi fora da plataforma — sem sinal, sem taxa, sem contrato pela Carro do Freela. Quem exige garantia não entra aqui: continua obrigatório.</p></div>
-      <div class="calc" style="margin-top:14px">
+      <div class="calc" style="margin-top:14px" data-sem-real>
         <div class="vl"><span>Valor da equipe em garantia</span><b id="fe-cheio"></b></div>
         <div class="vl"><span>Sinal agora (<span id="fe-sn"></span>%)</span><b id="fe-diarias"></b></div>
         <div class="vl"><span>Fica para a entrega</span><b id="fe-resto"></b></div>
@@ -9975,8 +9975,8 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
         <div class="vl" id="fe-saldol" hidden><span id="fe-saldot">Abatido do seu saldo</span><b id="fe-saldo"></b></div>
         <div class="vl tot"><span>Você paga agora</span><b id="fe-tot"></b></div>
       </div>
-      <div class="pgm" id="fe-pgm"></div>
-      <p class="note" style="margin-top:12px">Você adianta só o sinal — não o valor cheio da equipe. O resto de cada pessoa sai quando ela entregar a parte dela e você confirmar que está tudo certo, uma função por vez. Quem recusar a consulta devolve o sinal dele sozinho. Antes disso, os dois assinam o contrato daquela vaga.</p>
+      <div class="pgm" id="fe-pgm" data-sem-real></div>
+      <p class="note" style="margin-top:12px" data-sem-real>Você adianta só o sinal — não o valor cheio da equipe. O resto de cada pessoa sai quando ela entregar a parte dela e você confirmar que está tudo certo, uma função por vez. Quem recusar a consulta devolve o sinal dele sozinho. Antes disso, os dois assinam o contrato daquela vaga.</p>
       <div class="fim" style="margin-top:16px"><button class="btn gh" id="fe-x">Cancelar</button><button class="btn" id="fe-ok">Reservar e enviar consultas</button></div>
     </div>
     <div id="fe-ok2" hidden>
@@ -10028,7 +10028,7 @@ html[data-sd-montar] .sd-folha[data-curta] .sd-form{padding-bottom:110px}
 <div class="ovl" id="ovl-cv" hidden role="dialog" aria-modal="true" aria-labelledby="cv-t">
   <div class="mdl">
     <h2 id="cv-t">Job que veio de fora</h2>
-    <div class="who">Você já fechou no particular. Aqui é só para o combinado virar documento — e para quem te chamou confirmar.</div>
+    <div class="who"><span data-sem-real>Você já fechou no particular. Aqui é só para o combinado virar documento — e para quem te chamou confirmar.</span><span data-so-real hidden>Você já fechou no particular. Aqui ele entra na sua agenda, com o combinado escrito.</span></div>
     <div class="fgrid">
       <div class="f2">
         <div class="frow"><span class="lab">Quem te chamou</span><input class="fld" id="cv-quem" placeholder="nome da pessoa ou da produtora"></div>
@@ -11831,9 +11831,46 @@ const AJUDA={
    real. É o oposto de mostrar a faixa da praça como se fosse o preço de
    alguém. */
 const EXEMPLO=1000;
+/* ⚠️ A AJUDA DO SITE REAL (02/11, titular: "ainda mostra coisa que não existe", com o "O take, a moeda da plataforma"
+   e o "Taxas e como o dinheiro anda" na gaveta). Na fase 1 não há dinheiro dentro do Carro: nem take, nem pedágio,
+   nem taxa, sinal, contrato ou plano pago. No REAL o artigo de fase futura nem abre (os dois itens saem da gaveta
+   por data-sem-real), a linha de fase futura some em vez de virar "em breve", e estes quatro trocam o corpo inteiro.
+   A prévia e os builds de fase seguem com o AJUDA de sempre. Getter: a guilda entra conforme db/fase.js. */
+const AJUDA_REAL={
+  oque:{get corpo(){ return [
+    ["p","Uma agenda de equipe audiovisual que serve aos dois lados: o freela marca os dias de job e mostra quando está livre; quem contrata vê quem está livre numa data e chama a equipe."],
+    ["p","A disponibilidade sai da agenda sozinha. Ninguém atualiza duas coisas, e é por isso que ela fica em dia."],
+    ["h","O que ele substitui"],
+    ["p","O grupo de mensagens. É lá que o mercado está hoje, e o problema não é o grupo ser ruim: é ele não ter memória. A informação circula e não fica em lugar nenhum."],
+    ["h","O que vem com a sua conta Absolute ZRO"],
+    ["li","Perfil, agenda e busca por data"],
+    ["li","Propostas e jobs, aceitos ou recusados aqui dentro"],
+    ["li","Feed e brechó do set"]].concat(guildaReal()?[["li","A guilda, de graça"]]:[]).concat([
+    ["li","O Porta-malas, com o SOBEDESCE"]]) }},
+  como:{get corpo(){ return [
+    ["n","1","Complete o perfil","Funções, praça e portfólio. Cada campo vazio é uma busca em que você não aparece."],
+    ["n","2","Mantenha a agenda","Marque os dias em que já tem job. O que sobra vira a sua disponibilidade, sem você escrever nada."],
+    ["n","3","Responda as propostas","Aceito ou recuso, num botão. O que você aceita vira job na sua agenda."],
+    guildaReal()
+      ?["n","4","Entre numa guilda","A turma com quem você trabalha sempre: chat, quadro e o job montado na Sede, com quem está livre no horário."]
+      :["n","4","Ache quem você conhece","Pelo nome ou pela função, entre quem já tem conta Absolute ZRO."],
+    ["n","5","Use o brechó","Anuncie o equipamento parado. Quem se interessa chama você aqui dentro, e o resto vocês combinam direto."]] }},
+  faq:{corpo:[
+    ["q","Preciso pagar para aparecer na busca?","Não. A ordem da busca leva em conta a agenda em dia e o perfil completo. Nada compra posição."],
+    ["q","Como o pagamento do job acontece?","Direto entre vocês, como sempre foi. O Carro do Freela não recebe, não segura e não repassa dinheiro."],
+    ["q","E o brechó?","O anúncio mostra o preço e o estado. Quem se interessa chama você aqui dentro; a venda e a entrega vocês combinam direto."],
+    ["q","Posso ter conta de freela e de contratante?","Sim. Muito freela contrata equipe também, sem ser produtora. É a mesma conta com dois lados."],
+    ["q","Quem vê o meu perfil?","Quem tem conta, e só se você marcar “Mostrar meu perfil para quem contrata”. Telefone nunca aparece."]
+  ]},
+  contato:{corpo:[
+    ["p","O Carro do Freela é feito em Natal/RN por gente que trabalha no set. Se você achou um erro, tem uma ideia ou quer trazer a sua praça para a plataforma, escreva."],
+    ["q","E-mail","contato@absolutezro.com"]
+  ]}
+};
 const corpoDe=y=>typeof y==="function"?y():y;
 function abrirAjuda(k){
-  const a=AJUDA[k]; if(!a) return;
+  let a=AJUDA[k]; if(!a) return;
+  if(REAL){ if(a.fase&&a.fase>FASE) return; a=Object.assign({},a,AJUDA_REAL[k]||{}) }
   v("aj-rot").textContent=a.rot; v("aj-tit").textContent=a.tit;
   /* ⚠️ A AJUDA TAMBÉM É VITRINE (Victor, 24/ago: "tem lugar que fala do
      plano, mas na versão não tem"). Artigo que descreve coisa de fase
@@ -11853,6 +11890,7 @@ function abrirAjuda(k){
     /* o último elemento numérico da linha é a fase em que ela passa a valer */
     const fx=(typeof x[x.length-1]==="number")?x[x.length-1]:0;
     const fut=FASE&&fx&&fx>FASE;
+    if(fut&&REAL) return "";
     if(fut){
       if(x[0]==="q") return '<div class="blk ajfuturo" style="margin-bottom:11px"><b style="display:block;font-size:15px;margin-bottom:6px">'+
         esc(corpoDe(x[1]))+selo(fx)+'</b><span style="color:var(--cal-fraco);font-size:14.5px;line-height:1.6">'+esc(corpoDe(x[2]))+'</span></div>';
@@ -12729,7 +12767,7 @@ function ligarExplicadores(){
        recolhidos, sem botão — explicação mora na Ajuda. */
     if(curto){
       const row=document.createElement("div"); row.className="leadrow";
-      const lc=document.createElement("p"); lc.className="leadc"; lc.textContent=pg.dataset.lead;
+      const lc=document.createElement("p"); lc.className="leadc"; lc.textContent=(REAL&&pg.dataset.leadReal)||pg.dataset.lead;
       row.appendChild(lc);
       pg.parentNode.insertBefore(row,pg);
       pg.classList.add("rec");
@@ -14013,7 +14051,7 @@ function drawFbar(){
     {id:"only", rot:"Livres nesse dia", on:S.only},
     {id:"func", rot:nf?(nf===1?[...S.funcs][0]:nf+" funções"):"Função", on:nf>0, seta:!nf},
     {id:"gar",  rot:"Garantia", on:S.pagto==="gar"}
-  ];
+  ].filter(x=>!(REAL&&x.id==="gar"));
   el.innerHTML=itens.map(x=>'<button class="fpil" data-fb="'+x.id+'" aria-pressed="'+x.on+'">'+
       esc(x.rot)+(x.seta?' <span class="cnt">⌄</span>':'')+'</button>').join("")+
     '<button class="fpil fq-mais" data-fb="mais" aria-pressed="'+painelFiltros+'">Filtros'+
@@ -16024,7 +16062,7 @@ function drawDetalhe(){
         '<div class="frow"><span class="lab">Cliente</span><input class="fld" name="cliente" required placeholder="ex.: Produtora Maré"></div>'+
         '<div class="frow"><span class="lab">Função</span><select class="fld" name="func">'+EU.func.map(f=>'<option>'+esc(f)+'</option>').join("")+'</select></div>'+
         '<div class="two"><div class="frow"><span class="lab">Diária</span><input class="fld mono" name="valor" type="number" min="0" step="50" value="1000"></div>'+
-        '<div class="frow"><span class="lab">Situação</span><select class="fld" name="tipo"><option value="conf">Confirmado — acerto direto</option><option value="gar">Confirmado — com garantia</option><option value="hold">Segurando data</option></select></div></div>'+
+        '<div class="frow"><span class="lab">Situação</span><select class="fld" name="tipo"><option value="conf">Confirmado — acerto direto</option>'+(REAL?'':'<option value="gar">Confirmado — com garantia</option>')+'<option value="hold">Segurando data</option></select></div></div>'+
         '<div class="acts"><button class="btn sm" type="submit">Lançar job</button></div></form>')+'</div>';
   }
   ligarTarjas(el);
@@ -17242,8 +17280,9 @@ function abrirConvite(){
   v("cv-func").innerHTML=fs.map(f=>'<option>'+esc(f)+'</option>').join("");
   v("cv-quem").value=""; v("cv-nome").value="";
   v("cv-local").value=EU.cidade||"";
-  v("cv-nota").textContent="Nada disso vira cobrança agora. O link só mostra a ele o que vocês combinaram — "+
+  v("cv-nota").textContent=REAL?"Fica só com você: ninguém recebe link nem cobrança.":"Nada disso vira cobrança agora. O link só mostra a ele o que vocês combinaram — "+
     "e quando ele confirma, o job entra na sua agenda com o combinado escrito.";
+  if(REAL) v("cv-ver").textContent="Guardar na agenda";
   v("ovl-cv").hidden=false; document.body.style.overflow="hidden";
 }
 const fecharConvite=()=>{v("ovl-cv").hidden=true;document.body.style.overflow=""};
@@ -17304,7 +17343,8 @@ function confirmarConvite(){
   CONV=null;
 }
 v("cv-fechar").onclick=fecharConvite;
-v("cv-ver").onclick=()=>{som("toque");verConvite()};
+/* no real não existe o link de confirmação para quem chamou (nem nota emitida): guardar vai direto para a agenda */
+v("cv-ver").onclick=()=>{som("toque"); if(REAL){ CONV=lerConvite(); confirmarConvite(); return } verConvite()};
 v("ovl-cv").addEventListener("click",ev=>{if(ev.target===v("ovl-cv"))fecharConvite()});
 v("cv2-volta").onclick=()=>{v("ovl-cv2").hidden=true;v("ovl-cv").hidden=false};
 v("cv2-ok").onclick=confirmarConvite;
@@ -17528,7 +17568,7 @@ function drawPropostas(){
   v("pp-valor").textContent=brl(novas.reduce((a,x)=>a+x.valor,0));
   v("pp-resp").textContent=EU.resp==null?"—":EU.resp<60?EU.resp+" min":Math.round(EU.resp/60)+" h";
   v("pp-ok").textContent=aceitas.length;
-  v("pp-ok-s").textContent=brl(aceitas.reduce((a,x)=>a+x.valor,0))+" em jobs que nasceram nesta caixa";
+  v("pp-ok-s").textContent=REAL?"jobs que nasceram nesta caixa":brl(aceitas.reduce((a,x)=>a+x.valor,0))+" em jobs que nasceram nesta caixa";
 
   const ordem={novo:0,aceita:1,recusada:2,perdida:3};
   const list=[...PROPOSTAS].sort((a,b)=>ordem[a.status]-ordem[b.status]||a.data.localeCompare(b.data));
@@ -17901,6 +17941,7 @@ const ITENS=[
   {k:"trab",   t:"Três trabalhos em destaque", peso:8, st:6, ok:()=>trabalhosDe(EU).length>=3},
   {k:"clis",   t:"Clientes",             peso:3,  st:6, ok:()=>clientesDe(EU).length>0}
 ];
+if(REAL) ITENS.splice(ITENS.findIndex(i=>i.k==="fone"),1);   /* sem WhatsApp no real (ver CAD_PERG) */
 function completude(){
   const feitos=ITENS.filter(i=>i.ok());
   return {pct:feitos.reduce((a,i)=>a+i.peso,0),feitos};
@@ -18253,6 +18294,10 @@ var CAD_PERG=[
   {st:6,t:"Seus trabalhos",d:"",m:[["#cd-w-lista",".blk"]],semLab:1,ok:()=>trabalhosDe(EU).length>=3},
   {st:6,t:"Clientes",d:"",m:[["#cd-cli-lista",".blk"]],semLab:1,ok:()=>clientesDe(EU).length>0}
 ];
+/* (02/11) no site real o WhatsApp não tem para onde ir: a chamada chega em Propostas, dentro do Carro, e o servidor
+   recusa telefone. A pergunta sai (o campo e a nota levam data-sem-real; o item sai do ITENS). "Onde a sua agenda
+   vive?" também: Google Agenda e lembrete no WhatsApp não existem no real, e o cartão ficaria vazio. */
+if(REAL) CAD_PERG=CAD_PERG.filter(q=>q.m[0][0]!=="#cd-fone"&&q.m[0][0]!=="#cd-gcal");
 var CAD_FOCO=null;   /* {sec, via, atual, vistas:Set, feitos, chegou, assin} — nasce em montarFocoCad */
 const cadReduz=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
 const BANDEIRA_SVG='<svg viewBox="0 0 18 22" fill="none" aria-hidden="true"><path d="M2 21V2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 3h12l-3 4 3 4H3z" fill="currentColor"/></svg>';
@@ -23699,7 +23744,7 @@ function drawJobs(){
   const soma=list.reduce((t,e)=>t+(prod?totalEsc(e):((e.equipe.find(x=>x.quem===EU.id)||{}).valor||0)),0);
   v("jb-kpis").innerHTML=
     '<div class="kpi c"><span class="lab">'+(prod?"Jobs agendados":"Jobs seus")+'</span><b>'+list.length+'</b><small>nas próximas semanas</small></div>'+
-    '<div class="kpi gr"><span class="lab">'+(prod?"Custo agendado":"A receber deles")+'</span><b>'+brl(soma)+'</b><small>'+(prod?"somando as escalas":"somando suas diárias")+'</small></div>'+
+    (REAL?'':'<div class="kpi gr"><span class="lab">'+(prod?"Custo agendado":"A receber deles")+'</span><b>'+brl(soma)+'</b><small>'+(prod?"somando as escalas":"somando suas diárias")+'</small></div>')+
     '<div class="kpi"><span class="lab">Pessoas envolvidas</span><b>'+
       new Set(list.flatMap(e=>e.equipe.map(x=>x.quem))).size+'</b><small>na sua rede desses jobs</small></div>';
   /* só o freela registra job que veio de fora: quem contrata já monta a
@@ -23767,6 +23812,7 @@ const taxaPagaProd=()=>Math.round((pagoTot()+pagoRetido())*taxaPct()/100);
 
 function drawPagos(){
   const el=v("vd-pagos"); if(!el) return;
+  if(REAL){ el.innerHTML=""; return }   /* no real ninguém paga nada por aqui: sem sinal, taxa nem take */
   const lista=[...PAGOS].sort((a,b)=>b.off-a.off);
   el.innerHTML=
     '<span class="lab" style="display:block;margin:26px 0 10px">O que você já pagou</span>'+
@@ -26782,7 +26828,7 @@ function abrirAnuncio(id){
   v("a-ref").textContent=a.ref>a.preco?brl(a.ref)+" novo hoje · −"+Math.round((1-a.preco/a.ref)*100)+"%":"";
   v("a-entrega").textContent=a.entrega+". "+(anGar(a)
     ?"Com compra garantida: o valor fica retido até você conferir."
-    :"Sem garantia: combinação e pagamento direto com o vendedor.");
+    :REAL?"Combinado direto com quem anuncia.":"Sem garantia: combinação e pagamento direto com o vendedor.");
 
   const meu=a.dono===EU.id;
   const nProp=propsAbertas(a).length;
@@ -27547,6 +27593,7 @@ const ITENS_P=[
   {t:"CNPJ verificado",     peso:20, ok:()=>!!PROD.cnpj},
   {t:"Fecha com garantia",  peso:10, ok:()=>!!PROD.gar}
 ];
+if(REAL) ITENS_P.pop();   /* "Fecha com garantia": no real não há garantia nenhuma */
 /* ⚠️ O RÓTULO É DERIVADO, não setado uma vez. A primeira versão escrevia
    "Criar perfil" no momento do login e o título ficava preso nisso para
    sempre — quem já tinha preenchido e voltava pelo menu continuava lendo
@@ -27737,8 +27784,8 @@ function linhaFechamento(x,i){
   return '<div class="mov"><time>'+esc(x.func.split(" ")[0])+'</time>'+
     '<span><b style="color:var(--cal)">'+esc(titulo(x.c.nome))+'</b>'+(x.c.ver?" ✓":"")+
     (x.exato?'':' · <em style="font-style:normal;color:var(--segurando)">faixa da praça</em>')+
-    '<button class="chip sm'+(comGarantia(x)?" on":"")+'" data-fg="'+i+'"'+(trava?" disabled":"")+
-      ' style="margin-left:8px;vertical-align:1px">'+esc(rot)+'</button></span>'+
+    (REAL?'':'<button class="chip sm'+(comGarantia(x)?" on":"")+'" data-fg="'+i+'"'+(trava?" disabled":"")+
+      ' style="margin-left:8px;vertical-align:1px">'+esc(rot)+'</button>')+'</span>'+
     '<b class="menos">'+brl(x.valor)+
       (comGar?'<em class="edac" style="display:block">sinal '+brl(sinalDe(x.valor))+'</em>':'')+'</b></div>';
 }
@@ -27768,7 +27815,7 @@ function abrirFechamento(){
          mas não exige. Quem exige e quem não usa não têm o que decidir. */
       garEscOn=!garEscOn; som("passo"); repintar();
     });
-    v("fe-toggle").hidden=!temOpcional;
+    v("fe-toggle").hidden=REAL||!temOpcional;
     v("fe-toggle").setAttribute("aria-pressed",String(garEscOn));
     v("fe-toggle").onclick=()=>{garEscOn=!garEscOn;som("passo");repintar()};
 
@@ -27778,7 +27825,7 @@ function abrirFechamento(){
     v("fe-diarias").textContent=brl(soma);
     v("fe-resto").textContent=brl(resto);
     v("fe-taxa").textContent=brl(taxa);
-    v("fe-direto").hidden=!direto.length;
+    v("fe-direto").hidden=REAL||!direto.length;
     v("fe-direto-n").textContent=direto.length+(direto.length===1?" pessoa":" pessoas")+" em acerto direto";
     v("fe-direto-v").textContent=brl(somaDireto)+" combinados fora da custódia";
 
@@ -27794,7 +27841,8 @@ function abrirFechamento(){
         est.abatido()?"− "+lum(est.abatido()):""].filter(Boolean).join("  ");
       v("fe-tot").textContent=est.resta()||soma+taxa?brl(est.resta()):"R$ 0";
     },taxa);
-    v("fe-ok").textContent=soma+taxa>0?"Pagar o sinal e enviar consultas":"Enviar consultas";
+    v("fe-ok").textContent=REAL?"Fechar escala":soma+taxa>0?"Pagar o sinal e enviar consultas":"Enviar consultas";
+    if(REAL) v("fe-t").textContent="Fechar escala";
     v("fe-ok").onclick=()=>{
       if(pg.abatidoPed()){ gastarPedagio(pg.abatidoPed());
         movAdd("pedagio","Taxa da plataforma paga com "+PEDAGIO.nome,0,0); }
@@ -27831,7 +27879,7 @@ function abrirFechamento(){
         })});
       jobAberto=null;
       v("fe-form").hidden=true; v("fe-ok2").hidden=false;
-      v("fe-txt").textContent=
+      v("fe-txt").textContent=REAL?"A escala fica em Meus jobs. Para chamar alguém, mande a consulta pelo perfil da pessoa.":
         (soma+taxa>0?brl(soma+taxa)+" pagos agora — "+pg.resumo()+". "+
           brl(resto)+" ficam para a entrega, liberados por função. ":"Nada reservado agora — toda a equipe ficou em acerto direto. ")+
         (direto.length?brl(somaDireto)+" combinados direto com "+pl(direto.length,"pessoa")+", fora da plataforma. ":"")+
@@ -28123,7 +28171,7 @@ function drawEquipe(){
     v("e-resumo").innerHTML=
       '<p class="note" style="margin:2px 0 0;line-height:1.65">Cada vaga que você abrir entra aqui '+
       'com o valor da pessoa — tabela publicada sai exata, o resto entra como faixa da praça. '+
-      'O total soma na hora, junto com a taxa de garantia.</p>';
+      (REAL?'O total soma na hora.':'O total soma na hora, junto com a taxa de garantia.')+'</p>';
     v("e-saldo").innerHTML="";
     rotPassar("Passar o carro nas vagas abertas");
     const b0=v("e-fechar"); b0.disabled=true; b0.textContent="Escale alguém para fechar";
@@ -28135,10 +28183,10 @@ function drawEquipe(){
     '<div class="rl"><span>Ainda abertas</span><b style="color:'+(abertas?"var(--magenta)":"var(--livre)")+'">'+abertas+'</b></div>'+
     '<div class="rl" style="border-bottom:0"><span>Com tabela publicada</span><b>'+exatos+'</b></div>'+
     '<div class="rtot"><span>Custo estimado</span><b>'+(min===max?brl(min):brl(min)+"–"+brl(max))+'</b></div>'+
-    '<div class="rl" style="border-bottom:0;padding:12px 0 0"><span>Com garantia (+'+GARANTIA.taxa+'%, taxa sua)</span><b>'+
-      (min===max?brl(min+taxaDe(min)):brl(min+taxaDe(min))+"–"+brl(max+taxaDe(max)))+'</b></div>'+
+    (REAL?'':'<div class="rl" style="border-bottom:0;padding:12px 0 0"><span>Com garantia (+'+GARANTIA.taxa+'%, taxa sua)</span><b>'+
+      (min===max?brl(min+taxaDe(min)):brl(min+taxaDe(min))+"–"+brl(max+taxaDe(max)))+'</b></div>')+
     custoPorFuncao();
-  const orc=+v("e-orc").value||0;
+  const orc=REAL?0:(+v("e-orc").value||0);
   const sd=v("e-saldo");
   if(!VAGAS.length||!orc){sd.innerHTML="";}
   else if(max<=orc) sd.innerHTML='<div class="saldo ok">Cabe no orçamento com folga de '+brl(orc-max)+' no pior caso.</div>';
@@ -28154,6 +28202,7 @@ function drawEquipe(){
   const _cheio=_eq.reduce((t,x)=>t+x.valor,0);
   const _hoje=_eq.reduce((t,x)=>t+sinalDe(x.valor),0)+taxaDe(_cheio);
   bf.textContent=!nEsc?"Escale alguém para fechar"
+    :REAL?"Fechar escala"
     :_hoje?("Fechar escala e pagar "+brl(_hoje)+" de sinal")
           :"Fechar escala e enviar consultas";
 }
@@ -28736,6 +28785,10 @@ let hjEscala=[];
 function realHome(){
   if(!REAL) return;
   document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
+  const gg=document.querySelector("#g-guia span"); if(gg) gg.textContent="As três portas";
+  const s5=document.querySelector('#cd-steps [data-st="5"] span'); if(s5) s5.textContent="Identificação";   /* não há "como recebe" no real */
+  const cs=v("cd-consente"), cl=cs&&cs.closest("label");
+  if(cl) cl.title="Quem contrata vê nome, praça, funções, equipamento e portfólio. Dá para mudar quando quiser.";
   document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=!!e.hasAttribute("data-guilda")&&!guildaReal() });
 }
 /* a Z na home: fechado, ela está "chegando"; aberto (o lançamento), ela já está aqui */
@@ -29596,7 +29649,7 @@ const fotoDoTopo=nome=>HERO_ARTE[nome]||(nome==="passar"&&LOGIN_VIDEO&&LOGIN_VID
   vs.className="segm ag-vistas"; vs.id="ag-vistas"; vs.setAttribute("role","group"); vs.setAttribute("aria-label","Vista da agenda");
   vs.innerHTML='<button type="button" data-agv="cal" aria-pressed="true">Calendário</button>'+
     '<button type="button" data-agv="lista" aria-pressed="false">Lista</button>'+
-    '<button type="button" data-agv="fin" aria-pressed="false">Financeiro</button>';
+    (REAL?'':'<button type="button" data-agv="fin" aria-pressed="false">Financeiro</button>');   /* no real não há dinheiro para mostrar */
   h.after(vs);
   vs.querySelectorAll("[data-agv]").forEach(x=>x.onclick=()=>{
     vs.querySelectorAll("[data-agv]").forEach(y=>y.setAttribute("aria-pressed",String(y===x)));

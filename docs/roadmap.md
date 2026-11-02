@@ -2,6 +2,16 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Carro do Freela: o site real não fala do que não existe (02/11/2026, ramo `claude/carro-perfil`)
+
+- ✅ Pedido do titular (a gaveta ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda"): só no
+  site real (`REAL`) saem take, pedágio, taxas, sinal, garantia/custódia, contrato, planos pagos e WhatsApp da Ajuda
+  (artigos e FAQ reescritos para a fase 1), do cadastro (sem a pergunta do WhatsApp nem "Onde a sua agenda vive?"), da
+  agenda (sem Financeiro e sem os totais de dinheiro), de propostas, jobs, busca, perfil do contratante, Montar equipe,
+  fechamento da escala, anúncio e caixa do brechó. O job de fora vai direto para a agenda (sem link fingido). A prévia
+  e os builds de fase não mudam. Preço do anúncio, valor da proposta e tabela de diária continuam (são dado real).
+- ⬜ Decidir com o titular se a tabela de diária e o selo de verificado ficam no real (hoje só locais).
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
 - ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.

@@ -181,6 +181,23 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 02/nov · 2 — o site real não fala do que não existe (`test/demo-real.js`)
+
+Titular, com a gaveta aberta: a Ajuda ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda".
+Tudo **só no `REAL`** (a prévia e os builds de fase não mudam):
+- Ajuda: `moeda`/`taxas` com `data-sem-real`; `abrirAjuda` não abre artigo de fase futura e tira a linha de fase futura
+  (em vez do "em breve"); `AJUDA_REAL` troca o corpo de `oque`, `como`, `faq` e `contato` (sem sinal, contrato, take,
+  WhatsApp nem encontro presencial). "As quatro portas" vira "As três portas" (`realHome`).
+- Cadastro: sem "Qual é o seu WhatsApp?" (o número não ia a lugar nenhum: a chamada chega em Propostas e o servidor
+  recusa telefone) nem o cartão vazio "Onde a sua agenda vive?"; o item `fone` sai do `ITENS`; o passo 5 se chama
+  "Identificação".
+- Agenda: sem "e diárias", sem a vista Financeiro, sem os KPIs A receber / Recebido / Segurando, sem "Confirmado — com
+  garantia". Propostas: sem "Valor em jogo" e sem a soma em R$. Jobs: sem "A receber deles"; o job de fora vai direto
+  para a agenda (no real não há link para quem chamou nem nota emitida).
+- Busca sem o filtro Garantia; contratante sem "Fecha com garantia"; Montar equipe sem Orçamento, garantia, sinal, taxa
+  e "reservar o valor"; o caixa do contratante (`drawPagos`) vazio; o anúncio diz "Combinado direto com quem anuncia".
+- R$ que fica (é dado de verdade): preço do anúncio, valor da proposta, a tabela de diária do perfil e a faixa da praça.
+
 ## 02/nov — o modo demonstração em `/demo` (`test/demo-real.js`)
 
 Pedido do Victor: "simular como se tivesse uns 100 usuários usando a plataforma… em um endereço separado, qualquer

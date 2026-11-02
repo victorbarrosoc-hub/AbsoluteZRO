@@ -66,6 +66,39 @@ const { CHROME, ARGS } = require('./_navegador');
   t(await p.evaluate(() => /Esperando você/.test(document.getElementById('v-propostas').textContent)), 'propostas de exemplo esperando resposta');
   await p.evaluate(() => show('guildas')); await p.waitForTimeout(1200);
   t(await p.evaluate(() => /Panelinha/.test(document.getElementById('v-guildas').textContent)), 'a guilda de exemplo abre');
+
+  /* 02/11 · O SITE REAL NÃO FALA DO QUE NÃO EXISTE (titular, com a gaveta aberta: "O take, a moeda da plataforma" e
+     "Taxas e como o dinheiro anda" na Ajuda). A fase 1 não tem dinheiro dentro do Carro (take, pedágio, taxa, sinal,
+     custódia, contrato, aluguel, destaque pago, seguro), nem plano pago, selo "Prévia", Passar o carro, Sirene, Cofre,
+     Orçamento ou WhatsApp. R$ só onde é dado de verdade: preço do anúncio, valor da proposta e a tabela de diária. */
+  const NADA = /\btakes?\b|T\$|ped[áa]gio|\btaxas?\b|\bsinal\b|cust[óo]dia|garantia|contrato|gov\.br|aluguel|\balug|impulsion|\bseguro|dossi[êe]|Volante|Frota|Carona|Premium|Estrada|\bassin[ae]|mensalidade|Pr[ée]via|Passar o carro|Sirene|\bCofre|Or[çc]amento|WhatsApp|\bzap\b/i;
+  const sujo = (sel, comReais) => p.evaluate(({ sel, a, rs }) => {
+    const el = document.querySelector(sel); if (!el) return ['(sem ' + sel + ')'];
+    const A = new RegExp(a, 'i');
+    return el.innerText.split('\n').map(l => l.trim()).filter(l => A.test(l) || (rs && /R\$/.test(l))).slice(0, 3);
+  }, { sel, a: NADA.source, rs: !!comReais });
+  await p.evaluate(() => { abrirGaveta(); const a = document.querySelector('#gaveta [data-sanf="ajuda"] .mn-abre'); if (a && a.getAttribute('aria-expanded') !== 'true') a.click() });
+  await p.waitForTimeout(400);
+  const ajuda = await p.evaluate(() => [...document.querySelectorAll('#gaveta [data-ajuda]')].filter(b => b.offsetParent).map(b => b.dataset.ajuda));
+  const gav = await sujo('#gaveta', true);
+  t(!ajuda.includes('moeda') && !ajuda.includes('taxas') && ajuda.length >= 4 && !gav.length, 'a Ajuda da gaveta não tem take, taxas nem nada que não existe (' + ajuda.join(', ') + (gav.length ? ' · ' + gav.join(' | ') : '') + ')');
+  const arts = [];
+  for (const k of ajuda) { await p.evaluate(k => abrirAjuda(k), k); await p.waitForTimeout(150); arts.push(...(await sujo('#v-ajuda', true)).map(l => k + ': ' + l)) }
+  t(ajuda.length && !arts.length, '⟶⟶ e cada artigo aberto também não (' + arts.slice(0, 3).join(' | ') + ')');
+  t(await p.evaluate(() => { abrirAjuda('moeda'); abrirAjuda('taxas'); return !/take|taxa/i.test(document.getElementById('v-ajuda').innerText) }), '⟶⟶ e o take e as taxas não abrem nem chamados direto');
+  await p.evaluate(() => abrirGuia()); await p.waitForTimeout(300);
+  const guia = await sujo('#ovl-guia', true);
+  t(!guia.length, 'o guia de entrada só fala do que existe' + (guia.length ? ' (' + guia.join(' | ') + ')' : ''));
+  await p.evaluate(() => fecharGuia());
+  const telas = [];
+  for (const [modo, tela, rs] of [['freela', 'agenda', 1], ['freela', 'propostas', 0], ['freela', 'jobs', 1], ['freela', 'meu', 0], ['freela', 'cadastro', 1],
+    ['contratante', 'buscar', 0], ['contratante', 'equipe', 0], ['contratante', 'minhaprod', 1], ['contratante', 'brecho', 0]]) {
+    await p.evaluate(([m, x]) => { if (MODO !== m) v('modo-tog').onclick(); if (x === 'cadastro') { abrirCadastro('meu'); cadTodo = true; irPasso(1) } else show(x); if (x === 'brecho') painelBrecho('vender') }, [modo, tela]);
+    await p.waitForTimeout(500);
+    telas.push(...(await sujo('#v-' + tela, rs)).map(l => modo + '/' + tela + ': ' + l));
+  }
+  t(!telas.length, 'nas telas dos dois lados, nada de dinheiro, plano, contrato ou WhatsApp' + (telas.length ? ' (' + telas.slice(0, 4).join(' | ') + ')' : ''));
+  t(await p.evaluate(() => !CAD_PERG.some(q => /WhatsApp/.test(q.t)) && !ITENS.some(i => i.k === 'fone')), 'o cadastro não pergunta o WhatsApp (o número não teria para onde ir)');
   t(!api.length, 'nenhum pedido chega ao servidor (' + api.slice(0, 3).join(', ') + ')');
   const p2 = await ctx.newPage(); await p2.goto('https://carro.absolutezro.com/nada');
   const lsReal = await p2.evaluate(() => ({ uso: localStorage.getItem('cdf-uso'), entrou: localStorage.getItem('cdf-entrou') }));

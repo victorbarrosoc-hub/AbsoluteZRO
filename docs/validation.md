@@ -15,6 +15,20 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Carro do Freela: o site real não fala do que não existe (02/11/2026)
+
+- Varredura no `/demo` (Playwright, 1440 e 390 px, os dois lados: toda tela do `MENU`, gaveta, cada artigo da Ajuda,
+  guia, consulta, perfil, anúncio, cadastro passo a passo, painéis do brechó e o fechamento da escala) atrás de take,
+  T$, pedágio, taxa, sinal, custódia, garantia, contrato, gov.br, aluguel, impulsionado, seguro, dossiê, planos pagos,
+  assinatura, mensalidade, Prévia, Passar o carro, Sirene, Cofre, Orçamento e WhatsApp: 80 linhas antes, zero depois
+  (R$ só no preço do anúncio, no valor da proposta e na tabela de diária).
+- `test/demo-real.js` ganhou a guarda (gaveta, artigos, guia, nove telas, cadastro sem WhatsApp): 24/24; tirando o
+  `data-sem-real` de "Taxas" do HTML gerado ela reprova. Suítes do real: demo-real, site-real, conta-zro, guilda-real,
+  missoes-real e porta-malas-real 6/6 (porta-malas-real precisou rodar sozinha, 18/18). Protótipo inalterado: mapa,
+  menu-recolhivel, guia-portas, explicador, versoes, fase1-sem-dinheiro, cadastro, cadastro-foco, consentimento,
+  propostas, busca, busca-e-cartao, filtros-busca, contratante, fechar-escala, painel-do-job, rede-e-convite,
+  persistencia, baloes e vitrines 20/20.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
