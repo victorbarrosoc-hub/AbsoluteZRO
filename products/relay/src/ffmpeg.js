@@ -12,9 +12,16 @@
 //    flutuante, antes da escala.
 //  - Codificador de hardware (VideoToolbox, NVENC, Quick Sync, AMF) só no modo rápido: no mesmo tamanho, perde para o
 //    x264 em detalhe (docs/QUALIDADE.md).
+//  - Transparência: ProRes 4444 (prores_ks, 4:4:4 10 bits com alfa de 16) e VP9 em WebM (yuva420p) mantêm o alfa;
+//    faixas de tela fixa saem transparentes. Fundo chroma: a imagem entra por cima de uma cor chapada (overlay) e sai
+//    em H.264 sem alfa. Esses três sempre no codificador de software, qualquer que seja o modo.
 
-/** Formato de pixel que cada codificador aceita melhor (8 bits 4:2:0). */
-const pixFor = (encoder) => (encoder === 'h264_qsv' || encoder === 'h264_mf' || encoder === 'hevc_qsv' ? 'nv12' : 'yuv420p')
+/** Formato de pixel que cada codificador aceita melhor (8 bits 4:2:0; com alfa, o do codec de transparência). */
+const pixFor = (encoder, codec) =>
+  codec === 'prores4444' ? 'yuva444p10le' : codec === 'vp9' ? 'yuva420p' : encoder === 'h264_qsv' || encoder === 'h264_mf' || encoder === 'hevc_qsv' ? 'nv12' : 'yuv420p'
+
+/** Cor #RRGGBB → 0xRRGGBB (o jeito do ffmpeg). */
+const corFfmpeg = (hex) => `0x${String(hex).replace('#', '').toUpperCase()}`
 
 const k = (bps) => `${Math.round(bps / 1000)}k`
 
@@ -35,8 +42,9 @@ const NITIDEZ = [null, 'unsharp=5:5:0.4:5:5:0', 'unsharp=5:5:0.8:5:5:0']
  * Cadeia de filtros de vídeo: desentrelaçar, giro, espelho, recorte, ruído, cor da Revela (LUT), escala (Lanczos),
  * encaixe na tela fixa, nitidez, cadência e formato. `lut`: caminho do .cube assado (obrigatório com receita de cor).
  */
-export function filtroVideo(plano, encoder = 'libx264', lut = null) {
+export function filtroVideo(plano, encoder = 'libx264', lut = null, { rgba = false } = {}) {
   const v = plano.video
+  const transparente = Boolean(v.alfa || v.fundo)
   const c = plano.computador ?? {}
   const f = []
   const sws = 'flags=lanczos+accurate_rnd+full_chroma_int'
@@ -61,7 +69,9 @@ export function filtroVideo(plano, encoder = 'libx264', lut = null) {
   }
   if (v.encaixe === 'contain') {
     f.push(`scale=${v.largura}:${v.altura}:force_original_aspect_ratio=decrease:force_divisible_by=2:${sws}:${saida}`)
-    f.push(`pad=${v.largura}:${v.altura}:(ow-iw)/2:(oh-ih)/2:black`)
+    // com transparência, as faixas também são transparentes (no chroma, viram a cor do fundo)
+    if (transparente) f.push('format=yuva444p10le', `pad=${v.largura}:${v.altura}:(ow-iw)/2:(oh-ih)/2:black@0`)
+    else f.push(`pad=${v.largura}:${v.altura}:(ow-iw)/2:(oh-ih)/2:black`)
   } else if (v.encaixe === 'cover') {
     f.push(`scale=${v.largura}:${v.altura}:force_original_aspect_ratio=increase:${sws}:${saida}`)
     f.push(`crop=${v.largura}:${v.altura}`)
@@ -71,16 +81,38 @@ export function filtroVideo(plano, encoder = 'libx264', lut = null) {
   if (v.fps) f.push(`fps=${fracaoFps(v.fps)}`)
   // interpretar: todos os quadros, com o tempo de cada um multiplicado (e a cadência nova marcada no arquivo)
   if (v.conforme && v.conforme.fator !== 1) f.push(`setpts=PTS*${fracaoFps(v.conforme.de)}/(${fracaoFps(v.conforme.para)})`, `fps=${fracaoFps(v.conforme.para)}`)
-  f.push(`format=${pixFor(encoder)}`)
+  // fundo chroma: a imagem sai em RGBA para entrar por cima da cor (grafoChroma); o formato final vem depois do overlay
+  if (rgba) return [...f, 'format=rgba'].join(',')
+  f.push(`format=${pixFor(encoder, v.codec)}`)
   // marca cada quadro 1-1-1: do ffmpeg 8 em diante o codificador lê a cor dos quadros, e as opções -color_* sozinhas
   // não bastam (a saída perdia primárias e transferência). O mesmo que a Revela faz (products/finishing).
   f.push('setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv')
   return f.join(',')
 }
 
+/**
+ * Fundo chroma: a cor chapada no tamanho e na cadência da saída, a imagem (com alfa) por cima, H.264 sem alfa.
+ * Vai em -filter_complex com a saída [v].
+ */
+export function grafoChroma(plano, encoder = 'libx264', lut = null, fpsOrigem = 30) {
+  const v = plano.video
+  const fps = fracaoFps(v.fps ?? fpsOrigem)
+  const imagem = filtroVideo(plano, encoder, lut, { rgba: true })
+  return (
+    `color=c=${corFfmpeg(v.fundo)}:s=${v.largura}x${v.altura}:r=${fps},format=rgba[fundo];[0:v]${imagem}[imagem];` +
+    // a mistura em RGB e a volta para YUV com a matriz BT.709 explícita (sem ela o ffmpeg usa BT.601 e o verde escurece)
+    `[fundo][imagem]overlay=shortest=1:format=rgb,scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int,format=${pixFor(encoder)},` +
+    `setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv[v]`
+  )
+}
+
 /** Parâmetros do codificador de vídeo. `passe`: null (uma passada), 1 ou 2. */
 export function argsCodificador(plano, encoder = 'libx264', passe = null, log = null) {
   const v = plano.video
+  // transparência: sempre no software (os de hardware não gravam alfa)
+  if (v.codec === 'prores4444') return ['-c:v', 'prores_ks', '-profile:v', '4444', '-alpha_bits', '16', '-vendor', 'apl0']
+  if (v.codec === 'vp9') return ['-c:v', 'libvpx-vp9', '-crf', String(v.crf ?? 20), '-b:v', k(v.bitrate), '-deadline', 'good', '-cpu-used', '2', '-row-mt', '1', '-auto-alt-ref', '0']
+  if (v.fundo && encoder !== 'libx264') encoder = 'libx264'
   const hevc = v.codec === 'hevc'
   // CRF livre: o teto (VBV) só onde o tamanho importa (WhatsApp, proxy). Medido: com o teto, o x264 perdia para a
   // referência de duas passadas no mesmo tamanho; sem ele, ganha (docs/QUALIDADE.md)
@@ -133,6 +165,8 @@ export function argsAudio(plano) {
   switch (a.codec) {
     case 'aac':
       return ['-c:a', 'aac', '-b:a', k(a.bitrate), ...comum]
+    case 'opus':
+      return ['-c:a', 'libopus', '-b:a', k(a.bitrate), ...comum]
     case 'mp3':
       return ['-c:a', 'libmp3lame', '-b:a', k(a.bitrate), '-id3v2_version', '3', ...comum]
     case 'pcm-s24':
@@ -144,7 +178,7 @@ export function argsAudio(plano) {
   }
 }
 
-const MUX = { mp4: ['-movflags', '+faststart', '-f', 'mp4'], m4a: ['-movflags', '+faststart', '-f', 'ipod'], mp3: ['-f', 'mp3'], wav: ['-f', 'wav'] }
+const MUX = { mp4: ['-movflags', '+faststart', '-f', 'mp4'], m4a: ['-movflags', '+faststart', '-f', 'ipod'], mp3: ['-f', 'mp3'], wav: ['-f', 'wav'], webm: ['-f', 'webm'], mov: ['-f', 'mov'] }
 
 /**
  * Linhas de comando do ffmpeg para um plano: uma (CRF ou CBR) ou duas (tamanho máximo e bitrate médio, 2 passadas).
@@ -165,13 +199,15 @@ export function argsFfmpeg(plano, { input, output, origem = {}, encoder = 'libx2
   const fps = v.fps ?? origem.fps ?? 30
   const gop = ['-g', String(Math.max(1, Math.round(fps * v.gop))), '-keyint_min', String(Math.max(1, Math.round(fps * Math.min(v.gop, 1))))]
   const cor = ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv']
-  const mapa = ['-map', '0:v:0', ...(plano.audio ? ['-map', '0:a:0?'] : []), '-dn', '-sn', '-map_chapters', '-1']
-  const video = (passe) => ['-vf', filtroVideo(plano, encoder, lut), ...argsCodificador(plano, encoder, passe, log), ...gop, ...cor]
+  // fundo chroma: grafo com a cor atrás (saída [v]); o resto numa cadeia só
+  const imagem = v.fundo ? ['-filter_complex', grafoChroma(plano, encoder, lut, fps), '-map', '[v]'] : ['-map', '0:v:0', '-vf', filtroVideo(plano, encoder, lut)]
+  const mapa = [...(plano.audio ? ['-map', '0:a:0?'] : []), '-dn', '-sn', '-map_chapters', '-1']
+  const video = (passe) => [...imagem, ...argsCodificador(plano, encoder, passe, log), ...gop, ...cor]
   // tamanho máximo ou bitrate médio escolhido pela pessoa: duas passadas acertam o número (CBR vai numa)
   const duasPassadas = (plano.tamanhoMax || (v.fixo && !v.cbr)) && (encoder === 'libx264' || encoder === 'libx265')
-  if (!duasPassadas) return [[...base, ...mapa, ...video(null), ...argsAudio(plano), ...MUX[plano.formato], output]]
+  if (!duasPassadas) return [[...base, ...video(null), ...mapa, ...argsAudio(plano), ...MUX[plano.formato], output]]
   return [
-    [...base, '-map', '0:v:0', ...video(1), '-an', '-f', 'null', process.platform === 'win32' ? 'NUL' : '/dev/null'],
-    [...base, ...mapa, ...video(2), ...argsAudio(plano), ...MUX[plano.formato], output],
+    [...base, ...video(1), '-an', '-f', 'null', process.platform === 'win32' ? 'NUL' : '/dev/null'],
+    [...base, ...video(2), ...mapa, ...argsAudio(plano), ...MUX[plano.formato], output],
   ]
 }

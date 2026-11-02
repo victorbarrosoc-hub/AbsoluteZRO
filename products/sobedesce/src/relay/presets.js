@@ -47,6 +47,9 @@ const F = {
   x: fonte('X: H.264 High, 1280×720, 30 ou 60 fps, vídeo a partir de 5.000 kbit/s, AAC-LC a partir de 128 kbit/s, GOP fechado', 'https://docs.x.com/x-api/media/quickstart/best-practices'),
   mp3: fonte('MP3 320 kbit/s CBR: o teto do formato (MPEG-1 Layer III), padrão de mercado', 'https://lame.sourceforge.io/', 'mercado'),
   wav: fonte('WAV PCM 48 kHz: a taxa de áudio do vídeo e dos editores (EBU R 128 / produção)', 'https://tech.ebu.ch/docs/r/r128.pdf', 'mercado'),
+  webmAlfa: fonte('WebM com VP9 guarda transparência (alpha_mode); Chrome, Edge e Firefox tocam com fundo transparente', 'https://www.webmproject.org/docs/container/', 'oficial'),
+  prores4444: fonte('Apple ProRes 4444: 4:4:4 com canal alfa de até 16 bits, o formato de transparência que DaVinci Resolve, Premiere e Final Cut leem', 'https://www.apple.com/final-cut-pro/docs/Apple_ProRes.pdf'),
+  chroma: fonte('Verde chroma (Pantone 354 C, #00B140) e azul chroma (Pantone 2728 C, #0047BB): as cores de fundo de tela de recorte', 'https://www.pantone.com/connect/354-C', 'mercado'),
 }
 
 const AAC = (kbps) => ({ codec: 'aac', kbps, taxa: 48000, canais: 2 })
@@ -58,7 +61,10 @@ const AAC = (kbps) => ({ codec: 'aac', kbps, taxa: 48000, canais: 2 })
  *   teto (computador: limite do CRF em múltiplos do bitrate; sem ele, qualidade constante livre) }
  * - `audio`: { codec 'aac'|'mp3'|'pcm-s24'|'pcm-s16', kbps, taxa, canais }
  * - `tamanhoMax`: bytes (cabe no limite: o Relay escolhe tamanho e bitrate para caber)
- * - `formato`: contêiner de saída ('mp4' | 'mp3' | 'wav' | 'm4a')
+ * - `formato`: contêiner de saída ('mp4' | 'mp3' | 'wav' | 'm4a' | 'webm' | 'mov')
+ * - `video.alfa`: true = mantém a transparência do arquivo (VP9 em WebM ou ProRes 4444)
+ * - `video.fundo`: cor (#RRGGBB) que entra atrás da transparência (chroma key: o editor recorta a cor depois)
+ * - `soComputador`: o codec não existe no navegador (ProRes): só na Máxima qualidade
  */
 export const PRESETS = [
   {
@@ -234,6 +240,54 @@ export const PRESETS = [
     fontes: [fonte('Proxy de edição: 720p, GOP curto para correr na timeline, mesmo nome e duração do original', 'https://www.blackmagicdesign.com/products/davinciresolve/', 'mercado')],
   },
   {
+    id: 'alfa-webm',
+    nome: 'Transparente',
+    grupo: 'Transparência',
+    icone: 'alfa',
+    resumo: 'Fundo transparente em WebM, para web, overlays e o AEON.',
+    formato: 'webm',
+    video: { codec: 'vp9', alfa: true, ladoMenor: null, fpsMax: 120, gop: 2, kbps: { 720: [6000, 9000], 1080: [12000, 18000], 1440: [20000, 30000], 2160: [40000, 60000] }, crf: 20 },
+    audio: { codec: 'opus', kbps: 192, taxa: 48000, canais: 2 },
+    fontes: [F.webmAlfa],
+    dica: 'O Premiere não lê o alfa do WebM: para ele, use ProRes 4444.',
+  },
+  {
+    id: 'alfa-prores',
+    nome: 'ProRes 4444',
+    grupo: 'Transparência',
+    icone: 'alfa',
+    resumo: 'Com alfa, para DaVinci Resolve, Premiere e Final Cut.',
+    formato: 'mov',
+    soComputador: true,
+    video: { codec: 'prores4444', alfa: true, ladoMenor: null, fpsMax: 120, gop: 1, kbps: null, crf: null },
+    audio: { codec: 'pcm-s24', kbps: null, taxa: 48000, canais: null },
+    fontes: [F.prores4444],
+    dica: 'Sai no app de computador (Máxima qualidade): o navegador não grava ProRes.',
+  },
+  {
+    id: 'chroma-verde',
+    nome: 'Fundo verde',
+    grupo: 'Transparência',
+    icone: 'chroma',
+    resumo: 'A transparência vira verde chroma, para recortar no editor.',
+    formato: 'mp4',
+    video: { codec: 'avc', fundo: '#00B140', ladoMenor: null, fpsMax: 120, gop: 1, kbps: { 720: [12000, 18000], 1080: [24000, 36000], 1440: [36000, 54000], 2160: [70000, 100000] }, crf: 14 },
+    audio: AAC(320),
+    fontes: [F.chroma],
+    dica: 'Para o editor que não lê alfa. No AEON, "Remover fundo verde" recorta num toque.',
+  },
+  {
+    id: 'chroma-azul',
+    nome: 'Fundo azul',
+    grupo: 'Transparência',
+    icone: 'chroma',
+    resumo: 'Azul chroma, quando o verde aparece na arte.',
+    formato: 'mp4',
+    video: { codec: 'avc', fundo: '#0047BB', ladoMenor: null, fpsMax: 120, gop: 1, kbps: { 720: [12000, 18000], 1080: [24000, 36000], 1440: [36000, 54000], 2160: [70000, 100000] }, crf: 14 },
+    audio: AAC(320),
+    fontes: [F.chroma],
+  },
+  {
     id: 'tv',
     nome: 'Smart TV',
     grupo: 'TV',
@@ -329,7 +383,7 @@ export const PRESETS = [
   },
 ]
 
-export const GRUPOS = ['Redes', 'Trabalho', 'TV', 'Tamanho', 'Áudio']
+export const GRUPOS = ['Redes', 'Trabalho', 'Transparência', 'TV', 'Tamanho', 'Áudio']
 
 /**
  * Os destinos que uma produtora mais entrega ao cliente (o Maestro mostra estes primeiro em "Gerar versões"; os

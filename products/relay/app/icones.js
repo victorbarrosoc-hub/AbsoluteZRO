@@ -18,6 +18,8 @@ const G = {
   peso: '<path d="M7.5 8h9l2.5 12H5z"/><circle cx="12" cy="5.5" r="2.5"/>',
   envelope: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.8 6.5l8.2 6.2 8.2-6.2"/>',
   onda: '<path d="M3 12h1.5M6.5 8v8M10 5v14M13.5 9v6M17 6.5v11M20.5 10.5v3"/>',
+  alfa: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M6.5 3.5H12V12H3.5V6.5a3 3 0 0 1 3-3zM12 12h8.5v5.5a3 3 0 0 1-3 3H12z" fill="currentColor" stroke="none"/>',
+  chroma: '<rect x="2.5" y="4.5" width="19" height="15" rx="3"/><circle cx="12" cy="10" r="2.6"/><path d="M7.5 19.5c.6-3 2.3-4.6 4.5-4.6s3.9 1.6 4.5 4.6"/>',
   // interface
   soltar: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/>',
   baixar: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M4 19.5h16"/>',

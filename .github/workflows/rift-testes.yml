@@ -1,0 +1,45 @@
+# Testes do Rift Motion (products/rift-motion): o login da Absolute ZRO (api/zro), o banco próprio num Postgres de
+# verdade (migração, isolamento entre pessoas pelo RLS, recusas das rotas) e o build do site (publicar.mjs).
+# Roda quando a pasta ou este arquivo mudam.
+name: Rift Motion · testes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/rift-motion/**'
+      - '.github/workflows/rift-testes.yml'
+  pull_request:
+    paths:
+      - 'products/rift-motion/**'
+      - '.github/workflows/rift-testes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rift-testes-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/rift-motion
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/rift-motion/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: node publicar.mjs && node --check publico/app.js

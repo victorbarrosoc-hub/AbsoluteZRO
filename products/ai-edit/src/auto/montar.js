@@ -137,6 +137,7 @@ export function trocarPlano(p, id, alt) {
   delete novo.velocidade
   delete novo.estabilizar
   delete novo.faixas
+  delete novo.chroma
   if (alt.tipo === 'performance') delete novo.etiqueta
   else novo.etiqueta = 'B-roll'
   const clipes = p.linha.clipes.slice()

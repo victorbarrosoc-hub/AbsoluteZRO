@@ -35,6 +35,13 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
       'Para arquivo que está no Drive: o SOBEDESCE converte com o Relay no computador ou no celular e sobe ao lado do original.',
     ],
   },
+  'rift-motion': {
+    nome: 'Rift Motion (rift.absolutezro.com)',
+    faz: [
+      'Estúdio de motion design 2D e 3D no navegador e no app de computador: camadas de texto, forma, imagem, vídeo e objeto 3D, movimentos prontos (entrar, quicar, girar, aparecer, crescer, sair) e linha do tempo.',
+      'Criar com IA pela Higgsfield conectada na conta Absolute ZRO: prévias em imagem antes, depois anima a imagem em vídeo com o preço mostrado antes de gerar.',
+    ],
+  },
   synquei: {
     nome: 'Synquei',
     faz: [

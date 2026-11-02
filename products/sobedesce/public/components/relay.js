@@ -15,7 +15,7 @@ import { Barra, Opcoes, Pilulas } from './kit.js'
 import { invalidateAccount } from './drive-data.js'
 import { driveLinkFor } from './link-share.js'
 
-const GRUPOS = ['Redes', 'Trabalho', 'TV', 'Tamanho', 'Áudio']
+const GRUPOS = ['Redes', 'Trabalho', 'Transparência', 'TV', 'Tamanho', 'Áudio']
 const ICONE = { vertical: 'phone', horizontal: 'monitor', audio: 'music' }
 const FASE = { esperando: 'Na fila', baixando: 'Baixando', analisando: 'Lendo', convertendo: 'Convertendo', enviando: 'Enviando', conferindo: 'Conferindo' }
 

@@ -10,7 +10,7 @@ export const FAMILIA = [
   { id: 'hub', nome: 'Absolute ZRO', href: 'https://absolutezro.com', icone: 'absolute-zro', papel: 'Sua conta e seus projetos' },
   { id: 'sobedesce', nome: 'SOBEDESCE', href: 'https://sobedesce.absolutezro.com', icone: 'sobedesce.svg', papel: 'Descarga e subida conferidas' },
   { id: 'synquei', nome: 'Synquei', href: 'https://synquei.absolutezro.com', icone: 'synquei.svg', papel: 'Câmeras sincronizadas pelo som' },
-  { id: 'nossom', nome: 'Quasar Audio Lab', href: 'https://nossom.absolutezro.com', icone: 'nossom.svg', papel: 'Voz limpa, mix e master' },
+  { id: 'nossom', nome: 'Quasar Audio Lab', href: 'https://quasar.absolutezro.com', icone: 'nossom.svg', papel: 'Voz limpa, mix e master' },
   { id: 'finishing', nome: 'Revela', href: 'https://revela.absolutezro.com', icone: 'revela.svg', papel: 'Cor, LUT e entrega' },
   { id: 'relay', nome: 'Relay', href: 'https://relay.absolutezro.com', icone: 'relay.svg', papel: 'Versões para cada rede' },
   { id: 'tpeasy', nome: 'TPeasy', href: 'https://tpeasy.absolutezro.com', icone: 'tpeasy.svg', papel: 'Teleprompter com o roteiro' },
@@ -23,7 +23,7 @@ export const FAMILIA = [
 /** Depois do AEON: os próximos passos que abrem o app certo (Entrega). */
 export const DEPOIS = [
   { id: 'finishing', titulo: 'Cor na Revela', texto: 'LUT do seu frame de referência.', href: 'https://revela.absolutezro.com/lut' },
-  { id: 'nossom', titulo: 'Som no Quasar', texto: 'Voz limpa, mix e master.', href: 'https://nossom.absolutezro.com' },
+  { id: 'nossom', titulo: 'Som no Quasar', texto: 'Voz limpa, mix e master.', href: 'https://quasar.absolutezro.com' },
   { id: 'relay', titulo: 'Versões no Relay', texto: 'Do master ao feed de cada rede.', href: 'https://relay.absolutezro.com' },
   { id: 'sobedesce', titulo: 'Entregar com o SOBEDESCE', texto: 'Sobe conferido, com MD5.', href: 'https://sobedesce.absolutezro.com' },
 ]

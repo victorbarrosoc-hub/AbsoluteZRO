@@ -2,7 +2,7 @@
 
 Estúdio de áudio para criadores, com aplicação web responsiva, instalação pelo navegador e aplicativo Electron para Mac/Windows.
 
-**Produção:** <https://nossom.absolutezro.com> · **Downloads:** <https://nossom.absolutezro.com/apps>
+**Produção:** <https://quasar.absolutezro.com> (Quasar Audio Lab; o endereço antigo `nossom.absolutezro.com` redireciona) · **Downloads:** <https://quasar.absolutezro.com/apps>
 
 ## Continuar no Claude Code
 

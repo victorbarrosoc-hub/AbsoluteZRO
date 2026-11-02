@@ -1140,7 +1140,7 @@ test('peças: duas seções em 16:9 e 9:16, nome pelo modelo, vídeo de cada uma
 })
 
 /**
- * A NOSSOM falsa (nossom.absolutezro.com e o armazenamento dela): conta com franquia, preparar, receber o som em partes,
+ * A NOSSOM falsa (quasar.absolutezro.com e o armazenamento dela): conta com franquia, preparar, receber o som em partes,
  * fila → separando → pronto, as cinco faixas (FLAC de verdade) e liberar. Responde com o CORS da origem do AEON, como
  * products/nossom/lib/server/irmaos.ts. Guarda o que recebeu para o teste conferir.
  */
@@ -1149,7 +1149,7 @@ async function simularNossom(pagina, faixas) {
   const tamanhos = faixas.map((b) => b.length)
   const pacote = Buffer.concat(faixas)
   const cors = (origem) => ({ 'access-control-allow-origin': origem, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'Content-Type', 'access-control-allow-methods': 'GET, POST, PUT', vary: 'Origin' })
-  await pagina.route('https://nossom.absolutezro.com/**', async (rota) => {
+  await pagina.route('https://quasar.absolutezro.com/**', async (rota) => {
     const q = rota.request()
     const origem = q.headers().origin || s.url.replace(/\/$/, '')
     const u = new URL(q.url())

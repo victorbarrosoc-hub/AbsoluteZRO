@@ -1133,6 +1133,15 @@ body[data-pagina='z'] .paginas {
 .tela-video.visivel {
   opacity: 1;
 }
+.tela-chroma {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  opacity: 0;
+  pointer-events: none;
+}
 .tela-legenda {
   position: absolute;
   inset: 0;
@@ -2432,49 +2441,58 @@ select {
   color: var(--text-strong);
 }
 /* estabilizar: ligar, suavidade e recorte; o resumo é o que foi medido */
-.insp-estab {
+.insp-estab,
+.insp-chroma {
   display: grid;
   gap: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--line-soft, rgb(255 255 255 / 0.08));
 }
-.insp-estab button.ficha {
+.insp-estab button.ficha,
+.insp-chroma .chroma-acoes button.ficha {
   appearance: none;
   border: 0;
   font-family: inherit;
   cursor: pointer;
   color: var(--text-strong);
 }
-.insp-estab button.ficha[aria-pressed='true'] {
+.insp-estab button.ficha[aria-pressed='true'],
+.insp-chroma .chroma-acoes button.ficha[aria-pressed='true'] {
   box-shadow:
     var(--pill-rim),
     inset 0 0 0 1px var(--cor-verde);
 }
-.insp-estab button.ficha:disabled {
+.insp-estab button.ficha:disabled,
+.insp-chroma .chroma-acoes button.ficha:disabled {
   opacity: 0.5;
   cursor: progress;
 }
-.estab-resumo {
+.estab-resumo,
+.chroma-resumo {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--text-faint);
 }
-.estab-campo {
+.estab-campo,
+.chroma-campo {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 4px 10px;
   font-size: 12px;
   color: var(--text-faint);
 }
-.estab-campo input {
+.estab-campo input,
+.chroma-campo input {
   grid-column: 1 / -1;
   width: 100%;
   accent-color: var(--cor-verde);
 }
-.estab-campo input:disabled {
+.estab-campo input:disabled,
+.chroma-campo input:disabled {
   opacity: 0.4;
 }
-.estab-campo output {
+.estab-campo output,
+.chroma-campo output {
   font-variant-numeric: tabular-nums;
 }
 
@@ -3503,6 +3521,36 @@ html:not([data-conta]) body {
 .clipe:has(.clipe-faixas:not([hidden])) .clipe-vel {
   bottom: 14px;
 }
+
+/* remover fundo verde: a amostra da cor medida e as chaves Verde/Azul/Medir */
+.chroma-chaves {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.chroma-chaves[hidden] {
+  display: none;
+}
+.chroma-amostra {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+.insp-chroma .chroma-chaves button.ficha {
+  appearance: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-strong);
+}
+.insp-chroma .chroma-chaves button.ficha[aria-pressed='true'] {
+  box-shadow:
+    var(--pill-rim),
+    inset 0 0 0 1px var(--cor-verde);
+}
+
 /* nos sons da ZRO os chips são categorias (sem ícone de pasta), e a aberta fica marcada */
 .sons-categorias button::before {
   content: none;
