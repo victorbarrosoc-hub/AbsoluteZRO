@@ -58,6 +58,19 @@ export const iaAvancada = {
   id: 'ia-avancada-v1',
   label: 'Z avançada',
 } as const;
+/** A Z cria sons (titular, 02/11/2026): trilha instrumental e efeitos por texto, gerados no servidor. */
+export const trilhaZ = { id: 'trilha-z-v1', label: 'Trilha da Z' } as const;
+export const efeitoZ = { id: 'efeito-z-v1', label: 'Efeito da Z' } as const;
+/** Pedidos que rodam no servidor (sem GPU): a Z avançada e os sons criados pela Z. */
+export type ServerPreset = typeof iaAvancada.id | typeof trilhaZ.id | typeof efeitoZ.id;
+export function isServerPreset(value: unknown): value is ServerPreset {
+  return value === iaAvancada.id || value === trilhaZ.id || value === efeitoZ.id;
+}
+/** Trilha: de 10 s a 5 min. Efeito: de 0,5 a 30 s. */
+export const LIMITES_GERACAO = {
+  trilha: { min: 10, max: 300 },
+  efeito: { min: 0.5, max: 30 },
+} as const;
 export type CloudPreset =
   AudioPreset | typeof transcription.id | typeof stemSeparation.id | typeof iaAvancada.id;
 const presetSpecs: Record<AudioPreset, { sampleRate: number; channels: number; parts: number }> = {
@@ -86,8 +99,8 @@ export function isVoiceToolPreset(preset: unknown) {
 export function presetSpec(preset: AudioPreset) {
   return presetSpecs[preset];
 }
-export function outputParts(preset: CloudPreset) {
-  return preset === transcription.id || preset === iaAvancada.id
+export function outputParts(preset: CloudPreset | ServerPreset) {
+  return preset === transcription.id || isServerPreset(preset)
     ? 1
     : preset === stemSeparation.id
       ? STEMS_PARTS
@@ -222,7 +235,7 @@ export function validStemsReport(value: unknown): value is StemsReport {
 }
 /** O áudio da IA avançada: um arquivo comprimido; a duração é conferida depois de decodificar. */
 export type AdvancedReport = {
-  preset: typeof iaAvancada.id;
+  preset: ServerPreset;
   chunks: [{ index: 0; bytes: number }];
   totalBytes: number;
 };
@@ -230,7 +243,7 @@ export function validAdvancedReport(value: unknown): value is AdvancedReport {
   if (!value || typeof value !== 'object') return false;
   const r = value as AdvancedReport;
   return (
-    r.preset === iaAvancada.id &&
+    isServerPreset(r.preset) &&
     Number.isInteger(r.totalBytes) &&
     r.totalBytes > 0 &&
     r.totalBytes <= CLOUD_PART_BYTES &&

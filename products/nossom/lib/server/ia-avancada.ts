@@ -49,6 +49,38 @@ export async function isolarVoz(audio: Blob): Promise<Blob> {
   return limpo;
 }
 
+const API = 'https://api.elevenlabs.io/v1';
+/**
+ * A Z cria um som por texto: trilha instrumental (para ficar por baixo da voz) ou efeito. Devolve MP3. Nunca repete
+ * sozinha; o texto da pessoa vai como dado, nunca como instrução.
+ */
+export async function gerarSom(tipo: 'trilha' | 'efeito', texto: string, segundos: number) {
+  const chave = process.env.ELEVENLABS_API_KEY?.trim();
+  if (!chave || !iaAvancadaConfigurada()) throw new IaAvancadaErro('não configurada');
+  const [caminho, corpo] =
+    tipo === 'trilha'
+      ? [
+          '/music',
+          {
+            prompt: texto,
+            music_length_ms: Math.round(segundos * 1000),
+            force_instrumental: true,
+          },
+        ]
+      : ['/sound-generation', { text: texto, duration_seconds: segundos, prompt_influence: 0.5 }];
+  const resposta = await fetch(`${API}${caminho}?output_format=mp3_44100_128`, {
+    method: 'POST',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(CHAMADA_MS),
+    headers: { 'xi-api-key': chave, 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo),
+  });
+  if (!resposta.ok) throw new IaAvancadaErro('recusado ' + resposta.status);
+  const som = await resposta.blob();
+  if (!som.size || som.size > CLOUD_PART_BYTES) throw new IaAvancadaErro('resultado inválido');
+  return som;
+}
+
 /**
  * Trabalho depois da resposta (`after` da Next, que a Vercel mantém viva até o fim da função). Fora de um pedido
  * (testes), roda direto; os testes trocam `rodar` para esperar o fim.
