@@ -10,7 +10,7 @@ import { authorize, loadOidcClaims } from '@zro/core'
 import type { Database, Tx } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { divulgado } from '../../apps/hub-web/lib/divulgacao'
-import { newOrgWithOwner } from './helpers'
+import { newOrgWithOwner, legacyFreeOrg } from './helpers'
 
 let db: Database
 beforeAll(() => {
@@ -36,10 +36,10 @@ describe('AEON no ar na web (0043)', () => {
     expect(divulgado({ state: s[ID]!.state, canais: s[ID]!.channels })).toBe(false)
   })
 
-  it('planos: o grátis vigente, o Completo e o Pro trazem o AEON inteiro (nada muda nos planos)', async () => {
+  it('planos: o grátis antigo, o Completo e o Pro trazem o AEON inteiro (fora da venda desde a 0055, nada apagado)', async () => {
     const rows = await db.sql`
       select p.code, p.version from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = ${ID}
-      where p.status = 'active' order by p.code, p.version`
+      where p.status in ('active', 'retired') order by p.code, p.version`
     const codes = rows.map((r) => r.code)
     for (const c of ['conta-absolute-zro', 'ciclo-do-o', 'absolute-zro-pro']) expect(codes, c).toContain(c)
   })
@@ -57,7 +57,7 @@ describe('AEON no ar na web (0043)', () => {
   })
 
   it('backfill idempotente: conta de antes do lançamento ganha o AEON uma vez; rodar a 0043 de novo não muda nada', async () => {
-    const o = await newOrgWithOwner(db, 'aeon-web-antiga', { freePlan: true })
+    const o = await legacyFreeOrg(db, 'aeon-web-antiga')
     await sys((tx) => tx`delete from zro.entitlements where org_id = ${o.orgId} and product_id = ${ID}`)
     const contar = async () => {
       const [r] = await db.sql`

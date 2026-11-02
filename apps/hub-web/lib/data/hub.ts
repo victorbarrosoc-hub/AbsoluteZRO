@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import type { Authenticated } from '@zro/auth'
-import { isFeatureFlag, productAccessFor, quotaPeriod } from '@zro/billing'
+import { isFeatureFlag, planoAtual, productAccessFor, quotaPeriod } from '@zro/billing'
 import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
@@ -15,13 +15,27 @@ const atorDoInicio = cache((auth: Authenticated) => authorize(db(), auth))
  */
 export async function homeTopo(auth: Authenticated) {
   const actor = await atorDoInicio(auth)
-  return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
-    const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
-    const [latest] =
-      await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 1`
-    const access = await productAccessFor(tx, actor.orgId)
-    return { org, latest, access }
-  })
+  const [topo, plano] = await Promise.all([
+    db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+      const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
+      const [latest] =
+        await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 1`
+      const access = await productAccessFor(tx, actor.orgId)
+      return { org, latest, access }
+    }),
+    planoDaPessoa(auth),
+  ])
+  return { ...topo, plano }
+}
+
+/**
+ * O plano que a pessoa vê (Início e Perfil): "Zero", "Órbita", "Absoluto" ou, no teste, Absoluto com o fim. Lido como
+ * sistema porque assinatura só aparece para quem cuida da cobrança (RLS); aqui sai só o nome, da organização ativa
+ * em que a pessoa já foi autorizada.
+ */
+export async function planoDaPessoa(auth: Authenticated) {
+  const actor = await atorDoInicio(auth)
+  return db().asSystem('hub: plano da pessoa', (tx) => planoAtual(tx, actor.userId, actor.orgId))
 }
 
 /** Início, segunda parte: projetos recentes, pendências reais, execuções e uso do plano. */

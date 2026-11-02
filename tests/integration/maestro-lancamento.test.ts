@@ -7,7 +7,7 @@ import { checkEntitlement, featureFlagsFor, productAccessFor, releaseAllows, rel
 import { authorize, loadOidcClaims } from '@zro/core'
 import type { Database, Tx } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { givePlan, newOrgWithOwner } from './helpers'
+import { givePlan, newOrgWithOwner, legacyFreeOrg } from './helpers'
 
 let db: Database
 beforeAll(() => {
@@ -53,26 +53,27 @@ describe('Maestro no ar (0027 + 0039)', () => {
     for (const id of ['nossom', 'finishing', 'ai-edit']) expect(claims.release, id).not.toHaveProperty(id)
   })
 
-  it('marca própria: o grátis e o Completo não dão o sinal; só o Pro v2 (rascunho) e o adicional trazem', async () => {
+  it('marca própria: o grátis antigo e o Completo não dão o sinal; só o Pro v2 e o adicional (nunca publicados) trazem', async () => {
     const o = await newOrgWithOwner(db, 'maestro-lanc-marca', { freePlan: true })
     expect(await sys((tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual([])
     await givePlan(db, o.orgId, 'ciclo-do-o')
     expect(await sys((tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual([])
     const rows = await db.sql`
       select p.code, p.version, p.status, p.kind, pp.features, pp.limits
-      from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = 'maestro' order by p.code, p.version`
+      from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = 'maestro'
+      where p.legado order by p.code, p.version`
     const by = Object.fromEntries(rows.map((r) => [`${r.code}@${r.version}`, r]))
     for (const k of ['conta-absolute-zro@2', 'ciclo-do-o@2', 'ciclo-do-o-anual@1', 'absolute-zro-pro@1', 'absolute-zro-pro-anual@1']) {
-      expect(by[k], k).toMatchObject({ status: 'active', features: null })
+      expect(by[k], k).toMatchObject({ status: 'retired', features: null })
       expect(by[k]!.limits, k).not.toHaveProperty(['maestro.marca_propria'])
       expect(Object.keys(by[k]!.limits as object), k).toEqual(['zro.ai_credits'])
     }
     expect(by['conta-absolute-zro@2']!.limits).toEqual({ 'zro.ai_credits': 50 })
     for (const k of ['absolute-zro-pro@2', 'absolute-zro-pro-anual@2']) {
-      expect(by[k], k).toMatchObject({ status: 'draft', features: null, limits: { 'zro.ai_credits': 2000, 'maestro.marca_propria': 1 } })
+      expect(by[k], k).toMatchObject({ status: 'retired', features: null, limits: { 'zro.ai_credits': 2000, 'maestro.marca_propria': 1 } })
     }
     for (const k of ['maestro-marca-propria@1', 'maestro-marca-propria-anual@1']) {
-      expect(by[k], k).toMatchObject({ status: 'draft', features: [], limits: { 'maestro.marca_propria': 1 } })
+      expect(by[k], k).toMatchObject({ status: 'retired', features: [], limits: { 'maestro.marca_propria': 1 } })
     }
     // nenhum plano aposentado ou rascunho de outra coisa ganhou o Maestro
     expect(Object.keys(by).sort()).toEqual(
@@ -91,7 +92,7 @@ describe('Maestro no ar (0027 + 0039)', () => {
   })
 
   it('backfill idempotente: conta de antes do lançamento ganha o Maestro uma vez; rodar a 0027 e a 0039 de novo não muda nada', async () => {
-    const o = await newOrgWithOwner(db, 'maestro-lanc-antiga', { freePlan: true })
+    const o = await legacyFreeOrg(db, 'maestro-lanc-antiga')
     // como uma conta criada antes da 0027: sem o entitlement do Maestro
     await sys((tx) => tx`delete from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro'`)
     const contar = async () => {

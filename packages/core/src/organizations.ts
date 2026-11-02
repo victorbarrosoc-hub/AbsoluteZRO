@@ -4,6 +4,7 @@ import { hashToken, newToken, normalizeEmail, setActiveOrganization, TOKEN_FORMA
 import { pgErrorCode, PG, type Database, type Queryable } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { ADMIN_ROLES, authorize, requireUser, type OrgRole } from './authz'
+import { ipDaSessao, talvezIniciarTeste } from './planos'
 
 export const INVITE_TTL_MS = 7 * 24 * 3_600_000
 
@@ -31,6 +32,8 @@ export async function createOrganization(
   const id = r!.id as string
   await setActiveOrganization(db, auth!, id)
   auth!.session.activeOrgId = id
+  // Campanha do teste do Absoluto ligada: conta nova com e-mail confirmado ganha os dias agora (ADR 0039).
+  await talvezIniciarTeste(db, { userId, orgId: id, ipHash: await ipDaSessao(db, auth!) })
   return { id, slug }
 }
 

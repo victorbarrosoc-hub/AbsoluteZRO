@@ -206,6 +206,8 @@ export function discovery(issuer: string) {
       'zro_products',
       'zro_release',
       'zro_features',
+      'zro_nivel',
+      'zro_teste_ate',
       'zro_admin',
       'auth_time',
       'nonce',
@@ -460,7 +462,14 @@ export type OrgClaims = {
   release: Record<string, ReleaseClaimValue>
   /** Claim zro_features: sinais de recurso da organização (`produto.recurso`); cada app recebe só os do produto dele. */
   features?: string[]
+  /** Claim zro_nivel (0055): nível da pessoa em cada app que existe para ela, na organização do token. */
+  nivel?: Record<string, 'zero' | 'orbita' | 'absoluto'>
+  /** Claim zro_teste_ate: fim do teste do Absoluto em andamento (ISO), só quando há. */
+  testeAte?: string | null
 }
+
+/** zro_nivel e zro_teste_ate (só com o escopo org: o nível depende da organização). */
+const nivelClaims = (c: OrgClaims) => ({ zro_nivel: c.nivel ?? {}, ...(c.testeAte ? { zro_teste_ate: c.testeAte } : {}) })
 
 /** Os sinais que vão no token de um app: só os do produto do cliente (app sem produto, nenhum). */
 export function featuresForClient(client: Pick<OAuthClient, 'productId'>, features: string[] | undefined): string[] {
@@ -582,7 +591,9 @@ async function buildTokens(
       iat: now,
       exp: now + ACCESS_TTL_S,
       jti: randomUUID(),
-      ...(comOrg ? { zro_org: claims.org?.id ?? null, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
+      ...(comOrg
+        ? { zro_org: claims.org?.id ?? null, zro_products: claims.products, zro_features: featuresForClient(client, claims.features), ...nivelClaims(claims) }
+        : {}),
       zro_release: claims.release,
     },
     'at+jwt',
@@ -597,7 +608,7 @@ async function buildTokens(
     ...(g.nonce ? { nonce: g.nonce } : {}),
     ...(g.scopes.includes('email') ? { email: u.email, email_verified: !!u.email_verified_at } : {}),
     ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
-    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
+    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products, zro_features: featuresForClient(client, claims.features), ...nivelClaims(claims) } : {}),
     zro_release: claims.release,
     ...admin,
   })
@@ -708,7 +719,7 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
     if (scopes.includes('profile')) Object.assign(out, profileClaims(issuerFromEnv(), u))
     const comOrg = scopes.includes('org')
     const c = await loadClaims(tx, u.id as string, comOrg ? ((p.zro_org as string) ?? null) : null)
-    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products, zro_features: featuresForClient(client, c.features) })
+    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products, zro_features: featuresForClient(client, c.features), ...nivelClaims(c) })
     out.zro_release = c.release
     Object.assign(out, await adminClaim(tx, u.id as string))
     return out
