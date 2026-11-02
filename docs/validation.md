@@ -4523,6 +4523,14 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Endereço do Carro em carro.absolutezro.com nos menus da família (Revela e NOSSOM) e no teste de regras do
   `apps/hub-desktop` (6/6).
 
+## Quasar · abertura com a marca nova (02/11/2026)
+
+- A abertura (`components/brand-intro.tsx`, `app/styles/intro.css`) ainda mostrava o traço antigo do NOSSOM: agora a
+  Coroa vazada se desenha, o clarão acende com o feixe horizontal e QUASAR (Archivo Expanded) entra com o selo AUDIO LAB.
+  Só CSS; uma vez por sessão; pulada com reduzir movimento e em automação.
+- `products/nossom`: `format:check` OK, `npm test` 135/135, `npm run build` OK, e2e `liquid-site`, `workspace`,
+  `assistant-flow` e `home-logada` 8 passaram (5 pulados por `RELEASE=closed`). Quadros da abertura conferidos a 390.
+
 ## Quasar · Início com o símbolo como IA (01/11/2026)
 
 - `products/nossom`: `tsc` OK, `format:check` OK, `npm test` 134/134 (novo `tests/quasar-ia.test.ts`: a onda corre,
