@@ -4483,6 +4483,21 @@ html:not(.is-desktop) .so-desktop {
   justify-content: flex-end;
   gap: 8px;
 }
+/* "Usar outra conta": link discreto na linha de baixo, embaixo de Entrar (prompt=login na Absolute ZRO) */
+.conta-outra {
+  flex-basis: 100%;
+  color: var(--text-2);
+  font-size: 12px;
+  text-decoration: none;
+}
+.conta-acoes > .conta-outra {
+  text-align: right;
+}
+.conta-outra:hover,
+.conta-outra:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}
 .conta-linha.sem-acesso small {
   color: var(--warn-text);
 }

@@ -11,7 +11,17 @@ const CONTEXTO = "cookie:mae_zro";
 
 /** `criar`: a pessoa veio de "Criar conta" (prompt=create na Absolute ZRO); a volta é a mesma. */
 export type ModoZro = "entrar" | "criar";
-export type EstadoZro = { state: string; verificador: string; nonce: string; modo: ModoZro; volta: string; nivel?: NivelEscopo; expira: number };
+/** `outra`: "Usar outra conta" (prompt=login); segue junto se a Absolute ZRO pedir menos escopos e a ida recomeçar. */
+export type EstadoZro = {
+  state: string;
+  verificador: string;
+  nonce: string;
+  modo: ModoZro;
+  volta: string;
+  nivel?: NivelEscopo;
+  outra?: boolean;
+  expira: number;
+};
 
 export function selarEstadoZro(e: Omit<EstadoZro, "expira">): string {
   return selarCookie(JSON.stringify({ ...e, expira: Date.now() + DURACAO_ZRO_S * 1000 }), CONTEXTO);

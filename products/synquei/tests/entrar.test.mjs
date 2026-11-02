@@ -21,21 +21,26 @@ function elemento() {
       this.filhos.push(f)
     },
     addEventListener: (tipo, fn) => (ouvintes[tipo] = fn),
-    clicar: () => ouvintes.click(),
+    clicar: () => ouvintes.click({ preventDefault() {} }),
   }
 }
 
 /** Carrega a página com `?busca` e a resposta do /eu (ou `null` para sem rede). */
 async function abrir(busca, eu, { pagina = true } = {}) {
   const els = Object.fromEntries(IDS.map((id) => [id, elemento()]))
+  const outras = [elemento(), elemento()]
   const idas = []
   const pedidos = []
   const resposta = (status, corpo) => ({ status, headers: { get: () => 'application/json' }, json: async () => corpo })
   const ctx = {
     URLSearchParams,
     Promise,
-    location: { search: busca, replace: (u) => idas.push(u) },
-    document: { getElementById: (id) => (pagina ? els[id] || null : null), createElement: () => elemento() },
+    location: { search: busca, replace: (u) => idas.push(u), assign: (u) => idas.push(u) },
+    document: {
+      getElementById: (id) => (pagina ? els[id] || null : null),
+      createElement: () => elemento(),
+      querySelectorAll: (sel) => (pagina && sel === '[data-outra]' ? outras : []),
+    },
     fetch: async (url, opcoes) => {
       pedidos.push([url, opcoes?.method || 'GET'])
       if (url.startsWith('/api/zro/sair')) return resposta(200, { ok: true })
@@ -46,7 +51,7 @@ async function abrir(busca, eu, { pagina = true } = {}) {
   ctx.window = ctx
   vm.runInNewContext(CODIGO, ctx)
   await new Promise((r) => setTimeout(r, 10))
-  return { E: ctx.SynqueiEntrar, els, idas, pedidos }
+  return { E: ctx.SynqueiEntrar, els, outras, idas, pedidos }
 }
 
 describe('/entrar/', () => {
@@ -66,6 +71,16 @@ describe('/entrar/', () => {
     assert.equal(els.criar.href, '/api/zro/entrar?criar=1&volta=%2Fapp%2F%23%2Flinha')
     assert.equal(els.aviso.textContent, 'Entrada cancelada.')
     assert.deepEqual(idas, [])
+  })
+
+  test('"Usar outra conta" (fora e dentro): sai da conta deste site e pede a conta de novo (prompt=login)', async () => {
+    assert.equal((HTML.match(/data-outra>Usar outra conta</g) || []).length, 2)
+    const { outras, idas, pedidos } = await abrir('?volta=%2Fapp%2F%23%2Flinha', [200, { ok: false, configurado: true, entrou: false }])
+    for (const a of outras) assert.equal(a.href, '/api/zro/entrar?outra=1&volta=%2Fapp%2F%23%2Flinha')
+    outras[0].clicar()
+    await new Promise((r) => setTimeout(r, 10))
+    assert.deepEqual(pedidos.at(-1), ['/api/zro/sair', 'POST'])
+    assert.deepEqual(idas, ['/api/zro/entrar?outra=1&volta=%2Fapp%2F%23%2Flinha'])
   })
 
   test('o 401 de sempre (app antigo) também é "fora"', async () => {

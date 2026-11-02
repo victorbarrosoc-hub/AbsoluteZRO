@@ -41,10 +41,13 @@ function paginaDeErro(volta: string, codigo: string): string {
 /**
  * ?modo=entrar|criar&volta=/app/quadro → 302 para a Absolute ZRO (state, nonce e PKCE S256 em cookie selado de 10 min).
  * "criar" (a tela Criar conta) é o "entrar" com `prompt=create`: a Absolute ZRO abre direto em criar conta (ADR 0014).
+ * `outra=1` ("Usar outra conta") pede `prompt=login`: a Absolute ZRO pede a conta mesmo com sessão aberta lá. Só no
+ * "entrar" (Criar conta segue com prompt=create) e só com o valor "1".
  */
 export async function entrar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const modo: ModoZro = url.searchParams.get("modo") === "criar" ? "criar" : "entrar";
+  const outra = modo === "entrar" && url.searchParams.get("outra") === "1";
   const pedido = url.searchParams.get("nivel");
   // `basico=1` é o formato antigo do mesmo pedido.
   const nivel: NivelEscopo =
@@ -71,11 +74,11 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", nivel: nivelDaIda });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", outra, nivel: nivelDaIda });
   } catch {
     return redirecionar(new URL(paginaDeErro(volta, "zro_erro"), url.origin));
   }
-  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, nivel: nivelDaIda }), {
+  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, nivel: nivelDaIda, ...(outra ? { outra } : {}) }), {
     maxAge: DURACAO_ZRO_S,
     path: "/api/zro",
     secure: cookieSeguro(url.origin),
@@ -104,6 +107,7 @@ export async function callback(req: Request): Promise<Response> {
   const proximo = erroZro === "invalid_scope" ? PROXIMO_NIVEL[estado.nivel ?? "completo"] : null;
   if (proximo) {
     const q = new URLSearchParams({ modo, volta, nivel: proximo });
+    if (estado.outra === true) q.set("outra", "1");
     return ir(`/api/zro/entrar?${q}`);
   }
   if (erroZro) return falhar(erroZro === "access_denied" ? "zro_recusado" : "zro_erro");
@@ -229,7 +233,10 @@ export async function eu(req: Request): Promise<Response> {
   });
 }
 
-/** POST (ou GET) /api/zro/sair: encerra a sessão, avisa a Absolute ZRO e volta à página inicial. */
+/**
+ * POST (ou GET) /api/zro/sair: encerra a sessão, avisa a Absolute ZRO e volta à página inicial. Com `outra=1` ("Usar
+ * outra conta", lib/site.ts) segue para o login único com `outra=1` e a `volta` (só caminho do site).
+ */
 export async function sair(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const seguro = cookieSeguro(origemDoPedido(req.headers, req.url));
@@ -239,5 +246,9 @@ export async function sair(req: Request): Promise<Response> {
     const tokens = await encerrarSessao(s.id);
     if (tokens?.rt) await revogarToken(tokens.rt).catch(() => undefined);
   }
-  return redirecionar(new URL("/", url.origin), 303, [serializarCookie(COOKIE_SESSAO, "", { maxAge: 0, path: "/", secure: seguro })]);
+  const destino =
+    url.searchParams.get("outra") === "1"
+      ? `/api/zro/entrar?${new URLSearchParams({ outra: "1", volta: voltaSegura(url.searchParams.get("volta"), VOLTA_PADRAO) })}`
+      : "/";
+  return redirecionar(new URL(destino, url.origin), 303, [serializarCookie(COOKIE_SESSAO, "", { maxAge: 0, path: "/", secure: seguro })]);
 }

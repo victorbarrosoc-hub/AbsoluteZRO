@@ -245,8 +245,11 @@ export const desafioDe = (verificador) => createHash('sha256').update(verificado
 /** A organização ativa da pessoa liberou o TPeasy? Vem do admin da Absolute ZRO (`zro_products`). */
 export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.includes(PRODUTO)
 
-/** `criar`: "Criar conta" — o HUB abre o cadastro (prompt=create) e volta para cá já logado. */
-export async function urlDeLogin({ state, nonce, desafio, origem, criar = false, semSet = false, semRoteiros = false }) {
+/**
+ * `criar`: "Criar conta" — o HUB abre o cadastro (prompt=create) e volta para cá já logado. `outra`: "Usar outra conta"
+ * (02/11/2026) — prompt=login, o HUB pede a conta de novo mesmo com uma sessão aberta lá; criar vence.
+ */
+export async function urlDeLogin({ state, nonce, desafio, origem, criar = false, outra = false, semSet = false, semRoteiros = false }) {
   const d = await descobrir()
   const u = new URL(d.authorization_endpoint)
   u.searchParams.set('response_type', 'code')
@@ -258,6 +261,7 @@ export async function urlDeLogin({ state, nonce, desafio, origem, criar = false,
   u.searchParams.set('code_challenge', desafio)
   u.searchParams.set('code_challenge_method', 'S256')
   if (criar) u.searchParams.set('prompt', 'create')
+  else if (outra) u.searchParams.set('prompt', 'login')
   return u.toString()
 }
 

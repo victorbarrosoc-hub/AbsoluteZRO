@@ -142,7 +142,8 @@ async function rotaConta(req, u) {
   }
   if (u.pathname === '/api/zro/entrar') {
     const volta = voltaSegura(u.searchParams.get('volta'))
-    const r = await contaApp().entrar({ criar: u.searchParams.get('criar') === '1' })
+    // "Usar outra conta" (outra=1): prompt=login, a Absolute ZRO pede a conta de novo; criar conta vence
+    const r = await contaApp().entrar({ criar: u.searchParams.get('criar') === '1', outra: u.searchParams.get('outra') === '1' })
     // a mesma volta do site (?zro=<resultado>): a página mostra o recado e tira o ?zro= do endereço
     const destino = new URL(`${SCHEME}://app${volta}`)
     destino.searchParams.set('zro', r)

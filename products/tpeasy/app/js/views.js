@@ -280,7 +280,7 @@ export function renderAccount() {
     if (Zro.semAcesso())
       conta += `<div class="account account-form" id="zroSemAcesso"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Sem acesso</b><span>Sua conta Absolute ZRO ainda não tem acesso ao TPeasy.</span></div></div><a class="btn btn-blue btn-block" href="${Zro.HUB_FERRAMENTAS}" target="_blank" rel="noopener">Ver na Absolute ZRO</a></div>`;
   } else if (Zro.zro.estado === "fora") {
-    conta = `<div class="account account-form"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta</b><span>A mesma da Absolute ZRO</span></div></div><a class="btn btn-blue btn-block" href="${Zro.linkEntrar()}">Entrar com Absolute ZRO</a><a class="btn btn-soft btn-block" href="${Zro.linkCriarConta()}">Criar conta</a>${local}</div>`;
+    conta = `<div class="account account-form"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta</b><span>A mesma da Absolute ZRO</span></div></div><a class="btn btn-blue btn-block" href="${Zro.linkEntrar()}">Entrar com Absolute ZRO</a><a class="btn btn-soft btn-block" href="${Zro.linkCriarConta()}">Criar conta</a><a class="account-outra" id="zroOutra" href="${Zro.linkOutraConta()}">Usar outra conta</a>${local}</div>`;
   }
   if (!Sync.cloudEnabled) {
     card.innerHTML = conta || `<div class="account"><span class="avatar">${icon("cloud")}</span><div class="account-text"><b>Sincronização</b><span>Em breve</span></div></div>`;
@@ -355,6 +355,11 @@ $("#accountCard").addEventListener("submit", async (e) => {
   renderAccount();
 });
 $("#accountCard").addEventListener("click", async (e) => {
+  // "Usar outra conta": sai da conta daqui e pede a conta de novo à Absolute ZRO (prompt=login)
+  if (e.target.closest("#zroOutra")) {
+    e.preventDefault();
+    return Zro.usarOutraConta();
+  }
   const b = e.target.closest("button");
   if (!b) return;
   if (b.id === "zroSair") {
