@@ -84,15 +84,15 @@ function Reveal({
 const faqs = [
   [
     'Preciso saber tratar áudio?',
-    'Comece pelo assistente: anexe sua gravação e conte o que quer melhorar. A Z usa seu objetivo e as medições do áudio para sugerir o tratamento. Você revisa a proposta, ouve e pode ajustar os controles no estúdio.',
+    'Não. Toque em Melhorar com a Z: ela limpa a voz e, em seguida, a Quasar Presence dá corpo e presença. Cada passo aparece na mesa de faixas para você ouvir e comparar. Se quiser, peça à Z o que precisa ou ajuste os controles.',
   ],
   [
     'O que está incluído na minha conta?',
-    'O Grátis inclui 5 minutos de restauração por mês. Essencial: 2 horas por R$39/mês; Studio: 6 horas por R$99/mês. Cada restauração usa no mínimo 1 minuto; EQ, efeitos e masterização local não descontam minutos. A franquia renova no dia 1. Os planos pagos são mensais; o Grátis não pede cartão.',
+    'O Grátis inclui 5 minutos da Z por mês. Essencial: 2 horas por R$39/mês; Studio: 6 horas por R$99/mês. Cada pedido à Z (melhorar a voz, criar trilha ou efeito) usa no mínimo 1 minuto e volta se falhar; EQ, efeitos, Quasar Presence e masterização locais não descontam minutos. A franquia renova no dia 1. Os planos pagos são mensais; o Grátis não pede cartão.',
   ],
   [
     'Meu áudio é enviado à Z?',
-    'Ao melhorar com a Z, uma cópia temporária do arquivo vai para armazenamento privado e uma GPU da plataforma. Os projetos e originais ficam neste navegador. EQ, masterização e efeitos continuam locais. O assistente Claude recebe texto e medições, sem o arquivo de áudio.',
+    'Ao melhorar com a Z, uma cópia temporária do arquivo vai para armazenamento privado e é tratada na nuvem; quando o nosso motor não dá conta, um parceiro de IA de áudio faz a limpeza. Para criar trilha ou efeito, só o texto que você escreve sai do aparelho. Os projetos e originais ficam neste navegador. EQ, masterização e efeitos continuam locais.',
   ],
   [
     'Quais arquivos posso usar?',
@@ -229,9 +229,10 @@ export default function Landing({
         <section className="home-hero">
           <div className="ns-wrap home-hero-centro">
             <Reveal className="home-hero-copy">
-              <h1>
-                Do ruído
-                <span>ao pronto.</span>
+              {/* O slogan da marca no centro (titular, 02/11/2026); o topo e a onda de luz ficam como estão. */}
+              <h1 className="home-slogan">
+                O som encontrando
+                <span>o seu espaço.</span>
               </h1>
               <p>Um estúdio de áudio inteiro, com a Z quando você quiser.</p>
               <div className="ns-actions">
@@ -343,8 +344,8 @@ export default function Landing({
               <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
               <p>
                 {zroIa
-                  ? 'Ela abre o seu estúdio: pergunte sobre seu áudio e siga para a edição.'
-                  : 'Vai entender seus projetos de áudio e ajudar a seguir para a edição.'}
+                  ? 'Melhora sua voz, cria trilha e efeitos e responde sobre o seu áudio.'
+                  : 'Já melhora sua voz e cria trilha e efeitos. A conversa chega em breve.'}
               </p>
               <ul className="z-fichas" aria-label="Como a Z funciona">
                 <li title="A mesma conta Absolute ZRO que você já usa.">
