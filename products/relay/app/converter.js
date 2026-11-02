@@ -155,6 +155,23 @@ const avisar = (t) => {
   if (a) a.textContent = t
 }
 
+/** "Ajustar": o editor completo com os números deste arquivo; muda só esta saída ou guarda em Meus. */
+async function ajustarSaida(item, s) {
+  const id = [...escolhidos].find((x) => (item.ajustes?.[x] ?? achar(x)) === s.preset) ?? s.preset.id
+  const r = await Meus.editar(s.preset, item.info, Looks, { soAqui: true })
+  if (!r) return
+  if (r.acao === 'salvar') {
+    const antes = meus
+    meus = [...meus, r.preset]
+    Meus.guardar(meus)
+    contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
+  }
+  item.ajustes = { ...item.ajustes, [id]: r.preset }
+  s.verFicha = true
+  atualizarItem(item)
+  atualizarBarra()
+}
+
 async function abrirEditor(p) {
   const r = await Meus.editar(p, origemDoEditor(), Looks)
   if (!r) return
@@ -281,8 +298,9 @@ function sincronizarSaidas(item) {
   for (const id of escolhidos) {
     if (!achar(id)) continue
     if (tentadas.some((s) => s.preset.id === id)) continue
-    const s = antes.get(id) ?? { preset: achar(id) }
-    Object.assign(s, { preset: achar(id), estado: 'esperando', plano: null, avisos: [], erro: null })
+    const preset = item.ajustes?.[id] ?? achar(id) // "Ajustar": o preset mudado só para este arquivo
+    const s = antes.get(id) ?? { preset, verFicha: true }
+    Object.assign(s, { preset, estado: 'esperando', plano: null, avisos: [], erro: null })
     try {
       s.plano = planejar(item.info, s.preset, opcoes())
       s.avisos = [...s.plano.avisos]
@@ -309,6 +327,7 @@ function linhaSaida(item, s) {
         s.plano?.audio && !v ? ficha(`${nomeCodec(s.plano.audio.codec)}${s.plano.audio.bitrate ? ` ${Math.round(s.plano.audio.bitrate / 1000)}k` : ''}`) : null,
         s.bytes ? ficha(tamanhoLegivel(s.bytes), 'ficha--sinal') : s.plano ? ficha(`~${tamanhoLegivel(s.plano.tamanhoEstimado)}`) : null,
         ...(s.resumo ?? []).map((t) => ficha(t)),
+        p.ajustado ? ficha('Ajustado', 'ficha--sinal') : null,
       )
   const acoes = el('span', { className: 'saida-acoes' })
   if (s.estado === 'convertendo') {
@@ -326,6 +345,12 @@ function linhaSaida(item, s) {
     b.onclick = () => mandarAoDrive(item, s)
     acoes.prepend(b)
   } else if (s.envio) acoes.prepend(ficha({ fila: 'Indo para o Drive…', enviando: 'Indo para o Drive…', enviado: 'No Drive', erro: 'Não foi para o Drive' }[s.envio] ?? 'Indo para o Drive…', s.envio === 'enviado' ? 'ficha--sinal' : ''))
+  if (s.estado === 'esperando' && s.plano && !rodando) {
+    const ajustar = el('button', { type: 'button', className: 'vidro', title: 'Mudar tamanho, cadência, bitrate, áudio… antes de converter' }, icone('editar'), 'Ajustar')
+    ajustar.setAttribute('aria-label', `Ajustar ${p.nome} antes de converter`)
+    ajustar.onclick = () => ajustarSaida(item, s)
+    acoes.prepend(ajustar)
+  }
   if (s.plano) {
     const ver = el('button', { type: 'button', className: 'vidro vidro--icone', title: 'Ficha técnica', ariaLabel: `Ficha técnica de ${p.nome}` }, icone('ficha'))
     ver.setAttribute('aria-expanded', String(Boolean(s.verFicha)))

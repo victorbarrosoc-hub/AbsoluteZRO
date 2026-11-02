@@ -1440,6 +1440,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ O Relay pede a conta Absolute ZRO (decisão do titular, 02/11/2026): página `/entrar` (Entrar com Absolute ZRO,
   Criar conta) no padrão das outras plataformas; o conversor e o painel levam para ela e voltam depois; na página
   inicial, "Entrar" no herói e no topo.
+- ✅ Ajustar antes de converter (pedido do titular, 02/11/2026): cada saída mostra a ficha técnica aberta antes de
+  converter e "Ajustar" abre o editor completo com os números do arquivo; "Usar neste arquivo" muda só aquela
+  conversão, "Salvar preset" guarda em Meus e aplica.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
