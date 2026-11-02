@@ -87,6 +87,15 @@ O catálogo completo (contêineres, RAW, codecs, estruturas de cartão) está em
 
 O caminho dos arquivos sai da **pasta da mídia** que você informa + o caminho relativo da pasta arrastada (o navegador não revela caminhos absolutos). No app de desktop (Electron), o caminho absoluto é usado direto.
 
+## Leituras do TPeasy (`app/js/tpeasy.js`)
+
+Solte o `TPeasy-leituras-AAAA-MM-DD.jsonl` (Ajustes › Exportar leituras, no TPeasy) junto com as pastas dos cartões.
+Depois da sincronia, o Synquei acha o bip do TPeasy no áudio de cada clipe, casa com a leitura e propõe o nome do bloco
+(as cenas do roteiro do Maestro) em cada ponto do take. A hora da câmera só diz onde procurar; quem confirma é o bip, e
+a diferença de relógio tem de se repetir nos outros takes do aparelho. O que não fecha vai para revisar. Em Mídia,
+**Usar os blocos** põe os nomes como marcadores na exportação; nenhum arquivo é renomeado. Contrato em
+`docs/integration-contracts/tpeasy-leituras.md` na raiz.
+
 ## App de desktop (Mac e Windows)
 
 O mesmo app, empacotado com Electron (`desktop/main.cjs`). Vantagens sobre o navegador:

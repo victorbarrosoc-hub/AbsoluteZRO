@@ -202,7 +202,13 @@ function timeline(name, clips, base, opts, devOf, devIndex, project) {
       markers.push({ start: it.start, name: `Conferir ${it.clip.name}`, note: why })
     }
     if (s.drift) markers.push({ start: it.start, name: `Deriva ${it.clip.name}`, note: `${s.drift.ppm} ppm: alinhado pelo meio` })
+    // TPeasy: o nome do bloco no ponto do clipe em que ele começou a ser lido (só o que a pessoa aceitou)
+    const tp = it.clip.tpeasy
+    if (tp && tp.aceito) {
+      for (const m of tp.marcadores) if (m.t < it.dur) markers.push({ start: it.start + m.t, name: m.nome, note: `TPeasy · ${it.clip.name}` })
+    }
   }
+  markers.sort((a, b) => a.start - b.start)
   return { name, rate, drop, fps, width, height, sampleRate: 48000, startFrames, duration, durationF: Math.max(1, secToFrames(duration, rate)), video, audio: audio.filter((t) => !t.dropped), markers, items }
 }
 

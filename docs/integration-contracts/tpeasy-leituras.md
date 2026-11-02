@@ -47,12 +47,25 @@ Só tempos e nomes: nada de áudio, conta, e-mail ou aparelho. Produtor: `produc
 testado em `products/tpeasy/tests/leituras.test.mjs`); leitor de referência: `parseTpeasyLeituras()` (linha inválida vai
 para `invalidas`, as outras seguem). O teste do contrato gera as linhas com o código real do app.
 
-## Como o Synquei e o AEON vão usar (próximas etapas, nada disso existe ainda)
+## No Synquei (`products/synquei/app/js/tpeasy.js`, 02/11/2026)
 
-- **Synquei**: lê o `.jsonl` na pasta do material. A hora do aparelho só diz **onde procurar** (o relógio da câmera e o
-  do iPhone não batem); quem confirma o take é o **bip no áudio** do clipe. Bip confirmado → o nome do bloco vira o nome
-  proposto do take, em prévia, e só vale com a confirmação da pessoa. Sem bip, mais de uma leitura possível ou bip fora
-  da janela → **revisar**, nunca um chute (os apps não renomeiam mídia sozinhos).
+- **Entrada**: o `TPeasy-leituras-*.jsonl` solto junto com as pastas dos cartões vai para o projeto (`p.tpeasy`), não
+  vira clipe (antes, todo `.jsonl` virava um clipe fantasma). Mais de um arquivo junta pelo `id`.
+- **Bip**: no áudio de 4 kHz que a sincronia já lê, 1000 Hz é sr/4, então a amplitude do tom sai a cada 1 ms sem
+  filtro. Bip = tom que aparece de uma vez, segura os primeiros milissegundos, cai até 30 ms e, somado com a fase nos
+  20 ms, domina o som. Sílaba de fala (sobe aos poucos) e palma (ruído) não passam: 1 bip falso em 60 min de fala e
+  palmas sintéticas, e ele só vira leitura se cair na hora prevista de uma.
+- **Casar**: por aparelho, a diferença de relógio (câmera − celular) que mais takes repetem, com 1,5 s de tolerância
+  (vale até horas de diferença, como câmera que grava hora local como UTC). Bip que bate com essa diferença =
+  **confirmado**. Vai para **revisar**: um take só (sem outro para conferir o relógio), duas leituras para o mesmo bip,
+  a mesma leitura em dois clipes do aparelho, leitura sem bip (casada só pela hora).
+- **Saída**: os blocos viram marcadores no ponto do clipe (`bip + em_ms`). Mídia mostra o resumo e, em cada clipe, o
+  bloco, a leitura e os tempos; **Usar os blocos** aceita os confirmados (ou um clipe por vez, inclusive os de revisar).
+  Só o que foi aceito entra na exportação (marcadores da sequência: Premiere, Resolve, Final Cut, OTIO). Nenhum arquivo
+  é renomeado.
+
+## Próximas etapas
+
 - **AEON**: o nome do bloco vira a etiqueta do clipe (o AEON já exporta etiqueta como palavra-chave para Premiere,
   Final Cut e DaVinci).
 - **Depois, pelo HUB**: o registro preso ao projeto (o Synquei puxa sem arquivo), com contagens de volta ao Maestro.
