@@ -43,7 +43,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   chama, além do layout: no Next 16 os dois renderizam em paralelo) e rotas de dados usam `exigirAcesso()`. Sem
   sessão 401, sem acesso 403; nunca só a tela. Outro produto (ex.: SOBEDESCE para Arquivos) só por `temProduto()`.
 - **Login único**: `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, `id_token` conferido pela
-  JWKS, `prompt=create` em Criar conta). Sessão própria em `maestro.sessions` (cookie `mae_sessao`, só o sha256;
+  JWKS, `prompt=create` em Criar conta; "Usar outra conta" no Entrar e no Sem acesso, titular 02/11/2026: POST
+  `/api/zro/sair?outra=1&volta=` sai do Maestro e segue para `/api/zro/entrar?outra=1`, que pede `prompt=login`, só fora
+  do Criar conta e só com o valor `1`, e passa o `outra` adiante quando a ida recomeça por invalid_scope). Sessão própria em `maestro.sessions` (cookie `mae_sessao`, só o sha256;
   tokens da Absolute ZRO cifrados com `MAESTRO_KEY`). O `/eu` relê o perfil e os produtos no `userinfo` (≤ 1/min).
 - **Banco**: duas portas em `src/lib/db/client.ts`. `asUser` assume `maestro_app` com RLS por organização em toda
   tabela (`with check` inclusive); `asSystem` só para sessões, callback do login, link do cliente, migração e a lista

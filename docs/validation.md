@@ -4756,3 +4756,17 @@ SOBEDESCE de computador, que disparam os instaladores).
   servidor, `localStorage` do domínio intocado, zero erro de página.
 - `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
   (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.
+
+## "Usar outra conta" no login dos apps (02/11/2026)
+
+- Causa conferida no banco de produção: os códigos do Carro de 02/11 12:26 saíram para a conta aberta no navegador; a
+  outra conta só abriu sessão às 12:27–12:28 e nenhum código do Carro saiu para ela (o entitlement do Carro estava
+  ativo).
+- Carro: `npm run test:api` 49/49 (`prompt=login` com `outra=1`; outro valor ignorado; criar vence) e `conta-zro`
+  152/152 (o link à vista, leva a `entrar?outra=1`, some no modo criar).
+- Relay `npm test` 133/133. Synquei `npm test` 152 ok, 10 pulados (WebKit, luajit, root). TPeasy
+  `node --test tests/*.test.mjs` 80 ok, 4 pulados (WebKit).
+- Maestro: typecheck, lint, format e build ok; `tests/zro.test.mts` 29/29 (inclui o `invalid_scope` mantendo
+  `outra=1`). `npm test` 718/719: a falha é a cópia do Relay (`tests/relay.test.mts`), que já falha na `main`.
+- `scan-secrets`: nenhum segredo.
+

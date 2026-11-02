@@ -67,3 +67,13 @@ export const FERRAMENTAS_ZRO = `${HUB_URL}/ferramentas`;
 /** O login único já com a volta para o app: "Entrar" e "Criar conta" (o mesmo login com prompt=create). */
 export const ENTRAR_ZRO = `/api/zro/entrar?${new URLSearchParams({ volta: ROTAS.app })}`;
 export const CRIAR_CONTA_ZRO = `/api/zro/entrar?${new URLSearchParams({ modo: "criar", volta: ROTAS.app })}`;
+
+/**
+ * "Usar outra conta" (titular, 02/11/2026): sem isto o Maestro reaproveita calado a conta aberta na Absolute ZRO. Sai
+ * da sessão do Maestro (POST, revoga o acesso) e volta ao login único com `outra=1` (prompt=login: a Absolute ZRO pede a
+ * conta de novo, mesmo com uma sessão aberta lá).
+ */
+export const USAR_OUTRA_CONTA = "Usar outra conta";
+export function sairParaOutraConta(volta: string = ROTAS.app): string {
+  return `/api/zro/sair?${new URLSearchParams({ outra: "1", volta })}`;
+}

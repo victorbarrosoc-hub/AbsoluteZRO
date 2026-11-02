@@ -6,10 +6,14 @@ import { mensagemDeErro } from "@/lib/mensagens";
 import { HUB_URL, ROTAS } from "@/lib/site";
 import { zroConfigurado } from "@/lib/zro/config";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
+import { UsarOutraConta } from "@/components/outra-conta";
 
 export const metadata = { title: "Entrar" };
 
-/** Entrar com Absolute ZRO (conta única, ADR 0014): "Criar conta" é o mesmo login com prompt=create. */
+/**
+ * Entrar com Absolute ZRO (conta única, ADR 0014): "Criar conta" é o mesmo login com prompt=create; "Usar outra conta"
+ * pede a conta de novo na Absolute ZRO (prompt=login) em vez de reaproveitar a que está aberta lá.
+ */
 export default async function Entrar({ searchParams }: { searchParams: Promise<{ erro?: string; volta?: string }> }) {
   const q = await searchParams;
   const volta = voltaSegura(q.volta, ROTAS.app);
@@ -32,14 +36,17 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
           </p>
         )}
         {configurado ? (
-          <div className="acoes acoes--centro">
-            <a className="glass-btn glass-btn--ink" href={ida()}>
-              <ZroSimbolo size={18} /> Entrar
-            </a>
-            <a className="glass-btn" href={ida("criar")}>
-              Criar conta
-            </a>
-          </div>
+          <>
+            <div className="acoes acoes--centro">
+              <a className="glass-btn glass-btn--ink" href={ida()}>
+                <ZroSimbolo size={18} /> Entrar
+              </a>
+              <a className="glass-btn" href={ida("criar")}>
+                Criar conta
+              </a>
+            </div>
+            <UsarOutraConta volta={volta} />
+          </>
         ) : (
           <p className="sutil">O login com Absolute ZRO ainda não está configurado neste endereço.</p>
         )}
