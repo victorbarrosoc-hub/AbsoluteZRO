@@ -1,4 +1,5 @@
-// Parte de conta do app (app/js/conta.js): sem login aparecem "Entrar com Absolute ZRO" e "Criar conta" (prompt=create);
+// Parte de conta do app (app/js/conta.js): sem login aparecem "Entrar com Absolute ZRO", "Criar conta" (prompt=create) e
+// "Usar outra conta" (prompt=login);
 // conta sem o Synquei em zro_products mostra o aviso e "Ver na Absolute ZRO"; conta liberada mostra a organização.
 // No desktop/offline (sem função) nada aparece. Só gera HTML: roda no Node, sem navegador.
 
@@ -25,13 +26,16 @@ test('visitante (200 entrou:false, o /eu?visitante=1) é o mesmo "sem sessão" d
   assert.equal(C.estado, 'sem', 'sem configurado: sem conta, como antes')
 })
 
-test('sem sessão: Entrar com Absolute ZRO e Criar conta (prompt=create)', () => {
+test('sem sessão: Entrar com Absolute ZRO, Criar conta (prompt=create) e Usar outra conta (prompt=login)', () => {
   lerEu(401, { ok: false, configurado: true })
   for (const html of [linhaConta(), cartaoConta()]) {
     assert.match(html, /Entrar com Absolute ZRO/)
     assert.match(html, /Criar conta/)
     assert.ok(html.includes('href="/api/zro/entrar?volta=%2Fapp%2F%23%2Fajustes"'))
     assert.ok(html.includes('href="/api/zro/entrar?volta=%2Fapp%2F%23%2Fajustes&amp;criar=1"'))
+    // "Usar outra conta" embaixo de Entrar: prompt=login na Absolute ZRO (sem isto reaproveita calado a conta aberta lá)
+    assert.match(html, /<a class="conta-outra" data-entrar="outra" href="\/api\/zro\/entrar\?volta=%2Fapp%2F%23%2Fajustes&amp;outra=1">Usar outra conta<\/a>/)
+    assert.ok(html.indexOf('Usar outra conta') > html.indexOf('Entrar com Absolute ZRO'))
     assert.ok(!/senha|Google/i.test(html), 'sem cadastro próprio')
   }
 })

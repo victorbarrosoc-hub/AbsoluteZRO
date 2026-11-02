@@ -1,5 +1,7 @@
 // GET /api/zro/entrar?volta=/app/ — começa o "Entrar com Absolute ZRO". O HUB também abre o app por aqui.
 // Com ?criar=1 é o "Criar conta": o HUB abre o cadastro (prompt=create). O TPeasy não cria contas próprias.
+// Com ?outra=1 é o "Usar outra conta": prompt=login, o HUB pede a conta de novo mesmo com uma sessão aberta lá (criar
+// vence; outro valor não vira prompt). Os degraus de escopo do callback não repetem: a conta já foi pedida na ida.
 // Com ?sem_roteiros=1, o mesmo pedido sem tpeasy.roteiros (a Absolute ZRO de antes da 0040 recusou); com ?sem_set=1,
 // sem o Set também (a de antes do Set recusou zro.set; ver callback).
 import {
@@ -28,6 +30,7 @@ export default async function entrar(req, res) {
   const url = urlDoPedido(req)
   const volta = voltaSegura(url.searchParams.get('volta'))
   const criar = url.searchParams.get('criar') === '1'
+  const outra = !criar && url.searchParams.get('outra') === '1'
   const semSet = url.searchParams.get('sem_set') === '1'
   const semRoteiros = semSet || url.searchParams.get('sem_roteiros') === '1'
 
@@ -41,7 +44,7 @@ export default async function entrar(req, res) {
   const verificador = novoValor()
   let destino
   try {
-    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem, criar, semSet, semRoteiros })
+    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem, criar, outra, semSet, semRoteiros })
   } catch {
     return redirecionar(res, 302, comAviso(volta, 'erro'))
   }

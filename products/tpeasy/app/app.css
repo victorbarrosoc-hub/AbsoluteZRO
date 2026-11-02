@@ -1160,6 +1160,18 @@ a.btn {
 .account-edit {
   grid-column: 1 / -1;
 }
+/* "Usar outra conta": link discreto embaixo de Entrar e Criar conta (prompt=login na Absolute ZRO) */
+.account-outra {
+  justify-self: center;
+  font-size: 14px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+.account-outra:hover,
+.account-outra:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}
 .avatar .icon {
   width: 24px;
   height: 24px;

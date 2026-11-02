@@ -393,12 +393,13 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
   }
 
   /** Login completo. Devolve 'ok', 'recusado', 'expirou' ou 'erro' (os mesmos avisos do site). */
-  async function entrar({ criar = false } = {}) {
-    // Absolute ZRO de antes do Set (recusou zro.set): uma segunda ida sem ele; quem já entrou volta na hora
-    const r = await entrarCom({ criar, escopos: ESCOPOS })
+  async function entrar({ criar = false, outra = false } = {}) {
+    // Absolute ZRO de antes do Set (recusou zro.set): uma segunda ida sem ele; quem já entrou volta na hora (por isso a
+    // segunda ida não repete o "outra conta": a conta já foi pedida na primeira)
+    const r = await entrarCom({ criar, outra: outra && !criar, escopos: ESCOPOS })
     return r === 'escopo' ? entrarCom({ criar, escopos: ESCOPOS_SEM_SET }).then((x) => (x === 'escopo' ? 'erro' : x)) : r
   }
-  function entrarCom({ criar, escopos }) {
+  function entrarCom({ criar, outra = false, escopos }) {
     if (emAndamento) return emAndamento
     emAndamento = (async () => {
       const d = await descobrir()
@@ -428,7 +429,7 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
           })
         })
         const a = new URL(d.authorization_endpoint)
-        a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: escopos, state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : {}) }).toString()
+        a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: escopos, state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : outra ? { prompt: 'login' } : {}) }).toString()
         await abrirNavegador(a.toString())
         const r = await volta
         if (r.erro || !r.code) return r.erro || 'erro'

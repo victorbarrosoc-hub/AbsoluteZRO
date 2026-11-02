@@ -2,6 +2,8 @@
 // (api/zro/*); no app de desktop, o próprio app responde as mesmas rotas (desktop/conta.cjs: o login abre o navegador da
 // pessoa e volta pelo 127.0.0.1). Offline ou aberto de arquivo, não há função: fica tudo como sempre, sem conta.
 // Conta única: quem não tem conta cria na Absolute ZRO ("Criar conta" = /api/zro/entrar?criar=1, prompt=create).
+// "Usar outra conta" (02/11/2026) = /api/zro/entrar?outra=1, prompt=login: a Absolute ZRO pede a conta de novo, mesmo
+// com uma sessão aberta lá (sem isto o Synquei reaproveita calado a conta aberta na Absolute ZRO).
 // O direito de uso vem do admin da Absolute ZRO (zro_products): sem o Synquei liberado, a parte de conta mostra o aviso
 // e o caminho para a Absolute ZRO. O app em si (local, sem login) continua aberto; os planos seguem em plano.js.
 // Perfil único: nome, e-mail e foto são da conta Absolute ZRO (o /eu relê a cada abertura). O Synquei só mostra; para
@@ -29,8 +31,12 @@ const avisar = () => document.dispatchEvent(new CustomEvent('synquei:conta-mudou
 const noDesktop = () => !!globalThis.window?.synqueiDesktop
 const temFuncao = () => (noDesktop() ? window.synqueiDesktop.conta === true : /^https?:$/.test(location.protocol))
 
-/** Link de entrada que volta para a tela atual. `criar`: abre o cadastro da Absolute ZRO (prompt=create). */
-export const linkEntrar = (criar = false) => `/api/zro/entrar?volta=${encodeURIComponent(location.pathname + location.hash)}${criar ? '&criar=1' : ''}`
+/**
+ * Link de entrada que volta para a tela atual. `criar` (ou 'criar'): abre o cadastro da Absolute ZRO (prompt=create);
+ * 'outra': pede a conta de novo na Absolute ZRO (prompt=login).
+ */
+export const linkEntrar = (modo = false) =>
+  `/api/zro/entrar?volta=${encodeURIComponent(location.pathname + location.hash)}${modo === true || modo === 'criar' ? '&criar=1' : modo === 'outra' ? '&outra=1' : ''}`
 
 /** Resposta de /api/zro/eu → estado da conta. */
 export function lerEu(status, j) {
@@ -77,7 +83,15 @@ export async function iniciarConta() {
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-entrar]')
     if (!a) return
-    a.href = linkEntrar(a.dataset.entrar === 'criar')
+    a.href = linkEntrar(a.dataset.entrar)
+    if (a.dataset.entrar === 'outra') {
+      // sai da conta deste lugar (o /sair revoga o acesso) e pede a conta de novo; se o /sair falhar, segue mesmo assim
+      e.preventDefault()
+      const link = a.getAttribute('href')
+      const ir = () => (noDesktop() ? entrarNoDesktop(link) : location.assign(link))
+      fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin', cache: 'no-store' }).then(ir, ir)
+      return
+    }
     if (noDesktop()) {
       e.preventDefault()
       entrarNoDesktop(a.getAttribute('href'))
@@ -148,7 +162,7 @@ const editarNaConta = (p) =>
   `<div class="set-row"><div><b>Nome, e-mail e foto</b><small>Os mesmos em todos os apps da Absolute ZRO.</small></div><a class="btn btn-secondary btn-sm" href="${h(linkConta(p))}" target="_blank" rel="noopener">${icon('link')}Editar na conta Absolute ZRO</a></div>`
 
 const botoesEntrar = (cls) =>
-  `<a class="${cls}" data-entrar href="${h(linkEntrar())}">${icon('user')}Entrar com Absolute ZRO</a><a class="${cls} conta-criar" data-entrar="criar" href="${h(linkEntrar(true))}">${icon('plus')}Criar conta</a>`
+  `<a class="${cls}" data-entrar href="${h(linkEntrar())}">${icon('user')}Entrar com Absolute ZRO</a><a class="${cls} conta-criar" data-entrar="criar" href="${h(linkEntrar(true))}">${icon('plus')}Criar conta</a><a class="conta-outra" data-entrar="outra" href="${h(linkEntrar('outra'))}">Usar outra conta</a>`
 
 /** Linha da pessoa no cartão do plano (barra lateral). Vazio quando não há login neste lugar. */
 export function linhaConta() {
