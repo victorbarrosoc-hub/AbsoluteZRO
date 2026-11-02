@@ -415,6 +415,7 @@ async function importEntries(list) {
   if (r.added) parts.push(plural(r.added, 'clipe novo', 'clipes novos'))
   if (r.relinked) parts.push(plural(r.relinked, 'religado', 'religados'))
   if (r.ignored) parts.push(`${r.ignored} ignorados`)
+  if (r.leituras) parts.push(plural(r.leituras, 'leitura do TPeasy', 'leituras do TPeasy'))
   toast(parts.join(' · ') || 'Nada novo nessa pasta')
 }
 

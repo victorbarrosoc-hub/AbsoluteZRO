@@ -1,6 +1,7 @@
 // Mídia: o que foi reconhecido, separado por aparelho. Renomear grupo, mover clipe, ver todos os metadados.
 
-import { S, changed, peaksOf, hasMedia } from '../store.js'
+import { S, changed, peaksOf, hasMedia, aceitarLeituras } from '../store.js'
+import { resumoLeituras } from '../tpeasy.js'
 import { h, icon, bytes, plural, drawPeaks, $$, uiDark } from '../util.js'
 import { duration, rateLabel } from '../time.js'
 import { devColor, KIND_LABEL } from '../media/devices.js'
@@ -48,7 +49,48 @@ function formatChips(c) {
   if (c.spans) out.push(`<span class="chip">${c.spans} partes</span>`)
   if (c.linkAudio || c.linkedTo) out.push(`<span class="chip" title="Vídeo e áudio andam juntos">${icon('link')}par</span>`)
   if (c.demo) out.push(`<span class="chip">exemplo</span>`)
+  if (c.tpeasy) out.push(tpChip(c.tpeasy))
   return out.join('')
+}
+
+// TPeasy: o bloco que começa o take (confirmado) ou "revisar"; o resto fica no title e no painel do clipe
+function tpChip(tp) {
+  const nomes = [...new Set(tp.marcadores.map((m) => m.nome))]
+  const dica = [tp.leituras.map((l) => `${l.titulo}${l.versao ? ` · v${l.versao}` : ''}`).join(', '), nomes.join(' → '), tp.motivo].filter(Boolean).join('\n')
+  if (tp.estado !== 'confirmado') return `<span class="chip chip-warn" title="${h(dica)}">TPeasy · revisar</span>`
+  return `<span class="chip ${tp.aceito ? 'chip-ok' : 'chip-blue'}" title="${h(dica)}">${h((nomes[0] || 'TPeasy').slice(0, 28))}${nomes.length > 1 ? ` +${nomes.length - 1}` : ''}</span>`
+}
+
+const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`
+
+function tpPainel(c) {
+  const tp = c.tpeasy
+  if (!tp) return ''
+  const blocos = tp.marcadores.map((m) => `<li><span class="mono">${mmss(m.t)}</span> ${h(m.nome)}</li>`).join('')
+  const leituras = tp.leituras.map((l) => `${h(l.titulo)}${l.versao ? ` <span class="muted">v${l.versao}</span>` : ''}${l.viaBip ? '' : ' <span class="muted">(pela hora)</span>'}`).join('<br>')
+  return `<section class="tp-painel">
+    <dl class="kv"><dt>TPeasy</dt><dd>${leituras || '<span class="muted">bip sem leitura</span>'}${tp.motivo ? `<br><span class="muted">${h(tp.motivo)}</span>` : ''}</dd></dl>
+    ${blocos ? `<ul class="tp-blocos">${blocos}</ul>` : ''}
+    ${tp.marcadores.length ? (tp.aceito ? `<button class="btn btn-secondary" data-act="tp-tirar" data-id="${c.id}">Tirar os marcadores</button>` : `<button class="btn btn-primary" data-act="tp-usar" data-id="${c.id}" title="Os blocos viram marcadores na exportação. Nenhum arquivo é renomeado.">Usar os blocos</button>`) : ''}
+  </section>`
+}
+
+/** Aviso do TPeasy no topo de Mídia: quantos takes ganharam o nome do bloco, quantos pedem revisão. */
+function tpAviso(p) {
+  if (!p.tpeasy || !p.tpeasy.leituras.length) return ''
+  const r = resumoLeituras(p)
+  const ruins = p.tpeasy.invalidas ? ` <span class="muted">(${plural(p.tpeasy.invalidas, 'linha ilegível', 'linhas ilegíveis')})</span>` : ''
+  if (!r.confirmados && !r.revisar) {
+    const lido = p.clips.some((c) => c.audioStatus === 'ok')
+    return `<div class="info-box" style="margin-bottom:16px">${icon('info')}<div><b>${plural(r.leituras, 'leitura do TPeasy', 'leituras do TPeasy')}.</b> ${lido ? 'Nenhum bip achado nos clipes.' : 'Sincronize para achar o bip de cada take.'}${ruins}</div></div>`
+  }
+  const pendentes = r.confirmados - p.clips.filter((c) => c.tpeasy && c.tpeasy.estado === 'confirmado' && c.tpeasy.aceito).length
+  const botao = pendentes
+    ? `<button class="btn btn-primary" data-act="tp-aceitar" title="Os blocos viram marcadores na exportação. Nenhum arquivo é renomeado.">Usar os blocos</button>`
+    : r.aceitos
+      ? `<button class="btn btn-secondary" data-act="tp-desfazer">Tirar os marcadores</button>`
+      : ''
+  return `<div class="info-box tp-aviso" style="margin-bottom:16px">${icon('info')}<div style="flex:1"><b>TPeasy:</b> ${plural(r.confirmados, 'take com o nome do bloco', 'takes com o nome do bloco')}${r.revisar ? ` · ${plural(r.revisar, 'para revisar', 'para revisar')}` : ''}${ruins}</div>${botao}</div>`
 }
 
 function audioCell(c) {
@@ -130,6 +172,7 @@ function drawer(c) {
         ${c.meta && c.meta.tape ? kv('Fita / rolo', h(c.meta.tape)) : ''}
         ${c.sync ? kv('Sincronia', `${h(methodLabel(c.sync.method))} · ${Math.round(c.sync.conf * 100)}%`) : ''}
       </dl>
+      ${tpPainel(c)}
       ${!hasMedia(c) ? `<div class="info-box">${icon('info')}<div>Mídia não conectada nesta sessão. Solte a mesma pasta para religar.</div></div>` : ''}
     </div>
   </aside>`
@@ -171,6 +214,7 @@ export default {
       </header>
       <div id="probeBar">${pr.active ? probeBar() : ''}</div>
       ${missing && !pr.active ? `<div class="info-box" style="margin-bottom:16px">${icon('link')}<div><b>${plural(missing, 'clipe sem mídia', 'clipes sem mídia')} nesta sessão.</b> Solte as mesmas pastas para religar (o Synquei acha cada arquivo pelo caminho e pelo tamanho). A exportação funciona mesmo assim.</div></div>` : ''}
+      ${tpAviso(p)}
       <div class="toolbar"><div class="seg" role="group" aria-label="Filtro">${seg}</div><span class="grow"></span><label class="search">${icon('search')}<input class="input" type="search" placeholder="Buscar clipe, codec, câmera" value="${h(S.ui.query)}" data-input="query" /></label></div>
       ${groups.map(([d, cs], i) => deviceCard(d, cs, i)).join('')}
       ${loose.length ? deviceCard({ id: '', label: 'Sem aparelho', kind: 'camera', color: 8 }, loose, groups.length) : ''}
@@ -204,6 +248,18 @@ export default {
     },
     'go-sync'() {
       go('sincronizar')
+    },
+    'tp-aceitar'() {
+      aceitarLeituras('confirmados')
+    },
+    'tp-desfazer'() {
+      aceitarLeituras(S.project.clips.filter((c) => c.tpeasy).map((c) => c.id), false)
+    },
+    'tp-usar'(el) {
+      aceitarLeituras([el.dataset.id])
+    },
+    'tp-tirar'(el) {
+      aceitarLeituras([el.dataset.id], false)
     },
   },
   inputs: {

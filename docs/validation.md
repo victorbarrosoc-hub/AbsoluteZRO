@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Synquei: leituras do TPeasy viram blocos nos takes (02/11/2026)
+
+- `products/synquei`: `npm test` → **174/174** (10 pulados, como antes). Novo `tests/tpeasy.test.mjs` (11): leituras
+  geradas pelo código real do TPeasy; bip igual ao dele (seno de 1000 Hz, rampa de 160 ms) achado no meio da fala e
+  baixinho na pausa (18 dB abaixo), com 2 ms de precisão; contagem de 660 Hz, fala e palmas não viram bip (1 falso em
+  60 min de cenas sintéticas, com 12 microfones); 3 takes em 2 câmeras (uma 2 h + 7,4 s adiantada, outra 41 s
+  atrasada) confirmados com os blocos no ponto certo; um take só, leitura sem bip e bip ambíguo → revisar; o `.jsonl`
+  vai para as leituras e não vira clipe; só o aceito vira marcador no xmeml (378 quadros a 25 qps = 15,1 s).
+- Fumaça no Chromium (1280 px), projeto de exemplo com 3 takes casados: aviso "2 takes com o nome do bloco · 1 para
+  revisar (1 linha ilegível)", selos por clipe, painel com os tempos dos blocos, **Usar os blocos** aceita só os 2
+  confirmados; nenhum erro no console.
+
 ## Planos Zero/Órbita/Absoluto e níveis por app (02/11/2026, ADR 0039)
 
 Branch `planos-b`, migração `0055_planos_zero_orbita_absoluto.sql`. Rodado com banco de teste próprio

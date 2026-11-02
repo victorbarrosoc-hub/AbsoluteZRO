@@ -7,6 +7,7 @@ import { extractAudio, peaks as mkPeaks } from './media/extract.js'
 import { b64 } from './util.js'
 import { sfx } from './sfx.js'
 import { aplicarTipo } from './tipos.js'
+import { acharBips, casar, juntarLeituras, lerLeituras } from './tpeasy.js'
 
 const IDX = 'synquei:index'
 const KEY = (id) => `synquei:p:${id}`
@@ -196,7 +197,7 @@ export async function addEntries(entries, { name } = {}) {
     createProject(name || top || 'Projeto sem nome')
   }
   const p = S.project
-  const { media, ignored } = scanEntries(entries)
+  const { media, ignored, leituras } = scanEntries(entries)
   // Organizar: de que diária, dono e cartão veio cada arquivo (vem junto da entrada)
   const orgDe = new Map(entries.filter((e) => e.org).map((e) => [(e.path || e.file.name).replace(/^\/+/, ''), e.org]))
   const known = new Map(p.clips.map((c) => [fileKey(c.relPath, c.size), c]))
@@ -227,10 +228,73 @@ export async function addEntries(entries, { name } = {}) {
   }
   const seen = new Set(p.ignored.map((i) => i.relPath))
   for (const i of ignored) if (!seen.has(i.relPath)) p.ignored.push(i)
+  const novas = await lerArquivosDeLeituras(p, leituras)
   p.updatedAt = Date.now()
   changed()
   await probeQueue(queue)
-  return { added: queue.length - relinked, relinked, ignored: ignored.length }
+  return { added: queue.length - relinked, relinked, ignored: ignored.length - leituras.length, leituras: novas }
+}
+
+// ───────── TPeasy: registro de leituras (tpeasy.js) ─────────
+/** Lê os .jsonl do TPeasy soltos junto com as pastas e guarda as leituras no projeto. Devolve quantas chegaram. */
+async function lerArquivosDeLeituras(p, arquivos) {
+  if (!arquivos.length) return 0
+  const antes = p.tpeasy ? p.tpeasy.leituras.length : 0
+  let todas = p.tpeasy ? p.tpeasy.leituras : []
+  let invalidas = p.tpeasy ? p.tpeasy.invalidas : 0
+  const nomes = new Set(p.tpeasy ? p.tpeasy.arquivos : [])
+  for (const a of arquivos) {
+    try {
+      const r = lerLeituras(await a.file.text())
+      todas = juntarLeituras(todas, r.leituras)
+      invalidas += r.invalidas.length
+      nomes.add(a.relPath)
+    } catch {
+      invalidas++
+    }
+  }
+  p.tpeasy = { arquivos: [...nomes], leituras: todas, invalidas }
+  // áudio já lido nesta sessão: casa agora; senão, na próxima sincronia
+  aplicarLeituras(p)
+  return todas.length - antes
+}
+
+/**
+ * Acha o bip do TPeasy no áudio já lido de cada clipe e casa com as leituras. Clipe sem áudio nesta sessão fica como
+ * estava. Quem já tinha aceitado os mesmos marcadores continua aceito; proposta nova volta para a pessoa decidir.
+ */
+export function aplicarLeituras(p = S.project) {
+  if (!p || !p.tpeasy || !p.tpeasy.leituras.length) return
+  const clipes = []
+  for (const c of p.clips) {
+    const sig = S.signals.get(c.id)
+    if (!sig) continue
+    clipes.push({ id: c.id, device: c.deviceId || 'x', created: Number.isFinite(c.created) ? c.created : null, dur: c.duration || sig.length / 4000, bips: acharBips(sig, 4000) })
+  }
+  if (!clipes.length) return
+  const r = casar(clipes, p.tpeasy.leituras)
+  for (const { id } of clipes) {
+    const c = p.clips.find((x) => x.id === id)
+    const novo = r.get(id)
+    if (!novo) {
+      delete c.tpeasy
+      continue
+    }
+    const igual = c.tpeasy && JSON.stringify(c.tpeasy.marcadores) === JSON.stringify(novo.marcadores)
+    c.tpeasy = { ...novo, aceito: !!(igual && c.tpeasy.aceito) }
+  }
+}
+
+/** A pessoa confirma (ou desfaz) os nomes dos blocos: `ids` dos clipes, ou 'confirmados' para todos os confirmados. */
+export function aceitarLeituras(ids, aceito = true) {
+  const p = S.project
+  if (!p) return
+  for (const c of p.clips) {
+    if (!c.tpeasy) continue
+    if (ids === 'confirmados' ? c.tpeasy.estado === 'confirmado' : ids.includes(c.id)) c.tpeasy.aceito = aceito
+  }
+  p.updatedAt = Date.now()
+  changed()
 }
 
 // caminho completo: o arquivo vigiado (Organizar) já sabe o dele; o escolhido ou arrastado pergunta ao app de desktop
@@ -400,6 +464,7 @@ export async function runSync() {
     // 3. resultado
     S.sync.phase = 'done'
     const st = applySync(p, res)
+    aplicarLeituras(p)
     S.sync.running = false
     S.sync.finishedAt = Date.now()
     S.ui.session = 0
