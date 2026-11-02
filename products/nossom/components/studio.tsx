@@ -85,6 +85,7 @@ import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
 import Assistant from './assistant';
 import { WavePlayer } from './wave-player';
+import MesaFaixas from './mesa-faixas';
 import { PassosLista, PassosTrilho, passoDe, slugPasso } from './passos-nav';
 import { player } from '@/lib/player';
 import { restoreCloud, releaseCloudJob, cancelCloudJob, CloudFailed } from '@/lib/cloud-audio';
@@ -2073,6 +2074,11 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       chooseTool(id as Operation);
                       setFolha(true);
                     }}
+                  />
+                  <MesaFaixas
+                    versions={project.versions}
+                    activeId={version.id}
+                    projeto={{ id: project.id, nome: project.name, dono: account.id }}
                   />
                   {versionIndex > 0 &&
                     project.versions.some(

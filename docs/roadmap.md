@@ -450,6 +450,11 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Mesa de faixas (02/11/2026, prévia aprovada pelo titular): embaixo da onda, o tratamento aparece como
+  numa DAW. O original e cada passo até a versão aberta viram faixas com a onda medida (original em azul-acinzentado, a
+  Z em ciano, a Quasar Presence em roxo); "Ouvir" troca o som no mesmo ponto pelo player da plataforma; o mixer mostra
+  o volume (LUFS) e o pico medidos de cada passo e a saída; a cadeia mostra Melhorar com a Z, as quatro bandas da
+  Presence e o limite −3 dB; a Z resume o que fez só com números medidos (`lib/mesa.ts`). Claro, escuro e celular.
 - 🟡 Quasar · Melhorar com IA + Quasar Presence (02/11/2026, pedido do titular): "Restaurar com IA" vira "Melhorar
   com IA" e, com a chave "Quasar Presence depois da IA" (ligada por padrão), a cadeia do Premiere do titular
   (multibanda de quatro bandas + limite −3 dB, `lib/broadcast.ts`) entra sozinha na voz tratada, como uma versão a

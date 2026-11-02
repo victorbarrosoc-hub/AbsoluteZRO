@@ -15,6 +15,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Quasar: mesa de faixas (02/11/2026)
+
+Branch `claude/quasar-mesa`, em `products/nossom`.
+
+- `tests/mesa.test.ts` (4):
+  - a cadeia vai do original até a versão aberta, sem ramos e sem travar em ciclo;
+  - papel, nome e nome curto de cada faixa;
+  - o resumo da Z só com medidas;
+  - as bandas da Presence seguem os cortes.
+- E2E: depois de melhorar, a mesa tem 3 faixas, 4 canais e o resumo da Z, e passa no axe (WCAG 2.1 A/AA).
+- Conferido em captura (1440 px e 390 px):
+  - a agulha acompanha o som;
+  - "Ouvir" troca a faixa no mesmo ponto;
+  - sem rolagem lateral no celular.
+- Corrigido antes de entregar: a onda crescia sem parar porque o canvas realimentava a altura. Agora ele fica por cima
+  da caixa da faixa.
+
 ## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
 
 Branch `claude/quasar-presence-ia`, em `products/nossom`.
