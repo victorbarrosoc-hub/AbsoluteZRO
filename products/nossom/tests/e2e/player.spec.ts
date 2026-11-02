@@ -11,7 +11,9 @@ test('o último áudio continua ao trocar de ferramenta, volta depois de recarre
   page,
 }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Do ruído.*ao pronto/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /O som encontrando.*o seu espaço/ }),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: /Tudo o que o som pede/ })).toBeVisible();
   await page.screenshot({
     path: 'artifacts/home-p2-1440.png',

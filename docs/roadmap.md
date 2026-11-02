@@ -460,6 +460,11 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   no menu do celular; sai "Conhecer o projeto" e "Em desenvolvimento"). No estúdio, sol/lua no topo troca claro e
   escuro no computador e no celular ("Tema do aparelho" segue em Conta); no menu do celular cada app mostra o nome. A
   família tira o Revela (não lançado) e ganha o Relay.
+- 🟡 Quasar · Página inicial atualizada (02/11/2026, pedido do titular): o topo e a onda de luz ficam; no centro, o
+  slogan em duas linhas só, em qualquer tela ("O som encontrando / o seu espaço."), no lugar de "Do ruído ao pronto.".
+  Os cartões mostram o que mudou: mesa de faixas, Melhorar com a Z, trilha e efeitos e Quasar Presence (os da Z com o
+  roxo dela), além de Remixar, Legendas, Equalização e Preparar entrega. A seção da Z e as dúvidas falam da Presence,
+  da trilha e dos efeitos; o selo da Z continua "Já no Quasar" só com a conversa ligada.
 - 🟡 Quasar · Cor da Z (02/11/2026, opção 2 escolhida pelo titular entre três propostas): a marca segue azul (ícones,
   cartão de compartilhamento, abertura); quando a Z pensa, o halo, o clarão e o feixe da Coroa passam suavemente para o
   violeta dela (#a274ff) e voltam ao azul quando ela termina (`violeta` em `RITMOS`, `lib/quasar-ia.ts`). O trabalho

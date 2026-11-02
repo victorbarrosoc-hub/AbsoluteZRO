@@ -26,6 +26,14 @@ Branch `claude/synquei-pede-conta`, em `products/synquei`.
   `/entrar/` e o `/app/` no lugar.
 - Cache do app em `synquei-v29`.
 
+## Quasar: página inicial com o slogan (02/11/2026)
+
+- Medido em 1440, 390 e 320 px:
+  - o slogan ocupa duas linhas de texto;
+  - a onda aparece inteira;
+  - sem rolagem lateral.
+- E2E do estúdio, player, destinos, Z e acesso fechado passando, com os títulos atualizados.
+
 ## Quasar: cor da Z na Coroa e capa do player (02/11/2026)
 
 - `tests/quasar-ia.test.ts` (5) cobre a cor:
@@ -4767,6 +4775,15 @@ SOBEDESCE de computador, que disparam os instaladores).
   servidor, `localStorage` do domínio intocado, zero erro de página.
 - `vercel-build.js` confere o `demo.html` como o `index` (fase 1, real, sem perfil fictício); no emulador
   (`servir-saida`, com o CSP de produção) `/demo` responde 200, entra no feed e `/demo.html` vira `/demo`.
+
+## AEON: /app/ com a barra abre o editor depois do login (02/11/2026)
+
+- Causa: a volta do login é `/app/?zro=ok`, e na Vercel `/app/:caminho*` não casa com `/app/` (barra no fim, nada
+  depois). O pedido caía no 404 estático, a página neutra, mesmo para a conta liberada. `/app` e `/app/index.html`
+  chegavam à função.
+- Correção: reescrita explícita `/app/` → `/api/app?caminho=app/index.html` antes da regra curinga (`vercel.json`), e o
+  teste `test/fechado.test.js` confere a lista.
+- `npm test` do AEON 261/261; `node scripts/scan-secrets.mjs` sem segredo.
 
 ## AEON: BRAW pelo proxy (02/11/2026)
 
