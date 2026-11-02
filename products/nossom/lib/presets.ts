@@ -29,6 +29,8 @@ export type FilterSettings = {
       'id' | 'label' | 'lambd' | 'tau' | 'solver' | 'nfe'
     >;
   automatic?: boolean;
+  /** Feito pela IA avançada (reserva do Melhorar com a Z). */
+  iaAvancada?: boolean;
   restoration?: RestorationAnalysis;
   mudCut?: number;
   noiseFloor?: number;
@@ -64,7 +66,7 @@ export const operations: { id: Operation; label: string; description: string }[]
   },
   {
     id: 'auto',
-    label: 'Restaurar com IA',
+    label: 'Melhorar com a Z',
     description: 'Voz mais limpa e clara, pronta para ajustar.',
   },
   {

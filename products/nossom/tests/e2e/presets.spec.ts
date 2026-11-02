@@ -28,7 +28,7 @@ test('dedicated tools render EQ, apply the supplied multiband preset, and undo/r
     .getByRole('combobox', { name: 'Ferramenta do estúdio', exact: true })
     .selectOption('master');
   await expect(page).toHaveURL(/\/studio\/masterizacao\?project=/);
-  await page.getByRole('button', { name: 'Transmissão + Limite −3 dB', exact: false }).click();
+  await page.getByRole('button', { name: 'Quasar Presence', exact: false }).click();
   await expect(page.getByRole('spinbutton', { name: 'Crossover 1', exact: true })).toHaveValue(
     '137',
   );

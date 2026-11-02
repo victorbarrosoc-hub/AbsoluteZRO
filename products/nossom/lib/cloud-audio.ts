@@ -1,5 +1,7 @@
-import { inspect, decode, measure } from './audio';
+import { inspect, decode, encaixarDuracao, encodeWav, measure } from './audio';
 import {
+  iaAvancada,
+  validAdvancedReport,
   isCloudPreset,
   isVoiceToolPreset,
   restorationD,
@@ -24,6 +26,7 @@ const engines: Record<CloudPreset, string> = {
   [singingSeparation.id]: 'Mel-Band RoFormer · vocals',
   [transcription.id]: 'Whisper large-v3-turbo',
   [stemSeparation.id]: 'Mel-Band RoFormer + HTDemucs 6s',
+  [iaAvancada.id]: 'Z avançada',
 };
 const runningLabels: Record<CloudPreset, string> = {
   [restorationD.id]: 'Melhorando sua voz…',
@@ -32,6 +35,7 @@ const runningLabels: Record<CloudPreset, string> = {
   [singingSeparation.id]: 'Separando a voz dos instrumentos…',
   [transcription.id]: 'Escrevendo o que foi dito…',
   [stemSeparation.id]: 'Separando voz, bateria, baixo e guitarra…',
+  [iaAvancada.id]: 'A Z avançada está limpando sua voz…',
 };
 
 export class CloudCancelled extends Error {
@@ -39,6 +43,8 @@ export class CloudCancelled extends Error {
     super(message);
   }
 }
+/** O pedido terminou em falha confirmada pelo servidor (minutos devolvidos): pode tentar a IA avançada. */
+export class CloudFailed extends Error {}
 async function api(body: Record<string, unknown>, signal?: AbortSignal) {
   const response = await fetch('/api/audio/jobs', {
     method: 'POST',
@@ -121,10 +127,11 @@ export async function restoreCloud(
       if (!response.ok)
         throw new Error(String(status?.error || 'Não foi possível consultar o tratamento.'));
       if (status?.status === 'completed') break;
-      if (['failed', 'cancelled', 'released'].includes(String(status?.status)))
-        throw new Error(
-          'A restauração não foi concluída. Seu original foi preservado; confira seu saldo atualizado.',
-        );
+      if (['failed', 'cancelled', 'released'].includes(String(status?.status))) {
+        const message =
+          'A restauração não foi concluída. Seu original foi preservado; confira seu saldo atualizado.';
+        throw status?.status === 'failed' ? new CloudFailed(message) : new Error(message);
+      }
       const seconds = Math.floor((Date.now() - waitingSince) / 1000);
       const waiting = seconds >= 60 ? ` há ${Math.floor(seconds / 60)}min ${seconds % 60}s` : '';
       options.onStatus(
@@ -208,6 +215,41 @@ export async function restoreCloud(
       options.onProgress(100);
       return { kind: 'stems' as const, id: id!, files, gainDb: status.report.gainDb };
     }
+    if (validAdvancedReport(status.report)) {
+      options.onStatus('Conferindo o áudio limpo…');
+      options.onProgress(-1);
+      const decoded = await decode(new Blob(parts));
+      // O arquivo comprimido traz alguns milissegundos a mais ou a menos; mais que isso não é este áudio.
+      if (Math.abs(decoded.duration - duration) > 1.5)
+        throw new Error('A duração do resultado não corresponde ao original.');
+      const frames = Math.round(duration * decoded.sampleRate);
+      const fitted = new AudioBuffer({
+        length: frames,
+        numberOfChannels: decoded.numberOfChannels,
+        sampleRate: decoded.sampleRate,
+      });
+      for (let c = 0; c < decoded.numberOfChannels; c++)
+        fitted.copyToChannel(encaixarDuracao(decoded.getChannelData(c), frames), c);
+      const blob = encodeWav(fitted, true);
+      const info = inspect(fitted),
+        metrics = await measure(blob, options.onStatus);
+      options.onProgress(100);
+      return {
+        kind: 'audio' as const,
+        id: id!,
+        blob,
+        info,
+        metrics,
+        processing: {
+          engine: engines[iaAvancada.id],
+          strength: 100,
+          noiseFloor: info.noiseFloor ?? -60,
+          mode: 'cloud',
+          automatic: true,
+          iaAvancada: true,
+        },
+      };
+    }
     if (!validCloudReport(status.report)) throw new Error('O resultado não é um áudio válido.');
     const blob = new Blob(parts, { type: 'audio/wav' });
     options.onStatus('Verificando o resultado e preparando seus ajustes…');
@@ -259,6 +301,14 @@ export async function restoreCloud(
             ? 'O resultado já está pronto. Retome o pedido para salvar o áudio tratado.'
             : 'Cancelamento solicitado. Verifique o andamento para confirmar o encerramento.',
       );
+    }
+    // Falha no meio do caminho: só vale como falha confirmada se o servidor encerrou o pedido.
+    if (id && !(error instanceof CloudFailed)) {
+      const state = await fetch(`/api/audio/jobs?id=${id}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+      if (state?.status === 'failed')
+        throw new CloudFailed(error instanceof Error ? error.message : String(error));
     }
     throw error;
   }

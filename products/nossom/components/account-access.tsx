@@ -86,7 +86,7 @@ export function AccountForm({
       <p>
         {mode === 'register'
           ? 'A conta do Quasar é a sua conta Absolute ZRO.'
-          : 'Entre para continuar seus projetos e conversar com a IA do Quasar.'}
+          : 'Entre para continuar seus projetos e conversar com a Z.'}
       </p>
       {expandable && !expanded && (
         <button

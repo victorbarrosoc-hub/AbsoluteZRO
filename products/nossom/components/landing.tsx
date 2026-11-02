@@ -84,19 +84,19 @@ function Reveal({
 const faqs = [
   [
     'Preciso saber tratar áudio?',
-    'Comece pelo assistente: anexe sua gravação e conte o que quer melhorar. A IA usa seu objetivo e as medições do áudio para sugerir o tratamento. Você revisa a proposta, ouve e pode ajustar os controles no estúdio.',
+    'Comece pelo assistente: anexe sua gravação e conte o que quer melhorar. A Z usa seu objetivo e as medições do áudio para sugerir o tratamento. Você revisa a proposta, ouve e pode ajustar os controles no estúdio.',
   ],
   [
     'O que está incluído na minha conta?',
     'O Grátis inclui 5 minutos de restauração por mês. Essencial: 2 horas por R$39/mês; Studio: 6 horas por R$99/mês. Cada restauração usa no mínimo 1 minuto; EQ, efeitos e masterização local não descontam minutos. A franquia renova no dia 1. Os planos pagos são mensais; o Grátis não pede cartão.',
   ],
   [
-    'Meu áudio é enviado à IA?',
-    'Ao restaurar com IA, uma cópia temporária do arquivo vai para armazenamento privado e uma GPU da plataforma. Os projetos e originais ficam neste navegador. EQ, masterização e efeitos continuam locais. O assistente Claude recebe texto e medições, sem o arquivo de áudio.',
+    'Meu áudio é enviado à Z?',
+    'Ao melhorar com a Z, uma cópia temporária do arquivo vai para armazenamento privado e uma GPU da plataforma. Os projetos e originais ficam neste navegador. EQ, masterização e efeitos continuam locais. O assistente Claude recebe texto e medições, sem o arquivo de áudio.',
   ],
   [
     'Quais arquivos posso usar?',
-    'Áudio (WAV, MP3, M4A, FLAC, OGG) até 500 MB e vídeo (MP4, MOV, WebM) até 2 GB, com até 10 minutos. Em vídeo, só o som vai para a IA e você baixa o vídeo com o som novo. Exporte também em WAV ou MP3.',
+    'Áudio (WAV, MP3, M4A, FLAC, OGG) até 500 MB e vídeo (MP4, MOV, WebM) até 2 GB, com até 10 minutos. Em vídeo, só o som vai para a Z e você baixa o vídeo com o som novo. Exporte também em WAV ou MP3.',
   ],
   [
     'Posso desfazer um tratamento?',
@@ -233,7 +233,7 @@ export default function Landing({
                 Do ruído
                 <span>ao pronto.</span>
               </h1>
-              <p>Um estúdio de áudio inteiro, com IA quando você quiser.</p>
+              <p>Um estúdio de áudio inteiro, com a Z quando você quiser.</p>
               <div className="ns-actions">
                 <StudioLink href="/studio" className="button primary">
                   Abrir o estúdio
@@ -356,7 +356,7 @@ export default function Landing({
                 <li title="Nenhuma ação sem você conferir.">
                   <CircleCheck size={16} aria-hidden="true" /> Você confere antes
                 </li>
-                <li title="Usa os créditos de IA do seu plano.">
+                <li title="Usa os créditos da Z do seu plano.">
                   <Sparkle size={16} aria-hidden="true" /> 1 crédito por resposta
                 </li>
               </ul>

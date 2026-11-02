@@ -15,6 +15,22 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
+
+Branch `claude/quasar-presence-ia`, em `products/nossom`.
+
+- `npm test`: 141/141, com `tests/ia-avancada.test.ts`:
+  - contrato do resultado (um arquivo, limitado, que não passa por outro tipo);
+  - fluxo no servidor sem GPU, com reserva de minutos e a chave fora de qualquer resposta;
+  - recusa do parceiro encerra o pedido sem repetir;
+  - sem chave o pedido nem começa; passou do prazo, encerra.
+- E2E (Chromium):
+  - a restauração salva três versões (original, voz melhorada, Quasar Presence);
+  - a falha confirmada do motor leva à IA avançada uma vez só e a duração bate com o original;
+  - predefinições, assistente, navegação e instalação continuam passando.
+- `npm run typecheck`, `npm run format:check` e `npm run build` ok.
+- Não testado com o parceiro real: a chave está só em produção. A primeira chamada real acontece depois do deploy.
+
 ## AEON com a cara do AEON (02/11/2026)
 
 Branch `claude/aeon-visual-pro`, sobre a edição automática.

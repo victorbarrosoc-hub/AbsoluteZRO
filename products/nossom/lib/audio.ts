@@ -171,6 +171,12 @@ export function inspect(buffer: AudioBuffer): AudioInfo {
     noiseFloor: estimateNoiseFloor(data, buffer.sampleRate).floorDb,
   };
 }
+/** Acerta o número de amostras: corta o excesso no fim ou completa com silêncio. */
+export function encaixarDuracao(canal: Float32Array, frames: number): Float32Array<ArrayBuffer> {
+  const saida = new Float32Array(frames);
+  saida.set(canal.subarray(0, Math.min(canal.length, frames)));
+  return saida;
+}
 export function encodeWav(buffer: AudioBuffer, floating = false): Blob {
   const channels = buffer.numberOfChannels,
     frames = buffer.length,
@@ -505,7 +511,7 @@ export type ProcessOptions = {
 };
 export async function processAudio(blob: Blob, options: ProcessOptions) {
   if (options.operation === 'vocals')
-    throw new Error('A separação musical usa o serviço de IA. Ela não é uma limpeza local.');
+    throw new Error('A separação musical usa a Z na nuvem. Ela não é uma limpeza local.');
   const epoch = cancellationEpoch;
   return exclusive(async () => {
     const ff = await getEngine(options.onStatus);

@@ -215,7 +215,7 @@ export default function Assistant({
                 : 'Ouvindo…'
               : 'Pronta para ajudar'
           : authenticated
-            ? 'Ajuda básica · IA temporariamente indisponível'
+            ? 'Ajuda básica · Z temporariamente indisponível'
             : 'Entre na sua conta para conversar'}
     </div>
   );
@@ -258,7 +258,7 @@ export default function Assistant({
         )}
         {/* sem frase de efeito (titular, 01/11/2026): no Início o título é só para leitor de tela */}
         <Title id={id + '-title'} className={embedded ? 'sr-only' : undefined}>
-          {embedded ? 'Início do Quasar' : 'Peça ao Quasar'}
+          {embedded ? 'Início do Quasar' : 'Peça à Z'}
         </Title>
         {embedded && onUpload && (
           <div className="assistant-acoes">
@@ -327,7 +327,7 @@ export default function Assistant({
             id={id + '-text'}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={embedded ? 'Ou peça ao Quasar…' : 'Ou conte sua ideia…'}
+            placeholder={embedded ? 'Ou peça à Z…' : 'Ou conte sua ideia…'}
             maxLength={1500}
             disabled={thinking || loading || !authenticated || disabled}
             required
