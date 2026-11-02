@@ -7303,7 +7303,7 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-li-tx small[data-falta]{color:var(--nx-esp)}
 .nx-li-seta{color:var(--cal-tenue);font-size:22px}
 /* ---------- Propostas: a caixa ---------- */
-.nx-so-cel{display:none}
+@media(min-width:821px){.nx [data-so="cel"],.nx-folha [data-so="cel"]{display:none!important}}
 #nx-prop{padding:0}
 .nx-pp{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);min-height:calc(100dvh - 62px)}
 .nx-pp-col{border-right:1px solid var(--nx-l);min-width:0}
@@ -7383,10 +7383,15 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-dia[data-est="segura"]>b{color:var(--nx-esp)}
 .nx-dia[data-est="passou"]{background:transparent;cursor:default}
 .nx-dia[data-est="passou"]>b{color:var(--cal-tenue);font-weight:500}
-.nx-dia[data-fora]{opacity:.45}
+.nx-dia[data-fora]{opacity:.5;background:transparent}
+.nx-dia[data-fora]>b{color:var(--cal-tenue)}
+.nx-dia[data-fora] .nx-dia-ponto{display:none}
 .nx-dia[data-hoje]{border-color:var(--ciano);box-shadow:0 0 0 3px color-mix(in srgb,var(--ciano) 18%,transparent)}
 .nx-dia[data-bloq]{border-color:#FF6B8B;background:color-mix(in srgb,#FF6B8B 12%,var(--nx-c1))}
-.nx-dj{max-width:100%;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--ciano) 16%,transparent);color:var(--ciano);font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-dj{display:block;max-width:100%;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--ciano) 16%,transparent);color:var(--ciano);font-size:12.5px;font-weight:600;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-dj small{display:block;font-weight:500;opacity:.8}
+.nx-dia[data-job]{background:var(--nx-c1)}
 .nx-dl{color:var(--cal-tenue);font-size:12.5px}
 .nx-trilho{display:grid;gap:14px;align-content:start;position:sticky;top:90px}
 .nx-livres{margin:-4px 0 0;color:var(--cal-fraco);font-size:20px;letter-spacing:-.02em}
@@ -7485,8 +7490,7 @@ li[data-destaque] .nx-an-tx span{font-size:22px}
   .nx-tl::before{display:none}
 }
 @media(max-width:820px){
-  .nx-so-pc{display:none!important}
-  .nx-so-cel{display:block}
+  .nx [data-so="pc"],.nx-folha [data-so="pc"]{display:none!important}
   .nx{padding:18px 16px 40px}
   .nx-h1{font-size:34px}
   .nx-pp{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -7509,6 +7513,8 @@ li[data-destaque] .nx-an-tx span{font-size:22px}
   .nx-folha .nx-pd-pe .glass-btn{flex:1}
   .nx-ag-cab .nx-h1{font-size:30px}
   .nx-ag-nav .nx-hoje{display:none}
+  .nx-bloq-ac{position:fixed;z-index:60;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom,0px));padding:8px;border-radius:999px;
+    background:color-mix(in srgb,var(--grafite) 80%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--nx-l2)}
   .nx-trilho{margin-top:6px}
   .nx-jb-hero{grid-template-columns:minmax(0,1fr);margin:12px 16px 0;padding:24px 20px;border-radius:28px;border:1px solid var(--nx-l)}
   .nx-jb-h{font-size:clamp(40px,12vw,56px)}
@@ -24591,7 +24597,7 @@ function nxPropDet(pr){
   var ficha=function(r,val){ return '<div><span>'+r+'</span><b>'+esc(val||"—")+'</b></div>' };
   var acoes=pr.env?'<span class="nx-pe-nota">'+(pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>'
     :pr.status==="novo"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="pp-aceita" data-id="'+pr.id+'">Aceitar</button><button type="button" class="glass-btn" data-nx="pp-recusa" data-id="'+pr.id+'">Recusar</button>'+
-      (quem?'<button type="button" class="glass-btn nx-so-pc" data-nx="pp-perfil" data-id="'+quem.id+'">Ver perfil</button>':'')+'<span class="nx-pe-nota nx-so-pc">O acerto é direto com quem contrata.</span>'
+      (quem?'<button type="button" class="glass-btn" data-so="pc" data-nx="pp-perfil" data-id="'+quem.id+'">Ver perfil</button>':'')+'<span class="nx-pe-nota" data-so="pc">O acerto é direto com quem contrata.</span>'
     :pr.status==="aceita"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="agenda">Ver na agenda</button><span class="nx-pe-nota">Aceita. Quem chamou já vê.</span>'
     :'<span class="nx-pe-nota">'+(pr.status==="perdida"?"Outra pessoa pegou antes.":"Recusada"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>';
   return '<div class="nx-pd-cab">'+
@@ -24626,9 +24632,9 @@ function nxPropostas(){
     '<div class="nx-pp-col"><div class="nx-pp-cab"><h1 class="nx-h1">Propostas</h1>'+
       '<div class="nx-seg" role="tablist" aria-label="Propostas"><button type="button" role="tab" data-nx="pp-aba" data-aba="receb" aria-selected="'+(NX.pp==="receb")+'">Para você'+(nN?' · '+nN:'')+'</button>'+
       '<button type="button" role="tab" data-nx="pp-aba" data-aba="env" aria-selected="'+(NX.pp==="env")+'">Você enviou</button></div></div>'+
-      (prox?'<div class="nx-pp-prox nx-so-cel">'+nxProxHtml(prox)+'</div>':'')+
+      (prox?'<div class="nx-pp-prox" data-so="cel">'+nxProxHtml(prox)+'</div>':'')+
       (lista.length?'<ul class="nx-pp-lista">'+lista.map(it).join("")+'</ul>':vazio)+'</div>'+
-    '<div class="nx-pp-det nx-so-pc" aria-live="polite">'+(sel?nxPropDet(sel):'')+'</div></div>';
+    '<div class="nx-pp-det" data-so="pc" aria-live="polite">'+(sel?nxPropDet(sel):'')+'</div></div>';
 }
 function nxProxHtml(pr){
   var d=nxD(pr.data), ok=!isNaN(d)&&pr.srvTipo!=="brecho";
@@ -24657,10 +24663,10 @@ function nxAgenda(){
   for(var i=0;i<celulas;i++){
     var d=addD(ini,i-off), k=key(d), fora=d.getMonth()!==m, passou=d<HOJE, st=passou?"passou":statusEu(d), js=jobsEm(k), dec=decDe(k);
     var conteudo=js.map(function(j){ var pr=j.srv&&PROPOSTAS.find(function(x){return x.srv===j.srv});
-        return '<span class="nx-dj">'+esc([nxJobTit({desc:pr&&pr.desc,func:j.func}),pr&&pr.ini?pr.ini.slice(0,2)+"h":""].filter(Boolean).join(" · "))+'</span>' }).join("")+
+        return '<span class="nx-dj">'+esc(nxJobTit({desc:pr&&pr.desc,func:j.func}))+(pr&&pr.ini?'<small>'+esc(pr.ini.slice(0,2)+"h")+'</small>':'')+'</span>' }).join("")+
       (!js.length&&dec&&!passou?'<span class="nx-dl">'+(dec.e==="negociando"?"segurando":dec.p==="dia"?"ocupado":dec.p==="manha"?"manhã ocupada":"tarde ocupada")+'</span>':'');
     var rot=d.getDate()+" de "+MESL[d.getMonth()]+", "+(passou?"já passou":st==="livre"?"livre":st==="segura"?"segurando":"ocupado")+(js.length?", "+pl(js.length,"job","jobs"):"");
-    cel+='<button type="button" class="nx-dia" data-nx="ag-dia" data-k="'+k+'" data-est="'+st+'"'+(fora?' data-fora="1"':'')+(k===key(HOJE)?' data-hoje="1"':'')+
+    cel+='<button type="button" class="nx-dia" data-nx="ag-dia" data-k="'+k+'" data-est="'+st+'"'+(js.length?' data-job="1"':'')+(fora?' data-fora="1"':'')+(k===key(HOJE)?' data-hoje="1"':'')+
       (bloq&&bloq.has(k)?' data-bloq="1"':'')+(passou?' disabled':'')+' aria-label="'+esc(rot)+'"><b>'+pad(d.getDate())+'</b>'+(st==="livre"&&!fora?'<i class="nx-dia-ponto"></i>':'')+conteudo+'</button>';
     mini+=fora?'<span class="nx-mini-d" data-fora="1"></span>':'<button type="button" class="nx-mini-d" data-nx="ag-dia" data-k="'+k+'" data-est="'+st+'"'+(js.length?' data-job="1"':'')+(k===key(HOJE)?' data-hoje="1"':'')+(bloq&&bloq.has(k)?' data-bloq="1"':'')+(passou?' disabled':'')+' aria-label="'+esc(rot)+'">'+d.getDate()+'</button>';
   }
@@ -24673,8 +24679,8 @@ function nxAgenda(){
   el.innerHTML='<div class="nx-ag"><div class="nx-ag-mes">'+
       '<div class="nx-ag-cab"><h1 class="nx-h1">'+MESL[m].charAt(0).toUpperCase()+MESL[m].slice(1)+' <span>'+y+'</span></h1>'+
         '<div class="nx-ag-nav"><button type="button" class="nx-redondo" data-nx="ag-mes" data-d="-1" aria-label="Mês anterior">‹</button><button type="button" class="nx-redondo nx-hoje" data-nx="ag-mes" data-d="0"'+(atual?' aria-current="true"':'')+'>Hoje</button><button type="button" class="nx-redondo" data-nx="ag-mes" data-d="1" aria-label="Próximo mês">›</button></div></div>'+
-      '<div class="nx-cal nx-so-pc" role="group" aria-label="'+MESL[m]+' de '+y+'"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span>'+cel+'</div>'+
-      '<div class="nx-minical nx-so-cel"><span>s</span><span>t</span><span>q</span><span>q</span><span>s</span><span>s</span><span>d</span>'+mini+'</div>'+
+      '<div class="nx-cal" data-so="pc" role="group" aria-label="'+MESL[m]+' de '+y+'"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span>'+cel+'</div>'+
+      '<div class="nx-minical" data-so="cel"><span>s</span><span>t</span><span>q</span><span>q</span><span>s</span><span>s</span><span>d</span>'+mini+'</div>'+
     '</div>'+
     '<aside class="nx-trilho">'+
       (resta?'<span class="nx-rot">Este mês</span><p class="nx-livres"><b>'+livres+'</b> '+(livres===1?"dia livre":"dias livres")+'</p><div class="nx-barra" role="img" aria-label="'+livres+' de '+resta+' dias livres"><i style="width:'+Math.round(livres/resta*100)+'%"></i></div>'+
@@ -24735,10 +24741,10 @@ function nxJobs(){
   el.innerHTML='<div class="nx-jb">'+
     (h?'<div class="nx-jb-hero"><div class="nx-jb-tx"><span class="nx-rot">Próximo job'+(em?' · '+esc(em):'')+'</span><h1 class="nx-jb-h">'+esc(nxJobTit(h))+'</h1>'+
       '<p class="nx-jb-quando"><span>'+esc(DIAS[d.getDay()]+" "+pad(d.getDate())+" "+MES[d.getMonth()])+'</span>'+(nxHora(h.ini,h.fim)?'<span>'+esc(nxHora(h.ini,h.fim))+'</span>':'')+(h.local?'<span>'+esc(h.local)+'</span>':'')+'</p>'+
-      '<div class="nx-jb-av nx-so-cel">'+equipe.map(function(p){return nxAv(p.nome,36)}).join("")+'</div>'+
+      '<div class="nx-jb-av" data-so="cel">'+equipe.map(function(p){return nxAv(p.nome,36)}).join("")+'</div>'+
       '<div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="jb-ver" data-id="'+esc(h.id)+'">Ver o job</button>'+
-        (h.local?'<a class="glass-btn nx-so-pc" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h.local)+'" target="_blank" rel="noopener">Como chegar</a>':'')+'</div></div>'+
-      '<div class="nx-equipe nx-so-pc"><span class="nx-rot">Equipe · '+equipe.length+'</span><ul>'+equipe.map(function(p){return '<li>'+nxAv(p.nome,40)+'<b>'+esc(p.nome)+'</b><small>'+esc(p.papel||"")+'</small></li>'}).join("")+'</ul></div></div>'
+        (h.local?'<a class="glass-btn" data-so="pc" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h.local)+'" target="_blank" rel="noopener">Como chegar</a>':'')+'</div></div>'+
+      '<div class="nx-equipe" data-so="pc"><span class="nx-rot">Equipe · '+equipe.length+'</span><ul>'+equipe.map(function(p){return '<li>'+nxAv(p.nome,40)+'<b>'+esc(p.nome)+'</b><small>'+esc(p.papel||"")+'</small></li>'}).join("")+'</ul></div></div>'
      :'<div class="nx-jb-hero" data-vazio="true"><div class="nx-jb-tx"><span class="nx-rot">Jobs</span><h1 class="nx-jb-h">Nenhum job <b>chegando.</b></h1><div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="propostas">Ver propostas</button></div></div></div>')+
     '<div class="nx-tl-cab"><span class="nx-rot">Depois</span><button type="button" class="glass-btn nx-mini" data-nx="jb-fora">Fui chamado por fora</button></div>'+
     '<ol class="nx-tl">'+outros.map(card).join("")+
@@ -24797,6 +24803,11 @@ function nxBrecho(){
 function nxPintar(t){
   if(!REAL||!NX_PRONTO) return;
   t=t||S.tab;
+  /* o "aparecer na busca" e o cartão leem o perfil da conta: uma leitura só, na primeira tela que precisa */
+  if((t==="agenda"||t==="meu")&&!NX_PERFIL&&!(CFB&&CFB.carregado)&&!NX.perfilPedido&&zroPodeEnviar()){
+    NX.perfilPedido=true;
+    cfbPedir("GET","/api/zro/perfil").then(function(r){ if(r.status===200&&r.j&&r.j.perfil){ NX_PERFIL=r.j.perfil; nxPintar() } });
+  }
   try{
     if(t==="propostas") nxPropostas(); else if(t==="agenda") nxAgenda(); else if(t==="jobs") nxJobs();
     else if(t==="brecho") nxBrecho(); else if(t==="meu") nxMeu();
