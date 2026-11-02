@@ -201,6 +201,35 @@ test('autoteste: grava, lê, acha silêncio, corta, exporta e renderiza no naveg
   await pagina.close()
 })
 
+test('BRAW: entra pelo proxy de mesmo nome (a mídia fica com o nome do RAW); sem proxy, a folha acha na pasta do cartão', async () => {
+  const { pagina, erros } = await abrir()
+  const bytes = await pagina.evaluate(async () => {
+    const { videoDeTeste } = await import('/app/autoteste.js')
+    const v = await videoDeTeste()
+    return [...new Uint8Array(await v.arquivo.arrayBuffer())]
+  })
+  const cartao = join(dir, 'cartao')
+  execFileSync('mkdir', ['-p', join(cartao, 'Proxy')])
+  // o RAW de mentira: o navegador nunca lê o .braw, só o nome
+  writeFileSync(join(cartao, 'B001_C001.braw'), Buffer.from('BRAW'))
+  writeFileSync(join(cartao, 'B001_C002.braw'), Buffer.from('BRAW'))
+  writeFileSync(join(cartao, 'B001_C001.mp4'), Buffer.from(bytes))
+  writeFileSync(join(cartao, 'Proxy', 'B001_C002.mp4'), Buffer.from(bytes))
+  await pagina.setInputFiles('#arquivo', [join(cartao, 'B001_C001.braw'), join(cartao, 'B001_C001.mp4'), join(cartao, 'B001_C002.braw')])
+  await pagina.locator('.cartao-midia', { hasText: 'B001_C001.braw' }).waitFor()
+  assert.match(await pagina.locator('.cartao-midia .fichas').innerText(), /proxy/)
+  // o proxy que pareou não entra de novo como mídia solta
+  assert.equal(await pagina.locator('.cartao-midia').count(), 1)
+  await pagina.locator('#folhaRaw[open]').waitFor()
+  assert.equal(await pagina.locator('#rawTitulo').innerText(), 'B001_C002.braw pede o proxy.')
+  await pagina.setInputFiles('#pastaProxy', cartao)
+  await pagina.locator('.cartao-midia', { hasText: 'B001_C002.braw' }).waitFor()
+  await pagina.locator('#folhaRaw:not([open])').waitFor({ state: 'attached' })
+  assert.equal(await pagina.locator('.cartao-midia').count(), 2)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, exportar e renderizar', async () => {
   const { pagina, erros } = await abrir()
   // vídeo de teste gerado pelo próprio app, salvo no disco para entrar pelo seletor de arquivo como um vídeo de verdade

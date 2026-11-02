@@ -291,6 +291,16 @@
       </div>
     </dialog>
 
+    <dialog class="folha" id="folhaRaw" aria-labelledby="rawTitulo">
+      <h2 class="titulo-p" id="rawTitulo">BRAW pede o proxy.</h2>
+      <p class="apoio">O navegador não abre RAW. Escolha a pasta do cartão: o AEON acha o proxy de mesmo nome e exporta apontando para o original.</p>
+      <p class="apoio nota-raw">Sem proxy? O SOBEDESCE gera ao subir o cartão; no DaVinci, Gerar mídia proxy.</p>
+      <div class="acoes">
+        <button class="glass-btn" id="rawFechar">Agora não</button>
+        <button class="glass-btn glass-btn--ink" id="rawPasta">Escolher pasta</button>
+      </div>
+    </dialog>
+
     <dialog class="folha" id="folhaNovo">
       <form method="dialog" id="formNovo">
         <h2 class="titulo-p">Novo projeto</h2>
@@ -322,7 +332,8 @@
     <dialog class="folha folha-criar folha-auto" id="folhaAuto" aria-labelledby="autoTitulo"></dialog>
 
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
-    <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />
+    <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv,.braw,.r3d,.ari,.arx,.crm,.nev" multiple hidden />
+    <input type="file" id="pastaProxy" webkitdirectory multiple hidden />
     <input type="file" id="arquivoSom" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.flac,.ogg" multiple hidden />
     <input type="file" id="arquivoProjeto" accept=".aeon,.zroedit,application/json" hidden />
   </body>

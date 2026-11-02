@@ -4811,3 +4811,13 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Correção: reescrita explícita `/app/` → `/api/app?caminho=app/index.html` antes da regra curinga (`vercel.json`), e o
   teste `test/fechado.test.js` confere a lista.
 - `npm test` do AEON 261/261; `node scripts/scan-secrets.mjs` sem segredo.
+
+## AEON: BRAW pelo proxy (02/11/2026)
+
+- `src/proxy.js` (puro) pareia RAW e proxy pelo nome-base. A subpasta `Proxy` vem primeiro, o proxy pareado não entra
+  solto e os `._` do Mac ficam de fora. `test/proxy.test.js` 4/4: pareio, pasta do cartão, `accept` do seletor e FCPXML
+  apontando para o `.braw` (e não para o `.mp4`).
+- Tela (Chromium): `.braw` com proxy entra como "B001_C001.braw" com a ficha "proxy". O `.braw` sem proxy abre a folha,
+  e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
+- `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
+- Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).
