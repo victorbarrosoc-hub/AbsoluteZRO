@@ -4350,3 +4350,8 @@ label.auto-ajuste {
     filter: none;
   }
 }
+
+/* folha do RAW: a dica do proxy, menor */
+.nota-raw {
+  font-size: 12.5px;
+}

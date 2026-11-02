@@ -26,6 +26,7 @@ import { LinhaUI } from './linha-ui.js'
 import { renderizar, codecsDaMaquina, imagensEm, audioDoTrecho } from './render.js'
 import { carregarFluxo } from './fluxo.js'
 import * as ponte from './ponte.js'
+import { ehProxy, ehRaw, parear, proxiesNaPasta } from '../src/proxy.js'
 import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
@@ -420,7 +421,53 @@ $('maisMidia').onclick = () => $('arquivo').click()
 $('arquivo').onchange = async () => {
   const fs = [...$('arquivo').files]
   $('arquivo').value = ''
-  if (fs.length) await adicionar(await Promise.all(fs.map(ponte.entradaDe)))
+  if (fs.length) await entrarArquivos(fs)
+}
+
+// ───────── RAW de câmera (src/proxy.js) ─────────
+// BRAW, R3D e cia. não abrem no navegador. O AEON edita pelo proxy de mesmo nome (escolhido junto, ou achado na pasta
+// do cartão) e a mídia fica com o nome do RAW: a exportação aponta para o original. Sem proxy, a folha explica.
+
+let rawSemProxy = []
+
+/** Arquivos escolhidos ou arrastados: RAW pareado com o proxy, o resto como sempre. */
+async function entrarArquivos(fs) {
+  const { pares, semProxy, outras } = parear(fs.map((f) => ({ f, nome: f.name, relativo: f.webkitRelativePath || '' })))
+  const entradas = await Promise.all([...outras.map((e) => ponte.entradaDe(e.f)), ...pares.map((x) => entradaDoProxy(x))])
+  if (entradas.length) await adicionar(entradas)
+  if (semProxy.length) pedirProxies(semProxy)
+}
+
+async function entradaDoProxy({ original, proxy }) {
+  const e = await ponte.entradaDe(proxy.f)
+  return { ...e, original: { nome: original.nome, caminho: ponte.caminhoDe(original.f) || null } }
+}
+
+function pedirProxies(raws) {
+  rawSemProxy = raws
+  const n = raws.length
+  $('rawTitulo').textContent = n === 1 ? `${raws[0].nome} pede o proxy.` : `${n} arquivos RAW pedem o proxy.`
+  if (!$('folhaRaw').open) $('folhaRaw').showModal()
+}
+
+$('rawFechar').onclick = () => {
+  rawSemProxy = []
+  $('folhaRaw').close()
+}
+$('rawPasta').onclick = () => $('pastaProxy').click()
+$('pastaProxy').onchange = async () => {
+  const fs = [...$('pastaProxy').files]
+  $('pastaProxy').value = ''
+  if (!fs.length) return
+  const { pares, faltam } = proxiesNaPasta(
+    rawSemProxy,
+    fs.filter((f) => ehProxy(f.name)).map((f) => ({ f, nome: f.name, relativo: f.webkitRelativePath || '' })),
+  )
+  rawSemProxy = faltam
+  if (pares.length) await adicionar(await Promise.all(pares.map(entradaDoProxy)))
+  if (!faltam.length) return $('folhaRaw').close()
+  pedirProxies(faltam)
+  aviso(pares.length ? `${pares.length} com proxy. ${faltam.length} sem proxy nessa pasta.` : 'Nenhum proxy com esses nomes nessa pasta.')
 }
 document.addEventListener('dragover', (e) => {
   e.preventDefault()
@@ -435,10 +482,10 @@ document.addEventListener('drop', async (e) => {
   const fs = [...(e.dataTransfer?.files || [])]
   const proj = fs.find((f) => f.name.endsWith(PRODUTO.extensao))
   if (proj) return abrirProjetoDe(await proj.text())
-  const midia = fs.filter((f) => /^(video|audio)\//.test(f.type) || /\.(mov|mxf|mkv|mts|m2ts)$/i.test(f.name))
+  const midia = fs.filter((f) => /^(video|audio)\//.test(f.type) || /\.(mov|mxf|mkv|mts|m2ts)$/i.test(f.name) || ehRaw(f.name))
   if (midia.length) {
     ir('midia')
-    await adicionar(await Promise.all(midia.map(ponte.entradaDe)))
+    await entrarArquivos(midia)
   }
 })
 
@@ -454,7 +501,8 @@ async function adicionar(entradas) {
       S.entradas.set(somVolta.id, e)
       continue
     }
-    const volta = P()?.midias.find((m) => !S.entradas.has(m.id) && m.nome === e.nome)
+    // a mídia de um RAW guarda o nome do original e o do proxy que toca
+    const volta = P()?.midias.find((m) => !S.entradas.has(m.id) && (m.nome === (e.original?.nome || e.nome) || m.proxy?.nome === e.nome))
     if (volta) {
       S.entradas.set(volta.id, e)
       miniatura(e)
@@ -467,7 +515,7 @@ async function adicionar(entradas) {
       if (info.temVideo && info.decodificaVideo === false && !info.temAudio) throw new Error('formato de vídeo que este computador não decodifica')
       const id = crypto.randomUUID()
       S.entradas.set(id, e)
-      novas.push({ id, nome: e.nome, caminho: e.caminho || null, ...info })
+      novas.push(e.original ? { id, nome: e.original.nome, caminho: e.original.caminho, proxy: { nome: e.nome, caminho: e.caminho || null }, ...info } : { id, nome: e.nome, caminho: e.caminho || null, ...info })
       miniatura(e)
         .then((c) => {
           if (c) {
@@ -519,7 +567,7 @@ function desenharMidia() {
       if (mini) fig.append(mini)
       else fig.innerHTML = `<svg><use href="#i-${m.temVideo ? 'midia' : 'legenda'}"/></svg>`
       const tr = p.transcricoes[m.id]
-      const fichas = [relogio(m.duracao), m.temVideo ? `${m.largura}×${m.altura}` : 'só áudio', m.fps ? `${Math.round(m.fps * 100) / 100} qps` : null, tr ? `${tr.palavras.length} palavras` : null].filter(Boolean)
+      const fichas = [relogio(m.duracao), m.proxy ? 'proxy' : null, m.temVideo ? `${m.largura}×${m.altura}` : 'só áudio', m.fps ? `${Math.round(m.fps * 100) / 100} qps` : null, tr ? `${tr.palavras.length} palavras` : null].filter(Boolean)
       li.append(fig)
       const corpo = document.createElement('div')
       corpo.className = 'cartao-corpo'

@@ -958,6 +958,15 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   régua não batia com os clipes.
 - ⬜ Mídia em pastas com miniaturas e forma de onda da música, e dois visualizadores (fonte e linha), como na proposta.
 
+## AEON: BRAW e outros RAW de câmera pelo proxy (02/11/2026)
+
+- ✅ O seletor e o arrastar aceitam `.braw`, `.r3d`, `.ari`, `.arx`, `.crm` e `.nev`. O navegador não decodifica RAW,
+  então o AEON edita pelo proxy de mesmo nome-base: o escolhido junto ou o da subpasta `Proxy`, o mesmo padrão do
+  SOBEDESCE. A mídia fica com o nome e o caminho do RAW, e XML, FCPXML, OTIO e EDL apontam para o original.
+- ✅ Sem proxy, a folha pede a pasta do cartão e acha os proxies sozinha. Se não houver nenhum, aponta o SOBEDESCE ou o
+  "Gerar mídia proxy" do DaVinci.
+- ⬜ Abrir o .braw direto no app de computador, com o SDK da Blackmagic, como o SOBEDESCE já faz para a miniatura.
+
 ## Edição automática no AEON (01/11/2026, [ADR 0038](decisions/0038-edicao-automatica.md))
 
 - ✅ "Edição automática" na Mídia, com os modos em cartões e um preset versionado por modo (`presets/clipe.v1.json`,
