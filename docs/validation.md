@@ -23,6 +23,11 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   pelo `leituras.js` real e recusa campo a mais, tempo fora de ordem, bloco depois do fim e versão sem origem);
   `npm run test:e2e` **61/68**: 6 são WebKit e não abriram neste ambiente (`Executable doesn't exist`); a
   outra é `iphone-telas` (`/admin/lancamento`, "Revogar e encerrar sessões" passa da largura), vermelha no `main` também.
+- CI vermelho herdado do `main` (`iphone-telas`, `/admin/lancamento`): com o `<details class="adm-confirm">` fechado, o
+  formulário ficava espremido em 24 px ao lado do botão e o campo e o botão (223 px) passavam da borda. Corrigido em
+  `globals.css` (`.adm-confirm:not([open]) > :not(summary) { display: none }`): reproduzido e conferido com uma pessoa
+  na lista de acesso (375/393/430, fechado e aberto: o form aberto fica em 40–328 de 375) e o teste inteiro passou
+  no Chromium (WebKit não abre neste ambiente; o CI confere).
 - Fumaça no Chromium (iPhone 13), app servido como estático: roteiro `# Gancho` / `# Oferta` a 320 ppm, uma leitura de
   6 s grava os dois blocos (Oferta aos 3,4 s), Ajustes mostra 1, nenhum erro no console.
 
