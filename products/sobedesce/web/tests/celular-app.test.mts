@@ -1,6 +1,6 @@
 /**
  * O app do celular (public/app) no Safari do iPhone (WebKit do Playwright; revisão do titular de 01/11/2026): Início,
- * Drive, a ficha de um arquivo do Drive, "Trocar" o destino, Aparelhos e Criar, em 375, 393 e 430 px e deitado
+ * Drive, a ficha de um arquivo do Drive, "Trocar" o destino e Criar, em 375, 393 e 430 px e deitado
  * (852 × 393). Confere que a página nunca fica mais larga que a tela, que todo campo tem 16 px ou mais e que todo botão
  * à vista (só o que está por cima) tem 44 × 44 px de toque. A conta e o Drive são de mentira (rotas), nada sai para a
  * internet. Usa o Playwright da raiz do repositório; sem ele (ou sem o WebKit), pula.
@@ -186,7 +186,6 @@ for (const [w, h] of [
       await ver('arquivo do Drive')
       await p.goto(`${base}/app/`)
       await p.locator('.tabbar').waitFor({ timeout: 60_000 })
-      await aba('Aparelhos')
       await aba('Criar')
     } finally {
       await ctx.close()

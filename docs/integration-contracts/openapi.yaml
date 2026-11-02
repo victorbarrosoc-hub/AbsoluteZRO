@@ -183,7 +183,7 @@ paths:
       responses:
         '200': { description: 'application/x-ndjson: uma linha JSON por evento' }
         '403': { description: quota_not_configured (plano sem créditos de IA) }
-        '429': { description: quota_exceeded (créditos do mês acabaram) }
+        '429': { description: quota_exceeded (créditos do mês acabaram, ou o teto de gasto do dia da Z: 'volta amanhã', details.teto = usuario ou global) }
         '503': { description: upstream_unavailable (IA ainda não ligada) }
         default: { $ref: '#/components/responses/Error' }
   # Laboratório da Z (ADR 0033): só o papel admin da plataforma (403 platform_role_required para qualquer outra

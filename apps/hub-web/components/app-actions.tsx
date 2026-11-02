@@ -22,7 +22,10 @@ export type Situacao = {
   atualizacao?: { fase: string; versao: string } | null
   /** App 1.4+: o plano da conta não inclui o app (a central não atualiza; nada é apagado). */
   bloqueado?: { plano: string | null } | null
+  /** App 1.4.1+: com o app instalado, "Manter no Dock" (Mac) ou "Criar atalho" (Windows) e se já foi feito. */
+  atalho?: Atalho | null
 }
+type Atalho = { tipo: 'dock' | 'atalho'; feito: boolean }
 type Progresso = {
   id: string
   fase: 'baixando' | 'instalando' | 'pronto' | 'erro' | 'removendo' | 'removido' | 'agendado'
@@ -46,6 +49,8 @@ export type AppsApi = {
   definirAbrirComSistema?: (ligado: boolean) => Promise<Resposta<boolean>>
   abrir: (id: string) => Promise<Resposta<boolean>>
   remover: (id: string) => Promise<Resposta<boolean>>
+  /** App 1.4.1+: põe o app no Dock (Mac) ou cria o atalho (Windows), só com o toque da pessoa. */
+  atalho?: (id: string) => Promise<Resposta<Atalho>>
   cancelar: (id: string) => Promise<{ ok: boolean }>
   aoProgresso: (fn: (ev: Progresso) => void) => () => void
 }
@@ -69,6 +74,12 @@ function atualizarTodos(api: AppsApi) {
 }
 
 const mb = (b: number) => (b > 0 ? `${Math.round(b / 1_048_576)} MB` : '')
+
+/** Fixar na barra de tarefas do Windows não tem API pública: lá é atalho, e o texto diz atalho. */
+const TEXTO_ATALHO = {
+  dock: { acao: 'Manter no Dock', feito: 'No Dock', dica: 'Fica no Dock para abrir com um toque.' },
+  atalho: { acao: 'Criar atalho', feito: 'Atalho criado', dica: 'Atalho na Área de Trabalho e no Menu Iniciar.' },
+} as const
 
 /** Deep link absolutezro://apps/<id>?acao=…: traz o cartão do app para a vista (sem mexer no foco do leitor de tela). */
 export function DestaqueDoApp({ id }: { id: string }) {
@@ -106,6 +117,9 @@ export function AppActions({
   const [s, setS] = useState<Situacao | null>(null)
   const [prog, setProg] = useState<Progresso | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  // "Manter no Dock" / "Criar atalho": oferecido logo depois de instalar (opcional, um toque)
+  const [recem, setRecem] = useState(false)
+  const [atalhoFeito, setAtalhoFeito] = useState<Atalho['tipo'] | null>(null)
 
   useEffect(() => {
     const a = typeof window !== 'undefined' ? window.zroDesktop?.apps : undefined
@@ -152,7 +166,17 @@ export function AppActions({
     if (!r.ok) {
       setErro(r.erro ?? 'Algo deu errado.')
       setProg(null)
-    }
+    } else if (acao === 'instalar' && r.dados === true) setRecem(true)
+    else if (acao === 'remover') setRecem(false)
+  }
+
+  async function criarAtalho(tipo: Atalho['tipo']) {
+    if (!api?.atalho) return
+    setErro(null)
+    const r = await api.atalho(id)
+    if (!r.ok) return setErro(r.erro ?? 'Algo deu errado.')
+    setAtalhoFeito(tipo)
+    atualizarTodos(api)
   }
 
   const fase = prog?.fase
@@ -245,6 +269,26 @@ export function AppActions({
             </button>
           )
         )}
+        {recem && s.atalho && api.atalho && (s.atalho.feito || atalhoFeito)
+          ? atalhoFeito && (
+              <span className="app-actions__feito">
+                <Icon name="check" size={14} />
+                {TEXTO_ATALHO[atalhoFeito].feito}
+              </span>
+            )
+          : recem &&
+            s.atalho &&
+            api.atalho && (
+              <button
+                type="button"
+                className="glass-btn glass-btn--small app-actions__atalho"
+                title={TEXTO_ATALHO[s.atalho.tipo].dica}
+                onClick={() => criarAtalho(s.atalho!.tipo)}
+              >
+                <Icon name="plus" size={14} />
+                {TEXTO_ATALHO[s.atalho.tipo].acao}
+              </button>
+            )}
         <button type="button" className="zro-btn zro-btn--ghost zro-btn--small" onClick={() => agir('remover')}>
           Remover
         </button>

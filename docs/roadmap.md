@@ -2,6 +2,30 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
+
+- ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.
+  HUB = maior nível entre os apps; dentro de um app = nível dele. Admin da plataforma segue a versão publicada no Lab.
+- ✅ Cada resposta do chat grava o custo em `zro.z_lab_uso` (migração `0056`: org, produto, nível, origem), idempotente
+  por pergunta, também quando o stream aborta ou dá erro depois de gastar; falha ao registrar não derruba a resposta.
+- ✅ Teto diário em dólar do chat: US$ 1 por pessoa e US$ 20 global (`Z_TETO_USUARIO_DIA_USD`, `Z_TETO_GLOBAL_DIA_USD`),
+  mensagem curta quando bate; franquia e recargas intactas. /admin/custos mostra o gasto real por modelo e por nível.
+- ⬜ Subir o teto/ajustar pelo console (hoje é variável de ambiente) e avisar a pessoa antes de bater o teto.
+
+## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026, ramo `central-instalar`)
+
+- ✅ Bug: no Mac, SOBEDESCE, Synquei e Relay davam "Não deu para instalar. Tente de novo." (Maestro, Carro e TPeasy
+  instalavam). Causa: a troca do app que **já estava** em Aplicativos apagava o `.<App>.app.zro-antigo` com o `fs` do
+  Electron, que lê o `app.asar` como pasta; o `rm` recursivo falhava com `ENOTEMPTY` e a sobra travava a troca
+  seguinte. Agora os pacotes `.app` passam pelo `original-fs`, sobras são limpas antes, o antigo volta se o novo não
+  entrar e a causa real vai para o log. Download, redirecionamentos, SHA-256 e conteúdo dos `.dmg` estavam certos.
+- ✅ Depois de instalar, "Manter no Dock" (Mac: preferências do Dock + `killall Dock`) ou "Criar atalho" (Windows:
+  Área de Trabalho e Menu Iniciar com `shell.writeShortcutLink`), opcional, um toque, em vidro. Fixar na barra de
+  tarefas não tem API pública: não é prometido.
+- ⬜ Publicar a 1.4.1 (o workflow da central gera `.dmg`/`.exe` na `main`); quem tem a 1.4.0 recebe pelo "Nova versão".
+- ⬜ Conferir num Mac de verdade: atualizar o Relay instalado antes, "Manter no Dock" e a sobra `.Relay.app.zro-antigo`
+  apagada; no Windows, o atalho na Área de Trabalho.
+
 ## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026, ramo `claude/carro-menu`)
 
 - ✅ Pedido do titular: a lateral e a gaveta do site real mostram o selo neon (anel), não o "///". No computador o ☰ saiu
@@ -1645,6 +1669,7 @@ do card... não consigo localizar o job que quero achar".
 
 ## SOBEDESCE: Drive híbrido (31/10/2026)
 
+- 🔶 Ramo `sobedesce-wifi-espera` (titular via Painel Geral, 02/11/2026): **Wi-Fi celular ↔ computador/celular descontinuado** (sem data para voltar). Saiu do celular (aba Aparelhos, "Mandar para…") e do computador (motor, janela oculta do WebRTC, partes em Dispositivos); `/api/p2p/*` responde 503 fixo, sem sessão nem banco, e os apps antigos recuam. "Entre computadores" segue. Esperando o lote do dia para publicar.
 - ✅ Ramo `console-acesso-drive`: o "Acesso total" saiu do `/admin` do SOBEDESCE e foi para o console da Absolute ZRO (Apps › SOBEDESCE › Drive inteiro, `/admin/apps/sobedesce`): vagas e pessoas lidas do SOBEDESCE na hora, ligar/desligar só admin com motivo, pedido assinado `console.drive.*` (sem segredo novo), auditoria nos dois lados.
 - 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
 - 🔶 App de computador 0.3.0 no ramo `sobedesce-desktop-modo` (liberado pelo titular em 31/10/2026): diz ao site que

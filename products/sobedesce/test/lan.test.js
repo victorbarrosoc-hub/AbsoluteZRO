@@ -209,3 +209,11 @@ describe('entre computadores', () => {
     assert.match(v.erro, /não está aceitando pedidos de outras contas/)
   })
 })
+
+test('entre computadores não depende do Wi-Fi do celular: src/lan não usa /api/p2p nem src/celular', async () => {
+  const dir = new URL('../src/lan/', import.meta.url)
+  for (const f of await fsp.readdir(dir)) {
+    const src = await fsp.readFile(new URL(f, dir), 'utf8')
+    assert.doesNotMatch(src, /\/api\/p2p|celular\/wifi|wifi_desligado/, f)
+  }
+})

@@ -150,6 +150,7 @@ export async function responderNoRift(db: Database, p: PedidoDoRift, id: string)
     tokensCache: uso.cache,
     custoUsd: custoClaudeUsd(uso.modelo, uso),
     chave: `claude:rift-${id}`,
+    origem: 'rift',
   })
   if (r.stop_reason === 'refusal') return { resposta: 'Esse pedido eu não consigo fazer.', acoes: [] }
   const resposta = r.content

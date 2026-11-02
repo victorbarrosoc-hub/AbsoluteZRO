@@ -40,3 +40,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0037](0037-higgsfield-nas-conexoes.md)          | Higgsfield nas Conexões: imagem e vídeo com os créditos da pessoa | aceita                |
 | [0038](0038-edicao-automatica.md)                | Edição automática no AEON: modos por tipo de vídeo, na máquina    | aceita                |
 | [0039](0039-planos-zero-orbita-absoluto.md)      | Planos Zero/Órbita/Absoluto e níveis por app                      | aceita                |
+| [0040](0040-z-custo-e-modelo-por-plano.md)       | A Z: modelo por plano, custo real e teto diário                   | aceita                |

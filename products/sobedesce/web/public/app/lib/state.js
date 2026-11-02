@@ -21,7 +21,7 @@ let state = {
   awake: false, // trava de tela acesa ativa
   lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode, modo }
   sheet: null, // { name, props }
-  tab: 'send', // 'send' (Início, envio; a entrada) | 'z' (a Z, pelo botão discreto do topo, nunca a entrada) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
+  tab: 'send', // 'send' (Início, envio; a entrada) | 'z' (a Z, pelo botão discreto do topo, nunca a entrada) | 'drive' (navegar e baixar) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
   criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'calc'
   abrirLink: null, // link profundo #drive/<id>, #arquivo/<id> ou #baixar/<id> (lib/drive-link.js): a aba Drive abre e zera
   escolher: null, // aba Drive escolhendo um arquivo para outra tela: { para: 'frames' } (tocar no vídeo leva para lá)
@@ -30,8 +30,6 @@ let state = {
   refsOpen: null, // id da coleção aberta na aba Referências
   // "No computador" (lib/computador.js): o andamento das transferências dos computadores da conta
   pc: { status: 'idle', computadores: [], agora: 0, at: 0, push: null, error: null },
-  // Celular ↔ computador pelo Wi-Fi (lib/p2p.js): aparelhos ligados agora, o envio, o recebimento e "aceitar de outras pessoas"
-  p2p: { aparelhos: [], envio: null, recebimento: null, outros: Boolean(local.get('sobedesce.p2p.outros', false)) },
   toasts: [],
 }
 
@@ -135,7 +133,6 @@ export function setTab(tab) {
 export function savedTab() {
   if (LAN) return 'send'
   if (typeof location !== 'undefined' && location.hash === '#referencias') return 'refs'
-  if (typeof location !== 'undefined' && location.hash === '#aparelhos') return 'ap'
   if (typeof location !== 'undefined' && linkDoHash(location.hash)) return 'drive'
   // /app/#z abre a Z (link direto); só por pedido, nunca sozinha.
   if (typeof location !== 'undefined' && location.hash === '#z') return 'z'

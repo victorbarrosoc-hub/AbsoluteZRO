@@ -15,12 +15,38 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
-## Synquei: links que faltavam no subdomínio (02/11/2026)
+## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
-Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei em synquei.absolutezro.com, migration
-0051). Troca só o endereço do Synquei em `products/finishing/app/menu.js`, `products/nossom/components/family-nav.tsx`,
-`products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
-Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
+- `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
+  (zero→Haiku, órbita/absoluto/legado/teste/indefinido→Sonnet); HUB = maior nível, app = nível dele; preços do Haiku e do
+  Sonnet 5.5 e id com data; uma resposta cria 1 linha em `z_lab_uso` e 1 evento em `usage_events`, repetir a pergunta não
+  duplica; erro no meio registra o gasto sem gastar crédito; falha ao registrar não derruba a resposta; teto por pessoa
+  e global (mensagem humana, nada gasto, outra pessoa segue); o chat não consome o teto do Laboratório; pessoa comum não
+  lê nem grava `z_lab_uso` (RLS); painel soma por modelo e por nível.
+- Migração `0056_z_custo_por_plano.sql` aplicada só no banco de teste (nada em produção).
+
+## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026)
+
+- Causa do "Não deu para instalar. Tente de novo." (SOBEDESCE, Synquei e Relay no Mac), provada no Electron 44.5.1 de
+  verdade (Xvfb): a `central.cjs` da 1.4.0 (igual à do `app.asar` do `AbsoluteZRO-1.4.0-b32-mac-universal.dmg`
+  publicado, conferido arquivo a arquivo), com o `fs` do processo principal, atualizando um `Relay.app` já instalado
+  com o `app.asar` real do Relay 0.1.1: **falha** e deixa `.Relay.app.zro-antigo`; a segunda tentativa falha de novo.
+  O mesmo `fs.promises.rm` recursivo dá `ENOTEMPTY ... rmdir '.../Contents/Resources'`; com `original-fs` (ou
+  `process.noAsar`) apaga. A central corrigida, no mesmo teste: instala, sem sobras, e instala de novo.
+- Descartado com prova: os `.dmg` de SOBEDESCE 0.3.2 b1082, Synquei 1.0.1 b1064 e Relay 0.1.1 b2003 baixados por
+  `/baixar/app/…` têm o SHA-256 do catálogo, HFS+ com `SOBEDESCE.app`/`Synquei.app`/`Relay.app` na raiz (= `bundle`
+  de `desktop-apps.ts`), sem licença (SLA) que travaria o `hdiutil attach`, e a mesma forma do TPeasy 0.1.1 b2005 (que
+  instala); os redirecionamentos (HUB → github.com/victorbarrosoc-hub/AbsoluteZRO → release-assets) são iguais nos seis
+  apps e passam em `downloadPermitido`.
+- `apps/hub-desktop`: `npm test` **83/83** (novos: troca com o `fs` do Electron simulado, a mesma troca sem
+  `original-fs` falhando como na 1.4.0, sobra `.zro-antigo`/`.zro-novo` limpa, app antigo de volta se o novo não entra,
+  `main.cjs` com `original-fs`, item do Dock, "Manter no Dock" só com o toque e sem repetir, erro claro, atalho no
+  Windows na Área de Trabalho sem refazer o do Menu Iniciar). `npm run smoke` (Xvfb): SMOKE OK.
+- Raiz: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **614/614** (70 arquivos); `npm run build` ok;
+  `npm run test:e2e` **68/69**; o que falhou é `admin.spec.ts:64` (admin online/segmento/plano/axe), estouro de
+  60 s da tela de admin, sem relação com a central (os 2 testes de "central de apps", com o "Manter no Dock", passam).
+- Não conferido aqui: `hdiutil`, `ditto`, `defaults`/`killall Dock` e `shell.writeShortcutLink` num Mac e num Windows
+  de verdade (os testes simulam os comandos; o Linux não tem Dock nem atalho `.lnk`).
 
 ## Synquei: leituras do TPeasy viram blocos nos takes (02/11/2026)
 
@@ -155,6 +181,13 @@ Branch `claude/quasar-mesa`, em `products/nossom`.
   - sem rolagem lateral no celular.
 - Corrigido antes de entregar: a onda crescia sem parar porque o canvas realimentava a altura. Agora ele fica por cima
   da caixa da faixa.
+
+## Synquei: links que faltavam no subdomínio (02/11/2026)
+
+Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei em synquei.absolutezro.com, migration
+0051). Troca só o endereço do Synquei em `products/finishing/app/menu.js`, `products/nossom/components/family-nav.tsx`,
+`products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
+Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
 
 ## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
 
@@ -632,6 +665,20 @@ público. A regra fica como está; os testes passam a descrevê-la.
   manda o cookie no manifest em prévia da Vercel; abrir o produto devolve os dois ao público.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
+
+## SOBEDESCE: Wi-Fi celular ↔ aparelhos descontinuado (02/11/2026)
+
+Branch `sobedesce-wifi-espera` (PR #113). Primeiro espaçava a espera, depois uma chave; por fim o titular cancelou o
+recurso. Fica só "Entre computadores".
+
+- `web/tests/p2p.test.mts`: espera, aparelhos e sinal respondem 503 `p2p_descontinuado` com `Retry-After: 120` e
+  `proxima_em` 120 s, sem login, em menos de 0,5 s; as rotas não importam banco nem sessão.
+- `test/celular-p2p-antigo.test.js`: os laços dos apps antigos (cópia em `test/fixtures/p2p-antigo.js`) contra o 503:
+  computador recua 2 s, 4 s… até 60 s, celular até 30 s; ninguém sai da conta.
+- Entre computadores segue: `web/tests/lan.test.mts` (`/api/lan/presenca`, `/computadores` e `/proximos` respondem com o
+  p2p em 503) e `test/lan.test.js` (envio de ponta a ponta; `src/lan` não usa `/api/p2p` nem `src/celular`).
+- `test/app-sw.test.js`: app do celular 2.8.66 (cache v81), sem os arquivos do p2p na lista do cache.
+- `test/entrada-celular.test.js`: o teste do topo acompanha `af19f231` (estava vermelho na main).
 
 ## Console: quem está online e onde (31/10/2026)
 

@@ -376,6 +376,19 @@ function iniciarCentral() {
     fetchDeDownload: criarFetchDeDownload({ net, session: session.fromPartition(PARTICAO), permitido: (url) => regras.downloadPermitido(url, HUB) }),
     permitirHttp: !app.isPackaged,
     fs,
+    // trocar e apagar pacotes .app sem o fs do Electron ler o app.asar como pasta (o rm recursivo falhava: 1.4.1)
+    fsApps: require('original-fs'),
+    log: (...a) => console.log(...a),
+    // "Criar atalho" (Windows): Área de Trabalho e Menu Iniciar do usuário, pelo shell do Electron
+    ...(PLATAFORMA === 'windows'
+      ? {
+          criarAtalho: (lnk, opcoes) => shell.writeShortcutLink(lnk, 'create', opcoes),
+          pastasAtalho: {
+            areaDeTrabalho: app.getPath('desktop'),
+            menuIniciar: path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+          },
+        }
+      : {}),
     exec: (cmd, args, opts = {}) => exec(cmd, args, { maxBuffer: 8 * 1024 * 1024, ...opts }),
     abrirCaminho: (p) => shell.openPath(p),
     lixeira: (p) => shell.trashItem(p),
@@ -433,6 +446,8 @@ const acoesDaPagina = {
   'reiniciar-e-atualizar': (id) => (agenda ? agenda.reiniciarEAtualizar(id) : false),
   // 1.4: atualizar pela agenda (fechado: agora, com progresso; aberto: quando fechar)
   atualizar: (id) => (agenda ? agenda.atualizar(id) : central.instalar(id)),
+  // 1.4.1: "Manter no Dock" (Mac) / "Criar atalho" (Windows), só com o toque da pessoa
+  atalho: (id) => central.criarAtalho(id),
 }
 for (const [acao, fn] of Object.entries(acoesDaPagina)) {
   ipcMain.handle(`central:${acao}`, (e, id) => {

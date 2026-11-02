@@ -36,6 +36,7 @@ export const POST = route(
             tokensCache: uso.cache,
             custoUsd,
             chave: `claude:${turno.perguntaId}`,
+            origem: 'lab',
           })
           enviar({ tipo: 'fim', texto: !!texto, uso: { ...uso, custoUsd } })
         } catch (err) {
