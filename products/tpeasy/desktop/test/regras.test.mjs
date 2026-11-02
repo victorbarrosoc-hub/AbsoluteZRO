@@ -21,7 +21,7 @@ test('endereços: oficiais no app instalado; TPEASY_URL e ZRO_HUB_URL só em des
     assert.deepEqual(r.origens({ empacotado: false, env: { TPEASY_URL: ruim, ZRO_HUB_URL: ruim } }), O, ruim)
 })
 
-test('na janela: o site, as telas do login único e o login do Google', () => {
+test('na janela: o site, as telas do login único (o Google não: disallowed_useragent)', () => {
   for (const url of [
     `${M}/`,
     `${M}/converter`,
@@ -37,8 +37,6 @@ test('na janela: o site, as telas do login único e o login do Google', () => {
     `${HUB}/redefinir-senha?token=x`,
     `${HUB}/confirmar-email`,
     `${HUB}/boas-vindas?next=x`,
-    'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
-    'https://accounts.google.com/signin/v2/challenge',
   ]) {
     assert.equal(r.destino(url, O), 'app', url)
   }
@@ -62,6 +60,7 @@ test('no navegador: o resto do HUB e os outros sites; parecidos não enganam', (
     'https://evil-tpeasy.absolutezro.com/',
     'https://tpeasy.absolutezro.com:8443/',
     'https://absolutezro.com.evil.com/oauth/authorize',
+    'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
     'https://accounts.google.com.evil.com/',
     'https://mail.google.com/',
   ]) {
@@ -130,10 +129,8 @@ test('permissões: só o permitido, e só para o TPeasy', () => {
   assert.equal(r.permitir('clipboard-sanitized-write', 'https://accounts.google.com/', O), false)
 })
 
-test('erros de rede e agente de usuário limpo', () => {
+test('erros de rede', () => {
   assert.equal(r.ehErroDeRede(-106), true)
   assert.equal(r.ehErroDeRede(-105), true)
   assert.equal(r.ehErroDeRede(-202), false)
-  const ua = 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) tpeasy-desktop/0.1.0 Chrome/140.0 Electron/44.5.1 Safari/537.36'
-  assert.equal(r.agenteLimpo(ua), 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36')
 })

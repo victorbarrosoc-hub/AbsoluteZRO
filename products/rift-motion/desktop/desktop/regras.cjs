@@ -1,16 +1,14 @@
 // Regras de confiança do Rift Motion para computador, sem importar o Electron (os testes em test/ usam node --test).
 //
 // A janela mostra o Rift Motion (https://rift.absolutezro.com) e, para o login único, só as telas de entrar da Absolute ZRO
-// (https://absolutezro.com: /oauth/authorize, /entrar, /criar-conta…) e a página de contas do Google ("Entrar com o
-// Google" do HUB). A Higgsfield é conectada na conta Absolute ZRO (absolutezro.com/conexoes, no navegador), não aqui.
+// (https://absolutezro.com: /oauth/authorize, /entrar, /criar-conta…). O Google fica de fora: recusa OAuth em janela embutida (disallowed_useragent), então
+// "Entrar com o Google" roda no navegador do sistema e o app volta por deep link (login-externo.cjs, ADR 0041). A Higgsfield é conectada na conta Absolute ZRO (absolutezro.com/conexoes, no navegador), não aqui.
 // O resto do HUB e qualquer outro site abrem no navegador padrão, e só se forem https. E-mail (mailto:) vai para o app
 // de e-mail. O link rift://caminho abre uma rota do Rift Motion e nada além disso.
 
 const RIFT_PADRAO = 'https://rift.absolutezro.com'
 const HUB_PADRAO = 'https://absolutezro.com'
 const ESQUEMA = 'rift'
-
-const GOOGLE_LOGIN = new Set(['accounts.google.com'])
 
 // Telas do login único da Absolute ZRO que ficam na janela (o resto do HUB vai para o navegador).
 const LOGIN_DO_HUB = [
@@ -25,7 +23,8 @@ const LOGIN_DO_HUB = [
 ]
 
 // Caminhos que um link rift:// não abre: a API e o retorno do login (evita que um link de fora dispare uma ação).
-const FORA_DO_DEEP_LINK = [/^\/api(\/|$)/i, /^\/\.well-known(\/|$)/i]
+// `entrar-app` é o retorno do login pelo navegador (código de uso único): quem trata é login-externo.cjs, nunca uma página.
+const FORA_DO_DEEP_LINK = [/^\/api(\/|$)/i, /^\/\.well-known(\/|$)/i, /^\/entrar-app(\/|$)/i]
 
 /** https, ou http só no próprio computador (desenvolvimento), sem usuário/senha: devolve a origem ou null. */
 function origemAceita(bruto) {
@@ -72,16 +71,10 @@ function ehLoginDoHub(url, o) {
   return mesmaOrigem(u, o.hub) && LOGIN_DO_HUB.some((re) => re.test(u.pathname))
 }
 
-/** A página de login do Google (https, accounts.google.com, porta padrão)? */
-function ehLoginGoogle(url) {
-  const u = parse(url)
-  return !!u && u.protocol === 'https:' && GOOGLE_LOGIN.has(u.hostname) && !u.port && !u.username && !u.password
-}
-
 /** A janela do app pode navegar para esta URL? */
 function podeNavegar(url, o) {
   if (ehDoApp(url, o)) return true
-  return ehLoginDoHub(url, o) || ehLoginGoogle(url)
+  return ehLoginDoHub(url, o)
 }
 
 /**
@@ -146,19 +139,6 @@ function permitir(permissao, urlQuePede, o) {
 const ERROS_DE_REDE = new Set([-2, -7, -21, -100, -101, -102, -103, -104, -105, -106, -109, -118, -130, -137, -324])
 const ehErroDeRede = (codigo) => ERROS_DE_REDE.has(Number(codigo))
 
-/**
- * Agente de usuário sem o "Electron/x" e o nome do app: o login do Google recusa navegadores que se identificam
- * como embutidos. A página sabe que está no app pelo window.riftDesktop (preload), não pelo agente.
- */
-function agenteLimpo(ua) {
-  return String(ua || '')
-    .replace(/\s?Electron\/\S+/g, '')
-    .replace(/\s?rift-motion-desktop\/\S+/gi, '')
-    .replace(/\s?RiftMotion\/\S+/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-}
-
 module.exports = {
   RIFT_PADRAO,
   HUB_PADRAO,
@@ -166,7 +146,6 @@ module.exports = {
   origens,
   ehDoApp,
   ehLoginDoHub,
-  ehLoginGoogle,
   podeNavegar,
   linkExterno,
   destino,
@@ -174,5 +153,4 @@ module.exports = {
   deepLinkDosArgs,
   permitir,
   ehErroDeRede,
-  agenteLimpo,
 }

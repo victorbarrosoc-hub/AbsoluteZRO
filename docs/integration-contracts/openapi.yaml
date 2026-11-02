@@ -1446,3 +1446,59 @@ paths:
     post:
       summary: Revoga refresh token (RFC 7009); sempre 200
       responses: { '200': { description: ok } }
+  # Entrar pelo navegador do sistema, para os apps de computador (ADR 0041). Fora de /api: telas e rotas do login.
+  # O Google recusa OAuth em janela embutida; o app abre /entrar/app no navegador e volta por deep link.
+  /entrar/app:
+    get:
+      summary: Início do login pelo navegador (app de computador). Confere o pedido e segue para /entrar/app/confirmar
+      description: |
+        Parâmetros: `app` (esquema do app, lista fechada: absolutezro, relay, maestro, tpeasy, carrodofreela, rift),
+        `state` (aleatório do app, 16 a 128 caracteres base64url), `challenge` (PKCE: sha256 em base64url do `verifier`
+        que só o app conhece, 43 caracteres) e `next` opcional (caminho do próprio HUB, para onde o app volta; qualquer
+        outra coisa é descartada). Pedido inválido (esquema fora da lista, state ou challenge malformados) redireciona
+        para `/entrar?erro=app`: nada de redirecionamento para endereço vindo do cliente.
+      parameters:
+        - { name: app, in: query, required: true, schema: { type: string, enum: [absolutezro, relay, maestro, tpeasy, carrodofreela, rift] } }
+        - { name: state, in: query, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,128}$' } }
+        - { name: challenge, in: query, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' } }
+        - { name: next, in: query, required: false, schema: { type: string, description: 'caminho do HUB, começa com uma barra' } }
+      responses: { '307': { description: '/entrar/app/confirmar com o pedido já validado, ou /entrar?erro=app' } }
+  /entrar/app/confirmar:
+    get:
+      summary: Tela "Voltar para o app". Sem sessão, passa por /entrar (Google, e-mail e senha) e volta
+      description: |
+        Com a sessão aberta, o botão chama a Server Action que emite o código de uso único e abre o deep link
+        `<esquema>://entrar-app?code=zd_…&state=…` (o esquema vem da lista fechada). O código vale 60 segundos, uma troca,
+        e fica ligado ao `state`, ao `challenge` e ao app do pedido. O banco guarda só o sha256 (tabela
+        `zro.desktop_login_codes`, RLS sem acesso para o papel de aplicação).
+      responses: { '200': { description: tela de confirmação }, '307': { description: '/entrar?next=… (sem sessão) ou /entrar?erro=app' } }
+  /entrar/app/trocar:
+    post:
+      summary: O app troca o código de uso único por uma sessão do HUB (cookie `zro_session` no jar do próprio app)
+      description: |
+        Corpo JSON `{ app, code, state, verifier }`. Sem checagem de Origin: quem prova é o `verifier` PKCE, não um
+        cookie do navegador. O código é gasto na primeira apresentação, mesmo quando a troca falha (verifier, state ou
+        app errados queimam o código). Expirou, já usado, desconhecido ou conta inativa: 401 `unauthenticated` com
+        `details.reason`. Limite de tentativas por IP: 429 `rate_limited`. A resposta traz `next`, o caminho do HUB
+        guardado no pedido (ou null); o app só o carrega se for da própria origem do HUB.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [app, code, state, verifier]
+              properties:
+                app: { type: string, enum: [absolutezro, relay, maestro, tpeasy, carrodofreela, rift] }
+                code: { type: string, pattern: '^zd_[A-Za-z0-9_-]{43}$' }
+                state: { type: string }
+                verifier: { type: string, pattern: '^[A-Za-z0-9._~-]{43,128}$' }
+      responses:
+        {
+          '200': { description: 'sessão criada (Set-Cookie zro_session); corpo { ok: true, next: string | null }' },
+          '401':
+            {
+              description: 'código expirado, usado, desconhecido, com PKCE/state/app errado ou conta inativa',
+              content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          '429': { description: rate_limited },
+        }

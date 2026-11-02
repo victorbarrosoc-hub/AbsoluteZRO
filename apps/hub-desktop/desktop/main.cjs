@@ -38,6 +38,7 @@ const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
 const regras = require('./regras.cjs')
+const { criarLoginExterno } = require('./login-externo.cjs')
 const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
@@ -247,19 +248,35 @@ function criarJanela() {
   const wc = view.webContents
   // janelas novas (target=_blank, window.open): HUB e login do Google ficam na janela; https vai para o navegador
   wc.setWindowOpenHandler(({ url }) => {
+    if (loginExterno.ehEntradaGoogle(url)) {
+      loginExterno.iniciar(url)
+      return { action: 'deny' }
+    }
     const d = regras.destino(url, HUB)
     if (d === 'app') setImmediate(() => wc.loadURL(url))
     else if (d === 'fora') abrirFora(url)
     return { action: 'deny' }
   })
   wc.on('will-navigate', (e, url) => {
+    // Google recusa OAuth em janela embutida: o login com Google roda no navegador do sistema (ADR 0041)
+    if (loginExterno.ehEntradaGoogle(url)) {
+      e.preventDefault()
+      loginExterno.iniciar(url)
+      return
+    }
     if (regras.destino(url, HUB) === 'app') return
     e.preventDefault()
     abrirFora(url)
   })
   // redirecionamento do servidor para fora (ex.: /baixar/hub/mac → GitHub): cancela aqui e abre no navegador
   wc.on('will-redirect', (e) => {
-    if (!e.isMainFrame || regras.destino(e.url, HUB) === 'app') return
+    if (!e.isMainFrame) return
+    if (loginExterno.ehEntradaGoogle(e.url)) {
+      e.preventDefault()
+      loginExterno.iniciar(e.url)
+      return
+    }
+    if (regras.destino(e.url, HUB) === 'app') return
     e.preventDefault()
     abrirFora(e.url)
   })
@@ -314,7 +331,26 @@ function focar() {
   win.focus()
 }
 
+// Entrar com o Google pelo navegador do sistema (ADR 0041): o app volta por absolutezro://entrar-app?code=…&state=…
+const loginExterno = criarLoginExterno({
+  hub: HUB,
+  esquema: regras.ESQUEMA,
+  inicio: INICIO,
+  ultimaUrl: () => ultimaUrl,
+  abrirNoNavegador: (url) => shell.openExternal(url).catch(() => {}),
+  fetch: (url, opts) => session.fromPartition(PARTICAO).fetch(url, opts),
+  carregar: (url) => view && !view.webContents.isDestroyed() && view.webContents.loadURL(url).catch(() => {}),
+  focar: () => focar(),
+  avisar: (texto) => dialog.showErrorBox('Absolute ZRO', texto),
+})
+
 function abrirDeepLink(url) {
+  // o retorno do login não é página: troca o código e carrega o destino (nunca entra em deepLink())
+  if (loginExterno.ehRetorno(url)) {
+    if (app.isReady() && view) loginExterno.tratarLink(url).catch(() => {})
+    else if (app.isReady()) focar()
+    return
+  }
   const alvo = regras.deepLink(url, HUB)
   if (!alvo) return
   if (!app.isReady() || !view) {
@@ -962,7 +998,6 @@ function menu() {
 // ───────── segurança da sessão ─────────
 function protegerSessao() {
   const ses = session.fromPartition(PARTICAO)
-  ses.setUserAgent(regras.agenteLimpo(ses.getUserAgent()))
   ses.setPermissionRequestHandler((wc, permissao, cb, detalhes) => cb(regras.permitir(permissao, (detalhes && detalhes.requestingUrl) || wc.getURL(), HUB)))
   ses.setPermissionCheckHandler((_wc, permissao, origem) => regras.permitir(permissao, origem, HUB))
   ses.setDevicePermissionHandler(() => false)
@@ -1015,7 +1050,12 @@ async function smoke() {
     )
     const casos = [
       [regras.destino(HUB + '/inicio', HUB), 'app'],
-      [regras.destino('https://accounts.google.com/o/oauth2/v2/auth', HUB), 'app'],
+      // o Google recusa OAuth em janela embutida (disallowed_useragent): sai da janela e roda no navegador do sistema
+      [regras.destino('https://accounts.google.com/o/oauth2/v2/auth', HUB), 'fora'],
+      [loginExterno.ehEntradaGoogle('https://accounts.google.com/o/oauth2/v2/auth'), true],
+      [loginExterno.ehEntradaGoogle(HUB + '/entrar/google?next=%2Fapp'), true],
+      [loginExterno.ehEntradaGoogle(HUB + '/entrar'), false],
+      [regras.deepLink('absolutezro://entrar-app?code=x&state=y', HUB), null],
       [regras.destino('https://sobedesce.vercel.app/', HUB), 'fora'],
       [regras.destino('file:///etc/passwd', HUB), 'nada'],
       [regras.deepLink('absolutezro://projetos', HUB), HUB + '/projetos'],
@@ -1102,6 +1142,8 @@ app.on('open-url', (e, url) => {
 })
 
 app.on('second-instance', (_e, argv) => {
+  const retorno = loginExterno.retornoDosArgs(argv)
+  if (retorno) return abrirDeepLink(retorno)
   const alvo = regras.deepLinkDosArgs(argv, HUB)
   if (alvo) abrirDeepLink(alvo.replace(HUB + '/', `${regras.ESQUEMA}://`))
   // aberto de novo pelo sistema (--escondido) com o app já no ar: não mostra nada

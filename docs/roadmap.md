@@ -2,6 +2,24 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ramo `login-google-navegador`, ADR 0041)
+
+- ✅ Causa: `regras.destino('https://accounts.google.com/…')` devolvia `'app'` e a janela do Electron abria o Google, que
+  bloqueia OAuth embutido (`disallowed_useragent`). Estava em `apps/hub-desktop/desktop/regras.cjs` (`podeNavegar`) e nas
+  cópias de Relay, Maestro, TPeasy, Carro do Freela e Rift Motion; o `main.cjs` ainda tirava o "Electron/x" do agente de
+  usuário (truque, removido).
+- ✅ HUB: `GET /entrar/app` (início, lista fechada de esquemas, `state` e desafio PKCE), tela `/entrar/app/confirmar` ("Voltar
+  para o app") e `POST /entrar/app/trocar` (código `zd_…` de uso único, 60 s, ligado a `state`, desafio e app; sessão do
+  HUB no cookie). Tabela `zro.desktop_login_codes` (migração `0057`, RLS sem acesso para `zro_app`). Documentado no OpenAPI.
+- ✅ Apps de computador: `desktop/login-externo.cjs` (cópia idêntica, `npm run compartilhado`) cancela a navegação para o
+  Google ou `/entrar/google`, abre o HUB no navegador do sistema e volta por `<esquema>://entrar-app`. E-mail e senha
+  seguem na janela. Versões: Absolute ZRO 1.4.2, Relay 0.1.2, Maestro 0.2.2, TPeasy 0.1.2, Carro do Freela 0.2.2, Rift
+  Motion 0.1.1.
+- ⛔ Em produção, só com autorização: aplicar a migração `0057`, deploy do HUB e os instaladores novos dos seis apps
+  (sem push, deploy nem Release neste ramo). Os sites dos apps não mudam.
+- ⬜ Conferir à mão num Mac e num Windows com o Google real (aqui não há Google nem Electron; a lógica tem teste com
+  Google e HUB falsos).
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
 - ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.

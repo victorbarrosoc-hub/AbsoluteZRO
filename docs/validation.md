@@ -15,6 +15,27 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
+
+- `tests/integration/login-pelo-app.test.ts` (16, Postgres real): esquema só da lista fechada (javascript, https, outro app e
+  vazio recusados), `state`/`challenge` malformados, `next` fora do HUB (`//host`, `https://`, `\\`, controle) vira null,
+  troca de uso único (reuso falha e não cria sessão), banco guarda só o sha256, expira em 60 s (59 s ainda vale),
+  verifier/state/app errados queimam o código, conta suspensa não entra, `check` do banco recusa linhas inválidas, RLS
+  (pessoa comum não lê nem grava, nem o próprio código).
+- `tests/e2e/login-pelo-app.spec.ts` (2): pedido inválido volta para `/entrar?erro=app`; cadastro no navegador, "Voltar para
+  o Relay", código `zd_…` com o `state` certo, troca com verifier errado (401 e código queimado), troca certa (200, cookie
+  `zro_session`, sessão vale no HUB), reuso 401.
+- `apps/hub-desktop/test/login-externo.test.mjs` (10) e a cópia por app (3 em cada): o Google e `/entrar/google` saem da janela,
+  `/entrar` (e-mail e senha) fica; pedido com `state`/`verifier` aleatórios e desafio S256; `next` aberto recusado; troca
+  com `credentials: 'include'`; state errado, pedido velho (10 min) e reuso não trocam; troca recusada avisa; destino
+  devolvido fora do HUB cai no guardado. `regras.test.mjs` de cada app: `accounts.google.com` agora é `'fora'`.
+- O autoteste (`--smoke`) de cada `main.cjs` passou a conferir `accounts.google.com` = `'fora'` (antes `'app'`) e que
+  `<esquema>://entrar-app` não vira página. Electron não roda aqui, então o `--smoke` fica para o CI.
+- Migração `0057_login_pelo_app.sql` aplicada só no banco de teste (nada em produção).
+- Rodado neste ambiente: `npm run lint`, `format:check`, `typecheck`, `build` ok; `npm test` 645/645 em 72 arquivos; `npm test` em cada pasta de
+  app de computador ok (hub-desktop 93, relay 26, maestro 55, tpeasy 26, carro-do-freela 30, rift-motion 30); `npm run test:e2e`
+  parou no tempo limite do ambiente depois de 39 testes verdes (os dois novos inclusos); o restante fica para o CI.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo

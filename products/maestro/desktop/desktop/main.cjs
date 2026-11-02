@@ -33,6 +33,7 @@ const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
 const regras = require('./regras.cjs')
+const { criarLoginExterno } = require('./login-externo.cjs')
 const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo, PRODUTO } = require('./versao.cjs')
 const central = require('./central.cjs')
@@ -197,18 +198,33 @@ function criarJanela() {
   const wc = view.webContents
   // janelas novas (target=_blank, window.open): o Maestro e o login ficam na janela; o resto vai para o navegador
   wc.setWindowOpenHandler(({ url }) => {
+    if (loginExterno.ehEntradaGoogle(url)) {
+      loginExterno.iniciar(url)
+      return { action: 'deny' }
+    }
     const d = regras.destino(url, O)
     if (d === 'app') setImmediate(() => wc.loadURL(url))
     else if (d === 'fora') abrirFora(url)
     return { action: 'deny' }
   })
   wc.on('will-navigate', (e, url) => {
+    // Google recusa OAuth em janela embutida: o login com Google roda no navegador do sistema (ADR 0041)
+    if (loginExterno.ehEntradaGoogle(url)) {
+      e.preventDefault()
+      loginExterno.iniciar(url)
+      return
+    }
     if (regras.destino(url, O) === 'app') return
     e.preventDefault()
     abrirFora(url)
   })
   // redirecionamento do servidor para fora (ex.: o HUB depois do login sem volta): cancela aqui e abre no navegador
   wc.on('will-redirect', (e) => {
+    if (e.isMainFrame && loginExterno.ehEntradaGoogle(e.url)) {
+      e.preventDefault()
+      loginExterno.iniciar(e.url)
+      return
+    }
     if (!e.isMainFrame || regras.destino(e.url, O) === 'app') return
     e.preventDefault()
     abrirFora(e.url)
@@ -254,7 +270,26 @@ function focar() {
   win.focus()
 }
 
+// Entrar com o Google pelo navegador do sistema (ADR 0041): o app volta por <esquema>://entrar-app?code=…&state=…
+const loginExterno = criarLoginExterno({
+  hub: O.hub,
+  esquema: regras.ESQUEMA,
+  inicio: INICIO,
+  ultimaUrl: () => ultimaUrl,
+  abrirNoNavegador: (url) => shell.openExternal(url).catch(() => {}),
+  fetch: (url, opts) => session.fromPartition(PARTICAO).fetch(url, opts),
+  carregar: (url) => view && !view.webContents.isDestroyed() && view.webContents.loadURL(url).catch(() => {}),
+  focar: () => focar(),
+  avisar: (texto) => dialog.showErrorBox(app.getName(), texto),
+})
+
 function abrirDeepLink(url) {
+  // o retorno do login não é página: troca o código e carrega o destino (nunca entra em deepLink())
+  if (loginExterno.ehRetorno(url)) {
+    if (app.isReady() && view) loginExterno.tratarLink(url).catch(() => {})
+    else if (app.isReady()) focar()
+    return
+  }
   const alvo = regras.deepLink(url, O)
   if (!alvo) return
   // link do cliente (maestro://a/…): no navegador, como o cliente vê
@@ -489,7 +524,6 @@ function menu() {
 // ───────── segurança da sessão ─────────
 function protegerSessao() {
   const ses = session.fromPartition(PARTICAO)
-  ses.setUserAgent(regras.agenteLimpo(ses.getUserAgent()))
   ses.setPermissionRequestHandler((wc, permissao, cb, detalhes) => cb(regras.permitir(permissao, (detalhes && detalhes.requestingUrl) || wc.getURL(), O)))
   ses.setPermissionCheckHandler((_wc, permissao, origem) => regras.permitir(permissao, origem, O))
   ses.setDevicePermissionHandler(() => false)
@@ -770,7 +804,12 @@ async function smoke() {
     const casos = [
       [regras.destino(M + '/app/quadro', O), 'app'],
       [regras.destino(O.hub + '/oauth/authorize?client_id=maestro-web', O), 'app'],
-      [regras.destino('https://accounts.google.com/o/oauth2/v2/auth', O), 'app'],
+      // o Google recusa OAuth em janela embutida (disallowed_useragent): sai da janela e roda no navegador do sistema
+      [regras.destino('https://accounts.google.com/o/oauth2/v2/auth', O), 'fora'],
+      [loginExterno.ehEntradaGoogle('https://accounts.google.com/o/oauth2/v2/auth'), true],
+      [loginExterno.ehEntradaGoogle(O.hub + '/entrar/google?next=%2Foauth%2Fauthorize'), true],
+      [loginExterno.ehEntradaGoogle(O.hub + '/entrar'), false],
+      [regras.deepLink(regras.ESQUEMA + '://entrar-app?code=x&state=y', O), null],
       [regras.destino(O.hub + '/inicio', O), 'fora'],
       [regras.destino(M + '/a/abc', O), 'fora'],
       [regras.destino('file:///etc/passwd', O), 'nada'],
@@ -886,6 +925,8 @@ app.on('open-url', (e, url) => {
 })
 
 app.on('second-instance', (_e, argv) => {
+  const retorno = loginExterno.retornoDosArgs(argv)
+  if (retorno) return abrirDeepLink(retorno)
   const alvo = regras.deepLinkDosArgs(argv, O)
   if (alvo) abrirDeepLink(alvo.replace(O.maestro + '/', `${regras.ESQUEMA}://`))
   else focar()

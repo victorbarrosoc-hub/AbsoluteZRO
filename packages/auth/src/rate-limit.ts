@@ -14,6 +14,7 @@ export const RULES = {
   resetEmail: { max: 3, windowMs: 60 * 60_000 },
   emailChange: { max: 5, windowMs: 60 * 60_000 },
   inviteAccept: { max: 20, windowMs: 15 * 60_000 },
+  desktopLogin: { max: 30, windowMs: 15 * 60_000 },
   accountDelete: { max: 5, windowMs: 60 * 60_000 },
 } satisfies Record<string, Rule>
 

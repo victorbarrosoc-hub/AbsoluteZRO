@@ -36,7 +36,7 @@ npm run compartilhado           # copia de apps/hub-desktop o que é igual (o te
 Igual ao do Relay ([README](../../relay/desktop/README.md)); aqui só o que muda:
 
 - **Na janela:** o Rift Motion (`rift.absolutezro.com`), as telas de entrar da Absolute ZRO (`/oauth/authorize`,
-  `/entrar`, `/criar-conta`…) e `accounts.google.com`. A Higgsfield é conectada uma vez na conta Absolute ZRO
+  `/entrar`, `/criar-conta`…) (o Google não: vai para o navegador do sistema, veja "Entrar com o Google"). A Higgsfield é conectada uma vez na conta Absolute ZRO
   (`absolutezro.com/conexoes`, no navegador) e vale para todos os apps. O resto abre no navegador, só se for `https`.
   `rift://rota` abre só rotas do Rift (nunca `/api`).
 - **Login:** o fluxo do site (cliente `rift-web`) dentro da janela. Partição `persist:rift`. Agente sem "Electron".
@@ -64,3 +64,14 @@ o `.dmg` (Mac universal) e o `.exe` (Windows x64 e arm64), confere a fumaça do 
 teste **"Rift Motion · versão de teste"** (tag `rift-motion-versao-de-teste`, prerelease), com o `versao.json` (SHA-256
 de cada instalador) depois dos dois. Sem assinatura da Apple/Microsoft por enquanto: assinatura ad-hoc no Mac (na
 primeira vez, "Abrir Mesmo Assim").
+
+## Entrar com o Google (ADR 0041)
+
+O Google recusa OAuth dentro de janela embutida (`disallowed_useragent`), e não usamos truque de agente de usuário. Por
+isso a janela **nunca** abre `accounts.google.com`: o botão "Continuar com o Google" do HUB (`/entrar/google`) e qualquer
+redirecionamento para o Google são cancelados e o app abre `<HUB>/entrar/app` no **navegador do sistema**
+(`desktop/login-externo.cjs`, cópia idêntica em cada app de computador; `npm run compartilhado`). A pessoa entra lá,
+toca em "Voltar para o app" e o navegador abre `rift://entrar-app?code=…&state=…`. O app confere o `state`, troca
+o código de uso único (60 s) e o `verifier` PKCE por uma sessão do HUB (`POST /entrar/app/trocar`, o cookie vai para o
+jar da própria janela) e volta para onde estava. E-mail e senha continuam dentro da janela. O app é de instância única,
+então o link chega ao app que já está aberto (Mac: `open-url`; Windows: `second-instance`).

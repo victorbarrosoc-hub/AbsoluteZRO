@@ -1,19 +1,18 @@
 // Regras de confiança do app de desktop, sem importar o Electron (os testes em test/ usam node --test).
 //
-// A janela mostra só o HUB (https://absolutezro.com) e, para "Entrar com o Google", a página de login do
-// Google. Todo o resto (os apps SOBEDESCE, NOSSOM, Synquei, TPeasy, Carro do Freela, documentação, GitHub) abre no
-// navegador padrão, e só se for https. O link absolutezro://caminho abre uma rota do HUB e nada além disso.
+// A janela mostra só o HUB (https://absolutezro.com). O Google recusa OAuth dentro de janela embutida
+// (disallowed_useragent), então "Entrar com o Google" NÃO roda aqui: accounts.google.com é navegador do sistema e o app
+// volta por deep link (login-externo.cjs, ADR 0041). Todo o resto (os apps SOBEDESCE, NOSSOM, Synquei, TPeasy, Carro do
+// Freela, documentação, GitHub) também abre no navegador padrão, e só se for https. O link absolutezro://caminho abre
+// uma rota do HUB e nada além disso.
 
 const HUB_PADRAO = 'https://absolutezro.com'
 const ESQUEMA = 'absolutezro'
 
-// Login do Google: só a página de contas, em https. Os redirecionamentos internos do Google (accounts.youtube.com,
-// gds.google.com…) não entram; se aparecerem, vão para o navegador.
-const GOOGLE_LOGIN = new Set(['accounts.google.com'])
-
 // Caminhos do HUB que um link absolutezro:// não abre: a API e o fluxo OAuth (não fazem sentido como página e
 // evitam que um link de fora dispare uma ação).
-const FORA_DO_DEEP_LINK = [/^\/api(\/|$)/i, /^\/oauth(\/|$)/i, /^\/\.well-known(\/|$)/i]
+// `entrar-app` é o retorno do login pelo navegador (código de uso único): quem trata é login-externo.cjs, nunca uma página.
+const FORA_DO_DEEP_LINK = [/^\/api(\/|$)/i, /^\/oauth(\/|$)/i, /^\/\.well-known(\/|$)/i, /^\/entrar-app(\/|$)/i]
 
 /**
  * Endereço do HUB. No app instalado é sempre o oficial. Em desenvolvimento (`npm run desktop`), ZRO_HUB_URL pode
@@ -47,15 +46,9 @@ function ehDoHub(url, origin) {
   return !!u && u.origin === origin && !u.username && !u.password
 }
 
-/** A URL é a página de login do Google (https, accounts.google.com, porta padrão)? */
-function ehLoginGoogle(url) {
-  const u = parse(url)
-  return !!u && u.protocol === 'https:' && GOOGLE_LOGIN.has(u.hostname) && !u.port && !u.username && !u.password
-}
-
-/** A janela do app pode navegar para esta URL? (só o HUB e o login do Google) */
+/** A janela do app pode navegar para esta URL? (só o HUB; o Google vai para o navegador do sistema) */
 function podeNavegar(url, origin) {
-  return ehDoHub(url, origin) || ehLoginGoogle(url)
+  return ehDoHub(url, origin)
 }
 
 /**
@@ -160,25 +153,11 @@ function permitir(permissao, urlQuePede, origin) {
 const ERROS_DE_REDE = new Set([-2, -7, -21, -100, -101, -102, -103, -104, -105, -106, -109, -118, -130, -137, -324])
 const ehErroDeRede = (codigo) => ERROS_DE_REDE.has(Number(codigo))
 
-/**
- * Agente de usuário sem o "Electron/x" e o nome do app: o login do Google recusa navegadores que se identificam
- * como embutidos. A página sabe que está no app pelo window.zroDesktop (preload), não pelo agente.
- */
-function agenteLimpo(ua) {
-  return String(ua || '')
-    .replace(/\s?Electron\/\S+/g, '')
-    .replace(/\s?absolute-zro-desktop\/\S+/gi, '')
-    .replace(/\s?Absolute ZRO\/\S+/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-}
-
 module.exports = {
   HUB_PADRAO,
   ESQUEMA,
   hubOrigin,
   ehDoHub,
-  ehLoginGoogle,
   podeNavegar,
   linkExterno,
   destino,
@@ -188,5 +167,4 @@ module.exports = {
   downloadPermitido,
   permitir,
   ehErroDeRede,
-  agenteLimpo,
 }

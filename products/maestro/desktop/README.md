@@ -78,14 +78,14 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 
 - **Na janela:** o Maestro (`maestro.absolutezro.com`, menos as páginas do cliente) e, para o login único, só as telas
   de entrar da Absolute ZRO (`/oauth/authorize`, `/entrar`, `/entrar/google`, `/criar-conta`, `/esqueci-a-senha`,
-  `/redefinir-senha`, `/confirmar-email`, `/boas-vindas`, `/em-desenvolvimento`) e `accounts.google.com`. O resto da
+  `/redefinir-senha`, `/confirmar-email`, `/boas-vindas`, `/em-desenvolvimento`) (o Google não: vai para o navegador do sistema, veja "Entrar com o Google"). O resto da
   Absolute ZRO (conta, planos, Conexões), os links do cliente `/a`, `/o` e `/p` (aprovação, orçamento, pedido) e
   qualquer outro site abrem no navegador, só se forem `https`. `mailto:` vai para o e-mail e `webcal://` do próprio
   Maestro (`/api/agenda/<token>.ics`) para o calendário. `maestro://rota` abre só rotas do Maestro (nunca `/api`; link
   do cliente vai para o navegador).
 - **Login:** o fluxo normal do site, dentro da janela (OIDC com PKCE da Absolute ZRO). A partição `persist:maestro`
-  guarda os cookies (`mae_sessao` e o `zro_session` do HUB têm `Max-Age`, então sobrevivem a fechar e abrir). O agente
-  de usuário sai sem "Electron" (o Google recusa navegador embutido). Conferido: o login real abre dentro da janela até
+  guarda os cookies (`mae_sessao` e o `zro_session` do HUB têm `Max-Age`, então sobrevivem a fechar e abrir). "Entrar com o
+  Google" roda no navegador do sistema (veja abaixo). Conferido: o login real abre dentro da janela até
   a tela "Qual é o seu e-mail?" da Absolute ZRO, e num Maestro e numa Absolute ZRO falsos (local) o app entra, volta
   logado e continua logado depois de fechar e abrir.
 - **Segurança:** `contextIsolation`, `sandbox`, sem `nodeIntegration`, sem `<webview>`, sem janelas novas; permissões
@@ -115,6 +115,17 @@ atende o protocolo), abrem `https://absolutezro.com/baixar`. "Atualizações…"
 Absolute ZRO", com o mesmo botão.
 
 Enquanto o Maestro está fechado (0024), só a lista de acesso recebe o aviso e baixa; a 0027 do lançamento abre para todos.
+
+## Entrar com o Google (ADR 0041)
+
+O Google recusa OAuth dentro de janela embutida (`disallowed_useragent`), e não usamos truque de agente de usuário. Por
+isso a janela **nunca** abre `accounts.google.com`: o botão "Continuar com o Google" do HUB (`/entrar/google`) e qualquer
+redirecionamento para o Google são cancelados e o app abre `<HUB>/entrar/app` no **navegador do sistema**
+(`desktop/login-externo.cjs`, cópia idêntica em cada app de computador; `npm run compartilhado`). A pessoa entra lá,
+toca em "Voltar para o app" e o navegador abre `maestro://entrar-app?code=…&state=…`. O app confere o `state`, troca
+o código de uso único (60 s) e o `verifier` PKCE por uma sessão do HUB (`POST /entrar/app/trocar`, o cookie vai para o
+jar da própria janela) e volta para onde estava. E-mail e senha continuam dentro da janela. O app é de instância única,
+então o link chega ao app que já está aberto (Mac: `open-url`; Windows: `second-instance`).
 
 ## Publicar
 

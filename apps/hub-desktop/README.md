@@ -23,29 +23,30 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 
 ## Como é feito
 
-| Arquivo                      | O que faz                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| `desktop/main.cjs`           | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`             |
-| `desktop/regras.cjs`         | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron)  |
-| `desktop/janela.cjs`         | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                 |
-| `desktop/versao.cjs`         | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                              |
-| `desktop/central.cjs`        | central de apps: apps da conta (meus-apps), SHA-256 conferido, instalar/abrir/atualizar/remover  |
-| `desktop/agenda.cjs`         | versão nova: confere 20 s depois de abrir e a cada 4 h, avisa e atualiza (sozinho só se ligado)  |
-| `desktop/bandeja.cjs`        | menu da barra de menus/bandeja (lista de itens), dica e ícone de cada sistema                    |
-| `desktop/inicio-sistema.cjs` | abrir com o computador (ligado na primeira vez, escondido) e `preferencias.json`                 |
-| `desktop/gerenciados.cjs`    | `apps-gerenciados.json`: quais apps a central atualiza (o SOBEDESCE e o Synquei leem)            |
-| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO (e do Maestro, cópia idêntica): baixa, confere, troca e abre |
-| `desktop/paginas/`           | barra de título do Mac, "Sem conexão" e boas-vindas (HTML local, CSP fechada, Figtree local)     |
-| `scripts/bandeja.mjs`        | ícone da barra de menus (template) e da bandeja a partir de `absolute-zro-simbolo.svg`           |
-| `scripts/icons.mjs`          | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`              |
-| `scripts/release.mjs`        | build-info, nome com build, SHA-256 e `versao.json` do Release                                   |
-| `electron-builder.yml`       | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                     |
+| Arquivo                      | O que faz                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `desktop/main.cjs`           | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`                |
+| `desktop/regras.cjs`         | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron)     |
+| `desktop/login-externo.cjs`  | Entrar com o Google no navegador do sistema, com PKCE e código de uso único (cópia nos outros apps) |
+| `desktop/janela.cjs`         | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                    |
+| `desktop/versao.cjs`         | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                                 |
+| `desktop/central.cjs`        | central de apps: apps da conta (meus-apps), SHA-256 conferido, instalar/abrir/atualizar/remover     |
+| `desktop/agenda.cjs`         | versão nova: confere 20 s depois de abrir e a cada 4 h, avisa e atualiza (sozinho só se ligado)     |
+| `desktop/bandeja.cjs`        | menu da barra de menus/bandeja (lista de itens), dica e ícone de cada sistema                       |
+| `desktop/inicio-sistema.cjs` | abrir com o computador (ligado na primeira vez, escondido) e `preferencias.json`                    |
+| `desktop/gerenciados.cjs`    | `apps-gerenciados.json`: quais apps a central atualiza (o SOBEDESCE e o Synquei leem)               |
+| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO (e do Maestro, cópia idêntica): baixa, confere, troca e abre    |
+| `desktop/paginas/`           | barra de título do Mac, "Sem conexão" e boas-vindas (HTML local, CSP fechada, Figtree local)        |
+| `scripts/bandeja.mjs`        | ícone da barra de menus (template) e da bandeja a partir de `absolute-zro-simbolo.svg`              |
+| `scripts/icons.mjs`          | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`                 |
+| `scripts/release.mjs`        | build-info, nome com build, SHA-256 e `versao.json` do Release                                      |
+| `electron-builder.yml`       | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                        |
 
 - **Visual:** tema claro, o padrão da marca. A janela nasce com o papel `#fcfbfc` (sem flash), `hiddenInset` no Mac
   com barra própria (voltar, avançar, título, recarregar, início). A tela "Sem conexão" segue o site: símbolo pequeno,
   título Figtree fino × pesado em grafite e botões de vidro ("Tentar de novo" e "Abrir no navegador").
 - **Segurança:** `contextIsolation`, `sandbox`, sem `nodeIntegration`, partição `persist:absolutezro`. Na janela só o
-  HUB e `accounts.google.com` (Entrar com o Google); o resto (inclusive os apps da família) abre no navegador, e só se
+  HUB (o Google não: "Entrar com o Google" roda no navegador do sistema, veja abaixo); o resto (inclusive os apps da família) abre no navegador, e só se
   for `https`. Sem `<webview>`, sem janelas novas, permissões negadas (fora copiar e tela cheia do HUB). Fusíveis:
   sem `RunAsNode`, sem `NODE_OPTIONS`/`--inspect`, só o `app.asar` conferido. Uma instância só. `absolutezro://rota`
   abre só rotas do HUB (nunca `/api` ou `/oauth`). `ZRO_HUB_URL` vale só fora do app instalado.
@@ -53,6 +54,17 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
   nova; `desktop/atualizador.cjs`) ou "Baixar" quando não dá para trocar sozinho, e "Depois". Só na bandeja (aberto com
   o computador), o aviso vira notificação. "Procurar atualizações…" (menu e bandeja) confere o app e os apps de uma vez.
   Instalar por cima mantém o login.
+
+## Entrar com o Google (ADR 0041)
+
+O Google recusa OAuth dentro de janela embutida (`disallowed_useragent`), e não usamos truque de agente de usuário. Por
+isso a janela **nunca** abre `accounts.google.com`: o botão "Continuar com o Google" do HUB (`/entrar/google`) e qualquer
+redirecionamento para o Google são cancelados e o app abre `<HUB>/entrar/app` no **navegador do sistema**
+(`desktop/login-externo.cjs`, cópia idêntica em cada app de computador; `npm run compartilhado`). A pessoa entra lá,
+toca em "Voltar para o app" e o navegador abre `absolutezro://entrar-app?code=…&state=…`. O app confere o `state`, troca
+o código de uso único (60 s) e o `verifier` PKCE por uma sessão do HUB (`POST /entrar/app/trocar`, o cookie vai para o
+jar da própria janela) e volta para onde estava. E-mail e senha continuam dentro da janela. O app é de instância única,
+então o link chega ao app que já está aberto (Mac: `open-url`; Windows: `second-instance`).
 
 ## Trocar o ícone
 
