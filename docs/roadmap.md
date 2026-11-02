@@ -33,6 +33,8 @@ Atualizado em 01/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   portas da conta antiga só aparecem com `zro_email_em_uso` ou erro de senha (o SOBEDESCE não liga pelo e-mail).
 - ✅ Synquei em synquei.absolutezro.com (login, og, canonical; migration 0051 cadastra o retorno e o Abrir do HUB) e 308
   do synquei.vercel.app, menos o app e a API (os projetos do app instalado moram no endereço antigo).
+- ✅ Links do Synquei que ainda iam para synquei.vercel.app (família no Revela e no NOSSOM, "Conhecer o Synquei" nos
+  planos do SOBEDESCE, texto do Release do app de computador) no subdomínio.
 - ✅ Cabeçalhos de segurança no TPeasy e no Synquei; CSP mínima no Maestro (a com `script-src` em tudo pede nonce: ⬜).
 - ✅ HUB: marca dos fechados fora de `public/` (rota `/marca/<produto>` com `zro.release_visible`), @ reservados e selos
   só no servidor, Entrar no celular, `/privacidade` em português, 308 de absolutezro.vercel.app, `/cadastro` e

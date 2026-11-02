@@ -15,6 +15,13 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Synquei: links que faltavam no subdomínio (02/11/2026)
+
+Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei em synquei.absolutezro.com, migration
+0051). Troca só o endereço do Synquei em `products/finishing/app/menu.js`, `products/nossom/components/family-nav.tsx`,
+`products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
+Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
+
 ## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
 
 Branch `claude/quasar-presence-ia`, em `products/nossom`.
