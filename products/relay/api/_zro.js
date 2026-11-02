@@ -10,7 +10,7 @@
 //             para o /api/zro/eu reler o perfil em /oauth/userinfo (perfil único: mudou na conta, muda aqui).
 //
 // Conta única: o Relay não cria conta própria. "Criar conta" é o mesmo fluxo com prompt=create (o HUB abre o
-// cadastro e volta já logado). O Relay é aberto: converter não pede conta (ADR 0030). A conta só entra no que toca a
+// cadastro e volta já logado). O Relay pede a conta para usar (ADR 0030, revisão de 02/11/2026; a tela leva para /entrar). A conta só entra no que toca a
 // conta; hoje, o Set (presença e conversas do ecossistema, ADR 0032 da Absolute ZRO). Porta do Synquei
 // (products/synquei/api): sem ZRO_CLIENT_ID e ZRO_CLIENT_SECRET (cliente `relay-web` no console da Absolute ZRO), nada
 // disso aparece e o site segue como sempre.

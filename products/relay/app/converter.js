@@ -10,7 +10,7 @@ import * as Meus from './meus.js'
 import * as Looks from './looks.js'
 import { linkMaxima } from '../src/link.js'
 import { registro } from '../src/painel.js'
-import { lerConta } from './conta.js'
+import { exigirConta, lerConta } from './conta.js'
 import * as Historico from './historico.js'
 import * as Nuvem from './nuvem.js'
 import { RECURSOS } from './recursos.js'
@@ -25,6 +25,9 @@ const el = (tag, props = {}, ...filhos) => {
 const ficha = (texto, extra = '') => el('span', { className: `ficha ${extra}`.trim(), textContent: texto })
 const NOMES_CODEC = { prores: 'ProRes', prores4444: 'ProRes 4444', avc: 'H.264', hevc: 'HEVC', vp9: 'VP9', av1: 'AV1', vp8: 'VP8', aac: 'AAC', mp3: 'MP3', opus: 'Opus', flac: 'FLAC' }
 const nomeCodec = (c) => NOMES_CODEC[c] ?? (String(c).startsWith('pcm') ? 'PCM' : String(c ?? '').toUpperCase())
+
+// sem a conta Absolute ZRO, o conversor leva para /entrar (app/conta.js)
+exigirConta()
 
 // ─────────── estado ───────────
 

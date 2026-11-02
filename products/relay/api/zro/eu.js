@@ -1,4 +1,4 @@
-// GET /api/zro/eu — quem está logado no Relay. O Relay é aberto (converter não pede conta), então a resposta é sempre
+// GET /api/zro/eu — quem está logado no Relay. A página decide para onde levar (/entrar, app/conta.js), então a resposta é sempre
 // 200, sem erro no console de quem só veio converter: { ok: true, pessoa } com sessão; { ok: false, configurado: true }
 // sem sessão (o topo oferece "Set", que leva a entrar); { ok: false, configurado: false } sem o login ligado neste site.
 //

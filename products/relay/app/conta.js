@@ -22,10 +22,20 @@ export function lerConta() {
   return leitura
 }
 
-/** Para onde voltar depois de entrar: da página inicial, o painel; das outras, a mesma página. */
+/** A página de entrada (/entrar). Da página inicial, volta para o painel; das outras, para a mesma página. */
 export function linkEntrar(caminho = location.pathname + location.search) {
   const volta = caminho === '/' || caminho === '/index.html' ? '/painel' : caminho
-  return `/api/zro/entrar?volta=${encodeURIComponent(volta)}`
+  return `/entrar?volta=${encodeURIComponent(volta)}`
+}
+
+/**
+ * O Relay pede a conta Absolute ZRO (decisão do titular, 02/11/2026): fora dela, o conversor e o painel levam para
+ * /entrar e voltam depois. Login não ligado neste endereço (servidor local, testes): segue aberto.
+ */
+export async function exigirConta() {
+  const c = await lerConta()
+  if (c.estado === 'fora') location.replace(linkEntrar())
+  return c
 }
 
 export const primeiroNome = (p) => String(p?.nome || p?.email || '').split(/[\s@]/)[0]

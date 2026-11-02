@@ -217,8 +217,9 @@ describe('página inicial no Chromium', () => {
     conta = 'fora'
     let { ctx, p } = await abrir()
     await p.waitForSelector('[data-conta-acao]:not([hidden])')
-    assert.equal(await p.getAttribute('[data-conta-acao]', 'href'), '/api/zro/entrar?volta=%2Fpainel')
-    assert.equal(await p.textContent('[data-heroi-segunda]'), 'Ver as ferramentas')
+    assert.equal(await p.getAttribute('[data-conta-acao]', 'href'), '/entrar?volta=%2Fpainel')
+    assert.equal(await p.textContent('[data-heroi-segunda]'), 'Entrar')
+    assert.equal(await p.getAttribute('[data-heroi-segunda]', 'href'), '/entrar')
     await ctx.close()
 
     conta = 'dentro'

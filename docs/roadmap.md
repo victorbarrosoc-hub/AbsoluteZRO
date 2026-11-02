@@ -1342,6 +1342,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Interpretar a cadência (pedido do titular, 31/10/2026, como o Footage FPS do After Effects): no editor de preset,
   modo "Interpretar" — todos os quadros, só a velocidade muda, em lote; som junto até 5% de diferença. Navegador
   (tempo de cada quadro × fator) e computador (`setpts` + `asetrate`), liberado pelo titular com o app de computador.
+- ✅ O Relay pede a conta Absolute ZRO (decisão do titular, 02/11/2026): página `/entrar` (Entrar com Absolute ZRO,
+  Criar conta) no padrão das outras plataformas; o conversor e o painel levam para ela e voltam depois; na página
+  inicial, "Entrar" no herói e no topo.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.

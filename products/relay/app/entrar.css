@@ -1,0 +1,81 @@
+/* Relay · página de entrada: o relé no centro, uma frase, duas ações (Padrão Apple: pouco texto, muito respiro). */
+
+.pagina-entrar {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.entrar-voltar {
+  padding: 20px max(16px, calc((100vw - 1120px) / 2));
+}
+.entrar {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 20px;
+  padding: 24px 16px 64px;
+  text-align: center;
+}
+.rele--entrar {
+  --largura: 132px;
+  --altura: 44px;
+  margin-bottom: 8px;
+  animation: entrar-rele 0.9s var(--mola) both;
+}
+@keyframes entrar-rele {
+  from {
+    --curso: 0;
+  }
+}
+@property --curso {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+.entrar-bloco {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+.entrar-bloco h1 {
+  font-size: clamp(38px, 7vw, 60px);
+  line-height: 1.05;
+}
+.entrar-bloco .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.avatar--grande {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+.entrar-aviso {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--mudo);
+  font-size: 14px;
+}
+.familia-mini {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  color: var(--fraco);
+  font-size: 13px;
+}
+.familia-mini img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rele--entrar {
+    animation: none;
+  }
+}
