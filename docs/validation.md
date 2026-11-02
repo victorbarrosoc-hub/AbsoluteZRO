@@ -626,6 +626,19 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: espera do Wi-Fi só quando usada (02/11/2026)
+
+Branch `sobedesce-wifi-espera`. A espera longa (`/api/p2p/espera`) segurava uma função da Vercel o dia todo por app
+aberto (~98% da memória de funções do ecossistema, medido pelo Painel Geral).
+
+- `web/tests/p2p.test.mts`: consulta curta devolve `proxima_em` 20 s (computador) e 30 s (celular); sem `curto`, 0.
+- `test/celular-wifi-motor.test.js`: o computador parado consulta curto e espera o ritmo; `aquecer()` (envio começando)
+  acaba a pausa e volta à espera longa, que continua depois de um sinal. Pegou um erro de ordem (TDZ) na pausa.
+- `test/celular-wifi-app.test.js`: no celular, longa só com a aba Aparelhos, envio/recebimento, resposta pendente ou
+  logo depois de um sinal; a pausa fica entre 5 s e 2 min.
+- `test/app-sw.test.js`: cache `sobedesce-app-v80`, versão 2.8.65. Segue vermelho na main, sem relação com esta
+  mudança: `entrada-celular.test.js` (o "a Z fica no anel", desde `af19f231`).
+
 ## Console: quem está online e onde (31/10/2026)
 
 Branch `console-online-quem`. Tocar no "Online agora" da visão geral abre `/admin/agora`: cada pessoa online (mesma

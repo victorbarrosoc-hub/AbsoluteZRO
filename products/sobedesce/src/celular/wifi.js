@@ -21,6 +21,14 @@ import { criarFirewall } from './firewall.js'
 export const RECEBENDO = '.sobedesce-recebendo'
 const ESPERA_TIMEOUT_MS = 40_000 // o site segura até 25 s; folga para a rede
 const APARELHOS_MS = 20_000
+// Espera longa só com o Wi-Fi em uso (transferência andando, pedido esperando Aceitar ou logo depois de um sinal).
+// Fora disso, consulta curta (`curto=1`) no ritmo que o site manda (`proxima_em`): a espera longa segurava uma função
+// da Vercel o dia todo por computador ligado (Painel Geral, 02/11/2026). O celular que manda espera a resposta 45 s;
+// o site pede ~20 s ao computador, então a oferta chega a tempo.
+const CURTA_MS = 20_000 // se o site não disser o ritmo
+const CURTA_MIN_MS = 5_000
+const CURTA_MAX_MS = 60_000
+const QUENTE_MS = 3 * 60_000
 const BACKOFF_MIN_MS = 2_000
 const BACKOFF_MAX_MS = 60_000
 const GUARDA_MS = 24 * 60 * 60_000
@@ -39,6 +47,12 @@ export class CelularError extends Error {
     this.name = 'CelularError'
     this.status = status
   }
+}
+
+/** Pausa entre consultas curtas no ritmo do site, presa entre CURTA_MIN_MS e CURTA_MAX_MS. */
+export function pausaCurta(proximaEm) {
+  const n = Number(proximaEm)
+  return Number.isFinite(n) && n > 0 ? Math.min(CURTA_MAX_MS, Math.max(CURTA_MIN_MS, n)) : CURTA_MS
 }
 
 const novoId = (p) => `${p}${crypto.randomBytes(9).toString('base64url')}`
@@ -135,6 +149,8 @@ export class CelularWifi {
     this.timer = null
     this.janelaEm = 0
     this.pedidos = new Map() // oferta de outra pessoa esperando Aceitar/Recusar: id → { sinal, timer }
+    this.quenteAte = 0 // até quando a espera é longa depois de um sinal
+    this.cutucar = null // encerra a pausa entre consultas curtas
     this.onStatus = () => this.#acordar()
   }
 
@@ -169,6 +185,7 @@ export class CelularWifi {
 
   async close() {
     this.rodando = false
+    this.cutucar?.()
     clearInterval(this.timer)
     this.timer = null
     this.cloud()?.off?.('status', this.onStatus)
@@ -186,15 +203,47 @@ export class CelularWifi {
     })
   }
 
+  /** Longa só com o Wi-Fi em uso: transferência andando, pedido esperando resposta ou logo depois de um sinal. */
+  precisaEsperaLonga(agora = Date.now()) {
+    if (agora < this.quenteAte || this.pedidos.size) return true
+    for (const t of this.transfers.values()) if (ATIVO.has(t.estado)) return true
+    return false
+  }
+
+  /** Acorda a espera agora (um envio começando ou a tela do Wi-Fi aberta): a pausa da consulta curta acaba. */
+  aquecer(ms = QUENTE_MS) {
+    this.quenteAte = Math.max(this.quenteAte, Date.now() + ms)
+    this.cutucar?.()
+  }
+
+  #pausa(ms) {
+    return new Promise((ok) => {
+      let t = null
+      const fim = () => {
+        clearTimeout(t)
+        if (this.cutucar === fim) this.cutucar = null
+        ok()
+      }
+      t = setTimeout(fim, ms)
+      t.unref?.()
+      this.cutucar = fim
+    })
+  }
+
   async #laco() {
     let espera = BACKOFF_MIN_MS
     while (this.rodando && this.cloud()?.signedIn) {
+      const longa = this.precisaEsperaLonga()
       try {
         const nome = await this.nome()
         const outros = this.settings.get().celularOutros ? '&outros=1' : ''
-        const { data } = await this.cloud().request('GET', `/api/p2p/espera?nome=${encodeURIComponent(String(nome || '').slice(0, 60))}${outros}`, { timeoutMs: ESPERA_TIMEOUT_MS })
+        const curto = longa ? '' : '&curto=1'
+        const { data } = await this.cloud().request('GET', `/api/p2p/espera?nome=${encodeURIComponent(String(nome || '').slice(0, 60))}${outros}${curto}`, { timeoutMs: ESPERA_TIMEOUT_MS })
         espera = BACKOFF_MIN_MS
-        for (const s of Array.isArray(data?.sinais) ? data.sinais : []) await this.tratarSinal(s).catch((err) => this.log('celular: sinal', err?.message || err))
+        const sinais = Array.isArray(data?.sinais) ? data.sinais : []
+        if (sinais.length) this.quenteAte = Date.now() + QUENTE_MS
+        for (const s of sinais) await this.tratarSinal(s).catch((err) => this.log('celular: sinal', err?.message || err))
+        if (!sinais.length && this.rodando && (!longa || Number(data?.proxima_em) > 0) && !this.precisaEsperaLonga()) await this.#pausa(pausaCurta(data?.proxima_em))
       } catch (err) {
         if (err?.kind === 'reauth' || err?.reason === 'cloudSignedOut') return
         this.log('celular: espera', err?.message || err)
@@ -573,6 +622,7 @@ export class CelularWifi {
       amostra: { at: Date.now(), bytes: 0 },
     }
     this.transfers.set(t.id, t)
+    if (ATIVO.has(t.estado)) this.cutucar?.()
     this.#avisar()
     return t
   }
@@ -591,6 +641,7 @@ export class CelularWifi {
 
   #mudar(t, patch) {
     Object.assign(t, patch)
+    if (ATIVO.has(t.estado)) this.cutucar?.() // transferência andando: a espera volta a ser longa já
     this.#avisar()
   }
 

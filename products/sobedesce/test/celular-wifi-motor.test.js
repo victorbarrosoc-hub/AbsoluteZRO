@@ -42,7 +42,7 @@ function siteFalso({ aparelhos = [], esperas = [] } = {}) {
       }
       if (caminho.startsWith('/api/p2p/espera')) {
         const proxima = esperas.shift()
-        if (proxima) return r(200, { sinais: proxima })
+        if (proxima) return r(200, Array.isArray(proxima) ? { sinais: proxima } : proxima)
         return new Promise(() => {}) // fica esperando, como o site
       }
       if (caminho === '/api/p2p/aparelhos') return r(200, { aparelhos })
@@ -207,7 +207,7 @@ test('espera longa: manda outros=1 com o ajuste ligado, entrega os sinais e list
   w.janela()
   w.start()
   for (let i = 0; i < 100 && !hub.eventos.some(([ev]) => ev === 'celular-oferta'); i++) await new Promise((ok) => setTimeout(ok, 10))
-  assert.ok(site.pedidos.includes('GET /api/p2p/espera?nome=MacBook%20do%20Victor&outros=1'))
+  assert.ok(site.pedidos.includes('GET /api/p2p/espera?nome=MacBook%20do%20Victor&outros=1&curto=1'), 'parado: consulta curta')
   assert.ok(hub.eventos.some(([ev, s]) => ev === 'celular-oferta' && s.id === 'of7'))
   assert.deepEqual(w.view().celulares, [
     { id: 's1', nome: 'iPhone', mesmaRede: true, conta: 'minha', dono: null },
@@ -302,4 +302,23 @@ test('rotas locais: pedaço cru (octet-stream) passa pela trava do servidor, lei
   } finally {
     await app.shutdown()
   }
+})
+
+test('ritmo da espera: parado consulta curto no ritmo do site; depois de um sinal fica na espera longa', async () => {
+  const oferta = { id: 'of9', tipo: 'oferta', sdp: 'v=0', de: { id: 's1', nome: 'iPhone', tipo: 'celular', conta: 'minha' } }
+  // 1ª: curta, nada, o site pede 5 s; 2ª: curta, chega uma oferta; 3ª em diante: longa (fica pendurada).
+  const site = siteFalso({ esperas: [{ sinais: [], proxima_em: 5_000 }, [oferta]] })
+  const hub = hubFalso()
+  const w = new CelularWifi({ settings: ajustes({ celularPasta: tmp() }), cloud: site, hub, nome: () => 'Mac' })
+  w.janela()
+  w.start()
+  const esperas = () => site.pedidos.filter((p) => p.startsWith('GET /api/p2p/espera'))
+  await new Promise((ok) => setTimeout(ok, 100))
+  assert.deepEqual(esperas(), ['GET /api/p2p/espera?nome=Mac&curto=1'], 'depois da curta, espera o ritmo antes da próxima')
+  w.aquecer() // um envio começando: a pausa acaba na hora
+  for (let i = 0; i < 100 && esperas().length < 3; i++) await new Promise((ok) => setTimeout(ok, 10))
+  assert.equal(esperas()[1], 'GET /api/p2p/espera?nome=Mac', 'aquecido: espera longa')
+  assert.ok(hub.eventos.some(([ev, s]) => ev === 'celular-oferta' && s.id === 'of9'))
+  assert.equal(esperas()[2], 'GET /api/p2p/espera?nome=Mac', 'depois de um sinal: continua longa')
+  await w.close()
 })

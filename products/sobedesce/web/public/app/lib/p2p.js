@@ -6,14 +6,19 @@
 // Só com a conta (não no modo Wi-Fi via QR, LAN) e só com a tela à vista: o iPhone pausa a página em segundo plano.
 // Receber sempre pede Aceitar no celular, inclusive dos computadores da própria conta.
 import { LAN, local } from './config.js'
-import { closeSheet, getState, openSheet, setState, toast } from './state.js'
+import { closeSheet, getState, openSheet, setState, subscribe, toast } from './state.js'
 import { keepAwake } from './wakelock.js'
 import { CANAL, CanalError, enviarArquivos, esperarAberto, esperarCandidatos, receberArquivos } from './p2p-canal.js'
-import { DICA_MAC, LIMITE_MEMORIA, Medidor, candidatosDaSdp, mensagemDe, nomeAparelho, nomeSeguro, ondeGuardar, resumoConexao, textoConexao, tipoDe } from './p2p-util.js'
+import { DICA_MAC, LIMITE_MEMORIA, Medidor, candidatosDaSdp, esperaLonga, pausaCurta, mensagemDe, nomeAparelho, nomeSeguro, ondeGuardar, resumoConexao, textoConexao, tipoDe } from './p2p-util.js'
 
 export const API = { espera: '/api/p2p/espera', aparelhos: '/api/p2p/aparelhos', sinal: '/api/p2p/sinal' }
 
 const APARELHOS_MS = 20_000
+const APARELHOS_FORA_MS = 60_000 // fora da aba Aparelhos a lista só serve ao "Mandar para…": atualiza com calma
+// Espera longa só quando o Wi-Fi está em uso (aba Aparelhos aberta, um envio ou recebimento andando, ou logo depois de
+// um sinal). Fora disso, uma consulta curta (`curto=1`) de tempos em tempos, no ritmo que o site manda (`proxima_em`):
+// a espera longa segurava uma função da Vercel o dia todo por app aberto (Painel Geral, 02/11/2026).
+const QUENTE_MS = 3 * 60_000 // depois de um sinal, fica na espera longa por mais um tempo (a conversa costuma seguir)
 const RESPOSTA_MS = 45_000 // computador da conta: aceita sozinho
 const RESPOSTA_PESSOA_MS = 115_000 // celular ou outra pessoa: alguém precisa tocar em Aceitar (o sinal vale 2 min)
 const OUTROS_KEY = 'sobedesce.p2p.outros'
@@ -30,6 +35,8 @@ let desligado = false // o site disse 401: para até entrar de novo
 let laco = null
 let timerAparelhos = 0
 let falhas = 0
+let quenteAte = 0 // até quando a espera é longa depois de um sinal
+let cutucar = null // encerra a pausa entre consultas curtas (aba Aparelhos aberta, envio começando)
 const esperandoResposta = new Map() // id da oferta → { ok, erro }
 
 /** "Aceitar de outras pessoas por perto": guardado neste aparelho, vai na espera como outros=1. */
@@ -61,12 +68,27 @@ async function lerJson(res) {
   }
 }
 
+const precisaEsperaLonga = (st = getState()) => esperaLonga(st, { esperandoResposta: esperandoResposta.size, quenteAte })
+
+function pausa(ms) {
+  return new Promise((ok) => {
+    const t = setTimeout(fim, ms)
+    function fim() {
+      clearTimeout(t)
+      if (cutucar === fim) cutucar = null
+      ok()
+    }
+    cutucar = fim
+  })
+}
+
 async function rodarEspera() {
   if (laco) return laco
   laco = (async () => {
     while (ativo()) {
+      const longa = precisaEsperaLonga()
       try {
-        const q = `?nome=${encodeURIComponent(nomeAparelho(navigator.userAgent))}${aceitaOutros() ? '&outros=1' : ''}`
+        const q = `?nome=${encodeURIComponent(nomeAparelho(navigator.userAgent))}${aceitaOutros() ? '&outros=1' : ''}${longa ? '' : '&curto=1'}`
         const res = await fetch(`${API.espera}${q}`, { headers: HEADERS, cache: 'no-store', credentials: 'same-origin' })
         if (res.status === 401) {
           desligado = true
@@ -75,7 +97,11 @@ async function rodarEspera() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const d = await lerJson(res)
         falhas = 0
-        for (const s of Array.isArray(d.sinais) ? d.sinais : []) tratarSinal(s)
+        const sinais = Array.isArray(d.sinais) ? d.sinais : []
+        if (sinais.length) quenteAte = Date.now() + QUENTE_MS
+        for (const s of sinais) tratarSinal(s)
+        // Consulta curta (ou o site pediu calma): espera o ritmo antes da próxima, a menos que o Wi-Fi entre em uso.
+        if (!sinais.length && ativo() && (!longa || Number(d.proxima_em) > 0) && !precisaEsperaLonga()) await pausa(pausaCurta(d.proxima_em))
       } catch {
         falhas++
         await dormir(Math.min(30_000, 1000 * 2 ** Math.min(falhas, 5)))
@@ -111,16 +137,19 @@ function agendarAparelhos() {
   timerAparelhos = setTimeout(async () => {
     await atualizarAparelhos()
     agendarAparelhos()
-  }, APARELHOS_MS)
+  }, getState().tab === 'ap' ? APARELHOS_MS : APARELHOS_FORA_MS)
 }
 
-// Tela escondida: a espera em curso termina sozinha (no máximo 25 s) e não começa outra. Não é cortada: um sinal que o
+// Tela escondida: a espera longa em curso termina sozinha (no máximo 25 s) e não começa outra; a pausa entre consultas
+// curtas acaba na hora. Não é cortada: um sinal que o
 // site entregasse a um pedido cortado se perderia.
 function acordar() {
   if (!ativo()) {
     clearTimeout(timerAparelhos)
+    cutucar?.() // a pausa acaba e o laço sai (a tela sumiu)
     return
   }
+  cutucar?.() // voltou à vista: a próxima consulta sai agora
   rodarEspera()
   atualizarAparelhos()
   agendarAparelhos()
@@ -133,6 +162,13 @@ export function startP2p() {
   if (!started) {
     started = true
     document.addEventListener('visibilitychange', acordar)
+    // Abriu a aba Aparelhos ou começou um envio/recebimento: a pausa da consulta curta acaba e vem a espera longa.
+    let longaAntes = precisaEsperaLonga()
+    subscribe(() => {
+      const longa = precisaEsperaLonga()
+      if (longa && !longaAntes) cutucar?.()
+      longaAntes = longa
+    })
     limparSobras()
   }
   acordar()

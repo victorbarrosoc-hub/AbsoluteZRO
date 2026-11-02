@@ -110,6 +110,18 @@ describe("p2p", () => {
     assert.equal(noCel.sinais[0].oferta, of.id);
   });
 
+  test("consulta curta diz quando voltar (computador 20 s, celular 30 s); a longa, sem curto, devolve 0", async () => {
+    const mac = await corpo(await curta(doMac(victor, "/api/p2p/espera?curto=1")));
+    assert.equal(mac.proxima_em, 20_000);
+    const cel = await corpo(await curta(doCelular(victor, "/api/p2p/espera?curto=1")));
+    assert.equal(cel.proxima_em, 30_000);
+    // App antigo (sem curto): continua na espera longa, e o site não pede pausa (ele não sabe ler).
+    const ac = new AbortController();
+    const longa = rEspera.GET(new Request(doMac(victor, "/api/p2p/espera"), { signal: ac.signal }));
+    ac.abort();
+    assert.equal((await corpo(await longa)).proxima_em, 0);
+  });
+
   test("a espera longa devolve assim que chega um sinal", async () => {
     const inicio = Date.now();
     const esperando = rEspera.GET(doMac(victor, "/api/p2p/espera"));

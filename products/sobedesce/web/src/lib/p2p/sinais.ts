@@ -27,6 +27,12 @@ export const VALIDADE_MS = 2 * 60_000;
 /** Quanto a espera longa segura a resposta sem sinal novo (o cliente pede de novo logo depois). */
 export const ESPERA_MS = 25_000;
 const OLHAR_MS = 1_000;
+/**
+ * Fora do Wi-Fi em uso, o app consulta curto (`curto=1`) e volta depois disto. Abaixo de ONLINE_MS para o aparelho
+ * continuar visível. O computador volta mais cedo: o celular que manda espera a resposta dele por 45 s.
+ */
+export const PROXIMA_COMPUTADOR_MS = 20_000;
+export const PROXIMA_CELULAR_MS = 30_000;
 export const OFERTAS_POR_MINUTO = 20;
 
 export class SinalError extends Error {
@@ -67,6 +73,9 @@ export function nomeDoAparelho(a: Autenticado, pedido: string | null, ua: string
 }
 
 const primeiroNome = (nome: string | null | undefined) => (nome || "").trim().split(/\s+/)[0] || "Alguém";
+
+/** Ritmo da consulta curta de cada aparelho (`proxima_em` da espera). */
+export const proximaConsultaMs = (a: Autenticado): number => (tipoDe(a) === "computador" ? PROXIMA_COMPUTADOR_MS : PROXIMA_CELULAR_MS);
 
 /** Marca o aparelho como online (em qual rede, e se aceita pedidos de outras pessoas por perto). */
 export async function marcarVisto(a: Autenticado, nome: string, ip: string | null, aceitaOutros = false): Promise<void> {

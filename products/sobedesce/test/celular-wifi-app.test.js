@@ -2,7 +2,7 @@
 // que chega (OPFS ou memória, com o limite), nomes e tipos dos arquivos, velocidade e mensagens de erro.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DICA_MAC, candidatosDaSdp, LIMITE_MEMORIA, Medidor, mensagemDe, nomeAparelho, nomeSeguro, ondeGuardar, resumoConexao, textoConexao, tipoDe } from '../web/public/app/lib/p2p-util.js'
+import { DICA_MAC, candidatosDaSdp, esperaLonga, pausaCurta, LIMITE_MEMORIA, Medidor, mensagemDe, nomeAparelho, nomeSeguro, ondeGuardar, resumoConexao, textoConexao, tipoDe } from '../web/public/app/lib/p2p-util.js'
 
 test('nome do aparelho pelo user-agent', () => {
   assert.equal(nomeAparelho('Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) Mobile/15E148 Safari/604.1'), 'iPhone')
@@ -79,4 +79,21 @@ test('não conectou: o que o outro lado anunciou na SDP (IP local só até a red
   assert.deepEqual(candidatosDaSdp(sdp), ['1 local 192.168.15.x', '1 local .local', '1 internet', '1 local 192.168.15.x tcp', '1 local IPv6'])
   assert.deepEqual(candidatosDaSdp(''), [])
   assert.match(textoConexao({ local: ['local'], remoto: [], idas: 0, voltas: 0, estado: 'failed', sdpOutro: [] }), /SDP do outro: nenhum/)
+})
+
+test('ritmo da espera: longa só com o Wi-Fi em uso; fora disso, o ritmo do site, sem laço apertado', () => {
+  const st = (tab, envio = null, recebimento = null) => ({ tab, p2p: { envio, recebimento } })
+  assert.equal(esperaLonga(st('send')), false, 'Início, nada andando: consulta curta')
+  assert.equal(esperaLonga(st('ap')), true, 'aba Aparelhos aberta')
+  assert.equal(esperaLonga(st('drive', { fase: 'esperando' })), true, 'envio esperando a resposta')
+  assert.equal(esperaLonga(st('drive', { fase: 'pronto' })), false, 'envio terminado')
+  assert.equal(esperaLonga(st('refs', null, { fase: 'pedido' })), true, 'pedido para aceitar')
+  assert.equal(esperaLonga(st('send'), { esperandoResposta: 1 }), true)
+  assert.equal(esperaLonga(st('send'), { quenteAte: 2000, agora: 1000 }), true, 'logo depois de um sinal')
+  assert.equal(esperaLonga(st('send'), { quenteAte: 1000, agora: 2000 }), false)
+  assert.equal(pausaCurta(30_000), 30_000)
+  assert.equal(pausaCurta(0), 30_000, 'site antigo (sem proxima_em): 30 s')
+  assert.equal(pausaCurta(undefined), 30_000)
+  assert.equal(pausaCurta(10), 5_000, 'nunca menos de 5 s')
+  assert.equal(pausaCurta(10 * 60_000), 120_000, 'nunca mais de 2 min')
 })

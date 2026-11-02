@@ -24,7 +24,10 @@ A página do app no celular é HTTPS e não pode falar com `http://192.168.x.x` 
 **WebRTC** (canal de dados), que funciona entre uma página HTTPS e um aparelho da rede local:
 
 1. **Sinalização pelo site** (`/api/p2p/*`): cada aparelho fica numa espera longa (`GET /api/p2p/espera`, até 25 s)
-   enquanto está aberto; isso também marca que ele está online e em qual rede (HMAC do IP público, como em
+   **só com o Wi-Fi em uso** (aba Aparelhos aberta, envio ou recebimento andando, pedido esperando Aceitar, ou até 3 min
+   depois de um sinal; desde 02/11/2026, para não segurar uma função da Vercel o dia todo). Fora disso, consulta curta
+   (`curto=1`) no ritmo que o site manda em `proxima_em` (entre 5 s e 2 min), pausando com a tela escondida no celular.
+   Cada consulta, curta ou longa, marca que ele está online e em qual rede (HMAC do IP público, como em
    `lib/lan/presenca.ts`). Quem vai mandar cria a **oferta** (SDP inteira, sem trickle) e manda pelo site; o outro
    responde com a **resposta**. O site só repassa: sinais valem 2 minutos e só entre aparelhos da mesma conta.
 2. **Conexão direta:** o computador anuncia o IP local de verdade (o app desliga a ofuscação mDNS do Chromium:
@@ -70,7 +73,7 @@ Rotas (cookie do site no celular; Bearer `sdd_` no computador):
 
 | Rota | O quê |
 | --- | --- |
-| `GET /api/p2p/espera?nome=&outros=1` | Marca online (tipo pela sessão: dispositivo = computador; `outros=1` = aceita pessoas por perto). Devolve `{ agora, sinais }` assim que houver sinal para esta sessão (e marca entregue), ou `[]` depois de 25 s. `curto=1`: não espera. |
+| `GET /api/p2p/espera?nome=&outros=1` | Marca online (tipo pela sessão: dispositivo = computador; `outros=1` = aceita pessoas por perto). Devolve `{ agora, sinais }` assim que houver sinal para esta sessão (e marca entregue), ou `[]` depois de 25 s. `curto=1`: não espera e devolve `proxima_em` (computador 20 s, celular 30 s); sem `curto`, `proxima_em` = 0 (apps antigos seguem na espera longa, sem laço apertado). |
 | `GET /api/p2p/aparelhos` | `{ aparelhos: [{ id, nome, tipo, mesmaRede, conta: 'minha' \| 'outra', dono? }] }`: os da conta (acima) e as pessoas por perto que aceitam, online. |
 | `POST /api/p2p/sinal` | `{ para, tipo: 'oferta', sdp, resumo }` ou `{ para, tipo: 'resposta' \| 'recusa' \| 'cancela', oferta, sdp?, motivo? }` → `{ id }`. Oferta só para aparelho online que este vê (da conta, ou por perto na mesma rede e aceitando); os outros só sobre uma oferta entre os dois. SDP até 20 mil caracteres. Até 20 ofertas por minuto por sessão. |
 

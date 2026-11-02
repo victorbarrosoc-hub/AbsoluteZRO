@@ -146,3 +146,28 @@ export function mensagemDe(err) {
   if (m === 'cancelado') return err.message && err.message !== 'Cancelado.' ? err.message : 'Cancelado.'
   return err?.message || 'Algo deu errado. Tente de novo.'
 }
+
+// ───── ritmo da espera (lib/p2p.js) ─────
+// Espera longa só com o Wi-Fi em uso; fora disso, consulta curta no ritmo que o site manda (`proxima_em`).
+const ANDANDO_P2P = new Set(['conectando', 'esperando', 'andando'])
+const CURTA_MS = 30_000 // se o site não disser o ritmo
+const CURTA_MIN_MS = 5_000
+const CURTA_MAX_MS = 120_000
+
+/** Longa com a aba Aparelhos aberta, envio/recebimento em curso, resposta pendente ou logo depois de um sinal. */
+export function esperaLonga(st, { esperandoResposta = 0, quenteAte = 0, agora = Date.now() } = {}) {
+  const { envio, recebimento } = st?.p2p || {}
+  return (
+    st?.tab === 'ap' ||
+    Boolean(envio && ANDANDO_P2P.has(envio.fase)) ||
+    Boolean(recebimento && (ANDANDO_P2P.has(recebimento.fase) || recebimento.fase === 'pedido')) ||
+    esperandoResposta > 0 ||
+    agora < quenteAte
+  )
+}
+
+/** Pausa entre consultas curtas no ritmo do site, presa entre 5 s e 2 min (o site nunca põe o app em laço). */
+export function pausaCurta(proximaEm) {
+  const n = Number(proximaEm)
+  return Number.isFinite(n) && n > 0 ? Math.min(CURTA_MAX_MS, Math.max(CURTA_MIN_MS, n)) : CURTA_MS
+}
