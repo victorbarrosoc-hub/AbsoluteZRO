@@ -2,6 +2,16 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
+
+- ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.
+  HUB = maior nível entre os apps; dentro de um app = nível dele. Admin da plataforma segue a versão publicada no Lab.
+- ✅ Cada resposta do chat grava o custo em `zro.z_lab_uso` (migração `0056`: org, produto, nível, origem), idempotente
+  por pergunta, também quando o stream aborta ou dá erro depois de gastar; falha ao registrar não derruba a resposta.
+- ✅ Teto diário em dólar do chat: US$ 1 por pessoa e US$ 20 global (`Z_TETO_USUARIO_DIA_USD`, `Z_TETO_GLOBAL_DIA_USD`),
+  mensagem curta quando bate; franquia e recargas intactas. /admin/custos mostra o gasto real por modelo e por nível.
+- ⬜ Subir o teto/ajustar pelo console (hoje é variável de ambiente) e avisar a pessoa antes de bater o teto.
+
 ## Carro do Freela: selo neon na lateral e um menu só no computador (02/11/2026, ramo `claude/carro-menu`)
 
 - ✅ Pedido do titular: a lateral e a gaveta do site real mostram o selo neon (anel), não o "///". No computador o ☰ saiu

@@ -1,12 +1,11 @@
-import { concluirTurno, iniciarTurno } from '@zro/core'
+import { iniciarTurno } from '@zro/core'
 import { DomainError } from '@zro/observability'
-import { createLogger } from '@zro/observability'
 import { readJson, route } from '@/lib/api'
 import { comCors, IA_ESCOPO, preflight } from '@/lib/ia/http'
-import { iaLigada, responder, type IaEvento } from '@/lib/ia/modelo'
+import { iaLigada } from '@/lib/ia/modelo'
+import { executarTurno, type EventoDoTurno } from '@/lib/ia/turno-producao'
 
 export const maxDuration = 120
-const log = createLogger('ia')
 
 /**
  * Uma pergunta à IA do ecossistema. A resposta vem em streaming, uma linha JSON por evento (application/x-ndjson):
@@ -21,18 +20,23 @@ const post = route(
     const enc = new TextEncoder()
     const corpo = new ReadableStream<Uint8Array>({
       async start(ctrl) {
-        const enviar = (e: IaEvento | { tipo: 'fim'; mensagem: string; creditos: number } | { tipo: 'erro'; mensagem: string }) =>
-          ctrl.enqueue(enc.encode(JSON.stringify(e) + '\n'))
+        // Cliente que fechou a aba: enqueue falha, mas o turno segue até registrar o custo.
+        const enviar = (e: EventoDoTurno | { tipo: 'conversa'; id: string; titulo: string }) => {
+          try {
+            ctrl.enqueue(enc.encode(JSON.stringify(e) + '\n'))
+          } catch {
+            /* stream já fechado */
+          }
+        }
         enviar({ tipo: 'conversa', id: turno.conversa.id, titulo: turno.conversa.titulo })
         try {
-          const { texto, uso } = await responder(db, turno, enviar, req.signal)
-          const r = await concluirTurno(db, turno, texto, uso)
-          enviar({ tipo: 'fim', mensagem: r.mensagemId, creditos: r.creditos })
-        } catch (err) {
-          log.error('ia.resposta', { error: err })
-          enviar({ tipo: 'erro', mensagem: 'A Z não conseguiu responder agora. Tente de novo em instantes.' })
+          await executarTurno(db, turno, enviar, req.signal)
         } finally {
-          ctrl.close()
+          try {
+            ctrl.close()
+          } catch {
+            /* já fechado */
+          }
         }
       },
     })

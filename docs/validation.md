@@ -15,6 +15,16 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
+
+- `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
+  (zero→Haiku, órbita/absoluto/legado/teste/indefinido→Sonnet); HUB = maior nível, app = nível dele; preços do Haiku e do
+  Sonnet 5.5 e id com data; uma resposta cria 1 linha em `z_lab_uso` e 1 evento em `usage_events`, repetir a pergunta não
+  duplica; erro no meio registra o gasto sem gastar crédito; falha ao registrar não derruba a resposta; teto por pessoa
+  e global (mensagem humana, nada gasto, outra pessoa segue); o chat não consome o teto do Laboratório; pessoa comum não
+  lê nem grava `z_lab_uso` (RLS); painel soma por modelo e por nível.
+- Migração `0056_z_custo_por_plano.sql` aplicada só no banco de teste (nada em produção).
+
 ## Synquei: leituras do TPeasy viram blocos nos takes (02/11/2026)
 
 - `products/synquei`: `npm test` → **174/174** (10 pulados, como antes). Novo `tests/tpeasy.test.mjs` (11): leituras
