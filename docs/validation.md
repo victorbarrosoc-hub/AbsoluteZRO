@@ -15,6 +15,24 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Carro do Freela: o job só conta no selo quando os dois confirmam (03/11/2026, `0009_job_confirmado`)
+
+- Banco local (Postgres 16): `npm run test:banco` **61/61** (3 novos em `test/api/_confirmacao-testes.js`: RLS de
+  `job_confirmacoes` — só a própria linha, só ponta da proposta, só job aceito com o dia passado em São Paulo, uma vez,
+  sem UPDATE/DELETE, `em` do banco, quem é de fora não lê; o selo e a vitrine só contam o job confirmado pelos dois com
+  "aconteceu"; as rotas GET/PATCH com `confirmacao` e os erros `tipo`, `campo`, `estado`, `cedo`, `ja_confirmado`,
+  `nao_achado` e origem). Os testes do selo da 0008 passaram a confirmar os jobs, e a vitrine prova o ✓ desligado com 6
+  jobs aceitos sem confirmação. Migrações em banco vazio, duas vezes, e com o login sem superusuário.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **59/59** (era 50): 4 jobs passados e 2 no selo; "Aconteceu?" com Sim/Não dos dois lados;
+  histórico com o estado; balão "2 jobs para confirmar"; "Sim" manda o PATCH, vira "Confirmado pelos dois", relê o selo
+  (3 jobs) e o balão desce; Meu perfil com 3 traços e a dica; quem contratou responde "Não" no detalhe/Jobs, fica "Não
+  aconteceu" sem nova pergunta e o selo não muda.
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **95 de 95** (cadastro-foco, conta-zro,
+  porta-malas-real e sem-zoom falharam só em paralelo e passaram sozinhas). Playwright no `/demo` a 1440×900 e 390×844
+  (Jobs, respondido, histórico, selo, quem contrata, detalhe da proposta): zero erro de página. `scan-secrets`: nenhum
+  segredo.
+
 ## Carro do Freela: tabela de diária e selo no servidor (03/11/2026)
 
 - Banco local (Postgres 16): `npm run test:banco` **58/58** (5 novos em `test/api/_tabela-testes.js`: RLS e checagens da

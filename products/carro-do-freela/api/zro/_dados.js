@@ -371,6 +371,8 @@ async function pessoas(req, res) {
  * GET    /api/zro/propostas              → { recebidas: [...], enviadas: [...] }   (as minhas, dos dois lados)
  * POST   /api/zro/propostas              → 201 { proposta }   (chega na caixa de `para`, dentro do Carro)
  * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou)
+ * PATCH  /api/zro/propostas?id=          → { proposta }       ({acao:'confirmar', aconteceu}: o job aconteceu? cada lado, depois
+ *                                                            do dia, uma vez; 0009 — só o confirmado pelos dois conta no selo)
  * GET    /api/zro/feed                   → { posts: [...] }   (os 100 mais novos, sem os que EU denunciei)
  * POST   /api/zro/feed                   → 201 { post }
  * DELETE /api/zro/feed?id=               → 204                (só o próprio)
@@ -391,6 +393,14 @@ function propostaSaida(l, sub, missoes) {
   const o = { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
     anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
     mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+  /* o job aconteceu? (0009) — só no job aceito lido com as respostas (COM_CONFIRMACAO): `aberta` = o dia já passou;
+     `minha`/`outra` = true (aconteceu), false (não aconteceu) ou null (ainda não respondeu); `confirmado` = os dois
+     disseram que aconteceu (é o que conta no selo) */
+  if (l.tipo === 'job' && l.estado === 'aceita' && 'dia_passou' in l) {
+    const aberta = l.dia_passou === true, minha = l.conf_minha === null || l.conf_minha === undefined ? null : l.conf_minha,
+      outra = l.conf_outra === null || l.conf_outra === undefined ? null : l.conf_outra;
+    o.confirmacao = { aberta, minha, outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true };
+  }
   /* a marca da guilda (0006): só existe na proposta que nasceu de uma missão da Sede; sem ela a saída é a de sempre */
   if (l.missao_id) {
     const m = missoes && missoes.get(l.missao_id);
@@ -418,6 +428,25 @@ function semConteudo(res, extra) {
   return res.end();
 }
 
+/* a proposta com as respostas do "aconteceu?" (0009): $1 = quem pede (RLS já limita às propostas dela) */
+const COM_CONFIRMACAO = `select p.*,
+    (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub = $1) as conf_minha,
+    (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub <> $1) as conf_outra,
+    p.dia < (now() at time zone 'America/Sao_Paulo')::date as dia_passou
+  from carro_do_freela.propostas p`;
+/** o job aconteceu? Cada lado responde a própria vez, depois do dia, uma vez só (o banco confere de novo: RLS) */
+async function confirmarJob(c, id, sub, aconteceu) {
+  const l = (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0];
+  if (!l) return { status: 404, corpo: { erro: 'nao_achado' } };
+  if (l.tipo !== 'job' || l.estado !== 'aceita') return { status: 409, corpo: { erro: 'estado', campo: 'estado' } };
+  if (!l.dia_passou) return { status: 409, corpo: { erro: 'cedo', campo: 'dia' } };
+  const r = await c.query(
+    'insert into carro_do_freela.job_confirmacoes (proposta, sub, aconteceu) values ($1, $2, $3) on conflict (proposta, sub) do nothing',
+    [id, sub, aconteceu]);
+  if (!r.rowCount) return { status: 409, corpo: { erro: 'ja_confirmado', campo: 'aconteceu' } };
+  return { status: 200, l: (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0] };
+}
+
 async function propostas(req, res) {
   const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH'], escrita: req.method !== 'GET' });
   if (!p) return;
@@ -425,7 +454,7 @@ async function propostas(req, res) {
   try {
     if (req.method === 'GET') {
       const { rows, missoes } = await db.asUser(sub, async c => {
-        const rows = (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows;
+        const rows = (await c.query(COM_CONFIRMACAO + ' order by p.criado_em desc limit 300', [sub])).rows;
         return { rows, missoes: FASES.guildaNoAr() ? await missoesDasPropostas(c, rows) : new Map() };
       });
       const todas = rows.map(l => propostaSaida(l, sub, missoes));
@@ -454,6 +483,12 @@ async function propostas(req, res) {
     }
     const id = idDe(req);
     if (!id) return json(res, 400, { erro: 'id' }, extra);
+    if (corpo && typeof corpo === 'object' && !Array.isArray(corpo) && 'acao' in corpo) {
+      const v = R.confirmacaoDe(corpo);
+      const r = await db.asUser(sub, c => confirmarJob(c, id, sub, v.aconteceu));
+      if (!r.l) return json(res, r.status, r.corpo, extra);
+      return json(res, 200, { proposta: propostaSaida(r.l, sub) }, extra);
+    }
     const v = R.respostaDe(corpo);
     const l = await db.asUser(sub, async c =>
       (await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1 returning *', [id, v.estado, v.motivo])).rows[0]);

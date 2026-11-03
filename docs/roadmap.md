@@ -14,7 +14,16 @@ Atualizado em 03/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   diária" com a folha por função; a entrada em perguntas e "Onde trabalho" gravam o "Topo viajar" na conta. Quem
   contrata vê "diária a partir de" na busca, a tabela no perfil e o ✓ só quando o servidor diz. Sem servidor, o
   aparelho segue como antes e o selo não aparece. `/demo` responde as rotas novas.
-- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008.
+- ✅ Decisões do titular (03/11): hora extra e deslocamento em R$ 0 contam como respondidos ("o usuário escolhe se cobra
+  ou não"; a folha diz "0 se não cobra" e o perfil público mostra "não cobra"), e o selo endurecido: migração nova
+  `0009_job_confirmado` (a 0008 fica intacta) com `job_confirmacoes`, uma resposta por lado ("aconteceu" ou não),
+  só depois do dia, só em job aceito, sem volta (RLS, sem UPDATE/DELETE). O job só conta nos 6 do selo quando os
+  dois lados confirmam. `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu}`; o GET diz a cada lado se
+  falta a resposta dele e o que o outro disse. Site real: "Aconteceu?" em Jobs e no detalhe da proposta (quem fez e
+  quem contratou), estado no histórico, balão em Jobs e a dica no medidor. `/demo` com um job esperando cada lado.
+- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008 e a 0009.
+- ⬜ Decisão do titular: quem contratou ainda pode cancelar um job aceito depois do dia (regra da 0003), o que tira o
+  job do selo mesmo confirmado.
 
 ## Carro do Freela: telas novas do site real (02/11/2026, ramo `claude/carro-telas`)
 

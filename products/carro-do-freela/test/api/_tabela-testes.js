@@ -135,11 +135,16 @@ module.exports = function registrar(ctx) {
     await P('/api/zro/inventario?id=' + lente.item.id, c, 'PATCH', { ativo: true });
     s = (await (await P('/api/zro/tabela', c, 'PUT', TABELA)).json()).selo;
     assert.deepEqual([s.pct, s.jobs, s.verificado], [100, 0, false], 'perfil cheio sem jobs: sem selo');
-    /* jobs: só proposta de job ACEITA em que eu sou quem fez, com o dia já passado; o mesmo contratante no mesmo dia conta uma vez */
+    /* jobs: só proposta de job ACEITA em que eu sou quem fez, com o dia já passado; o mesmo contratante no mesmo dia conta uma
+       vez; e (0009) só com os DOIS lados confirmando que aconteceu — aqui todos confirmados, para provar que as outras
+       regras continuam valendo mesmo com as duas respostas (o banco de teste grava direto, sem passar pelo RLS) */
     const contratantes = [crypto.randomUUID(), crypto.randomUUID()];
-    const job = (de, para, dia, estado = 'aceita', tipo = 'job') =>
-      SQL("insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, estado) values ($1, $2, 'Quem contrata', $3, $4, $5, $6)",
-        [de, para, tipo, tipo === 'brecho' ? crypto.randomUUID() : null, dia, estado]);
+    const job = async (de, para, dia, estado = 'aceita', tipo = 'job') => {
+      const id = (await SQL("insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, estado) values ($1, $2, 'Quem contrata', $3, $4, $5, $6) returning id",
+        [de, para, tipo, tipo === 'brecho' ? crypto.randomUUID() : null, dia, estado]))[0].id;
+      await SQL('insert into carro_do_freela.job_confirmacoes (proposta, sub, aconteceu) values ($1, $2, true), ($1, $3, true)', [id, de, para]);
+      return id;
+    };
     for (let i = 1; i <= 5; i++) await job(contratantes[i % 2], eu.sub, ctx().hojeMais(-i - 1));
     await job(contratantes[0], eu.sub, ctx().hojeMais(-3));          /* repetido: o mesmo contratante no mesmo dia (o i = 2 acima) */
     await job(contratantes[0], eu.sub, ctx().hojeMais(3));           /* ainda não aconteceu */
@@ -192,8 +197,13 @@ module.exports = function registrar(ctx) {
       await P('/api/zro/perfil', cf, 'PUT', { nome: 'Vitrine', cidade: 'Natal', uf: 'RN', funcoes: ['Editor'], nichos: ['Clipe'], portfolio: 'https://vitrine.exemplo', visibilidade: 'contratantes', viaja: true });
       await P('/api/zro/inventario', cf, 'POST', { categoria: 'camera', modelo: 'FX3' });
       await P('/api/zro/inventario', cf, 'POST', { categoria: 'lente', modelo: '35mm' });
+      const ids = [];
       for (let i = 1; i <= 6; i++)
-        await SQL("insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, dia, estado) values ($1, $2, 'Quem contrata', $3, 'aceita')", [quem.sub, freela.sub, ctx().hojeMais(-i - 1)]);
+        ids.push((await SQL("insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, dia, estado) values ($1, $2, 'Quem contrata', $3, 'aceita') returning id", [quem.sub, freela.sub, ctx().hojeMais(-i - 1)]))[0].id);
+      ps = await lista();
+      assert.equal(ps.find(p => p.arroba === 'vitrine.teste').verificado, false, '(0009) seis jobs aceitos, nenhum confirmado: sem ✓');
+      for (const id of ids)
+        await SQL('insert into carro_do_freela.job_confirmacoes (proposta, sub, aconteceu) values ($1, $2, true), ($1, $3, true)', [id, quem.sub, freela.sub]);
       ps = await lista();
       assert.equal(ps.find(p => p.arroba === 'vitrine.teste').verificado, true);
       /* desmarcou: some a tabela, a viagem e o ✓ (continua na comunidade) */

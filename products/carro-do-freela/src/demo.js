@@ -103,6 +103,20 @@
   proposta(6, P(19).id, EU_ID, P(19).nome, 'Op. de câmera', 8, '14:00', '23:00', 'Pipa', 'Casamento em Pipa, segunda câmera.', 'aceita', 30);
   proposta(7, P(33).id, EU_ID, P(33).nome, 'Editor', 16, '08:00', '18:00', 'Redinha', 'Show na Redinha — corte do aftermovie.', 'aceita', 52);
   proposta(8, P(52).id, EU_ID, P(52).nome, 'Op. de câmera', -11, '07:00', '17:00', 'Genipabu', 'Institucional nas dunas.', 'aceita', 300);
+  /* o job aconteceu? (0009): cada lado responde depois do dia; só o confirmado pelos dois conta no selo. Os dois jobs
+     feitos de sempre (4 e 8) estão confirmados; o 10 espera a SUA resposta (quem chamou já disse que sim), o 11 espera
+     quem chamou, e o 12 é um job que VOCÊ contratou, esperando a sua resposta de contratante */
+  proposta(10, P(23).id, EU_ID, P(23).nome, 'Op. de câmera', -2, '09:00', '19:00', 'Cidade Alta', 'Clipe no Centro Histórico.', 'aceita', 90);
+  proposta(11, P(47).id, EU_ID, P(47).nome, 'Editor', -7, '09:00', '18:00', 'Home office', 'Corte do institucional da escola.', 'aceita', 200);
+  proposta(12, EU_ID, P(14).id, 'Você (demonstração)', 'Op. de drone', -5, '06:00', '10:00', 'Via Costeira', 'Imagens aéreas da Via Costeira.', 'aceita', 160);
+  var confirmacoes = {};
+  [[4, true, true], [8, true, true], [10, true, null], [11, null, true], [12, null, true]].forEach(function (x) { confirmacoes[uuid('pppppppp', x[0])] = { de: x[1], para: x[2] } });
+  var comConf = function (x) {
+    if (x.tipo !== 'job' || x.estado !== 'aceita' || !x.dia) return x;
+    var c = confirmacoes[x.id] || { de: null, para: null }, eu = x.para === EU_ID ? 'para' : 'de', aberta = x.dia < dia(0);
+    var minha = c[eu] === undefined ? null : c[eu], outra = c[eu === 'para' ? 'de' : 'para']; outra = outra === undefined ? null : outra;
+    return Object.assign({}, x, { confirmacao: { aberta: aberta, minha: minha, outra: outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true } });
+  };
   if (NOVO) propostas = [];
 
   /* o feed do set */
@@ -191,7 +205,8 @@
     var fatos = { nome: !!(p.nome && p.cidade), port: !!p.portfolio, func: !!(p.funcoes || []).length, nicho: !!(p.nichos || []).length,
       equip: usa('camera') && usa('lente'), tabela: !!t && t.linhas.some(function (l) { return l.so_eu_cents > 0 || l.com_equip_cents > 0 }),
       regras: !!t && t.hora_extra_cents != null && t.deslocamento_cents != null };
-    var feitos = {}; propostas.forEach(function (x) { if (x.recebida && x.tipo === 'job' && x.estado === 'aceita' && x.dia && x.dia < dia(0)) feitos[x.de + x.dia] = 1 });
+    var feitos = {}; propostas.forEach(function (x) { var c = confirmacoes[x.id];
+      if (x.recebida && x.tipo === 'job' && x.estado === 'aceita' && x.dia && x.dia < dia(0) && c && c.de === true && c.para === true) feitos[x.de + x.dia] = 1 });
     var soma = 0; SELO_ITENS.forEach(function (i) { if (fatos[i[0]]) soma += i[2] });
     var pct = Math.floor(100 * soma / 68), jobs = Object.keys(feitos).length;
     return { pct: pct, jobs: jobs, verificado: pct >= 85 && jobs >= 6, meta: { pct: 85, jobs: 6 },
@@ -235,8 +250,17 @@
       if (met === 'POST') { var pp = Object.assign({ id: uuid('pppppppp', 100 + ++nova), recebida: false, de: EU_ID, de_nome: 'Você (demonstração)', tipo: 'job', estado: 'pendente', motivo: null, valor_cents: null, criado_em: new Date().toISOString() }, c);
         propostas.unshift(pp); return J(201, { proposta: pp }) }
       if (met === 'PATCH') { var alvo = propostas.filter(function (x) { return x.id === q.get('id') })[0]; if (!alvo) return J(404, { erro: 'nao_achado' });
-        alvo.estado = c.estado || alvo.estado; return J(200, { proposta: alvo }) }
-      return J(200, { recebidas: propostas.filter(function (x) { return x.recebida }), enviadas: propostas.filter(function (x) { return !x.recebida }) });
+        if ('acao' in c) {
+          if (c.acao !== 'confirmar') return J(400, { erro: 'tipo', campo: 'acao' });
+          if (typeof c.aconteceu !== 'boolean') return J(400, { erro: 'tipo', campo: 'aconteceu' });
+          if (alvo.tipo !== 'job' || alvo.estado !== 'aceita') return J(409, { erro: 'estado', campo: 'estado' });
+          if (!alvo.dia || alvo.dia >= dia(0)) return J(409, { erro: 'cedo', campo: 'dia' });
+          var cf = confirmacoes[alvo.id] = confirmacoes[alvo.id] || { de: null, para: null }, lado = alvo.para === EU_ID ? 'para' : 'de';
+          if (cf[lado] !== null && cf[lado] !== undefined) return J(409, { erro: 'ja_confirmado', campo: 'aconteceu' });
+          cf[lado] = c.aconteceu; return J(200, { proposta: comConf(alvo) });
+        }
+        alvo.estado = c.estado || alvo.estado; return J(200, { proposta: comConf(alvo) }) }
+      return J(200, { recebidas: propostas.filter(function (x) { return x.recebida }).map(comConf), enviadas: propostas.filter(function (x) { return !x.recebida }).map(comConf) });
     }
     if (r === 'feed') {
       if (met === 'POST') { var po = { id: uuid('ffffffff', 100 + ++nova), autor: { sub: EU_ID, nome: 'Você (demonstração)' }, eu: true, tipo: c.tipo || 'nota', texto: c.texto || '', criado_em: new Date().toISOString() };
@@ -310,5 +334,5 @@
       }, 300);
     } catch (e) { clearInterval(entrar) }
   }, 100);
-  window.CDF_DEMO = { pessoas: pessoas.length, novo: NOVO, pedidos: pedidos, perfil: function () { return perfil } };
+  window.CDF_DEMO = { pessoas: pessoas.length, novo: NOVO, pedidos: pedidos, perfil: function () { return perfil }, confirmacoes: function () { return confirmacoes } };
 })();

@@ -181,7 +181,7 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
-## 03/nov — tabela de diária e selo no servidor (`0008_tabela_e_selo`, `_tabela-testes.js`, `test/demo-real.js`)
+## 03/nov — tabela de diária e selo no servidor (`0008_tabela_e_selo`, `0009_job_confirmado`, `_tabela-testes.js`, `_confirmacao-testes.js`, `test/demo-real.js`)
 
 Titular: *"Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado, coloca tudo pra subir
 sexta"*. Até aqui a tabela (`PRECOS`), o "Topo viajar" (`EU.viaja`) e o medidor do selo (`ITENS`/`completude()`)
@@ -213,6 +213,35 @@ moravam só no aparelho. Agora:
   Equipamento (`realPerfilTabela`), sem o "% de perfil completo" de quem não é você.
 - `/demo` responde `tabela` e `selo` com a mesma conta (`seloDemo`); as pessoas inventadas de lá têm tabela e selo
   inventados como elas. A conta da demo começa com 63% e 2 jobs.
+- **Decisões do titular (03/nov · 2):** (1) *"Hora extra e deslocamento em 0, o usuário que escolhe se cobra ou não"*:
+  **R$ 0 é resposta**, conta no item "Hora extra e deslocamento" (já era assim na 0008: `is not null`); a folha diz
+  "0 se não cobra" e o perfil público mostra hora extra 0 como "não cobra" (fora da cidade 0 já era "sem acréscimo").
+  (2) **Endurecer o selo**: o job só conta nos "6 jobs concluídos" quando os DOIS lados confirmam, depois do dia, que
+  ele aconteceu.
+- **Banco (`0009_job_confirmado`, arquivo NOVO, a 0008 ficou intacta):** `carro_do_freela.job_confirmacoes (proposta,
+  sub, aconteceu, em)`, pk `(proposta, sub)`. RLS: lê quem é ponta da proposta (a minha resposta e a do outro);
+  insere só a própria linha, só em proposta `tipo='job'`, `estado='aceita'`, com `dia` antes de hoje em São Paulo; o
+  app não tem UPDATE nem DELETE (resposta dada não vira) e o INSERT é por coluna (`em` é do banco). `selo_fatos` foi
+  refeita: conta só job com as duas respostas `aconteceu = true` (o resto igual: quem fez, dia passado, mesmo
+  contratante no mesmo dia uma vez); a `vitrine()` herda, então o ✓ de quem contrata vê também exige confirmação. A
+  guarda das propostas (0003) não mudou. ⚠️ Quem contratou ainda pode **cancelar** um job aceito depois do dia (regra da
+  0003) e aí ele sai do selo mesmo confirmado: é rebaixar, nunca inflar; mudar isso é decisão do titular.
+- **API:** `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu:true|false}` (o mesmo PATCH de aceitar e
+  recusar; `acao` no corpo escolhe o caminho) → `{proposta}`. Erros: 400 `{erro:'tipo', campo:'aconteceu'|'acao'}`,
+  400 `{erro:'campo', campo}` para campo a mais, 404 `nao_achado`, 409 `{erro:'estado', campo:'estado'}` (não é job
+  aceito), 409 `{erro:'cedo', campo:'dia'}` (o dia não passou), 409 `{erro:'ja_confirmado', campo:'aconteceu'}`. O GET
+  (e o PATCH) devolve em cada job aceito `confirmacao: {aberta, minha, outra, pendente, confirmado}` (`aberta` = o dia
+  passou; `minha`/`outra` = true, false ou null; `pendente` = falta a minha). Leitura com `COM_CONFIRMACAO`.
+- **Tela (só `REAL`):** em Jobs, o cartão **"Aconteceu?"** (`nxConfSecao`, `#nx-conf`, "Só conta quando os dois
+  confirmam.") com Sim/Não para cada job passado que espera a MINHA resposta, dos dois lados (os meus, de `PROPOSTAS`,
+  e os da minha equipe, de `REAL_ENVIADAS`); respondido, fica ali com o estado até repintar a sessão (`NX.confAgora`).
+  O histórico dos feitos mostra o estado (`nxConfDoJob`: "Confirmado pelos dois", "Esperando a outra parte", "Não
+  aconteceu", "Falta você"). O detalhe da proposta (recebida ou enviada) pergunta o mesmo (`nxConfAcoes`). Responder é
+  `realConfirmar` (relê o selo quando eu sou quem fez). O medidor ganhou "Job conta quando os dois confirmam."
+  (`#nx-selo-dica`) e a aba Jobs ganhou balão "N jobs para confirmar" (`contarPendencias({jobsConfirmar})`).
+- `/demo`: os jobs 4 e 8 estão confirmados (a conta segue com 63% e 2 jobs), o 10 espera a minha resposta (quem chamou
+  já disse sim), o 11 espera quem chamou e o 12 é um job que eu contratei esperando a minha resposta.
+  `CDF_DEMO.confirmacoes()` mostra o que a página respondeu. Suítes: `_confirmacao-testes.js` (banco) e `demo-real.js`.
 
 ## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
 

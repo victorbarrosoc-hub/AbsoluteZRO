@@ -7320,6 +7320,7 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-selo-jobs{display:flex;gap:6px;margin-top:4px}
 .nx-selo-jobs i{width:18px;height:6px;border-radius:999px;background:var(--nx-l2)}
 .nx-selo-jobs i[data-on="true"]{background:var(--nx-ok)}
+.nx-selo-dica{color:var(--cal-tenue);font-size:13px}
 .nx-selo-falta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .nx-selo-it{min-height:44px;padding:0 14px;border-radius:999px;border:1px dashed var(--nx-l2);background:transparent;color:var(--cal);font-size:14px;font-weight:600;cursor:pointer}
 .nx-selo-it:hover{background:var(--nx-c2);border-style:solid}
@@ -7517,9 +7518,26 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-jcard-tx small{color:var(--cal-fraco);font-size:14px}
 .nx-jcard-tx .nx-pill{margin-top:4px}
 .nx-hist{list-style:none;margin:24px clamp(20px,4vw,64px) 0;padding:0;border-radius:22px;background:var(--nx-c1);border:1px solid var(--nx-l);overflow:hidden}
-.nx-hist li{display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:center;padding:14px 20px}
+.nx-hist li{display:grid;grid-template-columns:110px 1fr auto auto;gap:14px;align-items:center;padding:14px 20px}
 .nx-hist li+li{border-top:1px solid var(--nx-l)}
-.nx-hist span,.nx-hist small{color:var(--cal-tenue);font-size:13.5px}
+.nx-hist span:not(.nx-pill),.nx-hist small{color:var(--cal-tenue);font-size:13.5px}
+/* (03/11) "Aconteceu?": o job que passou espera a resposta dos dois lados (0009) */
+.nx-conf{margin:28px clamp(20px,4vw,64px) 0;padding:20px 22px;border-radius:24px;background:var(--nx-c1);border:1px solid var(--nx-l)}
+.nx-conf-cab{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap}
+.nx-conf-cab h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.nx-conf-cab small{color:var(--cal-tenue);font-size:14px}
+.nx-conf-l{list-style:none;margin:14px 0 0;padding:0;display:grid}
+.nx-conf-l li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0}
+.nx-conf-l li+li{border-top:1px solid var(--nx-l)}
+.nx-conf-l .nx-data{min-width:64px;padding:6px 10px;border-radius:16px}
+.nx-conf-l .nx-data span{font-size:11px}
+.nx-conf-l .nx-data b{font-size:28px}
+.nx-conf-tx{display:grid;gap:2px;min-width:0}
+.nx-conf-tx b{font-size:16.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-conf-tx small{color:var(--cal-fraco);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nx-conf-ac{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nx-conf-q{font-weight:700;margin-right:2px}
+.nx-conf-l .nx-conf-q{display:none}
 /* ---------- Brechó: a vitrine ---------- */
 .nx-br{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:clamp(20px,3vw,44px);align-items:start}
 .nx-br-cab{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -7595,6 +7613,12 @@ li[data-destaque] .nx-an-tx span{font-size:22px}
   .nx-jcard-tx b{font-size:15.5px}
   .nx-hist{margin:18px 16px 0}
   .nx-hist li{grid-template-columns:minmax(0,1fr);gap:2px;padding:12px 16px}
+  .nx-hist .nx-pill{justify-self:start;margin-top:4px}
+  .nx-conf{margin:18px 16px 0;padding:16px}
+  .nx-conf-l li{grid-template-columns:auto minmax(0,1fr);gap:8px 12px}
+  .nx-conf-l .nx-conf-ac,.nx-conf-l li>.nx-pill{grid-column:1/-1;justify-self:start}
+  .nx-conf-l .nx-conf-ac .glass-btn{flex:1;min-width:120px}
+  .nx-conf-l .nx-conf-ac{display:flex;width:100%}
   .nx-br-cab{gap:12px}
   .nx-br-cab .glass-btn{min-height:44px;padding:0 18px}
   .nx-br-busca{order:3;flex-basis:100%;max-width:none}
@@ -16746,6 +16770,10 @@ function contarPendencias(e){
   if(ass+conf+aval) out.jobs={n:ass+conf+aval,t:[ass?pl2(ass,"contrato para assinar","contratos para assinar"):"",
     conf?pl2(conf,"entrega para conferir","entregas para conferir"):"",
     aval?pl2(aval,"avaliação para fazer","avaliações para fazer"):""].filter(Boolean).join(" · ")};
+  /* (03/11) o job que já passou e espera a MINHA resposta ("Aconteceu?", só no site real) */
+  const nC=e.jobsConfirmar||0;
+  if(nC){ const t=pl2(nC,"job para confirmar","jobs para confirmar");
+    out.jobs=out.jobs?{n:out.jobs.n+nC,t:out.jobs.t+" · "+t}:{n:nC,t:t} }
   const nP=e.pedidosAluguel||0;
   if(nP) out.brecho={n:nP,t:pl2(nP,"pedido de aluguel esperando você","pedidos de aluguel esperando você")};
   return out;
@@ -16764,6 +16792,7 @@ function pendenciasAbas(){
       avaliado:jaAvaliei(j.off,prod?x.quem:"prod",prod?"prod":"freela")}))):[];
   }catch(e){}
   try{ est.pedidosAluguel=PEDIDOS.length }catch(e){}
+  try{ if(REAL) est.jobsConfirmar=nxConfLista(true).length }catch(e){}
   return contarPendencias(est);
 }
 /* onde mora o balão de cada aba: a lateral (e a doca), a barra de baixo e a
@@ -22244,7 +22273,9 @@ var CFB_ERRO={
   obrigatorio:"Preencha o que falta.", tamanho:"Texto longo demais.", link:"Use um link https.",
   catalogo:"Escolha da lista.", numero:"Confira os números.", limite:"Limite de 500 itens.",
   devagar:"Muitos pedidos. Espere um minuto.", hub:"A Absolute ZRO não respondeu. Tente de novo.",
-  reconectar:"Entre de novo com a Absolute ZRO.", fechado:"Sua conta não tem acesso agora."
+  reconectar:"Entre de novo com a Absolute ZRO.", fechado:"Sua conta não tem acesso agora.",
+  /* o job aconteceu? (0009) */
+  ja_confirmado:"Você já respondeu.", cedo:"Dá para responder depois do dia.", estado:"Este job mudou. Recarregue a página."
 };
 function cfbPedir(metodo,caminho,corpo){
   var o={method:metodo,credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}};
@@ -22311,7 +22342,7 @@ function realReais(c){ return c%100===0?brl(c/100):cfbReais(c) }
 function realTabelaHtml(t){
   if(!t) return "";
   var regras=[t.meia!=null?["Meia diária",t.meia+"% da diária"]:null,t.fds!=null?["Fim de semana",(t.fds?"+"+t.fds+"%":"sem acréscimo")]:null,
-    t.hex!=null?["Hora extra",realReais(t.hex)+" por hora"]:null,t.desl!=null?["Fora da cidade",(t.desl?"+"+realReais(t.desl):"sem acréscimo")]:null].filter(Boolean);
+    t.hex!=null?["Hora extra",t.hex?realReais(t.hex)+" por hora":"não cobra"]:null,t.desl!=null?["Fora da cidade",(t.desl?"+"+realReais(t.desl):"sem acréscimo")]:null].filter(Boolean);
   return (t.linhas.length?'<div class="rt-tab" role="table" aria-label="Tabela de diária"><div class="rt-tr rt-cab" role="row"><span role="columnheader">Função</span><span role="columnheader">Só a pessoa</span><span role="columnheader">Com equipamento</span></div>'+
     t.linhas.map(function(l){ return '<div class="rt-tr" role="row"><span role="cell">'+esc(l.f)+'</span><span role="cell">'+(l.a?realReais(l.a):"—")+'</span><span role="cell">'+(l.b?realReais(l.b):"—")+'</span></div>' }).join("")+'</div>':"")+
     (regras.length?'<div class="rt-regras">'+regras.map(function(r){ return '<span><b>'+esc(r[0])+'</b>'+esc(r[1])+'</span>' }).join("")+'</div>':"");
@@ -23915,7 +23946,7 @@ function realPropostas(){
         func:p.funcao||(p.tipo==="brecho"?"Brechó":""),tipo:p.tipo==="brecho"?"Interesse no brechó":"Consulta",local:p.local||"",
         desc:p.mensagem||"",equip:false,fora:false,valor:(p.valor_cents||0)/100,gar:false,status:REAL_EST[p.estado]||"novo",
         motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0,guilda:p.guilda||null,
-        deSub:p.de||null,criado:p.criado_em||null,anuncio:p.anuncio||null};
+        deSub:p.de||null,criado:p.criado_em||null,anuncio:p.anuncio||null,conf:p.confirmacao||null};
       PROPOSTAS.push(pr);
       if(p.tipo==="job"&&p.estado==="aceita") JOBS.push({id:realNum("job:"+p.id),srv:p.id,data:pr.data,cliente:pr.de,func:pr.func,valor:pr.valor,hold:false,pago:false,gar:false});
     });
@@ -24243,7 +24274,7 @@ function cfbRemover(id,b){
 var NX_PRONTO=false, NX_PERFIL=null, OB=null;
 /* (03/11) a tabela de diária e o selo da conta, como o servidor devolveu (GET /api/zro/tabela): null = ainda não leu */
 var NX_TABELA=null, NX_SELO=null, NX_TAB_PEDIDA=false;
-var NX={pp:"receb",ppSel:null,agMes:null,agBloq:null,br:{cat:"",q:""},jbFeitos:false,folhaVolta:null};
+var NX={pp:"receb",ppSel:null,agMes:null,agBloq:null,br:{cat:"",q:""},jbFeitos:false,folhaVolta:null,confAgora:{},confEnviando:false};
 var NX_TELAS={propostas:"nx-prop",agenda:"nx-ag",jobs:"nx-jb",brecho:"nx-br",meu:"nx-meu"};
 function nxNorm(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim() }
 function nxD(k){ return new Date(String(k||"")+"T00:00:00") }
@@ -24647,7 +24678,7 @@ function nxSeloMedidor(){
     '<div class="nx-selo-topo"><div class="nx-selo-anel" style="--p:'+Math.max(0,Math.min(100,d.pct))+'" aria-hidden="true">'+
       (d.ver?'<span class="nx-selo-ok">'+CHECK_VF+'</span>':'<b>'+d.pct+'<small>%</small></b>')+'</div>'+
     '<div class="nx-selo-tx"><b id="nx-selo-t">'+(d.ver?"Verificado":"Selo de verificado")+'</b><span id="nx-selo-s">'+esc(sub)+'</span>'+
-      (d.srv?jobs:'')+'</div></div>'+
+      (d.srv?jobs:'')+(d.srv&&!d.ver?'<small class="nx-selo-dica" id="nx-selo-dica">Job conta quando os dois confirmam.</small>':'')+'</div></div>'+
     (!d.ver&&falta.length?'<div class="nx-selo-falta" role="list" aria-label="O que falta">'+falta.map(function(i){
       return '<button type="button" role="listitem" class="nx-selo-it" data-nx="meu-'+NX_SELO_LINHA[i.k]+'" data-k="'+esc(i.k)+'" title="Vale '+i.peso+' de 68">+ '+esc(i.t)+'</button>' }).join("")+'</div>':'')+
   '</section>';
@@ -24677,8 +24708,8 @@ function nxTabelaFolha(){
     '<span class="ob-rot">Regras</span><div class="nx-regras">'+
       regra("nx-t-meia","meia_pct","Meia diária","% da diária",t.meia_pct==null?"":t.meia_pct,true)+
       regra("nx-t-fds","fds_pct","Fim de semana","e feriado, a mais",t.fds_pct==null?"":t.fds_pct,true)+
-      regra("nx-t-hex","hora_extra_cents","Hora extra","por hora",nxReaisCampo(t.hora_extra_cents),false)+
-      regra("nx-t-desl","deslocamento_cents","Fora da cidade","a mais",nxReaisCampo(t.deslocamento_cents),false)+'</div>'+
+      regra("nx-t-hex","hora_extra_cents","Hora extra","por hora · 0 se não cobra",nxReaisCampo(t.hora_extra_cents),false)+
+      regra("nx-t-desl","deslocamento_cents","Fora da cidade","a mais · 0 se não cobra",nxReaisCampo(t.deslocamento_cents),false)+'</div>'+
     '<div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" id="nx-f-ok">Salvar</button><span class="nx-st" id="nx-f-st" role="status"></span></div>';
   nxFolha("Tabela de diária",html,function(f){
     var ok=v("nx-f-ok");
@@ -24831,7 +24862,7 @@ function nxEquipFolha(novo){
 function nxEnviadas(){
   return (REAL_ENVIADAS||[]).map(function(p){ return {id:"e:"+p.id,env:true,de:realNomeDe(p.para),deSub:p.para,data:p.dia||"",ini:p.ini||"",fim:p.fim||"",
     func:p.tipo==="brecho"?"Brechó":(p.funcao||"Consulta"),local:p.local||"",desc:p.mensagem||"",status:REAL_EST[p.estado]||"novo",motivo:p.motivo,
-    criado:p.criado_em,srvTipo:p.tipo,equip:false} });
+    criado:p.criado_em,srvTipo:p.tipo,equip:false,srv:p.id,conf:p.confirmacao||null} });
 }
 function nxRecebidas(){
   var o={novo:0,aceita:1,recusada:2,perdida:3};
@@ -24856,7 +24887,9 @@ function nxPropDet(pr){
   var stTxt=st==="livre"?"nada marcado na agenda":jd.length?"job: "+jd.map(function(j){return j.cliente}).join(", "):st==="segura"?"segurando na agenda":"ocupado na agenda";
   var faixa=""; if(ok){ for(var i=-3;i<=3;i++){ var x=addD(d,i); faixa+='<span data-est="'+(x<HOJE?"passou":statusEu(x))+'"'+(i===0?' data-sel="1"':'')+'>'+x.getDate()+'</span>' } }
   var ficha=function(r,val){ return '<div><span>'+r+'</span><b>'+esc(val||"—")+'</b></div>' };
-  var acoes=pr.env?'<span class="nx-pe-nota">'+(pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>'
+  var aconteceu=pr.status==="aceita"&&pr.conf&&pr.conf.aberta?nxConfAcoes(pr.srv,pr.conf,nxPropTit(pr)):"";
+  var acoes=aconteceu?aconteceu
+    :pr.env?'<span class="nx-pe-nota">'+(pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>'
     :pr.status==="novo"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="pp-aceita" data-id="'+pr.id+'">Aceitar</button><button type="button" class="glass-btn" data-nx="pp-recusa" data-id="'+pr.id+'">Recusar</button>'+
       (quem?'<button type="button" class="glass-btn" data-so="pc" data-nx="pp-perfil" data-id="'+quem.id+'">Ver perfil</button>':'')+'<span class="nx-pe-nota" data-so="pc">O acerto é direto com quem contrata.</span>'
     :pr.status==="aceita"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="agenda">Ver na agenda</button><span class="nx-pe-nota">Aceita. Quem chamou já vê.</span>'
@@ -24974,12 +25007,13 @@ function nxJobTit(j){
 function nxJobsLista(){
   var L=[];
   JOBS.forEach(function(j){ var pr=j.srv?PROPOSTAS.find(function(x){return x.srv===j.srv}):PROPOSTAS.find(function(x){return x.de===j.cliente&&x.data===j.data});
-    L.push({id:"j"+j.id,data:j.data,func:j.func||"",quem:j.cliente||"",quemSub:pr&&pr.deSub,ini:(pr&&pr.ini)||"",fim:(pr&&pr.fim)||"",local:(pr&&pr.local)||"",desc:(pr&&pr.desc)||"",pr:pr}) });
+    L.push({id:"j"+j.id,data:j.data,func:j.func||"",quem:j.cliente||"",quemSub:pr&&pr.deSub,ini:(pr&&pr.ini)||"",fim:(pr&&pr.fim)||"",local:(pr&&pr.local)||"",desc:(pr&&pr.desc)||"",pr:pr,
+      srv:j.srv||null,conf:(pr&&pr.conf)||null}) });
   var g={};
   (REAL_ENVIADAS||[]).filter(function(p){return p.estado==="aceita"&&p.tipo!=="brecho"&&p.dia}).forEach(function(p){ var k=p.dia+"|"+(p.local||""); (g[k]=g[k]||[]).push(p) });
   Object.keys(g).forEach(function(k){ var ps=g[k], p=ps[0];
     L.push({id:"e"+p.id,data:p.dia,func:"Sua equipe",quem:"Você",ini:p.ini||"",fim:p.fim||"",local:p.local||"",desc:p.mensagem||"",meu:true,
-      equipe:ps.map(function(x){return {nome:realNomeDe(x.para),papel:x.funcao||""}})}) });
+      equipe:ps.map(function(x){return {nome:realNomeDe(x.para),papel:x.funcao||"",srv:x.id,conf:x.confirmacao||null}})}) });
   return L.sort(function(a,b){return String(a.data).localeCompare(String(b.data))});
 }
 function nxJobs(){
@@ -25007,13 +25041,16 @@ function nxJobs(){
         (h.local?'<a class="glass-btn" data-so="pc" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h.local)+'" target="_blank" rel="noopener">Como chegar</a>':'')+'</div></div>'+
       '<div class="nx-equipe" data-so="pc"><span class="nx-rot">Equipe · '+equipe.length+'</span><ul>'+equipe.map(function(p){return '<li>'+nxAv(p.nome,40)+'<b>'+esc(p.nome)+'</b><small>'+esc(p.papel||"")+'</small></li>'}).join("")+'</ul></div></div>'
      :'<div class="nx-jb-hero" data-vazio="true"><div class="nx-jb-tx"><span class="nx-rot">Jobs</span><h1 class="nx-jb-h">Nenhum job <b>chegando.</b></h1><div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="propostas">Ver propostas</button></div></div></div>')+
+    nxConfSecao()+
     '<div class="nx-tl-cab"><span class="nx-rot">Depois</span><button type="button" class="glass-btn nx-mini" data-nx="jb-fora">Fui chamado por fora</button></div>'+
     '<ol class="nx-tl">'+outros.map(card).join("")+
       (feitos.length?'<li class="nx-tl-i"><span class="nx-tl-d">Feitos</span><i class="nx-tl-o" aria-hidden="true"></i><button type="button" class="nx-jcard" data-nx="jb-feitos" aria-expanded="'+NX.jbFeitos+'"><span class="nx-capa" aria-hidden="true"><small>'+esc(MESL[nxD(feitos[feitos.length-1].data).getMonth()])+'</small></span>'+
         '<span class="nx-jcard-tx"><b>'+pl(feitos.length,"job feito","jobs feitos")+'</b><small>'+pl(new Set(feitos.map(function(j){return j.quem})).size,"contratante","contratantes diferentes")+'</small><span class="nx-pill" data-tom="neu">'+(NX.jbFeitos?"fechar":"ver histórico")+'</span></span></button></li>':'')+
       (!outros.length&&!feitos.length?'<li class="nx-tl-vz">Nada depois deste.</li>':'')+
     '</ol>'+
-    (NX.jbFeitos&&feitos.length?'<ul class="nx-hist">'+feitos.slice().reverse().map(function(j){return '<li><span>'+esc(nxDiaCurto(j.data)+" "+MES[nxD(j.data).getMonth()])+'</span><b>'+esc(nxJobTit(j))+'</b><small>'+esc(j.quem)+'</small></li>'}).join("")+'</ul>':'')+
+    (NX.jbFeitos&&feitos.length?'<ul class="nx-hist">'+feitos.slice().reverse().map(function(j){ var e=nxConfDoJob(j);
+      return '<li><span>'+esc(nxDiaCurto(j.data)+" "+MES[nxD(j.data).getMonth()])+'</span><b>'+esc(nxJobTit(j))+'</b><small>'+esc(j.quem)+'</small>'+
+        (e?'<span class="nx-pill" data-tom="'+e.tom+'" data-conf="'+e.k+'">'+esc(e.t)+'</span>':'')+'</li>'}).join("")+'</ul>':'')+
   '</div>';
 }
 function nxJobVer(id){
@@ -25021,6 +25058,68 @@ function nxJobVer(id){
   if(j.pr){ NX.ppAuto=MODO; NX.pp="receb"; NX.ppSel=j.pr.id; show("propostas"); return }
   if(j.meu){ NX.ppAuto=MODO; NX.pp="env"; NX.ppSel="e:"+String(j.id).slice(1); show("propostas"); return }
   NX.agMes=new Date(nxD(j.data).getFullYear(),nxD(j.data).getMonth(),1); show("agenda");
+}
+
+/* ======================= O JOB ACONTECEU? (03/11, 0009) =======================
+   Titular: o job só conta para o selo ("6 jobs concluídos") quando os DOIS lados confirmam, depois do dia, que ele
+   aconteceu. Quem diz é o servidor (`confirmacao` em cada job aceito do GET /api/zro/propostas: aberta, minha, outra,
+   pendente, confirmado); a tela só pergunta a vez de quem está olhando e mostra o estado. Uma resposta por lado, sem
+   volta. Quem fez e quem contratou veem a mesma pergunta: em Jobs ("Aconteceu?") e no detalhe da proposta. */
+var NX_CONF_TXT={ok:"Confirmado pelos dois",espera:"Esperando a outra parte",nao:"Não aconteceu",voce:"Falta você"};
+function nxConfEstado(c){
+  if(!c||!c.aberta) return null;
+  var k=c.confirmado?"ok":c.minha===false||c.outra===false?"nao":c.pendente?"voce":"espera";
+  return {k:k,t:NX_CONF_TXT[k],tom:k==="ok"?"ok":k==="nao"?"neu":"esp"};
+}
+/* o job da linha do tempo: o meu (um) ou o da minha equipe (um por pessoa, e vale o que mais pede atenção) */
+function nxConfDoJob(j){
+  if(!j.meu) return nxConfEstado(j.conf);
+  var es=(j.equipe||[]).map(function(x){return nxConfEstado(x.conf)}).filter(Boolean); if(!es.length) return null;
+  var ordem=["voce","espera","nao","ok"]; es.sort(function(a,b){return ordem.indexOf(a.k)-ordem.indexOf(b.k)});
+  return es[0].k==="ok"&&es.length>1?{k:"ok",t:"Confirmado por todos",tom:"ok"}:es[0];
+}
+/* a pergunta (os dois botões) ou o estado, para um job */
+function nxConfAcoes(srv,c,tit){
+  if(c&&c.pendente) return '<span class="nx-conf-ac" role="group" aria-label="'+esc("Aconteceu? "+tit)+'"><span class="nx-conf-q">Aconteceu?</span>'+
+    '<button type="button" class="glass-btn glass-btn--ink" data-nx="jb-conf" data-srv="'+esc(srv)+'" data-sim="1" aria-label="'+esc("Sim, aconteceu: "+tit)+'">Sim</button>'+
+    '<button type="button" class="glass-btn" data-nx="jb-conf" data-srv="'+esc(srv)+'" data-sim="0" aria-label="'+esc("Não aconteceu: "+tit)+'">Não</button></span>';
+  var e=nxConfEstado(c);
+  return e?'<span class="nx-pill" data-tom="'+e.tom+'" data-conf="'+e.k+'">'+esc(e.t)+'</span>':'';
+}
+/* o que espera a MINHA resposta (e o que eu acabei de responder, para a pessoa ver o estado no mesmo lugar) */
+function nxConfLista(soPendentes){
+  var L=[], quer=function(c,srv){ return c&&c.aberta&&(c.pendente||(!soPendentes&&NX.confAgora[srv])) };
+  nxJobsLista().forEach(function(j){
+    if(j.meu) (j.equipe||[]).forEach(function(x){ if(quer(x.conf,x.srv)) L.push({srv:x.srv,data:j.data,tit:nxJobTit(j),quem:x.nome,papel:x.papel,conf:x.conf}) });
+    else if(quer(j.conf,j.srv)) L.push({srv:j.srv,data:j.data,tit:nxJobTit(j),quem:j.quem,papel:j.func,conf:j.conf});
+  });
+  return L.sort(function(a,b){return String(b.data).localeCompare(String(a.data))});
+}
+function nxConfSecao(){
+  var L=nxConfLista(false); if(!L.length) return "";
+  return '<section class="nx-conf" id="nx-conf" aria-labelledby="nx-conf-t"><div class="nx-conf-cab"><h2 id="nx-conf-t">Aconteceu?</h2>'+
+      '<small>Só conta quando os dois confirmam.</small></div><ul class="nx-conf-l">'+
+    L.map(function(x){ var d=nxD(x.data);
+      return '<li data-srv="'+esc(x.srv)+'" data-pendente="'+!!(x.conf&&x.conf.pendente)+'"><div class="nx-data"><span>'+DIAS[d.getDay()]+'</span><b>'+pad(d.getDate())+'</b></div>'+
+        '<span class="nx-conf-tx"><b>'+esc(x.tit)+'</b><small>'+esc([x.quem,x.papel].filter(Boolean).join(" · "))+'</small></span>'+nxConfAcoes(x.srv,x.conf,x.tit)+'</li>' }).join("")+
+  '</ul></section>';
+}
+function realConfirmar(srv,sim){
+  if(!srv||NX.confEnviando) return;
+  NX.confEnviando=true;
+  cfbPedir("PATCH","/api/zro/propostas?id="+encodeURIComponent(srv),{acao:"confirmar",aconteceu:!!sim}).then(function(r){
+    NX.confEnviando=false;
+    if(r.status!==200||!r.j||!r.j.proposta){ avisar({t:"A resposta não foi enviada",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); if(r.status===409) realPropostas(); return }
+    var c=r.j.proposta.confirmacao||null, fez=r.j.proposta.recebida===true;
+    NX.confAgora[srv]=true;
+    PROPOSTAS.forEach(function(x){ if(x.srv===srv) x.conf=c });
+    (REAL_ENVIADAS||[]).forEach(function(x){ if(x.id===srv) x.confirmacao=c });
+    som("toque");
+    avisar(c&&c.confirmado?{t:"Confirmado pelos dois",sub:fez?"Conta no seu selo.":"Conta para quem fez.",icone:"✓"}
+      :sim?{t:"Confirmado",sub:"Esperando a outra parte.",icone:"✓"}:{t:"Anotado",sub:"Este job não conta.",icone:"✓"});
+    try{ nxPintar(); pintarBaloes() }catch(e){ console.warn("confirmar",e) }
+    if(fez) nxSeloAtualizar();
+  });
 }
 
 /* ======================= BRECHÓ: a vitrine ======================= */
@@ -25096,6 +25195,7 @@ function nxAcao(a,b){
     NX.agBloq.forEach(function(k){ declarar(k,"fechado","dia",null) }); NX.agBloq=null; tocou(); drawAgenda(); render();
     avisar({t:pl(n,"dia bloqueado","dias bloqueados"),sub:"Quem contrata não te acha nesses dias.",icone:"✓"}); return }
   if(a==="jb-ver") return nxJobVer(id);
+  if(a==="jb-conf") return realConfirmar(b.dataset.srv,b.dataset.sim==="1");
   if(a==="jb-feitos"){ NX.jbFeitos=!NX.jbFeitos; return nxJobs() }
   if(a==="jb-fora"){ som("toque"); return abrirConvite() }
   if(a==="br-cat"){ NX.br.cat=b.dataset.cat; return nxBrecho() }

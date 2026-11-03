@@ -81,7 +81,8 @@ catálogo, bio curta, portfólio https opcional, visibilidade que nasce `privado
 pessoa, `id` estável, categoria, marca, modelo, quantidade, observação, diária opcional, ativo, `atualizado_em`),
 `inventario_eventos` (fila de saída) e `tabelas` (a tabela de diária, desde a 0008: por função "só eu" e "com meu
 equipamento" em centavos, meia diária %, fim de semana %, hora extra e deslocamento; null = não disse). O selo de
-verificado é calculado no banco (`selo_fatos` + `selo_de`), nunca guardado. **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
+verificado é calculado no banco (`selo_fatos` + `selo_de`), nunca guardado; desde a 0009 o job só conta quando os dois
+lados confirmam que aconteceu (`job_confirmacoes`, uma resposta por lado, depois do dia). **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
 (`proibido`) e o texto com jeito de número (`telefone`), e o banco confere de novo (`carro_do_freela.tem_telefone`).
 
 **Rotas** (só da própria origem para escrever, só JSON, limite de pedidos por IP, sessão conferida no HUB a cada
@@ -92,6 +93,7 @@ pedido, como o `/eu`):
 | `GET /api/zro/perfil` · `PUT /api/zro/perfil` | o perfil inteiro (com `viaja`) |
 | `GET /api/zro/tabela` · `PUT /api/zro/tabela` | a tabela de diária inteira, com o selo recalculado |
 | `GET /api/zro/selo` | o selo: `{pct, itens, jobs, verificado, meta}` |
+| `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu}` | o job aconteceu? (cada lado, depois do dia, uma vez) |
 | `GET /api/zro/inventario` · `POST` · `PATCH ?id=` · `DELETE ?id=` | os itens |
 
 Moram em `/api/zro/` de propósito: o cookie `cdf_hub` (o acesso ao HUB, com que a claim é relida) só vai para esse

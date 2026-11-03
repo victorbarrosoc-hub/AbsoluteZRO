@@ -9,7 +9,9 @@
  *   - a página não é indexada e a página principal não carrega o script da demonstração;
  *   - (03/11) a tabela de diária, o "topo viajar" e o selo vêm do servidor: Meu perfil salva a tabela (PUT
  *     /api/zro/tabela) e relê, o medidor do selo é o que o servidor calculou, e quem contrata vê a tabela e o ✓ só de
- *     quem o servidor devolveu.
+ *     quem o servidor devolveu;
+ *   - (03/11, 0009) o job só conta no selo quando os DOIS lados confirmam: Jobs pergunta "Aconteceu?" a quem fez e a quem
+ *     contratou, a resposta vai ao servidor uma vez, o estado aparece no histórico e o medidor diz por quê.
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -212,6 +214,55 @@ const { CHROME, ARGS } = require('./_navegador');
     'na busca, ✓ e "diária a partir de" só de quem o servidor devolveu (' + JSON.stringify([m.com, m.sem]) + ')');
   t(m.tab && m.linhas === m.esperado && /a partir de/.test(m.pg) && /verificado/.test(m.vf) && !m.ring && !m.tab2 && !/verificado/.test(m.semVf),
     '⟶⟶ no perfil da pessoa, a tabela que ela publicou e o ✓; quem não publicou fica sem tabela e sem ✓ (' + JSON.stringify(m) + ')');
+  await p.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick() });
+
+  /* 03/11 · O JOB ACONTECEU? (0009; titular: o job só conta para o selo quando os DOIS lados confirmam, depois do dia).
+     Na demo: os jobs 4 e 8 estão confirmados; o 10 espera a minha resposta (quem chamou já disse sim), o 11 espera quem
+     chamou, e o 12 é um job que EU contratei, esperando a minha resposta de contratante. */
+  m = await p.evaluate(async () => { show('jobs'); await new Promise(r => setTimeout(r, 300));
+    const passados = PROPOSTAS.filter(x => x.srvTipo === 'job' && x.status === 'aceita' && x.data < key(HOJE)).length;
+    const meu = PROPOSTAS.find(x => x.conf && x.conf.pendente), espera = PROPOSTAS.find(x => x.conf && x.conf.minha === true && x.conf.outra === null);
+    const contratei = REAL_ENVIADAS.find(x => x.confirmacao && x.confirmacao.pendente);
+    const li = srv => document.querySelector('#nx-conf li[data-srv="' + srv + '"]');
+    NX.jbFeitos = true; nxJobs();
+    const hist = [...document.querySelectorAll('#nx-jb .nx-hist [data-conf]')].map(e => e.dataset.conf + ':' + e.textContent);
+    NX.jbFeitos = false; nxJobs();
+    return { passados, jobs: NX_SELO && NX_SELO.jobs, meu: meu && meu.srv, contratei: contratei && contratei.id, espera: espera && espera.srv,
+      cab: (document.querySelector('#nx-conf h2') || {}).textContent, dica: (document.querySelector('#nx-conf .nx-conf-cab small') || {}).textContent,
+      liMeu: !!(meu && li(meu.srv) && li(meu.srv).querySelectorAll('[data-nx="jb-conf"]').length === 2), liContratei: !!(contratei && li(contratei.id) && li(contratei.id).querySelector('[data-sim="0"]')),
+      liEspera: !!(espera && li(espera.srv)), hist, bal: (pendenciasAbas().jobs || {}).t || '', seloDica: (document.getElementById('nx-selo-dica') || {}).textContent };
+  });
+  t(m.passados === 4 && m.jobs === 2, 'job aceito com o dia passado só conta no selo quando os dois confirmam: 4 feitos, 2 no selo (' + JSON.stringify([m.passados, m.jobs]) + ')');
+  t(m.cab === 'Aconteceu?' && /os dois confirmam/.test(m.dica || '') && m.liMeu && m.liContratei && !m.liEspera,
+    '⟶⟶ Jobs pergunta "Aconteceu?" com Sim e Não nos jobs que esperam a MINHA resposta, dos dois lados (quem fez e quem contratou) (' + JSON.stringify(m) + ')');
+  t(m.hist.some(h => h === 'espera:Esperando a outra parte') && m.hist.some(h => h === 'ok:Confirmado pelos dois') && m.hist.some(h => h === 'voce:Falta você'),
+    '⟶⟶ no histórico, cada job feito diz o estado: confirmado pelos dois, esperando a outra parte, falta você (' + m.hist.join(' | ') + ')');
+  t(/2 jobs para confirmar/.test(m.bal), '⟶⟶ e a aba Jobs ganha o balão do que espera a minha resposta (' + m.bal + ')');
+  const antesConf = await p.evaluate(() => ({ patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length, selo: CDF_DEMO.pedidos.filter(x => x === 'GET selo').length }));
+  await p.click('#nx-conf li[data-srv="' + m.meu + '"] [data-nx="jb-conf"][data-sim="1"]'); await p.waitForTimeout(600);
+  let c2 = await p.evaluate(([srv, a]) => { const li = document.querySelector('#nx-conf li[data-srv="' + srv + '"]');
+    return { conf: CDF_DEMO.confirmacoes()[srv], botoes: li ? li.querySelectorAll('[data-nx="jb-conf"]').length : -1, pill: li && (li.querySelector('.nx-pill') || {}).textContent,
+      patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - a.patch, selo: CDF_DEMO.pedidos.filter(x => x === 'GET selo').length - a.selo, jobs: NX_SELO && NX_SELO.jobs,
+      bal: (pendenciasAbas().jobs || {}).t || '' } }, [m.meu, antesConf]);
+  t(c2.patch === 1 && c2.conf && c2.conf.para === true && c2.conf.de === true && c2.botoes === 0 && c2.pill === 'Confirmado pelos dois',
+    '"Sim" manda a resposta ao servidor (PATCH {acao:"confirmar"}), e o job fica "Confirmado pelos dois" sem botão para mudar (' + JSON.stringify(c2) + ')');
+  t(c2.selo >= 1 && c2.jobs === 3 && /1 job para confirmar/.test(c2.bal), '⟶⟶ o selo é relido e sobe para 3 jobs; o balão desce para 1 (' + JSON.stringify([c2.jobs, c2.bal]) + ')');
+  await p.evaluate(() => show('meu')); await p.waitForTimeout(400);
+  c2 = await p.evaluate(() => ({ dica: (document.getElementById('nx-selo-dica') || {}).textContent, on: document.querySelectorAll('#nx-selo .nx-selo-jobs i[data-on="true"]').length,
+    sub: (document.getElementById('nx-selo-s') || {}).textContent }));
+  t(c2.dica === 'Job conta quando os dois confirmam.' && c2.on === 3 && /3 jobs/.test(c2.sub), '⟶⟶ Meu perfil: 3 dos 6 traços e "Job conta quando os dois confirmam." (' + JSON.stringify(c2) + ')');
+  /* quem contratou: a mesma pergunta no detalhe da proposta que mandou e em Jobs; "Não" fica registrado e não conta */
+  await p.evaluate(() => { if (MODO !== 'contratante') v('modo-tog').onclick() });
+  c2 = await p.evaluate(async srv => { const pr = nxEnviadas().find(x => x.srv === srv), det = nxPropDet(pr);
+    show('jobs'); await new Promise(r => setTimeout(r, 300));
+    return { det: /Aconteceu\?/.test(det) && /data-nx="jb-conf"/.test(det) && /data-sim="0"/.test(det), li: !!document.querySelector('#nx-conf li[data-srv="' + srv + '"] [data-sim="0"]') } }, m.contratei);
+  t(c2.det && c2.li, 'quem contratou vê "Aconteceu?" no detalhe da proposta que mandou e em Jobs (' + JSON.stringify(c2) + ')');
+  await p.click('#nx-conf li[data-srv="' + m.contratei + '"] [data-nx="jb-conf"][data-sim="0"]'); await p.waitForTimeout(600);
+  c2 = await p.evaluate(srv => { const li = document.querySelector('#nx-conf li[data-srv="' + srv + '"]'), env = REAL_ENVIADAS.find(x => x.id === srv);
+    return { conf: CDF_DEMO.confirmacoes()[srv], pill: li && (li.querySelector('.nx-pill') || {}).textContent, botoes: li ? li.querySelectorAll('[data-nx="jb-conf"]').length : -1,
+      det: nxPropDet(nxEnviadas().find(x => x.srv === srv)), jobs: NX_SELO && NX_SELO.jobs, bal: pendenciasAbas().jobs || null, srv: env && env.confirmacao } }, m.contratei);
+  t(c2.conf && c2.conf.de === false && c2.pill === 'Não aconteceu' && c2.botoes === 0 && /Não aconteceu/.test(c2.det) && !/jb-conf/.test(c2.det) && c2.jobs === 3 && !c2.bal,
+    '⟶⟶ "Não" fica registrado ("Não aconteceu"), não volta a perguntar, não mexe no meu selo, e o balão apaga (' + JSON.stringify([c2.conf, c2.pill, c2.jobs, c2.bal]) + ')');
   await p.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick() });
 
   /* 02/11 · 3 · A ENTRADA EM PERGUNTAS: a conta que acabou de chegar (/demo?novo=1) não cai no cadastro antigo; responde

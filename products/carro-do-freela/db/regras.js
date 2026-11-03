@@ -331,6 +331,14 @@ function respostaDe(corpo) {
   if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
   return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
 }
+/** PATCH /api/zro/propostas?id= com `acao: 'confirmar'` (0009): cada lado diz, depois do dia, se o job aconteceu */
+function confirmacaoDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'aconteceu']);
+  if (corpo.acao !== 'confirmar') throw new Recusa('tipo', 'acao');
+  if (typeof corpo.aconteceu !== 'boolean') throw new Recusa('tipo', 'aconteceu');
+  return { aconteceu: corpo.aconteceu };
+}
 const TIPOS_POST = ['nota', 'bastidor', 'entrega', 'procura'];
 function postDe(corpo) {
   objeto(corpo);
@@ -620,5 +628,5 @@ function missaoIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'missao']); 
 
 module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, disponibilidadeDe, faixaDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
   sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
-  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
+  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
   tabelaDe, tabelaSaida, seloSaida, TABELA_MAX };
