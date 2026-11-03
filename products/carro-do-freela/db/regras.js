@@ -331,6 +331,15 @@ function respostaDe(corpo) {
   if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
   return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
 }
+/** quem mandou pode cancelar? (0010, decisão do titular de 03/11/2026) A proposta `nova` sempre; a aceita também, MENOS o
+ *  job aceito com o dia já chegado em São Paulo (`dia_chegou`, lido do banco): do dia em diante, só o "Aconteceu? Não"
+ *  (0009). Brechó e job sem dia como eram. É a mesma régua da guarda das propostas no banco (0010), que confere de novo. */
+function cancelavel(l, sub) {
+  if (!l || l.de_sub !== sub) return false;
+  if (l.estado === 'nova') return true;
+  if (l.estado !== 'aceita') return false;
+  return !(l.tipo === 'job' && l.dia && l.dia_chegou === true);
+}
 /** PATCH /api/zro/propostas?id= com `acao: 'confirmar'` (0009): cada lado diz, depois do dia, se o job aconteceu */
 function confirmacaoDe(corpo) {
   objeto(corpo);
@@ -628,5 +637,5 @@ function missaoIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'missao']); 
 
 module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, disponibilidadeDe, faixaDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
   sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
-  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
+  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, cancelavel, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
   tabelaDe, tabelaSaida, seloSaida, TABELA_MAX };

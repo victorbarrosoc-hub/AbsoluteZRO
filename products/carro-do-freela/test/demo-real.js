@@ -13,7 +13,9 @@
  *   - (03/11, 0009) o job só conta no selo quando os DOIS lados confirmam: Jobs pergunta "Aconteceu?" a quem fez e a quem
  *     contratou, a resposta vai ao servidor uma vez, o estado aparece no histórico e o medidor diz por quê;
  *   - (03/11) a Agenda mostra os quatro estados na célula inteira (livre, negociando, ocupado, meia diária), com a
- *     legenda que conta o mês e filtra, no computador e no celular; e o /demo funciona dentro de um iframe.
+ *     legenda que conta o mês e filtra, no computador e no celular; e o /demo funciona dentro de um iframe;
+ *   - (03/11, 0010) o job aceito só se cancela até a véspera: do dia em diante não há "Cancelar" e o servidor recusa
+ *     (409 dia); a proposta nova cancela (dois toques).
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -377,6 +379,32 @@ const { CHROME, ARGS } = require('./_navegador');
       det: nxPropDet(nxEnviadas().find(x => x.srv === srv)), jobs: NX_SELO && NX_SELO.jobs, bal: pendenciasAbas().jobs || null, srv: env && env.confirmacao } }, m.contratei);
   t(c2.conf && c2.conf.de === false && c2.pill === 'Não aconteceu' && c2.botoes === 0 && /Não aconteceu/.test(c2.det) && !/jb-conf/.test(c2.det) && c2.jobs === 3 && !c2.bal,
     '⟶⟶ "Não" fica registrado ("Não aconteceu"), não volta a perguntar, não mexe no meu selo, e o balão apaga (' + JSON.stringify([c2.conf, c2.pill, c2.jobs, c2.bal]) + ')');
+  /* (03/11, 0010) cancelar só até a véspera: o job aceito que eu mandei, com o dia chegado, não tem "Cancelar" (o
+     servidor recusa com 409 dia); no dia a nota diz "Depois do dia, responda se aconteceu."; a proposta nova cancela */
+  c2 = await p.evaluate(async srv => {
+    const passado = nxEnviadas().find(x => x.srv === srv), nova = nxEnviadas().find(x => x.status === 'novo' && x.srvTipo === 'job');
+    const noDia = nxPropDet(Object.assign({}, nova, { status: 'aceita', cancelavel: false, conf: { aberta: false, minha: null, outra: null, pendente: false, confirmado: false } }));
+    const antes = CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length;
+    const r = await cfbPedir('PATCH', '/api/zro/propostas?id=' + encodeURIComponent(srv), { estado: 'cancelada' });
+    return { canc: passado.cancelavel, botao: /pp-cancela/.test(nxPropDet(passado)), status: r.status, j: r.j, msg: cfbMsg(r), patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - antes,
+      estado: (await cfbPedir('GET', '/api/zro/propostas')).j.enviadas.find(x => x.id === srv).estado,
+      noDia: /data-chegou="1"/.test(noDia) && /Depois do dia, responda se aconteceu\./.test(noDia) && !/pp-cancela/.test(noDia), nova: nova && nova.id, novaCanc: nova && nova.cancelavel };
+  }, m.contratei);
+  t(c2.canc === false && !c2.botao && c2.status === 409 && c2.j && c2.j.erro === 'dia' && c2.j.campo === 'dia' && c2.msg === 'Depois do dia, responda se aconteceu.' && c2.estado === 'aceita',
+    'job aceito que eu mandei, com o dia chegado: sem "Cancelar", e o PATCH de cancelar é recusado (409 dia) (' + JSON.stringify(c2) + ')');
+  t(c2.noDia, '⟶⟶ no dia do job aceito: sem "Cancelar", e a nota diz "Depois do dia, responda se aconteceu."');
+  await p.evaluate(async id => { show('propostas'); await new Promise(r => setTimeout(r, 200)); NX.pp = 'env'; NX.ppSel = id; nxPropostas() }, c2.nova);
+  const cancBt = '#nx-prop .nx-pp-det [data-nx="pp-cancela"]';
+  const antesCanc = await p.evaluate(() => CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length);
+  const temCanc = c2.novaCanc === true && await p.locator(cancBt).isVisible();
+  await p.click(cancBt); await p.waitForTimeout(150);
+  const primeiro = await p.evaluate(([sel, a]) => ({ txt: (document.querySelector(sel) || {}).textContent, patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - a }), [cancBt, antesCanc]);
+  await p.click(cancBt); await p.waitForTimeout(600);
+  c2 = await p.evaluate(([id, a]) => { const e = nxEnviadas().find(x => x.id === id), it = document.querySelector('#nx-prop [data-nx="pp-sel"][data-id="' + id + '"]');
+    return { patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - a, canc: e && e.canc, cancelavel: e && e.cancelavel, pill: it && (it.querySelector('.nx-pill') || {}).textContent,
+      botao: !!document.querySelector('#nx-prop .nx-pp-det [data-nx="pp-cancela"]'), nota: (document.querySelector('#nx-prop .nx-pp-det .nx-pe-nota') || {}).textContent } }, [c2.nova, antesCanc]);
+  t(temCanc && primeiro.txt === 'Cancelar mesmo?' && primeiro.patch === 0 && c2.patch === 1 && c2.canc === true && c2.cancelavel === false && c2.pill === 'cancelada' && !c2.botao && c2.nota === 'Você cancelou.',
+    '⟶⟶ a proposta nova que eu mandei tem "Cancelar" (dois toques): vai ao servidor e fica "cancelada" (' + JSON.stringify([temCanc, primeiro, c2]) + ')');
   await p.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick() });
 
   /* 02/11 · 3 · A ENTRADA EM PERGUNTAS: a conta que acabou de chegar (/demo?novo=1) não cai no cadastro antigo; responde

@@ -22323,7 +22323,9 @@ var CFB_ERRO={
   devagar:"Muitos pedidos. Espere um minuto.", hub:"A Absolute ZRO não respondeu. Tente de novo.",
   reconectar:"Entre de novo com a Absolute ZRO.", fechado:"Sua conta não tem acesso agora.",
   /* o job aconteceu? (0009) */
-  ja_confirmado:"Você já respondeu.", cedo:"Dá para responder depois do dia.", estado:"Este job mudou. Recarregue a página."
+  ja_confirmado:"Você já respondeu.", cedo:"Dá para responder depois do dia.", estado:"Este job mudou. Recarregue a página.",
+  /* o job aceito só se cancela até a véspera (0010) */
+  dia:"Depois do dia, responda se aconteceu."
 };
 function cfbPedir(metodo,caminho,corpo){
   var o={method:metodo,credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}};
@@ -24024,6 +24026,15 @@ function realResponder(pr,estado,motivo){
     avisar({t:estado==="aceita"?"Aceito — quem chamou já vê":"Recusa enviada",icone:"✓"});
   });
 }
+/* (0010) quem chamou cancela: a proposta nova sempre, o job aceito só até a véspera (o servidor confere: 409 dia) */
+function realCancelar(pr,b){
+  if(!pr||!pr.srv) return;
+  if(b) b.disabled=true;
+  cfbPedir("PATCH","/api/zro/propostas?id="+encodeURIComponent(pr.srv),{estado:"cancelada"}).then(function(r){
+    if(r.status!==200){ if(b) b.disabled=false; avisar({t:"Não deu para cancelar",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); if(r.status===409) realPropostas(); return }
+    nxFolhaFechar(true); som("nao"); avisar({t:"Cancelada",sub:"Quem você chamou já vê.",icone:"✓"}); realPropostas();
+  });
+}
 function realConsultar(){
   if(!realLigado()||!mAlvo||!mAlvo.sub){ avisar({t:"Entre com a sua conta para chamar alguém",tipo:"chama",icone:"⚠"}); return }
   var o=opcoes(), r=calcular(mAlvo,o);
@@ -24910,7 +24921,7 @@ function nxEquipFolha(novo){
 function nxEnviadas(){
   return (REAL_ENVIADAS||[]).map(function(p){ return {id:"e:"+p.id,env:true,de:realNomeDe(p.para),deSub:p.para,data:p.dia||"",ini:p.ini||"",fim:p.fim||"",
     func:p.tipo==="brecho"?"Brechó":(p.funcao||"Consulta"),local:p.local||"",desc:p.mensagem||"",status:REAL_EST[p.estado]||"novo",motivo:p.motivo,
-    criado:p.criado_em,srvTipo:p.tipo,equip:false,srv:p.id,conf:p.confirmacao||null} });
+    criado:p.criado_em,srvTipo:p.tipo,equip:false,srv:p.id,conf:p.confirmacao||null,cancelavel:p.cancelavel===true,canc:p.estado==="cancelada"} });
 }
 function nxRecebidas(){
   var o={novo:0,aceita:1,recusada:2,perdida:3};
@@ -24923,6 +24934,7 @@ function nxPropLinha(pr){
   return [pr.func,nxDiaCurto(pr.data),pr.local].filter(Boolean).join(" · ");
 }
 function nxPill(pr){
+  if(pr.env&&pr.canc) return '<span class="nx-pill" data-tom="neu">cancelada</span>';
   if(pr.status==="aceita") return '<span class="nx-pill" data-tom="ok">'+(pr.env?"aceitou":"aceita")+'</span>';
   if(pr.status==="recusada"||pr.status==="perdida") return '<span class="nx-pill" data-tom="neu">'+(pr.env?"recusou":pr.status==="perdida"?"perdida":"recusada")+'</span>';
   return pr.env?'<span class="nx-pill" data-tom="esp">esperando</span>':'<i class="nx-ponto" aria-label="nova"></i>';
@@ -24937,7 +24949,7 @@ function nxPropDet(pr){
   var ficha=function(r,val){ return '<div><span>'+r+'</span><b>'+esc(val||"—")+'</b></div>' };
   var aconteceu=pr.status==="aceita"&&pr.conf&&pr.conf.aberta?nxConfAcoes(pr.srv,pr.conf,nxPropTit(pr)):"";
   var acoes=aconteceu?aconteceu
-    :pr.env?'<span class="nx-pe-nota">'+(pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):"."))+'</span>'
+    :pr.env?nxEnvAcoes(pr)
     :pr.status==="novo"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="pp-aceita" data-id="'+pr.id+'">Aceitar</button><button type="button" class="glass-btn" data-nx="pp-recusa" data-id="'+pr.id+'">Recusar</button>'+
       (quem?'<button type="button" class="glass-btn" data-so="pc" data-nx="pp-perfil" data-id="'+quem.id+'">Ver perfil</button>':'')+'<span class="nx-pe-nota" data-so="pc">O acerto é direto com quem contrata.</span>'
     :pr.status==="aceita"?'<button type="button" class="glass-btn glass-btn--ink" data-nx="ir" data-ir="agenda">Ver na agenda</button><span class="nx-pe-nota">Aceita. Quem chamou já vê.</span>'
@@ -24957,6 +24969,15 @@ function nxPropDet(pr){
         (ok&&!pr.env&&d>=HOJE?'<div class="nx-card"><span class="nx-rot">Seu dia '+pad(d.getDate())+'</span><p class="nx-dia-st"><span class="nx-pill" data-tom="'+(st==="livre"?"ok":st==="segura"?"esp":"neu")+'">'+(st==="livre"?"livre":st==="segura"?"segurando":"ocupado")+'</span>'+esc(stTxt)+'</p><div class="nx-faixa">'+faixa+'</div></div>':'')+
       '</div></div>'+
     '<div class="nx-pd-pe">'+acoes+'</div>';
+}
+/* o pé do que EU mandei: o estado e, se o servidor deixa (`cancelavel`), "Cancelar" (dois toques). (03/11, 0010,
+   decisão do titular) O job aceito só se cancela até a véspera; do dia em diante não há "Cancelar": depois do dia a
+   pergunta é "Aconteceu?" (nxConfAcoes, no lugar deste pé) */
+function nxEnvAcoes(pr){
+  var nota=pr.canc?"Você cancelou.":pr.status==="novo"?"Esperando a resposta.":pr.status==="aceita"?"Aceitou. Está na agenda dela.":"Recusou"+(pr.motivo?": "+esc(pr.motivo):".");
+  var noDia=!pr.canc&&pr.status==="aceita"&&pr.srvTipo==="job"&&!pr.cancelavel;
+  return (pr.cancelavel?'<button type="button" class="glass-btn" data-nx="pp-cancela" data-id="'+esc(pr.id)+'">Cancelar</button>':'')+
+    '<span class="nx-pe-nota"'+(noDia?' data-chegou="1"':'')+'>'+nota+(noDia?' Depois do dia, responda se aconteceu.':'')+'</span>';
 }
 function nxPropostas(){
   var el=v("nx-prop"); if(!el) return;
@@ -25265,6 +25286,9 @@ function nxAcao(a,b){
   if(a==="pp-aceita"){ nxFolhaFechar(true); som("toque"); return aceitar(+id) }
   if(a==="pp-recusa"){ var p=PROPOSTAS.find(function(x){return x.id===+id}); if(p) nxRecusar(p); return }
   if(a==="pp-perfil"){ nxFolhaFechar(true); return abrirPerfil(+id) }
+  if(a==="pp-cancela"){ var pc=nxEnviadas().find(function(x){return String(x.id)===String(id)}); if(!pc||!pc.cancelavel) return;
+    if(b.dataset.certo!=="1"){ b.dataset.certo="1"; b.textContent="Cancelar mesmo?"; return }
+    return realCancelar(pc,b) }
   if(a==="ag-mes"){ var dd=+b.dataset.d; NX.agMes=dd?new Date((NX.agMes||HOJE).getFullYear(),(NX.agMes||HOJE).getMonth()+dd,1):null; return nxAgenda() }
   if(a==="ag-dia"){ var k=b.dataset.k;
     if(NX.agBloq){ if(NX.agBloq.has(k)) NX.agBloq.delete(k); else NX.agBloq.add(k); nxAgenda(); var x=document.querySelector('#nx-ag [data-k="'+k+'"]:not([hidden])'); if(x&&x.offsetParent) x.focus(); return }

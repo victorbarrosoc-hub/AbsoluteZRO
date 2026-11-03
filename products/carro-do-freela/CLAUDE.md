@@ -224,8 +224,7 @@ moravam só no aparelho. Agora:
   app não tem UPDATE nem DELETE (resposta dada não vira) e o INSERT é por coluna (`em` é do banco). `selo_fatos` foi
   refeita: conta só job com as duas respostas `aconteceu = true` (o resto igual: quem fez, dia passado, mesmo
   contratante no mesmo dia uma vez); a `vitrine()` herda, então o ✓ de quem contrata vê também exige confirmação. A
-  guarda das propostas (0003) não mudou. ⚠️ Quem contratou ainda pode **cancelar** um job aceito depois do dia (regra da
-  0003) e aí ele sai do selo mesmo confirmado: é rebaixar, nunca inflar; mudar isso é decisão do titular.
+  guarda das propostas (0003) não mudou na 0009; a regra de cancelar mudou na 0010 (abaixo).
 - **API:** `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu:true|false}` (o mesmo PATCH de aceitar e
   recusar; `acao` no corpo escolhe o caminho) → `{proposta}`. Erros: 400 `{erro:'tipo', campo:'aconteceu'|'acao'}`,
   400 `{erro:'campo', campo}` para campo a mais, 404 `nao_achado`, 409 `{erro:'estado', campo:'estado'}` (não é job
@@ -242,6 +241,24 @@ moravam só no aparelho. Agora:
 - `/demo`: os jobs 4 e 8 estão confirmados (a conta segue com 63% e 2 jobs), o 10 espera a minha resposta (quem chamou
   já disse sim), o 11 espera quem chamou e o 12 é um job que eu contratei esperando a minha resposta.
   `CDF_DEMO.confirmacoes()` mostra o que a página respondeu. Suítes: `_confirmacao-testes.js` (banco) e `demo-real.js`.
+- **Decisão do titular (03/nov · 4): o job aceito só se cancela ATÉ A VÉSPERA** (`0010_cancelar_ate_o_dia`, arquivo
+  NOVO; 0000–0009 intactas). Até aqui quem mandou podia cancelar a proposta aceita a qualquer hora (guarda da 0003),
+  tirando do selo um job que os dois já tinham confirmado. A 0010 refaz `propostas_guarda()` (o corpo da 0003, fiel, +
+  um portão no caminho de cancelar): `tipo='job'`, `estado='aceita'` e `dia <= hoje em São Paulo` (a mesma conta da
+  0009) → `42501` "O job não se cancela depois que o dia chega.". Do dia em diante, o caminho é "Aconteceu? Não". Não
+  mudou: cancelar a `nova` (qualquer dia), job aceito sem `dia`, brechó, aceitar/recusar e "não muda depois de
+  mandada". ⚠️ O desmontar da missão (`guilda_missao_cancelar`, 0006) cancela pelo mesmo UPDATE, então no dia do job
+  com alguém que aceitou ele também é recusado (409 `dia`, a missão fica).
+  **API:** `PATCH /api/zro/propostas?id=` `{estado:'cancelada'}` do dia em diante → 409 `{erro:'dia', campo:'dia'}`
+  (conferido antes em `_dados.js` com `R.cancelavel`, e a frase da guarda vira o mesmo 409 em `responderErro`, para a
+  corrida e para a Sede). O GET e o PATCH (lidos com `COM_CONFIRMACAO`, que ganhou `dia_chegou`) devolvem
+  `cancelavel` em cada proposta (só quem mandou; a nova sempre; a aceita até a véspera). **Tela (só `REAL`):** o pé da
+  proposta que eu mandei (`nxEnvAcoes`) tem "Cancelar" (dois toques, "Cancelar mesmo?", `realCancelar`) só com
+  `cancelavel`; no dia, a nota diz "Depois do dia, responda se aconteceu." (`data-chegou`); depois do dia, o pé é o
+  "Aconteceu?" de sempre. Cancelada mostra "cancelada"/"Você cancelou.". `CFB_ERRO.dia` = "Depois do dia, responda se
+  aconteceu.". Antes da 0010 o site real não oferecia cancelar em lugar nenhum; Jobs leva ao detalhe da proposta, onde
+  mora o botão. `/demo` com a mesma regra e o mesmo 409. Suítes: `_cancelar-testes.js` (banco), um caso em
+  `_missoes-testes.js` e `demo-real.js`.
 
 ## 03/nov · 3 — a Agenda em quatro estados, e o `/demo` dentro de um iframe (`test/demo-real.js`)
 

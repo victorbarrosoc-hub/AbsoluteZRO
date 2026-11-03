@@ -169,9 +169,12 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
   dois lados confirmam. `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu}`; o GET diz a cada lado se
   falta a resposta dele e o que o outro disse. Site real: "Aconteceu?" em Jobs e no detalhe da proposta (quem fez e
   quem contratou), estado no histórico, balão em Jobs e a dica no medidor. `/demo` com um job esperando cada lado.
-- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008 e a 0009.
-- ⬜ Decisão do titular: quem contratou ainda pode cancelar um job aceito depois do dia (regra da 0003), o que tira o
-  job do selo mesmo confirmado.
+- ✅ Decisão do titular (03/11): o job aceito só se cancela até a véspera. Migração nova `0010_cancelar_ate_o_dia`
+  (refaz a guarda das propostas da 0003 com o portão do dia em São Paulo); do dia em diante, "Aconteceu? Não" é o
+  caminho. A proposta nova, o job sem dia e o brechó cancelam como antes. A API responde 409 `{erro:'dia'}` e devolve
+  `cancelavel` em cada proposta; no site real, "Cancelar" (dois toques) aparece só na proposta que ainda se cancela, e o
+  desmontar da missão também para no dia do job. `/demo` com a mesma regra.
+- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008, a 0009 e a 0010.
 
 ## Carro do Freela: telas novas do site real (02/11/2026, ramo `claude/carro-telas`)
 
