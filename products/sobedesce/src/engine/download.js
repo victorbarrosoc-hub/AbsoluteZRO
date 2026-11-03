@@ -497,7 +497,9 @@ export class DownloadTask extends EventEmitter {
   }
 
   #desired() {
-    if (this.single) return 1
+    // Cota do arquivo estourada (manager.js, rec.economia): uma conexão só e sem cortar em blocos (#pick): o resto do
+    // arquivo vai num pedido só ao Google.
+    if (this.single || this.record.economia) return 1
     const n = Math.floor(Number(this.ctx.settings?.get?.().connectionsPerDownload) || 1)
     return Math.min(MAX_CONNECTIONS, Math.max(1, n))
   }

@@ -2,6 +2,15 @@
 
 O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão>`) e para o aviso de versão nova.
 
+## 0.3.3
+
+**Arquivo travado pelo Google baixa mesmo assim.** Quando o Google trava os downloads de um arquivo ("muitos usuários
+visualizaram ou fizeram o download deste arquivo"), o SOBEDESCE tenta de novo logo, numa conexão só. Se o Google ainda
+recusar, faz uma cópia do arquivo no seu Drive (dentro do Google, nada passa pelo computador), baixa a cópia e apaga só
+a cópia no fim. O original nunca é tocado.
+
+- Sai o Wi-Fi com o celular (descontinuado). Entre computadores continua igual.
+
 ## 0.3.0
 
 **Drives em Arquivos escolhidos também no computador.** Quem conectou o Drive com "Arquivos escolhidos" usa o app de

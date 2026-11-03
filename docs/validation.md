@@ -659,6 +659,17 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: cota de download do arquivo (03/11/2026)
+
+Branch `sobedesce-cota-download`. O Google trava os downloads de um arquivo muito acessado (vale até no site do Drive);
+o download em várias conexões faz muitos pedidos por arquivo.
+
+- `test/manager.test.js`: a 1ª recusa volta logo em economia (uma conexão, o resto num pedido só) e a 2ª segue a escada
+  de espera quando a cópia não dá; com a cópia, o download volta para a fila na hora lendo a cópia (marcada
+  `appProperties.sobedesce = copia-temporaria`), termina e apaga só a cópia, e o registro volta ao original; cópia sem
+  a marca não é apagada.
+- `npm run test:fast`: 767 passam; o único vermelho aqui é o do Set no Chromium local (tempo de rede), verde no CI.
+
 ## SOBEDESCE: Wi-Fi celular ↔ aparelhos descontinuado (02/11/2026)
 
 Branch `sobedesce-wifi-espera` (PR #113). Primeiro espaçava a espera, depois uma chave; por fim o titular cancelou o
