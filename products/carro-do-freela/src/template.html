@@ -7302,6 +7302,66 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-li-tx small{display:block;margin-top:2px;color:var(--cal-fraco);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nx-li-tx small[data-falta]{color:var(--nx-esp)}
 .nx-li-seta{color:var(--cal-tenue);font-size:22px}
+/* ---------- (03/11) o selo de verificado e a tabela de diária ---------- */
+.nx-selo{margin-top:22px;padding:20px 22px;border-radius:24px;background:var(--nx-c1);border:1px solid var(--nx-l)}
+.nx-selo-topo{display:flex;align-items:center;gap:18px}
+.nx-selo-anel{--p:0;position:relative;flex:none;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;
+  background:conic-gradient(var(--ciano) calc(var(--p) * 1%),var(--nx-l2) 0)}
+.nx-selo-anel::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--nx-c1)}
+.nx-selo-anel>*{position:relative}
+.nx-selo-anel b{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.nx-selo-anel small{font-size:12px;font-weight:600;color:var(--cal-fraco);margin-left:1px}
+.nx-selo[data-ver="true"] .nx-selo-anel{background:var(--nx-anel)}
+.nx-selo-ok{display:grid;place-items:center;color:var(--ciano)}
+.nx-selo-ok svg{width:38px;height:38px}
+.nx-selo-tx{min-width:0;display:grid;gap:4px}
+.nx-selo-tx b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.nx-selo-tx>span{color:var(--cal-fraco);font-size:14.5px;line-height:1.4}
+.nx-selo-jobs{display:flex;gap:6px;margin-top:4px}
+.nx-selo-jobs i{width:18px;height:6px;border-radius:999px;background:var(--nx-l2)}
+.nx-selo-jobs i[data-on="true"]{background:var(--nx-ok)}
+.nx-selo-falta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.nx-selo-it{min-height:44px;padding:0 14px;border-radius:999px;border:1px dashed var(--nx-l2);background:transparent;color:var(--cal);font-size:14px;font-weight:600;cursor:pointer}
+.nx-selo-it:hover{background:var(--nx-c2);border-style:solid}
+.nx-vf{display:inline-block;margin-left:8px;vertical-align:-.08em;color:var(--ciano)}
+.nx-vf svg{width:.8em;height:.8em}
+.nx-cartao-dia{margin:14px 0 0;color:var(--cal-fraco);font-size:14.5px}
+.nx-cartao-dia b{color:var(--cal);font-weight:700}
+.nx-tab{display:grid;gap:10px}
+.nx-tab-cab,.nx-tab-li{display:grid;grid-template-columns:minmax(0,1fr) 150px 150px;gap:10px;align-items:center}
+.nx-tab-c{display:grid;gap:6px;min-width:0}
+.nx-tab-c small{display:none;font-size:12.5px;color:var(--cal-fraco)}
+.nx-tab-cab span{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cal-tenue)}
+.nx-tab-li b{font-size:15.5px;font-weight:600;overflow-wrap:anywhere}
+.nx-rs{position:relative;display:flex;align-items:center}
+.nx-rs>span{position:absolute;left:14px;color:var(--cal-tenue);font-size:14px;pointer-events:none}
+.nx-rs .ob-in{min-height:48px;padding:0 12px 0 40px;font-size:16px;font-variant-numeric:tabular-nums}
+.nx-rs-pct>span{left:auto;right:14px}
+.nx-rs-pct .ob-in{padding:0 34px 0 14px}
+.nx-rs .ob-in[aria-invalid="true"]{border-color:#FF6B8B}
+.nx-regras{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nx-regra{display:grid;gap:8px;padding:12px 14px;border-radius:16px;background:var(--nx-c1);cursor:text}
+.nx-regra b{display:block;font-size:14.5px;font-weight:600}
+.nx-regra small{display:block;color:var(--cal-fraco);font-size:13px}
+@media(max-width:820px){
+  .nx-tab-cab{display:none}
+  .nx-tab-li{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:12px 14px;border-radius:16px;background:var(--nx-c1)}
+  .nx-tab-li b{grid-column:1/-1}
+  .nx-tab-c small{display:block}
+  .nx-regra{padding:12px}
+  .nx-regra small{display:none}
+  .nx-selo{padding:18px}
+  .nx-selo-anel{width:64px;height:64px}
+}
+/* na pessoa, para quem contrata (aba Equipamento): a tabela que ela publicou */
+.rt-tab{display:grid;margin-top:10px;border-radius:14px;border:1px solid var(--linha);overflow:hidden}
+.rt-tr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr) minmax(0,1.2fr);gap:10px;padding:10px 14px;font-size:14px}
+.rt-tr+.rt-tr{border-top:1px solid var(--linha)}
+.rt-tr span:not(:first-child){font-variant-numeric:tabular-nums;text-align:right}
+.rt-cab{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cal-tenue)}
+.rt-regras{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.rt-regras span{display:inline-flex;gap:6px;padding:6px 12px;border-radius:999px;background:var(--grafite2);font-size:13px;color:var(--cal-fraco)}
+.rt-regras b{color:var(--cal);font-weight:600}
 /* ---------- Propostas: a caixa ---------- */
 @media(min-width:821px){.nx [data-so="cel"],.nx-folha [data-so="cel"]{display:none!important}}
 #nx-prop{padding:0}
@@ -15387,7 +15447,7 @@ function linhaDe(c){
     (c.resp==null?'':'<span class="rsp">responde em '+respTxt(c)+'</span>')+
     (jan?'<span class="jan">job '+jan.ini+'–'+jan.fim+(jan.txt?' · <b>'+jan.txt+'</b>':' nesse dia')+'</span>':"")+
     (decl?'<span class="jan decl'+(decl.tipo==="negociando"?" neg":"")+'"><b>'+esc(decl.txt)+'</b></span>':"")+
-    rotuloDiaria(c)+'</span>';
+    rotuloDiaria(c)+(c.tabelaSrv&&!S.diaria&&c.tabelaSrv.min?'<span class="vlr dito">diária a partir de '+brl(c.tabelaSrv.min)+'</span>':'')+'</span>';
   b.onclick=()=>abrirPerfil(c.id);
   return b;
 }
@@ -16047,6 +16107,7 @@ function abrirPerfil(id){
     try{navigator.clipboard&&navigator.clipboard.writeText("https://"+url)}catch(e){}
     setTimeout(()=>{v("p-share").textContent="Compartilhar"},2600);
   };
+  if(REAL) realPerfilTabela(c);
   drawPtabs();
   show("perfil");
 }
@@ -18417,8 +18478,11 @@ function completude(){
 }
 function recalcular(){
   const c=completude();
-  EU.compl=c.pct;
-  EU.ver=EU.jobs>=6 && EU.compl>=85;
+  /* (03/11) no site real o selo é do SERVIDOR (GET /api/zro/selo, `nxSeloAplicar`): o aparelho nunca dá o selo.
+     Sem resposta do servidor, o percentual é o do aparelho e o selo fica desligado. */
+  if(REAL){ const sl=typeof NX_SELO!=="undefined"&&NX_SELO;
+    EU.compl=sl?sl.pct:c.pct; EU.ver=!!(sl&&sl.verificado); if(sl) EU.jobs=sl.jobs }
+  else { EU.compl=c.pct; EU.ver=EU.jobs>=6 && EU.compl>=85 }
   EU.principal=EU.func.filter(f=>!vazio(f)).slice(0,3);
   if(!EU.principal.length) EU.principal=["Perfil incompleto"];
   EU.tags=[...String(EU.cam||"").split("/").map(x=>x.trim()).filter(Boolean).slice(0,2),
@@ -18431,7 +18495,7 @@ function recalcular(){
   render();drawPracas();
 }
 function pintarMedidor(){
-  const {pct,feitos}=completude();
+  const cp=completude(), feitos=cp.feitos, pct=REAL?EU.compl:cp.pct;
   const cheio=pct>=85;
   [["cd-pct","cd-pct-s","cd-bar"],["mp-pct","mp-pct-s","mp-bar"]].forEach(([a,b,c])=>{
     v(a).textContent=pct+"%";
@@ -18451,7 +18515,7 @@ function pintarMedidor(){
   });
   v("cd-selo").innerHTML=EU.ver
     ? '<div class="selo-v sim"><span class="vf">✓ verificado</span><span>Você tem o selo: perfil em '+EU.compl+'% e '+EU.jobs+' jobs concluídos.</span></div>'
-    : '<div class="selo-v nao"><span>◇</span><span>Selo de verificado: <b style="color:var(--cal)">perfil ≥ 85%</b> ('+EU.compl+'% agora) e <b style="color:var(--cal)">6 jobs concluídos</b> ('+EU.jobs+' agora). Grátis, e nenhum plano vende.</span></div>';
+    : '<div class="selo-v nao"><span>◇</span><span>Selo de verificado: <b style="color:var(--cal)">perfil ≥ 85%</b> ('+EU.compl+'% agora) e <b style="color:var(--cal)">6 jobs concluídos</b> ('+EU.jobs+' agora).'+(REAL?'':' Grátis, e nenhum plano vende.')+'</span></div>';
 }
 let cdPasso=1;
 
@@ -22226,8 +22290,41 @@ function realPessoa(p,n){
   return {id:100000+n,sub:p.id,arroba:p.arroba,nome:p.nome||("@"+p.arroba),func:f,principal:f.slice(0,3),
     cidade:p.cidade||"",extras:0,cam:"",lentes:"",gim:false,dro:false,transporte:"",nicho:p.nichos||[],
     todosTipos:false,port:p.portfolio||null,obs:p.bio||"",tags:[],me:false,incompleto:!f.length,foto:p.foto||null,
-    streak:0,resp:null,jobs:0,compl:0,ver:false,segs:0,upd:0,gar:false,exige:false,viaja:false,
-    remoto:true,agendaSrv:p.agenda||{}};
+    streak:0,resp:null,jobs:0,compl:0,ver:p.verificado===true,segs:0,upd:0,gar:false,exige:false,viaja:p.viaja===true,
+    remoto:true,agendaSrv:p.agenda||{},tabelaSrv:realTabela(p.tabela)};
+}
+/* (03/11) a tabela de diária que a pessoa publicou (o servidor só devolve de quem consentiu), no formato do app: reais
+   por função, nas duas colunas, e o menor valor para a linha da busca. Sem nenhum valor = null (nada é inventado). */
+function realTabela(t){
+  if(!t||!Array.isArray(t.linhas)) return null;
+  var o={base:{},comeq:{},linhas:[],min:0,meia:t.meia_pct,fds:t.fds_pct,hex:t.hora_extra_cents,desl:t.deslocamento_cents}, vals=[];
+  t.linhas.forEach(function(l){ if(!l||FUNCOES.indexOf(l.funcao)<0) return;
+    var a=l.so_eu_cents, b=l.com_equip_cents;
+    if(a>0){ o.base[l.funcao]=a/100; vals.push(a) } if(b>0){ o.comeq[l.funcao]=b/100; vals.push(b) }
+    if(a>0||b>0) o.linhas.push({f:l.funcao,a:a>0?a:null,b:b>0?b:null}) });
+  if(!o.linhas.length&&o.meia==null&&o.fds==null&&o.hex==null&&o.desl==null) return null;
+  o.min=vals.length?Math.min.apply(null,vals)/100:0;
+  return o;
+}
+function realReais(c){ return c%100===0?brl(c/100):cfbReais(c) }
+/* a tabela no perfil da pessoa (aba Equipamento) e o "a partir de" no topo; nada quando ela não publicou */
+function realTabelaHtml(t){
+  if(!t) return "";
+  var regras=[t.meia!=null?["Meia diária",t.meia+"% da diária"]:null,t.fds!=null?["Fim de semana",(t.fds?"+"+t.fds+"%":"sem acréscimo")]:null,
+    t.hex!=null?["Hora extra",realReais(t.hex)+" por hora"]:null,t.desl!=null?["Fora da cidade",(t.desl?"+"+realReais(t.desl):"sem acréscimo")]:null].filter(Boolean);
+  return (t.linhas.length?'<div class="rt-tab" role="table" aria-label="Tabela de diária"><div class="rt-tr rt-cab" role="row"><span role="columnheader">Função</span><span role="columnheader">Só a pessoa</span><span role="columnheader">Com equipamento</span></div>'+
+    t.linhas.map(function(l){ return '<div class="rt-tr" role="row"><span role="cell">'+esc(l.f)+'</span><span role="cell">'+(l.a?realReais(l.a):"—")+'</span><span role="cell">'+(l.b?realReais(l.b):"—")+'</span></div>' }).join("")+'</div>':"")+
+    (regras.length?'<div class="rt-regras">'+regras.map(function(r){ return '<span><b>'+esc(r[0])+'</b>'+esc(r[1])+'</span>' }).join("")+'</div>':"");
+}
+function realPerfilTabela(c){
+  var t=c.me?nxTabelaPublica():c.tabelaSrv, pane=document.querySelector('#v-perfil [data-pane="equip"]'), blk=v("p-tab-blk");
+  if(!blk&&pane){ blk=document.createElement("div"); blk.className="blk"; blk.id="p-tab-blk";
+    blk.innerHTML='<span class="lab">Tabela de diária</span><div id="p-tab"></div>'; var col=pane.children[1]||pane; col.insertBefore(blk,col.firstChild) }
+  if(blk){ blk.hidden=!t; v("p-tab").innerHTML=realTabelaHtml(t) }
+  if(t&&t.min) v("p-gar").insertAdjacentHTML("beforeend",' <span class="selog">diária a partir de '+brl(t.min)+'</span>');
+  /* o percentual de perfil completo é da dona (o servidor só diz a quem contrata se há o selo): não se mostra o dos outros */
+  if(c.remoto){ var pr=v("p-nums").querySelector(".pring"); if(pr) pr.remove();
+    [].forEach.call(v("p-rep").querySelectorAll(".rp"),function(x){ if(/Perfil completo/.test(x.textContent)) x.remove() }) }
 }
 function realRepintar(){
   try{ render(); drawDatabar(); drawPracas(); drawAgenda(); drawHome() }catch(e){ console.warn("real: repintar",e) }
@@ -22253,6 +22350,8 @@ function realCarregar(){
     realRepintar();
     realSocial();
   });
+  /* (03/11) a tabela de diária e o selo da conta (depois da agenda e da busca, que a tela pede primeiro) */
+  nxTabelaCarregar();
 }
 /* ============ A SEDE DA GUILDA NO SERVIDOR (0004 + 0005 + 0006; na fase 1, grátis, desde 01/11: guildaReal()) ============
    O painel aprovado pelo titular (31/out, desenho "Sede", Gel magenta): a recepção (herói com o brasão, placa, lugares,
@@ -23977,7 +24076,11 @@ function realAcoesAnuncio(a,meu){
 /* o servidor diz QUAL campo recusou: "Texto longo demais." sozinho fazia a pessoa mexer no campo errado (02/11) */
 var CFB_CAMPO={funcoes:"Marque até 12 funções.",nichos:"Marque até 12 nichos.",bio:"A bio vai até 280 letras.",
   nome:"Confira o nome (até 80 letras).",cidade:"Confira a cidade.",uf:"Escolha o estado.",
-  portfolio:"Confira o link do portfólio (ex.: seusite.com.br ou @instagram)."};
+  portfolio:"Confira o link do portfólio (ex.: seusite.com.br ou @instagram).",
+  /* a tabela de diária (03/11) */
+  so_eu_cents:"Confira os valores de “Só eu”.",com_equip_cents:"Confira os valores com equipamento.",funcao:"Uma linha por função.",
+  linhas:"Até 12 funções na tabela.",meia_pct:"Meia diária: de 0 a 100%.",fds_pct:"Fim de semana: de 0 a 100%.",
+  hora_extra_cents:"Confira a hora extra.",deslocamento_cents:"Confira o valor fora da cidade.",viaja:"Confira o “topo viajar”."};
 function cfbMsg(r){ var j=r&&r.j, e=j&&j.erro, c=j&&j.campo;
   if(c&&CFB_CAMPO[c]&&e!=="telefone"&&e!=="proibido") return CFB_CAMPO[c];
   return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
@@ -24017,7 +24120,7 @@ function perfilDoCadastro(){
   var nic=(EU.nicho||[]).filter(function(t){return TIPOS.indexOf(t)>=0}).slice(0,12);
   var c=EU.consentimento;
   return {nome:titulo(EU.nome).slice(0,80),cidade:m?m[1]:"",uf:m&&CFB_UF.indexOf(m[2])>=0?m[2]:"",funcoes:fun,nichos:nic,
-    bio:"",portfolio:linkPortfolio(EU.port||""),visibilidade:c&&c.mostrar?"contratantes":"privado"};
+    bio:"",portfolio:linkPortfolio(EU.port||""),visibilidade:c&&c.mostrar?"contratantes":"privado",viaja:!!EU.viaja};
 }
 function enviarCadastroAoPerfil(){
   if(!REAL||typeof zroPodeEnviar!=="function"||!zroPodeEnviar()) return;
@@ -24026,9 +24129,10 @@ function enviarCadastroAoPerfil(){
     /* o que já está no servidor vence o que está vazio no cadastro: só preenche o que falta */
     var atual=r.status===200&&r.j&&r.j.perfil;
     if(atual){ ["cidade","uf","bio","portfolio"].forEach(function(k){ if(!corpo[k]&&atual[k]) corpo[k]=atual[k] });
-      if(!corpo.funcoes.length&&atual.funcoes) corpo.funcoes=atual.funcoes; if(!corpo.nichos.length&&atual.nichos) corpo.nichos=atual.nichos }
+      if(!corpo.funcoes.length&&atual.funcoes) corpo.funcoes=atual.funcoes; if(!corpo.nichos.length&&atual.nichos) corpo.nichos=atual.nichos;
+      if(!corpo.viaja&&atual.viaja) corpo.viaja=true }
     return cfbPedir("PUT","/api/zro/perfil",corpo);
-  }).then(function(r){ if(r&&r.status===200&&r.j&&r.j.perfil&&CFB){ CFB.perfil=r.j.perfil; cfbDesenhar() } });
+  }).then(function(r){ if(r&&r.status===200&&r.j&&r.j.perfil){ NX_PERFIL=r.j.perfil; if(CFB){ CFB.perfil=r.j.perfil; cfbDesenhar() } nxSeloAtualizar() } });
 }
 function cfbChips(id,lista,marcados){
   return '<div class="cfb-chips" id="'+id+'">'+lista.map(function(f){
@@ -24096,7 +24200,7 @@ function cfbSalvarPerfil(){
   var b=v("cfb-salvar"); if(b.disabled) return; b.disabled=true; cfbStatus("cfb-pst","Salvando…");
   cfbPedir("PUT","/api/zro/perfil",{nome:v("cfb-nome").value,cidade:v("cfb-cidade").value,uf:v("cfb-uf").value,
     funcoes:cfbMarcados("cfb-fun"),nichos:cfbMarcados("cfb-nic"),bio:v("cfb-bio").value,portfolio:linkPortfolio(v("cfb-port").value),
-    visibilidade:v("cfb-vis").checked?"contratantes":"privado"}).then(function(r){
+    visibilidade:v("cfb-vis").checked?"contratantes":"privado",viaja:!!(CFB.perfil&&CFB.perfil.viaja)}).then(function(r){
     b.disabled=false;
     if(r.status===200&&r.j&&r.j.perfil){ CFB.perfil=r.j.perfil; cfbStatus("cfb-pst","Salvo.") }
     else cfbStatus("cfb-pst",cfbMsg(r),true);
@@ -24137,6 +24241,8 @@ function cfbRemover(id,b){
    abrirAnuncio…): nada de segundo caminho para o servidor. A prévia e as suítes de sempre não veem nada disto.
    Estados por data-* e aria-*, nunca classe modificadora (test/colisao.js). ⚠️ Só var e function (o TDZ de 19/out · 2). */
 var NX_PRONTO=false, NX_PERFIL=null, OB=null;
+/* (03/11) a tabela de diária e o selo da conta, como o servidor devolveu (GET /api/zro/tabela): null = ainda não leu */
+var NX_TABELA=null, NX_SELO=null, NX_TAB_PEDIDA=false;
 var NX={pp:"receb",ppSel:null,agMes:null,agBloq:null,br:{cat:"",q:""},jbFeitos:false,folhaVolta:null};
 var NX_TELAS={propostas:"nx-prop",agenda:"nx-ag",jobs:"nx-jb",brecho:"nx-br",meu:"nx-meu"};
 function nxNorm(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim() }
@@ -24191,7 +24297,8 @@ function nxVisivel(){ var p=(CFB&&CFB.carregado&&CFB.perfil)||NX_PERFIL; return 
 function nxPerfilSalvar(patch,feito){
   var junta=function(base){
     var c={nome:base.nome||(ZRO_CONTA&&ZRO_CONTA.nome)||titulo(EU.nome||""),cidade:base.cidade||"",uf:base.uf||"",funcoes:base.funcoes||[],
-      nichos:base.nichos||[],bio:base.bio||"",portfolio:base.portfolio||"",visibilidade:base.visibilidade==="contratantes"?"contratantes":"privado"};
+      nichos:base.nichos||[],bio:base.bio||"",portfolio:base.portfolio||"",visibilidade:base.visibilidade==="contratantes"?"contratantes":"privado",
+      viaja:base.viaja===true};
     Object.keys(patch).forEach(function(k){ c[k]=patch[k] });
     return c;
   };
@@ -24201,6 +24308,7 @@ function nxPerfilSalvar(patch,feito){
     if("nichos" in patch) EU.nicho=c.nichos.slice();
     if("portfolio" in patch) EU.port=c.portfolio;
     if("visibilidade" in patch) registrarConsentimento(c.visibilidade==="contratantes");
+    if("viaja" in patch) EU.viaja=c.viaja;
     recalcular(); usoGravar();
   };
   if(!zroPodeEnviar()){ var c0=junta(nxPerfil()); NX_PERFIL=Object.assign({},nxPerfil(),c0); noAparelho(c0); feito(true); return }
@@ -24211,7 +24319,7 @@ function nxPerfilSalvar(patch,feito){
     return cfbPedir("PUT","/api/zro/perfil",c).then(function(r){
       if(r.status===200&&r.j&&r.j.perfil){
         NX_PERFIL=r.j.perfil; if(CFB&&CFB.carregado) CFB.perfil=r.j.perfil;
-        noAparelho(c); feito(true);
+        noAparelho(c); feito(true); nxSeloAtualizar();
       } else feito(false,cfbMsg(r));
     });
   });
@@ -24253,9 +24361,10 @@ function nxNichoHtml(sel,todos){
 function nxCartaoHtml(o){
   var chips=(o.chips||[]).filter(Boolean), mais=chips.length>7?chips.length-6:0;
   return '<div class="nx-cartao">'+
-    '<div class="nx-cartao-top">'+nxAv(o.nome,o.t||64,o.foto)+'<div class="nx-cartao-id"><b class="nx-cartao-nome">'+esc(o.nome||"Seu nome")+'</b>'+
+    '<div class="nx-cartao-top">'+nxAv(o.nome,o.t||64,o.foto)+'<div class="nx-cartao-id"><b class="nx-cartao-nome">'+esc(o.nome||"Seu nome")+(o.ver?'<span class="nx-vf" title="Verificado" role="img" aria-label="Verificado">'+CHECK_VF+'</span>':'')+'</b>'+
       '<span class="nx-cartao-sub">'+esc(o.sub||"")+'</span></div></div>'+
     (o.livre?'<p class="nx-livre"><i></i>'+esc(o.livre)+'</p>':'')+
+    (o.diaria?'<p class="nx-cartao-dia">Diária a partir de <b>'+esc(o.diaria)+'</b></p>':'')+
     (chips.length?'<div class="nx-chips">'+(mais?chips.slice(0,6):chips).map(function(c){return '<span>'+esc(c)+'</span>'}).join("")+(mais?'<span>+'+mais+'</span>':'')+'</div>'
       :(o.semVaga?'':'<div class="nx-oco" aria-hidden="true"><i></i><i></i></div>'))+
     (o.thumbs&&o.thumbs.length?'<div class="nx-thumbs">'+o.thumbs.slice(0,3).map(function(t){return '<span style="background-image:url('+cssUrl(t)+')"></span>'}).join("")+'</div>':'')+
@@ -24277,6 +24386,7 @@ function obTalvez(){
       if(p.cidade) EU.cidade=p.cidade+(p.uf?"/"+p.uf:"");
       EU.func=p.funcoes.filter(function(f){return FUNCOES.indexOf(f)>=0}); EU.nicho=(p.nichos||[]).slice();
       if(p.portfolio) EU.port=p.portfolio;
+      EU.viaja=p.viaja===true;
       if(p.visibilidade!=="privado") registrarConsentimento(true);
       recalcular(); usoGravar();
       if(perfilPronto()){ drawFeed(); show(naFase("feed")?"feed":"propostas"); return }
@@ -24465,6 +24575,147 @@ function obFimDesenhar(el){
   var t=el.querySelector(".ob-tit"); if(t) t.focus({preventScroll:true});
 }
 
+/* ======================= A TABELA DE DIÁRIA E O SELO (03/11) =======================
+   Titular: "Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado". A tabela mora no servidor
+   (GET/PUT /api/zro/tabela, a tabela inteira) e o selo é CALCULADO lá (GET /api/zro/selo): perfil completo ≥ 85% com o
+   que o servidor sabe e 6 jobs concluídos. A tela só mostra o que veio. Sem o servidor (fora do domínio, sem conta), a
+   tabela fica no aparelho como antes e o selo nunca aparece. Nenhum valor é sugerido: campo vazio é "não faço". */
+var NX_SELO_LINHA={nome:"onde",port:"port",func:"fun",nicho:"fun",equip:"eq",tabela:"tab",regras:"tab"};
+function nxTabOk(){ return REAL&&typeof zroPodeEnviar==="function"&&zroPodeEnviar() }
+function nxTabelaCarregar(forcar){
+  if(!nxTabOk()) return;
+  if(!forcar&&NX_TAB_PEDIDA&&Date.now()-NX_TAB_PEDIDA<60000) return;
+  NX_TAB_PEDIDA=Date.now();
+  cfbPedir("GET","/api/zro/tabela").then(function(r){
+    if(r.status!==200||!r.j) return;
+    nxTabelaAplicar(r.j.tabela||{linhas:[],meia_pct:null,fds_pct:null,hora_extra_cents:null,deslocamento_cents:null});
+    nxSeloAplicar(r.j.selo);
+  });
+}
+/* o servidor manda: a tabela do aparelho (que no protótipo nascia com valores de exemplo) é trocada pela da conta */
+function nxTabelaAplicar(t){
+  NX_TABELA=t;
+  PRECOS.base={}; PRECOS.comeq={};
+  (t.linhas||[]).forEach(function(l){ if(l.so_eu_cents>0) PRECOS.base[l.funcao]=l.so_eu_cents/100; if(l.com_equip_cents>0) PRECOS.comeq[l.funcao]=l.com_equip_cents/100 });
+  PRECOS.hex=t.hora_extra_cents!=null?t.hora_extra_cents/100:0; PRECOS.desl=t.deslocamento_cents!=null?t.deslocamento_cents/100:0;
+  if(t.meia_pct!=null) PRECOS.meia=t.meia_pct; if(t.fds_pct!=null) PRECOS.fds=t.fds_pct;
+}
+function nxSeloAplicar(sl){
+  if(!sl||typeof sl.pct!=="number") return;
+  NX_SELO=sl;
+  try{ recalcular() }catch(e){ console.warn("selo",e) }
+  nxPintar();
+}
+function nxSeloAtualizar(){
+  if(!nxTabOk()) return;
+  cfbPedir("GET","/api/zro/selo").then(function(r){ if(r.status===200&&r.j) nxSeloAplicar(r.j.selo) });
+}
+/* sem servidor: o que está no aparelho (só as funções e as duas regras em R$; a meia e o fim de semana do protótipo
+   nasciam com número de exemplo e não entram) */
+function nxTabelaDoAparelho(){
+  var fs=Object.keys(PRECOS.base||{}).concat(Object.keys(PRECOS.comeq||{})).filter(function(f,i,a){return a.indexOf(f)===i});
+  return {linhas:fs.map(function(f){ var a=(PRECOS.base||{})[f], b=(PRECOS.comeq||{})[f];
+      return {funcao:f,so_eu_cents:a>0?Math.round(a*100):null,com_equip_cents:b>0?Math.round(b*100):null} }),
+    meia_pct:null,fds_pct:null,hora_extra_cents:PRECOS.hex>0?Math.round(PRECOS.hex*100):null,deslocamento_cents:PRECOS.desl>0?Math.round(PRECOS.desl*100):null};
+}
+function nxTabelaAtual(){ return NX_TABELA||nxTabelaDoAparelho() }
+function nxTabelaPublica(){ return realTabela(nxTabelaAtual()) }
+function nxViaja(){ var p=(CFB&&CFB.carregado&&CFB.perfil)||NX_PERFIL; return p&&("viaja" in p)?p.viaja===true:!!EU.viaja }
+/* "R$ 1.200", "1200", "600,50": centavos; vazio = null; o resto = NaN (a tela marca o campo) */
+function nxCentavos(t){
+  t=String(t==null?"":t).trim().replace(/^R\$/i,"").replace(/\s/g,""); if(!t) return null;
+  if(/,/.test(t)) t=t.replace(/\./g,"").replace(",","."); else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t=t.replace(/\./g,"");
+  if(!/^\d+(\.\d{1,2})?$/.test(t)) return NaN;
+  var c=Math.round(parseFloat(t)*100); return c>100000000?NaN:c;
+}
+function nxPct(t){ t=String(t==null?"":t).trim().replace(/%$/,"").trim(); if(!t) return null; if(!/^\d{1,3}$/.test(t)||+t>100) return NaN; return +t }
+function nxReaisCampo(c){ return c==null?"":c%100===0?String(c/100):(c/100).toFixed(2).replace(".",",") }
+/* o selo como a tela desenha: o do servidor; sem ele, o percentual do aparelho (os mesmos sete itens) e nunca o ✓ */
+function nxSeloDados(){
+  if(NX_SELO) return {srv:true,pct:NX_SELO.pct,jobs:NX_SELO.jobs,ver:NX_SELO.verificado===true,itens:NX_SELO.itens||[]};
+  var it=ITENS.filter(function(i){return NX_SELO_LINHA[i.k]}).map(function(i){return {k:i.k,t:i.t,peso:i.peso,ok:!!i.ok()}});
+  var tot=it.reduce(function(a,i){return a+i.peso},0), feito=it.filter(function(i){return i.ok}).reduce(function(a,i){return a+i.peso},0);
+  return {srv:false,pct:tot?Math.floor(100*feito/tot):0,jobs:0,ver:false,itens:it};
+}
+function nxSeloMedidor(){
+  var d=nxSeloDados(), fp=Math.max(0,85-d.pct), fj=Math.max(0,6-d.jobs), falta=d.itens.filter(function(i){return !i.ok&&NX_SELO_LINHA[i.k]});
+  var sub=d.ver?"Perfil em "+d.pct+"% e "+pl(d.jobs,"job feito","jobs feitos")+"."
+    :!d.srv?"O selo é conferido na sua conta."
+    :"Faltam "+[fp?fp+"%":"",fj?pl(fj,"job","jobs"):""].filter(Boolean).join(" e ")+" para o selo.";
+  var jobs='<span class="nx-selo-jobs" role="img" aria-label="'+esc(Math.min(d.jobs,6)+" de 6 jobs")+'">'+[0,1,2,3,4,5].map(function(i){return '<i data-on="'+(i<d.jobs)+'"></i>'}).join("")+'</span>';
+  return '<section class="nx-selo" id="nx-selo" data-ver="'+d.ver+'" data-srv="'+d.srv+'" aria-labelledby="nx-selo-t">'+
+    '<div class="nx-selo-topo"><div class="nx-selo-anel" style="--p:'+Math.max(0,Math.min(100,d.pct))+'" aria-hidden="true">'+
+      (d.ver?'<span class="nx-selo-ok">'+CHECK_VF+'</span>':'<b>'+d.pct+'<small>%</small></b>')+'</div>'+
+    '<div class="nx-selo-tx"><b id="nx-selo-t">'+(d.ver?"Verificado":"Selo de verificado")+'</b><span id="nx-selo-s">'+esc(sub)+'</span>'+
+      (d.srv?jobs:'')+'</div></div>'+
+    (!d.ver&&falta.length?'<div class="nx-selo-falta" role="list" aria-label="O que falta">'+falta.map(function(i){
+      return '<button type="button" role="listitem" class="nx-selo-it" data-nx="meu-'+NX_SELO_LINHA[i.k]+'" data-k="'+esc(i.k)+'" title="Vale '+i.peso+' de 68">+ '+esc(i.t)+'</button>' }).join("")+'</div>':'')+
+  '</section>';
+}
+function nxTabelaResumo(){
+  var t=nxTabelaPublica();
+  if(!t||!t.linhas.length) return null;
+  return pl(t.linhas.length,"função","funções")+" · a partir de "+brl(t.min);
+}
+/* a folha da tabela: uma linha por função que a pessoa faz (Só eu / Com meu equipamento) e as quatro regras */
+function nxTabelaFolha(){
+  var p=nxPerfil(), t=nxTabelaAtual(), cat=nxFuncoes();
+  var fun=(p.funcoes&&p.funcoes.length?p.funcoes:EU.func||[]).filter(function(f){return cat.indexOf(f)>=0});
+  (t.linhas||[]).forEach(function(l){ if(fun.indexOf(l.funcao)<0&&cat.indexOf(l.funcao)>=0) fun.push(l.funcao) });
+  fun=fun.slice(0,12);
+  var deLinha=function(f){ return (t.linhas||[]).find(function(x){return x.funcao===f})||{} };
+  var campo=function(f,k,c,rot,ph){ return '<label class="nx-tab-c"><small aria-hidden="true">'+esc(ph)+'</small><span class="nx-rs"><span aria-hidden="true">R$</span><input class="ob-in" inputmode="decimal" autocomplete="off" data-tab-f="'+esc(f)+'" data-tab-k="'+k+'" aria-label="'+esc(f+", "+rot)+'" value="'+esc(nxReaisCampo(c))+'"></span></label>' };
+  var regra=function(id,k,tit,dica,val,pct){ return '<label class="nx-regra" for="'+id+'"><span><b>'+tit+'</b><small>'+dica+'</small></span>'+
+    '<span class="nx-rs'+(pct?' nx-rs-pct':'')+'">'+(pct?'':'<span aria-hidden="true">R$</span>')+'<input class="ob-in" id="'+id+'" data-tab-k="'+k+'" inputmode="'+(pct?'numeric':'decimal')+'" autocomplete="off" value="'+esc(val)+'">'+(pct?'<span aria-hidden="true">%</span>':'')+'</span></label>' };
+  if(!fun.length){
+    nxFolha("Tabela de diária",'<p class="nx-folha-d">Marque primeiro o que você faz.</p><div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" data-nx="meu-fun">Marcar funções</button></div>');
+    return;
+  }
+  var html='<p class="nx-folha-d">Só aparece o que você digitar.</p>'+
+    '<div class="nx-tab" role="group" aria-label="Diária por função"><div class="nx-tab-cab" aria-hidden="true"><span></span><span>Só eu</span><span>Com equipamento</span></div>'+
+      fun.map(function(f){ var l=deLinha(f); return '<div class="nx-tab-li"><b>'+esc(f)+'</b>'+campo(f,"so_eu_cents",l.so_eu_cents,"só eu","Só eu")+campo(f,"com_equip_cents",l.com_equip_cents,"com meu equipamento","Com equipamento")+'</div>' }).join("")+'</div>'+
+    '<span class="ob-rot">Regras</span><div class="nx-regras">'+
+      regra("nx-t-meia","meia_pct","Meia diária","% da diária",t.meia_pct==null?"":t.meia_pct,true)+
+      regra("nx-t-fds","fds_pct","Fim de semana","e feriado, a mais",t.fds_pct==null?"":t.fds_pct,true)+
+      regra("nx-t-hex","hora_extra_cents","Hora extra","por hora",nxReaisCampo(t.hora_extra_cents),false)+
+      regra("nx-t-desl","deslocamento_cents","Fora da cidade","a mais",nxReaisCampo(t.deslocamento_cents),false)+'</div>'+
+    '<div class="nx-folha-pe"><button type="button" class="glass-btn glass-btn--ink" id="nx-f-ok">Salvar</button><span class="nx-st" id="nx-f-st" role="status"></span></div>';
+  nxFolha("Tabela de diária",html,function(f){
+    var ok=v("nx-f-ok");
+    f.querySelectorAll("[data-tab-k]").forEach(function(i){ i.oninput=function(){ i.removeAttribute("aria-invalid") } });
+    ok.onclick=function(){
+      var ruim=null, marca=function(i){ i.setAttribute("aria-invalid","true"); ruim=ruim||i.dataset.tabK };
+      var linhas=fun.map(function(fn){ var l={funcao:fn};
+        f.querySelectorAll('[data-tab-f]').forEach(function(i){ if(i.dataset.tabF!==fn) return; var c=nxCentavos(i.value); if(c!==c) marca(i); else l[i.dataset.tabK]=c });
+        return l }).filter(function(l){return l.so_eu_cents!=null||l.com_equip_cents!=null});
+      var corpo={linhas:linhas};
+      [["nx-t-meia","meia_pct",nxPct],["nx-t-fds","fds_pct",nxPct],["nx-t-hex","hora_extra_cents",nxCentavos],["nx-t-desl","deslocamento_cents",nxCentavos]].forEach(function(x){
+        var i=v(x[0]), n=x[2](i.value); if(n!==n) marca(i); else corpo[x[1]]=n });
+      if(ruim) return nxStatus("nx-f-st",CFB_CAMPO[ruim]||"Confira os números.",true);
+      ok.disabled=true; nxStatus("nx-f-st","Salvando…");
+      nxTabelaSalvar(corpo,function(certo,msg,campoRuim){
+        ok.disabled=false;
+        if(!certo){ if(campoRuim) f.querySelectorAll('[data-tab-k="'+campoRuim+'"]').forEach(function(i){ i.setAttribute("aria-invalid","true") }); return nxStatus("nx-f-st",msg,true) }
+        nxFolhaFechar(); nxPintar();
+        avisar({t:"Tabela salva",sub:nxVisivel()?"Quem contrata vê a sua tabela.":"Ela aparece quando você estiver na busca.",icone:"✓"});
+      });
+    };
+  });
+}
+function nxTabelaSalvar(corpo,feito){
+  if(!nxTabOk()){
+    PRECOS.base={}; PRECOS.comeq={};
+    corpo.linhas.forEach(function(l){ if(l.so_eu_cents>0) PRECOS.base[l.funcao]=l.so_eu_cents/100; if(l.com_equip_cents>0) PRECOS.comeq[l.funcao]=l.com_equip_cents/100 });
+    PRECOS.hex=corpo.hora_extra_cents?corpo.hora_extra_cents/100:0; PRECOS.desl=corpo.deslocamento_cents?corpo.deslocamento_cents/100:0;
+    if(corpo.meia_pct!=null) PRECOS.meia=corpo.meia_pct; if(corpo.fds_pct!=null) PRECOS.fds=corpo.fds_pct;
+    recalcular(); usoGravar(); feito(true); return;
+  }
+  cfbPedir("PUT","/api/zro/tabela",corpo).then(function(r){
+    if(r.status===200&&r.j&&r.j.tabela){ nxTabelaAplicar(r.j.tabela); usoGravar(); feito(true); nxSeloAplicar(r.j.selo); return }
+    feito(false,cfbMsg(r),r.j&&r.j.campo);
+  });
+}
+
 /* ======================= MEU PERFIL: o cartão e a lista curta ======================= */
 function nxMeu(){
   var el=v("nx-meu"); if(!el) return;
@@ -24472,6 +24723,7 @@ function nxMeu(){
   var port=p.portfolio||linkPortfolio(EU.port||""), vis=nxVisivel(), itens=CFB&&CFB.carregado?CFB.itens:null;
   var livres=0; for(var i=0;i<7;i++) if(statusEu(dateAt(i))==="livre") livres++;
   var th=trabalhosDe(EU).map(function(t){return t.img}).filter(Boolean);
+  var tab=nxTabelaPublica(), tabRes=nxTabelaResumo(), sl=nxSeloDados();
   var linha=function(k,ic,tit,sub,falta,dir){
     return '<li><button type="button" class="nx-li" data-nx="meu-'+k+'"><span class="nx-li-ic" aria-hidden="true">'+ic+'</span>'+
       '<span class="nx-li-tx"><b>'+tit+'</b><small'+(falta?' data-falta="1"':'')+'>'+esc(sub)+'</small></span>'+(dir||'<span class="nx-li-seta" aria-hidden="true">›</span>')+'</button></li>' };
@@ -24480,17 +24732,20 @@ function nxMeu(){
     port:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     bio:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
     eq:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="12" rx="3"/><circle cx="12" cy="13" r="3.2"/><path d="M8.5 7l1.5-2.5h4L15.5 7"/></svg>',
-    ver:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>'};
+    ver:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    tab:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 12.6V5A1.5 1.5 0 0 1 5 3.5h7.6l8 8-9 9z"/><circle cx="8.3" cy="8.3" r="1.5"/></svg>'};
   el.innerHTML='<div class="nx-meu">'+
     '<div class="nx-meu-esq"><div class="nx-meu-cartao"><span class="nx-rot">Como quem contrata vê</span>'+
       nxCartaoHtml({nome:p.nome||titulo(EU.nome||""),foto:EU.foto,sub:[praca,fun[0]].filter(Boolean).join(" · "),livre:livres?"Livre esta semana":"",
-        chips:fun.concat(nic),thumbs:th,port:th.length?"":port,semVaga:true,t:104})+'</div>'+
+        chips:fun.concat(nic),thumbs:th,port:th.length?"":port,semVaga:true,t:104,ver:sl.ver,diaria:tab&&tab.min?brl(tab.min):""})+'</div>'+
       '<div class="nx-ac"><button type="button" class="glass-btn glass-btn--ink" data-nx="meu-trab">Adicionar trabalho</button>'+
       '<button type="button" class="glass-btn" data-nx="meu-ver">Ver como quem contrata vê</button></div></div>'+
     '<div class="nx-meu-dir"><h1 class="nx-h1">Seu perfil</h1><p class="nx-sub">Cada linha abre um campo só.</p>'+
+      nxSeloMedidor()+
       '<ul class="nx-lista">'+
         linha("fun",IC.fun,"O que eu faço",fun.length?pl(fun.length,"função","funções")+" · "+pl(nic.length,"nicho","nichos"):"Falta marcar",!fun.length)+
-        linha("onde",IC.onde,"Onde trabalho",praca?praca+(EU.viaja?" · topo viajar":""):"Falta a praça",!praca)+
+        linha("tab",IC.tab,"Tabela de diária",tabRes||"Não preenchida",!tabRes)+
+        linha("onde",IC.onde,"Onde trabalho",praca?praca+(nxViaja()?" · topo viajar":""):"Falta a praça",!praca)+
         linha("port",IC.port,"Portfólio",port?nxPortCurto(port):"Falta o link",!port)+
         linha("bio",IC.bio,"Bio",p.bio?"“"+p.bio+"”":"Falta a bio",!p.bio)+
         linha("eq",IC.eq,"Equipamento",itens===null?"—":itens.length?pl(itens.length,"item","itens"):"Nenhum ainda",false)+
@@ -24515,7 +24770,7 @@ function nxMeuFolha(k){
       v("nx-f-ok").onclick=function(){ if(!sel.length) return nxStatus("nx-f-st","Marque ao menos uma função.",true); salvar({funcoes:sel,nichos:nic}) };
     });
   } else if(k==="onde"){
-    var cid=nxPraca(p), q="", vj=!!EU.viaja;
+    var cid=nxPraca(p), q="", vj=nxViaja();
     nxFolha("Onde trabalho",'<div class="ob-busca"><input class="ob-in" id="nx-f-q" type="search" placeholder="Sua cidade" aria-label="Buscar praça" autocomplete="off"></div><div class="ob-chips" id="nx-f-pr">'+nxPracasHtml("",cid)+'</div>'+
       '<div class="ob-viaja">'+nxTog("nx-f-vj",vj)+'<label for="nx-f-vj">Topo viajar</label></div>'+pe(),function(){
       v("nx-f-q").oninput=function(){ q=v("nx-f-q").value; v("nx-f-pr").innerHTML=nxPracasHtml(q,cid) };
@@ -24523,7 +24778,7 @@ function nxMeuFolha(k){
         v("nx-f-pr").querySelectorAll("[data-praca]").forEach(function(x){x.setAttribute("aria-pressed",String(x===b))}) };
       v("nx-f-vj").onclick=function(){ vj=!vj; v("nx-f-vj").setAttribute("aria-checked",String(vj)) };
       v("nx-f-ok").onclick=function(){ var m=/^(.+)\/([A-Z]{2})$/.exec(cid||""); if(!m) return nxStatus("nx-f-st","Escolha a sua praça.",true);
-        salvar({cidade:m[1],uf:m[2]},function(){ EU.viaja=vj; usoGravar() }) };
+        salvar({cidade:m[1],uf:m[2],viaja:vj}) };
     });
   } else if(k==="port"){
     var atual=p.portfolio||EU.port||"";
@@ -24538,6 +24793,7 @@ function nxMeuFolha(k){
       v("nx-f-ok").onclick=function(){ salvar({bio:t.value.trim()}) };
     });
   } else if(k==="eq") nxEquipFolha();
+  else if(k==="tab") nxTabelaFolha();
 }
 function nxEquipFolha(novo){
   var it=CFB&&CFB.carregado?CFB.itens:[];
@@ -24553,7 +24809,7 @@ function nxEquipFolha(novo){
       if(b.dataset.certo!=="1"){ b.dataset.certo="1"; b.textContent="Remover mesmo?"; return }
       b.disabled=true;
       cfbPedir("DELETE","/api/zro/inventario?id="+encodeURIComponent(b.dataset.nxRm)).then(function(r){
-        if(r.status===204||r.status===404){ CFB.itens=CFB.itens.filter(function(x){return x.id!==b.dataset.nxRm}); nxEquipFolha(); nxPintar() }
+        if(r.status===204||r.status===404){ CFB.itens=CFB.itens.filter(function(x){return x.id!==b.dataset.nxRm}); nxEquipFolha(); nxPintar(); nxSeloAtualizar() }
         else { b.disabled=false; nxStatus("nx-f-st",cfbMsg(r),true) } }) } });
     var ok=v("nx-f-ok"); if(!ok) return;
     ok.onclick=function(){
@@ -24564,7 +24820,7 @@ function nxEquipFolha(novo){
       ok.disabled=true; nxStatus("nx-f-st","Salvando…");
       cfbPedir("POST","/api/zro/inventario",{categoria:v("nx-f-cat").value,marca:v("nx-f-mar").value,modelo:v("nx-f-mod").value,quantidade:1,observacao:"",diaria_cents:cents,ativo:true}).then(function(r){
         ok.disabled=false;
-        if((r.status===200||r.status===201)&&r.j&&r.j.item){ CFB.itens.push(r.j.item); nxEquipFolha(); nxPintar() }
+        if((r.status===200||r.status===201)&&r.j&&r.j.item){ CFB.itens.push(r.j.item); nxEquipFolha(); nxPintar(); nxSeloAtualizar() }
         else nxStatus("nx-f-st",cfbMsg(r),true);
       });
     };
@@ -24813,6 +25069,7 @@ function nxPintar(t){
     NX.perfilPedido=true;
     cfbPedir("GET","/api/zro/perfil").then(function(r){ if(r.status===200&&r.j&&r.j.perfil){ NX_PERFIL=r.j.perfil; nxPintar() } });
   }
+  if(t==="meu"&&!NX_TABELA) nxTabelaCarregar();
   try{
     if(t==="propostas") nxPropostas(); else if(t==="agenda") nxAgenda(); else if(t==="jobs") nxJobs();
     else if(t==="brecho") nxBrecho(); else if(t==="meu") nxMeu();
@@ -28922,6 +29179,8 @@ const REFERENCIA={
 let VAGAS=[];
 function precoDe(c,func){
   if(c&&temTabela(c)&&PRECOS.base[func]) return {exato:PRECOS.base[func]};
+  /* (03/11) no site real, a tabela que a PESSOA publicou e o servidor devolveu (só de quem consentiu) */
+  if(c&&c.tabelaSrv){ const x=c.tabelaSrv.base[func]||c.tabelaSrv.comeq[func]; if(x) return {exato:x} }
   const r=REFERENCIA[func]||[600,1000];
   return {min:r[0],max:r[1]};
 }

@@ -5,7 +5,9 @@
    ao recarregar, tudo volta ao começo. Cerca de 100 perfis INVENTADOS (nome e sobrenome sorteados, sem rosto: as
    iniciais), agendas, feed, brechó, propostas e uma guilda com o quadro de missões. Um selo fixo diz que é demonstração.
    ⚠️ Nenhum nome daqui pode coincidir com a base fictícia antiga (crew.json): o vercel-build confere.
-   ⚠️ Só o que o site real tem: nada de preço de plano, take, garantia nem "verificado". */
+   ⚠️ Só o que o site real tem: nada de preço de plano, take nem garantia. Desde 03/11 a tabela de diária e o selo de
+   verificado existem no site real (servidor), e a demonstração responde /api/zro/tabela e /api/zro/selo com a MESMA
+   conta do banco (pesos de selo_de, 85% e 6 jobs); as tabelas e os selos das pessoas daqui são inventados como elas. */
 (function () {
   'use strict';
   /* ⚠️ A MEMÓRIA DA DEMONSTRAÇÃO É SÓ DELA. A demo mora no MESMO endereço do site real (carro.absolutezro.com/demo), e o
@@ -62,9 +64,15 @@
       else if (r < 0.3) agenda[dia(d)] = { e: 'negociando', p: 'dia' };
       else if (r < 0.36) agenda[dia(d)] = { e: 'fechado', p: rnd() < 0.5 ? 'manha' : 'tarde' };
     }
+    /* (03/11) a tabela inventada de parte das pessoas (de 50 em 50 reais), o "topo viajar" e o selo de algumas */
+    var fs = f1 === f2 ? [f1] : [f1, f2], tab = null;
+    if (rnd() < 0.55) tab = { linhas: fs.map(function (f) { var b = (8 + Math.floor(rnd() * 14)) * 5000;
+        return { funcao: f, so_eu_cents: b, com_equip_cents: rnd() < 0.6 ? b + (4 + Math.floor(rnd() * 8)) * 5000 : null } }),
+      meia_pct: rnd() < 0.7 ? 60 : null, fds_pct: rnd() < 0.5 ? 20 : null, hora_extra_cents: rnd() < 0.7 ? 8000 : null, deslocamento_cents: rnd() < 0.6 ? 15000 : null };
     pessoas.push({ id: uuid('dddddddd', n + 1), arroba: nome.toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').replace(' ', '.'),
-      nome: nome, foto: null, cidade: um(CIDADES), funcoes: f1 === f2 ? [f1] : [f1, f2], nichos: [um(NICHOS)], bio: um(BIOS),
-      portfolio: null, agenda: agenda, agenda_atualizada_em: quando(rnd() * 72) });
+      nome: nome, foto: null, cidade: um(CIDADES), funcoes: fs, nichos: [um(NICHOS)], bio: um(BIOS),
+      portfolio: null, agenda: agenda, agenda_atualizada_em: quando(rnd() * 72),
+      viaja: rnd() < 0.45, tabela: tab, verificado: !!tab && rnd() < 0.3 });
   }
   var P = function (k) { return pessoas[k % pessoas.length] };
 
@@ -74,6 +82,8 @@
   var perfil = { nome: 'Você (demonstração)', cidade: 'Natal', uf: 'RN', funcoes: ['Op. de câmera', 'Editor'], nichos: ['Publicidade', 'Clipe'],
     bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'contratantes', arroba: 'voce.demo', atualizado_em: quando(2) };
   if (NOVO) perfil = null;
+  /* a tabela de diária da conta: nasce vazia (quem preenche é a pessoa) */
+  var tabela = null;
   var inventario = [
     { id: uuid('11111111', 1), categoria: 'camera', marca: 'Sony', modelo: 'FX3', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
     { id: uuid('11111111', 2), categoria: 'lente', marca: 'Sigma', modelo: '24-70 f/2.8 Art', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
@@ -172,6 +182,22 @@
     { id: 'p2', tipo: 'vaga', autor: { sub: membros[2].sub, nome: membros[2].nome }, eu: false, titulo: '1º assistente de câmera', texto: null, link: null, imagem: null, dados: { dia: dia(10), funcao: 'Assistente' }, fixado: false, criado_em: quando(30), reacoes: [], quero: { n: 2, eu: false } },
     { id: 'p3', tipo: 'vitoria', autor: { sub: membros[5].sub, nome: membros[5].nome }, eu: false, titulo: 'Campanha aprovada sem refação', texto: null, link: null, imagem: null, dados: {}, fixado: false, criado_em: quando(50), reacoes: [{ e: '🔥', n: 8, eu: true }], quero: { n: 0, eu: false } }];
 
+  /* o selo: a mesma conta de carro_do_freela.selo_de / selo_fatos (0008) — pesos, 85% e 6 jobs; job = proposta de job
+     aceita que eu FIZ, com o dia passado, o mesmo contratante no mesmo dia uma vez */
+  var SELO_ITENS = [['nome', 'Nome e praça', 10], ['port', 'Portfólio', 4], ['func', 'Funções', 16], ['nicho', 'Tipos de trabalho', 5],
+    ['equip', 'Câmera e lente', 12], ['tabela', 'Tabela de diária', 17], ['regras', 'Hora extra e deslocamento', 4]];
+  var seloDemo = function () {
+    var p = perfil || {}, t = tabela, usa = function (c) { return inventario.some(function (i) { return i.ativo !== false && i.categoria === c }) };
+    var fatos = { nome: !!(p.nome && p.cidade), port: !!p.portfolio, func: !!(p.funcoes || []).length, nicho: !!(p.nichos || []).length,
+      equip: usa('camera') && usa('lente'), tabela: !!t && t.linhas.some(function (l) { return l.so_eu_cents > 0 || l.com_equip_cents > 0 }),
+      regras: !!t && t.hora_extra_cents != null && t.deslocamento_cents != null };
+    var feitos = {}; propostas.forEach(function (x) { if (x.recebida && x.tipo === 'job' && x.estado === 'aceita' && x.dia && x.dia < dia(0)) feitos[x.de + x.dia] = 1 });
+    var soma = 0; SELO_ITENS.forEach(function (i) { if (fatos[i[0]]) soma += i[2] });
+    var pct = Math.floor(100 * soma / 68), jobs = Object.keys(feitos).length;
+    return { pct: pct, jobs: jobs, verificado: pct >= 85 && jobs >= 6, meta: { pct: 85, jobs: 6 },
+      itens: SELO_ITENS.map(function (i) { return { k: i[0], t: i[1], peso: i[2], ok: !!fatos[i[0]] } }) };
+  };
+
   /* ---------------- o servidor de mentira ---------------- */
   var original = window.fetch ? window.fetch.bind(window) : null;
   var J = function (s, j) { return Promise.resolve(new Response(j === undefined ? null : JSON.stringify(j), { status: s, headers: { 'Content-Type': 'application/json' } })) };
@@ -184,7 +210,17 @@
     pedidos.push(met + ' ' + r);
     if (r === 'eu') return J(200, { entrou: true, sub: EU_ID, nome: 'Você (demonstração)', email: '', arroba: 'voce.demo', organizacao: 'Demonstração', liberado: true, hub: false, release: 'open' });
     if (r === 'pessoas') return J(200, { pessoas: pessoas, de: q.get('de'), ate: q.get('ate'), agendas: true });
-    if (r === 'perfil') { if (met === 'PUT') perfil = Object.assign({}, perfil, c, { atualizado_em: new Date().toISOString() }); return J(200, { perfil: perfil }) }
+    if (r === 'perfil') { if (met === 'PUT') perfil = Object.assign({}, perfil, c, { viaja: c.viaja === true, atualizado_em: new Date().toISOString() }); return J(200, { perfil: perfil }) }
+    if (r === 'tabela') {
+      if (met === 'PUT') {
+        var nn = function (x) { return typeof x === 'number' && x >= 0 ? x : null };
+        tabela = { linhas: (c.linhas || []).map(function (l) { return { funcao: l.funcao, so_eu_cents: nn(l.so_eu_cents), com_equip_cents: nn(l.com_equip_cents) } })
+          .filter(function (l) { return l.so_eu_cents !== null || l.com_equip_cents !== null }),
+          meia_pct: nn(c.meia_pct), fds_pct: nn(c.fds_pct), hora_extra_cents: nn(c.hora_extra_cents), deslocamento_cents: nn(c.deslocamento_cents), atualizado_em: new Date().toISOString() };
+      } else if (met !== 'GET') return J(405, { erro: 'metodo' });
+      return J(200, { tabela: tabela, selo: seloDemo() });
+    }
+    if (r === 'selo') return J(200, { selo: seloDemo() });
     if (r === 'inventario') {
       if (met === 'POST') { var it = Object.assign({ id: uuid('11111111', 100 + ++nova), ativo: true, atualizado_em: new Date().toISOString() }, c); inventario.push(it); return J(201, { item: it }) }
       if (met === 'DELETE') { inventario = inventario.filter(function (x) { return x.id !== q.get('id') }); return J(204) }

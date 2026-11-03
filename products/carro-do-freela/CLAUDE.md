@@ -181,6 +181,39 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 03/nov — tabela de diária e selo no servidor (`0008_tabela_e_selo`, `_tabela-testes.js`, `test/demo-real.js`)
+
+Titular: *"Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado, coloca tudo pra subir
+sexta"*. Até aqui a tabela (`PRECOS`), o "Topo viajar" (`EU.viaja`) e o medidor do selo (`ITENS`/`completude()`)
+moravam só no aparelho. Agora:
+- **Banco (0008):** `perfis.viaja`; `carro_do_freela.tabelas` (uma por `sub`, RLS só da dona; por função do catálogo,
+  até 12, "só eu" e "com meu equipamento" em centavos em listas paralelas; meia e fim de semana em %, hora extra e
+  fora da cidade em centavos; **null = não disse**, nada semeado nem sugerido). O selo é **calculado, nunca guardado**:
+  `selo_de(fatos, jobs)` (pura, os pesos de sempre normalizados: nome e praça 10, portfólio 4, funções 16, nichos 5,
+  câmera + lente ativas no inventário 12, tabela com valor 17, hora extra e deslocamento respondidos 4 = 68 → 100) e
+  `selo_fatos(sub)` **sem security definer** (para outra conta o app só vê tudo falso). Job concluído = proposta de job
+  aceita em que a pessoa é `para_sub`, com `dia` antes de hoje em São Paulo; o mesmo contratante no mesmo dia conta uma
+  vez. Selo = ≥ 85% e ≥ 6 jobs. Para quem contrata, `vitrine(subs)` (security definer, como `agendas()`): só de quem
+  marcou "Mostrar meu perfil para quem contrata", devolve `viaja`, a tabela e **só o booleano** `verificado`.
+- **API:** `GET/PUT /api/zro/tabela` → `{tabela, selo}` (PUT = tabela inteira; erros `{erro, campo}` com `campo` em
+  `funcao`, `linhas`, `so_eu_cents`, `com_equip_cents`, `meia_pct`, `fds_pct`, `hora_extra_cents`,
+  `deslocamento_cents`); `GET /api/zro/selo` → `{selo:{pct, itens:[{k,t,peso,ok}], jobs, verificado, meta}}`; o perfil
+  ganhou `viaja` (o PUT é inteiro: sem o campo volta a falso, então `nxPerfilSalvar`, `cfbSalvarPerfil` e
+  `perfilDoCadastro` mandam o valor atual); `/api/zro/pessoas` ganhou `tabela`, `viaja` e `verificado`. As duas rotas
+  novas estão em `FUNCOES_BANCO` (`vercel-build.js`). O `openapi.yaml` da raiz só cobre o HUB.
+- **Tela (só `REAL`):** em Meu perfil, o medidor `#nx-selo` (`nxSeloMedidor`; anel com o %, "faltam X% e N jobs", os 6
+  traços dos jobs, e cada item que falta abre a folha que resolve, `NX_SELO_LINHA`) e a linha "Tabela de diária" com a
+  folha `nxTabelaFolha` (uma linha por função, as quatro regras, `nxCentavos`/`nxPct`, campo errado com
+  `aria-invalid`). `NX_TABELA`/`NX_SELO` vêm de `nxTabelaCarregar()` (no `realCarregar` e na primeira pintura de
+  Meu perfil) e o selo é relido (`nxSeloAtualizar`) depois de salvar perfil e equipamento. ⚠️ `recalcular()` no real
+  pega `EU.compl`, `EU.ver` e `EU.jobs` do servidor; sem servidor o % é o do aparelho e **o ✓ nunca liga**. A tabela do
+  servidor substitui o `PRECOS` (que no protótipo nascia com valores de exemplo). "Onde trabalho" e a entrada em
+  perguntas mandam `viaja` ao servidor. Para quem contrata: `realPessoa` lê `verificado`, `viaja` e `realTabela()`;
+  `precoDe` usa a tabela publicada; a linha da busca diz "diária a partir de" e o perfil mostra a tabela na aba
+  Equipamento (`realPerfilTabela`), sem o "% de perfil completo" de quem não é você.
+- `/demo` responde `tabela` e `selo` com a mesma conta (`seloDemo`); as pessoas inventadas de lá têm tabela e selo
+  inventados como elas. A conta da demo começa com 63% e 2 jobs.
+
 ## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
 
 Só no `REAL` (a prévia, as fases e as suítes de sempre não veem nada): bloco `nx-*` no começo de `#v-propostas`,

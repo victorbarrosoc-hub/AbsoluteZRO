@@ -15,6 +15,26 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Carro do Freela: tabela de diária e selo no servidor (03/11/2026)
+
+- Banco local (Postgres 16): `npm run test:banco` **58/58** (5 novos em `test/api/_tabela-testes.js`: RLS e checagens da
+  tabela, o selo calculado sem vazar conta alheia por `selo_fatos`, a vitrine exigindo pessoa e só de quem consentiu,
+  as rotas `/api/zro/tabela` e `/api/zro/selo` com erros por campo, jobs concluídos contados certo, 85% e 6 jobs dando o
+  ✓, "topo viajar" no perfil inteiro, e quem contrata vendo tabela, viagem e ✓ só com consentimento). As migrações
+  aplicam duas vezes sem efeito e com o login sem superusuário.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **50/50** (era 37): a folha da tabela vazia (nada sugerido), número inválido marca o campo e não
+  sai, salvar manda `PUT /api/zro/tabela` em centavos, a tabela relida volta igual, o medidor é o do servidor (63% →
+  94%, "faltam 4 jobs"), o ✓ só vem do servidor (nem jobs no aparelho nem 503 ligam), "Topo viajar" vai ao servidor
+  pela folha e pela entrada em perguntas, e quem contrata vê "diária a partir de" e o ✓ só de quem o servidor devolveu.
+- Bateria `node test/run.js`: 93 de 95 na rodada inteira; as duas que caíram foram `versoes` (o template foi mexido no
+  meio da rodada, builds defasados) e `site-real` (o primeiro pedido ao entrar passou a ser a tabela; a tabela agora
+  vem depois da agenda e da busca). Refeitas sozinhas: `versoes` 95/95, `site-real` 42/42, `conta-zro` 152/152,
+  `sem-zoom` 41/41, `colisao`, `toque-44` 9/9, `guilda-real` 64/64, `missoes-real` 61/61. `porta-malas-real` oscila
+  (o quadro do Sobedesce às vezes não monta em 30 s) também sem esta mudança: 2 de 5 sem ela, 2 de 7 com ela.
+- Playwright no `/demo` a 1440×900 e 390×844 (Meu perfil, folha da tabela vazia e cheia, selo antes/depois/verificado,
+  busca e perfil de quem contrata): zero erro de página. `scan-secrets`: nenhum segredo.
+
 ## Carro do Freela: telas novas do site real (02/11/2026)
 
 - Playwright (Chromium) no `/demo` a 1440×900 e 390×844, tema escuro e claro: entrada em perguntas (freela e quem

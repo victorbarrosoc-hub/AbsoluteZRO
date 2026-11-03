@@ -1,6 +1,20 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 03/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Carro do Freela: tabela de diária e selo de verificado no servidor (03/11/2026, ramo `claude/carro-telas`)
+
+- ✅ Pedido do titular ("Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado"): migração
+  `0008_tabela_e_selo` (aplica sozinha no build de produção) com `perfis.viaja`, a tabela `carro_do_freela.tabelas`
+  (uma por conta, RLS só da dona, por função "só eu" e "com meu equipamento" e as quatro regras; null = não disse) e o
+  selo calculado no banco (perfil completo ≥ 85% com o que o servidor sabe e 6 jobs concluídos), nunca guardado.
+  Rotas `GET/PUT /api/zro/tabela` e `GET /api/zro/selo`; o perfil leva o "Topo viajar"; `/api/zro/pessoas` devolve
+  tabela, viagem e o ✓ só de quem consentiu.
+- ✅ Site real: em Meu perfil, o medidor do selo do servidor (o que falta abre a folha que resolve) e a linha "Tabela de
+  diária" com a folha por função; a entrada em perguntas e "Onde trabalho" gravam o "Topo viajar" na conta. Quem
+  contrata vê "diária a partir de" na busca, a tabela no perfil e o ✓ só quando o servidor diz. Sem servidor, o
+  aparelho segue como antes e o selo não aparece. `/demo` responde as rotas novas.
+- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008.
 
 ## Carro do Freela: telas novas do site real (02/11/2026, ramo `claude/carro-telas`)
 
@@ -21,7 +35,7 @@ Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   agenda (sem Financeiro e sem os totais de dinheiro), de propostas, jobs, busca, perfil do contratante, Montar equipe,
   fechamento da escala, anúncio e caixa do brechó. O job de fora vai direto para a agenda (sem link fingido). A prévia
   e os builds de fase não mudam. Preço do anúncio, valor da proposta e tabela de diária continuam (são dado real).
-- ⬜ Decidir com o titular se a tabela de diária e o selo de verificado ficam no real (hoje só locais).
+- ✅ A tabela de diária e o selo de verificado ficam no real, no servidor (decisão do titular em 03/11; seção acima).
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
