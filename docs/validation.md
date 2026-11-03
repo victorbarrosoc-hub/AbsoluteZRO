@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Carro do Freela: telas novas do site real (02/11/2026)
+
+- Playwright (Chromium) no `/demo` a 1440×900 e 390×844, tema escuro e claro: entrada em perguntas (freela e quem
+  contrata), Meu perfil e as folhas, Propostas (lista, detalhe, brechó, aceita, enviadas, vazia), Agenda (mês, dia,
+  bloquear), Jobs (com jobs e vazio) e Brechó (vitrine e filtro): zero erro de página, sem rolagem lateral.
+- `test/demo-real.js` 37/37 (era 24): conta nova em `/demo?novo=1` cai na entrada em perguntas, cinco passos e o pronto,
+  "Topo viajar", a ★ da função principal, o @ virando link, concluir manda `PUT /api/zro/perfil` com praça, funções,
+  portfólio e a busca ligada, "Marcar minha semana" abre a agenda; as cinco telas novas aparecem e as antigas somem;
+  aceitar na caixa vai ao servidor e vira job; marcar um dia ocupado na agenda vai ao servidor.
+- Carro `npm run test:api` 49/49; bateria `node test/run.js` 95 de 95 (doca e conta-zro precisaram rodar sozinhas).
+- `scan-secrets`: nenhum segredo.
+
 ## Carro do Freela: o site real não fala do que não existe (02/11/2026)
 
 - Varredura no `/demo` (Playwright, 1440 e 390 px, os dois lados: toda tela do `MENU`, gaveta, cada artigo da Ajuda,

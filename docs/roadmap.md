@@ -2,6 +2,17 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Carro do Freela: telas novas do site real (02/11/2026, ramo `claude/carro-telas`)
+
+- ✅ Desenho aprovado pelo titular, só no site real (`REAL`; a prévia e os builds de fase não mudam): a entrada em
+  perguntas no primeiro login (uma pergunta por tela, cartão "Assim quem contrata vê você" ao lado; freela em cinco
+  passos, quem contrata em três; o fim manda o perfil à conta pelo caminho de sempre), Meu perfil como cartão + lista
+  curta com uma folha por campo, Propostas como caixa de entrada, Agenda do mês inteiro com "Bloquear dias", Jobs com o
+  próximo em destaque e a linha do tempo, Brechó como vitrine com "Seus anúncios". Dados reais, estados vazios
+  desenhados, nada de dinheiro que não existe. `/demo?novo=1` mostra a conta nova.
+- ⬜ Foto do anúncio e do portfólio no servidor (hoje a capa da categoria), chat com quem chamou e "Copiar link do
+  perfil" (sem página pública ainda).
+
 ## Carro do Freela: o site real não fala do que não existe (02/11/2026, ramo `claude/carro-perfil`)
 
 - ✅ Pedido do titular (a gaveta ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda"): só no

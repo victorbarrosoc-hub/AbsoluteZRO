@@ -181,6 +181,31 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
+
+Só no `REAL` (a prévia, as fases e as suítes de sempre não veem nada): bloco `nx-*` no começo de `#v-propostas`,
+`#v-agenda`, `#v-jobs`, `#v-brecho` e `#v-meu`, e o `.wrap` antigo some por CSS (`html.real #v-x>.wrap`). Código num
+bloco só (`NX_PRONTO`, `nxPintar`, `nxAcao`), antes de `contaZroDe`; CSS no fim da primeira folha.
+- **Entrada em perguntas** (`#ob`, `obTalvez`/`obAbrir`): no primeiro login, sem perfil pronto, em vez do
+  `abrirCadastro("entrar")`. Freela: para quê → praça (`PRACAS_REAL`, "Topo viajar") → funções (★ = a principal, a
+  primeira de `EU.func`; até 12) e nichos → @ ou link (`linkPortfolio`, "Pular") → aparecer na busca → pronto.
+  Contratante: para quê → praça → "Você contrata como?" (`PROD.tipo`) → pronto. Nome e e-mail vêm da conta. O fim é
+  `concluirCadastro({calado:true})` (consentimento + `enviarCadastroAoPerfil`, sem guia nem aviso). ⚠️ `obTalvez()` lê
+  antes `GET /api/zro/perfil`: quem já tem perfil na conta (outro aparelho) não responde de novo.
+- **Meu perfil**: o cartão "Como quem contrata vê" + uma lista; cada linha abre uma folha (`nxFolha`) com um campo só.
+  Salva com `nxPerfilSalvar(patch)`: o PUT é do perfil INTEIRO (8 campos; o servidor recusa campo desconhecido, então
+  nunca mande `arroba`/`atualizado_em` de volta) e erro de campo sai pelo `cfbMsg`. Equipamento usa as rotas de
+  inventário de sempre. O `#cfb` continua existindo (escondido) e o `cfbDesenhar` repinta a tela nova.
+- **Propostas** (caixa: lista + detalhe com data grande, fichas, "Quem chama" e "Seu dia"; no celular o próximo em
+  cartão e o detalhe em folha), **Agenda** (mês inteiro, folha do dia com o `declarar` de sempre, "Bloquear dias"),
+  **Jobs** (o próximo em destaque + linha do tempo + feitos) e **Brechó** (vitrine com destaque 2×2 e "Seus anúncios"
+  com interessados). Dados: `PROPOSTAS` (ganhou `deSub`, `criado`, `anuncio` no `realPropostas`), `REAL_ENVIADAS`,
+  `JOBS`, `AGENDA`, `ANUNCIOS`. Estado vazio desenhado em todas; nada inventado.
+- ⚠️ Estados por `data-*`/`aria-*` e celular × computador por `data-so="cel|pc"` (classe extra num elemento com
+  `display` próprio brigava com a regra de esconder).
+- `/demo?novo=1` é a conta que acabou de chegar (sem perfil, sem propostas); `CDF_DEMO.pedidos` registra o que a página
+  pediu ao servidor de mentira. A demonstração ganhou três jobs aceitos e um anúncio próprio com um interessado.
+
 ## 02/nov · 2 — o site real não fala do que não existe (`test/demo-real.js`)
 
 Titular, com a gaveta aberta: a Ajuda ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda".
