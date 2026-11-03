@@ -117,9 +117,6 @@ export function AppActions({
   const [s, setS] = useState<Situacao | null>(null)
   const [prog, setProg] = useState<Progresso | null>(null)
   const [erro, setErro] = useState<string | null>(null)
-  // "Manter no Dock" / "Criar atalho": oferecido logo depois de instalar (opcional, um toque)
-  const [recem, setRecem] = useState(false)
-  const [atalhoFeito, setAtalhoFeito] = useState<Atalho['tipo'] | null>(null)
 
   useEffect(() => {
     const a = typeof window !== 'undefined' ? window.zroDesktop?.apps : undefined
@@ -166,18 +163,16 @@ export function AppActions({
     if (!r.ok) {
       setErro(r.erro ?? 'Algo deu errado.')
       setProg(null)
-    } else if (acao === 'instalar' && r.dados === true) setRecem(true)
-    else if (acao === 'remover') setRecem(false)
+    }
   }
 
-  async function criarAtalho(tipo: Atalho['tipo']) {
+  async function criarAtalho() {
     if (!api?.atalho) return
     setErro(null)
     const r = await api.atalho(id)
     // só vira "No Dock" quando a central releu o Dock e confirmou (feito: true); nunca por otimismo
     if (!r.ok || r.dados?.feito !== true) return setErro(r.erro ?? 'Não deu para concluir. Tente de novo.')
-    setAtalhoFeito(tipo)
-    atualizarTodos(api)
+    atualizarTodos(api) // é a lista relida que mostra o selo
   }
 
   const fase = prog?.fase
@@ -270,26 +265,6 @@ export function AppActions({
             </button>
           )
         )}
-        {recem && s.atalho && api.atalho && s.atalho.feito
-          ? atalhoFeito && (
-              <span className="app-actions__feito">
-                <Icon name="check" size={14} />
-                {TEXTO_ATALHO[atalhoFeito].feito}
-              </span>
-            )
-          : recem &&
-            s.atalho &&
-            api.atalho && (
-              <button
-                type="button"
-                className="glass-btn glass-btn--small app-actions__atalho"
-                title={TEXTO_ATALHO[s.atalho.tipo].dica}
-                onClick={() => criarAtalho(s.atalho!.tipo)}
-              >
-                <Icon name="plus" size={14} />
-                {TEXTO_ATALHO[s.atalho.tipo].acao}
-              </button>
-            )}
         <button type="button" className="zro-btn zro-btn--ghost zro-btn--small" onClick={() => agir('remover')}>
           Remover
         </button>
@@ -302,6 +277,27 @@ export function AppActions({
                 ? `v${s.instalado.versao}`
                 : 'Instalado'}
         </span>
+        {/* em qualquer app instalado, a qualquer momento: botão até a central confirmar, depois só o selo.
+            Fica por último para nunca quebrar "Abrir · Remover · versão"; sem suporte (atalho null), nada. */}
+        {s.atalho &&
+          api.atalho &&
+          (s.atalho.feito ? (
+            <span className="app-actions__feito">
+              <Icon name="check" size={14} />
+              {TEXTO_ATALHO[s.atalho.tipo].feito}
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="glass-btn glass-btn--small app-actions__atalho"
+              title={TEXTO_ATALHO[s.atalho.tipo].dica}
+              aria-label={TEXTO_ATALHO[s.atalho.tipo].acao}
+              onClick={() => criarAtalho()}
+            >
+              <Icon name="plus" size={14} />
+              <span className="app-actions__atalho-txt">{TEXTO_ATALHO[s.atalho.tipo].acao}</span>
+            </button>
+          ))}
       </>
     )
   else

@@ -4960,9 +4960,26 @@ a.hbars__row:hover {
 .app-actions__erro {
   margin: 0;
 }
-/* Depois de instalar: "Manter no Dock" (Mac) / "Criar atalho" (Windows), opcional, em vidro; feito, só o selo. */
+/* App instalado: "Manter no Dock" (Mac) / "Criar atalho" (Windows), opcional, em vidro; feito, só o selo. Vai por último
+   na linha; em tela estreita (cartões de 4 colunas, celular) vira ícone-botão, o nome fica no title/aria-label. */
 .app-actions__atalho {
   gap: 6px;
+}
+@media (max-width: 560px), (min-width: 1000px) and (max-width: 1799px) {
+  .pcard .app-actions__atalho {
+    position: relative;
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .pcard .app-actions__atalho-txt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 .app-actions__feito {
   display: inline-flex;

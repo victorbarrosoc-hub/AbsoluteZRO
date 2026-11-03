@@ -46,6 +46,12 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   lê nem grava `z_lab_uso` (RLS); painel soma por modelo e por nível.
 - Migração `0056_z_custo_por_plano.sql` aplicada só no banco de teste (nada em produção).
 
+## "Manter no Dock" sempre à mão (03/11/2026)
+
+- `app-actions.tsx`: o convite deixou de depender de `recem`; usa só `s.atalho` (`feito` falso: botão; verdadeiro: selo).
+  e2e "central de apps": SYNQUEI recém-instalado e SOBEDESCE já instalado mostram o botão; app não instalado não mostra.
+- Não conferido: layout em navegador real nos 4 tamanhos de cartão e Dock num Mac de verdade.
+
 ## Central 1.4.3: "Manter no Dock" confiável (02/11/2026)
 
 - Causa mais provável, pelo código da 1.4.2 (`criarAtalho`, tipo `dock`): `defaults write -array-add` sem fila e

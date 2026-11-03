@@ -2,6 +2,14 @@
 
 Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
+
+- ✅ O botão "Manter no Dock" (Mac) / "Criar atalho" (Windows) aparece em qualquer app instalado, a qualquer momento (antes só
+  logo depois de instalar). Com o Dock confirmado pela central, só o selo "No Dock" / "Atalho criado". Sem suporte, nada.
+- ✅ Por último na linha do cartão (não quebra "Abrir · Remover · versão"); em cartões estreitos vira ícone-botão com `title`.
+- ⬜ Conferir num Mac de verdade com os apps já instalados. A central já devolvia `atalho` para todo app instalado, com uma
+  só leitura do Dock por listagem; sem mudança no app de computador.
+
 ## Central 1.4.3: "Manter no Dock" confiável (02/11/2026, ramo `dock-confiavel`)
 
 - ✅ Bug do Mac: SYNQUEI e CARRO DO FREELA mostravam "No Dock" sem entrar no Dock. Causa: gravações seguidas de

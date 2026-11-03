@@ -522,7 +522,7 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
   await expect(synquei.getByRole('progressbar')).toBeVisible()
   await expect(synquei.getByText('50%')).toBeVisible()
   await expect(synquei.getByRole('button', { name: 'Abrir' })).toBeVisible()
-  // logo depois de instalar: "Manter no Dock", opcional, um toque
+  // app instalado (aqui, na hora): "Manter no Dock", opcional, um toque
   await synquei.getByRole('button', { name: 'Manter no Dock' }).click()
   await expect(synquei.getByText('No Dock', { exact: true })).toBeVisible()
   await expect(synquei.getByRole('button', { name: 'Manter no Dock' })).toHaveCount(0)
@@ -532,8 +532,8 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
   // Instalado com versão antiga: Atualizar aparece. No app, o instalador avulso some.
   await page.getByRole('button', { name: 'SOBEDESCE' }).click()
   await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toBeVisible()
-  // já instalado antes (não acabou de instalar): sem o convite do Dock
-  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Manter no Dock' })).toHaveCount(0)
+  // já instalado antes (não acabou de instalar): o convite do Dock também aparece, a qualquer momento
+  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Manter no Dock' })).toBeVisible()
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="mac"]')).toBeHidden()
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="windows"]')).toBeHidden()
 })
