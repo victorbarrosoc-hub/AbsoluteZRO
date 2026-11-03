@@ -58,6 +58,12 @@ const MAX_CONNECTIONS = 32
 
 /** Cota de download do arquivo: esperas crescentes (repetir logo não adianta). */
 export const QUOTA_DELAYS = Object.freeze([15 * MINUTE, HOUR, 4 * HOUR, 24 * HOUR])
+// Cota de download do arquivo (downloadQuotaExceeded, 03/11/2026): o Google conta cada pedido com Range, e o download
+// em várias conexões faz muitos. 1ª vez: tenta de novo logo, numa conexão só e em blocos grandes (rec.economia).
+// 2ª: copia o arquivo no Drive da pessoa (files.copy, nada passa pelo computador), baixa a cópia e apaga só a cópia no
+// fim. Se a cópia não der, segue a espera de sempre (QUOTA_DELAYS).
+export const ECONOMIA_ESPERA_MS = 2 * MINUTE
+export const COPIA_TEMPORARIA = 'copia-temporaria'
 const QUOTA_FALLBACK_MS = HOUR
 // Falhas 'retry' que a própria tarefa anuncia como "vou tentar de novo": a fila tenta mais algumas vezes sozinha.
 const AUTO_RETRY = new Set(['remoteChanged', 'tempMissing', 'verifyFailed'])
@@ -136,7 +142,7 @@ export class TransferManager extends EventEmitter {
    * thumbnailer (miniatura de .braw: RawThumbnailer; null desliga), previas (prévia leve dos vídeos: GeradorPrevias;
    * null desliga).
    */
-  constructor({ settings, auth = null, hasher = null, paths = dataPaths(), driveFactory, keepAwake, createTask, taskOptions = {}, quotaDelays = QUOTA_DELAYS, quotaFallbackMs = QUOTA_FALLBACK_MS, quotaMaxMs = 24 * HOUR, networkDelays = NETWORK_DELAYS, log, thumbnailer, previas } = {}) {
+  constructor({ settings, auth = null, hasher = null, paths = dataPaths(), driveFactory, keepAwake, createTask, taskOptions = {}, quotaDelays = QUOTA_DELAYS, quotaFallbackMs = QUOTA_FALLBACK_MS, quotaMaxMs = 24 * HOUR, networkDelays = NETWORK_DELAYS, economiaMs = ECONOMIA_ESPERA_MS, log, thumbnailer, previas } = {}) {
     super()
     if (!settings?.get) throw new Error('TransferManager: settings é obrigatório')
     this.settings = settings
@@ -148,6 +154,7 @@ export class TransferManager extends EventEmitter {
     this.taskOptions = taskOptions
     this.createTask = createTask || ((record, ctx) => (record.type === 'download' ? new DownloadTask(record, ctx, this.taskOptions.download) : new UploadTask(record, ctx, this.taskOptions.upload)))
     this.quotaDelays = quotaDelays.length ? [...quotaDelays] : [...QUOTA_DELAYS]
+    this.economiaMs = Math.max(0, Number(economiaMs) || 0)
     this.quotaFallbackMs = quotaFallbackMs
     this.quotaMaxMs = quotaMaxMs
     this.networkDelays = networkDelays.length ? [...networkDelays] : [...NETWORK_DELAYS]
@@ -883,6 +890,7 @@ export class TransferManager extends EventEmitter {
    * `minSegmentSize` e roubo só acima de `stealMinBytes`). `big` = 3 ou mais segmentos: conta no limite de arquivos.
    */
   #downloadCost(rec, st) {
+    if (rec.economia) return { big: false, conns: 1 } // cota do arquivo estourada: uma conexão só (download.js)
     const conns = Math.min(MAX_CONNECTIONS, Math.max(1, Math.floor(Number(st.connectionsPerDownload) || 1)))
     const minSeg = Math.max(1, Number(st.minSegmentSize) || 64 * MiB)
     const size = Number(rec.size)
@@ -1004,6 +1012,15 @@ export class TransferManager extends EventEmitter {
         rec.error = null
         rec.retryAt = null
         delete rec.quotaHits
+        delete rec.economia
+        delete rec.copiaFalhou
+        if (rec.copiaTemporaria) {
+          const c = rec.copiaTemporaria
+          delete rec.copiaTemporaria
+          // A cópia sai; o registro volta a apontar para o original (o Abrir e a conferência usam ele).
+          rec.source = { ...rec.source, fileId: c.de, resourceKey: c.deResourceKey || null }
+          void this.#apagarCopia(rec.accountId, c.fileId)
+        }
         delete rec.autoRetries
         delete rec.netWaits
         delete rec.netWaitBytes
@@ -1106,7 +1123,13 @@ export class TransferManager extends EventEmitter {
   /** Cota do Google: espera e volta sozinho para a fila. */
   #wait(rec, info, error) {
     let delay
-    if (info.reason === 'downloadQuotaExceeded') {
+    const contornar = rec.type === 'download' && info.reason === 'downloadQuotaExceeded' && !rec.source?.export
+    const primeira = contornar && !rec.economia
+    if (primeira) {
+      // 1ª vez: uma conexão só, o resto num pedido só, daqui a pouco (muito menos pedidos ao Google).
+      rec.economia = true
+      delay = this.economiaMs
+    } else if (info.reason === 'downloadQuotaExceeded') {
       const hits = Math.max(0, Number(rec.quotaHits) || 0)
       delay = this.quotaDelays[Math.min(hits, this.quotaDelays.length - 1)]
       rec.quotaHits = hits + 1
@@ -1118,6 +1141,8 @@ export class TransferManager extends EventEmitter {
     rec.retryAt = Date.now() + delay
     rec.error = error
     this.#armWait(rec)
+    // 2ª vez (já estava em economia): a cópia temporária, sem esperar a hora marcada.
+    if (contornar && !primeira && !rec.copiaTemporaria && !rec.copiaFalhou) this.#copiarParaContornar(rec)
     // Limite de 750 GB/dia: vale para a conta inteira; os próximos envios dela esperam junto.
     if (rec.type === 'upload' && info.reason === 'uploadLimitExceeded') {
       for (const r of this.records.values()) {
@@ -1128,6 +1153,55 @@ export class TransferManager extends EventEmitter {
         this.#armWait(r)
         this.#touch(r)
       }
+    }
+  }
+
+  /**
+   * Cópia temporária do arquivo travado pela cota: `files.copy` no Drive da pessoa (com a marca
+   * appProperties.sobedesce = copia-temporaria), o download passa a ler a cópia (mesmo conteúdo e MD5; o que já baixou
+   * vale) e volta para a fila agora. No fim (#settle) ou ao cancelar (#cleanup), só a cópia é apagada.
+   */
+  async #copiarParaContornar(rec) {
+    const src = rec.source
+    try {
+      const drive = this.driveFor(rec.accountId)
+      const nome = String(rec.name || 'arquivo')
+      const copia = await drive.api('POST', `files/${encodeURIComponent(src.fileId)}/copy`, {
+        query: { supportsAllDrives: 'true', fields: 'id,md5Checksum,size,headRevisionId' },
+        headers: src.resourceKey ? { 'x-goog-drive-resource-keys': `${src.fileId}/${src.resourceKey}` } : undefined,
+        body: { name: `${nome} (cópia do SOBEDESCE)`, appProperties: { sobedesce: COPIA_TEMPORARIA, origem: src.fileId } },
+      })
+      const igual = copia?.id && (!src.md5 || !copia.md5Checksum || String(copia.md5Checksum).toLowerCase() === String(src.md5).toLowerCase())
+      if (!igual) throw new Error('a cópia não bateu com o original')
+      if (this.records.get(rec.id) !== rec || rec.status !== 'waiting') {
+        await this.#apagarCopia(rec.accountId, copia.id)
+        return
+      }
+      rec.copiaTemporaria = { fileId: copia.id, de: src.fileId, deResourceKey: src.resourceKey || null }
+      rec.source = { ...src, fileId: copia.id, resourceKey: null, headRevisionId: copia.headRevisionId || null }
+      this.log('cota do arquivo: baixando por uma cópia temporária', rec.id)
+      rec.retryAt = Date.now()
+      rec.error = null
+      this.#armWait(rec)
+      this.#touch(rec)
+      this.#saveSoon()
+    } catch (err) {
+      rec.copiaFalhou = true
+      this.log('cota do arquivo: a cópia temporária não deu; espera a hora marcada', rec.id, err?.message)
+      this.#saveSoon()
+    }
+  }
+
+  /** Apaga a cópia temporária (só se for nossa: confere a marca antes). Melhor esforço: nunca o original. */
+  async #apagarCopia(accountId, fileId) {
+    if (!fileId) return
+    try {
+      const drive = this.driveFor(accountId)
+      const f = await drive.api('GET', `files/${encodeURIComponent(fileId)}`, { query: { fields: 'id,appProperties', supportsAllDrives: 'true' } })
+      if (f?.appProperties?.sobedesce !== COPIA_TEMPORARIA) return this.log('cópia temporária sem a marca: não apago', fileId)
+      await drive.api('DELETE', `files/${encodeURIComponent(fileId)}`, { query: { supportsAllDrives: 'true' } })
+    } catch (err) {
+      this.log('não apaguei a cópia temporária', fileId, err?.message)
     }
   }
 
@@ -1247,6 +1321,12 @@ export class TransferManager extends EventEmitter {
   }
 
   async #cleanup(rec) {
+    if (rec.type === 'download' && rec.copiaTemporaria) {
+      const c = rec.copiaTemporaria
+      delete rec.copiaTemporaria
+      rec.source = { ...rec.source, fileId: c.de, resourceKey: c.deResourceKey || null }
+      await this.#apagarCopia(rec.accountId, c.fileId)
+    }
     if (rec.type === 'download') {
       const temp = rec.dest?.tempPath || (rec.dest?.path ? rec.dest.path + PART_SUFFIX : null)
       // Só apaga o nosso temporário (nunca um arquivo do usuário, nem com registro estranho).

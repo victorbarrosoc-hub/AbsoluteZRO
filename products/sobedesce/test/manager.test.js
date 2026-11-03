@@ -481,11 +481,12 @@ test('tarefa que termina como "skipped" continua skipped', async t => {
 
 // ─────────── cota e reconexão ───────────
 
-test('cota de download do arquivo: espera com atraso crescente e volta sozinho; os outros seguem', async t => {
+test('cota de download do arquivo: 1ª vez em economia (uma conexão), depois espera crescente; os outros seguem', async t => {
   const ctl = fakeTasks()
   const dir = await makeTmpDir()
   t.after(() => fs.rm(dir, { recursive: true, force: true }))
-  const { m } = await makeManager(t, { ctl, settings: { maxConcurrentDownloads: 1 }, quotaDelays: [150, 400, 5000] })
+  // driveFactory dos testes não sabe copiar: a cópia temporária falha e vale a espera de sempre.
+  const { m } = await makeManager(t, { ctl, settings: { maxConcurrentDownloads: 1 }, quotaDelays: [150, 400, 5000], economiaMs: 60 })
   await m.add({ batch: batch('b1'), records: [dl(dir, 'q1'), dl(dir, 'q2')] })
   await waitFor(() => ctl.live.has('q1'))
   const quota = () => new HttpError(403, { body: { error: { errors: [{ reason: 'downloadQuotaExceeded' }], message: 'The download quota for this file has been exceeded.' } } })
@@ -495,17 +496,95 @@ test('cota de download do arquivo: espera com atraso crescente e volta sozinho; 
   const w = m.get('q1')
   assert.equal(w.error.kind, 'quota')
   assert.equal(w.error.reason, 'downloadQuotaExceeded')
-  assert.ok(w.retryAt >= t0 + 140 && w.retryAt <= Date.now() + 200, `retryAt fora do esperado: ${w.retryAt - t0}`)
+  assert.equal(w.economia, true, 'a 1ª vez volta numa conexão só')
+  assert.ok(w.retryAt - t0 < 140, `a 1ª espera é a curta da economia: ${w.retryAt - t0}`)
   await waitFor(() => ctl.live.has('q2'), { message: 'o outro arquivo deveria seguir' })
   ctl.finish('q2')
   await waitFor(() => ctl.count('q1') === 2, { timeoutMs: 5000 })
   t0 = Date.now()
   ctl.fail('q1', quota())
   await waitFor(() => statusOf(m, 'q1') === 'waiting')
-  assert.ok(m.get('q1').retryAt - t0 >= 350, 'a segunda espera é maior')
+  assert.ok(m.get('q1').retryAt - t0 >= 140, 'a 2ª espera é a primeira da escada')
+  await waitFor(() => m.get('q1').copiaFalhou === true, { message: 'tentou a cópia temporária' })
   await waitFor(() => ctl.count('q1') === 3, { timeoutMs: 5000 })
+  t0 = Date.now()
+  ctl.fail('q1', quota())
+  await waitFor(() => statusOf(m, 'q1') === 'waiting')
+  assert.ok(m.get('q1').retryAt - t0 >= 350, 'a espera seguinte é maior')
+  await waitFor(() => ctl.count('q1') === 4, { timeoutMs: 5000 })
   ctl.finish('q1')
   await waitFor(() => statusOf(m, 'q1') === 'completed')
+  assert.equal(m.get('q1').economia, undefined, 'terminou: sai da economia')
+})
+
+test('cota do arquivo de novo em economia: baixa por uma cópia temporária e apaga só a cópia no fim', async t => {
+  const ctl = fakeTasks()
+  const dir = await makeTmpDir()
+  t.after(() => fs.rm(dir, { recursive: true, force: true }))
+  const chamadas = []
+  const copias = new Map()
+  const drive = {
+    async api(metodo, caminho, o = {}) {
+      chamadas.push(`${metodo} ${caminho}`)
+      const copiar = /^files\/([^/]+)\/copy$/.exec(caminho)
+      if (metodo === 'POST' && copiar) {
+        const id = `copia-de-${copiar[1]}`
+        copias.set(id, { id, appProperties: o.body.appProperties })
+        return { id, md5Checksum: 'abc', size: '1000', headRevisionId: 'rev-copia' }
+      }
+      const um = /^files\/([^/]+)$/.exec(caminho)
+      if (metodo === 'GET' && um) return copias.get(decodeURIComponent(um[1])) || { id: um[1], appProperties: {} }
+      if (metodo === 'DELETE' && um) return copias.delete(decodeURIComponent(um[1])), null
+      throw new Error(`inesperado ${metodo} ${caminho}`)
+    },
+  }
+  const { m } = await makeManager(t, { ctl, driveFactory: () => drive, quotaDelays: [60_000], economiaMs: 20 })
+  const r = dl(dir, 'c1')
+  r.source = { ...r.source, fileId: 'orig1', md5: 'abc' }
+  await m.add({ batch: batch('b1'), records: [r] })
+  await waitFor(() => ctl.live.has('c1'))
+  const quota = () => new HttpError(403, { body: { error: { errors: [{ reason: 'downloadQuotaExceeded' }] } } })
+  ctl.fail('c1', quota())
+  await waitFor(() => ctl.count('c1') === 2, { timeoutMs: 3000 })
+  ctl.fail('c1', quota())
+  // A espera seria de 1 min; a cópia põe de volta na fila na hora, lendo a cópia.
+  await waitFor(() => ctl.count('c1') === 3, { timeoutMs: 3000 })
+  assert.equal(m.get('c1').source.fileId, 'copia-de-orig1')
+  assert.deepEqual(copias.get('copia-de-orig1').appProperties, { sobedesce: 'copia-temporaria', origem: 'orig1' })
+  ctl.finish('c1')
+  await waitFor(() => statusOf(m, 'c1') === 'completed')
+  await waitFor(() => !copias.size, { message: 'a cópia foi apagada' })
+  assert.equal(m.get('c1').source.fileId, 'orig1', 'o registro volta a apontar para o original')
+  assert.ok(!chamadas.includes('DELETE files/orig1'), 'nunca apaga o original')
+})
+
+test('cota: cópia sem a marca do SOBEDESCE não é apagada', async t => {
+  const ctl = fakeTasks()
+  const dir = await makeTmpDir()
+  t.after(() => fs.rm(dir, { recursive: true, force: true }))
+  const apagados = []
+  const drive = {
+    async api(metodo, caminho) {
+      if (metodo === 'POST') return { id: 'c-x', md5Checksum: 'abc', headRevisionId: 'r' }
+      if (metodo === 'GET') return { id: 'c-x', appProperties: {} } // alguém tirou a marca
+      if (metodo === 'DELETE') apagados.push(caminho)
+      return null
+    },
+  }
+  const { m } = await makeManager(t, { ctl, driveFactory: () => drive, quotaDelays: [60_000], economiaMs: 20 })
+  const r = dl(dir, 'm1')
+  r.source = { ...r.source, fileId: 'orig2', md5: 'abc' }
+  await m.add({ batch: batch('b1'), records: [r] })
+  await waitFor(() => ctl.live.has('m1'))
+  const quota = () => new HttpError(403, { body: { error: { errors: [{ reason: 'downloadQuotaExceeded' }] } } })
+  ctl.fail('m1', quota())
+  await waitFor(() => ctl.count('m1') === 2, { timeoutMs: 3000 })
+  ctl.fail('m1', quota())
+  await waitFor(() => ctl.count('m1') === 3, { timeoutMs: 3000 })
+  ctl.finish('m1')
+  await waitFor(() => statusOf(m, 'm1') === 'completed')
+  await new Promise(ok => setTimeout(ok, 50))
+  assert.deepEqual(apagados, [])
 })
 
 test('limite diário de upload: espera, os próximos envios da conta esperam junto, e todos voltam sozinhos', async t => {

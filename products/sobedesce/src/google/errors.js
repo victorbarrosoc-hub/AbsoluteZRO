@@ -29,7 +29,7 @@ const RETRYABLE_REASONS = new Set([
 const QUOTA_REASONS = {
   dailyLimitExceeded: { ms: 60 * 60_000, msg: 'Limite diário da API do Google atingido. Vou tentar de novo mais tarde.' },
   uploadLimitExceeded: { ms: 60 * 60_000, msg: 'Você atingiu o limite de upload do Google (750 GB por dia). Retomo sozinho mais tarde.' },
-  downloadQuotaExceeded: { ms: 60 * 60_000, msg: 'O Google bloqueou downloads deste arquivo por excesso de acessos. Tento de novo mais tarde.' },
+  downloadQuotaExceeded: { ms: 60 * 60_000, msg: 'O Google travou os downloads deste arquivo (muitos acessos). Tento de novo numa conexão só e, se precisar, por uma cópia no seu Drive.' },
 }
 
 const FATAL_REASONS = {

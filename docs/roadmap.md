@@ -1667,6 +1667,7 @@ do card... não consigo localizar o job que quero achar".
 
 ## SOBEDESCE: Drive híbrido (31/10/2026)
 
+- 🔶 Ramo `sobedesce-cota-download` (titular, 03/11/2026): arquivo travado pela cota de download do Google (`downloadQuotaExceeded`) tenta de novo numa conexão só e, se o Google recusar outra vez, baixa por uma cópia temporária no Drive da pessoa (só a cópia é apagada no fim, conferindo a marca). App de computador 0.3.3, sem site na Vercel.
 - 🔶 Ramo `sobedesce-wifi-espera` (titular via Painel Geral, 02/11/2026): **Wi-Fi celular ↔ computador/celular descontinuado** (sem data para voltar). Saiu do celular (aba Aparelhos, "Mandar para…") e do computador (motor, janela oculta do WebRTC, partes em Dispositivos); `/api/p2p/*` responde 503 fixo, sem sessão nem banco, e os apps antigos recuam. "Entre computadores" segue. Esperando o lote do dia para publicar.
 - ✅ Ramo `console-acesso-drive`: o "Acesso total" saiu do `/admin` do SOBEDESCE e foi para o console da Absolute ZRO (Apps › SOBEDESCE › Drive inteiro, `/admin/apps/sobedesce`): vagas e pessoas lidas do SOBEDESCE na hora, ligar/desligar só admin com motivo, pedido assinado `console.drive.*` (sem segredo novo), auditoria nos dois lados.
 - 🔶 No ramo `sobedesce-drive-hibrido`: "Acesso total" (`drive`) só por vaga liberada pelo admin (limite 90, vaga usada não volta); os demais conectam com `drive.file` e "Escolher do Drive" (Picker); faltam as variáveis `GOOGLE_PICKER_API_KEY` e `GOOGLE_APP_ID` no projeto Vercel `sobedesce` e a versão do desktop que entenda o modo.
