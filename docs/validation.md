@@ -154,6 +154,23 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
 - Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
 
+## Carro do Freela: a Agenda em quatro estados e o `/demo` num iframe (03/11/2026)
+
+- `test/demo-real.js` **75/75** (era 59): no computador, cada dia de hoje em diante tem o estado do job e da agenda
+  declarada (livre, negociando, ocupado, meia diária) e a legenda conta igual ao mês; ocupado, negociando, meia diária
+  (manhã) e dia de job nos dias da conta da demonstração; os quatro diferem por desenho e não só pela cor (liso,
+  tracejado, hachura, metade); hoje com o anel; a legenda filtra e volta; a folha do dia mostra o desenho de cada opção e
+  "Negociando" atualiza a legenda; "Bloquear dias" marca dois dias e manda 2 PUT. No celular (390×844): o mês pequeno
+  com os mesmos estados e contagem, legenda numa linha, itens e dias com 44px ou mais, sem rolagem lateral, e "Tarde
+  ocupada" vira meia diária. O `/demo` num iframe liga a conta da demonstração (10 propostas, 101 pessoas); o site de
+  verdade num iframe segue sem conta.
+- `npm run test:api` **49/49**.
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **95 de 95** (`aluguel`, `cadastro` e `conta-zro`
+  falharam só em paralelo e passaram sozinhas; `colisao` pegou uma regra com duas classes raiz, corrigida). A prévia
+  e as fases não mudam (a Agenda nova só existe no `REAL`).
+- Playwright no `/demo` a 1440×900 e 390×844, claro e escuro, com os quatro estados na tela: zero erro de página.
+  `scan-secrets`: nenhum segredo.
+
 ## Carro do Freela: o job só conta no selo quando os dois confirmam (03/11/2026, `0009_job_confirmado`)
 
 - Banco local (Postgres 16): `npm run test:banco` **61/61** (3 novos em `test/api/_confirmacao-testes.js`: RLS de

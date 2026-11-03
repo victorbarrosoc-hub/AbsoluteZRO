@@ -141,6 +141,15 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
   permissão. O checklist pessoal flutuante no computador ficou de fora.
 - Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
 
+## Carro do Freela: a Agenda em quatro estados (03/11/2026, ramo `claude/carro-telas`)
+
+- ✅ Pedido do titular ("não consigo mais ver fácil quais dias estou livre, quais tô ocupado e quais estou negociando"):
+  no site real, cada dia do mês tem um estado na célula inteira, igual no computador e no celular, no claro e no
+  escuro: livre (verde liso), negociando (âmbar tracejado), ocupado (hachura; dia de job também) e meia diária (metade
+  hachurada). Não depende só da cor. A legenda em cima do mês conta os dias que faltam e filtra ao tocar; saiu o número
+  grande de dias livres. Hoje mantém o anel; tocar no dia, "Bloquear dias" e "Marcar minha semana" seguem iguais.
+- ✅ `/demo` dentro de um iframe mostra a conta da demonstração; o site de verdade num iframe segue sem conta.
+
 ## Carro do Freela: tabela de diária e selo de verificado no servidor (03/11/2026, ramo `claude/carro-telas`)
 
 - ✅ Pedido do titular ("Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado"): migração

@@ -243,6 +243,31 @@ moravam só no aparelho. Agora:
   já disse sim), o 11 espera quem chamou e o 12 é um job que eu contratei esperando a minha resposta.
   `CDF_DEMO.confirmacoes()` mostra o que a página respondeu. Suítes: `_confirmacao-testes.js` (banco) e `demo-real.js`.
 
+## 03/nov · 3 — a Agenda em quatro estados, e o `/demo` dentro de um iframe (`test/demo-real.js`)
+
+Titular, no celular: *"Em agenda não consigo mais ver fácil quais dias estou livre, quais tô ocupado e quais estou
+negociando"*. O mês da Agenda nova (só `REAL`) pintava o estado só no número (verde, âmbar, um pontinho e um "ocupado"
+miúdo). Agora:
+- **Um estado por dia, na célula inteira** (`nxAgEstado`, mesma fonte do `statusEu`: job + `AGENDA {e,p,h}` do
+  servidor): **livre** = verde liso; **negociando** = âmbar com borda **tracejada** (job segurando ou dia declarado
+  `negociando`; se for só uma metade, a metade âmbar); **ocupado** = **hachura** cheia (dia `fechado/dia` ou com job
+  confirmado; o chip do job continua no computador e vira um traço ciano no celular); **meia diária** = **metade
+  hachurada** (em cima a manhã, embaixo a tarde; `fechado` com `p` manha/tarde). Nunca só pela cor: liso, tracejado,
+  hachura e metade. `data-ag` (livre|neg|ocup|meia|passou) e `data-meia` nas células do computador (`.nx-dia`), do
+  celular (`.nx-mini-d`, 54px de altura), da legenda e da folha do dia (`.nx-sw`), todos com a classe `.nx-ag-c`.
+  `data-est` (o `statusEu`) continua na célula do computador. Tokens `--ag-oc1/--ag-oc2/--ag-oc-tx` (escuro e claro) e
+  `--ag-livre/--ag-neg/--ag-hachura` em `.nx-ag-mes,.nx-folha`.
+- **A legenda é o resumo e o filtro** (`.nx-leg`, em cima do mês): "23 livres · 1 negociando · 3 ocupados · 1 meia
+  diária", contados de hoje em diante no mês visível; só aparece o estado que existe. Tocar acende só aqueles dias
+  (`NX.agFiltro`, `data-apaga` nos outros); tocar de novo volta. No celular é uma linha de quatro blocos. Saíram o
+  número grande "28 dias livres", a barra e "N jobs · N dias bloqueados" do trilho.
+- **Hoje** mantém o anel (agora `outline`, para a borda ficar com o estado). "Bloquear dias" marca com borda cheia e ✓.
+  A folha do dia (`nxDiaFolha`) ganhou o desenho de cada opção e a ordem Livre, Negociando ("segurando a data"),
+  Ocupado, Manhã ocupada, Tarde ocupada; `declarar`/`liberarDia` como antes.
+- **`/demo` num iframe:** `zroLigavel()` desligava a conta em qualquer iframe, então a demonstração embutida (uma prévia)
+  ficava vazia. Agora `(!emIframe()||!!window.CDF_DEMO)`: só o `src/demo.js` define `CDF_DEMO`, então o site de verdade
+  num iframe segue com a conta desligada. A suíte cobra os dois.
+
 ## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
 
 Só no `REAL` (a prévia, as fases e as suítes de sempre não veem nada): bloco `nx-*` no começo de `#v-propostas`,
