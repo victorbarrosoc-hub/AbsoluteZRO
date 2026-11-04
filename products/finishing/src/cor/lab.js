@@ -64,8 +64,10 @@ export const AJUSTES = [
   { id: 'sombras', nome: 'Sombras', min: -100, max: 100, fino: true, dica: 'Acima de 0 abre a sombra; abaixo fecha' },
   { id: 'preto', nome: 'Preto', min: -100, max: 100, fino: true, dica: 'Só a sombra profunda: abaixo de 0 afunda, acima levanta' },
   { id: 'calor', nome: 'Calor', min: 0, max: 100, fino: true, dica: 'Meio-tom e pele mais quentes e ricos, sem amarelar o branco' },
-  { id: 'estilo', nome: 'Estilo', min: -100, max: 100, fino: true, dica: 'Retrô (sombra quente, alta fria) ↔ moderno (sombra petróleo, alta quente)' },
-  { id: 'densidade', nome: 'Densidade da cor', min: 0, max: 100, fino: true, dica: 'Cor forte mais densa e escura, como no filme subtrativo' },
+  { id: 'separacao', nome: 'Separação', min: -100, max: 100, fino: true, dica: 'Sombra fria e alta quente da cópia: -100 tira, +100 dobra' },
+  { id: 'era', nome: 'Era da cópia', min: -100, max: 100, fino: true, dica: 'Retrô (cinza quente, cor contida) ↔ moderno (cinza petróleo, verde teal, mais cor)' },
+  { id: 'densidade', nome: 'Densidade da cor', min: -100, max: 100, fino: true, dica: 'Corante: abaixo de 0 a cor sai e clareia; acima, cor cheia e mais escura' },
+  { id: 'pretoNeutro', nome: 'Preto neutro', min: -100, max: 100, fino: true, dica: 'Só o preto: acima de 0 tira a cor da sombra profunda' },
   { id: 'branqueamento', nome: 'Sem branqueamento', min: 0, max: 100, fino: true, dica: 'Bleach bypass: a prata fica, mais contraste e menos cor' },
   { id: 'peleMatiz', nome: 'Matiz da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: vermelho ↔ amarelo' },
   { id: 'peleSat', nome: 'Saturação da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: menos ↔ mais cor' },
@@ -169,8 +171,13 @@ export function criarLab(receita = {}) {
     altas: aj.altas / 100,
     sombras: aj.sombras / 100,
     preto: aj.preto / 100,
-    estilo: aj.estilo / 100,
+    estilo: (receita.legado?.estilo ?? 0) / 100,
+    separacao: aj.separacao / 100,
+    era: aj.era / 100,
+    pretoNeutro: aj.pretoNeutro / 100,
+    acabamento: receita.legado ? 0 : 1,
     densidade: aj.densidade / 100,
+    densidadeLegado: (receita.legado?.densidade ?? 0) / 100,
     branqueamento: aj.branqueamento / 100,
     peleMatiz: aj.peleMatiz / 100,
     peleSat: aj.peleSat / 100,
@@ -197,7 +204,7 @@ export function criarLab(receita = {}) {
 
 // ─────────── receita (.revela) ───────────
 
-export const VERSAO_RECEITA = 5
+export const VERSAO_RECEITA = 6
 
 /** Receita → texto do arquivo .revela (JSON, legível, para reabrir no Lab). */
 export function escreverReceita(receita) {
@@ -218,6 +225,7 @@ export function escreverReceita(receita) {
     intensidade: receita.intensidade ?? 1,
     correcao: receita.correcao ?? null,
     ajustes: { ...AJUSTES_NEUTROS, ...(receita.ajustes ?? {}) },
+    ...(receita.legado ? { legado: receita.legado } : {}),
   }
   return JSON.stringify(r, null, 2) + '\n'
 }
@@ -226,7 +234,9 @@ export function escreverReceita(receita) {
  * Texto .revela → receita. Recusa o que não for receita do Lab; valores fora do lugar voltam para o limite. A versão 1
  * (motor de tela) abre com a mesma base e os mesmos ajustes; a correção de branco antiga não vale no motor novo. A
  * versão 2 não tinha cópia e a 3 não tinha negativo, luz da cópia, Expandido nem revelação: abrem com os da base. Até a
- * 4 não havia Boost: abrem com ele em 0, para o look salvo continuar o mesmo.
+ * 4 não havia Boost: abrem com ele em 0, para o look salvo continuar o mesmo. Até a 5 não havia o acabamento da cópia
+ * (tom, polos, compressão de cor e separação): abrem sem ele (`legado`), com o Estilo e a Densidade antigos como
+ * estavam (a Densidade nova age depois da cópia e vai para os dois lados).
  */
 export function lerReceita(texto) {
   let r
@@ -239,6 +249,14 @@ export function lerReceita(texto) {
   if (r.versao > VERSAO_RECEITA) throw new Error('Receita de uma versão mais nova da Revela.')
   const ajustes = {}
   for (const a of AJUSTES) ajustes[a.id] = limitar(Number(r.ajustes?.[a.id]) || 0, a.min, a.max)
+  const antiga = r.versao < 6 || r.legado
+  const legado = antiga
+    ? {
+        estilo: limitar(Number(r.legado?.estilo ?? r.ajustes?.estilo) || 0, -100, 100),
+        densidade: limitar(Number(r.legado?.densidade ?? (r.versao < 6 ? r.ajustes?.densidade : 0)) || 0, 0, 100),
+      }
+    : null
+  if (r.versao < 6) ajustes.densidade = 0
   const c = r.correcao
   const ganhos = Array.isArray(c?.ganhos) && c.ganhos.length === 3 ? c.ganhos.map((v) => limitar(Number(v) || 1, 0.85, 1.15)) : null
   return {
@@ -255,5 +273,6 @@ export function lerReceita(texto) {
     intensidade: limitar(Number(r.intensidade ?? 1), 0, 1),
     correcao: c && typeof c === 'object' ? { exposicao: limitar(Number(c.exposicao) || 0, -2, 2), ganhos } : null,
     ajustes,
+    ...(legado ? { legado } : {}),
   }
 }

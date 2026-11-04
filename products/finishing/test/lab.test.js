@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AJUSTES, BOOST_PADRAO, GRUPOS, VERSAO_RECEITA, analisarFrame, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { codigoParaOklab } from '../src/cor/oklab.js'
+import { criarMotor, perfilDe } from '../src/cor/pelicula.js'
 
 const distancia = (x, y) => Math.hypot(...x.map((v, i) => v - y[i]))
 
@@ -114,8 +115,8 @@ test('Receita .revela: ida e volta, valores fora do limite voltam para o limite,
   assert.equal(lerReceita('{"revela":"lab","versao":2,"base":"revela"}').copia, '')
 })
 
-test('receita v5: o Boost vem ligado em 50, vai e volta no .revela e as receitas antigas abrem sem ele', () => {
-  assert.equal(VERSAO_RECEITA, 5)
+test('receita: o Boost vem ligado em 50, vai e volta no .revela e as receitas antigas abrem sem ele', () => {
+  assert.equal(VERSAO_RECEITA, 6)
   assert.equal(BOOST_PADRAO, 50)
   assert.equal(criarLab({ base: '250d-2383' }).receita.boost, 50)
   assert.equal(criarLab({ base: '250d-2383' }).motor.boost, 0.5)
@@ -124,4 +125,23 @@ test('receita v5: o Boost vem ligado em 50, vai e volta no .revela e as receitas
   assert.equal(lerReceita(escreverReceita({ base: '250d-2383' })).boost, 50)
   // até a v4 não havia Boost: o look salvo continua o mesmo
   assert.equal(lerReceita('{"revela":"lab","versao":4,"base":"250d-2383"}').boost, 0)
+})
+
+test('receita v6: o acabamento da cópia vem ligado; as receitas até a v5 abrem sem ele e com o Estilo e a Densidade antigos', () => {
+  const nova = criarLab({ base: '250d-2383' })
+  assert.equal(nova.motor.acabamento, 1)
+  // a v5 com Estilo e Densidade: abre como era (sem acabamento, com os dois ajustes do jeito antigo)
+  const v5 = lerReceita('{"revela":"lab","versao":5,"base":"250d-2383","boost":50,"ajustes":{"estilo":40,"densidade":60}}')
+  assert.deepEqual(v5.legado, { estilo: 40, densidade: 60 })
+  assert.equal(v5.ajustes.densidade, 0)
+  const lab = criarLab(v5)
+  assert.equal(lab.motor.acabamento, 0)
+  const antigo = criarMotor(perfilDe('250d-2383'), { boost: 50, estilo: 0.4, densidadeLegado: 0.6, acabamento: 0 })
+  for (const x of [[0.18, 0.18, 0.18], [0.3, 0.15, 0.08], [0.05, 0.12, 0.3]]) assert.deepEqual(lab.motor.emCena(x), antigo.emCena(x))
+  // e continua antiga quando é salva de novo
+  assert.deepEqual(lerReceita(escreverReceita(v5)).legado, v5.legado)
+  // os ajustes novos vão e voltam
+  const r = lerReceita(escreverReceita({ base: '250d-2383', ajustes: { separacao: -30, era: 50, pretoNeutro: 80, densidade: -40 } }))
+  assert.deepEqual([r.ajustes.separacao, r.ajustes.era, r.ajustes.pretoNeutro, r.ajustes.densidade], [-30, 50, 80, -40])
+  assert.equal(r.legado, undefined)
 })

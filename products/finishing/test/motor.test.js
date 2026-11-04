@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { criarTela, curvaDeTom, diParaLinear, linearParaDi } from '../src/cor/cena.js'
 import { aplicarTetra, assar } from '../src/cor/cube.js'
-import { GRUPOS, NEUTRO, criarMotor, dwgParaOklab } from '../src/cor/pelicula.js'
+import { GRUPOS, NEUTRO, criarMotor, dwgParaOklab, perfilDe } from '../src/cor/pelicula.js'
 import { avaliarLook } from '../src/cor/qc.js'
 import { escreverClf, montarPacote, offsetDaCorrecao, slugPack } from '../src/cor/pacote.js'
 import { crc32 } from '../src/imagem/zip.js'
@@ -208,9 +208,10 @@ test('pacote: nomes no padrão ARRI, CLF com azul mais rápido, CDL da correçã
 test('Boost (REVELAFILM): fora da película não age; em 0 é a película pura; o cinza fica cinza e a pele fica com a cópia', () => {
   const p = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === '250d-2383')
   const r = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === 'revela')
-  const puro = criarMotor(p)
-  const zero = criarMotor(p, { boost: 0 })
-  const cheio = criarMotor(p, { boost: 100 })
+  // o Boost sozinho (o acabamento da cópia, que vem depois dele, tem o teste dele)
+  const puro = criarMotor(p, { acabamento: 0 })
+  const zero = criarMotor(p, { boost: 0, acabamento: 0 })
+  const cheio = criarMotor(p, { boost: 100, acabamento: 0 })
   assert.equal(criarMotor(r, { boost: 100 }).boost, 0, 'look sem negativo nem cópia: sem Boost')
   assert.equal(cheio.boost, 1)
   for (const x of [[0.18, 0.18, 0.18], [0.3, 0.15, 0.08], [0.1, 0.2, 0.4]]) assert.deepEqual(zero.emCena(x), puro.emCena(x))
@@ -237,4 +238,59 @@ test('controle de qualidade: os 25 looks passam também com o Boost em 50 (o pad
         const r = avaliarLook(criarMotor(p, { boost }), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
         assert.ok(r.ok, `${p.id} com Boost ${boost}: ${r.verificacoes.filter((v) => !v.ok).map((v) => `${v.id}=${v.valor}`).join(', ')}`)
       }
+})
+
+test('acabamento da cópia (REVELAFILM): segura o neon, enche a cor fraca, junta os polos e separa sombra e alta', () => {
+  const p = perfilDe('250d-2383')
+  const sem = criarMotor(p, { boost: 50, acabamento: 0 })
+  const com = criarMotor(p, { boost: 50 })
+  const ok = (m, x) => dwgParaOklab(m.emCena(x))
+  const croma = (o) => Math.hypot(o[1], o[2])
+  const matiz = (o) => (Math.atan2(o[2], o[1]) * 180) / Math.PI
+  // só com cópia de cinema
+  assert.equal(criarMotor(perfilDe('revela')).acabamento, 0)
+  assert.equal(com.acabamento, 1)
+  // cor extrema (quase o primário do DWG) é segurada; cor fraca do dia a dia ganha um pouco
+  assert.ok(croma(ok(com, [0.02, 0.3, 0.02])) < croma(ok(sem, [0.02, 0.3, 0.02])) * 0.9, 'verde neon segurado')
+  assert.ok(croma(ok(com, [0.2, 0.18, 0.15])) > croma(ok(sem, [0.2, 0.18, 0.15])) * 1.05, 'cor fraca mais cheia')
+  // polos: o roxo vai para o azul (o matiz desce)
+  const roxo = [0.12, 0.06, 0.3]
+  assert.ok(matiz(ok(com, roxo)) < matiz(ok(sem, roxo)) - 3, 'roxo para o azul')
+  // separação: a sombra do cinza esfria (b desce) e a alta esquenta (b sobe)
+  const b = (m, y) => ok(m, [y, y, y])[2]
+  assert.ok(b(com, 0.18 * 2 ** -3) < b(sem, 0.18 * 2 ** -3) - 0.002, 'sombra fria')
+  assert.ok(b(com, 0.18 * 2 ** 2.5) > b(sem, 0.18 * 2 ** 2.5) + 0.002, 'alta quente')
+  // tom: o meio abre um pouco, a luz continua subindo (o QC confere a rampa inteira)
+  assert.ok(ok(com, [0.18, 0.18, 0.18])[0] > ok(sem, [0.18, 0.18, 0.18])[0])
+})
+
+test('ajustes da cópia: Separação, Era, Preto neutro, Densidade para os dois lados e o bleach com o ponto 1 stop acima', () => {
+  const p = perfilDe('250d-2383')
+  const m = (extra) => criarMotor(p, { boost: 50, ...extra })
+  const ok = (mm, x) => dwgParaOklab(mm.emCena(x))
+  const croma = (o) => Math.hypot(o[1], o[2])
+  const sombra = 0.18 * 2 ** -3
+  const cinza = (mm, y) => ok(mm, [y, y, y])
+  // separação -1 tira a separação inteira (o cinza fica com o tom da própria cópia)
+  assert.ok(Math.abs(cinza(m({ separacao: -1 }), sombra)[2] - cinza(m({ acabamento: 0 }), sombra)[2]) < 0.004)
+  assert.ok(cinza(m({ separacao: 1 }), sombra)[2] < cinza(m({}), sombra)[2])
+  // era: retrô aquece o meio, moderno puxa para o petróleo
+  assert.ok(cinza(m({ era: -1 }), 0.18)[2] > cinza(m({}), 0.18)[2] + 0.005)
+  assert.ok(cinza(m({ era: 1 }), 0.18)[2] < cinza(m({}), 0.18)[2] - 0.005)
+  // preto neutro: tira a cor só da sombra profunda
+  const escuro = [0.004, 0.006, 0.012]
+  assert.ok(croma(ok(m({ pretoNeutro: 1 }), escuro)) < croma(ok(m({}), escuro)) * 0.5)
+  const meio = [0.2, 0.15, 0.1]
+  assert.ok(Math.abs(croma(ok(m({ pretoNeutro: 1 }), meio)) - croma(ok(m({}), meio))) < 0.002)
+  // densidade: -1 quase sem cor e mais claro; +1 mais cor e mais escuro (num verde: a pele fica pela metade)
+  const verde = [0.08, 0.25, 0.06]
+  const base = ok(m({}), verde)
+  const menos = ok(m({ densidade: -1 }), verde)
+  const mais = ok(m({ densidade: 1 }), verde)
+  assert.ok(croma(menos) < croma(base) * 0.3 && menos[0] > base[0])
+  assert.ok(croma(mais) > croma(base) * 1.15 && mais[0] < base[0])
+  // bleach: o meio escurece um pouco e as altas abrem
+  const semB = m({}), comB = m({ branqueamento: 1 })
+  assert.ok(cinza(comB, 0.18)[0] < cinza(semB, 0.18)[0])
+  assert.ok(cinza(comB, 0.18 * 2 ** 3)[0] > cinza(semB, 0.18 * 2 ** 3)[0])
 })

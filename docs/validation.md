@@ -5061,7 +5061,44 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Lab refeito como workspace (lab.html, app/workspace.css, app/lab.js): barra com o nome do look e as etapas 01–05
   (acende a que está à vista e leva até ela), Film library à esquerda, a imagem no centro, a revelação à direita por
   etapa; no computador cada coluna rola sozinha e a imagem fica parada; no celular, imagem, biblioteca e etapas em
-  sequência. Sala sempre escura; ação principal (Baixar LUT) e etapa atual em vermelho cinematográfico.
+  sequência. Sala sempre escura, em preto e branco: a cor vem dos frames; azul cinematográfico só nos detalhes (etapa atual, trilho dos controles).
 - Fontes servidas pelo próprio site (CSP 'self'): Inter (variável), OFL, com a licença em fontes/ (sem serifada, pedido do titular).
 - Todos os IDs e papéis do Lab ficaram; `npm test` da Revela 191/191 (com as telas em Chromium).
 - A integração AEON ↔ REVELAFILM é direção de produto: não existe ainda (o AEON segue fechado pelo gate).
+
+## REVELAFILM: acabamento da cópia e os ajustes da cópia (04/11/2026)
+
+Pedido do titular: entender o comportamento do Filmverse Arsenal (demo, no Resolve dele) e levar para a REVELAFILM o que
+fizer sentido, com matemática própria. Nada do código deles foi lido nem copiado: o instalador (Filmverse Sync) só baixa
+as DCTLs depois da licença. Medição de caixa-preta: o titular passou pelo DCTL uma carta de medição nossa (DaVinci Wide
+Gamut / Intermediate, TIFF 16 bits: escala de cinza de −8 a +6 stops, 24 matizes × 5 cromas × 3 exposições e uma grade
+17³) e um frame dele, mudando um controle por vez. A passagem sem DCTL voltou idêntica (erro zero). As medições, a carta
+renderizada e os frames dele ficam fora do repositório e do site.
+
+- Medido (carta, padrão do Filmverse × REVELAFILM até hoje): sombras iguais; meio-tom com uns 19% mais contraste e meio
+  stop mais claro; altas que deitam antes (branco em ~93%); cinza com sombra fria e alta quente (o Split dele vem ligado);
+  cor fraca 15–30% mais cheia e cor extrema segurada (0,6×); matizes juntos em polos (vermelho e magenta para o laranja,
+  verde-amarelo para o verde, roxo para o azul). Uma leitura anterior, feita num JPEG 8 bits, dizia o contrário sobre o
+  cinza (0,85 stop mais escuro): estava errada, a carta corrigiu.
+- Controles dele, medidos um a um: Split Intensity (sombra fria/alta quente, linear de 0 a 2), Style (troca o cinza, os
+  polos e a cor), Bleach Bypass (−52% de cor e contraste aberto em 2), Filmic Saturation (cor na densidade, até o P&B que
+  clareia), Neutral Black (tira a cor só abaixo de −2 stops), Print D60/D65 (D60 ~0,6 b mais quente).
+- No motor (`ACABAMENTO` em `src/cor/pelicula.js`), depois da cópia e do High Density, só com cópia de cinema: tom (meio
+  abre, altas deitam), polos de matiz (curva periódica suave, pela saturação), compressão de cor (tanh na saturação, teto
+  menor perto do preto e do branco) e separação. A pele fica fora dos polos e da separação (pela cor da cena). Números
+  próprios, contidos: um ajuste livre contra a carta chegava a giros de 29°; ficou ~75% disso e suave.
+- Contra a carta: ΔE Oklab médio de 8,0 para 5,3 (escala de cinza 2,4 → 1,2; matizes 7,3 → 4,6; grade 9,6 → 6,6).
+- Ajustes novos no Lab (ajuste fino): **Separação** (−100 tira, +100 dobra), **Era da cópia** (retrô: cinza quente e cor
+  contida; moderno: cinza petróleo, polos mais fortes e mais cor), **Preto neutro** e **Densidade da cor** de −100 a +100
+  (agora depois da cópia). O Estilo antigo saiu (a separação e a Era fazem o papel dele). Sem branqueamento: o ponto que
+  fica parado subiu para 1 stop acima do cinza.
+- Receita `.revela` v6. Até a v5 abrem sem o acabamento e com o Estilo e a Densidade antigos (`legado`), idênticas.
+- Correções no caminho: o cinza de referência da cópia cortava a luz em zero (o azul profundo do DWG tem luminância
+  negativa) e fazia bico; agora passa suave. A proteção de pele do High Density usava um máximo com bico; agora une as
+  duas medidas sem bico.
+- QC: os 25 looks passam com o High Density em 0, 50 e 100. Nos extremos dos ajustes novos, a Separação em +100 tinge o
+  cinza além do limite do QC (0,045 / 0,035, de propósito, como o Split em 2) e a Densidade em ±100 mexe no matiz da pele
+  da 250D + 2383 (13–18° / 12). Testes: 194 de 194.
+- Material de teste: footage oficial da ARRI (ALEXA 35, Mini LF, Mini) e da DJI, só nos testes internos. Os frames do
+  titular não foram usados no desenvolvimento (pedido dele).
+- Não feito: as imagens da página inicial ainda são do motor anterior (não foram refeitas).

@@ -31,6 +31,11 @@ const suave = (a, b, x) => {
   const t = limitar((x - a) / (b - a), 0, 1)
   return t * t * (3 - 2 * t)
 }
+/** Como `suave`, mas sem bico também na curvatura (quíntica): para o que entra numa LUT de cor saturada. */
+const suave5 = (a, b, x) => {
+  const t = limitar((x - a) / (b - a), 0, 1)
+  return t * t * t * (t * (6 * t - 15) + 10)
+}
 const GRAU = Math.PI / 180
 const distancia = (h, centro) => ((((h - centro) % 360) + 540) % 360) - 180
 const noMatiz = (h, centro, largura) => {
@@ -472,6 +477,38 @@ const logCamada = (v) => {
 const peOmbro = (e, pe, ombro) => (e >= 0 ? (ombro === Infinity ? e : ombro * Math.tanh(e / ombro)) : pe === Infinity ? e : pe * Math.tanh(e / pe))
 
 /**
+ * Acabamento da cópia REVELAFILM (titular, 04/11/2026): o que uma cópia projetada faz com a imagem e a ficha técnica
+ * sozinha não conta, com números próprios, conferidos numa carta de medição (escala de cinza, 24 matizes × 5 cromas × 3
+ * exposições e uma grade 17³). Age depois da cópia e do High Density, na luz da cena:
+ *   - tom: o meio-tom abre um pouco e as altas deitam antes do branco (a luz sempre sobe);
+ *   - polos de matiz: as cores se juntam em poucos polos, como os corantes da cópia fazem (vermelho e magenta para o
+ *     laranja, verde-amarelo para o verde, roxo para o azul), mais forte quanto mais cor;
+ *   - compressão de cor: cor fraca ganha um pouco, cor extrema é segurada (neon vira cor de cinema), na saturação
+ *     (croma ÷ luz), menor perto do preto e do branco;
+ *   - separação: sombra fria e alta quente, a assinatura da cópia (de 0 a 2, 1 no padrão).
+ * A Era da cópia (−1 retrô a +1 moderno) dosa os polos e a cor e tinge o cinza do meio (retrô quente, moderno petróleo).
+ */
+export const ACABAMENTO = {
+  tom: { meio: 0.55, centro: 0.9, largura: 3, ombro: 0.45 },
+  polos: { graus: [16, 19, -8, 5, 16, 4, 11, 10, -6, -13, -22, -7], saturacao: 0.06 },
+  compressao: { teto: 0.29, ganho: 1.18, preto: 0.5, branco: 0.2 },
+  separacao: { sombras: [-0.012, -0.02], altas: [-0.006, 0.012] },
+  era: { tom: [0.016, 0.02], cor: 0.12 },
+}
+
+/** Valor periódico em nós a cada 30° (Catmull-Rom): curva de matiz suave, sem bico. */
+function noCirculo(nos, h) {
+  const n = nos.length
+  const passo = 360 / n
+  const u = ((((h % 360) + 360) % 360) / passo) % n
+  const i = Math.floor(u)
+  const t = u - i
+  const p = (k) => nos[(((i + k) % n) + n) % n]
+  const [p0, p1, p2, p3] = [p(-1), p(0), p(1), p(2)]
+  return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t)
+}
+
+/**
  * O look de um perfil em luz da cena: `emCena([r, g, b]) → [r, g, b]`, DWG linear nos dois lados.
  * `extra`: { exposicao (stops), temperatura, tint (-1–1), ganhosLms, contraste (×), saturacao (×), calor (0–1),
  * veu (0–1), pele (0–1, protege a cor da pele), copia (id, 'nenhuma' ou ausente = a do perfil), negativo (id,
@@ -499,8 +536,14 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const preto = extra.preto ?? 0
   const peleMatiz = extra.peleMatiz ?? 0
   const peleSat = extra.peleSat ?? 0
+  // Estilo (até a receita 5): a separação de tons antiga, retrô ou moderna, antes da cópia. Desde a 6 a separação é a
+  // do acabamento da cópia (abaixo) e a Era da cópia faz o papel do retrô ↔ moderno.
   const estilo = extra.estilo ?? 0
-  const densidade = pr.densidade + 0.3 * (extra.densidade ?? 0)
+  // densidade da cor (o corante da cópia): de -1 (tira corante: a cor some e a luz que ele segurava volta) a +1 (mais
+  // corante: cor cheia e mais escura), no acabamento, depois da cópia; até a receita 5 era um reforço de 0 a 1 antes
+  // dela (`densidadeLegado`)
+  const densidadeAj = limitar(extra.densidade ?? 0, -1, 1)
+  const densidade = pr.densidade + 0.3 * limitar(extra.densidadeLegado ?? 0, 0, 1)
   const branqueamento = extra.branqueamento ?? 0
   // Boost (REVELAFILM): a assinatura da casa por cima da película, de 0 a 100; só onde há negativo das fichas ou cópia
   const boostPedido = limitar((extra.boost ?? 0) / 100, 0, 1)
@@ -666,8 +709,10 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   /** Sem branqueamento (bleach bypass): a prata que fica soma densidade neutra: mais contraste, menos cor. */
   function semBranqueamento(y) {
     if (!branqueamento) return y
+    // a prata pesa mais no meio e nas altas: o ponto que fica parado é 1 stop acima do cinza (o meio escurece um pouco
+    // e as altas abrem)
     const Y = Math.max(1e-9, luz(y))
-    const Y2 = 0.18 * (Y / 0.18) ** (1 + 0.3 * branqueamento)
+    const Y2 = 0.36 * (Y / 0.36) ** (1 + 0.3 * branqueamento)
     const fica = 1 - 0.55 * branqueamento
     return y.map((v) => Y2 * (1 + (v / Y - 1) * fica))
   }
@@ -683,7 +728,11 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   // o Boost age na diferença entre a cor e o cinza da própria cópia na mesma luz: o neutro (com o leve tom que a cópia
   // tem no pé e no topo) fica exatamente como a ficha manda, e o reforço cresce em linha reta a partir dele
   function cinzaDaCopia(x) {
-    const Y = Math.max(0, luz(x))
+    // luz que nunca fica negativa e sem bico no zero (o azul profundo do DWG tem luminância negativa): o cinza de
+    // referência anda suave junto com a cor, e a conta relativa a ele (Boost, acabamento) não quebra
+    const Y0 = luz(x)
+    const escala = 0.05 * Math.max(x[0], x[1], x[2], 1e-6)
+    const Y = 0.5 * (Y0 + Math.sqrt(Y0 * Y0 + escala * escala))
     const c = [Y, Y, Y]
     const a = dwgParaOklab(c)
     let y = idNegativo ? c : negativo(c)
@@ -706,7 +755,9 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     let pl = noMatiz(h, 58, 30) * comCor
     if (antes) {
       const Ca = Math.hypot(antes[1], antes[2]) / Math.max(antes[0], 0.02)
-      pl = Math.max(pl, noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 52, 42) * suave(0.015, 0.07, Ca))
+      // (a união das duas medidas sem o bico do máximo: 1 − (1 − a)(1 − b))
+      const naCena = noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 52, 42) * suave5(0.015, 0.07, Ca)
+      pl = 1 - (1 - pl) * (1 - naCena)
     }
     const amarelo = noMatiz(h, 100, 20) * comCor * (1 - pl) ** 2
     const ceu = noMatiz(h, 245, 40) * comCor * (1 - suave(0.07, 0.16, C)) // céu: azul de saturação moderada, não o primário
@@ -730,14 +781,105 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     return y.map((v, i) => v + depois[i] - antesDwg[i])
   }
 
+  // acabamento da cópia (ACABAMENTO, acima): por inteiro com cópia de cinema; a separação, a Era e o preto neutro
+  // também valem sem ela, como ajuste
+  const AC = extra.parametrosAcabamento ?? ACABAMENTO
+  const acab = idCopia ? limitar(extra.acabamento ?? 1, 0, 1) : 0
+  const era = limitar(extra.era ?? 0, -1, 1)
+  const separacao = limitar(acab + (extra.separacao ?? 0), 0, 2)
+  const pretoNeutro = limitar(extra.pretoNeutro ?? 0, -1, 1)
+  const temAcabamento = acab > 0 || separacao > 0 || era !== 0 || pretoNeutro !== 0 || densidadeAj !== 0
+  function acabar(y, ref, antes) {
+    if (!temAcabamento) return y
+    let z = y
+    if (acab) {
+      // tom: o meio abre um pouco e as altas deitam antes (a inclinação nunca passa de 0,2 para baixo: a luz sempre sobe)
+      const T = AC.tom
+      const ev = Math.log2(Math.max(1e-9, luz(y)) / 0.18)
+      const sobe = acab * (T.meio * Math.exp(-(((ev - T.centro) / T.largura) ** 2)) - T.ombro * suave(2.5, 6.5, ev))
+      z = y.map((v) => v * 2 ** sobe)
+    }
+    const ok = dwgParaOklab(z)
+    const L = ok[0]
+    let L2 = L
+    if (!(L > 0)) return z
+    const Lr = L / L_CINZA
+    const ev = Math.log2(Math.max(1e-6, Lr * Lr * Lr))
+    let da = ok[1] - ref[1]
+    let db = ok[2] - ref[2]
+    const C = Math.hypot(da, db)
+    // a pele fica fora dos polos e da separação (pela cor da cena, que não muda com a exposição): fica com a cópia,
+    // como no resto do motor; sombra fria em rosto adoece. Laranja vivo (bem mais saturado que pele) entra.
+    let fora = 1
+    if (antes) {
+      const Ca = Math.hypot(antes[1], antes[2]) / Math.max(antes[0], 0.02)
+      fora = 1 - noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 50, 60) * suave(0.015, 0.06, Ca) * (1 - suave(0.22, 0.4, Ca))
+    }
+    const forca = acab * (1 + era)
+    if (C > 1e-7 && (acab || era || densidadeAj)) {
+      let h = Math.atan2(db, da) / GRAU
+      const base = Math.max(L, 0.02)
+      const sat = C / base
+      // polos: mais forte quanto mais saturada a cor (croma ÷ luz, que não muda com a exposição; perto do cinza o matiz
+      // não diz nada)
+      h += forca * fora * ((sat * sat) / (sat * sat + AC.polos.saturacao ** 2)) * noCirculo(AC.polos.graus, h)
+      // compressão na saturação: tanh, que cresce sempre e encosta no teto sem joelho
+      const K = AC.compressao
+      const teto = K.teto * (K.preto + (1 - K.preto) * suave5(0.1, 0.6, Lr)) * (1 - (1 - K.branco) * suave5(1.25, 2.2, Lr))
+      const k = K.ganho * (1 + AC.era.cor * era)
+      let sat2 = sat + acab * (teto * Math.tanh((k * sat) / teto) - sat)
+      let base2 = base
+      if (densidadeAj > 0) {
+        // mais corante: a cor saturada fica mais cheia e mais escura, como no filme subtrativo (a pele, pela metade)
+        const d = densidadeAj * (1 - 0.5 * (1 - fora))
+        const w = (sat2 * sat2) / (sat2 * sat2 + 0.1 * 0.1)
+        L2 = L * (1 - 0.25 * d * w * suave5(0.05, 0.4, Lr))
+        sat2 *= 1 + 0.5 * d
+        base2 = Math.max(L2, 0.02)
+      } else if (densidadeAj < 0) {
+        // menos corante: a cor vai embora e a luz que o corante absorvia volta, até quase o P&B da própria cópia
+        // (a luz que volta segue a cor tirada, medida sem bico no cinza: hypot)
+        // (a pele, pela metade, como no lado de mais corante)
+        const q = -densidadeAj * (1 - 0.5 * (1 - fora))
+        const s3 = sat2 * (1 - 0.88 * q)
+        L2 = L * (1 + 1.8 * 0.88 * q * (Math.hypot(sat2, 0.02) - 0.02) * suave5(0.05, 0.4, Lr))
+        sat2 = s3
+        base2 = Math.max(L2, 0.02)
+      }
+      da = sat2 * base2 * Math.cos(h * GRAU)
+      db = sat2 * base2 * Math.sin(h * GRAU)
+    }
+    // separação (sombra fria, alta quente) e o tom da Era no meio, proporcionais à luz (fora da pele)
+    const ws = 1 - suave(-4.5, -0.5, ev)
+    const wa = suave(0.5, 4, ev)
+    const wm = Math.exp(-((ev + 0.3) ** 2) / 4.5)
+    const S = AC.separacao
+    let a = ref[1] + da + (separacao * (ws * S.sombras[0] + wa * S.altas[0]) - era * AC.era.tom[0] * wm) * Lr * fora
+    let b = ref[2] + db + (separacao * (ws * S.sombras[1] + wa * S.altas[1]) - era * AC.era.tom[1] * wm) * Lr * fora
+    if (pretoNeutro) {
+      // preto neutro: a cor sai (ou cresce) só abaixo de -1,5 stop, por inteiro no preto
+      const wp = 1 - suave(-5, -1.5, ev)
+      const f = pretoNeutro > 0 ? 1 - pretoNeutro * wp : 1 + 0.3 * -pretoNeutro * wp
+      a *= f
+      b *= f
+    }
+    // como diferença sobre a cor de entrada (sem a ida e volta do Oklab onde nada mudou)
+    const antesDwg = oklabParaDwg(ok)
+    const depois = oklabParaDwg([L2, a, b])
+    return z.map((v, i) => v + depois[i] - antesDwg[i])
+  }
+
   function emCena(rgb) {
     const x = dentroDoGamut(tomDaCena(primaria(rgb)))
-    const antes = pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia || boost > 0 ? dwgParaOklab(x) : null
+    const antes = pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia || boost > 0 || temAcabamento ? dwgParaOklab(x) : null
     // um negativo das fichas substitui o negativo genérico do perfil (do perfil fica a cor): nunca dois negativos
     let y = idNegativo ? x : negativo(x)
     y = dentroDoGamut(cor(y, antes))
     if (copia) y = copiar(y, antes)
-    if (boost > 0) y = reforcar(y, antes, cinzaDaCopia(x))
+    const ref = boost > 0 || temAcabamento ? cinzaDaCopia(x) : null
+    if (boost > 0) y = reforcar(y, antes, ref)
+    // o acabamento da cópia segura também a cor que o High Density encheu (neon vira cor de cinema)
+    if (temAcabamento) y = acabar(y, ref, antes)
     if (LUZ) y = mul(LUZ, y)
     y = ajustarPele(y, antes)
     y = semBranqueamento(y)
@@ -756,7 +898,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     negativo: idNegativo,
     luzCopia,
     boost,
-    partes: { negativo, cor, dentroDoGamut, copia, reforcar }, // para os testes internos olharem cada etapa
+    acabamento: acab,
+    partes: { negativo, cor, dentroDoGamut, copia, reforcar, acabar }, // para os testes internos olharem cada etapa
     /** O mesmo look em código DaVinci Intermediate, para a LUT log → log. */
     emDi(r, g, b) {
       return emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)]).map(linearParaDi)
