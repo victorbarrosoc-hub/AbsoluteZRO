@@ -292,8 +292,9 @@ body.rf #baixar:hover {
   }
 }
 
-/* a marca do topo no escuro (o tema da página pode estar claro; a sala é sempre escura) */
-body.rf .marca img {
+/* a marca do topo no escuro: no tema claro a logo vem grafite e a sala é sempre escura, então inverte; no tema escuro a
+   logo já vem branca */
+:root:not([data-tema='escuro']) body.rf .marca img {
   filter: invert(1);
 }
 body.rf .vidro {

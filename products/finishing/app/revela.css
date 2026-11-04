@@ -1861,7 +1861,8 @@ html[data-sentido='volta'] {
   border-top: 1px solid var(--linha);
 }
 .menu-tema,
-.menu-instalar {
+.menu-instalar,
+.menu-apps-botao {
   width: 100%;
   border: 0;
   background: none;
@@ -2949,4 +2950,85 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
   --zro-set-perigo: var(--erro);
   --zro-set-raio: var(--raio-g);
   --zro-set-fonte: var(--fonte);
+}
+
+/* janela de apps da Absolute ZRO (popover, como no AEON): grade de 3 com o ícone de cada produto */
+.menu-apps {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--linha);
+  border-radius: 20px;
+  background: rgb(var(--chao) / 0.86);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.55);
+  color: var(--texto);
+  opacity: 0;
+  transform: translateX(-6px) scale(0.98);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    overlay 0.18s allow-discrete,
+    display 0.18s allow-discrete;
+}
+.menu-apps:popover-open {
+  opacity: 1;
+  transform: none;
+}
+@starting-style {
+  .menu-apps:popover-open {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.98);
+  }
+}
+.menu-apps-titulo {
+  margin: 4px 8px 10px;
+  color: var(--mudo);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.menu-apps-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 92px);
+  gap: 4px;
+}
+.menu-app {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 4px 10px;
+  border-radius: 14px;
+  color: var(--mudo);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.menu-app:hover,
+.menu-app:focus-visible {
+  color: var(--texto);
+  background: rgb(var(--t) / 0.07);
+}
+.menu-app:focus-visible {
+  outline: 2px solid rgb(var(--t) / 0.4);
+  outline-offset: 0;
+}
+.menu-app img {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  object-fit: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-apps {
+    transition: none;
+  }
 }

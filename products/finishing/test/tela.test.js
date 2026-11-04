@@ -472,9 +472,10 @@ test('entrar: sem sessão mostra os botões; login desligado avisa', async () =>
   const entrar = await pagina.getByRole('link', { name: 'Entrar com Absolute ZRO' }).getAttribute('href')
   assert.match(entrar, /^\/api\/zro\/entrar\?volta=%2Fconverter/)
   assert.match(await pagina.getByRole('link', { name: 'Criar conta' }).getAttribute('href'), /criar=1/)
-  // a conta vale para a família inteira, AEON e a própria Absolute ZRO inclusive
+  // a conta vale para a família inteira, a própria Absolute ZRO inclusive; os apps não lançados (AEON, NOSSOM) não aparecem
   const familia = await pagina.locator('.familia-mini img').evaluateAll((n) => n.map((i) => i.alt))
-  for (const nome of ['AEON', 'Absolute ZRO']) assert.ok(familia.includes(nome), nome)
+  for (const nome of ['Relay', 'Absolute ZRO']) assert.ok(familia.includes(nome), nome)
+  for (const nome of ['AEON', 'NOSSOM']) assert.ok(!familia.includes(nome), nome)
 
   await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' }))
   await pagina.reload()
@@ -558,18 +559,22 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   await pagina.waitForURL(/cst\.html$/)
   assert.equal(await pagina.locator('.menu-topo .menu-botao').getAttribute('aria-expanded'), 'true', 'o menu aberto devia ser lembrado')
   assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
-  // família em ordem alfabética, como em todas as plataformas
-  const familia = await pagina.locator('#menu .menu-item[href^="http"]').allTextContents()
+  // família: "Apps Absolute ZRO" abre a janela com a grade (como no AEON), só com os apps lançados
+  await pagina.getByRole('button', { name: 'Apps Absolute ZRO' }).click()
+  await pagina.locator('#menuApps:popover-open').waitFor()
+  const familia = await pagina.locator('#menuApps .menu-app span').allTextContents()
   // o Maestro entra no lançamento (MAESTRO_NA_FAMILIA em app/menu.js, scripts/lancamento-maestro.mjs na raiz)
   const comMaestro = /^const MAESTRO_NA_FAMILIA = true$/m.test(readFileSync(new URL('../app/menu.js', import.meta.url), 'utf8'))
-  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', ...(comMaestro ? ['Maestro'] : []), 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
+  assert.deepEqual(familia, ['Absolute ZRO', 'SOBEDESCE', 'Synquei', 'Relay', 'TPeasy', 'Carro do Freela', ...(comMaestro ? ['Maestro'] : [])])
+  await pagina.keyboard.press('Escape')
+  await pagina.locator('#menuApps:popover-open').waitFor({ state: 'detached' })
   await contexto.close()
 
   const celular = await navegador.newPage({ viewport: { width: 375, height: 800 } })
   await celular.goto(endereco + 'lut.html')
   assert.equal(await celular.locator('#menu').isVisible(), false)
   await celular.getByRole('button', { name: 'Abrir menu' }).click()
-  await celular.locator('#menu').getByRole('link', { name: 'Sobedesce' }).waitFor()
+  await celular.locator('#menu').getByRole('button', { name: 'Apps Absolute ZRO' }).waitFor()
   await celular.keyboard.press('Escape')
   await celular.waitForFunction(() => !document.documentElement.classList.contains('menu-gaveta'))
   const largura = await celular.evaluate(() => document.documentElement.scrollWidth)

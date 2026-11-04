@@ -5138,3 +5138,18 @@ exportar, com um modo simples e um profissional.
   crescia além dela e o rodapé cobria o botão de baixar).
 - Testes: novo teste de tela do modo Simples (referência, intensidade, LUT, preset do Lightroom, troca para um look e o
   modo lembrado); o teste do Lab entra no Profissional. 195 de 195.
+
+## REVELAFILM: janela "Apps Absolute ZRO" no padrão do AEON (04/11/2026)
+
+Pedido do titular: os ícones da família no menu da REVELAFILM no mesmo padrão do AEON.
+
+- O menu lateral ganhou, no pé, a linha **Apps Absolute ZRO** (ícone de grade), que abre uma janela (popover: Esc e clique
+  fora fecham) com a grade de 3 colunas e o ícone de cada produto, colada ao menu na altura do botão; no celular, centrada
+  sobre a gaveta. A lista de links da família saiu do corpo do menu.
+- Só os apps lançados (CLAUDE.md, gate `zro.product_release`): Absolute ZRO, SOBEDESCE, Synquei, Relay, TPeasy, Carro do
+  Freela e Maestro. AEON e NOSSOM saíram do menu, da faixa "Uma conta. Todas as ferramentas." da página inicial e do
+  Entrar (estavam lá, contra a regra); o Relay entrou. Ícones `aeon.svg` e `nossom.svg` apagados da pasta da Revela.
+- A chave do Maestro (`MAESTRO_NA_FAMILIA`) continua funcionando com `scripts/lancamento-maestro.mjs`.
+- Correção: no Lab, com o tema escuro, a marca do topo ficava preta sobre preto (invertida duas vezes); agora só inverte
+  no tema claro.
+- Testes: o do menu abre a janela e confere a lista; o do Entrar confere que AEON e NOSSOM não aparecem. 195 de 195.
