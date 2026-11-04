@@ -138,7 +138,8 @@ async function livreEm(dir) {
  * @param {{ origem: string, destinos: string[], nome?: string, signal?: AbortSignal, onProgress?: Function }} o
  * @returns {Promise<{ origem: object, nome: string, destinos: object[], itens: object[], ignorados: object[] }>}
  */
-export async function planejar({ origem, destinos, nome, signal, onProgress, procurarTudo = false }) {
+/** `filtro(relPath)`: só o que ele aceita entra no plano (o Backup Automático: só vídeos, só fotos, o que a pessoa escolheu). */
+export async function planejar({ origem, destinos, nome, signal, onProgress, procurarTudo = false, filtro = null }) {
   if (typeof origem !== 'string' || !origem) throw new DiscosError(400, 'Escolha a pasta ou o disco de origem.')
   if (!Array.isArray(destinos) || !destinos.length) throw new DiscosError(400, 'Escolha pelo menos um destino.')
   if (destinos.length > 4) throw new DiscosError(400, 'No máximo 4 destinos por vez.')
@@ -164,7 +165,7 @@ export async function planejar({ origem, destinos, nome, signal, onProgress, pro
 
   const lido = await scanLocal(org, { signal, onProgress: (p) => onProgress?.({ fase: 'origem', ...p }) })
   if (!lido.root.isDir) throw new DiscosError(400, 'Escolha uma pasta ou um disco (não um arquivo).')
-  const arquivos = lido.files.filter((f) => !SISTEMA.test(f.relPath)).sort((a, b) => (a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0))
+  const arquivos = lido.files.filter((f) => !SISTEMA.test(f.relPath) && (!filtro || filtro(f.relPath))).sort((a, b) => (a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0))
   const bytes = arquivos.reduce((s, f) => s + f.size, 0)
 
   const itens = arquivos.map((f) => ({ relPath: f.relPath, caminho: f.path, size: f.size, mtimeMs: f.mtimeMs, estados: [] }))

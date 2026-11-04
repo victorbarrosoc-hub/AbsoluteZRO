@@ -2,6 +2,18 @@
 
 O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão>`) e para o aviso de versão nova.
 
+## 0.3.4
+
+**Backup Automático com fotos e vídeos.** O projeto pergunta o que passa: vídeos, fotos ou os dois. Vídeo vai para
+Cenas, foto para Fotos; um cartão com os dois separa sozinho.
+
+- No primeiro toque você escolhe para onde vai o cartão (Cenas, Fotos ou separar). O app sugere pelo que tem nele.
+- "Escolher o que passar": marque os tipos e as pastas do cartão. O que ficar de fora continua no cartão.
+- Excluir o projeto: para o que estiver passando e some do painel. Os arquivos nos HDs ficam.
+- Limpar o histórico.
+- Usar o Synquei virou opção do projeto.
+- Ejetar desmonta só o disco certo quando o sistema recusa o HD inteiro e diz quem está usando.
+
 ## 0.3.3
 
 **Arquivo travado pelo Google baixa mesmo assim.** Quando o Google trava os downloads de um arquivo ("muitos usuários

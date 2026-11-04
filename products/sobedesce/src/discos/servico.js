@@ -99,7 +99,7 @@ export class DiscosService {
   // ───── planejar ─────
 
   /** `procurarTudo`: o que não está no caminho esperado é procurado em qualquer pasta do destino (planejar.js). */
-  async planejar({ origem, destinos, nome, procurarTudo = false }) {
+  async planejar({ origem, destinos, nome, procurarTudo = false, filtro = null }) {
     if (this.fase === 'copiando' || this.fase === 'planejando') throw new DiscosError(409, 'Já tem uma cópia em andamento.')
     this.ac?.abort()
     this.ac = new AbortController()
@@ -111,7 +111,7 @@ export class DiscosService {
     this.#mudou(true)
     const ac = this.ac
     try {
-      this.plano = await planejar({ origem, destinos, nome, procurarTudo, signal: ac.signal })
+      this.plano = await planejar({ origem, destinos, nome, procurarTudo, filtro, signal: ac.signal })
       this.fase = 'pronto'
     } catch (err) {
       // Cancelado na tela: não é erro, e o pedido de comparar termina normal (a tela mostra "cancelada").

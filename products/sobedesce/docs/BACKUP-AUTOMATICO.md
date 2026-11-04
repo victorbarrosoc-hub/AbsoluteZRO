@@ -6,13 +6,16 @@ formatar. Sem internet: nada vai para o Drive.
 
 ## Como usar
 
-1. **Cartões → Backup Automático → Novo projeto:** o nome (vira a pasta principal), os destinos (o HD principal e até
+1. **Cartões → Backup Automático → Novo projeto:** o nome (vira a pasta principal), **o que vai passar** (vídeos,
+   fotos ou os dois; a pergunta é obrigatória no projeto novo, o antigo passa tudo), os destinos (o HD principal e até
    3 backups; o cartão é lido uma vez e gravado em todos) e, se quiser, "Ejetar o cartão ao terminar".
 2. **Começar sozinho ao espetar** já vem ligado ao criar o projeto (a chave fica no painel). Desligado, cada disco
    plugado aparece em "Discos plugados" e espera "Usar como cartão" / "Copiar agora".
 3. **Espete o cartão.** Na primeira vez, um toque diz de quem ele é: um dono que já existe ou um novo, com nome e
-   câmera ("Aladim" + "FX30"). A câmera vem preenchida quando o app consegue ler (Sony). "Ignorar este disco" serve
-   para pendrive, HD de outra coisa etc.
+   câmera ("Ana" + "FX30") e **para onde vai** (Cenas, Fotos ou separar; sugerido pelo que o cartão tem). A câmera vem
+   preenchida quando o app consegue ler (Sony). "Ignorar este disco" serve para pendrive, HD de outra coisa etc.
+   **"Escolher o que passar"** (na pergunta ou em "Escolher…" no disco): marca os tipos (vídeos, fotos, outros) e as
+   pastas do cartão; vale só para aquela descarga.
 4. **Pronto.** Nas próximas vezes, o mesmo cartão passa sozinho. Na tela: o andamento (velocidade, arquivos, tempo que
    falta), a fila (um cartão por vez), os cartões espetados com o estado de cada um, os donos da diária e o histórico.
 5. **No fim de cada cartão:** "Cartão OK, pode formatar" (todos os arquivos do cartão estão em todos os destinos,
@@ -23,10 +26,20 @@ formatar. Sem internet: nada vai para o Drive.
 ## Pastas
 
 ```
-<destino>/<Projeto>/Diária 01/Cenas/Aladim - FX30/Cartão 01/<pastas do cartão, como estão>
+<destino>/<Projeto>/Diária 01/Cenas/Ana - FX30/Cartão 01/<pastas do cartão, como estão>   (vídeo e o resto)
+<destino>/<Projeto>/Diária 01/Fotos/Ana - FX30/Cartão 01/<pastas do cartão, como estão>   (foto)
 ```
 
-- **Nome da pasta do dono** (opcional): no primeiro toque ou no lápis do dono, ex.: `01_CAMERA_A_RAPHA_FX30`. Vazio =
+- **Fotos e vídeos** (`src/backup/midia.js`): pela extensão. Vídeo: MP4, MOV, MXF, BRAW, R3D, MTS… Foto: JPG, HEIC,
+  RAW (ARW, CR3, NEF, RAF, DNG…), TIFF, PNG e o XMP. O resto (XML, índice, áudio, miniatura) é "outros" e vai junto
+  com o vídeo.
+- **O projeto** passa só vídeos (as fotos ficam no cartão), só fotos (só elas, em Fotos) ou os dois.
+- **O dono** (com os dois): separar (vídeo em Cenas, foto em Fotos, o mesmo "Cartão NN"), tudo em Cenas ou tudo em
+  Fotos. Seção sem arquivo não cria pasta.
+- **Ficou algo de fora** (só vídeos, só fotos ou a escolha da pessoa): o fim diz "Passou o escolhido (o resto ficou no
+  cartão)", nunca "pode formatar", e o "Ejetar ao terminar" não ejeta.
+
+- **Nome da pasta do dono** (opcional): no primeiro toque ou no lápis do dono, ex.: `01_CAMERA_A_LEO_FX30`. Vazio =
   "Nome - Câmera". Editar muda só os próximos cartões (os que já passaram ficam onde estão). Dois donos não podem
   ter a mesma pasta: os "Cartão NN" de um se misturariam com os do outro.
 - **"Cartão NN"** é por cartão físico, dentro do dono e da diária. Protege contra nomes iguais: um cartão formatado
@@ -64,11 +77,18 @@ formatar. Sem internet: nada vai para o Drive.
     cartão (o índice/XML que a câmera reescreve entre uma leva e outra): o antigo vai para
     `.sobedesce-anteriores/<data>/` dentro da pasta do cartão e o novo é copiado. O resto vira alerta e o cartão não
     fica "OK".
+- **Excluir o projeto** (Editar ou "Excluir" no painel, com um segundo toque): para a descarga de agora, tira o projeto
+  da lista e o painel some; espetar o cartão de novo não copia mais nada (sem projeto, não há vigia). Os arquivos nos
+  destinos ficam.
+- **Limpar histórico:** tira as descargas da lista. O total "Já passou", a numeração dos cartões e o `descargas.jsonl`
+  ficam.
 - **Fila:** um cartão por vez, na ordem em que entraram.
 - **Destino desconectado:** a descarga espera ("Esperando Backup SSD") e começa sozinha quando ele volta.
 - **Cartão retirado no meio:** a descarga para com "O cartão saiu antes de terminar. Espete de novo: continua de onde
   parou." O arquivo pela metade é apagado; ao espetar de novo, a comparação copia só o que falta.
-- **Ejetar:** opção do projeto (só quando está tudo certo) e botão por cartão: `diskutil eject` no Mac,
+- **Ejetar:** opção do projeto (só quando está tudo certo) e botão por cartão: `diskutil eject` no Mac (recusado,
+  tenta `diskutil unmount` só daquele volume: HD com duas partições, uma em uso; recusado de novo, a mensagem diz quem
+  segura o disco, pelo PID que o diskutil aponta: o Spotlight, o DaVinci…; nunca força),
   `Shell.Application` → Eject no Windows, `gio mount -e` no Linux.
 - **Dados** em `<pasta de dados do app>/backup-automatico.json` (gravação atômica: temporário + rename): projetos,
   destinos, diárias, donos, mapa cartão → dono, serial → dono, ignorados, numeração dos cartões e o histórico (até 500
@@ -84,13 +104,14 @@ formatar. Sem internet: nada vai para o Drive.
 No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<destino>/<Projeto>/.sobedesce/descargas.jsonl`:
 
 ```json
-{"v":1,"app":"sobedesce","id":"dsc…","quando":"2026-10-24T14:02:11.000Z","data":"2026-10-24","projeto":"Show",
- "diaria":{"n":1,"nome":"Diária 01"},"dono":{"id":"don…","nome":"Aladim","camera":"FX30","pasta":"Aladim - FX30"},
- "cartao":{"n":1,"nome":"SD FX30","volId":"uuid:…","pasta":"Diária 01/Cenas/Aladim - FX30/Cartão 01"},
+{"v":1,"app":"sobedesce","id":"dsc…","quando":"2026-10-24T14:02:11.000Z","data":"2026-10-24","projeto":"Show","secao":"cenas",
+ "diaria":{"n":1,"nome":"Diária 01"},"dono":{"id":"don…","nome":"Ana","camera":"FX30","pasta":"Ana - FX30"},
+ "cartao":{"n":1,"nome":"SD FX30","volId":"uuid:…","pasta":"Diária 01/Cenas/Ana - FX30/Cartão 01"},
  "resultado":"ok","copiados":5,"bytes":12345,"arquivos":[{"rel":"PRIVATE/M4ROOT/CLIP/C0001.MP4","size":3001}]}
 ```
 
-- Uma linha por descarga (a segunda leva do mesmo cartão é outra linha, com a mesma pasta). O arquivo só cresce: quem
+- Uma linha por descarga e por seção (`secao`: `cenas` ou `fotos`; o cartão separado ganha duas, com o mesmo `id`).
+  A segunda leva do mesmo cartão é outra linha, com a mesma pasta). O arquivo só cresce: quem
   lê guarda até onde já leu.
 - `cartao.pasta` é relativo à pasta do projeto, com `/`. `arquivos[].rel` é relativo à pasta do cartão (até 50 mil).
 - O Synquei vigia esse arquivo e, a cada cartão, organiza a mídia no projeto do DaVinci (bins por diária, câmera e
@@ -102,15 +123,18 @@ No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<dest
 | Rota | O quê |
 | --- | --- |
 | `GET /api/backup` | o estado (também em `/api/state` → `backup` e no SSE `backup`) |
-| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar? }` | cria e abre o projeto (`ligar` padrão: sim) |
-| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar? }` | edita |
+| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar?, midia?, synquei? }` | cria e abre o projeto (`ligar` padrão: sim; `midia`: `tudo`, `videos` ou `fotos`) |
+| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar?, midia?, synquei? }` | edita |
 | `POST /api/backup/abrir` / `apagar` `{ id }` | troca de projeto / tira da lista (os arquivos ficam) |
 | `POST /api/backup/ligar` `{ ligado }` | liga/desliga o vigia |
 | `POST /api/backup/diaria` `{}` ou `{ n }` | nova diária / volta para uma diária |
-| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar }` | o toque "de quem é" |
+| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar, secao?, escolha? }` | o toque "de quem é" (`secao`: `separar`, `cenas` ou `fotos`) |
+| `POST /api/backup/conteudo` `{ caminho }` | o que tem no cartão: por tipo e as pastas com vídeo ou foto |
+| `POST /api/backup/escolher` `{ caminho, escolha: { tipos[], pastas[]? } }` | "Escolher o que passar" (só desta vez) |
+| `POST /api/backup/historico/limpar` | limpa a lista do histórico |
 | `POST /api/backup/repetir` / `ejetar` `{ caminho }` | copiar de novo / ejetar |
 | `POST /api/backup/usar` `{ caminho }` | "Usar como cartão" / "Copiar agora" |
-| `POST /api/backup/dono` `{ id, nome?, camera?, pasta? }` | edita o dono (a pasta vale para os próximos cartões) |
+| `POST /api/backup/dono` `{ id, nome?, camera?, pasta?, secao? }` | edita o dono (a pasta vale para os próximos cartões) |
 | `POST /api/backup/cancelar` | para a descarga de agora |
 | `POST /api/backup/ignorados/limpar` | volta a perguntar pelos discos ignorados |
 
@@ -133,6 +157,8 @@ o `vol` no Windows em português e o ejetar.
 
 ## Preparar no Synquei
 
+- **Usar o Synquei** (chave do projeto, ligada por padrão): desligada, a tela não mostra o tipo nem o "Preparar no
+  Synquei". O `descargas.jsonl` continua (o HUB também lê).
 - **Tipo no Synquei** (opcional, no projeto): videoclipe, casamento, show… (os mesmos de `products/synquei/app/js/tipos.js`;
   `test/synquei-ponte.test.js` confere). Vai em cada linha do `descargas.jsonl` (`tipo`) e no link.
 - Com o cartão OK, o painel mostra **Preparar no Synquei**. O motor (`POST /api/backup/synquei`) acha a pasta do projeto no

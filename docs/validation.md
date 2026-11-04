@@ -659,6 +659,22 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: Backup Automático com fotos e vídeos (04/11/2026)
+
+Branch `sobedesce-backup-escolha`.
+
+- `test/backup-fotos-videos.test.js` (9): tipo pela extensão e a pasta sugerida; cartão misto separa vídeo (com o XML e
+  o índice) em `Cenas` e foto em `Fotos` com o mesmo Cartão NN e uma linha `descargas.jsonl` por seção (`secao`);
+  cartão só de fotos não cria `Cenas` vazia; projeto só de vídeos deixa as fotos no cartão, marca `parcial` e não
+  ejeta; "Escolher o que passar" por tipo e pasta, só daquela vez; excluir o projeto com um cartão passando (para, some,
+  espetar de novo não passa); limpar o histórico (total, numeração e resumo ficam); Synquei opcional; ejetar no Mac
+  tenta `unmount` quando o `eject` é recusado e diz quem segura (DaVinci, Spotlight).
+- `test/backup-automatico.test.js` 21/21 sem mudança de comportamento (só os nomes de exemplo). As outras plataformas
+  não mudam (nenhum build de site na Vercel).
+- `npm run test:fast`: 780 de 781; o único vermelho é o do Set no Chromium local (tempo de rede), verde no CI.
+- Tela conferida no demo (Chromium, escuro): pergunta com "Vai para" e "Escolher o que passar", painel, editar com
+  "O que vai passar", "Usar o Synquei" e "Excluir projeto"; sem erro no console.
+
 ## SOBEDESCE: Meu Drive em Arquivos escolhidos (04/11/2026)
 
 Branch `sobedesce-raiz-arquivos`. Usuário com o Drive em Arquivos escolhidos via "Não achei no Google Drive" ao abrir o

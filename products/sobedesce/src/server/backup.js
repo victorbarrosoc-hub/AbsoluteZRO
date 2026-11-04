@@ -28,11 +28,13 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
     }
   }
   const texto = (v, max = 4096) => (typeof v === 'string' && v.length <= max ? v : null)
+  // "Escolher o que passar": { tipos: [...], pastas: [...] } (o serviço limpa; aqui só o tamanho).
+  const escolha = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? { tipos: Array.isArray(v.tipos) ? v.tipos.slice(0, 3).map((x) => texto(x, 20)) : undefined, pastas: Array.isArray(v.pastas) ? v.pastas.slice(0, 60).map((x) => texto(x, 1024)) : undefined } : null)
   const lista = (v) => (Array.isArray(v) ? v.slice(0, 4).map((x) => texto(x)) : null)
 
   route('GET', '/api/backup', tratar(async () => svc.view()))
 
-  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40) })))
+  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false })))
 
   route('POST', '/api/backup/projeto', tratar(async ({ body }) => {
     const id = texto(body.id, 100)
@@ -42,6 +44,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       destinos: body.destinos === undefined ? undefined : lista(body.destinos),
       ejetar: body.ejetar === undefined ? undefined : body.ejetar === true,
       tipo: body.tipo === undefined ? undefined : texto(body.tipo, 40),
+      midia: body.midia === undefined ? undefined : texto(body.midia, 20),
+      synquei: body.synquei === undefined ? undefined : body.synquei !== false,
     })
   }))
 
@@ -63,6 +67,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       nome: texto(body.nome, 200),
       camera: texto(body.camera, 200),
       pasta: texto(body.pasta, 200),
+      secao: texto(body.secao, 20),
+      escolha: escolha(body.escolha),
       ignorar: body.ignorar === true,
     })))
 
@@ -73,6 +79,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       nome: body.nome === undefined ? undefined : texto(body.nome, 200),
       camera: body.camera === undefined ? undefined : texto(body.camera, 200),
       pasta: body.pasta === undefined ? undefined : texto(body.pasta, 200),
+      secao: body.secao === undefined ? undefined : texto(body.secao, 20),
     })
   }))
 
@@ -83,6 +90,12 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
   route('POST', '/api/backup/pasta', tratar(async ({ body }) => svc.copiarPasta(texto(body.caminho, 4096))))
 
   route('POST', '/api/backup/nao-cartao', tratar(async ({ body }) => svc.naoECartao(texto(body.caminho))))
+
+  route('POST', '/api/backup/conteudo', tratar(async ({ body }) => svc.conteudo(texto(body.caminho))))
+
+  route('POST', '/api/backup/escolher', tratar(async ({ body }) => svc.escolher(texto(body.caminho), escolha(body.escolha))))
+
+  route('POST', '/api/backup/historico/limpar', tratar(async () => svc.limparHistorico()))
 
   route('POST', '/api/backup/ejetar', tratar(async ({ body }) => svc.ejetar(texto(body.caminho))))
 

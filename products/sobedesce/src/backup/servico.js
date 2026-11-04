@@ -1,6 +1,7 @@
-// Backup Automático (docs/BACKUP-AUTOMATICO.md): Cartões → Projetos. O projeto é configurado uma vez (destinos e diária);
-// depois, cada cartão espetado é reconhecido e descarregado sozinho para
-//   <destino>/<Projeto>/Diária NN/Cenas/<Dono - Câmera>/Cartão NN/<pastas do cartão>
+// Backup Automático (docs/BACKUP-AUTOMATICO.md): Cartões → Projetos. O projeto é configurado uma vez (destinos, diária e
+// o que passa: vídeos, fotos ou os dois); depois, cada cartão espetado é reconhecido e descarregado sozinho para
+//   <destino>/<Projeto>/Diária NN/<Cenas | Fotos>/<Dono - Câmera>/Cartão NN/<pastas do cartão>
+// (vídeo em Cenas, foto em Fotos; src/backup/midia.js).
 // Na primeira vez que um cartão aparece, a tela pergunta de quem ele é (um toque). Depois: o id do volume, ou o número
 // de série da câmera no XML da Sony (cartão formatado), já dizem o dono.
 // A cópia é o motor do "Entre discos" (src/discos/), numa instância só daqui: compara por caminho e tamanho, copia o que
@@ -11,10 +12,12 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { DiscosService } from '../discos/servico.js'
-import { nomeDePasta } from '../discos/planejar.js'
+import { SISTEMA, nomeDePasta } from '../discos/planejar.js'
+import { scanLocal } from '../local/scan.js'
 import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
 import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from './synquei.js'
+import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
 
 const VIGIA_MS = 3000
 const HISTORICO_MAX = 500
@@ -51,9 +54,9 @@ const dentro = (pai, filho) => {
 }
 const carimbo = (d = new Date()) => `${hojeLocal(d)}_${dois(d.getHours())}${dois(d.getMinutes())}${dois(d.getSeconds())}`
 
-/** "Aladim - FX30" (ou só o nome, sem câmera). */
+/** "Ana - FX30" (ou só o nome, sem câmera). */
 export const rotuloDono = (d) => [String(d?.nome || '').trim(), String(d?.camera || '').trim()].filter(Boolean).join(' - ') || 'Sem nome'
-/** A pasta do dono dentro de Cenas: a que a pessoa escolheu (ex.: "01_CAMERA_A_RAPHA_FX30") ou "Nome - Câmera". */
+/** A pasta do dono dentro de Cenas/Fotos: a que a pessoa escolheu (ex.: "01_CAMERA_A_LEO_FX30") ou "Nome - Câmera". */
 export const pastaDono = (d) => nomeDePasta(String(d?.pasta || '').trim()) || nomeDePasta(rotuloDono(d)) || 'Sem nome'
 const mesmoModelo = (a, b) => !!a && !!b && String(a).replace(/\s+/g, '').toLowerCase() === String(b).replace(/\s+/g, '').toLowerCase()
 
@@ -109,6 +112,10 @@ function normalizarProjeto(p) {
     ejetar: p.ejetar === true,
     // Tipo de projeto no Synquei (videoclipe, casamento…): vai no descargas.jsonl e no "Preparar no Synquei".
     tipo: tipoSynquei(p.tipo),
+    // O que passa do cartão: 'tudo' (vídeos e fotos), 'videos' ou 'fotos' (src/backup/midia.js).
+    midia: midiaDe(p.midia),
+    // Usar o Synquei: desligado, a tela não oferece o "Preparar no Synquei" (o resumo descargas.jsonl continua: o HUB lê).
+    synquei: p.synquei !== false,
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
     diaria: Number(p.diaria) || 1,
@@ -212,6 +219,7 @@ export class BackupService {
           camera: o.camera,
           rotulo: rotuloDono(o),
           pasta: pastaDono(o),
+          secao: secaoDe(o.secao),
           pastaPropria: !!String(o.pasta || '').trim(),
           cartoes: Object.keys(rolos).length,
           descargas: hs.length,
@@ -224,6 +232,8 @@ export class BackupService {
         nome: p.nome,
         ejetar: p.ejetar,
         tipo: p.tipo,
+        midia: p.midia,
+        synquei: p.synquei,
         destinos: p.destinos.map((c) => {
           const agora = this.destinosAgora.find((x) => x.caminho === c)
           return { caminho: c, nome: path.basename(c) || c, conectado: agora ? agora.conectado : null, livre: agora?.livre ?? null, total: agora?.total ?? null }
@@ -244,7 +254,7 @@ export class BackupService {
         },
         mediaCartao: mediaDe(daDiaria.length ? daDiaria : p.historico),
         ignorados: p.ignorados.length,
-        pasta: path.join(nomeDePasta(p.nome) || 'Projeto', d.nome, 'Cenas'),
+        pasta: path.join(nomeDePasta(p.nome) || 'Projeto', d.nome),
       }
     }
     const job = this.job
@@ -253,7 +263,7 @@ export class BackupService {
       atual: this.dados.atual,
       projetos: this.dados.projetos.map((x) => ({ id: x.id, nome: x.nome, diaria: this.#diaria(x).nome, descargas: x.historico.length })),
       projeto,
-      volumes: [...this.vistos.values()].map((v) => ({ caminho: v.caminho, nome: v.nome, estado: v.estado, dono: v.dono || null, erro: v.erro || null, capacidade: v.capacidade ?? null, pasta: v.pasta === true })),
+      volumes: [...this.vistos.values()].map((v) => ({ caminho: v.caminho, nome: v.nome, estado: v.estado, dono: v.dono || null, erro: v.erro || null, capacidade: v.capacidade ?? null, pasta: v.pasta === true, escolha: v.escolha || null, parcial: v.parcial === true })),
       pedidos: this.pedidos.map((x) => ({ ...x })),
       fila: this.fila.map((c) => this.vistos.get(c)).filter(Boolean).map((v) => ({ caminho: v.caminho, nome: v.nome, dono: v.dono || null })),
       job: job
@@ -296,11 +306,11 @@ export class BackupService {
 
   // ───── projetos ─────
 
-  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null } = {}) {
+  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null, midia = 'tudo', synquei = true } = {}) {
     if (this.job) throw new BackupError(409, 'Espere a descarga de agora terminar.')
     const n = nomeDePasta(nome)
     if (!n) throw new BackupError(400, 'Dê um nome ao projeto.')
-    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo })
+    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo, midia, synquei: synquei !== false })
     this.dados.projetos.unshift(p)
     this.dados.atual = p.id
     // Quem cria o projeto quer espetar o cartão em seguida: já liga (a tela mostra a chave para desligar).
@@ -312,7 +322,7 @@ export class BackupService {
     return this.view()
   }
 
-  async editarProjeto(id, { nome, destinos, ejetar, tipo } = {}) {
+  async editarProjeto(id, { nome, destinos, ejetar, tipo, midia, synquei } = {}) {
     const p = this.dados.projetos.find((x) => x.id === id)
     if (!p) throw new BackupError(404, 'Projeto não encontrado.')
     if (this.job && this.dados.atual === id && (nome !== undefined || destinos !== undefined)) throw new BackupError(409, 'Espere a descarga de agora terminar para mudar o nome ou os destinos.')
@@ -327,6 +337,8 @@ export class BackupService {
     }
     if (ejetar !== undefined) p.ejetar = ejetar === true
     if (tipo !== undefined) p.tipo = tipoSynquei(tipo)
+    if (midia !== undefined) p.midia = midiaDe(midia)
+    if (synquei !== undefined) p.synquei = synquei !== false
     await this.#salvar()
     this.#mudou(true)
     return this.view()
@@ -346,11 +358,20 @@ export class BackupService {
 
   /** Tira o projeto da lista (os arquivos nos destinos ficam onde estão). */
   async apagarProjeto(id) {
-    if (this.job && this.dados.atual === id) throw new BackupError(409, 'Espere a descarga de agora terminar.')
+    if (!this.dados.projetos.some((x) => x.id === id)) throw new BackupError(404, 'Projeto não encontrado.')
+    // Excluir com um cartão passando: para a descarga antes (o que já foi copiado fica nos destinos).
+    if (this.job && this.dados.atual === id) {
+      this.cancelar()
+      for (let i = 0; this.rodando && i < 200; i++) await dormir(50)
+      if (this.rodando) throw new BackupError(409, 'A descarga ainda está parando. Tente de novo em instantes.')
+    }
+    this.fila = []
+    this.pedidos = []
     this.dados.projetos = this.dados.projetos.filter((x) => x.id !== id)
     if (this.dados.atual === id) {
       this.dados.atual = this.dados.projetos[0]?.id || null
       this.#reiniciarVistos()
+      this.ultimo = null
       if (!this.dados.atual) {
         this.#parar()
         clearInterval(this.timer)
@@ -412,10 +433,25 @@ export class BackupService {
   }
 
   /**
+   * "Limpar histórico": tira as descargas da lista do projeto. Os arquivos nos destinos, o resumo para o Synquei
+   * (descargas.jsonl) e o total "Já passou" do projeto ficam; a numeração dos cartões também (nada vai por cima).
+   */
+  async limparHistorico() {
+    const p = this.#projeto()
+    if (!p) throw new BackupError(409, 'Crie um projeto antes.')
+    if (this.job) throw new BackupError(409, 'Espere a descarga de agora terminar.')
+    p.historico = []
+    this.ultimo = null
+    await this.#salvar()
+    this.#mudou(true)
+    return this.view()
+  }
+
+  /**
    * Edita o dono: nome, câmera e a pasta dentro de Cenas (vazia = "Nome - Câmera"). Os cartões que já passaram ficam
    * onde estão; os próximos vão para a pasta nova.
    */
-  async editarDono(id, { nome, camera, pasta } = {}) {
+  async editarDono(id, { nome, camera, pasta, secao } = {}) {
     const p = this.#projeto()
     if (!p) throw new BackupError(409, 'Crie um projeto antes.')
     const dono = p.donos.find((d) => d.id === id)
@@ -429,9 +465,10 @@ export class BackupService {
     }
     if (camera !== undefined) novo.camera = String(camera || '').trim().slice(0, 40)
     if (pasta !== undefined) novo.pasta = limparPasta(pasta)
+    if (secao !== undefined) novo.secao = secaoDe(secao)
     const outro = p.donos.find((d) => d.id !== id && pastaDono(d).toLowerCase() === pastaDono(novo).toLowerCase())
     if (outro) throw new BackupError(409, `A pasta "${pastaDono(novo)}" já é de ${rotuloDono(outro)}.`)
-    Object.assign(dono, { nome: novo.nome, camera: novo.camera, pasta: novo.pasta })
+    Object.assign(dono, { nome: novo.nome, camera: novo.camera, pasta: novo.pasta, secao: novo.secao })
     for (const reg of this.vistos.values()) if (reg.donoId === id) reg.dono = rotuloDono(dono)
     await this.#salvar()
     this.#mudou(true)
@@ -556,6 +593,9 @@ export class BackupService {
     if (this.pedidos.some((x) => x.caminho === reg.caminho)) return
     reg.estado = 'pedido'
     const mesmos = camera?.curto ? p.donos.filter((d) => mesmoModelo(d.camera, camera.curto)) : []
+    // O que tem no cartão (vídeos, fotos): a tela sugere para onde vai (Cenas, Fotos ou separado).
+    const conteudo = await lerConteudo(reg.caminho).catch(() => null)
+    if (!this.vistos.has(reg.caminho) || this.pedidos.some((x) => x.caminho === reg.caminho)) return
     const pedido = {
       caminho: reg.caminho,
       nome: reg.nome,
@@ -563,6 +603,8 @@ export class BackupService {
       capacidade: reg.capacidade,
       camera: camera ? { marca: camera.marca || null, modelo: camera.modelo || null, curto: camera.curto || null, serial: camera.serial || null } : null,
       donoSugerido: mesmos.length === 1 ? mesmos[0].id : null,
+      conteudo: conteudo ? conteudo.tipos : null,
+      secaoSugerida: secaoSugerida(conteudo, p.midia),
     }
     this.pedidos.push(pedido)
     try {
@@ -644,8 +686,8 @@ export class BackupService {
     return this.view()
   }
 
-  /** "De quem é este cartão?": um dono que já existe, um novo ("Aladim" + "FX30") ou ignorar o disco. */
-  async responder({ caminho, donoId, nome, camera, pasta, ignorar = false } = {}) {
+  /** "De quem é este cartão?": um dono que já existe, um novo ("Ana" + "FX30") ou ignorar o disco. */
+  async responder({ caminho, donoId, nome, camera, pasta, secao, escolha, ignorar = false } = {}) {
     const p = this.#projeto()
     if (!p) throw new BackupError(409, 'Crie um projeto antes.')
     const pedido = this.pedidos.find((x) => x.caminho === caminho)
@@ -666,7 +708,7 @@ export class BackupService {
         }
         dono = p.donos.find((d) => d.nome.toLowerCase() === n.toLowerCase() && String(d.camera || '').toLowerCase() === c.toLowerCase())
         if (!dono) {
-          dono = { id: novoId('don'), nome: n, camera: c, pasta: limparPasta(pasta), criadoEm: this.agora().toISOString() }
+          dono = { id: novoId('don'), nome: n, camera: c, pasta: limparPasta(pasta), secao: secaoDe(secao), criadoEm: this.agora().toISOString() }
           // Dois donos na mesma pasta misturariam os "Cartão NN" de um com os do outro.
           const outro = p.donos.find((d) => pastaDono(d).toLowerCase() === pastaDono(dono).toLowerCase())
           if (outro) {
@@ -676,7 +718,10 @@ export class BackupService {
           p.donos.push(dono)
         }
       }
+      // Dono que já existe: a seção escolhida agora passa a valer para os próximos cartões dele também.
+      if (secao !== undefined && secao !== null && dono.secao !== secaoDe(secao)) dono.secao = secaoDe(secao)
       this.#mapear(p, reg, dono.id, pedido.camera)
+      reg.escolha = limparEscolha(escolha)
       this.#enfileirar(reg)
     }
     await this.#salvar()
@@ -696,13 +741,61 @@ export class BackupService {
     return this.view()
   }
 
+  /** O que tem no cartão espetado (tipos e pastas com mídia), para "Escolher o que passar". */
+  async conteudo(caminho) {
+    const reg = this.vistos.get(caminho)
+    if (!reg) throw new BackupError(404, 'Esse disco não está plugado.')
+    if (reg.estado === 'destino') throw new BackupError(409, 'Esse disco é um destino deste projeto.')
+    try {
+      return { caminho, nome: reg.nome, ...(await lerConteudo(reg.caminho)), escolha: reg.escolha || null }
+    } catch (err) {
+      throw new BackupError(semPermissao(err) ? 403 : 409, semPermissao(err) ? MSG_PERMISSAO : 'Não consegui ler o cartão.')
+    }
+  }
+
+  /**
+   * "Escolher o que passar": só os tipos (vídeos, fotos, outros) e as pastas marcadas, desta vez. O cartão conhecido
+   * entra na fila; o novo continua na pergunta "de quem é?" e a escolha vai junto. O que fica de fora continua no
+   * cartão: o fim diz "passou o que você escolheu", nunca "pode formatar".
+   */
+  async escolher(caminho, escolha) {
+    const p = this.#projeto()
+    if (!p) throw new BackupError(409, 'Crie um projeto antes.')
+    const reg = this.vistos.get(caminho)
+    if (!reg) throw new BackupError(404, 'Esse disco não está plugado.')
+    if (reg.estado === 'destino') throw new BackupError(409, 'Esse disco é um destino deste projeto.')
+    if (this.job?.caminho === caminho) throw new BackupError(409, 'Esse cartão está passando agora. Pare antes de escolher.')
+    const e = limparEscolha(escolha)
+    if (!e) throw new BackupError(400, 'Escolha pelo menos um tipo de arquivo.')
+    reg.escolha = e
+    if (reg.estado === 'pedido') {
+      this.#mudou(true)
+      return this.view()
+    }
+    if (reg.donoId && p.donos.some((d) => d.id === reg.donoId)) {
+      p.ignorados = p.ignorados.filter((x) => x !== reg.id)
+      this.#enfileirar(reg)
+    } else {
+      await this.#avaliar(reg, p, { perguntar: true })
+      if (reg.estado === 'pronto') this.#enfileirar(reg)
+    }
+    await this.#salvar()
+    this.#processar()
+    this.#mudou(true)
+    return this.view()
+  }
+
   async ejetar(caminho) {
     // Só um disco que o vigia viu (nada de ejetar um caminho qualquer que chegou pela rota).
     if (!this.vistos.has(caminho)) throw new BackupError(404, 'Esse cartão não está espetado.')
     if (this.job?.caminho === caminho) throw new BackupError(409, 'Espere a descarga deste cartão terminar.')
     if (this.vistos.get(caminho)?.pasta) throw new BackupError(409, 'Isso é uma pasta: ejete o disco dela.')
-    const ok = await this.ejetarFn(caminho)
-    if (!ok) throw new BackupError(409, 'O sistema não deixou ejetar agora. Feche o que estiver usando o cartão.')
+    const r = await this.ejetarFn(caminho).catch(() => false)
+    const ok = r === true || r?.ok === true
+    if (!ok) {
+      const quem = r && typeof r === 'object' ? r.quem : null
+      throw new BackupError(409, quem ? `O sistema não deixou ejetar: ${quem} está usando o disco. Feche e tente de novo.` : 'O sistema não deixou ejetar agora. Feche o que estiver usando o disco (Finder, Premiere, DaVinci) e tente de novo.')
+    }
     const reg = this.vistos.get(caminho)
     if (reg) reg.estado = 'ejetado'
     this.#mudou(true)
@@ -797,60 +890,93 @@ export class BackupService {
 
     const n = this.#rolo(p, diaria.n, dono.id, reg.id)
     const pasta = `Cartão ${dois(n)}`
-    const donos = p.destinos.map((d) => path.join(d, nomeDePasta(p.nome) || 'Projeto', diaria.nome, 'Cenas', pastaDono(dono)))
     // Uma pasta de dentro do cartão vai para o mesmo lugar dentro do "Cartão NN" (o comparativo vê o que já passou).
     const partes = reg.sub ? reg.sub.split('/').filter(Boolean) : []
-    const pais = partes.length ? donos.map((d) => path.join(d, pasta, ...partes.slice(0, -1))) : donos
     const nomeFinal = partes.length ? partes.at(-1) : pasta
-    job.pasta = [diaria.nome, 'Cenas', pastaDono(dono), pasta, ...partes].join(' / ')
+    const escolha = reg.escolha || null
+    reg.escolha = null // a escolha vale para esta descarga; a próxima volta ao que o projeto passa
+    // As levas: vídeo (e o resto da estrutura) em Cenas, foto em Fotos, ou tudo numa seção (src/backup/midia.js).
+    const { levas: todas, tudo } = levas({ midia: p.midia, secao: dono.secao, escolha })
+    const comSub = (f) => (rel) => f(partes.length ? `${partes.join('/')}/${rel}` : rel)
+    let contagem = null
+    try {
+      const lido = await scanLocal(reg.caminho)
+      const arquivos = lido.files.filter((f) => !SISTEMA.test(f.relPath)).map((f) => f.relPath)
+      contagem = { total: arquivos.length, por: todas.map((l) => arquivos.filter(comSub(l.filtro)).length) }
+    } catch {
+      contagem = null // a leitura falha de novo no planejar, com a mensagem certa
+    }
+    // Leva sem nenhum arquivo não cria pasta (um cartão só de vídeo não ganha uma "Fotos" vazia).
+    let usar = contagem ? todas.filter((_, k) => contagem.por[k] > 0) : todas
+    if (!usar.length) usar = todas.slice(0, 1)
+    // Ficou algo do cartão de fora (só vídeos, só fotos, a escolha da pessoa): "OK" não quer dizer "pode formatar".
+    const parcial = !tudo && !!contagem && contagem.por.reduce((a, b) => a + b, 0) < contagem.total
+    const caminhoDe = (l) => [diaria.nome, l.pasta, pastaDono(dono), pasta, ...partes]
+    // Separado: "Diária 01 / Cenas · Fotos / Ana - FX30 / Cartão 01" (o mesmo Cartão NN nas duas seções).
+    job.pasta = caminhoDe({ pasta: usar.map((l) => l.pasta).join(' · ') }).join(' / ')
     await this.#salvar()
 
     let copiados = 0
     let bytes = 0
     let erro = null
-    const planejar = async () => {
-      job.fase = 'comparando'
-      this.#mudou(true)
-      await this.motor.planejar({ origem: reg.caminho, destinos: pais, nome: nomeFinal })
-      if (!this.motor.plano) throw new BackupError(499, 'Cancelado.') // parou no meio da comparação
-      const it = this.motor.plano.itens
-      job.plano = {
-        arquivos: it.length,
-        bytes: this.motor.plano.origem.bytes,
-        novos: it.filter((x) => x.estados.includes('novo')).length,
-        iguais: it.filter((x) => x.estados.every((e) => e === 'igual')).length,
-        diferentes: it.filter((x) => x.estados.includes('diferente')).length,
-      }
-    }
-    try {
-      for (const pai of pais) await fsp.mkdir(pai, { recursive: true })
-      await planejar()
-      if (await this.#guardarAntigos(this.motor.plano)) await planejar()
-      // Copia o que é novo; depois compara de novo (o comparativo automático). Sobrou algo (falha)? Mais uma vez.
-      while (job.plano.novos && job.tentativa < 2 && !job.cancelado && !job.saiu) {
-        job.tentativa++
-        job.fase = 'copiando'
-        await this.motor.iniciar({ substituir: false, conferir: true, conferirIguais: false, relatorio: true, algoritmo: 'xxh64' })
-        await this.motor.rodando
-        const r = this.motor.resultado
-        if (r) {
-          copiados += r.copiados || 0
-          bytes += r.bytes || 0
-          if (r.erro) erro = r.erro
+    let arquivosTotal = 0
+    let bytesCartao = 0
+    const faltam = []
+    const alertas = []
+    const feitas = []
+    for (const leva of usar) {
+      if (job.cancelado || job.saiu || erro) break
+      const donos = p.destinos.map((d) => path.join(d, nomeDePasta(p.nome) || 'Projeto', diaria.nome, leva.pasta, pastaDono(dono)))
+      const pais = partes.length ? donos.map((d) => path.join(d, pasta, ...partes.slice(0, -1))) : donos
+      const filtro = comSub(leva.filtro)
+      job.secao = leva.secao
+      job.tentativa = 0
+      const planejar = async () => {
+        job.fase = 'comparando'
+        this.#mudou(true)
+        await this.motor.planejar({ origem: reg.caminho, destinos: pais, nome: nomeFinal, filtro })
+        if (!this.motor.plano) throw new BackupError(499, 'Cancelado.') // parou no meio da comparação
+        const it = this.motor.plano.itens
+        job.plano = {
+          arquivos: it.length,
+          bytes: this.motor.plano.origem.bytes,
+          novos: it.filter((x) => x.estados.includes('novo')).length,
+          iguais: it.filter((x) => x.estados.every((e) => e === 'igual')).length,
+          diferentes: it.filter((x) => x.estados.includes('diferente')).length,
         }
-        if (job.cancelado || job.saiu || this.motor.fase === 'cancelado') break
-        await planejar()
       }
-    } catch (err) {
-      const sumiu = job.saiu || !(await eDiretorio(reg.caminho))
-      if (!job.cancelado) erro = sumiu ? 'O cartão saiu antes de terminar. Espete de novo: continua de onde parou.' : semPermissao(err) ? MSG_PERMISSAO : err?.message || 'A descarga parou.'
+      try {
+        for (const pai of pais) await fsp.mkdir(pai, { recursive: true })
+        await planejar()
+        if (await this.#guardarAntigos(this.motor.plano)) await planejar()
+        // Copia o que é novo; depois compara de novo (o comparativo automático). Sobrou algo (falha)? Mais uma vez.
+        while (job.plano.novos && job.tentativa < 2 && !job.cancelado && !job.saiu) {
+          job.tentativa++
+          job.fase = 'copiando'
+          await this.motor.iniciar({ substituir: false, conferir: true, conferirIguais: false, relatorio: true, algoritmo: 'xxh64' })
+          await this.motor.rodando
+          const r = this.motor.resultado
+          if (r) {
+            copiados += r.copiados || 0
+            bytes += r.bytes || 0
+            if (r.erro) erro = r.erro
+          }
+          if (job.cancelado || job.saiu || this.motor.fase === 'cancelado') break
+          await planejar()
+        }
+      } catch (err) {
+        const sumiu = job.saiu || !(await eDiretorio(reg.caminho))
+        if (!job.cancelado) erro = sumiu ? 'O cartão saiu antes de terminar. Espete de novo: continua de onde parou.' : semPermissao(err) ? MSG_PERMISSAO : err?.message || 'A descarga parou.'
+      }
+      const itens = this.motor.plano?.itens || []
+      arquivosTotal += itens.length
+      bytesCartao += this.motor.plano?.origem?.bytes || 0
+      faltam.push(...itens.filter((it) => it.estados.includes('novo')).map((it) => (usar.length > 1 ? `${leva.pasta}: ${it.relPath}` : it.relPath)))
+      alertas.push(...itens.filter((it) => it.estados.includes('diferente')).map((it) => (usar.length > 1 ? `${leva.pasta}: ${it.relPath}` : it.relPath)))
+      feitas.push({ leva, itens })
     }
     if (job.saiu && !erro) erro = 'O cartão saiu antes de terminar. Espete de novo: continua de onde parou.'
 
-    const plano = this.motor.plano
-    const itens = plano?.itens || []
-    const faltam = itens.filter((it) => it.estados.includes('novo')).map((it) => it.relPath)
-    const alertas = itens.filter((it) => it.estados.includes('diferente')).map((it) => it.relPath)
     const resultado = job.cancelado ? 'cancelado' : erro ? 'erro' : faltam.length || alertas.length ? 'falta' : 'ok'
     const agora = this.agora()
     const entrada = {
@@ -863,8 +989,9 @@ export class BackupService {
       volId: reg.id,
       cartao: reg.nome,
       pasta: job.pasta,
-      arquivos: itens.length,
-      bytesCartao: plano?.origem?.bytes || 0,
+      secoes: usar.map((l) => l.secao),
+      arquivos: arquivosTotal,
+      bytesCartao,
       copiados,
       bytes,
       segundos: Math.round((Date.now() - job.inicio) / 1000),
@@ -873,10 +1000,13 @@ export class BackupService {
       alertas: alertas.length,
       erro,
       soPasta: reg.pasta === true, // só uma pasta do cartão: "OK" não quer dizer "pode formatar"
+      parcial, // passou só o que o projeto ou a pessoa escolheu: o resto ficou no cartão
     }
     p.historico.unshift(entrada)
     if (p.historico.length > HISTORICO_MAX) p.historico.length = HISTORICO_MAX
-    if (resultado !== 'cancelado') await this.#resumir({ p, diaria, dono, n, pasta, itens, entrada, sub: partes.join('/') })
+    if (resultado !== 'cancelado') {
+      for (const f of feitas) await this.#resumir({ p, diaria, dono, n, pasta, itens: f.itens, entrada, sub: partes.join('/'), leva: f.leva })
+    }
     p.total = { bytes: p.total.bytes + bytes, arquivos: p.total.arquivos + copiados, descargas: p.total.descargas + 1 }
     await this.#salvar()
     this.ultimo = { ...entrada, listaFaltam: faltam.slice(0, LISTA_MAX), listaAlertas: alertas.slice(0, LISTA_MAX), destinos: p.destinos.map((d) => path.basename(d) || d) }
@@ -884,13 +1014,14 @@ export class BackupService {
     if (ainda) {
       ainda.estado = p.ignorados.includes(ainda.id) ? 'ignorado' : resultado // "Não é cartão" no meio da descarga
       ainda.erro = erro
+      ainda.parcial = parcial
     }
     try {
-      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta })
+      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta, parcial })
     } catch {}
-    if (resultado === 'ok' && p.ejetar && ainda && !reg.pasta) {
-      const ok = await this.ejetarFn(reg.caminho).catch(() => false)
-      if (ok) ainda.estado = 'ejetado'
+    if (resultado === 'ok' && p.ejetar && ainda && !reg.pasta && !parcial) {
+      const r = await this.ejetarFn(reg.caminho).catch(() => false)
+      if (r === true || r?.ok === true) ainda.estado = 'ejetado'
     }
   }
 
@@ -899,7 +1030,7 @@ export class BackupService {
    * pasta do cartão a partir da pasta do projeto e os arquivos (caminho dentro do cartão e tamanho). Falhar aqui nunca
    * atrapalha a descarga: o cartão já está copiado e conferido.
    */
-  async #resumir({ p, diaria, dono, n, pasta, itens, entrada, sub = '' }) {
+  async #resumir({ p, diaria, dono, n, pasta, itens, entrada, sub = '', leva = { secao: 'cenas', pasta: PASTA_SECAO.cenas } }) {
     const projeto = nomeDePasta(p.nome) || 'Projeto'
     const linha =
       JSON.stringify({
@@ -912,7 +1043,9 @@ export class BackupService {
         ...(p.tipo ? { tipo: p.tipo } : {}),
         diaria: { n: diaria.n, nome: diaria.nome },
         dono: { id: dono.id, nome: dono.nome || '', camera: dono.camera || '', pasta: pastaDono(dono) },
-        cartao: { n, nome: entrada.cartao, volId: entrada.volId, pasta: [diaria.nome, 'Cenas', pastaDono(dono), pasta].join('/') },
+        // Cenas (vídeo) ou Fotos: uma linha por seção quando o cartão foi separado.
+        secao: leva.secao,
+        cartao: { n, nome: entrada.cartao, volId: entrada.volId, pasta: [diaria.nome, leva.pasta, pastaDono(dono), pasta].join('/') },
         resultado: entrada.resultado,
         copiados: entrada.copiados,
         bytes: entrada.bytes,

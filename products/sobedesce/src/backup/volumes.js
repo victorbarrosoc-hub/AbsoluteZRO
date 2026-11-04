@@ -179,13 +179,44 @@ async function listarLinux({ fs, exec, usuario, c }) {
 }
 
 /** Ejeta o disco (o cartão pode sair com segurança). Devolve true se o sistema aceitou. */
-export async function ejetar(caminho, { platform = process.platform, exec = rodar } = {}) {
-  if (platform === 'darwin') return (await exec('/usr/sbin/diskutil', ['eject', caminho], { timeout: 20_000 })) != null
+/** Roda um comando e devolve { ok, saida } (a saída de erro junto: o diskutil diz ali quem segura o disco). */
+function rodarComErro(cmd, args, { timeout = CMD_MS } = {}) {
+  return new Promise((ok) => {
+    execFile(cmd, args, { timeout, windowsHide: true, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => ok({ ok: !err, saida: `${stdout || ''}\n${stderr || ''}` }))
+  })
+}
+
+/**
+ * Quem não deixou ejetar, pela saída do diskutil ("dissented by PID 452 (/System/.../mds_stores)"). O Spotlight
+ * (mds) é o caso mais comum num disco recém-espetado. null = o sistema não disse.
+ */
+export function quemSegura(saida) {
+  const m = /PID\s+(\d+)\s*\(([^)]+)\)/i.exec(String(saida || ''))
+  if (!m) return null
+  const caminho = m[2]
+  if (/\bmds|spotlight/i.test(caminho)) return 'o Spotlight do Mac (está indexando o disco)'
+  const app = /([^/]+)\.app(\/|$)/.exec(caminho)?.[1]
+  return app || path.basename(caminho) || null
+}
+
+/**
+ * Ejeta o disco. No Mac, se o `diskutil eject` (o disco físico inteiro) for recusado, tenta desmontar só este volume:
+ * um HD com duas partições ejeta mesmo quando a outra está em uso. Nunca força (pode ter algo gravando).
+ * Devolve { ok, quem } (quem = o que segurou o disco, quando o sistema diz).
+ */
+export async function ejetar(caminho, { platform = process.platform, exec = rodarComErro } = {}) {
+  if (platform === 'darwin') {
+    const a = await exec('/usr/sbin/diskutil', ['eject', caminho], { timeout: 20_000 })
+    if (a.ok) return { ok: true, quem: null }
+    const b = await exec('/usr/sbin/diskutil', ['unmount', caminho], { timeout: 20_000 })
+    if (b.ok) return { ok: true, quem: null }
+    return { ok: false, quem: quemSegura(b.saida) || quemSegura(a.saida) }
+  }
   if (platform === 'win32') {
     const letra = /^([a-z]):/i.exec(caminho)?.[1]?.toUpperCase()
-    if (!letra) return false
+    if (!letra) return { ok: false, quem: null }
     const cmd = `(New-Object -ComObject Shell.Application).Namespace(17).ParseName('${letra}:').InvokeVerb('Eject')`
-    return (await exec('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', cmd], { timeout: 20_000 })) != null
+    return { ok: (await exec('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', cmd], { timeout: 20_000 })).ok, quem: null }
   }
-  return (await exec('gio', ['mount', '-e', caminho], { timeout: 20_000 })) != null
+  return { ok: (await exec('gio', ['mount', '-e', caminho], { timeout: 20_000 })).ok, quem: null }
 }
