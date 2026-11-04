@@ -26,6 +26,13 @@ import {
 } from "./servidor";
 import { CAPA_ENTRADA_MAX } from "./capa-regras";
 import { carregarColunas, OPS_DE_COLUNA, operarColuna } from "./colunas-servidor";
+import { temProduto } from "@/lib/auth/acesso";
+import { PRODUTO_SOBEDESCE } from "@/lib/sobedesce/ponte";
+import { sugestaoDePastas } from "@/lib/sobedesce/arquivos";
+import { ehCampoPasta } from "./pastas";
+
+/** As pastas do Drive no card só com o SOBEDESCE no plano (a ficha também só mostra com ele). */
+const mexeEmPasta = (v: unknown) => !!v && typeof v === "object" && Object.keys(v as object).some(ehCampoPasta);
 
 const responderFalha = (f: Falha) => json({ erro: f.erro, mensagem: f.mensagem, campo: f.campo, card: f.card ?? undefined }, f.status);
 
@@ -52,6 +59,8 @@ export async function postQuadro(req: Request): Promise<Response> {
   const corpo = await lerJson(req, 64 * 1024);
   if (!corpo) return erro(400, "formato", "Pedido inválido.");
   const ctx = { sub: s.sub, orgId: s.orgId };
+  const pastas = corpo.op === "mudar" ? mexeEmPasta(corpo.campos) : corpo.op === "criar" ? mexeEmPasta(corpo.dados) : false;
+  if (pastas && !temProduto(s, PRODUTO_SOBEDESCE)) return erro(403, "sem_sobedesce", "As pastas do Drive no card fazem parte dos planos com SOBEDESCE.");
   if (typeof corpo.op === "string" && OPS_DE_COLUNA.has(corpo.op)) {
     if (!podeEditarColunas(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mudam as colunas.");
     const c = await operarColuna(ctx, corpo);
@@ -127,6 +136,18 @@ export async function deleteCapa(req: Request): Promise<Response> {
   if (!podeEscrever(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê o Quadro.");
   const r = await tirarCapa({ sub: s.sub, orgId: s.orgId }, new URL(req.url).searchParams.get("card"));
   return r.ok ? json({ card: r.card }) : responderFalha(r);
+}
+
+/**
+ * GET /api/quadro/pastas?projeto=<id>: a sugestão de "Brutos" e "Entrega" para o card (as subpastas da estrutura do
+ * projeto no Drive). Só com o SOBEDESCE e para quem escreve no Quadro; sem pasta no projeto, `{}`.
+ */
+export async function getPastas(req: Request): Promise<Response> {
+  const s = await exigirAcesso(req);
+  if (s instanceof Response) return s;
+  if (!podeEscrever(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê o Quadro.");
+  const r = await sugestaoDePastas(s, new URL(req.url).searchParams.get("projeto") ?? "");
+  return r.ok ? json({ sugestao: r.dados }, 200, { "Cache-Control": "no-store" }) : json({ erro: r.erro, mensagem: r.mensagem }, r.status);
 }
 
 const NAO_ACHEI = () => new Response("Não encontrado.", { status: 404, headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" } });

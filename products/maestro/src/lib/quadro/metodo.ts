@@ -11,6 +11,8 @@
  * a ordem entre vizinhos (mover não regrava a coluna inteira), os filtros e o rótulo do prazo. Puro: roda no
  * navegador, no servidor e nos testes.
  */
+import { lerPastaDoCard, type PastaDoCard } from "./pastas";
+
 /** Os papéis das 8 colunas do método (= o id delas). */
 export type PapelColuna = "pauta" | "afazer" | "fazendo" | "revisao" | "aprovacao" | "aprovado" | "agendado" | "entregue";
 /** Id de qualquer coluna: um papel ou `x-<acaso>` (coluna da produtora). */
@@ -67,13 +69,30 @@ export type DadosCard = {
   tipo?: string;
   /** O tempo previsto, em minutos (5 a 200 h, de 5 em 5): o estimado × real no card. */
   previsto?: number;
+  /** As pastas do Drive do card (titular, 04/11/2026; `src/lib/quadro/pastas.ts`): só com o SOBEDESCE no plano. */
+  pastaBrutos?: PastaDoCard;
+  pastaEntrega?: PastaDoCard;
 };
 
 /** O card como a tela recebe: os dados, a versão do card e a versão de cada campo (para o conflito por campo). */
 export type CardQ = { id: string; dados: DadosCard; versao: number; versoes: Record<string, number> };
 
 /** Campos que a equipe muda pela tela (o resto é do servidor). */
-export const CAMPOS_EDITAVEIS = ["tema", "coluna", "ordem", "cliente", "projeto", "resp", "prazo", "prioridade", "briefing", "tipo", "previsto"] as const;
+export const CAMPOS_EDITAVEIS = [
+  "tema",
+  "coluna",
+  "ordem",
+  "cliente",
+  "projeto",
+  "resp",
+  "prazo",
+  "prioridade",
+  "briefing",
+  "tipo",
+  "previsto",
+  "pastaBrutos",
+  "pastaEntrega",
+] as const;
 export type CampoEditavel = (typeof CAMPOS_EDITAVEIS)[number];
 export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   tema: "o título",
@@ -87,6 +106,8 @@ export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   briefing: "o briefing",
   tipo: "o tipo de vídeo",
   previsto: "o previsto",
+  pastaBrutos: "a pasta dos brutos",
+  pastaEntrega: "a pasta de entrega",
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -122,6 +143,9 @@ export function valorDoCampo(campo: CampoEditavel, v: unknown): unknown {
       return v === "baixa" || v === "normal" || v === "alta" ? v : undefined;
     case "briefing":
       return typeof v === "string" && v.length <= LIMITE_BRIEFING ? v : undefined;
+    case "pastaBrutos":
+    case "pastaEntrega":
+      return lerPastaDoCard(campo, v);
   }
 }
 

@@ -5,10 +5,12 @@ import { carregarCards, referenciasDoQuadro, selosDoQuadro } from "@/lib/quadro/
 import { carregarColunas } from "@/lib/quadro/colunas-servidor";
 import { Quadro } from "@/components/quadro/quadro";
 import { CarregarDemonstracao } from "@/components/demonstracao";
+import { temArquivos } from "@/lib/sobedesce/arquivos";
 import "../../../versoes-card.css";
 import "../../../colunas.css";
 import "../../../quadro-achar.css";
 import "../../../relay.css";
+import "../../../arquivos.css";
 
 export const metadata = { title: "Quadro" };
 
@@ -34,6 +36,7 @@ export default async function PaginaQuadro({ searchParams }: PageProps<"/app/qua
       cardInicial={card && cards.some((c) => c.id === card) ? card : null}
       clienteInicial={cliente}
       novoInicial={sp.novo === "1"}
+      sobedesce={temArquivos(sessao) ? (process.env.MAESTRO_SOBEDESCE_URL?.trim() || "https://sobedesce.com").replace(/\/$/, "") : null}
       projetoInicial={typeof sp.projeto === "string" && refs.projetos.some((p) => p.id === sp.projeto) ? sp.projeto : null}
     />
   );

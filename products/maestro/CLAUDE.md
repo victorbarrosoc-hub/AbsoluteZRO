@@ -57,6 +57,16 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Pastas do Drive no card** (titular 04/11/2026; `src/lib/quadro/pastas.ts` puro, `components/quadro/pastas.tsx`):
+  "Brutos" e "Entrega" em `dados.pastaBrutos`/`dados.pastaEntrega` (`{ id, nome, url }`, campos de `CAMPOS_EDITAVEIS`
+  gravados pelo `card_mudar`; sem migração). O link colado passa por `lerLinkDaPasta` (só `drive.google.com`:
+  `/drive/folders/<id>`, `/drive/u/<n>/…`, `/drive/mobile/…`, `folderview`/`embeddedfolderview?id=`; arquivo e `open?id=`
+  não) e o endereço guardado é sempre o montado do id (`enderecoDaPasta`, com a `resourcekey` se veio). Só com o
+  SOBEDESCE no plano: a ficha só mostra com `sobedesce` (a página passa a origem quando `temArquivos`) e `/api/quadro`
+  recusa `pasta*` sem ele (403 `sem_sobedesce`). Chips na ficha abrem o Drive; a folha cola o link, "Escolher no Drive"
+  (o `NavegadorDrive` com "Usar esta pasta") e a sugestão do projeto (`GET /api/quadro/pastas?projeto=`, lista a pasta
+  ligada pela ponte e acha "02 Bruto"/"05 Entregas"; projeto sem pasta = nenhuma sugestão). Duplicar não leva as pastas.
+  Testes: `tests/quadro.test.mts`, `tests/drive-sobedesce.test.mts`, `e2e/quadro-pastas.spec.ts` (`SHOTS_DIR` guarda `pd-*`).
 - **Achar o job no Quadro** (titular 30/10/2026; `drizzle/0035_capas_do_quadro.sql`, `src/lib/quadro/{selos,capa,
 capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o card mostra **um** selo do link, o
   mais adiantado e só do que o banco registra (`selosDoQuadro`/`selosDesde` como a pessoa: versão mais nova, lote fora

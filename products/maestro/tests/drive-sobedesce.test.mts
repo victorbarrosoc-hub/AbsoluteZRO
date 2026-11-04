@@ -146,7 +146,23 @@ describe("Arquivos: só com o SOBEDESCE no plano", () => {
     const [p] = await arquivos.projetosComPasta(ana);
     assert.deepEqual(p.pasta, { id: r1.dados.pasta.id, nome: "MAE-2026-001 Lançamento" });
     assert.equal((await arquivos.ligarPasta(ana, projeto, { id: "../x", nome: "x" })).ok, false);
+    // as pastas do card: a sugestão vem das subpastas da estrutura (02 Bruto, 05 Entregas), sem criar nada
+    const sub = Object.fromEntries(r1.dados.subpastas.map((s) => [s.nome, s.id]));
+    const antes = ponte.estado.chamadas.length;
+    const s = await arquivos.sugestaoDePastas(ana, projeto);
+    assert.ok(s.ok);
+    assert.equal(s.dados.pastaBrutos?.id, sub["02 Bruto"]);
+    assert.equal(s.dados.pastaEntrega?.id, sub["05 Entregas"]);
+    assert.equal(s.dados.pastaEntrega?.url, `https://drive.google.com/drive/folders/${sub["05 Entregas"]}`);
+    assert.equal(ponte.estado.chamadas.at(-1)!.acao, "drive.listar");
+    assert.equal(ponte.estado.chamadas.length, antes + 1, "uma leitura só");
+    assert.equal((await arquivos.sugestaoDePastas(anaSem, projeto)).ok, false, "sem o SOBEDESCE no plano");
     assert.ok((await arquivos.ligarPasta(ana, projeto, null)).ok);
+    // projeto sem pasta ligada: nenhuma sugestão (nada inventado) e nenhuma chamada
+    const sem = await arquivos.sugestaoDePastas(ana, projeto);
+    assert.ok(sem.ok);
+    assert.deepEqual(sem.dados, {});
+    assert.equal(ponte.estado.chamadas.length, antes + 1);
   });
 });
 

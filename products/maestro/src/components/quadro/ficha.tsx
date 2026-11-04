@@ -29,6 +29,7 @@ import { Icone } from "@/components/icones";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { AvatarPessoa, iniciaisDe } from "./pecas";
 import { VersoesDoCard } from "./versoes";
+import { PastasDoCard } from "./pastas";
 import { CapaDaFicha } from "./capa";
 import type { Selo } from "@/lib/quadro/selos";
 import { CriacaoDoCard } from "@/components/criacao/do-card";
@@ -58,6 +59,8 @@ type Props = {
   selo?: Selo;
   /** O card como o banco devolveu depois de pôr ou tirar a capa. */
   adotar: (c: CardQ) => void;
+  /** Com o SOBEDESCE no plano: a origem do app dele (as pastas do Drive do card). Sem ele, null: nada de Drive. */
+  sobedesce?: string | null;
 };
 
 /** Texto que grava ao sair do campo; o que chega do banco só entra quando a pessoa não está digitando ali. */
@@ -206,7 +209,7 @@ export function Ficha(props: Props) {
   );
 }
 
-function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, duplicar, copiarLink, aoCriar, selo, adotar }: Props) {
+function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, duplicar, copiarLink, aoCriar, selo, adotar, sobedesce }: Props) {
   const fechar = useFecharFolha();
   const idBase = useId();
   const caixa = useRef<HTMLFormElement>(null);
@@ -497,6 +500,7 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
         )}
       </label>
 
+      {card && sobedesce ? <PastasDoCard dados={card.dados} podeEscrever={podeEscrever} sobedesce={sobedesce} por={por} /> : null}
       {card ? <VersoesDoCard key={card.id} card={card.id} podeEscrever={podeEscrever} /> : null}
       {card ? <CriacaoDoCard key={`cr-${card.id}`} card={card.id} podeEscrever={podeEscrever} /> : null}
 

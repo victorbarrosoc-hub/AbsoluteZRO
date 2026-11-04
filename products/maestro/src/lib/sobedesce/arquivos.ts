@@ -11,6 +11,7 @@ import { temProduto } from "@/lib/auth/acesso";
 import type { Sessao } from "@/lib/auth/sessao";
 import { getBanco } from "@/lib/db/client";
 import { podeEscrever } from "@/lib/papeis";
+import { sugestaoDasSubpastas, type SugestaoDePastas } from "@/lib/quadro/pastas";
 import { apiDoGoogle, noSobedesce, PRODUTO_SOBEDESCE, SEM_SOBEDESCE, type Falha, type Resultado } from "./ponte";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -101,4 +102,26 @@ export async function criarEstrutura(
     ? r.dados.subpastas.filter((x) => typeof x?.id === "string" && ID_DRIVE.test(x.id) && typeof x.nome === "string")
     : [];
   return { ok: true, dados: { pasta: r.dados.pasta, subpastas, criadas: r.dados.criadas } };
+}
+
+/**
+ * As pastas do card (titular, 04/11/2026): a sugestão de "Brutos" e "Entrega" vem das subpastas que a estrutura do
+ * projeto criou (02 Bruto, 05 Entregas), listando a pasta ligada ao projeto pela ponte. Projeto sem pasta: nada (a tela
+ * não inventa). Nada é criado nem guardado aqui.
+ */
+export async function sugestaoDePastas(sessao: Sessao, projetoId: string): Promise<Resultado<SugestaoDePastas>> {
+  if (!temArquivos(sessao)) return SEM_SOBEDESCE();
+  if (!UUID.test(projetoId)) return { ok: false, status: 400, erro: "formato", mensagem: "Projeto inválido." };
+  const [p] = await getBanco().asUser(
+    { sub: sessao.sub, orgId: sessao.orgId },
+    async (tx) =>
+      (await tx.execute(sql`select drive_folder_id as pasta from maestro.projects where id = ${projetoId}::uuid and deleted_at is null`)) as unknown as {
+        pasta: string | null;
+      }[],
+  );
+  if (!p) return { ok: false, status: 404, erro: "nao_existe", mensagem: "Esse projeto não existe mais." };
+  if (!p.pasta || !ID_DRIVE.test(p.pasta)) return { ok: true, dados: {} };
+  const r = await noSobedesce<{ itens?: { id?: unknown; nome?: unknown; pasta?: unknown }[] }>(sessao, "drive.listar", { pasta: p.pasta });
+  if (!r.ok) return r;
+  return { ok: true, dados: sugestaoDasSubpastas(Array.isArray(r.dados.itens) ? r.dados.itens : []) };
 }

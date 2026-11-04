@@ -43,6 +43,8 @@ type Props = Inicial & {
   projetoInicial?: string | null;
   /** Pauta vazia: o botão "Carregar demonstração" (só administração e gestão), ao lado de "Novo card". */
   demonstracao?: ReactNode;
+  /** Com o SOBEDESCE no plano: a origem do app dele (pastas do Drive e o navegador na ficha); sem ele, null. */
+  sobedesce?: string | null;
 };
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaId; cliente?: string; projeto?: string } };
 /** Arrastar o cabeçalho (computador): a coluna e o lugar (índice entre as vivas) onde entraria. */
@@ -551,6 +553,7 @@ export function Quadro(props: Props) {
           refs={refs}
           colunas={vivas}
           podeEscrever={podeEscrever}
+          sobedesce={props.sobedesce ?? null}
           selo={"id" in ficha ? selos[ficha.id] : undefined}
           adotar={q.adotar}
           mudar={mudar}
