@@ -669,8 +669,9 @@ Branch `sobedesce-backup-escolha`.
   ejeta; "Escolher o que passar" por tipo e pasta, só daquela vez; excluir o projeto com um cartão passando (para, some,
   espetar de novo não passa); limpar o histórico (total, numeração e resumo ficam); Synquei opcional; ejetar no Mac
   tenta `unmount` quando o `eject` é recusado e diz quem segura (DaVinci, Spotlight).
-- `test/backup-automatico.test.js` 21/21 sem mudança de comportamento (só os nomes de exemplo); Synquei
-  (`organizador`, `davinci`) e Revela (`porclipe`) verdes com os nomes novos.
+- `test/backup-automatico.test.js` 21/21 sem mudança de comportamento (só os nomes de exemplo). As outras plataformas
+  não mudam (nenhum build de site na Vercel).
+- `npm run test:fast`: 780 de 781; o único vermelho é o do Set no Chromium local (tempo de rede), verde no CI.
 - Tela conferida no demo (Chromium, escuro): pergunta com "Vai para" e "Escolher o que passar", painel, editar com
   "O que vai passar", "Usar o Synquei" e "Excluir projeto"; sem erro no console.
 
