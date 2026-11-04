@@ -185,3 +185,20 @@ test('conta SOBEDESCE: o modo vem do site, o computador diz que entende e o 403 
   assert.equal(auth.modoDe('nuvem:g1'), 'arquivos')
   cloud.close()
 })
+
+test('Arquivos escolhidos: o Google recusa ler a raiz (404 "File not found: root") e o Meu Drive abre mesmo assim', async t => {
+  const { mock, drive } = await setup(t, 'arquivos')
+  const nossa = mock.addFolder('Nossa', 'root', { appProperties: { sobedesce: 'pasta' } })
+  // Como o drive.file responde de verdade: files/root → 404. Listar 'root' in parents continua funcionando.
+  const api = drive.api.bind(drive)
+  drive.api = (metodo, caminho, o) => api(metodo, caminho === 'files/root' ? 'files/nao-existe-raiz' : caminho, o)
+  const raiz = await drive.getItem('root', { media: true })
+  assert.equal(raiz.id, 'root')
+  assert.equal(raiz.name, 'Meu Drive')
+  assert.equal(raiz.isFolder, true)
+  assert.equal(raiz.canAddChildren, true, 'dá para enviar para o Meu Drive')
+  assert.ok((await drive.listChildren('root')).some((x) => x.id === nossa.id))
+  assert.deepEqual(await drive.getPath('root'), [{ id: 'root', name: 'Meu Drive' }])
+  // Outro 404 (um arquivo que sumiu de verdade) continua sendo "Não achei".
+  await assert.rejects(drive.getItem('sumiu-de-verdade'))
+})
