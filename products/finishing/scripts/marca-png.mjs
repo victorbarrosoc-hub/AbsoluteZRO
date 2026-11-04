@@ -30,7 +30,7 @@ html,body{margin:0}
 .og{position:relative;width:1200px;height:630px;overflow:hidden;background:#0b0a09}
 .og>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 40%}
 .og::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgb(11 10 9/.92) 18%,rgb(11 10 9/.55) 46%,rgb(11 10 9/0) 70%)}
-.logo{position:absolute;z-index:1;left:80px;top:283px;height:64px}
+.logo{position:absolute;z-index:1;left:80px;top:270px;height:90px}
 </style><div class="og"><img class="foto" src="${dataUrl('marca/home/hero-filme.jpg', 'image/jpeg')}"><img class="logo" src="${dataUrl('marca/revela-logo.svg', 'image/svg+xml')}"></div>`)
 for (const i of await pagina.locator('img').all()) await i.evaluate((n) => n.decode())
 writeFileSync(new URL('og.jpg', raiz), await pagina.screenshot({ type: 'jpeg', quality: 86 }))
