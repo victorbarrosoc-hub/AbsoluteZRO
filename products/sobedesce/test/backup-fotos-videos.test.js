@@ -46,9 +46,10 @@ async function esperar(fn, ms = 15_000) {
 
 function montar({ ejetarFn } = {}) {
   const discos = []
-  const svc = new BackupService({ arquivo: path.join(tmp(), 'backup.json'), listar: async () => discos.map((d) => ({ ...d })), vigiaMs: 0, keepAwake: sem, ejetar: ejetarFn || (async () => true) })
+  const avisos = []
+  const svc = new BackupService({ arquivo: path.join(tmp(), 'backup.json'), listar: async () => discos.map((d) => ({ ...d })), vigiaMs: 0, keepAwake: sem, ejetar: ejetarFn || (async () => true), avisar: (ev, d) => avisos.push([ev, d]), ejetarEsperasMs: [0, 0, 0] })
   const ocioso = () => esperar(() => !svc.rodando && !svc.fila.length)
-  return { svc, discos, ocioso }
+  return { svc, discos, ocioso, avisos }
 }
 
 const existe = (...p) => fs.existsSync(path.join(...p))
@@ -243,4 +244,41 @@ test('ejetar no Mac: o eject recusado tenta desmontar só o volume; recusado de 
   await svc.varrer()
   await assert.rejects(svc.ejetar(card), /DaVinci Resolve está usando o disco/)
   await svc.close()
+})
+
+test('"Ejetar ao terminar": recusado logo depois da cópia, tenta de novo; sem conseguir, o cartão e o aviso dizem por quê', async () => {
+  // recusa duas vezes (o Spotlight ainda lendo) e ejeta na terceira
+  let n = 0
+  const a = montar({ ejetarFn: async () => (++n < 3 ? { ok: false, quem: 'o Spotlight do Mac (está indexando o disco)' } : { ok: true, quem: null }) })
+  await a.svc.init()
+  await a.svc.criarProjeto({ nome: 'Show', destinos: [tmp('sobedesce-hd-')], ejetar: true })
+  const card = cartaoSoFotos()
+  a.discos.push({ caminho: card, nome: 'SD', id: 'uuid:EJ1' })
+  await a.svc.varrer()
+  await a.svc.responder({ caminho: card, nome: 'Ana', camera: 'R6' })
+  await a.ocioso()
+  assert.equal(n, 3)
+  assert.equal(a.svc.view().volumes[0].estado, 'ejetado')
+  const feito = a.avisos.find(([e]) => e === 'backup-feito')[1]
+  assert.equal(feito.ejetado, true)
+  assert.equal(feito.ejetarErro, null)
+  await a.svc.close()
+
+  // recusa sempre: fica "OK" (copiado e conferido), com o motivo no cartão e no aviso
+  const b = montar({ ejetarFn: async () => ({ ok: false, quem: 'DaVinci Resolve' }) })
+  await b.svc.init()
+  await b.svc.criarProjeto({ nome: 'Show', destinos: [tmp('sobedesce-hd-')], ejetar: true })
+  const card2 = cartaoSoFotos()
+  b.discos.push({ caminho: card2, nome: 'SD', id: 'uuid:EJ2' })
+  await b.svc.varrer()
+  await b.svc.responder({ caminho: card2, nome: 'Ana', camera: 'R6' })
+  await b.ocioso()
+  const vol = b.svc.view().volumes[0]
+  assert.equal(vol.estado, 'ok')
+  assert.match(vol.erro, /DaVinci Resolve está usando o cartão/)
+  const feito2 = b.avisos.find(([e]) => e === 'backup-feito')[1]
+  assert.equal(feito2.ok, true)
+  assert.equal(feito2.ejetado, false)
+  assert.match(feito2.ejetarErro, /Não ejetou sozinho/)
+  await b.svc.close()
 })

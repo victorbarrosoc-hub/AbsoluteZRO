@@ -286,9 +286,11 @@ function connect() {
   on('backup-feito', (d) => {
     if (!d) return
     const quem = d.dono ? `${d.dono} · ` : ''
-    const titulo = d.ok ? (d.soPasta ? 'Pasta copiada' : 'Cartão OK, pode formatar') : d.resultado === 'cancelado' ? 'Descarga parada' : 'Cartão com pendência'
-    const texto = d.ok ? `${quem}${d.cartao || 'cartão'} está em todos os destinos.` : d.erro || `${quem}${d.faltam || 0} arquivos ainda não estão em todos os destinos.`
-    if (d.resultado !== 'cancelado') toast(d.ok ? 'success' : 'error', `${titulo}. ${texto}`, { duration: 12_000 })
+    // parcial: passou só o escolhido (só vídeos, só fotos, "Escolher o que passar"): nunca "pode formatar"
+    const titulo = d.ok ? (d.soPasta ? 'Pasta copiada' : d.parcial ? 'Passou o escolhido' : 'Cartão OK, pode formatar') : d.resultado === 'cancelado' ? 'Descarga parada' : 'Cartão com pendência'
+    const fim = d.ejetado ? ' Ejetado: pode tirar.' : d.ejetarErro ? ` ${d.ejetarErro}` : ''
+    const texto = d.ok ? `${quem}${d.cartao || 'cartão'} está em todos os destinos.${d.parcial ? ' O resto ficou no cartão.' : ''}${fim}` : d.erro || `${quem}${d.faltam || 0} arquivos ainda não estão em todos os destinos.`
+    if (d.resultado !== 'cancelado') toast(d.ok && !d.ejetarErro ? 'success' : d.ok ? 'warning' : 'error', `${titulo}. ${texto}`, { duration: 12_000 })
     try {
       window.dispatchEvent(new CustomEvent('sd:backup', { detail: { titulo, texto } }))
     } catch {}

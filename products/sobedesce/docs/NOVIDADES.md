@@ -2,6 +2,14 @@
 
 O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão>`) e para o aviso de versão nova.
 
+## 0.3.5
+
+**"Ejetar o cartão ao terminar" de verdade.** Logo depois da cópia o Mac costuma segurar o cartão por alguns segundos
+(o Spotlight lendo). Agora o SOBEDESCE tenta de novo e, se ainda assim não der, diz no cartão e no aviso quem está
+usando ("Feche e toque em Ejetar"). Antes falhava calado.
+
+- O aviso do fim não diz mais "pode formatar" quando você passou só uma parte do cartão.
+
 ## 0.3.4
 
 **Backup Automático com fotos e vídeos.** O projeto pergunta o que passa: vídeos, fotos ou os dois. Vídeo vai para

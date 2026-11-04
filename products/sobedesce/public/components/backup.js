@@ -411,7 +411,7 @@ function Agora({ job, pontos }) {
             { icone: 'shield', valor: g.etapa === 'conferindo' ? 'conferindo' : `${bytes(g.copiados)}`, rotulo: g.etapa === 'conferindo' ? 'lendo de volta' : `de ${bytes(g.totalBytes)}`, tom: 'neutro' },
           ]}
         />`
-      : html`<p class="bk-fase">${job.fase === 'comparando' ? (job.tentativa ? 'Comparando de novo: confere se ficou tudo' : 'Comparando o cartão com os destinos') : 'Preparando'}</p>`}
+      : html`<p class="bk-fase">${job.fase === 'ejetando' ? 'Tudo conferido. Ejetando o cartão' : job.fase === 'comparando' ? (job.tentativa ? 'Comparando de novo: confere se ficou tudo' : 'Comparando o cartão com os destinos') : 'Preparando'}</p>`}
     ${pontos.length > 1 ? html`<div class="cp-grafico"><${GraficoVelocidade} pontos=${pontos.map((x) => ({ up: x }))} altura=${90} label="Velocidade da descarga" /></div>` : null}
   </${Passo}>`
 }
@@ -507,7 +507,7 @@ function Painel({ v, topo, onNovo, onEditar }) {
   else if (v.job?.fase === 'esperando-destino') destaque = html`<${Destaque} tom="erro" titulo="Esperando o destino" linha=${`Conecte ${v.job.faltando.join(' e ')}`} />`
   else if (v.job) {
     const frac = g ? (g.copiados + g.conferidos) / (g.totalBytes + g.totalConferir || 1) : null
-    destaque = html`<${Destaque} titulo=${`Passando · ${v.job.dono}`} numero=${frac != null ? Math.floor(frac * 100) : '…'} unidade=${frac != null ? '%' : ''} progresso=${frac} linha=${g ? `${bytes(g.copiados)} de ${bytes(g.totalBytes)}` : 'Comparando'} vivo />`
+    destaque = html`<${Destaque} titulo=${`Passando · ${v.job.dono}`} numero=${frac != null ? Math.floor(frac * 100) : '…'} unidade=${frac != null ? '%' : ''} progresso=${frac} linha=${g ? `${bytes(g.copiados)} de ${bytes(g.totalBytes)}` : v.job.fase === 'ejetando' ? 'Ejetando o cartão' : 'Comparando'} vivo />`
   } else if (v.pedidos.length) destaque = html`<${Destaque} tom="erro" titulo="Cartão novo" numero=${v.pedidos.length} unidade=${v.pedidos.length === 1 ? 'esperando o dono' : 'esperando o dono'} linha="Um toque e ele passa" />`
   else if (v.ultimo?.resultado === 'ok') destaque = html`<${Destaque} tom="ok" titulo=${v.ultimo.soPasta ? 'Pasta copiada (o resto do cartão não foi conferido)' : v.ultimo.parcial ? 'Passou o escolhido (o resto ficou no cartão)' : 'Cartão OK, pode formatar'} numero=${count(v.ultimo.copiados)} unidade=${v.ultimo.copiados === 1 ? 'arquivo novo' : 'arquivos novos'} linha=${`${v.ultimo.dono} · ${bytes(v.ultimo.bytes)} em ${duracao(v.ultimo.segundos)}`} />`
   else destaque = html`<${Destaque} tom="grad" titulo="Ligado" linha="Espete um cartão" vivo />`

@@ -20,6 +20,8 @@ import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from './synquei.js'
 import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
 
 const VIGIA_MS = 3000
+// "Ejetar ao terminar": a 1ª tentativa na hora; recusada, de novo depois de 3 s e de 8 s.
+const EJETAR_ESPERAS_MS = [0, 3000, 8000]
 const HISTORICO_MAX = 500
 const PEQUENO = 32 * 1024 * 1024 // índice/XML da câmera que o cartão reescreve entre uma leva e outra
 const LISTA_MAX = 30
@@ -149,7 +151,7 @@ export class BackupService {
    *           vigiaMs?: number, keepAwake?: object, workerUrl?: URL, agora?: () => Date }} o
    *   vigiaMs: 0 desliga o vigia automático (os testes chamam varrer()).
    */
-  constructor({ arquivo, onChange = () => {}, avisar = () => {}, log = () => {}, listar = null, camera = lerCamera, ejetar = ejetarVolume, vigiaMs = VIGIA_MS, keepAwake, workerUrl, agora = () => new Date() } = {}) {
+  constructor({ arquivo, onChange = () => {}, avisar = () => {}, log = () => {}, listar = null, camera = lerCamera, ejetar = ejetarVolume, vigiaMs = VIGIA_MS, keepAwake, workerUrl, agora = () => new Date(), ejetarEsperasMs = EJETAR_ESPERAS_MS } = {}) {
     this.arquivo = arquivo
     this.onChange = onChange
     this.avisar = avisar
@@ -159,6 +161,7 @@ export class BackupService {
     this.camera = camera
     this.ejetarFn = ejetar
     this.vigiaMs = vigiaMs
+    this.ejetarEsperasMs = ejetarEsperasMs
     this.agora = agora
     this.dados = vazio()
     this.vistos = new Map() // caminho → disco montado agora: { caminho, nome, id, capacidade, estado, donoId, ... }
@@ -1016,13 +1019,35 @@ export class BackupService {
       ainda.erro = erro
       ainda.parcial = parcial
     }
-    try {
-      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta, parcial })
-    } catch {}
+    // "Ejetar o cartão ao terminar": logo depois da cópia o macOS costuma recusar (o Spotlight ainda lê o cartão),
+    // então tenta de novo algumas vezes. Não deu: o cartão mostra o motivo e o aviso diz que não ejetou (antes falhava
+    // calado e parecia que a opção não funcionava).
+    let ejetado = false
+    let ejetarErro = null
     if (resultado === 'ok' && p.ejetar && ainda && !reg.pasta && !parcial) {
-      const r = await this.ejetarFn(reg.caminho).catch(() => false)
-      if (r === true || r?.ok === true) ainda.estado = 'ejetado'
+      let quem = null
+      job.fase = 'ejetando'
+      this.#mudou(true)
+      for (const espera of this.ejetarEsperasMs) {
+        if (espera) await dormir(espera)
+        if (this.fechado || this.vistos.get(reg.caminho) !== ainda) break // saiu (tiraram na mão) ou o app fechou
+        const r = await this.ejetarFn(reg.caminho).catch(() => false)
+        if (r === true || r?.ok === true) {
+          ejetado = true
+          break
+        }
+        quem = (r && typeof r === 'object' && r.quem) || quem
+      }
+      if (ejetado) ainda.estado = 'ejetado'
+      else if (this.vistos.get(reg.caminho) === ainda) {
+        ejetarErro = quem ? `Não ejetou sozinho: ${quem} está usando o cartão. Feche e toque em Ejetar.` : 'Não ejetou sozinho: o sistema não deixou agora. Toque em Ejetar.'
+        ainda.erro = ejetarErro
+      }
+      this.#mudou(true)
     }
+    try {
+      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta, parcial, ejetado, ejetarErro })
+    } catch {}
   }
 
   /**

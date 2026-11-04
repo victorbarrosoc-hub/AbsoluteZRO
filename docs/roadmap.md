@@ -1665,6 +1665,13 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: ejetar ao terminar (04/11/2026)
+
+- 🔶 Ramo `sobedesce-ejetar-sozinho` (titular, 04/11/2026): "Ejetar o cartão ao terminar" falhava calado quando o
+  macOS recusava logo depois da cópia. Agora tenta de novo (3 s e 8 s), mostra "Ejetando o cartão" e, sem conseguir,
+  diz no cartão e no aviso quem segura. O aviso do fim deixou de dizer "pode formatar" quando passou só o escolhido.
+  App de computador 0.3.5, sem site na Vercel.
+
 ## Central Absolute ZRO: Atualizar com o app aberto (04/11/2026)
 
 - 🔶 Ramo `central-atualizar-aberto` (titular, 04/11/2026): "Atualizar" com a ferramenta aberta baixava em silêncio
