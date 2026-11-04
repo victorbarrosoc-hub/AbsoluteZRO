@@ -49,7 +49,8 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 
 ## Interface
 
-Português, textos curtos, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
+Português, textos curtos, tom humano. Nada da fórmula "não é X, é Y" (nem "não é sobre isso, é sobre aquilo"): o texto
+diz o que é, direto (pedido do titular, 04/11/2026). Identidade oficial em `packages/ui/src/tokens.css` e
 `apps/hub-web/public/brand`; manual em [docs/marca/README.md](docs/marca/README.md). Não inventar logo; produtos mantêm
 os próprios ícones.
 
