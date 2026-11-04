@@ -1407,3 +1407,396 @@ span.cartao-home:hover {
   padding: 0;
   background: #0b0a09;
 }
+
+/* ─────────── The art of revelation (titular, 04/11/2026) ───────────
+   A home abre como um filme: cinemascope, o nome em contraste fino × pesado e um feixe de luz que atravessa o frame
+   enquanto ele se revela. Depois, os capítulos (01 a 05) com olho numerado, imagens que se revelam ao rolar e uma
+   atmosfera de cor que muda com a película escolhida. Luz e sombra fazem o desenho; nada de ícone. */
+
+.abertura {
+  --barra: clamp(0px, calc((100svh - 100vw / 2.39) / 2), 18svh);
+}
+.abertura::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-block: var(--barra) solid #000;
+}
+.abertura .luz {
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(105deg, transparent 42%, rgb(255 236 210 / 0.22) 50%, transparent 58%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .abertura .luz {
+    animation: feixe 3.6s cubic-bezier(0.45, 0, 0.2, 1) 0.6s;
+  }
+}
+@keyframes feixe {
+  0% {
+    opacity: 0;
+    transform: translateX(-35%);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(35%);
+  }
+}
+.abertura .hero-texto {
+  position: relative;
+  z-index: 1;
+}
+.abertura-olho,
+.cap-olho {
+  margin: 0 0 18px;
+  color: rgb(241 235 225 / 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+}
+.home .abertura .abertura-nome {
+  margin: 0;
+  color: #f1ebe1;
+  font-size: clamp(46px, 11vw, 176px);
+  font-weight: 200;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  white-space: nowrap;
+  text-shadow: 0 2px 50px rgb(0 0 0 / 0.35);
+}
+.abertura-nome b {
+  font-weight: 800;
+}
+.abertura .hero-sub {
+  max-width: 40ch;
+}
+.abertura .hero-credito,
+.abertura .hero-pe {
+  z-index: 1;
+  bottom: calc(var(--barra) + 24px);
+}
+
+/* capítulos */
+.cap {
+  position: relative;
+  isolation: isolate;
+  --atm: #6b3a1f;
+}
+.cap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--atm);
+  opacity: 0.32;
+  -webkit-mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
+  mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
+  transition: background-color 0.9s ease;
+  pointer-events: none;
+}
+.cap-olho {
+  text-align: center;
+}
+.cap-olho span {
+  margin-right: 14px;
+  color: #f1ebe1;
+}
+.cap .apoio {
+  color: #a59d91;
+}
+.sec-log[data-atm='500t-2383'] {
+  --atm: #7a3818;
+}
+.sec-log[data-atm='250d-2383'] {
+  --atm: #8a5a26;
+}
+.sec-log[data-atm='500t-3513'] {
+  --atm: #2f4a46;
+}
+.sec-log[data-atm='eterna500-3513'] {
+  --atm: #24384a;
+}
+.sec-log[data-atm='500t-scan'] {
+  --atm: #4a4a46;
+}
+.filmes {
+  --atm: #3a2a1c;
+}
+.motor,
+.historias,
+.fecho {
+  --texto: #f1ebe1;
+  --mudo: #a59d91;
+  --linha: rgb(241 235 225 / 0.1);
+  --t: 241 235 225;
+  background: #0b0a09;
+  color: #f1ebe1;
+}
+.motor {
+  --atm: #1f2a2a;
+}
+.historias {
+  --atm: #3d2614;
+}
+.home :is(.motor, .historias, .fecho) h2 {
+  font-size: clamp(36px, 5.2vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.home :is(.motor, .historias, .fecho) h2 .fino {
+  color: #8d867b;
+  font-weight: 400;
+}
+
+/* 02 · film stocks: cada quadro entra em log e se revela quando chega à tela */
+.stocks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1320px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.stock {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  aspect-ratio: 4 / 5;
+  background: #151311;
+}
+.stock img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stock .stock-filme {
+  opacity: 0;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--d, 0) * 120ms + 300ms);
+}
+.stock.visivel .stock-filme,
+:root:not(.js) .stock .stock-filme {
+  opacity: 1;
+}
+.stock::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(11 10 9 / 0.88), rgb(11 10 9 / 0) 55%);
+}
+.stock figcaption {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: grid;
+  gap: 4px;
+}
+.stock small {
+  color: rgb(241 235 225 / 0.6);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.stock b {
+  font-size: clamp(16px, 1.5vw, 20px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.stock span {
+  color: rgb(241 235 225 / 0.7);
+  font-size: 12px;
+}
+.stock em {
+  max-height: 0;
+  overflow: hidden;
+  color: rgb(241 235 225 / 0.8);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+  transition: max-height 0.4s ease;
+}
+.stock:hover em {
+  max-height: 60px;
+}
+.copias {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1320px;
+  margin: 16px auto 0;
+  padding: 0;
+  list-style: none;
+}
+.copias li {
+  display: grid;
+  gap: 6px;
+  padding: 22px 0 0;
+  border-top: 1px solid rgb(241 235 225 / 0.16);
+}
+.copias small {
+  color: #8d867b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.copias b {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.copias span {
+  color: #a59d91;
+  font-size: 14px;
+}
+
+/* 03 · the engine */
+.motor-trio {
+  max-width: 1180px;
+}
+.motor .cartao-home {
+  gap: 8px;
+  padding: 24px;
+  border-radius: 18px;
+  background: rgb(241 235 225 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(241 235 225 / 0.1);
+  color: #f1ebe1;
+}
+.motor .cartao-home small {
+  color: #8d867b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.motor .cartao-home b {
+  font-size: 20px;
+  font-weight: 500;
+}
+.motor .cartao-home span:last-child {
+  color: #a59d91;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* 04 · one frame, different stories */
+.historias-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 1320px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.historia {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.historia img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 1.2s var(--mola);
+}
+.historia:hover img {
+  transform: scale(1.03);
+}
+.historia figcaption {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: #f1ebe1;
+  background: rgb(11 10 9 / 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 12px;
+}
+.historia figcaption b {
+  font-weight: 600;
+}
+
+/* 05 · your image. your film. e a assinatura */
+.fecho {
+  position: relative;
+  isolation: isolate;
+  --atm: #6b3a1f;
+}
+.fecho .apoio {
+  color: #a59d91;
+}
+.assinatura {
+  margin: clamp(56px, 9vw, 112px) 0 0;
+  color: rgb(241 235 225 / 0.7);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  text-align: center;
+}
+.assinatura b {
+  font-weight: 800;
+}
+.assinatura span {
+  margin-left: 10px;
+  color: #8d867b;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+@media (max-width: 1000px) {
+  .stocks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .abertura {
+    --barra: 0px;
+  }
+  .stocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .copias,
+  .historias-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* a abertura com luz de dia pede mais sombra para o nome e as linhas */
+.abertura::after {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 48%, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0.2) 75%), linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 34%);
+}
+.abertura-olho {
+  text-shadow: 0 1px 18px rgb(0 0 0 / 0.6);
+}
+@media (max-width: 760px) {
+  .abertura .hero-credito {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .abertura .hero-pe {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .abertura::after {
+    background: linear-gradient(0deg, #0b0a09 18%, rgb(11 10 9 / 0.55) 48%, rgb(11 10 9 / 0.25) 70%, rgb(11 10 9 / 0.5) 100%);
+  }
+}
+.abertura .abertura-olho {
+  color: #f6f1ea;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.6),
+    0 0 24px rgb(0 0 0 / 0.7);
+}
