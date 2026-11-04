@@ -414,7 +414,7 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
     pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
     await pagina.goto(endereco)
     await pagina.getByRole('heading', { level: 1 }).waitFor()
-    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /^revela\.$/)
+    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /O cinema/)
     for (const id of ['looks', 'ferramentas', 'entrega', 'converter', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
     // sem sessão, o topo oferece "Entrar"
     await pagina.locator('#conta.conta--pronta').waitFor()
@@ -612,7 +612,7 @@ test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e 
   await pagina.close()
 })
 
-test('página inicial fechada ao público: a comparação segue, "Conhecer o projeto" é âncora e nada leva a uma ferramenta', async () => {
+test('página inicial fechada ao público: a comparação segue, "Explorar looks" é âncora e nada leva a uma ferramenta', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -626,7 +626,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
     hrefs.filter((h) => /^(inicio|lut|lab|looks|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
     [],
   )
-  assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
+  assert.equal(await pagina.getByRole('link', { name: 'Explorar looks' }).first().getAttribute('href'), '#looks')
   assert.equal(await pagina.getByRole('link', { name: 'Testar agora' }).count(), 0)
   assert.equal(await pagina.locator('#ferramentas .cartao-home').count(), 4)
   assert.equal(await pagina.locator('#ferramentas a.cartao-home').count(), 0)

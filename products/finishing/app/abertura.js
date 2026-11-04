@@ -40,7 +40,7 @@
         <div class="pel-furos">${furos}</div>
       </div>
       <div class="pel-vazamento"></div>
-      <img class="pel-nome" src="marca/revela-logo.png" alt="" width="209" height="20" />
+      <img class="pel-nome" src="marca/revela-logo.png" alt="" width="162" height="18" />
       <div class="pel-grao"></div>`
     document.body.append(tela)
     raiz.classList.remove('abrindo')

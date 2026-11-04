@@ -1,6 +1,6 @@
-# REVELAFILM · marca (titular, 04/11/2026): o R em três peças (a bandeira inclinada com a barriga, o pé e a perna em
-# diagonal; sem a haste de cima, como um quadro que corre) e a palavra REVELAFILM em Figtree, REVELA fina (Light) e
-# FILM pesada (Black). A palavra sai em contorno da própria fonte (fontes/), então os SVG não dependem de fonte.
+# REVELAFILM · marca (titular, 04/11/2026): só a palavra, sem símbolo. REVELAFILM em Figtree, REVELA fina (Light) e
+# FILM pesada (ExtraBold), assinada "by ABSOLUTE ZRO". O ícone do app e o favicon usam o monograma RF no mesmo
+# contraste. A palavra sai em contorno da própria fonte (fontes/), então os SVG não dependem de fonte.
 # Uso: python3 -I scripts/marca-revela.py  (precisa de fontTools). Depois: node scripts/icones-app.mjs e
 # node scripts/marca-png.mjs para os PNG.
 import pathlib
@@ -14,13 +14,6 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 MARCA = RAIZ / 'marca'
 FONTE = RAIZ / 'fontes/figtree-latin-wght-normal.woff2'
 
-# o R num quadro de 112 × 110
-R = (
-    'M0 0H80C100 0 112 13 112 31C112 49 100 62 80 62H54L42 44H80C88 44 92 38 92 31C92 24 88 18 80 18H12Z'
-    'M20 70H44V110H20Z'
-    'M56 70H82L112 110H86Z'
-)
-R_L, R_A = 112, 110
 TINTA = {'escuro': '#f1ebe1', 'claro': '#1d1d1f'}
 ESPACO = 60  # entreletra de 0,06 em, como no título
 
@@ -38,7 +31,7 @@ def contorno(texto, peso, x=0):
 
 
 fino, (fx0, _, fx1, _), fim = contorno('REVELA', 300)
-grosso, (_, _, gx1, _), _ = contorno('FILM', 900, fim)
+grosso, (_, _, gx1, _), _ = contorno('FILM', 800, fim)
 x0, x1, ALTO = fx0, gx1, 700  # a versal da Figtree tem 700
 
 
@@ -47,49 +40,40 @@ def gravar(nome, svg):
     print('marca/' + nome)
 
 
-def r(cor, alto, x=0, y=0):
-    s = alto / R_A
-    return f'<path transform="translate({x:g} {y:g}) scale({s:.5f})" fill="{cor}" d="{R}"/>'
-
-
 palavra = lambda cor, dx=0: (
     f'<g transform="translate({dx:g} 0)" fill="{cor}"><path d="{fino}"/><path d="{grosso}"/></g>'
 )
-lr = ALTO * R_L / R_A
-vao = 260
 for tema, cor in TINTA.items():
     sufixo = '' if tema == 'escuro' else '-claro'
-    larg = lr + vao + (x1 - x0)
-    gravar(
-        f'revela-logo{sufixo}.svg',
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -700 {larg:g} {ALTO}" width="{larg / 25:.1f}" height="{ALTO / 25:.1f}">'
-        f'<title>REVELAFILM</title>{r(cor, ALTO, 0, -700)}{palavra(cor, lr + vao - x0)}</svg>',
-    )
-    gravar(
-        f'revela-palavra{sufixo}.svg',
+    svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{x0:g} -700 {x1 - x0:g} {ALTO}" width="{(x1 - x0) / 25:.1f}" height="{ALTO / 25:.1f}">'
-        f'<title>REVELAFILM</title>{palavra(cor)}</svg>',
+        f'<title>REVELAFILM</title>{palavra(cor)}</svg>'
     )
+    gravar(f'revela-logo{sufixo}.svg', svg)
+    gravar(f'revela-palavra{sufixo}.svg', svg)
+
+# o monograma do ícone e do favicon: RF no mesmo contraste da palavra (R fino, F pesado)
+rf, (mx0, _, _, _), mfim = contorno('R', 300)
+ff, (_, _, mx1, _), _ = contorno('F', 900, mfim - 20)
+w = mx1 - mx0
+mono = lambda cor: f'<g fill="{cor}"><path d="{rf}"/><path d="{ff}"/></g>'
 gravar(
     'revela-simbolo.svg',
-    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {R_L} {R_A}" width="{R_L}" height="{R_A}"><title>REVELAFILM</title>'
-    f'<path fill="#f1ebe1" d="{R}"/></svg>',
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{mx0:g} -700 {w:g} 700" width="{w / 10:.0f}" height="70"><title>REVELAFILM</title>{mono("#f1ebe1")}</svg>',
 )
 gravar(
     'revela-simbolo-mono.svg',
-    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {R_L} {R_A}" width="{R_L}" height="{R_A}"><title>REVELAFILM</title>'
-    f'<path fill="currentColor" d="{R}"/></svg>',
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{mx0:g} -700 {w:g} 700" width="{w / 10:.0f}" height="70"><title>REVELAFILM</title>{mono("currentColor")}</svg>',
 )
-# ícone do app: o R creme no quadro escuro (o canto rx=186 e o fio da borda saem nos PNG, scripts/icones-app.mjs)
-lado = 440
-s = lado / R_A
+# ícone do app: RF creme no quadro escuro (o canto rx=186 e o fio da borda saem nos PNG, scripts/icones-app.mjs)
+esc = 330 / 700
 gravar(
     'revela-icone.svg',
     '<svg xmlns="http://www.w3.org/2000/svg" width="824" height="824" viewBox="100 100 824 824"><title>REVELAFILM</title>'
-    '<defs><linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2420"/>'
-    '<stop offset="1" stop-color="#110f0d"/></linearGradient></defs>'
+    '<defs><linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#24201c"/>'
+    '<stop offset="1" stop-color="#0e0c0b"/></linearGradient></defs>'
     '<rect x="100" y="100" width="824" height="824" rx="186" fill="url(#fundo)"/>'
-    f'<path transform="translate({512 - R_L * s / 2 + 8:.1f} {512 - lado / 2:.1f}) scale({s:.5f})" fill="#f1ebe1" d="{R}"/>'
+    f'<g transform="translate({512 - (mx0 + w / 2) * esc:.1f} {512 + 165:.1f}) scale({esc:.5f})">{mono("#f1ebe1")}</g>'
     '<rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="2"/>'
     '</svg>',
 )

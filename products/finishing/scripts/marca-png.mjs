@@ -28,11 +28,10 @@ await pagina.setViewportSize({ width: 1200, height: 630 })
 await pagina.setContent(`<style>
 html,body{margin:0}
 .og{position:relative;width:1200px;height:630px;overflow:hidden;background:#0b0a09}
-.og>.foto{position:absolute;right:0;top:0;width:86%;height:100%;object-fit:cover;object-position:70% 40%}
-.og::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#0b0a09 14%,rgb(11 10 9/.78) 38%,rgb(11 10 9/0) 64%),linear-gradient(0deg,rgb(11 10 9/.5),rgb(11 10 9/0) 40%)}
-.r{position:absolute;z-index:1;right:-70px;bottom:-40px;height:440px;opacity:.86}
-.logo{position:absolute;z-index:2;left:72px;top:268px;height:64px}
-</style><div class="og"><img class="foto" src="${dataUrl('marca/home/hero-filme.jpg', 'image/jpeg')}"><img class="r" src="${dataUrl('marca/revela-simbolo.svg', 'image/svg+xml')}"><img class="logo" src="${dataUrl('marca/revela-logo.svg', 'image/svg+xml')}"></div>`)
+.og>.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 40%}
+.og::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgb(11 10 9/.92) 18%,rgb(11 10 9/.55) 46%,rgb(11 10 9/0) 70%)}
+.logo{position:absolute;z-index:1;left:80px;top:283px;height:64px}
+</style><div class="og"><img class="foto" src="${dataUrl('marca/home/hero-filme.jpg', 'image/jpeg')}"><img class="logo" src="${dataUrl('marca/revela-logo.svg', 'image/svg+xml')}"></div>`)
 for (const i of await pagina.locator('img').all()) await i.evaluate((n) => n.decode())
 writeFileSync(new URL('og.jpg', raiz), await pagina.screenshot({ type: 'jpeg', quality: 86 }))
 await navegador.close()

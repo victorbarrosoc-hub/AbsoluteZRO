@@ -819,8 +819,9 @@ span.cartao-home:hover {
 }
 
 /* ─────────── topo de cinema (titular, 04/11/2026) ───────────
-   O nome REVELAFILM à esquerda (REVELA fina, FILM pesada), a foto revelada no Lab à direita, apagando para o escuro,
-   e o R grande saindo pela borda. A barra fica transparente sobre a foto, em caixa alta, e vira vidro ao rolar. */
+   Na linha da Filmverse: um frame inteiro revelado no Lab, título fino em caixa alta à esquerda, código de borda do
+   filme à direita, a marca REVELAFILM (só a palavra) e "by ABSOLUTE ZRO". O topo, as películas e a comparação ficam
+   sempre no escuro, como uma sala de cinema; o resto da página segue o tema. */
 
 .home:has(.hero--filme) .nav {
   position: fixed;
@@ -847,13 +848,22 @@ span.cartao-home:hover {
   color: #fff;
 }
 .home:has(.hero--filme) .nav-links a {
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+.home:has(.hero--filme) .conta {
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: #f1ebe1;
+  background: #0b0a09;
+  font-size: 13px;
+  font-weight: 600;
 }
 .hero--filme {
   display: grid;
-  align-items: center;
+  align-items: end;
   min-height: max(100svh, 640px);
   padding: 0;
   overflow: hidden;
@@ -861,118 +871,122 @@ span.cartao-home:hover {
   color: #f1ebe1;
   text-align: left;
 }
-.hero-foto {
+.hero-foto img {
   position: absolute;
-  inset: 0 0 0 auto;
-  z-index: -3;
-  width: 72%;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 40%;
+  object-position: 60% 40%;
 }
 .hero--filme::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: -1;
   background:
-    linear-gradient(90deg, #0b0a09 26%, rgb(11 10 9 / 0.72) 44%, rgb(11 10 9 / 0) 66%),
-    linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 34%),
+    linear-gradient(90deg, rgb(11 10 9 / 0.88) 0%, rgb(11 10 9 / 0.62) 30%, rgb(11 10 9 / 0) 58%),
+    linear-gradient(0deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 30%),
     linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
 }
-.hero-r {
+/* a borda do filme: código de borda na vertical, entre dois fios */
+.hero-borda {
   position: absolute;
-  z-index: -1;
-  right: -7vw;
-  bottom: -6vh;
-  height: min(66vh, 52vw);
-  fill: #f1ebe1;
-  opacity: 0.82;
-  mix-blend-mode: soft-light;
+  top: 18%;
+  bottom: 14%;
+  right: clamp(18px, 2.4vw, 36px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin: 0;
+  color: rgb(241 235 225 / 0.62);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+}
+.hero-borda::before,
+.hero-borda::after {
+  content: '';
+  flex: 1;
+  width: 1px;
+  background: rgb(241 235 225 / 0.35);
+}
+.hero-borda span {
+  writing-mode: vertical-rl;
 }
 .hero-texto {
-  width: min(1240px, 100%);
-  margin: 0 auto;
-  padding: 140px clamp(20px, 5vw, 64px) calc(56px + env(safe-area-inset-bottom));
+  width: 100%;
+  padding: 140px clamp(20px, 5.5vw, 80px) calc(44px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
-.hero-olho {
-  margin: 0 0 26px;
-  color: rgb(241 235 225 / 0.78);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  line-height: 1.8;
-  text-transform: uppercase;
-}
-.home .hero-marca {
+.home .hero-titulo {
   margin: 0;
   color: #f1ebe1;
-  font-size: clamp(54px, 9vw, 128px);
+  font-size: clamp(48px, 6.6vw, 104px);
   font-weight: 200;
-  letter-spacing: 0.01em;
-  line-height: 0.9;
-  text-align: left;
-}
-.hero-marca b {
-  color: #fff;
-  font-weight: 900;
   letter-spacing: -0.01em;
+  line-height: 0.96;
+  text-align: left;
+  text-transform: uppercase;
 }
 .hero--filme .hero-sub {
-  max-width: 30ch;
-  margin: 26px 0 0;
-  color: rgb(241 235 225 / 0.86);
+  max-width: 28ch;
+  margin: 24px 0 0;
+  color: rgb(241 235 225 / 0.88);
+  font-size: clamp(17px, 1.6vw, 21px);
   text-align: left;
 }
 .hero--filme .hero-acoes {
+  align-items: center;
   justify-content: flex-start;
-  margin-top: 36px;
+  gap: 24px;
+  margin-top: 32px;
 }
-.pilula-clara,
-.pilula-fio {
+.pilula-clara {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   border-radius: 999px;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    background 0.2s,
-    color 0.2s;
-}
-.pilula-clara {
   color: #0b0a09;
   background: #f1ebe1;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
 }
 .pilula-clara:hover {
   background: #fff;
 }
-.pilula-fio {
+.link-fio {
+  padding-bottom: 4px;
   color: #f1ebe1;
-  box-shadow: inset 0 0 0 1.5px rgb(241 235 225 / 0.7);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid rgb(241 235 225 / 0.6);
 }
-.pilula-fio:hover {
-  background: rgb(241 235 225 / 0.1);
+.link-fio:hover {
+  border-bottom-color: #fff;
 }
 .hero-pe {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 18px;
-  margin-top: clamp(40px, 9vh, 96px);
+  margin-top: clamp(40px, 10vh, 112px);
 }
 .hero-by {
   margin: 0;
   color: rgb(241 235 225 / 0.7);
-  font-size: 14px;
+  font-size: 13px;
 }
 .hero-by b {
-  margin-left: 4px;
+  margin-left: 6px;
   color: #f1ebe1;
   font-weight: 800;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
 }
 .hero--filme .selo-dev {
@@ -980,33 +994,126 @@ span.cartao-home:hover {
   color: rgb(241 235 225 / 0.78);
   background: rgb(241 235 225 / 0.1);
 }
+
+/* ─────────── as películas ─────────── */
+
+.filmes,
 .sec-log {
+  --texto: #f1ebe1;
+  --mudo: #a59d91;
+  --linha: rgb(241 235 225 / 0.1);
+  --t: 241 235 225;
+  background: #0b0a09;
+  color: #f1ebe1;
+}
+.filmes-olho {
+  margin: 0 0 18px;
+  color: #a59d91;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.filmes-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.filme {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  aspect-ratio: 4 / 5;
+  background: #151311;
+}
+.filme img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--mola);
+}
+.filme:hover img {
+  transform: scale(1.04);
+}
+.filme::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(11 10 9 / 0.85), rgb(11 10 9 / 0) 48%);
+}
+.filme figcaption {
+  position: absolute;
+  z-index: 1;
+  left: 22px;
+  right: 22px;
+  bottom: 20px;
+  display: grid;
+  gap: 8px;
+}
+.filme b {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.filme span {
+  color: rgb(241 235 225 / 0.72);
+  font-size: 13px;
+}
+.sec-log {
+  padding-top: 24px;
   padding-bottom: clamp(56px, 8vw, 96px);
 }
 .sec-log .comparar {
   margin-top: clamp(40px, 6vw, 64px);
 }
 @media (max-width: 760px) {
-  .hero--filme {
-    align-items: end;
-  }
-  .hero-foto {
-    width: 100%;
-    height: 72%;
-    object-position: 74% 30%;
+  .hero-borda {
+    display: none;
   }
   .hero--filme::after {
     background:
-      linear-gradient(0deg, #0b0a09 30%, rgb(11 10 9 / 0.7) 46%, rgb(11 10 9 / 0) 64%),
-      linear-gradient(180deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 20%);
+      linear-gradient(0deg, rgb(11 10 9 / 0.92) 22%, rgb(11 10 9 / 0.5) 46%, rgb(11 10 9 / 0) 66%),
+      linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
   }
-  .hero-r {
-    right: -18vw;
-    top: 18vh;
-    bottom: auto;
-    height: 34vh;
+  .filmes-grade {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .hero-olho {
-    font-size: 11px;
+  .filme {
+    aspect-ratio: 4 / 3;
   }
+}
+/* a barra da página inicial fica no escuro do cinema também ao rolar: vidro escuro, marca e links em creme */
+.home:has(.hero--filme) .nav.rolou {
+  background: rgb(11 10 9 / 0.72);
+  border-bottom-color: rgb(241 235 225 / 0.08);
+}
+.home:has(.hero--filme) .nav .marca img {
+  display: none;
+}
+.home:has(.hero--filme) .nav .marca .logo-foto {
+  display: block;
+}
+.home:has(.hero--filme) .nav :is(.nav-links a, .nav-tema) {
+  color: rgb(241 235 225 / 0.8);
+}
+.home:has(.hero--filme) .nav .nav-links a:hover {
+  color: #fff;
+}
+/* títulos das seções escuras no mesmo desenho do topo: finos e em caixa alta */
+.home :is(.filmes, .sec-log) h2 {
+  font-size: clamp(36px, 5vw, 72px);
+  font-weight: 200;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.home :is(.filmes, .sec-log) h2 .fino {
+  font-weight: 200;
 }

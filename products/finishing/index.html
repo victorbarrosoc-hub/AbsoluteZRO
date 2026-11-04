@@ -43,7 +43,7 @@
   <body class="home">
     <header class="nav" id="nav">
       <a class="marca" href="./" aria-label="REVELAFILM, página inicial"
-        ><img src="marca/revela-logo-claro.png" alt="REVELAFILM" width="209" height="20" /><img
+        ><img src="marca/revela-logo-claro.png" alt="REVELAFILM" width="162" height="18" /><img
           class="logo-foto"
           src="marca/revela-logo.svg"
           alt=""
@@ -52,10 +52,9 @@
       /></a>
       <nav class="nav-links" aria-label="Seções">
         <a href="#looks">Looks</a>
+        <a href="#filmes">Film stocks</a>
         <a href="#comparar">Comparar</a>
-        <a href="#ferramentas">Ferramentas</a>
-        <a href="#entrega">Entrega</a>
-        <a href="#familia">Família</a>
+        <a href="#ferramentas">Sobre</a>
       </nav>
       <div class="nav-acoes">
         <button class="nav-tema" id="tema" type="button" aria-label="Tema escuro" title="Tema escuro"></button>
@@ -64,28 +63,44 @@
     </header>
 
     <main>
-      <!-- O topo é um frame de cinema (titular, 04/11/2026): o nome REVELAFILM à esquerda, fino × pesado, a foto
-           revelada no Lab à direita e o R grande saindo pela borda. Duas âncoras: os looks e a comparação. -->
+      <!-- O topo (titular, 04/11/2026): um frame de cinema inteiro, revelado no Lab, com o título fino à esquerda, a
+           borda do filme (código de borda) à direita e a assinatura "by ABSOLUTE ZRO". Duas âncoras, nenhuma ferramenta. -->
       <section class="hero hero--filme" aria-labelledby="hero-titulo">
-        <img class="hero-foto" src="marca/home/hero-filme.jpg" alt="" width="1600" height="900" fetchpriority="high" />
-        <svg class="hero-r" viewBox="0 0 112 110" aria-hidden="true">
-          <path d="M0 0H80C100 0 112 13 112 31C112 49 100 62 80 62H54L42 44H80C88 44 92 38 92 31C92 24 88 18 80 18H12ZM20 70H44V110H20ZM56 70H82L112 110H86Z" />
-        </svg>
+        <picture class="hero-foto" aria-hidden="true">
+          <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/hero-filme-cel.jpg" width="780" height="1688" />
+          <img src="marca/home/hero-filme.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+        </picture>
+        <p class="hero-borda" aria-hidden="true"><span>VISION3 250D · 5207 · 2383 · D65</span></p>
         <div class="hero-texto">
-          <p class="hero-olho surge" style="--d: 1">Emulação de películas.<br />Com precisão de cinema.</p>
-          <h1 id="hero-titulo" class="hero-marca surge" style="--d: 1">REVELA<b>FILM</b></h1>
-          <p class="hero-sub surge" style="--d: 2">Looks das películas que fizeram o cinema, medidos das fichas técnicas.</p>
+          <h1 id="hero-titulo" class="hero-titulo surge" style="--d: 1">O cinema<br />em suas<br />imagens.</h1>
+          <p class="hero-sub surge" style="--d: 2">Converta suas imagens com a estética das películas de cinema.</p>
           <div class="hero-acoes surge" style="--d: 3">
             <a class="pilula-clara grande-pilula" href="#looks">Explorar looks <span aria-hidden="true">→</span></a>
-            <a class="pilula-fio grande-pilula" href="#comparar"
-              ><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg
-              >Ver demonstração</a
-            >
+            <a class="link-fio" href="#filmes">Saiba mais</a>
           </div>
           <div class="hero-pe surge" style="--d: 4">
             <p class="hero-by">by <b>Absolute ZRO</b></p>
             <p class="z-selo selo-dev"><i aria-hidden="true"></i>Em desenvolvimento</p>
           </div>
+        </div>
+      </section>
+
+      <section class="sec filmes" id="filmes" aria-labelledby="filmes-titulo">
+        <p class="filmes-olho revela-ao-rolar">Film stocks</p>
+        <h2 id="filmes-titulo" class="revela-ao-rolar">Películas reais.<br /><span class="fino">Medidas nas fichas.</span></h2>
+        <div class="filmes-grade" role="list">
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 0">
+            <img src="marca/home/filme-500t.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption><b>Kodak<br />Vision3 500T</b><span>Noite. Contraste. Cinema.</span></figcaption>
+          </figure>
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 1">
+            <img src="marca/home/filme-250d.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption><b>Kodak<br />Vision3 250D</b><span>Sol. Pele. Calor.</span></figcaption>
+          </figure>
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 2">
+            <img src="marca/home/filme-eterna.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption><b>Fujifilm<br />Eterna 500</b><span>Suave. Contida. Orgânica.</span></figcaption>
+          </figure>
         </div>
       </section>
 
@@ -95,8 +110,8 @@
           <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" loading="lazy" />
           <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" loading="lazy" />
           <span class="linha" aria-hidden="true"></span>
-          <span class="rotulo-home rotulo-home--antes">Log</span>
-          <span class="rotulo-home rotulo-home--depois">Final</span>
+          <span class="rotulo-home rotulo-home--antes">Original</span>
+          <span class="rotulo-home rotulo-home--depois">REVELAFILM</span>
           <span class="arraste" aria-hidden="true">Arraste</span>
           <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
         </figure>
