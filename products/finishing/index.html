@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>REVELAFILM · cor e entrega para o DaVinci Resolve</title>
-    <meta name="description" content="A cor que você quer numa LUT, o preset certo para cada destino e a conversão no seu aparelho. Para o DaVinci Resolve. Em desenvolvimento." />
+    <meta
+      name="description"
+      content="A cor que você quer numa LUT, o preset certo para cada destino e a conversão no seu aparelho. Para o DaVinci Resolve. Em desenvolvimento."
+    />
     <meta name="color-scheme" content="light" />
     <script src="app/tema.js"></script>
     <meta name="theme-color" content="#f5f5f7" />
@@ -51,10 +54,10 @@
           height="24"
       /></a>
       <nav class="nav-links" aria-label="Seções">
+        <a href="#comparar">Revelação</a>
+        <a href="#filmes">Películas</a>
+        <a href="#lab">Lab</a>
         <a href="#looks">Looks</a>
-        <a href="#filmes">Film stocks</a>
-        <a href="#comparar">Comparar</a>
-        <a href="#ferramentas">Sobre</a>
       </nav>
       <div class="nav-acoes">
         <button class="nav-tema" id="tema" type="button" aria-label="Tema escuro" title="Tema escuro"></button>
@@ -63,61 +66,57 @@
     </header>
 
     <main>
-      <!-- O topo (titular, 04/11/2026): um frame de cinema inteiro, revelado no Lab, com o título fino à esquerda, a
-           borda do filme (código de borda) à direita e a assinatura "by ABSOLUTE ZRO". Duas âncoras, nenhuma ferramenta. -->
+      <!-- O topo (titular, 04/11/2026): cinema em vez de ícone. O frame entra em log, lavado como sai da câmera, e se
+           revela na película (Vision3 250D copiado na 2383) diante de quem chega; o crédito embaixo diz o que se vê.
+           Imagens do próprio motor (scripts/home-revelacoes.mjs). Duas âncoras, nenhuma ferramenta. -->
       <section class="hero hero--filme" aria-labelledby="hero-titulo">
-        <picture class="hero-foto" aria-hidden="true">
-          <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/hero-filme-cel.jpg" width="780" height="1688" />
-          <img src="marca/home/hero-filme.jpg" alt="" width="1600" height="900" fetchpriority="high" />
-        </picture>
-        <p class="hero-borda" aria-hidden="true"><span>VISION3 250D · 5207 · 2383 · D65</span></p>
+        <div class="revelacao" aria-hidden="true">
+          <picture class="revelacao-log">
+            <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/topo-cel-log.jpg" width="780" height="1688" />
+            <img src="marca/home/topo-log.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+          </picture>
+          <picture class="revelacao-filme">
+            <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/topo-cel-250d-2383.jpg" width="780" height="1688" />
+            <img src="marca/home/topo-250d-2383.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+          </picture>
+        </div>
         <div class="hero-texto">
-          <h1 id="hero-titulo" class="hero-titulo hero-nome surge" style="--d: 1">REVELA<b>FILM</b></h1>
-          <p class="hero-sub surge" style="--d: 2">O laboratório de cinema, na sua timeline.</p>
+          <h1 id="hero-titulo" class="hero-titulo surge" style="--d: 1">O digital,<br />revelado em película.</h1>
+          <p class="hero-sub surge" style="--d: 2">Negativos e cópias de cinema, medidos das fichas técnicas.</p>
           <div class="hero-acoes surge" style="--d: 3">
-            <a class="pilula-clara grande-pilula" href="#looks">Explorar looks <span aria-hidden="true">→</span></a>
-            <a class="link-fio" href="#filmes">Saiba mais</a>
-          </div>
-          <div class="hero-pe surge" style="--d: 4">
-            <p class="hero-by">by <b>Absolute ZRO</b></p>
-            <p class="z-selo selo-dev"><i aria-hidden="true"></i>Em desenvolvimento</p>
+            <a class="pilula-clara grande-pilula" href="#comparar">Ver a revelação</a>
+            <a class="link-fio" href="#looks">Explorar looks</a>
           </div>
         </div>
-      </section>
-
-      <section class="sec filmes" id="filmes" aria-labelledby="filmes-titulo">
-        <p class="filmes-olho revela-ao-rolar">Film stocks</p>
-        <h2 id="filmes-titulo" class="revela-ao-rolar">Películas reais.<br /><span class="fino">Medidas nas fichas.</span></h2>
-        <div class="filmes-grade" role="list">
-          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 0">
-            <img src="marca/home/filme-500t.jpg" alt="" width="960" height="720" loading="lazy" />
-            <figcaption><b>Kodak<br />Vision3 500T</b><span>Noite. Contraste. Cinema.</span></figcaption>
-          </figure>
-          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 1">
-            <img src="marca/home/filme-250d.jpg" alt="" width="960" height="720" loading="lazy" />
-            <figcaption><b>Kodak<br />Vision3 250D</b><span>Sol. Pele. Calor.</span></figcaption>
-          </figure>
-          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 2">
-            <img src="marca/home/filme-eterna.jpg" alt="" width="960" height="720" loading="lazy" />
-            <figcaption><b>Fujifilm<br />Eterna 500</b><span>Suave. Contida. Orgânica.</span></figcaption>
-          </figure>
+        <p class="hero-credito" aria-hidden="true"><span class="credito-log">LogC3</span><span class="credito-filme">Kodak Vision3 250D · cópia 2383</span></p>
+        <div class="hero-pe surge" style="--d: 4">
+          <p class="hero-by">by <b>Absolute ZRO</b></p>
+          <p class="z-selo selo-dev"><i aria-hidden="true"></i>Em desenvolvimento</p>
         </div>
       </section>
 
       <section class="sec sec-log" id="comparar" aria-labelledby="log-titulo">
-        <h2 id="log-titulo" class="revela-ao-rolar">Do log<br /><span class="fino">à cor final.</span></h2>
-        <figure class="comparar revela-ao-rolar" aria-label="O mesmo frame em log e com a cor final">
-          <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" loading="lazy" />
-          <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" loading="lazy" />
+        <p class="filmes-olho revela-ao-rolar">A revelação</p>
+        <h2 id="log-titulo" class="revela-ao-rolar">Arraste.<br /><span class="fino">Veja o log virar cinema.</span></h2>
+        <figure class="comparar revela-ao-rolar" aria-label="O mesmo frame em log e revelado na película">
+          <img class="antes" src="marca/home/rev-log.jpg" alt="" width="1600" height="900" loading="lazy" />
+          <img class="depois" id="revDepois" src="marca/home/rev-500t-2383.jpg" alt="" width="1600" height="900" loading="lazy" />
           <span class="linha" aria-hidden="true"></span>
-          <span class="rotulo-home rotulo-home--antes">Original</span>
-          <span class="rotulo-home rotulo-home--depois">REVELAFILM</span>
+          <span class="rotulo-home rotulo-home--antes">Log</span>
+          <span class="rotulo-home rotulo-home--depois" id="revRotulo">Vision3 500T · 2383</span>
           <span class="arraste" aria-hidden="true">Arraste</span>
           <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
         </figure>
+        <div class="pelis revela-ao-rolar" role="radiogroup" aria-label="Película revelada">
+          <button type="button" role="radio" aria-checked="true" data-rev="500t-2383">Vision3 500T<small>cópia 2383</small></button>
+          <button type="button" role="radio" aria-checked="false" data-rev="250d-2383">Vision3 250D<small>cópia 2383</small></button>
+          <button type="button" role="radio" aria-checked="false" data-rev="500t-3513">Vision3 500T<small>cópia 3513</small></button>
+          <button type="button" role="radio" aria-checked="false" data-rev="eterna500-3513">Eterna 500<small>cópia 3513</small></button>
+          <button type="button" role="radio" aria-checked="false" data-rev="500t-scan">Vision3 500T<small>escaneado</small></button>
+        </div>
         <div class="editores revela-ao-rolar">
           <ul aria-label="Editores compatíveis">
-            <li title="LUT .cube e script de entrega">DaVinci Resolve</li>
+            <li title="LUT .cube, CLF e DCTL">DaVinci Resolve</li>
             <li title="LUT .cube">Premiere Pro</li>
             <li title="LUT .cube">Final Cut Pro</li>
             <li title="LUT .cube">CapCut</li>
@@ -127,10 +126,58 @@
         </div>
       </section>
 
+      <section class="sec filmes" id="filmes" aria-labelledby="filmes-titulo">
+        <p class="filmes-olho revela-ao-rolar">As películas</p>
+        <h2 id="filmes-titulo" class="revela-ao-rolar">Películas reais.<br /><span class="fino">Medidas nas fichas.</span></h2>
+        <div class="filmes-grade" role="list">
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 0">
+            <img src="marca/home/filme-500t.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption>
+              <b>Kodak<br />Vision3 500T</b><span>Noite. Contraste. Cinema.</span>
+            </figcaption>
+          </figure>
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 1">
+            <img src="marca/home/filme-250d.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption>
+              <b>Kodak<br />Vision3 250D</b><span>Sol. Pele. Calor.</span>
+            </figcaption>
+          </figure>
+          <figure class="filme revela-ao-rolar" role="listitem" style="--d: 2">
+            <img src="marca/home/filme-eterna.jpg" alt="" width="960" height="720" loading="lazy" />
+            <figcaption>
+              <b>Fujifilm<br />Eterna 500</b><span>Suave. Contida. Orgânica.</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="sec lab-home" id="lab" aria-labelledby="lab-titulo">
+        <p class="filmes-olho revela-ao-rolar">O Lab</p>
+        <h2 id="lab-titulo" class="revela-ao-rolar">Escolha o negativo.<br /><span class="fino">Escolha a cópia.</span></h2>
+        <p class="apoio revela-ao-rolar">Luz do projetor, revelação forçada, grão e halation. A LUT sai pronta para o seu editor.</p>
+        <figure class="painel revela-ao-rolar">
+          <img
+            src="marca/home/painel-lab.jpg"
+            alt="O Lab do REVELAFILM: o frame com Vision3 500T copiado na 2383 e o painel de ajustes"
+            width="1800"
+            height="1244"
+            loading="lazy"
+          />
+        </figure>
+        <ul class="numeros revela-ao-rolar" aria-label="O que o Lab tem">
+          <li><b>10</b>negativos</li>
+          <li><b>3</b>cópias de cinema</li>
+          <li><b>5</b>bitolas de grão</li>
+          <li><b>LUT · CLF · DCTL</b>para o Resolve</li>
+        </ul>
+      </section>
+
       <section class="sec sec-destaque" id="looks" aria-labelledby="looks-titulo">
         <h2 id="looks-titulo" class="revela-ao-rolar">Um frame.<br /><span class="fino">Todos os looks.</span></h2>
         <div class="looks-home revela-ao-rolar" role="list" aria-label="O mesmo frame em cada look da Revela">
-          <figure role="listitem"><img src="marca/home/look-revela.jpg" alt="Revela Look" title="Revela Look" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem">
+            <img src="marca/home/look-revela.jpg" alt="Revela Look" title="Revela Look" width="640" height="360" loading="lazy" />
+          </figure>
           <figure role="listitem"><img src="marca/home/look-suave.jpg" alt="Suave" title="Suave" width="640" height="360" loading="lazy" /></figure>
           <figure role="listitem"><img src="marca/home/look-petroleo.jpg" alt="Petróleo" title="Petróleo" width="640" height="360" loading="lazy" /></figure>
           <figure role="listitem"><img src="marca/home/look-dourado.jpg" alt="Dourado" title="Dourado" width="640" height="360" loading="lazy" /></figure>
@@ -213,14 +260,16 @@
         </div>
         <figure class="mac revela-ao-rolar">
           <div class="mac-tela">
-            <img class="so-claro"
+            <img
+              class="so-claro"
               src="marca/home/h-lut-claro.jpg"
               alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
               width="1440"
               height="900"
               loading="lazy"
             />
-            <img class="so-escuro"
+            <img
+              class="so-escuro"
               src="marca/home/h-lut.jpg"
               alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
               width="1440"
@@ -236,14 +285,16 @@
         <h2 id="entrega-titulo" class="revela-ao-rolar">Cada destino,<br /><span class="fino">do jeito certo.</span></h2>
         <figure class="mac revela-ao-rolar">
           <div class="mac-tela">
-            <img class="so-claro"
+            <img
+              class="so-claro"
               src="marca/home/h-entrega-claro.jpg"
               alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
               width="1440"
               height="900"
               loading="lazy"
             />
-            <img class="so-escuro"
+            <img
+              class="so-escuro"
               src="marca/home/h-entrega.jpg"
               alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
               width="1440"
@@ -264,14 +315,16 @@
           <div class="aparelhos revela-ao-rolar">
             <figure class="mac mac--menor">
               <div class="mac-tela">
-                <img class="so-claro"
+                <img
+                  class="so-claro"
                   src="marca/home/h-conv-claro.jpg"
                   alt="Dois masters em ProRes convertidos para o YouTube no computador"
                   width="1440"
                   height="900"
                   loading="lazy"
                 />
-            <img class="so-escuro"
+                <img
+                  class="so-escuro"
                   src="marca/home/h-conv.jpg"
                   alt="Dois masters em ProRes convertidos para o YouTube no computador"
                   width="1440"
@@ -282,7 +335,14 @@
               <div class="mac-base" aria-hidden="true"></div>
             </figure>
             <figure class="iphone">
-              <img class="so-claro" src="marca/home/h-conv-cel-claro.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" /><img class="so-escuro" src="marca/home/h-conv-cel.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" />
+              <img class="so-claro" src="marca/home/h-conv-cel-claro.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" /><img
+                class="so-escuro"
+                src="marca/home/h-conv-cel.jpg"
+                alt="O conversor da Revela no celular"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
             </figure>
           </div>
         </div>
@@ -299,7 +359,8 @@
           <span class="familia-app"><img src="marca/familia/tpeasy.svg" alt="" width="56" height="56" /><small>TPeasy</small></span>
           <span class="familia-app"><img src="marca/familia/carro-do-freela.png" alt="" width="56" height="56" /><small>Carro do Freela</small></span>
           <!-- Maestro na família: fica comentado até o lançamento (docs/operations/lancamento-maestro.md); vira com node scripts/lancamento-maestro.mjs -->
-          <!--maestro-familia--><span class="familia-app"><img src="marca/familia/maestro.svg" alt="" width="56" height="56" /><small>Maestro</small></span><!--/maestro-familia-->
+          <!--maestro-familia--><span class="familia-app"><img src="marca/familia/maestro.svg" alt="" width="56" height="56" /><small>Maestro</small></span
+          ><!--/maestro-familia-->
         </div>
         <figure class="janela revela-ao-rolar">
           <img
@@ -315,15 +376,38 @@
 
       <!-- a Z, a IA do ecossistema: chega junto com a Revela (fechada ao público, só a apresentação). -->
       <section class="sec z-sec" id="z" aria-labelledby="z-titulo">
-        <div class="z-simbolo revela-ao-rolar" aria-hidden="true"><img class="z-anel" src="marca/z/anel.webp" alt="" width="560" height="560" loading="lazy" /><img class="z-estrela" src="marca/z/estrela.webp" alt="" width="400" height="400" loading="lazy" /></div>
+        <div class="z-simbolo revela-ao-rolar" aria-hidden="true">
+          <img class="z-anel" src="marca/z/anel.webp" alt="" width="560" height="560" loading="lazy" /><img
+            class="z-estrela"
+            src="marca/z/estrela.webp"
+            alt=""
+            width="400"
+            height="400"
+            loading="lazy"
+          />
+        </div>
         <p class="z-selo revela-ao-rolar"><i aria-hidden="true"></i>Chegando à Revela</p>
         <h2 id="z-titulo" class="z-titulo revela-ao-rolar">Z.<br /><span class="fino">Uma IA para todo o ecossistema.</span></h2>
         <p class="apoio revela-ao-rolar">No painel inicial do app, quando ele abrir. Ela conversa e lê sua conta; a cor é sua.</p>
         <ul class="z-fichas revela-ao-rolar" aria-label="Como a Z funciona">
-          <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>Mesma conta</li>
-          <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z" /></svg>Conversas reunidas</li>
-          <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.2l2.4 2.4 4.6-4.9" /></svg>Você confere antes</li>
-          <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z" /></svg>1 crédito por resposta</li>
+          <li title="A mesma conta Absolute ZRO que você já usa.">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8.5" r="3.5" />
+              <path d="M5 20a7 7 0 0 1 14 0" /></svg
+            >Mesma conta
+          </li>
+          <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z" /></svg>Conversas reunidas
+          </li>
+          <li title="Nenhuma ação sem você conferir.">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M8.5 12.2l2.4 2.4 4.6-4.9" /></svg
+            >Você confere antes
+          </li>
+          <li title="Usa os créditos de IA do seu plano.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z" /></svg>1 crédito por resposta
+          </li>
         </ul>
         <div class="hero-acoes revela-ao-rolar"><a class="vidro grande-pilula" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
       </section>

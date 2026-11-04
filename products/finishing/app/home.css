@@ -887,8 +887,7 @@ span.cartao-home:hover {
   z-index: -1;
   background:
     linear-gradient(90deg, rgb(11 10 9 / 0.88) 0%, rgb(11 10 9 / 0.62) 30%, rgb(11 10 9 / 0) 58%),
-    linear-gradient(0deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 30%),
-    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+    linear-gradient(0deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 30%), linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
 }
 /* a borda do filme: código de borda na vertical, entre dois fios */
 .hero-borda {
@@ -1125,8 +1124,7 @@ span.cartao-home:hover {
 }
 .hero--filme::after {
   background:
-    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0.12) 70%),
-    linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 30%),
+    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0.12) 70%), linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 30%),
     linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
 }
 .hero--filme .hero-texto {
@@ -1157,8 +1155,7 @@ span.cartao-home:hover {
   .hero--filme::after {
     background:
       radial-gradient(ellipse 90% 50% at 50% 55%, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0.15) 75%),
-      linear-gradient(0deg, rgb(11 10 9 / 0.7), rgb(11 10 9 / 0) 30%),
-      linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
+      linear-gradient(0deg, rgb(11 10 9 / 0.7), rgb(11 10 9 / 0) 30%), linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
   }
   .hero--filme .hero-texto {
     padding-bottom: 150px;
@@ -1185,4 +1182,228 @@ span.cartao-home:hover {
   margin-top: 22px;
   font-size: clamp(17px, 1.7vw, 22px);
   letter-spacing: 0.01em;
+}
+
+/* ─────────── home de cinema (titular, 04/11/2026) ───────────
+   O topo se revela: o frame entra em log e a película aparece por cima, como a imagem no banho; o crédito embaixo
+   troca de "LogC3" para a película. Títulos em caixa normal, peso médio e justos, como os créditos de um trailer. */
+
+.hero--filme::after {
+  background:
+    radial-gradient(ellipse 72% 58% at 50% 50%, rgb(11 10 9 / 0.42), rgb(11 10 9 / 0.08) 72%), linear-gradient(0deg, rgb(11 10 9 / 0.65), rgb(11 10 9 / 0) 32%),
+    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+}
+.revelacao,
+.revelacao picture,
+.revelacao img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.revelacao {
+  z-index: -2;
+}
+.revelacao img {
+  object-fit: cover;
+  object-position: 55% 40%;
+}
+.home .hero--filme .hero-titulo {
+  font-size: clamp(40px, 6.4vw, 100px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.hero--filme .hero-sub {
+  max-width: 34ch;
+  margin-top: 22px;
+}
+.hero-credito {
+  position: absolute;
+  left: clamp(20px, 5vw, 64px);
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  display: grid;
+  margin: 0;
+  color: rgb(241 235 225 / 0.8);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.hero-credito span {
+  grid-area: 1 / 1;
+}
+.hero-credito .credito-filme {
+  opacity: 0;
+}
+.hero--filme .hero-pe {
+  left: auto;
+  right: clamp(20px, 5vw, 64px);
+  justify-content: flex-end;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .revelacao-filme {
+    opacity: 0;
+    animation: revelar 3.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+  }
+  .hero-credito .credito-log {
+    animation: sumir 0.8s ease 2.4s forwards;
+  }
+  .hero-credito .credito-filme {
+    animation: surgir 0.8s ease 3s forwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-credito .credito-log {
+    opacity: 0;
+  }
+  .hero-credito .credito-filme {
+    opacity: 1;
+  }
+}
+@keyframes revelar {
+  0% {
+    opacity: 0;
+    filter: brightness(1.6) contrast(0.6);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes sumir {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes surgir {
+  to {
+    opacity: 1;
+  }
+}
+
+/* as seções escuras: comparação, películas e o Lab */
+.lab-home {
+  --texto: #f1ebe1;
+  --mudo: #a59d91;
+  --linha: rgb(241 235 225 / 0.1);
+  --t: 241 235 225;
+  background: #0b0a09;
+  color: #f1ebe1;
+}
+.home :is(.filmes, .sec-log, .lab-home) h2 {
+  font-size: clamp(36px, 5.2vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.home :is(.filmes, .sec-log, .lab-home) h2 .fino {
+  color: #8d867b;
+  font-weight: 400;
+}
+.sec-log {
+  padding-top: clamp(88px, 12vw, 160px);
+}
+.pelis {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 1180px;
+  margin: 24px auto 0;
+}
+.pelis button {
+  display: grid;
+  gap: 2px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 14px;
+  color: #f1ebe1;
+  background: rgb(241 235 225 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(241 235 225 / 0.12);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.pelis button small {
+  color: #a59d91;
+  font-size: 12px;
+  font-weight: 500;
+}
+.pelis button[aria-checked='true'] {
+  color: #0b0a09;
+  background: #f1ebe1;
+}
+.pelis button[aria-checked='true'] small {
+  color: #5a544c;
+}
+.comparar .depois {
+  transition: opacity 0.35s;
+}
+.lab-home .apoio {
+  color: #a59d91;
+}
+.painel {
+  max-width: 1180px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgb(241 235 225 / 0.08),
+    0 60px 120px -40px rgb(0 0 0 / 0.8);
+}
+.painel img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: 40px auto 0;
+  padding: 0;
+  list-style: none;
+}
+.numeros li {
+  display: grid;
+  gap: 6px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(241 235 225 / 0.14);
+  color: #a59d91;
+  font-size: 14px;
+}
+.numeros b {
+  color: #f1ebe1;
+  font-size: clamp(22px, 2.6vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@media (max-width: 760px) {
+  .hero-credito {
+    left: 0;
+    right: 0;
+    bottom: calc(118px + env(safe-area-inset-bottom));
+    justify-items: center;
+  }
+  .hero--filme .hero-pe {
+    left: 0;
+    right: 0;
+    justify-content: center;
+  }
+  .numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.painel {
+  padding: 0;
+  background: #0b0a09;
 }
