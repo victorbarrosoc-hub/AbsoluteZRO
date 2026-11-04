@@ -509,7 +509,15 @@ export class DriveClient {
   async getItem(fileId, { signal, resourceKey, media = false, appProps = false } = {}) {
     const headers = resourceKey ? { 'x-goog-drive-resource-keys': `${fileId}/${resourceKey}` } : undefined
     const fields = media ? BROWSE_FIELDS : appProps ? ITEM_APP_FIELDS : FILE_FIELDS
-    const f = await this.api('GET', `files/${encodeURIComponent(fileId)}`, { query: { fields }, headers, signal })
+    let f
+    try {
+      f = await this.api('GET', `files/${encodeURIComponent(fileId)}`, { query: { fields }, headers, signal })
+    } catch (err) {
+      // Arquivos escolhidos (drive.file): o Google não deixa ler a raiz do Meu Drive e responde 404 ("File not found:
+      // root"), mas listar 'root' in parents e criar nela funcionam. Sem isso o Meu Drive inteiro vira "Não achei".
+      if (fileId !== 'root' || classifyError(err).kind !== 'notfound') throw err
+      f = { id: 'root', name: MY_DRIVE_NAME, mimeType: FOLDER_MIME, parents: [], capabilities: { canAddChildren: true, canRename: false, canMoveItemWithinDrive: false, canTrash: false } }
+    }
     const item = toDriveItem(f)
     this.#remember(item)
     if (fileId === 'root' && item.isFolder) this.myDriveRootId = item.id
