@@ -4,13 +4,16 @@
 //   1. difusão: a luz forte se espalha na lente e no filtro difusor (todas as cores);
 //   2. halation: a luz atravessa a emulsão, bate na base do filme e volta, expondo de novo a camada vermelha (e um pouco
 //      a verde) em volta dos pontos fortes: o halo laranja do cinema;
-//   3. grão: ruído de densidade no negativo, por camada, com o tamanho da bitola e a granularidade da película. Como
-//      entra antes da cópia, a cópia faz o que faz no cinema: o grão aparece no meio-tom e some no preto e no branco.
+//   3. grão: ruído de densidade no negativo, por camada, com o tamanho da bitola e a granularidade da película. A
+//      granularidade cresce com a prata (√ da densidade) e a mesma variação de densidade vale mais luz onde a curva da
+//      ficha é deitada (o pé): o grão pesa nas sombras; nas altas a cópia o comprime e ele fica fino.
 // O grão é um campo gaussiano: ruído branco numa grade (passo k) convoluído com uma gaussiana de desvio `tamanho`,
 // normalizado para variância 1 em todo ponto. Com k = 1 é ruído branco filtrado (o modelo clássico de granularidade,
 // Selwyn); com grão grande a grade fica mais espaçada (k ≤ tamanho/1,5) e a conta continua leve, sem padrão de grade.
 
 import { luminancia } from './cena.js'
+import { criarNegativo } from './negativos.js'
+import { criarCopia } from './copia.js'
 
 // ─────────── ruído determinístico (o mesmo na DCTL) ───────────
 
@@ -28,6 +31,61 @@ export function ruido(x, y, c, semente) {
   return (s - 1) * Math.sqrt(6)
 }
 
+// ─────────── grão pela curva do negativo ───────────
+
+const PESO_E0 = -10 // stops em relação ao cinza
+const PESO_PASSO = 0.25
+export const PESO_N = 73 // de -10 a +8 stops
+export const GRAO_COPIA = 0.3 // no cinza, a parte da variância do grão que é da cópia
+const tabelasDoGrao = new Map()
+/**
+ * Quanto o grão pesa em cada exposição, para o negativo da ficha (relativo ao cinza 18%). O grão nasce na densidade do
+ * negativo e a granularidade cresce com a prata (√ da densidade acima da base); de volta à luz da cena, a mesma variação
+ * de densidade vale 1 ÷ a inclinação da curva: no pé, onde a curva deita, o grão pesa. Soma-se o grão da cópia (2383),
+ * que cresce com a densidade dela e pesa nas sombras da tela. O limite (0,5 a 4) segura o fundo do pé, onde as curvas
+ * quase não sobem. Sem negativo da ficha (digital), vale a forma do Vision3 500T.
+ */
+export function tabelaDoGrao(negativo) {
+  const id = negativo && negativo !== 'digital' ? negativo : '5219'
+  if (tabelasDoGrao.has(id)) return tabelasDoGrao.get(id)
+  const neg = criarNegativo(id)
+  const dens = (e) => (neg.delta(0, e) + neg.delta(1, e) + neg.delta(2, e)) / 3
+  const base = dens(-16)
+  const inclinacao = (e) => (dens(e + 0.05) - dens(e - 0.05)) / 0.1
+  const bruto = (e) => Math.sqrt(Math.max(0, dens(e) - base) + 0.05) / Math.max(1e-4, inclinacao(e))
+  // o grão da cópia (2383): os corantes da cópia também formam nuvens, e a granularidade cresce com a densidade dela
+  // (√ da densidade acima da base); visto da luz da cena, vale 1 ÷ a inclinação do sistema. É ele que pesa nas
+  // sombras da tela, onde a cópia é densa; no branco da base quase não há corante e ele fica fino
+  const copia = criarCopia('2383', { negativo: id })
+  const Y = (e) => {
+    const v = 0.18 * 2 ** e
+    const t = copia.tela([v, v, v])
+    return Math.max(1e-6, 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2])
+  }
+  const Yb = Y(12)
+  const dc = (e) => Math.max(0, -Math.log10(Y(e) / Yb))
+  const incl = (e) => (dc(e - 0.05) - dc(e + 0.05)) / 0.1
+  const daCopia = (e) => Math.sqrt(dc(e) + 0.05) / Math.max(1e-3, incl(e))
+  const ref = bruto(0)
+  const refC = daCopia(0)
+  const t = new Float64Array(PESO_N)
+  for (let k = 0; k < PESO_N; k++) {
+    const e = PESO_E0 + k * PESO_PASSO
+    const neg = bruto(e) / ref
+    const cop = daCopia(e) / refC
+    // as duas granularidades se somam em variância; no cinza o negativo manda (GRAO_COPIA da variância do total)
+    t[k] = Math.min(4, Math.max(0.5, Math.sqrt((1 - GRAO_COPIA) * neg * neg + GRAO_COPIA * cop * cop)))
+  }
+  tabelasDoGrao.set(id, t)
+  return t
+}
+/** O peso do grão na exposição `e` (stops em relação ao cinza), interpolado na tabela. */
+export function pesoDoGrao(t, e) {
+  const u = Math.min(PESO_N - 1, Math.max(0, (e - PESO_E0) / PESO_PASSO))
+  const k = Math.min(PESO_N - 2, Math.floor(u))
+  return t[k] + (t[k + 1] - t[k]) * (u - k)
+}
+
 // ─────────── predefinições ───────────
 
 /** Bitolas: o tamanho do grão relativo a um quadro de 1920 de largura e quanto ele pesa. */
@@ -38,13 +96,26 @@ export const BITOLAS = [
   { id: '8', nome: 'Super 8', tamanho: 3.4, peso: 2.4 },
 ]
 /** Granularidade de cada negativo (desvio do grão em stops no meio-tom, 35 mm, num quadro de 1920). */
-export const GRANULARIDADE = { 5219: 0.034, 5213: 0.026, 5207: 0.025, 5203: 0.016, 8573: 0.033, 8583: 0.032, 8553: 0.027, 8563: 0.025, 8543: 0.022, 8592: 0.03, digital: 0.026 }
+export const GRANULARIDADE = {
+  5219: 0.034,
+  5213: 0.026,
+  5207: 0.025,
+  5203: 0.016,
+  8573: 0.033,
+  8583: 0.032,
+  8553: 0.027,
+  8563: 0.025,
+  8543: 0.022,
+  8592: 0.03,
+  digital: 0.026,
+}
 
 export const TEXTURA_NEUTRA = {
   grao: 0, // 0–2 (1 = a granularidade da película)
   bitola: '35',
   tamanhoGrao: 1, // multiplica o tamanho da bitola
   corGrao: 0.35, // 0 = grão só de luz (monocromático), 1 = cada camada independente
+  sombraGrao: 0, // 0–1: escolha criativa por cima da física, mais grão nas sombras (0 = só a física)
   semente: 0,
   halation: 0, // 0–2
   raioHalation: 1, // 0,3–3 (1 ≈ 0,6% da largura)
@@ -70,6 +141,15 @@ export const AJUSTES_TEXTURA = [
   { id: 'difusao', nome: 'Difusão', min: 0, max: 100, escala: 0.01, dica: 'O brilho de um filtro difusor nas altas' },
   { id: 'tamanhoGrao', nome: 'Tamanho do grão', min: 50, max: 200, escala: 0.01, fino: true, dica: 'Sobre o tamanho da bitola' },
   { id: 'corGrao', nome: 'Cor do grão', min: 0, max: 100, escala: 0.01, fino: true, dica: '0 = grão só de luz; 100 = cada camada com o seu' },
+  {
+    id: 'sombraGrao',
+    nome: 'Grão nas sombras',
+    min: 0,
+    max: 100,
+    escala: 0.01,
+    fino: true,
+    dica: 'Escolha criativa por cima da física: o grão pesa mais nas sombras (0 = só negativo e cópia)',
+  },
   { id: 'raioHalation', nome: 'Raio da halation', min: 30, max: 300, escala: 0.01, fino: true, dica: 'O tamanho do halo' },
   { id: 'corHalation', nome: 'Cor da halation', min: 0, max: 200, escala: 0.01, fino: true, dica: '0 = branco, 100 = laranja do filme, 200 = vermelho' },
   { id: 'raioDifusao', nome: 'Raio da difusão', min: 30, max: 300, escala: 0.01, fino: true, dica: 'O tamanho do brilho' },
@@ -251,14 +331,16 @@ export function aplicarTextura(img, w, h, t, { negativo = 'digital', largura = w
     const proprio = [0, 1, 2].map((c) => campoDeGrao(w, h, sigma * 0.85, c, semente))
     const mistura = Math.min(1, Math.max(0, tt.corGrao))
     const a = Math.sqrt(1 - mistura * mistura)
+    const tabela = tabelaDoGrao(negativo)
     for (let i = 0; i < n; i++) {
       const Yi = Math.max(1e-6, luminancia([out[i * 3], out[i * 3 + 1], out[i * 3 + 2]]))
-      // negativo fino (sombra da cena) tem menos prata: menos grão bem no fundo
+      // o peso pela curva do negativo: mais no pé (sombras), comprimido pela cópia nas altas
       const e = Math.log2(Yi / 0.18)
-      const fundo = 0.4 + 0.6 * Math.min(1, Math.max(0, (e + 6) / 5))
+      // + a escolha criativa: mais grão nas sombras, entrando do cinza para baixo (até 2,5× a 4 stops abaixo)
+      const peso = pesoDoGrao(tabela, e) * (1 + 1.5 * tt.sombraGrao * Math.min(1, Math.max(0, -e / 4)) ** 1.5)
       for (let c = 0; c < 3; c++) {
         const z = a * comum[i] + mistura * proprio[c][i]
-        out[i * 3 + c] *= 2 ** (desvio * fundo * z)
+        out[i * 3 + c] *= 2 ** (desvio * peso * z)
       }
     }
   }

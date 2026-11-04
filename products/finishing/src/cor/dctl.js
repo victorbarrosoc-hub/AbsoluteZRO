@@ -5,7 +5,7 @@
 //     prévia; o halo tem a mesma forma, com uma textura de amostragem fina que o grão cobre.
 // O Resolve não passa o número do quadro para a DCTL: para o grão andar, anime a Semente (dois keyframes).
 
-import { BITOLAS, GRANULARIDADE, TEXTURA_NEUTRA } from './textura.js'
+import { BITOLAS, GRANULARIDADE, PESO_N, TEXTURA_NEUTRA, tabelaDoGrao } from './textura.js'
 
 const f = (v) => {
   const s = Number(v).toFixed(6)
@@ -15,8 +15,12 @@ const f = (v) => {
 /** Texto da DCTL. `t`: a textura (TEXTURA_NEUTRA), `negativo`: id (granularidade), `titulo`: comentário do cabeçalho. */
 export function escreverDctlTextura(t, { negativo = 'digital', titulo = 'Revela · textura' } = {}) {
   const tt = { ...TEXTURA_NEUTRA, ...t }
-  const bitola = Math.max(0, BITOLAS.findIndex((b) => b.id === tt.bitola))
+  const bitola = Math.max(
+    0,
+    BITOLAS.findIndex((b) => b.id === tt.bitola),
+  )
   const gran = GRANULARIDADE[negativo] ?? GRANULARIDADE.digital
+  const peso = Array.from(tabelaDoGrao(negativo), (v) => `${v.toFixed(5)}f`).join(', ')
   return `// ${titulo}
 // Feito no Revela Lab (revela.absolutezro.com). Nó ANTES do look; linha do tempo em DaVinci Wide Gamut / Intermediate.
 // Ordem do filme: difusão -> halation -> grão (no negativo). Para o grão andar, anime a Semente.
@@ -26,6 +30,7 @@ DEFINE_UI_PARAMS(p_Grao, Grão, DCTLUI_SLIDER_FLOAT, ${f(tt.grao)}, 0.0, 2.0, 0.
 DEFINE_UI_PARAMS(p_Bitola, Bitola, DCTLUI_COMBO_BOX, ${bitola}, { B65, B35, B16, B8 }, { 65 mm, 35 mm, 16 mm, Super 8 })
 DEFINE_UI_PARAMS(p_Tamanho, Tamanho do grão, DCTLUI_SLIDER_FLOAT, ${f(tt.tamanhoGrao)}, 0.5, 2.0, 0.01)
 DEFINE_UI_PARAMS(p_CorGrao, Cor do grão, DCTLUI_SLIDER_FLOAT, ${f(tt.corGrao)}, 0.0, 1.0, 0.01)
+DEFINE_UI_PARAMS(p_SombraGrao, Grão nas sombras, DCTLUI_SLIDER_FLOAT, ${f(tt.sombraGrao ?? 0)}, 0.0, 1.0, 0.01)
 DEFINE_UI_PARAMS(p_Semente, Semente, DCTLUI_SLIDER_INT, ${Math.round(tt.semente)}, 0, 1000, 1)
 DEFINE_UI_PARAMS(p_Halation, Halation, DCTLUI_SLIDER_FLOAT, ${f(tt.halation)}, 0.0, 2.0, 0.01)
 DEFINE_UI_PARAMS(p_RaioHal, Raio da halation, DCTLUI_SLIDER_FLOAT, ${f(tt.raioHalation)}, 0.3, 3.0, 0.01)
@@ -60,6 +65,14 @@ __DEVICE__ float ruido(int x, int y, int c, int s) {
 }
 
 // campo de grão: ruído numa grade de passo k convoluído com a gaussiana de desvio s, normalizado (variância 1)
+// peso do grão pela curva do negativo (de -10 a +8 stops do cinza, a cada 1/4): pesa no pé, a cópia comprime nas altas
+__CONSTANT__ float PESO_GRAO[${PESO_N}] = { ${peso} };
+__DEVICE__ float pesoGrao(float e) {
+  float u = _clampf((e + 10.0f) / 0.25f, 0.0f, ${PESO_N - 1}.0f);
+  int k = (int)_fminf(u, ${PESO_N - 2}.0f);
+  return PESO_GRAO[k] + (PESO_GRAO[k + 1] - PESO_GRAO[k]) * (u - (float)k);
+}
+
 __DEVICE__ float campo(int px, int py, float s, int c, int semente) {
   int k = (int)_fmaxf(1.0f, _floor(s / 1.5f));
   int r = (int)_ceil(3.0f * s);
@@ -124,10 +137,11 @@ __DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, __TEXTU
     float a = _sqrtf(1.0f - mistura * mistura);
     float comum = campo(p_X, p_Y, s, 3, p_Semente);
     float Yi = _fmaxf(1e-6f, luz(c.x, c.y, c.z));
-    float fundo = 0.4f + 0.6f * _clampf((_log2f(Yi / 0.18f) + 6.0f) / 5.0f, 0.0f, 1.0f);
-    c.x *= _exp2f(desvio * fundo * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 0, p_Semente)));
-    c.y *= _exp2f(desvio * fundo * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 1, p_Semente)));
-    c.z *= _exp2f(desvio * fundo * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 2, p_Semente)));
+    float eg = _log2f(Yi / 0.18f);
+    float peso = pesoGrao(eg) * (1.0f + 1.5f * p_SombraGrao * _powf(_clampf(-eg / 4.0f, 0.0f, 1.0f), 1.5f));
+    c.x *= _exp2f(desvio * peso * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 0, p_Semente)));
+    c.y *= _exp2f(desvio * peso * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 1, p_Semente)));
+    c.z *= _exp2f(desvio * peso * (a * comum + mistura * campo(p_X, p_Y, s * 0.85f, 2, p_Semente)));
   }
   return make_float3(linearParaDi(c.x), linearParaDi(c.y), linearParaDi(c.z));
 }

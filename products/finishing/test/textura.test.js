@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { TEXTURA_NEUTRA, aplicarTextura, campoDeGrao, lerTextura, ruido, texturaAtiva } from '../src/cor/textura.js'
+import { TEXTURA_NEUTRA, aplicarTextura, campoDeGrao, lerTextura, pesoDoGrao, ruido, tabelaDoGrao, texturaAtiva } from '../src/cor/textura.js'
 import { escreverDctlTextura } from '../src/cor/dctl.js'
 import { montarPacote } from '../src/cor/pacote.js'
 
@@ -86,7 +86,7 @@ test('DCTL: controles com os valores do Lab, assinatura de transformação espac
   const t = lerTextura({ grao: 1.3, bitola: '16', halation: 0.7, difusao: 0.2, semente: 42 })
   const d = escreverDctlTextura(t, { negativo: '5219', titulo: 'Teste' })
   assert.match(d, /__DEVICE__ float3 transform\(int p_Width, int p_Height, int p_X, int p_Y, __TEXTURE__ p_TexR, __TEXTURE__ p_TexG, __TEXTURE__ p_TexB\)/)
-  assert.equal((d.match(/DEFINE_UI_PARAMS\(/g) ?? []).length, 10)
+  assert.equal((d.match(/DEFINE_UI_PARAMS\(/g) ?? []).length, 11)
   assert.match(d, /DEFINE_UI_PARAMS\(p_Grao, Grão, DCTLUI_SLIDER_FLOAT, 1\.300000f, 0\.0, 2\.0, 0\.01\)/)
   assert.match(d, /DEFINE_UI_PARAMS\(p_Bitola, Bitola, DCTLUI_COMBO_BOX, 2,/)
   assert.match(d, /DCTLUI_SLIDER_INT, 42, 0, 1000, 1\)/)
@@ -106,4 +106,15 @@ test('pacote: com textura leva a DCTL e o LEIA-ME põe a textura antes do look',
     sem.arquivos.some((a) => a.nome.endsWith('.dctl')),
     false,
   )
+})
+
+test('grão pela física: pesa no pé do negativo, a cópia comprime as altas, e "Grão nas sombras" só mexe abaixo do cinza', () => {
+  const t = tabelaDoGrao('5219')
+  assert.ok(Math.abs(pesoDoGrao(t, 0) - 1) < 1e-9, 'cinza = 1')
+  assert.ok(pesoDoGrao(t, -6) > 1.5, 'fundo do pé pesa')
+  for (let e = -10; e <= 8; e += 0.25) assert.ok(pesoDoGrao(t, e) >= 0.5 && pesoDoGrao(t, e) <= 4, `limite em ${e}`)
+  // a DCTL leva a mesma tabela
+  const d = escreverDctlTextura({ ...TEXTURA_NEUTRA, grao: 1 }, { negativo: '5219' })
+  assert.match(d, new RegExp(`PESO_GRAO\\[73\\] = \\{ ${t[0].toFixed(5)}f`))
+  assert.match(d, /p_SombraGrao/)
 })

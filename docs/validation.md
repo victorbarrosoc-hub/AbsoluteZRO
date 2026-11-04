@@ -5034,3 +5034,20 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Contra a referência (FilmVision 2383, exposição do plano igualada): Boost 50 aproxima a mesa e o café (ΔE −0,05 a
   −0,06), não muda a taça e afasta um pouco o terraço (+0,1, céu mais cheio). É a assinatura da casa, não uma cópia
   da referência.
+
+## REVELAFILM: grão pela física do negativo e da cópia; Boost vira High Density (04/11/2026)
+
+- Referência estudada: Veloura (Will's Film Drop), que vende grão "pesado nas sombras, fino nas luzes, novo a cada
+  quadro". Medimos o nosso de ponta a ponta (placas lisas de −6 a +4 stops, 250D + 2383, grão em L do Oklab).
+- Antes: o grão era proporcional à luz e ainda diminuía no fundo; na tela, quase sumia nas sombras (0,08 em −3 stops
+  contra 0,45 no cinza).
+- Agora (src/cor/textura.js, `tabelaDoGrao`): o grão nasce na densidade do negativo da ficha (granularidade ∝ √ da
+  densidade acima da base) e volta à luz pela inclinação da curva (pesa no pé); soma-se o grão da própria cópia 2383
+  (cresce com a densidade dela, pesa nas sombras da tela), 30% da variância no cinza. A DCTL leva a mesma tabela (73
+  pontos de −10 a +8 stops). Resultado na tela: sombras com mais grão (0,11 em −3, 0,08 em −4) e altas mais finas que o
+  meio-tom; o pico continua no meio-tom, que é o que a física de negativo × cópia dá.
+- "Pesado nas sombras" além disso é gosto, não física: virou o controle criativo "Grão nas sombras" (0 a 100, padrão
+  0, no Ajuste fino da textura e na DCTL), que até dobra o grão abaixo do cinza sem tocar meio-tom e altas.
+- Grão novo a cada quadro: a DCTL do Resolve não recebe o número do quadro; continua valendo animar a Semente.
+- O Boost passou a se chamar **High Density** no Lab (a receita segue com a chave `boost`).
+- `npm test` da Revela 191/191.
