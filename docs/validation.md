@@ -659,6 +659,15 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## Central Absolute ZRO: Atualizar com o app aberto (04/11/2026)
+
+Branch `central-atualizar-aberto`.
+
+- `apps/hub-desktop/test/agenda.test.mjs`: com o app aberto, "Atualizar" baixa com progresso (`{ progresso: true }`) e
+  a página recebe `agendado` com a versão; download que falha manda `erro` com a mensagem; o segundo plano não fala
+  com a página. Falha sem a correção, passa com ela.
+- `apps/hub-desktop`: `node --test test/*.test.mjs` 84/84.
+
 ## SOBEDESCE: Backup Automático com fotos e vídeos (04/11/2026)
 
 Branch `sobedesce-backup-escolha`.

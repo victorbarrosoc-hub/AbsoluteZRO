@@ -120,7 +120,7 @@ class AgendaDeApps extends EventEmitter {
   /** Situação de uma ferramenta para a página Downloads: { fase, versao } ou null. */
   situacao(id) {
     const p = this.pendentes.get(id)
-    return p ? { fase: p.fase, versao: p.versao } : null
+    return p ? { fase: p.fase, versao: p.versao, ...(p.erro ? { erro: p.erro } : {}) } : null
   }
 
   #mudou() {
@@ -231,16 +231,23 @@ class AgendaDeApps extends EventEmitter {
     }
     this.pendentes.set(s.id, p)
     this.#mudou()
+    // A pessoa pediu (forcar): a página mostra o download e fica sabendo do fim (ou do erro). Antes, com o app aberto,
+    // o "Atualizar" baixava em silêncio e o cartão parecia não fazer nada.
+    const avisar = (fase, extra) => forcar && this.central.avisar && this.central.avisar(s.id, fase, extra)
     try {
-      await this.central.prebaixar(s.id)
+      await this.central.prebaixar(s.id, forcar ? { progresso: true } : undefined)
     } catch (e) {
       // 'ocupado': a pessoa está instalando pela página agora; fica para a próxima conferência
       if (e && e.codigo === 'ocupado') this.pendentes.delete(s.id)
-      else Object.assign(p, { fase: 'erro', erro: (e && e.message) || 'Não deu para baixar agora.' })
+      else {
+        Object.assign(p, { fase: 'erro', erro: (e && e.message) || 'Não deu para baixar agora.' })
+        avisar('erro', { mensagem: p.erro })
+      }
       this.#mudou()
       return
     }
-    await this.#tentarInstalar(s.id)
+    const instalou = await this.#tentarInstalar(s.id)
+    if (!instalou && this.pendentes.get(s.id)?.fase === 'ao-fechar') avisar('agendado', { versao: p.versao })
   }
 
   /** Instala se a ferramenta estiver fechada; senão deixa "ao fechar" e vigia. Devolve true se instalou. */

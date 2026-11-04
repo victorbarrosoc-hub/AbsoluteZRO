@@ -1665,6 +1665,12 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## Central Absolute ZRO: Atualizar com o app aberto (04/11/2026)
+
+- 🔶 Ramo `central-atualizar-aberto` (titular, 04/11/2026): "Atualizar" com a ferramenta aberta baixava em silêncio
+  (cartão parado em "disponível", toque ignorado, fim sem aviso). Agora mostra o progresso no cartão e avisa a página
+  no fim (`agendado`: "Atualiza ao fechar" / "Reiniciar e atualizar") ou no erro. Central 1.4.2, sem site na Vercel.
+
 ## SOBEDESCE: Drive híbrido (31/10/2026)
 
 - 🔶 Ramo `sobedesce-backup-escolha` (titular, 04/11/2026): Backup Automático pergunta o que passa (vídeos, fotos ou os dois); vídeo vai para `Cenas` e foto para `Fotos` (cartão misto separa, mesmo Cartão NN; a pasta é escolhida no primeiro toque e no lápis do dono, sugerida pelo que o cartão tem); "Escolher o que passar" (tipos e pastas do cartão, só daquela vez; o que fica de fora nunca vira "pode formatar"); excluir o projeto (para a descarga e some do painel); limpar o histórico; Synquei opcional; ejetar que desmonta só o volume quando o disco inteiro é recusado e diz quem segura. Exemplo "Aladim" trocado por "Ana". App de computador 0.3.4, sem site na Vercel.
