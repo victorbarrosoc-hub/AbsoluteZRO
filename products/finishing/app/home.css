@@ -819,8 +819,8 @@ span.cartao-home:hover {
 }
 
 /* ─────────── topo de cinema (titular, 04/11/2026) ───────────
-   Um frame inteiro, revelado no Lab, com a marca "revela." por cima: o símbolo "cheio de densidade" fica no topo e
-   no ícone, a palavra em Figtree Black com o ponto. A barra fica transparente sobre a foto e vira vidro ao rolar. */
+   O nome REVELAFILM à esquerda (REVELA fina, FILM pesada), a foto revelada no Lab à direita, apagando para o escuro,
+   e o R grande saindo pela borda. A barra fica transparente sobre a foto, em caixa alta, e vira vidro ao rolar. */
 
 .home:has(.hero--filme) .nav {
   position: fixed;
@@ -841,80 +841,172 @@ span.cartao-home:hover {
   display: block;
 }
 .home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta, .nav-tema) {
-  color: rgb(255 255 255 / 0.86);
+  color: rgb(241 235 225 / 0.86);
 }
 .home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta):hover {
   color: #fff;
 }
+.home:has(.hero--filme) .nav-links a {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .hero--filme {
   display: grid;
-  align-items: end;
-  min-height: 100svh;
+  align-items: center;
+  min-height: max(100svh, 640px);
   padding: 0;
   overflow: hidden;
   background: #0b0a09;
-  color: #fff;
+  color: #f1ebe1;
+  text-align: left;
 }
-.hero-foto img {
+.hero-foto {
   position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
+  inset: 0 0 0 auto;
+  z-index: -3;
+  width: 72%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 35%;
+  object-position: 62% 40%;
 }
 .hero--filme::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, #0b0a09 26%, rgb(11 10 9 / 0.72) 44%, rgb(11 10 9 / 0) 66%),
+    linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 34%),
+    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+}
+.hero-r {
+  position: absolute;
   z-index: -1;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.4) 0%, rgb(0 0 0 / 0) 20%, rgb(0 0 0 / 0) 42%, rgb(0 0 0 / 0.78) 100%);
+  right: -7vw;
+  bottom: -6vh;
+  height: min(66vh, 52vw);
+  fill: #f1ebe1;
+  opacity: 0.82;
+  mix-blend-mode: soft-light;
 }
 .hero-texto {
-  padding: 120px clamp(16px, 4vw, 40px) calc(clamp(48px, 9vh, 104px) + env(safe-area-inset-bottom));
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  padding: 140px clamp(20px, 5vw, 64px) calc(56px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.hero-olho {
+  margin: 0 0 26px;
+  color: rgb(241 235 225 / 0.78);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  line-height: 1.8;
+  text-transform: uppercase;
 }
 .home .hero-marca {
+  margin: 0;
   color: #f1ebe1;
-  font-size: clamp(92px, 17vw, 232px);
+  font-size: clamp(54px, 9vw, 128px);
+  font-weight: 200;
+  letter-spacing: 0.01em;
+  line-height: 0.9;
+  text-align: left;
+}
+.hero-marca b {
+  color: #fff;
   font-weight: 900;
-  letter-spacing: -0.045em;
-  line-height: 0.82;
-  text-shadow: 0 2px 40px rgb(0 0 0 / 0.25);
+  letter-spacing: -0.01em;
 }
 .hero--filme .hero-sub {
-  margin-top: 22px;
-  color: rgb(255 255 255 / 0.86);
+  max-width: 30ch;
+  margin: 26px 0 0;
+  color: rgb(241 235 225 / 0.86);
+  text-align: left;
 }
-.hero--filme .selo-dev {
-  color: rgb(255 255 255 / 0.8);
-  background: rgb(255 255 255 / 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.hero--filme .hero-acoes {
+  justify-content: flex-start;
+  margin-top: 36px;
 }
-.pilula-clara {
+.pilula-clara,
+.pilula-fio {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   border-radius: 999px;
-  color: #0b0a09;
-  background: #f1ebe1;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.pilula-clara {
+  color: #0b0a09;
+  background: #f1ebe1;
 }
 .pilula-clara:hover {
   background: #fff;
 }
-.hero--filme .vidro {
-  --v-fundo: rgb(255 255 255 / 0.12);
-  --v-tinta: #fff;
-  background: var(--v-fundo);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.38);
+.pilula-fio {
+  color: #f1ebe1;
+  box-shadow: inset 0 0 0 1.5px rgb(241 235 225 / 0.7);
+}
+.pilula-fio:hover {
+  background: rgb(241 235 225 / 0.1);
+}
+.hero-pe {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: clamp(40px, 9vh, 96px);
+}
+.hero-by {
+  margin: 0;
+  color: rgb(241 235 225 / 0.7);
+  font-size: 14px;
+}
+.hero-by b {
+  margin-left: 4px;
+  color: #f1ebe1;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+.hero--filme .selo-dev {
+  margin: 0;
+  color: rgb(241 235 225 / 0.78);
+  background: rgb(241 235 225 / 0.1);
 }
 .sec-log {
   padding-bottom: clamp(56px, 8vw, 96px);
 }
 .sec-log .comparar {
   margin-top: clamp(40px, 6vw, 64px);
+}
+@media (max-width: 760px) {
+  .hero--filme {
+    align-items: end;
+  }
+  .hero-foto {
+    width: 100%;
+    height: 72%;
+    object-position: 74% 30%;
+  }
+  .hero--filme::after {
+    background:
+      linear-gradient(0deg, #0b0a09 30%, rgb(11 10 9 / 0.7) 46%, rgb(11 10 9 / 0) 64%),
+      linear-gradient(180deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 20%);
+  }
+  .hero-r {
+    right: -18vw;
+    top: 18vh;
+    bottom: auto;
+    height: 34vh;
+  }
+  .hero-olho {
+    font-size: 11px;
+  }
 }
