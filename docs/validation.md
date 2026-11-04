@@ -659,6 +659,15 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: Meu Drive em Arquivos escolhidos (04/11/2026)
+
+Branch `sobedesce-raiz-arquivos`. Usuário com o Drive em Arquivos escolhidos via "Não achei no Google Drive" ao abrir o
+Meu Drive no computador: com `drive.file`, o Google responde 404 a `files/root` (o rclone tem a mesma volta).
+
+- `test/modo-drive.test.js`: com `files/root` respondendo 404, o Meu Drive abre (nome, pasta, dá para enviar), lista o
+  que o SOBEDESCE criou e o caminho é só "Meu Drive"; outro 404 continua erro. Falha sem a correção, passa com ela.
+- `test/drive*.test.js` e `test/server.test.js`: 43/43.
+
 ## SOBEDESCE: cota de download do arquivo (03/11/2026)
 
 Branch `sobedesce-cota-download`. O Google trava os downloads de um arquivo muito acessado (vale até no site do Drive);
