@@ -5101,4 +5101,4 @@ renderizada e os frames dele ficam fora do repositório e do site.
   da 250D + 2383 (13–18° / 12). Testes: 194 de 194.
 - Material de teste: footage oficial da ARRI (ALEXA 35, Mini LF, Mini) e da DJI, só nos testes internos. Os frames do
   titular não foram usados no desenvolvimento (pedido dele).
-- Não feito: as imagens da página inicial ainda são do motor anterior (não foram refeitas).
+- Imagens da página inicial e OG refeitas com o motor novo (mesmos frames da ZRO Filmes).
