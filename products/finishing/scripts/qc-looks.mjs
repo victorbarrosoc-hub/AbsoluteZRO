@@ -1,14 +1,15 @@
 // Revela · roda o controle de qualidade em todos os looks do motor profissional e imprime a tabela.
-// Uso: node scripts/qc-looks.mjs [id-do-look]
+// Uso: node scripts/qc-looks.mjs [id-do-look]   (BOOST=50 roda com o Boost da REVELAFILM, como o Lab abre)
 import { GRUPOS, criarMotor } from '../src/cor/pelicula.js'
 import { avaliarLook } from '../src/cor/qc.js'
 
 const so = process.argv[2]
+const boost = Number(process.env.BOOST ?? 0)
 let falhas = 0
 for (const g of GRUPOS)
   for (const p of g.looks) {
     if (so && p.id !== so) continue
-    const r = avaliarLook(criarMotor(p), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
+    const r = avaliarLook(criarMotor(p, { boost }), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
     if (!r.ok) falhas++
     const linha = r.verificacoes.map((v) => `${v.ok ? '·' : '✗'}${v.id}=${v.valor}`).join(' ')
     console.log(`${r.ok ? 'OK   ' : 'FALHA'} ${p.id.padEnd(18)} ${linha}`)

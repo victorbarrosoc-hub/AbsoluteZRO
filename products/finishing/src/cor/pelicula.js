@@ -502,6 +502,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const estilo = extra.estilo ?? 0
   const densidade = pr.densidade + 0.3 * (extra.densidade ?? 0)
   const branqueamento = extra.branqueamento ?? 0
+  // Boost (REVELAFILM): a assinatura da casa por cima da película, de 0 a 100; só onde há negativo das fichas ou cópia
+  const boostPedido = limitar((extra.boost ?? 0) / 100, 0, 1)
   // Estilo: moderno (> 0) põe a sombra para o petróleo e a alta para o quente; retrô (< 0), a sombra quente e a alta
   // fria, como as cópias antigas. Soma à separação de tons do perfil.
   const split = {
@@ -670,13 +672,72 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     return y.map((v) => Y2 * (1 + (v / Y - 1) * fica))
   }
 
+  /**
+   * Boost (REVELAFILM, titular, 04/11/2026): a mão do colorista por cima da película, sem tocar no negativo nem na
+   * cópia (as curvas e corantes das fichas ficam como estão). Em Oklab, depois da cópia: o meio-tom ganha densidade de
+   * cor (a cor forte fica mais cheia e um pouco mais escura, como no filme subtrativo), as altas guardam cor (a cópia
+   * desbota rápido perto do branco), amarelos e laranjas mais cheios e quentes, o azul do céu puxa para o ciano. O
+   * neutro fica neutro, a pele fica com a cópia e a luz nunca inverte.
+   */
+  const boost = idCopia || idNegativo ? boostPedido : 0
+  // o Boost age na diferença entre a cor e o cinza da própria cópia na mesma luz: o neutro (com o leve tom que a cópia
+  // tem no pé e no topo) fica exatamente como a ficha manda, e o reforço cresce em linha reta a partir dele
+  function cinzaDaCopia(x) {
+    const Y = Math.max(0, luz(x))
+    const c = [Y, Y, Y]
+    const a = dwgParaOklab(c)
+    let y = idNegativo ? c : negativo(c)
+    y = dentroDoGamut(cor(y, a))
+    return dwgParaOklab(copia ? copiar(y, a) : y)
+  }
+  function reforcar(y, antes, ref) {
+    if (!(boost > 0)) return y
+    const [L, a, b] = dwgParaOklab(y)
+    const da = a - ref[1]
+    const db = b - ref[2]
+    const C = Math.hypot(da, db)
+    if (!(C > 1e-7) || !(L > 0)) return y
+    let h = Math.atan2(db, da) / GRAU
+    const h0 = h
+    const Lr = L / L_CINZA
+    // os giros e a densidade só entram com cor de verdade (perto do cinza o matiz não diz nada)
+    const comCor = (C * C) / (C * C + 0.0016)
+    // pele: medida na cor da cena (antes do filme), que não muda com a exposição; a da cópia muda nas altas
+    let pl = noMatiz(h, 58, 30) * comCor
+    if (antes) {
+      const Ca = Math.hypot(antes[1], antes[2]) / Math.max(antes[0], 0.02)
+      pl = Math.max(pl, noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 52, 42) * suave(0.015, 0.07, Ca))
+    }
+    const amarelo = noMatiz(h, 100, 20) * comCor * (1 - pl) ** 2
+    const ceu = noMatiz(h, 245, 40) * comCor * (1 - suave(0.07, 0.16, C)) // céu: azul de saturação moderada, não o primário
+    // o reforço some na sombra profunda (ruído não ganha cor), cresce um pouco nas altas e não toca a pele
+    const naLuz = suave(0.12, 0.45, Lr)
+    // cor que já está perto do limite é empurrada cada vez menos, sem joelho (sem virar tinta nem forçar a tela); o
+    // amarelo tem o limite mais baixo de todos fora do claro, então o teto dele é menor
+    const zonaAmarela = noMatiz(h, 100, 30)
+    const folga = 1 / (1 + (C / (0.2 - 0.08 * zonaAmarela)) ** 2)
+    const g = 1 + boost * naLuz * (1 - pl) * folga * (0.24 + 0.2 * suave(1.0, 2.2, Lr) + 0.2 * amarelo)
+    h += boost * folga * (5 * amarelo - 6 * ceu)
+    const C2 = C * g
+    // densidade subtrativa: cor cheia escurece um pouco (no máximo 6%), proporcional a quanto a cor cresceu
+    // (o amarelo é o corante mais claro do filme: não escurece)
+    const L2 = L * (1 - boost * 0.06 * comCor * (1 - pl) * (1 - zonaAmarela) * (C2 / (C2 + 0.09)))
+    if (C2 === C && L2 === L && h === h0) return y
+    // aplica como diferença sobre a cor original: onde o Boost não age (pele, neutro), a cor fica idêntica, sem passar
+    // pela ida e volta do Oklab (que recorta o gamut)
+    const antesDwg = oklabParaDwg([L, a, b])
+    const depois = oklabParaDwg([L2, ref[1] + C2 * Math.cos(h * GRAU), ref[2] + C2 * Math.sin(h * GRAU)])
+    return y.map((v, i) => v + depois[i] - antesDwg[i])
+  }
+
   function emCena(rgb) {
     const x = dentroDoGamut(tomDaCena(primaria(rgb)))
-    const antes = pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia ? dwgParaOklab(x) : null
+    const antes = pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia || boost > 0 ? dwgParaOklab(x) : null
     // um negativo das fichas substitui o negativo genérico do perfil (do perfil fica a cor): nunca dois negativos
     let y = idNegativo ? x : negativo(x)
     y = dentroDoGamut(cor(y, antes))
     if (copia) y = copiar(y, antes)
+    if (boost > 0) y = reforcar(y, antes, cinzaDaCopia(x))
     if (LUZ) y = mul(LUZ, y)
     y = ajustarPele(y, antes)
     y = semBranqueamento(y)
@@ -694,7 +755,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     copia: idCopia,
     negativo: idNegativo,
     luzCopia,
-    partes: { negativo, cor, dentroDoGamut, copia }, // para os testes internos olharem cada etapa
+    boost,
+    partes: { negativo, cor, dentroDoGamut, copia, reforcar }, // para os testes internos olharem cada etapa
     /** O mesmo look em código DaVinci Intermediate, para a LUT log → log. */
     emDi(r, g, b) {
       return emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)]).map(linearParaDi)

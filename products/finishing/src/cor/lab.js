@@ -140,9 +140,13 @@ export function descreverCorrecao(exposicao, ganhos) {
 
 // ─────────── o look do Lab ───────────
 
+/** O Boost da REVELAFILM vem ligado (titular, 04/11/2026); 0 deixa a película como a ficha manda. */
+export const BOOST_PADRAO = 50
+
 /**
  * Receita → look. `receita`: { entrada ('still' ou id de câmera), base, copia ('' = a da base, 'nenhuma' ou id),
  * negativo ('' = o da base, 'digital' ou id), luzCopia ('' ou D55/D60/D65), expandido e revelacao (null = os da base),
+ * boost (0–100, o Boost da REVELAFILM por cima da película; ligado em BOOST_PADRAO quando não vem),
  * intensidade (0–1), correcao: { exposicao, ganhos } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
  * DaVinci Intermediate → DI, para a LUT log → log) e `aplicar(r, g, b)`: a prévia do código da entrada até a tela
  * Rec.709, o caminho inteiro.
@@ -175,6 +179,7 @@ export function criarLab(receita = {}) {
     luzCopia: receita.luzCopia || undefined,
     expandido: receita.expandido ?? undefined,
     revelacao: receita.revelacao ?? undefined,
+    boost: limitar(Number(receita.boost ?? BOOST_PADRAO), 0, 100),
     intensidade,
   })
   const entrada = receita.entrada ?? 'still'
@@ -184,7 +189,7 @@ export function criarLab(receita = {}) {
     emCena: motor.emCena,
     emDi: motor.emDi,
     aplicar: (r, g, b) => telaSdr.aplicar(motor.emCena(cena(r, g, b))),
-    receita: { ...receita, entrada, copia: receita.copia ?? '', negativo: receita.negativo ?? '', luzCopia: receita.luzCopia ?? '', ajustes: aj, intensidade },
+    receita: { ...receita, entrada, copia: receita.copia ?? '', negativo: receita.negativo ?? '', luzCopia: receita.luzCopia ?? '', boost: limitar(Number(receita.boost ?? BOOST_PADRAO), 0, 100), ajustes: aj, intensidade },
     nome: receita.nome || perfil.nome || 'Meu look',
     perfil,
   }
@@ -192,7 +197,7 @@ export function criarLab(receita = {}) {
 
 // ─────────── receita (.revela) ───────────
 
-export const VERSAO_RECEITA = 4
+export const VERSAO_RECEITA = 5
 
 /** Receita → texto do arquivo .revela (JSON, legível, para reabrir no Lab). */
 export function escreverReceita(receita) {
@@ -208,6 +213,7 @@ export function escreverReceita(receita) {
     luzCopia: receita.luzCopia ?? '',
     expandido: receita.expandido ?? null,
     revelacao: receita.revelacao ?? null,
+    boost: limitar(Number(receita.boost ?? BOOST_PADRAO), 0, 100),
     textura: lerTextura(receita.textura),
     intensidade: receita.intensidade ?? 1,
     correcao: receita.correcao ?? null,
@@ -219,7 +225,8 @@ export function escreverReceita(receita) {
 /**
  * Texto .revela → receita. Recusa o que não for receita do Lab; valores fora do lugar voltam para o limite. A versão 1
  * (motor de tela) abre com a mesma base e os mesmos ajustes; a correção de branco antiga não vale no motor novo. A
- * versão 2 não tinha cópia e a 3 não tinha negativo, luz da cópia, Expandido nem revelação: abrem com os da base.
+ * versão 2 não tinha cópia e a 3 não tinha negativo, luz da cópia, Expandido nem revelação: abrem com os da base. Até a
+ * 4 não havia Boost: abrem com ele em 0, para o look salvo continuar o mesmo.
  */
 export function lerReceita(texto) {
   let r
@@ -243,6 +250,7 @@ export function lerReceita(texto) {
     luzCopia: LUZES_LAB.some((l) => l.id === r.luzCopia) ? r.luzCopia : '',
     expandido: typeof r.expandido === 'boolean' ? r.expandido : null,
     revelacao: REVELACOES.includes(r.revelacao) ? r.revelacao : null,
+    boost: r.versao < 5 ? 0 : limitar(Number(r.boost ?? BOOST_PADRAO), 0, 100),
     textura: lerTextura(r.textura),
     intensidade: limitar(Number(r.intensidade ?? 1), 0, 1),
     correcao: c && typeof c === 'object' ? { exposicao: limitar(Number(c.exposicao) || 0, -2, 2), ganhos } : null,

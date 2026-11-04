@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { AJUSTES, GRUPOS, analisarFrame, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import { AJUSTES, BOOST_PADRAO, GRUPOS, VERSAO_RECEITA, analisarFrame, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { codigoParaOklab } from '../src/cor/oklab.js'
 
 const distancia = (x, y) => Math.hypot(...x.map((v, i) => v - y[i]))
@@ -112,4 +112,16 @@ test('Receita .revela: ida e volta, valores fora do limite voltam para o limite,
   assert.deepEqual([v1.base, v1.entrada, v1.ajustes.cor, v1.correcao.exposicao, v1.correcao.ganhos], ['anos-70', 'still', 20, 0.5, null])
   // a versão 2 não tinha cópia: abre com a cópia da base
   assert.equal(lerReceita('{"revela":"lab","versao":2,"base":"revela"}').copia, '')
+})
+
+test('receita v5: o Boost vem ligado em 50, vai e volta no .revela e as receitas antigas abrem sem ele', () => {
+  assert.equal(VERSAO_RECEITA, 5)
+  assert.equal(BOOST_PADRAO, 50)
+  assert.equal(criarLab({ base: '250d-2383' }).receita.boost, 50)
+  assert.equal(criarLab({ base: '250d-2383' }).motor.boost, 0.5)
+  assert.equal(lerReceita(escreverReceita({ base: '250d-2383', boost: 80 })).boost, 80)
+  assert.equal(lerReceita(escreverReceita({ base: '250d-2383', boost: 300 })).boost, 100)
+  assert.equal(lerReceita(escreverReceita({ base: '250d-2383' })).boost, 50)
+  // até a v4 não havia Boost: o look salvo continua o mesmo
+  assert.equal(lerReceita('{"revela":"lab","versao":4,"base":"250d-2383"}').boost, 0)
 })

@@ -5,7 +5,7 @@
 import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { AJUSTES, AJUSTES_NEUTROS, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, LUZES_LAB, NEGATIVOS_LAB, REVELACOES, paraCena, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import { AJUSTES, AJUSTES_NEUTROS, BOOST_PADRAO, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, LUZES_LAB, NEGATIVOS_LAB, REVELACOES, paraCena, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 import { criarTela, diParaLinear, linearParaDi } from '../src/cor/cena.js'
@@ -23,7 +23,7 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
-let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null, textura: { ...TEXTURA_NEUTRA }, intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
+let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null, boost: BOOST_PADRAO, textura: { ...TEXTURA_NEUTRA }, intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
@@ -414,6 +414,19 @@ $('expandido').addEventListener('change', () => {
   refazer()
   trocouLook()
 })
+// Boost: a assinatura da REVELAFILM por cima da película (ligado em 50; duplo toque volta ao padrão)
+$('boost').addEventListener('input', () => {
+  receita.boost = Number($('boost').value)
+  $('valor-boost').textContent = $('boost').value
+  acender($('boost'))
+  agendar()
+})
+$('boost').addEventListener('change', () => refazer())
+$('boost').addEventListener('dblclick', () => {
+  receita.boost = BOOST_PADRAO
+  mostrarFilme()
+  refazer()
+})
 function mostrarFilme() {
   // o "da base" diz qual é a película da base
   const p = baseDoLab(receita.base)
@@ -426,6 +439,9 @@ function mostrarFilme() {
   $('luz-copia').value = receita.luzCopia ?? ''
   $('revelacao').value = receita.revelacao == null ? '' : String(receita.revelacao)
   $('expandido').checked = !!receita.expandido
+  $('boost').value = String(receita.boost ?? BOOST_PADRAO)
+  $('valor-boost').textContent = $('boost').value
+  acender($('boost'))
 }
 
 $('intensidade').addEventListener('input', () => {

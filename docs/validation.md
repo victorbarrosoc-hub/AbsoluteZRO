@@ -5014,3 +5014,23 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Decisão: o motor não muda com este material (mudar seria ajustar à força a 4 frames). Para calibrar a cor de
   verdade: um gráfico de cor (ColorChecker) em S-Log3, com luz de dia e de tungstênio, passado no FilmVision com as
   configurações anotadas (negativo, cópia, exposição) e sem ajuste por plano.
+
+## REVELAFILM Boost (04/11/2026)
+
+- Decisão do titular: as películas continuam como as fichas mandam (negativo e cópia sem mudança na matemática) e a
+  REVELAFILM ganha uma camada própria, o **Boost**, ligada em 50 por padrão (0 a 100 no Lab; receita `.revela` v5;
+  receitas até a v4 abrem com Boost 0 para o look salvo não mudar).
+- Onde: `criarMotor` (src/cor/pelicula.js), depois da cópia e antes da luz do projetor; só age com negativo das fichas
+  ou cópia. Em Oklab, sobre a diferença entre a cor e o cinza da própria cópia na mesma luz (o neutro, com o leve tom
+  da cópia no pé e no topo, fica idêntico) e aplicado como diferença sobre a cor original (onde não age, a cor fica bit
+  a bit igual). Faz: densidade de cor no meio-tom, cor guardada nas altas, amarelo mais cheio sem escurecer (é o
+  corante mais claro), céu de saturação moderada puxando para o ciano; cor perto do limite é empurrada cada vez menos;
+  a pele (medida na cor da cena) fica com a cópia.
+- Controle de qualidade: os 25 looks passam com Boost 0, 50 e 100 (teste em test/motor.test.js). Varredura de risco
+  (48 combinações livres: todas as bases × cópia 2383/3513 × negativo da base/500T × luz D60 × calor 40): com Boost 50
+  nenhuma reprovação nova; com Boost 100, 6 novas (pele até 12,3° e suavidade até 0,37), todas nessas combinações
+  extremas, onde o Lab já mostra o relatório. A varredura completa (1.152 combinações) passou do limite de tempo de
+  tarefa e não terminou para Boost 50/100; com Boost 0, 299 delas já reprovam.
+- Contra a referência (FilmVision 2383, exposição do plano igualada): Boost 50 aproxima a mesa e o café (ΔE −0,05 a
+  −0,06), não muda a taça e afasta um pouco o terraço (+0,1, céu mais cheio). É a assinatura da casa, não uma cópia
+  da referência.

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { criarTela, curvaDeTom, diParaLinear, linearParaDi } from '../src/cor/cena.js'
 import { aplicarTetra, assar } from '../src/cor/cube.js'
-import { GRUPOS, NEUTRO, criarMotor } from '../src/cor/pelicula.js'
+import { GRUPOS, NEUTRO, criarMotor, dwgParaOklab } from '../src/cor/pelicula.js'
 import { avaliarLook } from '../src/cor/qc.js'
 import { escreverClf, montarPacote, offsetDaCorrecao, slugPack } from '../src/cor/pacote.js'
 import { crc32 } from '../src/imagem/zip.js'
@@ -203,4 +203,38 @@ test('pacote: nomes no padrão ARRI, CLF com azul mais rápido, CDL da correçã
   const clf = escreverClf(lut, { id: 't', descricao: 'd', entrada: 'e', saida: 's' })
   const linhas = clf.split('<Array dim="17 17 17 3">\n')[1].split('\n')
   assert.equal(linhas[1], '0.000000 0.000000 0.062500')
+})
+
+test('Boost (REVELAFILM): fora da película não age; em 0 é a película pura; o cinza fica cinza e a pele fica com a cópia', () => {
+  const p = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === '250d-2383')
+  const r = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === 'revela')
+  const puro = criarMotor(p)
+  const zero = criarMotor(p, { boost: 0 })
+  const cheio = criarMotor(p, { boost: 100 })
+  assert.equal(criarMotor(r, { boost: 100 }).boost, 0, 'look sem negativo nem cópia: sem Boost')
+  assert.equal(cheio.boost, 1)
+  for (const x of [[0.18, 0.18, 0.18], [0.3, 0.15, 0.08], [0.1, 0.2, 0.4]]) assert.deepEqual(zero.emCena(x), puro.emCena(x))
+  // cinza: o Boost não toca o neutro da cópia (nem o leve tom que ela tem no pé e no topo)
+  for (const y of [0.005, 0.02, 0.18, 0.9]) {
+    const a = puro.emCena([y, y, y])
+    const b = cheio.emCena([y, y, y])
+    for (let k = 0; k < 3; k++) assert.ok(Math.abs(a[k] - b[k]) <= 0.004 * Math.max(0.05, a[k]), `cinza ${y}: ${a[k]} → ${b[k]}`)
+  }
+  // cor de verdade ganha croma (Oklab, sobre o que a cópia deu)
+  const croma = (v) => {
+    const o = dwgParaOklab(v)
+    return Math.hypot(o[1], o[2])
+  }
+  // cor do dia a dia ganha croma (madeira, areia, céu); cor que já está no limite do gamut fica praticamente igual
+  for (const x of [[0.2, 0.18, 0.1], [0.08, 0.14, 0.3]]) assert.ok(croma(cheio.emCena(x)) > croma(puro.emCena(x)) * 1.08, `mais cheio: ${x}`)
+  for (const x of [[0.25, 0.22, 0.05], [0.3, 0.12, 0.06]]) assert.ok(croma(cheio.emCena(x)) > croma(puro.emCena(x)) * 0.97, `no limite: ${x}`)
+})
+
+test('controle de qualidade: os 25 looks passam também com o Boost em 50 (o padrão do Lab) e em 100', () => {
+  for (const boost of [50, 100])
+    for (const g of GRUPOS)
+      for (const p of g.looks) {
+        const r = avaliarLook(criarMotor(p, { boost }), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
+        assert.ok(r.ok, `${p.id} com Boost ${boost}: ${r.verificacoes.filter((v) => !v.ok).map((v) => `${v.id}=${v.valor}`).join(', ')}`)
+      }
 })
