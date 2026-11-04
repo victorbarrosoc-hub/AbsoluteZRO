@@ -4996,3 +4996,21 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `npm test` da Revela 187/187 (com as telas em Chromium); o teste da página inicial agora espera o título "revela.".
 - Não validado: Safari/iOS de verdade (o `:has()` da barra sobre a foto pede Safari 15.4+), e a página `marca/index.html`
   (manual antigo da marca) ainda mostra a identidade anterior.
+
+## REVELAFILM: calibração da cópia 2383 contra o FilmVision Pro (04/11/2026)
+
+- Material: 4 planos da ZRO Filmes em S-Log3 / S-Gamut3.Cine (taça, mesa, café, terraço) e o mesmo frame no
+  FilmVision Pro com Kodak 2383, enviados pelo titular. O FilmVision fica fora do repositório (é referência, não
+  material do site).
+- Métrica: ΔE em OKLab (×100) por pixel, sem estourados nem preto puro; depois, só os pixels com cor (croma > 0,04).
+  A exposição de cada plano é livre (é decisão do colorista); o que fica para o sistema precisa valer nos 4 planos.
+- Tom: com só a exposição de cada plano igualada (−0,63 a +0,13 stop), a diferença de luz média é de −0,4 a +0,1:
+  o tom do negativo × cópia já bate. O "preto mais fundo e altas mais seguras" de um primeiro ajuste global era a
+  exposição dos planos mal separada.
+- Cor: testados (1) matriz câmera → negativo que preserva o neutro, (2) croma uniforme, (3) croma por luz, (4) croma
+  e giro por matiz. Validação deixando um plano de fora: nenhum generaliza (ganho médio fora de −0,39 a +0,07). A
+  saturação que a referência pede muda de plano para plano (0,74 no terraço a 1,30 no café) e os planos internos
+  pedem giros de matiz opostos ao do terraço: é grade feita plano a plano, não característica do sistema.
+- Decisão: o motor não muda com este material (mudar seria ajustar à força a 4 frames). Para calibrar a cor de
+  verdade: um gráfico de cor (ColorChecker) em S-Log3, com luz de dia e de tungstênio, passado no FilmVision com as
+  configurações anotadas (negativo, cópia, exposição) e sem ajuste por plano.
