@@ -22,6 +22,54 @@ export const EMBUTIDO = ANFITRIAO !== null
 /** O Relay escolhendo um vídeo (/app/?no=relay&modo=escolher): o toque no arquivo vira o recado `escolhido`. */
 export const ESCOLHER = ANFITRIAO === 'relay' && params.get('modo') === 'escolher'
 
+/**
+ * Versão do contrato do modo embutido (04/11/2026). Vai no `pronto` com os `recursos` do anfitrião: quem embute só mostra
+ * o que depende de um recado novo quando o `pronto` diz que ele existe (o SOBEDESCE antigo manda `pronto` sem nada, e o
+ * Maestro esconde o botão). Recado novo = versão nova e o recurso na lista.
+ *   1: pronto, envios, pasta (Maestro e Carro); escolhido (Relay).
+ *   2: o Maestro manda a entrega para a pasta do card (`enviar`: /app/?no=maestro&modo=enviar&pasta=<id>&nome=<nome>;
+ *      cada arquivo terminado vira o recado `enviado`) e a sonda (`?no=maestro&modo=sonda`: só o `pronto`, sem abrir o app).
+ */
+export const VERSAO_EMBUTIDO = 2
+const RECURSOS = { carro: [], maestro: ['enviar'], relay: ['escolher'] }
+export const RECURSOS_DO_ANFITRIAO = ANFITRIAO ? RECURSOS[ANFITRIAO] : []
+/** O Maestro só pergunta o que este SOBEDESCE sabe fazer: nada de conta, fila nem tela. */
+export const SONDA = ANFITRIAO === 'maestro' && params.get('modo') === 'sonda'
+
+const ID_PASTA = /^[A-Za-z0-9_-]{4,200}$/
+
+/** A pasta de entrega que o Maestro mandou no endereço (`pasta` + `nome`), ou null. Puro: o teste chama. */
+export function pastaDoEndereco(p) {
+  if (p.get('no') !== 'maestro' || p.get('modo') !== 'enviar') return null
+  const id = p.get('pasta') || ''
+  if (!ID_PASTA.test(id)) return null
+  const nome = (p.get('nome') || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Entrega'
+  return { id, name: nome, driveId: null, path: [{ id, name: nome }] }
+}
+/** No modo `enviar`: a pasta do card do Maestro (o destino da fila). */
+export const ENVIAR_PARA = typeof location !== 'undefined' ? pastaDoEndereco(params) : null
+
+/**
+ * O recado `enviado` de um item da fila, ou null enquanto não há o que dizer. Só arquivo que terminou nesta pasta, com
+ * o id do Drive e a conferência já decidida: `ok` (MD5 do aparelho igual ao do Drive), `diferente` (não conferiu) ou
+ * `sem` (o tamanho confere, sem MD5: grande demais, sem o arquivo, sem MD5 do Drive). Puro: o teste chama.
+ */
+export function recadoDoEnvio(it, pastaId) {
+  if (!it || it.status !== 'done' || !it.fileId || it.folder?.id !== pastaId) return null
+  const v = it.verify?.state
+  if (!v || v === 'pending' || v === 'running') return null
+  return {
+    arquivo: {
+      id: String(it.fileId),
+      nome: String(it.name || '').slice(0, 200),
+      tamanho: Number(it.size) || 0,
+      mime: String(it.type || '').slice(0, 120),
+      pasta: pastaId,
+      conferencia: v === 'ok' ? 'ok' : v === 'mismatch' ? 'diferente' : 'sem',
+    },
+  }
+}
+
 /** Abas que existem no modo embutido ('transferencias' é a tela cheia da fila, aberta pelo cartão do Início). */
 export const ABAS_EMBUTIDO = ['send', 'transferencias', 'drive']
 
@@ -71,5 +119,20 @@ export function iniciarEmbutido() {
     // o Relay abre um canal para ler o arquivo aos pedaços e mandar o resultado (lib/embutido-relay.js)
     if (ESCOLHER && d && typeof d === 'object' && d.fonte === 'relay' && d.tipo === 'canal' && e.ports[0]) import('./embutido-relay.js').then((m) => m.atender(e.ports[0]))
   })
-  avisarAnfitriao('pronto')
+  avisarAnfitriao('pronto', { versao: VERSAO_EMBUTIDO, recursos: RECURSOS_DO_ANFITRIAO })
+}
+
+/** Modo `enviar` do Maestro: cada arquivo que termina na pasta do card vira o recado `enviado` (uma vez por arquivo). */
+export function acompanharEntrega(engine) {
+  if (!ENVIAR_PARA) return
+  const ditos = new Set()
+  engine.subscribe(() => {
+    for (const it of engine.items) {
+      if (ditos.has(it.id)) continue
+      const r = recadoDoEnvio(it, ENVIAR_PARA.id)
+      if (!r) continue
+      ditos.add(it.id)
+      avisarAnfitriao('enviado', r)
+    }
+  })
 }

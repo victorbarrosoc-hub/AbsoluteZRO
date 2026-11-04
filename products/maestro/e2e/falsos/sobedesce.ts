@@ -10,6 +10,11 @@
  *
  * As pastas e os arquivos são os do Drive de mentira (tests/drive-fixture.mts). Use com `serviceWorkers: 'block'`.
  * `recusar: true` responde 404 (o SOBEDESCE fora do ar ou ainda sem o modo embutido): a aba mostra o aviso.
+ *
+ * Contrato 2 (04/11/2026): sem `recursos`, é o SOBEDESCE publicado de antes (`pronto` sem versão: o Maestro esconde o
+ * "Enviar a entrega"). Com `recursos: ["enviar"]`, o `pronto` leva `versao: 2` e a lista; `?modo=sonda` só responde o
+ * `pronto`; `?modo=enviar&pasta=&nome=` mostra o destino e o teste manda o `enviado` pela janela do quadro
+ * (`enviadoNoQuadro`).
  */
 import type { BrowserContext, Frame, Page } from "@playwright/test";
 import { DRIVE_FIXO, PASTA } from "../../tests/drive-fixture.mts";
@@ -69,7 +74,9 @@ main{flex:1;overflow:auto;padding:16px 18px}
 <main id="tela"></main>
 <script>
 const ITENS = __ITENS__;
+const RECURSOS = __RECURSOS__;
 const P = new URLSearchParams(location.search);
+const MODO = P.get("modo");
 const ANF = (location.ancestorOrigins && location.ancestorOrigins[0]) || "*";
 window.__sd = { carregou: Date.now(), recebidos: [], hashes: [] };
 const raiz = document.documentElement;
@@ -91,6 +98,10 @@ function abrir(id){ pasta = achar(id); aba = "drive"; raiz.dataset.pasta = pasta
 function desenhar(){
   for (const b of document.querySelectorAll(".abas button")) b.toggleAttribute("aria-current", b.dataset.aba === aba);
   const tela = document.getElementById("tela");
+  if (aba === "send" && MODO === "enviar") {
+    tela.innerHTML = '<div class="solta"><div><b>Enviar para ' + esc(P.get("nome") || "") + '</b><br><span>Vão direto para o seu Drive, em pedaços, conferidos.</span></div><button type="button">Escolher arquivos</button></div>';
+    return;
+  }
   if (aba === "send") {
     tela.innerHTML = '<div class="solta"><div><b>Solte os arquivos aqui</b><br><span>Vão direto para o seu Drive, em pedaços, conferidos.</span></div><button type="button">Escolher arquivos</button></div><p class="fila">Nada na fila.</p>';
     return;
@@ -116,20 +127,38 @@ function peloHash(){
   return true;
 }
 addEventListener("hashchange", peloHash);
-if (!peloHash()) desenhar();
-avisar("pronto");
+window.__sd.pasta = MODO === "enviar" ? P.get("pasta") : null;
+if (MODO !== "sonda" && !peloHash()) desenhar();
+avisar("pronto", RECURSOS ? { versao: 2, recursos: RECURSOS } : {});
 </script></body></html>`.replace("__ITENS__", () => JSON.stringify(itens));
 
-export async function sobedesceDeMentira(context: BrowserContext, o: { recusar?: boolean } = {}): Promise<{ pedidos: string[] }> {
+export async function sobedesceDeMentira(context: BrowserContext, o: { recusar?: boolean; recursos?: string[] } = {}): Promise<{ pedidos: string[] }> {
   const pedidos: string[] = [];
+  const casca = CASCA.replace("__RECURSOS__", () => JSON.stringify(o.recursos ?? null));
   await context.route(`${SOBEDESCE_FALSO}/**`, (route) => {
     const u = new URL(route.request().url());
     if (u.pathname !== "/app/") return route.fulfill({ status: 404, body: "" });
     pedidos.push(u.search);
     if (o.recusar) return route.fulfill({ status: 404, contentType: "text/html", body: "<!doctype html><title>404</title><h1>404</h1>" });
-    return route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: CASCA });
+    return route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: casca });
   });
   return { pedidos };
+}
+
+/** O SOBEDESCE terminou um arquivo na pasta da entrega (o recado sai da janela do quadro, como no app). */
+export async function enviadoNoQuadro(f: Frame, arquivo: { id: string; nome: string; conferencia: "ok" | "diferente" | "sem" }) {
+  await f.evaluate(
+    (a) =>
+      window.parent.postMessage(
+        {
+          fonte: "sobedesce",
+          tipo: "enviado",
+          arquivo: { ...a, tamanho: 1234, mime: "video/mp4", pasta: (window as unknown as { __sd: { pasta: string } }).__sd.pasta },
+        },
+        location.ancestorOrigins[0],
+      ),
+    arquivo,
+  );
 }
 
 /** O quadro do SOBEDESCE na página (a janela do iframe). */

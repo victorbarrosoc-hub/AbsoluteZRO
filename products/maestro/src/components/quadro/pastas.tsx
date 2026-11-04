@@ -178,6 +178,8 @@ function ConteudoPasta({
             className="pc-colar"
             onSubmit={(e) => {
               e.preventDefault();
+              // a folha mora num portal, mas o React leva o submit até o formulário da ficha
+              e.stopPropagation();
               colar();
             }}
           >

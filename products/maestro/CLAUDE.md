@@ -67,6 +67,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (o `NavegadorDrive` com "Usar esta pasta") e a sugestão do projeto (`GET /api/quadro/pastas?projeto=`, lista a pasta
   ligada pela ponte e acha "02 Bruto"/"05 Entregas"; projeto sem pasta = nenhuma sugestão). Duplicar não leva as pastas.
   Testes: `tests/quadro.test.mts`, `tests/drive-sobedesce.test.mts`, `e2e/quadro-pastas.spec.ts` (`SHOTS_DIR` guarda `pd-*`).
+  **Versões com o SOBEDESCE** (mesma data): "Escolher no Drive" (o `NavegadorDrive`, preenche o link e o nome da
+  versão) e **"Enviar a entrega"** (`components/quadro/entrega.tsx`): o próprio SOBEDESCE num quadro em
+  `?no=maestro&modo=enviar&pasta=<Entrega>` (contrato 2 do modo embutido, `docs/integration-contracts/maestro-sobedesce.md`);
+  o recado `enviado` traz o arquivo e a conferência (`ok` = MD5, `sem`, `diferente`: não vira versão); "Usar como
+  versão" só preenche o campo. O botão só aparece com a pasta Entrega, o SOBEDESCE no plano **e** o recurso `enviar`
+  no `pronto` do SOBEDESCE publicado (`components/arquivos/recursos-sobedesce.ts`: a sonda `?modo=sonda` num quadro
+  escondido, uma vez por aba, 6 h no localStorage; o `pronto` de Arquivos também anota). SOBEDESCE de antes = sem botão.
+  **Ordem do deploy**: o SOBEDESCE com o contrato 2 antes (ou junto) do Maestro.
 - **Achar o job no Quadro** (titular 30/10/2026; `drizzle/0035_capas_do_quadro.sql`, `src/lib/quadro/{selos,capa,
 capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o card mostra **um** selo do link, o
   mais adiantado e só do que o banco registra (`selosDoQuadro`/`selosDesde` como a pessoa: versão mais nova, lote fora

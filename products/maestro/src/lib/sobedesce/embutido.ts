@@ -8,6 +8,10 @@
  * - Recados do quadro (postMessage, só para a origem do Maestro): `pronto`, `envios` (quantos andando) e `pasta` (a
  *   pasta aberta no Drive, para ligar a um projeto). Nunca token.
  * - Recado para o quadro: `{ tipo: 'tema', tema }`, com a origem do SOBEDESCE como destino.
+ * - Contrato 2 (04/11/2026): o `pronto` traz `versao` e `recursos`; sem eles é o SOBEDESCE de antes (versão 1, nada).
+ *   `enviar` = a entrega do card (`?no=maestro&modo=enviar&pasta=<id>&nome=<nome>`, cada arquivo terminado vira
+ *   `enviado`) e `?modo=sonda` só responde o `pronto` (o Maestro pergunta antes de mostrar o botão). Recurso que não veio
+ *   no `pronto`: o botão não aparece (`components/arquivos/recursos-sobedesce.ts`).
  * - O cookie do SOBEDESCE é SameSite=Lax e o SOBEDESCE só se deixa embutir em `https://maestro.absolutezro.com`
  *   (`frame-ancestors`): fora desse endereço o quadro não abre e a aba mostra o aviso com o link.
  *
@@ -21,7 +25,16 @@ export const SOBEDESCE_APP = `${SOBEDESCE_ORIGEM}/app/`;
 
 export type TemaMaestro = "light" | "dark";
 export type PastaAberta = { id: string; nome: string };
-export type Recado = { tipo: "pronto" } | { tipo: "envios"; andando: number } | { tipo: "pasta"; pasta: PastaAberta | null };
+/** O arquivo que o SOBEDESCE terminou de mandar para a pasta da entrega. `ok` só com o MD5 do aparelho igual ao do Drive. */
+export type ArquivoEnviado = { id: string; nome: string; tamanho: number; mime: string; pasta: string; conferencia: "ok" | "diferente" | "sem" };
+export type Recado =
+  | { tipo: "pronto"; versao: number; recursos: string[] }
+  | { tipo: "envios"; andando: number }
+  | { tipo: "pasta"; pasta: PastaAberta | null }
+  | { tipo: "enviado"; arquivo: ArquivoEnviado };
+
+/** Os recursos que o Maestro conhece (o resto que vier é ignorado). */
+export const RECURSOS_CONHECIDOS = ["enviar"] as const;
 
 /** O mesmo formato de id do Drive que o vínculo projeto → pasta aceita (src/lib/sobedesce/arquivos.ts). */
 const ID_DRIVE = /^[A-Za-z0-9_-]{1,200}$/;
@@ -33,6 +46,16 @@ export const temaDoQuadro = (tema: TemaMaestro): "escuro" | "claro" => (tema ===
 export function enderecoDoQuadro(tema: TemaMaestro, pasta?: string | null): string {
   const base = `${SOBEDESCE_APP}?no=maestro&tema=${temaDoQuadro(tema)}`;
   return pasta && ID_DRIVE.test(pasta) ? `${base}#drive/${pasta}` : base;
+}
+
+/** A sonda (contrato 2): só o `pronto` com os recursos, sem abrir o app. */
+export const enderecoDaSonda = () => `${SOBEDESCE_APP}?no=maestro&modo=sonda`;
+
+/** A entrega do card: o app no modo `enviar`, com a pasta de entrega como destino. null = id estranho. */
+export function enderecoParaEnviar(tema: TemaMaestro, pasta: { id: string; nome: string }): string | null {
+  if (!ID_DRIVE.test(pasta.id)) return null;
+  const q = new URLSearchParams({ no: "maestro", modo: "enviar", tema: temaDoQuadro(tema), pasta: pasta.id, nome: pasta.nome.slice(0, 120) });
+  return `${SOBEDESCE_APP}?${q.toString()}`;
 }
 
 /** O mesmo endereço com outra pasta: só o `#` muda (o quadro navega sem recarregar). */
@@ -50,7 +73,29 @@ export function lerRecado(origem: string, dados: unknown): Recado | null {
   if (!dados || typeof dados !== "object" || Array.isArray(dados)) return null;
   const d = dados as Record<string, unknown>;
   if (d.fonte !== "sobedesce") return null;
-  if (d.tipo === "pronto") return { tipo: "pronto" };
+  if (d.tipo === "pronto") {
+    // contrato 1 (sem versão): nenhum recurso novo
+    const versao = typeof d.versao === "number" && Number.isInteger(d.versao) && d.versao >= 1 && d.versao <= 1000 ? d.versao : 1;
+    const recursos = Array.isArray(d.recursos) ? RECURSOS_CONHECIDOS.filter((r) => (d.recursos as unknown[]).includes(r)) : [];
+    return { tipo: "pronto", versao, recursos: versao >= 2 ? [...recursos] : [] };
+  }
+  if (d.tipo === "enviado") {
+    const a = d.arquivo as Record<string, unknown> | null | undefined;
+    if (!a || typeof a !== "object" || Array.isArray(a)) return null;
+    if (typeof a.id !== "string" || !ID_DRIVE.test(a.id) || typeof a.pasta !== "string" || !ID_DRIVE.test(a.pasta)) return null;
+    const nome =
+      typeof a.nome === "string"
+        ? a.nome
+            .replace(/[\u0000-\u001f\u007f]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 200)
+        : "";
+    const conferencia = a.conferencia === "ok" || a.conferencia === "diferente" ? a.conferencia : "sem";
+    const tamanho = typeof a.tamanho === "number" && Number.isFinite(a.tamanho) && a.tamanho >= 0 ? Math.floor(a.tamanho) : 0;
+    const mime = typeof a.mime === "string" ? a.mime.slice(0, 120) : "";
+    return { tipo: "enviado", arquivo: { id: a.id, nome: nome || "Arquivo", tamanho, mime, pasta: a.pasta, conferencia } };
+  }
   if (d.tipo === "envios") {
     const n = d.andando;
     if (typeof n !== "number" || !Number.isFinite(n) || n < 0) return null;

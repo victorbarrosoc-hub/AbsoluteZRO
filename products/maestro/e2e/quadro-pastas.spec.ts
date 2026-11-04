@@ -2,11 +2,15 @@
  * As pastas do Drive no card (titular, 04/11/2026): "Brutos" e "Entrega" na ficha, só com o SOBEDESCE no plano.
  * Colar o link (o errado é recusado, o certo vira o endereço montado do id), escolher pelo navegador do Drive do Maestro
  * (Google de mentira), abrir pelo chip, recarregar e continua; sem o SOBEDESCE, a ficha não tem Drive nenhum.
+ * Nas Versões: "Escolher no Drive" sempre (com o SOBEDESCE no plano) e "Enviar a entrega" só quando o SOBEDESCE
+ * publicado diz que sabe (contrato 2, a sonda); com o SOBEDESCE de antes, o botão não aparece. O envio pelo quadro
+ * do SOBEDESCE de mentira volta como `enviado` e preenche a versão; quem adiciona é a pessoa.
  * Organização do Drive (e2e/preparar.ts). Com SHOTS_DIR, guarda `pd-*`.
  */
 import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { googleDeMentira } from "./falsos/google-drive";
+import { enviadoNoQuadro, sobedesceDeMentira } from "./falsos/sobedesce";
 
 const SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 const SESSAO_SEM = "test-results/e2e-sessao-fluxo.json";
@@ -108,5 +112,76 @@ test.describe("As pastas do Drive no card", () => {
       headers: { Origin: new URL(page.url()).origin },
     });
     expect(r.status()).toBe(403);
+  });
+});
+
+/** Um card com a pasta Entrega já posta (a mesma rota da ficha). */
+async function cardComEntrega(page: Page, tema: string): Promise<string> {
+  const id = await novoCard(page, tema);
+  const r = await page.request.post("/api/quadro", {
+    data: { op: "mudar", id, campos: { pastaEntrega: { id: "pastaEntregaE2E", nome: "05 Entregas" } } },
+    headers: { Origin: new URL(page.url()).origin },
+  });
+  expect(r.ok()).toBe(true);
+  return id;
+}
+
+test.describe("Versões com o SOBEDESCE", () => {
+  // o service worker do SOBEDESCE de verdade assumiria os pedidos que o teste simula
+  test.use({ serviceWorkers: "block" });
+  test.beforeEach(({}, info) => {
+    test.skip(!["computador", "iphone"].includes(info.project.name), "computador e iPhone (Chromium)");
+  });
+
+  test("o SOBEDESCE de antes não sabe enviar: só Escolher no Drive, nada de Enviar a entrega", async ({ page, context, baseURL }, info) => {
+    const sd = await sobedesceDeMentira(context);
+    await entrar(context, baseURL!, SESSAO_DRIVE);
+    await page.goto("/app/quadro");
+    const id = await cardComEntrega(page, `Sem envio ${info.project.name}`);
+    await page.goto(`/app/quadro?card=${id}`);
+    const versoes = page.getByRole("region", { name: "Versões" });
+    await expect(versoes.getByRole("button", { name: "Escolher no Drive" })).toBeVisible();
+    // a sonda perguntou e o quadro escondido já saiu
+    await expect.poll(() => sd.pedidos.some((q) => q.includes("modo=sonda"))).toBe(true);
+    await expect(page.locator('iframe[src*="modo=sonda"]')).toHaveCount(0);
+    await expect(versoes.getByRole("button", { name: "Enviar a entrega" })).toHaveCount(0);
+    await versoes.scrollIntoViewIfNeeded();
+    await foto(page, "versoes-sem-envio", info.project.name);
+  });
+
+  test("o SOBEDESCE que sabe: Enviar a entrega para a pasta do card e usar como versão", async ({ page, context, baseURL }, info) => {
+    const sd = await sobedesceDeMentira(context, { recursos: ["enviar"] });
+    await entrar(context, baseURL!, SESSAO_DRIVE);
+    await page.goto("/app/quadro");
+    const id = await cardComEntrega(page, `Com envio ${info.project.name}`);
+    await page.goto(`/app/quadro?card=${id}`);
+    const versoes = page.getByRole("region", { name: "Versões" });
+    const botao = versoes.getByRole("button", { name: "Enviar a entrega" });
+    await expect(botao).toBeVisible();
+    await versoes.scrollIntoViewIfNeeded();
+    await foto(page, "versoes-com-envio", info.project.name);
+    await botao.click();
+    const folha = page.getByRole("dialog", { name: "Enviar a entrega" });
+    await expect(folha).toBeVisible();
+    const el = await page.waitForSelector("iframe.en__quadro");
+    expect(await el.getAttribute("src")).toContain("modo=enviar");
+    expect(await el.getAttribute("src")).toContain("pasta=pastaEntregaE2E");
+    expect(sd.pedidos.some((q) => q.includes("modo=enviar") && q.includes("nome=05+Entregas"))).toBe(true);
+    const f = (await el.contentFrame())!;
+    await f.waitForFunction(() => !!(window as unknown as { __sd?: unknown }).__sd);
+    await expect(f.getByText("Enviar para 05 Entregas")).toBeVisible();
+    // o que não conferiu não vira versão; o conferido vira
+    await enviadoNoQuadro(f, { id: "arqNaoConferiu", nome: "Final v2.mp4", conferencia: "diferente" });
+    await enviadoNoQuadro(f, { id: "arqFinalE2E01", nome: "Final v3.mp4", conferencia: "ok" });
+    const lista = folha.getByRole("list", { name: "Enviados" });
+    await expect(lista.getByText("Conferido")).toBeVisible();
+    await expect(lista.getByText("Não conferiu")).toBeVisible();
+    await expect(lista.getByRole("button", { name: "Usar como versão" })).toHaveCount(1);
+    await foto(page, "entrega-enviada", info.project.name);
+    await lista.getByRole("button", { name: "Usar como versão" }).click();
+    await expect(folha).toHaveCount(0);
+    await expect(versoes.getByLabel("Link da versão")).toHaveValue("https://drive.google.com/file/d/arqFinalE2E01/view");
+    await versoes.getByRole("button", { name: "Adicionar" }).click();
+    await expect(versoes.locator(".vc__lista")).toContainText("Final v3");
   });
 });

@@ -33,7 +33,11 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   `products/relay/src/drive.js`), em `web/public/app/lib/embutido.js`: só Transferências e Drive, tema do anfitrião,
   recados `pronto`/`envios`/`pasta` só para a origem dele, nunca token. `frame-ancestors` por anfitrião em
   `web/next.config.ts` (o resto do site e do app continua `'none'`). Testes: `test/porta-malas-carro.test.js` e
-  `web/tests/seguranca.test.mts`.
+  `web/tests/seguranca.test.mts`. **Contrato 2** (04/11/2026, `VERSAO_EMBUTIDO`): o `pronto` leva `versao` e `recursos`
+  do anfitrião (Maestro: `enviar`); `?no=maestro&modo=sonda` só responde o `pronto` (nada de conta, tela ou service
+  worker); `?no=maestro&modo=enviar&pasta=<id>&nome=` abre o Início com a pasta Entrega do card de destino e cada
+  arquivo terminado nela vira `enviado` com a conferência (`ok` só com MD5 batendo; `recadoDoEnvio`). Recado novo =
+  versão nova e o recurso na lista (o Maestro esconde o que não veio). Teste: `test/embutido-maestro.test.js`.
 - **O Set da Absolute ZRO** (30/10/2026): "Set" no cabeçalho da área logada do site, ao lado do anel da Z
   (`web/src/components/conta/aba-set.tsx`, em `menu.tsx`), e no topo do app do celular, ao lado da Z
   (`web/public/app/components/set.js` › `SetBotao`; a barra de baixo fica só com a tarefa, no máximo cinco abas),

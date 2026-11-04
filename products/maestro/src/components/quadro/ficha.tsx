@@ -501,7 +501,15 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
       </label>
 
       {card && sobedesce ? <PastasDoCard dados={card.dados} podeEscrever={podeEscrever} sobedesce={sobedesce} por={por} /> : null}
-      {card ? <VersoesDoCard key={card.id} card={card.id} podeEscrever={podeEscrever} /> : null}
+      {card ? (
+        <VersoesDoCard
+          key={card.id}
+          card={card.id}
+          podeEscrever={podeEscrever}
+          sobedesce={sobedesce ?? null}
+          entrega={sobedesce ? (card.dados.pastaEntrega ?? null) : null}
+        />
+      ) : null}
       {card ? <CriacaoDoCard key={`cr-${card.id}`} card={card.id} podeEscrever={podeEscrever} /> : null}
 
       {card && (card.dados.cliente || card.dados.projeto) ? (
