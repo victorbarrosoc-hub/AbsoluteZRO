@@ -1800,3 +1800,31 @@ span.cartao-home:hover {
     0 1px 2px rgb(0 0 0 / 0.6),
     0 0 24px rgb(0 0 0 / 0.7);
 }
+/* o nome na abertura no tamanho de um título de crédito, não de cartaz (titular, 04/11/2026) */
+.home .abertura .abertura-nome {
+  font-size: clamp(26px, 3.4vw, 50px);
+  letter-spacing: 0.26em;
+  margin-right: -0.26em;
+  line-height: 1.1;
+}
+.abertura .hero-sub {
+  margin-top: 18px;
+  font-size: clamp(15px, 1.25vw, 18px);
+}
+.abertura .hero-acoes {
+  margin-top: 28px;
+}
+.home .abertura .abertura-olho {
+  margin-bottom: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+}
+.home .abertura .hero-credito {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+}
+.home .abertura .selo-dev {
+  font-size: 12px;
+}
