@@ -365,3 +365,30 @@ test('sem sessão: o estado diz semLogin (a bandeja oferece Entrar)', async () =
   central.semLogin = true
   assert.equal(agenda.estado().semLogin, true)
 })
+
+test('Atualizar com o app aberto: a página vê o download e o fim ("agendado"), ou o erro; o segundo plano segue mudo', async () => {
+  const apps = {
+    sobedesce: { nome: 'SOBEDESCE', instalada: '0.3.3', nova: '0.3.4', aberto: true },
+    relay: { nome: 'Relay', instalada: '1.0.0', nova: '1.1.0', aberto: true, falhaDownload: true },
+  }
+  const { agenda, central } = montar(apps, { atualizarSozinho: () => false })
+  const pagina = []
+  const opcoes = []
+  central.avisar = (id, fase, extra = {}) => pagina.push({ id, fase, ...extra })
+  const prebaixar = central.prebaixar
+  central.prebaixar = async (id, o) => (opcoes.push([id, o]), prebaixar(id))
+  await agenda.conferir()
+  assert.deepEqual(pagina, [], 'conferir sozinho não fala com a página')
+  assert.deepEqual(await agenda.atualizar('sobedesce'), { fase: 'ao-fechar', versao: '0.3.4' })
+  assert.deepEqual(opcoes.at(-1), ['sobedesce', { progresso: true }], 'o download pedido pela pessoa mostra o progresso')
+  assert.deepEqual(pagina.at(-1), { id: 'sobedesce', fase: 'agendado', versao: '0.3.4' })
+  assert.deepEqual(await agenda.atualizar('relay'), { fase: 'erro', versao: '1.1.0', erro: 'Não deu para baixar agora. Tente de novo.' })
+  assert.deepEqual(pagina.at(-1), { id: 'relay', fase: 'erro', mensagem: 'Não deu para baixar agora. Tente de novo.' })
+
+  // "Atualizar sozinho" ligado (segundo plano): baixa sem progresso e sem recado para a página
+  const outro = montar({ maestro: { nome: 'Maestro', instalada: '0.2.0', nova: '0.3.0', aberto: true } })
+  const recados = []
+  outro.central.avisar = (...a) => recados.push(a)
+  await outro.agenda.conferir()
+  assert.deepEqual(recados, [])
+})

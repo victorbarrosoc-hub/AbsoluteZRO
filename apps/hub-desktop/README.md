@@ -153,6 +153,15 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.2: "Atualizar" com o app aberto mostra o que está fazendo
+
+- **Bug (relato do titular, 04/11/2026):** com o SOBEDESCE aberto, "Atualizar" (no cartão ou em "Atualizar tudo")
+  baixava a versão nova em segundo plano sem avisar a página: nada de progresso, o cartão continuava em "0.3.4
+  disponível", um novo toque era ignorado (o app já estava `baixando`) e o fim ("atualiza ao fechar") nunca chegava à
+  página. Agora, quando a pessoa pede, o download mostra o progresso no cartão (`prebaixar(id, { progresso: true })`)
+  e, no fim, a página recebe `agendado` (o cartão vira "Atualiza ao fechar" com "Reiniciar e atualizar") ou `erro` com
+  a mensagem. O segundo plano ("Atualizar sozinho") continua sem falar com a página.
+
 ## 1.4.1: troca do app já instalado e "Manter no Dock"
 
 - **Bug do Mac (1.4.0):** atualizar ou instalar por cima de um app que já estava em Aplicativos dava "Não deu para

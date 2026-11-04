@@ -552,10 +552,11 @@ class Central {
   }
 
   /**
-   * Segundo plano: baixa e confere a versão nova sem instalar e sem avisar a página (a agenda instala quando a
-   * ferramenta estiver fechada). Devolve { versao, build }.
+   * Segundo plano: baixa e confere a versão nova sem instalar (a agenda instala quando a ferramenta estiver fechada).
+   * `progresso`: a pessoa pediu (Atualizar com o app aberto): a página mostra o download, como no instalar.
+   * Devolve { versao, build }.
    */
-  async prebaixar(id) {
+  async prebaixar(id, { progresso = false } = {}) {
     if (!this.catalogo) await this.carregarCatalogo()
     const app = this.appDoPlano(id)
     const arquivo = arquivoPara(app, this.d.plataforma, this.d.arch)
@@ -564,7 +565,7 @@ class Central {
     const controle = new globalThis.AbortController()
     this.emAndamento.set(id, controle)
     try {
-      await this.garantirArquivo(app, arquivo, controle, false)
+      await this.garantirArquivo(app, arquivo, controle, progresso)
       return { versao: arquivo.versao, build: arquivo.build }
     } catch (e) {
       if (e instanceof ErroCentral) throw e
