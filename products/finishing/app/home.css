@@ -1168,3 +1168,21 @@ span.cartao-home:hover {
     gap: 12px;
   }
 }
+
+/* o nome da marca como título, numa linha só (titular, 04/11/2026): REVELA fina, FILM pesada */
+.home .hero--filme .hero-nome {
+  font-size: clamp(42px, 10.5vw, 168px);
+  font-weight: 200;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hero-nome b {
+  font-weight: 800;
+}
+.hero--filme .hero-sub {
+  max-width: none;
+  margin-top: 22px;
+  font-size: clamp(17px, 1.7vw, 22px);
+  letter-spacing: 0.01em;
+}
