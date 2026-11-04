@@ -961,7 +961,7 @@ test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desli
   await dock.getByRole('link', { name: 'CST' }).click()
   await pagina.waitForURL(/cst\.html$/)
   await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
-  assert.equal(await pagina.title(), 'Revela · Espaço de cor')
+  assert.equal(await pagina.title(), 'REVELAFILM · Espaço de cor')
   assert.equal(await pagina.evaluate(() => window.semRecarregar), true, 'a página recarregou')
   assert.equal(await pagina.locator('#menu').getAttribute('data-mesmo'), '1', 'o menu foi refeito')
   assert.equal(await pagina.locator('main').count(), 1)
@@ -1008,7 +1008,7 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
   for (const f of ['index.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
     const html = readFileSync(join(RAIZ, f), 'utf8')
-    for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
+    for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="REVELAFILM"', 'black-translucent'])
       assert.ok(html.includes(marca), `${f}: ${marca}`)
   }
 
