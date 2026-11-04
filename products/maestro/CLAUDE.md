@@ -68,7 +68,14 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   (o poll leva); rotas `POST|DELETE /api/quadro/capa?card=` (quem escreve no Quadro) e `GET /api/quadro/capa/<card>/<sha>`
   (cache privado imutável). Vídeo vira quadro no navegador. A imagem do card não recebe o ponteiro (o clique abre o
   card) e tem a proporção reservada (carregar não mexe no layout do arrasto). No computador "Mover para…" e o próximo
-  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. Busca: título, briefing, cliente e código do
+  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. O próximo passo tem a linha dele embaixo do prazo e
+  do responsável (titular 03/11/2026: solto no canto ele cobria as informações; no computador o lugar fica guardado).
+  Ficha do card: **Duplicar** (`dadosDaCopia` em `metodo.ts`: mesma coluna, logo depois, "(cópia)", campos principais,
+  nada de versão, comentário, capa ou tempo; só quem escreve; abre a ficha da cópia) e **Copiar link** (`linkDoCard`:
+  `/app/quadro?card=<id>`, interno; quem não alcança o card pelo RLS vê só o Quadro; nunca link público). O código do
+  projeto (`MAE-AAAA-NNN`) tem a dica no `title` (`dicaDoCodigo`, `src/lib/crm/codigo.ts`); o prefixo é fixo (nasce em
+  `proximoCodigo` e no aceite do orçamento em SQL, `drizzle/0012`). Testes: `tests/quadro.test.mts`,
+  `e2e/quadro-card.spec.ts` (`SHOTS_DIR` guarda `qc-*`). Busca: título, briefing, cliente e código do
   projeto, com realce (`pedacosDoRealce`), contagem e "Nada com …"; "/" foca a busca.
 - **Cronômetro de tarefas e tempo por tipo de vídeo** (titular 31/10/2026, inspirado no Ritto; `drizzle/0038_cronometro.sql`,
   puro em `src/lib/tempo/{calculo,tipos}.ts`, banco em `servidor.ts`, rota `/api/tempo` em `rota.ts`, tela em
@@ -462,8 +469,18 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   mexe na vista). Desfazer guarda volta e refazer (criar desfaz com lápide e refaz com restaurar). Apagar seção leva o
   que mora nela; apagar nó leva as ligações. A vista fica por aparelho em `localStorage`. No celular (≤ 900 px) o topo
   do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
-  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
-  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
+  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). **Prints do iPhone (titular
+  03/11/2026)**: o tamanho do nó fica sempre no estilo (nunca `""`: sem largura a nota encolhia até uma letra por linha
+  e a seta, pelo tamanho guardado, terminava no vazio); o segundo dedo (pinça) desfaz o que o primeiro começou
+  (`largar`); a nota tem mínimo `TAMANHO_MINIMO` (120 × 48; a mais estreita do banco é desenhada assim, `comTamanhoMinimo`,
+  e grava o mínimo ao editar), quebra por palavra e cresce para baixo com o texto (`fx-cresceu`, até `NOTA_ALTURA_MAX`,
+  altura gravada com o texto); depois de cada desenho sem gesto o canvas reescreve ligações e tamanhos pelas caixas; no
+  toque o texto que se digita tem 16 px (o Safari não amplia), o canvas e a página nunca rolam (volta a zero) e a nota
+  em edição vai para entre o cabeçalho e o teclado (`vistaParaEditar` + `visualViewport`); o canvas é uma camada só
+  (`isolation`) e o que flutua (zoom, desfazer, voltar, •••, Canvas/Lista) é vidro quase opaco. No computador ⌥ + roda,
+  ⌘/Ctrl + roda e a pinça do trackpad aproximam em volta do ponteiro (`zoomDaRoda`, um passo por evento, 10–400%). Testes:
+  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, `e2e/fluxo-celular.spec.ts` (iPhone Chromium e WebKit +
+  computador; `SHOTS_DIR` guarda `fxc-*`), telas no `sem-corte.spec.ts`.
 - **Criação · Fluxo, exportar e compartilhar** (fase F6; decisão do titular: privado por padrão; `drizzle/0032_fluxo_links.sql`,
   `src/lib/criacao/fluxo/{compartilhar,link,link-rota,pacote}.ts`, `src/lib/zip.ts`, tela em
   `components/criacao/fluxo/{exportar,imprimir}.tsx` + `fluxo-exportar.css`): menu **Exportar** (popover no computador,

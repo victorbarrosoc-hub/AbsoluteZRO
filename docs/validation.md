@@ -15,6 +15,28 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026)
+
+- Antes do código, o e2e novo reproduziu os prints contra o build da `main`: nota com uma letra por linha, seta
+  terminando no vazio depois de tocar na alça, pílula do zoom/desfazer deixando a imagem aparecer (escuro).
+- `e2e/fluxo-celular.spec.ts` (iPhone Chromium e WebKit + computador): nota estreita do banco desenhada com 120 px e
+  texto em no máximo 3 linhas; seta saindo e chegando na borda do que está desenhado; o toque no zoom é do zoom, pílula
+  com fundo ≥ 85% e canvas com `isolation`; tocar na alça sem arrastar e a pinça que começa nela não tiram a largura
+  nem soltam a seta; editar: campo de 16 px, a nota cresce com o texto, o que o Safari rolar volta a 0, a altura nova
+  fica depois de recarregar; ⌥ + rolagem e Ctrl + roda aproximam com o nó parado sob o ponteiro, sem tecla só anda,
+  limites 10% e 400%. **7/7.**
+- `e2e/quadro-card.spec.ts` (computador e iPhone): o próximo passo não cruza nenhuma informação do card; Copiar link
+  (`/app/quadro?card=`), Duplicar (mesma coluna, campos iguais, sem capa), o link abre a ficha, leitura copia e não
+  duplica, outra organização abre só o Quadro. **4/4.**
+- Também verdes: `quadro`, `quadro-achar`, `criacao-fluxo`, `criacao-exportar`, `celular`, `sem-corte`, `visual`,
+  `arrastar`, `gestos`, `colunas`, `cronometro` (iPhone Chromium/WebKit e computador). Uma rodada caiu por disco cheio da
+  máquina (ENOSPC, outras sessões); repetida sem trace, passou.
+- Unitários: `fluxo-tela.test.mts` (mínimo da nota, `zoomDaRoda`, `vistaParaEditar`) e `quadro.test.mts`
+  (`dadosDaCopia`, `linkDoCard`, `dicaDoCodigo`, a cópia pela rota, leitura 403, outra organização não vê) dentro de
+  245/245 em 21 arquivos (Quadro, Fluxo, Criação, demonstração, RLS, acessos, lançamento, migrador). A suíte inteira
+  não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
+- Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo

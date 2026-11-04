@@ -6,6 +6,7 @@ import { obterProjeto } from "@/lib/crm/projetos";
 import { podeEscrever, podeRemover } from "@/lib/papeis";
 import { CabecaForm, Formulario, Remover } from "@/components/form";
 import { removerProjetoAcao, salvarProjeto } from "../../acoes";
+import { dicaDoCodigo } from "@/lib/crm/codigo";
 
 export const metadata = { title: "Editar projeto" };
 
@@ -20,7 +21,9 @@ export default async function EditarProjeto({ params }: PageProps<"/app/projetos
   return (
     <div className="pagina pagina--estreita">
       <CabecaForm voltar={`/app/projetos/${id}`} titulo={<strong>{p.titulo}</strong>}>
-        <p className="apoio">{p.codigo}</p>
+        <p className="apoio" title={dicaDoCodigo(p.codigo)}>
+          {p.codigo}
+        </p>
       </CabecaForm>
       <Formulario
         acao={salvarProjeto}

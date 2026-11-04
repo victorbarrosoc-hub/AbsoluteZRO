@@ -152,3 +152,65 @@ export function lugarLivre(p: Ponto, w: number, h: number, ocupados: readonly Ca
   }
   return { x: x0, y: y0 };
 }
+
+/**
+ * O menor tamanho de cada tipo no canvas (alça de tamanho). A nota tem largura de nota (titular, 03/11/2026: no iPhone
+ * ela ficou estreita e mostrava uma letra por linha): a que chegar mais estreita do banco é desenhada com o mínimo, e
+ * a ligação encosta no que está desenhado.
+ */
+export const TAMANHO_MINIMO = {
+  nota: { w: 120, h: 48 },
+  imagem: { w: 80, h: 80 },
+  link: { w: 160, h: 96 },
+  roteiro: { w: 160, h: 56 },
+  card: { w: 160, h: 56 },
+  secao: { w: 160, h: 120 },
+} as const;
+/** Até onde a nota cresce sozinha com o texto (depois ela rola por dentro). */
+export const NOTA_ALTURA_MAX = 640;
+
+/** O nó como o canvas desenha: a nota nunca abaixo do mínimo (o mesmo objeto quando já cabe). */
+export function comTamanhoMinimo<T extends Caixa & { tipo: string }>(n: T): T {
+  if (n.tipo !== "nota") return n;
+  const m = TAMANHO_MINIMO.nota;
+  return n.w >= m.w && n.h >= m.h ? n : { ...n, w: Math.max(n.w, m.w), h: Math.max(n.h, m.h) };
+}
+
+/**
+ * O fator de zoom de um evento de roda, ou null quando a roda só anda: ⌘/Ctrl + roda, a pinça do trackpad (chega como
+ * roda com Ctrl) e ⌥ + rolagem de dois dedos (titular, 03/11/2026) aproximam. Cada evento vale no máximo um passo
+ * (a roda do mouse manda 100+ de uma vez); `zoomEm` segura os limites.
+ */
+export function zoomDaRoda(e: { deltaX: number; deltaY: number; deltaMode: number; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): number | null {
+  if (!(e.ctrlKey || e.metaKey || e.altKey)) return null;
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  // com ⌥ (ou ⇧) alguns sistemas mandam a rolagem de lado: vale o eixo que veio
+  const d = (e.deltaY || e.deltaX) * k;
+  return Math.exp(-Math.max(-60, Math.min(60, d)) * 0.0075);
+}
+
+/**
+ * A vista que deixa o nó em edição à vista no celular, entre o cabeçalho (`topo`) e o teclado (`baixo`, o fim da área
+ * visível): perto demais do zero aproxima até ler (sem passar de 100% nem da largura da tela), e anda só o que precisa.
+ * Devolve null quando já está bom.
+ */
+export function vistaParaEditar(v: Vista, n: Caixa, tela: { w: number; topo: number; baixo: number }, margem = 16): Vista | null {
+  let z = v.z;
+  if (z < 0.75) z = Math.min(1, Math.max(v.z, (tela.w - margem * 2) / Math.max(1, n.w)));
+  let x = v.x;
+  let y = v.y;
+  if (z !== v.z) {
+    // aproximou: o nó fica onde estava o meio dele
+    const cx = n.x + n.w / 2;
+    const cy = n.y + n.h / 2;
+    x = v.x + cx * v.z - cx * z;
+    y = v.y + cy * v.z - cy * z;
+  }
+  const esq = n.x * z + x;
+  const dir = esq + n.w * z;
+  if (esq < margem || dir > tela.w - margem) x += n.w * z <= tela.w - margem * 2 ? (tela.w - n.w * z) / 2 - esq : margem - esq;
+  const cima = n.y * z + y;
+  const alto = Math.min(n.h * z, 160);
+  if (cima < tela.topo + margem || cima + alto > tela.baixo - margem) y += tela.topo + margem - cima;
+  return x === v.x && y === v.y && z === v.z ? null : { x, y, z };
+}

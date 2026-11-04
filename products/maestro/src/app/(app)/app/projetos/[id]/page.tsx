@@ -27,6 +27,7 @@ import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 import { listarRoteiros, NOME_ESTADO_ROTEIRO } from "@/lib/criacao/roteiro/servidor";
 import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
 import { STATUS_DO_ESTADO } from "@/components/criacao/roteiro/comum";
+import { dicaDoCodigo } from "@/lib/crm/codigo";
 
 export const metadata = { title: "Projeto" };
 
@@ -61,7 +62,9 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
         <Icone nome="voltar" size={16} /> Projetos
       </Link>
       <header className="perfil">
-        <span className="codigo codigo--grande">{p.codigo}</span>
+        <span className="codigo codigo--grande" title={dicaDoCodigo(p.codigo)}>
+          {p.codigo}
+        </span>
         <div className="perfil__miolo">
           <h1 className="atitle">
             <strong>{p.titulo}</strong>

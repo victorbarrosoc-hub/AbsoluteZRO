@@ -10,7 +10,8 @@ const { zro } = amb;
 const rotas = await import("../src/lib/zro/rotas");
 const { getQuadro, postQuadro } = await import("../src/lib/quadro/rota");
 const { criarCliente } = await import("../src/lib/crm/clientes");
-const { proximoPasso, ordemEntre, passaFiltro, FILTRO_VAZIO } = await import("../src/lib/quadro/metodo");
+const { proximoPasso, ordemEntre, passaFiltro, FILTRO_VAZIO, dadosDaCopia, linkDoCard, LIMITE_TEMA } = await import("../src/lib/quadro/metodo");
+const { dicaDoCodigo } = await import("../src/lib/crm/codigo");
 
 const ORG_A = { id: UUID(), name: "Produtora A", role: "owner" };
 const ORG_B = { id: UUID(), name: "Produtora B", role: "owner" };
@@ -147,6 +148,26 @@ describe("rota do Quadro", () => {
     const r = await gravar(lia, { op: "criar", id: "cardQ0001", dados: { tema: "outro" } });
     assert.equal(r.status, 409);
   });
+
+  test("duplicar (titular, 03/11/2026): a cópia passa pela mesma rota, leva os campos e nada do histórico; leitura não duplica", async () => {
+    const original = (await (await ler(lia)).json()).cards.find((c: { id: string }) => c.id === "cardQ0001");
+    assert.ok(original);
+    const copia = dadosDaCopia(original.dados, null);
+    const r = await gravar(rui, { op: "criar", id: "cardQ0001c", dados: copia });
+    assert.equal(r.status, 200);
+    const { card } = await r.json();
+    assert.equal(card.dados.tema, `${original.dados.tema} (cópia)`);
+    for (const k of ["coluna", "cliente", "resp", "prazo", "prioridade"]) assert.deepEqual(card.dados[k], original.dados[k], k);
+    assert.ok(card.dados.ordem > (original.dados.ordem ?? 0), "logo depois do original");
+    assert.equal(card.dados.criadoPor, RUI.sub, "quem duplicou é quem criou a cópia");
+    assert.equal(card.dados.capa, undefined);
+    assert.equal(card.versao, 1, "nasce sem histórico");
+    // quem só lê não duplica; outra organização não vê nem o original nem a cópia (o link do card não abre nada lá)
+    assert.equal((await gravar(vic, { op: "criar", id: "cardV0002", dados: copia })).status, 403);
+    const deB = await (await ler(bia)).json();
+    assert.ok(!deB.cards.some((c: { id: string }) => c.id === "cardQ0001" || c.id === "cardQ0001c"));
+    assert.equal((await gravar(lia, { op: "apagar", id: "cardQ0001c" })).status, 200);
+  });
 });
 
 describe("método", () => {
@@ -156,6 +177,54 @@ describe("método", () => {
     assert.equal(proximoPasso({ coluna: "aprovacao" })?.outro?.rotulo, "Pediu ajuste");
     assert.equal(proximoPasso({ coluna: "entregue" }), null);
   });
+  test("a cópia do card: título com (cópia) dentro do limite, campos principais, entre o original e o seguinte", () => {
+    const d = {
+      tema: "Teaser",
+      coluna: "fazendo" as const,
+      ordem: 2,
+      cliente: "k1",
+      projeto: "p1",
+      resp: "eu",
+      prazo: "2026-11-10",
+      prioridade: "alta" as const,
+      briefing: "Luz da manhã.",
+      tipo: "reels",
+      previsto: 120,
+      capa: { sha: "a".repeat(64), l: 960, a: 540 },
+      criadoEm: 1,
+      criadoPor: "outra",
+      colunaEm: 1,
+    };
+    const c = dadosDaCopia(d, { ordem: 3 });
+    assert.deepEqual(c, {
+      tema: "Teaser (cópia)",
+      coluna: "fazendo",
+      ordem: 2.5,
+      cliente: "k1",
+      projeto: "p1",
+      resp: "eu",
+      prazo: "2026-11-10",
+      prioridade: "alta",
+      briefing: "Luz da manhã.",
+      tipo: "reels",
+      previsto: 120,
+    });
+    assert.equal(dadosDaCopia(d).ordem, 3, "último da coluna: logo depois");
+    const longo = dadosDaCopia({ tema: "x".repeat(LIMITE_TEMA), coluna: "pauta" });
+    assert.equal(longo.tema.length, LIMITE_TEMA);
+    assert.ok(longo.tema.endsWith(" (cópia)"));
+    assert.deepEqual(Object.keys(dadosDaCopia({ tema: "a", coluna: "pauta", briefing: "" })).sort(), ["coluna", "ordem", "tema"]);
+  });
+
+  test("o link do card é interno (o Quadro com a ficha); a dica do código do projeto", () => {
+    assert.equal(linkDoCard("https://maestro.absolutezro.com/", "c1x_y-2"), "https://maestro.absolutezro.com/app/quadro?card=c1x_y-2");
+    assert.equal(linkDoCard("http://localhost:3217", "a b"), "http://localhost:3217/app/quadro?card=a%20b");
+    assert.equal(dicaDoCodigo("MAE-2026-001"), "Código do projeto: MAE (Maestro) + ano 2026 + nº 1 do ano");
+    assert.equal(dicaDoCodigo("MAE-2026-0123"), "Código do projeto: MAE (Maestro) + ano 2026 + nº 123 do ano");
+    assert.equal(dicaDoCodigo("ABC-1"), "Código do projeto");
+    assert.equal(dicaDoCodigo(null), "Código do projeto");
+  });
+
   test("ordem entre vizinhos e filtros", () => {
     assert.equal(ordemEntre({ ordem: 1 }, { ordem: 2 }), 1.5);
     assert.equal(ordemEntre(null, { ordem: 2 }), 1);

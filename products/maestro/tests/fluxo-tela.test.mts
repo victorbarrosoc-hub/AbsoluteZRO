@@ -6,12 +6,16 @@ import { describe, test } from "node:test";
 import {
   caixaDe,
   caminhoLigacao,
+  comTamanhoMinimo,
   enquadrar,
   intersecta,
   mundoParaTela,
   retangulo,
   secaoNoPonto,
+  TAMANHO_MINIMO,
   telaParaMundo,
+  vistaParaEditar,
+  zoomDaRoda,
   zoomEm,
   ZOOM_MAX,
   ZOOM_MIN,
@@ -128,6 +132,62 @@ describe("canvas: vista, zoom e enquadrar", () => {
     // puxando até um ponto (a ligação ainda sem destino)
     const puxando = caminhoLigacao(a, { x: 300, y: 200 });
     assert.deepEqual(puxando.fim, { x: 300, y: 200 });
+  });
+
+  test("a nota nunca é desenhada estreita (titular, 03/11/2026) e a ligação encosta no que está desenhado", () => {
+    const estreita = { id: "n", tipo: "nota", x: 30, y: 230, w: 28, h: 30 };
+    const n = comTamanhoMinimo(estreita);
+    assert.deepEqual([n.w, n.h], [TAMANHO_MINIMO.nota.w, TAMANHO_MINIMO.nota.h]);
+    assert.equal(n.x, 30);
+    assert.equal(estreita.w, 28, "não muda o objeto de quem chamou");
+    const boa = { id: "b", tipo: "nota", x: 0, y: 0, w: 200, h: 120 };
+    assert.equal(comTamanhoMinimo(boa), boa, "a que já cabe é o mesmo objeto (o canvas não redesenha)");
+    const img = { id: "i", tipo: "imagem", x: 0, y: 0, w: 40, h: 40 };
+    assert.equal(comTamanhoMinimo(img), img, "só a nota");
+    // a seta sai da borda direita da nota desenhada (120 de largura), não da guardada (28)
+    const c = caminhoLigacao(n, { x: 400, y: 230, w: 100, h: 50 });
+    assert.match(c.d, /^M150 /);
+  });
+
+  test("⌥ + rolagem, ⌘/Ctrl + roda e a pinça do trackpad aproximam; sem tecla a roda anda", () => {
+    const roda = (o: Partial<{ deltaX: number; deltaY: number; deltaMode: number; ctrlKey: boolean; metaKey: boolean; altKey: boolean }>) =>
+      zoomDaRoda({ deltaX: 0, deltaY: 0, deltaMode: 0, ctrlKey: false, metaKey: false, altKey: false, ...o });
+    assert.equal(roda({ deltaY: 40 }), null);
+    assert.ok(roda({ deltaY: -40, altKey: true })! > 1, "⌥ + dois dedos para cima aproxima");
+    assert.ok(roda({ deltaY: 40, altKey: true })! < 1, "para baixo afasta");
+    assert.ok(roda({ deltaY: -3, ctrlKey: true })! > 1, "a pinça (Ctrl + roda, passos pequenos)");
+    assert.ok(roda({ deltaY: -3, metaKey: true })! > 1);
+    assert.ok(roda({ deltaX: -40, altKey: true })! > 1, "com ⌥ a rolagem pode chegar de lado");
+    // um passo por evento: a roda do mouse (120 de uma vez, ou em linhas) não pula do 10% ao 400%
+    assert.equal(roda({ deltaY: -120, altKey: true }), roda({ deltaY: -60, altKey: true }));
+    assert.equal(roda({ deltaY: -4, deltaMode: 1, altKey: true }), roda({ deltaY: -60, altKey: true }));
+    // os limites ficam com o zoomEm
+    let v = { x: 0, y: 0, z: 1 };
+    for (let i = 0; i < 100; i++) v = zoomEm(v, v.z * roda({ deltaY: -120, altKey: true })!, { x: 50, y: 50 });
+    assert.equal(v.z, ZOOM_MAX);
+    for (let i = 0; i < 200; i++) v = zoomEm(v, v.z * roda({ deltaY: 120, altKey: true })!, { x: 50, y: 50 });
+    assert.equal(v.z, ZOOM_MIN);
+  });
+
+  test("editar no celular leva a nota para entre o cabeçalho e o teclado, aproximando só se precisar", () => {
+    const tela = { w: 393, topo: 110, baixo: 480 };
+    const nota = { x: 100, y: 900, w: 200, h: 120 };
+    // a 100% e já à vista: nada muda
+    assert.equal(vistaParaEditar({ x: 0, y: -700, z: 1 }, nota, tela), null);
+    // atrás do teclado: sobe até logo abaixo do cabeçalho, sem mudar o zoom
+    const v = vistaParaEditar({ x: 0, y: 0, z: 1 }, nota, tela)!;
+    assert.equal(v.z, 1);
+    assert.equal(nota.y * v.z + v.y, tela.topo + 16);
+    // longe demais para ler (30%): aproxima até 100% e centra de lado
+    const perto = vistaParaEditar({ x: 0, y: 0, z: 0.3 }, nota, tela)!;
+    assert.equal(perto.z, 1);
+    const esq = nota.x * perto.z + perto.x;
+    assert.ok(Math.abs(esq - (tela.w - nota.w) / 2) < 1e-6);
+    const cima = nota.y * perto.z + perto.y;
+    assert.ok(cima >= tela.topo + 16 && cima + nota.h <= tela.baixo - 16, "entre o cabeçalho e o teclado");
+    // nota mais larga que a tela: aproxima só até caber
+    const larga = vistaParaEditar({ x: 0, y: 0, z: 0.3 }, { x: 0, y: 0, w: 800, h: 100 }, tela)!;
+    assert.ok(larga.z < 0.5 && larga.z > 0.3);
   });
 });
 

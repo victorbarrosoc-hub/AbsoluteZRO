@@ -11,6 +11,7 @@ import type { DadosImagem, DadosLink, DadosNota, DadosSecao, NoFluxo, RefResolvi
 import { LIMITES } from "@/lib/criacao/fluxo/modelo";
 import { Icone } from "@/components/icones";
 import { LEGENDA_PX } from "./colar";
+import { NOTA_ALTURA_MAX } from "./geometria";
 
 /** O campo em edição: o texto da nota, a legenda, o título do link, o nome da seção. */
 export type Campo = "texto" | "legenda" | "titulo" | "nome";
@@ -35,8 +36,8 @@ type Props = {
   podeEditar: boolean;
   /** Zoom atual grande o bastante para pedir a imagem inteira (e não a miniatura). */
   grande: boolean;
-  /** Fim da edição: `valor` novo (null = desistiu). */
-  aoSalvar: (id: string, campo: Campo, valor: string | null) => void;
+  /** Fim da edição: `valor` novo (null = desistiu) e, na nota, o tamanho com que ela ficou (cresce com o texto). */
+  aoSalvar: (id: string, campo: Campo, valor: string | null, tamanho?: { w: number; h: number }) => void;
 };
 
 /** Campo de uma linha que grava ao sair ou com Enter (Esc desiste). */
@@ -80,20 +81,45 @@ function CampoLinha({
   );
 }
 
-function TextoNota({ valor, aoFim }: { valor: string; aoFim: (v: string | null) => void }) {
+/**
+ * O texto da nota em edição. A nota cresce para baixo com o texto (até `NOTA_ALTURA_MAX`; depois rola por dentro),
+ * mexendo só na altura do nó no DOM e avisando o canvas (`fx-cresceu`) para as ligações seguirem; a altura nova vai
+ * junto com o texto ao gravar. Desistir devolve a altura de antes.
+ */
+function TextoNota({ id, valor, altura, aoFim }: { id: string; valor: string; altura: number; aoFim: (v: string | null, h: number) => void }) {
   const [v, setV] = useState(valor);
   const feito = useRef(false);
   const ta = useRef<HTMLTextAreaElement>(null);
+  const h = useRef(altura);
+  const crescer = () => {
+    const el = ta.current;
+    const no = el?.closest<HTMLElement>("[data-no]");
+    if (!el || !no) return;
+    // scrollHeight é medido sem o zoom do canvas (o transform fica no plano): é a altura no mundo
+    const precisa = Math.min(NOTA_ALTURA_MAX, Math.ceil(el.scrollHeight));
+    if (precisa <= h.current) return;
+    h.current = precisa;
+    no.style.height = `${precisa}px`;
+    no.dispatchEvent(new CustomEvent("fx-cresceu", { bubbles: true, detail: { id, h: precisa } }));
+  };
   useEffect(() => {
     const el = ta.current;
     if (!el) return;
     el.focus({ preventScroll: true });
     el.setSelectionRange(el.value.length, el.value.length);
+    crescer();
+    // só ao abrir o campo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const fim = (x: string | null) => {
     if (feito.current) return;
     feito.current = true;
-    aoFim(x);
+    if (x === null && h.current !== altura) {
+      const no = ta.current?.closest<HTMLElement>("[data-no]");
+      if (no) no.style.height = `${altura}px`;
+      no?.dispatchEvent(new CustomEvent("fx-cresceu", { bubbles: true, detail: { id, h: altura } }));
+    }
+    aoFim(x, x === null ? altura : h.current);
   };
   return (
     <textarea
@@ -103,7 +129,10 @@ function TextoNota({ valor, aoFim }: { valor: string; aoFim: (v: string | null) 
       maxLength={LIMITES.nota}
       aria-label="Texto da nota"
       placeholder="Escreva…"
-      onChange={(e) => setV(e.target.value)}
+      onChange={(e) => {
+        setV(e.target.value);
+        crescer();
+      }}
       onBlur={() => fim(v)}
       onKeyDown={(e) => {
         e.stopPropagation();
@@ -208,7 +237,7 @@ function NoBase({ no, ref_, selecionado, sozinho, editando, podeEditar, grande, 
       rotulo = `Nota: ${d.texto.slice(0, 80) || "vazia"}`;
       corpo =
         editando === "texto" ? (
-          <TextoNota valor={d.texto} aoFim={salvar("texto")} />
+          <TextoNota id={no.id} valor={d.texto} altura={no.h} aoFim={(v, h) => aoSalvar(no.id, "texto", v, { w: no.w, h })} />
         ) : (
           <p className="fx-nota__texto" data-vazio={!d.texto || undefined}>
             {d.texto || (podeEditar ? "Escreva…" : "")}

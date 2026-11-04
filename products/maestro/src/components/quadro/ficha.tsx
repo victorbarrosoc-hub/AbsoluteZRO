@@ -33,6 +33,7 @@ import { CapaDaFicha } from "./capa";
 import type { Selo } from "@/lib/quadro/selos";
 import { CriacaoDoCard } from "@/components/criacao/do-card";
 import { TempoDaFicha } from "@/components/tempo/do-card";
+import { dicaDoCodigo } from "@/lib/crm/codigo";
 
 type Props = {
   card: CardQ | null;
@@ -46,6 +47,10 @@ type Props = {
   mudar: (id: string, campos: Partial<Record<CampoEditavel, unknown>>) => Promise<boolean>;
   criar: (dados: Partial<DadosCard> & { tema: string }) => Promise<string | null>;
   apagar: (id: string) => void;
+  /** Cópia do card na mesma coluna (só quem escreve). */
+  duplicar: (id: string) => void;
+  /** Copia o link interno do card (todos que veem o card). */
+  copiarLink: (id: string) => void;
   fechar: () => void;
   /** O card nasceu: o Quadro o leva da folha até a coluna (a origem é o título da folha). */
   aoCriar: (id: string, origem: DOMRect | null, coluna: ColunaId) => void;
@@ -201,7 +206,7 @@ export function Ficha(props: Props) {
   );
 }
 
-function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, aoCriar, selo, adotar }: Props) {
+function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, duplicar, copiarLink, aoCriar, selo, adotar }: Props) {
   const fechar = useFecharFolha();
   const idBase = useId();
   const caixa = useRef<HTMLFormElement>(null);
@@ -503,7 +508,7 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
             </Link>
           ) : null}
           {card.dados.projeto ? (
-            <Link href={`/app/projetos/${card.dados.projeto}`}>
+            <Link href={`/app/projetos/${card.dados.projeto}`} title={dicaDoCodigo(projetoAtual?.codigo)}>
               <Icone nome="projetos" size={14} /> {projetoAtual?.codigo ?? "Projeto"}
             </Link>
           ) : null}
@@ -512,13 +517,37 @@ function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar
 
       <div className="q-ficha__fim">
         {card ? (
-          podeEscrever ? (
-            <button type="button" className="q-perigo" onClick={() => apagar(card.id)}>
-              <Icone nome="lixo" size={16} /> Apagar
+          <>
+            {podeEscrever ? (
+              <button type="button" className="q-perigo" onClick={() => apagar(card.id)}>
+                <Icone nome="lixo" size={16} /> Apagar
+              </button>
+            ) : (
+              <span className="sutil">Só leitura</span>
+            )}
+            <button
+              type="button"
+              className="glass-btn glass-btn--sm q-ficha__acao"
+              onClick={() => copiarLink(card.id)}
+              aria-label="Copiar link"
+              title="Link do card para quem tem acesso ao Maestro"
+            >
+              <Icone nome="link" size={15} />
+              <span>Copiar link</span>
             </button>
-          ) : (
-            <span className="sutil">Só leitura</span>
-          )
+            {podeEscrever ? (
+              <button
+                type="button"
+                className="glass-btn glass-btn--sm q-ficha__acao"
+                onClick={() => duplicar(card.id)}
+                aria-label="Duplicar"
+                title="Mesma coluna, sem versões nem comentários"
+              >
+                <Icone nome="copiar" size={15} />
+                <span>Duplicar</span>
+              </button>
+            ) : null}
+          </>
         ) : (
           <>
             <span className="q-ficha__dica" aria-hidden="true">

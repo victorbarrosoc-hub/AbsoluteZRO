@@ -1,6 +1,36 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 04/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026, ramo `maestro-fluxo-melhorias`)
+
+Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o projeto do Maestro muda.
+
+- ✅ Nota com uma letra por linha: tocar na alça de tamanho sem arrastar (ou a pinça que começava nela) apagava a
+  largura do estilo do nó; sem largura a nota encolhia até a menor palavra e a seta, desenhada pelo tamanho guardado,
+  terminava no vazio. O tamanho agora fica sempre no estilo, o segundo dedo desfaz o que o primeiro começou, a nota tem
+  mínimo de 120 × 48 (a mais estreita do banco é desenhada com o mínimo), quebra por palavra e cresce para baixo com o
+  texto (altura gravada junto).
+- ✅ Seta presa ao nó: depois de cada desenho sem gesto o canvas reescreve ligações e tamanhos pelo que está guardado; a
+  nota que cresce leva as ligações junto.
+- ✅ Editar com o teclado: texto de 16 px no toque (o Safari não amplia a página), o canvas e a página nunca rolam e a
+  nota em edição vai para a área entre o cabeçalho e o teclado (`visualViewport`), aproximando se estiver longe demais.
+- ✅ Controles sempre por cima: o canvas é uma camada só e zoom, desfazer/refazer, voltar, ••• e Canvas/Lista viram
+  vidro quase opaco (no escuro a pílula tinha 7% e a imagem aparecia através).
+- ✅ Computador: ⌥ + rolagem de dois dedos e a pinça do trackpad aproximam em volta do ponteiro (10%–400%).
+- ✅ Quadro: o próximo passo ("Mandar para revisão") tem a linha dele embaixo do prazo e do responsável; no computador
+  segue só no gesto, com o lugar guardado (não cobre nada nem muda o tamanho do card).
+- ✅ Ficha do card: **Duplicar** (mesma coluna, logo depois, "(cópia)", campos principais; sem versões, comentários,
+  capa nem tempo; só quem escreve) e **Copiar link** (`/app/quadro?card=<id>`, interno; quem não alcança o card vê só o
+  Quadro; nada de link público).
+- ✅ Código do projeto com dica no `title`: "MAE (Maestro) + ano + nº do ano".
+- ⬜ Prefixo do código por organização: pede migração que refaça a função do aceite do orçamento (`drizzle/0012`, que
+  também gera `MAE-`), o campo em Ajustes → Empresa e a regra da numeração do ano. Aguarda decisão do titular.
+- ⬜ Conferir no iPhone de verdade (Safari e app na Tela de Início) a nota em edição com o teclado aberto.
+- ⬜ Fase 2, só avaliada (sem código): pastas do Drive no card (bruto e destino), Versões escolhendo/subindo pelo
+  SOBEDESCE, checklist pessoal flutuante no computador e o link do fluxo com permissão (só ver, comentar sem cadastro,
+  editar).
+- Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 

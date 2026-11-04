@@ -11,29 +11,11 @@ import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone, type NomeIcone } from "@/components/icones";
 import type { CardEscolha } from "./folhas";
 
-const ENDERECO = "/api/criacao/fluxo/links";
+import { copiarTexto } from "@/components/copiar";
 
-/** Copia texto (a API do navegador; sem ela, o jeito antigo). */
-export async function copiarTexto(t: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(t);
-    return true;
-  } catch {
-    try {
-      const a = document.createElement("textarea");
-      a.value = t;
-      a.setAttribute("readonly", "");
-      a.style.cssText = "position:fixed;top:0;left:0;opacity:0";
-      document.body.appendChild(a);
-      a.select();
-      const ok = document.execCommand("copy");
-      a.remove();
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
+export { copiarTexto };
+
+const ENDERECO = "/api/criacao/fluxo/links";
 
 /** Baixa um texto como arquivo (o JSON do fluxo). */
 export function baixarTexto(nome: string, texto: string, tipo: string) {

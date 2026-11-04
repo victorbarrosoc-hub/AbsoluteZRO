@@ -505,7 +505,7 @@ export function Fluxo(props: Props) {
   );
 
   const salvarCampo = useCallback(
-    (id: string, campo: Campo, valor: string | null) => {
+    (id: string, campo: Campo, valor: string | null, tamanho?: { w: number; h: number }) => {
       setEditando(null);
       marcarEditando(null);
       const n = estadoRef.current.nos[id];
@@ -519,8 +519,16 @@ export function Fluxo(props: Props) {
         fazer({ ops: [{ op: "apagar_no", id }] });
         return;
       }
-      if (valor === antes) return;
-      fazer({ ops: [{ op: "mudar_no", id, dados: { [campo]: valor } }], volta: [{ op: "mudar_no", id, dados: { [campo]: antes } }] });
+      // a nota guarda o tamanho com que foi desenhada e editada (cresceu com o texto; a estreita ganha o mínimo)
+      const w = tamanho && Math.round(tamanho.w) !== n.w ? Math.round(tamanho.w) : undefined;
+      const h = tamanho && Math.round(tamanho.h) !== n.h ? Math.round(tamanho.h) : undefined;
+      if (valor === antes && w === undefined && h === undefined) return;
+      const tam = { ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}) };
+      const tamAntes = { ...(w !== undefined ? { w: n.w } : {}), ...(h !== undefined ? { h: n.h } : {}) };
+      fazer({
+        ops: [{ op: "mudar_no", id, ...(valor !== antes ? { dados: { [campo]: valor } } : {}), ...tam }],
+        volta: [{ op: "mudar_no", id, ...(valor !== antes ? { dados: { [campo]: antes } } : {}), ...tamAntes }],
+      });
     },
     [estadoRef, fazer, marcarEditando],
   );

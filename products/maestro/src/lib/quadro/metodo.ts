@@ -172,6 +172,31 @@ export function ordemEntre(a: { ordem?: number } | null, b: { ordem?: number } |
   return 1;
 }
 
+/* ───────────── duplicar e o link do card (titular, 03/11/2026) ───────────── */
+
+const SUFIXO_COPIA = " (cópia)";
+
+/**
+ * O que a cópia de um card leva: os campos principais (título com "(cópia)", coluna, cliente, projeto, responsável,
+ * prazo, prioridade, briefing, tipo e previsto), logo depois do original na mesma coluna (`depois` = o card seguinte,
+ * se houver). Nada do histórico: versões, comentários, capa, tempo e quem criou ficam no original.
+ */
+export function dadosDaCopia(d: DadosCard, depois: { ordem?: number } | null = null): Partial<DadosCard> & { tema: string } {
+  const base = d.tema.length + SUFIXO_COPIA.length > LIMITE_TEMA ? d.tema.slice(0, LIMITE_TEMA - SUFIXO_COPIA.length).trimEnd() : d.tema;
+  const copia: Partial<DadosCard> & { tema: string } = { tema: `${base}${SUFIXO_COPIA}`, coluna: d.coluna, ordem: ordemEntre(d, depois) };
+  for (const k of ["cliente", "projeto", "resp", "prazo", "prioridade", "briefing", "tipo", "previsto"] as const) {
+    const v = d[k];
+    if (v !== undefined && v !== null && v !== "") (copia as Record<string, unknown>)[k] = v;
+  }
+  return copia;
+}
+
+/**
+ * O link interno do card: abre o Quadro com a ficha dele, para quem entra no Maestro e alcança o card (o RLS decide;
+ * quem não alcança vê só o Quadro). Não é link público e não abre nada sem a conta.
+ */
+export const linkDoCard = (origem: string, id: string) => `${origem.replace(/\/+$/, "")}/app/quadro?card=${encodeURIComponent(id)}`;
+
 /** Entregue não tem ordem manual: o mais recente fica em cima (arrastar para lá entra no topo). */
 export const ordemPorChegada = (k: ColunaId) => k === "entregue";
 
