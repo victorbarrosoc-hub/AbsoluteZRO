@@ -67,14 +67,14 @@
 
     <main>
       <!-- The art of revelation (titular, 04/11/2026): a home abre como um filme e, rolando, revela a tecnologia.
-           Abertura em cinemascope com o nome; o frame (S-Log3 de verdade, da ZRO Filmes) se revela na película. As
-           imagens são do próprio motor (scripts/home-revelacoes.mjs). Nada aqui leva a uma ferramenta: a Revela segue
+           Abertura em cinemascope com o nome; o frame (footage do Coverr, licença comercial sem atribuição) se revela na
+           película. As imagens são do próprio motor (scripts/home-revelacoes.mjs). Nada aqui leva a uma ferramenta: a Revela segue
            fechada; as ações são âncoras e a entrada. -->
       <section class="hero hero--filme abertura" aria-labelledby="hero-titulo">
         <div class="revelacao" aria-hidden="true">
           <picture class="revelacao-log">
-            <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/topo-cel-log.jpg" width="780" height="1688" />
-            <img src="marca/home/log-terraco.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+            <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/topo-cel-orig.jpg" width="780" height="1688" />
+            <img src="marca/home/orig-carro.jpg" alt="" width="1600" height="900" fetchpriority="high" />
           </picture>
           <picture class="revelacao-filme">
             <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/topo-cel-250d-2383.jpg" width="780" height="1688" />
@@ -92,7 +92,7 @@
           </div>
         </div>
         <p class="hero-credito" aria-hidden="true">
-          <span class="credito-log">Sony S-Log3 · S-Gamut3.Cine</span><span class="credito-filme">Kodak Vision3 250D · cópia 2383</span>
+          <span class="credito-log">Original · Rec.709</span><span class="credito-filme">Kodak Vision3 250D · cópia 2383</span>
         </p>
         <div class="hero-pe surge" style="--d: 4">
           <p class="z-selo selo-dev"><i aria-hidden="true"></i>Em desenvolvimento</p>
@@ -101,16 +101,16 @@
 
       <section class="sec cap sec-log" id="comparar" aria-labelledby="log-titulo" data-atm="500t-2383">
         <p class="cap-olho revela-ao-rolar"><span>01</span>The transformation</p>
-        <h2 id="log-titulo" class="revela-ao-rolar">Do log<br /><span class="fino">à película.</span></h2>
-        <p class="apoio revela-ao-rolar">Arraste. O mesmo frame da câmera, revelado em cada negativo e cada cópia.</p>
-        <figure class="comparar revela-ao-rolar" aria-label="O mesmo frame em S-Log3 e revelado na película">
-          <img class="antes" src="marca/home/log-vinho.jpg" alt="" width="1600" height="900" loading="lazy" />
+        <h2 id="log-titulo" class="revela-ao-rolar">Do frame<br /><span class="fino">à película.</span></h2>
+        <p class="apoio revela-ao-rolar">Arraste. O mesmo frame, revelado em cada negativo e cada cópia.</p>
+        <figure class="comparar revela-ao-rolar" aria-label="O mesmo frame no original e revelado na película">
+          <img class="antes" src="marca/home/orig-casamento.jpg" alt="" width="1600" height="900" loading="lazy" />
           <img class="depois" id="revDepois" src="marca/home/rev-500t-2383.jpg" alt="" width="1600" height="900" loading="lazy" />
           <span class="linha" aria-hidden="true"></span>
-          <span class="rotulo-home rotulo-home--antes">S-Log3</span>
+          <span class="rotulo-home rotulo-home--antes">Original</span>
           <span class="rotulo-home rotulo-home--depois" id="revRotulo">Vision3 500T · 2383</span>
           <span class="arraste" aria-hidden="true">Arraste</span>
-          <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
+          <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar original e cor final" />
         </figure>
         <div class="pelis revela-ao-rolar" role="radiogroup" aria-label="Película revelada">
           <button type="button" role="radio" aria-checked="true" data-rev="500t-2383">Vision3 500T<small>cópia 2383</small></button>
@@ -137,62 +137,62 @@
         <p class="apoio revela-ao-rolar">Cada curva e cada camada de cor vêm da ficha técnica do fabricante. Role, e o frame se revela.</p>
         <div class="stocks" role="list" aria-label="Os negativos do REVELAFILM, copiados na 2383">
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 0">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-5219.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption>
               <small>Kodak · 5219</small><b>Vision3 500T</b><span>Tungstênio</span><em>O negativo da noite do cinema: latitude enorme, grão presente.</em>
             </figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 1">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-5213.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption><small>Kodak · 5213</small><b>Vision3 200T</b><span>Tungstênio</span><em>Tungstênio mais fino: o 500T com menos grão.</em></figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 2">
-            <img class="stock-log" src="marca/home/log-terraco-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-campo-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-5207.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption><small>Kodak · 5207</small><b>Vision3 250D</b><span>Luz do dia</span><em>O negativo do dia: cor limpa, pele natural.</em></figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 3">
-            <img class="stock-log" src="marca/home/log-terraco-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-campo-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-5203.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption>
               <small>Kodak · 5203</small><b>Vision3 50D</b><span>Luz do dia</span><em>Grão quase invisível e um pouco mais de contraste.</em>
             </figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 4">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8573.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption>
               <small>Fujifilm · 8573</small><b>Eterna 500</b><span>Tungstênio</span><em>O tungstênio da Fuji: azul mais firme, verde mais frio.</em>
             </figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 0">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8583.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption>
               <small>Fujifilm · 8583</small><b>Eterna 400</b><span>Tungstênio</span><em>O mais suave de todos: contraste baixo, cor contida.</em>
             </figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 1">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8553.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption><small>Fujifilm · 8553</small><b>Eterna 250</b><span>Tungstênio</span><em>Eterna de tungstênio em velocidade média.</em></figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 2">
-            <img class="stock-log" src="marca/home/log-terraco-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-campo-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8563.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption>
               <small>Fujifilm · 8563</small><b>Eterna 250D</b><span>Luz do dia</span><em>O dia da Fuji: sombra mais fria, meio-tom leve.</em>
             </figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 3">
-            <img class="stock-log" src="marca/home/log-vinho-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-jantar-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8543.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption><small>Fujifilm · 8543</small><b>Eterna Vivid 160</b><span>Tungstênio</span><em>A Eterna com mais cor e contraste.</em></figcaption>
           </figure>
           <figure class="stock revela-ao-rolar" role="listitem" style="--d: 4">
-            <img class="stock-log" src="marca/home/log-terraco-alto.jpg" alt="" width="720" height="900" loading="lazy" />
+            <img class="stock-log" src="marca/home/orig-campo-alto.jpg" alt="" width="720" height="900" loading="lazy" />
             <img class="stock-filme" src="marca/home/neg-8592.jpg" alt="" width="720" height="900" loading="lazy" />
             <figcaption><small>Fujifilm · 8592</small><b>Reala 500D</b><span>Luz do dia</span><em>Dia rápido da Fuji: cor fiel em luz mista.</em></figcaption>
           </figure>

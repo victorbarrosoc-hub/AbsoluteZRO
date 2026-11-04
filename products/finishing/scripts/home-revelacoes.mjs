@@ -1,7 +1,9 @@
-// REVELAFILM · imagens da página inicial: frames de verdade em S-Log3 / S-Gamut3.Cine (marca/home/log-*.jpg, da ZRO
-// Filmes, enviados pelo titular) revelados em cada película pelo próprio motor, com a textura dela (grão de 35 mm e
-// halation). O "antes" que a página mostra é o próprio log da câmera.
-// Uso: node scripts/home-revelacoes.mjs  (precisa do ffmpeg para ler e gravar JPEG; os arquivos entram no repositório).
+// REVELAFILM · imagens da página inicial: frames de footage cinematográfico do Coverr (licença do Coverr: uso comercial,
+// edição e cor liberados, sem atribuição; nada gerado por IA), um por assunto: carro, casamento, comida, natureza e moda.
+// Os originais estão em marca/home/orig-*.jpg (Rec.709, como vieram) e entram no motor pela entrada de still já tratado
+// (a tela inversa leva o frame de volta à luz da cena); cada um é revelado na película com a textura dela (grão de 35 mm e
+// halation). O "antes" que a página mostra é o original.
+// Uso: node scripts/home-revelacoes.mjs [nome]  (só os trabalhos com esse nome, como topo-cel; precisa do ffmpeg para ler e gravar JPEG; os arquivos entram no repositório).
 
 import { execFileSync } from 'node:child_process'
 import { criarLab, paraCena } from '../src/cor/lab.js'
@@ -17,7 +19,7 @@ const gravar = (buf, w, h, arq) =>
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${w}x${h}`, '-i', '-', '-q:v', '3', raiz + arq], { input: buf })
 
 function cenaDe(raw, n) {
-  const cena = paraCena('sony-slog3-cine')
+  const cena = paraCena('still')
   const img = new Float32Array(n * 3)
   for (let i = 0; i < n; i++) {
     const c = cena(raw[i * 3] / 255, raw[i * 3 + 1] / 255, raw[i * 3 + 2] / 255)
@@ -40,12 +42,12 @@ function revelar(img, n, w, h, receita, negativo) {
 }
 
 const TRABALHOS = [
-  // o topo: o terraço, de dia, revelado em 250D na 2383 (e o recorte em pé para o celular)
-  { fonte: 'marca/home/log-terraco.jpg', w: 1600, h: 900, nome: 'topo', looks: [['250d-2383', '5207']] },
-  { fonte: 'marca/home/log-terraco.jpg', filtro: 'crop=416:900:540:0', w: 780, h: 1688, nome: 'topo-cel', log: true, looks: [['250d-2383', '5207']] },
-  // a revelação: a taça, à noite, em cinco películas
+  // o topo: o carro antigo contra o sol, revelado em 250D na 2383 (e o recorte em pé para o celular)
+  { fonte: 'marca/home/orig-carro.jpg', w: 1600, h: 900, nome: 'topo', looks: [['250d-2383', '5207']] },
+  { fonte: 'marca/home/orig-carro.jpg', filtro: 'crop=499:1080:640:0', w: 780, h: 1688, nome: 'topo-cel', original: true, looks: [['250d-2383', '5207']] },
+  // a revelação: o casal na golden hour, em cinco películas
   {
-    fonte: 'marca/home/log-vinho.jpg',
+    fonte: 'marca/home/orig-casamento.jpg',
     w: 1600,
     h: 900,
     nome: 'rev',
@@ -57,13 +59,13 @@ const TRABALHOS = [
       ['500t-scan', '5219'],
     ],
   },
-  // as películas: uma cena para cada
-  { fonte: 'marca/home/log-vinho.jpg', w: 1200, h: 900, filtro: 'crop=1200:900:300:0', nome: 'filme', looks: [['500t-2383', '5219']] },
-  { fonte: 'marca/home/log-terraco.jpg', w: 1200, h: 900, filtro: 'crop=1200:900:200:0', nome: 'filme', looks: [['250d-2383', '5207']] },
-  { fonte: 'marca/home/log-cafe.jpg', w: 1200, h: 900, filtro: 'crop=1200:900:100:0', nome: 'filme', looks: [['eterna500-3513', '8573']] },
-  // one frame, different stories: o café em seis películas
+  // as películas: uma cena para cada (o jantar à lareira, o campo, a praia)
+  { fonte: 'marca/home/orig-jantar.jpg', w: 1200, h: 900, filtro: 'crop=1440:1080:0:0', nome: 'filme', looks: [['500t-2383', '5219']] },
+  { fonte: 'marca/home/orig-campo.jpg', w: 1200, h: 900, filtro: 'crop=1440:1080:300:0', nome: 'filme', looks: [['250d-2383', '5207']] },
+  { fonte: 'marca/home/orig-praia.jpg', w: 1200, h: 900, filtro: 'crop=1440:1080:240:0', nome: 'filme', looks: [['eterna500-3513', '8573']] },
+  // one frame, different stories: o retrato em seis películas
   {
-    fonte: 'marca/home/log-cafe.jpg',
+    fonte: 'marca/home/orig-retrato.jpg',
     w: 960,
     h: 540,
     nome: 'hist',
@@ -76,7 +78,9 @@ const TRABALHOS = [
       ['500t-scan', '5219'],
     ],
   },
-  // o catálogo: cada negativo copiado na 2383; os de tungstênio na taça (noite), os de dia no terraço
+  // o catálogo: cada negativo copiado na 2383; os de tungstênio no jantar (lareira), os de dia no campo
+  { fonte: 'marca/home/orig-jantar.jpg', w: 720, h: 900, filtro: 'crop=864:1080:250:0', nome: 'orig-jantar-alto', so: true },
+  { fonte: 'marca/home/orig-campo.jpg', w: 720, h: 900, filtro: 'crop=864:1080:790:0', nome: 'orig-campo-alto', so: true },
   ...[
     ['5219', 'T'],
     ['5213', 'T'],
@@ -89,18 +93,23 @@ const TRABALHOS = [
     ['8543', 'T'],
     ['8592', 'D'],
   ].map(([id, luz]) => ({
-    fonte: luz === 'T' ? 'marca/home/log-vinho.jpg' : 'marca/home/log-terraco.jpg',
+    fonte: luz === 'T' ? 'marca/home/orig-jantar.jpg' : 'marca/home/orig-campo.jpg',
     w: 720,
     h: 900,
-    filtro: luz === 'T' ? 'crop=720:900:480:0' : 'crop=720:900:560:0',
+    filtro: luz === 'T' ? 'crop=864:1080:250:0' : 'crop=864:1080:790:0',
     nome: 'neg',
     looks: [[`copia-2383:${id}`, id]],
   })),
 ]
 for (const t of TRABALHOS) {
+  if (process.argv[2] && t.nome !== process.argv[2]) continue
   const n = t.w * t.h
+  if (t.so) {
+    gravar(ler(t.fonte, t.w, t.h, t.filtro), t.w, t.h, `marca/home/${t.nome}.jpg`)
+    continue
+  }
   const img = cenaDe(ler(t.fonte, t.w, t.h, t.filtro), n)
-  if (t.log) gravar(ler(t.fonte, t.w, t.h, t.filtro), t.w, t.h, `marca/home/${t.nome}-log.jpg`)
+  if (t.original) gravar(ler(t.fonte, t.w, t.h, t.filtro), t.w, t.h, `marca/home/${t.nome}-orig.jpg`)
   for (const [base, negativo] of t.looks) {
     const [b, neg] = base.split(':')
     const arq = `marca/home/${t.nome}-${neg ?? b}.jpg`

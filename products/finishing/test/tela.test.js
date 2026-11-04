@@ -618,7 +618,7 @@ test('página inicial fechada ao público: a comparação segue, "Explorar looks
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco)
-  await pagina.getByRole('slider', { name: 'Comparar log e cor final' }).fill('25')
+  await pagina.getByRole('slider', { name: 'Comparar original e cor final' }).fill('25')
   assert.equal(await pagina.locator('.comparar').evaluate((n) => [n.classList.contains('manual'), n.style.getPropertyValue('--corte')].join()), 'true,25%')
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
   const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))

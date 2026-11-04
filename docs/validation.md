@@ -5102,3 +5102,20 @@ renderizada e os frames dele ficam fora do repositório e do site.
 - Material de teste: footage oficial da ARRI (ALEXA 35, Mini LF, Mini) e da DJI, só nos testes internos. Os frames do
   titular não foram usados no desenvolvimento (pedido dele).
 - Imagens da página inicial e OG refeitas com o motor novo (mesmos frames da ZRO Filmes).
+
+## REVELAFILM: página inicial com footage do Coverr (04/11/2026)
+
+Pedido do titular: tirar os frames dele da home e usar imagens da internet, cinematográficas e vendáveis, de moda, comida,
+carro, natureza e casamento (referência de linguagem: Filmsupply, Filmverse).
+
+- Fonte: Coverr (licença do site: uso comercial, edição e cor liberados, sem atribuição; os itens premium, os com marca
+  d'água e os gerados por IA ficaram de fora). O Mixkit foi olhado e não entrou (material com mais cara de banco de
+  imagem). Unsplash e Pexels recusam acesso automatizado; Filmsupply é pago; os pacotes da Sony e da ARRI não liberam uso
+  comercial; footage em log com licença comercial não foi encontrado.
+- Seis planos (1920×1080, em `marca/home/orig-*.jpg`): carro antigo contra o sol (topo), casal na golden hour (a
+  transformação), jantar à lareira (negativos de tungstênio e 500T), campo vermelho (negativos de luz do dia e 250D),
+  mulher na praia (Eterna 500) e retrato com argola (um frame, seis histórias).
+- Os originais vêm em Rec.709: entram no motor pela entrada de still já tratado. A home diz isso: o "antes" é o
+  "Original · Rec.709" e o título da transformação virou "Do frame à película" (antes "Do log", que valia para o S-Log3).
+- Os frames da ZRO Filmes saíram do repositório (`marca/home/log-*.jpg`); o print do painel foi refeito com um frame do
+  Coverr.
