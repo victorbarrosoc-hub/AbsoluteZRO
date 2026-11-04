@@ -5062,6 +5062,6 @@ SOBEDESCE de computador, que disparam os instaladores).
   (acende a que está à vista e leva até ela), Film library à esquerda, a imagem no centro, a revelação à direita por
   etapa; no computador cada coluna rola sozinha e a imagem fica parada; no celular, imagem, biblioteca e etapas em
   sequência. Sala sempre escura; ação principal (Baixar LUT) e etapa atual em vermelho cinematográfico.
-- Fontes servidas pelo próprio site (CSP 'self'): Inter (variável) e Instrument Serif, OFL, com as licenças em fontes/.
+- Fontes servidas pelo próprio site (CSP 'self'): Inter (variável), OFL, com a licença em fontes/ (sem serifada, pedido do titular).
 - Todos os IDs e papéis do Lab ficaram; `npm test` da Revela 191/191 (com as telas em Chromium).
 - A integração AEON ↔ REVELAFILM é direção de produto: não existe ainda (o AEON segue fechado pelo gate).

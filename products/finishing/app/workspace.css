@@ -1,6 +1,6 @@
 /* REVELAFILM · workspace (titular, 04/11/2026): Cinematic Image Development. A identidade da ferramenta, por cima da
    linguagem da família: base preto-carvão, superfícies grafite, texto marfim, vermelho cinematográfico na identidade e
-   âmbar suave de apoio; Inter no texto e Instrument Serif em itálico como voz editorial. O software fica discreto para a
+   âmbar suave de apoio; só a Inter, sem serifada (titular, 04/11/2026). O software fica discreto para a
    imagem dominar. Quatro áreas como numa sala de cor: biblioteca à esquerda, a imagem no centro, a revelação à
    direita e as etapas em cima (01 Source → 05 Output). Fontes servidas daqui (a CSP só aceita 'self'). OFL. */
 
@@ -24,19 +24,6 @@
     U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
     U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
-@font-face {
-  font-family: 'Instrument Serif RF';
-  font-style: normal;
-  font-display: swap;
-  src: url('../fontes/instrument-serif-latin-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Instrument Serif RF';
-  font-style: italic;
-  font-display: swap;
-  src: url('../fontes/instrument-serif-latin-italic.woff2') format('woff2');
-}
-
 /* a sala de cor é escura nos dois temas: a imagem é avaliada contra o carvão */
 body.rf {
   --rf-carvao: #0e0d0c;
@@ -79,17 +66,15 @@ body.rf .sobretitulo {
   font-size: 12px;
   font-weight: 600;
 }
-body.rf .sobretitulo em,
-body.rf .ws-cat {
-  font-family: 'Instrument Serif RF', Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-}
 body.rf .sobretitulo em {
-  font-size: 18px;
+  font-style: normal;
   color: var(--rf-marfim);
+}
+body.rf .ws-cat {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 /* ─────────── o workspace ─────────── */
@@ -121,7 +106,6 @@ body.rf .tela-lab:has(.workspace:not([hidden])) {
 }
 .ws-cat {
   color: var(--rf-mudo);
-  font-size: 17px;
   white-space: nowrap;
 }
 .ws-barra .nome-look {
