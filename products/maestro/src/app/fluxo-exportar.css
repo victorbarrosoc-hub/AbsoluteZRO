@@ -354,3 +354,189 @@
     object-fit: contain;
   }
 }
+
+/* O link "Ver e comentar" (components/criacao/fluxo/comentar-link.tsx) e os comentários no editor
+   (comentarios-equipe.tsx), prefixo fxc-. */
+.fxc-no {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: -2px 0 6px;
+  padding-left: 14px;
+}
+.fxc-abrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fxc-abrir:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.fxc-abrir:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.fxc-lista {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fxc-lista > li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.fxc-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.fxc-quem,
+.fxc-texto {
+  margin: 0;
+}
+.fxc-quem {
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+.fxc-quem time {
+  margin-left: 4px;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.fxc-texto {
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 0.94rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fxc-escrever {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 560px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+.fxc-nome input,
+.fxc-campo textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+.fxc-nome input:focus,
+.fxc-campo textarea:focus {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 0 2px var(--focus);
+}
+.fxc-como {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-faint);
+}
+.fxc-como b {
+  color: var(--text-strong);
+}
+.fxc-como button {
+  margin-left: 2px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-faint);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.fxc-erro {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--danger-text);
+}
+.fxc-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.fxc-acoes--esq {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+.fxc-do-fluxo {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.fxc-geral {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+.fxc-geral h2 {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.fxc-equipe .fxc-lista {
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .fx-privado.fxc-botao {
+    display: inline-flex;
+  }
+}
+@media (max-width: 600px) {
+  .fxc-nome input,
+  .fxc-campo textarea {
+    font-size: 16px;
+  }
+}
+@media print {
+  .fxc-abrir,
+  .fxc-escrever {
+    display: none;
+  }
+}

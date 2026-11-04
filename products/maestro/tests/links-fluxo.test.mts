@@ -149,7 +149,7 @@ describe("exportar: o puro", () => {
     assert.ok(cp.ehTokenFluxo(token) && !cp.ehTokenFluxo(`${token}.md`) && !cp.ehTokenFluxo("x"));
     assert.equal(cp.caminhoImagemPeloLink(token, { id: "i1", sha256: "s" }), `/f/${token}/i/i1/s.webp`);
     assert.equal(cp.enderecoDoLink("https://m.exemplo/", token), `https://m.exemplo/f/${token}`);
-    const base = { url: "u", visitas: 0, vistoEm: null };
+    const base = { url: "u", visitas: 0, vistoEm: null, permissao: "ver" as const };
     const links = [
       { ...base, id: "a", token: "ta", temPin: false, expira: "2026-11-01T00:00:00Z", criadoEm: "2026-10-20T00:00:00Z" },
       { ...base, id: "b", token: "tb", temPin: true, expira: "2026-11-01T00:00:00Z", criadoEm: "2026-10-28T00:00:00Z" },
@@ -539,5 +539,258 @@ describe("rotas da equipe", () => {
     assert.equal(z.get(nomeImg)!.subarray(8, 12).toString(), "WEBP");
     const [b] = (await getBanco().sql`select encode(sha256(webp), 'hex') as h from maestro.fluxo_imagens where id = ${img.id}`) as { h: string }[];
     assert.equal(b.h, img.sha256);
+  });
+});
+
+// ───────────── permissão do link e comentários (drizzle/0039) ─────────────
+
+describe("permissão do link: Só ver, Ver e comentar, Editar", () => {
+  let f2: string;
+  const N2 = { secao: UUID(), nota: UUID(), imagem: UUID() };
+  const NOS_B = { nota: UUID() };
+  const criar = async (permissao?: string, pin?: string) => ok(await lk.criarLinkFluxo(ctx.gil, f2, { permissao, pin })).link;
+  const comentar = (token: string, corpo: Record<string, unknown>, o: { ip?: string; cookies?: { get(n: string): string | undefined } } = {}) =>
+    lk.comentarPeloLink(token, o.cookies ?? sem(), o.ip ?? ip(), { idem: `idem${Math.random().toString(36).slice(2, 12)}`, ...corpo });
+
+  before(async () => {
+    f2 = ok(await fx.criarFluxo(ctx.rui, { titulo: "Teaser do verão" })).id;
+    ok(
+      await fx.aplicarOps(
+        ctx.rui,
+        f2,
+        opsDe([
+          { op: "criar_no", id: N2.secao, tipo: "secao", x: 0, y: 0, w: 640, h: 400, z: 1, dados: { nome: "Abertura", cor: "pessego" } },
+          { op: "criar_no", id: N2.nota, tipo: "nota", x: 20, y: 60, w: 200, h: 120, z: 2, secaoId: N2.secao, dados: { texto: "Abre no rosto." } },
+        ]),
+      ),
+    );
+    ok(
+      await fx.aplicarOps(ctx.bia, fluxoB, opsDe([{ op: "criar_no", id: NOS_B.nota, tipo: "nota", x: 0, y: 0, w: 200, h: 120, z: 1, dados: { texto: "B" } }])),
+    );
+  });
+
+  test("o puro: permissão, nome e texto limpos", () => {
+    assert.deepEqual(
+      [undefined, null, "", "ver", "comentar", "editar", "admin", 1].map((v) => cp.permissaoDoLink(v)),
+      ["ver", "ver", "ver", "ver", "comentar", "editar", null, null],
+    );
+    assert.equal(cp.nomeDoComentario("  Ana \u200b  Souza\n "), "Ana Souza");
+    assert.equal(cp.nomeDoComentario("\u0000\u202e"), null);
+    assert.equal(cp.nomeDoComentario("x".repeat(80))?.length, 60);
+    assert.equal(cp.nomeDoComentario(12), null);
+    assert.equal(cp.textoDoComentario("  Gostei\r\n\r\n\r\n\r\nda luz\u0007  "), "Gostei\n\nda luz");
+    assert.equal(cp.textoDoComentario("x".repeat(1001)), null, "maior não corta: recusa");
+    assert.equal(cp.textoDoComentario("   \n "), null);
+    assert.equal(cp.textoDoComentario("<script>alert(1)</script>"), "<script>alert(1)</script>", "o texto sai como texto (React escapa)");
+  });
+
+  test("no banco: padrão ver; escolhida ao criar; inválida recusada; não muda depois; auditada", async () => {
+    const v = await criar();
+    assert.equal(v.permissao, "ver");
+    const c = await criar("comentar");
+    assert.equal(c.permissao, "comentar");
+    const e = ok(await lk.criarLinkFluxo(ctx.lia, f2, { permissao: "editar" })).link;
+    assert.equal(e.permissao, "editar");
+    assert.equal((await lk.criarLinkFluxo(ctx.gil, f2, { permissao: "dono" })).ok, false);
+    assert.ok((await lk.listarLinksFluxo(ctx.gil, f2)).some((l) => l.id === c.id && l.permissao === "comentar"));
+    // maestro_app só muda revogado_em: a permissão é fixa
+    const err = await erroDe(getBanco().asUser(ctx.lia, (tx) => tx.execute(sql`update maestro.fluxo_links set permissao = 'editar' where id = ${v.id}`)));
+    assert.equal(codigoPg(err), PG.semPrivilegio);
+    const err2 = await erroDe(getBanco().asSystem("teste", (tx) => tx.execute(sql`update maestro.fluxo_links set permissao = 'editar' where id = ${v.id}`)));
+    assert.equal(mensagemPg(err2), "fluxo_link:permissao", "nem pelo sistema");
+    const [a] = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select metadata from maestro.audit_log where action = 'fluxo.link_criou' and metadata ->> 'link' = ${c.id}`),
+    )) as unknown as { metadata: { permissao: string } }[];
+    assert.equal(a.metadata.permissao, "comentar");
+    for (const l of [v, c, e]) ok(await lk.revogarLinkFluxo(ctx.lia, l.id));
+  });
+
+  test("Ver e comentar: só o nome; nó do fluxo ou o fluxo todo; idempotente; quem abre vê os comentários", async () => {
+    const l = await criar("comentar");
+    const aberto = await lk.abrirFluxoPublico(l.token!, sem(), ip());
+    assert.equal(aberto.estado, "ok");
+    if (aberto.estado !== "ok") return;
+    assert.equal(aberto.dados.permissao, "comentar");
+    assert.deepEqual(aberto.dados.comentarios, []);
+    const um = await comentar(l.token!, { nome: "  Ana  \u200bSouza ", texto: "Gostei\r\n\r\n\r\nda luz", no: N2.nota, idem: "idem-ana-0001" });
+    assert.ok(um.ok, JSON.stringify(um));
+    if (!um.ok) return;
+    assert.equal(um.comentario.nome, "Ana Souza");
+    assert.equal(um.comentario.texto, "Gostei\n\nda luz");
+    assert.equal(um.comentario.no, N2.nota);
+    const de = await comentar(l.token!, { nome: "Ana Souza", texto: "Outro texto", no: N2.nota, idem: "idem-ana-0001" });
+    assert.ok(de.ok && de.comentario.id === um.comentario.id, "a mesma chave devolve o mesmo comentário");
+    const geral = await comentar(l.token!, { nome: "Bruno", texto: "No geral, ótimo." });
+    assert.ok(geral.ok && geral.comentario.no === null);
+    // forma recusada antes do banco e no banco
+    const invisivel = await comentar(l.token!, { nome: " \u200b ", texto: "x" });
+    assert.ok(!invisivel.ok && invisivel.erro === "nome", "só invisível não é nome");
+    const sem_nome = await comentar(l.token!, { nome: "", texto: "x" });
+    assert.ok(!sem_nome.ok && sem_nome.erro === "nome" && sem_nome.status === 400);
+    const grande = await comentar(l.token!, { nome: "Ana", texto: "x".repeat(1001) });
+    assert.ok(!grande.ok && grande.erro === "texto");
+    for (const no of [NOS_B.nota, N2.secao, UUID(), "../x", 12]) {
+      const r = await comentar(l.token!, { nome: "Ana", texto: "x", no });
+      assert.ok(!r.ok && r.erro === "no", `nó ${String(no)}`);
+    }
+    const sem_idem = await lk.comentarPeloLink(l.token!, sem(), ip(), { nome: "Ana", texto: "x" });
+    assert.ok(!sem_idem.ok && sem_idem.erro === "formato");
+    // quem abre vê os comentários vivos, em ordem
+    const de_novo = await lk.abrirFluxoPublico(l.token!, sem(), ip());
+    assert.ok(de_novo.estado === "ok");
+    if (de_novo.estado === "ok")
+      assert.deepEqual(
+        de_novo.dados.comentarios.map((c) => [c.nome, c.no]),
+        [
+          ["Ana Souza", N2.nota],
+          ["Bruno", null],
+        ],
+      );
+    // auditado, sem IP
+    const aud = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select metadata from maestro.audit_log where action = 'fluxo.link_comentou' and metadata ->> 'link' = ${l.id}`),
+    )) as unknown as { metadata: Record<string, unknown> }[];
+    assert.equal(aud.length, 2);
+    assert.ok(!JSON.stringify(aud).includes("10.9."), "nada de IP");
+    // o .json e o .md continuam sem os comentários
+    const js = await lr.getArquivoPublico(pedido(`/f/${l.token}.json`, { ip: ip() }), l.token!, "json");
+    assert.ok(!(await js.text()).includes("Gostei"));
+  });
+
+  test("Só ver e Editar não recebem comentário; revogado, vencido e PIN também não", async () => {
+    for (const p of ["ver", "editar"]) {
+      const l = await criar(p);
+      const r = await comentar(l.token!, { nome: "Ana", texto: "x" });
+      assert.ok(!r.ok && r.erro === "permissao" && r.status === 403, p);
+      const a = await lk.abrirFluxoPublico(l.token!, sem(), ip());
+      assert.ok(a.estado === "ok" && a.dados.comentarios.length === 0);
+      ok(await lk.revogarLinkFluxo(ctx.lia, l.id));
+    }
+    const rev = await criar("comentar");
+    assert.ok((await comentar(rev.token!, { nome: "Ana", texto: "antes" })).ok);
+    ok(await lk.revogarLinkFluxo(ctx.lia, rev.id));
+    const r1 = await comentar(rev.token!, { nome: "Ana", texto: "depois" });
+    assert.ok(!r1.ok && r1.erro === "morto" && r1.status === 404, "revogado");
+    const venc = await criar("comentar");
+    await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`update maestro.fluxo_links set criado_em = now() - interval '3 days', expira_em = now() - interval '1 day' where id = ${venc.id}`),
+    );
+    const r2 = await comentar(venc.token!, { nome: "Ana", texto: "x" });
+    assert.ok(!r2.ok && r2.erro === "morto", "vencido");
+    const comPin = await criar("comentar", "4321");
+    const r3 = await comentar(comPin.token!, { nome: "Ana", texto: "x" });
+    assert.ok(!r3.ok && r3.erro === "pin" && r3.status === 401);
+    const p = await lk.conferirPinFluxo(comPin.token!, "4321", ip());
+    assert.ok(p.ok);
+    if (p.ok) {
+      const r4 = await comentar(
+        comPin.token!,
+        { nome: "Ana", texto: "com PIN" },
+        { cookies: { get: (n: string) => (n === p.cookie.nome ? p.cookie.valor : undefined) } },
+      );
+      assert.ok(r4.ok, JSON.stringify(r4));
+    }
+    ok(await lk.revogarLinkFluxo(ctx.lia, comPin.id));
+    assert.ok(!(await comentar("x".repeat(43), { nome: "Ana", texto: "x" })).ok, "token desconhecido");
+  });
+
+  test("limite: 20 a cada 15 min por link e IP (outro IP segue)", async () => {
+    const l = await criar("comentar");
+    const meu = ip();
+    for (let i = 0; i < 20; i++) assert.ok((await comentar(l.token!, { nome: "Ana", texto: `n${i}` }, { ip: meu })).ok, `comentário ${i}`);
+    const r = await comentar(l.token!, { nome: "Ana", texto: "um a mais" }, { ip: meu });
+    assert.ok(!r.ok && r.erro === "limite" && r.status === 429);
+    assert.ok((await comentar(l.token!, { nome: "Bia", texto: "de outro lugar" })).ok);
+    ok(await lk.revogarLinkFluxo(ctx.lia, l.id));
+  });
+
+  test("a equipe lê e apaga (quem edita); outra organização não vê; ninguém escreve pela tabela", async () => {
+    const l = await criar("comentar");
+    const c = await comentar(l.token!, { nome: "Cliente", texto: "Trocar a trilha.", no: N2.nota });
+    assert.ok(c.ok);
+    if (!c.ok) return;
+    for (const k of ["lia", "gil", "rui", "vic"] as const)
+      assert.ok(
+        (await lk.comentariosDoFluxo(ctx[k], f2)).some((x) => x.id === c.comentario.id && x.no === N2.nota),
+        `${k} lê`,
+      );
+    assert.deepEqual(await lk.comentariosDoFluxo(ctx.bia, f2), [], "outra organização não vê");
+    const deB = (await getBanco().asUser(ctx.bia, (tx) => tx.execute(sql`select count(*)::int as n from maestro.fluxo_comentarios`))) as unknown as {
+      n: number;
+    }[];
+    assert.equal(deB[0].n, 0);
+    // pela tabela, ninguém insere nem muda texto
+    const ins = await erroDe(
+      getBanco().asUser(ctx.lia, (tx) =>
+        tx.execute(
+          sql`insert into maestro.fluxo_comentarios (org_id, fluxo_id, link_id, nome, texto, idem_key) values (${orgA}, ${f2}, ${l.id}, 'X', 'Y', 'idem-forjado-01')`,
+        ),
+      ),
+    );
+    assert.equal(codigoPg(ins), PG.semPrivilegio);
+    const upd = await erroDe(
+      getBanco().asUser(ctx.lia, (tx) => tx.execute(sql`update maestro.fluxo_comentarios set texto = 'outro' where id = ${c.comentario.id}`)),
+    );
+    assert.equal(codigoPg(upd), PG.semPrivilegio);
+    // quem só lê não apaga; outra organização também não
+    assert.equal((await lk.apagarComentarioFluxo(ctx.vic, c.comentario.id)).ok, false);
+    assert.equal((await lk.apagarComentarioFluxo(ctx.bia, c.comentario.id)).ok, false);
+    // quem edita apaga, uma vez; auditado; some para quem abre
+    ok(await lk.apagarComentarioFluxo(ctx.rui, c.comentario.id));
+    assert.equal((await lk.apagarComentarioFluxo(ctx.rui, c.comentario.id)).ok, false);
+    assert.ok(!(await lk.comentariosDoFluxo(ctx.lia, f2)).some((x) => x.id === c.comentario.id));
+    const [a] = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select actor_sub from maestro.audit_log where action = 'fluxo.comentario_apagou' and metadata ->> 'comentario' = ${c.comentario.id}`),
+    )) as unknown as { actor_sub: string }[];
+    assert.equal(a.actor_sub, RUI.sub);
+    const ab = await lk.abrirFluxoPublico(l.token!, sem(), ip());
+    assert.ok(ab.estado === "ok" && !ab.dados.comentarios.some((x) => x.id === c.comentario.id));
+    // voltar não volta
+    const volta = await erroDe(
+      getBanco().asSystem("teste", (tx) => tx.execute(sql`update maestro.fluxo_comentarios set apagado_em = null where id = ${c.comentario.id}`)),
+    );
+    assert.equal(mensagemPg(volta), "fluxo_comentario:apagado");
+    ok(await lk.revogarLinkFluxo(ctx.lia, l.id));
+  });
+
+  test("Editar: só quem é da produtora do link e edita a Criação; o resto lê", async () => {
+    const l = await criar("editar");
+    const quem = (orgId: string, podeEditar = true, temAcesso = true) => ({ orgId, podeEditar, temAcesso });
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), quem(orgA)), f2);
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), quem(orgB)), null, "de outra produtora");
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), quem(orgA, false)), null, "papel que só lê");
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), quem(orgA, true, false)), null, "sem o Maestro");
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), null), null, "sem conta");
+    const c = await criar("comentar");
+    assert.equal(await lk.fluxoParaEditar(c.token!, sem(), quem(orgA)), null, "link que não é Editar");
+    const p = await criar("editar", "9876");
+    assert.equal(await lk.fluxoParaEditar(p.token!, sem(), quem(orgA)), null, "PIN antes");
+    for (const x of [l, c, p]) ok(await lk.revogarLinkFluxo(ctx.lia, x.id));
+    assert.equal(await lk.fluxoParaEditar(l.token!, sem(), quem(orgA)), null, "revogado");
+  });
+
+  test("rotas: comentar de fora (Origin, cabeçalhos) e a equipe lê e apaga com o papel", async () => {
+    const l = await criar("comentar");
+    const enviar = (corpo: unknown, origin?: string | null) =>
+      lr.postComentarPublico(pedido(`/f/${l.token}/comentar`, { corpo, origin, ip: ip() }), Promise.resolve({ token: l.token! }));
+    assert.equal((await enviar({ nome: "Ana", texto: "x", idem: "idem-rota-0001" }, "https://outro.exemplo")).status, 403);
+    const r = await enviar({ nome: "Ana", texto: "Pela rota", idem: "idem-rota-0001" });
+    assert.equal(r.status, 201);
+    assert.equal(r.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
+    assert.equal(r.headers.get("referrer-policy"), "no-referrer");
+    const { comentario } = await r.json();
+    assert.equal(comentario.nome, "Ana");
+    assert.equal((await enviar({ nome: "", texto: "x", idem: "idem-rota-0002" })).status, 400);
+    const ler = (s: string | undefined) => lr.getComentarios(pedido(`/api/criacao/fluxo/comentarios?fluxo=${f2}`, { cookies: { mae_sessao: s } }));
+    const apagar = (s: string | undefined, id: string, origin?: string | null) =>
+      lr.postComentarios(pedido("/api/criacao/fluxo/comentarios", { cookies: { mae_sessao: s }, corpo: { op: "apagar", id }, origin }));
+    assert.equal((await ler(undefined)).status, 401);
+    assert.ok(((await (await ler(vic)).json()).comentarios as { id: string }[]).some((x) => x.id === comentario.id));
+    assert.deepEqual((await (await ler(bia)).json()).comentarios, []);
+    assert.equal((await apagar(vic, comentario.id)).status, 403);
+    assert.equal((await apagar(rui, comentario.id, "https://outro.exemplo")).status, 403);
+    assert.equal((await apagar(rui, comentario.id)).status, 200);
+    assert.equal((await apagar(rui, comentario.id)).status, 404);
+    ok(await lk.revogarLinkFluxo(ctx.lia, l.id));
   });
 });

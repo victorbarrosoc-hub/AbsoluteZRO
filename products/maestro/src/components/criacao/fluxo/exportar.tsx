@@ -6,7 +6,16 @@
  * link vivo sem PIN, quando a pessoa pede ("Imagens pelo link").
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { linkParaIa, OPCOES_DIAS, PIN_LINK, vencimento, type LinkDoFluxo } from "@/lib/criacao/fluxo/compartilhar";
+import {
+  linkParaIa,
+  NOME_PERMISSAO,
+  OPCOES_DIAS,
+  PERMISSOES,
+  PIN_LINK,
+  vencimento,
+  type LinkDoFluxo,
+  type PermissaoLink,
+} from "@/lib/criacao/fluxo/compartilhar";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone, type NomeIcone } from "@/components/icones";
 import type { CardEscolha } from "./folhas";
@@ -49,12 +58,12 @@ export function useLinks(fluxoId: string, ativo: boolean) {
   }, [carregar]);
 
   const criar = useCallback(
-    async (dias: number, pin: string): Promise<{ link: LinkDoFluxo } | { mensagem: string }> => {
+    async (dias: number, pin: string, permissao: PermissaoLink = "ver"): Promise<{ link: LinkDoFluxo } | { mensagem: string }> => {
       try {
         const r = await fetch(ENDERECO, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ op: "criar", fluxo: fluxoId, dias, pin: pin || null }),
+          body: JSON.stringify({ op: "criar", fluxo: fluxoId, dias, pin: pin || null, permissao }),
         });
         const c = (await r.json().catch(() => ({}))) as { link?: LinkDoFluxo; mensagem?: string };
         if (!r.ok || !c.link) return { mensagem: c.mensagem ?? "Não deu para criar o link." };
@@ -232,9 +241,16 @@ const quando = (iso: string | null) => {
 function LinhaLink({ l, avisar, revogar }: { l: LinkDoFluxo; avisar: (t: string, tom?: "erro") => void; revogar: (id: string) => Promise<string | null> }) {
   const [confirmar, setConfirmar] = useState(false);
   const [indo, setIndo] = useState(false);
-  const detalhes = [l.temPin ? "PIN" : null, l.visitas === 1 ? "1 visita" : `${l.visitas} visitas`, quando(l.vistoEm)].filter(Boolean).join(" · ");
+  const detalhes = [
+    l.permissao !== "ver" ? NOME_PERMISSAO[l.permissao].linha : null,
+    l.temPin ? "PIN" : null,
+    l.visitas === 1 ? "1 visita" : `${l.visitas} visitas`,
+    quando(l.vistoEm),
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <li className="fx-links__item" data-link={l.id}>
+    <li className="fx-links__item" data-link={l.id} data-permissao={l.permissao}>
       <span className="fx-links__icone" aria-hidden="true">
         <Icone nome={l.temPin ? "cadeado" : "link"} size={16} />
       </span>
@@ -287,10 +303,11 @@ function CriarLink({
   criar,
   avisar,
 }: {
-  criar: (dias: number, pin: string) => Promise<{ link: LinkDoFluxo } | { mensagem: string }>;
+  criar: (dias: number, pin: string, permissao: PermissaoLink) => Promise<{ link: LinkDoFluxo } | { mensagem: string }>;
   avisar: (t: string, tom?: "erro") => void;
 }) {
   const [dias, setDias] = useState<number>(7);
+  const [permissao, setPermissao] = useState<PermissaoLink>("ver");
   const [pin, setPin] = useState("");
   const [indo, setIndo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -302,7 +319,10 @@ function CriarLink({
         <span className="fx-links__selo" aria-hidden="true">
           <Icone nome="check" size={18} />
         </span>
-        <p>Link criado{novo.temPin ? ", com PIN" : ""}.</p>
+        <p>
+          Link criado{novo.permissao !== "ver" ? ` · ${NOME_PERMISSAO[novo.permissao].rotulo}` : ""}
+          {novo.temPin ? ", com PIN" : ""}.
+        </p>
         <input className="fx-links__url" readOnly value={novo.url} aria-label="Endereço do link" onFocus={(e) => e.currentTarget.select()} />
         <div className="fx-folha__acoes">
           <button type="button" className="glass-btn glass-btn--sm" onClick={() => setNovo(null)}>
@@ -326,7 +346,7 @@ function CriarLink({
         if (!pinOk) return;
         setIndo(true);
         setErro(null);
-        const r = await criar(dias, pin);
+        const r = await criar(dias, pin, permissao);
         setIndo(false);
         if ("mensagem" in r) return setErro(r.mensagem);
         setPin("");
@@ -334,6 +354,24 @@ function CriarLink({
         if (r.link.url && (await copiarTexto(r.link.url))) avisar("Link criado e copiado.");
       }}
     >
+      <div
+        className="fx-seg fx-seg--cheio"
+        role="radiogroup"
+        aria-label="Permissão"
+        title={
+          permissao === "comentar"
+            ? "Quem abre comenta só com o nome, sem cadastro."
+            : permissao === "editar"
+              ? "Edita só quem entra com a conta da produtora. O resto só vê."
+              : "Quem abre só vê."
+        }
+      >
+        {PERMISSOES.map((p) => (
+          <button key={p} type="button" role="radio" aria-checked={permissao === p} onClick={() => setPermissao(p)}>
+            {NOME_PERMISSAO[p].rotulo}
+          </button>
+        ))}
+      </div>
       <div className="fx-seg fx-seg--cheio" role="radiogroup" aria-label="Validade">
         {OPCOES_DIAS.map((d) => (
           <button key={d} type="button" role="radio" aria-checked={dias === d} onClick={() => setDias(d)}>
@@ -371,7 +409,7 @@ function CriarLink({
 export function FolhaLinks(p: {
   aoFechar: () => void;
   links: LinkDoFluxo[] | null;
-  criar: (dias: number, pin: string) => Promise<{ link: LinkDoFluxo } | { mensagem: string }>;
+  criar: (dias: number, pin: string, permissao: PermissaoLink) => Promise<{ link: LinkDoFluxo } | { mensagem: string }>;
   revogar: (id: string) => Promise<string | null>;
   avisar: (t: string, tom?: "erro") => void;
   naLixeira: boolean;

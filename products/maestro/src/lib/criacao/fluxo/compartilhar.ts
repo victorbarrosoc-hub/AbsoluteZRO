@@ -5,6 +5,10 @@
  * O link (`/f/<token>`) só existe quando administração ou gestão cria: 7 dias por padrão (1 a 30), revogável, PIN
  * opcional, fora dos buscadores. Imagem só leva endereço pelo token de um link vivo, e só quando a pessoa pede
  * (`linkParaIa`: o mais novo sem PIN, porque a IA não digita PIN).
+ *
+ * Permissão do link (titular, 04/11/2026; drizzle/0039), escolhida ao criar e fixa depois: "Só ver" (padrão), "Ver e
+ * comentar" (quem abre escreve só o nome, sem cadastro, e comenta um nó ou o fluxo) e "Editar" (só quem entra com a
+ * conta Absolute ZRO e é da produtora edita, no editor do Maestro; o resto só lê).
  */
 import type { ImagemNo, NoFluxo } from "./modelo";
 
@@ -18,6 +22,47 @@ export const PIN_LINK = /^\d{4,8}$/;
 export const TOKEN_FLUXO = /^[A-Za-z0-9_-]{43}$/;
 export const ehTokenFluxo = (t: unknown): t is string => typeof t === "string" && TOKEN_FLUXO.test(t);
 
+export const PERMISSOES = ["ver", "comentar", "editar"] as const;
+export type PermissaoLink = (typeof PERMISSOES)[number];
+/** Os rótulos do seletor (curtos) e a linha do link na lista. */
+export const NOME_PERMISSAO: Record<PermissaoLink, { rotulo: string; linha: string }> = {
+  ver: { rotulo: "Só ver", linha: "Só ver" },
+  comentar: { rotulo: "Ver e comentar", linha: "Comentar" },
+  editar: { rotulo: "Editar", linha: "Editar" },
+};
+/** Permissão pedida ao criar: vazio = "ver"; fora da lista = null (inválido). */
+export function permissaoDoLink(v: unknown): PermissaoLink | null {
+  if (v === undefined || v === null || v === "") return "ver";
+  return typeof v === "string" && (PERMISSOES as readonly string[]).includes(v) ? (v as PermissaoLink) : null;
+}
+
+export const LIMITE_NOME_COMENTARIO = 60;
+export const LIMITE_TEXTO_COMENTARIO = 1000;
+const CONTROLE = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]/g;
+
+/** O nome de quem comenta: sem controle nem invisível, espaços juntos, até 60. Vazio = null. */
+export function nomeDoComentario(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const n = v.replace(CONTROLE, "").replace(/\s+/g, " ").trim().slice(0, LIMITE_NOME_COMENTARIO).trim();
+  return n || null;
+}
+
+/** O texto do comentário: sem controle (a quebra de linha fica, no máximo duas seguidas), até 1000. Vazio ou maior = null. */
+export function textoDoComentario(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v
+    .replace(/\r\n?/g, "\n")
+    .replace(/\t/g, " ")
+    .replace(CONTROLE, "")
+    .replace(/[ \u00a0]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return t && t.length <= LIMITE_TEXTO_COMENTARIO ? t : null;
+}
+
+/** Um comentário como quem abre o link e a equipe veem. `no` = null: do fluxo todo (ou o nó saiu). */
+export type ComentarioDoLink = { id: string; no: string | null; nome: string; texto: string; em: string };
+
 /** O link como a equipe vê (só administração e gestão): o token aberto só para copiar. */
 export type LinkDoFluxo = {
   id: string;
@@ -26,6 +71,7 @@ export type LinkDoFluxo = {
   token: string | null;
   expira: string;
   temPin: boolean;
+  permissao: PermissaoLink;
   visitas: number;
   vistoEm: string | null;
   criadoEm: string;

@@ -521,6 +521,24 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   políticas da 0031/0032 contra `PAPEIS_EDITAR_CRIACAO`/`PAPEIS_ENVIAR_CRIACAO`.
   Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
   `sem-corte.spec.ts`.
+  **Permissão do link** (titular 04/11/2026, `drizzle/0039_fluxo_link_permissao.sql`): escolhida ao criar (controle
+  "Só ver · Ver e comentar · Editar", `PERMISSOES`/`permissaoDoLink` em `compartilhar.ts`), `fluxo_links.permissao`
+  (check, padrão `ver`, fixa: gatilho `fluxo_links_permissao_fixa` e `maestro_app` só muda `revogado_em`; vai na
+  auditoria). **Ver e comentar**: quem abre escreve **só o nome** (sem cadastro; lembrado no localStorage do aparelho) e
+  comenta um item ou o fluxo (`components/criacao/fluxo/comentar-link.tsx`, `ListaFluxo.depoisDoItem`); `POST
+/f/<token>/comentar` → `comentarPeloLink` (Origin, `nomeDoComentario`/`textoDoComentario` limpam controle e
+  invisíveis, nome ≤ 60, texto ≤ 1000, idempotência por `idem`, limites `REGRAS.fluxoComentarIp`/`fluxoComentar` por link
+  - HMAC do IP do dia) → porta `maestro.fluxo_link_comentar` (link vivo, PIN, permissão `comentar`, nó vivo do mesmo
+    fluxo e não seção, até 500 por link, auditoria `fluxo.link_comentou` sem IP). `maestro.fluxo_comentarios`: RLS padrão
+  - `_cliente` pelo fluxo, `maestro_app` sem INSERT (só a porta) e só `apagado_em` (uma vez, gatilho, auditoria
+    `fluxo.comentario_apagou`). `fluxo_link_abrir` devolve `permissao` e, no `comentar`, os comentários vivos (o .md e o
+    .json não levam). Equipe: botão "Comentários (n)" na cabeça do editor e a folha (`comentarios-equipe.tsx`, poll 30 s;
+    "Ver" vai ao nó; "Apagar" para quem edita), rota `/api/criacao/fluxo/comentarios` (GET quem vê, POST `apagar` quem
+    edita). **Editar**: a página `/f` confere a sessão do Maestro de quem abriu (`fluxoParaEditar` → porta
+    `maestro.fluxo_link_editar`: a organização do link = a ativa da sessão, `temAcesso` e `podeEditarCriacao`) e mostra
+    "Editar no Maestro" (o editor de sempre, com RLS); sem sessão, "Entrar para editar" (volta para o `/f`); de fora, só
+    lê. Revogado ou vencido: nada abre e ninguém comenta. Testes: `tests/links-fluxo.test.mts` (permissão, comentários,
+    limite, Editar, rotas), `tests/acesso-cliente.test.mts` e `e2e/fluxo-comentar.spec.ts` (`SHOTS_DIR` guarda `fcm-*`).
 - **Criação · o cliente aprova o roteiro** (fase F7; decisão do titular nº 4: o MESMO link `/a` do card, o roteiro é
   mais uma peça; `drizzle/0033_roteiro_na_revisao.sql`, `src/lib/criacao/roteiro/cliente.ts`, `src/lib/revisao/roteiro.ts`,
   telas em `components/criacao/roteiro/cliente.tsx` e `components/revisao/roteiro-cliente.tsx`): a fonte de versão

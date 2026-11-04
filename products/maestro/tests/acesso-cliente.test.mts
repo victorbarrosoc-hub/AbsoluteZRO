@@ -42,6 +42,8 @@ const TABELAS = [
   "fluxos",
   "fluxo_ligacoes",
   "fluxo_imagens",
+  // comentário de quem abriu o link "Ver e comentar" (0039): pelo fluxo
+  "fluxo_comentarios",
   "card_capas",
   "entregaveis",
   "tempo_registros",
@@ -137,6 +139,12 @@ before(async () => {
       ids[`n_${k}`] = n1;
       const n2 = await um(sql`insert into maestro.fluxo_nos (org_id, fluxo_id, tipo, w, h) values (${A}, ${flx}, 'nota', 100, 100) returning id`);
       await tx.execute(sql`insert into maestro.fluxo_ligacoes (org_id, fluxo_id, de, para) values (${A}, ${flx}, ${n2}, ${n1})`);
+      const lk = await um(sql`
+        insert into maestro.fluxo_links (org_id, fluxo_id, token_hash, token_enc, expira_em, permissao)
+        values (${A}, ${flx}, encode(sha256(convert_to(${`link-${k}`}, 'UTF8')), 'hex'), 'cifrado-de-teste-0001', now() + interval '7 days', 'comentar') returning id`);
+      await tx.execute(sql`
+        insert into maestro.fluxo_comentarios (org_id, fluxo_id, link_id, no_id, nome, texto, idem_key)
+        values (${A}, ${flx}, ${lk}, ${n1}, 'Cliente', 'Gostei da luz.', ${`idem-${k}-0001`})`);
     }
     // Um fluxo sem vínculo: quem é restrito não vê.
     await tx.execute(sql`insert into maestro.fluxos (org_id, titulo) values (${A}, 'Fluxo solto')`);
@@ -326,8 +334,9 @@ describe("links do Fluxo (drizzle/0032)", () => {
           insert into maestro.fluxo_links (org_id, fluxo_id, token_hash, token_enc, expira_em)
           values (${o.orgA}, ${ids[`f_${k}`]}, encode(sha256(convert_to(${k}, 'UTF8')), 'hex'), ${`cifrado-de-teste-${k}`}, now() + interval '7 days')`);
     });
-    assert.equal(await contar(o.admin, "fluxo_links"), 2);
-    assert.equal(await contar(o.gestor, "fluxo_links"), 2);
+    // os dois daqui e os dois "Ver e comentar" da semente (um por cliente, com o comentário)
+    assert.equal(await contar(o.admin, "fluxo_links"), 4);
+    assert.equal(await contar(o.gestor, "fluxo_links"), 4);
     assert.equal(await contar(o.equipe, "fluxo_links"), 0, "equipe não vê link (só administração e gestão criam)");
     assert.equal(await contar(o.leitura, "fluxo_links"), 0);
     assert.equal(await contar(o.b, "fluxo_links"), 0);
