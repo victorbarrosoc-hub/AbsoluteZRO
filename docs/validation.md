@@ -4981,3 +4981,18 @@ SOBEDESCE de computador, que disparam os instaladores).
   e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
 - `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
 - Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).
+
+## Revela: marca nova e topo de cinema (04/11/2026)
+
+- Marca escolhida pelo titular: o símbolo "cheio de densidade" (o quadro cortado pela curva característica) e a palavra
+  "revela." em Figtree Black com o ponto. Os SVG saem de `products/finishing/scripts/marca-revela.py` (contorno da
+  própria fonte, sem depender de fonte instalada); os PNG do topo, o `og.jpg` e os ícones do app saem de
+  `scripts/marca-png.mjs` e `scripts/icones-app.mjs`. Os nomes dos arquivos não mudaram, então todas as telas trocaram
+  de logo sem mexer no `tema.js`.
+- Página inicial: o topo virou um frame inteiro (um exemplo do próprio repositório, revelado no Lab com 250D + 2383 e
+  textura de 35 mm), "revela." grande, uma linha e duas âncoras ("Conhecer o projeto" → `#looks`, "Ver as ferramentas"
+  → `#ferramentas`). A barra fica transparente sobre a foto e vira vidro ao rolar. A comparação log → final desceu para
+  a seção logo abaixo. Nada leva a ferramenta (a Revela segue fechada pelo gate).
+- `npm test` da Revela 187/187 (com as telas em Chromium); o teste da página inicial agora espera o título "revela.".
+- Não validado: Safari/iOS de verdade (o `:has()` da barra sobre a foto pede Safari 15.4+), e a página `marca/index.html`
+  (manual antigo da marca) ainda mostra a identidade anterior.

@@ -414,7 +414,7 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
     pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
     await pagina.goto(endereco)
     await pagina.getByRole('heading', { level: 1 }).waitFor()
-    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /Revela a cor/)
+    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /^revela\.$/)
     for (const id of ['looks', 'ferramentas', 'entrega', 'converter', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
     // sem sessão, o topo oferece "Entrar"
     await pagina.locator('#conta.conta--pronta').waitFor()

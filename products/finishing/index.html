@@ -15,8 +15,8 @@
     <meta property="og:url" content="https://revela.absolutezro.com/" />
     <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
     <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve. Em desenvolvimento." />
-    <meta property="og:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
-    <meta property="og:image:secure_url" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta property="og:image" content="https://revela.absolutezro.com/og.jpg?v=3" />
+    <meta property="og:image:secure_url" content="https://revela.absolutezro.com/og.jpg?v=3" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -24,7 +24,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
     <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve. Em desenvolvimento." />
-    <meta name="twitter:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta name="twitter:image" content="https://revela.absolutezro.com/og.jpg?v=3" />
     <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
     <link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials" />
     <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
@@ -42,7 +42,14 @@
        função api/app.js só para ela. -->
   <body class="home">
     <header class="nav" id="nav">
-      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo-claro.png" alt="Revela" width="150" height="28" /></a>
+      <a class="marca" href="./" aria-label="Revela, página inicial"
+        ><img src="marca/revela-logo-claro.png" alt="Revela" width="150" height="28" /><img
+          class="logo-foto"
+          src="marca/revela-logo.svg"
+          alt=""
+          width="150"
+          height="28"
+      /></a>
       <nav class="nav-links" aria-label="Seções">
         <a href="#looks">Looks</a>
         <a href="#ferramentas">Ferramentas</a>
@@ -57,23 +64,36 @@
     </header>
 
     <main>
-      <section class="hero" aria-labelledby="hero-titulo">
-        <h1 id="hero-titulo" class="surge" style="--d: 1">Revela a cor<br /><span class="fino">que você quer.</span></h1>
-        <p class="hero-sub surge" style="--d: 2">Da referência à entrega, num lugar só.</p>
-        <p class="z-selo selo-dev surge" style="--d: 3"><i aria-hidden="true"></i>Em desenvolvimento</p>
-        <div class="hero-acoes surge" style="--d: 3">
-          <a class="vidro vidro--tinta grande-pilula" href="#looks">Conhecer o projeto</a>
+      <!-- O topo é um frame de cinema inteiro (titular, 04/11/2026): a marca "revela." sobre a imagem, uma linha e duas
+           ações. A comparação log → final, o produto de verdade, vem logo abaixo. -->
+      <section class="hero hero--filme" aria-labelledby="hero-titulo">
+        <picture class="hero-foto" aria-hidden="true">
+          <source media="(max-aspect-ratio: 4/5)" srcset="marca/home/hero-filme-cel.jpg" width="780" height="1688" />
+          <img src="marca/home/hero-filme.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+        </picture>
+        <div class="hero-texto">
+          <p class="z-selo selo-dev surge" style="--d: 1"><i aria-hidden="true"></i>Em desenvolvimento</p>
+          <h1 id="hero-titulo" class="hero-marca surge" style="--d: 1">revela<span class="ponto">.</span></h1>
+          <p class="hero-sub surge" style="--d: 2">Película medida, não imitada.</p>
+          <div class="hero-acoes surge" style="--d: 3">
+            <a class="pilula-clara grande-pilula" href="#looks">Conhecer o projeto</a>
+            <a class="vidro grande-pilula" href="#ferramentas">Ver as ferramentas</a>
+          </div>
         </div>
-        <figure class="comparar surge" style="--d: 4" aria-label="O mesmo frame em log e com a cor final">
-          <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" fetchpriority="high" />
-          <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" />
+      </section>
+
+      <section class="sec sec-log" aria-labelledby="log-titulo">
+        <h2 id="log-titulo" class="revela-ao-rolar">Do log<br /><span class="fino">à cor final.</span></h2>
+        <figure class="comparar revela-ao-rolar" aria-label="O mesmo frame em log e com a cor final">
+          <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" loading="lazy" />
+          <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" loading="lazy" />
           <span class="linha" aria-hidden="true"></span>
           <span class="rotulo-home rotulo-home--antes">Log</span>
           <span class="rotulo-home rotulo-home--depois">Final</span>
           <span class="arraste" aria-hidden="true">Arraste</span>
           <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
         </figure>
-        <div class="editores surge" style="--d: 5">
+        <div class="editores revela-ao-rolar">
           <ul aria-label="Editores compatíveis">
             <li title="LUT .cube e script de entrega">DaVinci Resolve</li>
             <li title="LUT .cube">Premiere Pro</li>
