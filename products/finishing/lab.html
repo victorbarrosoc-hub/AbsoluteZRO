@@ -101,11 +101,40 @@
             <input id="intensidade" type="range" min="0" max="100" value="100" />
           </div>
 
-          <label class="campo-log copia-lab" title="Copia o look numa película de cinema, com as curvas das fichas técnicas"
-            ><span data-icone="looks"></span><select id="copia" aria-label="Cópia de cinema"></select
-          ></label>
+          <fieldset class="filme-lab" aria-label="Película">
+            <label class="campo-log" title="O negativo que a câmera vira: curva de cada camada e separação de cor das fichas técnicas"
+              ><span data-icone="looks"></span><select id="negativo" aria-label="Negativo"></select
+            ></label>
+            <label class="campo-log" title="A cópia de cinema em que o negativo é copiado, com as curvas das fichas técnicas"
+              ><span data-icone="looks"></span><select id="copia" aria-label="Cópia de cinema"></select
+            ></label>
+            <div class="filme-opcoes">
+              <label class="campo-log" title="Luz do projetor: muda o branco da cópia"
+                ><select id="luz-copia" aria-label="Luz da cópia"></select
+              ></label>
+              <label class="campo-log" title="Forçar ou puxar a revelação do negativo"
+                ><select id="revelacao" aria-label="Revelação"></select
+              ></label>
+              <label class="chave" title="Cópia com menos pé e ombro: altas mais altas, sombras mais fundas"
+                ><input id="expandido" type="checkbox" role="switch" /><span class="chave-trilho"></span> Expandido</label
+              >
+            </div>
+          </fieldset>
 
           <div id="ajustes" class="ajustes-lab" aria-label="Ajustes"></div>
+          <details class="fino-lab">
+            <summary>Ajuste fino</summary>
+            <div id="ajustes-finos" class="ajustes-lab" aria-label="Ajuste fino"></div>
+          </details>
+
+          <div class="textura-lab">
+            <div class="lab-grupos" id="texturas" role="radiogroup" aria-label="Textura"></div>
+            <div id="ajustes-textura" class="ajustes-lab" aria-label="Textura"></div>
+            <details class="fino-lab">
+              <summary>Mais textura</summary>
+              <div id="ajustes-textura-finos" class="ajustes-lab" aria-label="Mais textura"></div>
+            </details>
+          </div>
           <button id="zerar" class="vidro" type="button"><span data-icone="x"></span> Zerar ajustes</button>
         </div>
 

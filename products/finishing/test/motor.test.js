@@ -10,6 +10,7 @@ import { avaliarLook } from '../src/cor/qc.js'
 import { escreverClf, montarPacote, offsetDaCorrecao, slugPack } from '../src/cor/pacote.js'
 import { crc32 } from '../src/imagem/zip.js'
 import { COPIAS, criarCopia } from '../src/cor/copia.js'
+import { NEGATIVOS, criarNegativo, criarScan } from '../src/cor/negativos.js'
 
 test('tela: cinza 18% vai a 10 nits no SDR e 14,5 no HDR 1000; curva de tom com inversa exata', () => {
   const sdr = criarTela('rec709')
@@ -69,8 +70,8 @@ test('película: o perfil neutro não muda nada dentro do Rec.2020 (o motor part
   assert.ok(fora.every((v) => v >= 0))
 })
 
-test('controle de qualidade: os 20 looks passam em tudo (cinza, monotonia, degrau, pele, preto, branco, gamut, LUT)', () => {
-  assert.equal(GRUPOS.flatMap((g) => g.looks).length, 20)
+test('controle de qualidade: os 25 looks passam em tudo (cinza, monotonia, degrau, pele, preto, branco, gamut, LUT)', () => {
+  assert.equal(GRUPOS.flatMap((g) => g.looks).length, 25)
   for (const g of GRUPOS)
     for (const p of g.looks) {
       const r = avaliarLook(criarMotor(p), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
@@ -99,6 +100,46 @@ test('cópia de cinema: cinza no lugar e neutro, contraste de projeção, preto 
     const esperado = copia.tela([0.5, 0.3, 0.2]).map((v) => Math.max(0, v) ** (1 / 2.4))
     assert.ok(tela.every((v, i) => Math.abs(v - esperado[i]) < 2e-3), `${c.id} ${tela} × ${esperado}`)
   }
+})
+
+test('negativos das fichas: gama de 0,39 a 0,62 por camada, sobe sempre, e com a 2383 o sistema dá o contraste de uma cópia projetada', () => {
+  assert.equal(NEGATIVOS.length, 10)
+  for (const n of NEGATIVOS) {
+    const neg = criarNegativo(n.id)
+    for (const g of neg.gama) assert.ok(g > 0.38 && g < 0.63, `${n.id} gama ${g}`)
+    // monótona de -12 a +12 stops em cada camada
+    for (let j = 0; j < 3; j++) {
+      let antes = -Infinity
+      for (let e = -12; e <= 12; e += 0.05) {
+        const d = neg.delta(j, e)
+        assert.ok(d >= antes - 1e-12, `${n.id} camada ${j} desce em ${e}`)
+        antes = d
+      }
+    }
+    // a separação de cor mantém o branco: linhas da matriz somam 1
+    for (const linha of neg.M) assert.ok(Math.abs(linha[0] + linha[1] + linha[2] - 1) < 1e-3)
+  }
+  // Vision3 + 2383: o contraste no cinza sai da física, entre 1,6 e 1,85 (a cópia projetada de verdade)
+  for (const id of ['5219', '5207', '5213']) {
+    const c = criarCopia('2383', { negativo: id })
+    const y = (s) => c.tela([0.18 * 2 ** s, 0.18 * 2 ** s, 0.18 * 2 ** s])[1]
+    const g = (Math.log10(y(0.1)) - Math.log10(y(-0.1))) / (0.2 * Math.log10(2))
+    assert.ok(g > 1.6 && g < 1.85, `${id} + 2383: ${g}`)
+    assert.ok(Math.abs(y(0) - 0.0985) < 1e-6) // o cinza continua no lugar
+  }
+  // forçar a revelação sobe o contraste; o negativo escaneado devolve o cinza
+  const g0 = criarNegativo('5219').gama[1]
+  assert.ok(criarNegativo('5219', { revelacao: 1 }).gama[1] > g0 * 1.1)
+  const cinza = criarScan('5219').emCena([0.18, 0.18, 0.18])
+  assert.ok(cinza.every((v) => Math.abs(v - 0.18) < 1e-6), String(cinza))
+})
+
+test('cópia: a luz do projetor esquenta o branco (D55 > D60 > D65) e o Expandido abre as altas', () => {
+  const branco = (luz) => criarCopia('2383', { negativo: '5219', iluminante: luz }).tela([20, 20, 20])
+  const quente = (b) => b[0] / b[2]
+  assert.ok(quente(branco('D55')) > quente(branco('D60')) && quente(branco('D60')) > quente(branco('D65')))
+  const alta = (exp) => criarCopia('2383', { expandido: exp }).tela([0.18 * 2 ** 3, 0.18 * 2 ** 3, 0.18 * 2 ** 3])[1]
+  assert.ok(alta(true) > alta(false))
 })
 
 test('controle de qualidade: pega um look quebrado (degrau na curva e cinza tingido)', () => {

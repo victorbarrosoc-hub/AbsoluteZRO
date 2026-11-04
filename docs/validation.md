@@ -2715,6 +2715,49 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
   set, material log real de cada câmera e telas HDR.
 
+## Revela Film: negativos das fichas, laboratório, ajuste fino e textura (04/11/2026)
+
+- Pedido do titular: estudar o Filmverse (Colorist Foundry), o FilmVision Pro (Emulated Film) e o mercado e chegar a uma
+  ferramenta de nível matemático, eficiente e fácil. Estudo: documentação e vídeo do Filmverse Arsenal 1.2 (um nó, 20
+  controles, negativo × cópia com D55/D60/D65 e EXP, textura em DCTL à parte), FilmVision, Dehancer, FilmConvert
+  Nitrate, Filmbox, Genesis, Film Look Creator e o que há de aberto (spektrafilm: GPL/CC BY-SA, só ideias; Spectral
+  Film LUT: MIT).
+- Negativos das fichas (`src/cor/negativos.js`): curvas de cada camada do Vision3 500T/250D/200T/50D (fichas Kodak) e
+  dos Eterna 500/400/250/250D, Vivid 160 e Reala 500D (manual Fujifilm), digitalizadas e ajustadas por uma forma
+  analítica monótona (pé e ombro em softplus compostos). Erro: 0,002 a 0,005 de densidade (Kodak), 0,014 a 0,03 (Fuji).
+  Primeira forma (pé e ombro somados) descia em -12 stops quando as larguras diferiam: trocada pela composta, monótona
+  por construção (teste de -12 a +12 stops).
+- Separação de cor: sensibilidade espectral do 500T e do 250D digitalizada (grades excluídas, sementes conferidas em
+  sobreposição), integrada com a ColorChecker (colour-science, só para calcular) sob 3200 K e D55 e CIE 1931: matriz
+  DWG → camadas, erro médio 0,08 stop. Em P3 as camadas ficam perto da identidade (1 a 9% de vazamento), o que confere
+  o "negativo ideal" que a Revela usava.
+- Laboratório: o contraste no cinza sai da física (Vision3 + 2383: 1,71 a 1,75; Eterna 400 + 3513: 1,29, o filme
+  suave que ele era). Cruzamentos: Kodak com altas levemente quentes, Eterna 500 com altas mais frias.
+- Controle de qualidade: 25 looks aprovados. Rodadas: degrau e LUT (tabelas digitalizadas → forma analítica); monotonia
+  no fundo do pé das Fuji (a separação de corantes invertia uma fração de milésimo: tabela monótona); pele nas
+  combinações reais com a 2393 (até 21°, onde o verde da ficha é sintetizado) e 50D/Vivid 160 + 2383 (13–14°): saíram
+  dos looks prontos e continuam escolhíveis no Lab; Eterna escaneado (tinta no cinza): saiu dos prontos.
+- Combinações livres no Lab (base × negativo × cópia × luz): varredura de 96 combinações no controle de qualidade.
+  Achados e correções: um negativo das fichas somava ao negativo genérico do perfil (dois negativos em série): agora
+  substitui; a luz do projetor (D55/D60) aplicada na tela antes da inversa somava virada de pele: agora entra na luz
+  da cena depois da âncora da pele, e o controle de qualidade mede com o olho adaptado à lâmpada; a 2393 com negativos
+  reais (verde da ficha sintetizado) saía desequilibrada (contraste por camada 1,49/1,62/1,51 contra 1,65/1,67/1,62 na
+  2383): equilíbrio das camadas no cinza pelo desenho do sistema, cruzamento 0,25 e âncora firme. Perfis criativos com
+  negativo e cópia reais firmam a âncora (0,95). Resultado: 34 → 3 reprovadas (Dourado, Positivo 50D e Laranja e
+  petróleo sobre a 2393); o pacote mostra a reprovação no relatório, sem esconder.
+- Ajuste fino (padrão do mercado, nomes de gente): Altas, Sombras, Preto (em log, sem mexer no cinza; o Preto mexia no
+  cinza em 1,6% na primeira versão), Estilo retrô ↔ moderno, Densidade da cor, Sem branqueamento, Matiz e Saturação
+  da pele. Expandido: a primeira versão (curva da cópia mais larga) quase não mudava nada e passava do branco; agora é
+  8% mais faixa em volta do cinza com o branco da base no lugar.
+- Textura (`src/cor/textura.js`, `src/cor/dctl.js`): difusão, halation e grão por camada (granularidade de cada
+  negativo, bitolas 65/35/16 mm e Super 8), na luz da cena antes do look. Grão: campo gaussiano em grade, variância 1
+  em todo tamanho (teste); a função da DCTL, reimplementada no teste, dá o mesmo campo da prévia pixel a pixel. Pacote:
+  DCTL de textura e LEIA-ME com a textura antes do look.
+- Revisão em footage oficial da ARRI (recorte 1:1 do ALEXA 35 em LogC4): grão no meio-tom sem sujar o preto, halation
+  quente nas bordas claras.
+- Não validado: a DCTL compilada num DaVinci Resolve Studio de verdade (não há Resolve neste ambiente); o desempenho
+  da textura na prévia de celulares antigos; os negativos Fuji com a sensibilidade espectral própria (não publicada).
+
 ## Revela: cópias de cinema das fichas técnicas e revisão em material real (29/10/2026)
 
 - Pedido do titular: presets de películas conhecidas (Kodak 2383 e afins) e material de banco com as especificações.

@@ -5,9 +5,11 @@
 import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { AJUSTES, AJUSTES_NEUTROS, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import { AJUSTES, AJUSTES_NEUTROS, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, LUZES_LAB, NEGATIVOS_LAB, REVELACOES, paraCena, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
+import { criarTela, diParaLinear, linearParaDi } from '../src/cor/cena.js'
+import { AJUSTES_TEXTURA, PRESETS_TEXTURA, TEXTURA_NEUTRA, aplicarTextura, texturaAtiva } from '../src/cor/textura.js'
 
 icones()
 escalonar()
@@ -21,7 +23,7 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
-let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
+let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null, textura: { ...TEXTURA_NEUTRA }, intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
@@ -131,6 +133,43 @@ function pintarCom(base, f, tamanho) {
 }
 
 const lookAtual = () => criarLab(receita)
+const telaSdr = criarTela('rec709')
+
+// com textura, a prévia faz o caminho do Resolve: frame → luz da cena → textura → look → tela
+let cenaGuardada = null
+function cenaDaPrevia() {
+  if (cenaGuardada?.frame === frame && cenaGuardada.entrada === receita.entrada) return cenaGuardada.img
+  const paraDi = paraCena(receita.entrada)
+  const lut = assar((r, g, b) => paraDi(r, g, b).map(linearParaDi), 33)
+  const d = frame.previa.data
+  const img = new Float32Array((d.length / 4) * 3)
+  for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+    const o = aplicar(lut, d[i] / 255, d[i + 1] / 255, d[i + 2] / 255)
+    img[j] = diParaLinear(o[0])
+    img[j + 1] = diParaLinear(o[1])
+    img[j + 2] = diParaLinear(o[2])
+  }
+  cenaGuardada = { frame, entrada: receita.entrada, img }
+  return img
+}
+function pintarComTextura(look, tamanho) {
+  const { width: w, height: h } = frame.previa
+  const tex = aplicarTextura(cenaDaPrevia(), w, h, receita.textura, { negativo: look.motor.negativo ?? 'digital' })
+  const lut = assar((r, g, b) => telaSdr.aplicar(look.motor.emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)])), tamanho)
+  const out = new ImageData(w, h)
+  for (let i = 0, j = 0; j < tex.length; i += 4, j += 3) {
+    const o = aplicar(lut, linearParaDi(Math.max(0, tex[j])), linearParaDi(Math.max(0, tex[j + 1])), linearParaDi(Math.max(0, tex[j + 2])))
+    out.data[i] = Math.round(o[0] * 255)
+    out.data[i + 1] = Math.round(o[1] * 255)
+    out.data[i + 2] = Math.round(o[2] * 255)
+    out.data[i + 3] = 255
+  }
+  const c = document.createElement('canvas')
+  c.width = w
+  c.height = h
+  c.getContext('2d').putImageData(out, 0, 0)
+  return c
+}
 
 function refazer(rapido = false) {
   if (!frame) return
@@ -138,7 +177,9 @@ function refazer(rapido = false) {
   antes.width = frame.previa.width
   antes.height = frame.previa.height
   antes.getContext('2d').putImageData(frame.previa, 0, 0)
-  camadas = { antes, depois: pintarCom(frame.previa, lookAtual().aplicar, rapido ? 17 : 33) }
+  const look = lookAtual()
+  const depois = texturaAtiva(receita.textura) ? pintarComTextura(look, rapido ? 17 : 33) : pintarCom(frame.previa, look.aplicar, rapido ? 17 : 33)
+  camadas = { antes, depois }
   $('rotulo-depois').textContent = baseDoLab(receita.base)?.nome ?? 'Depois'
   pintar()
 }
@@ -212,6 +253,9 @@ function desenharBases() {
       b.append(mini, nome)
       b.addEventListener('click', () => {
         receita.base = l.id
+        // a base traz a própria película: as escolhas de negativo e cópia voltam para "da base"
+        Object.assign(receita, { copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null })
+        mostrarFilme()
         for (const x of $('bases').querySelectorAll('.look')) x.setAttribute('aria-checked', String(x === b))
         refazer()
         trocouLook()
@@ -255,8 +299,7 @@ function acender(barra) {
   barra.style.setProperty('--ate', `${Math.max(pct, neutro)}%`)
 }
 function desenharAjustes() {
-  $('ajustes').replaceChildren(
-    ...AJUSTES.map((a) => {
+  const linhaDe = (a) => {
       const linha = document.createElement('div')
       linha.className = 'controle ajuste'
       linha.title = a.dica
@@ -287,20 +330,103 @@ function desenharAjustes() {
       })
       linha.append(rotulo, valor, barra)
       return linha
-    }),
-  )
+  }
+  $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino).map(linhaDe))
+  $('ajustes-finos').replaceChildren(...AJUSTES.filter((a) => a.fino).map(linhaDe))
 }
 $('zerar').addEventListener('click', () => {
   receita.ajustes = { ...AJUSTES_NEUTROS }
   desenharAjustes()
   refazer()
 })
-$('copia').replaceChildren(...COPIAS_LAB.map((c) => Object.assign(document.createElement('option'), { value: c.id, textContent: c.nome })))
-$('copia').addEventListener('change', () => {
+
+// ─────────── textura ───────────
+
+function desenharTextura() {
+  const atual = PRESETS_TEXTURA.find((p) => Object.entries({ ...TEXTURA_NEUTRA, ...p.valores }).every(([k, v]) => receita.textura[k] === v))
+  $('texturas').replaceChildren(
+    ...PRESETS_TEXTURA.map((p) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'lab-grupo'
+      b.setAttribute('role', 'radio')
+      b.setAttribute('aria-checked', String(p === atual))
+      b.textContent = p.nome
+      b.addEventListener('click', () => {
+        receita.textura = { ...TEXTURA_NEUTRA, ...p.valores }
+        desenharTextura()
+        refazer()
+      })
+      return b
+    }),
+  )
+  const linhaDe = (a) => {
+    const linha = document.createElement('div')
+    linha.className = 'controle ajuste'
+    linha.title = a.dica
+    const rotulo = Object.assign(document.createElement('label'), { htmlFor: `tx-${a.id}`, textContent: a.nome })
+    const valor = Object.assign(document.createElement('output'), { htmlFor: `tx-${a.id}` })
+    const barra = document.createElement('input')
+    Object.assign(barra, { type: 'range', id: `tx-${a.id}`, min: a.min, max: a.max, value: Math.round(receita.textura[a.id] / a.escala) })
+    valor.textContent = barra.value
+    acender(barra)
+    barra.addEventListener('input', () => {
+      receita.textura = { ...receita.textura, [a.id]: Number(barra.value) * a.escala }
+      valor.textContent = barra.value
+      acender(barra)
+    })
+    barra.addEventListener('change', () => {
+      desenharTextura()
+      refazer()
+    })
+    linha.append(rotulo, valor, barra)
+    return linha
+  }
+  $('ajustes-textura').replaceChildren(...AJUSTES_TEXTURA.filter((a) => !a.fino).map(linhaDe))
+  $('ajustes-textura-finos').replaceChildren(...AJUSTES_TEXTURA.filter((a) => a.fino).map(linhaDe))
+}
+desenharTextura()
+const opcao = (value, textContent) => Object.assign(document.createElement('option'), { value, textContent })
+$('copia').replaceChildren(...COPIAS_LAB.map((c) => opcao(c.id, c.nome)))
+// negativos por fabricante, como nas fichas
+const grupoNeg = (fab) => Object.assign(document.createElement('optgroup'), { label: fab })
+const kodak = grupoNeg('Kodak')
+const fuji = grupoNeg('Fujifilm')
+for (const n of NEGATIVOS_LAB) (n.fabricante === 'Kodak' ? kodak : n.fabricante === 'Fujifilm' ? fuji : null)?.append(opcao(n.id, n.nome))
+$('negativo').replaceChildren(...NEGATIVOS_LAB.filter((n) => !n.fabricante).map((n) => opcao(n.id, n.nome)), kodak, fuji)
+$('luz-copia').replaceChildren(...LUZES_LAB.map((l) => opcao(l.id, l.nome)))
+$('revelacao').replaceChildren(
+  opcao('', 'Revelação da base'),
+  ...REVELACOES.map((r) => opcao(String(r), r === 0 ? 'Revelação normal' : r < 0 ? `Puxar ${-r} stop` : `Forçar ${r} ${r > 1 ? 'stops' : 'stop'}`)),
+)
+const trocarFilme = () => {
   receita.copia = $('copia').value
+  receita.negativo = $('negativo').value
+  receita.luzCopia = $('luz-copia').value
+  receita.revelacao = $('revelacao').value === '' ? null : Number($('revelacao').value)
+  refazer()
+  trocouLook()
+}
+for (const id of ['copia', 'negativo', 'luz-copia', 'revelacao']) $(id).addEventListener('change', trocarFilme)
+mostrarFilme()
+$('expandido').addEventListener('change', () => {
+  receita.expandido = $('expandido').checked
   refazer()
   trocouLook()
 })
+function mostrarFilme() {
+  // o "da base" diz qual é a película da base
+  const p = baseDoLab(receita.base)
+  const neg = NEGATIVOS_LAB.find((n) => n.id === p?.negativoFicha)
+  const cop = COPIAS_LAB.find((c) => c.id === p?.copia)
+  $('negativo').options[0].textContent = `Negativo da base · ${neg ? neg.nome : 'digital'}`
+  $('copia').options[0].textContent = `Cópia da base · ${cop ? cop.nome : 'sem cópia'}`
+  $('copia').value = receita.copia ?? ''
+  $('negativo').value = receita.negativo ?? ''
+  $('luz-copia').value = receita.luzCopia ?? ''
+  $('revelacao').value = receita.revelacao == null ? '' : String(receita.revelacao)
+  $('expandido').checked = !!receita.expandido
+}
 
 $('intensidade').addEventListener('input', () => {
   receita.intensidade = Number($('intensidade').value) / 100
@@ -417,7 +543,8 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     // a correção da receita era do frame de quem salvou: aqui vale a leitura deste frame
     receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : lida.correcao }
     $('entrada').value = receita.entrada
-    $('copia').value = receita.copia ?? ''
+    mostrarFilme()
+    desenharTextura()
     $('nome-look').value = lida.nome
     $('intensidade').value = String(Math.round(receita.intensidade * 100))
     $('valor-intensidade').textContent = `${$('intensidade').value}%`

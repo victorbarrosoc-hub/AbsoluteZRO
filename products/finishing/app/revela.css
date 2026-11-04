@@ -2845,10 +2845,39 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
 }
 
 /* Lab · de onde vem o frame e o selo do controle de qualidade do pacote */
-.entrada-lab,
-.copia-lab {
+.entrada-lab {
   max-width: 360px;
   width: 100%;
+}
+.filme-lab {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.filme-lab .campo-log {
+  width: 100%;
+}
+.filme-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.filme-opcoes .campo-log {
+  flex: 1 1 140px;
+  width: auto;
+}
+.fino-lab summary {
+  cursor: pointer;
+  color: var(--texto-2, #6e6e73);
+  font-size: 14px;
+  padding: 6px 0;
+}
+.fino-lab[open] summary {
+  margin-bottom: 4px;
 }
 .qc {
   margin: 0;

@@ -89,35 +89,52 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
   log) e as camadas conversam (efeito entre camadas); depois, cor como no filme subtrativo (cor forte mais densa,
   saturação menor nas altas e sombras, verde oliva, azul petróleo), separação de tons com a pele recortada e uma
   âncora que mantém o matiz da pele quando a exposição muda.
-- **Bases** em quatro grupos: Revela, **Película** (Negativo 250D, Negativo 500T, Positivo 50D, Reversível, Sem
-  branqueamento), **Cinema** (as cópias sozinhas e com os negativos: Cópia 2383, 2393 e 3513, 500T + 2383, 250D + 2383,
-  250D + 2393, 500T + 3513) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico). Negativos e looks têm nomes
-  genéricos.
+- **Bases** em quatro grupos: Revela, **Película** (interpretações com nomes genéricos), **Cinema** (tudo das fichas
+  técnicas: as cópias 2383, 2393 e 3513 sobre a câmera digital; os negativos copiados como no laboratório: 500T,
+  250D e 200T na 2383, 500T na 3513, Eterna 500, Eterna 250D, Eterna 400 e Reala 500D na 3513; e o 500T escaneado,
+  sem cópia) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico).
+- **Negativos das fichas** (`src/cor/negativos.js`): Kodak Vision3 500T 5219, 250D 5207, 200T 5213, 50D 5203 e
+  Fujifilm Eterna 500 8573, Eterna 400 8583, Eterna 250 8553, Eterna 250D 8563, Eterna Vivid 160 8543 e Reala 500D
+  8592. A curva de cada camada foi digitalizada da ficha (densidade Status M por stop de câmera) e ajustada por uma
+  forma analítica monótona (pé e ombro em softplus compostos; erro de 0,002 a 0,005 de densidade nas Kodak, 0,014 a
+  0,03 nas Fuji, de traço mais grosso). A **separação de cor** de cada camada vem da sensibilidade espectral publicada
+  do 500T e do 250D, integrada com a ColorChecker sob a luz do filme (3200 K e D55) e as funções de cor CIE 1931:
+  uma matriz DWG → camadas com erro médio de 0,08 stop (as camadas do Vision3 ficam perto das primárias P3, com 1 a 9%
+  de vazamento). A Fujifilm não publica a sensibilidade espectral: os Fuji usam a matriz Kodak da mesma luz.
+- **Laboratório**: o negativo vai à cópia pela densidade (luzes de copiagem que põem o cinza na densidade de
+  laboratório) e o contraste do sistema sai da física: Vision3 + 2383 dá 1,71 a 1,75 no cinza (uma cópia projetada),
+  sem ajuste. Revelação forçada ou puxada (contraste do negativo +12% por stop), **luz do projetor** D65, D60 ou D55
+  (o branco da cópia), **Expandido** (8% mais faixa em volta do cinza, branco no lugar) e o **negativo escaneado** sem
+  cópia (as camadas lidas como P3, como um scanner).
 - **Cópia de cinema** (`src/cor/copia.js`): as curvas sensitométricas publicadas nas fichas técnicas (KODAK VISION 2383,
   H-1-2383; VISION Premier 2393, H-61; FUJICOLOR ETERNA-CP 3513DI, manual Fujifilm), digitalizadas e ajustadas por uma
-  logística de Richards (erro de 0,02 a 0,09 de densidade), e os corantes da 2383 (densidade espectral, Status A).
-  Negativo + cópia com contraste 1,8 no cinza (os negativos que saem disso têm gama 0,50 a 0,68, como os reais), a
-  sobreposição espectral das camadas do negativo, cinza na densidade de laboratório (1,0 acima da base) e volta pela
-  inversa exata da tela: na tela SDR, o look é o que a cópia mostraria. A pele vira de matiz com a exposição como na
-  película; o motor tira a maior parte (âncora) e o controle de qualidade cobra 12° em vez de 7°. No Lab, a **Cópia**
-  troca a da base (ou tira). Sem vínculo com a Kodak ou a Fujifilm; as fichas são referência.
+  logística de Richards (erro de 0,02 a 0,09 de densidade), e os corantes da 2383 (densidade espectral, Status A). Volta
+  pela inversa exata da tela: na tela SDR, o look é o que a cópia mostraria. A pele vira de matiz com a exposição como
+  na película; o motor tira a maior parte (âncora) e o controle de qualidade cobra 12° em vez de 7°. No Lab, o
+  **Negativo** e a **Cópia** trocam os da base. Sem vínculo com a Kodak ou a Fujifilm; as fichas são referência.
+- **Textura** (`src/cor/textura.js`, DCTL em `src/cor/dctl.js`): difusão, halation (a luz que volta da base e expõe de
+  novo a camada vermelha, em duas escalas) e grão (campo gaussiano por camada, com a granularidade de cada negativo e o
+  tamanho da bitola: 65, 35, 16 mm e Super 8), na luz da cena e antes do look, como no filme. A prévia do Lab faz o
+  caminho do Resolve (cena → textura → look → tela) e o pacote leva a textura como DCTL para um nó antes do look; o
+  grão da DCTL é o mesmo da prévia, pixel a pixel (teste).
 - **Revisão em material de câmera real**: footage oficial da ARRI (ALEXA Mini e Mini LF em LogC3, ALEXA 35 em LogC4) e
   da DJI (Inspire 3, D-Log), baixado só para os testes internos (não fica no repositório: é de terceiros).
 - **O frame**: still já tratado (Rec.709) ou log de câmera (as mesmas do CST). **Analisar e corrigir** mede na cena:
   exposição (clareia 60% até +1,5 stop; escurece só 35% até -0,6, para frame claro de propósito continuar claro; numa
   cena escura de propósito as altas não passam de 0,75 stop sobre o cinza) e branco nos cones, só pelos tons quase
   neutros.
-- **Ajustes** com nome de gente: Luz (±2 stops), Contraste (em log), Cor, Temperatura e Tint (adaptação cromática),
-  Calor, Desbotar e Pele protegida. A intensidade dosa o look; a primária vale sempre.
+- **Ajustes** com nome de gente: Luz (±2 stops), Contraste (em log), Cor, Temperatura e Tint (adaptação cromática); no
+  **Ajuste fino**: Altas, Sombras e Preto (em log, sem mexer no cinza), Calor, Estilo (retrô ↔ moderno), Densidade da
+  cor, Sem branqueamento (bleach bypass), Matiz e Saturação da pele, Pele protegida e Desbotar. A intensidade dosa o
+  look; a primária vale sempre.
 - **Saída**: LUT no tamanho do editor; **Pacote profissional** (.zip, num worker): LMT DWG/DI 65 e 33, CLF, LMT
   ACEScct 65, LUT do monitor (câmera → Rec.709), LUT Rec.709 → Rec.709, a correção em ASC CDL (antes do look), a
   receita, o controle de qualidade e um LEIA-ME com a ordem. Nomes no padrão da ARRI.
 - **Controle de qualidade** (`src/cor/qc.js`, `node scripts/qc-looks.mjs`): cinza neutro (ou o tom declarado), luz que
   só sobe, sem degrau (medido em duas resoluções), pele estável de -2 a +2 stops, preto e branco no lugar, cor extrema
-  finita e LUT 65 tetraédrica igual à conta (ΔE Oklab ≤ 0,012). Os 20 looks passam; `test/motor.test.js` cobra.
+  finita e LUT 65 tetraédrica igual à conta (ΔE Oklab ≤ 0,012). Os 25 looks passam; `test/motor.test.js` cobra.
 - **Folha de contato** para revisão (`node scripts/folha-de-contato.mjs <pasta>`): cada look nos frames de exemplo e
   numa cartela (ColorChecker, rampa de cinza, rampas de cor), pelo caminho inteiro.
-- Grão, halation e bloom não entram: dependem dos vizinhos do pixel e nenhuma LUT carrega.
 
 ## Meus looks
 

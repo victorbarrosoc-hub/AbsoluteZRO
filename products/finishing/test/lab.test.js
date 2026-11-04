@@ -26,7 +26,8 @@ test('Lab: cada base tem nome, id único e muda o frame', () => {
   for (const id of ids) {
     const o = criarLab({ base: id }).aplicar(0.55, 0.45, 0.35)
     assert.ok(o.every((v) => v >= 0 && v <= 1))
-    assert.ok(distancia(o, [0.55, 0.45, 0.35]) > 0.01, id)
+    // o negativo escaneado (sem cópia) é sutil de propósito: mexe no pé, no ombro e na separação de cor
+    assert.ok(distancia(o, [0.55, 0.45, 0.35]) > (id.endsWith('-scan') ? 0.002 : 0.01), id)
   }
 })
 

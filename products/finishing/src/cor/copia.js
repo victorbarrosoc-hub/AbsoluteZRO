@@ -13,10 +13,16 @@
 // a cópia daria e volta pela inversa exata da tela Rec.709 (src/cor/cena.js) até a luz da cena. Assim o LMT continua
 // log → log e, na tela SDR, o resultado é o da cópia.
 //
+// O negativo que vai à cópia pode ser um negativo das fichas (src/cor/negativos.js: curva de cada camada e separação
+// de cor medidas) ou o negativo ideal do intermediário digital (reto, como o Cineon), quando a cópia entra sobre a
+// câmera digital. Com o negativo da ficha, o contraste do sistema não é escolhido: sai do negativo × cópia, como no
+// laboratório. A luz do projetor (D55, D60 ou D65) muda o branco da cópia, e "Expandido" abre o pé e o ombro.
+//
 // Nomes de fabricante só como referência da ficha: a Revela não tem vínculo com a Kodak nem com a Fujifilm.
 
-import { CURVAS, matrizGamut } from './espacos.js'
+import { CURVAS, matrizGamut, rgbParaXyz, inversa } from './espacos.js'
 import { comprimirGamut, criarTela } from './cena.js'
+import { criarNegativo, exposicaoDasCamadas } from './negativos.js'
 
 const mul = (m, v) => [
   m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
@@ -61,7 +67,10 @@ export const COPIAS = [
     curvas: [curva(4.3989, 0.4143, 1.1562, 0.05, 5.28), curva(4.74, 0.4785, 1.3853, 0.06, 5.34), curva(5.0812, 0.5426, 1.6143, 0.07, 5.4)],
     corantes: CORANTES_ECP,
     peleMax: PELE_MAX,
-    cruzamento: 0.5, // curvas quase sobrepostas na ficha (o verde é a média): o cruzamento medido é mais incerto
+    cruzamento: 0.25, // curvas quase sobrepostas na ficha (o verde é a média): o cruzamento medido é mais incerto
+    // com um negativo das fichas, o contraste de cada camada no cinza segue o desenho do sistema (a 2393 é feita para os
+    // Vision3, como a 2383), não o traço digitalizado, cujo verde é sintetizado
+    equilibrar: true,
   },
   {
     id: '3513',
@@ -111,6 +120,17 @@ const TAB_N = 4096
 const TAB_PASSO = (TAB_B - TAB_A) / (TAB_N - 1)
 const deLinear709 = CURVAS.rec709.deLinear
 
+// branco de cada luz de projetor em Rec.709 linear, com o maior canal em 1 (o pico continua o pico)
+const XY_LUZ = { D55: [0.33242, 0.34743], D60: [0.32168, 0.33767] }
+const XYZ_709 = inversa(rgbParaXyz('rec709'))
+export function branco709(luz) {
+  const xy = XY_LUZ[luz]
+  if (!xy) return null
+  const b = mul(XYZ_709, [xy[0] / xy[1], 1, (1 - xy[0] - xy[1]) / xy[1]])
+  const m = Math.max(...b)
+  return b.map((v) => v / m)
+}
+
 function semNegativo(rgb) {
   const ac = Math.max(rgb[0], rgb[1], rgb[2])
   if (!(ac > 0)) return [0, 0, 0]
@@ -127,17 +147,34 @@ function semNegativo(rgb) {
  * cada camada é escolhido para o cinza sair neutro e com esse contraste, como o laboratório equilibra as luzes de
  * copiagem. O que sobra de diferença entre as camadas (pé e ombro de cada uma) é o caráter da cópia.
  */
-export function criarCopia(id, { gamaSistema = 1.8, saturacaoSistema = 1.3 } = {}) {
-  const c = copiaDe(id)
-  if (!c) throw new Error(`Cópia desconhecida: ${id}`)
+export function criarCopia(id, { gamaSistema = 1.8, saturacaoSistema = 1.3, negativo = null, revelacao = 0, iluminante = 'D65', expandido = false } = {}) {
+  const c0 = copiaDe(id)
+  if (!c0) throw new Error(`Cópia desconhecida: ${id}`)
+  const c = c0
+  // Expandido: a cópia "aberta" das cópias de prova: 8% mais faixa na tela em volta do cinza (altas mais altas, sombras
+  // mais fundas, o mesmo cinza), o que um laboratório faz com menos pé e ombro na cópia
+  const abre = expandido ? 1.08 : 1
+  const neg = negativo ? criarNegativo(negativo, { revelacao }) : null
   const M = c.corantes
   const Mi = inversa3(M)
   // luzes de copiagem: em que exposição cada camada põe o cinza na densidade de laboratório
   const xCinza = c.curvas.map((cv) => exposicaoPara(cv, cv.dmin + SOBRE_O_CINZA))
-  const gamaNeg = c.curvas.map((cv, i) => gamaSistema / gama(cv, xCinza[i]))
+  // negativo ideal: o contraste de cada camada é escolhido para o sistema dar `gamaSistema` no cinza
+  const gamaNeg = neg ? neg.gama : c.curvas.map((cv, i) => gamaSistema / gama(cv, xCinza[i]))
+  // densidade a mais no negativo que no cinza, camada j, com a luz da cena em `e` (log10 relativo ao cinza)
+  const LOG2_10 = Math.log2(10)
+  // equilíbrio de laboratório (só nas cópias marcadas): cada camada do negativo ganha o fator que iguala o contraste do
+  // sistema no cinza ao da média das três
+  const fator = [1, 1, 1]
+  if (neg && c.equilibrar) {
+    const sist = c.curvas.map((cv, j) => neg.gama[j] * gama(cv, xCinza[j]))
+    const media = (sist[0] + sist[1] + sist[2]) / 3
+    for (let j = 0; j < 3; j++) fator[j] = media / sist[j]
+  }
+  const noNegativo = neg ? (j, e) => fator[j] * neg.delta(j, e * LOG2_10) : (j, e) => gamaNeg[j] * e
   // negativo + cópia de cada camada, em função do log da luz da cena relativo ao cinza (e)
   // (acima da base de cada camada: a base é o branco e fica de fora da média)
-  const integral = (j, e) => densidade(c.curvas[j], xCinza[j] - gamaNeg[j] * e) - c.curvas[j].dmin
+  const integral = (j, e) => densidade(c.curvas[j], xCinza[j] - noNegativo(j, e)) - c.curvas[j].dmin
   // o quanto cada camada se afasta da média (o cruzamento de cores no pé e no ombro) entra com a confiança da
   // digitalização da ficha: 1 = a curva como está
   const lambda = c.cruzamento
@@ -153,6 +190,9 @@ export function criarCopia(id, { gamaSistema = 1.8, saturacaoSistema = 1.3 } = {
   const tabelas = [0, 1, 2].map((i) => {
     const t = new Float64Array(TAB_N)
     for (let k = 0; k < TAB_N; k++) t[k] = exata(i, TAB_A + k * TAB_PASSO)
+    // mais luz na cena nunca dá mais corante na cópia: no fundo do pé, onde as três curvas encostam na densidade
+    // máxima, a separação dos corantes pode inverter uma fração de milésimo; a tabela fica monótona
+    for (let k = 1; k < TAB_N; k++) t[k] = Math.min(t[k], t[k - 1])
     return t
   })
   const analitica = (i, e) => {
@@ -180,15 +220,25 @@ export function criarCopia(id, { gamaSistema = 1.8, saturacaoSistema = 1.3 } = {
     [so, so, 1 - 2 * so],
   ]
 
+  // luz do projetor: o branco da cópia na tela D65. D65 = neutro; D60 e D55 esquentam como a lâmpada de xenônio
+  const lampada = branco709(iluminante)
+
   /** A tela da cópia (Rec.709 linear, 1 = pico) para uma luz da cena em DWG. */
   function tela(rgbDwg) {
-    const p3 = mul(sobreposicao, semNegativo(mul(DWG_P3, rgbDwg)))
     // negativo: mais luz na cena, mais densidade no negativo, menos luz na cópia (o sinal está em `integral`)
-    const e = p3.map((v) => Math.log10((v + FOG) / (0.18 + FOG)))
+    const e = neg
+      ? exposicaoDasCamadas(neg.M, rgbDwg, FOG).map((v) => v / LOG2_10)
+      : mul(sobreposicao, semNegativo(mul(DWG_P3, rgbDwg))).map((v) => Math.log10((v + FOG) / (0.18 + FOG)))
     const a = e.map((v, i) => analitica(i, v))
     const D = mul(M, a)
-    const t = D.map((v, i) => MARGEM * 0.1 * 10 ** -(v - dmin[i] - SOBRE_O_CINZA))
-    return mul(P3_709, t)
+    const t = D.map((v, i) => {
+      // densidade relativa ao cinza: -1 é o branco da base (fica no lugar), acima de 0 é sombra
+      const d = v - dmin[i] - SOBRE_O_CINZA
+      const e = abre === 1 ? d : d < 0 ? Math.max(0, 1 + d) ** abre - 1 : d * abre
+      return MARGEM * 0.1 * 10 ** -e
+    })
+    const l = mul(P3_709, t)
+    return lampada ? l.map((v, i) => v * lampada[i]) : l
   }
 
   function emCena(rgbDwg) {
@@ -197,5 +247,5 @@ export function criarCopia(id, { gamaSistema = 1.8, saturacaoSistema = 1.3 } = {
     return telaSdr.inverter(...lin.map((v) => deLinear709(Math.min(1, Math.max(0, v / pico)))))
   }
 
-  return { copia: c, tela, emCena, gamaNegativo: gamaNeg }
+  return { copia: c0, negativo: neg?.negativo ?? null, tela, emCena, gamaNegativo: gamaNeg }
 }
