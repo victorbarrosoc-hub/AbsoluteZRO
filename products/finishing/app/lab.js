@@ -5,7 +5,23 @@
 import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { AJUSTES, AJUSTES_NEUTROS, BOOST_PADRAO, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, LUZES_LAB, NEGATIVOS_LAB, REVELACOES, paraCena, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import {
+  AJUSTES,
+  AJUSTES_NEUTROS,
+  BOOST_PADRAO,
+  COPIAS_LAB,
+  ENTRADAS_LAB,
+  GRUPOS,
+  LUZES_LAB,
+  NEGATIVOS_LAB,
+  REVELACOES,
+  paraCena,
+  analisarFrame,
+  baseDoLab,
+  criarLab,
+  escreverReceita,
+  lerReceita,
+} from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 import { criarTela, diParaLinear, linearParaDi } from '../src/cor/cena.js'
@@ -23,7 +39,21 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
-let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null, boost: BOOST_PADRAO, textura: { ...TEXTURA_NEUTRA }, intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
+let receita = {
+  nome: 'Meu look',
+  entrada: 'still',
+  base: 'revela',
+  copia: '',
+  negativo: '',
+  luzCopia: '',
+  expandido: null,
+  revelacao: null,
+  boost: BOOST_PADRAO,
+  textura: { ...TEXTURA_NEUTRA },
+  intensidade: 1,
+  correcao: null,
+  ajustes: { ...AJUSTES_NEUTROS },
+}
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
@@ -300,36 +330,36 @@ function acender(barra) {
 }
 function desenharAjustes() {
   const linhaDe = (a) => {
-      const linha = document.createElement('div')
-      linha.className = 'controle ajuste'
-      linha.title = a.dica
-      const rotulo = document.createElement('label')
-      rotulo.htmlFor = `aj-${a.id}`
-      rotulo.textContent = a.nome
-      const valor = document.createElement('output')
-      valor.htmlFor = `aj-${a.id}`
-      const barra = document.createElement('input')
-      Object.assign(barra, { type: 'range', id: `aj-${a.id}`, min: a.min, max: a.max, value: receita.ajustes[a.id] ?? 0 })
-      if (a.min < 0) barra.classList.add('bipolar')
+    const linha = document.createElement('div')
+    linha.className = 'controle ajuste'
+    linha.title = a.dica
+    const rotulo = document.createElement('label')
+    rotulo.htmlFor = `aj-${a.id}`
+    rotulo.textContent = a.nome
+    const valor = document.createElement('output')
+    valor.htmlFor = `aj-${a.id}`
+    const barra = document.createElement('input')
+    Object.assign(barra, { type: 'range', id: `aj-${a.id}`, min: a.min, max: a.max, value: receita.ajustes[a.id] ?? 0 })
+    if (a.min < 0) barra.classList.add('bipolar')
+    valor.textContent = formatar(Number(barra.value))
+    acender(barra)
+    barra.addEventListener('input', () => {
+      receita.ajustes[a.id] = Number(barra.value)
       valor.textContent = formatar(Number(barra.value))
       acender(barra)
-      barra.addEventListener('input', () => {
-        receita.ajustes[a.id] = Number(barra.value)
-        valor.textContent = formatar(Number(barra.value))
-        acender(barra)
-        agendar()
-      })
-      barra.addEventListener('change', () => refazer())
-      // duplo toque volta ao neutro, como nos painéis de cor
-      barra.addEventListener('dblclick', () => {
-        barra.value = 0
-        receita.ajustes[a.id] = 0
-        valor.textContent = '0'
-        acender(barra)
-        refazer()
-      })
-      linha.append(rotulo, valor, barra)
-      return linha
+      agendar()
+    })
+    barra.addEventListener('change', () => refazer())
+    // duplo toque volta ao neutro, como nos painéis de cor
+    barra.addEventListener('dblclick', () => {
+      barra.value = 0
+      receita.ajustes[a.id] = 0
+      valor.textContent = '0'
+      acender(barra)
+      refazer()
+    })
+    linha.append(rotulo, valor, barra)
+    return linha
   }
   $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino).map(linhaDe))
   $('ajustes-finos').replaceChildren(...AJUSTES.filter((a) => a.fino).map(linhaDe))
@@ -595,3 +625,39 @@ desenharAjustes()
 aplicarPedido()
 // o painel do Lab fica guardado entre as abas: quem chega de novo por um link com ?base= escolhe de novo
 addEventListener('revela:pagina', (e) => e.detail === 'lab' && aplicarPedido())
+
+// ─────────── workspace: as cinco etapas ───────────
+// A barra de etapas acende a que está à vista (01 Source a 05 Output); o toque leva até ela.
+{
+  const links = [...raiz.querySelectorAll('.ws-etapas a')]
+  const visiveis = new Map()
+  const marcar = () => {
+    const atual = links.find((a) => visiveis.get(a.dataset.etapa)) ?? links[0]
+    for (const a of links) {
+      if (a === atual) a.setAttribute('aria-current', 'step')
+      else a.removeAttribute('aria-current')
+    }
+  }
+  const ver = new IntersectionObserver(
+    (entradas) => {
+      for (const e of entradas) visiveis.set(e.target.id, e.isIntersecting)
+      marcar()
+    },
+    { rootMargin: '-20% 0px -55% 0px' },
+  )
+  for (const a of links) {
+    const alvo = $(a.dataset.etapa)
+    if (alvo) ver.observe(alvo)
+    a.addEventListener('click', (e) => {
+      e.preventDefault()
+      const alvo = $(a.dataset.etapa)
+      if (!alvo) return
+      const comportamento = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      // no computador a coluna da revelação rola sozinha (a imagem fica parada); no celular rola a página
+      const coluna = alvo.closest('.ws-controles')
+      if (coluna && coluna.scrollHeight > coluna.clientHeight + 1) coluna.scrollTo({ top: alvo.offsetTop - coluna.offsetTop, behavior: comportamento })
+      else alvo.scrollIntoView({ behavior: comportamento, block: 'start' })
+    })
+  }
+  marcar()
+}

@@ -5051,3 +5051,17 @@ SOBEDESCE de computador, que disparam os instaladores).
 - Grão novo a cada quadro: a DCTL do Resolve não recebe o número do quadro; continua valendo animar a Semente.
 - O Boost passou a se chamar **High Density** no Lab (a receita segue com a chave `boost`).
 - `npm test` da Revela 191/191.
+
+## REVELAFILM: direcionamento de marca e workspace do Lab (04/11/2026)
+
+- Direcionamento do titular (vídeo): categoria "Cinematic Image Development", workspace em cinco etapas (Source,
+  Develop, Film, Finish, Output) e quatro áreas, integração com o AEON, identidade (carvão, grafite, marfim, vermelho
+  cinematográfico, âmbar; Inter + serifada editorial) e cinco princípios (cinema first, ciência por trás da imagem,
+  simples, não destrutivo, fluxo conectado).
+- Lab refeito como workspace (lab.html, app/workspace.css, app/lab.js): barra com o nome do look e as etapas 01–05
+  (acende a que está à vista e leva até ela), Film library à esquerda, a imagem no centro, a revelação à direita por
+  etapa; no computador cada coluna rola sozinha e a imagem fica parada; no celular, imagem, biblioteca e etapas em
+  sequência. Sala sempre escura; ação principal (Baixar LUT) e etapa atual em vermelho cinematográfico.
+- Fontes servidas pelo próprio site (CSP 'self'): Inter (variável) e Instrument Serif, OFL, com as licenças em fontes/.
+- Todos os IDs e papéis do Lab ficaram; `npm test` da Revela 191/191 (com as telas em Chromium).
+- A integração AEON ↔ REVELAFILM é direção de produto: não existe ainda (o AEON segue fechado pelo gate).

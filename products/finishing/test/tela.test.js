@@ -1288,7 +1288,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco + 'lab.html')
-  await pagina.getByRole('heading', { name: 'Crie o seu look.' }).waitFor()
+  await pagina.getByRole('heading', { name: 'Revele a imagem.' }).waitFor()
   await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
   await pagina.locator('#lab:not([hidden])').waitFor()
   // "Analisar e corrigir" já vem ligado e diz o que fez
