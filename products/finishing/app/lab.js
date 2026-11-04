@@ -26,6 +26,8 @@ import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 import { criarTela, diParaLinear, linearParaDi } from '../src/cor/cena.js'
 import { AJUSTES_TEXTURA, PRESETS_TEXTURA, TEXTURA_NEUTRA, aplicarTextura, texturaAtiva } from '../src/cor/textura.js'
+import { analisar, criarLook } from '../src/cor/referencia.js'
+import { presetLightroom } from '../src/cor/lightroom.js'
 
 icones()
 escalonar()
@@ -57,6 +59,9 @@ let receita = {
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
+// a sua referência (modo Simples): uma imagem com a cor que a pessoa quer. Fica só na memória (não vai na receita).
+// { analise, nome, url, intensidade, look, chave, baseAntes }
+let referencia = null
 
 const avisar = (t, erro = false) => {
   $('estado').textContent = t
@@ -165,6 +170,38 @@ function pintarCom(base, f, tamanho) {
 const lookAtual = () => criarLab(receita)
 const telaSdr = criarTela('rec709')
 
+/** Depois do look (código da tela), a referência leva a cor até a imagem escolhida, na intensidade dela. */
+const comReferencia = (f) =>
+  referencia?.look
+    ? (r, g, b) => {
+        const d = f(r, g, b)
+        return referencia.look.aplicar(d[0], d[1], d[2], referencia.intensidade)
+      }
+    : f
+const aplicarFinal = (look) => comReferencia(look.aplicar)
+
+/**
+ * A referência é medida contra o frame revelado sem look (base neutra, com a correção, sem os ajustes): assim os
+ * ajustes da pessoa continuam valendo por cima dela, em vez de a referência desfazer cada um.
+ */
+function prepararReferencia() {
+  if (!referencia || !frame) return
+  const chave = JSON.stringify([receita.entrada, receita.correcao])
+  if (referencia.look && referencia.chave === chave) return
+  const neutro = criarLab({ base: 'neutro', entrada: receita.entrada, correcao: receita.correcao }).aplicar
+  const lut = assar(neutro, 17)
+  const d = frame.mini.data
+  const pixels = new Float32Array((d.length / 4) * 3)
+  for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+    const o = aplicar(lut, d[i] / 255, d[i + 1] / 255, d[i + 2] / 255)
+    pixels[j] = o[0]
+    pixels[j + 1] = o[1]
+    pixels[j + 2] = o[2]
+  }
+  referencia.look = criarLook(referencia.analise, analisar({ largura: frame.mini.width, altura: frame.mini.height, pixels }))
+  referencia.chave = chave
+}
+
 // com textura, a prévia faz o caminho do Resolve: frame → luz da cena → textura → look → tela
 let cenaGuardada = null
 function cenaDaPrevia() {
@@ -185,7 +222,10 @@ function cenaDaPrevia() {
 function pintarComTextura(look, tamanho) {
   const { width: w, height: h } = frame.previa
   const tex = aplicarTextura(cenaDaPrevia(), w, h, receita.textura, { negativo: look.motor.negativo ?? 'digital' })
-  const lut = assar((r, g, b) => telaSdr.aplicar(look.motor.emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)])), tamanho)
+  const lut = assar(
+    comReferencia((r, g, b) => telaSdr.aplicar(look.motor.emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)]))),
+    tamanho,
+  )
   const out = new ImageData(w, h)
   for (let i = 0, j = 0; j < tex.length; i += 4, j += 3) {
     const o = aplicar(lut, linearParaDi(Math.max(0, tex[j])), linearParaDi(Math.max(0, tex[j + 1])), linearParaDi(Math.max(0, tex[j + 2])))
@@ -208,9 +248,10 @@ function refazer(rapido = false) {
   antes.height = frame.previa.height
   antes.getContext('2d').putImageData(frame.previa, 0, 0)
   const look = lookAtual()
-  const depois = texturaAtiva(receita.textura) ? pintarComTextura(look, rapido ? 17 : 33) : pintarCom(frame.previa, look.aplicar, rapido ? 17 : 33)
+  prepararReferencia()
+  const depois = texturaAtiva(receita.textura) ? pintarComTextura(look, rapido ? 17 : 33) : pintarCom(frame.previa, aplicarFinal(look), rapido ? 17 : 33)
   camadas = { antes, depois }
-  $('rotulo-depois').textContent = baseDoLab(receita.base)?.nome ?? 'Depois'
+  $('rotulo-depois').textContent = referencia ? 'Sua referência' : (baseDoLab(receita.base)?.nome ?? 'Depois')
   pintar()
 }
 
@@ -282,6 +323,8 @@ function desenharBases() {
       nome.textContent = l.nome
       b.append(mini, nome)
       b.addEventListener('click', () => {
+        // um look da biblioteca é outro ponto de partida: a referência sai
+        if (referencia) tirarReferencia(false)
         receita.base = l.id
         // a base traz a própria película: as escolhas de negativo e cópia voltam para "da base"
         Object.assign(receita, { copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null })
@@ -477,9 +520,153 @@ function mostrarFilme() {
 $('intensidade').addEventListener('input', () => {
   receita.intensidade = Number($('intensidade').value) / 100
   $('valor-intensidade').textContent = `${$('intensidade').value}%`
+  mostrarIntensidade()
   agendar()
 })
 $('intensidade').addEventListener('change', () => refazer())
+
+// no Simples, uma intensidade só: a da referência quando ela está escolhida, senão a do look
+function mostrarIntensidade() {
+  const v = Math.round((referencia ? referencia.intensidade : (receita.intensidade ?? 1)) * 100)
+  $('intensidade-simples').value = String(v)
+  $('valor-intensidade-simples').textContent = `${v}%`
+  acender($('intensidade-simples'))
+}
+$('intensidade-simples').addEventListener('input', () => {
+  const v = Number($('intensidade-simples').value)
+  $('valor-intensidade-simples').textContent = `${v}%`
+  acender($('intensidade-simples'))
+  if (referencia) referencia.intensidade = v / 100
+  else {
+    receita.intensidade = v / 100
+    $('intensidade').value = String(v)
+    $('valor-intensidade').textContent = `${v}%`
+  }
+  agendar()
+})
+$('intensidade-simples').addEventListener('change', () => refazer())
+
+// ─────────── a sua referência ───────────
+
+async function receberReferencia(arquivo) {
+  if (!arquivo || !frame) return
+  if (!arquivo.type.startsWith('image/')) return avisar('A referência precisa ser uma imagem.', true)
+  avisar('Lendo a referência…')
+  let bm
+  try {
+    bm = await createImageBitmap(arquivo, { colorSpaceConversion: 'none' }).catch(() => createImageBitmap(arquivo))
+  } catch {
+    return avisar('Não deu para abrir essa imagem.', true)
+  }
+  await espera()
+  const img = desenhar(bm, LADO_MINI)
+  const pixels = new Float32Array(img.width * img.height * 3)
+  for (let i = 0, j = 0; i < img.data.length; i += 4, j += 3) {
+    pixels[j] = img.data[i] / 255
+    pixels[j + 1] = img.data[i + 1] / 255
+    pixels[j + 2] = img.data[i + 2] / 255
+  }
+  if (referencia?.url) URL.revokeObjectURL(referencia.url)
+  const baseAntes = referencia?.baseAntes ?? { base: receita.base, copia: receita.copia, negativo: receita.negativo, luzCopia: receita.luzCopia }
+  referencia = {
+    analise: analisar({ largura: img.width, altura: img.height, pixels }),
+    nome: arquivo.name,
+    url: URL.createObjectURL(arquivo),
+    intensidade: 1,
+    look: null,
+    chave: null,
+    baseAntes,
+  }
+  // a referência é o ponto de partida: o frame revela sem look por baixo dela (os ajustes continuam valendo)
+  Object.assign(receita, { base: 'neutro', copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null })
+  for (const x of $('bases').querySelectorAll('.look')) x.setAttribute('aria-checked', 'false')
+  mostrarReferencia()
+  mostrarIntensidade()
+  refazer()
+  trocouLook()
+  avisar('Referência aplicada. A intensidade e os ajustes refinam; um look da biblioteca troca o ponto de partida.')
+}
+
+function mostrarReferencia() {
+  const caixa = $('caixa-ref')
+  caixa.classList.toggle('ativa', !!referencia)
+  $('ref-tirar').hidden = !referencia
+  $('ref-estado').textContent = referencia ? referencia.nome : 'Uma imagem com a cor que você quer'
+  const mini = $('ref-mini')
+  if (referencia) {
+    const img = new Image()
+    img.alt = ''
+    img.src = referencia.url
+    mini.replaceChildren(img)
+  } else {
+    const icone = document.createElement('span')
+    icone.dataset.icone = 'imagem'
+    mini.replaceChildren(icone)
+    icones()
+  }
+}
+
+/** Tira a referência; `voltar` devolve o look que estava antes dela (o clique num look já escolhe outro). */
+function tirarReferencia(voltar = true) {
+  if (!referencia) return
+  const antes = referencia.baseAntes
+  URL.revokeObjectURL(referencia.url)
+  referencia = null
+  if (voltar) Object.assign(receita, antes, { base: antes.base === 'neutro' ? 'revela' : antes.base })
+  mostrarReferencia()
+  mostrarIntensidade()
+  if (voltar) {
+    mostrarFilme()
+    desenharBases()
+    refazer()
+    avisar('Referência tirada.')
+  }
+}
+
+$('arquivo-ref').addEventListener('change', (e) => {
+  receberReferencia(e.target.files[0])
+  e.target.value = ''
+})
+$('ref-tirar').addEventListener('click', () => tirarReferencia())
+{
+  const c = $('caixa-ref')
+  c.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    c.classList.add('soltando')
+  })
+  c.addEventListener('dragleave', () => c.classList.remove('soltando'))
+  c.addEventListener('drop', (e) => {
+    e.preventDefault()
+    c.classList.remove('soltando')
+    receberReferencia(e.dataTransfer.files[0])
+  })
+}
+
+// ─────────── modos: Simples (padrão) e Profissional ───────────
+
+const CHAVE_MODO = 'revela-lab-modo'
+function aplicarModo(modo) {
+  const simples = modo !== 'pro'
+  $('lab').classList.toggle('simples', simples)
+  $('modo-simples').setAttribute('aria-pressed', String(simples))
+  $('modo-pro').setAttribute('aria-pressed', String(!simples))
+  try {
+    localStorage.setItem(CHAVE_MODO, simples ? 'simples' : 'pro')
+  } catch {
+    // sem armazenamento (janela privada): o modo vale só nesta visita
+  }
+}
+$('modo-simples').addEventListener('click', () => aplicarModo('simples'))
+$('modo-pro').addEventListener('click', () => aplicarModo('pro'))
+{
+  let guardado = null
+  try {
+    guardado = localStorage.getItem(CHAVE_MODO)
+  } catch {
+    guardado = null
+  }
+  aplicarModo(guardado === 'pro' ? 'pro' : 'simples')
+}
 
 // ─────────── saída ───────────
 
@@ -507,14 +694,26 @@ function baixarTexto(texto, arquivo) {
 $('editor').addEventListener('change', () => {
   const t = String(EDITORES[$('editor').value] ?? 33)
   for (const r of raiz.querySelectorAll('input[name=tamanho]')) r.checked = r.value === t
+  // Lightroom leva um preset de foto (.xmp); os editores de vídeo, a LUT
+  const rotulo = [...$('baixar').childNodes].findLast((n) => n.nodeType === Node.TEXT_NODE)
+  if (rotulo) rotulo.textContent = $('editor').value === 'lightroom' ? ' Baixar preset' : ' Baixar LUT'
 })
 
 $('baixar').addEventListener('click', async () => {
+  if ($('editor').value === 'lightroom') {
+    avisar('Gerando o preset do Lightroom…')
+    await espera()
+    // foto: o preset leva só o look (o frame de foto já está em Rec.709)
+    prepararReferencia()
+    baixarTexto(presetLightroom(aplicarFinal(criarLab({ ...receita, entrada: 'still' })), `REVELAFILM ${nome()}`), `${arquivoBase()}.xmp`)
+    return avisar('Preset baixado. No Lightroom: Presets › + › Importar presets.')
+  }
   const tamanho = Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
   const de = ENTRADAS_LAB.find((e) => e.id === receita.entrada)?.nome ?? 'Rec.709'
-  const texto = escreverCube(assar(lookAtual().aplicar, tamanho), `Revela Lab - ${nome()}`, [
+  prepararReferencia()
+  const texto = escreverCube(assar(aplicarFinal(lookAtual()), tamanho), `Revela Lab - ${nome()}`, [
     `Revela Lab · ${nome()}`,
     `Entrada: ${receita.entrada === 'still' ? 'Rec.709 Gama 2.4 (material já tratado)' : de}`,
     'Saída: Rec.709 Gama 2.4 (BT.1886). Faixa full. Interpolação tetraédrica.',
@@ -592,8 +791,10 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     mostrarFilme()
     desenharTextura()
     $('nome-look').value = lida.nome
+    if (referencia) tirarReferencia(false)
     $('intensidade').value = String(Math.round(receita.intensidade * 100))
     $('valor-intensidade').textContent = `${$('intensidade').value}%`
+    mostrarIntensidade()
     grupo = GRUPOS.find((g) => g.looks.some((l) => l.id === receita.base))?.id ?? 'revela'
     desenharGrupos()
     desenharAjustes()

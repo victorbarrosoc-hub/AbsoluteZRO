@@ -5119,3 +5119,22 @@ carro, natureza e casamento (referência de linguagem: Filmsupply, Filmverse).
   "Original · Rec.709" e o título da transformação virou "Do frame à película" (antes "Do log", que valia para o S-Log3).
 - Os frames da ZRO Filmes saíram do repositório (`marca/home/log-*.jpg`); o print do painel foi refeito com um frame do
   Coverr.
+
+## REVELAFILM: Lab com modo Simples e a sua referência (04/11/2026)
+
+Pedido do titular: a REVELAFILM precisa ser eficiente como o Color Tools (Canter LAB): frame → referência → ajuste →
+exportar, com um modo simples e um profissional.
+
+- O Lab abre no **Simples**: três passos (Look, Ajuste, Exportar). Ponto de partida: um look da biblioteca ou **a sua
+  referência** (uma imagem com a cor que a pessoa quer). Uma intensidade só, os cinco ajustes principais, os presets de
+  textura e Exportar sempre à vista no computador (preso no pé da coluna).
+- A referência usa o mesmo cálculo da tela de LUT (`src/cor/referencia.js`), medido contra o frame revelado sem look
+  (base neutra, com a correção, sem os ajustes): os ajustes continuam valendo por cima dela. Ela fica só na memória (não
+  vai na receita); um look da biblioteca troca o ponto de partida e tira a referência.
+- Exportar por editor: Resolve, Premiere, Final Cut e CapCut levam a LUT; **Lightroom (foto)** leva o preset .xmp.
+- **Profissional** (um clique, lembrado no navegador): tudo o que já existia (Source, película, High Density,
+  acabamento, textura fina, tamanho da LUT, pacote profissional, receita e Meus looks).
+- Correção no caminho: no computador as colunas do workspace passaram a caber na área (antes a coluna de controles
+  crescia além dela e o rodapé cobria o botão de baixar).
+- Testes: novo teste de tela do modo Simples (referência, intensidade, LUT, preset do Lightroom, troca para um look e o
+  modo lembrado); o teste do Lab entra no Profissional. 195 de 195.

@@ -1291,6 +1291,10 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByRole('heading', { name: 'Revele a imagem.' }).waitFor()
   await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
   await pagina.locator('#lab:not([hidden])').waitFor()
+  // o Lab abre no modo Simples; o Profissional tem a película, a textura fina e o pacote
+  assert.equal(await pagina.getByRole('button', { name: 'Simples' }).getAttribute('aria-pressed'), 'true')
+  assert.equal(await pagina.getByRole('button', { name: 'Pacote profissional' }).count(), 0)
+  await pagina.getByRole('button', { name: 'Profissional' }).click()
   // "Analisar e corrigir" já vem ligado e diz o que fez
   assert.equal(await pagina.getByRole('switch', { name: 'Analisar e corrigir' }).isChecked(), true)
   assert.notEqual((await pagina.locator('#leitura-correcao').textContent()).trim(), '')
@@ -1351,6 +1355,47 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
   await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
   assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Revela Lab no modo Simples: a sua referência como ponto de partida, intensidade única, LUT e preset do Lightroom', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.evaluate(() => localStorage.removeItem('revela-lab-modo'))
+  await pagina.reload()
+  await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  // três passos no Simples: Look, Ajuste, Exportar
+  assert.deepEqual(await pagina.locator('.ws-etapas a:visible').allTextContents(), ['01Look', '02Ajuste', '03Exportar'])
+  assert.equal(await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).count(), 0)
+  // a referência entra como ponto de partida
+  await pagina.setInputFiles('#arquivo-ref', 'exemplos/referencia-cavalo.jpg')
+  await pagina.getByText('Referência aplicada.', { exact: false }).waitFor()
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Sua referência')
+  assert.equal(await pagina.locator('#bases [aria-checked=true]').count(), 0)
+  await pagina.locator('#intensidade-simples').fill('60')
+  await pagina.locator('#intensidade-simples').dispatchEvent('change')
+  assert.equal(await pagina.locator('#valor-intensidade-simples').textContent(), '60%')
+  // a LUT sai com a referência; o Lightroom sai como preset .xmp
+  await pagina.locator('#nome-look').fill('Cavalo')
+  const [lut] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(lut.suggestedFilename(), 'revela-lab-cavalo-33.cube')
+  await pagina.getByRole('combobox', { name: 'Para qual editor' }).selectOption('lightroom')
+  const [xmp] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar preset' }).click()])
+  assert.equal(xmp.suggestedFilename(), 'cavalo.xmp')
+  assert.match(readFileSync(await xmp.path(), 'utf8'), /crs:PresetType="Normal"/)
+  // um look da biblioteca troca o ponto de partida e tira a referência
+  await pagina.getByRole('tab', { name: 'Cinema' }).click()
+  await pagina.locator('#bases [data-look="250d-2383"]').click()
+  assert.equal(await pagina.locator('#ref-tirar').isHidden(), true)
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), '250D + 2383')
+  // o modo fica lembrado
+  await pagina.getByRole('button', { name: 'Profissional' }).click()
+  assert.equal(await pagina.evaluate(() => localStorage.getItem('revela-lab-modo')), 'pro')
   assert.deepEqual(erros, [])
   await pagina.close()
 })

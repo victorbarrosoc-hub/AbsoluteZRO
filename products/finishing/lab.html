@@ -57,7 +57,7 @@
       <section class="abertura entra">
         <p class="sobretitulo">REVELAFILM · <em>The art of revelation</em></p>
         <h1>Revele a imagem.</h1>
-        <p>Do arquivo da câmera à película, em cinco etapas.</p>
+        <p>Seu frame, um look ou a sua referência, e a LUT pronta para o seu editor.</p>
       </section>
 
       <section class="lab-entrada entra" id="lab-entrada">
@@ -91,17 +91,30 @@
             <span class="ws-cat">Cinematic Image Development</span>
             <input id="nome-look" class="nome-look" type="text" maxlength="40" value="Meu look" aria-label="Nome do look" autocomplete="off" />
           </div>
+          <div class="ws-modo" role="group" aria-label="Modo">
+            <button type="button" id="modo-simples" aria-pressed="true">Simples</button>
+            <button type="button" id="modo-pro" aria-pressed="false">Profissional</button>
+          </div>
           <nav class="ws-etapas" aria-label="Etapas da revelação">
-            <a href="#ws-source" data-etapa="ws-source"><b>01</b>Source</a>
-            <a href="#ws-develop" data-etapa="ws-develop"><b>02</b>Develop</a>
-            <a href="#ws-film" data-etapa="ws-film"><b>03</b>Film</a>
-            <a href="#ws-finish" data-etapa="ws-finish"><b>04</b>Finish</a>
-            <a href="#ws-output" data-etapa="ws-output"><b>05</b>Output</a>
+            <a href="#ws-biblioteca" data-etapa="ws-biblioteca" data-simples><b>01</b>Look</a>
+            <a href="#ws-develop" data-etapa="ws-develop" data-simples><b>02</b>Ajuste</a>
+            <a href="#ws-output" data-etapa="ws-output" data-simples><b>03</b>Exportar</a>
+            <a href="#ws-source" data-etapa="ws-source" data-pro><b>01</b>Source</a>
+            <a href="#ws-develop" data-etapa="ws-develop" data-pro><b>02</b>Develop</a>
+            <a href="#ws-film" data-etapa="ws-film" data-pro><b>03</b>Film</a>
+            <a href="#ws-finish" data-etapa="ws-finish" data-pro><b>04</b>Finish</a>
+            <a href="#ws-output" data-etapa="ws-output" data-pro><b>05</b>Output</a>
           </nav>
         </div>
 
-        <aside class="ws-biblioteca" aria-label="Film library">
-          <p class="ws-titulo">Film library</p>
+        <aside class="ws-biblioteca" id="ws-biblioteca" aria-label="Film library">
+          <p class="ws-titulo"><span data-pro>Film library</span><span data-simples>Ponto de partida</span></p>
+          <label class="ref-caixa" id="caixa-ref" for="arquivo-ref" title="Uma imagem com a cor que você quer: o look leva o seu frame até ela"
+            ><span class="ref-mini" id="ref-mini" aria-hidden="true"><span data-icone="imagem"></span></span
+            ><span class="ref-texto"><b>Sua referência</b><small id="ref-estado">Uma imagem com a cor que você quer</small></span
+            ><input id="arquivo-ref" type="file" accept="image/*"
+          /></label>
+          <button id="ref-tirar" class="ref-tirar" type="button" hidden>Tirar a referência</button>
           <div class="lab-grupos" id="grupos" role="tablist" aria-label="Bases"></div>
           <div id="bases" class="looks" role="radiogroup" aria-label="Base do look"></div>
         </aside>
@@ -116,7 +129,7 @@
         </div>
 
         <div class="ws-controles lab-lado">
-          <section class="ws-etapa" id="ws-source" aria-labelledby="ws-source-t">
+          <section class="ws-etapa" id="ws-source" aria-labelledby="ws-source-t" data-pro>
             <h2 id="ws-source-t"><b>01</b>Source</h2>
             <div class="lab-correcao">
               <label class="chave" title="Acerta a exposição e o branco do frame antes da base: o look fica igual em clipes diferentes"
@@ -126,14 +139,19 @@
             </div>
           </section>
           <section class="ws-etapa" id="ws-develop" aria-labelledby="ws-develop-t">
-            <h2 id="ws-develop-t"><b>02</b>Develop</h2>
+            <h2 id="ws-develop-t"><b>02</b><span data-pro>Develop</span><span data-simples>Ajuste</span></h2>
+            <div class="controle" data-simples>
+              <label for="intensidade-simples">Intensidade</label>
+              <output id="valor-intensidade-simples" for="intensidade-simples">100%</output>
+              <input id="intensidade-simples" type="range" min="0" max="100" value="100" />
+            </div>
             <div id="ajustes" class="ajustes-lab" aria-label="Ajustes"></div>
-            <details class="fino-lab">
+            <details class="fino-lab" data-pro>
               <summary>Ajuste fino</summary>
               <div id="ajustes-finos" class="ajustes-lab" aria-label="Ajuste fino"></div>
             </details>
           </section>
-          <section class="ws-etapa" id="ws-film" aria-labelledby="ws-film-t">
+          <section class="ws-etapa" id="ws-film" aria-labelledby="ws-film-t" data-pro>
             <h2 id="ws-film-t"><b>03</b>Film</h2>
             <div class="controle">
               <label for="intensidade">Intensidade da base</label>
@@ -166,11 +184,12 @@
             </fieldset>
           </section>
           <section class="ws-etapa" id="ws-finish" aria-labelledby="ws-finish-t">
-            <h2 id="ws-finish-t"><b>04</b>Finish</h2>
+            <h2 id="ws-finish-t" data-pro><b>04</b>Finish</h2>
             <div class="textura-lab">
+              <p class="ws-titulo" data-simples>Textura</p>
               <div class="lab-grupos" id="texturas" role="radiogroup" aria-label="Textura"></div>
-              <div id="ajustes-textura" class="ajustes-lab" aria-label="Textura"></div>
-              <details class="fino-lab">
+              <div id="ajustes-textura" class="ajustes-lab" aria-label="Textura" data-pro></div>
+              <details class="fino-lab" data-pro>
                 <summary>Mais textura</summary>
                 <div id="ajustes-textura-finos" class="ajustes-lab" aria-label="Mais textura"></div>
               </details>
@@ -178,7 +197,7 @@
             <button id="zerar" class="vidro" type="button"><span data-icone="x"></span> Zerar ajustes</button>
           </section>
           <section class="ws-etapa ws-saida" id="ws-output" aria-labelledby="ws-output-t">
-            <h2 id="ws-output-t"><b>05</b>Output</h2>
+            <h2 id="ws-output-t"><b data-pro>05</b><b data-simples>03</b><span data-pro>Output</span><span data-simples>Exportar</span></h2>
             <div class="lab-saida">
               <div class="exportar">
                 <label class="campo-log"
@@ -188,9 +207,10 @@
                     <option value="premiere">Premiere Pro</option>
                     <option value="fcp">Final Cut Pro</option>
                     <option value="capcut">CapCut</option>
+                    <option value="lightroom">Lightroom (foto)</option>
                   </select></label
                 >
-                <div class="segmentado" id="tamanhos" role="radiogroup" aria-label="Tamanho da LUT">
+                <div class="segmentado" id="tamanhos" role="radiogroup" aria-label="Tamanho da LUT" data-pro>
                   <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" checked /> 33</label>
                   <label title="Grading"><input type="radio" name="tamanho" value="65" /> 65</label>
                 </div>
@@ -198,6 +218,7 @@
               <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
               <button
                 id="baixar-pacote"
+                data-pro
                 class="vidro grande"
                 type="button"
                 title="Look em DaVinci Wide Gamut/Intermediate e ACEScct (65, .cube e CLF), LUT do monitor, LUT Rec.709, CDL, receita e controle de qualidade"
@@ -205,7 +226,7 @@
                 <span data-icone="pasta"></span> Pacote profissional
               </button>
               <p id="qc" class="qc" role="status" hidden></p>
-              <div class="lab-acoes">
+              <div class="lab-acoes" data-pro>
                 <button id="salvar" class="vidro" type="button" title="Entra em Meus looks, na tela de LUT, neste navegador">
                   <span data-icone="brilho"></span> Salvar em Meus looks
                 </button>

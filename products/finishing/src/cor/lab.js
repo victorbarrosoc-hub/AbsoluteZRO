@@ -12,7 +12,7 @@
 
 import { ENTRADAS } from './espacos.js'
 import { criarTela, luminancia, paraTrabalho } from './cena.js'
-import { GRUPOS, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
+import { GRUPOS, NEUTRO, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
 import { COPIAS } from './copia.js'
 import { NEGATIVOS } from './negativos.js'
 import { lerTextura } from './textura.js'
@@ -157,7 +157,8 @@ export function criarLab(receita = {}) {
   const aj = { ...AJUSTES_NEUTROS, ...(receita.ajustes ?? {}) }
   const intensidade = limitar(receita.intensidade ?? 1, 0, 1)
   const cor = receita.correcao ?? null
-  const perfil = perfilDe(receita.base) ?? perfilDe('revela')
+  // 'neutro': a revelação sem look (a referência do modo Simples age por cima dela)
+  const perfil = receita.base === 'neutro' ? NEUTRO : (perfilDe(receita.base) ?? perfilDe('revela'))
   const motor = criarMotor(perfil, {
     exposicao: (cor?.exposicao ?? 0) + (aj.luz / 100) * 2,
     ganhosLms: cor?.ganhos ?? null,
@@ -262,7 +263,7 @@ export function lerReceita(texto) {
   return {
     nome: typeof r.nome === 'string' ? r.nome.slice(0, 40) : 'Meu look',
     entrada: ENTRADAS_LAB.some((e) => e.id === r.entrada) ? r.entrada : 'still',
-    base: perfilDe(r.base) ? r.base : 'revela',
+    base: perfilDe(r.base) || r.base === 'neutro' ? r.base : 'revela',
     copia: COPIAS_LAB.some((c) => c.id === r.copia) ? r.copia : '',
     negativo: NEGATIVOS_LAB.some((n) => n.id === r.negativo) ? r.negativo : '',
     luzCopia: LUZES_LAB.some((l) => l.id === r.luzCopia) ? r.luzCopia : '',
