@@ -148,7 +148,7 @@ function ConteudoPasta({
       </div>
       {navegar ? (
         <NavegadorDrive
-          modo="escolher"
+          modo="pasta"
           sobedesce={sobedesce}
           extraDaPasta={(aberta) =>
             aberta ? (

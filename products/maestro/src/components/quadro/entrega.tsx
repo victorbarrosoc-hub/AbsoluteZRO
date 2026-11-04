@@ -15,6 +15,7 @@ import type { PastaDoCard } from "@/lib/quadro/pastas";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone } from "@/components/icones";
 import { useTema } from "@/components/use-tema";
+import { anotarRecursos } from "@/components/arquivos/recursos-sobedesce";
 import "@/app/arquivos-sobedesce.css";
 
 const FOLGA_DO_PRONTO = 4000;
@@ -27,20 +28,27 @@ const CONFERENCIA: Record<ArquivoEnviado["conferencia"], { rotulo: string; dica:
 };
 
 export function FolhaEntrega(p: { pasta: PastaDoCard; aoFechar: () => void; aoUsar: (a: ArquivoEnviado) => void }) {
+  // fechar a folha tira o quadro do SOBEDESCE: com envio andando, pergunta antes (o envio pararia)
+  const andando = useRef(0);
+  const fecharSeguro = () => {
+    if (andando.current > 0 && !window.confirm("Um envio ainda está andando. Fechar para o envio?")) return;
+    p.aoFechar();
+  };
   return (
-    <Folha rotulo="Enviar a entrega" aoFechar={p.aoFechar} className="en-folha">
-      <Conteudo {...p} />
+    <Folha rotulo="Enviar a entrega" aoFechar={fecharSeguro} className="en-folha">
+      <Conteudo pasta={p.pasta} aoUsar={p.aoUsar} andando={andando} />
     </Folha>
   );
 }
 
-function Conteudo({ pasta, aoUsar }: { pasta: PastaDoCard; aoUsar: (a: ArquivoEnviado) => void }) {
+function Conteudo({ pasta, aoUsar, andando }: { pasta: PastaDoCard; aoUsar: (a: ArquivoEnviado) => void; andando: { current: number } }) {
   const fechar = useFecharFolha();
   const tema = useTema();
   const quadro = useRef<HTMLIFrameElement>(null);
   const [endereco, setEndereco] = useState<string | null>(null);
   const [fase, setFase] = useState<"abrindo" | "pronto" | "falhou">("abrindo");
   const [enviados, setEnviados] = useState<ArquivoEnviado[]>([]);
+  const [usado, setUsado] = useState<string | null>(null);
   // o endereço nasce uma vez, no tema da hora (trocar o tema não recarrega o envio)
   if (!endereco && tema) setEndereco(enderecoParaEnviar(tema, pasta));
 
@@ -49,13 +57,17 @@ function Conteudo({ pasta, aoUsar }: { pasta: PastaDoCard; aoUsar: (a: ArquivoEn
       const janela = quadro.current?.contentWindow;
       if (!janela || e.source !== janela) return;
       const r = lerRecado(e.origin, e.data);
-      if (r?.tipo === "pronto") setFase((f) => (f === "falhou" ? f : "pronto"));
+      if (r?.tipo === "pronto") {
+        // o SOBEDESCE voltou a uma versão sem o envio (o atalho do aparelho estava velho): diz e esquece o atalho
+        anotarRecursos(r.recursos);
+        setFase((f) => (f === "falhou" ? f : r.recursos.includes("enviar") ? "pronto" : "falhou"));
+      } else if (r?.tipo === "envios") andando.current = r.andando;
       else if (r?.tipo === "enviado" && r.arquivo.pasta === pasta.id)
         setEnviados((l) => (l.some((x) => x.id === r.arquivo.id) ? l : [r.arquivo, ...l].slice(0, 20)));
     };
     window.addEventListener("message", aoReceber);
     return () => window.removeEventListener("message", aoReceber);
-  }, [pasta.id]);
+  }, [pasta.id, andando]);
 
   useEffect(() => {
     if (!endereco || fase !== "abrindo") return;
@@ -94,10 +106,12 @@ function Conteudo({ pasta, aoUsar }: { pasta: PastaDoCard; aoUsar: (a: ArquivoEn
                   className="glass-btn glass-btn--sm glass-btn--ink"
                   onClick={() => {
                     aoUsar(a);
-                    fechar();
+                    // com outro envio andando, a folha fica (fechar pararia o envio); o campo da versão já tem o link
+                    if (andando.current > 0) setUsado(a.id);
+                    else fechar();
                   }}
                 >
-                  Usar como versão
+                  {usado === a.id ? "No campo da versão" : "Usar como versão"}
                 </button>
               ) : null}
             </li>

@@ -15,6 +15,26 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro fase 2: pastas do Drive no card, a entrega pelo SOBEDESCE e a permissão do link do Fluxo (04/11/2026)
+
+- Maestro: `lint`, `format:check`, `typecheck` ok; `npm test` **739/739** (novos casos em `quadro.test.mts`,
+  `drive-sobedesce.test.mts`, `sobedesce-embutido.test.mts`, `links-fluxo.test.mts` e `acesso-cliente.test.mts`: o
+  parser do link da pasta, a rota sem/com o SOBEDESCE, a sugestão do projeto, o contrato 2 do modo embutido, a permissão
+  fixa e auditada, comentar só com o nome, idempotência, limite por link e IP, revogado/vencido/PIN, duas organizações,
+  quem apaga, o Editar só para a produtora do link, as rotas); `build` ok.
+- E2E novos: `e2e/quadro-pastas.spec.ts` (computador e iPhone: Brutos colado, Entrega pelo navegador do Drive, recarregar
+  e tirar; sem o SOBEDESCE nada de Drive e 403; Versões com o SOBEDESCE de antes sem "Enviar a entrega" e com o que
+  sabe: o envio volta conferido e vira versão) e `e2e/fluxo-comentar.spec.ts` (criar "Ver e comentar", comentar só com
+  o nome no iPhone e no computador, o nome lembrado, a equipe vê e apaga, revogado não comenta; Só ver sem Comentar;
+  Editar sem conta só lê e a sessão da produtora vai ao editor). **8/8** e **2/2** (com `arquivos`: 16/16).
+- Também verdes depois da mudança: `fluxo-celular`, `quadro-card`, `arquivos`, `criacao-exportar`, `versao-card`,
+  `relay`, `criacao-fluxo` (**40 passaram**, o resto é de outro projeto), `sem-corte` e `celular` (**16/16**, Chromium e
+  WebKit).
+- SOBEDESCE: `npm run test:fast` **772/776** (4 pulados, 0 falhas); `test/embutido-maestro.test.js` 3/3, `app-sw.test.js` (cache v82 / 2.8.67) e
+  `porta-malas-carro.test.js` com o caso novo (a sonda e o modo enviar num Chromium de verdade, 2/2). O caso antigo do
+  Carro já oscilava antes desta mudança (tempo de espera de 40 s no ambiente; passa e falha também com o código da
+  base).
+
 ## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026)
 
 - Antes do código, o e2e novo reproduziu os prints contra o build da `main`: nota com uma letra por linha, seta

@@ -10,6 +10,8 @@ import { devices, expect, test, type Browser, type Page } from "@playwright/test
 const ARQUIVO = "test-results/e2e-sessao-exportar.json";
 const sessao = () => JSON.parse(readFileSync(ARQUIVO, "utf8")) as { token: string };
 const SHOTS = process.env.SHOTS_DIR;
+// as capturas com densidade 2
+test.use({ deviceScaleFactor: 2 });
 const foto = async (page: Page, nome: string) => {
   if (SHOTS) {
     await page.waitForTimeout(300);
@@ -127,7 +129,7 @@ test.describe("Link do Fluxo com permissão", () => {
     await expect(links.getByRole("list", { name: "Links ativos" })).toHaveCount(0);
     await v.page.getByRole("form", { name: "Comentar o fluxo" }).getByPlaceholder("Escreva um comentário").fill("Depois de revogado");
     await v.page.getByRole("form", { name: "Comentar o fluxo" }).getByRole("button", { name: "Comentar" }).click();
-    await expect(v.page.getByRole("alert")).toHaveText("Este link não está mais ativo.");
+    await expect(v.page.locator(".fxc-erro")).toHaveText("Este link não está mais ativo.");
     await v.page.reload();
     await expect(v.page.locator(".fxc-no")).toHaveCount(0);
     await v.ctx.close();

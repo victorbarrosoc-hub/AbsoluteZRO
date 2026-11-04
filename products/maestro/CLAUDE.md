@@ -64,14 +64,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   não) e o endereço guardado é sempre o montado do id (`enderecoDaPasta`, com a `resourcekey` se veio). Só com o
   SOBEDESCE no plano: a ficha só mostra com `sobedesce` (a página passa a origem quando `temArquivos`) e `/api/quadro`
   recusa `pasta*` sem ele (403 `sem_sobedesce`). Chips na ficha abrem o Drive; a folha cola o link, "Escolher no Drive"
-  (o `NavegadorDrive` com "Usar esta pasta") e a sugestão do projeto (`GET /api/quadro/pastas?projeto=`, lista a pasta
+  (o `NavegadorDrive` em `modo="pasta"`, só pastas, com "Usar esta pasta") e a sugestão do projeto (`GET /api/quadro/pastas?projeto=`, lista a pasta
   ligada pela ponte e acha "02 Bruto"/"05 Entregas"; projeto sem pasta = nenhuma sugestão). Duplicar não leva as pastas.
   Testes: `tests/quadro.test.mts`, `tests/drive-sobedesce.test.mts`, `e2e/quadro-pastas.spec.ts` (`SHOTS_DIR` guarda `pd-*`).
   **Versões com o SOBEDESCE** (mesma data): "Escolher no Drive" (o `NavegadorDrive`, preenche o link e o nome da
   versão) e **"Enviar a entrega"** (`components/quadro/entrega.tsx`): o próprio SOBEDESCE num quadro em
   `?no=maestro&modo=enviar&pasta=<Entrega>` (contrato 2 do modo embutido, `docs/integration-contracts/maestro-sobedesce.md`);
   o recado `enviado` traz o arquivo e a conferência (`ok` = MD5, `sem`, `diferente`: não vira versão); "Usar como
-  versão" só preenche o campo. O botão só aparece com a pasta Entrega, o SOBEDESCE no plano **e** o recurso `enviar`
+  versão" só preenche o campo; fechar a folha com envio andando (recado `envios`) pergunta antes, porque o envio pararia. O botão só aparece com a pasta Entrega, o SOBEDESCE no plano **e** o recurso `enviar`
   no `pronto` do SOBEDESCE publicado (`components/arquivos/recursos-sobedesce.ts`: a sonda `?modo=sonda` num quadro
   escondido, uma vez por aba, 6 h no localStorage; o `pronto` de Arquivos também anota). SOBEDESCE de antes = sem botão.
   **Ordem do deploy**: o SOBEDESCE com o contrato 2 antes (ou junto) do Maestro.

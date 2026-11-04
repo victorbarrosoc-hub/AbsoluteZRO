@@ -498,6 +498,7 @@
 .fxc-acoes {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
 }
@@ -539,4 +540,13 @@
   .fxc-escrever {
     display: none;
   }
+}
+
+/* a permissão do link: "Ver e comentar" numa linha só, o do meio um pouco maior */
+.fx-seg--permissao button {
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.fx-seg--permissao button:nth-child(2) {
+  flex: 1.5;
 }

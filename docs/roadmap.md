@@ -2,6 +2,26 @@
 
 Atualizado em 04/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Maestro fase 2: pastas do Drive no card, a entrega pelo SOBEDESCE e a permissão do link do Fluxo (04/11/2026, ramo `maestro-fase-2`)
+
+Pedidos do titular de 04/11/2026, em cima do ramo `maestro-fluxo-melhorias`. Migração nova: `0039_fluxo_link_permissao`.
+
+- ✅ **Pastas do Drive no card**: "Brutos" e "Entrega" na ficha (chips que abrem o Drive), pelo link colado (só pasta do
+  `drive.google.com`; o endereço guardado é o montado do id), pelo navegador do Drive ou pela sugestão do projeto (02
+  Bruto / 05 Entregas da estrutura). Só com o SOBEDESCE no plano (a rota do Quadro recusa sem ele). Sem migração.
+- ✅ **Versões com o SOBEDESCE**: "Escolher no Drive" e **"Enviar a entrega"** (o próprio SOBEDESCE num quadro, com a
+  pasta Entrega do card de destino; o arquivo terminado volta com a conferência do MD5 e vira "Usar como versão"). O
+  botão só aparece quando o SOBEDESCE publicado diz que sabe (contrato 2 do modo embutido, a sonda). SOBEDESCE app
+  2.8.67 (cache v82) com o contrato 2.
+- ⛔ **Deploy**: o SOBEDESCE com o contrato 2 vai antes (ou junto) do Maestro; com o SOBEDESCE de antes, o botão
+  simplesmente não aparece. Deploy só com o OK do titular.
+- ✅ **Permissão do link do Fluxo**: Só ver (padrão), Ver e comentar (só o nome, sem cadastro; a equipe vê e apaga no
+  editor) e Editar (só quem entra com a conta da produtora; o resto lê). PIN opcional nas três; revogado ou vencido,
+  ninguém comenta.
+- ⬜ Conferir no `maestro.absolutezro.com` de verdade o envio pelo SOBEDESCE embutido (Google, MD5 e o cookie do
+  SOBEDESCE no quadro) depois do deploy dos dois.
+- ⬜ Checklist pessoal flutuante no computador (avaliado na fase 1): fora desta fase.
+
 ## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026, ramo `maestro-fluxo-melhorias`)
 
 Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o projeto do Maestro muda.
@@ -27,9 +47,8 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
 - ⬜ Prefixo do código por organização: pede migração que refaça a função do aceite do orçamento (`drizzle/0012`, que
   também gera `MAE-`), o campo em Ajustes → Empresa e a regra da numeração do ano. Aguarda decisão do titular.
 - ⬜ Conferir no iPhone de verdade (Safari e app na Tela de Início) a nota em edição com o teclado aberto.
-- ⬜ Fase 2, só avaliada (sem código): pastas do Drive no card (bruto e destino), Versões escolhendo/subindo pelo
-  SOBEDESCE, checklist pessoal flutuante no computador e o link do fluxo com permissão (só ver, comentar sem cadastro,
-  editar).
+- ✅ Fase 2 (seção acima): pastas do Drive no card, Versões escolhendo/subindo pelo SOBEDESCE e o link do fluxo com
+  permissão. O checklist pessoal flutuante no computador ficou de fora.
 - Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)

@@ -16,6 +16,8 @@ const SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 const SESSAO_SEM = "test-results/e2e-sessao-fluxo.json";
 const SHOTS = process.env.SHOTS_DIR;
 const ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
+// as capturas com densidade 2 (computador e iPhone)
+test.use({ deviceScaleFactor: 2 });
 
 async function entrar(context: BrowserContext, baseURL: string, arquivo: string) {
   const { token } = JSON.parse(readFileSync(arquivo, "utf8")) as { token: string };
@@ -81,7 +83,10 @@ test.describe("As pastas do Drive no card", () => {
     await folhaE.getByRole("button", { name: "Escolher no Drive" }).click();
     await folhaE.getByRole("button", { name: /Clientes/ }).click();
     await folhaE.getByRole("button", { name: /Café Aurora/ }).click();
-    await expect(folhaE.getByRole("button", { name: /Teaser 15s vertical\.mp4/ })).toBeVisible();
+    // só pastas: o vídeo não aparece (nada de "Escolher" num arquivo)
+    await expect(folhaE.getByRole("heading", { name: "Nenhuma pasta aqui" })).toBeVisible();
+    await expect(folhaE.getByRole("button", { name: /Teaser 15s vertical\.mp4/ })).toHaveCount(0);
+    await expect(folhaE.getByRole("button", { name: "Usar esta pasta" })).toBeVisible();
     await foto(page, "navegador", info.project.name);
     await folhaE.getByRole("button", { name: "Usar esta pasta" }).click();
     await expect(folhaE).toHaveCount(0);

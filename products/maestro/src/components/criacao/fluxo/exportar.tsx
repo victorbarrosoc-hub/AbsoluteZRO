@@ -355,7 +355,7 @@ function CriarLink({
       }}
     >
       <div
-        className="fx-seg fx-seg--cheio"
+        className="fx-seg fx-seg--cheio fx-seg--permissao"
         role="radiogroup"
         aria-label="Permissão"
         title={
