@@ -1117,3 +1117,54 @@ span.cartao-home:hover {
 .home :is(.filmes, .sec-log) h2 .fino {
   font-weight: 200;
 }
+/* o texto do topo no centro, como na Filmverse (titular, 04/11/2026): título, linha e ações no meio da foto, a
+   assinatura "by ABSOLUTE ZRO" embaixo; a foto escurece por igual em vez de só à esquerda */
+.hero--filme {
+  align-items: center;
+  text-align: center;
+}
+.hero--filme::after {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0.12) 70%),
+    linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 30%),
+    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+}
+.hero--filme .hero-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 120px;
+}
+.home .hero--filme .hero-titulo,
+.hero--filme .hero-sub {
+  text-align: center;
+}
+.hero--filme .hero-sub {
+  margin-inline: auto;
+}
+.hero--filme .hero-acoes {
+  justify-content: center;
+}
+.hero--filme .hero-pe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(32px + env(safe-area-inset-bottom));
+  justify-content: center;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .hero--filme::after {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 55%, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0.15) 75%),
+      linear-gradient(0deg, rgb(11 10 9 / 0.7), rgb(11 10 9 / 0) 30%),
+      linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
+  }
+  .hero--filme .hero-texto {
+    padding-bottom: 150px;
+  }
+  .hero--filme .hero-pe {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
