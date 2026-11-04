@@ -1,6 +1,6 @@
 /* REVELAFILM · workspace (titular, 04/11/2026): Cinematic Image Development. A identidade da ferramenta, por cima da
-   linguagem da família: base preto-carvão, superfícies grafite, texto marfim, vermelho cinematográfico na identidade e
-   âmbar suave de apoio; só a Inter, sem serifada (titular, 04/11/2026). O software fica discreto para a
+   linguagem da família: preto e branco, com um azul cinematográfico só nos detalhes (etapa atual, trilho dos
+   controles); a cor da tela vem dos frames. Só a Inter, sem serifada (titular, 04/11/2026). O software fica discreto para a
    imagem dominar. Quatro áreas como numa sala de cor: biblioteca à esquerda, a imagem no centro, a revelação à
    direita e as etapas em cima (01 Source → 05 Output). Fontes servidas daqui (a CSP só aceita 'self'). OFL. */
 
@@ -26,25 +26,26 @@
 }
 /* a sala de cor é escura nos dois temas: a imagem é avaliada contra o carvão */
 body.rf {
-  --rf-carvao: #0e0d0c;
-  --rf-grafite: #171513;
-  --rf-grafite-2: #211e1b;
-  --rf-marfim: #efe8dc;
-  --rf-mudo: #a39b8f;
-  --rf-fraco: #6f685f;
-  --rf-vermelho: #b3262b;
-  --rf-ambar: #d4a056;
+  --rf-carvao: #050505;
+  --rf-grafite: #111111;
+  --rf-grafite-2: #1b1b1b;
+  --rf-marfim: #ffffff;
+  --rf-mudo: #9a9a9a;
+  --rf-fraco: #666666;
+  --rf-azul: #4a86c8;
+
   --fundo: var(--rf-carvao);
   --superficie: var(--rf-grafite);
   --superficie-2: var(--rf-grafite-2);
-  --t: 239 232 220;
-  --chao: 14 13 12;
-  --linha: rgb(239 232 220 / 0.09);
-  --linha-forte: rgb(239 232 220 / 0.16);
+  --t: 255 255 255;
+  --chao: 5 5 5;
+  --linha: rgb(255 255 255 / 0.09);
+  --linha-forte: rgb(255 255 255 / 0.16);
   --texto: var(--rf-marfim);
   --mudo: var(--rf-mudo);
   --fraco: var(--rf-fraco);
-  --amarelo: var(--rf-ambar);
+  --amarelo: var(--rf-azul);
+  --verde: var(--rf-azul);
   --fonte: 'Inter RF', 'Inter Variable', ui-sans-serif, -apple-system, system-ui, sans-serif;
   --fonte-titulo: 'Inter RF', 'Inter Variable', ui-sans-serif, -apple-system, system-ui, sans-serif;
   color-scheme: dark;
@@ -161,10 +162,10 @@ body.rf .tela-lab:has(.workspace:not([hidden])) {
 .ws-etapas a[aria-current='step'] {
   color: var(--rf-marfim);
   background: var(--rf-grafite-2);
-  box-shadow: inset 0 -2px 0 var(--rf-vermelho);
+  box-shadow: inset 0 -2px 0 var(--rf-azul);
 }
 .ws-etapas a[aria-current='step'] b {
-  color: var(--rf-vermelho);
+  color: var(--rf-azul);
 }
 
 .ws-biblioteca {
@@ -228,12 +229,12 @@ body.rf .tela-lab:has(.workspace:not([hidden])) {
 }
 /* a ação principal da saída leva a cor da marca */
 body.rf #baixar {
-  color: #fff;
-  background: var(--rf-vermelho);
+  color: #000;
+  background: #fff;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
 }
 body.rf #baixar:hover {
-  background: #c22d32;
+  background: #e6e6e6;
 }
 
 /* computador: quatro áreas, cada coluna rola sozinha e a imagem fica parada no centro */
@@ -293,10 +294,10 @@ body.rf #baixar:hover {
 
 /* a marca do topo no escuro (o tema da página pode estar claro; a sala é sempre escura) */
 body.rf .marca img {
-  filter: invert(0.93) sepia(0.08);
+  filter: invert(1);
 }
 body.rf .vidro {
-  --v-fundo: rgb(239 232 220 / 0.07);
+  --v-fundo: rgb(255 255 255 / 0.07);
   --v-tinta: var(--rf-marfim);
   background: var(--v-fundo);
   box-shadow: inset 0 0 0 1px var(--linha-forte);

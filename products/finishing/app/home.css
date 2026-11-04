@@ -842,7 +842,7 @@ span.cartao-home:hover {
   display: block;
 }
 .home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta, .nav-tema) {
-  color: rgb(241 235 225 / 0.86);
+  color: rgb(255 255 255 / 0.86);
 }
 .home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta):hover {
   color: #fff;
@@ -856,8 +856,8 @@ span.cartao-home:hover {
 .home:has(.hero--filme) .conta {
   padding: 8px 16px;
   border-radius: 999px;
-  color: #f1ebe1;
-  background: #0b0a09;
+  color: #ffffff;
+  background: #050505;
   font-size: 13px;
   font-weight: 600;
 }
@@ -867,8 +867,8 @@ span.cartao-home:hover {
   min-height: max(100svh, 640px);
   padding: 0;
   overflow: hidden;
-  background: #0b0a09;
-  color: #f1ebe1;
+  background: #050505;
+  color: #ffffff;
   text-align: left;
 }
 .hero-foto img {
@@ -886,8 +886,8 @@ span.cartao-home:hover {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgb(11 10 9 / 0.88) 0%, rgb(11 10 9 / 0.62) 30%, rgb(11 10 9 / 0) 58%),
-    linear-gradient(0deg, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0) 30%), linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+    linear-gradient(90deg, rgb(5 5 5 / 0.88) 0%, rgb(5 5 5 / 0.62) 30%, rgb(5 5 5 / 0) 58%), linear-gradient(0deg, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0) 30%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
 }
 /* a borda do filme: código de borda na vertical, entre dois fios */
 .hero-borda {
@@ -900,7 +900,7 @@ span.cartao-home:hover {
   align-items: center;
   gap: 18px;
   margin: 0;
-  color: rgb(241 235 225 / 0.62);
+  color: rgb(255 255 255 / 0.62);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.42em;
@@ -910,7 +910,7 @@ span.cartao-home:hover {
   content: '';
   flex: 1;
   width: 1px;
-  background: rgb(241 235 225 / 0.35);
+  background: rgb(255 255 255 / 0.35);
 }
 .hero-borda span {
   writing-mode: vertical-rl;
@@ -922,7 +922,7 @@ span.cartao-home:hover {
 }
 .home .hero-titulo {
   margin: 0;
-  color: #f1ebe1;
+  color: #ffffff;
   font-size: clamp(48px, 6.6vw, 104px);
   font-weight: 200;
   letter-spacing: -0.01em;
@@ -933,7 +933,7 @@ span.cartao-home:hover {
 .hero--filme .hero-sub {
   max-width: 28ch;
   margin: 24px 0 0;
-  color: rgb(241 235 225 / 0.88);
+  color: rgb(255 255 255 / 0.88);
   font-size: clamp(17px, 1.6vw, 21px);
   text-align: left;
 }
@@ -949,8 +949,8 @@ span.cartao-home:hover {
   justify-content: center;
   gap: 10px;
   border-radius: 999px;
-  color: #0b0a09;
-  background: #f1ebe1;
+  color: #050505;
+  background: #ffffff;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.2s;
@@ -960,11 +960,11 @@ span.cartao-home:hover {
 }
 .link-fio {
   padding-bottom: 4px;
-  color: #f1ebe1;
+  color: #ffffff;
   font-size: 16px;
   font-weight: 500;
   text-decoration: none;
-  border-bottom: 1px solid rgb(241 235 225 / 0.6);
+  border-bottom: 1px solid rgb(255 255 255 / 0.6);
 }
 .link-fio:hover {
   border-bottom-color: #fff;
@@ -978,36 +978,36 @@ span.cartao-home:hover {
 }
 .hero-by {
   margin: 0;
-  color: rgb(241 235 225 / 0.7);
+  color: rgb(255 255 255 / 0.7);
   font-size: 13px;
 }
 .hero-by b {
   margin-left: 6px;
-  color: #f1ebe1;
+  color: #ffffff;
   font-weight: 800;
   letter-spacing: 0.34em;
   text-transform: uppercase;
 }
 .hero--filme .selo-dev {
   margin: 0;
-  color: rgb(241 235 225 / 0.78);
-  background: rgb(241 235 225 / 0.1);
+  color: rgb(255 255 255 / 0.78);
+  background: rgb(255 255 255 / 0.1);
 }
 
 /* ─────────── as películas ─────────── */
 
 .filmes,
 .sec-log {
-  --texto: #f1ebe1;
-  --mudo: #a59d91;
-  --linha: rgb(241 235 225 / 0.1);
-  --t: 241 235 225;
-  background: #0b0a09;
-  color: #f1ebe1;
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
 }
 .filmes-olho {
   margin: 0 0 18px;
-  color: #a59d91;
+  color: #9a9a9a;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.4em;
@@ -1027,7 +1027,7 @@ span.cartao-home:hover {
   overflow: hidden;
   border-radius: 18px;
   aspect-ratio: 4 / 5;
-  background: #151311;
+  background: #111111;
 }
 .filme img {
   position: absolute;
@@ -1044,7 +1044,7 @@ span.cartao-home:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgb(11 10 9 / 0.85), rgb(11 10 9 / 0) 48%);
+  background: linear-gradient(0deg, rgb(5 5 5 / 0.85), rgb(5 5 5 / 0) 48%);
 }
 .filme figcaption {
   position: absolute;
@@ -1062,7 +1062,7 @@ span.cartao-home:hover {
   letter-spacing: -0.01em;
 }
 .filme span {
-  color: rgb(241 235 225 / 0.72);
+  color: rgb(255 255 255 / 0.72);
   font-size: 13px;
 }
 .sec-log {
@@ -1078,8 +1078,7 @@ span.cartao-home:hover {
   }
   .hero--filme::after {
     background:
-      linear-gradient(0deg, rgb(11 10 9 / 0.92) 22%, rgb(11 10 9 / 0.5) 46%, rgb(11 10 9 / 0) 66%),
-      linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
+      linear-gradient(0deg, rgb(5 5 5 / 0.92) 22%, rgb(5 5 5 / 0.5) 46%, rgb(5 5 5 / 0) 66%), linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 20%);
   }
   .filmes-grade {
     grid-template-columns: minmax(0, 1fr);
@@ -1090,8 +1089,8 @@ span.cartao-home:hover {
 }
 /* a barra da página inicial fica no escuro do cinema também ao rolar: vidro escuro, marca e links em creme */
 .home:has(.hero--filme) .nav.rolou {
-  background: rgb(11 10 9 / 0.72);
-  border-bottom-color: rgb(241 235 225 / 0.08);
+  background: rgb(5 5 5 / 0.72);
+  border-bottom-color: rgb(255 255 255 / 0.08);
 }
 .home:has(.hero--filme) .nav .marca img {
   display: none;
@@ -1100,7 +1099,7 @@ span.cartao-home:hover {
   display: block;
 }
 .home:has(.hero--filme) .nav :is(.nav-links a, .nav-tema) {
-  color: rgb(241 235 225 / 0.8);
+  color: rgb(255 255 255 / 0.8);
 }
 .home:has(.hero--filme) .nav .nav-links a:hover {
   color: #fff;
@@ -1124,8 +1123,8 @@ span.cartao-home:hover {
 }
 .hero--filme::after {
   background:
-    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0.12) 70%), linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 30%),
-    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0.12) 70%), linear-gradient(0deg, rgb(5 5 5 / 0.6), rgb(5 5 5 / 0) 30%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
 }
 .hero--filme .hero-texto {
   display: flex;
@@ -1154,8 +1153,8 @@ span.cartao-home:hover {
 @media (max-width: 760px) {
   .hero--filme::after {
     background:
-      radial-gradient(ellipse 90% 50% at 50% 55%, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0.15) 75%),
-      linear-gradient(0deg, rgb(11 10 9 / 0.7), rgb(11 10 9 / 0) 30%), linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 20%);
+      radial-gradient(ellipse 90% 50% at 50% 55%, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0.15) 75%), linear-gradient(0deg, rgb(5 5 5 / 0.7), rgb(5 5 5 / 0) 30%),
+      linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 20%);
   }
   .hero--filme .hero-texto {
     padding-bottom: 150px;
@@ -1190,8 +1189,8 @@ span.cartao-home:hover {
 
 .hero--filme::after {
   background:
-    radial-gradient(ellipse 72% 58% at 50% 50%, rgb(11 10 9 / 0.42), rgb(11 10 9 / 0.08) 72%), linear-gradient(0deg, rgb(11 10 9 / 0.65), rgb(11 10 9 / 0) 32%),
-    linear-gradient(180deg, rgb(11 10 9 / 0.5), rgb(11 10 9 / 0) 18%);
+    radial-gradient(ellipse 72% 58% at 50% 50%, rgb(5 5 5 / 0.42), rgb(5 5 5 / 0.08) 72%), linear-gradient(0deg, rgb(5 5 5 / 0.65), rgb(5 5 5 / 0) 32%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
 }
 .revelacao,
 .revelacao picture,
@@ -1225,7 +1224,7 @@ span.cartao-home:hover {
   bottom: calc(36px + env(safe-area-inset-bottom));
   display: grid;
   margin: 0;
-  color: rgb(241 235 225 / 0.8);
+  color: rgb(255 255 255 / 0.8);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.24em;
@@ -1285,12 +1284,12 @@ span.cartao-home:hover {
 
 /* as seções escuras: comparação, películas e o Lab */
 .lab-home {
-  --texto: #f1ebe1;
-  --mudo: #a59d91;
-  --linha: rgb(241 235 225 / 0.1);
-  --t: 241 235 225;
-  background: #0b0a09;
-  color: #f1ebe1;
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
 }
 .home :is(.filmes, .sec-log, .lab-home) h2 {
   font-size: clamp(36px, 5.2vw, 76px);
@@ -1300,7 +1299,7 @@ span.cartao-home:hover {
   text-transform: none;
 }
 .home :is(.filmes, .sec-log, .lab-home) h2 .fino {
-  color: #8d867b;
+  color: #7d7d7d;
   font-weight: 400;
 }
 .sec-log {
@@ -1320,9 +1319,9 @@ span.cartao-home:hover {
   padding: 10px 18px;
   border: 0;
   border-radius: 14px;
-  color: #f1ebe1;
-  background: rgb(241 235 225 / 0.06);
-  box-shadow: inset 0 0 0 1px rgb(241 235 225 / 0.12);
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -1333,22 +1332,22 @@ span.cartao-home:hover {
     color 0.2s;
 }
 .pelis button small {
-  color: #a59d91;
+  color: #9a9a9a;
   font-size: 12px;
   font-weight: 500;
 }
 .pelis button[aria-checked='true'] {
-  color: #0b0a09;
-  background: #f1ebe1;
+  color: #050505;
+  background: #ffffff;
 }
 .pelis button[aria-checked='true'] small {
-  color: #5a544c;
+  color: #555555;
 }
 .comparar .depois {
   transition: opacity 0.35s;
 }
 .lab-home .apoio {
-  color: #a59d91;
+  color: #9a9a9a;
 }
 .painel {
   max-width: 1180px;
@@ -1356,7 +1355,7 @@ span.cartao-home:hover {
   overflow: hidden;
   border-radius: 20px;
   box-shadow:
-    0 0 0 1px rgb(241 235 225 / 0.08),
+    0 0 0 1px rgb(255 255 255 / 0.08),
     0 60px 120px -40px rgb(0 0 0 / 0.8);
 }
 .painel img {
@@ -1377,12 +1376,12 @@ span.cartao-home:hover {
   display: grid;
   gap: 6px;
   padding-top: 18px;
-  border-top: 1px solid rgb(241 235 225 / 0.14);
-  color: #a59d91;
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+  color: #9a9a9a;
   font-size: 14px;
 }
 .numeros b {
-  color: #f1ebe1;
+  color: #ffffff;
   font-size: clamp(22px, 2.6vw, 34px);
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -1405,7 +1404,7 @@ span.cartao-home:hover {
 }
 .painel {
   padding: 0;
-  background: #0b0a09;
+  background: #050505;
 }
 
 /* ─────────── The art of revelation (titular, 04/11/2026) ───────────
@@ -1456,7 +1455,7 @@ span.cartao-home:hover {
 .abertura-olho,
 .cap-olho {
   margin: 0 0 18px;
-  color: rgb(241 235 225 / 0.72);
+  color: rgb(255 255 255 / 0.72);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.42em;
@@ -1464,7 +1463,7 @@ span.cartao-home:hover {
 }
 .home .abertura .abertura-nome {
   margin: 0;
-  color: #f1ebe1;
+  color: #ffffff;
   font-size: clamp(46px, 11vw, 176px);
   font-weight: 200;
   letter-spacing: 0.02em;
@@ -1496,7 +1495,7 @@ span.cartao-home:hover {
   inset: 0;
   z-index: -1;
   background: var(--atm);
-  opacity: 0.32;
+  opacity: 0;
   -webkit-mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
   mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
   transition: background-color 0.9s ease;
@@ -1507,10 +1506,10 @@ span.cartao-home:hover {
 }
 .cap-olho span {
   margin-right: 14px;
-  color: #f1ebe1;
+  color: #ffffff;
 }
 .cap .apoio {
-  color: #a59d91;
+  color: #9a9a9a;
 }
 .sec-log[data-atm='500t-2383'] {
   --atm: #7a3818;
@@ -1533,12 +1532,12 @@ span.cartao-home:hover {
 .motor,
 .historias,
 .fecho {
-  --texto: #f1ebe1;
-  --mudo: #a59d91;
-  --linha: rgb(241 235 225 / 0.1);
-  --t: 241 235 225;
-  background: #0b0a09;
-  color: #f1ebe1;
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
 }
 .motor {
   --atm: #1f2a2a;
@@ -1554,7 +1553,7 @@ span.cartao-home:hover {
   text-transform: none;
 }
 .home :is(.motor, .historias, .fecho) h2 .fino {
-  color: #8d867b;
+  color: #7d7d7d;
   font-weight: 400;
 }
 
@@ -1572,7 +1571,7 @@ span.cartao-home:hover {
   overflow: hidden;
   border-radius: 14px;
   aspect-ratio: 4 / 5;
-  background: #151311;
+  background: #111111;
 }
 .stock img {
   position: absolute;
@@ -1593,7 +1592,7 @@ span.cartao-home:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgb(11 10 9 / 0.88), rgb(11 10 9 / 0) 55%);
+  background: linear-gradient(0deg, rgb(5 5 5 / 0.88), rgb(5 5 5 / 0) 55%);
 }
 .stock figcaption {
   position: absolute;
@@ -1605,7 +1604,7 @@ span.cartao-home:hover {
   gap: 4px;
 }
 .stock small {
-  color: rgb(241 235 225 / 0.6);
+  color: rgb(255 255 255 / 0.6);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
@@ -1617,13 +1616,13 @@ span.cartao-home:hover {
   letter-spacing: -0.01em;
 }
 .stock span {
-  color: rgb(241 235 225 / 0.7);
+  color: rgb(255 255 255 / 0.7);
   font-size: 12px;
 }
 .stock em {
   max-height: 0;
   overflow: hidden;
-  color: rgb(241 235 225 / 0.8);
+  color: rgb(255 255 255 / 0.8);
   font-size: 12px;
   font-style: normal;
   line-height: 1.35;
@@ -1645,10 +1644,10 @@ span.cartao-home:hover {
   display: grid;
   gap: 6px;
   padding: 22px 0 0;
-  border-top: 1px solid rgb(241 235 225 / 0.16);
+  border-top: 1px solid rgb(255 255 255 / 0.16);
 }
 .copias small {
-  color: #8d867b;
+  color: #7d7d7d;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
@@ -1660,7 +1659,7 @@ span.cartao-home:hover {
   letter-spacing: -0.02em;
 }
 .copias span {
-  color: #a59d91;
+  color: #9a9a9a;
   font-size: 14px;
 }
 
@@ -1672,12 +1671,12 @@ span.cartao-home:hover {
   gap: 8px;
   padding: 24px;
   border-radius: 18px;
-  background: rgb(241 235 225 / 0.04);
-  box-shadow: inset 0 0 0 1px rgb(241 235 225 / 0.1);
-  color: #f1ebe1;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  color: #ffffff;
 }
 .motor .cartao-home small {
-  color: #8d867b;
+  color: #7d7d7d;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.22em;
@@ -1688,7 +1687,7 @@ span.cartao-home:hover {
   font-weight: 500;
 }
 .motor .cartao-home span:last-child {
-  color: #a59d91;
+  color: #9a9a9a;
   font-size: 14px;
   line-height: 1.4;
 }
@@ -1722,8 +1721,8 @@ span.cartao-home:hover {
   bottom: 12px;
   padding: 5px 12px;
   border-radius: 999px;
-  color: #f1ebe1;
-  background: rgb(11 10 9 / 0.55);
+  color: #ffffff;
+  background: rgb(5 5 5 / 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-size: 12px;
@@ -1739,11 +1738,11 @@ span.cartao-home:hover {
   --atm: #6b3a1f;
 }
 .fecho .apoio {
-  color: #a59d91;
+  color: #9a9a9a;
 }
 .assinatura {
   margin: clamp(56px, 9vw, 112px) 0 0;
-  color: rgb(241 235 225 / 0.7);
+  color: rgb(255 255 255 / 0.7);
   font-size: 13px;
   font-weight: 300;
   letter-spacing: 0.24em;
@@ -1754,7 +1753,7 @@ span.cartao-home:hover {
 }
 .assinatura span {
   margin-left: 10px;
-  color: #8d867b;
+  color: #7d7d7d;
   font-weight: 500;
   letter-spacing: 0.12em;
 }
@@ -1777,8 +1776,7 @@ span.cartao-home:hover {
 }
 /* a abertura com luz de dia pede mais sombra para o nome e as linhas */
 .abertura::after {
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 48%, rgb(11 10 9 / 0.55), rgb(11 10 9 / 0.2) 75%), linear-gradient(0deg, rgb(11 10 9 / 0.6), rgb(11 10 9 / 0) 34%);
+  background: radial-gradient(ellipse 60% 50% at 50% 48%, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0.2) 75%), linear-gradient(0deg, rgb(5 5 5 / 0.6), rgb(5 5 5 / 0) 34%);
 }
 .abertura-olho {
   text-shadow: 0 1px 18px rgb(0 0 0 / 0.6);
@@ -1791,11 +1789,11 @@ span.cartao-home:hover {
     bottom: calc(24px + env(safe-area-inset-bottom));
   }
   .abertura::after {
-    background: linear-gradient(0deg, #0b0a09 18%, rgb(11 10 9 / 0.55) 48%, rgb(11 10 9 / 0.25) 70%, rgb(11 10 9 / 0.5) 100%);
+    background: linear-gradient(0deg, #050505 18%, rgb(5 5 5 / 0.55) 48%, rgb(5 5 5 / 0.25) 70%, rgb(5 5 5 / 0.5) 100%);
   }
 }
 .abertura .abertura-olho {
-  color: #f6f1ea;
+  color: #ffffff;
   text-shadow:
     0 1px 2px rgb(0 0 0 / 0.6),
     0 0 24px rgb(0 0 0 / 0.7);
@@ -1827,4 +1825,9 @@ span.cartao-home:hover {
 }
 .home .abertura .selo-dev {
   font-size: 12px;
+}
+/* preto e branco; o azul cinematográfico só nos detalhes (titular, 04/11/2026): a cor vem dos frames */
+.home .hero--filme .selo-dev i,
+.home .fecho .selo-dev i {
+  background: #4a86c8;
 }

@@ -14,7 +14,7 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent
 MARCA = RAIZ / 'marca'
 FONTE = RAIZ / 'fontes/figtree-latin-wght-normal.woff2'
 
-TINTA = {'escuro': '#f1ebe1', 'claro': '#1d1d1f'}
+TINTA = {'escuro': '#ffffff', 'claro': '#111111'}
 ESPACO = 60  # entreletra de 0,06 em, como no título
 
 
@@ -76,18 +76,18 @@ for tema, cor in TINTA.items():
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{x0:g} -700 {x1 - x0:g} {ALTO}" width="{(x1 - x0) / 25:.1f}" height="{ALTO / 25:.1f}">'
         f'<title>REVELAFILM</title>{palavra(cor)}</svg>',
     )
-gravar('revela-simbolo.svg', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110"><title>REVELAFILM</title>{simbolo("#f4efe7")}</svg>')
-gravar('revela-simbolo-claro.svg', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110"><title>REVELAFILM</title>{simbolo("#1d1d1f")}</svg>')
+gravar('revela-simbolo.svg', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110"><title>REVELAFILM</title>{simbolo("#ffffff")}</svg>')
+gravar('revela-simbolo-claro.svg', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110"><title>REVELAFILM</title>{simbolo("#111111")}</svg>')
 gravar('revela-simbolo-mono.svg', f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110"><title>REVELAFILM</title>{simbolo("currentColor")}</svg>')
 # ícone do app: o símbolo creme no quadro escuro (o canto rx=186 e o fio da borda saem nos PNG, scripts/icones-app.mjs)
 lado = 452
 gravar(
     'revela-icone.svg',
     '<svg xmlns="http://www.w3.org/2000/svg" width="824" height="824" viewBox="100 100 824 824"><title>REVELAFILM</title>'
-    '<defs><linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#24201c"/>'
-    '<stop offset="1" stop-color="#0e0c0b"/></linearGradient></defs>'
+    '<defs><linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1c1c"/>'
+    '<stop offset="1" stop-color="#050505"/></linearGradient></defs>'
     '<rect x="100" y="100" width="824" height="824" rx="186" fill="url(#fundo)"/>'
-    f'<g transform="translate({512 - lado / 2:g} {512 - lado / 2:g}) scale({lado / 110:.5f})">{simbolo("#f4efe7", "i")}</g>'
+    f'<g transform="translate({512 - lado / 2:g} {512 - lado / 2:g}) scale({lado / 110:.5f})">{simbolo("#ffffff", "i")}</g>'
     '<rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="2"/>'
     '</svg>',
 )
