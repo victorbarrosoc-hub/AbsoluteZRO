@@ -1,6 +1,14 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
+
+- 🟡 Pesquisa e desenho na [ADR 0042](decisions/0042-radio-do-set.md): canais por função vindos da escala do Maestro,
+  avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
+  nativa (PushToTalk no iPhone) só com uso medido.
+- ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
+- ⬜ Pasta `products/<app>/`, gate fechado e página neutra no domínio, depois do nome.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 

@@ -15,6 +15,12 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rádio do set (05/11/2026, ADR 0042, proposta)
+
+- Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
+  Prettier (os 5 avisos do `format:check` já estavam na `main`).
+- Pesquisa de mercado e do limite do iPhone (PushToTalk, lojas alternativas no Brasil) com fontes no fim da ADR.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
