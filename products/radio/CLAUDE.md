@@ -10,4 +10,6 @@ Plataforma nova (ADR 0042, nome a definir). As regras do `CLAUDE.md` da raiz val
   microfone falso do Chromium).
 - Toda tabela com RLS e teste de isolamento em `test/banco.test.js`; rotas só por `comoPessoa`.
 - O modo local (`RADIO_LOCAL=1`) é só para desenvolver: nunca ligar em produção.
+- O rádio no ar é o do HUB (`absolutezro.com/radio`): mudou `api/_nucleo.js` ou `app/`, rode
+  `node scripts/para-o-hub.mjs` e o teste `tests/integration/radio.test.ts` da raiz.
 - Antes de entregar: `npm test` nesta pasta (Postgres e Chromium de verdade).

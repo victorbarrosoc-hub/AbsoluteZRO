@@ -1,5 +1,9 @@
 # Rádio do set (nome a definir)
 
+> **Mora no HUB** (titular, 05/11/2026): no ar em **absolutezro.com/radio**, com a conta e o banco do HUB. Esta pasta é
+> a fonte: o núcleo (`api/_nucleo.js`) e o app (`app/`) vão para o HUB por `node scripts/para-o-hub.mjs` (cópia em
+> `apps/hub-web/lib/radio`, conferida por `tests/integration/radio.test.ts`). Mudou algo aqui, rode o gerador.
+
 Voz por botão (push-to-talk) para a equipe da diária, no navegador do celular. Fase 1 da
 [ADR 0042](../../docs/decisions/0042-radio-do-set.md): **sem integração com as outras plataformas** (pedido do titular,
 05/11/2026); a equipe entra pelo código ou pelo QR. Não lançado: fechado no gate, fora do catálogo do HUB, sem deploy.
@@ -42,9 +46,7 @@ Voz por botão (push-to-talk) para a equipe da diária, no navegador do celular.
 - `npm run dev` com `RADIO_DATABASE_URL` → http://localhost:8091 em **modo local**: sem login, cada navegador escolhe um
   nome. Só liga com `RADIO_LOCAL=1`, sem o login configurado e em localhost; nunca em produção.
 
-## Para publicar (pede autorização do titular)
+## App separado (parado)
 
-1. Nome e domínio `<nome>.absolutezro.com` (ADR 0025); trocar "Rádio do set" em `app/app.html` e `SITE` em `api/_zro.js`.
-2. Migration nova no HUB: produto no catálogo, fechado (`development`), e o cliente OIDC `radio-web`.
-3. Schema `radio` e papéis `radio`/`radio_app` no Supabase `AbsoluteZRO`; `npm run migrar`.
-4. Projeto Vercel (Root Directory = esta pasta) com `ZRO_CLIENT_ID`, `ZRO_CLIENT_SECRET` e `RADIO_DATABASE_URL`.
+O site próprio (radio.absolutezro.com, projeto Vercel `radio`) está parado na página neutra: sem `ZRO_CLIENT_SECRET` e
+`RADIO_DATABASE_URL`. Ele continua servindo para o modo local e para os testes desta pasta.

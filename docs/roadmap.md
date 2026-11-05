@@ -12,10 +12,12 @@ Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
   WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
   scripts 404 para quem não passa), login único copiado do Rift, schema `radio` com RLS.
-- 🟡 Publicação (titular autorizou, 05/11/2026): HUB `0058` aplicada no AbsoluteZRO-SP (produto `radio` fechado,
-  checksum registrado), cliente OIDC `radio-web` cadastrado (o banco guarda o sha256), schema `radio` com papéis
-  `radio`/`radio_app` e a migração `0000`, projeto Vercel `radio` (Root Directory `products/radio`, `gru1`) no ar em
-  **radio.absolutezro.com** com a página neutra. Falta pôr `ZRO_CLIENT_SECRET` e `RADIO_DATABASE_URL` na Vercel.
+- ✅ Dentro do HUB (titular, 05/11/2026: "usa o do ecossistema"): **absolutezro.com/radio**, com a conta e o banco do
+  HUB. Núcleo único em `products/radio/api/_nucleo.js` (cópia gerada em `apps/hub-web/lib/radio`, teste confere);
+  `/radio`, `/radio/app/*` e `/api/v1/radio/*` só para quem passa no gate (fora, 404); migração `0059` deixa o HUB
+  assumir `radio_app`. HUB `0058` (produto fechado) e o schema `radio` já estão no AbsoluteZRO-SP.
+- ⬜ Ir ao ar: o ramo entra na `main` (o deploy do HUB aplica a `0059`). O projeto Vercel `radio` fica parado na
+  página neutra.
 - ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)

@@ -108,6 +108,21 @@ via `consumeQuota` com chave de idempotência. Preço e nível pedem o titular.
 Enquanto for proposta, basta apagar esta ADR. Depois da pasta e do gate, o produto sai do catálogo com migration nova
 (nunca editando uma aplicada) e o domínio volta para a página neutra.
 
+## Revisão (05/11/2026): o rádio mora no HUB
+
+O titular decidiu "usar o do ecossistema": em vez de um site próprio com login e banco separados (que pediam um segredo
+de cliente e uma senha de banco novos), o rádio abre em **absolutezro.com/radio**, com a conta e a conexão do HUB.
+
+- As regras ficam num núcleo só, `products/radio/api/_nucleo.js`, usado pelo app separado (modo local e testes) e pelo
+  HUB, que serve uma cópia gerada (`apps/hub-web/lib/radio/`, `node products/radio/scripts/para-o-hub.mjs`; o teste
+  `tests/integration/radio.test.ts` confere byte a byte).
+- Página, estilo e scripts saem por `/radio` e `/radio/app/*`, e a API por `/api/v1/radio/*`, só para quem passa no
+  gate (`authorize` com o lançamento de `radio`, canal web). Fora dele, 404, com ou sem sessão. Nada do rádio em
+  `public/`.
+- Os dados continuam no schema `radio` (dono: papel `radio`). O HUB só assume o papel `radio_app` em cada operação
+  (migração `0059`), e o RLS vale sempre.
+- O projeto Vercel `radio` (radio.absolutezro.com) fica parado na página neutra; sai quando o titular decidir.
+
 ## Fontes da pesquisa (05/11/2026)
 
 - [CrewCast na App Store](https://apps.apple.com/us/app/crewcast/id6747609699)

@@ -7,6 +7,11 @@ import { desenharQr } from './qr.js'
 import { destravarSom, somAviso, somComeca, somTermina } from './som.js'
 
 const $ = (id) => document.getElementById(id)
+const meta = (n) => document.querySelector(`meta[name="${n}"]`)?.content ?? ''
+// onde o app mora: '' e /api/radio no app separado; /radio e /api/v1/radio dentro do HUB
+const BASE = meta('radio-base')
+const API = meta('radio-api') || '/api/radio'
+const INICIO = BASE || '/'
 const FUNCOES = { direcao: 'Direção', producao: 'Produção', camera: 'Câmera', som: 'Som', luz: 'Luz', arte: 'Arte', elenco: 'Elenco' }
 const AVISOS = { silencio: 'Silêncio', acao: 'Ação', corta: 'Corta', intervalo: 'Intervalo' }
 const BATIDA_MS = 1000
@@ -71,8 +76,8 @@ async function telaDiarias() {
   sairDoRadio()
   $('tela-radio').hidden = true
   $('tela-diarias').hidden = false
-  history.replaceState(null, '', '/')
-  const r = await api('/api/radio/diarias')
+  history.replaceState(null, '', INICIO)
+  const r = await api(`${API}/diarias`)
   if (r.status === 503) return mostrarErro('diarias-erro', 'O rádio está sem banco agora.')
   const lista = $('lista')
   lista.replaceChildren(
@@ -96,14 +101,14 @@ $('criar').addEventListener('submit', async (e) => {
   e.preventDefault()
   const nome = $('criar-nome').value.trim()
   if (!nome) return
-  const r = await api('/api/radio/diarias', { acao: 'criar', nome })
+  const r = await api(`${API}/diarias`, { acao: 'criar', nome })
   if (!r.diaria) return mostrarErro('diarias-erro', 'Não deu para criar. Tente de novo.')
   $('criar-nome').value = ''
   abrirDiaria(r.diaria)
 })
 
 async function entrarComCodigo(codigo) {
-  const r = await api('/api/radio/diarias', { acao: 'entrar', codigo })
+  const r = await api(`${API}/diarias`, { acao: 'entrar', codigo })
   if (!r.diaria) {
     mostrarErro('diarias-erro', 'Código não encontrado.')
     return false
@@ -129,7 +134,7 @@ function abrirDiaria(d) {
   $('codigo').textContent = d.codigo
   $('ligar').hidden = estado.ligado
   $('radio').hidden = !estado.ligado
-  history.replaceState(null, '', `/?d=${d.codigo}`)
+  history.replaceState(null, '', `${INICIO}?d=${d.codigo}`)
   desenharFuncoes(d.funcao)
   estado.malha = new Malha({
     eu: estado.peer,
@@ -200,7 +205,7 @@ function desenharFuncoes(atual) {
       b.setAttribute('aria-checked', String(id === atual))
       b.textContent = nome
       b.addEventListener('click', async () => {
-        const r = await api('/api/radio/diarias', { acao: 'funcao', diaria: estado.diaria.id, funcao: id })
+        const r = await api(`${API}/diarias`, { acao: 'funcao', diaria: estado.diaria.id, funcao: id })
         if (r.ok) {
           estado.diaria.funcao = id
           desenharFuncoes(id)
@@ -258,7 +263,7 @@ async function bater() {
   const sinais = estado.saida.splice(0, 20)
   let r
   try {
-    r = await api('/api/radio/batida', { diaria: diaria.id, peer: estado.peer, sinais, aviso: estado.ultimoAviso })
+    r = await api(`${API}/batida`, { diaria: diaria.id, peer: estado.peer, sinais, aviso: estado.ultimoAviso })
   } catch {
     estado.saida.unshift(...sinais)
     r = null
@@ -365,7 +370,7 @@ $('aviso-tela').addEventListener('click', () => ($('aviso-tela').hidden = true))
 
 for (const b of document.querySelectorAll('[data-aviso]')) {
   b.addEventListener('click', async () => {
-    const r = await api('/api/radio/aviso', { diaria: estado.diaria.id, tipo: b.dataset.aviso })
+    const r = await api(`${API}/aviso`, { diaria: estado.diaria.id, tipo: b.dataset.aviso })
     if (!r.aviso) return mostrarErro('radio-erro', 'Só a Direção manda aviso.')
     estado.malha?.avisar({ t: 'aviso', ...r.aviso })
     mostrarAviso(r.aviso)
@@ -383,7 +388,7 @@ $('cue-fechar').addEventListener('click', () => {
 })
 
 // ───────── chamar a equipe (QR) ─────────
-const linkDaDiaria = () => `${location.origin}/?d=${estado.diaria.codigo}`
+const linkDaDiaria = () => `${location.origin}${INICIO}?d=${estado.diaria.codigo}`
 $('codigo').addEventListener('click', () => {
   desenharQr($('qr'), linkDaDiaria())
   $('qr-codigo').textContent = estado.diaria.codigo
@@ -406,5 +411,5 @@ if (codigoNaUrl && /^[A-Za-z0-9]{6}$/.test(codigoNaUrl)) {
   entrarComCodigo(codigoNaUrl).then((ok) => ok || telaDiarias())
 } else telaDiarias()
 
-// a sessão relê o perfil e o gate (no máximo uma vez por minuto, api/zro/eu.js)
-fetch('/api/zro/eu').catch(() => {})
+// app separado: a sessão relê o perfil e o gate (no máximo uma vez por minuto, api/zro/eu.js). No HUB, a sessão é a dele.
+if (!BASE) fetch('/api/zro/eu').catch(() => {})

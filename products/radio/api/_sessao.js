@@ -5,7 +5,10 @@
 // localhost, a pessoa vem do cookie rd_local (nome escolhido na tela). Em produção nunca liga: a Vercel não define
 // RADIO_LOCAL e o host não é localhost.
 
+import { nomeLimpo } from './_nucleo.js'
 import { abrir, configurado, COOKIE_CONTA, lerCookie, temAcesso } from './_zro.js'
+
+export { nomeLimpo }
 
 const hostLocal = (req) => /^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(String(req.headers.host || '').toLowerCase())
 
@@ -27,13 +30,6 @@ export function pessoaDe(req) {
   const c = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
   if (!c || typeof c.sub !== 'string' || !temAcesso(c.apps)) return null
   return { sub: c.sub, nome: nomeLimpo(c.nome) || nomeLimpo(String(c.email || '').split('@')[0]) || 'Pessoa', org: c.org?.id || null }
-}
-
-/** Nome de exibição: sem controle nem bidi, até 60. */
-export function nomeLimpo(v) {
-  if (typeof v !== 'string') return null
-  const s = v.replace(/[\u0000-\u001f\u007f‎‏‪-‮⁦-⁩]/g, '').trim().slice(0, 60)
-  return s || null
 }
 
 /** Corpo JSON do pedido (a Vercel já entrega em req.body; o servidor local, não). Até 64 KB. */

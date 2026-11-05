@@ -23,7 +23,7 @@ export default async function pagina(req, res) {
     res.setHeader('Allow', 'GET')
     return res.end()
   }
-  if (pessoaDe(req)) return html(res, await readFile(`${APP}app.html`, 'utf8'))
+  if (pessoaDe(req)) return html(res, (await readFile(`${APP}app.html`, 'utf8')).replaceAll('%BASE%', '').replaceAll('%API%', '/api/radio'))
   if (modoLocal(req)) return html(res, await readFile(`${APP}local.html`, 'utf8'))
   return html(res, await readFile(`${APP}indisponivel.html`, 'utf8'))
 }
