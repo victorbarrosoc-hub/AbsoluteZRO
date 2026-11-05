@@ -12,7 +12,7 @@ const DRIVE_ID = /^[\w-]{1,200}$/
 const ITEM_ID = /^[FT]\d{1,4}$/
 const LOGO_EXTS = ['.png', '.jpg', '.jpeg', '.webp']
 const POST_MAX = 60 * 1024 * 1024
-const TIPOS = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.tif': 'image/tiff', '.mp4': 'video/mp4', '.mov': 'video/quicktime' }
+const TIPOS = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.tif': 'image/tiff', '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm' }
 
 /** Arquivo do disco com Range (o <video> dos takes pula para qualquer ponto). */
 export async function servir(req, res, file, baseHeaders) {

@@ -399,14 +399,17 @@ da Higgsfield é a `0052`).
 
 Branch `sobedesce-montagens`.
 
-- `test/montagens.test.js` (6): tamanhos dos formatos e o personalizado nos limites; as caixas de todos os modelos em
-  todos os formatos ficam dentro da margem e, sem espaço, cobrem a montagem inteira; quadro no ponto, trocar de lugar
-  e preencher em ordem (quadro esvaziado não recebe outra foto); nome do arquivo sem caracteres que o Windows recusa;
-  rota da foto só com a chave da mídia (sem chave e de outro site: 403), só imagem (415), foto sumida (404); salvar grava
-  na pasta escolhida com nome novo, não grava por cima, recusa o que não é imagem e pasta que não existe.
+- `test/montagens.test.js` (11): tamanhos dos formatos e o personalizado nos limites; caixas de todos os modelos em
+  todos os formatos dentro da margem e, sem espaço, cobrindo a montagem inteira; quadro no ponto, trocar e preencher;
+  carrossel e grade (tamanho da tela, fatias, ordem de postar com o 1 embaixo à direita); trecho do take dentro do
+  vídeo e metade na câmera lenta; argumentos do ffmpeg (recorte e escala de cada take, camada por cima, som só do take
+  escolhido, `atempo` na câmera lenta); nome do arquivo; rotas da foto, do quadro e das informações só com a chave da
+  mídia; salvar sem gravar por cima; vídeo recusa pedido torto; **vídeo de ponta a ponta com o ffmpeg** (MP4 no tamanho
+  pedido, sem sobrar arquivo pela metade).
 - `test/navegacao.test.js`: Estúdio acende também em Montagens.
-- Demo (Chromium) em claro e escuro: escolher modelo e formato, enquadrar com zoom, trocar para Vertical 9:16 e salvar;
-  o arquivo saiu em 1080×1920 em Downloads › Montagens, o segundo com "(2)". Sem erro no console.
+- Demo (Chromium) em claro e escuro com 2 takes e fotos: Vertical 9:16, trecho escolhido na agulha, som do take 1,
+  "Os dois" saiu `…_9x16.mp4` (1080×1920, 5 s, H.264 + AAC, cantos e espaço iguais à tela) e `…_9x16.jpg`; carrossel
+  de 3 slides com a linha de corte; grade 3×2 em 3:4 saiu em 6 imagens `_3x4_01` a `_06`. Sem erro no console.
 
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
 

@@ -104,12 +104,18 @@ Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifes
 
 ## Montagens (Estúdio › Montagens)
 
-Fotos do computador em modelos prontos (`public/components/montagens.js`, geometria e desenho em
-`public/lib/montagens.js`). O motor só mostra a foto escolhida (`GET /api/montagens/foto?p=&k=`, com a chave da mídia;
-TIFF e HEIC viram JPEG de cache) e grava a pronta (`POST /api/montagens/salvar?nome=&formato=&pasta=`, corpo JPEG ou
-PNG, nome novo sempre, nunca por cima) — `src/server/montagens.js`. Formatos com o tamanho de cada rede: 9:16 1080×1920,
-4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1
-2560×1072 e personalizado (200 a 4096 px).
+Fotos e takes do computador em modelos prontos (`public/components/montagens.js`, geometria e desenho em
+`public/lib/montagens.js`). Três tipos: o post (foto, ou vídeo quando tem take), o carrossel contínuo (2 a 10 slides) e a
+grade do perfil (3 colunas, 1 a 5 linhas, 3:4 ou 1:1, numerada na ordem de postar: o 1 é o de baixo, à direita). Formatos
+com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1
+1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1 2560×1072 e personalizado (200 a 4096 px).
+
+Motor (`src/server/montagens.js`), tudo com a chave da mídia: `GET /api/montagens/foto` (TIFF e HEIC viram JPEG de
+cache), `GET /api/montagens/info` (duração, tamanho, som do take), `GET /api/montagens/quadro?t=&l=` (um quadro do take,
+para a agulha e a prévia), `GET /api/montagens/video` (o take para tocar, com Range), `POST /api/montagens/salvar`
+(JPEG/PNG, nome novo sempre) e, para vídeo, `POST /api/montagens/base` (a camada da tela em PNG, com buracos onde os
+takes tocam) + `POST /api/montagens/video` (`src/montagens/video.js`: o ffmpeg põe cada trecho no quadro, cobre com a
+camada e gera MP4 H.264 com o nome de "pela metade" até terminar).
 
 ## Ainda não
 
