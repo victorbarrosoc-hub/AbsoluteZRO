@@ -28,6 +28,9 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   alheia) e `test/radio.e2e.test.js` (três Chromium com microfone falso: todos se conectam, a fala da Equipe chega à
   Bia na Direção e não ao Caio na Câmera, o Geral chega ao Caio, soltar volta ao silêncio, o aviso "Ação" aparece nos
   dois, sem erro de console). Telas conferidas a 390 px. Não conferido: iPhone e Android de verdade, 4G com CGNAT.
+- Publicação (05/11/2026): HUB `npm test` 629/629 com a `0058` (a lista dos não lançados e o guia da Z conhecem o
+  `radio`), lint e typecheck ok. No ar: `radio.absolutezro.com/` devolve a página neutra, `/app/app.js` 404,
+  `/entrar` sem o segredo volta com `?zro=config`, cabeçalhos com `microphone=(self)` e `noindex`.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
