@@ -1670,6 +1670,9 @@ do card... não consigo localizar o job que quero achar".
 - 🔶 Ramo `sobedesce-ao-vivo` (titular, 05/11/2026): resumo ao vivo no topo de Transferências (subindo, baixando, já
   passou de quanto, falta e a hora que termina; gráfico de 5 min com sobe e desce; barra do total); o motor guarda 300
   pontos (5 min). Backup Automático com gráfico maior e a régua Copiar → Conferir → Pode formatar. Nome da marca: SOBE pesado, DESCE fino, mesma cor, menos espaço entre letras. App 0.3.7, sem site.
+- 🔶 Ramo `sobedesce-falta-cabe`: o "Falta" do resumo ao vivo cortava em "menos …" quando faltava menos de 1 min.
+  Agora segue o desenho da velocidade, com o número grande e a unidade pequena ("<1 min", "~12 min", "~1 h 12 min").
+  App 0.3.8, sem site.
 
 ## SOBEDESCE: navegação em cinco abas (05/11/2026)
 
