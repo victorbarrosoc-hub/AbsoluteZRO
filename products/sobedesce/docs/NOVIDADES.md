@@ -10,6 +10,7 @@ O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão
 - Cartões ganhou "Copiar" (o antigo Comparar entre discos), ao lado de Backup e Calculadora.
 - No Drive, "Conferir com o computador" mostra o que já subiu e o que falta.
 - Dispositivos, Z e os apps da Absolute ZRO estão no menu da sua conta (embaixo, na foto).
+- No Drive, "Mover para a lixeira" no menu de arquivos e pastas (com várias marcadas, todas). Pergunta antes e fica 30 dias na lixeira do Google. Mover para outra pasta continua no menu e no arrastar.
 
 ## 0.3.5
 

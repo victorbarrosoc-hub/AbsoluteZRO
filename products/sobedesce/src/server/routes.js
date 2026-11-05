@@ -925,6 +925,37 @@ export function createApi(ctx) {
     return { movidos, ja, recusados }
   })
 
+  // ── Mover para a lixeira (menu do item, titular 05/11/2026): arquivos e pastas, de 1 a 50 por vez. Vai para a LIXEIRA
+  // do Google (recuperável por 30 dias), nunca apaga de vez; só com `confirmado` (a tela pergunta antes). Pasta leva
+  // junto o que tem dentro (é assim no Google Drive). O que a conta não pode mexer volta em `recusados`.
+  route('POST', '/api/drive/:acc/lixeira', async ({ params, body, signal }) => {
+    account(params.acc)
+    if (body.confirmado !== true) throw new HttpProblem(400, 'Confirme na tela antes de mover para a lixeira.')
+    const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : []
+    if (!ids.length || ids.length > MOVER_LOTE || !ids.every(id => typeof id === 'string' && DRIVE_ID.test(id) && id !== 'root')) {
+      throw new HttpProblem(400, `Mande de 1 a ${MOVER_LOTE} itens por vez.`)
+    }
+    const drive = ctx.manager.driveFor(params.acc)
+    const movidos = []
+    const recusados = []
+    for (const id of ids) {
+      try {
+        await drive.trash(id, { signal })
+        movidos.push(id)
+      } catch (err) {
+        const info = classifyError(err)
+        if (info.kind === 'abort' || info.kind === 'auth' || info.kind === 'reauth' || info.kind === 'retry' || info.kind === 'quota') throw err
+        recusados.push({ id, status: info.status ?? null, error: err?.message || info.message })
+      }
+    }
+    if (movidos.length) ctx.log?.(`lixeira: ${movidos.length} item(ns) pelo menu`)
+    if (!movidos.length && recusados.length) {
+      const st = recusados[0].status
+      throw new HttpProblem(st === 400 || st === 403 || st === 404 ? st : 400, recusados[0].error)
+    }
+    return { movidos, recusados }
+  })
+
   // ── disco local
   route('GET', '/api/local/roots', async () => ({ roots: await listRoots(), home: os.homedir(), sep: path.sep }))
 

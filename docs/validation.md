@@ -667,6 +667,8 @@ Branch `sobedesce-visual-abas`.
   antigas acendem a aba nova; Estúdio lembra a última seção; Cartões com Backup · Copiar · Calculadora; o Comparar não
   abre mais o "Entre discos"; o Drive tem "Conferir com o computador". `test/entrada.test.js` atualizado (a Z no menu da
   conta).
+- `test/drive-mover.test.js`: rota `/api/drive/:acc/lixeira` só com confirmação, arquivo e pasta vão para a lixeira (nunca
+  apaga de vez), leitor recusado, outro site barrado. Menu do Drive com "Mover para a lixeira" e a confirmação (demo).
 - Telas no demo (Chromium) em claro e escuro: Drive, Estúdio (Frames, Referências), Cartões (as três seções),
   Conferir com o computador e o menu da conta; sem erro no console.
 
