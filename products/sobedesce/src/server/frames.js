@@ -15,7 +15,7 @@ const POST_MAX = 60 * 1024 * 1024
 const TIPOS = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.tif': 'image/tiff', '.mp4': 'video/mp4', '.mov': 'video/quicktime' }
 
 /** Arquivo do disco com Range (o <video> dos takes pula para qualquer ponto). */
-async function servir(req, res, file, baseHeaders) {
+export async function servir(req, res, file, baseHeaders) {
   const st = await fsp.stat(file).catch(() => null)
   if (!st?.isFile()) {
     res.writeHead(404, baseHeaders({ 'content-length': 0 }))
@@ -49,7 +49,7 @@ async function servir(req, res, file, baseHeaders) {
   })
 }
 
-function lerCorpo(req, limite) {
+export function lerCorpo(req, limite) {
   return new Promise((resolve, reject) => {
     const chunks = []
     let n = 0

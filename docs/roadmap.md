@@ -1665,6 +1665,16 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: Montagens no Estúdio (05/11/2026)
+
+- 🔶 Ramo `sobedesce-montagens` (titular, 05/11/2026), etapa 1 de 3: Estúdio ganha **Montagens** (Frames · Montagens ·
+  Referências). Fotos do computador (JPG, PNG, WebP; TIFF e HEIC viram JPEG de cache pelo ffmpeg) em 12 modelos
+  prontos já desenhados com as fotos da pessoa; 9 formatos de postagem com o tamanho de cada rede (9:16, 4:5, 3:4, 1:1,
+  16:9, 1.91:1, 2:3, 21:9, 2.39:1) e o personalizado; tocar no quadro, arrastar para enquadrar, rolar ou barra para
+  zoom, trocar de lugar, tirar; espaço, cantos e fundo. Salva JPG no tamanho do formato em Downloads › Montagens (ou
+  outra pasta), sempre com nome novo; "Subir pro Drive" pela fila de envio. App 0.3.9, sem site. Próximas etapas: takes
+  na montagem com a agulha de seleção e salvar como vídeo; carrossel contínuo e grade do perfil.
+
 ## SOBEDESCE: transferências ao vivo (05/11/2026)
 
 - 🔶 Ramo `sobedesce-ao-vivo` (titular, 05/11/2026): resumo ao vivo no topo de Transferências (subindo, baixando, já

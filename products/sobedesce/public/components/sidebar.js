@@ -23,7 +23,7 @@ const NAV = [
   { id: 'drive', label: 'Drive', icon: 'cloud', tambem: ['comparar'] },
   { id: 'transferencias', label: 'Transferências', icon: 'transfers', tambem: ['computadores'] },
   { id: 'cartoes', label: 'Cartões', icon: 'sdcard' },
-  { id: 'frames', label: 'Estúdio', icon: 'sparkle', tambem: ['referencias'], href: 'estudio' },
+  { id: 'frames', label: 'Estúdio', icon: 'sparkle', tambem: ['referencias', 'montagens'], href: 'estudio' },
 ]
 const NAV_BAIXO = [{ id: 'ajustes', label: 'Ajustes', icon: 'sliders' }]
 

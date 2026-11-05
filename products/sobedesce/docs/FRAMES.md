@@ -102,6 +102,15 @@ Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifes
   - O celular mostra o andamento: esperando, fazendo, pronto (com o resumo) ou erro (com Tentar de novo).
 - **Calculadora** também está na aba Criar, com a mesma conta do computador e do site.
 
+## Montagens (Estúdio › Montagens)
+
+Fotos do computador em modelos prontos (`public/components/montagens.js`, geometria e desenho em
+`public/lib/montagens.js`). O motor só mostra a foto escolhida (`GET /api/montagens/foto?p=&k=`, com a chave da mídia;
+TIFF e HEIC viram JPEG de cache) e grava a pronta (`POST /api/montagens/salvar?nome=&formato=&pasta=`, corpo JPEG ou
+PNG, nome novo sempre, nunca por cima) — `src/server/montagens.js`. Formatos com o tamanho de cada rede: 9:16 1080×1920,
+4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1
+2560×1072 e personalizado (200 a 4096 px).
+
 ## Ainda não
 
 - Vídeo HDR (HLG/PQ) sai sem conversão de tom: o JPEG fica lavado. Por enquanto, use a versão SDR do filme.

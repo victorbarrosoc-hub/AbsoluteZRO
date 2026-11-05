@@ -395,6 +395,19 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: Montagens no Estúdio (05/11/2026)
+
+Branch `sobedesce-montagens`.
+
+- `test/montagens.test.js` (6): tamanhos dos formatos e o personalizado nos limites; as caixas de todos os modelos em
+  todos os formatos ficam dentro da margem e, sem espaço, cobrem a montagem inteira; quadro no ponto, trocar de lugar
+  e preencher em ordem (quadro esvaziado não recebe outra foto); nome do arquivo sem caracteres que o Windows recusa;
+  rota da foto só com a chave da mídia (sem chave e de outro site: 403), só imagem (415), foto sumida (404); salvar grava
+  na pasta escolhida com nome novo, não grava por cima, recusa o que não é imagem e pasta que não existe.
+- `test/navegacao.test.js`: Estúdio acende também em Montagens.
+- Demo (Chromium) em claro e escuro: escolher modelo e formato, enquadrar com zoom, trocar para Vertical 9:16 e salvar;
+  o arquivo saiu em 1080×1920 em Downloads › Montagens, o segundo com "(2)". Sem erro no console.
+
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
 
 Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
