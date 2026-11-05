@@ -41,6 +41,23 @@ export function Passo({ n, icone, cor, titulo, sub, frase, acao, i = 1, id, clas
   </section>`
 }
 
+/**
+ * As seções de uma aba (Estúdio: Frames · Referências; Cartões: Backup · Copiar · Calculadora), numa pílula pequena
+ * no topo da tela, como no Ajustes do Sistema. itens: [{ value, titulo, icone?, href? }]: com `href` é link (troca de
+ * tela), sem é botão (troca dentro da tela, `onEscolher`).
+ */
+export function Secoes({ valor, itens, onEscolher, label }) {
+  return html`<div class="k-secoes-faixa"><nav class="k-secoes k-entra" style="--i:0" aria-label=${label}>
+    ${itens.map((o) => {
+      const on = o.value === valor
+      const corpo = html`${o.icone ? html`<${Icon} name=${o.icone} size=${15} strokeWidth=${1.9} />` : null}<span>${o.titulo}</span>`
+      return o.href
+        ? html`<a href=${o.href} class=${cx('k-secao', on && 'is-on')} aria-current=${on ? 'page' : undefined}>${corpo}</a>`
+        : html`<button type="button" class=${cx('k-secao', on && 'is-on')} aria-pressed=${on ? 'true' : 'false'} onClick=${() => onEscolher?.(o.value)}>${corpo}</button>`
+    })}
+  </nav></div>`
+}
+
 /** Opções em cartões (uma escolhida). itens: [{ value, titulo, sub?, icone?, selo?, up?, disabled? }] */
 export function Opcoes({ valor, itens, onEscolher, colunas, label }) {
   return html`<div class="k-opcoes" role="radiogroup" aria-label=${label} style=${`--n:${colunas || Math.min(itens.length, 4)}`}>

@@ -2,6 +2,15 @@
 
 O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão>`) e para o aviso de versão nova.
 
+## 0.3.6
+
+**Menu mais simples: cinco abas.** Início, Drive, Transferências, Cartões e Estúdio, com Ajustes embaixo.
+
+- Estúdio junta Frames e Referências, com a troca no topo.
+- Cartões ganhou "Copiar" (o antigo Comparar entre discos), ao lado de Backup e Calculadora.
+- No Drive, "Conferir com o computador" mostra o que já subiu e o que falta.
+- Dispositivos, Z e os apps da Absolute ZRO estão no menu da sua conta (embaixo, na foto).
+
 ## 0.3.5
 
 **"Ejetar o cartão ao terminar" de verdade.** Logo depois da cópia o Mac costuma segurar o cartão por alguns segundos

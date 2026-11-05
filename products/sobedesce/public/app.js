@@ -7,6 +7,8 @@ import { navigate, useRoute } from './lib/router.js'
 import { Wordmark } from './components/icons.js'
 import { Button, Spinner } from './components/common.js'
 import { Sidebar } from './components/sidebar.js'
+import { Secoes } from './components/kit.js'
+import { storage } from './lib/ui.js'
 import { TransfersScreen } from './components/transfers.js'
 import { PainelScreen } from './components/painel.js'
 import { ZScreen } from './components/z.js'
@@ -25,7 +27,7 @@ import { LigarZro } from './components/ligar-zro.js'
 import { abertura } from './lib/abertura.js'
 import { telaDeEntrada } from './lib/entrada.js'
 
-const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Comparar', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
+const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Conferir com o computador', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
 
 function Splash({ error }) {
   return html`<div class="splash">
@@ -60,6 +62,19 @@ function Shell({ route }) {
     dir.current = sentido(anterior.current, route.name)
     anterior.current = route.name
   }
+  // Estúdio (proposta A, 05/11/2026): Frames e Referências com as seções no topo; a aba lembra a última.
+  const ESTUDIO = [
+    { value: 'frames', titulo: 'Frames', icone: 'frames', href: '#/frames' },
+    { value: 'referencias', titulo: 'Referências', icone: 'bookmark', href: '#/referencias' },
+  ]
+  const noEstudio = route.name === 'frames' || route.name === 'referencias'
+  if (noEstudio) storage.set('estudio.secao', route.name)
+  if (route.name === 'estudio') {
+    const ultima = storage.get('estudio.secao', 'frames')
+    location.replace(`#/${ultima === 'referencias' ? 'referencias' : 'frames'}`)
+    return null
+  }
+  const secoes = noEstudio ? html`<${Secoes} label="Estúdio" valor=${route.name} itens=${ESTUDIO} />` : null
   let screen
   switch (route.name) {
     case 'drive':
@@ -96,7 +111,7 @@ function Shell({ route }) {
   // A Z entra sem o movimento: transform num ancestral prende a gaveta de Conversas (position: fixed) à caixa.
   return html`<div class="shell">
     <${Sidebar} current=${route.name} />
-    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} data-dir=${dir.current} key=${route.name}>${screen}</div></main>
+    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} data-dir=${dir.current} key=${route.name}>${secoes}${screen}</div></main>
   </div>`
 }
 

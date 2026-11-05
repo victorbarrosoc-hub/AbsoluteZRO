@@ -15,7 +15,6 @@ import { Button, Checkbox, FileIcon, Pill } from './common.js'
 import { Barra, BotaoGrande, Destaque, Opcoes, Pagina, Passo, Pilulas, Resumo } from './kit.js'
 import { loadLocalRoots, useLocalRoots } from './local-picker.js'
 import { navigate } from '../lib/router.js'
-import { DiscosPanel } from './discos.js'
 import { Fonte, Rota } from './comparar-partes.js'
 import { PRECISA_TOTAL } from '../lib/modo-drive.js'
 
@@ -87,16 +86,6 @@ const STATE_BADGE = {
 
 const inDir = (relDir, dir) => dir === '' || relDir === dir || relDir.startsWith(dir + '/')
 
-// ───── a escolha do modo (em cima, nos dois modos) ─────
-
-const TIPOS = [
-  { value: 'drive', titulo: 'Computador × Drive', sub: 'O que já subiu e o que ainda falta', icone: 'cloud' },
-  { value: 'discos', titulo: 'Entre discos', sub: 'Cartão ou SSD para outro disco, conferido', icone: 'disk', up: true },
-]
-
-function Modo({ tipo, setTipo }) {
-  return html`<div class="k-entra" style="--i:1"><${Opcoes} label="O que comparar" valor=${tipo} onEscolher=${setTipo} itens=${TIPOS} colunas=${2} /></div>`
-}
 
 // ───── progresso ─────
 
@@ -399,11 +388,10 @@ function Resultado({ result, onLimpar, busy, includeDiff, setIncludeDiff, onUplo
 
 // ───── tela ─────
 
+// "Conferir com o computador" (botão da tela Drive, proposta A de 05/11/2026): o que já subiu e o que falta, pasta por
+// pasta. O "Entre discos" que morava aqui virou Cartões › Copiar (cartoes.js).
 export function CompareScreen() {
-  const [tipo, setTipo] = usePersistentState('compare.tipo', 'drive')
-  const topo = html`<${Modo} tipo=${tipo} setTipo=${setTipo} />`
-  if (tipo === 'discos') return html`<${DiscosPanel} topo=${topo} />`
-  return html`<${CompareDrive} topo=${topo} />`
+  return html`<${CompareDrive} topo=${null} />`
 }
 
 function CompareDrive({ topo }) {
@@ -593,8 +581,8 @@ function CompareDrive({ topo }) {
     ${extra}`
 
   return html`<${Pagina}
-    titulo="Comparar"
-    frase="Veja o que já subiu e o que ainda falta, pasta por pasta."
+    titulo="Conferir com o computador"
+    frase="O que já subiu e o que falta, pasta por pasta."
     class=${cx('page-compare', (result || running || failed) && 'cp-lado-antes')}
     lado=${lado}
   >

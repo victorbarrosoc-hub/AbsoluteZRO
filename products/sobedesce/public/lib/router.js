@@ -3,7 +3,8 @@
 // 29/10/2026): a tarefa em curso, senão o Início. A Z nunca é a entrada.
 import { useEffect, useState } from '/vendor/preact-htm.js'
 
-export const ROUTES = ['painel', 'transferencias', 'drive', 'referencias', 'frames', 'comparar', 'computadores', 'cartoes', 'ajustes', 'z', 'inicio']
+// 'estudio': a aba do menu; abre a última seção usada (Frames ou Referências, app.js).
+export const ROUTES = ['painel', 'transferencias', 'drive', 'referencias', 'frames', 'estudio', 'comparar', 'computadores', 'cartoes', 'ajustes', 'z', 'inicio']
 
 export function parseHash(hash = location.hash) {
   const raw = hash.replace(/^#\/?/, '')

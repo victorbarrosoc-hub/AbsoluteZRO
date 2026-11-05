@@ -35,11 +35,13 @@ test('endereço sem rota cai no Início; #/z continua abrindo a Z (link direto)'
   assert.match(app, /rotaLida\.padrao && !entrada\.current\) entrada\.current = telaDeEntrada/)
 })
 
-test('a Z não é a primeira da barra: fica no pé, depois dos Ajustes', async () => {
+// Proposta A (titular, 05/11/2026): a Z continua discreta, agora no menu da conta (avatar), depois de Dispositivos.
+test('a Z não é a primeira da barra: fica no menu da conta, não nas abas', async () => {
   const lado = await fs.readFile(new URL('../public/components/sidebar.js', import.meta.url), 'utf8')
   const nav = /const NAV = \[([\s\S]*?)\n\]/.exec(lado)[1]
-  const baixo = /const NAV_BAIXO = \[([\s\S]*?)\n\]/.exec(lado)[1]
   assert.match(nav.trim(), /^\{ id: 'painel'/)
   assert.doesNotMatch(nav, /id: 'z'/)
-  assert.match(baixo, /id: 'ajustes'[\s\S]*id: 'z'/)
+  assert.doesNotMatch(/const NAV_BAIXO = \[[^\n]*\]/.exec(lado)[0], /id: 'z'/)
+  const menu = lado.slice(lado.indexOf('function AccountMenu'), lado.indexOf('function AccountChip'))
+  assert.ok(menu.indexOf("navigate('computadores')") < menu.indexOf("navigate('z')"), 'a Z vem depois de Dispositivos')
 })

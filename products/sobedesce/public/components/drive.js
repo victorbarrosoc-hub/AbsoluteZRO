@@ -543,9 +543,9 @@ export function DriveScreen({ route }) {
     <header class="k-cabeca k-entra" style="--i:0">
       <div>
         <h1>Drive</h1>
-        <p>Seus arquivos no Google Drive: abra as pastas, veja a prévia e baixe no computador.</p>
       </div>
       <div class="k-cabeca-acoes">
+        <${Button} icon="compare" onClick=${() => navigate('comparar')} title="O que já subiu e o que falta, pasta por pasta">Conferir com o computador</${Button}>
         <${Button} icon="link" class=${cx(copiando && 'is-copying')} onClick=${copiarDeLink} disabled=${modo === 'arquivos' && !copiando} title=${modo === 'arquivos' ? `${PRECISA_TOTAL} para copiar de um link.` : 'Copiar uma pasta ou arquivo do Drive de outra pessoa (pelo link) para o seu Drive'}>
           ${copiando ? `Copiando ${copiando.progress?.done || 0}/${copiando.progress?.total || 0}` : 'Copiar de um link'}
         </${Button}>
