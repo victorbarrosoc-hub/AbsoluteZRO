@@ -20,6 +20,14 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 - Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
   Prettier (os 5 avisos do `format:check` já estavam na `main`).
 - Pesquisa de mercado e do limite do iPhone (PushToTalk, lojas alternativas no Brasil) com fontes no fim da ADR.
+- Fase 1 (`products/radio/`, `npm test`, 4/4, Postgres 16 e Chromium do Playwright 1.63 desta máquina):
+  `test/banco.test.js` (migração não repete e recusa arquivo mudado; gate: sem `radio` na claim, página neutra, script
+  404 e API 401, modo local recusado com login configurado; criar, entrar pelo código, função; presença só para quem
+  está na diária; sinal chega só a quem recebe, uma vez, e não grava para aparelho fora; aviso só do dono e da Direção;
+  direto no banco como `radio_app`: quem está fora não lê nada, ninguém vira dono por update nem se põe em diária
+  alheia) e `test/radio.e2e.test.js` (três Chromium com microfone falso: todos se conectam, a fala da Equipe chega à
+  Bia na Direção e não ao Caio na Câmera, o Geral chega ao Caio, soltar volta ao silêncio, o aviso "Ação" aparece nos
+  dois, sem erro de console). Telas conferidas a 390 px. Não conferido: iPhone e Android de verdade, 4G com CGNAT.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 

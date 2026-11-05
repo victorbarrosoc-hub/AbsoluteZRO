@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <!-- Só no modo local (api/_sessao.js): escolher o nome para testar sem o login único. Nunca sai em produção. -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Rádio do set · teste local</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="/app/app.css" />
+    <script type="module" src="/app/local.js"></script>
+  </head>
+  <body>
+    <main class="tela">
+      <h1><span>Teste</span> <b>local.</b></h1>
+      <form id="local" class="cartao" autocomplete="off">
+        <input id="local-nome" maxlength="60" placeholder="Seu nome" aria-label="Seu nome" required />
+        <button class="glass-btn glass-btn--ink" type="submit">Entrar</button>
+      </form>
+    </main>
+  </body>
+</html>

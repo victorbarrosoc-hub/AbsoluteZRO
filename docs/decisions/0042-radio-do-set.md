@@ -1,9 +1,14 @@
 # ADR 0042 — Rádio do set: voz por botão (push-to-talk) para a equipe da diária
 
 **Status:** proposta (05/11/2026, pedido do titular). **Nome a definir** (opções na mesa: Câmbio, QAP, Copiado, Na
-Escuta); pasta, id técnico e domínio (`<app>.absolutezro.com`, ADR 0025) saem do nome. Nada aqui está implementado: sem
-pasta em `products/`, sem schema, sem projeto Vercel. Nasce **fechado** no gate (`zro.product_release`, ADR 0023):
-não aparece para ninguém além do papel `admin` até o titular lançar.
+Escuta); domínio (`<app>.absolutezro.com`, ADR 0025) sai do nome. Nasce **fechado** no gate (`zro.product_release`,
+ADR 0023): não aparece para ninguém além do papel `admin` até o titular lançar.
+
+**Fase 1 feita (05/11/2026), sem integração** (pedido do titular: "faz sem interação com as outras plataformas ainda,
+pra eu testar"): `products/radio/` (id técnico provisório `radio`), com diária por código e QR, canais Geral e Equipe,
+segurar para falar, avisos de set, tela de cue, login único e gate. Voz de aparelho para aparelho em malha (WebRTC), sem
+servidor de mídia; o servidor só leva os sinais de conexão. Sem deploy: o catálogo do HUB, o cliente OIDC, o schema no
+Supabase e o projeto Vercel pedem autorização. Detalhes em `products/radio/README.md`.
 
 ## Contexto
 

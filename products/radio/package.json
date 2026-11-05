@@ -1,0 +1,22 @@
+{
+  "name": "radio",
+  "version": "0.1.0",
+  "description": "Rádio do set (nome a definir): voz por botão para a equipe da diária, da Absolute ZRO. ADR 0042.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node publicar.mjs && RADIO_LOCAL=1 node scripts/servir.mjs",
+    "build": "node publicar.mjs",
+    "test": "node --test test/*.test.js",
+    "migrar": "node scripts/migrar.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

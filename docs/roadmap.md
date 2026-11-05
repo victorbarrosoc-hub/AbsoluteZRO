@@ -8,7 +8,13 @@ Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
   nativa (PushToTalk no iPhone) só com uso medido.
 - ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
-- ⬜ Pasta `products/<app>/`, gate fechado e página neutra no domínio, depois do nome.
+- ✅ Fase 1 sem integração (05/11/2026, `products/radio/`, nome provisório): diária com código e QR, canais Geral e
+  Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
+  WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
+  scripts 404 para quem não passa), login único copiado do Rift, schema `radio` com RLS.
+- ⛔ Publicar para testar no celular: produto fechado no catálogo do HUB, cliente OIDC `radio-web`, schema no Supabase
+  e projeto Vercel, com autorização do titular.
+- ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 

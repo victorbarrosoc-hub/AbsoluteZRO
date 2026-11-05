@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <!-- Rádio do set (ADR 0042, nome a definir). Não lançado: esta página só sai por api/pagina.js para quem passa no
+       gate. Sem script nem estilo inline (CSP). -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Rádio do set</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/app/app.css" />
+    <script type="module" src="/app/app.js"></script>
+  </head>
+  <body>
+    <!-- 1 · diárias -->
+    <main id="tela-diarias" class="tela" hidden>
+      <header class="topo">
+        <span class="marca">Rádio do set</span>
+        <button class="icone" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">◐</button>
+      </header>
+      <h1><span>Fale com a</span> <b>equipe.</b></h1>
+      <form id="criar" class="cartao" autocomplete="off">
+        <input id="criar-nome" name="nome" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" required />
+        <button class="glass-btn glass-btn--ink" type="submit">Criar diária</button>
+      </form>
+      <form id="entrar" class="cartao" autocomplete="off">
+        <input id="entrar-codigo" name="codigo" maxlength="7" placeholder="Código" aria-label="Código da diária" autocapitalize="characters" required />
+        <button class="glass-btn" type="submit">Entrar</button>
+      </form>
+      <p class="erro" id="diarias-erro" role="alert" hidden></p>
+      <ul id="lista" class="lista" aria-label="Suas diárias"></ul>
+    </main>
+
+    <!-- 2 · o rádio -->
+    <main id="tela-radio" class="tela" hidden>
+      <header class="topo">
+        <button class="icone" id="voltar" type="button" aria-label="Voltar">‹</button>
+        <div class="titulo-diaria">
+          <strong id="diaria-nome"></strong>
+          <span id="pessoas-conta" class="apoio"></span>
+        </div>
+        <button class="pilula" id="codigo" type="button" title="Chamar a equipe (QR)"></button>
+      </header>
+
+      <section id="ligar" class="ligar">
+        <button class="glass-btn glass-btn--ink grande" id="ligar-btn" type="button">Entrar no rádio</button>
+        <p class="apoio" id="ligar-dica">Deixe o app aberto e a tela ligada.</p>
+      </section>
+
+      <section id="radio" class="radio" hidden>
+        <div class="funcoes" id="funcoes" role="radiogroup" aria-label="Sua função"></div>
+
+        <div class="canais" role="radiogroup" aria-label="Falar para">
+          <button type="button" role="radio" data-canal="geral" aria-checked="true">Geral</button>
+          <button type="button" role="radio" data-canal="equipe" aria-checked="false" id="canal-equipe">Equipe</button>
+        </div>
+
+        <p class="no-ar" id="no-ar" aria-live="polite"></p>
+
+        <button class="ptt" id="ptt" type="button" aria-label="Segure para falar">
+          <span class="ptt-anel"></span>
+          <span class="ptt-texto" id="ptt-texto">Segure</span>
+        </button>
+
+        <div class="avisos" id="avisos" hidden>
+          <button type="button" data-aviso="silencio">Silêncio</button>
+          <button type="button" data-aviso="acao">Ação</button>
+          <button type="button" data-aviso="corta">Corta</button>
+          <button type="button" data-aviso="intervalo">Intervalo</button>
+        </div>
+
+        <details class="pessoas">
+          <summary>Equipe</summary>
+          <ul id="pessoas"></ul>
+        </details>
+
+        <button class="glass-btn" id="cue-btn" type="button">Tela de cue</button>
+      </section>
+      <p class="erro" id="radio-erro" role="alert" hidden></p>
+    </main>
+
+    <!-- aviso de set: a tela inteira -->
+    <div class="aviso-tela" id="aviso-tela" hidden aria-live="assertive"><span id="aviso-texto"></span></div>
+
+    <!-- tela de cue: preta, sem brilho, para o elenco -->
+    <div class="cue" id="cue" hidden>
+      <span id="cue-texto">Aguardando</span>
+      <button class="icone" id="cue-fechar" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <!-- chamar a equipe -->
+    <dialog id="qr-folha" class="folha">
+      <div id="qr" class="qr" aria-hidden="true"></div>
+      <strong id="qr-codigo" class="qr-codigo"></strong>
+      <div class="folha-acoes">
+        <button class="glass-btn" id="qr-copiar" type="button">Copiar link</button>
+        <button class="glass-btn glass-btn--ink" id="qr-fechar" type="button">Pronto</button>
+      </div>
+    </dialog>
+  </body>
+</html>
