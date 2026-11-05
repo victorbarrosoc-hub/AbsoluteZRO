@@ -9601,3 +9601,12 @@ span.dsize.is-off {
     margin-top: 4px;
   }
 }
+
+/* Segurar o dedo numa linha ou miniatura abre o menu do item (components/browser.js), não a seleção de texto do
+   sistema nem a lupa do iOS (titular, 05/11/2026). */
+.lrow,
+.tile {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}

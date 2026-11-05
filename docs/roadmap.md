@@ -1665,6 +1665,13 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE celular: segurar e lixeira de pastas (05/11/2026)
+
+- 🔶 Ramo `sobedesce-celular-segurar` (titular, 05/11/2026), **lote de sexta** (é o app do site: um build da
+  Vercel): segurar o dedo numa linha ou miniatura do Drive abre o menu do item sem selecionar o texto (`.lrow`/`.tile`
+  com `user-select: none` e `-webkit-touch-callout: none`); "Mover para a lixeira" vale também para pastas (no menu do
+  item e na seleção), avisando que a pasta vai com o que tem dentro. App do celular 2.8.67 (cache v82).
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 - 🔶 Ramo `sobedesce-ejetar-sozinho` (titular, 04/11/2026): "Ejetar o cartão ao terminar" falhava calado quando o

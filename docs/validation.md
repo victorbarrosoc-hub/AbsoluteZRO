@@ -659,6 +659,14 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE celular: segurar e lixeira de pastas (05/11/2026)
+
+Branch `sobedesce-celular-segurar`.
+
+- `npm run test:fast` 782 de 783 (o vermelho de sempre é o do Set no Chromium local); `web` `npm test` 379/379 (5
+  pulados). `test/app-sw.test.js` com o cache v82 e a versão 2.8.67.
+- Falta conferir num iPhone de verdade o segurar (a lupa e o menu do iOS não aparecem mais na linha).
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 Branch `sobedesce-ejetar-sozinho`.
