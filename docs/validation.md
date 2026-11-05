@@ -659,6 +659,14 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: transferências ao vivo (05/11/2026)
+
+Branch `sobedesce-ao-vivo`.
+
+- `test/navegacao.test.js` (+1): o resumo ao vivo no topo, os quatro números, `HISTORY_LEN = 300` e as fases do cartão.
+- `npm run test:fast`: 784/784 (4 pulados).
+- Demo com um download de verdade (Drive falso), claro e escuro: números, gráfico e barra mexendo; sem erro no console.
+
 ## SOBEDESCE: navegação em cinco abas (05/11/2026)
 
 Branch `sobedesce-visual-abas`.

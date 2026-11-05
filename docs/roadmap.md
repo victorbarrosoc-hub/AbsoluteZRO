@@ -1665,6 +1665,12 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: transferências ao vivo (05/11/2026)
+
+- 🔶 Ramo `sobedesce-ao-vivo` (titular, 05/11/2026): resumo ao vivo no topo de Transferências (subindo, baixando, já
+  passou de quanto, falta e a hora que termina; gráfico de 5 min com sobe e desce; barra do total); o motor guarda 300
+  pontos (5 min). Backup Automático com gráfico maior e a régua Copiar → Conferir → Pode formatar. App 0.3.7, sem site.
+
 ## SOBEDESCE: navegação em cinco abas (05/11/2026)
 
 - 🔶 Ramo `sobedesce-visual-abas` (titular, 05/11/2026, proposta A com tema claro e escuro): fase 1 da revisão visual.

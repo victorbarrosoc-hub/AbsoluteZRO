@@ -36,3 +36,14 @@ test('Comparar dividido: Copiar em Cartões; Conferir com o computador no Drive'
   assert.ok(!compare.includes('DiscosPanel'), 'o Comparar não abre mais o "Entre discos"')
   assert.match(ler('components/drive.js'), /navigate\('comparar'\)[^\n]*Conferir com o computador/)
 })
+
+test('ao vivo: Transferências com o resumo grande no topo (5 min de gráfico) e o cartão com as fases', () => {
+  const t = ler('components/transfers.js')
+  assert.match(t, /const AoVivo = memo\(/)
+  assert.match(t, /<\$\{AoVivo\} geral=\$\{data\.geral\} \/>/)
+  for (const r of ["'Subindo'", "'Baixando'", "'Já passou'", "'Falta'"]) assert.ok(t.includes(r), r)
+  const motor = fs.readFileSync(new URL('../src/engine/manager.js', import.meta.url), 'utf8')
+  assert.match(motor, /const HISTORY_LEN = 300\b/, '5 minutos, um ponto por segundo')
+  const b = ler('components/backup.js')
+  assert.match(b, /\['Copiar', 'Conferir', 'Pode formatar'\]/)
+})

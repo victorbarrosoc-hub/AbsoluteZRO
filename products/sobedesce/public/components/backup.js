@@ -375,6 +375,16 @@ function Dono({ d, k, bloqueado, midia = 'tudo' }) {
 
 // ───── a descarga de agora ─────
 
+/** As fases do cartão numa régua (titular, 05/11/2026): Copiar → Conferir → Pode formatar. */
+function Fases({ job }) {
+  const conferindo = job.progresso?.etapa === 'conferindo' || (job.fase === 'comparando' && job.tentativa > 0)
+  const atual = job.fase === 'ejetando' ? 2 : conferindo ? 1 : 0
+  const nomes = ['Copiar', 'Conferir', 'Pode formatar']
+  return html`<div class="bk-fases" role="list" aria-label="Fases do cartão">
+    ${nomes.map((n, i) => html`<div role="listitem" class=${cx('bk-fase-item', i < atual && 'is-ok', i === atual && 'is-agora')} aria-current=${i === atual ? 'step' : undefined}><span>${n}</span><i></i></div>`)}
+  </div>`
+}
+
 function Agora({ job, pontos }) {
   const g = job.progresso
   if (job.fase === 'esperando-destino') {
@@ -412,7 +422,8 @@ function Agora({ job, pontos }) {
           ]}
         />`
       : html`<p class="bk-fase">${job.fase === 'ejetando' ? 'Tudo conferido. Ejetando o cartão' : job.fase === 'comparando' ? (job.tentativa ? 'Comparando de novo: confere se ficou tudo' : 'Comparando o cartão com os destinos') : 'Preparando'}</p>`}
-    ${pontos.length > 1 ? html`<div class="cp-grafico"><${GraficoVelocidade} pontos=${pontos.map((x) => ({ up: x }))} altura=${90} label="Velocidade da descarga" /></div>` : null}
+    ${pontos.length > 1 ? html`<div class="cp-grafico"><${GraficoVelocidade} pontos=${pontos.map((x) => ({ up: x }))} altura=${120} label="Velocidade da descarga" /></div>` : null}
+    <${Fases} job=${job} />
   </${Passo}>`
 }
 
