@@ -86,7 +86,7 @@ formatar. Sem internet: nada vai para o Drive.
 - **Destino desconectado:** a descarga espera ("Esperando Backup SSD") e começa sozinha quando ele volta.
 - **Cartão retirado no meio:** a descarga para com "O cartão saiu antes de terminar. Espete de novo: continua de onde
   parou." O arquivo pela metade é apagado; ao espetar de novo, a comparação copia só o que falta.
-- **Ejetar:** opção do projeto (só quando está tudo certo) e botão por cartão: `diskutil eject` no Mac (recusado,
+- **Ejetar:** opção do projeto (só quando está tudo certo; recusado logo depois da cópia, tenta de novo em 3 s e em 8 s e, sem conseguir, o cartão e o aviso dizem quem segura) e botão por cartão: `diskutil eject` no Mac (recusado,
   tenta `diskutil unmount` só daquele volume: HD com duas partições, uma em uso; recusado de novo, a mensagem diz quem
   segura o disco, pelo PID que o diskutil aponta: o Spotlight, o DaVinci…; nunca força),
   `Shell.Application` → Eject no Windows, `gio mount -e` no Linux.

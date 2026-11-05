@@ -659,6 +659,14 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: ejetar ao terminar (04/11/2026)
+
+Branch `sobedesce-ejetar-sozinho`.
+
+- `test/backup-fotos-videos.test.js`: recusado duas vezes, ejeta na terceira (estado `ejetado`, aviso com
+  `ejetado: true`); recusado sempre, fica OK com o motivo no cartão e `ejetarErro` no aviso. Falha sem a correção.
+- `test/backup-fotos-videos.test.js` + `test/backup-automatico.test.js`: 31/31.
+
 ## Central Absolute ZRO: Atualizar com o app aberto (04/11/2026)
 
 Branch `central-atualizar-aberto`.
