@@ -400,3 +400,105 @@
     transition: none;
   }
 }
+
+/* ───── resumo ao vivo no topo (titular, 05/11/2026): números grandes, gráfico de 5 min e a barra do total ───── */
+.av {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.av.is-velho {
+  opacity: 0.6;
+}
+.av-nums {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+.av-num {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.av-rot {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.av-num b {
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.av-num.is-up b {
+  color: var(--up-text);
+}
+.av-num.is-down b {
+  color: var(--down-text);
+}
+.av-sub {
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.av-graf {
+  display: grid;
+  gap: 6px;
+}
+.av-leg {
+  display: inline-flex;
+  gap: 12px;
+}
+.av-leg > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.av-leg .is-up {
+  color: var(--up-text);
+}
+.av-leg .is-down {
+  color: var(--down-text);
+}
+.av-leg i {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  background: currentColor;
+}
+.av-barra {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--fill-2);
+  overflow: hidden;
+}
+.av-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--up), var(--down));
+  transition: width 0.6s var(--ease);
+}
+@media (max-width: 900px) {
+  .av-nums {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .av-barra i {
+    transition: none;
+  }
+}
+.av-num b small {
+  font-size: 0.5em;
+  font-weight: 650;
+  margin-left: 0.25em;
+  letter-spacing: 0;
+}
