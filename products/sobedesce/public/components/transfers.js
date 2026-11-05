@@ -3,7 +3,7 @@
 import { html, useMemo, useState, useCallback } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
-import { aprox, bytes, clock, count, dirOf, percent, plural, relTime, speed, speedParts, timecode, fullDate } from '../lib/format.js'
+import { bytes, clock, count, dirOf, percent, plural, relTime, speed, speedParts, timecode, fullDate } from '../lib/format.js'
 import { cx, memo, usePersistentState, storage } from '../lib/ui.js'
 import { batchAction, cancelBatch, cancelTransfer, driveFileUrl, driveFolderUrl, reveal, transferAction, uploadFlow, uploadPaths } from '../lib/actions.js'
 import { bridge, openExternal, prepararNoSynquei, revealLabel } from '../lib/desktop.js'
@@ -461,13 +461,22 @@ const AoVivo = memo(function AoVivo({ geral }) {
     const p = speedParts(bps)
     return html`${p.value}<small>${p.unit}</small>`
   }
+  // Tempo que falta no mesmo desenho: número grande, unidade pequena ("menos de 1 min" não cabia e virava "menos …").
+  const falta = (sec) => {
+    if (sec < 60) return html`<1<small>min</small>`
+    const min = Math.round(sec / 60)
+    if (min < 60) return html`~${min}<small>min</small>`
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return m ? html`~${h}<small>h</small> ${m}<small>min</small>` : html`~${h}<small>h</small>`
+  }
   const num = (rot, valor, sub, tom) => html`<div class=${cx('av-num', tom && `is-${tom}`)}><span class="av-rot">${rot}</span><b>${valor}</b>${sub ? html`<span class="av-sub">${sub}</span>` : null}</div>`
   return html`<section class=${cx('av k-entra', lost && 'is-velho')} style="--i:1" aria-label="Agora" title=${lost ? 'Sem contato com o motor: os números podem estar desatualizados' : undefined}>
     <div class="av-nums">
       ${num('Subindo', vel(up), stats.up?.active ? plural(stats.up.active, 'arquivo', 'arquivos') : null, 'up')}
       ${num('Baixando', vel(down), stats.down?.active ? plural(stats.down.active, 'arquivo', 'arquivos') : null, 'down')}
       ${num('Já passou', bytes(geral.done), `de ${bytes(geral.size)}`)}
-      ${num('Falta', eta != null ? aprox(eta) : geral.size && frac >= 1 ? 'nada' : '—', eta != null && eta >= 60 ? terminaAs(eta) : null)}
+      ${num('Falta', eta != null ? falta(eta) : geral.size && frac >= 1 ? 'nada' : '—', eta != null && eta >= 60 ? terminaAs(eta) : null)}
     </div>
     <div class="av-graf">
       <${GraficoVelocidade} pontos=${historico} altura=${150} label=${`Velocidade nos últimos ${minutos} minutos`} />
