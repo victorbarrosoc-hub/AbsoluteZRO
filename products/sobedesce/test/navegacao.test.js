@@ -17,7 +17,7 @@ test('menu: cinco abas e Ajustes; Z, Dispositivos e a família no menu da conta'
   for (const t of ["navigate('computadores')", "navigate('z')", 'FAMILIA.map']) assert.ok(menu.includes(t), t)
   // as telas antigas acendem a aba nova
   assert.match(s, /tambem: \['comparar'\]/)
-  assert.match(s, /tambem: \['referencias'\]/)
+  assert.match(s, /tambem: \['referencias', 'montagens'\]/)
   assert.match(s, /tambem: \['computadores'\]/)
 })
 

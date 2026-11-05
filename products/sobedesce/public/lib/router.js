@@ -4,7 +4,7 @@
 import { useEffect, useState } from '/vendor/preact-htm.js'
 
 // 'estudio': a aba do menu; abre a última seção usada (Frames ou Referências, app.js).
-export const ROUTES = ['painel', 'transferencias', 'drive', 'referencias', 'frames', 'estudio', 'comparar', 'computadores', 'cartoes', 'ajustes', 'z', 'inicio']
+export const ROUTES = ['painel', 'transferencias', 'drive', 'referencias', 'frames', 'montagens', 'estudio', 'comparar', 'computadores', 'cartoes', 'ajustes', 'z', 'inicio']
 
 export function parseHash(hash = location.hash) {
   const raw = hash.replace(/^#\/?/, '')

@@ -23,6 +23,7 @@ import { registerRelay } from './relay.js'
 import { registerTamanho } from './tamanho.js'
 import { registerCopiar } from './copiar.js'
 import { registerFrames } from './frames.js'
+import { registerMontagens } from './montagens.js'
 import { registerCenas } from './cenas.js'
 import { registerDiscos } from './discos.js'
 import { registerLan } from './lan.js'
@@ -529,6 +530,9 @@ export function createApi(ctx) {
       return enqueue(plan)
     },
   })
+
+  // Montagens (src/server/montagens.js): fotos do computador em modelos prontos; o motor mostra a foto e grava a pronta.
+  registerMontagens({ route, ctx, HttpProblem, baseHeaders })
 
   // Frames (src/server/frames.js): frames, takes e posts de um vídeo final; a pasta pronta sobe pela fila de envio.
   const frames = registerFrames({

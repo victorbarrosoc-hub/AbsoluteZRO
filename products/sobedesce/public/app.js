@@ -15,6 +15,7 @@ import { ZScreen } from './components/z.js'
 import { DriveScreen } from './components/drive.js'
 import { ReferenciasScreen } from './components/referencias.js'
 import { FramesScreen } from './components/frames.js'
+import { MontagensScreen } from './components/montagens.js'
 import { CompareScreen } from './components/compare.js'
 import { ComputadoresScreen } from './components/computadores.js'
 import { CartoesScreen } from './components/cartoes.js'
@@ -27,7 +28,7 @@ import { LigarZro } from './components/ligar-zro.js'
 import { abertura } from './lib/abertura.js'
 import { telaDeEntrada } from './lib/entrada.js'
 
-const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Conferir com o computador', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
+const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', montagens: 'Montagens', comparar: 'Conferir com o computador', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
 
 function Splash({ error }) {
   return html`<div class="splash">
@@ -62,16 +63,17 @@ function Shell({ route }) {
     dir.current = sentido(anterior.current, route.name)
     anterior.current = route.name
   }
-  // Estúdio (proposta A, 05/11/2026): Frames e Referências com as seções no topo; a aba lembra a última.
+  // Estúdio (proposta A, 05/11/2026): Frames, Montagens e Referências com as seções no topo; a aba lembra a última.
   const ESTUDIO = [
     { value: 'frames', titulo: 'Frames', icone: 'frames', href: '#/frames' },
+    { value: 'montagens', titulo: 'Montagens', icone: 'grid', href: '#/montagens' },
     { value: 'referencias', titulo: 'Referências', icone: 'bookmark', href: '#/referencias' },
   ]
-  const noEstudio = route.name === 'frames' || route.name === 'referencias'
+  const noEstudio = ESTUDIO.some((s) => s.value === route.name)
   if (noEstudio) storage.set('estudio.secao', route.name)
   if (route.name === 'estudio') {
     const ultima = storage.get('estudio.secao', 'frames')
-    location.replace(`#/${ultima === 'referencias' ? 'referencias' : 'frames'}`)
+    location.replace(`#/${ESTUDIO.some((s) => s.value === ultima) ? ultima : 'frames'}`)
     return null
   }
   const secoes = noEstudio ? html`<${Secoes} label="Estúdio" valor=${route.name} itens=${ESTUDIO} />` : null
@@ -85,6 +87,9 @@ function Shell({ route }) {
       break
     case 'frames':
       screen = html`<${FramesScreen} route=${route} />`
+      break
+    case 'montagens':
+      screen = html`<${MontagensScreen} />`
       break
     case 'comparar':
       screen = html`<${CompareScreen} />`

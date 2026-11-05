@@ -395,6 +395,22 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: Montagens no Estúdio (05/11/2026)
+
+Branch `sobedesce-montagens`.
+
+- `test/montagens.test.js` (11): tamanhos dos formatos e o personalizado nos limites; caixas de todos os modelos em
+  todos os formatos dentro da margem e, sem espaço, cobrindo a montagem inteira; quadro no ponto, trocar e preencher;
+  carrossel e grade (tamanho da tela, fatias, ordem de postar com o 1 embaixo à direita); trecho do take dentro do
+  vídeo e metade na câmera lenta; argumentos do ffmpeg (recorte e escala de cada take, camada por cima, som só do take
+  escolhido, `atempo` na câmera lenta); nome do arquivo; rotas da foto, do quadro e das informações só com a chave da
+  mídia; salvar sem gravar por cima; vídeo recusa pedido torto; **vídeo de ponta a ponta com o ffmpeg** (MP4 no tamanho
+  pedido, sem sobrar arquivo pela metade).
+- `test/navegacao.test.js`: Estúdio acende também em Montagens.
+- Demo (Chromium) em claro e escuro com 2 takes e fotos: Vertical 9:16, trecho escolhido na agulha, som do take 1,
+  "Os dois" saiu `…_9x16.mp4` (1080×1920, 5 s, H.264 + AAC, cantos e espaço iguais à tela) e `…_9x16.jpg`; carrossel
+  de 3 slides com a linha de corte; grade 3×2 em 3:4 saiu em 6 imagens `_3x4_01` a `_06`. Sem erro no console.
+
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
 
 Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
