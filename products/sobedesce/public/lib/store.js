@@ -260,6 +260,11 @@ function connect() {
   on('previas', (d) => d?.jobId && setPrevias(d))
   on('relay', (d) => d?.jobId && setRelayJob(d))
   on('copiar', (d) => d?.jobId && setCopia(d))
+  // Cópias de "Copiar de um link" com prazo vencido foram para a lixeira do Google (src/google/apagar-copias.js).
+  on('copias-apagadas', (d) => {
+    if (!d?.n) return
+    toast('info', d.n === 1 ? `“${d.nomes?.[0] || 'Uma cópia'}” passou do prazo e foi para a lixeira do Drive.` : `${d.n} cópias passaram do prazo e foram para a lixeira do Drive.`, { duration: 10_000 })
+  })
   on('frames', (d) => d?.jobId && setFrames(d))
   on('cenas', (d) => d && typeof d === 'object' && setState({ cenas: d }))
   on('discos', (d) => d && typeof d === 'object' && setState({ discos: d }))

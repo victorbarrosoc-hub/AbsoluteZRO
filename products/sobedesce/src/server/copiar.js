@@ -13,10 +13,14 @@ import fs from 'node:fs/promises'
 import { copiarPlano, copyDownloadItems, lerLink, parseDriveLink, readErrorMessage } from '../google/copiar.js'
 import { newId } from '../util/ids.js'
 import { isAbortError } from '../util/backoff.js'
+import { apagarEm, limparVencidas, marcaApagar, prazoDe } from '../google/apagar-copias.js'
 
 const DRIVE_ID = /^[\w-]{1,200}$/
 const EVENT_MS = 250
 const MAX_PLANS = 10
+// Apagar as cópias com prazo vencido (src/google/apagar-copias.js): 1 min depois de abrir e a cada 6 h com o app aberto.
+const LIMPEZA_PRIMEIRA_MS = 60_000
+const LIMPEZA_MS = 6 * 60 * 60_000
 
 /** O que a tela precisa do plano (sem a lista inteira de arquivos). */
 function planView(id, accountId, p) {
@@ -69,14 +73,18 @@ export class CopyJobs {
    * entra na fila de downloads. `download` na view: { status: 'aguardando'|'na fila'|'nada'|'erro', destDir, count,
    * bytes, batchId, skipped, error }.
    */
-  start({ accountId, planoId, dest, localDir = null }) {
+  start({ accountId, planoId, dest, localDir = null, apagar = 'nao' }) {
     const plan = this.planFor(accountId, planoId)
+    const agora = Date.now()
     const job = {
       id: newId('cpy'),
       accountId,
       plano: planView(planoId, accountId, plan),
       dest,
       download: localDir ? { status: 'aguardando', destDir: localDir } : null,
+      // "Apagar do meu Drive em…": a raiz da cópia leva a marca; o app manda para a lixeira quando vencer.
+      apagar: prazoDe(apagar).id,
+      apagarEm: apagarEm(apagar, agora),
       status: 'running',
       progress: null,
       error: null,
@@ -89,7 +97,7 @@ export class CopyJobs {
     const novas = { pastas: [], arquivos: [] }
     ;(async () => {
       try {
-        const s = await copiarPlano(this.ctx.manager.driveFor(accountId), plan, dest, { signal: job.ac.signal, onProgress: p => this.#progress(job, p), novas })
+        const s = await copiarPlano(this.ctx.manager.driveFor(accountId), plan, dest, { signal: job.ac.signal, onProgress: p => this.#progress(job, p), novas, marca: marcaApagar(apagar, agora) })
         job.progress = s
         job.status = 'done'
         this.ctx.log(`copiar de link: ${s.done - (s.failed.length - plan.blocked)} de ${s.total} copiados para ${dest.name}${s.stopped ? ` (parou: ${s.stopped})` : ''}`)
@@ -142,7 +150,7 @@ export class CopyJobs {
 
   view(job = this.job) {
     if (!job) return null
-    return { jobId: job.id, accountId: job.accountId, plano: job.plano, dest: job.dest, download: job.download || null, status: job.status, progress: job.progress, ...(job.error ? { error: job.error } : {}) }
+    return { jobId: job.id, accountId: job.accountId, plano: job.plano, dest: job.dest, download: job.download || null, apagar: job.apagar, apagarEm: job.apagarEm, status: job.status, progress: job.progress, ...(job.error ? { error: job.error } : {}) }
   }
 
   #emit(job) {
@@ -158,7 +166,50 @@ export class CopyJobs {
     return true
   }
 
+  /**
+   * As cópias com prazo que venceram vão para a lixeira do Google, em cada conta deste computador. Espera se tem
+   * transferência ou cópia andando (pode estar baixando justamente da cópia). Nunca lança. Devolve { apagadas, erros }.
+   */
+  async limparVencidas({ agora = Date.now() } = {}) {
+    const out = { apagadas: [], erros: [], adiado: false }
+    if (this.limpando || this.fechado) return out
+    if (this.running() || this.ctx.manager.activeCount?.() > 0) return { ...out, adiado: true }
+    this.limpando = true
+    try {
+      for (const acc of this.ctx.auth?.listAccounts?.() || []) {
+        try {
+          const r = await limparVencidas(this.ctx.manager.driveFor(acc.id), { agora })
+          out.apagadas.push(...r.apagadas.map(x => ({ ...x, accountId: acc.id })))
+          out.erros.push(...r.erros.map(x => ({ ...x, accountId: acc.id })))
+        } catch (err) {
+          this.ctx.log?.('copiar de link: limpeza das cópias com prazo:', err?.message || err)
+        }
+      }
+    } finally {
+      this.limpando = false
+    }
+    if (out.apagadas.length) {
+      this.ctx.log?.(`copiar de link: ${out.apagadas.length} cópia(s) com prazo vencido foram para a lixeira do Drive`)
+      this.ctx.hub?.send('copias-apagadas', { n: out.apagadas.length, nomes: out.apagadas.slice(0, 5).map(x => x.name) })
+    }
+    return out
+  }
+
+  vigiarPrazos({ primeiraMs = LIMPEZA_PRIMEIRA_MS, intervaloMs = LIMPEZA_MS } = {}) {
+    if (this.limpeza || this.fechado) return
+    const rodar = () => this.limparVencidas().catch(() => {})
+    this.limpeza = setTimeout(() => {
+      rodar()
+      this.limpeza = setInterval(rodar, intervaloMs)
+      this.limpeza.unref?.()
+    }, primeiraMs)
+    this.limpeza.unref?.()
+  }
+
   close() {
+    this.fechado = true
+    clearTimeout(this.limpeza)
+    clearInterval(this.limpeza)
     this.job?.ac.abort()
     if (this.job?.timer) clearTimeout(this.job.timer)
   }
@@ -167,6 +218,7 @@ export class CopyJobs {
 /** `baixar({ accountId, items, destDir, signal })`: planeja e põe na fila de downloads (routes.js, como o Baixar). */
 export function registerCopiar({ route, ctx, account, HttpProblem, baixar }) {
   const jobs = new CopyJobs(ctx, { HttpProblem, baixar })
+  if (ctx.copiasPrazo !== false) jobs.vigiarPrazos()
 
   route('POST', '/api/copiar/:acc/ler', async ({ params, body, signal }) => {
     account(params.acc)
@@ -198,7 +250,8 @@ export function registerCopiar({ route, ctx, account, HttpProblem, baixar }) {
       const st = await fs.stat(localDir).catch(() => null)
       if (!st?.isDirectory()) throw new HttpProblem(400, 'Não encontrei essa pasta no computador. O disco está conectado?')
     }
-    return { copia: jobs.start({ accountId: params.acc, planoId: body.planoId, dest, localDir }) }
+    const apagar = typeof body.apagar === 'string' ? prazoDe(body.apagar).id : 'nao'
+    return { copia: jobs.start({ accountId: params.acc, planoId: body.planoId, dest, localDir, apagar }) }
   })
 
   route('GET', '/api/copiar', async () => ({ copia: jobs.view() }))

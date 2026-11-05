@@ -16,6 +16,22 @@ import { Modal } from './modal.js'
 import { invalidateAccount } from './drive-data.js'
 
 const DRIVE_LINK = /https?:\/\/(drive|docs)\.google\.com\/\S+/
+// "Apagar do meu Drive" (src/google/apagar-copias.js, PRAZOS): a mesma lista, na mesma ordem.
+const PRAZOS = [
+  { id: 'nao', rotulo: 'Não apagar' },
+  { id: '24h', rotulo: '24 horas' },
+  { id: '48h', rotulo: '48 horas' },
+  { id: '7d', rotulo: '7 dias' },
+  { id: '15d', rotulo: '15 dias' },
+  { id: '30d', rotulo: '1 mês' },
+]
+const quando = (iso) => {
+  try {
+    return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
 
 function Resumo({ p }) {
   const parts = [plural(p.arquivos, 'arquivo', 'arquivos')]
@@ -52,6 +68,8 @@ function CopyLinkDialog({ accountId, dest: destInicial = null, onClose }) {
   const [indo, setIndo] = useState(false)
   // "Também baixar para…": pasta no HD/SSD/cartão (null = só copiar para o Drive).
   const [localDir, setLocalDir] = useState(null)
+  // Apagar a cópia do Drive da conta depois de um tempo (só quer passar pelo próprio Drive para baixar mais rápido).
+  const [apagar, setApagar] = useState('nao')
   const [jobId, setJobId] = useState(() => (copia?.status === 'running' ? copia.jobId : null))
   const ac = useRef(null)
   useEffect(() => () => ac.current?.abort(), [])
@@ -105,6 +123,7 @@ function CopyLinkDialog({ accountId, dest: destInicial = null, onClose }) {
         planoId: plano.planoId,
         dest: { id: dest.id, name: dest.name, path: dest.path || null, driveId: dest.driveId || null },
         localDir: localDir || null,
+        apagar,
       })
       setJobId(r.copia?.jobId || null)
     } catch (err) {
@@ -175,6 +194,7 @@ function CopyLinkDialog({ accountId, dest: destInicial = null, onClose }) {
               <b>${head}</b>
               ${job.status !== 'done' || p.stopped ? html`<span class="sub">${plural(copiados, 'arquivo já tinha sido copiado', 'arquivos já tinham sido copiados')}.</span>` : null}
               ${job.dest?.path ? html`<span class="sub">Em ${job.dest.path}${job.plano?.pasta ? ` / ${job.plano.nome}` : ''}</span>` : null}
+              ${job.apagarEm ? html`<span class="sub">Vai para a lixeira do Google em ${quando(job.apagarEm)}.</span>` : null}
             </div>
           </div>
           <${Falhas} list=${p.failed} />
@@ -221,6 +241,15 @@ function CopyLinkDialog({ accountId, dest: destInicial = null, onClose }) {
         <span class="cl-dest-go">${dest ? 'Trocar' : 'Escolher'}</span>
       </button>
       ${plano?.pasta && dest ? html`<span class="sub">Cria a pasta “${plano.nome}” lá dentro, com tudo igual.</span>` : null}
+      <label class="cl-apagar">
+        <span class="cl-text">
+          <span class="field-label">Apagar do meu Drive</span>
+          <span class="sub">${apagar === 'nao' ? 'A cópia fica no seu Drive.' : 'Vai para a lixeira do Google (dá para recuperar por 30 dias). O SOBEDESCE apaga quando abrir depois do prazo.'}</span>
+        </span>
+        <span class="select"><select value=${apagar} onChange=${(e) => setApagar(e.currentTarget.value)} aria-label="Apagar a cópia do meu Drive">
+          ${PRAZOS.map((p) => html`<option value=${p.id}>${p.id === 'nao' ? p.rotulo : `Em ${p.rotulo}`}</option>`)}
+        </select><${Icon} name="chevron-down" size=${12} /></span>
+      </label>
       <label class="check-label cl-also">
         <${Checkbox} checked=${!!localDir} onChange=${(on) => (on ? escolherLocal() : setLocalDir(null))} label="Também baixar para uma mídia física" />
         <span>Também baixar para uma mídia física (HD, SSD, cartão)</span>

@@ -157,7 +157,7 @@ export function copyError(err) {
  * `onProgress({ done, total, bytesDone, bytesTotal, current, failed, newFolderId })`. Devolve o mesmo resumo com
  * `stopped` (motivo) quando parou antes do fim. Abortar pelo `signal` interrompe e sobe o AbortError.
  */
-export async function copiarPlano(drive, plan, dest, { signal, onProgress, novas = { pastas: [], arquivos: [] } } = {}) {
+export async function copiarPlano(drive, plan, dest, { signal, onProgress, novas = { pastas: [], arquivos: [] }, marca = {} } = {}) {
   const todo = plan.files.filter(f => f.canCopy)
   const failed = plan.files.filter(f => !f.canCopy).map(f => ({ name: f.path || f.name, why: 'O dono bloqueou cópia e download.' }))
   const s = { done: 0, total: todo.length, bytesDone: 0, bytesTotal: todo.reduce((t, f) => t + (f.size || 0), 0), current: null, failed, newFolderId: null, stopped: null }
@@ -167,10 +167,12 @@ export async function copiarPlano(drive, plan, dest, { signal, onProgress, novas
   // `novas`: o que foi criado no Drive da conta (DriveItem com relPath/relDir), preenchido aos poucos e válido mesmo
   // se a cópia parar no meio. O "Também baixar" baixa daqui, da cópia.
   // Com a marca do SOBEDESCE (src/google/modo-drive.js): no modo Arquivos escolhidos, a cópia aparece inteira.
-  const mkdir = async (name, parent) => (await drive.api('POST', 'files', { query: { fields: 'id' }, body: { name, mimeType: FOLDER_MIME, parents: [parent], appProperties: { ...MARCA_PASTA } }, signal, retries: 2 })).id
+  // `marca`: só na raiz da cópia (a pasta nova ou o arquivo avulso): o prazo para apagar (src/google/apagar-copias.js).
+  const mkdir = async (name, parent, extra = {}) => (await drive.api('POST', 'files', { query: { fields: 'id' }, body: { name, mimeType: FOLDER_MIME, parents: [parent], appProperties: { ...MARCA_PASTA, ...extra } }, signal, retries: 2 })).id
+  const raizArquivo = !plan.root.folder && Object.keys(marca).length ? marca : null
   try {
     if (plan.root.folder) {
-      s.newFolderId = await mkdir(plan.root.name, dest.id)
+      s.newFolderId = await mkdir(plan.root.name, dest.id, marca)
       made.set(plan.root.id, s.newFolderId)
       tell()
       for (const f of plan.folders) {
@@ -194,7 +196,7 @@ export async function copiarPlano(drive, plan, dest, { signal, onProgress, novas
       try {
         const r = await drive.api('POST', `files/${encodeURIComponent(f.id)}/copy`, {
           query: { fields: COPY_FIELDS },
-          body: { name: f.name, parents: [f.parent ? made.get(f.parent) : dest.id] },
+          body: { name: f.name, parents: [f.parent ? made.get(f.parent) : dest.id], ...(raizArquivo ? { appProperties: raizArquivo } : {}) },
           headers: keysHeader(f),
           signal,
           retries: 4,

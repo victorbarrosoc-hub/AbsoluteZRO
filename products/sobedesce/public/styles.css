@@ -7624,6 +7624,22 @@ button.tree-twisty:hover {
   background: var(--fill);
   border: 1px solid var(--hairline);
 }
+.cl-apagar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--fill);
+  border: 1px solid var(--hairline);
+}
+.cl-apagar .cl-text {
+  flex: 1;
+  min-width: 0;
+}
+.cl-apagar .select {
+  flex: none;
+}
 .cl-what.is-wait {
   gap: 10px;
   color: var(--text-2);
