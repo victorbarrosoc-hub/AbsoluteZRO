@@ -364,8 +364,8 @@ export function DiscosPanel({ topo }) {
     ${podeLimpar ? html`<${Button} icon="trash" onClick=${limpar} class="cp-lado-btn">Limpar comparação</${Button}>` : null}`
 
   return html`<${Pagina}
-    titulo="Comparar"
-    frase="Passe um cartão ou SSD para outro disco: compara, copia o que falta e confere."
+    titulo="Cartões"
+    frase="De um cartão ou SSD para outros discos, conferido."
     class=${cx('page-compare', v.fase !== 'parado' && 'cp-lado-antes')}
     lado=${lado}
   >

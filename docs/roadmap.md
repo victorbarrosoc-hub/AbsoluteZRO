@@ -1665,6 +1665,15 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: navegação em cinco abas (05/11/2026)
+
+- 🔶 Ramo `sobedesce-visual-abas` (titular, 05/11/2026, proposta A com tema claro e escuro): fase 1 da revisão visual.
+  Menu com Início, Drive, Transferências, Cartões e Estúdio (Frames · Referências), Ajustes embaixo; Z, Dispositivos e
+  os apps da Absolute ZRO no menu da conta. Comparar dividido: "Entre discos" virou Cartões › Copiar e "Computador ×
+  Drive" virou "Conferir com o computador" no Drive. Seções em pílula (`Secoes`, kit.js) no lugar dos cartões grandes.
+  Rotas antigas seguem valendo. App de computador 0.3.6, sem site. Próximas fases: Copiar de um link (com o prazo para
+  apagar), Cartões, Início, Frames e Ajustes com menos texto; depois o celular (lote de sexta).
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 - 🔶 Ramo `sobedesce-ejetar-sozinho` (titular, 04/11/2026): "Ejetar o cartão ao terminar" falhava calado quando o

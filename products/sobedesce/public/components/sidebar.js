@@ -14,23 +14,18 @@ import { UpdatePill } from './versao.js'
 import { balaoAoLado } from './balao.js'
 import { openExternal } from '../lib/desktop.js'
 
-// O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
+// Cinco abas (proposta A, titular, 05/11/2026): Início, Drive, Transferências, Cartões e Estúdio; Ajustes embaixo.
+// `tambem`: telas que acendem a aba. Comparar "Computador × Drive" virou o botão "Conferir com o computador" do Drive;
+// "Entre discos" virou Cartões › Copiar; Frames e Referências moram no Estúdio (seções no topo, app.js); Dispositivos
+// manda arquivos para outro computador (fica com Transferências). Z e os apps da Absolute ZRO estão no menu da conta.
 const NAV = [
   { id: 'painel', label: 'Início', icon: 'home' },
-  { id: 'transferencias', label: 'Transferências', icon: 'transfers' },
-  { id: 'drive', label: 'Drive', icon: 'cloud' },
-  { id: 'referencias', label: 'Referências', icon: 'bookmark' },
-  { id: 'frames', label: 'Frames', icon: 'frames' },
+  { id: 'drive', label: 'Drive', icon: 'cloud', tambem: ['comparar'] },
+  { id: 'transferencias', label: 'Transferências', icon: 'transfers', tambem: ['computadores'] },
   { id: 'cartoes', label: 'Cartões', icon: 'sdcard' },
-  { id: 'comparar', label: 'Comparar', icon: 'compare' },
+  { id: 'frames', label: 'Estúdio', icon: 'sparkle', tambem: ['referencias'], href: 'estudio' },
 ]
-// A Z, a IA da Absolute ZRO (titular, 29/10/2026; Plano de Integração §7–8): discreta, no pé da barra, depois dos
-// Ajustes. Não é a primeira nem a tela de entrada; a tarefa do app vem primeiro.
-const NAV_BAIXO = [
-  { id: 'computadores', label: 'Dispositivos', icon: 'laptop' },
-  { id: 'ajustes', label: 'Ajustes', icon: 'sliders' },
-  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
-]
+const NAV_BAIXO = [{ id: 'ajustes', label: 'Ajustes', icon: 'sliders' }]
 
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
 // sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
@@ -93,6 +88,12 @@ function Familia() {
         </div>`
       : null}
   </div>`
+}
+
+/** Sem conta conectada não há menu da conta: os apps da família ficam na linha de sempre. */
+function FamiliaSemConta() {
+  const n = useStore((s) => s.accounts.length)
+  return n ? null : html`<${Familia} />`
 }
 
 function NavBadge() {
@@ -172,6 +173,18 @@ function AccountMenu({ accounts, active, onClose }) {
           )}`
       : null}
     <div class="menu-sep"></div>
+    <button type="button" class="menu-item" role="menuitem" onClick=${() => { navigate('computadores'); onClose() }}><${Icon} name="laptop" size=${15} /><span class="menu-item-text">Dispositivos</span></button>
+    <button type="button" class="menu-item" role="menuitem" onClick=${() => { navigate('z'); onClose() }} title="A Z, a IA da Absolute ZRO"><${Icon} name="z" size=${15} /><span class="menu-item-text">Z</span></button>
+    <div class="menu-sep"></div>
+    <div class="menu-label">Apps da Absolute ZRO</div>
+    ${FAMILIA.map(
+      (f) => html`<a href=${f.href} target="_blank" rel="noopener noreferrer" role="menuitem" class="menu-item" onClick=${(e) => { e.preventDefault(); onClose(); openExternal(f.href) }}>
+        <img class="nav-app" src=${f.img} alt="" width="18" height="18" draggable="false" />
+        <span class="menu-item-text">${f.nome}</span>
+        <${Icon} name="external" size=${13} />
+      </a>`,
+    )}
+    <div class="menu-sep"></div>
     <button type="button" class="menu-item" role="menuitem" onClick=${() => { navigate('ajustes/contas'); onClose() }}><${Icon} name="cloud" size=${15} /><span class="menu-item-text">Conta e Drives</span></button>
     <button type="button" class="menu-item" role="menuitem" onClick=${() => { navigate('ajustes'); onClose() }}><${Icon} name="sliders" size=${15} /><span class="menu-item-text">Ajustes</span></button>
   </div>`
@@ -198,11 +211,11 @@ function AccountChip() {
 
 function NavItem({ n, current }) {
   const on = current === n.id || n.tambem?.includes(current)
-  return html`<a href=${`#/${n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined} title=${n.title}>
+  return html`<a href=${`#/${n.href || n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined} title=${n.title}>
     <${Icon} name=${n.icon} size=${17} />
     <span>${n.label}</span>
     ${n.id === 'transferencias' ? html`<${NavBadge} />` : null}
-    ${n.id === 'referencias' ? html`<${RefBadge} />` : null}
+    ${n.id === 'frames' ? html`<${RefBadge} />` : null}
   </a>`
 }
 
@@ -212,8 +225,8 @@ export function Sidebar({ current }) {
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
-    <${Familia} />
-    <nav class="nav nav-baixo" aria-label="Dispositivos e ajustes">
+    <${FamiliaSemConta} />
+    <nav class="nav nav-baixo" aria-label="Ajustes">
       ${NAV_BAIXO.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
     <div class="sidebar-foot">

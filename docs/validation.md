@@ -659,6 +659,19 @@ público. A regra fica como está; os testes passam a descrevê-la.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
 
+## SOBEDESCE: navegação em cinco abas (05/11/2026)
+
+Branch `sobedesce-visual-abas`.
+
+- `test/navegacao.test.js` (3): as cinco abas e Ajustes; Z, Dispositivos e a família no menu da conta; as telas
+  antigas acendem a aba nova; Estúdio lembra a última seção; Cartões com Backup · Copiar · Calculadora; o Comparar não
+  abre mais o "Entre discos"; o Drive tem "Conferir com o computador". `test/entrada.test.js` atualizado (a Z no menu da
+  conta).
+- `test/drive-mover.test.js`: rota `/api/drive/:acc/lixeira` só com confirmação, arquivo e pasta vão para a lixeira (nunca
+  apaga de vez), leitor recusado, outro site barrado. Menu do Drive com "Mover para a lixeira" e a confirmação (demo).
+- Telas no demo (Chromium) em claro e escuro: Drive, Estúdio (Frames, Referências), Cartões (as três seções),
+  Conferir com o computador e o menu da conta; sem erro no console.
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 Branch `sobedesce-ejetar-sozinho`.

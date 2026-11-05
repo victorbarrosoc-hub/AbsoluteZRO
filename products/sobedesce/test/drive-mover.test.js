@@ -234,3 +234,28 @@ test('rota mover: lote com o que foi, o que já estava e o que foi recusado; tud
   const lista = await call('GET', `/api/drive/${acc()}/list?folderId=${destino.id}`)
   assert.deepEqual(lista.json.items.map(x => x.name), ['A.mov', 'B.mov'])
 })
+
+test('rota lixeira: só com confirmação; arquivo e pasta vão para a lixeira (não apaga de vez); leitor fica de fora', async () => {
+  const m = env.mock
+  const pasta = m.addFolder('Diária 03')
+  const dentro = m.addFile('C0001.MP4', pasta.id, { size: 10 })
+  const arq = m.addFile('Corte_v1.mov', 'root', { size: 10 })
+  const so = m.addShared('Deles.mov', { size: 10, role: 'reader' })
+  for (const body of [{ ids: [arq.id] }, { ids: [], confirmado: true }, { ids: ['root'], confirmado: true }, { ids: ['../x'], confirmado: true }]) {
+    const r = await call('POST', `/api/drive/${acc()}/lixeira`, { body })
+    assert.equal(r.status, 400, JSON.stringify(body))
+  }
+  assert.equal(m.getItem(arq.id).trashed, false, 'sem confirmação nada muda')
+  let r = await call('POST', `/api/drive/${acc()}/lixeira`, { body: { ids: [pasta.id, arq.id, so.id], confirmado: true } })
+  assert.equal(r.status, 200)
+  assert.deepEqual(r.json.movidos.sort(), [pasta.id, arq.id].sort())
+  assert.deepEqual(r.json.recusados.map(x => x.id), [so.id])
+  assert.equal(m.getItem(pasta.id).trashed, true)
+  assert.equal(m.getItem(arq.id).trashed, true)
+  assert.ok(m.getItem(dentro.id), 'o que está dentro da pasta continua existindo (vai junto para a lixeira)')
+  assert.equal(m.getItem(so.id).trashed, false)
+  r = await call('POST', `/api/drive/${acc()}/lixeira`, { body: { ids: [so.id], confirmado: true } })
+  assert.equal(r.status, 403)
+  r = await call('POST', `/api/drive/${acc()}/lixeira`, { body: { ids: [dentro.id], confirmado: true }, headers: { origin: 'https://evil.example' } })
+  assert.equal(r.status, 403)
+})

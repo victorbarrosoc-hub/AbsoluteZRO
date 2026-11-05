@@ -10,7 +10,7 @@ import { api, attempt } from '../lib/api.js'
 import { bytes, plural, shortPath } from '../lib/format.js'
 import { cx, storage, useDebounced, usePersistentState } from '../lib/ui.js'
 import { announceBatch, driveFolderUrl, uploadPaths } from '../lib/actions.js'
-import { pickDriveFolder, promptDialog } from '../lib/modals.js'
+import { confirmDialog, pickDriveFolder, promptDialog } from '../lib/modals.js'
 import { openExternal, pickFolderPath, pickUploadPaths } from '../lib/desktop.js'
 import { FileDrop } from './drop.js'
 import { toast } from '../lib/toasts.js'
@@ -20,7 +20,7 @@ import { DriveTable, isOpenable } from './drive-table.js'
 import { DriveGrid } from './drive-grid.js'
 import { DrivePreview } from './drive-preview.js'
 import { onProxies, knownProxy, siblingProxies } from '../lib/media.js'
-import { LIBERADOS_ID, LIBERADOS_NAME, SHARED_ID, SHARED_NAME, SHARED_URL, createDriveFolder, crumbsFor, invalidateFolder, isSharedTree, moveDriveItems, renameDriveItem, useAbout, useDriveFolder, useDriveSearch, useSharedDrives } from './drive-data.js'
+import { LIBERADOS_ID, LIBERADOS_NAME, SHARED_ID, SHARED_NAME, SHARED_URL, createDriveFolder, crumbsFor, invalidateFolder, isSharedTree, moveDriveItems, renameDriveItem, trashDriveItems, useAbout, useDriveFolder, useDriveSearch, useSharedDrives } from './drive-data.js'
 import { abrirMenuContexto } from './drive-menu.js'
 import { hasRawFiles, onRawThumbsDone, openRawThumbs, useRawThumbsRunning } from './raw-thumbs.js'
 import { hasVideoFiles, isVideoName, onPreviasDone, openPrevias, openProxyArquivo, usePreviasRunning, useComProxy } from './previa.js'
@@ -414,6 +414,29 @@ export function DriveScreen({ route }) {
     if (alvo.length) mover(alvo, { id: destId, name: pasta.name })
   }
 
+  // Mover para a lixeira (arquivo ou pasta; com várias marcadas, todas). Pergunta antes; dá para recuperar por 30 dias.
+  const lixeira = async (alvo) => {
+    if (!alvo.length) return
+    const pastas = alvo.filter((x) => x.isFolder && !x.isShortcut).length
+    const nome = alvo.length === 1 ? `“${alvo[0].name}”` : plural(alvo.length, 'item', 'itens')
+    const ok = await confirmDialog({
+      title: `Mover ${nome} para a lixeira?`,
+      message: `${pastas ? (alvo.length === 1 ? 'A pasta vai com tudo o que tem dentro. ' : 'As pastas vão com tudo o que têm dentro. ') : ''}Fica na lixeira do Google Drive por 30 dias: dá para recuperar lá.`,
+      confirmLabel: 'Mover para a lixeira',
+      danger: true,
+    })
+    if (!ok) return
+    const res = await attempt(trashDriveItems(accountId, alvo.map((x) => x.id), folder?.virtual ? null : folderId))
+    if (!res) return
+    const n = res.movidos.length
+    if (n) toast('success', n === 1 ? `“${alvo.find((x) => x.id === res.movidos[0])?.name || 'Item'}” foi para a lixeira.` : `${plural(n, 'item foi', 'itens foram')} para a lixeira.`)
+    if (res.recusados.length) toast('warning', `${plural(res.recusados.length, 'item ficou', 'itens ficaram')}: ${res.recusados[0].error}`)
+    if (n) {
+      setSelected(new Set())
+      reloadRef.current()
+    }
+  }
+
   const renomear = async (it) => {
     const nome = await promptDialog({ title: it.isFolder ? 'Renomear pasta' : 'Renomear arquivo', label: 'Nome', initial: it.name, confirmLabel: 'Renomear' })
     if (!nome || nome === it.name) return
@@ -457,6 +480,7 @@ export function DriveScreen({ route }) {
       pasta && !it.isShortcut ? { id: 'tamanho', icon: 'disk', label: 'Calcular tamanho', sep: true } : null,
       video && n === 1 ? { id: 'proxy', icon: 'film', label: 'Gerar proxy', sep: !pasta } : null,
       (video || audio) && n === 1 ? { id: 'relay', icon: 'compare', label: 'Converter com o Relay…' } : null,
+      { id: 'lixeira', icon: 'trash', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para a lixeira` : 'Mover para a lixeira', sep: true, perigo: true, disabled: alvo.some((x) => x.canTrash === false), title: alvo.some((x) => x.canTrash === false) ? 'Sua conta não pode mandar este item para a lixeira' : undefined },
     ]
     const escolha = await abrirMenuContexto({ titulo: n > 1 ? plural(n, 'item selecionado', 'itens selecionados') : it.name, itens, x: ponto.x, y: ponto.y })
     if (escolha === 'abrir') pasta ? open(it) : preview(it)
@@ -471,6 +495,7 @@ export function DriveScreen({ route }) {
     else if (escolha === 'tamanho') calcFolder(it)
     else if (escolha === 'proxy') openProxyArquivo({ accountId, item: it })
     else if (escolha === 'relay') openRelay({ accountId, item: it })
+    else if (escolha === 'lixeira') lixeira(alvo)
   }
 
   const escolherAqui = html`<${Button} icon="external" onClick=${() => abrirEscolherDoDrive(accountId)} title="Abre o SOBEDESCE no navegador para escolher no Google Drive">Escolher do Drive</${Button}>`
@@ -543,9 +568,9 @@ export function DriveScreen({ route }) {
     <header class="k-cabeca k-entra" style="--i:0">
       <div>
         <h1>Drive</h1>
-        <p>Seus arquivos no Google Drive: abra as pastas, veja a prévia e baixe no computador.</p>
       </div>
       <div class="k-cabeca-acoes">
+        <${Button} icon="compare" onClick=${() => navigate('comparar')} title="O que já subiu e o que falta, pasta por pasta">Conferir com o computador</${Button}>
         <${Button} icon="link" class=${cx(copiando && 'is-copying')} onClick=${copiarDeLink} disabled=${modo === 'arquivos' && !copiando} title=${modo === 'arquivos' ? `${PRECISA_TOTAL} para copiar de um link.` : 'Copiar uma pasta ou arquivo do Drive de outra pessoa (pelo link) para o seu Drive'}>
           ${copiando ? `Copiando ${copiando.progress?.done || 0}/${copiando.progress?.total || 0}` : 'Copiar de um link'}
         </${Button}>

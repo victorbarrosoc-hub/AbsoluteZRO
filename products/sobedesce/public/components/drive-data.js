@@ -126,6 +126,14 @@ export async function moveDriveItems(accountId, ids, destId, fromId) {
   return res
 }
 
+/** Mover para a lixeira do Google (recuperável por 30 dias). A tela confirma antes. */
+export async function trashDriveItems(accountId, ids, fromId) {
+  const res = await api.post(`/api/drive/${enc(accountId)}/lixeira`, { ids, confirmado: true })
+  if (fromId) invalidateFolder(accountId, fromId)
+  for (const id of res.movidos || []) invalidateFolder(accountId, id)
+  return res
+}
+
 export function useSharedDrives(accountId) {
   const [drives, setDrives] = useState(() => drivesCache.get(accountId) || [])
   useEffect(() => {

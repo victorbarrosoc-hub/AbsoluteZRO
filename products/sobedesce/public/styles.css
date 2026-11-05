@@ -12508,3 +12508,51 @@ button.pn-cartao:hover .pn-seta {
   color: var(--danger, #c4261d);
   font-size: 13px;
 }
+
+/* ───── seções de uma aba (Estúdio, Cartões): pílula pequena no topo (proposta A, 05/11/2026) ───── */
+.k-secoes-faixa {
+  max-width: 2200px;
+  margin: 0 auto;
+  padding: clamp(22px, 2vw, 32px) var(--page-x) 0;
+}
+.k-secoes-faixa + .page {
+  padding-top: 18px;
+}
+.k-secoes {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--fill);
+  border: 1px solid var(--hairline);
+}
+.k-secao {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.k-secao:hover {
+  color: var(--text);
+}
+.k-secao.is-on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-secao {
+    transition: none;
+  }
+}
