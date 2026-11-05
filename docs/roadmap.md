@@ -1,6 +1,24 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
+
+- 🟡 Pesquisa e desenho na [ADR 0042](decisions/0042-radio-do-set.md): canais por função vindos da escala do Maestro,
+  avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
+  nativa (PushToTalk no iPhone) só com uso medido.
+- ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
+- ✅ Fase 1 sem integração (05/11/2026, `products/radio/`, nome provisório): diária com código e QR, canais Geral e
+  Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
+  WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
+  scripts 404 para quem não passa), login único copiado do Rift, schema `radio` com RLS.
+- ✅ Dentro do HUB (titular, 05/11/2026: "usa o do ecossistema"): **absolutezro.com/radio**, com a conta e o banco do
+  HUB. Núcleo único em `products/radio/api/_nucleo.js` (cópia gerada em `apps/hub-web/lib/radio`, teste confere);
+  `/radio`, `/radio/app/*` e `/api/v1/radio/*` só para quem passa no gate (fora, 404); migração `0059` deixa o HUB
+  assumir `radio_app`. HUB `0058` (produto fechado) e o schema `radio` já estão no AbsoluteZRO-SP.
+- ⬜ Ir ao ar: o ramo entra na `main` (o deploy do HUB aplica a `0059`). O projeto Vercel `radio` fica parado na
+  página neutra.
+- ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 

@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rádio do set (05/11/2026, ADR 0042, proposta)
+
+- Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
+  Prettier (os 5 avisos do `format:check` já estavam na `main`).
+- Pesquisa de mercado e do limite do iPhone (PushToTalk, lojas alternativas no Brasil) com fontes no fim da ADR.
+- Fase 1 (`products/radio/`, `npm test`, 4/4, Postgres 16 e Chromium do Playwright 1.63 desta máquina):
+  `test/banco.test.js` (migração não repete e recusa arquivo mudado; gate: sem `radio` na claim, página neutra, script
+  404 e API 401, modo local recusado com login configurado; criar, entrar pelo código, função; presença só para quem
+  está na diária; sinal chega só a quem recebe, uma vez, e não grava para aparelho fora; aviso só do dono e da Direção;
+  direto no banco como `radio_app`: quem está fora não lê nada, ninguém vira dono por update nem se põe em diária
+  alheia) e `test/radio.e2e.test.js` (três Chromium com microfone falso: todos se conectam, a fala da Equipe chega à
+  Bia na Direção e não ao Caio na Câmera, o Geral chega ao Caio, soltar volta ao silêncio, o aviso "Ação" aparece nos
+  dois, sem erro de console). Telas conferidas a 390 px. Não conferido: iPhone e Android de verdade, 4G com CGNAT.
+- Publicação (05/11/2026): HUB `npm test` 629/629 com a `0058` (a lista dos não lançados e o guia da Z conhecem o
+  `radio`), lint e typecheck ok. No ar: `radio.absolutezro.com/` devolve a página neutra, `/app/app.js` 404,
+  `/entrar` sem o segredo volta com `?zro=config`, cabeçalhos com `microphone=(self)` e `noindex`.
+- Dentro do HUB (05/11/2026, absolutezro.com/radio): `npm run lint`, `format:check` e `typecheck` ok; `npm test` 633/633
+  (novo `tests/integration/radio.test.ts`: as cópias de `apps/hub-web/lib/radio` batem com products/radio; nada do
+  rádio em `public/`; conta comum e anônimo não passam no gate, admin e a lista de acesso passam; criar, entrar pelo
+  código, presença, aviso só da Direção e isolamento pelo RLS como `radio_app`); `npm run build` com `/radio`,
+  `/radio/app/[...arquivo]` e `/api/v1/radio/{diarias,batida,aviso}`; `npm run test:e2e` 64 passaram no Chromium
+  (novo `tests/e2e/radio.spec.ts`: conta comum recebe 404 na página, nos scripts e na API; duas contas de admin criam a
+  diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
+  do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
