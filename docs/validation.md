@@ -31,6 +31,14 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 - Publicação (05/11/2026): HUB `npm test` 629/629 com a `0058` (a lista dos não lançados e o guia da Z conhecem o
   `radio`), lint e typecheck ok. No ar: `radio.absolutezro.com/` devolve a página neutra, `/app/app.js` 404,
   `/entrar` sem o segredo volta com `?zro=config`, cabeçalhos com `microphone=(self)` e `noindex`.
+- Dentro do HUB (05/11/2026, absolutezro.com/radio): `npm run lint`, `format:check` e `typecheck` ok; `npm test` 633/633
+  (novo `tests/integration/radio.test.ts`: as cópias de `apps/hub-web/lib/radio` batem com products/radio; nada do
+  rádio em `public/`; conta comum e anônimo não passam no gate, admin e a lista de acesso passam; criar, entrar pelo
+  código, presença, aviso só da Direção e isolamento pelo RLS como `radio_app`); `npm run build` com `/radio`,
+  `/radio/app/[...arquivo]` e `/api/v1/radio/{diarias,batida,aviso}`; `npm run test:e2e` 64 passaram no Chromium
+  (novo `tests/e2e/radio.spec.ts`: conta comum recebe 404 na página, nos scripts e na API; duas contas de admin criam a
+  diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
+  do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
