@@ -672,6 +672,23 @@ Branch `sobedesce-visual-abas`.
 - Telas no demo (Chromium) em claro e escuro: Drive, Estúdio (Frames, Referências), Cartões (as três seções),
   Conferir com o computador e o menu da conta; sem erro no console.
 
+## SOBEDESCE: página inicial com a fita e o nome (05/11/2026)
+
+Branch `sobedesce-home-fita`.
+
+- `web`: `npm run typecheck` ok, `npm test` 379/379, eslint dos componentes da home e do cabeçalho sem erro.
+  `test/app-sw.test.js` e `test/navegacao.test.js` 12/12. `npm run build` do site não rodou aqui.
+- Home no `next dev` (Chromium) em 1600×1000 e 390×844: título em duas linhas no computador e três no celular, fita
+  passando por trás do palco sem cobrir a ficha de compatibilidade, sem rolagem lateral e sem erro no console.
+
+## SOBEDESCE celular: segurar e lixeira de pastas (05/11/2026)
+
+Branch `sobedesce-celular-segurar`.
+
+- `npm run test:fast` 782 de 783 (o vermelho de sempre é o do Set no Chromium local); `web` `npm test` 379/379 (5
+  pulados). `test/app-sw.test.js` com o cache v82 e a versão 2.8.67.
+- Falta conferir num iPhone de verdade o segurar (a lupa e o menu do iOS não aparecem mais na linha).
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 Branch `sobedesce-ejetar-sozinho`.

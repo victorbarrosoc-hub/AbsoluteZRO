@@ -284,18 +284,18 @@ code {
   gap: 9px;
   color: var(--text);
 }
+/* O nome: SOBE pesado, DESCE fino, mesma cor (o contraste é só de peso), pouco espaço entre letras. */
 .wordmark-text {
   font-family: var(--font-display);
   font-size: 16px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.015em;
   line-height: 1;
 }
 .wordmark-text b {
-  font-weight: 750;
+  font-weight: 800;
 }
 .wordmark-text span {
-  font-weight: 350;
-  color: var(--text-2);
+  font-weight: 300;
 }
 .mark {
   flex: none;
@@ -701,7 +701,6 @@ code {
 }
 .signin-title .wordmark-text {
   font-size: 30px;
-  letter-spacing: 0.06em;
 }
 .signin-lead {
   margin-top: 12px;
@@ -9600,4 +9599,13 @@ span.dsize.is-off {
     justify-self: start;
     margin-top: 4px;
   }
+}
+
+/* Segurar o dedo numa linha ou miniatura abre o menu do item (components/browser.js), não a seleção de texto do
+   sistema nem a lupa do iOS (titular, 05/11/2026). */
+.lrow,
+.tile {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }

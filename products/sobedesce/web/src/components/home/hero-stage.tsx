@@ -5,8 +5,8 @@ import { ParallelUpload, SegmentedDownload } from "./transfer-sim";
 
 /**
  * O palco do topo da home, desenhado em canvas.
- * Esquerda (desce): um arquivo só, oito conexões, cada uma num pedaço; quando uma termina,
- * pega metade do maior pedaço que falta. Direita (sobe): quatro arquivos, um fluxo cada.
+ * Esquerda (sobe): quatro arquivos, um fluxo cada. Direita (desce): um arquivo só, oito conexões, cada uma num pedaço;
+ * quando uma termina, pega metade do maior pedaço que falta.
  * Com "reduzir movimento" o quadro fica parado num momento bonito da animação.
  */
 
@@ -83,8 +83,10 @@ export function HeroStage() {
       const pad = narrow ? 18 : Math.max(40, w * 0.05);
       const gap = narrow ? 14 : 40;
       const mid = w / 2;
-      const L = { x0: pad, x1: mid - gap };
-      const R = { x0: mid + gap, x1: w - pad };
+      // L é o lado do que desce (direita) e R o do que sobe (esquerda): lido da esquerda, sobe e desce, como o nome e a
+      // fita por trás do palco.
+      const L = { x0: mid + gap, x1: w - pad };
+      const R = { x0: pad, x1: mid - gap };
       const topY = h * 0.17;
       const barY = h * 0.68;
       const barH = narrow ? 10 : 14;
@@ -166,17 +168,17 @@ export function HeroStage() {
       ctx!.lineCap = "round";
 
       // Linha do Google Drive no alto.
-      const line = ctx!.createLinearGradient(g.L.x0, 0, g.R.x1, 0);
-      line.addColorStop(0, `rgba(${BLUE},0)`);
-      line.addColorStop(0.22, `rgba(${BLUE_SOFT},0.5)`);
+      const line = ctx!.createLinearGradient(g.R.x0, 0, g.L.x1, 0);
+      line.addColorStop(0, `rgba(${VIOLET},0)`);
+      line.addColorStop(0.22, `rgba(${VIOLET_SOFT},0.5)`);
       line.addColorStop(0.5, "rgba(255,255,255,0.32)");
-      line.addColorStop(0.78, `rgba(${VIOLET_SOFT},0.5)`);
-      line.addColorStop(1, `rgba(${VIOLET},0)`);
+      line.addColorStop(0.78, `rgba(${BLUE_SOFT},0.5)`);
+      line.addColorStop(1, `rgba(${BLUE},0)`);
       ctx!.strokeStyle = line;
       ctx!.lineWidth = 1;
       ctx!.beginPath();
-      ctx!.moveTo(g.L.x0 - 10, g.topY);
-      ctx!.lineTo(g.R.x1 + 10, g.topY);
+      ctx!.moveTo(g.R.x0 - 10, g.topY);
+      ctx!.lineTo(g.L.x1 + 10, g.topY);
       ctx!.stroke();
 
       const barX0 = g.L.x0;

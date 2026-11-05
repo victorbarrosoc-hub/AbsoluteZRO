@@ -15,7 +15,7 @@ const ITENS = [
 
 export function CompatStrip() {
   return (
-    <ul aria-label="Funciona com" className="mx-auto mt-10 grid max-w-[22rem] grid-cols-2 gap-x-4 gap-y-4 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center sm:gap-x-6 lg:mt-12 lg:justify-start">
+    <ul aria-label="Funciona com" className="mx-auto mt-10 grid max-w-[22rem] grid-cols-2 gap-x-4 gap-y-4 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center sm:gap-x-6 lg:mt-9">
       {ITENS.map((it) => (
         <li key={it.nome} className="flex items-center gap-2.5" title={`${it.nome} · ${it.sub}`}>
           <span className="grid size-9 place-items-center rounded-xl bg-surface-2 ring-1 ring-line">

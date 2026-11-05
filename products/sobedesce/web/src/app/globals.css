@@ -346,6 +346,21 @@ body {
   }
 }
 
+/* A fita do topo da home se desenha da esquerda para a direita, uma vez. Sem movimento pedido, já aparece inteira. */
+@keyframes sd-fita-entra {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sd-fita {
+    animation: sd-fita-entra 1.8s var(--ease-out-soft) 0.35s both;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
