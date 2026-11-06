@@ -68,7 +68,7 @@ O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/fra
 - **Sua LUT**: um `.cube` 3D do computador ou do Drive (desce uma vez). Fica em "Usadas antes" (até 20), em
   `~/.sobedesce/frames/luts/`. A LUT é conferida antes de aceitar: LUT 1D, shaper ou arquivo incompleto são recusados
   com o motivo.
-  - **A LUT recebe**: o log da câmera (LUT de câmera, como a do Revela Lab) ou o Rec.709 (LUT criativa: o app converte o
+  - **A LUT recebe**: o log da câmera (LUT de câmera, a que o colorista exporta para o log) ou o Rec.709 (LUT criativa: o app converte o
     LOG antes).
   - **Intensidade**: mistura o look com o Rec.709 neutro da câmera.
 - **Câmera**: automático pelos metadados do arquivo (`src/cor/detectar.js`, os mesmos da prévia do Drive) ou escolhida.

@@ -15,7 +15,7 @@ const PONTOS = 7 // quantos quadros medir em cada clipe
 const MARGEM = 0.08 // fração do clipe que fica de fora no começo e no fim
 
 // Pastas que não são brutos: proxy da câmera (inclui a SUB da Sony), miniaturas e o que o próprio app gera.
-const PULAR = new Set([...PROXY_DIRS, 'sub', 'thmbnl', 'thumbnail', 'thumbnails', '_revela', 'frames'])
+const PULAR = new Set([...PROXY_DIRS, 'sub', 'thmbnl', 'thumbnail', 'thumbnails', 'frames'])
 
 /**
  * Os clipes de vídeo de uma pasta (com as subpastas), na ordem do nome ("C0002" antes de "C0010").
