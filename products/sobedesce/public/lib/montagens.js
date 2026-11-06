@@ -118,6 +118,63 @@ export const MODELOS = [
 
 export const modeloPorId = (id) => MODELOS.find((m) => m.id === id) || MODELOS[0]
 
+// ── faixas: frames empilhados com o formato do frame (o "stills" de filme, para o pré-color virar story)
+
+/** O formato de cada faixa: a proporção do frame (largura ÷ altura) ou tela cheia (as faixas dividem a altura). */
+export const ASPECTOS_FAIXA = [
+  { id: '16:9', nome: '16:9', v: 16 / 9 },
+  { id: '1.85', nome: '1,85', v: 1.85 },
+  { id: '2.39', nome: '2,39', v: 2.39 },
+  { id: '4:3', nome: '4:3', v: 4 / 3 },
+  { id: 'cheio', nome: 'Tela cheia', v: null },
+]
+export const FAIXAS_N = [2, 3, 4, 5, 6]
+export const FAIXAS_PADRAO = Object.freeze({ n: 3, aspecto: '16:9', seguro: true })
+/** Zona dos Stories que a interface do Instagram cobre (perfil em cima; responder e figurinhas embaixo), em 1080×1920. */
+export const ZONA_STORIES = Object.freeze({ topo: 250 / 1920, base: 340 / 1920 })
+
+/** O modelo "Faixas": `n` frames um embaixo do outro, no formato `aspecto`, fora da zona dos Stories se `seguro`. */
+export function modeloFaixas(f = FAIXAS_PADRAO) {
+  const n = FAIXAS_N.includes(f?.n) ? f.n : FAIXAS_PADRAO.n
+  const a = ASPECTOS_FAIXA.find((x) => x.id === f?.aspecto) || ASPECTOS_FAIXA[0]
+  const seguro = f?.seguro !== false
+  return {
+    id: 'faixas',
+    nome: a.v ? `Faixas ${a.nome}` : 'Faixas',
+    faixas: { n, aspecto: a.id, v: a.v, seguro },
+    // em fração só para contar e para quem não sabe das faixas; as caixas de verdade saem de caixasDe
+    caixas: Array.from({ length: n }, (_, i) => [0, i / n, 1, 1 / n]),
+  }
+}
+
+/** O modelo de uma montagem salva: as faixas com os ajustes dela, ou um dos prontos. */
+export const modeloDe = (d) => (d?.modelo === 'faixas' ? modeloFaixas(d.faixas) : modeloPorId(d?.modelo))
+
+/**
+ * As faixas em px: a largura toda (menos a borda) no formato pedido, centradas na altura livre; se não cabem, ficam
+ * mais estreitas para manter o formato. Num formato vertical (9:16), `seguro` deixa livre a zona dos Stories.
+ */
+function caixasDasFaixas({ n, v, seguro }, { w, h, espaco, borda }) {
+  const e = Math.max(0, espaco)
+  const lado = borda ? e : 0
+  const vertical = h / w > 1.6
+  const topo = seguro && vertical ? Math.max(lado, h * ZONA_STORIES.topo) : lado
+  const base = seguro && vertical ? Math.max(lado, h * ZONA_STORIES.base) : lado
+  const livreW = Math.max(1, w - 2 * lado)
+  const livreH = Math.max(1, h - topo - base)
+  let fw = livreW
+  let fh = v ? fw / v : (livreH - e * (n - 1)) / n
+  if (v && fh * n + e * (n - 1) > livreH) {
+    fh = (livreH - e * (n - 1)) / n
+    fw = fh * v
+  }
+  fh = Math.max(1, fh)
+  const total = fh * n + e * (n - 1)
+  const y0 = topo + (livreH - total) / 2
+  const x = (w - fw) / 2
+  return Array.from({ length: n }, (_, i) => ({ x, y: y0 + i * (fh + e), w: fw, h: fh }))
+}
+
 // ── carrossel contínuo e grade do perfil
 
 /** Formatos de cada slide do carrossel e do quadradinho da grade (os que o Instagram mostra no feed e no perfil). */
@@ -177,6 +234,7 @@ const quase = (a, b) => Math.abs(a - b) < 1e-6
  */
 export function caixasDe(modelo, { w, h, espaco = 0, borda = true }) {
   const m = typeof modelo === 'string' ? modeloPorId(modelo) : modelo
+  if (m.faixas) return caixasDasFaixas(m.faixas, { w, h, espaco, borda })
   const e = Math.max(0, espaco)
   const fora = borda ? e : 0
   return m.caixas.map(([fx, fy, fw, fh]) => {

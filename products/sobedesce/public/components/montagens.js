@@ -12,13 +12,17 @@ import { bridge, pathsFromDrop, pickFolderPath, revealLabel, revealPath } from '
 import { openModal, pickDriveFolder, pickLocal, promptDialog } from '../lib/modals.js'
 import { ZOOM_MAX, cobrir, enquadreDe, moverEnquadre } from '../lib/frames-posts.js'
 import {
+  ASPECTOS_FAIXA,
+  FAIXAS_N,
+  FAIXAS_PADRAO,
   FORMATOS,
   FORMATOS_CARROSSEL,
   caixasDe,
   desenharMontagem,
   formatoPersonalizado,
   formatoPorId,
-  modeloPorId,
+  modeloDe,
+  modeloFaixas,
   modelosPara,
   preencher,
   quadroNoPonto,
@@ -27,7 +31,7 @@ import {
   trocarQuadros,
 } from '../lib/montagens.js'
 import { Icon } from './icons.js'
-import { Button, EmptyState, Slider } from './common.js'
+import { Button, EmptyState, Slider, Switch } from './common.js'
 
 const FOTO_EXT = /\.(jpe?g|png|webp|tiff?|heic|heif)$/i
 const VIDEO_EXT = /\.(mp4|mov|m4v|mxf|mkv|avi|mts|m2ts|webm|3gp|mpg|mpeg)$/i
@@ -48,6 +52,7 @@ const PADRAO = {
   linhas: 2,
   quadrado: '3x4',
   modelo: 'grande-dois',
+  faixas: FAIXAS_PADRAO, // o modelo "Faixas": quantas, o formato do frame e a zona dos Stories
   quadros: [],
   enquadres: [],
   espaco: 12,
@@ -335,7 +340,9 @@ export function MontagensScreen() {
     linhas: d.linhas,
     quadrado: d.quadrado,
   })
-  const modelo = modeloPorId(d.modelo)
+  const fx = d.faixas || FAIXAS_PADRAO
+  const modelo = useMemo(() => modeloDe(d), [d.modelo, fx.n, fx.aspecto, fx.seguro])
+  const faixasDaGaleria = useMemo(() => modeloFaixas(fx), [fx.n, fx.aspecto, fx.seguro])
   const n = modelo.caixas.length
   const quadros = useMemo(() => preencher(d.quadros.slice(0, n), n, d.fotos), [d.quadros, d.fotos, n])
   const videosNoPost = d.tipo === 'post' ? quadros.map((p, i) => (p && ehVideo(p) ? i : -1)).filter((i) => i >= 0) : []
@@ -780,7 +787,7 @@ export function MontagensScreen() {
       ${formatos}
       ${bandeja}
       <div class="mt-modelos">
-        ${modelosPara(d.fotos.length).map(
+        ${[faixasDaGaleria, ...modelosPara(d.fotos.length)].map(
           (m) =>
             html`<${Modelo}
               key=${m.id}
@@ -890,6 +897,21 @@ export function MontagensScreen() {
                   itens=${[{ value: null, label: 'Sem som' }, ...videosNoPost.map((i, j) => ({ value: quadros[i], label: `Do take ${j + 1}` }))]}
                   onEscolher=${(v) => muda({ som: v })}
                 />
+              </section>`
+            : null
+        }
+        ${
+          modelo.faixas
+            ? html`<section class="mt-card">
+                <h3>Faixas</h3>
+                <${Chips} label="Quantas faixas" valor=${modelo.faixas.n} itens=${FAIXAS_N.map((v) => ({ value: v, label: String(v) }))} onEscolher=${(v) => muda({ faixas: { ...fx, n: v }, quadros: [], enquadres: [] })} />
+                <h3 class="mt-h3-mais">Formato do frame</h3>
+                <${Chips} label="Formato do frame" valor=${modelo.faixas.aspecto} itens=${ASPECTOS_FAIXA.map((a) => ({ value: a.id, label: a.nome }))} onEscolher=${(v) => muda({ faixas: { ...fx, aspecto: v }, enquadres: [] })} />
+                ${
+                  tela.h / tela.w > 1.6
+                    ? html`<label class="mt-linha-switch"><span><b>Zona segura dos Stories</b><small>Nada embaixo do perfil nem do “responder”</small></span><${Switch} checked=${modelo.faixas.seguro} label="Zona segura dos Stories" onChange=${(v) => muda({ faixas: { ...fx, seguro: v } })} /></label>`
+                    : null
+                }
               </section>`
             : null
         }

@@ -145,6 +145,12 @@ grade do perfil (3 colunas, 1 a 5 linhas, 3:4 ou 1:1, numerada na ordem de posta
 com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1
 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1 2560×1072 e personalizado (200 a 4096 px).
 
+**Faixas** (o modelo do pré-color para os Stories): 2 a 6 frames um embaixo do outro, no formato do frame (16:9, 1,85,
+2,39, 4:3 ou tela cheia, que divide a altura), centrados; quando não cabem na largura toda, ficam mais estreitos sem
+mudar o formato. Num formato vertical, a **zona segura dos Stories** (ligada no padrão) deixa livres os 250 px de cima e
+os 340 px de baixo (em 1080×1920), onde ficam o perfil e o "responder". No trabalho do Frames, **Montar story** abre a
+Montagens com os frames (já com a cor) em Faixas 9:16 (`public/lib/montagens.js` › `modeloFaixas`).
+
 Motor (`src/server/montagens.js`), tudo com a chave da mídia: `GET /api/montagens/foto` (TIFF e HEIC viram JPEG de
 cache), `GET /api/montagens/info` (duração, tamanho, som do take), `GET /api/montagens/quadro?t=&l=` (um quadro do take,
 para a agulha e a prévia), `GET /api/montagens/video` (o take para tocar, com Range), `POST /api/montagens/salvar`

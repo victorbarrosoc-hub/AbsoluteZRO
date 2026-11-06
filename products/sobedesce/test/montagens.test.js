@@ -236,3 +236,40 @@ test('vídeo da montagem de ponta a ponta: MP4 no tamanho do formato, com o take
   assert.ok(st.size > 1000)
   assert.deepEqual((await fs.readdir(destino)).filter((n) => n.includes('parcial')), [], 'não sobra arquivo pela metade')
 })
+
+test('faixas: frames empilhados no formato do frame, centrados e fora da zona dos Stories', async () => {
+  const { ASPECTOS_FAIXA, ZONA_STORIES, caixasDe, modeloDe, modeloFaixas, quadroNoPonto } = await import('../public/lib/montagens.js')
+  // 3 × 16:9 num story: largura toda (menos a borda), proporção certa, espaço igual e centrado na área livre
+  const tres = caixasDe(modeloFaixas({ n: 3, aspecto: '16:9', seguro: true }), { w: 1080, h: 1920, espaco: 20 })
+  assert.equal(tres.length, 3)
+  // na área livre dos Stories (1330 px de altura) três 16:9 não cabem na largura toda: ficam do tamanho que cabe
+  const altura = (1920 * (1 - ZONA_STORIES.topo - ZONA_STORIES.base) - 2 * 20) / 3
+  for (const c of tres) {
+    assert.ok(Math.abs(c.w / c.h - 16 / 9) < 1e-9)
+    assert.ok(Math.abs(c.h - altura) < 1e-9 && c.w < 1040)
+  }
+  // dois 16:9 cabem: largura toda menos a borda
+  for (const c of caixasDe(modeloFaixas({ n: 2, aspecto: '16:9', seguro: true }), { w: 1080, h: 1920, espaco: 20 })) assert.equal(c.w, 1040)
+  assert.ok(Math.abs(tres[1].y - (tres[0].y + tres[0].h + 20)) < 1e-9)
+  const livre = [1920 * ZONA_STORIES.topo, 1920 * (1 - ZONA_STORIES.base)]
+  assert.ok(Math.abs(tres[0].y - livre[0] - (livre[1] - (tres[2].y + tres[2].h))) < 1e-6, 'centrado na área livre')
+  // 5 × 2,39 não cabe na largura toda: fica mais estreito, mas no formato e dentro da zona segura
+  const cinco = caixasDe(modeloFaixas({ n: 5, aspecto: '2.39', seguro: true }), { w: 1080, h: 1920, espaco: 20 })
+  for (const c of cinco) assert.ok(Math.abs(c.w / c.h - 2.39) < 1e-9 && c.w < 1040 && Math.abs(c.x + c.w / 2 - 540) < 1e-9)
+  assert.ok(cinco[0].y >= livre[0] - 1e-9 && cinco[4].y + cinco[4].h <= livre[1] + 1e-9)
+  // sem a zona: as faixas podem ir mais perto da borda; tela cheia divide a altura sem sobra
+  const solto = caixasDe(modeloFaixas({ n: 5, aspecto: '2.39', seguro: false }), { w: 1080, h: 1920, espaco: 20 })
+  assert.ok(solto[0].w > cinco[0].w)
+  const cheio = caixasDe(modeloFaixas({ n: 3, aspecto: 'cheio', seguro: false }), { w: 1080, h: 1920, espaco: 0, borda: true })
+  assert.deepEqual(cheio.map((c) => [c.x, c.y, c.w, c.h]), [[0, 0, 1080, 640], [0, 640, 1080, 640], [0, 1280, 1080, 640]])
+  // a zona dos Stories só vale no vertical; no 4:5 as faixas usam a altura toda
+  const feed = caixasDe(modeloFaixas({ n: 4, aspecto: '2.39', seguro: true }), { w: 1080, h: 1350, espaco: 0, borda: false })
+  assert.ok(feed[0].y < 1350 * ZONA_STORIES.topo)
+  // valores fora da lista voltam ao padrão; a montagem salva acha o modelo; o toque acha a faixa
+  const m = modeloFaixas({ n: 9, aspecto: 'x' })
+  assert.equal(m.faixas.n, 3)
+  assert.equal(m.faixas.aspecto, ASPECTOS_FAIXA[0].id)
+  assert.equal(modeloDe({ modelo: 'faixas', faixas: { n: 4, aspecto: '1.85', seguro: true } }).caixas.length, 4)
+  assert.equal(modeloDe({ modelo: 'quatro' }).id, 'quatro')
+  assert.equal(quadroNoPonto(modeloFaixas({ n: 3 }), { w: 1080, h: 1920, espaco: 20 }, 540, tres[1].y + 10), 1)
+})

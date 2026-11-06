@@ -1140,6 +1140,28 @@ function Trabalho({ id }) {
     if (await attempt(api.del(`/api/frames/${enc(m.id)}`))) navigate('frames')
   }
 
+  /** Os frames (já com a cor) vão para Estúdio › Montagens, no modelo Faixas em 9:16, prontos para os Stories. */
+  const montarStory = () => {
+    const fotos = ativos.map((f) => juntar(m.pasta, f.arquivo)).slice(0, 60)
+    const antes = storage.get('montagens.rascunho', null) || {}
+    storage.set('montagens.rascunho', {
+      ...antes,
+      fotos,
+      tipo: 'post',
+      formato: '9x16',
+      modelo: 'faixas',
+      faixas: { n: Math.min(5, Math.max(2, fotos.length)), aspecto: '16:9', seguro: true },
+      quadros: [],
+      enquadres: [],
+      trechos: {},
+      fundo: '#000000',
+      espaco: 20,
+      cantos: 0,
+      nome: `${nomeSemExt(m.video.nome)} · story`,
+    })
+    navigate('montagens')
+  }
+
   return html`<div class="page page-frames">
     <nav class="ref-crumbs" aria-label="Caminho"><a href="#/frames">Frames</a><${Icon} name="chevron-right" size=${13} /><span>${nomeSemExt(m.video.nome)}</span></nav>
     <header class="page-head fr-head">
@@ -1152,6 +1174,7 @@ function Trabalho({ id }) {
       </div>
       <div class="page-head-actions">
         <${Button} icon="reveal" onClick=${() => revealPath(m.pasta)} title=${shortPath(m.pasta, home)}>${revealLabel()}</${Button}>
+        <${Button} icon="grid" disabled=${rodando || !ativos.length} onClick=${montarStory} title="Os frames em faixas, um embaixo do outro, prontos para os Stories">Montar story</${Button}>
         <${Button} variant="primary" icon="upload" loading=${subindo} disabled=${rodando} onClick=${subir}>Subir pro Drive</${Button}>
         <${IconButton} icon="trash" label="Tirar da lista" onClick=${esquecer} />
       </div>
