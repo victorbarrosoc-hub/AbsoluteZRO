@@ -39,7 +39,7 @@ test.beforeAll(async () => {
   await sql.end()
 })
 
-async function conta(browser: Browser, nome: string, admin: boolean): Promise<Page> {
+async function conta(browser: Browser, nome: string, admin: boolean): Promise<Page & { email: string }> {
   const ctx = await browser.newContext({ permissions: ['microphone'], viewport: { width: 390, height: 844 } })
   const page = await ctx.newPage()
   const email = `radio-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
@@ -54,7 +54,7 @@ async function conta(browser: Browser, nome: string, admin: boolean): Promise<Pa
     await sql`update zro.users set platform_role = 'admin', email_verified_at = coalesce(email_verified_at, now()) where email = ${email}`
     await sql.end()
   }
-  return page
+  return Object.assign(page, { email })
 }
 
 test('conta comum: o rádio não existe (página, scripts e API dão 404)', async ({ browser }) => {
@@ -106,4 +106,36 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   await expect(bia.locator('#aviso-tela')).toBeVisible()
   await expect(bia.locator('#aviso-texto')).toHaveText('Ação')
   expect(erros).toEqual([])
+})
+
+test('Admin › Apps: dar acesso ao rádio pelo e-mail, a pessoa entra, tirar e ela sai', async ({ browser }) => {
+  const chefe = await conta(browser, 'Chefe', true)
+  const convidada = await conta(browser, 'Convidada', false)
+  expect((await convidada.goto('/radio'))?.status()).toBe(404)
+
+  await chefe.goto('/admin/apps')
+  const cartao = chefe.locator('.app-card--radio')
+  await expect(cartao).toBeVisible()
+  await expect(cartao.getByText('Fechado')).toBeVisible()
+
+  // e-mail sem conta: diz isso e não libera ninguém
+  await cartao.getByLabel('E-mail de quem pode entrar').fill('ninguem-aqui@teste.absolutezro.local')
+  await cartao.getByRole('button', { name: 'Dar acesso' }).click()
+  await expect(cartao.getByRole('alert')).toContainText('ainda não tem conta')
+
+  await cartao.getByLabel('E-mail de quem pode entrar').fill(convidada.email.toUpperCase())
+  await cartao.getByRole('button', { name: 'Dar acesso' }).click()
+  await expect(cartao.getByRole('status')).toContainText('já entra no rádio')
+  await chefe.reload()
+  await expect(chefe.locator('.radio-acesso')).toContainText(convidada.email)
+
+  // a convidada entra (o gate é lido a cada pedido, sem novo login)
+  expect((await convidada.goto('/radio'))?.status()).toBe(200)
+  await expect(convidada.locator('#tela-diarias')).toBeVisible()
+
+  // tirar: na hora volta a não existir
+  await chefe.locator('.radio-acesso li').filter({ hasText: convidada.email }).getByRole('button', { name: 'Tirar' }).click()
+  // a linha sai da lista (é o retorno da ação)
+  await expect(chefe.locator('.app-card--radio')).not.toContainText(convidada.email)
+  expect((await convidada.goto('/radio'))?.status()).toBe(404)
 })

@@ -127,6 +127,9 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
 - 🟡 Intercom no modelo do C1 Pro (06/11/2026): uma faixa por setor com cor, ícone e medidor ao vivo; Ouvir e Falar por
   canal; TALK com toque (trava aberto, full duplex) e segurar (push-to-talk); "Todos" para a Direção; avisos no topo;
   escolher o setor ao entrar. Falta conferir em iPhone e Android de verdade.
+- ✅ Admin › Apps (06/11/2026): cartão do Rádio em "Na Absolute ZRO" (ícone fechado em `/marca/radio`, estado, link
+  para abrir) com quem tem acesso e o campo "E-mail de quem pode entrar". Dar e tirar usam a lista do gate
+  (`zro.product_release_access`, canal web) pelo e-mail da conta; e-mail sem conta Absolute ZRO é recusado com aviso.
 - ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

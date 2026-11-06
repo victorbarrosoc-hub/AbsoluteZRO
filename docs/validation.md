@@ -146,6 +146,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   Caio desliga o Geral e a voz do Geral deixa de chegar a ele; "Todos" chega ao Caio mesmo assim; aviso "Ação". HUB:
   lint, format:check, typecheck ok, `npm test` 633/633, build ok, `tests/e2e/radio.spec.ts` 2/2 (setor pela folha,
   fala segurada acende o Geral do outro lado). Telas conferidas a 390 e 1280 px, claro e escuro.
+- Admin › Apps com o Rádio (06/11/2026): `tests/e2e/radio.spec.ts` 3/3 (novo: admin abre /admin/apps, e-mail sem conta
+  recusado, dá acesso a uma conta comum pelo e-mail em maiúsculas, a conta abre /radio (200) sem novo login, tirar e
+  ela volta a 404 na hora); `tests/integration/marca-fechada.test.ts` com o `radio`; HUB `npm test` 649/649, lint,
+  format:check, typecheck e build ok.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
