@@ -12,6 +12,11 @@ import { randomInt } from 'node:crypto'
 
 export const FUNCOES = ['direcao', 'producao', 'camera', 'som', 'luz', 'arte', 'elenco']
 export const TIPOS_AVISO = ['silencio', 'acao', 'corta', 'intervalo']
+export const PAPEIS = ['dono', 'responsavel', 'equipe', 'convidado']
+/** Ações de moderação (regras e poderes em db/migrations/0001_poderes.sql, radio.moderar). */
+export const ACOES = ['silenciar', 'reativar', 'silenciar_todos', 'reativar_todos', 'mover', 'responsavel', 'papel', 'tirar', 'mao', 'baixar_mao']
+const APELIDO = /^[a-f0-9]{16}$/
+const RECUSA = { fora: 403, sem_permissao: 403, imune: 409, nao_achei: 404, invalido: 400 }
 /** Online = bateu nos últimos 20 s. */
 export const ONLINE_S = 20
 
@@ -32,7 +37,7 @@ export function nomeLimpo(v) {
   return s || null
 }
 
-const publica = (d) => ({ id: d.id, codigo: d.codigo, nome: d.nome, dono: d.papel === 'dono', funcao: d.funcao ?? null })
+const publica = (d) => ({ id: d.id, codigo: d.codigo, nome: d.nome, dono: d.papel === 'dono', papel: d.papel, funcao: d.funcao ?? null, criado: d.criado ?? null, pessoas: d.pessoas ?? null, noAr: d.no_ar ?? null })
 
 async function lerDiaria(tx, sub, id) {
   const [d] = await tx`
@@ -45,7 +50,11 @@ async function lerDiaria(tx, sub, id) {
 /** GET: as diárias da pessoa. */
 export async function listarDiarias(tx, p) {
   const lista = await tx`
-    select d.id, d.codigo, d.nome, m.papel, m.funcao from radio.membros m
+    select d.id, d.codigo, d.nome, d.criado, m.papel, m.funcao,
+      (select count(*)::int from radio.membros x where x.diaria_id = d.id) as pessoas,
+      (select count(distinct pr.user_sub)::int from radio.presencas pr
+        where pr.diaria_id = d.id and pr.visto > now() - make_interval(secs => ${ONLINE_S})) as no_ar
+    from radio.membros m
     join radio.diarias d on d.id = m.diaria_id
     where m.user_sub = ${p.sub} and d.expira > now()
     order by m.entrou desc limit 30`
@@ -85,8 +94,8 @@ export async function mudarDiarias(tx, p, c) {
 
   if (c?.acao === 'funcao') {
     if (!ID.test(String(c.diaria || '')) || !FUNCOES.includes(c.funcao)) return r(400, { ok: false })
-    const n = await tx`update radio.membros set funcao = ${c.funcao} where diaria_id = ${c.diaria} and user_sub = ${p.sub}`
-    return n.count ? r(200, { ok: true }) : r(404, { ok: false })
+    const [n] = await tx`select radio.meu_setor(${c.diaria}, ${c.funcao}) as ok`
+    return n?.ok ? r(200, { ok: true }) : r(404, { ok: false })
   }
 
   return r(400, { ok: false, erro: 'acao' })
@@ -106,7 +115,11 @@ export async function bater(tx, p, c) {
     .filter((s) => s && PEER.test(String(s.para || '')) && (s.tipo === 'oferta' || s.tipo === 'resposta') && typeof s.dados?.sdp === 'string' && s.dados.sdp.length <= 12000)
   const ultimo = Number.isSafeInteger(c.aviso) && c.aviso >= 0 ? c.aviso : null
 
-  const [m] = await tx`select papel, funcao, radio.pode_avisar(${diaria}) as pode from radio.membros where diaria_id = ${diaria} and user_sub = ${p.sub} and radio.membro(${diaria})`
+  const [m] = await tx`
+    select m.papel, m.funcao, radio.pode_avisar(${diaria}) as pode, radio.apelido(${diaria}, m.user_sub) as apelido,
+      d.gravando_silencia, d.pedir_palavra, d.silencio_min
+    from radio.membros m join radio.diarias d on d.id = m.diaria_id
+    where m.diaria_id = ${diaria} and m.user_sub = ${p.sub} and radio.membro(${diaria})`
   if (!m) return r(403, { ok: false, erro: 'fora' })
   await tx`
     insert into radio.presencas (diaria_id, peer, user_sub) values (${diaria}, ${peer}, ${p.sub})
@@ -124,36 +137,103 @@ export async function bater(tx, p, c) {
   // sinal velho que ninguém pegou (aparelho que saiu) não fica
   await tx`delete from radio.sinais where de_sub = ${p.sub} and criado < now() - interval '2 minutes'`
   const pessoas = await tx`
-    select pr.peer, m.nome, m.funcao, m.papel, pr.user_sub = ${p.sub} as minha from radio.presencas pr
+    select pr.peer, m.nome, m.funcao, m.papel, pr.user_sub = ${p.sub} as minha, radio.apelido(${diaria}, m.user_sub) as apelido from radio.presencas pr
     join radio.membros m on m.diaria_id = pr.diaria_id and m.user_sub = pr.user_sub
     where pr.diaria_id = ${diaria} and pr.visto > now() - make_interval(secs => ${ONLINE_S})
     order by m.nome, pr.peer limit 40`
+  const membros = await tx`
+    select radio.apelido(${diaria}, m.user_sub) as apelido, m.nome, m.papel, m.funcao,
+      exists (select 1 from radio.presencas pr where pr.diaria_id = m.diaria_id and pr.user_sub = m.user_sub
+        and pr.visto > now() - make_interval(secs => ${ONLINE_S})) as online
+    from radio.membros m where m.diaria_id = ${diaria} order by m.nome limit 200`
+  const silenciados = await tx`select apelido, por, ate, motivo from radio.silenciados(${diaria})`
+  const maos = await tx`select radio.apelido(${diaria}, user_sub) as apelido from radio.maos where diaria_id = ${diaria} order by criado`
+  const globais = await tx`
+    select tipo, alvo, motivo, por_nome, criado from radio.silencios
+    where diaria_id = ${diaria} and tipo in ('todos', 'setor') and (ate is null or ate > now()) order by id`
   const [topo] = await tx`select coalesce(max(id), 0)::bigint as id from radio.avisos where diaria_id = ${diaria}`
   const avisos =
     ultimo == null
       ? []
       : await tx`
-        select id, tipo, de_nome from radio.avisos
+        select id, tipo, de_nome, setor from radio.avisos
         where diaria_id = ${diaria} and id > ${ultimo} and criado > now() - interval '30 seconds'
+          and (setor is null or setor = ${m.funcao ?? ''} or ${m.papel === 'dono'} or ${m.funcao === 'direcao'})
         order by id limit 10`
+  const quando = (t) => (t ? new Date(t).toISOString() : null)
+  const meuSilencio = silenciados.find((x) => x.apelido === m.apelido)
+  const todos = globais.find((g) => g.tipo === 'todos')
   return r(200, {
     ok: true,
-    eu: { peer, nome: p.nome, funcao: m.funcao ?? null, dono: m.papel === 'dono', podeAvisar: m.pode },
-    pessoas: pessoas.map((x) => ({ peer: x.peer, nome: x.nome, funcao: x.funcao ?? null, dono: x.papel === 'dono', eu: x.peer === peer, minha: x.minha })),
+    eu: {
+      peer,
+      nome: p.nome,
+      apelido: m.apelido,
+      funcao: m.funcao ?? null,
+      papel: m.papel,
+      dono: m.papel === 'dono',
+      podeAvisar: m.pode,
+      podeModerar: m.papel === 'dono' || m.papel === 'responsavel',
+      silenciado: meuSilencio ? { por: meuSilencio.por ?? null, ate: quando(meuSilencio.ate), motivo: meuSilencio.motivo } : null,
+    },
+    pessoas: pessoas.map((x) => ({ peer: x.peer, apelido: x.apelido, nome: x.nome, funcao: x.funcao ?? null, papel: x.papel, dono: x.papel === 'dono', eu: x.peer === peer, minha: x.minha })),
+    membros: membros.map((x) => ({ apelido: x.apelido, nome: x.nome, papel: x.papel, funcao: x.funcao ?? null, online: x.online })),
+    silenciados: silenciados.map((x) => ({ apelido: x.apelido, por: x.por ?? null, ate: quando(x.ate), motivo: x.motivo })),
+    maos: maos.map((x) => x.apelido),
+    silencio: {
+      todos: todos ? { motivo: todos.motivo, por: todos.por_nome, desde: quando(todos.criado) } : null,
+      setores: globais.filter((g) => g.tipo === 'setor').map((g) => g.alvo),
+    },
+    ajustes: { gravandoSilencia: m.gravando_silencia, pedirPalavra: m.pedir_palavra, silencioMin: m.silencio_min ?? null },
     sinais: [...chegaram].sort((a, b) => Number(a.id) - Number(b.id)).map((s) => ({ de: s.de_peer, tipo: s.tipo, dados: s.dados })),
-    avisos: avisos.map((a) => ({ id: Number(a.id), tipo: a.tipo, de: a.de_nome })),
+    avisos: avisos.map((a) => ({ id: Number(a.id), tipo: a.tipo, de: a.de_nome, setor: a.setor ?? null })),
     ultimoAviso: Number(topo.id),
   })
 }
 
-/** POST aviso { diaria, tipo }: só quem criou a diária ou quem está na Direção (conferido também pelo RLS). */
+/**
+ * POST aviso { diaria, tipo, setor? }: o dono e a Direção mandam para todos ou para um setor; o responsável, só para o
+ * setor dele (radio.avisar confere). Gravando para todos silencia o set (menos Direção e Som); Corta reativa.
+ */
 export async function avisar(tx, p, c) {
   const diaria = String(c?.diaria || '')
-  if (!ID.test(diaria) || !TIPOS_AVISO.includes(c?.tipo)) return r(400, { ok: false })
-  const [pode] = await tx`select radio.pode_avisar(${diaria}) as ok`
-  if (!pode?.ok) return r(403, { ok: false, erro: 'sem_permissao' })
-  const [a] = await tx`insert into radio.avisos (diaria_id, tipo, de_sub, de_nome) values (${diaria}, ${c.tipo}, ${p.sub}, ${p.nome}) returning id`
-  return r(201, { ok: true, aviso: { id: Number(a.id), tipo: c.tipo, de: p.nome } })
+  const setor = c?.setor == null ? null : String(c.setor)
+  if (!ID.test(diaria) || !TIPOS_AVISO.includes(c?.tipo) || (setor !== null && !FUNCOES.includes(setor))) return r(400, { ok: false })
+  const [a] = await tx`select radio.avisar(${diaria}, ${c.tipo}, ${setor}, ${p.nome}) as id`
+  if (a?.id == null) return r(403, { ok: false, erro: 'sem_permissao' })
+  const [v] = await tx`select setor from radio.avisos where id = ${a.id}`
+  return r(201, { ok: true, aviso: { id: Number(a.id), tipo: c.tipo, de: p.nome, setor: v?.setor ?? null } })
+}
+
+/**
+ * POST moderar { diaria, acao, alvo?, valor?, minutos? } — silenciar e reativar (uma pessoa, o setor ou o set), mover
+ * de setor, escolher o responsável, mudar o papel, tirar, pedir e baixar a palavra; e { acao: ajustes, ajustes } e
+ * { acao: historico } para o dono. Quem pode o quê: radio.moderar no banco (db/migrations/0001_poderes.sql).
+ */
+export async function moderar(tx, p, c) {
+  const diaria = String(c?.diaria || '')
+  if (!ID.test(diaria)) return r(400, { ok: false })
+  if (c?.acao === 'ajustes') {
+    const a = c.ajustes || {}
+    const bool = (v) => (typeof v === 'boolean' ? v : null)
+    const min = a.silencioMin == null ? null : Number(a.silencioMin)
+    if (min !== null && min !== 5 && min !== 15) return r(400, { ok: false, erro: 'invalido' })
+    const [x] = await tx`select radio.ajustar(${diaria}, ${bool(a.gravandoSilencia)}, ${bool(a.pedirPalavra)}, ${min}) as ok`
+    return x?.ok ? r(200, { ok: true }) : r(403, { ok: false, erro: 'sem_permissao' })
+  }
+  if (c?.acao === 'historico') {
+    const lista = await tx`select quem_nome, acao, alvo_nome, detalhe, criado from radio.historico where diaria_id = ${diaria} order by id desc limit 100`
+    return r(200, { ok: true, historico: lista.map((h) => ({ quem: h.quem_nome, acao: h.acao, alvo: h.alvo_nome ?? null, detalhe: h.detalhe ?? null, quando: new Date(h.criado).toISOString() })) })
+  }
+  if (!ACOES.includes(c?.acao)) return r(400, { ok: false, erro: 'acao' })
+  const alvo = c.alvo == null ? null : String(c.alvo)
+  if (alvo !== null && !APELIDO.test(alvo)) return r(400, { ok: false, erro: 'alvo' })
+  const valor = c.valor == null ? null : String(c.valor).slice(0, 20)
+  const minutos = c.minutos == null ? null : Number(c.minutos)
+  if (minutos !== null && ![0, 5, 15].includes(minutos)) return r(400, { ok: false, erro: 'minutos' })
+  const [x] = await tx`select radio.moderar(${diaria}, ${c.acao}, ${alvo}, ${valor}, ${minutos}) as resultado`
+  const res = x?.resultado
+  return res === 'ok' ? r(200, { ok: true }) : r(RECUSA[res] || 400, { ok: false, erro: res || 'invalido' })
 }
 
 // ───────── TURN (voz entre redes diferentes) ─────────
