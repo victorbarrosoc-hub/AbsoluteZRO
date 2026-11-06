@@ -155,6 +155,12 @@ o `vol` no Windows em português e o ejetar.
 - **Já passou:** o total do projeto (GB, cartões e arquivos, somando todas as diárias) e o da diária atual. O total do
   projeto fica guardado no `backup-automatico.json` (projetos antigos somam pelo histórico).
 
+## Frames do cartão
+
+Com o cartão OK, **Frames do cartão** abre Estúdio › Frames na pasta do vídeo daquele cartão no primeiro destino
+(`pastaVideo` na descarga): um frame por clipe, com a LUT e o ajuste que o dono usou da última vez (docs/FRAMES.md,
+"Pasta ou cartão"). Os frames ficam em Downloads › Frames; o cartão e a cópia não mudam.
+
 ## Preparar no Synquei
 
 - **Usar o Synquei** (chave do projeto, ligada por padrão): desligada, a tela não mostra o tipo nem o "Preparar no

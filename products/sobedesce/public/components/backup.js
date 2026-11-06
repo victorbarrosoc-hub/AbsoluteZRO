@@ -6,7 +6,8 @@ import { html, useEffect, useState } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
 import { bytes, count, plural, tildify, baseName } from '../lib/format.js'
-import { cx } from '../lib/ui.js'
+import { cx, storage } from '../lib/ui.js'
+import { navigate } from '../lib/router.js'
 import { abrirNoSynquei, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, Switch } from './common.js'
@@ -525,8 +526,15 @@ function Painel({ v, topo, onNovo, onEditar }) {
 
   // Cartão conferido: a mídia já pode ir para o Synquei (ele lê o descargas.jsonl da pasta do projeto).
   const synquei = p.synquei !== false && !v.job && v.ultimo?.resultado === 'ok'
+  // Cartão conferido: os brutos dele viram frames com a cor da câmera do dono (Estúdio › Frames, "Pasta ou cartão")
+  const framesDoCartao = !v.job && v.ultimo?.resultado === 'ok' && !!v.ultimo.pastaVideo
+  const abrirFrames = () => {
+    storage.set('frames.pedido', { caminho: v.ultimo.pastaVideo, nome: `${v.ultimo.dono} · ${v.ultimo.cartao}`, donoId: v.ultimo.donoId })
+    navigate('frames')
+  }
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
+      ${framesDoCartao ? html`<${Button} icon="sparkle" class="bk-synquei" onClick=${abrirFrames} title="Um frame por clipe, com a cor (LUT e ajuste) da câmera deste dono">Frames do cartão</${Button}>` : null}
       ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}

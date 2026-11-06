@@ -24,6 +24,7 @@ import { readJSON, writeJSONAtomic } from '../util/store.js'
 import { amostrar, cenas as separarCenas, distanciaHash, sondar } from './analise.js'
 import { escolherFrames, escolherTakes, etiquetas, nota, refPorCena } from './escolha.js'
 import { extrairFrame, extrairTake, filtroCor, miniatura, timecode } from './extracao.js'
+import { listarClipes, melhorQuadro } from './pasta.js'
 
 export const FORMATOS_FRAME = ['jpg', 'png', 'tiff']
 export const FORMATOS_TAKE = ['original', '9:16', '4:5', '1:1']
@@ -283,6 +284,7 @@ export class FramesService {
     const ffmpeg = motor?.ffmpeg?.path
     if (!ffmpeg) throw new FramesError('Este computador ainda não tem o conversor de vídeo (ffmpeg). Veja em Ajustes → Proxy.', 409)
     const encoder = motor.encoder?.nome || 'libx264'
+    if (origem.tipo === 'pasta') return this.#rodarPasta(job, origem, aj, ffmpeg)
 
     let videoPath = origem.caminho
     let limpar = async () => {}
@@ -402,8 +404,95 @@ export class FramesService {
   // ── cor (docs/FRAMES.md, "Cor")
 
   /** A cor que vai para o ffmpeg: a LUT montada deste trabalho (na pasta de dados), com a matriz e a faixa do vídeo. */
-  #corDe(m) {
-    return m.cor?.cube ? { lut: m.cor.cube, matriz: m.cor.matriz, faixa: m.cor.faixa } : null
+  #corDe(m, n = null) {
+    // na pasta, cada clipe tem a cor da câmera dele (a LUT montada por perfil)
+    const c = n != null && m.cores ? m.cores[m.cenas.find((x) => x.n === n)?.cor] : m.cor
+    return c?.cube ? { lut: c.cube, matriz: c.matriz, faixa: c.faixa } : null
+  }
+
+  /** Quantos clipes uma pasta tem (para a tela, antes de começar) e o primeiro (para a prévia da cor). */
+  async lerPasta(caminho) {
+    const { clipes, ignorados } = await listarClipes(caminho)
+    return { nome: path.basename(caminho) || caminho, clipes: clipes.length, primeiro: clipes[0]?.caminho ?? null, ignorados }
+  }
+
+  /**
+   * Pasta ou cartão: cada clipe vira uma "cena" com um frame, o melhor dele (pasta.js), já com a cor. Sem takes. A cor é
+   * montada uma vez por câmera (automático: os metadados de cada clipe). Os frames ficam em Frames/, com o nome do clipe.
+   */
+  async #rodarPasta(job, origem, aj, ffmpeg) {
+    const signal = job.ac.signal
+    const raiz = origem.caminho
+    const nome = path.basename(raiz) || 'Pasta'
+    job.videoNome = nome
+    this.#fase(job, 'lendo', 0, 'Procurando os clipes…')
+    const { clipes, ignorados } = await listarClipes(raiz)
+    if (!clipes.length) throw new FramesError(ignorados.raw ? 'Essa pasta só tem RAW (BRAW, R3D…), que o conversor não lê. Use a pasta do proxy da câmera.' : 'Não achei vídeos nessa pasta.')
+    const destinoRaiz = aj.destino || this.pastaPadrao()
+    await fs.mkdir(destinoRaiz, { recursive: true })
+    const pasta = path.join(destinoRaiz, uniqueName(safeLocalName(`${nome} — Frames`), await fs.readdir(destinoRaiz).catch(() => [])))
+    await fs.mkdir(path.join(pasta, 'Frames'), { recursive: true })
+    const m = {
+      versao: 1,
+      id: job.id,
+      criado: new Date().toISOString(),
+      video: { nome, origem: 'pasta', caminho: raiz, clipes: clipes.length, ignorados: { ...ignorados, leitura: 0 }, duracaoS: 0 },
+      pasta,
+      base: baseDoNome(nome),
+      ajustes: { ...aj, takes: null },
+      cor: null,
+      cores: {},
+      cenas: [],
+      frames: [],
+      takes: [],
+      posts: [],
+      descartes: null,
+      drive: null,
+    }
+    job.manifestoId = m.id
+    await fs.mkdir(path.join(this.dirDe(m.id), 'mini'), { recursive: true })
+    const fmt = aj.frames.formato
+    for (const [i, c] of clipes.entries()) {
+      this.#fase(job, 'frames', i / clipes.length, `Clipe ${i + 1} de ${clipes.length}: ${path.basename(c.rel)}`)
+      try {
+        const info = await sondar(ffmpeg, c.caminho, { signal })
+        // a cor da câmera deste clipe (a mesma câmera reaproveita a LUT montada)
+        let chaveCor = null
+        if (aj.cor) {
+          const perfil = aj.cor.perfil && aj.cor.perfil !== 'auto' ? aj.cor.perfil : (await perfilDoArquivo(c.caminho).catch(() => null)) || 'padrao'
+          chaveCor = perfil
+          if (!m.cores[perfil]) {
+            const pedido = { ...aj.cor, perfil: perfil === 'padrao' ? 'auto' : perfil }
+            m.cores[perfil] = await this.#montarCor(pedido, { videoPath: c.caminho, info, destino: path.join(this.dirDe(m.id), `cor-${perfil}.cube`) })
+          }
+          m.cor ??= m.cores[perfil]
+        }
+        const cor = chaveCor ? this.#corDe({ ...m, cenas: [{ n: 0, cor: chaveCor }] }, 0) : null
+        const q = await melhorQuadro(ffmpeg, c.caminho, { info, cor: cor ? filtroCor(cor) : null, signal })
+        if (!q) {
+          m.video.ignorados.leitura++
+          continue
+        }
+        const n = m.cenas.length + 1
+        const clipe = path.basename(c.rel).replace(/\.[^.]{1,6}$/, '')
+        m.cenas.push({ n, ini: 0, fim: +info.durationS.toFixed(3), tags: q.tags, nome: clipe, clipe: c.rel, cor: chaveCor, fps: info.fps, candidatos: q.candidatos })
+        m.video.duracaoS += info.durationS
+        m.video.largura ??= info.video.width
+        m.video.altura ??= info.video.height
+        const f = { id: `F${dd(n, 3)}`, cena: n, t: q.escolhido.t, tc: timecode(q.escolhido.t, info.fps), nota: q.escolhido.nota, hash: q.escolhido.hash, descartado: false }
+        f.arquivo = await this.#tirarFrame(m, ffmpeg, c.caminho, f, fmt, signal)
+        m.frames.push(f)
+        if (n % 5 === 0) await this.#salvar(m)
+      } catch (err) {
+        if (signal.aborted) throw err
+        m.video.ignorados.leitura++
+        this.log('frames: clipe sem leitura:', c.rel, err?.message)
+      }
+    }
+    if (!m.frames.length) throw new FramesError('Nenhum clipe dessa pasta deu para ler.')
+    await this.#salvar(m)
+    if (aj.subir) await this.#subirPasta(m, aj.subir)
+    this.#fase(job, 'pronto', 1, 'Pronto')
   }
 
   /**
@@ -550,16 +639,22 @@ export class FramesService {
   }
 
   #pastaCena(m, n) {
+    if (m.video.origem === 'pasta') return 'Frames'
     const c = m.cenas.find((x) => x.n === n)
     return path.join('Frames', pastaDaCena(n, c?.nome || c?.tags.join(', ')))
   }
 
   async #tirarFrame(m, ffmpeg, videoPath, f, fmt, signal) {
-    const rel = path.join(this.#pastaCena(m, f.cena), `${m.base}_C${dd(f.cena)}_${f.id}_${f.tc}.${fmt === 'tiff' ? 'tif' : fmt}`)
+    const ext = fmt === 'tiff' ? 'tif' : fmt
+    // na pasta, todos em Frames/ com o nome do clipe (C0012_F012_00-00-03-12.jpg)
+    const clipe = m.video.origem === 'pasta' ? m.cenas.find((x) => x.n === f.cena)?.clipe : null
+    const rel = clipe
+      ? path.join('Frames', `${baseDoNome(path.basename(clipe))}_${f.id}_${f.tc}.${ext}`)
+      : path.join(this.#pastaCena(m, f.cena), `${m.base}_C${dd(f.cena)}_${f.id}_${f.tc}.${ext}`)
     const destino = path.join(m.pasta, rel)
     await fs.mkdir(path.dirname(destino), { recursive: true })
     const logo = m.ajustes.frames.logo && m.ajustes.logo ? m.ajustes.logo : null
-    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, cor: this.#corDe(m), signal })
+    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, cor: this.#corDe(m, f.cena), signal })
     await miniatura({ ffmpeg, entrada: destino, destino: path.join(this.dirDe(m.id), 'mini', `${f.id}.jpg`), signal })
     return rel
   }
@@ -598,7 +693,13 @@ export class FramesService {
     return null
   }
 
-  async #comVideo(m, fn) {
+  async #comVideo(m, fn, n = null) {
+    if (m.video.origem === 'pasta') {
+      const c = m.cenas.find((x) => x.n === n)
+      const clipe = c ? path.join(m.video.caminho, c.clipe) : null
+      if (!clipe || !(await existe(clipe))) throw new FramesError('Não achei o clipe neste computador. O disco está conectado?', 409)
+      return fn(clipe)
+    }
     const local = await this.#videoLocal(m)
     if (local) return fn(local)
     if (m.video.origem !== 'drive') throw new FramesError('Não achei o vídeo original neste computador. O disco está conectado?', 409)
@@ -679,10 +780,15 @@ export class FramesService {
       const k = this.#proximo(m, n)
       if (!k) throw new FramesError('Essa cena não tem mais nenhum quadro bom que seja diferente dos que já estão.', 409)
       const motor = await this.motor()
-      const f = { id: this.#novoId(m), cena: n, t: k.t, tc: timecode(k.t, m.video.fps || 25), nota: k.nota, hash: k.hash, descartado: false }
-      await this.#comVideo(m, async (v) => {
-        f.arquivo = await this.#tirarFrame(m, motor.ffmpeg.path, v, f, m.ajustes.frames.formato)
-      })
+      const fps = m.cenas.find((x) => x.n === n)?.fps || m.video.fps || 25
+      const f = { id: this.#novoId(m), cena: n, t: k.t, tc: timecode(k.t, fps), nota: k.nota, hash: k.hash, descartado: false }
+      await this.#comVideo(
+        m,
+        async (v) => {
+          f.arquivo = await this.#tirarFrame(m, motor.ffmpeg.path, v, f, m.ajustes.frames.formato)
+        },
+        n,
+      )
       if (velho && !velho.descartado) {
         await this.#moverParaDescartados(m, velho.arquivo)
         velho.descartado = true
@@ -698,6 +804,7 @@ export class FramesService {
   frameEm(id, t) {
     return this.#emFila(async () => {
       const m = await this.manifesto(id)
+      if (m.video.origem === 'pasta') throw new FramesError('Numa pasta, use "Outro frame" no clipe.')
       const dur = m.video.duracaoS || 0
       if (!(t >= 0 && t < dur)) throw new FramesError('Esse tempo está fora do vídeo.')
       const c = m.cenas.find((x) => t >= x.ini && t < x.fim) || m.cenas[m.cenas.length - 1]
@@ -738,6 +845,7 @@ export class FramesService {
   outroTake(id, takeId, { formato, codec }) {
     return this.#emFila(async () => {
       const m = await this.manifesto(id)
+      if (m.video.origem === 'pasta') throw new FramesError('Numa pasta não há takes.')
       const base = m.takes.find((t) => t.id === takeId)
       if (!base) throw new FramesError('Esse take não existe mais.', 404)
       const motor = await this.motor()

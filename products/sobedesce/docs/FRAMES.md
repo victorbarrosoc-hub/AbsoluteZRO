@@ -85,12 +85,29 @@ não ganha a LUT.
 A **prévia** é um frame do vídeo do computador (a um terço), 960 px, pelo mesmo caminho, antes e depois. Vídeo do
 Drive: a cor entra quando ele desce.
 
+## Pasta ou cartão (os brutos)
+
+A origem **Pasta ou cartão** (`src/frames/pasta.js`) faz **um frame por clipe**, para ver os brutos de uma diária já com
+a cor:
+
+- Lista os vídeos da pasta e das subpastas, na ordem do nome ("C0002" antes de "C0010"). Ficam de fora o proxy da câmera
+  (`Proxy/`, a `SUB/` da Sony), miniaturas, pastas ocultas e o que o próprio app gerou. RAW (BRAW, R3D…) o conversor não
+  lê: entra só a contagem, e a tela avisa.
+- Cada clipe: 7 pontos entre 8% e 92% da duração (longe da claquete e da câmera parando), medidos em 256 px já com a cor,
+  pelas mesmas regras do filme (`escolha.js` › `nota`). Fica o melhor; os outros são o "Outro frame" daquele clipe.
+  Nenhum serve (tudo escuro, chapado)? Fica o de mais contraste, para o clipe não sumir.
+- A cor é montada uma vez por câmera (automático: os metadados de cada clipe; `cor-<perfil>.cube` na pasta de dados).
+- Sai `<Pasta> — Frames/Frames/<Clipe>_F001_<timecode>.jpg` e o `indice.csv`. Sem takes e sem "frame num ponto".
+- **Frames do cartão** (Cartões › Backup Automático): com o "Cartão OK", o botão abre o Frames com a pasta do vídeo do
+  cartão no primeiro destino (`pastaVideo` na descarga). A cor que aquele dono usou fica lembrada e volta no próximo
+  cartão dele.
+
 ## API
 
 | Rota | O quê |
 | --- | --- |
 | `GET /api/frames` | trabalho atual e histórico |
-| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
+| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'pasta', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
 | `DELETE /api/frames/job/:jobId` | para |
 | `GET /api/frames/:id` | o trabalho (cenas, frames, takes, posts) |
 | `DELETE /api/frames/:id` | tira da lista (a pasta fica) |
@@ -100,6 +117,7 @@ Drive: a cor entra quando ele desce.
 | `POST /api/frames/:id/subir` | `{ para: 'junto' \| { accountId, folderId, driveId, name } }` |
 | `GET /api/frames/:id/arquivo?p=\|mini=\|alta=&k=` | arquivo do trabalho (chave da mídia), com Range |
 | `GET /api/frames-logo?p=&k=` | prévia da logomarca |
+| `POST /api/frames/pasta` | `{ caminho }` → `{ nome, clipes, primeiro, ignorados: { raw, demais } }` (antes de começar) |
 | `GET /api/frames-cor/luts` | as LUTs usadas antes |
 | `POST /api/frames-cor/lut` | guarda uma LUT: `{ tipo: 'local', caminho }` \| `{ tipo: 'drive', accountId, fileId }` → `{ lut }` |
 | `POST /api/frames-cor/lut/esquecer` | `{ id }` tira da lista |

@@ -131,9 +131,10 @@ function Escolha({ value, opcoes, onChange, label, tom }) {
 
 /** "O que vai sair": o resumo ao vivo do trabalho, com os frames, os takes e o caminho até a nuvem desenhados. */
 function Resumo({ video, aj, nuvem, pastaDrive, busy, onComecar }) {
-  const nf = aj.frames.quantidade
+  const naPasta = video?.tipo === 'pasta'
+  const nf = naPasta ? video.clipes : aj.frames.quantidade
   const mostra = Math.min(nf, 24)
-  const takes = aj.takes.ligado ? aj.takes.quantidade : 0
+  const takes = aj.takes.ligado && !naPasta ? aj.takes.quantidade : 0
   const [tw, th] = (aj.takes.formato === 'original' ? '16:9' : aj.takes.formato).split(':').map(Number)
   const destinoNuvem = nuvem === 'junto' ? 'Ao lado do vídeo' : nuvem === 'escolher' && pastaDrive ? pastaDrive.name : null
   return html`<div class="frn-resumo">
@@ -160,7 +161,7 @@ function Resumo({ video, aj, nuvem, pastaDrive, busy, onComecar }) {
     </div>
     <button type="button" class="frn-cta" disabled=${!video || busy} onClick=${onComecar}>
       ${busy ? html`<${Spinner} size=${16} />` : html`<${Icon} name="sparkle" size=${18} />`}
-      <span>Fazer frames${aj.takes.ligado ? ' e takes' : ''}</span>
+      <span>Fazer frames${takes ? ' e takes' : ''}</span>
     </button>
     <p class="frn-cta-dica">${video ? html`<b>${video.nome}</b>` : 'Escolha o vídeo para começar.'}</p>
     ${resumoCor(aj.cor) ? html`<p class="frn-cor-resumo"><${Icon} name="sparkle" size=${12} />Cor: ${resumoCor(aj.cor)}</p>` : null}
@@ -216,14 +217,16 @@ function CorPasso({ video, cor, setCor }) {
 
   // a prévia segue a cor (espera a pessoa parar de mexer)
   const pedido = corPedido(cor)
-  const chavePrevia = video?.tipo === 'local' ? JSON.stringify([video.caminho, pedido]) : null
+  // a prévia usa o vídeo do computador (na pasta, o primeiro clipe)
+  const fonte = video?.tipo === 'local' ? video.caminho : video?.tipo === 'pasta' ? video.primeiro : null
+  const chavePrevia = fonte ? JSON.stringify([fonte, pedido]) : null
   useEffect(() => {
     if (!chavePrevia || !pedido) return setPrevia(null)
     let vivo = true
     const t = setTimeout(async () => {
       const [depois, antes] = await Promise.all([
-        api.post('/api/frames-cor/previa', { caminho: video.caminho, cor: pedido }).catch(() => null),
-        api.post('/api/frames-cor/previa', { caminho: video.caminho, cor: null }).catch(() => null),
+        api.post('/api/frames-cor/previa', { caminho: fonte, cor: pedido }).catch(() => null),
+        api.post('/api/frames-cor/previa', { caminho: fonte, cor: null }).catch(() => null),
       ])
       if (!vivo) return
       if (!depois?.previa) return setPrevia({ erro: 'Não deu para fazer a prévia deste vídeo.' })
@@ -294,7 +297,7 @@ function CorPasso({ video, cor, setCor }) {
       <div class="frn-cor-previa">
         ${!video
           ? html`<p class="frn-cor-aviso">A prévia aparece quando você escolher o vídeo.</p>`
-          : video.tipo !== 'local'
+          : !fonte
             ? html`<p class="frn-cor-aviso">Do Drive, a cor entra quando o vídeo descer. A prévia aparece com um vídeo do computador.</p>`
             : !pedido
               ? html`<p class="frn-cor-aviso">${cor.modo === 'lut' ? 'Escolha a LUT para ver a prévia.' : 'Sem cor: o frame sai como está no arquivo.'}</p>`
@@ -338,6 +341,26 @@ function Novo({ onComecou }) {
     if (!VIDEO_EXT.test(p)) return toast('error', 'Escolha um arquivo de vídeo (MP4, MOV, MXF…).')
     setVideo({ tipo: 'local', caminho: p, nome: p.split(/[\\/]/).pop() })
   }
+  /** Pasta ou cartão: um frame por clipe. `donoId` vem do Backup Automático (a cor da câmera daquele dono volta). */
+  const usarPasta = async (caminho, { nome = null, donoId = null } = {}) => {
+    const r = await attempt(api.post('/api/frames/pasta', { caminho }))
+    if (!r) return
+    if (!r.clipes) return toast('error', r.ignorados?.raw ? 'Essa pasta só tem RAW (BRAW, R3D…), que o conversor não lê. Use a pasta do proxy da câmera.' : 'Não achei vídeos nessa pasta.')
+    setVideo({ tipo: 'pasta', caminho, nome: nome || r.nome, clipes: r.clipes, primeiro: r.primeiro, ignorados: r.ignorados, donoId })
+    const corDoDono = donoId ? storage.get(`frames.cor.dono.${donoId}`, null) : null
+    if (corDoDono) setAj((a) => ({ ...a, cor: { ...COR_PADRAO, ...corDoDono, ajustes: { ...COR_NEUTRA, ...corDoDono.ajustes } } }))
+  }
+  const doPasta = async () => {
+    const p = await pickFolderPath({ title: 'Escolha a pasta ou o cartão (um frame por clipe)' })
+    if (p) usarPasta(p)
+  }
+  // "Frames do cartão" (Cartões › Backup Automático): a pasta do cartão chega pronta
+  useEffect(() => {
+    const pedido = storage.get('frames.pedido', null)
+    if (!pedido?.caminho) return
+    storage.set('frames.pedido', null)
+    usarPasta(pedido.caminho, { nome: pedido.nome, donoId: pedido.donoId })
+  }, [])
   const doDrive = async () => {
     const accountId = activeAccountId || accounts[0]?.id
     if (!accountId) return toast('error', 'Conecte um Drive primeiro.')
@@ -386,10 +409,10 @@ function Novo({ onComecou }) {
     const subir = nuvem === 'junto' ? 'junto' : nuvem === 'escolher' && pastaDrive ? { accountId: pastaDrive.accountId, folderId: pastaDrive.id, driveId: pastaDrive.driveId, name: pastaDrive.name } : null
     const res = await attempt(
       api.post('/api/frames', {
-        origem: video.tipo === 'local' ? { tipo: 'local', caminho: video.caminho } : { tipo: 'drive', accountId: video.accountId, fileId: video.fileId },
+        origem: video.tipo === 'local' || video.tipo === 'pasta' ? { tipo: video.tipo, caminho: video.caminho } : { tipo: 'drive', accountId: video.accountId, fileId: video.fileId },
         ajustes: {
           frames: aj.frames,
-          takes: aj.takes.ligado ? { ...aj.takes } : null,
+          takes: aj.takes.ligado && video.tipo !== 'pasta' ? { ...aj.takes } : null,
           logo: aj.logo,
           destino,
           subir,
@@ -398,6 +421,8 @@ function Novo({ onComecou }) {
       }),
     )
     setBusy(false)
+    // a cor que este dono usou volta no próximo cartão dele
+    if (res?.jobId && video.donoId) storage.set(`frames.cor.dono.${video.donoId}`, aj.cor)
     if (res?.jobId) {
       onComecou?.(res.jobId)
       setVideo(null)
@@ -420,33 +445,42 @@ function Novo({ onComecou }) {
     onDrop=${onDrop}
   >
     <div class="frn-main">
-      <${Passo} n="1" titulo="O vídeo final" dica="O filme pronto, do computador ou do Drive.">
+      <${Passo} n="1" titulo="O vídeo" dica="O filme pronto (do computador ou do Drive) ou os brutos de uma pasta ou cartão.">
         ${video
           ? html`<div class="fr-video">
-              <span class=${cx('fr-video-ic', video.tipo === 'drive' && 'is-drive')}><${Icon} name=${video.tipo === 'drive' ? 'cloud' : 'film'} size=${20} /></span>
+              <span class=${cx('fr-video-ic', video.tipo === 'drive' && 'is-drive')}><${Icon} name=${video.tipo === 'drive' ? 'cloud' : video.tipo === 'pasta' ? 'folder' : 'film'} size=${20} /></span>
               <span class="fr-video-txt">
                 <b title=${video.nome}>${video.nome}</b>
-                <span>${video.tipo === 'drive' ? `Desce do Drive${video.size ? ` · ${bytes(video.size)}` : ''} e é apagado do computador no fim` : shortPath(video.caminho, home)}</span>
+                <span>${
+                  video.tipo === 'drive'
+                    ? `Desce do Drive${video.size ? ` · ${bytes(video.size)}` : ''} e é apagado do computador no fim`
+                    : video.tipo === 'pasta'
+                      ? `${plural(video.clipes, 'clipe', 'clipes')} · um frame por clipe${video.ignorados?.raw ? ` · ${plural(video.ignorados.raw, 'RAW fica', 'RAW ficam')} de fora` : ''}`
+                      : shortPath(video.caminho, home)
+                }</span>
               </span>
               <${Button} size="sm" onClick=${() => setVideo(null)}>Trocar</${Button}>
             </div>`
           : html`<div class="fr-origens">
                 <${OrigemTile} icon="desktop" tom="local" titulo="Do computador" dica="Escolha ou arraste o arquivo" onClick=${doComputador} />
                 <${OrigemTile} icon="cloud" tom="drive" titulo="Do Drive" dica="Desce, vira frames e sai do computador" tag="Desce" onClick=${doDrive} />
+                <${OrigemTile} icon="folder" tom="local" titulo="Pasta ou cartão" dica="Os brutos: um frame por clipe" onClick=${doPasta} />
               </div>
               <p class="frn-arraste"><${Icon} name="drop" size=${14} />Ou solte o vídeo em qualquer lugar desta tela</p>`}
       </${Passo}>
 
       <${CorPasso} video=${video} cor=${aj.cor} setCor=${(v) => set('cor', v)} />
 
-      <${Passo} n="3" titulo="Frames" dica="Os melhores de cada cena, no tamanho do vídeo.">
-        <div class="frn-quant">
+      <${Passo} n="3" titulo="Frames" dica=${video?.tipo === 'pasta' ? 'O melhor quadro de cada clipe: nítido, bem exposto, longe do começo e do fim.' : 'Os melhores de cada cena, no tamanho do vídeo.'}>
+        ${video?.tipo === 'pasta'
+          ? html`<div class="frn-quant"><div class="frn-quant-num"><b>${video.clipes}</b><span>frames · um por clipe</span></div></div>`
+          : html`<div class="frn-quant">
           <div class="frn-quant-num"><b>${aj.frames.quantidade}</b><span>frames</span></div>
           <div class="frn-quant-ctl">
             <${Slider} value=${aj.frames.quantidade} min=${6} max=${120} step=${1} label="Quantidade de frames" format=${() => ''} onInput=${(v) => set('frames', { quantidade: v })} />
             <div class="frn-atalhos">${[12, 24, 48, 96].map((q) => html`<button type="button" class=${cx('frn-atalho', aj.frames.quantidade === q && 'is-on')} onClick=${() => set('frames', { quantidade: q })}>${q}</button>`)}</div>
           </div>
-        </div>
+        </div>`}
         <${Escolha}
           label="Formato dos frames"
           value=${aj.frames.formato}
@@ -459,8 +493,10 @@ function Novo({ onComecou }) {
         />
       </${Passo}>
 
-      <${Passo} n="4" titulo="Takes" dica="O melhor trecho de cada cena, pronto para as redes." acao=${html`<${Switch} checked=${aj.takes.ligado} label="Gerar takes" onChange=${(v) => set('takes', { ligado: v })} />`}>
-        ${aj.takes.ligado
+      <${Passo} n="4" titulo="Takes" dica="O melhor trecho de cada cena, pronto para as redes." acao=${video?.tipo === 'pasta' ? null : html`<${Switch} checked=${aj.takes.ligado} label="Gerar takes" onChange=${(v) => set('takes', { ligado: v })} />`}>
+        ${video?.tipo === 'pasta'
+          ? html`<p class="fr-off">Numa pasta, só os frames (um por clipe).</p>`
+          : aj.takes.ligado
           ? html`<div class="frn-dupla">
                 <div class="frn-campo"><span class="frn-rot">Quantos</span><${Stepper} value=${aj.takes.quantidade} min=${1} max=${30} label="Quantidade de takes" onChange=${(v) => set('takes', { quantidade: v })} /></div>
                 <div class="frn-campo">
@@ -736,7 +772,7 @@ function AbaFrames({ m, setM, sel, setSel }) {
   return html`<div class="fr-aba">
     <div class="fr-aba-barra">
       <span class="fr-aba-txt">${m.descartes ? html`Fora da escolha: <b>${m.descartes.escuro_ou_estourado}</b> escuros ou estourados, <b>${m.descartes.desfocado_ou_tremido}</b> desfocados ou tremidos, <b>${m.descartes.transicao}</b> em corte ou transição.` : null}</span>
-      <${Button} size="sm" icon="plus" onClick=${noPonto}>Frame num ponto</${Button}>
+      ${m.video.origem === 'pasta' ? null : html`<${Button} size="sm" icon="plus" onClick=${noPonto}>Frame num ponto</${Button}>`}
     </div>
     ${m.cenas.map((c) => {
       const fs = m.frames.filter((f) => f.cena === c.n && (!f.descartado || verFora))
@@ -1168,7 +1204,7 @@ function Trabalho({ id }) {
       <div>
         <h1>${nomeSemExt(m.video.nome)}</h1>
         <p class="page-lead">
-          ${plural(m.cenas.length, 'cena', 'cenas')} · ${plural(ativos.length, 'frame', 'frames')} · ${plural(takes.length, 'take', 'takes')}${m.posts.length ? ` · ${plural(m.posts.length, 'post', 'posts')}` : ''}
+          ${m.video.origem === 'pasta' ? plural(m.cenas.length, 'clipe', 'clipes') : plural(m.cenas.length, 'cena', 'cenas')} · ${plural(ativos.length, 'frame', 'frames')}${m.video.origem === 'pasta' ? '' : ` · ${plural(takes.length, 'take', 'takes')}`}${m.posts.length ? ` · ${plural(m.posts.length, 'post', 'posts')}` : ''}
           ${m.drive ? html` · <span class="fr-nuvem"><${Icon} name="cloud" size=${13} /> subiu ${relTime(m.drive.em)}${m.drive.name ? ` para ${m.drive.name}` : ''}</span>` : null}
         </p>
       </div>

@@ -164,6 +164,11 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
       if (!caminho) throw new HttpProblem(400, 'Não achei esse vídeo no computador. O disco está conectado?')
       if (!isVideoName(caminho)) throw new HttpProblem(400, 'Escolha um arquivo de vídeo (MP4, MOV, MXF…).')
       origem = { tipo: 'local', caminho }
+    } else if (o.tipo === 'pasta') {
+      // pasta ou cartão: um frame por clipe
+      const caminho = await caminhoLocal(o.caminho, { arquivo: false })
+      if (!caminho) throw new HttpProblem(400, 'Não achei essa pasta no computador. O disco está conectado?')
+      origem = { tipo: 'pasta', caminho }
     } else if (o.tipo === 'drive') {
       const acc = account(o.accountId)
       if (typeof o.fileId !== 'string' || !DRIVE_ID.test(o.fileId)) throw new HttpProblem(400, 'Escolha um vídeo do Drive.')
@@ -175,7 +180,7 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
     const f = a.frames || {}
     const frames = { quantidade: int(f.quantidade, 1, 300, 24), formato: FORMATOS_FRAME.includes(f.formato) ? f.formato : 'jpg', logo: f.logo === true }
     let takes = null
-    if (a.takes && int(a.takes.quantidade, 0, 60, 0) > 0) {
+    if (origem.tipo !== 'pasta' && a.takes && int(a.takes.quantidade, 0, 60, 0) > 0) {
       const t = a.takes
       takes = {
         quantidade: int(t.quantidade, 1, 60, 6),
@@ -204,6 +209,13 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
     if (cor?.lut) await svc.lut(cor.lut.id)
     const jobId = svc.iniciar({ origem, ajustes: { frames, takes, logo, destino, subir: subirPara, cor } })
     return { jobId }
+  }))
+
+  // Pasta ou cartão antes de começar: quantos clipes, o primeiro (para a prévia da cor) e o que fica de fora.
+  route('POST', '/api/frames/pasta', tratar(async ({ body }) => {
+    const caminho = await caminhoLocal(body.caminho, { arquivo: false })
+    if (!caminho) throw new HttpProblem(400, 'Não achei essa pasta no computador. O disco está conectado?')
+    return await svc.lerPasta(caminho)
   }))
 
   route('DELETE', '/api/frames/job/:jobId', ({ params }) => {

@@ -205,3 +205,69 @@ test('Frames com cor: LUT guardada (e recusada quando quebrada), prévia, frames
   await svc.esquecerLut(lut.id)
   assert.equal((await svc.luts()).length, 0)
 })
+
+test('Frames de uma pasta (cartão): um frame por clipe, com a cor, proxy e RAW de fora, outro frame no clipe', { skip: semFfmpeg, timeout: 240_000 }, async (t) => {
+  const dir = await makeTmpDir('sobedesce-frames-pasta-')
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 3 }))
+  const cartao = path.join(dir, 'Cartão 03')
+  await fs.mkdir(path.join(cartao, 'PRIVATE', 'M4ROOT', 'CLIP'), { recursive: true })
+  await fs.mkdir(path.join(cartao, 'PRIVATE', 'M4ROOT', 'SUB'), { recursive: true })
+  await fs.mkdir(path.join(cartao, 'Proxy'), { recursive: true })
+  filmeVermelho(path.join(cartao, 'PRIVATE', 'M4ROOT', 'CLIP', 'C0010.mp4'))
+  filmeVermelho(path.join(cartao, 'PRIVATE', 'M4ROOT', 'CLIP', 'C0002.mp4'))
+  filmeVermelho(path.join(cartao, 'A001_C003.mov'))
+  filmeVermelho(path.join(cartao, 'PRIVATE', 'M4ROOT', 'SUB', 'C0002S03.mp4')) // proxy da Sony: fica de fora
+  filmeVermelho(path.join(cartao, 'Proxy', 'A001_C003.mp4')) // proxy: fica de fora
+  await fs.writeFile(path.join(cartao, 'A002_C001.braw'), 'raw') // RAW: o conversor não lê
+  const lutArq = path.join(dir, 'Troca.cube')
+  await fs.writeFile(lutArq, cubeDe((r, g, b) => [b, g, r], 17))
+  const svc = new FramesService({
+    dataRoot: path.join(dir, 'dados'),
+    motor: async () => ({ ffmpeg: { path: ffmpeg }, encoder: { nome: 'libx264' } }),
+    drive: () => assert.fail('não usa o Drive'),
+    baixar: () => assert.fail('não baixa'),
+    subir: async () => ({ count: 0 }),
+    pastaPadrao: () => path.join(dir, 'Frames'),
+  })
+  const lida = await svc.lerPasta(cartao)
+  assert.equal(lida.clipes, 3)
+  assert.equal(lida.ignorados.raw, 1)
+  assert.match(lida.primeiro, /A001_C003\.mov$/)
+  const lut = await svc.guardarLut({ tipo: 'local', caminho: lutArq })
+  const id = svc.iniciar({
+    origem: { tipo: 'pasta', caminho: cartao },
+    ajustes: { frames: { quantidade: 99, formato: 'jpg', logo: false }, takes: null, logo: null, destino: null, subir: null, cor: { modo: 'lut', perfil: 'auto', lut: { id: lut.id }, espera: 'log', intensidade: 1, ajustes: { exposicao: 0 } } },
+  })
+  while (svc.job.status === 'running') await new Promise((res) => setTimeout(res, 100))
+  assert.equal(svc.job.status, 'done', svc.job.erro)
+  const m = await svc.manifesto(id)
+  assert.equal(m.pasta, path.join(dir, 'Frames', 'Cartão 03 — Frames'))
+  // um por clipe, na ordem do nome (C0002 antes de C0010), com o nome do clipe
+  assert.deepEqual(m.cenas.map((c) => c.nome), ['A001_C003', 'C0002', 'C0010'])
+  assert.equal(m.frames.length, 3)
+  for (const [i, f] of m.frames.entries()) {
+    assert.match(f.arquivo, new RegExp(`^Frames[\\\\/]${m.cenas[i].nome}_F00${i + 1}_\\d\\d-\\d\\d-\\d\\d-\\d\\d\\.jpg$`))
+    const [r, , b] = media(path.join(m.pasta, f.arquivo))
+    assert.ok(b > 150 && r < 80, `com a cor: ${r},${b}`)
+    // longe do começo e do fim do clipe
+    assert.ok(f.t > 0.3 && f.t < 3.7, `t ${f.t}`)
+  }
+  assert.equal(m.takes.length, 0)
+  // outro frame do clipe: troca por outro ponto do mesmo clipe, com a cor
+  const m2 = await svc.maisUm(id, { trocar: m.frames[1].id })
+  const novo = m2.frames.find((f) => !f.descartado && f.cena === 2)
+  assert.ok(novo && novo.id !== m.frames[1].id && Math.abs(novo.t - m.frames[1].t) > 0.4)
+  const [r2, , b2] = media(path.join(m.pasta, novo.arquivo))
+  assert.ok(b2 > 150 && r2 < 80)
+  await assert.rejects(svc.frameEm(id, 1), /Outro frame/)
+  // a pasta entregue só tem os frames e o índice
+  assert.deepEqual((await fs.readdir(m.pasta)).sort(), ['Frames', 'indice.csv'])
+  // pasta sem vídeo
+  const vazia = path.join(dir, 'vazia')
+  await fs.mkdir(vazia)
+  await fs.writeFile(path.join(vazia, 'B001.braw'), 'raw')
+  svc.iniciar({ origem: { tipo: 'pasta', caminho: vazia }, ajustes: { frames: { quantidade: 1, formato: 'jpg', logo: false }, takes: null, logo: null, destino: null, subir: null, cor: null } })
+  while (svc.job.status === 'running') await new Promise((res) => setTimeout(res, 50))
+  assert.equal(svc.job.status, 'error')
+  assert.match(svc.job.erro, /só tem RAW/)
+})

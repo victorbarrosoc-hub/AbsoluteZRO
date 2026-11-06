@@ -1004,6 +1004,8 @@ export class BackupService {
       erro,
       soPasta: reg.pasta === true, // só uma pasta do cartão: "OK" não quer dizer "pode formatar"
       parcial, // passou só o que o projeto ou a pessoa escolheu: o resto ficou no cartão
+      // onde o vídeo deste cartão ficou no primeiro destino (o atalho "Frames do cartão", docs/FRAMES.md)
+      pastaVideo: p.destinos[0] ? path.join(p.destinos[0], nomeDePasta(p.nome) || 'Projeto', diaria.nome, (usar.find((l) => l.secao === 'cenas') || usar[0]).pasta, pastaDono(dono), pasta) : null,
     }
     p.historico.unshift(entrada)
     if (p.historico.length > HISTORICO_MAX) p.historico.length = HISTORICO_MAX
