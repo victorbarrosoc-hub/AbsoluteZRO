@@ -93,6 +93,16 @@ function summaryOf(p) {
   return { id: p.id, name: p.name, type: p.type || null, multicam: p.export.multicam !== false, updatedAt: p.updatedAt, createdAt: p.createdAt, clips: ready.length, devices: devs, synced: p.result ? p.result.stats : null }
 }
 
+/** O projeto salvo, sem abrir (para ler o estudo de uma pasta). */
+export function lerProjeto(id) {
+  try {
+    const raw = ls.get(KEY(id))
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export function openProject(id) {
   const raw = ls.get(KEY(id))
   if (!raw) return false

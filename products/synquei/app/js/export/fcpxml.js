@@ -5,7 +5,12 @@
 import { esc, clipPath, fileUrl } from './model.js'
 import { Rat, frameDur } from '../time.js'
 
-export function toFcpxml(timelines, project) {
+/**
+ * tags (opcional): id do clipe → palavras (momento, câmera, lente, cartão, b-roll…). Cada clipe entra também no evento
+ * com essas keywords: no Final Cut viram as coleções de palavras-chave (as "pastas" do evento).
+ * evento (opcional): nome do evento (padrão "Synquei · <projeto>").
+ */
+export function toFcpxml(timelines, project, { tags = null, evento = null } = {}) {
   const opts = project.export
   const mode = opts.fcp || 'both'
   const formats = new Map()
@@ -146,5 +151,17 @@ export function toFcpxml(timelines, project) {
       projects.push(`      <project name="${esc(`${tl.name} · multicâmera`)}">\n        <sequence ${seqAttrs}>\n          <spine>\n            <mc-clip ref="${mid}" offset="0s" name="${esc(tl.name)}" start="0s" duration="${total.fcp()}">\n              ${sources}\n            </mc-clip>\n          </spine>\n        </sequence>\n      </project>`)
     }
   })
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n<fcpxml version="1.10">\n  <resources>\n${[...res, ...medias].join('\n')}\n  </resources>\n  <library>\n    <event name="${esc(`Synquei · ${project.name}`)}">\n${projects.join('\n')}\n    </event>\n  </library>\n</fcpxml>\n`
+  // clipes do evento com as keywords (só os que já viraram asset numa linha do tempo, ou entram agora)
+  const doEvento = []
+  if (tags) {
+    const r0 = timelines[0] ? timelines[0].rate : { num: 25, den: 1 }
+    const t0 = timelines[0] || { rate: r0, width: 1920, height: 1080 }
+    for (const c of project.clips) {
+      const palavras = tags.get(c.id)
+      if (!palavras || !palavras.length || c.status !== 'ready' || !c.duration) continue
+      const a = assetOf(c, t0)
+      doEvento.push(`      <asset-clip ref="${a.id}" name="${esc(c.name)}" start="${a.start.fcp()}" duration="${a.dur.fcp()}"${a.hasV ? ` tcFormat="${t0.drop ? 'DF' : 'NDF'}"` : ''}>\n        <keyword start="${a.start.fcp()}" duration="${a.dur.fcp()}" value="${esc(palavras.map((x) => String(x).replace(/,/g, ' ')).join(', '))}"/>\n      </asset-clip>`)
+    }
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n<fcpxml version="1.10">\n  <resources>\n${[...res, ...medias].join('\n')}\n  </resources>\n  <library>\n    <event name="${esc(evento || `Synquei · ${project.name}`)}">\n${[...doEvento, ...projects].join('\n')}\n    </event>\n  </library>\n</fcpxml>\n`
 }

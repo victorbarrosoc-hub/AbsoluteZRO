@@ -1,12 +1,39 @@
 // Organizar: a pasta do projeto no Backup Automático do SOBEDESCE ligada ao Synquei e ao DaVinci. Cada cartão que
 // termina de passar entra sozinho (app/js/organizar.js); aqui ficam as pastas, as diárias com seus cartões e a ponte
-// com o Resolve.
+// com o Resolve. Sem o SOBEDESCE: "Organizar uma pasta" estuda qualquer pasta do SSD e mostra os momentos para a
+// pessoa conferir (e corrigir por câmera) antes de mandar para o editor.
 
-import { S, openProject } from '../store.js'
+import { S, openProject, lerProjeto } from '../store.js'
 import { h, icon, ago, plural, modal, uiDark } from '../util.js'
 import { devColor } from '../media/devices.js'
 import { go } from '../main.js'
-import { O, api, adicionarPasta, reorganizarTudo, organizarAgora, atualizarDavinci, mandarParaDavinci, setMandarParaDavinci } from '../organizar.js'
+import { escolherTipo } from '../tipo-picker.js'
+import { tipoDe } from '../tipos.js'
+import { duracao } from '../relatorio.js'
+import { O, api, adicionarPasta, reorganizarTudo, organizarAgora, atualizarDavinci, mandarParaDavinci, setMandarParaDavinci, organizarPastaLivre, estudarPastaLivre, mandarEstudo, estudoDe, corrigirNoEstudo, mostrarArquivo, trocarTipoDoEstudo } from '../organizar.js'
+
+// projetos lidos do disco para a tela (sem abrir): id → { updatedAt, p }
+const lidos = new Map()
+function projetoSalvo(id) {
+  if (!id) return null
+  if (S.project && S.project.id === id) return S.project
+  const item = S.list.find((x) => x.id === id)
+  if (!item) return null
+  const c = lidos.get(id)
+  if (c && c.updatedAt === item.updatedAt) return c.p
+  const p = lerProjeto(id)
+  lidos.set(id, { updatedAt: item.updatedAt, p })
+  return p
+}
+
+/** Os arquivos que o Synquei gravou na pasta Synquei/ (relatório, Premiere, Final Cut), como botões. */
+function arquivosGerados(pastaId, p) {
+  const a = (p && p.org && p.org.arquivos) || {}
+  const ic = { Relatório: 'painel', 'Premiere Pro': 'film', 'Final Cut Pro': 'film' }
+  const nomes = Object.keys(a).filter((k) => ic[k])
+  if (!nomes.length) return ''
+  return `<div class="org-gerados">${nomes.map((k) => `<button class="btn btn-ghost btn-sm" data-act="org-mostrar" data-id="${h(pastaId)}" data-arquivo="${h(a[k])}" title="${h(a[k])}">${icon(ic[k])}${k === 'Relatório' ? 'Relatório' : h(k)}</button>`).join('')}</div>`
+}
 
 const ESTADO = {
   novo: ['chip', 'Na fila'],
@@ -92,12 +119,91 @@ function pasta(p) {
         ? diarias
             .map(([n, d]) => {
               const pid = p.projetos && p.projetos[n]
-              return `<div class="org-diaria"><div class="org-diaria-topo"><h3>${h(d.nome)}</h3><span class="sub">${d.cartoes.every((c) => c.modo === 'drive') ? 'Download do Drive' : plural(d.cartoes.length, 'cartão', 'cartões')}</span>${pid && S.list.some((x) => x.id === pid) ? `<button class="btn btn-secondary btn-sm" data-act="org-proj" data-id="${h(pid)}">${icon('timeline')}Abrir projeto</button>` : ''}</div><ul class="org-cartoes">${d.cartoes.map((c) => cartao(c, p.cores)).join('')}</ul></div>`
+              return `<div class="org-diaria"><div class="org-diaria-topo"><h3>${h(d.nome)}</h3><span class="sub">${d.cartoes.every((c) => c.modo === 'drive') ? 'Download do Drive' : plural(d.cartoes.length, 'cartão', 'cartões')}</span>${pid && S.list.some((x) => x.id === pid) ? `<button class="btn btn-secondary btn-sm" data-act="org-proj" data-id="${h(pid)}">${icon('timeline')}Abrir projeto</button>` : ''}</div>${pid ? momentosDaDiaria(projetoSalvo(pid)) : ''}${pid ? arquivosGerados(p.id, projetoSalvo(pid)) : ''}<ul class="org-cartoes">${d.cartoes.map((c) => cartao(c, p.cores)).join('')}</ul></div>`
             })
             .join('')
         : `<p class="sub">Nenhum cartão terminou ainda. Quando o SOBEDESCE terminar o próximo, ele aparece aqui e vai sozinho para o projeto.</p>`
     }
     <p class="sub org-pastas-trabalho">${icon('folder')}<span>Criadas em volta da mídia (nada é movido): <b>Assets</b>, <b>Exports</b> e <b>Synquei/Sequências</b>.</span></p></div></section>`
+}
+
+/** Uma linha com os momentos que o Synquei entendeu na diária (casamento: cerimônia, festa…; clipe: takes). */
+function momentosDaDiaria(p) {
+  const m = p && p.momentos
+  if (!m || !m.momentos || !m.momentos.length) return ''
+  return `<div class="org-momentos-linha">${m.momentos
+    .slice(0, 10)
+    .map((x) => `<span class="chip${x.sugestao ? ' chip-warn' : ''}" title="${x.sugestao ? 'Sugerido pelo horário: confira' : ''}">${h(x.nome)} · ${x.clipes}</span>`)
+    .join('')}${m.partes ? `<span class="chip">${plural(m.partes, m.parte === 'Take' ? 'take' : 'parte', m.parte === 'Take' ? 'takes' : 'partes')}</span>` : ''}</div>`
+}
+
+const ORIGEM = { marcado: 'Marcado', pasta: 'Pela pasta', horario: 'Pelo horário', padrao: 'Sem pista' }
+
+/** O estudo de uma pasta livre: números, momentos × câmera (com troca de momento) e as ações. */
+function estudo(pasta, p) {
+  const m = p.momentos
+  if (!m) return '<p class="sub">Estudo ainda não feito.</p>'
+  const prontos = p.clips.filter((c) => c.status === 'ready')
+  const sinc = prontos.filter((c) => c.sync).length
+  const cams = new Set(prontos.filter((c) => c.kind !== 'audio').map((c) => c.deviceId)).size
+  const dur = prontos.filter((c) => c.kind !== 'audio').reduce((t, c) => t + (c.duration || 0), 0)
+  const stat = (n, t) => `<div class="org-stat"><b>${n}</b><span>${t}</span></div>`
+  const manual = p.momentosManual || {}
+  const opcoes = m.opcoes || []
+  const grupos = m.grupos || []
+  const porMomento = new Map()
+  grupos.forEach((g, i) => {
+    if (!porMomento.has(g.momento)) porMomento.set(g.momento, { nome: g.nome, pasta: g.pasta, linhas: [] })
+    porMomento.get(g.momento).linhas.push({ ...g, i })
+  })
+  const linha = (g) => {
+    const marcado = g.ids.every((id) => manual[id])
+    const opts = [...opcoes]
+    if (!opts.some((o) => o.id === g.momento)) opts.unshift({ id: g.momento, nome: g.nome })
+    const sel = `<select class="select" data-change="org-momento" data-id="${h(pasta.id)}" data-g="${g.i}" aria-label="Momento de ${h(g.camera)}">${marcado ? '<option value="">Automático</option>' : ''}${opts.map((o) => `<option value="${h(o.id)}"${o.id === g.momento ? ' selected' : ''}>${h(o.nome)}</option>`).join('')}</select>`
+    const det = [plural(g.ids.length, g.audio ? 'arquivo' : 'clipe', g.audio ? 'arquivos' : 'clipes')]
+    if (g.broll && !g.audio) det.push(g.broll === g.ids.length ? 'b-roll' : `${g.broll} b-roll`)
+    return `<li class="org-grupo"><span class="org-grupo-ic">${icon(g.audio ? 'mic' : 'camera')}</span><div><b>${h(g.camera)}</b><small>${det.join(' · ')}${g.sugeridos ? ` · <span class="org-sug">${marcado ? 'corrigido' : 'sugerido'}</span>` : ''}</small></div>${sel}</li>`
+  }
+  const blocos = [...porMomento.values()]
+    .map((b) => {
+      const sug = b.linhas.some((l) => l.sugeridos && !l.ids.every((id) => manual[id]))
+      return `<div class="org-momento"><div class="org-momento-topo"><h4>${h(b.pasta)}</h4>${sug ? '<span class="chip chip-warn">Confira</span>' : ''}</div><ul class="org-grupos">${b.linhas.map(linha).join('')}</ul></div>`
+    })
+    .join('')
+  const tipo = tipoDe(p.type)
+  const dv = mandarParaDavinci()
+  return `<div class="org-estudo">
+    <div class="org-stats">${stat(prontos.length, 'arquivos')}${stat(cams, cams === 1 ? 'câmera' : 'câmeras')}${stat(duracao(dur), 'de imagem')}${stat(prontos.length ? `${Math.round((sinc / prontos.length) * 100)}%` : '–', 'sincronizado')}${stat(m.broll || 0, 'b-roll')}</div>
+    <div class="org-estudo-topo"><div><h3>${tipo ? h(tipo.label) : 'Momentos'}</h3><p class="sub">${m.sugeridos ? `${plural(m.sugeridos, 'clipe foi sugerido', 'clipes foram sugeridos')} pelo horário. Troque o momento se não for.` : 'Tudo pela pasta ou pelo que você marcou.'}</p></div>
+      <button class="btn btn-ghost btn-sm" data-act="org-tipo" data-id="${h(pasta.id)}">${icon('edit')}Tipo</button></div>
+    ${blocos || '<p class="sub">Nenhum clipe pronto nesta pasta.</p>'}
+    <div class="org-estudo-acoes"><button class="btn btn-primary" data-act="org-mandar" data-id="${h(pasta.id)}">${icon(dv ? 'film' : 'export')}${dv ? 'Mandar para o DaVinci' : 'Gerar Premiere e Final Cut'}</button>${arquivosGerados(pasta.id, p)}</div>
+    <p class="sub org-pastas-trabalho">${icon('lock')}<span>Os originais ficam onde estão: a organização vive no editor e na pasta <b>Synquei</b>.</span></p>
+  </div>`
+}
+
+/** Pasta livre ("Organizar uma pasta"): sem vigia, estudada quando a pessoa pede. */
+function pastaLivre(pasta) {
+  const c = (pasta.cartoes || [])[0]
+  const atual = O.atual && O.atual.pastaId === pasta.id
+  const naFila = O.fila.some((x) => x.pastaId === pasta.id)
+  const e = estudoDe(pasta.id)
+  const p = e && projetoSalvo(e.projetoId)
+  const tipo = tipoDe(pasta.tipo)
+  let corpo
+  if (atual) corpo = `<div class="info-box org-agora is-live">${icon('sync')}<div><b>${h(O.etapa || 'Estudando a pasta')}</b>${S.sync.running ? ` · ${S.sync.done}/${S.sync.total}` : ''}</div></div>`
+  else if (naFila) corpo = `<p class="sub">${icon('clock')} Na fila para estudar.</p>`
+  else if (c && c.estado === 'erro') corpo = `<div class="warn-box">${icon('warn')}<div>${h(c.erro || 'Não deu certo.')} <a href="#" data-act="org-estudar" data-id="${h(pasta.id)}" style="text-decoration:underline">Tentar de novo</a></div></div>`
+  else if (p) corpo = estudo(pasta, p)
+  else corpo = `<p class="sub">Ainda não estudada.</p>`
+  const enviado = O.enviados[pasta.id]
+  return `<section class="card org-pasta org-livre"><header class="card-head"><div><h2>${h(pasta.nome)}</h2><p class="sub mono" style="font-size:12px">${h(pasta.raiz)}</p></div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${tipo ? `<span class="chip">${icon(tipo.icon)}${h(tipo.label)}</span>` : ''}${enviado ? `<span class="chip chip-ok">${icon('check')}Mandado ${ago(enviado)}</span>` : ''}
+    <button class="btn btn-ghost btn-sm" data-act="org-abrir" data-id="${h(pasta.id)}">${icon('folder')}Abrir pasta</button>
+    <button class="btn btn-ghost btn-sm" data-act="org-estudar" data-id="${h(pasta.id)}" ${atual || naFila ? 'disabled' : ''} title="Lê o que entrou de novo na pasta (o que já foi lido fica)">${icon('sync')}Estudar de novo</button>
+    <button class="icon-btn" data-act="org-tirar" data-id="${h(pasta.id)}" aria-label="Tirar da lista">${icon('trash')}</button></div></header>
+    <div class="card-pad">${corpo}</div></section>`
 }
 
 export default {
@@ -106,16 +212,41 @@ export default {
     if (!O.ativo)
       return `<div class="page tela"><header class="page-head"><div><h1>Organizar</h1><p class="page-lead">SOBEDESCE › Synquei › DaVinci, sozinho a cada cartão.</p></div></header>
         <div class="info-box">${icon('info')}<div>O Organizar vigia pastas do seu computador e fala com o DaVinci: só funciona no <b>app de desktop</b> do Synquei. <a href="https://absolutezro.com/baixar" target="_blank" rel="noopener" style="text-decoration:underline">Use no computador com a Absolute ZRO</a></div></div></div>`
-    return `<div class="page tela"><header class="page-head"><div><h1>Organizar</h1><p class="page-lead">Ligue a pasta de um projeto do Backup Automático do SOBEDESCE. Cada cartão que termina de passar entra sozinho: o Synquei sincroniza a diária e organiza tudo no DaVinci.</p></div><div class="page-actions"><button class="btn btn-primary" data-act="org-add">${icon('plus')}Ligar pasta do SOBEDESCE</button></div></header>
-      ${fluxo()}
+    const livres = O.pastas.filter((p) => p.origem === 'livre')
+    const vigiadas = O.pastas.filter((p) => p.origem !== 'livre')
+    return `<div class="page tela"><header class="page-head"><div><h1>Organizar</h1><p class="page-lead">O material entende o tipo de vídeo e chega no editor por momento, câmera e cartão.</p></div><div class="page-actions"><button class="btn btn-secondary" data-act="org-add">${icon('download')}Ligar pasta do SOBEDESCE</button><button class="btn btn-primary" data-act="org-livre">${icon('folder')}Organizar uma pasta</button></div></header>
+      ${vigiadas.length ? fluxo() : ''}
       ${agora()}
       <div class="settings stagger">
-        ${O.pastas.length ? O.pastas.map(pasta).join('') : `<section class="card"><div class="card-pad org-vazio">${icon('folder')}<div><b>Escolha a pasta do projeto no HD</b><p class="sub">A que o SOBEDESCE criou dentro do destino, com as pastas “Diária 01”, “Diária 02”… Os cartões que já passaram entram agora; os próximos, assim que terminarem.</p></div><button class="btn btn-primary" data-act="org-add">${icon('folder')}Escolher pasta</button></div></section>`}
+        ${livres.map(pastaLivre).join('')}
+        ${vigiadas.map(pasta).join('')}
+        ${
+          O.pastas.length
+            ? ''
+            : `<section class="card"><div class="card-pad org-vazio">${icon('folder')}<div><b>Uma pasta do SSD ou a do SOBEDESCE</b><p class="sub">Escolha o tipo de vídeo e a pasta: o Synquei estuda, mostra os momentos para você conferir e manda para o editor. Os originais não saem do lugar.</p></div><button class="btn btn-primary" data-act="org-livre">${icon('folder')}Organizar uma pasta</button></div></section>`
+        }
         ${davinci()}
       </div></div>`
   },
   acts: {
     'org-add': () => adicionarPasta(),
+    'org-livre': async () => {
+      const r = await escolherTipo({ novo: true })
+      if (r && r.type) organizarPastaLivre(r.type)
+    },
+    'org-estudar': (el, e) => {
+      if (e) e.preventDefault()
+      estudarPastaLivre(el.dataset.id)
+    },
+    'org-mandar': (el) => mandarEstudo(el.dataset.id),
+    'org-mostrar': (el) => mostrarArquivo(el.dataset.id, el.dataset.arquivo),
+    'org-tipo': async (el) => {
+      const e = estudoDe(el.dataset.id)
+      const p = e && projetoSalvo(e.projetoId)
+      if (!p) return
+      const r = await escolherTipo({ name: p.name, type: p.type, multicam: p.export && p.export.multicam, novo: false })
+      if (r && r.type && (r.type !== p.type || r.multicam !== (p.export && p.export.multicam))) trocarTipoDoEstudo(el.dataset.id, r)
+    },
     'org-agora': (el, e) => {
       e.preventDefault()
       organizarAgora()
@@ -143,6 +274,12 @@ export default {
   },
   changes: {
     'org-davinci': (el) => setMandarParaDavinci(el.checked),
+    'org-momento': (el) => {
+      const e = estudoDe(el.dataset.id)
+      const p = e && projetoSalvo(e.projetoId)
+      const g = p && p.momentos && p.momentos.grupos[Number(el.dataset.g)]
+      if (g) corrigirNoEstudo(el.dataset.id, g.ids, el.value || null)
+    },
     'org-ligar': (el) => api.ligar(el.dataset.id, el.checked),
   },
 }

@@ -318,6 +318,14 @@ function iniciarOrganizar() {
     const p = await org.adicionar(r.filePaths[0])
     return p.id
   })
+  // pasta livre (sem o SOBEDESCE): qualquer pasta no SSD, com o tipo de vídeo que a pessoa escolheu
+  handle('org:escolherLivre', async (tipo) => {
+    const r = await dialog.showOpenDialog(win, { title: 'Pasta com o material gravado', buttonLabel: 'Estudar esta pasta', properties: ['openDirectory'] })
+    if (r.canceled || !r.filePaths[0]) return null
+    const p = await org.adicionarLivre(r.filePaths[0], { tipo: tipo ? String(tipo) : null })
+    return p.id
+  })
+  handle('org:estudar', (pastaId) => org.estudar(String(pastaId)))
   handle('org:remover', (id) => org.remover(String(id)))
   handle('org:ligar', (id, ligado) => org.ligar(String(id), !!ligado))
   handle('org:vincular', (id, dados) => org.vincular(String(id), dados || {}))
@@ -331,6 +339,8 @@ function iniciarOrganizar() {
     const raiz = org.raizDe(String(pastaId))
     return raiz ? shell.openPath(raiz) : null
   })
+  handle('org:tipo', (pastaId, tipo) => org.tipo(String(pastaId), tipo))
+  handle('org:mostrar', (pastaId, abs) => (org.doSynquei(String(pastaId), abs) ? shell.openPath(path.resolve(String(abs))) : null))
   handle('davinci:status', () => ponte.status())
   handle('davinci:instalar', () => ponte.instalar())
   handle('davinci:enviar', (pedido) => ponte.enviar(pedido))

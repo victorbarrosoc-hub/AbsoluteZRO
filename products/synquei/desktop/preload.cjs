@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('synqueiDesktop', {
   organizar: {
     estado: () => ipcRenderer.invoke('org:estado'),
     escolher: () => ipcRenderer.invoke('org:escolher'),
+    // pasta livre (sem o SOBEDESCE): escolher com o tipo de vídeo e estudar (a pasta inteira vira uma operação)
+    escolherLivre: (tipo) => ipcRenderer.invoke('org:escolherLivre', tipo),
+    estudar: (pastaId) => ipcRenderer.invoke('org:estudar', pastaId),
     remover: (id) => ipcRenderer.invoke('org:remover', id),
     ligar: (id, ligado) => ipcRenderer.invoke('org:ligar', id, ligado),
     vincular: (id, dados) => ipcRenderer.invoke('org:vincular', id, dados),
@@ -37,6 +40,8 @@ contextBridge.exposeInMainWorld('synqueiDesktop', {
     escrever: (pastaId, rel, texto) => ipcRenderer.invoke('org:escrever', pastaId, rel, texto),
     assets: (pastaId) => ipcRenderer.invoke('org:assets', pastaId),
     abrir: (pastaId) => ipcRenderer.invoke('org:abrir', pastaId),
+    tipo: (pastaId, tipo) => ipcRenderer.invoke('org:tipo', pastaId, tipo),
+    mostrar: (pastaId, caminho) => ipcRenderer.invoke('org:mostrar', pastaId, caminho),
     onCartao: (cb) => ouvir('synquei:org-cartao', cb),
     onEstado: (cb) => ouvir('synquei:org-estado', cb),
     // "Preparar no Synquei" do SOBEDESCE: a pasta entrou no Organizar (a página vai para lá)

@@ -5047,3 +5047,127 @@ html:not(.is-desktop) .so-desktop {
 .tp-aviso {
   align-items: center;
 }
+
+/* organizar: estudo da pasta (momentos × câmera) */
+.org-momentos-linha,
+.org-gerados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.org-gerados {
+  margin: 0;
+}
+.org-estudo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.org-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.org-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--fill-2);
+}
+.org-stat b {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.org-stat span {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.org-estudo-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.org-estudo-topo h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.org-momento-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.org-momento-topo h4 {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.org-grupos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.org-grupo {
+  display: grid;
+  grid-template-columns: auto 1fr minmax(140px, 200px);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  animation: org-entra 0.35s var(--spring) both;
+}
+.org-grupo + .org-grupo {
+  border-top: 1px solid var(--hairline);
+}
+.org-grupo small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.org-grupo-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--fill-2);
+  color: var(--text-2);
+}
+.org-sug {
+  color: var(--warn-text);
+}
+.org-estudo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+@keyframes org-entra {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .org-grupo {
+    animation: none;
+  }
+}
+@media (max-width: 720px) {
+  .org-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .org-grupo {
+    grid-template-columns: auto 1fr;
+  }
+  .org-grupo select {
+    grid-column: 1 / -1;
+  }
+}
