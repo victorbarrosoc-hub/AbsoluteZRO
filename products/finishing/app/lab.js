@@ -15,7 +15,12 @@ import {
   LUZES_LAB,
   NEGATIVOS_LAB,
   REVELACOES,
+  VETORES_HSL,
+  ZONAS_HDR,
+  centrosDasZonas,
+  faixaDaEntrada,
   paraCena,
+  valorVisivel,
   analisarFrame,
   baseDoLab,
   criarLab,
@@ -39,10 +44,10 @@ const LADO_MINI = 300
 const CHAVE_MEUS = 'revela-meus-looks'
 const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
-let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
+let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array, nome, info (vídeo: codec, fps, câmera…) }
 let correcaoLida = null
 // a correção que vai para a receita: exposição, branco e níveis (contraste, cor, sombra fria), sem o texto da leitura
-const correcaoDaLeitura = ({ leitura, ...c }) => c
+const correcaoDaLeitura = ({ leitura, faixa, faixaCamera, ...c }) => c
 let receita = {
   nome: 'Meu look',
   entrada: 'still',
@@ -85,13 +90,37 @@ function desenhar(bm, lado) {
 
 async function receber(arquivo) {
   if (!arquivo) return
-  if (!arquivo.type.startsWith('image/')) return avisar('Escolha uma imagem (um still do seu vídeo).', true)
-  avisar('Abrindo o frame…')
   let bm
-  try {
-    bm = await createImageBitmap(arquivo, { colorSpaceConversion: 'none' }).catch(() => createImageBitmap(arquivo))
-  } catch {
-    return avisar('Não deu para abrir essa imagem.', true)
+  let info = null
+  // vídeo: o Mediabunny (carregado só agora) tira um quadro e lê o que o arquivo conta de si
+  if (!arquivo.type.startsWith('image/')) {
+    let video
+    try {
+      video = await import('./video.js')
+    } catch {
+      return avisar('Não deu para abrir o leitor de vídeo agora.', true)
+    }
+    if (!video.ehVideo(arquivo)) return avisar('Escolha uma imagem ou um clipe (.mov, .mp4).', true)
+    avisar('Lendo um quadro do clipe…')
+    try {
+      const lido = await video.lerQuadro(arquivo, LADO_PREVIA)
+      bm = lido.canvas
+      info = lido.info
+    } catch (erro) {
+      return avisar(erro?.message || 'Não deu para ler esse clipe.', true)
+    }
+    // a curva que o arquivo cita entra sozinha (a pessoa pode trocar)
+    if (info.curva && ENTRADAS_LAB.some((e) => e.id === info.curva)) {
+      receita.entrada = info.curva
+      $('entrada').value = info.curva
+    }
+  } else {
+    avisar('Abrindo o frame…')
+    try {
+      bm = await createImageBitmap(arquivo, { colorSpaceConversion: 'none' }).catch(() => createImageBitmap(arquivo))
+    } catch {
+      return avisar('Não deu para abrir essa imagem.', true)
+    }
   }
   const previa = desenhar(bm, LADO_PREVIA)
   const mini = desenhar(bm, LADO_MINI)
@@ -101,7 +130,7 @@ async function receber(arquivo) {
     pixels[j + 1] = previa.data[i + 1] / 255
     pixels[j + 2] = previa.data[i + 2] / 255
   }
-  frame = { previa, mini, pixels }
+  frame = { previa, mini, pixels, nome: arquivo.name, info }
   lerFrame()
   $('lab').hidden = false
   $('lab-entrada').classList.add('compacta')
@@ -115,12 +144,17 @@ async function receber(arquivo) {
 function lerFrame() {
   correcaoLida = analisarFrame(frame.pixels, { entrada: receita.entrada })
   if (receita.correcao || corrigirSozinho) receita.correcao = correcaoDaLeitura(correcaoLida)
+  // a faixa do arquivo posiciona as zonas HDR, com ou sem a correção ligada
+  receita.faixaHdr = correcaoLida.faixa
+  desenharCamera()
+  desenharHdr()
 }
 
 // de onde vem o frame: still já tratado ou o log de uma câmera
 $('entrada').replaceChildren(...ENTRADAS_LAB.map((e) => Object.assign(document.createElement('option'), { value: e.id, textContent: e.nome })))
 $('entrada').addEventListener('change', () => {
   receita.entrada = $('entrada').value
+  desenharCamera()
   if (!frame) return
   lerFrame()
   mostrarCorrecao()
@@ -363,7 +397,6 @@ $('corrigir').addEventListener('change', () => {
   refazer()
 })
 
-const formatar = (v) => (v > 0 ? `+${v}` : String(v))
 /** Acende o trilho do neutro até o valor (o neutro é o centro nos ajustes de dois lados). */
 function acender(barra) {
   const min = Number(barra.min)
@@ -373,42 +406,200 @@ function acender(barra) {
   barra.style.setProperty('--de', `${Math.min(pct, neutro)}%`)
   barra.style.setProperty('--ate', `${Math.max(pct, neutro)}%`)
 }
-function desenharAjustes() {
-  const linhaDe = (a) => {
-    const linha = document.createElement('div')
-    linha.className = 'controle ajuste'
-    linha.title = a.dica
-    const rotulo = document.createElement('label')
-    rotulo.htmlFor = `aj-${a.id}`
-    rotulo.textContent = a.nome
-    const valor = document.createElement('output')
-    valor.htmlFor = `aj-${a.id}`
-    const barra = document.createElement('input')
-    Object.assign(barra, { type: 'range', id: `aj-${a.id}`, min: a.min, max: a.max, value: receita.ajustes[a.id] ?? 0 })
-    if (a.min < 0) barra.classList.add('bipolar')
-    valor.textContent = formatar(Number(barra.value))
+/** Uma linha de ajuste (rótulo, valor, trilho). `aoMexer` roda a cada passo (redesenhos que dependem do valor). */
+function linhaDeAjuste(a, aoMexer = null) {
+  const linha = document.createElement('div')
+  linha.className = 'controle ajuste'
+  linha.title = a.dica
+  const rotulo = document.createElement('label')
+  rotulo.htmlFor = `aj-${a.id}`
+  rotulo.textContent = a.nome
+  const valor = document.createElement('output')
+  valor.htmlFor = `aj-${a.id}`
+  const barra = document.createElement('input')
+  Object.assign(barra, { type: 'range', id: `aj-${a.id}`, min: a.min, max: a.max, value: receita.ajustes[a.id] ?? a.padrao ?? 0 })
+  if (a.min < 0) barra.classList.add('bipolar')
+  const mostrar = () => {
+    valor.textContent = valorVisivel(a, Number(barra.value))
     acender(barra)
-    barra.addEventListener('input', () => {
-      receita.ajustes[a.id] = Number(barra.value)
-      valor.textContent = formatar(Number(barra.value))
-      acender(barra)
-      agendar()
-    })
-    barra.addEventListener('change', () => refazer())
-    // duplo toque volta ao neutro, como nos painéis de cor
-    barra.addEventListener('dblclick', () => {
-      barra.value = 0
-      receita.ajustes[a.id] = 0
-      valor.textContent = '0'
-      acender(barra)
-      refazer()
-    })
-    linha.append(rotulo, valor, barra)
-    return linha
   }
-  $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino).map(linhaDe))
-  $('ajustes-finos').replaceChildren(...AJUSTES.filter((a) => a.fino).map(linhaDe))
+  mostrar()
+  barra.addEventListener('input', () => {
+    receita.ajustes[a.id] = Number(barra.value)
+    mostrar()
+    aoMexer?.()
+    agendar()
+  })
+  barra.addEventListener('change', () => refazer())
+  // duplo toque volta ao ponto de partida, como nos painéis de cor
+  barra.addEventListener('dblclick', () => {
+    barra.value = a.padrao ?? 0
+    receita.ajustes[a.id] = a.padrao ?? 0
+    mostrar()
+    aoMexer?.()
+    refazer()
+  })
+  linha.append(rotulo, valor, barra)
+  return linha
 }
+
+function desenharAjustes() {
+  $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino && !a.grupo).map((a) => linhaDeAjuste(a)))
+  $('ajustes-finos').replaceChildren(...AJUSTES.filter((a) => a.fino && !a.grupo).map((a) => linhaDeAjuste(a)))
+  desenharPelicula()
+  desenharHsl()
+  desenharHdr()
+}
+
+// ─────────── cor de película: densidade (pesos e limitadores) e saturação subtrativa ───────────
+
+const ajusteDe = (id) => AJUSTES.find((a) => a.id === id)
+const subtitulo = (texto) => Object.assign(document.createElement('p'), { className: 'sub-lab', textContent: texto })
+function desenharPelicula() {
+  const linhas = (ids) => ids.map((id) => linhaDeAjuste(ajusteDe(id)))
+  $('ajustes-pelicula').replaceChildren(
+    ...linhas(['densidadeFilme', 'subtrativa']),
+    subtitulo('Peso por cor'),
+    ...linhas(['pesoVermelho', 'pesoVerde', 'pesoAzul']),
+    subtitulo('Onde age'),
+    ...linhas(['poupaFraca', 'poupaPreto', 'protegePele']),
+  )
+}
+
+// ─────────── HSL de seis vetores ───────────
+
+let vetorHsl = VETORES_HSL[0].id
+const idHsl = (v, canal) => `hsl${v.nome}${['Matiz', 'Sat', 'Luz'][canal]}`
+const vetorMexido = (v) => [0, 1, 2].some((c) => receita.ajustes[idHsl(v, c)])
+function desenharHsl() {
+  const atual = VETORES_HSL.find((v) => v.id === vetorHsl)
+  $('hsl-vetores').replaceChildren(
+    ...VETORES_HSL.map((v) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = `hsl-vetor hsl-${v.id}`
+      b.setAttribute('role', 'radio')
+      b.setAttribute('aria-checked', String(v.id === vetorHsl))
+      b.setAttribute('aria-label', v.nome)
+      b.title = v.nome
+      b.textContent = v.curto
+      b.classList.toggle('mexido', vetorMexido(v))
+      b.addEventListener('click', () => {
+        vetorHsl = v.id
+        desenharHsl()
+      })
+      return b
+    }),
+  )
+  // a marca na faixa de matizes fica no matiz do vetor (Oklab), girada pelo ajuste de matiz
+  const giro = receita.ajustes[idHsl(atual, 0)] ?? 0
+  const pos = (((atual.matiz + giro - 29 + 360) % 360) / 360) * 100
+  $('hsl-marca').style.left = `${pos}%`
+  const marcar = () => raiz.querySelector(`.hsl-${atual.id}`)?.classList.toggle('mexido', vetorMexido(atual))
+  $('ajustes-hsl').replaceChildren(
+    ...[0, 1, 2].map((c) =>
+      linhaDeAjuste(ajusteDe(idHsl(atual, c)), () => {
+        marcar()
+        if (c === 0) $('hsl-marca').style.left = `${(((atual.matiz + (receita.ajustes[idHsl(atual, 0)] ?? 0) - 29 + 360) % 360) / 360) * 100}%`
+      }),
+    ),
+  )
+}
+
+// ─────────── exposição HDR por zonas, posicionadas pela faixa do arquivo ───────────
+
+const stops = (v, casas = 1) => `${v > 0.05 ? '+' : v < -0.05 ? '−' : ''}${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}`
+function desenharHdr() {
+  const centros = centrosDasZonas(receita.faixaHdr)
+  $('zonas-hdr').replaceChildren(
+    ...ZONAS_HDR.map((z, i) => {
+      const a = ajusteDe(`hdr${z.nome}`)
+      const col = document.createElement('div')
+      col.className = 'zona-hdr ajuste'
+      col.title = a.dica
+      const barra = document.createElement('input')
+      Object.assign(barra, { type: 'range', id: `aj-${a.id}`, min: a.min, max: a.max, value: receita.ajustes[a.id] ?? 0 })
+      barra.className = 'vertical bipolar'
+      barra.setAttribute('aria-label', `${z.nome}: exposição`)
+      const nome = Object.assign(document.createElement('label'), { htmlFor: barra.id, textContent: z.nome })
+      const onde = Object.assign(document.createElement('small'), { textContent: stops(centros[i]), title: 'Centro da zona neste arquivo (stops do cinza)' })
+      const valor = Object.assign(document.createElement('output'), { htmlFor: barra.id })
+      const mostrar = () => {
+        valor.textContent = stops((Number(barra.value) / 100) * 1.5)
+        acender(barra)
+      }
+      mostrar()
+      barra.addEventListener('input', () => {
+        receita.ajustes[a.id] = Number(barra.value)
+        mostrar()
+        agendar()
+      })
+      barra.addEventListener('change', () => refazer())
+      barra.addEventListener('dblclick', () => {
+        barra.value = 0
+        receita.ajustes[a.id] = 0
+        mostrar()
+        refazer()
+      })
+      col.append(barra, nome, onde, valor)
+      return col
+    }),
+  )
+  desenharRegua()
+}
+
+// ─────────── câmera e arquivo ───────────
+
+const DE_STOP = -12
+const ATE_STOP = 12
+const naRegua = (v) => `${((Math.min(ATE_STOP, Math.max(DE_STOP, v)) - DE_STOP) / (ATE_STOP - DE_STOP)) * 100}%`
+function desenharRegua() {
+  const regua = $('regua-faixa')
+  const camera = correcaoLida?.faixaCamera ?? faixaDaEntrada(receita.entrada)
+  const faixa = receita.faixaHdr
+  const parte = (classe, de, ate) => {
+    const e = document.createElement('span')
+    e.className = classe
+    e.style.left = naRegua(de)
+    if (ate != null) e.style.width = `calc(${naRegua(ate)} - ${naRegua(de)})`
+    return e
+  }
+  regua.replaceChildren(
+    parte('regua-camera', camera[0], camera[1]),
+    ...(faixa ? [parte('regua-usado', faixa[0], faixa[1])] : []),
+    ...centrosDasZonas(faixa).map((c) => parte('regua-zona', c)),
+    parte('regua-cinza', 0),
+  )
+  $('regua-escala').replaceChildren(
+    ...[-12, -8, -4, 0, 4, 8, 12].map((v) => {
+      const e = Object.assign(document.createElement('span'), { textContent: v === 0 ? 'cinza 18%' : stops(v, 0) })
+      e.style.left = naRegua(v)
+      return e
+    }),
+  )
+  const nomeCurva = ENTRADAS_LAB.find((e) => e.id === receita.entrada)?.nome ?? ''
+  $('faixa-texto').textContent = faixa
+    ? `Faixa do arquivo: ${stops(faixa[0])} a ${stops(faixa[1])} stops · a curva guarda ${stops(camera[0])} a ${stops(camera[1])}. As zonas HDR se posicionam nela.`
+    : `${nomeCurva}: guarda de ${stops(camera[0])} a ${stops(camera[1])} stops. Traga um frame para medir a faixa dele.`
+}
+
+function desenharCamera() {
+  const info = frame?.info
+  const fichas = []
+  const ficha = (texto, extra = '') => Object.assign(document.createElement('span'), { className: `ficha ${extra}`.trim(), textContent: texto })
+  if (info?.camera) fichas.push(ficha(info.camera, 'ficha--marca'))
+  else if (info) fichas.push(ficha('Câmera não consta no arquivo'))
+  fichas.push(ficha(ENTRADAS_LAB.find((e) => e.id === receita.entrada)?.nome ?? receita.entrada, info?.curva === receita.entrada ? 'ficha--marca' : ''))
+  if (info) {
+    fichas.push(ficha(`${info.largura}×${info.altura}`))
+    if (info.fps) fichas.push(ficha(`${info.fps.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} fps`))
+    fichas.push(ficha(info.codec))
+  }
+  $('camera-fichas').replaceChildren(...fichas)
+  $('camera-origem').textContent = info?.camera || info?.curva ? 'do metadado' : info ? 'curva escolhida por você' : frame ? 'still' : ''
+  desenharRegua()
+}
+
 $('zerar').addEventListener('click', () => {
   receita.ajustes = { ...AJUSTES_NEUTROS }
   desenharAjustes()
@@ -799,7 +990,10 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     mostrarIntensidade()
     grupo = GRUPOS.find((g) => g.looks.some((l) => l.id === receita.base))?.id ?? 'revela'
     desenharGrupos()
+    // a faixa da receita era do frame de quem salvou: aqui vale a deste frame
+    if (correcaoLida) receita.faixaHdr = correcaoLida.faixa
     desenharAjustes()
+    desenharCamera()
     mostrarCorrecao()
     desenharBases()
     refazer()
@@ -825,6 +1019,7 @@ function aplicarPedido() {
 
 desenharGrupos()
 desenharAjustes()
+desenharCamera()
 aplicarPedido()
 // o painel do Lab fica guardado entre as abas: quem chega de novo por um link com ?base= escolhe de novo
 addEventListener('revela:pagina', (e) => e.detail === 'lab' && aplicarPedido())

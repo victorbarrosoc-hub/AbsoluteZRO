@@ -63,10 +63,10 @@
       <section class="lab-entrada entra" id="lab-entrada">
         <label class="entrada entrada--larga" id="caixa-frame" for="arquivo-frame">
           <span class="entrada-icone" data-icone="filme"></span>
-          <strong>Seu frame</strong>
-          <span class="ficha" title="Exporte o still do editor já em Rec.709 (depois do CST)">Rec.709</span>
+          <strong>Seu frame ou vídeo</strong>
+          <span class="ficha" title="Um still do editor (Rec.709 ou log) ou o próprio clipe: .mov, .mp4">Still ou clipe</span>
           <span class="acao">Escolher ou soltar</span>
-          <input id="arquivo-frame" type="file" accept="image/*" />
+          <input id="arquivo-frame" type="file" accept="image/*,video/*,.mov,.mp4,.m4v,.mkv,.webm" />
         </label>
         <label class="campo-log entrada-lab" title="Still já tratado ou o log da câmera: o Lab leva o frame até a luz da cena do jeito certo"
           ><span data-icone="cst"></span
@@ -131,6 +131,13 @@
         <div class="ws-controles lab-lado">
           <section class="ws-etapa" id="ws-source" aria-labelledby="ws-source-t" data-pro>
             <h2 id="ws-source-t"><b>01</b>Source</h2>
+            <div class="camera-lab" id="camera-lab">
+              <p class="ws-titulo">Câmera e arquivo <small id="camera-origem"></small></p>
+              <div class="camera-fichas" id="camera-fichas"></div>
+              <div class="regua-faixa" id="regua-faixa" aria-hidden="true"></div>
+              <div class="regua-escala" id="regua-escala" aria-hidden="true"></div>
+              <p class="nota-lab" id="faixa-texto"></p>
+            </div>
             <div class="lab-correcao">
               <label class="chave" title="Acerta a exposição e o branco do frame antes da base: o look fica igual em clipes diferentes"
                 ><input id="corrigir" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Analisar e corrigir</label
@@ -150,6 +157,11 @@
               <summary>Ajuste fino</summary>
               <div id="ajustes-finos" class="ajustes-lab" aria-label="Ajuste fino"></div>
             </details>
+            <div class="hdr-lab" data-pro>
+              <p class="ws-titulo">Exposição HDR <small>por zonas · na luz da cena</small></p>
+              <div class="zonas-hdr" id="zonas-hdr" role="group" aria-label="Exposição HDR por zonas"></div>
+              <p class="nota-lab">Embaixo de cada zona: onde ela fica neste arquivo (stops do cinza) e a exposição aplicada. A curva nunca inverte.</p>
+            </div>
           </section>
           <section class="ws-etapa" id="ws-film" aria-labelledby="ws-film-t" data-pro>
             <h2 id="ws-film-t"><b>03</b>Film</h2>
@@ -182,9 +194,19 @@
                 ><input id="boost" type="range" min="0" max="100" value="50" />
               </div>
             </fieldset>
+            <div class="pelicula-lab" data-pro>
+              <p class="ws-titulo">Cor de película <small>densidade · subtrativa</small></p>
+              <div id="ajustes-pelicula" class="ajustes-lab" aria-label="Cor de película"></div>
+            </div>
           </section>
           <section class="ws-etapa" id="ws-finish" aria-labelledby="ws-finish-t">
             <h2 id="ws-finish-t" data-pro><b>04</b>Finish</h2>
+            <div class="hsl-lab" data-pro>
+              <p class="ws-titulo">HSL <small>seis vetores · matiz, saturação, luz</small></p>
+              <div class="hsl-vetores" id="hsl-vetores" role="radiogroup" aria-label="Vetor do HSL"></div>
+              <div class="hsl-faixa" aria-hidden="true"><span id="hsl-marca"></span></div>
+              <div id="ajustes-hsl" class="ajustes-lab" aria-label="HSL"></div>
+            </div>
             <div class="textura-lab">
               <p class="ws-titulo" data-simples>Textura</p>
               <div class="lab-grupos" id="texturas" role="radiogroup" aria-label="Textura"></div>

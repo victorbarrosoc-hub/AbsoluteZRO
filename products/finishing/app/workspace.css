@@ -377,6 +377,243 @@ body.rf .tela-lab:has(.workspace:not([hidden])) .lab-entrada {
   text-overflow: ellipsis;
 }
 
+/* ─────────── painel de cor (05/11/2026): câmera e arquivo, exposição HDR, cor de película, HSL ─────────── */
+
+.camera-lab,
+.hdr-lab,
+.pelicula-lab,
+.hsl-lab {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+:is(.camera-lab, .hdr-lab, .pelicula-lab, .hsl-lab) .ws-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+:is(.camera-lab, .hdr-lab, .pelicula-lab, .hsl-lab) .ws-titulo small {
+  margin-left: auto;
+  color: var(--rf-fraco);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.hdr-lab,
+.pelicula-lab,
+.hsl-lab {
+  padding-top: 14px;
+  border-top: 1px solid var(--linha);
+}
+.nota-lab {
+  margin: 0;
+  color: var(--rf-mudo);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.sub-lab {
+  margin: 4px 0 -4px;
+  color: var(--rf-fraco);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.camera-fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.camera-fichas .ficha {
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.ficha.ficha--marca {
+  color: #cfe0f4;
+  background: rgb(74 134 200 / 0.18);
+}
+/* a régua: o que a curva da câmera guarda, a faixa deste arquivo e onde caem as zonas HDR */
+.regua-faixa {
+  position: relative;
+  height: 26px;
+  margin: 4px 2px 0;
+}
+.regua-faixa::before {
+  content: '';
+  position: absolute;
+  inset: 9px 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #000 0%, #262626 30%, #777 50%, #d6d6d6 78%, #fff 100%);
+}
+.regua-faixa span {
+  position: absolute;
+}
+.regua-camera {
+  top: 7px;
+  bottom: 7px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+}
+.regua-usado {
+  top: 6px;
+  bottom: 6px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1.5px var(--rf-azul);
+  background: rgb(74 134 200 / 0.14);
+}
+.regua-zona {
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rf-azul);
+}
+.regua-cinza {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.55);
+}
+.regua-escala {
+  position: relative;
+  height: 14px;
+  margin: 0 2px;
+  color: var(--rf-fraco);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.regua-escala span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.regua-escala span:first-child {
+  transform: none;
+}
+.regua-escala span:last-child {
+  transform: translateX(-100%);
+}
+/* seis trilhos de pé, como as rodas HDR do Resolve */
+.zonas-hdr {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.zona-hdr {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.zona-hdr label {
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.zona-hdr small {
+  color: var(--rf-fraco);
+  font-size: 10.5px;
+}
+.zona-hdr output {
+  color: var(--rf-marfim);
+  font-size: 12px;
+}
+.ajuste.zona-hdr input[type='range'].vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 22px;
+  height: 110px;
+  cursor: ns-resize;
+}
+.ajuste.zona-hdr input[type='range'].vertical::-webkit-slider-runnable-track {
+  width: 4px;
+  height: auto;
+  background:
+    linear-gradient(0deg, transparent var(--de, 0%), var(--amarelo) var(--de, 0%), var(--amarelo) var(--ate, 0%), transparent var(--ate, 0%)),
+    rgb(var(--t) / 0.12);
+}
+.ajuste.zona-hdr input[type='range'].vertical::-webkit-slider-thumb {
+  margin-top: 0;
+  margin-left: -9px;
+}
+.ajuste.zona-hdr input[type='range'].vertical::-moz-range-track {
+  width: 4px;
+  height: auto;
+  background:
+    linear-gradient(0deg, transparent var(--de, 0%), var(--amarelo) var(--de, 0%), var(--amarelo) var(--ate, 0%), transparent var(--ate, 0%)),
+    rgb(var(--t) / 0.12);
+}
+.ajuste.zona-hdr:has(.bipolar)::after {
+  display: none;
+}
+/* HSL: seis vetores com a cor de cada um; o mexido ganha um ponto */
+.hsl-vetores {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.hsl-vetor {
+  position: relative;
+  min-width: 0;
+  padding: 14px 0 5px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--cor-vetor);
+  color: rgb(0 0 0 / 0.72);
+  font: 600 10px/1 var(--fonte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.hsl-vetor[aria-checked='true'] {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px var(--rf-carvao),
+    0 0 0 3.5px #fff;
+}
+.hsl-vetor.mexido::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #000;
+}
+.hsl-vermelho { --cor-vetor: #d9534f; }
+.hsl-amarelo { --cor-vetor: #e3b341; }
+.hsl-verde { --cor-vetor: #4caf50; }
+.hsl-ciano { --cor-vetor: #3bb8b8; }
+.hsl-azul { --cor-vetor: #4a6fd1; }
+.hsl-magenta { --cor-vetor: #b259c4; }
+.hsl-faixa {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  /* a volta dos matizes Oklab, começando no vermelho */
+  background: linear-gradient(90deg, #d9534f, #e3b341 22%, #4caf50 31%, #3bb8b8 46%, #4a6fd1 65%, #b259c4 83%, #d9534f);
+}
+#hsl-marca {
+  position: absolute;
+  top: -3px;
+  width: 14px;
+  height: 16px;
+  margin-left: -7px;
+  border-radius: 5px;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 2px 6px rgb(0 0 0 / 0.5);
+  transition: left 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  #hsl-marca {
+    transition: none;
+  }
+}
+
 /* ─────────── modos: Simples (padrão) e Profissional ─────────── */
 /* Simples: ponto de partida (um look ou a sua referência) → ajuste → exportar. Profissional: tudo o que o Lab tem. */
 .lab.simples [data-pro],

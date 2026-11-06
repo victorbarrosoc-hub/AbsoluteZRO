@@ -3,8 +3,7 @@
 
 import './conta.js'
 import './menu.js'
-import * as MB from '../vendor/mediabunny.min.mjs'
-import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
+import { MB, comCor } from './video.js'
 import { assar } from '../src/cor/cube.js'
 import { ENTRADAS, criarCst } from '../src/cor/espacos.js'
 import { criarAplicadorLut } from './lut-gpu.js'
@@ -14,7 +13,6 @@ import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 import { avisarPendencias } from './baloes.js'
 import { pendenciasConverter } from '../src/pendencias.js'
 
-registerProresDecoder()
 // reduzir o quadro na placa de vídeo (app/escala-gpu.js); para comparar, ?escala=canvas fica no caminho do Mediabunny
 // e ?escala=gpu usa a placa mesmo quando o WebGL é de software (testes)
 const escala = new URLSearchParams(location.search).get('escala')
@@ -119,32 +117,6 @@ async function adicionar(arquivos) {
     mostrar(item)
   }
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
-}
-
-const REC709 = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false }
-
-/**
- * A cor de cada quadro. O decodificador de ProRes lê a do cabeçalho do quadro, que pode faltar (aí o navegador assume
- * BT.601, de SD) ou contradizer o contêiner. A do contêiner manda, como no QuickTime; sem nenhuma, Rec.709.
- */
-async function comCor(amostra, conteiner) {
-  const atual = amostra.colorSpace
-  const cor = conteiner?.matrix ? conteiner : atual?.matrix ? null : REC709
-  const igual = (k) => atual?.[k] === cor[k]
-  if (!cor || (igual('primaries') && igual('transfer') && igual('matrix') && Boolean(atual.fullRange) === Boolean(cor.fullRange))) return amostra
-  const dados = new Uint8Array(amostra.allocationSize())
-  const layout = await amostra.copyTo(dados)
-  const nova = new MB.VideoSample(dados, {
-    format: amostra.format,
-    codedWidth: amostra.codedWidth,
-    codedHeight: amostra.codedHeight,
-    timestamp: amostra.timestamp,
-    duration: amostra.duration,
-    layout,
-    colorSpace: cor,
-  })
-  amostra.close()
-  return nova
 }
 
 async function ler(arquivo, item) {
