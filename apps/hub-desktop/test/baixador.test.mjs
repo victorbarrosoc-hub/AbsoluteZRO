@@ -313,7 +313,7 @@ test('direto (https do Node): IPv4 primeiro, Range repassado e cada redirecionam
     }
     res.writeHead(200, { 'content-length': buf.length }).end(buf)
   })
-  await new Promise((ok) => srv.listen(0, 'localhost', ok))
+  await new Promise((ok) => srv.listen(0, '127.0.0.1', ok))
   const base = `http://localhost:${srv.address().port}`
   try {
     const direto = criarFetchDireto({ https: http, permitido: (u) => u.startsWith(base) })
