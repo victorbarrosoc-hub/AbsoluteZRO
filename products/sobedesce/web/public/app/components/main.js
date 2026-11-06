@@ -399,7 +399,8 @@ export function MainScreen() {
       ${reconnect ? html`<${ReconnectNotice} drive=${drive} message=${authError} />` : null}
       ${compact ? null : html`<div class="ini-entra" style="--i:2"><${Picker} dest=${lan?.noAccount || reconnect ? null : dest} account=${user?.emailAddress} /></div>`}
       ${LAN ? null : html`<${TransfersCard} />`}
-      ${inicio ? html`<${Atalhos} /><${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
+      ${LAN || EMBUTIDO ? null : html`<${Atalhos} />`}
+      ${inicio ? html`<${Espaco} /><${Recentes} user=${user} dest=${dest} />` : null}
       ${LAN ? html`<${LanNotices} lan=${lan} sum=${sum} />` : null}
 
       ${engine.notice
@@ -432,11 +433,7 @@ export function MainScreen() {
           ? html`<${Empty} />`
           : null}
 
-      <p class="foot">
-        ${LAN
-          ? html`<${Icon} name="wifi" size=${13} /> Pelo Wi-Fi até “${lan?.mac || LAN.mac}”, que sobe pro seu Drive.`
-          : 'Direto do celular para o Google — nada passa por servidor nosso.'}
-      </p>
+      ${LAN ? html`<p class="foot"><${Icon} name="wifi" size=${13} /> Pelo Wi-Fi até “${lan?.mac || LAN.mac}”, que sobe pro seu Drive.</p>` : null}
     </main>
 
     ${waiting

@@ -10233,3 +10233,206 @@ span.dsize.is-off {
     animation: none !important;
   }
 }
+
+/* ───────────── visual do computador (0.3.6–0.3.9) no celular ───────────── */
+.tab-tr.is-on {
+  color: var(--text);
+}
+.tab-tr.is-on .tab-icon {
+  color: var(--up-text);
+}
+/* Estúdio: Frames · Montagens · Referências, o controle de seções do computador */
+.est-secoes {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 0 14px;
+  padding: 3px;
+  overflow-x: auto;
+  border-radius: 14px;
+  background: var(--fill);
+  box-shadow: inset 0 0 0 0.5px var(--hairline);
+  scrollbar-width: none;
+}
+.est-secoes::-webkit-scrollbar {
+  display: none;
+}
+.est-secao {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 6px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-2);
+  position: relative;
+  transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+/* a pílula é baixa à vista, mas o toque tem 44 px */
+.est-secao span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.est-secao svg {
+  flex: none;
+}
+.est-secao::after {
+  content: "";
+  position: absolute;
+  inset: -3px 0;
+}
+.est-secao.is-on {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px var(--hairline);
+}
+.refs-secoes {
+  padding: 12px var(--gutter) 0;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.refs-secoes .est-secoes {
+  margin-bottom: 0;
+}
+/* Início: quatro atalhos em 2 × 2, como os do computador */
+.ini-atalhos.n-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.ini-atalho.tom-ok .ini-atalho-icon {
+  color: var(--ok-text);
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+}
+/* Transferências: o resumo ao vivo ("Agora" do computador, 0.3.7) */
+.tr-tela > .topbar + .k-cabeca {
+  margin-top: 4px;
+}
+.av {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 16px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.av-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.av-estado {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.av-pausa {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px -6px -8px 0;
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--fill);
+}
+.av-pausa:active {
+  transform: scale(0.94);
+}
+.av-nums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.av-num {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.av-rot {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.av-num b {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.av-num b small {
+  margin-left: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+.av-num.is-up b {
+  color: var(--up-text);
+}
+.av-sub {
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.av-graf {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+.av-area {
+  fill: color-mix(in srgb, var(--up) 16%, transparent);
+}
+.av-linha {
+  fill: none;
+  stroke: var(--up);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.av.is-parado .av-area {
+  fill: var(--fill);
+}
+.av.is-parado .av-linha {
+  stroke: var(--text-3);
+}
+.av-barra {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--fill-2);
+}
+.av-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--k-grad, var(--up));
+  transition: width 0.4s var(--ease);
+}
+.av-pe {
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.tr-tela:has(> .topbar) {
+  padding-top: 0;
+}
+@media (max-width: 430px) {
+  .est-secao svg {
+    display: none;
+  }
+}

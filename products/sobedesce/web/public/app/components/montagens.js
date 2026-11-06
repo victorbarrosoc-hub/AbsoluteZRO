@@ -382,7 +382,7 @@ const rotuloSaida = { video: 'Vídeo', foto: 'Foto', 'os-dois': 'Os dois' }
 
 // ───── a tela ─────
 
-export function MontagensTela({ onVoltar }) {
+export function MontagensTela() {
   const o = useObra()
   const d = ajustes
   const [ativo, setAtivo] = useState(-1)
@@ -488,7 +488,6 @@ export function MontagensTela({ onVoltar }) {
 
   if (!o.midias.length)
     return html`<div class="cr-frames mtc">
-      <button type="button" class="cr-voltar" onClick=${onVoltar}><${Icon} name="chevron-left" size=${18} />Criar</button>
       <header class="k-cabeca k-entra" style="--i:0">
         <div class="k-cabeca-txt"><h1>Montagens</h1><p>Fotos e takes em modelos prontos.</p></div>
       </header>
@@ -635,12 +634,11 @@ export function MontagensTela({ onVoltar }) {
   }
 
   return html`<div class="cr-frames mtc">
-    <div class="mtc-topo">
-      <button type="button" class="cr-voltar" onClick=${onVoltar}><${Icon} name="chevron-left" size=${18} />Criar</button>
-      <button type="button" class="link-btn" onClick=${() => confirm('Começar outra montagem? As fotos saem daqui (não do celular).') && limparTudo()}>Nova</button>
-    </div>
     <header class="mtc-cabeca">
-      <button type="button" class="mtc-nome" onClick=${nomear} title="Trocar o nome">${d.nome}<${Icon} name="pencil" size=${13} /></button>
+      <div class="mtc-topo">
+        <button type="button" class="mtc-nome" onClick=${nomear} title="Trocar o nome">${d.nome}<${Icon} name="pencil" size=${13} /></button>
+        <button type="button" class="link-btn" onClick=${() => confirm('Começar outra montagem? As fotos saem daqui (não do celular).') && limparTudo()}>Nova</button>
+      </div>
       <${Pilulas} label="Tipo de montagem" valor=${d.tipo} onEscolher=${mudaTipo} itens=${TIPOS} />
     </header>
 

@@ -52,5 +52,10 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   (`web/src/components/central-zro.tsx`). Desde 01/11/2026 `/baixar/mac` e `/baixar/windows` levam para
   `https://absolutezro.com/baixar` (só o `?build=N` do "Atualizar" dos apps antigos ainda baixa) e `instalar.*` viraram
   um recado sem download (no navegador, vão para a central); `/baixar/versao` continua (é o aviso dos apps).
+- **App do celular com as abas do computador** (titular, 06/11/2026): Início · Drive · Transferências · Estúdio
+  (`web/public/app/components/tabs.js`); o Estúdio tem Frames · Montagens · Referências no topo
+  (`components/estudio.js`; Referências continua a aba interna `refs`, Frames e Montagens a `criar`). Cartões fica no
+  computador; no celular, o atalho "Cartões" do Início abre a Calculadora. Montagens usa o mesmo `lib/montagens.js` do
+  computador (cópia idêntica, `test/montagens-celular.test.js`).
 - O build do desktop baixa o SDK da Blackmagic com o segredo `BRAW_SDK_CADASTRO`; se a Blackmagic recusar (400), é o
   cadastro, não o código.

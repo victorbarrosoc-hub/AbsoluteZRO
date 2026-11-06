@@ -23,6 +23,25 @@ abaixo.
   hidratar (`Folha` só no navegador, no `<body>`), e o `criacao-tpeasy.spec.ts` pega o `/api/zro/eu?visitante=1` do
   TPeasy de agora.
 
+## SOBEDESCE Celular 2.8.69: a cara do app de computador (06/11/2026, ramo `claude/sobedesce-celular-visual`)
+
+Pedido do titular: o app do celular com a mesma linguagem do computador (0.3.6 a 0.3.9) e pouco texto.
+
+- ✅ Abas como as do computador: **Início · Drive · Transferências · Estúdio** (Transferências virou aba; Referências e
+  Criar entram no Estúdio). Cartões fica no computador (o leitor está lá); no celular, o atalho "Cartões" do Início
+  abre a Calculadora.
+- ✅ Estúdio com **Frames · Montagens · Referências** no topo (o controle de seções do computador), sem a tela de
+  escolher ferramenta.
+- ✅ Transferências com o resumo **ao vivo** ("Agora" do computador, 0.3.7/0.3.8): Subindo, Já passou, Falta com
+  "termina ~hh:mm", gráfico dos últimos 2 minutos, barra do total e Pausar/Retomar.
+- ✅ Início: os quatro atalhos do computador (Drive, Referências, Frames, Cartões) sempre à vista, em 2 × 2; menos
+  texto (sai o rodapé e as frases longas de Frames e Referências).
+- ✅ Frames "Da galeria" abre com a CSP do app (`media-src 'self' blob:`; antes a CSP recusava o vídeo da galeria).
+- ⬜ Cartões estilo computador (fases do cartão) mostrando os backups dos computadores da conta: o celular ainda não
+  recebe esse estado.
+- ⬜ Início com os cartões de número do computador (Enviando agora, Espaço, Computadores, Próximo envio) num só
+  bloco; Drive e as folhas seguem com o desenho de antes.
+
 ## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
 
 Pedido do titular: o que o app de computador faz e cabe no celular, também no celular, primeiro as Montagens (0.3.9).

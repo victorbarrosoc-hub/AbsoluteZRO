@@ -14,6 +14,7 @@ import { Button, SheetHead, copyText, cx } from './ui.js'
 import { KindGlyph, Thumb } from './thumb.js'
 import { Preview } from './preview.js'
 import { switchDrive } from './account.js'
+import { EstudioSecoes } from './estudio.js'
 import { TopoMarca } from './main.js'
 
 const POLL_MS = 15_000
@@ -103,7 +104,7 @@ function FirstUse() {
 
 function SaveButton({ colecaoId, small }) {
   if (!small)
-    return html`<div class="rsave-k k-entra" style="--i:1"><${BotaoGrande} icone="link" onClick=${() => openSheet('refSave', colecaoId ? { colecaoId } : {})} dica="Instagram, YouTube, TikTok. O computador baixa e guarda no seu Drive.">Salvar link</${BotaoGrande}></div>`
+    return html`<div class="rsave-k k-entra" style="--i:1"><${BotaoGrande} icone="link" onClick=${() => openSheet('refSave', colecaoId ? { colecaoId } : {})} dica="Instagram, YouTube, TikTok.">Salvar link</${BotaoGrande}></div>`
   return html`<button type="button" class=${cx('rsave', small && 'is-small')} onClick=${() => openSheet('refSave', colecaoId ? { colecaoId } : {})}>
     <span class="rsave-icon" aria-hidden="true"><${Icon} name="link" size=${small ? 19 : 23} strokeWidth=${1.9} /></span>
     <span class="rsave-text">
@@ -193,7 +194,7 @@ function BackFrom({ from, dismiss }) {
 }
 
 function Sources() {
-  return html`<${Passo} icone="search" cor="up" titulo="Procurar referência" frase="Copie o link do post e volte para cá: um toque cola e salva." i=${3}>
+  return html`<${Passo} icone="search" cor="up" titulo="Procurar referência" frase="Copie o link e volte: um toque salva." i=${3}>
     <div class="k-pilulas rsrc-row">
       ${SOURCES.map(
         (s) => html`<a
@@ -267,10 +268,11 @@ function Home({ onOpen }) {
   const naFila = fila.filter((i) => i.status !== 'erro').length
   return html`<div class="screen refs-screen">
     <${TopoMarca} />
+    <div class="refs-secoes"><${EstudioSecoes} /></div>
     <header class="k-cabeca k-entra rtop-k" style="--i:0">
       <div class="k-cabeca-txt">
         <h1>Referências</h1>
-        <p>Vídeos que inspiram, salvos no seu Drive.</p>
+        <p>O que inspira, salvo no seu Drive.</p>
       </div>
       <div class="k-cabeca-acoes">
         <button type="button" class="icon-btn" onClick=${() => openSheet('refName')} aria-label="Nova coleção">
