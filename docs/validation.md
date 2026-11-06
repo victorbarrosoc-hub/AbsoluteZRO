@@ -5380,3 +5380,15 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `npm test` da Revela 187/187 (com as telas em Chromium); o teste da página inicial agora espera o título "revela.".
 - Não validado: Safari/iOS de verdade (o `:has()` da barra sobre a foto pede Safari 15.4+), e a página `marca/index.html`
   (manual antigo da marca) ainda mostra a identidade anterior.
+
+## Lote extra de 06/11/2026: SOBEDESCE 0.3.11 e Celular 2.8.69
+
+- Ramo `claude/lote-extra-2026-11-06`: `main` + #130 (Frames pré-color, Faixas, frames do cartão) +
+  `claude/sobedesce-celular-visual`; a Revela (#131) fica de fora.
+- SOBEDESCE `npm run test:fast`: 830 de 836 passaram, 4 pulados (como root), 2 falharam: `test/set-celular.test.js`
+  falha igual na `main` (a barra "Seções" não aparece no login de antes do Set) e `test/lan.test.js` "entre computadores"
+  oscila com a bateria inteira (passa 3/3 sozinho, sem mudança nos arquivos dele).
+- Montagens no celular em Chromium e WebKit (`test/montagens-celular-navegador.test.js`) 2/2; cópia idêntica,
+  `celular-visual`, `frames-galeria-csp`, `app-sw`, `frames-cor`, `montagens` e Backup Automático: 73/73.
+- Site do SOBEDESCE (`products/sobedesce/web`): lint e tipos limpos, `npm test` 384/384.
+- Raiz: lint, format:check e typecheck limpos; `npm test` 76 arquivos, 666/666; `scan-secrets` sem segredos.

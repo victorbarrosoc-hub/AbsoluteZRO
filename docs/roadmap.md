@@ -43,6 +43,20 @@ abaixo.
   hidratar (`Folha` só no navegador, no `<body>`), e o `criacao-tpeasy.spec.ts` pega o `/api/zro/eu?visitante=1` do
   TPeasy de agora.
 
+## Lote extra de 06/11/2026: SOBEDESCE 0.3.11 e Celular 2.8.69 (ramo `claude/lote-extra-2026-11-06`)
+
+Junta o #130 (`claude/sobedesce-frames-cor`) e o `claude/sobedesce-celular-visual` sobre a `main`. A Revela fica de
+fora deste lote (o #131 não entra hoje).
+
+- ✅ SOBEDESCE de computador **0.3.11**: no Frames, o passo Cor (pré-color com a LUT e o ajuste rápido de cada câmera),
+  a origem "Pasta ou cartão" (um frame por clipe) e "Frames do cartão" no Backup Automático (com o pré-color ligado, o
+  cartão OK já vira frames sozinho); nas Montagens, o modelo **Faixas** para Stories (antes e depois, em lote).
+- ✅ Conflitos com a `main` resolvidos com os dois comportamentos: o Relatório da diária e o "Gravando agora" (momento)
+  convivem com o pré-color e com o atalho dos frames do cartão.
+- ✅ SOBEDESCE Celular **2.8.69** / `sobedesce-app-v84` (uma subida só): `web/public/app/lib/montagens.js` recopiada do
+  computador (cópia idêntica, com as Faixas); a tela do celular ainda não oferece as Faixas.
+- ⬜ Conferir no ar: o pré-color com um cartão de verdade e o app do celular no Safari do iPhone.
+
 ## SOBEDESCE Celular 2.8.69: a cara do app de computador (06/11/2026, ramo `claude/sobedesce-celular-visual`)
 
 Pedido do titular: o app do celular com a mesma linguagem do computador (0.3.6 a 0.3.9) e pouco texto.
