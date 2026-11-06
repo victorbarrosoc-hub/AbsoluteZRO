@@ -6,8 +6,13 @@
  * sem SHA-256 não entra (a central nunca instala o que não pode conferir). O download passa por /baixar/app/<id>/…,
  * que só redireciona para o endereço assinado e temporário do GitHub (com GITHUB_TOKEN) ou para o link público.
  *
+ * Espelho em São Paulo (ADR 0043): cada Release copiado para o bucket `apps` traz a pasta no `espelho` do versao.json.
+ * /baixar/app/<id>/<arquivo>?origem=espelho (a central 1.4.4) e os botões `mac`/`windows` mandam para o espelho quando o
+ * arquivo está lá; o nome exato sem `origem` continua indo para o GitHub (a central 1.4.3 só aceita o GitHub).
+ *
  * Sem `server-only` e com fetch/env injetáveis para os testes (tests/integration/desktop-apps.test.ts).
  */
+import { estaNoEspelho, pastaDoEspelho, urlNoEspelho, type Origem } from './espelho'
 
 export type Plataforma = 'mac' | 'windows'
 export type Arquitetura = 'universal' | 'arm64' | 'x64'
@@ -138,10 +143,13 @@ export type Deps = { fetch?: typeof fetch; env?: Record<string, string | undefin
 const CACHE_MS = 5 * 60_000
 const TEMPO_MS = 8_000
 const cache = new Map<string, { em: number; assets: Asset[] | null }>()
+/** A pasta do espelho de cada versao.json já lido (pelo endereço do arquivo no GitHub). */
+const espelhos = new Map<string, string | null>()
 
 /** Para os testes. */
 export function limparCacheApps() {
   cache.clear()
+  espelhos.clear()
 }
 
 function config(d: Deps) {
@@ -251,17 +259,54 @@ export async function catalogoDesktop(liberados: ReadonlySet<string>, d: Deps = 
   return { versao: 1, apps }
 }
 
+/** A pasta do Release no espelho (o `espelho` do versao.json da fonte), lida uma vez por versao.json. */
+export async function espelhoDaFonte(assets: Asset[], d: Deps = {}): Promise<string | null> {
+  const v = assets.find((a) => a.name === 'versao.json')
+  if (!v) return null
+  if (espelhos.has(v.url)) return espelhos.get(v.url) ?? null
+  const c = config(d)
+  let pasta: string | null = null
+  try {
+    let link: string | null = v.browser_download_url
+    if (c.token) {
+      const r = await c.f(v.url, {
+        headers: { accept: 'application/octet-stream', authorization: `Bearer ${c.token}` },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(TEMPO_MS),
+        cache: 'no-store',
+      })
+      const loc = r.headers.get('location')
+      await r.body?.cancel().catch(() => {})
+      link = loc && loc.startsWith('https://') ? loc : null
+    }
+    if (link) {
+      const r = await c.f(link, { signal: AbortSignal.timeout(TEMPO_MS), cache: 'no-store' })
+      if (r.ok) pasta = pastaDoEspelho(((await r.json()) as { espelho?: unknown }).espelho)
+      else await r.body?.cancel().catch(() => {})
+    }
+  } catch {
+    // sem versao.json legível: fica o GitHub (e tenta de novo no próximo versao.json)
+    return null
+  }
+  if (espelhos.size > 50) espelhos.clear()
+  espelhos.set(v.url, pasta)
+  return pasta
+}
+
 /**
  * Endereço do arquivo pedido pela central (/baixar/app/<id>/<arquivo>). Só arquivos que o catálogo dessa ferramenta
  * reconhece; nada de nome livre. null = não existe ou sem acesso (produto fora dos `liberados` no canal download).
  * Também: `mac` e `windows` = o instalador mais novo daquele sistema (os botões da página Downloads), e `versao.json`
  * para a ferramenta que publica o aviso "Nova versão" no Release (`versaoJson`).
  */
-export async function enderecoDoArquivo(liberados: ReadonlySet<string>, id: string, nome: string, d: Deps = {}): Promise<string | null> {
+export async function enderecoDoArquivo(liberados: ReadonlySet<string>, id: string, nome: string, d: Deps = {}, origem: Origem = null): Promise<string | null> {
   if (!liberados.has(id)) return null
   const app = APPS_DESKTOP.find((a) => a.id === id)
   if (!app || !/^[A-Za-z0-9._-]{1,120}$/.test(nome)) return null
+  // o espelho: pedido pela central nova (?origem=espelho) ou pelos botões mac/windows (navegador); nunca o versao.json
+  let espelho = origem === 'espelho'
   if (nome === 'mac' || nome === 'windows') {
+    espelho = origem !== 'github'
     const c = await appNoCatalogo(app, d)
     const maisNovo = nome === 'mac' ? c.mac?.arquivos[0]?.arquivo : c.windows?.arquivo.arquivo
     if (!maisNovo) return null
@@ -271,8 +316,13 @@ export async function enderecoDoArquivo(liberados: ReadonlySet<string>, id: stri
   if (!reconhece) return null
   const c = config(d)
   for (const fonte of app.fontes) {
-    const asset = (await assetsDaFonte(fonte, d))?.find((a) => a.name === nome)
-    if (!asset) continue
+    const assets = await assetsDaFonte(fonte, d)
+    const asset = assets?.find((a) => a.name === nome)
+    if (!assets || !asset) continue
+    if (espelho && nome !== 'versao.json') {
+      const url = urlNoEspelho(await espelhoDaFonte(assets, d), nome)
+      if (url && (await estaNoEspelho(url, Number(asset.size) || null, d))) return url
+    }
     if (!c.token) return asset.browser_download_url
     try {
       const r = await c.f(asset.url, {

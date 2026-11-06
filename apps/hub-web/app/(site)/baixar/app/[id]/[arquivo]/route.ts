@@ -1,5 +1,6 @@
 import { liberadosPara } from '@/lib/data/catalog'
 import { enderecoDoArquivo } from '@/lib/desktop-apps'
+import { origemPedida } from '@/lib/espelho'
 import { acessoAoDownload, liberadosParaBaixar } from '@/lib/meus-apps'
 import { db, getAuth } from '@/lib/session'
 
@@ -13,13 +14,15 @@ import { db, getAuth } from '@/lib/session'
  *   instalados continuarem a se atualizar por aqui.
  * `mac`/`windows` = o instalador mais novo daquele sistema; `versao.json` = o aviso "Nova versão" do app que publica um.
  * Estas rotas saíram da página Downloads (lá fica só a Absolute ZRO), mas continuam no ar.
+ * Espelho em São Paulo (ADR 0043): `?origem=espelho` (a central 1.4.4) e `mac`/`windows` vão para o espelho quando o
+ * arquivo está lá; o nome exato sem `origem` continua no GitHub (a central 1.4.3 só segue redirecionamento para o GitHub).
  */
 export const dynamic = 'force-dynamic'
 
 const texto = (corpo: string, status: number) =>
   new Response(corpo, { status, headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' } })
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string; arquivo: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string; arquivo: string }> }) {
   const { id, arquivo } = await params
   // Escape quebrado no nome (ex.: %25E0%25A4%25A, que o Next entrega como %E0%A4%A): 404, nunca 500.
   let nome: string
@@ -33,7 +36,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const acesso = await acessoAoDownload(db(), auth, id, nome, liberados)
   if (acesso === 'entrar') return texto('Entre na Absolute ZRO para baixar este app.', 401)
   if (acesso === 'sem-direito') return texto('Este app não está no seu plano.', 403)
-  const destino = acesso === 'ok' ? await enderecoDoArquivo(liberados, id, nome) : null
+  const origem = origemPedida(new URL(req.url).searchParams.get('origem'))
+  const destino = acesso === 'ok' ? await enderecoDoArquivo(liberados, id, nome, {}, origem) : null
   if (!destino) return texto('Arquivo indisponível.', 404)
   return new Response(null, { status: 302, headers: { location: destino, 'cache-control': 'no-store' } })
 }

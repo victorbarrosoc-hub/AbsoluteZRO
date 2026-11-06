@@ -44,13 +44,17 @@ const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
 const { spawn } = require('node:child_process')
 const { Central } = require('./central.cjs')
-const { criarFetchDeDownload } = require('./download.cjs')
+const { criarFetchDeDownload, criarFetchDireto } = require('./download.cjs')
 const { AgendaDeApps } = require('./agenda.cjs')
 const bandeja = require('./bandeja.cjs')
 const inicio = require('./inicio-sistema.cjs')
 const gerenciados = require('./gerenciados.cjs')
 const { execFile } = require('node:child_process')
 const { promisify } = require('node:util')
+
+// IPv4 primeiro no que passa pelo Node (aviso de versão, atualizar o próprio app): a rota IPv6 até o GitHub em alguns
+// provedores do Brasil é a mais lenta (ADR 0043). Sem endereço IPv4, o IPv6 continua valendo.
+require('node:dns').setDefaultResultOrder('ipv4first')
 
 const SMOKE = process.argv.includes('--smoke')
 const SMOKE_SAIDA = process.env.ZRO_SMOKE_SAIDA || null
@@ -410,6 +414,8 @@ function iniciarCentral() {
     fetch: (url, opts = {}) => session.fromPartition(PARTICAO).fetch(url, { credentials: 'include', ...opts }),
     // o instalador: cada redirecionamento conferido (só o HUB, o Release no GitHub e o servidor de arquivos dele)
     fetchDeDownload: criarFetchDeDownload({ net, session: session.fromPartition(PARTICAO), permitido: (url) => regras.downloadPermitido(url, HUB) }),
+    // os pedaços do download paralelo (baixador.cjs): direto ao endereço final, IPv4 primeiro, com a mesma regra
+    fetchDireto: criarFetchDireto({ permitido: (url) => regras.downloadPermitido(url, HUB) }),
     permitirHttp: !app.isPackaged,
     fs,
     // trocar e apagar pacotes .app sem o fs do Electron ler o app.asar como pasta (o rm recursivo falhava: 1.4.1)
@@ -1198,6 +1204,8 @@ app.whenReady().then(() => {
       appPid: process.pid,
       pasta: app.getPath('userData'),
       entregar: entregarTroca,
+      // o instalador novo só do HUB, do Release no GitHub ou do espelho (a mesma regra da central)
+      permitido: (url) => regras.downloadPermitido(url, HUB),
       log: (...a) => console.log(...a),
     })
     atualizador.on('mudou', mostrarAtualizacao)

@@ -2,8 +2,9 @@
 // já na versão nova. Sem assinatura da Apple/Microsoft, o que trava a instalação é a marca de "veio da internet" que
 // o navegador põe no arquivo; arquivo baixado pelo próprio app não ganha essa marca. O caminho:
 //
-//   1. baixa o instalador de <hub>/baixar/hub/<plataforma>?build=N (segue o redirecionamento para o GitHub), com
-//      progresso;
+//   1. baixa o instalador de <hub>/baixar/hub/<plataforma>?build=N, com progresso. Desde a 1.4.4 (ADR 0043): o HUB
+//      manda para o espelho em São Paulo quando o arquivo está nele; se falhar, de novo com ?origem=github. Pedaços em
+//      paralelo e IPv4 primeiro (baixador.cjs, download.cjs);
 //   2. confere o SHA-256 com o que /baixar/hub/versao publicou (sem hash ou hash diferente = não instala);
 //   3. prepara a troca. Mac: monta o .dmg (hdiutil), copia o app novo para o lado do atual (ditto), desmonta e tira a
 //      quarentena (xattr -cr). Windows: o próprio instalador NSIS, em silêncio (/S);
@@ -21,6 +22,8 @@ const os = require('node:os')
 const path = require('node:path')
 const { EventEmitter } = require('node:events')
 const { execFile } = require('node:child_process')
+const { baixarComReserva, comOrigem } = require('./baixador.cjs')
+const { criarFetchDireto } = require('./download.cjs')
 
 const MARCA = 'atualizacao-falhou.json'
 const PREFIXO_TMP = 'absolutezro-atualizacao-'
@@ -216,6 +219,18 @@ async function baixarPara(url, arquivo, { fetch = globalThis.fetch, aoProgresso 
 }
 
 /**
+ * O baixar padrão (1.4.4): os endereços em ordem, pedaços em paralelo pelo https do Node com IPv4 primeiro, cada
+ * redirecionamento conferido por `permitido`. Devolve o SHA-256 do arquivo que ficou no disco.
+ */
+function baixarRapido({ permitido = (u) => /^https:\/\//.test(String(u)), fetchDireto } = {}) {
+  const direto = fetchDireto || criarFetchDireto({ permitido })
+  return async (url, arquivo, aoProgresso, { urls, sha256 } = {}) => {
+    const r = await baixarComReserva(urls && urls.length ? urls : [url], arquivo, { abrir: direto, direto, fs, sha256, maxBytes: MAX_BYTES, aoProgresso })
+    return r.sha256
+  }
+}
+
+/**
  * Evento 'mudou' a cada fase e no progresso (no máximo a cada 250 ms). status() = { disponivel, motivo, fase:
  * null|'baixando'|'conferindo'|'preparando'|'pronto'|'reiniciando'|'erro', build, recebido, total, erro, bloqueado }
  */
@@ -233,6 +248,8 @@ class Atualizador extends EventEmitter {
     log = () => {},
     progressoMs = PROGRESSO_MS,
     nome = NOME_APP,
+    permitido,
+    fetchDireto,
   } = {}) {
     super()
     // nome do app (do .app no Mac e do processo no Windows): o Maestro usa este mesmo motor (products/maestro/desktop)
@@ -243,7 +260,7 @@ class Atualizador extends EventEmitter {
     this.appPid = Number(appPid) || 0
     this.pasta = pasta || null
     this.entregar = entregar || null
-    this.baixar = baixar || ((url, arquivo, aoProgresso) => baixarPara(url, arquivo, { aoProgresso }))
+    this.baixar = baixar || baixarRapido({ permitido, fetchDireto })
     this.run = run || rodar
     this.canWrite = canWrite || podeGravar
     this.tmpRoot = tmpRoot || os.tmpdir()
@@ -367,7 +384,9 @@ class Atualizador extends EventEmitter {
       const arquivo = path.join(tmp, this.plataforma === 'mac' ? 'AbsoluteZRO.dmg' : 'AbsoluteZRO-setup.exe')
       let got
       try {
-        got = await this.baixar(url, arquivo, (recebido, total) => this.#mudar({ recebido, total }, { progresso: true }))
+        // o HUB escolhe o espelho; se ele falhar, o mesmo build direto do GitHub
+        const urls = [...new Set([url, comOrigem(url, 'github')])]
+        got = await this.baixar(url, arquivo, (recebido, total) => this.#mudar({ recebido, total }, { progresso: true }), { urls, sha256 })
       } catch (err) {
         this.log('[atualizar] não consegui baixar:', err && err.message)
         throw new Error('Não consegui baixar a versão nova. Confira a internet e tente de novo.')
@@ -471,4 +490,4 @@ class Atualizador extends EventEmitter {
   }
 }
 
-module.exports = { Atualizador, baixarPara, comandoDaTroca, ehScriptDaTroca, macBundle, scriptMac, scriptWin, shQuote, psQuote, MARCA }
+module.exports = { Atualizador, baixarPara, baixarRapido, comandoDaTroca, ehScriptDaTroca, macBundle, scriptMac, scriptWin, shQuote, psQuote, MARCA }

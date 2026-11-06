@@ -223,6 +223,18 @@ jobs:
           path: products/sobedesce/sha256
           merge-multiple: true
       - run: node scripts/build-info.mjs versao.json --sha256 sha256
+      # Espelho em São Paulo (ADR 0043): os dois instaladores deste build e o versao.json no bucket público `apps` do
+      # Supabase (apps/sobedesce-versao-de-teste/), o campo `espelho` no versao.json e os builds antigos apagados de lá. Sem os
+      # secrets SUPABASE_STORAGE_S3_*, pula com um aviso; se falhar, o build segue só no GitHub (continue-on-error).
+      - name: Espelho em São Paulo
+        continue-on-error: true
+        working-directory: .
+        run: node scripts/espelho-apps.mjs sobedesce-versao-de-teste products/sobedesce/versao.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_STORAGE_S3_ENDPOINT: ${{ secrets.SUPABASE_STORAGE_S3_ENDPOINT }}
+          SUPABASE_STORAGE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_STORAGE_S3_ACCESS_KEY_ID }}
+          SUPABASE_STORAGE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_STORAGE_S3_SECRET_ACCESS_KEY }}
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: sobedesce-versao-de-teste

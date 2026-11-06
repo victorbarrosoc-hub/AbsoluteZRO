@@ -7,12 +7,16 @@
  * Download só aparece com HUB_DESKTOP_PUBLICO=1 (pedido do titular, 25/10/2026): os instaladores são gerados a cada
  * mudança na main, mas o titular decide quando o público pode baixar. Sem a chave, a página mostra "Em breve".
  *
+ * Espelho em São Paulo (ADR 0043): quando o versao.json traz `espelho` e o arquivo está lá (HEAD conferido, lib/espelho),
+ * /baixar/hub/<sistema> manda para o espelho; `?origem=github` força o GitHub (a reserva da central).
+ *
  * Sem `server-only` e com fetch/env injetáveis para os testes (tests/integration/hub-desktop-download.test.ts).
  */
+import { estaNoEspelho, origemPedida, pastaDoEspelho, urlNoEspelho } from './espelho'
 
 export type Plataforma = 'mac' | 'windows'
 
-export type ReleaseAsset = { name: string; url: string; browser_download_url: string }
+export type ReleaseAsset = { name: string; url: string; browser_download_url: string; size?: number }
 
 export type Versao = {
   build: number | null
@@ -22,6 +26,8 @@ export type Versao = {
   sha256Mac: string | null
   arquivoWindows: string | null
   sha256Windows: string | null
+  /** A pasta deste Release no espelho em São Paulo (ADR 0043), quando o build foi copiado para lá. */
+  espelho: string | null
 }
 
 export type Disponibilidade = { mac: boolean; windows: boolean; versao: string | null; build: number | null }
@@ -48,10 +54,13 @@ export const QUAL: Record<Plataforma, (nome: string) => boolean> = {
 }
 
 let cache: { em: number; chave: string; assets: ReleaseAsset[] | null } | null = null
+/** versao.json já lidos, pelo endereço do arquivo no GitHub (um versao.json novo é outro arquivo, com outro endereço). */
+const versoes = new Map<string, Versao>()
 
 /** Para os testes: esquece o Release lido. */
 export function limparCache() {
   cache = null
+  versoes.clear()
 }
 
 function config(d: Deps) {
@@ -130,6 +139,8 @@ export async function lerVersao(d: Deps = {}, assets?: ReleaseAsset[] | null): P
   const lista = assets === undefined ? await assetsDoRelease(d) : assets
   const a = lista?.find((x) => x.name === 'versao.json')
   if (!a) return null
+  const guardada = versoes.get(a.url)
+  if (guardada) return guardada
   const url = await linkDoArquivo(a, d)
   if (!url) return null
   try {
@@ -138,7 +149,7 @@ export async function lerVersao(d: Deps = {}, assets?: ReleaseAsset[] | null): P
     if (!r.ok) return null
     const v = (await r.json()) as Record<string, unknown>
     const build = Number(v.build)
-    return {
+    const lida: Versao = {
       build: Number.isInteger(build) && build > 0 ? build : null,
       versao: texto(v.versao),
       data: texto(v.data),
@@ -146,7 +157,11 @@ export async function lerVersao(d: Deps = {}, assets?: ReleaseAsset[] | null): P
       sha256Mac: sha(v.sha256Mac),
       arquivoWindows: texto(v.arquivoWindows),
       sha256Windows: sha(v.sha256Windows),
+      espelho: pastaDoEspelho(v.espelho),
     }
+    if (versoes.size > 20) versoes.clear()
+    versoes.set(a.url, lida)
+    return lida
   } catch {
     return null
   }
@@ -233,14 +248,27 @@ export function buildPedido(valor: string | null): number | null {
 
 const semCache = { 'cache-control': 'no-store' }
 
-/** /baixar/hub/mac e /baixar/hub/windows: redireciona para o instalador; sem Release, volta para /baixar com aviso. */
+/** O endereço do instalador no espelho, se ele estiver lá (null = GitHub). */
+export async function noEspelho(alvo: ReleaseAsset, d: Deps = {}): Promise<string | null> {
+  const v = await lerVersao(d).catch(() => null)
+  const url = urlNoEspelho(v?.espelho, alvo.name)
+  return url && (await estaNoEspelho(url, Number(alvo.size) || null, d)) ? url : null
+}
+
+/**
+ * /baixar/hub/mac e /baixar/hub/windows: redireciona para o instalador (o espelho em São Paulo quando ele tem o arquivo,
+ * senão o GitHub; `?origem=github` força o GitHub); sem Release, volta para /baixar com aviso.
+ */
 export async function respostaInstalador(p: Plataforma, pedido: URL, d: Deps = {}): Promise<Response> {
   const build = buildPedido(pedido.searchParams.get('build'))
+  const origem = origemPedida(pedido.searchParams.get('origem'))
   const voltar = () => new Response(null, { status: 302, headers: { location: new URL('/baixar?hub=indisponivel#absolute-zro', pedido).href, ...semCache } })
   if (!config(d).publico) return voltar()
   try {
     const alvo = await escolherInstalador(p, d, build)
     if (!alvo) return build != null ? new Response('Instalador deste build não está mais no ar.', { status: 404, headers: semCache }) : voltar()
+    const espelho = origem === 'github' ? null : await noEspelho(alvo, d)
+    if (espelho) return new Response(null, { status: 302, headers: { location: espelho, ...semCache } })
     const destino = await linkDoArquivo(alvo, d)
     if (!destino) return voltar()
     return new Response(null, { status: 302, headers: { location: destino, ...semCache } })

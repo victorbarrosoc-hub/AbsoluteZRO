@@ -10,12 +10,15 @@
 //   internet"), então o Mac e o Windows não mostram o aviso de app não identificado. A garantia é o SHA-256.
 // - Atualizar ou remover com a ferramenta aberta: pede para fechar antes, nunca mata o processo. "Reiniciar e
 //   atualizar" (agenda.cjs) só pede para a ferramenta sair, do jeito educado (como o ⌘Q ou o X da janela).
+// - Download (baixador.cjs, ADR 0043): o espelho em São Paulo primeiro e o GitHub de reserva; pedaços em paralelo
+//   quando o servidor aceita Range.
 // - Atualização em segundo plano (agenda.cjs): `prebaixar` baixa e confere sem avisar a página; `instalar` reaproveita
 //   o arquivo já conferido (confere o SHA-256 de novo antes de usar).
 
 const path = require('node:path')
 const { createHash } = require('node:crypto')
 const { pathToFileURL, fileURLToPath } = require('node:url')
+const { baixarComReserva, comOrigem } = require('./baixador.cjs')
 
 const ID = /^[a-z0-9-]{2,40}$/
 const NOME_ARQUIVO = /^[A-Za-z0-9._-]{1,120}$/
@@ -206,46 +209,39 @@ function estaNoDock(saida, caminho, insensivel = false) {
   return caminhosDoDock(saida).some((c) => f(c) === f(alvo))
 }
 
-/** Baixa para `destino`, conferindo tamanho e SHA-256. Se não bater, apaga e falha. */
-async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps }) {
-  // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
-  const r = await (deps.fetchDeDownload || deps.fetch)(url, { redirect: 'follow', signal }).catch((e) => {
-    if (e instanceof ErroCentral) throw e
-    if (e && e.recusado) throw new ErroCentral('download', e.message)
-    throw new ErroCentral('download', signal && signal.aborted ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
-  })
-  if (!r.ok || !r.body) throw new ErroCentral('download', 'Não deu para baixar agora. Tente de novo.')
-  if (r.url && !/^https:\/\//.test(r.url) && !deps.permitirHttp) throw new ErroCentral('download', 'Endereço de download recusado.')
-  const total = Number(r.headers.get('content-length')) || tamanho || 0
+/**
+ * Baixa para `destino`, conferindo tamanho e SHA-256. `urls`: os endereços em ordem (o espelho primeiro, o GitHub de
+ * reserva; ADR 0043); arquivo que não confere num endereço tenta o próximo. Se nenhum bater, apaga e falha.
+ */
+async function baixar({ url, urls, destino, sha256, tamanho, onProgresso, signal, deps }) {
+  const lista = Array.isArray(urls) && urls.length ? urls : [url]
   const parcial = destino + '.parte'
   await deps.fs.promises.mkdir(path.dirname(destino), { recursive: true })
-  const arquivo = await deps.fs.promises.open(parcial, 'w')
-  const hash = createHash('sha256')
-  let recebido = 0
+  let r
   try {
-    const leitor = r.body.getReader()
-    for (;;) {
-      const { done, value } = await leitor.read()
-      if (done) break
-      recebido += value.length
-      // maior que o catálogo diz: não confere de jeito nenhum (e não enche o disco)
-      if (tamanho && recebido > tamanho) {
-        await leitor.cancel().catch(() => {})
-        throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
-      }
-      hash.update(value)
-      await arquivo.write(value)
-      if (onProgresso) onProgresso(recebido, total)
-    }
+    r = await baixarComReserva(lista, parcial, {
+      // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
+      abrir: deps.fetchDeDownload || deps.fetch,
+      // os pedaços do download paralelo: direto ao endereço final, IPv4 primeiro (download.cjs)
+      direto: deps.fetchDireto || null,
+      fs: deps.fs,
+      tamanho,
+      sha256,
+      signal,
+      aoProgresso: onProgresso,
+      permitirHttp: deps.permitirHttp,
+      log: deps.log,
+      ...(deps.download || {}),
+    })
   } catch (e) {
-    // cancelado, rede caiu ou grande demais: o pedaço baixado não fica para trás
-    await arquivo.close().catch(() => {})
+    // cancelado, rede caiu, grande demais ou recusado: o pedaço baixado não fica para trás
     await deps.fs.promises.rm(parcial, { force: true }).catch(() => {})
-    throw e
+    if (e instanceof ErroCentral) throw e
+    if (e && e.conferencia) throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
+    if (e && e.recusado) throw new ErroCentral('download', e.message)
+    throw new ErroCentral('download', (signal && signal.aborted) || (e && e.cancelado) ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
   }
-  await arquivo.close()
-  const obtido = hash.digest('hex')
-  if (obtido !== sha256 || (tamanho && recebido !== tamanho)) {
+  if (!r.confere || (tamanho && r.tamanho !== tamanho)) {
     await deps.fs.promises.rm(parcial, { force: true })
     throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
   }
@@ -613,8 +609,10 @@ class Central {
     await this.d.fs.promises.rm(pasta, { recursive: true, force: true }).catch(() => {})
     if (progresso) this.avisar(id, 'baixando', { recebido: 0, total: arquivo.tamanho })
     let ultimo = 0
+    const url = `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`
     await baixar({
-      url: `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`,
+      // o espelho em São Paulo primeiro (o HUB só manda para lá quando o arquivo está nele); o GitHub de reserva
+      urls: [comOrigem(url, 'espelho'), url],
       destino,
       sha256: arquivo.sha256,
       tamanho: arquivo.tamanho,
