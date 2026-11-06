@@ -1800,6 +1800,22 @@ do card... não consigo localizar o job que quero achar".
   Rotas antigas seguem valendo. App de computador 0.3.6, sem site. Próximas fases: Copiar de um link (com o prazo para
   apagar), Cartões, Início, Frames e Ajustes com menos texto; depois o celular (lote de sexta).
 
+## SOBEDESCE: página inicial com a fita e o nome (05/11/2026)
+
+- 🔶 Ramo `sobedesce-home-fita` (titular, 05/11/2026, proposta A), **lote de sexta** junto com o celular (um build da
+  Vercel): topo da home centralizado, com o mesmo texto em menos linhas (título em duas, fino em cima e pesado
+  embaixo; apoio em duas). Por trás do palco, uma fita de fios finos que sobe em violeta da esquerda e desce em azul na
+  direita (`fita.tsx`, calculada no servidor, entra só com CSS e para com "reduzir movimento"); o palco passou a ter o
+  que sobe à esquerda e o que desce à direita, na ordem do nome. Nome SOBE pesado e DESCE fino, mesma cor, menos espaço
+  entre letras, no site e no app do celular. A home segue só no tema claro.
+
+## SOBEDESCE celular: segurar e lixeira de pastas (05/11/2026)
+
+- 🔶 Ramo `sobedesce-celular-segurar` (titular, 05/11/2026), **lote de sexta** (é o app do site: um build da
+  Vercel): segurar o dedo numa linha ou miniatura do Drive abre o menu do item sem selecionar o texto (`.lrow`/`.tile`
+  com `user-select: none` e `-webkit-touch-callout: none`); "Mover para a lixeira" vale também para pastas (no menu do
+  item e na seleção), avisando que a pasta vai com o que tem dentro. App do celular 2.8.67 (cache v82).
+
 ## SOBEDESCE: ejetar ao terminar (04/11/2026)
 
 - 🔶 Ramo `sobedesce-ejetar-sozinho` (titular, 04/11/2026): "Ejetar o cartão ao terminar" falhava calado quando o

@@ -15,7 +15,11 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <LogoMark />
-      <span className="font-display text-[15px] font-semibold tracking-[0.04em] text-ink">SOBEDESCE</span>
+      {/* O nome: SOBE pesado, DESCE fino, mesma cor (o contraste é só de peso). */}
+      <span className="font-display text-[15px] tracking-[0.015em] text-ink">
+        <b className="font-extrabold">SOBE</b>
+        <span className="font-light">DESCE</span>
+      </span>
     </span>
   );
 }

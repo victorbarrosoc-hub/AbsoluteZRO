@@ -159,7 +159,7 @@ export function ItemMenuSheet({ f, onAbrir, onSelecionar, dest, inicio, driveId,
             ${video ? html`<${Item} icon="sparkle" label="Frames" onClick=${fechar(() => framesDoDrive(f))} />` : null}
             ${video || /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i.test(f.name) ? html`<${Item} icon="compare" label="Converter com o Relay" onClick=${() => openSheet('relay', { f, pasta: inicio })} />` : null}
           </ul>
-          ${!pasta && caps.canTrash !== false
+          ${!f.isDrive && caps.canTrash !== false
             ? html`<ul class="group menu rmenu-danger">
                 <${Item} icon="trash" label="Mover para a lixeira" perigo onClick=${() => openSheet('lixeiraSelecao', { itens: [f], onFeito: (ids) => onMudou?.({ removidos: ids }) })} />
               </ul>`

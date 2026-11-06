@@ -194,7 +194,8 @@ export function BarraSelecao({ sel, visiveis, onSair, onRemovidos }) {
   const resumo = n ? `${count(n)} ${n === 1 ? 'selecionado' : 'selecionados'}` : 'Toque para marcar'
   const peso = arquivos.length ? bytes(pesoDe(arquivos)) : null
   const baixaveis = arquivos.filter(canDownload)
-  const lixo = arquivos.filter((f) => f.capabilities?.canTrash !== false)
+  // Lixeira: arquivos e pastas (titular, 05/11/2026; a pasta vai com o que tem dentro).
+  const lixo = marcados.filter((f) => !f.isDrive && f.capabilities?.canTrash !== false)
   const videos = arquivos.filter(podeProxy)
   return html`<div class="selbar" role="toolbar" aria-label="Itens selecionados">
     <div class="selbar-top">
@@ -228,7 +229,7 @@ export function BarraSelecao({ sel, visiveis, onSair, onRemovidos }) {
         type="button"
         class="selact is-danger"
         disabled=${!lixo.length}
-        onClick=${() => openSheet('lixeiraSelecao', { itens: lixo, pastas, semPermissao: arquivos.length - lixo.length, onFeito: onRemovidos })}
+        onClick=${() => openSheet('lixeiraSelecao', { itens: lixo, semPermissao: marcados.length - lixo.length, onFeito: onRemovidos })}
       >
         <${Icon} name="trash" size=${20} /><span>Lixeira</span>
       </button>
@@ -310,7 +311,9 @@ export function BaixarSheet({ itens, pastas = 0, semPermissao = 0 }) {
 BaixarSheet.label = 'Baixar selecionados'
 
 /** Folha "Lixeira": confirma e manda para a lixeira do Drive, 3 de cada vez. */
-export function LixeiraSheet({ itens, pastas = 0, semPermissao = 0, onFeito }) {
+export function LixeiraSheet({ itens, semPermissao = 0, onFeito }) {
+  const pastas = itens.filter(isFolder).length
+  const quantos = (n) => (pastas === 0 ? (n === 1 ? '1 arquivo' : `${count(n)} arquivos`) : pastas === n ? (n === 1 ? '1 pasta' : `${count(n)} pastas`) : `${count(n)} itens`)
   const [st, setSt] = useState({ fase: 'confirmar' })
   const ctl = useRef(null)
   useEffect(() => () => ctl.current?.abort(), [])
@@ -341,15 +344,14 @@ export function LixeiraSheet({ itens, pastas = 0, semPermissao = 0, onFeito }) {
     if (res.movidos.length) onFeito?.(res.movidos)
     if (!c.signal.aborted) setSt({ fase: 'fim', res })
   }
-  const nome = itens.length === 1 ? `“${itens[0].name}”` : `${count(itens.length)} arquivos`
+  const nome = itens.length === 1 ? `“${itens[0].name}”` : quantos(itens.length)
   if (st.fase === 'confirmar') {
     return html`<${SheetHead} title="Mover para a lixeira" left=${html`<button type="button" class="link-btn" onClick=${closeSheet}>Cancelar</button>`} />
       <div class="sheet-body rsheet">
-        <p class="rexplain">${nome} ${itens.length === 1 ? 'vai' : 'vão'} para a lixeira do Drive (${bytes(pesoDe(itens))}). Dá para recuperar por 30 dias, na lixeira do Drive.</p>
-        ${pastas ? html`<p class="group-foot">${count(pastas)} ${pastas === 1 ? 'pasta selecionada fica' : 'pastas selecionadas ficam'} de fora: só arquivos vão para a lixeira por aqui.</p>` : null}
+        <p class="rexplain">${nome} ${itens.length === 1 ? 'vai' : 'vão'} para a lixeira do Drive${pastas ? '' : ` (${bytes(pesoDe(itens))})`}. ${pastas ? (pastas === 1 ? 'A pasta vai com tudo o que tem dentro. ' : 'As pastas vão com tudo o que têm dentro. ') : ''}Dá para recuperar por 30 dias.</p>
         ${semPermissao ? html`<p class="group-foot mjunk-warn">${count(semPermissao)} sem permissão para mover (falta permissão nesta pasta).</p>` : null}
         <${Button} variant="secondary" class="btn-block btn-lg is-danger" icon="trash" onClick=${mover}>
-          ${`Mover ${itens.length === 1 ? '1 arquivo' : `${count(itens.length)} arquivos`} para a lixeira`}
+          ${`Mover ${quantos(itens.length)} para a lixeira`}
         </${Button}>
       </div>`
   }
@@ -370,7 +372,7 @@ export function LixeiraSheet({ itens, pastas = 0, semPermissao = 0, onFeito }) {
       <div class=${cx('ritem', m ? 'is-ok' : 'is-error')}>
         <${Icon} name=${m ? 'circle-check' : 'warning'} size=${22} />
         <div>
-          <b>${m ? `${m === 1 ? '1 arquivo foi' : `${count(m)} arquivos foram`} para a lixeira do Drive` : 'Nenhum arquivo foi para a lixeira'}</b>
+          <b>${m ? `${quantos(m)} ${m === 1 ? 'foi' : 'foram'} para a lixeira do Drive` : 'Nada foi para a lixeira'}</b>
           <p>${[
             m ? 'Dá para recuperar por 30 dias, na lixeira do Drive.' : null,
             r.recusados ? `${count(r.recusados)} sem permissão (num Drive compartilhado, só quem gerencia o conteúdo pode).` : null,
