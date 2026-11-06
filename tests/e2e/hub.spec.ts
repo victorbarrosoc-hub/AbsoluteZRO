@@ -468,6 +468,11 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
     }
     const ouvintes: ((ev: unknown) => void)[] = []
     const emitir = (ev: unknown) => ouvintes.forEach((f) => f(ev))
+    // o teste muda o computador "por fora" (o app se atualizou sozinho) e avisa como a central 1.4.5 ao voltar o foco
+    ;(window as unknown as { __porFora: (id: string) => void }).__porFora = (id) => {
+      estado[id] = { ...estado[id]!, instalado: { versao: '1.0.0' }, atualizar: false }
+      emitir({ id: '*', fase: 'reler' })
+    }
     ;(window as unknown as { __abertos: string[] }).__abertos = []
     ;(window as unknown as { __dock: string[] }).__dock = []
     ;(window as unknown as { zroDesktop: unknown }).zroDesktop = {
@@ -536,6 +541,10 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
   await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Manter no Dock' })).toBeVisible()
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="mac"]')).toBeHidden()
   await expect(page.locator('#app-sobedesce .dl-opt[data-os="windows"]')).toBeHidden()
+  // atualizou por fora (ou a central releu ao voltar o foco): o cartão deixa de oferecer Atualizar sem recarregar
+  await page.evaluate(() => (window as unknown as { __porFora: (id: string) => void }).__porFora('sobedesce'))
+  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toHaveCount(0)
+  await expect(page.locator('#app-sobedesce').getByText('v1.0.0', { exact: true })).toBeVisible()
 })
 
 test('central de apps: no navegador não aparece nada da central', async ({ page }) => {

@@ -392,3 +392,23 @@ test('Atualizar com o app aberto: a página vê o download e o fim ("agendado"),
   await outro.agenda.conferir()
   assert.deepEqual(recados, [])
 })
+
+test('1.4.5: a lista que a página leu limpa o "disponível" do que já está no build novo (sem esperar 4 horas)', async () => {
+  // padrão (Atualizar sozinho desligado): a conferência deixa SOBEDESCE "disponível"; a pessoa instala (pela central
+  // ou o app se atualiza) e a página relê ao voltar o foco: a mesma leitura tira o pendente da bandeja e do cartão
+  const apps = { sobedesce: { nome: 'SOBEDESCE', instalada: '0.3.9', nova: '0.3.10' } }
+  const { agenda, central } = montar(apps, { atualizarSozinho: () => false })
+  await agenda.conferir()
+  assert.equal(agenda.situacao('sobedesce').fase, 'disponivel')
+  const mudancas = []
+  agenda.on('mudou', (e) => mudancas.push(e))
+  apps.sobedesce.instalada = '0.3.10'
+  agenda.sincronizar(await central.listar())
+  assert.equal(agenda.situacao('sobedesce'), null)
+  assert.deepEqual(agenda.estado().pendentes, [])
+  assert.equal(mudancas.length, 1, 'a bandeja é avisada uma vez')
+  agenda.sincronizar(await central.listar())
+  assert.equal(mudancas.length, 1, 'sem mudança, sem aviso')
+  agenda.sincronizar(null)
+  assert.equal(agenda.estado().apps[0].versao, '0.3.10')
+})

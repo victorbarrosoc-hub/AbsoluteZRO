@@ -2,6 +2,22 @@
 
 Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
+
+Bug do titular no Mac: "já instalei 3 vezes e nunca fica atualizado", em todos os apps (SOBEDESCE com o b1119 instalado e
+o cartão oferecendo "Atualizar · 0.3.10 disponível").
+
+- ✅ Causa: a central lia o `build-info.json` dentro do `app.asar` de cada app com o `fs` do Electron, que guarda cada
+  `.asar` aberto pelo caminho até o processo sair. Depois da troca do pacote, o build lido era o do app antigo (mesma
+  versão, build menor) até a central reiniciar. Conferido no Electron 44.5.1 e nos DMGs publicados (os pacotes estão
+  certos: SOBEDESCE `src/build-info.json` 1119, Relay `desktop/build-info.json` 2008).
+- ✅ `lerBuildInstalado` lê o `.asar` com o `original-fs`, abrindo e fechando a cada leitura (e o `unpacked`).
+- ✅ Sem estado velho: a lista da página limpa os pendentes da agenda; foco de volta na janela relê e avisa a página
+  (`fase: 'reler'`); a página do HUB relê ao voltar o foco ou a aba (`app-actions.tsx`, `painel-resumo.tsx`).
+- ✅ Nenhum app de `products/` muda: só a central (workflow `hub-desktop` na `main`) e o HUB (Vercel `absolutezro`).
+- ⬜ Conferir no Mac do titular depois da 1.4.5: os cartões em dia sem "Atualizar" e, numa atualização nova, o botão
+  sumindo ao terminar.
+
 ## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
 
 - ✅ Espelho dos instaladores em São Paulo: bucket público `apps` do Supabase AbsoluteZRO-SP (migração HUB `0060`,
