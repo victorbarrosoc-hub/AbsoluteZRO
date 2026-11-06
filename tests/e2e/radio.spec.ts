@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import postgres from 'postgres'
-import { criarConta } from './conversa'
+import { criarConta, entrar } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 const RAIZ = fileURLToPath(new URL('../..', import.meta.url))
@@ -56,6 +56,19 @@ async function conta(browser: Browser, nome: string, admin: boolean): Promise<Pa
   }
   return Object.assign(page, { email })
 }
+
+test('sem login (link aberto num navegador fora da conta): vai para o entrar e volta ao rádio com o código', async ({ browser }) => {
+  const admin = await conta(browser, 'Volta', true)
+  const fora = await (await browser.newContext()).newPage()
+  await fora.goto('/radio?d=ABC234')
+  await fora.waitForURL(/\/entrar\?next=/)
+  expect(decodeURIComponent(new URL(fora.url()).searchParams.get('next') ?? '')).toBe('/radio?d=ABC234')
+  await expect(fora.locator('body')).not.toContainText('Rádio')
+  // a mesma conta, entrando neste navegador, cai no rádio
+  await entrar(fora, admin.email, 'senha-e2e-segura-1')
+  await fora.waitForURL(/\/radio\?d=ABC234/)
+  await expect(fora.locator('#tela-radio, #tela-diarias').first()).toBeAttached()
+})
 
 test('conta comum: o rádio não existe (página, scripts e API dão 404)', async ({ browser }) => {
   const page = await conta(browser, 'Comum', false)

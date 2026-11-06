@@ -150,6 +150,9 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   recusado, dá acesso a uma conta comum pelo e-mail em maiúsculas, a conta abre /radio (200) sem novo login, tirar e
   ela volta a 404 na hora); `tests/integration/marca-fechada.test.ts` com o `radio`; HUB `npm test` 649/649, lint,
   format:check, typecheck e build ok.
+- Rádio sem login (06/11/2026): `/radio` sem sessão (link aberto num navegador fora da conta, como o de dentro do
+  WhatsApp ou do Instagram) leva ao `/entrar?next=/radio?d=…` e, entrando, volta ao rádio com o código; logado sem acesso
+  segue 404. `tests/e2e/radio.spec.ts` 4/4.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
