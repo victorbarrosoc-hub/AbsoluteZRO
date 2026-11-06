@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from '../src/backup/synquei.js'
+import { MOMENTOS_SYNQUEI, TIPOS_SYNQUEI, linkSynquei, momentosSynquei, tipoSynquei } from '../src/backup/synquei.js'
 import { BackupService, RESUMO_ARQUIVO, RESUMO_PASTA } from '../src/backup/servico.js'
 
 const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), p))
@@ -14,6 +14,17 @@ const tiposDoSynquei = new URL('../../synquei/app/js/tipos.js', import.meta.url)
 test('os tipos são os mesmos do Synquei (id e nome)', { skip: !fs.existsSync(tiposDoSynquei) && 'Synquei fora do monorepo' }, async () => {
   const { TIPOS } = await import(tiposDoSynquei.href)
   assert.deepEqual(TIPOS_SYNQUEI, TIPOS.map((t) => ({ id: t.id, label: t.label })))
+})
+
+test('os momentos de cada tipo são os do Synquei (fora o b-roll, que é por clipe)', { skip: !fs.existsSync(tiposDoSynquei) && 'Synquei fora do monorepo' }, async () => {
+  const { MODELOS } = await import(new URL('../../synquei/app/js/momentos.js', import.meta.url).href)
+  assert.deepEqual(Object.keys(MOMENTOS_SYNQUEI).sort(), TIPOS_SYNQUEI.map((t) => t.id).sort())
+  for (const [tipo, nomes] of Object.entries(MOMENTOS_SYNQUEI)) {
+    const doSynquei = MODELOS[tipo].momentos.filter((m) => !/^b-roll$/i.test(m.nome)).map((m) => m.nome)
+    assert.deepEqual(nomes, doSynquei, tipo)
+  }
+  assert.deepEqual(momentosSynquei(null), [])
+  assert.deepEqual(momentosSynquei('toString'), [])
 })
 
 test('link: pasta absoluta e tipo conhecido; o resto fica de fora', () => {
@@ -42,6 +53,10 @@ test('projeto com tipo: vai no resumo do cartão e no link; sem cartão conferid
   fs.mkdirSync(path.join(card, 'DCIM'))
   fs.writeFileSync(path.join(card, 'DCIM', 'C0001.MP4'), Buffer.alloc(2048, 1))
   discos.push({ caminho: card, nome: 'SD', id: 'uuid:SQ-1', capacidade: 64e9 })
+  // "Gravando agora": o momento vai com o cartão
+  assert.ok(svc.view().projeto.momentos.includes('Cerimônia'))
+  await svc.momento('  Cerimônia ')
+  assert.equal(svc.view().projeto.momento, 'Cerimônia')
   await svc.varrer()
   await svc.responder({ caminho: card, nome: 'Ana', camera: 'A7S' })
   const t0 = Date.now()
@@ -50,9 +65,20 @@ test('projeto com tipo: vai no resumo do cartão e no link; sem cartão conferid
 
   const linha = JSON.parse(fs.readFileSync(path.join(hd, 'Casamento Ana', RESUMO_PASTA, RESUMO_ARQUIVO), 'utf8').trim())
   assert.equal(linha.tipo, 'casamento')
+  assert.equal(linha.momento, 'Cerimônia', 'o momento marcado vai na linha do cartão')
+  await svc.momento('')
+  assert.equal(svc.view().projeto.momento, null, 'vazio volta ao automático')
   const r = await svc.paraSynquei()
   assert.equal(r.pasta, path.join(hd, 'Casamento Ana'))
   assert.equal(new URL(r.link).searchParams.get('tipo'), 'casamento')
+
+  // o relatório da diária: o cartão conferido, a câmera e o mesmo link do Synquei
+  const rel = await svc.relatorio()
+  assert.equal(rel.dados.total.cartoes, 1)
+  assert.equal(rel.dados.cameras.length, 1)
+  assert.equal(rel.dados.tipoLabel, 'Casamento')
+  assert.equal(rel.dados.link, r.link)
+  assert.match(rel.html, /Pode formatar os cartões/)
 
   await svc.editarProjeto(svc.view().atual, { tipo: '' })
   assert.equal(svc.view().projeto.tipo, null)

@@ -55,6 +55,10 @@ export function parseSonyXml(xml) {
   if (created && !isNaN(Date.parse(created))) out.created = Date.parse(created)
   const model = attr(xml, 'Device', 'modelName')
   if (model) out.device = { make: attr(xml, 'Device', 'manufacturer') || 'Sony', model, serial: attr(xml, 'Device', 'serialNo') || null }
+  // lente (as câmeras Sony mais novas gravam <Lens modelName="…"/>): vira pasta e tag no DaVinci
+  const lens = attr(xml, 'Lens', 'modelName')
+  if (lens && out.device) out.device.lens = lens
+  else if (lens) out.lens = lens
   const w = parseInt(attr(xml, 'VideoLayout', 'pixel'), 10)
   const h = parseInt(attr(xml, 'VideoLayout', 'numOfVerticalLine'), 10)
   if (w && h) out.size = { width: w, height: h }

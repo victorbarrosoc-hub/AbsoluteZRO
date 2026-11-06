@@ -15,6 +15,10 @@
 //     no disco (existe, tamanho, não está baixando); ausentes, movidos e alterados vão para o recibo
 //     (<pasta>/Synquei/preparos.jsonl), que o SOBEDESCE lê. Repetir o mesmo op não duplica nada.
 //
+//  4. Pasta livre (sem o SOBEDESCE): a pessoa escolhe qualquer pasta no SSD ("Organizar uma pasta"). Não há vigia:
+//     cada "Estudar e organizar" lê a pasta inteira (menos Synquei/, Assets/, Exports/ e Relatórios/) e entrega como
+//     uma operação só; a página não repete clipe, então rodar de novo só acrescenta o que entrou.
+//
 // Nada aqui importa o Electron: desktop/main.cjs liga os eventos e a página. Os testes usam pastas temporárias.
 
 const fs = require('node:fs')
@@ -31,6 +35,9 @@ const IGNORAR = /(^|\/)(\.sobedesce-anteriores|\.sobedesce|\.Spotlight-V100|\.Tr
 const CONFIG = 'organizador.json'
 
 const idDrive = (op) => `drive:${op}`
+const ID_LIVRE = 'livre'
+// na pasta livre, o que o próprio Synquei (e o SOBEDESCE) criam em volta não é mídia do projeto
+const FORA_DA_LIVRE = /^(Synquei|Assets|Exports|Relat[oó]rios)(\/|$)/
 const resumoLinha = (l) => crypto.createHash('sha1').update(JSON.stringify({ ...l, quando: null })).digest('hex').slice(0, 16)
 
 const idDe = (raiz) => crypto.createHash('sha1').update(path.resolve(raiz)).digest('hex').slice(0, 12)
@@ -160,6 +167,58 @@ class Organizador extends EventEmitter {
     return this.cfg.pastas[id]
   }
 
+  /**
+   * Pasta livre: qualquer pasta, sem o SOBEDESCE. Só cria a pasta Synquei/ dentro (relatórios e linhas do tempo);
+   * nada é movido nem renomeado. O tipo de vídeo vem de quem escolheu a pasta.
+   */
+  async adicionarLivre(raiz, { tipo = null } = {}) {
+    raiz = path.resolve(String(raiz || ''))
+    if (!(await eDiretorio(raiz))) throw new Error('Essa pasta não existe ou não abre.')
+    try {
+      await fsp.readdir(raiz)
+    } catch {
+      throw new Error('Sem permissão para ler essa pasta. Libere o acesso nos ajustes do sistema e tente de novo.')
+    }
+    if (tipo != null && !Object.hasOwn(TIPOS, tipo)) tipo = null
+    const id = idDe(raiz)
+    const p = this.cfg.pastas[id]
+    if (!p) this.cfg.pastas[id] = { id, raiz, nome: path.basename(raiz), ligado: true, tipo, projetos: {}, cores: {}, origem: 'livre', offset: 0, resto: '', cartoes: {}, criadoEm: new Date().toISOString() }
+    else {
+      p.ligado = true
+      if (tipo) p.tipo = tipo
+    }
+    await fsp.mkdir(path.join(raiz, 'Synquei'), { recursive: true }).catch(() => {})
+    await this.#gravar()
+    this.emit('mudou', this.estado())
+    return this.cfg.pastas[id]
+  }
+
+  /** "Estudar e organizar" a pasta livre: a pasta inteira vira um evento (a página só acrescenta o que é novo). */
+  async estudar(pastaId) {
+    const p = this.cfg.pastas[pastaId]
+    if (!p) throw new Error('pasta não vigiada')
+    if (!(await eDiretorio(p.raiz))) throw new Error('A pasta não está mais aqui (o SSD foi desconectado?).')
+    const lista = await this.#listaLivre(p)
+    if (!lista.length) throw new Error('Não achei arquivos nesta pasta.')
+    const c = { id: ID_LIVRE, modo: 'livre', nome: p.nome, quando: new Date().toISOString(), diaria: { n: ID_LIVRE, nome: p.nome }, dono: { nome: '', camera: '', pasta: '' }, cartao: { n: 1, nome: '' }, pasta: '', resultado: 'ok' }
+    p.cartoes[ID_LIVRE] = { ...(p.cartoes[ID_LIVRE] || {}), ...c, arquivos: lista.length, estado: 'novo', erro: null }
+    await this.#gravar()
+    this.emit('mudou', this.estado())
+    return this.#evento(p, { ...c, lista })
+  }
+
+  async #listaLivre(p) {
+    const lista = []
+    for (const rel of await arquivosDe(p.raiz)) {
+      if (FORA_DA_LIVRE.test(rel) || IGNORAR.test(rel)) continue
+      try {
+        const st = await fsp.stat(path.join(p.raiz, ...rel.split('/')))
+        if (st.isFile()) lista.push({ rel, abs: path.join(p.raiz, ...rel.split('/')), size: st.size, mtimeMs: st.mtimeMs })
+      } catch {}
+    }
+    return lista
+  }
+
   async remover(id) {
     delete this.cfg.pastas[id]
     await this.#gravar()
@@ -215,7 +274,7 @@ class Organizador extends EventEmitter {
     this.rodando = new Promise((r) => (fim = r))
     try {
       for (const p of Object.values(this.cfg.pastas)) {
-        if (!p.ligado || !(await eDiretorio(p.raiz))) continue
+        if (!p.ligado || p.origem === 'livre' || !(await eDiretorio(p.raiz))) continue
         const novos = fs.existsSync(path.join(p.raiz, RESUMO)) ? await this.#doResumo(p) : await this.#dasPastas(p)
         for (const c of novos) {
           p.cartoes[c.id] = { ...c, arquivos: c.lista.length, estado: 'novo', lista: undefined }
@@ -240,6 +299,25 @@ class Organizador extends EventEmitter {
   }
 
   #evento(p, c) {
+    if (c.modo === 'livre') {
+      return {
+        modo: 'livre',
+        pastaId: p.id,
+        raiz: p.raiz,
+        projetoNome: p.nome,
+        projetoId: (p.projetos || {})[ID_LIVRE] || null,
+        tipo: p.tipo,
+        cor: 0,
+        id: ID_LIVRE,
+        quando: c.quando,
+        diaria: { n: ID_LIVRE, nome: p.nome, data: null },
+        dono: { nome: '', camera: '', pasta: '' },
+        cartao: { n: 1, nome: '' },
+        pasta: '',
+        resultado: 'ok',
+        arquivos: c.lista.map((r) => ({ rel: r.rel, abs: r.abs, size: r.size, mtimeMs: r.mtimeMs })),
+      }
+    }
     if (c.modo === 'drive') {
       return {
         modo: 'drive',
@@ -275,6 +353,7 @@ class Organizador extends EventEmitter {
       cartao: c.cartao,
       pasta: c.pasta,
       resultado: c.resultado,
+      momento: c.momento || null,
       arquivos: c.lista.map((r) => ({ rel: `${c.pasta}/${r.rel}`, abs: path.join(p.raiz, ...c.pasta.split('/'), ...r.rel.split('/')), size: r.size, mtimeMs: r.mtimeMs })),
     }
   }
@@ -346,6 +425,8 @@ class Organizador extends EventEmitter {
         cartao: { n: Number(d.cartao.n) || numeroCartao(d.cartao.pasta.split('/').pop()) || 1, nome: d.cartao.nome || '' },
         pasta: d.cartao.pasta,
         resultado: d.resultado || 'ok',
+        // opcional: o momento que a pessoa marcou ao espetar o cartão ("Cerimônia", "Making da noiva", "Take 3"…)
+        ...(typeof d.momento === 'string' && d.momento.trim() ? { momento: d.momento.trim().slice(0, 60) } : {}),
         lista,
       })
     }
@@ -532,6 +613,12 @@ class Organizador extends EventEmitter {
     const out = []
     for (const c of Object.values(p.cartoes)) {
       if (c.estado === 'pronto') continue
+      if (c.modo === 'livre') {
+        // o app fechou no meio do estudo: volta com a pasta como ela está agora
+        const lista = await this.#listaLivre(p)
+        if (lista.length) out.push(this.#evento(p, { ...c, lista }))
+        continue
+      }
       if (c.modo === 'drive') {
         const l = await this.#linhaDoOp(p.raiz, c.op)
         if (!l || !l.ok) continue
@@ -600,6 +687,22 @@ class Organizador extends EventEmitter {
     const p = this.cfg.pastas[pastaId]
     if (!p) return []
     return (await arquivosDe(path.join(p.raiz, 'Assets'))).map((rel) => ({ rel, abs: path.join(p.raiz, 'Assets', ...rel.split('/')) }))
+  }
+
+  /** Troca o tipo de vídeo da pasta (vale para o próximo estudo). */
+  async tipo(pastaId, tipo) {
+    const p = this.cfg.pastas[pastaId]
+    if (!p) return false
+    p.tipo = tipo ? String(tipo).slice(0, 40) : null
+    await this.#gravar()
+    this.emit('mudou', this.estado())
+    return true
+  }
+
+  /** O arquivo é um dos que o Synquei gravou em <projeto>/Synquei/ (relatório, Premiere, Final Cut)? */
+  doSynquei(pastaId, abs) {
+    const p = this.cfg.pastas[pastaId]
+    return !!(p && abs && dentro(path.join(p.raiz, 'Synquei'), path.resolve(String(abs))))
   }
 
   raizDe(pastaId) {

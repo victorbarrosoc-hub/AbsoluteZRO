@@ -194,6 +194,7 @@ export async function probeWithSidecar(file, relPath, sidecar) {
     if (x) {
       if (x.timecode && !info.timecode) info.timecode = x.timecode
       if (x.device) info.device = x.device
+      if (x.lens) info.device = { ...(info.device || {}), lens: x.lens }
       if (x.created && info.createdSource !== 'metadado') {
         info.created = x.created
         info.createdSource = 'XML Sony'

@@ -960,6 +960,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/transfers/action` | `{ action: pause|resume|cancel|retry|remove|prioritize, ids?: string[]|'all', batchId? }` | `{ }` |
 | POST | `/api/transfers/clear` | | `{ removidos, mantidos }` (lote com proxy ainda na fila ou sendo feito fica e o proxy continua; a tela avisa "1 lote ficou: ainda gerando proxies.") |
 | POST | `/api/transfers/synquei` | `{ batchId }` | `{ link, pasta, op }` ("Preparar no Synquei" de um download do Drive; 409 com o motivo se o lote não terminou, tem arquivo diferente, não é uma pasta inteira ou a pasta sumiu). Ver "Preparar no Synquei" |
+| GET | `/api/transfers/relatorio?batchId=` | — | Página HTML sem script (`src/backup/relatorio.js`): o que o download baixou, por pasta, com a conferência do MD5 e o link "Preparar no Synquei". 404 sem o resumo v2 na pasta |
 | GET | `/api/settings` / PATCH `/api/settings` | patch | `{ settings }` |
 | GET | `/api/raw-thumbs` | `refresh=1` (refaz a detecção) | `{ rawThumbs: { supported, found, via, enabled, last, downloadUrl } }` |
 | POST | `/api/raw-thumbs/lote` | `{ accountId, driveFolderId, localDir, recursive?: true, refazer?: false, folderName? }` | `{ jobId }` (progresso via SSE `rawthumbs`; 400 pasta inválida, 409 já tem um rodando) |

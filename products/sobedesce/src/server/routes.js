@@ -31,6 +31,9 @@ import { registerRede } from './rede.js'
 import { registerBackup } from './backup.js'
 import { EntregaError, comprovanteDeEntrega, pastaDoLote } from '../engine/entrega.js'
 import { PreparoError, PreparoSynquei } from '../engine/preparo-synquei.js'
+import { lerManifesto } from '../engine/manifesto.js'
+import { dadosDoDrive, relatorioHtml } from '../backup/relatorio.js'
+import { linkSynquei } from '../backup/synquei.js'
 
 const BODY_LIMIT = 1024 * 1024
 const BODY_HARD_LIMIT = 16 * BODY_LIMIT // além disso nem lê o resto: derruba a conexão
@@ -1065,6 +1068,20 @@ export function createApi(ctx) {
       throw err
     }
   })
+
+  // Relatório do download (src/backup/relatorio.js): a linha v2 que o lote gravou na pasta baixada.
+  route('GET', '/api/transfers/relatorio', async ({ res, query }) => {
+    const batchId = /^[\w-]{1,100}$/.test(query.get('batchId') || '') ? query.get('batchId') : null
+    const info = batchId && ctx.manager.batches?.get(batchId)?.synquei
+    if (!info || !info.pasta || !info.op) throw new HttpProblem(404, 'Este download ainda não tem relatório.')
+    const linha = await lerManifesto(info.pasta, info.op)
+    if (!linha) throw new HttpProblem(404, 'Não achei o resumo do download na pasta (ela foi movida ou o disco saiu?).')
+    let link = null
+    try {
+      link = linkSynquei(info.pasta, null, info.op)
+    } catch {}
+    sendHtml(res, 200, relatorioHtml(dadosDoDrive({ linha, link })))
+  }, { raw: true })
 
   // Limpar concluídas: lote com proxy ainda sendo feito fica (e o proxy segue); a tela diz quantos ficaram.
   route('POST', '/api/transfers/clear', () => ctx.manager.clearFinished() ?? {})

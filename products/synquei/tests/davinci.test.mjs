@@ -91,6 +91,26 @@ local pool = {}
 function pool:GetRootFolder() return raiz end
 function pool:AddSubFolder(pai, nome) local f = Pasta(nome); table.insert(pai.subs, f); return f end
 function pool:SetCurrentFolder(f) atual = f; return true end
+local function tirarDe(f, it)
+  for i, c in ipairs(f.clips) do if c == it then table.remove(f.clips, i); return true end end
+  for _, s in ipairs(f.subs) do if tirarDe(s, it) then return true end end
+  return false
+end
+function pool:MoveClips(lst, destino)
+  for _, it in ipairs(lst) do if tirarDe(raiz, it) then table.insert(destino.clips, it) end end
+  return true
+end
+-- SEED_CLIPS: { { caminho, { pasta, sub, ... } } } já na Media Pool antes da passada
+for _, sc in ipairs(SEED_CLIPS or {}) do
+  local f = raiz
+  for _, n in ipairs(sc[2]) do
+    local achou
+    for _, x in ipairs(f.subs) do if x.nome == n then achou = x end end
+    if not achou then achou = Pasta(n); table.insert(f.subs, achou) end
+    f = achou
+  end
+  table.insert(f.clips, Item(sc[1]))
+end
 function pool:ImportMedia(lst)
   chamadas.importMedia = chamadas.importMedia + 1
   local out = {}
@@ -198,15 +218,15 @@ varrer(raiz, "")
 local tls = {}
 for _, t in ipairs(timelines) do tls[#tls + 1] = { nome = t.nome, pasta = t.pasta or "", semFonte = t.semFonte or false } end
 local cor = corrente and { nome = corrente.nome, marcadores = corrente.marcadores, anexados = corrente.anexados, nomesFaixas = corrente.nomesFaixas } or {}
-print(m.json({ feitos = feitos, clips = clips, linhas = tls, estado = m.estado, importMedia = chamadas.importMedia, projeto = proj.nome, corrente = cor }))
+print(m.json({ historico = m.textos and m.textos().historico or nil, feitos = feitos, clips = clips, linhas = tls, estado = m.estado, importMedia = chamadas.importMedia, projeto = proj.nome, corrente = cor }))
 `
 
-function rodar(troca, { projeto = 'Filme X', seed = [], acoes = ['passada'], ui = false, cliques = [] } = {}) {
+function rodar(troca, { projeto = 'Filme X', seed = [], acoes = ['passada'], ui = false, cliques = [], clipes = [] } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'resolve-'))
   const script = join(dir, 'Synquei.lua')
   writeFileSync(script, scriptLua({ troca }))
   const mock = join(dir, 'mock.lua')
-  writeFileSync(mock, `PROJETO = ${paraLua(projeto)}\nSCRIPT = ${paraLua(script)}\nSEED = ${paraLua(seed)}\nACOES = ${paraLua(acoes)}\nSYNQUEI_UI = ${ui}\nCLIQUES = ${paraLua(cliques)}\n${MOCK}`)
+  writeFileSync(mock, `PROJETO = ${paraLua(projeto)}\nSCRIPT = ${paraLua(script)}\nSEED = ${paraLua(seed)}\nACOES = ${paraLua(acoes)}\nSYNQUEI_UI = ${ui}\nCLIQUES = ${paraLua(cliques)}\nSEED_CLIPS = ${paraLua(clipes)}\n${MOCK}`)
   const r = spawnSync('luajit', [mock], { encoding: 'utf8' })
   assert.equal(r.status, 0, r.stderr)
   return JSON.parse(r.stdout)
@@ -277,6 +297,36 @@ test('Resolve: pastas, cores, Cena/Take, sem importar duas vezes, linhas do temp
   assert.equal(st.fila, 0)
   // o que já foi importado não volta, mesmo se tirarem da Media Pool
   assert.match(readFileSync(join(troca, 'importados', 'Filme X.txt'), 'utf8'), /C0002\.MP4/)
+})
+
+test('Resolve: momento corrigido muda o clipe de pasta dentro da diária; o que a pessoa levou para fora fica', { skip: !temLua && 'sem luajit' }, async () => {
+  const troca = mkdtempSync(join(tmpdir(), 'troca-'))
+  const ponte = new Ponte({ troca })
+  const FESTA = ['Diária 01', '05 Festa', 'Câmeras', 'Aladim - FX30', 'Cartão 01']
+  const CERIMONIA = ['Diária 01', '03 Cerimônia', 'Câmeras', 'Aladim - FX30', 'Cartão 01']
+  await ponte.enviar({
+    projeto: 'Filme X',
+    pastaId: 'abc',
+    itens: [item('/hd/C0001.MP4', CERIMONIA, 'Blue', { Shot: 'Cerimônia' }), item('/hd/C0002.MP4', CERIMONIA, 'Blue')],
+    resumo: { tipo: 'Casamento', momentos: [{ nome: '03 Cerimônia', clipes: 2, sugestao: false }, { nome: '05 Festa', clipes: 0, sugestao: true }], broll: 1, partes: 0 },
+  })
+  const r = rodar(troca, { clipes: [['/hd/C0001.MP4', FESTA], ['/hd/C0002.MP4', ['Meu bin']]], acoes: ['passada'] })
+  const por = Object.fromEntries(r.clips.map((c) => [c.caminho.split('/').pop(), c]))
+  assert.equal(por['C0001.MP4'].pasta, CERIMONIA.join('/'), 'mudou de pasta dentro da diária')
+  assert.equal(por['C0001.MP4'].meta.Shot, 'Cerimônia')
+  assert.equal(por['C0002.MP4'].pasta, 'Meu bin', 'o bin da pessoa é respeitado')
+  assert.equal(r.clips.length, 2, 'nada importado duas vezes')
+  assert.equal(r.importMedia, 0)
+  const [resp] = await ponte.verificar()
+  assert.equal(resp.movidos, 1)
+  assert.equal(resp.jaEstavam, 1)
+  assert.match(r.estado.detalhe, /1 clipe mudou de pasta/)
+  assert.equal(r.estado.resumo.tipo, 'Casamento')
+  // a janelinha mostra o tipo e os momentos em pílulas (o sugerido em laranja)
+  assert.match(r.historico, /Casamento/)
+  assert.match(r.historico, /03 Cerimônia · 2/)
+  assert.match(r.historico, /#ffb340;[^>]*>&nbsp;&nbsp;05 Festa/)
+  assert.match(r.historico, /1 b-roll/)
 })
 
 test('Resolve: outro projeto aberto espera; "Usar o projeto aberto" liga e organiza', { skip: !temLua && 'sem luajit' }, async () => {

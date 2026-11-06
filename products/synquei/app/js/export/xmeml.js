@@ -132,8 +132,11 @@ function multicamXml(tl, src, ids, n) {
   ].join('\n')
 }
 
-/** Um arquivo com várias sequências dentro de um projeto (Premiere) ou uma sequência solta (Resolve, Vegas). */
-export function toXmeml(timelines, project, { wrap = true, multicam = false } = {}) {
+/**
+ * Um arquivo com várias sequências dentro de um projeto (Premiere) ou uma sequência solta (Resolve, Vegas).
+ * bins (opcional): nome da sequência → nome do bin ("03 Cerimônia", "Takes"…); no Premiere, cada grupo vira um bin.
+ */
+export function toXmeml(timelines, project, { wrap = true, multicam = false, bins = null } = {}) {
   const opts = { ...project.export, __devices: new Map(project.devices.map((d) => [d.id, d])) }
   const ids = { clip: 0, files: new Map(), master: new Map() }
   const seqs = timelines.map((tl, i) => {
@@ -146,5 +149,18 @@ export function toXmeml(timelines, project, { wrap = true, multicam = false } = 
   })
   const head = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n<xmeml version="4">'
   if (!wrap && seqs.length === 1) return `${head}\n${seqs[0].replace(/^ {4}/gm, '  ')}\n</xmeml>\n`
-  return `${head}\n  <project>\n    <name>${esc(project.name)}</name>\n    <children>\n${seqs.map((s) => s.replace(/^/gm, '    ')).join('\n')}\n    </children>\n  </project>\n</xmeml>\n`
+  let filhos = seqs.map((s) => s.replace(/^/gm, '    '))
+  if (bins) {
+    // sequências agrupadas em bins, na ordem em que os bins aparecem; sem bin, ficam soltas no projeto
+    const grupos = new Map()
+    const soltas = []
+    timelines.forEach((tl, i) => {
+      const b = bins.get(tl.name)
+      if (!b) return soltas.push(filhos[i])
+      if (!grupos.has(b)) grupos.set(b, [])
+      grupos.get(b).push(filhos[i].replace(/^/gm, '    '))
+    })
+    filhos = [...[...grupos].map(([b, xs]) => `      <bin>\n        <name>${esc(b)}</name>\n        <children>\n${xs.join('\n')}\n        </children>\n      </bin>`), ...soltas]
+  }
+  return `${head}\n  <project>\n    <name>${esc(project.name)}</name>\n    <children>\n${filhos.join('\n')}\n    </children>\n  </project>\n</xmeml>\n`
 }

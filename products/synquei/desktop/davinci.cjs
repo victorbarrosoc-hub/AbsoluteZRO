@@ -202,7 +202,22 @@ local function aplicar(it, item, resp)
   end
 end
 
+-- todos os clipes da Media Pool pelo caminho: { clipe, pasta, topo } (topo: a pasta de cima, a da diária)
+local function indice(pool)
+  local m = {}
+  local function andar(pasta, topo)
+    for _, it in ipairs(lista(pasta:GetClipList())) do
+      local p = it:GetClipProperty("File Path")
+      if type(p) == "string" and p ~= "" then m[normal(p)] = { clipe = it, pasta = pasta, topo = topo } end
+    end
+    for _, f in ipairs(lista(pasta:GetSubFolderList())) do andar(f, topo or f:GetName()) end
+  end
+  andar(pool:GetRootFolder(), nil)
+  return m
+end
+
 local function importarItens(pool, pedido, resp, memoria)
+  local todos = indice(pool)
   -- agrupa por pasta da Media Pool (o ImportMedia importa na pasta atual)
   local grupos, ordem = {}, {}
   for _, item in ipairs(pedido.itens or {}) do
@@ -217,8 +232,17 @@ local function importarItens(pool, pedido, resp, memoria)
     local novos, seqs = {}, {}
     for _, item in ipairs(itens) do
       local chave = normal(item.caminho)
+      local outro = todos[chave]
       if ja[chave] then
         aplicar(ja[chave], item, resp)
+        resp.jaEstavam = resp.jaEstavam + 1
+      elseif outro and item.pasta and outro.topo == item.pasta[1] and pool.MoveClips and pool:MoveClips({ outro.clipe }, pasta) then
+        -- o Synquei mudou de ideia (momento corrigido, organização nova): o clipe muda de pasta dentro da diária.
+        -- O que a pessoa levou para fora da pasta da diária fica onde ela pôs.
+        aplicar(outro.clipe, item, resp)
+        resp.movidos = (resp.movidos or 0) + 1
+      elseif outro then
+        aplicar(outro.clipe, item, resp)
         resp.jaEstavam = resp.jaEstavam + 1
       elseif memoria[chave] then
         -- já foi importado antes e alguém tirou da Media Pool: não volta
@@ -439,7 +463,7 @@ end
 
 local function processar(pedido, proj, nome)
   local pool = proj:GetMediaPool()
-  local resp = { seq = pedido.seq, tipo = pedido.tipo, ok = true, projeto = nome, importados = 0, jaEstavam = 0, pulados = 0, trocadas = 0, linhas = {}, guardadas = {}, falhas = {}, avisos = {} }
+  local resp = { seq = pedido.seq, tipo = pedido.tipo, ok = true, projeto = nome, importados = 0, jaEstavam = 0, pulados = 0, movidos = 0, trocadas = 0, linhas = {}, guardadas = {}, falhas = {}, avisos = {} }
   local base = arquivoSeguro(nome)
   local memF = TROCA .. "/importados/" .. base .. ".txt"
   local regF = TROCA .. "/linhas/" .. base .. ".txt"
@@ -514,6 +538,8 @@ local function passada()
       gravar(string.format("%s/respostas/%06d.json", TROCA, seq), json(resp))
       if pedido.tipo ~= "ler_linha" and pedido.tipo ~= "listar_linhas" then
         anotar(pedido, resp)
+        if not pedido.tipo and type(pedido.resumo) == "table" then estado.resumo = pedido.resumo end
+        if (resp.movidos or 0) > 0 then estado.movidos = resp.movidos end
         if not resp.ok then erro = resp.erro end
         feitos = feitos + 1
       end
@@ -534,7 +560,8 @@ local function passada()
   elseif feitos > 0 then
     estado.situacao = "ok"
     estado.texto = "Organizado às " .. os.date("%H:%M")
-    estado.detalhe = feitos == 1 and "1 cartão novo no projeto." or (feitos .. " cartões novos no projeto.")
+    estado.detalhe = (feitos == 1 and "1 cartão novo no projeto." or (feitos .. " cartões novos no projeto."))
+      .. ((estado.movidos or 0) > 0 and (" " .. estado.movidos .. (estado.movidos == 1 and " clipe mudou de pasta." or " clipes mudaram de pasta.")) or "")
   elseif nome then
     estado.situacao = "ok"
     estado.texto = "Ligado ao projeto “" .. nome .. "”"
@@ -605,7 +632,7 @@ local function textos()
   t.pilulaEstilo = "QLabel { background-color: " .. p[3] .. "; color: " .. p[2] .. "; border-radius: 12px; padding: 4px 12px; font-size: 12px; font-weight: 600; }"
   t.marca = img(LOGO, 26) .. "&nbsp;&nbsp;" .. span(C.text, 19, "<b>Synquei</b>")
   t.titulo = '<span style="font-family:' .. FONTE_TITULO .. '; font-size:30px; font-weight:700; color:' .. C.text .. ';">Organizar</span><br>'
-    .. span(C.text2, 14, "Cada cartão que o SOBEDESCE termina entra sozinho neste projeto: pastas por diária, câmera e cartão, cores e as linhas do tempo sincronizadas.")
+    .. span(C.text2, 14, "Cada cartão entra sozinho neste projeto: pastas por diária, momento, câmera e cartão, cores, tags e as linhas do tempo sincronizadas.")
   local icone = ({ ok = "status-ok", esperando = "status-esperando", erro = "status-erro" })[sit] or "status-off"
   t.status = '<table cellspacing="0" cellpadding="0"><tr><td valign="middle" style="padding-right:16px;">' .. img(UI .. icone .. ".png", 48) .. "</td>"
     .. '<td valign="middle">' .. span(C.text, 20, esc(estado.texto), true) .. "<br>" .. span(C.text2, 14, esc(estado.detalhe)) .. "</td></tr></table>"
@@ -630,7 +657,23 @@ local function textos()
       .. span(C.text2, 12.5, esc(sub ~= "" and (sub .. " · ") or "") .. (x.ok and nums or esc(x.erro or "erro")) .. " · " .. os.date("%H:%M", x.quando)) .. "</td>"
       .. '<td valign="middle" align="right" style="padding:8px 0 8px 12px;">' .. selo .. "</td></tr>"
   end
-  t.historico = span(C.text, 15, "Últimos cartões", true) .. (#estado.historico > 0 and ("&nbsp;&nbsp;" .. span(C.text2, 12, tostring(#estado.historico))) or "") .. "<br>"
+  -- o que o Synquei entendeu no último cartão: o tipo e os momentos (ou takes), em pílulas
+  local r = estado.resumo
+  local momentos = ""
+  if r and type(r.momentos) == "table" and #r.momentos > 0 then
+    local chips = {}
+    for _, mm in ipairs(r.momentos) do
+      local cor = mm.sugestao and C.warn or C.text
+      chips[#chips + 1] = '<span style="background-color:rgba(255,255,255,0.08); color:' .. cor .. '; font-size:12.5px; font-weight:600;">&nbsp;&nbsp;' .. esc(mm.nome) .. " · " .. tostring(mm.clipes or 0) .. "&nbsp;&nbsp;</span>"
+    end
+    local extra = {}
+    if (tonumber(r.partes) or 0) > 0 then extra[#extra + 1] = plural(tonumber(r.partes), r.parte == "Take" and "take" or "parte", r.parte == "Take" and "takes" or "partes") end
+    if (tonumber(r.broll) or 0) > 0 then extra[#extra + 1] = plural(tonumber(r.broll), "b-roll", "b-rolls") end
+    momentos = span(C.text, 15, (r.tipo and r.tipo ~= "") and esc(r.tipo) or "Momentos", true)
+      .. (#extra > 0 and ("&nbsp;&nbsp;" .. span(C.text2, 12, table.concat(extra, " · "))) or "") .. "<br>"
+      .. '<p style="line-height:190%;">' .. table.concat(chips, "&nbsp;&nbsp;") .. "</p>"
+  end
+  t.historico = momentos .. span(C.text, 15, "Últimos cartões", true) .. (#estado.historico > 0 and ("&nbsp;&nbsp;" .. span(C.text2, 12, tostring(#estado.historico))) or "") .. "<br>"
     .. (#linhas > 0 and ('<table width="100%" cellspacing="0" cellpadding="0">' .. table.concat(linhas) .. "</table>")
       or ("<br>" .. span(C.text2, 13, "Os cartões aparecem aqui quando o SOBEDESCE terminar de passar e o Synquei sincronizar.")))
   t.pe = span(C.text3, 11.5, "Deixe esta janela aberta enquanto grava · nada sai do seu computador")

@@ -1,6 +1,21 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Synquei + SOBEDESCE: material organizado por tipo de vídeo (06/11/2026, ramo `claude/synquei-fluxo-sobedesce`)
+
+- ✅ Momentos por tipo (`products/synquei/app/js/momentos.js`, 18 tipos): casamento por momento (votos, cerimônia,
+  festa, making, buffet, banda…), clipe por take, EP por música, show/DVD por câmera e bloco, evento, aftermovie,
+  documentário, podcast, aula. Marcado › pasta › horário (como sugestão) › sem pista. Tipo novo: Aftermovie.
+- ✅ DaVinci: pastas por diária › momento › câmera › cartão, b-roll e áudio à parte, Angle/Shot/Keywords/Lens, uma linha
+  do tempo por momento, momento corrigido muda o clipe de pasta dentro da diária; janelinha com os momentos.
+- ✅ Premiere (XML com bins) e Final Cut (FCPXML com keywords) e o relatório HTML + JSON em `<projeto>/Synquei/`.
+- ✅ "Organizar uma pasta" sem o SOBEDESCE: tipo + pasta do SSD, estudo com correção por câmera antes de mandar.
+- ✅ SOBEDESCE 0.3.10: botão **Relatório** ao lado de "Preparar no Synquei" no Backup Automático (diária: câmeras,
+  cartões, conferência xxHash64) e no download do Drive (pastas, MD5), com o link para o Synquei.
+- ✅ "Gravando agora" no SOBEDESCE: o momento escolhido (pílulas com os momentos do tipo, os mesmos nomes do Synquei)
+  vai em cada cartão que passar (`momento` na linha v1) e o Synquei põe o cartão nele em vez de adivinhar.
+- ⬜ Multicâmera criado direto no DaVinci (a API não cria; hoje vai o Angle e a linha sincronizada).
 
 ## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
 

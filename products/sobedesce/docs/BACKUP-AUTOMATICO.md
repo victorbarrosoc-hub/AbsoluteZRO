@@ -161,6 +161,13 @@ o `vol` no Windows em português e o ejetar.
   Synquei". O `descargas.jsonl` continua (o HUB também lê).
 - **Tipo no Synquei** (opcional, no projeto): videoclipe, casamento, show… (os mesmos de `products/synquei/app/js/tipos.js`;
   `test/synquei-ponte.test.js` confere). Vai em cada linha do `descargas.jsonl` (`tipo`) e no link.
+- **Gravando agora** (com o Synquei ligado): pílulas com os momentos do tipo do projeto (casamento: Making da noiva,
+  Cerimônia, Festa…; sem tipo, um campo livre). O escolhido vai em cada cartão que entrar na fila a partir dali
+  (`momento` na linha do `descargas.jsonl`, `POST /api/backup/momento`); "Automático" deixa o Synquei decidir pela
+  pasta e pelo horário. Os nomes são os do Synquei (`MOMENTOS_SYNQUEI`, conferidos em `test/synquei-ponte.test.js`).
+- **Relatório** (ao lado do Synquei, assim que a diária tem um cartão): `GET /api/backup/relatorio?id=&diaria=` monta a
+  página da diária a partir do `descargas.jsonl` (`src/backup/relatorio.js`): câmeras, cartões, tamanho, o que pede
+  atenção e o botão "Preparar no Synquei" (link `synquei://organizar`). Sem script; só diz conferido com xxHash64.
 - Com o cartão OK, o painel mostra **Preparar no Synquei**. O motor (`POST /api/backup/synquei`) acha a pasta do projeto no
   primeiro destino que já tem o `descargas.jsonl` e monta `synquei://organizar?pasta=…&tipo=…` (`src/backup/synquei.js`).
 - No app, a ponte (`sobedesce:abrir-synquei`) confere se o Synquei está instalado; sem ele, abre a central Absolute ZRO
