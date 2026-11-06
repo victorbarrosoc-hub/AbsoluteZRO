@@ -234,6 +234,8 @@ function criarJanela() {
   posicionarView()
   for (const ev of ['resize', 'enter-full-screen', 'leave-full-screen', 'maximize', 'unmaximize']) win.on(ev, posicionarView)
   for (const ev of ['focus', 'blur', 'enter-full-screen', 'leave-full-screen']) win.on(ev, estadoBarra)
+  // 1.4.5: voltou para a janela (instalou ou atualizou algo por fora, ou o app se atualizou): relê os apps
+  win.on('focus', relerAoFocar)
 
   // mostra a janela assim que houver algo pintado (fundo claro do site desde o primeiro quadro, sem flash)
   let mostrada = false
@@ -461,9 +463,33 @@ const responder = async (fn) => {
 }
 ipcMain.handle('central:listar', (e) =>
   daPaginaDoHub(e) && central
-    ? responder(async () => (await central.listar()).map((s) => ({ ...s, atualizacao: agenda ? agenda.situacao(s.id) : null })))
+    ? responder(async () => {
+        const lista = await central.listar()
+        // a mesma leitura limpa os "pendentes" que já estão em dia (bandeja e cartão concordam: 1.4.5)
+        if (agenda) agenda.sincronizar(lista)
+        return lista.map((s) => ({ ...s, atualizacao: agenda ? agenda.situacao(s.id) : null }))
+      })
     : { ok: false, erro: 'indisponível' },
 )
+
+/**
+ * A janela voltou ao foco: a agenda relê o que está instalado (sai de "pendente" o que já está no build disponível) e a
+ * página dos apps relê os cartões (evento 'reler'). No máximo uma vez a cada RELER_MS.
+ */
+const RELER_MS = 5_000
+let relidoEm = 0
+function relerAoFocar() {
+  if (!central || !agenda || Date.now() - relidoEm < RELER_MS) return
+  relidoEm = Date.now()
+  agenda
+    .relistar()
+    .then(() => {
+      if (view && !view.webContents.isDestroyed() && regras.ehDoHub(view.webContents.getURL(), HUB))
+        view.webContents.send('central:progresso', { id: '*', fase: 'reler' })
+    })
+    .catch(() => {})
+}
+
 // Atualizar com a ferramenta aberta: baixa e confere já e instala quando ela fechar ("atualiza ao fechar").
 async function instalarPelaPagina(id) {
   if (agenda && (await central.aberto(id).catch(() => false))) {

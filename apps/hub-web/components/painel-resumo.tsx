@@ -33,11 +33,25 @@ export function PainelResumo({ liberados }: { liberados: string[] }) {
         if (vivo && r.ok) setLista((r.dados as Situacao[] | undefined) ?? [])
       })
     ler()
+    // voltou para a janela (ou a central 1.4.5 avisou 'reler'): a contagem de versões novas lê de novo
+    let relidaEm = 0
+    const reler = () => {
+      if (Date.now() - relidaEm < 3_000) return
+      relidaEm = Date.now()
+      ler()
+    }
+    const voltar = () => {
+      if (document.visibilityState === 'visible') reler()
+    }
+    window.addEventListener('focus', voltar)
+    document.addEventListener('visibilitychange', voltar)
     const off = api.aoProgresso((ev) => {
-      if (ev.fase === 'pronto' || ev.fase === 'removido' || ev.fase === 'erro') ler()
+      if (ev.fase === 'pronto' || ev.fase === 'removido' || ev.fase === 'erro' || ev.fase === 'reler') ler()
     })
     return () => {
       vivo = false
+      window.removeEventListener('focus', voltar)
+      document.removeEventListener('visibilitychange', voltar)
       off()
     }
   }, [])

@@ -5392,3 +5392,18 @@ SOBEDESCE de computador, que disparam os instaladores).
   `celular-visual`, `frames-galeria-csp`, `app-sw`, `frames-cor`, `montagens` e Backup Automático: 73/73.
 - Site do SOBEDESCE (`products/sobedesce/web`): lint e tipos limpos, `npm test` 384/384.
 - Raiz: lint, format:check e typecheck limpos; `npm test` 76 arquivos, 666/666; `scan-secrets` sem segredos.
+
+## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026)
+
+- Causa conferida no Electron 44.5.1 de verdade (`ELECTRON_RUN_AS_NODE`): app.asar com build 1100, troca do pacote como
+  a central faz (`.zro-novo` → `.app`, apaga o `.zro-antigo`) para 1119 → o `fs` do Electron segue lendo 1100; o
+  `original-fs` (e o `lerBuildInstalado` novo) lê 1119.
+- DMGs publicados conferidos (7z + `@electron/asar`): SOBEDESCE 0.3.10 b1119 tem `src/build-info.json` com build 1119 e
+  Relay 0.1.2 b2008 tem `desktop/build-info.json` com build 2008, dentro do app.asar; o `lerBuildInstalado` novo lê 1119
+  do app.asar real do SOBEDESCE. Pacotes dos apps sem mudança.
+- `apps/hub-desktop` `npm test` 117/117 (novos: app.asar real, unpacked e lixo; troca com o cache do Electron simulado,
+  que falha com a leitura da 1.4.4; `agenda.sincronizar`; ligações no `main.cjs`).
+- Raiz: lint, format:check e typecheck limpos; `npm test` 76 arquivos, 666/666; `npm run build` ok; e2e
+  `hub.spec.ts -g "central de apps"` 2/2 (com o cartão perdendo o "Atualizar" no aviso `reler`); `scan-secrets` sem
+  segredos. A bateria e2e inteira não foi rodada.
+- Não validado: num Mac de verdade com a central empacotada (a 1.4.5 só sai pelo workflow `hub-desktop` na `main`).
