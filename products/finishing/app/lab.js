@@ -41,6 +41,8 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
+// a correção que vai para a receita: exposição, branco e níveis (contraste, cor, sombra fria), sem o texto da leitura
+const correcaoDaLeitura = ({ leitura, ...c }) => c
 let receita = {
   nome: 'Meu look',
   entrada: 'still',
@@ -112,7 +114,7 @@ async function receber(arquivo) {
 /** Lê o frame na luz da cena (pela entrada escolhida) e liga a correção automática, se ela estiver ligada. */
 function lerFrame() {
   correcaoLida = analisarFrame(frame.pixels, { entrada: receita.entrada })
-  if (receita.correcao || corrigirSozinho) receita.correcao = { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos }
+  if (receita.correcao || corrigirSozinho) receita.correcao = correcaoDaLeitura(correcaoLida)
 }
 
 // de onde vem o frame: still já tratado ou o log de uma câmera
@@ -355,7 +357,7 @@ function mostrarCorrecao() {
 }
 $('corrigir').addEventListener('change', () => {
   corrigirSozinho = false
-  receita.correcao = $('corrigir').checked && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : null
+  receita.correcao = $('corrigir').checked && correcaoLida ? correcaoDaLeitura(correcaoLida) : null
   mostrarCorrecao()
   desenharBases()
   refazer()
@@ -786,7 +788,7 @@ $('arquivo-receita').addEventListener('change', async (e) => {
   try {
     const lida = lerReceita(await arquivo.text())
     // a correção da receita era do frame de quem salvou: aqui vale a leitura deste frame
-    receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : lida.correcao }
+    receita = { ...lida, correcao: lida.correcao && correcaoLida ? correcaoDaLeitura(correcaoLida) : lida.correcao }
     $('entrada').value = receita.entrada
     mostrarFilme()
     desenharTextura()

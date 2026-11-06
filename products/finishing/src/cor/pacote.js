@@ -119,8 +119,11 @@ export function montarPacote(receita, opcoes = {}) {
   const nome = slugPack(receita.nome)
   const pasta = `REVELA_${nome}`
   const prefixo = `${pasta}/REVELA_${nome}`
-  // o look sem a correção do frame (ela vai no CDL), com os ajustes da pessoa e a intensidade
-  const look = criarLab({ ...receita, correcao: null })
+  // o look sem a exposição e o branco do frame (eles vão no CDL, antes); os níveis do Analisar (contraste, cor e sombra
+  // fria) vêm depois da primária no motor, então seguem dentro do LMT, com os ajustes da pessoa e a intensidade
+  const c = receita.correcao
+  const niveis = c && (c.contraste || c.saturacao || c.sombraFria) ? { contraste: c.contraste, saturacao: c.saturacao, sombraFria: c.sombraFria } : null
+  const look = criarLab({ ...receita, correcao: niveis })
   const tudo = criarLab(receita)
   const sdr = criarTela('rec709')
   const arquivos = []

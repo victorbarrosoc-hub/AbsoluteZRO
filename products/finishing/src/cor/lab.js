@@ -73,28 +73,85 @@ export const AJUSTES = [
   { id: 'peleSat', nome: 'Saturação da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: menos ↔ mais cor' },
   { id: 'pele', nome: 'Pele protegida', min: 0, max: 100, fino: true, dica: 'Mantém a pele natural enquanto o look muda o resto' },
   { id: 'desbotar', nome: 'Desbotar', min: 0, max: 100, fino: true, dica: 'Véu no preto, como cópia antiga' },
+  // exposição HDR por zonas (como as rodas HDR do Resolve): ±100 = ±1,5 stop na zona, na luz da cena
+  { id: 'hdrPreto', nome: 'HDR · Preto', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição só no preto profundo (−6 stops)' },
+  { id: 'hdrEscuros', nome: 'HDR · Escuros', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nos escuros (−4 stops)' },
+  { id: 'hdrSombras', nome: 'HDR · Sombras', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nas sombras (−2 stops)' },
+  { id: 'hdrClaros', nome: 'HDR · Claros', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nos claros: pele iluminada, céu (+1,5 stop)' },
+  { id: 'hdrAltas', nome: 'HDR · Altas', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nas altas (+3,5 stops)' },
+  { id: 'hdrEspecular', nome: 'HDR · Especular', min: -100, max: 100, fino: true, hdr: true, dica: 'Só o brilho especular e as luzes (+5,5 stops)' },
 ]
 export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, 0]))
 
 // ─────────── analisar e corrigir (na luz da cena) ───────────
 
+// Calibrado em 04/11/2026 com 19 takes reais (RED, ARRI, Sony, Canon, Blackmagic, Panasonic) e o grade do colorista
+// de cada um: a correção chega mais perto da exposição que o colorista escolheu (erro médio 1,09 → 0,85 stop) e quase
+// não mexe num frame que já saiu graduado (0,23 → 0,10 stop). O que pesou: cena escura de propósito (palco, arena,
+// interior) não pode subir, e cena clara de propósito escurece menos.
+const CLAREIA = 0.6 // fração do desvio do meio-tom até o cinza, ao clarear
+const CLAREIA_MAX = 1.5 // stops
+const ESCURECE = 0.25 // fração ao escurecer (era 0,35: escurecia o retrato claro e o estúdio)
+const ESCURECE_MAX = 0.6 // stops
+const TETO_ALTAS = 0.75 // ao clarear, as altas não passam disto acima do cinza (stops)
+const PCT_ALTAS = 0.95 // as altas: percentil 95 (era 90: a luz prática e o rosto iluminado ficavam de fora)
+// Níveis (04/11/2026, calibrados nos scopes dos mesmos 19 coloristas): o colorista assenta o preto (piso do waveform
+// 3–6%), abre o branco e sobe a cor; a revelação fiel à cena deixava o preto em 12% e a cor 45% abaixo. Depois da
+// exposição, a sombra profunda (p1) vai para PRETO_ALVO stops abaixo do cinza e a alta (p99) para BRANCO_ALVO acima,
+// com um contraste para cada lado (em log, em volta do cinza); a cor sobe até COR_ALVO só quando o frame está lavado.
+// Erro contra os coloristas (piso, meio, teto, saturação e cor por zona): 27,2 → 20,7.
+const PRETO_ALVO = -4.8 // stops abaixo do cinza para o p1
+const CONTRASTE_SOMBRA_MAX = 1.4
+// força com que o preto assenta (05/11/2026): 60% do caminho até o alvo — o preto do cinema é denso mas tem ar
+// (interior: p25 do waveform 12% → 13% contra 14% nos filmes); com 100% ficava forte demais
+const PRETO_FORCA = 0.6
+const BRANCO_ALVO = 3.5 // stops acima do cinza para o p99
+const CONTRASTE_ALTA = [1, 1.4] // nunca achata o branco; abre até 1,4
+const COR_ALVO = 0.09 // croma Oklab ÷ L no meio-tom
+// cor automática desligada (04/11/2026): contra os filmes de referência, subir a cor do frame afastava do cinema (a
+// cópia já dá a densidade de cor); fica a regra, para um look de comercial que queira ligar
+const COR_MAX = 1
+// cena escura de propósito (meio-tom abaixo disto, em stops, já com a exposição): como nos interiores e noites dos
+// filmes de referência, menos contraste nas duas pontas — a sombra respira (o preto assenta no máximo 1,1) e as luzes
+// práticas descem (as altas comprimem 0,9). Interior: p95 do waveform 83% → 70% (cinema 66%)
+const ESCURA = -0.3
+const ESCURA_SOMBRA_MAX = 1.1
+const ESCURA_ALTA = 0.9
+const SOMBRA_FRIA = 2 // o azul-petróleo que os coloristas põem na sombra (src/cor/pelicula.js)
+
+// branco de referência nos cones: o cinza neutro em DWG não tem os três cones iguais (Bradford: 0,94 · 1,04 · 1,09),
+// e comparar com a média dos cones esquentava e tirava verde de todo frame já neutro
+const BRANCO_CONES = (() => {
+  const c = dwgParaCones([1, 1, 1])
+  const Y = luminancia([1, 1, 1])
+  return c.map((v) => v / Y)
+})()
+
 /**
  * Lê o frame (`pixels`: Float32Array RGB no código da entrada, 0–1) e devolve a correção: exposição em stops para o
- * meio-tom ir na direção do cinza 18% e ganhos de branco (nos cones, como a câmera faria) a partir dos tons quase
- * neutros. Clareia 60% (até 1,5 stop) e escurece só 35% (até 0,6): frame claro de propósito continua claro. Ao
- * clarear, as altas do frame (percentil 90) não passam de 0,75 stop acima do cinza.
+ * meio-tom ir na direção do cinza 18% e ganhos de branco (nos cones, como a câmera faria) que levam os tons quase
+ * neutros ao branco D65. Clareia 60% (até 1,5 stop) e escurece só 25% (até 0,6): frame claro de propósito continua
+ * claro. Ao clarear, as altas do frame (percentil 95) não passam de 0,75 stop acima do cinza.
  */
 export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   const cena = paraCena(entrada)
   const Ys = []
+  const todos = [] // para os níveis: a sombra profunda e a alta estourada também contam
   const soma = [0, 0, 0]
   let n = 0
+  let croma = 0
+  let nCroma = 0
   for (let i = 0; i < pixels.length; i += 3 * passo) {
     const x = cena(pixels[i], pixels[i + 1], pixels[i + 2])
     const Y = luminancia(x)
     if (Y > 0.18 * 2 ** -6 && Y < 0.18 * 2 ** 4) Ys.push(Y)
+    if (Y > 1e-5) todos.push(Y)
     const [L, a, b] = dwgParaOklab(x)
     const Lr = L / Math.cbrt(0.18)
+    if (Lr > 0.4 && Lr < 1.8) {
+      croma += Math.hypot(a, b) / L
+      nCroma++
+    }
     // neutros do meio: pouca cor, nem preto nem branco estourado
     if (Lr > 0.55 && Lr < 1.7 && Math.hypot(a, b) < 0.04 * Lr) {
       const c = dwgParaCones(x)
@@ -110,22 +167,36 @@ export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   // assimétrica, como um colorista: clareia o que ficou escuro (60%, até +1,5), mas escurece pouco o que é claro de
   // propósito (35%, até -0,6): vestido de noiva e cena clara não viram cinza médio
   const desvio = Math.log2(0.18 / mediana)
-  let exposicao = desvio >= 0 ? Math.min(1.5, desvio * 0.6) : Math.max(-0.6, desvio * 0.35)
-  // cena escura de propósito (low key): se as altas do frame (percentil 90, o assunto iluminado) já estão no cinza ou
-  // acima, clarear não as leva além de 0,75 stop sobre o cinza. Interior com o assunto bem exposto continua interior
+  let exposicao = desvio >= 0 ? Math.min(CLAREIA_MAX, desvio * CLAREIA) : Math.max(-ESCURECE_MAX, desvio * ESCURECE)
+  // cena escura de propósito (low key): se as altas do frame (o assunto iluminado, a luz prática) já estão no cinza ou
+  // acima, clarear não as leva além de TETO_ALTAS sobre o cinza. Palco, arena e interior continuam escuros
   if (exposicao > 0) {
-    const alto = Ys[Math.min(Ys.length - 1, Math.floor(Ys.length * 0.9))]
-    exposicao = Math.min(exposicao, Math.max(0, Math.log2((0.18 * 2 ** 0.75) / alto)))
+    const alto = Ys[Math.min(Ys.length - 1, Math.floor(Ys.length * PCT_ALTAS))]
+    exposicao = Math.min(exposicao, Math.max(0, Math.log2((0.18 * 2 ** TETO_ALTAS) / alto)))
   }
   let ganhos = null
   if (n > 40) {
-    const media = (soma[0] + soma[1] + soma[2]) / 3
-    ganhos = soma.map((v) => limitar((media / v) ** 0.6, 0.85, 1.15))
+    // quanto cada cone precisa andar para o neutro medido virar o branco D65; normalizado para não mexer na luz
+    const k = soma.map((v, i) => BRANCO_CONES[i] / (v / n))
+    const media = (k[0] + k[1] + k[2]) / 3
+    ganhos = k.map((v) => limitar((v / media) ** 0.6, 0.85, 1.15))
   }
-  return { exposicao, ganhos, leitura: descreverCorrecao(exposicao, ganhos) }
+  // níveis, medidos já com a exposição corrigida
+  todos.sort((x, y) => x - y)
+  const stop = (p) => Math.log2((todos[Math.floor((todos.length - 1) * p)] * 2 ** exposicao) / 0.18)
+  const e1 = stop(0.01)
+  const e99 = stop(0.99)
+  const escura = Math.log2((mediana * 2 ** exposicao) / 0.18) < ESCURA
+  const contraste = [
+    1 + PRETO_FORCA * (limitar(e1 < -0.5 ? PRETO_ALVO / e1 : 1, 1, escura ? ESCURA_SOMBRA_MAX : CONTRASTE_SOMBRA_MAX) - 1),
+    escura ? ESCURA_ALTA : limitar(e99 > 0.5 ? BRANCO_ALVO / e99 : 1, CONTRASTE_ALTA[0], CONTRASTE_ALTA[1]),
+  ]
+  const saturacao = limitar((COR_ALVO / Math.max(1e-3, nCroma ? croma / nCroma : COR_ALVO)) ** 0.7, 1, COR_MAX)
+  const c = { exposicao, ganhos, contraste, saturacao, sombraFria: SOMBRA_FRIA }
+  return { ...c, leitura: descreverCorrecao(exposicao, ganhos, c) }
 }
 
-export function descreverCorrecao(exposicao, ganhos) {
+export function descreverCorrecao(exposicao, ganhos, niveis = null) {
   const partes = []
   if (Math.abs(exposicao) >= 0.1)
     partes.push(`${exposicao > 0 ? '+' : '−'}${Math.abs(exposicao).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} ${Math.abs(exposicao) >= 1.5 ? 'stops' : 'stop'}`)
@@ -137,6 +208,11 @@ export function descreverCorrecao(exposicao, ganhos) {
     if (verde > 1.015) partes.push('menos magenta')
     else if (verde < 0.985) partes.push('menos verde')
   }
+  if (niveis?.contraste) {
+    if (niveis.contraste[0] > 1.05) partes.push('preto assentado')
+    if (niveis.contraste[1] > 1.05) partes.push('branco aberto')
+  }
+  if (niveis?.saturacao > 1.05) partes.push('mais cor')
   return partes.length ? partes.join(' · ') : 'Frame já equilibrado.'
 }
 
@@ -149,7 +225,7 @@ export const BOOST_PADRAO = 50
  * Receita → look. `receita`: { entrada ('still' ou id de câmera), base, copia ('' = a da base, 'nenhuma' ou id),
  * negativo ('' = o da base, 'digital' ou id), luzCopia ('' ou D55/D60/D65), expandido e revelacao (null = os da base),
  * boost (0–100, o Boost da REVELAFILM por cima da película; ligado em BOOST_PADRAO quando não vem),
- * intensidade (0–1), correcao: { exposicao, ganhos } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
+ * intensidade (0–1), correcao: { exposicao, ganhos, contraste: [sombra, alta], saturacao, sombraFria } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
  * DaVinci Intermediate → DI, para a LUT log → log) e `aplicar(r, g, b)`: a prévia do código da entrada até a tela
  * Rec.709, o caminho inteiro.
  */
@@ -162,6 +238,9 @@ export function criarLab(receita = {}) {
   const motor = criarMotor(perfil, {
     exposicao: (cor?.exposicao ?? 0) + (aj.luz / 100) * 2,
     ganhosLms: cor?.ganhos ?? null,
+    contrasteCena: cor?.contraste ?? 1,
+    saturacaoCena: cor?.saturacao ?? 1,
+    sombraFria: cor?.sombraFria ?? 0,
     temperatura: aj.temperatura / 100,
     tint: aj.tint / 100,
     contraste: 1 + (aj.contraste / 100) * 0.35,
@@ -182,6 +261,7 @@ export function criarLab(receita = {}) {
     branqueamento: aj.branqueamento / 100,
     peleMatiz: aj.peleMatiz / 100,
     peleSat: aj.peleSat / 100,
+    zonas: ['hdrPreto', 'hdrEscuros', 'hdrSombras', 'hdrClaros', 'hdrAltas', 'hdrEspecular'].map((k) => ((aj[k] ?? 0) / 100) * 1.5),
     copia: receita.copia || undefined,
     negativo: receita.negativo || undefined,
     luzCopia: receita.luzCopia || undefined,
@@ -272,7 +352,19 @@ export function lerReceita(texto) {
     boost: r.versao < 5 ? 0 : limitar(Number(r.boost ?? BOOST_PADRAO), 0, 100),
     textura: lerTextura(r.textura),
     intensidade: limitar(Number(r.intensidade ?? 1), 0, 1),
-    correcao: c && typeof c === 'object' ? { exposicao: limitar(Number(c.exposicao) || 0, -2, 2), ganhos } : null,
+    correcao:
+      c && typeof c === 'object'
+        ? {
+            exposicao: limitar(Number(c.exposicao) || 0, -2, 2),
+            ganhos,
+            // níveis (desde 04/11/2026): receita antiga não tem e abre como estava
+            ...(Array.isArray(c.contraste) && c.contraste.length === 2
+              ? { contraste: [limitar(Number(c.contraste[0]) || 1, 1, CONTRASTE_SOMBRA_MAX), limitar(Number(c.contraste[1]) || 1, ESCURA_ALTA, CONTRASTE_ALTA[1])] }
+              : {}),
+            ...(c.saturacao != null ? { saturacao: limitar(Number(c.saturacao) || 1, 1, Math.max(COR_MAX, 2.2)) } : {}),
+            ...(c.sombraFria != null ? { sombraFria: limitar(Number(c.sombraFria) || 0, 0, 2) } : {}),
+          }
+        : null,
     ajustes,
     ...(legado ? { legado } : {}),
   }

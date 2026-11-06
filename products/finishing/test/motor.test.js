@@ -207,7 +207,8 @@ test('pacote: nomes no padrão ARRI, CLF com azul mais rápido, CDL da correçã
 
 test('Boost (REVELAFILM): fora da película não age; em 0 é a película pura; o cinza fica cinza e a pele fica com a cópia', () => {
   const p = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === '250d-2383')
-  const r = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === 'revela')
+  // look sem negativo nem cópia (o Revela Look nasce da 2383 desde 04/11/2026; o Suave não tem cópia)
+  const r = GRUPOS.flatMap((g) => g.looks).find((l) => l.id === 'suave')
   // o Boost sozinho (o acabamento da cópia, que vem depois dele, tem o teste dele)
   const puro = criarMotor(p, { acabamento: 0 })
   const zero = criarMotor(p, { boost: 0, acabamento: 0 })
@@ -248,7 +249,8 @@ test('acabamento da cópia (REVELAFILM): segura o neon, enche a cor fraca, junta
   const croma = (o) => Math.hypot(o[1], o[2])
   const matiz = (o) => (Math.atan2(o[2], o[1]) * 180) / Math.PI
   // só com cópia de cinema
-  assert.equal(criarMotor(perfilDe('revela')).acabamento, 0)
+  assert.equal(criarMotor(perfilDe('suave')).acabamento, 0)
+  assert.equal(criarMotor(perfilDe('revela')).acabamento, 1)
   assert.equal(com.acabamento, 1)
   // cor extrema (quase o primário do DWG) é segurada; cor fraca do dia a dia ganha um pouco
   assert.ok(croma(ok(com, [0.02, 0.3, 0.02])) < croma(ok(sem, [0.02, 0.3, 0.02])) * 0.9, 'verde neon segurado')

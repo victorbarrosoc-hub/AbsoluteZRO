@@ -169,6 +169,7 @@ export const NEUTRO = {
   verde: { gira: 0, croma: 1 },
   azul: { gira: 0, croma: 1 },
   pele: { junta: 0, croma: 1, ancora: 0 },
+  subtrativa: 0,
   sombras: [0, 0],
   meios: [0, 0],
   altas: [0, 0],
@@ -185,27 +186,21 @@ export const NEUTRO = {
 const perfil = (p) => ({ ...NEUTRO, ...p })
 
 export const REVELA = [
+  // Revela Look (04/11/2026): refeito sobre a cópia de projeção (2383, das fichas) e medido nos scopes de 9 filmes de
+  // referência finalizados casando o digital com a cópia (Interstellar, Oppenheimer, Duna 1 e 2, The Batman, A Chegada,
+  // 2001, 1917, Onde os Fracos Não Têm Vez), aplicado em 35 takes reais. Sai o meio-tom dourado (amarelava pele, céu e
+  // parede branca) e sai a alta morna da cópia (o branco fica branco: céu, neve, vestido); fica o desenho da cópia:
+  // preto denso, contraste de projeção, pele contida, verde sem neon. Erro contra os filmes: 2,98 → 2,57.
   perfil({
     id: 'revela',
     nome: 'Revela Look',
-    frases: ['Película de cinema: preto denso, meio-tom dourado, altas que deitam.', 'Verde oliva, céu petróleo, pele junta.'],
-    contraste: 1.08,
-    canais: [1.0, 1.0, 0.985],
-    timing: [0.03, 0, -0.04],
-    pe: 6.5,
-    ombro: 7,
-    sensibilidade: 0.05,
-    entreCamadas: 0.12,
-    densidade: 0.22,
-    saturacao: 0.97,
-    satAltas: 0.35,
-    satSombras: 0.2,
-    verde: { gira: -14, croma: 0.84 },
-    azul: { gira: -10, croma: 0.92 },
-    pele: { junta: 0.3, croma: 1.02, ancora: 0.6 },
-    sombras: [-0.006, -0.012],
-    meios: [0.002, 0.012],
-    altas: [0.002, 0.008],
+    frases: ['Cópia de cinema: preto denso, contraste de projeção, branco limpo.', 'Pele contida, verde sem neon.'],
+    copia: '2383',
+    saturacao: 0.95,
+    satAltas: 0, // a cópia e a tela já desaturam perto do branco; mais que isso apagava o azul do céu
+    verde: { gira: -4, croma: 1 },
+    peleSat: -0.5,
+    separacao: -1,
   }),
   perfil({
     id: 'suave',
@@ -514,6 +509,38 @@ function noCirculo(nos, h) {
  * veu (0–1), pele (0–1, protege a cor da pele), copia (id, 'nenhuma' ou ausente = a do perfil), negativo (id,
  * 'digital' ou ausente = o do perfil), revelacao, luzCopia, expandido, intensidade (0–1) }.
  */
+/** Zonas da exposição HDR: centro em stops sobre o cinza 18%. */
+export const ZONAS_HDR = [
+  { id: 'preto', centro: -6 },
+  { id: 'escuros', centro: -4 },
+  { id: 'sombras', centro: -2 },
+  { id: 'claros', centro: 1.5 },
+  { id: 'altas', centro: 3.5 },
+  { id: 'especular', centro: 5.5 },
+]
+/**
+ * `exposicoes`: stops por zona (na ordem de ZONAS_HDR, até ±1,5). Devolve ev → ev, monótona: soma de sinos (largura
+ * 1,2 stop) tabelada de -16 a +12 stops e corrigida para a inclinação nunca ficar abaixo de 0,15.
+ */
+export function criarCurvaZonas(exposicoes) {
+  const e = ZONAS_HDR.map((_, i) => limitar(exposicoes[i] ?? 0, -1.5, 1.5))
+  const DE = -16, ATE = 12, PASSO = 0.05, N = Math.round((ATE - DE) / PASSO) + 1
+  const tab = new Float64Array(N)
+  for (let k = 0; k < N; k++) {
+    const ev = DE + k * PASSO
+    let off = 0
+    for (let i = 0; i < e.length; i++) if (e[i]) off += e[i] * Math.exp(-(((ev - ZONAS_HDR[i].centro) / 1.2) ** 2) / 2)
+    tab[k] = ev + off
+    if (k > 0 && tab[k] < tab[k - 1] + 0.15 * PASSO) tab[k] = tab[k - 1] + 0.15 * PASSO
+  }
+  return (ev) => {
+    if (!(ev > DE)) return ev + (tab[0] - DE)
+    if (ev >= ATE) return ev + (tab[N - 1] - ATE)
+    const f = (ev - DE) / PASSO, k = Math.floor(f), t = f - k
+    return tab[k] + (tab[k + 1] - tab[k]) * t
+  }
+}
+
 export function criarMotor(p = NEUTRO, extra = {}) {
   const pr = perfil(p)
   const ganho = 2 ** (extra.exposicao ?? 0)
@@ -534,8 +561,9 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const altas = extra.altas ?? 0
   const sombrasAj = extra.sombras ?? 0
   const preto = extra.preto ?? 0
-  const peleMatiz = extra.peleMatiz ?? 0
-  const peleSat = extra.peleSat ?? 0
+  // matiz e saturação da pele: o do perfil (o look) somado ao ajuste da pessoa
+  const peleMatiz = (pr.peleMatiz ?? 0) + (extra.peleMatiz ?? 0)
+  const peleSat = (pr.peleSat ?? 0) + (extra.peleSat ?? 0)
   // Estilo (até a receita 5): a separação de tons antiga, retrô ou moderna, antes da cópia. Desde a 6 a separação é a
   // do acabamento da cópia (abaixo) e a Era da cópia faz o papel do retrô ↔ moderno.
   const estilo = extra.estilo ?? 0
@@ -553,7 +581,10 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     sombras: estilo >= 0 ? [-0.008 * estilo, -0.014 * estilo] : [0.006 * -estilo, 0.013 * -estilo],
     altas: estilo >= 0 ? [0.005 * estilo, 0.014 * estilo] : [-0.004 * -estilo, -0.011 * -estilo],
   }
-  const sombrasTom = [pr.sombras[0] + split.sombras[0], pr.sombras[1] + split.sombras[1]]
+  // sombra fria (Analisar e corrigir, 0 a 1): o azul-petróleo que os coloristas põem na sombra (19 takes reais,
+  // 04/11/2026). A pele continua fora da separação de tons
+  const fria = limitar(extra.sombraFria ?? 0, 0, 2)
+  const sombrasTom = [pr.sombras[0] + split.sombras[0] - 0.008 * fria, pr.sombras[1] + split.sombras[1] - 0.02 * fria]
   const altasTom = [pr.altas[0] + split.altas[0], pr.altas[1] + split.altas[1]]
   const t = limitar(extra.intensidade ?? 1, 0, 1)
   const idCopia = extra.copia === 'nenhuma' ? null : (extra.copia ?? pr.copia)
@@ -604,6 +635,17 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     C *= pr.saturacao * satExtra * (1 - pr.satAltas * suave(1.25, 1.9, Lr)) * (1 - pr.satSombras * (1 - suave(0.35, 0.85, Lr)))
     // densidade subtrativa: cor forte fica mais escura, proporcional à luz (no preto não há o que escurecer)
     L -= densidade * (Math.hypot(C, 0.01) - 0.01) * suave(0.15, 0.7, Lr) * L
+    // saturação subtrativa (04/11/2026): como o corante da película, a cor forte ganha croma e perde luz juntos — fica
+    // cheia e escura, nunca neon. Até o meio-tom alto: luz prática, janela e céu não escurecem (no cinema elas continuam
+    // luz). Medido nos filmes: no dia, a cor forte é ~20% mais escura que a fraca na mesma faixa
+    if (pr.subtrativa) {
+      const forte = (C * C) / (C * C + 0.0036) // quadrática: suave no eixo neutro (o croma tem bico no zero)
+      const ondeAge = suave5(0.12, 0.5, Lr) * (1 - suave5(1.15, 1.9, Lr)) // quíntica: sem quina na LUT
+      // a pele fica fora (como o colorista protege): escurecer a pele a deixa barrenta, principalmente a pele negra
+      * (1 - 0.8 * noMatiz(h, 55, 45))
+      L *= 1 - pr.subtrativa * forte * ondeAge
+      C *= 1 + 0.5 * pr.subtrativa * forte * ondeAge
+    }
     // separação de tons pela exposição (stops em volta do cinza), proporcional à luz
     const ev = Math.log2(Math.max(1e-6, (L / L_CINZA) ** 3))
     const ws = 1 - suave(-4.5, -0.5, ev)
@@ -673,17 +715,42 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     return oklabParaDwg([L, C * Math.cos(h * GRAU), C * Math.sin(h * GRAU)])
   }
 
+  // níveis do frame (Analisar e corrigir), depois da exposição e do branco, em DaVinci Intermediate: um slope abaixo do
+  // cinza (assenta o preto) e outro acima (abre ou segura o branco), com o cinza parado e a passagem suave (sem quina
+  // na LUT); depois a saturação com a luma do Rec.709, como no ASC CDL
+  const [slopeSombra, slopeAlta] = Array.isArray(extra.contrasteCena) ? extra.contrasteCena : [extra.contrasteCena ?? 1, extra.contrasteCena ?? 1]
+  const satDi = extra.saturacaoCena ?? 1
+  const DI_CINZA = linearParaDi(0.18)
+  const JOELHO = 0.02 // largura da passagem, em código DI (~0,3 stop)
+  const sp = (u) => (u > 30 ? u : Math.log1p(Math.exp(u)))
+  const niveis = (v) => {
+    const u = linearParaDi(v) - DI_CINZA
+    return DI_CINZA + slopeSombra * u + (slopeAlta - slopeSombra) * JOELHO * (sp(u / JOELHO) - Math.LN2)
+  }
   function primaria(rgb) {
     const x = rgb.map((v) => v * ganho)
-    return branco ? mul(branco, x) : x
+    const y = branco ? mul(branco, x) : x
+    if (slopeSombra === 1 && slopeAlta === 1 && satDi === 1) return y
+    let d = y.map(niveis)
+    if (satDi !== 1) {
+      const l = 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2]
+      d = d.map((v) => l + (v - l) * satDi)
+    }
+    return d.map(diParaLinear)
   }
 
+  // Exposição HDR por zonas (como as rodas HDR do Resolve): seis zonas em stops na luz da cena, cada uma até ±1,5
+  // stop, somadas por sinos suaves; a curva final é forçada a subir sempre (nunca inverte a luz nem faz degrau, mesmo
+  // com zonas vizinhas em sentidos opostos). Age na luz e mantém a cor.
+  const zonas = extra.zonas && extra.zonas.some((z) => z) ? extra.zonas : null
+  const curvaZonas = zonas ? criarCurvaZonas(zonas) : null
+
   /**
-   * Tom da cena antes do filme: altas, sombras e preto em log, em volta do cinza e sem mexer nele. Age na luz e mantém
-   * a cor (a razão entre os canais).
+   * Tom da cena antes do filme: altas, sombras e preto em log, em volta do cinza e sem mexer nele; depois as zonas HDR.
+   * Age na luz e mantém a cor (a razão entre os canais).
    */
   function tomDaCena(x) {
-    if (!altas && !sombrasAj && !preto) return x
+    if (!altas && !sombrasAj && !preto && !curvaZonas) return x
     const Y = Math.max(1e-9, luz(x))
     const e = Math.log2(Y / 0.18)
     let e2 = e
@@ -691,6 +758,7 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     else e2 = e * (1 - 0.35 * sombrasAj * suave(0, 3, -e))
     // preto: só abaixo de -1,5 stop (até -7 por inteiro): afunda ou levanta a sombra profunda, a curva sempre sobe
     if (preto) e2 += (preto < 0 ? 2 : 1) * preto * suave(-1.5, -7, e)
+    if (curvaZonas) e2 = curvaZonas(e2)
     return x.map((v) => (v * 2 ** e2 * 0.18) / Y)
   }
 
@@ -786,7 +854,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const AC = extra.parametrosAcabamento ?? ACABAMENTO
   const acab = idCopia ? limitar(extra.acabamento ?? 1, 0, 1) : 0
   const era = limitar(extra.era ?? 0, -1, 1)
-  const separacao = limitar(acab + (extra.separacao ?? 0), 0, 2)
+  // separação de tons da cópia: a do acabamento, mais a do perfil (o Revela Look tira a alta morna) e o ajuste da pessoa
+  const separacao = limitar(acab + (pr.separacao ?? 0) + (extra.separacao ?? 0), 0, 2)
   const pretoNeutro = limitar(extra.pretoNeutro ?? 0, -1, 1)
   const temAcabamento = acab > 0 || separacao > 0 || era !== 0 || pretoNeutro !== 0 || densidadeAj !== 0
   function acabar(y, ref, antes) {
