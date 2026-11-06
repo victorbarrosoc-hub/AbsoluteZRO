@@ -133,7 +133,7 @@ escolhida). Os limites do iPhone ficam em `lib/montagens-celular.js`:
 - vídeo: até 4 takes, 3/5/8/15 s, no máximo 1920 px no lado maior (21:9 sai 1920×810), 30 qps. Gravado no aparelho
   (`lib/montagens-midia.js`): o Mediabunny do Relay lê os takes quadro a quadro pelo WebCodecs (galeria pelo arquivo,
   Drive aos pedaços com o token), cada quadro é desenhado (takes por baixo, a camada da tela por cima, como o ffmpeg do
-  computador) e sai em H.264 num MP4. Sem `<video>` nem `MediaRecorder` (a CSP do app só deixa `media-src 'self'`).
+  computador) e sai em H.264 num MP4. Sem `<video>` nem `MediaRecorder`: quadro a quadro, o quadro certo de cada take.
   Precisa do iOS 16.4 ou mais novo; sem WebCodecs, a tela diz e sai a foto. O som vem de um take em velocidade normal,
   em AAC (o do sistema ou o do FFmpeg em WebAssembly); o Safari antes do iOS 26 não lê áudio pelo WebCodecs, e aí o vídeo
   sai sem som, com o aviso na folha. Câmera lenta sai sem som (o computador usa `atempo`).

@@ -164,7 +164,7 @@ test('celular: a aba Criar abre Montagens e o service worker guarda os arquivos 
   assert.match(criar, /MontagensTela/)
   const sw = await ler('sw.js')
   for (const f of ['lib/montagens.js', 'lib/montagens-celular.js', 'lib/montagens-midia.js', 'lib/frames-posts.js', 'components/montagens.js']) assert.ok(sw.includes(`'./${f}'`), `${f} fora do service worker`)
-  // o vídeo lê pelo Mediabunny (WebCodecs), nunca por <video> com blob: (a CSP do app só deixa media-src 'self')
+  // o vídeo lê pelo Mediabunny (WebCodecs), quadro a quadro, sem <video> nem MediaRecorder
   const midia = await ler('lib/montagens-midia.js')
   assert.doesNotMatch(midia, /createElement\('video'\)|new MediaRecorder/)
 })

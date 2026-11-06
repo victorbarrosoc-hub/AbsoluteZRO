@@ -2,7 +2,7 @@
 //  - Foto: aberta uma vez e reduzida ao que precisa (miniatura da bandeja, prévia da tela, a pronta em alta).
 //  - Take: lido com o Mediabunny (o mesmo do Relay, relay/vendor/, carregado só quando entra um vídeo), quadro a
 //    quadro pelo WebCodecs, direto do arquivo da galeria ou do Drive aos pedaços (Range, com o token). Nada de <video>:
-//    funciona com a CSP do app (media-src 'self') e com qualquer formato que o aparelho decodifica.
+//    quadro certo em qualquer formato que o aparelho decodifica, sem esperar o vídeo tocar.
 //  - Vídeo pronto: cada quadro é desenhado num canvas (os takes nos quadros deles e, por cima, a camada da tela com as
 //    fotos, o fundo, o espaço e os cantos: igual à prévia) e gravado em H.264 num MP4 pelo WebCodecs. No iPhone
 //    precisa do iOS 16.4 ou mais novo; sem ele, a tela diz que o vídeo fica para o computador.

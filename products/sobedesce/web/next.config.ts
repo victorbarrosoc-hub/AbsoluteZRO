@@ -44,7 +44,9 @@ const appCsp = [
   "style-src 'self' 'unsafe-inline'",
   `connect-src ${appConnect.join(" ")}`,
   `img-src ${appImg.join(" ")}`,
-  "media-src 'self'",
+  // blob:: o vídeo que a pessoa escolhe na galeria (Criar › Frames) abre num <video> por um endereço blob: que a
+  // própria página cria (public/app/lib/frames/celular.js). Sem ele, a CSP recusava e os Frames da galeria não abriam.
+  "media-src 'self' blob:",
   // Vídeo pesado aberto a qualquer pessoa com o link: o player do próprio Drive (components/preview.js, DrivePlayer).
   // Com a conta Google no aparelho, ele passa por accounts.google.com antes de tocar: bloquear o desvio = quadro branco.
   "frame-src https://*.google.com https://*.googleusercontent.com",
