@@ -214,6 +214,8 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
   portas da conta antiga só aparecem com `zro_email_em_uso` ou erro de senha (o SOBEDESCE não liga pelo e-mail).
 - ✅ Synquei em synquei.absolutezro.com (login, og, canonical; migration 0051 cadastra o retorno e o Abrir do HUB) e 308
   do synquei.vercel.app, menos o app e a API (os projetos do app instalado moram no endereço antigo).
+- ✅ Links do Synquei que ainda iam para synquei.vercel.app (família no Revela e no NOSSOM, "Conhecer o Synquei" nos
+  planos do SOBEDESCE, texto do Release do app de computador) no subdomínio.
 - ✅ Synquei pede a conta Absolute ZRO (titular, 02/11/2026, padrão do Relay): `/entrar/` nos dois endereços, o app leva
   para lá quem está fora e volta para a mesma tela; offline ou sem login ligado, segue aberto. Desktop sem mudança.
 - ✅ Cabeçalhos de segurança no TPeasy e no Synquei; CSP mínima no Maestro (a com `script-src` em tudo pede nonce: ⬜).

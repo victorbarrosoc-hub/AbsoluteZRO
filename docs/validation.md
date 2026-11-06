@@ -303,6 +303,13 @@ Branch `claude/quasar-mesa`, em `products/nossom`.
 - Corrigido antes de entregar: a onda crescia sem parar porque o canvas realimentava a altura. Agora ele fica por cima
   da caixa da faixa.
 
+## Synquei: links que faltavam no subdomínio (02/11/2026)
+
+Branch `claude/synquei-dominio-links`, a partir da `main` (que já tem o Synquei em synquei.absolutezro.com, migration
+0051). Troca só o endereço do Synquei em `products/finishing/app/menu.js`, `products/nossom/components/family-nav.tsx`,
+`products/sobedesce/web/src/components/precos/planos.tsx` e no texto do Release em `.github/workflows/synquei-desktop.yml`.
+Substitui o PR #67, fechado porque a `main` seguiu outro desenho (o app fica em synquei.vercel.app).
+
 ## Quasar: Melhorar com IA, Quasar Presence e IA avançada (02/11/2026)
 
 Branch `claude/quasar-presence-ia`, em `products/nossom`.

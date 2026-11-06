@@ -30,7 +30,7 @@ const FAMILIA = [
   { href: 'https://carro.absolutezro.com', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
   { href: 'https://quasar.absolutezro.com', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
   { href: 'https://tpeasy.absolutezro.com', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
