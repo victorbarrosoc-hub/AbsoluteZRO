@@ -712,6 +712,8 @@ test('rotas: limite de pedidos por IP (freio por instância) e a régua de orige
 require('./_tabela-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
 /* o job aconteceu? (0009): os dois lados confirmam depois do dia, e só o confirmado pelos dois conta no selo */
 require('./_confirmacao-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
+/* cancelar só até a véspera (0010): do dia do job em diante, só o "Aconteceu? Não" */
+require('./_cancelar-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
 /* a guilda (0004, fase 2): suítes em _guilda-testes.js, com o mesmo banco, a mesma Absolute ZRO falsa e o mesmo servidor */
 require('./_guilda-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais, FREELA, OUTRA, TERCEIRA }));
 /* a Sede (0005): chat, quadro, XP, personalização, imagens e lugares — o mesmo banco, a mesma Absolute ZRO falsa */

@@ -91,6 +91,7 @@ async function corpoDe(req, res, extra) {
   }
 }
 
+const CANCELAR_DEPOIS_DO_DIA = /depois que o dia chega/;
 /** recusa de regra (400 com o campo) e do banco (check, RLS) viram resposta curta; o resto sobe */
 function responderErro(res, e, extra) {
   if (e instanceof R.Recusa) return json(res, 400, { erro: e.erro, campo: e.campo }, extra);
@@ -100,6 +101,8 @@ function responderErro(res, e, extra) {
     const quem = typeof e.detail === 'string' && /^[0-9a-f-]{36}$/i.test(e.detail) ? { quem: e.detail.toLowerCase() } : {};
     return json(res, ERROS_GUILDA[e.message], Object.assign({ erro: e.message }, quem), extra);
   }
+  /* (0010) o job aceito não se cancela do dia em diante: a guarda das propostas recusa com esta frase */
+  if (e && e.code === '42501' && CANCELAR_DEPOIS_DO_DIA.test(e.message || '')) return json(res, 409, { erro: 'dia', campo: 'dia' }, extra);
   if (e && e.code === '42501') return json(res, 403, { erro: 'proibido' }, extra);
   if (e && e.code === '22P02') return json(res, 400, { erro: 'pedido' }, extra);
   if (e && e.code === '22023') return json(res, 400, { erro: 'janela' }, extra);
@@ -370,7 +373,8 @@ async function pessoas(req, res) {
 /* ---------------- propostas, feed, brechó e denúncia (0003) ----------------
  * GET    /api/zro/propostas              → { recebidas: [...], enviadas: [...] }   (as minhas, dos dois lados)
  * POST   /api/zro/propostas              → 201 { proposta }   (chega na caixa de `para`, dentro do Carro)
- * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou)
+ * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou — o job
+ *                                                            aceito só até a véspera do dia: 409 {erro:'dia', campo:'dia'}, 0010)
  * PATCH  /api/zro/propostas?id=          → { proposta }       ({acao:'confirmar', aconteceu}: o job aconteceu? cada lado, depois
  *                                                            do dia, uma vez; 0009 — só o confirmado pelos dois conta no selo)
  * GET    /api/zro/feed                   → { posts: [...] }   (os 100 mais novos, sem os que EU denunciei)
@@ -393,6 +397,8 @@ function propostaSaida(l, sub, missoes) {
   const o = { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
     anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
     mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+  /* (0010) quem mandou ainda pode cancelar? Só lido com COM_CONFIRMACAO (que traz `dia_chegou`) */
+  if ('dia_chegou' in l) o.cancelavel = R.cancelavel(l, sub);
   /* o job aconteceu? (0009) — só no job aceito lido com as respostas (COM_CONFIRMACAO): `aberta` = o dia já passou;
      `minha`/`outra` = true (aconteceu), false (não aconteceu) ou null (ainda não respondeu); `confirmado` = os dois
      disseram que aconteceu (é o que conta no selo) */
@@ -432,7 +438,8 @@ function semConteudo(res, extra) {
 const COM_CONFIRMACAO = `select p.*,
     (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub = $1) as conf_minha,
     (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub <> $1) as conf_outra,
-    p.dia < (now() at time zone 'America/Sao_Paulo')::date as dia_passou
+    p.dia < (now() at time zone 'America/Sao_Paulo')::date as dia_passou,
+    p.dia <= (now() at time zone 'America/Sao_Paulo')::date as dia_chegou
   from carro_do_freela.propostas p`;
 /** o job aconteceu? Cada lado responde a própria vez, depois do dia, uma vez só (o banco confere de novo: RLS) */
 async function confirmarJob(c, id, sub, aconteceu) {
@@ -490,10 +497,19 @@ async function propostas(req, res) {
       return json(res, 200, { proposta: propostaSaida(r.l, sub) }, extra);
     }
     const v = R.respostaDe(corpo);
-    const l = await db.asUser(sub, async c =>
-      (await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1 returning *', [id, v.estado, v.motivo])).rows[0]);
-    if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
-    return json(res, 200, { proposta: propostaSaida(l, sub) }, extra);
+    const r = await db.asUser(sub, async c => {
+      /* (0010) cancelar o job aceito do dia em diante: a resposta antes de tentar (o banco recusa de novo, na guarda) */
+      if (v.estado === 'cancelada') {
+        const a = (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0];
+        if (a && a.de_sub === sub && a.estado === 'aceita' && !R.cancelavel(a, sub)) return { dia: true };
+      }
+      const n = await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1', [id, v.estado, v.motivo]);
+      if (!n.rowCount) return null;
+      return { l: (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0] };
+    });
+    if (r && r.dia) return json(res, 409, { erro: 'dia', campo: 'dia' }, extra);
+    if (!r || !r.l) return json(res, 404, { erro: 'nao_achado' }, extra);
+    return json(res, 200, { proposta: propostaSaida(r.l, sub) }, extra);
   } catch (e) {
     return responderErro(res, e, extra);
   }

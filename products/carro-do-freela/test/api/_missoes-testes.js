@@ -282,6 +282,24 @@ module.exports = function registrar(ctx) {
     assert.equal((await S(A.cd, { acao: 'missao', titulo: 'Doc das dunas 2', dia: dia(12), equipe: [{ sub: m1.p.sub }] })).status, 201);
   });
 
+  test('missões (0010): no dia do job, desmontar com gente que aceitou é recusado (409 dia); só com proposta nova, desmonta', async () => {
+    const A = await montar('Petrópolis', 'PTP', 1);
+    const [m1] = A.membros;
+    const hojeSP = (await SQL("select (now() at time zone 'America/Sao_Paulo')::date::text as d"))[0].d;
+    const { missao } = await (await S(A.cd, { acao: 'missao', titulo: 'Hoje em Petrópolis', dia: hojeSP, equipe: [{ sub: m1.p.sub }] })).json();
+    const id = (await (await mandar(A.cd, m1.p, missao.id)).json()).proposta.id;
+    assert.equal((await P(m1.ck, { estado: 'aceita' }, 'PATCH', id)).status, 200);
+    const r = await S(A.cd, { acao: 'missao_cancelar', missao: missao.id });
+    assert.deepEqual([r.status, await r.json()], [409, { erro: 'dia', campo: 'dia' }], 'o job aceito não se cancela no dia, nem desmontando');
+    assert.equal((await SQL('select estado from carro_do_freela.propostas where id = $1', [id]))[0].estado, 'aceita');
+    assert.equal((await minha(A.cd)).missoes.filter(x => x.id === missao.id).length, 1, 'a missão fica no quadro');
+    /* outro dono, no mesmo dia, só com a proposta nova (ninguém aceitou): desmonta como antes */
+    const B = await montar('Quintas', 'QNT', 1);
+    const b = await (await S(B.cd, { acao: 'missao', titulo: 'Hoje nas Quintas', dia: hojeSP, equipe: [{ sub: B.membros[0].p.sub }] })).json();
+    await mandar(B.cd, B.membros[0].p, b.missao.id);
+    assert.equal((await S(B.cd, { acao: 'missao_cancelar', missao: b.missao.id })).status, 204);
+  });
+
   test('missões: o quadro mostra a rodar, rodando (hoje) e feito, e a busca não conhece missão', async () => {
     const A = await montar('Alecrim', 'ALC', 1);
     const m1 = A.membros[0];

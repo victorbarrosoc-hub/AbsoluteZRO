@@ -71,6 +71,9 @@ reprova o build.
   carro_do_freela.tabelas;` e, logado, `GET /api/zro/selo` responde `{selo:{pct, itens, jobs, verificado}}`.
 - Desde a 0009 (03/11/2026, também sozinha no build de produção): `select count(*) from carro_do_freela.job_confirmacoes;`.
   Os jobs que já existiam passam a contar no selo só depois que os dois lados confirmarem em Jobs ("Aconteceu?").
+- Desde a 0010 (03/11/2026, também sozinha no build de produção; só troca o corpo de `propostas_guarda()`):
+  `select prosrc like '%depois que o dia chega%' from pg_proc where oid = 'carro_do_freela.propostas_guarda'::regproc;`
+  responde `true`. Na tela, um job aceito que já chegou ao dia não mostra "Cancelar" em Propostas.
 
 ## Não ligar sem nova decisão
 

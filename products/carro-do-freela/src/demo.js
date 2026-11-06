@@ -111,11 +111,16 @@
   proposta(12, EU_ID, P(14).id, 'Você (demonstração)', 'Op. de drone', -5, '06:00', '10:00', 'Via Costeira', 'Imagens aéreas da Via Costeira.', 'aceita', 160);
   var confirmacoes = {};
   [[4, true, true], [8, true, true], [10, true, null], [11, null, true], [12, null, true]].forEach(function (x) { confirmacoes[uuid('pppppppp', x[0])] = { de: x[1], para: x[2] } });
+  /* cancelar (0010): quem mandou cancela a nova sempre e a aceita só até a véspera do dia do job (brechó e job sem dia
+     como eram); do dia em diante, "Aconteceu? Não" */
+  var diaChegou = function (x) { return x.tipo === 'job' && x.estado === 'aceita' && !!x.dia && x.dia <= dia(0) };
+  var podeCancelar = function (x) { return !x.recebida && (x.estado === 'nova' || x.estado === 'pendente' || (x.estado === 'aceita' && !diaChegou(x))) };
   var comConf = function (x) {
-    if (x.tipo !== 'job' || x.estado !== 'aceita' || !x.dia) return x;
+    var o = Object.assign({}, x, { cancelavel: podeCancelar(x) });
+    if (x.tipo !== 'job' || x.estado !== 'aceita' || !x.dia) return o;
     var c = confirmacoes[x.id] || { de: null, para: null }, eu = x.para === EU_ID ? 'para' : 'de', aberta = x.dia < dia(0);
     var minha = c[eu] === undefined ? null : c[eu], outra = c[eu === 'para' ? 'de' : 'para']; outra = outra === undefined ? null : outra;
-    return Object.assign({}, x, { confirmacao: { aberta: aberta, minha: minha, outra: outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true } });
+    return Object.assign(o, { confirmacao: { aberta: aberta, minha: minha, outra: outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true } });
   };
   if (NOVO) propostas = [];
 
@@ -259,6 +264,8 @@
           if (cf[lado] !== null && cf[lado] !== undefined) return J(409, { erro: 'ja_confirmado', campo: 'aconteceu' });
           cf[lado] = c.aconteceu; return J(200, { proposta: comConf(alvo) });
         }
+        if (c.estado === 'cancelada' && !alvo.recebida && diaChegou(alvo)) return J(409, { erro: 'dia', campo: 'dia' });
+        if (c.estado === 'cancelada' && !podeCancelar(alvo)) return J(403, { erro: 'proibido' });
         alvo.estado = c.estado || alvo.estado; return J(200, { proposta: comConf(alvo) }) }
       return J(200, { recebidas: propostas.filter(function (x) { return x.recebida }).map(comConf), enviadas: propostas.filter(function (x) { return !x.recebida }).map(comConf) });
     }

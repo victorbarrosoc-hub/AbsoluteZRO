@@ -154,6 +154,40 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
 - Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
 
+## Carro do Freela: o job aceito só se cancela até a véspera (03/11/2026, `0010_cancelar_ate_o_dia`)
+
+- Banco local (Postgres 16): `npm run test:banco` **65/65** (era 61; 3 novos em `test/api/_cancelar-testes.js` e 1 em
+  `_missoes-testes.js`): a guarda recusa cancelar o job aceito no dia, um dia e um mês depois (data de São Paulo) e
+  deixa na véspera e um mês antes; a proposta nova (mesmo com o dia passado), o job aceito sem dia e o brechó cancelam
+  como antes; quem recebeu nunca cancela; quem é de fora não alcança a linha; mudar o dia junto não escapa ("não muda
+  depois de mandada"); o job confirmado pelos dois continua no selo; as rotas devolvem `cancelavel` (só quem mandou, só
+  até a véspera) e o PATCH de cancelar responde 409 `{erro:'dia', campo:'dia'}` no dia e depois, 403 para quem recebeu,
+  404 para quem é de fora, 200 na véspera; "Aconteceu? Não" segue aberto; desmontar a missão no dia com alguém que
+  aceitou dá 409 `dia` e a missão fica. Migrações em banco vazio, duas vezes, e com o login sem superusuário.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **78/78** (era 75): o job aceito que eu mandei com o dia passado não tem "Cancelar" e o PATCH
+  é recusado (409 `dia`, "Depois do dia, responda se aconteceu."); no dia, a nota diz o mesmo e não há botão; a
+  proposta nova cancela em dois toques ("Cancelar mesmo?"), vai ao servidor e fica "cancelada".
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **95 de 95** (`cadastro-foco`, `conta-zro` e `sem-zoom`
+  falharam só em paralelo e passaram sozinhas). `scan-secrets`: nenhum segredo.
+
+## Carro do Freela: a Agenda em quatro estados e o `/demo` num iframe (03/11/2026)
+
+- `test/demo-real.js` **75/75** (era 59): no computador, cada dia de hoje em diante tem o estado do job e da agenda
+  declarada (livre, negociando, ocupado, meia diária) e a legenda conta igual ao mês; ocupado, negociando, meia diária
+  (manhã) e dia de job nos dias da conta da demonstração; os quatro diferem por desenho e não só pela cor (liso,
+  tracejado, hachura, metade); hoje com o anel; a legenda filtra e volta; a folha do dia mostra o desenho de cada opção e
+  "Negociando" atualiza a legenda; "Bloquear dias" marca dois dias e manda 2 PUT. No celular (390×844): o mês pequeno
+  com os mesmos estados e contagem, legenda numa linha, itens e dias com 44px ou mais, sem rolagem lateral, e "Tarde
+  ocupada" vira meia diária. O `/demo` num iframe liga a conta da demonstração (10 propostas, 101 pessoas); o site de
+  verdade num iframe segue sem conta.
+- `npm run test:api` **49/49**.
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **95 de 95** (`aluguel`, `cadastro` e `conta-zro`
+  falharam só em paralelo e passaram sozinhas; `colisao` pegou uma regra com duas classes raiz, corrigida). A prévia
+  e as fases não mudam (a Agenda nova só existe no `REAL`).
+- Playwright no `/demo` a 1440×900 e 390×844, claro e escuro, com os quatro estados na tela: zero erro de página.
+  `scan-secrets`: nenhum segredo.
+
 ## Carro do Freela: o job só conta no selo quando os dois confirmam (03/11/2026, `0009_job_confirmado`)
 
 - Banco local (Postgres 16): `npm run test:banco` **61/61** (3 novos em `test/api/_confirmacao-testes.js`: RLS de
