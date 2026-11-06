@@ -45,7 +45,7 @@ const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'ic
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set'];
 /* (28/out) as rotas de dados falam com o banco (pg): vão EMPACOTADAS pelo
    esbuild num arquivo só, com o `pg` dentro — as outras seguem copiadas */
-const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'propostas', 'feed', 'brecho', 'denuncia', 'guildas', 'sede', 'sede-imagem'];
+const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas', 'tabela', 'selo', 'propostas', 'feed', 'brecho', 'denuncia', 'guildas', 'sede', 'sede-imagem'];
 /* (31/out) a imagem da Sede (logo e foto do set) é reencodada pelo sharp, que tem binário nativo (libvips): ele fica
    FORA do pacote do esbuild e vai copiado, com as dependências dele, para o node_modules da própria função */
 const COM_SHARP = ['sede-imagem'];

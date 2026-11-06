@@ -120,6 +120,70 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
 - Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
 
+## Carro do Freela: o job só conta no selo quando os dois confirmam (03/11/2026, `0009_job_confirmado`)
+
+- Banco local (Postgres 16): `npm run test:banco` **61/61** (3 novos em `test/api/_confirmacao-testes.js`: RLS de
+  `job_confirmacoes` — só a própria linha, só ponta da proposta, só job aceito com o dia passado em São Paulo, uma vez,
+  sem UPDATE/DELETE, `em` do banco, quem é de fora não lê; o selo e a vitrine só contam o job confirmado pelos dois com
+  "aconteceu"; as rotas GET/PATCH com `confirmacao` e os erros `tipo`, `campo`, `estado`, `cedo`, `ja_confirmado`,
+  `nao_achado` e origem). Os testes do selo da 0008 passaram a confirmar os jobs, e a vitrine prova o ✓ desligado com 6
+  jobs aceitos sem confirmação. Migrações em banco vazio, duas vezes, e com o login sem superusuário.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **59/59** (era 50): 4 jobs passados e 2 no selo; "Aconteceu?" com Sim/Não dos dois lados;
+  histórico com o estado; balão "2 jobs para confirmar"; "Sim" manda o PATCH, vira "Confirmado pelos dois", relê o selo
+  (3 jobs) e o balão desce; Meu perfil com 3 traços e a dica; quem contratou responde "Não" no detalhe/Jobs, fica "Não
+  aconteceu" sem nova pergunta e o selo não muda.
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **95 de 95** (cadastro-foco, conta-zro,
+  porta-malas-real e sem-zoom falharam só em paralelo e passaram sozinhas). Playwright no `/demo` a 1440×900 e 390×844
+  (Jobs, respondido, histórico, selo, quem contrata, detalhe da proposta): zero erro de página. `scan-secrets`: nenhum
+  segredo.
+
+## Carro do Freela: tabela de diária e selo no servidor (03/11/2026)
+
+- Banco local (Postgres 16): `npm run test:banco` **58/58** (5 novos em `test/api/_tabela-testes.js`: RLS e checagens da
+  tabela, o selo calculado sem vazar conta alheia por `selo_fatos`, a vitrine exigindo pessoa e só de quem consentiu,
+  as rotas `/api/zro/tabela` e `/api/zro/selo` com erros por campo, jobs concluídos contados certo, 85% e 6 jobs dando o
+  ✓, "topo viajar" no perfil inteiro, e quem contrata vendo tabela, viagem e ✓ só com consentimento). As migrações
+  aplicam duas vezes sem efeito e com o login sem superusuário.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **50/50** (era 37): a folha da tabela vazia (nada sugerido), número inválido marca o campo e não
+  sai, salvar manda `PUT /api/zro/tabela` em centavos, a tabela relida volta igual, o medidor é o do servidor (63% →
+  94%, "faltam 4 jobs"), o ✓ só vem do servidor (nem jobs no aparelho nem 503 ligam), "Topo viajar" vai ao servidor
+  pela folha e pela entrada em perguntas, e quem contrata vê "diária a partir de" e o ✓ só de quem o servidor devolveu.
+- Bateria `node test/run.js`: 93 de 95 na rodada inteira; as duas que caíram foram `versoes` (o template foi mexido no
+  meio da rodada, builds defasados) e `site-real` (o primeiro pedido ao entrar passou a ser a tabela; a tabela agora
+  vem depois da agenda e da busca). Refeitas sozinhas: `versoes` 95/95, `site-real` 42/42, `conta-zro` 152/152,
+  `sem-zoom` 41/41, `colisao`, `toque-44` 9/9, `guilda-real` 64/64, `missoes-real` 61/61. `porta-malas-real` oscila
+  (o quadro do Sobedesce às vezes não monta em 30 s) também sem esta mudança: 2 de 5 sem ela, 2 de 7 com ela.
+- Playwright no `/demo` a 1440×900 e 390×844 (Meu perfil, folha da tabela vazia e cheia, selo antes/depois/verificado,
+  busca e perfil de quem contrata): zero erro de página. `scan-secrets`: nenhum segredo.
+
+## Carro do Freela: telas novas do site real (02/11/2026)
+
+- Playwright (Chromium) no `/demo` a 1440×900 e 390×844, tema escuro e claro: entrada em perguntas (freela e quem
+  contrata), Meu perfil e as folhas, Propostas (lista, detalhe, brechó, aceita, enviadas, vazia), Agenda (mês, dia,
+  bloquear), Jobs (com jobs e vazio) e Brechó (vitrine e filtro): zero erro de página, sem rolagem lateral.
+- `test/demo-real.js` 37/37 (era 24): conta nova em `/demo?novo=1` cai na entrada em perguntas, cinco passos e o pronto,
+  "Topo viajar", a ★ da função principal, o @ virando link, concluir manda `PUT /api/zro/perfil` com praça, funções,
+  portfólio e a busca ligada, "Marcar minha semana" abre a agenda; as cinco telas novas aparecem e as antigas somem;
+  aceitar na caixa vai ao servidor e vira job; marcar um dia ocupado na agenda vai ao servidor.
+- Carro `npm run test:api` 49/49; bateria `node test/run.js` 95 de 95 (doca e conta-zro precisaram rodar sozinhas).
+- `scan-secrets`: nenhum segredo.
+
+## Carro do Freela: o site real não fala do que não existe (02/11/2026)
+
+- Varredura no `/demo` (Playwright, 1440 e 390 px, os dois lados: toda tela do `MENU`, gaveta, cada artigo da Ajuda,
+  guia, consulta, perfil, anúncio, cadastro passo a passo, painéis do brechó e o fechamento da escala) atrás de take,
+  T$, pedágio, taxa, sinal, custódia, garantia, contrato, gov.br, aluguel, impulsionado, seguro, dossiê, planos pagos,
+  assinatura, mensalidade, Prévia, Passar o carro, Sirene, Cofre, Orçamento e WhatsApp: 80 linhas antes, zero depois
+  (R$ só no preço do anúncio, no valor da proposta e na tabela de diária).
+- `test/demo-real.js` ganhou a guarda (gaveta, artigos, guia, nove telas, cadastro sem WhatsApp): 24/24; tirando o
+  `data-sem-real` de "Taxas" do HTML gerado ela reprova. Suítes do real: demo-real, site-real, conta-zro, guilda-real,
+  missoes-real e porta-malas-real 6/6 (porta-malas-real precisou rodar sozinha, 18/18). Protótipo inalterado: mapa,
+  menu-recolhivel, guia-portas, explicador, versoes, fase1-sem-dinheiro, cadastro, cadastro-foco, consentimento,
+  propostas, busca, busca-e-cartao, filtros-busca, contratante, fechar-escala, painel-do-job, rede-e-convite,
+  persistencia, baloes e vitrines 20/20.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo

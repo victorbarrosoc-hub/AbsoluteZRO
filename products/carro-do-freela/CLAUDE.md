@@ -181,6 +181,110 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
   `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
+## 03/nov — tabela de diária e selo no servidor (`0008_tabela_e_selo`, `0009_job_confirmado`, `_tabela-testes.js`, `_confirmacao-testes.js`, `test/demo-real.js`)
+
+Titular: *"Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado, coloca tudo pra subir
+sexta"*. Até aqui a tabela (`PRECOS`), o "Topo viajar" (`EU.viaja`) e o medidor do selo (`ITENS`/`completude()`)
+moravam só no aparelho. Agora:
+- **Banco (0008):** `perfis.viaja`; `carro_do_freela.tabelas` (uma por `sub`, RLS só da dona; por função do catálogo,
+  até 12, "só eu" e "com meu equipamento" em centavos em listas paralelas; meia e fim de semana em %, hora extra e
+  fora da cidade em centavos; **null = não disse**, nada semeado nem sugerido). O selo é **calculado, nunca guardado**:
+  `selo_de(fatos, jobs)` (pura, os pesos de sempre normalizados: nome e praça 10, portfólio 4, funções 16, nichos 5,
+  câmera + lente ativas no inventário 12, tabela com valor 17, hora extra e deslocamento respondidos 4 = 68 → 100) e
+  `selo_fatos(sub)` **sem security definer** (para outra conta o app só vê tudo falso). Job concluído = proposta de job
+  aceita em que a pessoa é `para_sub`, com `dia` antes de hoje em São Paulo; o mesmo contratante no mesmo dia conta uma
+  vez. Selo = ≥ 85% e ≥ 6 jobs. Para quem contrata, `vitrine(subs)` (security definer, como `agendas()`): só de quem
+  marcou "Mostrar meu perfil para quem contrata", devolve `viaja`, a tabela e **só o booleano** `verificado`.
+- **API:** `GET/PUT /api/zro/tabela` → `{tabela, selo}` (PUT = tabela inteira; erros `{erro, campo}` com `campo` em
+  `funcao`, `linhas`, `so_eu_cents`, `com_equip_cents`, `meia_pct`, `fds_pct`, `hora_extra_cents`,
+  `deslocamento_cents`); `GET /api/zro/selo` → `{selo:{pct, itens:[{k,t,peso,ok}], jobs, verificado, meta}}`; o perfil
+  ganhou `viaja` (o PUT é inteiro: sem o campo volta a falso, então `nxPerfilSalvar`, `cfbSalvarPerfil` e
+  `perfilDoCadastro` mandam o valor atual); `/api/zro/pessoas` ganhou `tabela`, `viaja` e `verificado`. As duas rotas
+  novas estão em `FUNCOES_BANCO` (`vercel-build.js`). O `openapi.yaml` da raiz só cobre o HUB.
+- **Tela (só `REAL`):** em Meu perfil, o medidor `#nx-selo` (`nxSeloMedidor`; anel com o %, "faltam X% e N jobs", os 6
+  traços dos jobs, e cada item que falta abre a folha que resolve, `NX_SELO_LINHA`) e a linha "Tabela de diária" com a
+  folha `nxTabelaFolha` (uma linha por função, as quatro regras, `nxCentavos`/`nxPct`, campo errado com
+  `aria-invalid`). `NX_TABELA`/`NX_SELO` vêm de `nxTabelaCarregar()` (no `realCarregar` e na primeira pintura de
+  Meu perfil) e o selo é relido (`nxSeloAtualizar`) depois de salvar perfil e equipamento. ⚠️ `recalcular()` no real
+  pega `EU.compl`, `EU.ver` e `EU.jobs` do servidor; sem servidor o % é o do aparelho e **o ✓ nunca liga**. A tabela do
+  servidor substitui o `PRECOS` (que no protótipo nascia com valores de exemplo). "Onde trabalho" e a entrada em
+  perguntas mandam `viaja` ao servidor. Para quem contrata: `realPessoa` lê `verificado`, `viaja` e `realTabela()`;
+  `precoDe` usa a tabela publicada; a linha da busca diz "diária a partir de" e o perfil mostra a tabela na aba
+  Equipamento (`realPerfilTabela`), sem o "% de perfil completo" de quem não é você.
+- `/demo` responde `tabela` e `selo` com a mesma conta (`seloDemo`); as pessoas inventadas de lá têm tabela e selo
+  inventados como elas. A conta da demo começa com 63% e 2 jobs.
+- **Decisões do titular (03/nov · 2):** (1) *"Hora extra e deslocamento em 0, o usuário que escolhe se cobra ou não"*:
+  **R$ 0 é resposta**, conta no item "Hora extra e deslocamento" (já era assim na 0008: `is not null`); a folha diz
+  "0 se não cobra" e o perfil público mostra hora extra 0 como "não cobra" (fora da cidade 0 já era "sem acréscimo").
+  (2) **Endurecer o selo**: o job só conta nos "6 jobs concluídos" quando os DOIS lados confirmam, depois do dia, que
+  ele aconteceu.
+- **Banco (`0009_job_confirmado`, arquivo NOVO, a 0008 ficou intacta):** `carro_do_freela.job_confirmacoes (proposta,
+  sub, aconteceu, em)`, pk `(proposta, sub)`. RLS: lê quem é ponta da proposta (a minha resposta e a do outro);
+  insere só a própria linha, só em proposta `tipo='job'`, `estado='aceita'`, com `dia` antes de hoje em São Paulo; o
+  app não tem UPDATE nem DELETE (resposta dada não vira) e o INSERT é por coluna (`em` é do banco). `selo_fatos` foi
+  refeita: conta só job com as duas respostas `aconteceu = true` (o resto igual: quem fez, dia passado, mesmo
+  contratante no mesmo dia uma vez); a `vitrine()` herda, então o ✓ de quem contrata vê também exige confirmação. A
+  guarda das propostas (0003) não mudou. ⚠️ Quem contratou ainda pode **cancelar** um job aceito depois do dia (regra da
+  0003) e aí ele sai do selo mesmo confirmado: é rebaixar, nunca inflar; mudar isso é decisão do titular.
+- **API:** `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu:true|false}` (o mesmo PATCH de aceitar e
+  recusar; `acao` no corpo escolhe o caminho) → `{proposta}`. Erros: 400 `{erro:'tipo', campo:'aconteceu'|'acao'}`,
+  400 `{erro:'campo', campo}` para campo a mais, 404 `nao_achado`, 409 `{erro:'estado', campo:'estado'}` (não é job
+  aceito), 409 `{erro:'cedo', campo:'dia'}` (o dia não passou), 409 `{erro:'ja_confirmado', campo:'aconteceu'}`. O GET
+  (e o PATCH) devolve em cada job aceito `confirmacao: {aberta, minha, outra, pendente, confirmado}` (`aberta` = o dia
+  passou; `minha`/`outra` = true, false ou null; `pendente` = falta a minha). Leitura com `COM_CONFIRMACAO`.
+- **Tela (só `REAL`):** em Jobs, o cartão **"Aconteceu?"** (`nxConfSecao`, `#nx-conf`, "Só conta quando os dois
+  confirmam.") com Sim/Não para cada job passado que espera a MINHA resposta, dos dois lados (os meus, de `PROPOSTAS`,
+  e os da minha equipe, de `REAL_ENVIADAS`); respondido, fica ali com o estado até repintar a sessão (`NX.confAgora`).
+  O histórico dos feitos mostra o estado (`nxConfDoJob`: "Confirmado pelos dois", "Esperando a outra parte", "Não
+  aconteceu", "Falta você"). O detalhe da proposta (recebida ou enviada) pergunta o mesmo (`nxConfAcoes`). Responder é
+  `realConfirmar` (relê o selo quando eu sou quem fez). O medidor ganhou "Job conta quando os dois confirmam."
+  (`#nx-selo-dica`) e a aba Jobs ganhou balão "N jobs para confirmar" (`contarPendencias({jobsConfirmar})`).
+- `/demo`: os jobs 4 e 8 estão confirmados (a conta segue com 63% e 2 jobs), o 10 espera a minha resposta (quem chamou
+  já disse sim), o 11 espera quem chamou e o 12 é um job que eu contratei esperando a minha resposta.
+  `CDF_DEMO.confirmacoes()` mostra o que a página respondeu. Suítes: `_confirmacao-testes.js` (banco) e `demo-real.js`.
+
+## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
+
+Só no `REAL` (a prévia, as fases e as suítes de sempre não veem nada): bloco `nx-*` no começo de `#v-propostas`,
+`#v-agenda`, `#v-jobs`, `#v-brecho` e `#v-meu`, e o `.wrap` antigo some por CSS (`html.real #v-x>.wrap`). Código num
+bloco só (`NX_PRONTO`, `nxPintar`, `nxAcao`), antes de `contaZroDe`; CSS no fim da primeira folha.
+- **Entrada em perguntas** (`#ob`, `obTalvez`/`obAbrir`): no primeiro login, sem perfil pronto, em vez do
+  `abrirCadastro("entrar")`. Freela: para quê → praça (`PRACAS_REAL`, "Topo viajar") → funções (★ = a principal, a
+  primeira de `EU.func`; até 12) e nichos → @ ou link (`linkPortfolio`, "Pular") → aparecer na busca → pronto.
+  Contratante: para quê → praça → "Você contrata como?" (`PROD.tipo`) → pronto. Nome e e-mail vêm da conta. O fim é
+  `concluirCadastro({calado:true})` (consentimento + `enviarCadastroAoPerfil`, sem guia nem aviso). ⚠️ `obTalvez()` lê
+  antes `GET /api/zro/perfil`: quem já tem perfil na conta (outro aparelho) não responde de novo.
+- **Meu perfil**: o cartão "Como quem contrata vê" + uma lista; cada linha abre uma folha (`nxFolha`) com um campo só.
+  Salva com `nxPerfilSalvar(patch)`: o PUT é do perfil INTEIRO (8 campos; o servidor recusa campo desconhecido, então
+  nunca mande `arroba`/`atualizado_em` de volta) e erro de campo sai pelo `cfbMsg`. Equipamento usa as rotas de
+  inventário de sempre. O `#cfb` continua existindo (escondido) e o `cfbDesenhar` repinta a tela nova.
+- **Propostas** (caixa: lista + detalhe com data grande, fichas, "Quem chama" e "Seu dia"; no celular o próximo em
+  cartão e o detalhe em folha), **Agenda** (mês inteiro, folha do dia com o `declarar` de sempre, "Bloquear dias"),
+  **Jobs** (o próximo em destaque + linha do tempo + feitos) e **Brechó** (vitrine com destaque 2×2 e "Seus anúncios"
+  com interessados). Dados: `PROPOSTAS` (ganhou `deSub`, `criado`, `anuncio` no `realPropostas`), `REAL_ENVIADAS`,
+  `JOBS`, `AGENDA`, `ANUNCIOS`. Estado vazio desenhado em todas; nada inventado.
+- ⚠️ Estados por `data-*`/`aria-*` e celular × computador por `data-so="cel|pc"` (classe extra num elemento com
+  `display` próprio brigava com a regra de esconder).
+- `/demo?novo=1` é a conta que acabou de chegar (sem perfil, sem propostas); `CDF_DEMO.pedidos` registra o que a página
+  pediu ao servidor de mentira. A demonstração ganhou três jobs aceitos e um anúncio próprio com um interessado.
+
+## 02/nov · 2 — o site real não fala do que não existe (`test/demo-real.js`)
+
+Titular, com a gaveta aberta: a Ajuda ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda".
+Tudo **só no `REAL`** (a prévia e os builds de fase não mudam):
+- Ajuda: `moeda`/`taxas` com `data-sem-real`; `abrirAjuda` não abre artigo de fase futura e tira a linha de fase futura
+  (em vez do "em breve"); `AJUDA_REAL` troca o corpo de `oque`, `como`, `faq` e `contato` (sem sinal, contrato, take,
+  WhatsApp nem encontro presencial). "As quatro portas" vira "As três portas" (`realHome`).
+- Cadastro: sem "Qual é o seu WhatsApp?" (o número não ia a lugar nenhum: a chamada chega em Propostas e o servidor
+  recusa telefone) nem o cartão vazio "Onde a sua agenda vive?"; o item `fone` sai do `ITENS`; o passo 5 se chama
+  "Identificação".
+- Agenda: sem "e diárias", sem a vista Financeiro, sem os KPIs A receber / Recebido / Segurando, sem "Confirmado — com
+  garantia". Propostas: sem "Valor em jogo" e sem a soma em R$. Jobs: sem "A receber deles"; o job de fora vai direto
+  para a agenda (no real não há link para quem chamou nem nota emitida).
+- Busca sem o filtro Garantia; contratante sem "Fecha com garantia"; Montar equipe sem Orçamento, garantia, sinal, taxa
+  e "reservar o valor"; o caixa do contratante (`drawPagos`) vazio; o anúncio diz "Combinado direto com quem anuncia".
+- R$ que fica (é dado de verdade): preço do anúncio, valor da proposta, a tabela de diária do perfil e a faixa da praça.
+
 ## 02/nov — o modo demonstração em `/demo` (`test/demo-real.js`)
 
 Pedido do Victor: "simular como se tivesse uns 100 usuários usando a plataforma… em um endereço separado, qualquer

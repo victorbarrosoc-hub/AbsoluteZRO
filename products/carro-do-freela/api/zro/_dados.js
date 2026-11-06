@@ -11,7 +11,11 @@
  *   GET    /api/zro/agenda?de=&ate=    → { agenda: { "YYYY-MM-DD": {e,p,h?} } }   (a própria)
  *   PUT    /api/zro/agenda             → { dia, declaracao }  (UM dia: fechado|negociando)
  *   DELETE /api/zro/agenda?dia=        → 204                  (o dia volta a livre)
- *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (a comunidade da Absolute ZRO + a agenda de quem consentiu)
+ *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (a comunidade da Absolute ZRO + a agenda, a tabela
+ *                                        de diária, o "topo viajar" e o selo de quem consentiu)
+ *   GET    /api/zro/tabela             → { tabela | null, selo }  (a própria tabela de diária, 03/11)
+ *   PUT    /api/zro/tabela             → { tabela, selo }     (a tabela inteira)
+ *   GET    /api/zro/selo               → { selo }             ({pct, itens, jobs, verificado, meta}: calculado no banco)
  *
  * Cada pedido passa, nesta ordem: método → limite de pedidos (por IP) →
  * mesma origem (escrita: Origin igual ao site e Sec-Fetch-Site same-origin
@@ -118,16 +122,68 @@ async function perfil(req, res) {
     const v = R.perfilDe(corpo);
     const l = await db.asUser(sub, async c =>
       (await c.query(
-        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade, arroba, foto)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade, arroba, foto, viaja)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          on conflict (sub) do update set nome_exibicao = excluded.nome_exibicao, cidade = excluded.cidade, uf = excluded.uf,
            funcoes = excluded.funcoes, nichos = excluded.nichos, bio = excluded.bio, portfolio_url = excluded.portfolio_url,
-           visibilidade = excluded.visibilidade, arroba = excluded.arroba, foto = excluded.foto
+           visibilidade = excluded.visibilidade, arroba = excluded.arroba, foto = excluded.foto, viaja = excluded.viaja
          returning *`,
         /* o @ e a foto vêm da CONTA (claims relidas no HUB a cada pedido), nunca do corpo */
-        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade, quem.arroba || null, quem.foto || null],
+        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade, quem.arroba || null, quem.foto || null, v.viaja],
       )).rows[0]);
     return json(res, 200, { perfil: R.perfilSaida(l) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+/* ---------------- a tabela de diária e o selo (0008, 03/11) ----------------
+ * A tabela é da dona (RLS); o selo é CALCULADO no banco a cada leitura (`selo_fatos` + `selo_de`), nunca guardado:
+ * não há campo que a pessoa possa mandar para ganhar o selo. */
+async function seloDe(c, sub) {
+  const r = await c.query('select carro_do_freela.selo_de(f.fatos, f.jobs) as j from carro_do_freela.selo_fatos($1) f', [sub]);
+  return R.seloSaida(r.rows[0] && r.rows[0].j);
+}
+
+async function tabela(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'PUT'], escrita: req.method === 'PUT' });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const out = await db.asUser(sub, async c => {
+        const l = (await c.query('select * from carro_do_freela.tabelas where sub = $1', [sub])).rows[0];
+        return { tabela: R.tabelaSaida(l, { dona: true }), selo: await seloDe(c, sub) };
+      });
+      return json(res, 200, out, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.tabelaDe(corpo);
+    const out = await db.asUser(sub, async c => {
+      const l = (await c.query(
+        `insert into carro_do_freela.tabelas (sub, funcoes, so_eu_cents, com_equip_cents, meia_pct, fds_pct, hora_extra_cents, deslocamento_cents)
+         values ($1, $2, $3, $4, $5, $6, $7, $8)
+         on conflict (sub) do update set funcoes = excluded.funcoes, so_eu_cents = excluded.so_eu_cents,
+           com_equip_cents = excluded.com_equip_cents, meia_pct = excluded.meia_pct, fds_pct = excluded.fds_pct,
+           hora_extra_cents = excluded.hora_extra_cents, deslocamento_cents = excluded.deslocamento_cents
+         returning *`,
+        [sub, v.funcoes, v.so_eu_cents, v.com_equip_cents, v.meia_pct, v.fds_pct, v.hora_extra_cents, v.deslocamento_cents],
+      )).rows[0];
+      return { tabela: R.tabelaSaida(l, { dona: true }), selo: await seloDe(c, sub) };
+    });
+    return json(res, 200, out, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function selo(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET'], escrita: false });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    return json(res, 200, { selo: await db.asUser(sub, c => seloDe(c, sub)) }, extra);
   } catch (e) {
     return responderErro(res, e, extra);
   }
@@ -293,12 +349,17 @@ async function pessoas(req, res) {
     /* o token desta sessão não tem zro.pessoas (login de antes): a lista pede entrar de novo, nada quebra */
     if (c.recusado) return json(res, 200, { pessoas: [], de: j.de, ate: j.ate, agendas: false, reconectar: true }, extra);
     const subs = c.lista.map(x => String(x.id || '').toLowerCase()).filter(x => UUID.test(x));
-    const rows = subs.length
-      ? await db.asUser(sub, async cx => (await cx.query('select * from carro_do_freela.agendas($1::uuid[], $2, $3)', [subs, j.de, j.ate])).rows)
-      : [];
+    /* a agenda (0002) e a vitrine (0008: "topo viajar", tabela de diária e o selo) — as duas só de quem consentiu */
+    const [rows, vits] = subs.length
+      ? await db.asUser(sub, async cx => [
+        (await cx.query('select * from carro_do_freela.agendas($1::uuid[], $2, $3)', [subs, j.de, j.ate])).rows,
+        (await cx.query('select * from carro_do_freela.vitrine($1::uuid[])', [subs])).rows,
+      ])
+      : [[], []];
     const doCarro = new Map(rows.map(l => [String(l.sub), l]));
+    const vitrine = new Map(vits.map(l => [String(l.sub), l]));
     const ver = podeVerAgendas(quem);
-    const lista = c.lista.map(x => R.pessoaSaida(x, doCarro.get(String(x.id).toLowerCase()), FUNCAO_DO_HUB)).filter(Boolean)
+    const lista = c.lista.map(x => { const id = String(x.id).toLowerCase(); return R.pessoaSaida(x, doCarro.get(id), FUNCAO_DO_HUB, vitrine.get(id)) }).filter(Boolean)
       .map(x => (ver || x.id === sub ? x : Object.assign(x, { agenda: null })));
     return json(res, 200, { pessoas: lista, de: j.de, ate: j.ate, agendas: ver }, extra);
   } catch (e) {
@@ -310,6 +371,8 @@ async function pessoas(req, res) {
  * GET    /api/zro/propostas              → { recebidas: [...], enviadas: [...] }   (as minhas, dos dois lados)
  * POST   /api/zro/propostas              → 201 { proposta }   (chega na caixa de `para`, dentro do Carro)
  * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou)
+ * PATCH  /api/zro/propostas?id=          → { proposta }       ({acao:'confirmar', aconteceu}: o job aconteceu? cada lado, depois
+ *                                                            do dia, uma vez; 0009 — só o confirmado pelos dois conta no selo)
  * GET    /api/zro/feed                   → { posts: [...] }   (os 100 mais novos, sem os que EU denunciei)
  * POST   /api/zro/feed                   → 201 { post }
  * DELETE /api/zro/feed?id=               → 204                (só o próprio)
@@ -330,6 +393,14 @@ function propostaSaida(l, sub, missoes) {
   const o = { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
     anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
     mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+  /* o job aconteceu? (0009) — só no job aceito lido com as respostas (COM_CONFIRMACAO): `aberta` = o dia já passou;
+     `minha`/`outra` = true (aconteceu), false (não aconteceu) ou null (ainda não respondeu); `confirmado` = os dois
+     disseram que aconteceu (é o que conta no selo) */
+  if (l.tipo === 'job' && l.estado === 'aceita' && 'dia_passou' in l) {
+    const aberta = l.dia_passou === true, minha = l.conf_minha === null || l.conf_minha === undefined ? null : l.conf_minha,
+      outra = l.conf_outra === null || l.conf_outra === undefined ? null : l.conf_outra;
+    o.confirmacao = { aberta, minha, outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true };
+  }
   /* a marca da guilda (0006): só existe na proposta que nasceu de uma missão da Sede; sem ela a saída é a de sempre */
   if (l.missao_id) {
     const m = missoes && missoes.get(l.missao_id);
@@ -357,6 +428,25 @@ function semConteudo(res, extra) {
   return res.end();
 }
 
+/* a proposta com as respostas do "aconteceu?" (0009): $1 = quem pede (RLS já limita às propostas dela) */
+const COM_CONFIRMACAO = `select p.*,
+    (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub = $1) as conf_minha,
+    (select c.aconteceu from carro_do_freela.job_confirmacoes c where c.proposta = p.id and c.sub <> $1) as conf_outra,
+    p.dia < (now() at time zone 'America/Sao_Paulo')::date as dia_passou
+  from carro_do_freela.propostas p`;
+/** o job aconteceu? Cada lado responde a própria vez, depois do dia, uma vez só (o banco confere de novo: RLS) */
+async function confirmarJob(c, id, sub, aconteceu) {
+  const l = (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0];
+  if (!l) return { status: 404, corpo: { erro: 'nao_achado' } };
+  if (l.tipo !== 'job' || l.estado !== 'aceita') return { status: 409, corpo: { erro: 'estado', campo: 'estado' } };
+  if (!l.dia_passou) return { status: 409, corpo: { erro: 'cedo', campo: 'dia' } };
+  const r = await c.query(
+    'insert into carro_do_freela.job_confirmacoes (proposta, sub, aconteceu) values ($1, $2, $3) on conflict (proposta, sub) do nothing',
+    [id, sub, aconteceu]);
+  if (!r.rowCount) return { status: 409, corpo: { erro: 'ja_confirmado', campo: 'aconteceu' } };
+  return { status: 200, l: (await c.query(COM_CONFIRMACAO + ' where p.id = $2', [sub, id])).rows[0] };
+}
+
 async function propostas(req, res) {
   const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH'], escrita: req.method !== 'GET' });
   if (!p) return;
@@ -364,7 +454,7 @@ async function propostas(req, res) {
   try {
     if (req.method === 'GET') {
       const { rows, missoes } = await db.asUser(sub, async c => {
-        const rows = (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows;
+        const rows = (await c.query(COM_CONFIRMACAO + ' order by p.criado_em desc limit 300', [sub])).rows;
         return { rows, missoes: FASES.guildaNoAr() ? await missoesDasPropostas(c, rows) : new Map() };
       });
       const todas = rows.map(l => propostaSaida(l, sub, missoes));
@@ -393,6 +483,12 @@ async function propostas(req, res) {
     }
     const id = idDe(req);
     if (!id) return json(res, 400, { erro: 'id' }, extra);
+    if (corpo && typeof corpo === 'object' && !Array.isArray(corpo) && 'acao' in corpo) {
+      const v = R.confirmacaoDe(corpo);
+      const r = await db.asUser(sub, c => confirmarJob(c, id, sub, v.aconteceu));
+      if (!r.l) return json(res, r.status, r.corpo, extra);
+      return json(res, 200, { proposta: propostaSaida(r.l, sub) }, extra);
+    }
     const v = R.respostaDe(corpo);
     const l = await db.asUser(sub, async c =>
       (await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1 returning *', [id, v.estado, v.motivo])).rows[0]);
@@ -822,6 +918,8 @@ module.exports = {
   inventario: protegido(inventario),
   agenda: protegido(agenda),
   pessoas: protegido(pessoas),
+  tabela: protegido(tabela),
+  selo: protegido(selo),
   propostas: protegido(propostas),
   feed: protegido(feed),
   brecho: protegido(brecho),

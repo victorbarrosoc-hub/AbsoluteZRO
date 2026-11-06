@@ -17,7 +17,8 @@ const ROOT = path.resolve(__dirname, '..');
 /* o endereço oficial (ADR 0025; carrodofreela.com.br leva para cá com 308): canonical, og:url e og:image */
 const SITE = 'https://carro.absolutezro.com';
 const TITULO_OG = 'Carro do Freela — a agenda do audiovisual de Natal';
-const OG_IMG = '/og.jpg?v=3';   /* v=3 em 19/out · 2: o carro do emblema passou para fora do anel */
+const OG_IMG = '/og.jpg?v=4';   /* v=4 em 02/11: selo neon no topo, carro.absolutezro.com, sem "Prévia" */
+// v=3   /* v=3 em 19/out · 2: o carro do emblema passou para fora do anel */
 /* ⚠️ 86 CARACTERES DAVAM TRÊS LINHAS, e o WhatsApp mostra duas. A versão
    anterior terminava em "com contrato e sinal em garantia" e a última
    palavra caía numa terceira linha que ninguém lê. Medido em navegador

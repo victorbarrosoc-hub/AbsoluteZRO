@@ -121,6 +121,51 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
   permissão. O checklist pessoal flutuante no computador ficou de fora.
 - Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
 
+
+## Carro do Freela: tabela de diária e selo de verificado no servidor (03/11/2026, ramo `claude/carro-telas`)
+
+- ✅ Pedido do titular ("Tabela diária tem que salvar sim, precisa e pode preparar o selo de verificado"): migração
+  `0008_tabela_e_selo` (aplica sozinha no build de produção) com `perfis.viaja`, a tabela `carro_do_freela.tabelas`
+  (uma por conta, RLS só da dona, por função "só eu" e "com meu equipamento" e as quatro regras; null = não disse) e o
+  selo calculado no banco (perfil completo ≥ 85% com o que o servidor sabe e 6 jobs concluídos), nunca guardado.
+  Rotas `GET/PUT /api/zro/tabela` e `GET /api/zro/selo`; o perfil leva o "Topo viajar"; `/api/zro/pessoas` devolve
+  tabela, viagem e o ✓ só de quem consentiu.
+- ✅ Site real: em Meu perfil, o medidor do selo do servidor (o que falta abre a folha que resolve) e a linha "Tabela de
+  diária" com a folha por função; a entrada em perguntas e "Onde trabalho" gravam o "Topo viajar" na conta. Quem
+  contrata vê "diária a partir de" na busca, a tabela no perfil e o ✓ só quando o servidor diz. Sem servidor, o
+  aparelho segue como antes e o selo não aparece. `/demo` responde as rotas novas.
+- ✅ Decisões do titular (03/11): hora extra e deslocamento em R$ 0 contam como respondidos ("o usuário escolhe se cobra
+  ou não"; a folha diz "0 se não cobra" e o perfil público mostra "não cobra"), e o selo endurecido: migração nova
+  `0009_job_confirmado` (a 0008 fica intacta) com `job_confirmacoes`, uma resposta por lado ("aconteceu" ou não),
+  só depois do dia, só em job aceito, sem volta (RLS, sem UPDATE/DELETE). O job só conta nos 6 do selo quando os
+  dois lados confirmam. `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu}`; o GET diz a cada lado se
+  falta a resposta dele e o que o outro disse. Site real: "Aconteceu?" em Jobs e no detalhe da proposta (quem fez e
+  quem contratou), estado no histórico, balão em Jobs e a dica no medidor. `/demo` com um job esperando cada lado.
+- ⬜ Subir na sexta (06/11) com o titular: mesclar os PRs #114 e #116; o build de produção aplica a 0008 e a 0009.
+- ⬜ Decisão do titular: quem contratou ainda pode cancelar um job aceito depois do dia (regra da 0003), o que tira o
+  job do selo mesmo confirmado.
+
+## Carro do Freela: telas novas do site real (02/11/2026, ramo `claude/carro-telas`)
+
+- ✅ Desenho aprovado pelo titular, só no site real (`REAL`; a prévia e os builds de fase não mudam): a entrada em
+  perguntas no primeiro login (uma pergunta por tela, cartão "Assim quem contrata vê você" ao lado; freela em cinco
+  passos, quem contrata em três; o fim manda o perfil à conta pelo caminho de sempre), Meu perfil como cartão + lista
+  curta com uma folha por campo, Propostas como caixa de entrada, Agenda do mês inteiro com "Bloquear dias", Jobs com o
+  próximo em destaque e a linha do tempo, Brechó como vitrine com "Seus anúncios". Dados reais, estados vazios
+  desenhados, nada de dinheiro que não existe. `/demo?novo=1` mostra a conta nova.
+- ⬜ Foto do anúncio e do portfólio no servidor (hoje a capa da categoria), chat com quem chamou e "Copiar link do
+  perfil" (sem página pública ainda).
+
+## Carro do Freela: o site real não fala do que não existe (02/11/2026, ramo `claude/carro-perfil`)
+
+- ✅ Pedido do titular (a gaveta ainda tinha "O take, a moeda da plataforma" e "Taxas e como o dinheiro anda"): só no
+  site real (`REAL`) saem take, pedágio, taxas, sinal, garantia/custódia, contrato, planos pagos e WhatsApp da Ajuda
+  (artigos e FAQ reescritos para a fase 1), do cadastro (sem a pergunta do WhatsApp nem "Onde a sua agenda vive?"), da
+  agenda (sem Financeiro e sem os totais de dinheiro), de propostas, jobs, busca, perfil do contratante, Montar equipe,
+  fechamento da escala, anúncio e caixa do brechó. O job de fora vai direto para a agenda (sem link fingido). A prévia
+  e os builds de fase não mudam. Preço do anúncio, valor da proposta e tabela de diária continuam (são dado real).
+- ✅ A tabela de diária e o selo de verificado ficam no real, no servidor (decisão do titular em 03/11; seção acima).
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
 - ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.

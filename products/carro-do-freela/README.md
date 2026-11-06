@@ -72,14 +72,17 @@ lá e os passos estão em [db/PRODUCAO.md](db/PRODUCAO.md). Os mesmos arquivos d
 | Migrador (diário `carro_do_freela.__migracoes` com sha256; recusa editada, sumida e fora de ordem) | `db/migrador.js`, `npm run db:migrate` |
 | Conexão e as duas portas (`asUser(sub)` com `set_config('carro_do_freela.sub')` + `SET LOCAL ROLE carro_do_freela_app`; `asSystem`) | `db/banco.js` |
 | Regras do que entra (estritas, sem telefone, catálogos do app) | `db/regras.js` |
-| Rotas | `api/zro/perfil.js`, `api/zro/inventario.js` (miolo `api/zro/_dados.js`) |
+| Rotas | `api/zro/perfil.js`, `api/zro/inventario.js`, `api/zro/tabela.js`, `api/zro/selo.js`… (miolo `api/zro/_dados.js`) |
 | Publicador da sincronização (desligado) | `db/sync.js` |
 | O que falta fazer em produção | [db/PRODUCAO.md](db/PRODUCAO.md) |
 
 **Tabelas.** `perfis` (uma linha por `sub` da conta Absolute ZRO: nome de exibição, cidade/UF, funções e nichos do
-catálogo, bio curta, portfólio https opcional, visibilidade que nasce `privado`), `inventario` (itens da pessoa, `id`
-estável, categoria, marca, modelo, quantidade, observação, diária opcional, ativo, `atualizado_em`) e
-`inventario_eventos` (fila de saída). **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
+catálogo, bio curta, portfólio https opcional, visibilidade que nasce `privado`, "topo viajar"), `inventario` (itens da
+pessoa, `id` estável, categoria, marca, modelo, quantidade, observação, diária opcional, ativo, `atualizado_em`),
+`inventario_eventos` (fila de saída) e `tabelas` (a tabela de diária, desde a 0008: por função "só eu" e "com meu
+equipamento" em centavos, meia diária %, fim de semana %, hora extra e deslocamento; null = não disse). O selo de
+verificado é calculado no banco (`selo_fatos` + `selo_de`), nunca guardado; desde a 0009 o job só conta quando os dois
+lados confirmam que aconteceu (`job_confirmacoes`, uma resposta por lado, depois do dia). **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
 (`proibido`) e o texto com jeito de número (`telefone`), e o banco confere de novo (`carro_do_freela.tem_telefone`).
 
 **Rotas** (só da própria origem para escrever, só JSON, limite de pedidos por IP, sessão conferida no HUB a cada
@@ -87,7 +90,10 @@ pedido, como o `/eu`):
 
 | | |
 | --- | --- |
-| `GET /api/zro/perfil` · `PUT /api/zro/perfil` | o perfil inteiro |
+| `GET /api/zro/perfil` · `PUT /api/zro/perfil` | o perfil inteiro (com `viaja`) |
+| `GET /api/zro/tabela` · `PUT /api/zro/tabela` | a tabela de diária inteira, com o selo recalculado |
+| `GET /api/zro/selo` | o selo: `{pct, itens, jobs, verificado, meta}` |
+| `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu}` | o job aconteceu? (cada lado, depois do dia, uma vez) |
 | `GET /api/zro/inventario` · `POST` · `PATCH ?id=` · `DELETE ?id=` | os itens |
 
 Moram em `/api/zro/` de propósito: o cookie `cdf_hub` (o acesso ao HUB, com que a claim é relida) só vai para esse

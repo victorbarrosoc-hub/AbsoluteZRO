@@ -10,6 +10,8 @@
  * ⚠️ Catálogos — ninguém digita: funções vêm da base (`src/crew.json`, as
  * mesmas do app) e nichos de `TIPOS` (o mesmo do template; a suíte confere).
  * ⚠️ Diária é OPCIONAL e só a pessoa escreve a dela: nenhum valor é sugerido.
+ *    Vale para o item do inventário e para a tabela de diária (03/11, `tabelaDe`):
+ *    o que não foi digitado fica null, nunca um padrão.
  */
 const CREW = require('../src/crew.json');
 
@@ -75,10 +77,17 @@ function doCatalogo(v, campo, catalogo, max) {
 /** PUT /api/zro/perfil — o perfil inteiro (o que não vem volta ao vazio) */
 function perfilDe(corpo) {
   corpo = objeto(corpo);
-  soEstes(corpo, ['nome', 'cidade', 'uf', 'funcoes', 'nichos', 'bio', 'portfolio', 'visibilidade']);
+  soEstes(corpo, ['nome', 'cidade', 'uf', 'funcoes', 'nichos', 'bio', 'portfolio', 'visibilidade', 'viaja']);
   const uf = corpo.uf === undefined || corpo.uf === null || corpo.uf === '' ? null : String(corpo.uf).toUpperCase();
   if (uf !== null && (typeof corpo.uf !== 'string' || !UFS.includes(uf))) throw new Recusa('uf', 'uf');
   let portfolio = texto(corpo.portfolio, 'portfolio', 300);
+  /* como a pessoa escreve (02/11): "@fulano" é o Instagram; sem esquema ganha https://; http:// vira https:// */
+  if (portfolio !== null) {
+    const arroba = /^@([A-Za-z0-9._]{1,30})$/.exec(portfolio);
+    if (arroba) portfolio = 'https://instagram.com/' + arroba[1];
+    else if (/^http:\/\//i.test(portfolio)) portfolio = 'https://' + portfolio.slice(7);
+    else if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(portfolio)) portfolio = 'https://' + portfolio.replace(/^\/+/, '');
+  }
   if (portfolio !== null) {
     let u;
     try { u = new URL(portfolio) } catch (e) { throw new Recusa('link', 'portfolio') }
@@ -88,6 +97,8 @@ function perfilDe(corpo) {
   }
   const visibilidade = corpo.visibilidade === undefined ? 'privado' : corpo.visibilidade;
   if (!VISIBILIDADES.includes(visibilidade)) throw new Recusa('visibilidade', 'visibilidade');
+  /* "Topo viajar" (03/11): o perfil é inteiro, então o que não vem volta a falso */
+  if (corpo.viaja !== undefined && corpo.viaja !== null && typeof corpo.viaja !== 'boolean') throw new Recusa('tipo', 'viaja');
   return {
     nome_exibicao: texto(corpo.nome, 'nome', 80, { obrigatorio: true }),
     cidade: texto(corpo.cidade, 'cidade', 80),
@@ -97,6 +108,7 @@ function perfilDe(corpo) {
     bio: texto(corpo.bio, 'bio', 280, { linhas: true }),
     portfolio_url: portfolio,
     visibilidade,
+    viaja: corpo.viaja === true,
   };
 }
 
@@ -138,8 +150,71 @@ function perfilSaida(l) {
   if (!l) return null;
   return {
     nome: l.nome_exibicao, cidade: l.cidade, uf: l.uf, funcoes: l.funcoes || [], nichos: l.nichos || [],
-    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, arroba: l.arroba || null,
+    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, viaja: l.viaja === true, arroba: l.arroba || null,
     atualizado_em: iso(l.atualizado_em),
+  };
+}
+
+/* ───────────── a tabela de diária e o selo (0008, 03/11) ───────────── */
+const TABELA_MAX = 100000000; /* R$ 1.000.000,00: o mesmo teto do banco (carro_do_freela.centavos_ok) */
+const CAMPOS_TABELA = ['linhas', 'meia_pct', 'fds_pct', 'hora_extra_cents', 'deslocamento_cents'];
+function centavosOuNada(v, campo) {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > TABELA_MAX) throw new Recusa('numero', campo);
+  return v;
+}
+function pctOuNada(v, campo) {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 100) throw new Recusa('numero', campo);
+  return v;
+}
+/**
+ * PUT /api/zro/tabela — a tabela INTEIRA (o que não vem volta a null):
+ *   { linhas: [{ funcao, so_eu_cents?, com_equip_cents? }], meia_pct?, fds_pct?, hora_extra_cents?, deslocamento_cents? }
+ * Função do catálogo, até 12, sem repetir; linha sem nenhum valor sai (não oferecer é não ter a linha). Nenhum valor é
+ * completado pelo servidor: null é "não disse".
+ */
+function tabelaDe(corpo) {
+  corpo = objeto(corpo);
+  soEstes(corpo, CAMPOS_TABELA);
+  const linhas = corpo.linhas === undefined || corpo.linhas === null ? [] : corpo.linhas;
+  if (!Array.isArray(linhas)) throw new Recusa('tipo', 'linhas');
+  if (linhas.length > 12) throw new Recusa('tamanho', 'linhas');
+  const funcoes = [], soEu = [], comEquip = [];
+  for (const l of linhas) {
+    if (!l || typeof l !== 'object' || Array.isArray(l)) throw new Recusa('tipo', 'linhas');
+    soEstes(l, ['funcao', 'so_eu_cents', 'com_equip_cents']);
+    if (typeof l.funcao !== 'string' || !FUNCOES.includes(l.funcao)) throw new Recusa('catalogo', 'funcao');
+    if (funcoes.includes(l.funcao)) throw new Recusa('repetida', 'funcao');
+    const a = centavosOuNada(l.so_eu_cents, 'so_eu_cents'), b = centavosOuNada(l.com_equip_cents, 'com_equip_cents');
+    if (a === null && b === null) continue;
+    funcoes.push(l.funcao); soEu.push(a); comEquip.push(b);
+  }
+  return {
+    funcoes, so_eu_cents: soEu, com_equip_cents: comEquip,
+    meia_pct: pctOuNada(corpo.meia_pct, 'meia_pct'), fds_pct: pctOuNada(corpo.fds_pct, 'fds_pct'),
+    hora_extra_cents: centavosOuNada(corpo.hora_extra_cents, 'hora_extra_cents'),
+    deslocamento_cents: centavosOuNada(corpo.deslocamento_cents, 'deslocamento_cents'),
+  };
+}
+const num = x => (x === null || x === undefined ? null : Number(x));
+/** linha do banco (ou da vitrine) → a tabela da API; sem linha nenhuma e sem regra nenhuma = null (não preencheu) */
+function tabelaSaida(l, { dona = false } = {}) {
+  if (!l || !Array.isArray(l.funcoes)) return null;
+  const linhas = l.funcoes.map((f, i) => ({ funcao: f, so_eu_cents: num((l.so_eu_cents || [])[i]), com_equip_cents: num((l.com_equip_cents || [])[i]) }))
+    .filter(x => x.so_eu_cents !== null || x.com_equip_cents !== null);
+  const t = { linhas, meia_pct: num(l.meia_pct), fds_pct: num(l.fds_pct), hora_extra_cents: num(l.hora_extra_cents), deslocamento_cents: num(l.deslocamento_cents) };
+  if (!linhas.length && t.meia_pct === null && t.fds_pct === null && t.hora_extra_cents === null && t.deslocamento_cents === null) return dona ? t : null;
+  if (dona) t.atualizado_em = iso(l.atualizado_em);
+  return t;
+}
+/** o que `carro_do_freela.selo_de` devolve → a API da dona (só o que a tela usa) */
+function seloSaida(j) {
+  if (!j || typeof j !== 'object') return null;
+  return {
+    pct: Number(j.pct) || 0, jobs: Number(j.jobs) || 0, verificado: j.verificado === true,
+    meta: { pct: 85, jobs: 6 },
+    itens: (Array.isArray(j.itens) ? j.itens : []).map(i => ({ k: String(i.k), t: String(i.t), peso: Number(i.peso), ok: i.ok === true })),
   };
 }
 function itemSaida(l) {
@@ -193,10 +268,12 @@ function janelaDe(de, ate, hoje = new Date()) {
   return { de: d, ate: a };
 }
 /**
- * Uma pessoa da comunidade (o objeto do HUB) + o que o Carro tem dela (`carro`: linha de carro_do_freela.agendas, só
- * de quem consentiu) → o que a lista devolve. Nada de contato, diária ou inventário. `agenda: null` = não divulgada.
+ * Uma pessoa da comunidade (o objeto do HUB) para quem contrata. `carro` = a agenda e o ofício de quem consentiu
+ * (agendas(), 0002); `vit` = a vitrine da mesma pessoa (vitrine(), 0008): o "topo viajar", a tabela de diária que ELA
+ * digitou e só o booleano do selo. Quem não consentiu ('privado') sai sem agenda (`agenda: null` = não divulgada), sem
+ * tabela e sem selo. Contato (telefone, e-mail) e inventário nunca saem.
  */
-function pessoaSaida(z, carro, funcaoDoHub = {}) {
+function pessoaSaida(z, carro, funcaoDoHub = {}, vit = null) {
   if (!z || typeof z.id !== 'string' || typeof z.arroba !== 'string') return null;
   const doHub = (Array.isArray(z.funcoes) ? z.funcoes : []).map(f => funcaoDoHub[f && f.chave]).filter(Boolean);
   const funcoes = carro && carro.funcoes && carro.funcoes.length ? carro.funcoes : [...new Set(doHub)];
@@ -207,6 +284,7 @@ function pessoaSaida(z, carro, funcaoDoHub = {}) {
     cidade: typeof z.cidade === 'string' ? z.cidade.slice(0, 80) : null, funcoes,
     nichos: carro && carro.nichos ? carro.nichos : [], bio: typeof z.bio === 'string' ? z.bio.slice(0, 280) : null, portfolio,
     agenda: carro ? carro.agenda || {} : null, agenda_atualizada_em: carro ? iso(carro.agenda_atualizada_em) : null,
+    viaja: !!(vit && vit.viaja === true), tabela: vit ? tabelaSaida(vit) : null, verificado: !!(vit && vit.verificado === true),
   };
 }
 
@@ -252,6 +330,14 @@ function respostaDe(corpo) {
   soEstes(corpo, ['estado', 'motivo']);
   if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
   return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
+}
+/** PATCH /api/zro/propostas?id= com `acao: 'confirmar'` (0009): cada lado diz, depois do dia, se o job aconteceu */
+function confirmacaoDe(corpo) {
+  objeto(corpo);
+  soEstes(corpo, ['acao', 'aconteceu']);
+  if (corpo.acao !== 'confirmar') throw new Recusa('tipo', 'acao');
+  if (typeof corpo.aconteceu !== 'boolean') throw new Recusa('tipo', 'aconteceu');
+  return { aconteceu: corpo.aconteceu };
 }
 const TIPOS_POST = ['nota', 'bastidor', 'entrega', 'procura'];
 function postDe(corpo) {
@@ -542,4 +628,5 @@ function missaoIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'missao']); 
 
 module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, disponibilidadeDe, faixaDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
   sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
-  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
+  tabelaDe, tabelaSaida, seloSaida, TABELA_MAX };

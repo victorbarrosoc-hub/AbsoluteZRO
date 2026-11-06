@@ -5,7 +5,9 @@
    ao recarregar, tudo volta ao começo. Cerca de 100 perfis INVENTADOS (nome e sobrenome sorteados, sem rosto: as
    iniciais), agendas, feed, brechó, propostas e uma guilda com o quadro de missões. Um selo fixo diz que é demonstração.
    ⚠️ Nenhum nome daqui pode coincidir com a base fictícia antiga (crew.json): o vercel-build confere.
-   ⚠️ Só o que o site real tem: nada de preço de plano, take, garantia nem "verificado". */
+   ⚠️ Só o que o site real tem: nada de preço de plano, take nem garantia. Desde 03/11 a tabela de diária e o selo de
+   verificado existem no site real (servidor), e a demonstração responde /api/zro/tabela e /api/zro/selo com a MESMA
+   conta do banco (pesos de selo_de, 85% e 6 jobs); as tabelas e os selos das pessoas daqui são inventados como elas. */
 (function () {
   'use strict';
   /* ⚠️ A MEMÓRIA DA DEMONSTRAÇÃO É SÓ DELA. A demo mora no MESMO endereço do site real (carro.absolutezro.com/demo), e o
@@ -19,8 +21,10 @@
   };
   try { Object.defineProperty(window, 'localStorage', { value: memoria(), configurable: true }) } catch (e) {}
   try { Object.defineProperty(window, 'sessionStorage', { value: memoria(), configurable: true }) } catch (e) {}
+  /* (02/nov · 3) /demo?novo=1 é a conta que acabou de chegar: sem perfil, ela passa pela entrada em perguntas */
+  var NOVO = /[?&]novo=1\b/.test(location.search);
   /* a conta da demonstração já passou pela porta (não zera o perfil nem pede cadastro) */
-  try { window.localStorage.setItem('cdf-entrou', '1') } catch (e) {}
+  if (!NOVO) try { window.localStorage.setItem('cdf-entrou', '1') } catch (e) {}
   var seed = 20261102;
   var rnd = function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 };
@@ -60,9 +64,15 @@
       else if (r < 0.3) agenda[dia(d)] = { e: 'negociando', p: 'dia' };
       else if (r < 0.36) agenda[dia(d)] = { e: 'fechado', p: rnd() < 0.5 ? 'manha' : 'tarde' };
     }
+    /* (03/11) a tabela inventada de parte das pessoas (de 50 em 50 reais), o "topo viajar" e o selo de algumas */
+    var fs = f1 === f2 ? [f1] : [f1, f2], tab = null;
+    if (rnd() < 0.55) tab = { linhas: fs.map(function (f) { var b = (8 + Math.floor(rnd() * 14)) * 5000;
+        return { funcao: f, so_eu_cents: b, com_equip_cents: rnd() < 0.6 ? b + (4 + Math.floor(rnd() * 8)) * 5000 : null } }),
+      meia_pct: rnd() < 0.7 ? 60 : null, fds_pct: rnd() < 0.5 ? 20 : null, hora_extra_cents: rnd() < 0.7 ? 8000 : null, deslocamento_cents: rnd() < 0.6 ? 15000 : null };
     pessoas.push({ id: uuid('dddddddd', n + 1), arroba: nome.toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').replace(' ', '.'),
-      nome: nome, foto: null, cidade: um(CIDADES), funcoes: f1 === f2 ? [f1] : [f1, f2], nichos: [um(NICHOS)], bio: um(BIOS),
-      portfolio: null, agenda: agenda, agenda_atualizada_em: quando(rnd() * 72) });
+      nome: nome, foto: null, cidade: um(CIDADES), funcoes: fs, nichos: [um(NICHOS)], bio: um(BIOS),
+      portfolio: null, agenda: agenda, agenda_atualizada_em: quando(rnd() * 72),
+      viaja: rnd() < 0.45, tabela: tab, verificado: !!tab && rnd() < 0.3 });
   }
   var P = function (k) { return pessoas[k % pessoas.length] };
 
@@ -70,7 +80,10 @@
   var euAgenda = {};
   euAgenda[dia(2)] = { e: 'fechado', p: 'dia' }; euAgenda[dia(5)] = { e: 'negociando', p: 'dia' }; euAgenda[dia(9)] = { e: 'fechado', p: 'manha' };
   var perfil = { nome: 'Você (demonstração)', cidade: 'Natal', uf: 'RN', funcoes: ['Op. de câmera', 'Editor'], nichos: ['Publicidade', 'Clipe'],
-    bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'publico', arroba: 'voce.demo', atualizado_em: quando(2) };
+    bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'contratantes', arroba: 'voce.demo', atualizado_em: quando(2) };
+  if (NOVO) perfil = null;
+  /* a tabela de diária da conta: nasce vazia (quem preenche é a pessoa) */
+  var tabela = null;
   var inventario = [
     { id: uuid('11111111', 1), categoria: 'camera', marca: 'Sony', modelo: 'FX3', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
     { id: uuid('11111111', 2), categoria: 'lente', marca: 'Sigma', modelo: '24-70 f/2.8 Art', quantidade: 1, observacao: null, diaria_cents: null, ativo: true, atualizado_em: quando(30) },
@@ -87,6 +100,24 @@
   proposta(3, P(27).id, EU_ID, P(27).nome, 'Op. de câmera', 12, '14:00', '23:00', 'Pipa', 'Casamento na praia, segunda câmera.', 'pendente', 20);
   proposta(4, P(40).id, EU_ID, P(40).nome, 'Op. de câmera', -4, '08:00', '18:00', 'Redinha', null, 'aceita', 120);
   proposta(5, EU_ID, P(8).id, 'Você (demonstração)', 'Op. de drone', 6, '06:00', '10:00', 'Forte dos Reis Magos', 'Nascer do sol, voo de 2h.', 'pendente', 3);
+  proposta(6, P(19).id, EU_ID, P(19).nome, 'Op. de câmera', 8, '14:00', '23:00', 'Pipa', 'Casamento em Pipa, segunda câmera.', 'aceita', 30);
+  proposta(7, P(33).id, EU_ID, P(33).nome, 'Editor', 16, '08:00', '18:00', 'Redinha', 'Show na Redinha — corte do aftermovie.', 'aceita', 52);
+  proposta(8, P(52).id, EU_ID, P(52).nome, 'Op. de câmera', -11, '07:00', '17:00', 'Genipabu', 'Institucional nas dunas.', 'aceita', 300);
+  /* o job aconteceu? (0009): cada lado responde depois do dia; só o confirmado pelos dois conta no selo. Os dois jobs
+     feitos de sempre (4 e 8) estão confirmados; o 10 espera a SUA resposta (quem chamou já disse que sim), o 11 espera
+     quem chamou, e o 12 é um job que VOCÊ contratou, esperando a sua resposta de contratante */
+  proposta(10, P(23).id, EU_ID, P(23).nome, 'Op. de câmera', -2, '09:00', '19:00', 'Cidade Alta', 'Clipe no Centro Histórico.', 'aceita', 90);
+  proposta(11, P(47).id, EU_ID, P(47).nome, 'Editor', -7, '09:00', '18:00', 'Home office', 'Corte do institucional da escola.', 'aceita', 200);
+  proposta(12, EU_ID, P(14).id, 'Você (demonstração)', 'Op. de drone', -5, '06:00', '10:00', 'Via Costeira', 'Imagens aéreas da Via Costeira.', 'aceita', 160);
+  var confirmacoes = {};
+  [[4, true, true], [8, true, true], [10, true, null], [11, null, true], [12, null, true]].forEach(function (x) { confirmacoes[uuid('pppppppp', x[0])] = { de: x[1], para: x[2] } });
+  var comConf = function (x) {
+    if (x.tipo !== 'job' || x.estado !== 'aceita' || !x.dia) return x;
+    var c = confirmacoes[x.id] || { de: null, para: null }, eu = x.para === EU_ID ? 'para' : 'de', aberta = x.dia < dia(0);
+    var minha = c[eu] === undefined ? null : c[eu], outra = c[eu === 'para' ? 'de' : 'para']; outra = outra === undefined ? null : outra;
+    return Object.assign({}, x, { confirmacao: { aberta: aberta, minha: minha, outra: outra, pendente: aberta && minha === null, confirmado: minha === true && outra === true } });
+  };
+  if (NOVO) propostas = [];
 
   /* o feed do set */
   var TEXTOS = {
@@ -111,6 +142,12 @@
   var brecho = ANUNCIOS.map(function (x, k) { var d = P(k * 5 + 2);
     return { id: uuid('bbbbbbbb', k + 1), dono: { sub: d.id, nome: d.nome }, eu: false, titulo: x[0], categoria: x[1], estado_item: x[2],
       descricao: null, cidade: d.cidade, preco_cents: x[3], situacao: 'disponivel', criado_em: quando(k * 9 + 4) } });
+  /* um anúncio da própria conta, com alguém interessado (a proposta de brechó chega na caixa) */
+  var meuAnuncio = { id: uuid('bbbbbbbb', 99), dono: { sub: EU_ID, nome: 'Você (demonstração)' }, eu: true, titulo: 'Canon C70', categoria: 'camera',
+    estado_item: 'Usado, bom estado', descricao: null, cidade: 'Natal/RN', preco_cents: 2350000, situacao: 'disponivel', criado_em: quando(40) };
+  if (!NOVO) { brecho.splice(3, 0, meuAnuncio);
+    propostas.push({ id: uuid('pppppppp', 9), recebida: true, de: P(61).id, para: EU_ID, de_nome: P(61).nome, tipo: 'brecho', anuncio: meuAnuncio.id, dia: null,
+      ini: null, fim: null, funcao: null, local: null, mensagem: 'Tenho interesse: Canon C70', valor_cents: null, estado: 'pendente', motivo: null, criado_em: quando(6) }) }
 
   /* a guilda: fase 1, grátis, 15 lugares */
   var membros = [{ sub: EU_ID, nome: 'Você (demonstração)', arroba: 'voce.demo', foto: null, papel: 'dono', eu: true, online: true }];
@@ -159,18 +196,46 @@
     { id: 'p2', tipo: 'vaga', autor: { sub: membros[2].sub, nome: membros[2].nome }, eu: false, titulo: '1º assistente de câmera', texto: null, link: null, imagem: null, dados: { dia: dia(10), funcao: 'Assistente' }, fixado: false, criado_em: quando(30), reacoes: [], quero: { n: 2, eu: false } },
     { id: 'p3', tipo: 'vitoria', autor: { sub: membros[5].sub, nome: membros[5].nome }, eu: false, titulo: 'Campanha aprovada sem refação', texto: null, link: null, imagem: null, dados: {}, fixado: false, criado_em: quando(50), reacoes: [{ e: '🔥', n: 8, eu: true }], quero: { n: 0, eu: false } }];
 
+  /* o selo: a mesma conta de carro_do_freela.selo_de / selo_fatos (0008) — pesos, 85% e 6 jobs; job = proposta de job
+     aceita que eu FIZ, com o dia passado, o mesmo contratante no mesmo dia uma vez */
+  var SELO_ITENS = [['nome', 'Nome e praça', 10], ['port', 'Portfólio', 4], ['func', 'Funções', 16], ['nicho', 'Tipos de trabalho', 5],
+    ['equip', 'Câmera e lente', 12], ['tabela', 'Tabela de diária', 17], ['regras', 'Hora extra e deslocamento', 4]];
+  var seloDemo = function () {
+    var p = perfil || {}, t = tabela, usa = function (c) { return inventario.some(function (i) { return i.ativo !== false && i.categoria === c }) };
+    var fatos = { nome: !!(p.nome && p.cidade), port: !!p.portfolio, func: !!(p.funcoes || []).length, nicho: !!(p.nichos || []).length,
+      equip: usa('camera') && usa('lente'), tabela: !!t && t.linhas.some(function (l) { return l.so_eu_cents > 0 || l.com_equip_cents > 0 }),
+      regras: !!t && t.hora_extra_cents != null && t.deslocamento_cents != null };
+    var feitos = {}; propostas.forEach(function (x) { var c = confirmacoes[x.id];
+      if (x.recebida && x.tipo === 'job' && x.estado === 'aceita' && x.dia && x.dia < dia(0) && c && c.de === true && c.para === true) feitos[x.de + x.dia] = 1 });
+    var soma = 0; SELO_ITENS.forEach(function (i) { if (fatos[i[0]]) soma += i[2] });
+    var pct = Math.floor(100 * soma / 68), jobs = Object.keys(feitos).length;
+    return { pct: pct, jobs: jobs, verificado: pct >= 85 && jobs >= 6, meta: { pct: 85, jobs: 6 },
+      itens: SELO_ITENS.map(function (i) { return { k: i[0], t: i[1], peso: i[2], ok: !!fatos[i[0]] } }) };
+  };
+
   /* ---------------- o servidor de mentira ---------------- */
   var original = window.fetch ? window.fetch.bind(window) : null;
   var J = function (s, j) { return Promise.resolve(new Response(j === undefined ? null : JSON.stringify(j), { status: s, headers: { 'Content-Type': 'application/json' } })) };
   var corpo = function (o) { try { return o && typeof o.body === 'string' ? JSON.parse(o.body) : {} } catch (e) { return {} } };
-  var nova = 0;
+  var nova = 0, pedidos = [];
   window.fetch = function (u, o) {
     var url = new URL(typeof u === 'string' ? u : u.url, location.href);
     if (url.origin !== location.origin || url.pathname.indexOf('/api/zro/') !== 0) return original ? original(u, o) : J(404, {});
     var r = url.pathname.slice(9), met = ((o && o.method) || 'GET').toUpperCase(), q = url.searchParams, c = met === 'GET' ? {} : corpo(o);
+    pedidos.push(met + ' ' + r);
     if (r === 'eu') return J(200, { entrou: true, sub: EU_ID, nome: 'Você (demonstração)', email: '', arroba: 'voce.demo', organizacao: 'Demonstração', liberado: true, hub: false, release: 'open' });
     if (r === 'pessoas') return J(200, { pessoas: pessoas, de: q.get('de'), ate: q.get('ate'), agendas: true });
-    if (r === 'perfil') { if (met === 'PUT') perfil = Object.assign({}, perfil, c, { atualizado_em: new Date().toISOString() }); return J(200, { perfil: perfil }) }
+    if (r === 'perfil') { if (met === 'PUT') perfil = Object.assign({}, perfil, c, { viaja: c.viaja === true, atualizado_em: new Date().toISOString() }); return J(200, { perfil: perfil }) }
+    if (r === 'tabela') {
+      if (met === 'PUT') {
+        var nn = function (x) { return typeof x === 'number' && x >= 0 ? x : null };
+        tabela = { linhas: (c.linhas || []).map(function (l) { return { funcao: l.funcao, so_eu_cents: nn(l.so_eu_cents), com_equip_cents: nn(l.com_equip_cents) } })
+          .filter(function (l) { return l.so_eu_cents !== null || l.com_equip_cents !== null }),
+          meia_pct: nn(c.meia_pct), fds_pct: nn(c.fds_pct), hora_extra_cents: nn(c.hora_extra_cents), deslocamento_cents: nn(c.deslocamento_cents), atualizado_em: new Date().toISOString() };
+      } else if (met !== 'GET') return J(405, { erro: 'metodo' });
+      return J(200, { tabela: tabela, selo: seloDemo() });
+    }
+    if (r === 'selo') return J(200, { selo: seloDemo() });
     if (r === 'inventario') {
       if (met === 'POST') { var it = Object.assign({ id: uuid('11111111', 100 + ++nova), ativo: true, atualizado_em: new Date().toISOString() }, c); inventario.push(it); return J(201, { item: it }) }
       if (met === 'DELETE') { inventario = inventario.filter(function (x) { return x.id !== q.get('id') }); return J(204) }
@@ -185,8 +250,17 @@
       if (met === 'POST') { var pp = Object.assign({ id: uuid('pppppppp', 100 + ++nova), recebida: false, de: EU_ID, de_nome: 'Você (demonstração)', tipo: 'job', estado: 'pendente', motivo: null, valor_cents: null, criado_em: new Date().toISOString() }, c);
         propostas.unshift(pp); return J(201, { proposta: pp }) }
       if (met === 'PATCH') { var alvo = propostas.filter(function (x) { return x.id === q.get('id') })[0]; if (!alvo) return J(404, { erro: 'nao_achado' });
-        alvo.estado = c.estado || alvo.estado; return J(200, { proposta: alvo }) }
-      return J(200, { recebidas: propostas.filter(function (x) { return x.recebida }), enviadas: propostas.filter(function (x) { return !x.recebida }) });
+        if ('acao' in c) {
+          if (c.acao !== 'confirmar') return J(400, { erro: 'tipo', campo: 'acao' });
+          if (typeof c.aconteceu !== 'boolean') return J(400, { erro: 'tipo', campo: 'aconteceu' });
+          if (alvo.tipo !== 'job' || alvo.estado !== 'aceita') return J(409, { erro: 'estado', campo: 'estado' });
+          if (!alvo.dia || alvo.dia >= dia(0)) return J(409, { erro: 'cedo', campo: 'dia' });
+          var cf = confirmacoes[alvo.id] = confirmacoes[alvo.id] || { de: null, para: null }, lado = alvo.para === EU_ID ? 'para' : 'de';
+          if (cf[lado] !== null && cf[lado] !== undefined) return J(409, { erro: 'ja_confirmado', campo: 'aconteceu' });
+          cf[lado] = c.aconteceu; return J(200, { proposta: comConf(alvo) });
+        }
+        alvo.estado = c.estado || alvo.estado; return J(200, { proposta: comConf(alvo) }) }
+      return J(200, { recebidas: propostas.filter(function (x) { return x.recebida }).map(comConf), enviadas: propostas.filter(function (x) { return !x.recebida }).map(comConf) });
     }
     if (r === 'feed') {
       if (met === 'POST') { var po = { id: uuid('ffffffff', 100 + ++nova), autor: { sub: EU_ID, nome: 'Você (demonstração)' }, eu: true, tipo: c.tipo || 'nota', texto: c.texto || '', criado_em: new Date().toISOString() };
@@ -235,7 +309,9 @@
       'font:500 12.5px/1.2 "Figtree",system-ui,sans-serif;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.35);white-space:nowrap;max-width:calc(100vw - 24px)}' +
       '#demo-selo b{color:#17D1E8;font-weight:800}#demo-selo span{color:#AEAEB2}' +
       '#demo-selo a{color:#1D1D1F;background:rgba(245,245,247,.94);border-radius:999px;padding:6px 12px;font-weight:700;text-decoration:none}' +
-      '@media(max-width:520px){#demo-selo span{display:none}}';
+      '@media(max-width:520px){#demo-selo span{display:none}}' +
+      /* a entrada em perguntas ocupa a tela toda: no celular o selo não pode cobrir a barra de progresso */
+      '@media(max-width:820px){.ob-esq{padding-top:calc(64px + env(safe-area-inset-top,0px))!important}}';
     document.head.appendChild(st);
     document.body.appendChild(s);
   };
@@ -248,6 +324,7 @@
       if (typeof ZRO_PRONTO === 'undefined' || !ZRO_PRONTO || !ZRO_CONTA || typeof zroEntrar !== 'function') return;
       clearInterval(entrar);
       /* o perfil da conta de demonstração já vem pronto (sem passar pelo cadastro) e o feed abre na praça inteira */
+      if (NOVO) { zroEntrar(false); return }
       if (typeof EU === 'object' && EU) { EU.nome = EU.nome || 'Você (demonstração)'; if (!(EU.func || []).length) EU.func = ['Op. de câmera', 'Editor']; EU.cidade = EU.cidade || 'Natal/RN' }
       try { FDP_ABA = 'praca' } catch (e) {}
       zroEntrar(false);
@@ -257,5 +334,5 @@
       }, 300);
     } catch (e) { clearInterval(entrar) }
   }, 100);
-  window.CDF_DEMO = { pessoas: pessoas.length };
+  window.CDF_DEMO = { pessoas: pessoas.length, novo: NOVO, pedidos: pedidos, perfil: function () { return perfil }, confirmacoes: function () { return confirmacoes } };
 })();

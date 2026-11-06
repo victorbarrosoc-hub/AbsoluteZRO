@@ -371,6 +371,8 @@ test('rotas: preparar a Absolute ZRO falsa e o servidor', async () => {
     '/api/zro/inventario': require(path.join(RAIZ, 'api', 'zro', 'inventario.js')),
     '/api/zro/agenda': require(path.join(RAIZ, 'api', 'zro', 'agenda.js')),
     '/api/zro/pessoas': require(path.join(RAIZ, 'api', 'zro', 'pessoas.js')),
+    '/api/zro/tabela': require(path.join(RAIZ, 'api', 'zro', 'tabela.js')),
+    '/api/zro/selo': require(path.join(RAIZ, 'api', 'zro', 'selo.js')),
     '/api/zro/propostas': require(path.join(RAIZ, 'api', 'zro', 'propostas.js')),
     '/api/zro/feed': require(path.join(RAIZ, 'api', 'zro', 'feed.js')),
     '/api/zro/brecho': require(path.join(RAIZ, 'api', 'zro', 'brecho.js')),
@@ -396,7 +398,7 @@ after(async () => {
 });
 
 test('rotas: sem sessão é 401, sem cache; método errado é 405', async () => {
-  for (const c of ['/api/zro/perfil', '/api/zro/inventario', '/api/zro/agenda', '/api/zro/pessoas']) {
+  for (const c of ['/api/zro/perfil', '/api/zro/inventario', '/api/zro/agenda', '/api/zro/pessoas', '/api/zro/tabela', '/api/zro/selo']) {
     const r = await pedir(c);
     assert.equal(r.status, 401);
     assert.equal(r.headers.get('cache-control'), 'no-store');
@@ -416,7 +418,8 @@ test('rotas: o perfil — nasce vazio, grava, e devolve só o que é do perfil',
   assert.equal(perfil.uf, 'RN');
   assert.deepEqual(perfil.funcoes, ['Op. de câmera', 'Editor']);
   assert.equal(perfil.visibilidade, 'privado', 'caixa desmarcada não é consentimento: nasce privado');
-  assert.deepEqual(Object.keys(perfil).sort(), ['arroba', 'atualizado_em', 'bio', 'cidade', 'funcoes', 'nichos', 'nome', 'portfolio', 'uf', 'visibilidade']);
+  assert.deepEqual(Object.keys(perfil).sort(), ['arroba', 'atualizado_em', 'bio', 'cidade', 'funcoes', 'nichos', 'nome', 'portfolio', 'uf', 'viaja', 'visibilidade']);
+  assert.equal(perfil.viaja, false, '"topo viajar" nasce falso');
   assert.equal((await (await pedir('/api/zro/perfil', { cookies: c })).json()).perfil.cidade, 'Natal');
   /* a outra conta não vê este perfil */
   const o = await entrar(OUTRA);
@@ -435,7 +438,8 @@ test('rotas: nenhum campo de telefone entra — nem como campo, nem escondido no
   await recusa({ nome: 'X (84) 3222-1111' }, 'telefone', 'nome');
   await recusa({ nome: 'X', portfolio: 'https://wa.me/5584999990000' }, 'telefone', 'portfolio');
   await recusa({ nome: 'X', portfolio: 'https://api.whatsapp.com/send' }, 'proibido', 'portfolio');
-  await recusa({ nome: 'X', portfolio: 'http://inseguro.exemplo' }, 'link', 'portfolio');
+  await recusa({ nome: 'X', portfolio: 'ftp://inseguro.exemplo' }, 'link', 'portfolio');
+  await recusa({ nome: 'X', portfolio: 'javascript:alert(1)' }, 'link', 'portfolio');
   await recusa({ nome: 'X', sub: crypto.randomUUID() }, 'campo', 'sub');
   await recusa({ nome: 'X', funcoes: ['Som direto'] }, 'catalogo', 'funcoes');
   await recusa({ nome: 'X', uf: 'XX' }, 'uf', 'uf');
@@ -625,8 +629,10 @@ test('rotas: as pessoas — a comunidade da Absolute ZRO, com a agenda só de qu
   const pv = corpo.pessoas.find(p => p.arroba === 'privada');
   assert.equal(pv.agenda, null, 'sem "mostrar para quem contrata", a agenda não é divulgada');
   assert.deepEqual(pv.funcoes, ['Editor'], 'e as funções vêm do perfil da Absolute ZRO, no catálogo do Carro');
-  assert.deepEqual(Object.keys(f).sort(), ['agenda', 'agenda_atualizada_em', 'arroba', 'bio', 'cidade', 'foto', 'funcoes', 'id', 'nichos', 'nome', 'portfolio']);
-  assert.ok(!/@exemplo\.com|telefone|diaria/.test(JSON.stringify(corpo)), 'nem e-mail, nem telefone, nem diária saem');
+  assert.deepEqual(Object.keys(f).sort(), ['agenda', 'agenda_atualizada_em', 'arroba', 'bio', 'cidade', 'foto', 'funcoes', 'id', 'nichos', 'nome', 'portfolio', 'tabela', 'verificado', 'viaja']);
+  /* a tabela só sai de quem consentiu E preencheu (0008, `_tabela-testes.js`); aqui ninguém preencheu */
+  assert.deepEqual([f.tabela, f.verificado, pv.tabela, pv.verificado], [null, false, null, false]);
+  assert.ok(!/@exemplo\.com|telefone|diaria|inventario/.test(JSON.stringify(corpo)), 'nem e-mail, nem telefone, nem inventário saem');
   /* fora da janela, a agenda vem vazia; janela longa é recusada */
   const longe = await (await pedir('/api/zro/pessoas?de=' + hojeMais(10) + '&ate=' + hojeMais(20), { cookies: cc })).json();
   assert.deepEqual(longe.pessoas.find(p => p.arroba === 'freela.teste').agenda, {});
@@ -702,6 +708,10 @@ test('rotas: limite de pedidos por IP (freio por instância) e a régua de orige
   D._interno.esquecerLimite();
 });
 
+/* a tabela de diária, o "topo viajar" e o selo (0008): o mesmo banco, a mesma Absolute ZRO falsa e o mesmo servidor */
+require('./_tabela-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
+/* o job aconteceu? (0009): os dois lados confirmam depois do dia, e só o confirmado pelos dois conta no selo */
+require('./_confirmacao-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
 /* a guilda (0004, fase 2): suítes em _guilda-testes.js, com o mesmo banco, a mesma Absolute ZRO falsa e o mesmo servidor */
 require('./_guilda-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais, FREELA, OUTRA, TERCEIRA }));
 /* a Sede (0005): chat, quadro, XP, personalização, imagens e lugares — o mesmo banco, a mesma Absolute ZRO falsa */

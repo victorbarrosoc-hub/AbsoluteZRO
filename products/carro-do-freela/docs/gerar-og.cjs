@@ -16,7 +16,8 @@
  * e à `/fase1`, que não tem sinal nem garantia: a imagem só diz o que as
  * duas fazem (achar quem está livre e chamar).
  *
- * ⚠️ O SELO "PRÉVIA" FICA. É o lugar único onde a casa se declara antes do
+ * (02/11: o selo "Prévia" e o domínio antigo saíram; a marca do topo é o selo neon, como no site real.)
+ * ⚠️ ANTES: O SELO "PRÉVIA" FICAVA. É o lugar único onde a casa se declara antes do
  * lançamento (17/out · 5), e o cartão é a primeira coisa que alguém vê.
  *
  * ⚠️ As fontes são as da casa, embutidas de `src/assets/fonts.json` — com
@@ -52,10 +53,10 @@ h1 em{font-style:normal;background:linear-gradient(100deg,#17D1E8 0%,#3B8CFF 38%
 .orbita{position:absolute;inset:-46px;border-radius:50%;border:1.5px dashed rgba(127,235,247,.18)}
 .faixa{position:absolute;left:0;right:0;bottom:0;height:7px;background:linear-gradient(100deg,#17D1E8 0%,#3B8CFF 38%,#B04CFF 68%,#FF3D9A 100%)}
 </style>
-<div class="marca">${MARCA("og-mk")}Carro do Freela</div>
+<div class="marca">${emblema(48,"og-mk")}Carro do Freela</div>
 <h1>Ache freela de audiovisual <em>livre na sua data.</em></h1>
 <p class="sub">A agenda do audiovisual de Natal. Veja quem está livre e chame em um toque.</p>
-<div class="pe"><span class="dom">carrodofreela.com.br</span><span class="previa">Prévia</span></div>
+<div class="pe"><span class="dom">carro.absolutezro.com</span></div>
 <div class="palco"><i class="orbita"></i>${emblema(320,"og-em")}</div>
 <i class="faixa"></i>`;
 

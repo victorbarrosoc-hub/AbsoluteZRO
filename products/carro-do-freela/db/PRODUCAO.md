@@ -67,6 +67,10 @@ reprova o build.
 - No Supabase: `select count(*) from carro_do_freela.inventario;` e
   `select estado, count(*) from carro_do_freela.inventario_eventos group by 1;` (ficam `pendente`: sincronização desligada).
 - As tabelas antigas seguem iguais: `select count(*) from carro_do_freela.passos;`.
+- Desde a 0008 (03/11/2026, aplicada sozinha pelo build de produção, sem passo à mão): `select count(*) from
+  carro_do_freela.tabelas;` e, logado, `GET /api/zro/selo` responde `{selo:{pct, itens, jobs, verificado}}`.
+- Desde a 0009 (03/11/2026, também sozinha no build de produção): `select count(*) from carro_do_freela.job_confirmacoes;`.
+  Os jobs que já existiam passam a contar no selo só depois que os dois lados confirmarem em Jobs ("Aconteceu?").
 
 ## Não ligar sem nova decisão
 
