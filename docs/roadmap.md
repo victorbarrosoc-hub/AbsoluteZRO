@@ -52,8 +52,10 @@ abaixo.
   HUB. Núcleo único em `products/radio/api/_nucleo.js` (cópia gerada em `apps/hub-web/lib/radio`, teste confere);
   `/radio`, `/radio/app/*` e `/api/v1/radio/*` só para quem passa no gate (fora, 404); migração `0059` deixa o HUB
   assumir `radio_app`. HUB `0058` (produto fechado) e o schema `radio` já estão no AbsoluteZRO-SP.
-- ⬜ Ir ao ar: o ramo entra na `main` (o deploy do HUB aplica a `0059`). O projeto Vercel `radio` fica parado na
-  página neutra.
+- ✅ No ar em absolutezro.com/radio (05/11/2026, PR #127; migração `0059` aplicada pelo deploy do HUB).
+- 🟡 Intercom no modelo do C1 Pro (06/11/2026): uma faixa por setor com cor, ícone e medidor ao vivo; Ouvir e Falar por
+  canal; TALK com toque (trava aberto, full duplex) e segurar (push-to-talk); "Todos" para a Direção; avisos no topo;
+  escolher o setor ao entrar. Falta conferir em iPhone e Android de verdade.
 - ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

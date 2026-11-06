@@ -90,6 +90,12 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   (novo `tests/e2e/radio.spec.ts`: conta comum recebe 404 na página, nos scripts e na API; duas contas de admin criam a
   diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
   do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
+- Intercom no modelo do C1 Pro (06/11/2026): `products/radio` `npm test` 4/4. O e2e com três Chromium agora confere:
+  quem entra escolhe o setor; a faixa do setor vem logo depois do Geral, ouvindo; segurar o TALK para a Direção chega à
+  Bia e não ao Caio (Câmera), e a faixa da Direção acende na Bia; um toque trava o TALK aberto no Geral e outro fecha;
+  Caio desliga o Geral e a voz do Geral deixa de chegar a ele; "Todos" chega ao Caio mesmo assim; aviso "Ação". HUB:
+  lint, format:check, typecheck ok, `npm test` 633/633, build ok, `tests/e2e/radio.spec.ts` 2/2 (setor pela folha,
+  fala segurada acende o Geral do outro lado). Telas conferidas a 390 e 1280 px, claro e escuro.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

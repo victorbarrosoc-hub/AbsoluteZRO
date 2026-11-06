@@ -1,7 +1,7 @@
 // O rádio do set dentro do HUB (ADR 0042, absolutezro.com/radio): não lançado, então conta comum recebe 404 na página,
 // nos scripts e na API; duas contas de admin entram com a conta do HUB, uma cria a diária e a outra entra pelo link do
-// QR, as duas ligam o rádio (microfone falso do Chromium), se conectam, a fala aparece "no ar" do outro lado e o aviso
-// de set ocupa a tela.
+// QR e escolhe o setor, as duas ligam o rádio (microfone falso do Chromium), se conectam, a fala segurada acende o Geral
+// do outro lado e o aviso de set ocupa a tela.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -84,6 +84,10 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   await bia.goto(`/radio?d=${codigo}`)
   await bia.waitForSelector('#tela-radio:not([hidden])')
   await expect(bia.locator('#diaria-nome')).toHaveText('Comercial')
+  // quem entra pelo link escolhe o setor
+  await expect(bia.locator('#setor-folha')).toBeVisible()
+  await bia.click('#setores [data-canal="som"]')
+  await expect(bia.locator('#setor-folha')).toBeHidden()
 
   for (const p of [ana, bia]) await p.click('#ligar-btn')
   for (const p of [ana, bia])
@@ -92,7 +96,9 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   const caixa = (await ana.locator('#ptt').boundingBox())!
   await ana.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
   await ana.mouse.down()
+  await ana.waitForTimeout(400) // segurou: push-to-talk (um toque travaria o TALK aberto)
   await expect(bia.locator('#no-ar')).toHaveText(/Ana · Geral/)
+  await expect(bia.locator('.faixa[data-canal="geral"]')).toHaveClass(/is-no-ar/)
   await ana.mouse.up()
   await expect(bia.locator('#no-ar')).toHaveText('')
 
