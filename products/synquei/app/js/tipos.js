@@ -135,6 +135,17 @@ export const TIPOS = [
     dicas: ['Puxe um cabo da mesa de som para o gravador: é a melhor referência.', 'Cada palestra vira uma sequência quando há intervalo.', 'Câmeras de salas diferentes que não se ouvem ficam em sessões separadas.'],
   },
   {
+    id: 'aftermovie',
+    grupo: 'eventos',
+    label: 'Aftermovie',
+    icon: 'stage',
+    tom: 'green',
+    resumo: 'Festival, show ou evento contado em imagens: público, palco, marcas.',
+    multicam: false,
+    sync: { drift: true, sessionGap: 30, useDate: true, minConf: 0.35 },
+    dicas: ['Nomeie as pastas pelo momento (Público, Palco, Ativações): o Synquei separa sozinho.', 'Drone e gimbal sem som entram como imagens do evento, pela data.', 'Grave a saída da mesa quando houver show: os trechos de palco sincronizam.'],
+  },
+  {
     id: 'culto',
     grupo: 'eventos',
     label: 'Culto · Celebração',

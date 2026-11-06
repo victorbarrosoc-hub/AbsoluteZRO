@@ -16,6 +16,7 @@ export const TIPOS_SYNQUEI = [
   { id: 'aula', label: 'Aula · Curso online' },
   { id: 'casamento', label: 'Casamento' },
   { id: 'evento', label: 'Evento · Palestra' },
+  { id: 'aftermovie', label: 'Aftermovie' },
   { id: 'culto', label: 'Culto · Celebração' },
   { id: 'ficcao', label: 'Curta · Filme · Série' },
   { id: 'publicidade', label: 'Publicidade' },

@@ -18,6 +18,7 @@ const TIPOS = {
   aula: 'Aula · Curso online',
   casamento: 'Casamento',
   evento: 'Evento · Palestra',
+  aftermovie: 'Aftermovie',
   culto: 'Culto · Celebração',
   ficcao: 'Curta · Filme · Série',
   publicidade: 'Publicidade',
