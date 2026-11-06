@@ -13,7 +13,8 @@ Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ "Organizar uma pasta" sem o SOBEDESCE: tipo + pasta do SSD, estudo com correção por câmera antes de mandar.
 - ✅ SOBEDESCE 0.3.10: botão **Relatório** ao lado de "Preparar no Synquei" no Backup Automático (diária: câmeras,
   cartões, conferência xxHash64) e no download do Drive (pastas, MD5), com o link para o Synquei.
-- ⬜ Marcar o momento do cartão no SOBEDESCE ao espetar (o Synquei já lê `momento` na linha v1; falta a tela).
+- ✅ "Gravando agora" no SOBEDESCE: o momento escolhido (pílulas com os momentos do tipo, os mesmos nomes do Synquei)
+  vai em cada cartão que passar (`momento` na linha v1) e o Synquei põe o cartão nele em vez de adivinhar.
 - ⬜ Multicâmera criado direto no DaVinci (a API não cria; hoje vai o Angle e a linha sincronizada).
 
 ## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)

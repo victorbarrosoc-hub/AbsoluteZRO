@@ -497,6 +497,24 @@
   min-width: 140px;
 }
 /* "Preparar no Synquei": cartão conferido, a mídia segue para o projeto de edição */
+/* "Gravando agora": o momento dos próximos cartões (vai para o Synquei) */
+.bk-momento {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bk-momento-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bk-momento-topo span {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.bk-momento-livre .input {
+  width: 100%;
+}
 .bk-proximo {
   display: flex;
   gap: 8px;

@@ -25,6 +25,32 @@ export const TIPOS_SYNQUEI = [
   { id: 'outro', label: 'Outro' },
 ]
 
+// Os momentos de cada tipo, com os mesmos nomes do Synquei (products/synquei/app/js/momentos.js): marcado no
+// SOBEDESCE ("Gravando agora"), o cartão vai direto para esse momento no Synquei. B-roll fica de fora: é por clipe.
+export const MOMENTOS_SYNQUEI = {
+  casamento: ['Making da noiva', 'Making do noivo', 'Making of', 'Decoração', 'Cerimônia', 'Votos', 'Ensaio', 'Festa', 'Buffet', 'Banda', 'Discursos e brindes'],
+  videoclipe: ['Performance', 'Cenas'],
+  show: ['Palco', 'Plateia', 'Bastidores'],
+  dvd: ['Palco', 'Plateia', 'Bastidores'],
+  sessao: ['Performance', 'Bastidores'],
+  podcast: ['Conversa', 'Cortes'],
+  entrevista: ['Entrevista'],
+  documentario: ['Entrevistas', 'Observacional', 'Arquivo'],
+  conteudo: ['Fala para a câmera', 'Tela', 'Detalhe'],
+  aula: ['Professor', 'Tela', 'Detalhe'],
+  evento: ['Credenciamento', 'Palestras e painéis', 'Plateia', 'Networking', 'Entrevistas'],
+  aftermovie: ['Chegada e montagem', 'Público', 'Palco e shows', 'Ativações e marcas', 'Entrevistas', 'Imagens do evento'],
+  culto: ['Louvor', 'Palavra', 'Celebração'],
+  ficcao: ['Cenas', 'Making of'],
+  publicidade: ['Cenas', 'Produto', 'Making of'],
+  espetaculo: ['Palco', 'Plateia', 'Bastidores'],
+  esporte: ['Ação', 'Torcida', 'Entrevistas'],
+  outro: ['Principal'],
+}
+
+/** Os momentos do tipo (ou [] sem tipo): a lista do "Gravando agora". */
+export const momentosSynquei = (tipo) => (Object.hasOwn(MOMENTOS_SYNQUEI, tipo || '') ? MOMENTOS_SYNQUEI[tipo] : [])
+
 // Synquei não instalado: a central do Absolute ZRO (se estiver no computador) abre a página Downloads do HUB, que
 // instala conferindo o SHA-256; sem a central, a mesma página no navegador. (No HUB a rota é /baixar.)
 export const SYNQUEI_BAIXAR = 'https://absolutezro.com/baixar'

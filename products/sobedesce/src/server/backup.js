@@ -73,6 +73,9 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
 
   route('POST', '/api/backup/apagar', tratar(async ({ body }) => svc.apagarProjeto(texto(body.id, 100))))
 
+  // "Gravando agora": o momento que vai nos próximos cartões ('' = automático).
+  route('POST', '/api/backup/momento', tratar(async ({ body }) => svc.momento(body.momento == null ? '' : texto(body.momento, 200) ?? '')))
+
   route('POST', '/api/backup/ligar', tratar(async ({ body }) => svc.ligar(body.ligado === true)))
 
   route('POST', '/api/backup/diaria', tratar(async ({ body }) => (body.n == null ? svc.novaDiaria() : svc.escolherDiaria(Number(body.n)))))

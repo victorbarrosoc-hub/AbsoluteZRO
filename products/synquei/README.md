@@ -161,7 +161,8 @@ O tipo do projeto (escolhido no SOBEDESCE, no link ou em "Organizar uma pasta") 
   (episódios).
 - **Por câmera e bloco**: show, DVD, espetáculo, esporte.
 
-De onde vem o momento, nesta ordem: o que a pessoa marcou/corrigiu › o nome da pasta ("Cerimonia", "making noiva",
+De onde vem o momento, nesta ordem: o que a pessoa marcou/corrigiu (no estudo ou no "Gravando agora" do
+SOBEDESCE, que chega no campo `momento` do cartão) › o nome da pasta ("Cerimonia", "making noiva",
 "buffet", sem ligar para acento) › o horário (casamento: a sessão mais longa sincronizada é a cerimônia; antes,
 making; depois, festa) › sem pista. O que vem do horário aparece como **sugerido** para conferir, nunca escondido.
 B-roll: drone, pasta "broll"/"apoio" e, nos tipos musicais, o que não sincronizou pelo som. Câmera pelo nome do

@@ -16,7 +16,7 @@ import { SISTEMA, nomeDePasta } from '../discos/planejar.js'
 import { scanLocal } from '../local/scan.js'
 import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
-import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from './synquei.js'
+import { TIPOS_SYNQUEI, linkSynquei, momentosSynquei, tipoSynquei } from './synquei.js'
 import { dadosDaDiaria, relatorioHtml } from './relatorio.js'
 import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
 
@@ -119,6 +119,8 @@ function normalizarProjeto(p) {
     midia: midiaDe(p.midia),
     // Usar o Synquei: desligado, a tela não oferece o "Preparar no Synquei" (o resumo descargas.jsonl continua: o HUB lê).
     synquei: p.synquei !== false,
+    // O momento que está sendo gravado agora ("Cerimônia", "Festa"…): vai em cada cartão que passar (null = o Synquei decide).
+    momento: typeof p.momento === 'string' && p.momento.trim() ? p.momento.trim().slice(0, 60) : null,
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
     diaria: Number(p.diaria) || 1,
@@ -238,6 +240,8 @@ export class BackupService {
         tipo: p.tipo,
         midia: p.midia,
         synquei: p.synquei,
+        momento: p.momento,
+        momentos: momentosSynquei(p.tipo),
         destinos: p.destinos.map((c) => {
           const agora = this.destinosAgora.find((x) => x.caminho === c)
           return { caminho: c, nome: path.basename(c) || c, conectado: agora ? agora.conectado : null, livre: agora?.livre ?? null, total: agora?.total ?? null }
@@ -625,6 +629,8 @@ export class BackupService {
   }
 
   #enfileirar(reg) {
+    // o momento de agora vai com o cartão (trocar depois não muda o que já está na fila)
+    reg.momento = this.#projeto()?.momento || null
     reg.estado = 'fila'
     reg.erro = null
     if (!this.fila.includes(reg.caminho)) this.fila.push(reg.caminho)
@@ -730,6 +736,20 @@ export class BackupService {
     }
     await this.#salvar()
     this.#processar()
+    this.#mudou(true)
+    return this.view()
+  }
+
+  /**
+   * "Gravando agora": o momento que vai em cada cartão que passar a partir de agora (Cerimônia, Festa, Take 3…).
+   * Vazio volta ao automático (o Synquei decide pela pasta e pelo horário).
+   */
+  async momento(nome) {
+    const p = this.#projeto()
+    if (!p) throw new BackupError(409, 'Crie um projeto antes.')
+    const m = String(nome ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 60)
+    p.momento = m || null
+    await this.#salvar()
     this.#mudou(true)
     return this.view()
   }
@@ -1005,6 +1025,7 @@ export class BackupService {
       erro,
       soPasta: reg.pasta === true, // só uma pasta do cartão: "OK" não quer dizer "pode formatar"
       parcial, // passou só o que o projeto ou a pessoa escolheu: o resto ficou no cartão
+      ...(reg.momento ? { momento: reg.momento } : {}),
     }
     p.historico.unshift(entrada)
     if (p.historico.length > HISTORICO_MAX) p.historico.length = HISTORICO_MAX
@@ -1073,6 +1094,8 @@ export class BackupService {
         secao: leva.secao,
         cartao: { n, nome: entrada.cartao, volId: entrada.volId, pasta: [diaria.nome, leva.pasta, pastaDono(dono), pasta].join('/') },
         resultado: entrada.resultado,
+        // opcional: o momento marcado (o Synquei põe o cartão nele em vez de adivinhar)
+        ...(entrada.momento ? { momento: entrada.momento } : {}),
         copiados: entrada.copiados,
         bytes: entrada.bytes,
         arquivos: itens.slice(0, RESUMO_MAX_ARQUIVOS).map((it) => ({ rel: sub ? `${sub}/${it.relPath}` : it.relPath, size: it.size })),

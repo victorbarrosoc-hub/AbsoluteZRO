@@ -10,7 +10,7 @@ import { cx } from '../lib/ui.js'
 import { abrirNoSynquei, openExternal, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, Switch } from './common.js'
-import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, Pagina, Passo, Resumo, Stats, Vazio } from './kit.js'
+import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, Pagina, Passo, Pilulas, Resumo, Stats, Vazio } from './kit.js'
 import { useLocalRoots } from './local-picker.js'
 import { Fonte } from './comparar-partes.js'
 import { duracao } from './discos.js'
@@ -500,6 +500,28 @@ function EspacoDestino({ d, i, media }) {
   </div>`
 }
 
+/**
+ * "Gravando agora": o momento que vai em cada cartão que passar (o Synquei põe o cartão nele em vez de adivinhar).
+ * Pílulas com os momentos do tipo do projeto; sem tipo, um campo livre. "Automático" deixa o Synquei decidir.
+ */
+function GravandoAgora({ p }) {
+  const [texto, setTexto] = useState(p.momento || '')
+  useEffect(() => setTexto(p.momento || ''), [p.momento])
+  const marcar = (m) => post('/api/backup/momento', { momento: m || '' })
+  const lista = p.momentos || []
+  const itens = [{ value: '', label: 'Automático' }, ...lista.map((m) => ({ value: m, label: m }))]
+  // um momento escrito à mão (ou de outro tipo) continua aparecendo marcado
+  if (p.momento && !lista.includes(p.momento)) itens.push({ value: p.momento, label: p.momento })
+  return html`<div class="k-caixa bk-momento">
+    <div class="bk-momento-topo"><b>Gravando agora</b><span>${p.momento ? `Os próximos cartões entram em “${p.momento}” no Synquei` : 'O Synquei separa pela pasta e pelo horário'}</span></div>
+    ${lista.length
+      ? html`<${Pilulas} label="Momento dos próximos cartões" valor=${p.momento || ''} itens=${itens} onEscolher=${marcar} />`
+      : html`<form class="bk-momento-livre" onSubmit=${(e) => (e.preventDefault(), marcar(texto))}>
+          <input class="input" value=${texto} maxlength="60" placeholder="Ex.: Abertura, Take 3, Palestra 2" aria-label="Momento dos próximos cartões" onInput=${(e) => setTexto(e.currentTarget.value)} onBlur=${() => texto !== (p.momento || '') && marcar(texto)} />
+        </form>`}
+  </div>`
+}
+
 function Painel({ v, topo, onNovo, onEditar }) {
   const p = v.projeto
   const [pontos, setPontos] = useState([])
@@ -533,6 +555,7 @@ function Painel({ v, topo, onNovo, onEditar }) {
             ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
           </div>`
         : null}
+      ${p.synquei !== false ? html`<${GravandoAgora} p=${p} />` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}
       </div>
