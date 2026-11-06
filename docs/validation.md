@@ -5162,3 +5162,9 @@ SOBEDESCE de computador, que disparam os instaladores).
   e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
 - `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
 - Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).
+
+## Relay: ajustar antes de converter (02/11/2026)
+
+- `test/ajustar.test.js` no Chromium: a ficha técnica aparece antes de converter; "Ajustar" abre "Ajustar antes de
+  converter", 24 fps exatos + "Usar neste arquivo" marca a saída como "Ajustado", nada vai para Meus presets, e o
+  arquivo convertido sai a 24/1 (ffprobe).

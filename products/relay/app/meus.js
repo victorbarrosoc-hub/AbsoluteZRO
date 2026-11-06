@@ -101,12 +101,13 @@ function chave(rotulo, ligada, aoMudar) {
 /**
  * Abre o editor. `p`: preset da pessoa (editar) ou do Relay (partir dele). `origem`: o arquivo para a ficha ao vivo
  * (ou um master de exemplo). `looks`: app/looks.js (a cor da Revela). Devolve Promise<{ acao: 'salvar', preset } |
- * { acao: 'apagar' } | null>.
+ * { acao: 'apagar' } | { acao: 'usar', preset } | null>. `soAqui`: ajustar a saída de um arquivo antes de converter
+ * ("Usar neste arquivo" muda só aquela conversão, sem guardar; "Salvar preset" guarda em Meus e aplica).
  */
-export function editar(p, origem, looks = null) {
-  const editando = p?.personalizado ? p : null
+export function editar(p, origem, looks = null, { soAqui = false } = {}) {
+  const editando = p?.personalizado && !soAqui ? p : null
   let e = especificacaoDe(p ?? presetDoRelay('youtube-1080'))
-  if (!editando) e.nome = p ? `${p.nome} · meu` : 'Meu preset'
+  if (!editando) e.nome = soAqui ? p.nome : p ? `${p.nome} · meu` : 'Meu preset'
   const dialogo = el('dialog', { className: 'folha', ariaLabel: editando ? 'Editar preset' : 'Novo preset' })
   document.body.append(dialogo)
   const abertos = new Set(Object.entries({ imagem: e.recorte && Object.values(e.recorte).some(Boolean), trecho: e.inicio != null || e.fim != null, computador: e.computador.velocidade !== 'slow' || e.computador.ajuste || e.computador.perfil || e.computador.desentrelacar || e.computador.ruido || e.computador.nitidez || e.computador.loudness, cor: Boolean(e.cor) }).filter(([, v]) => v).map(([k]) => k))
@@ -409,6 +410,17 @@ export function editar(p, origem, looks = null) {
         erro.textContent = err.message
       }
     }
+    const usar = soAqui ? el('button', { type: 'button', className: 'vidro vidro--tinta', textContent: 'Usar neste arquivo' }) : null
+    if (usar) {
+      salvar.className = 'vidro'
+      usar.onclick = () => {
+        try {
+          fechar({ acao: 'usar', preset: { ...presetPersonalizado(e), ajustado: true } })
+        } catch (err) {
+          erro.textContent = err.message
+        }
+      }
+    }
     const cancelar = el('button', { type: 'button', className: 'vidro', textContent: 'Cancelar' })
     cancelar.onclick = () => fechar(null)
     const apagar = editando ? el('button', { type: 'button', className: 'vidro apagar', textContent: 'Apagar' }) : null
@@ -423,12 +435,12 @@ export function editar(p, origem, looks = null) {
       el(
         'div',
         { className: 'folha-topo' },
-        el('h2', {}, el('span', { className: 'fino', textContent: editando ? 'Editar ' : 'Novo ' }), el('span', { className: 'pesado', textContent: 'preset' })),
+        el('h2', {}, el('span', { className: 'fino', textContent: soAqui ? 'Ajustar ' : editando ? 'Editar ' : 'Novo ' }), el('span', { className: 'pesado', textContent: soAqui ? 'antes de converter' : 'preset' })),
         nome,
       ),
       el('div', { className: 'folha-meio' }, corpo, el('aside', { className: 'folha-ficha' }, el('h3', { className: 'secao', textContent: 'Ficha técnica' }), ficha)),
       erro,
-      el('div', { className: 'folha-acoes' }, apagar, el('span', { className: 'espaco' }), cancelar, salvar),
+      el('div', { className: 'folha-acoes' }, apagar, el('span', { className: 'espaco' }), cancelar, salvar, usar),
     )
     montar()
     dialogo.showModal()
