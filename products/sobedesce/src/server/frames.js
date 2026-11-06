@@ -7,11 +7,15 @@ import path from 'node:path'
 import { expandHome } from '../local/fsbrowse.js'
 import { FORMATOS_FRAME, FORMATOS_TAKE, FramesService, POSICOES_LOGO } from '../frames/servico.js'
 import { detectarMotor, isVideoName } from '../media/previa.js'
+import { MODOS_COR, lerAjustes } from '../cor/grade.js'
+import { ehPerfil } from '../cor/lut.js'
 
 const DRIVE_ID = /^[\w-]{1,200}$/
 const ITEM_ID = /^[FT]\d{1,4}$/
 const LOGO_EXTS = ['.png', '.jpg', '.jpeg', '.webp']
 const POST_MAX = 60 * 1024 * 1024
+const LUT_ID = /^lut_[a-f0-9]{16}$/
+const PREVIA_ID = /^[a-f0-9]{24}$/
 const TIPOS = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.tif': 'image/tiff', '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm' }
 
 /** Arquivo do disco com Range (o <video> dos takes pula para qualquer ponto). */
@@ -121,6 +125,23 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
     return p
   }
 
+  /** A cor pedida pela tela (docs/FRAMES.md, "Cor"), conferida. null = sem cor (o frame sai como está no arquivo). */
+  const corPedida = (c) => {
+    if (c == null || c === false) return null
+    if (typeof c !== 'object') throw new HttpProblem(400, 'Pedido inválido.')
+    const modo = MODOS_COR.includes(c.modo) ? c.modo : 'original'
+    const lutId = c.lut?.id
+    if (modo === 'lut' && (typeof lutId !== 'string' || !LUT_ID.test(lutId))) throw new HttpProblem(400, 'Escolha a LUT.')
+    return {
+      modo,
+      perfil: ehPerfil(c.perfil) ? c.perfil : 'auto',
+      lut: modo === 'lut' ? { id: lutId } : null,
+      espera: c.espera === '709' ? '709' : 'log',
+      intensidade: num(c.intensidade, 0, 1, 1),
+      ajustes: lerAjustes(c.ajustes),
+    }
+  }
+
   const alvoDrive = (v) => {
     if (v == null || v === false) return null
     if (v === 'junto') return 'junto'
@@ -143,6 +164,11 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
       if (!caminho) throw new HttpProblem(400, 'Não achei esse vídeo no computador. O disco está conectado?')
       if (!isVideoName(caminho)) throw new HttpProblem(400, 'Escolha um arquivo de vídeo (MP4, MOV, MXF…).')
       origem = { tipo: 'local', caminho }
+    } else if (o.tipo === 'pasta') {
+      // pasta ou cartão: um frame por clipe
+      const caminho = await caminhoLocal(o.caminho, { arquivo: false })
+      if (!caminho) throw new HttpProblem(400, 'Não achei essa pasta no computador. O disco está conectado?')
+      origem = { tipo: 'pasta', caminho }
     } else if (o.tipo === 'drive') {
       const acc = account(o.accountId)
       if (typeof o.fileId !== 'string' || !DRIVE_ID.test(o.fileId)) throw new HttpProblem(400, 'Escolha um vídeo do Drive.')
@@ -154,7 +180,7 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
     const f = a.frames || {}
     const frames = { quantidade: int(f.quantidade, 1, 300, 24), formato: FORMATOS_FRAME.includes(f.formato) ? f.formato : 'jpg', logo: f.logo === true }
     let takes = null
-    if (a.takes && int(a.takes.quantidade, 0, 60, 0) > 0) {
+    if (origem.tipo !== 'pasta' && a.takes && int(a.takes.quantidade, 0, 60, 0) > 0) {
       const t = a.takes
       takes = {
         quantidade: int(t.quantidade, 1, 60, 6),
@@ -179,8 +205,21 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
       if (!destino) throw new HttpProblem(400, 'Não achei essa pasta no computador.')
     }
     const subirPara = alvoDrive(a.subir)
-    const jobId = svc.iniciar({ origem, ajustes: { frames, takes, logo, destino, subir: subirPara } })
+    const cor = corPedida(a.cor)
+    if (cor?.lut) await svc.lut(cor.lut.id)
+    // pasta de um cartão do Backup Automático: o dono (a cor dele volta no pré-color automático) e o nome do trabalho
+    const donoId = origem.tipo === 'pasta' && typeof a.donoId === 'string' && /^don[\w-]{4,40}$/.test(a.donoId) ? a.donoId : null
+    const nome = origem.tipo === 'pasta' && typeof a.nome === 'string' ? a.nome.slice(0, 120) : null
+    const jobId = svc.iniciar({ origem, ajustes: { frames, takes, logo, destino, subir: subirPara, cor, donoId, nome } })
+    if (donoId) await svc.guardarCorDoDono(donoId, cor).catch((err) => ctx.log?.('frames: cor do dono', err?.message))
     return { jobId }
+  }))
+
+  // Pasta ou cartão antes de começar: quantos clipes, o primeiro (para a prévia da cor) e o que fica de fora.
+  route('POST', '/api/frames/pasta', tratar(async ({ body }) => {
+    const caminho = await caminhoLocal(body.caminho, { arquivo: false })
+    if (!caminho) throw new HttpProblem(400, 'Não achei essa pasta no computador. O disco está conectado?')
+    return await svc.lerPasta(caminho)
   }))
 
   route('DELETE', '/api/frames/job/:jobId', ({ params }) => {
@@ -274,6 +313,44 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
   })
   route('GET', '/api/frames/:id/arquivo', arquivo, { raw: true })
   route('HEAD', '/api/frames/:id/arquivo', arquivo, { raw: true })
+
+  // ── cor: as LUTs usadas, guardar uma LUT (do computador ou do Drive) e a prévia de um frame com a cor
+
+  route('GET', '/api/frames-cor/luts', tratar(async () => ({ luts: await svc.luts() })))
+
+  route('POST', '/api/frames-cor/lut', tratar(async ({ body }) => {
+    if (body.tipo === 'drive') {
+      const acc = account(body.accountId)
+      if (typeof body.fileId !== 'string' || !DRIVE_ID.test(body.fileId)) throw new HttpProblem(400, 'Escolha a LUT no Drive.')
+      return { lut: await svc.guardarLut({ tipo: 'drive', accountId: acc.id, fileId: body.fileId }) }
+    }
+    const caminho = await caminhoLocal(body.caminho)
+    if (!caminho) throw new HttpProblem(400, 'Não achei essa LUT no computador.')
+    if (path.extname(caminho).toLowerCase() !== '.cube') throw new HttpProblem(400, 'A LUT precisa ser um arquivo .cube.')
+    return { lut: await svc.guardarLut({ tipo: 'local', caminho }) }
+  }))
+
+  route('POST', '/api/frames-cor/lut/esquecer', tratar(async ({ body }) => {
+    if (typeof body.id !== 'string' || !LUT_ID.test(body.id)) throw new HttpProblem(400, 'Pedido inválido.')
+    await svc.esquecerLut(body.id)
+    return { luts: await svc.luts() }
+  }))
+
+  route('POST', '/api/frames-cor/previa', tratar(async ({ body }) => {
+    const caminho = await caminhoLocal(body.caminho)
+    if (!caminho || !isVideoName(caminho)) throw new HttpProblem(400, 'A prévia da cor precisa do vídeo no computador.')
+    const cor = corPedida(body.cor) ?? { modo: 'original', perfil: 'auto', lut: null, espera: 'log', intensidade: 1, ajustes: lerAjustes({}) }
+    const t = body.t == null ? null : num(body.t, 0, 1e7, null)
+    const r = await svc.previaCor({ caminho, cor, t })
+    return { previa: path.basename(r.arquivo, '.jpg'), perfil: r.perfil, perfilNome: r.perfilNome, perfilOrigem: r.perfilOrigem, resumo: r.resumo }
+  }))
+
+  route('GET', '/api/frames-cor/previa', tratar(async ({ req, res, query }) => {
+    chave(req, query)
+    const id = query.get('id') || ''
+    if (!PREVIA_ID.test(id)) throw new HttpProblem(400, 'Arquivo inválido.')
+    await servir(req, res, path.join(svc.root, 'previas', `${id}.jpg`), baseHeaders)
+  }), { raw: true })
 
   // Prévia da logomarca escolhida (antes de começar): só imagens, até 20 MB.
   route('GET', '/api/frames-logo', tratar(async ({ req, res, query }) => {

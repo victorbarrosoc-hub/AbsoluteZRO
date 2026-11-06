@@ -6,7 +6,8 @@ import { html, useEffect, useState } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
 import { bytes, count, plural, tildify, baseName } from '../lib/format.js'
-import { cx } from '../lib/ui.js'
+import { cx, storage } from '../lib/ui.js'
+import { navigate } from '../lib/router.js'
 import { abrirNoSynquei, openExternal, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, Switch } from './common.js'
@@ -166,6 +167,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   // Projeto novo pergunta o que passa (nada escolhido no começo); o antigo já passava tudo.
   const [midia, setMidia] = useState(inicial ? inicial.midia || 'tudo' : null)
   const [synquei, setSynquei] = useState(inicial ? inicial.synquei !== false : true)
+  const [precolor, setPrecolor] = useState(!!inicial?.precolor)
   const [ligar, setLigar] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const ds = destinos.filter(Boolean)
@@ -173,7 +175,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   const salvar = async () => {
     setOcupado(true)
     const tipoFinal = synquei ? tipo : ''
-    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei })
+    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei, precolor }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei, precolor })
     setOcupado(false)
     if (r) onPronto?.()
   }
@@ -241,6 +243,9 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
             </${Linha}>`}
         <${Linha} titulo="Ejetar o cartão ao terminar" sub="Só quando estiver tudo certo em todos os destinos.">
           <${Switch} checked=${ejetar} label="Ejetar o cartão ao terminar" onChange=${setEjetar} />
+        </${Linha}>
+        <${Linha} titulo="Frames com cor ao terminar o cartão" sub=${precolor ? 'Cartão OK: um frame por clipe, com a LUT e o ajuste da câmera daquele dono (Estúdio › Frames).' : 'Desligado: os frames saem quando você tocar em “Frames do cartão”.'}>
+          <${Switch} checked=${precolor} label="Frames com cor ao terminar o cartão" onChange=${setPrecolor} />
         </${Linha}>
         <${Linha} titulo="Usar o Synquei" sub=${synquei ? 'No fim, “Preparar no Synquei” organiza a mídia no DaVinci.' : 'Desligado: sem o botão do Synquei.'}>
           <${Switch} checked=${synquei} label="Usar o Synquei" onChange=${setSynquei} />
@@ -547,8 +552,16 @@ function Painel({ v, topo, onNovo, onEditar }) {
 
   // Cartão conferido: a mídia já pode ir para o Synquei (ele lê o descargas.jsonl da pasta do projeto).
   const synquei = p.synquei !== false && !v.job && v.ultimo?.resultado === 'ok'
+  // Cartão conferido: os brutos dele viram frames com a cor da câmera do dono (Estúdio › Frames, "Pasta ou cartão")
+  const framesDoCartao = !v.job && v.ultimo?.resultado === 'ok' && !!v.ultimo.pastaVideo
+  const abrirFrames = () => {
+    // com o pré-color ligado, os frames já estão sendo feitos: só abre o Frames (o andamento e o histórico)
+    if (!p.precolor) storage.set('frames.pedido', { caminho: v.ultimo.pastaVideo, nome: `${v.ultimo.dono} · ${v.ultimo.cartao}`, donoId: v.ultimo.donoId })
+    navigate('frames')
+  }
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
+      ${framesDoCartao ? html`<${Button} icon="sparkle" class="bk-synquei" onClick=${abrirFrames} title="Um frame por clipe, com a cor (LUT e ajuste) da câmera deste dono">${p.precolor ? 'Ver os frames do cartão' : 'Frames do cartão'}</${Button}>` : null}
       ${synquei || (!v.job && p.totalDiaria.descargas)
         ? html`<div class="bk-proximo">
             ${p.totalDiaria.descargas ? html`<${Button} icon="doc" variant="ghost" onClick=${() => openExternal(`/api/backup/relatorio?id=${encodeURIComponent(v.atual)}`)} title=${`Câmeras, cartões e conferência da ${p.diaria.nome}`}>Relatório</${Button}>` : null}

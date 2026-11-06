@@ -12,13 +12,17 @@ import { bridge, pathsFromDrop, pickFolderPath, revealLabel, revealPath } from '
 import { openModal, pickDriveFolder, pickLocal, promptDialog } from '../lib/modals.js'
 import { ZOOM_MAX, cobrir, enquadreDe, moverEnquadre } from '../lib/frames-posts.js'
 import {
+  ASPECTOS_FAIXA,
+  FAIXAS_N,
+  FAIXAS_PADRAO,
   FORMATOS,
   FORMATOS_CARROSSEL,
   caixasDe,
   desenharMontagem,
   formatoPersonalizado,
   formatoPorId,
-  modeloPorId,
+  modeloDe,
+  modeloFaixas,
   modelosPara,
   preencher,
   quadroNoPonto,
@@ -27,7 +31,7 @@ import {
   trocarQuadros,
 } from '../lib/montagens.js'
 import { Icon } from './icons.js'
-import { Button, EmptyState, Slider } from './common.js'
+import { Button, EmptyState, Slider, Switch } from './common.js'
 
 const FOTO_EXT = /\.(jpe?g|png|webp|tiff?|heic|heif)$/i
 const VIDEO_EXT = /\.(mp4|mov|m4v|mxf|mkv|avi|mts|m2ts|webm|3gp|mpg|mpeg)$/i
@@ -48,6 +52,7 @@ const PADRAO = {
   linhas: 2,
   quadrado: '3x4',
   modelo: 'grande-dois',
+  faixas: FAIXAS_PADRAO, // o modelo "Faixas": quantas, o formato do frame e a zona dos Stories
   quadros: [],
   enquadres: [],
   espaco: 12,
@@ -335,7 +340,9 @@ export function MontagensScreen() {
     linhas: d.linhas,
     quadrado: d.quadrado,
   })
-  const modelo = modeloPorId(d.modelo)
+  const fx = d.faixas || FAIXAS_PADRAO
+  const modelo = useMemo(() => modeloDe(d), [d.modelo, fx.n, fx.aspecto, fx.seguro, fx.antesDepois])
+  const faixasDaGaleria = useMemo(() => modeloFaixas(fx), [fx.n, fx.aspecto, fx.seguro, fx.antesDepois])
   const n = modelo.caixas.length
   const quadros = useMemo(() => preencher(d.quadros.slice(0, n), n, d.fotos), [d.quadros, d.fotos, n])
   const videosNoPost = d.tipo === 'post' ? quadros.map((p, i) => (p && ehVideo(p) ? i : -1)).filter((i) => i >= 0) : []
@@ -618,6 +625,30 @@ export function MontagensScreen() {
     })
     return [r]
   }
+  /** Faixas em lote: as fotos na ordem, em grupos do tamanho do modelo, um story (JPG) para cada grupo. */
+  const salvarLote = async () => {
+    const por = modelo.faixas.n
+    const grupos = []
+    for (let i = 0; i < d.fotos.length; i += por) grupos.push(d.fotos.slice(i, i + por))
+    try {
+      const arquivos = []
+      for (const [k, g] of grupos.entries()) {
+        setSalvando(`Story ${k + 1} de ${grupos.length}…`)
+        // o último grupo pode ser menor: sai com as faixas que tem, sem quadro vazio
+        const mod = g.length < por ? modeloFaixas({ ...fx, n: g.length }) : modelo
+        const im = await imagensDe(g, d)
+        const c = document.createElement('canvas')
+        desenharMontagem(c, { formato: tela, modelo: mod, imagens: im, enquadres: [], espaco: d.espaco, cantos: d.cantos, fundo: d.fundo, escala: 1 })
+        arquivos.push(await salvarImagem(c, `${d.nome} ${dois(k + 1)}`, tela.id))
+      }
+      setUltimo({ arquivos: arquivos.map((a) => a.arquivo), pasta: arquivos[0]?.pasta })
+      toast('success', `Salvos ${arquivos.length} stories, na ordem.`, { action: { label: revealLabel(), onClick: () => revealPath(arquivos[0].arquivo) } })
+    } catch (err) {
+      toast('error', err?.message || 'Não consegui salvar os stories.')
+    } finally {
+      setSalvando(null)
+    }
+  }
   const salvar = async (e) => {
     if (!quadros.some(Boolean)) return toast('error', 'Ponha pelo menos uma foto num quadro.')
     let como = 'foto'
@@ -780,7 +811,7 @@ export function MontagensScreen() {
       ${formatos}
       ${bandeja}
       <div class="mt-modelos">
-        ${modelosPara(d.fotos.length).map(
+        ${[faixasDaGaleria, ...modelosPara(d.fotos.length)].map(
           (m) =>
             html`<${Modelo}
               key=${m.id}
@@ -893,6 +924,31 @@ export function MontagensScreen() {
               </section>`
             : null
         }
+        ${
+          modelo.faixas
+            ? html`<section class="mt-card">
+                <h3>Faixas</h3>
+                <${Chips}
+                  label="Quantas faixas"
+                  valor=${modelo.faixas.n}
+                  itens=${FAIXAS_N.filter((v) => !modelo.faixas.antesDepois || v % 2 === 0).map((v) => ({ value: v, label: modelo.faixas.antesDepois ? `${v / 2} ${v === 2 ? 'par' : 'pares'}` : String(v) }))}
+                  onEscolher=${(v) => muda({ faixas: { ...fx, n: v }, quadros: [], enquadres: [] })}
+                />
+                <label class="mt-linha-switch"><span><b>Antes e depois</b><small>Em pares: o arquivo em cima, a cor embaixo, com rótulo</small></span><${Switch}
+                  checked=${modelo.faixas.antesDepois}
+                  label="Antes e depois"
+                  onChange=${(v) => muda({ faixas: { ...fx, antesDepois: v, n: v && fx.n % 2 ? Math.min(6, fx.n + 1) : fx.n }, quadros: [], enquadres: [] })}
+                /></label>
+                <h3 class="mt-h3-mais">Formato do frame</h3>
+                <${Chips} label="Formato do frame" valor=${modelo.faixas.aspecto} itens=${ASPECTOS_FAIXA.map((a) => ({ value: a.id, label: a.nome }))} onEscolher=${(v) => muda({ faixas: { ...fx, aspecto: v }, enquadres: [] })} />
+                ${
+                  tela.h / tela.w > 1.6
+                    ? html`<label class="mt-linha-switch"><span><b>Zona segura dos Stories</b><small>Nada embaixo do perfil nem do “responder”</small></span><${Switch} checked=${modelo.faixas.seguro} label="Zona segura dos Stories" onChange=${(v) => muda({ faixas: { ...fx, seguro: v } })} /></label>`
+                    : null
+                }
+              </section>`
+            : null
+        }
         <section class="mt-card"><h3>Espaço entre as fotos</h3><${Slider} value=${d.espaco} min=${0} max=${80} onInput=${(v) => muda({ espaco: v })} label="Espaço entre as fotos" format=${(v) => `${v} px`} /></section>
         <section class="mt-card"><h3>Cantos</h3><${Slider} value=${d.cantos} min=${0} max=${80} onInput=${(v) => muda({ cantos: v })} label="Cantos arredondados" format=${(v) => `${v} px`} /></section>
         <section class="mt-card"><h3>Fundo</h3><div class="mt-cores">
@@ -903,6 +959,13 @@ export function MontagensScreen() {
           <h3>Sai assim</h3>
           <p>${tela.fatias.length > 1 ? `${tela.fatias.length} imagens ${tela.fatias[0].w} × ${tela.fatias[0].h}, numeradas` : videosNoPost.length ? `${tela.w} × ${tela.h} · MP4 ou JPG` : `${tela.w} × ${tela.h} · JPG`}</p>
           ${d.tipo !== 'post' && d.fotos.some(ehVideo) ? html`<p class="mt-sub">Aqui os takes entram como foto (o quadro do começo do trecho).</p>` : null}
+          ${
+            modelo.faixas && d.tipo === 'post' && d.fotos.length > modelo.faixas.n
+              ? html`<${Button} icon="stack" disabled=${!!salvando} onClick=${salvarLote} title="As fotos na ordem, em grupos do tamanho deste modelo: um story para cada grupo">
+                  Todas em stories · ${Math.ceil(d.fotos.length / modelo.faixas.n)}
+                </${Button}>`
+              : null
+          }
           <button type="button" class="mt-link" onClick=${escolherPasta}><${Icon} name="folder" size=${14} />${pasta() ? nomeDe(pasta()) : 'Downloads › Montagens'}</button>
           ${
             ultimo

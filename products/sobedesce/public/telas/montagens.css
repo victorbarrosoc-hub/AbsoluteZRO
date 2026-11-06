@@ -635,3 +635,20 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
+
+/* modelo Faixas: a zona segura dos Stories (texto à esquerda, chave à direita) */
+.mt-linha-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.mt-linha-switch b {
+  display: block;
+  font-size: 13px;
+}
+.mt-linha-switch small {
+  color: var(--text-2);
+  font-size: 12px;
+}

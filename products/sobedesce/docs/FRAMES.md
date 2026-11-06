@@ -59,12 +59,62 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
   grafite; título, legenda e logomarca. Usa os frames escolhidos na aba Frames ou escolhe sozinho.
 - Enquadramento por frame (`enquadres[i] = { x, y, zoom }`, zoom até 3×): tocar ou clicar no frame da prévia escolhe; arrastar move (até a borda do frame encostar na caixa); pinça, roda do mouse ou a barra aproximam; Centralizar volta ao meio. Vale em qualquer formato (fica guardado por frame) e sai igual no post em alta. `frameNoPonto` acha o frame tocado (na polaroid, desfaz o giro).
 
+## Cor (pré-color)
+
+O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/frames.js` › `CorPasso`):
+
+- **Original**: como está no arquivo.
+- **Rec.709 da câmera**: a mesma conversão de monitor da prévia (`src/cor/lut.js`).
+- **Sua LUT**: um `.cube` 3D do computador ou do Drive (desce uma vez). Fica em "Usadas antes" (até 20), em
+  `~/.sobedesce/frames/luts/`. A LUT é conferida antes de aceitar: LUT 1D, shaper ou arquivo incompleto são recusados
+  com o motivo.
+  - **A LUT recebe**: o log da câmera (LUT de câmera, a que o colorista exporta para o log) ou o Rec.709 (LUT criativa: o app converte o
+    LOG antes).
+  - **Intensidade**: mistura o look com o Rec.709 neutro da câmera.
+- **Câmera**: automático pelos metadados do arquivo (`src/cor/detectar.js`, os mesmos da prévia do Drive) ou escolhida.
+  Arquivo que não diz a câmera fica em Rec.709 até a pessoa escolher.
+- **Ajuste rápido**, antes da LUT, na luz do arquivo: exposição (±2 stops), temperatura, contraste (em volta do cinza
+  18%), preto (abaixo de 0 assenta só a sombra funda; acima levanta o preto) e saturação.
+
+Tudo vira **uma LUT só** (33³), gravada na pasta de dados do trabalho (`cor.cube`), e o ffmpeg aplica numa passada:
+YUV → RGB de ponto flutuante com a matriz e a faixa explícitas, `lut3d` tetraédrico (`extracao.js` › `filtroCor`). Vale
+nos frames, nos takes (marcados BT.709), em "outro frame", "frame num ponto" e "take em outro formato", e na leitura do
+filme: a escolha mede a imagem já com a cor (LOG lavado não vira "P&B"). O arquivo original não muda e a pasta entregue
+não ganha a LUT.
+
+A **prévia** é um frame do vídeo do computador (a um terço), 960 px, pelo mesmo caminho, antes e depois. Vídeo do
+Drive: a cor entra quando ele desce.
+
+## Pasta ou cartão (os brutos)
+
+A origem **Pasta ou cartão** (`src/frames/pasta.js`) faz **um frame por clipe**, para ver os brutos de uma diária já com
+a cor:
+
+- Lista os vídeos da pasta e das subpastas, na ordem do nome ("C0002" antes de "C0010"). Ficam de fora o proxy da câmera
+  (`Proxy/`, a `SUB/` da Sony), miniaturas, pastas ocultas e o que o próprio app gerou. RAW (BRAW, R3D…) o conversor não
+  lê: entra só a contagem, e a tela avisa.
+- Cada clipe: 7 pontos entre 8% e 92% da duração (longe da claquete e da câmera parando), medidos em 256 px já com a cor,
+  pelas mesmas regras do filme (`escolha.js` › `nota`). Fica o melhor; os outros são o "Outro frame" daquele clipe.
+  Nenhum serve (tudo escuro, chapado)? Fica o de mais contraste, para o clipe não sumir.
+- A cor é montada uma vez por câmera (automático: os metadados de cada clipe; `cor-<perfil>.cube` na pasta de dados).
+- Sai `<Pasta> — Frames/Frames/<Clipe>_F001_<timecode>.jpg` e o `indice.csv`. Sem takes e sem "frame num ponto".
+- **Frames do cartão** (Cartões › Backup Automático): com o "Cartão OK", o botão abre o Frames com a pasta do vídeo do
+  cartão no primeiro destino (`pastaVideo` na descarga). A cor que aquele dono usou fica lembrada e volta no próximo
+  cartão dele.
+- **Pré-color automático**: com "Frames com cor ao terminar o cartão" ligado no projeto, o cartão OK já vira frames
+  sozinho (`FramesService.precolorDoCartao`), com a cor que o dono usou por último (guardada no motor,
+  `frames/cor-donos.json`; sem nenhuma, o Rec.709 da câmera). O trabalho se chama "Dono · Cartão NN". Rodando outro
+  trabalho, o cartão espera a vez (uma fila); a cópia nunca espera a cor.
+
+Com cor, cada frame tem também o **antes** (o mesmo quadro sem a cor, até 2160 px) na pasta de dados do trabalho
+(`antes/F001.jpg`): a pasta entregue continua só com a cor.
+
 ## API
 
 | Rota | O quê |
 | --- | --- |
 | `GET /api/frames` | trabalho atual e histórico |
-| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
+| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'pasta', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
 | `DELETE /api/frames/job/:jobId` | para |
 | `GET /api/frames/:id` | o trabalho (cenas, frames, takes, posts) |
 | `DELETE /api/frames/:id` | tira da lista (a pasta fica) |
@@ -74,6 +124,16 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
 | `POST /api/frames/:id/subir` | `{ para: 'junto' \| { accountId, folderId, driveId, name } }` |
 | `GET /api/frames/:id/arquivo?p=\|mini=\|alta=&k=` | arquivo do trabalho (chave da mídia), com Range |
 | `GET /api/frames-logo?p=&k=` | prévia da logomarca |
+| `POST /api/frames/pasta` | `{ caminho }` → `{ nome, clipes, primeiro, ignorados: { raw, demais } }` (antes de começar) |
+| `GET /api/frames-cor/luts` | as LUTs usadas antes |
+| `POST /api/frames-cor/lut` | guarda uma LUT: `{ tipo: 'local', caminho }` \| `{ tipo: 'drive', accountId, fileId }` → `{ lut }` |
+| `POST /api/frames-cor/lut/esquecer` | `{ id }` tira da lista |
+| `POST /api/frames-cor/previa` | `{ caminho, cor, t? }` → `{ previa, perfil, perfilNome, perfilOrigem, resumo }` |
+| `GET /api/frames-cor/previa?id=&k=` | a imagem da prévia |
+
+`ajustes.cor` (no `POST /api/frames`): `{ modo: 'original' \| '709' \| 'lut', perfil: 'auto' \| id, lut: { id }, espera:
+'log' \| '709', intensidade: 0–1, ajustes: { exposicao, temperatura, contraste, preto, saturacao } }` (-100 a 100); null
+= sem cor.
 
 Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifestoId, erro }`.
 
@@ -109,6 +169,17 @@ Fotos e takes do computador em modelos prontos (`public/components/montagens.js`
 grade do perfil (3 colunas, 1 a 5 linhas, 3:4 ou 1:1, numerada na ordem de postar: o 1 é o de baixo, à direita). Formatos
 com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1
 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1 2560×1072 e personalizado (200 a 4096 px).
+
+**Faixas** (o modelo do pré-color para os Stories): 2 a 6 frames um embaixo do outro, no formato do frame (16:9, 1,85,
+2,39, 4:3 ou tela cheia, que divide a altura), centrados; quando não cabem na largura toda, ficam mais estreitos sem
+mudar o formato. Num formato vertical, a **zona segura dos Stories** (ligada no padrão) deixa livres os 250 px de cima e
+os 340 px de baixo (em 1080×1920), onde ficam o perfil e o "responder". No trabalho do Frames, **Montar story** abre a
+Montagens com os frames (já com a cor) em Faixas 9:16 (`public/lib/montagens.js` › `modeloFaixas`).
+
+- **Antes e depois**: as faixas vão em pares, o arquivo em cima e a cor embaixo, com o rótulo ANTES/DEPOIS (1 a 3 pares).
+  No trabalho do Frames com cor, o botão **Antes e depois** abre a Montagens já em pares.
+- **Todas em stories**: as fotos na ordem, em grupos do tamanho do modelo, um JPG para cada grupo ("Nome 01", "Nome
+  02"…); o último sai só com as faixas que tem.
 
 Motor (`src/server/montagens.js`), tudo com a chave da mídia: `GET /api/montagens/foto` (TIFF e HEIC viram JPEG de
 cache), `GET /api/montagens/info` (duração, tamanho, som do take), `GET /api/montagens/quadro?t=&l=` (um quadro do take,
