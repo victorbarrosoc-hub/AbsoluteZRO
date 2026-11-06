@@ -12,7 +12,12 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, us
 import { createPortal } from "react-dom";
 
 const nada = () => () => {};
-/** No servidor (e na hidratação) a folha sai no lugar; depois de montar, vai para o <body>. */
+/**
+ * A folha só existe no navegador, direto no <body>. No servidor e na hidratação não sai nada: a folha que já vem aberta
+ * (o link do card, `?card=`) aparece uma vez só, no lugar certo e com uma entrada. Antes ela saía no lugar (presa na
+ * cápsula) e, ao hidratar, o portal a montava de novo no <body>: a entrada recomeçava e tudo o que estava dentro era
+ * trocado por uma cópia nova.
+ */
 function useNoNavegador() {
   return useSyncExternalStore(
     nada,
@@ -65,6 +70,7 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
 
   // foco: guarda quem abriu, prende o Tab dentro, Esc fecha
   useEffect(() => {
+    if (!noNavegador) return;
     const antes = document.activeElement as HTMLElement | null;
     const eu = {};
     pilha.push(eu);
@@ -101,7 +107,7 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
       pilha.splice(pilha.indexOf(eu), 1);
       if (antes?.isConnected) antes.focus({ preventScroll: true });
     };
-  }, [fechar]);
+  }, [fechar, noNavegador]);
 
   /* ───── a alça (celular): puxar para baixo fecha ───── */
   const arraste = useRef<{ y: number; t: number } | null>(null);
@@ -154,5 +160,5 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
       </div>
     </div>
   );
-  return noNavegador ? createPortal(folha, document.body) : folha;
+  return noNavegador ? createPortal(folha, document.body) : null;
 }

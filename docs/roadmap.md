@@ -19,8 +19,9 @@ abaixo.
 - ✅ Revela segue fechada pelo gate (página neutra para quem não tem acesso; `test/fechado.test.js` passa).
 - ⬜ Conferir no ar depois do push da `main`: login com o Google pelo navegador num Mac e num Windows, "Manter no Dock" com
   vários apps, a home nova do SOBEDESCE e a ficha do card do Maestro com as pastas do Drive.
-- ⬜ e2e do Maestro: `criacao-tpeasy.spec.ts` já falhava na `main` e `quadro-pastas.spec.ts` (novo) é intermitente
-  (a ficha aberta por `?card=` às vezes fecha); o CI do Maestro pode ficar vermelho até corrigir.
+- ✅ e2e do Maestro verde (305 passaram, 0 falharam): a folha aberta por `?card=` não é mais montada de novo ao
+  hidratar (`Folha` só no navegador, no `<body>`), e o `criacao-tpeasy.spec.ts` pega o `/api/zro/eu?visitante=1` do
+  TPeasy de agora.
 
 ## Synquei + SOBEDESCE: material organizado por tipo de vídeo (06/11/2026, ramo `claude/synquei-fluxo-sobedesce`)
 

@@ -71,7 +71,9 @@ test.afterAll(async () => {
  */
 async function tpeasyLogado(page: Page) {
   const { sub } = sessao();
-  await page.route("**/api/zro/eu", (r) =>
+  // com ou sem a busca: o TPeasy de agora pergunta `/api/zro/eu?visitante=1` (desde 01/11/2026) e o glob sem `?` não
+  // pegava, então o app ficava "fora" e nunca buscava as entregas
+  await page.route(/\/api\/zro\/eu(\?.*)?$/, (r) =>
     r.fulfill({
       json: {
         entrou: true,
@@ -107,12 +109,16 @@ async function noBanco<T>(fn: (sql: postgres.Sql, org: string) => Promise<T>): P
   }
 }
 
-/** Um roteiro (cópia do da demonstração, sem versão), só deste projeto do Playwright. */
+/**
+ * Um roteiro novo (cópia do da demonstração, sem versão) a cada teste. Rodar de novo no mesmo banco (`--repeat-each`)
+ * não reaproveita o já enviado (lá o botão é "Reenviar" e o TPeasy já tem o roteiro): da segunda vez o título ganha
+ * uma marca própria, e a primeira (a das capturas) fica com o título limpo.
+ */
 async function semear(projeto: string): Promise<{ id: string; titulo: string }> {
-  const titulo = `Café Aurora · manifesto ${projeto === "iphone" ? "(celular)" : ""}`.trim();
+  const base = `Café Aurora · manifesto ${projeto === "iphone" ? "(celular)" : ""}`.trim();
   return noBanco(async (sql, org) => {
-    const [ja] = await sql`select id from maestro.roteiros where org_id = ${org} and titulo = ${titulo}`;
-    if (ja) return { id: ja.id as string, titulo };
+    const [ja] = await sql`select 1 from maestro.roteiros where org_id = ${org} and titulo = ${base}`;
+    const titulo = ja ? `${base} · ${Date.now().toString(36)}` : base;
     const [r] = await sql`
       insert into maestro.roteiros (org_id, titulo, modelo, formato, conteudo, duracao_seg)
       select org_id, ${titulo}, modelo, formato, conteudo, duracao_seg from maestro.roteiros where org_id = ${org} and demo order by created_at limit 1

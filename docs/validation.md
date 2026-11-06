@@ -25,12 +25,22 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   `packages/media-contracts` não mudou. `node scripts/scan-secrets.mjs`: nenhum segredo em 4419 arquivos.
 - Apps de computador (`npm test`): hub-desktop 100/100, relay 26/26, maestro 55/55, tpeasy 26/26, carro-do-freela
   30/30, rift-motion 27/27 (igual à `main`).
-- Maestro: `lint`, `format:check`, `typecheck`, `build` ok; `npm test` 739/739. `npm run test:e2e`
-  301 passaram, 100 pulados, 4 falharam: `criacao-tpeasy.spec.ts:204` (computador e iphone, o toast "Roteiro do Maestro
-  chegou" não aparece) falha igual na `main` (rodado com as pastas do Maestro da `main`), e `quadro-pastas.spec.ts:53`
-  (novo do `maestro-fase-2`) é intermitente: a ficha do card aberto por `?card=` às vezes fecha sozinha e o teste perde a
-  região "Pastas no Drive" (passou em 1 de 2 e em 3 de 4 rodadas só dele). O código web do Maestro no lote é idêntico ao
-  da ponta do `maestro-fase-2`.
+- Maestro: `lint`, `format:check`, `typecheck`, `build` ok; `npm test` 739/739. `npm run test:e2e` **305 passaram**,
+  100 pulados, 0 falharam (depois das duas correções abaixo; nas duas rodadas antes desta, um caso por vez que passa
+  sozinho: o WebKit caiu uma vez em `celular.spec.ts`, 12/12 de novo, e com a máquina ocupada `arrastar.spec.ts`
+  contou um render a mais e o `aprovacao.spec.ts` perdeu um comentário no iPhone, 5/5 e 3 × 6/6 de novo).
+  - `quadro-pastas.spec.ts:53` intermitente (falhou em 3 de 8 antes): a ficha não fechava, ela era **montada de novo**.
+    A `Folha` (`src/components/folha.tsx`) saía no lugar no servidor e na hidratação e, ao montar, o portal a criava
+    outra vez no `<body>`: a entrada recomeçava, tudo o que estava dentro virava uma cópia nova e o teste segurava a
+    região "Pastas no Drive" da cópia velha ("Element is not attached to the DOM"). Agora a folha só existe no
+    navegador, direto no `<body>` (o mesmo jeito da lixeira da Criação): o card aberto por `?card=` aparece uma vez, no
+    lugar certo, e fica. Depois: **20/20** no Chromium (computador e iphone, `--repeat-each=10`) e **20/20** no WebKit
+    (Desktop Safari e iPhone 15 Pro, numa configuração só da rodada).
+  - `criacao-tpeasy.spec.ts:204` (computador e iphone): o teste estava velho. Desde 01/11/2026 (`0005a29`) o TPeasy
+    pergunta `/api/zro/eu?visitante=1`, e o `route("**/api/zro/eu")` do teste não pega endereço com busca: o TPeasy
+    ficava "fora", nunca buscava as entregas e o aviso "Roteiro do Maestro chegou" não vinha. O `route` agora aceita a
+    busca; e o roteiro semeado é novo a cada teste (o reaproveitado já estava enviado na segunda rodada no mesmo banco).
+    Depois: `criacao-tpeasy.spec.ts` inteiro com `--repeat-each=5`, **15 passaram**, 0 falharam (computador e iphone).
 - SOBEDESCE `test:fast` 804/808 (4 pulados). Na primeira rodada, com a máquina ocupada pelo e2e, `test/lan.test.js`
   falhou uma vez por tempo ("preparando" no lugar de "aguardando"); sozinho passa 3 de 3 e na rodada de novo passou.
   Nem ele nem `src/lan` mudam no lote. SOBEDESCE web: `lint`, `typecheck` ok, `npm test` 384/384.
