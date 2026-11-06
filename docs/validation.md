@@ -153,6 +153,11 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - Rádio sem login (06/11/2026): `/radio` sem sessão (link aberto num navegador fora da conta, como o de dentro do
   WhatsApp ou do Instagram) leva ao `/entrar?next=/radio?d=…` e, entrando, volta ao rádio com o código; logado sem acesso
   segue 404. `tests/e2e/radio.spec.ts` 4/4.
+- TURN para o rádio (06/11/2026): `/api/v1/radio/ice` (gate; fora dele, 404) devolve STUN e, com
+  `CLOUDFLARE_TURN_KEY_ID` e `CLOUDFLARE_TURN_API_TOKEN` no servidor, credenciais temporárias (6 h) do TURN da Cloudflare
+  para a voz passar entre redes (4G com CGNAT). `products/radio/test/ice.test.js` 3/3 (sem chave só STUN, pedido certo à
+  Cloudflare com Bearer e ttl, porta 53 fora, falha volta para STUN); `tests/e2e/radio.spec.ts` 4/4 (sem a chave: só
+  STUN). Não conferido: a chave de verdade e duas redes de verdade.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

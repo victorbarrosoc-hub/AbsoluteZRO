@@ -155,3 +155,36 @@ export async function avisar(tx, p, c) {
   const [a] = await tx`insert into radio.avisos (diaria_id, tipo, de_sub, de_nome) values (${diaria}, ${c.tipo}, ${p.sub}, ${p.nome}) returning id`
   return r(201, { ok: true, aviso: { id: Number(a.id), tipo: c.tipo, de: p.nome } })
 }
+
+// ───────── TURN (voz entre redes diferentes) ─────────
+// Sem ponte, a voz só fecha quando os aparelhos se alcançam direto (mesma rede, a maioria das redes de casa); em 4G com
+// CGNAT não fecha. Com a chave TURN da Cloudflare (CLOUDFLARE_TURN_KEY_ID e CLOUDFLARE_TURN_API_TOKEN, só no servidor),
+// cada pedido ganha credenciais temporárias. A voz segue cifrada de ponta a ponta (DTLS-SRTP): a ponte não ouve.
+
+export const STUN_PADRAO = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }]
+export const TURN_TTL_S = 6 * 3600
+
+/** { iceServers } para o RTCPeerConnection: com a chave TURN, as credenciais da Cloudflare; sem ela (ou falhando), só STUN. */
+export async function pedirIceServers(env, buscar = fetch) {
+  const id = String(env?.CLOUDFLARE_TURN_KEY_ID || '').trim()
+  const token = String(env?.CLOUDFLARE_TURN_API_TOKEN || '').trim()
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(id) || !token) return { iceServers: STUN_PADRAO, turn: false }
+  try {
+    const r = await buscar(`https://rtc.live.cloudflare.com/v1/turn/keys/${id}/credentials/generate-ice-servers`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ ttl: TURN_TTL_S }),
+      signal: AbortSignal.timeout(5000),
+    })
+    const corpo = r.ok ? await r.json() : null
+    const lista = Array.isArray(corpo?.iceServers) ? corpo.iceServers : null
+    if (!lista?.length) return { iceServers: STUN_PADRAO, turn: false }
+    // sem trickle ICE: a porta 53 (o navegador bloqueia) só atrasaria juntar os candidatos
+    const servidores = lista
+      .map((s) => ({ ...s, urls: (Array.isArray(s.urls) ? s.urls : [s.urls]).filter((u) => typeof u === 'string' && !/:53(\?|$)/.test(u)) }))
+      .filter((s) => s.urls.length)
+    return { iceServers: servidores, turn: servidores.some((s) => s.urls.some((u) => u.startsWith('turn'))) }
+  } catch {
+    return { iceServers: STUN_PADRAO, turn: false }
+  }
+}

@@ -6,10 +6,10 @@
 // dados); ao fechar, sai de todas. Quem não escuta aquele canal não recebe nem um byte da fala. Várias pessoas falam ao
 // mesmo tempo (full duplex): cada conexão traz a voz de um aparelho e o navegador mistura.
 //
-// Sem servidor TURN: funciona na mesma rede e na maioria das redes de casa e escritório. Em 4G com CGNAT algumas
-// conexões não abrem; a lista da equipe mostra quem está sem conexão (honesto, sem fingir que está ligado).
+// Servidores de conexão: os que o servidor manda (/ice: STUN e, com a chave da Cloudflare, TURN, a ponte para redes que
+// não se alcançam direto, como 4G com CGNAT). Sem TURN, a lista da equipe mostra quem ficou "conectando".
 
-const ICE = [{ urls: 'stun:stun.l.google.com:19302' }]
+const ICE_PADRAO = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }]
 const ESPERA_ICE_MS = 2500
 const REFAZER_MS = 9000
 
@@ -42,6 +42,7 @@ export class Malha {
    */
   constructor(op) {
     this.eu = op.eu
+    this.ice = Array.isArray(op.iceServers) && op.iceServers.length ? op.iceServers : ICE_PADRAO
     this.enviarSinal = op.enviarSinal
     this.aoMudar = op.aoMudar
     this.aoRecado = op.aoRecado
@@ -76,7 +77,7 @@ export class Malha {
   }
 
   nova(peer, iniciador) {
-    const pc = new RTCPeerConnection({ iceServers: ICE })
+    const pc = new RTCPeerConnection({ iceServers: this.ice })
     const c = { pc, iniciador, desde: Date.now(), sender: null, dc: null, audio: null }
     this.conexoes.set(peer, c)
     pc.addEventListener('connectionstatechange', () => {

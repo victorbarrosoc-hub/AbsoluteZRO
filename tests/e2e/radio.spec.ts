@@ -75,6 +75,7 @@ test('conta comum: o rádio não existe (página, scripts e API dão 404)', asyn
   for (const p of ['/radio', '/radio/app/app.js', '/radio/app/app.css']) expect((await page.goto(p))?.status(), p).toBe(404)
   const api = await page.request.get('/api/v1/radio/diarias')
   expect(api.status()).toBe(404)
+  expect((await page.request.get('/api/v1/radio/ice')).status()).toBe(404)
 })
 
 test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, falar e mandar aviso', async ({ browser }) => {
@@ -85,6 +86,10 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   const r = await ana.goto('/radio')
   expect(r?.status()).toBe(200)
   expect(r?.headers()['permissions-policy']).toContain('microphone=(self)')
+  // servidores de conexão: sem a chave TURN no ambiente de teste, só STUN
+  const ice = await (await ana.request.get('/api/v1/radio/ice')).json()
+  expect(ice.turn).toBe(false)
+  expect(ice.iceServers[0].urls).toContain('stun:stun.cloudflare.com:3478')
   await ana.waitForSelector('#tela-diarias:not([hidden])')
   await ana.fill('#criar-nome', 'Comercial')
   await ana.click('#criar button')

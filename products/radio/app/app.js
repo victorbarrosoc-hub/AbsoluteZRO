@@ -166,8 +166,22 @@ $('entrar').addEventListener('submit', (e) => {
   if (codigo) entrarComCodigo(codigo)
 })
 
+// ───────── servidores de conexão (TURN quando há) ─────────
+let iceCache = null
+async function servidoresIce() {
+  if (iceCache && Date.now() - iceCache.em < 5 * 3600_000) return iceCache.lista
+  try {
+    const r = await api(`${API}/ice`)
+    if (Array.isArray(r.iceServers) && r.iceServers.length) iceCache = { lista: r.iceServers, em: Date.now() }
+  } catch {
+    // sem a lista do servidor: a Malha usa só STUN
+  }
+  return iceCache?.lista ?? null
+}
+
 // ───────── tela 2: o rádio ─────────
-function abrirDiaria(d) {
+async function abrirDiaria(d) {
+  const iceServers = await servidoresIce()
   mostrarErro('diarias-erro', '')
   estado.diaria = d
   estado.ultimoAviso = null
@@ -186,6 +200,7 @@ function abrirDiaria(d) {
   montarFaixas()
   estado.malha = new Malha({
     eu: estado.peer,
+    iceServers,
     enviarSinal: (para, tipo, dados) => {
       estado.saida.push({ para, tipo, dados })
       bater()
