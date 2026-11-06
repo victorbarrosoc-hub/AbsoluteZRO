@@ -216,16 +216,12 @@
 /* ───────────── o próximo passo: no computador, só no gesto ───────────── */
 
 @media (hover: hover) and (pointer: fine) {
+  /*
+   * O próximo passo tem a linha dele, embaixo do prazo e do responsável (titular, 03/11/2026: solto no canto, por
+   * cima, ele cobria as informações). Continua só no gesto (30/10/2026): o lugar fica guardado e ele aparece ali, sem
+   * mexer no tamanho do card nem cobrir nada.
+   */
   .q-card__passo {
-    position: absolute;
-    right: 9px;
-    bottom: 9px;
-    z-index: 1;
-    max-width: calc(100% - 18px);
-    background: var(--gb-sheen), var(--surface);
-    box-shadow:
-      var(--gb-shadow),
-      0 6px 16px rgb(0 0 0 / 0.12);
     opacity: 0;
     transform: translateY(3px) scale(0.97);
     transition:
@@ -345,4 +341,31 @@
   filter: grayscale(1);
   opacity: 0.6;
   cursor: pointer;
+}
+
+/* ───────────── a ficha: copiar o link e duplicar (titular, 03/11/2026) ───────────── */
+
+.q-ficha__fim > .sutil {
+  margin-right: auto;
+}
+.q-ficha__fim .glass-btn {
+  gap: 6px;
+}
+/* no iPhone estreito as duas ações viram só o ícone (o nome fica para o leitor de tela e no toque longo) */
+@media (max-width: 420px) {
+  .q-ficha__fim .glass-btn.q-ficha__acao {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .q-ficha__acao span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }

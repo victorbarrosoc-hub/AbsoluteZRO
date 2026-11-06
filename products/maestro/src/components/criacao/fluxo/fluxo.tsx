@@ -38,6 +38,7 @@ import { Canvas, ZoomRotulo, type CanvasApi, type Ferramenta, type Movido, type 
 import { conferirImagem, oQueColar, tamanhoDaImagem } from "./colar";
 import { useFluxo, type Inicial } from "./estado";
 import { baixarTexto, copiarTexto, FolhaCard, FolhaExportar, FolhaLinks, PopoverExportar, useLinks, type AcaoExportar } from "./exportar";
+import { FolhaComentarios, useComentariosDoFluxo } from "./comentarios-equipe";
 import { FolhaAdicionar, FolhaLink, FolhaReferencia, FolhaRotulo, type Adicionar, type CardEscolha, type RoteiroEscolha } from "./folhas";
 import { caixaDe, lugarLivre, secaoNoPonto, type Caixa, type Ponto } from "./geometria";
 import { IconeF } from "./icones";
@@ -54,7 +55,7 @@ type Props = Inicial & {
   cards: CardEscolha[];
 };
 
-type Folhas = "link" | "ref" | "adicionar" | "rotulo" | "exportar" | "links" | "card" | null;
+type Folhas = "link" | "ref" | "adicionar" | "rotulo" | "exportar" | "links" | "card" | "comentarios" | null;
 type Modo = "canvas" | "lista";
 
 const NOME_COR: Record<CorFluxo, string> = {
@@ -132,6 +133,8 @@ export function Fluxo(props: Props) {
   const [incluirImagens, setIncluirImagens] = useState(false);
   const podeEnviar = !!props.podeEnviar;
   const L = useLinks(info.id, podeEnviar);
+  // os comentários de quem abriu um link "Ver e comentar" (drizzle/0039)
+  const C = useComentariosDoFluxo(info.id);
   const celular = useMidia("(max-width: 900px)");
   const margens = celular ? MARGENS_CELULAR : MARGENS_COMPUTADOR;
   const arquivo = useRef<HTMLInputElement>(null);
@@ -505,7 +508,7 @@ export function Fluxo(props: Props) {
   );
 
   const salvarCampo = useCallback(
-    (id: string, campo: Campo, valor: string | null) => {
+    (id: string, campo: Campo, valor: string | null, tamanho?: { w: number; h: number }) => {
       setEditando(null);
       marcarEditando(null);
       const n = estadoRef.current.nos[id];
@@ -519,8 +522,16 @@ export function Fluxo(props: Props) {
         fazer({ ops: [{ op: "apagar_no", id }] });
         return;
       }
-      if (valor === antes) return;
-      fazer({ ops: [{ op: "mudar_no", id, dados: { [campo]: valor } }], volta: [{ op: "mudar_no", id, dados: { [campo]: antes } }] });
+      // a nota guarda o tamanho com que foi desenhada e editada (cresceu com o texto; a estreita ganha o mínimo)
+      const w = tamanho && Math.round(tamanho.w) !== n.w ? Math.round(tamanho.w) : undefined;
+      const h = tamanho && Math.round(tamanho.h) !== n.h ? Math.round(tamanho.h) : undefined;
+      if (valor === antes && w === undefined && h === undefined) return;
+      const tam = { ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}) };
+      const tamAntes = { ...(w !== undefined ? { w: n.w } : {}), ...(h !== undefined ? { h: n.h } : {}) };
+      fazer({
+        ops: [{ op: "mudar_no", id, ...(valor !== antes ? { dados: { [campo]: valor } } : {}), ...tam }],
+        volta: [{ op: "mudar_no", id, ...(valor !== antes ? { dados: { [campo]: antes } } : {}), ...tamAntes }],
+      });
     },
     [estadoRef, fazer, marcarEditando],
   );
@@ -881,10 +892,22 @@ export function Fluxo(props: Props) {
               className="fx-privado"
               data-ativo={linksVivos > 0 || undefined}
               onClick={() => setFolha("links")}
-              title={linksVivos ? "Quem tem o link vê o fluxo, só para ler." : "Ninguém de fora vê este fluxo."}
+              title={linksVivos ? "Quem tem o link vê o fluxo." : "Ninguém de fora vê este fluxo."}
             >
               <Icone nome={linksVivos ? "link" : "cadeado"} size={15} />
               {linksVivos === 0 ? "Privado" : linksVivos === 1 ? "Link ativo" : `${linksVivos} links`}
+            </button>
+          ) : null}
+          {C.lista.length ? (
+            <button
+              type="button"
+              className="fx-privado fxc-botao"
+              onClick={() => setFolha("comentarios")}
+              aria-label={`Comentários (${C.lista.length})`}
+              title="Comentários de quem abriu o link"
+            >
+              <Icone nome="balao" size={15} />
+              {C.lista.length}
             </button>
           ) : null}
           <div className="fx-exp">
@@ -1184,6 +1207,25 @@ export function Fluxo(props: Props) {
           revogar={L.revogar}
           avisar={(t, tom) => avisar(t, tom ? { tom } : undefined)}
           naLixeira={info.apagado}
+        />
+      ) : null}
+      {folha === "comentarios" ? (
+        <FolhaComentarios
+          lista={C.lista}
+          nomeDoNo={(id) => {
+            const n = vivos.find((x) => x.id === id);
+            if (!n) return null;
+            const d = n.dados as { texto?: string; legenda?: string; titulo?: string; nome?: string };
+            const t = (d.texto ?? d.legenda ?? d.titulo ?? d.nome ?? "").split("\n")[0].trim();
+            return (
+              t || (n.tipo === "nota" ? "Nota" : n.tipo === "imagem" ? "Imagem" : n.tipo === "link" ? "Link" : n.tipo === "roteiro" ? "Roteiro" : "Card")
+            ).slice(0, 40);
+          }}
+          podeApagar={podeEditar}
+          apagar={C.apagar}
+          irPara={irPara}
+          avisar={(t, tom) => avisar(t, tom ? { tom } : undefined)}
+          aoFechar={() => setFolha(null)}
         />
       ) : null}
       {folha === "card" ? (

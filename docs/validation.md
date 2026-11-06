@@ -61,6 +61,48 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   app de computador ok (hub-desktop 93, relay 26, maestro 55, tpeasy 26, carro-do-freela 30, rift-motion 30); `npm run test:e2e`
   parou no tempo limite do ambiente depois de 39 testes verdes (os dois novos inclusos); o restante fica para o CI.
 
+## Maestro fase 2: pastas do Drive no card, a entrega pelo SOBEDESCE e a permissão do link do Fluxo (04/11/2026)
+
+- Maestro: `lint`, `format:check`, `typecheck` ok; `npm test` **739/739** (novos casos em `quadro.test.mts`,
+  `drive-sobedesce.test.mts`, `sobedesce-embutido.test.mts`, `links-fluxo.test.mts` e `acesso-cliente.test.mts`: o
+  parser do link da pasta, a rota sem/com o SOBEDESCE, a sugestão do projeto, o contrato 2 do modo embutido, a permissão
+  fixa e auditada, comentar só com o nome, idempotência, limite por link e IP, revogado/vencido/PIN, duas organizações,
+  quem apaga, o Editar só para a produtora do link, as rotas); `build` ok.
+- E2E novos: `e2e/quadro-pastas.spec.ts` (computador e iPhone: Brutos colado, Entrega pelo navegador do Drive, recarregar
+  e tirar; sem o SOBEDESCE nada de Drive e 403; Versões com o SOBEDESCE de antes sem "Enviar a entrega" e com o que
+  sabe: o envio volta conferido e vira versão) e `e2e/fluxo-comentar.spec.ts` (criar "Ver e comentar", comentar só com
+  o nome no iPhone e no computador, o nome lembrado, a equipe vê e apaga, revogado não comenta; Só ver sem Comentar;
+  Editar sem conta só lê e a sessão da produtora vai ao editor). **8/8** e **2/2** (com `arquivos`: 16/16).
+- Também verdes depois da mudança: `fluxo-celular`, `quadro-card`, `arquivos`, `criacao-exportar`, `versao-card`,
+  `relay`, `criacao-fluxo` (**40 passaram**, o resto é de outro projeto), `sem-corte` e `celular` (**16/16**, Chromium e
+  WebKit).
+- SOBEDESCE: `npm run test:fast` **772/776** (4 pulados, 0 falhas); `test/embutido-maestro.test.js` 3/3, `app-sw.test.js` (cache v82 / 2.8.67) e
+  `porta-malas-carro.test.js` com o caso novo (a sonda e o modo enviar num Chromium de verdade, 2/2). O caso antigo do
+  Carro já oscilava antes desta mudança (tempo de espera de 40 s no ambiente; passa e falha também com o código da
+  base).
+
+## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026)
+
+- Antes do código, o e2e novo reproduziu os prints contra o build da `main`: nota com uma letra por linha, seta
+  terminando no vazio depois de tocar na alça, pílula do zoom/desfazer deixando a imagem aparecer (escuro).
+- `e2e/fluxo-celular.spec.ts` (iPhone Chromium e WebKit + computador): nota estreita do banco desenhada com 120 px e
+  texto em no máximo 3 linhas; seta saindo e chegando na borda do que está desenhado; o toque no zoom é do zoom, pílula
+  com fundo ≥ 85% e canvas com `isolation`; tocar na alça sem arrastar e a pinça que começa nela não tiram a largura
+  nem soltam a seta; editar: campo de 16 px, a nota cresce com o texto, o que o Safari rolar volta a 0, a altura nova
+  fica depois de recarregar; ⌥ + rolagem e Ctrl + roda aproximam com o nó parado sob o ponteiro, sem tecla só anda,
+  limites 10% e 400%. **7/7.**
+- `e2e/quadro-card.spec.ts` (computador e iPhone): o próximo passo não cruza nenhuma informação do card; Copiar link
+  (`/app/quadro?card=`), Duplicar (mesma coluna, campos iguais, sem capa), o link abre a ficha, leitura copia e não
+  duplica, outra organização abre só o Quadro. **4/4.**
+- Também verdes: `quadro`, `quadro-achar`, `criacao-fluxo`, `criacao-exportar`, `celular`, `sem-corte`, `visual`,
+  `arrastar`, `gestos`, `colunas`, `cronometro` (iPhone Chromium/WebKit e computador). Uma rodada caiu por disco cheio da
+  máquina (ENOSPC, outras sessões); repetida sem trace, passou.
+- Unitários: `fluxo-tela.test.mts` (mínimo da nota, `zoomDaRoda`, `vistaParaEditar`) e `quadro.test.mts`
+  (`dadosDaCopia`, `linkDoCard`, `dicaDoCodigo`, a cópia pela rota, leitura 403, outra organização não vê) dentro de
+  245/245 em 21 arquivos (Quadro, Fluxo, Criação, demonstração, RLS, acessos, lançamento, migrador). A suíte inteira
+  não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
+- Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo

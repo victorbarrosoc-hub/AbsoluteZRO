@@ -56,6 +56,56 @@ Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ Conferir à mão num Mac e num Windows com o Google real (aqui não há Google nem Electron; a lógica tem teste com
   Google e HUB falsos).
 
+
+## Maestro fase 2: pastas do Drive no card, a entrega pelo SOBEDESCE e a permissão do link do Fluxo (04/11/2026, ramo `maestro-fase-2`)
+
+Pedidos do titular de 04/11/2026, em cima do ramo `maestro-fluxo-melhorias`. Migração nova: `0039_fluxo_link_permissao`.
+
+- ✅ **Pastas do Drive no card**: "Brutos" e "Entrega" na ficha (chips que abrem o Drive), pelo link colado (só pasta do
+  `drive.google.com`; o endereço guardado é o montado do id), pelo navegador do Drive ou pela sugestão do projeto (02
+  Bruto / 05 Entregas da estrutura). Só com o SOBEDESCE no plano (a rota do Quadro recusa sem ele). Sem migração.
+- ✅ **Versões com o SOBEDESCE**: "Escolher no Drive" e **"Enviar a entrega"** (o próprio SOBEDESCE num quadro, com a
+  pasta Entrega do card de destino; o arquivo terminado volta com a conferência do MD5 e vira "Usar como versão"). O
+  botão só aparece quando o SOBEDESCE publicado diz que sabe (contrato 2 do modo embutido, a sonda). SOBEDESCE app
+  2.8.67 (cache v82) com o contrato 2.
+- ⛔ **Deploy**: o SOBEDESCE com o contrato 2 vai antes (ou junto) do Maestro; com o SOBEDESCE de antes, o botão
+  simplesmente não aparece. Deploy só com o OK do titular.
+- ✅ **Permissão do link do Fluxo**: Só ver (padrão), Ver e comentar (só o nome, sem cadastro; a equipe vê e apaga no
+  editor) e Editar (só quem entra com a conta da produtora; o resto lê). PIN opcional nas três; revogado ou vencido,
+  ninguém comenta.
+- ⬜ Conferir no `maestro.absolutezro.com` de verdade o envio pelo SOBEDESCE embutido (Google, MD5 e o cookie do
+  SOBEDESCE no quadro) depois do deploy dos dois.
+- ⬜ Checklist pessoal flutuante no computador (avaliado na fase 1): fora desta fase.
+
+## Maestro: o Fluxo no iPhone, zoom pelo trackpad e o card do Quadro (04/11/2026, ramo `maestro-fluxo-melhorias`)
+
+Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o projeto do Maestro muda.
+
+- ✅ Nota com uma letra por linha: tocar na alça de tamanho sem arrastar (ou a pinça que começava nela) apagava a
+  largura do estilo do nó; sem largura a nota encolhia até a menor palavra e a seta, desenhada pelo tamanho guardado,
+  terminava no vazio. O tamanho agora fica sempre no estilo, o segundo dedo desfaz o que o primeiro começou, a nota tem
+  mínimo de 120 × 48 (a mais estreita do banco é desenhada com o mínimo), quebra por palavra e cresce para baixo com o
+  texto (altura gravada junto).
+- ✅ Seta presa ao nó: depois de cada desenho sem gesto o canvas reescreve ligações e tamanhos pelo que está guardado; a
+  nota que cresce leva as ligações junto.
+- ✅ Editar com o teclado: texto de 16 px no toque (o Safari não amplia a página), o canvas e a página nunca rolam e a
+  nota em edição vai para a área entre o cabeçalho e o teclado (`visualViewport`), aproximando se estiver longe demais.
+- ✅ Controles sempre por cima: o canvas é uma camada só e zoom, desfazer/refazer, voltar, ••• e Canvas/Lista viram
+  vidro quase opaco (no escuro a pílula tinha 7% e a imagem aparecia através).
+- ✅ Computador: ⌥ + rolagem de dois dedos e a pinça do trackpad aproximam em volta do ponteiro (10%–400%).
+- ✅ Quadro: o próximo passo ("Mandar para revisão") tem a linha dele embaixo do prazo e do responsável; no computador
+  segue só no gesto, com o lugar guardado (não cobre nada nem muda o tamanho do card).
+- ✅ Ficha do card: **Duplicar** (mesma coluna, logo depois, "(cópia)", campos principais; sem versões, comentários,
+  capa nem tempo; só quem escreve) e **Copiar link** (`/app/quadro?card=<id>`, interno; quem não alcança o card vê só o
+  Quadro; nada de link público).
+- ✅ Código do projeto com dica no `title`: "MAE (Maestro) + ano + nº do ano".
+- ⬜ Prefixo do código por organização: pede migração que refaça a função do aceite do orçamento (`drizzle/0012`, que
+  também gera `MAE-`), o campo em Ajustes → Empresa e a regra da numeração do ano. Aguarda decisão do titular.
+- ⬜ Conferir no iPhone de verdade (Safari e app na Tela de Início) a nota em edição com o teclado aberto.
+- ✅ Fase 2 (seção acima): pastas do Drive no card, Versões escolhendo/subindo pelo SOBEDESCE e o link do fluxo com
+  permissão. O checklist pessoal flutuante no computador ficou de fora.
+- Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
 - ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.

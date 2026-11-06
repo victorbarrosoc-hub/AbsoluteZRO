@@ -57,6 +57,24 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Pastas do Drive no card** (titular 04/11/2026; `src/lib/quadro/pastas.ts` puro, `components/quadro/pastas.tsx`):
+  "Brutos" e "Entrega" em `dados.pastaBrutos`/`dados.pastaEntrega` (`{ id, nome, url }`, campos de `CAMPOS_EDITAVEIS`
+  gravados pelo `card_mudar`; sem migração). O link colado passa por `lerLinkDaPasta` (só `drive.google.com`:
+  `/drive/folders/<id>`, `/drive/u/<n>/…`, `/drive/mobile/…`, `folderview`/`embeddedfolderview?id=`; arquivo e `open?id=`
+  não) e o endereço guardado é sempre o montado do id (`enderecoDaPasta`, com a `resourcekey` se veio). Só com o
+  SOBEDESCE no plano: a ficha só mostra com `sobedesce` (a página passa a origem quando `temArquivos`) e `/api/quadro`
+  recusa `pasta*` sem ele (403 `sem_sobedesce`). Chips na ficha abrem o Drive; a folha cola o link, "Escolher no Drive"
+  (o `NavegadorDrive` em `modo="pasta"`, só pastas, com "Usar esta pasta") e a sugestão do projeto (`GET /api/quadro/pastas?projeto=`, lista a pasta
+  ligada pela ponte e acha "02 Bruto"/"05 Entregas"; projeto sem pasta = nenhuma sugestão). Duplicar não leva as pastas.
+  Testes: `tests/quadro.test.mts`, `tests/drive-sobedesce.test.mts`, `e2e/quadro-pastas.spec.ts` (`SHOTS_DIR` guarda `pd-*`).
+  **Versões com o SOBEDESCE** (mesma data): "Escolher no Drive" (o `NavegadorDrive`, preenche o link e o nome da
+  versão) e **"Enviar a entrega"** (`components/quadro/entrega.tsx`): o próprio SOBEDESCE num quadro em
+  `?no=maestro&modo=enviar&pasta=<Entrega>` (contrato 2 do modo embutido, `docs/integration-contracts/maestro-sobedesce.md`);
+  o recado `enviado` traz o arquivo e a conferência (`ok` = MD5, `sem`, `diferente`: não vira versão); "Usar como
+  versão" só preenche o campo; fechar a folha com envio andando (recado `envios`) pergunta antes, porque o envio pararia. O botão só aparece com a pasta Entrega, o SOBEDESCE no plano **e** o recurso `enviar`
+  no `pronto` do SOBEDESCE publicado (`components/arquivos/recursos-sobedesce.ts`: a sonda `?modo=sonda` num quadro
+  escondido, uma vez por aba, 6 h no localStorage; o `pronto` de Arquivos também anota). SOBEDESCE de antes = sem botão.
+  **Ordem do deploy**: o SOBEDESCE com o contrato 2 antes (ou junto) do Maestro.
 - **Achar o job no Quadro** (titular 30/10/2026; `drizzle/0035_capas_do_quadro.sql`, `src/lib/quadro/{selos,capa,
 capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o card mostra **um** selo do link, o
   mais adiantado e só do que o banco registra (`selosDoQuadro`/`selosDesde` como a pessoa: versão mais nova, lote fora
@@ -68,7 +86,14 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   (o poll leva); rotas `POST|DELETE /api/quadro/capa?card=` (quem escreve no Quadro) e `GET /api/quadro/capa/<card>/<sha>`
   (cache privado imutável). Vídeo vira quadro no navegador. A imagem do card não recebe o ponteiro (o clique abre o
   card) e tem a proporção reservada (carregar não mexe no layout do arrasto). No computador "Mover para…" e o próximo
-  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. Busca: título, briefing, cliente e código do
+  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. O próximo passo tem a linha dele embaixo do prazo e
+  do responsável (titular 03/11/2026: solto no canto ele cobria as informações; no computador o lugar fica guardado).
+  Ficha do card: **Duplicar** (`dadosDaCopia` em `metodo.ts`: mesma coluna, logo depois, "(cópia)", campos principais,
+  nada de versão, comentário, capa ou tempo; só quem escreve; abre a ficha da cópia) e **Copiar link** (`linkDoCard`:
+  `/app/quadro?card=<id>`, interno; quem não alcança o card pelo RLS vê só o Quadro; nunca link público). O código do
+  projeto (`MAE-AAAA-NNN`) tem a dica no `title` (`dicaDoCodigo`, `src/lib/crm/codigo.ts`); o prefixo é fixo (nasce em
+  `proximoCodigo` e no aceite do orçamento em SQL, `drizzle/0012`). Testes: `tests/quadro.test.mts`,
+  `e2e/quadro-card.spec.ts` (`SHOTS_DIR` guarda `qc-*`). Busca: título, briefing, cliente e código do
   projeto, com realce (`pedacosDoRealce`), contagem e "Nada com …"; "/" foca a busca.
 - **Cronômetro de tarefas e tempo por tipo de vídeo** (titular 31/10/2026, inspirado no Ritto; `drizzle/0038_cronometro.sql`,
   puro em `src/lib/tempo/{calculo,tipos}.ts`, banco em `servidor.ts`, rota `/api/tempo` em `rota.ts`, tela em
@@ -462,8 +487,18 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   mexe na vista). Desfazer guarda volta e refazer (criar desfaz com lápide e refaz com restaurar). Apagar seção leva o
   que mora nela; apagar nó leva as ligações. A vista fica por aparelho em `localStorage`. No celular (≤ 900 px) o topo
   do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
-  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
-  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
+  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). **Prints do iPhone (titular
+  03/11/2026)**: o tamanho do nó fica sempre no estilo (nunca `""`: sem largura a nota encolhia até uma letra por linha
+  e a seta, pelo tamanho guardado, terminava no vazio); o segundo dedo (pinça) desfaz o que o primeiro começou
+  (`largar`); a nota tem mínimo `TAMANHO_MINIMO` (120 × 48; a mais estreita do banco é desenhada assim, `comTamanhoMinimo`,
+  e grava o mínimo ao editar), quebra por palavra e cresce para baixo com o texto (`fx-cresceu`, até `NOTA_ALTURA_MAX`,
+  altura gravada com o texto); depois de cada desenho sem gesto o canvas reescreve ligações e tamanhos pelas caixas; no
+  toque o texto que se digita tem 16 px (o Safari não amplia), o canvas e a página nunca rolam (volta a zero) e a nota
+  em edição vai para entre o cabeçalho e o teclado (`vistaParaEditar` + `visualViewport`); o canvas é uma camada só
+  (`isolation`) e o que flutua (zoom, desfazer, voltar, •••, Canvas/Lista) é vidro quase opaco. No computador ⌥ + roda,
+  ⌘/Ctrl + roda e a pinça do trackpad aproximam em volta do ponteiro (`zoomDaRoda`, um passo por evento, 10–400%). Testes:
+  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, `e2e/fluxo-celular.spec.ts` (iPhone Chromium e WebKit +
+  computador; `SHOTS_DIR` guarda `fxc-*`), telas no `sem-corte.spec.ts`.
 - **Criação · Fluxo, exportar e compartilhar** (fase F6; decisão do titular: privado por padrão; `drizzle/0032_fluxo_links.sql`,
   `src/lib/criacao/fluxo/{compartilhar,link,link-rota,pacote}.ts`, `src/lib/zip.ts`, tela em
   `components/criacao/fluxo/{exportar,imprimir}.tsx` + `fluxo-exportar.css`): menu **Exportar** (popover no computador,
@@ -486,6 +521,24 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   políticas da 0031/0032 contra `PAPEIS_EDITAR_CRIACAO`/`PAPEIS_ENVIAR_CRIACAO`.
   Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
   `sem-corte.spec.ts`.
+  **Permissão do link** (titular 04/11/2026, `drizzle/0039_fluxo_link_permissao.sql`): escolhida ao criar (controle
+  "Só ver · Ver e comentar · Editar", `PERMISSOES`/`permissaoDoLink` em `compartilhar.ts`), `fluxo_links.permissao`
+  (check, padrão `ver`, fixa: gatilho `fluxo_links_permissao_fixa` e `maestro_app` só muda `revogado_em`; vai na
+  auditoria). **Ver e comentar**: quem abre escreve **só o nome** (sem cadastro; lembrado no localStorage do aparelho) e
+  comenta um item ou o fluxo (`components/criacao/fluxo/comentar-link.tsx`, `ListaFluxo.depoisDoItem`); `POST
+/f/<token>/comentar` → `comentarPeloLink` (Origin, `nomeDoComentario`/`textoDoComentario` limpam controle e
+  invisíveis, nome ≤ 60, texto ≤ 1000, idempotência por `idem`, limites `REGRAS.fluxoComentarIp`/`fluxoComentar` por link
+  - HMAC do IP do dia) → porta `maestro.fluxo_link_comentar` (link vivo, PIN, permissão `comentar`, nó vivo do mesmo
+    fluxo e não seção, até 500 por link, auditoria `fluxo.link_comentou` sem IP). `maestro.fluxo_comentarios`: RLS padrão
+  - `_cliente` pelo fluxo, `maestro_app` sem INSERT (só a porta) e só `apagado_em` (uma vez, gatilho, auditoria
+    `fluxo.comentario_apagou`). `fluxo_link_abrir` devolve `permissao` e, no `comentar`, os comentários vivos (o .md e o
+    .json não levam). Equipe: botão "Comentários (n)" na cabeça do editor e a folha (`comentarios-equipe.tsx`, poll 30 s;
+    "Ver" vai ao nó; "Apagar" para quem edita), rota `/api/criacao/fluxo/comentarios` (GET quem vê, POST `apagar` quem
+    edita). **Editar**: a página `/f` confere a sessão do Maestro de quem abriu (`fluxoParaEditar` → porta
+    `maestro.fluxo_link_editar`: a organização do link = a ativa da sessão, `temAcesso` e `podeEditarCriacao`) e mostra
+    "Editar no Maestro" (o editor de sempre, com RLS); sem sessão, "Entrar para editar" (volta para o `/f`); de fora, só
+    lê. Revogado ou vencido: nada abre e ninguém comenta. Testes: `tests/links-fluxo.test.mts` (permissão, comentários,
+    limite, Editar, rotas), `tests/acesso-cliente.test.mts` e `e2e/fluxo-comentar.spec.ts` (`SHOTS_DIR` guarda `fcm-*`).
 - **Criação · o cliente aprova o roteiro** (fase F7; decisão do titular nº 4: o MESMO link `/a` do card, o roteiro é
   mais uma peça; `drizzle/0033_roteiro_na_revisao.sql`, `src/lib/criacao/roteiro/cliente.ts`, `src/lib/revisao/roteiro.ts`,
   telas em `components/criacao/roteiro/cliente.tsx` e `components/revisao/roteiro-cliente.tsx`): a fonte de versão

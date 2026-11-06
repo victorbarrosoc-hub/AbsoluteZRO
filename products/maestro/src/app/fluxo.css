@@ -184,6 +184,9 @@ html:has(.fx) {
 .fx-tela {
   position: absolute;
   inset: 0;
+  /* uma camada só: nada do canvas (nó erguido, imagem, seta) sobe acima do que flutua por cima dele */
+  z-index: 0;
+  isolation: isolate;
   overflow: hidden;
   touch-action: none;
   user-select: none;
@@ -474,6 +477,9 @@ html:has(.fx) {
 
 /* nota adesiva */
 .fx-nota {
+  /* rede de segurança do mínimo do canvas (geometria.ts, TAMANHO_MINIMO.nota) */
+  min-width: 120px;
+  min-height: 48px;
   background: var(--fx-c, var(--fx-amarelo));
   border-radius: 6px 6px 16px 6px;
   box-shadow:
@@ -497,7 +503,8 @@ html:has(.fx) {
   line-height: 1.42;
   color: var(--text-strong);
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  /* quebra por palavra; só a palavra que não cabe sozinha parte (nunca uma letra por linha) */
+  overflow-wrap: break-word;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(#000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(#000 calc(100% - 18px), transparent);
@@ -513,6 +520,7 @@ html:has(.fx) {
   display: block;
   width: 100%;
   height: 100%;
+  overflow-wrap: break-word;
   padding: 14px 16px;
   border: 0;
   background: transparent;
@@ -1109,6 +1117,26 @@ g[data-sel] > .fx-lig__seta {
   background: var(--pill-fill);
   box-shadow: var(--pill-rim);
 }
+/*
+ * O que flutua sobre o canvas é vidro de verdade (titular, 03/11/2026, print do iPhone: a imagem passava "por cima"
+ * do zoom e do desfazer): quase opaco e com desfoque, para o conteúdo de baixo nunca aparecer através.
+ */
+.fx-pe .fx-zoom,
+.fx-pe .fx-redondo,
+.fx-cabeca .fx-redondo,
+.fx-cabeca .fx-seg {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow:
+    var(--pill-rim),
+    0 4px 14px rgb(0 0 0 / 0.1);
+}
+.fx-pe .fx-redondo:disabled {
+  /* apagado sem deixar o canvas aparecer através */
+  opacity: 1;
+  color: var(--text-faint);
+}
 .fx-zoom button {
   display: inline-grid;
   place-items: center;
@@ -1536,7 +1564,9 @@ g[data-sel] > .fx-lig__seta {
     height: 36px;
     padding: 0;
     justify-content: center;
-    background: var(--pill-fill);
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
     box-shadow: var(--pill-rim);
   }
   .fx-voltar span {
@@ -1617,6 +1647,18 @@ g[data-sel] > .fx-lig__seta {
     display: none;
   }
 }
+/*
+ * Toque: o texto que se digita no canvas tem 16 px. Abaixo disso o Safari do iPhone amplia a página inteira ao focar o
+ * campo, e o canvas (fixo) e o cabeçalho saíam do lugar com o teclado aberto.
+ */
+@media (pointer: coarse) {
+  .fx-nota__texto,
+  .fx-nota__campo,
+  .fx-campo {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 420px) {
   .fx-zoom button:first-child,
   .fx-zoom button:nth-child(3) {

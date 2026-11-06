@@ -7,6 +7,7 @@
  * curto da pessoa; nada é guardado.
  *
  * `modo="escolher"`: o mesmo navegador como seletor ("Escolher no Drive" na versão da revisão), só vídeos.
+ * `modo="pasta"`: só pastas, para escolher uma (as pastas do card no Quadro, com "Usar esta pasta" em `extraDaPasta`).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -126,7 +127,7 @@ export function NavegadorDrive({
   aoEscolher,
   extraDaPasta,
 }: {
-  modo?: "navegar" | "escolher";
+  modo?: "navegar" | "escolher" | "pasta";
   /** Origem do app do SOBEDESCE (deep links). */
   sobedesce: string;
   inicial?: Pasta | null;
@@ -220,7 +221,12 @@ export function NavegadorDrive({
     if (modo === "escolher" && aoEscolher && kindOf(f) === "video") return aoEscolher(f);
     setAberto(target(f));
   };
-  const itens = estado.tipo === "pronto" ? estado.itens.filter((f) => modo !== "escolher" || isFolder(f) || f.isDrive || kindOf(f) === "video") : [];
+  const itens =
+    estado.tipo === "pronto"
+      ? estado.itens.filter((f) =>
+          modo === "escolher" ? isFolder(f) || f.isDrive || kindOf(f) === "video" : modo === "pasta" ? isFolder(f) || f.isDrive : true,
+        )
+      : [];
   const v = vista ?? autoView(itens);
   const nomeEscopo = SCOPES.find((s) => s.id === escopo)?.aria ?? "Meu Drive";
   const semDrive = estado.tipo === "erro" && ["sem_vinculo", "sem_drive", "reconectar_drive"].includes(estado.erro);
@@ -359,7 +365,7 @@ export function NavegadorDrive({
           <span className="dv-vazio__icone">
             <Icone nome={modo === "escolher" ? "filme" : "pasta"} size={26} />
           </span>
-          <h2>{buscaFeita ? "Nada com esse nome" : modo === "escolher" ? "Nenhum vídeo aqui" : "Pasta vazia"}</h2>
+          <h2>{buscaFeita ? "Nada com esse nome" : modo === "escolher" ? "Nenhum vídeo aqui" : modo === "pasta" ? "Nenhuma pasta aqui" : "Pasta vazia"}</h2>
         </section>
       ) : (
         <ul className={v === "grid" ? "dv-grade" : "dv-lista"}>

@@ -10,7 +10,8 @@ const { zro } = amb;
 const rotas = await import("../src/lib/zro/rotas");
 const { getQuadro, postQuadro } = await import("../src/lib/quadro/rota");
 const { criarCliente } = await import("../src/lib/crm/clientes");
-const { proximoPasso, ordemEntre, passaFiltro, FILTRO_VAZIO } = await import("../src/lib/quadro/metodo");
+const { proximoPasso, ordemEntre, passaFiltro, FILTRO_VAZIO, dadosDaCopia, linkDoCard, LIMITE_TEMA } = await import("../src/lib/quadro/metodo");
+const { dicaDoCodigo } = await import("../src/lib/crm/codigo");
 
 const ORG_A = { id: UUID(), name: "Produtora A", role: "owner" };
 const ORG_B = { id: UUID(), name: "Produtora B", role: "owner" };
@@ -18,6 +19,8 @@ const LIA: PessoaZro = { sub: UUID(), email: "lia@a.exemplo", nome: "Lia", org: 
 const RUI: PessoaZro = { sub: UUID(), email: "rui@a.exemplo", nome: "Rui", org: { ...ORG_A, role: "editor" }, produtos: ["maestro"] };
 const VIC: PessoaZro = { sub: UUID(), email: "vic@a.exemplo", nome: "Vic", org: { ...ORG_A, role: "viewer" }, produtos: ["maestro"] };
 const BIA: PessoaZro = { sub: UUID(), email: "bia@b.exemplo", nome: "Bia", org: ORG_B, produtos: ["maestro"] };
+// Com o SOBEDESCE no plano: as pastas do Drive no card.
+const TEO: PessoaZro = { sub: UUID(), email: "teo@a.exemplo", nome: "Teo", org: { ...ORG_A, role: "editor" }, produtos: ["maestro", "sobedesce"] };
 
 after(() => amb.fechar());
 
@@ -34,7 +37,7 @@ const ler = (s: string | undefined, query = "") => getQuadro(pedido(`/api/quadro
 const gravar = (s: string | undefined, corpo: Corpo, origin?: string | null) =>
   postQuadro(pedido("/api/quadro", { cookies: { mae_sessao: s }, corpo, origin }));
 
-let lia: string, rui: string, vic: string, bia: string;
+let lia: string, rui: string, vic: string, bia: string, teo: string;
 let orgA: string;
 let clienteA: string;
 
@@ -43,6 +46,7 @@ before(async () => {
   rui = await entrar(RUI);
   vic = await entrar(VIC);
   bia = await entrar(BIA);
+  teo = await entrar(TEO);
   const [o] = await amb.banco.getBanco().sql`select id from maestro.organizations where zro_org_id = ${ORG_A.id}`;
   orgA = o.id;
   const c = await criarCliente(
@@ -147,6 +151,26 @@ describe("rota do Quadro", () => {
     const r = await gravar(lia, { op: "criar", id: "cardQ0001", dados: { tema: "outro" } });
     assert.equal(r.status, 409);
   });
+
+  test("duplicar (titular, 03/11/2026): a cópia passa pela mesma rota, leva os campos e nada do histórico; leitura não duplica", async () => {
+    const original = (await (await ler(lia)).json()).cards.find((c: { id: string }) => c.id === "cardQ0001");
+    assert.ok(original);
+    const copia = dadosDaCopia(original.dados, null);
+    const r = await gravar(rui, { op: "criar", id: "cardQ0001c", dados: copia });
+    assert.equal(r.status, 200);
+    const { card } = await r.json();
+    assert.equal(card.dados.tema, `${original.dados.tema} (cópia)`);
+    for (const k of ["coluna", "cliente", "resp", "prazo", "prioridade"]) assert.deepEqual(card.dados[k], original.dados[k], k);
+    assert.ok(card.dados.ordem > (original.dados.ordem ?? 0), "logo depois do original");
+    assert.equal(card.dados.criadoPor, RUI.sub, "quem duplicou é quem criou a cópia");
+    assert.equal(card.dados.capa, undefined);
+    assert.equal(card.versao, 1, "nasce sem histórico");
+    // quem só lê não duplica; outra organização não vê nem o original nem a cópia (o link do card não abre nada lá)
+    assert.equal((await gravar(vic, { op: "criar", id: "cardV0002", dados: copia })).status, 403);
+    const deB = await (await ler(bia)).json();
+    assert.ok(!deB.cards.some((c: { id: string }) => c.id === "cardQ0001" || c.id === "cardQ0001c"));
+    assert.equal((await gravar(lia, { op: "apagar", id: "cardQ0001c" })).status, 200);
+  });
 });
 
 describe("método", () => {
@@ -156,6 +180,54 @@ describe("método", () => {
     assert.equal(proximoPasso({ coluna: "aprovacao" })?.outro?.rotulo, "Pediu ajuste");
     assert.equal(proximoPasso({ coluna: "entregue" }), null);
   });
+  test("a cópia do card: título com (cópia) dentro do limite, campos principais, entre o original e o seguinte", () => {
+    const d = {
+      tema: "Teaser",
+      coluna: "fazendo" as const,
+      ordem: 2,
+      cliente: "k1",
+      projeto: "p1",
+      resp: "eu",
+      prazo: "2026-11-10",
+      prioridade: "alta" as const,
+      briefing: "Luz da manhã.",
+      tipo: "reels",
+      previsto: 120,
+      capa: { sha: "a".repeat(64), l: 960, a: 540 },
+      criadoEm: 1,
+      criadoPor: "outra",
+      colunaEm: 1,
+    };
+    const c = dadosDaCopia(d, { ordem: 3 });
+    assert.deepEqual(c, {
+      tema: "Teaser (cópia)",
+      coluna: "fazendo",
+      ordem: 2.5,
+      cliente: "k1",
+      projeto: "p1",
+      resp: "eu",
+      prazo: "2026-11-10",
+      prioridade: "alta",
+      briefing: "Luz da manhã.",
+      tipo: "reels",
+      previsto: 120,
+    });
+    assert.equal(dadosDaCopia(d).ordem, 3, "último da coluna: logo depois");
+    const longo = dadosDaCopia({ tema: "x".repeat(LIMITE_TEMA), coluna: "pauta" });
+    assert.equal(longo.tema.length, LIMITE_TEMA);
+    assert.ok(longo.tema.endsWith(" (cópia)"));
+    assert.deepEqual(Object.keys(dadosDaCopia({ tema: "a", coluna: "pauta", briefing: "" })).sort(), ["coluna", "ordem", "tema"]);
+  });
+
+  test("o link do card é interno (o Quadro com a ficha); a dica do código do projeto", () => {
+    assert.equal(linkDoCard("https://maestro.absolutezro.com/", "c1x_y-2"), "https://maestro.absolutezro.com/app/quadro?card=c1x_y-2");
+    assert.equal(linkDoCard("http://localhost:3217", "a b"), "http://localhost:3217/app/quadro?card=a%20b");
+    assert.equal(dicaDoCodigo("MAE-2026-001"), "Código do projeto: MAE (Maestro) + ano 2026 + nº 1 do ano");
+    assert.equal(dicaDoCodigo("MAE-2026-0123"), "Código do projeto: MAE (Maestro) + ano 2026 + nº 123 do ano");
+    assert.equal(dicaDoCodigo("ABC-1"), "Código do projeto");
+    assert.equal(dicaDoCodigo(null), "Código do projeto");
+  });
+
   test("ordem entre vizinhos e filtros", () => {
     assert.equal(ordemEntre({ ordem: 1 }, { ordem: 2 }), 1.5);
     assert.equal(ordemEntre(null, { ordem: 2 }), 1);
@@ -166,5 +238,104 @@ describe("método", () => {
     assert.ok(!passaFiltro(c, { ...FILTRO_VAZIO, resp: "ninguem" }, "eu"));
     assert.ok(!passaFiltro(c, { ...FILTRO_VAZIO, cliente: "k2" }, "eu"));
     assert.ok(passaFiltro(c, { ...FILTRO_VAZIO, busca: "padaria" }, "eu", () => "Padaria Aurora"));
+  });
+});
+
+describe("as pastas do Drive no card (Brutos e Entrega)", () => {
+  const pastas = () => import("../src/lib/quadro/pastas");
+  const ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
+
+  test("o link colado: as formas do Drive e só pasta", async () => {
+    const { lerLinkDaPasta, enderecoDaPasta } = await pastas();
+    const casos: [string, string | null][] = [
+      [`https://drive.google.com/drive/folders/${ID}`, ID],
+      [`https://drive.google.com/drive/folders/${ID}?usp=sharing`, ID],
+      [`https://drive.google.com/drive/folders/${ID}/`, ID],
+      [`https://drive.google.com/drive/u/1/folders/${ID}?usp=drive_link`, ID],
+      [`https://drive.google.com/drive/mobile/folders/${ID}`, ID],
+      [`drive.google.com/drive/folders/${ID}`, ID],
+      [`  https://drive.google.com/drive/folders/${ID}  `, ID],
+      [`http://drive.google.com/drive/folders/${ID}`, ID],
+      [`https://drive.google.com/folderview?id=${ID}`, ID],
+      [`https://drive.google.com/embeddedfolderview?id=${ID}#grid`, ID],
+      ["https://drive.google.com/drive/folders/0AbCdEfGhIjKlMnOpQ", "0AbCdEfGhIjKlMnOpQ"],
+      // arquivo, outro site, sem id, id estranho, credencial no endereço, Docs
+      [`https://drive.google.com/file/d/${ID}/view`, null],
+      [`https://drive.google.com/open?id=${ID}`, null],
+      [`https://drive.google.com.exemplo.com/drive/folders/${ID}`, null],
+      [`https://exemplo.com/drive/folders/${ID}`, null],
+      [`https://docs.google.com/drive/folders/${ID}`, null],
+      ["https://drive.google.com/drive/folders/", null],
+      ["https://drive.google.com/drive/folders/abc", null],
+      [`https://drive.google.com/drive/folders/${ID}%22onload`, null],
+      [`https://eu:senha@drive.google.com/drive/folders/${ID}`, null],
+      [`javascript:alert(1)//drive.google.com/drive/folders/${ID}`, null],
+      [`https://drive.google.com/drive/my-drive`, null],
+      ["", null],
+    ];
+    for (const [t, id] of casos) assert.equal(lerLinkDaPasta(t)?.id ?? null, id, t);
+    // a resourcekey de pasta antiga vai junto; lixo nela fica de fora
+    assert.deepEqual(lerLinkDaPasta(`https://drive.google.com/drive/folders/${ID}?resourcekey=0-AbC_d`), { id: ID, chave: "0-AbC_d" });
+    assert.equal(lerLinkDaPasta(`https://drive.google.com/drive/folders/${ID}?resourcekey=a%20b`)?.chave, null);
+    assert.equal(enderecoDaPasta(ID, "0-AbC_d"), `https://drive.google.com/drive/folders/${ID}?resourcekey=0-AbC_d`);
+    assert.equal(lerLinkDaPasta(123), null);
+  });
+
+  test("o valor guardado: o endereço é sempre o montado do id; nome limpo; sugestão do projeto", async () => {
+    const { lerPastaDoCard, pastaDoLink, sugestaoDasSubpastas } = await pastas();
+    const { valorDoCampo } = await import("../src/lib/quadro/metodo");
+    assert.deepEqual(lerPastaDoCard("pastaBrutos", { id: ID }), { id: ID, nome: "Brutos", url: `https://drive.google.com/drive/folders/${ID}` });
+    assert.deepEqual(lerPastaDoCard("pastaEntrega", { id: ID, nome: "  05\n Entregas ", url: `https://drive.google.com/drive/u/0/folders/${ID}?usp=x` }), {
+      id: ID,
+      nome: "05 Entregas",
+      url: `https://drive.google.com/drive/folders/${ID}`,
+    });
+    assert.equal(
+      lerPastaDoCard("pastaBrutos", { id: ID, url: "https://drive.google.com/drive/folders/OutroIdDePasta1234" }),
+      undefined,
+      "id e link diferentes",
+    );
+    assert.equal(lerPastaDoCard("pastaBrutos", { id: "x" }), undefined);
+    assert.equal(lerPastaDoCard("pastaBrutos", { id: ID, nome: 12 }), undefined);
+    assert.equal(lerPastaDoCard("pastaBrutos", [ID]), undefined);
+    assert.equal(valorDoCampo("pastaBrutos", null), null, "tirar");
+    assert.equal(pastaDoLink("pastaEntrega", "https://youtu.be/x"), null);
+    assert.equal(pastaDoLink("pastaEntrega", `https://drive.google.com/drive/folders/${ID}`)?.nome, "Entrega");
+    assert.equal(lerPastaDoCard("pastaBrutos", { id: ID, nome: "x".repeat(300) })?.nome.length, 120);
+    const s = sugestaoDasSubpastas([
+      { id: "pastaBriefing0001", nome: "01 Briefing", pasta: true },
+      { id: "arquivoBruto00001", nome: "02 Bruto", pasta: false },
+      { id: "pastaBruto0000001", nome: "02 Bruto", pasta: true },
+      { id: "pastaEntregas0001", nome: "05 Entregas", pasta: true },
+    ]);
+    assert.equal(s.pastaBrutos?.id, "pastaBruto0000001");
+    assert.equal(s.pastaEntrega?.id, "pastaEntregas0001");
+    assert.deepEqual(sugestaoDasSubpastas([{ id: "pastaOutra000001", nome: "Edição", pasta: true }]), {});
+  });
+
+  test("na rota: só com o SOBEDESCE no plano; o banco guarda o endereço montado; tirar e leitura", async () => {
+    const id = "cardPasta01";
+    assert.equal((await gravar(teo, { op: "criar", id, dados: { tema: "Com pastas" } })).status, 200);
+    const pasta = { id: ID, nome: "02 Bruto", url: `https://drive.google.com/drive/u/2/folders/${ID}?usp=sharing` };
+    // sem o SOBEDESCE no plano, nada de pasta (nem ao criar)
+    const sem = await gravar(rui, { op: "mudar", id, campos: { pastaBrutos: pasta } });
+    assert.equal(sem.status, 403);
+    assert.equal((await sem.json()).erro, "sem_sobedesce");
+    assert.equal((await gravar(rui, { op: "criar", id: "cardPasta02", dados: { tema: "x", pastaEntrega: pasta } })).status, 403);
+    // com ele: grava, e o endereço é o montado do id
+    const r = await gravar(teo, { op: "mudar", id, campos: { pastaBrutos: pasta } });
+    assert.equal(r.status, 200);
+    const { card } = await r.json();
+    assert.deepEqual(card.dados.pastaBrutos, { id: ID, nome: "02 Bruto", url: `https://drive.google.com/drive/folders/${ID}` });
+    // link que não é pasta: recusa o pedido
+    assert.equal((await gravar(teo, { op: "mudar", id, campos: { pastaEntrega: { id: ID, url: `https://drive.google.com/file/d/${ID}/view` } } })).status, 400);
+    // quem só lê não grava
+    assert.equal((await gravar(vic, { op: "mudar", id, campos: { pastaBrutos: null } })).status, 403);
+    // tirar
+    const t = await gravar(teo, { op: "mudar", id, campos: { pastaBrutos: null } });
+    assert.equal(t.status, 200);
+    assert.equal((await t.json()).card.dados.pastaBrutos, undefined);
+    // outra organização não vê o card
+    assert.ok(!(await (await ler(bia)).json()).cards.some((c: { id: string }) => c.id === id));
   });
 });

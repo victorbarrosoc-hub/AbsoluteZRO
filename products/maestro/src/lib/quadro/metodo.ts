@@ -11,6 +11,8 @@
  * a ordem entre vizinhos (mover não regrava a coluna inteira), os filtros e o rótulo do prazo. Puro: roda no
  * navegador, no servidor e nos testes.
  */
+import { lerPastaDoCard, type PastaDoCard } from "./pastas";
+
 /** Os papéis das 8 colunas do método (= o id delas). */
 export type PapelColuna = "pauta" | "afazer" | "fazendo" | "revisao" | "aprovacao" | "aprovado" | "agendado" | "entregue";
 /** Id de qualquer coluna: um papel ou `x-<acaso>` (coluna da produtora). */
@@ -67,13 +69,30 @@ export type DadosCard = {
   tipo?: string;
   /** O tempo previsto, em minutos (5 a 200 h, de 5 em 5): o estimado × real no card. */
   previsto?: number;
+  /** As pastas do Drive do card (titular, 04/11/2026; `src/lib/quadro/pastas.ts`): só com o SOBEDESCE no plano. */
+  pastaBrutos?: PastaDoCard;
+  pastaEntrega?: PastaDoCard;
 };
 
 /** O card como a tela recebe: os dados, a versão do card e a versão de cada campo (para o conflito por campo). */
 export type CardQ = { id: string; dados: DadosCard; versao: number; versoes: Record<string, number> };
 
 /** Campos que a equipe muda pela tela (o resto é do servidor). */
-export const CAMPOS_EDITAVEIS = ["tema", "coluna", "ordem", "cliente", "projeto", "resp", "prazo", "prioridade", "briefing", "tipo", "previsto"] as const;
+export const CAMPOS_EDITAVEIS = [
+  "tema",
+  "coluna",
+  "ordem",
+  "cliente",
+  "projeto",
+  "resp",
+  "prazo",
+  "prioridade",
+  "briefing",
+  "tipo",
+  "previsto",
+  "pastaBrutos",
+  "pastaEntrega",
+] as const;
 export type CampoEditavel = (typeof CAMPOS_EDITAVEIS)[number];
 export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   tema: "o título",
@@ -87,6 +106,8 @@ export const NOME_DO_CAMPO: Record<CampoEditavel, string> = {
   briefing: "o briefing",
   tipo: "o tipo de vídeo",
   previsto: "o previsto",
+  pastaBrutos: "a pasta dos brutos",
+  pastaEntrega: "a pasta de entrega",
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -122,6 +143,9 @@ export function valorDoCampo(campo: CampoEditavel, v: unknown): unknown {
       return v === "baixa" || v === "normal" || v === "alta" ? v : undefined;
     case "briefing":
       return typeof v === "string" && v.length <= LIMITE_BRIEFING ? v : undefined;
+    case "pastaBrutos":
+    case "pastaEntrega":
+      return lerPastaDoCard(campo, v);
   }
 }
 
@@ -171,6 +195,31 @@ export function ordemEntre(a: { ordem?: number } | null, b: { ordem?: number } |
   if (b) return o(b) - 1;
   return 1;
 }
+
+/* ───────────── duplicar e o link do card (titular, 03/11/2026) ───────────── */
+
+const SUFIXO_COPIA = " (cópia)";
+
+/**
+ * O que a cópia de um card leva: os campos principais (título com "(cópia)", coluna, cliente, projeto, responsável,
+ * prazo, prioridade, briefing, tipo e previsto), logo depois do original na mesma coluna (`depois` = o card seguinte,
+ * se houver). Nada do histórico: versões, comentários, capa, tempo e quem criou ficam no original.
+ */
+export function dadosDaCopia(d: DadosCard, depois: { ordem?: number } | null = null): Partial<DadosCard> & { tema: string } {
+  const base = d.tema.length + SUFIXO_COPIA.length > LIMITE_TEMA ? d.tema.slice(0, LIMITE_TEMA - SUFIXO_COPIA.length).trimEnd() : d.tema;
+  const copia: Partial<DadosCard> & { tema: string } = { tema: `${base}${SUFIXO_COPIA}`, coluna: d.coluna, ordem: ordemEntre(d, depois) };
+  for (const k of ["cliente", "projeto", "resp", "prazo", "prioridade", "briefing", "tipo", "previsto"] as const) {
+    const v = d[k];
+    if (v !== undefined && v !== null && v !== "") (copia as Record<string, unknown>)[k] = v;
+  }
+  return copia;
+}
+
+/**
+ * O link interno do card: abre o Quadro com a ficha dele, para quem entra no Maestro e alcança o card (o RLS decide;
+ * quem não alcança vê só o Quadro). Não é link público e não abre nada sem a conta.
+ */
+export const linkDoCard = (origem: string, id: string) => `${origem.replace(/\/+$/, "")}/app/quadro?card=${encodeURIComponent(id)}`;
 
 /** Entregue não tem ordem manual: o mais recente fica em cima (arrastar para lá entra no topo). */
 export const ordemPorChegada = (k: ColunaId) => k === "entregue";

@@ -2,7 +2,7 @@
 // A conta (e os Drives ligados a ela) vem do site da SOBEDESCE, na mesma origem; os arquivos vão direto ao Google.
 import { html, render } from './vendor/preact-htm.js'
 import { DEV, LAN } from './lib/config.js'
-import { EMBUTIDO, avisarAnfitriao, iniciarEmbutido } from './lib/embutido.js'
+import { EMBUTIDO, ENVIAR_PARA, SONDA, acompanharEntrega, avisarAnfitriao, iniciarEmbutido } from './lib/embutido.js'
 import * as auth from './lib/auth.js'
 import { getState, openSheet, savedTab, setState, setTab, subscribe, useApp } from './lib/state.js'
 import { AccountScreen, DrivesSheet } from './components/account.js'
@@ -102,10 +102,13 @@ function openShared(state) {
 }
 
 // Modo Wi-Fi (servido pelo SOBEDESCE do computador): sem conta aqui, quem fala com o Drive é o computador.
-if (!LAN) {
+// Na sonda do Maestro (lib/embutido.js) nada abre: só o recado `pronto` com os recursos.
+if (!LAN && !SONDA) {
   auth.boot()
   // Sem link, o app abre no Início, a tarefa (titular, 29/10/2026); a Z fica no botão discreto do topo (lib/state.js).
   setState({ tab: savedTab(), abrirLink: linkDoHash(location.hash) })
+  // O Maestro mandando a entrega do card (?no=maestro&modo=enviar&pasta=): o Início já com a pasta do card de destino.
+  if (ENVIAR_PARA) setState({ tab: 'send', dest: ENVIAR_PARA, abrirLink: null })
   startBridge() // o service worker pede o token por aqui para a prévia e o download (/app/stream/)
   subscribe(openShared)
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
@@ -191,12 +194,14 @@ if (!LAN && !EMBUTIDO) {
   abertura({ tamanho: 92, sempre: true, pronto: contaPronta })
   aberturaAoVoltar({ tamanho: 92 })
 }
-render(html`<${App} />`, document.getElementById('app'))
+if (!SONDA) render(html`<${App} />`, document.getElementById('app'))
 
 // No porta-malas do Carro: link que sairia do /app/ (entrar, criar conta, conectar o Drive, a conta) abre em outra
 // aba, porque o login da Absolute ZRO e o do Google não abrem dentro de um quadro.
 if (EMBUTIDO) {
   iniciarEmbutido()
+  // a entrega do card: cada arquivo terminado na pasta dele vira o recado `enviado` (com a conferência)
+  acompanharEntrega(engine)
   // Os envios andando, para o anfitrião acender o aviso no menu e segurar o fechar da aba.
   let andandoAntes = -1
   engine.subscribe(() => {
@@ -228,7 +233,7 @@ document.documentElement.classList.add('is-ready')
 // Service worker do app: guarda a casca (/app/) e faz a prévia e o download do Drive (/app/stream/). Também no modo
 // de teste (é ele que faz o streaming). Nunca no Wi-Fi: lá a casca vem do computador, protegida pelo código, e não
 // deve ficar guardada.
-if ('serviceWorker' in navigator && !LAN) {
+if ('serviceWorker' in navigator && !LAN && !SONDA) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(new URL('sw.js', import.meta.url), { scope: new URL('./', import.meta.url).pathname }).catch(() => {})
   })

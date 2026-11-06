@@ -10,6 +10,8 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FILTRO_VAZIO,
+  dadosDaCopia,
+  linkDoCard,
   ordemEntre,
   ordemPorChegada,
   ordenarColuna,
@@ -22,6 +24,7 @@ import {
 import { USO_DO_PAPEL, colunasVivas, descricaoDaColuna, moverNaLista, nomeDaColuna } from "@/lib/quadro/colunas";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
+import { copiarTexto } from "@/components/copiar";
 import { Ficha } from "./ficha";
 import { AvatarPessoa, ChipPrazo, ChipPrioridade, ImagemDoCard, MarcaCliente, MoverPara, Realce, SeloDoCard } from "./pecas";
 import { imagemDoCard, rotuloDoSelo, termosDaBusca, type Selo } from "@/lib/quadro/selos";
@@ -40,6 +43,8 @@ type Props = Inicial & {
   projetoInicial?: string | null;
   /** Pauta vazia: o botão "Carregar demonstração" (só administração e gestão), ao lado de "Novo card". */
   demonstracao?: ReactNode;
+  /** Com o SOBEDESCE no plano: a origem do app dele (pastas do Drive e o navegador na ficha); sem ele, null. */
+  sobedesce?: string | null;
 };
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaId; cliente?: string; projeto?: string } };
 /** Arrastar o cabeçalho (computador): a coluna e o lugar (índice entre as vivas) onde entraria. */
@@ -159,6 +164,30 @@ export function Quadro(props: Props) {
   }, [ficha]);
 
   const fecharFicha = useCallback(() => setFicha(null), []);
+
+  /** Duplicar (titular, 03/11/2026): a cópia nasce logo depois do original, na mesma coluna, e a ficha dela abre. */
+  const duplicar = useCallback(
+    async (id: string) => {
+      const c = cards[id];
+      if (!c) return;
+      const lista = porColuna[c.dados.coluna] ?? [];
+      const i = lista.findIndex((x) => x.id === id);
+      const novo = await criar(dadosDaCopia(c.dados, i >= 0 ? (lista[i + 1]?.dados ?? null) : null));
+      if (!novo) return;
+      setFicha({ id: novo });
+      avisar("Card duplicado.");
+    },
+    [cards, porColuna, criar, avisar],
+  );
+
+  /** O link interno do card (quem tem acesso ao Maestro e alcança o card abre a ficha); nunca link público. */
+  const copiarLink = useCallback(
+    async (id: string) => {
+      const link = linkDoCard(window.location.origin, id);
+      avisar((await copiarTexto(link)) ? "Link copiado." : link);
+    },
+    [avisar],
+  );
   const fecharMover = useCallback(() => setMover(null), []);
 
   /** Move para o fim de uma coluna (Mover para…, próximo passo) ou entre dois cards (arrastar). */
@@ -524,6 +553,7 @@ export function Quadro(props: Props) {
           refs={refs}
           colunas={vivas}
           podeEscrever={podeEscrever}
+          sobedesce={props.sobedesce ?? null}
           selo={"id" in ficha ? selos[ficha.id] : undefined}
           adotar={q.adotar}
           mudar={mudar}
@@ -532,6 +562,8 @@ export function Quadro(props: Props) {
             setFicha(null);
             void apagar(id);
           }}
+          duplicar={(id) => void duplicar(id)}
+          copiarLink={(id) => void copiarLink(id)}
           fechar={fecharFicha}
           aoCriar={(id, origem, col) => {
             if (origem) voo.current = { id, de: origem };

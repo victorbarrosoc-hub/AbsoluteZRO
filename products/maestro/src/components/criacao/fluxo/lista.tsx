@@ -5,6 +5,7 @@
  * de tela, teclado). Tocar num item leva até ele no canvas. No link de exportação (`/f/<token>`, F6) a mesma Lista sai
  * só de leitura (`publico`): sem "ver no canvas", referência só com o título e sem endereço interno, imagem inteira.
  */
+import { Fragment, type ReactNode } from "react";
 import { duracao, organizar, prazoCurto } from "@/lib/criacao/fluxo/exportar";
 import { NOME_FONTE_LINK } from "@/lib/criacao/fluxo/endereco";
 import type { DadosImagem, DadosLink, DadosNota, DadosSecao, LigacaoFluxo, NoFluxo, RefResolvida } from "@/lib/criacao/fluxo/modelo";
@@ -111,6 +112,7 @@ export function ListaFluxo({
   irPara,
   publico = false,
   className = "",
+  depoisDoItem,
 }: {
   titulo: string;
   nos: NoFluxo[];
@@ -119,6 +121,8 @@ export function ListaFluxo({
   irPara?: (id: string) => void;
   publico?: boolean;
   className?: string;
+  /** Depois de cada item (o link "Ver e comentar": os comentários do nó e o "Comentar"). */
+  depoisDoItem?: (n: NoFluxo) => ReactNode;
 }) {
   const o = organizar({ titulo, nos, ligacoes, refs });
   const nome = (id: string) => {
@@ -145,7 +149,10 @@ export function ListaFluxo({
           {s.itens.length ? (
             <ul>
               {s.itens.map((n) => (
-                <Item key={n.id} n={n} r={refs[n.id]} irPara={irPara} publico={publico} />
+                <Fragment key={n.id}>
+                  <Item n={n} r={refs[n.id]} irPara={irPara} publico={publico} />
+                  {depoisDoItem?.(n)}
+                </Fragment>
               ))}
             </ul>
           ) : (
@@ -158,7 +165,10 @@ export function ListaFluxo({
           {o.secoes.length ? <h2>Fora das seções</h2> : null}
           <ul>
             {o.soltos.map((n) => (
-              <Item key={n.id} n={n} r={refs[n.id]} irPara={irPara} publico={publico} />
+              <Fragment key={n.id}>
+                <Item n={n} r={refs[n.id]} irPara={irPara} publico={publico} />
+                {depoisDoItem?.(n)}
+              </Fragment>
             ))}
           </ul>
         </section>

@@ -4,7 +4,7 @@
  * (andar, aproximar, arrastar, redimensionar, puxar ligação, laço) mexe direto no estilo dos elementos; o React só
  * recebe o resultado ao soltar. Gestos:
  *
- *   * mouse/trackpad: dois dedos (roda) andam; ⌘/Ctrl + roda e a pinça do trackpad aproximam em torno do cursor;
+ *   * mouse/trackpad: dois dedos (roda) andam; ⌘/Ctrl + roda, ⌥ + roda e a pinça do trackpad aproximam em torno do cursor;
  *     espaço + arrastar ou o botão do meio andam; arrastar no vazio faz o laço (⇧ soma); arrastar o nó move (a seleção
  *     inteira; a seção leva o que está dentro); a alça do canto redimensiona; a bolinha da direita puxa uma ligação
  *     (soltar no vazio cria uma nota já ligada); clique duplo edita (no vazio, cria uma nota);
@@ -17,12 +17,16 @@ import type { LigacaoFluxo, NoFluxo, RefResolvida } from "@/lib/criacao/fluxo/mo
 import {
   caixaDe,
   caminhoLigacao,
+  comTamanhoMinimo,
   enquadrar,
   GRADE,
   intersecta,
   pontaDaSeta,
   retangulo,
+  TAMANHO_MINIMO,
   telaParaMundo,
+  vistaParaEditar,
+  zoomDaRoda,
   zoomEm,
   type Caixa,
   type Ponto,
@@ -94,9 +98,8 @@ type Gesto =
 const SEGURAR_MS = 280;
 const TRAVA_TOQUE = 8;
 const TRAVA_MOUSE = 3;
-const MIN_LADO = { nota: 80, imagem: 80, link: 160, roteiro: 160, card: 160, secao: 160 } as const;
-const MIN_ALTURA = { nota: 48, imagem: 80, link: 96, roteiro: 56, card: 56, secao: 120 } as const;
 const calmo = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const toqueGrosso = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 const vibrar = (ms: number) => {
   try {
     navigator.vibrate?.(ms);
@@ -129,11 +132,15 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
   const [zoomAlto, setZoomAlto] = useState(false);
   const guardar = useRef(0);
 
-  const porId = useMemo(() => new Map(p.vivos.map((n) => [n.id, n])), [p.vivos]);
+  // o que o canvas desenha (e onde a ligação encosta): a nota nunca abaixo do mínimo
+  const vivos = useMemo(() => p.vivos.map(comTamanhoMinimo), [p.vivos]);
+  const vivosRef = useRef(vivos);
+  const porId = useMemo(() => new Map(vivos.map((n) => [n.id, n])), [vivos]);
   const porIdRef = useRef(porId);
   useLayoutEffect(() => {
+    vivosRef.current = vivos;
     porIdRef.current = porId;
-  }, [porId]);
+  }, [vivos, porId]);
 
   /** Pinta a vista: o plano, a grade de pontos e o número do zoom (sem React). */
   const pintar = useCallback(() => {
@@ -196,7 +203,7 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
 
   const vistaDeTudo = useCallback(() => {
     const t = tamanhoTela();
-    const c = caixaDe(props.current.vivos);
+    const c = caixaDe(vivosRef.current);
     return enquadrar(c, t.w, t.h, { topo: props.current.margens.topo, pe: props.current.margens.pe, margem: t.w < 600 ? 20 : 48 });
   }, [tamanhoTela]);
 
@@ -276,10 +283,10 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
   };
 
   const conjuntoParaArrastar = (no: string): string[] => {
-    const { selecao, vivos } = props.current;
+    const { selecao } = props.current;
     const base = selecao.has(no) ? [...selecao].filter((id) => porIdRef.current.has(id)) : [no];
     const s = new Set(base);
-    for (const id of base) if (porIdRef.current.get(id)?.tipo === "secao") for (const n of vivos) if (n.secaoId === id) s.add(n.id);
+    for (const id of base) if (porIdRef.current.get(id)?.tipo === "secao") for (const n of vivosRef.current) if (n.secaoId === id) s.add(n.id);
     return [...s];
   };
 
@@ -314,9 +321,47 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
     delete tela.current?.dataset.gesto;
   };
 
+  /** Largura e altura do nó no estilo (o React só reescreve quando o valor dele muda). */
+  const tamanhoNoDom = (el: HTMLElement, c: { w: number; h: number }) => {
+    el.style.width = `${c.w}px`;
+    el.style.height = `${c.h}px`;
+  };
+
   const limparLaco = (g: Extract<Gesto, { t: "laco" }>) => {
     if (laco.current) laco.current.hidden = true;
     for (const id of g.quase) delete elDoNo(id)?.dataset.quase;
+  };
+
+  /**
+   * Desiste do gesto sem gravar nada (o segundo dedo chegou e virou pinça): cada um desfaz o que pôs no DOM. Antes, a
+   * pinça que começava na alça deixava a nota com a largura do meio do gesto e a seta presa nessa caixa; a próxima
+   * volta da seta (pelo que está guardado) terminava no vazio.
+   */
+  const largar = (g: Gesto) => {
+    switch (g.t) {
+      case "segurar":
+        window.clearTimeout(g.timer);
+        return;
+      case "arrastar":
+        fimDoArrasto(g, true);
+        return;
+      case "laco":
+        limparLaco(g);
+        return;
+      case "redim":
+        tamanhoNoDom(g.el.el, g.el.caixa);
+        redesenharLigacoes(g.ligs, (x) => porIdRef.current.get(x));
+        delete tela.current?.dataset.gesto;
+        return;
+      case "ligar":
+        if (puxando.current) puxando.current.style.display = "none";
+        plano.current?.querySelectorAll("[data-alvo]").forEach((x) => delete (x as HTMLElement).dataset.alvo);
+        delete tela.current?.dataset.gesto;
+        return;
+      case "pan":
+        delete tela.current?.dataset.gesto;
+        return;
+    }
   };
 
   /* ───────────── ponteiros ───────────── */
@@ -334,10 +379,9 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
     const pp = props.current;
     // dois dedos: pinça (larga o que estava acontecendo)
     if (ponteiros.current.size === 2 && toque) {
+      // o que o primeiro dedo começou (erguer, redimensionar, ligar, laço) volta como estava: nada fica pela metade
       const g = gesto.current;
-      if (g?.t === "segurar") window.clearTimeout(g.timer);
-      if (g?.t === "arrastar") fimDoArrasto(g, true);
-      if (g?.t === "laco") limparLaco(g);
+      if (g) largar(g);
       const [a, b] = [...ponteiros.current.entries()];
       const m = local((a[1].x + b[1].x) / 2, (a[1].y + b[1].y) / 2);
       gesto.current = { t: "pinca", a: a[0], b: b[0], d0: Math.hypot(a[1].x - b[1].x, a[1].y - b[1].y) || 1, m0: m, v0: { ...vista.current } };
@@ -494,8 +538,8 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
         const z = vista.current.z;
         const n = porIdRef.current.get(g.el.id);
         const tipo = n?.tipo ?? "nota";
-        const w = Math.max(MIN_LADO[tipo], Math.round(g.el.caixa.w + dx / z));
-        const h = Math.max(MIN_ALTURA[tipo], Math.round(g.el.caixa.h + dy / z));
+        const w = Math.max(TAMANHO_MINIMO[tipo].w, Math.round(g.el.caixa.w + dx / z));
+        const h = Math.max(TAMANHO_MINIMO[tipo].h, Math.round(g.el.caixa.h + dy / z));
         g.c = { ...g.el.caixa, w, h };
         g.el.el.style.width = `${w}px`;
         g.el.el.style.height = `${h}px`;
@@ -529,7 +573,7 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
         const mb = telaParaMundo(vista.current, b);
         const rm = retangulo(ma, mb);
         const agora = new Set<string>();
-        for (const n of props.current.vivos) {
+        for (const n of vivosRef.current) {
           const dentro = n.tipo === "secao" ? rm.x <= n.x && rm.y <= n.y && rm.x + rm.w >= n.x + n.w && rm.y + rm.h >= n.y + n.h : intersecta(rm, n);
           if (dentro) agora.add(n.id);
         }
@@ -586,8 +630,9 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
         flushSync(() => {
           if (mudou && !cancelado) pp.redimensionarFim(id, g.c);
         });
-        g.el.el.style.width = "";
-        g.el.el.style.height = "";
+        // o tamanho fica no estilo (o do gesto ou o de antes), nunca vazio: sem largura, o nó encolhia até a menor
+        // palavra (a nota com uma letra por linha do print) e a seta, pelo tamanho guardado, terminava no vazio
+        tamanhoNoDom(g.el.el, mudou && !cancelado ? g.c : g.el.caixa);
         if (!mudou || cancelado) redesenharLigacoes(g.ligs, (x) => porIdRef.current.get(x));
         return;
       }
@@ -629,11 +674,11 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
     if (!el) return;
     const roda = (e: WheelEvent) => {
       const alvo = e.target as Element;
-      if (!(e.ctrlKey || e.metaKey) && alvo.closest("textarea, .fx-lista")) return;
+      const fator = zoomDaRoda(e);
+      if (fator === null && alvo.closest("textarea, .fx-lista")) return;
       e.preventDefault();
       const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
-      if (e.ctrlKey || e.metaKey) {
-        const fator = Math.exp(-e.deltaY * k * 0.0075);
+      if (fator !== null) {
         vista.current = zoomEm(vista.current, vista.current.z * fator, local(e.clientX, e.clientY));
       } else {
         vista.current = { ...vista.current, x: vista.current.x - e.deltaX * k, y: vista.current.y - e.deltaY * k };
@@ -697,8 +742,8 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
 
   /* ───────────── desenho ───────────── */
 
-  const secoes = useMemo(() => p.vivos.filter((n) => n.tipo === "secao").sort((a, b) => a.z - b.z), [p.vivos]);
-  const outros = useMemo(() => p.vivos.filter((n) => n.tipo !== "secao").sort((a, b) => a.z - b.z), [p.vivos]);
+  const secoes = useMemo(() => vivos.filter((n) => n.tipo === "secao").sort((a, b) => a.z - b.z), [vivos]);
+  const outros = useMemo(() => vivos.filter((n) => n.tipo !== "secao").sort((a, b) => a.z - b.z), [vivos]);
   const desenhos = useMemo(
     () =>
       p.ligacoes.flatMap((l) => {
@@ -709,6 +754,102 @@ export const Canvas = forwardRef<CanvasApi, Props>(function Canvas(p, api) {
       }),
     [p.ligacoes, porId],
   );
+  /*
+   * A ligação acompanha o nó: durante o gesto o canvas escreve o caminho direto no DOM e o React só compara com o que
+   * ele mesmo desenhou da última vez. Se o banco devolveu o nó para o mesmo lugar (conflito, desfazer no meio), o
+   * React não via diferença e a seta ficava onde o gesto deixou. Depois de cada desenho, sem gesto, o DOM volta a ser
+   * o que as caixas dizem (só atributos; nada de layout).
+   */
+  useLayoutEffect(() => {
+    const pl = plano.current;
+    if (!pl || gesto.current) return;
+    // o tamanho de cada nó é o das caixas (exceto a nota em edição, que cresce com o texto)
+    for (const el of pl.querySelectorAll<HTMLElement>(":scope > [data-no]")) {
+      const n = porId.get(el.dataset.no!);
+      if (!n || el.dataset.editando !== undefined) continue;
+      if (el.style.width !== `${n.w}px` || el.style.height !== `${n.h}px`) tamanhoNoDom(el, n);
+    }
+    for (const { l, c } of desenhos) {
+      const g = pl.querySelector<SVGGElement>(`[data-lig="${l.id}"]`);
+      if (!g) continue;
+      for (const el of g.querySelectorAll<SVGPathElement>(".fx-lig__toque, .fx-lig__linha")) if (el.getAttribute("d") !== c.d) el.setAttribute("d", c.d);
+      const seta = g.querySelector<SVGPathElement>(".fx-lig__seta");
+      const ponta = pontaDaSeta(c.fim, c.angulo);
+      if (seta && seta.getAttribute("d") !== ponta) seta.setAttribute("d", ponta);
+      const r = pl.querySelector<HTMLElement>(`[data-rotulo-lig="${l.id}"]`);
+      if (r) {
+        r.style.left = `${c.meio.x}px`;
+        r.style.top = `${c.meio.y}px`;
+      }
+    }
+  });
+
+  /*
+   * O texto da nota cresceu (no.tsx muda a altura dela direto no DOM enquanto se digita): as ligações dela seguem.
+   */
+  useEffect(() => {
+    const el = tela.current;
+    if (!el) return;
+    const cresceu = (e: Event) => {
+      const { id, h } = (e as CustomEvent<{ id: string; h: number }>).detail;
+      const n = porIdRef.current.get(id);
+      if (!n) return;
+      redesenharLigacoes(ligacoesDe(new Set([id])), (x) => (x === id ? { ...n, h } : porIdRef.current.get(x)));
+    };
+    el.addEventListener("fx-cresceu", cresceu);
+    return () => el.removeEventListener("fx-cresceu", cresceu);
+    // ligacoesDe e redesenharLigacoes leem só refs
+  }, []);
+
+  /*
+   * O canvas nunca rola (titular, 03/11/2026, print do iPhone): com o teclado aberto o Safari rola quem tem overflow
+   * escondido (e a página) para mostrar o cursor, e a nota em edição ia parar atrás do cabeçalho, desalinhada. Quem
+   * rolar volta para o zero; quem leva a nota para a vista é a própria vista do canvas (abaixo).
+   */
+  useEffect(() => {
+    const el = tela.current;
+    if (!el) return;
+    const caixas = [el, el.parentElement, el.closest<HTMLElement>(".fx")].filter((x): x is HTMLElement => !!x);
+    const zerar = (e: Event) => {
+      const t = e.currentTarget as HTMLElement;
+      if (t.scrollTop || t.scrollLeft) {
+        t.scrollTop = 0;
+        t.scrollLeft = 0;
+      }
+    };
+    const pagina = () => {
+      if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+    };
+    for (const c of caixas) c.addEventListener("scroll", zerar);
+    window.addEventListener("scroll", pagina);
+    return () => {
+      for (const c of caixas) c.removeEventListener("scroll", zerar);
+      window.removeEventListener("scroll", pagina);
+    };
+  }, []);
+
+  /*
+   * Editar no celular: a nota vai para a área que sobra entre o cabeçalho e o teclado (visualViewport), aproximando se
+   * o zoom estiver longe demais para ler. Assim o Safari não precisa rolar nada para mostrar o cursor.
+   */
+  const editandoId = p.editando?.id ?? null;
+  useEffect(() => {
+    if (!editandoId || !toqueGrosso()) return;
+    const vv = window.visualViewport;
+    const levar = (suave: boolean) => {
+      const n = porIdRef.current.get(editandoId);
+      const t = tela.current?.getBoundingClientRect();
+      if (!n || !t) return;
+      const baixo = (vv ? vv.offsetTop + vv.height : window.innerHeight) - t.top;
+      const alvo = vistaParaEditar(vista.current, n, { w: t.width, topo: props.current.margens.topo - 40, baixo: Math.min(t.height, baixo) });
+      if (alvo) animarPara(alvo, suave);
+    };
+    levar(true);
+    const aoMudar = () => levar(false);
+    vv?.addEventListener("resize", aoMudar);
+    return () => vv?.removeEventListener("resize", aoMudar);
+  }, [editandoId, animarPara]);
+
   const sozinho = p.selecao.size === 1 ? [...p.selecao][0] : null;
   const desenhaNo = (n: NoFluxo) => (
     <No

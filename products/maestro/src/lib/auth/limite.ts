@@ -47,6 +47,9 @@ export const REGRAS = {
   fluxoPinIp: { max: 5, janelaMs: 15 * 60_000 },
   fluxoPin: { max: 20, janelaMs: 15 * 60_000 },
   fluxoImagemIp: { max: 2000, janelaMs: 60 * 60_000 },
+  /** Comentar pelo link "Ver e comentar" (drizzle/0039): 20 a cada 15 min por link e IP; 120 por hora por link. */
+  fluxoComentarIp: { max: 20, janelaMs: 15 * 60_000 },
+  fluxoComentar: { max: 120, janelaMs: 60 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

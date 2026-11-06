@@ -7,7 +7,7 @@
  * (em destaque quando aprovada, só quando um computador da conta converte; com app antigo, o pedido para atualizar)
  * e os entregáveis dela embaixo (`components/relay`).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { versoesDoCardAcao } from "@/app/(app)/app/aprovacoes/acoes";
 import { NOME_DA_FONTE, type TipoFonte } from "@/lib/revisao/fontes/detectar";
 import type { VersaoDoCard } from "@/lib/revisao/equipe";
@@ -15,6 +15,11 @@ import { Icone, type NomeIcone } from "@/components/icones";
 import { useNovaVersao } from "@/components/revisao/nova-versao";
 import { AvisoAtualizar, BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
 import { GerarVersoes } from "@/components/relay/gerar-versoes";
+import { NavegadorDrive } from "@/components/arquivos/navegador";
+import { useRecursoSobedesce } from "@/components/arquivos/recursos-sobedesce";
+import { Folha, useFecharFolha } from "@/components/folha";
+import type { PastaDoCard } from "@/lib/quadro/pastas";
+import { FolhaEntrega } from "./entrega";
 
 const ICONE: Record<TipoFonte | "roteiro", NomeIcone> = {
   drive: "nuvem",
@@ -29,11 +34,67 @@ const ICONE: Record<TipoFonte | "roteiro", NomeIcone> = {
 
 const dia = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
-export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrever: boolean }) {
+/** O nome do arquivo sem a extensão, como nome da versão. */
+const nomeDaVersao = (nome: string) => nome.replace(/\.[A-Za-z0-9]{2,5}$/, "").slice(0, 200);
+const linkDoArquivo = (id: string) => `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+
+/** "Escolher no Drive" na ficha: o navegador do Drive do Maestro como seletor, só vídeos. */
+function FolhaEscolher({ sobedesce, aoFechar, aoEscolher }: { sobedesce: string; aoFechar: () => void; aoEscolher: (id: string, nome: string) => void }) {
+  return (
+    <Folha rotulo="Escolher no Drive" aoFechar={aoFechar} className="pc-folha">
+      <EscolherConteudo sobedesce={sobedesce} aoEscolher={aoEscolher} />
+    </Folha>
+  );
+}
+function EscolherConteudo({ sobedesce, aoEscolher }: { sobedesce: string; aoEscolher: (id: string, nome: string) => void }) {
+  const fechar = useFecharFolha();
+  return (
+    <div className="pc-folha__corpo">
+      <div className="pc-folha__topo">
+        <h2>Escolher no Drive</h2>
+        <button type="button" className="q-icone-btn" onClick={fechar} aria-label="Fechar">
+          <Icone nome="fechar" size={18} />
+        </button>
+      </div>
+      <NavegadorDrive
+        modo="escolher"
+        sobedesce={sobedesce}
+        aoEscolher={(f) => {
+          aoEscolher(f.id, f.name);
+          fechar();
+        }}
+      />
+    </div>
+  );
+}
+
+export function VersoesDoCard({
+  card,
+  podeEscrever,
+  sobedesce = null,
+  entrega = null,
+}: {
+  card: string;
+  podeEscrever: boolean;
+  /** Com o SOBEDESCE no plano: a origem do app dele ("Escolher no Drive" e "Enviar a entrega"). */
+  sobedesce?: string | null;
+  /** A pasta "Entrega" do card (src/lib/quadro/pastas.ts): o destino de "Enviar a entrega". */
+  entrega?: PastaDoCard | null;
+}) {
   const [versoes, setVersoes] = useState<VersaoDoCard[] | null>(null);
   const [vez, setVez] = useState(0);
   const recarregar = useCallback(() => setVez((n) => n + 1), []);
-  const { link, setLink, fonte, pendente, enviar, mensagem } = useNovaVersao(card, recarregar);
+  const { link, setLink, setTitulo, fonte, pendente, enviar, mensagem } = useNovaVersao(card, recarregar);
+  const [folha, setFolha] = useState<"escolher" | "entrega" | null>(null);
+  // "Enviar a entrega" só quando o SOBEDESCE publicado sabe (contrato 2); senão o botão nem aparece
+  const sabeEnviar = useRecursoSobedesce("enviar", !!(podeEscrever && sobedesce && entrega));
+  const campoLink = useRef<HTMLInputElement>(null);
+  /** Escolhido ou enviado: o campo da versão já preenchido; quem adiciona é a pessoa. */
+  const preencher = (id: string, nome: string) => {
+    setLink(linkDoArquivo(id));
+    setTitulo(nomeDaVersao(nome));
+    requestAnimationFrame(() => campoLink.current?.focus({ preventScroll: true }));
+  };
   const entregas = useEntregaveis(card);
   const [gerando, setGerando] = useState<VersaoDoCard | null>(null);
 
@@ -114,6 +175,7 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
           <div className="vc__colar">
             <Icone nome="link" size={16} />
             <input
+              ref={campoLink}
               type="url"
               inputMode="url"
               data-campo="versao"
@@ -122,7 +184,10 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
               title="Drive, YouTube, Vimeo, Dropbox, mp4…"
               value={link}
               maxLength={2000}
-              onChange={(e) => setLink(e.currentTarget.value)}
+              onChange={(e) => {
+                setLink(e.currentTarget.value);
+                setTitulo("");
+              }}
               onKeyDown={(e) => {
                 if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
                 e.preventDefault();
@@ -139,6 +204,18 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
               {pendente ? "Guardando…" : "Adicionar"}
             </button>
           </div>
+          {sobedesce ? (
+            <div className="vc__drive">
+              <button type="button" className="glass-btn glass-btn--sm" onClick={() => setFolha("escolher")}>
+                <Icone nome="nuvem" size={15} /> Escolher no Drive
+              </button>
+              {entrega && sabeEnviar ? (
+                <button type="button" className="glass-btn glass-btn--sm" onClick={() => setFolha("entrega")} title={`Para a pasta ${entrega.nome}`}>
+                  <Icone nome="enviar" size={15} /> Enviar a entrega
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {mensagem ? (
             <p className="vc__erro" role="alert">
               {mensagem}
@@ -146,6 +223,8 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
           ) : null}
         </>
       ) : null}
+      {folha === "escolher" && sobedesce ? <FolhaEscolher sobedesce={sobedesce} aoFechar={() => setFolha(null)} aoEscolher={preencher} /> : null}
+      {folha === "entrega" && entrega ? <FolhaEntrega pasta={entrega} aoFechar={() => setFolha(null)} aoUsar={(a) => preencher(a.id, a.nome)} /> : null}
       {gerando ? (
         <GerarVersoes
           versaoId={gerando.id}

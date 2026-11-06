@@ -17,6 +17,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import { comPasta, enderecoDoQuadro, lerRecado, SOBEDESCE_APP, SOBEDESCE_ORIGEM, temaDoQuadro, type PastaAberta } from "@/lib/sobedesce/embutido";
 import { Icone } from "@/components/icones";
 import { useTema } from "@/components/use-tema";
+import { anotarRecursos } from "./recursos-sobedesce";
 import "@/app/arquivos-sobedesce.css";
 
 export const ROTA_ARQUIVOS = "/app/arquivos";
@@ -83,9 +84,12 @@ function Quadro({ visivel }: { visivel: boolean }) {
       if (!janela || e.source !== janela) return;
       const r = lerRecado(e.origin, e.data);
       if (!r) return;
-      if (r.tipo === "pronto") mudar({ fase: "pronto" });
-      else if (r.tipo === "envios") mudar({ andando: r.andando });
-      else mudar({ pasta: r.pasta });
+      if (r.tipo === "pronto") {
+        mudar({ fase: "pronto" });
+        // o que este SOBEDESCE sabe fazer (contrato 2): a ficha do card só mostra o envio da entrega com o recurso
+        anotarRecursos(r.recursos);
+      } else if (r.tipo === "envios") mudar({ andando: r.andando });
+      else if (r.tipo === "pasta") mudar({ pasta: r.pasta });
     };
     window.addEventListener("message", aoReceber);
     return () => window.removeEventListener("message", aoReceber);

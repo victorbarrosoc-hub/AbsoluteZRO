@@ -3,21 +3,34 @@
  *
  * Equipe (sessão e acesso conferidos no servidor; Origin nas gravações):
  *   GET  /api/criacao/fluxo/links?fluxo=<id>          os links vivos (só administração e gestão)
- *   POST /api/criacao/fluxo/links                      { op: "criar", fluxo, dias?, pin? } | { op: "revogar", id }
+ *   POST /api/criacao/fluxo/links                      { op: "criar", fluxo, dias?, pin?, permissao? } | { op: "revogar", id }
+ *   GET  /api/criacao/fluxo/comentarios?fluxo=<id>     os comentários de quem abriu um link "Ver e comentar" (quem vê)
+ *   POST /api/criacao/fluxo/comentarios                { op: "apagar", id } (quem edita a Criação)
  *   GET  /api/criacao/fluxo/pacote?id=<id>             o .zip (fluxo.md, fluxo.json, imagens/), a quem vê o fluxo
  *
  * Quem abre de fora (sem conta, pela porta estreita; noindex, no-referrer, sem cache):
  *   GET  /f/<token>.md  e  /f/<token>.json             (reescritas para /f/<token>/fluxo.md|json em next.config.ts)
  *   GET  /f/<token>/i/<id>/<sha>.webp[?mini=1]         a imagem pelo token
  *   POST /f/<token>/pin                                { pin } → cookie da prova (path /f)
+ *   POST /f/<token>/comentar                           { nome, texto, no?, idem } (só no link "Ver e comentar")
  */
 import { erro, ipDe, json, lerCookie, lerJson, origemConfere, serializarCookie } from "@/lib/http";
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { cookieSeguro, origemDoSite, origensDoSite, siteUrl } from "@/lib/site";
-import { podeEnviarCriacao, podeVerCriacao } from "../permissoes";
+import { podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "../permissoes";
 import { slug, urlImagemPeloLink } from "./compartilhar";
 import { fluxoParaJson, fluxoParaMarkdown } from "./exportar";
-import { abrirFluxoPublico, conferirPinFluxo, criarLinkFluxo, imagemPeloLink, listarLinksFluxo, revogarLinkFluxo } from "./link";
+import {
+  abrirFluxoPublico,
+  apagarComentarioFluxo,
+  comentariosDoFluxo,
+  comentarPeloLink,
+  conferirPinFluxo,
+  criarLinkFluxo,
+  imagemPeloLink,
+  listarLinksFluxo,
+  revogarLinkFluxo,
+} from "./link";
 import { pacoteDoFluxo } from "./pacote";
 
 const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, limite: 409, revogado: 409, formato: 422, pin: 422 };
@@ -43,7 +56,7 @@ export async function postLinks(req: Request): Promise<Response> {
   if (!corpo) return erro(400, "formato", "Pedido inválido.");
   const ctx = { sub: s.sub, orgId: s.orgId };
   if (corpo.op === "criar") {
-    const r = await criarLinkFluxo(ctx, texto(corpo.fluxo), { dias: corpo.dias, pin: corpo.pin });
+    const r = await criarLinkFluxo(ctx, texto(corpo.fluxo), { dias: corpo.dias, pin: corpo.pin, permissao: corpo.permissao });
     return r.ok ? json({ link: r.link }, 201) : json({ erro: r.erro, mensagem: r.mensagem }, STATUS[r.erro] ?? 400);
   }
   if (corpo.op === "revogar") {
@@ -51,6 +64,27 @@ export async function postLinks(req: Request): Promise<Response> {
     return r.ok ? json({ ok: true }) : json({ erro: r.erro, mensagem: r.mensagem }, STATUS[r.erro] ?? 400);
   }
   return erro(400, "formato", "Operação desconhecida.");
+}
+
+/** Os comentários do fluxo (de quem abriu um link "Ver e comentar"): todos que veem a Criação leem. */
+export async function getComentarios(req: Request): Promise<Response> {
+  const s = await exigirAcesso(req);
+  if (s instanceof Response) return s;
+  if (!podeVerCriacao(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização não vê a Criação.");
+  const fluxo = new URL(req.url).searchParams.get("fluxo") ?? "";
+  return json({ comentarios: await comentariosDoFluxo({ sub: s.sub, orgId: s.orgId }, fluxo) }, 200, { "Cache-Control": "no-store" });
+}
+
+/** Apagar um comentário: quem edita a Criação (o banco confere o papel de novo e audita). */
+export async function postComentarios(req: Request): Promise<Response> {
+  if (!origemConfere(req.headers, req.url, origensDoSite())) return erro(403, "origem", "Pedido de outra origem.");
+  const s = await exigirAcesso(req);
+  if (s instanceof Response) return s;
+  if (!podeEditarCriacao(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê a Criação.");
+  const corpo = await lerJson(req, 1024);
+  if (!corpo || corpo.op !== "apagar") return erro(400, "formato", "Pedido inválido.");
+  const r = await apagarComentarioFluxo({ sub: s.sub, orgId: s.orgId }, texto(corpo.id));
+  return r.ok ? json({ ok: true }) : json({ erro: r.erro, mensagem: r.mensagem }, STATUS[r.erro] ?? 400);
 }
 
 /** Nome do arquivo no Content-Disposition (ASCII e a forma UTF-8). */
@@ -140,4 +174,15 @@ export async function postPinPublico(req: Request, params: Promise<{ token: stri
     ...PUBLICO,
     "Set-Cookie": serializarCookie(r.cookie.nome, r.cookie.valor, { maxAge: r.cookie.maxAge, path: "/f", httpOnly: true, secure: seguro, sameSite: "Lax" }),
   });
+}
+
+/** Comentar pelo link "Ver e comentar": só o nome, sem conta (Origin conferida; limites por link e IP no `link.ts`). */
+export async function postComentarPublico(req: Request, params: Promise<{ token: string }>): Promise<Response> {
+  if (!origemConfere(req.headers, req.url, origensDoSite())) return erro(403, "origem", "Pedido de outro site.", PUBLICO);
+  const { token } = await params;
+  const corpo = await lerJson(req, 8 * 1024);
+  if (!corpo) return erro(400, "formato", "Pedido inválido.", PUBLICO);
+  const r = await comentarPeloLink(token, cookiesDe(req), ipDe(req.headers), corpo).catch(() => null);
+  if (!r) return erro(503, "indisponivel", "Não deu para comentar agora. Tente de novo.", PUBLICO);
+  return r.ok ? json({ comentario: r.comentario }, 201, PUBLICO) : erro(r.status, r.erro, r.mensagem, PUBLICO);
 }

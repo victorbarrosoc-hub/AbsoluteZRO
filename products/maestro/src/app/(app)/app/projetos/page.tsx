@@ -6,6 +6,7 @@ import { Busca } from "@/components/busca";
 import { dataBr, Pilulas, Selo } from "@/components/crm";
 import { Icone } from "@/components/icones";
 import { EstadoVazio } from "@/components/vazio";
+import { dicaDoCodigo } from "@/lib/crm/codigo";
 
 export const metadata = { title: "Projetos" };
 
@@ -71,7 +72,9 @@ export default async function Projetos({ searchParams }: PageProps<"/app/projeto
               {projetos.map((p) => (
                 <li key={p.id}>
                   <Link className="item" href={`/app/projetos/${p.id}`}>
-                    <span className="codigo">{p.codigo}</span>
+                    <span className="codigo" title={dicaDoCodigo(p.codigo)}>
+                      {p.codigo}
+                    </span>
                     <span className="item__miolo">
                       <span className="item__nome">{p.titulo}</span>
                       <span className="item__apoio">

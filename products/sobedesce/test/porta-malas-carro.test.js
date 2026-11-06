@@ -115,3 +115,53 @@ test('porta-malas do Carro: o app embutido mostra só Transferências e Drive; s
   const temApp = bloqueado ? await bloqueado.evaluate(() => !!document.getElementById('app')).catch(() => false) : false
   assert.equal(temApp, false, 'sem ?no=carro, nada embute')
 })
+
+test('no Maestro (contrato 2): a sonda só diz o que sabe; o modo enviar abre com a pasta do card de destino', { skip: pular, timeout: 90_000 }, async () => {
+  const doMaestro = cspDoApp('http://127.0.0.1:*')
+  const pedidos = []
+  const sobedesce = await ouvir((req, res) => {
+    const url = new URL(req.url, 'http://x')
+    pedidos.push(url.pathname)
+    if (url.pathname === '/api/eu') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      return res.end(JSON.stringify({ usuario: { id: 'u1', nome: 'Lia Montadora', email: 'lia@exemplo.com' }, contas: [], recursos: {}, zro: { ligada: true } }))
+    }
+    if (url.pathname.startsWith('/api/')) return res.writeHead(404, { 'Content-Type': 'application/json' }).end('{"erro":"nao_encontrado"}')
+    let rel = decodeURIComponent(url.pathname.replace(/^\/app\/?/, ''))
+    if (!rel) rel = 'index.html'
+    const arquivo = path.join(APP, rel)
+    if (!arquivo.startsWith(APP) || !fs.existsSync(arquivo) || fs.statSync(arquivo).isDirectory()) return res.writeHead(404).end()
+    res.writeHead(200, { 'Content-Type': TIPOS[path.extname(arquivo)] || 'application/octet-stream', 'Content-Security-Policy': doMaestro }).end(fs.readFileSync(arquivo))
+  })
+  const maestro = await ouvir((req, res) => {
+    const url = new URL(req.url, 'http://x')
+    const src = `${sobedesce}/app/${url.searchParams.get('q') || ''}`
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(`<!doctype html><title>Maestro</title><script>window.recados=[];addEventListener('message',e=>recados.push({origem:e.origin,...e.data}))</script><iframe id="sd" src="${src}" style="width:393px;height:760px;border:0"></iframe>`)
+  })
+  nav ??= await chromium.launch()
+  const ctx = await nav.newContext({ viewport: { width: 1200, height: 860 } })
+  const pagina = await ctx.newPage()
+  const erros = []
+  pagina.on('pageerror', e => erros.push(e.message))
+
+  // a sonda: o pronto com a versão e os recursos, sem abrir o app (nem a conta)
+  await pagina.goto(`${maestro}/?q=${encodeURIComponent('?no=maestro&modo=sonda')}`)
+  await pagina.waitForFunction(() => window.recados.some((r) => r.tipo === 'pronto'), null, { timeout: 30_000 })
+  const pronto = (await pagina.evaluate(() => window.recados)).find((r) => r.tipo === 'pronto')
+  assert.deepEqual({ fonte: pronto.fonte, versao: pronto.versao, recursos: pronto.recursos }, { fonte: 'sobedesce', versao: 2, recursos: ['enviar'] })
+  const sonda = pagina.frames().find(f => f.url().includes('/app/'))
+  await pagina.waitForTimeout(800)
+  assert.equal(await sonda.evaluate(() => !!document.querySelector('#app > .boot') && !document.querySelector('.tab-label')), true, 'a sonda não desenha o app')
+  assert.ok(!pedidos.includes('/api/eu'), 'a sonda não abre a conta')
+
+  // o modo enviar: o destino da fila é a pasta do card
+  await pagina.goto(`${maestro}/?q=${encodeURIComponent('?no=maestro&modo=enviar&tema=claro&pasta=pastaEntrega01&nome=05%20Entregas&dev_api=http%3A%2F%2F127.0.0.1%3A9%2Fdrive')}`)
+  await pagina.waitForFunction(() => window.recados.filter((r) => r.tipo === 'pronto').length >= 1, null, { timeout: 40_000 })
+  const quadro = pagina.frames().find(f => f.url().includes('modo=enviar'))
+  await quadro.waitForFunction(() => !!window.__sobedesce, null, { timeout: 20_000 })
+  const dest = await quadro.evaluate(() => window.__sobedesce.getState().dest)
+  assert.deepEqual(dest, { id: 'pastaEntrega01', name: '05 Entregas', driveId: null, path: [{ id: 'pastaEntrega01', name: '05 Entregas' }] })
+  assert.equal(await quadro.evaluate(() => window.__sobedesce.getState().tab), 'send')
+  assert.deepEqual(erros, [])
+  await ctx.close()
+})

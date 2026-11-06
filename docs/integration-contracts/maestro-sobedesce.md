@@ -79,6 +79,22 @@ sem_vinculo | nao_achou | sem_miniatura | conta_desconhecida` · `409 sem_drive 
   nova abre no quadro), "Abrir" (o quadro vai à pasta) e "Ligar a um projeto" com a pasta aberta no quadro
   (`projects.drive_folder_id` e `drive_folder_nome`, migração `0019`).
 
+- **Contrato 2 do modo embutido** (04/11/2026; `web/public/app/lib/embutido.js` do SOBEDESCE e
+  `src/lib/sobedesce/embutido.ts` do Maestro). O `pronto` passa a levar `{versao: 2, recursos: [...]}` (`maestro:
+['enviar']`); o SOBEDESCE de antes manda `pronto` sem nada, que o Maestro lê como versão 1, sem recurso. O Maestro só
+  mostra o que depende de recado novo quando o recurso veio:
+
+  | Recurso / modo                                                   | O quê                                                                                                                                                                                               |
+  | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `?no=maestro&modo=sonda`                                         | Só o `pronto` (sem conta, sem tela, sem service worker). Um quadro escondido no Maestro pergunta uma vez por aba (cache de 6 h no aparelho; sem resposta, 10 min).                                  |
+  | `enviar`: `?no=maestro&modo=enviar&tema=&pasta=<id>&nome=<nome>` | O Início do app com a pasta "Entrega" do card como destino. Cada arquivo terminado nela vira `{fonte:'sobedesce', tipo:'enviado', arquivo:{id, nome, tamanho, mime, pasta, conferencia}}`, uma vez. |
+
+  `conferencia`: `ok` só com o MD5 do aparelho igual ao do Drive; `diferente` (não conferiu: o Maestro não deixa virar
+  versão); `sem` (tamanho confere, sem MD5). O recado só sai depois da conferência decidida. No Maestro, a ficha do card
+  (Versões) mostra "Enviar a entrega" só com a pasta Entrega no card, o SOBEDESCE no plano e o recurso `enviar`;
+  "Usar como versão" só preenche o link da versão (`https://drive.google.com/file/d/<id>/view`). **Ordem do deploy**: o
+  SOBEDESCE com o contrato 2 antes (ou junto); com o de antes, o botão simplesmente não aparece.
+
 - **Revisão, equipe**: com o SOBEDESCE no plano, a versão do Drive toca num `<video>` pelo service worker
   `/drive-sw.js` (escopo `/app/`, cópia de `packages/drive-web/src/sw.js`): `/app/stream/<id>?…&c=<conta>&k=<chave da
 aba>` → Google com o token curto, repassando o `Range` (206). Tempo e timecode de verdade, até em arquivo privado.
