@@ -2,6 +2,26 @@
 
 Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`, publicação autorizada pelo titular)
+
+Um ramo só, em cima da `main`, para um push só (um build por site que muda). Junta, nesta ordem: `dock-sempre`,
+`maestro-fase-2`, `sobedesce-home-fita` (#128), `synquei-fluxo-sobedesce`, `synquei-dominio-links` (#105),
+`admiring-goodall-eiznf7` (Relay), `carro-telas` (#116 com o #114) e `revela-lab` (#118). As seções de cada ramo seguem
+abaixo.
+
+- ✅ Versões: central Absolute ZRO **1.4.3** (o "Atualizar" com progresso da 1.4.2 e a fila do Dock), SOBEDESCE
+  **0.3.10**, SOBEDESCE Celular 2.8.67, Relay 0.1.2, Maestro 0.2.2, TPeasy 0.1.2 e Carro do Freela 0.2.2 no computador;
+  Synquei segue 1.0.1 (o aviso de versão compara o número do build).
+- ✅ Rift Motion (não lançado): o app de computador fica como na `main` (0.1.0, sem o `login-externo.cjs`), sem
+  instalador novo. O HUB já aceita o esquema `rift` para o login pelo navegador.
+- ✅ Migrações que rodam no deploy de produção: HUB `0057_login_pelo_app` (o runner aplica por nome; a `main` já tem
+  `0058` e `0059`), Maestro `0039_fluxo_link_permissao` e Carro `0008_tabela_e_selo` e `0009_job_confirmado`.
+- ✅ Revela segue fechada pelo gate (página neutra para quem não tem acesso; `test/fechado.test.js` passa).
+- ⬜ Conferir no ar depois do push da `main`: login com o Google pelo navegador num Mac e num Windows, "Manter no Dock" com
+  vários apps, a home nova do SOBEDESCE e a ficha do card do Maestro com as pastas do Drive.
+- ⬜ e2e do Maestro: `criacao-tpeasy.spec.ts` já falhava na `main` e `quadro-pastas.spec.ts` (novo) é intermitente
+  (a ficha aberta por `?card=` às vezes fecha); o CI do Maestro pode ficar vermelho até corrigir.
+
 ## Synquei + SOBEDESCE: material organizado por tipo de vídeo (06/11/2026, ramo `claude/synquei-fluxo-sobedesce`)
 
 - ✅ Momentos por tipo (`products/synquei/app/js/momentos.js`, 18 tipos): casamento por momento (votos, cerimônia,
@@ -71,7 +91,6 @@ Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ Conferir à mão num Mac e num Windows com o Google real (aqui não há Google nem Electron; a lógica tem teste com
   Google e HUB falsos).
 
-
 ## Maestro fase 2: pastas do Drive no card, a entrega pelo SOBEDESCE e a permissão do link do Fluxo (04/11/2026, ramo `maestro-fase-2`)
 
 Pedidos do titular de 04/11/2026, em cima do ramo `maestro-fluxo-melhorias`. Migração nova: `0039_fluxo_link_permissao`.
@@ -120,7 +139,6 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
 - ✅ Fase 2 (seção acima): pastas do Drive no card, Versões escolhendo/subindo pelo SOBEDESCE e o link do fluxo com
   permissão. O checklist pessoal flutuante no computador ficou de fora.
 - Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
-
 
 ## Carro do Freela: tabela de diária e selo de verificado no servidor (03/11/2026, ramo `claude/carro-telas`)
 

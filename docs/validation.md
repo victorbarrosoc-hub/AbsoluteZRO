@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`)
+
+Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Chromium e WebKit do Playwright 1.63).
+
+- HUB: `npm run lint`, `format:check`, `typecheck` e `build` ok (`/entrar/app`, `/entrar/app/confirmar` e
+  `/entrar/app/trocar` no build); `npm test` **649/649** em 73 arquivos (com `openapi.test.ts` e o `findEventCycle` de
+  `packages/core`); `npm run test:e2e` **73/73** (com `login-pelo-app.spec.ts` e a central de apps em `hub.spec.ts`).
+  `packages/media-contracts` não mudou. `node scripts/scan-secrets.mjs`: nenhum segredo em 4419 arquivos.
+- Apps de computador (`npm test`): hub-desktop 100/100, relay 26/26, maestro 55/55, tpeasy 26/26, carro-do-freela
+  30/30, rift-motion 27/27 (igual à `main`).
+- Maestro: `lint`, `format:check`, `typecheck`, `build` ok; `npm test` 739/739. `npm run test:e2e`
+  301 passaram, 100 pulados, 4 falharam: `criacao-tpeasy.spec.ts:204` (computador e iphone, o toast "Roteiro do Maestro
+  chegou" não aparece) falha igual na `main` (rodado com as pastas do Maestro da `main`), e `quadro-pastas.spec.ts:53`
+  (novo do `maestro-fase-2`) é intermitente: a ficha do card aberto por `?card=` às vezes fecha sozinha e o teste perde a
+  região "Pastas no Drive" (passou em 1 de 2 e em 3 de 4 rodadas só dele). O código web do Maestro no lote é idêntico ao
+  da ponta do `maestro-fase-2`.
+- SOBEDESCE `test:fast` 804/808 (4 pulados). Na primeira rodada, com a máquina ocupada pelo e2e, `test/lan.test.js`
+  falhou uma vez por tempo ("preparando" no lugar de "aguardando"); sozinho passa 3 de 3 e na rodada de novo passou.
+  Nem ele nem `src/lan` mudam no lote. SOBEDESCE web: `lint`, `typecheck` ok, `npm test` 384/384.
+- Synquei 194/200 (6 pulados: 5 sem luajit, 1 root ignora permissão). Relay 134/134. Revela 187/187 (com
+  `fechado.test.js`: o gate segue fechando). Carro: `test:api` 49/49, `test:banco` 61/61, `build:vercel` ok (lançamento
+  FECHADO); `npm test` (telas no Chromium) 95/95 (cadastro-foco e conta-zro passaram na rodada sozinha do próprio
+  runner).
+
 ## Synquei + SOBEDESCE: organização por tipo de vídeo (06/11/2026)
 
 | Verificação                                                                     | Comando                                      | Resultado      |
