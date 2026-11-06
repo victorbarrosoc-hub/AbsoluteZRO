@@ -370,3 +370,15 @@ test('Analisar mede a faixa do arquivo dentro do que a curva guarda; a receita l
   assert.equal(velha.ajustes.protegePele, 80)
   assert.equal(velha.faixaHdr, null)
 })
+
+test('pacote: o controle de qualidade avalia o look; os níveis do Analisar (correção do frame) seguem no LMT', async () => {
+  const { montarPacote } = await import('../src/cor/pacote.js')
+  // a receita do teste de tela: 500T na 2383, luz D60, Calor 40 e o Analisar de um frame claro (preto assentado)
+  const receita = { nome: 'Noite quente', entrada: 'still', base: 'negativo-500t', copia: '2383', negativo: '5219', luzCopia: 'D60', ajustes: { calor: 40 }, correcao: { exposicao: -0.37, ganhos: [0.984, 0.989, 1.026], contraste: [1.24, 1.4], saturacao: 1, sombraFria: 2 } }
+  const p = montarPacote(receita)
+  assert.equal(p.qc.ok, true, p.qc.verificacoes.filter((v) => !v.ok).map((v) => `${v.nome} ${v.valor}`).join('; '))
+  // a LUT do look leva os níveis: difere da do look sem eles
+  const comNiveis = p.arquivos.find((a) => /DWG-DI-to-DWG-DI_v1_65\.cube$/.test(a.nome)).dados
+  const sem = montarPacote({ ...receita, correcao: { exposicao: -0.37, ganhos: [0.984, 0.989, 1.026] } }, { qc: false })
+  assert.notEqual(comNiveis, sem.arquivos.find((a) => /DWG-DI-to-DWG-DI_v1_65\.cube$/.test(a.nome)).dados)
+})

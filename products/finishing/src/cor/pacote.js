@@ -207,10 +207,13 @@ export function montarPacote(receita, opcoes = {}) {
     })
   arquivos.push({ nome: `${prefixo}.revela`, dados: escreverReceita(receita) })
 
-  // 6. controle de qualidade do look (o LMT) e leia-me
+  // 6. controle de qualidade do look e leia-me. O QC avalia o look sem a correção deste frame: os níveis do Analisar
+  // (preto assentado, branco aberto) são, como a exposição e o branco, a correção de um frame; com eles a faixa de
+  // exposição da pele estica antes da cópia e a "Pele estável" (de -2 a +2 stops) mediria a correção, não o look
   let qc = null
   if (opcoes.qc !== false) {
-    qc = avaliarLook(look.motor, { veu: (receita.ajustes?.desbotar ?? 0) > 0 || look.perfil.veu > 0, pb: !!look.perfil.pb, tingeMax: look.perfil.tingeMax })
+    const doLook = niveis ? criarLab({ ...receita, correcao: null }) : look
+    qc = avaliarLook(doLook.motor, { veu: (receita.ajustes?.desbotar ?? 0) > 0 || look.perfil.veu > 0, pb: !!look.perfil.pb, tingeMax: look.perfil.tingeMax })
     arquivos.push({ nome: `${pasta}/CONTROLE-DE-QUALIDADE.txt`, dados: relatorioEmTexto(receita.nome || 'Meu look', qc) })
   }
   arquivos.push({ nome: `${pasta}/LEIA-ME.txt`, dados: leiaMe(nome, receita, cam, qc, look.motor.copia, textura) })
