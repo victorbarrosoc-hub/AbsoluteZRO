@@ -22,7 +22,7 @@ let state = {
   lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode, modo }
   sheet: null, // { name, props }
   tab: 'send', // 'send' (Início, envio; a entrada) | 'z' (a Z, pelo botão discreto do topo, nunca a entrada) | 'drive' (navegar e baixar) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
-  criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'montagens' | 'calc'
+  criarTela: 'frames', // aba Estúdio (Criar): 'frames' | 'montagens' | 'calc' (Calculadora, pelo atalho Cartões do Início)
   abrirLink: null, // link profundo #drive/<id>, #arquivo/<id> ou #baixar/<id> (lib/drive-link.js): a aba Drive abre e zera
   escolher: null, // aba Drive escolhendo para outra tela: { para: 'frames' } (tocar no vídeo leva para lá) | { para: 'montagens' } (cada toque junta)
   recursos: {}, // de /api/eu: { referencias: boolean }

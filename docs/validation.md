@@ -73,6 +73,16 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   FECHADO); `npm test` (telas no Chromium) 95/95 (cadastro-foco e conta-zro passaram na rodada sozinha do próprio
   runner).
 
+## SOBEDESCE Celular 2.8.69: a cara do app de computador (06/11/2026, ramo `claude/sobedesce-celular-visual`)
+
+- `cd products/sobedesce && npm run test:fast`: **820/825** (4 pulados; 1 falhou por tempo com a máquina ocupada,
+  `set-celular`, `locator.waitFor` 20 s, que passa sozinho). Novos: `test/celular-visual.test.js` 4/4 (abas Início ·
+  Drive · Transferências · Estúdio, seções do Estúdio, "Falta" e "termina ~hh:mm", gráfico de velocidade) e
+  `test/frames-galeria-csp.test.js` 2/2 (o vídeo da galeria abre com a CSP do app; antes, "violates media-src
+  'self'"). `montagens-celular-navegador` 2/2 pelo Estúdio. `test/app-sw.test.js` confere 2.8.69 / `sobedesce-app-v84`.
+- `cd products/sobedesce/web`: `lint` ok, `typecheck` ok, `npm test` **384/384** (`celular-app.test.mts` passa pelas
+  abas Estúdio e Transferências no WebKit a 375, 393, 430 e 852 px: toque de 44 px, campo de 16 px, nada mais largo).
+
 ## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
 
 Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.

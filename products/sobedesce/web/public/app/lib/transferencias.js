@@ -135,3 +135,38 @@ export function textoConferencia({ total, conferidos, diferentes, sem }) {
   if (sem) parts.push(`${sem} sem conferência`)
   return parts.join(' · ')
 }
+
+// ───── o resumo ao vivo (como o "Agora" do app de computador, 0.3.7/0.3.8) ─────
+
+/**
+ * Quanto falta em número grande e unidade pequena, que não corta: "<1 min", "~12 min", "~1 h 12 min".
+ * Devolve [[número, unidade], …].
+ */
+export function faltaPartes(sec) {
+  if (!(sec >= 0) || !Number.isFinite(sec)) return null
+  if (sec < 60) return [['<1', 'min']]
+  const min = Math.round(sec / 60)
+  if (min < 60) return [[`~${min}`, 'min']]
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return m ? [[`~${h}`, 'h'], [String(m), 'min']] : [[`~${h}`, 'h']]
+}
+
+/** "termina ~19:22" (ou "termina amanhã ~08:10"); só com mais de um minuto pela frente. */
+export function terminaAs(sec, agora = Date.now()) {
+  if (!(sec >= 60) || !Number.isFinite(sec)) return null
+  const fim = new Date(agora + sec * 1000)
+  const hora = `${String(fim.getHours()).padStart(2, '0')}:${String(fim.getMinutes()).padStart(2, '0')}`
+  const outroDia = fim.toDateString() !== new Date(agora).toDateString()
+  return `termina ${outroDia ? 'amanhã ' : ''}~${hora}`
+}
+
+/** O gráfico de velocidade (SVG `w`×`h`): o caminho da linha e o da área, na escala do maior ponto. */
+export function caminhoVelocidade(pontos, w, h) {
+  if (!pontos.length) return null
+  const max = Math.max(1, ...pontos)
+  const passo = pontos.length > 1 ? w / (pontos.length - 1) : w
+  const xy = pontos.map((v, i) => [i * passo, h - 2 - (v / max) * (h - 6)])
+  const linha = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')
+  return { linha, area: `${linha} L${xy[xy.length - 1][0].toFixed(1)} ${h} L0 ${h} Z` }
+}

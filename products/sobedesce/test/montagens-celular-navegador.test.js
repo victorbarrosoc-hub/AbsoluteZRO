@@ -1,5 +1,5 @@
 // Montagens no app do celular (web/public/app/components/montagens.js), num navegador de verdade com cara de iPhone
-// (Chromium e, se tiver, o WebKit do Playwright): Criar › Montagens, três fotos da galeria, o carrossel contínuo e a
+// (Chromium e, se tiver, o WebKit do Playwright): Estúdio › Montagens, três fotos da galeria, o carrossel contínuo e a
 // grade do perfil saem nas imagens certas (tamanho e quantidade, pela folha de compartilhar do iPhone) e, com um take,
 // o vídeo sai em MP4 H.264 no tamanho do formato (conferido pelo ffprobe). A conta e o Drive são de mentira, nada sai
 // para a internet. Sem Playwright (ou sem ffmpeg para o take), fica de fora. MONTAGENS_FOTOS=<pasta> grava as telas.
@@ -148,9 +148,9 @@ for (const motor of ['chromium', 'webkit']) {
     p.on('pageerror', (e) => erros.push(e.message))
     await p.goto(`${base}/app/`)
     await p.locator('.tabbar').waitFor({ timeout: 60_000 })
-    await p.locator('.tabbar .tab', { hasText: 'Criar' }).click()
-    await foto(p, motor, '1-criar')
-    await p.locator('.cr-ferr', { hasText: 'Montagens' }).click()
+    await p.locator('.tabbar .tab', { hasText: 'Estúdio' }).click()
+    await foto(p, motor, '1-estudio')
+    await p.locator('.est-secao', { hasText: 'Montagens' }).click()
     await p.locator('.mtc-vazio').waitFor()
     await foto(p, motor, '2-montagens-vazia')
 

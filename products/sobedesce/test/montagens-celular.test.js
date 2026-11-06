@@ -157,14 +157,14 @@ test('mídia: foto ou vídeo pelo tipo e, sem tipo, pelo nome', () => {
   assert.equal(C.saidaDe(M.telaDe({ tipo: 'post', formato: '21x9' }), { takes: 1, video: true }), '1920 × 810 · MP4')
 })
 
-test('celular: a aba Criar abre Montagens e o service worker guarda os arquivos novos', async () => {
+test('celular: o Estúdio abre Montagens e o service worker guarda os arquivos novos', async () => {
   const ler = (p) => fs.readFile(new URL(`../web/public/app/${p}`, import.meta.url), 'utf8')
   const criar = await ler('components/criar.js')
-  assert.match(criar, /onMontagens/)
   assert.match(criar, /MontagensTela/)
+  assert.match(await ler('components/estudio.js'), /Montagens/)
   const sw = await ler('sw.js')
-  for (const f of ['lib/montagens.js', 'lib/montagens-celular.js', 'lib/montagens-midia.js', 'lib/frames-posts.js', 'components/montagens.js']) assert.ok(sw.includes(`'./${f}'`), `${f} fora do service worker`)
-  // o vídeo lê pelo Mediabunny (WebCodecs), nunca por <video> com blob: (a CSP do app só deixa media-src 'self')
+  for (const f of ['components/estudio.js', 'lib/montagens.js', 'lib/montagens-celular.js', 'lib/montagens-midia.js', 'lib/frames-posts.js', 'components/montagens.js']) assert.ok(sw.includes(`'./${f}'`), `${f} fora do service worker`)
+  // o vídeo lê pelo Mediabunny (WebCodecs), quadro a quadro, sem <video> nem MediaRecorder
   const midia = await ler('lib/montagens-midia.js')
   assert.doesNotMatch(midia, /createElement\('video'\)|new MediaRecorder/)
 })

@@ -1,6 +1,7 @@
 // Tela Transferências do celular, a mesma ideia da aba do app de computador: o andamento geral (porcentagem,
 // velocidade, tempo restante), os lotes da fila (pausar, retomar e cancelar o lote inteiro), os terminados com a
-// conferência (MD5) e filtros simples. Abre pelo cartão do Início (TransfersCard); não é aba da barra de baixo.
+// conferência (MD5) e filtros simples. É aba (como no computador desde a 0.3.6); o cartão do Início também abre.
+// O topo é o resumo ao vivo do computador (0.3.7): subindo, já passou, falta (com a hora que termina) e o gráfico.
 // Os dados vêm do motor (lib/uploader.js): a fila em engine.items e os terminados em engine.history (IndexedDB).
 import { html, useState } from '../vendor/preact-htm.js'
 import { LAN, local } from '../lib/config.js'
@@ -9,11 +10,12 @@ import { ago } from '../lib/computador.js'
 import { closeSheet, folderTrail, openSheet, setTab, useApp } from '../lib/state.js'
 import { FINISHED, engine } from '../lib/uploader.js'
 import { CONFERIR_AUTO_MAX, seloConferencia } from '../lib/conferir.js'
-import { FILTROS, rodada, conferenciaLote, contagem, filtraHist, filtraItem, ordemFila, porLote, resumoLote, textoConferencia } from '../lib/transferencias.js'
+import { FILTROS, caminhoVelocidade, conferenciaLote, contagem, faltaPartes, filtraHist, filtraItem, ordemFila, porLote, resumoLote, rodada, terminaAs, textoConferencia } from '../lib/transferencias.js'
 import { Icon } from './icons.js'
 import { Button, Pill, cx, useEngine } from './ui.js'
 import { Pilulas, Vazio } from './kit.js'
 import { FileName, QueueRow, SequenceBar, ShareLink, driveLink } from './queue.js'
+import { TopoMarca } from './main.js'
 
 const FILTRO_KEY = 'sobedesce.transferencias.filtro'
 const pctW = (f) => `${(Math.max(0, Math.min(1, f)) * 100).toFixed(2)}%`
@@ -64,26 +66,63 @@ export function TransfersCard() {
 
 // ───── tela ─────
 
-function Geral({ fila }) {
+// Velocidade dos últimos 2 minutos (um ponto por segundo), guardada enquanto o app está aberto e algo anda.
+const HIST = []
+let amostrador = 0
+function amostrar() {
+  if (amostrador) return
+  amostrador = setInterval(() => {
+    const r = resumoLote(engine.items.filter((it) => !FINISHED.has(it.status)))
+    HIST.push(r.speed)
+    if (HIST.length > 120) HIST.shift()
+    if (!r.andando && !r.naFila && HIST.every((v) => !v)) {
+      clearInterval(amostrador)
+      amostrador = 0
+    }
+  }, 1000)
+}
+
+/** Velocidade: o número grande e a unidade pequena ("69,0" e "MB/s"). */
+function vel(bps) {
+  if (!bps) return '—'
+  const t = speed(bps)
+  const k = t.lastIndexOf(' ')
+  return html`${t.slice(0, k)}<small>${t.slice(k + 1)}</small>`
+}
+
+/**
+ * O resumo ao vivo no topo, como o "Agora" do app de computador (0.3.7): três números grandes (subindo, quanto já
+ * passou do total e quanto falta, com a hora que termina), o gráfico dos últimos 2 minutos e a barra do total.
+ */
+function AoVivo({ fila }) {
   const r = resumoLote(fila)
   const rd = rodada(engine.items)
   const pausado = !r.andando && !r.naFila
   const waiting = useApp((s) => s.auth.issue === 'rede')
-  const rotulo = pausado ? 'Pausado' : r.speed > 0 ? speed(r.speed) : waiting ? 'Esperando a conta' : 'Preparando…'
-  return html`<section class="pc-card tr-geral k-entra" style="--i:1" aria-label="Andamento geral">
-    <div class="pc-card-top">
-      <span class="pc-card-icon" aria-hidden="true"><${Icon} name=${pausado ? 'pause' : 'arrow-up'} size=${16} strokeWidth=${2.1} /></span>
-      <span class="pc-card-name">${rotulo}</span>
-      <span class="tc tr-geral-tc" aria-label="tempo restante">${pausado || !r.speed ? '--:--:--' : timecode(r.eta)}</span>
-      <button type="button" class="icon-btn tr-geral-btn" onClick=${() => (pausado ? engine.resumeAll() : engine.pauseAll())} aria-label=${pausado ? 'Retomar tudo' : 'Pausar tudo'}>
+  if (!pausado) amostrar()
+  const total = rd.itens.reduce((t, it) => t + (it.size || 0), 0)
+  const feito = Math.max(0, total - rd.restantes)
+  const falta = !pausado && r.speed > 0 ? faltaPartes(r.eta) : null
+  const fim = !pausado && r.speed > 0 ? terminaAs(r.eta) : null
+  const curva = caminhoVelocidade(HIST.length > 1 ? HIST : [0, 0], 320, 56)
+  const num = (rot, valor, sub, tom) => html`<div class=${cx('av-num', tom && `is-${tom}`)}><span class="av-rot">${rot}</span><b>${valor}</b>${sub ? html`<span class="av-sub">${sub}</span>` : null}</div>`
+  return html`<section class=${cx('av k-entra', pausado && 'is-parado')} style="--i:1" aria-label="Agora">
+    <div class="av-topo">
+      <span class="av-estado">${pausado ? 'Pausado' : waiting ? 'Esperando a conta' : r.speed > 0 ? 'Agora' : 'Preparando'}</span>
+      <button type="button" class="av-pausa" onClick=${() => (pausado ? engine.resumeAll() : engine.pauseAll())} aria-label=${pausado ? 'Retomar tudo' : 'Pausar tudo'}>
         <${Icon} name=${pausado ? 'play' : 'pause'} size=${16} strokeWidth=${2} />
       </button>
     </div>
-    <div class="pc-card-main">
-      <span class="pc-card-pct">${percent(rd.frac)}</span>
-      <span class="pc-card-sub">${count(rd.feitos)} de ${plural(rd.total, 'arquivo', 'arquivos')} · ${bytes(rd.restantes)} restantes</span>
+    <div class="av-nums">
+      ${num('Subindo', vel(pausado ? 0 : r.speed), r.andando ? plural(r.andando, 'arquivo', 'arquivos') : null, 'up')}
+      ${num('Já passou', bytes(feito), `de ${bytes(total)}`)}
+      ${num('Falta', falta ? falta.map(([n, u]) => html`${n}<small>${u}</small> `) : '—', fim)}
     </div>
-    <${SequenceBar} items=${rd.itens} />
+    <svg class="av-graf" viewBox="0 0 320 56" preserveAspectRatio="none" aria-hidden="true">
+      ${curva ? html`<path class="av-area" d=${curva.area} /><path class="av-linha" d=${curva.linha} />` : null}
+    </svg>
+    <div class="av-barra" role="progressbar" aria-label="Total" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${Math.floor(rd.frac * 100)}><i style=${`width:${pctW(rd.frac)}`}></i></div>
+    <span class="av-pe">${count(rd.feitos)} de ${plural(rd.total, 'arquivo', 'arquivos')} · ${percent(rd.frac)}</span>
   </section>`
 }
 
@@ -217,14 +256,14 @@ export function TransfersScreen() {
   const vazio = !lotesFila.length && !lotesFeitos.length
   const [titVazio, txtVazio] = VAZIO[filtro] || VAZIO.tudo
   return html`<div class="screen tr-tela">
-    <button type="button" class="cr-voltar tr-voltar" onClick=${() => setTab('send')}><${Icon} name="chevron-left" size=${18} />Início</button>
+    ${LAN ? null : html`<${TopoMarca} />`}
     <header class="k-cabeca k-entra" style="--i:0">
       <div class="k-cabeca-txt">
         <h1>Transferências</h1>
         ${frase ? html`<p>${frase}</p>` : null}
       </div>
     </header>
-    ${fila.length ? html`<${Geral} fila=${fila} />` : null}
+    ${fila.length ? html`<${AoVivo} fila=${fila} />` : null}
     ${LAN ? null : html`<${AbaAberta} />`}
     ${fila.length || hist.length
       ? html`<div class="pc-filtros tr-filtros k-entra" style="--i:2"><${Pilulas}
