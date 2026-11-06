@@ -12,7 +12,11 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, us
 import { createPortal } from "react-dom";
 
 const nada = () => () => {};
-/** No servidor (e na hidratação) a folha sai no lugar; depois de montar, vai para o <body>. */
+/**
+ * Só no navegador a folha existe: no servidor (e na hidratação) ela não desenha nada e, depois de montar, nasce direto
+ * no <body>. Desenhar no lugar e depois mudar para o portal remontava tudo o que está dentro (a ficha aberta por link,
+ * `/app/quadro?card=`, nascia duas vezes, com os pedidos dela em dobro e o foco perdido).
+ */
 function useNoNavegador() {
   return useSyncExternalStore(
     nada,
@@ -63,8 +67,9 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
     setTimeout(() => aoFecharRef.current(), SAIDA_MS);
   }, []);
 
-  // foco: guarda quem abriu, prende o Tab dentro, Esc fecha
+  // foco: guarda quem abriu, prende o Tab dentro, Esc fecha (só com a folha já no <body>)
   useEffect(() => {
+    if (!noNavegador) return;
     const antes = document.activeElement as HTMLElement | null;
     const eu = {};
     pilha.push(eu);
@@ -101,7 +106,7 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
       pilha.splice(pilha.indexOf(eu), 1);
       if (antes?.isConnected) antes.focus({ preventScroll: true });
     };
-  }, [fechar]);
+  }, [fechar, noNavegador]);
 
   /* ───── a alça (celular): puxar para baixo fecha ───── */
   const arraste = useRef<{ y: number; t: number } | null>(null);
@@ -154,5 +159,5 @@ export function Folha({ rotulo, aoFechar, tamanho = "ficha", veuClasse = "", cla
       </div>
     </div>
   );
-  return noNavegador ? createPortal(folha, document.body) : folha;
+  return noNavegador ? createPortal(folha, document.body) : null;
 }

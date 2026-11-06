@@ -39,6 +39,29 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   FECHADO); `npm test` (telas no Chromium) 95/95 (cadastro-foco e conta-zro passaram na rodada sozinha do próprio
   runner).
 
+## Maestro: e2e do TPeasy e das pastas do Drive de volta ao verde (06/11/2026)
+
+Ramo `claude/gallant-albattani-0uke4f`, em cima do `claude/lote-2026-11-06` (Linux, Node 22, Postgres 16.15 local,
+Chromium do Playwright 1.63).
+
+- **`criacao-tpeasy.spec.ts`** (falhava sempre, também na `main`): o TPeasy pergunta `/api/zro/eu?visitante=1` desde o
+  0005a29 e o spec interceptava só `**/api/zro/eu`, que não casa com a query. O servidor estático do teste respondia 404,
+  o app ficava em "não sei" (`zro.estado = "?"`) e nunca buscava as entregas, daí o toast vazio. O app está certo; o
+  spec passou a casar `**/api/zro/eu**`. Cada repetição (`--repeat-each`) ou nova tentativa semeia o próprio roteiro (o
+  da volta anterior já tinha a v1 enviada e a folha mostrava "Reenviar").
+- **`quadro-pastas.spec.ts`** (intermitente, 6 de 16 no ramo do lote): a ficha não fechava. O snapshot da falha ainda
+  tinha a ficha, e o poll nunca tira um card (`juntar` só remove com `apagadoEm`). A `Folha` saía no lugar no HTML do
+  servidor e, depois da hidratação, era desmontada e montada de novo no portal do `<body>`: a ficha aberta por
+  `?card=` nascia duas vezes (o trace mostra cada Server Action dela em dobro) e o teste segurava o elemento velho.
+  Correção no app (`src/components/folha.tsx`): a folha só desenha no navegador, direto no portal, e o foco/Esc entram
+  quando ela já existe.
+- `npx playwright test e2e/criacao-tpeasy.spec.ts e2e/quadro-pastas.spec.ts --repeat-each=5`: **55 passaram**, 15
+  pulados de propósito (projeto errado), 0 falharam. Antes da correção da `Folha`: 6 falhas em 16 só do teste das pastas.
+- Maestro: `lint`, `format:check`, `typecheck`, `build` ok; `npm test` **739/739**. `npx playwright test` completo:
+  **266 passaram** no Chromium (computador e iphone), 92 pulados; os 47 de `iphone-safari`/`computador-safari` não
+  rodaram aqui (o WebKit não está instalado neste ambiente: "Executable doesn't exist"), então a `Folha` no WebKit fica
+  para o CI. `node scripts/scan-secrets.mjs`: nenhum segredo em 4419 arquivos.
+
 ## Synquei + SOBEDESCE: organização por tipo de vídeo (06/11/2026)
 
 | Verificação                                                                     | Comando                                      | Resultado      |
@@ -4985,7 +5008,7 @@ VocalSplitter) e trazidos para o AEON, sem copiar marca nem nome.
   WAV estéreo de 44,1 kHz do trecho, `prepare → submit:stems-v1 → release`, Só voz, e o vídeo final sai com a voz
   (440 Hz) mais de 25 dB acima do instrumental (3 kHz); a entrega leva `show - Voz 0s.wav` e não o instrumental mudo.
 - NOSSOM (`lib/server/irmaos.ts`, `proxy.ts`, rota de pedidos): `tests/irmaos.test.ts` 4/4 (só a origem exata do AEON,
-  CORS nunca "*", pré-voo 204 só nos três caminhos, fechado o 403 chega com CORS, outra origem recusada, AEON só pede
+  CORS nunca "\*", pré-voo 204 só nos três caminhos, fechado o 403 chega com CORS, outra origem recusada, AEON só pede
   stems-v1); `npm test` 128/128, `tsc` limpo e `next build` OK.
 - AEON: `npm test` 221/222 (1 pulado: Whisper real sem rede); `xvfb-run electron . --smoke` OK.
 - Não validado: a NOSSOM de verdade (GPU, franquia, cookie entre os subdomínios em produção); marcadores e peças abertos

@@ -71,7 +71,9 @@ test.afterAll(async () => {
  */
 async function tpeasyLogado(page: Page) {
   const { sub } = sessao();
-  await page.route("**/api/zro/eu", (r) =>
+  // o TPeasy pergunta `/api/zro/eu?visitante=1` (sem sessão, 200 { entrou: false } em vez de 401); o glob sem o `**`
+  // final não casa com a query, e o servidor estático daqui responderia 404 (o app ficaria em "não sei" e não buscaria)
+  await page.route("**/api/zro/eu**", (r) =>
     r.fulfill({
       json: {
         entrou: true,
@@ -107,9 +109,12 @@ async function noBanco<T>(fn: (sql: postgres.Sql, org: string) => Promise<T>): P
   }
 }
 
-/** Um roteiro (cópia do da demonstração, sem versão), só deste projeto do Playwright. */
-async function semear(projeto: string): Promise<{ id: string; titulo: string }> {
-  const titulo = `Café Aurora · manifesto ${projeto === "iphone" ? "(celular)" : ""}`.trim();
+/**
+ * Um roteiro (cópia do da demonstração, sem versão), só deste projeto do Playwright. Cada repetição (`--repeat-each`) ou
+ * nova tentativa ganha o seu: o da volta anterior já tem a v1 enviada (a folha mostraria "Reenviar").
+ */
+async function semear(projeto: string, volta = 0): Promise<{ id: string; titulo: string }> {
+  const titulo = `Café Aurora · manifesto ${projeto === "iphone" ? "(celular)" : ""}${volta ? ` · ${volta + 1}` : ""}`.replace(/\s+/g, " ").trim();
   return noBanco(async (sql, org) => {
     const [ja] = await sql`select id from maestro.roteiros where org_id = ${org} and titulo = ${titulo}`;
     if (ja) return { id: ja.id as string, titulo };
@@ -208,7 +213,7 @@ for (const projeto of ["computador", "iphone"] as const) {
   }, info) => {
     test.skip(info.project.name !== projeto, projeto);
     const celular = projeto === "iphone";
-    const s = await semear(projeto);
+    const s = await semear(projeto, info.repeatEachIndex + info.retry * 100);
     await entrar(context, baseURL!);
     await tpeasyLogado(page);
     const url = `/app/criacao/roteiros/${s.id}`;
