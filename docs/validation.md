@@ -15,6 +15,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Synquei + SOBEDESCE: organização por tipo de vídeo (06/11/2026)
+
+| Verificação                                                                     | Comando                                      | Resultado      |
+| ------------------------------------------------------------------------------- | -------------------------------------------- | -------------- |
+| Synquei (momentos, pasta livre, relatório, Premiere/FCP, DaVinci em LuaJIT 2.1) | `cd products/synquei && npm test`            | **195/195**    |
+| SOBEDESCE (relatório da diária e do Drive, ponte do Synquei)                    | `cd products/sobedesce && npm run test:fast` | **799/799**    |
+| Segredos                                                                        | `node scripts/scan-secrets.mjs`              | nenhum segredo |
+
+- `tests/momentos.test.mjs`: casamento pela pasta e pelo horário (sugestão), marcado vence, lente só quando trocou,
+  clipe com takes e b-roll, EP/podcast/aula, evento/documentário/aftermovie.
+- `tests/organizar-livre.test.mjs`: pasta livre (fora `Synquei/`, `Exports/`, `.DS_Store`, `._*`), troca de tipo,
+  só abre arquivo de `Synquei/`; relatório sem script e escapado; bins do Premiere; keywords do Final Cut.
+- `tests/davinci.test.mjs` (agora com LuaJIT no ambiente): momento corrigido move o clipe dentro da diária, o bin da
+  pessoa fica, nada importado duas vezes, janelinha com os momentos.
+- `products/sobedesce/test/relatorio-backup.test.js` e `synquei-ponte.test.js`: relatório por câmera e cartão, só da
+  diária pedida, repetição conta uma vez, sem botão sem cartão, Drive só diz conferido com MD5, link synquei://.
+
 ## Rádio do set (05/11/2026, ADR 0042, proposta)
 
 - Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no

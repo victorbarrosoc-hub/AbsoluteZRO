@@ -12,9 +12,11 @@
 | `zro-event-envelope` + payloads  | v1                                                                 | todos (tabela em `packages/media-contracts/src/events.ts`)      |
 | `carro-do-freela.job`            | v1 (proposto)                                                      | Carro do Freela → HUB                                           |
 | `tpeasy.backup`                  | v1 (existente no TPeasy)                                           | TPeasy ↔ HUB                                                    |
-| `sobedesce.descargas.jsonl`      | v1 (existente no SOBEDESCE)                                        | SOBEDESCE → HUB/Synquei                                         |
+| `sobedesce.descargas.jsonl`      | v1 (existente no SOBEDESCE; `momento` opcional, até 60 caracteres) | SOBEDESCE → HUB/Synquei                                         |
 | `sobedesce.descarga` (Drive)     | v2 (linha `v: 2` no mesmo `descargas.jsonl`)                       | SOBEDESCE → Synquei (e HUB: `parseDescargas().drive`)           |
 | `synquei.preparo`                | v1 (`<pasta>/Synquei/preparos.jsonl`)                              | Synquei → SOBEDESCE (e HUB: `parsePreparos`)                    |
+| `synquei.relatorio`              | v1 (`<pasta>/Synquei/relatorio-<diária>.json` + HTML)              | Synquei → pessoa e editor (momentos, câmeras, linhas do tempo)  |
+| `sobedesce.relatorio`            | v1 (página local, sem arquivo)                                     | SOBEDESCE → pessoa (diária ou download, link para o Synquei)    |
 | `zro-pedido+jwt` (Drive da Z)    | v1 ([sobedesce-drive.md](sobedesce-drive.md))                      | HUB → SOBEDESCE                                                 |
 | `maestro.project`                | v1 (rascunho, [maestro-project.md](maestro-project.md))            | Maestro → HUB (etapa 3); peças via SOBEDESCE (etapa 2)          |
 | `maestro.escala`                 | só mapa ([maestro-carro-do-freela.md](maestro-carro-do-freela.md)) | Maestro → Carro do Freela (não implementado)                    |

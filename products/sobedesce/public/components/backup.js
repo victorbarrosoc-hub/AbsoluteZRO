@@ -7,7 +7,7 @@ import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
 import { bytes, count, plural, tildify, baseName } from '../lib/format.js'
 import { cx } from '../lib/ui.js'
-import { abrirNoSynquei, pickFolderPath } from '../lib/desktop.js'
+import { abrirNoSynquei, openExternal, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, Switch } from './common.js'
 import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, Pagina, Passo, Resumo, Stats, Vazio } from './kit.js'
@@ -527,7 +527,12 @@ function Painel({ v, topo, onNovo, onEditar }) {
   const synquei = p.synquei !== false && !v.job && v.ultimo?.resultado === 'ok'
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
-      ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
+      ${synquei || (!v.job && p.totalDiaria.descargas)
+        ? html`<div class="bk-proximo">
+            ${p.totalDiaria.descargas ? html`<${Button} icon="doc" variant="ghost" onClick=${() => openExternal(`/api/backup/relatorio?id=${encodeURIComponent(v.atual)}`)} title=${`Câmeras, cartões e conferência da ${p.diaria.nome}`}>Relatório</${Button}>` : null}
+            ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
+          </div>`
+        : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}
       </div>

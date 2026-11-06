@@ -353,6 +353,7 @@ class Organizador extends EventEmitter {
       cartao: c.cartao,
       pasta: c.pasta,
       resultado: c.resultado,
+      momento: c.momento || null,
       arquivos: c.lista.map((r) => ({ rel: `${c.pasta}/${r.rel}`, abs: path.join(p.raiz, ...c.pasta.split('/'), ...r.rel.split('/')), size: r.size, mtimeMs: r.mtimeMs })),
     }
   }
@@ -424,6 +425,8 @@ class Organizador extends EventEmitter {
         cartao: { n: Number(d.cartao.n) || numeroCartao(d.cartao.pasta.split('/').pop()) || 1, nome: d.cartao.nome || '' },
         pasta: d.cartao.pasta,
         resultado: d.resultado || 'ok',
+        // opcional: o momento que a pessoa marcou ao espetar o cartão ("Cerimônia", "Making da noiva", "Take 3"…)
+        ...(typeof d.momento === 'string' && d.momento.trim() ? { momento: d.momento.trim().slice(0, 60) } : {}),
         lista,
       })
     }

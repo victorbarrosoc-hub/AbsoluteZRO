@@ -17,6 +17,7 @@ import { scanLocal } from '../local/scan.js'
 import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
 import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from './synquei.js'
+import { dadosDaDiaria, relatorioHtml } from './relatorio.js'
 import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
 
 const VIGIA_MS = 3000
@@ -1102,6 +1103,37 @@ export class BackupService {
       } catch {}
     }
     throw new BackupError(409, 'Nenhum cartão deste projeto foi conferido ainda (ou o destino está desconectado).')
+  }
+
+  /**
+   * O relatório da diária (a atual, se não disser qual), montado do descargas.jsonl do primeiro destino que o tem.
+   * Devolve o HTML (src/backup/relatorio.js) e os dados.
+   */
+  async relatorio(id = this.dados.atual, n = null) {
+    const p = this.dados.projetos.find((x) => x.id === id)
+    if (!p) throw new BackupError(404, 'Projeto não encontrado.')
+    const diaria = n == null ? this.#diaria(p) : p.diarias.find((d) => d.n === Number(n))
+    if (!diaria) throw new BackupError(404, 'Diária não encontrada.')
+    const projeto = nomeDePasta(p.nome) || 'Projeto'
+    let linhas = []
+    let pasta = null
+    for (const d of p.destinos) {
+      try {
+        const texto = await fsp.readFile(path.join(d, projeto, RESUMO_PASTA, RESUMO_ARQUIVO), 'utf8')
+        pasta = path.join(d, projeto)
+        for (const l of texto.split('\n')) {
+          if (!l.trim()) continue
+          try {
+            linhas.push(JSON.parse(l))
+          } catch {}
+        }
+        break
+      } catch {}
+    }
+    const tipoLabel = (TIPOS_SYNQUEI.find((t) => t.id === p.tipo) || {}).label || ''
+    const link = pasta && p.synquei !== false ? linkSynquei(pasta, p.tipo) : null
+    const dados = dadosDaDiaria({ projeto: p.nome, diaria, linhas, tipoLabel, link, agora: this.agora() })
+    return { html: relatorioHtml(dados), dados }
   }
 
   async close() {

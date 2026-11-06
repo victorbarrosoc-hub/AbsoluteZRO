@@ -54,6 +54,14 @@ test('projeto com tipo: vai no resumo do cartão e no link; sem cartão conferid
   assert.equal(r.pasta, path.join(hd, 'Casamento Ana'))
   assert.equal(new URL(r.link).searchParams.get('tipo'), 'casamento')
 
+  // o relatório da diária: o cartão conferido, a câmera e o mesmo link do Synquei
+  const rel = await svc.relatorio()
+  assert.equal(rel.dados.total.cartoes, 1)
+  assert.equal(rel.dados.cameras.length, 1)
+  assert.equal(rel.dados.tipoLabel, 'Casamento')
+  assert.equal(rel.dados.link, r.link)
+  assert.match(rel.html, /Pode formatar os cartões/)
+
   await svc.editarProjeto(svc.view().atual, { tipo: '' })
   assert.equal(svc.view().projeto.tipo, null)
   assert.equal(new URL((await svc.paraSynquei()).link).searchParams.get('tipo'), null)

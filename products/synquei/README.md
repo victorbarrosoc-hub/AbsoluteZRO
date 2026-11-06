@@ -151,6 +151,45 @@ Como funciona:
 - **Janelinha no Resolve** com o mesmo desenho do app no tema escuro: título "Organizar", cartão de status com ícone, botões em pílula, os quadros Projeto/Fila/Último com os quadradinhos coloridos e "Últimos cartões" com a miniatura na cor da câmera e o selo Organizado (o histórico dos últimos 6 fica em `historico.txt`). O Qt do Resolve não desenha SVG nem cantos dentro do texto, então os ícones vão como PNG (`desktop/davinci-ui/`, gerados por `scripts/davinci-ui.cjs` com os desenhos do app). Quando o app atualiza, o script do Resolve é trocado sozinho (vale na próxima vez que abrir Workspace › Scripts › Synquei).
 - `desktop/davinci.cjs`: a ponte. O Resolve só deixa mexer no projeto por script (por isso o **Studio**: a versão grátis não aceita). O script Lua fica no menu Workspace › Scripts e conversa por uma pasta de troca: pedidos em Lua (`pedidos/000012.lua` + `indice.lua`), respostas em JSON, `vivo.json` a cada 3 s. No Windows a pasta fica em `C:\ProgramData\Synquei\davinci` (o Lua do Resolve não abre caminhos com acento).
 
+### Momentos: cada tipo de vídeo organizado do jeito dele (`app/js/momentos.js`)
+
+O tipo do projeto (escolhido no SOBEDESCE, no link ou em "Organizar uma pasta") decide como o material é separado:
+
+- **Por momento**: casamento (making da noiva e do noivo, decoração, cerimônia, votos, discursos, buffet, banda,
+  festa, ensaio), evento corporativo, aftermovie, documentário, culto, conteúdo, aula.
+- **Por take ou música**: videoclipe (performance em takes, cenas e b-roll), EP/sessão (uma linha por música), podcast
+  (episódios).
+- **Por câmera e bloco**: show, DVD, espetáculo, esporte.
+
+De onde vem o momento, nesta ordem: o que a pessoa marcou/corrigiu › o nome da pasta ("Cerimonia", "making noiva",
+"buffet", sem ligar para acento) › o horário (casamento: a sessão mais longa sincronizada é a cerimônia; antes,
+making; depois, festa) › sem pista. O que vem do horário aparece como **sugerido** para conferir, nunca escondido.
+B-roll: drone, pasta "broll"/"apoio" e, nos tipos musicais, o que não sincronizou pelo som. Câmera pelo nome do
+dono/aparelho e a lente pelo XML da Sony (subpasta por lente só quando a câmera trocou de lente).
+
+No editor (os originais não saem do lugar):
+
+- **DaVinci**: `Diária 01 › 03 Cerimônia › Câmeras › Aladim - FX30 › Cartão 01`, `… › B-roll`, `… › Áudio`,
+  `Linhas do tempo › 03 Cerimônia`; metadados Camera #, **Angle** (para o multicâmera), Shot (momento), Keywords
+  (diária, momento, câmera, lente, cartão, Principal/B-roll/Áudio), Lens Type, Scene/Take. Uma linha do tempo por
+  momento (ou take), o b-roll de cada momento numa linha em fila e "Sem sincronia (conferir)". Momento corrigido muda o
+  clipe de pasta **dentro da diária** (`MediaPool:MoveClips`); o que a pessoa levou para outra pasta fica onde ela pôs.
+  A janelinha mostra o tipo e os momentos do último cartão (o sugerido em laranja).
+- **Premiere**: `<projeto>/Synquei/Premiere/<diária>.xml`, sequências em bins por momento (multicâmera se ligado).
+- **Final Cut**: `<projeto>/Synquei/Final Cut/<diária>.fcpxml`, evento com os clipes e as keywords (viram coleções).
+- **Relatório**: `<projeto>/Synquei/Relatório · <diária>.html` (página sem script, clara/escura) e
+  `relatorio-<diária>.json` (`synquei.relatorio/1`): números, momentos com a origem, câmeras e lentes, áudio,
+  linhas do tempo, o que conferir e onde ficou cada coisa.
+
+### Organizar uma pasta (sem o SOBEDESCE)
+
+**Organizar › Organizar uma pasta**: escolha o tipo de vídeo e qualquer pasta do SSD. O Synquei lê tudo (menos
+`Synquei/`, `Assets/`, `Exports/`, `Relatórios/` e arquivos do sistema), sincroniza e mostra o **estudo**: arquivos,
+câmeras, horas de imagem, % sincronizado, b-roll e os momentos × câmera, cada um com a troca de momento. Confira,
+corrija se precisar e clique **Mandar para o DaVinci** (ou, com o DaVinci desligado, só os arquivos de Premiere e
+Final Cut). "Estudar de novo" lê só o que entrou; trocar o tipo estuda outra vez. A correção fica gravada no projeto
+(`momentosManual`) e vale para os próximos envios.
+
 ### Download do Drive ("Preparar no Synquei" do SOBEDESCE)
 
 Quando o SOBEDESCE termina e confere (MD5) o download de uma pasta do Drive, ele grava uma linha `v: 2` no

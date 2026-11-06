@@ -64,6 +64,7 @@ test('resumo: cada linha nova vira um cartão; linha pela metade espera; cancela
       diaria: { n: 1, nome: 'Diária 01' },
       dono: { nome: 'Aladim', camera: 'FX30', pasta: 'Aladim - FX30' },
       cartao: { n: 1, nome: 'SONY', pasta },
+      momento: '  Cerimônia  ',
       arquivos: [{ rel: 'PRIVATE/M4ROOT/CLIP/C0001.MP4' }, { rel: 'PRIVATE/M4ROOT/CLIP/C0001M01.XML' }, { rel: 'SOBEDESCE_copia_2026-10-24.xxh64' }, { rel: '../../../../fora.txt' }],
     }),
   )
@@ -74,6 +75,7 @@ test('resumo: cada linha nova vira um cartão; linha pela metade espera; cancela
   assert.equal(e.id, 'c1')
   assert.equal(e.diaria.n, 1)
   assert.equal(e.dono.camera, 'FX30')
+  assert.equal(e.momento, 'Cerimônia', 'o momento marcado no SOBEDESCE chega no evento')
   assert.equal(e.cor, 0)
   assert.equal(e.projetoId, null)
   assert.deepEqual(

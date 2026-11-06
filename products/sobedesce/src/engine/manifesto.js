@@ -144,6 +144,25 @@ export async function gravarManifesto(pasta, linha) {
   return true
 }
 
+/** A última linha v2 deste `op` no descargas.jsonl da pasta (ou null). */
+export async function lerManifesto(pasta, op) {
+  let texto = ''
+  try {
+    texto = await fs.readFile(path.join(pasta, RESUMO_PASTA, RESUMO_ARQUIVO), 'utf8')
+  } catch {
+    return null
+  }
+  let ultima = null
+  for (const l of texto.split('\n')) {
+    if (!l.includes(op)) continue
+    try {
+      const d = JSON.parse(l)
+      if (d?.v === 2 && d.op === op) ultima = d
+    } catch {}
+  }
+  return ultima
+}
+
 /** A pasta está lá e dá para ler? 'ok' | 'sem_pasta' (apagada, movida, disco desconectado) | 'sem_permissao'. */
 export async function acessoDaPasta(pasta) {
   try {

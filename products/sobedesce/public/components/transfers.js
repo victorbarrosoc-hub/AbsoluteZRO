@@ -225,6 +225,7 @@ function PrepararSynquei({ batch, finished }) {
         </span>`
       : null}
     ${e.atualizar ? html`<${Button} size="sm" variant="ghost" icon="external" title="Página Downloads da Absolute ZRO" onClick=${() => openExternal(SYNQUEI_ATUALIZAR)}>Atualizar o Synquei</${Button}>` : null}
+    ${batch.synquei?.pasta ? html`<${Button} size="sm" variant="ghost" icon="doc" title="O que baixou, por pasta, e a conferência do MD5" onClick=${() => openExternal(`/api/transfers/relatorio?batchId=${encodeURIComponent(batch.id)}`)}>Relatório</${Button}>` : null}
     ${e.botao ? html`<${Button} size="sm" icon="arrow-right" disabled=${abrindo} title=${e.detalhe || 'Abre a pasta baixada no Synquei'} onClick=${preparar}>Preparar no Synquei</${Button}>` : null}
   </div>`
 }

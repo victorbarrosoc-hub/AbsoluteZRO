@@ -3,6 +3,9 @@
 import path from 'node:path'
 import { BackupService } from '../backup/servico.js'
 
+// a página do relatório: só CSS em linha, nada de script, e só o link synquei:// sai dela
+export const RELATORIO_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+
 /**
  * @param {{ route, ctx, HttpProblem, servico?: BackupService }} o
  * @returns {{ view(): object, close(): Promise<void> }}
@@ -33,6 +36,20 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
   const lista = (v) => (Array.isArray(v) ? v.slice(0, 4).map((x) => texto(x)) : null)
 
   route('GET', '/api/backup', tratar(async () => svc.view()))
+
+  // Relatório da diária (src/backup/relatorio.js): página sem script, aberta no navegador pelo botão "Relatório".
+  route(
+    'GET',
+    '/api/backup/relatorio',
+    tratar(async ({ res, query }) => {
+      const n = query.get('diaria')
+      const { html } = await svc.relatorio(texto(query.get('id'), 100) || undefined, n != null && /^\d{1,4}$/.test(n) ? Number(n) : null)
+      const corpo = Buffer.from(html, 'utf8')
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'content-security-policy': RELATORIO_CSP, 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'content-length': corpo.length })
+      res.end(corpo)
+    }),
+    { raw: true },
+  )
 
   route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false })))
 
