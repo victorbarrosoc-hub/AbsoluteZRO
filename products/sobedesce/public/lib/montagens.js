@@ -129,19 +129,23 @@ export const ASPECTOS_FAIXA = [
   { id: 'cheio', nome: 'Tela cheia', v: null },
 ]
 export const FAIXAS_N = [2, 3, 4, 5, 6]
-export const FAIXAS_PADRAO = Object.freeze({ n: 3, aspecto: '16:9', seguro: true })
+export const FAIXAS_PADRAO = Object.freeze({ n: 3, aspecto: '16:9', seguro: true, antesDepois: false })
+/** Antes e depois: as faixas vão em pares (o arquivo em cima, a cor embaixo), com o rótulo de cada uma. */
+export const ROTULOS_ANTES_DEPOIS = Object.freeze(['ANTES', 'DEPOIS'])
 /** Zona dos Stories que a interface do Instagram cobre (perfil em cima; responder e figurinhas embaixo), em 1080×1920. */
 export const ZONA_STORIES = Object.freeze({ topo: 250 / 1920, base: 340 / 1920 })
 
 /** O modelo "Faixas": `n` frames um embaixo do outro, no formato `aspecto`, fora da zona dos Stories se `seguro`. */
 export function modeloFaixas(f = FAIXAS_PADRAO) {
-  const n = FAIXAS_N.includes(f?.n) ? f.n : FAIXAS_PADRAO.n
+  // na tela, de 2 a 6; o último story de um lote pode sair com menos (1 inclusive)
+  const n = Number.isInteger(f?.n) && f.n >= 1 && f.n <= 6 ? f.n : FAIXAS_PADRAO.n
   const a = ASPECTOS_FAIXA.find((x) => x.id === f?.aspecto) || ASPECTOS_FAIXA[0]
   const seguro = f?.seguro !== false
+  const antesDepois = f?.antesDepois === true
   return {
     id: 'faixas',
-    nome: a.v ? `Faixas ${a.nome}` : 'Faixas',
-    faixas: { n, aspecto: a.id, v: a.v, seguro },
+    nome: `${antesDepois ? 'Antes e depois' : 'Faixas'}${a.v ? ` ${a.nome}` : ''}`,
+    faixas: { n, aspecto: a.id, v: a.v, seguro, antesDepois, rotulos: antesDepois ? ROTULOS_ANTES_DEPOIS : null },
     // em fração só para contar e para quem não sabe das faixas; as caixas de verdade saem de caixasDe
     caixas: Array.from({ length: n }, (_, i) => [0, i / n, 1, 1 / n]),
   }
@@ -294,6 +298,7 @@ export function desenharMontagem(
   { formato, modelo, imagens = [], enquadres = [], espaco = 0, cantos = 0, fundo = '#ffffff', escala = 1, destaque = -1, vazio = '#e5e5ea', buracos = null },
 ) {
   const f = typeof formato === 'string' ? formatoPorId(formato) : formato
+  const m = typeof modelo === 'string' ? modeloPorId(modelo) : modelo
   const W = Math.round(f.w * escala)
   const H = Math.round(f.h * escala)
   if (canvas.width !== W) canvas.width = W
@@ -320,6 +325,28 @@ export function desenharMontagem(
       ctx.fillRect(c.x, c.y, c.w, c.h)
     }
     ctx.restore()
+    // rótulos das faixas (antes e depois): uma pílula escura no canto de cima, à esquerda
+    const rotulo = m?.faixas?.rotulos?.[i % m.faixas.rotulos.length]
+    if (rotulo) {
+      ctx.save()
+      const fs = Math.max(9, Math.round(W * 0.02))
+      ctx.font = `700 ${fs}px -apple-system, "SF Pro Text", Inter, system-ui, sans-serif`
+      const pad = Math.round(fs * 0.55)
+      const tw = ctx.measureText(rotulo).width + (rotulo.length - 1) * fs * 0.12
+      const x = c.x + Math.round(c.w * 0.025)
+      const y = c.y + Math.round(c.w * 0.025)
+      ctx.fillStyle = 'rgba(0,0,0,0.62)'
+      caminhoArredondado(ctx, x, y, tw + pad * 2, fs + pad * 1.3, (fs + pad * 1.3) / 2)
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.textBaseline = 'middle'
+      let px = x + pad
+      for (const ch of rotulo) {
+        ctx.fillText(ch, px, y + (fs + pad * 1.3) / 2)
+        px += ctx.measureText(ch).width + fs * 0.12
+      }
+      ctx.restore()
+    }
     if (i === destaque) {
       ctx.save()
       ctx.lineWidth = Math.max(2, 3 * (W / 1080))

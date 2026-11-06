@@ -136,6 +136,7 @@ export class FramesService {
     this.job = null
     this.cache = new Map() // id → manifesto
     this.fila = Promise.resolve() // edições de um manifesto, uma de cada vez
+    this.filaCartoes = [] // pré-color automático: cartões esperando a vez (um trabalho por vez)
   }
 
   dirDe(id) {
@@ -244,6 +245,7 @@ export class FramesService {
       () => {
         job.status = 'done'
         this.onChange(this.view(job))
+        this.#proximoCartao()
       },
       (err) => {
         if (job.ac.signal.aborted) {
@@ -255,6 +257,7 @@ export class FramesService {
           this.log('frames falhou:', err?.stack || err)
         }
         this.onChange(this.view(job))
+        this.#proximoCartao()
       },
     )
     return job.id
@@ -410,6 +413,53 @@ export class FramesService {
     return c?.cube ? { lut: c.cube, matriz: c.matriz, faixa: c.faixa } : null
   }
 
+  // ── pré-color automático (Cartões › Backup Automático, docs/FRAMES.md "Pasta ou cartão")
+
+  /** A cor que cada dono (câmera) usou por último, guardada aqui para o pré-color automático rodar sem a tela. */
+  async corDoDono(donoId) {
+    const todas = await readJSON(path.join(this.root, 'cor-donos.json'), {})
+    return todas && typeof todas === 'object' ? (todas[donoId] ?? null) : null
+  }
+  async guardarCorDoDono(donoId, cor) {
+    if (!donoId) return
+    const arq = path.join(this.root, 'cor-donos.json')
+    const todas = (await readJSON(arq, {})) || {}
+    todas[donoId] = cor ?? null
+    await fs.mkdir(this.root, { recursive: true })
+    await writeJSONAtomic(arq, todas)
+  }
+
+  /**
+   * Um cartão conferido (a descarga do Backup Automático): um frame por clipe da pasta do vídeo, com a cor que o dono
+   * usou da última vez (sem nenhuma: o Rec.709 da câmera). Rodando outro trabalho, espera a vez.
+   */
+  async precolorDoCartao({ pastaVideo, donoId = null, dono = null, cartao = null }) {
+    if (!pastaVideo || !(await existe(pastaVideo))) return null
+    let cor = donoId ? await this.corDoDono(donoId) : null
+    if (cor?.lut && !(await this.lut(cor.lut.id).catch(() => null))) cor = null // a LUT saiu da lista
+    if (!cor) cor = { modo: '709', perfil: 'auto', lut: null, espera: 'log', intensidade: 1, ajustes: lerAjustes({}) }
+    const pedido = {
+      origem: { tipo: 'pasta', caminho: pastaVideo },
+      ajustes: { frames: { quantidade: 1, formato: 'jpg', logo: false }, takes: null, logo: null, destino: null, subir: null, cor, donoId, nome: [dono, cartao].filter(Boolean).join(' · ') || null, automatico: true },
+    }
+    if (this.job?.status === 'running') {
+      this.filaCartoes.push(pedido)
+      return 'fila'
+    }
+    return this.iniciar(pedido)
+  }
+
+  #proximoCartao() {
+    const p = this.filaCartoes.shift()
+    if (p) setImmediate(() => {
+      try {
+        this.iniciar(p)
+      } catch (err) {
+        this.log('frames: pré-color do cartão', err?.message)
+      }
+    })
+  }
+
   /** Quantos clipes uma pasta tem (para a tela, antes de começar) e o primeiro (para a prévia da cor). */
   async lerPasta(caminho) {
     const { clipes, ignorados } = await listarClipes(caminho)
@@ -423,7 +473,8 @@ export class FramesService {
   async #rodarPasta(job, origem, aj, ffmpeg) {
     const signal = job.ac.signal
     const raiz = origem.caminho
-    const nome = path.basename(raiz) || 'Pasta'
+    // do Backup Automático: "Bia - Komodo · Cartão 03"; senão, o nome da pasta
+    const nome = String(aj.nome || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100) || path.basename(raiz) || 'Pasta'
     job.videoNome = nome
     this.#fase(job, 'lendo', 0, 'Procurando os clipes…')
     const { clipes, ignorados } = await listarClipes(raiz)
@@ -654,8 +705,16 @@ export class FramesService {
     const destino = path.join(m.pasta, rel)
     await fs.mkdir(path.dirname(destino), { recursive: true })
     const logo = m.ajustes.frames.logo && m.ajustes.logo ? m.ajustes.logo : null
-    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, cor: this.#corDe(m, f.cena), signal })
+    const cor = this.#corDe(m, f.cena)
+    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, cor, signal })
     await miniatura({ ffmpeg, entrada: destino, destino: path.join(this.dirDe(m.id), 'mini', `${f.id}.jpg`), signal })
+    // com cor, o mesmo quadro sem ela (o "antes" das montagens), na pasta de dados: a pasta entregue fica só com a cor
+    if (cor) {
+      const antes = path.join(this.dirDe(m.id), 'antes', `${f.id}.jpg`)
+      await fs.mkdir(path.dirname(antes), { recursive: true })
+      await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino: antes, formato: 'jpg', logo, largura: Math.min(2160, m.video.largura || 2160), signal })
+      f.antes = antes
+    }
     return rel
   }
 

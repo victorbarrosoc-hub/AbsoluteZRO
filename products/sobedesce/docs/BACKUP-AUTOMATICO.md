@@ -161,6 +161,9 @@ Com o cartão OK, **Frames do cartão** abre Estúdio › Frames na pasta do ví
 (`pastaVideo` na descarga): um frame por clipe, com a LUT e o ajuste que o dono usou da última vez (docs/FRAMES.md,
 "Pasta ou cartão"). Os frames ficam em Downloads › Frames; o cartão e a cópia não mudam.
 
+Com **Frames com cor ao terminar o cartão** ligado no projeto (`precolor`), isso acontece sozinho a cada cartão OK, com a
+cor que o dono usou por último; o botão vira "Ver os frames do cartão".
+
 ## Preparar no Synquei
 
 - **Usar o Synquei** (chave do projeto, ligada por padrão): desligada, a tela não mostra o tipo nem o "Preparar no

@@ -118,6 +118,8 @@ function normalizarProjeto(p) {
     midia: midiaDe(p.midia),
     // Usar o Synquei: desligado, a tela não oferece o "Preparar no Synquei" (o resumo descargas.jsonl continua: o HUB lê).
     synquei: p.synquei !== false,
+    // Pré-color: com o cartão OK, o Frames faz um frame por clipe com a cor do dono, sozinho (docs/FRAMES.md)
+    precolor: p.precolor === true,
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
     diaria: Number(p.diaria) || 1,
@@ -237,6 +239,7 @@ export class BackupService {
         tipo: p.tipo,
         midia: p.midia,
         synquei: p.synquei,
+        precolor: p.precolor === true,
         destinos: p.destinos.map((c) => {
           const agora = this.destinosAgora.find((x) => x.caminho === c)
           return { caminho: c, nome: path.basename(c) || c, conectado: agora ? agora.conectado : null, livre: agora?.livre ?? null, total: agora?.total ?? null }
@@ -309,11 +312,11 @@ export class BackupService {
 
   // ───── projetos ─────
 
-  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null, midia = 'tudo', synquei = true } = {}) {
+  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null, midia = 'tudo', synquei = true, precolor = false } = {}) {
     if (this.job) throw new BackupError(409, 'Espere a descarga de agora terminar.')
     const n = nomeDePasta(nome)
     if (!n) throw new BackupError(400, 'Dê um nome ao projeto.')
-    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo, midia, synquei: synquei !== false })
+    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo, midia, synquei: synquei !== false, precolor: precolor === true })
     this.dados.projetos.unshift(p)
     this.dados.atual = p.id
     // Quem cria o projeto quer espetar o cartão em seguida: já liga (a tela mostra a chave para desligar).
@@ -325,7 +328,7 @@ export class BackupService {
     return this.view()
   }
 
-  async editarProjeto(id, { nome, destinos, ejetar, tipo, midia, synquei } = {}) {
+  async editarProjeto(id, { nome, destinos, ejetar, tipo, midia, synquei, precolor } = {}) {
     const p = this.dados.projetos.find((x) => x.id === id)
     if (!p) throw new BackupError(404, 'Projeto não encontrado.')
     if (this.job && this.dados.atual === id && (nome !== undefined || destinos !== undefined)) throw new BackupError(409, 'Espere a descarga de agora terminar para mudar o nome ou os destinos.')
@@ -342,6 +345,7 @@ export class BackupService {
     if (tipo !== undefined) p.tipo = tipoSynquei(tipo)
     if (midia !== undefined) p.midia = midiaDe(midia)
     if (synquei !== undefined) p.synquei = synquei !== false
+    if (precolor !== undefined) p.precolor = precolor === true
     await this.#salvar()
     this.#mudou(true)
     return this.view()
@@ -1015,6 +1019,11 @@ export class BackupService {
     p.total = { bytes: p.total.bytes + bytes, arquivos: p.total.arquivos + copiados, descargas: p.total.descargas + 1 }
     await this.#salvar()
     this.ultimo = { ...entrada, listaFaltam: faltam.slice(0, LISTA_MAX), listaAlertas: alertas.slice(0, LISTA_MAX), destinos: p.destinos.map((d) => path.basename(d) || d) }
+    // pré-color: cartão OK, o Frames faz os frames com a cor do dono (depois da cópia, sem segurar a descarga)
+    if (resultado === 'ok' && p.precolor && entrada.pastaVideo && this.aoTerminarCartao) {
+      const ok = entrada
+      setImmediate(() => Promise.resolve(this.aoTerminarCartao(ok)).catch((err) => this.log('backup: pré-color', err?.message || err)))
+    }
     const ainda = this.vistos.get(reg.caminho)
     if (ainda) {
       ainda.estado = p.ignorados.includes(ainda.id) ? 'ignorado' : resultado // "Não é cartão" no meio da descarga

@@ -417,6 +417,8 @@ function Novo({ onComecou }) {
           destino,
           subir,
           cor: corPedido(aj.cor),
+          // cartão do Backup Automático: o dono (a cor dele fica guardada para o pré-color automático) e o nome
+          ...(video.tipo === 'pasta' ? { donoId: video.donoId || null, nome: video.nome } : {}),
         },
       }),
     )
@@ -1177,8 +1179,9 @@ function Trabalho({ id }) {
   }
 
   /** Os frames (já com a cor) vão para Estúdio › Montagens, no modelo Faixas em 9:16, prontos para os Stories. */
-  const montarStory = () => {
-    const fotos = ativos.map((f) => juntar(m.pasta, f.arquivo)).slice(0, 60)
+  const montarStory = (antesDepois = false) => {
+    // antes e depois: cada frame vira um par (o mesmo quadro sem a cor, em cima; com a cor, embaixo)
+    const fotos = (antesDepois ? ativos.filter((f) => f.antes).flatMap((f) => [f.antes, juntar(m.pasta, f.arquivo)]) : ativos.map((f) => juntar(m.pasta, f.arquivo))).slice(0, 60)
     const antes = storage.get('montagens.rascunho', null) || {}
     storage.set('montagens.rascunho', {
       ...antes,
@@ -1186,7 +1189,7 @@ function Trabalho({ id }) {
       tipo: 'post',
       formato: '9x16',
       modelo: 'faixas',
-      faixas: { n: Math.min(5, Math.max(2, fotos.length)), aspecto: '16:9', seguro: true },
+      faixas: antesDepois ? { n: 4, aspecto: '16:9', seguro: true, antesDepois: true } : { n: Math.min(5, Math.max(2, fotos.length)), aspecto: '16:9', seguro: true, antesDepois: false },
       quadros: [],
       enquadres: [],
       trechos: {},
@@ -1210,7 +1213,8 @@ function Trabalho({ id }) {
       </div>
       <div class="page-head-actions">
         <${Button} icon="reveal" onClick=${() => revealPath(m.pasta)} title=${shortPath(m.pasta, home)}>${revealLabel()}</${Button}>
-        <${Button} icon="grid" disabled=${rodando || !ativos.length} onClick=${montarStory} title="Os frames em faixas, um embaixo do outro, prontos para os Stories">Montar story</${Button}>
+        <${Button} icon="grid" disabled=${rodando || !ativos.length} onClick=${() => montarStory(false)} title="Os frames em faixas, um embaixo do outro, prontos para os Stories">Montar story</${Button}>
+        ${ativos.some((f) => f.antes) ? html`<${Button} icon="stack" disabled=${rodando} onClick=${() => montarStory(true)} title="Cada frame em par: o arquivo em cima, a cor embaixo">Antes e depois</${Button}>` : null}
         <${Button} variant="primary" icon="upload" loading=${subindo} disabled=${rodando} onClick=${subir}>Subir pro Drive</${Button}>
         <${IconButton} icon="trash" label="Tirar da lista" onClick=${esquecer} />
       </div>

@@ -207,7 +207,11 @@ export function registerFrames({ route, ctx, account, HttpProblem, baseHeaders, 
     const subirPara = alvoDrive(a.subir)
     const cor = corPedida(a.cor)
     if (cor?.lut) await svc.lut(cor.lut.id)
-    const jobId = svc.iniciar({ origem, ajustes: { frames, takes, logo, destino, subir: subirPara, cor } })
+    // pasta de um cartão do Backup Automático: o dono (a cor dele volta no pré-color automático) e o nome do trabalho
+    const donoId = origem.tipo === 'pasta' && typeof a.donoId === 'string' && /^don[\w-]{4,40}$/.test(a.donoId) ? a.donoId : null
+    const nome = origem.tipo === 'pasta' && typeof a.nome === 'string' ? a.nome.slice(0, 120) : null
+    const jobId = svc.iniciar({ origem, ajustes: { frames, takes, logo, destino, subir: subirPara, cor, donoId, nome } })
+    if (donoId) await svc.guardarCorDoDono(donoId, cor).catch((err) => ctx.log?.('frames: cor do dono', err?.message))
     return { jobId }
   }))
 

@@ -167,6 +167,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   // Projeto novo pergunta o que passa (nada escolhido no começo); o antigo já passava tudo.
   const [midia, setMidia] = useState(inicial ? inicial.midia || 'tudo' : null)
   const [synquei, setSynquei] = useState(inicial ? inicial.synquei !== false : true)
+  const [precolor, setPrecolor] = useState(!!inicial?.precolor)
   const [ligar, setLigar] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const ds = destinos.filter(Boolean)
@@ -174,7 +175,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   const salvar = async () => {
     setOcupado(true)
     const tipoFinal = synquei ? tipo : ''
-    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei })
+    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei, precolor }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei, precolor })
     setOcupado(false)
     if (r) onPronto?.()
   }
@@ -242,6 +243,9 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
             </${Linha}>`}
         <${Linha} titulo="Ejetar o cartão ao terminar" sub="Só quando estiver tudo certo em todos os destinos.">
           <${Switch} checked=${ejetar} label="Ejetar o cartão ao terminar" onChange=${setEjetar} />
+        </${Linha}>
+        <${Linha} titulo="Frames com cor ao terminar o cartão" sub=${precolor ? 'Cartão OK: um frame por clipe, com a LUT e o ajuste da câmera daquele dono (Estúdio › Frames).' : 'Desligado: os frames saem quando você tocar em “Frames do cartão”.'}>
+          <${Switch} checked=${precolor} label="Frames com cor ao terminar o cartão" onChange=${setPrecolor} />
         </${Linha}>
         <${Linha} titulo="Usar o Synquei" sub=${synquei ? 'No fim, “Preparar no Synquei” organiza a mídia no DaVinci.' : 'Desligado: sem o botão do Synquei.'}>
           <${Switch} checked=${synquei} label="Usar o Synquei" onChange=${setSynquei} />
@@ -529,12 +533,13 @@ function Painel({ v, topo, onNovo, onEditar }) {
   // Cartão conferido: os brutos dele viram frames com a cor da câmera do dono (Estúdio › Frames, "Pasta ou cartão")
   const framesDoCartao = !v.job && v.ultimo?.resultado === 'ok' && !!v.ultimo.pastaVideo
   const abrirFrames = () => {
-    storage.set('frames.pedido', { caminho: v.ultimo.pastaVideo, nome: `${v.ultimo.dono} · ${v.ultimo.cartao}`, donoId: v.ultimo.donoId })
+    // com o pré-color ligado, os frames já estão sendo feitos: só abre o Frames (o andamento e o histórico)
+    if (!p.precolor) storage.set('frames.pedido', { caminho: v.ultimo.pastaVideo, nome: `${v.ultimo.dono} · ${v.ultimo.cartao}`, donoId: v.ultimo.donoId })
     navigate('frames')
   }
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
-      ${framesDoCartao ? html`<${Button} icon="sparkle" class="bk-synquei" onClick=${abrirFrames} title="Um frame por clipe, com a cor (LUT e ajuste) da câmera deste dono">Frames do cartão</${Button}>` : null}
+      ${framesDoCartao ? html`<${Button} icon="sparkle" class="bk-synquei" onClick=${abrirFrames} title="Um frame por clipe, com a cor (LUT e ajuste) da câmera deste dono">${p.precolor ? 'Ver os frames do cartão' : 'Frames do cartão'}</${Button}>` : null}
       ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}

@@ -266,10 +266,21 @@ test('faixas: frames empilhados no formato do frame, centrados e fora da zona do
   const feed = caixasDe(modeloFaixas({ n: 4, aspecto: '2.39', seguro: true }), { w: 1080, h: 1350, espaco: 0, borda: false })
   assert.ok(feed[0].y < 1350 * ZONA_STORIES.topo)
   // valores fora da lista voltam ao padrão; a montagem salva acha o modelo; o toque acha a faixa
+  assert.equal(modeloFaixas({ n: 1 }).faixas.n, 1) // o último story de um lote
   const m = modeloFaixas({ n: 9, aspecto: 'x' })
   assert.equal(m.faixas.n, 3)
   assert.equal(m.faixas.aspecto, ASPECTOS_FAIXA[0].id)
   assert.equal(modeloDe({ modelo: 'faixas', faixas: { n: 4, aspecto: '1.85', seguro: true } }).caixas.length, 4)
   assert.equal(modeloDe({ modelo: 'quatro' }).id, 'quatro')
   assert.equal(quadroNoPonto(modeloFaixas({ n: 3 }), { w: 1080, h: 1920, espaco: 20 }, 540, tres[1].y + 10), 1)
+})
+
+test('faixas antes e depois: pares com rótulo (ANTES em cima, DEPOIS embaixo); sem a chave, sem rótulo', async () => {
+  const { modeloFaixas, modeloDe, ROTULOS_ANTES_DEPOIS } = await import('../public/lib/montagens.js')
+  const ad = modeloFaixas({ n: 4, aspecto: '2.39', seguro: true, antesDepois: true })
+  assert.equal(ad.nome, 'Antes e depois 2,39')
+  assert.deepEqual(ad.faixas.rotulos, ROTULOS_ANTES_DEPOIS)
+  assert.deepEqual([0, 1, 2, 3].map((i) => ad.faixas.rotulos[i % 2]), ['ANTES', 'DEPOIS', 'ANTES', 'DEPOIS'])
+  assert.equal(modeloFaixas({ n: 4 }).faixas.rotulos, null)
+  assert.equal(modeloDe({ modelo: 'faixas', faixas: { n: 2, antesDepois: true } }).faixas.antesDepois, true)
 })

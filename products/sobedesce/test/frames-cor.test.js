@@ -253,6 +253,12 @@ test('Frames de uma pasta (cartão): um frame por clipe, com a cor, proxy e RAW 
     assert.ok(f.t > 0.3 && f.t < 3.7, `t ${f.t}`)
   }
   assert.equal(m.takes.length, 0)
+  // o "antes" (sem a cor) fica na pasta de dados, para as montagens de antes e depois
+  for (const f of m.frames) {
+    assert.ok(f.antes && !f.antes.startsWith(m.pasta), f.antes)
+    const [ar, , ab] = media(f.antes)
+    assert.ok(ar > 150 && ab < 80, `antes sem a cor: ${ar},${ab}`)
+  }
   // outro frame do clipe: troca por outro ponto do mesmo clipe, com a cor
   const m2 = await svc.maisUm(id, { trocar: m.frames[1].id })
   const novo = m2.frames.find((f) => !f.descartado && f.cena === 2)
@@ -270,4 +276,47 @@ test('Frames de uma pasta (cartão): um frame por clipe, com a cor, proxy e RAW 
   while (svc.job.status === 'running') await new Promise((res) => setTimeout(res, 50))
   assert.equal(svc.job.status, 'error')
   assert.match(svc.job.erro, /só tem RAW/)
+})
+
+test('pré-color automático do cartão: a cor do dono (guardada), o nome do trabalho e a fila de cartões', { skip: semFfmpeg, timeout: 240_000 }, async (t) => {
+  const dir = await makeTmpDir('sobedesce-frames-auto-')
+  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 3 }))
+  const c1 = path.join(dir, 'Cartão 01')
+  const c2 = path.join(dir, 'Cartão 02')
+  for (const c of [c1, c2]) {
+    await fs.mkdir(c, { recursive: true })
+    filmeVermelho(path.join(c, 'C0001.mp4'))
+  }
+  const lutArq = path.join(dir, 'Troca.cube')
+  await fs.writeFile(lutArq, cubeDe((r, g, b) => [b, g, r], 17))
+  const svc = new FramesService({
+    dataRoot: path.join(dir, 'dados'),
+    motor: async () => ({ ffmpeg: { path: ffmpeg }, encoder: { nome: 'libx264' } }),
+    drive: () => assert.fail('não usa o Drive'),
+    baixar: () => assert.fail('não baixa'),
+    subir: async () => ({ count: 0 }),
+    pastaPadrao: () => path.join(dir, 'Frames'),
+  })
+  const lut = await svc.guardarLut({ tipo: 'local', caminho: lutArq })
+  await svc.guardarCorDoDono('donBia123', { modo: 'lut', perfil: 'auto', lut: { id: lut.id }, espera: 'log', intensidade: 1, ajustes: {} })
+  assert.equal((await svc.corDoDono('donBia123')).lut.id, lut.id)
+  // dois cartões seguidos: o segundo espera a vez
+  const a = await svc.precolorDoCartao({ pastaVideo: c1, donoId: 'donBia123', dono: 'Bia - FX3', cartao: 'Cartão 01' })
+  const b = await svc.precolorDoCartao({ pastaVideo: c2, donoId: 'donOutro1', dono: 'Rapha - A7', cartao: 'Cartão 02' })
+  assert.match(a, /^frm_/)
+  assert.equal(b, 'fila')
+  const fim = Date.now() + 120_000
+  while ((await svc.historico()).length < 2 || svc.job.status === 'running') {
+    assert.ok(Date.now() < fim, 'os dois cartões terminam')
+    await new Promise((res) => setTimeout(res, 100))
+  }
+  const [segundo, primeiro] = await Promise.all((await svc.historico()).map((h) => svc.manifesto(h.id)))
+  assert.equal(primeiro.video.nome, 'Bia - FX3 · Cartão 01')
+  assert.equal(primeiro.pasta, path.join(dir, 'Frames', 'Bia - FX3 · Cartão 01 — Frames'))
+  const [r, , bl] = media(path.join(primeiro.pasta, primeiro.frames[0].arquivo))
+  assert.ok(bl > 150 && r < 80, 'com a LUT do dono')
+  // dono sem cor guardada: o Rec.709 da câmera
+  assert.equal(segundo.cor.modo, '709')
+  // pasta que sumiu: nada acontece
+  assert.equal(await svc.precolorDoCartao({ pastaVideo: path.join(dir, 'não existe') }), null)
 })

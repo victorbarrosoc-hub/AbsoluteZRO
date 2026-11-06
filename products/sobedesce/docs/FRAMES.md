@@ -101,6 +101,13 @@ a cor:
 - **Frames do cartão** (Cartões › Backup Automático): com o "Cartão OK", o botão abre o Frames com a pasta do vídeo do
   cartão no primeiro destino (`pastaVideo` na descarga). A cor que aquele dono usou fica lembrada e volta no próximo
   cartão dele.
+- **Pré-color automático**: com "Frames com cor ao terminar o cartão" ligado no projeto, o cartão OK já vira frames
+  sozinho (`FramesService.precolorDoCartao`), com a cor que o dono usou por último (guardada no motor,
+  `frames/cor-donos.json`; sem nenhuma, o Rec.709 da câmera). O trabalho se chama "Dono · Cartão NN". Rodando outro
+  trabalho, o cartão espera a vez (uma fila); a cópia nunca espera a cor.
+
+Com cor, cada frame tem também o **antes** (o mesmo quadro sem a cor, até 2160 px) na pasta de dados do trabalho
+(`antes/F001.jpg`): a pasta entregue continua só com a cor.
 
 ## API
 
@@ -168,6 +175,11 @@ com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1
 mudar o formato. Num formato vertical, a **zona segura dos Stories** (ligada no padrão) deixa livres os 250 px de cima e
 os 340 px de baixo (em 1080×1920), onde ficam o perfil e o "responder". No trabalho do Frames, **Montar story** abre a
 Montagens com os frames (já com a cor) em Faixas 9:16 (`public/lib/montagens.js` › `modeloFaixas`).
+
+- **Antes e depois**: as faixas vão em pares, o arquivo em cima e a cor embaixo, com o rótulo ANTES/DEPOIS (1 a 3 pares).
+  No trabalho do Frames com cor, o botão **Antes e depois** abre a Montagens já em pares.
+- **Todas em stories**: as fotos na ordem, em grupos do tamanho do modelo, um JPG para cada grupo ("Nome 01", "Nome
+  02"…); o último sai só com as faixas que tem.
 
 Motor (`src/server/montagens.js`), tudo com a chave da mídia: `GET /api/montagens/foto` (TIFF e HEIC viram JPEG de
 cache), `GET /api/montagens/info` (duração, tamanho, som do take), `GET /api/montagens/quadro?t=&l=` (um quadro do take,
