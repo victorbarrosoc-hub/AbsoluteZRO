@@ -15,6 +15,7 @@ import { Thumb } from './thumb.js'
 import { FileName } from './queue.js'
 import { copiarLinks } from './selecao.js'
 import { framesDoDrive } from './criar.js'
+import { montagemDoDrive } from './montagens.js'
 import { enviarPara } from './browser.js'
 
 function Item({ icon, label, sub, onClick, disabled, perigo, href }) {
@@ -157,6 +158,7 @@ export function ItemMenuSheet({ f, onAbrir, onSelecionar, dest, inicio, driveId,
             ${pasta ? html`<${Item} icon="disk" label="Calcular tamanho" onClick=${fechar(() => folderSizes.start({ id: t.id, driveId: driveId || f.driveId || null }, { refresh: true }))} />` : null}
             ${video ? html`<${Item} icon="film" label="Gerar proxy" sub="O computador gera a cópia leve" onClick=${() => openSheet('proxySelecao', { itens: [f], fora: 0 })} />` : null}
             ${video ? html`<${Item} icon="sparkle" label="Frames" onClick=${fechar(() => framesDoDrive(f))} />` : null}
+            ${!pasta && (kind === 'video' || kind === 'image') ? html`<${Item} icon="grid" label="Pôr numa montagem" onClick=${fechar(() => montagemDoDrive([f]))} />` : null}
             ${video || /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i.test(f.name) ? html`<${Item} icon="compare" label="Converter com o Relay" onClick=${() => openSheet('relay', { f, pasta: inicio })} />` : null}
           </ul>
           ${!f.isDrive && caps.canTrash !== false

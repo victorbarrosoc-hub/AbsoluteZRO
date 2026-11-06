@@ -23,6 +23,24 @@ abaixo.
   hidratar (`Folha` só no navegador, no `<body>`), e o `criacao-tpeasy.spec.ts` pega o `/api/zro/eu?visitante=1` do
   TPeasy de agora.
 
+## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
+
+Pedido do titular: o que o app de computador faz e cabe no celular, também no celular, primeiro as Montagens (0.3.9).
+
+- ✅ Criar › Montagens: fotos e vídeos da galeria ou do Drive, post, carrossel contínuo (2 a 10 slides) e grade do
+  perfil (3×1 a 3×5, 3:4 ou 1:1, numerada na ordem de postar), os 12 modelos e os 9 formatos do computador (mesmo
+  `lib/montagens.js`), enquadrar com o dedo e pinça, trocar de lugar, espaço, cantos e fundo. Salva pela folha de
+  compartilhar do iPhone ou sobe pro Drive pela fila.
+- ✅ Vídeo de verdade no aparelho (WebCodecs + Mediabunny do Relay): até 4 takes, 3/5/8/15 s, até 1920 px, trecho e
+  câmera lenta, som de um take. iOS 16.4+; sem WebCodecs a tela diz e sai a foto.
+- 🟡 Som no iPhone só com o Safari que lê áudio pelo WebCodecs (iOS 26); antes disso o vídeo sai sem som, com aviso.
+  Câmera lenta sai sem som.
+- ⬜ Conferir num iPhone de verdade (memória com 4 takes 4K HEVC de 15 s, HEIC da galeria, folha "Salvar vídeo").
+- ⬜ Do computador e sem sentido no celular, ficam de fora: Cartões e Backup Automático (discos, ejetar, xxHash64),
+  Comparar (pasta do computador × Drive), Entre computadores, Procurar cenas (índice local), Gerar miniaturas de
+  BRAW/R3D, Resgate. Frames com takes e "Baixar como…" das Referências seguem pedidos ao computador.
+- ⬜ Transferências "ao vivo" do computador (gráfico de 5 min, "termina às"): o celular mostra %, velocidade e tempo.
+
 ## Synquei + SOBEDESCE: material organizado por tipo de vídeo (06/11/2026, ramo `claude/synquei-fluxo-sobedesce`)
 
 - ✅ Momentos por tipo (`products/synquei/app/js/momentos.js`, 18 tipos): casamento por momento (votos, cerimônia,

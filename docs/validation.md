@@ -49,6 +49,22 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   FECHADO); `npm test` (telas no Chromium) 95/95 (cadastro-foco e conta-zro passaram na rodada sozinha do próprio
   runner).
 
+## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
+
+Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
+
+- `cd products/sobedesce && npm run test:fast`: **813/819** (4 pulados, 2 falharam por tempo com a máquina ocupada:
+  `porta-malas-carro` e `set-celular`, `locator.waitFor` 40 s/20 s; os dois passam sozinhos e juntos com o teste novo do
+  navegador, 6/6). Novos: `test/montagens-celular.test.js` 9/9 (cópia idêntica de `lib/montagens.js`, partes e nomes
+  na ordem de postar, fatia igual ao corte da imagem inteira no carrossel contínuo, grade 3×5 sem canvas acima do limite
+  do Safari, foto aberta no tamanho do quadro, vídeo até 1920 px, tempo do take normal/lento/volta) e
+  `test/montagens-celular-navegador.test.js` 2/2 (Chromium e WebKit com cara de iPhone: foto do Drive pela faixa de
+  escolher, carrossel 3 × 1080×1350, grade 3×2 6 × 1080×1440 pela folha de compartilhar, vídeo 1080×1350 H.264 + AAC
+  de 3 s conferido pelo ffprobe). `test/app-sw.test.js` confere 2.8.68 / `sobedesce-app-v83`.
+- `cd products/sobedesce/web`: `npm run lint` ok, `npm run typecheck` ok, `npm test` **384/384** (com
+  `celular-app.test.mts`, que passa pela aba Criar no WebKit a 375, 393, 430 e 852 px: toque de 44 px e campo de 16 px).
+- `node scripts/scan-secrets.mjs`: nenhum segredo em 4426 arquivos.
+
 ## Synquei + SOBEDESCE: organização por tipo de vídeo (06/11/2026)
 
 | Verificação                                                                     | Comando                                      | Resultado      |
