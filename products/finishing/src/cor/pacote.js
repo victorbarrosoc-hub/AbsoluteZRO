@@ -10,6 +10,8 @@ import { ENTRADAS } from './espacos.js'
 import { criarTela, deTrabalho, linearParaDi, paraTrabalho } from './cena.js'
 import { criarLab, escreverReceita, paraCena } from './lab.js'
 import { copiaDe } from './copia.js'
+import { escreverDctlTextura } from './dctl.js'
+import { texturaAtiva } from './textura.js'
 import { NEUTRO, criarMotor } from './pelicula.js'
 import { avaliarLook, relatorioEmTexto } from './qc.js'
 import { criarZip } from '../imagem/zip.js'
@@ -193,6 +195,13 @@ export function montarPacote(receita, opcoes = {}) {
       offset,
     }),
   })
+  // a textura (grão, halation, difusão) não cabe em LUT: vai como DCTL, num nó antes do look
+  const textura = texturaAtiva(receita.textura)
+  if (textura)
+    arquivos.push({
+      nome: `${prefixo}_Textura_DWG-DI.dctl`,
+      dados: escreverDctlTextura(receita.textura, { negativo: look.motor.negativo ?? 'digital', titulo: `Revela · ${receita.nome || 'Meu look'} · textura` }),
+    })
   arquivos.push({ nome: `${prefixo}.revela`, dados: escreverReceita(receita) })
 
   // 6. controle de qualidade do look (o LMT) e leia-me
@@ -201,17 +210,17 @@ export function montarPacote(receita, opcoes = {}) {
     qc = avaliarLook(look.motor, { veu: (receita.ajustes?.desbotar ?? 0) > 0 || look.perfil.veu > 0, pb: !!look.perfil.pb, tingeMax: look.perfil.tingeMax })
     arquivos.push({ nome: `${pasta}/CONTROLE-DE-QUALIDADE.txt`, dados: relatorioEmTexto(receita.nome || 'Meu look', qc) })
   }
-  arquivos.push({ nome: `${pasta}/LEIA-ME.txt`, dados: leiaMe(nome, receita, cam, qc, look.motor.copia) })
+  arquivos.push({ nome: `${pasta}/LEIA-ME.txt`, dados: leiaMe(nome, receita, cam, qc, look.motor.copia, textura) })
   return { pasta, arquivos, qc, zip: criarZip(arquivos) }
 }
 
-function leiaMe(nome, receita, cam, qc, copia) {
+function leiaMe(nome, receita, cam, qc, copia, textura = false) {
   const c = copia ? copiaDe(copia) : null
   return `REVELA · ${receita.nome || 'Meu look'}
 Feito no Revela Lab (revela.absolutezro.com). Look na luz da cena, separado da tela.
 
 ORDEM
-  correção do frame (CDL)  →  look (LMT)  →  saída do projeto (Rec.709, P3-D65 PQ, Rec.2020 PQ)
+  correção do frame (CDL)  →  ${textura ? 'textura (DCTL)  →  ' : ''}look (LMT)  →  saída do projeto (Rec.709, P3-D65 PQ, Rec.2020 PQ)
 
 ARQUIVOS
   REVELA_${nome}_DWG-DI-to-DWG-DI_${VERSAO}_65.cube
@@ -245,8 +254,16 @@ ${
 CONTROLE DE QUALIDADE
   ${qc ? (qc.ok ? 'Aprovado em todas as verificações (detalhes em CONTROLE-DE-QUALIDADE.txt).' : 'Reprovado em alguma verificação: veja CONTROLE-DE-QUALIDADE.txt antes de usar.') : 'Não rodado.'}
 
-O que uma LUT não leva: grão, halation e bloom são efeitos de espaço (dependem dos vizinhos do pixel) e ficam fora
-de qualquer LUT. No Resolve, use os efeitos nativos depois do look.
+${
+    textura
+      ? `TEXTURA
+  REVELA_${nome}_Textura_DWG-DI.dctl
+    Grão, halation e difusão (efeitos de espaço, que nenhuma LUT leva). DaVinci Resolve Studio: copie para a pasta de
+    LUTs, reinicie e ponha num nó ANTES do look, com a linha do tempo em DaVinci Wide Gamut / Intermediate. Os
+    controles abrem com os valores do Lab. Para o grão andar, anime a Semente.`
+      : `O que uma LUT não leva: grão, halation e difusão são efeitos de espaço (dependem dos vizinhos do pixel) e ficam
+fora de qualquer LUT. No Revela Lab, a Textura sai como DCTL para o Resolve.`
+  }
 `
 }
 

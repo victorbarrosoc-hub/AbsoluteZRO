@@ -414,7 +414,7 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
     pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
     await pagina.goto(endereco)
     await pagina.getByRole('heading', { level: 1 }).waitFor()
-    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /Revela a cor/)
+    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /^revela\.$/)
     for (const id of ['looks', 'ferramentas', 'entrega', 'converter', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
     // sem sessão, o topo oferece "Entrar"
     await pagina.locator('#conta.conta--pronta').waitFor()
@@ -1300,6 +1300,14 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
   // a cópia de cinema vai na receita
   await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).selectOption('2383')
+  // negativo das fichas: Kodak e Fuji, e a luz do projetor
+  await pagina.getByRole('combobox', { name: 'Negativo' }).selectOption('5219')
+  await pagina.getByRole('combobox', { name: 'Luz da cópia' }).selectOption('D60')
+  // textura: preset de 35 mm (grão e halation) com a prévia passando pela cena
+  await pagina.getByRole('radio', { name: '35 mm' }).click()
+  assert.equal(await pagina.locator('#tx-grao').inputValue(), '100')
+  // o Calor fica no ajuste fino
+  await pagina.getByText('Ajuste fino', { exact: true }).click()
   await pagina.locator('#aj-calor').fill('40')
   await pagina.locator('#aj-calor').dispatchEvent('change')
   await pagina.locator('#nome-look').fill('Noite quente')
@@ -1314,6 +1322,9 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(r.base, 'negativo-500t')
   assert.equal(r.ajustes.calor, 40)
   assert.equal(r.copia, '2383')
+  assert.equal(r.negativo, '5219')
+  assert.equal(r.luzCopia, 'D60')
+  assert.equal(r.textura.grao, 1)
 
   // zera, reabre a receita e volta tudo
   await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
@@ -1333,6 +1344,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_DWG-DI-to-DWG-DI_v1_65.cube'))
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
   assert.ok(zip.includes('O look inclui a cópia 2383'))
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_Textura_DWG-DI.dctl'))
   assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
   // salvo em Meus looks: aparece na grade da tela de LUT

@@ -14,11 +14,28 @@ import { ENTRADAS } from './espacos.js'
 import { criarTela, luminancia, paraTrabalho } from './cena.js'
 import { GRUPOS, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
 import { COPIAS } from './copia.js'
+import { NEGATIVOS } from './negativos.js'
+import { lerTextura } from './textura.js'
 
 export { GRUPOS }
 
 /** Cópia de cinema do look: '' = a da base, 'nenhuma' ou o id de uma cópia (src/cor/copia.js). */
 export const COPIAS_LAB = [{ id: '', nome: 'Cópia da base' }, { id: 'nenhuma', nome: 'Sem cópia' }, ...COPIAS.map((c) => ({ id: c.id, nome: c.nome }))]
+/** Negativo do look: '' = o da base, 'digital' (a câmera, com o negativo ideal) ou um negativo das fichas. */
+export const NEGATIVOS_LAB = [
+  { id: '', nome: 'Negativo da base' },
+  { id: 'digital', nome: 'Digital (sem negativo)' },
+  ...NEGATIVOS.map((n) => ({ id: n.id, nome: `${n.nome} · ${n.numero}`, fabricante: n.fabricante })),
+]
+/** Luz do projetor da cópia: muda o branco (D65 neutro; D60 e D55 mais quentes). '' = a da base. */
+export const LUZES_LAB = [
+  { id: '', nome: 'Luz da base' },
+  { id: 'D65', nome: 'D65 · neutra' },
+  { id: 'D60', nome: 'D60 · morna' },
+  { id: 'D55', nome: 'D55 · quente' },
+]
+/** Revelação do negativo, em stops (forçar sobe o contraste e o grão). */
+export const REVELACOES = [-1, 0, 1, 2]
 export const baseDoLab = perfilDe
 
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -42,9 +59,18 @@ export const AJUSTES = [
   { id: 'cor', nome: 'Cor', min: -100, max: 100, dica: 'Saturação (no -100 vira preto e branco)' },
   { id: 'temperatura', nome: 'Temperatura', min: -100, max: 100, dica: 'Frio ↔ quente, por adaptação cromática' },
   { id: 'tint', nome: 'Tint', min: -100, max: 100, dica: 'Verde ↔ magenta' },
-  { id: 'calor', nome: 'Calor', min: 0, max: 100, dica: 'Meio-tom e pele mais quentes e ricos, sem amarelar o branco' },
-  { id: 'desbotar', nome: 'Desbotar', min: 0, max: 100, dica: 'Véu no preto, como cópia antiga' },
-  { id: 'pele', nome: 'Pele protegida', min: 0, max: 100, dica: 'Mantém a pele natural enquanto o look muda o resto' },
+  // ajuste fino (recolhido na tela)
+  { id: 'altas', nome: 'Altas', min: -100, max: 100, fino: true, dica: 'Abaixo de 0 segura o que é claro; acima abre' },
+  { id: 'sombras', nome: 'Sombras', min: -100, max: 100, fino: true, dica: 'Acima de 0 abre a sombra; abaixo fecha' },
+  { id: 'preto', nome: 'Preto', min: -100, max: 100, fino: true, dica: 'Só a sombra profunda: abaixo de 0 afunda, acima levanta' },
+  { id: 'calor', nome: 'Calor', min: 0, max: 100, fino: true, dica: 'Meio-tom e pele mais quentes e ricos, sem amarelar o branco' },
+  { id: 'estilo', nome: 'Estilo', min: -100, max: 100, fino: true, dica: 'Retrô (sombra quente, alta fria) ↔ moderno (sombra petróleo, alta quente)' },
+  { id: 'densidade', nome: 'Densidade da cor', min: 0, max: 100, fino: true, dica: 'Cor forte mais densa e escura, como no filme subtrativo' },
+  { id: 'branqueamento', nome: 'Sem branqueamento', min: 0, max: 100, fino: true, dica: 'Bleach bypass: a prata fica, mais contraste e menos cor' },
+  { id: 'peleMatiz', nome: 'Matiz da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: vermelho ↔ amarelo' },
+  { id: 'peleSat', nome: 'Saturação da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: menos ↔ mais cor' },
+  { id: 'pele', nome: 'Pele protegida', min: 0, max: 100, fino: true, dica: 'Mantém a pele natural enquanto o look muda o resto' },
+  { id: 'desbotar', nome: 'Desbotar', min: 0, max: 100, fino: true, dica: 'Véu no preto, como cópia antiga' },
 ]
 export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, 0]))
 
@@ -116,6 +142,7 @@ export function descreverCorrecao(exposicao, ganhos) {
 
 /**
  * Receita → look. `receita`: { entrada ('still' ou id de câmera), base, copia ('' = a da base, 'nenhuma' ou id),
+ * negativo ('' = o da base, 'digital' ou id), luzCopia ('' ou D55/D60/D65), expandido e revelacao (null = os da base),
  * intensidade (0–1), correcao: { exposicao, ganhos } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
  * DaVinci Intermediate → DI, para a LUT log → log) e `aplicar(r, g, b)`: a prévia do código da entrada até a tela
  * Rec.709, o caminho inteiro.
@@ -135,7 +162,19 @@ export function criarLab(receita = {}) {
     calor: aj.calor / 100,
     veu: (aj.desbotar / 100) * 1.8,
     pele: aj.pele / 100,
+    altas: aj.altas / 100,
+    sombras: aj.sombras / 100,
+    preto: aj.preto / 100,
+    estilo: aj.estilo / 100,
+    densidade: aj.densidade / 100,
+    branqueamento: aj.branqueamento / 100,
+    peleMatiz: aj.peleMatiz / 100,
+    peleSat: aj.peleSat / 100,
     copia: receita.copia || undefined,
+    negativo: receita.negativo || undefined,
+    luzCopia: receita.luzCopia || undefined,
+    expandido: receita.expandido ?? undefined,
+    revelacao: receita.revelacao ?? undefined,
     intensidade,
   })
   const entrada = receita.entrada ?? 'still'
@@ -145,7 +184,7 @@ export function criarLab(receita = {}) {
     emCena: motor.emCena,
     emDi: motor.emDi,
     aplicar: (r, g, b) => telaSdr.aplicar(motor.emCena(cena(r, g, b))),
-    receita: { ...receita, entrada, copia: receita.copia ?? '', ajustes: aj, intensidade },
+    receita: { ...receita, entrada, copia: receita.copia ?? '', negativo: receita.negativo ?? '', luzCopia: receita.luzCopia ?? '', ajustes: aj, intensidade },
     nome: receita.nome || perfil.nome || 'Meu look',
     perfil,
   }
@@ -153,7 +192,7 @@ export function criarLab(receita = {}) {
 
 // ─────────── receita (.revela) ───────────
 
-export const VERSAO_RECEITA = 3
+export const VERSAO_RECEITA = 4
 
 /** Receita → texto do arquivo .revela (JSON, legível, para reabrir no Lab). */
 export function escreverReceita(receita) {
@@ -165,6 +204,11 @@ export function escreverReceita(receita) {
     entrada: receita.entrada ?? 'still',
     base: receita.base,
     copia: receita.copia ?? '',
+    negativo: receita.negativo ?? '',
+    luzCopia: receita.luzCopia ?? '',
+    expandido: receita.expandido ?? null,
+    revelacao: receita.revelacao ?? null,
+    textura: lerTextura(receita.textura),
     intensidade: receita.intensidade ?? 1,
     correcao: receita.correcao ?? null,
     ajustes: { ...AJUSTES_NEUTROS, ...(receita.ajustes ?? {}) },
@@ -175,7 +219,7 @@ export function escreverReceita(receita) {
 /**
  * Texto .revela → receita. Recusa o que não for receita do Lab; valores fora do lugar voltam para o limite. A versão 1
  * (motor de tela) abre com a mesma base e os mesmos ajustes; a correção de branco antiga não vale no motor novo. A
- * versão 2 não tinha cópia: abre com a cópia da base.
+ * versão 2 não tinha cópia e a 3 não tinha negativo, luz da cópia, Expandido nem revelação: abrem com os da base.
  */
 export function lerReceita(texto) {
   let r
@@ -195,6 +239,11 @@ export function lerReceita(texto) {
     entrada: ENTRADAS_LAB.some((e) => e.id === r.entrada) ? r.entrada : 'still',
     base: perfilDe(r.base) ? r.base : 'revela',
     copia: COPIAS_LAB.some((c) => c.id === r.copia) ? r.copia : '',
+    negativo: NEGATIVOS_LAB.some((n) => n.id === r.negativo) ? r.negativo : '',
+    luzCopia: LUZES_LAB.some((l) => l.id === r.luzCopia) ? r.luzCopia : '',
+    expandido: typeof r.expandido === 'boolean' ? r.expandido : null,
+    revelacao: REVELACOES.includes(r.revelacao) ? r.revelacao : null,
+    textura: lerTextura(r.textura),
     intensidade: limitar(Number(r.intensidade ?? 1), 0, 1),
     correcao: c && typeof c === 'object' ? { exposicao: limitar(Number(c.exposicao) || 0, -2, 2), ganhos } : null,
     ajustes,
