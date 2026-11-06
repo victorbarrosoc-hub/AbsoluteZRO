@@ -17,7 +17,7 @@ test('menu: cinco abas e Ajustes; Z, Dispositivos e a família no menu da conta'
   for (const t of ["navigate('computadores')", "navigate('z')", 'FAMILIA.map']) assert.ok(menu.includes(t), t)
   // as telas antigas acendem a aba nova
   assert.match(s, /tambem: \['comparar'\]/)
-  assert.match(s, /tambem: \['referencias'\]/)
+  assert.match(s, /tambem: \['referencias', 'montagens'\]/)
   assert.match(s, /tambem: \['computadores'\]/)
 })
 
@@ -35,4 +35,15 @@ test('Comparar dividido: Copiar em Cartões; Conferir com o computador no Drive'
   const compare = ler('components/compare.js')
   assert.ok(!compare.includes('DiscosPanel'), 'o Comparar não abre mais o "Entre discos"')
   assert.match(ler('components/drive.js'), /navigate\('comparar'\)[^\n]*Conferir com o computador/)
+})
+
+test('ao vivo: Transferências com o resumo grande no topo (5 min de gráfico) e o cartão com as fases', () => {
+  const t = ler('components/transfers.js')
+  assert.match(t, /const AoVivo = memo\(/)
+  assert.match(t, /<\$\{AoVivo\} geral=\$\{data\.geral\} \/>/)
+  for (const r of ["'Subindo'", "'Baixando'", "'Já passou'", "'Falta'"]) assert.ok(t.includes(r), r)
+  const motor = fs.readFileSync(new URL('../src/engine/manager.js', import.meta.url), 'utf8')
+  assert.match(motor, /const HISTORY_LEN = 300\b/, '5 minutos, um ponto por segundo')
+  const b = ler('components/backup.js')
+  assert.match(b, /\['Copiar', 'Conferir', 'Pode formatar'\]/)
 })

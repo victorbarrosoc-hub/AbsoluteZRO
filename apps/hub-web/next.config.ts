@@ -52,6 +52,14 @@ const config: NextConfig = {
       },
       // Laboratório da Z (ADR 0033, só admin): o microfone vale nesta tela (voz e ditado), e só nela. Vem depois da regra
       // geral, então vence.
+      // Rádio do set (ADR 0042): microfone, tela ligada e tela cheia (tela de cue) só nestas rotas. Vem depois da regra
+      // geral, então vence.
+      ...['/radio', '/radio/:path*'].map((source) => ({
+        source,
+        headers: [
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=(), screen-wake-lock=(self), fullscreen=(self)' },
+        ],
+      })),
       {
         source: '/admin/laboratorio/:path*',
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],

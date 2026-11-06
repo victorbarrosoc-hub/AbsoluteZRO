@@ -999,6 +999,53 @@ paths:
           '404': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/radio/diarias:
+    get:
+      security: [{ session: [] }]
+      summary: 'Rádio do set (ADR 0042, não lançado: fora do gate, 404). As diárias da pessoa: { ok, diarias: [{ id, codigo, nome, dono, funcao }] }'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ session: [] }]
+      summary: 'Rádio do set. { acao: criar, nome } → 201 { diaria }; { acao: entrar, codigo } → { diaria } ou 404; { acao: funcao, diaria, funcao } → { ok }'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/radio/batida:
+    post:
+      security: [{ session: [] }]
+      summary: 'Rádio do set. { diaria, peer, sinais: [{ para, tipo: oferta | resposta, dados: { sdp } }], aviso } → { eu, pessoas, sinais, avisos, ultimoAviso }. A voz nunca passa pelo servidor'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/radio/aviso:
+    post:
+      security: [{ session: [] }]
+      summary: 'Rádio do set. { diaria, tipo: silencio | acao | corta | intervalo } → 201 { aviso: { id, tipo, de } }; só o dono e a Direção'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/set:
     get:
       security: [{ session: [] }, { appToken: [zro.set] }]

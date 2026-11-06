@@ -42,6 +42,13 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
       'Criar com IA pela Higgsfield conectada na conta Absolute ZRO: prévias em imagem antes, depois anima a imagem em vídeo com o preço mostrado antes de gerar.',
     ],
   },
+  radio: {
+    nome: 'Rádio do set (nome provisório)',
+    faz: [
+      'Voz por botão para a equipe da diária, no navegador do celular: diária com código e QR, canal Geral e canal da função (Câmera, Som, Luz…), segurar para falar, avisos de set (Silêncio, Ação, Corta, Intervalo) e tela de cue para o elenco.',
+      'No iPhone funciona com o app aberto e a tela ligada; a voz vai de aparelho para aparelho e não é gravada.',
+    ],
+  },
   synquei: {
     nome: 'Synquei',
     faz: [

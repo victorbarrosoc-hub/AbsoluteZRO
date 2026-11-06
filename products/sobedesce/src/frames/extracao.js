@@ -58,7 +58,7 @@ function filtroRecorte(formato, foco = 0.5) {
 }
 
 /** Parâmetros de alta qualidade para cada codificador de H.264 (os mesmos que a prévia detecta, sem o teto dela). */
-function h264Alta(encoder, altura) {
+export function h264Alta(encoder, altura) {
   const mbps = altura > 1600 ? 50 : altura > 1100 ? 30 : 20
   switch (encoder) {
     case 'h264_videotoolbox':

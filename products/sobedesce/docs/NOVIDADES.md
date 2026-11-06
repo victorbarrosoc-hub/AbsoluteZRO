@@ -2,6 +2,13 @@
 
 O texto de cada versão serve para o Release do GitHub (tag `sobedesce-v<versão>`) e para o aviso de versão nova.
 
+## 0.3.7
+
+**Transferências ao vivo.** No topo, quatro números grandes (subindo, baixando, quanto já passou do total e quanto
+falta, com a hora que termina), o gráfico dos últimos 5 minutos com sobe e desce e a barra do total.
+
+- Backup Automático: gráfico maior e a régua das fases do cartão (Copiar → Conferir → Pode formatar).
+
 ## 0.3.6
 
 **Menu mais simples: cinco abas.** Início, Drive, Transferências, Cartões e Estúdio, com Ajustes embaixo.

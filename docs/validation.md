@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Rádio do set (05/11/2026, ADR 0042, proposta)
+
+- Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
+  Prettier (os 5 avisos do `format:check` já estavam na `main`).
+- Pesquisa de mercado e do limite do iPhone (PushToTalk, lojas alternativas no Brasil) com fontes no fim da ADR.
+- Fase 1 (`products/radio/`, `npm test`, 4/4, Postgres 16 e Chromium do Playwright 1.63 desta máquina):
+  `test/banco.test.js` (migração não repete e recusa arquivo mudado; gate: sem `radio` na claim, página neutra, script
+  404 e API 401, modo local recusado com login configurado; criar, entrar pelo código, função; presença só para quem
+  está na diária; sinal chega só a quem recebe, uma vez, e não grava para aparelho fora; aviso só do dono e da Direção;
+  direto no banco como `radio_app`: quem está fora não lê nada, ninguém vira dono por update nem se põe em diária
+  alheia) e `test/radio.e2e.test.js` (três Chromium com microfone falso: todos se conectam, a fala da Equipe chega à
+  Bia na Direção e não ao Caio na Câmera, o Geral chega ao Caio, soltar volta ao silêncio, o aviso "Ação" aparece nos
+  dois, sem erro de console). Telas conferidas a 390 px. Não conferido: iPhone e Android de verdade, 4G com CGNAT.
+- Publicação (05/11/2026): HUB `npm test` 629/629 com a `0058` (a lista dos não lançados e o guia da Z conhecem o
+  `radio`), lint e typecheck ok. No ar: `radio.absolutezro.com/` devolve a página neutra, `/app/app.js` 404,
+  `/entrar` sem o segredo volta com `?zro=config`, cabeçalhos com `microphone=(self)` e `noindex`.
+- Dentro do HUB (05/11/2026, absolutezro.com/radio): `npm run lint`, `format:check` e `typecheck` ok; `npm test` 633/633
+  (novo `tests/integration/radio.test.ts`: as cópias de `apps/hub-web/lib/radio` batem com products/radio; nada do
+  rádio em `public/`; conta comum e anônimo não passam no gate, admin e a lista de acesso passam; criar, entrar pelo
+  código, presença, aviso só da Direção e isolamento pelo RLS como `radio_app`); `npm run build` com `/radio`,
+  `/radio/app/[...arquivo]` e `/api/v1/radio/{diarias,batida,aviso}`; `npm run test:e2e` 64 passaram no Chromium
+  (novo `tests/e2e/radio.spec.ts`: conta comum recebe 404 na página, nos scripts e na API; duas contas de admin criam a
+  diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
+  do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
@@ -395,6 +420,22 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: Montagens no Estúdio (05/11/2026)
+
+Branch `sobedesce-montagens`.
+
+- `test/montagens.test.js` (11): tamanhos dos formatos e o personalizado nos limites; caixas de todos os modelos em
+  todos os formatos dentro da margem e, sem espaço, cobrindo a montagem inteira; quadro no ponto, trocar e preencher;
+  carrossel e grade (tamanho da tela, fatias, ordem de postar com o 1 embaixo à direita); trecho do take dentro do
+  vídeo e metade na câmera lenta; argumentos do ffmpeg (recorte e escala de cada take, camada por cima, som só do take
+  escolhido, `atempo` na câmera lenta); nome do arquivo; rotas da foto, do quadro e das informações só com a chave da
+  mídia; salvar sem gravar por cima; vídeo recusa pedido torto; **vídeo de ponta a ponta com o ffmpeg** (MP4 no tamanho
+  pedido, sem sobrar arquivo pela metade).
+- `test/navegacao.test.js`: Estúdio acende também em Montagens.
+- Demo (Chromium) em claro e escuro com 2 takes e fotos: Vertical 9:16, trecho escolhido na agulha, som do take 1,
+  "Os dois" saiu `…_9x16.mp4` (1080×1920, 5 s, H.264 + AAC, cantos e espaço iguais à tela) e `…_9x16.jpg`; carrossel
+  de 3 slides com a linha de corte; grade 3×2 em 3:4 saiu em 6 imagens `_3x4_01` a `_06`. Sem erro no console.
+
 ## SOBEDESCE: o avatar do topo é a conta Absolute ZRO (01/11/2026)
 
 Ramo `sobedesce-avatar-zro`. O avatar do topo do app do celular lia o `/about` do Drive conectado; agora lê a conta
@@ -658,6 +699,14 @@ público. A regra fica como está; os testes passam a descrevê-la.
   manda o cookie no manifest em prévia da Vercel; abrir o produto devolve os dois ao público.
 - NOSSOM: `format:check`, `typecheck`, `npm test` 124/124 e `build` ok; `test:e2e` **65 passadas, 0 falhas** (26
   puladas por `onlyWhenOpen`, que descrevem o produto aberto). `test:quota` não rodou aqui (pede Docker).
+
+## SOBEDESCE: transferências ao vivo (05/11/2026)
+
+Branch `sobedesce-ao-vivo`.
+
+- `test/navegacao.test.js` (+1): o resumo ao vivo no topo, os quatro números, `HISTORY_LEN = 300` e as fases do cartão.
+- `npm run test:fast`: 784/784 (4 pulados).
+- Demo com um download de verdade (Drive falso), claro e escuro: números, gráfico e barra mexendo; sem erro no console.
 
 ## SOBEDESCE: navegação em cinco abas (05/11/2026)
 

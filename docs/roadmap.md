@@ -1,6 +1,24 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 02/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
+
+- 🟡 Pesquisa e desenho na [ADR 0042](decisions/0042-radio-do-set.md): canais por função vindos da escala do Maestro,
+  avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
+  nativa (PushToTalk no iPhone) só com uso medido.
+- ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
+- ✅ Fase 1 sem integração (05/11/2026, `products/radio/`, nome provisório): diária com código e QR, canais Geral e
+  Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
+  WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
+  scripts 404 para quem não passa), login único copiado do Rift, schema `radio` com RLS.
+- ✅ Dentro do HUB (titular, 05/11/2026: "usa o do ecossistema"): **absolutezro.com/radio**, com a conta e o banco do
+  HUB. Núcleo único em `products/radio/api/_nucleo.js` (cópia gerada em `apps/hub-web/lib/radio`, teste confere);
+  `/radio`, `/radio/app/*` e `/api/v1/radio/*` só para quem passa no gate (fora, 404); migração `0059` deixa o HUB
+  assumir `radio_app`. HUB `0058` (produto fechado) e o schema `radio` já estão no AbsoluteZRO-SP.
+- ⬜ Ir ao ar: o ramo entra na `main` (o deploy do HUB aplica a `0059`). O projeto Vercel `radio` fica parado na
+  página neutra.
+- ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
@@ -1664,6 +1682,28 @@ do card... não consigo localizar o job que quero achar".
 - 🔶 No ramo `sobedesce-web-transferencias`, esperando a aprovação do titular pela prévia: tela Transferências no app
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
+
+## SOBEDESCE: Montagens no Estúdio (05/11/2026)
+
+- 🔶 Ramo `sobedesce-montagens` (titular, 05/11/2026, as três etapas): Estúdio ganha **Montagens** (Frames ·
+  Montagens · Referências). Fotos e takes do computador (JPG, PNG, WebP; TIFF e HEIC viram JPEG de cache; vídeos pelo
+  ffmpeg) em 12 modelos já desenhados com as fotos da pessoa; 9 formatos com o tamanho de cada rede (9:16, 4:5, 3:4,
+  1:1, 16:9, 1.91:1, 2:3, 21:9, 2.39:1) e o personalizado; tocar no quadro, arrastar para enquadrar, zoom, trocar de
+  lugar, tirar; espaço, cantos e fundo. **Takes:** foto e vídeo na mesma montagem; cada take tem o trecho escolhido na
+  agulha (faixa de quadros, janela do trecho, câmera lenta ½×); duração 3/5/8/15 s e som de um take; salva MP4 H.264 no
+  tamanho do formato (o ffmpeg põe cada trecho no quadro e cobre com a camada da tela), a capa em JPG ou os dois.
+  **Carrossel contínuo** (2 a 10 slides, linha onde um vira o outro) e **grade do perfil** (3×1 a 3×5, 3:4 ou 1:1, numerada
+  na ordem de postar): uma imagem por slide/parte, numeradas. Salva em Downloads › Montagens (ou outra pasta), sempre
+  com nome novo; "Subir pro Drive" pela fila de envio. App 0.3.9, sem site.
+
+## SOBEDESCE: transferências ao vivo (05/11/2026)
+
+- 🔶 Ramo `sobedesce-ao-vivo` (titular, 05/11/2026): resumo ao vivo no topo de Transferências (subindo, baixando, já
+  passou de quanto, falta e a hora que termina; gráfico de 5 min com sobe e desce; barra do total); o motor guarda 300
+  pontos (5 min). Backup Automático com gráfico maior e a régua Copiar → Conferir → Pode formatar. Nome da marca: SOBE pesado, DESCE fino, mesma cor, menos espaço entre letras. App 0.3.7, sem site.
+- 🔶 Ramo `sobedesce-falta-cabe`: o "Falta" do resumo ao vivo cortava em "menos …" quando faltava menos de 1 min.
+  Agora segue o desenho da velocidade, com o número grande e a unidade pequena ("<1 min", "~12 min", "~1 h 12 min").
+  App 0.3.8, sem site.
 
 ## SOBEDESCE: navegação em cinco abas (05/11/2026)
 

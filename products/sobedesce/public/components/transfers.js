@@ -3,7 +3,7 @@
 import { html, useMemo, useState, useCallback } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
-import { aprox, bytes, clock, count, dirOf, percent, plural, relTime, speed, timecode, fullDate } from '../lib/format.js'
+import { bytes, clock, count, dirOf, percent, plural, relTime, speed, speedParts, timecode, fullDate } from '../lib/format.js'
 import { cx, memo, usePersistentState, storage } from '../lib/ui.js'
 import { batchAction, cancelBatch, cancelTransfer, driveFileUrl, driveFolderUrl, reveal, transferAction, uploadFlow, uploadPaths } from '../lib/actions.js'
 import { bridge, openExternal, prepararNoSynquei, revealLabel } from '../lib/desktop.js'
@@ -389,19 +389,16 @@ const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falt
   const down = stats.down?.speed || 0
   const up = stats.up?.speed || 0
   const moving = down + up > 0
-  const eta = moving && tot.moving > 0 ? stats.eta : null
   const pronto = geral.total > 0 && geral.feitos === geral.total
   const frac = geral.size ? geral.done / geral.size : pronto ? 1 : 0
   // Tudo chegou, mas ainda há proxy sendo feito: não é "Tudo pronto".
   const soProxies = pronto && !moving && proxies > 0
   const titulo = moving ? (down && up ? 'Subindo e descendo' : up ? 'Enviando agora' : 'Baixando agora') : soProxies ? 'Gerando proxies' : pronto ? 'Tudo pronto' : canResume && !canPause ? 'Parado' : 'Na fila'
+  // O tempo que falta está no resumo do topo (AoVivo); aqui, quantos arquivos já foram.
   const linha =
-    eta != null
-      ? html`faltam <b>${aprox(eta)}</b>${eta >= 600 ? ` · ${terminaAs(eta)}` : ''}`
-      : soProxies
+    soProxies
         ? html`originais no Drive · ${plural(proxies, 'proxy falta', 'proxies faltam')}`
         : html`${count(geral.feitos)} de ${plural(geral.total, 'arquivo', 'arquivos')}${tot.parked ? ` · ${bytes(tot.parked)} ${tot.parkedCount === 1 ? 'parado' : 'parados'}` : ''}`
-  const historico = (stats.history || []).slice(-120)
   const up24 = stats.usage?.[accountId]?.up24h || 0
 
   return html`<${Resumo} titulo="Agora">
@@ -415,17 +412,6 @@ const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falt
         tom=${pronto && !soProxies ? 'ok' : 'grad'}
         vivo=${moving || soProxies}
       />
-    </div>
-    <div class="k-caixa">
-      <div class="tl-graf-topo">
-        <span class="k-rot">Velocidade</span>
-        <span class="tl-legenda">
-          <span class="is-down" title=${stats.down?.active ? `Baixando ${plural(stats.down.active, 'arquivo', 'arquivos')}` : 'Baixando'}><i></i>${down ? speed(down) : '—'}</span>
-          <span class="is-up" title=${stats.up?.active ? `Enviando ${plural(stats.up.active, 'arquivo', 'arquivos')}` : 'Enviando'}><i></i>${up ? speed(up) : '—'}</span>
-        </span>
-      </div>
-      <${GraficoVelocidade} pontos=${historico} altura=${96} label="Velocidade nos últimos 2 minutos" />
-      <div class="tl-graf-regua" aria-hidden="true"><span>−2 min</span><span>agora</span></div>
     </div>
     <${Stats}
       colunas=${2}
@@ -451,6 +437,53 @@ const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falt
         </div>`
       : null}
   </${Resumo}>`
+})
+
+/**
+ * O resumo ao vivo no topo (proposta "ao vivo", titular, 05/11/2026): quatro números grandes (subindo, baixando, quanto
+ * já passou do total e quanto falta, com a hora que termina), o gráfico dos últimos 5 minutos com sobe e desce e a
+ * barra do total. Assina `stats` sozinho (2×/s), como o painel ao lado.
+ */
+const AoVivo = memo(function AoVivo({ geral }) {
+  const stats = useStore((s) => s.stats)
+  const lost = useStore((s) => s.conn === 'lost')
+  const tot = meterTotals(stats.totals)
+  const down = stats.down?.speed || 0
+  const up = stats.up?.speed || 0
+  const moving = down + up > 0
+  const eta = moving && tot.moving > 0 ? stats.eta : null
+  const frac = geral.size ? Math.min(1, geral.done / geral.size) : 0
+  const historico = stats.history || []
+  const minutos = Math.max(1, Math.round(historico.length / 60))
+  // Velocidade: o número grande e a unidade pequena (cabe em "118,5 MB/s" sem cortar).
+  const vel = (bps) => {
+    if (!bps) return '—'
+    const p = speedParts(bps)
+    return html`${p.value}<small>${p.unit}</small>`
+  }
+  // Tempo que falta no mesmo desenho: número grande, unidade pequena ("menos de 1 min" não cabia e virava "menos …").
+  const falta = (sec) => {
+    if (sec < 60) return html`<1<small>min</small>`
+    const min = Math.round(sec / 60)
+    if (min < 60) return html`~${min}<small>min</small>`
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return m ? html`~${h}<small>h</small> ${m}<small>min</small>` : html`~${h}<small>h</small>`
+  }
+  const num = (rot, valor, sub, tom) => html`<div class=${cx('av-num', tom && `is-${tom}`)}><span class="av-rot">${rot}</span><b>${valor}</b>${sub ? html`<span class="av-sub">${sub}</span>` : null}</div>`
+  return html`<section class=${cx('av k-entra', lost && 'is-velho')} style="--i:1" aria-label="Agora" title=${lost ? 'Sem contato com o motor: os números podem estar desatualizados' : undefined}>
+    <div class="av-nums">
+      ${num('Subindo', vel(up), stats.up?.active ? plural(stats.up.active, 'arquivo', 'arquivos') : null, 'up')}
+      ${num('Baixando', vel(down), stats.down?.active ? plural(stats.down.active, 'arquivo', 'arquivos') : null, 'down')}
+      ${num('Já passou', bytes(geral.done), `de ${bytes(geral.size)}`)}
+      ${num('Falta', eta != null ? falta(eta) : geral.size && frac >= 1 ? 'nada' : '—', eta != null && eta >= 60 ? terminaAs(eta) : null)}
+    </div>
+    <div class="av-graf">
+      <${GraficoVelocidade} pontos=${historico} altura=${150} label=${`Velocidade nos últimos ${minutos} minutos`} />
+      <div class="tl-graf-regua" aria-hidden="true"><span>−${minutos} min</span><span class="av-leg"><span class="is-up"><i></i>sobe</span><span class="is-down"><i></i>desce</span></span><span>agora</span></div>
+    </div>
+    <div class="av-barra" role="progressbar" aria-label="Total" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${Math.floor(frac * 100)}><i style=${`width:${(frac * 100).toFixed(1)}%`}></i></div>
+  </section>`
 })
 
 /** Seções da lista: o que anda, o que está parado e o que terminou. */
@@ -588,8 +621,9 @@ export function TransfersScreen() {
   const acoes = html`<${Button} icon="upload" onClick=${(e) => uploadFlow({ anchor: e.currentTarget })}>Enviar</${Button}>`
   const secoes = SECOES.map((sec) => ({ ...sec, itens: visible.filter((v) => sec.ranks.includes(v.g.rank)) })).filter((sec) => sec.itens.length)
 
-  return html`<${Pagina} titulo="Transferências" frase=${FRASE} acoes=${acoes} lado=${lado} class="tl">
+  return html`<${Pagina} titulo="Transferências" acoes=${acoes} lado=${lado} class="tl">
     ${drop}
+    <${AoVivo} geral=${data.geral} />
     <div class="tl-filtros k-entra" style="--i:1">
       <${Pilulas}
         label="Filtrar transferências"

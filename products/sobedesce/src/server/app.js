@@ -256,7 +256,9 @@ export async function startServer({ port = DEFAULT_PORT, host = '127.0.0.1', pub
       const method = req.method
       if (method !== 'GET' && method !== 'HEAD') {
         // Post do Frames: a imagem vai crua (PNG/JPEG), o que também pede a checagem prévia do navegador (CORS).
-        const imagemDoFrames = method === 'POST' && /^\/api\/frames\/frm_[\w-]+\/post$/.test(url.pathname) && /^image\/(png|jpeg)$/i.test(String(req.headers['content-type'] || '').split(';')[0].trim())
+        // Montagem pronta (Estúdio › Montagens): o mesmo caso, numa rota só.
+        const imagemCrua = /^image\/(png|jpeg)$/i.test(String(req.headers['content-type'] || '').split(';')[0].trim())
+        const imagemDoFrames = method === 'POST' && imagemCrua && (/^\/api\/frames\/frm_[\w-]+\/post$/.test(url.pathname) || url.pathname === '/api/montagens/salvar' || url.pathname === '/api/montagens/base')
         // Celular pelo Wi-Fi: a janela oculta grava os pedaços que chegam do celular crus (mesmo motivo: tipo não simples).
         const pedacoDoCelular = method === 'PUT' && /^\/api\/celular\/receber\/[\w-]+\/\d+$/.test(url.pathname) && String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase() === 'application/octet-stream'
         // Apagar uma conversa da Z: o painel (<zro-ia>) manda DELETE sem corpo. DELETE de outro site exige preflight de

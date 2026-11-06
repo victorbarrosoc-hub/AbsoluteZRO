@@ -41,3 +41,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0038](0038-edicao-automatica.md)                | Edição automática no AEON: modos por tipo de vídeo, na máquina    | aceita                |
 | [0039](0039-planos-zero-orbita-absoluto.md)      | Planos Zero/Órbita/Absoluto e níveis por app                      | aceita                |
 | [0040](0040-z-custo-e-modelo-por-plano.md)       | A Z: modelo por plano, custo real e teto diário                   | aceita                |
+| [0042](0042-radio-do-set.md)                     | Rádio do set: voz por botão para a equipe (nome a definir)        | proposta              |
