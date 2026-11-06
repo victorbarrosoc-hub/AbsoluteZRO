@@ -2819,6 +2819,49 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
   set, material log real de cada câmera e telas HDR.
 
+## Revela Film: negativos das fichas, laboratório, ajuste fino e textura (04/11/2026)
+
+- Pedido do titular: estudar o Filmverse (Colorist Foundry), o FilmVision Pro (Emulated Film) e o mercado e chegar a uma
+  ferramenta de nível matemático, eficiente e fácil. Estudo: documentação e vídeo do Filmverse Arsenal 1.2 (um nó, 20
+  controles, negativo × cópia com D55/D60/D65 e EXP, textura em DCTL à parte), FilmVision, Dehancer, FilmConvert
+  Nitrate, Filmbox, Genesis, Film Look Creator e o que há de aberto (spektrafilm: GPL/CC BY-SA, só ideias; Spectral
+  Film LUT: MIT).
+- Negativos das fichas (`src/cor/negativos.js`): curvas de cada camada do Vision3 500T/250D/200T/50D (fichas Kodak) e
+  dos Eterna 500/400/250/250D, Vivid 160 e Reala 500D (manual Fujifilm), digitalizadas e ajustadas por uma forma
+  analítica monótona (pé e ombro em softplus compostos). Erro: 0,002 a 0,005 de densidade (Kodak), 0,014 a 0,03 (Fuji).
+  Primeira forma (pé e ombro somados) descia em -12 stops quando as larguras diferiam: trocada pela composta, monótona
+  por construção (teste de -12 a +12 stops).
+- Separação de cor: sensibilidade espectral do 500T e do 250D digitalizada (grades excluídas, sementes conferidas em
+  sobreposição), integrada com a ColorChecker (colour-science, só para calcular) sob 3200 K e D55 e CIE 1931: matriz
+  DWG → camadas, erro médio 0,08 stop. Em P3 as camadas ficam perto da identidade (1 a 9% de vazamento), o que confere
+  o "negativo ideal" que a Revela usava.
+- Laboratório: o contraste no cinza sai da física (Vision3 + 2383: 1,71 a 1,75; Eterna 400 + 3513: 1,29, o filme
+  suave que ele era). Cruzamentos: Kodak com altas levemente quentes, Eterna 500 com altas mais frias.
+- Controle de qualidade: 25 looks aprovados. Rodadas: degrau e LUT (tabelas digitalizadas → forma analítica); monotonia
+  no fundo do pé das Fuji (a separação de corantes invertia uma fração de milésimo: tabela monótona); pele nas
+  combinações reais com a 2393 (até 21°, onde o verde da ficha é sintetizado) e 50D/Vivid 160 + 2383 (13–14°): saíram
+  dos looks prontos e continuam escolhíveis no Lab; Eterna escaneado (tinta no cinza): saiu dos prontos.
+- Combinações livres no Lab (base × negativo × cópia × luz): varredura de 96 combinações no controle de qualidade.
+  Achados e correções: um negativo das fichas somava ao negativo genérico do perfil (dois negativos em série): agora
+  substitui; a luz do projetor (D55/D60) aplicada na tela antes da inversa somava virada de pele: agora entra na luz
+  da cena depois da âncora da pele, e o controle de qualidade mede com o olho adaptado à lâmpada; a 2393 com negativos
+  reais (verde da ficha sintetizado) saía desequilibrada (contraste por camada 1,49/1,62/1,51 contra 1,65/1,67/1,62 na
+  2383): equilíbrio das camadas no cinza pelo desenho do sistema, cruzamento 0,25 e âncora firme. Perfis criativos com
+  negativo e cópia reais firmam a âncora (0,95). Resultado: 34 → 3 reprovadas (Dourado, Positivo 50D e Laranja e
+  petróleo sobre a 2393); o pacote mostra a reprovação no relatório, sem esconder.
+- Ajuste fino (padrão do mercado, nomes de gente): Altas, Sombras, Preto (em log, sem mexer no cinza; o Preto mexia no
+  cinza em 1,6% na primeira versão), Estilo retrô ↔ moderno, Densidade da cor, Sem branqueamento, Matiz e Saturação
+  da pele. Expandido: a primeira versão (curva da cópia mais larga) quase não mudava nada e passava do branco; agora é
+  8% mais faixa em volta do cinza com o branco da base no lugar.
+- Textura (`src/cor/textura.js`, `src/cor/dctl.js`): difusão, halation e grão por camada (granularidade de cada
+  negativo, bitolas 65/35/16 mm e Super 8), na luz da cena antes do look. Grão: campo gaussiano em grade, variância 1
+  em todo tamanho (teste); a função da DCTL, reimplementada no teste, dá o mesmo campo da prévia pixel a pixel. Pacote:
+  DCTL de textura e LEIA-ME com a textura antes do look.
+- Revisão em footage oficial da ARRI (recorte 1:1 do ALEXA 35 em LogC4): grão no meio-tom sem sujar o preto, halation
+  quente nas bordas claras.
+- Não validado: a DCTL compilada num DaVinci Resolve Studio de verdade (não há Resolve neste ambiente); o desempenho
+  da textura na prévia de celulares antigos; os negativos Fuji com a sensibilidade espectral própria (não publicada).
+
 ## Revela: cópias de cinema das fichas técnicas e revisão em material real (29/10/2026)
 
 - Pedido do titular: presets de películas conhecidas (Kodak 2383 e afins) e material de banco com as especificações.
@@ -5042,3 +5085,175 @@ SOBEDESCE de computador, que disparam os instaladores).
   e a pasta do cartão (`webkitdirectory`) acha `Proxy/B001_C002.mp4`, sem erro no console.
 - `npm test` do AEON 266/266; `node scripts/scan-secrets.mjs` sem segredo.
 - Não validado: um cartão real da Blackmagic (o teste usa um `.braw` de mentira, que o navegador nunca lê).
+
+## Revela: marca nova e topo de cinema (04/11/2026)
+
+- Marca escolhida pelo titular: o símbolo "cheio de densidade" (o quadro cortado pela curva característica) e a palavra
+  "revela." em Figtree Black com o ponto. Os SVG saem de `products/finishing/scripts/marca-revela.py` (contorno da
+  própria fonte, sem depender de fonte instalada); os PNG do topo, o `og.jpg` e os ícones do app saem de
+  `scripts/marca-png.mjs` e `scripts/icones-app.mjs`. Os nomes dos arquivos não mudaram, então todas as telas trocaram
+  de logo sem mexer no `tema.js`.
+- Página inicial: o topo virou um frame inteiro (um exemplo do próprio repositório, revelado no Lab com 250D + 2383 e
+  textura de 35 mm), "revela." grande, uma linha e duas âncoras ("Conhecer o projeto" → `#looks`, "Ver as ferramentas"
+  → `#ferramentas`). A barra fica transparente sobre a foto e vira vidro ao rolar. A comparação log → final desceu para
+  a seção logo abaixo. Nada leva a ferramenta (a Revela segue fechada pelo gate).
+- `npm test` da Revela 187/187 (com as telas em Chromium); o teste da página inicial agora espera o título "revela.".
+- Não validado: Safari/iOS de verdade (o `:has()` da barra sobre a foto pede Safari 15.4+), e a página `marca/index.html`
+  (manual antigo da marca) ainda mostra a identidade anterior.
+
+## REVELAFILM: calibração da cópia 2383 contra o FilmVision Pro (04/11/2026)
+
+- Material: 4 planos da ZRO Filmes em S-Log3 / S-Gamut3.Cine (taça, mesa, café, terraço) e o mesmo frame no
+  FilmVision Pro com Kodak 2383, enviados pelo titular. O FilmVision fica fora do repositório (é referência, não
+  material do site).
+- Métrica: ΔE em OKLab (×100) por pixel, sem estourados nem preto puro; depois, só os pixels com cor (croma > 0,04).
+  A exposição de cada plano é livre (é decisão do colorista); o que fica para o sistema precisa valer nos 4 planos.
+- Tom: com só a exposição de cada plano igualada (−0,63 a +0,13 stop), a diferença de luz média é de −0,4 a +0,1:
+  o tom do negativo × cópia já bate. O "preto mais fundo e altas mais seguras" de um primeiro ajuste global era a
+  exposição dos planos mal separada.
+- Cor: testados (1) matriz câmera → negativo que preserva o neutro, (2) croma uniforme, (3) croma por luz, (4) croma
+  e giro por matiz. Validação deixando um plano de fora: nenhum generaliza (ganho médio fora de −0,39 a +0,07). A
+  saturação que a referência pede muda de plano para plano (0,74 no terraço a 1,30 no café) e os planos internos
+  pedem giros de matiz opostos ao do terraço: é grade feita plano a plano, não característica do sistema.
+- Decisão: o motor não muda com este material (mudar seria ajustar à força a 4 frames). Para calibrar a cor de
+  verdade: um gráfico de cor (ColorChecker) em S-Log3, com luz de dia e de tungstênio, passado no FilmVision com as
+  configurações anotadas (negativo, cópia, exposição) e sem ajuste por plano.
+
+## REVELAFILM Boost (04/11/2026)
+
+- Decisão do titular: as películas continuam como as fichas mandam (negativo e cópia sem mudança na matemática) e a
+  REVELAFILM ganha uma camada própria, o **Boost**, ligada em 50 por padrão (0 a 100 no Lab; receita `.revela` v5;
+  receitas até a v4 abrem com Boost 0 para o look salvo não mudar).
+- Onde: `criarMotor` (src/cor/pelicula.js), depois da cópia e antes da luz do projetor; só age com negativo das fichas
+  ou cópia. Em Oklab, sobre a diferença entre a cor e o cinza da própria cópia na mesma luz (o neutro, com o leve tom
+  da cópia no pé e no topo, fica idêntico) e aplicado como diferença sobre a cor original (onde não age, a cor fica bit
+  a bit igual). Faz: densidade de cor no meio-tom, cor guardada nas altas, amarelo mais cheio sem escurecer (é o
+  corante mais claro), céu de saturação moderada puxando para o ciano; cor perto do limite é empurrada cada vez menos;
+  a pele (medida na cor da cena) fica com a cópia.
+- Controle de qualidade: os 25 looks passam com Boost 0, 50 e 100 (teste em test/motor.test.js). Varredura de risco
+  (48 combinações livres: todas as bases × cópia 2383/3513 × negativo da base/500T × luz D60 × calor 40): com Boost 50
+  nenhuma reprovação nova; com Boost 100, 6 novas (pele até 12,3° e suavidade até 0,37), todas nessas combinações
+  extremas, onde o Lab já mostra o relatório. A varredura completa (1.152 combinações) passou do limite de tempo de
+  tarefa e não terminou para Boost 50/100; com Boost 0, 299 delas já reprovam.
+- Contra a referência (FilmVision 2383, exposição do plano igualada): Boost 50 aproxima a mesa e o café (ΔE −0,05 a
+  −0,06), não muda a taça e afasta um pouco o terraço (+0,1, céu mais cheio). É a assinatura da casa, não uma cópia
+  da referência.
+
+## REVELAFILM: grão pela física do negativo e da cópia; Boost vira High Density (04/11/2026)
+
+- Referência estudada: Veloura (Will's Film Drop), que vende grão "pesado nas sombras, fino nas luzes, novo a cada
+  quadro". Medimos o nosso de ponta a ponta (placas lisas de −6 a +4 stops, 250D + 2383, grão em L do Oklab).
+- Antes: o grão era proporcional à luz e ainda diminuía no fundo; na tela, quase sumia nas sombras (0,08 em −3 stops
+  contra 0,45 no cinza).
+- Agora (src/cor/textura.js, `tabelaDoGrao`): o grão nasce na densidade do negativo da ficha (granularidade ∝ √ da
+  densidade acima da base) e volta à luz pela inclinação da curva (pesa no pé); soma-se o grão da própria cópia 2383
+  (cresce com a densidade dela, pesa nas sombras da tela), 30% da variância no cinza. A DCTL leva a mesma tabela (73
+  pontos de −10 a +8 stops). Resultado na tela: sombras com mais grão (0,11 em −3, 0,08 em −4) e altas mais finas que o
+  meio-tom; o pico continua no meio-tom, que é o que a física de negativo × cópia dá.
+- "Pesado nas sombras" além disso é gosto, não física: virou o controle criativo "Grão nas sombras" (0 a 100, padrão
+  0, no Ajuste fino da textura e na DCTL), que até dobra o grão abaixo do cinza sem tocar meio-tom e altas.
+- Grão novo a cada quadro: a DCTL do Resolve não recebe o número do quadro; continua valendo animar a Semente.
+- O Boost passou a se chamar **High Density** no Lab (a receita segue com a chave `boost`).
+- `npm test` da Revela 191/191.
+
+## REVELAFILM: direcionamento de marca e workspace do Lab (04/11/2026)
+
+- Direcionamento do titular (vídeo): categoria "Cinematic Image Development", workspace em cinco etapas (Source,
+  Develop, Film, Finish, Output) e quatro áreas, integração com o AEON, identidade (carvão, grafite, marfim, vermelho
+  cinematográfico, âmbar; Inter + serifada editorial) e cinco princípios (cinema first, ciência por trás da imagem,
+  simples, não destrutivo, fluxo conectado).
+- Lab refeito como workspace (lab.html, app/workspace.css, app/lab.js): barra com o nome do look e as etapas 01–05
+  (acende a que está à vista e leva até ela), Film library à esquerda, a imagem no centro, a revelação à direita por
+  etapa; no computador cada coluna rola sozinha e a imagem fica parada; no celular, imagem, biblioteca e etapas em
+  sequência. Sala sempre escura, em preto e branco: a cor vem dos frames; azul cinematográfico só nos detalhes (etapa atual, trilho dos controles).
+- Fontes servidas pelo próprio site (CSP 'self'): Inter (variável), OFL, com a licença em fontes/ (sem serifada, pedido do titular).
+- Todos os IDs e papéis do Lab ficaram; `npm test` da Revela 191/191 (com as telas em Chromium).
+- A integração AEON ↔ REVELAFILM é direção de produto: não existe ainda (o AEON segue fechado pelo gate).
+
+## REVELAFILM: acabamento da cópia e os ajustes da cópia (04/11/2026)
+
+Pedido do titular: entender o comportamento do Filmverse Arsenal (demo, no Resolve dele) e levar para a REVELAFILM o que
+fizer sentido, com matemática própria. Nada do código deles foi lido nem copiado: o instalador (Filmverse Sync) só baixa
+as DCTLs depois da licença. Medição de caixa-preta: o titular passou pelo DCTL uma carta de medição nossa (DaVinci Wide
+Gamut / Intermediate, TIFF 16 bits: escala de cinza de −8 a +6 stops, 24 matizes × 5 cromas × 3 exposições e uma grade
+17³) e um frame dele, mudando um controle por vez. A passagem sem DCTL voltou idêntica (erro zero). As medições, a carta
+renderizada e os frames dele ficam fora do repositório e do site.
+
+- Medido (carta, padrão do Filmverse × REVELAFILM até hoje): sombras iguais; meio-tom com uns 19% mais contraste e meio
+  stop mais claro; altas que deitam antes (branco em ~93%); cinza com sombra fria e alta quente (o Split dele vem ligado);
+  cor fraca 15–30% mais cheia e cor extrema segurada (0,6×); matizes juntos em polos (vermelho e magenta para o laranja,
+  verde-amarelo para o verde, roxo para o azul). Uma leitura anterior, feita num JPEG 8 bits, dizia o contrário sobre o
+  cinza (0,85 stop mais escuro): estava errada, a carta corrigiu.
+- Controles dele, medidos um a um: Split Intensity (sombra fria/alta quente, linear de 0 a 2), Style (troca o cinza, os
+  polos e a cor), Bleach Bypass (−52% de cor e contraste aberto em 2), Filmic Saturation (cor na densidade, até o P&B que
+  clareia), Neutral Black (tira a cor só abaixo de −2 stops), Print D60/D65 (D60 ~0,6 b mais quente).
+- No motor (`ACABAMENTO` em `src/cor/pelicula.js`), depois da cópia e do High Density, só com cópia de cinema: tom (meio
+  abre, altas deitam), polos de matiz (curva periódica suave, pela saturação), compressão de cor (tanh na saturação, teto
+  menor perto do preto e do branco) e separação. A pele fica fora dos polos e da separação (pela cor da cena). Números
+  próprios, contidos: um ajuste livre contra a carta chegava a giros de 29°; ficou ~75% disso e suave.
+- Contra a carta: ΔE Oklab médio de 8,0 para 5,3 (escala de cinza 2,4 → 1,2; matizes 7,3 → 4,6; grade 9,6 → 6,6).
+- Ajustes novos no Lab (ajuste fino): **Separação** (−100 tira, +100 dobra), **Era da cópia** (retrô: cinza quente e cor
+  contida; moderno: cinza petróleo, polos mais fortes e mais cor), **Preto neutro** e **Densidade da cor** de −100 a +100
+  (agora depois da cópia). O Estilo antigo saiu (a separação e a Era fazem o papel dele). Sem branqueamento: o ponto que
+  fica parado subiu para 1 stop acima do cinza.
+- Receita `.revela` v6. Até a v5 abrem sem o acabamento e com o Estilo e a Densidade antigos (`legado`), idênticas.
+- Correções no caminho: o cinza de referência da cópia cortava a luz em zero (o azul profundo do DWG tem luminância
+  negativa) e fazia bico; agora passa suave. A proteção de pele do High Density usava um máximo com bico; agora une as
+  duas medidas sem bico.
+- QC: os 25 looks passam com o High Density em 0, 50 e 100. Nos extremos dos ajustes novos, a Separação em +100 tinge o
+  cinza além do limite do QC (0,045 / 0,035, de propósito, como o Split em 2) e a Densidade em ±100 mexe no matiz da pele
+  da 250D + 2383 (13–18° / 12). Testes: 194 de 194.
+- Material de teste: footage oficial da ARRI (ALEXA 35, Mini LF, Mini) e da DJI, só nos testes internos. Os frames do
+  titular não foram usados no desenvolvimento (pedido dele).
+- Imagens da página inicial e OG refeitas com o motor novo (mesmos frames da ZRO Filmes).
+
+## REVELAFILM: página inicial com footage do Coverr (04/11/2026)
+
+Pedido do titular: tirar os frames dele da home e usar imagens da internet, cinematográficas e vendáveis, de moda, comida,
+carro, natureza e casamento (referência de linguagem: Filmsupply, Filmverse).
+
+- Fonte: Coverr (licença do site: uso comercial, edição e cor liberados, sem atribuição; os itens premium, os com marca
+  d'água e os gerados por IA ficaram de fora). O Mixkit foi olhado e não entrou (material com mais cara de banco de
+  imagem). Unsplash e Pexels recusam acesso automatizado; Filmsupply é pago; os pacotes da Sony e da ARRI não liberam uso
+  comercial; footage em log com licença comercial não foi encontrado.
+- Seis planos (1920×1080, em `marca/home/orig-*.jpg`): carro antigo contra o sol (topo), casal na golden hour (a
+  transformação), jantar à lareira (negativos de tungstênio e 500T), campo vermelho (negativos de luz do dia e 250D),
+  mulher na praia (Eterna 500) e retrato com argola (um frame, seis histórias).
+- Os originais vêm em Rec.709: entram no motor pela entrada de still já tratado. A home diz isso: o "antes" é o
+  "Original · Rec.709" e o título da transformação virou "Do frame à película" (antes "Do log", que valia para o S-Log3).
+- Os frames da ZRO Filmes saíram do repositório (`marca/home/log-*.jpg`); o print do painel foi refeito com um frame do
+  Coverr.
+
+## REVELAFILM: Lab com modo Simples e a sua referência (04/11/2026)
+
+Pedido do titular: a REVELAFILM precisa ser eficiente como o Color Tools (Canter LAB): frame → referência → ajuste →
+exportar, com um modo simples e um profissional.
+
+- O Lab abre no **Simples**: três passos (Look, Ajuste, Exportar). Ponto de partida: um look da biblioteca ou **a sua
+  referência** (uma imagem com a cor que a pessoa quer). Uma intensidade só, os cinco ajustes principais, os presets de
+  textura e Exportar sempre à vista no computador (preso no pé da coluna).
+- A referência usa o mesmo cálculo da tela de LUT (`src/cor/referencia.js`), medido contra o frame revelado sem look
+  (base neutra, com a correção, sem os ajustes): os ajustes continuam valendo por cima dela. Ela fica só na memória (não
+  vai na receita); um look da biblioteca troca o ponto de partida e tira a referência.
+- Exportar por editor: Resolve, Premiere, Final Cut e CapCut levam a LUT; **Lightroom (foto)** leva o preset .xmp.
+- **Profissional** (um clique, lembrado no navegador): tudo o que já existia (Source, película, High Density,
+  acabamento, textura fina, tamanho da LUT, pacote profissional, receita e Meus looks).
+- Correção no caminho: no computador as colunas do workspace passaram a caber na área (antes a coluna de controles
+  crescia além dela e o rodapé cobria o botão de baixar).
+- Testes: novo teste de tela do modo Simples (referência, intensidade, LUT, preset do Lightroom, troca para um look e o
+  modo lembrado); o teste do Lab entra no Profissional. 195 de 195.
+
+## REVELAFILM: janela "Apps Absolute ZRO" no padrão do AEON (04/11/2026)
+
+Pedido do titular: os ícones da família no menu da REVELAFILM no mesmo padrão do AEON.
+
+- O menu lateral ganhou, no pé, a linha **Apps Absolute ZRO** (ícone de grade), que abre uma janela (popover: Esc e clique
+  fora fecham) com a grade de 3 colunas e o ícone de cada produto, colada ao menu na altura do botão; no celular, centrada
+  sobre a gaveta. A lista de links da família saiu do corpo do menu.
+- Só os apps lançados (CLAUDE.md, gate `zro.product_release`): Absolute ZRO, SOBEDESCE, Synquei, Relay, TPeasy, Carro do
+  Freela e Maestro. AEON e NOSSOM saíram do menu, da faixa "Uma conta. Todas as ferramentas." da página inicial e do
+  Entrar (estavam lá, contra a regra); o Relay entrou. Ícones `aeon.svg` e `nossom.svg` apagados da pasta da Revela.
+- A chave do Maestro (`MAESTRO_NA_FAMILIA`) continua funcionando com `scripts/lancamento-maestro.mjs`.
+- Correção: no Lab, com o tema escuro, a marca do topo ficava preta sobre preto (invertida duas vezes); agora só inverte
+  no tema claro.
+- Testes: o do menu abre a janela e confere a lista; o do Entrar confere que AEON e NOSSOM não aparecem. 195 de 195.

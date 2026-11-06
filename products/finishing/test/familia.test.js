@@ -23,7 +23,7 @@ test('Maestro: chave no menu, blocos na página inicial e no entrar, tudo no mes
   assert.ok(chave)
   assert.match(
     menu,
-    /if \(MAESTRO_NA_FAMILIA\) FAMILIA\.splice\(3, 0, \{ href: 'https:\/\/maestro\.absolutezro\.com', nome: 'Maestro', img: 'marca\/familia\/maestro\.svg' \}\)/,
+    /if \(MAESTRO_NA_FAMILIA\) FAMILIA\.push\(\{ href: 'https:\/\/maestro\.absolutezro\.com', nome: 'Maestro', img: 'marca\/familia\/maestro\.svg'/,
   )
   const aberto = chave[1] === 'true'
   assert.equal(bloco(ler('../index.html')), aberto)

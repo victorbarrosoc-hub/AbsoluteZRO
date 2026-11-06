@@ -84,11 +84,11 @@ describe('o que o site publica', () => {
     }
   })
 
-  test('página inicial sem CTA de ferramenta: "Conhecer o projeto" é âncora, Z "Chegando", Voltar ao HUB no fecho', () => {
+  test('página inicial sem CTA de ferramenta: "Explorar looks" é âncora, Z "Chegando", Voltar ao HUB no fecho', () => {
     const html = ler('index.html')
     for (const f of FERRAMENTAS) assert.doesNotMatch(html, new RegExp(`href="${f}(\\.html)?[^"]*"`), f)
     assert.doesNotMatch(html, /Testar agora|Abrir a Revela|Converter agora|Testar no seu frame|Conversar com a Z|Criar conta|Agora na Revela/)
-    assert.match(html, /href="#looks">Conhecer o projeto</)
+    assert.match(html, /href="#looks">Explorar looks/)
     assert.match(html, /Chegando à Revela/)
     assert.match(html, /Em desenvolvimento/)
     assert.match(html, /href="https:\/\/absolutezro\.com\/inicio">Voltar ao HUB</)

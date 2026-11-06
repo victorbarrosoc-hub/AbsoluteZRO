@@ -8,7 +8,7 @@ import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
 const raiz = new URL('..', import.meta.url)
 const svg = readFileSync(new URL('marca/revela-icone.svg', raiz), 'utf8')
-  .replace(/rx="186"/, 'rx="0"') // fundo até a borda
+  .replaceAll('rx="186"', 'rx="0"') // fundo (e o recorte da curva) até a borda
   .replace(/<rect x="101"[^>]*\/>/, '') // sem o fio de luz da borda
 
 const TAMANHOS = [

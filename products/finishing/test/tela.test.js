@@ -414,8 +414,8 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
     pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
     await pagina.goto(endereco)
     await pagina.getByRole('heading', { level: 1 }).waitFor()
-    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /Revela a cor/)
-    for (const id of ['looks', 'ferramentas', 'entrega', 'converter', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
+    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /^REVELAFILM$/)
+    for (const id of ['comparar', 'filmes', 'ferramentas', 'looks', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
     // sem sessão, o topo oferece "Entrar"
     await pagina.locator('#conta.conta--pronta').waitFor()
     assert.equal(await pagina.locator('#conta').getAttribute('href'), 'entrar.html')
@@ -472,9 +472,10 @@ test('entrar: sem sessão mostra os botões; login desligado avisa', async () =>
   const entrar = await pagina.getByRole('link', { name: 'Entrar com Absolute ZRO' }).getAttribute('href')
   assert.match(entrar, /^\/api\/zro\/entrar\?volta=%2Fconverter/)
   assert.match(await pagina.getByRole('link', { name: 'Criar conta' }).getAttribute('href'), /criar=1/)
-  // a conta vale para a família inteira, AEON e a própria Absolute ZRO inclusive
+  // a conta vale para a família inteira, a própria Absolute ZRO inclusive; os apps não lançados (AEON, NOSSOM) não aparecem
   const familia = await pagina.locator('.familia-mini img').evaluateAll((n) => n.map((i) => i.alt))
-  for (const nome of ['AEON', 'Absolute ZRO']) assert.ok(familia.includes(nome), nome)
+  for (const nome of ['Relay', 'Absolute ZRO']) assert.ok(familia.includes(nome), nome)
+  for (const nome of ['AEON', 'NOSSOM']) assert.ok(!familia.includes(nome), nome)
 
   await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' }))
   await pagina.reload()
@@ -558,18 +559,22 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   await pagina.waitForURL(/cst\.html$/)
   assert.equal(await pagina.locator('.menu-topo .menu-botao').getAttribute('aria-expanded'), 'true', 'o menu aberto devia ser lembrado')
   assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
-  // família em ordem alfabética, como em todas as plataformas
-  const familia = await pagina.locator('#menu .menu-item[href^="http"]').allTextContents()
+  // família: "Apps Absolute ZRO" abre a janela com a grade (como no AEON), só com os apps lançados
+  await pagina.getByRole('button', { name: 'Apps Absolute ZRO' }).click()
+  await pagina.locator('#menuApps:popover-open').waitFor()
+  const familia = await pagina.locator('#menuApps .menu-app span').allTextContents()
   // o Maestro entra no lançamento (MAESTRO_NA_FAMILIA em app/menu.js, scripts/lancamento-maestro.mjs na raiz)
   const comMaestro = /^const MAESTRO_NA_FAMILIA = true$/m.test(readFileSync(new URL('../app/menu.js', import.meta.url), 'utf8'))
-  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', ...(comMaestro ? ['Maestro'] : []), 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
+  assert.deepEqual(familia, ['Absolute ZRO', 'SOBEDESCE', 'Synquei', 'Relay', 'TPeasy', 'Carro do Freela', ...(comMaestro ? ['Maestro'] : [])])
+  await pagina.keyboard.press('Escape')
+  await pagina.locator('#menuApps:popover-open').waitFor({ state: 'detached' })
   await contexto.close()
 
   const celular = await navegador.newPage({ viewport: { width: 375, height: 800 } })
   await celular.goto(endereco + 'lut.html')
   assert.equal(await celular.locator('#menu').isVisible(), false)
   await celular.getByRole('button', { name: 'Abrir menu' }).click()
-  await celular.locator('#menu').getByRole('link', { name: 'Sobedesce' }).waitFor()
+  await celular.locator('#menu').getByRole('button', { name: 'Apps Absolute ZRO' }).waitFor()
   await celular.keyboard.press('Escape')
   await celular.waitForFunction(() => !document.documentElement.classList.contains('menu-gaveta'))
   const largura = await celular.evaluate(() => document.documentElement.scrollWidth)
@@ -612,13 +617,13 @@ test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e 
   await pagina.close()
 })
 
-test('página inicial fechada ao público: a comparação segue, "Conhecer o projeto" é âncora e nada leva a uma ferramenta', async () => {
+test('página inicial fechada ao público: a comparação segue, "Explorar looks" é âncora e nada leva a uma ferramenta', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco)
-  await pagina.getByRole('slider', { name: 'Comparar log e cor final' }).fill('25')
+  await pagina.getByRole('slider', { name: 'Comparar original e cor final' }).fill('25')
   assert.equal(await pagina.locator('.comparar').evaluate((n) => [n.classList.contains('manual'), n.style.getPropertyValue('--corte')].join()), 'true,25%')
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
   const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
@@ -626,7 +631,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
     hrefs.filter((h) => /^(inicio|lut|lab|looks|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
     [],
   )
-  assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
+  assert.equal(await pagina.getByRole('link', { name: 'Explorar looks' }).first().getAttribute('href'), '#looks')
   assert.equal(await pagina.getByRole('link', { name: 'Testar agora' }).count(), 0)
   assert.equal(await pagina.locator('#ferramentas .cartao-home').count(), 4)
   assert.equal(await pagina.locator('#ferramentas a.cartao-home').count(), 0)
@@ -961,7 +966,7 @@ test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desli
   await dock.getByRole('link', { name: 'CST' }).click()
   await pagina.waitForURL(/cst\.html$/)
   await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
-  assert.equal(await pagina.title(), 'Revela · Espaço de cor')
+  assert.equal(await pagina.title(), 'REVELAFILM · Espaço de cor')
   assert.equal(await pagina.evaluate(() => window.semRecarregar), true, 'a página recarregou')
   assert.equal(await pagina.locator('#menu').getAttribute('data-mesmo'), '1', 'o menu foi refeito')
   assert.equal(await pagina.locator('main').count(), 1)
@@ -1008,7 +1013,7 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
   for (const f of ['index.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
     const html = readFileSync(join(RAIZ, f), 'utf8')
-    for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
+    for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="REVELAFILM"', 'black-translucent'])
       assert.ok(html.includes(marca), `${f}: ${marca}`)
   }
 
@@ -1288,9 +1293,13 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco + 'lab.html')
-  await pagina.getByRole('heading', { name: 'Crie o seu look.' }).waitFor()
+  await pagina.getByRole('heading', { name: 'Revele a imagem.' }).waitFor()
   await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
   await pagina.locator('#lab:not([hidden])').waitFor()
+  // o Lab abre no modo Simples; o Profissional tem a película, a textura fina e o pacote
+  assert.equal(await pagina.getByRole('button', { name: 'Simples' }).getAttribute('aria-pressed'), 'true')
+  assert.equal(await pagina.getByRole('button', { name: 'Pacote profissional' }).count(), 0)
+  await pagina.getByRole('button', { name: 'Profissional' }).click()
   // "Analisar e corrigir" já vem ligado e diz o que fez
   assert.equal(await pagina.getByRole('switch', { name: 'Analisar e corrigir' }).isChecked(), true)
   assert.notEqual((await pagina.locator('#leitura-correcao').textContent()).trim(), '')
@@ -1300,6 +1309,14 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
   // a cópia de cinema vai na receita
   await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).selectOption('2383')
+  // negativo das fichas: Kodak e Fuji, e a luz do projetor
+  await pagina.getByRole('combobox', { name: 'Negativo' }).selectOption('5219')
+  await pagina.getByRole('combobox', { name: 'Luz da cópia' }).selectOption('D60')
+  // textura: preset de 35 mm (grão e halation) com a prévia passando pela cena
+  await pagina.getByRole('radio', { name: '35 mm' }).click()
+  assert.equal(await pagina.locator('#tx-grao').inputValue(), '100')
+  // o Calor fica no ajuste fino
+  await pagina.getByText('Ajuste fino', { exact: true }).click()
   await pagina.locator('#aj-calor').fill('40')
   await pagina.locator('#aj-calor').dispatchEvent('change')
   await pagina.locator('#nome-look').fill('Noite quente')
@@ -1314,6 +1331,9 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(r.base, 'negativo-500t')
   assert.equal(r.ajustes.calor, 40)
   assert.equal(r.copia, '2383')
+  assert.equal(r.negativo, '5219')
+  assert.equal(r.luzCopia, 'D60')
+  assert.equal(r.textura.grao, 1)
 
   // zera, reabre a receita e volta tudo
   await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
@@ -1333,12 +1353,54 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_DWG-DI-to-DWG-DI_v1_65.cube'))
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
   assert.ok(zip.includes('O look inclui a cópia 2383'))
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_Textura_DWG-DI.dctl'))
   assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
   // salvo em Meus looks: aparece na grade da tela de LUT
   await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
   await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
   assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Revela Lab no modo Simples: a sua referência como ponto de partida, intensidade única, LUT e preset do Lightroom', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.evaluate(() => localStorage.removeItem('revela-lab-modo'))
+  await pagina.reload()
+  await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  // três passos no Simples: Look, Ajuste, Exportar
+  assert.deepEqual(await pagina.locator('.ws-etapas a:visible').allTextContents(), ['01Look', '02Ajuste', '03Exportar'])
+  assert.equal(await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).count(), 0)
+  // a referência entra como ponto de partida
+  await pagina.setInputFiles('#arquivo-ref', 'exemplos/referencia-cavalo.jpg')
+  await pagina.getByText('Referência aplicada.', { exact: false }).waitFor()
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Sua referência')
+  assert.equal(await pagina.locator('#bases [aria-checked=true]').count(), 0)
+  await pagina.locator('#intensidade-simples').fill('60')
+  await pagina.locator('#intensidade-simples').dispatchEvent('change')
+  assert.equal(await pagina.locator('#valor-intensidade-simples').textContent(), '60%')
+  // a LUT sai com a referência; o Lightroom sai como preset .xmp
+  await pagina.locator('#nome-look').fill('Cavalo')
+  const [lut] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(lut.suggestedFilename(), 'revela-lab-cavalo-33.cube')
+  await pagina.getByRole('combobox', { name: 'Para qual editor' }).selectOption('lightroom')
+  const [xmp] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar preset' }).click()])
+  assert.equal(xmp.suggestedFilename(), 'cavalo.xmp')
+  assert.match(readFileSync(await xmp.path(), 'utf8'), /crs:PresetType="Normal"/)
+  // um look da biblioteca troca o ponto de partida e tira a referência
+  await pagina.getByRole('tab', { name: 'Cinema' }).click()
+  await pagina.locator('#bases [data-look="250d-2383"]').click()
+  assert.equal(await pagina.locator('#ref-tirar').isHidden(), true)
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), '250D + 2383')
+  // o modo fica lembrado
+  await pagina.getByRole('button', { name: 'Profissional' }).click()
+  assert.equal(await pagina.evaluate(() => localStorage.getItem('revela-lab-modo')), 'pro')
   assert.deepEqual(erros, [])
   await pagina.close()
 })

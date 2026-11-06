@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232327"/>
+      <stop offset="1" stop-color="#0C0C0E"/>
+    </linearGradient>
+    <linearGradient id="sinal" x1="168" y1="0" x2="760" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2FD9AE"/>
+      <stop offset="1" stop-color="#D8F76A"/>
+    </linearGradient>
+    <radialGradient id="luz" cx="0.72" cy="0.5" r="0.45">
+      <stop offset="0" stop-color="#C9F57A" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#C9F57A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Placa até a borda (ícone de família): sem margem nem sombra, quem mostra recorta os cantos. -->
+  <rect width="1024" height="1024" rx="232" fill="url(#fundo)"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#luz)"/>
+  <!-- O relé: o trilho, o sinal que já passou e o anel do O no fim do curso (como o O da Absolute ZRO). -->
+  <rect x="168" y="400" width="688" height="224" rx="112" fill="#fff" fill-opacity="0.09"/>
+  <rect x="168" y="400" width="576" height="224" rx="112" fill="url(#sinal)"/>
+  <circle cx="744" cy="512" r="82" fill="#0C0C0E"/>
+  <circle cx="744" cy="512" r="82" fill="none" stroke="#fff" stroke-width="42"/>
+</svg>

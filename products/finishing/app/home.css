@@ -291,7 +291,7 @@ span.cartao-home:hover {
 }
 /* o selo "Em desenvolvimento" do topo (o mesmo desenho do selo da Z) */
 .hero .selo-dev {
-  margin: 22px auto 0;
+  margin: 0 auto 18px;
 }
 .cartao-home b {
   font-size: 22px;
@@ -816,4 +816,1018 @@ span.cartao-home:hover {
   .looks-home figure:first-child {
     grid-column: 1 / -1;
   }
+}
+
+/* ─────────── topo de cinema (titular, 04/11/2026) ───────────
+   Na linha da Filmverse: um frame inteiro revelado no Lab, título fino em caixa alta à esquerda, código de borda do
+   filme à direita, a marca REVELAFILM (só a palavra) e "by ABSOLUTE ZRO". O topo, as películas e a comparação ficam
+   sempre no escuro, como uma sala de cinema; o resto da página segue o tema. */
+
+.home:has(.hero--filme) .nav {
+  position: fixed;
+  inset: 0 0 auto;
+}
+.nav .logo-foto {
+  display: none;
+}
+.home:has(.hero--filme) .nav:not(.rolou) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.home:has(.hero--filme) .nav:not(.rolou) .marca img {
+  display: none;
+}
+.home:has(.hero--filme) .nav:not(.rolou) .marca .logo-foto {
+  display: block;
+}
+.home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta, .nav-tema) {
+  color: rgb(255 255 255 / 0.86);
+}
+.home:has(.hero--filme) .nav:not(.rolou) :is(.nav-links a, .conta):hover {
+  color: #fff;
+}
+.home:has(.hero--filme) .nav-links a {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.home:has(.hero--filme) .conta {
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #050505;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hero--filme {
+  display: grid;
+  align-items: end;
+  min-height: max(100svh, 640px);
+  padding: 0;
+  overflow: hidden;
+  background: #050505;
+  color: #ffffff;
+  text-align: left;
+}
+.hero-foto img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 40%;
+}
+.hero--filme::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(5 5 5 / 0.88) 0%, rgb(5 5 5 / 0.62) 30%, rgb(5 5 5 / 0) 58%), linear-gradient(0deg, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0) 30%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
+}
+/* a borda do filme: código de borda na vertical, entre dois fios */
+.hero-borda {
+  position: absolute;
+  top: 18%;
+  bottom: 14%;
+  right: clamp(18px, 2.4vw, 36px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin: 0;
+  color: rgb(255 255 255 / 0.62);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+}
+.hero-borda::before,
+.hero-borda::after {
+  content: '';
+  flex: 1;
+  width: 1px;
+  background: rgb(255 255 255 / 0.35);
+}
+.hero-borda span {
+  writing-mode: vertical-rl;
+}
+.hero-texto {
+  width: 100%;
+  padding: 140px clamp(20px, 5.5vw, 80px) calc(44px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.home .hero-titulo {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(48px, 6.6vw, 104px);
+  font-weight: 200;
+  letter-spacing: -0.01em;
+  line-height: 0.96;
+  text-align: left;
+  text-transform: uppercase;
+}
+.hero--filme .hero-sub {
+  max-width: 28ch;
+  margin: 24px 0 0;
+  color: rgb(255 255 255 / 0.88);
+  font-size: clamp(17px, 1.6vw, 21px);
+  text-align: left;
+}
+.hero--filme .hero-acoes {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+  margin-top: 32px;
+}
+.pilula-clara {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  color: #050505;
+  background: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.pilula-clara:hover {
+  background: #fff;
+}
+.link-fio {
+  padding-bottom: 4px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid rgb(255 255 255 / 0.6);
+}
+.link-fio:hover {
+  border-bottom-color: #fff;
+}
+.hero-pe {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: clamp(40px, 10vh, 112px);
+}
+.hero-by {
+  margin: 0;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 13px;
+}
+.hero-by b {
+  margin-left: 6px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+.hero--filme .selo-dev {
+  margin: 0;
+  color: rgb(255 255 255 / 0.78);
+  background: rgb(255 255 255 / 0.1);
+}
+
+/* ─────────── as películas ─────────── */
+
+.filmes,
+.sec-log {
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
+}
+.filmes-olho {
+  margin: 0 0 18px;
+  color: #9a9a9a;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.filmes-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.filme {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  aspect-ratio: 4 / 5;
+  background: #111111;
+}
+.filme img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--mola);
+}
+.filme:hover img {
+  transform: scale(1.04);
+}
+.filme::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(5 5 5 / 0.85), rgb(5 5 5 / 0) 48%);
+}
+.filme figcaption {
+  position: absolute;
+  z-index: 1;
+  left: 22px;
+  right: 22px;
+  bottom: 20px;
+  display: grid;
+  gap: 8px;
+}
+.filme b {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.filme span {
+  color: rgb(255 255 255 / 0.72);
+  font-size: 13px;
+}
+.sec-log {
+  padding-top: 24px;
+  padding-bottom: clamp(56px, 8vw, 96px);
+}
+.sec-log .comparar {
+  margin-top: clamp(40px, 6vw, 64px);
+}
+@media (max-width: 760px) {
+  .hero-borda {
+    display: none;
+  }
+  .hero--filme::after {
+    background:
+      linear-gradient(0deg, rgb(5 5 5 / 0.92) 22%, rgb(5 5 5 / 0.5) 46%, rgb(5 5 5 / 0) 66%), linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 20%);
+  }
+  .filmes-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filme {
+    aspect-ratio: 4 / 3;
+  }
+}
+/* a barra da página inicial fica no escuro do cinema também ao rolar: vidro escuro, marca e links em creme */
+.home:has(.hero--filme) .nav.rolou {
+  background: rgb(5 5 5 / 0.72);
+  border-bottom-color: rgb(255 255 255 / 0.08);
+}
+.home:has(.hero--filme) .nav .marca img {
+  display: none;
+}
+.home:has(.hero--filme) .nav .marca .logo-foto {
+  display: block;
+}
+.home:has(.hero--filme) .nav :is(.nav-links a, .nav-tema) {
+  color: rgb(255 255 255 / 0.8);
+}
+.home:has(.hero--filme) .nav .nav-links a:hover {
+  color: #fff;
+}
+/* títulos das seções escuras no mesmo desenho do topo: finos e em caixa alta */
+.home :is(.filmes, .sec-log) h2 {
+  font-size: clamp(36px, 5vw, 72px);
+  font-weight: 200;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.home :is(.filmes, .sec-log) h2 .fino {
+  font-weight: 200;
+}
+/* o texto do topo no centro, como na Filmverse (titular, 04/11/2026): título, linha e ações no meio da foto, a
+   assinatura "by ABSOLUTE ZRO" embaixo; a foto escurece por igual em vez de só à esquerda */
+.hero--filme {
+  align-items: center;
+  text-align: center;
+}
+.hero--filme::after {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 52%, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0.12) 70%), linear-gradient(0deg, rgb(5 5 5 / 0.6), rgb(5 5 5 / 0) 30%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
+}
+.hero--filme .hero-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 120px;
+}
+.home .hero--filme .hero-titulo,
+.hero--filme .hero-sub {
+  text-align: center;
+}
+.hero--filme .hero-sub {
+  margin-inline: auto;
+}
+.hero--filme .hero-acoes {
+  justify-content: center;
+}
+.hero--filme .hero-pe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(32px + env(safe-area-inset-bottom));
+  justify-content: center;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .hero--filme::after {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 55%, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0.15) 75%), linear-gradient(0deg, rgb(5 5 5 / 0.7), rgb(5 5 5 / 0) 30%),
+      linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 20%);
+  }
+  .hero--filme .hero-texto {
+    padding-bottom: 150px;
+  }
+  .hero--filme .hero-pe {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* o nome da marca como título, numa linha só (titular, 04/11/2026): REVELA fina, FILM pesada */
+.home .hero--filme .hero-nome {
+  font-size: clamp(42px, 10.5vw, 168px);
+  font-weight: 200;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hero-nome b {
+  font-weight: 800;
+}
+.hero--filme .hero-sub {
+  max-width: none;
+  margin-top: 22px;
+  font-size: clamp(17px, 1.7vw, 22px);
+  letter-spacing: 0.01em;
+}
+
+/* ─────────── home de cinema (titular, 04/11/2026) ───────────
+   O topo se revela: o frame entra em log e a película aparece por cima, como a imagem no banho; o crédito embaixo
+   troca de "LogC3" para a película. Títulos em caixa normal, peso médio e justos, como os créditos de um trailer. */
+
+.hero--filme::after {
+  background:
+    radial-gradient(ellipse 72% 58% at 50% 50%, rgb(5 5 5 / 0.42), rgb(5 5 5 / 0.08) 72%), linear-gradient(0deg, rgb(5 5 5 / 0.65), rgb(5 5 5 / 0) 32%),
+    linear-gradient(180deg, rgb(5 5 5 / 0.5), rgb(5 5 5 / 0) 18%);
+}
+.revelacao,
+.revelacao picture,
+.revelacao img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.revelacao {
+  z-index: -2;
+}
+.revelacao img {
+  object-fit: cover;
+  object-position: 55% 40%;
+}
+.home .hero--filme .hero-titulo {
+  font-size: clamp(40px, 6.4vw, 100px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.hero--filme .hero-sub {
+  max-width: 34ch;
+  margin-top: 22px;
+}
+.hero-credito {
+  position: absolute;
+  left: clamp(20px, 5vw, 64px);
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  display: grid;
+  margin: 0;
+  color: rgb(255 255 255 / 0.8);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.hero-credito span {
+  grid-area: 1 / 1;
+}
+.hero-credito .credito-filme {
+  opacity: 0;
+}
+.hero--filme .hero-pe {
+  left: auto;
+  right: clamp(20px, 5vw, 64px);
+  justify-content: flex-end;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .revelacao-filme {
+    opacity: 0;
+    animation: revelar 3.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+  }
+  .hero-credito .credito-log {
+    animation: sumir 0.8s ease 2.4s forwards;
+  }
+  .hero-credito .credito-filme {
+    animation: surgir 0.8s ease 3s forwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-credito .credito-log {
+    opacity: 0;
+  }
+  .hero-credito .credito-filme {
+    opacity: 1;
+  }
+}
+@keyframes revelar {
+  0% {
+    opacity: 0;
+    filter: brightness(1.6) contrast(0.6);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes sumir {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes surgir {
+  to {
+    opacity: 1;
+  }
+}
+
+/* as seções escuras: comparação, películas e o Lab */
+.lab-home {
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
+}
+.home :is(.filmes, .sec-log, .lab-home) h2 {
+  font-size: clamp(36px, 5.2vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.home :is(.filmes, .sec-log, .lab-home) h2 .fino {
+  color: #7d7d7d;
+  font-weight: 400;
+}
+.sec-log {
+  padding-top: clamp(88px, 12vw, 160px);
+}
+.pelis {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 1180px;
+  margin: 24px auto 0;
+}
+.pelis button {
+  display: grid;
+  gap: 2px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 14px;
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.pelis button small {
+  color: #9a9a9a;
+  font-size: 12px;
+  font-weight: 500;
+}
+.pelis button[aria-checked='true'] {
+  color: #050505;
+  background: #ffffff;
+}
+.pelis button[aria-checked='true'] small {
+  color: #555555;
+}
+.comparar .depois {
+  transition: opacity 0.35s;
+}
+.lab-home .apoio {
+  color: #9a9a9a;
+}
+.painel {
+  max-width: 1180px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 60px 120px -40px rgb(0 0 0 / 0.8);
+}
+.painel img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: 40px auto 0;
+  padding: 0;
+  list-style: none;
+}
+.numeros li {
+  display: grid;
+  gap: 6px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+  color: #9a9a9a;
+  font-size: 14px;
+}
+.numeros b {
+  color: #ffffff;
+  font-size: clamp(22px, 2.6vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+@media (max-width: 760px) {
+  .hero-credito {
+    left: 0;
+    right: 0;
+    bottom: calc(118px + env(safe-area-inset-bottom));
+    justify-items: center;
+  }
+  .hero--filme .hero-pe {
+    left: 0;
+    right: 0;
+    justify-content: center;
+  }
+  .numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.painel {
+  padding: 0;
+  background: #050505;
+}
+
+/* ─────────── The art of revelation (titular, 04/11/2026) ───────────
+   A home abre como um filme: cinemascope, o nome em contraste fino × pesado e um feixe de luz que atravessa o frame
+   enquanto ele se revela. Depois, os capítulos (01 a 05) com olho numerado, imagens que se revelam ao rolar e uma
+   atmosfera de cor que muda com a película escolhida. Luz e sombra fazem o desenho; nada de ícone. */
+
+.abertura {
+  --barra: clamp(0px, calc((100svh - 100vw / 2.39) / 2), 18svh);
+}
+.abertura::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-block: var(--barra) solid #000;
+}
+.abertura .luz {
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(105deg, transparent 42%, rgb(255 236 210 / 0.22) 50%, transparent 58%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .abertura .luz {
+    animation: feixe 3.6s cubic-bezier(0.45, 0, 0.2, 1) 0.6s;
+  }
+}
+@keyframes feixe {
+  0% {
+    opacity: 0;
+    transform: translateX(-35%);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(35%);
+  }
+}
+.abertura .hero-texto {
+  position: relative;
+  z-index: 1;
+}
+.abertura-olho,
+.cap-olho {
+  margin: 0 0 18px;
+  color: rgb(255 255 255 / 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+}
+.home .abertura .abertura-nome {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(46px, 11vw, 176px);
+  font-weight: 200;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  white-space: nowrap;
+  text-shadow: 0 2px 50px rgb(0 0 0 / 0.35);
+}
+.abertura-nome b {
+  font-weight: 800;
+}
+.abertura .hero-sub {
+  max-width: 40ch;
+}
+.abertura .hero-credito,
+.abertura .hero-pe {
+  z-index: 1;
+  bottom: calc(var(--barra) + 24px);
+}
+
+/* capítulos */
+.cap {
+  position: relative;
+  isolation: isolate;
+  --atm: #6b3a1f;
+}
+.cap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--atm);
+  opacity: 0;
+  -webkit-mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
+  mask: radial-gradient(ellipse 70% 55% at 50% 0%, #000, transparent 72%);
+  transition: background-color 0.9s ease;
+  pointer-events: none;
+}
+.cap-olho {
+  text-align: center;
+}
+.cap-olho span {
+  margin-right: 14px;
+  color: #ffffff;
+}
+.cap .apoio {
+  color: #9a9a9a;
+}
+.sec-log[data-atm='500t-2383'] {
+  --atm: #7a3818;
+}
+.sec-log[data-atm='250d-2383'] {
+  --atm: #8a5a26;
+}
+.sec-log[data-atm='500t-3513'] {
+  --atm: #2f4a46;
+}
+.sec-log[data-atm='eterna500-3513'] {
+  --atm: #24384a;
+}
+.sec-log[data-atm='500t-scan'] {
+  --atm: #4a4a46;
+}
+.filmes {
+  --atm: #3a2a1c;
+}
+.motor,
+.historias,
+.fecho {
+  --texto: #ffffff;
+  --mudo: #9a9a9a;
+  --linha: rgb(255 255 255 / 0.1);
+  --t: 255 255 255;
+  background: #050505;
+  color: #ffffff;
+}
+.motor {
+  --atm: #1f2a2a;
+}
+.historias {
+  --atm: #3d2614;
+}
+.home :is(.motor, .historias, .fecho) h2 {
+  font-size: clamp(36px, 5.2vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-transform: none;
+}
+.home :is(.motor, .historias, .fecho) h2 .fino {
+  color: #7d7d7d;
+  font-weight: 400;
+}
+
+/* 02 · film stocks: cada quadro entra em log e se revela quando chega à tela */
+.stocks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1320px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.stock {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  aspect-ratio: 4 / 5;
+  background: #111111;
+}
+.stock img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stock .stock-filme {
+  opacity: 0;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--d, 0) * 120ms + 300ms);
+}
+.stock.visivel .stock-filme,
+:root:not(.js) .stock .stock-filme {
+  opacity: 1;
+}
+.stock::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(5 5 5 / 0.88), rgb(5 5 5 / 0) 55%);
+}
+.stock figcaption {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: grid;
+  gap: 4px;
+}
+.stock small {
+  color: rgb(255 255 255 / 0.6);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.stock b {
+  font-size: clamp(16px, 1.5vw, 20px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.stock span {
+  color: rgb(255 255 255 / 0.7);
+  font-size: 12px;
+}
+.stock em {
+  max-height: 0;
+  overflow: hidden;
+  color: rgb(255 255 255 / 0.8);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+  transition: max-height 0.4s ease;
+}
+.stock:hover em {
+  max-height: 60px;
+}
+.copias {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1320px;
+  margin: 16px auto 0;
+  padding: 0;
+  list-style: none;
+}
+.copias li {
+  display: grid;
+  gap: 6px;
+  padding: 22px 0 0;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+}
+.copias small {
+  color: #7d7d7d;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.copias b {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.copias span {
+  color: #9a9a9a;
+  font-size: 14px;
+}
+
+/* 03 · the engine */
+.motor-trio {
+  max-width: 1180px;
+}
+.motor .cartao-home {
+  gap: 8px;
+  padding: 24px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  color: #ffffff;
+}
+.motor .cartao-home small {
+  color: #7d7d7d;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.motor .cartao-home b {
+  font-size: 20px;
+  font-weight: 500;
+}
+.motor .cartao-home span:last-child {
+  color: #9a9a9a;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* 04 · one frame, different stories */
+.historias-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 1320px;
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.historia {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.historia img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 1.2s var(--mola);
+}
+.historia:hover img {
+  transform: scale(1.03);
+}
+.historia figcaption {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgb(5 5 5 / 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 12px;
+}
+.historia figcaption b {
+  font-weight: 600;
+}
+
+/* 05 · your image. your film. e a assinatura */
+.fecho {
+  position: relative;
+  isolation: isolate;
+  --atm: #6b3a1f;
+}
+.fecho .apoio {
+  color: #9a9a9a;
+}
+.assinatura {
+  margin: clamp(56px, 9vw, 112px) 0 0;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  text-align: center;
+}
+.assinatura b {
+  font-weight: 800;
+}
+.assinatura span {
+  margin-left: 10px;
+  color: #7d7d7d;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+@media (max-width: 1000px) {
+  .stocks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .abertura {
+    --barra: 0px;
+  }
+  .stocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .copias,
+  .historias-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* a abertura com luz de dia pede mais sombra para o nome e as linhas */
+.abertura::after {
+  background: radial-gradient(ellipse 60% 50% at 50% 48%, rgb(5 5 5 / 0.55), rgb(5 5 5 / 0.2) 75%), linear-gradient(0deg, rgb(5 5 5 / 0.6), rgb(5 5 5 / 0) 34%);
+}
+.abertura-olho {
+  text-shadow: 0 1px 18px rgb(0 0 0 / 0.6);
+}
+@media (max-width: 760px) {
+  .abertura .hero-credito {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .abertura .hero-pe {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .abertura::after {
+    background: linear-gradient(0deg, #050505 18%, rgb(5 5 5 / 0.55) 48%, rgb(5 5 5 / 0.25) 70%, rgb(5 5 5 / 0.5) 100%);
+  }
+}
+.abertura .abertura-olho {
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.6),
+    0 0 24px rgb(0 0 0 / 0.7);
+}
+/* o nome na abertura no tamanho de um título de crédito, não de cartaz (titular, 04/11/2026) */
+.home .abertura .abertura-nome {
+  font-size: clamp(26px, 3.4vw, 50px);
+  letter-spacing: 0.26em;
+  margin-right: -0.26em;
+  line-height: 1.1;
+}
+.abertura .hero-sub {
+  margin-top: 18px;
+  font-size: clamp(15px, 1.25vw, 18px);
+}
+.abertura .hero-acoes {
+  margin-top: 28px;
+}
+.home .abertura .abertura-olho {
+  margin-bottom: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+}
+.home .abertura .hero-credito {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+}
+.home .abertura .selo-dev {
+  font-size: 12px;
+}
+/* preto e branco; o azul cinematográfico só nos detalhes (titular, 04/11/2026): a cor vem dos frames */
+.home .hero--filme .selo-dev i,
+.home .fecho .selo-dev i {
+  background: #4a86c8;
 }

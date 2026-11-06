@@ -45,3 +45,18 @@ botaoTema?.addEventListener('click', () => {
   pintarTema()
 })
 if (botaoTema) pintarTema()
+
+// A revelação: cada botão revela o mesmo log numa película (imagens de scripts/home-revelacoes.mjs)
+const revDepois = document.getElementById('revDepois')
+const revRotulo = document.getElementById('revRotulo')
+const pelis = [...document.querySelectorAll('.pelis [data-rev]')]
+for (const b of pelis) {
+  new Image().src = `marca/home/rev-${b.dataset.rev}.jpg` // já carrega, para a troca não piscar
+  b.addEventListener('click', () => {
+    for (const o of pelis) o.setAttribute('aria-checked', String(o === b))
+    document.getElementById('comparar').dataset.atm = b.dataset.rev // a atmosfera da seção muda com a película
+    revDepois.src = `marca/home/rev-${b.dataset.rev}.jpg`
+    const [nome, copia] = [b.firstChild.textContent.trim(), b.querySelector('small').textContent.trim()]
+    revRotulo.textContent = `${nome} · ${copia.replace('cópia ', '')}`
+  })
+}

@@ -7,7 +7,7 @@ import { aplicarTetra, assar } from './cube.js'
 import { CURVAS, matrizGamut } from './espacos.js'
 import { criarTela, diParaLinear, linearParaDi } from './cena.js'
 import { linearParaOklab } from './oklab.js'
-import { copiaDe } from './copia.js'
+import { branco709, copiaDe } from './copia.js'
 
 const mul = (m, v) => [
   m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
@@ -75,7 +75,11 @@ function sorteio(semente = 7) {
  */
 export function avaliarLook(motor, opcoes = {}) {
   const tela = criarTela('rec709')
-  const ver = (x) => tela.aplicar(motor.emCena(x))
+  // com a luz do projetor quente (D60, D55) a cópia inteira leva o tom da lâmpada, de propósito: as medidas de cor
+  // são as de um olho adaptado à lâmpada (o branco dela vira o neutro), como numa sala de cinema
+  const lampada = motor.luzCopia && motor.luzCopia !== 'D65' ? branco709(motor.luzCopia) : null
+  const adaptar = (c) => (lampada ? c.map((v, i) => (Math.max(0, v) ** 2.4 / lampada[i]) ** (1 / 2.4)) : c)
+  const ver = (x) => adaptar(tela.aplicar(motor.emCena(x)))
   const verificacoes = []
   const conferir = (id, nome, valor, limite, ok, detalhe = '') => verificacoes.push({ id, nome, valor: fixo(valor), limite, ok, detalhe })
 

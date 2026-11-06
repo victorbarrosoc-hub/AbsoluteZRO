@@ -24,20 +24,20 @@ const FERRAMENTAS = [
   { href: 'entrega.html', nome: 'Entrega', icone: 'entrega', pagina: 'entrega' },
   { href: 'converter.html', nome: 'Converter', icone: 'converter', pagina: 'converter' },
 ]
+// os apps da Absolute ZRO que estão no ar (gate `zro.product_release`, CLAUDE.md): só os lançados aparecem; AEON, NOSSOM e
+// Rift Motion ficam de fora até a migration que abre cada um. Mesma ordem e mesmos ícones da janela de apps do AEON.
 const FAMILIA = [
-  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
-  { href: 'https://aeon.absolutezro.com', nome: 'AEON', img: 'marca/familia/aeon.svg' },
-  { href: 'https://carro.absolutezro.com', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
-  { href: 'https://quasar.absolutezro.com', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
-  { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
-  { href: 'https://tpeasy.absolutezro.com', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp', papel: 'Sua conta e seus projetos' },
+  { href: 'https://sobedesce.absolutezro.com', nome: 'SOBEDESCE', img: 'marca/familia/sobedesce.svg', papel: 'Descarga e subida conferidas' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: 'marca/familia/synquei.svg', papel: 'Câmeras sincronizadas pelo som' },
+  { href: 'https://relay.absolutezro.com', nome: 'Relay', img: 'marca/familia/relay.svg', papel: 'Versões para cada rede' },
+  { href: 'https://tpeasy.absolutezro.com', nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', papel: 'Teleprompter com o roteiro' },
+  { href: 'https://carro.absolutezro.com', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png', papel: 'Escala de freelas' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
 const MAESTRO_NA_FAMILIA = true
-// em ordem alfabética, como em todas as plataformas: entre o Carro do Freela e o Nossom
-if (MAESTRO_NA_FAMILIA) FAMILIA.splice(3, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'marca/familia/maestro.svg' })
+if (MAESTRO_NA_FAMILIA) FAMILIA.push({ href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'marca/familia/maestro.svg', papel: 'Gestão da produtora' })
 
 const el = (tag, props = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
@@ -69,10 +69,43 @@ const menu = el(
     ...FERRAMENTAS.map(item),
     // a Z, discreta, depois das ferramentas (titular, 29/10/2026): nunca a primeira do menu nem a entrada
     item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
-    el('p', { className: 'menu-grupo', textContent: 'Absolute ZRO' }),
-    ...FAMILIA.map(item),
   ),
 )
+
+// a família numa linha só, no pé do menu: "Apps Absolute ZRO" abre a janela com a grade de apps (como no AEON).
+// Popover: Esc e clique fora fecham; abre colado ao menu, na altura do botão.
+const janelaApps = el(
+  'div',
+  { id: 'menuApps', className: 'menu-apps', popover: 'auto', role: 'menu', ariaLabel: 'Apps Absolute ZRO' },
+  el('p', { className: 'menu-apps-titulo', textContent: 'Absolute ZRO' }),
+  el(
+    'div',
+    { className: 'menu-apps-grade' },
+    ...FAMILIA.map((f) =>
+      el(
+        'a',
+        { href: f.href, className: 'menu-app', role: 'menuitem', title: `${f.nome} · ${f.papel}`, rel: 'noopener' },
+        el('img', { src: f.img, alt: '', width: 40, height: 40 }),
+        el('span', { textContent: f.nome }),
+      ),
+    ),
+  ),
+)
+const botaoApps = el('button', { type: 'button', className: 'menu-item menu-apps-botao', title: 'Os outros apps da Absolute ZRO' })
+botaoApps.append(icone('apps'), el('span', { className: 'menu-nome', textContent: 'Apps Absolute ZRO' }))
+botaoApps.setAttribute('popovertarget', 'menuApps')
+botaoApps.setAttribute('aria-haspopup', 'menu')
+janelaApps.addEventListener('beforetoggle', (e) => {
+  botaoApps.setAttribute('aria-expanded', String(e.newState === 'open'))
+  if (e.newState !== 'open') return
+  const r = botaoApps.getBoundingClientRect()
+  const borda = menu.getBoundingClientRect().right
+  // no celular a gaveta ocupa a largura: a janela fica centrada sobre ela
+  const largura = 3 * 92 + 2 * 4 + 22
+  const esquerda = LARGO.matches ? Math.max(borda, r.right) + 8 : (innerWidth - largura) / 2
+  janelaApps.style.left = `${Math.round(Math.max(12, esquerda))}px`
+  janelaApps.style.bottom = `${Math.max(12, Math.round(innerHeight - r.bottom))}px`
+})
 // tema: claro é o padrão; o botão mostra para onde vai (lua no claro, sol no escuro)
 const botaoTema = el('button', { type: 'button', className: 'menu-item menu-tema' })
 function pintarTema() {
@@ -131,7 +164,7 @@ botaoInstalar.addEventListener('click', async () => {
     botaoInstalar.hidden = true
   } else folhaInstalar()
 })
-menu.append(el('div', { className: 'menu-pe' }, botaoInstalar, botaoTema))
+menu.append(el('div', { className: 'menu-pe' }, botaoApps, botaoInstalar, botaoTema))
 
 const fundo = el('div', { className: 'menu-fundo', hidden: true })
 const alternarTopo = el('button', { type: 'button', className: 'menu-botao menu-botao--topo', ariaLabel: 'Abrir menu' }, icone('menu'))
@@ -139,6 +172,7 @@ alternarTopo.setAttribute('aria-controls', 'menu')
 alternarRail.setAttribute('aria-controls', 'menu')
 
 document.body.prepend(menu, fundo)
+document.body.append(janelaApps)
 // o Set, a aba em comum do ecossistema: o fim do dock (app/set.js)
 montarSet()
 document.querySelector('.topo')?.prepend(alternarTopo)
