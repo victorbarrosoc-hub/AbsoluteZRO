@@ -1022,6 +1022,11 @@ paths:
           '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
           '404': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/radio/ice:
+    get:
+      security: [{ session: [] }]
+      summary: 'Rádio do set. Servidores de conexão do aparelho: { ok, iceServers, turn }. STUN sempre; com a chave TURN da Cloudflare no servidor, credenciais temporárias (6 h). Fora do gate, 404'
+      responses: { '200': { description: 'ok' }, '401': { $ref: '#/components/responses/Error' }, '404': { $ref: '#/components/responses/Error' } }
   /api/v1/radio/batida:
     post:
       security: [{ session: [] }]

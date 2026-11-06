@@ -40,8 +40,9 @@ Intercom no modelo dos headsets de set (Hollyland Solidcom C1 Pro), no navegador
 ## Limites honestos
 
 - **iPhone: só com o app aberto e a tela ligada.** Tela bloqueada pede app nativo (PushToTalk), que é a fase 2.
-- **Sem servidor TURN**: funciona na mesma rede e na maioria das redes; em 4G com CGNAT algumas conexões não abrem. A
-  lista da equipe mostra "conectando" para quem não ligou, sem fingir.
+- **TURN da Cloudflare** (a ponte para redes que não se alcançam direto, como 4G com CGNAT): liga com
+  `CLOUDFLARE_TURN_KEY_ID` e `CLOUDFLARE_TURN_API_TOKEN` no servidor (projeto Vercel `absolutezro`); `/ice` entrega
+  credenciais de 6 h. Sem a chave, só STUN: a lista da equipe mostra "conectando" para quem não ligou.
 - Malha: bom até ~10 pessoas por diária. Mais que isso pede servidor de mídia (SFU), decisão do titular (ADR 0042).
 
 ## Testar
