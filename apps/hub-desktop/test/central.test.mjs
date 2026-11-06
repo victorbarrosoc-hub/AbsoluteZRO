@@ -275,9 +275,12 @@ test('download: maior que o catálogo para no meio; redirecionamento recusado e 
     }),
     (e) => e.codigo === 'download' && /recusado/.test(e.message),
   )
-  // a rede cai no meio do arquivo
+  // a rede cai no meio do arquivo: a mensagem de sempre (a causa vai para o log)
   const quebrado = { ok: true, url: 'https://x', headers: { get: () => null }, body: new ReadableStream({ pull: (c) => c.error(new Error('rede caiu')) }) }
-  await assert.rejects(baixar({ url: 'https://x', destino: path.join(raiz, 'q.dmg'), sha256: sha, deps: { fs, fetch: async () => quebrado } }), /rede caiu/)
+  await assert.rejects(
+    baixar({ url: 'https://x', destino: path.join(raiz, 'q.dmg'), sha256: sha, deps: { fs, fetch: async () => quebrado } }),
+    (e) => e.codigo === 'download' && /Não deu para baixar/.test(e.message),
+  )
   assert.equal(fs.existsSync(path.join(raiz, 'q.dmg.parte')), false)
 })
 
@@ -291,7 +294,8 @@ test('Mac: monta o .dmg, copia o app sem pedir senha, tira a quarentena e desmon
     cmds.filter((c) => c !== 'fetch' && c !== 'plutil' && c !== 'pgrep'),
     ['hdiutil', 'ditto', 'xattr', 'hdiutil'],
   )
-  assert.ok(chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/baixar/app/synquei/Synquei-1.2.0-b40-mac-universal.dmg`))
+  // o espelho primeiro (ADR 0043): o HUB manda para São Paulo quando o arquivo está lá
+  assert.ok(chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/baixar/app/synquei/Synquei-1.2.0-b40-mac-universal.dmg?origem=espelho`))
   assert.deepEqual(
     avisos.map((a) => a.fase).filter((f, i, l) => l.indexOf(f) === i),
     ['baixando', 'instalando', 'pronto'],

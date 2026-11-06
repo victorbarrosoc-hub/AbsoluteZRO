@@ -165,6 +165,24 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.4: downloads rápidos no Brasil (espelho em São Paulo, ADR 0043)
+
+- **Problema (titular, 06/11/2026):** instaladores a 5–64 KB/s numa internet de 210 Mbps; o mesmo arquivo sai a 16 MB/s
+  de um servidor nos EUA. É a rota do servidor de arquivos do GitHub até o provedor, não a internet da pessoa.
+- **Espelho primeiro, GitHub de reserva:** a central baixa `/baixar/app/<id>/<arquivo>?origem=espelho` (o HUB manda para
+  o bucket público `apps` do Supabase em São Paulo quando o arquivo está lá) e, se falhar ou o SHA-256 não bater, o
+  mesmo endereço sem `origem` (GitHub). Ela mesma: `/baixar/hub/<sistema>?build=N` e depois `&origem=github`.
+- **Download robusto** (`desktop/baixador.cjs`): um pedido de 1 byte descobre Range, tamanho e endereço final; com Range,
+  pedaços de 8 MB em até 6 conexões; pedaço que cai ou para (30 s) volta de onde parou; link do GitHub vencido no meio é
+  renovado. Os pedaços vão direto ao endereço final pelo `https` do Node com IPv4 primeiro (`download.cjs`
+  `criarFetchDireto`); se esse caminho nunca conectar (proxy do sistema), seguem pelo do Chromium. O progresso na tela é
+  o mesmo; nada é instalado sem conferir o SHA-256.
+- **Regra de destino** (`regras.downloadPermitido`): além do HUB e do GitHub, só
+  `https://<ref>.supabase.co/storage/v1/object/public/apps/<tag>/<arquivo>`.
+- **Quem está na 1.4.3:** a atualização para a 1.4.4 já vem do espelho (o `fetch` do Node segue o redirecionamento do
+  HUB). As ferramentas que a 1.4.3 instala continuam pelo GitHub: ela recusa outro destino, e o HUB só manda o nome
+  exato do arquivo para o espelho com `?origem=espelho`.
+
 ## 1.4.3: "Manter no Dock" que confere
 
 - **Bug (Mac):** depois de "Manter no Dock" em vários apps, o botão virava "No Dock" em todos, mas alguns (SYNQUEI e

@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
+
+Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.
+
+- HUB: `npm run lint`, `format:check`, `typecheck` e `build` ok; `npm test` **666/666** em 76 arquivos, com os novos
+  `espelho.test.ts` (a forma exata do espelho que o HUB aceita, o HEAD com tamanho e o cache; `/baixar/hub` com e sem
+  espelho, `?build=` e `?origem=github`; `/baixar/app` com o nome exato no GitHub para a central 1.4.3 e
+  `?origem=espelho`/`mac` no espelho), `espelho-bucket.test.ts` (a `0060` sem Storage não faz nada; com um
+  `storage.buckets` mínimo cria o bucket público, 1 GB, só dmg/exe/json, idempotente e sem policy) e
+  `espelho-ci.test.ts` (assinatura S3 v4 igual aos exemplos da documentação da AWS; o passo inteiro contra um S3 falso:
+  sem secrets pula sem pedido nenhum, sobe os dois instaladores e o `versao.json` com `espelho`, apaga o build antigo;
+  SHA-256 do Release diferente para antes de gravar `espelho`). `openapi.test.ts` passa (só descrições mudaram).
+- `npm run test:e2e -- tests/e2e/hub.spec.ts tests/e2e/a11y.spec.ts`: **23/23** (gate do `/baixar/app`, a central de
+  apps com progresso, acessibilidade do `/baixar`).
+- hub-desktop `npm test` **113/113**, com o novo `baixador.test.mjs`: pedaços com Range em até 6 conexões, sem Range uma
+  conexão só, retomada do byte exato depois de uma queda, pedaço parado pedido de novo, link 403 renovado pelo HUB,
+  tamanho diferente do catálogo, espelho com arquivo errado ou fora do ar caindo no GitHub, os dois errados = "não
+  confere" sem sobra no disco, cancelado no meio, a regra de destino do espelho (outro host, porta, bucket, `sign/` ou
+  usuário embutido recusados), o `https` do Node com IPv4 (servidor local de verdade, `remoteFamily` IPv4 e
+  redirecionamento fora da regra recusado), o caminho direto que nunca conecta passando para o do Chromium e a própria
+  central caindo no `?origem=github`. Teste de fumaça no Electron 44.5.1 (Linux, Xvfb): `SMOKE OK`.
+- Não verificado: o upload de verdade para o Supabase (sem as chaves S3 aqui) e a velocidade real no Brasil.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+
 ## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`)
 
 Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Chromium e WebKit do Playwright 1.63).

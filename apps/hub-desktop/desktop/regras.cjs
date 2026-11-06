@@ -126,9 +126,20 @@ function deepLinkDosArgs(argv, origin) {
 }
 
 // Downloads da central (ADR 0036): o HUB (/baixar/…) redireciona para o Release no GitHub do dono da Absolute ZRO e
-// dali para o servidor de arquivos do GitHub. Nenhum outro destino, e fora do HUB só https na porta padrão.
+// dali para o servidor de arquivos do GitHub. Desde a 1.4.4 (ADR 0043), também para o espelho em São Paulo: o bucket
+// público `apps` do Supabase da Absolute ZRO (só leitura pública; só o GitHub Actions grava). Nenhum outro destino, e
+// fora do HUB só https na porta padrão.
 const GITHUB_RELEASE = /^\/victorbarrosoc-hub\/[A-Za-z0-9._-]+\/releases\/download\/[^/]+\/[^/]+$/
 const ARQUIVOS_DO_GITHUB = new Set(['release-assets.githubusercontent.com', 'objects.githubusercontent.com', 'github-releases.githubusercontent.com'])
+// <ref>.supabase.co/storage/v1/object/public/apps/<tag>/<arquivo>: o ref do projeto tem 20 letras minúsculas e números
+const ESPELHO_HOST = /^[a-z0-9]{20}\.supabase\.co$/
+const ESPELHO_CAMINHO = /^\/storage\/v1\/object\/public\/apps\/[A-Za-z0-9._-]{1,80}\/[A-Za-z0-9._-]{1,120}$/
+
+/** O endereço é um arquivo do espelho (bucket público `apps`)? */
+function ehDoEspelho(url) {
+  const u = parse(url)
+  return !!u && u.protocol === 'https:' && !u.port && !u.username && !u.password && ESPELHO_HOST.test(u.hostname) && ESPELHO_CAMINHO.test(u.pathname)
+}
 
 /** A central pode baixar deste endereço (ou seguir um redirecionamento para ele)? */
 function downloadPermitido(url, origin) {
@@ -137,6 +148,7 @@ function downloadPermitido(url, origin) {
   if (u.origin === origin) return u.pathname.startsWith('/baixar/')
   if (u.protocol !== 'https:' || u.port) return false
   if (u.hostname === 'github.com') return GITHUB_RELEASE.test(u.pathname)
+  if (ESPELHO_HOST.test(u.hostname)) return ehDoEspelho(url)
   return ARQUIVOS_DO_GITHUB.has(u.hostname)
 }
 
@@ -165,6 +177,7 @@ module.exports = {
   linkDeApp,
   deepLinkDosArgs,
   downloadPermitido,
+  ehDoEspelho,
   permitir,
   ehErroDeRede,
 }

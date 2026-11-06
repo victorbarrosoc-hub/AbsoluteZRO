@@ -2,6 +2,26 @@
 
 Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
+
+- ✅ Espelho dos instaladores em São Paulo: bucket público `apps` do Supabase AbsoluteZRO-SP (migração HUB `0060`,
+  leitura pública, escrita só com as chaves S3), preenchido pelo job de versão de cada app de computador
+  (`scripts/espelho-apps.mjs` em `hub-desktop`, `sobedesce-desktop`, `synquei-desktop`, `relay-desktop`,
+  `maestro-desktop`, `tpeasy-desktop` e `carro-desktop`; AEON, Rift Motion e NOSSOM ficam de fora). Só o build atual de
+  cada tag fica lá; o `versao.json` ganha o campo `espelho`.
+- ✅ HUB: `/baixar/hub/<sistema>` (inclusive `?build=`) e `/baixar/app/<id>/mac|windows` mandam para o espelho quando o
+  arquivo está lá (HEAD conferido, com o tamanho do GitHub); o nome exato só com `?origem=espelho` (a central 1.4.3
+  recusa outro destino que não o GitHub); `?origem=github` força o GitHub.
+- ✅ Central **1.4.4**: espelho primeiro e GitHub de reserva, SHA-256 conferido em cada endereço; pedaços de 8 MB em até
+  6 conexões com Range, retomada, link vencido renovado, IPv4 primeiro (`desktop/baixador.cjs`). A 1.4.3 já recebe a
+  1.4.4 pelo espelho (a atualização dela segue o redirecionamento do HUB).
+- ✅ Apps: só leem o `versao.json` para avisar; quem baixa é a central. Nenhum arquivo de `products/` mudou.
+- ⛔ Ligar o espelho: o titular cria as chaves S3 (Supabase › Storage › S3), sobe o limite global de arquivo para 1 GB e
+  põe `SUPABASE_STORAGE_S3_ENDPOINT`, `SUPABASE_STORAGE_S3_ACCESS_KEY_ID` e `SUPABASE_STORAGE_S3_SECRET_ACCESS_KEY` nos
+  secrets do Actions (passos no ADR 0043). Sem eles, o passo pula com aviso e tudo segue pelo GitHub.
+- ⬜ Conferir no ar: o primeiro upload de verdade (o passo "Espelho em São Paulo" do Actions), a velocidade no Brasil e o
+  HEAD do Storage respondendo com o tamanho.
+
 ## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`, publicação autorizada pelo titular)
 
 Um ramo só, em cima da `main`, para um push só (um build por site que muda). Junta, nesta ordem: `dock-sempre`,
