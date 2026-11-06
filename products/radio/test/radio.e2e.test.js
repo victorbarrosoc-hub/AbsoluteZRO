@@ -87,51 +87,83 @@ const esperarNivel = async (page, acima, ms = 6000) => {
   return n
 }
 
-test('três pessoas: voz chega, Equipe só para a mesma função, Geral para todos, aviso na tela', { skip: pular, timeout: 90000 }, async () => {
+test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de ouvir, Todos e aviso', { skip: pular, timeout: 120000 }, async () => {
   const ana = await pessoa('Ana')
   await ana.page.fill('#criar-nome', 'Comercial')
   await ana.page.click('#criar button')
   await ana.page.waitForSelector('#tela-radio:not([hidden])')
   const codigo = (await ana.page.textContent('#codigo')).trim()
   assert.match(codigo, /^[A-Z2-9]{6}$/)
+  // quem criou já está na Direção: não pergunta o setor
+  assert.equal(await ana.page.isVisible('#setor-folha'), false)
 
   const bia = await pessoa('Bia')
   await bia.page.goto(`${base}/?d=${codigo}`) // o link do QR
-  await bia.page.waitForSelector('#tela-radio:not([hidden])')
+  await bia.page.waitForSelector('#setor-folha[open]')
+  await bia.page.click('#setores [data-canal="direcao"]')
   const caio = await pessoa('Caio')
   await caio.page.fill('#entrar-codigo', codigo.toLowerCase())
   await caio.page.click('#entrar button')
-  await caio.page.waitForSelector('#tela-radio:not([hidden])')
+  await caio.page.waitForSelector('#setor-folha[open]')
+  await caio.page.click('#setores [data-canal="camera"]')
 
+  for (const p of [bia, caio]) await p.page.waitForFunction(() => !document.getElementById('setor-folha').open)
   for (const p of [ana, bia, caio]) await p.page.click('#ligar-btn')
-  await bia.page.click('#funcoes button:has-text("Direção")')
-  await caio.page.click('#funcoes button:has-text("Câmera")')
+  // o seu setor vem logo depois do Geral, marcado "Seu"
+  assert.deepEqual(await caio.page.$$eval('.faixa', (fs) => fs.slice(0, 2).map((f) => f.dataset.canal)), ['geral', 'camera'])
+  assert.equal(await caio.page.getAttribute('[data-ouvir="camera"]', 'aria-pressed'), 'true')
+  assert.equal(await caio.page.getAttribute('[data-ouvir="direcao"]', 'aria-pressed'), 'false')
 
   // todos ligados com todos
   for (const p of [ana, bia, caio]) await p.page.waitForFunction(() => document.querySelectorAll('#pessoas li[data-estado="ligado"]').length === 3, null, { timeout: 30000 })
-
-  // ninguém falando: silêncio
   assert.ok((await esperarNivel(bia.page, false)) < 0.001)
 
-  // Ana na Equipe (Direção): Bia ouve, Caio não
-  await ana.page.click('.canais button[data-canal="equipe"]')
-  const ptt = await ana.page.$('#ptt')
-  const caixa = await ptt.boundingBox()
-  await ana.page.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
-  await ana.page.mouse.down()
+  const caixa = await (await ana.page.$('#ptt')).boundingBox()
+  const segurar = async () => {
+    await ana.page.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
+    await ana.page.mouse.down()
+    await ana.page.waitForTimeout(400) // segurou: push-to-talk
+  }
+
+  // Ana fala para a Direção (segurando): Bia ouve, Caio (Câmera) não
+  await ana.page.click('[data-alvo="direcao"]')
+  assert.equal((await ana.page.textContent('#alvo-nome')).trim(), 'Direção')
+  await segurar()
+  assert.equal(await ana.page.getAttribute('#ptt', 'data-estado'), 'ptt')
   await bia.page.waitForFunction(() => document.getElementById('no-ar').textContent.includes('Ana'))
   assert.match(await bia.page.textContent('#no-ar'), /Ana · Direção/)
+  await bia.page.waitForSelector('.faixa[data-canal="direcao"].is-no-ar')
   assert.ok((await esperarNivel(bia.page, true)) > 0.005, 'Bia ouve a Ana')
-  assert.ok((await esperarNivel(caio.page, false, 2500)) < 0.001, 'Caio (Câmera) não recebe a fala da Equipe da Direção')
+  assert.ok((await esperarNivel(caio.page, false, 2500)) < 0.001, 'Caio (Câmera) não recebe a fala da Direção')
   await ana.page.mouse.up()
+  assert.equal(await ana.page.getAttribute('#ptt', 'data-estado'), 'mudo')
   await bia.page.waitForFunction(() => document.getElementById('no-ar').textContent === '')
   assert.ok((await esperarNivel(bia.page, false)) < 0.001, 'soltou: silêncio')
 
-  // Ana no Geral: Caio ouve
-  await ana.page.click('.canais button[data-canal="geral"]')
-  await ana.page.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
-  await ana.page.mouse.down()
-  assert.ok((await esperarNivel(caio.page, true)) > 0.005, 'Caio ouve no Geral')
+  // um toque trava o TALK aberto no Geral: Caio ouve sem ninguém segurar; outro toque fecha
+  await ana.page.click('[data-alvo="geral"]')
+  await ana.page.click('#ptt')
+  assert.equal(await ana.page.getAttribute('#ptt', 'data-estado'), 'aberto')
+  assert.ok((await esperarNivel(caio.page, true)) > 0.005, 'Caio ouve no Geral com o TALK aberto')
+  await ana.page.click('#ptt')
+  assert.equal(await ana.page.getAttribute('#ptt', 'data-estado'), 'mudo')
+  assert.ok((await esperarNivel(caio.page, false)) < 0.001)
+
+  // Caio deixa de ouvir o Geral: a fala do Geral não chega mais a ele
+  await caio.page.click('[data-ouvir="geral"]')
+  assert.equal(await caio.page.getAttribute('[data-ouvir="geral"]', 'aria-pressed'), 'false')
+  await ana.page.waitForTimeout(500)
+  await segurar()
+  assert.ok((await esperarNivel(bia.page, true)) > 0.005, 'Bia ainda ouve o Geral')
+  assert.ok((await esperarNivel(caio.page, false, 2500)) < 0.001, 'Caio não ouve o Geral desligado')
+  await ana.page.mouse.up()
+
+  // Todos (Direção): chega a todo mundo, inclusive a quem desligou o Geral
+  assert.equal(await caio.page.isHidden('#todos'), true)
+  await ana.page.click('#todos')
+  assert.equal((await ana.page.textContent('#alvo-nome')).trim(), 'Todos')
+  await segurar()
+  assert.ok((await esperarNivel(caio.page, true)) > 0.005, 'Todos chega ao Caio')
   await ana.page.mouse.up()
 
   // aviso de set: Ana manda Ação, os outros veem; Caio (Câmera) não tem os botões

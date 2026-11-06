@@ -10,20 +10,25 @@ Voz por botão (push-to-talk) para a equipe da diária, no navegador do celular.
 
 ## O que faz
 
-- **Diária**: quem cria é o dono (Direção) e ganha um código de 6 letras, com QR e link (`/?d=CODIGO`).
-- **Canais**: Geral (todos) e Equipe (quem tem a mesma função: Direção, Produção, Câmera, Som, Luz, Arte, Elenco).
-- **Segure para falar** (ou a barra de espaço no computador), com o "câmbio" sonoro de começo e fim.
-- **Avisos de set** (Silêncio, Ação, Corta, Intervalo): só o dono e quem está na Direção mandam; aparecem na tela
-  inteira de todos, com toque e vibração.
-- **Tela de cue**: preta, sem brilho, para o elenco.
-- Mantém a tela ligada (Wake Lock) enquanto o rádio está aberto.
+Intercom no modelo dos headsets de set (Hollyland Solidcom C1 Pro), no navegador do celular:
+
+- **Diária** com código de 6 letras, QR e link (`?d=CODIGO`). Quem cria fica na Direção; quem entra escolhe o setor.
+- **Uma faixa por canal:** Geral e os setores (Direção, Produção, Câmera, Som, Luz, Arte, Elenco), cada uma com cor,
+  ícone, medidor ao vivo e quem está no ar. Em cada faixa: **Ouvir** (liga e desliga o canal) e **Falar** (o destino).
+  Começa ouvindo Geral e o próprio setor, falando no Geral.
+- **TALK:** um toque abre o microfone e trava (fala aberta, full duplex: várias pessoas ao mesmo tempo); segurar fala
+  só enquanto aperta (push-to-talk); outro toque fecha. A barra de espaço faz o mesmo no computador.
+- **Todos** (Direção e quem criou): fala para todos os canais, inclusive para quem desligou o Geral.
+- **Avisos de set** (Silêncio, Ação, Corta, Intervalo) no topo para a Direção; tela inteira, toque e vibração para
+  todos. **Tela de cue** preta para o elenco. Tela ligada (Wake Lock) com o rádio aberto.
 
 ## Como funciona
 
 - **Voz de aparelho para aparelho** (WebRTC em malha, `app/rtc.js`). O servidor só leva a oferta e a resposta de cada
   par (`api/radio/batida.js`, a cada ~1 s) e grava os avisos. **Nenhuma voz passa nem fica no servidor.**
-- Roteamento sem vazamento: o transceptor de cada conexão nasce mudo; ao segurar, o microfone entra só nas conexões de
-  quem deve ouvir. Quem não está no canal não recebe nem um byte da fala.
+- Roteamento sem vazamento: cada aparelho diz pelo canal de dados o que escuta; com o TALK aberto, o microfone entra
+  só nas conexões de quem escuta o destino. Quem desligou o canal não recebe nem um byte da fala. O medidor de cada
+  faixa vem do nível que quem fala manda (10 vezes por segundo), não do áudio.
 - **Gate** (raiz `CLAUDE.md`): a página (`api/pagina.js`) e os scripts (`api/recurso.js`) só saem para a sessão com
   `radio` na claim `zro_release` (admin da plataforma ou lista de acesso do HUB). Fora disso, "Página indisponível.";
   nada do app fica no site estático (`publico/` só tem as fontes e o robots).

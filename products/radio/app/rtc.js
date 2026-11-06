@@ -1,9 +1,10 @@
 // Voz de aparelho para aparelho (WebRTC, malha: cada par tem uma conexão). O servidor só leva a oferta e a resposta
 // (api/radio/batida.js); a voz e os recados de "estou falando" vão direto pela conexão e nunca passam pelo servidor.
 //
-// Roteamento: cada conexão tem um transceptor de áudio que nasce mudo (sem trilha). Ao segurar o botão, a trilha do
-// microfone entra só nas conexões de quem deve ouvir (Geral: todos; Equipe: quem tem a mesma função); ao soltar, sai de
-// todas. Quem não está no canal não recebe nem um byte da fala.
+// Roteamento: cada conexão tem um transceptor de áudio que nasce mudo (sem trilha). Com o TALK aberto, a trilha do
+// microfone entra só nas conexões de quem escuta o canal de destino (cada aparelho diz o que escuta pelo canal de
+// dados); ao fechar, sai de todas. Quem não escuta aquele canal não recebe nem um byte da fala. Várias pessoas falam ao
+// mesmo tempo (full duplex): cada conexão traz a voz de um aparelho e o navegador mistura.
 //
 // Sem servidor TURN: funciona na mesma rede e na maioria das redes de casa e escritório. Em 4G com CGNAT algumas
 // conexões não abrem; a lista da equipe mostra quem está sem conexão (honesto, sem fingir que está ligado).
@@ -44,6 +45,7 @@ export class Malha {
     this.enviarSinal = op.enviarSinal
     this.aoMudar = op.aoMudar
     this.aoRecado = op.aoRecado
+    this.aoAbrir = op.aoAbrir || (() => {})
     this.conexoes = new Map()
     this.trilha = null
     this.falandoPara = null // Set de peers que estão recebendo minha voz agora
@@ -103,6 +105,7 @@ export class Malha {
         dc.send(JSON.stringify(this.recadoAtual))
         if (this.deveOuvir?.(peer)) this.mandarVoz(peer, true)
       }
+      this.aoAbrir(peer)
       this.aoMudar()
     })
     dc.addEventListener('close', () => this.aoMudar())
@@ -163,6 +166,7 @@ export class Malha {
     if (!c?.sender) return
     c.sender.replaceTrack(sim && this.trilha ? this.trilha : null).catch(() => {})
     if (sim) this.falandoPara?.add(peer)
+    else this.falandoPara?.delete(peer)
   }
 
   /** Segurou o botão: a voz vai para quem `deveOuvir(peer)` diz. */
@@ -185,6 +189,17 @@ export class Malha {
       if (c.dc?.readyState === 'open') c.dc.send(JSON.stringify({ t: 'fim' }))
     }
     this.falandoPara = null
+  }
+
+  /** Recado só para um aparelho (o que eu escuto, para quem acabou de chegar). */
+  enviar(peer, msg) {
+    const c = this.conexoes.get(peer)
+    if (c?.dc?.readyState === 'open') c.dc.send(JSON.stringify(msg))
+  }
+
+  /** Quem fala reavalia um aparelho (ele mudou o que escuta): entra ou sai da fala sem renegociar. */
+  reavaliar(peer) {
+    if (this.recadoAtual && this.deveOuvir) this.mandarVoz(peer, this.deveOuvir(peer))
   }
 
   /** Recado para todos (aviso de set já gravado no servidor). */

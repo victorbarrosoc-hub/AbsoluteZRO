@@ -19,6 +19,7 @@ export const ARQUIVOS = {
   'app.css': 'text/css; charset=utf-8',
   'app.js': JS,
   'rtc.js': JS,
+  'icones.js': JS,
   'som.js': JS,
   'qr.js': JS,
   'vendor/qrcode.mjs': JS,

@@ -48,3 +48,6 @@ export function somAviso(tipo) {
     // sem vibração neste aparelho
   }
 }
+
+/** O contexto de áudio já destravado (para o medidor do microfone), ou null. */
+export const contextoDeAudio = () => ctx

@@ -1,33 +1,39 @@
 <!doctype html>
 <html lang="pt-BR" data-tema="claro">
-  <!-- Rádio do set (ADR 0042, nome a definir). Não lançado: esta página só sai por api/pagina.js para quem passa no
-       gate. Sem script nem estilo inline (CSP). -->
+  <!-- Rádio do set (ADR 0042, nome a definir). Intercom no modelo dos headsets de set (C1 Pro): uma faixa por setor,
+       ouvir e falar por canal, botão TALK (toque trava, segurar fala). Não lançado: esta página só sai para quem passa
+       no gate. Sem script nem estilo inline (CSP). -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Rádio do set</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#f5f5f7" />
-    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- %BASE% e %API%: onde o app mora (vazio e /api/radio no app separado; /radio e /api/v1/radio no HUB) -->
     <meta name="radio-base" content="%BASE%" />
     <meta name="radio-api" content="%API%" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="%BASE%/app/app.css" />
     <script type="module" src="%BASE%/app/app.js"></script>
   </head>
   <body>
     <!-- 1 · diárias -->
-    <main id="tela-diarias" class="tela" hidden>
+    <main id="tela-diarias" class="tela tela--diarias" hidden>
       <header class="topo">
-        <span class="marca">Rádio do set</span>
-        <button class="icone" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">◐</button>
+        <span class="marca"><span class="marca-onda" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Rádio</span>
+        <button class="redondo" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z" /></svg>
+        </button>
       </header>
-      <h1><span>Fale com a</span> <b>equipe.</b></h1>
-      <form id="criar" class="cartao" autocomplete="off">
+      <section class="abertura">
+        <h1><span>Fale com o</span> <b>set.</b></h1>
+        <div class="setores-mini" aria-hidden="true"></div>
+      </section>
+      <form id="criar" class="campo" autocomplete="off">
         <input id="criar-nome" name="nome" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" required />
-        <button class="glass-btn glass-btn--ink" type="submit">Criar diária</button>
+        <button class="glass-btn glass-btn--ink" type="submit">Criar</button>
       </form>
-      <form id="entrar" class="cartao" autocomplete="off">
+      <form id="entrar" class="campo" autocomplete="off">
         <input id="entrar-codigo" name="codigo" maxlength="7" placeholder="Código" aria-label="Código da diária" autocapitalize="characters" required />
         <button class="glass-btn" type="submit">Entrar</button>
       </form>
@@ -36,52 +42,76 @@
     </main>
 
     <!-- 2 · o rádio -->
-    <main id="tela-radio" class="tela" hidden>
-      <header class="topo">
-        <button class="icone" id="voltar" type="button" aria-label="Voltar">‹</button>
+    <main id="tela-radio" class="tela tela--radio" hidden>
+      <header class="topo topo--radio">
+        <button class="redondo" id="voltar" type="button" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" /></svg>
+        </button>
         <div class="titulo-diaria">
           <strong id="diaria-nome"></strong>
-          <span id="pessoas-conta" class="apoio"></span>
+          <button class="ao-vivo" id="pessoas-btn" type="button" aria-label="Quem está no rádio"><i aria-hidden="true"></i><span id="pessoas-conta">0</span></button>
         </div>
         <button class="pilula" id="codigo" type="button" title="Chamar a equipe (QR)"></button>
       </header>
 
       <section id="ligar" class="ligar">
+        <div class="ligar-onda" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <button class="glass-btn glass-btn--ink grande" id="ligar-btn" type="button">Entrar no rádio</button>
-        <p class="apoio" id="ligar-dica">Deixe o app aberto e a tela ligada.</p>
+        <p class="apoio" id="ligar-dica">Use fone. Deixe o app aberto e a tela ligada.</p>
       </section>
 
       <section id="radio" class="radio" hidden>
-        <div class="funcoes" id="funcoes" role="radiogroup" aria-label="Sua função"></div>
-
-        <div class="canais" role="radiogroup" aria-label="Falar para">
-          <button type="button" role="radio" data-canal="geral" aria-checked="true">Geral</button>
-          <button type="button" role="radio" data-canal="equipe" aria-checked="false" id="canal-equipe">Equipe</button>
-        </div>
-
-        <p class="no-ar" id="no-ar" aria-live="polite"></p>
-
-        <button class="ptt" id="ptt" type="button" aria-label="Segure para falar">
-          <span class="ptt-anel"></span>
-          <span class="ptt-texto" id="ptt-texto">Segure</span>
-        </button>
-
         <div class="avisos" id="avisos" hidden>
           <button type="button" data-aviso="silencio">Silêncio</button>
           <button type="button" data-aviso="acao">Ação</button>
           <button type="button" data-aviso="corta">Corta</button>
           <button type="button" data-aviso="intervalo">Intervalo</button>
         </div>
+        <div class="faixas" id="faixas" aria-label="Canais"></div>
 
-        <details class="pessoas">
-          <summary>Equipe</summary>
-          <ul id="pessoas"></ul>
-        </details>
-
-        <button class="glass-btn" id="cue-btn" type="button">Tela de cue</button>
+        <div class="acoes-extra">
+          <button class="glass-btn" id="cue-btn" type="button">Tela de cue</button>
+        </div>
       </section>
       <p class="erro" id="radio-erro" role="alert" hidden></p>
+
+      <!-- a base, como o headset: para quem fala, o nível do microfone e o TALK -->
+      <footer class="base" id="base" hidden>
+        <div class="base-alvo">
+          <span class="base-rotulo">Falando para</span>
+          <strong id="alvo-nome">Geral</strong>
+          <p class="no-ar" id="no-ar" aria-live="polite"></p>
+        </div>
+        <button class="talk" id="ptt" type="button" aria-label="Falar: toque abre, segure para falar" data-estado="mudo">
+          <svg class="talk-anel" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="talk-anel-fundo" cx="60" cy="60" r="54" />
+            <circle class="talk-anel-nivel" id="talk-nivel" cx="60" cy="60" r="54" />
+          </svg>
+          <span class="talk-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+          </span>
+          <span class="talk-texto" id="ptt-texto">Falar</span>
+        </button>
+        <button class="todos" id="todos" type="button" hidden aria-pressed="false" title="Falar para todos os canais">Todos</button>
+        <p class="base-dica" id="base-dica">Toque abre<br />Segure fala</p>
+      </footer>
     </main>
+
+    <!-- qual é o seu setor (primeira vez na diária) -->
+    <dialog id="setor-folha" class="folha folha--setor" aria-labelledby="setor-titulo">
+      <h2 id="setor-titulo"><span>Seu</span> <b>setor</b></h2>
+      <div class="setores" id="setores" role="radiogroup" aria-label="Seu setor"></div>
+    </dialog>
+
+    <!-- quem está no rádio -->
+    <dialog id="pessoas-folha" class="folha">
+      <h2><span>No</span> <b>rádio</b></h2>
+      <ul id="pessoas" class="pessoas"></ul>
+      <div class="folha-acoes">
+        <button class="glass-btn" id="trocar-setor" type="button">Trocar setor</button>
+        <button class="glass-btn glass-btn--ink" id="pessoas-fechar" type="button">Pronto</button>
+      </div>
+    </dialog>
 
     <!-- aviso de set: a tela inteira -->
     <div class="aviso-tela" id="aviso-tela" hidden aria-live="assertive"><span id="aviso-texto"></span></div>
@@ -89,7 +119,9 @@
     <!-- tela de cue: preta, sem brilho, para o elenco -->
     <div class="cue" id="cue" hidden>
       <span id="cue-texto">Aguardando</span>
-      <button class="icone" id="cue-fechar" type="button" aria-label="Fechar">×</button>
+      <button class="redondo" id="cue-fechar" type="button" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
     </div>
 
     <!-- chamar a equipe -->

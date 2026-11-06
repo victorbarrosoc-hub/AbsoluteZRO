@@ -97,7 +97,7 @@ test('gate: sem a claim do rádio, página neutra, recurso 404 e API 401', { ski
   delete process.env.RADIO_LOCAL
   // com a claim: o app
   const dentro = sessao('sub-dentro', 'Dentro')
-  assert.match((await chamar('pagina', 'GET', dentro)).corpo, /Segure para falar/)
+  assert.match((await chamar("pagina", "GET", dentro)).corpo, /id="ptt"/)
   const js = await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=app.js')
   assert.equal(js.statusCode, 200)
   assert.equal((await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=../api/_zro.js')).statusCode, 404)
