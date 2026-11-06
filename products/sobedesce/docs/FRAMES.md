@@ -209,6 +209,9 @@ escolhida). Os limites do iPhone ficam em `lib/montagens-celular.js`:
   em AAC (o do sistema ou o do FFmpeg em WebAssembly); o Safari antes do iOS 26 não lê áudio pelo WebCodecs, e aí o vídeo
   sai sem som, com o aviso na folha. Câmera lenta sai sem som (o computador usa `atempo`).
 
+O modelo Faixas (stories do pré-color) já vem na cópia da biblioteca, mas a tela do celular ainda não o oferece:
+lá seguem os modelos prontos (`modeloPorId`).
+
 Testes: `test/montagens-celular.test.js` (cópia idêntica, partes e nomes, fatia igual ao corte da imagem inteira,
 limites) e `test/montagens-celular-navegador.test.js` (Chromium e WebKit do Playwright com cara de iPhone: carrossel 3 ×
 1080×1350, grade 6 × 1080×1440, foto do Drive e o vídeo 1080×1350 H.264 + AAC de 3 s conferido pelo ffprobe).
