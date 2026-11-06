@@ -3865,6 +3865,48 @@ a.hbars__row:hover {
   font-weight: 600;
 }
 
+/* Admin › Apps · os apps que moram na Absolute ZRO (o rádio do set, ADR 0042): acesso pelo e-mail da conta */
+.app-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.app-section__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.app-card--radio {
+  grid-column: 1 / -1;
+  max-width: 720px;
+}
+.radio-acesso {
+  margin: 0;
+}
+.radio-acesso li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.radio-acesso__quem {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.radio-acesso__quem .zro-faint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.radio-acesso__tirar {
+  flex: none;
+}
+.radio-acesso__novo {
+  display: grid;
+  gap: var(--space-2);
+}
+
 /* lançamento */
 .rel-card--open {
   box-shadow:
