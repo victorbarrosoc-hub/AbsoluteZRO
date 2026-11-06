@@ -7964,6 +7964,214 @@ button.tree-twisty:hover {
   transform: scale(1.04);
 }
 
+/* Cor (docs/FRAMES.md, "Cor"): a escolha, a LUT, o ajuste rápido e a prévia antes/depois */
+.frn-cor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .frn-cor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.frn-cor-ctl,
+.frn-lut {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.frn-cor-ctl .select select {
+  max-width: 100%;
+  width: 100%;
+}
+.frn-cor-ctl .select {
+  display: flex;
+}
+/* os trilhos do passo Cor ocupam a coluna (o valor fica dentro dela) */
+.frn-cor .fr-linha {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.frn-cor .slider {
+  min-width: 0;
+}
+.frn-cor .slider input[type='range'] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+.frn-cor .slider-value {
+  min-width: 38px;
+}
+.frn-cor .frn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.frn-lut-atual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--fill-2);
+}
+.frn-lut-atual b {
+  display: block;
+  font-size: 13px;
+}
+.frn-lut-atual small {
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+.frn-lut-ic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: conic-gradient(from 200deg, #e5534b, #e3b341, #3fb950, #39c5cf, #4c8dff, #b36bff, #e5534b);
+}
+.frn-lut-vazia {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.frn-chip:disabled {
+  opacity: 0.5;
+}
+.frn-chip svg {
+  vertical-align: -2px;
+}
+.frn-lut-usada {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px 0 12px;
+}
+.frn-lut-usada button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  height: 100%;
+}
+.frn-lut-x {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px !important;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.frn-lut-x:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 0.12);
+}
+.frn-ajuste {
+  border-radius: 12px;
+  background: var(--fill-2);
+  padding: 10px 12px;
+}
+.frn-ajuste summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+.frn-ajuste summary small {
+  margin-left: 6px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.frn-ajuste[open] summary {
+  margin-bottom: 8px;
+}
+.frn-cor-previa {
+  min-width: 0;
+}
+.frn-cor-aviso {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--fill-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-align: center;
+}
+.frn-cor-tela {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+.frn-cor-tela.is-carregando {
+  display: grid;
+  place-items: center;
+  background: var(--fill-2);
+}
+.frn-cor-tela img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.frn-cor-tela .frn-cor-antes {
+  clip-path: inset(0 calc(100% - var(--div)) 0 0);
+}
+.frn-cor-tela::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--div);
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  pointer-events: none;
+}
+.frn-cor-tela input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: ew-resize;
+}
+.frn-cor-rot {
+  position: absolute;
+  top: 8px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 650;
+  pointer-events: none;
+}
+.frn-cor-rot.is-antes {
+  left: 8px;
+}
+.frn-cor-rot.is-depois {
+  right: 8px;
+}
+.frn-cor-resumo {
+  margin: -6px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
 /* opções grandes (formato, codec, nuvem) */
 .frn-escolha {
   display: grid;

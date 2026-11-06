@@ -29,7 +29,7 @@ export async function sondar(ffmpeg, arquivo, { signal } = {}) {
  * @returns {Promise<{ info, w, h, passo: number, amostras: object[] }>} amostras: { t, media, desvio, nitidez, escuros,
  *   estourados, calor, saturacao, hash, dif } (dif = diferença média para a amostra anterior, 0–255)
  */
-export async function amostrar(ffmpeg, arquivo, { info, signal, onProgress } = {}) {
+export async function amostrar(ffmpeg, arquivo, { info, signal, onProgress, cor = null } = {}) {
   info ??= await sondar(ffmpeg, arquivo, { signal })
   const dur = info.durationS
   const fps = Math.max(0.5, Math.min(4, MAX_AMOSTRAS / dur))
@@ -40,7 +40,7 @@ export async function amostrar(ffmpeg, arquivo, { info, signal, onProgress } = {
   const sar = info.video.sar ? info.video.sar[0] / info.video.sar[1] : 1
   const w = LARGURA
   const h = Math.max(8, Math.round((w * oh) / (ow * sar) / 2) * 2)
-  const args = ['-hide_banner', '-nostdin', '-loglevel', 'error', '-i', arquivo, '-map', '0:v:0', '-an', '-sn', '-dn', '-vf', `fps=${fps.toFixed(4)},scale=${w}:${h}:flags=area,format=rgb24`, '-f', 'rawvideo', '-']
+  const args = ['-hide_banner', '-nostdin', '-loglevel', 'error', '-i', arquivo, '-map', '0:v:0', '-an', '-sn', '-dn', '-vf', `fps=${fps.toFixed(4)},${cor ? `${cor},` : ''}scale=${w}:${h}:flags=area,format=rgb24`, '-f', 'rawvideo', '-']
   const amostras = []
   const tam = w * h * 3
   await new Promise((resolve, reject) => {

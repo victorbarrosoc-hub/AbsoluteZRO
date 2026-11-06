@@ -12,14 +12,18 @@
 //
 // O que é do app (miniaturas, candidatos de cada cena, descartados) fica na pasta de dados, fora da pasta entregue:
 // a pasta que sobe para o Drive só tem o que serve para postar e editar.
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { PEDACO, perfilDosBytes } from '../cor/detectar.js'
+import { LutError, MODOS_COR, criarCor, cubeDaCor, lerAjustes, lerCube } from '../cor/grade.js'
+import { PERFIS, ehPerfil } from '../cor/lut.js'
 import { newId } from '../util/ids.js'
 import { safeLocalName, uniqueName } from '../util/paths.js'
 import { readJSON, writeJSONAtomic } from '../util/store.js'
 import { amostrar, cenas as separarCenas, distanciaHash, sondar } from './analise.js'
 import { escolherFrames, escolherTakes, etiquetas, nota, refPorCena } from './escolha.js'
-import { extrairFrame, extrairTake, miniatura, timecode } from './extracao.js'
+import { extrairFrame, extrairTake, filtroCor, miniatura, timecode } from './extracao.js'
 
 export const FORMATOS_FRAME = ['jpg', 'png', 'tiff']
 export const FORMATOS_TAKE = ['original', '9:16', '4:5', '1:1']
@@ -28,6 +32,39 @@ const HISTORICO_MAX = 60
 const CANDIDATOS_POR_CENA = 40
 const HASH_IGUAL = 10
 const PARALELO = 3
+const LUTS_MAX = 20
+const LUT_BYTES = 40 * 1024 * 1024
+const PREVIAS_MAX = 40
+
+/**
+ * Que perfil de cor o arquivo tem, pelos metadados que a câmera grava (o começo e o fim do arquivo, como na prévia do
+ * Drive: src/cor/detectar.js). Sem metadado: null (a pessoa escolhe a câmera na tela).
+ */
+export async function perfilDoArquivo(caminho) {
+  const fh = await fs.open(caminho, 'r').catch(() => null)
+  if (!fh) return null
+  try {
+    const { size } = await fh.stat()
+    const ler = async (pos, n) => {
+      const b = Buffer.alloc(Math.max(0, Math.min(n, size - pos)))
+      if (b.length) await fh.read(b, 0, b.length, pos)
+      return b
+    }
+    const ini = await ler(0, PEDACO)
+    const fim = size > PEDACO ? await ler(Math.max(PEDACO, size - PEDACO), PEDACO) : Buffer.alloc(0)
+    return perfilDosBytes(Buffer.concat([ini, fim]))
+  } finally {
+    await fh.close()
+  }
+}
+
+/** A matriz e a faixa do vídeo para o YUV → RGB da cor (sem marca: BT.709 no HD, como o ffmpeg e o Relay supõem). */
+function corDaEntrada(info) {
+  const w = info?.video?.width || 0
+  const h = info?.video?.height || 0
+  const hd = Math.max(w, h) >= 1280 || Math.min(w, h) >= 720
+  return { matriz: hd ? 'bt709' : 'bt601', faixa: /^yuvj/.test(info?.video?.pixFmt || '') ? 'pc' : 'tv' }
+}
 
 export class FramesError extends Error {
   constructor(message, status = 400) {
@@ -268,7 +305,10 @@ export class FramesService {
     try {
       this.#fase(job, 'lendo', 0, 'Assistindo o filme…')
       const info = await sondar(ffmpeg, videoPath, { signal })
-      const a = await amostrar(ffmpeg, videoPath, { info, signal, onProgress: (f) => this.#fase(job, 'lendo', f, 'Assistindo o filme…') })
+      // a cor vem antes da leitura: a escolha (exposição, nitidez, etiquetas) olha a imagem como ela vai sair, não o LOG lavado
+      const cor = aj.cor ? await this.#montarCor(aj.cor, { videoPath, info, destino: path.join(this.dirDe(job.id), 'cor.cube') }) : null
+      const filtro = cor?.cube ? filtroCor({ lut: cor.cube, matriz: cor.matriz, faixa: cor.faixa }) : null
+      const a = await amostrar(ffmpeg, videoPath, { info, signal, cor: filtro, onProgress: (f) => this.#fase(job, 'lendo', f, 'Assistindo o filme…') })
       const cs = separarCenas(a.amostras, a.passo)
       Object.assign(video, { duracaoS: info.durationS, largura: info.video.width, altura: info.video.height, fps: info.fps, codec: info.video.codec, audio: info.audio })
 
@@ -287,6 +327,7 @@ export class FramesService {
         pasta,
         base,
         ajustes: aj,
+        cor,
         cenas: [],
         frames: [],
         takes: [],
@@ -296,6 +337,7 @@ export class FramesService {
       }
       job.manifestoId = m.id
       await fs.mkdir(path.join(this.dirDe(m.id), 'mini'), { recursive: true })
+      if (cor?.cube) this.#fase(job, 'frames', 0, `Cor: ${cor.resumo}`)
 
       // Cenas: etiquetas automáticas e os candidatos (para "outro frame" e "mais um" sem ler o filme de novo).
       const ref = refPorCena(a.amostras, cs)
@@ -357,6 +399,156 @@ export class FramesService {
     }
   }
 
+  // ── cor (docs/FRAMES.md, "Cor")
+
+  /** A cor que vai para o ffmpeg: a LUT montada deste trabalho (na pasta de dados), com a matriz e a faixa do vídeo. */
+  #corDe(m) {
+    return m.cor?.cube ? { lut: m.cor.cube, matriz: m.cor.matriz, faixa: m.cor.faixa } : null
+  }
+
+  /**
+   * Monta a cor de um trabalho (ou da prévia): resolve a câmera (automático = metadados do arquivo), lê a LUT guardada e
+   * grava a LUT única em `destino`. Devolve o que fica no manifesto (sem cubo quando nada muda).
+   * `pedido`: { modo, perfil: 'auto' | id, lut: { id } | null, espera: 'log' | '709', intensidade, ajustes }
+   */
+  async #montarCor(pedido, { videoPath, info, destino }) {
+    const modo = MODOS_COR.includes(pedido.modo) ? pedido.modo : 'original'
+    let perfil = ehPerfil(pedido.perfil) ? pedido.perfil : null
+    let perfilOrigem = perfil ? 'escolhido' : 'metadados'
+    if (!perfil) {
+      perfil = await perfilDoArquivo(videoPath).catch(() => null)
+      if (!perfil) {
+        perfil = 'rec709'
+        perfilOrigem = 'padrao'
+      }
+    }
+    let lut = null
+    let lutInfo = null
+    if (modo === 'lut') {
+      lutInfo = await this.lut(pedido.lut?.id)
+      lut = lerCube(await fs.readFile(this.#arquivoLut(lutInfo.id), 'utf8'))
+    }
+    const ajustes = lerAjustes(pedido.ajustes)
+    const espera = pedido.espera === '709' ? '709' : 'log'
+    const intensidade = Math.max(0, Math.min(1, Number(pedido.intensidade ?? 1) || 0))
+    const fn = criarCor({ modo, perfil, lut, espera, intensidade, ajustes })
+    const resumo = [modo === 'lut' ? lutInfo.nome : modo === '709' ? 'Rec.709 da câmera' : 'Original', Object.values(ajustes).some(Boolean) ? 'ajuste rápido' : null].filter(Boolean).join(' · ')
+    const base = { modo, perfil, perfilNome: PERFIS[perfil]?.nome || perfil, perfilOrigem, lut: lutInfo ? { id: lutInfo.id, nome: lutInfo.nome } : null, espera, intensidade, ajustes, resumo, ...corDaEntrada(info) }
+    if (!fn) return { ...base, cube: null }
+    await fs.mkdir(path.dirname(destino), { recursive: true })
+    await fs.writeFile(destino, cubeDaCor(fn, { n: 33, titulo: `SOBEDESCE Frames · ${resumo}` }))
+    return { ...base, cube: destino }
+  }
+
+  get #pastaLuts() {
+    return path.join(this.root, 'luts')
+  }
+  #arquivoLut(id) {
+    if (!/^lut_[a-f0-9]{16}$/.test(String(id))) throw new FramesError('Essa LUT não existe mais. Escolha de novo.', 404)
+    return path.join(this.#pastaLuts, `${id}.cube`)
+  }
+
+  /** As LUTs já usadas (as mais recentes primeiro). */
+  async luts() {
+    const l = await readJSON(path.join(this.#pastaLuts, 'luts.json'), [])
+    return Array.isArray(l) ? l : []
+  }
+
+  async lut(id) {
+    const info = (await this.luts()).find((x) => x.id === id)
+    if (!info || !(await existe(this.#arquivoLut(id)))) throw new FramesError('Essa LUT não existe mais. Escolha de novo.', 404)
+    return info
+  }
+
+  /**
+   * Guarda uma LUT para usar (e reusar): do computador (`{ tipo: 'local', caminho }`) ou do Drive (`{ tipo: 'drive',
+   * accountId, fileId }`, desce uma vez). Confere antes de aceitar: só .cube 3D inteira.
+   */
+  guardarLut(origem) {
+    return this.#emFila(async () => {
+      let texto
+      let nome
+      if (origem.tipo === 'drive') {
+        const drive = this.drive(origem.accountId)
+        const item = await drive.getItem(origem.fileId, { media: true })
+        if (item.isFolder) throw new FramesError('Escolha um arquivo .cube.')
+        if (Number(item.size) > LUT_BYTES) throw new FramesError('Essa LUT passa de 40 MB.')
+        const b = await this.baixar(drive, item, {})
+        try {
+          texto = await fs.readFile(b.path, 'utf8')
+        } finally {
+          await b.limpar()
+        }
+        nome = item.name
+      } else {
+        const st = await fs.stat(origem.caminho).catch(() => null)
+        if (!st?.isFile()) throw new FramesError('Não achei essa LUT no computador.')
+        if (st.size > LUT_BYTES) throw new FramesError('Essa LUT passa de 40 MB.')
+        texto = await fs.readFile(origem.caminho, 'utf8')
+        nome = path.basename(origem.caminho)
+      }
+      let lut
+      try {
+        lut = lerCube(texto)
+      } catch (err) {
+        if (err instanceof LutError) throw new FramesError(err.message)
+        throw err
+      }
+      const id = `lut_${createHash('sha256').update(texto).digest('hex').slice(0, 16)}`
+      await fs.mkdir(this.#pastaLuts, { recursive: true })
+      await fs.writeFile(this.#arquivoLut(id), texto)
+      const info = { id, nome: String(nome).replace(/\.cube$/i, '').slice(0, 80), n: lut.n, titulo: lut.titulo, origem: origem.tipo === 'drive' ? { tipo: 'drive', accountId: origem.accountId, fileId: origem.fileId } : { tipo: 'local', caminho: origem.caminho }, em: new Date().toISOString() }
+      const todas = [info, ...(await this.luts()).filter((x) => x.id !== id)]
+      for (const velha of todas.slice(LUTS_MAX)) await fs.rm(this.#arquivoLut(velha.id), { force: true })
+      await writeJSONAtomic(path.join(this.#pastaLuts, 'luts.json'), todas.slice(0, LUTS_MAX))
+      return info
+    })
+  }
+
+  async esquecerLut(id) {
+    const arq = this.#arquivoLut(id)
+    await writeJSONAtomic(path.join(this.#pastaLuts, 'luts.json'), (await this.luts()).filter((x) => x.id !== id))
+    await fs.rm(arq, { force: true })
+  }
+
+  /**
+   * Prévia da cor antes de começar: um frame do vídeo do computador (a um terço, ou em `t`), 960 px, com a cor pedida.
+   * Guardada pelo pedido (o mesmo pedido não roda o ffmpeg de novo). Devolve { arquivo, perfil, perfilNome, perfilOrigem }.
+   */
+  async previaCor({ caminho, cor, t = null }) {
+    const motor = await this.motor()
+    const ffmpeg = motor?.ffmpeg?.path
+    if (!ffmpeg) throw new FramesError('Este computador ainda não tem o conversor de vídeo (ffmpeg). Veja em Ajustes → Proxy.', 409)
+    const st = await fs.stat(caminho)
+    const dir = path.join(this.root, 'previas')
+    await fs.mkdir(dir, { recursive: true })
+    const chave = createHash('sha256').update(JSON.stringify([caminho, st.size, st.mtimeMs, cor, t])).digest('hex').slice(0, 24)
+    const jpg = path.join(dir, `${chave}.jpg`)
+    const meta = path.join(dir, `${chave}.json`)
+    if (await existe(jpg)) {
+      const m = await readJSON(meta, null)
+      if (m) return { arquivo: jpg, ...m }
+    }
+    const info = await sondar(ffmpeg, caminho)
+    const c = await this.#montarCor(cor, { videoPath: caminho, info, destino: path.join(dir, `${chave}.cube`) })
+    const quando = t != null && t >= 0 && t < info.durationS ? t : info.durationS / 3
+    await extrairFrame({ ffmpeg, video: caminho, t: quando, destino: jpg, formato: 'jpg', cor: c.cube ? { lut: c.cube, matriz: c.matriz, faixa: c.faixa } : null, largura: 960 })
+    const m = { perfil: c.perfil, perfilNome: c.perfilNome, perfilOrigem: c.perfilOrigem, resumo: c.resumo }
+    await writeJSONAtomic(meta, m)
+    if (c.cube) await fs.rm(c.cube, { force: true })
+    // as prévias antigas saem (ficam as últimas PREVIAS_MAX)
+    const todas = (await fs.readdir(dir).catch(() => [])).filter((n) => n.endsWith('.jpg'))
+    if (todas.length > PREVIAS_MAX) {
+      const comData = await Promise.all(todas.map(async (n) => ({ n, t: (await fs.stat(path.join(dir, n)).catch(() => null))?.mtimeMs ?? 0 })))
+      comData.sort((a, b) => a.t - b.t)
+      for (const { n } of comData.slice(0, todas.length - PREVIAS_MAX)) {
+        await fs.rm(path.join(dir, n), { force: true })
+        await fs.rm(path.join(dir, n.replace(/\.jpg$/, '.json')), { force: true })
+      }
+    }
+    return { arquivo: jpg, ...m }
+  }
+
   #pastaCena(m, n) {
     const c = m.cenas.find((x) => x.n === n)
     return path.join('Frames', pastaDaCena(n, c?.nome || c?.tags.join(', ')))
@@ -367,7 +559,7 @@ export class FramesService {
     const destino = path.join(m.pasta, rel)
     await fs.mkdir(path.dirname(destino), { recursive: true })
     const logo = m.ajustes.frames.logo && m.ajustes.logo ? m.ajustes.logo : null
-    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, signal })
+    await extrairFrame({ ffmpeg, video: videoPath, t: f.t, destino, formato: fmt, logo, cor: this.#corDe(m), signal })
     await miniatura({ ffmpeg, entrada: destino, destino: path.join(this.dirDe(m.id), 'mini', `${f.id}.jpg`), signal })
     return rel
   }
@@ -379,7 +571,7 @@ export class FramesService {
     const rel = path.join('Takes', `${m.base}_C${dd(take.cena)}_${take.id}_${take.tc}${sufixo}.${ext}`)
     const destino = path.join(m.pasta, rel)
     const logo = aj.logo && m.ajustes.logo ? m.ajustes.logo : null
-    await extrairTake({ ffmpeg, encoder, video: videoPath, ini: take.ini, dur: take.dur, destino, formato: take.formato, foco: aj.foco ?? 0.5, audio: aj.audio && m.video.audio, fade: aj.fade, codec: take.codec, logo, altura: m.video.altura || 1080, signal, onProgress })
+    await extrairTake({ ffmpeg, encoder, video: videoPath, ini: take.ini, dur: take.dur, destino, formato: take.formato, foco: aj.foco ?? 0.5, audio: aj.audio && m.video.audio, fade: aj.fade, codec: take.codec, logo, cor: this.#corDe(m), altura: m.video.altura || 1080, signal, onProgress })
     await miniatura({ ffmpeg, entrada: destino, destino: path.join(this.dirDe(m.id), 'mini', `${take.id}.jpg`), t: take.dur / 2, signal })
     return rel
   }

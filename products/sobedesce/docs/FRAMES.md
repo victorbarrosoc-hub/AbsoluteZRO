@@ -59,6 +59,32 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
   grafite; título, legenda e logomarca. Usa os frames escolhidos na aba Frames ou escolhe sozinho.
 - Enquadramento por frame (`enquadres[i] = { x, y, zoom }`, zoom até 3×): tocar ou clicar no frame da prévia escolhe; arrastar move (até a borda do frame encostar na caixa); pinça, roda do mouse ou a barra aproximam; Centralizar volta ao meio. Vale em qualquer formato (fica guardado por frame) e sai igual no post em alta. `frameNoPonto` acha o frame tocado (na polaroid, desfaz o giro).
 
+## Cor (pré-color)
+
+O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/frames.js` › `CorPasso`):
+
+- **Original**: como está no arquivo.
+- **Rec.709 da câmera**: a mesma conversão de monitor da prévia (`src/cor/lut.js`).
+- **Sua LUT**: um `.cube` 3D do computador ou do Drive (desce uma vez). Fica em "Usadas antes" (até 20), em
+  `~/.sobedesce/frames/luts/`. A LUT é conferida antes de aceitar: LUT 1D, shaper ou arquivo incompleto são recusados
+  com o motivo.
+  - **A LUT recebe**: o log da câmera (LUT de câmera, como a do Revela Lab) ou o Rec.709 (LUT criativa: o app converte o
+    LOG antes).
+  - **Intensidade**: mistura o look com o Rec.709 neutro da câmera.
+- **Câmera**: automático pelos metadados do arquivo (`src/cor/detectar.js`, os mesmos da prévia do Drive) ou escolhida.
+  Arquivo que não diz a câmera fica em Rec.709 até a pessoa escolher.
+- **Ajuste rápido**, antes da LUT, na luz do arquivo: exposição (±2 stops), temperatura, contraste (em volta do cinza
+  18%), preto (abaixo de 0 assenta só a sombra funda; acima levanta o preto) e saturação.
+
+Tudo vira **uma LUT só** (33³), gravada na pasta de dados do trabalho (`cor.cube`), e o ffmpeg aplica numa passada:
+YUV → RGB de ponto flutuante com a matriz e a faixa explícitas, `lut3d` tetraédrico (`extracao.js` › `filtroCor`). Vale
+nos frames, nos takes (marcados BT.709), em "outro frame", "frame num ponto" e "take em outro formato", e na leitura do
+filme: a escolha mede a imagem já com a cor (LOG lavado não vira "P&B"). O arquivo original não muda e a pasta entregue
+não ganha a LUT.
+
+A **prévia** é um frame do vídeo do computador (a um terço), 960 px, pelo mesmo caminho, antes e depois. Vídeo do
+Drive: a cor entra quando ele desce.
+
 ## API
 
 | Rota | O quê |
@@ -74,6 +100,15 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
 | `POST /api/frames/:id/subir` | `{ para: 'junto' \| { accountId, folderId, driveId, name } }` |
 | `GET /api/frames/:id/arquivo?p=\|mini=\|alta=&k=` | arquivo do trabalho (chave da mídia), com Range |
 | `GET /api/frames-logo?p=&k=` | prévia da logomarca |
+| `GET /api/frames-cor/luts` | as LUTs usadas antes |
+| `POST /api/frames-cor/lut` | guarda uma LUT: `{ tipo: 'local', caminho }` \| `{ tipo: 'drive', accountId, fileId }` → `{ lut }` |
+| `POST /api/frames-cor/lut/esquecer` | `{ id }` tira da lista |
+| `POST /api/frames-cor/previa` | `{ caminho, cor, t? }` → `{ previa, perfil, perfilNome, perfilOrigem, resumo }` |
+| `GET /api/frames-cor/previa?id=&k=` | a imagem da prévia |
+
+`ajustes.cor` (no `POST /api/frames`): `{ modo: 'original' \| '709' \| 'lut', perfil: 'auto' \| id, lut: { id }, espera:
+'log' \| '709', intensidade: 0–1, ajustes: { exposicao, temperatura, contraste, preto, saturacao } }` (-100 a 100); null
+= sem cor.
 
 Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifestoId, erro }`.
 
