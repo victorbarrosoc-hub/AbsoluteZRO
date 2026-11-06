@@ -58,7 +58,7 @@ export async function listarDiarias(tx, p) {
     join radio.diarias d on d.id = m.diaria_id
     where m.user_sub = ${p.sub} and d.expira > now()
     order by m.entrou desc limit 30`
-  return r(200, { ok: true, diarias: lista.map(publica) })
+  return r(200, { ok: true, eu: { nome: p.nome }, diarias: lista.map(publica) })
 }
 
 /** POST { acao: criar | entrar | funcao }. Criar roda em savepoint para sortear de novo um código repetido. */

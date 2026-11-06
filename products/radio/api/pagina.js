@@ -17,13 +17,23 @@ function html(res, corpo) {
   res.end(corpo)
 }
 
+/** Os marcadores do app.html no app separado (no HUB, apps/hub-web/app/radio/route.ts põe os dele). */
+export const paraOAppSeparado = (html) =>
+  html
+    .replaceAll('%BASE%', '')
+    .replaceAll('%API%', '/api/radio')
+    .replaceAll('%SET_API%', '/api/zro/set')
+    .replaceAll('%SET%', 'https://absolutezro.com/set/v1/zro-set.js')
+    .replaceAll('%SAIR%', '/api/zro/sair')
+    .replaceAll('%TOQUE%', '<link rel="apple-touch-icon" href="/app/marca/radion-180.png" />')
+
 export default async function pagina(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.statusCode = 405
     res.setHeader('Allow', 'GET')
     return res.end()
   }
-  if (pessoaDe(req)) return html(res, (await readFile(`${APP}app.html`, 'utf8')).replaceAll('%BASE%', '').replaceAll('%API%', '/api/radio'))
+  if (pessoaDe(req)) return html(res, paraOAppSeparado(await readFile(`${APP}app.html`, 'utf8')))
   if (modoLocal(req)) return html(res, await readFile(`${APP}local.html`, 'utf8'))
   return html(res, await readFile(`${APP}indisponivel.html`, 'utf8'))
 }

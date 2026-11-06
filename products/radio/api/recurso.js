@@ -8,7 +8,23 @@ import { modoLocal, pessoaDe } from './_sessao.js'
 
 const APP = fileURLToPath(new URL('../app/', import.meta.url))
 const JS = 'text/javascript; charset=utf-8'
-export const ARQUIVOS = { 'app.js': JS, 'rtc.js': JS, 'icones.js': JS, 'som.js': JS, 'qr.js': JS, 'vendor/qrcode.mjs': JS, 'app.css': 'text/css; charset=utf-8' }
+const SVG = 'image/svg+xml'
+const PNG = 'image/png'
+export const ARQUIVOS = {
+  'app.js': JS,
+  'rtc.js': JS,
+  'icones.js': JS,
+  'som.js': JS,
+  'qr.js': JS,
+  'vendor/qrcode.mjs': JS,
+  'app.css': 'text/css; charset=utf-8',
+  'marca/radion-simbolo.svg': SVG,
+  'marca/radion-simbolo-branco.svg': SVG,
+  'marca/favicon.svg': SVG,
+  'marca/radion-180.png': PNG,
+  'marca/radion-192.png': PNG,
+  'marca/radion-512.png': PNG,
+}
 const DO_LOCAL = { 'local.js': JS, 'app.css': 'text/css; charset=utf-8' }
 
 export default async function recurso(req, res) {
