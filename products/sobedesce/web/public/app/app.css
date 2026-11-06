@@ -9609,3 +9609,627 @@ span.dsize.is-off {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* ───────────── Criar › Montagens (components/montagens.js) ───────────── */
+.cr-ferr-art.is-montagens {
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.cr-ferr-art.is-montagens i {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(140deg, #8e8e93, #3a3a40);
+}
+.cr-ferr-art.is-montagens i:nth-child(1) {
+  left: 7px;
+  top: 8px;
+  width: 24px;
+  bottom: 8px;
+}
+.cr-ferr-art.is-montagens i:nth-child(2) {
+  left: 34px;
+  right: 7px;
+  top: 8px;
+  height: 26px;
+  animation: mtc-troca 3.6s var(--ease) infinite;
+}
+.cr-ferr-art.is-montagens i:nth-child(3) {
+  left: 34px;
+  right: 7px;
+  bottom: 8px;
+  height: 26px;
+  animation: mtc-troca 3.6s var(--ease) infinite reverse;
+}
+@keyframes mtc-troca {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  55%,
+  85% {
+    opacity: 0.45;
+  }
+}
+.mtc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.mtc > * {
+  min-width: 0;
+}
+.mtc .k-pilula {
+  position: relative;
+}
+/* a pílula é baixa à vista, mas o toque tem 44 px */
+.mtc .k-pilula::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+.mtc-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mtc-topo .cr-voltar,
+.mtc > .cr-voltar {
+  height: 44px;
+}
+.mtc-cabeca {
+  display: grid;
+  gap: 10px;
+}
+.mtc-nome {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.mtc-nome svg {
+  flex: none;
+  color: var(--text-3);
+}
+.mtc-palco {
+  display: flex;
+  justify-content: center;
+}
+.mtc-canvas {
+  display: block;
+  max-width: 100%;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), 0 0 0 0.5px var(--hairline);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* com um quadro escolhido, o dedo enquadra (não rola a página) */
+.mtc-canvas.is-ativo {
+  touch-action: none;
+}
+.mtc-canvas.is-trocando {
+  outline: 2px dashed var(--up);
+  outline-offset: 3px;
+}
+.mtc-barra {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 14px;
+  border-radius: 999px;
+  background: var(--glass-2);
+  box-shadow: var(--shadow-card), inset 0 0 0 0.5px var(--hairline);
+}
+.mtc-zoom {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-2);
+}
+.mtc-zoom input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  accent-color: var(--text);
+}
+.mtc-barra-txt {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.mtc-ferr {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: var(--text);
+}
+.mtc-ferr:active,
+.mtc-ferr.is-on {
+  color: var(--primary-fg);
+  background: var(--primary-bg);
+}
+.mtc-rolar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 2px var(--gutter);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.mtc-rolar::-webkit-scrollbar {
+  display: none;
+}
+.mtc-midia {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.mtc-midia.is-mais {
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--text-2);
+  background: var(--fill);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.mtc-midia-img {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--fill-2);
+  color: var(--text-3);
+}
+.mtc-midia-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mtc-midia.is-usada .mtc-midia-img {
+  box-shadow: 0 0 0 2px var(--text);
+}
+.mtc-midia.is-erro .mtc-midia-img {
+  color: var(--warn-text);
+}
+.mtc-midia-img i {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 18px;
+  color: #fff;
+  background: rgba(29, 29, 31, 0.85);
+}
+.mtc-midia-play {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}
+.mtc-midia-x {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  color: var(--text);
+  background: var(--glass-2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), inset 0 0 0 0.5px var(--hairline);
+}
+/* o x é pequeno à vista, mas o toque tem 44 px */
+.mtc-midia-x::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  bottom: -11px;
+  left: -11px;
+}
+.mtc-bandeja .mtc-rolar {
+  padding-top: 8px;
+  padding-bottom: 4px;
+}
+.mtc-modelo {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 112px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+.mtc-modelo.is-on {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+.mtc-modelo-tela canvas {
+  display: block;
+  max-width: 80px;
+  max-height: 92px;
+  width: auto;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 0 0 0.5px var(--hairline-2);
+}
+.mtc-modelo-n {
+  position: absolute;
+  right: 7px;
+  bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.mtc-formato {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-width: 56px;
+  height: 56px;
+  padding: 0 8px;
+  border-radius: 14px;
+  background: var(--fill);
+  color: var(--text-2);
+}
+.mtc-formato i {
+  display: block;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+.mtc-formato b {
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.mtc-formato.is-on {
+  color: var(--primary-fg);
+  background: var(--primary-bg);
+}
+.mtc-linhas {
+  display: grid;
+  gap: 10px;
+}
+.mtc-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.mtc-card .k-pilulas.is-rolar {
+  margin: 0 -14px;
+  padding: 2px 14px;
+}
+.mtc-ajustes {
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.mtc-ajustes summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  list-style: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.mtc-ajustes summary::-webkit-details-marker {
+  display: none;
+}
+.mtc-ajustes summary span {
+  flex: 1;
+}
+.mtc-ajustes summary svg:last-child {
+  color: var(--text-3);
+  transition: transform 0.2s var(--ease);
+}
+.mtc-ajustes[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+.mtc-slider {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  font-size: 14.5px;
+  color: var(--text-2);
+}
+.mtc-slider input {
+  height: 44px;
+  accent-color: var(--text);
+}
+.mtc-slider output {
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.mtc-cores {
+  display: flex;
+  gap: 10px;
+  padding: 6px 14px 14px;
+}
+.mtc-cor {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--cor);
+  box-shadow: inset 0 0 0 1px var(--hairline-2);
+}
+.mtc-cor.is-on {
+  box-shadow: inset 0 0 0 1px var(--hairline-2), 0 0 0 2px var(--surface), 0 0 0 4px var(--text);
+}
+.mtc-cor.is-livre {
+  overflow: hidden;
+  background: conic-gradient(#ff3b30, #ffcc00, #34c759, #0a84ff, #af52de, #ff3b30);
+}
+.mtc-cor.is-livre input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.mtc-fazer {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+.mtc-andamento {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.mtc-andamento-txt {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 15px;
+}
+.mtc-andamento-txt span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.mtc-barra-prog {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--fill-2);
+}
+.mtc-barra-prog i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--text);
+  transition: width 0.2s linear;
+}
+.mtc-vazio {
+  display: grid;
+  gap: 18px;
+}
+.mtc-vazio-art {
+  position: relative;
+  justify-self: center;
+  width: 168px;
+  height: 210px;
+  margin: 8px 0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.35), 0 0 0 0.5px var(--hairline);
+}
+.mtc-vazio-art i {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(150deg, #c7c7cc, #8e8e93);
+}
+.mtc-vazio-art i:nth-child(1) {
+  left: 8px;
+  top: 8px;
+  width: 96px;
+  bottom: 8px;
+}
+.mtc-vazio-art i:nth-child(2) {
+  left: 110px;
+  right: 8px;
+  top: 8px;
+  height: 94px;
+  background: linear-gradient(150deg, #aeaeb2, #636366);
+}
+.mtc-vazio-art i:nth-child(3) {
+  left: 110px;
+  right: 8px;
+  bottom: 8px;
+  height: 94px;
+  background: linear-gradient(150deg, #d1d1d6, #aeaeb2);
+}
+.mtc-pronta {
+  display: grid;
+  gap: 14px;
+  padding: 4px var(--gutter) calc(20px + var(--safe-b));
+}
+.mtc-pronta-lista {
+  display: grid;
+  justify-items: center;
+}
+.mtc-pronta-lista.is-varias {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.mtc-pronta-item {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  width: 100%;
+}
+.mtc-pronta-item > img {
+  display: block;
+  width: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 0 0 0.5px var(--hairline);
+}
+.mtc-pronta-lista:not(.is-varias) .mtc-pronta-item > img {
+  width: auto;
+  max-width: 100%;
+  justify-self: center;
+}
+.mtc-pronta-video {
+  position: relative;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  height: min(52vh, 420px);
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #000;
+}
+.mtc-pronta-video img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+}
+.mtc-pronta-video span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.mtc-pronta-item figcaption {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.mtc-pronta-item figcaption b {
+  color: var(--text);
+}
+.mtc-trecho {
+  display: grid;
+  gap: 14px;
+  padding: 4px var(--gutter) calc(20px + var(--safe-b));
+}
+.mtc-trecho-tela {
+  justify-self: center;
+  width: 100%;
+  max-height: 42vh;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+}
+.mtc-trecho-tela canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.mtc-trecho-tc {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.mtc-trecho-tc b {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.mtc-trecho-tc span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.mtc-faixa {
+  position: relative;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  touch-action: none;
+  background: var(--fill-2);
+}
+.mtc-faixa-quadros {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  height: 100%;
+}
+.mtc-faixa-quadros img,
+.mtc-faixa-quadros span {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+.mtc-fora {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.mtc-janela {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 3px #ffcc00;
+  transition: left 0.06s linear;
+}
+.mtc-janela.is-parado {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr-ferr-art.is-montagens i {
+    animation: none !important;
+  }
+}

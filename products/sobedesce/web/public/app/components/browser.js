@@ -42,6 +42,7 @@ import { FileName } from './queue.js'
 import { CopyButton } from './copiar.js'
 import { MY_DRIVE, closeSheet, getState, openSheet, pushRecent, setState, setTab, toast, useApp } from '../lib/state.js'
 import { framesDoDrive } from './criar.js'
+import { montagemDoDrive, useNaMontagem } from './montagens.js'
 import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
@@ -61,6 +62,13 @@ const lugar = (id) => TODOS_LUGARES.find((x) => x.id === id)
 
 // Listas já abertas (voltar para uma pasta não pisca). Vale enquanto a página está aberta.
 const lists = new Map()
+
+/** Na faixa de escolher para a montagem: quantos já entraram. */
+function NaMontagem() {
+  const n = useNaMontagem()
+  return n ? `${n} na montagem · toque para juntar mais` : 'Toque em cada um para juntar'
+}
+
 /** Esquece as listas guardadas de uma pasta (recebeu algo pelo "Mover para…": abre de novo atualizada). */
 function esquecer(id) {
   for (const k of [...lists.keys()]) if (k.includes(JSON.stringify(id))) lists.delete(k)
@@ -1168,6 +1176,12 @@ export function DriveScreen({ active }) {
       avisarAnfitriao('escolhido', { arquivos: [{ id: f.id, nome: f.name, tamanho: Number(f.size), mime: f.mimeType || '', pasta }] })
       return
     }
+    // Escolhendo para as Montagens (aba Criar → Do Drive): cada foto ou vídeo tocado entra; "Pronto" volta.
+    if (escolher?.para === 'montagens' && !isFolder(f)) {
+      if (kindOf(f) === 'video' || kindOf(f) === 'image') montagemDoDrive([f], { voltar: false })
+      else toast('Escolha fotos ou vídeos', { ms: 2000 })
+      return
+    }
     // Escolhendo para os Frames (aba Criar → Do Drive): tocar no vídeo leva para lá.
     if (escolher && !isFolder(f)) {
       if (kindOf(f) === 'video') framesDoDrive(f)
@@ -1304,8 +1318,11 @@ export function DriveScreen({ active }) {
       ${escolher
         ? html`<div class="escolher-faixa" role="status">
             <${Icon} name="sparkle" size=${16} />
-            <span><b>Escolha o vídeo para os Frames</b><small>Abra a pasta e toque no vídeo</small></span>
-            <button type="button" class="link-btn" onClick=${() => (setState({ escolher: null }), setTab('criar'))}>Cancelar</button>
+            ${escolher.para === 'montagens'
+              ? html`<span><b>Fotos e takes para a montagem</b><small><${NaMontagem} /></small></span>
+                  <button type="button" class="link-btn is-strong" onClick=${() => (setState({ escolher: null, criarTela: 'montagens' }), setTab('criar'))}>Pronto</button>`
+              : html`<span><b>Escolha o vídeo para os Frames</b><small>Abra a pasta e toque no vídeo</small></span>
+                  <button type="button" class="link-btn" onClick=${() => (setState({ escolher: null }), setTab('criar'))}>Cancelar</button>`}
           </div>`
         : null}
       <div class="dtop-row">

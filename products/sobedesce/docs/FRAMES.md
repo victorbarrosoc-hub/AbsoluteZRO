@@ -117,6 +117,31 @@ para a agulha e a prévia), `GET /api/montagens/video` (o take para tocar, com R
 takes tocam) + `POST /api/montagens/video` (`src/montagens/video.js`: o ffmpeg põe cada trecho no quadro, cobre com a
 camada e gera MP4 H.264 com o nome de "pela metade" até terminar).
 
+### No celular (Criar › Montagens, SOBEDESCE Celular 2.8.68)
+
+O mesmo desenho (`web/public/app/lib/montagens.js` é cópia idêntica de `public/lib/montagens.js`; a ponte
+`lib/frames-posts.js` reexporta `lib/frames/posts.js`), com fotos e vídeos da galeria (`<input multiple>`) ou do Drive
+(a faixa "Fotos e takes para a montagem": cada toque junta; também "Pôr numa montagem" no menu do arquivo). Tocar no
+quadro escolhe, arrastar enquadra, pinça ou a barra dá zoom, trocar de lugar e tirar; modelos desenhados com as fotos da
+pessoa, formatos, slides, linhas, espaço, cantos e fundo. "Fazer a montagem" abre a folha "Pronta": **Salvar no
+celular** (a folha de compartilhar do iPhone; sem ela, download) ou **Subir pro Drive** (a fila de sempre, na pasta
+escolhida). Os limites do iPhone ficam em `lib/montagens-celular.js`:
+
+- cada parte do carrossel e da grade é desenhada sozinha, no tamanho dela (`desenharFatia`): o Safari recusa canvas acima
+  de 16,7 milhões de pixels e a grade 3×5 em 3:4 tem 23 milhões;
+- a foto abre só no tamanho que o quadro precisa, com o zoom (`tamanhoNecessario`); até 30 fotos e takes na bandeja;
+- vídeo: até 4 takes, 3/5/8/15 s, no máximo 1920 px no lado maior (21:9 sai 1920×810), 30 qps. Gravado no aparelho
+  (`lib/montagens-midia.js`): o Mediabunny do Relay lê os takes quadro a quadro pelo WebCodecs (galeria pelo arquivo,
+  Drive aos pedaços com o token), cada quadro é desenhado (takes por baixo, a camada da tela por cima, como o ffmpeg do
+  computador) e sai em H.264 num MP4. Sem `<video>` nem `MediaRecorder` (a CSP do app só deixa `media-src 'self'`).
+  Precisa do iOS 16.4 ou mais novo; sem WebCodecs, a tela diz e sai a foto. O som vem de um take em velocidade normal,
+  em AAC (o do sistema ou o do FFmpeg em WebAssembly); o Safari antes do iOS 26 não lê áudio pelo WebCodecs, e aí o vídeo
+  sai sem som, com o aviso na folha. Câmera lenta sai sem som (o computador usa `atempo`).
+
+Testes: `test/montagens-celular.test.js` (cópia idêntica, partes e nomes, fatia igual ao corte da imagem inteira,
+limites) e `test/montagens-celular-navegador.test.js` (Chromium e WebKit do Playwright com cara de iPhone: carrossel 3 ×
+1080×1350, grade 6 × 1080×1440, foto do Drive e o vídeo 1080×1350 H.264 + AAC de 3 s conferido pelo ffprobe).
+
 ## Ainda não
 
 - Vídeo HDR (HLG/PQ) sai sem conversão de tom: o JPEG fica lavado. Por enquanto, use a versão SDR do filme.
