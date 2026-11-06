@@ -12,7 +12,9 @@
 
 import { ENTRADAS } from './espacos.js'
 import { criarTela, luminancia, paraTrabalho } from './cena.js'
-import { GRUPOS, NEUTRO, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
+import { GRUPOS, NEUTRO, VETORES_HSL, ZONAS_HDR, centrosDasZonas, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
+
+export { VETORES_HSL, ZONAS_HDR, centrosDasZonas }
 import { COPIAS } from './copia.js'
 import { NEGATIVOS } from './negativos.js'
 import { lerTextura } from './textura.js'
@@ -73,15 +75,43 @@ export const AJUSTES = [
   { id: 'peleSat', nome: 'Saturação da pele', min: -100, max: 100, fino: true, dica: 'Só a pele: menos ↔ mais cor' },
   { id: 'pele', nome: 'Pele protegida', min: 0, max: 100, fino: true, dica: 'Mantém a pele natural enquanto o look muda o resto' },
   { id: 'desbotar', nome: 'Desbotar', min: 0, max: 100, fino: true, dica: 'Véu no preto, como cópia antiga' },
-  // exposição HDR por zonas (como as rodas HDR do Resolve): ±100 = ±1,5 stop na zona, na luz da cena
-  { id: 'hdrPreto', nome: 'HDR · Preto', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição só no preto profundo (−6 stops)' },
-  { id: 'hdrEscuros', nome: 'HDR · Escuros', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nos escuros (−4 stops)' },
-  { id: 'hdrSombras', nome: 'HDR · Sombras', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nas sombras (−2 stops)' },
-  { id: 'hdrClaros', nome: 'HDR · Claros', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nos claros: pele iluminada, céu (+1,5 stop)' },
-  { id: 'hdrAltas', nome: 'HDR · Altas', min: -100, max: 100, fino: true, hdr: true, dica: 'Exposição nas altas (+3,5 stops)' },
-  { id: 'hdrEspecular', nome: 'HDR · Especular', min: -100, max: 100, fino: true, hdr: true, dica: 'Só o brilho especular e as luzes (+5,5 stops)' },
+  // saturação subtrativa (Cor de película): a cor forte ganha croma e perde luz juntos, como o corante
+  { id: 'subtrativa', nome: 'Saturação subtrativa', min: 0, max: 100, grupo: 'pelicula', dica: 'Cor forte mais cheia e mais escura, nunca neon. A luz prática e a pele ficam fora' },
+  // densidade de película (como o Film Density do Paul Dore): força 0 a 2, pesos por canal 0 a 2, limitadores 0 a 1
+  { id: 'densidadeFilme', nome: 'Densidade', min: 0, max: 200, escala: 100, grupo: 'pelicula', dica: 'Cor saturada mais densa (mais escura) com a mesma saturação, como o corante da película' },
+  { id: 'pesoVermelho', nome: 'Vermelho', min: -100, max: 100, peso: true, grupo: 'pelicula', dica: 'Peso do vermelho na densidade: acima de 1, o vermelho fica mais denso' },
+  { id: 'pesoVerde', nome: 'Verde', min: -100, max: 100, peso: true, grupo: 'pelicula', dica: 'Peso do verde na densidade' },
+  { id: 'pesoAzul', nome: 'Azul', min: -100, max: 100, peso: true, grupo: 'pelicula', dica: 'Peso do azul na densidade' },
+  { id: 'poupaFraca', nome: 'Poupa cor fraca', min: 0, max: 100, escala: 100, padrao: 20, grupo: 'pelicula', dica: 'A densidade não age na cor fraca (abaixo desta saturação)' },
+  { id: 'poupaPreto', nome: 'Poupa o preto', min: 0, max: 100, escala: 100, padrao: 15, grupo: 'pelicula', dica: 'A densidade não age na sombra profunda' },
+  { id: 'protegePele', nome: 'Protege a pele', min: 0, max: 100, padrao: 80, grupo: 'pelicula', dica: 'A pele fica fora da densidade' },
+  // exposição HDR por zonas (como as rodas HDR do Resolve): ±100 = ±1,5 stop na zona, na luz da cena; as zonas se
+  // posicionam na faixa do arquivo (centrosDasZonas)
+  ...ZONAS_HDR.map((z) => ({
+    id: `hdr${z.nome}`,
+    nome: z.nome,
+    min: -100,
+    max: 100,
+    grupo: 'hdr',
+    dica: `Exposição só na zona ${z.nome.toLowerCase()} (±1,5 stop), na luz da cena`,
+  })),
+  // HSL de seis vetores: matiz em graus (±30), saturação e luz (±100)
+  ...VETORES_HSL.flatMap((v) => [
+    { id: `hsl${v.nome}Matiz`, nome: 'Matiz', min: -30, max: 30, grupo: 'hsl', vetor: v.id, canal: 0, dica: `${v.nome}: gira o matiz (graus)` },
+    { id: `hsl${v.nome}Sat`, nome: 'Saturação', min: -100, max: 100, grupo: 'hsl', vetor: v.id, canal: 1, dica: `${v.nome}: menos ↔ mais cor` },
+    { id: `hsl${v.nome}Luz`, nome: 'Luz', min: -100, max: 100, grupo: 'hsl', vetor: v.id, canal: 2, dica: `${v.nome}: mais escuro ↔ mais claro` },
+  ]),
 ]
-export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, 0]))
+/** Ajustes no ponto de partida: 0 é neutro; os limitadores da densidade já nascem no padrão (só agem com ela ligada). */
+export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, a.padrao ?? 0]))
+/** O valor que a tela mostra: a escala do ajuste (densidade 0–2, limitadores 0–1), o peso (0–2) ou o número. */
+export function valorVisivel(a, v) {
+  if (a.peso) return (1 + v / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  if (a.escala) return (v / a.escala).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  if (a.grupo === 'hsl' && a.canal === 0) return `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}°`
+  if (a.min >= 0) return String(v)
+  return v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0'
+}
 
 // ─────────── analisar e corrigir (na luz da cena) ───────────
 
@@ -193,7 +223,31 @@ export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   ]
   const saturacao = limitar((COR_ALVO / Math.max(1e-3, nCroma ? croma / nCroma : COR_ALVO)) ** 0.7, 1, COR_MAX)
   const c = { exposicao, ganhos, contraste, saturacao, sombraFria: SOMBRA_FRIA }
-  return { ...c, leitura: descreverCorrecao(exposicao, ganhos, c) }
+  // a faixa do arquivo (stops sobre o cinza, antes da exposição): onde a luz deste frame está, dentro do que a curva da
+  // câmera consegue guardar. As zonas HDR se posicionam nela
+  const camera = faixaDaEntrada(entrada)
+  const bruto = (p) => Math.log2(todos[Math.floor((todos.length - 1) * p)] / 0.18)
+  const faixa = todos.length > 20 ? [limitar(bruto(0.002), camera[0], -1.5), limitar(bruto(0.998), 1.5, camera[1])] : null
+  return { ...c, leitura: descreverCorrecao(exposicao, ganhos, c), faixa, faixaCamera: camera }
+}
+
+/**
+ * O que a curva da entrada guarda, em stops sobre o cinza 18%: o piso útil (primeiro código, em 10 bits, com luz acima
+ * de 12 stops abaixo do cinza) e o teto (o código 1, a alta mais alta que a curva grava).
+ */
+export function faixaDaEntrada(entrada = 'still') {
+  const cena = paraCena(entrada)
+  const Y = (v) => luminancia(cena(v, v, v))
+  const teto = Math.log2(Math.max(1e-9, Y(1)) / 0.18)
+  let piso = -12
+  for (let k = 0; k <= 1023; k++) {
+    const y = Y(k / 1023)
+    if (y > 0.18 * 2 ** -12) {
+      piso = Math.log2(y / 0.18)
+      break
+    }
+  }
+  return [Math.max(-14, piso), teto]
 }
 
 export function descreverCorrecao(exposicao, ganhos, niveis = null) {
@@ -261,7 +315,21 @@ export function criarLab(receita = {}) {
     branqueamento: aj.branqueamento / 100,
     peleMatiz: aj.peleMatiz / 100,
     peleSat: aj.peleSat / 100,
-    zonas: ['hdrPreto', 'hdrEscuros', 'hdrSombras', 'hdrClaros', 'hdrAltas', 'hdrEspecular'].map((k) => ((aj[k] ?? 0) / 100) * 1.5),
+    zonas: ZONAS_HDR.map((z) => ((aj[`hdr${z.nome}`] ?? 0) / 100) * 1.5),
+    // a faixa do arquivo foi medida antes da exposição; as zonas andam junto com a exposição aplicada
+    faixaHdr: Array.isArray(receita.faixaHdr) ? receita.faixaHdr.map((v) => v + (cor?.exposicao ?? 0) + (aj.luz / 100) * 2) : null,
+    // 100 no painel = 0,4 no motor (0,3 embutido no look já escurecia demais o verde e o preto, 05/11/2026)
+    subtrativa: (aj.subtrativa / 100) * 0.4,
+    densidadeFilme: aj.densidadeFilme
+      ? {
+          forca: aj.densidadeFilme / 100,
+          pesos: [aj.pesoVermelho, aj.pesoVerde, aj.pesoAzul].map((v) => 1 + v / 100),
+          poupaFraca: aj.poupaFraca / 100,
+          poupaPreto: aj.poupaPreto / 100,
+          protegePele: aj.protegePele / 100,
+        }
+      : null,
+    hsl: VETORES_HSL.map((v) => [aj[`hsl${v.nome}Matiz`] ?? 0, (aj[`hsl${v.nome}Sat`] ?? 0) / 100, (aj[`hsl${v.nome}Luz`] ?? 0) / 100]),
     copia: receita.copia || undefined,
     negativo: receita.negativo || undefined,
     luzCopia: receita.luzCopia || undefined,
@@ -305,6 +373,7 @@ export function escreverReceita(receita) {
     textura: lerTextura(receita.textura),
     intensidade: receita.intensidade ?? 1,
     correcao: receita.correcao ?? null,
+    faixaHdr: Array.isArray(receita.faixaHdr) ? receita.faixaHdr : null,
     ajustes: { ...AJUSTES_NEUTROS, ...(receita.ajustes ?? {}) },
     ...(receita.legado ? { legado: receita.legado } : {}),
   }
@@ -329,7 +398,8 @@ export function lerReceita(texto) {
   if (r?.revela !== 'lab' || typeof r.versao !== 'number') throw new Error('Não é uma receita da Revela.')
   if (r.versao > VERSAO_RECEITA) throw new Error('Receita de uma versão mais nova da Revela.')
   const ajustes = {}
-  for (const a of AJUSTES) ajustes[a.id] = limitar(Number(r.ajustes?.[a.id]) || 0, a.min, a.max)
+  // ajuste que a receita não traz (receita mais antiga que ele) abre no ponto de partida
+  for (const a of AJUSTES) ajustes[a.id] = limitar(r.ajustes?.[a.id] == null ? (a.padrao ?? 0) : Number(r.ajustes[a.id]) || 0, a.min, a.max)
   const antiga = r.versao < 6 || r.legado
   const legado = antiga
     ? {
@@ -364,6 +434,10 @@ export function lerReceita(texto) {
             ...(c.saturacao != null ? { saturacao: limitar(Number(c.saturacao) || 1, 1, Math.max(COR_MAX, 2.2)) } : {}),
             ...(c.sombraFria != null ? { sombraFria: limitar(Number(c.sombraFria) || 0, 0, 2) } : {}),
           }
+        : null,
+    faixaHdr:
+      Array.isArray(r.faixaHdr) && r.faixaHdr.length === 2 && r.faixaHdr.every((v) => Number.isFinite(Number(v)))
+        ? [limitar(Number(r.faixaHdr[0]), -16, 0), limitar(Number(r.faixaHdr[1]), 0, 14)]
         : null,
     ajustes,
     ...(legado ? { legado } : {}),

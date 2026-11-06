@@ -1,8 +1,20 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { AJUSTES, BOOST_PADRAO, GRUPOS, VERSAO_RECEITA, analisarFrame, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import {
+  AJUSTES,
+  AJUSTES_NEUTROS,
+  BOOST_PADRAO,
+  GRUPOS,
+  VERSAO_RECEITA,
+  analisarFrame,
+  centrosDasZonas,
+  criarLab,
+  escreverReceita,
+  faixaDaEntrada,
+  lerReceita,
+} from '../src/cor/lab.js'
 import { codigoParaOklab } from '../src/cor/oklab.js'
-import { criarMotor, perfilDe } from '../src/cor/pelicula.js'
+import { criarMotor, perfilDe, pesosHsl } from '../src/cor/pelicula.js'
 import { criarTela } from '../src/cor/cena.js'
 
 const distancia = (x, y) => Math.hypot(...x.map((v, i) => v - y[i]))
@@ -250,4 +262,111 @@ test('saturação subtrativa (controle do motor): a cor forte fica mais escura q
   assert.ok(Y(com.emCena(vermelho)) < Y(sem.emCena(vermelho)) * 0.97, 'vermelho mais denso')
   const luz = [3, 1.6, 0.6] // luz prática laranja, 4 stops acima do cinza
   assert.ok(Y(com.emCena(luz)) > Y(sem.emCena(luz)) * 0.98, 'a luz continua luz')
+})
+
+// ─────────── painel de cor (05/11/2026): densidade, subtrativa, HSL e zonas pela faixa do arquivo ───────────
+
+const okDe = (f, c) => codigoParaOklab(...f(...c))
+const croma = (o) => Math.hypot(o[1], o[2])
+const NEUTROS = { ...AJUSTES_NEUTROS }
+const comAjustes = (aj, extra = {}) => criarLab({ base: 'revela', ...extra, ajustes: { ...NEUTROS, ...aj } }).aplicar
+
+test('painel de cor: tudo no ponto de partida não muda o look (os limitadores só agem com a densidade)', () => {
+  const g = criarLab({ base: 'revela' }).aplicar
+  const f = comAjustes({})
+  for (const c of [[0.4, 0.4, 0.4], [0.6, 0.2, 0.18], [0.25, 0.5, 0.2], [0.62, 0.45, 0.36]]) assert.ok(distancia(f(...c), g(...c)) < 1e-9)
+  assert.equal(AJUSTES_NEUTROS.poupaFraca, 20)
+  assert.equal(AJUSTES_NEUTROS.protegePele, 80)
+})
+
+test('densidade de película: cor saturada mais escura com a mesma saturação; cinza, pele e preto ficam', () => {
+  const g = comAjustes({})
+  const f = comAjustes({ densidadeFilme: 100 })
+  const vermelho = [0.6, 0.2, 0.18]
+  const a = okDe(g, vermelho)
+  const b = okDe(f, vermelho)
+  assert.ok(b[0] < a[0] - 0.02, `vermelho mais denso: L ${a[0].toFixed(3)} → ${b[0].toFixed(3)}`)
+  // saturação (croma ÷ luz) quase igual: a cor não lava nem vira neon
+  assert.ok(Math.abs(croma(b) / b[0] - croma(a) / a[0]) < 0.06)
+  assert.ok(distancia(f(0.4, 0.4, 0.4), g(0.4, 0.4, 0.4)) < 1e-6, 'cinza parado')
+  assert.ok(Math.abs(okDe(f, [0.62, 0.45, 0.36])[0] - okDe(g, [0.62, 0.45, 0.36])[0]) < 0.006, 'pele protegida')
+  // peso do vermelho acima de 1: o vermelho fica mais denso que com o peso neutro
+  const pesado = okDe(comAjustes({ densidadeFilme: 100, pesoVermelho: 80 }), vermelho)
+  assert.ok(pesado[0] < b[0], `peso do vermelho: ${pesado[0].toFixed(3)} < ${b[0].toFixed(3)}`)
+  // a luz nunca sobe com a densidade, em nenhuma cor da grade
+  for (let r = 0; r <= 1; r += 0.25)
+    for (let gg = 0; gg <= 1; gg += 0.25)
+      for (let bb = 0; bb <= 1; bb += 0.25) assert.ok(okDe(f, [r, gg, bb])[0] <= okDe(g, [r, gg, bb])[0] + 2e-3, `subiu em ${[r, gg, bb]}`)
+})
+
+test('saturação subtrativa no painel: a cor forte escurece e ganha cheio; 0 desliga', () => {
+  const g = comAjustes({})
+  const f = comAjustes({ subtrativa: 60 })
+  const verde = [0.25, 0.5, 0.2]
+  assert.ok(okDe(f, verde)[0] < okDe(g, verde)[0] - 0.02)
+  assert.ok(distancia(f(0.4, 0.4, 0.4), g(0.4, 0.4, 0.4)) < 1e-3, 'cinza parado')
+})
+
+test('HSL de seis vetores: cada vetor age na sua cor, o vizinho distante não muda e o neutro fica', () => {
+  const g = comAjustes({})
+  const azul = [0.2, 0.3, 0.6]
+  const vermelho = [0.6, 0.2, 0.18]
+  const sat = comAjustes({ hslAzulSat: -100 })
+  assert.ok(croma(okDe(sat, azul)) < croma(okDe(g, azul)) * 0.4, 'azul sem cor')
+  assert.ok(distancia(sat(...vermelho), g(...vermelho)) < 1e-6, 'vermelho intocado')
+  assert.ok(distancia(sat(0.4, 0.4, 0.4), g(0.4, 0.4, 0.4)) < 1e-6, 'cinza intocado')
+  const luz = comAjustes({ hslVermelhoLuz: -100 })
+  assert.ok(okDe(luz, vermelho)[0] < okDe(g, vermelho)[0] - 0.03, 'vermelho mais escuro')
+  const matiz = comAjustes({ hslVermelhoMatiz: 20 })
+  const h = (o) => (Math.atan2(o[2], o[1]) * 180) / Math.PI
+  assert.ok(h(okDe(matiz, vermelho)) > h(okDe(g, vermelho)) + 5, 'vermelho gira para o laranja')
+  // os pesos somam 1 em todo o círculo e passam sem degrau de um vetor ao outro
+  let antes = pesosHsl(0)
+  for (let x = 0.5; x <= 360; x += 0.5) {
+    const w = pesosHsl(x)
+    assert.ok(Math.abs(w.reduce((s, v) => s + v, 0) - 1) < 1e-9)
+    assert.ok(Math.max(...w.map((v, i) => Math.abs(v - antes[i]))) < 0.05, `degrau em ${x}°`)
+    antes = w
+  }
+})
+
+test('zonas HDR pela faixa do arquivo: o Especular cai no brilho deste arquivo; sem faixa, os centros padrão', () => {
+  assert.deepEqual(centrosDasZonas(null), [-6, -4, -2, 1.5, 3.5, 5.5])
+  const largo = centrosDasZonas([-8.6, 6.9])
+  assert.ok(Math.abs(largo[0] + 7.9) < 0.1 && Math.abs(largo[5] - 6.4) < 0.1, `RED: ${largo}`)
+  const estreito = centrosDasZonas([-4, 3])
+  assert.ok(estreito[5] < 3 && estreito[0] > -4)
+  // num still estreito, o Especular +100 sobe o branco do arquivo (+2,8 stops), e não o que ele não tem (+5,5)
+  const tela = criarTela('rec709')
+  const codigo = (s) => tela.aplicar([0.18 * 2 ** s, 0.18 * 2 ** s, 0.18 * 2 ** s])
+  const comFaixa = criarLab({ base: 'neutro', boost: 0, faixaHdr: [-4, 3], ajustes: { hdrEspecular: 100 } }).aplicar
+  const semFaixa = criarLab({ base: 'neutro', boost: 0, ajustes: { hdrEspecular: 100 } }).aplicar
+  const neutro = criarLab({ base: 'neutro', boost: 0 }).aplicar
+  const c = codigo(2.8)
+  assert.ok(comFaixa(...c)[1] - neutro(...c)[1] > 2 * Math.abs(semFaixa(...c)[1] - neutro(...c)[1]))
+  // e a curva continua subindo com as zonas apertadas e opostas
+  const extremo = criarLab({ base: 'neutro', boost: 0, faixaHdr: [-3, 2], ajustes: { hdrPreto: 100, hdrEscuros: -100, hdrSombras: 100, hdrClaros: -100, hdrAltas: 100, hdrEspecular: -100 } }).aplicar
+  let antes = -1
+  for (let v = 0.005; v <= 1; v += 0.005) {
+    const y = extremo(v, v, v)[1]
+    assert.ok(y >= antes - 1e-6, `desceu em ${v.toFixed(3)}`)
+    antes = y
+  }
+})
+
+test('Analisar mede a faixa do arquivo dentro do que a curva guarda; a receita leva a faixa', () => {
+  const stops = Array.from({ length: 6000 }, (_, i) => -5 + (i % 100) / 10)
+  const c = analisarFrame(frameDeCinzas(stops), { passo: 1 })
+  assert.ok(Math.abs(c.faixa[0] + 5) < 0.3 && Math.abs(c.faixa[1] - 4.9) < 0.3, `faixa ${c.faixa}`)
+  const [piso, teto] = faixaDaEntrada('red-log3g10')
+  assert.ok(piso < -10 && teto > 9, `Log3G10: ${piso} a ${teto}`)
+  assert.ok(faixaDaEntrada('canon-clog')[1] < 6)
+  const r = lerReceita(escreverReceita({ base: 'revela', faixaHdr: [-8.6, 6.9], ajustes: { densidadeFilme: 70, hslVermelhoMatiz: 6 } }))
+  assert.deepEqual(r.faixaHdr, [-8.6, 6.9])
+  assert.equal(r.ajustes.densidadeFilme, 70)
+  assert.equal(r.ajustes.hslVermelhoMatiz, 6)
+  // receita de antes do painel: os limitadores abrem no padrão, a faixa fica de fora
+  const velha = lerReceita(JSON.stringify({ revela: 'lab', versao: 6, base: 'revela', ajustes: { luz: 10 } }))
+  assert.equal(velha.ajustes.protegePele, 80)
+  assert.equal(velha.faixaHdr, null)
 })

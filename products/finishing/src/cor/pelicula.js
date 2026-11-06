@@ -509,27 +509,48 @@ function noCirculo(nos, h) {
  * veu (0–1), pele (0–1, protege a cor da pele), copia (id, 'nenhuma' ou ausente = a do perfil), negativo (id,
  * 'digital' ou ausente = o do perfil), revelacao, luzCopia, expandido, intensidade (0–1) }.
  */
-/** Zonas da exposição HDR: centro em stops sobre o cinza 18%. */
+/** Zonas da exposição HDR: centro em stops sobre o cinza 18% (o padrão, sem a faixa de um arquivo). */
 export const ZONAS_HDR = [
-  { id: 'preto', centro: -6 },
-  { id: 'escuros', centro: -4 },
-  { id: 'sombras', centro: -2 },
-  { id: 'claros', centro: 1.5 },
-  { id: 'altas', centro: 3.5 },
-  { id: 'especular', centro: 5.5 },
+  { id: 'preto', nome: 'Preto', centro: -6 },
+  { id: 'escuros', nome: 'Escuros', centro: -4 },
+  { id: 'sombras', nome: 'Sombras', centro: -2 },
+  { id: 'claros', nome: 'Claros', centro: 1.5 },
+  { id: 'altas', nome: 'Altas', centro: 3.5 },
+  { id: 'especular', nome: 'Especular', centro: 5.5 },
 ]
+// onde cada zona fica dentro da faixa do arquivo: fração do caminho do cinza até a sombra mais funda (as três de
+// baixo) e até a alta mais alta (as três de cima). Numa faixa de −6,5 a +6 stops dá as zonas padrão
+const FRACOES_ZONAS = [0.92, 0.6, 0.28, 0.26, 0.58, 0.93]
+
 /**
- * `exposicoes`: stops por zona (na ordem de ZONAS_HDR, até ±1,5). Devolve ev → ev, monótona: soma de sinos (largura
- * 1,2 stop) tabelada de -16 a +12 stops e corrigida para a inclinação nunca ficar abaixo de 0,15.
+ * Centros das zonas HDR posicionados pela faixa do arquivo (`faixa`: [sombra mais funda, alta mais alta], em stops
+ * sobre o cinza, na luz da cena): numa câmera de 15 stops o Especular cai no brilho de verdade daquele arquivo, e num
+ * still de 8 stops as zonas se apertam. Sem faixa, os centros padrão.
  */
-export function criarCurvaZonas(exposicoes) {
+export function centrosDasZonas(faixa = null) {
+  if (!Array.isArray(faixa) || !faixa.every(Number.isFinite)) return ZONAS_HDR.map((z) => z.centro)
+  const lo = limitar(faixa[0], -14, -1.5)
+  const hi = limitar(faixa[1], 1.5, 12)
+  return FRACOES_ZONAS.map((f, i) => (i < 3 ? lo : hi) * f)
+}
+
+/**
+ * `exposicoes`: stops por zona (na ordem de ZONAS_HDR, até ±1,5); `centros`: onde fica cada zona (centrosDasZonas).
+ * Devolve ev → ev, monótona: soma de sinos (largura proporcional à distância até as vizinhas, 0,8 a 2 stops)
+ * tabelada de -16 a +12 stops e corrigida para a inclinação nunca ficar abaixo de 0,15.
+ */
+export function criarCurvaZonas(exposicoes, centros = centrosDasZonas()) {
   const e = ZONAS_HDR.map((_, i) => limitar(exposicoes[i] ?? 0, -1.5, 1.5))
+  const larguras = centros.map((c, i) => {
+    const vizinhas = [centros[i - 1], centros[i + 1]].filter((v) => v != null).map((v) => Math.abs(v - c))
+    return limitar(0.5 * Math.min(...vizinhas), 0.8, 2)
+  })
   const DE = -16, ATE = 12, PASSO = 0.05, N = Math.round((ATE - DE) / PASSO) + 1
   const tab = new Float64Array(N)
   for (let k = 0; k < N; k++) {
     const ev = DE + k * PASSO
     let off = 0
-    for (let i = 0; i < e.length; i++) if (e[i]) off += e[i] * Math.exp(-(((ev - ZONAS_HDR[i].centro) / 1.2) ** 2) / 2)
+    for (let i = 0; i < e.length; i++) if (e[i]) off += e[i] * Math.exp(-(((ev - centros[i]) / larguras[i]) ** 2) / 2)
     tab[k] = ev + off
     if (k > 0 && tab[k] < tab[k - 1] + 0.15 * PASSO) tab[k] = tab[k - 1] + 0.15 * PASSO
   }
@@ -539,6 +560,41 @@ export function criarCurvaZonas(exposicoes) {
     const f = (ev - DE) / PASSO, k = Math.floor(f), t = f - k
     return tab[k] + (tab[k + 1] - tab[k]) * t
   }
+}
+
+// ─────────── HSL de seis vetores ───────────
+
+/** Os seis vetores do HSL, no matiz Oklab de cada primária e secundária (graus). */
+export const VETORES_HSL = [
+  { id: 'vermelho', nome: 'Vermelho', curto: 'Verm.', matiz: 29 },
+  { id: 'amarelo', nome: 'Amarelo', curto: 'Amar.', matiz: 105 },
+  { id: 'verde', nome: 'Verde', curto: 'Verde', matiz: 142 },
+  { id: 'ciano', nome: 'Ciano', curto: 'Ciano', matiz: 195 },
+  { id: 'azul', nome: 'Azul', curto: 'Azul', matiz: 264 },
+  { id: 'magenta', nome: 'Magenta', curto: 'Mag.', matiz: 328 },
+]
+/**
+ * Peso de cada vetor num matiz: entre dois vetores vizinhos a passagem é um cosseno levantado, que soma 1 em todo o
+ * círculo e não tem bico (derivada zero em cada vetor): sem quebra na LUT, como pede um HSL de colorista.
+ */
+export function pesosHsl(h) {
+  const n = VETORES_HSL.length
+  const w = new Array(n).fill(0)
+  const hh = ((h % 360) + 360) % 360
+  for (let i = 0; i < n; i++) {
+    const a = VETORES_HSL[i].matiz
+    const b = VETORES_HSL[(i + 1) % n].matiz + (i === n - 1 ? 360 : 0)
+    const x = hh < a ? hh + 360 : hh
+    if (x >= a && x < b) {
+      const t = (x - a) / (b - a)
+      const u = (1 - Math.cos(Math.PI * t)) / 2
+      w[i] = 1 - u
+      w[(i + 1) % n] = u
+      return w
+    }
+  }
+  w[0] = 1
+  return w
 }
 
 export function criarMotor(p = NEUTRO, extra = {}) {
@@ -573,6 +629,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const densidadeAj = limitar(extra.densidade ?? 0, -1, 1)
   const densidade = pr.densidade + 0.3 * limitar(extra.densidadeLegado ?? 0, 0, 1)
   const branqueamento = extra.branqueamento ?? 0
+  // saturação subtrativa: a do perfil (desligada nos looks da Revela) mais o ajuste da pessoa (0 a 1)
+  const subtrativa = limitar((pr.subtrativa ?? 0) + (extra.subtrativa ?? 0), 0, 1)
   // Boost (REVELAFILM): a assinatura da casa por cima da película, de 0 a 100; só onde há negativo das fichas ou cópia
   const boostPedido = limitar((extra.boost ?? 0) / 100, 0, 1)
   // Estilo: moderno (> 0) põe a sombra para o petróleo e a alta para o quente; retrô (< 0), a sombra quente e a alta
@@ -638,13 +696,13 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     // saturação subtrativa (04/11/2026): como o corante da película, a cor forte ganha croma e perde luz juntos — fica
     // cheia e escura, nunca neon. Até o meio-tom alto: luz prática, janela e céu não escurecem (no cinema elas continuam
     // luz). Medido nos filmes: no dia, a cor forte é ~20% mais escura que a fraca na mesma faixa
-    if (pr.subtrativa) {
+    if (subtrativa) {
       const forte = (C * C) / (C * C + 0.0036) // quadrática: suave no eixo neutro (o croma tem bico no zero)
       const ondeAge = suave5(0.12, 0.5, Lr) * (1 - suave5(1.15, 1.9, Lr)) // quíntica: sem quina na LUT
       // a pele fica fora (como o colorista protege): escurecer a pele a deixa barrenta, principalmente a pele negra
       * (1 - 0.8 * noMatiz(h, 55, 45))
-      L *= 1 - pr.subtrativa * forte * ondeAge
-      C *= 1 + 0.5 * pr.subtrativa * forte * ondeAge
+      L *= 1 - subtrativa * forte * ondeAge
+      C *= 1 + 0.5 * subtrativa * forte * ondeAge
     }
     // separação de tons pela exposição (stops em volta do cinza), proporcional à luz
     const ev = Math.log2(Math.max(1e-6, (L / L_CINZA) ** 3))
@@ -743,7 +801,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   // stop, somadas por sinos suaves; a curva final é forçada a subir sempre (nunca inverte a luz nem faz degrau, mesmo
   // com zonas vizinhas em sentidos opostos). Age na luz e mantém a cor.
   const zonas = extra.zonas && extra.zonas.some((z) => z) ? extra.zonas : null
-  const curvaZonas = zonas ? criarCurvaZonas(zonas) : null
+  // as zonas ficam onde a luz deste arquivo está (a faixa medida no Analisar), ou nos centros padrão
+  const curvaZonas = zonas ? criarCurvaZonas(zonas, centrosDasZonas(extra.faixaHdr)) : null
 
   /**
    * Tom da cena antes do filme: altas, sombras e preto em log, em volta do cinza e sem mexer nele; depois as zonas HDR.
@@ -760,6 +819,88 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     if (preto) e2 += (preto < 0 ? 2 : 1) * preto * suave(-1.5, -7, e)
     if (curvaZonas) e2 = curvaZonas(e2)
     return x.map((v) => (v * 2 ** e2 * 0.18) / Y)
+  }
+
+  /**
+   * Densidade de película (como o Film Density do Paul Dore, refeito aqui): em DaVinci Intermediate, a cor vai na direção
+   * de uma luma com pesos por canal e a saturação HSV volta ao que era; o que sobra é a cor saturada mais densa (mais
+   * escura) com a mesma saturação, como o corante. O peso de um canal sobe a densidade das cores dele (vermelho 1,3 =
+   * vermelho mais denso). Limitadores: poupa a cor fraca (saturação HSV), poupa o preto (luma) e protege a pele (pela
+   * cor da cena). O neutro fica neutro e a luz nunca passa da de antes.
+   */
+  const df = extra.densidadeFilme ?? null
+  const forcaDensidade = df ? limitar(df.forca ?? 0, 0, 2) : 0
+  const pesosLuma = (() => {
+    const p = df?.pesos ?? [1, 1, 1]
+    const c = [0.2126, 0.7152, 0.0722].map((k, i) => k * limitar(2 - limitar(p[i] ?? 1, 0, 2), 0.02, 2))
+    const soma = c[0] + c[1] + c[2]
+    return c.map((v) => v / soma)
+  })()
+  function densidadeDePelicula(y, antes) {
+    if (!(forcaDensidade > 0)) return y
+    const d = y.map(linearParaDi)
+    const M = Math.max(d[0], d[1], d[2])
+    const m = Math.min(d[0], d[1], d[2])
+    if (!(M > 1e-4) || !(M - m > 1e-6)) return y
+    const s = 1 / (1 + forcaDensidade)
+    const Y = pesosLuma[0] * d[0] + pesosLuma[1] * d[1] + pesosLuma[2] * d[2]
+    const d1 = d.map((v) => Y + (v - Y) * s)
+    const M1 = Math.max(d1[0], d1[1], d1[2])
+    const m1 = Math.min(d1[0], d1[1], d1[2])
+    if (!(M1 > 1e-4) || !(M1 - m1 > 1e-7)) return y
+    // satura de volta no HSV (o matiz e o valor ficam): a distância de cada canal até o máximo cresce por igual
+    const satAntes = (M - m) / M
+    const sat1 = (M1 - m1) / M1
+    const f = Math.min(satAntes, 0.999) / sat1
+    const d2 = d1.map((v) => M1 - (M1 - v) * f)
+    // onde age: os limitadores, suaves (sem quina na LUT)
+    const lS = limitar(df.poupaFraca ?? 0, 0, 1)
+    const lL = limitar(df.poupaPreto ?? 0, 0, 1)
+    let w = lS > 0 ? suave5(0.5 * lS, 1.5 * lS, satAntes) : 1
+    const luma = 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2]
+    if (lL > 0) w *= suave5(0.5 * lL, 1.5 * lL, luma)
+    const pp = limitar(df.protegePele ?? 0, 0, 1)
+    if (pp > 0 && antes) {
+      const Ca = Math.hypot(antes[1], antes[2]) / Math.max(antes[0], 0.02)
+      w *= 1 - pp * noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 52, 40) * suave5(0.015, 0.06, Ca)
+    }
+    if (!(w > 0)) return y
+    return d.map((v, i) => diParaLinear(v + (Math.min(d2[i], v + 1e-9) - v) * w))
+  }
+
+  /**
+   * HSL de seis vetores: matiz (graus), saturação e luz por vetor (VETORES_HSL), com a passagem entre vizinhos em
+   * cosseno (sem quebra na LUT). Entra aos poucos com a cor (o neutro não tem matiz) e a luz só mexe na cor: o cinza
+   * fica parado. Depois do filme, como um nó de HSL no fim da árvore.
+   */
+  const hsl = Array.isArray(extra.hsl) && extra.hsl.some((v) => v && (v[0] || v[1] || v[2])) ? extra.hsl : null
+  function ajustarHsl(y) {
+    if (!hsl) return y
+    const [L, a, b] = dwgParaOklab(y)
+    const C = Math.hypot(a, b)
+    if (!(C > 1e-7) || !(L > 0)) return y
+    const h = Math.atan2(b, a) / GRAU
+    const w = pesosHsl(h)
+    let dh = 0
+    let ds = 0
+    let dl = 0
+    for (let i = 0; i < w.length; i++) {
+      if (!w[i] || !hsl[i]) continue
+      dh += w[i] * (hsl[i][0] ?? 0)
+      ds += w[i] * (hsl[i][1] ?? 0)
+      dl += w[i] * (hsl[i][2] ?? 0)
+    }
+    if (!dh && !ds && !dl) return y
+    // perto do cinza o matiz não diz nada: tudo entra com a saturação (croma ÷ luz), sem bico no zero
+    const sat = C / Math.max(L, 0.02)
+    const comCor = (sat * sat) / (sat * sat + 0.035 * 0.035)
+    const h2 = h + dh * comCor
+    const C2 = C * Math.max(0, 1 + ds * comCor)
+    // luz: até ±25% do L Oklab (perto de ±1 stop) na cor cheia, proporcional à cor
+    const L2 = L * (1 + 0.25 * dl * comCor * suave5(0.02, 0.12, sat))
+    const antesDwg = oklabParaDwg([L, a, b])
+    const depois = oklabParaDwg([L2, C2 * Math.cos(h2 * GRAU), C2 * Math.sin(h2 * GRAU)])
+    return y.map((v, i) => v + depois[i] - antesDwg[i])
   }
 
   /** Pele: matiz (vermelho ↔ amarelo) e saturação só onde a cena tem pele, depois do filme. */
@@ -940,7 +1081,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
 
   function emCena(rgb) {
     const x = dentroDoGamut(tomDaCena(primaria(rgb)))
-    const antes = pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia || boost > 0 || temAcabamento ? dwgParaOklab(x) : null
+    const antes =
+      pele || peleMatiz || peleSat || pr.pele.ancora > 0 || copia || boost > 0 || temAcabamento || forcaDensidade > 0 ? dwgParaOklab(x) : null
     // um negativo das fichas substitui o negativo genérico do perfil (do perfil fica a cor): nunca dois negativos
     let y = idNegativo ? x : negativo(x)
     y = dentroDoGamut(cor(y, antes))
@@ -950,6 +1092,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     // o acabamento da cópia segura também a cor que o High Density encheu (neon vira cor de cinema)
     if (temAcabamento) y = acabar(y, ref, antes)
     if (LUZ) y = mul(LUZ, y)
+    y = densidadeDePelicula(y, antes)
+    y = ajustarHsl(y)
     y = ajustarPele(y, antes)
     y = semBranqueamento(y)
     if (veu) y = y.map((v) => v + veu * 0.005)
@@ -968,7 +1112,7 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     luzCopia,
     boost,
     acabamento: acab,
-    partes: { negativo, cor, dentroDoGamut, copia, reforcar, acabar }, // para os testes internos olharem cada etapa
+    partes: { negativo, cor, dentroDoGamut, copia, reforcar, acabar, densidadeDePelicula, ajustarHsl }, // para os testes internos olharem cada etapa
     /** O mesmo look em código DaVinci Intermediate, para a LUT log → log. */
     emDi(r, g, b) {
       return emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)]).map(linearParaDi)
