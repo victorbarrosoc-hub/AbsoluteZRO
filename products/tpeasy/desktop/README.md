@@ -30,7 +30,7 @@ Igual ao do Maestro (leia o [README dele](../../maestro/desktop/README.md)); aqu
 
 - **Na janela:** o TPeasy (`tpeasy.absolutezro.com`) e, para o login único, só as telas de entrar da Absolute ZRO
   (`/oauth/authorize`, `/entrar`, `/entrar/google`, `/criar-conta`, `/esqueci-a-senha`, `/redefinir-senha`,
-  `/confirmar-email`, `/boas-vindas`, `/em-desenvolvimento`) e `accounts.google.com`. O resto da Absolute ZRO e qualquer outro
+  `/confirmar-email`, `/boas-vindas`, `/em-desenvolvimento`) (o Google não: vai para o navegador do sistema, veja "Entrar com o Google"). O resto da Absolute ZRO e qualquer outro
   site abrem no navegador, só se forem `https`; `mailto:` vai para o e-mail. `tpeasy://rota` abre só rotas do TPeasy (nunca
   `/api`). Sem página do cliente, sem agenda `.ics`: o TPeasy não tem.
 - **Login:** o fluxo normal do site (OIDC com PKCE, cliente `tpeasy-web`), dentro da janela. Partição `persist:tpeasy`.
@@ -63,6 +63,17 @@ Absolute ZRO", com o mesmo botão.
 
 Os canais `desktop` e `download` abrem na migração `0042` do HUB
 (`infra/migrations/0042_tpeasy_carro_desktop.sql`): aplique depois do primeiro build verde.
+
+## Entrar com o Google (ADR 0041)
+
+O Google recusa OAuth dentro de janela embutida (`disallowed_useragent`), e não usamos truque de agente de usuário. Por
+isso a janela **nunca** abre `accounts.google.com`: o botão "Continuar com o Google" do HUB (`/entrar/google`) e qualquer
+redirecionamento para o Google são cancelados e o app abre `<HUB>/entrar/app` no **navegador do sistema**
+(`desktop/login-externo.cjs`, cópia idêntica em cada app de computador; `npm run compartilhado`). A pessoa entra lá,
+toca em "Voltar para o app" e o navegador abre `tpeasy://entrar-app?code=…&state=…`. O app confere o `state`, troca
+o código de uso único (60 s) e o `verifier` PKCE por uma sessão do HUB (`POST /entrar/app/trocar`, o cookie vai para o
+jar da própria janela) e volta para onde estava. E-mail e senha continuam dentro da janela. O app é de instância única,
+então o link chega ao app que já está aberto (Mac: `open-url`; Windows: `second-instance`).
 
 ## Publicar
 

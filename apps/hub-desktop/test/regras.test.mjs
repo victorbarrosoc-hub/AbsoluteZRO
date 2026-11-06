@@ -17,8 +17,8 @@ test('endereço do HUB: oficial no app instalado; ZRO_HUB_URL só em desenvolvim
   assert.equal(r.hubOrigin({ empacotado: false, env: { ZRO_HUB_URL: 'não é url' } }), HUB)
 })
 
-test('navegação: só o HUB e o login do Google ficam na janela', () => {
-  for (const url of [`${HUB}/`, `${HUB}/inicio?x=1#a`, `${HUB}/baixar`, 'https://accounts.google.com/o/oauth2/v2/auth?client_id=x']) {
+test('navegação: só o HUB fica na janela; o Google vai para o navegador do sistema (disallowed_useragent)', () => {
+  for (const url of [`${HUB}/`, `${HUB}/inicio?x=1#a`, `${HUB}/baixar`]) {
     assert.equal(r.destino(url, HUB), 'app', url)
   }
   for (const url of [
@@ -32,6 +32,8 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
     'https://absolutezro.com.evil.com/',
     'https://evil-absolutezro.com/',
     'https://absolutezro.com:8443/',
+    'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
+    'https://accounts.google.com:444/',
     'https://accounts.google.com.evil.com/',
     'https://mail.google.com/',
   ]) {
@@ -51,7 +53,7 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
     assert.equal(r.destino(url, HUB), 'nada', url)
   }
   assert.equal(r.destino(`https://user:senha@absolutezro.com/`, HUB), 'nada')
-  assert.equal(r.ehLoginGoogle('https://accounts.google.com:444/'), false)
+  assert.equal(r.podeNavegar('https://accounts.google.com/', HUB), false)
 })
 
 test('links externos: só https, sem credenciais', () => {
@@ -68,6 +70,9 @@ test('deep link absolutezro:// abre só rotas do HUB', () => {
   assert.equal(r.deepLink('ABSOLUTEZRO://inicio', HUB), `${HUB}/inicio`)
   assert.equal(r.deepLink('absolutezro://', HUB), `${HUB}/`)
   assert.equal(r.deepLink('absolutezro://a/../../baixar', HUB), `${HUB}/baixar`)
+  // o retorno do login pelo navegador não é página (login-externo.cjs troca o código)
+  assert.equal(r.deepLink('absolutezro://entrar-app?code=zd_x&state=y', HUB), null)
+  assert.equal(r.deepLinkDosArgs(['x', 'absolutezro://entrar-app?code=zd_x&state=y'], HUB), null)
   // nunca sai do HUB
   for (const ruim of [
     'absolutezro://evil.com@absolutezro.com/',
@@ -123,15 +128,10 @@ test('permissões: só copiar e tela cheia, e só para o HUB', () => {
   assert.equal(r.permitir('clipboard-sanitized-write', 'https://accounts.google.com/', HUB), false)
 })
 
-test('erros de rede e agente de usuário', () => {
+test('erros de rede', () => {
   assert.equal(r.ehErroDeRede(-106), true)
   assert.equal(r.ehErroDeRede(-105), true)
   assert.equal(r.ehErroDeRede(-200), false)
-  const ua =
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) absolute-zro-desktop/1.0.0 Chrome/140.0.0.0 Electron/44.5.1 Safari/537.36'
-  const limpo = r.agenteLimpo(ua)
-  assert.doesNotMatch(limpo, /Electron|absolute-zro/i)
-  assert.match(limpo, /Chrome\/140\.0\.0\.0 Safari\/537\.36$/)
 })
 
 test('download da central: só o HUB (/baixar/), o Release no GitHub do dono e o servidor de arquivos do GitHub', () => {

@@ -1,6 +1,7 @@
 export * from './arroba'
 export * from './arroba-reservadas'
 export * from './accounts'
+export * from './desktop-login'
 export * from './email'
 export * from './google'
 export * from './oidc'

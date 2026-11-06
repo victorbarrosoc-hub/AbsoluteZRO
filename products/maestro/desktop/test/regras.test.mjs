@@ -21,7 +21,7 @@ test('endereços: oficiais no app instalado; MAESTRO_URL e ZRO_HUB_URL só em de
     assert.deepEqual(r.origens({ empacotado: false, env: { MAESTRO_URL: ruim, ZRO_HUB_URL: ruim } }), O, ruim)
 })
 
-test('na janela: o Maestro, as telas do login único e o login do Google', () => {
+test('na janela: o Maestro, as telas do login único (o Google não: disallowed_useragent)', () => {
   for (const url of [
     `${M}/`,
     `${M}/app`,
@@ -38,8 +38,6 @@ test('na janela: o Maestro, as telas do login único e o login do Google', () =>
     `${HUB}/redefinir-senha?token=x`,
     `${HUB}/confirmar-email`,
     `${HUB}/boas-vindas?next=x`,
-    'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
-    'https://accounts.google.com/signin/v2/challenge',
   ]) {
     assert.equal(r.destino(url, O), 'app', url)
   }
@@ -75,6 +73,7 @@ test('no navegador: o resto do HUB, as páginas do cliente e os outros sites', (
     'https://evil-maestro.absolutezro.com/',
     'https://maestro.absolutezro.com:8443/app',
     'https://absolutezro.com.evil.com/oauth/authorize',
+    'https://accounts.google.com/o/oauth2/v2/auth?client_id=x',
     'https://accounts.google.com.evil.com/',
     'https://mail.google.com/',
   ]) {
@@ -143,10 +142,8 @@ test('permissões: só copiar e tela cheia, e só para o Maestro', () => {
   assert.equal(r.permitir('clipboard-sanitized-write', 'https://accounts.google.com/', O), false)
 })
 
-test('erros de rede e agente de usuário limpo', () => {
+test('erros de rede', () => {
   assert.equal(r.ehErroDeRede(-106), true)
   assert.equal(r.ehErroDeRede(-105), true)
   assert.equal(r.ehErroDeRede(-202), false)
-  const ua = 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) maestro-desktop/0.1.0 Chrome/140.0 Electron/44.5.1 Safari/537.36'
-  assert.equal(r.agenteLimpo(ua), 'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36')
 })

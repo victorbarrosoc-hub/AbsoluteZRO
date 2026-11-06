@@ -17,6 +17,7 @@ export const ORIGEM = path.resolve(RAIZ, '..', '..', '..', 'apps', 'hub-desktop'
 /** Caminhos relativos, iguais nos dois apps. */
 export const COMPARTILHADOS = [
   'desktop/janela.cjs',
+  'desktop/login-externo.cjs',
   'desktop/preload-barra.cjs',
   'desktop/paginas/offline.css',
   'desktop/paginas/fontes/OFL.txt',

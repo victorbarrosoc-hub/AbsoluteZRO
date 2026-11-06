@@ -40,6 +40,27 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
   do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
 
+## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
+
+- `tests/integration/login-pelo-app.test.ts` (16, Postgres real): esquema só da lista fechada (javascript, https, outro app e
+  vazio recusados), `state`/`challenge` malformados, `next` fora do HUB (`//host`, `https://`, `\\`, controle) vira null,
+  troca de uso único (reuso falha e não cria sessão), banco guarda só o sha256, expira em 60 s (59 s ainda vale),
+  verifier/state/app errados queimam o código, conta suspensa não entra, `check` do banco recusa linhas inválidas, RLS
+  (pessoa comum não lê nem grava, nem o próprio código).
+- `tests/e2e/login-pelo-app.spec.ts` (2): pedido inválido volta para `/entrar?erro=app`; cadastro no navegador, "Voltar para
+  o Relay", código `zd_…` com o `state` certo, troca com verifier errado (401 e código queimado), troca certa (200, cookie
+  `zro_session`, sessão vale no HUB), reuso 401.
+- `apps/hub-desktop/test/login-externo.test.mjs` (10) e a cópia por app (3 em cada): o Google e `/entrar/google` saem da janela,
+  `/entrar` (e-mail e senha) fica; pedido com `state`/`verifier` aleatórios e desafio S256; `next` aberto recusado; troca
+  com `credentials: 'include'`; state errado, pedido velho (10 min) e reuso não trocam; troca recusada avisa; destino
+  devolvido fora do HUB cai no guardado. `regras.test.mjs` de cada app: `accounts.google.com` agora é `'fora'`.
+- O autoteste (`--smoke`) de cada `main.cjs` passou a conferir `accounts.google.com` = `'fora'` (antes `'app'`) e que
+  `<esquema>://entrar-app` não vira página. Electron não roda aqui, então o `--smoke` fica para o CI.
+- Migração `0057_login_pelo_app.sql` aplicada só no banco de teste (nada em produção).
+- Rodado neste ambiente: `npm run lint`, `format:check`, `typecheck`, `build` ok; `npm test` 645/645 em 72 arquivos; `npm test` em cada pasta de
+  app de computador ok (hub-desktop 93, relay 26, maestro 55, tpeasy 26, carro-do-freela 30, rift-motion 30); `npm run test:e2e`
+  parou no tempo limite do ambiente depois de 39 testes verdes (os dois novos inclusos); o restante fica para o CI.
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ADR 0040)
 
 - `tests/integration/z-custo-plano.test.ts` (15, Claude simulado, nada chama a Anthropic): mapa nível → modelo
@@ -49,6 +70,22 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   e global (mensagem humana, nada gasto, outra pessoa segue); o chat não consome o teto do Laboratório; pessoa comum não
   lê nem grava `z_lab_uso` (RLS); painel soma por modelo e por nível.
 - Migração `0056_z_custo_por_plano.sql` aplicada só no banco de teste (nada em produção).
+
+## "Manter no Dock" sempre à mão (03/11/2026)
+
+- `app-actions.tsx`: o convite deixou de depender de `recem`; usa só `s.atalho` (`feito` falso: botão; verdadeiro: selo).
+  e2e "central de apps": SYNQUEI recém-instalado e SOBEDESCE já instalado mostram o botão; app não instalado não mostra.
+- Não conferido: layout em navegador real nos 4 tamanhos de cartão e Dock num Mac de verdade.
+
+## Central 1.4.3: "Manter no Dock" confiável (02/11/2026)
+
+- Causa mais provável, pelo código da 1.4.2 (`criarAtalho`, tipo `dock`): `defaults write -array-add` sem fila e
+  `killall Dock` por app, retorno `{ feito: true }` sem reler o Dock; a UI tratava o retorno como confirmação.
+- `apps/hub-desktop`: `npm test` com os novos: gravação que some e entra na segunda; nunca entra (erro, sem selo e sem
+  killall); duas chamadas simultâneas na fila (no máximo uma gravação por vez, um `killall`); erro não trava a fila;
+  `Carro do Freela.app` (espaço/%20) e item antigo de outro caminho; comparação por caminho decodificado.
+- Não provável sem um Mac real: o comportamento do `cfprefsd` e do Dock ao reiniciar (se regrava a lista com o
+  conteúdo em memória), o formato exato do `defaults read` por versão do macOS e a sensibilidade a maiúsculas do disco.
 
 ## Central 1.4.1: atualizar app já instalado no Mac e "Manter no Dock" (02/11/2026)
 

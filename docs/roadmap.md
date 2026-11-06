@@ -20,6 +20,42 @@ Atualizado em 05/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   página neutra.
 - ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
 
+## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
+
+- ✅ O botão "Manter no Dock" (Mac) / "Criar atalho" (Windows) aparece em qualquer app instalado, a qualquer momento (antes só
+  logo depois de instalar). Com o Dock confirmado pela central, só o selo "No Dock" / "Atalho criado". Sem suporte, nada.
+- ✅ Por último na linha do cartão (não quebra "Abrir · Remover · versão"); em cartões estreitos vira ícone-botão com `title`.
+- ⬜ Conferir num Mac de verdade com os apps já instalados. A central já devolvia `atalho` para todo app instalado, com uma
+  só leitura do Dock por listagem; sem mudança no app de computador.
+
+## Central 1.4.3: "Manter no Dock" confiável (02/11/2026, ramo `dock-confiavel`)
+
+- ✅ Bug do Mac: SYNQUEI e CARRO DO FREELA mostravam "No Dock" sem entrar no Dock. Causa: gravações seguidas de
+  `defaults write -array-add` sem fila, `killall Dock` por app e retorno `feito: true` sem reler o Dock.
+- ✅ Fila única, releitura do Dock com comparação do caminho exato (decodificado), até 3 gravações, erro claro se não
+  entrar, um `killall Dock` agrupado (~1,5 s) e a tela só mostra "No Dock" com a central confirmando.
+- ⬜ Conferir num Mac de verdade: instalar vários apps e tocar em "Manter no Dock" em sequência; todos no Dock. Publicar
+  a 1.4.3.
+
+## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ramo `login-google-navegador`, ADR 0041)
+
+- ✅ Causa: `regras.destino('https://accounts.google.com/…')` devolvia `'app'` e a janela do Electron abria o Google, que
+  bloqueia OAuth embutido (`disallowed_useragent`). Estava em `apps/hub-desktop/desktop/regras.cjs` (`podeNavegar`) e nas
+  cópias de Relay, Maestro, TPeasy, Carro do Freela e Rift Motion; o `main.cjs` ainda tirava o "Electron/x" do agente de
+  usuário (truque, removido).
+- ✅ HUB: `GET /entrar/app` (início, lista fechada de esquemas, `state` e desafio PKCE), tela `/entrar/app/confirmar` ("Voltar
+  para o app") e `POST /entrar/app/trocar` (código `zd_…` de uso único, 60 s, ligado a `state`, desafio e app; sessão do
+  HUB no cookie). Tabela `zro.desktop_login_codes` (migração `0057`, RLS sem acesso para `zro_app`). Documentado no OpenAPI.
+- ✅ Apps de computador: `desktop/login-externo.cjs` (cópia idêntica, `npm run compartilhado`) cancela a navegação para o
+  Google ou `/entrar/google`, abre o HUB no navegador do sistema e volta por `<esquema>://entrar-app`. E-mail e senha
+  seguem na janela. Versões: Absolute ZRO 1.4.3 (junto do Dock), Relay 0.1.2, Maestro 0.2.2, TPeasy 0.1.2, Carro do
+  Freela 0.2.2. Rift Motion fica na 0.1.0 e sem a cópia do `login-externo.cjs` (regra do titular: app não lançado não
+  ganha versão nova de computador); o HUB já aceita o esquema `rift` para quando ele for lançado.
+- ⛔ Em produção, só com autorização: aplicar a migração `0057`, deploy do HUB e os instaladores novos dos seis apps
+  (sem push, deploy nem Release neste ramo). Os sites dos apps não mudam.
+- ⬜ Conferir à mão num Mac e num Windows com o Google real (aqui não há Google nem Electron; a lógica tem teste com
+  Google e HUB falsos).
+
 ## A Z: modelo por plano, custo real e teto diário (02/11/2026, ramo `z-custo-modelo-por-plano`, ADR 0040)
 
 - ✅ Modelo por nível (`z-plano.ts`, um lugar só): Zero → Haiku 5.5; Órbita e Absoluto → Sonnet 5.5; sem nível → Sonnet.
