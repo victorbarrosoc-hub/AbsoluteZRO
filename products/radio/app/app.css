@@ -609,3 +609,9 @@ a.item { text-decoration: none; }
 .linha-diaria-casa .linha-diaria { flex: 1; min-width: 0; }
 #df-campo { margin-bottom: 10px; }
 #df-info { margin: 4px 0 16px; font-size: 14px; color: var(--apoio); }
+/* Safari do iPhone: sem zoom ao tocar. Toque duplo não amplia (o pinçar segue valendo) e campo com letra abaixo de 16px
+   não puxa o zoom ao ganhar foco. */
+html, button, a, input, select, label, [role='button'] { touch-action: manipulation; }
+@media (max-width: 860px) {
+  input, select, textarea, .campo input, .campo select, .seletor { font-size: 16px; }
+}
