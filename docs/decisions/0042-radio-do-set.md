@@ -121,7 +121,7 @@ de cliente e uma senha de banco novos), o rádio abre em **absolutezro.com/radio
   `public/`.
 - Os dados continuam no schema `radio` (dono: papel `radio`). O HUB só assume o papel `radio_app` em cada operação
   (migração `0059`), e o RLS vale sempre.
-- O projeto Vercel `radion` (radio.absolutezro.com) fica parado na página neutra; sai quando o titular decidir.
+- O projeto Vercel `radio` (radio.absolutezro.com; hoje `radion`) fica parado na página neutra; sai quando o titular decidir.
 
 ## Revisão (06/11/2026): RADION, papéis e poderes, app próprio
 
