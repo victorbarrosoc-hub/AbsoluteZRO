@@ -217,6 +217,9 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   o navegador deixa escolher; no iPhone e no Android, a dica de como trocar pelo sistema). A escolha fica no aparelho,
   pelo id e pelo nome (o navegador troca o id entre visitas); trocar com o rádio ligado não derruba a fala; microfone
   que some (lapela desligada) volta ao do aparelho.
+- ✅ **RADION, foto sem piscar** (titular, 07/11/2026: "bug na foto", vídeo do iPhone): a lista da equipe é redesenhada
+  a cada batida e a foto, recriada, deixava as iniciais aparecerem por um quadro. A foto vira o fundo do círculo e a
+  página lembra quais já abriram: no redesenho ela entra direto.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

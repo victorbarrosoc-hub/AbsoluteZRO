@@ -401,3 +401,43 @@ test('microfone e som: lista dos aparelhos, troca com o rádio ligado e fica gua
   assert.ok(podeSaida || (await hi.page.textContent('#aj-som-sub')).length > 10)
   assert.deepEqual(hi.erros, [])
 })
+
+// Foto sem piscar (titular, 07/11/2026: "bug na foto"): a lista da equipe é redesenhada a cada batida; quem tem foto
+// aparece com ela desde o primeiro quadro de cada redesenho, nunca com as iniciais por cima.
+test('fotos da equipe: o redesenho da lista não pisca as iniciais', { skip: pular, timeout: 90000 }, async () => {
+  const ID = '5e7f3c1a-9b2d-4e6f-8a1c-2d3e4f5a6b7c'
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
+  const ivo = await pessoa('Ivo', navegador, (ctx) =>
+    ctx.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: png })),
+  )
+  await ivo.page.click('.item[data-ir="diarias"]')
+  await ivo.page.fill('#criar-nome', 'Clipe')
+  await ivo.page.click('#criar button')
+  await ivo.page.waitForSelector('#noar:not([hidden])')
+  await ivo.page.click('#ligar-btn')
+  // a foto da conta, como o login único grava (só o id público)
+  const sql = postgres(pg.url, { max: 1, onnotice: () => {} })
+  await sql`update radio.membros set foto = ${ID} where nome = 'Ivo'`
+  await sql.end()
+  await ivo.page.click('.item[data-ir="equipe"]')
+  await ivo.page.waitForSelector('#pg-equipe .quem .av.av--foto', { timeout: 15000 })
+  // daqui em diante, todo círculo que entra na lista já entra com a foto
+  await ivo.page.evaluate(() => {
+    window.__semFoto = 0
+    window.__redesenhos = 0
+    new MutationObserver((ms) => {
+      for (const m of ms)
+        for (const n of m.addedNodes) {
+          if (!(n instanceof Element)) continue
+          for (const av of [n, ...n.querySelectorAll('.av')]) {
+            if (!av.classList?.contains('av') || !av.closest('.quem')) continue
+            window.__redesenhos++
+            if (!av.classList.contains('av--foto')) window.__semFoto++
+          }
+        }
+    }).observe(document.getElementById('pg-equipe'), { childList: true, subtree: true })
+  })
+  await ivo.page.waitForFunction(() => window.__redesenhos >= 3, null, { timeout: 30000 })
+  assert.equal(await ivo.page.evaluate(() => window.__semFoto), 0)
+  assert.deepEqual(ivo.erros, [])
+})
