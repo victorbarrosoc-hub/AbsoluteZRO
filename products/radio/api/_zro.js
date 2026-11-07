@@ -19,7 +19,7 @@ export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // Set recusa o escopo (invalid_scope): o callback refaz o pedido com ESCOPOS_SEM_SET e o login segue, sem o Set.
 export const ESCOPOS = 'openid email profile org offline_access zro.set'
 export const ESCOPOS_SEM_SET = 'openid email profile org offline_access'
-export const SITE = 'https://radio.absolutezro.com'
+export const SITE = 'https://radion.absolutezro.com'
 export const COOKIE_IDA = 'rd_zro'
 export const COOKIE_CONTA = 'rd_conta'
 export const COOKIE_HUB = 'rd_hub'
@@ -54,7 +54,7 @@ export function origemPermitida(req) {
     .split(',')[0]
     .trim()
     .toLowerCase()
-  if (host === 'radio.absolutezro.com') return SITE
+  if (host === 'radion.absolutezro.com') return SITE
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return SITE
 }

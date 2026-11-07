@@ -1,7 +1,7 @@
 # RADION — Stay connected.
 
 > O rádio do set (ADR 0042, [revisão de 06/11/2026](../../docs/decisions/0042-radio-do-set.md)). Mora em
-> **radion.absolutezro.com** (este app, projeto Vercel `radio`, Root Directory `products/radio`) e, até o domínio
+> **radion.absolutezro.com** (este app, projeto Vercel `radion`, Root Directory `products/radio`) e, até o domínio
 > ligar, também em **absolutezro.com/radio** (o HUB serve uma cópia gerada: `node scripts/para-o-hub.mjs`, conferida por
 > `tests/integration/radio.test.ts`). Mudou o núcleo ou o app, rode o gerador. Não lançado: fechado no gate.
 
@@ -48,7 +48,7 @@ Voz por botão (push-to-talk) para a equipe da diária, no navegador do celular 
 
 1. Console da Absolute ZRO › Apps: cadastrar o cliente **`radio-web`** (confidencial, produto `radio`), com o retorno
    `https://radion.absolutezro.com/api/zro/callback`. O segredo aparece uma vez.
-2. Projeto Vercel `radio`: `ZRO_CLIENT_SECRET` (o segredo acima; `ZRO_CLIENT_ID=radio-web` já está), `RADIO_DATABASE_URL`
+2. Projeto Vercel `radion`: `ZRO_CLIENT_SECRET` (o segredo acima; `ZRO_CLIENT_ID=radio-web` já está), `RADIO_DATABASE_URL`
    (papel `radio`, pooler de transação do AbsoluteZRO-SP), `CLOUDFLARE_TURN_KEY_ID` e `CLOUDFLARE_TURN_API_TOKEN`.
 3. Domínio `radion.absolutezro.com` no projeto `radio`.
 4. A migração `0001_poderes.sql` no schema `radio` (`npm run migrar` com o papel dono) antes do primeiro deploy.

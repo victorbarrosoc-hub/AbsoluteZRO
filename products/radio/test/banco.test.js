@@ -16,7 +16,7 @@ const pedido = (metodo, url, cookie, corpo) => {
     method: metodo,
     url,
     body: corpo ?? undefined,
-    headers: { host: 'radio.absolutezro.com', 'x-forwarded-proto': 'https', cookie: cookie ? `rd_conta=${cookie}` : '', 'content-type': 'application/json' },
+    headers: { host: 'radion.absolutezro.com', 'x-forwarded-proto': 'https', cookie: cookie ? `rd_conta=${cookie}` : '', 'content-type': 'application/json' },
   })
 }
 const resposta = () => {
