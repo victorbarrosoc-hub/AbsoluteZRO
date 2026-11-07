@@ -11,7 +11,8 @@ valem aqui; este arquivo só acrescenta.
 - **Voz nunca no servidor**: nem gravação, nem transcrição, nem amostra de teste no repositório (testes usam o
   microfone falso do Chromium).
 - **Poderes no banco**: quem pode silenciar, mover, tirar, escolher responsável e mandar aviso fica em
-  `radio.moderar`/`radio.avisar` (migrações em `db/migrations/`, arquivo novo para mudar). A interface só espelha.
+  `radio.moderar`/`radio.avisar`, e os setores da diária em `radio.setor` (migrações em `db/migrations/`, arquivo novo
+  para mudar). A interface só espelha.
 - Toda tabela com RLS e teste de isolamento em `test/banco.test.js`; rotas só por `comoPessoa`.
 - O modo local (`RADIO_LOCAL=1`) é só para desenvolver: nunca ligar em produção.
 - Mudou `api/_nucleo.js` ou `app/`, rode `node scripts/para-o-hub.mjs` e o teste `tests/integration/radio.test.ts` da raiz

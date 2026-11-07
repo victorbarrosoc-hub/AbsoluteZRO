@@ -10,13 +10,17 @@
 
 import { randomInt } from 'node:crypto'
 
+/** Os setores com que toda diária nasce (db/migrations/0002_setores.sql); o dono cria, renomeia e tira outros. */
 export const FUNCOES = ['direcao', 'producao', 'camera', 'som', 'luz', 'arte', 'elenco']
+/** Cores de setor (as mesmas do banco). */
+export const CORES = ['laranja', 'roxo', 'azul', 'verde', 'amarelo', 'rosa', 'ciano', 'indigo', 'vermelho', 'cinza']
+const SETOR = /^[a-z0-9]{2,24}$/
 export const TIPOS_AVISO = ['silencio', 'acao', 'corta', 'intervalo']
 export const PAPEIS = ['dono', 'responsavel', 'equipe', 'convidado']
 /** Ações de moderação (regras e poderes em db/migrations/0001_poderes.sql, radio.moderar). */
 export const ACOES = ['silenciar', 'reativar', 'silenciar_todos', 'reativar_todos', 'mover', 'responsavel', 'papel', 'tirar', 'mao', 'baixar_mao']
 const APELIDO = /^[a-f0-9]{16}$/
-const RECUSA = { fora: 403, sem_permissao: 403, imune: 409, nao_achei: 404, invalido: 400 }
+const RECUSA = { fora: 403, sem_permissao: 403, imune: 409, nao_achei: 404, invalido: 400, repetido: 409, limite: 409 }
 /** Online = bateu nos últimos 20 s. */
 export const ONLINE_S = 20
 
@@ -37,12 +41,13 @@ export function nomeLimpo(v) {
   return s || null
 }
 
-const publica = (d) => ({ id: d.id, codigo: d.codigo, nome: d.nome, dono: d.papel === 'dono', papel: d.papel, funcao: d.funcao ?? null, criado: d.criado ?? null, pessoas: d.pessoas ?? null, noAr: d.no_ar ?? null })
+const publica = (d) => ({ id: d.id, codigo: d.codigo, nome: d.nome, dono: d.papel === 'dono', papel: d.papel, funcao: d.funcao ?? null, funcaoNome: d.funcao_nome ?? null, criado: d.criado ?? null, pessoas: d.pessoas ?? null, noAr: d.no_ar ?? null })
 
 async function lerDiaria(tx, sub, id) {
   const [d] = await tx`
-    select d.id, d.codigo, d.nome, m.papel, m.funcao from radio.diarias d
+    select d.id, d.codigo, d.nome, m.papel, m.funcao, s.nome as funcao_nome from radio.diarias d
     join radio.membros m on m.diaria_id = d.id and m.user_sub = ${sub}
+    left join radio.setores s on s.diaria_id = d.id and s.id = m.funcao
     where d.id = ${id} and d.expira > now()`
   return d ? publica(d) : null
 }
@@ -51,6 +56,7 @@ async function lerDiaria(tx, sub, id) {
 export async function listarDiarias(tx, p) {
   const lista = await tx`
     select d.id, d.codigo, d.nome, d.criado, m.papel, m.funcao,
+      (select s.nome from radio.setores s where s.diaria_id = d.id and s.id = m.funcao) as funcao_nome,
       (select count(*)::int from radio.membros x where x.diaria_id = d.id) as pessoas,
       (select count(distinct pr.user_sub)::int from radio.presencas pr
         where pr.diaria_id = d.id and pr.visto > now() - make_interval(secs => ${ONLINE_S})) as no_ar
@@ -61,7 +67,7 @@ export async function listarDiarias(tx, p) {
   return r(200, { ok: true, eu: { nome: p.nome }, diarias: lista.map(publica) })
 }
 
-/** POST { acao: criar | entrar | funcao }. Criar roda em savepoint para sortear de novo um código repetido. */
+/** POST { acao: criar | entrar | funcao | sair | encerrar }. Criar roda em savepoint para sortear de novo um código repetido. */
 export async function mudarDiarias(tx, p, c) {
   if (c?.acao === 'criar') {
     const nome = nomeLimpo(c.nome)
@@ -93,9 +99,16 @@ export async function mudarDiarias(tx, p, c) {
   }
 
   if (c?.acao === 'funcao') {
-    if (!ID.test(String(c.diaria || '')) || !FUNCOES.includes(c.funcao)) return r(400, { ok: false })
+    if (!ID.test(String(c.diaria || '')) || !SETOR.test(String(c.funcao || ''))) return r(400, { ok: false })
     const [n] = await tx`select radio.meu_setor(${c.diaria}, ${c.funcao}) as ok`
-    return n?.ok ? r(200, { ok: true }) : r(404, { ok: false })
+    return n?.ok ? r(200, { ok: true }) : r(409, { ok: false, erro: 'travado' })
+  }
+
+  // sair: quem não é o dono deixa a diária; encerrar: o dono fecha a diária para todos
+  if (c?.acao === 'sair' || c?.acao === 'encerrar') {
+    if (!ID.test(String(c.diaria || ''))) return r(400, { ok: false })
+    const [x] = c.acao === 'sair' ? await tx`select radio.sair(${c.diaria}) as res` : await tx`select radio.encerrar(${c.diaria}) as res`
+    return x?.res === 'ok' ? r(200, { ok: true }) : r(RECUSA[x?.res] || 400, { ok: false, erro: x?.res || 'invalido' })
   }
 
   return r(400, { ok: false, erro: 'acao' })
@@ -117,7 +130,7 @@ export async function bater(tx, p, c) {
 
   const [m] = await tx`
     select m.papel, m.funcao, radio.pode_avisar(${diaria}) as pode, radio.apelido(${diaria}, m.user_sub) as apelido,
-      d.gravando_silencia, d.pedir_palavra, d.silencio_min
+      d.gravando_silencia, d.pedir_palavra, d.silencio_min, d.setor_travado
     from radio.membros m join radio.diarias d on d.id = m.diaria_id
     where m.diaria_id = ${diaria} and m.user_sub = ${p.sub} and radio.membro(${diaria})`
   if (!m) return r(403, { ok: false, erro: 'fora' })
@@ -151,6 +164,7 @@ export async function bater(tx, p, c) {
   const globais = await tx`
     select tipo, alvo, motivo, por_nome, criado from radio.silencios
     where diaria_id = ${diaria} and tipo in ('todos', 'setor') and (ate is null or ate > now()) order by id`
+  const setores = await tx`select id, nome, cor from radio.setores where diaria_id = ${diaria} order by ordem, criado`
   const [topo] = await tx`select coalesce(max(id), 0)::bigint as id from radio.avisos where diaria_id = ${diaria}`
   const avisos =
     ultimo == null
@@ -184,7 +198,8 @@ export async function bater(tx, p, c) {
       todos: todos ? { motivo: todos.motivo, por: todos.por_nome, desde: quando(todos.criado) } : null,
       setores: globais.filter((g) => g.tipo === 'setor').map((g) => g.alvo),
     },
-    ajustes: { gravandoSilencia: m.gravando_silencia, pedirPalavra: m.pedir_palavra, silencioMin: m.silencio_min ?? null },
+    setores: setores.map((x) => ({ id: x.id, nome: x.nome, cor: x.cor })),
+    ajustes: { gravandoSilencia: m.gravando_silencia, pedirPalavra: m.pedir_palavra, silencioMin: m.silencio_min ?? null, setorTravado: m.setor_travado },
     sinais: [...chegaram].sort((a, b) => Number(a.id) - Number(b.id)).map((s) => ({ de: s.de_peer, tipo: s.tipo, dados: s.dados })),
     avisos: avisos.map((a) => ({ id: Number(a.id), tipo: a.tipo, de: a.de_nome, setor: a.setor ?? null })),
     ultimoAviso: Number(topo.id),
@@ -198,7 +213,7 @@ export async function bater(tx, p, c) {
 export async function avisar(tx, p, c) {
   const diaria = String(c?.diaria || '')
   const setor = c?.setor == null ? null : String(c.setor)
-  if (!ID.test(diaria) || !TIPOS_AVISO.includes(c?.tipo) || (setor !== null && !FUNCOES.includes(setor))) return r(400, { ok: false })
+  if (!ID.test(diaria) || !TIPOS_AVISO.includes(c?.tipo) || (setor !== null && !SETOR.test(setor))) return r(400, { ok: false })
   const [a] = await tx`select radio.avisar(${diaria}, ${c.tipo}, ${setor}, ${p.nome}) as id`
   if (a?.id == null) return r(403, { ok: false, erro: 'sem_permissao' })
   const [v] = await tx`select setor from radio.avisos where id = ${a.id}`
@@ -207,8 +222,9 @@ export async function avisar(tx, p, c) {
 
 /**
  * POST moderar { diaria, acao, alvo?, valor?, minutos? } — silenciar e reativar (uma pessoa, o setor ou o set), mover
- * de setor, escolher o responsável, mudar o papel, tirar, pedir e baixar a palavra; e { acao: ajustes, ajustes } e
- * { acao: historico } para o dono. Quem pode o quê: radio.moderar no banco (db/migrations/0001_poderes.sql).
+ * de setor, escolher o responsável, mudar o papel, tirar, pedir e baixar a palavra; e, para o dono, { acao: ajustes,
+ * ajustes }, { acao: historico } e os setores da diária { acao: setor_criar | setor_editar | setor_tirar, setor: { id,
+ * nome, cor } }. Quem pode o quê: radio.moderar e radio.setor no banco (db/migrations/0001_poderes.sql, 0002_setores.sql).
  */
 export async function moderar(tx, p, c) {
   const diaria = String(c?.diaria || '')
@@ -218,17 +234,26 @@ export async function moderar(tx, p, c) {
     const bool = (v) => (typeof v === 'boolean' ? v : null)
     const min = a.silencioMin == null ? null : Number(a.silencioMin)
     if (min !== null && min !== 5 && min !== 15) return r(400, { ok: false, erro: 'invalido' })
-    const [x] = await tx`select radio.ajustar(${diaria}, ${bool(a.gravandoSilencia)}, ${bool(a.pedirPalavra)}, ${min}) as ok`
+    const [x] = await tx`select radio.ajustar(${diaria}, ${bool(a.gravandoSilencia)}, ${bool(a.pedirPalavra)}, ${min}, ${bool(a.setorTravado)}) as ok`
     return x?.ok ? r(200, { ok: true }) : r(403, { ok: false, erro: 'sem_permissao' })
   }
   if (c?.acao === 'historico') {
     const lista = await tx`select quem_nome, acao, alvo_nome, detalhe, criado from radio.historico where diaria_id = ${diaria} order by id desc limit 100`
     return r(200, { ok: true, historico: lista.map((h) => ({ quem: h.quem_nome, acao: h.acao, alvo: h.alvo_nome ?? null, detalhe: h.detalhe ?? null, quando: new Date(h.criado).toISOString() })) })
   }
+  if (['setor_criar', 'setor_editar', 'setor_tirar'].includes(c?.acao)) {
+    const st = c.setor || {}
+    const id = st.id == null ? null : String(st.id)
+    const nome = st.nome == null ? null : nomeLimpo(st.nome)
+    const cor = st.cor == null ? null : String(st.cor)
+    if ((id !== null && !SETOR.test(id)) || (cor !== null && !CORES.includes(cor)) || (nome !== null && nome.length > 24)) return r(400, { ok: false, erro: 'invalido' })
+    const [x] = await tx`select radio.setor(${diaria}, ${c.acao.slice(6)}, ${id}, ${nome}, ${cor}) as res`
+    return x?.res === 'ok' ? r(200, { ok: true }) : r(RECUSA[x?.res] || 400, { ok: false, erro: x?.res || 'invalido' })
+  }
   if (!ACOES.includes(c?.acao)) return r(400, { ok: false, erro: 'acao' })
   const alvo = c.alvo == null ? null : String(c.alvo)
   if (alvo !== null && !APELIDO.test(alvo)) return r(400, { ok: false, erro: 'alvo' })
-  const valor = c.valor == null ? null : String(c.valor).slice(0, 20)
+  const valor = c.valor == null ? null : String(c.valor).slice(0, 24)
   const minutos = c.minutos == null ? null : Number(c.minutos)
   if (minutos !== null && ![0, 5, 15].includes(minutos)) return r(400, { ok: false, erro: 'minutos' })
   const [x] = await tx`select radio.moderar(${diaria}, ${c.acao}, ${alvo}, ${valor}, ${minutos}) as resultado`

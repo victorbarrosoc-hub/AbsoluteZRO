@@ -20,19 +20,45 @@ const SAIR = meta('radio-sair')
 const INICIO = BASE || '/'
 const ZRO = SET ? new URL(SET, location.href).origin : ''
 
-const CANAIS = [
-  ['geral', 'Geral'],
-  ['direcao', 'Direção'],
-  ['producao', 'Produção'],
-  ['camera', 'Câmera'],
-  ['som', 'Som'],
-  ['luz', 'Luz'],
-  ['arte', 'Arte'],
-  ['elenco', 'Elenco'],
+// os setores vêm da diária (o dono cria, renomeia e tira; db/migrations/0002_setores.sql); estes são os de sempre
+const PADRAO = [
+  ['direcao', 'Direção', 'laranja'],
+  ['producao', 'Produção', 'roxo'],
+  ['camera', 'Câmera', 'azul'],
+  ['som', 'Som', 'verde'],
+  ['luz', 'Luz', 'amarelo'],
+  ['arte', 'Arte', 'rosa'],
+  ['elenco', 'Elenco', 'ciano'],
 ]
-const NOME = Object.fromEntries(CANAIS)
-NOME.todos = 'Todos'
-const SETORES = CANAIS.filter(([id]) => id !== 'geral')
+const CORES = { laranja: '#ff6b1a', roxo: '#6c4df5', azul: '#0a8cff', verde: '#12b76a', amarelo: '#e0a100', rosa: '#e6195c', ciano: '#18c2e8', indigo: '#5856d6', vermelho: '#ff3b30', cinza: '#8e8e93' }
+const ICONE_PROPRIO = new Set(['geral', ...PADRAO.map(([id]) => id)])
+/** Ícone de um canal: os de sempre têm o seu; o setor criado pelo dono usa o de gente. */
+const icSetor = (id, classe) => icone(ICONE_PROPRIO.has(id) ? id : 'gente', classe)
+let SETORES = PADRAO.map(([id, nome]) => [id, nome])
+let CANAIS = [['geral', 'Geral'], ...SETORES]
+const NOME = { todos: 'Todos' }
+let setoresVistos = ''
+const folhaDeCores = new CSSStyleSheet()
+document.adoptedStyleSheets = [...document.adoptedStyleSheets, folhaDeCores]
+/** Troca a lista de setores (vinda da batida) e as cores de cada um. Devolve se mudou. */
+function aplicarSetores(lista) {
+  const chave = JSON.stringify(lista)
+  if (chave === setoresVistos) return false
+  setoresVistos = chave
+  SETORES = lista.map((x) => [x.id, x.nome])
+  CANAIS = [['geral', 'Geral'], ...SETORES]
+  for (const k of Object.keys(NOME)) if (k !== 'todos') delete NOME[k]
+  Object.assign(NOME, Object.fromEntries(CANAIS))
+  const regras = lista.map((x) => {
+    const c = CORES[x.cor] || CORES.cinza
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16))
+    return `[data-canal='${x.id}'] { --c: ${c}; --cf: rgba(${r}, ${g}, ${b}, 0.13); }`
+  })
+  folhaDeCores.replaceSync(regras.join('\n'))
+  return true
+}
+aplicarSetores(PADRAO.map(([id, nome, cor]) => ({ id, nome, cor })))
+const nomeDoSetor = (id, reserva) => (id ? NOME[id] || reserva || 'Setor' : null)
 const AVISOS = { acao: 'Gravando', corta: 'Corta', silencio: 'Silêncio', intervalo: 'Intervalo' }
 const AVISO_DICA = { acao: 'Silencia o set até o Corta', corta: 'Reativa quem o Gravando calou', silencio: 'Pede silêncio no set', intervalo: 'Pausa da equipe' }
 const PAPEL = { dono: 'Dono do projeto', responsavel: 'Responsável', equipe: 'Equipe', convidado: 'Convidado' }
@@ -41,6 +67,7 @@ const BATIDA_MS = 1000
 const BATIDA_ESCONDIDO_MS = 4000
 const TOQUE_MS = 280 // soltar antes disso = toque (trava ou destrava); depois = segurou (push-to-talk)
 const PAGINAS = ['inicio', 'noar', 'diarias', 'equipe', 'avisos', 'setores', 'convites', 'ajustes']
+const SETOR_ERRO = { repetido: 'Já existe um setor com esse nome.', limite: 'Até 20 setores por diária.', sem_permissao: 'Só o dono mexe nos setores.' }
 // as plataformas da Absolute ZRO no ar (a mesma família dos outros apps; os não lançados não entram)
 const FAMILIA = [
   ['Absolute ZRO', 'https://absolutezro.com', '/brand/app-icon-1024.png'],
@@ -116,7 +143,7 @@ function avatar(nome, classe = '') {
   a.style.background = cor(nome)
   return a
 }
-const ico = (canal, classe = 'ico') => h('span', { class: classe, dataset: { canal } }, icone(canal))
+const ico = (canal, classe = 'ico') => h('span', { class: classe, dataset: { canal } }, icSetor(canal))
 const primeiro = (n) => String(n || '').split(/\s+/)[0]
 function mostrarErro(id, texto) {
   const el = $(id)
@@ -167,6 +194,8 @@ function aplicarLado(l) {
 // ───────── navegação ─────────
 function ir(p) {
   if (!PAGINAS.includes(p)) p = 'inicio'
+  // outra página começa do topo (a rolagem da anterior não vem junto)
+  if (p !== estado.pagina) window.scrollTo(0, 0)
   estado.pagina = p
   fecharFlutuantes()
   if ($('mais-folha').open) $('mais-folha').close()
@@ -181,6 +210,7 @@ function ir(p) {
   const alvo = `${INICIO}${estado.diaria ? `?d=${estado.diaria.codigo}` : ''}#${p}`
   if (location.pathname + location.search + location.hash !== alvo) history.replaceState(null, '', alvo)
   $('ligar').hidden = !(p === 'noar' && estado.diaria && !estado.ligado)
+  $('ligar-nome').textContent = estado.diaria?.nome || ''
   $('base').hidden = !(p === 'noar' && estado.diaria && estado.ligado)
   $('fala-cel').hidden = $('base').hidden
   desenharPagina()
@@ -201,7 +231,7 @@ function desenharCasca() {
   const n = estado.nome || estado.eu?.nome || ''
   $('eu-av').replaceWith(Object.assign(avatar(n), { id: 'eu-av' }))
   $('eu-nome').textContent = n
-  $('eu-sub').textContent = estado.diaria ? [PAPEL[estado.diaria.papel], estado.diaria.funcao && NOME[estado.diaria.funcao]].filter(Boolean).join(' · ') : 'Conta Absolute ZRO'
+  $('eu-sub').textContent = estado.diaria ? [PAPEL[estado.diaria.papel], nomeDoSetor(estado.diaria.funcao, estado.diaria.funcaoNome)].filter(Boolean).join(' · ') : 'Conta Absolute ZRO'
   const t = $('topo-av')
   t.textContent = iniciais(n)
   t.style.background = cor(n)
@@ -229,8 +259,8 @@ function linhaDiaria(d) {
     h(
       'button',
       { class: 'linha-diaria', type: 'button', onclick: () => (aberta ? ir('noar') : abrirDiaria(d)) },
-      ico(d.funcao || 'geral', 'ico ico--p'),
-      h('div', {}, h('b', {}, d.nome), h('small', {}, [PAPEL[d.papel] || 'Equipe', d.funcao ? NOME[d.funcao] : null, d.pessoas != null ? `${d.pessoas} ${d.pessoas === 1 ? 'pessoa' : 'pessoas'}` : null].filter(Boolean).join(' · '))),
+      ico(d.funcao && ICONE_PROPRIO.has(d.funcao) ? d.funcao : 'geral', 'ico ico--p'),
+      h('div', {}, h('b', {}, d.nome), h('small', {}, [PAPEL[d.papel] || 'Equipe', d.funcao ? (estado.diaria?.id === d.id ? nomeDoSetor(d.funcao) : d.funcaoNome) : null, d.pessoas != null ? `${d.pessoas} ${d.pessoas === 1 ? 'pessoa' : 'pessoas'}` : null].filter(Boolean).join(' · '))),
       aberta || d.noAr ? h('span', { class: 'chip chip--vivo' }, aberta ? `no ar · ${estado.pessoas.length || 1}` : `no ar · ${d.noAr}`) : null,
       h('span', { class: 'codigo chip' }, d.codigo),
     ),
@@ -280,7 +310,7 @@ function desenharInicio() {
     $('heroi-setores').replaceChildren(
       ...SETORES.map(([id, nome]) => {
         const n = Math.round(escala(niveis.get(id)?.nivel || 0) * 4)
-        return h('div', { class: 'mini-setor', dataset: { canal: id } }, h('span', { class: 'ico' }, icone(id)), h('small', {}, nome), h('div', { class: 'medidor' }, ...Array.from({ length: 4 }, (_, k) => h('i', { class: k < n ? 'aceso' : '' }))))
+        return h('div', { class: 'mini-setor', dataset: { canal: id } }, h('span', { class: 'ico' }, icSetor(id)), h('small', {}, nome), h('div', { class: 'medidor' }, ...Array.from({ length: 4 }, (_, k) => h('i', { class: k < n ? 'aceso' : '' }))))
       }),
     )
     const meu = d.funcao
@@ -352,6 +382,17 @@ async function abrirDiaria(d) {
   if (!d.funcao) abrirSetores()
   bater()
   if (nova) carregarDiarias()
+}
+/** Desliga o rádio: fecha as conexões e o microfone (some o ponto laranja do iPhone); a pessoa segue na diária. */
+function desligar() {
+  sairDoRadio()
+  estado.trilha?.stop()
+  estado.trilha = null
+  estado.medidorMic = null
+  estado.ligado = false
+  estado.trava?.release?.().catch(() => {})
+  history.replaceState(null, '', `${INICIO}#diarias`)
+  carregarDiarias().then(() => ir('diarias'))
 }
 function sairDoRadio() {
   clearTimeout(estado.laco)
@@ -428,18 +469,25 @@ document.addEventListener('visibilitychange', () => {
 })
 
 // ───────── setor ─────────
+/** Com a trava, quem já tem setor não troca sozinho (o dono move). */
+const setorTravado = () => Boolean(estado.ajustes?.setorTravado && !(estado.eu || estado.diaria)?.dono && (estado.eu?.funcao ?? estado.diaria?.funcao))
 function abrirSetores() {
   const atual = estado.eu?.funcao ?? estado.diaria?.funcao
   $('setores').replaceChildren(
     ...SETORES.map(([id, nome]) =>
-      h('button', { type: 'button', role: 'radio', 'aria-checked': String(id === atual), dataset: { canal: id }, onclick: () => escolherSetor(id) }, h('span', { class: 'ico' }, icone(id)), nome),
+      h('button', { type: 'button', role: 'radio', 'aria-checked': String(id === atual), dataset: { canal: id }, onclick: () => escolherSetor(id) }, h('span', { class: 'ico' }, icSetor(id)), nome),
     ),
   )
   if (!$('setor-folha').open) $('setor-folha').showModal()
 }
+$('setor-folha').addEventListener('click', (e) => e.target === $('setor-folha') && (estado.eu?.funcao ?? estado.diaria?.funcao) && $('setor-folha').close())
 async function escolherSetor(id) {
   const r = await api(`${API}/diarias`, { acao: 'funcao', diaria: estado.diaria.id, funcao: id })
-  if (!r.ok) return
+  if (!r.ok) {
+    $('setor-folha').close()
+    estado.erroAte = Date.now() + 4000
+    return mostrarErro('radio-erro', r.erro === 'travado' ? 'O setor está travado. Peça para o dono mover você.' : 'Não deu para trocar de setor.')
+  }
   const antigo = estado.diaria.funcao
   estado.diaria.funcao = id
   if (estado.eu) estado.eu.funcao = id
@@ -627,12 +675,14 @@ function desenharNoAr() {
   $('diaria-papel').textContent = `· ${PAPEL[estado.eu?.papel || d.papel] || 'Equipe'}`
   $('noar-conta').textContent = `no ar · ${estado.pessoas.length}`
   $('codigo').textContent = d.codigo
-  $('avisos').hidden = !estado.eu?.podeAvisar
+  $('avisos').hidden = !(estado.eu?.podeAvisar || estado.eu?.podeModerar)
+  for (const b of $('avisos').querySelectorAll('[data-aviso]')) b.hidden = !estado.eu?.podeAvisar
   // eu silenciado
   const s = estado.eu?.silenciado
   $('eu-calado').hidden = !s
   if (s) {
-    $('eu-calado-titulo').textContent = s.motivo === 'convidado' ? 'Você entrou como convidado' : s.por ? `${primeiro(s.por)} silenciou você` : 'Você está silenciado'
+    $('eu-calado-titulo').textContent =
+      s.motivo === 'convidado' ? 'Você entrou como convidado' : s.motivo === 'gravando' ? 'Gravando: silêncio no set' : s.motivo === 'manual' ? `${s.por ? primeiro(s.por) : 'O dono'} travou a fala` : s.motivo === 'setor' ? 'A fala do seu setor está travada' : s.por ? `${primeiro(s.por)} silenciou você` : 'Você está silenciado'
     const ate = s.ate ? new Date(s.ate) : null
     $('eu-calado-sub').textContent = s.motivo === 'convidado' ? 'Você ouve tudo. Para falar, o dono muda o seu papel.' : `Você continua ouvindo.${ate ? ` Volta às ${ate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.` : ''}`
     const jaPediu = estado.maos.has(estado.eu.apelido)
@@ -644,17 +694,23 @@ function desenharNoAr() {
   const todos = estado.silencio.todos
   const meuSetor = estado.eu?.funcao && estado.silencio.setores.includes(estado.eu.funcao)
   const algum = todos || estado.silencio.setores.length
-  $('silencio-set').hidden = !algum || (!todos && !meuSetor && !estado.eu?.dono)
+  // quem foi calado pela trava já vê o aviso dele; a faixa do set fica para quem modera e para quem segue falando
+  $('silencio-set').hidden = !algum || (!todos && !meuSetor && !estado.eu?.dono) || Boolean(s && s.motivo !== 'pessoa' && !estado.eu?.podeModerar)
   if (algum) {
-    $('silencio-titulo').textContent = todos ? 'Silêncio no set' : `Silêncio na ${estado.silencio.setores.map((x) => NOME[x]).join(', ')}`
-    $('silencio-sub').textContent = todos ? (todos.motivo === 'gravando' ? 'Só Direção e Som falam · ligou com o Gravando, sai no Corta' : `Só o dono e a Direção falam · ${primeiro(todos.por)} silenciou`) : 'Só o responsável do setor fala'
+    $('silencio-titulo').textContent = todos ? 'Silêncio no set' : `Silêncio na ${estado.silencio.setores.map((x) => NOME[x] || 'equipe').join(', ')}`
+    $('silencio-sub').textContent = todos ? (todos.motivo === 'gravando' ? 'Só Direção e Som falam · ligou com o Gravando, sai no Corta' : `Fala travada · só o dono e a Direção falam · ${primeiro(todos.por)} travou`) : 'Fala travada · só o responsável do setor fala'
     const maos = [...estado.maos].map((a) => estado.membros.find((m) => m.apelido === a)?.nome).filter(Boolean)
     $('silencio-maos').hidden = !maos.length || !estado.eu?.podeModerar
     $('silencio-maos').replaceChildren(icone('mao', 'ic ic--p'), maos.length === 1 ? `${primeiro(maos[0])} pediu a palavra` : `${maos.length} pediram a palavra`)
     $('reativar-todos').hidden = !(estado.eu?.dono || (estado.eu?.papel === 'responsavel' && !todos))
   }
-  $('silenciar-todos').hidden = !estado.eu?.podeModerar || Boolean(estado.eu?.dono ? todos : estado.silencio.setores.includes(estado.eu?.funcao))
-  $('silenciar-todos').lastChild.textContent = estado.eu?.dono ? 'Silenciar todos' : `Silenciar a ${NOME[estado.eu?.funcao] || 'equipe'}`
+  // travar a fala: o dono cala o set (ele e a Direção seguem falando); o responsável, o setor dele
+  const travada = Boolean(estado.eu?.dono ? todos : estado.silencio.setores.includes(estado.eu?.funcao))
+  const rotuloTrava = estado.eu?.dono ? 'Travar a fala' : `Travar a ${NOME[estado.eu?.funcao] || 'equipe'}`
+  for (const b of [$('silenciar-todos'), $('travar-fala')]) {
+    b.hidden = !estado.eu?.podeModerar || travada
+    b.lastChild.textContent = rotuloTrava
+  }
   desenharCanais()
   desenharPessoas()
   desenharBase()
@@ -764,7 +820,8 @@ function abrirMenuPessoa(apelido, botao) {
       desenharPessoas()
     }, { dica: 'ninguém vê' }))
   }
-  if (ehEu) itens.push(acao('setores', 'Trocar meu setor', () => (fecharFlutuantes(), abrirSetores())))
+  if (ehEu && !setorTravado()) itens.push(acao('setores', 'Trocar meu setor', () => (fecharFlutuantes(), abrirSetores())))
+  if (ehEu && setorTravado()) itens.push(h('div', { class: 'acao', role: 'presentation' }, icone('cadeado'), 'Setor travado pelo dono'))
   if (p.dono && !ehEu) {
     itens.push(
       h('div', {}, h('div', { class: 'acao', role: 'presentation' }, icone('mover'), 'Mover para outro setor')),
@@ -804,6 +861,7 @@ document.addEventListener('pointerdown', (e) => {
 })
 document.addEventListener('keydown', (e) => e.key === 'Escape' && fecharFlutuantes())
 $('silenciar-todos').addEventListener('click', () => moderar('silenciar_todos'))
+$('travar-fala').addEventListener('click', () => moderar('silenciar_todos'))
 $('reativar-todos').addEventListener('click', () => moderar('reativar_todos'))
 $('pedir-palavra').addEventListener('click', () => moderar('mao'))
 
@@ -839,11 +897,19 @@ async function bater() {
     estado.maos = new Set(r.maos)
     estado.silencio = r.silencio
     estado.ajustes = r.ajustes
+    const setoresMudaram = Array.isArray(r.setores) && aplicarSetores(r.setores)
     diaria.papel = r.eu.papel
     diaria.dono = r.eu.dono
-    if (diaria.funcao !== r.eu.funcao) {
+    if (diaria.funcao !== r.eu.funcao || setoresMudaram) {
+      if (diaria.funcao !== r.eu.funcao) {
+        if (diaria.funcao) estado.escuta.delete(diaria.funcao)
+        if (r.eu.funcao) estado.escuta.add(r.eu.funcao)
+        anunciarEscuta()
+      }
       diaria.funcao = r.eu.funcao
+      for (const c of [...estado.escuta]) if (!Object.hasOwn(NOME, c)) estado.escuta.delete(c)
       montarCanais()
+      if (!r.eu.funcao && estado.ligado) abrirSetores()
     }
     if (!podeFalarEm(estado.alvo)) estado.alvo = alvoPadrao()
     if (estado.todos && !podeTodos()) estado.todos = false
@@ -854,10 +920,11 @@ async function bater() {
     for (const peer of estado.noAr.keys()) if (!r.pessoas.some((p) => p.peer === peer)) estado.noAr.delete(peer)
     for (const peer of estado.escutaDe.keys()) if (!r.pessoas.some((p) => p.peer === peer)) estado.escutaDe.delete(peer)
     aplicarSilencio()
-    if (!antes || antes.papel !== r.eu.papel || antes.funcao !== r.eu.funcao) desenharCasca()
+    if (!antes || antes.papel !== r.eu.papel || antes.funcao !== r.eu.funcao || setoresMudaram) desenharCasca()
     if (estado.pagina === 'noar') desenharNoAr()
     else if (estado.pagina === 'equipe') desenharEquipe()
-    else if (estado.pagina === 'setores' && !document.activeElement?.closest?.('#pg-setores')) desenharSetores()
+    // a lista de setores não redesenha com um seletor aberto (a pessoa está escolhendo), a não ser que os setores mudem
+    else if (estado.pagina === 'setores' && (setoresMudaram || !document.activeElement?.matches?.('#pg-setores select'))) desenharSetores()
     else if (estado.pagina === 'inicio') desenharInicio()
     desenharBase()
     if (!(estado.erroAte > Date.now())) mostrarErro('radio-erro', '')
@@ -1018,8 +1085,9 @@ function desenharAvisos() {
   const geral = podeTodos()
   $('avisos-sub').textContent = !d ? 'Abra uma diária.' : pode ? (geral ? 'Toca na tela de todo mundo.' : `Vai para a ${NOME[estado.eu.funcao] || 'sua equipe'}.`) : 'Só o dono, a Direção e os responsáveis mandam aviso.'
   $('avisos-para-casa').hidden = !(d && pode && geral)
-  if (d && pode && geral && !$('avisos-para').options.length) {
-    $('avisos-para').replaceChildren(h('option', { value: '' }, 'Para todos'), ...SETORES.map(([id, nome]) => h('option', { value: id }, `Só ${nome}`)))
+  if (d && pode && geral) {
+    const antes = $('avisos-para').value
+    $('avisos-para').replaceChildren(h('option', { value: '' }, 'Para todos'), ...SETORES.map(([id, nome]) => h('option', { value: id, selected: id === antes }, `Só ${nome}`)))
   }
   $('avisos-grade').replaceChildren(
     ...(d && pode
@@ -1077,7 +1145,8 @@ function desenharSetores() {
   const d = estado.diaria
   const dono = estado.eu?.dono
   $('setores-titulo').replaceChildren(...(abaSetores === 'setores' ? [h('span', { class: 'leve' }, 'Quem cuida'), ' ', h('span', { class: 'forte' }, 'de cada rádio.')] : [h('span', { class: 'leve' }, 'Quem pode'), ' ', h('span', { class: 'forte' }, 'o quê.')]))
-  $('setores-sub').textContent = abaSetores === 'setores' ? (d ? (dono ? `Escolha um responsável por setor em ${d.nome}.` : `Só o dono de ${d.nome} escolhe os responsáveis.`) : '') : 'Ninguém silencia o dono nem a Direção.'
+  $('setores-sub').textContent = abaSetores === 'setores' ? (d ? (dono ? 'Toque num setor para renomear, mudar a cor e pôr gente.' : `Só o dono de ${d.nome} mexe nos setores.`) : '') : 'Ninguém silencia o dono nem a Direção.'
+  $('novo-setor').hidden = !(dono && d && abaSetores === 'setores')
   $('aba-setores').setAttribute('aria-selected', String(abaSetores === 'setores'))
   $('aba-poderes').setAttribute('aria-selected', String(abaSetores === 'poderes'))
   $('vista-setores').hidden = abaSetores !== 'setores'
@@ -1098,7 +1167,10 @@ function desenharSetores() {
           celula = sel
         } else celula = resp ? h('span', { class: 'quem' }, avatar(resp.nome), h('b', {}, resp.nome)) : h('span', { class: 'sub' }, doSetor.length ? (escolhiveis.length ? 'Ninguém ainda' : 'Só o dono') : 'Ninguém no setor')
         const noAr = doSetor.filter((m) => m.online).length
-        return h('div', { class: 'tabela-linha t-setores' }, h('div', { class: 'quem' }, ico(id, 'ico ico--p'), h('b', {}, nome)), celula, h('span', { class: 'chip' }, `${doSetor.length} ${doSetor.length === 1 ? 'pessoa' : 'pessoas'}`), h('span', { class: setorCalado(id) ? 'chip' : 'chip' }, setorCalado(id) ? 'silenciado' : `${noAr} no ar`))
+        const nomeCel = dono
+          ? h('button', { class: 'quem setor-nome', type: 'button', 'aria-label': `Editar ${nome}`, onclick: () => abrirEditorSetor(id) }, ico(id, 'ico ico--p'), h('b', {}, nome), icone('lapis', 'ic ic--p'))
+          : h('div', { class: 'quem' }, ico(id, 'ico ico--p'), h('b', {}, nome))
+        return h('div', { class: 'tabela-linha t-setores' }, nomeCel, celula, h('span', { class: 'chip' }, `${doSetor.length} ${doSetor.length === 1 ? 'pessoa' : 'pessoas'}`), h('span', { class: setorCalado(id) ? 'chip' : 'chip' }, setorCalado(id) ? 'silenciado' : `${noAr} no ar`))
       }),
     )
     const papel = (ic, canal, t, s) => h('div', { class: 'papel' }, h('span', { class: 'ico ico--p', dataset: { canal } }, icone(ic)), h('div', {}, h('b', {}, t), h('small', {}, s)))
@@ -1122,10 +1194,11 @@ function desenharSetores() {
     ['ar', 'Falar com todos ao mesmo tempo', SIM(), NAO(), NAO(), NAO()],
     ['sino', 'Mandar avisos (Gravando, Corta…)', SIM(), info('no setor'), NAO(), NAO()],
     ['micoff', 'Silenciar uma pessoa', SIM(), info('no setor'), meu('só para si'), meu('só para si')],
-    ['micoff', 'Silenciar todos', SIM(), info('o setor'), NAO(), NAO()],
+    ['cadeado', 'Travar a fala', SIM(), info('do setor'), NAO(), NAO()],
     ['gente', 'Tirar gente', SIM(), info('do setor'), NAO(), NAO()],
     ['mover', 'Mover alguém de setor', SIM(), NAO(), NAO(), NAO()],
     ['escudo', 'Escolher os responsáveis', SIM(), NAO(), NAO(), NAO()],
+    ['setores', 'Criar, renomear e tirar setores', SIM(), NAO(), NAO(), NAO()],
   ]
   $('poderes-tabela').replaceChildren(
     h('div', { class: 'tabela-linha tabela-cabeca t-poderes' }, h('span', {}, 'Poder'), h('span', {}, 'Dono'), h('span', {}, 'Responsável'), h('span', {}, 'Equipe'), h('span', {}, 'Convidado')),
@@ -1139,18 +1212,115 @@ function desenharSetores() {
     regra('sino', 'Gravando silencia o set', 'Só Direção e Som falam até o Corta.', a.gravandoSilencia, () => moderar('ajustes', { ajustes: { gravandoSilencia: !a.gravandoSilencia, silencioMin: a.silencioMin ?? null } })),
     regra('mao', 'Pedir a palavra', 'Quem foi silenciado levanta a mão.', a.pedirPalavra, () => moderar('ajustes', { ajustes: { pedirPalavra: !a.pedirPalavra, silencioMin: a.silencioMin ?? null } })),
     regra('relogio', 'Silêncio volta sozinho', 'Silenciar alguém vale 5 min.', a.silencioMin === 5, () => moderar('ajustes', { ajustes: { silencioMin: a.silencioMin === 5 ? null : 5 } })),
+    h('b', { class: 'titulo-sec' }, 'Setores'),
+    regra('cadeado', 'Setor travado', 'Quem já escolheu o setor não troca sozinho; o dono move.', a.setorTravado, () => moderar('ajustes', { ajustes: { setorTravado: !a.setorTravado, silencioMin: a.silencioMin ?? null } })),
   )
 }
 async function carregarHistorico() {
   const lista = $('historico')
   if (!estado.diaria || !estado.eu?.dono) return lista.replaceChildren(h('li', {}, 'Só o dono da diária vê o histórico.'))
   const r = await api(`${API}/moderar`, { diaria: estado.diaria.id, acao: 'historico' })
-  const ACAO = { silenciar: 'silenciou', reativar: 'reativou', silenciar_todos: 'silenciou todos', reativar_todos: 'reativou todos', mover: 'moveu', responsavel: 'fez responsável', papel: 'mudou o papel de', tirar: 'tirou' }
+  const ACAO = { silenciar: 'silenciou', reativar: 'reativou', silenciar_todos: 'travou a fala', reativar_todos: 'destravou a fala', mover: 'moveu', responsavel: 'fez responsável', papel: 'mudou o papel de', tirar: 'tirou', setor_criar: 'criou o setor', setor_editar: 'mudou o setor', setor_tirar: 'tirou o setor', sair: 'saiu da diária' }
   lista.replaceChildren(
     ...((r.historico || []).length
       ? r.historico.slice(0, 20).map((x) => h('li', {}, h('b', {}, x.quem), ` ${ACAO[x.acao] || x.acao}${x.alvo ? ` ${x.alvo}` : ''}${x.detalhe ? ` (${NOME[x.detalhe] || PAPEL[x.detalhe] || x.detalhe})` : ''} · ${new Date(x.quando).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`))
       : [h('li', {}, 'Nada por enquanto.')]),
   )
+}
+
+// ───────── um setor: criar, renomear, a cor, pôr gente, tirar (o dono; radio.setor confere) ─────────
+let setorEmEdicao = null
+let corEscolhida = 'azul'
+function abrirEditorSetor(id = null) {
+  setorEmEdicao = id
+  const lista = JSON.parse(setoresVistos)
+  const atual = id ? lista.find((x) => x.id === id) : null
+  corEscolhida = atual?.cor || Object.keys(CORES).find((c) => !lista.some((x) => x.cor === c)) || 'azul'
+  $('se-titulo').replaceChildren(h('span', {}, id ? 'Editar' : 'Novo'), ' ', h('b', {}, id ? NOME[id] : 'setor'))
+  $('se-nome').value = atual?.nome || ''
+  $('se-tirar').hidden = !id || id === 'direcao'
+  mostrarErro('se-erro', '')
+  desenharCores()
+  desenharGenteDoSetor()
+  $('setor-editar').showModal()
+  if (!id) $('se-nome').focus()
+}
+function desenharCores() {
+  $('se-cores').replaceChildren(
+    ...Object.entries(CORES).map(([nome, hex]) => {
+      const b = h('button', { type: 'button', class: 'cor', role: 'radio', 'aria-checked': String(nome === corEscolhida), 'aria-label': nome, onclick: () => ((corEscolhida = nome), desenharCores()) })
+      b.style.setProperty('--c', hex)
+      return b
+    }),
+  )
+}
+function desenharGenteDoSetor() {
+  const id = setorEmEdicao
+  const caixa = $('se-gente')
+  if (!id) return caixa.replaceChildren()
+  const dentro = estado.membros.filter((m) => m.funcao === id)
+  const fora = estado.membros.filter((m) => m.funcao !== id && m.papel !== 'dono')
+  const sel = h('select', { class: 'seletor', 'aria-label': `Pôr alguém em ${NOME[id]}` }, h('option', { value: '' }, fora.length ? 'Pôr alguém neste setor…' : 'Todo mundo já está aqui'), ...fora.map((m) => h('option', { value: m.apelido }, `${m.nome}${m.funcao ? ` · ${NOME[m.funcao] || 'outro setor'}` : ' · sem setor'}`)))
+  sel.disabled = !fora.length
+  sel.addEventListener('change', async () => {
+    if (!sel.value) return
+    const r = await moderar('mover', { alvo: sel.value, valor: id })
+    if (r.ok) {
+      const m = estado.membros.find((x) => x.apelido === sel.value)
+      if (m) m.funcao = id
+      desenharGenteDoSetor()
+    }
+  })
+  caixa.replaceChildren(
+    h('div', { class: 'titulo-sec' }, 'Pessoas', h('small', {}, `${dentro.length}`)),
+    h('ul', { class: 'se-lista' }, ...(dentro.length ? dentro.map((m) => h('li', {}, avatar(m.nome, 'av--p'), h('span', {}, m.nome), m.papel === 'responsavel' ? h('small', {}, 'responsável') : m.papel === 'dono' ? h('small', {}, 'dono') : null)) : [h('li', { class: 'sub' }, 'Ninguém ainda.')])),
+    sel,
+  )
+}
+$('se-form').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const nome = $('se-nome').value.trim()
+  if (!nome) return
+  const r = await api(`${API}/moderar`, { diaria: estado.diaria.id, acao: setorEmEdicao ? 'setor_editar' : 'setor_criar', setor: { id: setorEmEdicao, nome, cor: corEscolhida } })
+  if (!r.ok) return mostrarErro('se-erro', SETOR_ERRO[r.erro] || 'Não deu certo. Tente de novo.')
+  $('setor-editar').close()
+  bater()
+})
+$('se-tirar').addEventListener('click', async () => {
+  if (!setorEmEdicao || !confirm(`Tirar o setor ${NOME[setorEmEdicao]}? Quem está nele fica sem setor.`)) return
+  const r = await api(`${API}/moderar`, { diaria: estado.diaria.id, acao: 'setor_tirar', setor: { id: setorEmEdicao } })
+  if (!r.ok) return mostrarErro('se-erro', SETOR_ERRO[r.erro] || 'Não deu certo. Tente de novo.')
+  $('setor-editar').close()
+  bater()
+})
+$('se-cancelar').addEventListener('click', () => $('setor-editar').close())
+$('novo-setor').addEventListener('click', () => abrirEditorSetor())
+
+// ───────── sair: desligar o rádio, deixar a diária, encerrar (o dono) ─────────
+$('sair-btn').addEventListener('click', () => {
+  const dono = estado.eu?.dono ?? estado.diaria?.dono
+  $('sair-nome').textContent = estado.diaria?.nome || 'diária'
+  $('sair-deixar').hidden = Boolean(dono)
+  $('sair-encerrar').hidden = !dono
+  $('sair-folha').showModal()
+})
+$('sair-cancelar').addEventListener('click', () => $('sair-folha').close())
+$('sair-folha').addEventListener('click', (e) => e.target === $('sair-folha') && $('sair-folha').close())
+$('sair-desligar').addEventListener('click', () => ($('sair-folha').close(), desligar()))
+for (const [botao, acao, pergunta] of [
+  ['sair-deixar', 'sair', 'Deixar a diária? Para voltar, você vai precisar do código.'],
+  ['sair-encerrar', 'encerrar', 'Encerrar a diária para todo mundo? O código para de valer.'],
+]) {
+  $(botao).addEventListener('click', async () => {
+    if (!estado.diaria || !confirm(pergunta)) return
+    const r = await api(`${API}/diarias`, { acao, diaria: estado.diaria.id })
+    $('sair-folha').close()
+    if (!r.ok) {
+      estado.erroAte = Date.now() + 4000
+      return mostrarErro('radio-erro', 'Não deu certo. Tente de novo.')
+    }
+    desligar()
+  })
 }
 
 // ───────── convites e QR ─────────
@@ -1239,6 +1409,7 @@ function ligarSet() {
 }
 
 // ───────── início ─────────
+for (const a of document.querySelectorAll('[data-so-app]')) a.hidden = Boolean(BASE)
 porIcones()
 aplicarTema(ler('rd_tema') === 'escuro' ? 'escuro' : 'claro')
 aplicarLado(ler('rd_lado') === 'recolhido' ? 'recolhido' : 'aberto')

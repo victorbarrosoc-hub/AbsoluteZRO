@@ -1013,7 +1013,7 @@ paths:
         }
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { acao: criar, nome } → 201 { diaria }; { acao: entrar, codigo } → { diaria } ou 404; { acao: funcao, diaria, funcao } → { ok }'
+      summary: 'Rádio do set. { acao: criar, nome } → 201 { diaria }; { acao: entrar, codigo } → { diaria } ou 404; { acao: funcao, diaria, funcao } → { ok } ou 409 (setor travado ou de outra diária); { acao: sair, diaria } (quem não é o dono deixa a diária) e { acao: encerrar, diaria } (o dono fecha para todos) → { ok }'
       responses:
         {
           '200': { description: 'ok' },
@@ -1054,7 +1054,7 @@ paths:
   /api/v1/radio/moderar:
     post:
       security: [{ session: [] }]
-      summary: 'RADION. { diaria, acao: silenciar | reativar | silenciar_todos | reativar_todos | mover | responsavel | papel | tirar | mao | baixar_mao, alvo? (apelido), valor?, minutos? (0, 5, 15) } → { ok }; { acao: ajustes, ajustes } e { acao: historico } para o dono. O dono pode tudo; o responsável, só no setor dele; ninguém silencia o dono nem a Direção'
+      summary: 'RADION. { diaria, acao: silenciar | reativar | silenciar_todos | reativar_todos | mover | responsavel | papel | tirar | mao | baixar_mao, alvo? (apelido), valor?, minutos? (0, 5, 15) } → { ok }; { acao: ajustes, ajustes }, { acao: historico } e os setores da diária { acao: setor_criar | setor_editar | setor_tirar, setor: { id?, nome?, cor? } } para o dono. O dono pode tudo; o responsável, só no setor dele; ninguém silencia o dono nem a Direção'
       responses:
         {
           '200': { description: 'ok' },

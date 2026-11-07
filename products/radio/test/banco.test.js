@@ -143,7 +143,8 @@ test('diária: criar, entrar pelo código, função, presença e isolamento', { 
   assert.equal(e.statusCode, 200)
   assert.equal(e.corpo.diaria.dono, false)
   assert.equal((await chamar('diarias', 'POST', bia, { acao: 'funcao', diaria: d.id, funcao: 'som' })).statusCode, 200)
-  assert.equal((await chamar('diarias', 'POST', bia, { acao: 'funcao', diaria: d.id, funcao: 'diretor' })).statusCode, 400)
+  assert.equal((await chamar('diarias', 'POST', bia, { acao: 'funcao', diaria: d.id, funcao: 'diretor' })).statusCode, 409)
+  assert.equal((await chamar('diarias', 'POST', bia, { acao: 'funcao', diaria: d.id, funcao: 'Di Retor' })).statusCode, 400)
 
   // presença: os dois se veem; Caio (fora) não
   const pa = 'a'.repeat(24)
@@ -317,5 +318,81 @@ test('poderes: responsável do setor, silenciar, silenciar todos, Gravando, pedi
   assert.equal((await como('sub-teo', (tx) => tx`select * from radio.historico`)).length, 0)
   assert.equal((await como('sub-fora', (tx) => tx`select * from radio.silencios`)).length, 0)
   assert.equal((await como('sub-fora', (tx) => tx`select * from radio.silenciados(${d.id})`)).length, 0)
+  await sql.end()
+})
+
+test('setores da diária: criar, renomear, tirar, pôr gente, trava de setor, sair e encerrar', { skip: pular }, async () => {
+  const dona = sessao('sub-dona2', 'Dona')
+  const ana = sessao('sub-ana', 'Ana')
+  const bia = sessao('sub-bia', 'Bia')
+  const d = (await chamar('diarias', 'POST', dona, { acao: 'criar', nome: 'Setores' })).corpo.diaria
+  for (const s of [ana, bia]) await chamar('diarias', 'POST', s, { acao: 'entrar', codigo: d.codigo })
+  const bater = async (s, peer) => (await chamar('batida', 'POST', s, { diaria: d.id, peer })).corpo
+  const mod = async (s, corpo) => chamar('moderar', 'POST', s, { diaria: d.id, ...corpo })
+  const setores = async () => (await bater(dona, 'e'.repeat(24))).setores
+
+  // nasce com os sete de sempre, na ordem
+  assert.deepEqual((await setores()).map((x) => x.id), ['direcao', 'producao', 'camera', 'som', 'luz', 'arte', 'elenco'])
+  assert.equal((await setores())[0].nome, 'Direção')
+
+  // só a dona cria; nome repetido e cor fora da lista são recusados
+  assert.equal((await mod(ana, { acao: 'setor_criar', setor: { nome: 'Maquiagem', cor: 'rosa' } })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'setor_criar', setor: { nome: 'Maquiagem', cor: 'rosa' } })).statusCode, 200)
+  assert.equal((await mod(dona, { acao: 'setor_criar', setor: { nome: 'maquiagem', cor: 'azul' } })).statusCode, 409)
+  assert.equal((await mod(dona, { acao: 'setor_criar', setor: { nome: 'Figurino', cor: 'dourado' } })).statusCode, 400)
+  const maq = (await setores()).find((x) => x.nome === 'Maquiagem')
+  assert.match(maq.id, /^s[a-f0-9]{7}$/)
+  assert.equal(maq.cor, 'rosa')
+
+  // a equipe escolhe o setor novo; a dona renomeia e o nome novo aparece para todos
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'funcao', diaria: d.id, funcao: maq.id })).statusCode, 200)
+  assert.equal((await mod(dona, { acao: 'setor_editar', setor: { id: maq.id, nome: 'Make' } })).statusCode, 200)
+  assert.equal((await setores()).find((x) => x.id === maq.id).nome, 'Make')
+  assert.equal((await chamar('diarias', 'GET', ana)).corpo.diarias.find((x) => x.id === d.id).funcaoNome, 'Make')
+  assert.equal((await mod(ana, { acao: 'setor_editar', setor: { id: maq.id, nome: 'Outro' } })).statusCode, 403)
+  // setor que não é desta diária não vale
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'funcao', diaria: d.id, funcao: 'sinexiste' })).statusCode, 409)
+
+  // a dona põe a Bia no setor novo (mover) e a faz responsável; tirar o setor deixa as duas sem setor e a Bia na equipe
+  const quem = async (nome) => (await bater(dona, 'e'.repeat(24))).membros.find((m) => m.nome === nome).apelido
+  assert.equal((await mod(dona, { acao: 'mover', alvo: await quem('Bia'), valor: maq.id })).statusCode, 200)
+  assert.equal((await mod(dona, { acao: 'responsavel', alvo: await quem('Bia') })).statusCode, 200)
+  assert.equal((await mod(dona, { acao: 'setor_tirar', setor: { id: 'direcao' } })).statusCode, 400)
+  assert.equal((await mod(dona, { acao: 'setor_tirar', setor: { id: maq.id } })).statusCode, 200)
+  const bb = await bater(bia, 'b'.repeat(24))
+  assert.equal(bb.eu.funcao, null)
+  assert.equal(bb.eu.papel, 'equipe')
+  assert.ok(!bb.setores.some((x) => x.id === maq.id))
+
+  // trava de setor: a primeira escolha vale; depois, só a dona move
+  assert.equal((await mod(ana, { acao: 'ajustes', ajustes: { setorTravado: true } })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'ajustes', ajustes: { setorTravado: true } })).statusCode, 200)
+  assert.equal((await bater(ana, 'a'.repeat(24))).ajustes.setorTravado, true)
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'funcao', diaria: d.id, funcao: 'luz' })).statusCode, 200)
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'funcao', diaria: d.id, funcao: 'som' })).statusCode, 409)
+  assert.equal((await mod(dona, { acao: 'mover', alvo: await quem('Ana'), valor: 'som' })).statusCode, 200)
+  assert.equal((await bater(ana, 'a'.repeat(24))).eu.funcao, 'som')
+
+  // sair: a Ana deixa a diária (e some da equipe); a dona não sai, encerra, e a diária some para todos
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'sair', diaria: d.id })).statusCode, 200)
+  assert.equal((await chamar('batida', 'POST', ana, { diaria: d.id, peer: 'a'.repeat(24) })).statusCode, 403)
+  assert.ok(!(await bater(dona, 'e'.repeat(24))).membros.some((m) => m.nome === 'Ana'))
+  assert.equal((await chamar('diarias', 'POST', dona, { acao: 'sair', diaria: d.id })).statusCode, 403)
+  assert.equal((await chamar('diarias', 'POST', bia, { acao: 'encerrar', diaria: d.id })).statusCode, 403)
+  assert.equal((await chamar('diarias', 'POST', dona, { acao: 'encerrar', diaria: d.id })).statusCode, 200)
+  assert.equal((await chamar('batida', 'POST', bia, { diaria: d.id, peer: 'b'.repeat(24) })).statusCode, 403)
+  assert.ok(!(await chamar('diarias', 'GET', dona)).corpo.diarias.some((x) => x.id === d.id))
+
+  // direto no banco, como radio_app: ninguém escreve setor
+  const sql = postgres(urlRadio, { max: 1, onnotice: () => {} })
+  const como = (sub, fn) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('radio.user_sub', ${sub}, true)`
+      await tx.unsafe('set local role radio_app')
+      return fn(tx)
+    })
+  await assert.rejects(como('sub-dona2', (tx) => tx`insert into radio.setores (diaria_id, id, nome, cor) values (${d.id}, 'xx', 'X', 'azul')`), /permission denied/)
+  await assert.rejects(como('sub-dona2', (tx) => tx`update radio.setores set nome = 'Y'`), /permission denied/)
+  assert.equal((await como('sub-fora', (tx) => tx`select * from radio.setores`)).length, 0)
   await sql.end()
 })

@@ -164,6 +164,12 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   titular entrou pelo celular. No celular o TALK volta a ser o microfone (como antes do leque) e não troca de tela:
   falando, a barra e o canal escolhido acendem; com o microfone aberto, tocar num canal não troca o destino; segurar
   não abre o menu de imagem do iPhone (pedido do titular, 07/11/2026).
+- ✅ **RADION, setores da diária** (pedido do titular, 07/11/2026): o dono cria, renomeia, muda a cor e tira setores
+  (a Direção fica) e põe gente em cada um; trava de setor (quem já escolheu não troca sozinho, o dono move); Travar a
+  fala no topo do No ar (o dono cala o set; o responsável, o setor); Sair (desligar o rádio, deixar a diária ou, o dono,
+  encerrar); Sobre o RADION no menu. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
+  `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
+  "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
