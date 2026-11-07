@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="pt-BR" data-tema="claro">
-  <!-- RADION · a página inicial (aprovada pelo titular em 06/11/2026). Não lançado: só sai para quem passa no gate (a
-       prévia em /sobre) ou, no lançamento, para todos (RADION_SITE_ABERTO=1). Telas de verdade do app, nada de efeito
-       de luz. Sem script nem estilo inline (CSP). -->
+<html lang="pt-BR">
+  <!-- RADION · a página inicial (refeita a pedido do titular em 07/11/2026: mais completa, com motion e a demonstração de
+       como funciona, no estilo da página do SOBEDESCE). Não lançado: só sai para quem passa no gate (a prévia em /sobre)
+       ou, no lançamento, para todos (RADION_SITE_ABERTO=1). As demonstrações são o próprio desenho do app em HTML,
+       animadas por app/site.js; com "reduzir movimento", cada uma mostra um quadro parado. Sem script nem estilo inline
+       (CSP). -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>RADION · Stay connected.</title>
     <meta name="description" content="O rádio do set no celular de cada equipe. Um canal por setor, da Absolute ZRO." />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/app/marca/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/app/marca/radion-180.png" />
     <link rel="manifest" href="/app/manifest.webmanifest" />
@@ -27,66 +30,197 @@
     <meta name="twitter:image" content="https://radion.absolutezro.com/app/marca/og.png" />
     <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/app/site.css" />
+    <script type="module" src="/app/site.js"></script>
   </head>
   <body>
     <header class="s-topo">
-      <a class="s-marca" href="/"><img src="/app/marca/radion-simbolo.svg" alt="" />radion</a>
-      <nav class="s-links" aria-label="Seções"><a href="#como">Como funciona</a><a href="#setores">Setores</a><a href="#seguranca">Segurança</a></nav>
+      <a class="s-marca" href="/" aria-label="RADION">
+        <picture><source srcset="/app/marca/radion-simbolo-branco.svg" media="(prefers-color-scheme: dark)" /><img src="/app/marca/radion-simbolo.svg" alt="" /></picture>
+        <span>radion</span>
+      </a>
+      <nav class="s-links" aria-label="Seções"><a href="#canais">Canais</a><a href="#como">Como funciona</a><a href="#poderes">Poderes</a><a href="#privacidade">Privacidade</a></nav>
       <a class="s-btn s-btn--tinta" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
     </header>
 
     <main>
+      <!-- herói: a frase e o app de verdade, ao vivo -->
       <section class="s-heroi">
-        <picture><source srcset="/app/marca/radion-icone-escuro.svg" media="(prefers-color-scheme: dark)" /><img class="s-icone" src="/app/marca/radion-icone.svg" alt="RADION" width="168" height="168" /></picture>
-        <h1><span class="leve">stay</span> <span class="forte">connected</span><span class="ponto">.</span></h1>
-        <p>O rádio do set no celular de cada equipe.</p>
-        <div class="s-acoes">
+        <p class="s-sobre s-sobe">O rádio do set, no celular de cada equipe</p>
+        <h1 class="s-sobe"><span class="leve">stay</span> <span class="forte">connected</span><span class="ponto">.</span></h1>
+        <p class="s-apoio s-sobe">Um canal por setor. Segure e fale. Sem rádio, sem bateria extra, sem canal cruzado.</p>
+        <div class="s-acoes s-sobe">
           <a class="s-btn s-btn--tinta s-btn--g" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
           <a class="s-btn s-btn--g" href="#como">Como funciona</a>
         </div>
-      </section>
 
-      <section class="s-aparelhos" id="como" aria-label="O RADION no computador e no celular">
-        <figure class="s-mac">
-          <picture>
-            <source srcset="/app/site/computador-escuro.webp" media="(prefers-color-scheme: dark)" />
-            <img src="/app/site/computador-claro.webp" alt="O RADION no computador: os oito canais, quem está no ar e o botão de falar" width="1440" height="900" />
-          </picture>
-        </figure>
-        <figure class="s-iphone">
-          <picture>
-            <source srcset="/app/site/celular-escuro.webp" media="(prefers-color-scheme: dark)" />
-            <img src="/app/site/celular-claro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" />
-          </picture>
-        </figure>
-      </section>
-
-      <section class="s-faixa" id="setores">
-        <h2><span class="leve">Um canal</span> <span class="forte">por setor.</span></h2>
-        <p>Cada um ouve o seu e o Geral. A direção fala com todos.</p>
-        <ul class="s-setores" aria-label="Os canais">
-          <li data-canal="geral">Geral</li><li data-canal="direcao">Direção</li><li data-canal="producao">Produção</li><li data-canal="camera">Câmera</li><li data-canal="som">Som</li><li data-canal="luz">Luz</li><li data-canal="arte">Arte</li><li data-canal="elenco">Elenco</li>
-        </ul>
-        <div class="s-cartoes" id="seguranca">
-          <article><b>Um responsável por rádio</b><span>Quem cuida do setor silencia e organiza a equipe dele.</span></article>
-          <article><b>Silêncio no set</b><span>No Gravando, só a Direção e o Som falam, até o Corta.</span></article>
-          <article><b>A voz não fica gravada</b><span>Vai de aparelho para aparelho, cifrada. Nada no servidor.</span></article>
+        <div class="s-palco s-sobe" aria-label="Demonstração: o RADION no celular durante uma diária">
+          <div class="s-cel" id="demo-cel" data-fase="0">
+            <div class="s-cel-topo"><b>Comercial Verão</b><span class="s-vivo">no ar · 6</span></div>
+            <div class="s-cel-avisos"><span class="s-av-btn s-av-btn--grav">Gravando</span><span class="s-av-btn">Corta</span><span class="s-av-btn">Silêncio</span></div>
+            <div class="s-canal" data-canal="geral"><i class="s-ico"></i><div><b>Geral</b><small class="s-sub">todos · 6 no ar</small></div><span class="s-fala" data-quem="ana">Ana · Direção</span><span class="s-med"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="s-canal" data-canal="camera"><i class="s-ico"></i><div><b>Câmera</b><small class="s-sub">2 no ar</small></div><span class="s-fala" data-quem="rui">Rui falando</span><span class="s-fala" data-quem="voce">Você</span><span class="s-med"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="s-canal" data-canal="som"><i class="s-ico"></i><div><b>Som</b><small class="s-sub">1 no ar</small></div><span class="s-calado">silenciado</span><span class="s-med"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="s-canal" data-canal="luz"><i class="s-ico"></i><div><b>Luz</b><small class="s-sub">2 no ar</small></div><span class="s-calado">silenciado</span><span class="s-med"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="s-cel-base"><small id="demo-rotulo">Falar para</small><b>Câmera</b><span id="demo-dica">Segure para falar</span></div>
+            <div class="s-cel-talk" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></div>
+            <div class="s-cel-aviso">Gravando</div>
+          </div>
+          <ol class="s-legenda" aria-live="polite">
+            <li data-fase="1">Rui chama a Câmera</li>
+            <li data-fase="2">Você segura e responde</li>
+            <li data-fase="3">A Direção fala com todos</li>
+            <li data-fase="4">Gravando: o set fica em silêncio</li>
+          </ol>
         </div>
       </section>
 
-      <section class="s-eco">
-        <h2><span class="leve">Parte da</span> <span class="forte">Absolute ZRO.</span></h2>
-        <p>A mesma conta de todo o ecossistema. O Set mostra quem da equipe está online.</p>
-        <div class="s-eco-apps">
+      <!-- números -->
+      <section class="s-numeros" aria-label="Em números">
+        <div class="revela"><b data-conta="8">8</b><span>canais prontos, do Geral ao Elenco</span></div>
+        <div class="revela"><b data-conta="20">20</b><span>setores por diária, com o nome que você quiser</span></div>
+        <div class="revela"><b>1</b><span>toque para falar, ou segure como um rádio</span></div>
+        <div class="revela"><b>0</b><span>voz guardada no servidor</span></div>
+      </section>
+
+      <!-- os canais: cada setor no seu grupo -->
+      <section class="s-secao" id="canais">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Os grupos do set</p>
+          <h2><span class="leve">Um canal</span> <span class="forte">por setor.</span></h2>
+          <p class="s-apoio">A Câmera conversa com a Câmera. O Som com o Som. A Direção fala com todo mundo no Geral.</p>
+        </div>
+        <div class="s-set revela" id="demo-set" data-fala="camera" aria-label="Demonstração: quem ouve quem">
+          <div class="s-set-direcao" data-canal="direcao"><span class="s-pessoa">AL</span><b>Direção</b><small>fala no Geral</small></div>
+          <div class="s-grupos">
+            <div class="s-grupo" data-canal="camera"><b>Câmera</b><div><span class="s-pessoa">RA</span><span class="s-pessoa">JS</span><span class="s-pessoa">MT</span></div></div>
+            <div class="s-grupo" data-canal="som"><b>Som</b><div><span class="s-pessoa">LP</span><span class="s-pessoa">DB</span></div></div>
+            <div class="s-grupo" data-canal="luz"><b>Luz</b><div><span class="s-pessoa">CM</span><span class="s-pessoa">FE</span><span class="s-pessoa">GU</span></div></div>
+            <div class="s-grupo" data-canal="arte"><b>Arte</b><div><span class="s-pessoa">NR</span><span class="s-pessoa">VI</span></div></div>
+            <div class="s-grupo" data-canal="producao"><b>Produção</b><div><span class="s-pessoa">BR</span><span class="s-pessoa">TA</span></div></div>
+            <div class="s-grupo" data-canal="elenco"><b>Elenco</b><div><span class="s-pessoa">IS</span><span class="s-pessoa">PE</span></div></div>
+          </div>
+          <p class="s-set-legenda" id="demo-set-legenda">A Câmera fala só com a Câmera.</p>
+        </div>
+      </section>
+
+      <!-- o app de verdade -->
+      <section class="s-aparelhos" aria-label="O RADION no computador e no celular">
+        <figure class="s-mac revela">
+          <picture>
+            <source srcset="/app/site/computador-escuro.webp" media="(prefers-color-scheme: dark)" />
+            <img src="/app/site/computador-claro.webp" alt="O RADION no computador: os canais, quem está no ar e o botão de falar" width="1440" height="900" loading="lazy" />
+          </picture>
+        </figure>
+        <figure class="s-iphone revela">
+          <picture>
+            <source srcset="/app/site/celular-escuro.webp" media="(prefers-color-scheme: dark)" />
+            <img src="/app/site/celular-claro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" loading="lazy" />
+          </picture>
+        </figure>
+      </section>
+
+      <!-- como funciona: três passos -->
+      <section class="s-secao s-faixa" id="como">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Em um minuto</p>
+          <h2><span class="leve">Do QR</span> <span class="forte">ao primeiro "copiado".</span></h2>
+        </div>
+        <div class="s-passos">
+          <article class="s-passo revela">
+            <span class="s-num">1</span>
+            <div class="s-vis s-vis-qr" aria-hidden="true"><i></i></div>
+            <b>Crie a diária</b>
+            <span>Dê um nome e mostre o QR. Quem aponta a câmera entra com a conta da Absolute ZRO.</span>
+          </article>
+          <article class="s-passo revela">
+            <span class="s-num">2</span>
+            <div class="s-vis s-vis-setores" aria-hidden="true"><i data-canal="camera">Câmera</i><i data-canal="som">Som</i><i data-canal="luz">Luz</i><i data-canal="arte">Arte</i></div>
+            <b>Cada um no seu setor</b>
+            <span>A pessoa escolhe o setor, ou o dono já põe cada um no lugar e trava.</span>
+          </article>
+          <article class="s-passo revela">
+            <span class="s-num">3</span>
+            <div class="s-vis s-vis-talk" aria-hidden="true"><i><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></i></div>
+            <b>Segure e fale</b>
+            <span>Como um rádio: segure para falar, solte para ouvir. Um toque deixa o microfone aberto.</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- o diferencial: os poderes -->
+      <section class="s-secao" id="poderes">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">O que um rádio comum não faz</p>
+          <h2><span class="leve">O set</span> <span class="forte">na sua mão.</span></h2>
+          <p class="s-apoio">O dono e os responsáveis de cada setor organizam a conversa sem gritar no corredor.</p>
+        </div>
+        <div class="s-bento">
+          <article class="s-cartao s-cartao--g revela" id="demo-grav" data-grav="0">
+            <div class="s-cartao-vis" aria-hidden="true">
+              <span class="s-grav-btn">Gravando</span>
+              <ul class="s-grav-lista"><li data-canal="direcao">Direção<em>fala</em></li><li data-canal="som">Som<em>fala</em></li><li data-canal="camera">Câmera<em>calada</em></li><li data-canal="luz">Luz<em>calada</em></li><li data-canal="arte">Arte<em>calada</em></li></ul>
+            </div>
+            <b>Gravando cala o set</b>
+            <span>Um toque e só a Direção e o Som falam. No Corta, todo mundo volta.</span>
+          </article>
+          <article class="s-cartao revela">
+            <div class="s-cartao-vis s-vis-trava" aria-hidden="true"><i></i></div>
+            <b>Travar a fala</b>
+            <span>O dono fala e o resto ouve. O responsável faz o mesmo no setor dele.</span>
+          </article>
+          <article class="s-cartao revela">
+            <div class="s-cartao-vis s-vis-mao" aria-hidden="true"><i></i></div>
+            <b>Pedir a palavra</b>
+            <span>Quem foi silenciado levanta a mão; quem cuida do setor devolve a voz.</span>
+          </article>
+          <article class="s-cartao revela">
+            <div class="s-cartao-vis s-vis-resp" aria-hidden="true"><i data-canal="camera"></i></div>
+            <b>Um responsável por setor</b>
+            <span>Cuida da equipe dele: silencia, organiza e manda aviso só para o setor.</span>
+          </article>
+          <article class="s-cartao revela">
+            <div class="s-cartao-vis s-vis-nomes" aria-hidden="true"><i data-canal="rosa">Maquiagem</i><i data-canal="indigo">Figurino</i></div>
+            <b>Os setores do seu jeito</b>
+            <span>Crie, renomeie e pinte os canais da diária. A Direção fica sempre.</span>
+          </article>
+          <article class="s-cartao revela">
+            <div class="s-cartao-vis s-vis-cel" aria-hidden="true"><i></i><i></i><i></i></div>
+            <b>Qualquer celular</b>
+            <span>Abre no navegador e vai para a Tela de Início. Sem rádio para carregar nem distribuir.</span>
+          </article>
+        </div>
+      </section>
+
+      <!-- privacidade: a voz de aparelho para aparelho -->
+      <section class="s-escuro" id="privacidade">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Privacidade</p>
+          <h2><span class="leve">A voz vai</span> <span class="forte">de aparelho para aparelho.</span></h2>
+          <p class="s-apoio">Cifrada no caminho e nunca gravada. O servidor só apresenta os aparelhos; a conversa não passa por ele.</p>
+        </div>
+        <div class="s-rede revela" aria-hidden="true">
+          <span class="s-no" data-canal="direcao"></span><span class="s-no" data-canal="camera"></span><span class="s-no" data-canal="som"></span><span class="s-no" data-canal="luz"></span><span class="s-no" data-canal="arte"></span>
+          <svg viewBox="0 0 600 220" preserveAspectRatio="none"><path d="M60 110 C180 20 240 20 300 110" /><path d="M300 110 C360 200 420 200 540 110" /><path d="M60 110 C200 200 380 200 540 110" /><path d="M180 60 C260 130 340 130 420 60" /></svg>
+        </div>
+      </section>
+
+      <!-- a família -->
+      <section class="s-secao s-eco">
+        <div class="s-cabeca revela">
+          <h2><span class="leve">Parte da</span> <span class="forte">Absolute ZRO.</span></h2>
+          <p class="s-apoio">A mesma conta de todo o ecossistema. O Set mostra quem da equipe está online.</p>
+        </div>
+        <div class="s-eco-apps revela">
           <figure><img src="https://absolutezro.com/brand/app-icon-1024.png" alt="" /><figcaption>Absolute ZRO</figcaption></figure>
           <span aria-hidden="true">+</span>
           <figure><picture><source srcset="/app/marca/radion-icone-escuro.svg" media="(prefers-color-scheme: dark)" /><img src="/app/marca/radion-icone.svg" alt="" /></picture><figcaption>RADION</figcaption></figure>
         </div>
+        <div class="s-acoes revela"><a class="s-btn s-btn--tinta s-btn--g" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a></div>
       </section>
     </main>
 
     <footer class="s-rodape">
-      <img src="https://absolutezro.com/brand/absolute-zro-grafite.svg" alt="Absolute ZRO" />
+      <picture><source srcset="https://absolutezro.com/brand/absolute-zro-branco.svg" media="(prefers-color-scheme: dark)" /><img src="https://absolutezro.com/brand/absolute-zro-grafite.svg" alt="Absolute ZRO" /></picture>
       <a href="https://absolutezro.com/privacidade">Privacidade</a>
       <a href="https://absolutezro.com/termos">Termos</a>
     </footer>

@@ -180,6 +180,9 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4, typecheck. Capturas no Chromium em 390 × 844
   (escuro) e 1200 × 800: No ar com Travar a fala e Sair, Setores com o lápis e o editor (cores, pessoas, pôr alguém),
   Poderes com o Setor travado, Equipe, Avisos, Sair e a volta para Diárias.
+- RADION, página inicial nova (07/11/2026): `npm test` 12/12 (o `site.js` sai só pelo gate, como o `site.css`);
+  capturas no Chromium em 390 × 844 (claro e escuro) e 1440 × 900 com as seções entrando na rolagem e as três
+  demonstrações andando, sem erro no console.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
