@@ -226,8 +226,8 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   Pronto para o lote de sexta (Vercel travada).
 - ✅ **RADION, o nome em Figtree** (titular, 07/11/2026, pelo Painel Geral): "radion" passa de Nunito Black para Figtree
   ExtraBold (800), -0,04em, e fica mais junto do símbolo (0,32em: ~8 px em 25 px). No cabeçalho do app e da página
-  inicial, na imagem de compartilhar (o nome desce para junto do símbolo, entre os anéis; o círculo segue no centro) e nas telas
-  da página inicial (refeitas); o Nunito sai do carregamento e do
+  inicial, na imagem de compartilhar (o nome segue no topo, decisão do titular) e nas telas da página
+  inicial (refeitas); o Nunito sai do carregamento e do
   repositório. O símbolo não muda. Lote de sexta.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
