@@ -7,8 +7,10 @@
 // O sinal (titular, 07/11/2026: "um sinal de Wi-Fi, é um detalhe"): três arcos no quadrante oposto ao leque, centrados
 // no rebite e na diagonal de baixo à esquerda, 78° cada, traço 0,38w, raios 1,97w · 2,78w · 3,59w, na cor do rebite.
 // No ícone do app o rebite fica no centro exato (512, 512), na escala 3,55 (o desenho preenche mais o quadrado).
+// Regra do titular (07/11/2026): o rebite, o círculo, é o centro da logo. Onde o símbolo aparece sozinho (ícone, favicon,
+// imagem de compartilhamento) o círculo fica no centro exato do quadro.
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -93,37 +95,43 @@ export function icone(escuro = false) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="RADION"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo[0]}"/><stop offset="1" stop-color="${fundo[1]}"/></linearGradient>${defs}</defs><rect width="1024" height="1024" rx="228" fill="url(#f)"/>${corpo}</svg>\n`
 }
 
-/** Favicon: o símbolo sozinho, com o rebite que acompanha o tema do sistema. */
+/** Favicon: o símbolo sozinho, com o rebite no centro do quadro (o círculo é o centro da logo) e a cor do tema. */
 export function favicon() {
   const c = caixa()
   const m = 2
+  const r = Math.max(-c.x0, c.x0 + c.w, -c.y0, c.y0 + c.h) + m
   const { defs, corpo } = leque(0, 0, 1, 'var(--rebite)', 'v')
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(c.x0 - m)} ${n(c.y0 - m)} ${n(c.w + 2 * m)} ${n(c.h + 2 * m)}"><style>:root{--rebite:${GRAFITE}}@media (prefers-color-scheme:dark){:root{--rebite:${BRANCO}}}</style><defs>${defs}</defs>${corpo}</svg>\n`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(-r)} ${n(-r)} ${n(2 * r)} ${n(2 * r)}"><style>:root{--rebite:${GRAFITE}}@media (prefers-color-scheme:dark){:root{--rebite:${BRANCO}}}</style><defs>${defs}</defs>${corpo}</svg>\n`
 }
 
 /**
- * A imagem de compartilhamento (1200 × 630), no padrão dos apps da Absolute ZRO (Relay, Maestro): fundo claro, o
- * símbolo grande, a frase em Light × ExtraBold e o ícone com o nome embaixo. A luz atrás vem das cores dos setores.
+ * A imagem de compartilhamento (1200 × 630). O rebite (o círculo) é o centro da logo e fica no centro exato da imagem
+ * (titular, 07/11/2026: "o círculo é o centro da logo, sempre"): no recorte quadrado do iPhone e do WhatsApp o símbolo
+ * continua no meio. Em volta: o nome em cima; embaixo a frase em Light × ExtraBold, uma linha do que é e a assinatura do
+ * ecossistema Absolute ZRO. A luz atrás vem das cores dos setores.
  */
-export function og(fontes) {
-  const c = caixa()
-  const alt = 210
-  const larg = (c.w * alt) / c.h
-  const { defs, corpo } = leque(0, 0, 1, GRAFITE, 'o')
+export function og(fontes, zro) {
+  const k = 1.3
+  const { defs, corpo } = leque(600, 315, k, GRAFITE, 'o')
   const luz = CORES.map((cor, i) => `radial-gradient(circle at ${18 + i * 13}% ${i % 2 ? 30 : 44}%, ${cor}1f, transparent 34%)`).join(',')
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:Figtree;font-weight:300 900;src:url('${fontes}/figtree-latin-wght-normal.woff2') format('woff2-variations')}
 @font-face{font-family:Nunito;font-weight:200 1000;src:url('${fontes}/nunito-latin-wght-normal.woff2') format('woff2-variations')}
 html,body{margin:0}
-body{width:1200px;height:630px;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;-webkit-font-smoothing:antialiased}
-h1{margin:0;font-size:92px;letter-spacing:-0.05em;line-height:1}
-h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800}
-.assina{display:flex;align-items:center;gap:12px;font-family:Nunito;font-weight:850;font-size:30px;letter-spacing:-0.04em}
-.assina img{width:46px;height:46px;border-radius:11px;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
+body{position:relative;width:1200px;height:630px;overflow:hidden;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+svg.s{position:absolute;inset:0}
+.nome{position:absolute;left:0;right:0;top:58px;text-align:center;font-family:Nunito;font-weight:850;font-size:50px;letter-spacing:-0.045em;line-height:1}
+.baixo{position:absolute;left:0;right:0;top:432px;display:flex;flex-direction:column;align-items:center}
+h1{margin:0;font-size:74px;letter-spacing:-0.05em;line-height:1}
+h1 span{font-weight:300} h1 b{font-weight:800}
+p{margin:16px 0 0;font-size:27px;letter-spacing:-0.015em;color:#6e6e73;font-weight:450}
+.eco{position:absolute;left:0;right:0;bottom:28px;display:flex;align-items:center;justify-content:center;gap:13px;font-size:21px;color:#6e6e73;letter-spacing:-0.01em}
+.eco img{height:21px}
 </style></head><body>
-<svg width="${larg}" height="${alt}" viewBox="${n(c.x0)} ${n(c.y0)} ${n(c.w)} ${n(c.h)}"><defs>${defs}</defs>${corpo}</svg>
-<h1><span>stay</span> <b>connected</b><i>.</i></h1>
-<div class="assina"><img src="data:image/svg+xml;base64,${Buffer.from(icone(false)).toString('base64')}" alt="">radion</div>
+<svg class="s" width="1200" height="630" viewBox="0 0 1200 630"><defs>${defs}</defs>${corpo}</svg>
+<div class="nome">radion</div>
+<div class="baixo"><h1><span>stay</span> <b>connected.</b></h1><p>O rádio do set no celular de cada equipe.</p></div>
+<div class="eco">Faz parte do ecossistema <img src="data:image/svg+xml;base64,${Buffer.from(zro).toString('base64')}" alt="Absolute ZRO"></div>
 </body></html>`
 }
 
@@ -152,7 +160,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const tmp = mkdtempSync(join(tmpdir(), 'radion-og-'))
   try {
     const arq = join(tmp, 'og.html')
-    writeFileSync(arq, og(pathToFileURL(join(pasta, '../../fontes')).href))
+    const zro = readFileSync(join(pasta, '../../../../apps/hub-web/public/brand/absolute-zro-grafite.svg'), 'utf8')
+    writeFileSync(arq, og(pathToFileURL(join(pasta, '../../fontes')).href, zro))
     await p.setViewportSize({ width: 1200, height: 630 })
     await p.goto(pathToFileURL(arq).href)
     await p.evaluate(() => document.fonts.ready)

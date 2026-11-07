@@ -21,7 +21,7 @@ function html(res, corpo) {
 
 /** O RADION na Tela de Início (Safari › Compartilhar › Adicionar à Tela de Início) e o ícone do compartilhar. */
 export const TOQUE = [
-  '<link rel="apple-touch-icon" href="/app/marca/radion-180.png" />',
+  '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
   '<link rel="manifest" href="/app/manifest.webmanifest" />',
   '<meta name="apple-mobile-web-app-capable" content="yes" />',
   '<meta name="mobile-web-app-capable" content="yes" />',

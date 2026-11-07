@@ -17,6 +17,8 @@ valem aqui; este arquivo só acrescenta.
 - O modo local (`RADIO_LOCAL=1`) é só para desenvolver: nunca ligar em produção.
 - Mudou `api/_nucleo.js` ou `app/`, rode `node scripts/para-o-hub.mjs` e o teste `tests/integration/radio.test.ts` da raiz
   (o HUB serve a cópia em absolutezro.com/radio).
+- **O círculo é o centro da logo** (titular, 07/11/2026): onde o símbolo aparece sozinho (ícone, favicon, imagem de
+  compartilhar), o rebite fica no centro exato do quadro.
 - Marca só em `scripts/marca.mjs` (depois, `node scripts/marca.mjs`); mudou a interface, `node scripts/telas-do-site.mjs`
   refaz as telas da página inicial.
 - Telas: Figtree no texto, Nunito só no logotipo; claro é o padrão; padrão Apple da raiz.
