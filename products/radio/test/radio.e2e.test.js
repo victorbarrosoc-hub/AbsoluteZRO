@@ -441,3 +441,43 @@ test('fotos da equipe: o redesenho da lista não pisca as iniciais', { skip: pul
   assert.equal(await ivo.page.evaluate(() => window.__semFoto), 0)
   assert.deepEqual(ivo.erros, [])
 })
+
+// Foto do tamanho de verdade (titular, 07/11/2026: "círculo preto" no topo e no menu): a foto da conta tem 512 px e fundo
+// escuro; ela precisa caber no círculo (cover, no centro) no topo, nos Ajustes e na equipe, nunca no tamanho real.
+test('foto da conta: cabe no círculo no topo, nos Ajustes e na equipe', { skip: pular, timeout: 90000 }, async () => {
+  const ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#000"/><circle cx="256" cy="256" r="120" fill="#e6195c"/></svg>'
+  const jo = await pessoa('Jô', navegador, async (ctx) => {
+    await ctx.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg }))
+    // no modo local não há login único: a lista de diárias devolve a foto como o radion devolve da sessão
+    await ctx.route('**/api/radio/diarias', async (r) => {
+      if (r.request().method() !== 'GET') return r.continue()
+      const resp = await r.fetch()
+      const corpo = await resp.json()
+      return r.fulfill({ response: resp, json: { ...corpo, eu: { ...corpo.eu, foto: ID } } })
+    })
+  })
+  await jo.page.click('.item[data-ir="diarias"]')
+  await jo.page.fill('#criar-nome', 'Ensaio')
+  await jo.page.click('#criar button')
+  await jo.page.waitForSelector('#noar:not([hidden])')
+  await jo.page.click('#ligar-btn')
+  const sql = postgres(pg.url, { max: 1, onnotice: () => {} })
+  await sql`update radio.membros set foto = ${ID} where nome = 'Jô'`
+  await sql.end()
+  const encaixe = (sel) =>
+    jo.page.$eval(sel, (el) => {
+      const c = getComputedStyle(el)
+      return { foto: c.backgroundImage.includes('/api/v1/foto/'), tamanho: c.backgroundSize, lugar: c.backgroundPosition, texto: c.color }
+    })
+  const certo = { foto: true, tamanho: 'cover', lugar: '50% 50%', texto: 'rgba(0, 0, 0, 0)' }
+  await jo.page.waitForSelector('#topo-av.av--foto')
+  assert.deepEqual(await encaixe('#topo-av'), certo)
+  await jo.page.click('.item[data-ir="equipe"]')
+  await jo.page.waitForSelector('#pg-equipe .quem .av.av--foto')
+  assert.deepEqual(await encaixe('#pg-equipe .quem .av.av--foto'), certo)
+  await jo.page.click('.item[data-ir="ajustes"]')
+  await jo.page.waitForSelector('#aj-av.av--foto')
+  assert.deepEqual(await encaixe('#aj-av'), certo)
+  assert.deepEqual(jo.erros, [])
+})
