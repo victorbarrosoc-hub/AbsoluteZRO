@@ -117,7 +117,7 @@ export function og(fontes) {
 html,body{margin:0}
 body{width:1200px;height:630px;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;-webkit-font-smoothing:antialiased}
 h1{margin:0;font-size:92px;letter-spacing:-0.05em;line-height:1}
-h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800;color:#0a8cff}
+h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800}
 .assina{display:flex;align-items:center;gap:12px;font-family:Nunito;font-weight:850;font-size:30px;letter-spacing:-0.04em}
 .assina img{width:46px;height:46px;border-radius:11px;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
 </style></head><body>
