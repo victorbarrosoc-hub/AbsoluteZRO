@@ -203,6 +203,20 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   iniciais por baixo quando não há foto ou ela não abre. Migração `0003_fotos` do rádio: `radio.membros.foto` guarda só
   o id público de `/api/v1/foto/<id>`; cada site monta o endereço (`%FOTO%`). A foto vem da sessão (claim `picture`) no
   `radion.absolutezro.com` e de `zro.user_avatars` (RLS) no HUB, e se atualiza ao abrir a lista, criar ou entrar.
+- ✅ **RADION no Android, som no viva-voz** (titular, 07/11/2026: no Android o som saía no alto-falante de ligação):
+  com o microfone aberto o Android trata a página como chamada. Lá o microfone abre só enquanto a pessoa fala (segurar
+  ou fala travada) e fecha ao soltar; no Ligar ele só pede a permissão. iPhone e computador seguem com o microfone
+  aberto desde o Ligar.
+- ✅ **RADION, abrir o microfone pela voz** (titular, 07/11/2026: mãos livres para eventos e sets, com lapela): nos
+  Ajustes a pessoa escolhe Botão ou Pela voz, com a sensibilidade (Baixa, Média, Alta) e um medidor ao vivo com a marca.
+  Pela voz o microfone fica aberto, a fala sai quando o nível passa da marca em 2 de 3 leituras e fecha depois de 1,2 s
+  abaixo dela; a voz vai com 0,25 s de atraso para a primeira sílaba não se perder; um toque no botão pausa e retoma,
+  segurar ainda fala. A escolha é de cada aparelho (depende do microfone ligado nele).
+- ✅ **RADION, microfone e som** (titular, 07/11/2026: "fone Bluetooth + lapela é o combo perfeito"): nos Ajustes, o
+  Microfone (o do aparelho, a lapela, o fone: a lista do que o aparelho tem) e o Som (a saída das vozes e dos bipes, onde
+  o navegador deixa escolher; no iPhone e no Android, a dica de como trocar pelo sistema). A escolha fica no aparelho,
+  pelo id e pelo nome (o navegador troca o id entre visitas); trocar com o rádio ligado não derruba a fala; microfone
+  que some (lapela desligada) volta ao do aparelho.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

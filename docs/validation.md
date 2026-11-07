@@ -198,6 +198,18 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, fotos das contas (07/11/2026): `products/radio` `npm test` 12/12 (a lista de diárias devolve `eu.foto`, só o
   id público; valor estranho vira null; quem entra com foto aparece com ela na batida da equipe e, sem foto na conta,
   sai também); `tests/integration/radio.test.ts` 5/5 (no HUB, a foto é a da própria conta pelo RLS, null sem foto).
+- RADION no Android (07/11/2026): `products/radio` `npm test` 13/13, com o teste novo de ponta a ponta no Chromium com o
+  agente de usuário do Android: depois do Ligar nenhum microfone aberto; segurando, o microfone abre e a voz chega ao
+  outro aparelho; soltando, fecha e a voz para; a fala travada abre e fecha igual. A troca de alto-falante em si só se
+  confere num Android de verdade (o Chromium de teste não escolhe saída de som).
+- RADION, pela voz (07/11/2026): `products/radio` `npm test` 14/14, com o teste novo de ponta a ponta: nos Ajustes,
+  Pela voz e sensibilidade Alta (guardadas no aparelho); com um tom contínuo no microfone falso (gerado na hora, sem voz
+  no repositório) a fala abre sozinha e a voz chega; um toque pausa (não abre mais sozinho e a voz para); outro retoma.
+  Telas dos Ajustes conferidas no celular (390 px, claro e escuro) e no computador.
+- RADION, microfone e som (07/11/2026): `products/radio` `npm test` 15/15, com o teste novo de ponta a ponta: com o rádio
+  ligado, a lista mostra os microfones com o nome de verdade; escolher um passa a mandar só ele (o antigo fecha); numa
+  nova visita, com o id trocado pelo navegador, o rádio liga com o microfone guardado (achado pelo nome). Telas
+  conferidas no celular (390 px) e no computador. A saída só se escolhe onde o navegador tem `setSinkId` (computador).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

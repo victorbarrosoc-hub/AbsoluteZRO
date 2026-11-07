@@ -55,6 +55,13 @@ export class Malha {
     this.falandoPara = null // Set de peers que estão recebendo minha voz agora
     this.recadoAtual = null
     this.calados = new Set() // peers cuja voz não toca aqui
+    this.saida = '' // saída de som escolhida nos Ajustes ('' = a do aparelho)
+  }
+
+  /** As vozes tocam nesta saída (só onde o navegador deixa escolher: setSinkId). */
+  usarSaida(id) {
+    this.saida = id || ''
+    for (const [, c] of this.conexoes) c.audio?.setSinkId?.(this.saida).catch(() => {})
   }
 
   /** A voz destes aparelhos não toca aqui (silenciados pela moderação ou por mim). */
@@ -100,6 +107,7 @@ export class Malha {
         c.audio.autoplay = true
         c.audio.setAttribute('playsinline', '')
         c.audio.hidden = true
+        if (this.saida) c.audio.setSinkId?.(this.saida).catch(() => {})
         document.body.append(c.audio)
       }
       c.audio.muted = this.calados.has(peer)
