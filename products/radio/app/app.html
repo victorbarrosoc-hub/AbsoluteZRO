@@ -59,7 +59,7 @@
           <div class="topo-dir">
             <span id="set-casa"></span>
             <button class="tema" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro"><span data-ic="sol"></span><span data-ic="lua"></span></button>
-            <button class="av av--g" id="topo-av" type="button" data-ir="ajustes" aria-label="Sua conta"></button>
+            <button class="av av--g" id="topo-av" type="button" aria-label="Sua conta e mais"></button>
           </div>
         </header>
 
@@ -102,6 +102,7 @@
                   <button class="aviso-btn" type="button" data-aviso="intervalo">Intervalo</button>
                 </div>
               </div>
+              <ul class="pessoas-cel" id="pessoas-cel" aria-label="No ar agora"></ul>
               <div class="faixa-silencio faixa-silencio--eu" id="eu-calado" hidden>
                 <span class="ico" data-ic="micoff"></span>
                 <div><b id="eu-calado-titulo"></b><small id="eu-calado-sub"></small></div>
@@ -220,6 +221,20 @@
         </main>
       </div>
 
+      <!-- celular: para quem fala, logo acima das abas, e a tela inteira enquanto fala -->
+      <div class="fala-cel" id="fala-cel" hidden>
+        <span class="base-rotulo">Falando para</span>
+        <strong id="fala-cel-nome" data-canal="geral">Geral</strong>
+        <button class="todos" id="todos-cel" type="button" hidden aria-pressed="false">Todos</button>
+      </div>
+      <div class="falando-cel" id="falando-cel" hidden aria-live="polite">
+        <span class="base-rotulo">Falando para</span>
+        <b id="falando-cel-nome" data-canal="geral">Geral</b>
+        <small id="falando-cel-sub"></small>
+        <div class="falando-cel-anel" id="falando-cel-anel" data-canal="geral"><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /></div>
+        <small id="falando-cel-dica">Solte para parar</small>
+      </div>
+
       <!-- celular: abas com o TALK no meio -->
       <nav class="abas" id="abas" aria-label="Abas">
         <button class="aba" type="button" data-ir="noar" data-ic="ar">No ar</button>
@@ -246,6 +261,20 @@
     <dialog id="setor-folha" class="folha" aria-labelledby="setor-titulo">
       <h2 id="setor-titulo"><span>Seu</span> <b>setor</b></h2>
       <div class="setores-escolha" id="setores" role="radiogroup" aria-label="Seu setor"></div>
+    </dialog>
+
+    <!-- celular: o resto do menu -->
+    <dialog id="mais-folha" class="folha folha--mais" aria-labelledby="mais-titulo">
+      <div class="mais-cabeca"><span class="av av--g" id="mais-av"></span><div><b id="mais-nome"></b><small id="mais-sub"></small></div></div>
+      <h2 id="mais-titulo" class="sr">Mais</h2>
+      <nav class="mais-lista" aria-label="Mais">
+        <button class="item" type="button" data-ir="inicio" data-ic="casa"><span class="item-rotulo">Início</span></button>
+        <button class="item" type="button" data-ir="setores" data-ic="setores" data-precisa-diaria="1"><span class="item-rotulo">Setores e responsáveis</span></button>
+        <button class="item" type="button" data-ir="convites" data-ic="qr" data-precisa-diaria="1"><span class="item-rotulo">Convites e QR</span></button>
+        <button class="item" type="button" id="mais-set" data-ic="balao" hidden><span class="item-rotulo">Set</span></button>
+        <button class="item" type="button" id="mais-apps" data-ic="apps"><span class="item-rotulo">Apps Absolute ZRO</span></button>
+        <button class="item" type="button" data-ir="ajustes" data-ic="ajustes"><span class="item-rotulo">Ajustes</span></button>
+      </nav>
     </dialog>
 
     <!-- menu de uma pessoa -->

@@ -169,6 +169,7 @@ function ir(p) {
   if (!PAGINAS.includes(p)) p = 'inicio'
   estado.pagina = p
   fecharFlutuantes()
+  if ($('mais-folha').open) $('mais-folha').close()
   for (const id of PAGINAS) $(`pg-${id}`).hidden = id !== p
   for (const b of document.querySelectorAll('.item[data-ir], .aba[data-ir]')) {
     if (b.dataset.ir === p) b.setAttribute('aria-current', 'page')
@@ -181,6 +182,7 @@ function ir(p) {
   if (location.pathname + location.search + location.hash !== alvo) history.replaceState(null, '', alvo)
   $('ligar').hidden = !(p === 'noar' && estado.diaria && !estado.ligado)
   $('base').hidden = !(p === 'noar' && estado.diaria && estado.ligado)
+  $('fala-cel').hidden = $('base').hidden
   desenharPagina()
 }
 function desenharPagina() {
@@ -404,6 +406,7 @@ $('ligar-btn').addEventListener('click', async () => {
   for (const a of document.querySelectorAll('audio')) a.play().catch(() => {})
   $('ligar').hidden = true
   $('base').hidden = estado.pagina !== 'noar'
+  $('fala-cel').hidden = $('base').hidden
   desenharBase()
   manterTelaLigada()
 })
@@ -457,7 +460,7 @@ function montarCanais() {
     ...ordem.map(([id, nome]) =>
       h(
         'article',
-        { class: 'cartao canal', dataset: { canal: id } },
+        { class: 'cartao canal', dataset: { canal: id }, onclick: (e) => !e.target.closest('button') && escolherAlvo(id) },
         h(
           'div',
           { class: 'canal-topo' },
@@ -481,7 +484,11 @@ function alternarEscuta(id) {
 }
 const anunciarEscuta = () => estado.malha?.avisar({ t: 'escuta', canais: [...estado.escuta] })
 function escolherAlvo(id) {
-  if (!podeFalarEm(id)) return
+  if (!podeFalarEm(id)) {
+    estado.erroAte = Date.now() + 3000
+    const e = estado.eu || estado.diaria
+    return mostrarErro('radio-erro', e?.papel === 'convidado' ? 'Convidado só ouve.' : 'A equipe fala no próprio setor. O Geral é do dono, da Direção e dos responsáveis.')
+  }
   estado.alvo = id
   estado.todos = false
   if (estado.modo !== 'mudo') falarAgora()
@@ -577,8 +584,27 @@ function desenharBase() {
   $('base-dica').hidden = podeTodos() && !calado
   $('base-dica').replaceChildren(...(calado ? [estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado'] : estado.modo === 'aberto' ? ['Toque fecha'] : ['Toque abre', h('br'), 'Segure fala']))
   $('ptt-texto').textContent = calado ? 'Silenciado' : estado.modo === 'aberto' ? 'Aberto' : estado.modo === 'ptt' ? 'Falando' : 'Falar'
+  // celular: para quem fala (acima das abas) e a tela inteira enquanto fala
+  const canal = alvo === 'todos' ? 'geral' : alvo
+  $('fala-cel-nome').textContent = calado ? (estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado') : NOME[alvo]
+  $('fala-cel-nome').dataset.canal = canal
+  $('todos-cel').hidden = !podeTodos()
+  $('todos-cel').setAttribute('aria-pressed', String(estado.todos))
+  const falando = estado.modo !== 'mudo'
+  $('falando-cel').hidden = !falando
+  document.documentElement.toggleAttribute('data-falando', falando)
+  if (falando) {
+    $('falando-cel-nome').textContent = NOME[alvo]
+    $('falando-cel-nome').dataset.canal = canal
+    $('falando-cel-anel').dataset.canal = canal
+    $('falando-cel').dataset.canal = canal
+    const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
+    $('falando-cel-sub').textContent = ouvem ? `${ouvem} ${ouvem === 1 ? 'pessoa ouvindo' : 'pessoas ouvindo'}` : 'Ninguém ouvindo este canal agora'
+    $('falando-cel-dica').textContent = estado.modo === 'aberto' ? 'Aberto · toque no botão para fechar' : 'Solte para parar'
+  }
   desenharFalando()
 }
+$('todos-cel').addEventListener('click', () => $('todos').click())
 $('todos').addEventListener('click', () => {
   if (!podeTodos()) return
   estado.todos = !estado.todos
@@ -669,6 +695,23 @@ function desenharPessoas() {
     )
   }
   $('pessoas').replaceChildren(...linhas)
+  $('pessoas-cel').replaceChildren(
+    ...[...vistos].map((apelido) => {
+      const p = estado.pessoas.find((x) => x.apelido === apelido)
+      const meu = apelido === estado.eu?.apelido
+      const falando = [...estado.noAr.keys()].some((peer) => estado.pessoas.find((x) => x.peer === peer)?.apelido === apelido)
+      return h(
+        'li',
+        {},
+        h(
+          'button',
+          { type: 'button', class: 'pessoa-cel', dataset: { canal: p.funcao || 'geral', mao: estado.maos.has(apelido) ? '1' : '', calado: calado(apelido) ? '1' : '', falando: falando ? '1' : '' }, 'aria-label': `${meu ? 'Você' : p.nome}${p.funcao ? `, ${NOME[p.funcao]}` : ''}`, onclick: (e) => abrirMenuPessoa(apelido, e.currentTarget) },
+          h('span', { class: 'av-casa' }, avatar(p.nome, 'av--g')),
+          h('span', {}, meu ? 'Você' : primeiro(p.nome)),
+        ),
+      )
+    }),
+  )
   $('pessoas-conta').textContent = `${vistos.size} de ${estado.membros.length}`
   pintarNiveis()
 }
@@ -1020,9 +1063,9 @@ function desenharEquipe() {
       return h(
         'div',
         { class: 'tabela-linha t-equipe' },
-        h('div', { class: 'quem' }, avatar(m.nome, 'av--g'), h('div', {}, h('b', {}, eu ? `${m.nome} (você)` : m.nome), h('small', {}, calado(m.apelido) ? 'silenciado' : estado.maos.has(m.apelido) ? 'pediu a palavra' : ''))),
+        h('div', { class: 'quem' }, avatar(m.nome, 'av--g'), h('div', {}, h('b', {}, eu ? `${m.nome} (você)` : m.nome), h('small', {}, [m.funcao ? NOME[m.funcao] : 'Sem setor', calado(m.apelido) ? 'silenciado' : estado.maos.has(m.apelido) ? 'pediu a palavra' : m.online ? 'no ar' : null].filter(Boolean).join(' · ')))),
         m.funcao ? h('span', { class: 'chip', dataset: { canal: m.funcao } }, h('span', { class: 'ponto' }), NOME[m.funcao]) : h('span', { class: 'chip' }, 'Sem setor'),
-        h('span', { class: 'chip' }, m.papel === 'dono' ? icone('coroa', 'ic ic--p') : m.papel === 'responsavel' ? icone('escudo', 'ic ic--p') : null, PAPEL[m.papel]),
+        h('span', { class: 'chip', title: PAPEL[m.papel] }, m.papel === 'dono' ? icone('coroa', 'ic ic--p') : m.papel === 'responsavel' ? icone('escudo', 'ic ic--p') : null, m.papel === 'dono' ? 'Dono' : PAPEL[m.papel]),
         h('span', { class: 'chip' }, h('span', { class: 'ponto', dataset: { canal: m.online ? 'som' : '' } }), m.online ? 'no ar' : 'fora do ar'),
         h('button', { class: 'redondo linha-pessoa', type: 'button', 'aria-label': `Opções de ${m.nome}`, 'aria-haspopup': 'menu', onclick: (e) => abrirMenuPessoa(m.apelido, e.currentTarget) }, icone('ajustes')),
       )
@@ -1161,6 +1204,23 @@ $('apps-btn').addEventListener('click', () => {
   $('apps').hidden = !abrir
   $('apps-btn').setAttribute('aria-expanded', String(abrir))
 })
+
+// ───────── celular: a folha Mais ─────────
+const celular = () => matchMedia('(max-width: 860px)').matches
+$('topo-av').addEventListener('click', () => {
+  if (!celular()) return ir('ajustes')
+  const n = estado.nome || estado.eu?.nome || ''
+  $('mais-av').textContent = iniciais(n)
+  $('mais-av').style.background = cor(n)
+  $('mais-nome').textContent = n
+  $('mais-sub').textContent = $('eu-sub').textContent
+  for (const b of $('mais-folha').querySelectorAll('[data-precisa-diaria]')) b.hidden = !estado.diaria
+  $('mais-set').hidden = $('nav-set').hidden
+  $('mais-folha').showModal()
+})
+$('mais-folha').addEventListener('click', (e) => e.target === $('mais-folha') && $('mais-folha').close())
+$('mais-set').addEventListener('click', () => ($('mais-folha').close(), $('nav-set').click()))
+$('mais-apps').addEventListener('click', () => ($('mais-folha').close(), $('apps-btn').click()))
 
 // ───────── o Set da Absolute ZRO ─────────
 function ligarSet() {

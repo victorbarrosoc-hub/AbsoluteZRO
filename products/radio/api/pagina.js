@@ -19,6 +19,16 @@ function html(res, corpo) {
   res.end(corpo)
 }
 
+/** O RADION na Tela de Início (Safari › Compartilhar › Adicionar à Tela de Início) e o ícone do compartilhar. */
+export const TOQUE = [
+  '<link rel="apple-touch-icon" href="/app/marca/radion-180.png" />',
+  '<link rel="manifest" href="/app/manifest.webmanifest" />',
+  '<meta name="apple-mobile-web-app-capable" content="yes" />',
+  '<meta name="mobile-web-app-capable" content="yes" />',
+  '<meta name="apple-mobile-web-app-title" content="RADION" />',
+  '<meta name="apple-mobile-web-app-status-bar-style" content="default" />',
+].join('\n    ')
+
 /** Os marcadores do app.html no app separado (no HUB, apps/hub-web/app/radio/route.ts põe os dele). */
 export const paraOAppSeparado = (html) =>
   html
@@ -27,7 +37,7 @@ export const paraOAppSeparado = (html) =>
     .replaceAll('%SET_API%', '/api/zro/set')
     .replaceAll('%SET%', 'https://absolutezro.com/set/v1/zro-set.js')
     .replaceAll('%SAIR%', '/api/zro/sair')
-    .replaceAll('%TOQUE%', '<link rel="apple-touch-icon" href="/app/marca/radion-180.png" />')
+    .replaceAll('%TOQUE%', TOQUE)
 
 /** A página inicial abre para todos só no lançamento (o gate do HUB abre junto; raiz CLAUDE.md). */
 export const siteAberto = () => process.env.RADION_SITE_ABERTO === '1'

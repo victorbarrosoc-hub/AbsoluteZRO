@@ -6,9 +6,10 @@
 // marca funciona sobre qualquer fundo). Pontas sobre R(t) = 6w + 1,5w·sen(πt). Rebite com raio 1,25w e o mesmo respiro.
 // No ícone do app o rebite fica no centro exato (512, 512).
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export const CORES = ['#FFB300', '#FF6B1A', '#E6195C', '#6C4DF5', '#0A8CFF', '#12B76A']
 export const GRAFITE = '#1d1d1f'
@@ -76,6 +77,32 @@ export function favicon() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(c.x0 - m)} ${n(c.y0 - m)} ${n(c.w + 2 * m)} ${n(c.h + 2 * m)}"><style>:root{--rebite:${GRAFITE}}@media (prefers-color-scheme:dark){:root{--rebite:${BRANCO}}}</style><defs>${defs}</defs>${corpo}</svg>\n`
 }
 
+/**
+ * A imagem de compartilhamento (1200 × 630), no padrão dos apps da Absolute ZRO (Relay, Maestro): fundo claro, o
+ * símbolo grande, a frase em Light × ExtraBold e o ícone com o nome embaixo. A luz atrás vem das cores dos setores.
+ */
+export function og(fontes) {
+  const c = caixa()
+  const alt = 210
+  const larg = (c.w * alt) / c.h
+  const { defs, corpo } = leque(0, 0, 1, GRAFITE, 'o')
+  const luz = CORES.map((cor, i) => `radial-gradient(circle at ${18 + i * 13}% ${i % 2 ? 30 : 44}%, ${cor}1f, transparent 34%)`).join(',')
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Figtree;font-weight:300 900;src:url('${fontes}/figtree-latin-wght-normal.woff2') format('woff2-variations')}
+@font-face{font-family:Nunito;font-weight:200 1000;src:url('${fontes}/nunito-latin-wght-normal.woff2') format('woff2-variations')}
+html,body{margin:0}
+body{width:1200px;height:630px;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;-webkit-font-smoothing:antialiased}
+h1{margin:0;font-size:92px;letter-spacing:-0.05em;line-height:1}
+h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800;color:#0a8cff}
+.assina{display:flex;align-items:center;gap:12px;font-family:Nunito;font-weight:850;font-size:30px;letter-spacing:-0.04em}
+.assina img{width:46px;height:46px;border-radius:11px;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
+</style></head><body>
+<svg width="${larg}" height="${alt}" viewBox="${n(c.x0)} ${n(c.y0)} ${n(c.w)} ${n(c.h)}"><defs>${defs}</defs>${corpo}</svg>
+<h1><span>stay</span> <b>connected</b><i>.</i></h1>
+<div class="assina"><img src="data:image/svg+xml;base64,${Buffer.from(icone(false)).toString('base64')}" alt="">radion</div>
+</body></html>`
+}
+
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
   const pasta = join(dirname(fileURLToPath(import.meta.url)), '../app/marca')
   mkdirSync(pasta, { recursive: true })
@@ -96,6 +123,18 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
     // o ícone do iPhone e do Android é quadrado: o sistema arredonda
     await p.setContent(`<html><body style="margin:0;background:transparent">${icone(false).replace('rx="228"', 'rx="0"').replace('<svg ', `<svg width="${tam}" height="${tam}" `)}</body></html>`)
     await p.screenshot({ path: join(pasta, nome), omitBackground: true })
+  }
+  // a imagem de compartilhamento (precisa das fontes de verdade: abre de um arquivo)
+  const tmp = mkdtempSync(join(tmpdir(), 'radion-og-'))
+  try {
+    const arq = join(tmp, 'og.html')
+    writeFileSync(arq, og(pathToFileURL(join(pasta, '../../fontes')).href))
+    await p.setViewportSize({ width: 1200, height: 630 })
+    await p.goto(pathToFileURL(arq).href)
+    await p.evaluate(() => document.fonts.ready)
+    await p.screenshot({ path: join(pasta, 'og.png') })
+  } finally {
+    rmSync(tmp, { recursive: true, force: true })
   }
   await b.close()
   console.log('app/marca pronta')

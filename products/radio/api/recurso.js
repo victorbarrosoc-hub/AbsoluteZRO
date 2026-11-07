@@ -27,6 +27,8 @@ export const ARQUIVOS = {
   'marca/radion-512.png': PNG,
   'marca/radion-icone.svg': SVG,
   'marca/radion-icone-escuro.svg': SVG,
+  'marca/og.png': PNG,
+  'manifest.webmanifest': 'application/manifest+json',
   'site.css': 'text/css; charset=utf-8',
   'site/computador-claro.webp': 'image/webp',
   'site/computador-escuro.webp': 'image/webp',
@@ -34,7 +36,7 @@ export const ARQUIVOS = {
   'site/celular-escuro.webp': 'image/webp',
 }
 /** O que a página inicial usa: sai para todos só no lançamento (RADION_SITE_ABERTO=1). */
-const DO_SITE = Object.fromEntries(Object.entries(ARQUIVOS).filter(([f]) => f.startsWith('marca/') || f.startsWith('site')))
+const DO_SITE = Object.fromEntries(Object.entries(ARQUIVOS).filter(([f]) => f.startsWith('marca/') || f.startsWith('site') || f === 'manifest.webmanifest'))
 const DO_LOCAL = { 'local.js': JS, 'app.css': 'text/css; charset=utf-8' }
 
 export default async function recurso(req, res) {

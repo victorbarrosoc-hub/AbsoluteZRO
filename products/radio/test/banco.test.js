@@ -106,10 +106,15 @@ test('gate: sem a claim do rádio, página neutra, recurso 404 e API 401', { ski
   assert.match((await chamar('pagina', 'GET', dentro, null, '/api/pagina?v=sobre')).corpo, /stay<\/span> <span class="forte">connected/)
   assert.match((await chamar('pagina', 'GET', null, null, '/api/pagina?v=sobre')).corpo, /indisponível/)
   assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 404)
+  assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=marca/og.png')).statusCode, 404)
+  // o ícone do compartilhar e o manifesto da Tela de Início vêm com o app
+  assert.match((await chamar('pagina', 'GET', dentro)).corpo, /rel="apple-touch-icon"[\s\S]*rel="manifest"/)
   process.env.RADION_SITE_ABERTO = '1'
   try {
     const aberto = (await chamar('pagina', 'GET', null)).corpo
     assert.match(aberto, /href="\/entrar"/)
+    assert.match(aberto, /og:image" content="https:\/\/radion\.absolutezro\.com\/app\/marca\/og\.png"/)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=marca/og.png')).statusCode, 200)
     assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 200)
     assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=app.js')).statusCode, 404)
   } finally {
