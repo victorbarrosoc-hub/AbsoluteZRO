@@ -161,8 +161,7 @@ svg { display: block; flex: none; }
 
 .av { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; flex: none; background: #8e8e93; letter-spacing: 0; }
 .av--g { width: 38px; height: 38px; font-size: 14px; }
-.av { position: relative; overflow: hidden; }
-.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.av--foto { background-size: cover; background-position: center; color: transparent; }
 .av--p { width: 20px; height: 20px; font-size: 8.5px; }
 .miolo { padding: 30px 36px 40px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .ola { font-size: 46px; letter-spacing: -0.035em; line-height: 1.05; }

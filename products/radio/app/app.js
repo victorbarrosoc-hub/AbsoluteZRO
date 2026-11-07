@@ -146,14 +146,35 @@ function cor(n) {
   return COR_AV[x % COR_AV.length]
 }
 /** Bolinha da pessoa: as iniciais na cor dela e, por cima, a foto da conta Absolute ZRO (se a foto não abrir, ficam as iniciais). */
+// Fotos que já abriram (ou falharam) nesta página. A lista da equipe é redesenhada a cada batida: com a foto como fundo
+// do círculo e a memória de quem já abriu, ela entra direto, sem piscar as iniciais (titular, 07/11/2026: "bug na foto").
+const fotos = new Map() // id → 'ok' | 'erro' | 'abrindo'
+function comFoto(el, id) {
+  el.style.backgroundImage = `url("${FOTO}${id}")`
+  el.classList.add('av--foto')
+}
 function pintarAv(el, nome, foto) {
   el.textContent = iniciais(nome)
   el.style.background = cor(nome)
+  el.classList.remove('av--foto')
+  delete el.dataset.foto
   const id = fotoValida(foto)
   if (!id || !FOTO) return el
-  const img = h('img', { src: FOTO + id, alt: '', decoding: 'async', loading: 'lazy', referrerpolicy: 'no-referrer' })
-  img.addEventListener('error', () => img.remove(), { once: true })
-  el.append(img)
+  const situacao = fotos.get(id)
+  if (situacao === 'ok') return comFoto(el, id), el
+  if (situacao === 'erro') return el
+  el.dataset.foto = id
+  if (!situacao) {
+    fotos.set(id, 'abrindo')
+    const im = new Image()
+    im.referrerPolicy = 'no-referrer'
+    im.onload = () => {
+      fotos.set(id, 'ok')
+      for (const e of document.querySelectorAll(`.av[data-foto="${id}"]`)) comFoto(e, id)
+    }
+    im.onerror = () => fotos.set(id, 'erro')
+    im.src = FOTO + id
+  }
   return el
 }
 function avatar(nome, classe = '', foto = null) {
