@@ -460,7 +460,7 @@ function montarCanais() {
     ...ordem.map(([id, nome]) =>
       h(
         'article',
-        { class: 'cartao canal', dataset: { canal: id }, onclick: (e) => !e.target.closest('button') && escolherAlvo(id) },
+        { class: 'cartao canal', dataset: { canal: id }, onclick: (e) => !e.target.closest('button') && estado.modo === 'mudo' && escolherAlvo(id) },
         h(
           'div',
           { class: 'canal-topo' },
@@ -584,24 +584,20 @@ function desenharBase() {
   $('base-dica').hidden = podeTodos() && !calado
   $('base-dica').replaceChildren(...(calado ? [estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado'] : estado.modo === 'aberto' ? ['Toque fecha'] : ['Toque abre', h('br'), 'Segure fala']))
   $('ptt-texto').textContent = calado ? 'Silenciado' : estado.modo === 'aberto' ? 'Aberto' : estado.modo === 'ptt' ? 'Falando' : 'Falar'
-  // celular: para quem fala (acima das abas) e a tela inteira enquanto fala
+  // celular: para quem fala, acima das abas; falando, a barra acende e o canal escolhido brilha (a tela não muda)
   const canal = alvo === 'todos' ? 'geral' : alvo
+  const falando = estado.modo !== 'mudo'
   $('fala-cel-nome').textContent = calado ? (estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado') : NOME[alvo]
   $('fala-cel-nome').dataset.canal = canal
-  $('todos-cel').hidden = !podeTodos()
+  $('fala-cel').dataset.canal = canal
+  $('fala-cel').toggleAttribute('data-falando', falando)
+  $('fala-cel-rotulo').textContent = falando ? (estado.modo === 'aberto' ? 'Aberto para' : 'Falando para') : 'Falar para'
+  $('todos-cel').hidden = !podeTodos() || falando
   $('todos-cel').setAttribute('aria-pressed', String(estado.todos))
-  const falando = estado.modo !== 'mudo'
-  $('falando-cel').hidden = !falando
+  // a dica diz o que o botão faz agora: segurar fala; aberto, um toque fecha (falando, o canal não troca por toque)
+  const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
+  $('fala-cel-sub').textContent = calado ? '' : estado.modo === 'aberto' ? 'Toque no botão para fechar' : falando ? (ouvem ? `${ouvem} ouvindo` : 'Ninguém ouvindo') : 'Segure para falar'
   document.documentElement.toggleAttribute('data-falando', falando)
-  if (falando) {
-    $('falando-cel-nome').textContent = NOME[alvo]
-    $('falando-cel-nome').dataset.canal = canal
-    $('falando-cel-anel').dataset.canal = canal
-    $('falando-cel').dataset.canal = canal
-    const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
-    $('falando-cel-sub').textContent = ouvem ? `${ouvem} ${ouvem === 1 ? 'pessoa ouvindo' : 'pessoas ouvindo'}` : 'Ninguém ouvindo este canal agora'
-    $('falando-cel-dica').textContent = estado.modo === 'aberto' ? 'Aberto · toque no botão para fechar' : 'Solte para parar'
-  }
   desenharFalando()
 }
 $('todos-cel').addEventListener('click', () => $('todos').click())

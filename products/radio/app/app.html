@@ -132,7 +132,7 @@
             </div>
             <button class="talk" id="ptt" type="button" aria-label="Falar: toque abre, segure para falar" data-estado="mudo" data-canal="geral">
               <svg class="talk-anel" viewBox="0 0 120 120" aria-hidden="true"><circle class="talk-anel-fundo" cx="60" cy="60" r="54" /><circle class="talk-anel-nivel" id="talk-nivel" cx="60" cy="60" r="54" /></svg>
-              <img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /><img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" />
+              <span class="talk-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></span>
               <span class="talk-texto" id="ptt-texto">Falar</span>
             </button>
             <div class="base-lado">
@@ -221,18 +221,12 @@
         </main>
       </div>
 
-      <!-- celular: para quem fala, logo acima das abas, e a tela inteira enquanto fala -->
-      <div class="fala-cel" id="fala-cel" hidden>
-        <span class="base-rotulo">Falando para</span>
+      <!-- celular: para quem fala, logo acima das abas; falando, ela acende (a tela não muda: o set continua à vista) -->
+      <div class="fala-cel" id="fala-cel" hidden aria-live="polite">
+        <span class="base-rotulo" id="fala-cel-rotulo">Falar para</span>
         <strong id="fala-cel-nome" data-canal="geral">Geral</strong>
+        <small id="fala-cel-sub">Segure para falar</small>
         <button class="todos" id="todos-cel" type="button" hidden aria-pressed="false">Todos</button>
-      </div>
-      <div class="falando-cel" id="falando-cel" hidden aria-live="polite">
-        <span class="base-rotulo">Falando para</span>
-        <b id="falando-cel-nome" data-canal="geral">Geral</b>
-        <small id="falando-cel-sub"></small>
-        <div class="falando-cel-anel" id="falando-cel-anel" data-canal="geral"><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /></div>
-        <small id="falando-cel-dica">Solte para parar</small>
       </div>
 
       <!-- celular: abas com o TALK no meio -->
@@ -240,7 +234,7 @@
         <button class="aba" type="button" data-ir="noar" data-ic="ar">No ar</button>
         <button class="aba" type="button" data-ir="diarias" data-ic="cal">Diárias</button>
         <button class="talk" id="ptt-aba" type="button" aria-label="Falar: toque abre, segure para falar" data-estado="mudo" data-canal="geral">
-          <img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /><img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" />
+          <span class="talk-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></span>
         </button>
         <button class="aba" type="button" data-ir="equipe" data-ic="gente">Equipe</button>
         <button class="aba" type="button" data-ir="avisos" data-ic="sino">Avisos</button>
