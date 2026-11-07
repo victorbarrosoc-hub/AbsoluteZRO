@@ -9,7 +9,7 @@ type Regra = (tx: Tx, p: { sub: string; nome: string; foto?: string | null }, co
 /**
  * Rota /api/v1/radio/*: sessão do HUB (cookie), origem conferida nas mutações, gate do rádio (fora dele, 404: o app não
  * lançado não aparece nem pela API) e a regra do núcleo dentro de `noRadio`. `comFoto`: a regra recebe também a foto da
- * conta (só a lista de diárias, que desenha o topo; a batida não paga a consulta).
+ * conta (só as rotas de diárias: o topo e a foto que a equipe vê; a batida não paga a consulta).
  */
 export function rotaDoRadio(regra: Regra, { mutation = false, comFoto = false } = {}) {
   return route(

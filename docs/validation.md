@@ -195,9 +195,9 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   Mac e Windows empacotados, teste de fumaça dos dois `SMOKE OK`, Release `radion-versao-de-teste` com o .dmg, o .exe
   e o `versao.json`. HUB `0064`: `tests/integration/radion-computador.test.ts` (desktop e download abertos só para o
   RADION, web/api/sso como na 0062, idempotente e sem auditoria nova).
-- RADION, foto da conta (07/11/2026): `products/radio` `npm test` 12/12 (a lista de diárias devolve `eu.foto` da sessão,
-  só o endereço público `/api/v1/foto/…`; valor estranho vira null); `tests/integration/radio.test.ts` 5/5 (no HUB, a
-  foto é a da própria conta pelo RLS, null sem foto).
+- RADION, fotos das contas (07/11/2026): `products/radio` `npm test` 12/12 (a lista de diárias devolve `eu.foto`, só o
+  id público; valor estranho vira null; quem entra com foto aparece com ela na batida da equipe e, sem foto na conta,
+  sai também); `tests/integration/radio.test.ts` 5/5 (no HUB, a foto é a da própria conta pelo RLS, null sem foto).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

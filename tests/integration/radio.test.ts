@@ -76,7 +76,7 @@ describe('rádio do set no HUB', () => {
       (tx) => tx`insert into zro.user_avatars (user_id, content_type, data) values (${o.userId}, 'image/webp', ${Buffer.from([1, 2, 3])})`,
     )
     const [a] = await db.sql`select public_id from zro.user_avatars where user_id = ${o.userId}`
-    expect(await radio.fotoDoRadio(db, actor)).toBe(`/api/v1/foto/${a!.public_id as string}`)
+    expect(await radio.fotoDoRadio(db, actor)).toBe(a!.public_id as string)
     const p = { sub: o.userId, nome: 'Foto', foto: await radio.fotoDoRadio(db, actor) }
     expect((await radio.noRadio(db, p.sub, (tx) => nucleo.listarDiarias(tx, p))).corpo).toMatchObject({ eu: { nome: 'Foto', foto: p.foto } })
   })

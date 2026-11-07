@@ -50,6 +50,14 @@ async function lerDiaria(tx, sub, id) {
 }
 
 /** GET: as diárias da pessoa. */
+/** A foto da conta (só o id público) vai para as diárias da pessoa, para a equipe ver; só quando a rota sabe a foto. */
+async function guardarFoto(tx, p, diaria = null) {
+  if (!('foto' in p)) return
+  const foto = typeof p.foto === 'string' && /^[A-Za-z0-9_-]{8,80}$/.test(p.foto) ? p.foto : null
+  if (diaria) await tx`update radio.membros set foto = ${foto} where user_sub = ${p.sub} and diaria_id = ${diaria} and foto is distinct from ${foto}`
+  else await tx`update radio.membros set foto = ${foto} where user_sub = ${p.sub} and foto is distinct from ${foto}`
+}
+
 export async function listarDiarias(tx, p) {
   const lista = await tx`
     select d.id, d.codigo, d.nome, d.criado, m.papel, m.funcao,
@@ -61,6 +69,7 @@ export async function listarDiarias(tx, p) {
     join radio.diarias d on d.id = m.diaria_id
     where m.user_sub = ${p.sub} and d.expira > now()
     order by m.entrou desc limit 30`
+  await guardarFoto(tx, p)
   return r(200, { ok: true, eu: { nome: p.nome, foto: p.foto ?? null }, diarias: lista.map(publica) })
 }
 
@@ -77,6 +86,7 @@ export async function mudarDiarias(tx, p, c) {
           await sp`insert into radio.diarias (id, codigo, nome, dono_sub) values (${id}, ${codigo}, ${nome}, ${p.sub})`
           await sp`insert into radio.membros (diaria_id, user_sub, nome, papel, funcao) values (${id}, ${p.sub}, ${p.nome}, 'dono', 'direcao')`
         })
+        await guardarFoto(tx, p, id)
         return r(201, { ok: true, diaria: await lerDiaria(tx, p.sub, id) })
       } catch (e) {
         if (e?.code !== '23505') throw e // código repetido: sorteia de novo
@@ -91,6 +101,7 @@ export async function mudarDiarias(tx, p, c) {
       .replace(/[^A-Z0-9]/g, '')
     if (!/^[A-HJ-NP-Z2-9]{6}$/.test(codigo)) return r(404, { ok: false, erro: 'codigo' })
     const [e] = await tx`select radio.entrar(${codigo}, ${p.nome}) as id`
+    if (e?.id) await guardarFoto(tx, p, e.id)
     const d = e?.id ? await lerDiaria(tx, p.sub, e.id) : null
     return d ? r(200, { ok: true, diaria: d }) : r(404, { ok: false, erro: 'codigo' })
   }
@@ -155,12 +166,12 @@ export async function bater(tx, p, c) {
   // sinal velho que ninguém pegou (aparelho que saiu) não fica
   await tx`delete from radio.sinais where de_sub = ${p.sub} and criado < now() - interval '2 minutes'`
   const pessoas = await tx`
-    select pr.peer, m.nome, m.funcao, m.papel, pr.user_sub = ${p.sub} as minha, radio.apelido(${diaria}, m.user_sub) as apelido from radio.presencas pr
+    select pr.peer, m.nome, m.foto, m.funcao, m.papel, pr.user_sub = ${p.sub} as minha, radio.apelido(${diaria}, m.user_sub) as apelido from radio.presencas pr
     join radio.membros m on m.diaria_id = pr.diaria_id and m.user_sub = pr.user_sub
     where pr.diaria_id = ${diaria} and pr.visto > now() - make_interval(secs => ${ONLINE_S})
     order by m.nome, pr.peer limit 40`
   const membros = await tx`
-    select radio.apelido(${diaria}, m.user_sub) as apelido, m.nome, m.papel, m.funcao,
+    select radio.apelido(${diaria}, m.user_sub) as apelido, m.nome, m.foto, m.papel, m.funcao,
       exists (select 1 from radio.presencas pr where pr.diaria_id = m.diaria_id and pr.user_sub = m.user_sub
         and pr.visto > now() - make_interval(secs => ${ONLINE_S})) as online
     from radio.membros m where m.diaria_id = ${diaria} order by m.nome limit 200`
@@ -195,8 +206,8 @@ export async function bater(tx, p, c) {
       podeModerar: m.papel === 'dono' || m.papel === 'responsavel',
       silenciado: meuSilencio ? { por: meuSilencio.por ?? null, ate: quando(meuSilencio.ate), motivo: meuSilencio.motivo } : null,
     },
-    pessoas: pessoas.map((x) => ({ peer: x.peer, apelido: x.apelido, nome: x.nome, funcao: x.funcao ?? null, papel: x.papel, dono: x.papel === 'dono', eu: x.peer === peer, minha: x.minha })),
-    membros: membros.map((x) => ({ apelido: x.apelido, nome: x.nome, papel: x.papel, funcao: x.funcao ?? null, online: x.online })),
+    pessoas: pessoas.map((x) => ({ peer: x.peer, apelido: x.apelido, nome: x.nome, foto: x.foto ?? null, funcao: x.funcao ?? null, papel: x.papel, dono: x.papel === 'dono', eu: x.peer === peer, minha: x.minha })),
+    membros: membros.map((x) => ({ apelido: x.apelido, nome: x.nome, foto: x.foto ?? null, papel: x.papel, funcao: x.funcao ?? null, online: x.online })),
     silenciados: silenciados.map((x) => ({ apelido: x.apelido, por: x.por ?? null, ate: quando(x.ate), motivo: x.motivo })),
     maos: maos.map((x) => x.apelido),
     silencio: {

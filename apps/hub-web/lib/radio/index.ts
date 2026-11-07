@@ -23,10 +23,10 @@ export async function acessoAoRadio(db: Database, auth: Authenticated | null): P
   }
 }
 
-/** A foto da conta (perfil único): o endereço público de /api/v1/foto, ou null sem foto. Só a da própria pessoa (RLS). */
+/** A foto da conta (perfil único): o id público de /api/v1/foto/<id>, ou null sem foto. Só a da própria pessoa (RLS). */
 export async function fotoDoRadio(db: Database, actor: Actor): Promise<string | null> {
   const [r] = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`select public_id from zro.user_avatars where user_id = ${actor.userId}`)
-  return r ? `/api/v1/foto/${r.public_id as string}` : null
+  return r ? (r.public_id as string) : null
 }
 
 /** Quem fala no rádio: o id da conta (o `sub` do login único) e o nome de exibição. */

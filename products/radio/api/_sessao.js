@@ -14,7 +14,7 @@ const hostLocal = (req) => /^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(String(r
 
 export const modoLocal = (req) => !configurado() && process.env.RADIO_LOCAL === '1' && hostLocal(req)
 
-/** A pessoa da sessão, já passada pelo gate, ou null. { sub, nome, foto, org } (a foto é o endereço público da conta) */
+/** A pessoa da sessão, já passada pelo gate, ou null. { sub, nome, foto, org } (foto: o id público da foto da conta) */
 export function pessoaDe(req) {
   if (modoLocal(req)) {
     const v = lerCookie(req, 'rd_local')
@@ -29,7 +29,8 @@ export function pessoaDe(req) {
   }
   const c = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
   if (!c || typeof c.sub !== 'string' || !temAcesso(c.apps)) return null
-  const foto = typeof c.foto === 'string' && /^https:\/\/[a-z0-9.-]+(:\d{1,5})?\/api\/v1\/foto\/[A-Za-z0-9_-]{8,80}$/.test(c.foto) ? c.foto : null
+  // a foto da conta: só o id público do fim de /api/v1/foto/<id> (o endereço já foi conferido contra a Absolute ZRO no login)
+  const foto = (typeof c.foto === 'string' && /\/api\/v1\/foto\/([A-Za-z0-9_-]{8,80})$/.exec(c.foto)?.[1]) || null
   return { sub: c.sub, nome: nomeLimpo(c.nome) || nomeLimpo(String(c.email || '').split('@')[0]) || 'Pessoa', foto, org: c.org?.id || null }
 }
 

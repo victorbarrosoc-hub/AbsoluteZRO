@@ -6,4 +6,4 @@ import { rotaDoRadio } from '@/lib/radio/api'
  * dono, na Direção), entrar pelo código, escolher a função. RADION (ADR 0042), não lançado: fora do gate, 404.
  */
 export const GET = rotaDoRadio(listarDiarias, { comFoto: true })
-export const POST = rotaDoRadio(mudarDiarias, { mutation: true })
+export const POST = rotaDoRadio(mudarDiarias, { mutation: true, comFoto: true })
