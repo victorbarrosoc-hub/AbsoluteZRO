@@ -161,8 +161,9 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   Domínio `radion.absolutezro.com` ligado ao projeto Vercel `radion` (antes `radio`) (07/11/2026, página neutra até o
   login); `radio.absolutezro.com` redireciona (308). No ar em 07/11/2026: cliente `radio-web` cadastrado, variáveis do
   `radion` postas pelo titular (banco pelo pooler de transação `aws-1-sa-east-1`), `/api/radio/saude` com 2 migrações e o
-  titular entrou pelo celular. No celular o TALK não troca mais de tela: falando, a barra e o canal escolhido acendem
-  (pedido do titular, 07/11/2026).
+  titular entrou pelo celular. No celular o TALK volta a ser o microfone (como antes do leque) e não troca de tela:
+  falando, a barra e o canal escolhido acendem; com o microfone aberto, tocar num canal não troca o destino; segurar
+  não abre o menu de imagem do iPhone (pedido do titular, 07/11/2026).
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

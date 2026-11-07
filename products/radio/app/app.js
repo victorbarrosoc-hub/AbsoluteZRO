@@ -460,7 +460,7 @@ function montarCanais() {
     ...ordem.map(([id, nome]) =>
       h(
         'article',
-        { class: 'cartao canal', dataset: { canal: id }, onclick: (e) => !e.target.closest('button') && escolherAlvo(id) },
+        { class: 'cartao canal', dataset: { canal: id }, onclick: (e) => !e.target.closest('button') && estado.modo === 'mudo' && escolherAlvo(id) },
         h(
           'div',
           { class: 'canal-topo' },
@@ -594,12 +594,9 @@ function desenharBase() {
   $('fala-cel-rotulo').textContent = falando ? (estado.modo === 'aberto' ? 'Aberto para' : 'Falando para') : 'Falar para'
   $('todos-cel').hidden = !podeTodos() || falando
   $('todos-cel').setAttribute('aria-pressed', String(estado.todos))
-  const sub = $('fala-cel-sub')
-  sub.hidden = !falando
-  if (falando) {
-    const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
-    sub.textContent = ouvem ? `${ouvem} ouvindo` : 'ninguém ouvindo'
-  }
+  // a dica diz o que o botão faz agora: segurar fala; aberto, um toque fecha (falando, o canal não troca por toque)
+  const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
+  $('fala-cel-sub').textContent = calado ? '' : estado.modo === 'aberto' ? 'Toque no botão para fechar' : falando ? (ouvem ? `${ouvem} ouvindo` : 'Ninguém ouvindo') : 'Segure para falar'
   document.documentElement.toggleAttribute('data-falando', falando)
   desenharFalando()
 }

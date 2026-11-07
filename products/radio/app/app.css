@@ -292,11 +292,13 @@ svg { display: block; flex: none; }
 .base-dica { font-size: 12px; color: var(--apoio); font-weight: 600; text-align: right; line-height: 1.35; }
 .talk { position: relative; width: 78px; height: 78px; border-radius: 50%; background: var(--tinta-btn); display: grid; place-items: center; box-shadow: 0 0 0 5px rgba(29, 29, 31, 0.1), 0 10px 24px -8px rgba(0, 0, 0, 0.5); touch-action: none; user-select: none; -webkit-user-select: none; flex: none; transition: transform 0.12s; }
 .talk:active { transform: scale(0.96); }
-.talk .simbolo { height: 32px; }
-.talk .simbolo--branco { display: block; }
-.talk .simbolo--grafite { display: none; }
-[data-tema='escuro'] .talk .simbolo--branco { display: none; }
-[data-tema='escuro'] .talk .simbolo--grafite { display: block; }
+/* segurar o TALK no iPhone não abre menu de imagem nem seleção de texto */
+.talk, .talk *, .canal, .abas, .fala-cel { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.talk * { pointer-events: none; }
+.talk-icone svg { width: 30px; height: 30px; display: block; fill: none; stroke: var(--fundo); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.talk[data-estado='aberto'], .talk[data-estado='ptt'] { background: var(--c, #0a8cff); }
+.talk[data-estado='aberto'] .talk-icone svg, .talk[data-estado='ptt'] .talk-icone svg { stroke: #fff; }
+[data-tema='escuro'] .talk[data-estado='aberto'][data-canal='geral'] .talk-icone svg, [data-tema='escuro'] .talk[data-estado='ptt'][data-canal='geral'] .talk-icone svg { stroke: #1d1d1f; }
 .talk-anel { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); transform: rotate(-90deg); pointer-events: none; }
 .talk-anel circle { fill: none; stroke-width: 4; }
 .talk-anel-fundo { stroke: transparent; }
@@ -528,7 +530,7 @@ svg { display: block; flex: none; }
   .aba[aria-current='page'] { color: var(--tinta); }
   .aba .ic { width: 22px; height: 22px; }
   .abas .talk { width: 64px; height: 64px; margin-top: -28px; }
-  .abas .talk .simbolo { height: 27px; }
+  .abas .talk .talk-icone svg { width: 27px; height: 27px; }
   .abas .talk-texto { display: none; }
 }
 
