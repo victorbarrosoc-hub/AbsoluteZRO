@@ -206,6 +206,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   Pela voz e sensibilidade Alta (guardadas no aparelho); com um tom contínuo no microfone falso (gerado na hora, sem voz
   no repositório) a fala abre sozinha e a voz chega; um toque pausa (não abre mais sozinho e a voz para); outro retoma.
   Telas dos Ajustes conferidas no celular (390 px, claro e escuro) e no computador.
+- RADION, microfone e som (07/11/2026): `products/radio` `npm test` 15/15, com o teste novo de ponta a ponta: com o rádio
+  ligado, a lista mostra os microfones com o nome de verdade; escolher um passa a mandar só ele (o antigo fecha); numa
+  nova visita, com o id trocado pelo navegador, o rádio liga com o microfone guardado (achado pelo nome). Telas
+  conferidas no celular (390 px) e no computador. A saída só se escolhe onde o navegador tem `setSinkId` (computador).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

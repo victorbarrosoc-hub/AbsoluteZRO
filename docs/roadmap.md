@@ -212,6 +212,11 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   Pela voz o microfone fica aberto, a fala sai quando o nível passa da marca em 2 de 3 leituras e fecha depois de 1,2 s
   abaixo dela; a voz vai com 0,25 s de atraso para a primeira sílaba não se perder; um toque no botão pausa e retoma,
   segurar ainda fala. A escolha é de cada aparelho (depende do microfone ligado nele).
+- ✅ **RADION, microfone e som** (titular, 07/11/2026: "fone Bluetooth + lapela é o combo perfeito"): nos Ajustes, o
+  Microfone (o do aparelho, a lapela, o fone: a lista do que o aparelho tem) e o Som (a saída das vozes e dos bipes, onde
+  o navegador deixa escolher; no iPhone e no Android, a dica de como trocar pelo sistema). A escolha fica no aparelho,
+  pelo id e pelo nome (o navegador troca o id entre visitas); trocar com o rádio ligado não derruba a fala; microfone
+  que some (lapela desligada) volta ao do aparelho.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

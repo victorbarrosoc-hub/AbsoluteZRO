@@ -45,8 +45,9 @@ after(async () => {
   await pg?.fechar()
 })
 
-async function pessoa(nome, nav = navegador) {
+async function pessoa(nome, nav = navegador, antes = null) {
   const ctx = await nav.newContext({ permissions: ['microphone'] })
+  if (antes) await antes(ctx)
   const page = await ctx.newPage()
   const erros = []
   page.on('pageerror', (e) => erros.push(String(e)))
@@ -349,4 +350,54 @@ test('pela voz: abre sozinho com o som do microfone, um toque pausa e outro reto
   await fe.page.click('#ptt')
   await fe.page.waitForFunction(() => document.getElementById('ptt').dataset.estado === 'ptt', null, { timeout: 15000 })
   assert.deepEqual([...fe.erros, ...gil.erros], [])
+})
+
+// Microfone e som (titular, 07/11/2026: "fone Bluetooth + lapela"): nos Ajustes, a lista do que o aparelho tem; trocar o
+// microfone com o rádio ligado passa a mandar o escolhido; a escolha fica guardada no aparelho.
+test('microfone e som: lista dos aparelhos, troca com o rádio ligado e fica guardado', { skip: pular, timeout: 90000 }, async () => {
+  // conta as trilhas do microfone que a página abre (o nome diz de qual aparelho)
+  const hi = await pessoa('Hel', navegador, (ctx) =>
+    ctx.addInitScript(() => {
+      const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+      window.__trilhas = []
+      navigator.mediaDevices.getUserMedia = async (c) => {
+        const m = await pedir(c)
+        window.__trilhas.push(...m.getAudioTracks())
+        return m
+      }
+    }),
+  )
+  const viva = () => hi.page.evaluate(() => window.__trilhas.filter((t) => t.readyState === 'live').map((t) => t.label))
+  await hi.page.click('.item[data-ir="diarias"]')
+  await hi.page.fill('#criar-nome', 'Show')
+  await hi.page.click('#criar button')
+  await hi.page.waitForSelector('#noar:not([hidden])')
+  await hi.page.click('#ligar-btn')
+  await hi.page.click('.item[data-ir="ajustes"]')
+  await hi.page.waitForFunction(() => document.querySelectorAll('#aj-mic option').length > 2)
+  const opcoes = await hi.page.$$eval('#aj-mic option', (os) => os.map((o) => [o.value, o.textContent]))
+  assert.equal(opcoes[0][1], 'O do aparelho')
+  const [id, nome] = opcoes[2]
+  assert.ok(id && nome && !/^Microfone \d/.test(nome), 'com a permissão, os nomes de verdade')
+  await hi.page.selectOption('#aj-mic', id)
+  // a página passa a usar o escolhido e fecha o antigo (o rádio segue ligado)
+  await hi.page.waitForFunction((n) => {
+    const vivas = window.__trilhas.filter((t) => t.readyState === 'live')
+    return vivas.length === 1 && vivas[0].label === n
+  }, nome)
+  assert.deepEqual(await viva(), [nome])
+  assert.equal(await hi.page.evaluate(() => localStorage.getItem('rd_mic')), id)
+  // de volta (outra visita): o rádio já liga com o microfone guardado
+  await hi.page.reload()
+  await hi.page.waitForSelector('#ligar:not([hidden])')
+  await hi.page.click('#ligar-btn')
+  await hi.page.waitForFunction((n) => window.__trilhas.some((t) => t.readyState === 'live' && t.label === n), nome)
+  await hi.page.click('.item[data-ir="ajustes"]')
+  await hi.page.waitForSelector('#pg-ajustes:not([hidden])')
+  // o navegador pode ter trocado o id do aparelho na nova visita: a escolha segue pelo nome
+  await hi.page.waitForFunction((n) => document.getElementById('aj-mic').selectedOptions[0]?.textContent === n, nome)
+  // a saída: escolhe onde o navegador deixa (computador); senão, a dica de como trocar no celular
+  const podeSaida = await hi.page.evaluate(() => !document.getElementById('aj-som-casa').hidden)
+  assert.ok(podeSaida || (await hi.page.textContent('#aj-som-sub')).length > 10)
+  assert.deepEqual(hi.erros, [])
 })

@@ -401,11 +401,13 @@ svg { display: block; flex: none; }
 .ajuste > div { flex: 1; min-width: 0; }
 .ajuste--escolha { flex-wrap: wrap; }
 .ajuste > .segmento { flex: none; }
+.ajuste > .campo--aj { flex: 0 1 280px; min-width: 0; }
+.campo--aj select { text-overflow: ellipsis; }
 .voz-medidor { position: relative; height: 6px; margin-top: 10px; border-radius: 3px; background: var(--campo); max-width: 320px; }
 .voz-medidor i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 3px; background: var(--verde); transition: width 0.1s linear; }
 .voz-medidor b { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--tinta); }
 @media (max-width: 560px) {
-  .ajuste--escolha > .segmento { flex: 1 1 100%; }
+  .ajuste--escolha > .segmento, .ajuste--escolha > .campo--aj { flex: 1 1 100%; }
   .ajuste--escolha .segmento button { flex: 1; }
 }
 .ajuste b { display: block; font-size: 15px; }

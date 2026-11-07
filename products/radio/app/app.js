@@ -7,7 +7,7 @@
 import { icone, porIcones } from './icones.js'
 import { Malha } from './rtc.js'
 import { desenharQr } from './qr.js'
-import { contextoDeAudio, destravarSom, somAviso, somComeca, somTermina } from './som.js'
+import { contextoDeAudio, destravarSom, saidaDosSons, somAviso, somComeca, somTermina } from './som.js'
 
 const $ = (id) => document.getElementById(id)
 const meta = (n) => document.querySelector(`meta[name="${n}"]`)?.content ?? ''
@@ -448,7 +448,8 @@ async function abrirDiaria(d) {
       aoRecado: recado,
       aoAbrir: (peer) => estado.malha.enviar(peer, { t: 'escuta', canais: [...estado.escuta] }),
     })
-    if (estado.trilha) estado.malha.usarMicrofone(estado.trilha)
+    estado.malha.usarSaida(estado.somEscolhido)
+    if (estado.trilha) estado.malha.usarMicrofone(estado.envio?.trilha || estado.trilha)
     montarCanais()
   }
   desenharCasca()
@@ -502,10 +503,43 @@ function podeFalarEm(canal) {
 // o viva-voz. No iPhone e no computador ele segue aberto desde o Ligar (a fala sai na hora).
 const MIC_SOB_DEMANDA = navigator.userAgentData?.platform === 'Android' || /Android/i.test(navigator.userAgent)
 const AUDIO_MIC = { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+// Microfone e saída escolhidos nos Ajustes (titular, 07/11/2026: "fone Bluetooth + lapela"): o id do aparelho, que o
+// navegador dá por site e o RADION guarda só neste aparelho. Microfone que sumiu (lapela desligada): volta ao do aparelho.
+const PODE_SAIDA = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype
+/** O aparelho escolhido agora: o navegador pode trocar o id entre visitas, então reencontra pelo nome guardado. */
+async function acharAparelho(tipo, id, nome) {
+  if (!id && !nome) return ''
+  try {
+    const lista = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === tipo)
+    const d = lista.find((x) => x.deviceId === id) || (nome && lista.find((x) => x.label === nome))
+    return d?.deviceId || id
+  } catch {
+    return id
+  }
+}
+async function pedirMic() {
+  const id = await acharAparelho('audioinput', estado.micEscolhido, estado.micNome)
+  if (id && id !== estado.micEscolhido) {
+    estado.micEscolhido = id
+    gravarPref('rd_mic', id)
+  }
+  if (id) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: { ...AUDIO_MIC, deviceId: { exact: id } } })
+    } catch (e) {
+      if (e?.name !== 'OverconstrainedError' && e?.name !== 'NotFoundError') throw e
+      estado.micSumiu = true
+    }
+  }
+  return navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
+}
 const temMic = () => Boolean(estado.trilha || (MIC_SOB_DEMANDA && estado.micLiberado))
 /** Liga o microfone a este aparelho: a malha manda esta trilha e o anel do TALK mede o nível dela. */
 function usarTrilha(m) {
-  estado.trilha = m.getAudioTracks()[0] || null
+  const t = m.getAudioTracks()[0] || null
+  estado.trilha = t
+  // o microfone sumiu no meio (lapela desligou, fone saiu): volta ao do aparelho sem desligar o rádio
+  t?.addEventListener('ended', () => estado.trilha === t && estado.ligado && trocarMic())
   const ctx = contextoDeAudio()
   estado.medidorMic?.fonte?.disconnect()
   estado.medidorMic = null
@@ -560,7 +594,7 @@ const possoFalar = () => Boolean(temMic() && estado.eu && !estado.eu.silenciado 
 $('ligar-btn').addEventListener('click', async () => {
   destravarSom()
   try {
-    const m = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
+    const m = await pedirMic()
     estado.micLiberado = true
     if (MIC_SOB_DEMANDA && !estado.porVoz) {
       // só para pedir a permissão agora (no toque): o microfone fecha e abre de novo a cada fala
@@ -571,6 +605,8 @@ $('ligar-btn').addEventListener('click', async () => {
     mostrarErro('radio-erro', 'Sem microfone, você só ouve. Libere nos ajustes do navegador.')
   }
   estado.ligado = true
+  aplicarSaida()
+  if (estado.pagina === 'ajustes') desenharAjustes()
   for (const a of document.querySelectorAll('audio')) a.play().catch(() => {})
   $('ligar').hidden = true
   $('base').hidden = estado.pagina !== 'noar'
@@ -1128,9 +1164,7 @@ function escolherFala(voz) {
   gravarPref('rd_fala', voz ? 'voz' : 'botao')
   if (estado.ligado) {
     if (voz && !estado.trilha && estado.micLiberado)
-      navigator.mediaDevices
-        .getUserMedia({ audio: AUDIO_MIC })
-        .then((m) => (estado.porVoz && estado.ligado ? usarTrilha(m) : m.getTracks().forEach((t) => t.stop())))
+      pedirMic().then((m) => (estado.porVoz && estado.ligado ? usarTrilha(m) : m.getTracks().forEach((t) => t.stop())))
         .catch(() => mostrarErro('radio-erro', 'Sem microfone, você só ouve. Libere nos ajustes do navegador.'))
     else if (!voz && MIC_SOB_DEMANDA) soltarTrilha()
     else montarEnvio()
@@ -1163,6 +1197,100 @@ function ouvirVoz(v) {
   }
 }
 
+// ───────── microfone e som: qual aparelho (Ajustes) ─────────
+function lerTexto(chave) {
+  try {
+    const v = localStorage.getItem(chave)
+    return typeof v === 'string' && v.length <= 200 ? v : ''
+  } catch {
+    return ''
+  }
+}
+estado.micEscolhido = lerTexto('rd_mic')
+estado.micNome = lerTexto('rd_mic_nome')
+estado.somEscolhido = PODE_SAIDA ? lerTexto('rd_som') : ''
+estado.somNome = PODE_SAIDA ? lerTexto('rd_som_nome') : ''
+saidaDosSons(estado.somEscolhido)
+/** A saída guardada, reencontrada pelo nome se o id mudou (vale para as vozes e para os bipes). */
+async function aplicarSaida() {
+  if (!PODE_SAIDA) return
+  const id = await acharAparelho('audiooutput', estado.somEscolhido, estado.somNome)
+  if (id !== estado.somEscolhido) {
+    estado.somEscolhido = id
+    gravarPref('rd_som', id)
+  }
+  saidaDosSons(estado.somEscolhido)
+  estado.malha?.usarSaida(estado.somEscolhido)
+}
+/** Troca o microfone com o rádio ligado: abre o novo, passa a mandar ele e só então fecha o antigo. */
+async function trocarMic() {
+  if (!estado.ligado || !estado.trilha) return // fechado (Android pelo botão): a próxima fala já abre o escolhido
+  try {
+    const velho = estado.trilha
+    const m = await pedirMic()
+    if (!estado.ligado) return m.getTracks().forEach((t) => t.stop())
+    usarTrilha(m)
+    velho.stop()
+  } catch {
+    mostrarErro('radio-erro', 'Não deu para abrir esse microfone. Confira se ele está ligado.')
+  }
+  if (estado.pagina === 'ajustes') desenharAparelhos()
+}
+const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+/** As listas de microfone e de saída, com o que o aparelho tem agora (os nomes só aparecem depois da permissão). */
+async function desenharAparelhos() {
+  let lista = []
+  try {
+    lista = await navigator.mediaDevices.enumerateDevices()
+  } catch {
+    // sem lista: fica só o do aparelho
+  }
+  const opcoes = (sel, tipo, escolhido, nome, nomeGuardado) => {
+    const daqui = lista.filter((d) => d.kind === tipo && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')
+    sel.replaceChildren(
+      h('option', { value: '' }, 'O do aparelho'),
+      ...daqui.map((d, i) => h('option', { value: d.deviceId }, d.label || `${nome} ${i + 1}`)),
+    )
+    const achado = daqui.find((d) => d.deviceId === escolhido) || (nomeGuardado && daqui.find((d) => d.label === nomeGuardado))
+    sel.value = achado ? achado.deviceId : ''
+    return daqui
+  }
+  const mics = opcoes($('aj-mic'), 'audioinput', estado.micEscolhido, 'Microfone', estado.micNome)
+  const semNomes = mics.length > 0 && mics.every((d) => !d.label)
+  $('aj-mic-sub').textContent = estado.micSumiu
+    ? 'O microfone escolhido não está ligado: usando o do aparelho.'
+    : semNomes || !mics.length
+      ? 'Ligue o rádio para ver a lapela e o fone.'
+      : 'A lapela ou o fone, se estiverem ligados.'
+  const saidas = PODE_SAIDA ? opcoes($('aj-som'), 'audiooutput', estado.somEscolhido, 'Saída', estado.somNome) : []
+  const escolhe = PODE_SAIDA && saidas.length > 0
+  $('aj-som-casa').hidden = !escolhe
+  $('aj-som-sub').textContent = escolhe
+    ? 'Onde as vozes e os avisos tocam.'
+    : IOS
+      ? 'No iPhone, escolha na Central de Controle (o ícone do AirPlay no player).'
+      : 'No celular, o som vai para o fone Bluetooth conectado; sem fone, para o alto-falante.'
+}
+const nomeDaOpcao = (sel) => (sel.value ? sel.selectedOptions[0]?.textContent || '' : '')
+$('aj-mic').addEventListener('change', () => {
+  estado.micEscolhido = $('aj-mic').value
+  estado.micNome = nomeDaOpcao($('aj-mic'))
+  estado.micSumiu = false
+  gravarPref('rd_mic', estado.micEscolhido)
+  gravarPref('rd_mic_nome', estado.micNome)
+  trocarMic()
+  desenharAparelhos()
+})
+$('aj-som').addEventListener('change', () => {
+  estado.somEscolhido = $('aj-som').value
+  estado.somNome = nomeDaOpcao($('aj-som'))
+  gravarPref('rd_som', estado.somEscolhido)
+  gravarPref('rd_som_nome', estado.somNome)
+  saidaDosSons(estado.somEscolhido)
+  estado.malha?.usarSaida(estado.somEscolhido)
+})
+navigator.mediaDevices?.addEventListener?.('devicechange', () => estado.pagina === 'ajustes' && desenharAparelhos())
+
 // ───────── falar: o TALK ─────────
 const deveOuvir = (peer) => (estado.todos ? true : escutaDe(peer).has(estado.alvo))
 function falarAgora() {
@@ -1185,7 +1313,7 @@ function abrirMic(modo) {
 async function pegarMicDaFala() {
   const vez = (estado.vezDaFala = (estado.vezDaFala || 0) + 1)
   try {
-    const m = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
+    const m = await pedirMic()
     if (vez !== estado.vezDaFala || estado.modo === 'mudo' || !estado.ligado) {
       for (const t of m.getTracks()) t.stop()
       return
@@ -1623,6 +1751,7 @@ function desenharAjustes() {
   $('aj-voz-limiar').style.left = `${Math.round(escala(LIMIAR[estado.sens]) * 100)}%`
   $('aj-voz-sub').textContent = estado.ligado ? 'Fale normalmente: a barra passa da marca e o microfone abre.' : 'Ligue o rádio para ver o nível.'
   if (!estado.ligado) $('aj-voz-nivel').style.width = '0'
+  desenharAparelhos()
 }
 $('aj-fala').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-fala]')

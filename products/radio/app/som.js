@@ -2,13 +2,21 @@
 // falar e o toque de cada aviso de set. O contexto só nasce num toque (regra do iPhone).
 
 let ctx = null
+let saida = ''
 
 export function destravarSom() {
   if (!ctx) {
     const C = window.AudioContext || window.webkitAudioContext
     if (C) ctx = new C()
+    if (saida) ctx?.setSinkId?.(saida).catch?.(() => {})
   }
   ctx?.resume?.().catch(() => {})
+}
+
+/** Saída escolhida nos Ajustes (onde o navegador deixa escolher): os bipes e avisos tocam nela. '' = a do aparelho. */
+export function saidaDosSons(id) {
+  saida = id || ''
+  ctx?.setSinkId?.(saida).catch?.(() => {})
 }
 
 function bip(freq, inicio, dur, volume = 0.12) {
