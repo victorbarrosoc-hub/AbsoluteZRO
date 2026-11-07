@@ -8,6 +8,7 @@ export const DESKTOP_LOGIN_NOMES: Record<DesktopLoginApp, string> = {
   tpeasy: 'TPeasy',
   carrodofreela: 'Carro do Freela',
   rift: 'Rift Motion',
+  radion: 'RADION',
 }
 
 /** Endereço canônico do pedido (só os campos conhecidos, já validados). */

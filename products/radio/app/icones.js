@@ -42,6 +42,8 @@ const TRACOS = {
   cadeado: 'M5 10.5h14v10H5zM8 10.5V7.5a4 4 0 0 1 8 0v3',
   check: 'm5 12 4.5 4.5L19 7',
   info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 7.5h.01',
+  compacto: 'M3.5 5h17v14h-17zM12.5 12h5v4h-5z',
+  expandir: 'M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7',
   lapis: 'M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16zM13.5 6.5l4 4',
   x: 'M6 6l12 12M18 6 6 18',
 }

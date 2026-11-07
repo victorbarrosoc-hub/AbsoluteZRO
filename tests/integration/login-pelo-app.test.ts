@@ -42,7 +42,7 @@ const trocar = (code: string, extra: Partial<{ verifier: string; state: string; 
 
 describe('pedido do app: lista fechada e formato', () => {
   it('aceita só os esquemas da lista e monta o deep link com o esquema dela', () => {
-    expect([...DESKTOP_LOGIN_APPS].sort()).toEqual(['absolutezro', 'carrodofreela', 'maestro', 'relay', 'rift', 'tpeasy'])
+    expect([...DESKTOP_LOGIN_APPS].sort()).toEqual(['absolutezro', 'carrodofreela', 'maestro', 'radion', 'relay', 'rift', 'tpeasy'])
     for (const app of DESKTOP_LOGIN_APPS) {
       const r = parseDesktopLoginRequest({ app, state: STATE, challenge: challengeOf(VERIFIER) })
       expect(r.ok).toBe(true)
