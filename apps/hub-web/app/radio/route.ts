@@ -1,5 +1,5 @@
 /**
- * GET /radio — o rádio do set dentro do HUB (ADR 0042). Não lançado: só para quem passa no gate (admin da plataforma ou
+ * GET /radio — o RADION dentro do HUB (ADR 0042). Não lançado: só para quem passa no gate (admin da plataforma ou
  * a lista de acesso). Sem sessão (o link aberto num navegador que não está na conta, como o de dentro do WhatsApp ou do
  * Instagram), vai para o entrar da Absolute ZRO e volta para cá, com o código da diária; nada do app aparece no caminho.
  * Com sessão e sem acesso, 404 sem dizer se o app existe. A página e os scripts vêm de lib/radio/arquivos.ts (cópia
@@ -26,7 +26,12 @@ export async function GET(req: Request) {
     return new Response(null, { status: 303, headers: { location: destino.pathname + destino.search, 'cache-control': 'no-store' } })
   }
   if (!(await acessoAoRadio(db(), auth))) return nada()
-  const html = RADIO_ARQUIVOS['app.html']!.corpo.replaceAll('%BASE%', '/radio').replaceAll('%API%', '/api/v1/radio')
+  const html = RADIO_ARQUIVOS['app.html']!.corpo.replaceAll('%BASE%', '/radio')
+    .replaceAll('%API%', '/api/v1/radio')
+    .replaceAll('%SET_API%', '/api/v1/set')
+    .replaceAll('%SET%', '/set/v1/zro-set.js')
+    .replaceAll('%SAIR%', '/api/v1/auth/logout')
+    .replaceAll('%TOQUE%', '')
   return new Response(html, {
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex, nofollow' },
   })

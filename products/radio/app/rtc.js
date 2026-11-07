@@ -6,6 +6,9 @@
 // dados); ao fechar, sai de todas. Quem não escuta aquele canal não recebe nem um byte da fala. Várias pessoas falam ao
 // mesmo tempo (full duplex): cada conexão traz a voz de um aparelho e o navegador mistura.
 //
+// Silêncio (moderação do RADION): o servidor diz quem está silenciado; este aparelho corta a voz que chega de quem está
+// (e de quem a pessoa silenciou só para si) e não manda a própria voz quando é ela que está.
+//
 // Servidores de conexão: os que o servidor manda (/ice: STUN e, com a chave da Cloudflare, TURN, a ponte para redes que
 // não se alcançam direto, como 4G com CGNAT). Sem TURN, a lista da equipe mostra quem ficou "conectando".
 
@@ -51,6 +54,13 @@ export class Malha {
     this.trilha = null
     this.falandoPara = null // Set de peers que estão recebendo minha voz agora
     this.recadoAtual = null
+    this.calados = new Set() // peers cuja voz não toca aqui
+  }
+
+  /** A voz destes aparelhos não toca aqui (silenciados pela moderação ou por mim). */
+  calarDe(peers) {
+    this.calados = new Set(peers)
+    for (const [peer, c] of this.conexoes) if (c.audio) c.audio.muted = this.calados.has(peer)
   }
 
   usarMicrofone(trilha) {
@@ -92,6 +102,7 @@ export class Malha {
         c.audio.hidden = true
         document.body.append(c.audio)
       }
+      c.audio.muted = this.calados.has(peer)
       c.audio.srcObject = new MediaStream([e.track])
       c.audio.play().catch(() => {})
     })

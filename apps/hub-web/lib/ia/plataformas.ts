@@ -43,9 +43,10 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
     ],
   },
   radio: {
-    nome: 'Rádio do set (nome provisório)',
+    nome: 'RADION (radion.absolutezro.com)',
     faz: [
-      'Voz por botão para a equipe da diária, no navegador do celular: diária com código e QR, canal Geral e canal da função (Câmera, Som, Luz…), segurar para falar, avisos de set (Silêncio, Ação, Corta, Intervalo) e tela de cue para o elenco.',
+      'O rádio do set, no navegador do celular: diária com código e QR, um canal por setor (Geral, Direção, Produção, Câmera, Som, Luz, Arte, Elenco), segurar ou tocar para falar, avisos de set (Gravando, Corta, Silêncio, Intervalo) e tela de cue para o elenco.',
+      'Papéis: o dono da diária pode tudo; um responsável por setor silencia e tira gente do setor dele; a equipe fala no próprio setor; o convidado só ouve. Silenciar uma pessoa, um setor ou o set inteiro; no Gravando, só a Direção e o Som falam até o Corta; quem foi silenciado pede a palavra.',
       'No iPhone funciona com o app aberto e a tela ligada; a voz vai de aparelho para aparelho e não é gravada.',
     ],
   },

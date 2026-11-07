@@ -67,7 +67,7 @@ test('sem login (link aberto num navegador fora da conta): vai para o entrar e v
   // a mesma conta, entrando neste navegador, cai no rádio
   await entrar(fora, admin.email, 'senha-e2e-segura-1')
   await fora.waitForURL(/\/radio\?d=ABC234/)
-  await expect(fora.locator('#tela-radio, #tela-diarias').first()).toBeAttached()
+  await expect(fora.locator('#pg-inicio, #pg-noar, #pg-diarias').first()).toBeAttached()
 })
 
 test('conta comum: o rádio não existe (página, scripts e API dão 404)', async ({ browser }) => {
@@ -90,17 +90,19 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   const ice = await (await ana.request.get('/api/v1/radio/ice')).json()
   expect(ice.turn).toBe(false)
   expect(ice.iceServers[0].urls).toContain('stun:stun.cloudflare.com:3478')
-  await ana.waitForSelector('#tela-diarias:not([hidden])')
+  await ana.waitForSelector('#pg-inicio:not([hidden])')
+  // no celular (o tamanho destas contas) a lateral some: Diárias e o TALK ficam nas abas de baixo
+  await ana.locator('[data-ir="diarias"]:visible').first().click()
   await ana.fill('#criar-nome', 'Comercial')
   await ana.click('#criar button')
-  await ana.waitForSelector('#tela-radio:not([hidden])')
+  await ana.waitForSelector('#noar:not([hidden])')
   const codigo = (await ana.textContent('#codigo'))!.trim()
   expect(ana.url()).toContain(`/radio?d=${codigo}`)
 
   const bia = await conta(browser, 'Bia', true)
   bia.on('pageerror', (e) => erros.push(String(e)))
   await bia.goto(`/radio?d=${codigo}`)
-  await bia.waitForSelector('#tela-radio:not([hidden])')
+  await bia.waitForSelector('#noar:not([hidden])')
   await expect(bia.locator('#diaria-nome')).toHaveText('Comercial')
   // quem entra pelo link escolhe o setor
   await expect(bia.locator('#setor-folha')).toBeVisible()
@@ -109,20 +111,22 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
 
   for (const p of [ana, bia]) await p.click('#ligar-btn')
   for (const p of [ana, bia])
-    await p.waitForFunction(() => document.querySelectorAll('#pessoas li[data-estado="ligado"]').length === 2, null, { timeout: 40_000 })
+    await p.waitForFunction(() => document.querySelectorAll('#pessoas .pessoa[data-estado="ligado"]').length === 2, null, { timeout: 40_000 })
 
-  const caixa = (await ana.locator('#ptt').boundingBox())!
+  const caixa = (await ana.locator('#ptt:visible, #ptt-aba:visible').first().boundingBox())!
   await ana.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
   await ana.mouse.down()
   await ana.waitForTimeout(400) // segurou: push-to-talk (um toque travaria o TALK aberto)
   await expect(bia.locator('#no-ar')).toHaveText(/Ana · Geral/)
-  await expect(bia.locator('.faixa[data-canal="geral"]')).toHaveClass(/is-no-ar/)
+  await expect(bia.locator('.canal[data-canal="geral"]')).toHaveClass(/is-no-ar/)
   await ana.mouse.up()
   await expect(bia.locator('#no-ar')).toHaveText('')
 
-  await ana.click('[data-aviso="acao"]')
+  await ana.click('#avisos [data-aviso="acao"]')
   await expect(bia.locator('#aviso-tela')).toBeVisible()
-  await expect(bia.locator('#aviso-texto')).toHaveText('Ação')
+  await expect(bia.locator('#aviso-texto')).toHaveText('Gravando')
+  // no Gravando o set fica em silêncio, menos a Direção e o Som: a Bia (Som) segue podendo falar
+  await expect(bia.locator('#eu-calado')).toBeHidden()
   expect(erros).toEqual([])
 })
 
@@ -149,7 +153,7 @@ test('Admin › Apps: dar acesso ao rádio pelo e-mail, a pessoa entra, tirar e 
 
   // a convidada entra (o gate é lido a cada pedido, sem novo login)
   expect((await convidada.goto('/radio'))?.status()).toBe(200)
-  await expect(convidada.locator('#tela-diarias')).toBeVisible()
+  await expect(convidada.locator('#pg-inicio')).toBeVisible()
 
   // tirar: na hora volta a não existir
   await chefe.locator('.radio-acesso li').filter({ hasText: convidada.email }).getByRole('button', { name: 'Tirar' }).click()

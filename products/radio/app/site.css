@@ -1,0 +1,73 @@
+/* RADION · a página inicial. Mesma linguagem do app (app.css): Figtree no texto, Nunito no logotipo, claro por padrão
+   e escuro pelo sistema, botões de vidro, as cores dos setores. */
+@font-face { font-family: 'Figtree'; font-weight: 300 900; font-display: swap; src: url('/fontes/figtree-latin-wght-normal.woff2') format('woff2-variations'); }
+@font-face { font-family: 'Nunito'; font-weight: 200 1000; font-display: swap; src: url('/fontes/nunito-latin-wght-normal.woff2') format('woff2-variations'); }
+:root { color-scheme: light dark; --fundo: #ffffff; --faixa: #f5f5f7; --cartao: #ffffff; --tinta: #1d1d1f; --apoio: #6e6e73; --linha: rgba(0, 0, 0, 0.07); --contorno: rgba(0, 0, 0, 0.08); font-family: 'Figtree', system-ui, sans-serif; color: var(--tinta); background: var(--fundo); -webkit-font-smoothing: antialiased; }
+@media (prefers-color-scheme: dark) {
+  :root { --fundo: #000; --faixa: #0b0b0c; --cartao: #1c1c1e; --tinta: #f5f5f7; --apoio: #a1a1a6; --linha: rgba(255, 255, 255, 0.08); --contorno: rgba(255, 255, 255, 0.12); }
+  .s-marca img, .s-rodape img { filter: invert(1) brightness(1.6); }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; }
+h1, h2, p { margin: 0; }
+.leve { font-weight: 300; }
+.forte { font-weight: 800; }
+.s-topo { position: sticky; top: 0; z-index: 2; height: 72px; display: flex; align-items: center; gap: 28px; padding: 0 clamp(16px, 4.5vw, 64px); background: color-mix(in srgb, var(--fundo) 82%, transparent); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); }
+.s-marca { display: flex; align-items: center; gap: 9px; font-family: 'Nunito', sans-serif; font-weight: 850; letter-spacing: -0.045em; font-size: 26px; text-decoration: none; margin-right: auto; }
+.s-marca img { height: 26px; }
+.s-links { display: flex; gap: 28px; font-size: 15px; font-weight: 600; color: var(--apoio); }
+.s-links a { text-decoration: none; }
+.s-links a:hover { color: var(--tinta); }
+.s-btn { display: inline-flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 20px; border-radius: 21px; font-weight: 700; font-size: 15px; text-decoration: none; white-space: nowrap; background: color-mix(in srgb, var(--cartao) 80%, transparent); box-shadow: inset 0 0 0 1px var(--contorno), 0 4px 14px -6px rgba(0, 0, 0, 0.15); }
+.s-btn img { height: 16px; }
+.s-btn--tinta { background: linear-gradient(180deg, #3a3a3e, #1d1d1f); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 20px -8px rgba(0, 0, 0, 0.5); }
+.s-btn--g { min-height: 52px; padding: 0 26px; font-size: 16px; border-radius: 26px; }
+.s-heroi { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; padding: 56px 16px 0; }
+.s-icone { width: 168px; height: 168px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.16)); animation: entra 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.s-heroi h1 { font-size: clamp(56px, 10vw, 112px); letter-spacing: -0.05em; line-height: 0.95; margin-top: 12px; }
+.s-heroi h1 .ponto { color: #0a8cff; font-weight: 800; }
+.s-heroi p, .s-faixa > p, .s-eco > p { font-size: clamp(17px, 2vw, 21px); color: var(--apoio); font-weight: 500; }
+.s-acoes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.s-aparelhos { position: relative; max-width: 1100px; margin: 64px auto 0; padding: 0 16px 80px; }
+.s-mac { margin: 0 70px 0 0; border-radius: 26px; background: #1d1d1f; padding: 14px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.35); }
+.s-mac img, .s-iphone img { display: block; width: 100%; height: auto; }
+.s-mac img { border-radius: 12px; }
+.s-iphone { position: absolute; right: 16px; bottom: 30px; width: min(25%, 250px); margin: 0; border-radius: 44px; background: #1d1d1f; padding: 10px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.45); }
+.s-iphone img { border-radius: 35px; }
+.s-faixa { background: var(--faixa); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px; padding: 80px 16px; }
+.s-faixa h2, .s-eco h2 { font-size: clamp(40px, 6vw, 62px); letter-spacing: -0.045em; line-height: 1; }
+.s-setores { list-style: none; margin: 12px 0 0; padding: 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 900px; }
+.s-setores li { height: 40px; padding: 0 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; background: var(--cartao); box-shadow: inset 0 0 0 1px var(--contorno); }
+.s-setores li::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.s-setores [data-canal='geral'] { background: var(--tinta); color: var(--fundo); box-shadow: none; }
+[data-canal='geral'] { --c: currentColor; }
+[data-canal='direcao'] { --c: #ff6b1a; }
+[data-canal='producao'] { --c: #6c4df5; }
+[data-canal='camera'] { --c: #0a8cff; }
+[data-canal='som'] { --c: #12b76a; }
+[data-canal='luz'] { --c: #ffb300; }
+[data-canal='arte'] { --c: #e6195c; }
+[data-canal='elenco'] { --c: #18c2e8; }
+.s-cartoes { display: grid; grid-template-columns: repeat(3, minmax(0, 330px)); gap: 20px; margin-top: 34px; text-align: left; }
+.s-cartoes article { background: var(--cartao); border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04); }
+.s-cartoes b { font-size: 20px; letter-spacing: -0.02em; }
+.s-cartoes span { color: var(--apoio); font-weight: 500; font-size: 15px; line-height: 1.4; }
+.s-eco { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 20px; padding: 80px 16px; }
+.s-eco-apps { display: flex; align-items: center; gap: 26px; margin-top: 16px; font-size: 28px; color: var(--apoio); }
+.s-eco-apps figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.s-eco-apps img { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.3); }
+.s-eco-apps figcaption { font-size: 15px; font-weight: 700; color: var(--tinta); }
+.s-rodape { border-top: 1px solid var(--linha); display: flex; align-items: center; gap: 22px; padding: 28px clamp(16px, 4.5vw, 64px); font-size: 13px; color: var(--apoio); font-weight: 600; }
+.s-rodape img { height: 13px; margin-right: auto; }
+.s-rodape a { text-decoration: none; }
+@keyframes entra { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (max-width: 760px) {
+  .s-links { display: none; }
+  .s-topo .s-btn { padding: 0 14px; font-size: 13.5px; }
+  .s-mac { margin: 0; }
+  .s-iphone { width: 34%; right: 8px; bottom: 40px; border-radius: 30px; padding: 6px; }
+  .s-iphone img { border-radius: 25px; }
+  .s-cartoes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <!-- RADION · a página inicial (aprovada pelo titular em 06/11/2026). Não lançado: só sai para quem passa no gate (a
+       prévia em /sobre) ou, no lançamento, para todos (RADION_SITE_ABERTO=1). Telas de verdade do app, nada de efeito
+       de luz. Sem script nem estilo inline (CSP). -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RADION · Stay connected.</title>
+    <meta name="description" content="O rádio do set no celular de cada equipe. Um canal por setor, da Absolute ZRO." />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/app/marca/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/app/marca/radion-180.png" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="RADION" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RADION" />
+    <meta property="og:title" content="RADION · Stay connected." />
+    <meta property="og:description" content="O rádio do set no celular de cada equipe. Um canal por setor, da Absolute ZRO." />
+    <meta property="og:url" content="https://radion.absolutezro.com/" />
+    <meta property="og:image" content="https://radion.absolutezro.com/app/marca/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RADION — stay connected." />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://radion.absolutezro.com/app/marca/og.png" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/app/site.css" />
+  </head>
+  <body>
+    <header class="s-topo">
+      <a class="s-marca" href="/"><img src="/app/marca/radion-simbolo.svg" alt="" />radion</a>
+      <nav class="s-links" aria-label="Seções"><a href="#como">Como funciona</a><a href="#setores">Setores</a><a href="#seguranca">Segurança</a></nav>
+      <a class="s-btn s-btn--tinta" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
+    </header>
+
+    <main>
+      <section class="s-heroi">
+        <picture><source srcset="/app/marca/radion-icone-escuro.svg" media="(prefers-color-scheme: dark)" /><img class="s-icone" src="/app/marca/radion-icone.svg" alt="RADION" width="168" height="168" /></picture>
+        <h1><span class="leve">stay</span> <span class="forte">connected</span><span class="ponto">.</span></h1>
+        <p>O rádio do set no celular de cada equipe.</p>
+        <div class="s-acoes">
+          <a class="s-btn s-btn--tinta s-btn--g" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
+          <a class="s-btn s-btn--g" href="#como">Como funciona</a>
+        </div>
+      </section>
+
+      <section class="s-aparelhos" id="como" aria-label="O RADION no computador e no celular">
+        <figure class="s-mac">
+          <picture>
+            <source srcset="/app/site/computador-escuro.webp" media="(prefers-color-scheme: dark)" />
+            <img src="/app/site/computador-claro.webp" alt="O RADION no computador: os oito canais, quem está no ar e o botão de falar" width="1440" height="900" />
+          </picture>
+        </figure>
+        <figure class="s-iphone">
+          <picture>
+            <source srcset="/app/site/celular-escuro.webp" media="(prefers-color-scheme: dark)" />
+            <img src="/app/site/celular-claro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" />
+          </picture>
+        </figure>
+      </section>
+
+      <section class="s-faixa" id="setores">
+        <h2><span class="leve">Um canal</span> <span class="forte">por setor.</span></h2>
+        <p>Cada um ouve o seu e o Geral. A direção fala com todos.</p>
+        <ul class="s-setores" aria-label="Os canais">
+          <li data-canal="geral">Geral</li><li data-canal="direcao">Direção</li><li data-canal="producao">Produção</li><li data-canal="camera">Câmera</li><li data-canal="som">Som</li><li data-canal="luz">Luz</li><li data-canal="arte">Arte</li><li data-canal="elenco">Elenco</li>
+        </ul>
+        <div class="s-cartoes" id="seguranca">
+          <article><b>Um responsável por rádio</b><span>Quem cuida do setor silencia e organiza a equipe dele.</span></article>
+          <article><b>Silêncio no set</b><span>No Gravando, só a Direção e o Som falam, até o Corta.</span></article>
+          <article><b>A voz não fica gravada</b><span>Vai de aparelho para aparelho, cifrada. Nada no servidor.</span></article>
+        </div>
+      </section>
+
+      <section class="s-eco">
+        <h2><span class="leve">Parte da</span> <span class="forte">Absolute ZRO.</span></h2>
+        <p>A mesma conta de todo o ecossistema. O Set mostra quem da equipe está online.</p>
+        <div class="s-eco-apps">
+          <figure><img src="https://absolutezro.com/brand/app-icon-1024.png" alt="" /><figcaption>Absolute ZRO</figcaption></figure>
+          <span aria-hidden="true">+</span>
+          <figure><picture><source srcset="/app/marca/radion-icone-escuro.svg" media="(prefers-color-scheme: dark)" /><img src="/app/marca/radion-icone.svg" alt="" /></picture><figcaption>RADION</figcaption></figure>
+        </div>
+      </section>
+    </main>
+
+    <footer class="s-rodape">
+      <img src="https://absolutezro.com/brand/absolute-zro-grafite.svg" alt="Absolute ZRO" />
+      <a href="https://absolutezro.com/privacidade">Privacidade</a>
+      <a href="https://absolutezro.com/termos">Termos</a>
+    </footer>
+  </body>
+</html>

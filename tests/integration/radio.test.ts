@@ -77,7 +77,7 @@ describe('rádio do set no HUB', () => {
     const c = await como(P.ana, (tx) => nucleo.mudarDiarias(tx, P.ana, { acao: 'criar', nome: 'Comercial' }))
     expect(c.status).toBe(201)
     const d = (c.corpo as { diaria: { id: string; codigo: string } }).diaria
-    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, diarias: [] })
+    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, eu: { nome: 'Bia' }, diarias: [] })
     expect((await como(P.bia, (tx) => nucleo.mudarDiarias(tx, P.bia, { acao: 'entrar', codigo: d.codigo }))).status).toBe(200)
 
     await como(P.ana, (tx) => nucleo.bater(tx, P.ana, { diaria: d.id, peer: 'a'.repeat(24) }))
@@ -87,6 +87,14 @@ describe('rádio do set no HUB', () => {
 
     expect((await como(P.ana, (tx) => nucleo.avisar(tx, P.ana, { diaria: d.id, tipo: 'acao' }))).status).toBe(201)
     expect((await como(P.bia, (tx) => nucleo.avisar(tx, P.bia, { diaria: d.id, tipo: 'corta' }))).status).toBe(403)
+
+    // poderes (RADION, migração 0001 do rádio): a dona silencia a Bia; a Bia (equipe) não silencia a dona
+    const apelido = (bb.corpo as { membros: { nome: string; apelido: string }[] }).membros.find((m) => m.nome === 'Bia')!.apelido
+    const donaApelido = (bb.corpo as { membros: { nome: string; apelido: string }[] }).membros.find((m) => m.nome === 'Ana')!.apelido
+    expect((await como(P.ana, (tx) => nucleo.moderar(tx, P.ana, { diaria: d.id, acao: 'silenciar', alvo: apelido, minutos: 5 }))).status).toBe(200)
+    expect((await como(P.bia, (tx) => nucleo.moderar(tx, P.bia, { diaria: d.id, acao: 'silenciar', alvo: donaApelido }))).status).toBe(409)
+    const calada = await como(P.bia, (tx) => nucleo.bater(tx, P.bia, { diaria: d.id, peer: 'b'.repeat(24) }))
+    expect((calada.corpo as { eu: { silenciado: { por: string } | null } }).eu.silenciado?.por).toBe('Ana')
 
     // como radio_app: quem está fora não lê nada; ninguém vira dono por update
     expect(await como(P.caio, (tx) => tx`select * from radio.diarias`)).toHaveLength(0)

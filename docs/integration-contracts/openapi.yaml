@@ -1030,7 +1030,7 @@ paths:
   /api/v1/radio/batida:
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { diaria, peer, sinais: [{ para, tipo: oferta | resposta, dados: { sdp } }], aviso } → { eu, pessoas, sinais, avisos, ultimoAviso }. A voz nunca passa pelo servidor'
+      summary: 'RADION. { diaria, peer, sinais: [{ para, tipo: oferta | resposta, dados: { sdp } }], aviso } → { eu (papel, podeModerar, silenciado), pessoas, membros, silenciados, maos, silencio, ajustes, sinais, avisos, ultimoAviso }. Pessoas por apelido da diária, nunca o sub. A voz nunca passa pelo servidor'
       responses:
         {
           '200': { description: 'ok' },
@@ -1042,7 +1042,7 @@ paths:
   /api/v1/radio/aviso:
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { diaria, tipo: silencio | acao | corta | intervalo } → 201 { aviso: { id, tipo, de } }; só o dono e a Direção'
+      summary: 'RADION. { diaria, tipo: silencio | acao | corta | intervalo, setor? } → 201 { aviso: { id, tipo, de, setor } }; dono e Direção para todos ou um setor, responsável só para o setor dele. Gravando para todos silencia o set (menos Direção e Som); Corta reativa'
       responses:
         {
           '200': { description: 'ok' },
@@ -1050,6 +1050,19 @@ paths:
           '401': { $ref: '#/components/responses/Error' },
           '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
           '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/radio/moderar:
+    post:
+      security: [{ session: [] }]
+      summary: 'RADION. { diaria, acao: silenciar | reativar | silenciar_todos | reativar_todos | mover | responsavel | papel | tirar | mao | baixar_mao, alvo? (apelido), valor?, minutos? (0, 5, 15) } → { ok }; { acao: ajustes, ajustes } e { acao: historico } para o dono. O dono pode tudo; o responsável, só no setor dele; ninguém silencia o dono nem a Direção'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false, erro })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { description: 'a pessoa não pode ser silenciada nem tirada (dono ou Direção)' },
         }
   /api/v1/set:
     get:

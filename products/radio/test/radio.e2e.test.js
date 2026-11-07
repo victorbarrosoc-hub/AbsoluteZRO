@@ -1,7 +1,8 @@
-// O rádio de ponta a ponta no Chromium, com três pessoas (modo local, Postgres de verdade, microfone falso do
-// Chromium, que toca um bipe): Ana (Direção) cria a diária, Bia entra pelo código e fica na Direção, Caio entra e fica
-// na Câmera. Confere que a voz chega de verdade (nível do áudio recebido), que o canal da Equipe só chega a quem tem a
-// mesma função, que o Geral chega a todos e que o aviso de set aparece na tela dos outros.
+// O RADION de ponta a ponta no Chromium, com três pessoas (modo local, Postgres de verdade, microfone falso do
+// Chromium, que toca um bipe): Ana (dona, Direção) cria a diária, Bia entra pelo código e fica na Direção, Caio entra e
+// fica na Câmera. Confere que a voz chega de verdade (nível do áudio recebido), que o canal de um setor só chega a quem
+// o ouve, que o Geral chega a todos, que o aviso de set aparece na tela dos outros e o silêncio: Gravando cala o set
+// (menos a Direção) até o Corta, e a dona silencia o Caio, que vê quem silenciou e pede a palavra.
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
 import postgres from 'postgres'
@@ -52,7 +53,7 @@ async function pessoa(nome) {
   await page.goto(base)
   await page.fill('#local-nome', nome)
   await page.click('#local button')
-  await page.waitForSelector('#tela-diarias:not([hidden])')
+  await page.waitForSelector('#pg-inicio:not([hidden])')
   return { page, erros }
 }
 
@@ -89,9 +90,10 @@ const esperarNivel = async (page, acima, ms = 6000) => {
 
 test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de ouvir, Todos e aviso', { skip: pular, timeout: 120000 }, async () => {
   const ana = await pessoa('Ana')
+  await ana.page.click('.item[data-ir="diarias"]')
   await ana.page.fill('#criar-nome', 'Comercial')
   await ana.page.click('#criar button')
-  await ana.page.waitForSelector('#tela-radio:not([hidden])')
+  await ana.page.waitForSelector('#noar:not([hidden])')
   const codigo = (await ana.page.textContent('#codigo')).trim()
   assert.match(codigo, /^[A-Z2-9]{6}$/)
   // quem criou já está na Direção: não pergunta o setor
@@ -102,6 +104,7 @@ test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de 
   await bia.page.waitForSelector('#setor-folha[open]')
   await bia.page.click('#setores [data-canal="direcao"]')
   const caio = await pessoa('Caio')
+  await caio.page.click('.item[data-ir="diarias"]')
   await caio.page.fill('#entrar-codigo', codigo.toLowerCase())
   await caio.page.click('#entrar button')
   await caio.page.waitForSelector('#setor-folha[open]')
@@ -110,12 +113,15 @@ test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de 
   for (const p of [bia, caio]) await p.page.waitForFunction(() => !document.getElementById('setor-folha').open)
   for (const p of [ana, bia, caio]) await p.page.click('#ligar-btn')
   // o seu setor vem logo depois do Geral, marcado "Seu"
-  assert.deepEqual(await caio.page.$$eval('.faixa', (fs) => fs.slice(0, 2).map((f) => f.dataset.canal)), ['geral', 'camera'])
+  assert.deepEqual(await caio.page.$$eval('.canal', (fs) => fs.slice(0, 2).map((f) => f.dataset.canal)), ['geral', 'camera'])
+  // a equipe fala no próprio setor, não no Geral
+  assert.equal(await caio.page.isDisabled('[data-alvo="geral"]'), true)
+  assert.equal((await caio.page.textContent('#alvo-nome')).trim(), 'Câmera')
   assert.equal(await caio.page.getAttribute('[data-ouvir="camera"]', 'aria-pressed'), 'true')
   assert.equal(await caio.page.getAttribute('[data-ouvir="direcao"]', 'aria-pressed'), 'false')
 
   // todos ligados com todos
-  for (const p of [ana, bia, caio]) await p.page.waitForFunction(() => document.querySelectorAll('#pessoas li[data-estado="ligado"]').length === 3, null, { timeout: 30000 })
+  for (const p of [ana, bia, caio]) await p.page.waitForFunction(() => document.querySelectorAll('#pessoas .pessoa[data-estado="ligado"]').length === 3, null, { timeout: 30000 })
   assert.ok((await esperarNivel(bia.page, false)) < 0.001)
 
   const caixa = await (await ana.page.$('#ptt')).boundingBox()
@@ -132,7 +138,7 @@ test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de 
   assert.equal(await ana.page.getAttribute('#ptt', 'data-estado'), 'ptt')
   await bia.page.waitForFunction(() => document.getElementById('no-ar').textContent.includes('Ana'))
   assert.match(await bia.page.textContent('#no-ar'), /Ana · Direção/)
-  await bia.page.waitForSelector('.faixa[data-canal="direcao"].is-no-ar')
+  await bia.page.waitForSelector('.canal[data-canal="direcao"].is-no-ar')
   assert.ok((await esperarNivel(bia.page, true)) > 0.005, 'Bia ouve a Ana')
   assert.ok((await esperarNivel(caio.page, false, 2500)) < 0.001, 'Caio (Câmera) não recebe a fala da Direção')
   await ana.page.mouse.up()
@@ -166,13 +172,39 @@ test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de 
   assert.ok((await esperarNivel(caio.page, true)) > 0.005, 'Todos chega ao Caio')
   await ana.page.mouse.up()
 
-  // aviso de set: Ana manda Ação, os outros veem; Caio (Câmera) não tem os botões
+  await ana.page.click('#todos')
+  // aviso de set: Ana manda Gravando, os outros veem; Caio (Câmera) não tem os botões
   assert.equal(await caio.page.isHidden('#avisos'), true)
-  await ana.page.click('[data-aviso="acao"]')
+  await ana.page.click('#avisos [data-aviso="acao"]')
   for (const p of [bia, caio]) {
     await p.page.waitForSelector('#aviso-tela:not([hidden])', { timeout: 5000 })
-    assert.equal((await p.page.textContent('#aviso-texto')).trim(), 'Ação')
+    assert.equal((await p.page.textContent('#aviso-texto')).trim(), 'Gravando')
   }
+  // Gravando silencia o set: Caio não fala; Bia (Direção) segue falando
+  await caio.page.waitForSelector('#eu-calado:not([hidden])', { timeout: 5000 })
+  assert.equal(await caio.page.isDisabled('#ptt'), true)
+  await bia.page.waitForSelector('#silencio-set:not([hidden])')
+  assert.equal(await bia.page.isDisabled('#ptt'), false)
+  // Corta reativa
+  await ana.page.click('#aviso-tela')
+  await ana.page.click('#avisos [data-aviso="corta"]')
+  await caio.page.waitForSelector('#eu-calado', { state: 'hidden', timeout: 5000 })
+  assert.equal(await caio.page.isDisabled('#ptt'), false)
+
+  // a dona silencia o Caio pela lista de quem está no ar; ele vê quem foi e pede a palavra
+  for (const p of [ana, caio]) if (await p.page.isVisible('#aviso-tela')) await p.page.click('#aviso-tela')
+  await ana.page.click('#pessoas .pessoa:has-text("Caio")')
+  await ana.page.click('#menu-pessoa .tempos button:has-text("Até eu reativar")')
+  await caio.page.waitForSelector('#eu-calado:not([hidden])', { timeout: 5000 })
+  assert.match(await caio.page.textContent('#eu-calado-titulo'), /Ana silenciou você/)
+  await caio.page.click('#pedir-palavra')
+  await ana.page.waitForSelector('#pessoas .pessoa[data-mao="1"]', { timeout: 5000 })
+  await ana.page.click('#pessoas .pessoa:has-text("Caio")')
+  await ana.page.click('#menu-pessoa .acao:has-text("Dar a palavra")')
+  await caio.page.waitForSelector('#eu-calado', { state: 'hidden', timeout: 5000 })
+  // a Bia (Direção, sem ser dona) não silencia ninguém: o menu dela não tem a opção
+  await bia.page.click('#pessoas .pessoa:has-text("Caio")')
+  assert.equal(await bia.page.locator('#menu-pessoa .tempos').count(), 0)
 
   for (const p of [ana, bia, caio]) assert.deepEqual(p.erros, [])
 })

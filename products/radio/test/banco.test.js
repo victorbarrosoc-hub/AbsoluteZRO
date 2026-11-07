@@ -59,6 +59,7 @@ before(async () => {
     diarias: (await import('../api/radio/diarias.js')).default,
     batida: (await import('../api/radio/batida.js')).default,
     aviso: (await import('../api/radio/aviso.js')).default,
+    moderar: (await import('../api/radio/moderar.js')).default,
     pagina: (await import('../api/pagina.js')).default,
     recurso: (await import('../api/recurso.js')).default,
     local: (await import('../api/local.js')).default,
@@ -101,6 +102,24 @@ test('gate: sem a claim do rádio, página neutra, recurso 404 e API 401', { ski
   const js = await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=app.js')
   assert.equal(js.statusCode, 200)
   assert.equal((await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=../api/_zro.js')).statusCode, 404)
+  // a página inicial: prévia só com acesso; sem sessão, neutra, até o lançamento abrir o site
+  assert.match((await chamar('pagina', 'GET', dentro, null, '/api/pagina?v=sobre')).corpo, /stay<\/span> <span class="forte">connected/)
+  assert.match((await chamar('pagina', 'GET', null, null, '/api/pagina?v=sobre')).corpo, /indisponível/)
+  assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 404)
+  assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=marca/og.png')).statusCode, 404)
+  // o ícone do compartilhar e o manifesto da Tela de Início vêm com o app
+  assert.match((await chamar('pagina', 'GET', dentro)).corpo, /rel="apple-touch-icon"[\s\S]*rel="manifest"/)
+  process.env.RADION_SITE_ABERTO = '1'
+  try {
+    const aberto = (await chamar('pagina', 'GET', null)).corpo
+    assert.match(aberto, /href="\/entrar"/)
+    assert.match(aberto, /og:image" content="https:\/\/radion\.absolutezro\.com\/app\/marca\/og\.png"/)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=marca/og.png')).statusCode, 200)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 200)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=app.js')).statusCode, 404)
+  } finally {
+    delete process.env.RADION_SITE_ABERTO
+  }
 })
 
 test('diária: criar, entrar pelo código, função, presença e isolamento', { skip: pular }, async () => {
@@ -155,7 +174,7 @@ test('diária: criar, entrar pelo código, função, presença e isolamento', { 
   assert.equal(av.statusCode, 201)
   assert.equal((await chamar('aviso', 'POST', bia, { diaria: d.id, tipo: 'corta' })).statusCode, 403)
   const comAviso = await chamar('batida', 'POST', bia, { diaria: d.id, peer: pb, aviso: visto })
-  assert.deepEqual(comAviso.corpo.avisos, [{ id: av.corpo.aviso.id, tipo: 'acao', de: 'Ana' }])
+  assert.deepEqual(comAviso.corpo.avisos, [{ id: av.corpo.aviso.id, tipo: 'acao', de: 'Ana', setor: null }])
   // Bia na Direção passa a poder
   await chamar('diarias', 'POST', bia, { acao: 'funcao', diaria: d.id, funcao: 'direcao' })
   assert.equal((await chamar('aviso', 'POST', bia, { diaria: d.id, tipo: 'corta' })).statusCode, 201)
@@ -172,7 +191,131 @@ test('diária: criar, entrar pelo código, função, presença e isolamento', { 
   assert.equal((await como('sub-caio', (tx) => tx`select * from radio.avisos`)).length, 0)
   await assert.rejects(como('sub-bia', (tx) => tx`update radio.membros set papel = 'dono' where user_sub = 'sub-bia'`), /permission denied/)
   await assert.rejects(como('sub-caio', (tx) => tx`insert into radio.membros (diaria_id, user_sub, nome, papel) values (${d.id}, 'sub-caio', 'Caio', 'dono')`), /row-level security/)
-  await assert.rejects(como('sub-caio', (tx) => tx`insert into radio.avisos (diaria_id, tipo, de_sub, de_nome) values (${d.id}, 'acao', 'sub-caio', 'Caio')`), /row-level security/)
+  await assert.rejects(como('sub-caio', (tx) => tx`insert into radio.avisos (diaria_id, tipo, de_sub, de_nome) values (${d.id}, 'acao', 'sub-caio', 'Caio')`), /permission denied/)
   assert.equal((await como('sub-bia', (tx) => tx`delete from radio.diarias where id = ${d.id}`)).count, 0)
+  await sql.end()
+})
+
+test('poderes: responsável do setor, silenciar, silenciar todos, Gravando, pedir a palavra e quem é imune', { skip: pular }, async () => {
+  const dona = sessao('sub-dona', 'Dona')
+  const lia = sessao('sub-lia', 'Lia')
+  const gil = sessao('sub-gil', 'Gil')
+  const teo = sessao('sub-teo', 'Teo')
+  const rui = sessao('sub-rui', 'Rui')
+  const d = (await chamar('diarias', 'POST', dona, { acao: 'criar', nome: 'Poderes' })).corpo.diaria
+  for (const [s, f] of [[lia, 'luz'], [gil, 'luz'], [teo, 'som'], [rui, 'camera']]) {
+    await chamar('diarias', 'POST', s, { acao: 'entrar', codigo: d.codigo })
+    await chamar('diarias', 'POST', s, { acao: 'funcao', diaria: d.id, funcao: f })
+  }
+  const bater = async (s, peer) => (await chamar('batida', 'POST', s, { diaria: d.id, peer })).corpo
+  const mod = async (s, corpo) => chamar('moderar', 'POST', s, { diaria: d.id, ...corpo })
+  const quem = async (nome) => (await bater(dona, 'd'.repeat(24))).membros.find((m) => m.nome === nome).apelido
+  const calados = async () => {
+    const b = await bater(dona, 'd'.repeat(24))
+    return b.silenciados.map((x) => b.membros.find((m) => m.apelido === x.apelido).nome).sort()
+  }
+  const aLia = await quem('Lia')
+  const aGil = await quem('Gil')
+  const aTeo = await quem('Teo')
+  const aDona = await quem('Dona')
+  // apelido, nunca o sub da conta
+  assert.match(aLia, /^[a-f0-9]{16}$/)
+  assert.doesNotMatch(JSON.stringify(await bater(lia, 'l'.repeat(24))), /sub-/)
+
+  // só a dona escolhe responsável; Lia vira a da Luz
+  assert.equal((await mod(lia, { acao: 'responsavel', alvo: aGil })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'responsavel', alvo: aLia })).statusCode, 200)
+  const bl = await bater(lia, 'l'.repeat(24))
+  assert.equal(bl.eu.papel, 'responsavel')
+  assert.equal(bl.eu.podeModerar, true)
+  assert.equal(bl.eu.podeAvisar, true)
+
+  // responsável silencia gente do setor dela, nunca de outro setor nem a dona
+  assert.equal((await mod(lia, { acao: 'silenciar', alvo: aGil, minutos: 5 })).statusCode, 200)
+  assert.equal((await mod(lia, { acao: 'silenciar', alvo: aTeo })).statusCode, 403)
+  assert.equal((await mod(lia, { acao: 'silenciar', alvo: aDona })).statusCode, 409)
+  assert.equal((await mod(teo, { acao: 'silenciar', alvo: aGil })).statusCode, 403)
+  assert.deepEqual(await calados(), ['Gil'])
+  const bg = await bater(gil, 'g'.repeat(24))
+  assert.equal(bg.eu.silenciado.por, 'Lia')
+  assert.ok(Date.parse(bg.eu.silenciado.ate) > Date.now())
+
+  // pedir a palavra: só quem está silenciado; a responsável reativa e a mão baixa
+  assert.equal((await mod(teo, { acao: 'mao' })).statusCode, 400)
+  assert.equal((await mod(gil, { acao: 'mao' })).statusCode, 200)
+  assert.deepEqual((await bater(lia, 'l'.repeat(24))).maos, [aGil])
+  assert.equal((await mod(lia, { acao: 'reativar', alvo: aGil })).statusCode, 200)
+  assert.deepEqual(await calados(), [])
+  assert.deepEqual((await bater(lia, 'l'.repeat(24))).maos, [])
+
+  // responsável silencia o setor (ela mesma fica livre); dona silencia o set (ela e a Direção ficam livres)
+  assert.equal((await mod(lia, { acao: 'silenciar_todos' })).statusCode, 200)
+  assert.deepEqual(await calados(), ['Gil'])
+  assert.deepEqual((await bater(gil, 'g'.repeat(24))).silencio.setores, ['luz'])
+  assert.equal((await mod(lia, { acao: 'reativar_todos' })).statusCode, 200)
+  assert.equal((await mod(teo, { acao: 'silenciar_todos' })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'silenciar_todos' })).statusCode, 200)
+  assert.deepEqual(await calados(), ['Gil', 'Lia', 'Rui', 'Teo'])
+  // a dona libera uma pessoa durante o silêncio do set
+  assert.equal((await mod(dona, { acao: 'reativar', alvo: aTeo })).statusCode, 200)
+  assert.deepEqual(await calados(), ['Gil', 'Lia', 'Rui'])
+  assert.equal((await mod(dona, { acao: 'reativar_todos' })).statusCode, 200)
+  assert.deepEqual(await calados(), [])
+
+  // Gravando silencia o set menos Direção e Som; Corta reativa
+  assert.equal((await chamar('aviso', 'POST', dona, { diaria: d.id, tipo: 'acao' })).statusCode, 201)
+  assert.deepEqual(await calados(), ['Gil', 'Lia', 'Rui'])
+  assert.equal((await bater(teo, 't'.repeat(24))).silencio.todos.motivo, 'gravando')
+  await chamar('aviso', 'POST', dona, { diaria: d.id, tipo: 'corta' })
+  assert.deepEqual(await calados(), [])
+  // com o ajuste desligado, Gravando não silencia; só a dona mexe nos ajustes
+  assert.equal((await mod(lia, { acao: 'ajustes', ajustes: { gravandoSilencia: false } })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'ajustes', ajustes: { gravandoSilencia: false } })).statusCode, 200)
+  await chamar('aviso', 'POST', dona, { diaria: d.id, tipo: 'acao' })
+  assert.deepEqual(await calados(), [])
+
+  // aviso da responsável vai só para o setor dela, mesmo pedindo para todos
+  const visto = (await bater(teo, 't'.repeat(24))).ultimoAviso
+  const al = await chamar('aviso', 'POST', lia, { diaria: d.id, tipo: 'intervalo' })
+  assert.equal(al.corpo.aviso.setor, 'luz')
+  assert.deepEqual((await chamar('batida', 'POST', teo, { diaria: d.id, peer: 't'.repeat(24), aviso: visto })).corpo.avisos, [])
+  assert.equal((await chamar('batida', 'POST', gil, { diaria: d.id, peer: 'g'.repeat(24), aviso: visto })).corpo.avisos.length, 1)
+
+  // convidado só ouve: entra silenciado; a dona move, tira e o histórico guarda (só para ela)
+  assert.equal((await mod(dona, { acao: 'papel', alvo: await quem('Rui'), valor: 'convidado' })).statusCode, 200)
+  assert.deepEqual(await calados(), ['Rui'])
+  assert.equal((await mod(dona, { acao: 'mover', alvo: aGil, valor: 'arte' })).statusCode, 200)
+  assert.equal((await bater(gil, 'g'.repeat(24))).eu.funcao, 'arte')
+  assert.equal((await mod(lia, { acao: 'tirar', alvo: aGil })).statusCode, 403)
+  assert.equal((await mod(dona, { acao: 'tirar', alvo: aGil })).statusCode, 200)
+  assert.equal((await chamar('batida', 'POST', gil, { diaria: d.id, peer: 'g'.repeat(24) })).statusCode, 403)
+  const h = (await mod(dona, { acao: 'historico' })).corpo.historico
+  assert.ok(h.some((x) => x.acao === 'silenciar' && x.quem === 'Lia' && x.alvo === 'Gil' && x.detalhe === '5 min'))
+  assert.deepEqual((await mod(lia, { acao: 'historico' })).corpo.historico, [])
+  // sem setor (NULL) não é setor de ninguém: a responsável não silencia quem está sem setor, e quem está sem setor
+  // não manda aviso
+  const ze = sessao('sub-ze', 'Zé')
+  await chamar('diarias', 'POST', ze, { acao: 'entrar', codigo: d.codigo })
+  assert.equal((await mod(lia, { acao: 'silenciar', alvo: await quem('Zé') })).statusCode, 403)
+  assert.equal((await chamar('aviso', 'POST', ze, { diaria: d.id, tipo: 'corta' })).statusCode, 403)
+  // responsável que troca de setor deixa de ser responsável
+  await chamar('diarias', 'POST', lia, { acao: 'funcao', diaria: d.id, funcao: 'som' })
+  assert.equal((await bater(lia, 'l'.repeat(24))).eu.papel, 'equipe')
+
+  // direto no banco, como radio_app: ninguém escreve silêncio, mão nem histórico, nem troca o próprio papel ou setor
+  const sql = postgres(urlRadio, { max: 1, onnotice: () => {} })
+  const como = (sub, fn) =>
+    sql.begin(async (tx) => {
+      await tx`select set_config('radio.user_sub', ${sub}, true)`
+      await tx.unsafe('set local role radio_app')
+      return fn(tx)
+    })
+  await assert.rejects(como('sub-teo', (tx) => tx`insert into radio.silencios (diaria_id, tipo, alvo, por_sub, por_nome) values (${d.id}, 'todos', '*', 'sub-teo', 'Teo')`), /permission denied/)
+  await assert.rejects(como('sub-teo', (tx) => tx`delete from radio.silencios`), /permission denied/)
+  await assert.rejects(como('sub-teo', (tx) => tx`insert into radio.maos (diaria_id, user_sub) values (${d.id}, 'sub-teo')`), /permission denied/)
+  await assert.rejects(como('sub-teo', (tx) => tx`update radio.membros set funcao = 'direcao' where user_sub = 'sub-teo'`), /permission denied/)
+  assert.equal((await como('sub-teo', (tx) => tx`select * from radio.historico`)).length, 0)
+  assert.equal((await como('sub-fora', (tx) => tx`select * from radio.silencios`)).length, 0)
+  assert.equal((await como('sub-fora', (tx) => tx`select * from radio.silenciados(${d.id})`)).length, 0)
   await sql.end()
 })

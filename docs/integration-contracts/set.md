@@ -105,6 +105,7 @@ de novo. A folha veste a identidade do app pelas propriedades `--zro-set-*`, tir
 | NOSSOM (fechado)             | fim da navegação do estúdio (antes da Z) e da barra do celular (5 abas)                                               | `/api/zro/set/*` com o token da Z; o estúdio já é só da conta liberada             | `studio.css` (três temas)                 |
 | AEON `ai-edit` (fechado)     | fim do dock (Mídia, Revisar, Edição, Entrega, Set); a Z fica no ícone da barra                                        | `api/_set.js` (403 sem a liberação); no computador, `desktop/main.cjs` (só código) | `app/editor.css`                          |
 | Revela `finishing` (fechado) | ícone no topo, antes do anel da Z, em toda página (o dock fica com as cinco ferramentas)                              | `api/_set.js` (403 sem a liberação)                                                | `app/revela.css` (`data-tema`)            |
+| RADION `radio` (fechado)     | "Set" na lateral, depois de Avisos, e a pílula na barra de cima                                                       | `api/zro/set.js` (cofre `rd_hub`); dentro do HUB, `/api/v1/set` direto             | `app/app.css` (`data-tema`)               |
 
 Todos pedem `zro.set` no login, junto com o que já pediam; a Absolute ZRO de antes do Set (`invalid_scope`) faz o login
 refazer o pedido sem ele, uma vez, e o resto segue. Nenhum 401 do Set apaga os tokens da Z. Clientes OAuth: a `0035`
