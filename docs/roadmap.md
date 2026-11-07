@@ -158,7 +158,8 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   o Set no app próprio (`radion.absolutezro.com`, cliente `radio-web`, escopo `zro.set`, repasse `/api/zro/set`) e
   página inicial com telas de verdade (prévia em `/sobre` para quem tem acesso; para todos só no lançamento,
   `RADION_SITE_ABERTO=1`). HUB `0061`: nome RADION, endereço e os canais `sso` e `api` para a lista de acesso.
-  Falta (titular): cadastrar o cliente `radio-web` no console, as variáveis do projeto Vercel `radio` e o domínio.
+  Domínio `radion.absolutezro.com` ligado ao projeto `radio` (07/11/2026, página neutra até o login). Falta (titular):
+  cadastrar o cliente `radio-web` no console e as variáveis do projeto Vercel `radio`.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

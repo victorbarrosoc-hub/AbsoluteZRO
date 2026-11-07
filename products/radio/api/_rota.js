@@ -1,4 +1,4 @@
-// Rota do app separado (radio.absolutezro.com e o modo local): pessoa da sessão (gate), banco ligado, corpo JSON e o
+// Rota do app separado (radion.absolutezro.com e o modo local): pessoa da sessão (gate), banco ligado, corpo JSON e o
 // núcleo (api/_nucleo.js) dentro de `comoPessoa` (papel radio_app, RLS).
 import { comoPessoa, nuvemLigada } from './_banco.js'
 import { json } from './_zro.js'
