@@ -96,10 +96,11 @@
               <div class="noar-cabeca">
                 <h1><span class="forte" id="diaria-nome"></span> <span class="leve" id="diaria-papel"></span></h1>
                 <span class="chip chip--vivo" id="noar-conta"></span>
+                <span class="chip chip--gravando" id="gravando-chip" hidden>gravando</span>
                 <button class="redondo sair-btn" id="sair-btn" type="button" aria-label="Sair da diária" title="Sair" data-ic="sair"></button>
                 <div class="avisos-rapidos" id="avisos" hidden>
                   <button class="aviso-btn aviso-btn--trava" id="travar-fala" type="button" hidden data-ic-antes="cadeado">Travar a fala</button>
-                  <button class="aviso-btn" type="button" data-aviso="acao">Gravando</button>
+                  <button class="aviso-btn" type="button" data-aviso="acao" title="Toque para gravar; gravando, toque para cortar">Gravando</button>
                   <button class="aviso-btn" type="button" data-aviso="corta">Corta</button>
                   <button class="aviso-btn" type="button" data-aviso="silencio">Silêncio</button>
                   <button class="aviso-btn" type="button" data-aviso="intervalo">Intervalo</button>
@@ -289,6 +290,22 @@
           <button class="vidro" id="se-cancelar" type="button">Cancelar</button>
           <button class="vidro vidro--tinta" id="se-salvar" type="submit">Salvar</button>
         </div>
+      </form>
+    </dialog>
+
+    <!-- uma diária da lista: renomear (o dono), copiar o link, excluir (o dono) ou deixar -->
+    <dialog id="diaria-folha" class="folha" aria-labelledby="df-titulo">
+      <form id="df-form" method="dialog" autocomplete="off">
+        <h2 id="df-titulo"><span>Diária</span> <b id="df-nome"></b></h2>
+        <div class="campo" id="df-campo"><input id="df-novo" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" /><button class="vidro vidro--tinta" type="submit">Salvar</button></div>
+        <p class="sub" id="df-info"></p>
+        <div class="sair-lista">
+          <button class="sair-op" id="df-copiar" type="button"><span class="ico ico--p" data-canal="geral" data-ic="link"></span><div><b>Copiar o link</b><small id="df-codigo"></small></div></button>
+          <button class="sair-op" id="df-deixar" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="sair"></span><div><b>Deixar a diária</b><small>Sai da equipe. Para voltar, precisa do código.</small></div></button>
+          <button class="sair-op sair-op--perigo" id="df-excluir" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="x"></span><div><b>Excluir a diária</b><small>Some para todo mundo. O código para de valer.</small></div></button>
+        </div>
+        <p class="erro" id="df-erro" role="alert" hidden></p>
+        <div class="folha-acoes"><button class="vidro" id="df-fechar" type="button">Fechar</button></div>
       </form>
     </dialog>
 

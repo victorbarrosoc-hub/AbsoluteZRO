@@ -255,7 +255,7 @@ function linhaDiaria(d) {
   const aberta = estado.diaria?.id === d.id
   return h(
     'li',
-    {},
+    { class: 'linha-diaria-casa' },
     h(
       'button',
       { class: 'linha-diaria', type: 'button', onclick: () => (aberta ? ir('noar') : abrirDiaria(d)) },
@@ -264,8 +264,65 @@ function linhaDiaria(d) {
       aberta || d.noAr ? h('span', { class: 'chip chip--vivo' }, aberta ? `no ar · ${estado.pessoas.length || 1}` : `no ar · ${d.noAr}`) : null,
       h('span', { class: 'codigo chip' }, d.codigo),
     ),
+    h('button', { class: 'redondo diaria-mais', type: 'button', 'aria-label': `Opções de ${d.nome}`, title: 'Renomear, copiar o link, excluir', onclick: () => abrirDiariaFolha(d) }, icone('ajustes')),
   )
 }
+// ───────── uma diária da lista: renomear, copiar o link, excluir (o dono) ou deixar ─────────
+let diariaDaFolha = null
+function abrirDiariaFolha(d) {
+  diariaDaFolha = d
+  $('df-nome').textContent = d.nome
+  $('df-campo').hidden = !d.dono
+  $('df-novo').value = d.nome
+  $('df-info').textContent = [PAPEL[d.papel] || 'Equipe', d.funcao ? (estado.diaria?.id === d.id ? nomeDoSetor(d.funcao) : d.funcaoNome) : 'Sem setor', d.pessoas != null ? `${d.pessoas} ${d.pessoas === 1 ? 'pessoa' : 'pessoas'}` : null, d.criado ? `criada em ${new Date(d.criado).toLocaleDateString('pt-BR')}` : null].filter(Boolean).join(' · ')
+  $('df-codigo').textContent = `Código ${d.codigo}`
+  $('df-excluir').hidden = !d.dono
+  $('df-deixar').hidden = Boolean(d.dono)
+  mostrarErro('df-erro', '')
+  $('diaria-folha').showModal()
+}
+async function depoisDeSair(d) {
+  $('diaria-folha').close()
+  if (estado.diaria?.id === d.id) return desligar()
+  await carregarDiarias()
+  desenharPagina()
+}
+$('df-form').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const d = diariaDaFolha
+  const nome = $('df-novo').value.trim()
+  if (!d?.dono || !nome || nome === d.nome) return $('diaria-folha').close()
+  const r = await api(`${API}/diarias`, { acao: 'renomear', diaria: d.id, nome })
+  if (!r.ok) return mostrarErro('df-erro', 'Não deu para renomear.')
+  if (estado.diaria?.id === d.id) estado.diaria.nome = r.diaria.nome
+  $('diaria-folha').close()
+  await carregarDiarias()
+  desenharCasca()
+  desenharPagina()
+})
+$('df-copiar').addEventListener('click', async () => {
+  const d = diariaDaFolha
+  try {
+    await navigator.clipboard.writeText(`${location.origin}${INICIO}?d=${d.codigo}`)
+    $('df-codigo').textContent = 'Link copiado'
+  } catch {
+    $('df-codigo').textContent = `Código ${d.codigo}`
+  }
+})
+for (const [botao, acao, pergunta] of [
+  ['df-deixar', 'sair', 'Deixar a diária? Para voltar, você vai precisar do código.'],
+  ['df-excluir', 'encerrar', 'Excluir a diária para todo mundo? O código para de valer.'],
+]) {
+  $(botao).addEventListener('click', async () => {
+    const d = diariaDaFolha
+    if (!d || !confirm(pergunta)) return
+    const r = await api(`${API}/diarias`, { acao, diaria: d.id })
+    if (!r.ok) return mostrarErro('df-erro', 'Não deu certo. Tente de novo.')
+    depoisDeSair(d)
+  })
+}
+$('df-fechar').addEventListener('click', () => $('diaria-folha').close())
+$('diaria-folha').addEventListener('click', (e) => e.target === $('diaria-folha') && $('diaria-folha').close())
 function desenharDiarias() {
   $('lista').replaceChildren(...(estado.diarias.length ? estado.diarias.map(linhaDiaria) : [h('li', { class: 'vazio' }, 'Nenhuma diária ainda.')]))
 }
@@ -674,6 +731,11 @@ function desenharNoAr() {
   $('diaria-nome').textContent = d.nome
   $('diaria-papel').textContent = `· ${PAPEL[estado.eu?.papel || d.papel] || 'Equipe'}`
   $('noar-conta').textContent = `no ar · ${estado.pessoas.length}`
+  // gravando é estado: liga no Gravando, desliga no Corta (o botão mostra e um toque corta)
+  $('gravando-chip').hidden = !estado.gravando
+  const grav = $('avisos').querySelector('[data-aviso="acao"]')
+  grav.dataset.ativo = estado.gravando ? '1' : ''
+  grav.textContent = estado.gravando && podeTodos() ? 'Gravando · cortar' : 'Gravando'
   $('codigo').textContent = d.codigo
   $('avisos').hidden = !(estado.eu?.podeAvisar || estado.eu?.podeModerar)
   for (const b of $('avisos').querySelectorAll('[data-aviso]')) b.hidden = !estado.eu?.podeAvisar
@@ -897,6 +959,7 @@ async function bater() {
     estado.maos = new Set(r.maos)
     estado.silencio = r.silencio
     estado.ajustes = r.ajustes
+    estado.gravando = r.gravando ?? null
     const setoresMudaram = Array.isArray(r.setores) && aplicarSetores(r.setores)
     diaria.papel = r.eu.papel
     diaria.dono = r.eu.dono
@@ -1073,11 +1136,16 @@ $('aviso-tela').addEventListener('click', () => ($('aviso-tela').hidden = true))
 async function mandarAviso(tipo, setor = null) {
   const r = await api(`${API}/aviso`, { diaria: estado.diaria.id, tipo, setor })
   if (!r.aviso) return mostrarErro('radio-erro', 'Só o dono, a Direção e os responsáveis mandam aviso.')
+  if (!r.aviso.setor && tipo === 'acao') estado.gravando = estado.gravando || new Date().toISOString()
+  if (!r.aviso.setor && tipo === 'corta') estado.gravando = null
+  if (estado.pagina === 'noar') desenharNoAr()
   estado.malha?.avisar({ t: 'aviso', ...r.aviso })
   mostrarAviso(r.aviso)
   bater()
 }
-for (const b of document.querySelectorAll('#avisos [data-aviso]')) b.addEventListener('click', () => mandarAviso(b.dataset.aviso))
+/** Gravando liga e desliga: gravando, o mesmo botão manda o Corta. */
+const avisoDoBotao = (tipo) => (tipo === 'acao' && estado.gravando && podeTodos() ? 'corta' : tipo)
+for (const b of document.querySelectorAll('#avisos [data-aviso]')) b.addEventListener('click', () => mandarAviso(avisoDoBotao(b.dataset.aviso)))
 
 function desenharAvisos() {
   const d = estado.diaria
@@ -1091,7 +1159,10 @@ function desenharAvisos() {
   }
   $('avisos-grade').replaceChildren(
     ...(d && pode
-      ? Object.entries(AVISOS).map(([tipo, rot]) => h('button', { class: 'aviso-cartao', type: 'button', dataset: { aviso: tipo }, onclick: () => mandarAviso(tipo, geral ? $('avisos-para').value || null : null) }, h('b', {}, rot), h('small', {}, AVISO_DICA[tipo])))
+      ? Object.entries(AVISOS).map(([tipo, rot]) => {
+          const ativo = tipo === 'acao' && estado.gravando && geral
+          return h('button', { class: 'aviso-cartao', type: 'button', dataset: { aviso: tipo, ativo: ativo ? '1' : '' }, onclick: () => mandarAviso(ativo ? 'corta' : tipo, ativo || !geral ? null : $('avisos-para').value || null).then(() => desenharAvisos()) }, h('b', {}, ativo ? 'Gravando agora' : rot), h('small', {}, ativo ? 'Toque para cortar' : AVISO_DICA[tipo]))
+        })
       : []),
   )
   $('avisos-lista').replaceChildren(

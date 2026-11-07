@@ -236,7 +236,13 @@ svg { display: block; flex: none; }
 .noar-cabeca h1 .leve { color: var(--apoio); }
 .avisos-rapidos { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .aviso-btn { height: 34px; padding: 0 14px; font-size: 13.5px; font-weight: 700; border-radius: 17px; background: var(--cartao); box-shadow: inset 0 0 0 1px var(--contorno); }
-.aviso-btn[data-aviso='acao'] { background: var(--vermelho); color: #fff; box-shadow: none; }
+.aviso-btn[data-aviso='acao'] { display: inline-flex; align-items: center; gap: 7px; }
+.aviso-btn[data-aviso='acao']::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--vermelho); flex: none; }
+.aviso-btn[data-aviso='acao'][data-ativo='1'] { background: var(--vermelho); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--vermelho) 22%, transparent); }
+.aviso-btn[data-aviso='acao'][data-ativo='1']::before { background: #fff; animation: gravando 1.2s ease-in-out infinite; }
+.chip--gravando { background: var(--vermelho); color: #fff; }
+.chip--gravando::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: gravando 1.2s ease-in-out infinite; }
+@keyframes gravando { 50% { opacity: 0.25; } }
 .faixa-silencio { display: flex; align-items: center; gap: 14px; padding: 12px 14px 12px 18px; border-radius: 20px; background: #1d1d1f; color: #fff; flex-wrap: wrap; }
 [data-tema='escuro'] .faixa-silencio { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
 .faixa-silencio .ico { background: rgba(255, 59, 48, 0.2); color: #ff6961; width: 40px; height: 40px; border-radius: 13px; }
@@ -382,8 +388,11 @@ svg { display: block; flex: none; }
 .aviso-cartao { padding: 22px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; text-align: left; border-radius: 24px; background: var(--cartao); box-shadow: var(--sombra); }
 .aviso-cartao b { font-size: 20px; letter-spacing: -0.02em; }
 .aviso-cartao small { color: var(--apoio); font-weight: 500; font-size: 13px; }
-.aviso-cartao[data-aviso='acao'] { background: var(--vermelho); color: #fff; }
-.aviso-cartao[data-aviso='acao'] small { color: rgba(255, 255, 255, 0.85); }
+.aviso-cartao[data-aviso='acao'] b { display: flex; align-items: center; gap: 8px; }
+.aviso-cartao[data-aviso='acao'] b::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--vermelho); }
+.aviso-cartao[data-aviso='acao'][data-ativo='1'] { background: var(--vermelho); color: #fff; }
+.aviso-cartao[data-aviso='acao'][data-ativo='1'] b::before { background: #fff; animation: gravando 1.2s ease-in-out infinite; }
+.aviso-cartao[data-aviso='acao'][data-ativo='1'] small { color: rgba(255, 255, 255, 0.85); }
 .ajustes { padding: 6px 20px; }
 .ajuste { display: flex; align-items: center; gap: 14px; padding: 16px 0; border-top: 1px solid var(--linha); }
 .ajuste:first-child { border-top: 0; }
@@ -595,3 +604,8 @@ a.item { text-decoration: none; }
   .linha-diaria small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 .canal-nome { overflow: hidden; }
+/* a lista de diárias: a linha e o botão de opções ao lado */
+.linha-diaria-casa { display: flex; align-items: center; gap: 8px; }
+.linha-diaria-casa .linha-diaria { flex: 1; min-width: 0; }
+#df-campo { margin-bottom: 10px; }
+#df-info { margin: 4px 0 16px; font-size: 14px; color: var(--apoio); }

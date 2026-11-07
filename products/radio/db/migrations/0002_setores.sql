@@ -7,6 +7,8 @@
 -- silenciada). O id de um setor criado é sorteado ('s' + 7); o nome é só o que aparece.
 -- Trava de setor (ajuste do dono): quem já tem setor não troca sozinho; o dono move (radio.moderar 'mover').
 -- Sair: quem não é o dono deixa a diária (radio.sair); o dono encerra a diária (radio.encerrar), que some para todos.
+-- Gravando vira estado (titular: "fica sempre em gravando"): liga no aviso de Gravando para todos e desliga no Corta,
+-- com ou sem o silêncio do set.
 
 -- ───────── setores ─────────
 create table radio.setores (
@@ -54,8 +56,9 @@ alter table radio.membros add constraint membros_setor foreign key (diaria_id, f
 alter table radio.avisos drop constraint if exists avisos_setor_check;
 alter table radio.avisos add constraint avisos_setor foreign key (diaria_id, setor) references radio.setores (diaria_id, id) on delete set null (setor);
 
--- ───────── trava de setor ─────────
+-- ───────── trava de setor e o estado de gravando ─────────
 alter table radio.diarias add column setor_travado boolean not null default false;
+alter table radio.diarias add column gravando_desde timestamptz;
 
 -- Mudar o próprio setor. Com a trava, só a primeira escolha (quem ainda não tem setor); depois, o dono move.
 -- Quem era responsável deixa de ser (o setor novo já pode ter o seu).
@@ -202,6 +205,11 @@ begin
   if v_setor is not null and not exists (select 1 from radio.setores s where s.diaria_id = p_diaria and s.id = v_setor) then return null; end if;
   insert into radio.avisos (diaria_id, tipo, de_sub, de_nome, setor) values (p_diaria, p_tipo, eu.user_sub, left(btrim(p_nome), 60), v_setor)
   returning id into v_id;
+  if v_setor is null and p_tipo = 'acao' then
+    update radio.diarias x set gravando_desde = coalesce(x.gravando_desde, now()) where x.id = p_diaria;
+  elsif v_setor is null and p_tipo = 'corta' then
+    update radio.diarias x set gravando_desde = null where x.id = p_diaria;
+  end if;
   if v_setor is null and p_tipo = 'acao' and d.gravando_silencia
      and not exists (select 1 from radio.silencios s where s.diaria_id = p_diaria and s.tipo = 'todos' and (s.ate is null or s.ate > now())) then
     insert into radio.silencios (diaria_id, tipo, alvo, motivo, por_sub, por_nome) values (p_diaria, 'todos', '*', 'gravando', eu.user_sub, eu.nome);

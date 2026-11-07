@@ -64,7 +64,7 @@ export async function listarDiarias(tx, p) {
   return r(200, { ok: true, eu: { nome: p.nome }, diarias: lista.map(publica) })
 }
 
-/** POST { acao: criar | entrar | funcao | sair | encerrar }. Criar roda em savepoint para sortear de novo um código repetido. */
+/** POST { acao: criar | entrar | funcao | renomear | sair | encerrar }. Criar roda em savepoint para sortear de novo um código repetido. */
 export async function mudarDiarias(tx, p, c) {
   if (c?.acao === 'criar') {
     const nome = nomeLimpo(c.nome)
@@ -101,6 +101,14 @@ export async function mudarDiarias(tx, p, c) {
     return n?.ok ? r(200, { ok: true }) : r(409, { ok: false, erro: 'travado' })
   }
 
+  // renomear: só o dono (o RLS de diarias confere)
+  if (c?.acao === 'renomear') {
+    const nome = nomeLimpo(c.nome)
+    if (!ID.test(String(c.diaria || '')) || !nome) return r(400, { ok: false, erro: 'nome' })
+    const feito = await tx`update radio.diarias set nome = ${nome} where id = ${c.diaria} and dono_sub = ${p.sub} and expira > now() returning id`
+    return feito.length ? r(200, { ok: true, diaria: await lerDiaria(tx, p.sub, c.diaria) }) : r(403, { ok: false, erro: 'sem_permissao' })
+  }
+
   // sair: quem não é o dono deixa a diária; encerrar: o dono fecha a diária para todos
   if (c?.acao === 'sair' || c?.acao === 'encerrar') {
     if (!ID.test(String(c.diaria || ''))) return r(400, { ok: false })
@@ -127,7 +135,7 @@ export async function bater(tx, p, c) {
 
   const [m] = await tx`
     select m.papel, m.funcao, radio.pode_avisar(${diaria}) as pode, radio.apelido(${diaria}, m.user_sub) as apelido,
-      d.gravando_silencia, d.pedir_palavra, d.silencio_min, d.setor_travado
+      d.gravando_silencia, d.pedir_palavra, d.silencio_min, d.setor_travado, d.gravando_desde
     from radio.membros m join radio.diarias d on d.id = m.diaria_id
     where m.diaria_id = ${diaria} and m.user_sub = ${p.sub} and radio.membro(${diaria})`
   if (!m) return r(403, { ok: false, erro: 'fora' })
@@ -196,6 +204,7 @@ export async function bater(tx, p, c) {
       setores: globais.filter((g) => g.tipo === 'setor').map((g) => g.alvo),
     },
     setores: setores.map((x) => ({ id: x.id, nome: x.nome, cor: x.cor })),
+    gravando: m.gravando_desde ? new Date(m.gravando_desde).toISOString() : null,
     ajustes: { gravandoSilencia: m.gravando_silencia, pedirPalavra: m.pedir_palavra, silencioMin: m.silencio_min ?? null, setorTravado: m.setor_travado },
     sinais: [...chegaram].sort((a, b) => Number(a.id) - Number(b.id)).map((s) => ({ de: s.de_peer, tipo: s.tipo, dados: s.dados })),
     avisos: avisos.map((a) => ({ id: Number(a.id), tipo: a.tipo, de: a.de_nome, setor: a.setor ?? null })),

@@ -373,6 +373,19 @@ test('setores da diária: criar, renomear, tirar, pôr gente, trava de setor, sa
   assert.equal((await mod(dona, { acao: 'mover', alvo: await quem('Ana'), valor: 'som' })).statusCode, 200)
   assert.equal((await bater(ana, 'a'.repeat(24))).eu.funcao, 'som')
 
+  // Gravando é estado: liga no aviso de Gravando e desliga no Corta
+  assert.equal((await bater(dona, 'e'.repeat(24))).gravando, null)
+  await chamar('aviso', 'POST', dona, { diaria: d.id, tipo: 'acao' })
+  assert.ok(Date.parse((await bater(ana, 'a'.repeat(24))).gravando) > 0)
+  await chamar('aviso', 'POST', dona, { diaria: d.id, tipo: 'corta' })
+  assert.equal((await bater(ana, 'a'.repeat(24))).gravando, null)
+
+  // renomear: só a dona
+  assert.equal((await chamar('diarias', 'POST', ana, { acao: 'renomear', diaria: d.id, nome: 'Outra' })).statusCode, 403)
+  const ren = await chamar('diarias', 'POST', dona, { acao: 'renomear', diaria: d.id, nome: 'Setores 2' })
+  assert.equal(ren.corpo.diaria.nome, 'Setores 2')
+  assert.equal((await chamar('diarias', 'GET', ana)).corpo.diarias.find((x) => x.id === d.id).nome, 'Setores 2')
+
   // sair: a Ana deixa a diária (e some da equipe); a dona não sai, encerra, e a diária some para todos
   assert.equal((await chamar('diarias', 'POST', ana, { acao: 'sair', diaria: d.id })).statusCode, 200)
   assert.equal((await chamar('batida', 'POST', ana, { diaria: d.id, peer: 'a'.repeat(24) })).statusCode, 403)
