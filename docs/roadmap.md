@@ -170,7 +170,18 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   encerrar); Sobre o RADION no menu. Gravando vira estado (liga no Gravando, desliga no Corta ou no mesmo botão, com
   o selo "gravando" para todos). Diárias com opções: renomear (o dono), copiar o link, excluir (o dono) ou deixar.
   Marca com o sinal (aprovada pelo titular, 07/11/2026): três arcos no quadrante oposto ao leque, na cor do rebite, e o
-  ícone do app maior (escala 3,55, o rebite no centro); `scripts/marca.mjs` refez símbolo, ícones, favicon e OG. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
+  ícone do app maior (escala 3,55, o rebite no centro); `scripts/marca.mjs` refez símbolo, ícones, favicon e OG.
+- ✅ **RADION, página inicial nova** (pedido do titular, 07/11/2026, no estilo da página do SOBEDESCE): o celular com o
+  app ao vivo no herói (Rui chama a Câmera, você responde, a Direção fala com todos, Gravando cala o set), os números,
+  os grupos do set (quem ouve quem), as telas de verdade, Como funciona em três passos, os poderes (Gravando, Travar a
+  fala, Pedir a palavra, responsável, setores do seu jeito, qualquer celular), a voz de aparelho para aparelho e a
+  família. Motion com a rolagem e demonstrações em HTML (`app/site.js`), paradas com "reduzir movimento". A logo do
+  topo usa o símbolo branco no escuro (antes o filtro invertia as cores). Sem zoom ao tocar no Safari.
+- ✅ **RADION no ar para todos** (titular, 07/11/2026: "lançar para todos"): HUB `0062` abre o gate (web, sso e api; sem
+  app de computador), põe o RADION em todo plano de pacote e no grátis (sem limites próprios) e dá o acesso a quem já
+  assina; o ícone volta para `public/products/radio.svg` e para o `ICONES_PUBLICOS`; o projeto `radion` abre a página
+  inicial (`RADION_SITE_ABERTO=1`) e o robots deixa achar só o `/`. No topo da página e do app (também no celular), o
+  claro × escuro; um Entrar só, no topo. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
   `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
   "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.

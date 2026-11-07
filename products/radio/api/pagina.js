@@ -41,7 +41,7 @@ export const paraOAppSeparado = (html) =>
 
 /** A página inicial abre para todos só no lançamento (o gate do HUB abre junto; raiz CLAUDE.md). */
 export const siteAberto = () => process.env.RADION_SITE_ABERTO === '1'
-const site = async (entrar, texto) => (await readFile(`${APP}site.html`, 'utf8')).replaceAll('%ENTRAR_TEXTO%', texto).replaceAll('%ENTRAR%', entrar)
+const site = async (entrar, texto, curto) => (await readFile(`${APP}site.html`, 'utf8')).replaceAll('%ENTRAR_TEXTO%', texto).replaceAll('%ENTRAR_CURTO%', curto).replaceAll('%ENTRAR%', entrar)
 
 export default async function pagina(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -51,9 +51,9 @@ export default async function pagina(req, res) {
   }
   const sobre = /[?&]v=sobre(&|$)/.test(req.url || '') || /^\/sobre\/?(\?|$)/.test(req.url || '')
   const pessoa = pessoaDe(req)
-  if (pessoa && sobre) return html(res, await site('/', 'Abrir o rádio'))
+  if (pessoa && sobre) return html(res, await site('/', 'Abrir o rádio', 'Abrir'))
   if (pessoa) return html(res, paraOAppSeparado(await readFile(`${APP}app.html`, 'utf8')))
   if (modoLocal(req)) return html(res, await readFile(`${APP}local.html`, 'utf8'))
-  if (siteAberto()) return html(res, await site('/entrar', 'Entrar com a Absolute ZRO'))
+  if (siteAberto()) return html(res, await site('/entrar', 'Entrar com a Absolute ZRO', 'Entrar'))
   return html(res, await readFile(`${APP}indisponivel.html`, 'utf8'))
 }

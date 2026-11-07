@@ -64,14 +64,14 @@ describe('preços antigos (0011), fora da venda desde a 0055', () => {
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
       where (p.code, p.version) in (('individual-nossom', 2), ('ciclo-do-o', 2), ('absolute-zro-pro', 1), ('absolute-zro-pro-anual', 1)) group by p.code order by p.code`
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
-      // o Maestro (0027) e o Relay (0031) entram nos planos sem mexer nos créditos
-      'absolute-zro-pro:9:2000',
-      'absolute-zro-pro-anual:9:2000',
-      'ciclo-do-o:9:600',
+      // o Maestro (0027), o Relay (0031) e o RADION (0062) entram nos planos sem mexer nos créditos
+      'absolute-zro-pro:10:2000',
+      'absolute-zro-pro-anual:10:2000',
+      'ciclo-do-o:10:600',
       'individual-nossom:2:200',
     ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
-    expect(anual!.n).toBe(9)
+    expect(anual!.n).toBe(10)
   })
 })
 
@@ -98,11 +98,11 @@ describe('Maestro com a sua marca (0025)', () => {
         expect(r.limits).toEqual({ 'zro.ai_credits': 2000, 'maestro.marca_propria': 1 })
       }
     }
-    // Pro v2 = as 7 ferramentas da v1 (com os mesmos créditos) + o sinal do Maestro
+    // Pro v2 = as 7 ferramentas da v1 (com os mesmos créditos) + o sinal do Maestro; o RADION (0062) entra sem crédito
     const [n] = await db.sql`
       select count(*)::int as n, max((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
       where p.code = 'absolute-zro-pro' and p.version = 2 and pp.product_id <> 'maestro'`
-    expect(n).toMatchObject({ n: 7, ai: 2000 })
+    expect(n).toMatchObject({ n: 8, ai: 2000 })
     // nenhum rascunho aparece à venda
     const [vend] = await db.sql`select count(*)::int as n from zro.plans where status = 'active' and code like 'maestro-marca-propria%'`
     expect(vend!.n).toBe(0)

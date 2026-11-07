@@ -123,6 +123,7 @@ const ICONES_PUBLICOS: Readonly<Record<string, string>> = {
   'carro-do-freela': '/products/carro-do-freela.png',
   maestro: '/products/maestro.svg',
   relay: '/products/relay.svg',
+  radio: '/products/radio.svg',
 }
 
 export function ProductMark({ productId, name, size = 32 }: { productId: string; name: string; size?: number }) {

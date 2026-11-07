@@ -30,6 +30,7 @@ export const ARQUIVOS = {
   'marca/og.png': PNG,
   'manifest.webmanifest': 'application/manifest+json',
   'site.css': 'text/css; charset=utf-8',
+  'site.js': JS,
   'site/computador-claro.webp': 'image/webp',
   'site/computador-escuro.webp': 'image/webp',
   'site/celular-claro.webp': 'image/webp',

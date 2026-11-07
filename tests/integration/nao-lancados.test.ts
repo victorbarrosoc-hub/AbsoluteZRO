@@ -19,8 +19,9 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
-const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion', 'radio']
-const NO_AR = ['maestro', 'carro-do-freela', 'synquei', 'sobedesce', 'relay', 'tpeasy']
+const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion']
+// o RADION (`radio`) abriu na 0062 (titular, 07/11/2026)
+const NO_AR = ['maestro', 'carro-do-freela', 'synquei', 'sobedesce', 'relay', 'tpeasy', 'radio']
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
 const MIGRATION = readFileSync(new URL('../../infra/migrations/0049_nao_lancados.sql', import.meta.url), 'utf8')
 
@@ -52,7 +53,7 @@ describe('gate (0049)', () => {
     const antes = await contar()
     await db.sql.unsafe(MIGRATION)
     expect(await contar()).toEqual(antes)
-    expect(antes.produtos).toBe(5)
+    expect(antes.produtos).toBe(4)
     expect(antes.planos).toBeGreaterThan(0)
     resetReleaseCache()
   })

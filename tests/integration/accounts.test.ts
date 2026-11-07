@@ -28,7 +28,8 @@ afterAll(() => db.close())
 
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
 // Conta nova nasce no Zero (0055): os seis apps no ar e, como no grátis antigo, os fechados (o gate esconde).
-const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'relay', 'sobedesce', 'synquei', 'tpeasy']
+// o RADION entrou no grátis ao lançar (0062)
+const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'radio', 'relay', 'sobedesce', 'synquei', 'tpeasy']
 
 describe('plano grátis da organização nova', () => {
   it('libera as ferramentas do plano grátis vigente e aparece no login único', async () => {
@@ -41,14 +42,15 @@ describe('plano grátis da organização nova', () => {
     expect(rows.every((r) => r.provider === 'free' && r.code === 'zero' && r.version === 1)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
     // No login único só entram os abertos (gate de lançamento, ADR 0023): os lançados, o Maestro (0027/0039), o
-    // Carro do Freela (0041); os não lançados (AEON, Revela, NOSSOM; 0049) nem entram em zro_release.
-    expect([...claims.products].sort()).toEqual(['carro-do-freela', 'maestro', 'sobedesce', 'synquei', 'tpeasy'])
+    // Carro do Freela (0041), o RADION (0062); os não lançados (AEON, Revela, NOSSOM; 0049) nem entram em zro_release.
+    expect([...claims.products].sort()).toEqual(['carro-do-freela', 'maestro', 'radio', 'sobedesce', 'synquei', 'tpeasy'])
     expect(claims.release).toMatchObject({
       maestro: 'released',
       sobedesce: 'released',
       synquei: 'released',
       tpeasy: 'released',
       'carro-do-freela': 'released',
+      radio: 'released',
     })
     for (const id of ['nossom', 'ai-edit', 'finishing']) expect(claims.release, id).not.toHaveProperty(id)
   })
