@@ -114,7 +114,7 @@ test('gate: sem a claim do rádio, página neutra, recurso 404 e API 401', { ski
   try {
     const aberto = (await chamar('pagina', 'GET', null)).corpo
     assert.match(aberto, /href="\/entrar"/)
-    assert.match(aberto, /og:image" content="https:\/\/radion\.absolutezro\.com\/app\/marca\/og\.png"/)
+    assert.match(aberto, /og:image" content="https:\/\/radion\.absolutezro\.com\/og\.png"/)
     assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=marca/og.png')).statusCode, 200)
     assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 200)
     assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.js')).statusCode, 200)

@@ -191,7 +191,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   diária, estado conferido, título da barra, dica, selo, rótulo do atalho, cópias do hub-desktop, ícones, nomes do
   Release); teste de fumaça no Linux (Xvfb) `SMOKE OK`; HUB `desktop-apps`, `downloads`, `login-pelo-app` e `meus-apps`
   51/51 com o RADION no catálogo da central; `products/radio` `npm test` 12/12 e `tests/integration/radio.test.ts` com a
-  cópia nova (modo compacto e ponte do computador, que no navegador não aparecem).
+  cópia nova (modo compacto e ponte do computador, que no navegador não aparecem). Primeiro build na main (b4002):
+  Mac e Windows empacotados, teste de fumaça dos dois `SMOKE OK`, Release `radion-versao-de-teste` com o .dmg, o .exe
+  e o `versao.json`. HUB `0064`: `tests/integration/radion-computador.test.ts` (desktop e download abertos só para o
+  RADION, web/api/sso como na 0062, idempotente e sem auditoria nova).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
