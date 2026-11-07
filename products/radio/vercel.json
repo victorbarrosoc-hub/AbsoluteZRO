@@ -16,6 +16,19 @@
       "includeFiles": "app/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/:caminho*",
+      "has": [
+        {
+          "type": "host",
+          "value": "radio.absolutezro.com"
+        }
+      ],
+      "destination": "https://radion.absolutezro.com/:caminho*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/zro/set/:caminho*",
