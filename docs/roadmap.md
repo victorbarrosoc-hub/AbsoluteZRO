@@ -184,10 +184,11 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   claro × escuro; um Entrar só, no topo. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
   `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
   "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
-- ✅ **RADION, imagem de compartilhar nova** (pedido do titular, 07/11/2026): o símbolo com o círculo no centro exato
-  da imagem (regra do titular: o círculo é o centro da logo, sempre; vale também para o favicon e os ícones), o nome, a
-  frase "stay connected.", uma linha do que é e "Faz parte do ecossistema Absolute ZRO". `og.png` e
-  `apple-touch-icon.png` agora saem na raiz do `radion.absolutezro.com`, fora do `/app/` que o robots fecha.
+- ✅ **RADION, imagem de compartilhar nova** (pedido do titular, 07/11/2026; das três propostas ele escolheu a "Ondas"):
+  o símbolo com o círculo no centro exato da imagem (regra do titular: o círculo é o centro da logo, sempre; vale também
+  para o favicon e os ícones), anéis nas cores dos setores saindo dele como o sinal, o nome, "stay connected.", uma linha
+  do que é e a Absolute ZRO pequena no canto. `og.png` e `apple-touch-icon.png` agora saem na raiz do
+  `radion.absolutezro.com`, fora do `/app/` que o robots fecha.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

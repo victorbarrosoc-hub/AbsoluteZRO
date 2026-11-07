@@ -105,33 +105,33 @@ export function favicon() {
 }
 
 /**
- * A imagem de compartilhamento (1200 × 630). O rebite (o círculo) é o centro da logo e fica no centro exato da imagem
- * (titular, 07/11/2026: "o círculo é o centro da logo, sempre"): no recorte quadrado do iPhone e do WhatsApp o símbolo
- * continua no meio. Em volta: o nome em cima; embaixo a frase em Light × ExtraBold, uma linha do que é e a assinatura do
- * ecossistema Absolute ZRO. A luz atrás vem das cores dos setores.
+ * A imagem de compartilhamento (1200 × 630), "Ondas" (escolhida pelo titular, 07/11/2026). O rebite (o círculo) é o
+ * centro da logo e fica no centro exato da imagem: no recorte quadrado do iPhone e do WhatsApp o símbolo continua no
+ * meio. Em volta, anéis nas cores dos setores se espalham como o sinal do rádio e somem em cima e embaixo, onde ficam o
+ * nome, a frase em Light × ExtraBold e uma linha do que é; a Absolute ZRO assina pequena no canto.
  */
 export function og(fontes, zro) {
-  const k = 1.3
-  const { defs, corpo } = leque(600, 315, k, GRAFITE, 'o')
-  const luz = CORES.map((cor, i) => `radial-gradient(circle at ${18 + i * 13}% ${i % 2 ? 30 : 44}%, ${cor}1f, transparent 34%)`).join(',')
+  const { defs, corpo } = leque(600, 315, 1.05, GRAFITE, 'o')
+  const aneis = [150, 215, 290, 375, 470, 575, 690]
+    .map((r, i) => `<circle cx="600" cy="315" r="${r}" fill="none" stroke="${CORES[i % 6]}" stroke-opacity="${n(0.6 - i * 0.065)}" stroke-width="${n(2.4 - i * 0.22)}"/>`)
+    .join('')
+  const some = `<linearGradient id="oa" x1="0" y1="0" x2="0" y2="630" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".22" stop-color="#fff"/><stop offset=".6" stop-color="#fff"/><stop offset=".78" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="om" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="630"><rect width="1200" height="630" fill="url(#oa)"/></mask>`
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:Figtree;font-weight:300 900;src:url('${fontes}/figtree-latin-wght-normal.woff2') format('woff2-variations')}
 @font-face{font-family:Nunito;font-weight:200 1000;src:url('${fontes}/nunito-latin-wght-normal.woff2') format('woff2-variations')}
 html,body{margin:0}
-body{position:relative;width:1200px;height:630px;overflow:hidden;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;-webkit-font-smoothing:antialiased}
-svg.s{position:absolute;inset:0}
-.nome{position:absolute;left:0;right:0;top:58px;text-align:center;font-family:Nunito;font-weight:850;font-size:50px;letter-spacing:-0.045em;line-height:1}
-.baixo{position:absolute;left:0;right:0;top:432px;display:flex;flex-direction:column;align-items:center}
-h1{margin:0;font-size:74px;letter-spacing:-0.05em;line-height:1}
-h1 span{font-weight:300} h1 b{font-weight:800}
-p{margin:16px 0 0;font-size:27px;letter-spacing:-0.015em;color:#6e6e73;font-weight:450}
-.eco{position:absolute;left:0;right:0;bottom:28px;display:flex;align-items:center;justify-content:center;gap:13px;font-size:21px;color:#6e6e73;letter-spacing:-0.01em}
-.eco img{height:21px}
+body{position:relative;width:1200px;height:630px;overflow:hidden;background:#fbfbfd;font-family:Figtree;color:#1d1d1f;-webkit-font-smoothing:antialiased}
+svg{position:absolute;inset:0}
+.nome{position:absolute;left:0;right:0;top:50px;text-align:center;font-family:Nunito;font-weight:850;font-size:42px;letter-spacing:-0.045em;line-height:1}
+.zro{position:absolute;right:56px;top:58px;height:16px;opacity:.8}
+.baixo{position:absolute;left:0;right:0;bottom:52px;display:flex;flex-direction:column;align-items:center}
+h1{margin:0;font-size:66px;letter-spacing:-0.05em;line-height:.95;font-weight:300} h1 b{font-weight:800}
+p{margin:12px 0 0;font-size:25px;color:#6e6e73}
 </style></head><body>
-<svg class="s" width="1200" height="630" viewBox="0 0 1200 630"><defs>${defs}</defs>${corpo}</svg>
+<svg width="1200" height="630" viewBox="0 0 1200 630"><defs>${some}${defs}</defs><g mask="url(#om)">${aneis}</g>${corpo}</svg>
 <div class="nome">radion</div>
-<div class="baixo"><h1><span>stay</span> <b>connected.</b></h1><p>O rádio do set no celular de cada equipe.</p></div>
-<div class="eco">Faz parte do ecossistema <img src="data:image/svg+xml;base64,${Buffer.from(zro).toString('base64')}" alt="Absolute ZRO"></div>
+<img class="zro" src="data:image/svg+xml;base64,${Buffer.from(zro).toString('base64')}" alt="Absolute ZRO">
+<div class="baixo"><h1>stay <b>connected.</b></h1><p>O rádio do set no celular de cada equipe.</p></div>
 </body></html>`
 }
 
