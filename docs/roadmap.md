@@ -168,7 +168,9 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   (a Direção fica) e põe gente em cada um; trava de setor (quem já escolheu não troca sozinho, o dono move); Travar a
   fala no topo do No ar (o dono cala o set; o responsável, o setor); Sair (desligar o rádio, deixar a diária ou, o dono,
   encerrar); Sobre o RADION no menu. Gravando vira estado (liga no Gravando, desliga no Corta ou no mesmo botão, com
-  o selo "gravando" para todos). Diárias com opções: renomear (o dono), copiar o link, excluir (o dono) ou deixar. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
+  o selo "gravando" para todos). Diárias com opções: renomear (o dono), copiar o link, excluir (o dono) ou deixar.
+  Marca com o sinal (aprovada pelo titular, 07/11/2026): três arcos no quadrante oposto ao leque, na cor do rebite, e o
+  ícone do app maior (escala 3,55, o rebite no centro); `scripts/marca.mjs` refez símbolo, ícones, favicon e OG. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
   `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
   "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
