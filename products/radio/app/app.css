@@ -619,3 +619,28 @@ html, button, a, input, select, label, [role='button'] { touch-action: manipulat
 @media (max-width: 860px) {
   input, select, textarea, .campo input, .campo select, .seletor { font-size: 16px; }
 }
+
+/* ───────── app de computador (products/radio/desktop) ───────── */
+.so-computador[hidden] { display: none !important; }
+.compacto-topo { display: none; }
+/* modo compacto: a janelinha por cima das outras mostra só o canal, quem fala e o botão de falar */
+:root[data-compacto] body { overflow: hidden; background: var(--fundo); }
+:root[data-compacto] .lado, :root[data-compacto] .topo, :root[data-compacto] .abas, :root[data-compacto] .fala-cel,
+:root[data-compacto] .pagina:not(#pg-noar), :root[data-compacto] #noar, :root[data-compacto] #noar-vazio,
+:root[data-compacto] .aviso-tela { display: none !important; }
+:root[data-compacto] .compacto-topo:not([hidden]) { display: flex; align-items: center; gap: 8px; position: fixed; inset: 0 0 auto 0; height: 36px; padding: 0 8px 0 14px; z-index: 21; -webkit-app-region: drag; user-select: none; -webkit-user-select: none; }
+.compacto-topo .simbolo { height: 16px; }
+.compacto-topo b { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--apoio); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compacto-sair { -webkit-app-region: no-drag; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--apoio); }
+.compacto-sair:hover { background: var(--campo); color: var(--tinta); }
+.compacto-sair .ic { width: 15px; height: 15px; }
+:root[data-compacto] .base:not([hidden]) { display: flex !important; position: fixed; inset: 38px 8px 8px 8px; transform: none; width: auto; min-height: 0; border-radius: 22px; padding: 6px 12px 6px 16px; gap: 12px; }
+:root[data-compacto] .base .talk { width: 64px; height: 64px; }
+:root[data-compacto] .base-alvo strong { font-size: 17px; }
+:root[data-compacto] .base-lado { flex: none; }
+:root[data-compacto] .base-dica { display: none; }
+:root[data-compacto] .ligar:not([hidden]) { display: flex; align-items: stretch; padding: 38px 8px 8px; background: var(--fundo); }
+:root[data-compacto] .ligar-caixa { width: 100%; padding: 10px 16px; flex-direction: row; justify-content: space-between; gap: 12px; border-radius: 22px; }
+:root[data-compacto] .ligar-caixa > img, :root[data-compacto] .ligar-caixa > p { display: none; }
+:root[data-compacto] .ligar-caixa h2 { font-size: 16px; margin: 0; }
+:root[data-compacto] .ligar-caixa .vidro--g { min-height: 44px; padding: 0 18px; font-size: 14px; }

@@ -184,6 +184,14 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   claro × escuro; um Entrar só, no topo. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
   `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
   "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
+- ✅ **RADION para computador** (pedido do titular, 07/11/2026: "não é só adaptar", experiência como a do SOBEDESCE):
+  `products/radio/desktop`, na moldura do Relay. Na barra de menus (Mac) ou na bandeja (Windows), com o canal ao lado e o
+  menu de falar; atalho global de falar (`⌘⇧Espaço`/`Ctrl+Shift+Espaço`, com reservas); modo compacto por cima das
+  outras janelas; fechar não desliga o rádio; não dorme na diária; notificação de aviso e de pedido da palavra quando a
+  janela está atrás; selo no Dock; `radion://d/<código>` abre a diária. A página conversa por `window.radionDesktop`
+  (estado conferido campo a campo no app). Na central (`APPS_DESKTOP`, `downloads`), login pelo navegador (HUB `0063`,
+  esquema `radion`) e workflow `radion-desktop.yml` (Release `radion-versao-de-teste`, build base 4000). ⏳ Canais
+  `desktop`/`download` do RADION: migração nova com o titular depois do primeiro build verde.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

@@ -187,6 +187,11 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   pacote e no grátis, contas antigas com ele no nível legado, claims de login único com `radio`, projeto com a etapa do
   RADION), lint, typecheck, format; e2e `hub.spec.ts` 19/19 (a órbita e a faixa com os sete no ar), `radio.spec.ts` 4/4
   (conta comum entra), `sso.spec.ts`, `z-entrada.spec.ts`, `login-pelo-app.spec.ts`; `products/radio` `npm test` 12/12.
+- RADION para computador (07/11/2026): `products/radio/desktop` `npm test` 31/31 (permissões só de áudio, deep link da
+  diária, estado conferido, título da barra, dica, selo, rótulo do atalho, cópias do hub-desktop, ícones, nomes do
+  Release); teste de fumaça no Linux (Xvfb) `SMOKE OK`; HUB `desktop-apps`, `downloads`, `login-pelo-app` e `meus-apps`
+  51/51 com o RADION no catálogo da central; `products/radio` `npm test` 12/12 e `tests/integration/radio.test.ts` com a
+  cópia nova (modo compacto e ponte do computador, que no navegador não aparecem).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

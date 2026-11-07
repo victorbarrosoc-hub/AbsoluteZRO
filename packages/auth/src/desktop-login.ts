@@ -17,7 +17,7 @@ import { createSession } from './sessions'
 import { hashToken, newToken, TOKEN_FORMAT } from './tokens'
 
 /** Esquemas dos apps de computador que podem receber o retorno. Lista fechada: nada fora dela vira redirecionamento. */
-export const DESKTOP_LOGIN_APPS = ['absolutezro', 'relay', 'maestro', 'tpeasy', 'carrodofreela', 'rift'] as const
+export const DESKTOP_LOGIN_APPS = ['absolutezro', 'relay', 'maestro', 'tpeasy', 'carrodofreela', 'rift', 'radion'] as const
 export type DesktopLoginApp = (typeof DESKTOP_LOGIN_APPS)[number]
 
 /** Quanto o código vale. */
