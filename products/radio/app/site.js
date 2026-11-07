@@ -4,6 +4,29 @@
 const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches
 document.documentElement.classList.add('js')
 
+// ───────── claro × escuro: a escolha do topo vale aqui e no app (rd_tema); sem escolha, o sistema ─────────
+const ler = () => {
+  try {
+    return localStorage.getItem('rd_tema')
+  } catch {
+    return null
+  }
+}
+const aplicarTema = (t) => {
+  document.documentElement.dataset.tema = t
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.content = t === 'escuro' ? '#000000' : '#ffffff'
+}
+aplicarTema(ler() === 'escuro' || ler() === 'claro' ? ler() : matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro')
+document.getElementById('s-tema')?.addEventListener('click', () => {
+  const t = document.documentElement.dataset.tema === 'escuro' ? 'claro' : 'escuro'
+  aplicarTema(t)
+  try {
+    localStorage.setItem('rd_tema', t)
+  } catch {
+    // sem armazenamento: vale só nesta aba
+  }
+})
+
 // ───────── entrar com a rolagem ─────────
 const revelar = new IntersectionObserver(
   (entradas) => {

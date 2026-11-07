@@ -1,5 +1,5 @@
 // O rádio do set dentro do HUB (ADR 0042; absolutezro.com/radio, com a conta e o banco do HUB). Aqui: as cópias geradas
-// de products/radio batem byte a byte; o gate (conta comum não passa, admin e a lista de acesso passam); e as regras do
+// de products/radio batem byte a byte; o gate (no ar desde a 0062: conta comum passa; sem login, não); e as regras do
 // núcleo rodando como `radio_app` no schema `radio`, com o isolamento entre pessoas pelo RLS.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -44,9 +44,9 @@ describe('cópias do rádio no HUB', () => {
     expect(readFileSync(path.join(RAIZ, 'apps/hub-web/lib/radio/arquivos.ts'), 'utf8')).toBe(arquivos)
   })
 
-  it('nada do rádio em public/ (só a fonte Figtree, que é da marca)', () => {
+  it('em public/ do rádio só o ícone (no ar desde a 0062); o app sai pela rota, com o gate', () => {
     const publicos = readdirSync(path.join(RAIZ, 'apps/hub-web/public'), { recursive: true }).map(String)
-    expect(publicos.filter((f) => /radio|r[aá]dio/i.test(f))).toEqual([])
+    expect(publicos.filter((f) => /radio|r[aá]dio/i.test(f))).toEqual(['products/radio.svg'])
   })
 })
 
@@ -54,9 +54,9 @@ describe('rádio do set no HUB', () => {
   const admin = (userId: string) =>
     db.sql`update zro.users set platform_role = 'admin', email_verified_at = coalesce(email_verified_at, now()) where id = ${userId}`
 
-  it('gate: conta comum não passa; admin e a lista de acesso passam', async () => {
+  it('gate (0062, no ar): conta comum passa, sem login não; a lista de acesso segue valendo', async () => {
     const comum = await newOrgWithOwner(db, 'rd-comum', { freePlan: true })
-    expect(await radio.acessoAoRadio(db, comum.auth)).toBeNull()
+    expect((await radio.acessoAoRadio(db, comum.auth))?.userId).toBe(comum.userId)
     expect(await radio.acessoAoRadio(db, null)).toBeNull()
     const chefe = await newOrgWithOwner(db, 'rd-chefe', { freePlan: true })
     await admin(chefe.userId)

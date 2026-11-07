@@ -4,8 +4,16 @@
 @font-face { font-family: 'Figtree'; font-weight: 300 900; font-display: swap; src: url('/fontes/figtree-latin-wght-normal.woff2') format('woff2-variations'); }
 @font-face { font-family: 'Nunito'; font-weight: 200 1000; font-display: swap; src: url('/fontes/nunito-latin-wght-normal.woff2') format('woff2-variations'); }
 :root { color-scheme: light dark; --fundo: #fbfbfd; --faixa: #f5f5f7; --cartao: #ffffff; --tinta: #1d1d1f; --apoio: #6e6e73; --fraco: #a1a1a6; --linha: rgba(60, 60, 67, 0.12); --contorno: rgba(0, 0, 0, 0.08); --campo: #f2f2f4; --vermelho: #ff3b30; --sombra: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.06); --mola: cubic-bezier(0.2, 0.8, 0.2, 1); font-family: 'Figtree', system-ui, sans-serif; color: var(--tinta); background: var(--fundo); -webkit-font-smoothing: antialiased; }
+/* claro × escuro: o sistema manda até a pessoa escolher no topo (app/site.js grava data-tema, a mesma escolha do app) */
+:root[data-tema='escuro'] { --fundo: #000; --faixa: #0b0b0c; --cartao: #1c1c1e; --tinta: #f5f5f7; --apoio: #a1a1a6; --fraco: #6e6e73; --linha: rgba(255, 255, 255, 0.1); --contorno: rgba(255, 255, 255, 0.12); --campo: #2c2c2e; --sombra: 0 0 0 1px rgba(255, 255, 255, 0.06);  color-scheme: dark; }
+:root[data-tema='claro'] { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root { --fundo: #000; --faixa: #0b0b0c; --cartao: #1c1c1e; --tinta: #f5f5f7; --apoio: #a1a1a6; --fraco: #6e6e73; --linha: rgba(255, 255, 255, 0.1); --contorno: rgba(255, 255, 255, 0.12); --campo: #2c2c2e; --sombra: 0 0 0 1px rgba(255, 255, 255, 0.06); }
+  :root:not([data-tema]) { --fundo: #000; --faixa: #0b0b0c; --cartao: #1c1c1e; --tinta: #f5f5f7; --apoio: #a1a1a6; --fraco: #6e6e73; --linha: rgba(255, 255, 255, 0.1); --contorno: rgba(255, 255, 255, 0.12); --campo: #2c2c2e; --sombra: 0 0 0 1px rgba(255, 255, 255, 0.06); }
+}
+:root:not([data-tema='escuro']) .so-escuro, :root[data-tema='escuro'] .so-claro { display: none !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) .so-claro { display: none !important; }
+  :root:not([data-tema]) .so-escuro { display: initial !important; }
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
@@ -31,7 +39,11 @@ h1, h2, p { margin: 0; }
 /* topo */
 .s-topo { position: sticky; top: 0; z-index: 5; height: 64px; display: flex; align-items: center; gap: 28px; padding: 0 clamp(16px, 4.5vw, 64px); background: color-mix(in srgb, var(--fundo) 80%, transparent); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-bottom: 1px solid var(--linha); }
 .s-marca { display: flex; align-items: center; gap: 8px; font-family: 'Nunito', sans-serif; font-weight: 850; letter-spacing: -0.045em; font-size: 24px; text-decoration: none; margin-right: auto; line-height: 1; }
-.s-marca picture, .s-marca img { display: block; height: 24px; width: auto; }
+.s-marca img { display: block; height: 24px; width: auto; }
+.s-tema { height: 36px; border-radius: 18px; border: 0; background: var(--cartao); box-shadow: inset 0 0 0 1px var(--contorno); display: flex; align-items: center; padding: 3px; gap: 2px; cursor: pointer; flex: none; }
+.s-tema span { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--fraco); }
+.s-tema svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+:root:not([data-tema='escuro']) .s-tema span:first-child, :root[data-tema='escuro'] .s-tema span:last-child { background: var(--campo); color: var(--tinta); }
 .s-links { display: flex; gap: 26px; font-size: 14px; font-weight: 600; color: var(--apoio); }
 .s-links a { text-decoration: none; }
 .s-links a:hover { color: var(--tinta); }
@@ -39,6 +51,7 @@ h1, h2, p { margin: 0; }
 .s-btn:active { transform: scale(0.97); }
 .s-btn img { height: 15px; }
 .s-btn--tinta { background: linear-gradient(180deg, #3a3a3e, #1d1d1f); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 20px -8px rgba(0, 0, 0, 0.5); }
+.s-curto { display: none; }
 .s-btn--g { min-height: 52px; padding: 0 26px; font-size: 16px; border-radius: 26px; }
 
 /* textos de seção */
@@ -210,8 +223,8 @@ h2 { font-size: clamp(38px, 5.4vw, 68px); letter-spacing: -0.045em; line-height:
 .s-eco-apps img { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.3); }
 .s-eco-apps figcaption { font-size: 15px; font-weight: 700; color: var(--tinta); }
 .s-rodape { border-top: 1px solid var(--linha); display: flex; align-items: center; gap: 22px; padding: 28px clamp(16px, 4.5vw, 64px); font-size: 13px; color: var(--apoio); font-weight: 600; }
-.s-rodape picture { margin-right: auto; display: block; }
 .s-rodape img { height: 15px; display: block; }
+.s-rodape img:nth-of-type(2), .s-rodape img:first-of-type { margin-right: auto; }
 .s-rodape a { text-decoration: none; }
 
 /* motion: o herói sobe ao abrir; o resto entra com a rolagem (app/site.js põe .in) */
@@ -262,6 +275,8 @@ h2 { font-size: clamp(38px, 5.4vw, 68px); letter-spacing: -0.045em; line-height:
   .s-links { display: none; }
   .s-topo { gap: 12px; }
   .s-topo .s-btn { padding: 0 14px; font-size: 13.5px; min-height: 38px; }
+  .s-topo .s-longo { display: none; }
+  .s-topo .s-curto { display: inline; }
   .s-cel { transform: scale(0.92); transform-origin: top center; margin-bottom: -50px; }
   .s-mac { margin: 0; }
   .s-iphone { width: 34%; right: 8px; bottom: 40px; border-radius: 30px; padding: 6px; }

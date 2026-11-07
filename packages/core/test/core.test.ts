@@ -112,8 +112,10 @@ describe('projetos', () => {
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
     // AEON, NOSSOM e Revela não lançados (0049): a etapa nem aparece para a pessoa. O Maestro (0027/0039) e o Carro do
     // Freela (0041) estão no ar: sem o plano grátis nem outro que os traga, pedem assinatura.
-    // O Relay abriu (0032) e entra em todo plano, inclusive o avulso do SOBEDESCE.
+    // O Relay abriu (0032) e entra em todo plano, inclusive o avulso do SOBEDESCE. O RADION (0062) entra nos pacotes e
+    // no grátis, não no avulso de outro app.
     expect(by).toEqual({
+      radio: 'blocked_subscription',
       'carro-do-freela': 'blocked_subscription',
       tpeasy: 'blocked_subscription',
       sobedesce: 'not_started',

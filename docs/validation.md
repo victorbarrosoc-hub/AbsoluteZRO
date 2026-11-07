@@ -183,6 +183,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, página inicial nova (07/11/2026): `npm test` 12/12 (o `site.js` sai só pelo gate, como o `site.css`);
   capturas no Chromium em 390 × 844 (claro e escuro) e 1440 × 900 com as seções entrando na rolagem e as três
   demonstrações andando, sem erro no console.
+- RADION no ar (07/11/2026, HUB `0062`): HUB `npm test` 666/666 (gate aberto em web/sso/api, o RADION nos planos de
+  pacote e no grátis, contas antigas com ele no nível legado, claims de login único com `radio`, projeto com a etapa do
+  RADION), lint, typecheck, format; e2e `hub.spec.ts` 19/19 (a órbita e a faixa com os sete no ar), `radio.spec.ts` 4/4
+  (conta comum entra), `sso.spec.ts`, `z-entrada.spec.ts`, `login-pelo-app.spec.ts`; `products/radio` `npm test` 12/12.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

@@ -1,5 +1,5 @@
-// O rádio do set dentro do HUB (ADR 0042, absolutezro.com/radio): não lançado, então conta comum recebe 404 na página,
-// nos scripts e na API; duas contas de admin entram com a conta do HUB, uma cria a diária e a outra entra pelo link do
+// O rádio do set dentro do HUB (ADR 0042, absolutezro.com/radio): no ar desde a 0062, então conta comum entra (página,
+// scripts e API); duas contas de admin entram com a conta do HUB, uma cria a diária e a outra entra pelo link do
 // QR e escolhe o setor, as duas ligam o rádio (microfone falso do Chromium), se conectam, a fala segurada acende o Geral
 // do outro lado e o aviso de set ocupa a tela.
 import { readdirSync, readFileSync } from 'node:fs'
@@ -70,12 +70,10 @@ test('sem login (link aberto num navegador fora da conta): vai para o entrar e v
   await expect(fora.locator('#pg-inicio, #pg-noar, #pg-diarias').first()).toBeAttached()
 })
 
-test('conta comum: o rádio não existe (página, scripts e API dão 404)', async ({ browser }) => {
+test('conta comum (no ar, 0062): entra no rádio (página, scripts e API)', async ({ browser }) => {
   const page = await conta(browser, 'Comum', false)
-  for (const p of ['/radio', '/radio/app/app.js', '/radio/app/app.css']) expect((await page.goto(p))?.status(), p).toBe(404)
-  const api = await page.request.get('/api/v1/radio/diarias')
-  expect(api.status()).toBe(404)
-  expect((await page.request.get('/api/v1/radio/ice')).status()).toBe(404)
+  for (const p of ['/radio', '/radio/app/app.js', '/radio/app/app.css']) expect((await page.goto(p))?.status(), p).toBe(200)
+  expect((await page.request.get('/api/v1/radio/diarias')).status()).toBe(200)
 })
 
 test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, falar e mandar aviso', async ({ browser }) => {
@@ -130,34 +128,17 @@ test('duas contas de admin: criar diária, entrar pelo link, ligar o rádio, fal
   expect(erros).toEqual([])
 })
 
-test('Admin › Apps: dar acesso ao rádio pelo e-mail, a pessoa entra, tirar e ela sai', async ({ browser }) => {
+test('Admin › Apps: o RADION aparece aberto e a lista de acesso segue no cartão', async ({ browser }) => {
   const chefe = await conta(browser, 'Chefe', true)
   const convidada = await conta(browser, 'Convidada', false)
-  expect((await convidada.goto('/radio'))?.status()).toBe(404)
-
+  expect((await convidada.goto('/radio'))?.status()).toBe(200)
   await chefe.goto('/admin/apps')
   const cartao = chefe.locator('.app-card--radio')
   await expect(cartao).toBeVisible()
-  await expect(cartao.getByText('Fechado')).toBeVisible()
-
-  // e-mail sem conta: diz isso e não libera ninguém
-  await cartao.getByLabel('E-mail de quem pode entrar').fill('ninguem-aqui@teste.absolutezro.local')
-  await cartao.getByRole('button', { name: 'Dar acesso' }).click()
-  await expect(cartao.getByRole('alert')).toContainText('ainda não tem conta')
-
+  await expect(cartao.getByText('Aberto')).toBeVisible()
   await cartao.getByLabel('E-mail de quem pode entrar').fill(convidada.email.toUpperCase())
   await cartao.getByRole('button', { name: 'Dar acesso' }).click()
   await expect(cartao.getByRole('status')).toContainText('já entra no rádio')
   await chefe.reload()
   await expect(chefe.locator('.radio-acesso')).toContainText(convidada.email)
-
-  // a convidada entra (o gate é lido a cada pedido, sem novo login)
-  expect((await convidada.goto('/radio'))?.status()).toBe(200)
-  await expect(convidada.locator('#pg-inicio')).toBeVisible()
-
-  // tirar: na hora volta a não existir
-  await chefe.locator('.radio-acesso li').filter({ hasText: convidada.email }).getByRole('button', { name: 'Tirar' }).click()
-  // a linha sai da lista (é o retorno da ação)
-  await expect(chefe.locator('.app-card--radio')).not.toContainText(convidada.email)
-  expect((await convidada.goto('/radio'))?.status()).toBe(404)
 })

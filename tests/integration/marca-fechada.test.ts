@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 const RAIZ = path.resolve(__dirname, '../..')
 const ler = (f: string) => readFileSync(path.join(RAIZ, f), 'utf8')
-const FECHADOS = ['nossom', 'finishing', 'ai-edit', 'rift-motion', 'radio']
+const FECHADOS = ['nossom', 'finishing', 'ai-edit', 'rift-motion']
 
 describe('marca dos apps fechados', () => {
   it('nada deles em public/products nem em public/brand', () => {

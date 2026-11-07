@@ -35,11 +35,15 @@
   <body>
     <header class="s-topo">
       <a class="s-marca" href="/" aria-label="RADION">
-        <picture><source srcset="/app/marca/radion-simbolo-branco.svg" media="(prefers-color-scheme: dark)" /><img src="/app/marca/radion-simbolo.svg" alt="" /></picture>
+        <img class="so-claro" src="/app/marca/radion-simbolo.svg" alt="" /><img class="so-escuro" src="/app/marca/radion-simbolo-branco.svg" alt="" />
         <span>radion</span>
       </a>
       <nav class="s-links" aria-label="Seções"><a href="#canais">Canais</a><a href="#como">Como funciona</a><a href="#poderes">Poderes</a><a href="#privacidade">Privacidade</a></nav>
-      <a class="s-btn s-btn--tinta" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
+      <button class="s-tema" id="s-tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
+        <span><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg></span>
+        <span><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg></span>
+      </button>
+      <a class="s-btn s-btn--tinta" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" /><span class="s-longo">%ENTRAR_TEXTO%</span><span class="s-curto">%ENTRAR_CURTO%</span></a>
     </header>
 
     <main>
@@ -48,10 +52,7 @@
         <p class="s-sobre s-sobe">O rádio do set, no celular de cada equipe</p>
         <h1 class="s-sobe"><span class="leve">stay</span> <span class="forte">connected</span><span class="ponto">.</span></h1>
         <p class="s-apoio s-sobe">Um canal por setor. Segure e fale. Sem rádio, sem bateria extra, sem canal cruzado.</p>
-        <div class="s-acoes s-sobe">
-          <a class="s-btn s-btn--tinta s-btn--g" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a>
-          <a class="s-btn s-btn--g" href="#como">Como funciona</a>
-        </div>
+        <div class="s-acoes s-sobe"><a class="s-btn s-btn--g" href="#como">Como funciona</a></div>
 
         <div class="s-palco s-sobe" aria-label="Demonstração: o RADION no celular durante uma diária">
           <div class="s-cel" id="demo-cel" data-fase="0">
@@ -106,16 +107,10 @@
       <!-- o app de verdade -->
       <section class="s-aparelhos" aria-label="O RADION no computador e no celular">
         <figure class="s-mac revela">
-          <picture>
-            <source srcset="/app/site/computador-escuro.webp" media="(prefers-color-scheme: dark)" />
-            <img src="/app/site/computador-claro.webp" alt="O RADION no computador: os canais, quem está no ar e o botão de falar" width="1440" height="900" loading="lazy" />
-          </picture>
+          <img class="so-claro" src="/app/site/computador-claro.webp" alt="O RADION no computador: os canais, quem está no ar e o botão de falar" width="1440" height="900" loading="lazy" /><img class="so-escuro" src="/app/site/computador-escuro.webp" alt="O RADION no computador: os canais, quem está no ar e o botão de falar" width="1440" height="900" loading="lazy" />
         </figure>
         <figure class="s-iphone revela">
-          <picture>
-            <source srcset="/app/site/celular-escuro.webp" media="(prefers-color-scheme: dark)" />
-            <img src="/app/site/celular-claro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" loading="lazy" />
-          </picture>
+          <img class="so-claro" src="/app/site/celular-claro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" loading="lazy" /><img class="so-escuro" src="/app/site/celular-escuro.webp" alt="O RADION no celular: os canais e o botão de falar no meio das abas" width="390" height="844" loading="lazy" />
         </figure>
       </section>
 
@@ -213,14 +208,14 @@
         <div class="s-eco-apps revela">
           <figure><img src="https://absolutezro.com/brand/app-icon-1024.png" alt="" /><figcaption>Absolute ZRO</figcaption></figure>
           <span aria-hidden="true">+</span>
-          <figure><picture><source srcset="/app/marca/radion-icone-escuro.svg" media="(prefers-color-scheme: dark)" /><img src="/app/marca/radion-icone.svg" alt="" /></picture><figcaption>RADION</figcaption></figure>
+          <figure><img class="so-claro" src="/app/marca/radion-icone.svg" alt="" /><img class="so-escuro" src="/app/marca/radion-icone-escuro.svg" alt="" /><figcaption>RADION</figcaption></figure>
         </div>
         <div class="s-acoes revela"><a class="s-btn s-btn--tinta s-btn--g" href="%ENTRAR%"><img src="https://absolutezro.com/brand/absolute-zro-simbolo-branco.svg" alt="" />%ENTRAR_TEXTO%</a></div>
       </section>
     </main>
 
     <footer class="s-rodape">
-      <picture><source srcset="https://absolutezro.com/brand/absolute-zro-branco.svg" media="(prefers-color-scheme: dark)" /><img src="https://absolutezro.com/brand/absolute-zro-grafite.svg" alt="Absolute ZRO" /></picture>
+      <img class="so-claro" src="https://absolutezro.com/brand/absolute-zro-grafite.svg" alt="Absolute ZRO" /><img class="so-escuro" src="https://absolutezro.com/brand/absolute-zro-branco.svg" alt="Absolute ZRO" />
       <a href="https://absolutezro.com/privacidade">Privacidade</a>
       <a href="https://absolutezro.com/termos">Termos</a>
     </footer>

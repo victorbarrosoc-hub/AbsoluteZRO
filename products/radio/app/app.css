@@ -455,7 +455,11 @@ svg { display: block; flex: none; }
   .topo { padding: 0 16px; }
   .topo .marca { display: flex; font-size: 21px; }
   .topo .marca .simbolo { height: 21px; }
-  .caminho, .tema { display: none; }
+  .caminho { display: none; }
+  /* o claro × escuro fica no topo também no celular, menor */
+  .tema { height: 34px; border-radius: 17px; }
+  .tema span { width: 28px; height: 28px; }
+  .tema .ic { width: 16px; height: 16px; }
   .miolo { padding: 20px 16px 130px; gap: 16px; }
   .ola { font-size: 34px; }
   .ola--m { font-size: 30px; }

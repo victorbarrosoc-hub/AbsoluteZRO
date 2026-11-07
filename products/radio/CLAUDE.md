@@ -3,9 +3,9 @@
 O rádio do set (ADR 0042; nome, marca e telas aprovados pelo titular em 06/11/2026). As regras do `CLAUDE.md` da raiz
 valem aqui; este arquivo só acrescenta.
 
-- **Não lançado**: a página, os scripts e a marca só saem por `api/pagina.js` e `api/recurso.js` depois do gate (claim
-  `zro_release` com `radio`). Nada do app no site estático, no OG, no robots ou em lista de outro app. A página inicial
-  é só prévia (`/sobre`, com acesso) até o lançamento (`RADION_SITE_ABERTO=1`, junto com a migration que abre o gate).
+- **No ar** (titular, 07/11/2026; HUB 0062 abriu o gate e o projeto `radion` tem `RADION_SITE_ABERTO=1`): a página
+  inicial é o `/` de quem não entrou; o app, os scripts dele e a API seguem só por `api/pagina.js` e `api/recurso.js`
+  depois do gate (claim `zro_release` com `radio`), que agora vale para toda conta Absolute ZRO.
 - **Integração nova** (projeto do HUB, Maestro, Carro do Freela) = contrato em `docs/integration-contracts/` antes do
   código. Hoje: login único e o Set.
 - **Voz nunca no servidor**: nem gravação, nem transcrição, nem amostra de teste no repositório (testes usam o

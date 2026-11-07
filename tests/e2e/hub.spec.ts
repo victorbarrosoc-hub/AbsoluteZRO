@@ -124,7 +124,7 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
-  await expect(list.getByRole('listitem')).toHaveCount(6) // só as seis no ar (0049): AEON, NOSSOM e Revela nem aparecem
+  await expect(list.getByRole('listitem')).toHaveCount(7) // só as sete no ar (0049, RADION na 0062): AEON, NOSSOM e Revela nem aparecem
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(page.locator('main')).not.toContainText(/AEON|Revela|NOSSOM/)
@@ -315,7 +315,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   // só o que está no ar, sem "Em breve" (titular, 30/10/2026: "Quando for pro ar, aí divulga")
   const strip = page.locator('.pstrip__list')
   await expect(strip.locator('.selo-dev')).toHaveCount(0)
-  await expect(strip.locator('.pstrip__name')).toHaveText(['Carro do Freela', 'TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay'])
+  await expect(strip.locator('.pstrip__name')).toHaveText(['Carro do Freela', 'TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay', 'RADION'])
   // o Carro do Freela (0041) entra pelo subdomínio, com o ícone dele
   await expect(strip.locator('a.pstrip__card[href="https://carro.absolutezro.com"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
@@ -325,7 +325,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
   // a órbita da Z só tem os do ar
-  await expect(page.locator('.pz__orbita li')).toHaveCount(6)
+  await expect(page.locator('.pz__orbita li')).toHaveCount(7) // os sete no ar (RADION na 0062)
   await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="Revela"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
   await expect(page.locator('.pz__orbita li[title="Maestro"], .pz__orbita li[title="Relay"]')).toHaveCount(2)
   // o fluxo: da pauta (Maestro) à aprovação do cliente (Maestro), só com etapas que existem
@@ -430,8 +430,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   // Plano grátis lista todas, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): SOBEDESCE, Synquei,
-  // TPeasy, o Maestro (0027/0039), o Relay (0032) e o Carro do Freela (0041); os não lançados nem aparecem (0049).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(6)
+  // TPeasy, o Maestro (0027/0039), o Relay (0032), o Carro do Freela (0041) e o RADION (0062); os não lançados nem
+  // aparecem (0049).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(7)
   await expect(page.locator('.access-org__apps')).not.toContainText(/AEON|Revela|NOSSOM/)
 })
 
