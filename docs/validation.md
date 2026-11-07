@@ -202,6 +202,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   agente de usuário do Android: depois do Ligar nenhum microfone aberto; segurando, o microfone abre e a voz chega ao
   outro aparelho; soltando, fecha e a voz para; a fala travada abre e fecha igual. A troca de alto-falante em si só se
   confere num Android de verdade (o Chromium de teste não escolhe saída de som).
+- RADION, pela voz (07/11/2026): `products/radio` `npm test` 14/14, com o teste novo de ponta a ponta: nos Ajustes,
+  Pela voz e sensibilidade Alta (guardadas no aparelho); com um tom contínuo no microfone falso (gerado na hora, sem voz
+  no repositório) a fala abre sozinha e a voz chega; um toque pausa (não abre mais sozinho e a voz para); outro retoma.
+  Telas dos Ajustes conferidas no celular (390 px, claro e escuro) e no computador.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

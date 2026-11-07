@@ -516,7 +516,35 @@ function usarTrilha(m) {
     fonte.connect(an)
     estado.medidorMic = { an, fonte, buf: new Float32Array(an.fftSize) }
   }
-  estado.malha?.usarMicrofone(estado.trilha)
+  montarEnvio()
+}
+/**
+ * O que vai para a malha. Pela voz: a voz passa por um atraso de 0,25 s, para que a primeira sílaba (dita antes de o
+ * nível passar da marca) não se perca; pelo botão, a trilha do microfone direto.
+ */
+function montarEnvio() {
+  const e = estado.envio
+  if (e) {
+    try {
+      e.fonte.disconnect(e.atraso)
+    } catch {
+      // a fonte já saiu (microfone fechado)
+    }
+    e.atraso.disconnect()
+    e.trilha.stop()
+    estado.envio = null
+  }
+  const ctx = contextoDeAudio()
+  if (estado.porVoz && ctx && estado.medidorMic) {
+    const atraso = ctx.createDelay(1)
+    atraso.delayTime.value = 0.25
+    const destino = ctx.createMediaStreamDestination()
+    estado.medidorMic.fonte.connect(atraso)
+    atraso.connect(destino)
+    estado.envio = { fonte: estado.medidorMic.fonte, atraso, trilha: destino.stream.getAudioTracks()[0] }
+  }
+  estado.malha?.usarMicrofone(estado.envio?.trilha || estado.trilha)
+  if (estado.modo !== 'mudo') falarAgora()
 }
 /** Fecha o microfone (o Android sai do modo ligação; o iPhone apaga o ponto laranja). */
 function soltarTrilha() {
@@ -524,7 +552,7 @@ function soltarTrilha() {
   estado.trilha = null
   estado.medidorMic?.fonte?.disconnect()
   estado.medidorMic = null
-  estado.malha?.usarMicrofone(null)
+  montarEnvio()
 }
 const possoFalar = () => Boolean(temMic() && estado.eu && !estado.eu.silenciado && estado.eu.papel !== 'convidado' && (estado.todos || podeFalarEm(estado.alvo)))
 
@@ -533,7 +561,8 @@ $('ligar-btn').addEventListener('click', async () => {
   destravarSom()
   try {
     const m = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
-    if (MIC_SOB_DEMANDA) {
+    estado.micLiberado = true
+    if (MIC_SOB_DEMANDA && !estado.porVoz) {
       // só para pedir a permissão agora (no toque): o microfone fecha e abre de novo a cada fala
       for (const t of m.getTracks()) t.stop()
       estado.micLiberado = true
@@ -720,7 +749,8 @@ function desenharBase() {
   el.textContent = NOME[alvo]
   el.dataset.canal = alvo === 'todos' ? 'geral' : alvo
   for (const b of [$('ptt'), $('ptt-aba')]) {
-    b.dataset.estado = estado.modo
+    b.dataset.estado = estado.modo === 'voz' ? 'ptt' : estado.modo
+    b.toggleAttribute('data-pausado', estado.porVoz && estado.vozPausada)
     b.dataset.canal = alvo === 'todos' ? 'geral' : alvo
     b.disabled = !estado.ligado || !possoFalar()
   }
@@ -728,8 +758,19 @@ function desenharBase() {
   $('todos').setAttribute('aria-pressed', String(estado.todos))
   const calado = estado.eu?.silenciado || estado.eu?.papel === 'convidado'
   $('base-dica').hidden = podeTodos() && !calado
-  $('base-dica').replaceChildren(...(calado ? [estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado'] : estado.modo === 'aberto' ? ['Toque fecha'] : ['Toque abre', h('br'), 'Segure fala']))
-  $('ptt-texto').textContent = calado ? 'Silenciado' : estado.modo === 'aberto' ? 'Aberto' : estado.modo === 'ptt' ? 'Falando' : 'Falar'
+  const voz = estado.porVoz && !calado
+  $('base-dica').replaceChildren(
+    ...(calado
+      ? [estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado']
+      : voz
+        ? estado.vozPausada
+          ? ['Pausado', h('br'), 'Toque retoma']
+          : ['Fale e abre', h('br'), 'Toque pausa']
+        : estado.modo === 'aberto'
+          ? ['Toque fecha']
+          : ['Toque abre', h('br'), 'Segure fala']),
+  )
+  $('ptt-texto').textContent = calado ? 'Silenciado' : estado.modo === 'aberto' ? 'Aberto' : estado.modo !== 'mudo' ? 'Falando' : voz ? (estado.vozPausada ? 'Pausado' : 'Pela voz') : 'Falar'
   // celular: para quem fala, acima das abas; falando, a barra acende e o canal escolhido brilha (a tela não muda)
   const canal = alvo === 'todos' ? 'geral' : alvo
   const falando = estado.modo !== 'mudo'
@@ -737,12 +778,24 @@ function desenharBase() {
   $('fala-cel-nome').dataset.canal = canal
   $('fala-cel').dataset.canal = canal
   $('fala-cel').toggleAttribute('data-falando', falando)
-  $('fala-cel-rotulo').textContent = falando ? (estado.modo === 'aberto' ? 'Aberto para' : 'Falando para') : 'Falar para'
+  $('fala-cel-rotulo').textContent = falando ? (estado.modo === 'aberto' ? 'Aberto para' : 'Falando para') : voz ? (estado.vozPausada ? 'Pausado' : 'Pela voz para') : 'Falar para'
   $('todos-cel').hidden = !podeTodos() || falando
   $('todos-cel').setAttribute('aria-pressed', String(estado.todos))
   // a dica diz o que o botão faz agora: segurar fala; aberto, um toque fecha (falando, o canal não troca por toque)
   const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
-  $('fala-cel-sub').textContent = calado ? '' : estado.modo === 'aberto' ? 'Toque no botão para fechar' : falando ? (ouvem ? `${ouvem} ouvindo` : 'Ninguém ouvindo') : 'Segure para falar'
+  $('fala-cel-sub').textContent = calado
+    ? ''
+    : estado.modo === 'aberto'
+      ? 'Toque no botão para fechar'
+      : falando
+        ? ouvem
+          ? `${ouvem} ouvindo`
+          : 'Ninguém ouvindo'
+        : voz
+          ? estado.vozPausada
+            ? 'Toque no botão para retomar'
+            : 'Fale e o microfone abre'
+          : 'Segure para falar'
   document.documentElement.toggleAttribute('data-falando', falando)
   desenharFalando()
   contarAoComputador()
@@ -1045,6 +1098,71 @@ async function bater() {
   estado.laco = setTimeout(bater, document.visibilityState === 'visible' ? BATIDA_MS : BATIDA_ESCONDIDO_MS)
 }
 
+// ───────── abrir o microfone: pelo botão ou pela voz (titular, 07/11/2026: mãos livres, para lapela) ─────────
+// Pela voz o microfone fica aberto (também no Android) e a fala sai quando o nível passa da marca em 2 de 3 leituras; fecha
+// depois de 1,2 s abaixo dela. A escolha e a sensibilidade são deste aparelho (dependem do microfone ligado nele).
+const LIMIAR = { baixa: 0.05, media: 0.025, alta: 0.012 }
+function lerPref(chave, validos, padrao) {
+  try {
+    const v = localStorage.getItem(chave)
+    return validos.includes(v) ? v : padrao
+  } catch {
+    return padrao
+  }
+}
+function gravarPref(chave, v) {
+  try {
+    localStorage.setItem(chave, v)
+  } catch {
+    // sem armazenamento: vale até fechar a página
+  }
+}
+estado.porVoz = lerPref('rd_fala', ['botao', 'voz'], 'botao') === 'voz'
+estado.sens = lerPref('rd_voz', ['baixa', 'media', 'alta'], 'media')
+estado.vozPausada = false
+function escolherFala(voz) {
+  if (voz === estado.porVoz) return
+  calar()
+  estado.porVoz = voz
+  estado.vozPausada = false
+  gravarPref('rd_fala', voz ? 'voz' : 'botao')
+  if (estado.ligado) {
+    if (voz && !estado.trilha && estado.micLiberado)
+      navigator.mediaDevices
+        .getUserMedia({ audio: AUDIO_MIC })
+        .then((m) => (estado.porVoz && estado.ligado ? usarTrilha(m) : m.getTracks().forEach((t) => t.stop())))
+        .catch(() => mostrarErro('radio-erro', 'Sem microfone, você só ouve. Libere nos ajustes do navegador.'))
+    else if (!voz && MIC_SOB_DEMANDA) soltarTrilha()
+    else montarEnvio()
+  }
+  desenharAjustes()
+  desenharBase()
+}
+function pausarVoz(pausar) {
+  estado.vozPausada = pausar
+  if (pausar) calar()
+  desenharBase()
+}
+function ouvirVoz(v) {
+  if (!estado.porVoz || !estado.ligado || estado.vozPausada || !estado.trilha || estado.apertou) {
+    estado.vozAcima = 0
+    return
+  }
+  const limiar = LIMIAR[estado.sens]
+  const agora = Date.now()
+  if (estado.modo === 'mudo') {
+    // 2 das últimas 3 leituras acima da marca: a fala tem respiros entre sílabas; um estalo sozinho não abre
+    estado.vozAcima = (((estado.vozAcima || 0) << 1) | (v > limiar ? 1 : 0)) & 0b111
+    if ((estado.vozAcima & 1) && [3, 5, 6, 7].includes(estado.vozAcima) && possoFalar()) {
+      estado.vozDesde = agora
+      abrirMic('voz')
+    }
+  } else if (estado.modo === 'voz') {
+    if (v > limiar * 0.6) estado.vozDesde = agora
+    else if (agora - estado.vozDesde > 1200) calar()
+  }
+}
+
 // ───────── falar: o TALK ─────────
 const deveOuvir = (peer) => (estado.todos ? true : escutaDe(peer).has(estado.alvo))
 function falarAgora() {
@@ -1056,7 +1174,7 @@ function abrirMic(modo) {
   const estava = estado.modo
   estado.modo = modo
   if (estava === 'mudo') {
-    somComeca()
+    if (modo !== 'voz') somComeca() // pela voz, sem bipe a cada frase
     if (estado.trilha) falarAgora()
     else pegarMicDaFala()
   }
@@ -1072,8 +1190,7 @@ async function pegarMicDaFala() {
       for (const t of m.getTracks()) t.stop()
       return
     }
-    usarTrilha(m)
-    falarAgora()
+    usarTrilha(m) // já manda a voz (montarEnvio fala se a fala segue aberta)
   } catch {
     estado.micLiberado = false
     calar()
@@ -1082,11 +1199,12 @@ async function pegarMicDaFala() {
 }
 function calar() {
   if (estado.modo === 'mudo') return
+  const eraVoz = estado.modo === 'voz'
   estado.modo = 'mudo'
   estado.vezDaFala = (estado.vezDaFala || 0) + 1
   estado.malha?.calar()
-  if (MIC_SOB_DEMANDA) soltarTrilha()
-  somTermina()
+  if (MIC_SOB_DEMANDA && !estado.porVoz) soltarTrilha()
+  if (!eraVoz) somTermina()
   desenharBase()
 }
 function apertar() {
@@ -1098,6 +1216,12 @@ function soltar() {
   if (!estado.apertou) return
   const toque = Date.now() - estado.apertou < TOQUE_MS
   estado.apertou = 0
+  // pela voz: um toque pausa (ou retoma); segurar ainda fala, como no botão
+  if (estado.porVoz) {
+    calar()
+    if (toque) pausarVoz(!estado.vozPausada)
+    return
+  }
   if (estado.estavaAberto) {
     if (toque) calar()
     return
@@ -1134,14 +1258,16 @@ window.addEventListener('blur', () => estado.modo === 'ptt' && calar())
 setInterval(() => {
   const m = estado.medidorMic
   let v = 0
-  if (m && estado.modo !== 'mudo') {
+  if (m && (estado.modo !== 'mudo' || estado.porVoz)) {
     m.an.getFloatTimeDomainData(m.buf)
     let s = 0
     for (const x of m.buf) s += x * x
     v = Math.sqrt(s / m.buf.length)
   }
+  ouvirVoz(v)
   ultimoNivel = Math.max(v, ultimoNivel * 0.6)
-  $('talk-nivel').style.strokeDashoffset = String(339.3 * (1 - (estado.modo === 'mudo' ? 0 : escala(ultimoNivel))))
+  $('talk-nivel').style.strokeDashoffset = String(339.3 * (1 - (estado.modo === 'mudo' && !estado.porVoz ? 0 : escala(ultimoNivel))))
+  if (estado.pagina === 'ajustes' && estado.porVoz) $('aj-voz-nivel').style.width = `${Math.round(escala(ultimoNivel) * 100)}%`
   if (estado.modo !== 'mudo') estado.malha?.avisar({ t: 'nivel', v: Math.round(v * 1000) / 1000 })
   if (estado.diaria && estado.ligado && estado.pagina === 'noar') pintarNiveis()
 }, 100)
@@ -1490,7 +1616,25 @@ function desenharAjustes() {
   $('aj-av').textContent = iniciais(n)
   $('aj-av').style.background = cor(n)
   $('aj-sair').hidden = !SAIR
+  for (const b of $('aj-fala').querySelectorAll('button')) b.setAttribute('aria-selected', String((b.dataset.fala === 'voz') === estado.porVoz))
+  $('aj-fala-sub').textContent = estado.porVoz ? 'Abre sozinho quando você fala. Melhor com lapela.' : 'Segure o botão para falar; um toque deixa aberto.'
+  $('aj-voz').hidden = !estado.porVoz
+  for (const b of $('aj-voz-sens').querySelectorAll('button')) b.setAttribute('aria-selected', String(b.dataset.sens === estado.sens))
+  $('aj-voz-limiar').style.left = `${Math.round(escala(LIMIAR[estado.sens]) * 100)}%`
+  $('aj-voz-sub').textContent = estado.ligado ? 'Fale normalmente: a barra passa da marca e o microfone abre.' : 'Ligue o rádio para ver o nível.'
+  if (!estado.ligado) $('aj-voz-nivel').style.width = '0'
 }
+$('aj-fala').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-fala]')
+  if (b) escolherFala(b.dataset.fala === 'voz')
+})
+$('aj-voz-sens').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-sens]')
+  if (!b || !LIMIAR[b.dataset.sens]) return
+  estado.sens = b.dataset.sens
+  gravarPref('rd_voz', estado.sens)
+  desenharAjustes()
+})
 $('aj-tema').addEventListener('click', trocarTema)
 $('aj-sair').addEventListener('click', async (e) => {
   e.preventDefault()
@@ -1553,7 +1697,7 @@ function contarAoComputador() {
   const e = {
     diaria: estado.diaria?.nome ?? null,
     canal: estado.diaria ? NOME[alvo] || 'Geral' : null,
-    modo: estado.modo,
+    modo: estado.modo === 'voz' ? 'aberto' : estado.modo,
     calado: Boolean(estado.eu?.silenciado || estado.eu?.papel === 'convidado'),
     maos: estado.eu?.podeModerar ? estado.maos.size : 0,
     ligado: Boolean(estado.diaria && estado.ligado),
@@ -1578,7 +1722,8 @@ if (DESKTOP) {
     if (c === 'alternar-fala') {
       if (!estado.diaria) return
       if (!estado.ligado) return ir('noar')
-      if (estado.modo === 'mudo') abrirMic('aberto')
+      if (estado.porVoz) pausarVoz(!estado.vozPausada)
+      else if (estado.modo === 'mudo') abrirMic('aberto')
       else calar()
     } else if (c && typeof c === 'object' && 'compacto' in c) modoCompacto(Boolean(c.compacto))
   })

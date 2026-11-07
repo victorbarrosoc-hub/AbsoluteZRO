@@ -230,6 +230,12 @@
           <section class="cartao ajustes">
             <div class="ajuste"><span class="av av--g" id="aj-av"></span><div><b id="aj-nome"></b><small>O nome vem da sua conta Absolute ZRO.</small></div><a class="vidro vidro--p" id="aj-sair" href="#">Sair</a></div>
             <div class="ajuste"><span class="ico ico--p" data-canal="geral" data-ic="lua"></span><div><b>Tema escuro</b><small>O claro é o padrão.</small></div><button class="alavanca" id="aj-tema" type="button" role="switch" aria-checked="false" aria-label="Tema escuro"></button></div>
+            <div class="ajuste ajuste--escolha"><span class="ico ico--p" data-canal="geral" data-ic="falar"></span><div><b>Abrir o microfone</b><small id="aj-fala-sub">Segure o botão para falar.</small></div>
+              <div class="segmento" id="aj-fala" role="group" aria-label="Abrir o microfone"><button type="button" data-fala="botao" aria-selected="true">Botão</button><button type="button" data-fala="voz" aria-selected="false">Pela voz</button></div>
+            </div>
+            <div class="ajuste ajuste--escolha" id="aj-voz" hidden><span class="ico ico--p" data-canal="geral" data-ic="ar"></span><div><b>Sensibilidade</b><small id="aj-voz-sub">Ligue o rádio para ver o nível.</small><div class="voz-medidor" aria-hidden="true"><i id="aj-voz-nivel"></i><b id="aj-voz-limiar"></b></div></div>
+              <div class="segmento" id="aj-voz-sens" role="group" aria-label="Sensibilidade"><button type="button" data-sens="baixa" aria-selected="false">Baixa</button><button type="button" data-sens="media" aria-selected="true">Média</button><button type="button" data-sens="alta" aria-selected="false">Alta</button></div>
+            </div>
             <div class="ajuste"><span class="ico ico--p" data-canal="geral" data-ic="fone"></span><div><b>Use fone</b><small>No iPhone, deixe o RADION aberto e a tela ligada.</small></div></div>
           </section>
         </main>
