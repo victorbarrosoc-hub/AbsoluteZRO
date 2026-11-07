@@ -216,6 +216,9 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, foto do tamanho certo (07/11/2026): `products/radio` `npm test` 17/17, com o teste novo: foto de 512 px com
   fundo preto servida pela rota do navegador; no topo, na equipe e nos Ajustes o círculo usa a foto em `cover`, no
   centro, sem as iniciais por cima (no código de antes: `auto` e `0% 0%`, a foto presa no canto).
+- RADION, o nome em Figtree (07/11/2026): antes e depois fotografados no iPhone (claro e escuro), no computador e na
+  imagem de compartilhar; `node scripts/marca.mjs` e `node scripts/telas-do-site.mjs` refeitos; nenhuma referência ao
+  Nunito no app, no site, na marca ou na cópia do HUB; `products/radio` `npm test` 17/17.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

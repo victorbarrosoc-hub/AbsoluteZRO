@@ -224,6 +224,10 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   `background` no estilo do círculo zerava o `cover` da classe e a foto (512 px, fundo escuro) saía no tamanho real,
   presa no canto. O círculo agora só recebe a cor; a foto cabe no centro no topo, no menu, nos Ajustes e na equipe.
   Pronto para o lote de sexta (Vercel travada).
+- ✅ **RADION, o nome em Figtree** (titular, 07/11/2026, pelo Painel Geral): "radion" passa de Nunito Black para Figtree
+  ExtraBold (800), -0,04em, e fica mais junto do símbolo (0,32em: ~8 px em 25 px). No cabeçalho do app e da página
+  inicial, na imagem de compartilhar e nas telas da página inicial (refeitas); o Nunito sai do carregamento e do
+  repositório. O símbolo não muda. Lote de sexta.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

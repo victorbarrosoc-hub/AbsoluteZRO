@@ -1,8 +1,7 @@
-/* RADION · a página inicial. Mesma linguagem do app (app.css): Figtree no texto, Nunito no logotipo, claro por padrão
+/* RADION · a página inicial. Mesma linguagem do app (app.css): Figtree no texto e no logotipo, claro por padrão
    e escuro pelo sistema, botões de vidro, as cores dos setores. As demonstrações são HTML animado (app/site.js marca a
    fase em data-*; o CSS faz o resto). Reduzir movimento: tudo parado num quadro que conta a história. */
 @font-face { font-family: 'Figtree'; font-weight: 300 900; font-display: swap; src: url('/fontes/figtree-latin-wght-normal.woff2') format('woff2-variations'); }
-@font-face { font-family: 'Nunito'; font-weight: 200 1000; font-display: swap; src: url('/fontes/nunito-latin-wght-normal.woff2') format('woff2-variations'); }
 :root { color-scheme: light dark; --fundo: #fbfbfd; --faixa: #f5f5f7; --cartao: #ffffff; --tinta: #1d1d1f; --apoio: #6e6e73; --fraco: #a1a1a6; --linha: rgba(60, 60, 67, 0.12); --contorno: rgba(0, 0, 0, 0.08); --campo: #f2f2f4; --vermelho: #ff3b30; --sombra: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.06); --mola: cubic-bezier(0.2, 0.8, 0.2, 1); font-family: 'Figtree', system-ui, sans-serif; color: var(--tinta); background: var(--fundo); -webkit-font-smoothing: antialiased; }
 /* claro × escuro: o sistema manda até a pessoa escolher no topo (app/site.js grava data-tema, a mesma escolha do app) */
 :root[data-tema='escuro'] { --fundo: #000; --faixa: #0b0b0c; --cartao: #1c1c1e; --tinta: #f5f5f7; --apoio: #a1a1a6; --fraco: #6e6e73; --linha: rgba(255, 255, 255, 0.1); --contorno: rgba(255, 255, 255, 0.12); --campo: #2c2c2e; --sombra: 0 0 0 1px rgba(255, 255, 255, 0.06);  color-scheme: dark; }
@@ -38,7 +37,7 @@ h1, h2, p { margin: 0; }
 
 /* topo */
 .s-topo { position: sticky; top: 0; z-index: 5; height: 64px; display: flex; align-items: center; gap: 28px; padding: 0 clamp(16px, 4.5vw, 64px); background: color-mix(in srgb, var(--fundo) 80%, transparent); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-bottom: 1px solid var(--linha); }
-.s-marca { display: flex; align-items: center; gap: 8px; font-family: 'Nunito', sans-serif; font-weight: 850; letter-spacing: -0.045em; font-size: 24px; text-decoration: none; margin-right: auto; line-height: 1; }
+.s-marca { display: flex; align-items: center; gap: 0.32em; font-family: 'Figtree', sans-serif; font-weight: 800; letter-spacing: -0.04em; font-size: 24px; text-decoration: none; margin-right: auto; line-height: 1; }
 .s-marca img { display: block; height: 24px; width: auto; }
 .s-tema { height: 36px; border-radius: 18px; border: 0; background: var(--cartao); box-shadow: inset 0 0 0 1px var(--contorno); display: flex; align-items: center; padding: 3px; gap: 2px; cursor: pointer; flex: none; }
 .s-tema span { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--fraco); }

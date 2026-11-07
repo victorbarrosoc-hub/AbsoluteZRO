@@ -42,7 +42,7 @@ Voz por botão (push-to-talk) para a equipe da diária, no navegador do celular 
 - **Login único** (`api/zro/*`, cookies `rd_*`, cliente `radio-web`, escopos com `zro.set`) e o repasse do Set
   (`api/zro/set.js`, cópia do Relay).
 - **Marca:** `node scripts/marca.mjs` gera `app/marca/` (símbolo, ícones, favicon e os PNG do iPhone). Figtree no
-  texto, Nunito só no logotipo (`fontes/`).
+  texto e no logotipo, o nome em ExtraBold 800 (`fontes/`).
 
 ## Ligar o radion.absolutezro.com (titular)
 

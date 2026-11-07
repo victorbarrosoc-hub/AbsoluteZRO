@@ -1,6 +1,6 @@
 /* RADION (ADR 0042) · o app. Telas aprovadas pelo titular em 06/11/2026: lateral recolhível, Apps Absolute ZRO num
    balão, Início, No ar com moderação, Diárias, Equipe, Avisos, Setores e responsáveis, Convites e QR, Ajustes; no
-   celular, barra de abas com o TALK no meio. Tema claro é o padrão; escuro é escolha. Figtree no texto, Nunito só no
+   celular, barra de abas com o TALK no meio. Tema claro é o padrão; escuro é escolha. Figtree no texto e no
    logotipo. Sem estilo inline (CSP). */
 
 @font-face {
@@ -16,12 +16,6 @@
   font-display: swap;
   src: url('/fontes/figtree-latin-ext-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Nunito';
-  font-weight: 200 1000;
-  font-display: swap;
-  src: url('/fontes/nunito-latin-wght-normal.woff2') format('woff2-variations');
 }
 
 :root {
@@ -101,7 +95,8 @@ svg { display: block; flex: none; }
 .forte { font-weight: 800; }
 
 /* ───────── logotipo ───────── */
-.marca { display: flex; align-items: center; gap: 9px; font-family: 'Nunito', 'Figtree', sans-serif; font-weight: 850; letter-spacing: -0.045em; font-size: 25px; line-height: 1; }
+/* o nome em Figtree ExtraBold, junto do símbolo (titular, 07/11/2026: ~8 px em 25 px de letra) */
+.marca { display: flex; align-items: center; gap: 0.32em; font-family: 'Figtree', sans-serif; font-weight: 800; letter-spacing: -0.04em; font-size: 25px; line-height: 1; }
 .simbolo { height: 26px; width: auto; }
 .simbolo--branco { display: none; }
 [data-tema='escuro'] .simbolo--grafite { display: none; }

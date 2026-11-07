@@ -24,5 +24,6 @@ valem aqui; este arquivo só acrescenta.
   compartilhar), o rebite fica no centro exato do quadro.
 - Marca só em `scripts/marca.mjs` (depois, `node scripts/marca.mjs`); mudou a interface, `node scripts/telas-do-site.mjs`
   refaz as telas da página inicial.
-- Telas: Figtree no texto, Nunito só no logotipo; claro é o padrão; padrão Apple da raiz.
+- Telas: Figtree no texto e no logotipo (o nome "radion" em ExtraBold 800, -0,04em, a 0,32em do símbolo; titular,
+  07/11/2026); claro é o padrão; padrão Apple da raiz.
 - Antes de entregar: `npm test` nesta pasta (Postgres e Chromium de verdade).

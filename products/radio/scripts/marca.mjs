@@ -118,11 +118,10 @@ export function og(fontes, zro) {
   const some = `<linearGradient id="oa" x1="0" y1="0" x2="0" y2="630" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".22" stop-color="#fff"/><stop offset=".6" stop-color="#fff"/><stop offset=".78" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="om" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="630"><rect width="1200" height="630" fill="url(#oa)"/></mask>`
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:Figtree;font-weight:300 900;src:url('${fontes}/figtree-latin-wght-normal.woff2') format('woff2-variations')}
-@font-face{font-family:Nunito;font-weight:200 1000;src:url('${fontes}/nunito-latin-wght-normal.woff2') format('woff2-variations')}
 html,body{margin:0}
 body{position:relative;width:1200px;height:630px;overflow:hidden;background:#fbfbfd;font-family:Figtree;color:#1d1d1f;-webkit-font-smoothing:antialiased}
 svg{position:absolute;inset:0}
-.nome{position:absolute;left:0;right:0;top:50px;text-align:center;font-family:Nunito;font-weight:850;font-size:42px;letter-spacing:-0.045em;line-height:1}
+.nome{position:absolute;left:0;right:0;top:50px;text-align:center;font-family:Figtree;font-weight:800;font-size:42px;letter-spacing:-0.04em;line-height:1}
 .zro{position:absolute;right:56px;top:58px;height:16px;opacity:.8}
 .baixo{position:absolute;left:0;right:0;bottom:52px;display:flex;flex-direction:column;align-items:center}
 h1{margin:0;font-size:66px;letter-spacing:-0.05em;line-height:.95;font-weight:300} h1 b{font-weight:800}
