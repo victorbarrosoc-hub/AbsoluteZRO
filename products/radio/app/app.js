@@ -92,6 +92,7 @@ const estado = {
   diarias: [],
   diaria: null, // { id, codigo, nome, dono, papel, funcao }
   eu: null, // da batida
+  foto: null, // a foto da conta Absolute ZRO (endereço público), da lista de diárias
   peer: novoPeer(),
   pessoas: [],
   membros: [],
@@ -140,11 +141,21 @@ function cor(n) {
   for (const ch of String(n)) x = (x * 31 + ch.charCodeAt(0)) >>> 0
   return COR_AV[x % COR_AV.length]
 }
-function avatar(nome, classe = '') {
-  const a = h('span', { class: `av ${classe}`, 'aria-hidden': 'true' }, iniciais(nome))
-  a.style.background = cor(nome)
-  return a
+/** Bolinha da pessoa: as iniciais na cor dela e, por cima, a foto da conta Absolute ZRO (se a foto não abrir, ficam as iniciais). */
+function pintarAv(el, nome, foto) {
+  el.textContent = iniciais(nome)
+  el.style.background = cor(nome)
+  if (!foto) return el
+  const img = h('img', { src: foto, alt: '', decoding: 'async', referrerpolicy: 'no-referrer' })
+  img.addEventListener('error', () => img.remove(), { once: true })
+  el.append(img)
+  return el
 }
+function avatar(nome, classe = '', foto = null) {
+  return pintarAv(h('span', { class: `av ${classe}`, 'aria-hidden': 'true' }), nome, foto)
+}
+/** A foto da conta só vale se for o endereço público da Absolute ZRO (o servidor já conferiu; aqui, de novo). */
+const fotoValida = (f) => (typeof f === 'string' && /^(https:\/\/absolutezro\.com)?\/api\/v1\/foto\/[A-Za-z0-9_-]{8,80}$/.test(f) ? f : null)
 const ico = (canal, classe = 'ico') => h('span', { class: classe, dataset: { canal } }, icSetor(canal))
 const primeiro = (n) => String(n || '').split(/\s+/)[0]
 function mostrarErro(id, texto) {
@@ -231,12 +242,10 @@ function desenharPagina() {
 
 function desenharCasca() {
   const n = estado.nome || estado.eu?.nome || ''
-  $('eu-av').replaceWith(Object.assign(avatar(n), { id: 'eu-av' }))
+  $('eu-av').replaceWith(Object.assign(avatar(n, '', estado.foto), { id: 'eu-av' }))
   $('eu-nome').textContent = n
   $('eu-sub').textContent = estado.diaria ? [PAPEL[estado.diaria.papel], nomeDoSetor(estado.diaria.funcao, estado.diaria.funcaoNome)].filter(Boolean).join(' · ') : 'Conta Absolute ZRO'
-  const t = $('topo-av')
-  t.textContent = iniciais(n)
-  t.style.background = cor(n)
+  pintarAv($('topo-av'), n, estado.foto)
   $('nav-diarias').textContent = estado.diarias.length ? String(estado.diarias.length) : ''
   $('nav-vivo').hidden = !estado.diaria
   $('nav-noar').dataset.vivo = estado.diaria ? '1' : ''
@@ -250,6 +259,7 @@ async function carregarDiarias() {
   if (r.status === 503) return mostrarErro('diarias-erro', 'O RADION está sem banco agora.')
   estado.diarias = r.diarias || []
   if (r.eu?.nome) estado.nome = r.eu.nome
+  if (r.eu && 'foto' in r.eu) estado.foto = fotoValida(r.eu.foto)
   desenharCasca()
   if (['inicio', 'diarias'].includes(estado.pagina)) desenharPagina()
 }
@@ -1454,8 +1464,7 @@ const celular = () => matchMedia('(max-width: 860px)').matches
 $('topo-av').addEventListener('click', () => {
   if (!celular()) return ir('ajustes')
   const n = estado.nome || estado.eu?.nome || ''
-  $('mais-av').textContent = iniciais(n)
-  $('mais-av').style.background = cor(n)
+  pintarAv($('mais-av'), n, estado.foto)
   $('mais-nome').textContent = n
   $('mais-sub').textContent = $('eu-sub').textContent
   for (const b of $('mais-folha').querySelectorAll('[data-precisa-diaria]')) b.hidden = !estado.diaria

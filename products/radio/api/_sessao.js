@@ -14,7 +14,7 @@ const hostLocal = (req) => /^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(String(r
 
 export const modoLocal = (req) => !configurado() && process.env.RADIO_LOCAL === '1' && hostLocal(req)
 
-/** A pessoa da sessão, já passada pelo gate, ou null. { sub, nome, org } */
+/** A pessoa da sessão, já passada pelo gate, ou null. { sub, nome, foto, org } (a foto é o endereço público da conta) */
 export function pessoaDe(req) {
   if (modoLocal(req)) {
     const v = lerCookie(req, 'rd_local')
@@ -29,7 +29,8 @@ export function pessoaDe(req) {
   }
   const c = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
   if (!c || typeof c.sub !== 'string' || !temAcesso(c.apps)) return null
-  return { sub: c.sub, nome: nomeLimpo(c.nome) || nomeLimpo(String(c.email || '').split('@')[0]) || 'Pessoa', org: c.org?.id || null }
+  const foto = typeof c.foto === 'string' && /^https:\/\/[a-z0-9.-]+(:\d{1,5})?\/api\/v1\/foto\/[A-Za-z0-9_-]{8,80}$/.test(c.foto) ? c.foto : null
+  return { sub: c.sub, nome: nomeLimpo(c.nome) || nomeLimpo(String(c.email || '').split('@')[0]) || 'Pessoa', foto, org: c.org?.id || null }
 }
 
 /** Corpo JSON do pedido (a Vercel já entrega em req.body; o servidor local, não). Até 64 KB. */

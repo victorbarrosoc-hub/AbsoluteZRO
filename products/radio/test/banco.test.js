@@ -138,6 +138,12 @@ test('diária: criar, entrar pelo código, função, presença e isolamento', { 
 
   // Bia ainda não está: não vê a diária nem bate
   assert.equal((await chamar('diarias', 'GET', bia)).corpo.diarias.length, 0)
+  // a foto da conta Absolute ZRO vem da sessão para o topo do app; só o endereço público da foto, nada inventado
+  assert.equal((await chamar('diarias', 'GET', bia)).corpo.eu.foto, null)
+  const comFoto = z.selar(z.COOKIE_CONTA, { sub: 'bia-foto', nome: 'Bia', foto: 'https://absolutezro.com/api/v1/foto/0b6f1c3e-1a2b-4c5d-8e9f-0a1b2c3d4e5f', apps: ['radio'], lido: Math.floor(Date.now() / 1000) }, 3600)
+  assert.equal((await chamar('diarias', 'GET', comFoto)).corpo.eu.foto, 'https://absolutezro.com/api/v1/foto/0b6f1c3e-1a2b-4c5d-8e9f-0a1b2c3d4e5f')
+  const fotoRuim = z.selar(z.COOKIE_CONTA, { sub: 'bia-ruim', nome: 'Bia', foto: 'javascript:alert(1)', apps: ['radio'], lido: Math.floor(Date.now() / 1000) }, 3600)
+  assert.equal((await chamar('diarias', 'GET', fotoRuim)).corpo.eu.foto, null)
   assert.equal((await chamar('batida', 'POST', bia, { diaria: d.id, peer: 'b'.repeat(24) })).statusCode, 403)
   assert.equal((await chamar('diarias', 'POST', bia, { acao: 'entrar', codigo: 'ZZZZZZ' })).statusCode, 404)
 

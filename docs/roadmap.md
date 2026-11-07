@@ -198,6 +198,9 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   esquema `radion`) e workflow `radion-desktop.yml` (Release `radion-versao-de-teste`, build base 4000). Primeiro build
   verde (b4002, Mac e Windows); HUB `0064` abre os canais `desktop` e `download` (titular, 07/11/2026: "pode abrir o
   download na central também").
+- ✅ **RADION, foto da conta** (pedido do titular, 07/11/2026): o topo, o menu e a folha "Mais" mostram a foto do perfil
+  único da Absolute ZRO (claim `picture` no `radion.absolutezro.com`, `zro.user_avatars` no HUB), com as iniciais por
+  baixo quando não há foto ou ela não abre.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
