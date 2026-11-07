@@ -121,7 +121,7 @@ export function og(fontes, zro) {
 html,body{margin:0}
 body{position:relative;width:1200px;height:630px;overflow:hidden;background:#fbfbfd;font-family:Figtree;color:#1d1d1f;-webkit-font-smoothing:antialiased}
 svg{position:absolute;inset:0}
-.nome{position:absolute;left:0;right:0;top:50px;text-align:center;font-family:Figtree;font-weight:800;font-size:42px;letter-spacing:-0.04em;line-height:1}
+.nome{position:absolute;left:0;right:0;top:112px;text-align:center;font-family:Figtree;font-weight:800;font-size:44px;letter-spacing:-0.04em;line-height:1}
 .zro{position:absolute;right:56px;top:58px;height:16px;opacity:.8}
 .baixo{position:absolute;left:0;right:0;bottom:52px;display:flex;flex-direction:column;align-items:center}
 h1{margin:0;font-size:66px;letter-spacing:-0.05em;line-height:.95;font-weight:300} h1 b{font-weight:800}
