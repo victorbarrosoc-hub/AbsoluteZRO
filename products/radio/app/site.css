@@ -26,7 +26,7 @@ h1, h2, p { margin: 0; }
 .s-heroi { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; padding: 56px 16px 0; }
 .s-icone { width: 168px; height: 168px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.16)); animation: entra 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .s-heroi h1 { font-size: clamp(56px, 10vw, 112px); letter-spacing: -0.05em; line-height: 0.95; margin-top: 12px; }
-.s-heroi h1 .ponto { color: #0a8cff; font-weight: 800; }
+.s-heroi h1 .ponto { font-weight: 800; }
 .s-heroi p, .s-faixa > p, .s-eco > p { font-size: clamp(17px, 2vw, 21px); color: var(--apoio); font-weight: 500; }
 .s-acoes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .s-aparelhos { position: relative; max-width: 1100px; margin: 64px auto 0; padding: 0 16px 80px; }

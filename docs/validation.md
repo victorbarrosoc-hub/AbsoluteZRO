@@ -173,6 +173,13 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   mesmo caminho no radion, `/api/radio/diarias` sem sessão → 401, `/` sem sessão → página neutra; o titular entrou e
   abriu uma diária no celular. TALK no celular sem a tela inteira (barra e canal acendem): `npm test` 11/11,
   `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4 e captura no Chromium em 390 × 844.
+- RADION, setores da diária (07/11/2026): `products/radio` `npm test` 12/12, com o teste novo de setores (nasce com os
+  sete; só o dono cria, renomeia e tira; nome repetido e cor fora da lista recusados; setor de outra diária não vale;
+  mover põe gente no setor novo; tirar o setor deixa quem estava sem setor e o responsável na equipe; a Direção não sai;
+  trava de setor; Gravando liga e o Corta desliga; renomear só o dono; sair e encerrar; `radio_app` não escreve setor nem lê setor de diária alheia). HUB:
+  `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4, typecheck. Capturas no Chromium em 390 × 844
+  (escuro) e 1200 × 800: No ar com Travar a fala e Sair, Setores com o lápis e o editor (cores, pessoas, pôr alguém),
+  Poderes com o Setor travado, Equipe, Avisos, Sair e a volta para Diárias.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

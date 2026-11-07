@@ -4,7 +4,9 @@
 // Construção, tudo em múltiplos da largura da lâmina (w): seis lâminas girando no mesmo rebite, uma a cada 18°, de
 // 90° (em pé) a 0° (deitada), cada uma deitada sobre a anterior com um respiro de 0,22w (recortado, não pintado: a
 // marca funciona sobre qualquer fundo). Pontas sobre R(t) = 6w + 1,5w·sen(πt). Rebite com raio 1,25w e o mesmo respiro.
-// No ícone do app o rebite fica no centro exato (512, 512).
+// O sinal (titular, 07/11/2026: "um sinal de Wi-Fi, é um detalhe"): três arcos no quadrante oposto ao leque, centrados
+// no rebite e na diagonal de baixo à esquerda, 78° cada, traço 0,38w, raios 1,97w · 2,78w · 3,59w, na cor do rebite.
+// No ícone do app o rebite fica no centro exato (512, 512), na escala 3,55 (o desenho preenche mais o quadrado).
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -21,6 +23,21 @@ const INI = 1.2 * W
 const R = (i) => 6 * W + 1.5 * W * Math.sin((Math.PI * i) / 5)
 const rad = (g) => (g * Math.PI) / 180
 const n = (v) => Math.round(v * 100) / 100
+// o sinal: a base 2,1 · 3,05 · 4,0w encolhida a 85% a partir da borda do rebite (1,25w)
+const SINAL_RAIOS = [2.1, 3.05, 4.0].map((x) => 1.25 + (x - 1.25) * 0.85)
+const SINAL_TRACO = 0.38 * W
+const SINAL_DE = 135 - 39
+const SINAL_ATE = 135 + 39
+const ICONE_K = 3.55
+
+/** Os três arcos do sinal em volta de (cx, cy), escala k. */
+function sinal(cx, cy, k, cor) {
+  return SINAL_RAIOS.map((x) => {
+    const r = x * W * k
+    const p = (g) => `${n(cx + r * Math.cos(rad(g)))} ${n(cy + r * Math.sin(rad(g)))}`
+    return `<path d="M${p(SINAL_DE)} A${n(r)} ${n(r)} 0 0 1 ${p(SINAL_ATE)}" fill="none" stroke="${cor}" stroke-width="${n(SINAL_TRACO * k)}" stroke-linecap="round"/>`
+  }).join('')
+}
 
 /** As lâminas e o rebite em volta de (cx, cy), escala k. `id` separa as máscaras quando há mais de um no mesmo SVG. */
 export function leque(cx, cy, k, rebite, id = 'r') {
@@ -39,10 +56,10 @@ export function leque(cx, cy, k, rebite, id = 'r') {
     defs += `<mask id="${id}${i}" maskUnits="userSpaceOnUse" x="${n(cx - 20 * W * k)}" y="${n(cy - 20 * W * k)}" width="${n(40 * W * k)}" height="${n(40 * W * k)}"><rect x="${n(cx - 20 * W * k)}" y="${n(cy - 20 * W * k)}" width="${n(40 * W * k)}" height="${n(40 * W * k)}" fill="#fff"/>${cortes}${furo}</mask>`
     corpo += `<g mask="url(#${id}${i})">${linha(i, W * k, CORES[i])}</g>`
   }
-  return { defs, corpo: corpo + `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(REB * k)}" fill="${rebite}"/>` }
+  return { defs, corpo: sinal(cx, cy, k, rebite) + corpo + `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(REB * k)}" fill="${rebite}"/>` }
 }
 
-/** Caixa justa do símbolo com o rebite na origem. */
+/** Caixa justa do símbolo com o rebite na origem (o leque em cima à direita, o sinal embaixo à esquerda). */
 function caixa() {
   const e = REB + G
   let x1 = 0
@@ -53,7 +70,14 @@ function caixa() {
     x1 = Math.max(x1, r * Math.cos(a) + W / 2)
     y0 = Math.min(y0, r * Math.sin(a) - W / 2)
   }
-  return { x0: -e, y0, w: x1 + e, h: e - y0 }
+  let x0 = -e
+  let y1 = e
+  for (let g = SINAL_DE; g <= SINAL_ATE; g += 1) {
+    const r = SINAL_RAIOS[2] * W + SINAL_TRACO / 2
+    x0 = Math.min(x0, r * Math.cos(rad(g)))
+    y1 = Math.max(y1, r * Math.sin(rad(g)))
+  }
+  return { x0, y0, w: x1 - x0, h: y1 - y0 }
 }
 
 export function simbolo(rebite = GRAFITE) {
@@ -65,7 +89,7 @@ export function simbolo(rebite = GRAFITE) {
 /** Ícone do app (1024): fundo claro ou escuro, rebite no centro. */
 export function icone(escuro = false) {
   const fundo = escuro ? ['#232326', '#0b0b0c'] : ['#ffffff', '#f0f0f4']
-  const { defs, corpo } = leque(512, 512, 3.25, escuro ? BRANCO : GRAFITE, 'i')
+  const { defs, corpo } = leque(512, 512, ICONE_K, escuro ? BRANCO : GRAFITE, 'i')
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="RADION"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${fundo[0]}"/><stop offset="1" stop-color="${fundo[1]}"/></linearGradient>${defs}</defs><rect width="1024" height="1024" rx="228" fill="url(#f)"/>${corpo}</svg>\n`
 }
 
@@ -93,7 +117,7 @@ export function og(fontes) {
 html,body{margin:0}
 body{width:1200px;height:630px;background:${luz},#f5f5f7;font-family:Figtree;color:#1d1d1f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;-webkit-font-smoothing:antialiased}
 h1{margin:0;font-size:92px;letter-spacing:-0.05em;line-height:1}
-h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800;color:#0a8cff}
+h1 span{font-weight:300} h1 b{font-weight:800} h1 i{font-style:normal;font-weight:800}
 .assina{display:flex;align-items:center;gap:12px;font-family:Nunito;font-weight:850;font-size:30px;letter-spacing:-0.04em}
 .assina img{width:46px;height:46px;border-radius:11px;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
 </style></head><body>
