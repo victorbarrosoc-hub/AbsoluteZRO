@@ -17,6 +17,8 @@ const API = meta('radio-api') || '/api/radio'
 const SET = meta('radio-set')
 const SET_API = meta('radio-set-api')
 const SAIR = meta('radio-sair')
+// fotos das contas: a página recebe só o id público e monta o endereço com a Absolute ZRO deste site
+const FOTO = /^(https:\/\/absolutezro\.com)?\/api\/v1\/foto\/$/.test(meta('radio-foto')) ? meta('radio-foto') : ''
 const INICIO = BASE || '/'
 const ZRO = SET ? new URL(SET, location.href).origin : ''
 // no app de computador (products/radio/desktop/desktop/preload.cjs): a ponte com a barra de menus, o atalho e o compacto
@@ -92,6 +94,7 @@ const estado = {
   diarias: [],
   diaria: null, // { id, codigo, nome, dono, papel, funcao }
   eu: null, // da batida
+  foto: null, // a foto da conta Absolute ZRO (endereço público), da lista de diárias
   peer: novoPeer(),
   pessoas: [],
   membros: [],
@@ -140,11 +143,22 @@ function cor(n) {
   for (const ch of String(n)) x = (x * 31 + ch.charCodeAt(0)) >>> 0
   return COR_AV[x % COR_AV.length]
 }
-function avatar(nome, classe = '') {
-  const a = h('span', { class: `av ${classe}`, 'aria-hidden': 'true' }, iniciais(nome))
-  a.style.background = cor(nome)
-  return a
+/** Bolinha da pessoa: as iniciais na cor dela e, por cima, a foto da conta Absolute ZRO (se a foto não abrir, ficam as iniciais). */
+function pintarAv(el, nome, foto) {
+  el.textContent = iniciais(nome)
+  el.style.background = cor(nome)
+  const id = fotoValida(foto)
+  if (!id || !FOTO) return el
+  const img = h('img', { src: FOTO + id, alt: '', decoding: 'async', loading: 'lazy', referrerpolicy: 'no-referrer' })
+  img.addEventListener('error', () => img.remove(), { once: true })
+  el.append(img)
+  return el
 }
+function avatar(nome, classe = '', foto = null) {
+  return pintarAv(h('span', { class: `av ${classe}`, 'aria-hidden': 'true' }), nome, foto)
+}
+/** A foto de uma conta: só o id público (o servidor já conferiu; aqui, de novo). */
+const fotoValida = (f) => (typeof f === 'string' && /^[A-Za-z0-9_-]{8,80}$/.test(f) ? f : null)
 const ico = (canal, classe = 'ico') => h('span', { class: classe, dataset: { canal } }, icSetor(canal))
 const primeiro = (n) => String(n || '').split(/\s+/)[0]
 function mostrarErro(id, texto) {
@@ -231,12 +245,10 @@ function desenharPagina() {
 
 function desenharCasca() {
   const n = estado.nome || estado.eu?.nome || ''
-  $('eu-av').replaceWith(Object.assign(avatar(n), { id: 'eu-av' }))
+  $('eu-av').replaceWith(Object.assign(avatar(n, '', estado.foto), { id: 'eu-av' }))
   $('eu-nome').textContent = n
   $('eu-sub').textContent = estado.diaria ? [PAPEL[estado.diaria.papel], nomeDoSetor(estado.diaria.funcao, estado.diaria.funcaoNome)].filter(Boolean).join(' · ') : 'Conta Absolute ZRO'
-  const t = $('topo-av')
-  t.textContent = iniciais(n)
-  t.style.background = cor(n)
+  pintarAv($('topo-av'), n, estado.foto)
   $('nav-diarias').textContent = estado.diarias.length ? String(estado.diarias.length) : ''
   $('nav-vivo').hidden = !estado.diaria
   $('nav-noar').dataset.vivo = estado.diaria ? '1' : ''
@@ -250,6 +262,7 @@ async function carregarDiarias() {
   if (r.status === 503) return mostrarErro('diarias-erro', 'O RADION está sem banco agora.')
   estado.diarias = r.diarias || []
   if (r.eu?.nome) estado.nome = r.eu.nome
+  if (r.eu && 'foto' in r.eu) estado.foto = fotoValida(r.eu.foto)
   desenharCasca()
   if (['inicio', 'diarias'].includes(estado.pagina)) desenharPagina()
 }
@@ -670,7 +683,7 @@ function pintarNiveis() {
     else {
       const resp = estado.membros.find((m) => m.funcao === id && m.papel === 'responsavel')
       const ouve = ouvintes(id)
-      sub.replaceChildren(...(resp ? [avatar(resp.nome, 'av--p'), `${primeiro(resp.nome)} · responsável`, h('i', {}, ' · ')] : []), `${q} no ar${ouve > q ? ` · ${ouve} ouvindo` : ''}`)
+      sub.replaceChildren(...(resp ? [avatar(resp.nome, 'av--p', resp.foto), `${primeiro(resp.nome)} · responsável`, h('i', {}, ' · ')] : []), `${q} no ar${ouve > q ? ` · ${ouve} ouvindo` : ''}`)
     }
   }
 }
@@ -804,7 +817,7 @@ function desenharPessoas() {
         h(
           'button',
           { class: 'pessoa', type: 'button', dataset: { estado: st, mao: mao ? '1' : '', calado: calado(p.apelido) ? '1' : '' }, 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: (e) => abrirMenuPessoa(p.apelido, e.currentTarget) },
-          h('span', { class: 'av-casa' }, avatar(p.nome)),
+          h('span', { class: 'av-casa' }, avatar(p.nome, '', p.foto)),
           h('div', {}, h('b', {}, meu ? 'Você' : p.nome), h('small', { dataset: { canal: p.funcao || 'geral' } }, h('span', { class: 'ponto' }), `${p.funcao ? NOME[p.funcao] : 'Sem setor'} · ${situacao}`)),
           mao ? h('span', { class: 'mao' }, icone('mao', 'ic ic--p')) : calado(p.apelido) ? icone('micoff', 'ic ic--p') : null,
         ),
@@ -823,7 +836,7 @@ function desenharPessoas() {
         h(
           'button',
           { type: 'button', class: 'pessoa-cel', dataset: { canal: p.funcao || 'geral', mao: estado.maos.has(apelido) ? '1' : '', calado: calado(apelido) ? '1' : '', falando: falando ? '1' : '' }, 'aria-label': `${meu ? 'Você' : p.nome}${p.funcao ? `, ${NOME[p.funcao]}` : ''}`, onclick: (e) => abrirMenuPessoa(apelido, e.currentTarget) },
-          h('span', { class: 'av-casa' }, avatar(p.nome, 'av--g')),
+          h('span', { class: 'av-casa' }, avatar(p.nome, 'av--g', p.foto)),
           h('span', {}, meu ? 'Você' : primeiro(p.nome)),
         ),
       )
@@ -899,7 +912,7 @@ function abrirMenuPessoa(apelido, botao) {
   if (!ehEu && p.tirar) itens.push(h('div', { class: 'divisor' }), acao('sair', p.dono ? 'Tirar da diária' : 'Tirar do setor', () => moderar('tirar', { alvo: apelido }), { perigo: true }))
   menu.replaceChildren(
     h('svg', {}),
-    h('div', { class: 'balao-caixa' }, h('div', { class: 'balao-cabeca' }, avatar(t.nome, 'av--g'), h('div', {}, h('b', {}, ehEu ? `${t.nome} (você)` : t.nome), h('small', {}, [t.funcao ? NOME[t.funcao] : 'Sem setor', PAPEL[t.papel]].join(' · ')))), ...itens),
+    h('div', { class: 'balao-caixa' }, h('div', { class: 'balao-cabeca' }, avatar(t.nome, 'av--g', t.foto), h('div', {}, h('b', {}, ehEu ? `${t.nome} (você)` : t.nome), h('small', {}, [t.funcao ? NOME[t.funcao] : 'Sem setor', PAPEL[t.papel]].join(' · ')))), ...itens),
   )
   // a ponta do balão, apontando para a pessoa
   const ponta = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -1205,7 +1218,7 @@ function desenharEquipe() {
       return h(
         'div',
         { class: 'tabela-linha t-equipe' },
-        h('div', { class: 'quem' }, avatar(m.nome, 'av--g'), h('div', {}, h('b', {}, eu ? `${m.nome} (você)` : m.nome), h('small', {}, [m.funcao ? NOME[m.funcao] : 'Sem setor', calado(m.apelido) ? 'silenciado' : estado.maos.has(m.apelido) ? 'pediu a palavra' : m.online ? 'no ar' : null].filter(Boolean).join(' · ')))),
+        h('div', { class: 'quem' }, avatar(m.nome, 'av--g', m.foto), h('div', {}, h('b', {}, eu ? `${m.nome} (você)` : m.nome), h('small', {}, [m.funcao ? NOME[m.funcao] : 'Sem setor', calado(m.apelido) ? 'silenciado' : estado.maos.has(m.apelido) ? 'pediu a palavra' : m.online ? 'no ar' : null].filter(Boolean).join(' · ')))),
         m.funcao ? h('span', { class: 'chip', dataset: { canal: m.funcao } }, h('span', { class: 'ponto' }), NOME[m.funcao]) : h('span', { class: 'chip' }, 'Sem setor'),
         h('span', { class: 'chip', title: PAPEL[m.papel] }, m.papel === 'dono' ? icone('coroa', 'ic ic--p') : m.papel === 'responsavel' ? icone('escudo', 'ic ic--p') : null, m.papel === 'dono' ? 'Dono' : PAPEL[m.papel]),
         h('span', { class: 'chip' }, h('span', { class: 'ponto', dataset: { canal: m.online ? 'som' : '' } }), m.online ? 'no ar' : 'fora do ar'),
@@ -1243,7 +1256,7 @@ function desenharSetores() {
           if (resp) sel.firstChild.remove()
           sel.addEventListener('change', () => sel.value && moderar('responsavel', { alvo: sel.value }))
           celula = sel
-        } else celula = resp ? h('span', { class: 'quem' }, avatar(resp.nome), h('b', {}, resp.nome)) : h('span', { class: 'sub' }, doSetor.length ? (escolhiveis.length ? 'Ninguém ainda' : 'Só o dono') : 'Ninguém no setor')
+        } else celula = resp ? h('span', { class: 'quem' }, avatar(resp.nome, '', resp.foto), h('b', {}, resp.nome)) : h('span', { class: 'sub' }, doSetor.length ? (escolhiveis.length ? 'Ninguém ainda' : 'Só o dono') : 'Ninguém no setor')
         const noAr = doSetor.filter((m) => m.online).length
         const nomeCel = dono
           ? h('button', { class: 'quem setor-nome', type: 'button', 'aria-label': `Editar ${nome}`, onclick: () => abrirEditorSetor(id) }, ico(id, 'ico ico--p'), h('b', {}, nome), icone('lapis', 'ic ic--p'))
@@ -1351,7 +1364,7 @@ function desenharGenteDoSetor() {
   })
   caixa.replaceChildren(
     h('div', { class: 'titulo-sec' }, 'Pessoas', h('small', {}, `${dentro.length}`)),
-    h('ul', { class: 'se-lista' }, ...(dentro.length ? dentro.map((m) => h('li', {}, avatar(m.nome, 'av--p'), h('span', {}, m.nome), m.papel === 'responsavel' ? h('small', {}, 'responsável') : m.papel === 'dono' ? h('small', {}, 'dono') : null)) : [h('li', { class: 'sub' }, 'Ninguém ainda.')])),
+    h('ul', { class: 'se-lista' }, ...(dentro.length ? dentro.map((m) => h('li', {}, avatar(m.nome, 'av--p', m.foto), h('span', {}, m.nome), m.papel === 'responsavel' ? h('small', {}, 'responsável') : m.papel === 'dono' ? h('small', {}, 'dono') : null)) : [h('li', { class: 'sub' }, 'Ninguém ainda.')])),
     sel,
   )
 }
@@ -1454,8 +1467,7 @@ const celular = () => matchMedia('(max-width: 860px)').matches
 $('topo-av').addEventListener('click', () => {
   if (!celular()) return ir('ajustes')
   const n = estado.nome || estado.eu?.nome || ''
-  $('mais-av').textContent = iniciais(n)
-  $('mais-av').style.background = cor(n)
+  pintarAv($('mais-av'), n, estado.foto)
   $('mais-nome').textContent = n
   $('mais-sub').textContent = $('eu-sub').textContent
   for (const b of $('mais-folha').querySelectorAll('[data-precisa-diaria]')) b.hidden = !estado.diaria

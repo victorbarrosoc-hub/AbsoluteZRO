@@ -36,6 +36,7 @@ export const paraOAppSeparado = (html) =>
     .replaceAll('%API%', '/api/radio')
     .replaceAll('%SET_API%', '/api/zro/set')
     .replaceAll('%SET%', 'https://absolutezro.com/set/v1/zro-set.js')
+    .replaceAll('%FOTO%', 'https://absolutezro.com/api/v1/foto/')
     .replaceAll('%SAIR%', '/api/zro/sair')
     .replaceAll('%TOQUE%', TOQUE)
 

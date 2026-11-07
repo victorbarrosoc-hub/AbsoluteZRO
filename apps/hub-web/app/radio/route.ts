@@ -30,6 +30,7 @@ export async function GET(req: Request) {
     .replaceAll('%API%', '/api/v1/radio')
     .replaceAll('%SET_API%', '/api/v1/set')
     .replaceAll('%SET%', '/set/v1/zro-set.js')
+    .replaceAll('%FOTO%', '/api/v1/foto/')
     .replaceAll('%SAIR%', '/api/v1/auth/logout')
     .replaceAll('%TOQUE%', '')
   return new Response(html, {

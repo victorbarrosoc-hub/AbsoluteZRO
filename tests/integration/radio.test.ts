@@ -67,6 +67,20 @@ describe('rádio do set no HUB', () => {
     expect((await radio.acessoAoRadio(db, testadora.auth))?.userId).toBe(testadora.userId)
   })
 
+  it('foto da conta no topo do rádio: o endereço público da própria foto (perfil único), null sem foto', async () => {
+    const o = await newOrgWithOwner(db, 'rd-foto', { freePlan: true })
+    const actor = (await radio.acessoAoRadio(db, o.auth))!
+    expect(await radio.fotoDoRadio(db, actor)).toBeNull()
+    await db.asSystem(
+      'teste',
+      (tx) => tx`insert into zro.user_avatars (user_id, content_type, data) values (${o.userId}, 'image/webp', ${Buffer.from([1, 2, 3])})`,
+    )
+    const [a] = await db.sql`select public_id from zro.user_avatars where user_id = ${o.userId}`
+    expect(await radio.fotoDoRadio(db, actor)).toBe(a!.public_id as string)
+    const p = { sub: o.userId, nome: 'Foto', foto: await radio.fotoDoRadio(db, actor) }
+    expect((await radio.noRadio(db, p.sub, (tx) => nucleo.listarDiarias(tx, p))).corpo).toMatchObject({ eu: { nome: 'Foto', foto: p.foto } })
+  })
+
   it('diária pelo HUB: criar, entrar pelo código, presença, aviso só da Direção e isolamento pelo RLS', async () => {
     const ana = (await newOrgWithOwner(db, 'rd-ana', { freePlan: true })).userId
     const bia = (await newOrgWithOwner(db, 'rd-bia', { freePlan: true })).userId
@@ -77,7 +91,7 @@ describe('rádio do set no HUB', () => {
     const c = await como(P.ana, (tx) => nucleo.mudarDiarias(tx, P.ana, { acao: 'criar', nome: 'Comercial' }))
     expect(c.status).toBe(201)
     const d = (c.corpo as { diaria: { id: string; codigo: string } }).diaria
-    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, eu: { nome: 'Bia' }, diarias: [] })
+    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, eu: { nome: 'Bia', foto: null }, diarias: [] })
     expect((await como(P.bia, (tx) => nucleo.mudarDiarias(tx, P.bia, { acao: 'entrar', codigo: d.codigo }))).status).toBe(200)
 
     await como(P.ana, (tx) => nucleo.bater(tx, P.ana, { diaria: d.id, peer: 'a'.repeat(24) }))
