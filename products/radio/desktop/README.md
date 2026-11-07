@@ -65,8 +65,8 @@ confere, uns segundos depois de abrir e a cada 6 h, `https://absolutezro.com/bai
 confere o gate do produto, canal `download`). Build maior que o do app: aviso discreto e uma notificação por build, que
 abrem `absolutezro://apps/radio?acao=atualizar` (sem a central, `https://absolutezro.com/baixar`).
 
-Os canais `desktop` e `download` do RADION seguem fechados na 0062 do HUB: abrem numa migração nova, com o titular,
-depois do primeiro build verde. Até lá só o papel `admin` e a lista de acesso veem o app na central.
+Os canais `desktop` e `download` do RADION abriram na `0064` do HUB (titular, 07/11/2026), depois do primeiro build
+verde (b4002): toda conta Absolute ZRO instala o RADION pela central.
 
 ## Entrar com o Google (ADR 0041)
 

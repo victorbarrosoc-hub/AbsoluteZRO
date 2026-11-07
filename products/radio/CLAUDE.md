@@ -8,7 +8,7 @@ valem aqui; este arquivo só acrescenta.
   depois do gate (claim `zro_release` com `radio`), que agora vale para toda conta Absolute ZRO.
 - **App de computador** em `desktop/` (pacote próprio, Electron, moldura do Relay; leia o `desktop/README.md`): barra de
   menus/bandeja, atalho de falar, modo compacto. A página só fala com ele por `window.radionDesktop` (no navegador não
-  existe) e o app confere tudo que chega (`desktop/radio.cjs`). Instala e atualiza só pela central Absolute ZRO.
+  existe) e o app confere tudo que chega (`desktop/radio.cjs`). Instala e atualiza só pela central Absolute ZRO (canais `desktop`/`download` abertos na HUB 0064).
 - **Integração nova** (projeto do HUB, Maestro, Carro do Freela) = contrato em `docs/integration-contracts/` antes do
   código. Hoje: login único e o Set.
 - **Voz nunca no servidor**: nem gravação, nem transcrição, nem amostra de teste no repositório (testes usam o
