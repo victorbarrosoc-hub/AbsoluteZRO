@@ -421,7 +421,7 @@ svg { display: block; flex: none; }
 .setores-escolha .ico { width: 38px; height: 38px; border-radius: 12px; }
 
 /* ───────── celular: sem lateral, barra de abas com o TALK ───────── */
-.abas, .pessoas-cel, .fala-cel, .falando-cel { display: none; }
+.abas, .pessoas-cel, .fala-cel { display: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .canal { cursor: pointer; }
 .mais-cabeca { display: flex; align-items: center; gap: 12px; padding: 4px 4px 16px; border-bottom: 1px solid var(--linha); margin-bottom: 8px; }
@@ -514,19 +514,12 @@ svg { display: block; flex: none; }
   .fala-cel strong { flex: 1; min-width: 0; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fala-cel strong::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
   .fala-cel .todos { height: 36px; }
-  /* falando: a tela inteira diz para quem (o botão segue embaixo, nas abas) */
-  .falando-cel { --c: #0a8cff; display: flex; position: fixed; inset: 0; z-index: 6; flex-direction: column; align-items: center; padding: calc(70px + env(safe-area-inset-top)) 24px calc(120px + env(safe-area-inset-bottom)); gap: 8px; text-align: center; color: #fff; background-color: #0b0b0c; background-image: radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--c) 34%, transparent), transparent 55%); pointer-events: none; animation: aparece 0.16s ease-out; }
-  .falando-cel[data-canal='geral'], .falando-cel[data-canal='geral'] [data-canal] { --c: #f5f5f7; }
-  .falando-cel .base-rotulo { color: #a1a1a6; margin-top: 18px; }
-  .falando-cel b { font-size: 36px; letter-spacing: -0.035em; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-  .falando-cel b::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
-  .falando-cel small { font-size: 14px; color: #a1a1a6; font-weight: 600; }
-  .falando-cel-anel { margin: auto 0 18px; width: 200px; height: 200px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, #232326, #0b0b0c); box-shadow: 0 0 0 3px var(--c), 0 0 60px color-mix(in srgb, var(--c) 55%, transparent); }
-  .falando-cel-anel .simbolo { height: 86px; display: block; }
-  [data-tema='escuro'] .falando-cel-anel .simbolo--branco { display: block; }
   :root[data-falando] .abas .talk { box-shadow: 0 0 0 5px color-mix(in srgb, var(--c, #0a8cff) 45%, transparent), 0 0 34px color-mix(in srgb, var(--c, #0a8cff) 55%, transparent); }
-  :root[data-falando] .abas { z-index: 7; background: rgba(11, 11, 12, 0.9); border-top-color: rgba(255, 255, 255, 0.08); }
-  :root[data-falando] .aba { color: #6e6e73; }
+  /* falando: a barra acende na cor do canal e o canal escolhido brilha; a lista segue à vista */
+  .fala-cel[data-falando] { background: color-mix(in srgb, var(--c) 18%, var(--cartao)); box-shadow: 0 0 0 2px var(--c), var(--sombra-alta); }
+  .fala-cel[data-falando] .base-rotulo { color: var(--c); }
+  .fala-cel small { font-size: 13px; font-weight: 700; color: var(--apoio); white-space: nowrap; padding-right: 10px; }
+  :root[data-falando] .canal.is-alvo { box-shadow: 0 0 0 2.5px var(--c), 0 0 28px color-mix(in srgb, var(--c) 45%, transparent); }
   /* o Mais: folha de baixo */
   .folha--mais { margin: auto 0 0; width: 100%; max-width: none; border-radius: 28px 28px 0 0; padding: 22px 16px calc(22px + env(safe-area-inset-bottom)); }
   .folha { max-height: 86vh; overflow-y: auto; }

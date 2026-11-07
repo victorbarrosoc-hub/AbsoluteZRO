@@ -168,6 +168,11 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   três Chromium com voz de verdade: setor, a equipe sem o Geral, segurar e travar o TALK, deixar de ouvir, Todos,
   Gravando que cala e Corta que reativa, a dona silencia, quem foi silenciado pede a palavra e ganha de volta.
   HUB: `tests/integration/radio.test.ts` (cópias, gate, poderes pelo HUB) e `tests/e2e/radio.spec.ts` no desenho novo.
+- RADION no ar (07/11/2026): `https://radion.absolutezro.com/api/radio/saude` → `{ ok: true, migracoes: 2 }`, `/entrar`
+  leva ao `/oauth/authorize` com `radio-web` (o HUB aceita e pede login), `radio.absolutezro.com/<caminho>` → 308 para o
+  mesmo caminho no radion, `/api/radio/diarias` sem sessão → 401, `/` sem sessão → página neutra; o titular entrou e
+  abriu uma diária no celular. TALK no celular sem a tela inteira (barra e canal acendem): `npm test` 11/11,
+  `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4 e captura no Chromium em 390 × 844.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

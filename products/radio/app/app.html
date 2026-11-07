@@ -221,18 +221,12 @@
         </main>
       </div>
 
-      <!-- celular: para quem fala, logo acima das abas, e a tela inteira enquanto fala -->
-      <div class="fala-cel" id="fala-cel" hidden>
-        <span class="base-rotulo">Falando para</span>
+      <!-- celular: para quem fala, logo acima das abas; falando, ela acende (a tela não muda: o set continua à vista) -->
+      <div class="fala-cel" id="fala-cel" hidden aria-live="polite">
+        <span class="base-rotulo" id="fala-cel-rotulo">Falar para</span>
         <strong id="fala-cel-nome" data-canal="geral">Geral</strong>
+        <small id="fala-cel-sub" hidden></small>
         <button class="todos" id="todos-cel" type="button" hidden aria-pressed="false">Todos</button>
-      </div>
-      <div class="falando-cel" id="falando-cel" hidden aria-live="polite">
-        <span class="base-rotulo">Falando para</span>
-        <b id="falando-cel-nome" data-canal="geral">Geral</b>
-        <small id="falando-cel-sub"></small>
-        <div class="falando-cel-anel" id="falando-cel-anel" data-canal="geral"><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /></div>
-        <small id="falando-cel-dica">Solte para parar</small>
       </div>
 
       <!-- celular: abas com o TALK no meio -->

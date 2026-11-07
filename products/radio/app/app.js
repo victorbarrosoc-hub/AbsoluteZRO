@@ -584,24 +584,23 @@ function desenharBase() {
   $('base-dica').hidden = podeTodos() && !calado
   $('base-dica').replaceChildren(...(calado ? [estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado'] : estado.modo === 'aberto' ? ['Toque fecha'] : ['Toque abre', h('br'), 'Segure fala']))
   $('ptt-texto').textContent = calado ? 'Silenciado' : estado.modo === 'aberto' ? 'Aberto' : estado.modo === 'ptt' ? 'Falando' : 'Falar'
-  // celular: para quem fala (acima das abas) e a tela inteira enquanto fala
+  // celular: para quem fala, acima das abas; falando, a barra acende e o canal escolhido brilha (a tela não muda)
   const canal = alvo === 'todos' ? 'geral' : alvo
+  const falando = estado.modo !== 'mudo'
   $('fala-cel-nome').textContent = calado ? (estado.eu?.papel === 'convidado' ? 'Você só ouve' : 'Silenciado') : NOME[alvo]
   $('fala-cel-nome').dataset.canal = canal
-  $('todos-cel').hidden = !podeTodos()
+  $('fala-cel').dataset.canal = canal
+  $('fala-cel').toggleAttribute('data-falando', falando)
+  $('fala-cel-rotulo').textContent = falando ? (estado.modo === 'aberto' ? 'Aberto para' : 'Falando para') : 'Falar para'
+  $('todos-cel').hidden = !podeTodos() || falando
   $('todos-cel').setAttribute('aria-pressed', String(estado.todos))
-  const falando = estado.modo !== 'mudo'
-  $('falando-cel').hidden = !falando
-  document.documentElement.toggleAttribute('data-falando', falando)
+  const sub = $('fala-cel-sub')
+  sub.hidden = !falando
   if (falando) {
-    $('falando-cel-nome').textContent = NOME[alvo]
-    $('falando-cel-nome').dataset.canal = canal
-    $('falando-cel-anel').dataset.canal = canal
-    $('falando-cel').dataset.canal = canal
     const ouvem = estado.todos ? estado.pessoas.filter((p) => !p.eu).length : ouvintes(estado.alvo)
-    $('falando-cel-sub').textContent = ouvem ? `${ouvem} ${ouvem === 1 ? 'pessoa ouvindo' : 'pessoas ouvindo'}` : 'Ninguém ouvindo este canal agora'
-    $('falando-cel-dica').textContent = estado.modo === 'aberto' ? 'Aberto · toque no botão para fechar' : 'Solte para parar'
+    sub.textContent = ouvem ? `${ouvem} ouvindo` : 'ninguém ouvindo'
   }
+  document.documentElement.toggleAttribute('data-falando', falando)
   desenharFalando()
 }
 $('todos-cel').addEventListener('click', () => $('todos').click())
