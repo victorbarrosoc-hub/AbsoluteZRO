@@ -203,6 +203,10 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   iniciais por baixo quando não há foto ou ela não abre. Migração `0003_fotos` do rádio: `radio.membros.foto` guarda só
   o id público de `/api/v1/foto/<id>`; cada site monta o endereço (`%FOTO%`). A foto vem da sessão (claim `picture`) no
   `radion.absolutezro.com` e de `zro.user_avatars` (RLS) no HUB, e se atualiza ao abrir a lista, criar ou entrar.
+- ✅ **RADION no Android, som no viva-voz** (titular, 07/11/2026: no Android o som saía no alto-falante de ligação):
+  com o microfone aberto o Android trata a página como chamada. Lá o microfone abre só enquanto a pessoa fala (segurar
+  ou fala travada) e fecha ao soltar; no Ligar ele só pede a permissão. iPhone e computador seguem com o microfone
+  aberto desde o Ligar.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)

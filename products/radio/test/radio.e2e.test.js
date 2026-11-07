@@ -208,3 +208,70 @@ test('três pessoas: setor, canal por faixa, segurar e travar o TALK, deixar de 
 
   for (const p of [ana, bia, caio]) assert.deepEqual(p.erros, [])
 })
+
+// Android (titular, 07/11/2026: no Android o som saía no alto-falante de ligação): lá o microfone só fica aberto
+// enquanto a pessoa fala. Ligar pede a permissão e fecha; segurar abre, a voz chega; soltar fecha de novo.
+test('Android: o microfone abre só durante a fala (fora dela, o som segue no viva-voz)', { skip: pular, timeout: 90000 }, async () => {
+  const ctx = await navegador.newContext({
+    permissions: ['microphone'],
+    userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36',
+  })
+  // conta as trilhas do microfone que este aparelho abriu e quantas seguem vivas
+  await ctx.addInitScript(() => {
+    const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+    window.__trilhas = []
+    navigator.mediaDevices.getUserMedia = async (c) => {
+      const m = await pedir(c)
+      window.__trilhas.push(...m.getAudioTracks())
+      return m
+    }
+  })
+  const page = await ctx.newPage()
+  const erros = []
+  page.on('pageerror', (e) => erros.push(String(e)))
+  await page.goto(base)
+  await page.fill('#local-nome', 'Duda')
+  await page.click('#local button')
+  await page.waitForSelector('#pg-inicio:not([hidden])')
+  const vivas = () => page.evaluate(() => window.__trilhas.filter((t) => t.readyState === 'live').length)
+
+  await page.click('.item[data-ir="diarias"]')
+  await page.fill('#criar-nome', 'Externa')
+  await page.click('#criar button')
+  await page.waitForSelector('#noar:not([hidden])')
+  const codigo = (await page.textContent('#codigo')).trim()
+  const edu = await pessoa('Edu')
+  await edu.page.goto(`${base}/?d=${codigo}`)
+  await edu.page.waitForSelector('#setor-folha[open]')
+  await edu.page.click('#setores [data-canal="direcao"]')
+  await edu.page.waitForFunction(() => !document.getElementById('setor-folha').open)
+
+  await page.click('#ligar-btn')
+  await edu.page.click('#ligar-btn')
+  for (const p of [page, edu.page]) await p.waitForFunction(() => document.querySelectorAll('#pessoas .pessoa[data-estado="ligado"]').length === 2, null, { timeout: 30000 })
+  // ligado e calado: a permissão foi dada, mas nenhum microfone aberto
+  assert.equal((await page.evaluate(() => window.__trilhas.length)) >= 1, true)
+  assert.equal(await vivas(), 0)
+
+  await page.click('[data-alvo="direcao"]')
+  const caixa = await (await page.$('#ptt')).boundingBox()
+  await page.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2)
+  await page.mouse.down()
+  await page.waitForTimeout(400)
+  assert.equal(await page.getAttribute('#ptt', 'data-estado'), 'ptt')
+  await page.waitForFunction(() => window.__trilhas.some((t) => t.readyState === 'live'))
+  assert.ok((await esperarNivel(edu.page, true)) > 0.005, 'a voz do Android chega')
+
+  await page.mouse.up()
+  assert.equal(await page.getAttribute('#ptt', 'data-estado'), 'mudo')
+  await page.waitForFunction(() => window.__trilhas.every((t) => t.readyState !== 'live'))
+  assert.ok((await esperarNivel(edu.page, false)) < 0.001, 'soltou: a voz para')
+
+  // um toque trava a fala aberta: o microfone abre; outro toque fecha
+  await page.click('#ptt')
+  await page.waitForFunction(() => window.__trilhas.some((t) => t.readyState === 'live'))
+  await page.click('#ptt')
+  await page.waitForFunction(() => window.__trilhas.every((t) => t.readyState !== 'live'))
+  assert.deepEqual([...erros, ...edu.erros], [])
+  await ctx.close()
+})

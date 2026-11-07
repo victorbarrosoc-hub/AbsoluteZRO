@@ -198,6 +198,10 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, fotos das contas (07/11/2026): `products/radio` `npm test` 12/12 (a lista de diárias devolve `eu.foto`, só o
   id público; valor estranho vira null; quem entra com foto aparece com ela na batida da equipe e, sem foto na conta,
   sai também); `tests/integration/radio.test.ts` 5/5 (no HUB, a foto é a da própria conta pelo RLS, null sem foto).
+- RADION no Android (07/11/2026): `products/radio` `npm test` 13/13, com o teste novo de ponta a ponta no Chromium com o
+  agente de usuário do Android: depois do Ligar nenhum microfone aberto; segurando, o microfone abre e a voz chega ao
+  outro aparelho; soltando, fecha e a voz para; a fala travada abre e fecha igual. A troca de alto-falante em si só se
+  confere num Android de verdade (o Chromium de teste não escolhe saída de som).
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

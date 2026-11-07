@@ -119,6 +119,8 @@ const estado = {
   ligado: false,
   trilha: null,
   medidorMic: null,
+  micLiberado: false, // Android: a permissão do microfone já foi dada no Ligar (ele abre só durante a fala)
+  vezDaFala: 0,
   apertou: 0,
 }
 
@@ -458,9 +460,8 @@ async function abrirDiaria(d) {
 /** Desliga o rádio: fecha as conexões e o microfone (some o ponto laranja do iPhone); a pessoa segue na diária. */
 function desligar() {
   sairDoRadio()
-  estado.trilha?.stop()
-  estado.trilha = null
-  estado.medidorMic = null
+  soltarTrilha()
+  estado.micLiberado = false
   estado.ligado = false
   estado.trava?.release?.().catch(() => {})
   history.replaceState(null, '', `${INICIO}#diarias`)
@@ -496,26 +497,51 @@ function podeFalarEm(canal) {
   if (falaNoGeral(e)) return true
   return canal === e.funcao
 }
-const possoFalar = () => Boolean(estado.trilha && estado.eu && !estado.eu.silenciado && estado.eu.papel !== 'convidado' && (estado.todos || podeFalarEm(estado.alvo)))
+// Android: com o microfone aberto o sistema trata a página como ligação e o som sai no alto-falante de encostar no ouvido
+// (titular, 07/11/2026). Lá o microfone abre só enquanto a pessoa fala e fecha ao soltar; fora da fala, o som volta para
+// o viva-voz. No iPhone e no computador ele segue aberto desde o Ligar (a fala sai na hora).
+const MIC_SOB_DEMANDA = navigator.userAgentData?.platform === 'Android' || /Android/i.test(navigator.userAgent)
+const AUDIO_MIC = { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+const temMic = () => Boolean(estado.trilha || (MIC_SOB_DEMANDA && estado.micLiberado))
+/** Liga o microfone a este aparelho: a malha manda esta trilha e o anel do TALK mede o nível dela. */
+function usarTrilha(m) {
+  estado.trilha = m.getAudioTracks()[0] || null
+  const ctx = contextoDeAudio()
+  estado.medidorMic?.fonte?.disconnect()
+  estado.medidorMic = null
+  if (ctx && estado.trilha) {
+    const an = ctx.createAnalyser()
+    an.fftSize = 512
+    const fonte = ctx.createMediaStreamSource(m)
+    fonte.connect(an)
+    estado.medidorMic = { an, fonte, buf: new Float32Array(an.fftSize) }
+  }
+  estado.malha?.usarMicrofone(estado.trilha)
+}
+/** Fecha o microfone (o Android sai do modo ligação; o iPhone apaga o ponto laranja). */
+function soltarTrilha() {
+  estado.trilha?.stop()
+  estado.trilha = null
+  estado.medidorMic?.fonte?.disconnect()
+  estado.medidorMic = null
+  estado.malha?.usarMicrofone(null)
+}
+const possoFalar = () => Boolean(temMic() && estado.eu && !estado.eu.silenciado && estado.eu.papel !== 'convidado' && (estado.todos || podeFalarEm(estado.alvo)))
 
 // Entrar no rádio: o toque libera o microfone, o som e a tela ligada (regras do navegador, sobretudo no iPhone).
 $('ligar-btn').addEventListener('click', async () => {
   destravarSom()
   try {
-    const m = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
-    estado.trilha = m.getAudioTracks()[0]
-    const ctx = contextoDeAudio()
-    if (ctx) {
-      const an = ctx.createAnalyser()
-      an.fftSize = 512
-      ctx.createMediaStreamSource(m).connect(an)
-      estado.medidorMic = { an, buf: new Float32Array(an.fftSize) }
-    }
+    const m = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
+    if (MIC_SOB_DEMANDA) {
+      // só para pedir a permissão agora (no toque): o microfone fecha e abre de novo a cada fala
+      for (const t of m.getTracks()) t.stop()
+      estado.micLiberado = true
+    } else usarTrilha(m)
   } catch {
     mostrarErro('radio-erro', 'Sem microfone, você só ouve. Libere nos ajustes do navegador.')
   }
   estado.ligado = true
-  if (estado.trilha) estado.malha?.usarMicrofone(estado.trilha)
   for (const a of document.querySelectorAll('audio')) a.play().catch(() => {})
   $('ligar').hidden = true
   $('base').hidden = estado.pagina !== 'noar'
@@ -1031,15 +1057,35 @@ function abrirMic(modo) {
   estado.modo = modo
   if (estava === 'mudo') {
     somComeca()
-    falarAgora()
+    if (estado.trilha) falarAgora()
+    else pegarMicDaFala()
   }
   desenharBase()
   pintarNiveis()
 }
+/** Android: abre o microfone para esta fala; se a pessoa já soltou (ou foi silenciada) quando ele chega, fecha na hora. */
+async function pegarMicDaFala() {
+  const vez = (estado.vezDaFala = (estado.vezDaFala || 0) + 1)
+  try {
+    const m = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_MIC })
+    if (vez !== estado.vezDaFala || estado.modo === 'mudo' || !estado.ligado) {
+      for (const t of m.getTracks()) t.stop()
+      return
+    }
+    usarTrilha(m)
+    falarAgora()
+  } catch {
+    estado.micLiberado = false
+    calar()
+    mostrarErro('radio-erro', 'Sem microfone, você só ouve. Libere nos ajustes do navegador.')
+  }
+}
 function calar() {
   if (estado.modo === 'mudo') return
   estado.modo = 'mudo'
+  estado.vezDaFala = (estado.vezDaFala || 0) + 1
   estado.malha?.calar()
+  if (MIC_SOB_DEMANDA) soltarTrilha()
   somTermina()
   desenharBase()
 }
