@@ -122,6 +122,18 @@ export const APPS_DESKTOP: AppDesktop[] = [
     mac: { arquivos: [{ arch: 'universal', re: /^RiftMotion-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'Rift Motion.app' },
     windows: { re: /^RiftMotion-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'Rift Motion.exe', nomeNoSistema: 'Rift Motion' },
   },
+  {
+    // RADION para computador (products/radio/desktop, .github/workflows/radion-desktop.yml; titular, 07/11/2026): o
+    // rádio do set com a barra de menus, o atalho de falar em qualquer programa e o modo compacto. O id é o do produto
+    // (`radio`); os arquivos e o app instalado se chamam RADION. Fechado pelo gate (desktop e download) até a migração
+    // do primeiro build verde.
+    id: 'radio',
+    nome: 'RADION',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'radion-versao-de-teste' }],
+    versaoJson: true,
+    mac: { arquivos: [{ arch: 'universal', re: /^RADION-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'RADION.app' },
+    windows: { re: /^RADION-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'RADION.exe', nomeNoSistema: 'RADION' },
+  },
 ]
 
 /** A ferramenta de computador com este id (ou undefined). */

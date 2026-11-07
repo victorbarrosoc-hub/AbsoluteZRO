@@ -181,6 +181,19 @@ export const DOWNLOADS: DownloadEntry[] = [
       { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' },
     ],
   },
+  {
+    // RADION (products/radio): o rádio do set no celular de cada equipe, no navegador e no app de computador (com o
+    // canal download aberto; fechado, só o navegador e o celular).
+    productId: 'radio',
+    site: 'https://radion.absolutezro.com',
+    status: 'test',
+    note: 'Com a conta Absolute ZRO. No iPhone: Safari › Compartilhar › Adicionar à Tela de Início.',
+    options: [
+      ...NO_COMPUTADOR('radio'),
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://radion.absolutezro.com', format: 'Sem instalar' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, na Tela de Início', href: 'https://radion.absolutezro.com', format: 'Sem instalar' },
+    ],
+  },
 ]
 
 /** Como um produto fechado aparece: só o selo "Em desenvolvimento". */

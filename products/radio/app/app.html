@@ -24,6 +24,13 @@
   </head>
   <body>
     <div class="app" id="app" data-lado="aberto">
+      <!-- app de computador, modo compacto: a faixa de cima (arrasta a janelinha) -->
+      <div class="compacto-topo" id="compacto-topo" hidden>
+        <img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" />
+        <b id="compacto-nome">RADION</b>
+        <button class="compacto-sair" id="compacto-sair" type="button" title="Abrir o RADION inteiro" aria-label="Sair do modo compacto" data-ic="expandir"></button>
+      </div>
+
       <!-- lateral -->
       <aside class="lado" id="lado" aria-label="Menu">
         <div class="lado-topo">
@@ -59,6 +66,7 @@
           <div class="caminho" id="caminho"></div>
           <div class="topo-dir">
             <span id="set-casa"></span>
+            <button class="redondo so-computador" id="compacto-btn" type="button" title="Modo compacto: uma janelinha por cima das outras" aria-label="Modo compacto" data-ic="compacto" hidden></button>
             <button class="tema" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro"><span data-ic="sol"></span><span data-ic="lua"></span></button>
             <button class="av av--g" id="topo-av" type="button" aria-label="Sua conta e mais"></button>
           </div>

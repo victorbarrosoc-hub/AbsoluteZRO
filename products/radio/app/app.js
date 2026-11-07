@@ -19,6 +19,8 @@ const SET_API = meta('radio-set-api')
 const SAIR = meta('radio-sair')
 const INICIO = BASE || '/'
 const ZRO = SET ? new URL(SET, location.href).origin : ''
+// no app de computador (products/radio/desktop/desktop/preload.cjs): a ponte com a barra de menus, o atalho e o compacto
+const DESKTOP = window.radionDesktop?.isDesktop ? window.radionDesktop : null
 
 // os setores vêm da diária (o dono cria, renomeia e tira; db/migrations/0002_setores.sql); estes são os de sempre
 const PADRAO = [
@@ -704,6 +706,7 @@ function desenharBase() {
   $('fala-cel-sub').textContent = calado ? '' : estado.modo === 'aberto' ? 'Toque no botão para fechar' : falando ? (ouvem ? `${ouvem} ouvindo` : 'Ninguém ouvindo') : 'Segure para falar'
   document.documentElement.toggleAttribute('data-falando', falando)
   desenharFalando()
+  contarAoComputador()
 }
 $('todos-cel').addEventListener('click', () => $('todos').click())
 $('todos').addEventListener('click', () => {
@@ -956,6 +959,8 @@ async function bater() {
     estado.pessoas = r.pessoas
     estado.membros = r.membros
     estado.silenciados = new Map(r.silenciados.map((s) => [s.apelido, s]))
+    // pediu a palavra agora (quem modera fica sabendo, também no computador com a janela escondida)
+    if (estado.eu?.podeModerar && DESKTOP) for (const a of r.maos) if (!estado.maos.has(a)) DESKTOP.notificar('Pediu a palavra', r.membros.find((m) => m.apelido === a)?.nome || 'Alguém da equipe')
     estado.maos = new Set(r.maos)
     estado.silencio = r.silencio
     estado.ajustes = r.ajustes
@@ -1128,6 +1133,8 @@ function mostrarAviso(a) {
   tela.hidden = false
   clearTimeout(avisoTempo)
   avisoTempo = setTimeout(() => (tela.hidden = true), 2200)
+  // no computador, com a janela atrás de outra: notificação do sistema (o app só mostra se a janela não estiver na frente)
+  DESKTOP?.notificar(AVISOS[a.tipo], [a.de, a.setor ? `para a ${NOME[a.setor] || 'equipe'}` : null].filter(Boolean).join(' · '))
   $('cue-texto').textContent = AVISOS[a.tipo]
   $('cue').dataset.tipo = a.tipo
   if (estado.pagina === 'avisos') desenharAvisos()
@@ -1477,6 +1484,46 @@ function ligarSet() {
   el.addEventListener('zro-set:sem-login', () => ($('nav-set').hidden = true))
   $('set-casa').append(el)
   $('nav-set').addEventListener('click', () => el.abrirSet?.())
+}
+
+// ───────── no computador (products/radio/desktop): a barra de menus, o atalho e o modo compacto ─────────
+let contado = ''
+/** Conta ao app de computador o estado do rádio (só quando muda): barra de menus, selo do ícone e o "não dormir". */
+function contarAoComputador() {
+  if (!DESKTOP) return
+  const alvo = estado.todos ? 'todos' : estado.alvo
+  const e = {
+    diaria: estado.diaria?.nome ?? null,
+    canal: estado.diaria ? NOME[alvo] || 'Geral' : null,
+    modo: estado.modo,
+    calado: Boolean(estado.eu?.silenciado || estado.eu?.papel === 'convidado'),
+    maos: estado.eu?.podeModerar ? estado.maos.size : 0,
+    ligado: Boolean(estado.diaria && estado.ligado),
+  }
+  const k = JSON.stringify(e)
+  if (k === contado) return
+  contado = k
+  DESKTOP.estado(e)
+}
+function modoCompacto(ligar) {
+  document.documentElement.toggleAttribute('data-compacto', ligar)
+  $('compacto-topo').hidden = !ligar
+  $('compacto-nome').textContent = estado.diaria?.nome || 'RADION'
+  if (ligar && estado.diaria) ir('noar')
+}
+if (DESKTOP) {
+  $('compacto-btn').hidden = false
+  $('compacto-btn').addEventListener('click', () => DESKTOP.compacto(true))
+  $('compacto-sair').addEventListener('click', () => DESKTOP.compacto(false))
+  DESKTOP.onComando((c) => {
+    // o atalho de teclado (em qualquer programa) e a barra de menus: um toque abre o microfone, outro fecha
+    if (c === 'alternar-fala') {
+      if (!estado.diaria) return
+      if (!estado.ligado) return ir('noar')
+      if (estado.modo === 'mudo') abrirMic('aberto')
+      else calar()
+    } else if (c && typeof c === 'object' && 'compacto' in c) modoCompacto(Boolean(c.compacto))
+  })
 }
 
 // ───────── início ─────────
