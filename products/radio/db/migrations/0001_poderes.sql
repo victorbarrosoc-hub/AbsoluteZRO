@@ -174,8 +174,9 @@ begin
   select * into d from radio.diarias where id = p_diaria and expira > now();
   select * into eu from radio.membros where diaria_id = p_diaria and user_sub = radio.sub();
   if d.id is null or eu.user_sub is null or p_tipo not in ('silencio', 'acao', 'corta', 'intervalo') then return null; end if;
-  if not (eu.papel = 'dono' or eu.funcao = 'direcao') then
-    if eu.papel <> 'responsavel' then return null; end if;
+  -- coalesce: sem setor (NULL) não é Direção nem o setor de ninguém
+  if not (eu.papel = 'dono' or coalesce(eu.funcao = 'direcao', false)) then
+    if eu.papel <> 'responsavel' or eu.funcao is null then return null; end if;
     v_setor := eu.funcao; -- o responsável fala só com o setor dele
   end if;
   if v_setor is not null and v_setor not in ('direcao', 'producao', 'camera', 'som', 'luz', 'arte', 'elenco') then return null; end if;
@@ -252,7 +253,7 @@ begin
   if t.user_sub is null then return 'nao_achei'; end if;
 
   if p_acao = 'baixar_mao' then
-    if t.user_sub <> eu.user_sub and not (eu.papel = 'dono' or (eu.papel = 'responsavel' and t.funcao = eu.funcao)) then
+    if t.user_sub <> eu.user_sub and not (eu.papel = 'dono' or (eu.papel = 'responsavel' and coalesce(t.funcao = eu.funcao, false))) then
       return 'sem_permissao';
     end if;
     delete from radio.maos mo where mo.diaria_id = p_diaria and mo.user_sub = t.user_sub;
@@ -262,8 +263,8 @@ begin
   if t.user_sub = eu.user_sub then return 'invalido'; end if;
 
   if p_acao in ('silenciar', 'reativar') then
-    if t.papel = 'dono' or t.funcao = 'direcao' then return 'imune'; end if;
-    if not (eu.papel = 'dono' or (eu.papel = 'responsavel' and t.funcao = eu.funcao and t.papel in ('equipe', 'convidado'))) then
+    if t.papel = 'dono' or coalesce(t.funcao = 'direcao', false) then return 'imune'; end if;
+    if not (eu.papel = 'dono' or (eu.papel = 'responsavel' and coalesce(t.funcao = eu.funcao, false) and t.papel in ('equipe', 'convidado'))) then
       return 'sem_permissao';
     end if;
     delete from radio.silencios s where s.diaria_id = p_diaria and s.tipo in ('pessoa', 'libera') and s.alvo = t.user_sub;
@@ -287,7 +288,7 @@ begin
       delete from radio.silencios s where s.diaria_id = p_diaria and s.alvo = t.user_sub;
       delete from radio.maos mo where mo.diaria_id = p_diaria and mo.user_sub = t.user_sub;
       delete from radio.membros m where m.diaria_id = p_diaria and m.user_sub = t.user_sub;
-    elsif eu.papel = 'responsavel' and t.funcao = eu.funcao and t.papel in ('equipe', 'convidado') then
+    elsif eu.papel = 'responsavel' and coalesce(t.funcao = eu.funcao, false) and t.papel in ('equipe', 'convidado') then
       update radio.membros m set funcao = null where m.diaria_id = p_diaria and m.user_sub = t.user_sub;
     else
       return 'sem_permissao';

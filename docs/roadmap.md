@@ -125,12 +125,13 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
   vai em cada cartão que passar (`momento` na linha v1) e o Synquei põe o cartão nele em vez de adivinhar.
 - ⬜ Multicâmera criado direto no DaVinci (a API não cria; hoje vai o Angle e a linha sincronizada).
 
-## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
+## RADION, o rádio do set (05/11/2026, ADR 0042; nome em 06/11/2026)
 
 - 🟡 Pesquisa e desenho na [ADR 0042](decisions/0042-radio-do-set.md): canais por função vindos da escala do Maestro,
   avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
   nativa (PushToTalk no iPhone) só com uso medido.
-- ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
+- ✅ Nome: **RADION — Stay connected.** (titular, 06/11/2026). ⛔ Servidor de mídia (custo por minuto de voz), plano e
+  gravação de voz: decisão do titular.
 - ✅ Fase 1 sem integração (05/11/2026, `products/radio/`, nome provisório): diária com código e QR, canais Geral e
   Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
   WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
@@ -146,7 +147,19 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
 - ✅ Admin › Apps (06/11/2026): cartão do Rádio em "Na Absolute ZRO" (ícone fechado em `/marca/radio`, estado, link
   para abrir) com quem tem acesso e o campo "E-mail de quem pode entrar". Dar e tirar usam a lista do gate
   (`zro.product_release_access`, canal web) pelo e-mail da conta; e-mail sem conta Absolute ZRO é recusado com aviso.
-- ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
+- ✅ TURN da Cloudflare (06/11/2026, PRs #136 e #137): a voz passa entre redes (4G com CGNAT); testado pelo titular com
+  o celular travado. ⬜ Servidor de mídia acima de ~10 pessoas.
+- ✅ **RADION, Fase 1** (06/11/2026, telas aprovadas pelo titular): nome e marca (o leque: seis lâminas no mesmo rebite,
+  `products/radio/scripts/marca.mjs`), interface nova (lateral recolhível, Apps Absolute ZRO num balão, Início, No ar,
+  Diárias, Equipe, Avisos, Setores e responsáveis, Poderes, Convites e QR, Ajustes; celular com abas e o TALK no meio),
+  Figtree no texto e Nunito no logotipo. Papéis (dono, responsável por setor, equipe, convidado) e poderes de silêncio
+  (pessoa, setor, o set; Gravando cala o set menos Direção e Som até o Corta; pedir a palavra; histórico do dono),
+  migração `0001_poderes` do rádio, regras no banco (`radio.moderar`, `radio.avisar`), rota `/moderar`. Login único e
+  o Set no app próprio (`radion.absolutezro.com`, cliente `radio-web`, escopo `zro.set`, repasse `/api/zro/set`) e
+  página inicial com telas de verdade (prévia em `/sobre` para quem tem acesso; para todos só no lançamento,
+  `RADION_SITE_ABERTO=1`). HUB `0061`: nome RADION, endereço e os canais `sso` e `api` para a lista de acesso.
+  Falta (titular): cadastrar o cliente `radio-web` no console, as variáveis do projeto Vercel `radio` e o domínio.
+- Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
 

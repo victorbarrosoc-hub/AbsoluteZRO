@@ -102,6 +102,19 @@ test('gate: sem a claim do rádio, página neutra, recurso 404 e API 401', { ski
   const js = await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=app.js')
   assert.equal(js.statusCode, 200)
   assert.equal((await chamar('recurso', 'GET', dentro, null, '/api/recurso?f=../api/_zro.js')).statusCode, 404)
+  // a página inicial: prévia só com acesso; sem sessão, neutra, até o lançamento abrir o site
+  assert.match((await chamar('pagina', 'GET', dentro, null, '/api/pagina?v=sobre')).corpo, /stay<\/span> <span class="forte">connected/)
+  assert.match((await chamar('pagina', 'GET', null, null, '/api/pagina?v=sobre')).corpo, /indisponível/)
+  assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 404)
+  process.env.RADION_SITE_ABERTO = '1'
+  try {
+    const aberto = (await chamar('pagina', 'GET', null)).corpo
+    assert.match(aberto, /href="\/entrar"/)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=site.css')).statusCode, 200)
+    assert.equal((await chamar('recurso', 'GET', null, null, '/api/recurso?f=app.js')).statusCode, 404)
+  } finally {
+    delete process.env.RADION_SITE_ABERTO
+  }
 })
 
 test('diária: criar, entrar pelo código, função, presença e isolamento', { skip: pular }, async () => {
@@ -274,6 +287,12 @@ test('poderes: responsável do setor, silenciar, silenciar todos, Gravando, pedi
   const h = (await mod(dona, { acao: 'historico' })).corpo.historico
   assert.ok(h.some((x) => x.acao === 'silenciar' && x.quem === 'Lia' && x.alvo === 'Gil' && x.detalhe === '5 min'))
   assert.deepEqual((await mod(lia, { acao: 'historico' })).corpo.historico, [])
+  // sem setor (NULL) não é setor de ninguém: a responsável não silencia quem está sem setor, e quem está sem setor
+  // não manda aviso
+  const ze = sessao('sub-ze', 'Zé')
+  await chamar('diarias', 'POST', ze, { acao: 'entrar', codigo: d.codigo })
+  assert.equal((await mod(lia, { acao: 'silenciar', alvo: await quem('Zé') })).statusCode, 403)
+  assert.equal((await chamar('aviso', 'POST', ze, { diaria: d.id, tipo: 'corta' })).statusCode, 403)
   // responsável que troca de setor deixa de ser responsável
   await chamar('diarias', 'POST', lia, { acao: 'funcao', diaria: d.id, funcao: 'som' })
   assert.equal((await bater(lia, 'l'.repeat(24))).eu.papel, 'equipe')

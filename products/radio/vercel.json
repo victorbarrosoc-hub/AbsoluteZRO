@@ -18,8 +18,16 @@
   },
   "rewrites": [
     {
+      "source": "/api/zro/set/:caminho*",
+      "destination": "/api/zro/set?c=:caminho*"
+    },
+    {
       "source": "/",
       "destination": "/api/pagina"
+    },
+    {
+      "source": "/sobre",
+      "destination": "/api/pagina?v=sobre"
     },
     {
       "source": "/entrar",

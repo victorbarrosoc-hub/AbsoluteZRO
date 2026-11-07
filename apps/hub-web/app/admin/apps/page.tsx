@@ -27,10 +27,11 @@ export default async function Apps() {
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id and a.last_login_at > now() - interval '7 days') as active7
                from zro.oauth_clients c order by c.status, (select count(*) from zro.app_accounts a where a.client_id = c.id) desc, c.name`,
     products: await tx`select id, name from zro.products order by step_order`,
-    // Rádio do set (ADR 0042): mora no HUB (absolutezro.com/radio), sem cliente do login único; quem entra é a lista do gate
+    // RADION (ADR 0042): no radion.absolutezro.com (login único, cliente radio-web) e, até o domínio ligar, em
+    // absolutezro.com/radio; quem entra é a lista do gate
     radio:
       (
-        await tx`select p.name, coalesce(r.state, 'development') as state from zro.products p
+        await tx`select p.name, p.external_url, coalesce(r.state, 'development') as state from zro.products p
                      left join zro.product_release r on r.product_id = p.id where p.id = 'radio'`
       )[0] ?? null,
     radioAcesso: (await listReleaseAccess(tx, { productId: 'radio' })).filter((a) => a.active),
@@ -56,7 +57,7 @@ export default async function Apps() {
                 <ProductMark productId="radio" name={d.radio.name as string} size={44} />
                 <div className="app-card__who">
                   <strong>{d.radio.name as string}</strong>
-                  <span className="zro-faint">absolutezro.com/radio</span>
+                  <span className="zro-faint">{((d.radio.external_url as string | null) ?? 'absolutezro.com/radio').replace(/^https:\/\//, '')}</span>
                 </div>
                 <Pill tone={radioAberto ? 'ok' : 'faint'}>{radioAberto ? 'Aberto' : 'Fechado'}</Pill>
               </div>
@@ -66,8 +67,13 @@ export default async function Apps() {
                 </span>
                 <span className="zro-faint">e a administração</span>
               </div>
+              {d.radio.external_url ? (
+                <a href={`${d.radio.external_url as string}/entrar`} className="app-card__link">
+                  Abrir o RADION →
+                </a>
+              ) : null}
               <a href="/radio" className="app-card__link">
-                Abrir o rádio →
+                No HUB (absolutezro.com/radio) →
               </a>
 
               {d.radioAcesso.length > 0 && (

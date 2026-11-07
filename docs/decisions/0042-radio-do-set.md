@@ -1,7 +1,7 @@
 # ADR 0042 — Rádio do set: voz por botão (push-to-talk) para a equipe da diária
 
-**Status:** proposta (05/11/2026, pedido do titular). **Nome a definir** (opções na mesa: Câmbio, QAP, Copiado, Na
-Escuta); domínio (`<app>.absolutezro.com`, ADR 0025) sai do nome. Nasce **fechado** no gate (`zro.product_release`,
+**Status:** aceita (05/11/2026, pedido do titular). **Nome: RADION — Stay connected.** (06/11/2026), em
+`radion.absolutezro.com` (ADR 0025; ver a revisão de 06/11/2026). Nasce **fechado** no gate (`zro.product_release`,
 ADR 0023): não aparece para ninguém além do papel `admin` até o titular lançar.
 
 **Fase 1 feita (05/11/2026), sem integração** (pedido do titular: "faz sem interação com as outras plataformas ainda,
@@ -98,7 +98,7 @@ via `consumeQuota` com chave de idempotência. Preço e nível pedem o titular.
 
 ## Em aberto (titular)
 
-- Nome (e conferência no INPI).
+- ~~Nome~~: **RADION — Stay connected.** (06/11/2026). Falta a conferência no INPI.
 - Servidor de mídia: hospedado por nós ou serviço pago; orçamento por minuto.
 - Se o rádio é vendido sozinho, só junto do Maestro ou nos dois.
 - Gravação de voz: nunca ou opcional por diária.
@@ -122,6 +122,32 @@ de cliente e uma senha de banco novos), o rádio abre em **absolutezro.com/radio
 - Os dados continuam no schema `radio` (dono: papel `radio`). O HUB só assume o papel `radio_app` em cada operação
   (migração `0059`), e o RLS vale sempre.
 - O projeto Vercel `radio` (radio.absolutezro.com) fica parado na página neutra; sai quando o titular decidir.
+
+## Revisão (06/11/2026): RADION, papéis e poderes, app próprio
+
+O titular deu o nome (**RADION — Stay connected.**), aprovou a marca (o leque: seis lâminas girando no mesmo rebite, nas
+cores dos setores; `products/radio/scripts/marca.mjs` é a única fonte da geometria), as telas e as fases.
+
+- **Endereço:** `radion.absolutezro.com` (ADR 0025, autorizado pelo titular), no projeto Vercel `radio` (Root Directory
+  `products/radio`), com o login único (cliente `radio-web`, escopo `zro.set`) e o Set (`/api/zro/set`, repasse como no
+  Relay). `absolutezro.com/radio` continua servindo a mesma versão até o domínio ligar. HUB `0061`: nome, endereço e os
+  canais `sso` e `api` para quem está na lista de acesso.
+- **Papéis por diária:** dono (pode tudo), responsável (um por setor, escolhido pelo dono: silencia, reativa e tira
+  gente do setor dele, silencia o setor, manda aviso para o setor, fala no Geral), equipe (fala no próprio setor e ouve
+  o Geral) e convidado (só ouve). Ninguém silencia o dono nem a Direção.
+- **Silêncio:** uma pessoa (5 min, 15 min ou até reativar), o setor ou o set inteiro; no Gravando, só a Direção e o Som
+  falam até o Corta (ajuste do dono); quem foi silenciado vê quem foi e pede a palavra; "silenciar só para mim" fica no
+  aparelho. Histórico de quem silenciou quem, só para o dono; a voz nunca.
+- **Onde vale:** as regras de poder moram no banco (`radio.moderar`, `radio.avisar`, `radio.silenciados`,
+  `db/migrations/0001_poderes.sql`); o `radio_app` não escreve silêncio, mão, histórico, papel nem setor. Como a voz vai
+  de aparelho para aparelho, quem impõe o silêncio é o aparelho: o servidor diz quem está silenciado, o aparelho dele
+  fecha o microfone e os outros não tocam a voz dele. Um aparelho adulterado poderia furar; fechar isso de vez pede o
+  servidor de mídia (em aberto, com custo).
+- **Página inicial** (`app/site.html`, telas de verdade de `scripts/telas-do-site.mjs`): enquanto não lança, só a prévia
+  em `/sobre` para quem tem acesso; quem não entrou vê a página neutra. No lançamento, `RADION_SITE_ABERTO=1` junto com a
+  migration que abre o gate.
+- **Fases:** 2) diária ligada ao projeto do HUB e convite pelo @; 3) agenda do Maestro e escala do Carro do Freela
+  (contrato em `docs/integration-contracts/` antes do código).
 
 ## Fontes da pesquisa (05/11/2026)
 

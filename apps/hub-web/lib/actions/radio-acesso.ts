@@ -1,6 +1,6 @@
 'use server'
 /**
- * Administração › Apps › Rádio do set (ADR 0042): quem entra no rádio enquanto ele está fechado. É a mesma lista de
+ * Administração › Apps › RADION (ADR 0042): quem entra no rádio enquanto ele está fechado. É a mesma lista de
  * acesso do gate de lançamento (zro.product_release_access, ADR 0023), só que pelo e-mail da conta, no cartão do app.
  * Só papel admin da plataforma; tudo fica na auditoria pelo trigger da migration 0018. Quem não tem conta Absolute ZRO
  * ainda não entra: a conta nasce na Absolute ZRO, nunca aqui.
@@ -18,7 +18,8 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** O rádio é web (a página e a API do HUB pela sessão). */
-const CANAIS_DO_RADIO = ['web'] as const
+// web: absolutezro.com/radio; sso e api: o login e o Set no radion.absolutezro.com
+const CANAIS_DO_RADIO = ['web', 'sso', 'api'] as const
 
 function atualizar() {
   revalidatePath('/admin/apps')
@@ -35,7 +36,7 @@ export async function darAcessoAoRadioAction(_: FormState, fd: FormData): Promis
       if (!u) throw new DomainError('not_found', 'Esse e-mail ainda não tem conta Absolute ZRO. Peça para criar em absolutezro.com/criar-conta.')
       await grantReleaseAccess(
         tx,
-        { userId: admin.userId, reason: 'Rádio do set: acesso pelo e-mail no console' },
+        { userId: admin.userId, reason: 'RADION: acesso pelo e-mail no console' },
         { productId: PRODUTO_RADIO, userId: u.id as string, kind: 'tester', channels: [...CANAIS_DO_RADIO], endsAt: null },
       )
       return (u.display_name as string) || email
@@ -53,7 +54,7 @@ export async function tirarAcessoAoRadioAction(_: FormState, fd: FormData): Prom
     const userId = str(fd, 'userId')
     if (!UUID.test(userId)) throw new DomainError('invalid_input', 'Pedido inválido.')
     await db().asSystem('admin: tirar acesso ao rádio', (tx) =>
-      revokeReleaseAccess(tx, { userId: admin.userId, reason: 'Rádio do set: acesso tirado no console' }, { productId: PRODUTO_RADIO, userId }),
+      revokeReleaseAccess(tx, { userId: admin.userId, reason: 'RADION: acesso tirado no console' }, { productId: PRODUTO_RADIO, userId }),
     )
     atualizar()
     // o gate é lido a cada pedido: a pessoa sai do rádio no próximo toque, sem esperar sessão vencer

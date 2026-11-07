@@ -1,7 +1,7 @@
 {
   "name": "radio",
   "version": "0.1.0",
-  "description": "Rádio do set (nome a definir): voz por botão para a equipe da diária, da Absolute ZRO. ADR 0042.",
+  "description": "RADION: o rádio do set, um canal por setor, da Absolute ZRO. ADR 0042.",
   "private": true,
   "type": "module",
   "scripts": {

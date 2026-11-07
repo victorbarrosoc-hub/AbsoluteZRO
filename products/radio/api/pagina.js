@@ -1,6 +1,8 @@
-// GET / — a página do rádio. Não lançado (raiz CLAUDE.md): sem sessão liberada pelo gate, a página neutra
-// ("Página indisponível.", sem nome nem marca). Com acesso, o app. O app e os scripts dele moram em app/ e saem só por
-// aqui e por /api/recurso (nada do app fica público no site estático).
+// GET / — o RADION. Não lançado (raiz CLAUDE.md): sem sessão liberada pelo gate, a página neutra ("Página
+// indisponível.", sem nome nem marca). Com acesso, o app. O app e os scripts dele moram em app/ e saem só por aqui e
+// por /api/recurso (nada do app fica público no site estático).
+// GET /sobre — a página inicial: prévia só para quem tem acesso. No lançamento (RADION_SITE_ABERTO=1, com a migration
+// que abre o gate), ela vira o / de quem não entrou.
 //
 // Modo local (api/_sessao.js): sem a pessoa escolhida ainda, a tela de "Seu nome" para testar em dois aparelhos.
 
@@ -27,13 +29,21 @@ export const paraOAppSeparado = (html) =>
     .replaceAll('%SAIR%', '/api/zro/sair')
     .replaceAll('%TOQUE%', '<link rel="apple-touch-icon" href="/app/marca/radion-180.png" />')
 
+/** A página inicial abre para todos só no lançamento (o gate do HUB abre junto; raiz CLAUDE.md). */
+export const siteAberto = () => process.env.RADION_SITE_ABERTO === '1'
+const site = async (entrar, texto) => (await readFile(`${APP}site.html`, 'utf8')).replaceAll('%ENTRAR_TEXTO%', texto).replaceAll('%ENTRAR%', entrar)
+
 export default async function pagina(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.statusCode = 405
     res.setHeader('Allow', 'GET')
     return res.end()
   }
-  if (pessoaDe(req)) return html(res, paraOAppSeparado(await readFile(`${APP}app.html`, 'utf8')))
+  const sobre = /[?&]v=sobre(&|$)/.test(req.url || '') || /^\/sobre\/?(\?|$)/.test(req.url || '')
+  const pessoa = pessoaDe(req)
+  if (pessoa && sobre) return html(res, await site('/', 'Abrir o rádio'))
+  if (pessoa) return html(res, paraOAppSeparado(await readFile(`${APP}app.html`, 'utf8')))
   if (modoLocal(req)) return html(res, await readFile(`${APP}local.html`, 'utf8'))
+  if (siteAberto()) return html(res, await site('/entrar', 'Entrar com a Absolute ZRO'))
   return html(res, await readFile(`${APP}indisponivel.html`, 'utf8'))
 }

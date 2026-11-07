@@ -116,7 +116,7 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - `products/sobedesce/test/relatorio-backup.test.js` e `synquei-ponte.test.js`: relatório por câmera e cartão, só da
   diária pedida, repetição conta uma vez, sem botão sem cartão, Drive só diz conferido com MD5, link synquei://.
 
-## Rádio do set (05/11/2026, ADR 0042, proposta)
+## RADION, o rádio do set (05/11/2026, ADR 0042)
 
 - Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
   Prettier (os 5 avisos do `format:check` já estavam na `main`).
@@ -158,6 +158,16 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   para a voz passar entre redes (4G com CGNAT). `products/radio/test/ice.test.js` 3/3 (sem chave só STUN, pedido certo à
   Cloudflare com Bearer e ttl, porta 53 fora, falha volta para STUN); `tests/e2e/radio.spec.ts` 4/4 (sem a chave: só
   STUN). Não conferido: a chave de verdade e duas redes de verdade.
+
+- RADION, Fase 1 (06/11/2026): `products/radio` `npm test` 11/11 (Postgres 16 e Chromium do Playwright 1.63 desta
+  máquina): poderes no banco (responsável só no setor dele e nunca com quem está sem setor, ninguém silencia o dono nem
+  a Direção, silenciar todos e o setor, Gravando cala o set menos Direção e Som e o Corta reativa, pedir a palavra,
+  convidado entra calado, mover, tirar, histórico só do dono, `radio_app` não escreve silêncio, mão, histórico, papel
+  nem setor; pessoas por apelido, nunca o sub), gate da página inicial (prévia só com acesso, para todos só com
+  `RADION_SITE_ABERTO=1`), login com `zro.set` e o repasse do Set contra a Absolute ZRO falsa, e de ponta a ponta em
+  três Chromium com voz de verdade: setor, a equipe sem o Geral, segurar e travar o TALK, deixar de ouvir, Todos,
+  Gravando que cala e Corta que reativa, a dona silencia, quem foi silenciado pede a palavra e ganha de volta.
+  HUB: `tests/integration/radio.test.ts` (cópias, gate, poderes pelo HUB) e `tests/e2e/radio.spec.ts` no desenho novo.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
