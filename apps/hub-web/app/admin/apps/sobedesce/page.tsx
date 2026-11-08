@@ -77,8 +77,34 @@ export default async function SobedesceDrive() {
                     <span className="zro-faint">{p.email}</span>
                   </span>
                   <span className="row">
-                    {p.acessoTotal ? <Pill tone="ok">Drive inteiro</Pill> : <Pill tone="faint">Arquivos escolhidos</Pill>}
+                    {/* Liberado (a permissão daqui) × conectado (o que o Google deu de fato a cada Drive), 08/11/2026. */}
+                    {p.acessoTotal ? (
+                      <Pill tone="ok" title="Permissão dada aqui no console">
+                        Drive inteiro liberado
+                      </Pill>
+                    ) : (
+                      <Pill tone="faint">Arquivos escolhidos</Pill>
+                    )}
                     {p.usouVaga && <Pill title="Já gastou uma vaga. Ela não volta.">vaga usada</Pill>}
+                    {p.drives.length === 0 ? (
+                      <Pill tone="faint" title="Nenhum Google Drive conectado no SOBEDESCE">
+                        sem Drive conectado
+                      </Pill>
+                    ) : (
+                      p.drives.map((d) => (
+                        <Pill
+                          key={d.email}
+                          tone={d.estado === 'reconectar' ? 'warn' : d.modo === 'total' ? 'ok' : p.acessoTotal ? 'warn' : 'faint'}
+                          title={`${d.email}: o que o Google deu de fato a esta conexão`}
+                        >
+                          {d.estado === 'reconectar'
+                            ? 'precisa reconectar'
+                            : d.modo === 'total'
+                              ? 'conectado: Drive inteiro'
+                              : 'conectado: arquivos escolhidos'}
+                        </Pill>
+                      ))
+                    )}
                     {pode && (p.acessoTotal || p.usouVaga || v.livres > 0) && (
                       <details className="adm-confirm">
                         <summary className="zro-btn zro-btn--small">{p.acessoTotal ? 'Desligar…' : 'Ligar…'}</summary>

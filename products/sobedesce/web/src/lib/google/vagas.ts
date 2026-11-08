@@ -144,6 +144,18 @@ export async function recusarDriveInteiro(
   return "google_erro";
 }
 
+/**
+ * A conta Google desta pessoa que já usou a vaga (o e-mail, para o login_hint), se a pessoa tem o acesso total ligado.
+ * Com `googleSub`, só essa conta. Pedir o `drive` de novo para ela não gasta vaga: o Google já contou essa conta.
+ */
+export async function contaDaVaga(usuarioId: string, googleSub?: string): Promise<{ sub: string; email: string } | null> {
+  const [u] = await db.select({ ligado: usuarios.driveAcessoTotal }).from(usuarios).where(eq(usuarios.id, usuarioId));
+  if (!u?.ligado) return null;
+  const minhas = await db.select({ sub: vagasDrive.googleSub, email: vagasDrive.email }).from(vagasDrive).where(eq(vagasDrive.usuarioId, usuarioId));
+  const v = googleSub ? minhas.find((x) => x.sub === googleSub) : minhas[0];
+  return v ? { sub: v.sub, email: v.email } : null;
+}
+
 /** O modo que vale para um Drive: acesso total ligado E o `drive` recebido. Qualquer outra coisa é Arquivos escolhidos. */
 export function modoEfetivo(acessoTotal: boolean, escopos: string): ModoDrive {
   return acessoTotal && acessoDoEscopo(escopos) === "total" ? "total" : "arquivos";

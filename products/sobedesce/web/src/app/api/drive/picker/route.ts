@@ -1,5 +1,5 @@
 import { semAcesso, usuarioDaRequisicao, SEM_SESSAO } from "@/lib/auth/requisicao";
-import { configDoPicker } from "@/lib/google/config";
+import { diagnosticoPicker } from "@/lib/google/config";
 import { json } from "@/lib/http";
 
 /**
@@ -12,6 +12,8 @@ export async function GET(req: Request) {
   if (!atual) return SEM_SESSAO();
   const bloqueio = semAcesso(atual);
   if (bloqueio) return bloqueio;
-  const c = configDoPicker();
-  return json(c ? { pronto: true, ...c } : { pronto: false });
+  const d = diagnosticoPicker();
+  // Sem valor nenhum no log nem na resposta: só qual variável falhou (aparece também no /admin).
+  if (d.problemas.length) console.warn(`[picker] configuração: ${d.problemas.join(", ")}${d.appIdDoClientId ? " (App ID tirado do client ID)" : ""}`);
+  return json(d.config ? { pronto: true, ...d.config } : { pronto: false, problemas: d.problemas });
 }

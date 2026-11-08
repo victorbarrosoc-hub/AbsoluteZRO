@@ -1,3 +1,4 @@
+import { diagnosticoPicker, type ProblemaPicker } from "@/lib/google/config";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -227,6 +228,14 @@ function Chip({
   );
 }
 
+const PROBLEMA_PICKER: Record<ProblemaPicker, string> = {
+  client_id_falta: "falta GOOGLE_CLIENT_ID",
+  chave_falta: "falta GOOGLE_PICKER_API_KEY",
+  chave_formato: "GOOGLE_PICKER_API_KEY não parece uma chave de API (AIza…)",
+  app_id_formato: "GOOGLE_APP_ID não é o número do projeto (só dígitos); usando o do client ID",
+  app_id_outro_projeto: "GOOGLE_APP_ID é de outro projeto; usando o do client ID",
+};
+
 export default async function Admin({ searchParams }: Props) {
   const { usuario } = await exigirUsuario("/admin");
   // Quem não é admin vê a mesma página de "não encontrado" de qualquer endereço que não existe.
@@ -247,6 +256,7 @@ export default async function Admin({ searchParams }: Props) {
     resumoVagas(),
   ]);
   const macsSemAviso = macsTravados.filter((c) => !c.avisada).length;
+  const picker = diagnosticoPicker();
   const lista = aplicarFiltro(
     filtrarPessoas(pessoas, busca),
     { filtro, plano, ordem, buildAtual },
@@ -284,6 +294,22 @@ export default async function Admin({ searchParams }: Props) {
           O plano de cada conta fica guardado para quando o beta fechar
           (SOBEDESCE_BETA_ABERTO=0).
         </span>
+      </p>
+
+      {/* "Escolher do Drive" (Picker): qual variável falhou, sem o valor (08/11/2026). */}
+      <p className="mb-4 flex flex-wrap items-center gap-2 px-1 text-[14px] text-ink-2">
+        {picker.config ? (
+          <span className="inline-flex items-center gap-2 rounded-full bg-ok/12 px-3 py-1 font-medium text-ok-text ring-1 ring-ok/30">
+            <span aria-hidden className="size-1.5 rounded-full bg-ok" />
+            Escolher do Drive ligado
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2 rounded-full bg-err/12 px-3 py-1 font-medium text-err-text ring-1 ring-err/30">
+            <span aria-hidden className="size-1.5 rounded-full bg-err" />
+            Escolher do Drive desligado
+          </span>
+        )}
+        {picker.problemas.length ? <span className="text-[13px] text-ink-3">{picker.problemas.map((p) => PROBLEMA_PICKER[p]).join(" · ")}</span> : null}
       </p>
 
       <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-8">

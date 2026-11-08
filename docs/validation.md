@@ -744,6 +744,17 @@ da Higgsfield é a `0052`).
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
 
+## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
+
+Branch `sobedesce-drive-escopo`.
+
+- `web/tests/drive-hibrido.test.mts`: concessão perdida → o callback manda para o segundo pedido (`drive` com
+  `login_hint` da vaga), volta inteiro sem gastar vaga; desmarcou de novo → `?google=escolhidos`, sem terceiro pedido;
+  `?inteiro=` forjado ou com o acesso total desligado não pede o Drive inteiro; Picker: App ID errado usa o do client
+  ID, aspas e espaços, outro projeto, chave errada e a resposta com `problemas` sem valor.
+- `web/tests/google.test.mts`: reconectar depois de remover agora vai ao segundo pedido.
+- `web`: `npm run lint`, `npm run typecheck` e `npm test` (todos passando). HUB: `tsc` de `apps/hub-web` sem erro.
+
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)
 
 Branch `sobedesce-montagens`.

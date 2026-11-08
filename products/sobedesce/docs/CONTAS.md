@@ -449,6 +449,21 @@ Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto*
 - **Callback confere o que veio**: sem Drive nenhum (caixinha desmarcada) → `?erro=google_sem_drive`, nada gravado;
   pediu `drive` e veio só `drive.file` → conecta e volta com `?google=escolhidos` (aviso honesto em `/conta`); todo `drive`
   recebido grava a vaga (também na renovação do token, inclusive pelo app de computador).
+- **Segundo pedido** (08/11/2026): com acesso total e a vaga já usada, reconectar pede `drive.file` somando o concedido.
+  Se a concessão antiga sumiu no Google (revogada, vencida), volta só `drive.file`. Quando a conta Google que voltou é a
+  da vaga, o callback salva a conexão e manda para `/api/google/conectar?modo=vincular&inteiro=<sub>`, que pede o
+  `drive` de novo só para ela (`login_hint` com o e-mail da vaga; não gasta vaga, o Google já contou essa conta). Vale
+  uma vez (`segunda` no cookie do state): desmarcou de novo, conecta em Arquivos escolhidos com `?google=escolhidos`.
+  `?inteiro=` com outro sub ou sem acesso total não muda nada (o pedido continua `drive.file`). Antes caía calado em
+  Arquivos escolhidos.
+- **Desconectou sozinho:** `invalid_grant` na renovação marca "reconectar" e agora deixa no log
+  `[drive] reconectar: conta …, ligada há N h`. Em torno de 168 h (7 dias) = o app do Google do projeto SOBEDESCE está
+  em modo **Teste** (o refresh token vence em 7 dias): publicar em Google Cloud › OAuth › Público-alvo › "Publicar app"
+  (sem verificação, como o projeto antigo). Antes disso: revogado, senha trocada ou acesso removido.
+- **Escolher do Drive (Picker):** `diagnosticoPicker` (`web/src/lib/google/config.ts`) aceita valores colados com aspas,
+  `projects/<número>` e, quando o `GOOGLE_APP_ID` falta ou não é o número do projeto do client ID, usa o número do
+  começo do `GOOGLE_CLIENT_ID` (é o mesmo projeto). O que falha sai em `/api/drive/picker` (`problemas`), no log
+  (`[picker] configuração: …`) e no topo do `/admin`, sempre sem o valor.
 - **Modo de cada Drive** (`Conta.modo` em `/api/eu`, `/api/drive/contas` e `/api/drive/token`): `total` só com o acesso
   total ligado E o `drive` recebido; qualquer outra coisa é `arquivos`. Sua conta e Ajustes do app mostram a linha
   "Acesso ao Drive" com o que muda recolhido.

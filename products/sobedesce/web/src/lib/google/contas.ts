@@ -348,6 +348,9 @@ async function renovarComTrava(contaId: string, depoisDe: Date | null): Promise<
       return { tipo: "ok", token: { accessToken: novo.acesso, expiraEm: novo.expiraEm, email: l.email } };
     } catch (e) {
       if (e instanceof GoogleError && e.motivo === "reconectar") {
+        // Para achar a causa depois (08/11/2026): quanto tempo a conexão durou. 7 dias certinhos = app do Google em
+        // modo Teste (o refresh token vence em 7 dias); antes disso = revogado, senha trocada ou acesso removido.
+        console.warn(`[drive] reconectar: conta ${l.id}, ${e.message}, ligada há ${Math.round((Date.now() - l.criadoEm.getTime()) / 3_600_000)} h`);
         await marcarReconectar();
         return { tipo: "erro", codigo: "reconectar" };
       }
