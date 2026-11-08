@@ -156,6 +156,22 @@ export async function contaDaVaga(usuarioId: string, googleSub?: string): Promis
   return v ? { sub: v.sub, email: v.email } : null;
 }
 
+export type DriveInteiro = { liberado: boolean; ativar: string | null };
+
+/**
+ * "Ativar Drive inteiro" (08/11/2026): liberado no console, mas nenhum Drive conectado com o `drive` inteiro. `ativar`
+ * é o caminho do pedido certo: com a vaga já usada, o `drive` para a conta dela (`inteiro=1`, login_hint, sem gastar
+ * vaga); sem vaga usada ainda, o Conectar de sempre (já pede o inteiro).
+ */
+export async function driveInteiroDe(usuarioId: string, contas: { modo: ModoDrive }[], volta: string): Promise<DriveInteiro> {
+  const [u] = await db.select({ ligado: usuarios.driveAcessoTotal }).from(usuarios).where(eq(usuarios.id, usuarioId));
+  const liberado = u?.ligado === true;
+  if (!liberado || !contas.length || contas.some((c) => c.modo === "total")) return { liberado, ativar: null };
+  const q = new URLSearchParams({ modo: "vincular", volta });
+  if (await contaDaVaga(usuarioId)) q.set("inteiro", "1");
+  return { liberado, ativar: `/api/google/conectar?${q}` };
+}
+
 /** O modo que vale para um Drive: acesso total ligado E o `drive` recebido. Qualquer outra coisa é Arquivos escolhidos. */
 export function modoEfetivo(acessoTotal: boolean, escopos: string): ModoDrive {
   return acessoTotal && acessoDoEscopo(escopos) === "total" ? "total" : "arquivos";

@@ -93,10 +93,11 @@ async function load() {
   apply(r.json)
 }
 
-function apply({ usuario, contas, recursos, zro }) {
+function apply({ usuario, contas, recursos, zro, driveInteiro }) {
   const drives = Array.isArray(contas) ? contas : []
   // zro.pedir: conta antiga sem vínculo com a Absolute ZRO (lib/ligar-zro.js). Só muda a tela; envio e token seguem.
-  setState({ account: usuario, drives, recursos: recursos && typeof recursos === 'object' ? recursos : {}, zro: lerZro(zro) })
+  // driveInteiro: acesso total liberado sem o Drive inteiro conectado (lib/modo-drive.js › ativarDriveInteiro).
+  setState({ account: usuario, drives, recursos: recursos && typeof recursos === 'object' ? recursos : {}, zro: lerZro(zro), driveInteiro: driveInteiro && typeof driveInteiro === 'object' ? driveInteiro : null })
   if (!drives.length) {
     forget()
     setState({ drive: null })

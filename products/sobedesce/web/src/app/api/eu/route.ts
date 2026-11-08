@@ -1,6 +1,7 @@
 import { aprenderAparelho, COOKIE_APARELHO, opcoesCookieAparelho } from "@/lib/auth/aparelho";
 import { semAcesso, usuarioDaRequisicao, SEM_SESSAO } from "@/lib/auth/requisicao";
 import { listarContas } from "@/lib/google/contas";
+import { driveInteiroDe } from "@/lib/google/vagas";
 import { json, lerCookie, origemDoPedido, serializarCookie } from "@/lib/http";
 import { recursosDe } from "@/lib/recursos";
 import { cookieSeguro } from "@/lib/site";
@@ -36,5 +37,7 @@ export async function GET(req: Request) {
   // `usuario` é a conta da pessoa (a Absolute ZRO, como o Apple ID): nome e foto do "você" no topo dos apps. A foto do
   // Google fica em `contas` (o Drive conectado), nunca aqui.
   const usuario = { ...atual.usuario, fotoUrl: atual.fotoZro };
-  return json({ usuario, contas, recursos, zro }, 200, extras);
+  // Acesso total liberado e nenhum Drive inteiro conectado: o caminho do "Ativar Drive inteiro" (volta para o app).
+  const driveInteiro = await driveInteiroDe(atual.usuario.id, contas, "/app/");
+  return json({ usuario, contas, recursos, zro, driveInteiro }, 200, extras);
 }

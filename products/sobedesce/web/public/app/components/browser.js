@@ -49,7 +49,7 @@ import { LAN } from '../lib/config.js'
 import { EMBUTIDO, ESCOLHER, ORIGEM_ANFITRIAO, avisarAnfitriao } from '../lib/embutido.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
 import { alvoDoLink } from '../lib/drive-link.js'
-import { DICA_MODO, NOME_MODO, PRECISA_TOTAL, criadaPeloSobedesce, lugarCompleto, modoDe, vazioDoLugar } from '../lib/modo-drive.js'
+import { DICA_MODO, NOME_MODO, PRECISA_TOTAL, ativarDriveInteiro, criadaPeloSobedesce, lugarCompleto, modoDe, vazioDoLugar } from '../lib/modo-drive.js'
 import { escolherDoDrive } from '../lib/picker.js'
 import { selectDrive } from '../lib/auth.js'
 
@@ -81,6 +81,7 @@ const AUTO_MAX = 3000
  * "Escolher do Drive" e o que muda recolhido.
  */
 function FaixaArquivos({ completo, onEscolher }) {
+  const ativar = ativarDriveInteiro(useApp((s) => s.driveInteiro))
   return html`<div class="modo-faixa" role="note">
     <span class="modo-faixa-ic" aria-hidden="true"><${Icon} name="key" size=${15} strokeWidth=${1.9} /></span>
     <span class="modo-faixa-txt">
@@ -90,6 +91,9 @@ function FaixaArquivos({ completo, onEscolher }) {
     <button type="button" class="btn btn-sm btn-primary modo-faixa-btn" onClick=${onEscolher}>
       <${Icon} name="plus" size=${15} strokeWidth=${2} /><span>Escolher do Drive</span>
     </button>
+    ${ativar
+      ? html`<a class="modo-faixa-ativar" href=${ativar}><${Icon} name="key" size=${14} strokeWidth=${2} /><span>Ativar Drive inteiro</span></a>`
+      : null}
     <details class="modo-faixa-dica">
       <summary>O que muda</summary>
       <ul>${DICA_MODO.arquivos.map((t) => html`<li>${t}</li>`)}</ul>

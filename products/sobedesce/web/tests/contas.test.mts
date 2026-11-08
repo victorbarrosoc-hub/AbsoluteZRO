@@ -62,6 +62,8 @@ describe("criar conta, entrar e sair", () => {
       contas: [],
       recursos: { referencias: true },
       zro: { ligada: false, pedir: false, ligar: "/api/zro/entrar?modo=vincular&volta=%2Fconta" },
+      // "Ativar Drive inteiro" (08/11/2026): nada sem o acesso total liberado.
+      driveInteiro: { liberado: false, ativar: null },
     });
 
     const { db, schema } = amb.banco;
