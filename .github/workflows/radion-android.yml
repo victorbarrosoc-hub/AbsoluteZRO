@@ -1,0 +1,103 @@
+# RADION no Android (products/radio/nativo/android): roda os testes do núcleo e do app, gera o APK e, em push, publica
+# no Release de teste "RADION Android · versão de teste" (tag radion-android-teste), com um nome fixo para o link
+# (RADION-android.apk) e um com o build (RADION-android-<versão>-b<build>.apk). Sem loja por enquanto (titular,
+# 08/11/2026): o link do APK é a distribuição de teste. Em pull request, só testes e o APK como artefato.
+#
+# Assinatura: com os secrets RADION_ANDROID_KEYSTORE_B64 (a chave .jks em base64), RADION_ANDROID_KEYSTORE_SENHA,
+# RADION_ANDROID_CHAVE e RADION_ANDROID_CHAVE_SENHA, o APK sai com a chave fixa e cada versão instala por cima da
+# anterior. Sem eles, sai com a chave de depuração: instala, mas trocar de versão pede desinstalar antes. A chave nunca
+# vai para o repositório.
+name: RADION · Android
+
+on:
+  push:
+    branches: [main, 'claude/radion-android**']
+    paths:
+      - 'products/radio/nativo/**'
+      - 'products/radio/scripts/marca.mjs'
+      - '.github/workflows/radion-android.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'products/radio/nativo/**'
+      - '.github/workflows/radion-android.yml'
+  workflow_dispatch:
+
+# Só leitura por padrão; escrita só no passo que publica no Release.
+permissions:
+  contents: read
+
+concurrency:
+  group: radion-android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/radio/nativo/android
+
+env:
+  # Build = número da execução + base (o Android só instala por cima um versionCode maior).
+  RADION_ANDROID_BUILD_BASE: '100'
+
+jobs:
+  apk:
+    name: Testes e APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Chave de assinatura (dos secrets, se houver)
+        env:
+          CHAVE_B64: ${{ secrets.RADION_ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$CHAVE_B64" ]; then
+            printf '%s' "$CHAVE_B64" | base64 -d > "$RUNNER_TEMP/radion.jks"
+            echo "RADION_ANDROID_KEYSTORE=$RUNNER_TEMP/radion.jks" >> "$GITHUB_ENV"
+            echo "Assinando com a chave fixa."
+          else
+            echo "::warning::Sem a chave fixa (secrets RADION_ANDROID_*): o APK sai com a chave de depuração."
+          fi
+      - name: Testes e APK
+        env:
+          RADION_ANDROID_KEYSTORE_SENHA: ${{ secrets.RADION_ANDROID_KEYSTORE_SENHA }}
+          RADION_ANDROID_CHAVE: ${{ secrets.RADION_ANDROID_CHAVE }}
+          RADION_ANDROID_CHAVE_SENHA: ${{ secrets.RADION_ANDROID_CHAVE_SENHA }}
+        run: |
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          export RADION_ANDROID_BUILD=$(( ${{ github.run_number }} + RADION_ANDROID_BUILD_BASE ))
+          echo "RADION_ANDROID_BUILD=$RADION_ANDROID_BUILD" >> "$GITHUB_ENV"
+          ./gradlew --no-daemon test assembleRelease
+      - name: Nomes do APK
+        run: |
+          versao=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          mkdir -p saida
+          cp app/build/outputs/apk/release/app-release.apk "saida/RADION-android-${versao}-b${RADION_ANDROID_BUILD}.apk"
+          cp app/build/outputs/apk/release/app-release.apk saida/RADION-android.apk
+          (cd saida && sha256sum *.apk | tee SHA256SUMS.txt)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: radion-android
+          path: products/radio/nativo/android/saida/
+          retention-days: 7
+          if-no-files-found: error
+      # Em push (main ou o ramo do Android), o APK vai para o Release de teste: é de lá que sai o link.
+      - if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: radion-android-teste
+          name: RADION Android · versão de teste
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          files: |
+            products/radio/nativo/android/saida/RADION-android.apk
+            products/radio/nativo/android/saida/RADION-android-*-b*.apk
+            products/radio/nativo/android/saida/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+          body: |
+            RADION para Android, versão de teste (sem loja). Baixe o **RADION-android.apk** no celular e instale (o Android pede para permitir instalar deste navegador).
+            Depois de instalar: abra, entre na conta Absolute ZRO, entre numa diária, toque em Entrar no rádio e libere o microfone e as notificações.
+            Para o rádio seguir com a tela travada: em Configurações › Apps › RADION › Bateria, escolha "Sem restrições".

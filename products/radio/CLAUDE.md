@@ -9,6 +9,9 @@ valem aqui; este arquivo só acrescenta.
 - **App de computador** em `desktop/` (pacote próprio, Electron, moldura do Relay; leia o `desktop/README.md`): barra de
   menus/bandeja, atalho de falar, modo compacto. A página só fala com ele por `window.radionDesktop` (no navegador não
   existe) e o app confere tudo que chega (`desktop/radio.cjs`). Instala e atualiza só pela central Absolute ZRO (canais `desktop`/`download` abertos na HUB 0064).
+- **Nativo** em `nativo/` (leia o `nativo/README.md`): o Android (`nativo/android`, Gradle) é a página numa WebView,
+  com o núcleo do rádio (`nucleo/`, sem login nem banco, reaproveitável pelo DEICHECK). A ponte é `assets/ponte.js`,
+  com o mesmo contrato do computador (`window.radionDesktop`); mudou o contrato, mude os dois.
 - **Integração nova** (projeto do HUB, Maestro, Carro do Freela) = contrato em `docs/integration-contracts/` antes do
   código. Hoje: login único e o Set.
 - **Voz nunca no servidor**: nem gravação, nem transcrição, nem amostra de teste no repositório (testes usam o
