@@ -11,6 +11,16 @@
 export const NOME_MODO = { total: 'Acesso total', arquivos: 'Arquivos escolhidos' }
 export const PRECISA_TOTAL = 'Precisa de acesso total'
 
+/**
+ * "Ativar Drive inteiro" (08/11/2026): o acesso total está liberado na conta, mas o Drive conectado ficou em Arquivos
+ * escolhidos. O servidor manda o caminho do pedido certo em `driveInteiro.ativar` (/api/eu); só vale um caminho do
+ * próprio Conectar do site.
+ */
+export function ativarDriveInteiro(driveInteiro) {
+  const a = driveInteiro?.ativar
+  return typeof a === 'string' && a.startsWith('/api/google/conectar?') ? a : null
+}
+
 /** O modo de um Drive da conta (`drives[i]` do /api/eu). */
 export function modoDe(drive) {
   return drive?.modo === 'arquivos' ? 'arquivos' : 'total'

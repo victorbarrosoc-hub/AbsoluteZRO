@@ -10,10 +10,11 @@ import { Icon } from './icons.js'
 import { SheetHead } from './ui.js'
 import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
 import { Avatar, contaComoUser } from './main.js'
-import { DICA_MODO, NOME_MODO, modoDe } from '../lib/modo-drive.js'
+import { DICA_MODO, NOME_MODO, ativarDriveInteiro, modoDe } from '../lib/modo-drive.js'
 
 /** Drive híbrido: o modo deste Drive numa linha, com o que muda recolhido (os mesmos textos de Sua conta no site). */
 export function ModoDoDrive({ drive }) {
+  const ativar = ativarDriveInteiro(useApp((s) => s.driveInteiro))
   if (!drive) return null
   const modo = modoDe(drive)
   return html`<div class="k-modo" data-modo-drive=${modo}>
@@ -21,6 +22,9 @@ export function ModoDoDrive({ drive }) {
       <span>Acesso ao Drive</span>
       <b><span class=${modo === 'total' ? 'k-modo-ponto is-total' : 'k-modo-ponto'} aria-hidden="true"></span>${NOME_MODO[modo]}</b>
     </div>
+    ${modo === 'arquivos' && ativar
+      ? html`<a class="btn btn-sm btn-primary k-modo-ativar" href=${ativar}><span>Ativar Drive inteiro</span></a>`
+      : null}
     <details class="k-modo-dica">
       <summary>O que muda</summary>
       <ul>${DICA_MODO[modo].map((t) => html`<li>${t}</li>`)}</ul>

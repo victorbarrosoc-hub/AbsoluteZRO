@@ -456,6 +456,14 @@ Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto*
   uma vez (`segunda` no cookie do state): desmarcou de novo, conecta em Arquivos escolhidos com `?google=escolhidos`.
   `?inteiro=` com outro sub ou sem acesso total não muda nada (o pedido continua `drive.file`). Antes caía calado em
   Arquivos escolhidos.
+- **Ativar Drive inteiro** (08/11/2026, regra do titular: o Drive inteiro só existe com a liberação no admin) →
+  `/api/eu` manda `driveInteiro: { liberado, ativar }` (`driveInteiroDe`, `web/src/lib/google/vagas.ts`). `ativar` só
+  vem com acesso total ligado, Drive conectado em Arquivos escolhidos, nenhum com o inteiro e a vaga já usada: é
+  `?inteiro=1` (o servidor acha a conta da vaga e pede o `drive` com `login_hint`). Nunca gasta vaga nova: sem
+  liberação, sem vaga ou com sub de outra conta, o `?inteiro=` fica em drive.file. Botão "Ativar Drive inteiro" na faixa
+  "Arquivos escolhidos" da aba Drive e em Ajustes do celular (`public/app/lib/modo-drive.js` › `ativarDriveInteiro`, só
+  aceita caminho do Conectar) e na linha "Acesso ao Drive" de `/conta`, que passa a mostrar o modo de verdade (o que o
+  Google deu), não a permissão.
 - **Desconectou sozinho:** `invalid_grant` na renovação marca "reconectar" e agora deixa no log
   `[drive] reconectar: conta …, ligada há N h`. Em torno de 168 h (7 dias) = o app do Google do projeto SOBEDESCE está
   em modo **Teste** (o refresh token vence em 7 dias): publicar em Google Cloud › OAuth › Público-alvo › "Publicar app"

@@ -1,3 +1,4 @@
+import { driveInteiroDe } from "@/lib/google/vagas";
 import type { Metadata } from "next";
 import { Aviso } from "@/components/conta/aviso";
 import { BotaoGoogle } from "@/components/conta/google";
@@ -63,6 +64,8 @@ export default async function Conta({ searchParams }: Props) {
     contaZroDe(usuario.id),
     temAcessoTotal(usuario.id),
   ]);
+  // Liberado no console sem o Drive inteiro conectado: "Ativar Drive inteiro" (08/11/2026).
+  const driveInteiro = acessoTotal ? await driveInteiroDe(usuario.id, contas, "/conta") : { liberado: false, ativar: null };
   const erro = typeof q.erro === "string" ? q.erro : undefined;
   const conectou = q.google === "ok";
   const primeiroNome = usuario.nome.split(" ")[0];
@@ -174,7 +177,7 @@ export default async function Conta({ searchParams }: Props) {
             frase="As contas do Google que a SOBEDESCE usa para enviar e baixar."
             acao={contas.length ? <span className="text-[13px] font-medium text-ink-3 tabular-nums">{contas.length}</span> : null}
           >
-            {contas.length ? <LinhaModoDrive acessoTotal={acessoTotal} reconectarParaTotal={acessoTotal && contas.some((c) => c.modo !== "total")} /> : null}
+            {contas.length ? <LinhaModoDrive inteiro={contas.some((c) => c.modo === "total")} ativar={driveInteiro.ativar} /> : null}
             <Drives contas={contas} entrar={entrar} />
             <div>
               <BotaoGoogle modo="vincular" variant={contas.length ? "secondary" : "primary"} size="md" className="w-full sm:w-auto">

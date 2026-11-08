@@ -9516,6 +9516,24 @@ select.input {
 .modo-faixa-btn {
   white-space: nowrap;
 }
+.modo-faixa-ativar {
+  grid-column: 2 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--fill-2);
+  text-decoration: none;
+}
+.k-modo-ativar {
+  margin-top: 8px;
+  text-decoration: none;
+}
 .modo-faixa-dica {
   grid-column: 2 / -1;
   font-size: 12.5px;

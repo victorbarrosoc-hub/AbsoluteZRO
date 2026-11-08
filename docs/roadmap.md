@@ -2020,6 +2020,14 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: Ativar Drive inteiro (08/11/2026)
+
+- 🔶 Ramo `sobedesce-ativar-drive-inteiro` (Painel Geral, teste do titular no celular), **lote de sexta 13/11**: quem tem
+  o acesso total liberado, o Drive conectado em Arquivos escolhidos e a vaga já usada ganha o botão "Ativar Drive
+  inteiro" (faixa da aba Drive e Ajustes no celular; linha "Acesso ao Drive" em `/conta`), que vai direto ao pedido do
+  `drive` para a conta da vaga. Regra do titular: o Drive inteiro só existe com a liberação no admin, o botão nunca gasta
+  vaga nova e o servidor recusa o `?inteiro=` (fica drive.file) sem liberação, sem vaga ou com outra conta. `/conta` passa a mostrar o modo de verdade, não a permissão. App do celular 2.8.70 (cache v85).
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:

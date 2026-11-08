@@ -341,6 +341,81 @@ describe("callback: o escopo que veio de fato", () => {
     assert.equal(q.get("login_hint"), null);
   });
 
+  test("Ativar Drive inteiro: /api/eu manda o caminho quando o liberado ficou em Arquivos escolhidos; inteiro=1 é a conta da vaga", async () => {
+    await zerarVagas();
+    const p = await pessoa("Otto");
+    const eu1 = async () => (await (await eu.GET(pedido("/api/eu", { cookies: { sd_sessao: p.token } }))).json()).driveInteiro;
+    const g = conta("otto");
+    await conectarDrive(p.token, g);
+    assert.deepEqual(await eu1(), { liberado: false, ativar: null }, "sem liberar no console, nada");
+    // Liberado depois de conectar com drive.file, sem vaga usada: o botão não aparece (nunca gasta vaga nova).
+    await ligarDireto(p.id);
+    assert.deepEqual(await eu1(), { liberado: true, ativar: null }, "sem vaga usada, nada de botão");
+    await conectarDrive(p.token, g);
+    assert.deepEqual(await eu1(), { liberado: true, ativar: null }, "Drive inteiro conectado: some");
+    // A concessão do inteiro sumiu e a conexão ficou em Arquivos escolhidos: o caminho vai direto ao pedido da vaga.
+    const { db, schema } = amb.banco;
+    await db.update(schema.contasGoogle).set({ escopos: `${BASICOS} ${DRIVE_FILE}` }).where(drizzle.eq(schema.contasGoogle.googleSub, g.sub));
+    const ativar = (await eu1()).ativar as string;
+    assert.equal(ativar, "/api/google/conectar?modo=vincular&volta=%2Fapp%2F&inteiro=1");
+    amb.google.proximo.conta = g;
+    amb.google.proximo.escopo = null;
+    const ida = await conectar.GET(pedido(ativar, { cookies: { sd_sessao: p.token } }));
+    const u = new URL(ida.headers.get("location")!);
+    assert.equal(u.searchParams.get("scope"), `${BASICOS} ${DRIVE}`);
+    assert.equal(u.searchParams.get("login_hint"), g.email);
+    const google = await fetch(u, { redirect: "manual" });
+    const res = await callback.GET(pedido(google.headers.get("location")!.replace(SITE, ""), { cookies: { sd_google: cookiesDe(ida).get("sd_google"), sd_sessao: p.token } }));
+    assert.equal(new URL(res.headers.get("location")!, SITE).pathname, "/app/");
+    assert.equal((await drivesDe(p.token))[0].modo, "total");
+    assert.equal((await vagas.resumoVagas()).usadas, 1, "não gasta outra vaga");
+  });
+
+  test("Ativar Drive inteiro sem liberação ou sem vaga: não vê o botão e não consegue pelo link (fica drive.file, nenhuma vaga nova)", async () => {
+    await zerarVagas();
+    const eu1 = async (token: string) => (await (await eu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }))).json()).driveInteiro;
+    const tentar = async (token: string, caminho: string) => {
+      const q = new URL((await conectar.GET(pedido(caminho, { cookies: { sd_sessao: token } }))).headers.get("location")!).searchParams;
+      assert.equal(q.get("scope"), `${BASICOS} ${DRIVE_FILE}`, caminho);
+      assert.equal(q.get("login_hint"), null, caminho);
+    };
+    // Usou a vaga, o titular desligou no console e a concessão caiu para drive.file.
+    const p = await pessoa("Nina");
+    await ligarDireto(p.id);
+    const g = conta("nina");
+    await conectarDrive(p.token, g);
+    await ligarDireto(p.id, false);
+    const { db, schema } = amb.banco;
+    await db.update(schema.contasGoogle).set({ escopos: `${BASICOS} ${DRIVE_FILE}` }).where(drizzle.eq(schema.contasGoogle.googleSub, g.sub));
+    assert.deepEqual(await eu1(p.token), { liberado: false, ativar: null });
+    amb.google.proximo.conta = g;
+    await tentar(p.token, "/api/google/conectar?modo=vincular&inteiro=1");
+    await tentar(p.token, `/api/google/conectar?modo=vincular&inteiro=${g.sub}`);
+    // Liberado, conectado em Arquivos escolhidos, mas sem vaga usada: nada de botão, e o link não gasta a primeira vaga.
+    const q = await pessoa("Theo");
+    await ligarDireto(q.id, false);
+    await conectarDrive(q.token, conta("theo"), `${BASICOS} ${DRIVE_FILE}`);
+    await ligarDireto(q.id);
+    assert.deepEqual(await eu1(q.token), { liberado: true, ativar: null });
+    amb.google.proximo.conta = conta("theo");
+    await tentar(q.token, "/api/google/conectar?modo=vincular&inteiro=1");
+    assert.equal((await vagas.resumoVagas()).usadas, 1, "só a vaga da Nina");
+  });
+
+  test("Ativar Drive inteiro no celular: a faixa e os Ajustes mostram o botão só com um caminho do Conectar", async () => {
+    const { ativarDriveInteiro } = await import("../public/app/lib/modo-drive.js");
+    assert.equal(ativarDriveInteiro({ ativar: "/api/google/conectar?modo=vincular&inteiro=1" }), "/api/google/conectar?modo=vincular&inteiro=1");
+    assert.equal(ativarDriveInteiro({ ativar: "https://outro.site/api/google/conectar?" }), null);
+    assert.equal(ativarDriveInteiro({ ativar: null }), null);
+    assert.equal(ativarDriveInteiro(undefined), null);
+    const browser = readFileSync(new URL("../public/app/components/browser.js", import.meta.url), "utf8");
+    const ajustes = readFileSync(new URL("../public/app/components/settings.js", import.meta.url), "utf8");
+    const auth = readFileSync(new URL("../public/app/lib/auth.js", import.meta.url), "utf8");
+    assert.match(browser, /ativarDriveInteiro\(useApp\(\(s\) => s\.driveInteiro\)\)[\s\S]*Ativar Drive inteiro/);
+    assert.match(ajustes, /ativarDriveInteiro\(useApp\(\(s\) => s\.driveInteiro\)\)[\s\S]*Ativar Drive inteiro/);
+    assert.match(auth, /driveInteiro: driveInteiro && typeof driveInteiro === 'object'/);
+  });
+
   test("entrar com Google não troca o `drive` guardado por um token menor", async () => {
     await zerarVagas();
     const p = await pessoa("Iris");

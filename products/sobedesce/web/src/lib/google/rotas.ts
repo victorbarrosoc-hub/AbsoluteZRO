@@ -62,13 +62,19 @@ export async function conectar(req: Request): Promise<Response> {
     // Drive inteiro de novo só para ela (login_hint), o que não gasta vaga: o Google já contou essa conta.
     const inteiro = url.searchParams.get("inteiro");
     if (inteiro) {
-      const vaga = await contaDaVaga(usuarioId, inteiro);
+      // "1": a conta da vaga desta pessoa (o botão "Ativar Drive inteiro" não precisa saber o sub).
+      const vaga = await contaDaVaga(usuarioId, inteiro === "1" ? undefined : inteiro);
       if (vaga) {
         escopo = escoposDoModo("total");
         somarConcedidos = true;
         pedido = "total";
         segunda = true;
         dica = vaga.email;
+      } else {
+        // Sem liberação, sem vaga usada ou sub de outra conta: o link não abre o Drive inteiro nem gasta vaga nova.
+        escopo = escoposDoModo("arquivos");
+        somarConcedidos = false;
+        pedido = "arquivos";
       }
     }
   }
