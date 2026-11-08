@@ -2028,7 +2028,9 @@ do card... não consigo localizar o job que quero achar".
     ela (`login_hint`, não gasta vaga); desmarcou de novo, avisa.
   - **Escolher do Drive:** o App ID errado não derruba mais o Picker (usa o número do projeto do client ID) e o
     `/admin` e o log dizem qual variável falhou, sem o valor.
-  - **Desconectou sozinho:** log com quanto tempo a conexão durou; 7 dias = app do Google em modo Teste.
+  - **Desconectou sozinho:** o `drive` recusado no callback revogava o token mesmo quando a conta Google já era um
+    Drive salvo da própria pessoa, e no Google revogar derruba a concessão inteira (o Drive salvo junto). Agora só revoga
+    conta Google que não está conectada aqui. Log com quanto tempo a conexão durou antes do `invalid_grant`.
   - **Console da Absolute ZRO:** "Drive inteiro liberado" (a permissão) separado de "conectado: Drive inteiro / arquivos
     escolhidos / precisa reconectar" (o que o Google deu a cada Drive).
 

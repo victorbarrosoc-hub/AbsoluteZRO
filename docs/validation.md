@@ -753,6 +753,8 @@ Branch `sobedesce-drive-escopo`.
   `?inteiro=` forjado ou com o acesso total desligado não pede o Drive inteiro; Picker: App ID errado usa o do client
   ID, aspas e espaços, outro projeto, chave errada e a resposta com `problemas` sem valor.
 - `web/tests/google.test.mts`: reconectar depois de remover agora vai ao segundo pedido.
+- O Google falso passa a revogar a concessão inteira da conta Google (como o Google). Teste novo: `drive` recusado numa
+  conta Google já conectada aqui não revoga e o Drive salvo continua renovando (falha sem a correção).
 - `web`: `npm run lint`, `npm run typecheck` e `npm test` (todos passando). HUB: `tsc` de `apps/hub-web` sem erro.
 
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)

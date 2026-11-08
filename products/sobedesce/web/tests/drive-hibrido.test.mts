@@ -341,6 +341,22 @@ describe("callback: o escopo que veio de fato", () => {
     assert.equal(q.get("login_hint"), null);
   });
 
+  test("drive recusado numa conta Google que já está conectada aqui não revoga: derrubaria o Drive salvo (08/11/2026)", async () => {
+    await zerarVagas();
+    const p = await pessoa("Mel");
+    const g = conta("mel");
+    await conectarDrive(p.token, g);
+    const [d] = await drivesDe(p.token);
+    assert.equal(d.modo, "arquivos");
+    const antes = amb.google.contadores.revogacoes;
+    // O mesmo Google volta com o `drive` sem ter pedido (escopo trocado na URL): recusa, mas não revoga a concessão.
+    const r = await conectarDrive(p.token, g, `${BASICOS} ${DRIVE}`);
+    assert.equal(r.destino, "/conta?erro=google_erro");
+    assert.equal(amb.google.contadores.revogacoes, antes, "revogar derrubaria a concessão inteira, e o Drive salvo junto");
+    const token = await googleContas.tokenDeAcesso(p.id, d.id, { renovar: true });
+    assert.ok(token.accessToken, "o Drive salvo continua renovando");
+  });
+
   test("entrar com Google não troca o `drive` guardado por um token menor", async () => {
     await zerarVagas();
     const p = await pessoa("Iris");
