@@ -70,6 +70,8 @@ jobs:
           export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
           export RADION_ANDROID_BUILD=$(( ${{ github.run_number }} + RADION_ANDROID_BUILD_BASE ))
           echo "RADION_ANDROID_BUILD=$RADION_ANDROID_BUILD" >> "$GITHUB_ENV"
+          # o download do Gradle às vezes cai na rede do runner: até 3 tentativas antes do build
+          for i in 1 2 3; do ./gradlew --no-daemon --version > /dev/null && break; echo "Gradle não baixou (tentativa $i)"; sleep $((i * 10)); done
           ./gradlew --no-daemon test assembleRelease
       - name: Nomes do APK
         run: |
