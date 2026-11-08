@@ -456,10 +456,11 @@ Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto*
   uma vez (`segunda` no cookie do state): desmarcou de novo, conecta em Arquivos escolhidos com `?google=escolhidos`.
   `?inteiro=` com outro sub ou sem acesso total não muda nada (o pedido continua `drive.file`). Antes caía calado em
   Arquivos escolhidos.
-- **Ativar Drive inteiro** (08/11/2026): liberado no console e nenhum Drive da conta conectado com o `drive` inteiro →
-  `/api/eu` manda `driveInteiro: { liberado, ativar }` (`driveInteiroDe`, `web/src/lib/google/vagas.ts`). `ativar` é o
-  Conectar certo: com a vaga já usada, `?inteiro=1` (o servidor acha a conta da vaga e pede o `drive` com `login_hint`,
-  sem gastar vaga); sem vaga usada, o Conectar de sempre (já pede o inteiro). Botão "Ativar Drive inteiro" na faixa
+- **Ativar Drive inteiro** (08/11/2026, regra do titular: o Drive inteiro só existe com a liberação no admin) →
+  `/api/eu` manda `driveInteiro: { liberado, ativar }` (`driveInteiroDe`, `web/src/lib/google/vagas.ts`). `ativar` só
+  vem com acesso total ligado, Drive conectado em Arquivos escolhidos, nenhum com o inteiro e a vaga já usada: é
+  `?inteiro=1` (o servidor acha a conta da vaga e pede o `drive` com `login_hint`). Nunca gasta vaga nova: sem
+  liberação, sem vaga ou com sub de outra conta, o `?inteiro=` fica em drive.file. Botão "Ativar Drive inteiro" na faixa
   "Arquivos escolhidos" da aba Drive e em Ajustes do celular (`public/app/lib/modo-drive.js` › `ativarDriveInteiro`, só
   aceita caminho do Conectar) e na linha "Acesso ao Drive" de `/conta`, que passa a mostrar o modo de verdade (o que o
   Google deu), não a permissão.

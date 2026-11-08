@@ -748,10 +748,11 @@ da Higgsfield é a `0052`).
 
 Branch `sobedesce-ativar-drive-inteiro`.
 
-- `web/tests/drive-hibrido.test.mts`: `/api/eu` › `driveInteiro` (nada sem liberar; Conectar de sempre sem vaga usada;
-  some com o Drive inteiro; `?inteiro=1` quando a conexão ficou em Arquivos escolhidos) e o pedido de `inteiro=1` vai
+- `web/tests/drive-hibrido.test.mts`: `/api/eu` › `driveInteiro` (nada sem liberar; nada sem vaga usada; some com o
+  Drive inteiro; `?inteiro=1` quando a conexão ficou em Arquivos escolhidos) e o pedido de `inteiro=1` vai
   ao `drive` com `login_hint` da vaga, volta para `/app/` com o Drive inteiro e sem gastar vaga; `ativarDriveInteiro`
-  só aceita caminho do Conectar; faixa e Ajustes do celular mostram o botão.
+  só aceita caminho do Conectar; faixa e Ajustes do celular mostram o botão. Sem liberação (vaga usada e desligado) ou
+  liberado sem vaga: `ativar` nulo, e `?inteiro=1` e `?inteiro=<sub>` ficam em drive.file sem `login_hint` nem vaga nova.
 - `test/app-sw.test.js`: cache v85 e versão 2.8.70.
 
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)

@@ -159,17 +159,17 @@ export async function contaDaVaga(usuarioId: string, googleSub?: string): Promis
 export type DriveInteiro = { liberado: boolean; ativar: string | null };
 
 /**
- * "Ativar Drive inteiro" (08/11/2026): liberado no console, mas nenhum Drive conectado com o `drive` inteiro. `ativar`
- * é o caminho do pedido certo: com a vaga já usada, o `drive` para a conta dela (`inteiro=1`, login_hint, sem gastar
- * vaga); sem vaga usada ainda, o Conectar de sempre (já pede o inteiro).
+ * "Ativar Drive inteiro" (08/11/2026, regra do titular): o Drive inteiro só existe com a liberação no console. `ativar`
+ * só vem com acesso total ligado, um Drive conectado em Arquivos escolhidos, nenhum com o inteiro E uma vaga já usada
+ * pela pessoa: o caminho é o pedido do `drive` para a conta dessa vaga (`inteiro=1`, login_hint). Nunca gasta vaga nova;
+ * o servidor confere a vaga e o acesso total de novo no Conectar e, fora disso, fica em drive.file.
  */
 export async function driveInteiroDe(usuarioId: string, contas: { modo: ModoDrive }[], volta: string): Promise<DriveInteiro> {
   const [u] = await db.select({ ligado: usuarios.driveAcessoTotal }).from(usuarios).where(eq(usuarios.id, usuarioId));
   const liberado = u?.ligado === true;
-  if (!liberado || !contas.length || contas.some((c) => c.modo === "total")) return { liberado, ativar: null };
-  const q = new URLSearchParams({ modo: "vincular", volta });
-  if (await contaDaVaga(usuarioId)) q.set("inteiro", "1");
-  return { liberado, ativar: `/api/google/conectar?${q}` };
+  const emArquivos = contas.some((c) => c.modo === "arquivos") && !contas.some((c) => c.modo === "total");
+  if (!liberado || !emArquivos || !(await contaDaVaga(usuarioId))) return { liberado, ativar: null };
+  return { liberado, ativar: `/api/google/conectar?${new URLSearchParams({ modo: "vincular", volta, inteiro: "1" })}` };
 }
 
 /** O modo que vale para um Drive: acesso total ligado E o `drive` recebido. Qualquer outra coisa é Arquivos escolhidos. */

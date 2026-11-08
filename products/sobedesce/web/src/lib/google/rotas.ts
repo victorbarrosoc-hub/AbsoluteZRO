@@ -70,6 +70,11 @@ export async function conectar(req: Request): Promise<Response> {
         pedido = "total";
         segunda = true;
         dica = vaga.email;
+      } else {
+        // Sem liberação, sem vaga usada ou sub de outra conta: o link não abre o Drive inteiro nem gasta vaga nova.
+        escopo = escoposDoModo("arquivos");
+        somarConcedidos = false;
+        pedido = "arquivos";
       }
     }
   }

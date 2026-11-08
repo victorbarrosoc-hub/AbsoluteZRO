@@ -2023,9 +2023,10 @@ do card... não consigo localizar o job que quero achar".
 ## SOBEDESCE: Ativar Drive inteiro (08/11/2026)
 
 - 🔶 Ramo `sobedesce-ativar-drive-inteiro` (Painel Geral, teste do titular no celular), **lote de sexta 13/11**: quem tem
-  o acesso total liberado e o Drive conectado em Arquivos escolhidos ganha o botão "Ativar Drive inteiro" (faixa da aba
-  Drive e Ajustes no celular; linha "Acesso ao Drive" em `/conta`), que vai direto ao pedido do `drive` para a conta da
-  vaga (sem gastar vaga). `/conta` passa a mostrar o modo de verdade, não a permissão. App do celular 2.8.70 (cache v85).
+  o acesso total liberado, o Drive conectado em Arquivos escolhidos e a vaga já usada ganha o botão "Ativar Drive
+  inteiro" (faixa da aba Drive e Ajustes no celular; linha "Acesso ao Drive" em `/conta`), que vai direto ao pedido do
+  `drive` para a conta da vaga. Regra do titular: o Drive inteiro só existe com a liberação no admin, o botão nunca gasta
+  vaga nova e o servidor recusa o `?inteiro=` (fica drive.file) sem liberação, sem vaga ou com outra conta. `/conta` passa a mostrar o modo de verdade, não a permissão. App do celular 2.8.70 (cache v85).
 
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
