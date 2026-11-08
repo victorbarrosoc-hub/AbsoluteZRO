@@ -22,7 +22,8 @@ export type PessoaDrive = {
   zroSub: string | null
   acessoTotal: boolean
   usouVaga: boolean
-  drives: { email: string; modo: 'total' | 'escolhidos'; estado: 'ok' | 'reconectar' }[]
+  /** O que a conexão recebeu de fato do Google (o SOBEDESCE manda 'arquivos'; 'escolhidos' é o nome antigo). */
+  drives: { email: string; modo: 'total' | 'arquivos' | 'escolhidos'; estado: 'ok' | 'reconectar' }[]
 }
 export type PainelDrive = { vagas: VagasDrive; pessoas: PessoaDrive[] }
 

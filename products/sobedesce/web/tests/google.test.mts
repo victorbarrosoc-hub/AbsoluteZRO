@@ -437,10 +437,11 @@ describe("token do Drive", () => {
   });
 
   test("Google fora do ar ao renovar: 502", async () => {
-    // Victor ganhou acesso total e já usou a vaga dele: reconectar pede drive.file (somando o que já foi dado; o
-    // `drive` foi revogado ao remover). Uma vaga por pessoa (revisão M1).
+    // Victor ganhou acesso total e já usou a vaga dele: reconectar pede drive.file (somando o que já foi dado). O
+    // `drive` foi revogado ao remover, então volta só drive.file: a conta já fica salva e o callback manda para o
+    // segundo pedido, o Drive inteiro só para a conta da vaga (08/11/2026). Uma vaga por pessoa (revisão M1).
     const r = await fluxo({ modo: "vincular", conta: CONTA_ANA, sessao: victor.token, pedido: PEDIDO_ARQUIVOS });
-    assert.equal(r.destino, "/conta?google=ok");
+    assert.equal(r.destino, `/api/google/conectar?modo=vincular&volta=%2Fconta&inteiro=${CONTA_ANA.sub}`);
     const id = (await contasDe(victor.token))[0].id;
     const base = process.env.SOBEDESCE_GOOGLE_BASE;
     process.env.SOBEDESCE_GOOGLE_BASE = "http://127.0.0.1:9";

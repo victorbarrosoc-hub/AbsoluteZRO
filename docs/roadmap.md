@@ -2020,6 +2020,18 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:
+  - **Reconectar com acesso total** pedia só `drive.file` (vaga já usada) e, sem a concessão antiga no Google, caía
+    calado em Arquivos escolhidos. Agora, quando a conta Google é a da vaga, faz um segundo pedido do `drive` só para
+    ela (`login_hint`, não gasta vaga); desmarcou de novo, avisa.
+  - **Escolher do Drive:** o App ID errado não derruba mais o Picker (usa o número do projeto do client ID) e o
+    `/admin` e o log dizem qual variável falhou, sem o valor.
+  - **Desconectou sozinho:** log com quanto tempo a conexão durou; 7 dias = app do Google em modo Teste.
+  - **Console da Absolute ZRO:** "Drive inteiro liberado" (a permissão) separado de "conectado: Drive inteiro / arquivos
+    escolhidos / precisa reconectar" (o que o Google deu a cada Drive).
+
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)
 
 - 🔶 Ramo `sobedesce-montagens` (titular, 05/11/2026, as três etapas): Estúdio ganha **Montagens** (Frames ·

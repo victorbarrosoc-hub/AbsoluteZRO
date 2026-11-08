@@ -23,12 +23,15 @@ export function urlDeConsentimento({
   origem,
   escopo = escoposDoModo("arquivos"),
   somarConcedidos = true,
+  dica,
 }: {
   state: string;
   desafio: string;
   origem?: string | null;
   escopo?: string;
   somarConcedidos?: boolean;
+  /** login_hint: a conta Google que o Google já deixa escolhida (o Drive que tem a vaga). */
+  dica?: string | null;
 }): string {
   const { clientId } = credenciais();
   const u = new URL(endpoints().auth);
@@ -39,6 +42,7 @@ export function urlDeConsentimento({
   u.searchParams.set("access_type", "offline");
   u.searchParams.set("prompt", "consent");
   if (somarConcedidos) u.searchParams.set("include_granted_scopes", "true");
+  if (dica) u.searchParams.set("login_hint", dica);
   u.searchParams.set("code_challenge", desafio);
   u.searchParams.set("code_challenge_method", "S256");
   u.searchParams.set("state", state);
