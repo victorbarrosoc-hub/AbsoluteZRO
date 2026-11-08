@@ -127,8 +127,9 @@ export async function driveInteiroPermitido(usuarioId: string, googleSub: string
 
 /**
  * Recusa um `drive` que não vale. O Google já contou a vaga quando deu o escopo: ela entra no contador sem dono (a
- * pessoa não ganha acesso total, e a conta daqui nunca passa dos 100 do Google). A concessão volta para o Google, menos
- * quando a conta Google é o Drive de outra pessoa daqui (revogar derrubaria o dela). Devolve o erro para a tela.
+ * pessoa não ganha acesso total, e a conta daqui nunca passa dos 100 do Google). A concessão volta para o Google só
+ * quando essa conta Google não está conectada aqui: revogar um token derruba a concessão inteira da conta Google com
+ * este app, e com ela o Drive já salvo (de outra pessoa ou da própria, 08/11/2026). Devolve o erro para a tela.
  */
 export async function recusarDriveInteiro(
   usuarioId: string,
@@ -140,7 +141,7 @@ export async function recusarDriveInteiro(
   await registrarVaga(googleSub, email, null);
   const [dono] = await db.select({ usuarioId: contasGoogle.usuarioId }).from(contasGoogle).where(eq(contasGoogle.googleSub, googleSub)).limit(1);
   if (dono && dono.usuarioId !== usuarioId) return "google_outra_conta";
-  await revogar(token);
+  if (!dono) await revogar(token);
   return "google_erro";
 }
 

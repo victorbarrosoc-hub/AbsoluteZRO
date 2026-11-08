@@ -223,15 +223,12 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
         const p = await corpo(req);
         const token = p.get("token") ?? "";
         contadores.revogacoes++;
-        const r = refreshes.get(token);
-        if (r) {
-          r.revogado = true;
-          for (const a of acessos.values()) if (a.refresh === token) a.revogado = true;
-          return enviar(res, 200, {});
-        }
-        const a = acessos.get(token);
-        if (a) {
-          a.revogado = true;
+        // Como no Google: revogar um token (refresh ou acesso) derruba a concessão inteira daquela conta Google com
+        // este app, inclusive os outros refresh tokens dela.
+        const sub = refreshes.get(token)?.conta.sub ?? acessos.get(token)?.conta.sub;
+        if (sub) {
+          for (const r of refreshes.values()) if (r.conta.sub === sub) r.revogado = true;
+          for (const a of acessos.values()) if (a.conta.sub === sub) a.revogado = true;
           return enviar(res, 200, {});
         }
         return enviar(res, 400, { error: "invalid_token" });
