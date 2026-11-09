@@ -671,3 +671,116 @@
 .bk-fase-item.is-ok i {
   background: var(--ok);
 }
+
+/* ───── Prévia do cartão (components/previa-cartao.js, 09/11/2026) ───── */
+.pcv-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pcv-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--fill-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.pcv-chip.is-on {
+  background: var(--text);
+  color: var(--surface);
+}
+.pcv-carregando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pcv-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  max-height: min(62vh, 640px);
+  overflow-y: auto;
+  padding: 2px;
+}
+.pcv-item {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  text-align: left;
+  color: var(--text);
+  border-radius: 12px;
+}
+.pcv-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.pcv-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--fill-2);
+}
+.pcv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pcv-sem {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+.pcv-play {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+.pcv-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pcv-grande {
+  display: grid;
+  gap: 12px;
+}
+.pcv-grande img,
+.pcv-grande video {
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #000;
+}
+.pcv-grande-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pcv-grande-pe .mono-path {
+  flex: 1 1 200px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

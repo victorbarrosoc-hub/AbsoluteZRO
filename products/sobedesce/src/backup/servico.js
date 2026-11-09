@@ -18,7 +18,7 @@ import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
 import { TIPOS_SYNQUEI, linkSynquei, momentosSynquei, tipoSynquei } from './synquei.js'
 import { dadosDaDiaria, relatorioHtml } from './relatorio.js'
-import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
+import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida, tipoDe } from './midia.js'
 import { deixaNoCartao, pastaContadorZerado, procurarInterrompidas } from './imprevistos.js'
 
 const VIGIA_MS = 3000
@@ -784,6 +784,29 @@ export class BackupService {
     } catch (err) {
       throw new BackupError(semPermissao(err) ? 403 : 409, semPermissao(err) ? MSG_PERMISSAO : 'Não consegui ler o cartão.')
     }
+  }
+
+  /**
+   * Prévia do cartão (antes de copiar, 09/11/2026): as fotos e os vídeos do cartão espetado, do mais novo para o mais
+   * antigo, com o caminho para a tela pedir a miniatura (/api/montagens/foto e /quadro, pela chave da mídia). Proxies e
+   * restos do sistema ficam de fora. Só lê nomes, tamanhos e datas.
+   */
+  async previa(caminho, { max = 400 } = {}) {
+    const reg = this.vistos.get(caminho)
+    if (!reg) throw new BackupError(404, 'Esse disco não está plugado.')
+    if (reg.estado === 'destino') throw new BackupError(409, 'Esse disco é um destino deste projeto.')
+    let lido
+    try {
+      lido = await scanLocal(reg.caminho)
+    } catch (err) {
+      throw new BackupError(semPermissao(err) ? 403 : 409, semPermissao(err) ? MSG_PERMISSAO : 'Não consegui ler o cartão.')
+    }
+    const midia = lido.files
+      .filter((f) => !SISTEMA.test(f.relPath) && !deixaNoCartao(f.relPath))
+      .map((f) => ({ rel: f.relPath, caminho: f.path, tipo: tipoDe(f.relPath), tamanho: f.size, data: f.mtimeMs || 0 }))
+      .filter((f) => f.tipo === 'videos' || f.tipo === 'fotos')
+      .sort((a, b) => b.data - a.data || (a.rel < b.rel ? -1 : 1))
+    return { caminho, nome: reg.nome, total: midia.length, videos: midia.filter((f) => f.tipo === 'videos').length, fotos: midia.filter((f) => f.tipo === 'fotos').length, itens: midia.slice(0, max) }
   }
 
   /**

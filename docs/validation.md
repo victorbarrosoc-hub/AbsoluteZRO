@@ -5514,3 +5514,8 @@ Branch `sobedesce-cartao-imprevistos`.
 - `test/backup-automatico.test.js`: o contador zerado vai para `Cartão 01 · contador zerado`, conferido. O destino
   antigo fica intacto e o mesmo cartão de novo não copia outra vez.
 - Backup Automático, fotos e vídeos e relatório: 39 testes, 39 passaram, 0 falhas.
+- Prévia do cartão (`test/cartao-imprevistos.test.js`):
+  - pega a maior prévia JPEG embutida no RAW, com `FF 00` e marcadores de reinício no meio, e devolve null sem prévia;
+  - lista do mais novo para o mais antigo, sem proxies, e responde 404 a um disco que não está plugado.
+- Conferida no demo, claro e escuro, com um cartão de exemplo em `/media/root`: JPG, ARW (prévia embutida) e MP4
+  tocando.

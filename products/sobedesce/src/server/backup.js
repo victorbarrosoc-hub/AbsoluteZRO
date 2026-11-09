@@ -116,6 +116,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
   route('POST', '/api/backup/nao-cartao', tratar(async ({ body }) => svc.naoECartao(texto(body.caminho))))
 
   route('POST', '/api/backup/conteudo', tratar(async ({ body }) => svc.conteudo(texto(body.caminho))))
+  // Prévia do cartão: as fotos e os vídeos, para ver antes de copiar (a tela pede as miniaturas às rotas da montagem).
+  route('POST', '/api/backup/previa', tratar(async ({ body }) => svc.previa(texto(body.caminho))))
 
   route('POST', '/api/backup/escolher', tratar(async ({ body }) => svc.escolher(texto(body.caminho), escolha(body.escolha))))
 

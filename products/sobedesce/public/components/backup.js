@@ -15,6 +15,7 @@ import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, P
 import { useLocalRoots } from './local-picker.js'
 import { Fonte } from './comparar-partes.js'
 import { duracao } from './discos.js'
+import { abrirPreviaCartao } from './previa-cartao.js'
 
 const FRASE = 'Espete o cartão: o backup passa sozinho, organizado por diária e por dono.'
 const post = (url, body = {}) => attempt(api.post(url, body))
@@ -473,6 +474,8 @@ function Volume({ v, midia }) {
   const [escolhendo, setEscolhendo] = useState(false)
   const e = v.pasta && v.estado === 'ok' ? { ...ESTADO.ok, texto: 'Pasta copiada' } : v.parcial && v.estado === 'ok' ? { ...ESTADO.ok, texto: 'Passou o escolhido' } : ESTADO[v.estado] || ESTADO.lendo
   const acoes = []
+  // Ver o que tem no cartão antes de copiar (fotos, RAW e vídeos).
+  if (!v.pasta && ['disco', 'pronto', 'fila', 'ignorado', 'ok', 'falta', 'erro', 'cancelado', 'pedido'].includes(v.estado)) acoes.push(html`<${Button} size="sm" icon="eye" onClick=${() => abrirPreviaCartao({ caminho: v.caminho, nome: v.nome })} title="Ver as fotos e os vídeos do cartão">Ver</${Button}>`)
   if (!v.pasta && ['disco', 'pronto', 'ignorado', 'ok', 'falta', 'erro', 'cancelado'].includes(v.estado)) acoes.push(html`<${Button} size="sm" icon="list" onClick=${() => setEscolhendo(true)} disabled=${escolhendo} title="Só uma parte do cartão">Escolher…</${Button}>`)
   if (v.estado === 'disco' || v.estado === 'ignorado') acoes.push(html`<${Button} size="sm" icon="sdcard" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Usar como cartão</${Button}>`)
   if (v.estado === 'pronto') acoes.push(html`<${Button} size="sm" icon="copy" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Copiar agora</${Button}>`)

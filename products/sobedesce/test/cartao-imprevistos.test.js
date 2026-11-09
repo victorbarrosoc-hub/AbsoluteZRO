@@ -82,3 +82,54 @@ test('descarga: gravação interrompida avisa (confira antes de formatar) e os p
   assert.deepEqual(ejetados, [card], 'tudo copiado: ejeta (o aviso diz para conferir antes de formatar)')
   await svc.close()
 })
+
+// ───── prévia do cartão (antes de copiar) ─────
+
+/** Um JPEG mínimo válido com `n` bytes de dados de imagem (sem FF no meio). */
+function jpegMinimo(n, cor = 0x11) {
+  const app0 = Buffer.from([0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00])
+  const sos = Buffer.from([0xff, 0xda, 0x00, 0x0c, 0x03, 0x01, 0x00, 0x02, 0x11, 0x03, 0x11, 0x00, 0x3f, 0x00])
+  // dados com marcadores de reinício e FF 00 no meio: não podem ser lidos como fim
+  const dados = Buffer.alloc(n, cor)
+  dados[10] = 0xff
+  dados[11] = 0x00
+  dados[20] = 0xff
+  dados[21] = 0xd3
+  return Buffer.concat([Buffer.from([0xff, 0xd8]), app0, sos, dados, Buffer.from([0xff, 0xd9])])
+}
+
+test('RAW: pega a maior prévia JPEG embutida (a miniatura pequena fica de lado); sem prévia, null', async () => {
+  const { maiorJpeg, jpegDoRaw, ehRaw } = await import('../src/media/raw-jpeg.js')
+  const pequena = jpegMinimo(9000, 0x22)
+  const grande = jpegMinimo(60_000, 0x33)
+  const raw = Buffer.concat([Buffer.from('II*\u0000', 'latin1'), Buffer.alloc(300, 0), pequena, Buffer.alloc(500, 0x44), grande, Buffer.alloc(2000, 0x55)])
+  const achado = maiorJpeg(raw)
+  assert.equal(achado.length, grande.length)
+  assert.ok(achado.equals(grande))
+  const d = tmp()
+  assert.ok((await jpegDoRaw(escrever(d, 'DSC0001.ARW', raw))).equals(grande))
+  assert.equal(await jpegDoRaw(escrever(d, 'SEM.NEF', Buffer.alloc(5000, 0x10))), null)
+  assert.ok(ehRaw('A/B/IMG_0001.CR3') && ehRaw('x.nef') && !ehRaw('x.jpg') && !ehRaw('x.mp4'))
+})
+
+test('prévia do cartão: fotos e vídeos do mais novo para o mais antigo, sem proxies; disco que não está plugado: 404', async () => {
+  const card = tmp('sobedesce-cartao-')
+  const velho = escrever(card, 'DCIM/100MSDCF/DSC0001.ARW', Buffer.alloc(100, 1))
+  fs.utimesSync(velho, new Date(2026, 10, 1), new Date(2026, 10, 1))
+  escrever(card, 'PRIVATE/M4ROOT/CLIP/C0001.MP4', inteiro())
+  escrever(card, 'PRIVATE/M4ROOT/CLIP/C0001M01.XML', '<x/>')
+  escrever(card, 'DCIM/100GOPRO/GL010001.LRV', Buffer.alloc(10, 2))
+  const discos = [{ caminho: card, nome: 'SD A7', id: 'uuid:PV', capacidade: 1 }]
+  const svc = new BackupService({ arquivo: path.join(tmp(), 'backup.json'), listar: async () => discos, vigiaMs: 0, keepAwake: sem, ejetar: async () => true })
+  await svc.init()
+  await svc.criarProjeto({ nome: 'Ensaio', destinos: [tmp('sobedesce-hd-')] })
+  await svc.varrer()
+  const p = await svc.previa(card)
+  assert.equal(p.total, 2)
+  assert.equal(p.videos, 1)
+  assert.equal(p.fotos, 1)
+  assert.deepEqual(p.itens.map((x) => [x.rel, x.tipo]), [['PRIVATE/M4ROOT/CLIP/C0001.MP4', 'videos'], ['DCIM/100MSDCF/DSC0001.ARW', 'fotos']])
+  assert.equal(p.itens[1].caminho, velho)
+  await assert.rejects(svc.previa('/nao/existe'), (err) => err.status === 404)
+  await svc.close()
+})

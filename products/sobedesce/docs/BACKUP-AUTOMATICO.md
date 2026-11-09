@@ -108,6 +108,17 @@ formatar. Sem internet: nada vai para o Drive.
 - **Sem licença do macOS para ler o cartão** (EPERM/EACCES): a mensagem diz onde liberar (Privacidade e Segurança →
   Arquivos e Pastas → SOBEDESCE → Volumes Removíveis).
 
+## Prévia do cartão (09/11/2026)
+
+- "Ver" em cada cartão espetado (Cartões › Backup): as fotos e os vídeos do cartão, do mais novo para o mais antigo,
+  antes de copiar (`POST /api/backup/previa`, até 400; proxies e restos do sistema ficam de fora).
+- A miniatura vem das rotas da montagem, pela chave da mídia:
+  - foto (`/api/montagens/foto`): JPG/PNG direto, HEIC/TIFF convertidos, e o RAW (ARW, NEF, CR2, CR3, RAF, DNG…)
+    pela prévia JPEG que a câmera grava dentro do arquivo (`src/media/raw-jpeg.js`, em cache);
+  - vídeo: um quadro em 1 s (`/api/montagens/quadro`). Tocar abre o vídeo (`/api/montagens/video`), quando o navegador
+    sabe tocar; senão, o quadro.
+- Só lê o cartão.
+
 ## Resumo de cada cartão (para o Synquei)
 
 No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<destino>/<Projeto>/.sobedesce/descargas.jsonl`:
