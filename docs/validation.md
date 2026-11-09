@@ -5501,7 +5501,6 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
-
 ## SOBEDESCE: o site para de anunciar o Wi-Fi celular ↔ computador (09/11/2026)
 
 Branch `sobedesce-home-sem-wifi`.
