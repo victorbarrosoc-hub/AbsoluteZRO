@@ -23,6 +23,22 @@ Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
 - `prototipo.html`: o protótipo publicado como Artifact (página inicial, entrar e estúdio). Sem `<!doctype>` de
   propósito: o Artifact põe o esqueleto. Nada nele exporta, entra ou salva de verdade.
 
+## Prévia no team grátis (ZROFREE)
+
+Para o titular testar num projeto Vercel grátis à parte, sem o login da Absolute ZRO (decisão de 09/11/2026: porta de
+prévia por chave e "só a interface", sem banco nem chaves). Código em `api/_previa.js`; testes em `test/previa.test.js`.
+
+- **Projeto Vercel** (team ZROFREE, plano Hobby): Root Directory `products/rift-motion`, Framework **Other**; build e
+  saída vêm do `vercel.json` (`node publicar.mjs`, `publico`). Variável única: `ZRO_CHAVE_PREVIA` (24+ caracteres).
+  Não ponha `ZRO_CLIENT_ID`, `ZRO_CLIENT_SECRET` nem `RIFT_DATABASE_URL`.
+- Abra `https://<projeto>.vercel.app/previa?chave=<a chave>` uma vez: o cookie `rf_previa` (HMAC da chave) vale 30 dias.
+  Sem ele, o site, os arquivos e toda a `api/` respondem a página neutra. Trocou a chave: **Redeploy** (o build lê a
+  variável para tirar o site do estático).
+- **Funciona sem banco**: o site, o painel em demonstração (projetos, modelos, mídia e exportações guardados neste
+  aparelho) e o estúdio. **Não funciona**: entrar com a conta, projetos na nuvem (abrir em outro aparelho), a Z e o
+  Criar com IA da Higgsfield (pedem o login e o banco; a API responde 503 e a tela diz que está em demonstração).
+- Sem a variável (o projeto oficial `rift-motion`), nada muda: o site sai do estático como sempre.
+
 ## Marca
 
 | Peça           | Arquivo                                            | Uso                                          |
