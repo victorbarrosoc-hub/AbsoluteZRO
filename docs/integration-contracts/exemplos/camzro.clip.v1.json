@@ -46,7 +46,8 @@
     "zoom": 1,
     "anamorfico": 1,
     "lut_monitor": "Kodak 2383",
-    "nd": 0.9
+    "nd": 0.9,
+    "perfil_imagem": "neutro-zro"
   },
   "ecossistema": {
     "maestro": {

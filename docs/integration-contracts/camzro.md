@@ -41,6 +41,7 @@ Exemplo gerado pelo código: [exemplos/camzro.clip.v1.json](exemplos/camzro.clip
 | `camera.iso`, `camera.obturador_s`, `camera.angulo`                                            | o que a câmera disse no início do take (`null` onde o aparelho não informa)           |
 | `camera.kelvin`, `camera.zoom`, `camera.nd`                                                    | balanço, zoom e o ND na lente (densidade)                                             |
 | `camera.anamorfico`, `camera.lut_monitor`                                                      | fator de desanamorfizar (o editor aplica) e o nome da LUT do monitor                  |
+| `camera.perfil_imagem`                                                                         | `padrao` ou `neutro-zro` (perfil plano; não é Log: Rec.709 de 8 bits)                 |
 | `ecossistema`, `ecossistema.maestro`                                                           | elo com o roteiro do Maestro (abaixo), ou `null`                                      |
 | `ecossistema.maestro.contrato`, `ecossistema.maestro.roteiro_id`, `ecossistema.maestro.versao` | `maestro.roteiro/1`, o roteiro e a versão salva                                       |
 | `ecossistema.maestro.cena_id`, `ecossistema.maestro.plano_id`                                  | a cena e o bloco `plano` do roteiro                                                   |

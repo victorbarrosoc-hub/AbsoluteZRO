@@ -8,6 +8,7 @@
 
 export const UNIDADE_EXPOSICAO = 1e-4 // 100 µs
 
+const num = (v) => (Number.isFinite(v) ? v : null)
 const faixa = (c) => (c && Number.isFinite(c.min) && Number.isFinite(c.max) && c.max > c.min ? { min: c.min, max: c.max, passo: c.step > 0 ? c.step : 0 } : null)
 
 /** O que esta câmera deixa controlar. caps = track.getCapabilities(), ajustes = track.getSettings(). */
@@ -29,6 +30,11 @@ export function lerCapacidades(caps = {}, ajustes = {}) {
     altura: faixa(caps.height),
     fps: faixa(caps.frameRate),
     voltada: typeof ajustes.facingMode === 'string' ? ajustes.facingMode : null,
+    contraste: faixa(caps.contrast),
+    saturacao: faixa(caps.saturation),
+    nitidez: faixa(caps.sharpness),
+    // como a câmera abriu: é para onde o perfil Padrão volta
+    imagemPadrao: { contraste: num(ajustes.contrast), saturacao: num(ajustes.saturation), nitidez: num(ajustes.sharpness) },
     pontos: 'pointsOfInterest' in ajustes || 'pointsOfInterest' in caps,
   }
   r.exposicaoManual = Boolean(r.tempo && r.iso && r.modoExposicao.includes('manual'))
@@ -37,6 +43,7 @@ export function lerCapacidades(caps = {}, ajustes = {}) {
   r.travaExposicao = r.modoExposicao.includes('manual') || r.modoExposicao.includes('single-shot')
   r.travaFoco = r.modoFoco.includes('manual') || r.modoFoco.includes('single-shot')
   r.travaBalanco = r.modoBalanco.includes('manual') || r.modoBalanco.includes('single-shot')
+  r.neutro = Boolean(r.contraste || r.nitidez)
   r.algumManual = r.exposicaoManual || r.focoManual || r.balancoManual || Boolean(r.compensacao || r.zoom || r.tocha)
   return r
 }
@@ -55,6 +62,31 @@ export function isosDaCamera(f) {
   if (!f) return []
   const dentro = base.filter((v) => v >= f.min - 1e-6 && v <= f.max + 1e-6)
   return dentro.length ? dentro : [f.min, f.max]
+}
+
+/**
+ * Neutro ZRO: o perfil plano do CAMZRO (titular, 09/11/2026). Não é Log: a imagem continua Rec.709 de 8 bits; só tira
+ * do processamento do aparelho o que não se desfaz na edição. Nitidez no mínimo (o realce de borda não sai depois);
+ * contraste e saturação a um terço do caminho entre o mínimo e como a câmera abriu (sem lavar a imagem a ponto de o
+ * 8 bits virar degrau na correção). Sem o valor de abertura, o meio da faixa. Só o que a câmera aceita.
+ */
+export function imagemNeutra(cap) {
+  const r = {}
+  const terco = (f, padrao) => prender(f.min + ((padrao ?? (f.min + f.max) / 2) - f.min) / 3, f)
+  if (cap.contraste) r.contrast = terco(cap.contraste, cap.imagemPadrao?.contraste)
+  if (cap.saturacao) r.saturation = terco(cap.saturacao, cap.imagemPadrao?.saturacao)
+  if (cap.nitidez) r.sharpness = cap.nitidez.min
+  return r
+}
+
+/** O perfil Padrão: devolve contraste, saturação e nitidez a como a câmera abriu (o que se souber). */
+export function imagemPadrao(cap) {
+  const r = {}
+  const p = cap.imagemPadrao || {}
+  if (cap.contraste && p.contraste != null) r.contrast = prender(p.contraste, cap.contraste)
+  if (cap.saturacao && p.saturacao != null) r.saturation = prender(p.saturacao, cap.saturacao)
+  if (cap.nitidez && p.nitidez != null) r.sharpness = prender(p.nitidez, cap.nitidez)
+  return r
 }
 
 /** Restrições para aplicar na track (applyConstraints) a partir dos controles da tela. Só o que a câmera aceita. */
@@ -84,6 +116,7 @@ export function restricoes(cap, c) {
   } else if (cap.modoFoco.includes('continuous')) a.focusMode = 'continuous'
   if (cap.zoom && Number.isFinite(c.zoom)) a.zoom = prender(c.zoom, cap.zoom)
   if (cap.tocha) a.torch = Boolean(c.tocha)
+  if (cap.neutro) Object.assign(a, c.perfil === 'neutro' ? imagemNeutra(cap) : imagemPadrao(cap))
   return a
 }
 

@@ -136,6 +136,12 @@ function folhaFormato() {
     ${grupo('Codec', segmentos('formato.codec', codecs, A.formato.codec))}
     ${grupo('Qualidade', `${segmentos('formato.nivel', [{ v: 'padrao', r: 'Padrão' }, { v: 'alta', r: 'Alta' }, { v: 'maxima', r: 'Máxima' }, { v: 'manual', r: 'Manual' }], A.formato.nivel)}${A.formato.nivel === 'manual' ? `<div class="cartao dial"><div class="dial__valor"><b>${bitrateTexto(p.bitrate)}</b><small>vídeo</small></div><input type="range" min="4" max="400" step="1" value="${Math.round(p.bitrate / 1e6)}" data-campo="formato.bitrateMb" data-num aria-label="Bitrate em Mb/s" /></div>` : ''}`)}
     ${grupo(
+      'Imagem',
+      S.capacidades?.neutro
+        ? `${segmentos('camera.perfil', [{ v: 'padrao', r: 'Padrão' }, { v: 'neutro', r: 'Neutro ZRO', dica: 'Menos contraste, saturação e nitidez: mais espaço para a cor' }], A.camera.perfil)}${nota('Neutro ZRO não é Log: continua Rec.709 de 8 bits, com menos processamento do aparelho. Exponha pelos scopes.')}`
+        : nota('Neutro ZRO: este aparelho não deixa o navegador mudar contraste e nitidez.'),
+    )}
+    ${grupo(
       'Avançado',
       cartao([
         linha('Bitrate', selecao('formato.modoBitrate', [{ v: 'variable', r: 'Variável' }, { v: 'constant', r: 'Constante' }], A.formato.modoBitrate)),

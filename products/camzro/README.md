@@ -104,6 +104,10 @@ Fontes: páginas e notícias do Blackmagic Camera 2.0 (dpreview, PetaPixel, Cine
   e todas as ferramentas de monitor, scopes, timecode, claquete e descarga. Controle manual completo pede app nativo
   (outra fase, decisão do titular: conta de desenvolvedor Apple).
 - **Sem ProRes, Log e 10 bits**: o navegador grava H.264/HEVC/AV1 de 8 bits. O Relay converte depois, no aparelho.
+- **Neutro ZRO** (Formato › Imagem; nome do titular, 09/11/2026): o perfil plano. Nitidez no mínimo, contraste e
+  saturação a um terço do caminho entre o mínimo e como a câmera abriu (`nucleo/controles.js`). Não é Log: continua
+  Rec.709 de 8 bits. Só aparece onde a câmera deixa o navegador mudar contraste ou nitidez (webcams e placas no
+  computador, alguns Android); vai na ficha (`camera.perfil_imagem: neutro-zro`) e nas palavras-chave do CSV do DaVinci.
 - **Tela ligada**: no celular, o app grava com a tela acesa e na frente (o CAMZRO pede para a tela não apagar). Sair do
   app fecha o take com o que já foi gravado.
 - Android: os controles manuais dependem do aparelho (Chrome expõe o que o fabricante libera). A folha "Câmera e

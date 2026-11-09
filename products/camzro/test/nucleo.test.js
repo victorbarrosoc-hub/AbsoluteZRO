@@ -393,6 +393,29 @@ test('controles: só o que a câmera aceita, nas unidades certas', () => {
   assert.equal(ctl.toqueNoQuadro(50, 5, { largura: 100, altura: 100 }, { largura: 16, altura: 9 }), null)
 })
 
+test('Neutro ZRO: nitidez no mínimo, contraste e saturação a um terço do padrão; Padrão volta; sem controle, nada', () => {
+  // webcam UVC típica: 0–255, abre em 128 (contraste e saturação) e 64 (nitidez)
+  const caps = { contrast: { min: 0, max: 255, step: 1 }, saturation: { min: 0, max: 255, step: 1 }, sharpness: { min: 0, max: 255, step: 1 } }
+  const c = ctl.lerCapacidades(caps, { contrast: 128, saturation: 128, sharpness: 64 })
+  assert.equal(c.neutro, true)
+  assert.deepEqual(ctl.imagemNeutra(c), { contrast: 43, saturation: 43, sharpness: 0 })
+  assert.deepEqual(ctl.restricoes(c, { perfil: 'neutro' }), { contrast: 43, saturation: 43, sharpness: 0 })
+  assert.deepEqual(ctl.restricoes(c, { perfil: 'padrao' }), { contrast: 128, saturation: 128, sharpness: 64 })
+  // sem o valor de abertura: um terço entre o mínimo e o meio da faixa, no passo da câmera
+  const s = ctl.lerCapacidades({ contrast: { min: -10, max: 10, step: 2 } }, {})
+  assert.deepEqual(ctl.imagemNeutra(s), { contrast: -6 }) // -10 + (0 - -10)/3 = -6,67 → passo de 2 → -6
+  assert.deepEqual(ctl.restricoes(s, { perfil: 'padrao' }), {}) // não sabe para onde voltar: não mexe
+  // só saturação não é perfil plano; nada de controle = nada na tela nem na track (iPhone)
+  assert.equal(ctl.lerCapacidades({ saturation: { min: 0, max: 100, step: 1 } }, {}).neutro, false)
+  assert.equal(ctl.lerCapacidades({}, {}).neutro, false)
+  assert.deepEqual(ctl.restricoes(ctl.lerCapacidades({}, {}), { perfil: 'neutro' }), {})
+  // vai na ficha e no CSV do DaVinci
+  const sc = meta.sidecar({ arquivo: 'a.mov', nome: 'a', inicioMs: 0, duracao: 1, quadros: 24, fps: 24, tcInicio: 0, claquete: cl.CLAQUETE_INICIAL, video: {}, camera: { perfil: 'neutro-zro' } })
+  assert.equal(sc.camera.perfil_imagem, 'neutro-zro')
+  assert.match(meta.csvResolve([sc]), /Neutro ZRO, CAMZRO/)
+  assert.equal(meta.sidecar({ arquivo: 'b.mov', nome: 'b', inicioMs: 0, duracao: 1, quadros: 24, fps: 24, tcInicio: 0, claquete: cl.CLAQUETE_INICIAL, video: {} }).camera.perfil_imagem, 'padrao')
+})
+
 test('guias: 2,39 dentro de 16:9 e 9:16 dentro de 16:9; anamórfico 1,33× em 16:9 ≈ 2,37', () => {
   const g = gu.guia(2.39, 1920, 1080)
   assert.equal(g.largura, 1)

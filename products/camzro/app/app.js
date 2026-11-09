@@ -522,7 +522,7 @@ export async function gravar() {
 function fotoDaCamera() {
   const a = S.ajustes || {}
   const fps = cadencia().fps
-  return { iso: a.iso ?? null, tempo: a.tempo ?? null, angulo: a.tempo ? exp.tempoParaAngulo(a.tempo, fps) : null, kelvin: a.kelvin ?? null, zoom: a.zoom ?? null, lente: A.camera.lente || null, anamorfico: A.monitor.anamorfico, lut: S.lutNome || null, nd: A.camera.nd || null }
+  return { iso: a.iso ?? null, tempo: a.tempo ?? null, angulo: a.tempo ? exp.tempoParaAngulo(a.tempo, fps) : null, kelvin: a.kelvin ?? null, zoom: a.zoom ?? null, lente: A.camera.lente || null, anamorfico: A.monitor.anamorfico, lut: S.lutNome || null, nd: A.camera.nd || null, perfil: A.camera.perfil === 'neutro' && S.capacidades?.neutro ? 'neutro-zro' : 'padrao' }
 }
 
 function sidecarDe(s, { duracao, quadros, arquivo, perdidos = 0 }) {
@@ -643,7 +643,7 @@ export function atualizarTela() {
   const c = cadencia()
   const res = S.ajustes?.altura ? (S.ajustes.altura >= 2160 ? '4K' : `${S.ajustes.altura}p`) : '—'
   const codec = p.motor === 'webcodecs' ? { hevc: 'HEVC', avc: 'H.264', av1: 'AV1', vp9: 'VP9' }[p.codec] : 'Simples'
-  $('chip-formato').textContent = `${res} · ${c.rotulo} · ${codec} · ${bitrateTexto(p.bitrate)}`
+  $('chip-formato').textContent = `${res} · ${c.rotulo} · ${codec} · ${bitrateTexto(p.bitrate)}${A.camera.perfil === 'neutro' && S.capacidades?.neutro ? ' · Neutro' : ''}`
   // espaço em minutos no bitrate de agora
   if (S.espaco) {
     const bps = p.bitrate + (p.audio ? bitrateAudio({ codec: p.audio }) : 0)

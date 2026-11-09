@@ -21,7 +21,7 @@ export function exemploSidecar() {
     video: { codec: 'hevc', largura: 3840, altura: 2160, bitrate: 160_000_000, quadroChave: 1, perdidos: 0, motor: 'webcodecs' },
     audio: { codec: 'pcm-s24', taxa: 48000, canais: 2 },
     aparelho: 'K3F2',
-    camera: { iso: 100, tempo: 1 / 50, angulo: 172.8, kelvin: 5600, zoom: 1, lente: '24 mm', anamorfico: 1, lut: 'Kodak 2383', nd: 0.9 },
+    camera: { iso: 100, tempo: 1 / 50, angulo: 172.8, kelvin: 5600, zoom: 1, lente: '24 mm', anamorfico: 1, lut: 'Kodak 2383', nd: 0.9, perfil: 'neutro-zro' },
     sincronia: { bip_s: 0.712, hz: 1000, ms: 160, assinatura: 'tpeasy' },
     maestro: { contrato: 'maestro.roteiro/1', roteiro_id: '6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f', versao: 3, cena_id: 'c1', plano_id: 'p1' },
   })

@@ -71,6 +71,10 @@ Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microf
   iPhone 15 Pro deitado (`node scripts/telas-do-site.mjs`, todas abaixo de 130 KB), conferida no Chromium em 1280×800
   e iPhone 15 Pro, com e sem reduzir movimento: sem erro de console, sem pedido falhando, sem rolagem lateral; o herói
   (celular deitando, obturador girando) conferido quadro a quadro.
+- Neutro ZRO: `npm test` em `products/camzro` **41/41** (teste novo: nitidez no mínimo, contraste e saturação a um
+  terço, volta ao Padrão, nada sem controle, ficha e CSV). No Chromium, sem controle de imagem a folha Formato diz que o
+  aparelho não deixa; com uma webcam simulada (0–255, abrindo em 128/128/64) o app pede contraste 43, saturação 43 e
+  nitidez 0 e o chip mostra "Neutro". Não verificado: webcam e Android de verdade.
 - `node scripts/scan-secrets.mjs`: nenhum segredo.
 - Não verificado: aparelho de verdade (Android com controles manuais, iPhone/Safari, câmera USB), a descarga numa pasta
   (o seletor de pasta pede uma pessoa) e o login único (sem cliente `camzro-web` cadastrado; o gate foi testado com o

@@ -13,7 +13,7 @@ export const FORMATO_PRESET = 'camzro.preset/1'
 
 export const PADRAO = Object.freeze({
   formato: { resolucao: '1080', cadencia: '30', codec: 'auto', nivel: 'alta', bitrate: 0, modoBitrate: 'variable', quadroChave: 1, conteiner: 'mov', audio: 'pcm-s24', rede: 60, fecharTake: true },
-  camera: { camera: '', voltada: 'environment', microfone: '', exposicao: 'auto', tempo: 0, angulo: 180, iso: 0, compensacao: 0, ev: 0, nd: 0, balanco: 'auto', kelvin: 5600, foco: 'auto', distancia: 0, zoom: 1, tocha: false, lente: '' },
+  camera: { camera: '', voltada: 'environment', microfone: '', exposicao: 'auto', tempo: 0, angulo: 180, iso: 0, compensacao: 0, ev: 0, nd: 0, balanco: 'auto', kelvin: 5600, foco: 'auto', distancia: 0, zoom: 1, tocha: false, lente: '', perfil: 'padrao' },
   monitor: { falsaCor: 'arri', falsaCorLigada: false, zebra: false, zebraModo: 'acima', zebraNivel: 95, pico: false, picoCor: 'vermelho', picoSensibilidade: 0.6, mono: false, guia: '', grade: false, aurea: false, centro: false, segura: false, anamorfico: 1, espelho: false, scopes: '', nivel: false, mostrarAngulo: true },
   claquete: { ...CLAQUETE_INICIAL },
   sincronia: { bip: false, claqueteNaTela: false },
@@ -66,6 +66,7 @@ export function limpar(a = {}) {
       zoom: num(c.zoom, 0.5, 100, 1),
       tocha: bool(c.tocha, false),
       lente: campo(c.lente, 40),
+      perfil: um(c.perfil, ['padrao', 'neutro'], 'padrao'),
     },
     monitor: {
       falsaCor: um(m.falsaCor, ['arri', 'simples'], 'arri'),
