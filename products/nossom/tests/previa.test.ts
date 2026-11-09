@@ -10,6 +10,7 @@ import { proxy } from '../proxy';
 import {
   chaveConfere,
   chavePrevia,
+  CONTA_PREVIA,
   emPrevia,
   iguais,
   PREVIA_COOKIE,
@@ -115,4 +116,10 @@ test('cookie forjado ou de outra chave não abre nada', async () => {
   }
   assert.equal(iguais('a', 'a'), true);
   assert.equal(iguais('a', 'ab'), false);
+});
+
+test('a conta de prévia serve ao armazenamento local do estúdio (id em forma de UUID) e não é admin', () => {
+  assert.match(CONTA_PREVIA.id, /^[a-f0-9-]{36}$/);
+  assert.equal(CONTA_PREVIA.isAdmin, false);
+  assert.equal(CONTA_PREVIA.zroBlocked, undefined);
 });

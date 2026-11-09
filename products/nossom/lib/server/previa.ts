@@ -19,9 +19,12 @@ export const PREVIA_COOKIE = 'nossom-previa';
 export const PREVIA_S = 30 * 24 * 3600;
 export const PREVIA_ERRO = 'Indisponível nesta prévia.';
 
-/** A conta que o estúdio mostra na prévia: nada de dado de pessoa, nada de nuvem. */
+/**
+ * A conta que o estúdio mostra na prévia: nada de dado de pessoa, nada de nuvem. O id tem a forma de UUID que o
+ * armazenamento local do estúdio exige (lib/storage.ts): os projetos da prévia ficam só neste navegador.
+ */
 export const CONTA_PREVIA: Account = Object.freeze({
-  id: 'previa',
+  id: '00000000-0000-4000-8000-00000000a1e7',
   name: 'Prévia',
   username: 'previa',
   email: 'previa@quasar.invalid',
