@@ -2,8 +2,10 @@
 // de ninguém: só `select 1` e quantas migrações foram aplicadas.
 import { json } from '../_zro.js'
 import { banco, nuvemLigada } from '../_banco.js'
+import { fechadoPelaPrevia } from '../_previa.js'
 
 export default async function saude(req, res) {
+  if (fechadoPelaPrevia(req, res)) return
   if (!nuvemLigada()) return json(res, 200, { ok: false, nuvem: false })
   try {
     const [r] = await banco()`select count(*)::int as n from rift.migracoes`

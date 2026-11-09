@@ -9,6 +9,7 @@
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { liberado } from './_release.js'
+import { emPrevia } from './_previa.js'
 import { abrir, configurado, COOKIE_CONTA, lerCookie } from './_zro.js'
 
 const RAIZ = new URL('..', import.meta.url)
@@ -71,7 +72,8 @@ export default async function app(req, res) {
   if (!caminho) return negar(req, res, 404)
   const ext = extname(caminho).toLowerCase()
   const conta = configurado() ? abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA)) : null
-  if (!liberado(conta && typeof conta.sub === 'string' ? conta : null)) return ext === '.html' ? pagina(req, res) : negar(req, res, 404)
+  // a conta que o HUB liberou, ou a prévia do titular (api/_previa.js, só com ZRO_CHAVE_PREVIA no projeto)
+  if (!liberado(conta && typeof conta.sub === 'string' ? conta : null) && !emPrevia(req)) return ext === '.html' ? pagina(req, res) : negar(req, res, 404)
   let corpo
   try {
     corpo = await readFile(new URL(caminho, RAIZ))

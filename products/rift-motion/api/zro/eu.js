@@ -8,8 +8,10 @@
 
 import { zLiberado } from '../_z.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_HUB, CONTA_S, decifrar, emissor, FERRAMENTAS, idLocal, json, lerCookie, lerPerfil, REVER_S, selar, sessaoDe, temAcesso, ZroRevogado } from '../_zro.js'
+import { fechadoPelaPrevia } from '../_previa.js'
 
 export default async function eu(req, res) {
+  if (fechadoPelaPrevia(req, res)) return
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET')
     return json(res, 405, { ok: false })

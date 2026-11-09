@@ -2,6 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ACCOUNT_COOKIE, refreshAccount, sessionCookie } from './lib/server/account';
 import { nossomClosed } from './lib/server/release';
 import { cabecalhosIrmao, caminhoIrmao, origemIrma, preVoo } from './lib/server/irmaos';
+import {
+  chaveConfere,
+  chavePrevia,
+  emPrevia,
+  PREVIA_COOKIE,
+  PREVIA_ERRO,
+  previaCookie,
+  selo,
+} from './lib/server/previa';
 
 /** Rotas de conta que continuam respondendo com o NOSSOM fechado: entrar, sair, quem sou, ligar/desligar a Absolute ZRO. */
 const ACCOUNT_API = /^\/api\/(?:account(?:\/|$)|zro\/(?:entrar|conta)$)/;
@@ -38,7 +47,42 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+/**
+ * GET /previa?chave=… (lib/server/previa.ts). Porta desligada (sem ZRO_CHAVE_PREVIA): segue como antes (404). Chave
+ * certa: o cookie com o HMAC e o estúdio (303). Chave errada: o mesmo de qualquer página fechada (a Absolute ZRO).
+ */
+async function portaDaPrevia(request: NextRequest) {
+  const chave = chavePrevia();
+  if (request.method !== 'GET' || !chave) return NextResponse.next();
+  if (!chaveConfere(request.nextUrl.searchParams.get('chave'))) return paraFora();
+  const response = NextResponse.redirect(new URL('/studio', request.url), 303);
+  response.headers.set('Cache-Control', 'no-store');
+  response.headers.append('Set-Cookie', previaCookie(await selo(chave)));
+  return response;
+}
+
+/** Na prévia, sem conta: páginas e estúdio abrem; o que depende de serviço responde 503; "Sair" apaga o cookie. */
+function naPrevia(request: NextRequest, path: string) {
+  if (!path.startsWith('/api/')) return NextResponse.next();
+  if (path === '/api/account' && request.method === 'DELETE') {
+    const response = NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
+    response.headers.append('Set-Cookie', previaCookie(null));
+    return response;
+  }
+  return NextResponse.json(
+    { error: PREVIA_ERRO, code: 'previa' },
+    { status: 503, headers: { 'Cache-Control': 'no-store' } },
+  );
+}
+
 async function responder(request: NextRequest, path: string) {
+  if (path === '/previa') return portaDaPrevia(request);
+  // Prévia do titular (team grátis): só sem conta; a conta de verdade, quando existe, segue o caminho de sempre.
+  if (
+    !request.cookies.get(ACCOUNT_COOKIE)?.value &&
+    (await emPrevia(request.cookies.get(PREVIA_COOKIE)?.value))
+  )
+    return naPrevia(request, path);
   const api = path.startsWith('/api/');
   const studio = path === '/studio' || path.startsWith('/studio/');
   // Página do site (não API nem estúdio): aberto, segue como sempre (pública).
@@ -123,5 +167,7 @@ export const config = {
     '/auth/:path*',
     '/opengraph-image',
     '/manifest.webmanifest',
+    // Prévia do titular no team grátis (lib/server/previa.ts); sem ZRO_CHAVE_PREVIA, segue como antes.
+    '/previa',
   ],
 };

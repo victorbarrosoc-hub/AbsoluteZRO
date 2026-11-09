@@ -2,12 +2,20 @@
 // prototipo.html (o mesmo arquivo publicado como Artifact): aqui ganha o <head> de verdade (título, descrição, ícones,
 // OG), os scripts viram arquivos (a CSP não aceita script inline), o three.js e a Figtree saem do próprio site (nada de
 // CDN de terceiros) e a marca vem de marca/.
+//
+// Com a porta de prévia ligada (ZRO_CHAVE_PREVIA, api/_previa.js; o team grátis ZROFREE), a página, os scripts e a marca
+// ficam fora do estático: saem por api/pagina.js e api/recurso.js, que montam o mesmo site com montarSite() abaixo,
+// só para quem tem a chave. Sem a variável (o projeto oficial), o estático sai inteiro, como sempre.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { previaLigada } from './api/_previa.js'
 
 const raiz = dirname(fileURLToPath(import.meta.url))
 const saida = join(raiz, 'publico')
+
+/** O site montado do prototipo.html: { html (o index.html), tema (tema.js), js (app.js) }. */
+export function montarSite() {
 let html = readFileSync(join(raiz, 'prototipo.html'), 'utf8')
 
 const tirar = (re, nome) => {
@@ -64,15 +72,30 @@ const head = `<!doctype html>
 <script src="/tema.js"></script>
 <style>html, body { margin: 0; } :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } img { max-width: 100%; } [hidden] { display: none !important; }</style>
 `
-rmSync(saida, { recursive: true, force: true })
-mkdirSync(join(saida, 'vendor'), { recursive: true })
-writeFileSync(join(saida, 'index.html'), head + html.replace(/^\s+/, '') + '\n</html>\n')
-writeFileSync(join(saida, 'tema.js'), tema)
-writeFileSync(join(saida, 'app.js'), js)
-cpSync(join(raiz, 'vendor/three-r128.min.js'), join(saida, 'vendor/three-r128.min.js'))
-cpSync(join(raiz, 'fontes'), join(saida, 'fontes'), { recursive: true })
-cpSync(join(raiz, 'marca/favicon.svg'), join(saida, 'favicon.svg'))
-cpSync(join(raiz, 'marca/rift-icone-180.png'), join(saida, 'apple-touch-icon.png'))
-cpSync(join(raiz, 'marca/og.png'), join(saida, 'og.png'))
-cpSync(join(raiz, 'marca'), join(saida, 'marca'), { recursive: true, filter: (f) => !f.endsWith('.py') && !f.includes('__pycache__') })
-console.log('publico/ pronto')
+return { html: head + html.replace(/^\s+/, '') + '\n</html>\n', tema, js }
+}
+
+export function publicar() {
+  rmSync(saida, { recursive: true, force: true })
+  mkdirSync(saida, { recursive: true })
+  cpSync(join(raiz, 'fontes'), join(saida, 'fontes'), { recursive: true })
+  if (previaLigada()) {
+    // porta de prévia: no estático só as fontes e o robots; o resto, pelas funções e só com a chave
+    writeFileSync(join(saida, 'robots.txt'), 'User-agent: *\nDisallow: /\n')
+    console.log('publico/ pronto (prévia: o site sai só pela porta da chave)')
+    return
+  }
+  const { html, tema, js } = montarSite()
+  mkdirSync(join(saida, 'vendor'), { recursive: true })
+  writeFileSync(join(saida, 'index.html'), html)
+  writeFileSync(join(saida, 'tema.js'), tema)
+  writeFileSync(join(saida, 'app.js'), js)
+  cpSync(join(raiz, 'vendor/three-r128.min.js'), join(saida, 'vendor/three-r128.min.js'))
+  cpSync(join(raiz, 'marca/favicon.svg'), join(saida, 'favicon.svg'))
+  cpSync(join(raiz, 'marca/rift-icone-180.png'), join(saida, 'apple-touch-icon.png'))
+  cpSync(join(raiz, 'marca/og.png'), join(saida, 'og.png'))
+  cpSync(join(raiz, 'marca'), join(saida, 'marca'), { recursive: true, filter: (f) => !f.endsWith('.py') && !f.includes('__pycache__') })
+  console.log('publico/ pronto')
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) publicar()

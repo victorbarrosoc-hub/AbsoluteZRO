@@ -5,6 +5,48 @@
   "buildCommand": "node publicar.mjs",
   "outputDirectory": "publico",
   "cleanUrls": true,
+  "functions": {
+    "api/pagina.js": {
+      "includeFiles": "{prototipo.html,neutra.html,vendor/**,marca/**}"
+    },
+    "api/recurso.js": {
+      "includeFiles": "{prototipo.html,neutra.html,vendor/**,marca/**}"
+    },
+    "api/previa.js": {
+      "includeFiles": "neutra.html"
+    },
+    "api/rift/*.js": {
+      "includeFiles": "neutra.html"
+    },
+    "api/zro/*.js": {
+      "includeFiles": "neutra.html"
+    },
+    "api/zro/higgsfield/*.js": {
+      "includeFiles": "neutra.html"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/previa",
+      "destination": "/api/previa"
+    },
+    {
+      "source": "/",
+      "destination": "/api/pagina"
+    },
+    {
+      "source": "/:f(tema\\.js|app\\.js|favicon\\.svg|apple-touch-icon\\.png|og\\.png)",
+      "destination": "/api/recurso?f=:f"
+    },
+    {
+      "source": "/vendor/:f*",
+      "destination": "/api/recurso?f=vendor/:f*"
+    },
+    {
+      "source": "/marca/:f*",
+      "destination": "/api/recurso?f=marca/:f*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

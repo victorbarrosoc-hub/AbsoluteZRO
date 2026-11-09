@@ -5,9 +5,14 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ACCOUNT_COOKIE, accountFromToken } from '@/lib/server/account';
 import { nossomClosed } from '@/lib/server/release';
+import { CONTA_PREVIA, emPrevia, PREVIA_COOKIE } from '@/lib/server/previa';
 import { zroConfigured } from '@/lib/server/zro/config';
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
-  const account = accountFromToken((await cookies()).get(ACCOUNT_COOKIE)?.value);
+  const jar = await cookies();
+  // Sem conta, a prévia do titular (team grátis, lib/server/previa.ts) abre o estúdio com a conta de prévia.
+  const account =
+    accountFromToken(jar.get(ACCOUNT_COOKIE)?.value) ??
+    ((await emPrevia(jar.get(PREVIA_COOKIE)?.value)) ? CONTA_PREVIA : null);
   if (!account) redirect('/entrar');
   // Sem direito de uso (`temAcesso`) o estúdio não abre, além do proxy: fechado ao público, a página
   // institucional; aberto, o aviso de que a organização ainda não liberou o NOSSOM. As APIs também recusam.

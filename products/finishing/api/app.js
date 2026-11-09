@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { liberado } from './_release.js'
 import { abrir, configurado, COOKIE_CONTA, lerCookie } from './_zro.js'
+import { emPrevia } from './_previa.js'
 
 const RAIZ = new URL('..', import.meta.url)
 /** As páginas das ferramentas (na raiz) e as pastas que elas carregam. vendor/ é só biblioteca e fica no estático. */
@@ -77,7 +78,8 @@ export default async function app(req, res) {
   if (!caminho) return negar(req, res, 404)
   const ext = extname(caminho).toLowerCase()
   const conta = configurado() ? abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA)) : null
-  if (!liberado(conta && typeof conta.sub === 'string' ? conta : null)) return ext === '.html' ? pagina(req, res) : negar(req, res, 404)
+  // a prévia do titular (ZRO_CHAVE_PREVIA, api/_previa.js) vale como a conta `allowed`; sem a variável, não existe
+  if (!emPrevia(req) && !liberado(conta && typeof conta.sub === 'string' ? conta : null)) return ext === '.html' ? pagina(req, res) : negar(req, res, 404)
   let corpo
   try {
     corpo = await readFile(new URL(caminho, RAIZ))

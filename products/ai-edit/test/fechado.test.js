@@ -29,6 +29,8 @@ describe('o que o site publica', () => {
       [
         // o repasse do Set (api/_set.js, que confere a liberação como a Z)
         ['/api/zro/set/:caminho*', '/api/zro/set?c=:caminho*'],
+        // a prévia do titular no team grátis (api/_previa.js): sem ZRO_CHAVE_PREVIA, a página neutra
+        ['/previa', '/api/previa'],
         // /app/ (com a barra, a volta do login) não casa com :caminho* na Vercel: vai explícito
         ['/app/', '/api/app?caminho=app/index.html'],
         ['/app/:caminho*', '/api/app?caminho=app/:caminho*'],

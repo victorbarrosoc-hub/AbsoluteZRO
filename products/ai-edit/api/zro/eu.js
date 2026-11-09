@@ -9,16 +9,32 @@
 // traz também a claim zro_release: liberação tirada no HUB vira 403 na abertura seguinte.
 
 import { HUB_INICIO, liberado, nossomAberta, PAGINA_FECHADO } from '../_release.js'
+import { emPrevia } from '../_previa.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_TOKENS, CONTA_S, decifrar, emissor, enderecoDaZro, FERRAMENTAS, json, lerCookie, relerPerfil, selar, sessaoDe, temAcesso, ZroErro } from '../_zro.js'
+
+/**
+ * A prévia do titular (api/_previa.js): o editor abre como `allowed`, sem conta ("só a interface"). O que pede a conta
+ * Absolute ZRO (IA, Higgsfield, sons, Set) segue recusando sem login.
+ */
+const PREVIA = Object.freeze({
+  ok: true,
+  previa: true,
+  acesso: true,
+  irmaos: { nossom: false },
+  ferramentas: FERRAMENTAS,
+  conta: 'https://absolutezro.com/perfil',
+  pessoa: { nome: 'Prévia', email: null, foto: null, organizacao: null, produtos: [] },
+})
 
 export default async function eu(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET')
     return json(res, 405, { ok: false })
   }
-  if (!configurado()) return json(res, 503, { ok: false, configurado: false })
+  const previa = emPrevia(req)
+  if (!configurado()) return previa ? json(res, 200, PREVIA) : json(res, 503, { ok: false, configurado: false })
   let c = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
-  if (!c || typeof c.sub !== 'string') return json(res, 401, { ok: false, configurado: true, entrar: '/api/zro/entrar', criar: '/api/zro/entrar?criar=1' })
+  if (!c || typeof c.sub !== 'string') return previa ? json(res, 200, PREVIA) : json(res, 401, { ok: false, configurado: true, entrar: '/api/zro/entrar', criar: '/api/zro/entrar?criar=1' })
 
   const cookies = []
   const t = decifrar(COOKIE_TOKENS, lerCookie(req, COOKIE_TOKENS))
@@ -42,7 +58,7 @@ export default async function eu(req, res) {
     }
   }
   // fechado ao público: só a conta que o HUB liberou passa daqui (a página mostra "Em desenvolvimento")
-  if (!liberado(c)) return json(res, 403, { ok: false, fechado: true, hub: HUB_INICIO, pagina: PAGINA_FECHADO }, cookies)
+  if (!liberado(c)) return previa ? json(res, 200, PREVIA, cookies) : json(res, 403, { ok: false, fechado: true, hub: HUB_INICIO, pagina: PAGINA_FECHADO }, cookies)
 
   const org = c.org && typeof c.org === 'object' ? { nome: c.org.nome || null, papel: c.org.papel || null } : null
   const produtos = Array.isArray(c.produtos) ? c.produtos : []

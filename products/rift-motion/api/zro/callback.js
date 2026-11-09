@@ -4,6 +4,7 @@
 
 import { timingSafeEqual } from 'node:crypto'
 import { abrir, cifrar, comAviso, consulta, cookie, COOKIE_CONTA, COOKIE_HUB, COOKIE_IDA, CONTA_S, emissor, lerCookie, redirecionar, retorno, selar, sessaoDe, trocarCodigo, VOLTA_PADRAO, voltaSegura } from '../_zro.js'
+import { fechadoPelaPrevia } from '../_previa.js'
 
 const igual = (a, b) => {
   const x = Buffer.from(String(a || ''))
@@ -12,6 +13,7 @@ const igual = (a, b) => {
 }
 
 export default async function callback(req, res) {
+  if (fechadoPelaPrevia(req, res)) return
   const q = consulta(req)
   const limpar = cookie(COOKIE_IDA, '', { maxAge: 0, path: '/api/zro' })
   const ida = abrir(COOKIE_IDA, lerCookie(req, COOKIE_IDA))

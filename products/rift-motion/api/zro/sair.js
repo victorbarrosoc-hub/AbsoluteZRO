@@ -2,8 +2,10 @@
 // continua (sem logout federado, ADR 0012).
 
 import { cookie, COOKIE_CONTA, COOKIE_HUB, decifrar, json, lerCookie, origemDoPedido, revogar } from '../_zro.js'
+import { fechadoPelaPrevia } from '../_previa.js'
 
 export default async function sair(req, res) {
+  if (fechadoPelaPrevia(req, res)) return
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return json(res, 405, { ok: false })

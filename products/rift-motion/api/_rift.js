@@ -1,8 +1,10 @@
 // Rotas de dados do Rift (api/rift/*): quem é a pessoa vem só da sessão assinada (rf_conta, api/_zro.js), nunca do
 // pedido; toda leitura e escrita roda em `comoPessoa` (papel rift_app, RLS). Escrita só do próprio site (Origin) e só
-// JSON. Sem login configurado ou sem banco (RIFT_DATABASE_URL), responde 503 e o painel segue no aparelho.
+// JSON. Sem login configurado ou sem banco (RIFT_DATABASE_URL), responde 503 e o painel segue no aparelho. Com a porta
+// de prévia ligada (api/_previa.js), quem não tem a chave recebe a página neutra.
 import { abrir, configurado, consulta, COOKIE_CONTA, json, lerCookie, origemDoPedido } from './_zro.js'
 import { comoPessoa, nuvemLigada } from './_banco.js'
+import { fechadoPelaPrevia } from './_previa.js'
 
 /** Pedido recusado com motivo curto para a tela. */
 export class Recusa extends Error {
@@ -47,6 +49,7 @@ export async function lerCorpo(req) {
 /** Uma rota por método: `fn(tx, { corpo, q, pessoa })` devolve o corpo da resposta (200). */
 export function rota(metodos) {
   return async (req, res) => {
+    if (fechadoPelaPrevia(req, res)) return
     const fn = metodos[req.method]
     if (!fn) {
       res.setHeader('Allow', Object.keys(metodos).join(', '))
@@ -75,6 +78,7 @@ export function rota(metodos) {
  * própria rota com `comoPessoa`, só nos trechos que precisam. Mesmas portas: login, sessão, Origin, JSON. */
 export function rotaSolta(metodos) {
   return async (req, res) => {
+    if (fechadoPelaPrevia(req, res)) return
     const fn = metodos[req.method]
     if (!fn) {
       res.setHeader('Allow', Object.keys(metodos).join(', '))
