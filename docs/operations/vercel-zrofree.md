@@ -53,8 +53,32 @@ Em cada projeto, depois de criar:
 4. **Deployments › Redeploy** e abrir o link da prévia.
 5. Não fazer upgrade do team para Pro. Para trocar a chave: muda a variável e faz Redeploy (o cookie antigo para de valer).
 
+## No ar (09/11/2026)
+
+Os cinco projetos existem no ZROFREE, criados pelo Claude pela conexão da Vercel, e foram conferidos um a um:
+
+| Projeto  | Endereço                            | Sem a chave              |
+| -------- | ----------------------------------- | ------------------------ |
+| `camzro` | `https://camzro-zrofree.vercel.app` | página neutra            |
+| `aeon`   | `https://aeon-zrofree.vercel.app`   | página neutra            |
+| `revela` | `https://revela-zrofree.vercel.app` | página neutra            |
+| `rift`   | `https://rift-zrofree.vercel.app`   | página neutra            |
+| `quasar` | `https://quasar-zrofree.vercel.app` | vai para absolutezro.com |
+
+- **Login da Vercel antes da chave**: os projetos estão com a Vercel Authentication ligada (padrão do team). Em cada
+  aparelho, entre na Vercel com a conta do titular e só depois abra o link `/previa?chave=…`. É uma camada a mais; para
+  tirar, Settings › Deployment Protection em cada projeto.
+- **Limite de 12 funções por deploy no Hobby**: o AEON tinha 20 e o Rift 14, e o build falhava. As rotas de conta
+  viraram uma função só com roteador (`api/conta.js` + `api/_zro_rotas/` no AEON, hoje com 4 funções; o Rift ficou com
+  5). Rota nova nesses dois entra no roteador, não como arquivo novo em `api/`.
+- **Deploy a partir do ramo**: enquanto as portas de prévia não chegam à `main`, o deploy de produção de cada projeto
+  saiu do ramo `claude/kind-cray-xja6bm`. Depois do merge, Production Branch = `main`.
+- **Ignored Build Step** dos cinco: `git diff HEAD^ HEAD --quiet -- .` (só gera build quando a pasta do app mudou). Para
+  forçar um deploy sem mudança na pasta: limpar o campo, Redeploy e voltar o comando.
+- As chaves vivem só nas variáveis de cada projeto (Settings › Environment Variables). Nunca neste repositório.
+
 ## Pelo Claude
 
 A conexão da Vercel no claude.ai precisa enxergar o team ZROFREE: em claude.ai › Personalizar › Conectores › Vercel,
-reconectar e marcar o ZROFREE na autorização; depois, sessão nova. Aí o Claude cria os cinco projetos com estas
-configurações (sem criar nada no team Pro).
+reconectar e marcar o ZROFREE na autorização; depois, sessão nova. Com isso o Claude cria e publica nos projetos do
+ZROFREE (sem criar nada no team Pro).

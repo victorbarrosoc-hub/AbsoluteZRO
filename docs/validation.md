@@ -19,15 +19,21 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63. `npm test` de cada app no estado final do ramo:
 
-- Revela `products/finishing` **193/193**, AEON `products/ai-edit` **271/271**, Rift Motion `products/rift-motion`
-  **21/21** (com Postgres), Quasar `products/nossom` **158/158**, CAMZRO **38/38**. Em cada um, a porta de prévia: sem a
+- Revela `products/finishing` **193/193**, AEON `products/ai-edit` **275/275** (com as rotas de conta numa função só),
+  Rift Motion `products/rift-motion` **25/25** (com Postgres), Quasar `products/nossom` **158/158**, CAMZRO **38/38**.
+  Em cada um, a porta de prévia: sem a
   variável não existe; chave curta desliga; chave errada dá a página neutra; chave certa dá 303 com o cookie (HMAC, sem a
   chave); cookie forjado ou de outra chave não entra.
 - Quasar: `npm run build` sem variável nenhuma; `next start` só com a chave, no Chromium: estúdio abre como "Prévia",
   Meus projetos no navegador, sem erro de página. Rift: o fluxo inteiro no Chromium (neutra sem chave, painel em
   demonstração com a chave). O e2e completo do Quasar (Playwright) não rodou aqui.
 - Vercel (team Pro, pela conexão): `aeon`, `revela`, `rift-motion` e `quasar` com Ignored Build Step `exit 0`; domínios e
-  último deploy conferidos depois da troca. Os projetos do ZROFREE não foram criados (a conexão não enxerga o team).
+  último deploy conferidos depois da troca.
+- Vercel (team ZROFREE, pela conexão): os cinco projetos criados e com deploy de produção READY a partir do ramo. No ar,
+  pedido de fora: `camzro`, `aeon`, `revela` e `rift` respondem a página neutra sem a chave; `quasar` manda para
+  absolutezro.com. Com a chave: o Rift abre o site e o AEON abre o editor (200). O AEON (20 funções) e o Rift (14) só
+  passaram no limite de 12 do Hobby depois do roteador de conta (4 e 5 funções). Detalhes em
+  [operations/vercel-zrofree.md](operations/vercel-zrofree.md).
 
 ## CAMZRO, a câmera do set (09/11/2026, ramo `claude/kind-cray-xja6bm`, ADR 0044)
 
