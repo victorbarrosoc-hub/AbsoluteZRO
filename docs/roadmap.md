@@ -2045,6 +2045,8 @@ do card... não consigo localizar o job que quero achar".
     opção "Levar os proxies da câmera".
   - **Prévia do cartão:** o "Ver" mostra fotos, RAW (pela prévia JPEG embutida) e vídeos do cartão antes de copiar, e o
     vídeo toca. A foto da montagem também passa a aceitar RAW.
+  - **Arquivar:** "Arquivar…" em Cartões faz uma cópia menor da pasta ao lado (`<pasta> · arquivo`): RAW → DNG (Adobe
+    DNG Converter, quando instalado) e vídeo compactado com LUT opcional, com "Testar 8 s" antes. O original não muda.
   - Só o app de computador, sem custo, publicado pelo workflow no merge.
 
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)

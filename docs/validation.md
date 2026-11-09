@@ -5519,3 +5519,10 @@ Branch `sobedesce-cartao-imprevistos`.
   - lista do mais novo para o mais antigo, sem proxies, e responde 404 a um disco que não está plugado.
 - Conferida no demo, claro e escuro, com um cartão de exemplo em `/media/root`: JPG, ARW (prévia embutida) e MP4
   tocando.
+- Arquivar (`test/arquivar.test.js`, 3 testes, 3 passaram):
+  - argumentos do DNG Converter por nível e do ffmpeg (CRF/qualidade, LUT, 1080p no Econômico);
+  - escolha do codificador (VideoToolbox só no Mac, x265 se houver, senão x264);
+  - pasta real com ffmpeg e um conversor DNG de mentira: DNG e MP4 em `<pasta> · arquivo`, o original intacto, e a
+    segunda vez não refaz nada.
+- Conferido no demo: pasta com 2 RAW, 2 vídeos (94 MB) e 1 nota; "Testar 8 s" com LUT S-Log3 estimou 33,5 MB e o
+  arquivo saiu com 33,9 MB (−65%).

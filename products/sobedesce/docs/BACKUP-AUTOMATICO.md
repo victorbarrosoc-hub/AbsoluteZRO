@@ -119,15 +119,41 @@ formatar. Sem internet: nada vai para o Drive.
     sabe tocar; senão, o quadro.
 - Só lê o cartão.
 
+## Arquivar (09/11/2026)
+
+- "Arquivar…" no topo de Cartões: escolhe uma pasta (o projeto, uma diária) e faz uma cópia menor em
+  `<pasta> · arquivo`, ao lado. **O original nunca é tocado** (`src/arquivar/servico.js`, rotas `/api/arquivar`).
+- Fotos RAW → DNG pelo Adobe DNG Converter (gratuito), quando instalado (no Mac em `/Applications`, no Windows em
+  `Program Files`, ou `SOBEDESCE_DNG`). Níveis: Máxima (`-c`, sem perda), Alta (`-lossy`), Equilibrado (`-lossy -side
+4096`), Econômico (`-lossy -side 2560`). Sem o conversor, o RAW é copiado igual e a tela diz como instalar.
+- Vídeo compactado pelo ffmpeg das prévias: HEVC no Mac (VideoToolbox), x265 ou x264 no resto, com a LUT de câmera →
+  Rec.709 opcional (`src/cor/lut.js`). Econômico vai até 1080p.
+- "Testar 8 s": converte 8 s do maior vídeo (a partir de 1/3) e mostra quanto a pasta de vídeos ficaria; "Ver o teste"
+  abre o arquivo.
+- Um trabalho por vez; o que já está no arquivo não é refeito; cada saída vai por `.sobedesce-parcial` e só entra no
+  nome final sem passar por cima. Arquivo que falha fica de fora (vale o original) e entra na lista de erros.
+
 ## Resumo de cada cartão (para o Synquei)
 
 No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<destino>/<Projeto>/.sobedesce/descargas.jsonl`:
 
 ```json
-{"v":1,"app":"sobedesce","id":"dsc…","quando":"2026-10-24T14:02:11.000Z","data":"2026-10-24","projeto":"Show","secao":"cenas",
- "diaria":{"n":1,"nome":"Diária 01"},"dono":{"id":"don…","nome":"Ana","camera":"FX30","pasta":"Ana - FX30"},
- "cartao":{"n":1,"nome":"SD FX30","volId":"uuid:…","pasta":"Diária 01/Cenas/Ana - FX30/Cartão 01"},
- "resultado":"ok","copiados":5,"bytes":12345,"arquivos":[{"rel":"PRIVATE/M4ROOT/CLIP/C0001.MP4","size":3001}]}
+{
+  "v": 1,
+  "app": "sobedesce",
+  "id": "dsc…",
+  "quando": "2026-10-24T14:02:11.000Z",
+  "data": "2026-10-24",
+  "projeto": "Show",
+  "secao": "cenas",
+  "diaria": { "n": 1, "nome": "Diária 01" },
+  "dono": { "id": "don…", "nome": "Ana", "camera": "FX30", "pasta": "Ana - FX30" },
+  "cartao": { "n": 1, "nome": "SD FX30", "volId": "uuid:…", "pasta": "Diária 01/Cenas/Ana - FX30/Cartão 01" },
+  "resultado": "ok",
+  "copiados": 5,
+  "bytes": 12345,
+  "arquivos": [{ "rel": "PRIVATE/M4ROOT/CLIP/C0001.MP4", "size": 3001 }]
+}
 ```
 
 - Uma linha por descarga e por seção (`secao`: `cenas` ou `fotos`; o cartão separado ganha duas, com o mesmo `id`).
@@ -140,23 +166,23 @@ No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<dest
 
 ## Rotas locais (`src/server/backup.js`)
 
-| Rota | O quê |
-| --- | --- |
-| `GET /api/backup` | o estado (também em `/api/state` → `backup` e no SSE `backup`) |
-| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar?, midia?, synquei? }` | cria e abre o projeto (`ligar` padrão: sim; `midia`: `tudo`, `videos` ou `fotos`) |
-| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar?, midia?, synquei? }` | edita |
-| `POST /api/backup/abrir` / `apagar` `{ id }` | troca de projeto / tira da lista (os arquivos ficam) |
-| `POST /api/backup/ligar` `{ ligado }` | liga/desliga o vigia |
-| `POST /api/backup/diaria` `{}` ou `{ n }` | nova diária / volta para uma diária |
-| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar, secao?, escolha? }` | o toque "de quem é" (`secao`: `separar`, `cenas` ou `fotos`) |
-| `POST /api/backup/conteudo` `{ caminho }` | o que tem no cartão: por tipo e as pastas com vídeo ou foto |
-| `POST /api/backup/escolher` `{ caminho, escolha: { tipos[], pastas[]? } }` | "Escolher o que passar" (só desta vez) |
-| `POST /api/backup/historico/limpar` | limpa a lista do histórico |
-| `POST /api/backup/repetir` / `ejetar` `{ caminho }` | copiar de novo / ejetar |
-| `POST /api/backup/usar` `{ caminho }` | "Usar como cartão" / "Copiar agora" |
-| `POST /api/backup/dono` `{ id, nome?, camera?, pasta?, secao? }` | edita o dono (a pasta vale para os próximos cartões) |
-| `POST /api/backup/cancelar` | para a descarga de agora |
-| `POST /api/backup/ignorados/limpar` | volta a perguntar pelos discos ignorados |
+| Rota                                                                                                   | O quê                                                                             |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `GET /api/backup`                                                                                      | o estado (também em `/api/state` → `backup` e no SSE `backup`)                    |
+| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar?, midia?, synquei? }`                   | cria e abre o projeto (`ligar` padrão: sim; `midia`: `tudo`, `videos` ou `fotos`) |
+| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar?, midia?, synquei? }`                       | edita                                                                             |
+| `POST /api/backup/abrir` / `apagar` `{ id }`                                                           | troca de projeto / tira da lista (os arquivos ficam)                              |
+| `POST /api/backup/ligar` `{ ligado }`                                                                  | liga/desliga o vigia                                                              |
+| `POST /api/backup/diaria` `{}` ou `{ n }`                                                              | nova diária / volta para uma diária                                               |
+| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar, secao?, escolha? }` | o toque "de quem é" (`secao`: `separar`, `cenas` ou `fotos`)                      |
+| `POST /api/backup/conteudo` `{ caminho }`                                                              | o que tem no cartão: por tipo e as pastas com vídeo ou foto                       |
+| `POST /api/backup/escolher` `{ caminho, escolha: { tipos[], pastas[]? } }`                             | "Escolher o que passar" (só desta vez)                                            |
+| `POST /api/backup/historico/limpar`                                                                    | limpa a lista do histórico                                                        |
+| `POST /api/backup/repetir` / `ejetar` `{ caminho }`                                                    | copiar de novo / ejetar                                                           |
+| `POST /api/backup/usar` `{ caminho }`                                                                  | "Usar como cartão" / "Copiar agora"                                               |
+| `POST /api/backup/dono` `{ id, nome?, camera?, pasta?, secao? }`                                       | edita o dono (a pasta vale para os próximos cartões)                              |
+| `POST /api/backup/cancelar`                                                                            | para a descarga de agora                                                          |
+| `POST /api/backup/ignorados/limpar`                                                                    | volta a perguntar pelos discos ignorados                                          |
 
 ## Testar
 
