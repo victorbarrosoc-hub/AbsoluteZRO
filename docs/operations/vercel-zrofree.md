@@ -15,6 +15,16 @@ estourou um limite, o projeto para até o mês virar.
 - **Só a interface** no Quasar e no Rift (decisão do titular, 09/11/2026): sem banco nem chaves de produção. Nenhuma
   chave do team Pro é copiada para o ZROFREE.
 
+## No team Pro: sem build para quem não está no ar
+
+Pedido do titular (09/11/2026: "não tá no ar, não preciso ficar gastando dinheiro com deploy no Pro"). Nos projetos
+`aeon`, `revela`, `rift-motion` e `quasar` do team Pro, **Settings › Git › Ignored Build Step = `exit 0`**: push nenhum
+gera build (nem de prévia). O último deploy de cada um continua servindo a página neutra; domínios e variáveis não
+mudaram. O CAMZRO não tem projeto no Pro.
+
+Para religar um deles (no lançamento, com o titular): trocar o Ignored Build Step para "Only build if there are changes
+in a folder" (o comportamento de antes: cancelar quando a pasta do app não mudou) e fazer Redeploy.
+
 ## Os cinco projetos
 
 Todos: **Import Git Repository** › `victorbarrosoc-hub/AbsoluteZRO`, com o team **ZROFREE** selecionado (nunca o Pro).

@@ -21,6 +21,8 @@ ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`,
   relatório de câmera.
 - ✅ Ecossistema: contrato `camzro.clip/1`; roteiro do Maestro como decupagem; bip igual ao do TPeasy (o Synquei acha);
   o Set; HUB `0065` cadastra o produto fechado (roda no deploy do HUB quando a `main` receber o ramo).
+- ✅ Team Pro sem build dos não lançados (titular, 09/11/2026): `aeon`, `revela`, `rift-motion` e `quasar` com Ignored
+  Build Step `exit 0`; o último deploy segue servindo a página neutra (`docs/operations/vercel-zrofree.md`).
 - ⛔ Publicar: o titular cria o projeto numa conta Vercel grátis à parte (passo a passo no README do app). Domínio
   `camzro.absolutezro.com`, cliente OIDC e abrir o gate pedem autorização.
 - ⬜ Conferir em aparelho de verdade: Android (controles manuais, HEVC, 4K, aquecimento), iPhone (Safari: automático,
