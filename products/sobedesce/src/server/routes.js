@@ -570,6 +570,14 @@ export function createApi(ctx) {
 
   // ── estado e eventos
   route('GET', '/api/state', () => state())
+  // "Copiar diagnóstico" (Ajustes, 09/11/2026): versão, ajustes, o estado das transferências sem nome de arquivo e as
+  // últimas linhas do log do motor. A pessoa copia e manda para o suporte; nada sai daqui sozinho.
+  route('GET', '/api/diagnostico', () => ({
+    diagnostico: {
+      app: { version: APP_VERSION, build: ctx.versao?.status()?.atual?.build ?? null, plataforma: process.platform, arquitetura: process.arch, desktop: !!ctx.desktop },
+      ...ctx.manager.diagnostico(),
+    },
+  }))
   route('GET', '/api/events', ({ req, res }) => ctx.hub.attach(req, res, state()), { raw: true })
 
   // ── chave do Google e login

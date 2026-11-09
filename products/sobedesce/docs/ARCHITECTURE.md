@@ -372,8 +372,13 @@ Algoritmo:
 8. Erros por worker: 'retry' → `backoffDelay(tentativas)` e reabre; 'auth' → força refresh e reabre;
    tentativas zeram quando há progresso; > 10 falhas seguidas sem progresso → falha a tarefa.
    'fatal'/'quota'/'notfound'/'reauth' → aborta todos os workers e rejeita.
-   `downloadQuotaExceeded` (cota do arquivo) chega como 'quota': o manager reagenda com atraso crescente
-   (15 min, 1 h, 4 h, 24 h) e os outros arquivos seguem.
+   `downloadQuotaExceeded` (cota do arquivo) chega como 'quota'. Na 1ª vez, o arquivo passa a usar uma conexão só
+   (`rec.economia`), mas só por 1 h (`rec.economiaAte`, `src/engine/recuo.js` › `emEconomia`). Na 2ª, o app faz uma
+   cópia temporária, que volta às conexões normais. Depois disso, atraso crescente (15 min, 1 h, 4 h, 24 h); os outros
+   arquivos seguem. "Tentar de novo" limpa economia, `quotaHits` e `copiaFalhou` (0.3.12, 09/11/2026).
+   403 de limite e 429 numa conexão fazem todas as conexões de download da conta esperarem juntas
+   (`RecuoDaConta`: 1 s, 2 s, 4 s… até 64 s, ou o `Retry-After`). Se ainda assim desistir, a espera diz "O Google pediu
+   para ir mais devagar", e não "Sem conexão".
    416 → se o segmento já está completo segue; senão o arquivo mudou: recomeça do zero.
 9. Checkpoint a cada 10 s OU a cada 1 GiB gravado (o que vier primeiro; era a cada 2 s): `await fh.datasync()`,
    copia `pos` vivo → `record.segments[i].pos`, atualiza `record.bytesDone`, `ctx.persist()`. Só posições sincronizadas
@@ -981,6 +986,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/compare/:jobId/download` | `{ relDirs?: string[] }` | `{ batch, count, bytes }` |
 | POST | `/api/reveal` | `{ path }` | abre no Finder/Explorer |
 | GET | `/api/versao` | | `{ versao: VersionStatus }` |
+| GET | `/api/diagnostico` | | `{ diagnostico: { app, ajustes, porStatus, recuo, itens, log } }`. É o "Copiar diagnóstico" dos Ajustes. Não leva nome de arquivo, caminho, e-mail, token nem id do Drive, só o id do registro, o andamento e o motivo. O log do motor (`motor.log`) fica sempre ligado, com a mesma limpeza. |
 | POST | `/api/versao/verificar` | | `{ versao }` (pergunta ao site agora; falha não dá erro, vira `falhou: true`) |
 | POST | `/api/versao/depois` | `{ build? }` (padrão: o mais novo conhecido) | `{ versao }` (grava `versaoDispensada`; 400 build inválido, 409 nenhuma versão conhecida) |
 | GET | `/api/events` | | SSE |
