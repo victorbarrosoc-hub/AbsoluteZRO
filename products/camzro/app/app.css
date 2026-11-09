@@ -901,6 +901,9 @@ input[type='range'] {
   font-size: 13.5px;
   line-height: 1.4;
 }
+.folha__corpo > .nota {
+  margin-bottom: 16px;
+}
 .nota b {
   color: var(--tinta);
   font-weight: 600;

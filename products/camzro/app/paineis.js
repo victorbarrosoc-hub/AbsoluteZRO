@@ -2,7 +2,7 @@
 // numa nota. Cada folha é uma função que devolve HTML; os cliques passam por data-set (muda um ajuste),
 // data-acao (faz algo) e data-folha (abre outra folha).
 
-import { A, S, $, definir, substituirAjustes, avisar, cadencia, perfil, reabrir, abrirSlate, zerarNivel, tirarLut, MODO } from './app.js'
+import { A, S, $, definir, substituirAjustes, avisar, cadencia, perfil, abrirSlate, zerarNivel, tirarLut, MODO } from './app.js'
 import * as E from './estado.js'
 import { pintar, svg } from './icones.js'
 import * as exp from './nucleo/exposicao.js'
@@ -11,7 +11,7 @@ import { CADENCIAS } from './nucleo/exposicao.js'
 import { RESOLUCOES, isosDaCamera } from './nucleo/controles.js'
 import { BALANCOS, FALSA_COR, kelvinDeRgb } from './nucleo/cor.js'
 import { PROPORCOES, ANAMORFICOS } from './nucleo/guias.js'
-import { bitrateTexto, bitrateAudio, bytesTexto, tempoTexto, segundosQueCabem } from './nucleo/armazenamento.js'
+import { bitrateTexto, bitrateAudio, tempoTexto, segundosQueCabem } from './nucleo/armazenamento.js'
 import { CODECS_VIDEO } from './motor/gravador.js'
 import { dispositivos } from './motor/camera.js'
 import { folhaBiblioteca, ligarBiblioteca } from './biblioteca.js'
@@ -481,6 +481,4 @@ export function registrarFolhas() {
       avisar('Não é um preset do CAMZRO.', { ruim: true })
     }
   })
-  void reabrir
-  void bytesTexto
 }
