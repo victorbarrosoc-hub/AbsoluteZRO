@@ -168,6 +168,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   const [midia, setMidia] = useState(inicial ? inicial.midia || 'tudo' : null)
   const [synquei, setSynquei] = useState(inicial ? inicial.synquei !== false : true)
   const [precolor, setPrecolor] = useState(!!inicial?.precolor)
+  const [levarProxies, setLevarProxies] = useState(!!inicial?.levarProxies)
   const [ligar, setLigar] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const ds = destinos.filter(Boolean)
@@ -175,7 +176,7 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   const salvar = async () => {
     setOcupado(true)
     const tipoFinal = synquei ? tipo : ''
-    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei, precolor }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei, precolor })
+    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei, precolor, levarProxies }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei, precolor, levarProxies })
     setOcupado(false)
     if (r) onPronto?.()
   }
@@ -243,6 +244,9 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
             </${Linha}>`}
         <${Linha} titulo="Ejetar o cartão ao terminar" sub="Só quando estiver tudo certo em todos os destinos.">
           <${Switch} checked=${ejetar} label="Ejetar o cartão ao terminar" onChange=${setEjetar} />
+        </${Linha}>
+        <${Linha} titulo="Levar os proxies da câmera" sub=${levarProxies ? 'LRV, THM e afins vão junto com o material.' : 'Desligado: LRV, THM e arquivos do sistema ficam no cartão. Não seguram o “pode formatar”.'}>
+          <${Switch} checked=${levarProxies} label="Levar os proxies da câmera" onChange=${setLevarProxies} />
         </${Linha}>
         <${Linha} titulo="Frames com cor ao terminar o cartão" sub=${precolor ? 'Cartão OK: um frame por clipe, com a LUT e o ajuste da câmera daquele dono (Estúdio › Frames).' : 'Desligado: os frames saem quando você tocar em “Frames do cartão”.'}>
           <${Switch} checked=${precolor} label="Frames com cor ao terminar o cartão" onChange=${setPrecolor} />
@@ -432,8 +436,25 @@ function Agora({ job, pontos }) {
   </${Passo}>`
 }
 
+/**
+ * Imprevistos do último cartão que passou OK (src/backup/imprevistos.js): nome repetido que foi para a pasta
+ * "contador zerado" e gravação que parece interrompida (copiou igual, mas o arquivo está quebrado no próprio cartão).
+ */
+function Imprevistos({ u }) {
+  if (!u || u.resultado !== 'ok' || (!u.suspeitos && !u.zerados)) return null
+  const lista = [...(u.listaSuspeitos || []).map((r) => ({ r, tipo: 'suspeito' })), ...(u.listaZerados || []).map((r) => ({ r, tipo: 'zerado' }))]
+  const frases = [
+    u.suspeitos ? `${plural(u.suspeitos, 'gravação parece interrompida', 'gravações parecem interrompidas')} (bateria ou cartão saiu no meio). Confira antes de formatar` : null,
+    u.zerados ? `A câmera voltou a numerar do zero: ${plural(u.zerados, 'arquivo com nome repetido foi', 'arquivos com nome repetido foram')} para a pasta “contador zerado”, ao lado do cartão` : null,
+  ].filter(Boolean)
+  return html`<${Passo} icone="warning" cor=${u.suspeitos ? 'warn' : 'ok'} titulo=${u.suspeitos ? `Confira antes de formatar: ${u.dono}` : `Nada por cima: ${u.dono}`} frase=${frases.join('. ')} i=${4}>
+    ${lista.length ? html`<ul class="bk-lista">${lista.map((x) => html`<li class=${cx(x.tipo === 'suspeito' && 'is-alerta')}><${Icon} name=${x.tipo === 'suspeito' ? 'warning' : 'folder'} size=${12} /><span class="mono-path">${x.r}</span></li>`)}</ul>` : null}
+  </${Passo}>`
+}
+
 function Ultimo({ u }) {
-  if (!u || u.resultado === 'ok') return null
+  if (u?.resultado === 'ok') return html`<${Imprevistos} u=${u} />`
+  if (!u) return null
   const lista = [...(u.listaFaltam || []).map((r) => ({ r, tipo: 'falta' })), ...(u.listaAlertas || []).map((r) => ({ r, tipo: 'alerta' }))]
   return html`<${Passo}
     icone="warning"

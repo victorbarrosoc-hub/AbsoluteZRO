@@ -75,8 +75,17 @@ formatar. Sem internet: nada vai para o Drive.
   - **comparativo automático:** depois de copiar, compara tudo de novo; se sobrou algo (falha), tenta mais uma vez;
   - **mesmo nome, outro tamanho no destino:** nunca grava por cima. Exceção: arquivo pequeno (até 32 MB) e mais novo no
     cartão (o índice/XML que a câmera reescreve entre uma leva e outra): o antigo vai para
-    `.sobedesce-anteriores/<data>/` dentro da pasta do cartão e o novo é copiado. O resto vira alerta e o cartão não
-    fica "OK".
+    `.sobedesce-anteriores/<data>/` dentro da pasta do cartão e o novo é copiado. O resto é o **contador zerado** (a
+    câmera voltou a numerar do zero, 09/11/2026): o arquivo novo vai, com a mesma conferência, para a pasta
+    `Cartão NN · contador zerado`, ao lado do cartão. O antigo fica onde estava. Se o mesmo cartão volta, ele já está
+    lá e não é copiado de novo (`procurarTudo`). Só o que não deu para copiar vira alerta, e aí o cartão não fica "OK";
+  - **gravação interrompida** (`src/backup/imprevistos.js`, 09/11/2026): depois da cópia, o app lê só o cabeçalho de
+    cada MP4/MOV/BRAW/INSV (um bloco que passa do fim do arquivo ou a falta do índice `moov`) e de cada JPEG (sem o
+    marcador do fim). O arquivo é copiado igual ao do cartão, mas a tela, o aviso e a notificação dizem "Confira antes
+    de formatar" e listam os arquivos. Nada é alterado;
+  - **proxies e restos do sistema ficam no cartão:** LRV, LRF, THM, `._*`, `.DS_Store`, `Thumbs.db`. Não contam como
+    "ficou de fora", então não seguram o "pode formatar" nem o ejetar. A opção do projeto "Levar os proxies da câmera"
+    (`levarProxies`) leva tudo.
 - **Excluir o projeto** (Editar ou "Excluir" no painel, com um segundo toque): para a descarga de agora, tira o projeto
   da lista e o painel some; espetar o cartão de novo não copia mais nada (sem projeto, não há vigia). Os arquivos nos
   destinos ficam.

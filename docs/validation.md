@@ -5500,3 +5500,17 @@ Branch `sobedesce-download-recuo`.
   - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+Branch `sobedesce-cartao-imprevistos`.
+
+- `test/cartao-imprevistos.test.js`:
+  - Detecta MP4 sem índice, MOV cortado, vazio e JPEG sem o fim. Não acusa o arquivo inteiro, o formato estranho, o
+    RAW nem o arquivo que sumiu.
+  - Separa o que fica no cartão (LRV, LRF, THM, `._`, `.DS_Store`, `Thumbs.db`) do que vai (material bruto e XML).
+  - Na descarga, o interrompido é copiado e avisado, os proxies ficam no cartão, o cartão sai como "não parcial" e é
+    ejetado.
+- `test/backup-automatico.test.js`: o contador zerado vai para `Cartão 01 · contador zerado`, conferido. O destino
+  antigo fica intacto e o mesmo cartão de novo não copia outra vez.
+- Backup Automático, fotos e vídeos e relatório: 39 testes, 39 passaram, 0 falhas.
