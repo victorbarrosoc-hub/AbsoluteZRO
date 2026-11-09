@@ -2043,6 +2043,14 @@ do card... não consigo localizar o job que quero achar".
   - "Montagem" leva os frames escolhidos (como foto) e os cortes (como take, começando no ponto do corte) para a bandeja
     da Montagem.
 
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+- 🔶 Ramo `sobedesce-frames-montagem-pc` (titular: "não é pra ficar só no celular, plataforma do computador também"):
+  - No trabalho do Frames, frames e takes (os cortes de cena) ganham o + de escolher, e a barra de escolhidos ganha
+    "Montagem", que leva os arquivos para a bandeja de Estúdio › Montagens, somando ao que já está lá.
+  - Contador da agulha da montagem com take: o texto saía duplicado ("0:00,00:00:0,0"); agora é só do DOM.
+  - Só o app de computador, sem custo.
+
 ## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
 
 - 🔶 Ramo `sobedesce-carrossel-por-slide` (titular: "não consigo separar qual foto vai em que número"):

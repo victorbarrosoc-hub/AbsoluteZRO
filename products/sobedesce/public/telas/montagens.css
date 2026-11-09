@@ -813,3 +813,21 @@
   font-size: 12px;
   color: var(--text-2);
 }
+
+/* Frames › Takes: escolher o take para a Montagem (o mesmo + dos frames) */
+.fr-take:hover .fr-take-sel,
+.fr-take.is-sel .fr-take-sel {
+  opacity: 1;
+}
+.fr-take.is-sel .fr-take-sel {
+  color: #000;
+  background: #fff;
+  box-shadow: none;
+}
+.fr-take.is-sel .fr-take-vid {
+  box-shadow: 0 0 0 3px var(--text);
+}
+.fr-take-sel {
+  left: auto;
+  right: 8px;
+}
