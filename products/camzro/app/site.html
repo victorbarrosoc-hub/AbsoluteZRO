@@ -9,22 +9,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>CAMZRO · A câmera do set.</title>
-    <meta name="description" content="A câmera de vídeo do set, no navegador do celular e do computador. Monitor de cinema, timecode do set, claquete e take à prova de queda. Faz parte do ecossistema Absolute ZRO." />
+    <meta name="description" content="A câmera de vídeo do set, no navegador do celular. Monitor de cinema, timecode do set, claquete e take à prova de queda. Faz parte do ecossistema Absolute ZRO." />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#fbfbfd" />
-    <link rel="icon" href="/app/marca/simbolo-grafite.svg" type="image/svg+xml" />
+    <link rel="icon" href="/app/marca/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/app/marca/icone-180.png" />
     <link rel="manifest" href="/app/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-title" content="CAMZRO" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CAMZRO" />
     <meta property="og:title" content="CAMZRO · A câmera do set." />
-    <meta property="og:description" content="A câmera de vídeo do set, no navegador do celular e do computador. Faz parte do ecossistema Absolute ZRO." />
+    <meta property="og:description" content="A câmera de vídeo do set, no navegador do celular. Faz parte do ecossistema Absolute ZRO." />
     <meta property="og:url" content="https://camzro.absolutezro.com/" />
     <meta property="og:image" content="https://camzro.absolutezro.com/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="CAMZRO — a câmera do set, gravando um take no computador." />
+    <meta property="og:image:alt" content="CAMZRO — a câmera do set, gravando um take no celular." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://camzro.absolutezro.com/og.png" />
     <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
@@ -48,12 +48,12 @@
     <main>
       <!-- herói: a marca, o nome e a câmera de verdade gravando -->
       <section class="s-heroi">
-        <svg class="s-simbolo s-sobe" viewBox="0 0 100 100" aria-hidden="true"><path class="s-estrela" d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /></svg>
+        <svg class="s-simbolo s-sobe" viewBox="0 0 100 100" aria-hidden="true"><path class="s-estrela" d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /><path class="s-obturador" d="M44 31a19 19 0 0 0 0 38Z" /></svg>
         <h1 class="s-sobe"><span class="leve">CAM</span><span class="forte">ZRO</span></h1>
-        <p class="s-apoio s-sobe">A câmera de vídeo do set, no navegador do celular e do computador.</p>
+        <p class="s-apoio s-sobe">A câmera de vídeo do set, no navegador do celular.</p>
         <div class="s-acoes s-sobe"><a class="glass-btn glass-btn--ink glass-btn--g" href="%ENTRAR%">%ENTRAR_TEXTO%</a><a class="glass-btn glass-btn--g" href="#monitor">Ver o monitor</a></div>
         <figure class="s-palco s-sobe">
-          <div class="s-mac"><img src="/app/site/gravando.webp" alt="O CAMZRO no computador gravando um take: timecode vermelho correndo, guia 2,39, medidor de áudio e a claquete Cena 1 · A · Take 3" width="1920" height="1200" fetchpriority="high" /></div>
+          <div class="s-fone"><img src="/app/site/gravando.webp" alt="O CAMZRO no celular deitado gravando um take: timecode vermelho correndo, guia 2,39 e medidor de áudio" width="2556" height="1179" fetchpriority="high" /></div>
           <figcaption>Gravando: timecode do set, guia 2,39 e o medidor de áudio. Tela real do CAMZRO.</figcaption>
         </figure>
       </section>
@@ -74,12 +74,12 @@
           <p class="s-apoio">Falsa cor, foco, forma de onda e vectorscope medidos no sinal gravado, antes de apertar o botão.</p>
         </div>
         <div class="s-mon revela" id="demo-mon" data-fase="0">
-          <div class="s-mac">
+          <div class="s-fone">
             <div class="s-mon-telas">
-              <img src="/app/site/falsa-cor.webp" alt="Falsa cor na escala ARRI: cinza 18% em verde, pele em rosa, estourado em vermelho, com a legenda" width="1920" height="1200" loading="lazy" />
-              <img src="/app/site/foco.webp" alt="Focus peaking: as bordas em foco marcadas em vermelho" width="1920" height="1200" loading="lazy" />
-              <img src="/app/site/computador.webp" alt="Forma de onda no canto do visor, com o guia 2,39 e o medidor de áudio" width="1920" height="1200" loading="lazy" />
-              <img src="/app/site/vectorscope.webp" alt="Vectorscope com os alvos a 75% e a linha de pele" width="1920" height="1200" loading="lazy" />
+              <img src="/app/site/falsa-cor.webp" alt="Falsa cor na escala ARRI: cinza 18% em verde, pele em rosa, estourado em vermelho, com a legenda" width="2556" height="1179" loading="lazy" />
+              <img src="/app/site/foco.webp" alt="Focus peaking: as bordas em foco marcadas em vermelho" width="2556" height="1179" loading="lazy" />
+              <img src="/app/site/onda.webp" alt="Forma de onda no canto do visor, com o guia 2,39 e o medidor de áudio" width="2556" height="1179" loading="lazy" />
+              <img src="/app/site/vectorscope.webp" alt="Vectorscope com os alvos a 75% e a linha de pele" width="2556" height="1179" loading="lazy" />
             </div>
           </div>
           <ol class="s-leg">
@@ -101,7 +101,7 @@
         </div>
         <div class="s-exp revela" id="demo-exp" data-luz="0" aria-label="Demonstração: a luz muda, o ângulo fica em 180° e o ISO acompanha">
           <div class="s-exp-visor">
-            <div class="s-exp-cena"><img src="/app/site/gravando.webp" alt="" width="1920" height="1200" loading="lazy" /></div>
+            <div class="s-exp-cena"><img src="/app/site/gravando.webp" alt="" width="2556" height="1179" loading="lazy" /></div>
             <div class="s-exp-base">
               <div><small>ISO</small><b id="exp-iso">100</b></div>
               <div class="fixo"><small>Obturador</small><b>180°</b></div>
@@ -135,7 +135,7 @@
             </div>
           </div>
           <figure class="revela">
-            <div class="s-mac"><img src="/app/site/recuperado.webp" alt="O CAMZRO na volta: o aviso 'Um take que caiu foi recuperado' e o clipe marcado como recuperado na lista" width="1920" height="1200" loading="lazy" /></div>
+            <div class="s-fone"><img src="/app/site/recuperado.webp" alt="O CAMZRO na volta: o take que caiu está na lista de clipes, marcado como recuperado" width="2556" height="1179" loading="lazy" /></div>
           </figure>
         </div>
         <p class="s-nota">Testado no Chromium: a página é derrubada no meio do take e o arquivo volta inteiro. Descarga conferida em xxh64, com CSV do DaVinci e ALE.</p>
@@ -169,7 +169,7 @@
             <figcaption>Claquete na tela: número grande, timecode, bip e flash.</figcaption>
           </figure>
           <figure class="revela">
-            <div class="s-mac"><img src="/app/site/claquete.webp" alt="A folha Claquete com o roteiro Café Aurora do Maestro: Cena 1 · Abertura, Plano A, GPG drone subindo, e o botão Próximo plano" width="1920" height="1200" loading="lazy" /></div>
+            <div class="s-fone"><img src="/app/site/claquete.webp" alt="A folha Claquete com o roteiro Café Aurora do Maestro: Cena 1 · Abertura, Plano A, GPG drone subindo, e o botão Próximo plano" width="2556" height="1179" loading="lazy" /></div>
             <figcaption>O roteiro do Maestro na claquete. Próximo plano anda pela lista.</figcaption>
           </figure>
         </div>
@@ -195,15 +195,14 @@
         <p class="s-nota">Conta única da Absolute ZRO e o Set, com a equipe online. Tudo sai como arquivo, por ação sua.</p>
       </section>
 
-      <!-- aparelhos -->
+      <!-- aparelhos: o celular é a câmera; o computador entra como webcam ou placa de captura -->
       <section class="s-secao" id="aparelhos">
         <div class="s-cabeca revela">
           <p class="s-sobre">Aparelhos</p>
-          <h2><span class="leve">Qualquer aparelho</span> <span class="forte">vira câmera.</span></h2>
-          <p class="s-apoio">Abre no navegador e vai para a Tela de Início. Câmera USB e placa de captura HDMI aparecem na lista.</p>
+          <h2><span class="leve">O celular</span> <span class="forte">vira câmera de cinema.</span></h2>
+          <p class="s-apoio">Abre no navegador e vai para a Tela de Início. Deitado, como se filma cinema.</p>
         </div>
         <div class="s-apar revela">
-          <figure class="s-mac"><img src="/app/site/computador.webp" alt="O CAMZRO no computador, com forma de onda e guia 2,39" width="1920" height="1200" loading="lazy" /></figure>
           <figure class="s-fone"><img src="/app/site/celular-deitado.webp" alt="O CAMZRO no iPhone deitado, com a falsa cor ligada" width="2556" height="1179" loading="lazy" /></figure>
         </div>
         <div class="s-fichas">
@@ -218,9 +217,9 @@
             <span>Exposição e foco no automático, com trava e zoom. Monitor, scopes, timecode e claquete inteiros.</span>
           </article>
           <article class="s-ficha revela">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="12.5" rx="2" /><path d="M2 20h20" /></svg>
-            <b>Computador</b>
-            <span>Câmera USB ou placa HDMI. Descarga conferida para o SSD, com CSV do DaVinci e ALE.</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="6.5" /><circle cx="12" cy="10" r="2.5" /><path d="M8 20.5h8M12 16.5v4" /></svg>
+            <b>Webcam e placa de captura</b>
+            <span>No computador, a webcam grava com timecode e claquete. Pela placa HDMI, a câmera do set ganha falsa cor e scopes.</span>
           </article>
         </div>
         <p class="s-nota">O navegador grava H.264, HEVC ou AV1 de 8 bits. Sem ProRes nem Log: isso pede app nativo, outra fase.</p>
@@ -228,7 +227,7 @@
 
       <!-- fecho -->
       <section class="s-secao s-fecho">
-        <svg class="s-simbolo revela" viewBox="0 0 100 100" aria-hidden="true"><path d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /></svg>
+        <svg class="s-simbolo revela" viewBox="0 0 100 100" aria-hidden="true"><path d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /><path d="M44 31a19 19 0 0 0 0 38Z" /></svg>
         <div class="s-cabeca revela">
           <h2><span class="leve">Pronto</span> <span class="forte">para o set.</span></h2>
           <p class="s-apoio">Uma conta Absolute ZRO. Nada sai do aparelho sem você mandar.</p>

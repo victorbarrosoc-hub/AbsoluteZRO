@@ -82,17 +82,19 @@ async function parar(page) {
   await parou(page)
 }
 
-const COMPUTADOR = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 4 / 3 } // sai em 1920 × 1200
+// o celular deitado (iPhone 15 Pro, 2556 × 1179), como se filma cinema: o CAMZRO é app de celular; o computador só
+// entra como webcam ou placa de captura (pedido do titular, 09/11/2026)
+const CELULAR = devices['iPhone 15 Pro landscape']
 
 try {
-  // computador (16:10): o herói e as ferramentas do monitor, com guia 2,39
+  // o herói e as ferramentas do monitor, com guia 2,39
   {
-    const { ctx, page } = await abrir(COMPUTADOR)
+    const { ctx, page } = await abrir(CELULAR)
     // forma de onda
     await ferramenta(page, 'scopes')
     await ferramenta(page, 'scopes')
     await page.waitForTimeout(1200)
-    await foto(page, 'computador')
+    await foto(page, 'onda')
     await definir(page, 'monitor.scopes', '')
     // falsa cor (escala ARRI, com a legenda)
     await ferramenta(page, 'falsaCorLigada')
@@ -114,6 +116,9 @@ try {
     await folha(page, 'claquete')
     await page.setInputFiles('#arquivo-roteiro', ROTEIRO)
     await page.waitForTimeout(800)
+    // no celular deitado a folha mostra pouco: rola até o roteiro (o grupo do Próximo plano)
+    await page.locator('[data-acao="plano-seguinte"]').evaluate((b) => b.closest('.grupo, section, fieldset')?.scrollIntoView({ block: 'center' }) ?? b.scrollIntoView({ block: 'center' }))
+    await page.waitForTimeout(400)
     await foto(page, 'claquete')
     await fecharFolha(page)
     // gravando: o ponto vermelho, o timecode correndo e o medidor (um take antes, para a miniatura aparecer)
@@ -126,7 +131,7 @@ try {
   }
   // o app cai no meio do take e, na volta, o take está lá (o mesmo caminho do teste de ponta a ponta)
   {
-    const ctx = await browser.newContext({ permissions: ['camera', 'microphone'], colorScheme: 'light', ...COMPUTADOR })
+    const ctx = await browser.newContext({ permissions: ['camera', 'microphone'], colorScheme: 'light', ...CELULAR })
     const { page } = await abrir({ ctx })
     await gravar(page, 4200)
     await page.close({ runBeforeUnload: false }) // como o telefone matando o app
@@ -138,9 +143,9 @@ try {
     await foto(volta, 'recuperado')
     await ctx.close()
   }
-  // celular deitado (iPhone), como se filma cinema: a mesma tela do computador, na mão
+  // falsa cor para a seção de aparelhos e a claquete na tela
   {
-    const { ctx, page } = await abrir({ ...devices['iPhone 15 Pro landscape'] })
+    const { ctx, page } = await abrir(CELULAR)
     await ferramenta(page, 'falsaCorLigada')
     await page.waitForTimeout(800)
     await foto(page, 'celular-deitado')
@@ -152,18 +157,20 @@ try {
     await page.click('[data-acao="fechar-slate"]')
     await ctx.close()
   }
-  // imagem de compartilhar (1200 × 630): a tela gravando sobre o claro, com o nome
+  // imagem de compartilhar (1200 × 630): a marca, o nome e o celular deitado gravando, sobre o claro
   {
     const ctx = await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })
     const page = await ctx.newPage()
     const fonte = readFileSync(join(RAIZ, 'fontes/figtree-latin-wght-normal.woff2')).toString('base64')
     const tela = readFileSync(join(SAIDA, 'gravando.webp')).toString('base64')
+    const simbolo = readFileSync(join(RAIZ, 'app/marca/simbolo-grafite.svg'), 'utf8')
     await page.setContent(`<!doctype html><style>@font-face{font-family:F;src:url(data:font/woff2;base64,${fonte}) format('woff2');font-weight:300 900}
       body{margin:0;width:1200px;height:630px;background:#f5f5f7;font-family:F;color:#1d1d1f;position:relative;overflow:hidden}
-      .t{position:absolute;left:72px;top:150px}.t h1{margin:0;font-size:84px;letter-spacing:-.035em;line-height:1}.t h1 span{font-weight:300}.t h1 b{font-weight:800}
+      .t{position:absolute;left:72px;top:150px;z-index:1}.t h1{margin:0;font-size:84px;letter-spacing:-.035em;line-height:1}.t h1 span{font-weight:300}.t h1 b{font-weight:800}
       .t p{margin:16px 0 0;font-size:28px;color:#6e6e73;font-weight:500}
-      .m{position:absolute;left:470px;top:62px;width:820px;border-radius:22px;background:#1d1d1f;padding:12px;box-shadow:0 40px 80px -30px rgba(0,0,0,.4)}.m img{display:block;width:100%;border-radius:12px}</style>
-      <div class="t"><h1><span>CAM</span><b>ZRO</b></h1><p>A câmera do set.</p></div><div class="m"><img src="data:image/webp;base64,${tela}"></div>`)
+      .t svg{width:64px;height:64px;fill:#1d1d1f;margin-bottom:26px;display:block}
+      .m{position:absolute;left:480px;top:142px;width:690px;border-radius:44px;background:#1d1d1f;padding:9px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 40px 80px -30px rgba(0,0,0,.45)}.m img{display:block;width:100%;border-radius:36px}</style>
+      <div class="t">${simbolo}<h1><span>CAM</span><b>ZRO</b></h1><p>A câmera do set.</p></div><div class="m"><img src="data:image/webp;base64,${tela}"></div>`)
     await page.waitForTimeout(400)
     await page.screenshot({ path: join(RAIZ, 'app/marca/og.png') })
     feitas.push('marca/og.png')

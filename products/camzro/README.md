@@ -1,7 +1,7 @@
 # CAMZRO (nome provisório) — a câmera do set
 
-Câmera de vídeo profissional no navegador do celular e do computador, da Absolute ZRO. **Não lançada**: fechada no gate
-(migração HUB `0065`, só a administração da plataforma) e **sem deploy** (pedido do titular, 09/11/2026: nada na Vercel
+Câmera de vídeo profissional no navegador do celular (no computador, pela webcam ou placa de captura), da Absolute ZRO.
+**Não lançada**: fechada no gate (migração HUB `0065`, só a administração da plataforma) e **sem deploy** (pedido do titular, 09/11/2026: nada na Vercel
 por enquanto). Contrato com os outros apps: [docs/integration-contracts/camzro.md](../../docs/integration-contracts/camzro.md).
 Decisão: [ADR 0044](../../docs/decisions/0044-camzro.md).
 

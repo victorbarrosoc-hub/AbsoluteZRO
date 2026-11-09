@@ -20,6 +20,8 @@ acrescenta.
   sem mudar os dois.
 - `app/vendor/` só por `npm run vendor` (Mediabunny e xxhash-wasm; conferido em teste).
 - Interface: identidade Absolute ZRO (Figtree, Liquid Glass, texto grafite/branco e cinza, claro nas folhas); o visor é
-  escuro. Pouco texto; a marca é o símbolo Absolute ZRO. A marca própria está em estudo (`docs/marca/camzro.md`,
-  `scripts/marca.mjs`): só entra no app com a escolha do titular.
+  escuro. Pouco texto. A marca é o **Obturador 180°** (titular, 09/11/2026; `docs/marca/camzro.md`): geometria só em
+  `scripts/marca.mjs`, que gera `app/marca/`.
+- **Celular primeiro** (titular, 09/11/2026): o CAMZRO é app de celular, deitado. O computador só aparece como webcam
+  ou placa de captura; nada de computador nas telas da página inicial.
 - Antes de entregar: `npm test` nesta pasta (Chromium de verdade) e `node publicar.mjs`.
