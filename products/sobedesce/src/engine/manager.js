@@ -26,6 +26,7 @@ import { KeepAwake } from './power.js'
 import { RawThumbnailer } from '../media/raw-thumb.js'
 import { GeradorPrevias, PREVIA_PENDENTE } from '../media/previa-fila.js'
 import { LoteTempo } from './lote-tempo.js'
+import { DiarioMotor, ECONOMIA_PRAZO_MS, MSG_LIMITE, MSG_REDE, RecuoDaConta, ehLimite, emEconomia } from './recuo.js'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -93,7 +94,7 @@ function errorInfo(err) {
   }
   if (info.kind === 'auth') message = 'O Google recusou o acesso desta conta. Tente de novo; se continuar, conecte a conta de novo.'
   if (info.kind === 'abort') message = 'A transferência foi interrompida. Tente de novo.'
-  return { info, error: { message, reason: info.reason ?? null, kind: info.kind, at: Date.now() } }
+  return { info, error: { message, reason: info.reason ?? null, kind: info.kind, status: info.status ?? null, at: Date.now() } }
 }
 
 /** Até `max` segmentos para a interface: os vizinhos são somados (o preenchimento continua proporcional). */
@@ -142,7 +143,7 @@ export class TransferManager extends EventEmitter {
    * thumbnailer (miniatura de .braw: RawThumbnailer; null desliga), previas (prévia leve dos vídeos: GeradorPrevias;
    * null desliga).
    */
-  constructor({ settings, auth = null, hasher = null, paths = dataPaths(), driveFactory, keepAwake, createTask, taskOptions = {}, quotaDelays = QUOTA_DELAYS, quotaFallbackMs = QUOTA_FALLBACK_MS, quotaMaxMs = 24 * HOUR, networkDelays = NETWORK_DELAYS, economiaMs = ECONOMIA_ESPERA_MS, log, thumbnailer, previas } = {}) {
+  constructor({ settings, auth = null, hasher = null, paths = dataPaths(), driveFactory, keepAwake, createTask, taskOptions = {}, quotaDelays = QUOTA_DELAYS, quotaFallbackMs = QUOTA_FALLBACK_MS, quotaMaxMs = 24 * HOUR, networkDelays = NETWORK_DELAYS, economiaMs = ECONOMIA_ESPERA_MS, economiaPrazoMs = ECONOMIA_PRAZO_MS, recuoOptions = {}, log, thumbnailer, previas } = {}) {
     super()
     if (!settings?.get) throw new Error('TransferManager: settings é obrigatório')
     this.settings = settings
@@ -158,9 +159,22 @@ export class TransferManager extends EventEmitter {
     this.quotaFallbackMs = quotaFallbackMs
     this.quotaMaxMs = quotaMaxMs
     this.networkDelays = networkDelays.length ? [...networkDelays] : [...NETWORK_DELAYS]
-    this.log = log || ((...args) => {
-      if (process.env.SOBEDESCE_DEBUG) console.error('[motor]', ...args)
-    })
+    // Log do motor sempre ligado (09/11/2026): vai para o motor.log do app (sem token, sem nome de arquivo, sem caminho)
+    // e fica nas últimas linhas do diário, para o "Copiar diagnóstico" dos Ajustes.
+    this.economiaPrazoMs = Math.max(0, Number(economiaPrazoMs) || 0)
+    this.recuoOptions = recuoOptions
+    this.recuos = new Map() // accountId → RecuoDaConta (downloads)
+    this.diario = new DiarioMotor()
+    const escrever = log || ((linha) => console.error('[motor]', linha))
+    this.log = (...args) => {
+      const linha = this.diario.anotar(args)
+      try {
+        if (log) log(...args)
+        else escrever(linha)
+      } catch {
+        // log nunca derruba o motor
+      }
+    }
     // Miniatura de .braw: o frame sai em paralelo ao envio e vai para o Drive depois que ele termina, em segundo
     // plano. Nunca muda o status da transferência; quando grava, marca `thumbnail: true` no registro.
     this.thumbnailer =
@@ -340,6 +354,55 @@ export class TransferManager extends EventEmitter {
   }
 
   // ─────────── consulta ───────────
+
+  /**
+   * Diagnóstico do "Copiar diagnóstico" (Ajustes): o estado das transferências que não terminaram, o recuo de cada
+   * conta e as últimas linhas do log. Sem nome de arquivo, caminho, token, e-mail ou id do Drive: só o id do registro,
+   * o tipo, o tamanho, o andamento e o motivo.
+   */
+  diagnostico({ linhas = 200 } = {}) {
+    const now = Date.now()
+    const st = this.settings.get()
+    const contas = [...new Set([...this.records.values()].map((r) => r.accountId))]
+    const conta = (id) => `conta ${contas.indexOf(id) + 1}`
+    const porStatus = {}
+    const itens = []
+    for (const r of this.records.values()) {
+      porStatus[r.status] = (porStatus[r.status] || 0) + 1
+      if (r.status === 'completed' || r.status === 'skipped' || r.status === 'canceled') continue
+      itens.push({
+        id: r.id,
+        tipo: r.type,
+        status: r.status,
+        conta: conta(r.accountId),
+        tamanho: r.size ?? null,
+        feito: Number(r.bytesDone) || 0,
+        motivo: r.error?.reason ?? null,
+        mensagem: r.error?.message ?? null,
+        economia: emEconomia(r, now),
+        quotaHits: r.quotaHits || 0,
+        netWaits: r.netWaits || 0,
+        tentativas: r.attempts || 0,
+        copiaTemporaria: Boolean(r.copiaTemporaria),
+        voltaEmSeg: r.retryAt ? Math.max(0, Math.round((r.retryAt - now) / 1000)) : null,
+      })
+    }
+    return {
+      geradoEm: new Date(now).toISOString(),
+      ajustes: {
+        downloadsJuntos: st.maxConcurrentDownloads,
+        conexoesPorArquivo: st.connectionsPerDownload,
+        enviosJuntos: st.maxConcurrentUploads,
+        limiteDownload: st.bandwidthLimitDown || 0,
+        limiteUpload: st.bandwidthLimitUp || 0,
+        conferirMd5: st.verifyChecksums !== false,
+      },
+      porStatus,
+      recuo: [...this.recuos.entries()].map(([id, r]) => ({ conta: conta(id), recusas: r.vezes, esperaSeg: Math.round(r.restante() / 1000) })),
+      itens: itens.slice(0, 300),
+      log: this.diario.ultimas(linhas),
+    }
+  }
 
   snapshot() {
     return {
@@ -715,6 +778,11 @@ export class TransferManager extends EventEmitter {
       r.attempts = 0
       r.finishedAt = null
       delete r.netWaits
+      // "Tentar de novo" recomeça do jeito normal: conexões dos Ajustes, sem a economia nem a contagem da cota.
+      delete r.economia
+      delete r.economiaAte
+      delete r.quotaHits
+      delete r.copiaFalhou
       if (r.verify?.state === 'mismatch') r.verify = null
       this.#touch(r)
     }
@@ -890,7 +958,7 @@ export class TransferManager extends EventEmitter {
    * `minSegmentSize` e roubo só acima de `stealMinBytes`). `big` = 3 ou mais segmentos: conta no limite de arquivos.
    */
   #downloadCost(rec, st) {
-    if (rec.economia) return { big: false, conns: 1 } // cota do arquivo estourada: uma conexão só (download.js)
+    if (emEconomia(rec)) return { big: false, conns: 1 } // cota do arquivo estourada: uma conexão só, por um tempo (download.js)
     const conns = Math.min(MAX_CONNECTIONS, Math.max(1, Math.floor(Number(st.connectionsPerDownload) || 1)))
     const minSeg = Math.max(1, Number(st.minSegmentSize) || 64 * MiB)
     const size = Number(rec.size)
@@ -971,6 +1039,13 @@ export class TransferManager extends EventEmitter {
     })()
   }
 
+  /** A espera compartilhada pelas conexões de download desta conta (403 de limite / 429). */
+  recuoDe(accountId) {
+    let r = this.recuos.get(accountId)
+    if (!r) this.recuos.set(accountId, (r = new RecuoDaConta(this.recuoOptions)))
+    return r
+  }
+
   #ctxFor(rec) {
     const ctx = {
       drive: this.driveFor(rec.accountId),
@@ -981,6 +1056,7 @@ export class TransferManager extends EventEmitter {
       onBytes: n => this.#onBytes(rec, n),
       log: this.log,
     }
+    if (rec.type === 'download') ctx.recuo = this.recuoDe(rec.accountId)
     if (rec.type === 'upload') {
       ctx.feed = this.feeds.get(rec.id) || null
       let cache = this.folderCaches.get(rec.accountId)
@@ -1013,6 +1089,7 @@ export class TransferManager extends EventEmitter {
         rec.retryAt = null
         delete rec.quotaHits
         delete rec.economia
+        delete rec.economiaAte
         delete rec.copiaFalhou
         if (rec.copiaTemporaria) {
           const c = rec.copiaTemporaria
@@ -1114,8 +1191,9 @@ export class TransferManager extends EventEmitter {
     rec.netWaitBytes = done
     rec.status = 'waiting'
     rec.retryAt = Date.now() + delay
-    rec.error = { ...error, message: 'Sem conexão com o Google por enquanto. Tento de novo sozinho.' }
-    this.log('rede fora do ar: espera', rec.id, delay, error.reason)
+    const limite = ehLimite({ kind: 'retry', status: error.status, reason: error.reason })
+    rec.error = { ...error, message: limite ? MSG_LIMITE : MSG_REDE }
+    this.log(limite ? 'limite do Google: espera' : 'rede fora do ar: espera', rec.id, delay, error.reason)
     this.#armWait(rec)
     return true
   }
@@ -1124,11 +1202,14 @@ export class TransferManager extends EventEmitter {
   #wait(rec, info, error) {
     let delay
     const contornar = rec.type === 'download' && info.reason === 'downloadQuotaExceeded' && !rec.source?.export
-    const primeira = contornar && !rec.economia
+    const primeira = contornar && !emEconomia(rec)
     if (primeira) {
-      // 1ª vez: uma conexão só, o resto num pedido só, daqui a pouco (muito menos pedidos ao Google).
+      // 1ª vez: uma conexão só, o resto num pedido só, daqui a pouco (muito menos pedidos ao Google). Só por um tempo
+      // (economiaPrazoMs): depois volta às conexões dos Ajustes. Antes ficava numa conexão até terminar (09/11/2026).
       rec.economia = true
+      rec.economiaAte = Date.now() + this.economiaPrazoMs
       delay = this.economiaMs
+      this.log('cota do arquivo: uma conexão só por um tempo', rec.id)
     } else if (info.reason === 'downloadQuotaExceeded') {
       const hits = Math.max(0, Number(rec.quotaHits) || 0)
       delay = this.quotaDelays[Math.min(hits, this.quotaDelays.length - 1)]
@@ -1179,6 +1260,9 @@ export class TransferManager extends EventEmitter {
       }
       rec.copiaTemporaria = { fileId: copia.id, de: src.fileId, deResourceKey: src.resourceKey || null }
       rec.source = { ...src, fileId: copia.id, resourceKey: null, headRevisionId: copia.headRevisionId || null }
+      // A cópia é um arquivo novo, com a cota dele: volta às conexões normais.
+      delete rec.economia
+      delete rec.economiaAte
       this.log('cota do arquivo: baixando por uma cópia temporária', rec.id)
       rec.retryAt = Date.now()
       rec.error = null

@@ -5485,3 +5485,18 @@ SOBEDESCE de computador, que disparam os instaladores).
   `hub.spec.ts -g "central de apps"` 2/2 (com o cartão perdendo o "Atualizar" no aviso `reler`); `scan-secrets` sem
   segredos. A bateria e2e inteira não foi rodada.
 - Não validado: num Mac de verdade com a central empacotada (a 1.4.5 só sai pelo workflow `hub-desktop` na `main`).
+
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+Branch `sobedesce-download-recuo`.
+
+- `test/download.test.js`: o Drive falso recusa com 403 de limite e com 429 em 6 conexões. O arquivo de 48 MiB termina
+  com o MD5 certo, as recusas passam pelo recuo da conta e ele zera no fim.
+- `test/manager.test.js`:
+  - Economia com prazo: depois do prazo, o arquivo volta às conexões normais; registro antigo sem prazo não fica
+    preso; "Tentar de novo" limpa `economia`, `economiaAte`, `quotaHits` e `copiaFalhou`.
+  - 403 `userRateLimitExceeded` diz "O Google pediu para ir mais devagar", e queda de rede continua "Sem conexão".
+  - O diagnóstico não leva nome de arquivo, caminho, e-mail, token nem o id da conta.
+  - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
+- `APP_VERSION` é a versão do `package.json`, com teste.
+- Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.

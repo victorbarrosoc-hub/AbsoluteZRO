@@ -7,6 +7,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { setupDrive, md5File, waitFor } from './helpers.js'
 import { DownloadTask, loadSegments, formatBytes, FRESH_PLAN_MS } from '../src/engine/download.js'
+import { RecuoDaConta } from '../src/engine/recuo.js'
 import { planDownloads } from '../src/engine/planner.js'
 import { Settings } from '../src/config.js'
 import { BandwidthLimiter } from '../src/util/limiter.js'
@@ -178,6 +179,23 @@ test('200 MiB com 8 conexões: MD5 confere, ≥ 6 conexões simultâneas, data d
   assert.ok(rec.segments.every(s => s.pos === s.end + 1), 'todos os segmentos completos no registro')
   assert.ok(job.snapshots.length >= 2, 'persist() chamado')
   assert.deepEqual(job.task.liveSegments().map(s => s.active), rec.segments.map(() => false))
+})
+
+test('limite do Google (403/429) nas conexões: a conta recua junta e o arquivo termina inteiro, com MD5 certo', async t => {
+  const e = await env(t, { mock: { failures: { rateLimit403Prob: 0.2, error429Prob: 0.1 } }, settings: { connectionsPerDownload: 6, minSegmentSize: 4 * MiB } })
+  const size = 48 * MiB
+  const file = e.mock.addFile('B002_C011.braw', 'root', { size, seed: 21 })
+  const rec = await recordFor(e, file.id)
+  const job = makeTask(e, rec, { maxFailures: 40 })
+  const recuo = new RecuoDaConta({ baseMs: 5, maxMs: 40 })
+  job.task.ctx.recuo = recuo
+  await job.task.run()
+  await assertDone(e, rec, file.id)
+  assert.equal(rec.verify.state, 'ok')
+  const f = e.mock.stats().faults
+  assert.ok(f.rateLimit403 + f.error429 > 0, 'o Drive falso recusou algumas vezes')
+  assert.ok(recuo.vezes > 0, 'as recusas passaram pelo recuo da conta')
+  assert.equal(recuo.restante(), 0)
 })
 
 test('slow: 4 MB/s por conexão, 64 MiB: 8 conexões ≥ 3× mais rápido que 1', async t => {

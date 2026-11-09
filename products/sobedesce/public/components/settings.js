@@ -147,6 +147,34 @@ function Versao() {
       ${dev ? null : html`<${Button} variant="ghost" icon="search" loading=${busy} onClick=${conferir} title="Conferir se saiu versão nova">Conferir</${Button}>`}
     </div>
     ${atual?.commit ? html`<p class="k-nota aj-commit" title=${`commit ${atual.commit}`}>commit ${String(atual.commit).slice(0, 7)}</p>` : null}
+    <${Diagnostico} />
+  </div>`
+}
+
+/**
+ * "Copiar diagnóstico" (09/11/2026): versão, ajustes, o estado das transferências e as últimas linhas do log do motor,
+ * sem nome de arquivo, caminho, e-mail ou token. A pessoa cola na conversa com o suporte.
+ */
+function Diagnostico() {
+  const [busy, setBusy] = useState(false)
+  const [feito, setFeito] = useState(false)
+  const copiar = async () => {
+    setBusy(true)
+    try {
+      const r = await api.get('/api/diagnostico')
+      if (await copyText(JSON.stringify(r.diagnostico, null, 2))) {
+        setFeito(true)
+        setTimeout(() => setFeito(false), 2000)
+        toast('success', 'Diagnóstico copiado. Cole na conversa com o suporte.')
+      } else toast('error', 'Não consegui copiar o diagnóstico.')
+    } catch (err) {
+      toast('error', err?.message || 'Não consegui montar o diagnóstico.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return html`<div class="aj-diagnostico">
+    <${Button} variant="ghost" icon=${feito ? 'check' : 'copy'} loading=${busy} onClick=${copiar} title="Versão, ajustes e o estado das transferências, sem nomes de arquivo">${feito ? 'Copiado' : 'Copiar diagnóstico'}</${Button}>
   </div>`
 }
 

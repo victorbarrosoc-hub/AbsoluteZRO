@@ -2020,6 +2020,20 @@ do card... não consigo localizar o job que quero achar".
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
 
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+- 🔶 Ramo `sobedesce-download-recuo` (relato de usuário pelo Painel Geral; o titular autorizou fazer e publicar o app
+  de computador no mesmo dia): baixando 30 GB, a velocidade deu dois picos e caiu para ~539 KB/s, "0 com problema".
+  - Economia com prazo de 1 h: depois disso, o arquivo volta às conexões dos Ajustes. "Tentar de novo" e a cópia
+    temporária também limpam a economia.
+  - Recuo por conta no 403/429: todas as conexões de download esperam juntas. A espera diz "O Google pediu para ir
+    mais devagar", e não "Sem conexão".
+  - Log do motor sempre ligado (sem token, nome de arquivo, caminho ou e-mail) e "Copiar diagnóstico" em Ajustes ›
+    Versão (`GET /api/diagnostico`).
+  - A versão escrita em Ajustes estava parada em "0.3.2" desde 01/11, em todas as versões novas. Agora ela vem do
+    `package.json`.
+  - Só o app de computador (workflow, sem custo); nada do site.
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:
