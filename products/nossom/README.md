@@ -81,6 +81,20 @@ npm run test:quota
 
 Não rode duas suítes/servidores nas mesmas portas. Testes usam contratos simulados e referências públicas/sintéticas; o cenário de áudio privado é opcional. Não confundem render válido, métricas de sinal ou viewport com qualidade perceptual, GPU em produção ou homologação em dispositivos físicos.
 
+## Prévia no team grátis (ZROFREE)
+
+Para o titular testar a interface num projeto Vercel grátis à parte, sem o login da Absolute ZRO e sem nenhum serviço
+pago ou de produção (decisão de 09/11/2026). A porta é `lib/server/previa.ts` (testes em `tests/previa.test.ts`).
+
+- Projeto Vercel no team ZROFREE: Root Directory `products/nossom`, Framework **Next.js**; o `vercel.json` já dá
+  `npm ci`, `npm run build` e `.next`. Única variável: `ZRO_CHAVE_PREVIA` (24+ caracteres, só do titular). Nenhuma
+  chave do Supabase, Stripe, RunPod, ElevenLabs ou Anthropic.
+- Abrir uma vez `https://<projeto>.vercel.app/previa?chave=<a chave>`: grava o cookie `nossom-previa` (HMAC da chave,
+  30 dias) e abre o estúdio. Sem a chave, o de sempre (vai para a Absolute ZRO). Sem a variável, a porta não existe.
+- Funciona: o site, o estúdio inteiro (telas, ferramentas, Meus projetos no próprio navegador, enviar e ouvir áudio).
+- Não funciona (responde "Indisponível nesta prévia."): tratar o áudio (a cota vem do banco), nuvem, GPU, Z, planos,
+  conta e administração. O cron diário de limpeza responde sem fazer nada (sem `CRON_SECRET`).
+
 ## Distribuição e limites
 
 O Mac 0.2.2 tem assinatura ad-hoc de integridade, sem Developer ID/notarização Apple. As prévias não têm canal nativo de atualização automática habilitado. A infraestrutura para uma distribuição assinada existe, mas requer certificados, nova versão e homologação real. As orientações de instalação estão em `/apps`.
