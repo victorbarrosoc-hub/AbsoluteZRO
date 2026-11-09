@@ -75,6 +75,21 @@ Produção (27/10/2026): cliente `revela-web` cadastrado no banco `AbsoluteZRO` 
 `ZRO_CLIENT_SECRET` (sensível) só em Production na Vercel. Mudar uma variável pede deploy novo, e o projeto só publica
 quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é cancelado pelo Ignored Build Step.
 
+## Prévia no team grátis (ZROFREE)
+
+Para testar sem o login do HUB (que só volta para `revela.absolutezro.com`) e sem nenhuma chave ou banco de produção
+(titular, 09/11/2026). A porta só existe com a variável `ZRO_CHAVE_PREVIA` (24+ caracteres); o projeto oficial no Pro
+não a define e segue igual.
+
+- Projeto Vercel no team **ZROFREE** (Hobby): Root Directory `products/finishing`, Framework **Other**; o resto vem do
+  `vercel.json` (instalação sem dependências, build `node scripts/publicar-site.mjs`, saída `publico/`).
+- Variável: só `ZRO_CHAVE_PREVIA` (a mesma frase longa dos outros apps do ZROFREE). Nada de `ZRO_CLIENT_*` nem `RELEASE`.
+- Abrir uma vez: `https://<projeto>.vercel.app/previa?chave=<a frase>` → cookie `rv_previa` (HMAC da chave, 30 dias) e
+  vai para `/inicio`. Sem a chave, a página neutra. Trocar a variável (e fazer Redeploy) invalida os cookies.
+- Funciona tudo que roda no navegador (LUT, Lab, Looks, CST, Entrega, Converter); o que pede a conta Absolute ZRO (a Z,
+  o Set) continua pedindo e fica de fora na prévia.
+- Código: `api/_previa.js`, `api/previa.js` e a checagem em `api/app.js`; testes em `test/previa.test.js`.
+
 ## Revela Lab
 
 `lab.html` + `app/lab.js` + `src/cor/lab.js`: a pessoa monta o próprio look e leva um pacote profissional.
