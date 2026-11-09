@@ -4,6 +4,7 @@ import { AparelhosSection } from "@/components/home/aparelhos-section";
 import { ClosingSection } from "@/components/home/closing-section";
 import { FeaturesGrid } from "@/components/home/features-grid";
 import { Hero } from "@/components/home/hero";
+import { ImprevistosSection } from "@/components/home/imprevistos-section";
 import { MotionProvider } from "@/components/home/motion";
 import { NovidadesSection } from "@/components/home/novidades-section";
 import { PlatformScript } from "@/components/home/platform";
@@ -34,6 +35,7 @@ export default function Home() {
           <StatsStrip />
           <FeaturesGrid />
           <AparelhosSection />
+          <ImprevistosSection />
           <NovidadesSection />
           <SynqueiSection />
           <ZSection />
