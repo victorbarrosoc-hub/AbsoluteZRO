@@ -5500,3 +5500,13 @@ Branch `sobedesce-download-recuo`.
   - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE: seção "E se…" na página inicial (09/11/2026)
+
+Branch `sobedesce-site-imprevistos`.
+
+- `web/tests/home-imprevistos.test.mts`:
+  - A seção está logo depois de Entre aparelhos e traz os seis casos na ordem.
+  - Cada caso cabe em uma linha.
+  - Não há número de velocidade sem medição.
+- Conferida no `next dev`: três por linha no computador e um por linha no celular.

@@ -2034,6 +2034,15 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE: seção "E se…" na página inicial (09/11/2026)
+
+- 🔶 Ramo `sobedesce-site-imprevistos` (titular, depois de estudar a página do Descarrega), **lote de sexta 13/11**:
+  - Seção "E se…" ("Pensado para o pior dia do set."), logo depois de Entre aparelhos.
+  - Seis casos, cada um com uma linha: cartão saiu no meio, o mesmo cartão de novo, bateria acabou gravando, contador
+    zerado, HD desconectou e fechou tudo no meio da cópia.
+  - A bateria e o contador zerado dependem do app de computador 0.3.13 (ramo `sobedesce-cartao-imprevistos`), que
+    precisa estar publicado antes do site.
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:
