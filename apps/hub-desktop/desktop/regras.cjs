@@ -61,9 +61,32 @@ function linkExterno(url) {
   return u.href
 }
 
-/** O que fazer com uma navegação ou janela nova: 'app' (fica na janela), 'fora' (navegador) ou 'nada'. */
+// Campus da Absolute ZRO (pedido do titular, 09/11/2026): página privada no claude.ai, só do titular. O link aparece só
+// no painel de administração do HUB; aqui ele abre numa janela própria (sessão separada), não no navegador.
+const CAMPUS = 'https://claude.ai/artifact/8A91Heceo7ZyXQ89a4UEDV'
+const CAMPUS_CAMINHO = new URL(CAMPUS).pathname
+
+/** O link é o do Campus (com ou sem # de vista)? */
+function ehCampus(url) {
+  const u = parse(url)
+  return !!u && u.origin === 'https://claude.ai' && !u.username && !u.password && u.pathname.replace(/\/+$/, '') === CAMPUS_CAMINHO
+}
+
+/** A janela do Campus pode navegar para cá? (só claude.ai em https; o resto vai para o navegador) */
+function ehDoClaude(url) {
+  const u = parse(url)
+  return !!u && u.protocol === 'https:' && !u.port && !u.username && !u.password && u.hostname === 'claude.ai'
+}
+
+/** Permissões da janela do Campus: copiar texto e tela cheia, só para o claude.ai. */
+function permitirNoCampus(permissao, urlQuePede) {
+  return PERMITIDAS.has(permissao) && ehDoClaude(urlQuePede)
+}
+
+/** O que fazer com uma navegação ou janela nova: 'app' (fica na janela), 'campus' (janela do Campus), 'fora' (navegador) ou 'nada'. */
 function destino(url, origin) {
   if (podeNavegar(url, origin)) return 'app'
+  if (ehCampus(url)) return 'campus'
   if (linkExterno(url)) return 'fora'
   return 'nada'
 }
@@ -173,6 +196,10 @@ module.exports = {
   podeNavegar,
   linkExterno,
   destino,
+  CAMPUS,
+  ehCampus,
+  ehDoClaude,
+  permitirNoCampus,
   deepLink,
   linkDeApp,
   deepLinkDosArgs,
