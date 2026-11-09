@@ -20,5 +20,6 @@ acrescenta.
   sem mudar os dois.
 - `app/vendor/` só por `npm run vendor` (Mediabunny e xxhash-wasm; conferido em teste).
 - Interface: identidade Absolute ZRO (Figtree, Liquid Glass, texto grafite/branco e cinza, claro nas folhas); o visor é
-  escuro. Pouco texto; a marca é o símbolo Absolute ZRO (o CAMZRO não tem logo próprio ainda).
+  escuro. Pouco texto; a marca é o símbolo Absolute ZRO. A marca própria está em estudo (`docs/marca/camzro.md`,
+  `scripts/marca.mjs`): só entra no app com a escolha do titular.
 - Antes de entregar: `npm test` nesta pasta (Chromium de verdade) e `node publicar.mjs`.

@@ -44,6 +44,9 @@ ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`,
   o Set; HUB `0065` cadastra o produto fechado (roda no deploy do HUB quando a `main` receber o ramo).
 - ✅ Team Pro sem build dos não lançados (titular, 09/11/2026): `aeon`, `revela`, `rift-motion` e `quasar` com Ignored
   Build Step `exit 0`; o último deploy segue servindo a página neutra (`docs/operations/vercel-zrofree.md`).
+- 🟡 Marca (pedido do titular, 09/11/2026: "Crie a logo da CAMZRO"): três estudos de símbolo (Tally, Obturador 180°,
+  Meia-luz) em vetor no código (`products/camzro/scripts/marca.mjs`, `docs/marca/camzro.md`). Esperam a escolha do
+  titular; o app segue com o símbolo Absolute ZRO.
 - ⛔ Publicar: o titular cria o projeto numa conta Vercel grátis à parte (passo a passo no README do app). Domínio
   `camzro.absolutezro.com`, cliente OIDC e abrir o gate pedem autorização.
 - ⬜ Conferir em aparelho de verdade: Android (controles manuais, HEVC, 4K, aquecimento), iPhone (Safari: automático,
