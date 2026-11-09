@@ -2,6 +2,13 @@
 
 Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Console: atalho para o Campus (09/11/2026, ramo `claude/admin-campus`)
+
+- Pedido do titular: o Campus Absolute ZRO (página do Claude com as salas, os agentes, as missões e a mesa de decisões)
+  ganha um item **Campus** no menu do console, só para o papel Admin (`campus` em `AREAS_CONSOLE`, ADR 0034).
+- Abre numa aba nova. O claude.ai não deixa a página abrir dentro de outro site (`frame-ancestors 'self'`), então o
+  console só leva até ela; os dados continuam na própria página.
+
 ## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
 
 Bug do titular no Mac: "já instalei 3 vezes e nunca fica atualizado", em todos os apps (SOBEDESCE com o b1119 instalado e

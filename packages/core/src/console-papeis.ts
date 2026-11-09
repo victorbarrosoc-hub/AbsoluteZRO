@@ -29,6 +29,7 @@ export const AREAS_CONSOLE = [
   'teste-drive',
   'papeis',
   'correio',
+  'campus',
 ] as const
 export type AreaConsole = (typeof AREAS_CONSOLE)[number]
 
@@ -50,6 +51,7 @@ const VER: Record<AreaConsole, readonly PapelConsole[]> = {
   'teste-drive': ADMIN,
   papeis: ADMIN,
   correio: FINANCAS,
+  campus: ADMIN,
 }
 
 /** Quem muda algo em cada área (o suporte só lê, salvo as denúncias do Set). */

@@ -15,6 +15,14 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Console: atalho para o Campus (09/11/2026, ramo `claude/admin-campus`)
+
+- `npm run typecheck`, eslint e prettier nos arquivos mudados: ok.
+- `tests/integration/console-papeis.test.ts` precisa do Postgres do CI (aqui sem banco): roda no PR. A área nova entra
+  em `areasDoPapel('admin')` e fica fora de suporte e financeiro.
+- Conferido: `claude.ai/artifact/...` responde `content-security-policy: frame-ancestors 'self' …`, por isso link e não
+  quadro embutido.
+
 ## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.
