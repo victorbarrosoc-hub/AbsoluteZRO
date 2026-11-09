@@ -5500,3 +5500,29 @@ Branch `sobedesce-download-recuo`.
   - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+Branch `sobedesce-cartao-imprevistos`.
+
+- `test/cartao-imprevistos.test.js`:
+  - Detecta MP4 sem índice, MOV cortado, vazio e JPEG sem o fim. Não acusa o arquivo inteiro, o formato estranho, o
+    RAW nem o arquivo que sumiu.
+  - Separa o que fica no cartão (LRV, LRF, THM, `._`, `.DS_Store`, `Thumbs.db`) do que vai (material bruto e XML).
+  - Na descarga, o interrompido é copiado e avisado, os proxies ficam no cartão, o cartão sai como "não parcial" e é
+    ejetado.
+- `test/backup-automatico.test.js`: o contador zerado vai para `Cartão 01 · contador zerado`, conferido. O destino
+  antigo fica intacto e o mesmo cartão de novo não copia outra vez.
+- Backup Automático, fotos e vídeos e relatório: 39 testes, 39 passaram, 0 falhas.
+- Prévia do cartão (`test/cartao-imprevistos.test.js`):
+  - pega a maior prévia JPEG embutida no RAW, com `FF 00` e marcadores de reinício no meio, e devolve null sem prévia;
+  - lista do mais novo para o mais antigo, sem proxies, e responde 404 a um disco que não está plugado.
+- Conferida no demo, claro e escuro, com um cartão de exemplo em `/media/root`: JPG, ARW (prévia embutida) e MP4
+  tocando.
+- Arquivar (`test/arquivar.test.js`, 3 testes, 3 passaram):
+  - argumentos do DNG Converter por nível e do ffmpeg (CRF/qualidade, LUT, 1080p no Econômico);
+  - escolha do codificador (VideoToolbox só no Mac, x265 se houver, senão x264);
+  - pasta real com ffmpeg e um conversor DNG de mentira: DNG e MP4 em `<pasta> · arquivo`, o original intacto, e a
+    segunda vez não refaz nada.
+- Conferido no demo: pasta com 2 RAW, 2 vídeos (94 MB) e 1 nota; "Testar 8 s" com LUT S-Log3 estimou 33,5 MB e o
+  arquivo saiu com 33,9 MB (−65%).

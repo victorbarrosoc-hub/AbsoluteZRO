@@ -2034,6 +2034,21 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+- 🔶 Ramo `sobedesce-cartao-imprevistos` (titular, depois de estudar a página do Descarrega):
+  - **Contador zerado:** o arquivo com nome repetido não fica mais só como alerta. Ele vai conferido para
+    `Cartão NN · contador zerado`, sem gravar por cima, e não é copiado de novo.
+  - **Gravação interrompida:** MP4/MOV sem índice ou cortado e JPEG sem o fim geram o aviso "Confira antes de
+    formatar", com a lista dos arquivos.
+  - **Proxies:** LRV, LRF, THM e restos do sistema ficam no cartão sem segurar o "pode formatar". O projeto ganha a
+    opção "Levar os proxies da câmera".
+  - **Prévia do cartão:** o "Ver" mostra fotos, RAW (pela prévia JPEG embutida) e vídeos do cartão antes de copiar, e o
+    vídeo toca. A foto da montagem também passa a aceitar RAW.
+  - **Arquivar:** "Arquivar…" em Cartões faz uma cópia menor da pasta ao lado (`<pasta> · arquivo`): RAW → DNG (Adobe
+    DNG Converter, quando instalado) e vídeo compactado com LUT opcional, com "Testar 8 s" antes. O original não muda.
+  - Só o app de computador, sem custo, publicado pelo workflow no merge.
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:

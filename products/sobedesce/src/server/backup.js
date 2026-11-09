@@ -53,7 +53,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
     { raw: true },
   )
 
-  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false, precolor: body.precolor === true })))
+  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false, precolor: body.precolor === true, levarProxies: body.levarProxies === true })))
 
   route('POST', '/api/backup/projeto', tratar(async ({ body }) => {
     const id = texto(body.id, 100)
@@ -66,6 +66,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       midia: body.midia === undefined ? undefined : texto(body.midia, 20),
       synquei: body.synquei === undefined ? undefined : body.synquei !== false,
       precolor: body.precolor === undefined ? undefined : body.precolor === true,
+      levarProxies: body.levarProxies === undefined ? undefined : body.levarProxies === true,
     })
   }))
 
@@ -115,6 +116,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
   route('POST', '/api/backup/nao-cartao', tratar(async ({ body }) => svc.naoECartao(texto(body.caminho))))
 
   route('POST', '/api/backup/conteudo', tratar(async ({ body }) => svc.conteudo(texto(body.caminho))))
+  // Prévia do cartão: as fotos e os vídeos, para ver antes de copiar (a tela pede as miniaturas às rotas da montagem).
+  route('POST', '/api/backup/previa', tratar(async ({ body }) => svc.previa(texto(body.caminho))))
 
   route('POST', '/api/backup/escolher', tratar(async ({ body }) => svc.escolher(texto(body.caminho), escolha(body.escolha))))
 
