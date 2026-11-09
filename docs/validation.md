@@ -37,6 +37,9 @@ Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microf
   roteiro do Maestro andando de plano, ajustes, câmera e microfone, presets, calculadora, clipes).
 - HUB: `npm test` **669/669** em 77 arquivos (com a `0065` e o `nao-lancados.test.ts` cobrindo o `camzro` fechado:
   conta comum não vê, admin vê em todos os canais), `lint`, `format:check` e `typecheck` ok; `build` ok.
+- HUB `npm run test:e2e`: **68 passaram**; os 7 que falharam são todos de WebKit e caem ao abrir o navegador
+  (`Executable doesn't exist at /opt/pw-browsers/webkit-2359`): este ambiente só tem o Chromium. Nenhum depende do
+  CAMZRO; o CI roda com o WebKit instalado.
 - `node scripts/scan-secrets.mjs`: nenhum segredo.
 - Não verificado: aparelho de verdade (Android com controles manuais, iPhone/Safari, câmera USB), a descarga numa pasta
   (o seletor de pasta pede uma pessoa) e o login único (sem cliente `camzro-web` cadastrado; o gate foi testado com o
