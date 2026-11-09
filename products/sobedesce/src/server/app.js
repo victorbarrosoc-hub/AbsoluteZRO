@@ -267,6 +267,8 @@ export async function startServer({ port = DEFAULT_PORT, host = '127.0.0.1', pub
         if (!imagemDoFrames && !pedacoDoCelular && !apagarConversaDaZ && !isJsonType(req.headers['content-type'])) return sendJSON(res, 415, { ok: false, error: 'Requisição recusada: falta Content-Type: application/json.' })
         const origin = req.headers.origin
         if (origin && !origins().has(String(origin).toLowerCase())) return sendJSON(res, 403, { ok: false, error: 'Origem não permitida.' })
+        // a pessoa está mexendo no app: os pedidos do celular voltam a ser vistos a cada 30 s (src/engine/ronda-pedidos.js)
+        ctx.ronda?.acordar(5_000)
       }
       if (url.pathname.startsWith('/api/') || url.pathname === '/oauth/callback') {
         if (await api.dispatch(req, res, url)) return

@@ -66,7 +66,9 @@ export class PedidosRelay {
    * @param {() => import('../server/relay.js').RelayJobs|null} o.relay os trabalhos do Relay (vêm com o servidor)
    * Trocáveis nos testes: pollMs, vidaMs, andamentoMs, esperaContarMs, log.
    */
-  constructor({ cloud, relay, pollMs = POLL_MS, vidaMs = VIDA_MS, andamentoMs = ANDAMENTO_MS, esperaContarMs = 2_000, log } = {}) {
+  constructor({ cloud, relay, pollMs = POLL_MS, vidaMs = VIDA_MS, andamentoMs = ANDAMENTO_MS, esperaContarMs = 2_000, log, ronda = null } = {}) {
+    this.tipo = 'relay'
+    this.ronda = ronda // RondaPedidos: uma pergunta só para todos os tipos (src/engine/ronda-pedidos.js)
     this.cloud = cloud
     this.relay = relay
     this.pollMs = pollMs
@@ -82,6 +84,7 @@ export class PedidosRelay {
   }
 
   start() {
+    if (this.ronda) return this.ronda.ouvir(this)
     this.#planejar(8_000)
   }
 
@@ -94,7 +97,7 @@ export class PedidosRelay {
   }
 
   #planejar(ms = this.pollMs) {
-    if (this.closed) return
+    if (this.closed || this.ronda) return
     clearTimeout(this.timer)
     this.timer = setTimeout(() => {
       this.timer = null
@@ -109,7 +112,8 @@ export class PedidosRelay {
   }
 
   /** Pega e converte os pedidos pendentes, um por vez (os mais antigos primeiro). Devolve quantos terminaram aqui. */
-  async consultar() {
+  /** `lista`: os pedidos que a ronda já trouxe (sem ela, pergunta ao site). */
+  async consultar(lista = null) {
     if (this.rodando) return this.rodando
     this.rodando = (async () => {
       try {
@@ -117,7 +121,7 @@ export class PedidosRelay {
         if (this.closed || !jobs || !this.cloud?.signedIn || Date.now() < this.pausaAte) return 0
         let pedidos
         try {
-          const d = await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=relay')
+          const d = lista ? { pedidos: lista } : await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=relay')
           pedidos = Array.isArray(d.pedidos) ? d.pedidos.filter(p => p?.tipo === 'relay') : []
         } catch (err) {
           if ([400, 403, 404].includes(statusDe(err))) this.pausaAte = Date.now() + SEM_SITE_MS
