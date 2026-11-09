@@ -1,7 +1,7 @@
 {
   "name": "absolute-zro-desktop",
   "productName": "Absolute ZRO",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "Absolute ZRO para computador: o HUB numa janela própria e o instalador do ecossistema, no Mac e no Windows.",
   "private": true,
   "main": "desktop/main.cjs",

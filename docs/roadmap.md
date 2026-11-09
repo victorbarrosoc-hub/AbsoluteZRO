@@ -2,6 +2,14 @@
 
 Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Central 1.4.7: menu Administração no app (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+Pedido do titular: o Campus no programa do computador, dentro de Administração, só para quem é administrador.
+
+- ✅ Menu **Administração** (Painel de administração e Campus, ⌘⇧K) só aparece para o papel `admin`: o app confere em
+  `/api/v1/admin/z-lab` com a sessão do HUB (200 só para admin). Sem mudança no HUB, sem custo na Vercel.
+- ⬜ Conferir no Mac do titular: o menu aparece depois de entrar, e some ao sair da conta.
+
 ## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
 
 Pedido do titular: no app de computador, o Campus (página privada dele no claude.ai, link no painel de administração do

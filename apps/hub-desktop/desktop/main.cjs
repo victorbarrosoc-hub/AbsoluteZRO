@@ -173,6 +173,26 @@ function abrirFora(url) {
 const PARTICAO_CAMPUS = 'persist:campus'
 let campusWin = null
 
+// Menu "Administração" (pedido do titular, 09/11/2026): só aparece para o papel de plataforma admin. O app pergunta ao
+// HUB com a sessão guardada, numa rota que só responde 200 para admin; qualquer outra resposta (ou sem rede) esconde o menu.
+let ehAdmin = false
+let adminConferidoEm = 0
+async function conferirAdmin(forcar = false) {
+  if (SMOKE || (!forcar && Date.now() - adminConferidoEm < 10 * 60 * 1000)) return
+  adminConferidoEm = Date.now()
+  let novo = false
+  try {
+    const r = await session.fromPartition(PARTICAO).fetch(`${HUB}/api/v1/admin/z-lab`, { credentials: 'include' })
+    novo = r.status === 200
+  } catch {
+    novo = false
+  }
+  if (novo !== ehAdmin) {
+    ehAdmin = novo
+    menu()
+  }
+}
+
 function abrirCampus() {
   if (campusWin && !campusWin.isDestroyed()) {
     if (campusWin.isMinimized()) campusWin.restore()
@@ -354,6 +374,7 @@ function criarJanela() {
     if (regras.ehDoHub(url, HUB)) ultimaUrl = url
     // acabou de entrar na conta (a central estava sem sessão): confere os apps da conta agora
     if (central && central.semLogin && agenda && regras.ehDoHub(url, HUB) && new URL(url).pathname === '/app') agenda.conferir().catch(() => {})
+    if (regras.ehDoHub(url, HUB)) conferirAdmin(/^\/(app|entrar|sair)/.test(new URL(url).pathname)).catch(() => {})
     wc.setZoomLevel(zoom)
     estadoBarra()
   })
@@ -1026,6 +1047,24 @@ function menu() {
         MAC ? { role: 'close', label: 'Fechar janela' } : { role: 'quit', label: 'Sair', accelerator: 'Ctrl+Q' },
       ],
     },
+    ...(ehAdmin
+      ? [
+          {
+            label: 'Administração',
+            submenu: [
+              {
+                label: 'Painel de administração',
+                click: () =>
+                  wc() &&
+                  wc()
+                    .loadURL(`${HUB}/admin`)
+                    .catch(() => {}),
+              },
+              { label: 'Campus', accelerator: 'CmdOrCtrl+Shift+K', click: () => abrirCampus() },
+            ],
+          },
+        ]
+      : []),
     {
       label: 'Editar',
       submenu: [

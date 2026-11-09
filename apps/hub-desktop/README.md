@@ -165,6 +165,13 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.7: menu Administração (só para admin)
+
+Para o papel de plataforma `admin`, o app mostra o menu **Administração** com **Painel de administração** e **Campus**
+(⌘⇧K / Ctrl+Shift+K, abre a janela do Campus). O app pergunta ao HUB com a sessão guardada, em
+`/api/v1/admin/z-lab`, que só responde 200 para admin; outra resposta, ou sem rede, esconde o menu. Confere ao abrir uma
+página do HUB, no máximo a cada 10 minutos, e na hora ao entrar ou sair da conta.
+
 ## 1.4.6: Campus numa janela própria
 
 O link do Campus no painel de administração do HUB (só o papel `admin` vê) abre numa janela do app, com sessão
