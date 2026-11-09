@@ -17,7 +17,9 @@ const resposta = () => {
   return r
 }
 const chamar = async (rota, url, cookie, metodo) => {
-  const f = (await import(`../api/${rota}.js`)).default
+  // /api/zro/* e /api/rift/* passam pelos roteadores (api/conta.js e api/dados.js), como na Vercel
+  const arquivo = rota.startsWith('zro/') ? 'conta' : rota.startsWith('rift/') ? 'dados' : rota
+  const f = (await import(`../api/${arquivo}.js`)).default
   const r = resposta()
   await f(pedido(url, cookie, metodo), r)
   return r
@@ -108,7 +110,7 @@ test('sem cookie ou com cookie forjado: a página neutra no site, nos arquivos e
     assert.equal(p.statusCode, 200)
     assert.ok(neutra(p))
     assert.equal((await chamar('recurso', '/api/recurso?f=app.js', cookie)).statusCode, 404)
-    for (const rota of ['zro/eu', 'zro/entrar', 'rift/saude', 'rift/projetos', 'rift/biblioteca', 'rift/z', 'zro/higgsfield/index']) {
+    for (const rota of ['zro/eu', 'zro/entrar', 'rift/saude', 'rift/projetos', 'rift/biblioteca', 'rift/z', 'zro/higgsfield', 'zro/higgsfield/gerar']) {
       const r = await chamar(rota, `/api/${rota}`, cookie)
       assert.equal(r.statusCode, 404, `${rota} ${cookie}`)
       assert.ok(neutra(r), rota)

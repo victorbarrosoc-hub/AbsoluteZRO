@@ -45,11 +45,9 @@ before(async () => {
   process.env.RIFT_DATABASE_URL = urlRift
   z = await import('../api/_zro.js')
   banco = await import('../api/_banco.js')
-  rotas = {
-    projetos: (await import('../api/rift/projetos.js')).default,
-    biblioteca: (await import('../api/rift/biblioteca.js')).default,
-    exportacoes: (await import('../api/rift/exportacoes.js')).default,
-  }
+  // pelo roteador de /api/rift/* (api/dados.js): o endereço do pedido escolhe a rota, como na Vercel
+  const dados = (await import('../api/dados.js')).default
+  rotas = { projetos: dados, biblioteca: dados, exportacoes: dados }
 })
 after(async () => {
   await banco?.fecharBanco()

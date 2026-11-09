@@ -14,8 +14,13 @@ Decisões em [ADR 0035](../../docs/decisions/0035-motion-2d-3d.md).
   `npm test` confere.
 - Banco próprio (01/11/2026): schema `rift` no Supabase AbsoluteZRO-SP, papel dono `rift` (login) e `rift_app` (sem
   login, sem BYPASSRLS), RLS forçado em `projetos`, `biblioteca` (só nome, tipo e tamanho) e `exportacoes`. Migração
-  nova = arquivo novo em `db/migrations/` (`npm run migrar` com `RIFT_DATABASE_URL`; o sha256 é conferido). Rotas em
-  `api/rift/*` sempre por `comoPessoa` (`api/_banco.js`); `/api/rift/saude` confere a conexão. `npm test` sobe um
+  nova = arquivo novo em `db/migrations/` (`npm run migrar` com `RIFT_DATABASE_URL`; o sha256 é conferido). Rotas de
+  `/api/rift/*` sempre por `comoPessoa` (`api/_banco.js`); `/api/rift/saude` confere a conexão.
+- Funções (plano grátis da Vercel: no máximo 12 por deploy): `/api/zro/*` e `/api/rift/*` são uma função cada
+  (`api/conta.js` e `api/dados.js`, `api/_roteador.js`), com os handlers em `api/_rotas/zro/` e `api/_rotas/rift/`. O
+  vercel.json reescreve `/api/zro/<c>` para `/api/conta?c=<c>` (idem `dados`); o roteador devolve ao handler o endereço
+  público de sempre. Rota nova = handler em `api/_rotas/` e uma linha em `ROTAS`; `test/funcoes.test.js` confere o
+  limite (hoje 5 funções). `npm test` sobe um
   Postgres de verdade (isolamento pelas rotas e direto no banco).
 - Painel (`/#app`, `#projetos`, `#modelos`, `#biblioteca`, `#exportacoes`): com a conta, tudo na conta (abre em qualquer
   aparelho; o que estava no aparelho sobe na primeira vez); sem banco, neste aparelho. O estúdio abre cada projeto com

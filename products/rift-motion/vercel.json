@@ -15,17 +15,22 @@
     "api/previa.js": {
       "includeFiles": "neutra.html"
     },
-    "api/rift/*.js": {
+    "api/conta.js": {
       "includeFiles": "neutra.html"
     },
-    "api/zro/*.js": {
-      "includeFiles": "neutra.html"
-    },
-    "api/zro/higgsfield/*.js": {
+    "api/dados.js": {
       "includeFiles": "neutra.html"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/zro/:c*",
+      "destination": "/api/conta?c=:c*"
+    },
+    {
+      "source": "/api/rift/:c*",
+      "destination": "/api/dados?c=:c*"
+    },
     {
       "source": "/previa",
       "destination": "/api/previa"

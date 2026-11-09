@@ -22,7 +22,8 @@ const pedido = (metodo, url, cookie, corpo) =>
 const chamar = async (rota, metodo, url, cookie, corpo) => {
   const r = { statusCode: 0, headers: {} }
   r.setHeader = (k, v) => (r.headers[k.toLowerCase()] = v)
-  r.end = (c) => (r.corpo = c ? JSON.parse(c) : null)
+  // JSON das rotas; caminho que não existe é a página neutra (HTML) do roteador, como o 404 da Vercel de antes
+  r.end = (c) => (r.corpo = !c ? null : String(c).startsWith('<') ? String(c) : JSON.parse(c))
   await rotas[rota](pedido(metodo, url, cookie, corpo), r)
   return r
 }
@@ -38,7 +39,9 @@ before(async () => {
   await (await import('../scripts/migrar.mjs')).migrar(urlRift)
   z = await import('../api/_zro.js')
   banco = await import('../api/_banco.js')
-  rotas = { painel: (await import('../api/zro/higgsfield/index.js')).default, gerar: (await import('../api/zro/higgsfield/gerar.js')).default, z: (await import('../api/rift/z.js')).default }
+  // pelos roteadores (api/conta.js para /api/zro/*, api/dados.js para /api/rift/*): o endereço escolhe a rota
+  const conta = (await import('../api/conta.js')).default
+  rotas = { painel: conta, gerar: conta, z: (await import('../api/dados.js')).default }
 })
 after(async () => {
   await banco?.fecharBanco()
@@ -87,7 +90,9 @@ test('Higgsfield pela Absolute ZRO: sem sessão, outra origem, método ou caminh
   assert.equal((await chamar('painel', 'GET', '/api/zro/higgsfield', outra)).statusCode, 401, 'tokens de outra pessoa')
   assert.equal((await chamar('painel', 'POST', '/api/zro/higgsfield', comTokens('ana'), {})).statusCode, 405)
   assert.equal((await chamar('gerar', 'DELETE', '/api/zro/higgsfield/gerar', comTokens('ana'))).statusCode, 405)
-  assert.equal((await chamar('gerar', 'GET', '/api/zro/higgsfield/outra', comTokens('ana'))).statusCode, 404)
+  const outraRota = await chamar('gerar', 'GET', '/api/zro/higgsfield/outra', comTokens('ana'))
+  assert.equal(outraRota.statusCode, 404)
+  assert.match(outraRota.corpo, /indisponível/)
   const req = pedido('POST', '/api/zro/higgsfield/gerar', comTokens('ana'), { acao: 'telas' })
   req.headers.origin = 'https://mal.example'
   const r = { statusCode: 0, headers: {}, setHeader() {}, end(c) { this.corpo = JSON.parse(c) } }

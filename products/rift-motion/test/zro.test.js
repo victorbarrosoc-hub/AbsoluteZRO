@@ -14,12 +14,12 @@ const resposta = () => {
 test('sem ZRO_CLIENT_ID e ZRO_CLIENT_SECRET: /eu diz "não configurado" e /entrar volta ao painel com ?zro=config', async () => {
   delete process.env.ZRO_CLIENT_ID
   delete process.env.ZRO_CLIENT_SECRET
-  const eu = (await import('../api/zro/eu.js')).default
+  const eu = (await import('../api/conta.js')).default
   const r = resposta()
   await eu(pedido('/api/zro/eu'), r)
   assert.equal(r.statusCode, 200)
   assert.deepEqual(JSON.parse(r.corpo), { ok: false, configurado: false })
-  const entrar = (await import('../api/zro/entrar.js')).default
+  const entrar = (await import('../api/conta.js')).default
   const r2 = resposta()
   await entrar(pedido('/api/zro/entrar?volta=%2F%23projetos'), r2)
   assert.equal(r2.statusCode, 303)
