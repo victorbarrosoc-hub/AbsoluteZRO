@@ -34,6 +34,12 @@ ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`,
   tela; nome de clipe de cinema; presets.
 - ✅ Clipes: por dia, rever, mandar, apagar com dois toques; descarga conferida em xxh64 com CSV do DaVinci, ALE e
   relatório de câmera.
+- ✅ Página inicial (pedido do titular, 09/11/2026: "precisa ser foda", referências SOBEDESCE e RADION): herói com a
+  tela real gravando, números, monitor trocando de ferramenta (telas reais), prioridade de obturador em motion, "O app
+  caiu. O take voltou.", três câmeras com o mesmo timecode (hora de verdade), claquete na tela + roteiro do Maestro, o
+  clipe andando do Maestro ao DaVinci, aparelhos e fichas honestas (Android, iPhone, computador). Telas geradas pelo
+  próprio app (`scripts/telas-do-site.mjs`). Sai só em `/sobre` para quem passa no gate (Ajustes › Sobre o CAMZRO); no
+  lançamento, `CAMZRO_SITE_ABERTO=1` abre `/`, os arquivos do site e a `og.png`. Reduzir movimento: quadros parados.
 - ✅ Ecossistema: contrato `camzro.clip/1`; roteiro do Maestro como decupagem; bip igual ao do TPeasy (o Synquei acha);
   o Set; HUB `0065` cadastra o produto fechado (roda no deploy do HUB quando a `main` receber o ramo).
 - ✅ Team Pro sem build dos não lançados (titular, 09/11/2026): `aeon`, `revela`, `rift-motion` e `quasar` com Ignored

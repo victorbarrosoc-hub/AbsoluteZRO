@@ -121,10 +121,26 @@ Fontes: páginas e notícias do Blackmagic Camera 2.0 (dpreview, PetaPixel, Cine
   titular ou modo local), o login único (`api/zro/*`, cópia do RADION/Relay) e a hora do set.
 - `app/vendor/`: Mediabunny (MPL-2.0) e xxhash-wasm (MIT), cópias exatas (`npm run vendor`, conferidas em teste).
 
+## Página inicial
+
+- Mora em `app/site.html`, `app/site.css` e `app/site.js`; as telas de verdade em `app/site/*.webp` e a imagem de
+  compartilhar em `app/marca/og.png`. Não lançado: só sai pelas portas do gate, em **`/sobre`** (no app, Ajustes ›
+  Sobre o CAMZRO); `/` continua sendo o app. Sem porta, a página neutra, e nenhum arquivo do site sai.
+- No lançamento (com a migration que abre o gate), `CAMZRO_SITE_ABERTO=1` no projeto: `/` de quem não entrou vira a
+  página inicial com "Entrar com a Absolute ZRO" (`/entrar`), os arquivos do site (`site.css`, `site.js`, `site/*`,
+  `marca/*`, manifest) saem para todos, e o `publicar.mjs` põe `og.png` e o `apple-touch-icon` na raiz pública. O app e a
+  API seguem fechados sem porta.
+- As demonstrações (monitor, exposição, queda, timecode, ecossistema) são HTML animado por fases em `site.js`; com
+  "reduzir movimento", cada uma fica num quadro parado. O tema (claro por padrão) é a mesma escolha do app.
+- Refazer as telas: `node scripts/telas-do-site.mjs` (ffmpeg e o Chromium do Playwright). O app roda com a câmera falsa
+  filmando um take do Coverr (`products/ai-edit/marca/home/cenas/onda.mp4`, só leitura), liga cada ferramenta de
+  verdade (falsa cor, foco, scopes, claquete com o roteiro do Maestro, claquete na tela, take recuperado depois de uma
+  queda, iPhone deitado) e grava os `.webp` (~70–240 KB) e a `og.png`.
+
 ## Testar
 
-- `npm test`: núcleo (contas contra valores de norma), portas (gate, prévia, arquivos), contrato e a câmera de ponta a
-  ponta num Chromium com câmera e microfone falsos (grava, confere o arquivo, derruba o app no meio do take e recupera).
+- `npm test`: núcleo (contas contra valores de norma), portas (gate, prévia, arquivos, `/sobre` e o site aberto), contrato e
+  a câmera de ponta a ponta num Chromium com câmera e microfone falsos (grava, confere o arquivo, derruba o app no meio do take e recupera).
 - `npm run dev` → http://localhost:8092 em modo local (sem login; só em localhost).
 
 ## Publicar numa conta Vercel grátis (passo a passo para o titular)

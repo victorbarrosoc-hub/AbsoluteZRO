@@ -603,10 +603,10 @@ h2 {
 .s-exp-cena img {
   /* a tela real do visor, sem o resto da interface em volta: a imagem não muda enquanto a luz muda */
   position: absolute;
-  width: 112%;
+  width: 114%;
   max-width: none;
-  left: -6%;
-  top: -5%;
+  left: -7%;
+  top: -11%;
 }
 .s-exp::before {
   /* a luz do ambiente: um calor atrás do visor que apaga conforme a luz cai (o indicador, não um efeito) */
@@ -830,6 +830,8 @@ h2 {
   color: var(--apoio);
   display: flex;
   justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
 }
 .s-qd-vez {
   position: relative;
@@ -1349,15 +1351,14 @@ h2 {
     grid-template-columns: minmax(0, 1fr);
   }
   .s-leg {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
   .s-leg button {
-    width: auto;
     display: flex;
-    padding: 9px 14px;
+    justify-content: center;
+    padding: 11px 14px;
   }
   .s-leg button::before {
     width: 7px;
@@ -1372,9 +1373,6 @@ h2 {
   .s-queda,
   .s-claq {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .s-queda .s-mac {
-    order: -1;
   }
   .s-fluxo ol {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1482,5 +1480,29 @@ h2 {
   .s-clipe {
     font-size: 11px;
     padding: 7px 10px;
+    left: 0;
+    transform: none;
+    transition:
+      left 0.9s var(--mola),
+      transform 0.9s var(--mola);
+  }
+  .s-fluxo[data-fase='1'] .s-clipe {
+    left: 25%;
+    transform: translateX(-25%);
+  }
+  .s-fluxo[data-fase='2'] .s-clipe {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .s-fluxo[data-fase='3'] .s-clipe {
+    left: 75%;
+    transform: translateX(-75%);
+  }
+  .s-fluxo[data-fase='4'] .s-clipe {
+    left: 100%;
+    transform: translateX(-100%);
+  }
+  .s-qd-legenda {
+    font-size: 12.5px;
   }
 }

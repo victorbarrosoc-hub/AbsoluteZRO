@@ -110,28 +110,15 @@ try {
     await page.waitForTimeout(1000)
     await foto(page, 'vectorscope')
     await definir(page, 'monitor.scopes', '')
-    // obturador: ND na lente, rede de 50/60 Hz e os ângulos sem flicker
-    await folha(page, 'obturador')
-    await page.waitForTimeout(500)
-    await foto(page, 'obturador')
-    await fecharFolha(page)
     // claquete com o roteiro do Maestro
     await folha(page, 'claquete')
     await page.setInputFiles('#arquivo-roteiro', ROTEIRO)
     await page.waitForTimeout(800)
     await foto(page, 'claquete')
     await fecharFolha(page)
-    // dois takes e a lista de clipes, com um bom take
-    for (let i = 0; i < 2; i++) {
-      await gravar(page, 1600)
-      await parar(page)
-    }
-    await page.evaluate(async () => (await import('/app/biblioteca.js')).marcarBom())
-    await folha(page, 'biblioteca')
-    await page.waitForTimeout(800)
-    await foto(page, 'clipes')
-    await fecharFolha(page)
-    // gravando: o ponto vermelho, o timecode correndo e o medidor
+    // gravando: o ponto vermelho, o timecode correndo e o medidor (um take antes, para a miniatura aparecer)
+    await gravar(page, 1600)
+    await parar(page)
     await gravar(page, 2600)
     await foto(page, 'gravando')
     await parar(page)
