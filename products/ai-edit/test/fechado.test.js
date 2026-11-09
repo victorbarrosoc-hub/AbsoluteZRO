@@ -27,8 +27,8 @@ describe('o que o site publica', () => {
     assert.deepEqual(
       v.rewrites.map((r) => [r.source, r.destination]),
       [
-        // o repasse do Set (api/_set.js, que confere a liberação como a Z)
-        ['/api/zro/set/:caminho*', '/api/zro/set?c=:caminho*'],
+        // login, Set, Z, Higgsfield e sons numa função só (api/conta.js; o Hobby aceita no máximo 12 funções)
+        ['/api/zro/:caminho*', '/api/conta?c=:caminho*'],
         // a prévia do titular no team grátis (api/_previa.js): sem ZRO_CHAVE_PREVIA, a página neutra
         ['/previa', '/api/previa'],
         // /app/ (com a barra, a volta do login) não casa com :caminho* na Vercel: vai explícito
@@ -243,7 +243,7 @@ describe('api/app.js: o editor só para a conta liberada', () => {
   before(async () => {
     zro = await iniciarZroFalsa(CLIENTE)
     Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-    for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/zro/${r}.js`)).default
+    for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
     f.app = (await import('../api/app.js')).default
     // como na Vercel: a função responde /api/app, e as reescritas do vercel.json levam /app/*, /src/* e /presets/* a ela
     app = http.createServer((req, res) => {

@@ -20,9 +20,9 @@ const f = {}
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/zro/${r}.js`)).default
-  f.buscar = (await import('../api/zro/sons/buscar.js')).default
-  f.arquivo = (await import('../api/zro/sons/openverse/[id].js')).default
+  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
+  f.buscar = (await import('../api/_zro_rotas/sons/buscar.js')).default
+  f.arquivo = (await import('../api/_zro_rotas/sons/openverse/[id].js')).default
   app = http.createServer((req, res) => {
     const p = new URL(req.url, 'http://x').pathname
     if (p === '/api/zro/entrar') return f.entrar(req, res)
@@ -97,8 +97,8 @@ describe('repasse dos sons', () => {
 
   test('banco no Drive: a pasta e o arquivo seguem só com os parâmetros conferidos', async () => {
     const c = await entrar()
-    f.banco = f.banco || (await import('../api/zro/sons/banco/index.js')).default
-    f.somBanco = f.somBanco || (await import('../api/zro/sons/banco/[id].js')).default
+    f.banco = f.banco || (await import('../api/_zro_rotas/sons/banco/index.js')).default
+    f.somBanco = f.somBanco || (await import('../api/_zro_rotas/sons/banco/[id].js')).default
     const lista = await pedir('/api/zro/sons/banco?pasta=1AbCdEfGhIjKlMnOp&q=whoosh&conta=c1&token=roubar', { cookies: c })
     assert.equal(lista.status, 200)
     assert.equal((await lista.json()).sons[0].origem, 'banco')
@@ -123,8 +123,8 @@ describe('repasse dos sons', () => {
 
   test('sons da Absolute ZRO: o catálogo e o arquivo de uma versão seguem sem parâmetro nenhum', async () => {
     const c = await entrar()
-    f.zro = f.zro || (await import('../api/zro/sons/zro/index.js')).default
-    f.somZro = f.somZro || (await import('../api/zro/sons/zro/[id].js')).default
+    f.zro = f.zro || (await import('../api/_zro_rotas/sons/zro/index.js')).default
+    f.somZro = f.somZro || (await import('../api/_zro_rotas/sons/zro/[id].js')).default
     const lista = await pedir('/api/zro/sons/zro?x=1', { cookies: c })
     assert.equal(lista.status, 200)
     assert.equal(lista.headers.get('cache-control'), 'no-store')

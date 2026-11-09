@@ -21,7 +21,7 @@ const sessaoFalsa = (extra = {}) => selar('ae_conta', { sub: 'zro-111', nome: 'L
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-  for (const r of ['entrar', 'callback', 'eu', 'sair']) rotas[r] = (await import(`../api/zro/${r}.js`)).default
+  for (const r of ['entrar', 'callback', 'eu', 'sair']) rotas[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
   app = http.createServer((req, res) => {
     const r = /^\/api\/zro\/(\w+)/.exec(req.url)
     if (r && rotas[r[1]]) return rotas[r[1]](req, res)

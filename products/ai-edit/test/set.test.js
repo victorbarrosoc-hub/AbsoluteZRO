@@ -24,7 +24,7 @@ const f = {}
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-  for (const r of ['entrar', 'callback', 'set']) f[r] = (await import(`../api/zro/${r}.js`)).default
+  for (const r of ['entrar', 'callback', 'set']) f[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
   // como a Vercel: /api/zro/set e a reescrita /api/zro/set/<caminho> → ?c=<caminho>
   app = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x')

@@ -105,9 +105,9 @@ describe('as contas da folha', () => {
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/zro/${r}.js`)).default
-  f.painel = (await import('../api/zro/higgsfield/index.js')).default
-  f.gerar = (await import('../api/zro/higgsfield/gerar.js')).default
+  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
+  f.painel = (await import('../api/_zro_rotas/higgsfield/index.js')).default
+  f.gerar = (await import('../api/_zro_rotas/higgsfield/gerar.js')).default
   app = http.createServer((req, res) => {
     const p = new URL(req.url, 'http://x').pathname
     if (p === '/api/zro/entrar') return f.entrar(req, res)

@@ -19,7 +19,7 @@ describe('prévia por chave (ZRO_CHAVE_PREVIA)', () => {
     for (const k of ['ZRO_CLIENT_ID', 'ZRO_CLIENT_SECRET', 'ZRO_ISSUER', 'ZRO_CHAVE_PREVIA', 'RELEASE']) delete process.env[k]
     f.app = (await import('../api/app.js')).default
     f.previa = (await import('../api/previa.js')).default
-    f.eu = (await import('../api/zro/eu.js')).default
+    f.eu = (await import('../api/_zro_rotas/eu.js')).default
     srv = http.createServer((req, res) => {
       const u = new URL(req.url, 'http://x')
       if (u.pathname === '/previa') return f.previa(req, res)

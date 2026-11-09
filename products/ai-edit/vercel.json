@@ -10,6 +10,9 @@
     },
     "api/previa.js": {
       "includeFiles": "em-desenvolvimento.html"
+    },
+    "api/conta.js": {
+      "includeFiles": "em-desenvolvimento.html"
     }
   },
   "headers": [
@@ -79,7 +82,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/zro/set/:caminho*", "destination": "/api/zro/set?c=:caminho*" },
+    { "source": "/api/zro/:caminho*", "destination": "/api/conta?c=:caminho*" },
     { "source": "/previa", "destination": "/api/previa" },
     { "source": "/app/", "destination": "/api/app?caminho=app/index.html" },
     { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },

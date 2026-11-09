@@ -20,8 +20,8 @@ const f = {}
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
-  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/zro/${r}.js`)).default
-  for (const [k, arq] of Object.entries(ROTAS)) f[k] = (await import(`../api/zro/${arq}`)).default
+  for (const r of ['entrar', 'callback']) f[r] = (await import(`../api/_zro_rotas/${r}.js`)).default
+  for (const [k, arq] of Object.entries(ROTAS)) f[k] = (await import(`../api/_zro_rotas/${arq}`)).default
   // como a Vercel: cada arquivo de api/ responde o próprio caminho
   app = http.createServer((req, res) => {
     const p = new URL(req.url, 'http://x').pathname
