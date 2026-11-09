@@ -417,6 +417,71 @@ export function MontagensScreen() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [vista])
+
+  // ── ver a montagem andando (post com take): play e agulha embaixo; cada take toca no quadro dele, no trecho escolhido.
+  // A agulha anda pelo DOM (requestAnimationFrame), não pelo estado do Preact.
+  const [tocandoM, setTocandoM] = useState(false)
+  const [naoToca, setNaoToca] = useState({}) // caminho → true quando o navegador não toca o take (MXF, ProRes)
+  const agulhaM = useRef(0)
+  const rafM = useRef(0)
+  const reguaM = useRef(null)
+  const ponteiroM = useRef(null)
+  const tcM = useRef(null)
+  const vidsM = useRef({}) // índice do quadro → <video>
+  const tempoDoTake = (p, t) => {
+    const info = infoAtual[p]
+    if (!info) return 0
+    const tr = trechoDe(d.trechos[p], d.duracao, info.duracao)
+    return Math.min(info.duracao, tr.inicio + t * (tr.lento ? 0.5 : 1))
+  }
+  const marcar = (t) => {
+    agulhaM.current = t
+    if (ponteiroM.current) ponteiroM.current.style.left = `${(t / d.duracao) * 100}%`
+    if (tcM.current) tcM.current.textContent = tc(t)
+  }
+  const irPara = (t) => {
+    marcar(t)
+    for (const [i, v] of Object.entries(vidsM.current)) if (v && quadros[i]) v.currentTime = tempoDoTake(quadros[i], t)
+  }
+  const pararM = () => {
+    cancelAnimationFrame(rafM.current)
+    for (const v of Object.values(vidsM.current)) v?.pause()
+    setTocandoM(false)
+  }
+  const tocarM = () => {
+    if (tocandoM) return pararM()
+    const t0 = agulhaM.current >= d.duracao - 0.05 ? 0 : agulhaM.current
+    irPara(t0)
+    for (const [i, v] of Object.entries(vidsM.current)) {
+      if (!v || !quadros[i]) continue
+      v.playbackRate = d.trechos[quadros[i]]?.lento ? 0.5 : 1
+      v.play().catch(() => {})
+    }
+    const comeco = performance.now() - t0 * 1000
+    const passo = () => {
+      const t = (performance.now() - comeco) / 1000
+      if (t >= d.duracao) {
+        pararM()
+        irPara(0)
+        return
+      }
+      marcar(t)
+      rafM.current = requestAnimationFrame(passo)
+    }
+    rafM.current = requestAnimationFrame(passo)
+    setTocandoM(true)
+  }
+  const arrastoM = useRef(false)
+  const tempoNaRegua = (e) => {
+    const r = reguaM.current.getBoundingClientRect()
+    return Math.max(0, Math.min(d.duracao, ((e.clientX - r.left) / r.width) * d.duracao))
+  }
+  // mudou o trecho, a duração ou os quadros: para e volta a agulha para onde estava (dentro da duração)
+  useEffect(() => {
+    pararM()
+    irPara(Math.min(agulhaM.current, d.duracao))
+    return () => cancelAnimationFrame(rafM.current)
+  }, [d.trechos, d.duracao, quadros, vista, trechoDoQuadro])
   const numeroDoQuadro = useMemo(() => (grupos ? slideDosQuadros(grupos, opts).map((s) => s + 1) : quadros.map((_, i) => i + 1)), [grupos, tela.w, d.espaco, quadros])
 
   // informações dos takes (duração, tamanho) para a agulha e o enquadre
@@ -1027,8 +1092,65 @@ export function MontagensScreen() {
         <div class=${cx('mt-rolagem', longo && 'is-longo')}>
         <div class="mt-tela" style=${`width:${Math.round(tela.w * escala)}px;height:${Math.round(tela.h * escala)}px`}>
           <canvas ref=${canvas} class=${cx('mt-canvas', (trocando >= 0 || pega) && 'is-trocando')} style=${`width:${Math.round(tela.w * escala)}px;height:${Math.round(tela.h * escala)}px`} onPointerDown=${desce} onPointerMove=${move} onPointerUp=${sobe} onPointerCancel=${sobe} aria-label="Montagem: toque num quadro para escolher, arraste para enquadrar, role para dar zoom"></canvas>
+          ${videosNoPost.map((i) => {
+            const p = quadros[i]
+            const info = infoAtual[p]
+            if (!info || naoToca[p]) return null
+            const b = caixasAgora()[i]
+            const q = enquadreDe(d.enquadres[i])
+            const s = cobrir(info.largura, info.altura, b.w, b.h, q.x, q.y, q.zoom)
+            const pc = (v) => `${(v * 100).toFixed(4)}%`
+            return html`<div
+              key=${`${i}:${p}`}
+              class=${cx('mt-take-vivo', ativo === i && 'is-ativo')}
+              style=${`left:${pc(b.x / tela.w)};top:${pc(b.y / tela.h)};width:${pc(b.w / tela.w)};height:${pc(b.h / tela.h)};border-radius:${d.cantos * escala}px`}
+            >
+              <video
+                ref=${(el) => {
+                  if (el) vidsM.current[i] = el
+                  else delete vidsM.current[i]
+                }}
+                src=${videoUrl(p)}
+                muted=${d.som !== p}
+                playsinline
+                preload="auto"
+                style=${`left:${pc(-s.sx / s.sw)};top:${pc(-s.sy / s.sh)};width:${pc(info.largura / s.sw)};height:${pc(info.altura / s.sh)}`}
+                onLoadedMetadata=${(e) => (e.currentTarget.currentTime = tempoDoTake(p, agulhaM.current))}
+                onError=${() => setNaoToca((x) => ({ ...x, [p]: true }))}
+              ></video>
+            </div>`
+          })}
         </div>
         </div>
+        ${
+          videosNoPost.length
+            ? html`<div class="mt-tempo" role="group" aria-label="Ver a montagem">
+                <button type="button" class="mt-tempo-play" onClick=${tocarM} aria-label=${tocandoM ? 'Pausar' : 'Tocar a montagem'}><${Icon} name=${tocandoM ? 'pause-fill' : 'play'} size=${16} /></button>
+                <div
+                  class="mt-tempo-regua"
+                  ref=${reguaM}
+                  onPointerDown=${(e) => {
+                    if (tocandoM) pararM()
+                    e.currentTarget.setPointerCapture?.(e.pointerId)
+                    arrastoM.current = true
+                    irPara(tempoNaRegua(e))
+                  }}
+                  onPointerMove=${(e) => arrastoM.current && irPara(tempoNaRegua(e))}
+                  onPointerUp=${() => (arrastoM.current = false)}
+                  onPointerCancel=${() => (arrastoM.current = false)}
+                >
+                  ${Array.from({ length: d.duracao + 1 }, (_, k) => html`<i style=${`left:${(k / d.duracao) * 100}%`}></i>`)}
+                  <span class="mt-tempo-ponteiro" ref=${ponteiroM}></span>
+                </div>
+                <span class="mt-tempo-tc"><b ref=${tcM}>${tc(0)}</b> / ${tc(d.duracao)}</span>
+                ${
+                  ativoVideo
+                    ? html`<button type="button" class="mt-link" disabled=${!infoAtual[quadros[ativo]]} onClick=${() => setTrechoDoQuadro(ativo)}><${Icon} name="film" size=${14} />Mudar o trecho</button>`
+                    : html`<span class="mt-sub">${videosNoPost.some((i) => naoToca[quadros[i]]) ? 'Um take não toca aqui: ele fica no quadro do começo' : 'Toque num take para mudar o trecho'}</span>`
+                }
+              </div>`
+            : null
+        }
         ${
           ativo >= 0
             ? html`<div class="mt-barra" role="toolbar" aria-label="Quadro escolhido">

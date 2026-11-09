@@ -5520,6 +5520,10 @@ Branch `sobedesce-carrossel-por-slide`.
   - tocar na foto e depois no slide 4;
   - 20 slides rolando de lado.
 - Salvar um carrossel de 3 slides (1–2 emendados e 3 com "Quatro") gerou 3 JPG de 1080 × 1350, na ordem certa.
+- Ver a montagem com take, no demo: post "Dois empilhados" com um take (trecho a partir de 10 s) e uma foto.
+  - O play anda o take no quadro: em 2 s, o vídeo estava em 12,4 s.
+  - A agulha em 4 s mostra o vídeo em 14 s, e o contador diz 0:04,0 / 0:05,0.
+  - O enquadre do take tocando bate com o da foto parada.
 
 ## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
 

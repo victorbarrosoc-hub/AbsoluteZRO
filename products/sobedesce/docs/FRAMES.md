@@ -178,6 +178,11 @@ tocar no slide e depois na foto (passa sozinho para o próximo), ou tocar na fot
 mostra o número do slide. O formato vale para todos os slides (o Instagram corta o carrossel pelo primeiro). Trocar o
 modelo de um slide ou o número de slides não tira as fotos dos outros (`remapear`).
 
+**Ver a montagem andando** (titular, 09/11/2026): no post com take, embaixo da montagem ficam o play e a agulha (a
+duração da montagem). Cada take toca no quadro dele, com o enquadre, no trecho escolhido (câmera lenta a ½×) e com o som
+do take escolhido em "Som"; arrastar a agulha mostra o quadro daquele instante. "Mudar o trecho" abre a agulha do take.
+Take que o navegador não toca (MXF, ProRes) fica no quadro do começo, com aviso.
+
 **Faixas** (o modelo do pré-color para os Stories): 2 a 6 frames um embaixo do outro, no formato do frame (16:9, 1,85,
 2,39, 4:3 ou tela cheia, que divide a altura), centrados; quando não cabem na largura toda, ficam mais estreitos sem
 mudar o formato. Num formato vertical, a **zona segura dos Stories** (ligada no padrão) deixa livres os 250 px de cima e
