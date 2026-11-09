@@ -59,6 +59,11 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
   grafite; título, legenda e logomarca. Usa os frames escolhidos na aba Frames ou escolhe sozinho.
 - Enquadramento por frame (`enquadres[i] = { x, y, zoom }`, zoom até 3×): tocar ou clicar no frame da prévia escolhe; arrastar move (até a borda do frame encostar na caixa); pinça, roda do mouse ou a barra aproximam; Centralizar volta ao meio. Vale em qualquer formato (fica guardado por frame) e sai igual no post em alta. `frameNoPonto` acha o frame tocado (na polaroid, desfaz o giro).
 
+- **Frames → Montagem** (titular, 09/11/2026, 0.3.15): no trabalho, o + escolhe frames (aba Frames) e takes (aba
+  Takes, o + no canto do take). A barra de escolhidos ganha "Montagem": os arquivos vão para a bandeja de Estúdio ›
+  Montagens, somando ao que já está lá (sem repetir, até 60): o frame como foto, o take como vídeo (o arquivo do take,
+  já cortado e com a cor). Os takes são os cortes de cena do computador; o celular faz os dele (Celular 2.8.72).
+
 ## Cor (pré-color)
 
 O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/frames.js` › `CorPasso`):
