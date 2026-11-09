@@ -221,7 +221,7 @@ function folhaAjustes() {
   return `${topo('', 'Ajustes')}
     ${grupo('', `<div class="cartao">${[item('formato', 'ajustes', 'Formato'), item('monitor', 'lut', 'Monitor'), item('claquete', 'claquete', 'Claquete'), item('biblioteca', 'biblioteca', 'Clipes'), item('presets', 'preset', 'Presets'), item('calculadora', 'calculadora', 'Calculadora do set'), item('aparelho', 'trocar', 'Câmera e microfone')].join('')}</div>`)}
     ${grupo('', cartao([linha('Tema', segmentos('tema', [{ v: 'claro', r: 'Claro' }, { v: 'escuro', r: 'Escuro' }], A.tema))]))}
-    ${grupo('Ecossistema', cartao([linha(conta, MODO === 'conta' ? `<button type="button" class="glass-btn glass-btn--pequeno" data-acao="sair">Sair</button>` : ''), linha('Apps Absolute ZRO', `<a class="glass-btn glass-btn--pequeno" href="https://absolutezro.com/ferramentas" target="_blank" rel="noopener">Abrir</a>`)]))}
+    ${grupo('Ecossistema', cartao([linha(conta, MODO === 'conta' ? `<button type="button" class="glass-btn glass-btn--pequeno" data-acao="sair">Sair</button>` : ''), linha('Apps Absolute ZRO', `<a class="glass-btn glass-btn--pequeno" href="https://absolutezro.com/ferramentas" target="_blank" rel="noopener">Abrir</a>`), linha('Sobre o CAMZRO', `<a class="glass-btn glass-btn--pequeno" href="/sobre">Ver</a>`, 'A página inicial: o que a câmera faz')]))}
     ${nota(`Aparelho <b>${esc(S.aparelho)}</b> · nada sai daqui sem você mandar.`)}`
 }
 

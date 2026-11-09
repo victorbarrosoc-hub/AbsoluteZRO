@@ -12,9 +12,10 @@ const TIPOS = { '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.p
 const config = JSON.parse(await readFile(join(RAIZ, 'vercel.json'), 'utf8'))
 const cabecalhos = Object.fromEntries(config.headers.find((h) => h.source === '/(.*)').headers.map((h) => [h.key, h.value]))
 
-/** /, /entrar, /previa, /hora e /app/<f> como no vercel.json. */
+/** /, /sobre, /entrar, /previa, /sw.js e /app/<f> como no vercel.json. */
 export function reescrever(caminho) {
   if (caminho === '/') return '/api/pagina'
+  if (caminho === '/sobre') return '/api/pagina?v=sobre'
   if (caminho === '/entrar') return '/api/zro/entrar'
   if (caminho === '/previa') return '/api/previa'
   if (caminho === '/sw.js') return '/api/recurso?f=sw.js'

@@ -2,7 +2,7 @@
 // `camzro` na claim zro_release, prévia do titular (chave) ou modo local. Fora disso, a página neutra e 404.
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import http from 'node:http'
 
 const PORTA = 8191
@@ -19,7 +19,7 @@ const comHost = (caminho, host) =>
     r.on('error', erro)
   })
 const ambiente = (env) => {
-  for (const k of ['CAMZRO_LOCAL', 'CAMZRO_CHAVE_PREVIA', 'ZRO_CHAVE_PREVIA', 'ZRO_CLIENT_ID', 'ZRO_CLIENT_SECRET']) delete process.env[k]
+  for (const k of ['CAMZRO_LOCAL', 'CAMZRO_CHAVE_PREVIA', 'ZRO_CHAVE_PREVIA', 'ZRO_CLIENT_ID', 'ZRO_CLIENT_SECRET', 'CAMZRO_SITE_ABERTO']) delete process.env[k]
   Object.assign(process.env, env)
 }
 
@@ -106,6 +106,75 @@ test('conta Absolute ZRO: entra só com `camzro` na claim zro_release (gate de l
   assert.match(await (await fetch(url('/'))).text(), /indisponível/)
 })
 
+test('/sobre, a página inicial: só por uma porta; no lançamento (CAMZRO_SITE_ABERTO=1), para todos, com Entrar', async () => {
+  const DO_SITE = ['site.css', 'site.js', 'site/gravando.webp', 'marca/og.png', 'marca/simbolo-grafite.svg', 'manifest.webmanifest']
+  const DO_APP = ['app.js', 'app.css', 'motor/gravador.js', 'nucleo/timecode.js', 'sw.js']
+  // sem porta: a página neutra em /sobre e em ?v=sobre; nenhum arquivo do site
+  ambiente({})
+  for (const c of ['/sobre', '/api/pagina?v=sobre']) {
+    const html = await (await fetch(url(c))).text()
+    assert.match(html, /indisponível/)
+    assert.doesNotMatch(html, /CAMZRO/)
+  }
+  for (const f of [...DO_SITE, ...DO_APP]) assert.equal((await fetch(url(`/app/${f}`))).status, 404, f)
+  // modo local: a página inicial, com a ação principal levando ao app (/), e os arquivos do site
+  ambiente({ CAMZRO_LOCAL: '1' })
+  const local = await fetch(url('/sobre'))
+  assert.equal(local.status, 200)
+  assert.equal(local.headers.get('x-camzro'), null)
+  const htmlLocal = await local.text()
+  assert.match(htmlLocal, /<title>CAMZRO · A câmera do set\.<\/title>/)
+  assert.match(htmlLocal, /<span class="leve">CAM<\/span><span class="forte">ZRO<\/span>/)
+  assert.match(htmlLocal, /href="\/">Abrir a câmera</)
+  assert.doesNotMatch(htmlLocal, /%[A-Z_]+%/)
+  assert.doesNotMatch(htmlLocal, /\/entrar/)
+  assert.match(await (await fetch(url('/'))).text(), /<title>CAMZRO<\/title>/) // o / continua sendo o app
+  for (const f of DO_SITE) {
+    const r = await fetch(url(`/app/${f}`))
+    assert.equal(r.status, 200, f)
+  }
+  assert.match((await fetch(url('/app/site/gravando.webp'))).headers.get('content-type'), /image\/webp/)
+  assert.equal((await fetch(url('/app/site.html'))).status, 404) // a página só sai montada, por /sobre
+  // prévia do titular: a mesma página
+  const chave = 'p'.repeat(16) + '-previa-de-teste-123'
+  ambiente({ ZRO_CHAVE_PREVIA: chave })
+  const cookie = (await fetch(url(`/previa?chave=${encodeURIComponent(chave)}`), { redirect: 'manual' })).headers.get('set-cookie').split(';')[0]
+  assert.match(await (await fetch(url('/sobre'), { headers: { cookie } })).text(), /Abrir a câmera/)
+  assert.match(await (await fetch(url('/sobre'))).text(), /indisponível/)
+  // a página não cita app não lançado nem promete o que o navegador não grava
+  assert.doesNotMatch(htmlLocal, /\bAEON\b|\bRevela\b|Quasar|NOSSOM|Rift Motion/) // (a classe .revela, em minúsculas, é o motion)
+  assert.doesNotMatch(htmlLocal, /ProRes[^.]*\b(sim|grava)\b/i)
+  // lançamento: CAMZRO_SITE_ABERTO=1 e sem porta: / e /sobre mostram a página com Entrar; o app continua fechado
+  ambiente({ CAMZRO_SITE_ABERTO: '1' })
+  for (const c of ['/', '/sobre']) {
+    const r = await fetch(url(c))
+    assert.equal(r.headers.get('x-camzro'), null, c)
+    const html = await r.text()
+    assert.match(html, /href="\/entrar">Entrar com a Absolute ZRO</, c)
+    assert.doesNotMatch(html, /<title>CAMZRO<\/title>/, c)
+  }
+  for (const f of DO_SITE) assert.equal((await fetch(url(`/app/${f}`))).status, 200, f)
+  for (const f of DO_APP) assert.equal((await fetch(url(`/app/${f}`))).status, 404, f)
+  assert.equal((await fetch(url('/sw.js'))).status, 404)
+  assert.equal((await fetch(url('/api/camzro/hora'))).status, 401)
+  // com o site aberto, quem passou por uma porta segue vendo o app em / e a página em /sobre
+  ambiente({ CAMZRO_SITE_ABERTO: '1', CAMZRO_LOCAL: '1' })
+  assert.equal((await fetch(url('/'))).headers.get('x-camzro'), 'app')
+  assert.match(await (await fetch(url('/sobre'))).text(), /Abrir a câmera/)
+})
+
+test('a página inicial é só arquivos do próprio site (CSP sem script inline, sem CDN) e as telas são leves', () => {
+  const html = readFileSync(new URL('../app/site.html', import.meta.url), 'utf8')
+  assert.doesNotMatch(html, /<script(?![^>]*src=)/)
+  assert.doesNotMatch(html, /style="/)
+  for (const m of html.matchAll(/(?:src|href)="(https?:[^"]+)"/g)) assert.match(m[1], /^https:\/\/absolutezro\.com\//, m[1])
+  for (const m of html.matchAll(/src="(\/app\/[^"]+)"/g)) {
+    const f = m[1].slice('/app/'.length)
+    assert.ok(statSync(new URL(`../app/${f}`, import.meta.url)).isFile(), f)
+    if (f.endsWith('.webp')) assert.ok(statSync(new URL(`../app/${f}`, import.meta.url)).size <= 260 * 1024, `${f} pesada`)
+  }
+})
+
 test('vercel.json: câmera e microfone só no próprio site, CSP fechada, tudo pelo gate', () => {
   const v = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
   const h = Object.fromEntries(v.headers.find((x) => x.source === '/(.*)').headers.map((x) => [x.key, x.value]))
@@ -116,6 +185,7 @@ test('vercel.json: câmera e microfone só no próprio site, CSP fechada, tudo p
   assert.match(h['X-Robots-Tag'], /noindex/)
   const r = Object.fromEntries(v.rewrites.map((x) => [x.source, x.destination]))
   assert.equal(r['/'], '/api/pagina')
+  assert.equal(r['/sobre'], '/api/pagina?v=sobre')
   assert.equal(r['/app/:f*'], '/api/recurso?f=:f*')
   assert.equal(r['/sw.js'], '/api/recurso?f=sw.js')
   assert.equal(v.outputDirectory, 'publico')

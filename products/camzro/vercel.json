@@ -15,6 +15,7 @@
     { "source": "/api/zro/set/:caminho*", "destination": "/api/zro/set?c=:caminho*" },
     { "source": "/", "destination": "/api/pagina" },
     { "source": "/previa", "destination": "/api/previa" },
+    { "source": "/sobre", "destination": "/api/pagina?v=sobre" },
     { "source": "/entrar", "destination": "/api/zro/entrar" },
     { "source": "/sw.js", "destination": "/api/recurso?f=sw.js" },
     { "source": "/app/:f*", "destination": "/api/recurso?f=:f*" }

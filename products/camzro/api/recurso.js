@@ -1,12 +1,14 @@
 // GET /app/<arquivo> (e /sw.js) → os scripts, o estilo e a marca do app, só para quem passou por uma das portas de
 // api/_sessao.js (fora delas, 404: o app não lançado não aparece nem pelo código). Lista fechada de arquivos, montada
-// da pasta app/ na hora de carregar; nada de caminho vindo do pedido.
+// da pasta app/ na hora de carregar; nada de caminho vindo do pedido. Os arquivos da página inicial (site.css, site.js,
+// site/*, marca/*, manifest) saem para todos só no lançamento (CAMZRO_SITE_ABERTO=1); o resto do app, nunca sem porta.
 import { readFile } from 'node:fs/promises'
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { consulta } from './_zro.js'
 import { pessoaDe } from './_sessao.js'
+import { siteAberto } from './pagina.js'
 
 const APP = fileURLToPath(new URL('../app/', import.meta.url))
 const TIPOS = {
@@ -15,9 +17,10 @@ const TIPOS = {
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.webmanifest': 'application/manifest+json',
 }
-const FORA = new Set(['app.html', 'indisponivel.html'])
+const FORA = new Set(['app.html', 'indisponivel.html', 'site.html'])
 
 function listar(dir) {
   const r = []
@@ -36,10 +39,13 @@ export const ARQUIVOS = Object.fromEntries(
     .filter((f) => TIPOS[extname(f)] && !FORA.has(f))
     .map((f) => [f, TIPOS[extname(f)]]),
 )
+/** O que a página inicial usa: sai para todos só no lançamento (CAMZRO_SITE_ABERTO=1). */
+export const DO_SITE = Object.fromEntries(Object.entries(ARQUIVOS).filter(([f]) => f.startsWith('marca/') || f.startsWith('site') || f === 'manifest.webmanifest'))
 
 export default async function recurso(req, res) {
   const f = String(consulta(req).get('f') || '')
-  const tipo = pessoaDe(req) && Object.hasOwn(ARQUIVOS, f) ? ARQUIVOS[f] : null
+  const liberado = pessoaDe(req) ? ARQUIVOS : siteAberto() ? DO_SITE : {}
+  const tipo = Object.hasOwn(liberado, f) ? liberado[f] : null
   if (!tipo) {
     res.statusCode = 404
     res.setHeader('Cache-Control', 'no-store')

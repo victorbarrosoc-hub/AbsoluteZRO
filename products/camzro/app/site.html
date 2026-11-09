@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <!-- CAMZRO · a página inicial (pedido do titular, 09/11/2026: à altura de uma página de produto da apple.com; referências:
+       as páginas do SOBEDESCE e do RADION). Não lançado: só sai para quem passa no gate (prévia em /sobre) ou, no
+       lançamento, para todos (CAMZRO_SITE_ABERTO=1). As telas são o app de verdade (app/site/*.webp, geradas por
+       scripts/telas-do-site.mjs); as demonstrações são HTML animado por fases em app/site.js; com "reduzir movimento",
+       cada uma mostra um quadro parado. Sem script nem estilo inline (CSP). -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>CAMZRO · A câmera do set.</title>
+    <meta name="description" content="A câmera de vídeo do set, no navegador do celular e do computador. Monitor de cinema, timecode do set, claquete e take à prova de queda. Faz parte do ecossistema Absolute ZRO." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#fbfbfd" />
+    <link rel="icon" href="/app/marca/simbolo-grafite.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/app/marca/icone-180.png" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="CAMZRO" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CAMZRO" />
+    <meta property="og:title" content="CAMZRO · A câmera do set." />
+    <meta property="og:description" content="A câmera de vídeo do set, no navegador do celular e do computador. Faz parte do ecossistema Absolute ZRO." />
+    <meta property="og:url" content="https://camzro.absolutezro.com/" />
+    <meta property="og:image" content="https://camzro.absolutezro.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CAMZRO — a câmera do set, gravando um take no computador." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://camzro.absolutezro.com/og.png" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/app/site.css" />
+    <script type="module" src="/app/site.js"></script>
+  </head>
+  <body>
+    <header class="s-topo">
+      <a class="s-marca" href="/sobre" aria-label="CAMZRO">
+        <img class="so-claro" src="/app/marca/simbolo-grafite.svg" alt="" width="22" height="22" /><img class="so-escuro" src="/app/marca/simbolo-branco.svg" alt="" width="22" height="22" />
+        <span><span class="leve">CAM</span><span class="forte">ZRO</span></span>
+      </a>
+      <nav class="s-links" aria-label="Seções"><a href="#monitor">Monitor</a><a href="#exposicao">Exposição</a><a href="#queda">Gravação</a><a href="#set">Set</a><a href="#ecossistema">Ecossistema</a></nav>
+      <button class="s-tema" id="s-tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
+        <span><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg></span>
+        <span><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg></span>
+      </button>
+      <a class="glass-btn glass-btn--ink glass-btn--pequeno" href="%ENTRAR%"><span class="s-longo">%ENTRAR_TEXTO%</span><span class="s-curto">%ENTRAR_CURTO%</span></a>
+    </header>
+
+    <main>
+      <!-- herói: a marca, o nome e a câmera de verdade gravando -->
+      <section class="s-heroi">
+        <svg class="s-simbolo s-sobe" viewBox="0 0 100 100" aria-hidden="true"><path class="s-estrela" d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /></svg>
+        <h1 class="s-sobe"><span class="leve">CAM</span><span class="forte">ZRO</span></h1>
+        <p class="s-apoio s-sobe">A câmera de vídeo do set, no navegador do celular e do computador.</p>
+        <div class="s-acoes s-sobe"><a class="glass-btn glass-btn--ink glass-btn--g" href="%ENTRAR%">%ENTRAR_TEXTO%</a><a class="glass-btn glass-btn--g" href="#monitor">Ver o monitor</a></div>
+        <figure class="s-palco s-sobe">
+          <div class="s-mac"><img src="/app/site/gravando.webp" alt="O CAMZRO no computador gravando um take: timecode vermelho correndo, guia 2,39, medidor de áudio e a claquete Cena 1 · A · Take 3" width="1920" height="1200" fetchpriority="high" /></div>
+          <figcaption>Gravando: timecode do set, guia 2,39 e o medidor de áudio. Tela real do CAMZRO.</figcaption>
+        </figure>
+      </section>
+
+      <!-- números (todos verdadeiros: README e núcleo testado) -->
+      <section class="s-numeros" aria-label="Em números">
+        <div class="revela"><b>4K</b><span>de 23,976 a 60 fps, cadência constante</span></div>
+        <div class="revela"><b>24<small>bits</small></b><span>áudio PCM cru, sem processamento de chamada</span></div>
+        <div class="revela"><b>1<small>s</small></b><span>por fragmento salvo no disco, enquanto grava</span></div>
+        <div class="revela"><b>0</b><span>imagem ou som enviado a um servidor</span></div>
+      </section>
+
+      <!-- monitor: o app de verdade trocando de ferramenta -->
+      <section class="s-secao" id="monitor">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Monitor de cinema</p>
+          <h2><span class="leve">Veja</span> <span class="forte">o que a câmera vê.</span></h2>
+          <p class="s-apoio">Falsa cor, foco, forma de onda e vectorscope medidos no sinal gravado, antes de apertar o botão.</p>
+        </div>
+        <div class="s-mon revela" id="demo-mon" data-fase="0">
+          <div class="s-mac">
+            <div class="s-mon-telas">
+              <img src="/app/site/falsa-cor.webp" alt="Falsa cor na escala ARRI: cinza 18% em verde, pele em rosa, estourado em vermelho, com a legenda" width="1920" height="1200" loading="lazy" />
+              <img src="/app/site/foco.webp" alt="Focus peaking: as bordas em foco marcadas em vermelho" width="1920" height="1200" loading="lazy" />
+              <img src="/app/site/computador.webp" alt="Forma de onda no canto do visor, com o guia 2,39 e o medidor de áudio" width="1920" height="1200" loading="lazy" />
+              <img src="/app/site/vectorscope.webp" alt="Vectorscope com os alvos a 75% e a linha de pele" width="1920" height="1200" loading="lazy" />
+            </div>
+          </div>
+          <ol class="s-leg">
+            <li><button type="button" data-ir="0"><b>Falsa cor</b><span>Escala ARRI ou Simples, com legenda</span></button></li>
+            <li><button type="button" data-ir="1"><b>Foco</b><span>Peaking com cor e sensibilidade, lupa 4×</span></button></li>
+            <li><button type="button" data-ir="2"><b>Forma de onda</b><span>Histograma, RGB parade e % estourado</span></button></li>
+            <li><button type="button" data-ir="3"><b>Vectorscope</b><span>Alvos a 75% e linha de pele</span></button></li>
+          </ol>
+        </div>
+        <p class="s-nota">Zebra, guias de 2,39 a 9:16, área segura, nível, LUT de monitor <code>.cube</code> e desanamorfizar. Tudo num shader, só na tela.</p>
+      </section>
+
+      <!-- exposição: prioridade de obturador -->
+      <section class="s-secao s-faixa" id="exposicao">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Prioridade de obturador</p>
+          <h2><span class="leve">180° fica.</span> <span class="forte">O ISO acompanha.</span></h2>
+          <p class="s-apoio">O celular não dá esse modo ao navegador: o CAMZRO fecha o laço e corrige até ⅓ de stop por vez, mantendo o desfoque do cinema.</p>
+        </div>
+        <div class="s-exp revela" id="demo-exp" data-luz="0" aria-label="Demonstração: a luz muda, o ângulo fica em 180° e o ISO acompanha">
+          <div class="s-exp-visor">
+            <div class="s-exp-cena"><img src="/app/site/gravando.webp" alt="" width="1920" height="1200" loading="lazy" /></div>
+            <div class="s-exp-base">
+              <div><small>ISO</small><b id="exp-iso">100</b></div>
+              <div class="fixo"><small>Obturador</small><b>180°</b></div>
+              <div><small>WB</small><b>5600 K</b></div>
+              <div><small>Cadência</small><b>24</b></div>
+              <span class="dica" id="exp-dica">Sol. ISO no mínimo.</span>
+            </div>
+          </div>
+          <div class="s-exp-luz"><span></span><b>Luz<small id="exp-luz">Sol</small></b></div>
+        </div>
+        <div class="s-chips revela" aria-label="Anti-flicker a 24 fps"><span>Sem flicker a 24 fps</span><i>60 Hz · 144°</i><i>60 Hz · 216°</i><i>50 Hz · 172,8°</i></div>
+        <p class="s-nota">Onde o aparelho deixa: ISO, ângulo ou velocidade, Kelvin, foco, zoom e tocha. Segurar trava AE/AF; arrastar muda o EV. ND para 180° calculado na hora.</p>
+      </section>
+
+      <!-- gravação à prova de queda -->
+      <section class="s-secao" id="queda">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Gravação à prova de queda</p>
+          <h2><span class="leve">O app caiu.</span> <span class="forte">O take voltou.</span></h2>
+          <p class="s-apoio">Um fragmento por segundo, direto no armazenamento. Na volta, o take é fechado em MOV até o último segundo gravado.</p>
+        </div>
+        <div class="s-queda">
+          <div class="s-qd revela" id="demo-queda" data-fase="0" aria-label="Demonstração: o take vai para o disco a cada segundo; o app cai; o take volta">
+            <div class="s-qd-tc"><i></i><b>A001C007</b><small id="qd-estado">gravando</small></div>
+            <div class="s-frags"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="s-qd-legenda"><span>MP4 fragmentado, no armazenamento</span><span>1 fragmento = 1 s</span></p>
+            <div class="s-qd-vez">
+              <div class="s-qd-disco"><b>Cada segundo já está no disco.</b><span>Sem arquivo temporário, sem esperar o Parar.</span></div>
+              <div class="s-qd-queda"><b>O app fechou.</b><span>Ligação, bateria, o sistema matou a aba.</span></div>
+              <div class="s-qd-volta"><b>A001C007_261109_K3F2.mov</b><span>0:11 · fechado sem recomprimir</span><em>recuperado</em></div>
+            </div>
+          </div>
+          <figure class="revela">
+            <div class="s-mac"><img src="/app/site/recuperado.webp" alt="O CAMZRO na volta: o aviso 'Um take que caiu foi recuperado' e o clipe marcado como recuperado na lista" width="1920" height="1200" loading="lazy" /></div>
+          </figure>
+        </div>
+        <p class="s-nota">Testado no Chromium: a página é derrubada no meio do take e o arquivo volta inteiro. Descarga conferida em xxh64, com CSV do DaVinci e ALE.</p>
+      </section>
+
+      <!-- o set: timecode igual em todas as câmeras -->
+      <section class="s-secao s-escuro" id="set">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Relógio do set</p>
+          <h2><span class="leve">Três câmeras.</span> <span class="forte">Um timecode.</span></h2>
+          <p class="s-apoio">Hora do dia acertada pela rede do set, abaixo de meio quadro. Câmeras A, B e C saem com o mesmo número.</p>
+        </div>
+        <div class="s-tcs revela" id="demo-tc" aria-label="Demonstração: três câmeras com o mesmo timecode">
+          <div class="s-tcam"><small>Câmera A</small><b class="tc">00:00:00:00</b><span>Cena 12 · B · Take 3<em>±1 ms</em></span></div>
+          <div class="s-tcam"><small>Câmera B</small><b class="tc">00:00:00:00</b><span>Cena 12 · B · Take 3<em>±2 ms</em></span></div>
+          <div class="s-tcam"><small>Câmera C</small><b class="tc">00:00:00:00</b><span>Cena 12 · B · Take 3<em>±1 ms</em></span></div>
+        </div>
+        <p class="s-tc-legenda">SMPTE com drop-frame em 29,97 e 59,94. Sem rede, o relógio do aparelho, e a tela avisa.</p>
+      </section>
+
+      <!-- claquete: a tela e o roteiro do Maestro -->
+      <section class="s-secao" id="claquete">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Claquete</p>
+          <h2><span class="leve">A claquete</span> <span class="forte">já sabe o plano.</span></h2>
+          <p class="s-apoio">O roteiro do Maestro vira a decupagem: cena, plano e lente entram na claquete. Bater toca o bip que o Synquei acha.</p>
+        </div>
+        <div class="s-claq">
+          <figure class="revela">
+            <div class="s-fone"><img src="/app/site/slate.webp" alt="Claquete na tela do celular: projeto Maré, cena 12, plano B, take 3, câmera A e o timecode em vermelho" width="2556" height="1179" loading="lazy" /></div>
+            <figcaption>Claquete na tela: número grande, timecode, bip e flash.</figcaption>
+          </figure>
+          <figure class="revela">
+            <div class="s-mac"><img src="/app/site/claquete.webp" alt="A folha Claquete com o roteiro Café Aurora do Maestro: Cena 1 · Abertura, Plano A, GPG drone subindo, e o botão Próximo plano" width="1920" height="1200" loading="lazy" /></div>
+            <figcaption>O roteiro do Maestro na claquete. Próximo plano anda pela lista.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ecossistema: o clipe anda do roteiro à edição -->
+      <section class="s-secao s-faixa" id="ecossistema">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Ecossistema Absolute ZRO</p>
+          <h2><span class="leve">Do roteiro</span> <span class="forte">ao DaVinci.</span></h2>
+          <p class="s-apoio">O mesmo clipe, a mesma ficha, a mesma conta. Cada app faz a parte dele.</p>
+        </div>
+        <div class="s-fluxo revela" id="demo-fluxo" data-fase="0" aria-label="Demonstração: o clipe anda do Maestro ao DaVinci">
+          <span class="s-clipe" aria-hidden="true">A001C007 · 12B-3</span>
+          <ol>
+            <li><i class="s-no"><svg viewBox="0 0 24 24"><path d="M7 3.5h8l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" /><path d="M9 11h6M9 15h6M15 3.5v4h4" /></svg></i><b>Maestro</b><span>O roteiro vira a claquete: cena, plano, lente.</span></li>
+            <li><i class="s-no"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="11" rx="2.5" /><path d="m16 11 5-2.5v8L16 14" /><circle cx="9.5" cy="12.5" r="2.5" /></svg></i><b>CAMZRO</b><span>Grava o take com a ficha e o bip de sincronia.</span></li>
+            <li><i class="s-no"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 4 10 2-5h7" /></svg></i><b>Synquei</b><span>Acha o bip e sincroniza com o som direto.</span></li>
+            <li><i class="s-no"><svg viewBox="0 0 24 24"><path d="M8 20V5M4.5 8.5 8 5l3.5 3.5M16 4v15M12.5 15.5 16 19l3.5-3.5" /></svg></i><b>SOBEDESCE</b><span>Confere a cópia pelo mesmo xxh64.</span></li>
+            <li><i class="s-no"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3" /><path d="M12 3.5v5M12 15.5v5M3.5 12h5M15.5 12h5" /></svg></i><b>DaVinci</b><span>Importa o CSV: cena, plano, take e bom take.</span></li>
+          </ol>
+        </div>
+        <p class="s-nota">Conta única da Absolute ZRO e o Set, com a equipe online. Tudo sai como arquivo, por ação sua.</p>
+      </section>
+
+      <!-- aparelhos -->
+      <section class="s-secao" id="aparelhos">
+        <div class="s-cabeca revela">
+          <p class="s-sobre">Aparelhos</p>
+          <h2><span class="leve">Qualquer aparelho</span> <span class="forte">vira câmera.</span></h2>
+          <p class="s-apoio">Abre no navegador e vai para a Tela de Início. Câmera USB e placa de captura HDMI aparecem na lista.</p>
+        </div>
+        <div class="s-apar revela">
+          <figure class="s-mac"><img src="/app/site/computador.webp" alt="O CAMZRO no computador, com forma de onda e guia 2,39" width="1920" height="1200" loading="lazy" /></figure>
+          <figure class="s-fone"><img src="/app/site/celular-deitado.webp" alt="O CAMZRO no iPhone deitado, com a falsa cor ligada" width="2556" height="1179" loading="lazy" /></figure>
+        </div>
+        <div class="s-fichas">
+          <article class="s-ficha revela">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M10 18.5h4" /></svg>
+            <b>Android</b>
+            <span>Controles manuais conforme o aparelho libera. HEVC, 4K, PCM 24 bits.</span>
+          </article>
+          <article class="s-ficha revela">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3" /><path d="M10 5h4" /></svg>
+            <b>iPhone</b>
+            <span>Exposição e foco no automático, com trava e zoom. Monitor, scopes, timecode e claquete inteiros.</span>
+          </article>
+          <article class="s-ficha revela">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="12.5" rx="2" /><path d="M2 20h20" /></svg>
+            <b>Computador</b>
+            <span>Câmera USB ou placa HDMI. Descarga conferida para o SSD, com CSV do DaVinci e ALE.</span>
+          </article>
+        </div>
+        <p class="s-nota">O navegador grava H.264, HEVC ou AV1 de 8 bits. Sem ProRes nem Log: isso pede app nativo, outra fase.</p>
+      </section>
+
+      <!-- fecho -->
+      <section class="s-secao s-fecho">
+        <svg class="s-simbolo revela" viewBox="0 0 100 100" aria-hidden="true"><path d="M74 40.02C75 47.51 77.33 49 94.82 50C77.33 51 75 52.49 74 59.98C73 52.49 70.67 51 53.18 50C70.67 49 73 47.51 74 40.02Z" /><path fill-rule="evenodd" d="M9.7 50a34.3 34.3 0 1 0 68.6 0a34.3 34.3 0 1 0-68.6 0ZM18.3 50a25.7 25.7 0 1 0 51.4 0a25.7 25.7 0 1 0-51.4 0Z" /></svg>
+        <div class="s-cabeca revela">
+          <h2><span class="leve">Pronto</span> <span class="forte">para o set.</span></h2>
+          <p class="s-apoio">Uma conta Absolute ZRO. Nada sai do aparelho sem você mandar.</p>
+        </div>
+        <div class="s-acoes revela"><a class="glass-btn glass-btn--ink glass-btn--g" href="%ENTRAR%">%ENTRAR_TEXTO%</a></div>
+      </section>
+    </main>
+
+    <footer class="s-rodape">
+      <img class="so-claro" src="/app/marca/absolute-zro-grafite.svg" alt="Absolute ZRO" width="1340" height="124" /><img class="so-escuro" src="/app/marca/absolute-zro-branco.svg" alt="Absolute ZRO" width="1340" height="124" />
+      <a href="https://absolutezro.com/privacidade">Privacidade</a>
+      <a href="https://absolutezro.com/termos">Termos</a>
+    </footer>
+  </body>
+</html>
