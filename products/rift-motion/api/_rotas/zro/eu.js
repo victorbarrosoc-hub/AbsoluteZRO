@@ -6,9 +6,9 @@
 // /oauth/userinfo com o token do cofre (rf_hub) e regrava a sessão. Absolute ZRO fora do ar: vale a última cópia.
 // Absolute ZRO recusou (acesso ao app removido no Perfil, conta inativa): a sessão acaba.
 
-import { zLiberado } from '../_z.js'
-import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_HUB, CONTA_S, decifrar, emissor, FERRAMENTAS, idLocal, json, lerCookie, lerPerfil, REVER_S, selar, sessaoDe, temAcesso, ZroRevogado } from '../_zro.js'
-import { fechadoPelaPrevia } from '../_previa.js'
+import { zLiberado } from '../../_z.js'
+import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_HUB, CONTA_S, decifrar, emissor, FERRAMENTAS, idLocal, json, lerCookie, lerPerfil, REVER_S, selar, sessaoDe, temAcesso, ZroRevogado } from '../../_zro.js'
+import { fechadoPelaPrevia } from '../../_previa.js'
 
 export default async function eu(req, res) {
   if (fechadoPelaPrevia(req, res)) return

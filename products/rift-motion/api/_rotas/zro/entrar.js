@@ -4,8 +4,8 @@
 // Rift não tem cadastro próprio) e a pessoa volta ao app já logada.
 // GET /api/zro/entrar?sem_hf=1 — o mesmo pedido sem zro.higgsfield (a Absolute ZRO recusou o escopo; ver callback).
 
-import { clientId, comAviso, configurado, consulta, cookie, COOKIE_IDA, desafioPkce, descobrir, ESCOPOS, ESCOPOS_SEM_HF, IDA_S, novoValor, origemDoPedido, origemPermitida, redirecionar, retorno, selar, voltaSegura } from '../_zro.js'
-import { fechadoPelaPrevia } from '../_previa.js'
+import { clientId, comAviso, configurado, consulta, cookie, COOKIE_IDA, desafioPkce, descobrir, ESCOPOS, ESCOPOS_SEM_HF, IDA_S, novoValor, origemDoPedido, origemPermitida, redirecionar, retorno, selar, voltaSegura } from '../../_zro.js'
+import { fechadoPelaPrevia } from '../../_previa.js'
 
 export default async function entrar(req, res) {
   if (fechadoPelaPrevia(req, res)) return

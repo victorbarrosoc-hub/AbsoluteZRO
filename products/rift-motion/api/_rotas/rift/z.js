@@ -4,10 +4,10 @@
 // com a lista dele). A Z não mexe em nada sozinha: as ações voltam para o aparelho, que aplica com desfazer.
 // "gerar_motion" nunca gasta crédito aqui: abre a folha Gerar com IA preenchida e a pessoa confirma.
 import { randomBytes } from 'node:crypto'
-import { comoPessoa } from '../_banco.js'
-import { rotaSolta, Recusa } from '../_rift.js'
-import { zLiberado, zLimiteDia, Z_MODELO } from '../_z.js'
-import { basicAuth, configurado, emissor } from '../_zro.js'
+import { comoPessoa } from '../../_banco.js'
+import { rotaSolta, Recusa } from '../../_rift.js'
+import { zLiberado, zLimiteDia, Z_MODELO } from '../../_z.js'
+import { basicAuth, configurado, emissor } from '../../_zro.js'
 
 const ACOES = ['aplicar_movimento', 'ajustar_camada', 'adicionar_camada', 'apagar_camada', 'gerar_motion']
 

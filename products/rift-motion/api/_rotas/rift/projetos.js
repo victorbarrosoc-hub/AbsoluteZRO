@@ -1,6 +1,6 @@
 // /api/rift/projetos — os projetos da pessoa. GET lista (sem a cena) ou GET ?id= um projeto com a cena; POST cria;
 // PATCH ?id= muda nome, cadência ou cena (e marca a edição); DELETE ?id= apaga. As exportações do projeto ficam.
-import { CADENCIAS, data, FORMATOS, id, projetoDe, Recusa, rota, texto, umDe } from '../_rift.js'
+import { CADENCIAS, data, FORMATOS, id, projetoDe, Recusa, rota, texto, umDe } from '../../_rift.js'
 
 /** A cena do estúdio: um objeto { v: 1, camadas } de até 256 KB (o banco confere de novo). */
 function cenaValida(c) {

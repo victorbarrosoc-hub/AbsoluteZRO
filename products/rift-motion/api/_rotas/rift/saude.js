@@ -1,8 +1,8 @@
 // GET /api/rift/saude — o banco do Rift responde? Para conferir o deploy e a conexão (pooler do Supabase). Não lê nada
 // de ninguém: só `select 1` e quantas migrações foram aplicadas.
-import { json } from '../_zro.js'
-import { banco, nuvemLigada } from '../_banco.js'
-import { fechadoPelaPrevia } from '../_previa.js'
+import { json } from '../../_zro.js'
+import { banco, nuvemLigada } from '../../_banco.js'
+import { fechadoPelaPrevia } from '../../_previa.js'
 
 export default async function saude(req, res) {
   if (fechadoPelaPrevia(req, res)) return

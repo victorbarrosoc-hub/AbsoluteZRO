@@ -1,6 +1,6 @@
 // /api/rift/biblioteca — o que a pessoa trouxe para a biblioteca: só nome, tipo e tamanho (o arquivo fica no
 // computador dela). GET lista; POST { itens: [...] } (até 50 de uma vez); DELETE ?id= tira da lista.
-import { data, id, itemDe, Recusa, rota, texto, TIPOS, umDe } from '../_rift.js'
+import { data, id, itemDe, Recusa, rota, texto, TIPOS, umDe } from '../../_rift.js'
 
 export default rota({
   async GET(tx) {

@@ -3,8 +3,8 @@
 // como ?zro=<codigo>. Os tokens da Absolute ZRO vão cifrados em rf_hub (só /api/zro), para o /eu reler o perfil.
 
 import { timingSafeEqual } from 'node:crypto'
-import { abrir, cifrar, comAviso, consulta, cookie, COOKIE_CONTA, COOKIE_HUB, COOKIE_IDA, CONTA_S, emissor, lerCookie, redirecionar, retorno, selar, sessaoDe, trocarCodigo, VOLTA_PADRAO, voltaSegura } from '../_zro.js'
-import { fechadoPelaPrevia } from '../_previa.js'
+import { abrir, cifrar, comAviso, consulta, cookie, COOKIE_CONTA, COOKIE_HUB, COOKIE_IDA, CONTA_S, emissor, lerCookie, redirecionar, retorno, selar, sessaoDe, trocarCodigo, VOLTA_PADRAO, voltaSegura } from '../../_zro.js'
+import { fechadoPelaPrevia } from '../../_previa.js'
 
 const igual = (a, b) => {
   const x = Buffer.from(String(a || ''))

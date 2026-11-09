@@ -5,7 +5,7 @@
 //
 // Quem pode usar o AEON enquanto fechado vem do HUB, na claim zro_release do id_token e do /oauth/userinfo:
 //   { "ai-edit": "released" | "closed" | "allowed" }   allowed = fechado, mas esta conta está na lista do titular.
-// A claim entra na sessão a cada login e a cada releitura do perfil (api/zro/eu.js); nunca vem de e-mail nem do cliente.
+// A claim entra na sessão a cada login e a cada releitura do perfil (api/_zro_rotas/eu.js, pelo roteador api/conta.js); nunca vem de e-mail nem do cliente.
 // Sessão antiga, sem a claim (login de antes do gate ou HUB sem o gate) = fechado.
 
 export const PRODUTO = 'ai-edit'

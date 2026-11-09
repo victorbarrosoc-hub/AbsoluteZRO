@@ -1,6 +1,6 @@
 // /api/rift/exportacoes — as exportações pedidas no estúdio. GET lista; POST registra uma. Nasce "nao_renderizado":
 // o Relay ainda não renderiza a partir do Rift, e a tela diz isso (nada de progresso inventado).
-import { data, exportacaoDe, id, rota, texto, umDe } from '../_rift.js'
+import { data, exportacaoDe, id, rota, texto, umDe } from '../../_rift.js'
 
 const CADENCIAS_TELA = ['12', '15', '23,976', '24', '29,97', '30', '60', '120']
 
