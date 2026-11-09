@@ -12,7 +12,7 @@ import { createFolder, driveCall } from '../lib/drive.js'
 import { engine } from '../lib/uploader.js'
 import { framesPedidos, pedirFrames, tentarDeNovo } from '../lib/proxies.js'
 import { bytes, count } from '../lib/format.js'
-import { abrirVideo, amostrar, baseDoNome, escolher, fechar, nomeDoFrame, pastaDaCena, timecode, tirar } from '../lib/frames/celular.js'
+import { abrirVideo, amostrar, baseDoNome, escolher, fechar, nomeDoFrame, pastaDaCena, pular, timecode, tirar } from '../lib/frames/celular.js'
 import { celularAbre, lerCodec, porqueNaoAbre, rotuloCodec } from '../lib/frames/codec.js'
 import { faixa } from '../lib/psd.js'
 import { findProxy, mayPlay } from '../lib/browse.js'
@@ -21,7 +21,7 @@ import { Icon } from './icons.js'
 import { Button, SheetHead, cx } from './ui.js'
 import { BotaoGrande, Destaque, Opcoes, Passo, Pilulas, Stats } from './kit.js'
 import { TopoMarca } from './main.js'
-import { MontagensTela } from './montagens.js'
+import { MontagensTela, juntarMidias } from './montagens.js'
 import { EstudioSecoes } from './estudio.js'
 
 const QUANTOS = [6, 12, 24, 36]
@@ -34,7 +34,7 @@ const tc = (s) => String(s || '').replace(/-/g, ':')
 
 // ───── o trabalho (fica no módulo: a aba some e volta sem perder) ─────
 
-let job = null // { video, fase, frac, cenas, frames: [{ id, t, tc, cena, blob, url, mini, sel }], erro, ac }
+let job = null // { video, fase, frac, cenas, frames: [{ id, t, tc, cena, blob, url, mini, sel }], cortes: [{ id, ini, dur, cena, miniUrl, sel }], erro, ac }
 const ouvintes = new Set()
 const mudou = () => ouvintes.forEach((f) => f())
 function useJob() {
@@ -53,6 +53,7 @@ function limpar() {
     URL.revokeObjectURL(f.url)
     URL.revokeObjectURL(f.miniUrl)
   }
+  for (const c of job?.cortes || []) URL.revokeObjectURL(c.miniUrl)
   if (job?.video?.blobUrl) URL.revokeObjectURL(job.video.blobUrl)
   if (job?.video?.baixado) URL.revokeObjectURL(job.video.baixado)
   job = null
@@ -91,7 +92,8 @@ const erroDoCodec = (codec, nome, resto = '') => Object.assign(new Error(`${porq
 
 async function rodar(quantidade, formato) {
   const ac = new AbortController()
-  Object.assign(job, { fase: 'lendo', frac: 0, erro: null, ac, frames: [], cenas: [], formato, baixou: false })
+  for (const c of job.cortes || []) URL.revokeObjectURL(c.miniUrl)
+  Object.assign(job, { fase: 'lendo', frac: 0, erro: null, ac, frames: [], cenas: [], cortes: [], formato, baixou: false })
   mudou()
   const passo = (fase, frac) => {
     if (job?.ac !== ac) return
@@ -111,7 +113,8 @@ async function rodar(quantidade, formato) {
         job.baixou = true
         if (!job.video.baixado) {
           passo('baixando', 0)
-          job.video.baixado = URL.createObjectURL(await baixarDoDrive(file, ac.signal, (f) => passo('baixando', f)))
+          job.video.blob = await baixarDoDrive(file, ac.signal, (f) => passo('baixando', f))
+          job.video.baixado = URL.createObjectURL(job.video.blob)
         }
         passo('lendo', 0)
         v = await abrirVideo(job.video.baixado, { signal: ac.signal }).catch((err) => {
@@ -136,7 +139,8 @@ async function rodar(quantidade, formato) {
     const pelaRede = !(v.currentSrc || v.src).startsWith('blob:')
     const a = await amostrar([v, ...extras], { signal: ac.signal, max: pelaRede ? 120 : 240, onProgress: (f) => passo('lendo', f) })
     for (const x of extras.splice(0)) fechar(x)
-    const r = escolher(a, quantidade)
+    // os cortes: um por cena (os melhores), quantos frames a pessoa pediu, no máximo 24; 5 s, a duração da Montagem
+    const r = escolher(a, quantidade, { cortes: Math.min(24, quantidade), duracao: 5 })
     job.cenas = r.cenas
     job.descartes = r.descartes
     const base = baseDoNome(job.video.nome)
@@ -148,6 +152,10 @@ async function rodar(quantidade, formato) {
       fr.nome = nomeDoFrame(base, fr, formato === 'png' ? 'png' : 'jpg')
       job.frames.push(fr)
     }
+    for (const [i, c] of r.cortes.entries()) {
+      passo('frames', 1)
+      job.cortes.push({ id: `C${String(i + 1).padStart(2, '0')}`, ini: c.ini, dur: c.dur, cena: c.cena, nota: c.nota, miniUrl: await miniatura(v, c.ini + Math.min(1, c.dur / 2), ac.signal), sel: 0 })
+    }
     passo('pronto', 1)
   } catch (err) {
     if (job?.ac !== ac) return
@@ -158,6 +166,17 @@ async function rodar(quantidade, formato) {
     if (v) fechar(v)
     for (const x of extras) fechar(x)
   }
+}
+
+/** Só a miniatura (480 px) de um instante: a capa do corte. */
+async function miniatura(v, t, signal) {
+  await pular(v, t, signal)
+  const c = document.createElement('canvas')
+  c.width = 480
+  c.height = Math.round((480 * v.videoHeight) / v.videoWidth) || 270
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height)
+  const b = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.8))
+  return b ? URL.createObjectURL(b) : ''
 }
 
 async function maisLeitores(v, n, signal) {
@@ -199,7 +218,7 @@ async function abrirDoDrive(file, signal, codec = null, { original = true } = {}
   const proxy = await findProxy(file, [], signal).catch(() => null)
   if (proxy) {
     const v = await abrirVideo(streamUrl(proxy), { signal })
-    job.fonte = { tipo: 'proxy', nome: proxy.name, largura: v.videoWidth, altura: v.videoHeight }
+    job.fonte = { tipo: 'proxy', nome: proxy.name, largura: v.videoWidth, altura: v.videoHeight, file: proxy }
     return v
   }
   if (codec && celularAbre(codec) !== true) throw Object.assign(erroDoCodec(codec, file.name, ' E ele ainda não tem proxy no Drive.'), { causa: erro })
@@ -287,6 +306,42 @@ async function subir(itens) {
   } catch (err) {
     toast(err?.message || 'Não consegui criar a pasta no Drive.', { tone: 'error' })
   }
+}
+
+// ───── para a Montagem ─────
+
+/** O vídeo de onde saem os cortes: o da galeria, o que desceu inteiro do Drive ou o do Drive (o proxy, se foi ele). */
+function fonteDoVideo() {
+  const v = job.video
+  if (v.origem === 'galeria') return { blob: v.arquivo }
+  if (job.fonte?.tipo === 'proxy') return { file: job.fonte.file }
+  if (v.blob) return { blob: new File([v.blob], v.nome, { type: v.blob.type || 'video/mp4' }), tipo: 'video' }
+  return { file: v.file }
+}
+
+/** Para tocar o corte aqui: o endereço que o <video> abre. */
+function enderecoDoVideo() {
+  const v = job.video
+  if (v.origem === 'galeria') return v.blobUrl
+  if (job.fonte?.tipo === 'proxy') return streamUrl(job.fonte.file)
+  return v.baixado || streamUrl(v.file)
+}
+
+const tcCurto = (s) => {
+  const m = Math.floor(s / 60)
+  return `${m}:${String(Math.floor(s - m * 60)).padStart(2, '0')}`
+}
+
+/** Frames (como foto) e cortes (como take, começando no ponto do corte) vão para a bandeja da Montagem. */
+function paraMontagem({ frames = [], cortes = [] }) {
+  const fonte = cortes.length ? fonteDoVideo() : null
+  const itens = [
+    ...frames.map((f) => ({ blob: new File([f.blob], f.nome, { type: f.blob.type }) })),
+    ...cortes.map((c) => ({ ...fonte, tipo: 'video', trecho: { inicio: c.ini }, nome: `Corte ${c.id.slice(1)} · ${tcCurto(c.ini)}` })),
+  ]
+  const n = juntarMidias(itens)
+  setState({ criarTela: 'montagens' })
+  if (n) toast(`${count(n)} ${n === 1 ? 'item foi' : 'itens foram'} para a Montagem`, { tone: 'success', ms: 2600 })
 }
 
 // ───── telas ─────
@@ -451,17 +506,58 @@ function Andamento({ j }) {
   </div>`
 }
 
+/** Um corte: a capa, de onde a onde, e o play (toca só o trecho, aqui mesmo). */
+function Corte({ c, sel, tocando, onTocar, onAlternar, proporcao }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const v = ref.current
+    if (!v) return
+    const ir = () => {
+      v.currentTime = c.ini
+      v.play().catch(() => onTocar(null))
+    }
+    if (v.readyState >= 1) ir()
+    else v.addEventListener('loadedmetadata', ir, { once: true })
+  }, [tocando])
+  return html`<div class=${cx('cr-frame cr-corte', c.sel && 'is-sel')} style=${proporcao ? `aspect-ratio:${proporcao}` : ''}>
+    <button type="button" class="cr-corte-capa" onClick=${() => onAlternar(c)} aria-pressed=${c.sel ? 'true' : 'false'} aria-label=${`Corte ${c.id.slice(1)}, de ${tcCurto(c.ini)} a ${tcCurto(c.ini + c.dur)}`}>
+      ${tocando
+        ? html`<video
+            ref=${ref}
+            src=${enderecoDoVideo()}
+            muted
+            playsinline
+            preload="auto"
+            onTimeUpdate=${(e) => e.currentTarget.currentTime >= c.ini + c.dur && onTocar(null)}
+            onError=${() => onTocar(null)}
+          ></video>`
+        : html`<img src=${c.miniUrl} alt="" />`}
+      <span class="cr-frame-tc">${tcCurto(c.ini)} → ${tcCurto(c.ini + c.dur)}</span>
+      ${sel ? html`<span class="cr-frame-n">${sel}</span>` : null}
+    </button>
+    <button type="button" class="cr-corte-play" onClick=${() => onTocar(tocando ? null : c.id)} aria-label=${tocando ? 'Parar' : `Tocar o corte ${c.id.slice(1)}`}>
+      <${Icon} name=${tocando ? 'pause-fill' : 'play'} size=${14} />
+    </button>
+  </div>`
+}
+
 function Resultado({ j }) {
   const [, force] = useState(0)
+  const [vista, setVista] = useState('frames')
+  const [tocando, setTocando] = useState(null)
+  const cortes = j.cortes || []
   const sel = j.frames.filter((f) => f.sel).sort((a, b) => a.sel - b.sel)
-  const alternar = (f) => {
-    if (f.sel) {
-      const n = f.sel
-      f.sel = 0
-      for (const x of j.frames) if (x.sel > n) x.sel--
-    } else f.sel = sel.length + 1
-    force((x) => x + 1)
+  const selCortes = cortes.filter((c) => c.sel).sort((a, b) => a.sel - b.sel)
+  const numerar = (lista, x, escolhidos) => {
+    if (x.sel) {
+      const n = x.sel
+      x.sel = 0
+      for (const y of lista) if (y.sel > n) y.sel--
+    } else x.sel = escolhidos.length + 1
+    force((v) => v + 1)
   }
+  const alternar = (f) => numerar(j.frames, f, sel)
+  const alternarCorte = (c) => numerar(cortes, c, selCortes)
   const nomear = (c) => {
     const nome = prompt(`Nome da cena ${String(c.n).padStart(2, '0')} (vira a pasta no Drive)`, c.nome || '')
     if (nome == null) return
@@ -469,6 +565,7 @@ function Resultado({ j }) {
     force((x) => x + 1)
   }
   const escolhidos = sel.length ? sel : j.frames
+  const emCortes = vista === 'cortes' && cortes.length
   return html`<div class="cr-res">
     <div class="cr-res-top">
       <span class="k-rotulo">Pronto</span>
@@ -477,15 +574,39 @@ function Resultado({ j }) {
     <${Stats}
       itens=${[
         { icone: 'photo', valor: count(j.frames.length), rotulo: 'frames' },
-        { icone: 'film', valor: count(j.cenas.length), rotulo: 'cenas', tom: 'up' },
-        { icone: 'check', valor: count(sel.length), rotulo: 'escolhidos', tom: 'ok' },
+        { icone: 'film', valor: count(cortes.length || j.cenas.length), rotulo: cortes.length ? 'cortes' : 'cenas', tom: 'up' },
+        { icone: 'check', valor: count(sel.length + selCortes.length), rotulo: 'escolhidos', tom: 'ok' },
       ]}
     />
+    ${cortes.length
+      ? html`<${Pilulas}
+          label="Ver"
+          valor=${vista}
+          onEscolher=${(v) => (setTocando(null), setVista(v))}
+          itens=${[
+            { value: 'frames', label: `Frames · ${j.frames.length}` },
+            { value: 'cortes', label: `Cortes · ${cortes.length}` },
+          ]}
+        />`
+      : null}
     ${j.fonte?.tipo === 'proxy'
       ? html`<p class="cr-aviso"><${Icon} name="info" size=${15} />O iPhone não abre o original, então estes frames vieram do proxy (${j.fonte.largura}×${j.fonte.altura}). Para tirar do original em alta, peça ao computador.</p>`
       : null}
     ${j.cenas.map((c) => {
       const fs = j.frames.filter((f) => f.cena === c.n)
+      const cs = cortes.filter((x) => x.cena === c.n)
+      if (emCortes) {
+        if (!cs.length) return null
+        return html`<section key=${`c${c.n}`} class="cr-cena">
+          <header>
+            <span class="cr-cena-n">${String(c.n).padStart(2, '0')}</span>
+            <button type="button" class="cr-cena-nome" onClick=${() => nomear(c)}>${c.nome || c.tags.join(' · ')} <${Icon} name="pencil" size=${12} /></button>
+          </header>
+          <div class="cr-grade">
+            ${cs.map((x) => html`<${Corte} key=${x.id} c=${x} sel=${x.sel} tocando=${tocando === x.id} onTocar=${setTocando} onAlternar=${alternarCorte} proporcao=${j.frames[0] ? `${j.frames[0].largura}/${j.frames[0].altura}` : null} />`)}
+          </div>
+        </section>`
+      }
       if (!fs.length) return null
       return html`<section key=${c.n} class="cr-cena">
         <header>
@@ -503,14 +624,22 @@ function Resultado({ j }) {
         </div>
       </section>`
     })}
-    <div class="cr-acoes">
-      <span class="cr-acoes-txt">${sel.length ? `${sel.length} escolhido${sel.length > 1 ? 's' : ''}` : 'Toque para escolher'}</span>
-      <div class="cr-acoes-btns">
-        <button type="button" class="selact" onClick=${() => salvarNoCelular(escolhidos.map((f) => ({ blob: f.blob, nome: f.nome })))}><${Icon} name="download" size=${20} /><span>Salvar</span></button>
-        <button type="button" class="selact" onClick=${() => subir({ frames: escolhidos })}><${Icon} name="upload" size=${20} /><span>Subir</span></button>
-        <button type="button" class="selact is-strong" onClick=${() => openSheet('framesPost', { ids: sel.map((f) => f.id) })}><${Icon} name="grid" size=${20} /><span>Post</span></button>
-      </div>
-    </div>
+    ${emCortes
+      ? html`<div class="cr-acoes">
+          <span class="cr-acoes-txt">${selCortes.length ? `${selCortes.length} corte${selCortes.length > 1 ? 's' : ''} escolhido${selCortes.length > 1 ? 's' : ''}` : 'Toque para escolher · ▶ para ver'}</span>
+          <div class="cr-acoes-btns is-um">
+            <button type="button" class="selact is-strong" disabled=${!selCortes.length && !sel.length} onClick=${() => paraMontagem({ frames: sel, cortes: selCortes })}><${Icon} name="grid" size=${20} /><span>${sel.length ? `Montagem · ${selCortes.length + sel.length}` : 'Montagem'}</span></button>
+          </div>
+        </div>`
+      : html`<div class="cr-acoes">
+          <span class="cr-acoes-txt">${sel.length ? `${sel.length} escolhido${sel.length > 1 ? 's' : ''}` : 'Toque para escolher'}</span>
+          <div class="cr-acoes-btns is-quatro">
+            <button type="button" class="selact" onClick=${() => salvarNoCelular(escolhidos.map((f) => ({ blob: f.blob, nome: f.nome })))}><${Icon} name="download" size=${20} /><span>Salvar</span></button>
+            <button type="button" class="selact" onClick=${() => subir({ frames: escolhidos })}><${Icon} name="upload" size=${20} /><span>Subir</span></button>
+            <button type="button" class="selact" onClick=${() => openSheet('framesPost', { ids: sel.map((f) => f.id) })}><${Icon} name="grid" size=${20} /><span>Post</span></button>
+            <button type="button" class="selact is-strong" disabled=${!sel.length && !selCortes.length} onClick=${() => paraMontagem({ frames: sel, cortes: selCortes })}><${Icon} name="stack" size=${20} /><span>Montagem</span></button>
+          </div>
+        </div>`}
   </div>`
 }
 

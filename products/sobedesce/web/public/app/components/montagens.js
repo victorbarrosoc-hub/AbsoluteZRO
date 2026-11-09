@@ -56,16 +56,24 @@ function muda(o) {
 }
 const porId = (id) => obra.midias.find((m) => m.id === id) || null
 
-/** Fotos e takes entram na bandeja (galeria: File; Drive: o arquivo do Drive). Cada um abre sozinho. */
+/**
+ * Fotos e takes entram na bandeja (galeria: File; Drive: o arquivo do Drive). Cada um abre sozinho. Um corte da aba
+ * Frames entra como take com `trecho` ({ inicio }: onde ele começa) e `nome`; o mesmo vídeo pode entrar várias vezes,
+ * um por corte (o que se repete é o mesmo arquivo no mesmo ponto).
+ */
 export function juntarMidias(itens) {
   const cabem = Math.max(0, LIMITES.midias - obra.midias.length)
   const novos = []
   for (const it of itens) {
-    const tipo = tipoDaMidia(it.blob || it.file || {})
+    const fonte = it.blob || it.file
+    const tipo = tipoDaMidia(it.tipo ? { type: `${it.tipo === 'video' ? 'video' : 'image'}/x` } : fonte || {})
     if (!tipo) continue
-    if (it.file && obra.midias.some((m) => m.file?.id === it.file.id)) continue
+    const chave = `${it.file ? `d:${it.file.id}` : `g:${fonte.name || ''}:${fonte.size}`}@${it.trecho ? Math.round(it.trecho.inicio * 100) : ''}`
+    if (obra.midias.some((m) => m.chave === chave) || novos.some((m) => m.chave === chave)) continue
     if (novos.length >= cabem) break
-    novos.push({ id: `m${++seq}`, nome: (it.blob || it.file).name || 'foto', tipo, origem: it.file ? 'drive' : 'galeria', blob: it.blob || null, file: it.file || null, estado: 'lendo' })
+    const m = { id: `m${++seq}`, chave, nome: it.nome || fonte.name || 'foto', tipo, origem: it.file ? 'drive' : 'galeria', blob: it.blob || null, file: it.file || null, estado: 'lendo' }
+    if (it.trecho) obra.trechos = { ...obra.trechos, [m.id]: { inicio: Math.max(0, Number(it.trecho.inicio) || 0), lento: false } }
+    novos.push(m)
   }
   if (itens.length > novos.length) toast(cabem < itens.length ? `Cabem ${LIMITES.midias} na montagem` : 'Só fotos e vídeos entram', { ms: 2400 })
   if (!novos.length) return 0
@@ -86,7 +94,9 @@ async function abrirMidia(m) {
     } else {
       m.leitor = await abrirTake(m.blob ? { blob: m.blob } : { file: m.file })
       m.info = m.leitor.info
-      m.mini = await m.leitor.quadro(Math.min(1, m.info.duracao * 0.1), MINI)
+      // um corte da aba Frames mostra o ponto dele; o resto, um quadro do começo
+      const t0 = obra.trechos[m.id] ? trechoDe(obra.trechos[m.id], ajustes.duracao, m.info.duracao).inicio + 0.5 : Math.min(1, m.info.duracao * 0.1)
+      m.mini = await m.leitor.quadro(Math.min(t0, Math.max(0, m.info.duracao - 0.1)), MINI)
     }
     m.miniUrl = await new Promise((ok) => m.mini.toBlob((b) => ok(b ? URL.createObjectURL(b) : ''), 'image/jpeg', 0.8))
     m.estado = 'ok'

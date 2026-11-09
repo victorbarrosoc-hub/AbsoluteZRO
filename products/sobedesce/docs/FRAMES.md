@@ -151,6 +151,13 @@ Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifes
   - Salvar no celular: pela folha de compartilhar (Salvar imagem ou Arquivos); sem ela, um download por arquivo.
   - Subir pro Drive: `<Vídeo> — Frames/Cena NN — …/` e `Posts/`, ao lado do vídeo (ou onde a pessoa escolher, se veio da galeria).
   - Na aba Drive, a seleção de um vídeo ganha "Frames".
+  - **Cortes** (titular, 09/11/2026, Celular 2.8.72): junto com os frames, a aba faz os cortes de cena: a mesma escolha
+    dos takes do computador (`escolherTakes`: a melhor janela de 5 s de cada cena, longe do corte), quantos frames a
+    pessoa pediu (no máximo 24). O corte não vira arquivo no celular: é o vídeo + onde começa. "Frames · Cortes" troca a
+    grade; cada corte tem capa, de onde a onde e ▶, que toca só o trecho ali mesmo.
+  - **Montagem:** os frames e os cortes escolhidos vão para a bandeja da Montagem (`juntarMidias`): o frame como foto,
+    o corte como take começando no ponto dele (`trechos`), com o nome "Corte NN · m:ss". Do Drive, o take lê o vídeo
+    que já desceu (até 150 MB) ou o próprio Drive (ou o proxy, se os frames vieram dele). Mandar de novo não repete.
   - **Codec antes de abrir** (`lib/frames/codec.js`): lê só a caixa `moov` do MP4/MOV (Range do Drive ou `File.slice`), mesmo quando ela vem no fim do arquivo. A tela mostra o codec ("H.264 10-bit 4:2:2").
     - H.264 de 10 bits ou 4:2:2/4:4:4 (XAVC S-I, Canon, Panasonic) e DNxHD: nenhum iPhone decodifica, então nem tenta o original e vai direto ao proxy do Drive ou ao computador. A mensagem diz o motivo ("Este MP4 é H.264 10-bit 4:2:2, o modo de alta qualidade da câmera").
     - HEVC 4:2:2 e ProRes dependem do aparelho: tenta e, se falhar, explica pelo codec.

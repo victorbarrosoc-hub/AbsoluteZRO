@@ -5501,6 +5501,21 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE Celular 2.8.72: cortes de cena e Frames → Montagem (09/11/2026)
+
+Branch `sobedesce-frames-para-montagens`.
+
+- `test/frames-cortes-celular.test.js`, novo: navegador com cara de iPhone (393 px, toque), vídeo WebM de 3 cenas da
+  galeria. O teste confere:
+  - 6 frames pedidos e cortes com "m:ss → m:ss";
+  - o ▶ toca o trecho (`currentTime` andando);
+  - 2 cortes e 1 frame vão para a Montagem: 3 itens, 2 deles takes chamados "Corte NN · m:ss";
+  - mandar de novo não repete.
+- Resultado: Chromium passou. O WebKit não está instalado aqui (o teste pula); no CI ele roda se houver.
+- Frames e Montagens do celular (`frames.test.js`, `montagens-celular*.test.js`, `frames-galeria-csp.test.js`,
+  `montagens.test.js`): 41 testes, 41 passaram e 1 foi pulado.
+- Site (`web`, `npm test`): 382 passaram, 0 falhas.
+
 ## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
 
 Branch `sobedesce-carrossel-por-slide`.
