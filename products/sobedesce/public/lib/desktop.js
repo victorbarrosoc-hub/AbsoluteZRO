@@ -86,12 +86,21 @@ export async function pickFolderPath({ title, defaultPath, subtitle } = {}) {
 /**
  * Arquivos e pastas para enviar. No macOS o diálogo nativo aceita os dois juntos; no Windows/Linux o diálogo
  * nativo só escolhe arquivos OU uma pasta, então mostramos um menu "Arquivos… / Pasta…" ancorado no botão.
- * @param {{ title?: string, anchor?: Element|null }} opts
+ * @param {{ title?: string, anchor?: Element|null, kind?: 'files'|'folder' }} opts `kind`: já sabe o que enviar (menu do vazio).
  * @returns {Promise<string[]|null>}
  */
-export async function pickUploadPaths({ title, anchor } = {}) {
+export async function pickUploadPaths({ title, anchor, kind } = {}) {
   if (bridge?.pickPaths) {
     try {
+      // "Enviar arquivos…" / "Enviar pasta…" do menu do vazio: já sabe o que é, sem perguntar.
+      if (kind === 'files' || kind === 'folder') {
+        if (kind === 'folder') {
+          const p = await bridge.pickFolder({ title })
+          return p ? [p] : null
+        }
+        const list = await bridge.pickPaths({ title, kind: 'files' })
+        return list?.length ? list : null
+      }
       if (platform() === 'darwin') {
         const list = await bridge.pickPaths({ title, kind: 'any' })
         return list?.length ? list : null
@@ -118,6 +127,10 @@ export async function pickUploadPaths({ title, anchor } = {}) {
     } catch (err) {
       console.info('[sobedesce] seletor nativo indisponível, usando o próprio:', err?.message || err)
     }
+  }
+  if (kind === 'folder') {
+    const p = await pickLocal({ mode: 'folder', title })
+    return p ? [p] : null
   }
   return pickLocal({ mode: 'files', title })
 }

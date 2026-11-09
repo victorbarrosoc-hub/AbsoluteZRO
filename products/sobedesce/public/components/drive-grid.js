@@ -11,6 +11,7 @@ import { Scrub } from './scrub.js'
 import { isOpenable } from './drive-table.js'
 import { sizeShort } from './drive-tamanho.js'
 import { comecarArrasto, fimArrasto, idsSoltos, podeSoltar, pontoDoItem, teclaDeMenu } from './drive-menu.js'
+import { SELO_PUBLICO } from '../lib/compartilhar.js'
 
 const PAGE = 120
 
@@ -45,6 +46,7 @@ const Card = memo(function Card({ item, index, selected, focused, accountId, pro
       ${dur ? html`<span class="gbadge">${dur}</span>` : null}
       ${item.isGoogleDoc ? html`<span class="gbadge gbadge-left">Doc Google</span>` : null}
       ${hasProxy ? html`<span class="gbadge gbadge-left gbadge-proxy" title="Tem proxy (cópia leve): a prévia toca fluida">Proxy</span>` : null}
+      ${item.publico ? html`<span class="gbadge gbadge-publico" title="Qualquer pessoa com o link pode ver"><${Icon} name="globe" size=${11} />${SELO_PUBLICO}</span>` : null}
       ${!folderLike
         ? html`<button type="button" class="gpeek" tabindex="-1" title="Prévia (espaço)" aria-label=${`Prévia de ${item.name}`} onClick=${(e) => {
             e.stopPropagation()
@@ -53,7 +55,7 @@ const Card = memo(function Card({ item, index, selected, focused, accountId, pro
         : null}
     </div>
     <div class="gmeta">
-      <span class="gname">${item.name}</span>
+      <span class="gname">${item.starred ? html`<${Icon} name="star-fill" size=${11} class="gestrela" title="Com estrela" />` : null}${item.name}</span>
       <span class="gsub">${sub}</span>
     </div>
   </div>`

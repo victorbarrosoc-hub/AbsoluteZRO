@@ -246,6 +246,29 @@ export function openLink(id) {
 }
 
 /**
+ * Volta para "Restrito" (só quem tem acesso abre): apaga as permissões "qualquer pessoa" do próprio item. Se o público
+ * vem da pasta de cima (herdado), o Google não deixa: o erro diz isso (reason 'publicoHerdado'). Só pelo toque da pessoa.
+ */
+export async function closeLink(id) {
+  const r = await call(`/files/${encodeURIComponent(id)}`, { query: { supportsAllDrives: true, fields: 'id,permissionIds' }, retries: 2 })
+  for (const p of (r.permissionIds || []).filter((x) => ANYONE_IDS.includes(x))) {
+    try {
+      await call(`/files/${encodeURIComponent(id)}/permissions/${encodeURIComponent(p)}`, { method: 'DELETE', query: { supportsAllDrives: true }, retries: 1 })
+    } catch (err) {
+      if (err?.status !== 403 && err?.status !== 404) throw err
+    }
+  }
+  const depois = await linkAccess(id)
+  if (depois.open) {
+    const e = new Error('Continua público: a pasta de cima está aberta para qualquer pessoa com o link. Deixe ela restrita.')
+    e.reason = 'publicoHerdado'
+    e.status = 403
+    throw e
+  }
+  return depois
+}
+
+/**
  * Manda um arquivo para a lixeira do Drive (files.update trashed=true; dá para recuperar por 30 dias). Não apaga de
  * vez. Usado pela folha de confirmação dos arquivos do Mac (lib/browse.js macJunkTrash) e pelo "Apagar" de uma
  * referência (lib/referencias.js apagarArquivo), sempre depois de uma confirmação.
@@ -325,6 +348,7 @@ const POLICY = new Set([
 /** Erro do Liberar → { policy, text } em linguagem de gente. */
 export function openLinkError(err) {
   const reason = err?.reason || ''
+  if (reason === 'publicoHerdado') return { policy: false, text: err.message }
   if (POLICY.has(reason) || /policy|domain|organi[sz]ation/i.test(err?.message || '')) {
     return { policy: true, text: 'A política do Google da sua empresa não deixa abrir para qualquer pessoa. Compartilhe com o e-mail de quem vai ver, pelo Drive.' }
   }

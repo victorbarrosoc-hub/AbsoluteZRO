@@ -9,12 +9,23 @@ import { Thumb } from './drive-thumb.js'
 import { FolderSizeCell } from './drive-tamanho.js'
 import { DEFAULT_SORT, compareItems, isFolderLike, nextSort, normalizeSort } from '../lib/ordenar.js'
 import { comecarArrasto, fimArrasto, idsSoltos, podeSoltar, pontoDoItem, teclaDeMenu } from './drive-menu.js'
+import { SELO_PUBLICO } from '../lib/compartilhar.js'
+
+/** As ações rápidas da linha (passar o mouse), como no Google Drive. `false` = não aparece para este item. */
+export function acoesRapidas(item) {
+  return [
+    { id: 'compartilhar', icon: 'users', label: 'Compartilhar' },
+    item.canDownload !== false ? { id: 'baixar', icon: 'download', label: 'Baixar' } : null,
+    item.canRename !== false ? { id: 'renomear', icon: 'pencil', label: 'Renomear' } : null,
+    { id: 'estrela', icon: item.starred ? 'star-fill' : 'star', label: item.starred ? 'Tirar a estrela' : 'Adicionar estrela' },
+  ].filter(Boolean)
+}
 
 const PAGE = 200
 
 export const isOpenable = isFolderLike
 
-const Row = memo(function Row({ item, index, selected, focused, mode, blocked, onRowClick, onRowDouble, onCheck, onKey, accountId, proxy, onPreview, fsize, onCalcSize, hasProxy, onLink, dnd }) {
+const Row = memo(function Row({ item, index, selected, focused, mode, blocked, onRowClick, onRowDouble, onCheck, onKey, accountId, proxy, onPreview, fsize, onCalcSize, hasProxy, onAcao, dnd }) {
   const folderLike = isOpenable(item)
   const disabled = blocked ?? (mode === 'folder' && !folderLike)
   // Menu de contexto e arrastar para uma pasta (só na tela Drive: `dnd` = handlers estáveis da tabela).
@@ -45,13 +56,17 @@ const Row = memo(function Row({ item, index, selected, focused, mode, blocked, o
         ? html`<${Thumb} accountId=${accountId} item=${item} proxy=${proxy} folderLike=${folderLike} size=${64} iconSize=${28} class="thumb-row" />`
         : html`<${FileIcon} name=${item.name} mimeType=${item.mimeType} isFolder=${folderLike} size=${28} shortcut=${item.isShortcut} />`}
       <span class="name" title=${item.name}>${item.name}</span>
+      ${item.starred ? html`<span class="drow-estrela" title="Com estrela"><${Icon} name="star-fill" size=${12} /></span>` : null}
+      ${item.publico ? html`<span class="tag tag-publico" title="Qualquer pessoa com o link pode ver"><${Icon} name="globe" size=${11} />${SELO_PUBLICO}</span>` : null}
       ${item.isGoogleDoc ? html`<span class="tag" title="Documento nativo do Google: é exportado (.docx, .xlsx, .pptx) ao baixar">Doc Google</span>` : null}
       ${hasProxy ? html`<span class="tag tag-proxy" title="Tem proxy (cópia leve): a prévia toca fluida">Proxy</span>` : null}
-      ${onLink
-        ? html`<button type="button" class="drow-act" tabindex="-1" title="Copiar link" aria-label=${`Copiar o link de ${item.name}`} onClick=${(e) => {
-            e.stopPropagation()
-            onLink(index)
-          }} onDblClick=${(e) => e.stopPropagation()}><${Icon} name="link" size=${14} /></button>`
+      ${onAcao
+        ? html`<span class="drow-acts">${acoesRapidas(item).map(
+            (a) => html`<button type="button" class=${'drow-act' + (a.id === 'estrela' && item.starred ? ' is-on' : '')} tabindex="-1" title=${a.label} aria-label=${`${a.label}: ${item.name}`} onClick=${(e) => {
+              e.stopPropagation()
+              onAcao(index, a.id)
+            }} onDblClick=${(e) => e.stopPropagation()}><${Icon} name=${a.icon} size=${14} /></button>`,
+          )}</span>`
         : null}
     </span>
     <span class="drow-size" role="gridcell">${folderLike
@@ -77,7 +92,7 @@ const Row = memo(function Row({ item, index, selected, focused, mode, blocked, o
  * @param {{ items: any[], mode?: 'browse'|'folder', selected: Set<string>, onSelect: (s:Set<string>)=>void,
  *           onOpen: (item)=>void, loading?: boolean, error?: string|null, onRetry?: ()=>void, empty?: any, resetKey?: string }} props
  */
-export function DriveTable({ items, sorted: sortedProp, mode = 'browse', pode, onPick, selected, onSelect, onOpen, loading, error, onRetry, empty, resetKey, compact, accountId, onPreview, proxies, sort: sortProp, onSort, sizeOf, onCalcSize, comProxy, onCopyLink, onMenu, onSoltar }) {
+export function DriveTable({ items, sorted: sortedProp, mode = 'browse', pode, onPick, selected, onSelect, onOpen, loading, error, onRetry, empty, resetKey, compact, accountId, onPreview, proxies, sort: sortProp, onSort, sizeOf, onCalcSize, comProxy, onAcao, onMenu, onSoltar }) {
   const [sortLocal, setSortLocal] = useState(DEFAULT_SORT)
   const sort = normalizeSort(sortProp || sortLocal)
   const setSort = onSort || setSortLocal
@@ -219,8 +234,8 @@ export function DriveTable({ items, sorted: sortedProp, mode = 'browse', pode, o
     onPreview?.(shown[i])
   }
   const onCalc = (i) => onCalcSize?.(shown[i])
-  const onLink = (i) => onCopyLink?.(shown[i])
-  live.current = { onRowClick, onRowDouble, onCheck, onKey, onPeek, onCalc, onLink, onCtx, onDragStart, onDragOver, onDrop }
+  const onAcaoRow = (i, acao) => onAcao?.(shown[i], acao)
+  live.current = { onRowClick, onRowDouble, onCheck, onKey, onPeek, onCalc, onAcaoRow, onCtx, onDragStart, onDragOver, onDrop }
   const stable = useRef(null)
   if (!stable.current)
     stable.current = {
@@ -230,7 +245,7 @@ export function DriveTable({ items, sorted: sortedProp, mode = 'browse', pode, o
       onKey: (e, i) => live.current.onKey(e, i),
       onPeek: (i) => live.current.onPeek(i),
       onCalc: (i) => live.current.onCalc(i),
-      onLink: (i) => live.current.onLink(i),
+      onAcao: (i, acao) => live.current.onAcaoRow(i, acao),
       dnd: {
         onMenu: (e, i) => live.current.onCtx(e, i),
         onDragStart: (e, i) => live.current.onDragStart(e, i),
@@ -285,7 +300,7 @@ export function DriveTable({ items, sorted: sortedProp, mode = 'browse', pode, o
         onPreview=${onPreview && mode !== 'folder' ? h.onPeek : null}
         fsize=${sizeOf && isOpenable(it) ? sizeOf(it) : null}
         onCalcSize=${onCalcSize && mode !== 'folder' ? h.onCalc : null}
-        onLink=${onCopyLink && mode !== 'folder' ? h.onLink : null}
+        onAcao=${onAcao && mode === 'browse' ? h.onAcao : null}
         dnd=${onMenu && mode === 'browse' ? h.dnd : null}
       />`,
     )}

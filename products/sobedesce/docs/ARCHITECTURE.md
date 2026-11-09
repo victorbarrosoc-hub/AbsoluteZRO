@@ -1071,9 +1071,13 @@ filtros), **Primeiros passos** (sem nenhum Drive: "Entrar com a conta SOBEDESCE"
 "Pronto. Seus Drives apareceram aqui." — e, como alternativa, "Conectar um Drive só neste computador", que leva ao
 caminho antigo da chave em `#/inicio/local`), **Drive** (navegar Meu Drive, Compartilhados comigo — rota `#/drive/compartilhados` — e drives compartilhados,
 selecionar e baixar, enviar para a pasta atual; botão direito ou a tecla de menu numa linha/cartão abre o menu do item
-em `components/drive-menu.js`, na camada das janelas: Abrir, Baixar, Enviar para esta pasta, Copiar link, Abrir no
-Google Drive, Renomear, Mover para… (seletor de pasta), Calcular tamanho, Gerar proxy; arrastar linhas para cima de uma
-pasta move), **Comparar** (pasta local × pasta do Drive, árvore com o que falta por pasta, botão
+em `components/drive-menu.js`, na camada das janelas: Abrir, Baixar, Renomear, Enviar para esta pasta, Compartilhar,
+Copiar link, Abrir no Google Drive, Mover para… (seletor de pasta), estrela, Detalhes, Calcular tamanho, Gerar proxy e
+lixeira. O que não dá fica cinza com o motivo. Botão direito no vazio: Nova pasta, Enviar arquivos, Enviar pasta.
+Arrastar linhas para cima de uma pasta move, com Desfazer. Com mouse, a linha mostra ações rápidas. "Copiar link" e
+Compartilhar (`components/compartilhar.js`, 09/11/2026): a escolha "Qualquer pessoa com o link pode ver" (anyone/leitor)
+pode ficar lembrada; sem ela, o app pergunta. Selo "Público (link)" e volta para Restrito
+(`POST /api/drive/:acc/link/restringir`). O celular tem o mesmo menu em `web/public/app/components/item-menu.js`), **Comparar** (pasta local × pasta do Drive, árvore com o que falta por pasta, botão
 "Subir o que falta"), **Ajustes**.
 Seletor de pastas/arquivos locais próprio (modal) usando `/api/local/*`.
 

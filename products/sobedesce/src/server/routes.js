@@ -777,6 +777,30 @@ export function createApi(ctx) {
     return { link: await drive.sharing(before.id, { signal, resourceKey }) }
   })
 
+  // Volta para "Restrito" (só quem tem acesso abre). Também só com `confirmado: true` (o botão "Restrito" da tela).
+  route('POST', '/api/drive/:acc/link/restringir', async ({ params, body, signal }) => {
+    account(params.acc)
+    if (body.confirmado !== true) throw new HttpProblem(400, 'Confirme na tela antes de mudar o link.')
+    const { id, resourceKey } = linkTarget(body)
+    if (id === 'root') throw new HttpProblem(400, 'O Meu Drive não tem link para restringir.')
+    const drive = ctx.manager.driveFor(params.acc)
+    const before = await drive.sharing(id, { signal, resourceKey })
+    if (before.access !== 'qualquer') return { link: before }
+    if (!before.canShare) throw new HttpProblem(403, 'Sua conta não pode mudar o compartilhamento deste item. Peça a quem é dono ou gerente.')
+    const link = await drive.restrictLink(before.id, { signal, resourceKey })
+    ctx.log?.(`link restrito de novo: ${before.id}`)
+    return { link }
+  })
+
+  // ── Estrela (menu do item e ação rápida da linha, 09/11/2026): a mesma do Google Drive.
+  route('POST', '/api/drive/:acc/estrela', async ({ params, body, signal }) => {
+    account(params.acc)
+    const id = typeof body.id === 'string' && DRIVE_ID.test(body.id) && body.id !== 'root' ? body.id : null
+    if (!id) throw new HttpProblem(400, 'Item inválido.')
+    if (typeof body.starred !== 'boolean') throw new HttpProblem(400, 'Diga se é para pôr ou tirar a estrela.')
+    return await ctx.manager.driveFor(params.acc).setStarred(id, body.starred, { signal })
+  })
+
   // ── Arquivos do Mac (._A003_C001.braw, .DS_Store, Thumbs.db) que vieram junto com os originais: para a lixeira do
   // Drive (recuperável por 30 dias). Só com `confirmado: true`, que a tela manda depois de a pessoa ler o aviso e clicar
   // em "Mover para a lixeira". A tela manda os ids em lotes pequenos (mostra o progresso); aqui a pasta é listada de

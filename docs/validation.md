@@ -5485,3 +5485,27 @@ SOBEDESCE de computador, que disparam os instaladores).
   `hub.spec.ts -g "central de apps"` 2/2 (com o cartão perdendo o "Atualizar" no aviso `reler`); `scan-secrets` sem
   segredos. A bateria e2e inteira não foi rodada.
 - Não validado: num Mac de verdade com a central empacotada (a 1.4.5 só sai pelo workflow `hub-desktop` na `main`).
+
+## SOBEDESCE: menu do Drive igual ao do Google Drive e link público (09/11/2026)
+
+Branch `sobedesce-drive-menu`.
+
+- `test/compartilhar.test.js` (Drive falso):
+  - `restrictLink` apaga só o "qualquer pessoa" do item e mantém quem foi convidado. Quando o público vem da pasta de
+    cima, diz de onde vem.
+  - Navegar traz a estrela, o selo (`permissionIds`), a criação e o `canShare`.
+  - Rotas: `link/restringir` exige `confirmado: true`; `estrela` põe e tira a estrela e recusa valor inválido e a raiz.
+- `test/drive-menu.test.js`:
+  - Os textos são iguais no computador e no celular.
+  - A escolha lembrada só aceita `publico` e `copiar`.
+  - O selo vem de `anyoneWithLink`/`anyone`.
+  - A listagem do celular ganha os campos sem mexer no núcleo do Maestro.
+  - Menu do vazio com o motivo, árvore do "Enviar pasta" e Desfazer por pasta de origem.
+  - O liberar só sai da escolha ou do Compartilhar.
+- `test/app-sw.test.js`: cache v86, versão 2.8.71 e `lib/link-publico.js` no cache.
+- Prévia no navegador:
+  - App de computador (demo com o Drive falso), claro e escuro: menu do item, menu do vazio, escolha do Copiar link,
+    selo depois de liberar, ações rápidas, Compartilhar indo e voltando de Restrito, e Detalhes.
+  - Celular (iPhone 15 Pro): toque longo no item e no vazio, Copiar link, Compartilhar, Detalhes e o selo. "Enviar pasta"
+    aparece cinza no iPhone.
+  - Web com mouse: ações rápidas, e arrastar `Roteiro.pdf` para `Brutos` e Desfazer devolvem o item.
