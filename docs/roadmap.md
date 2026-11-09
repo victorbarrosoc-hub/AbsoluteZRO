@@ -1,6 +1,33 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## CAMZRO, a câmera do set (09/11/2026, ramo `claude/kind-cray-xja6bm`, ADR 0044)
+
+Pedido do titular: câmera completa, melhor que o Blackmagic Camera e o FilmLab Pro (urfilmlab), integrada ao
+ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`, em `products/camzro/`.
+
+- ✅ App web (PWA) com o gate: página neutra para quem não tem acesso; portas só por conta com `camzro` na claim
+  `zro_release`, prévia do titular (`CAMZRO_CHAVE_PREVIA`) ou modo local. Login único copiado do RADION (`camzro-web`).
+- ✅ Gravação: Mediabunny + WebCodecs, cadência constante, PCM 24 bits cru, bitrate e quadro-chave; MP4 fragmentado
+  gravado no lugar (OPFS + worker) e fechado em MOV sem recompressão; take recuperado depois de queda (testado).
+- ✅ Exposição: ISO, ângulo, Kelvin, foco, zoom, tocha onde o aparelho deixa; prioridade de obturador e de ISO em malha
+  fechada; segurar trava AE/AF; arrastar muda o EV; anti-flicker, ND para 180°, conta-gotas de Kelvin.
+- ✅ Monitor em WebGL2: LUT 3D, falsa cor (ARRI e Simples), zebra, peaking, lupa, P&B, desanamorfizar; histograma, forma
+  de onda, RGB parade, vectorscope; guias, terços, áurea, área segura, nível; medidor de pico e LUFS.
+- ✅ Set: timecode SMPTE com drop-frame e relógio do set pela rede; claquete com take automático e bom take; claquete na
+  tela; nome de clipe de cinema; presets.
+- ✅ Clipes: por dia, rever, mandar, apagar com dois toques; descarga conferida em xxh64 com CSV do DaVinci, ALE e
+  relatório de câmera.
+- ✅ Ecossistema: contrato `camzro.clip/1`; roteiro do Maestro como decupagem; bip igual ao do TPeasy (o Synquei acha);
+  o Set; HUB `0065` cadastra o produto fechado (roda no deploy do HUB quando a `main` receber o ramo).
+- ⛔ Publicar: o titular cria o projeto numa conta Vercel grátis à parte (passo a passo no README do app). Domínio
+  `camzro.absolutezro.com`, cliente OIDC e abrir o gate pedem autorização.
+- ⬜ Conferir em aparelho de verdade: Android (controles manuais, HEVC, 4K, aquecimento), iPhone (Safari: automático,
+  trava, tela de início), câmera USB/placa de captura no computador, descarga para um SSD no Chrome.
+- ⬜ Próximas fases: controle e monitoramento de várias câmeras por um aparelho (WebRTC, como o RADION); tally com o
+  Gravando/Corta do RADION; proxy para a edição; app nativo para o iPhone (manual, ProRes, Log) se o titular decidir;
+  o SOBEDESCE reconhecendo a pasta da descarga do CAMZRO como cartão.
 
 ## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
 

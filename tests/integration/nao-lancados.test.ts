@@ -20,6 +20,8 @@ afterAll(() => db.close())
 
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion']
+/** Entraram fechados depois da 0049 (cada um com a sua migration): CAMZRO (0065). */
+const FECHADOS_DEPOIS = ['camzro']
 // o RADION (`radio`) abriu na 0062 (titular, 07/11/2026)
 const NO_AR = ['maestro', 'carro-do-freela', 'synquei', 'sobedesce', 'relay', 'tpeasy', 'radio']
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
@@ -32,7 +34,7 @@ async function tornarAdmin(userId: string) {
 describe('gate (0049)', () => {
   it('não lançados fechados em todos os canais; os seis no ar seguem abertos e divulgados', async () => {
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
-    for (const id of NAO_LANCADOS) {
+    for (const id of [...NAO_LANCADOS, ...FECHADOS_DEPOIS]) {
       expect(s[id], id).toMatchObject({ state: 'development', open: false })
       expect(Object.values(s[id]!.channels).some(Boolean), id).toBe(false)
       expect(divulgado({ state: s[id]!.state, canais: s[id]!.channels }), id).toBe(false)
@@ -74,7 +76,7 @@ describe('conta comum × admin da plataforma', () => {
         id,
       ).toBeTruthy()
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    for (const id of NAO_LANCADOS) {
+    for (const id of [...NAO_LANCADOS, ...FECHADOS_DEPOIS]) {
       expect(claims.release, id).not.toHaveProperty(id)
       expect(claims.products, id).not.toContain(id)
       await expectCode(authorize(db, o.auth, { product: { id } }), 'product_closed')
@@ -83,7 +85,7 @@ describe('conta comum × admin da plataforma', () => {
     const actor = await authorize(db, o.auth)
     const retrato = await retratoDoEcossistema(db, actor, null)
     const texto = JSON.stringify(retrato)
-    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Quasar', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion'])
+    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Quasar', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion', 'CAMZRO', 'camzro'])
       expect(texto, nome).not.toContain(nome)
   })
 
@@ -91,13 +93,14 @@ describe('conta comum × admin da plataforma', () => {
     const o = await newOrgWithOwner(db, 'nl-admin', { freePlan: true })
     await tornarAdmin(o.userId)
     const auth = await refresh(db, o.token)
-    for (const id of NAO_LANCADOS) for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, id, o.userId, ch)), `${id} ${ch}`).toBe(true)
+    for (const id of [...NAO_LANCADOS, ...FECHADOS_DEPOIS])
+      for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, id, o.userId, ch)), `${id} ${ch}`).toBe(true)
     const access = await db.asUser({ userId: o.userId, orgId: o.orgId }, (tx) => productAccessFor(tx, o.orgId, { channel: 'download' }))
     for (const id of NAO_LANCADOS) expect(access.find((a) => a.productId === id)?.release, id).toMatchObject({ allowed: true })
     const claims = await sys((tx) => releaseClaimsFor(tx, o.userId, 'sso'))
-    for (const id of NAO_LANCADOS) expect(claims[id], id).toBe('allowed')
+    for (const id of [...NAO_LANCADOS, ...FECHADOS_DEPOIS]) expect(claims[id], id).toBe('allowed')
     await expect(authorize(db, auth, { release: { productId: 'nossom', channel: 'desktop' } })).resolves.toBeTruthy()
-    expect(await sys((tx) => releaseVisibleFor(tx, o.userId))).toEqual(new Set([...NO_AR, ...NAO_LANCADOS]))
+    expect(await sys((tx) => releaseVisibleFor(tx, o.userId))).toEqual(new Set([...NO_AR, ...NAO_LANCADOS, ...FECHADOS_DEPOIS]))
   })
 })
 

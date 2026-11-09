@@ -1,0 +1,21 @@
+{
+  "name": "camzro",
+  "version": "0.1.0",
+  "description": "CAMZRO: a câmera de vídeo do set, da Absolute ZRO (nome provisório).",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node publicar.mjs && CAMZRO_LOCAL=1 node scripts/servir.mjs",
+    "build": "node publicar.mjs",
+    "test": "node --test test/*.test.js",
+    "vendor": "node scripts/vendor.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "mediabunny": "1.62.1",
+    "playwright": "1.63.0",
+    "xxhash-wasm": "^1.1.0"
+  }
+}

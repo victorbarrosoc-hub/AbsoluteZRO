@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <!-- CAMZRO (nome provisório): a câmera de vídeo do set, da Absolute ZRO. Não lançado: esta página só sai para quem
+       passa por uma das portas de api/_sessao.js. Sem script nem estilo inline (CSP). -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>CAMZRO</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0e0e10" />
+    <meta name="camzro-modo" content="%MODO%" />
+    <meta name="camzro-nome" content="%NOME%" />
+    <meta name="camzro-set" content="%SET%" />
+    <meta name="camzro-set-api" content="%SET_API%" />
+    <meta name="camzro-sair" content="%SAIR%" />
+    <link rel="icon" href="/app/marca/simbolo-grafite.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/app/marca/icone-180.png" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="CAMZRO" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/app/app.css" />
+    <script type="module" src="/app/app.js"></script>
+  </head>
+  <body>
+    <!-- começo: uma ideia, uma ação -->
+    <section class="inicio" id="inicio">
+      <img class="inicio__simbolo simbolo-tema" src="/app/marca/simbolo-grafite.svg" alt="" data-claro="/app/marca/simbolo-grafite.svg" data-escuro="/app/marca/simbolo-branco.svg" />
+      <h1 class="titulo"><span>CAM</span><b>ZRO</b></h1>
+      <p class="apoio" id="inicio-apoio">A câmera do set.</p>
+      <button class="glass-btn glass-btn--ink" id="abrir" type="button">Abrir a câmera</button>
+      <p class="inicio__erro" id="inicio-erro" role="alert" hidden></p>
+    </section>
+
+    <main class="cam" id="cam" hidden>
+      <div class="visor" id="visor">
+        <video id="video" playsinline muted autoplay disablepictureinpicture></video>
+        <canvas id="tela" aria-label="Imagem da câmera"></canvas>
+        <svg class="sobre" id="sobre" aria-hidden="true"></svg>
+        <div class="toque" id="toque"></div>
+        <div class="foco-alvo" id="foco-alvo" hidden></div>
+        <div class="legenda" id="legenda" hidden></div>
+        <div class="scope" id="scope" hidden><canvas id="scope-canvas"></canvas><span class="scope__aviso" id="scope-aviso"></span></div>
+        <div class="nivel" id="nivel" hidden><span class="nivel__linha" id="nivel-linha"></span><b id="nivel-graus">0°</b></div>
+        <div class="medidor" id="medidor" hidden title="Pico (dBFS) e loudness momentânea (LUFS)">
+          <div class="medidor__barras"><span class="barra" id="barra-0"><i></i><b></b></span><span class="barra" id="barra-1"><i></i><b></b></span></div>
+          <small id="lufs">— LUFS</small>
+        </div>
+        <div class="aviso" id="aviso" role="status" hidden></div>
+        <div class="flash" id="flash"></div>
+      </div>
+
+      <header class="topo">
+        <span class="marca" title="Absolute ZRO"><img class="simbolo-tema" src="/app/marca/simbolo-branco.svg" alt="" data-claro="/app/marca/simbolo-branco.svg" data-escuro="/app/marca/simbolo-branco.svg" /></span>
+        <span class="rec" id="rec"><i></i><b id="tc">00:00:00:00</b></span>
+        <button class="chip" id="chip-formato" type="button" data-folha="formato" title="Formato de gravação">—</button>
+        <span class="chip chip--fraco" id="chip-espaco" title="Quanto cabe neste aparelho">—</span>
+        <span class="chip chip--fraco" id="chip-relogio" hidden title="Relógio do set">TC</span>
+        <span class="topo__resto"></span>
+        <zro-set-slot id="set-slot"></zro-set-slot>
+      </header>
+
+      <nav class="ferramentas" id="ferramentas" aria-label="Ferramentas do monitor">
+        <button type="button" data-ferramenta="falsaCorLigada" data-ic="falsa" title="Falsa cor"><span>Falsa cor</span></button>
+        <button type="button" data-ferramenta="zebra" data-ic="zebra" title="Zebra"><span>Zebra</span></button>
+        <button type="button" data-ferramenta="pico" data-ic="foco" title="Foco (peaking)"><span>Foco</span></button>
+        <button type="button" data-ferramenta="lupa" data-ic="lupa" title="Lupa de foco"><span>Lupa</span></button>
+        <button type="button" data-ferramenta="scopes" data-ic="scopes" title="Scopes: histograma, forma de onda, RGB, vectorscope"><span>Scopes</span></button>
+        <button type="button" data-ferramenta="guias" data-ic="guias" title="Guias de enquadramento"><span>Guias</span></button>
+        <button type="button" data-folha="monitor" data-ic="lut" title="Monitor: LUT, anamórfico, falsa cor"><span>Monitor</span></button>
+      </nav>
+
+      <footer class="base">
+        <div class="exposicao" id="exposicao">
+          <button type="button" class="valor" data-folha="iso" id="v-iso"><small>ISO</small><b>Auto</b></button>
+          <button type="button" class="valor" data-folha="obturador" id="v-obt"><small>Obturador</small><b>Auto</b></button>
+          <button type="button" class="valor" data-folha="balanco" id="v-wb"><small>WB</small><b>Auto</b></button>
+          <button type="button" class="valor" data-folha="foco" id="v-foco"><small>Foco</small><b>Auto</b></button>
+          <button type="button" class="valor" data-folha="zoom" id="v-zoom"><small>Zoom</small><b>1×</b></button>
+        </div>
+        <button type="button" class="claquete" id="claquete" data-folha="claquete"><b id="claquete-texto">Cena 1 · A · Take 1</b><small id="claquete-cam">A001</small></button>
+        <div class="acoes">
+          <button type="button" class="redondo" id="biblioteca" data-folha="biblioteca" title="Clipes" aria-label="Clipes"><span class="miniatura" id="miniatura"></span></button>
+          <button type="button" class="gravar" id="gravar" aria-label="Gravar" title="Gravar (espaço)"><i></i></button>
+          <button type="button" class="redondo" id="mais" data-folha="ajustes" data-ic="ajustes" title="Ajustes" aria-label="Ajustes"></button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- folha: os painéis abrem aqui (um por vez) -->
+    <div class="folha" id="folha" hidden>
+      <div class="folha__fundo" data-acao="fechar-folha"></div>
+      <section class="folha__corpo" id="folha-corpo" role="dialog" aria-modal="true" aria-labelledby="folha-titulo"></section>
+    </div>
+
+    <!-- claquete na tela (smart slate): número grande, timecode do set, bip e flash -->
+    <div class="slate" id="slate" hidden>
+      <div class="slate__linha"><small>Projeto</small><b id="slate-projeto">—</b></div>
+      <div class="slate__grade">
+        <div><small>Cena</small><b id="slate-cena">1</b></div>
+        <div><small>Plano</small><b id="slate-plano">A</b></div>
+        <div><small>Take</small><b id="slate-take">1</b></div>
+        <div><small>Câm</small><b id="slate-cam">A</b></div>
+      </div>
+      <b class="slate__tc" id="slate-tc">00:00:00:00</b>
+      <div class="slate__acoes">
+        <button type="button" class="glass-btn glass-btn--ink" data-acao="bater">Bater</button>
+        <button type="button" class="glass-btn" data-acao="fechar-slate">Fechar</button>
+      </div>
+    </div>
+
+    <input type="file" id="arquivo-lut" accept=".cube" hidden />
+    <input type="file" id="arquivo-preset" accept=".json,application/json" hidden />
+    <input type="file" id="arquivo-roteiro" accept=".json,application/json" hidden />
+  </body>
+</html>

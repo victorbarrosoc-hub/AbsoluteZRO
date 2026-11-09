@@ -15,6 +15,33 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## CAMZRO, a câmera do set (09/11/2026, ramo `claude/kind-cray-xja6bm`, ADR 0044)
+
+Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microfone falsos do Chromium).
+
+- `products/camzro`: `npm test` **38/38**:
+  - `nucleo.test.js` (26): 180° e anti-flicker (24 fps: 172,8° em 50 Hz; 72/144/216/288/360° em 60 Hz), EV100, ND
+    para 180° (5 stops → ND 1,5), timecode drop-frame 29,97 e 59,94 com ida e volta em todos os quadros de 11 min e
+    2.589.408 quadros por dia, hora do dia, falsa cor ARRI/Simples, zebra, vectorscope (alvos a 75%), histograma,
+    forma de onda, nitidez (Sobel), Kelvin por McCamy (D65 ≈ 6500 K), filtro K igual aos coeficientes da BS.1770 a
+    48 kHz, LUFS de um seno a −20 dBFS, bip igual ao do TPeasy, LUT .cube (identidade, inversa, 1D→3D, erros), CSV do
+    DaVinci, ALE, relatório, Cristian, controles nas unidades da especificação, guias, prioridade de exposição e o
+    roteiro do Maestro (exemplo `maestro.roteiro.v1.json`).
+  - `portas.test.js` (6): página neutra sem porta; modo local só em localhost; prévia só com a chave certa (cookie com
+    HMAC, chave curta desliga a porta); conta só com `camzro` na claim; `vercel.json`; `app/vendor` igual aos pacotes.
+  - `contrato.test.js` (2): o exemplo `camzro.clip.v1.json` sai do código e todo campo está no contrato.
+  - `camera.e2e.test.js` (4): grava 2,6 s e confere o arquivo (MOV, H.264, 30 fps constantes com a câmera falsa a
+    20 fps, PCM 24 bits estéreo, ficha e claquete, take subindo, bom take); derruba a página no meio do take e o take
+    volta fechado em MOV; CSV e ALE baixados; gravador simples (MediaRecorder) como reserva.
+- Fumaça de todas as folhas no Chromium sem erro de página (ISO, obturador, WB, foco, formato, monitor, claquete com o
+  roteiro do Maestro andando de plano, ajustes, câmera e microfone, presets, calculadora, clipes).
+- HUB: `npm test` **669/669** em 77 arquivos (com a `0065` e o `nao-lancados.test.ts` cobrindo o `camzro` fechado:
+  conta comum não vê, admin vê em todos os canais), `lint`, `format:check` e `typecheck` ok; `build` ok.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+- Não verificado: aparelho de verdade (Android com controles manuais, iPhone/Safari, câmera USB), a descarga numa pasta
+  (o seletor de pasta pede uma pessoa) e o login único (sem cliente `camzro-web` cadastrado; o gate foi testado com o
+  cookie assinado).
+
 ## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.

@@ -50,6 +50,13 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
       'No iPhone funciona com o app aberto e a tela ligada; a voz vai de aparelho para aparelho e não é gravada.',
     ],
   },
+  camzro: {
+    nome: 'CAMZRO (nome provisório)',
+    faz: [
+      'A câmera de vídeo do set, no navegador do celular e do computador: exposição manual onde o aparelho deixa (ISO, obturador em ângulo, Kelvin, foco), prioridade de obturador ou de ISO, falsa cor, zebra, peaking, lupa, histograma, forma de onda e vectorscope.',
+      'Grava com cadência constante e áudio PCM 24 bits, timecode do set e claquete (cena, plano, take, rolo, bom take); o roteiro do Maestro vira a decupagem; o bip é o mesmo que o Synquei acha; a descarga numa pasta confere cada cópia (xxh64) e sai com CSV do DaVinci, ALE e relatório de câmera.',
+    ],
+  },
   synquei: {
     nome: 'Synquei',
     faz: [

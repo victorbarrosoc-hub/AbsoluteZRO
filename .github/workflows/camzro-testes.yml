@@ -1,0 +1,46 @@
+# Testes do CAMZRO (products/camzro, ADR 0044): as contas do núcleo, o gate e a prévia (api/), o contrato
+# camzro.clip/1 e a câmera de ponta a ponta num Chromium com câmera e microfone falsos (grava, confere, cai e recupera).
+# Roda quando a pasta ou este arquivo mudam.
+name: CAMZRO · testes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/camzro/**'
+      - '.github/workflows/camzro-testes.yml'
+  pull_request:
+    paths:
+      - 'products/camzro/**'
+      - '.github/workflows/camzro-testes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: camzro-testes-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/camzro
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/camzro/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: node publicar.mjs && node --check app/app.js && node --check app/motor/gravador.js

@@ -1,0 +1,66 @@
+{
+  "formato": "camzro.clip/1",
+  "arquivo": "A001C007_261109_K3F2.mov",
+  "clipe": "A001C007_261109_K3F2",
+  "criado": "2026-11-09T13:20:04.500Z",
+  "duracao_s": 12.5,
+  "quadros": 300,
+  "fps": 24,
+  "timecode": {
+    "inicio": "10:20:04:12",
+    "fim": "10:20:17:00",
+    "drop_frame": false,
+    "fonte": "relogio-do-set"
+  },
+  "claquete": {
+    "projeto": "Café Aurora",
+    "cena": "1",
+    "plano": "A",
+    "take": 3,
+    "camera": "A",
+    "rolo": "A001",
+    "bom": true,
+    "notas": "Melhor do drone; foco ok."
+  },
+  "video": {
+    "codec": "hevc",
+    "largura": 3840,
+    "altura": 2160,
+    "bitrate": 160000000,
+    "quadro_chave_s": 1,
+    "quadros_perdidos": 0,
+    "motor": "webcodecs"
+  },
+  "audio": {
+    "codec": "pcm-s24",
+    "taxa": 48000,
+    "canais": 2
+  },
+  "camera": {
+    "aparelho": "K3F2",
+    "lente": "24 mm",
+    "iso": 100,
+    "obturador_s": 0.02,
+    "angulo": 172.8,
+    "kelvin": 5600,
+    "zoom": 1,
+    "anamorfico": 1,
+    "lut_monitor": "Kodak 2383",
+    "nd": 0.9
+  },
+  "ecossistema": {
+    "maestro": {
+      "contrato": "maestro.roteiro/1",
+      "roteiro_id": "6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f",
+      "versao": 3,
+      "cena_id": "c1",
+      "plano_id": "p1"
+    },
+    "sincronia": {
+      "bip_s": 0.712,
+      "hz": 1000,
+      "ms": 160,
+      "assinatura": "tpeasy"
+    }
+  }
+}
