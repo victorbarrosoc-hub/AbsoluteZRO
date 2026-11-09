@@ -2034,6 +2034,15 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-por-slide` (titular: "não consigo separar qual foto vai em que número"):
+  - Cada slide do carrossel tem o próprio modelo e as próprias fotos; "Emendar com o anterior" faz o panorama.
+  - Foto no número: arrastar até o slide, tocar no slide e depois na foto, ou tocar na foto e depois no slide.
+  - Até 20 slides (era 10); com muitos, a fileira rola de lado.
+  - Só o app de computador, sem custo. O celular continua com o carrossel de antes até o lote do site (a lib
+    compartilhada `public/lib/montagens.js` não mudou).
+
 ## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
 
 - 🔶 Ramo `sobedesce-cartao-imprevistos` (titular, depois de estudar a página do Descarrega):

@@ -652,3 +652,76 @@
   color: var(--text-2);
   font-size: 12px;
 }
+
+/* carrossel por slide (public/lib/montagens-carrossel.js) */
+.mt-rolagem {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.mt-rolagem.is-longo .mt-tela,
+.mt-rolagem.is-longo .mt-canvas {
+  max-width: none;
+}
+.mt-tela {
+  margin: 0 auto;
+}
+.mt-slides {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mt-modelos.is-carrossel {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+.mt-modelo.is-carrossel .mt-modelo-tela {
+  height: 120px;
+}
+.mt-modelo.is-carrossel canvas {
+  max-height: 120px;
+}
+.mt-minis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.mt-mini {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill-2);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.mt-mini svg rect {
+  fill: currentColor;
+  opacity: 0.55;
+}
+.mt-mini:hover {
+  color: var(--text);
+}
+.mt-mini.is-on {
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--text);
+}
+.mt-mini.is-on svg rect {
+  opacity: 0.9;
+}
+.mt-foto.is-pega {
+  box-shadow: 0 0 0 3px #0a84ff;
+  transform: translateY(-3px);
+}
+.mt-dica.is-pega {
+  color: var(--text);
+  font-weight: 600;
+}
+.mt-dica .mt-link {
+  display: inline;
+  padding: 0;
+}
