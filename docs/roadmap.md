@@ -2034,6 +2034,14 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE: o site para de anunciar o Wi-Fi celular ↔ computador (09/11/2026)
+
+- 🔶 Ramo `sobedesce-home-sem-wifi` (titular), **lote de sexta 13/11**:
+  - O cartão "Celular e computador · pelo Wi-Fi" saiu da página inicial; "Entre aparelhos" fica com Entre computadores
+    e Entre discos.
+  - A linha "Wi-Fi direto entre celular e computador" saiu dos preços.
+  - O Wi-Fi celular ↔ computador foi descontinuado em 02/11, mas o site ainda anunciava.
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:

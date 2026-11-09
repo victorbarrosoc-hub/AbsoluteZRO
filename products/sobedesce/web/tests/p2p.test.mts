@@ -4,6 +4,7 @@
  * computador até 60 s; test/celular-p2p-antigo.test.js reproduz os dois laços).
  */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 
 describe("p2p descontinuado", () => {
@@ -29,5 +30,13 @@ describe("p2p descontinuado", () => {
       const src = readFileSync(new URL(`../src/app/api/p2p/${r}/route.ts`, import.meta.url), "utf8");
       assert.doesNotMatch(src, /@\/lib\/db|@\/lib\/auth|maxDuration/, r);
     }
+  });
+  test("o site não anuncia mais o Wi-Fi celular ↔ computador (página inicial e preços, 09/11/2026)", () => {
+    const ler = (f: string) => readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8");
+    const home = ler("components/home/aparelhos-section.tsx");
+    assert.doesNotMatch(home, /<WifiDemo|sem cabo|eyebrow="Celular e computador|Quem está por perto/);
+    assert.match(home, /Entre computadores/, "Entre computadores continua");
+    assert.match(home, /Entre discos/);
+    assert.doesNotMatch(ler("components/precos/planos.tsx"), /Wi-Fi direto/);
   });
 });

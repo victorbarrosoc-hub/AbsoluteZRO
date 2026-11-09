@@ -5500,3 +5500,14 @@ Branch `sobedesce-download-recuo`.
   - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE: o site para de anunciar o Wi-Fi celular ↔ computador (09/11/2026)
+
+Branch `sobedesce-home-sem-wifi`.
+
+- `web/tests/p2p.test.mts`:
+  - A seção "Entre aparelhos" não tem mais o cartão nem a animação do Wi-Fi, e Entre computadores e Entre discos
+    continuam.
+  - Os preços não têm mais "Wi-Fi direto".
+- Site: lint e tipos limpos; `npm test` com 388 testes, 383 passaram, 0 falhas.
+- Conferido no `next dev`: a seção mostra só os dois cartões, lado a lado, e `/precos` não tem a linha.

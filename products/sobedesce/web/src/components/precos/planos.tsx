@@ -36,7 +36,6 @@ const PLANOS: Plano[] = [
     linhas: [
       { texto: "2 aparelhos por conta do Drive" },
       { texto: "Envio e download retomáveis no Google Drive" },
-      { texto: "Wi-Fi direto entre celular e computador" },
       { texto: "Calculadora de mídia" },
       { texto: "Comparador, Entre discos e Frames com limite" },
       { texto: "Backup Automático", nao: true },
