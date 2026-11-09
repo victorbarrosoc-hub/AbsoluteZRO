@@ -5501,6 +5501,18 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+Branch `sobedesce-frames-montagem-pc`.
+
+- Conferido no demo com um trabalho real (`POST /api/frames`), vídeo H.264 de 3 cenas de 6 s:
+  - o trabalho saiu com 3 frames e 3 takes;
+  - escolhidos 2 frames e 2 takes, com a barra mostrando "2 frames e 2 takes · escolhidos";
+  - "Montagem" pôs os 4 caminhos na montagem, com o nome do vídeo, e abriu a tela, que diz "4 itens foram para a
+    Montagem". Lá, os takes viram vídeo, com play e agulha.
+- O contador da agulha mostra "0:00,0 / 0:05,0" (antes saía "0:00,00:00:0,0").
+- Montagens (`test/montagens*.test.js`): passaram.
+
 ## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
 
 Branch `sobedesce-carrossel-por-slide`.

@@ -477,11 +477,12 @@ export function MontagensScreen() {
     return Math.max(0, Math.min(d.duracao, ((e.clientX - r.left) / r.width) * d.duracao))
   }
   // mudou o trecho, a duração ou os quadros: para e volta a agulha para onde estava (dentro da duração)
+  // (o contador e a agulha são do DOM: o Preact não escreve neles, para não brigar com a agulha andando)
   useEffect(() => {
     pararM()
     irPara(Math.min(agulhaM.current, d.duracao))
     return () => cancelAnimationFrame(rafM.current)
-  }, [d.trechos, d.duracao, quadros, vista, trechoDoQuadro])
+  }, [d.trechos, d.duracao, quadros, vista, trechoDoQuadro, videosNoPost.length])
   const numeroDoQuadro = useMemo(() => (grupos ? slideDosQuadros(grupos, opts).map((s) => s + 1) : quadros.map((_, i) => i + 1)), [grupos, tela.w, d.espaco, quadros])
 
   // informações dos takes (duração, tamanho) para a agulha e o enquadre
@@ -1142,7 +1143,7 @@ export function MontagensScreen() {
                   ${Array.from({ length: d.duracao + 1 }, (_, k) => html`<i style=${`left:${(k / d.duracao) * 100}%`}></i>`)}
                   <span class="mt-tempo-ponteiro" ref=${ponteiroM}></span>
                 </div>
-                <span class="mt-tempo-tc"><b ref=${tcM}>${tc(0)}</b> / ${tc(d.duracao)}</span>
+                <span class="mt-tempo-tc"><b ref=${tcM}></b> / ${tc(d.duracao)}</span>
                 ${
                   ativoVideo
                     ? html`<button type="button" class="mt-link" disabled=${!infoAtual[quadros[ativo]]} onClick=${() => setTrechoDoQuadro(ativo)}><${Icon} name="film" size=${14} />Mudar o trecho</button>`
