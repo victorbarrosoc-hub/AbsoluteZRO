@@ -139,12 +139,15 @@ limite acaba o projeto para até o mês virar; não há cobrança:
 4. Em **Environment Variables**, crie `CAMZRO_CHAVE_PREVIA` com uma frase longa e só sua (24+ caracteres, ex.: gerada
    por um gerenciador de senhas). Não crie `ZRO_CLIENT_ID` nem `ZRO_CLIENT_SECRET` (o login único fica para quando o
    domínio `camzro.absolutezro.com` for autorizado).
-5. **Deploy**. Abra `https://<projeto>.vercel.app/previa?chave=<a frase>` uma vez no celular: o cookie fica 30 dias.
+5. **Deploy**. Enquanto o CAMZRO não estiver na `main`, o primeiro deploy (da `main`) falha por não achar a pasta: em
+   **Settings › Git › Production Branch**, ponha `claude/kind-cray-xja6bm` e faça **Redeploy** (ou faça o merge antes;
+   aí a migração `0065` também roda no deploy do HUB e cadastra o CAMZRO fechado).
+   Abra `https://<projeto>.vercel.app/previa?chave=<a frase>` uma vez no celular: o cookie fica 30 dias.
    Sem a chave, o endereço mostra só a página neutra (o app continua invisível para quem não tem a chave).
 6. No celular: **Abrir a câmera** e permita câmera e microfone. No iPhone, Compartilhar › Adicionar à Tela de Início
    (abre em tela cheia). No Android, o Chrome oferece Instalar.
-7. Para cortar custo e exposição: em **Settings › Git**, deixe só a `main` (ou desligue o deploy automático de branch)
-   e, terminado o teste, apague o projeto. Para trocar a chave, mude a variável e faça **Redeploy**.
+7. Para não gastar build à toa: **Settings › Git › Ignored Build Step** › "Only build if there are changes in a folder"
+   com `products/camzro`. Terminado o teste, apague o projeto. Para trocar a chave, mude a variável e faça **Redeploy**.
 
 Quando lançar (com o titular): domínio `camzro.absolutezro.com` (ADR 0025), cliente `camzro-web` no console da Absolute
 ZRO (retorno `https://camzro.absolutezro.com/api/zro/callback`), `ZRO_CLIENT_ID=camzro-web` e `ZRO_CLIENT_SECRET` no
