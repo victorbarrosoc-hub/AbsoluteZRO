@@ -134,6 +134,7 @@ async function abrirCamera() {
     else avisar('A câmera foi fechada por outro app. Toque para abrir de novo.', { ruim: true, ms: 6000 })
   })
   if (r.stream.semAudio && A.formato.audio !== 'sem') avisar('Sem microfone: gravando só a imagem.', { ruim: true })
+  else avisarSoAutomatico(r.capacidades)
   const v = $('video')
   v.srcObject = r.stream
   await v.play().catch(() => {})
@@ -314,6 +315,29 @@ function lacoDeExposicao(rgba, w, h) {
 }
 
 // ───────── toque no visor: focar, lupa, pinça para zoom ─────────
+
+/** Uma vez por aparelho: sem nenhum controle manual (Safari no iPhone), diz o que dá e onde está o resto. */
+function avisarSoAutomatico(cap) {
+  if (cap.exposicaoManual || cap.balancoManual || cap.focoManual) return
+  try {
+    if (localStorage.getItem('camzro.aviso-automatico')) return
+    localStorage.setItem('camzro.aviso-automatico', '1')
+  } catch {}
+  // depois dos avisos da abertura (cadência, microfone), para não sumir debaixo deles
+  setTimeout(() => avisar('Aqui a câmera fica no automático, com trava. Controle manual completo: no Android.', { ms: 6000 }), 3500)
+}
+
+/** O botão Exposição (aparelho sem ISO e obturador): um toque trava, outro solta. */
+function alternarExposicao() {
+  const cap = S.capacidades || {}
+  if (!cap.travaExposicao) return avisar('Neste aparelho a exposição é só automática.')
+  const travar = A.camera.exposicao !== 'travada'
+  A = E.limpar({ ...A, camera: { ...A.camera, exposicao: travar ? 'travada' : 'auto' } })
+  E.salvar(A)
+  void aplicarControles()
+  avisar(travar ? 'Exposição travada' : 'Exposição no automático', { ms: 1500 })
+  navigator.vibrate?.(10)
+}
 
 function travarAeAf() {
   const cap = S.capacidades || {}
@@ -670,6 +694,15 @@ export function atualizarTela() {
   }
   valor('v-iso', fmtIso(), A.camera.exposicao === 'manual' && cap.exposicaoManual)
   valor('v-obt', fmtObt(), A.camera.exposicao === 'manual' && cap.exposicaoManual)
+  // sem ISO e obturador (Safari no iPhone): um botão só, que trava e solta a exposição, com o que o aparelho contar
+  const soAuto = Boolean(S.capacidades) && !cap.exposicaoManual
+  $('v-iso').hidden = soAuto
+  $('v-obt').hidden = soAuto
+  $('v-exp').hidden = !soAuto
+  if (soAuto) {
+    const medido = [S.ajustes?.iso ? `ISO ${Math.round(S.ajustes.iso)}` : '', S.ajustes?.tempo ? exp.fracao(S.ajustes.tempo) : ''].filter(Boolean).join(' · ')
+    valor('v-exp', A.camera.exposicao === 'travada' ? 'Travada' : medido ? `Auto · ${medido}` : 'Auto', A.camera.exposicao === 'travada')
+  }
   valor('v-wb', S.ajustes?.kelvin ? `${Math.round(S.ajustes.kelvin)}K` : A.camera.balanco === 'travado' ? 'Travado' : 'Auto', A.camera.balanco !== 'auto')
   valor('v-foco', A.camera.foco === 'manual' && S.ajustes?.foco != null ? `${S.ajustes.foco.toFixed(2)} m` : A.camera.foco === 'travado' ? 'Travado' : 'Auto', A.camera.foco !== 'auto')
   valor('v-zoom', `${(S.ajustes?.zoom || A.camera.zoom || 1).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}×`, (S.ajustes?.zoom || 1) !== 1)
@@ -868,6 +901,7 @@ function ligar() {
   registrarFolhas()
   $('abrir').addEventListener('click', comecar)
   $('gravar').addEventListener('click', () => (S.sessao ? parar() : gravar()))
+  $('v-exp').addEventListener('click', alternarExposicao)
   document.addEventListener('click', (e) => {
     const f = e.target.closest('[data-ferramenta]')
     if (f) return alternarFerramenta(f.dataset.ferramenta)

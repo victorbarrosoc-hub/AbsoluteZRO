@@ -47,6 +47,9 @@ ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`,
 - ✅ Marca (pedido do titular, 09/11/2026: "Crie a logo da CAMZRO"): três estudos; o titular escolheu o **Obturador
   180°** (o anel e a centelha da Absolute ZRO com meio disco dentro). Símbolo, favicon, ícones, manifest, OG e o herói
   (o obturador gira e para em 180°) em `products/camzro/scripts/marca.mjs` e `docs/marca/camzro.md`.
+- ✅ iPhone mais honesto (titular, 09/11/2026, depois de testar no aparelho): sem ISO e obturador, a fileira de baixo
+  mostra um botão **Exposição** que trava e solta; aviso único de que o manual completo é no Android. Muda quando
+  houver o app nativo.
 - ✅ Perfil **Neutro ZRO** (titular, 09/11/2026: "Neutro ZRO é legal"): o perfil plano, honesto (não é Log; Rec.709 de
   8 bits), onde a câmera deixa mudar contraste ou nitidez; na ficha (`camera.perfil_imagem`) e no CSV do DaVinci. Log de
   verdade (Apple Log, ProRes, 10 bits) segue pedindo app nativo, decisão do titular.

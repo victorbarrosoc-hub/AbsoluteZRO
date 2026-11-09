@@ -75,6 +75,9 @@ Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microf
   terço, volta ao Padrão, nada sem controle, ficha e CSV). No Chromium, sem controle de imagem a folha Formato diz que o
   aparelho não deixa; com uma webcam simulada (0–255, abrindo em 128/128/64) o app pede contraste 43, saturação 43 e
   nitidez 0 e o chip mostra "Neutro". Não verificado: webcam e Android de verdade.
+- Botão Exposição (iPhone): no Chromium com as capacidades do Safari simuladas (trava, sem ISO, tempo, Kelvin e
+  distância), ISO e Obturador somem, o botão mostra "Auto · 1/200" e um toque pede `exposureMode: single-shot` e mostra
+  "Travada"; sem erro de página. `npm test` 41/41. Não verificado: no iPhone de verdade.
 - `node scripts/scan-secrets.mjs`: nenhum segredo.
 - Não verificado: aparelho de verdade (Android com controles manuais, iPhone/Safari, câmera USB), a descarga numa pasta
   (o seletor de pasta pede uma pessoa) e o login único (sem cliente `camzro-web` cadastrado; o gate foi testado com o

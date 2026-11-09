@@ -101,7 +101,9 @@ Fontes: páginas e notícias do Blackmagic Camera 2.0 (dpreview, PetaPixel, Cine
 ## Limites honestos
 
 - **iPhone (Safari)**: o navegador não abre ISO, obturador, Kelvin nem foco manual. Ficam o automático, a trava, o zoom
-  e todas as ferramentas de monitor, scopes, timecode, claquete e descarga. Controle manual completo pede app nativo
+  e todas as ferramentas de monitor, scopes, timecode, claquete e descarga. Sem ISO e obturador, a fileira de baixo
+  troca os dois por um botão **Exposição** (um toque trava, outro solta, com o que o aparelho contar) e o app avisa uma
+  vez que o controle manual completo é no Android (titular, 09/11/2026; muda no app nativo). Controle manual completo pede app nativo
   (outra fase, decisão do titular: conta de desenvolvedor Apple).
 - **Sem ProRes, Log e 10 bits**: o navegador grava H.264/HEVC/AV1 de 8 bits. O Relay converte depois, no aparelho.
 - **Neutro ZRO** (Formato › Imagem; nome do titular, 09/11/2026): o perfil plano. Nitidez no mínimo, contraste e
