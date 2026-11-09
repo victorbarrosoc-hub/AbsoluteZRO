@@ -1,6 +1,19 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Pedido do titular: no app de computador, o Campus (página privada dele no claude.ai, link no painel de administração do
+HUB, PR #161) abre numa janela própria, não no navegador.
+
+- ✅ `regras.cjs`: o link do Campus vira o destino `campus`; a janela dele só navega em `https://claude.ai` e o resto vai
+  para o navegador; permissões só de copiar texto e tela cheia.
+- ✅ `main.cjs`: `abrirCampus()` abre (ou traz para a frente) uma janela com sessão separada `persist:campus`, longe da
+  sessão do HUB. O login do claude.ai fica lembrado nela. Entrar com o Google não roda em janela embutida: entra com
+  o e-mail.
+- ✅ Sem custo: só a central (workflow `hub-desktop`); nada na Vercel. O link no painel sai no lote de 13/11 (#161).
+- ⬜ Conferir no Mac do titular: Painel de administração → Campus abre a janela, e o login fica lembrado.
 
 ## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
 

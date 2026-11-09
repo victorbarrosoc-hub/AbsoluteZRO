@@ -165,6 +165,12 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.6: Campus numa janela própria
+
+O link do Campus no painel de administração do HUB (só o papel `admin` vê) abre numa janela do app, com sessão
+separada (`persist:campus`): o login do claude.ai fica lembrado só ali. A janela navega só em `https://claude.ai`; o resto
+vai para o navegador. Entrar com o Google não funciona em janela embutida: use o e-mail.
+
 ## 1.4.5: "Atualizar" some depois de atualizar
 
 - **Bug (titular, 06/11/2026, Mac):** "já instalei 3 vezes e nunca fica atualizado", em todos os apps. O SOBEDESCE
