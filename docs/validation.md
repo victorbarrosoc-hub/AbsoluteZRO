@@ -15,6 +15,20 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Apps não lançados no team grátis ZROFREE (09/11/2026, ramo `claude/kind-cray-xja6bm`)
+
+Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63. `npm test` de cada app no estado final do ramo:
+
+- Revela `products/finishing` **193/193**, AEON `products/ai-edit` **271/271**, Rift Motion `products/rift-motion`
+  **21/21** (com Postgres), Quasar `products/nossom` **158/158**, CAMZRO **38/38**. Em cada um, a porta de prévia: sem a
+  variável não existe; chave curta desliga; chave errada dá a página neutra; chave certa dá 303 com o cookie (HMAC, sem a
+  chave); cookie forjado ou de outra chave não entra.
+- Quasar: `npm run build` sem variável nenhuma; `next start` só com a chave, no Chromium: estúdio abre como "Prévia",
+  Meus projetos no navegador, sem erro de página. Rift: o fluxo inteiro no Chromium (neutra sem chave, painel em
+  demonstração com a chave). O e2e completo do Quasar (Playwright) não rodou aqui.
+- Vercel (team Pro, pela conexão): `aeon`, `revela`, `rift-motion` e `quasar` com Ignored Build Step `exit 0`; domínios e
+  último deploy conferidos depois da troca. Os projetos do ZROFREE não foram criados (a conexão não enxerga o team).
+
 ## CAMZRO, a câmera do set (09/11/2026, ramo `claude/kind-cray-xja6bm`, ADR 0044)
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microfone falsos do Chromium).
