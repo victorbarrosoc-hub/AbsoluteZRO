@@ -34,7 +34,7 @@ ecossistema, minimalista, fácil e eficiente, com "as melhores matemáticas". Pe
    os campos do Synquei, ALE, bip de sincronia igual ao do TPeasy (o Synquei já acha), roteiro do Maestro
    (`maestro.roteiro/1`) como decupagem, o Set e a conta única. O servidor só serve a página pelo gate e a hora.
 5. **Gate e prévia**: três portas (`api/_sessao.js`) — conta com `camzro` na claim `zro_release`, prévia do titular
-   (`CAMZRO_CHAVE_PREVIA`, cookie com HMAC da chave) e modo local (só localhost). Fora delas, a página neutra.
+   (`ZRO_CHAVE_PREVIA`, a variável única do team grátis ZROFREE; cookie com HMAC da chave) e modo local (só localhost). Fora delas, a página neutra.
 
 ## Consequências
 

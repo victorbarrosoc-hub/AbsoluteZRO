@@ -1,4 +1,4 @@
-// GET /previa?chave=<CAMZRO_CHAVE_PREVIA> — a porta da prévia do titular (api/_sessao.js): confere a chave em tempo
+// GET /previa?chave=<ZRO_CHAVE_PREVIA> — a porta da prévia do titular (api/_sessao.js): confere a chave em tempo
 // constante, grava o cookie cz_previa (o HMAC da chave, nunca a chave) e manda para /. Chave errada ou porta
 // desligada: a mesma página neutra de quem não tem acesso, sem dizer o que faltou.
 import { readFile } from 'node:fs/promises'

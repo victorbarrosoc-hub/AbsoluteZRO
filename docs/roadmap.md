@@ -8,7 +8,7 @@ Pedido do titular: câmera completa, melhor que o Blackmagic Camera e o FilmLab 
 ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`, em `products/camzro/`.
 
 - ✅ App web (PWA) com o gate: página neutra para quem não tem acesso; portas só por conta com `camzro` na claim
-  `zro_release`, prévia do titular (`CAMZRO_CHAVE_PREVIA`) ou modo local. Login único copiado do RADION (`camzro-web`).
+  `zro_release`, prévia do titular (`ZRO_CHAVE_PREVIA`) ou modo local. Login único copiado do RADION (`camzro-web`).
 - ✅ Gravação: Mediabunny + WebCodecs, cadência constante, PCM 24 bits cru, bitrate e quadro-chave; MP4 fragmentado
   gravado no lugar (OPFS + worker) e fechado em MOV sem recompressão; take recuperado depois de queda (testado).
 - ✅ Exposição: ISO, ângulo, Kelvin, foco, zoom, tocha onde o aparelho deixa; prioridade de obturador e de ISO em malha

@@ -136,7 +136,8 @@ limite acaba o projeto para até o mês virar; não há cobrança:
 2. **Add New › Project › Import Git Repository**, escolha `victorbarrosoc-hub/AbsoluteZRO` (autorize o GitHub só para
    este repositório).
 3. Em **Root Directory**, escolha `products/camzro`. Framework: **Other**. Os comandos vêm do `vercel.json` (não mude).
-4. Em **Environment Variables**, crie `CAMZRO_CHAVE_PREVIA` com uma frase longa e só sua (24+ caracteres, ex.: gerada
+4. Em **Environment Variables**, crie `ZRO_CHAVE_PREVIA` (a mesma variável dos outros apps no ZROFREE; o antigo
+   `CAMZRO_CHAVE_PREVIA` também vale) com uma frase longa e só sua (24+ caracteres, ex.: gerada
    por um gerenciador de senhas). Não crie `ZRO_CLIENT_ID` nem `ZRO_CLIENT_SECRET` (o login único fica para quando o
    domínio `camzro.absolutezro.com` for autorizado).
 5. **Deploy**. Enquanto o CAMZRO não estiver na `main`, o primeiro deploy (da `main`) falha por não achar a pasta: em

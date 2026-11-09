@@ -19,7 +19,7 @@ const comHost = (caminho, host) =>
     r.on('error', erro)
   })
 const ambiente = (env) => {
-  for (const k of ['CAMZRO_LOCAL', 'CAMZRO_CHAVE_PREVIA', 'ZRO_CLIENT_ID', 'ZRO_CLIENT_SECRET']) delete process.env[k]
+  for (const k of ['CAMZRO_LOCAL', 'CAMZRO_CHAVE_PREVIA', 'ZRO_CHAVE_PREVIA', 'ZRO_CLIENT_ID', 'ZRO_CLIENT_SECRET']) delete process.env[k]
   Object.assign(process.env, env)
 }
 
@@ -83,6 +83,10 @@ test('prévia do titular: só com a chave certa, e o cookie leva o HMAC, nunca a
   assert.equal((await fetch(url('/app/app.js'), { headers: { cookie: valor } })).status, 200)
   // cookie forjado não passa
   assert.match(await (await fetch(url('/'), { headers: { cookie: 'cz_previa=abc' } })).text(), /indisponível/)
+  // a variável única do ZROFREE (ZRO_CHAVE_PREVIA) abre a mesma porta
+  ambiente({ ZRO_CHAVE_PREVIA: chave })
+  assert.equal((await fetch(url(`/previa?chave=${encodeURIComponent(chave)}`), { redirect: 'manual' })).status, 303)
+  assert.match(await (await fetch(url('/'), { headers: { cookie: valor } })).text(), /content="previa"/)
   // chave curta demais: a porta não existe
   ambiente({ CAMZRO_CHAVE_PREVIA: 'curta' })
   assert.equal((await fetch(url('/previa?chave=curta'), { redirect: 'manual' })).status, 404)

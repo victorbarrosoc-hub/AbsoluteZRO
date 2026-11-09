@@ -4,7 +4,7 @@ A câmera de vídeo do set (nome provisório; ADR 0044). As regras do `CLAUDE.md
 acrescenta.
 
 - **Não lançado e sem deploy** (titular, 09/11/2026): fechado no gate (HUB `0065`); nada de projeto Vercel, domínio ou
-  banco sem nova autorização. Para teste, o titular publica numa conta Vercel grátis à parte com `CAMZRO_CHAVE_PREVIA`
+  banco sem nova autorização. Para teste, o titular publica numa conta Vercel grátis à parte (team ZROFREE) com `ZRO_CHAVE_PREVIA`
   (passo a passo no README). A página, os scripts e a API só saem pelas portas de `api/_sessao.js`.
 - **Imagem e som nunca saem do aparelho** sem a pessoa mandar (compartilhar, descarregar). Nada de upload, nada de
   amostra de vídeo ou áudio real no repositório (testes usam a câmera e o microfone falsos do Chromium).

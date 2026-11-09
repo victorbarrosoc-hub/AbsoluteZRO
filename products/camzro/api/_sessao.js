@@ -2,7 +2,8 @@
 //
 // 1. Conta Absolute ZRO (login único, cookie cz_conta) com `camzro` na claim zro_release (gate de lançamento, raiz
 //    CLAUDE.md): o caminho de produção. Libera também o ecossistema (Set, relógio do set, Maestro).
-// 2. Prévia do titular (CAMZRO_CHAVE_PREVIA): para testar num projeto Vercel à parte, antes do login estar ligado. Quem
+// 2. Prévia do titular (ZRO_CHAVE_PREVIA, a mesma variável de todos os apps não lançados no team grátis ZROFREE;
+//    CAMZRO_CHAVE_PREVIA ainda vale): para testar num projeto Vercel à parte, antes do login estar ligado. Quem
 //    abre /previa?chave=<a chave> uma vez ganha o cookie cz_previa (HMAC da chave, 30 dias) e vê o app. Sem a chave,
 //    a página neutra. Sem a variável, a porta não existe.
 // 3. Modo local (CAMZRO_LOCAL=1, sem login configurado, pedido de localhost): só para desenvolver e para os testes.
@@ -21,7 +22,7 @@ export const modoLocal = (req) => !configurado() && process.env.CAMZRO_LOCAL ===
 
 /** A chave da prévia, se estiver configurada e for comprida o bastante (24+ caracteres). */
 export function chavePrevia() {
-  const k = String(process.env.CAMZRO_CHAVE_PREVIA || '').trim()
+  const k = String(process.env.ZRO_CHAVE_PREVIA || process.env.CAMZRO_CHAVE_PREVIA || '').trim()
   return k.length >= 24 ? k : null
 }
 
