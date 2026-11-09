@@ -37,6 +37,9 @@ entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
   "Indisponível.". O editor no navegador segue pela função `api/app.js` para a conta `allowed`. Lançar de novo pede os
   dois lados (migration do HUB e `LANCADO = true`), com o titular. A página do lançamento continua pronta em
   `lancamento/pagina.html`. Roteiro antigo: `docs/operations/lancamento-aeon.md`.
+  **Prévia do titular** (09/11/2026): com `ZRO_CHAVE_PREVIA` (24+ caracteres) no projeto do team grátis ZROFREE,
+  `/previa?chave=` grava o cookie `ae_previa` (HMAC da chave) e o editor abre sem conta (`api/_previa.js`; README,
+  "Prévia no team grátis"). Nunca defina essa variável no projeto oficial.
 - Repositório público: nada de chave, token, áudio ou vídeo de pessoa real. `node scripts/scan-secrets.mjs` na raiz.
 
 ## Implementação

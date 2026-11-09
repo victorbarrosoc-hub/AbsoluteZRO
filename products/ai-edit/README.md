@@ -75,6 +75,20 @@ Abrir ao público pede os dois lados: o HUB marca o produto como lançado e o pr
 `RELEASE=released` (build e runtime) com deploy novo; aí `publicar-site.mjs` volta a publicar o editor e os
 instaladores. Localmente: `RELEASE=released node scripts/publicar-site.mjs`.
 
+## Prévia no team grátis (ZROFREE)
+
+Para o titular testar o AEON num projeto Vercel à parte (team Hobby **ZROFREE**), sem o login do HUB e sem chave nem
+banco de produção ("só a interface"; decisão do titular, 09/11/2026):
+
+- Projeto Vercel: Root Directory `products/ai-edit`, Framework **Other** (build `npm run vendor && node
+  scripts/publicar-site.mjs` e saída `publico` já vêm do `vercel.json`). Variável única: **`ZRO_CHAVE_PREVIA`** (24+
+  caracteres). Nada de `ZRO_CLIENT_ID`, `ZRO_CLIENT_SECRET` ou `RELEASE`.
+- Abrir uma vez: `https://<projeto>.vercel.app/previa?chave=<a chave>` → cookie `ae_previa` (o HMAC da chave, 30 dias)
+  e o editor em `/app/`. Chave errada, curta ou sem a variável: a página neutra (404). Trocar a chave derruba os cookies.
+- Com a prévia, o editor abre como a conta `allowed` (`api/_previa.js`, `api/app.js`, `/api/zro/eu` responde
+  `previa: true`); IA, Higgsfield, sons e Set continuam pedindo a conta Absolute ZRO. O projeto oficial (sem a variável)
+  não muda. Testes: `test/previa.test.js`.
+
 ## Instalar (quando abrir; sem certificado: custo zero)
 
 Os instaladores ficam no Release `ai-edit-app-desktop` do GitHub, publicado só pelo botão do workflow
