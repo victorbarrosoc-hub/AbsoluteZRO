@@ -18,7 +18,9 @@ describe('packages/drive-web no app do celular', () => {
   test('browse.js reexporta o núcleo e lista pelo listador dele', () => {
     const src = fs.readFileSync(app('browse.js'), 'utf8')
     assert.match(src, /export \* from '\.\/drive-nucleo\.js'/)
-    assert.match(src, /criarListador\(driveCall\)/)
+    // O listador do núcleo, com o driveCall do app; a listagem ganha os campos do menu (estrela, selo) em `comMais`.
+    assert.match(src, /criarListador\(comMais\)/)
+    assert.match(src, /return driveCall\(caminho, \{ \.\.\.opts, query: \{ \.\.\.opts\.query, fields: mais \} \}\)/)
   })
 
   test('o listador contorna o 400 do filtro por tipo e da ordem, uma vez', async () => {
