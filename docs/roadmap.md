@@ -2,6 +2,21 @@
 
 Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
+## Apps não lançados no team grátis ZROFREE (09/11/2026, ramo `claude/kind-cray-xja6bm`)
+
+Pedido do titular: alimentar CAMZRO, AEON, Revela, Quasar e Rift Motion num team Vercel Hobby à parte, sem gastar no Pro.
+Guia: `docs/operations/vercel-zrofree.md`.
+
+- ✅ Porta de prévia por chave em todos (`ZRO_CHAVE_PREVIA`, 24+ caracteres; `/previa?chave=…` grava o HMAC da chave,
+  nunca a chave; sem a variável, nada muda): CAMZRO, AEON (`/app/`), Revela (`/inicio`), Rift (painel em demonstração)
+  e Quasar (`/studio`). Fora da porta, a página neutra de cada um.
+- ✅ Só a interface no Quasar e no Rift (decisão do titular): build sem variável nenhuma; o que pede banco, conta ou chave
+  responde 503 curto e a tela segue.
+- ✅ Team Pro sem build dos não lançados: `aeon`, `revela`, `rift-motion` e `quasar` com Ignored Build Step `exit 0`.
+- ⛔ Criar os cinco projetos no ZROFREE: a conexão da Vercel no claude.ai só enxerga o team Pro; o titular reconecta
+  marcando o ZROFREE (ou cria à mão pelo guia).
+- ⬜ Conferir na Vercel de verdade: o `includeFiles` com chaves do Rift e o cron diário do Quasar no Hobby.
+
 ## CAMZRO, a câmera do set (09/11/2026, ramo `claude/kind-cray-xja6bm`, ADR 0044)
 
 Pedido do titular: câmera completa, melhor que o Blackmagic Camera e o FilmLab Pro (urfilmlab), integrada ao

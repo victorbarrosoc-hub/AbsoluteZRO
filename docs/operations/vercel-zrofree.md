@@ -30,13 +30,18 @@ in a folder" (o comportamento de antes: cancelar quando a pasta do app não mudo
 Todos: **Import Git Repository** › `victorbarrosoc-hub/AbsoluteZRO`, com o team **ZROFREE** selecionado (nunca o Pro).
 Comandos de build e saída vêm do `vercel.json` de cada pasta (não mude).
 
-| Projeto (sugestão) | Root Directory         | Framework | Variáveis          | Abre em                 |
-| ------------------ | ---------------------- | --------- | ------------------ | ----------------------- |
-| `camzro`           | `products/camzro`      | Other     | `ZRO_CHAVE_PREVIA` | `/previa?chave=…` → `/` |
-| `aeon`             | `products/ai-edit`     | Other     | `ZRO_CHAVE_PREVIA` | `/previa?chave=…`       |
-| `revela`           | `products/finishing`   | Other     | `ZRO_CHAVE_PREVIA` | `/previa?chave=…`       |
-| `rift`             | `products/rift-motion` | Other     | `ZRO_CHAVE_PREVIA` | `/previa?chave=…`       |
-| `quasar`           | `products/nossom`      | Next.js   | `ZRO_CHAVE_PREVIA` | `/previa?chave=…`       |
+| Projeto (sugestão) | Root Directory         | Framework | A chave leva para | Fica de fora na prévia (sem conta, banco ou chaves)         |
+| ------------------ | ---------------------- | --------- | ----------------- | ----------------------------------------------------------- |
+| `camzro`           | `products/camzro`      | Other     | `/` (a câmera)    | Set e login (o resto roda no aparelho)                      |
+| `aeon`             | `products/ai-edit`     | Other     | `/app/`           | IA, Higgsfield, sons e Set                                  |
+| `revela`           | `products/finishing`   | Other     | `/inicio`         | a Z e o Set                                                 |
+| `rift`             | `products/rift-motion` | Other     | o painel (demo)   | conta, projetos na nuvem, a Z e Criar com IA (a API dá 503) |
+| `quasar`           | `products/nossom`      | Next.js   | `/studio`         | tratar áudio (cota), nuvem, GPU, Z, planos e conta (dá 503) |
+
+Em todos, a variável é só `ZRO_CHAVE_PREVIA` (24+ caracteres). Nada de `ZRO_CLIENT_*`, `RELEASE`, `RIFT_DATABASE_URL` nem
+chaves de Supabase, Stripe, RunPod, ElevenLabs ou Anthropic. O Rift lê a chave no build: trocou a variável, Redeploy.
+O que funciona: CAMZRO inteiro; AEON e Revela com as ferramentas no navegador; Rift com o site, o painel em demonstração
+(projetos no aparelho) e o estúdio; Quasar com o estúdio inteiro (Meus projetos no navegador, enviar e ouvir áudio).
 
 Em cada projeto, depois de criar:
 
