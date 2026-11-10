@@ -5523,6 +5523,8 @@ Branch `sobedesce-download-recuo`.
 … tag name ('1<small')` e parava. Com a correção, nenhum erro: "Falta <1 min" aparece e o andamento segue até o fim.
   Os proxies saíram ("pronta") nos dois arquivos.
 - `test/templates-html.test.js`: falha com o código antigo e passa com o novo.
+- Proteção de tela, no demo com o defeito antigo forçado: Transferências mostra "Esta tela teve um problema…" com
+  "Tentar de novo", e o menu abre o Drive normalmente.
 
 ## SOBEDESCE 0.3.16: uma ronda só para os pedidos (09/11/2026)
 

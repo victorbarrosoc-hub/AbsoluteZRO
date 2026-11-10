@@ -2061,6 +2061,8 @@ do card... não consigo localizar o job que quero achar".
   resposta): quando faltava menos de 1 min, o "Falta" escrevia `<1` direto no html``, o "<" virava tag e a tela inteira
   parava de desenhar (o envio continuava por baixo). Agora vai interpolado. Defeito desde a 0.3.8 (05/11).
   - Guarda nova: `test/templates-html.test.js` recusa "<" seguido de número nos templates (computador e celular).
+  - Um erro de desenho não trava mais o app inteiro (o titular relatou todos os botões mortos): cada tela e a raiz
+    ficam protegidas (`useErrorBoundary`). A tela mostra o aviso e "Tentar de novo", e o menu continua.
 
 ## SOBEDESCE 0.3.16: uma ronda só para os pedidos (CPU da Vercel, 09/11/2026)
 
