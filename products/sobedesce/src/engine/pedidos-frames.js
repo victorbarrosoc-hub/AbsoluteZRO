@@ -46,7 +46,9 @@ export class PedidosFrames {
    * @param {() => import('../frames/servico.js').FramesService|null} o.frames o serviço do Frames (vem com o servidor)
    * Trocáveis nos testes: pollMs, vidaMs, log.
    */
-  constructor({ cloud, frames, pollMs = POLL_MS, vidaMs = VIDA_MS, log } = {}) {
+  constructor({ cloud, frames, pollMs = POLL_MS, vidaMs = VIDA_MS, log, ronda = null } = {}) {
+    this.tipo = 'frames'
+    this.ronda = ronda // RondaPedidos: uma pergunta só para todos os tipos (src/engine/ronda-pedidos.js)
     this.cloud = cloud
     this.frames = frames
     this.pollMs = pollMs
@@ -60,6 +62,7 @@ export class PedidosFrames {
   }
 
   start() {
+    if (this.ronda) return this.ronda.ouvir(this)
     this.#planejar(8_000)
   }
 
@@ -73,7 +76,7 @@ export class PedidosFrames {
   }
 
   #planejar(ms = this.pollMs) {
-    if (this.closed) return
+    if (this.closed || this.ronda) return
     clearTimeout(this.timer)
     this.timer = setTimeout(() => {
       this.timer = null
@@ -88,7 +91,8 @@ export class PedidosFrames {
   }
 
   /** Pega e faz os pedidos pendentes, um por vez. Devolve quantos terminaram aqui. */
-  async consultar() {
+  /** `lista`: os pedidos que a ronda já trouxe (sem ela, pergunta ao site). */
+  async consultar(lista = null) {
     if (this.rodando) return this.rodando
     this.rodando = (async () => {
       try {
@@ -97,7 +101,7 @@ export class PedidosFrames {
         if (svc.job?.status === 'running') return 0 // a pessoa está usando o Frames aqui: espera a vez
         let pedidos
         try {
-          const d = await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=frames')
+          const d = lista ? { pedidos: lista } : await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=frames')
           pedidos = Array.isArray(d.pedidos) ? d.pedidos.filter((p) => p?.tipo === 'frames') : []
         } catch (err) {
           if (err instanceof HttpError && [400, 403, 404].includes(err.status)) this.pausaAte = Date.now() + SEM_SITE_MS

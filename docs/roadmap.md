@@ -1,6 +1,27 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Central 1.4.7: menu Administração no app (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+Pedido do titular: o Campus no programa do computador, dentro de Administração, só para quem é administrador.
+
+- ✅ Menu **Administração** (Painel de administração e Campus, ⌘⇧K) só aparece para o papel `admin`: o app confere em
+  `/api/v1/admin/z-lab` com a sessão do HUB (200 só para admin). Sem mudança no HUB, sem custo na Vercel.
+- ⬜ Conferir no Mac do titular: o menu aparece depois de entrar, e some ao sair da conta.
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Pedido do titular: no app de computador, o Campus (página privada dele no claude.ai, link no painel de administração do
+HUB, PR #161) abre numa janela própria, não no navegador.
+
+- ✅ `regras.cjs`: o link do Campus vira o destino `campus`; a janela dele só navega em `https://claude.ai` e o resto vai
+  para o navegador; permissões só de copiar texto e tela cheia.
+- ✅ `main.cjs`: `abrirCampus()` abre (ou traz para a frente) uma janela com sessão separada `persist:campus`, longe da
+  sessão do HUB. O login do claude.ai fica lembrado nela. Entrar com o Google não roda em janela embutida: entra com
+  o e-mail.
+- ✅ Sem custo: só a central (workflow `hub-desktop`); nada na Vercel. O link no painel sai no lote de 13/11 (#161).
+- ⬜ Conferir no Mac do titular: Painel de administração → Campus abre a janela, e o login fica lembrado.
 
 ## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
 
@@ -220,6 +241,12 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
 - ✅ **RADION, foto sem piscar** (titular, 07/11/2026: "bug na foto", vídeo do iPhone): a lista da equipe é redesenhada
   a cada batida e a foto, recriada, deixava as iniciais aparecerem por um quadro. A foto vira o fundo do círculo e a
   página lembra quais já abriram: no redesenho ela entra direto.
+- 🟡 **RADION nativo, Android, marco 1** (titular, 08/11/2026: caminho A, celular travado no bolso):
+  `products/radio/nativo/android`. O módulo `nucleo` (sem login nem banco, reaproveitável pelo DEICHECK) traz o
+  serviço em primeiro plano com Falar/Parar na tela bloqueada, o botão do fone, o "não dormir" e o som no fone ou no
+  viva-voz. O `app` traz a página do RADION numa WebView com a ponte do contrato do computador, o login pelo
+  navegador (`radion://entrar-app`) e as regras de navegação. APK de teste pelo GitHub Actions no Release
+  `radion-android-teste`, sem loja e sem custo. ⏳ Teste num Android de verdade e a chave fixa de assinatura.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
@@ -2019,6 +2046,91 @@ do card... não consigo localizar o job que quero achar".
 - 🔶 No ramo `sobedesce-web-transferencias`, esperando a aprovação do titular pela prévia: tela Transferências no app
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
+
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+- 🔶 Ramo `sobedesce-download-recuo` (relato de usuário pelo Painel Geral; o titular autorizou fazer e publicar o app
+  de computador no mesmo dia): baixando 30 GB, a velocidade deu dois picos e caiu para ~539 KB/s, "0 com problema".
+  - Economia com prazo de 1 h: depois disso, o arquivo volta às conexões dos Ajustes. "Tentar de novo" e a cópia
+    temporária também limpam a economia.
+  - Recuo por conta no 403/429: todas as conexões de download esperam juntas. A espera diz "O Google pediu para ir
+    mais devagar", e não "Sem conexão".
+  - Log do motor sempre ligado (sem token, nome de arquivo, caminho ou e-mail) e "Copiar diagnóstico" em Ajustes ›
+    Versão (`GET /api/diagnostico`).
+  - A versão escrita em Ajustes estava parada em "0.3.2" desde 01/11, em todas as versões novas. Agora ela vem do
+    `package.json`.
+  - Só o app de computador (workflow, sem custo); nada do site.
+
+## SOBEDESCE 0.3.19: menu do Drive igual ao do Google Drive, no computador (10/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-menu-pc` (titular via Z: soltar o que é grátis): a parte do app de computador do #153 sai
+  agora. Botão direito no item e no vazio, Copiar link (com "Qualquer pessoa com o link pode ver" ou "Só copiar",
+  escolha lembrada), selo "Público (link)", Restrito, estrela, arrastar para mover com Desfazer e ações rápidas.
+  - Motor: rotas `link/restringir` e `estrela`; a listagem traz `starred`, `permissionIds`, `createdTime`, `canShare`.
+  - O celular e o site (`web/`) continuam no #153, para o lote de sexta (13/11).
+
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-rolar` (titular: "não consigo ver as outras páginas no carrossel", "não consigo jogar
+  os takes selecionados pra montagem", "não consigo selecionar o número e a foto que vou colocar em cada número"):
+  - Carrossel: a roda do mouse rola de lado e os números dos slides (com ‹ ›) levam até cada um.
+  - Grade do perfil por quadradinho (foto e modelo próprios, na ordem de postar); "Uma imagem só, dividida" mantém o
+    jeito antigo.
+  - Takes do Frames com o botão visível "Escolher" / "Escolhido · N".
+  - Só o app de computador (workflow, sem custo); nada do site.
+
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- 🔶 Ramo `sobedesce-envio-proxy` (relato do titular via Z: lote de 2 vídeos com proxy parou em 3%, cancelar sem
+  resposta): quando faltava menos de 1 min, o "Falta" escrevia `<1` direto no html``, o "<" virava tag e a tela inteira
+  parava de desenhar (o envio continuava por baixo). Agora vai interpolado. Defeito desde a 0.3.8 (05/11).
+  - Guarda nova: `test/templates-html.test.js` recusa "<" seguido de número nos templates (computador e celular).
+  - Um erro de desenho não trava mais o app inteiro (o titular relatou todos os botões mortos): cada tela e a raiz
+    ficam protegidas (`useErrorBoundary`). A tela mostra o aviso e "Tentar de novo", e o menu continua.
+
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (CPU da Vercel, 09/11/2026)
+
+- 🔶 Ramo `sobedesce-ronda-pedidos` (proposta aprovada pelo titular via Z): o app de computador perguntava os pedidos
+  em 4 rondas (proxy, frames e formato a cada 30 s, Relay a cada 20 s; ~9/min). Agora é uma pergunta só
+  (`tipo=todos`, `src/engine/ronda-pedidos.js`) que vai de 30 s até 5 min enquanto não aparece pedido e volta a 30 s
+  com pedido ou quando a pessoa mexe no app. Parado: ~12 perguntas por hora em vez de ~540.
+  - Conserto junto: uma volta que acabava na hora (sem conta, em pausa) prendia a ronda para sempre.
+  - Falta: o sinal de vida do "Acompanhar pelo celular" (90 s parado) só pode espaçar junto com o limite de "ligado"
+    do celular (2 min), que é do site: vai no lote. Medir o antes/depois uma semana depois de publicar.
+
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+- 🔶 Ramo `sobedesce-frames-montagem-pc` (titular: "não é pra ficar só no celular, plataforma do computador também"):
+  - No trabalho do Frames, frames e takes (os cortes de cena) ganham o + de escolher, e a barra de escolhidos ganha
+    "Montagem", que leva os arquivos para a bandeja de Estúdio › Montagens, somando ao que já está lá.
+  - Contador da agulha da montagem com take: o texto saía duplicado ("0:00,00:00:0,0"); agora é só do DOM.
+  - Só o app de computador, sem custo.
+
+## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-por-slide` (titular: "não consigo separar qual foto vai em que número"):
+  - Cada slide do carrossel tem o próprio modelo e as próprias fotos; "Emendar com o anterior" faz o panorama.
+  - Foto no número: arrastar até o slide, tocar no slide e depois na foto, ou tocar na foto e depois no slide.
+  - Até 20 slides (era 10); com muitos, a fileira rola de lado.
+  - **Ver a montagem com take:** play e agulha embaixo da montagem; cada take toca no quadro dele, no trecho escolhido
+    ("sem ver isso não faz sentido", titular).
+  - Só o app de computador, sem custo. O celular continua com o carrossel de antes até o lote do site (a lib
+    compartilhada `public/lib/montagens.js` não mudou).
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+- 🔶 Ramo `sobedesce-cartao-imprevistos` (titular, depois de estudar a página do Descarrega):
+  - **Contador zerado:** o arquivo com nome repetido não fica mais só como alerta. Ele vai conferido para
+    `Cartão NN · contador zerado`, sem gravar por cima, e não é copiado de novo.
+  - **Gravação interrompida:** MP4/MOV sem índice ou cortado e JPEG sem o fim geram o aviso "Confira antes de
+    formatar", com a lista dos arquivos.
+  - **Proxies:** LRV, LRF, THM e restos do sistema ficam no cartão sem segurar o "pode formatar". O projeto ganha a
+    opção "Levar os proxies da câmera".
+  - **Prévia do cartão:** o "Ver" mostra fotos, RAW (pela prévia JPEG embutida) e vídeos do cartão antes de copiar, e o
+    vídeo toca. A foto da montagem também passa a aceitar RAW.
+  - **Arquivar:** "Arquivar…" em Cartões faz uma cópia menor da pasta ao lado (`<pasta> · arquivo`): RAW → DNG (Adobe
+    DNG Converter, quando instalado) e vídeo compactado com LUT opcional, com "Testar 8 s" antes. O original não muda.
+  - Só o app de computador, sem custo, publicado pelo workflow no merge.
 
 ## SOBEDESCE: menu do Drive igual ao do Google Drive e link público (09/11/2026)
 

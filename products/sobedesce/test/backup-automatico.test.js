@@ -423,8 +423,8 @@ test('o HD de destino não vira pedido; "Ignorar este disco" fica guardado; tira
   await svc.close()
 })
 
-test('arquivo grande com o mesmo nome e outro tamanho no destino: nunca por cima, vira alerta e não libera formatar', async () => {
-  const { svc, discos, ocioso } = montar()
+test('contador zerado: o arquivo grande com nome repetido vai para "Cartão NN · contador zerado", conferido; nada por cima (09/11/2026)', async () => {
+  const { svc, discos, ocioso, avisos } = montar()
   await svc.init()
   const hd = tmp('sobedesce-hd-')
   await svc.criarProjeto({ nome: 'P', destinos: [hd] })
@@ -436,10 +436,21 @@ test('arquivo grande com o mesmo nome e outro tamanho no destino: nunca por cima
   await svc.varrer()
   await svc.responder({ caminho: card, nome: 'Ana', camera: '' })
   await ocioso()
-  const v = svc.view()
-  assert.equal(v.ultimo.resultado, 'falta')
-  assert.deepEqual(v.ultimo.listaAlertas, ['PRIVATE/M4ROOT/CLIP/GRANDE.MP4'])
+  let v = svc.view()
+  assert.equal(v.ultimo.resultado, 'ok', 'o arquivo novo foi copiado (à parte): nada fica para trás')
+  assert.deepEqual(v.ultimo.listaZerados, ['PRIVATE/M4ROOT/CLIP/GRANDE.MP4'])
+  assert.deepEqual(v.ultimo.listaAlertas, [])
   assert.equal(fs.statSync(destino).size, 100, 'o que estava no destino ficou')
+  const aParte = path.join(hd, 'P', 'Diária 01', 'Cenas', 'Ana', 'Cartão 01 · contador zerado', 'PRIVATE', 'M4ROOT', 'CLIP', 'GRANDE.MP4')
+  assert.equal(fs.statSync(aParte).size, 40 * 1024 * 1024 + 10)
+  assert.equal(avisos.findLast(([ev]) => ev === 'backup-feito')[1].zerados, 1)
+  // O mesmo cartão de novo: já está na pasta à parte, não copia outra vez.
+  await svc.repetir(card)
+  await ocioso()
+  v = svc.view()
+  assert.equal(v.ultimo.resultado, 'ok')
+  assert.equal(v.ultimo.copiados, 0)
+  assert.deepEqual(fs.readdirSync(path.join(hd, 'P', 'Diária 01', 'Cenas', 'Ana')).sort(), ['Cartão 01', 'Cartão 01 · contador zerado'])
   await svc.close()
 })
 

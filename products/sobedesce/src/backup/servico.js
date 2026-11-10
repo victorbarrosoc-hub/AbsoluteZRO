@@ -18,7 +18,8 @@ import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
 import { TIPOS_SYNQUEI, linkSynquei, momentosSynquei, tipoSynquei } from './synquei.js'
 import { dadosDaDiaria, relatorioHtml } from './relatorio.js'
-import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida } from './midia.js'
+import { PASTA_SECAO, lerConteudo, levas, limparEscolha, midiaDe, secaoDe, secaoSugerida, tipoDe } from './midia.js'
+import { deixaNoCartao, pastaContadorZerado, procurarInterrompidas } from './imprevistos.js'
 
 const VIGIA_MS = 3000
 // "Ejetar ao terminar": a 1ª tentativa na hora; recusada, de novo depois de 3 s e de 8 s.
@@ -123,6 +124,8 @@ function normalizarProjeto(p) {
     momento: typeof p.momento === 'string' && p.momento.trim() ? p.momento.trim().slice(0, 60) : null,
     // Pré-color: com o cartão OK, o Frames faz um frame por clipe com a cor do dono, sozinho (docs/FRAMES.md)
     precolor: p.precolor === true,
+    // Proxies da câmera (LRV, THM) e restos do sistema: ficam no cartão, a não ser que o projeto leve (imprevistos.js)
+    levarProxies: p.levarProxies === true,
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
     diaria: Number(p.diaria) || 1,
@@ -245,6 +248,7 @@ export class BackupService {
         momento: p.momento,
         momentos: momentosSynquei(p.tipo),
         precolor: p.precolor === true,
+        levarProxies: p.levarProxies === true,
         destinos: p.destinos.map((c) => {
           const agora = this.destinosAgora.find((x) => x.caminho === c)
           return { caminho: c, nome: path.basename(c) || c, conectado: agora ? agora.conectado : null, livre: agora?.livre ?? null, total: agora?.total ?? null }
@@ -317,11 +321,11 @@ export class BackupService {
 
   // ───── projetos ─────
 
-  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null, midia = 'tudo', synquei = true, precolor = false } = {}) {
+  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null, midia = 'tudo', synquei = true, precolor = false, levarProxies = false } = {}) {
     if (this.job) throw new BackupError(409, 'Espere a descarga de agora terminar.')
     const n = nomeDePasta(nome)
     if (!n) throw new BackupError(400, 'Dê um nome ao projeto.')
-    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo, midia, synquei: synquei !== false, precolor: precolor === true })
+    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo, midia, synquei: synquei !== false, precolor: precolor === true, levarProxies: levarProxies === true })
     this.dados.projetos.unshift(p)
     this.dados.atual = p.id
     // Quem cria o projeto quer espetar o cartão em seguida: já liga (a tela mostra a chave para desligar).
@@ -333,7 +337,7 @@ export class BackupService {
     return this.view()
   }
 
-  async editarProjeto(id, { nome, destinos, ejetar, tipo, midia, synquei, precolor } = {}) {
+  async editarProjeto(id, { nome, destinos, ejetar, tipo, midia, synquei, precolor, levarProxies } = {}) {
     const p = this.dados.projetos.find((x) => x.id === id)
     if (!p) throw new BackupError(404, 'Projeto não encontrado.')
     if (this.job && this.dados.atual === id && (nome !== undefined || destinos !== undefined)) throw new BackupError(409, 'Espere a descarga de agora terminar para mudar o nome ou os destinos.')
@@ -351,6 +355,7 @@ export class BackupService {
     if (midia !== undefined) p.midia = midiaDe(midia)
     if (synquei !== undefined) p.synquei = synquei !== false
     if (precolor !== undefined) p.precolor = precolor === true
+    if (levarProxies !== undefined) p.levarProxies = levarProxies === true
     await this.#salvar()
     this.#mudou(true)
     return this.view()
@@ -782,6 +787,29 @@ export class BackupService {
   }
 
   /**
+   * Prévia do cartão (antes de copiar, 09/11/2026): as fotos e os vídeos do cartão espetado, do mais novo para o mais
+   * antigo, com o caminho para a tela pedir a miniatura (/api/montagens/foto e /quadro, pela chave da mídia). Proxies e
+   * restos do sistema ficam de fora. Só lê nomes, tamanhos e datas.
+   */
+  async previa(caminho, { max = 400 } = {}) {
+    const reg = this.vistos.get(caminho)
+    if (!reg) throw new BackupError(404, 'Esse disco não está plugado.')
+    if (reg.estado === 'destino') throw new BackupError(409, 'Esse disco é um destino deste projeto.')
+    let lido
+    try {
+      lido = await scanLocal(reg.caminho)
+    } catch (err) {
+      throw new BackupError(semPermissao(err) ? 403 : 409, semPermissao(err) ? MSG_PERMISSAO : 'Não consegui ler o cartão.')
+    }
+    const midia = lido.files
+      .filter((f) => !SISTEMA.test(f.relPath) && !deixaNoCartao(f.relPath))
+      .map((f) => ({ rel: f.relPath, caminho: f.path, tipo: tipoDe(f.relPath), tamanho: f.size, data: f.mtimeMs || 0 }))
+      .filter((f) => f.tipo === 'videos' || f.tipo === 'fotos')
+      .sort((a, b) => b.data - a.data || (a.rel < b.rel ? -1 : 1))
+    return { caminho, nome: reg.nome, total: midia.length, videos: midia.filter((f) => f.tipo === 'videos').length, fotos: midia.filter((f) => f.tipo === 'fotos').length, itens: midia.slice(0, max) }
+  }
+
+  /**
    * "Escolher o que passar": só os tipos (vídeos, fotos, outros) e as pastas marcadas, desta vez. O cartão conhecido
    * entra na fila; o novo continua na pergunta "de quem é?" e a escolha vai junto. O que fica de fora continua no
    * cartão: o fim diz "passou o que você escolheu", nunca "pode formatar".
@@ -924,12 +952,19 @@ export class BackupService {
     const escolha = reg.escolha || null
     reg.escolha = null // a escolha vale para esta descarga; a próxima volta ao que o projeto passa
     // As levas: vídeo (e o resto da estrutura) em Cenas, foto em Fotos, ou tudo numa seção (src/backup/midia.js).
-    const { levas: todas, tudo } = levas({ midia: p.midia, secao: dono.secao, escolha })
+    const { levas: brutas, tudo } = levas({ midia: p.midia, secao: dono.secao, escolha })
+    // Proxies da câmera e restos do sistema ficam no cartão (src/backup/imprevistos.js), a não ser que o projeto leve.
+    const fica = (rel) => !p.levarProxies && deixaNoCartao(rel)
+    const todas = brutas.map((l) => ({ ...l, filtro: (rel) => !fica(rel) && l.filtro(rel) }))
     const comSub = (f) => (rel) => f(partes.length ? `${partes.join('/')}/${rel}` : rel)
+    let deixados = 0
     let contagem = null
     try {
       const lido = await scanLocal(reg.caminho)
-      const arquivos = lido.files.filter((f) => !SISTEMA.test(f.relPath)).map((f) => f.relPath)
+      const todos = lido.files.filter((f) => !SISTEMA.test(f.relPath)).map((f) => f.relPath)
+      // O que fica no cartão de propósito não conta como "ficou de fora": não segura o "pode formatar".
+      const arquivos = todos.filter((r) => !fica(r))
+      deixados = todos.length - arquivos.length
       contagem = { total: arquivos.length, por: todas.map((l) => arquivos.filter(comSub(l.filtro)).length) }
     } catch {
       contagem = null // a leitura falha de novo no planejar, com a mensagem certa
@@ -951,6 +986,8 @@ export class BackupService {
     let bytesCartao = 0
     const faltam = []
     const alertas = []
+    const zerados = []
+    const suspeitos = []
     const feitas = []
     for (const leva of usar) {
       if (job.cancelado || job.saiu || erro) break
@@ -992,11 +1029,47 @@ export class BackupService {
           if (job.cancelado || job.saiu || this.motor.fase === 'cancelado') break
           await planejar()
         }
+        // Mesmo nome, outro arquivo (a câmera voltou a numerar do zero): nada por cima. Vai para a pasta
+        // "Cartão NN · contador zerado", ao lado, com a mesma conferência. Já está lá (outra vez o mesmo cartão)? Não copia.
+        const repetidos = (this.motor.plano?.itens || []).filter((x) => x.estados.includes('diferente')).map((x) => x.relPath)
+        if (repetidos.length && !job.cancelado && !job.saiu && !erro) {
+          const quais = new Set(repetidos)
+          const lado = { origem: reg.caminho, destinos: pais, nome: pastaContadorZerado(nomeFinal), filtro: (rel) => quais.has(rel), procurarTudo: true }
+          job.fase = 'comparando'
+          this.#mudou(true)
+          await this.motor.planejar(lado)
+          if (this.motor.plano?.itens.some((x) => x.estados.includes('novo'))) {
+            job.fase = 'copiando'
+            await this.motor.iniciar({ substituir: false, conferir: true, conferirIguais: false, relatorio: false, algoritmo: 'xxh64' })
+            await this.motor.rodando
+            const r = this.motor.resultado
+            if (r) {
+              copiados += r.copiados || 0
+              bytes += r.bytes || 0
+              if (r.erro) erro = r.erro
+            }
+            await this.motor.planejar(lado)
+          }
+          const salvos = new Set((this.motor.plano?.itens || []).filter((x) => x.estados.every((e) => e === 'igual' || e === 'outro')).map((x) => x.relPath))
+          zerados.push(...repetidos.filter((r) => salvos.has(r)).map((r) => (usar.length > 1 ? `${leva.pasta}: ${r}` : r)))
+          this.log('backup: contador zerado', salvos.size, 'de', repetidos.length)
+          await planejar() // o plano da leva volta a ser o do Cartão NN (a lista de alertas sai dele)
+          for (const it of this.motor.plano?.itens || []) if (salvos.has(it.relPath)) it.estados = it.estados.map((e) => (e === 'diferente' ? 'igual' : e))
+        }
       } catch (err) {
         const sumiu = job.saiu || !(await eDiretorio(reg.caminho))
         if (!job.cancelado) erro = sumiu ? 'O cartão saiu antes de terminar. Espete de novo: continua de onde parou.' : semPermissao(err) ? MSG_PERMISSAO : err?.message || 'A descarga parou.'
       }
       const itens = this.motor.plano?.itens || []
+      // Gravação interrompida (bateria, cartão arrancado): copiou igual, mas o arquivo está quebrado no próprio cartão.
+      if (!job.cancelado && !job.saiu) {
+        try {
+          const ruins = await procurarInterrompidas(reg.caminho, itens.map((x) => x.relPath))
+          suspeitos.push(...ruins.map((r) => (usar.length > 1 ? `${leva.pasta}: ${r}` : r)))
+        } catch (err) {
+          this.log('backup: conferir gravações', err?.message || err)
+        }
+      }
       arquivosTotal += itens.length
       bytesCartao += this.motor.plano?.origem?.bytes || 0
       faltam.push(...itens.filter((it) => it.estados.includes('novo')).map((it) => (usar.length > 1 ? `${leva.pasta}: ${it.relPath}` : it.relPath)))
@@ -1026,6 +1099,9 @@ export class BackupService {
       resultado,
       faltam: faltam.length,
       alertas: alertas.length,
+      zerados: zerados.length, // nome repetido (contador zerado): foram para "Cartão NN · contador zerado"
+      suspeitos: suspeitos.length, // parecem gravação interrompida: conferir antes de formatar
+      deixados, // proxies e restos do sistema que ficaram no cartão de propósito
       erro,
       soPasta: reg.pasta === true, // só uma pasta do cartão: "OK" não quer dizer "pode formatar"
       parcial, // passou só o que o projeto ou a pessoa escolheu: o resto ficou no cartão
@@ -1040,7 +1116,7 @@ export class BackupService {
     }
     p.total = { bytes: p.total.bytes + bytes, arquivos: p.total.arquivos + copiados, descargas: p.total.descargas + 1 }
     await this.#salvar()
-    this.ultimo = { ...entrada, listaFaltam: faltam.slice(0, LISTA_MAX), listaAlertas: alertas.slice(0, LISTA_MAX), destinos: p.destinos.map((d) => path.basename(d) || d) }
+    this.ultimo = { ...entrada, listaFaltam: faltam.slice(0, LISTA_MAX), listaAlertas: alertas.slice(0, LISTA_MAX), listaZerados: zerados.slice(0, LISTA_MAX), listaSuspeitos: suspeitos.slice(0, LISTA_MAX), destinos: p.destinos.map((d) => path.basename(d) || d) }
     // pré-color: cartão OK, o Frames faz os frames com a cor do dono (depois da cópia, sem segurar a descarga)
     if (resultado === 'ok' && p.precolor && entrada.pastaVideo && this.aoTerminarCartao) {
       const ok = entrada
@@ -1079,7 +1155,7 @@ export class BackupService {
       this.#mudou(true)
     }
     try {
-      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta, parcial, ejetado, ejetarErro })
+      this.avisar('backup-feito', { ok: resultado === 'ok', resultado, dono: entrada.dono, cartao: reg.nome, copiados, bytes, faltam: faltam.length, erro, soPasta: entrada.soPasta, parcial, ejetado, ejetarErro, zerados: zerados.length, suspeitos: suspeitos.length })
     } catch {}
   }
 

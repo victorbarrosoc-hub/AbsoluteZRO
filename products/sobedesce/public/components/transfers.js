@@ -464,7 +464,9 @@ const AoVivo = memo(function AoVivo({ geral }) {
   }
   // Tempo que falta no mesmo desenho: número grande, unidade pequena ("menos de 1 min" não cabia e virava "menos …").
   const falta = (sec) => {
-    if (sec < 60) return html`<1<small>min</small>`
+    // "<1" vai como texto (${'<1'}): escrito direto no html``, o "<" abre uma tag e a tela inteira parava de desenhar
+    // (Transferências congelada em 3%, cancelar sem resposta: relato do titular, 10/11/2026).
+    if (!(sec >= 60)) return html`${'<1'}<small>min</small>`
     const min = Math.round(sec / 60)
     if (min < 60) return html`~${min}<small>min</small>`
     const h = Math.floor(min / 60)

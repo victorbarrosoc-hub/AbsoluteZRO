@@ -8,7 +8,16 @@ import { JsonFile } from './util/store.js'
 
 export const APP_NAME = 'SOBEDESCE'
 export const APP_ID = 'sobedesce'
-export const APP_VERSION = '0.3.2'
+// A versão vem do package.json (vai dentro do app, electron-builder.yml). Antes era escrita à mão aqui e ficou em
+// 0.3.2 desde 01/11/2026: Ajustes e o diagnóstico mostravam "0.3.2" em todas as versões novas (09/11/2026).
+export const APP_VERSION = (() => {
+  try {
+    const v = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+    return typeof v === 'string' && /^\d+\.\d+\.\d+/.test(v) ? v : '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+})()
 /**
  * O que este app sabe fazer, dito ao site em todo pedido (cabeçalho x-sobedesce-capacidades, src/google/cloud-auth.js).
  * "relay": pega e converte as versões do Relay pedidas pelo Maestro (src/engine/pedidos-relay.js), desde a 0.2.0. O
