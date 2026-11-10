@@ -2055,6 +2055,15 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE Celular 2.8.72: cortes de cena e Frames → Montagem (09/11/2026)
+
+- 🔶 Ramo `sobedesce-frames-para-montagens` (titular, no iPhone: "faz a integração de fazer os frames ou cortes do vídeo
+  … e jogar pra Montagens"; "hoje a aba Frames não faz os cortes de cenas"), **lote de sexta 13/11** (site):
+  - Frames faz também os cortes de cena (a escolha dos takes do computador). Cada corte tem capa, de onde a onde e ▶,
+    que toca só o trecho.
+  - "Montagem" leva os frames escolhidos (como foto) e os cortes (como take, começando no ponto do corte) para a bandeja
+    da Montagem.
+
 ## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
 
 - 🔶 Ramo `sobedesce-frames-montagem-pc` (titular: "não é pra ficar só no celular, plataforma do computador também"):

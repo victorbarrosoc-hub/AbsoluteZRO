@@ -3,7 +3,7 @@
 // Drive (/app/stream/<id>, pelo service worker: mesma origem, então o canvas pode ler os pixels). Cada amostra é um
 // pulo no vídeo desenhado pequeno (256 px). Os frames escolhidos saem do vídeo no tamanho dele, em JPEG ou PNG.
 import { cenas, diferenca, medir } from './medidas.js'
-import { escolherFrames, etiquetas } from './escolha.js'
+import { escolherFrames, escolherTakes, etiquetas } from './escolha.js'
 
 export const LARGURA = 256
 const MAX_AMOSTRAS = 240
@@ -196,12 +196,16 @@ export async function amostrar(videos, { signal, onProgress, porSegundo = 2, max
 }
 
 /** Escolhe com as regras do computador. Devolve as cenas (com etiquetas) e os frames. */
-export function escolher({ passo, amostras }, quantidade) {
+export function escolher({ passo, amostras }, quantidade, { cortes = 0, duracao = 5 } = {}) {
   const cs = cenas(amostras, passo)
   const r = escolherFrames({ amostras, cenas: cs, passo }, quantidade)
+  // Cortes: o mesmo bom senso dos takes do computador (a melhor janela de cada cena, longe do corte), sem gravar
+  // arquivo: o corte é o vídeo + onde começa, e vira take na Montagem.
+  const ts = cortes > 0 ? escolherTakes({ amostras, cenas: cs, passo }, { quantidade: cortes, duracao }) : []
   return {
     cenas: cs.map((c) => ({ n: c.i + 1, ini: c.ini, fim: c.fim, tags: etiquetas(amostras, c), nome: null })),
     frames: r.frames.map((f) => ({ t: f.t, cena: f.cena + 1, nota: f.nota })),
+    cortes: ts.map((t) => ({ ini: t.ini, dur: t.dur, cena: t.cena + 1, nota: t.nota })),
     descartes: r.descartes,
   }
 }
