@@ -54,3 +54,19 @@ test('trocar o modelo de um slide não tira as fotos dos outros', () => {
   assert.deepEqual(C.remapear(depois, cinco, ['a', 'b', 'x', 'c']), ['a', 'b', 'x', 'c', null, null])
   assert.deepEqual(L.preencher(C.remapear(depois, cinco, ['a', 'b', 'x', 'c']), 6, ['a', 'b', 'c', 'd', 'e', 'x']), ['a', 'b', 'x', 'c', 'd', 'e'])
 })
+
+test('grade do perfil: uma foto por quadradinho, na ordem de postar (o 1 é o de baixo, à direita)', () => {
+  const bruta = L.telaDe({ tipo: 'grade', formato: '1x1', linhas: 2, quadrado: '1x1' })
+  const tela = { ...bruta, fatias: [...bruta.fatias].sort((a, b) => a.n - b.n) }
+  const g = C.gruposDe(C.paginasDe({ paginas: Array.from({ length: 6 }, () => ({ modelo: 'uma' })) }, 6))
+  const opts = { w: tela.w, h: tela.h, espaco: 0, slides: 6, tela }
+  const cx = C.caixasCarrossel(g, opts)
+  assert.equal(cx.length, 6)
+  // quadro 0 = quadradinho 1: canto de baixo, à direita
+  assert.deepEqual(cx[0], { ...cx[0], x: 2160, y: 1080, w: 1080, h: 1080 })
+  assert.deepEqual(C.slideDosQuadros(g, opts), [0, 1, 2, 3, 4, 5])
+  assert.equal(C.quadroNoCarrossel(g, opts, 100, 100), 5)
+  // uma imagem só, dividida: um grupo emendado cobre a grade inteira
+  const um = C.gruposDe(C.paginasDe({ paginas: [{ modelo: 'uma' }, ...Array(5).fill({ emenda: true })] }, 6))
+  assert.deepEqual(C.caixasCarrossel(um, opts).map(({ x, y, w, h }) => [x, y, w, h]), [[0, 0, 3240, 2160]])
+})

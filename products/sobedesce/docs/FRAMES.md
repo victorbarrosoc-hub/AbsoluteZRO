@@ -183,6 +183,13 @@ tocar no slide e depois na foto (passa sozinho para o próximo), ou tocar na fot
 mostra o número do slide. O formato vale para todos os slides (o Instagram corta o carrossel pelo primeiro). Trocar o
 modelo de um slide ou o número de slides não tira as fotos dos outros (`remapear`).
 
+**Andar pelo carrossel e pela grade** (titular, 10/11/2026): com muitos slides, a roda do mouse ou o trackpad rola
+o carrossel de lado (em cima da foto ativa, a roda continua sendo zoom), e embaixo ficam os números dos slides com ‹ ›:
+tocar no número leva até ele e o escolhe. A **grade do perfil** agora é por quadradinho, igual ao carrossel: cada um
+tem a própria foto e o próprio modelo, e as fotos entram na ordem de postar (1, 2, 3…, começando embaixo à direita).
+"Uma imagem só, dividida" volta à foto única cortada em todos. No trabalho do Frames, cada take mostra **Escolher**
+(ou "Escolhido · N"), e o botão Montagem leva os escolhidos.
+
 **Ver a montagem andando** (titular, 09/11/2026): no post com take, embaixo da montagem ficam o play e a agulha (a
 duração da montagem). Cada take toca no quadro dele, com o enquadre, no trecho escolhido (câmera lenta a ½×) e com o som
 do take escolhido em "Som"; arrastar a agulha mostra o quadro daquele instante. "Mudar o trecho" abre a agulha do take.

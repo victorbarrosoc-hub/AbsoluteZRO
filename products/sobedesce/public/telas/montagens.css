@@ -831,3 +831,55 @@
   left: auto;
   right: 8px;
 }
+
+/* carrossel: os números dos slides embaixo (toque leva ao slide; com muitos, setas) */
+.mt-paginas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+.mt-pag,
+.mt-pag-seta {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 15px;
+  background: var(--fill-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.mt-pag.is-on {
+  background: #0a84ff;
+  color: #fff;
+}
+.mt-pag-seta:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* Frames › Takes: o + de escolher sempre à vista (no hover sumia e ninguém achava) */
+.fr-take .fr-take-sel {
+  opacity: 0.9;
+}
+.fr-take-escolher {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fr-take-escolher.is-on {
+  background: var(--text);
+  color: var(--surface);
+}
