@@ -160,3 +160,27 @@ test('marca flat na tela "Sem conexão": o wordmark oficial do HUB, nada do feix
   assert.equal(fs.existsSync(new URL('desktop/paginas/marca.webp', raiz)), false)
   assert.match(ler('desktop/paginas/offline.html').toString(), /src="marca\.svg"/)
 })
+
+test('Campus: o link do painel de administração abre numa janela própria; ela só navega no claude.ai', () => {
+  for (const url of [r.CAMPUS, `${r.CAMPUS}/`, `${r.CAMPUS}#lista`, `${r.CAMPUS}#campus`]) {
+    assert.equal(r.ehCampus(url), true, url)
+    assert.equal(r.destino(url, HUB), 'campus', url)
+  }
+  for (const url of [
+    'https://claude.ai/artifact/outro',
+    'https://claude.ai/',
+    'https://claude.ai.evil.com/artifact/8A91Heceo7ZyXQ89a4UEDV',
+    'http://claude.ai/artifact/8A91Heceo7ZyXQ89a4UEDV',
+    'https://a:b@claude.ai/artifact/8A91Heceo7ZyXQ89a4UEDV',
+  ]) {
+    assert.equal(r.ehCampus(url), false, url)
+    assert.notEqual(r.destino(url, HUB), 'campus', url)
+  }
+  assert.equal(r.ehDoClaude('https://claude.ai/login'), true)
+  for (const url of ['https://claude.ai.evil.com/', 'https://claude.ai:444/', 'http://claude.ai/', 'https://accounts.google.com/', 'https://evil.com/']) {
+    assert.equal(r.ehDoClaude(url), false, url)
+  }
+  assert.equal(r.permitirNoCampus('clipboard-sanitized-write', 'https://claude.ai/artifact/x'), true)
+  assert.equal(r.permitirNoCampus('media', 'https://claude.ai/artifact/x'), false)
+  assert.equal(r.permitirNoCampus('fullscreen', 'https://evil.com/'), false)
+})

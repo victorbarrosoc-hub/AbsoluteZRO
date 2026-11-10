@@ -15,6 +15,22 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Central 1.4.7: menu Administração (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+| Verificação       | Comando                                           | Resultado |
+| ----------------- | ------------------------------------------------- | --------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | 118/118   |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK  |
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Linux, Node 22, Electron 44.5.1 com Xvfb.
+
+| Verificação       | Comando                                           | Resultado                                          |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | **118/118** (novo: destino `campus`, só claude.ai) |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK                                           |
+
 ## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.

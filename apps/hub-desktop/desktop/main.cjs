@@ -166,6 +166,85 @@ function abrirFora(url) {
   if (ok) shell.openExternal(ok).catch(() => {})
 }
 
+// ───────── Campus (pedido do titular, 09/11/2026) ─────────
+// O Campus é uma página privada do titular no claude.ai. O link sai do painel de administração do HUB e abre aqui numa
+// janela própria, com sessão separada (o login do claude.ai fica só nela, longe da sessão do HUB). Só navega no
+// claude.ai; links de fora vão para o navegador. O login com Google não roda em janela embutida: entre com o e-mail.
+const PARTICAO_CAMPUS = 'persist:campus'
+let campusWin = null
+
+// Menu "Administração" (pedido do titular, 09/11/2026): só aparece para o papel de plataforma admin. O app pergunta ao
+// HUB com a sessão guardada, numa rota que só responde 200 para admin; qualquer outra resposta (ou sem rede) esconde o menu.
+let ehAdmin = false
+let adminConferidoEm = 0
+async function conferirAdmin(forcar = false) {
+  if (SMOKE || (!forcar && Date.now() - adminConferidoEm < 10 * 60 * 1000)) return
+  adminConferidoEm = Date.now()
+  let novo = false
+  try {
+    const r = await session.fromPartition(PARTICAO).fetch(`${HUB}/api/v1/admin/z-lab`, { credentials: 'include' })
+    novo = r.status === 200
+  } catch {
+    novo = false
+  }
+  if (novo !== ehAdmin) {
+    ehAdmin = novo
+    menu()
+  }
+}
+
+function abrirCampus() {
+  if (campusWin && !campusWin.isDestroyed()) {
+    if (campusWin.isMinimized()) campusWin.restore()
+    campusWin.show()
+    campusWin.focus()
+    return
+  }
+  const area = screen.getPrimaryDisplay().workAreaSize
+  campusWin = new BrowserWindow({
+    width: Math.min(1440, area.width),
+    height: Math.min(900, area.height),
+    minWidth: Math.min(janela.MINIMO.width, area.width),
+    minHeight: Math.min(janela.MINIMO.height, area.height),
+    center: true,
+    show: false,
+    title: 'Campus',
+    backgroundColor: FUNDO,
+    autoHideMenuBar: !MAC,
+    icon: MAC ? undefined : path.join(__dirname, '..', 'build', 'icon-windows.png'),
+    webPreferences: {
+      partition: PARTICAO_CAMPUS,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      spellcheck: true,
+    },
+  })
+  const wc = campusWin.webContents
+  campusWin.once('ready-to-show', () => campusWin && !campusWin.isDestroyed() && campusWin.show())
+  setTimeout(() => campusWin && !campusWin.isDestroyed() && !campusWin.isVisible() && campusWin.show(), 2500)
+  campusWin.on('closed', () => {
+    campusWin = null
+  })
+  wc.setWindowOpenHandler(({ url }) => {
+    if (regras.ehDoClaude(url)) setImmediate(() => wc.loadURL(url).catch(() => {}))
+    else abrirFora(url)
+    return { action: 'deny' }
+  })
+  const sair = (e, url) => {
+    if (regras.ehDoClaude(url)) return
+    e.preventDefault()
+    abrirFora(url)
+  }
+  wc.on('will-navigate', (e, url) => sair(e, url))
+  wc.on('will-redirect', (e) => {
+    if (e.isMainFrame) sair(e, e.url)
+  })
+  wc.loadURL(regras.CAMPUS).catch(() => {})
+}
+
 function mostrarSemConexao(motivo) {
   if (!view) return
   view.webContents.loadFile(path.join(PAGINAS, 'offline.html'), { query: { motivo } }).catch(() => {})
@@ -260,6 +339,7 @@ function criarJanela() {
     }
     const d = regras.destino(url, HUB)
     if (d === 'app') setImmediate(() => wc.loadURL(url))
+    else if (d === 'campus') abrirCampus()
     else if (d === 'fora') abrirFora(url)
     return { action: 'deny' }
   })
@@ -270,9 +350,11 @@ function criarJanela() {
       loginExterno.iniciar(url)
       return
     }
-    if (regras.destino(url, HUB) === 'app') return
+    const d = regras.destino(url, HUB)
+    if (d === 'app') return
     e.preventDefault()
-    abrirFora(url)
+    if (d === 'campus') abrirCampus()
+    else abrirFora(url)
   })
   // redirecionamento do servidor para fora (ex.: /baixar/hub/mac → GitHub): cancela aqui e abre no navegador
   wc.on('will-redirect', (e) => {
@@ -282,14 +364,17 @@ function criarJanela() {
       loginExterno.iniciar(e.url)
       return
     }
-    if (regras.destino(e.url, HUB) === 'app') return
+    const d = regras.destino(e.url, HUB)
+    if (d === 'app') return
     e.preventDefault()
-    abrirFora(e.url)
+    if (d === 'campus') abrirCampus()
+    else abrirFora(e.url)
   })
   wc.on('did-navigate', (_e, url) => {
     if (regras.ehDoHub(url, HUB)) ultimaUrl = url
     // acabou de entrar na conta (a central estava sem sessão): confere os apps da conta agora
     if (central && central.semLogin && agenda && regras.ehDoHub(url, HUB) && new URL(url).pathname === '/app') agenda.conferir().catch(() => {})
+    if (regras.ehDoHub(url, HUB)) conferirAdmin(/^\/(app|entrar|sair)/.test(new URL(url).pathname)).catch(() => {})
     wc.setZoomLevel(zoom)
     estadoBarra()
   })
@@ -962,6 +1047,24 @@ function menu() {
         MAC ? { role: 'close', label: 'Fechar janela' } : { role: 'quit', label: 'Sair', accelerator: 'Ctrl+Q' },
       ],
     },
+    ...(ehAdmin
+      ? [
+          {
+            label: 'Administração',
+            submenu: [
+              {
+                label: 'Painel de administração',
+                click: () =>
+                  wc() &&
+                  wc()
+                    .loadURL(`${HUB}/admin`)
+                    .catch(() => {}),
+              },
+              { label: 'Campus', accelerator: 'CmdOrCtrl+Shift+K', click: () => abrirCampus() },
+            ],
+          },
+        ]
+      : []),
     {
       label: 'Editar',
       submenu: [
@@ -1034,6 +1137,13 @@ function protegerSessao() {
   ses.setPermissionCheckHandler((_wc, permissao, origem) => regras.permitir(permissao, origem, HUB))
   ses.setDevicePermissionHandler(() => false)
   // a moldura (barra de título) não pede nada
+  // a janela do Campus (claude.ai): só copiar texto e tela cheia
+  const campus = session.fromPartition(PARTICAO_CAMPUS)
+  campus.setPermissionRequestHandler((wc, permissao, cb, detalhes) =>
+    cb(regras.permitirNoCampus(permissao, (detalhes && detalhes.requestingUrl) || wc.getURL())),
+  )
+  campus.setPermissionCheckHandler((_wc, permissao, origem) => regras.permitirNoCampus(permissao, origem))
+  campus.setDevicePermissionHandler(() => false)
   session.defaultSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false))
   session.defaultSession.setPermissionCheckHandler(() => false)
 }
@@ -1044,6 +1154,8 @@ app.on('web-contents-created', (_e, contents) => {
   contents.setWindowOpenHandler(() => ({ action: 'deny' }))
   contents.on('will-navigate', (e, url) => {
     if (view && contents === view.webContents) return
+    // a janela do Campus tem regra própria (só claude.ai), em abrirCampus
+    if (campusWin && !campusWin.isDestroyed() && contents === campusWin.webContents) return
     if (!ehPaginaLocal(url)) e.preventDefault()
   })
 })
