@@ -85,10 +85,14 @@ export function closeSheet() {
 }
 
 let toastSeq = 0
-export function toast(text, { tone = 'neutral', ms = 2800 } = {}) {
+/** Aviso rápido no topo. `action`: { label, onClick } (ex.: Desfazer depois de mover); o toque nela fecha o aviso. */
+export function toast(text, { tone = 'neutral', ms = 2800, action = null } = {}) {
   const id = ++toastSeq
-  setState((s) => ({ toasts: [...s.toasts.slice(-2), { id, text, tone }] }))
+  setState((s) => ({ toasts: [...s.toasts.slice(-2), { id, text, tone, action }] }))
   setTimeout(() => setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), ms)
+}
+export function fecharToast(id) {
+  setState((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
 }
 
 // ───── destino e recentes ─────

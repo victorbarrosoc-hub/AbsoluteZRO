@@ -6,12 +6,22 @@ import { extOf } from './format.js'
 import { local } from './config.js'
 import { criarListador, FILE_FIELDS, isFolder, isTrashableJunk, kindOf, mayPlay, SORTS } from './drive-nucleo.js'
 import { FolderSizes, pageLister, walkFolderSize } from './tamanho.js'
+import { comCamposDoMenu } from './link-publico.js'
 
 // O núcleo sem estado (tipos, filtros, ordens, a consulta de cada página) é o de packages/drive-web, copiado em
 // drive-nucleo.js; aqui fica o que é só do app: preferências, limpeza dos ._ do Mac, tamanho das pastas e proxy.
 export * from './drive-nucleo.js'
 
-const lister = criarListador(driveCall)
+// A aba Drive pede a estrela, as permissões (selo "Público (link)") e o dono a mais (lib/link-publico.js), sem mexer no
+// núcleo que o Maestro também usa: o pedido de listagem ganha os campos aqui.
+const CAMPOS = `files(${FILE_FIELDS})`
+const comMais = (caminho, opts = {}) => {
+  const f = opts.query?.fields
+  if (typeof f !== 'string' || !(f === FILE_FIELDS || f.includes(CAMPOS))) return driveCall(caminho, opts)
+  const mais = f === FILE_FIELDS ? comCamposDoMenu(FILE_FIELDS) : f.replace(CAMPOS, `files(${comCamposDoMenu(FILE_FIELDS)})`)
+  return driveCall(caminho, { ...opts, query: { ...opts.query, fields: mais } })
+}
+const lister = criarListador(comMais)
 /** Uma página de um lugar do Drive (drive-nucleo.js → criarListador). */
 export const listPage = lister.listPage
 /** Drives compartilhados da conta, como "pastas" da raiz. */

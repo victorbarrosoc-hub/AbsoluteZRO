@@ -23,7 +23,7 @@ import { ComputerSheet } from './components/computador.js'
 import { startPc } from './lib/computador.js'
 import { MacJunkSheet } from './components/browser.js'
 import { BaixarSheet, LixeiraSheet } from './components/selecao.js'
-import { ItemMenuSheet } from './components/item-menu.js'
+import { ItemMenuSheet, VazioSheet } from './components/item-menu.js'
 import { ProxySheet } from './components/proxies.js'
 import { RelaySheet } from './components/relay.js'
 import { CopySheet } from './components/copiar.js'
@@ -51,6 +51,7 @@ const SHEETS = {
   baixarSelecao: BaixarSheet,
   lixeiraSelecao: LixeiraSheet,
   itemMenu: ItemMenuSheet,
+  vazioMenu: VazioSheet,
   proxySelecao: ProxySheet,
   relay: RelaySheet,
   copiar: CopySheet,

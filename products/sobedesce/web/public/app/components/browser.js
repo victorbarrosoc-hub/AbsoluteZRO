@@ -1,7 +1,10 @@
 // Aba Drive: navegar no Meu Drive, Compartilhados comigo e Drives compartilhados, em grade com miniaturas ou em
 // lista; ordenar e filtrar por tipo (chips abaixo da busca), buscar por nome, puxar para atualizar e carregar mais ao
 // rolar. Os arquivos ._ do Mac ficam ocultos (com a opção de mostrar ou mandar para a lixeira, com confirmação).
-// Tocar num arquivo abre a prévia; segurar o dedo (ou o botão direito do mouse) abre o menu do item.
+// Tocar num arquivo abre a prévia; segurar o dedo (ou o botão direito do mouse) abre o menu do item. Igual ao Google
+// Drive (titular, 09/11/2026): segurar no vazio (ou botão direito) abre Nova pasta / Enviar arquivos / Enviar pasta; com
+// mouse, a linha mostra ações rápidas ao passar por cima e dá para arrastar um item para cima de uma pasta (com
+// Desfazer); o selo "Público (link)" e a estrela aparecem no item.
 import { html, useEffect, useMemo, useRef, useState } from '../vendor/preact-htm.js'
 import {
   FILTERS,
@@ -47,7 +50,8 @@ import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
 import { EMBUTIDO, ESCOLHER, ORIGEM_ANFITRIAO, avisarAnfitriao } from '../lib/embutido.js'
-import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
+import { driveCall, folderPath, moveErrorText, moveFile, myDriveId, setStarred } from '../lib/drive.js'
+import { SELO_PUBLICO, ehPublico, voltasDoMover } from '../lib/link-publico.js'
 import { alvoDoLink } from '../lib/drive-link.js'
 import { DICA_MODO, NOME_MODO, PRECISA_TOTAL, criadaPeloSobedesce, lugarCompleto, modoDe, vazioDoLugar } from '../lib/modo-drive.js'
 import { escolherDoDrive } from '../lib/picker.js'
@@ -180,6 +184,61 @@ function metaOf(f, kind) {
 /** Bruto sem miniatura (BRAW, R3D…): usa a do proxy, se ele já é conhecido. */
 const thumbSource = (f, kind, siblings) => (kind === 'video' && !f.thumbnailLink ? knownProxy(f, siblings) || f : f)
 
+/** A estrela e o selo "Público (link)" ao lado do nome. */
+function Marcas({ f }) {
+  if (!f.starred && !ehPublico(f)) return null
+  return html`${f.starred ? html`<span class="d-estrela" title="Com estrela"><${Icon} name="star-fill" size=${12} /></span>` : null}${ehPublico(f)
+    ? html`<span class="d-selo" title="Qualquer pessoa com o link pode ver"><${Icon} name="globe" size=${11} />${SELO_PUBLICO}</span>`
+    : null}`
+}
+
+// Arrastar e soltar com mouse (no computador, o app no navegador): o item vai para a pasta em que caiu.
+const MOUSE = typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches
+const TIPO_ARRASTO = 'application/x-sobedesce-item'
+let arrastando = null // o item que está sendo arrastado
+
+function alvoDeSoltar(f, dnd) {
+  if (!dnd || !isFolder(f) || f.isDrive) return {}
+  const dentro = (e) => arrastando && arrastando.id !== f.id && Array.from(e.dataTransfer?.types || []).includes(TIPO_ARRASTO)
+  return {
+    onDragOver: (e) => {
+      if (!dentro(e)) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      e.currentTarget.classList.add('is-alvo')
+    },
+    onDragLeave: (e) => e.currentTarget.classList.remove('is-alvo'),
+    onDrop: (e) => {
+      e.currentTarget.classList.remove('is-alvo')
+      if (!dentro(e)) return
+      e.preventDefault()
+      const item = arrastando
+      arrastando = null
+      dnd.onSoltar(item, f)
+    },
+  }
+}
+
+function arrastavel(f, dnd) {
+  if (!dnd || f.isDrive) return {}
+  return {
+    draggable: 'true',
+    onDragStart: (e) => {
+      arrastando = f
+      try {
+        e.dataTransfer.setData(TIPO_ARRASTO, f.id)
+        e.dataTransfer.effectAllowed = 'move'
+      } catch {
+        // segue sem
+      }
+    },
+    onDragEnd: () => {
+      arrastando = null
+      for (const el of document.querySelectorAll('.is-alvo')) el.classList.remove('is-alvo')
+    },
+  }
+}
+
 let avisouSemTira = 0
 /** O vídeo ainda não tem a tira de quadros (é o computador que gera, junto do proxy). No máximo a cada 20 s. */
 function avisarSemTira() {
@@ -188,7 +247,7 @@ function avisarSemTira() {
   toast('Este vídeo ainda não tem a prévia de arrastar. Selecione e toque em Gerar proxy: o computador cria.', { ms: 6000 })
 }
 
-function Tile({ f, siblings, onOpen, selecionando = false, marcado = false, onMarcar, onMenu }) {
+function Tile({ f, siblings, onOpen, selecionando = false, marcado = false, onMarcar, onMenu, dnd }) {
   const kind = kindOf(f)
   const dur = f.videoMediaMetadata?.durationMillis
   // Miniatura de vídeo: arrastar para os lados corre o take (sem segurar; o "voltar" sai de fora dela). Sem a tira
@@ -203,9 +262,10 @@ function Tile({ f, siblings, onOpen, selecionando = false, marcado = false, onMa
     onArrastar: tira ? setToqueX : video ? (x) => x != null && avisarSemTira() : null,
     direto: video,
   })
-  return html`<li>
+  return html`<li ...${alvoDeSoltar(f, dnd)}>
     <button
       type="button"
+      ...${arrastavel(f, dnd)}
       class=${cx('tile', selecionando && 'is-selecting', marcado && 'is-marked', kind === 'video' && 'is-video', isFolder(f) && 'is-pasta')}
       ref=${gesto.ref}
       onPointerDown=${gesto.onPointerDown}
@@ -224,14 +284,22 @@ function Tile({ f, siblings, onOpen, selecionando = false, marcado = false, onMa
         ${dur ? html`<span class="tile-badge">${duration(dur)}</span>` : null}
         ${kind === 'video' && !dur && f.thumbnailLink ? html`<span class="tile-badge is-icon"><${Icon} name="play" size=${10} /></span>` : null}
         ${selecionando ? html`<${Marca} on=${marcado} />` : null}
+        ${ehPublico(f) ? html`<span class="tile-badge tile-publico" title=${SELO_PUBLICO}><${Icon} name="globe" size=${11} /></span>` : null}
       </span>
-      ${kind === 'folder' ? html`<span class="tile-name">${f.name}</span>` : html`<${FileName} name=${f.name} class="tile-name is-file" />`}
+      ${kind === 'folder' ? html`<span class="tile-name">${f.starred ? html`<${Icon} name="star-fill" size=${11} class="d-estrela" />` : null}${f.name}</span>` : html`<${FileName} name=${f.name} class="tile-name is-file" />`}
       <span class="tile-meta">${kind === 'folder' ? (f.isDrive ? 'Drive' : folderMeta(f, 'Pasta')) : f.size != null ? bytes(Number(f.size)) : shortDate(f.modifiedTime)}</span>
     </button>
   </li>`
 }
 
-function Row({ f, siblings, onOpen, driveId, selecionando = false, marcado = false, onMarcar, onMenu }) {
+const ACOES_RAPIDAS = [
+  { id: 'compartilhar', icon: 'users', label: 'Compartilhar' },
+  { id: 'baixar', icon: 'download', label: 'Baixar' },
+  { id: 'renomear', icon: 'pencil', label: 'Renomear' },
+  { id: 'estrela', icon: 'star', label: 'Adicionar estrela' },
+]
+
+function Row({ f, siblings, onOpen, driveId, selecionando = false, marcado = false, onMarcar, onMenu, dnd, onAcao }) {
   const kind = kindOf(f)
   const dur = f.videoMediaMetadata?.durationMillis
   // Pasta: "Calcular" ao lado soma o que tem dentro (sob pedido; o Drive não guarda o tamanho de pastas).
@@ -241,9 +309,16 @@ function Row({ f, siblings, onOpen, driveId, selecionando = false, marcado = fal
     onSegurar: onMarcar ? () => (selecionando || !onMenu ? onMarcar(f) : onMenu(f)) : null,
     onMenu: onMenu && !selecionando ? () => onMenu(f) : null,
   })
-  return html`<li class=${calc ? 'has-calc' : undefined}>
+  // Ações rápidas (só com mouse, ao passar por cima): o que não dá para este item não aparece.
+  const caps = f.capabilities || {}
+  const acoes =
+    MOUSE && onAcao && !selecionando && !f.isDrive
+      ? ACOES_RAPIDAS.filter((a) => (a.id === 'baixar' ? kind !== 'folder' && kind !== 'gdoc' && caps.canDownload !== false : a.id === 'renomear' ? caps.canRename !== false : true))
+      : []
+  return html`<li class=${cx(calc && 'has-calc', acoes.length && 'has-acoes')} ...${alvoDeSoltar(f, dnd)}>
     <button
       type="button"
+      ...${arrastavel(f, dnd)}
       class=${cx('lrow', selecionando && 'is-selecting', marcado && 'is-marked', kind === 'video' && 'is-video', isFolder(f) && 'is-pasta')}
       ref=${gesto.ref}
       onPointerDown=${gesto.onPointerDown}
@@ -259,10 +334,17 @@ function Row({ f, siblings, onOpen, driveId, selecionando = false, marcado = fal
       <span class="lrow-media"><${Thumb} file=${f} from=${thumbSource(f, kind, siblings)} px=${48} kind=${kind} small /></span>
       <span class="lrow-text">
         <${FileName} name=${f.name} class="lrow-name" />
-        <span class="lrow-meta">${metaOf(f, kind)}${dur ? html` · <span class="tc">${duration(dur)}</span>` : null}</span>
+        <span class="lrow-meta">${metaOf(f, kind)}${dur ? html` · <span class="tc">${duration(dur)}</span>` : null}<${Marcas} f=${f} /></span>
       </span>
       ${kind === 'folder' && !selecionando ? html`<${Icon} name="chevron-right" size=${16} strokeWidth=${2} class="lrow-chev" />` : null}
     </button>
+    ${acoes.length
+      ? html`<span class="lrow-acoes">${acoes.map(
+          (a) => html`<button type="button" class=${cx('lrow-acao', a.id === 'estrela' && f.starred && 'is-on')} title=${a.id === 'estrela' && f.starred ? 'Tirar a estrela' : a.label} aria-label=${`${a.label}: ${f.name}`} onClick=${() => onAcao(f, a.id)}>
+            <${Icon} name=${a.id === 'estrela' && f.starred ? 'star-fill' : a.icon} size=${16} />
+          </button>`,
+        )}</span>`
+      : null}
     ${calc
       ? html`<button type="button" class="lrow-calc" onClick=${() => folderSizes.start({ id: t.id, driveId: driveId || f.driveId || null })} aria-label=${`Calcular o tamanho de ${f.name}`}>
           Calcular
@@ -390,6 +472,11 @@ function useListing(where, prefs, filter) {
     ...st,
     reload: () => load(key),
     more: (opts) => load(key, { more: true, ...opts }),
+    /** Muda campos de um item (estrela, selo do link) em todas as listas guardadas, sem recarregar. */
+    patch: (id, campos) => {
+      for (const [k, v] of lists) if (v.files?.some((f) => f.id === id)) lists.set(k, { ...v, files: v.files.map((f) => (f.id === id ? { ...f, ...campos } : f)) })
+      if (lists.get(keyRef.current)) setSt(lists.get(keyRef.current))
+    },
     /** Tira itens (foram para a lixeira) de todas as listas guardadas, sem recarregar. */
     drop: (ids) => {
       const gone = new Set(ids)
@@ -1222,7 +1309,24 @@ export function DriveScreen({ active }) {
   const marcar = (f) => sel.alternar(f.id)
   // Segurar um item: o menu dele (components/item-menu.js). A pasta que vira destino de envio e onde o "Mover para…" abre
   // seguem o caminho de agora (numa busca, a pasta achada começa a trilha).
-  const abrirMenu = (f) => {
+  const mudou = ({ removidos, destId, recarregar, ajuste } = {}) => {
+    if (ajuste) {
+      const { id, ...campos } = ajuste
+      // O selo vem de permissionIds: liga/desliga o id "qualquer pessoa com o link" sem perder os outros.
+      if ('publico' in campos) {
+        const atual = raw.find((x) => x.id === id)?.permissionIds || []
+        const sem = atual.filter((p) => p !== 'anyoneWithLink' && p !== 'anyone')
+        campos.permissionIds = campos.publico ? [...sem, 'anyoneWithLink'] : sem
+        delete campos.publico
+      }
+      list.patch(id, campos)
+    }
+    if (removidos?.length) list.drop(removidos)
+    if (destId) esquecer(destId)
+    if (recarregar) list.reload()
+    if (folder && removidos?.length) folderSizes.start({ id: folder.id, driveId: driveId || folder.driveId || null }, { refresh: true })
+  }
+  const abrirMenu = (f, fase) => {
     if (escolher) return
     const t = target(f)
     const pasta = isFolder(f)
@@ -1236,13 +1340,83 @@ export function DriveScreen({ active }) {
       onSelecionar: () => sel.alternar(f.id),
       dest: podeEnviar ? destOf(nav.scope, [...base, entry]) : null,
       inicio: folder && !search ? destOf(nav.scope, nav.path) : null,
-      onMudou: ({ removidos, destId, recarregar } = {}) => {
-        if (removidos?.length) list.drop(removidos)
-        if (destId) esquecer(destId)
-        if (recarregar) list.reload()
-        if (folder && removidos?.length) folderSizes.start({ id: folder.id, driveId: driveId || folder.driveId || null }, { refresh: true })
-      },
+      local: search ? '' : [lugar(nav.scope)?.aria, ...nav.path.map((p) => p.name)].filter(Boolean).join(' / '),
+      fase,
+      onMudou: mudou,
     })
+  }
+  // Ações rápidas da linha (mouse): Compartilhar e Renomear abrem a folha do item já nelas.
+  const acaoRapida = async (f, acao) => {
+    if (acao === 'compartilhar') return abrirMenu(f, 'compartilhar')
+    if (acao === 'renomear') return abrirMenu(f, 'renomear')
+    if (acao === 'baixar') return openSheet('baixarSelecao', { itens: [f], semPermissao: 0 })
+    if (acao === 'estrela') {
+      try {
+        const r = await setStarred(target(f).id, !f.starred)
+        mudou({ ajuste: { id: f.id, starred: r?.starred === true } })
+      } catch {
+        toast('Não consegui mudar a estrela agora.', { tone: 'error' })
+      }
+    }
+  }
+  // Arrastar um item para cima de uma pasta: move, com Desfazer no aviso.
+  const soltar = async (f, pasta) => {
+    const t = target(pasta)
+    const para = { id: t.id, name: pasta.name, path: [...(search ? [] : nav.path), { id: t.id, name: pasta.name }] }
+    try {
+      const r = await moveFile(f.id, para)
+      if (!r.moved) return toast(`Já estava em “${pasta.name}”`)
+      mudou({ removidos: [f.id], destId: t.id })
+      const voltas = voltasDoMover([f], t.id)
+      toast(`“${f.name}” foi para “${pasta.name}”`, {
+        tone: 'success',
+        ms: 6000,
+        action: Object.keys(voltas).length
+          ? {
+              label: 'Desfazer',
+              onClick: async () => {
+                try {
+                  for (const de of Object.keys(voltas)) for (const id of voltas[de]) await moveFile(id, { id: de, name: '' })
+                  esquecer(t.id)
+                  list.reload()
+                  toast('Voltou para onde estava')
+                } catch (err) {
+                  toast(moveErrorText(err, 'mover'), { tone: 'error', ms: 4200 })
+                }
+              },
+            }
+          : null,
+      })
+    } catch (err) {
+      toast(moveErrorText(err, 'mover'), { tone: 'error', ms: 4200 })
+    }
+  }
+  const dnd = MOUSE && !escolher && !sel.ativa ? { onSoltar: soltar } : null
+  // Segurar (ou botão direito) no vazio: o menu da pasta aberta.
+  const destAqui = folder && !search && folder.canAdd !== false ? destOf(nav.scope, nav.path) : null
+  const abrirVazio = () => !escolher && !sel.ativa && openSheet('vazioMenu', { dest: destAqui, busca: Boolean(search), onMudou: mudou })
+  const vazioRef = useRef({ timer: 0, x: 0, y: 0 })
+  const noVazio = (e) => !e.target.closest?.('li, button, a, input, label, header, nav, .dtools, .dfolder, .drive-note, .selbar, .pv-layer')
+  const vazio = {
+    onContextMenu: (e) => {
+      if (!noVazio(e)) return
+      e.preventDefault()
+      abrirVazio()
+    },
+    onPointerDown: (e) => {
+      if (e.pointerType !== 'touch' || !noVazio(e)) return
+      const v = vazioRef.current
+      v.x = e.clientX
+      v.y = e.clientY
+      clearTimeout(v.timer)
+      v.timer = setTimeout(abrirVazio, 550)
+    },
+    onPointerMove: (e) => {
+      const v = vazioRef.current
+      if (v.timer && Math.hypot(e.clientX - v.x, e.clientY - v.y) > 10) clearTimeout(v.timer)
+    },
+    onPointerUp: () => clearTimeout(vazioRef.current.timer),
+    onPointerCancel: () => clearTimeout(vazioRef.current.timer),
   }
   const canSwipe = active && !preview && !sel.ativa && !search && nav.path.length > 0 && swipeHere()
   useSwipeBack({
@@ -1313,7 +1487,7 @@ export function DriveScreen({ active }) {
   const huntText = needsAll(prefs.sort) ? 'Carregando a pasta toda para agrupar por tipo…' : wantAll ? 'Somando tudo…' : 'Procurando…'
 
   return html`${swipe ? html`<${SwipeBehind} scope=${nav.scope} path=${nav.path.slice(0, -1)} prefs=${prefs} innerRef=${behindRef} />` : null}
-  <div class=${cx('screen', 'drive-screen', view === 'list' && 'is-list', sel.ativa && 'is-selecting', escolher && 'is-escolhendo')} ref=${root}>
+  <div class=${cx('screen', 'drive-screen', view === 'list' && 'is-list', sel.ativa && 'is-selecting', escolher && 'is-escolhendo')} ref=${root} onContextMenu=${vazio.onContextMenu}>
     <header class="topbar dtop">
       ${escolher
         ? html`<div class="escolher-faixa" role="status">
@@ -1408,7 +1582,14 @@ export function DriveScreen({ active }) {
       ${busy ? html`<span class="offscreen" role="status">Atualizando</span>` : null}
     </div>
 
-    <main class="drive-body" aria-busy=${list.loading ? 'true' : 'false'}>
+    <main
+      class="drive-body"
+      aria-busy=${list.loading ? 'true' : 'false'}
+      onPointerDown=${vazio.onPointerDown}
+      onPointerMove=${vazio.onPointerMove}
+      onPointerUp=${vazio.onPointerUp}
+      onPointerCancel=${vazio.onPointerCancel}
+    >
       ${atDrivesRoot
         ? null
         : html`<${DriveTools} prefs=${prefs} filter=${filter} menu=${menu} setMenu=${setMenu} onPrefs=${changePrefs} onFilter=${changeFilter} />`}
@@ -1474,8 +1655,8 @@ export function DriveScreen({ active }) {
       ${huntNote && !files.length ? html`<p class="drive-note dhunt" role="status"><span class="spinner" aria-hidden="true"></span>${huntText} <small>${count(raw.length)} vistos</small></p>` : null}
       ${files.length
         ? view === 'grid'
-          ? html`<ul class="tiles">${files.map((f) => html`<${Tile} key=${f.id} f=${f} siblings=${raw} onOpen=${open} selecionando=${sel.ativa} marcado=${sel.tem(f.id)} onMarcar=${marcar} onMenu=${abrirMenu} />`)}</ul>`
-          : html`<ul class="group lrows">${files.map((f) => html`<${Row} key=${f.id} f=${f} siblings=${raw} onOpen=${open} driveId=${driveId} selecionando=${sel.ativa} marcado=${sel.tem(f.id)} onMarcar=${marcar} onMenu=${abrirMenu} />`)}</ul>`
+          ? html`<ul class="tiles">${files.map((f) => html`<${Tile} key=${f.id} f=${f} siblings=${raw} onOpen=${open} selecionando=${sel.ativa} marcado=${sel.tem(f.id)} onMarcar=${marcar} onMenu=${abrirMenu} dnd=${dnd} />`)}</ul>`
+          : html`<ul class="group lrows">${files.map((f) => html`<${Row} key=${f.id} f=${f} siblings=${raw} onOpen=${open} driveId=${driveId} selecionando=${sel.ativa} marcado=${sel.tem(f.id)} onMarcar=${marcar} onMenu=${abrirMenu} dnd=${dnd} onAcao=${acaoRapida} />`)}</ul>`
         : null}
       ${list.error && list.files ? html`<p class="drive-note is-error">Não consegui carregar mais. <button type="button" class="link-btn" onClick=${() => list.more()}>Tentar de novo</button></p>` : null}
       <div ref=${sentinel} class="drive-sentinel">

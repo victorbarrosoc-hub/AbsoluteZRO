@@ -1598,6 +1598,17 @@ code {
     scale: 0.96;
   }
 }
+/* Ação no aviso (Desfazer depois de mover, 09/11/2026): o único pedaço do aviso que recebe toque. */
+.toast-acao {
+  pointer-events: auto;
+  margin: -6px -8px -6px 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--hud-fg);
+  font: inherit;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+}
 
 /* esqueletos */
 .skeleton {
@@ -10435,4 +10446,206 @@ span.dsize.is-off {
   .est-secao svg {
     display: none;
   }
+}
+
+/* ───── Menu igual ao do Google Drive (09/11/2026): selo, estrela, ações rápidas, arrastar e as folhas do link ───── */
+.d-estrela {
+  display: inline-grid;
+  color: var(--warn);
+  margin: 0 3px 0 0;
+  vertical-align: -1px;
+}
+.lrow-meta .d-estrela {
+  margin-left: 6px;
+}
+.d-selo,
+.lk-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--down) 13%, transparent);
+  color: var(--down-text);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.lk-selo {
+  margin-left: 0;
+}
+.tile-badge.tile-publico {
+  top: 5px;
+  bottom: auto;
+  color: #fff;
+}
+/* Ações rápidas: só com mouse, ao passar por cima da linha (no lugar do "Calcular"). */
+.lrow-acoes {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%);
+  display: none;
+  gap: 2px;
+  z-index: 3;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lrows li.has-acoes:hover .lrow-acoes,
+  .lrows li.has-acoes:focus-within .lrow-acoes {
+    display: inline-flex;
+  }
+  .lrows li.has-acoes:hover .lrow-calc {
+    display: none;
+  }
+}
+.lrow-acao {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+.lrow-acao:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+.lrow-acao.is-on {
+  color: var(--warn);
+}
+/* A pasta embaixo do item arrastado. */
+.lrows li.is-alvo .lrow,
+.tiles li.is-alvo .tile {
+  background: color-mix(in srgb, var(--down) 14%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--down) 70%, transparent);
+  border-radius: 14px;
+}
+/* Folhas Copiar link, Compartilhar e Detalhes. */
+.lk {
+  display: grid;
+  gap: 10px;
+}
+.lk-nome {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lk-grupo {
+  display: grid;
+  gap: 8px;
+}
+.lk-opcao {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.lk-opcao:disabled {
+  opacity: 0.55;
+}
+.lk-opcao.is-on {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--down) 60%, transparent);
+  background: color-mix(in srgb, var(--down) 7%, var(--surface));
+  opacity: 1;
+}
+.lk-ic {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+}
+.lk-opcao.is-publico .lk-ic {
+  background: color-mix(in srgb, var(--down) 14%, transparent);
+  color: var(--down-text);
+}
+.lk-txt {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.lk-txt b {
+  font-weight: 600;
+}
+.lk-txt small {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.lk-ok {
+  color: var(--down-text);
+}
+.lk-lembrar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.lk-rotulo {
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.lk-nota {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.lk-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--seg-bg);
+}
+.lk-seg .seg-btn {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 550;
+}
+.lk-seg .seg-btn.is-on {
+  background: var(--seg-on);
+  color: var(--text);
+}
+.lk-convidar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.lk-dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 10px 16px;
+  margin: 4px 0 0;
+  font-size: 15px;
+}
+.lk-dl dt {
+  color: var(--text-2);
+}
+.lk-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }

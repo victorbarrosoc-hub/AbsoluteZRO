@@ -1,6 +1,6 @@
 // Peças comuns: botão, pílula, controle segmentado, sheet (folha que sobe de baixo, como no iOS) e avisos.
 import { html, useEffect, useReducer, useRef, useState } from '../vendor/preact-htm.js'
-import { closeSheet, useApp } from '../lib/state.js'
+import { closeSheet, fecharToast, useApp } from '../lib/state.js'
 import { engine } from '../lib/uploader.js'
 import { Icon } from './icons.js'
 
@@ -202,6 +202,12 @@ export function Toasts() {
       (t) => html`<div key=${t.id} class=${cx('toast', `toast-${t.tone}`)}>
         ${t.tone === 'success' ? html`<${Icon} name="circle-check" size=${17} />` : t.tone === 'error' ? html`<${Icon} name="warning" size=${17} />` : null}
         <span>${t.text}</span>
+        ${t.action
+          ? html`<button type="button" class="toast-acao" onClick=${() => {
+              fecharToast(t.id)
+              t.action.onClick?.()
+            }}>${t.action.label}</button>`
+          : null}
       </div>`,
     )}
   </div>`

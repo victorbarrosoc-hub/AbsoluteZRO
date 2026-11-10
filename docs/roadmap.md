@@ -2132,6 +2132,20 @@ do card... não consigo localizar o job que quero achar".
     DNG Converter, quando instalado) e vídeo compactado com LUT opcional, com "Testar 8 s" antes. O original não muda.
   - Só o app de computador, sem custo, publicado pelo workflow no merge.
 
+## SOBEDESCE: menu do Drive igual ao do Google Drive e link público (09/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-menu` (pedido do titular pelo Painel Geral), **lote de sexta 13/11**:
+  - Botão direito no app de computador e no web, toque longo no celular. No item: Abrir, Baixar, Renomear, Compartilhar,
+    Copiar link, Mover para…, Adicionar estrela, Detalhes e Mover para a lixeira (com confirmação). No vazio: Nova
+    pasta, Enviar arquivos e Enviar pasta. O que não dá fica cinza, com o motivo.
+  - Arrastar um item para cima de uma pasta move e destaca a pasta de destino; o aviso traz **Desfazer**. Com mouse, a
+    linha mostra ações rápidas: compartilhar, baixar, renomear e estrela.
+  - "Copiar link" com a escolha "Qualquer pessoa com o link pode ver" (anyone/leitor, sem `allowFileDiscovery`), que
+    ajusta e copia num clique. A escolha pode ficar lembrada; sem escolha guardada, o app pergunta. Nada vira público
+    sem a pessoa escolher.
+  - Selo "Público (link)" no item e "Restrito" para voltar. A recusa do Workspace diz isso com clareza.
+  - Motor: `POST /api/drive/:acc/link/restringir` e `/api/drive/:acc/estrela`. Celular 2.8.71 (cache v86).
+
 ## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
 
 - 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:
