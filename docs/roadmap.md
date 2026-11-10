@@ -2055,6 +2055,16 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (CPU da Vercel, 09/11/2026)
+
+- 🔶 Ramo `sobedesce-ronda-pedidos` (proposta aprovada pelo titular via Z): o app de computador perguntava os pedidos
+  em 4 rondas (proxy, frames e formato a cada 30 s, Relay a cada 20 s; ~9/min). Agora é uma pergunta só
+  (`tipo=todos`, `src/engine/ronda-pedidos.js`) que vai de 30 s até 5 min enquanto não aparece pedido e volta a 30 s
+  com pedido ou quando a pessoa mexe no app. Parado: ~12 perguntas por hora em vez de ~540.
+  - Conserto junto: uma volta que acabava na hora (sem conta, em pausa) prendia a ronda para sempre.
+  - Falta: o sinal de vida do "Acompanhar pelo celular" (90 s parado) só pode espaçar junto com o limite de "ligado"
+    do celular (2 min), que é do site: vai no lote. Medir o antes/depois uma semana depois de publicar.
+
 ## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
 
 - 🔶 Ramo `sobedesce-frames-montagem-pc` (titular: "não é pra ficar só no celular, plataforma do computador também"):

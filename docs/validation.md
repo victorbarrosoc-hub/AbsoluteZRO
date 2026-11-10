@@ -5517,6 +5517,18 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (09/11/2026)
+
+- `test/ronda-pedidos.test.js` (6 testes, 6 passaram):
+  - recuo de 30 s até 5 min (12 perguntas por hora parado);
+  - uma pergunta só, e cada tipo recebe só os pendentes dele (sem tipo = proxy);
+  - acordar volta ao curto;
+  - 404/403 pausa 30 min;
+  - volta sem conta não prende a ronda;
+  - com a ronda, o tipo não faz GET sozinho.
+- Motor (`npm run test:fast`): 854 testes, 1 falha. A falha é o "Set" do celular, que já falha neste contêiner sem esta
+  mudança; os outros passaram.
+
 ## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
 
 Branch `sobedesce-frames-montagem-pc`.

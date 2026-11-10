@@ -34,7 +34,9 @@ export class PedidosProxy {
    * @param {object} o.manager TransferManager (driveFor, previas, records)
    * Trocáveis nos testes: pollMs, vidaMs, gerar (gerarPreviasLote), log.
    */
-  constructor({ cloud, manager, pollMs = POLL_MS, vidaMs = VIDA_MS, gerar = gerarPreviasLote, log } = {}) {
+  constructor({ cloud, manager, pollMs = POLL_MS, vidaMs = VIDA_MS, gerar = gerarPreviasLote, log, ronda = null } = {}) {
+    this.tipo = 'proxy'
+    this.ronda = ronda // RondaPedidos: uma pergunta só para todos os tipos (src/engine/ronda-pedidos.js)
     this.cloud = cloud
     this.manager = manager
     this.pollMs = pollMs
@@ -49,6 +51,7 @@ export class PedidosProxy {
   }
 
   start() {
+    if (this.ronda) return this.ronda.ouvir(this)
     this.#planejar(5_000)
   }
 
@@ -61,7 +64,7 @@ export class PedidosProxy {
   }
 
   #planejar(ms = this.pollMs) {
-    if (this.closed) return
+    if (this.closed || this.ronda) return
     clearTimeout(this.timer)
     this.timer = setTimeout(() => {
       this.timer = null
@@ -76,7 +79,8 @@ export class PedidosProxy {
   }
 
   /** Pega e gera os pedidos pendentes, um por vez. Devolve quantos terminaram aqui (prontos ou com erro). */
-  async consultar() {
+  /** `lista`: os pedidos que a ronda já trouxe (sem ela, pergunta ao site). */
+  async consultar(lista = null) {
     if (this.rodando) return this.rodando
     this.rodando = (async () => {
       try {
@@ -85,7 +89,7 @@ export class PedidosProxy {
         if (!gerador?.gerarESubir) return 0
         let pedidos
         try {
-          const d = await this.#api('GET', '/api/proxies/pedidos?status=pendente')
+          const d = lista ? { pedidos: lista } : await this.#api('GET', '/api/proxies/pedidos?status=pendente')
           pedidos = Array.isArray(d.pedidos) ? d.pedidos : []
         } catch (err) {
           if (err instanceof HttpError && [403, 404].includes(err.status)) this.pausaAte = Date.now() + SEM_SITE_MS
