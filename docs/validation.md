@@ -5517,6 +5517,13 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- Reproduzido no demo: envio de 2 vídeos (164 MB) com proxy. Com o ETA abaixo de 60 s, a página dava `InvalidCharacterError:
+… tag name ('1<small')` e parava. Com a correção, nenhum erro: "Falta <1 min" aparece e o andamento segue até o fim.
+  Os proxies saíram ("pronta") nos dois arquivos.
+- `test/templates-html.test.js`: falha com o código antigo e passa com o novo.
+
 ## SOBEDESCE 0.3.16: uma ronda só para os pedidos (09/11/2026)
 
 - `test/ronda-pedidos.test.js` (6 testes, 6 passaram):

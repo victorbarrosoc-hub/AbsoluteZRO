@@ -2055,6 +2055,13 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- 🔶 Ramo `sobedesce-envio-proxy` (relato do titular via Z: lote de 2 vídeos com proxy parou em 3%, cancelar sem
+  resposta): quando faltava menos de 1 min, o "Falta" escrevia `<1` direto no html``, o "<" virava tag e a tela inteira
+  parava de desenhar (o envio continuava por baixo). Agora vai interpolado. Defeito desde a 0.3.8 (05/11).
+  - Guarda nova: `test/templates-html.test.js` recusa "<" seguido de número nos templates (computador e celular).
+
 ## SOBEDESCE 0.3.16: uma ronda só para os pedidos (CPU da Vercel, 09/11/2026)
 
 - 🔶 Ramo `sobedesce-ronda-pedidos` (proposta aprovada pelo titular via Z): o app de computador perguntava os pedidos
