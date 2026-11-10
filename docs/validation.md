@@ -5517,6 +5517,14 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE 0.3.19: menu do Drive no computador (10/11/2026)
+
+- Só os arquivos do computador e do motor do #153 (`public/`, `src/`, testes), aplicados sobre a main da 0.3.18; nada em
+  `web/`. Sem conflito de versão com #150, #151 e #159 (nenhum deles mexe em `package.json`, `public/` ou `src/`).
+- `test/drive-menu.test.js` (parte do computador), `test/compartilhar.test.js` e `test/drive-web.test.js`: 24
+  passaram. Motor (`npm run test:fast`): 863 passaram, 1 falha. A falha é o "Set" do celular, que já falha neste
+  contêiner sem esta mudança.
+
 ## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
 
 - No demo (trabalho de Frames real): "Escolher" em 2 takes e Montagem levou os 2 arquivos; carrossel 9:16 de 10

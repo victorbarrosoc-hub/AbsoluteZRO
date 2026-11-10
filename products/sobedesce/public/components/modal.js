@@ -19,6 +19,9 @@ export function Modal({ title, subtitle, onClose, children, footer, size = 'md',
     if (!el) return
     const target = el.querySelector('[data-autofocus]') || el.querySelector('.modal-body ' + FOCUSABLE) || el.querySelector(FOCUSABLE)
     target?.focus({ preventScroll: true })
+    // Aberta por um item de menu: o menu, ao fechar, devolve o foco para a linha. Sem isso o Esc não chegava aqui.
+    const raf = requestAnimationFrame(() => !el.contains(document.activeElement) && target?.focus({ preventScroll: true }))
+    return () => cancelAnimationFrame(raf)
   }, [])
 
   const keydown = (e) => {
