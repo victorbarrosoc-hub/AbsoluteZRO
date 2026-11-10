@@ -456,6 +456,11 @@ Sem a auditoria paga, o Google deixa no máximo **100 contas na vida do projeto*
   uma vez (`segunda` no cookie do state): desmarcou de novo, conecta em Arquivos escolhidos com `?google=escolhidos`.
   `?inteiro=` com outro sub ou sem acesso total não muda nada (o pedido continua `drive.file`). Antes caía calado em
   Arquivos escolhidos.
+- **Revogar derruba a concessão inteira:** no Google, revogar um token (refresh ou acesso) tira o acesso da conta Google
+  ao app todo, inclusive o refresh guardado. Por isso o `drive` recusado no callback (`recusarDriveInteiro`) só revoga
+  quando essa conta Google não está conectada aqui; antes revogava também quando era um Drive da própria pessoa e
+  derrubava a conexão salva (08/11/2026). Desconectar, apagar a conta e desligar o acesso total revogam de propósito.
+  O Google falso dos testes faz igual (`web/tests/google-falso.mts`).
 - **Desconectou sozinho:** `invalid_grant` na renovação marca "reconectar" e agora deixa no log
   `[drive] reconectar: conta …, ligada há N h`. Em torno de 168 h (7 dias) = o app do Google do projeto SOBEDESCE está
   em modo **Teste** (o refresh token vence em 7 dias): publicar em Google Cloud › OAuth › Público-alvo › "Publicar app"
