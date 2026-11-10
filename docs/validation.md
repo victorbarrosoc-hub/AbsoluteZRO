@@ -5517,6 +5517,14 @@ Branch `sobedesce-download-recuo`.
 - `APP_VERSION` é a versão do `package.json`, com teste.
 - Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
 
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- No demo (trabalho de Frames real): "Escolher" em 2 takes e Montagem levou os 2 arquivos; carrossel 9:16 de 10
+  slides rola com a roda e o número 10 leva ao fim; grade 3×5 recebe uma foto por quadradinho de 1 a 8, começando
+  embaixo à direita, com o cartão "Quadradinho 8".
+- `test/montagens-carrossel.test.js` ganhou a geometria da grade (ordem de postar, toque, imagem dividida); 6 testes
+  passaram com `test/templates-html.test.js`.
+
 ## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
 
 - Reproduzido no demo: envio de 2 vídeos (164 MB) com proxy. Com o ETA abaixo de 60 s, a página dava `InvalidCharacterError:

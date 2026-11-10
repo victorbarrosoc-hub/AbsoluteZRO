@@ -21,8 +21,8 @@ export function telaCarrossel(formato, slides) {
  * Os slides de uma montagem: `{ modelo, emenda }` por slide (emenda = continua do slide anterior). Montagem de antes
  * (sem `paginas`) era uma imagem só passando por todos: vira um grupo só com o modelo dela, igual ao que saía.
  */
-export function paginasDe(d) {
-  const n = nDe(d?.slides)
+export function paginasDe(d, total = null) {
+  const n = total ?? nDe(d?.slides)
   const base = Array.isArray(d?.paginas) ? d.paginas : Array.from({ length: n }, (_, i) => (i === 0 ? { modelo: d?.modelo } : { emenda: true }))
   return Array.from({ length: n }, (_, i) => {
     const p = base[i] || {}
@@ -43,10 +43,30 @@ export function gruposDe(paginas) {
 /** Quantos quadros (fotos) o carrossel tem ao todo. */
 export const quadrosDe = (grupos) => grupos.reduce((s, g) => s + modeloPorId(g.modelo).caixas.length, 0)
 
-/** As caixas em px de todo o carrossel (`w` × `h` é a tela inteira; cada slide tem a própria borda). */
-export function caixasCarrossel(grupos, { w, h, espaco = 0, slides }) {
+/**
+ * O retângulo (px) de um grupo: com `tela` (as fatias de verdade: o carrossel lado a lado ou a grade do perfil), a
+ * união das fatias do grupo; sem ela, slides iguais lado a lado.
+ */
+function caixaDoGrupo(g, { w, h, slides, tela }) {
+  if (tela?.fatias?.length) {
+    const k = w / tela.w
+    const fs = tela.fatias.slice(g.de, g.ate + 1)
+    const x0 = Math.min(...fs.map((f) => f.x))
+    const y0 = Math.min(...fs.map((f) => f.y))
+    const x1 = Math.max(...fs.map((f) => f.x + f.w))
+    const y1 = Math.max(...fs.map((f) => f.y + f.h))
+    return { x: x0 * k, y: y0 * k, w: (x1 - x0) * k, h: (y1 - y0) * k }
+  }
   const sw = w / slides
-  return grupos.flatMap((g) => caixasDe(g.modelo, { w: sw * g.slides, h, espaco }).map((c) => ({ ...c, x: c.x + g.de * sw, slide: g.de })))
+  return { x: g.de * sw, y: 0, w: sw * g.slides, h }
+}
+
+/** As caixas em px de todo o carrossel ou da grade (`w` × `h` é a tela inteira; cada parte tem a própria borda). */
+export function caixasCarrossel(grupos, { w, h, espaco = 0, slides, tela = null }) {
+  return grupos.flatMap((g) => {
+    const b = caixaDoGrupo(g, { w, h, slides, tela })
+    return caixasDe(g.modelo, { w: b.w, h: b.h, espaco }).map((c) => ({ ...c, x: c.x + b.x, y: c.y + b.y, slide: g.de }))
+  })
 }
 
 /** Qual quadro está no ponto (px da tela)? -1 se nenhum. */
@@ -54,10 +74,17 @@ export function quadroNoCarrossel(grupos, opts, px, py) {
   return caixasCarrossel(grupos, opts).findIndex((c) => px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h)
 }
 
-/** Em que slide (0…) cada quadro aparece primeiro: o número que a pessoa vê na tela. */
+/** Em que parte (índice da fatia, 0…) cada quadro aparece primeiro: a parte onde fica o canto de cima do quadro. */
 export function slideDosQuadros(grupos, opts) {
-  const sw = opts.w / opts.slides
-  return caixasCarrossel(grupos, opts).map((c) => Math.min(opts.slides - 1, Math.floor((c.x + 0.5) / sw)))
+  const k = opts.tela ? opts.w / opts.tela.w : 1
+  return caixasCarrossel(grupos, opts).map((c) => {
+    if (opts.tela) {
+      const i = opts.tela.fatias.findIndex((f) => c.x + 1 >= f.x * k && c.x + 1 < (f.x + f.w) * k && c.y + 1 >= f.y * k && c.y + 1 < (f.y + f.h) * k)
+      return i >= 0 ? i : 0
+    }
+    const sw = opts.w / opts.slides
+    return Math.min(opts.slides - 1, Math.floor((c.x + 0.5) / sw))
+  })
 }
 
 /**
@@ -93,13 +120,13 @@ export function desenharCarrossel(canvas, { tela, grupos, imagens = [], enquadre
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = fundo
   ctx.fillRect(0, 0, W, H)
-  const sw = tela.w / tela.fatias.length
   const doc = canvas.ownerDocument || globalThis.document
   for (const g of grupos) {
     const n = modeloPorId(g.modelo).caixas.length
+    const b = caixaDoGrupo(g, { w: tela.w, h: tela.h, tela })
     const parte = doc.createElement('canvas')
     desenharMontagem(parte, {
-      formato: { id: tela.id, w: sw * g.slides, h: tela.h },
+      formato: { id: tela.id, w: b.w, h: b.h },
       modelo: g.modelo,
       imagens: imagens.slice(g.inicio, g.inicio + n),
       enquadres: enquadres.slice(g.inicio, g.inicio + n),
@@ -110,7 +137,7 @@ export function desenharCarrossel(canvas, { tela, grupos, imagens = [], enquadre
       destaque: destaque >= g.inicio && destaque < g.inicio + n ? destaque - g.inicio : -1,
       ...(vazio ? { vazio } : {}),
     })
-    ctx.drawImage(parte, Math.round(g.de * sw * escala), 0)
+    ctx.drawImage(parte, Math.round(b.x * escala), Math.round(b.y * escala))
   }
-  return { w: W, h: H, caixas: caixasCarrossel(grupos, { w: W, h: H, espaco: espaco * escala, slides: tela.fatias.length }) }
+  return { w: W, h: H, caixas: caixasCarrossel(grupos, { w: W, h: H, espaco: espaco * escala, slides: tela.fatias.length, tela }) }
 }

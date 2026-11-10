@@ -826,6 +826,7 @@ function TakeCard({ m, t, onAcao, busy, ordem, onSel }) {
     </div>
     <div class="fr-take-meta">
       <span><b>${t.id}</b> · Cena ${String(t.cena).padStart(2, '0')} · ${t.dur.toFixed(1).replace('.', ',')} s</span>
+      ${t.descartado ? null : html`<button type="button" class=${cx('fr-take-escolher', ordem && 'is-on')} onClick=${onSel}>${ordem ? `Escolhido · ${ordem}` : 'Escolher'}</button>`}
       <span class="sub">${tc(t.tc)}</span>
     </div>
     ${t.descartado

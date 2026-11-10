@@ -2055,6 +2055,16 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-rolar` (titular: "não consigo ver as outras páginas no carrossel", "não consigo jogar
+  os takes selecionados pra montagem", "não consigo selecionar o número e a foto que vou colocar em cada número"):
+  - Carrossel: a roda do mouse rola de lado e os números dos slides (com ‹ ›) levam até cada um.
+  - Grade do perfil por quadradinho (foto e modelo próprios, na ordem de postar); "Uma imagem só, dividida" mantém o
+    jeito antigo.
+  - Takes do Frames com o botão visível "Escolher" / "Escolhido · N".
+  - Só o app de computador (workflow, sem custo); nada do site.
+
 ## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
 
 - 🔶 Ramo `sobedesce-envio-proxy` (relato do titular via Z: lote de 2 vídeos com proxy parou em 3%, cancelar sem
