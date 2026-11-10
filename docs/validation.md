@@ -229,6 +229,13 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, foto sem piscar (07/11/2026): `products/radio` `npm test` 16/16, com o teste novo: com a foto servida pela
   rota do navegador, um observador da lista da equipe confere que todo círculo que entra nos redesenhos já vem com a
   foto (no código antigo, 3 de 3 entravam sem).
+- RADION nativo, Android, marco 1 (08/11/2026): `./gradlew test assembleRelease` em `products/radio/nativo/android`.
+  Núcleo 6/6: estado conferido, texto da notificação e ordem da saída de som. App 8/8: regras de navegação e deep
+  link, login pelo navegador com state, PKCE, validade e troca recusada. O APK pede só RECORD_AUDIO,
+  MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE (microfone e mídia), POST_NOTIFICATIONS, WAKE_LOCK e INTERNET.
+  `products/radio` `npm test` 17/17, com o teste novo da ponte (`assets/ponte.js`) na página de verdade: o estado chega
+  ao app, o Falar/Parar abre e fecha a fala e o microfone fica aberto com o rádio ligado. A tela travada em si só se
+  confere num Android de verdade.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 

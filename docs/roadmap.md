@@ -241,6 +241,12 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
 - ✅ **RADION, foto sem piscar** (titular, 07/11/2026: "bug na foto", vídeo do iPhone): a lista da equipe é redesenhada
   a cada batida e a foto, recriada, deixava as iniciais aparecerem por um quadro. A foto vira o fundo do círculo e a
   página lembra quais já abriram: no redesenho ela entra direto.
+- 🟡 **RADION nativo, Android, marco 1** (titular, 08/11/2026: caminho A, celular travado no bolso):
+  `products/radio/nativo/android`. O módulo `nucleo` (sem login nem banco, reaproveitável pelo DEICHECK) traz o
+  serviço em primeiro plano com Falar/Parar na tela bloqueada, o botão do fone, o "não dormir" e o som no fone ou no
+  viva-voz. O `app` traz a página do RADION numa WebView com a ponte do contrato do computador, o login pelo
+  navegador (`radion://entrar-app`) e as regras de navegação. APK de teste pelo GitHub Actions no Release
+  `radion-android-teste`, sem loja e sem custo. ⏳ Teste num Android de verdade e a chave fixa de assinatura.
 - Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
