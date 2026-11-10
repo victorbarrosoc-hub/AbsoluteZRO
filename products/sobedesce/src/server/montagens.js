@@ -9,6 +9,7 @@ import { expandHome } from '../local/fsbrowse.js'
 import { miniatura } from '../frames/extracao.js'
 import { sondar } from '../frames/analise.js'
 import { detectarMotor, isVideoName } from '../media/previa.js'
+import { ehRaw, jpegDoRaw } from '../media/raw-jpeg.js'
 import { DURACOES, gerarMontagemVideo } from '../montagens/video.js'
 import { safeLocalName, uniqueName } from '../util/paths.js'
 import { lerCorpo, servir } from './frames.js'
@@ -80,7 +81,21 @@ export function registerMontagens({ route, ctx, HttpProblem, baseHeaders }) {
     const ext = path.extname(c.p).toLowerCase()
     if (c.st.size > FOTO_MAX) throw new HttpProblem(400, 'Essa foto passa de 200 MB.')
     if (FOTO_EXTS.includes(ext)) return servir(req, res, c.p, baseHeaders)
-    if (!FOTO_EXTS_CONVERTE.includes(ext)) throw new HttpProblem(415, 'Use fotos JPG, PNG, WebP, TIFF ou HEIC.')
+    // RAW (ARW, NEF, CR3…): a prévia JPEG que a câmera grava dentro do arquivo (src/media/raw-jpeg.js), em cache.
+    if (ehRaw(c.p)) {
+      const id = crypto.createHash('sha1').update(`raw\0${c.p}\0${c.st.size}\0${c.st.mtimeMs}`).digest('hex').slice(0, 24)
+      const jpg = path.join(cacheDir, `${id}.jpg`)
+      if (!(await fsp.stat(jpg).catch(() => null))) {
+        const dados = await jpegDoRaw(c.p)
+        if (!dados) throw new HttpProblem(415, 'Esse RAW não tem prévia para mostrar.')
+        await fsp.mkdir(cacheDir, { recursive: true })
+        const tmp = `${jpg}.${process.pid}.tmp`
+        await fsp.writeFile(tmp, dados)
+        await fsp.rename(tmp, jpg)
+      }
+      return servir(req, res, jpg, baseHeaders)
+    }
+    if (!FOTO_EXTS_CONVERTE.includes(ext)) throw new HttpProblem(415, 'Use fotos JPG, PNG, WebP, TIFF, HEIC ou RAW.')
     // TIFF/HEIC: um JPEG de cache por arquivo e versão (caminho, tamanho e data).
     const id = crypto.createHash('sha1').update(`${c.p}\0${c.st.size}\0${c.st.mtimeMs}`).digest('hex').slice(0, 24)
     const jpg = path.join(cacheDir, `${id}.jpg`)

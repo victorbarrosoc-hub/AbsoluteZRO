@@ -59,6 +59,11 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
   grafite; título, legenda e logomarca. Usa os frames escolhidos na aba Frames ou escolhe sozinho.
 - Enquadramento por frame (`enquadres[i] = { x, y, zoom }`, zoom até 3×): tocar ou clicar no frame da prévia escolhe; arrastar move (até a borda do frame encostar na caixa); pinça, roda do mouse ou a barra aproximam; Centralizar volta ao meio. Vale em qualquer formato (fica guardado por frame) e sai igual no post em alta. `frameNoPonto` acha o frame tocado (na polaroid, desfaz o giro).
 
+- **Frames → Montagem** (titular, 09/11/2026, 0.3.15): no trabalho, o + escolhe frames (aba Frames) e takes (aba
+  Takes, o + no canto do take). A barra de escolhidos ganha "Montagem": os arquivos vão para a bandeja de Estúdio ›
+  Montagens, somando ao que já está lá (sem repetir, até 60): o frame como foto, o take como vídeo (o arquivo do take,
+  já cortado e com a cor). Os takes são os cortes de cena do computador; o celular faz os dele (Celular 2.8.72).
+
 ## Cor (pré-color)
 
 O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/frames.js` › `CorPasso`):
@@ -165,10 +170,30 @@ Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifes
 ## Montagens (Estúdio › Montagens)
 
 Fotos e takes do computador em modelos prontos (`public/components/montagens.js`, geometria e desenho em
-`public/lib/montagens.js`). Três tipos: o post (foto, ou vídeo quando tem take), o carrossel contínuo (2 a 10 slides) e a
+`public/lib/montagens.js`). Três tipos: o post (foto, ou vídeo quando tem take), o carrossel (2 a 20 slides) e a
 grade do perfil (3 colunas, 1 a 5 linhas, 3:4 ou 1:1, numerada na ordem de postar: o 1 é o de baixo, à direita). Formatos
 com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1
 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1 2560×1072 e personalizado (200 a 4096 px).
+
+**Carrossel por slide** (titular, 09/11/2026; `public/lib/montagens-carrossel.js`, só no computador por enquanto):
+cada slide tem o próprio modelo (Uma foto, Dois lado a lado, Quatro…) e as próprias fotos, com a borda dele. "Emendar
+com o anterior" junta slides num panorama (a foto passa pelo corte); a montagem de antes, sem `paginas`, abre como um
+panorama só, igual ao que saía. Para pôr a foto no número: arrastar da bandeja até o slide (o quadro embaixo acende), ou
+tocar no slide e depois na foto (passa sozinho para o próximo), ou tocar na foto e depois no slide. O selo da bandeja
+mostra o número do slide. O formato vale para todos os slides (o Instagram corta o carrossel pelo primeiro). Trocar o
+modelo de um slide ou o número de slides não tira as fotos dos outros (`remapear`).
+
+**Andar pelo carrossel e pela grade** (titular, 10/11/2026): com muitos slides, a roda do mouse ou o trackpad rola
+o carrossel de lado (em cima da foto ativa, a roda continua sendo zoom), e embaixo ficam os números dos slides com ‹ ›:
+tocar no número leva até ele e o escolhe. A **grade do perfil** agora é por quadradinho, igual ao carrossel: cada um
+tem a própria foto e o próprio modelo, e as fotos entram na ordem de postar (1, 2, 3…, começando embaixo à direita).
+"Uma imagem só, dividida" volta à foto única cortada em todos. No trabalho do Frames, cada take mostra **Escolher**
+(ou "Escolhido · N"), e o botão Montagem leva os escolhidos.
+
+**Ver a montagem andando** (titular, 09/11/2026): no post com take, embaixo da montagem ficam o play e a agulha (a
+duração da montagem). Cada take toca no quadro dele, com o enquadre, no trecho escolhido (câmera lenta a ½×) e com o som
+do take escolhido em "Som"; arrastar a agulha mostra o quadro daquele instante. "Mudar o trecho" abre a agulha do take.
+Take que o navegador não toca (MXF, ProRes) fica no quadro do começo, com aviso.
 
 **Faixas** (o modelo do pré-color para os Stories): 2 a 6 frames um embaixo do outro, no formato do frame (16:9, 1,85,
 2,39, 4:3 ou tela cheia, que divide a altura), centrados; quando não cabem na largura toda, ficam mais estreitos sem

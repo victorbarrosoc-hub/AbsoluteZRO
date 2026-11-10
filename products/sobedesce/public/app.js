@@ -1,5 +1,5 @@
 // SOBEDESCE — interface. Preact + htm sem build.
-import { html, render, useEffect, useRef } from '/vendor/preact-htm.js'
+import { html, render, useEffect, useErrorBoundary, useRef } from '/vendor/preact-htm.js'
 import { start, useStore } from './lib/store.js'
 import { startDesktopIntegration } from './lib/desktop.js'
 import { startCloudWatch } from './lib/cloud.js'
@@ -116,8 +116,21 @@ function Shell({ route }) {
   // A Z entra sem o movimento: transform num ancestral prende a gaveta de Conversas (position: fixed) à caixa.
   return html`<div class="shell">
     <${Sidebar} current=${route.name} />
-    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} data-dir=${dir.current} key=${route.name}>${secoes}${screen}</div></main>
+    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} data-dir=${dir.current} key=${route.name}>${secoes}<${Protegida} onde=${route.name}>${screen}</${Protegida}></div></main>
   </div>`
+}
+
+/**
+ * Um erro de desenho numa tela não derruba o app (titular, 10/11/2026: um "<1" num template parou a interface inteira,
+ * botões mortos, enquanto o envio seguia). A tela mostra o aviso e "Tentar de novo"; o menu continua.
+ */
+function Protegida({ children, onde }) {
+  const [erro, tentar] = useErrorBoundary((e) => console.error(`[sobedesce] a tela ${onde} quebrou:`, e))
+  if (!erro) return children
+  return html`<div class="page"><div class="table-msg is-error" role="alert">
+    <span>Esta tela teve um problema e parou de desenhar. O que estava em andamento continua no motor.</span>
+    <button type="button" class="btn btn-secondary btn-sm" onClick=${tentar}>Tentar de novo</button>
+  </div></div>`
 }
 
 function App() {
@@ -180,7 +193,7 @@ function App() {
 
 // A abertura com o símbolo (uma vez por abertura do app; lib/abertura.js) fica por cima enquanto a tela carrega.
 abertura({ tamanho: 84 })
-render(html`<${App} />`, document.getElementById('app'))
+render(html`<${Protegida} onde="principal"><${App} /></${Protegida}>`, document.getElementById('app'))
 startDesktopIntegration()
 startCloudWatch()
 start()

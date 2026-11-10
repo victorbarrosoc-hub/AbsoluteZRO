@@ -800,11 +800,11 @@ function AbaFrames({ m, setM, sel, setSel }) {
   </div>`
 }
 
-function TakeCard({ m, t, onAcao, busy }) {
+function TakeCard({ m, t, onAcao, busy, ordem, onSel }) {
   const ref = useRef(null)
   const toca = t.codec !== 'prores'
   const ar = t.formato === 'original' ? (m.video.largura && m.video.altura ? `${m.video.largura} / ${m.video.altura}` : '16 / 9') : t.formato.replace(':', ' / ')
-  return html`<div class=${cx('fr-take', t.descartado && 'is-fora')}>
+  return html`<div class=${cx('fr-take', ordem && 'is-sel', t.descartado && 'is-fora')}>
     <div
       class="fr-take-vid"
       style=${`aspect-ratio:${ar}`}
@@ -819,10 +819,14 @@ function TakeCard({ m, t, onAcao, busy }) {
         ? html`<video ref=${ref} src=${arquivoUrl(m.id, { p: t.arquivo })} poster=${arquivoUrl(m.id, { mini: t.id })} muted loop playsinline preload="none"></video>`
         : html`<img src=${arquivoUrl(m.id, { mini: t.id })} alt="" />`}
       <span class="fr-take-tag">${t.codec === 'prores' ? 'ProRes 422 HQ' : t.formato === 'original' ? 'H.264' : t.formato}</span>
+      ${t.descartado
+        ? null
+        : html`<button type="button" class="fr-frame-sel fr-take-sel" aria-pressed=${ordem ? 'true' : 'false'} aria-label=${ordem ? `Tirar ${t.id} da escolha` : `Escolher ${t.id}`} title="Escolher para a Montagem" onClick=${onSel}>${ordem || html`<${Icon} name="plus" size=${13} />`}</button>`}
       ${busy ? html`<span class="fr-frame-busy"><${Spinner} size=${18} /></span>` : null}
     </div>
     <div class="fr-take-meta">
       <span><b>${t.id}</b> · Cena ${String(t.cena).padStart(2, '0')} · ${t.dur.toFixed(1).replace('.', ',')} s</span>
+      ${t.descartado ? null : html`<button type="button" class=${cx('fr-take-escolher', ordem && 'is-on')} onClick=${onSel}>${ordem ? `Escolhido · ${ordem}` : 'Escolher'}</button>`}
       <span class="sub">${tc(t.tc)}</span>
     </div>
     ${t.descartado
@@ -839,7 +843,7 @@ function TakeCard({ m, t, onAcao, busy }) {
   </div>`
 }
 
-function AbaTakes({ m, setM }) {
+function AbaTakes({ m, setM, selTakes, setSelTakes }) {
   const [ocupado, setOcupado] = useState(null)
   const acao = async (t, o) => {
     setOcupado(t.id)
@@ -851,14 +855,28 @@ function AbaTakes({ m, setM }) {
     if (r?.trabalho) {
       setM(r.trabalho)
       if (!o.descartar && !o.voltar) toast('success', 'Take pronto.')
+      if (o.descartar) setSelTakes((s) => s.filter((x) => x !== t.id))
     }
   }
   const lista = m.takes.filter((t) => !t.descartado).concat(m.takes.filter((t) => t.descartado))
   if (!m.takes.length)
     return html`<${EmptyState} compact art=${html`<${Icon} name="film" size=${32} strokeWidth=${1.2} />`} title="Sem takes neste trabalho">Ligue os takes no próximo vídeo para ganhar os melhores trechos de cada cena.</${EmptyState}>`
   return html`<div class="fr-aba">
-    <div class="fr-aba-barra"><span class="fr-aba-txt">Passe o cursor para ver. Cada take é o trecho mais firme e bem exposto da cena, longe dos cortes.</span></div>
-    <div class="fr-takes">${lista.map((t) => html`<${TakeCard} key=${t.id} m=${m} t=${t} busy=${ocupado === t.id} onAcao=${(o) => acao(t, o)} />`)}</div>
+    <div class="fr-aba-barra"><span class="fr-aba-txt">Passe o cursor para ver. Cada take é o trecho mais firme e bem exposto da cena, longe dos cortes. Escolha no + para levar à Montagem.</span></div>
+    <div class="fr-takes">
+      ${lista.map(
+        (t) =>
+          html`<${TakeCard}
+            key=${t.id}
+            m=${m}
+            t=${t}
+            busy=${ocupado === t.id}
+            ordem=${selTakes.indexOf(t.id) + 1 || 0}
+            onSel=${() => setSelTakes((s) => (s.includes(t.id) ? s.filter((x) => x !== t.id) : [...s, t.id]))}
+            onAcao=${(o) => acao(t, o)}
+          />`,
+      )}
+    </div>
   </div>`
 }
 
@@ -1132,6 +1150,7 @@ function Trabalho({ id }) {
   const home = useStore((s) => s.app?.home)
   const [aba, setAba] = useState('frames')
   const [sel, setSel] = useState([])
+  const [selTakes, setSelTakes] = useState([])
   const [subindo, setSubindo] = useState(false)
   const rodando = job?.status === 'running' && job.manifestoId === id
 
@@ -1201,6 +1220,24 @@ function Trabalho({ id }) {
     navigate('montagens')
   }
 
+  /**
+   * Os frames e os takes escolhidos vão para Estúdio › Montagens: entram na bandeja da montagem que já está lá (sem
+   * repetir), o frame como foto e o take como vídeo (o arquivo do take, já cortado e com a cor).
+   */
+  const paraMontagem = () => {
+    const porId = new Map([...m.frames, ...m.takes].map((x) => [x.id, x]))
+    const caminhos = [...sel, ...selTakes].map((id) => porId.get(id)).filter((x) => x && !x.descartado).map((x) => juntar(m.pasta, x.arquivo))
+    if (!caminhos.length) return
+    const antes = storage.get('montagens.rascunho', null) || {}
+    const ja = Array.isArray(antes.fotos) ? antes.fotos : []
+    const fotos = [...new Set([...ja, ...caminhos])].slice(0, 60)
+    const novos = fotos.length - ja.length
+    storage.set('montagens.rascunho', { ...antes, fotos, ...(ja.length ? {} : { nome: nomeSemExt(m.video.nome), quadros: [], enquadres: [], trechos: {} }) })
+    toast('success', novos ? `${plural(novos, 'item foi', 'itens foram')} para a Montagem.` : 'Esses já estavam na Montagem.')
+    navigate('montagens')
+  }
+  const escolhidos = [sel.length ? plural(sel.length, 'frame', 'frames') : null, selTakes.length ? plural(selTakes.length, 'take', 'takes') : null].filter(Boolean).join(' e ')
+
   return html`<div class="page page-frames">
     <nav class="ref-crumbs" aria-label="Caminho"><a href="#/frames">Frames</a><${Icon} name="chevron-right" size=${13} /><span>${nomeSemExt(m.video.nome)}</span></nav>
     <header class="page-head fr-head">
@@ -1231,18 +1268,27 @@ function Trabalho({ id }) {
           { value: 'posts', label: 'Posts', count: m.posts.length },
         ]}
       />
-      ${sel.length && aba === 'frames'
+      ${(sel.length || selTakes.length) && aba !== 'posts'
         ? html`<div class="fr-sel">
-            <span>${plural(sel.length, 'frame escolhido', 'frames escolhidos')}</span>
-            <${Button} size="sm" variant="ghost" onClick=${() => setSel([])}>Limpar</${Button}>
-            <${Button} size="sm" variant="primary" icon="arrow-right" onClick=${() => setAba('posts')}>Montar post</${Button}>
+            <span>${escolhidos} · ${sel.length + selTakes.length === 1 ? 'escolhido' : 'escolhidos'}</span>
+            <${Button}
+              size="sm"
+              variant="ghost"
+              onClick=${() => {
+                setSel([])
+                setSelTakes([])
+              }}
+              >Limpar</${Button}
+            >
+            ${sel.length ? html`<${Button} size="sm" icon="arrow-right" onClick=${() => setAba('posts')}>Montar post</${Button}>` : null}
+            <${Button} size="sm" variant="primary" icon="grid" onClick=${paraMontagem} title="Os frames entram como foto e os takes como vídeo, na montagem que já está lá">Montagem</${Button}>
           </div>`
         : null}
     </div>
     ${aba === 'frames'
       ? html`<${AbaFrames} m=${m} setM=${setM} sel=${sel} setSel=${setSel} />`
       : aba === 'takes'
-        ? html`<${AbaTakes} m=${m} setM=${setM} />`
+        ? html`<${AbaTakes} m=${m} setM=${setM} selTakes=${selTakes} setSelTakes=${setSelTakes} />`
         : html`<${AbaPosts} key=${m.id} m=${m} setM=${setM} sel=${sel} irParaFrames=${() => setAba('frames')} />`}
   </div>`
 }
