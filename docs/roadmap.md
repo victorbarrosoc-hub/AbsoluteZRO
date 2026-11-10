@@ -2061,6 +2061,14 @@ do card... não consigo localizar o job que quero achar".
     `package.json`.
   - Só o app de computador (workflow, sem custo); nada do site.
 
+## SOBEDESCE 0.3.19: menu do Drive igual ao do Google Drive, no computador (10/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-menu-pc` (titular via Z: soltar o que é grátis): a parte do app de computador do #153 sai
+  agora. Botão direito no item e no vazio, Copiar link (com "Qualquer pessoa com o link pode ver" ou "Só copiar",
+  escolha lembrada), selo "Público (link)", Restrito, estrela, arrastar para mover com Desfazer e ações rápidas.
+  - Motor: rotas `link/restringir` e `estrela`; a listagem traz `starred`, `permissionIds`, `createdTime`, `canShare`.
+  - O celular e o site (`web/`) continuam no #153, para o lote de sexta (13/11).
+
 ## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
 
 - 🔶 Ramo `sobedesce-carrossel-rolar` (titular: "não consigo ver as outras páginas no carrossel", "não consigo jogar

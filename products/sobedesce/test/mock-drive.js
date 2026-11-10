@@ -1610,7 +1610,7 @@ class MockDrive {
     const c = item.content
     const j = { kind: 'drive#file', id: item.id, name: item.name, mimeType: item.mimeType }
     if (item.description) j.description = item.description
-    j.starred = false
+    j.starred = item.starred === true
     j.trashed = item.trashed
     j.explicitlyTrashed = item.explicitlyTrashed
     if (item.parents.length) j.parents = [...item.parents]
@@ -1920,6 +1920,9 @@ class MockDrive {
       if (segs.length === 3 && segs[1] && segs[2] === 'permissions') {
         if (method === 'GET') return drive('permissions.list', (q, s, u) => this._permissionsList(q, s, u, segs[1]))
         if (method === 'POST') return drive('permissions.create', (q, s, u) => this._permissionsCreate(q, s, u, segs[1]), { write: true })
+      }
+      if (segs.length === 4 && segs[1] && segs[2] === 'permissions' && segs[3] && method === 'DELETE') {
+        return drive('permissions.delete', (q, s, u) => this._permissionsDelete(q, s, u, segs[1], decodeURIComponent(segs[3])), { write: true })
       }
     }
     return notFound
@@ -2423,6 +2426,21 @@ class MockDrive {
     this._send(res, 200, applyMask({ kind: 'drive#permission', ...created }, mask ?? DEFAULT_PERMISSION_MASK))
   }
 
+  /** permissions.delete: só a permissão do próprio item; a herdada da pasta de cima o Google recusa (403). */
+  _permissionsDelete(req, res, url, rawId, permId) {
+    const item = this._accessible(rawId, url, req)
+    if (!item) return this._send(res, 404, notFoundFile(rawId))
+    if (!item.canShare || !item.parents.length) return this._send(res, 403, gError(403, 'insufficientFilePermissions', 'The user does not have sufficient permissions for this file.'))
+    const i = (item.permissions || []).findIndex(p => p.id === permId)
+    if (i < 0) {
+      if (this._permissions(item).some(p => p.id === permId)) return this._send(res, 403, gError(403, 'cannotDeleteInheritedPermission', 'Inherited permissions cannot be deleted.'))
+      return this._send(res, 404, gError(404, 'notFound', `Permission not found: ${permId}.`))
+    }
+    item.permissions.splice(i, 1)
+    res.writeHead(204)
+    res.end()
+  }
+
   async _jsonBody(req, limit = MiB) {
     const raw = await readBody(req, limit)
     if (!raw.length) return {}
@@ -2574,8 +2592,13 @@ class MockDrive {
       return this._send(res, 400, gError(400, 'invalid', 'Invalid value for: trashed', { location: 'trashed' }))
     }
     if (meta.trashed === true && !item.trashed && !item.canTrash) return this._send(res, 403, gError(403, 'insufficientFilePermissions', 'The user does not have sufficient permissions for this file.'))
+    if (meta.starred != null && typeof meta.starred !== 'boolean') {
+      return this._send(res, 400, gError(400, 'invalid', 'Invalid value for: starred', { location: 'starred' }))
+    }
     if (meta.name != null) item.name = String(meta.name)
     if (meta.description !== undefined) item.description = meta.description
+    // A estrela é de quem marca (leitor também marca): não pede edição.
+    if (typeof meta.starred === 'boolean') item.starred = meta.starred
     // Renomear/mover não mexe em modifiedTime (só quando vem explícito).
     if (meta.modifiedTime != null) item.modifiedTime = toIso(meta.modifiedTime)
     if (typeof meta.trashed === 'boolean' && meta.trashed !== item.trashed) this._setTrashed(item, meta.trashed)

@@ -139,6 +139,46 @@ test('shareWithAnyone: recusa da política do Workspace e do drive compartilhado
   assert.deepEqual(anyone(mock.permissionsOf(f.id)), [])
 })
 
+test('restrictLink: volta para Restrito apagando só o "qualquer pessoa" do item; herdado da pasta de cima diz de onde vem', async t => {
+  const { mock, drive } = await setup(t)
+  const pasta = mock.addFolder('ENTREGA_LIA')
+  await drive.shareWithAnyone(pasta.id)
+  mock.share(pasta.id, { type: 'user', role: 'reader', emailAddress: 'cliente@exemplo.com' })
+  const calls = spyApi(drive)
+  const depois = await drive.restrictLink(pasta.id)
+  assert.equal(depois.access, 'restrito')
+  assert.deepEqual(anyone(mock.permissionsOf(pasta.id)), [])
+  assert.ok(mock.permissionsOf(pasta.id).some(p => p.emailAddress === 'cliente@exemplo.com'), 'quem foi convidado continua')
+  assert.deepEqual(calls.filter(c => c.method === 'DELETE').map(c => c.path), [`files/${pasta.id}/permissions/anyoneWithLink`])
+
+  // Arquivo dentro de pasta pública: o público é herdado; não dá para restringir só ele.
+  await drive.shareWithAnyone(pasta.id)
+  const f = mock.addFile('corte_final.mp4', pasta.id, { content: 'x' })
+  await assert.rejects(drive.restrictLink(f.id), err => {
+    assert.equal(err.status, 403)
+    assert.equal(err.reason, 'publicoHerdado')
+    assert.match(err.message, /pasta de cima está aberta/)
+    return true
+  })
+})
+
+test('navegar traz a estrela, o selo Público (link), a data de criação e o poder de compartilhar', async t => {
+  const { mock, drive } = await setup(t)
+  const pasta = mock.addFolder('Diária 03')
+  const f = mock.addFile('teaser.mp4', pasta.id, { content: 'x' })
+  const g = mock.addFile('bruto.mov', pasta.id, { content: 'y' })
+  await drive.shareWithAnyone(f.id)
+  assert.deepEqual(await drive.setStarred(g.id, true), { id: g.id, starred: true })
+  const itens = Object.fromEntries((await drive.listChildren(pasta.id, { media: true })).map(it => [it.name, it]))
+  assert.equal(itens['teaser.mp4'].publico, true)
+  assert.equal(itens['teaser.mp4'].starred, false)
+  assert.equal(itens['bruto.mov'].publico, false)
+  assert.equal(itens['bruto.mov'].starred, true)
+  assert.equal(itens['bruto.mov'].canShare, true)
+  assert.ok(itens['bruto.mov'].createdTime)
+  assert.deepEqual(await drive.setStarred(g.id, false), { id: g.id, starred: false })
+})
+
 test('sharing sem poder compartilhar: não oferece liberar e, sem ver as permissões, diz que não sabe', async t => {
   const { mock, drive } = await setup(t)
   const pasta = mock.addFolder('Compartilhada comigo', 'root', { canShare: false })
@@ -269,6 +309,30 @@ test('rotas: liberar recusa Meu Drive, item inválido e mostra a recusa do domí
   } finally {
     env.mock.setOptions({ anyoneSharingBlocked: false })
   }
+})
+
+test('rotas: restringir exige confirmado: true e volta para Restrito; estrela põe e tira', async () => {
+  const pasta = env.mock.addFolder('Rota - Pública')
+  let r = await call('POST', `/api/drive/${acc()}/link/liberar`, { body: { id: pasta.id, confirmado: true } })
+  assert.equal(r.json.link.access, 'qualquer')
+  r = await call('POST', `/api/drive/${acc()}/link/restringir`, { body: { id: pasta.id } })
+  assert.equal(r.status, 400)
+  assert.equal(anyone(env.mock.permissionsOf(pasta.id)).length, 1, 'sem confirmar, nada muda')
+  r = await call('POST', `/api/drive/${acc()}/link/restringir`, { body: { id: pasta.id, confirmado: true } })
+  assert.equal(r.status, 200)
+  assert.equal(r.json.link.access, 'restrito')
+  assert.deepEqual(anyone(env.mock.permissionsOf(pasta.id)), [])
+  // Já restrito: responde o estado e não chama nada.
+  r = await call('POST', `/api/drive/${acc()}/link/restringir`, { body: { id: pasta.id, confirmado: true } })
+  assert.equal(r.json.link.access, 'restrito')
+
+  r = await call('POST', `/api/drive/${acc()}/estrela`, { body: { id: pasta.id, starred: true } })
+  assert.equal(r.status, 200)
+  assert.equal(r.json.starred, true)
+  r = await call('POST', `/api/drive/${acc()}/estrela`, { body: { id: pasta.id, starred: 'sim' } })
+  assert.equal(r.status, 400)
+  r = await call('POST', `/api/drive/${acc()}/estrela`, { body: { id: 'root', starred: true } })
+  assert.equal(r.status, 400)
 })
 
 test('rotas: GET /pastas busca pastas pelo nome no escopo, com o caminho', async () => {

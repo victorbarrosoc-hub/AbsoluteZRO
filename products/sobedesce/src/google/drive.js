@@ -27,13 +27,14 @@ export const GOOGLE_EXPORTS = Object.freeze({
 })
 
 /** Campos extras para navegar e ver a prévia (miniatura, dimensões, dono). Não entram nas varreduras grandes. */
+// starred/permissionIds/createdTime (09/11/2026): a estrela, o selo "Público (link)" e o Detalhes do menu do item.
 export const MEDIA_FIELDS =
-  'hasThumbnail,thumbnailLink,iconLink,webViewLink,owners(displayName,emailAddress),appProperties,' +
+  'hasThumbnail,thumbnailLink,iconLink,webViewLink,owners(displayName,emailAddress),appProperties,starred,permissionIds,createdTime,' +
   'videoMediaMetadata(width,height,durationMillis),' +
   'imageMediaMetadata(width,height,rotation,time,cameraMake,cameraModel,exposureTime,aperture,isoSpeed,focalLength)'
 // Navegar também traz o que a conta pode fazer com cada item (menu de contexto: Renomear, Mover, Enviar para esta pasta).
 // Um `capabilities(...)` só (o de FILE_FIELDS ganha os campos): duas seleções do mesmo campo no `fields` não são garantidas.
-const BROWSE_CAPS = 'capabilities(canDownload,canEdit,canRename,canAddChildren,canMoveItemWithinDrive,canTrash)'
+const BROWSE_CAPS = 'capabilities(canDownload,canEdit,canRename,canAddChildren,canMoveItemWithinDrive,canTrash,canShare)'
 export const BROWSE_FIELDS = `${FILE_FIELDS.replace('capabilities(canDownload)', BROWSE_CAPS)},${MEDIA_FIELDS}`
 
 const LIST_FIELDS = `nextPageToken,files(${FILE_FIELDS})`
@@ -130,13 +131,22 @@ function capsInfo(f) {
     canMove: c.canMoveItemWithinDrive !== false && c.canEdit !== false,
     canAddChildren: c.canAddChildren === true,
     canTrash: c.canTrash !== false,
+    canShare: c.canShare === true,
   }
 }
+
+/** Ids de permissão que o Google dá para "qualquer pessoa": com o link (`anyoneWithLink`) ou aberto na busca (`anyone`). */
+export const PUBLICO_IDS = Object.freeze(['anyoneWithLink', 'anyone'])
+/** O item abre para qualquer pessoa com o link? (pelas permissionIds; as herdadas da pasta de cima também contam) */
+export const ehPublico = permissionIds => Array.isArray(permissionIds) && permissionIds.some(id => PUBLICO_IDS.includes(id))
 
 /** Campos de prévia (só quando a resposta trouxe: as varreduras não pedem e o DriveItem fica como era). */
 function mediaInfo(f) {
   if (!f || (f.hasThumbnail === undefined && f.thumbnailLink === undefined && !f.videoMediaMetadata && !f.imageMediaMetadata && !f.owners && !f.webViewLink)) return {}
   const out = { hasThumbnail: Boolean(f.hasThumbnail && f.thumbnailLink), thumbnailLink: f.thumbnailLink ?? null }
+  if (f.starred !== undefined) out.starred = f.starred === true
+  if (Array.isArray(f.permissionIds)) out.publico = ehPublico(f.permissionIds)
+  if (f.createdTime) out.createdTime = f.createdTime
   if (f.iconLink) out.iconLink = f.iconLink
   if (f.webViewLink) out.webViewLink = f.webViewLink
   const owner = Array.isArray(f.owners) ? f.owners[0] : null
@@ -789,6 +799,41 @@ export class DriveClient {
       }
       throw err
     }
+  }
+
+  /**
+   * Volta o link para "Restrito" (só quem tem acesso abre): apaga as permissões "qualquer pessoa" do próprio item. Só pela
+   * ação explícita de quem usa o app (rota POST /api/drive/:acc/link/restringir). Se o público vem da pasta de cima
+   * (herdado), o Google não deixa apagar aqui: a mensagem diz isso. Devolve o `sharing` de depois.
+   */
+  async restrictLink(fileId, { signal, resourceKey } = {}) {
+    const headers = resourceKey ? { 'x-goog-drive-resource-keys': `${fileId}/${resourceKey}` } : undefined
+    const perms = await this.listPermissions(fileId, { signal, resourceKey })
+    const publicos = perms.filter(p => p?.type === 'anyone' && p.id)
+    for (const p of publicos) {
+      try {
+        await this.api('DELETE', `files/${encodeURIComponent(fileId)}/permissions/${encodeURIComponent(p.id)}`, { headers, signal, retries: 2 })
+      } catch (err) {
+        const info = classifyError(err)
+        if (info.kind !== 'fatal' && info.kind !== 'notfound') throw err
+        if (info.kind === 'notfound') continue // já não estava (outra tela apagou)
+        if (info.status !== 403) throw err
+      }
+    }
+    const depois = await this.sharing(fileId, { signal, resourceKey })
+    if (depois.access === 'qualquer') {
+      throw new SobeDesceError('fatal', depois.canShare ? 'Continua público: a pasta de cima está aberta para qualquer pessoa com o link. Deixe ela restrita.' : 'Sua conta não pode mudar o compartilhamento deste item. Peça a quem é dono ou gerente.', {
+        reason: depois.canShare ? 'publicoHerdado' : 'semPermissao',
+        status: 403,
+      })
+    }
+    return depois
+  }
+
+  /** Marca ou tira a estrela (files.update starred). A estrela é de quem marca: leitor também marca. */
+  async setStarred(fileId, starred, { signal } = {}) {
+    const r = await this.api('PATCH', `files/${encodeURIComponent(fileId)}`, { query: { fields: 'id,starred' }, body: { starred: starred === true }, signal })
+    return { id: r.id ?? fileId, starred: r.starred === true }
   }
 
   /**

@@ -38,6 +38,13 @@ export function closeModal(id, value = null) {
   m.resolve(value)
   // devolve o foco para quem abriu
   setTimeout(() => {
+    // A escolha abriu outra janela (ex.: "Compartilhar…" do menu do item): o foco fica nela, e quem abriu o menu passa a
+    // ser quem abriu essa janela (o item do menu já sumiu).
+    const nova = stack.find((x) => x.id > id)
+    if (nova) {
+      if (!nova.opener || !document.contains(nova.opener)) nova.opener = m.opener
+      return
+    }
     try {
       if (m.opener && document.contains(m.opener)) m.opener.focus({ preventScroll: true })
     } catch {}
