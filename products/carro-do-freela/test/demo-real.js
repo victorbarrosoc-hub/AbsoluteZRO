@@ -11,7 +11,13 @@
  *     /api/zro/tabela) e relê, o medidor do selo é o que o servidor calculou, e quem contrata vê a tabela e o ✓ só de
  *     quem o servidor devolveu;
  *   - (03/11, 0009) o job só conta no selo quando os DOIS lados confirmam: Jobs pergunta "Aconteceu?" a quem fez e a quem
- *     contratou, a resposta vai ao servidor uma vez, o estado aparece no histórico e o medidor diz por quê.
+ *     contratou, a resposta vai ao servidor uma vez, o estado aparece no histórico e o medidor diz por quê;
+ *   - (03/11) a Agenda mostra os quatro estados na célula inteira (livre, negociando, ocupado, meia diária), com a
+ *     legenda que conta o mês e filtra, no computador e no celular; e o /demo funciona dentro de um iframe;
+ *   - (03/11, 0010) o job aceito só se cancela até a véspera: do dia em diante não há "Cancelar" e o servidor recusa
+ *     (409 dia); a proposta nova cancela (dois toques);
+ *   - (11/11, 0011) a noite: "Noite ocupada" vai ao servidor como parte noite, a célula mostra o último terço hachurado e
+ *     uma lua, e o dia segue livre de manhã e à tarde (para mim e para quem contrata).
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -133,6 +139,152 @@ const { CHROME, ARGS } = require('./_navegador');
       put: CDF_DEMO.pedidos.filter(x => x === 'PUT agenda').length };
   });
   t(m.folha && m.dec === 'fechado/dia' && m.est === 'ocupado' && m.put >= 1, '⟶⟶ na agenda, tocar num dia abre a folha e marcar ocupado vai ao servidor (' + JSON.stringify(m) + ')');
+
+  /* 03/11 · OS QUATRO ESTADOS DA AGENDA (titular, no celular: "não consigo mais ver fácil quais dias estou livre, quais
+     tô ocupado e quais estou negociando"). Cada dia tem um estado na célula inteira — livre, negociando, ocupado (job
+     também) e meia diária —, saído do job e da agenda declarada; a legenda conta o mês e filtra; hoje mantém o anel. */
+  const AG_ESPERADO = `(k => { const js = JOBS.filter(j => j.data === k); if (js.length) return js.some(j => !j.hold) ? 'ocup' : 'neg';
+    const d = AGENDA[k]; if (!d) return 'livre'; if (d.e === 'negociando') return 'neg'; return d.p === 'dia' ? 'ocup' : 'meia' })`;
+  const agLer = (pg, sel) => pg.evaluate(([esp, sel]) => { const esperado = eval(esp);
+    const cel = [...document.querySelectorAll('#nx-ag ' + sel + '[data-ag]')].filter(c => c.dataset.ag !== 'passou');
+    const conta = {}; cel.forEach(c => { conta[c.dataset.ag] = (conta[c.dataset.ag] || 0) + 1 });
+    const leg = {}; document.querySelectorAll('#nx-ag .nx-leg-i').forEach(b => { leg[b.dataset.f] = +b.querySelector('b').textContent });
+    const est = {}; ['livre', 'neg', 'ocup', 'meia'].forEach(ag => { const c = cel.find(x => x.dataset.ag === ag); if (!c) return; const s = getComputedStyle(c);
+      est[ag] = { bg: s.backgroundColor, img: s.backgroundImage, borda: s.borderTopStyle } });
+    const hj = document.querySelector('#nx-ag ' + sel + '[data-hoje]');
+    return { errados: cel.filter(c => c.dataset.ag !== esperado(c.dataset.k)).map(c => c.dataset.k + ':' + c.dataset.ag), conta, leg, est,
+      hoje: hj ? getComputedStyle(hj).outlineStyle : 'sem hoje', velho: !!document.querySelector('#nx-ag .nx-livres, #nx-ag .nx-barra') } }, [AG_ESPERADO, sel]);
+  /* o mês de cada dia da conta da demonstração: dia(2) fechado, dia(5) negociando, dia(9) manhã ocupada, dia(8) job */
+  const agDia = (pg, n, sel) => pg.evaluate(async ([n, sel]) => { const d = addD(HOJE, n), k = key(d); NX.agFiltro = null; NX.agMes = new Date(d.getFullYear(), d.getMonth(), 1); nxAgenda();
+    const c = document.querySelector('#nx-ag ' + sel + '[data-k="' + k + '"]'); return c ? [c.dataset.ag, c.dataset.meia || '', c.querySelector('.nx-dj') ? 'job' : '', c.getAttribute('aria-label')].join('|') : 'sem ' + k }, [n, sel]);
+  await p.evaluate(() => { NX.agMes = null; NX.agFiltro = null; show('agenda') }); await p.waitForTimeout(300);
+  m = await agLer(p, '.nx-cal .nx-dia');
+  t(!m.errados.length && Object.keys(m.conta).length >= 2 && !m.velho, 'Agenda (computador): cada dia de hoje em diante tem o estado do job e da agenda declarada, e o número grande saiu (' + JSON.stringify([m.errados, m.conta]) + ')');
+  t(JSON.stringify(Object.keys(m.leg).sort()) === JSON.stringify(Object.keys(m.conta).sort()) && Object.keys(m.conta).every(k => m.leg[k] === m.conta[k]),
+    '⟶⟶ a legenda conta o mês (só o que aparece): ' + JSON.stringify(m.leg));
+  t(m.hoje === 'solid', '⟶⟶ hoje mantém o anel (' + m.hoje + ')');
+  const agDias = [];
+  for (const [n, sel] of [[2, '.nx-cal .nx-dia'], [5, '.nx-cal .nx-dia'], [9, '.nx-cal .nx-dia'], [8, '.nx-cal .nx-dia']]) agDias.push(await agDia(p, n, sel));
+  t(/^ocup\|\|\|/.test(agDias[0]) && /^neg\|\|\|.*negociando/.test(agDias[1]) && /^meia\|manha\|\|.*meia diária, manhã ocupada/.test(agDias[2]) && /^ocup\|\|job\|/.test(agDias[3]),
+    '⟶⟶ ocupado, negociando, meia diária (a manhã) e o dia de job (ocupado, com o job na célula) (' + agDias.join(' · ') + ')');
+  await p.evaluate(() => { NX.agMes = new Date(HOJE.getFullYear(), HOJE.getMonth() + (addD(HOJE, 9).getMonth() !== HOJE.getMonth() ? 1 : 0), 1); nxAgenda() });
+  m = await agLer(p, '.nx-cal .nx-dia');
+  t(m.est.livre && m.est.neg && m.est.ocup && m.est.meia && m.est.livre.bg !== m.est.neg.bg && m.est.livre.bg !== 'rgba(0, 0, 0, 0)' && m.est.neg.borda === 'dashed' && m.est.livre.borda !== 'dashed' &&
+    /repeating-linear-gradient/.test(m.est.ocup.img) && /^linear-gradient.*repeating-linear-gradient/.test(m.est.meia.img),
+    '⟶⟶ os quatro na célula inteira e não só pela cor: livre liso, negociando tracejado, ocupado hachurado, meia diária pela metade (' + JSON.stringify(Object.keys(m.est)) + ')');
+  /* a legenda filtra: tocar em "negociando" acende só esses dias; tocar de novo volta */
+  m = await p.evaluate(async () => { const b = document.querySelector('#nx-ag .nx-leg-i[data-f="neg"]'); b.click(); await new Promise(r => setTimeout(r, 100));
+    const apagados = [...document.querySelectorAll('#nx-ag .nx-cal .nx-dia[data-ag]:not([data-ag="passou"])')], so = apagados.filter(c => !c.dataset.apaga).map(c => c.dataset.ag);
+    const pr = document.querySelector('#nx-ag .nx-leg-i[data-f="neg"]').getAttribute('aria-pressed'), op = +getComputedStyle(apagados.find(c => c.dataset.ag === 'livre')).opacity;
+    document.querySelector('#nx-ag .nx-leg-i[data-f="neg"]').click(); await new Promise(r => setTimeout(r, 100));
+    return { so: [...new Set(so)], pr, op, volta: document.querySelectorAll('#nx-ag [data-apaga]').length, filtro: NX.agFiltro } });
+  t(m.so.join() === 'neg' && m.pr === 'true' && m.op < 0.5 && m.volta === 0 && m.filtro === null, '⟶⟶ a legenda filtra: "negociando" acende só esses dias, e tocar de novo volta (' + JSON.stringify(m) + ')');
+  /* a folha do dia muda o estado e a legenda acompanha; "Bloquear dias" marca vários de uma vez */
+  m = await p.evaluate(async () => { NX.agMes = null; nxAgenda(); const livres = [...document.querySelectorAll('#nx-ag .nx-cal .nx-dia[data-ag="livre"]')].map(c => c.dataset.k);
+    const n0 = k => +((document.querySelector('#nx-ag .nx-leg-i[data-f="' + k + '"] b') || {}).textContent || 0), antes = { livre: n0('livre'), neg: n0('neg'), ocup: n0('ocup'), meia: n0('meia') };
+    const put0 = CDF_DEMO.pedidos.filter(x => x === 'PUT agenda').length;
+    document.querySelector('#nx-ag .nx-cal [data-k="' + livres[0] + '"]').click(); await new Promise(r => setTimeout(r, 100));
+    const sw = [...document.querySelectorAll('#nx-folha [data-dia-op] .nx-sw')].map(i => i.dataset.ag + (i.dataset.meia ? '/' + i.dataset.meia : ''));
+    document.querySelector('#nx-folha [data-dia-op="segura"]').click(); await new Promise(r => setTimeout(r, 150));
+    const neg = document.querySelector('#nx-ag .nx-cal [data-k="' + livres[0] + '"]').dataset.ag, depois1 = { livre: n0('livre'), neg: n0('neg') };
+    document.querySelector('#nx-ag [data-nx="ag-bloq"]').click(); await new Promise(r => setTimeout(r, 50));
+    for (const k of [livres[1], livres[2]]) { document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').click(); await new Promise(r => setTimeout(r, 50)) }
+    const marcados = document.querySelectorAll('#nx-ag .nx-cal [data-bloq]').length, ok = document.querySelector('#nx-ag [data-nx="ag-bloq-ok"]').textContent;
+    document.querySelector('#nx-ag [data-nx="ag-bloq-ok"]').click(); await new Promise(r => setTimeout(r, 150));
+    return { sw, neg, antes, depois1, marcados, ok, bloq: [livres[1], livres[2]].map(k => document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').dataset.ag + ':' + (AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p)),
+      depois2: { livre: n0('livre'), ocup: n0('ocup') }, put: CDF_DEMO.pedidos.filter(x => x === 'PUT agenda').length - put0 } });
+  t(m.sw.join() === 'livre,neg,ocup,meia/manha,meia/tarde,meia/noite' && m.neg === 'neg' && m.depois1.livre === m.antes.livre - 1 && m.depois1.neg === m.antes.neg + 1,
+    '⟶⟶ a folha do dia mostra o desenho de cada estado, e "Negociando" pinta o dia e conta na legenda (' + JSON.stringify([m.sw, m.antes, m.depois1]) + ')');
+  t(m.marcados === 2 && m.ok === 'Bloquear 2 dias' && m.bloq.every(x => x === 'ocup:fechado/dia') && m.depois2.livre === m.antes.livre - 3 && m.depois2.ocup === m.antes.ocup + 2 && m.put === 3,
+    '⟶⟶ "Bloquear dias" marca vários, vira ocupado no servidor e a legenda acompanha (' + JSON.stringify([m.bloq, m.depois2, m.put]) + ')');
+
+  /* 11/11 · A NOITE (freela: "boa parte dos trabalhos é à noite, não tem opção de marcar dizendo que a noite está
+     ocupada"). "Noite ocupada" na folha vai ao servidor como parte 'noite' (0011); a célula mostra só o último terço
+     hachurado e uma lua (não só a cor nem só a altura); o dia continua livre de manhã e à tarde, para mim e para quem
+     contrata; a legenda conta como meia diária. O dia 13 da conta da demonstração já nasce com a noite ocupada. */
+  m = await p.evaluate(async () => { NX.agMes = null; NX.agFiltro = null; nxAgenda();
+    const k = [...document.querySelectorAll('#nx-ag .nx-cal .nx-dia[data-ag="livre"]:not([data-hoje])')].map(c => c.dataset.k)[0];
+    const n0 = e => +((document.querySelector('#nx-ag .nx-leg-i[data-f="' + e + '"] b') || {}).textContent || 0), antes = { livre: n0('livre'), meia: n0('meia') };
+    document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').click(); await new Promise(r => setTimeout(r, 100));
+    const op = document.querySelector('#nx-folha [data-dia-op="noite"]'), txt = op ? op.innerText.replace(/\n/g, ' · ') : '';
+    op.click(); await new Promise(r => setTimeout(r, 200));
+    const c = document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]'), s = getComputedStyle(c), lua = getComputedStyle(c, '::before');
+    const srv = (await (await fetch('/api/zro/agenda')).json()).agenda[k];
+    return { txt, k, dec: AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p, srv, ag: c.dataset.ag + '/' + c.dataset.meia, rot: c.getAttribute('aria-label'), dl: (c.querySelector('.nx-dl') || {}).textContent,
+      img: s.backgroundImage, lua: lua.content !== 'none' && lua.content !== 'normal' && parseFloat(lua.width) >= 8, st: statusEu(nxD(k)), jan: (janelaEu(k) || {}).txt,
+      antes, depois: { livre: n0('livre'), meia: n0('meia') } } });
+  t(/Noite ocupada/.test(m.txt) && /18h/.test(m.txt) && m.dec === 'fechado/noite' && m.srv && m.srv.e === 'fechado' && m.srv.p === 'noite',
+    'Noite: a folha do dia tem "Noite ocupada" (livre até as 18h), e marcar vai ao servidor com parte noite (' + JSON.stringify([m.txt, m.dec, m.srv]) + ')');
+  t(m.ag === 'meia/noite' && /noite ocupada/.test(m.rot) && m.dl === 'noite' && /66\.6/.test(m.img) && /repeating-linear-gradient/.test(m.img) && m.lua,
+    '⟶⟶ a célula mostra a noite: o último terço hachurado e uma lua, com o rótulo "noite" (' + JSON.stringify([m.ag, m.rot, m.dl, m.lua]) + ')');
+  t(m.st === 'livre' && m.jan === 'livre até as 18h' && m.depois.livre === m.antes.livre - 1 && m.depois.meia === m.antes.meia + 1,
+    '⟶⟶ ocupado à noite segue livre de manhã e à tarde ("' + m.jan + '"), e a legenda conta como meia diária (' + JSON.stringify([m.antes, m.depois]) + ')');
+  m = await p.evaluate(() => { const k = key(addD(HOJE, 13)), d = AGENDA[k];
+    /* quem contrata: a pessoa ocupada à noite continua livre na busca, com a janela dita por ela */
+    const c = CREW.find(x => x.remoto && x.agendaSrv && Object.keys(x.agendaSrv).some(q => x.agendaSrv[q].p === 'noite' && x.agendaSrv[q].e === 'fechado'));
+    const q = c && Object.keys(c.agendaSrv).find(q => c.agendaSrv[q].p === 'noite' && c.agendaSrv[q].e === 'fechado'), i = q ? Math.round((nxD(q) - HOJE) / 864e5) : null;
+    const sd = S.dia; S.dia = i; const linha = c ? linhaDe(c).innerText.replace(/\n/g, ' · ') : ''; S.dia = sd;
+    return { semente: d && d.e + '/' + d.p, outro: !!c, st: c ? status(c, i) : null, linha } });
+  t(m.semente === 'fechado/noite' && m.outro && m.st === 'livre' && /livre até as 18h/.test(m.linha),
+    '⟶⟶ para quem contrata, a pessoa ocupada à noite é livre naquele dia, e a linha da busca diz "livre até as 18h" (' + JSON.stringify(m) + ')');
+
+  /* o celular (390×844): o mesmo estado no mês pequeno, a legenda numa linha, nada sai da tela */
+  const ctxCel = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const rotaDemo = r => {
+    const u = new URL(r.request().url());
+    if (u.pathname.startsWith('/api/')) { api.push(u.pathname); return r.fulfill({ status: 401, contentType: 'application/json', body: '{"erro":"sem_sessao"}' }) }
+    const rel = u.pathname === '/demo' ? 'demo.html' : u.pathname === '/' ? 'real.html' : decodeURIComponent(u.pathname.slice(1)), f = path.join(PUB, rel);
+    if (u.pathname === '/nada') return r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>x</title>' });
+    if (!f.startsWith(PUB) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return r.fulfill({ status: 404, body: '' });
+    return r.fulfill({ status: 200, contentType: TIPOS[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
+  };
+  await ctxCel.route('https://carro.absolutezro.com/**', rotaDemo);
+  const pc = await ctxCel.newPage(); const errosC = []; pc.on('pageerror', e => errosC.push(e.message));
+  await pc.goto('https://carro.absolutezro.com/demo');
+  await pc.waitForFunction(() => typeof S === 'object' && S.tab && S.tab !== 'home', null, { timeout: 15000 }).catch(() => {});
+  await pc.waitForTimeout(600);
+  await pc.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick(); show('agenda') }); await pc.waitForTimeout(400);
+  m = await agLer(pc, '.nx-minical .nx-mini-d');
+  const cel = await pc.evaluate(() => { const leg = [...document.querySelectorAll('#nx-ag .nx-leg-i')].map(b => b.getBoundingClientRect());
+    return { mini: !!document.querySelector('#nx-ag .nx-minical').offsetParent, grande: !!document.querySelector('#nx-ag .nx-cal').offsetParent,
+      linha: leg.length > 1 && leg.every(r => Math.abs(r.top - leg[0].top) < 2), dentro: leg.every(r => r.left >= 0 && r.right <= innerWidth), alto: leg.every(r => r.height >= 44),
+      larg: document.documentElement.scrollWidth <= innerWidth, dia: Math.min(...[...document.querySelectorAll('#nx-ag .nx-mini-d[data-ag]')].map(c => c.getBoundingClientRect().height)) } });
+  t(cel.mini && !cel.grande && !m.errados.length && Object.keys(m.conta).every(k => m.leg[k] === m.conta[k]) && m.hoje === 'solid',
+    'Agenda (celular): o mês pequeno tem os mesmos estados, a legenda conta igual e hoje tem o anel (' + JSON.stringify([m.errados, m.leg, m.hoje]) + ')');
+  t(cel.linha && cel.dentro && cel.alto && cel.larg && cel.dia >= 44, '⟶⟶ a legenda cabe numa linha, cada item e cada dia com 44px ou mais, sem rolar de lado (' + JSON.stringify(cel) + ')');
+  m = { d: [await agDia(pc, 2, '.nx-minical .nx-mini-d'), await agDia(pc, 5, '.nx-minical .nx-mini-d'), await agDia(pc, 9, '.nx-minical .nx-mini-d')] };
+  await pc.evaluate(() => { NX.agMes = new Date(HOJE.getFullYear(), HOJE.getMonth() + (addD(HOJE, 9).getMonth() !== HOJE.getMonth() ? 1 : 0), 1); nxAgenda() });
+  const estC = (await agLer(pc, '.nx-minical .nx-mini-d')).est;
+  t(/^ocup/.test(m.d[0]) && /^neg/.test(m.d[1]) && /^meia\|manha/.test(m.d[2]) && estC.neg && estC.neg.borda === 'dashed' && /repeating-linear-gradient/.test((estC.ocup || {}).img) && /^linear-gradient/.test((estC.meia || {}).img),
+    '⟶⟶ no celular também: ocupado hachurado, negociando tracejado, meia diária pela metade (' + m.d.join(' · ') + ')');
+  await pc.evaluate(() => { NX.agMes = null; nxAgenda() });
+  const kCel = await pc.evaluate(() => (document.querySelector('#nx-ag .nx-minical .nx-mini-d[data-ag="livre"]:not([data-hoje])') || {}).dataset.k);
+  await pc.click('#nx-ag .nx-minical [data-k="' + kCel + '"]'); await pc.waitForTimeout(300);
+  await pc.click('#nx-folha [data-dia-op="tarde"]'); await pc.waitForTimeout(300);
+  m = await pc.evaluate(k => { const c = document.querySelector('#nx-ag .nx-minical [data-k="' + k + '"]'); return [c.dataset.ag, c.dataset.meia, AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p].join('|') }, kCel);
+  t(m === 'meia|tarde|fechado/tarde', '⟶⟶ tocar num dia no celular abre a folha, e "Tarde ocupada" vira meia diária (' + m + ')');
+  m = await pc.evaluate(async () => { const d = addD(HOJE, 13), k = key(d); NX.agFiltro = null; NX.agMes = new Date(d.getFullYear(), d.getMonth(), 1); nxAgenda();
+    const c = document.querySelector('#nx-ag .nx-minical [data-k="' + k + '"]'), s = getComputedStyle(c), lua = getComputedStyle(c, '::before'), r = c.getBoundingClientRect();
+    return [c.dataset.ag + '/' + c.dataset.meia, /66\.6/.test(s.backgroundImage), lua.content !== 'none' && parseFloat(lua.right) <= 6, r.height >= 44, /noite ocupada/.test(c.getAttribute('aria-label'))].join('|') });
+  t(m === 'meia/noite|true|true|true|true', '⟶⟶ no celular, o dia com a noite ocupada: o último terço hachurado e a lua no canto (' + m + ')');
+  t(!errosC.length, '⟶⟶ zero erro de página no celular' + (errosC.length ? ': ' + errosC.join(' | ') : ''));
+  await ctxCel.close();
+
+  /* 03/11 · A DEMONSTRAÇÃO DENTRO DE UM IFRAME (uma prévia embutida): a conta da demonstração liga mesmo assim (o
+     servidor dela é de mentira, no navegador). O site de verdade num iframe continua com a conta desligada. */
+  const ctxF = await b.newContext({ viewport: { width: 1280, height: 900 } }); await ctxF.route('https://carro.absolutezro.com/**', rotaDemo);
+  const pf = await ctxF.newPage(); const errosF = []; pf.on('pageerror', e => errosF.push(e.message));
+  await pf.goto('https://carro.absolutezro.com/nada');
+  await pf.evaluate(() => { for (const [id, src] of [['fd', '/demo'], ['fr', '/']]) { const f = document.createElement('iframe'); f.id = id; f.src = src; f.style.cssText = 'width:1200px;height:800px'; document.body.appendChild(f) } });
+  const fDemo = () => pf.frames().find(f => /\/demo$/.test(f.url())), fReal = () => pf.frames().find(f => /\/$/.test(f.url()) && f !== pf.mainFrame());
+  for (let i = 0; i < 60 && !(fDemo() && fReal()); i++) await pf.waitForTimeout(100);
+  await fDemo().waitForFunction(() => typeof PROPOSTAS === 'object' && PROPOSTAS.some(x => x.srv), null, { timeout: 15000 }).catch(() => {});
+  m = await fDemo().evaluate(() => ({ iframe: window.top !== window.self, liga: zroLigavel(), conta: !!ZRO_CONTA, propostas: PROPOSTAS.filter(x => x.srv).length, crew: CREW.length, tab: S.tab }));
+  const mr = await fReal().evaluate(() => ({ iframe: window.top !== window.self, liga: zroLigavel(), demo: !!window.CDF_DEMO }));
+  t(m.iframe && m.liga && m.conta && m.propostas >= 3 && m.crew >= 100, 'o /demo dentro de um iframe liga a conta da demonstração e mostra as propostas dela (' + JSON.stringify(m) + ')');
+  t(mr.iframe && !mr.liga && !mr.demo, '⟶⟶ o site de verdade num iframe continua com a conta desligada (' + JSON.stringify(mr) + ')');
+  t(!errosF.length, '⟶⟶ zero erro de página no iframe' + (errosF.length ? ': ' + errosF.join(' | ') : ''));
+  await ctxF.close();
 
   /* 03/11 · A TABELA DE DIÁRIA E O SELO NO SERVIDOR (titular: "Tabela diária tem que salvar sim, precisa e pode preparar o
      selo de verificado"). Meu perfil: a linha "Tabela de diária" abre a folha; salvar manda a tabela inteira ao
@@ -263,6 +415,32 @@ const { CHROME, ARGS } = require('./_navegador');
       det: nxPropDet(nxEnviadas().find(x => x.srv === srv)), jobs: NX_SELO && NX_SELO.jobs, bal: pendenciasAbas().jobs || null, srv: env && env.confirmacao } }, m.contratei);
   t(c2.conf && c2.conf.de === false && c2.pill === 'Não aconteceu' && c2.botoes === 0 && /Não aconteceu/.test(c2.det) && !/jb-conf/.test(c2.det) && c2.jobs === 3 && !c2.bal,
     '⟶⟶ "Não" fica registrado ("Não aconteceu"), não volta a perguntar, não mexe no meu selo, e o balão apaga (' + JSON.stringify([c2.conf, c2.pill, c2.jobs, c2.bal]) + ')');
+  /* (03/11, 0010) cancelar só até a véspera: o job aceito que eu mandei, com o dia chegado, não tem "Cancelar" (o
+     servidor recusa com 409 dia); no dia a nota diz "Depois do dia, responda se aconteceu."; a proposta nova cancela */
+  c2 = await p.evaluate(async srv => {
+    const passado = nxEnviadas().find(x => x.srv === srv), nova = nxEnviadas().find(x => x.status === 'novo' && x.srvTipo === 'job');
+    const noDia = nxPropDet(Object.assign({}, nova, { status: 'aceita', cancelavel: false, conf: { aberta: false, minha: null, outra: null, pendente: false, confirmado: false } }));
+    const antes = CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length;
+    const r = await cfbPedir('PATCH', '/api/zro/propostas?id=' + encodeURIComponent(srv), { estado: 'cancelada' });
+    return { canc: passado.cancelavel, botao: /pp-cancela/.test(nxPropDet(passado)), status: r.status, j: r.j, msg: cfbMsg(r), patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - antes,
+      estado: (await cfbPedir('GET', '/api/zro/propostas')).j.enviadas.find(x => x.id === srv).estado,
+      noDia: /data-chegou="1"/.test(noDia) && /Depois do dia, responda se aconteceu\./.test(noDia) && !/pp-cancela/.test(noDia), nova: nova && nova.id, novaCanc: nova && nova.cancelavel };
+  }, m.contratei);
+  t(c2.canc === false && !c2.botao && c2.status === 409 && c2.j && c2.j.erro === 'dia' && c2.j.campo === 'dia' && c2.msg === 'Depois do dia, responda se aconteceu.' && c2.estado === 'aceita',
+    'job aceito que eu mandei, com o dia chegado: sem "Cancelar", e o PATCH de cancelar é recusado (409 dia) (' + JSON.stringify(c2) + ')');
+  t(c2.noDia, '⟶⟶ no dia do job aceito: sem "Cancelar", e a nota diz "Depois do dia, responda se aconteceu."');
+  await p.evaluate(async id => { show('propostas'); await new Promise(r => setTimeout(r, 200)); NX.pp = 'env'; NX.ppSel = id; nxPropostas() }, c2.nova);
+  const cancBt = '#nx-prop .nx-pp-det [data-nx="pp-cancela"]';
+  const antesCanc = await p.evaluate(() => CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length);
+  const temCanc = c2.novaCanc === true && await p.locator(cancBt).isVisible();
+  await p.click(cancBt); await p.waitForTimeout(150);
+  const primeiro = await p.evaluate(([sel, a]) => ({ txt: (document.querySelector(sel) || {}).textContent, patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - a }), [cancBt, antesCanc]);
+  await p.click(cancBt); await p.waitForTimeout(600);
+  c2 = await p.evaluate(([id, a]) => { const e = nxEnviadas().find(x => x.id === id), it = document.querySelector('#nx-prop [data-nx="pp-sel"][data-id="' + id + '"]');
+    return { patch: CDF_DEMO.pedidos.filter(x => x === 'PATCH propostas').length - a, canc: e && e.canc, cancelavel: e && e.cancelavel, pill: it && (it.querySelector('.nx-pill') || {}).textContent,
+      botao: !!document.querySelector('#nx-prop .nx-pp-det [data-nx="pp-cancela"]'), nota: (document.querySelector('#nx-prop .nx-pp-det .nx-pe-nota') || {}).textContent } }, [c2.nova, antesCanc]);
+  t(temCanc && primeiro.txt === 'Cancelar mesmo?' && primeiro.patch === 0 && c2.patch === 1 && c2.canc === true && c2.cancelavel === false && c2.pill === 'cancelada' && !c2.botao && c2.nota === 'Você cancelou.',
+    '⟶⟶ a proposta nova que eu mandei tem "Cancelar" (dois toques): vai ao servidor e fica "cancelada" (' + JSON.stringify([temCanc, primeiro, c2]) + ')');
   await p.evaluate(() => { if (MODO !== 'freela') v('modo-tog').onclick() });
 
   /* 02/11 · 3 · A ENTRADA EM PERGUNTAS: a conta que acabou de chegar (/demo?novo=1) não cai no cadastro antigo; responde

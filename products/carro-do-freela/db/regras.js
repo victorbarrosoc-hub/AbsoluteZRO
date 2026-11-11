@@ -236,8 +236,9 @@ function diaDe(v, campo = 'dia') {
   return v;
 }
 /**
- * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde, hora?: "HH:MM" }.
- * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale na meia diária.
+ * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde|noite, hora?: "HH:MM" }.
+ * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale fora do dia todo (a virada).
+ * 'noite' (0011) = das 18:00 (ou da hora) até 24:00; 'tarde' segue do meio-dia (ou da hora) até 24:00.
  */
 function agendaDe(corpo) {
   corpo = objeto(corpo);
@@ -245,7 +246,7 @@ function agendaDe(corpo) {
   const dia = diaDe(corpo.dia);
   if (!['fechado', 'negociando'].includes(corpo.estado)) throw new Recusa('estado', 'estado');
   const parte = corpo.parte === undefined || corpo.parte === null ? 'dia' : corpo.parte;
-  if (!['dia', 'manha', 'tarde'].includes(parte)) throw new Recusa('parte', 'parte');
+  if (!['dia', 'manha', 'tarde', 'noite'].includes(parte)) throw new Recusa('parte', 'parte');
   let hora = corpo.hora === undefined || corpo.hora === null || corpo.hora === '' ? null : corpo.hora;
   if (hora !== null) {
     if (typeof hora !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) throw new Recusa('hora', 'hora');
@@ -330,6 +331,15 @@ function respostaDe(corpo) {
   soEstes(corpo, ['estado', 'motivo']);
   if (!['aceita', 'recusada', 'cancelada'].includes(corpo.estado)) throw new Recusa('tipo', 'estado');
   return { estado: corpo.estado, motivo: corpo.estado === 'recusada' ? texto(corpo.motivo, 'motivo', 200) : null };
+}
+/** quem mandou pode cancelar? (0010, decisão do titular de 03/11/2026) A proposta `nova` sempre; a aceita também, MENOS o
+ *  job aceito com o dia já chegado em São Paulo (`dia_chegou`, lido do banco): do dia em diante, só o "Aconteceu? Não"
+ *  (0009). Brechó e job sem dia como eram. É a mesma régua da guarda das propostas no banco (0010), que confere de novo. */
+function cancelavel(l, sub) {
+  if (!l || l.de_sub !== sub) return false;
+  if (l.estado === 'nova') return true;
+  if (l.estado !== 'aceita') return false;
+  return !(l.tipo === 'job' && l.dia && l.dia_chegou === true);
 }
 /** PATCH /api/zro/propostas?id= com `acao: 'confirmar'` (0009): cada lado diz, depois do dia, se o job aconteceu */
 function confirmacaoDe(corpo) {
@@ -628,5 +638,5 @@ function missaoIdDe(corpo) { objeto(corpo); soEstes(corpo, ['acao', 'missao']); 
 
 module.exports = { missaoDe, missaoTrocarDe, missaoIdDe, disponibilidadeDe, faixaDe, PALETAS, paletaDe, corPropria, contraste, EMOJIS, TIPOS_MURAL, personalizarDe, mensagemDe, chamadaDe, reagirDe,
   sedeIdDe, fixarDe, responderChamadaDe, presencaDe, jobDe, nomearDe, lidoDe, digitandoDe, muralDe, linkDe,
-  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
+  guildaSemCampos, guildaDe, conviteDe, aceitarDe, verConviteDe, recusarDe, idConviteDe, removerDe, propostaDe, respostaDe, cancelavel, confirmacaoDe, postDe, anuncioDe, situacaoDe, denunciaDe, diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida,
   tabelaDe, tabelaSaida, seloSaida, TABELA_MAX };

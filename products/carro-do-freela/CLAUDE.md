@@ -224,8 +224,7 @@ moravam só no aparelho. Agora:
   app não tem UPDATE nem DELETE (resposta dada não vira) e o INSERT é por coluna (`em` é do banco). `selo_fatos` foi
   refeita: conta só job com as duas respostas `aconteceu = true` (o resto igual: quem fez, dia passado, mesmo
   contratante no mesmo dia uma vez); a `vitrine()` herda, então o ✓ de quem contrata vê também exige confirmação. A
-  guarda das propostas (0003) não mudou. ⚠️ Quem contratou ainda pode **cancelar** um job aceito depois do dia (regra da
-  0003) e aí ele sai do selo mesmo confirmado: é rebaixar, nunca inflar; mudar isso é decisão do titular.
+  guarda das propostas (0003) não mudou na 0009; a regra de cancelar mudou na 0010 (abaixo).
 - **API:** `PATCH /api/zro/propostas?id=` com `{acao:'confirmar', aconteceu:true|false}` (o mesmo PATCH de aceitar e
   recusar; `acao` no corpo escolhe o caminho) → `{proposta}`. Erros: 400 `{erro:'tipo', campo:'aconteceu'|'acao'}`,
   400 `{erro:'campo', campo}` para campo a mais, 404 `nao_achado`, 409 `{erro:'estado', campo:'estado'}` (não é job
@@ -242,6 +241,72 @@ moravam só no aparelho. Agora:
 - `/demo`: os jobs 4 e 8 estão confirmados (a conta segue com 63% e 2 jobs), o 10 espera a minha resposta (quem chamou
   já disse sim), o 11 espera quem chamou e o 12 é um job que eu contratei esperando a minha resposta.
   `CDF_DEMO.confirmacoes()` mostra o que a página respondeu. Suítes: `_confirmacao-testes.js` (banco) e `demo-real.js`.
+- **Decisão do titular (03/nov · 4): o job aceito só se cancela ATÉ A VÉSPERA** (`0010_cancelar_ate_o_dia`, arquivo
+  NOVO; 0000–0009 intactas). Até aqui quem mandou podia cancelar a proposta aceita a qualquer hora (guarda da 0003),
+  tirando do selo um job que os dois já tinham confirmado. A 0010 refaz `propostas_guarda()` (o corpo da 0003, fiel, +
+  um portão no caminho de cancelar): `tipo='job'`, `estado='aceita'` e `dia <= hoje em São Paulo` (a mesma conta da
+  0009) → `42501` "O job não se cancela depois que o dia chega.". Do dia em diante, o caminho é "Aconteceu? Não". Não
+  mudou: cancelar a `nova` (qualquer dia), job aceito sem `dia`, brechó, aceitar/recusar e "não muda depois de
+  mandada". ⚠️ O desmontar da missão (`guilda_missao_cancelar`, 0006) cancela pelo mesmo UPDATE, então no dia do job
+  com alguém que aceitou ele também é recusado (409 `dia`, a missão fica).
+  **API:** `PATCH /api/zro/propostas?id=` `{estado:'cancelada'}` do dia em diante → 409 `{erro:'dia', campo:'dia'}`
+  (conferido antes em `_dados.js` com `R.cancelavel`, e a frase da guarda vira o mesmo 409 em `responderErro`, para a
+  corrida e para a Sede). O GET e o PATCH (lidos com `COM_CONFIRMACAO`, que ganhou `dia_chegou`) devolvem
+  `cancelavel` em cada proposta (só quem mandou; a nova sempre; a aceita até a véspera). **Tela (só `REAL`):** o pé da
+  proposta que eu mandei (`nxEnvAcoes`) tem "Cancelar" (dois toques, "Cancelar mesmo?", `realCancelar`) só com
+  `cancelavel`; no dia, a nota diz "Depois do dia, responda se aconteceu." (`data-chegou`); depois do dia, o pé é o
+  "Aconteceu?" de sempre. Cancelada mostra "cancelada"/"Você cancelou.". `CFB_ERRO.dia` = "Depois do dia, responda se
+  aconteceu.". Antes da 0010 o site real não oferecia cancelar em lugar nenhum; Jobs leva ao detalhe da proposta, onde
+  mora o botão. `/demo` com a mesma regra e o mesmo 409. Suítes: `_cancelar-testes.js` (banco), um caso em
+  `_missoes-testes.js` e `demo-real.js`.
+
+## 11/nov — a noite na agenda (`0011_agenda_noite`, `_noite-testes.js`, `test/demo-real.js`)
+
+Retorno de um freela marcando trabalhos de verdade: *"boa parte dos trabalhos é à noite, não tem opção de marcar
+dizendo que a noite está ocupada; aí eu tô marcando como se fosse à tarde."*
+- **Banco (0011, arquivo NOVO; 0000–0010 intactas):** `agenda_dias.parte` aceita `noite` (o check refeito com o mesmo
+  nome, `agenda_dias_parte_check`). `faixa_da_agenda()` (0007, corpo fiel + um ramo): `noite` = [hora ou 18:00, 24:00).
+  ⚠️ **A tarde NÃO passou a acabar às 18:00**, de propósito: continua [hora ou 12:00, 24:00). Quem já marcou "tarde"
+  para um trabalho da noite (exatamente o retorno acima) ficaria livre à noite para a guilda e seria chamado para um
+  horário em que está ocupado; ocupado a mais a pessoa corrige, livre a mais marca duas pessoas no mesmo horário. A
+  folha diz "Tarde ocupada · livre de manhã" e "Noite ocupada · livre até as 18h". `pessoas()`/`agendas()` só repassam
+  `p` e não mudaram; `guilda_estado_em()` cruza pela `faixa_da_agenda()`. Uma linha por dia continua (um estado só).
+- **API:** `agendaDe` (`db/regras.js`) aceita `parte: 'noite'` (com ou sem `hora`); o resto como antes. `/demo` aceita
+  a noite, recusa parte desconhecida (400 `parte`), sorteia noites nas pessoas inventadas e a conta da demo nasce com
+  `dia(13)` = noite ocupada.
+- **Tela:** a folha do dia (`nxDiaFolha`) ganhou a 6ª opção "Noite ocupada" (`data-dia-op="noite"`). A célula:
+  `data-ag="meia" data-meia="noite"` = só o **último terço** hachurado + uma **lua** (`::before`, desenhada em CSS) no
+  canto de baixo, no computador e no celular; rótulo "noite", `aria-label` "meia diária, noite ocupada". Negociando à
+  noite (`neg` + `noite`) já pinta o último terço âmbar, mas a folha só oferece negociar o dia todo. A legenda conta a
+  noite em "meia diária". `NX_PARTE`/`NX_PARTE_EM` dão os nomes. `statusEu`/`realStatus`: noite = livre (como toda meia
+  diária). `janelaEu` virou `janelaDe(dec)` (`META_DIA.noite`, `OUTRA.noite` → "livre até as 18h"), e a linha da busca
+  de quem contrata agora mostra a janela também de pessoas do servidor (`c.remoto`, da agenda divulgada). A prévia
+  ganhou "Só à noite" (4 partes, `agenda-declarada.js`).
+
+## 03/nov · 3 — a Agenda em quatro estados, e o `/demo` dentro de um iframe (`test/demo-real.js`)
+
+Titular, no celular: *"Em agenda não consigo mais ver fácil quais dias estou livre, quais tô ocupado e quais estou
+negociando"*. O mês da Agenda nova (só `REAL`) pintava o estado só no número (verde, âmbar, um pontinho e um "ocupado"
+miúdo). Agora:
+- **Um estado por dia, na célula inteira** (`nxAgEstado`, mesma fonte do `statusEu`: job + `AGENDA {e,p,h}` do
+  servidor): **livre** = verde liso; **negociando** = âmbar com borda **tracejada** (job segurando ou dia declarado
+  `negociando`; se for só uma metade, a metade âmbar); **ocupado** = **hachura** cheia (dia `fechado/dia` ou com job
+  confirmado; o chip do job continua no computador e vira um traço ciano no celular); **meia diária** = **metade
+  hachurada** (em cima a manhã, embaixo a tarde; `fechado` com `p` manha/tarde). Nunca só pela cor: liso, tracejado,
+  hachura e metade. `data-ag` (livre|neg|ocup|meia|passou) e `data-meia` nas células do computador (`.nx-dia`), do
+  celular (`.nx-mini-d`, 54px de altura), da legenda e da folha do dia (`.nx-sw`), todos com a classe `.nx-ag-c`.
+  `data-est` (o `statusEu`) continua na célula do computador. Tokens `--ag-oc1/--ag-oc2/--ag-oc-tx` (escuro e claro) e
+  `--ag-livre/--ag-neg/--ag-hachura` em `.nx-ag-mes,.nx-folha`.
+- **A legenda é o resumo e o filtro** (`.nx-leg`, em cima do mês): "23 livres · 1 negociando · 3 ocupados · 1 meia
+  diária", contados de hoje em diante no mês visível; só aparece o estado que existe. Tocar acende só aqueles dias
+  (`NX.agFiltro`, `data-apaga` nos outros); tocar de novo volta. No celular é uma linha de quatro blocos. Saíram o
+  número grande "28 dias livres", a barra e "N jobs · N dias bloqueados" do trilho.
+- **Hoje** mantém o anel (agora `outline`, para a borda ficar com o estado). "Bloquear dias" marca com borda cheia e ✓.
+  A folha do dia (`nxDiaFolha`) ganhou o desenho de cada opção e a ordem Livre, Negociando ("segurando a data"),
+  Ocupado, Manhã ocupada, Tarde ocupada; `declarar`/`liberarDia` como antes.
+- **`/demo` num iframe:** `zroLigavel()` desligava a conta em qualquer iframe, então a demonstração embutida (uma prévia)
+  ficava vazia. Agora `(!emIframe()||!!window.CDF_DEMO)`: só o `src/demo.js` define `CDF_DEMO`, então o site de verdade
+  num iframe segue com a conta desligada. A suíte cobra os dois.
 
 ## 02/nov · 3 — telas novas (desenho aprovado pelo titular; `test/demo-real.js`)
 

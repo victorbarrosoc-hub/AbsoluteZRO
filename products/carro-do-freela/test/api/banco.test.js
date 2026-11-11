@@ -514,7 +514,7 @@ test('rotas: a agenda — declara, lê, libera; livre é ausência; a outra cont
   assert.deepEqual(ag, { [d1]: { e: 'negociando', p: 'dia' }, [d2]: { e: 'negociando', p: 'manha', h: '13:30' } });
   /* recusas: dia que não existe, estado livre (livre é DELETE), hora no dia inteiro, campo de fora */
   for (const corpo of [{ dia: '2026-02-31', estado: 'fechado' }, { dia: d1, estado: 'livre' }, { dia: d1, estado: 'fechado', hora: '10:00' },
-    { dia: d1, estado: 'fechado', telefone: '84999990000' }, { dia: d1, estado: 'fechado', parte: 'noite' }]) {
+    { dia: d1, estado: 'fechado', telefone: '84999990000' }, { dia: d1, estado: 'fechado', parte: 'madrugada' }]) {
     assert.equal((await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo })).status, 400, JSON.stringify(corpo));
   }
   assert.equal((await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: hojeMais(400), estado: 'fechado' } })).status, 400, 'fora da janela de um ano');
@@ -712,6 +712,10 @@ test('rotas: limite de pedidos por IP (freio por instância) e a régua de orige
 require('./_tabela-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
 /* o job aconteceu? (0009): os dois lados confirmam depois do dia, e só o confirmado pelos dois conta no selo */
 require('./_confirmacao-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
+/* cancelar só até a véspera (0010): do dia do job em diante, só o "Aconteceu? Não" */
+require('./_cancelar-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
+/* a noite na agenda (0011): ocupado à noite segue livre de manhã e à tarde */
+require('./_noite-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais }));
 /* a guilda (0004, fase 2): suítes em _guilda-testes.js, com o mesmo banco, a mesma Absolute ZRO falsa e o mesmo servidor */
 require('./_guilda-testes.js')(() => ({ RAIZ, db, D, zro, entrar, pedir, admin, URL_TESTE, hojeMais, FREELA, OUTRA, TERCEIRA }));
 /* a Sede (0005): chat, quadro, XP, personalização, imagens e lugares — o mesmo banco, a mesma Absolute ZRO falsa */
