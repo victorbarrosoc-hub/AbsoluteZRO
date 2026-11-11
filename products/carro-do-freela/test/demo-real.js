@@ -15,7 +15,9 @@
  *   - (03/11) a Agenda mostra os quatro estados na célula inteira (livre, negociando, ocupado, meia diária), com a
  *     legenda que conta o mês e filtra, no computador e no celular; e o /demo funciona dentro de um iframe;
  *   - (03/11, 0010) o job aceito só se cancela até a véspera: do dia em diante não há "Cancelar" e o servidor recusa
- *     (409 dia); a proposta nova cancela (dois toques).
+ *     (409 dia); a proposta nova cancela (dois toques);
+ *   - (11/11, 0011) a noite: "Noite ocupada" vai ao servidor como parte noite, a célula mostra o último terço hachurado e
+ *     uma lua, e o dia segue livre de manhã e à tarde (para mim e para quem contrata).
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -191,10 +193,40 @@ const { CHROME, ARGS } = require('./_navegador');
     document.querySelector('#nx-ag [data-nx="ag-bloq-ok"]').click(); await new Promise(r => setTimeout(r, 150));
     return { sw, neg, antes, depois1, marcados, ok, bloq: [livres[1], livres[2]].map(k => document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').dataset.ag + ':' + (AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p)),
       depois2: { livre: n0('livre'), ocup: n0('ocup') }, put: CDF_DEMO.pedidos.filter(x => x === 'PUT agenda').length - put0 } });
-  t(m.sw.join() === 'livre,neg,ocup,meia/manha,meia/tarde' && m.neg === 'neg' && m.depois1.livre === m.antes.livre - 1 && m.depois1.neg === m.antes.neg + 1,
+  t(m.sw.join() === 'livre,neg,ocup,meia/manha,meia/tarde,meia/noite' && m.neg === 'neg' && m.depois1.livre === m.antes.livre - 1 && m.depois1.neg === m.antes.neg + 1,
     '⟶⟶ a folha do dia mostra o desenho de cada estado, e "Negociando" pinta o dia e conta na legenda (' + JSON.stringify([m.sw, m.antes, m.depois1]) + ')');
   t(m.marcados === 2 && m.ok === 'Bloquear 2 dias' && m.bloq.every(x => x === 'ocup:fechado/dia') && m.depois2.livre === m.antes.livre - 3 && m.depois2.ocup === m.antes.ocup + 2 && m.put === 3,
     '⟶⟶ "Bloquear dias" marca vários, vira ocupado no servidor e a legenda acompanha (' + JSON.stringify([m.bloq, m.depois2, m.put]) + ')');
+
+  /* 11/11 · A NOITE (freela: "boa parte dos trabalhos é à noite, não tem opção de marcar dizendo que a noite está
+     ocupada"). "Noite ocupada" na folha vai ao servidor como parte 'noite' (0011); a célula mostra só o último terço
+     hachurado e uma lua (não só a cor nem só a altura); o dia continua livre de manhã e à tarde, para mim e para quem
+     contrata; a legenda conta como meia diária. O dia 13 da conta da demonstração já nasce com a noite ocupada. */
+  m = await p.evaluate(async () => { NX.agMes = null; NX.agFiltro = null; nxAgenda();
+    const k = [...document.querySelectorAll('#nx-ag .nx-cal .nx-dia[data-ag="livre"]:not([data-hoje])')].map(c => c.dataset.k)[0];
+    const n0 = e => +((document.querySelector('#nx-ag .nx-leg-i[data-f="' + e + '"] b') || {}).textContent || 0), antes = { livre: n0('livre'), meia: n0('meia') };
+    document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]').click(); await new Promise(r => setTimeout(r, 100));
+    const op = document.querySelector('#nx-folha [data-dia-op="noite"]'), txt = op ? op.innerText.replace(/\n/g, ' · ') : '';
+    op.click(); await new Promise(r => setTimeout(r, 200));
+    const c = document.querySelector('#nx-ag .nx-cal [data-k="' + k + '"]'), s = getComputedStyle(c), lua = getComputedStyle(c, '::before');
+    const srv = (await (await fetch('/api/zro/agenda')).json()).agenda[k];
+    return { txt, k, dec: AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p, srv, ag: c.dataset.ag + '/' + c.dataset.meia, rot: c.getAttribute('aria-label'), dl: (c.querySelector('.nx-dl') || {}).textContent,
+      img: s.backgroundImage, lua: lua.content !== 'none' && lua.content !== 'normal' && parseFloat(lua.width) >= 8, st: statusEu(nxD(k)), jan: (janelaEu(k) || {}).txt,
+      antes, depois: { livre: n0('livre'), meia: n0('meia') } } });
+  t(/Noite ocupada/.test(m.txt) && /18h/.test(m.txt) && m.dec === 'fechado/noite' && m.srv && m.srv.e === 'fechado' && m.srv.p === 'noite',
+    'Noite: a folha do dia tem "Noite ocupada" (livre até as 18h), e marcar vai ao servidor com parte noite (' + JSON.stringify([m.txt, m.dec, m.srv]) + ')');
+  t(m.ag === 'meia/noite' && /noite ocupada/.test(m.rot) && m.dl === 'noite' && /66\.6/.test(m.img) && /repeating-linear-gradient/.test(m.img) && m.lua,
+    '⟶⟶ a célula mostra a noite: o último terço hachurado e uma lua, com o rótulo "noite" (' + JSON.stringify([m.ag, m.rot, m.dl, m.lua]) + ')');
+  t(m.st === 'livre' && m.jan === 'livre até as 18h' && m.depois.livre === m.antes.livre - 1 && m.depois.meia === m.antes.meia + 1,
+    '⟶⟶ ocupado à noite segue livre de manhã e à tarde ("' + m.jan + '"), e a legenda conta como meia diária (' + JSON.stringify([m.antes, m.depois]) + ')');
+  m = await p.evaluate(() => { const k = key(addD(HOJE, 13)), d = AGENDA[k];
+    /* quem contrata: a pessoa ocupada à noite continua livre na busca, com a janela dita por ela */
+    const c = CREW.find(x => x.remoto && x.agendaSrv && Object.keys(x.agendaSrv).some(q => x.agendaSrv[q].p === 'noite' && x.agendaSrv[q].e === 'fechado'));
+    const q = c && Object.keys(c.agendaSrv).find(q => c.agendaSrv[q].p === 'noite' && c.agendaSrv[q].e === 'fechado'), i = q ? Math.round((nxD(q) - HOJE) / 864e5) : null;
+    const sd = S.dia; S.dia = i; const linha = c ? linhaDe(c).innerText.replace(/\n/g, ' · ') : ''; S.dia = sd;
+    return { semente: d && d.e + '/' + d.p, outro: !!c, st: c ? status(c, i) : null, linha } });
+  t(m.semente === 'fechado/noite' && m.outro && m.st === 'livre' && /livre até as 18h/.test(m.linha),
+    '⟶⟶ para quem contrata, a pessoa ocupada à noite é livre naquele dia, e a linha da busca diz "livre até as 18h" (' + JSON.stringify(m) + ')');
 
   /* o celular (390×844): o mesmo estado no mês pequeno, a legenda numa linha, nada sai da tela */
   const ctxCel = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -231,6 +263,10 @@ const { CHROME, ARGS } = require('./_navegador');
   await pc.click('#nx-folha [data-dia-op="tarde"]'); await pc.waitForTimeout(300);
   m = await pc.evaluate(k => { const c = document.querySelector('#nx-ag .nx-minical [data-k="' + k + '"]'); return [c.dataset.ag, c.dataset.meia, AGENDA[k] && AGENDA[k].e + '/' + AGENDA[k].p].join('|') }, kCel);
   t(m === 'meia|tarde|fechado/tarde', '⟶⟶ tocar num dia no celular abre a folha, e "Tarde ocupada" vira meia diária (' + m + ')');
+  m = await pc.evaluate(async () => { const d = addD(HOJE, 13), k = key(d); NX.agFiltro = null; NX.agMes = new Date(d.getFullYear(), d.getMonth(), 1); nxAgenda();
+    const c = document.querySelector('#nx-ag .nx-minical [data-k="' + k + '"]'), s = getComputedStyle(c), lua = getComputedStyle(c, '::before'), r = c.getBoundingClientRect();
+    return [c.dataset.ag + '/' + c.dataset.meia, /66\.6/.test(s.backgroundImage), lua.content !== 'none' && parseFloat(lua.right) <= 6, r.height >= 44, /noite ocupada/.test(c.getAttribute('aria-label'))].join('|') });
+  t(m === 'meia/noite|true|true|true|true', '⟶⟶ no celular, o dia com a noite ocupada: o último terço hachurado e a lua no canto (' + m + ')');
   t(!errosC.length, '⟶⟶ zero erro de página no celular' + (errosC.length ? ': ' + errosC.join(' | ') : ''));
   await ctxCel.close();
 

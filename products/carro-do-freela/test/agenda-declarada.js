@@ -134,7 +134,7 @@ const {servir,URL}=require('./_servir.js');
   const t1=await p.evaluate(()=>({dec:decDe(S.selDia),formJob:!!document.getElementById('ag-form'),
     partes:[...document.querySelectorAll('#ag-detail [data-decp]')].length}));
   t(t1.dec&&t1.dec.e==='fechado'&&t1.dec.p==='dia','tocar em "Fechado" fecha o dia inteiro por padrão');
-  t(t1.partes===3,'e abre a escolha da parte do dia: '+t1.partes+' opções');
+  t(t1.partes===4,'e abre a escolha da parte do dia (dia, manhã, tarde e noite, 11/11): '+t1.partes+' opções');
   t(!t1.formJob,'⟶⟶ com o dia inteiro fechado, o formulário de job SOME — dia fechado não recebe job');
 
   await p.click('#ag-detail [data-decp="manha"]'); await p.waitForTimeout(250);

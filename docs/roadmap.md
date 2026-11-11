@@ -334,6 +334,15 @@ Pedidos do titular de 03/11/2026 (prints do iPhone). Sem migração; só o proje
   permissão. O checklist pessoal flutuante no computador ficou de fora.
 - Exportar o fluxo como imagem (PNG/PDF do desenho): cancelado pelo titular.
 
+## Carro do Freela: a noite na agenda (11/11/2026, ramo `claude/carro-agenda`, `0011_agenda_noite`)
+
+- ✅ Retorno de um freela ("boa parte dos trabalhos é à noite, não tem opção de marcar dizendo que a noite está
+  ocupada"): a folha do dia ganhou **Noite ocupada** ("livre até as 18h"). No banco, a parte `noite` vale das 18:00 (ou
+  da hora dita) até 24:00; a tarde continua do meio-dia até 24:00, para quem já marcou "tarde" no lugar da noite não
+  ficar livre à noite. No mês, a noite é o último terço hachurado com uma lua, e conta como meia diária na legenda.
+  Para quem contrata e para a guilda, ocupado à noite segue livre de manhã e à tarde.
+- ⬜ "Negociando à noite": o banco e a célula já aceitam; a folha só oferece negociar o dia todo. Aguarda o titular.
+
 ## Carro do Freela: a Agenda em quatro estados (03/11/2026, ramo `claude/carro-telas`)
 
 - ✅ Pedido do titular ("não consigo mais ver fácil quais dias estou livre, quais tô ocupado e quais estou negociando"):

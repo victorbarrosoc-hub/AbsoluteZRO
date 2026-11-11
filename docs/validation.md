@@ -300,6 +300,24 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
   não coube no disco desta máquina (o Postgres entrou em recuperação por falta de espaço).
 - Maestro: lint, format, typecheck e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
 
+## Carro do Freela: a noite na agenda (11/11/2026, `0011_agenda_noite`)
+
+- Banco local (Postgres 16): `npm run test:banco` **68/68** (era 65; 3 novos em `test/api/_noite-testes.js`): o banco
+  aceita `parte = 'noite'` (com e sem hora) e segue recusando parte desconhecida e hora no dia inteiro;
+  `faixa_da_agenda` dá a noite [18:00, 24:00) ou [hora, 24:00), e manhã, tarde e dia iguais aos da 0007; ocupado à noite
+  é livre para a guilda das 08:00 às 12:00 e das 13:00 às 18:00 (encosta), ocupado das 17:00 às 19:00, à noite e no dia
+  todo; com a hora 21:00, livre das 18:00 às 21:00. As rotas: PUT `parte: 'noite'` → 200, `madrugada` → 400, e quem
+  contrata lê `{e, p: 'noite'}` em `/api/zro/pessoas`.
+- `npm run test:api` **49/49**.
+- `test/demo-real.js` **83/83** (era 78): "Noite ocupada" na folha do dia vai ao servidor como parte noite; a célula
+  mostra o último terço hachurado, a lua e o rótulo "noite"; o dia segue livre ("livre até as 18h") e a legenda conta
+  como meia diária; para quem contrata, a pessoa ocupada à noite é livre e a linha da busca diz "livre até as 18h"; no
+  celular, o mesmo desenho. `test/agenda-declarada.js` 35/35 (a prévia oferece 4 partes).
+- Bateria `CHROME=/opt/pw-browsers/chromium node test/run.js`: **93 de 95**. `conta-zro` e `sem-zoom` falharam só em
+  paralelo e passaram sozinhas; `colisao` pegou um seletor composto novo (corrigido; passa sozinha);
+  `porta-malas-real` falha também sem esta mudança ("dentro do quadro: só Transferências e Drive"), já vinha assim.
+  `scan-secrets`: nenhum segredo.
+
 ## Carro do Freela: o job aceito só se cancela até a véspera (03/11/2026, `0010_cancelar_ate_o_dia`)
 
 - Banco local (Postgres 16): `npm run test:banco` **65/65** (era 61; 3 novos em `test/api/_cancelar-testes.js` e 1 em

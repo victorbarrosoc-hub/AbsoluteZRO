@@ -236,8 +236,9 @@ function diaDe(v, campo = 'dia') {
   return v;
 }
 /**
- * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde, hora?: "HH:MM" }.
- * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale na meia diária.
+ * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde|noite, hora?: "HH:MM" }.
+ * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale fora do dia todo (a virada).
+ * 'noite' (0011) = das 18:00 (ou da hora) até 24:00; 'tarde' segue do meio-dia (ou da hora) até 24:00.
  */
 function agendaDe(corpo) {
   corpo = objeto(corpo);
@@ -245,7 +246,7 @@ function agendaDe(corpo) {
   const dia = diaDe(corpo.dia);
   if (!['fechado', 'negociando'].includes(corpo.estado)) throw new Recusa('estado', 'estado');
   const parte = corpo.parte === undefined || corpo.parte === null ? 'dia' : corpo.parte;
-  if (!['dia', 'manha', 'tarde'].includes(parte)) throw new Recusa('parte', 'parte');
+  if (!['dia', 'manha', 'tarde', 'noite'].includes(parte)) throw new Recusa('parte', 'parte');
   let hora = corpo.hora === undefined || corpo.hora === null || corpo.hora === '' ? null : corpo.hora;
   if (hora !== null) {
     if (typeof hora !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) throw new Recusa('hora', 'hora');

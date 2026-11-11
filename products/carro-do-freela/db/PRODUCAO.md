@@ -74,6 +74,10 @@ reprova o build.
 - Desde a 0010 (03/11/2026, também sozinha no build de produção; só troca o corpo de `propostas_guarda()`):
   `select prosrc like '%depois que o dia chega%' from pg_proc where oid = 'carro_do_freela.propostas_guarda'::regproc;`
   responde `true`. Na tela, um job aceito que já chegou ao dia não mostra "Cancelar" em Propostas.
+- Desde a 0011 (11/11/2026, também sozinha no build de produção; troca o check de `agenda_dias.parte` e o corpo de
+  `faixa_da_agenda()`): `select carro_do_freela.faixa_da_agenda('noite', null)::text;` responde `[1080,1440)` e
+  `select pg_get_constraintdef(oid) from pg_constraint where conname = 'agenda_dias_parte_check';` cita `noite`. Na tela,
+  a folha do dia da Agenda mostra "Noite ocupada".
 
 ## Não ligar sem nova decisão
 

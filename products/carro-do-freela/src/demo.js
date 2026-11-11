@@ -62,7 +62,7 @@
       var r = rnd();
       if (r < 0.22) agenda[dia(d)] = { e: 'fechado', p: 'dia' };
       else if (r < 0.3) agenda[dia(d)] = { e: 'negociando', p: 'dia' };
-      else if (r < 0.36) agenda[dia(d)] = { e: 'fechado', p: rnd() < 0.5 ? 'manha' : 'tarde' };
+      else if (r < 0.36) { var q = rnd(); agenda[dia(d)] = { e: 'fechado', p: q < 0.4 ? 'manha' : q < 0.7 ? 'tarde' : 'noite' } } /* (11/11) a noite também (0011) */
     }
     /* (03/11) a tabela inventada de parte das pessoas (de 50 em 50 reais), o "topo viajar" e o selo de algumas */
     var fs = f1 === f2 ? [f1] : [f1, f2], tab = null;
@@ -78,7 +78,7 @@
 
   /* a conta da demonstração */
   var euAgenda = {};
-  euAgenda[dia(2)] = { e: 'fechado', p: 'dia' }; euAgenda[dia(5)] = { e: 'negociando', p: 'dia' }; euAgenda[dia(9)] = { e: 'fechado', p: 'manha' };
+  euAgenda[dia(2)] = { e: 'fechado', p: 'dia' }; euAgenda[dia(5)] = { e: 'negociando', p: 'dia' }; euAgenda[dia(9)] = { e: 'fechado', p: 'manha' }; euAgenda[dia(13)] = { e: 'fechado', p: 'noite' };
   var perfil = { nome: 'Você (demonstração)', cidade: 'Natal', uf: 'RN', funcoes: ['Op. de câmera', 'Editor'], nichos: ['Publicidade', 'Clipe'],
     bio: 'Conta de demonstração: mexa à vontade, nada é salvo.', portfolio: null, visibilidade: 'contratantes', arroba: 'voce.demo', atualizado_em: quando(2) };
   if (NOVO) perfil = null;
@@ -247,6 +247,7 @@
       return J(200, { itens: inventario });
     }
     if (r === 'agenda') {
+      if (met === 'PUT' && ['dia', 'manha', 'tarde', 'noite'].indexOf(c.parte || 'dia') < 0) return J(400, { erro: 'parte', campo: 'parte' });
       if (met === 'PUT') { euAgenda[c.dia] = { e: c.estado, p: c.parte || 'dia', h: c.hora || undefined }; return J(200, { dia: c.dia, declaracao: euAgenda[c.dia] }) }
       if (met === 'DELETE') { delete euAgenda[q.get('dia')]; return J(204) }
       return J(200, { agenda: euAgenda });

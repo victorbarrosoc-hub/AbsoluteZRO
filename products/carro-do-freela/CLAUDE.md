@@ -260,6 +260,29 @@ moravam só no aparelho. Agora:
   mora o botão. `/demo` com a mesma regra e o mesmo 409. Suítes: `_cancelar-testes.js` (banco), um caso em
   `_missoes-testes.js` e `demo-real.js`.
 
+## 11/nov — a noite na agenda (`0011_agenda_noite`, `_noite-testes.js`, `test/demo-real.js`)
+
+Retorno de um freela marcando trabalhos de verdade: *"boa parte dos trabalhos é à noite, não tem opção de marcar
+dizendo que a noite está ocupada; aí eu tô marcando como se fosse à tarde."*
+- **Banco (0011, arquivo NOVO; 0000–0010 intactas):** `agenda_dias.parte` aceita `noite` (o check refeito com o mesmo
+  nome, `agenda_dias_parte_check`). `faixa_da_agenda()` (0007, corpo fiel + um ramo): `noite` = [hora ou 18:00, 24:00).
+  ⚠️ **A tarde NÃO passou a acabar às 18:00**, de propósito: continua [hora ou 12:00, 24:00). Quem já marcou "tarde"
+  para um trabalho da noite (exatamente o retorno acima) ficaria livre à noite para a guilda e seria chamado para um
+  horário em que está ocupado; ocupado a mais a pessoa corrige, livre a mais marca duas pessoas no mesmo horário. A
+  folha diz "Tarde ocupada · livre de manhã" e "Noite ocupada · livre até as 18h". `pessoas()`/`agendas()` só repassam
+  `p` e não mudaram; `guilda_estado_em()` cruza pela `faixa_da_agenda()`. Uma linha por dia continua (um estado só).
+- **API:** `agendaDe` (`db/regras.js`) aceita `parte: 'noite'` (com ou sem `hora`); o resto como antes. `/demo` aceita
+  a noite, recusa parte desconhecida (400 `parte`), sorteia noites nas pessoas inventadas e a conta da demo nasce com
+  `dia(13)` = noite ocupada.
+- **Tela:** a folha do dia (`nxDiaFolha`) ganhou a 6ª opção "Noite ocupada" (`data-dia-op="noite"`). A célula:
+  `data-ag="meia" data-meia="noite"` = só o **último terço** hachurado + uma **lua** (`::before`, desenhada em CSS) no
+  canto de baixo, no computador e no celular; rótulo "noite", `aria-label` "meia diária, noite ocupada". Negociando à
+  noite (`neg` + `noite`) já pinta o último terço âmbar, mas a folha só oferece negociar o dia todo. A legenda conta a
+  noite em "meia diária". `NX_PARTE`/`NX_PARTE_EM` dão os nomes. `statusEu`/`realStatus`: noite = livre (como toda meia
+  diária). `janelaEu` virou `janelaDe(dec)` (`META_DIA.noite`, `OUTRA.noite` → "livre até as 18h"), e a linha da busca
+  de quem contrata agora mostra a janela também de pessoas do servidor (`c.remoto`, da agenda divulgada). A prévia
+  ganhou "Só à noite" (4 partes, `agenda-declarada.js`).
+
 ## 03/nov · 3 — a Agenda em quatro estados, e o `/demo` dentro de um iframe (`test/demo-real.js`)
 
 Titular, no celular: *"Em agenda não consigo mais ver fácil quais dias estou livre, quais tô ocupado e quais estou

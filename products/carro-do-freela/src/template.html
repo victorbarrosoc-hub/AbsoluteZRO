@@ -7461,8 +7461,14 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-ag-c[data-ag="meia"][data-meia="tarde"]{background:linear-gradient(180deg,var(--ag-livre) 50%,transparent 50%),var(--ag-hachura)}
 .nx-ag-c[data-ag="neg"][data-meia="manha"]{background:linear-gradient(180deg,var(--ag-neg) 50%,var(--ag-livre) 50%)}
 .nx-ag-c[data-ag="neg"][data-meia="tarde"]{background:linear-gradient(180deg,var(--ag-livre) 50%,var(--ag-neg) 50%)}
+/* (11/11) a noite: só o último terço (das 18h em diante) e uma lua no canto, para não depender da altura da faixa */
+.nx-ag-c[data-ag="meia"][data-meia="noite"]{background:linear-gradient(180deg,var(--ag-livre) 66.6%,transparent 66.6%),var(--ag-hachura)}
+.nx-ag-c[data-ag="neg"][data-meia="noite"]{background:linear-gradient(180deg,var(--ag-livre) 66.6%,var(--ag-neg) 66.6%)}
+.nx-ag-c[data-meia="noite"]:not(.nx-sw)::before{content:"";position:absolute;right:8px;bottom:8px;width:11px;height:11px;border-radius:50%;box-shadow:inset -3.5px -1px 0 0 var(--ag-oc-tx);pointer-events:none}
+.nx-ag-c[data-ag="neg"][data-meia="noite"]:not(.nx-sw)::before{box-shadow:inset -3.5px -1px 0 0 var(--nx-esp)}
 .nx-ag-c[data-ag="meia"]>b,.nx-ag-c[data-ag="meia"] .nx-dl{color:var(--cal)}
-.nx-dia[data-ag="meia"][data-meia="tarde"] .nx-dl{margin-top:auto}
+.nx-dia[data-ag="meia"][data-meia="tarde"] .nx-dl,.nx-dia[data-meia="noite"] .nx-dl{margin-top:auto}
+.nx-dia[data-meia="noite"] .nx-dl{padding-right:16px}
 .nx-dia[data-ag="passou"]{background:transparent;cursor:default}
 .nx-dia[data-ag="passou"]>b{color:var(--cal-tenue);font-weight:500}
 .nx-dia[data-fora]{opacity:.45;background:transparent}
@@ -7512,6 +7518,7 @@ button.nx-li:hover{background:var(--nx-c2)}
 .nx-mini-d[data-ag="passou"]>b{color:var(--cal-tenue);font-weight:500}
 .nx-mini-job{display:block;width:14px;height:3px;border-radius:2px;background:var(--ciano)}
 .nx-mini-d[data-bloq]::after{top:3px;right:3px;width:16px;height:16px;font-size:10px}
+.nx-minical .nx-mini-d[data-meia="noite"]::before{right:4px;bottom:4px;width:9px;height:9px}
 /* ---------- Jobs ---------- */
 #nx-jb{padding:0}
 .nx-jb-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:32px;align-items:start;padding:clamp(28px,4vw,56px) clamp(20px,4vw,64px);
@@ -13027,7 +13034,10 @@ let JOBS=REAL?[]:[
                                       de declaração, nunca um valor: assim
                                       "liberar o dia" é apagar, e não existe
                                       estado órfão para limpar depois.
-     p   "dia" | "manha" | "tarde"  — a que PARTE do dia aquilo se aplica.
+     p   "dia" | "manha" | "tarde" | "noite" — a que PARTE do dia aquilo se aplica
+                                      (11/11, 0011: "boa parte dos trabalhos
+                                      é à noite"; a noite = das 18h em diante,
+                                      a tarde segue do meio-dia em diante).
                                       É o eixo da meia diária, e ele é
                                       independente do estado: dá para estar
                                       negociando só a manhã.
@@ -13041,9 +13051,9 @@ let JOBS=REAL?[]:[
    ===================================================================== */
 const AGENDA={};
 const decDe=k=>AGENDA[k]||null;
-const META_DIA={dia:"o dia todo",manha:"de manhã",tarde:"à tarde"};
-/* a metade que SOBRA de uma declaração de meia diária */
-const OUTRA={manha:"tarde",tarde:"manha"};
+const META_DIA={dia:"o dia todo",manha:"de manhã",tarde:"à tarde",noite:"à noite",ate18:"até as 18h"};
+/* a metade que SOBRA de uma declaração de meia diária (a noite ocupada deixa livre até as 18h) */
+const OUTRA={manha:"tarde",tarde:"manha",noite:"ate18"};
 
 function declarar(k,e,p,h){
   if(!e){ delete AGENDA[k]; realAgendaSalvar(k); return }
@@ -13071,8 +13081,10 @@ function statusEu(d){const k=key(d),js=jobsEm(k);
 /* O que sobrou do dia, em palavras da pessoa — nunca em hora inventada.
    Devolve null quando não há nada a dizer (dia livre inteiro, ou fechado
    inteiro: nos dois casos o status já diz tudo). */
-function janelaEu(k){
-  const dec=decDe(k); if(!dec||dec.p==="dia") return null;
+function janelaEu(k){ return janelaDe(decDe(k)) }
+/* a mesma frase para quem contrata, da agenda que a pessoa divulgou (11/11: ocupada à noite = livre até as 18h) */
+function janelaDe(dec){
+  if(!dec||!dec.p||dec.p==="dia"||!OUTRA[dec.p]) return null;
   const sobra=OUTRA[dec.p];
   const quando=dec.h
     ? (dec.p==="manha"?"a partir das "+dec.h:"até as "+dec.h)
@@ -15504,7 +15516,7 @@ function linhaDe(c){
      verdade, cada pessoa traz a declaração dela e esta linha passa a valer
      para todas sem mudar de forma. */
   const jan=janelaLivre(c,S.dia);
-  const decl=c.me?janelaEu(key(dateAt(S.dia))):null;
+  const decl=c.me?janelaEu(key(dateAt(S.dia))):c.remoto?janelaDe(c.agendaSrv&&c.agendaSrv[key(dateAt(S.dia))]):null;
   const b=document.createElement("button");b.className="row";
   /* Quatro informações: quem é, o que faz, se está livre, quanto demora a
      responder. O resto não sumiu do produto — equipamento e funções extras
@@ -16633,9 +16645,9 @@ function drawDetalhe(){
         '</div>'+
         (dec
           ? '<div class="decbts" style="margin-top:9px">'+
-              ["dia","manha","tarde"].map(p=>
+              ["dia","manha","tarde","noite"].map(p=>
                 '<button class="decb sm'+(dec.p===p?" on":"")+'" data-decp="'+p+'">'+
-                  (p==="dia"?"Diária inteira":p==="manha"?"Só de manhã":"Só à tarde")+'</button>').join("")+
+                  (p==="dia"?"Diária inteira":p==="manha"?"Só de manhã":p==="tarde"?"Só à tarde":"Só à noite")+'</button>').join("")+
             '</div>'+
             (dec.p!=="dia"
               ? '<div class="dechora"><span class="lab">Vira às</span>'+
@@ -25025,6 +25037,8 @@ function nxRecusar(pr){
    metade valem para quem não distingue verde de âmbar. A fonte é a de sempre: o job (segurando = negociando) e o que
    a pessoa declarou na agenda (AGENDA {e,p,h}, que mora no servidor) — o mesmo modelo de statusEu(). */
 var NX_AG_ORDEM=["livre","neg","ocup","meia"];
+/* (11/11) a noite entra como meia diária: só a faixa de baixo (o último terço) e uma lua; manhã e tarde seguem livres */
+var NX_PARTE={manha:"manhã",tarde:"tarde",noite:"noite"}, NX_PARTE_EM={manha:"de manhã",tarde:"à tarde",noite:"à noite"};
 var NX_AG_NOME={livre:["livre","livres","livres"],neg:["negociando","negociando","em negociação"],ocup:["ocupado","ocupados","ocupados"],meia:["meia diária","meias diárias","de meia diária"]};
 function nxAgEstado(d,k){
   if(d<HOJE) return {ag:"passou"};
@@ -25037,8 +25051,8 @@ function nxAgEstado(d,k){
 }
 function nxAgRot(s){
   if(s.ag==="passou") return "já passou";
-  if(s.ag==="meia") return "meia diária, "+(s.meia==="manha"?"manhã":"tarde")+" ocupada";
-  return NX_AG_NOME[s.ag][0]+(s.meia?" "+(s.meia==="manha"?"de manhã":"à tarde"):"");
+  if(s.ag==="meia") return "meia diária, "+NX_PARTE[s.meia]+" ocupada";
+  return NX_AG_NOME[s.ag][0]+(s.meia?" "+NX_PARTE_EM[s.meia]:"");
 }
 function nxAgAttrs(s,k){
   var f=NX.agFiltro;
@@ -25055,7 +25069,7 @@ function nxAgenda(){
     if(!fora&&!passou){ resta++; conta[s.ag]++ }
     var conteudo=js.map(function(j){ var pr=j.srv&&PROPOSTAS.find(function(x){return x.srv===j.srv});
         return '<span class="nx-dj">'+esc(nxJobTit({desc:pr&&pr.desc,func:j.func}))+(pr&&pr.ini?'<small>'+esc(pr.ini.slice(0,2)+"h")+'</small>':'')+'</span>' }).join("")+
-      (!js.length&&!passou&&s.ag!=="livre"?'<span class="nx-dl">'+(s.ag==="meia"?(s.meia==="manha"?"manhã":"tarde"):s.ag==="neg"?"negociando":"ocupado")+'</span>':'');
+      (!js.length&&!passou&&s.ag!=="livre"?'<span class="nx-dl">'+(s.ag==="meia"?NX_PARTE[s.meia]:s.ag==="neg"?"negociando":"ocupado")+'</span>':'');
     var rot=d.getDate()+" de "+MESL[d.getMonth()]+", "+nxAgRot(s)+(js.length?", "+pl(js.length,"job","jobs"):"");
     cel+='<button type="button" class="nx-dia nx-ag-c" data-nx="ag-dia" data-k="'+k+'" data-est="'+(passou?"passou":statusEu(d))+'"'+(fora?' data-fora="1"':nxAgAttrs(s,k))+(js.length?' data-job="1"':'')+
       (passou?' disabled':'')+' aria-label="'+esc(rot)+'"><b>'+pad(d.getDate())+'</b>'+conteudo+'</button>';
@@ -25089,10 +25103,10 @@ function nxAgenda(){
 }
 function nxDiaFolha(k){
   var d=nxD(k), dec=decDe(k), js=jobsEm(k), at=!dec?"livre":dec.e==="negociando"?"segura":dec.p==="dia"?"dia":dec.p;
-  var sw={livre:'data-ag="livre"',dia:'data-ag="ocup"',manha:'data-ag="meia" data-meia="manha"',tarde:'data-ag="meia" data-meia="tarde"',segura:'data-ag="neg"'};
+  var sw={livre:'data-ag="livre"',dia:'data-ag="ocup"',manha:'data-ag="meia" data-meia="manha"',tarde:'data-ag="meia" data-meia="tarde"',noite:'data-ag="meia" data-meia="noite"',segura:'data-ag="neg"'};
   var op=function(id,t,s){ return '<button type="button" class="nx-op" data-dia-op="'+id+'" aria-pressed="'+(at===id)+'"><i class="nx-sw nx-ag-c" '+sw[id]+' aria-hidden="true"></i><b>'+t+'</b>'+(s?'<small>'+s+'</small>':'')+'</button>' };
   nxFolha(nxDiaLongo(k),(js.length?'<ul class="nx-eq">'+js.map(function(j){return '<li><span><b>'+esc(j.cliente||"Job")+'</b><small>'+esc(j.func||"")+'</small></span></li>'}).join("")+'</ul>':'')+
-    '<div class="nx-ops">'+op("livre","Livre","aparece na busca")+op("segura","Negociando","segurando a data")+op("dia","Ocupado","o dia todo")+op("manha","Manhã ocupada","livre à tarde")+op("tarde","Tarde ocupada","livre de manhã")+'</div>',function(f){
+    '<div class="nx-ops">'+op("livre","Livre","aparece na busca")+op("segura","Negociando","segurando a data")+op("dia","Ocupado","o dia todo")+op("manha","Manhã ocupada","livre à tarde")+op("tarde","Tarde ocupada","livre de manhã")+op("noite","Noite ocupada","livre até as 18h")+'</div>',function(f){
     f.querySelectorAll("[data-dia-op]").forEach(function(b){ b.onclick=function(){ var o=b.dataset.diaOp;
       if(o==="livre") liberarDia(k); else if(o==="segura") declarar(k,"negociando","dia",null); else declarar(k,"fechado",o,null);
       tocou(); drawAgenda(); render(); nxFolhaFechar() } });
