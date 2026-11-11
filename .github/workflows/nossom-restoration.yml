@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Reserve disk for CUDA image
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
