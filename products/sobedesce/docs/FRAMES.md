@@ -59,12 +59,67 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
   grafite; título, legenda e logomarca. Usa os frames escolhidos na aba Frames ou escolhe sozinho.
 - Enquadramento por frame (`enquadres[i] = { x, y, zoom }`, zoom até 3×): tocar ou clicar no frame da prévia escolhe; arrastar move (até a borda do frame encostar na caixa); pinça, roda do mouse ou a barra aproximam; Centralizar volta ao meio. Vale em qualquer formato (fica guardado por frame) e sai igual no post em alta. `frameNoPonto` acha o frame tocado (na polaroid, desfaz o giro).
 
+- **Frames → Montagem** (titular, 09/11/2026, 0.3.15): no trabalho, o + escolhe frames (aba Frames) e takes (aba
+  Takes, o + no canto do take). A barra de escolhidos ganha "Montagem": os arquivos vão para a bandeja de Estúdio ›
+  Montagens, somando ao que já está lá (sem repetir, até 60): o frame como foto, o take como vídeo (o arquivo do take,
+  já cortado e com a cor). Os takes são os cortes de cena do computador; o celular faz os dele (Celular 2.8.72).
+
+## Cor (pré-color)
+
+O passo **Cor** diz como o frame sai (`src/cor/grade.js`, `public/components/frames.js` › `CorPasso`):
+
+- **Original**: como está no arquivo.
+- **Rec.709 da câmera**: a mesma conversão de monitor da prévia (`src/cor/lut.js`).
+- **Sua LUT**: um `.cube` 3D do computador ou do Drive (desce uma vez). Fica em "Usadas antes" (até 20), em
+  `~/.sobedesce/frames/luts/`. A LUT é conferida antes de aceitar: LUT 1D, shaper ou arquivo incompleto são recusados
+  com o motivo.
+  - **A LUT recebe**: o log da câmera (LUT de câmera, a que o colorista exporta para o log) ou o Rec.709 (LUT criativa: o app converte o
+    LOG antes).
+  - **Intensidade**: mistura o look com o Rec.709 neutro da câmera.
+- **Câmera**: automático pelos metadados do arquivo (`src/cor/detectar.js`, os mesmos da prévia do Drive) ou escolhida.
+  Arquivo que não diz a câmera fica em Rec.709 até a pessoa escolher.
+- **Ajuste rápido**, antes da LUT, na luz do arquivo: exposição (±2 stops), temperatura, contraste (em volta do cinza
+  18%), preto (abaixo de 0 assenta só a sombra funda; acima levanta o preto) e saturação.
+
+Tudo vira **uma LUT só** (33³), gravada na pasta de dados do trabalho (`cor.cube`), e o ffmpeg aplica numa passada:
+YUV → RGB de ponto flutuante com a matriz e a faixa explícitas, `lut3d` tetraédrico (`extracao.js` › `filtroCor`). Vale
+nos frames, nos takes (marcados BT.709), em "outro frame", "frame num ponto" e "take em outro formato", e na leitura do
+filme: a escolha mede a imagem já com a cor (LOG lavado não vira "P&B"). O arquivo original não muda e a pasta entregue
+não ganha a LUT.
+
+A **prévia** é um frame do vídeo do computador (a um terço), 960 px, pelo mesmo caminho, antes e depois. Vídeo do
+Drive: a cor entra quando ele desce.
+
+## Pasta ou cartão (os brutos)
+
+A origem **Pasta ou cartão** (`src/frames/pasta.js`) faz **um frame por clipe**, para ver os brutos de uma diária já com
+a cor:
+
+- Lista os vídeos da pasta e das subpastas, na ordem do nome ("C0002" antes de "C0010"). Ficam de fora o proxy da câmera
+  (`Proxy/`, a `SUB/` da Sony), miniaturas, pastas ocultas e o que o próprio app gerou. RAW (BRAW, R3D…) o conversor não
+  lê: entra só a contagem, e a tela avisa.
+- Cada clipe: 7 pontos entre 8% e 92% da duração (longe da claquete e da câmera parando), medidos em 256 px já com a cor,
+  pelas mesmas regras do filme (`escolha.js` › `nota`). Fica o melhor; os outros são o "Outro frame" daquele clipe.
+  Nenhum serve (tudo escuro, chapado)? Fica o de mais contraste, para o clipe não sumir.
+- A cor é montada uma vez por câmera (automático: os metadados de cada clipe; `cor-<perfil>.cube` na pasta de dados).
+- Sai `<Pasta> — Frames/Frames/<Clipe>_F001_<timecode>.jpg` e o `indice.csv`. Sem takes e sem "frame num ponto".
+- **Frames do cartão** (Cartões › Backup Automático): com o "Cartão OK", o botão abre o Frames com a pasta do vídeo do
+  cartão no primeiro destino (`pastaVideo` na descarga). A cor que aquele dono usou fica lembrada e volta no próximo
+  cartão dele.
+- **Pré-color automático**: com "Frames com cor ao terminar o cartão" ligado no projeto, o cartão OK já vira frames
+  sozinho (`FramesService.precolorDoCartao`), com a cor que o dono usou por último (guardada no motor,
+  `frames/cor-donos.json`; sem nenhuma, o Rec.709 da câmera). O trabalho se chama "Dono · Cartão NN". Rodando outro
+  trabalho, o cartão espera a vez (uma fila); a cópia nunca espera a cor.
+
+Com cor, cada frame tem também o **antes** (o mesmo quadro sem a cor, até 2160 px) na pasta de dados do trabalho
+(`antes/F001.jpg`): a pasta entregue continua só com a cor.
+
 ## API
 
 | Rota | O quê |
 | --- | --- |
 | `GET /api/frames` | trabalho atual e histórico |
-| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
+| `POST /api/frames` | começa: `{ origem: { tipo: 'local', caminho } \| { tipo: 'pasta', caminho } \| { tipo: 'drive', accountId, fileId }, ajustes }` |
 | `DELETE /api/frames/job/:jobId` | para |
 | `GET /api/frames/:id` | o trabalho (cenas, frames, takes, posts) |
 | `DELETE /api/frames/:id` | tira da lista (a pasta fica) |
@@ -74,6 +129,16 @@ cor, uma impressão digital (dHash) e a diferença para a amostra anterior.
 | `POST /api/frames/:id/subir` | `{ para: 'junto' \| { accountId, folderId, driveId, name } }` |
 | `GET /api/frames/:id/arquivo?p=\|mini=\|alta=&k=` | arquivo do trabalho (chave da mídia), com Range |
 | `GET /api/frames-logo?p=&k=` | prévia da logomarca |
+| `POST /api/frames/pasta` | `{ caminho }` → `{ nome, clipes, primeiro, ignorados: { raw, demais } }` (antes de começar) |
+| `GET /api/frames-cor/luts` | as LUTs usadas antes |
+| `POST /api/frames-cor/lut` | guarda uma LUT: `{ tipo: 'local', caminho }` \| `{ tipo: 'drive', accountId, fileId }` → `{ lut }` |
+| `POST /api/frames-cor/lut/esquecer` | `{ id }` tira da lista |
+| `POST /api/frames-cor/previa` | `{ caminho, cor, t? }` → `{ previa, perfil, perfilNome, perfilOrigem, resumo }` |
+| `GET /api/frames-cor/previa?id=&k=` | a imagem da prévia |
+
+`ajustes.cor` (no `POST /api/frames`): `{ modo: 'original' \| '709' \| 'lut', perfil: 'auto' \| id, lut: { id }, espera:
+'log' \| '709', intensidade: 0–1, ajustes: { exposicao, temperatura, contraste, preto, saturacao } }` (-100 a 100); null
+= sem cor.
 
 Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifestoId, erro }`.
 
@@ -105,10 +170,41 @@ Progresso pelo SSE `frames`: `{ jobId, status, fase, frac, texto, video, manifes
 ## Montagens (Estúdio › Montagens)
 
 Fotos e takes do computador em modelos prontos (`public/components/montagens.js`, geometria e desenho em
-`public/lib/montagens.js`). Três tipos: o post (foto, ou vídeo quando tem take), o carrossel contínuo (2 a 10 slides) e a
+`public/lib/montagens.js`). Três tipos: o post (foto, ou vídeo quando tem take), o carrossel (2 a 20 slides) e a
 grade do perfil (3 colunas, 1 a 5 linhas, 3:4 ou 1:1, numerada na ordem de postar: o 1 é o de baixo, à direita). Formatos
 com o tamanho de cada rede: 9:16 1080×1920, 4:5 1080×1350, 3:4 1080×1440, 1:1 1080×1080, 16:9 1920×1080, 1.91:1
 1200×628, 2:3 1000×1500, 21:9 2560×1080, 2.39:1 2560×1072 e personalizado (200 a 4096 px).
+
+**Carrossel por slide** (titular, 09/11/2026; `public/lib/montagens-carrossel.js`, só no computador por enquanto):
+cada slide tem o próprio modelo (Uma foto, Dois lado a lado, Quatro…) e as próprias fotos, com a borda dele. "Emendar
+com o anterior" junta slides num panorama (a foto passa pelo corte); a montagem de antes, sem `paginas`, abre como um
+panorama só, igual ao que saía. Para pôr a foto no número: arrastar da bandeja até o slide (o quadro embaixo acende), ou
+tocar no slide e depois na foto (passa sozinho para o próximo), ou tocar na foto e depois no slide. O selo da bandeja
+mostra o número do slide. O formato vale para todos os slides (o Instagram corta o carrossel pelo primeiro). Trocar o
+modelo de um slide ou o número de slides não tira as fotos dos outros (`remapear`).
+
+**Andar pelo carrossel e pela grade** (titular, 10/11/2026): com muitos slides, a roda do mouse ou o trackpad rola
+o carrossel de lado (em cima da foto ativa, a roda continua sendo zoom), e embaixo ficam os números dos slides com ‹ ›:
+tocar no número leva até ele e o escolhe. A **grade do perfil** agora é por quadradinho, igual ao carrossel: cada um
+tem a própria foto e o próprio modelo, e as fotos entram na ordem de postar (1, 2, 3…, começando embaixo à direita).
+"Uma imagem só, dividida" volta à foto única cortada em todos. No trabalho do Frames, cada take mostra **Escolher**
+(ou "Escolhido · N"), e o botão Montagem leva os escolhidos.
+
+**Ver a montagem andando** (titular, 09/11/2026): no post com take, embaixo da montagem ficam o play e a agulha (a
+duração da montagem). Cada take toca no quadro dele, com o enquadre, no trecho escolhido (câmera lenta a ½×) e com o som
+do take escolhido em "Som"; arrastar a agulha mostra o quadro daquele instante. "Mudar o trecho" abre a agulha do take.
+Take que o navegador não toca (MXF, ProRes) fica no quadro do começo, com aviso.
+
+**Faixas** (o modelo do pré-color para os Stories): 2 a 6 frames um embaixo do outro, no formato do frame (16:9, 1,85,
+2,39, 4:3 ou tela cheia, que divide a altura), centrados; quando não cabem na largura toda, ficam mais estreitos sem
+mudar o formato. Num formato vertical, a **zona segura dos Stories** (ligada no padrão) deixa livres os 250 px de cima e
+os 340 px de baixo (em 1080×1920), onde ficam o perfil e o "responder". No trabalho do Frames, **Montar story** abre a
+Montagens com os frames (já com a cor) em Faixas 9:16 (`public/lib/montagens.js` › `modeloFaixas`).
+
+- **Antes e depois**: as faixas vão em pares, o arquivo em cima e a cor embaixo, com o rótulo ANTES/DEPOIS (1 a 3 pares).
+  No trabalho do Frames com cor, o botão **Antes e depois** abre a Montagens já em pares.
+- **Todas em stories**: as fotos na ordem, em grupos do tamanho do modelo, um JPG para cada grupo ("Nome 01", "Nome
+  02"…); o último sai só com as faixas que tem.
 
 Motor (`src/server/montagens.js`), tudo com a chave da mídia: `GET /api/montagens/foto` (TIFF e HEIC viram JPEG de
 cache), `GET /api/montagens/info` (duração, tamanho, som do take), `GET /api/montagens/quadro?t=&l=` (um quadro do take,
@@ -116,6 +212,34 @@ para a agulha e a prévia), `GET /api/montagens/video` (o take para tocar, com R
 (JPEG/PNG, nome novo sempre) e, para vídeo, `POST /api/montagens/base` (a camada da tela em PNG, com buracos onde os
 takes tocam) + `POST /api/montagens/video` (`src/montagens/video.js`: o ffmpeg põe cada trecho no quadro, cobre com a
 camada e gera MP4 H.264 com o nome de "pela metade" até terminar).
+
+### No celular (Criar › Montagens, SOBEDESCE Celular 2.8.68)
+
+O mesmo desenho (`web/public/app/lib/montagens.js` é cópia idêntica de `public/lib/montagens.js`; a ponte
+`lib/frames-posts.js` reexporta `lib/frames/posts.js`), com fotos e vídeos da galeria (`<input multiple>`) ou do Drive
+(a faixa "Fotos e takes para a montagem": cada toque junta; também "Pôr numa montagem" no menu do arquivo). Tocar no
+quadro escolhe, arrastar enquadra, pinça ou a barra dá zoom, trocar de lugar e tirar; modelos desenhados com as fotos da
+pessoa, formatos, slides, linhas, espaço, cantos e fundo. "Fazer a montagem" abre a folha "Pronta": **Salvar no
+celular** (a folha de compartilhar do iPhone; sem ela, download) ou **Subir pro Drive** (a fila de sempre, na pasta
+escolhida). Os limites do iPhone ficam em `lib/montagens-celular.js`:
+
+- cada parte do carrossel e da grade é desenhada sozinha, no tamanho dela (`desenharFatia`): o Safari recusa canvas acima
+  de 16,7 milhões de pixels e a grade 3×5 em 3:4 tem 23 milhões;
+- a foto abre só no tamanho que o quadro precisa, com o zoom (`tamanhoNecessario`); até 30 fotos e takes na bandeja;
+- vídeo: até 4 takes, 3/5/8/15 s, no máximo 1920 px no lado maior (21:9 sai 1920×810), 30 qps. Gravado no aparelho
+  (`lib/montagens-midia.js`): o Mediabunny do Relay lê os takes quadro a quadro pelo WebCodecs (galeria pelo arquivo,
+  Drive aos pedaços com o token), cada quadro é desenhado (takes por baixo, a camada da tela por cima, como o ffmpeg do
+  computador) e sai em H.264 num MP4. Sem `<video>` nem `MediaRecorder`: quadro a quadro, o quadro certo de cada take.
+  Precisa do iOS 16.4 ou mais novo; sem WebCodecs, a tela diz e sai a foto. O som vem de um take em velocidade normal,
+  em AAC (o do sistema ou o do FFmpeg em WebAssembly); o Safari antes do iOS 26 não lê áudio pelo WebCodecs, e aí o vídeo
+  sai sem som, com o aviso na folha. Câmera lenta sai sem som (o computador usa `atempo`).
+
+O modelo Faixas (stories do pré-color) já vem na cópia da biblioteca, mas a tela do celular ainda não o oferece:
+lá seguem os modelos prontos (`modeloPorId`).
+
+Testes: `test/montagens-celular.test.js` (cópia idêntica, partes e nomes, fatia igual ao corte da imagem inteira,
+limites) e `test/montagens-celular-navegador.test.js` (Chromium e WebKit do Playwright com cara de iPhone: carrossel 3 ×
+1080×1350, grade 6 × 1080×1440, foto do Drive e o vídeo 1080×1350 H.264 + AAC de 3 s conferido pelo ffprobe).
 
 ## Ainda não
 

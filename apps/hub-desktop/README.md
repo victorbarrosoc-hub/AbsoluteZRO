@@ -165,6 +165,55 @@ computador se instala e se atualiza **só** pela central, como no Adobe Creative
   `preferencias.json` › `atualizarSozinho`): ligado, a agenda baixa e instala sem perguntar, como na 1.3.
 - **A própria central** continua com o "Nova versão" de sempre (`versao.cjs` e `atualizador.cjs`, sem mudança).
 
+## 1.4.7: menu Administração (só para admin)
+
+Para o papel de plataforma `admin`, o app mostra o menu **Administração** com **Painel de administração** e **Campus**
+(⌘⇧K / Ctrl+Shift+K, abre a janela do Campus). O app pergunta ao HUB com a sessão guardada, em
+`/api/v1/admin/z-lab`, que só responde 200 para admin; outra resposta, ou sem rede, esconde o menu. Confere ao abrir uma
+página do HUB, no máximo a cada 10 minutos, e na hora ao entrar ou sair da conta.
+
+## 1.4.6: Campus numa janela própria
+
+O link do Campus no painel de administração do HUB (só o papel `admin` vê) abre numa janela do app, com sessão
+separada (`persist:campus`): o login do claude.ai fica lembrado só ali. A janela navega só em `https://claude.ai`; o resto
+vai para o navegador. Entrar com o Google não funciona em janela embutida: use o e-mail.
+
+## 1.4.5: "Atualizar" some depois de atualizar
+
+- **Bug (titular, 06/11/2026, Mac):** "já instalei 3 vezes e nunca fica atualizado", em todos os apps. O SOBEDESCE
+  mostrava 1119 nos Ajustes dele (o mesmo build do catálogo) e o cartão seguia com "Atualizar · 0.3.10 disponível".
+- **Causa:** a central lia o `build-info.json` de dentro do `app.asar` de cada app com o `fs` do Electron. Esse `fs`
+  abre cada `.asar` uma vez e guarda pelo caminho até o processo sair; trocar o pacote (`.zro-novo` → `.app`, apagar o
+  `.zro-antigo`) não invalida, e o arquivo apagado segue aberto. A versão (lida do `Info.plist` pelo `plutil`) vinha
+  certa e o build vinha o antigo: mesma versão, build menor → "Atualizar", para sempre, até a central reiniciar (e ela
+  fica na barra de menus). Conferido no Electron 44.5.1: build 1100 → troca para 1119 → o `fs` lê 1100, o
+  `original-fs` lê 1119. Os pacotes estavam certos (SOBEDESCE `src/build-info.json` 1119 e Relay `desktop/build-info.json`
+  2008 dentro do app.asar dos DMGs publicados, iguais ao b#### do nome).
+- **Correção:** `lerBuildInstalado` lê o cabeçalho do `.asar` com o `original-fs` (`fsApps`), abrindo e fechando o
+  arquivo a cada leitura (arquivo `unpacked` também). No Windows, a mesma leitura deixava o app.asar aberto durante a
+  troca pelo instalador; agora não fica.
+- **Sem estado velho:** a lista que a página lê também limpa os pendentes da agenda (`agenda.sincronizar`); a janela
+  voltando ao foco relê os apps e avisa a página (`central:progresso` com `fase: 'reler'`), e a página relê ao voltar o
+  foco ou a aba. Instalou por fora ou o app se atualizou: o cartão e a bandeja deixam de oferecer "Atualizar".
+
+## 1.4.4: downloads rápidos no Brasil (espelho em São Paulo, ADR 0043)
+
+- **Problema (titular, 06/11/2026):** instaladores a 5–64 KB/s numa internet de 210 Mbps; o mesmo arquivo sai a 16 MB/s
+  de um servidor nos EUA. É a rota do servidor de arquivos do GitHub até o provedor, não a internet da pessoa.
+- **Espelho primeiro, GitHub de reserva:** a central baixa `/baixar/app/<id>/<arquivo>?origem=espelho` (o HUB manda para
+  o bucket público `apps` do Supabase em São Paulo quando o arquivo está lá) e, se falhar ou o SHA-256 não bater, o
+  mesmo endereço sem `origem` (GitHub). Ela mesma: `/baixar/hub/<sistema>?build=N` e depois `&origem=github`.
+- **Download robusto** (`desktop/baixador.cjs`): um pedido de 1 byte descobre Range, tamanho e endereço final; com Range,
+  pedaços de 8 MB em até 6 conexões; pedaço que cai ou para (30 s) volta de onde parou; link do GitHub vencido no meio é
+  renovado. Os pedaços vão direto ao endereço final pelo `https` do Node com IPv4 primeiro (`download.cjs`
+  `criarFetchDireto`); se esse caminho nunca conectar (proxy do sistema), seguem pelo do Chromium. O progresso na tela é
+  o mesmo; nada é instalado sem conferir o SHA-256.
+- **Regra de destino** (`regras.downloadPermitido`): além do HUB e do GitHub, só
+  `https://<ref>.supabase.co/storage/v1/object/public/apps/<tag>/<arquivo>`.
+- **Quem está na 1.4.3:** a atualização para a 1.4.4 já vem do espelho (o `fetch` do Node segue o redirecionamento do
+  HUB). As ferramentas que a 1.4.3 instala continuam pelo GitHub: ela recusa outro destino, e o HUB só manda o nome
+  exato do arquivo para o espelho com `?origem=espelho`.
+
 ## 1.4.3: "Manter no Dock" que confere
 
 - **Bug (Mac):** depois de "Manter no Dock" em vários apps, o botão virava "No Dock" em todos, mas alguns (SYNQUEI e

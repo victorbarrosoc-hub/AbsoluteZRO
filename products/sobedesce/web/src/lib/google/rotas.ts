@@ -9,12 +9,12 @@ import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { recuperarColecoes } from "@/lib/referencias/colecoes";
 import { cookieSeguro } from "@/lib/site";
-import { ESCOPOS_ENTRAR, googleConfigurado, redirectUri, type ModoDrive } from "./config";
+import { ESCOPOS_ENTRAR, escoposDoModo, googleConfigurado, redirectUri, type ModoDrive } from "./config";
 import { donoDaContaGoogle, vincularConta } from "./contas";
 import { chaveConfigurada } from "./cripto";
 import { abrirEstado, COOKIE_OAUTH, DURACAO_OAUTH_S, novoState, selarEstado, stateConfere, type ModoGoogle } from "./estado";
 import { acessoDoEscopo, perfil, pkce, revogar, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
-import { driveInteiroPermitido, pedidoParaConectar, recusarDriveInteiro, registrarSeTotal } from "./vagas";
+import { contaDaVaga, driveInteiroPermitido, pedidoParaConectar, recusarDriveInteiro, registrarSeTotal } from "./vagas";
 
 /** Junta um parâmetro a um caminho interno que talvez já tenha "?". */
 export function comParametro(caminho: string, chave: string, valor: string): string {
@@ -47,6 +47,8 @@ export async function conectar(req: Request): Promise<Response> {
   let escopo = ESCOPOS_ENTRAR;
   let somarConcedidos = true;
   let pedido: ModoDrive | undefined;
+  let segunda = false;
+  let dica: string | null = null;
   if (modo === "vincular") {
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual) return redirecionar(new URL(comParametro("/entrar", "volta", volta), url.origin));
@@ -56,16 +58,29 @@ export async function conectar(req: Request): Promise<Response> {
     const p = await pedidoParaConectar(usuarioId);
     ({ escopo, somarConcedidos } = p);
     pedido = p.modo;
+    // Segundo pedido (o callback manda para cá): a conta Google que já tem a vaga voltou só com drive.file. Pede o
+    // Drive inteiro de novo só para ela (login_hint), o que não gasta vaga: o Google já contou essa conta.
+    const inteiro = url.searchParams.get("inteiro");
+    if (inteiro) {
+      const vaga = await contaDaVaga(usuarioId, inteiro);
+      if (vaga) {
+        escopo = escoposDoModo("total");
+        somarConcedidos = true;
+        pedido = "total";
+        segunda = true;
+        dica = vaga.email;
+      }
+    }
   }
 
   const state = novoState();
   const { verificador, desafio } = pkce();
-  const cookie = serializarCookie(COOKIE_OAUTH, selarEstado({ state, verificador, modo, usuarioId, volta, ...(pedido ? { pedido } : {}) }), {
+  const cookie = serializarCookie(COOKIE_OAUTH, selarEstado({ state, verificador, modo, usuarioId, volta, ...(pedido ? { pedido } : {}), ...(segunda ? { segunda } : {}) }), {
     maxAge: DURACAO_OAUTH_S,
     path: "/api/google",
     secure: cookieSeguro(url.origin),
   });
-  return redirecionar(urlDeConsentimento({ state, desafio, origem: retorno.origin, escopo, somarConcedidos }), 302, [cookie]);
+  return redirecionar(urlDeConsentimento({ state, desafio, origem: retorno.origin, escopo, somarConcedidos, dica }), 302, [cookie]);
 }
 
 /** `depois`: onde vai o aviso de entrada nova (a rota usa o `after` do Next; os testes passam o deles). */
@@ -118,8 +133,21 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     const usuarioId = atual.usuario.id;
     const contaGoogleId = r.conta.id;
     depois(() => recuperarColecoes(usuarioId, { contaGoogleId, forcar: true }));
-    // Pediu o Drive inteiro e voltou só com drive.file: conectou, mas em Arquivos escolhidos (a tela diz).
-    if ((estado.pedido ?? "total") === "total" && acesso === "arquivos") return ir(comParametro(volta, "google", "escolhidos"));
+    if (acesso === "arquivos") {
+      // Acesso total liberado e a conta Google é a que já tem a vaga, mas o Google devolveu só drive.file (a concessão
+      // antiga foi revogada ou venceu, e o include_granted_scopes não tinha o que somar): pede o Drive inteiro de novo,
+      // uma vez, só para essa conta. Antes caía calado em Arquivos escolhidos (08/11/2026).
+      if (!estado.segunda && (await contaDaVaga(usuarioId, quem.sub))) {
+        const de = new URL("/api/google/conectar", url.origin);
+        de.searchParams.set("modo", "vincular");
+        de.searchParams.set("volta", volta);
+        de.searchParams.set("inteiro", quem.sub);
+        return ir(de.pathname + de.search);
+      }
+      // Pediu o Drive inteiro e voltou só com drive.file: conectou, mas em Arquivos escolhidos (a tela diz). Outra conta
+      // Google de quem já usou a vaga entra em Arquivos escolhidos por regra (M1), sem aviso de caixinha.
+      if ((estado.pedido ?? "total") === "total") return ir(comParametro(volta, "google", "escolhidos"));
+    }
     return ir(comParametro(volta, "google", "ok"));
   }
 

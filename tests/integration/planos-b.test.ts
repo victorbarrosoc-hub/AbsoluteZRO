@@ -34,7 +34,7 @@ import { admin, expectCode, givePlan, newOrgWithOwner, newUser, planId, refresh 
 
 let db: Database
 const sys = <T>(fn: Parameters<Database['asSystem']>[1]) => db.asSystem('teste', fn) as Promise<T>
-const NO_AR = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'maestro', 'relay']
+const NO_AR = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'maestro', 'relay', 'radio']
 const FECHADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion']
 const ip = () => randomUUID().replace(/-/g, '')
 
@@ -139,11 +139,12 @@ describe('nível efetivo por app', () => {
     expect(lim.produtos['carro-do-freela']!.limites.guilda_lugares).toBeNull()
     expect(lim.produtos.maestro!.limites.marca_propria).toBe(1)
     expect(lim.z.franquia).toBe(50)
-    // O acesso (entitlements) é o mesmo de antes: os 9 apps do grátis antigo, inclusive os fechados (o gate é que fecha).
+    // O acesso (entitlements) é o mesmo de antes, os 9 apps do grátis antigo (inclusive os fechados: o gate é que fecha),
+    // mais o RADION, que entrou em todo plano de pacote e no grátis ao lançar (0062).
     const [e] = await sys<Record<string, unknown>[]>(
       (tx) => tx`select count(*)::int as n, bool_and(legado) as legado from zro.entitlements where org_id = ${o.orgId} and status = 'active'`,
     )
-    expect(e).toMatchObject({ n: 9, legado: true })
+    expect(e).toMatchObject({ n: 10, legado: true })
   })
 
   it('avulso: Absoluto só no app dele, Z de 50', async () => {

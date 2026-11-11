@@ -35,3 +35,26 @@ export function avisoDoLink(link, { copiado = true } = {}) {
       return { tone: 'aviso', texto: `${inicio} Não consegui conferir quem consegue abrir.`, nota: semPoder, liberar }
   }
 }
+
+// ─────────── Copiar link público (titular, 09/11/2026) ───────────
+// "Copiar link" com a escolha "Qualquer pessoa com o link pode ver" (anyone/leitor, sem aparecer em busca): ajusta e
+// copia num clique. A escolha pode ficar lembrada (`PADRAO_LINK`), mas nunca vira pública sem a pessoa ter escolhido:
+// sem escolha guardada, o "Copiar link" pergunta.
+
+export const LINK_PUBLICO = 'Qualquer pessoa com o link pode ver'
+export const LINK_PUBLICO_SUB = 'Leitor. Não aparece em buscas.'
+export const LINK_SO_COPIAR = 'Só copiar'
+export const LINK_SO_COPIAR_SUB = 'Sem mudar quem tem acesso.'
+export const SELO_PUBLICO = 'Público (link)'
+export const RESTRITO = 'Restrito'
+export const PADRAO_LINK = 'drive.linkPadrao'
+
+/** A escolha guardada do "Copiar link": 'publico', 'copiar' ou null (perguntar). Qualquer outra coisa é perguntar. */
+export function padraoDoLink(v) {
+  return v === 'publico' || v === 'copiar' ? v : null
+}
+
+/** Texto do cartão depois de liberar e copiar. */
+export function textoPublico(copiado) {
+  return `${copiado ? 'Copiado. ' : ''}${LINK_PUBLICO}.`
+}

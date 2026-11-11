@@ -20,6 +20,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       log: ctx.log,
     })
   ctx.backup = svc
+  // pré-color automático: o cartão OK vira frames com a cor do dono (src/frames/servico.js › precolorDoCartao)
+  svc.aoTerminarCartao ??= (entrada) => ctx.frames?.precolorDoCartao(entrada)
   const pronto = svc.init().catch((err) => ctx.log?.('backup: iniciar', err?.message || err))
   const tratar = (fn) => async (a) => {
     await pronto
@@ -51,7 +53,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
     { raw: true },
   )
 
-  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false })))
+  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40), midia: texto(body.midia, 20), synquei: body.synquei !== false, precolor: body.precolor === true, levarProxies: body.levarProxies === true })))
 
   route('POST', '/api/backup/projeto', tratar(async ({ body }) => {
     const id = texto(body.id, 100)
@@ -63,6 +65,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       tipo: body.tipo === undefined ? undefined : texto(body.tipo, 40),
       midia: body.midia === undefined ? undefined : texto(body.midia, 20),
       synquei: body.synquei === undefined ? undefined : body.synquei !== false,
+      precolor: body.precolor === undefined ? undefined : body.precolor === true,
+      levarProxies: body.levarProxies === undefined ? undefined : body.levarProxies === true,
     })
   }))
 
@@ -112,6 +116,8 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
   route('POST', '/api/backup/nao-cartao', tratar(async ({ body }) => svc.naoECartao(texto(body.caminho))))
 
   route('POST', '/api/backup/conteudo', tratar(async ({ body }) => svc.conteudo(texto(body.caminho))))
+  // Prévia do cartão: as fotos e os vídeos, para ver antes de copiar (a tela pede as miniaturas às rotas da montagem).
+  route('POST', '/api/backup/previa', tratar(async ({ body }) => svc.previa(texto(body.caminho))))
 
   route('POST', '/api/backup/escolher', tratar(async ({ body }) => svc.escolher(texto(body.caminho), escolha(body.escolha))))
 

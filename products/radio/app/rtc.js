@@ -1,14 +1,18 @@
 // Voz de aparelho para aparelho (WebRTC, malha: cada par tem uma conexão). O servidor só leva a oferta e a resposta
 // (api/radio/batida.js); a voz e os recados de "estou falando" vão direto pela conexão e nunca passam pelo servidor.
 //
-// Roteamento: cada conexão tem um transceptor de áudio que nasce mudo (sem trilha). Ao segurar o botão, a trilha do
-// microfone entra só nas conexões de quem deve ouvir (Geral: todos; Equipe: quem tem a mesma função); ao soltar, sai de
-// todas. Quem não está no canal não recebe nem um byte da fala.
+// Roteamento: cada conexão tem um transceptor de áudio que nasce mudo (sem trilha). Com o TALK aberto, a trilha do
+// microfone entra só nas conexões de quem escuta o canal de destino (cada aparelho diz o que escuta pelo canal de
+// dados); ao fechar, sai de todas. Quem não escuta aquele canal não recebe nem um byte da fala. Várias pessoas falam ao
+// mesmo tempo (full duplex): cada conexão traz a voz de um aparelho e o navegador mistura.
 //
-// Sem servidor TURN: funciona na mesma rede e na maioria das redes de casa e escritório. Em 4G com CGNAT algumas
-// conexões não abrem; a lista da equipe mostra quem está sem conexão (honesto, sem fingir que está ligado).
+// Silêncio (moderação do RADION): o servidor diz quem está silenciado; este aparelho corta a voz que chega de quem está
+// (e de quem a pessoa silenciou só para si) e não manda a própria voz quando é ela que está.
+//
+// Servidores de conexão: os que o servidor manda (/ice: STUN e, com a chave da Cloudflare, TURN, a ponte para redes que
+// não se alcançam direto, como 4G com CGNAT). Sem TURN, a lista da equipe mostra quem ficou "conectando".
 
-const ICE = [{ urls: 'stun:stun.l.google.com:19302' }]
+const ICE_PADRAO = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }]
 const ESPERA_ICE_MS = 2500
 const REFAZER_MS = 9000
 
@@ -41,13 +45,29 @@ export class Malha {
    */
   constructor(op) {
     this.eu = op.eu
+    this.ice = Array.isArray(op.iceServers) && op.iceServers.length ? op.iceServers : ICE_PADRAO
     this.enviarSinal = op.enviarSinal
     this.aoMudar = op.aoMudar
     this.aoRecado = op.aoRecado
+    this.aoAbrir = op.aoAbrir || (() => {})
     this.conexoes = new Map()
     this.trilha = null
     this.falandoPara = null // Set de peers que estão recebendo minha voz agora
     this.recadoAtual = null
+    this.calados = new Set() // peers cuja voz não toca aqui
+    this.saida = '' // saída de som escolhida nos Ajustes ('' = a do aparelho)
+  }
+
+  /** As vozes tocam nesta saída (só onde o navegador deixa escolher: setSinkId). */
+  usarSaida(id) {
+    this.saida = id || ''
+    for (const [, c] of this.conexoes) c.audio?.setSinkId?.(this.saida).catch(() => {})
+  }
+
+  /** A voz destes aparelhos não toca aqui (silenciados pela moderação ou por mim). */
+  calarDe(peers) {
+    this.calados = new Set(peers)
+    for (const [peer, c] of this.conexoes) if (c.audio) c.audio.muted = this.calados.has(peer)
   }
 
   usarMicrofone(trilha) {
@@ -74,7 +94,7 @@ export class Malha {
   }
 
   nova(peer, iniciador) {
-    const pc = new RTCPeerConnection({ iceServers: ICE })
+    const pc = new RTCPeerConnection({ iceServers: this.ice })
     const c = { pc, iniciador, desde: Date.now(), sender: null, dc: null, audio: null }
     this.conexoes.set(peer, c)
     pc.addEventListener('connectionstatechange', () => {
@@ -87,8 +107,10 @@ export class Malha {
         c.audio.autoplay = true
         c.audio.setAttribute('playsinline', '')
         c.audio.hidden = true
+        if (this.saida) c.audio.setSinkId?.(this.saida).catch(() => {})
         document.body.append(c.audio)
       }
+      c.audio.muted = this.calados.has(peer)
       c.audio.srcObject = new MediaStream([e.track])
       c.audio.play().catch(() => {})
     })
@@ -103,6 +125,7 @@ export class Malha {
         dc.send(JSON.stringify(this.recadoAtual))
         if (this.deveOuvir?.(peer)) this.mandarVoz(peer, true)
       }
+      this.aoAbrir(peer)
       this.aoMudar()
     })
     dc.addEventListener('close', () => this.aoMudar())
@@ -163,6 +186,7 @@ export class Malha {
     if (!c?.sender) return
     c.sender.replaceTrack(sim && this.trilha ? this.trilha : null).catch(() => {})
     if (sim) this.falandoPara?.add(peer)
+    else this.falandoPara?.delete(peer)
   }
 
   /** Segurou o botão: a voz vai para quem `deveOuvir(peer)` diz. */
@@ -185,6 +209,17 @@ export class Malha {
       if (c.dc?.readyState === 'open') c.dc.send(JSON.stringify({ t: 'fim' }))
     }
     this.falandoPara = null
+  }
+
+  /** Recado só para um aparelho (o que eu escuto, para quem acabou de chegar). */
+  enviar(peer, msg) {
+    const c = this.conexoes.get(peer)
+    if (c?.dc?.readyState === 'open') c.dc.send(JSON.stringify(msg))
+  }
+
+  /** Quem fala reavalia um aparelho (ele mudou o que escuta): entra ou sai da fala sem renegociar. */
+  reavaliar(peer) {
+    if (this.recadoAtual && this.deveOuvir) this.mandarVoz(peer, this.deveOuvir(peer))
   }
 
   /** Recado para todos (aviso de set já gravado no servidor). */

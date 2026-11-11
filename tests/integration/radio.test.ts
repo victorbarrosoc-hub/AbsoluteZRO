@@ -1,5 +1,5 @@
 // O rádio do set dentro do HUB (ADR 0042; absolutezro.com/radio, com a conta e o banco do HUB). Aqui: as cópias geradas
-// de products/radio batem byte a byte; o gate (conta comum não passa, admin e a lista de acesso passam); e as regras do
+// de products/radio batem byte a byte; o gate (no ar desde a 0062: conta comum passa; sem login, não); e as regras do
 // núcleo rodando como `radio_app` no schema `radio`, com o isolamento entre pessoas pelo RLS.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -44,9 +44,9 @@ describe('cópias do rádio no HUB', () => {
     expect(readFileSync(path.join(RAIZ, 'apps/hub-web/lib/radio/arquivos.ts'), 'utf8')).toBe(arquivos)
   })
 
-  it('nada do rádio em public/ (só a fonte Figtree, que é da marca)', () => {
+  it('em public/ do rádio só o ícone (no ar desde a 0062); o app sai pela rota, com o gate', () => {
     const publicos = readdirSync(path.join(RAIZ, 'apps/hub-web/public'), { recursive: true }).map(String)
-    expect(publicos.filter((f) => /radio|r[aá]dio/i.test(f))).toEqual([])
+    expect(publicos.filter((f) => /radio|r[aá]dio/i.test(f))).toEqual(['products/radio.svg'])
   })
 })
 
@@ -54,9 +54,9 @@ describe('rádio do set no HUB', () => {
   const admin = (userId: string) =>
     db.sql`update zro.users set platform_role = 'admin', email_verified_at = coalesce(email_verified_at, now()) where id = ${userId}`
 
-  it('gate: conta comum não passa; admin e a lista de acesso passam', async () => {
+  it('gate (0062, no ar): conta comum passa, sem login não; a lista de acesso segue valendo', async () => {
     const comum = await newOrgWithOwner(db, 'rd-comum', { freePlan: true })
-    expect(await radio.acessoAoRadio(db, comum.auth)).toBeNull()
+    expect((await radio.acessoAoRadio(db, comum.auth))?.userId).toBe(comum.userId)
     expect(await radio.acessoAoRadio(db, null)).toBeNull()
     const chefe = await newOrgWithOwner(db, 'rd-chefe', { freePlan: true })
     await admin(chefe.userId)
@@ -65,6 +65,20 @@ describe('rádio do set no HUB', () => {
     const testadora = await newOrgWithOwner(db, 'rd-teste', { freePlan: true })
     await db.sql`insert into zro.product_release_access (product_id, user_id, kind, channels, reason) values ('radio', ${testadora.userId}, 'tester', array['web'], 'teste do rádio')`
     expect((await radio.acessoAoRadio(db, testadora.auth))?.userId).toBe(testadora.userId)
+  })
+
+  it('foto da conta no topo do rádio: o endereço público da própria foto (perfil único), null sem foto', async () => {
+    const o = await newOrgWithOwner(db, 'rd-foto', { freePlan: true })
+    const actor = (await radio.acessoAoRadio(db, o.auth))!
+    expect(await radio.fotoDoRadio(db, actor)).toBeNull()
+    await db.asSystem(
+      'teste',
+      (tx) => tx`insert into zro.user_avatars (user_id, content_type, data) values (${o.userId}, 'image/webp', ${Buffer.from([1, 2, 3])})`,
+    )
+    const [a] = await db.sql`select public_id from zro.user_avatars where user_id = ${o.userId}`
+    expect(await radio.fotoDoRadio(db, actor)).toBe(a!.public_id as string)
+    const p = { sub: o.userId, nome: 'Foto', foto: await radio.fotoDoRadio(db, actor) }
+    expect((await radio.noRadio(db, p.sub, (tx) => nucleo.listarDiarias(tx, p))).corpo).toMatchObject({ eu: { nome: 'Foto', foto: p.foto } })
   })
 
   it('diária pelo HUB: criar, entrar pelo código, presença, aviso só da Direção e isolamento pelo RLS', async () => {
@@ -77,7 +91,7 @@ describe('rádio do set no HUB', () => {
     const c = await como(P.ana, (tx) => nucleo.mudarDiarias(tx, P.ana, { acao: 'criar', nome: 'Comercial' }))
     expect(c.status).toBe(201)
     const d = (c.corpo as { diaria: { id: string; codigo: string } }).diaria
-    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, diarias: [] })
+    expect((await como(P.bia, (tx) => nucleo.listarDiarias(tx, P.bia))).corpo).toEqual({ ok: true, eu: { nome: 'Bia', foto: null }, diarias: [] })
     expect((await como(P.bia, (tx) => nucleo.mudarDiarias(tx, P.bia, { acao: 'entrar', codigo: d.codigo }))).status).toBe(200)
 
     await como(P.ana, (tx) => nucleo.bater(tx, P.ana, { diaria: d.id, peer: 'a'.repeat(24) }))
@@ -87,6 +101,14 @@ describe('rádio do set no HUB', () => {
 
     expect((await como(P.ana, (tx) => nucleo.avisar(tx, P.ana, { diaria: d.id, tipo: 'acao' }))).status).toBe(201)
     expect((await como(P.bia, (tx) => nucleo.avisar(tx, P.bia, { diaria: d.id, tipo: 'corta' }))).status).toBe(403)
+
+    // poderes (RADION, migração 0001 do rádio): a dona silencia a Bia; a Bia (equipe) não silencia a dona
+    const apelido = (bb.corpo as { membros: { nome: string; apelido: string }[] }).membros.find((m) => m.nome === 'Bia')!.apelido
+    const donaApelido = (bb.corpo as { membros: { nome: string; apelido: string }[] }).membros.find((m) => m.nome === 'Ana')!.apelido
+    expect((await como(P.ana, (tx) => nucleo.moderar(tx, P.ana, { diaria: d.id, acao: 'silenciar', alvo: apelido, minutos: 5 }))).status).toBe(200)
+    expect((await como(P.bia, (tx) => nucleo.moderar(tx, P.bia, { diaria: d.id, acao: 'silenciar', alvo: donaApelido }))).status).toBe(409)
+    const calada = await como(P.bia, (tx) => nucleo.bater(tx, P.bia, { diaria: d.id, peer: 'b'.repeat(24) }))
+    expect((calada.corpo as { eu: { silenciado: { por: string } | null } }).eu.silenciado?.por).toBe('Ana')
 
     // como radio_app: quem está fora não lê nada; ninguém vira dono por update
     expect(await como(P.caio, (tx) => tx`select * from radio.diarias`)).toHaveLength(0)

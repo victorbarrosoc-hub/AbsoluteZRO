@@ -28,6 +28,7 @@ import { ProxySheet } from './components/proxies.js'
 import { RelaySheet } from './components/relay.js'
 import { CopySheet } from './components/copiar.js'
 import { FramesPostSheet } from './components/criar.js'
+import { MontagemProntaSheet, MontagemTrechoSheet } from './components/montagens.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
 import { linkDoHash } from './lib/drive-link.js'
@@ -54,6 +55,8 @@ const SHEETS = {
   relay: RelaySheet,
   copiar: CopySheet,
   framesPost: FramesPostSheet,
+  montagemPronta: MontagemProntaSheet,
+  montagemTrecho: MontagemTrechoSheet,
 }
 
 // Android (share_target nos manifestos): /app/?compartilhar=1&title=&text=&url=. O navegador pode trocar a query

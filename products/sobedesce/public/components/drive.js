@@ -2,7 +2,9 @@
 // pasta atual e baixar a seleção (barra flutuante embaixo, translúcida como no macOS). No padrão do kit
 // (docs/UI-KIT.md): cabeçalho com a ação principal, a faixa colorida com onde você está e o espaço no Drive, filtros em
 // pílulas. Botão direito (ou a tecla de menu) numa linha abre o menu do item (drive-menu.js): abrir, baixar, copiar o
-// link, renomear, mover para outra pasta… Arrastar linhas para cima de uma pasta também move.
+// link, renomear, mover para outra pasta… Arrastar linhas para cima de uma pasta também move (com Desfazer). Botão
+// direito no vazio: Nova pasta, Enviar arquivos, Enviar pasta. Menu igual ao do Google Drive (titular, 09/11/2026):
+// Compartilhar, Copiar link (com "Qualquer pessoa com o link pode ver", compartilhar.js), estrela e Detalhes.
 import { html, useEffect, useMemo, useRef, useState } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { navigate } from '../lib/router.js'
@@ -25,7 +27,8 @@ import { abrirMenuContexto } from './drive-menu.js'
 import { hasRawFiles, onRawThumbsDone, openRawThumbs, useRawThumbsRunning } from './raw-thumbs.js'
 import { hasVideoFiles, isVideoName, onPreviasDone, openPrevias, openProxyArquivo, usePreviasRunning, useComProxy } from './previa.js'
 import { FolderSummary, calcSize, focusSize, getSize, sizeId, useSizes } from './drive-tamanho.js'
-import { copyDriveLink, driveLinkFor } from './link-share.js'
+import { driveLinkFor, onLinkMudou } from './link-share.js'
+import { abrirCompartilhar, abrirDetalhes, alvoDoLink, copiarLink, lerPadraoDoLink, trocarEstrela } from './compartilhar.js'
 import { openRelay } from './relay.js'
 import { DEFAULT_SORT, FILTERS, driveView, filterChips, keepVisible, normalizeSort, visibleSummary } from '../lib/ordenar.js'
 import { MacLine, SortMenu, openMacTrash } from './drive-ordenar.js'
@@ -33,15 +36,10 @@ import { openCopyLink, useCopiaRunning } from './copiar-link.js'
 import { CenasPainel } from './cenas.js'
 import { Vazio } from './kit.js'
 import { FaixaArquivos, abrirEscolherDoDrive } from './modo-drive.js'
-import { PRECISA_TOTAL, modoDe } from '../lib/modo-drive.js'
-
-const FOLDER_MIME = 'application/vnd.google-apps.folder'
+import { PRECISA_TOTAL, criadaPeloSobedesce, modoDe } from '../lib/modo-drive.js'
 
 /** O que copiar de um item da lista: atalho vira o alvo (o link do atalho só abre para quem o criou). */
-export function linkTarget(it) {
-  if (it.isShortcut && it.shortcutTargetId) return { id: it.shortcutTargetId, resourceKey: it.shortcutTargetResourceKey || null, url: null, isFolder: it.shortcutTargetMimeType === FOLDER_MIME }
-  return { id: it.id, resourceKey: it.resourceKey || null, url: it.webViewLink || null, isFolder: !!it.isFolder }
-}
+export const linkTarget = alvoDoLink
 
 /** "Meu Drive / SERHS / Diária 02": o caminho da pasta aberta, para lembrar nos destinos recentes. */
 function folderPathText(data, drives) {
@@ -242,7 +240,13 @@ export function DriveScreen({ route }) {
   const searching = !!q.trim()
   // Selo "Proxy" nos vídeos que já têm (mesma pasta ou subpasta Proxy da lista).
   const comProxy = useComProxy(accountId, searching ? null : data?.items)
-  const items = searching ? search.items : data?.items || null
+  // Estrela e link mudados aqui valem na hora, até a pasta recarregar (id → { starred?, publico? }).
+  const [ajustes, setAjustes] = useState(() => new Map())
+  const ajustar = (id, p) => setAjustes((m) => new Map(m).set(id, { ...m.get(id), ...p }))
+  const brutos = searching ? search.items : data?.items || null
+  useEffect(() => setAjustes(new Map()), [brutos])
+  const items = useMemo(() => (brutos && ajustes.size ? brutos.map((it) => (ajustes.has(it.id) ? { ...it, ...ajustes.get(it.id) } : it)) : brutos), [brutos, ajustes])
+  useEffect(() => onLinkMudou((m) => m.accountId === accountId && ajustar(m.id, { publico: m.publico })), [accountId])
   const folder = data?.folder
   const sourceId = sourceOf(data, drives)
   // "Compartilhados comigo" (a raiz) não é pasta: não dá para enviar, criar pasta nem somar o tamanho ali. Pasta de
@@ -315,9 +319,9 @@ export function DriveScreen({ route }) {
     }
   }
 
-  const uploadHere = async (e) => {
+  const uploadHere = async (e, kind) => {
     if (!podeEnviar) return
-    const paths = await pickUploadPaths({ title: `Enviar para “${folderLabel(folder, drives)}”`, anchor: e?.currentTarget })
+    const paths = await pickUploadPaths({ title: `Enviar para “${folderLabel(folder, drives)}”`, anchor: e?.currentTarget, kind })
     if (!paths?.length) return
     await uploadPaths({ accountId, paths, destFolderId: folderId, driveId: folder?.driveId || null, destName: folderLabel(folder, drives), destPath: folderPathText(data, drives) })
   }
@@ -332,9 +336,8 @@ export function DriveScreen({ route }) {
     if (copiaFim?.dest?.id === folderId) reload()
   }, [copiaFim?.jobId])
 
-  const copyItemLink = (it) => copyDriveLink({ accountId, name: it.name, ...linkTarget(it) })
-  const copyFolderLink = () =>
-    folder && copyDriveLink({ accountId, id: folder.id, name: folderLabel(folder, drives), isFolder: true, url: folder.webViewLink || null, resourceKey: folder.resourceKey || null })
+  const copyItemLink = (it) => copiarLink({ accountId, item: it })
+  const copyFolderLink = () => folder && copiarLink({ accountId, item: { ...folder, name: folderLabel(folder, drives), isFolder: true } })
 
   const chooseDest = async () => {
     const p = await pickFolderPath({ title: 'Onde salvar os downloads?', defaultPath: dest })
@@ -386,7 +389,27 @@ export function DriveScreen({ route }) {
     if (!res) return
     const n = res.movidos.length
     const para = `“${dest.name}”`
-    if (n) toast('success', n === 1 ? `“${alvo.find((x) => x.id === res.movidos[0])?.name || 'Item'}” foi para ${para}.` : `${plural(n, 'item foi', 'itens foram')} para ${para}.`)
+    // Desfazer: cada item volta para a pasta de onde saiu (na busca, os itens podem vir de pastas diferentes).
+    const deOnde = new Map()
+    for (const id of res.movidos) {
+      const de = alvo.find((x) => x.id === id)?.parents?.[0]
+      if (de && de !== dest.id) deOnde.set(de, [...(deOnde.get(de) || []), id])
+    }
+    const desfazer = deOnde.size
+      ? {
+          label: 'Desfazer',
+          onClick: async () => {
+            let voltou = 0
+            for (const [de, ids] of deOnde) {
+              const r = await attempt(moveDriveItems(accountId, ids, de, dest.id))
+              voltou += r?.movidos?.length || 0
+            }
+            if (voltou) toast('info', voltou === 1 ? 'Voltou para onde estava.' : `${plural(voltou, 'item voltou', 'itens voltaram')} para onde estavam.`)
+            reloadRef.current()
+          },
+        }
+      : undefined
+    if (n) toast('success', n === 1 ? `“${alvo.find((x) => x.id === res.movidos[0])?.name || 'Item'}” foi para ${para}.` : `${plural(n, 'item foi', 'itens foram')} para ${para}.`, { action: desfazer, duration: 8000 })
     else if (res.ja.length) toast('info', res.ja.length === 1 ? `Já estava em ${para}.` : `Já estavam em ${para}.`)
     if (res.recusados.length) toast('warning', `${plural(res.recusados.length, 'item ficou', 'itens ficaram')} onde ${res.recusados.length === 1 ? 'estava' : 'estavam'}: ${res.recusados[0].error}`)
     if (n) {
@@ -461,7 +484,25 @@ export function DriveScreen({ route }) {
     openExternal(t.url || driveLinkFor(t.id, t.isFolder, t.resourceKey))
   }
 
-  // O menu do item. Com várias linhas marcadas e o clique numa delas, Baixar e Mover valem para todas.
+  const caminhoAqui = () => (searching ? '' : folderPathText(data, drives))
+
+  const estrela = async (alvo) => {
+    // Várias marcadas: se alguma está sem estrela, todas ganham; senão, todas perdem (como no Google Drive).
+    const quer = alvo.some((x) => !x.starred)
+    for (const it of alvo) {
+      if (!!it.starred === quer) continue
+      const r = await trocarEstrela({ accountId, item: it })
+      if (r !== null) ajustar(it.id, { starred: r })
+    }
+  }
+
+  const baixarItens = async (alvo) => {
+    const res = await attempt(api.post('/api/transfers/download', { accountId, items: alvo, destDir: dest }))
+    if (res) announceBatch(res, 'na fila')
+  }
+
+  // O menu do item, na ordem do Google Drive. Com várias linhas marcadas e o clique numa delas, Baixar, Mover, estrela
+  // e lixeira valem para todas. O que não dá fica cinza com o motivo embaixo (nada falha calado).
   const abrirMenu = async (it, ponto) => {
     const varios = selected.has(it.id) && selected.size > 1 ? [...selected].map((id) => byId.get(id)).filter(Boolean) : null
     const alvo = varios || [it]
@@ -469,33 +510,69 @@ export function DriveScreen({ route }) {
     const n = alvo.length
     const video = !pasta && isVideoName(it.name)
     const audio = !pasta && /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i.test(it.name)
+    const umSo = n > 1 ? 'Escolha um item só.' : null
+    const comEstrela = alvo.every((x) => x.starred)
+    const padrao = lerPadraoDoLink()
+    const semMover = alvo.some((x) => x.canMove === false)
+    const semLixeira = alvo.some((x) => x.canTrash === false)
     const itens = [
       { id: 'abrir', icon: pasta ? 'folder' : 'eye', label: pasta ? 'Abrir' : 'Prévia', hint: pasta ? '' : 'espaço' },
-      { id: 'baixar', icon: 'download', label: n > 1 ? `Baixar ${plural(n, 'item', 'itens')}` : 'Baixar', disabled: !n || alvo.every((x) => x.canDownload === false), title: `Baixar em ${shortPath(dest, home) || 'Downloads'}` },
+      { id: 'baixar', icon: 'download', label: n > 1 ? `Baixar ${plural(n, 'item', 'itens')}` : 'Baixar', disabled: !n || alvo.every((x) => x.canDownload === false), motivo: 'Quem é dono não liberou baixar.', title: `Baixar em ${shortPath(dest, home) || 'Downloads'}` },
+      { id: 'renomear', icon: 'pencil', label: 'Renomear…', disabled: n > 1 || it.canRename === false, motivo: umSo || 'Sua conta não pode renomear este item.' },
       pasta && !it.isShortcut && it.canAddChildren !== false ? { id: 'enviar', icon: 'upload', label: 'Enviar para esta pasta…' } : null,
-      { id: 'link', icon: 'link', label: 'Copiar link', sep: true, disabled: n > 1 },
-      { id: 'drive', icon: 'external', label: 'Abrir no Google Drive', disabled: n > 1 },
-      { id: 'renomear', icon: 'pencil', label: 'Renomear…', sep: true, disabled: n > 1 || it.canRename === false },
-      { id: 'mover', icon: 'arrow-right', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para…` : 'Mover para…', disabled: alvo.some((x) => x.canMove === false), title: alvo.some((x) => x.canMove === false) ? 'Sua conta não pode mudar este item de lugar' : undefined },
-      pasta && !it.isShortcut ? { id: 'tamanho', icon: 'disk', label: 'Calcular tamanho', sep: true } : null,
+      { id: 'compartilhar', icon: 'users', label: 'Compartilhar…', sep: true, disabled: n > 1, motivo: umSo },
+      { id: 'link', icon: padrao === 'publico' ? 'globe' : 'link', label: 'Copiar link', hint: padrao === 'publico' ? 'público' : '', disabled: n > 1, motivo: umSo },
+      { id: 'drive', icon: 'external', label: 'Abrir no Google Drive', disabled: n > 1, motivo: umSo },
+      { id: 'mover', icon: 'arrow-right', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para…` : 'Mover para…', sep: true, disabled: semMover, motivo: 'Sua conta não pode mudar este item de lugar.' },
+      { id: 'estrela', icon: comEstrela ? 'star-fill' : 'star', label: comEstrela ? 'Tirar a estrela' : 'Adicionar estrela' },
+      { id: 'detalhes', icon: 'info', label: 'Detalhes', disabled: n > 1, motivo: umSo },
+      pasta && !it.isShortcut ? { id: 'tamanho', icon: 'disk', label: 'Calcular tamanho', sep: true, disabled: modo === 'arquivos' && !criadaPeloSobedesce(it), motivo: `${PRECISA_TOTAL} para somar o que tem dentro.` } : null,
       video && n === 1 ? { id: 'proxy', icon: 'film', label: 'Gerar proxy', sep: !pasta } : null,
       (video || audio) && n === 1 ? { id: 'relay', icon: 'compare', label: 'Converter com o Relay…' } : null,
-      { id: 'lixeira', icon: 'trash', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para a lixeira` : 'Mover para a lixeira', sep: true, perigo: true, disabled: alvo.some((x) => x.canTrash === false), title: alvo.some((x) => x.canTrash === false) ? 'Sua conta não pode mandar este item para a lixeira' : undefined },
+      { id: 'lixeira', icon: 'trash', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para a lixeira` : 'Mover para a lixeira', sep: true, perigo: true, disabled: semLixeira, motivo: 'Sua conta não pode mandar este item para a lixeira.' },
     ]
     const escolha = await abrirMenuContexto({ titulo: n > 1 ? plural(n, 'item selecionado', 'itens selecionados') : it.name, itens, x: ponto.x, y: ponto.y })
     if (escolha === 'abrir') pasta ? open(it) : preview(it)
-    else if (escolha === 'baixar') {
-      const res = await attempt(api.post('/api/transfers/download', { accountId, items: alvo, destDir: dest }))
-      if (res) announceBatch(res, 'na fila')
-    } else if (escolha === 'enviar') enviarPara(it)
-    else if (escolha === 'link') copyItemLink(it)
+    else if (escolha === 'baixar') baixarItens(alvo)
+    else if (escolha === 'enviar') enviarPara(it)
+    else if (escolha === 'compartilhar') abrirCompartilhar({ accountId, item: it })
+    else if (escolha === 'link') copiarLink({ accountId, item: it })
     else if (escolha === 'drive') abrirNoDrive(it)
     else if (escolha === 'renomear') renomear(it)
     else if (escolha === 'mover') moverPara(alvo)
+    else if (escolha === 'estrela') estrela(alvo)
+    else if (escolha === 'detalhes') abrirDetalhes({ accountId, item: it, local: caminhoAqui() })
     else if (escolha === 'tamanho') calcFolder(it)
     else if (escolha === 'proxy') openProxyArquivo({ accountId, item: it })
     else if (escolha === 'relay') openRelay({ accountId, item: it })
     else if (escolha === 'lixeira') lixeira(alvo)
+  }
+
+  // Ações rápidas da linha (passar o mouse): Compartilhar, Baixar, Renomear e estrela.
+  const acaoRapida = (it, acao) => {
+    if (acao === 'compartilhar') abrirCompartilhar({ accountId, item: it })
+    else if (acao === 'baixar') baixarItens([it])
+    else if (acao === 'renomear') renomear(it)
+    else if (acao === 'estrela') estrela([it])
+  }
+
+  // Botão direito no vazio da lista: o que dá para fazer na pasta aberta.
+  const menuDoVazio = async (e) => {
+    // Só o vazio: linha, cartão, controles, cabeçalho e barras ficam com o menu deles (ou o do sistema).
+    if (e.defaultPrevented || e.target.closest?.('.drow, .gcard, button, a, input, label, .k-cabeca, .dv-barra, .dv-faixa, .modo-faixa, .selbar, .cn, .qlook-backdrop')) return
+    e.preventDefault()
+    const motivo = searching ? 'Saia da busca para escolher a pasta.' : virtual ? 'Abra uma das pastas compartilhadas.' : !folder ? 'Carregando a pasta…' : 'Você só pode ver esta pasta.'
+    const itens = [
+      { id: 'pasta', icon: 'folder-plus', label: 'Nova pasta…', disabled: searching || !podeEnviar, motivo },
+      { id: 'arquivos', icon: 'upload', label: 'Enviar arquivos…', sep: true, disabled: searching || !podeEnviar, motivo },
+      { id: 'enviar-pasta', icon: 'folder-up', label: 'Enviar pasta…', disabled: searching || !podeEnviar, motivo },
+      !searching && folder && folderId !== 'root' && !virtual ? { id: 'link', icon: 'link', label: 'Copiar link da pasta', sep: true } : null,
+    ]
+    const escolha = await abrirMenuContexto({ titulo: searching ? 'Busca' : folderLabel(folder, drives), itens, x: e.clientX, y: e.clientY })
+    if (escolha === 'pasta') newFolder()
+    else if (escolha === 'arquivos') uploadHere(null, 'files')
+    else if (escolha === 'enviar-pasta') uploadHere(null, 'folder')
+    else if (escolha === 'link') copyFolderLink()
   }
 
   const escolherAqui = html`<${Button} icon="external" onClick=${() => abrirEscolherDoDrive(accountId)} title="Abre o SOBEDESCE no navegador para escolher no Google Drive">Escolher do Drive</${Button}>`
@@ -559,7 +636,7 @@ export function DriveScreen({ route }) {
     </div>`
   }
 
-  return html`<div class=${cx('page page-drive k-pagina', selected.size && 'has-selbar')} onKeyDown=${onKeyDownPage}>
+  return html`<div class=${cx('page page-drive k-pagina', selected.size && 'has-selbar')} onKeyDown=${onKeyDownPage} onContextMenu=${menuDoVazio}>
     <${FileDrop}
       label=${folderLabel(folder, drives)}
       enabled=${podeEnviar && !!accountId}
@@ -686,7 +763,7 @@ export function DriveScreen({ route }) {
             proxies=${proxies}
             sizeOf=${sizeOf}
             onCalcSize=${calcFolder}
-            onCopyLink=${copyItemLink}
+            onAcao=${acaoRapida}
             comProxy=${comProxy}
             onMenu=${abrirMenu}
             onSoltar=${soltar}

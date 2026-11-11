@@ -6,7 +6,8 @@ import { html, useEffect, useState } from '/vendor/preact-htm.js'
 import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
 import { bytes, count, plural, tildify, baseName } from '../lib/format.js'
-import { cx } from '../lib/ui.js'
+import { cx, storage } from '../lib/ui.js'
+import { navigate } from '../lib/router.js'
 import { abrirNoSynquei, openExternal, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Checkbox, Switch } from './common.js'
@@ -14,6 +15,8 @@ import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, P
 import { useLocalRoots } from './local-picker.js'
 import { Fonte } from './comparar-partes.js'
 import { duracao } from './discos.js'
+import { abrirPreviaCartao } from './previa-cartao.js'
+import { abrirArquivar } from './arquivar.js'
 
 const FRASE = 'Espete o cartão: o backup passa sozinho, organizado por diária e por dono.'
 const post = (url, body = {}) => attempt(api.post(url, body))
@@ -57,9 +60,17 @@ const TIPOS = [
 function Chips({ opcoes, valor, onChange, label }) {
   return html`<div class="bk-donos-escolha" role="radiogroup" aria-label=${label}>
     ${opcoes.map(
-      (o) => html`<button type="button" role="radio" aria-checked=${valor === o.id ? 'true' : 'false'} class=${cx('bk-dono-btn', valor === o.id && 'is-on')} onClick=${() => onChange(o.id)} title=${o.dica || o.sub || ''}>
-        <${Icon} name=${o.icone} size=${14} />${o.rotulo}
-      </button>`,
+      (o) =>
+        html`<button
+          type="button"
+          role="radio"
+          aria-checked=${valor === o.id ? 'true' : 'false'}
+          class=${cx('bk-dono-btn', valor === o.id && 'is-on')}
+          onClick=${() => onChange(o.id)}
+          title=${o.dica || o.sub || ''}
+        >
+          <${Icon} name=${o.icone} size=${14} />${o.rotulo}
+        </button>`,
     )}
   </div>`
 }
@@ -114,32 +125,46 @@ function Escolha({ caminho, nome, inicial, midia = 'tudo', onPronto, onCancelar,
       <span class="bk-escolha-dica">O que ficar de fora continua no cartão.</span>
     </div>
     ${erro ? html`<p class="bk-vazio-txt">${erro}</p>` : !c ? html`<${Barra} p=${null} label="Lendo o cartão" />` : null}
-    ${c
-      ? html`<div class="bk-escolha-tipos">
-            ${visiveis.map(
-              (t) => html`<label class=${cx('bk-escolha-tipo', tipos?.includes(t.id) && 'is-on')} title=${t.dica || ''}>
-                <${Checkbox} checked=${tipos?.includes(t.id)} onChange=${(on) => setTipos(marcar(tipos || [], t.id, on))} label=${t.rotulo} />
-                <${Icon} name=${t.icone} size=${15} />
-                <b>${t.rotulo}</b>
-                <span>${count(c.tipos[t.id].arquivos)} · ${bytes(c.tipos[t.id].bytes)}</span>
-              </label>`,
-            )}
-          </div>
-          ${c.pastas.length > 1
-            ? html`<details class="bk-escolha-pastas">
-                <summary>Pastas do cartão <span>${pastas ? `${pastas.length} de ${c.pastas.length}` : ''}</span></summary>
-                <ul>
-                  ${c.pastas.map(
-                    (p) => html`<li><label class="check-label">
-                      <${Checkbox} checked=${pastas?.includes(p.pasta)} onChange=${(on) => setPastas(marcar(pastas || [], p.pasta, on))} label=${p.pasta || 'Raiz do cartão'} />
-                      <span class="mono-path">${p.pasta || 'Raiz do cartão'}</span>
-                      <span class="sub">${[p.videos ? plural(p.videos, 'vídeo', 'vídeos') : null, p.fotos ? plural(p.fotos, 'foto', 'fotos') : null, bytes(p.bytes)].filter(Boolean).join(' · ')}</span>
-                    </label></li>`,
-                  )}
-                </ul>
-              </details>`
-            : null}`
-      : null}
+    ${
+      c
+        ? html`<div class="bk-escolha-tipos">
+              ${visiveis.map(
+                (t) =>
+                  html`<label class=${cx('bk-escolha-tipo', tipos?.includes(t.id) && 'is-on')} title=${t.dica || ''}>
+                    <${Checkbox} checked=${tipos?.includes(t.id)} onChange=${(on) => setTipos(marcar(tipos || [], t.id, on))} label=${t.rotulo} />
+                    <${Icon} name=${t.icone} size=${15} />
+                    <b>${t.rotulo}</b>
+                    <span>${count(c.tipos[t.id].arquivos)} · ${bytes(c.tipos[t.id].bytes)}</span>
+                  </label>`,
+              )}
+            </div>
+            ${
+              c.pastas.length > 1
+                ? html`<details class="bk-escolha-pastas">
+                    <summary>Pastas do cartão <span>${pastas ? `${pastas.length} de ${c.pastas.length}` : ''}</span></summary>
+                    <ul>
+                      ${c.pastas.map(
+                        (p) =>
+                          html`<li>
+                            <label class="check-label">
+                              <${Checkbox}
+                                checked=${pastas?.includes(p.pasta)}
+                                onChange=${(on) => setPastas(marcar(pastas || [], p.pasta, on))}
+                                label=${p.pasta || 'Raiz do cartão'}
+                              />
+                              <span class="mono-path">${p.pasta || 'Raiz do cartão'}</span>
+                              <span class="sub"
+                                >${[p.videos ? plural(p.videos, 'vídeo', 'vídeos') : null, p.fotos ? plural(p.fotos, 'foto', 'fotos') : null, bytes(p.bytes)].filter(Boolean).join(' · ')}</span
+                              >
+                            </label>
+                          </li>`,
+                      )}
+                    </ul>
+                  </details>`
+                : null
+            }`
+        : null
+    }
     <div class="bk-dono-acoes">
       <${Button} size="sm" variant="ghost" onClick=${onCancelar}>Cancelar</${Button}>
       <${Button} size="sm" icon="check" onClick=${enviar} disabled=${!pronto}>${confirmar}</${Button}>
@@ -166,6 +191,8 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   // Projeto novo pergunta o que passa (nada escolhido no começo); o antigo já passava tudo.
   const [midia, setMidia] = useState(inicial ? inicial.midia || 'tudo' : null)
   const [synquei, setSynquei] = useState(inicial ? inicial.synquei !== false : true)
+  const [precolor, setPrecolor] = useState(!!inicial?.precolor)
+  const [levarProxies, setLevarProxies] = useState(!!inicial?.levarProxies)
   const [ligar, setLigar] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const ds = destinos.filter(Boolean)
@@ -173,30 +200,43 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
   const salvar = async () => {
     setOcupado(true)
     const tipoFinal = synquei ? tipo : ''
-    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei })
+    const r = inicial
+      ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo: tipoFinal, midia, synquei, precolor, levarProxies })
+      : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo: tipoFinal, midia, synquei, precolor, levarProxies })
     setOcupado(false)
     if (r) onPronto?.()
   }
   const exemplo = [ds[0] ? baseName(ds[0]) : 'HD', nome.trim() || 'Projeto', 'Diária 01', pastasDaMidia(midia || 'tudo'), 'Ana - FX30', 'Cartão 01']
-  const dica = !nome.trim() ? 'Falta o nome do projeto' : !midia ? 'Falta dizer o que vai passar' : !ds.length ? 'Falta escolher onde guardar' : ds.length === 1 ? 'Com dois destinos você já sai com o backup' : `${ds.length} destinos ao mesmo tempo`
+  const dica = !nome.trim()
+    ? 'Falta o nome do projeto'
+    : !midia
+      ? 'Falta dizer o que vai passar'
+      : !ds.length
+        ? 'Falta escolher onde guardar'
+        : ds.length === 1
+          ? 'Com dois destinos você já sai com o backup'
+          : `${ds.length} destinos ao mesmo tempo`
   const lado = html`<${Resumo} titulo="Como fica no disco">
       <div class="k-caixa bk-arvore" aria-label="Pastas">
         ${exemplo.map(
-          (p, i) => html`<div class="bk-arvore-linha" style=${`--n:${i}`}>
-            <${Icon} name=${i === 0 ? 'disk' : i === exemplo.length - 1 ? 'sdcard' : 'folder'} size=${14} />
-            <span class=${cx(i >= 4 && 'is-dono')}>${p}</span>
-          </div>`,
+          (p, i) =>
+            html`<div class="bk-arvore-linha" style=${`--n:${i}`}>
+              <${Icon} name=${i === 0 ? 'disk' : i === exemplo.length - 1 ? 'sdcard' : 'folder'} size=${14} />
+              <span class=${cx(i >= 4 && 'is-dono')}>${p}</span>
+            </div>`,
         )}
       </div>
       <p class="cp-resumo-txt">O dono do cartão é perguntado só na primeira vez que ele é espetado.</p>
     </${Resumo}>
     <${BotaoGrande} icone="check" onClick=${salvar} disabled=${ocupado || !nome.trim() || !ds.length || !midia} dica=${dica}>${inicial ? 'Salvar' : 'Criar o projeto'}</${BotaoGrande}>
     ${onCancelar ? html`<${Button} icon="x" onClick=${onCancelar} class="cp-lado-btn">Cancelar</${Button}>` : null}
-    ${inicial
-      ? html`<div class="bk-excluir">
+    ${
+      inicial
+        ? html`<div class="bk-excluir">
           <${Confirma} icone="trash" pergunta="Excluir o projeto? Os arquivos nos HDs ficam." sim="Excluir" onSim=${async () => (await post('/api/backup/apagar', { id: inicial.id })) && onExcluido?.()}>Excluir projeto</${Confirma}>
         </div>`
-      : null}`
+        : null
+    }`
 
   return html`<${Pagina} titulo="Cartões" frase=${FRASE} class="page-backup" lado=${lado}>
     ${topo}
@@ -209,50 +249,65 @@ function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, onExcluido, to
     <${Passo} n="3" titulo="Para onde" sub=${ds.length > 1 ? `${ds.length} destinos` : 'destino'} frase="O HD principal e os backups. O cartão é lido uma vez e gravado em todos." i=${4}>
       <div class="cp-destinos">
         ${destinos.map(
-          (d, i) => html`<${Fonte}
-            key=${i}
-            icone="disk"
-            tom="up"
-            rotulo=${destinos.length > 1 ? (i === 0 ? 'Principal' : `Backup ${i}`) : null}
-            valor=${d ? baseName(d) || d : null}
-            caminho=${d ? tildify(d, roots?.home) : ''}
-            vazio=${i === 0 ? 'Escolher o HD principal' : `Escolher o backup ${i}`}
-            dica="O HD ou a pasta onde o projeto fica"
-            onTrocar=${async () => {
-              const p = await escolher(d)
-              if (p) setDestinos(destinos.map((x, k) => (k === i ? p : x)))
-            }}
-            onSoltarPasta=${(p) => setDestinos(destinos.map((x, k) => (k === i ? p : x)))}
-            onTirar=${destinos.length > 1 ? () => setDestinos(destinos.filter((_, k) => k !== i)) : d ? () => setDestinos([null]) : null}
-            tirarLabel="Tirar este destino"
-          />`,
+          (d, i) =>
+            html`<${Fonte}
+              key=${i}
+              icone="disk"
+              tom="up"
+              rotulo=${destinos.length > 1 ? (i === 0 ? 'Principal' : `Backup ${i}`) : null}
+              valor=${d ? baseName(d) || d : null}
+              caminho=${d ? tildify(d, roots?.home) : ''}
+              vazio=${i === 0 ? 'Escolher o HD principal' : `Escolher o backup ${i}`}
+              dica="O HD ou a pasta onde o projeto fica"
+              onTrocar=${async () => {
+                const p = await escolher(d)
+                if (p) setDestinos(destinos.map((x, k) => (k === i ? p : x)))
+              }}
+              onSoltarPasta=${(p) => setDestinos(destinos.map((x, k) => (k === i ? p : x)))}
+              onTirar=${destinos.length > 1 ? () => setDestinos(destinos.filter((_, k) => k !== i)) : d ? () => setDestinos([null]) : null}
+              tirarLabel="Tirar este destino"
+            />`,
         )}
-        ${destinos.length < 4
-          ? html`<button type="button" class="cp-mais" onClick=${() => setDestinos([...destinos, null])}><span><${Icon} name="plus" size=${14} strokeWidth=${2.2} /></span> Outro destino (backup)</button>`
-          : null}
+        ${
+          destinos.length < 4
+            ? html`<button type="button" class="cp-mais" onClick=${() => setDestinos([...destinos, null])}>
+                <span><${Icon} name="plus" size=${14} strokeWidth=${2.2} /></span> Outro destino (backup)
+              </button>`
+            : null
+        }
       </div>
     </${Passo}>
     <${Passo} n="4" titulo="No fim" frase="Cada arquivo copiado é lido de novo no destino e conferido." i=${5}>
       <${Linhas}>
-        ${inicial
-          ? null
-          : html`<${Linha} titulo="Começar sozinho ao espetar" sub="O cartão conhecido passa direto; o novo pergunta de quem é.">
+        ${
+          inicial
+            ? null
+            : html`<${Linha} titulo="Começar sozinho ao espetar" sub="O cartão conhecido passa direto; o novo pergunta de quem é.">
               <${Switch} checked=${ligar} label="Começar sozinho ao espetar" onChange=${setLigar} />
-            </${Linha}>`}
+            </${Linha}>`
+        }
         <${Linha} titulo="Ejetar o cartão ao terminar" sub="Só quando estiver tudo certo em todos os destinos.">
           <${Switch} checked=${ejetar} label="Ejetar o cartão ao terminar" onChange=${setEjetar} />
+        </${Linha}>
+        <${Linha} titulo="Levar os proxies da câmera" sub=${levarProxies ? 'LRV, THM e afins vão junto com o material.' : 'Desligado: LRV, THM e arquivos do sistema ficam no cartão. Não seguram o “pode formatar”.'}>
+          <${Switch} checked=${levarProxies} label="Levar os proxies da câmera" onChange=${setLevarProxies} />
+        </${Linha}>
+        <${Linha} titulo="Frames com cor ao terminar o cartão" sub=${precolor ? 'Cartão OK: um frame por clipe, com a LUT e o ajuste da câmera daquele dono (Estúdio › Frames).' : 'Desligado: os frames saem quando você tocar em “Frames do cartão”.'}>
+          <${Switch} checked=${precolor} label="Frames com cor ao terminar o cartão" onChange=${setPrecolor} />
         </${Linha}>
         <${Linha} titulo="Usar o Synquei" sub=${synquei ? 'No fim, “Preparar no Synquei” organiza a mídia no DaVinci.' : 'Desligado: sem o botão do Synquei.'}>
           <${Switch} checked=${synquei} label="Usar o Synquei" onChange=${setSynquei} />
         </${Linha}>
-        ${synquei && tipos.length
-          ? html`<${Linha} titulo="No Synquei" sub="O tipo de projeto já chega escolhido.">
+        ${
+          synquei && tipos.length
+            ? html`<${Linha} titulo="No Synquei" sub="O tipo de projeto já chega escolhido.">
               <span class="select bk-tipo"><select value=${tipo} onChange=${(e) => setTipo(e.currentTarget.value)} aria-label="Tipo de projeto no Synquei">
                 <option value="">Escolher lá</option>
                 ${tipos.map((t) => html`<option value=${t.id}>${t.label}</option>`)}
               </select><${Icon} name="chevron-down" size=${12} /></span>
             </${Linha}>`
-          : null}
+            : null
+        }
       </${Linhas}>
     </${Passo}>
   </${Pagina}>`
@@ -278,7 +333,12 @@ function Pedido({ p, donos, i, midia = 'tudo' }) {
     setOcupado(false)
   }
   const ct = p.conteudo
-  const temDos = ct ? [ct.videos?.arquivos ? plural(ct.videos.arquivos, 'vídeo', 'vídeos') : null, ct.fotos?.arquivos ? plural(ct.fotos.arquivos, 'foto', 'fotos') : null].filter(Boolean) : []
+  const temDos = ct
+    ? [
+        ct.videos?.arquivos ? plural(ct.videos.arquivos, 'vídeo', 'vídeos') : null,
+        ct.fotos?.arquivos ? plural(ct.fotos.arquivos, 'foto', 'fotos') : null,
+      ].filter(Boolean)
+    : []
   const pronto = novo ? !!nome.trim() : !!donoId
   const cam = p.camera?.modelo ? `${p.camera.curto} (${p.camera.modelo})` : p.camera?.curto
   return html`<section class="bk-pedido k-entra" style=${`--i:${i}`} role="alertdialog" aria-label=${`Cartão novo: ${p.nome}`}>
@@ -290,33 +350,82 @@ function Pedido({ p, donos, i, midia = 'tudo' }) {
         <p>${[p.capacidade ? bytes(p.capacidade) : null, cam ? `câmera ${cam}` : null].filter(Boolean).join(' · ') || 'Nas próximas vezes ele passa sozinho.'}</p>
       </div>
     </div>
-    ${donos.length
-      ? html`<div class="bk-donos-escolha" role="radiogroup" aria-label="Dono do cartão">
-          ${donos.map(
-            (d) => html`<button type="button" role="radio" aria-checked=${!novo && donoId === d.id ? 'true' : 'false'} class=${cx('bk-dono-btn', !novo && donoId === d.id && 'is-on')} onClick=${() => (setNovo(false), setDonoId(d.id))}>
-              <${Icon} name="user" size=${14} />${d.rotulo}${p.donoSugerido === d.id ? html`<em>mesma câmera</em>` : null}
-            </button>`,
-          )}
-          <button type="button" role="radio" aria-checked=${novo ? 'true' : 'false'} class=${cx('bk-dono-btn is-novo', novo && 'is-on')} onClick=${() => setNovo(true)}><${Icon} name="plus" size=${14} />Outra pessoa</button>
-        </div>`
-      : null}
-    ${novo
-      ? html`<div class="bk-novo-dono">
-          <label><span class="k-rot">Nome</span><input class="input" type="text" maxlength="60" placeholder="ex.: Ana" value=${nome} onInput=${(e) => setNome(e.currentTarget.value)} /></label>
-          <label><span class="k-rot">Câmera</span><input class="input" type="text" maxlength="40" placeholder="ex.: FX30" value=${camera} onInput=${(e) => setCamera(e.currentTarget.value)} /></label>
-          <label class="bk-novo-pasta-campo"><span class="k-rot">Nome da pasta <em>opcional</em></span><input class="input mono-path" type="text" maxlength="80" placeholder=${pastaPadrao(nome, camera)} value=${pasta} onInput=${(e) => setPasta(e.currentTarget.value)} aria-label="Nome da pasta do dono" /></label>
-          <span class="bk-novo-pasta mono-path">${midia === 'tudo' ? rotuloSecao(secao) : pastasDaMidia(midia)} / ${pasta.trim() || pastaPadrao(nome, camera)} / Cartão 01</span>
-        </div>`
-      : null}
-    ${midia === 'tudo'
-      ? html`<div class="bk-pedido-secao">
-          <span class="k-rot">Vai para${temDos.length ? html` <em>tem ${temDos.join(' e ')}</em>` : null}</span>
-          <${Chips} opcoes=${SECOES} valor=${secao} onChange=${setSecao} label="Pasta do cartão" />
-        </div>`
-      : null}
-    ${escolhendo
-      ? html`<${Escolha} caminho=${p.caminho} nome=${p.nome} inicial=${escolha} midia=${midia} confirmar="Usar esta escolha" onCancelar=${() => setEscolhendo(false)} onPronto=${(e) => (setEscolha(e), setEscolhendo(false))} />`
-      : null}
+    ${
+      donos.length
+        ? html`<div class="bk-donos-escolha" role="radiogroup" aria-label="Dono do cartão">
+            ${donos.map(
+              (d) =>
+                html`<button
+                  type="button"
+                  role="radio"
+                  aria-checked=${!novo && donoId === d.id ? 'true' : 'false'}
+                  class=${cx('bk-dono-btn', !novo && donoId === d.id && 'is-on')}
+                  onClick=${() => (setNovo(false), setDonoId(d.id))}
+                >
+                  <${Icon} name="user" size=${14} />${d.rotulo}${p.donoSugerido === d.id ? html`<em>mesma câmera</em>` : null}
+                </button>`,
+            )}
+            <button
+              type="button"
+              role="radio"
+              aria-checked=${novo ? 'true' : 'false'}
+              class=${cx('bk-dono-btn is-novo', novo && 'is-on')}
+              onClick=${() => setNovo(true)}
+            >
+              <${Icon} name="plus" size=${14} />Outra pessoa
+            </button>
+          </div>`
+        : null
+    }
+    ${
+      novo
+        ? html`<div class="bk-novo-dono">
+            <label
+              ><span class="k-rot">Nome</span
+              ><input class="input" type="text" maxlength="60" placeholder="ex.: Ana" value=${nome} onInput=${(e) => setNome(e.currentTarget.value)}
+            /></label>
+            <label
+              ><span class="k-rot">Câmera</span
+              ><input class="input" type="text" maxlength="40" placeholder="ex.: FX30" value=${camera} onInput=${(e) => setCamera(e.currentTarget.value)}
+            /></label>
+            <label class="bk-novo-pasta-campo"
+              ><span class="k-rot">Nome da pasta <em>opcional</em></span
+              ><input
+                class="input mono-path"
+                type="text"
+                maxlength="80"
+                placeholder=${pastaPadrao(nome, camera)}
+                value=${pasta}
+                onInput=${(e) => setPasta(e.currentTarget.value)}
+                aria-label="Nome da pasta do dono"
+            /></label>
+            <span class="bk-novo-pasta mono-path"
+              >${midia === 'tudo' ? rotuloSecao(secao) : pastasDaMidia(midia)} / ${pasta.trim() || pastaPadrao(nome, camera)} / Cartão 01</span
+            >
+          </div>`
+        : null
+    }
+    ${
+      midia === 'tudo'
+        ? html`<div class="bk-pedido-secao">
+            <span class="k-rot">Vai para${temDos.length ? html` <em>tem ${temDos.join(' e ')}</em>` : null}</span>
+            <${Chips} opcoes=${SECOES} valor=${secao} onChange=${setSecao} label="Pasta do cartão" />
+          </div>`
+        : null
+    }
+    ${
+      escolhendo
+        ? html`<${Escolha}
+            caminho=${p.caminho}
+            nome=${p.nome}
+            inicial=${escolha}
+            midia=${midia}
+            confirmar="Usar esta escolha"
+            onCancelar=${() => setEscolhendo(false)}
+            onPronto=${(e) => (setEscolha(e), setEscolhendo(false))}
+          />`
+        : null
+    }
     <div class="bk-pedido-acoes">
       <${Button} variant="ghost" icon="eye-off" onClick=${() => responder({ ignorar: true })} disabled=${ocupado}>Ignorar este disco</${Button}>
       <${Button} variant="ghost" icon="list" onClick=${() => setEscolhendo(true)} disabled=${ocupado || escolhendo} title="Só uma parte do cartão">${escolha ? 'Escolha feita · mudar' : 'Escolher o que passar'}</${Button}>
@@ -367,9 +476,16 @@ function Dono({ d, k, bloqueado, midia = 'tudo' }) {
   return html`<div class="bk-dono k-entra" style=${`--i:${k}`}>
     <span class="bk-dono-ic"><${Icon} name="user" size=${16} /></span>
     <b>${d.rotulo}</b>
-    <span>${d.cartoes ? `${plural(d.cartoes, 'cartão', 'cartões')} · ${bytes(d.bytes)}` : 'Nenhum cartão nesta diária'} · ${midia === 'tudo' ? rotuloSecao(d.secao) : pastasDaMidia(midia)}</span>
-    <span class="bk-dono-pasta mono-path" title=${`Em ${midia === 'tudo' ? rotuloSecao(d.secao) : pastasDaMidia(midia)} / ${d.pasta}`}><${Icon} name="folder" size=${12} />${d.pasta}</span>
-    <button type="button" class="bk-dono-editar" onClick=${abrir} disabled=${bloqueado} aria-label=${`Editar ${d.rotulo}`} title="Editar nome, câmera e pasta"><${Icon} name="pencil" size=${13} /></button>
+    <span
+      >${d.cartoes ? `${plural(d.cartoes, 'cartão', 'cartões')} · ${bytes(d.bytes)}` : 'Nenhum cartão nesta diária'} ·
+      ${midia === 'tudo' ? rotuloSecao(d.secao) : pastasDaMidia(midia)}</span
+    >
+    <span class="bk-dono-pasta mono-path" title=${`Em ${midia === 'tudo' ? rotuloSecao(d.secao) : pastasDaMidia(midia)} / ${d.pasta}`}
+      ><${Icon} name="folder" size=${12} />${d.pasta}</span
+    >
+    <button type="button" class="bk-dono-editar" onClick=${abrir} disabled=${bloqueado} aria-label=${`Editar ${d.rotulo}`} title="Editar nome, câmera e pasta">
+      <${Icon} name="pencil" size=${13} />
+    </button>
   </div>`
 }
 
@@ -411,24 +527,60 @@ function Agora({ job, pontos }) {
     acao=${html`<${Button} size="sm" icon="x" onClick=${() => post('/api/backup/cancelar')}>Parar</${Button}>`}
   >
     <${Barra} p=${job.fase === 'comparando' ? null : frac} vivo label="Andamento da descarga" />
-    ${g
-      ? html`<${Stats}
-          colunas=${4}
-          itens=${[
-            { icone: 'gauge', valor: g.velocidade ? `${bytes(g.velocidade)}/s` : '—', rotulo: 'agora', tom: 'up' },
-            { icone: 'doc', valor: `${count(g.arquivos)}/${count(g.totalArquivos)}`, rotulo: 'arquivos', tom: 'down' },
-            { icone: 'clock', valor: g.restante != null ? duracao(g.restante) : '—', rotulo: 'falta', tom: 'ok' },
-            { icone: 'shield', valor: g.etapa === 'conferindo' ? 'conferindo' : `${bytes(g.copiados)}`, rotulo: g.etapa === 'conferindo' ? 'lendo de volta' : `de ${bytes(g.totalBytes)}`, tom: 'neutro' },
-          ]}
-        />`
-      : html`<p class="bk-fase">${job.fase === 'ejetando' ? 'Tudo conferido. Ejetando o cartão' : job.fase === 'comparando' ? (job.tentativa ? 'Comparando de novo: confere se ficou tudo' : 'Comparando o cartão com os destinos') : 'Preparando'}</p>`}
+    ${
+      g
+        ? html`<${Stats}
+            colunas=${4}
+            itens=${[
+              { icone: 'gauge', valor: g.velocidade ? `${bytes(g.velocidade)}/s` : '—', rotulo: 'agora', tom: 'up' },
+              { icone: 'doc', valor: `${count(g.arquivos)}/${count(g.totalArquivos)}`, rotulo: 'arquivos', tom: 'down' },
+              { icone: 'clock', valor: g.restante != null ? duracao(g.restante) : '—', rotulo: 'falta', tom: 'ok' },
+              {
+                icone: 'shield',
+                valor: g.etapa === 'conferindo' ? 'conferindo' : `${bytes(g.copiados)}`,
+                rotulo: g.etapa === 'conferindo' ? 'lendo de volta' : `de ${bytes(g.totalBytes)}`,
+                tom: 'neutro',
+              },
+            ]}
+          />`
+        : html`<p class="bk-fase">
+            ${job.fase === 'ejetando' ? 'Tudo conferido. Ejetando o cartão' : job.fase === 'comparando' ? (job.tentativa ? 'Comparando de novo: confere se ficou tudo' : 'Comparando o cartão com os destinos') : 'Preparando'}
+          </p>`
+    }
     ${pontos.length > 1 ? html`<div class="cp-grafico"><${GraficoVelocidade} pontos=${pontos.map((x) => ({ up: x }))} altura=${120} label="Velocidade da descarga" /></div>` : null}
     <${Fases} job=${job} />
   </${Passo}>`
 }
 
+/**
+ * Imprevistos do último cartão que passou OK (src/backup/imprevistos.js): nome repetido que foi para a pasta
+ * "contador zerado" e gravação que parece interrompida (copiou igual, mas o arquivo está quebrado no próprio cartão).
+ */
+function Imprevistos({ u }) {
+  if (!u || u.resultado !== 'ok' || (!u.suspeitos && !u.zerados)) return null
+  const lista = [...(u.listaSuspeitos || []).map((r) => ({ r, tipo: 'suspeito' })), ...(u.listaZerados || []).map((r) => ({ r, tipo: 'zerado' }))]
+  const frases = [
+    u.suspeitos
+      ? `${plural(u.suspeitos, 'gravação parece interrompida', 'gravações parecem interrompidas')} (bateria ou cartão saiu no meio). Confira antes de formatar`
+      : null,
+    u.zerados
+      ? `A câmera voltou a numerar do zero: ${plural(u.zerados, 'arquivo com nome repetido foi', 'arquivos com nome repetido foram')} para a pasta “contador zerado”, ao lado do cartão`
+      : null,
+  ].filter(Boolean)
+  return html`<${Passo} icone="warning" cor=${u.suspeitos ? 'warn' : 'ok'} titulo=${u.suspeitos ? `Confira antes de formatar: ${u.dono}` : `Nada por cima: ${u.dono}`} frase=${frases.join('. ')} i=${4}>
+    ${
+      lista.length
+        ? html`<ul class="bk-lista">
+            ${lista.map((x) => html`<li class=${cx(x.tipo === 'suspeito' && 'is-alerta')}><${Icon} name=${x.tipo === 'suspeito' ? 'warning' : 'folder'} size=${12} /><span class="mono-path">${x.r}</span></li>`)}
+          </ul>`
+        : null
+    }
+  </${Passo}>`
+}
+
 function Ultimo({ u }) {
-  if (!u || u.resultado === 'ok') return null
+  if (u?.resultado === 'ok') return html`<${Imprevistos} u=${u} />`
+  if (!u) return null
   const lista = [...(u.listaFaltam || []).map((r) => ({ r, tipo: 'falta' })), ...(u.listaAlertas || []).map((r) => ({ r, tipo: 'alerta' }))]
   return html`<${Passo}
     icone="warning"
@@ -437,20 +589,40 @@ function Ultimo({ u }) {
     frase=${u.erro || [u.faltam ? `${plural(u.faltam, 'arquivo não está', 'arquivos não estão')} em todos os destinos` : null, u.alertas ? `${plural(u.alertas, 'arquivo tem', 'arquivos têm')} o mesmo nome e outro tamanho no destino (nada foi gravado por cima)` : null].filter(Boolean).join('. ')}
     i=${4}
   >
-    ${lista.length
-      ? html`<ul class="bk-lista">${lista.map((x) => html`<li class=${cx(x.tipo === 'alerta' && 'is-alerta')}><${Icon} name=${x.tipo === 'alerta' ? 'warning' : 'minus'} size=${12} /><span class="mono-path">${x.r}</span></li>`)}</ul>`
-      : null}
+    ${
+      lista.length
+        ? html`<ul class="bk-lista">
+            ${lista.map((x) => html`<li class=${cx(x.tipo === 'alerta' && 'is-alerta')}><${Icon} name=${x.tipo === 'alerta' ? 'warning' : 'minus'} size=${12} /><span class="mono-path">${x.r}</span></li>`)}
+          </ul>`
+        : null
+    }
   </${Passo}>`
 }
 
 function Volume({ v, midia }) {
   const [escolhendo, setEscolhendo] = useState(false)
-  const e = v.pasta && v.estado === 'ok' ? { ...ESTADO.ok, texto: 'Pasta copiada' } : v.parcial && v.estado === 'ok' ? { ...ESTADO.ok, texto: 'Passou o escolhido' } : ESTADO[v.estado] || ESTADO.lendo
+  const e =
+    v.pasta && v.estado === 'ok'
+      ? { ...ESTADO.ok, texto: 'Pasta copiada' }
+      : v.parcial && v.estado === 'ok'
+        ? { ...ESTADO.ok, texto: 'Passou o escolhido' }
+        : ESTADO[v.estado] || ESTADO.lendo
   const acoes = []
-  if (!v.pasta && ['disco', 'pronto', 'ignorado', 'ok', 'falta', 'erro', 'cancelado'].includes(v.estado)) acoes.push(html`<${Button} size="sm" icon="list" onClick=${() => setEscolhendo(true)} disabled=${escolhendo} title="Só uma parte do cartão">Escolher…</${Button}>`)
-  if (v.estado === 'disco' || v.estado === 'ignorado') acoes.push(html`<${Button} size="sm" icon="sdcard" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Usar como cartão</${Button}>`)
-  if (v.estado === 'pronto') acoes.push(html`<${Button} size="sm" icon="copy" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Copiar agora</${Button}>`)
-  if (['ok', 'falta', 'erro', 'cancelado'].includes(v.estado) && v.dono && v.estado !== 'ok') acoes.push(html`<${Button} size="sm" icon="retry" onClick=${() => post('/api/backup/repetir', { caminho: v.caminho })}>Copiar de novo</${Button}>`)
+  // Ver o que tem no cartão antes de copiar (fotos, RAW e vídeos).
+  if (!v.pasta && ['disco', 'pronto', 'fila', 'ignorado', 'ok', 'falta', 'erro', 'cancelado', 'pedido'].includes(v.estado))
+    acoes.push(
+      html`<${Button} size="sm" icon="eye" onClick=${() => abrirPreviaCartao({ caminho: v.caminho, nome: v.nome })} title="Ver as fotos e os vídeos do cartão">Ver</${Button}>`,
+    )
+  if (!v.pasta && ['disco', 'pronto', 'ignorado', 'ok', 'falta', 'erro', 'cancelado'].includes(v.estado))
+    acoes.push(
+      html`<${Button} size="sm" icon="list" onClick=${() => setEscolhendo(true)} disabled=${escolhendo} title="Só uma parte do cartão">Escolher…</${Button}>`,
+    )
+  if (v.estado === 'disco' || v.estado === 'ignorado')
+    acoes.push(html`<${Button} size="sm" icon="sdcard" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Usar como cartão</${Button}>`)
+  if (v.estado === 'pronto')
+    acoes.push(html`<${Button} size="sm" icon="copy" onClick=${() => post('/api/backup/usar', { caminho: v.caminho })}>Copiar agora</${Button}>`)
+  if (['ok', 'falta', 'erro', 'cancelado'].includes(v.estado) && v.dono && v.estado !== 'ok')
+    acoes.push(html`<${Button} size="sm" icon="retry" onClick=${() => post('/api/backup/repetir', { caminho: v.caminho })}>Copiar de novo</${Button}>`)
   // Marcou um HD/SSD como cartão por engano: desfaz (para, esquece o dono e passa a ignorar o disco).
   if (['disco', 'pronto', 'fila', 'ok', 'falta', 'erro', 'cancelado', 'ejetado'].includes(v.estado))
     acoes.push(
@@ -458,7 +630,8 @@ function Volume({ v, midia }) {
         ? html`<${Button} size="sm" variant="ghost" icon="x" onClick=${() => post('/api/backup/nao-cartao', { caminho: v.caminho })}>Tirar da lista</${Button}>`
         : html`<${Button} size="sm" variant="ghost" icon="x" onClick=${() => post('/api/backup/nao-cartao', { caminho: v.caminho })} title="Não copiar este disco neste projeto">Não é cartão</${Button}>`,
     )
-  if (!v.pasta && !['copiando', 'ejetado', 'lendo', 'destino'].includes(v.estado)) acoes.push(html`<${Button} size="sm" icon="arrow-up" onClick=${() => post('/api/backup/ejetar', { caminho: v.caminho })}>Ejetar</${Button}>`)
+  if (!v.pasta && !['copiando', 'ejetado', 'lendo', 'destino'].includes(v.estado))
+    acoes.push(html`<${Button} size="sm" icon="arrow-up" onClick=${() => post('/api/backup/ejetar', { caminho: v.caminho })}>Ejetar</${Button}>`)
   const tam = v.capacidade ? bytes(v.capacidade) : null
   return html`<${Item}
       icone=${v.pasta ? 'folder' : v.estado === 'destino' || v.estado === 'disco' ? 'disk' : 'sdcard'}
@@ -467,9 +640,17 @@ function Volume({ v, midia }) {
       sub=${v.erro || [v.dono || e.texto, tam].filter(Boolean).join(' · ')}
       fim=${html`<span class=${cx('bk-estado', `is-${e.tom}`)}><${Icon} name=${e.icone} size=${13} />${e.texto}</span>${acoes}`}
     />
-    ${escolhendo
-      ? html`<${Escolha} caminho=${v.caminho} nome=${v.nome} midia=${midia} onCancelar=${() => setEscolhendo(false)} onPronto=${async (esc) => (await post('/api/backup/escolher', { caminho: v.caminho, escolha: esc })) && setEscolhendo(false)} />`
-      : null}`
+    ${
+      escolhendo
+        ? html`<${Escolha}
+            caminho=${v.caminho}
+            nome=${v.nome}
+            midia=${midia}
+            onCancelar=${() => setEscolhendo(false)}
+            onPronto=${async (esc) => (await post('/api/backup/escolher', { caminho: v.caminho, escolha: esc })) && setEscolhendo(false)}
+          />`
+        : null
+    }`
 }
 
 // ───── o painel do projeto ─────
@@ -495,7 +676,9 @@ function EspacoDestino({ d, i, media }) {
     <span class="bk-destino-txt">
       <span class="bk-destino-linha"><b>${d.nome}</b><span class="bk-destino-livre">${d.livre != null ? `${bytes(d.livre)} livres` : '…'}</span></span>
       ${temTotal ? html`<${Barra} p=${usado} tom=${pouco ? 'erro' : undefined} label=${`Espaço usado em ${d.nome}`} />` : null}
-      <span>${papel}${temTotal ? ` · de ${bytes(d.total)}` : ''}${cabem != null ? ` · cabem ~${count(cabem)} ${cabem === 1 ? 'cartão' : 'cartões'} como os de hoje` : ''}</span>
+      <span
+        >${papel}${temTotal ? ` · de ${bytes(d.total)}` : ''}${cabem != null ? ` · cabem ~${count(cabem)} ${cabem === 1 ? 'cartão' : 'cartões'} como os de hoje` : ''}</span
+      >
     </span>
   </div>`
 }
@@ -513,12 +696,24 @@ function GravandoAgora({ p }) {
   // um momento escrito à mão (ou de outro tipo) continua aparecendo marcado
   if (p.momento && !lista.includes(p.momento)) itens.push({ value: p.momento, label: p.momento })
   return html`<div class="k-caixa bk-momento">
-    <div class="bk-momento-topo"><b>Gravando agora</b><span>${p.momento ? `Os próximos cartões entram em “${p.momento}” no Synquei` : 'O Synquei separa pela pasta e pelo horário'}</span></div>
-    ${lista.length
-      ? html`<${Pilulas} label="Momento dos próximos cartões" valor=${p.momento || ''} itens=${itens} onEscolher=${marcar} />`
-      : html`<form class="bk-momento-livre" onSubmit=${(e) => (e.preventDefault(), marcar(texto))}>
-          <input class="input" value=${texto} maxlength="60" placeholder="Ex.: Abertura, Take 3, Palestra 2" aria-label="Momento dos próximos cartões" onInput=${(e) => setTexto(e.currentTarget.value)} onBlur=${() => texto !== (p.momento || '') && marcar(texto)} />
-        </form>`}
+    <div class="bk-momento-topo">
+      <b>Gravando agora</b><span>${p.momento ? `Os próximos cartões entram em “${p.momento}” no Synquei` : 'O Synquei separa pela pasta e pelo horário'}</span>
+    </div>
+    ${
+      lista.length
+        ? html`<${Pilulas} label="Momento dos próximos cartões" valor=${p.momento || ''} itens=${itens} onEscolher=${marcar} />`
+        : html`<form class="bk-momento-livre" onSubmit=${(e) => (e.preventDefault(), marcar(texto))}>
+            <input
+              class="input"
+              value=${texto}
+              maxlength="60"
+              placeholder="Ex.: Abertura, Take 3, Palestra 2"
+              aria-label="Momento dos próximos cartões"
+              onInput=${(e) => setTexto(e.currentTarget.value)}
+              onBlur=${() => texto !== (p.momento || '') && marcar(texto)}
+            />
+          </form>`
+    }
   </div>`
 }
 
@@ -537,24 +732,56 @@ function Painel({ v, topo, onNovo, onEditar }) {
   const desligado = !v.ligado
   let destaque
   if (desligado) destaque = html`<${Destaque} tom="grad" titulo="Desligado" linha="Os cartões esperam o seu toque: “Usar como cartão”" />`
-  else if (v.job?.fase === 'esperando-destino') destaque = html`<${Destaque} tom="erro" titulo="Esperando o destino" linha=${`Conecte ${v.job.faltando.join(' e ')}`} />`
+  else if (v.job?.fase === 'esperando-destino')
+    destaque = html`<${Destaque} tom="erro" titulo="Esperando o destino" linha=${`Conecte ${v.job.faltando.join(' e ')}`} />`
   else if (v.job) {
     const frac = g ? (g.copiados + g.conferidos) / (g.totalBytes + g.totalConferir || 1) : null
-    destaque = html`<${Destaque} titulo=${`Passando · ${v.job.dono}`} numero=${frac != null ? Math.floor(frac * 100) : '…'} unidade=${frac != null ? '%' : ''} progresso=${frac} linha=${g ? `${bytes(g.copiados)} de ${bytes(g.totalBytes)}` : v.job.fase === 'ejetando' ? 'Ejetando o cartão' : 'Comparando'} vivo />`
-  } else if (v.pedidos.length) destaque = html`<${Destaque} tom="erro" titulo="Cartão novo" numero=${v.pedidos.length} unidade=${v.pedidos.length === 1 ? 'esperando o dono' : 'esperando o dono'} linha="Um toque e ele passa" />`
-  else if (v.ultimo?.resultado === 'ok') destaque = html`<${Destaque} tom="ok" titulo=${v.ultimo.soPasta ? 'Pasta copiada (o resto do cartão não foi conferido)' : v.ultimo.parcial ? 'Passou o escolhido (o resto ficou no cartão)' : 'Cartão OK, pode formatar'} numero=${count(v.ultimo.copiados)} unidade=${v.ultimo.copiados === 1 ? 'arquivo novo' : 'arquivos novos'} linha=${`${v.ultimo.dono} · ${bytes(v.ultimo.bytes)} em ${duracao(v.ultimo.segundos)}`} />`
+    destaque = html`<${Destaque}
+      titulo=${`Passando · ${v.job.dono}`}
+      numero=${frac != null ? Math.floor(frac * 100) : '…'}
+      unidade=${frac != null ? '%' : ''}
+      progresso=${frac}
+      linha=${g ? `${bytes(g.copiados)} de ${bytes(g.totalBytes)}` : v.job.fase === 'ejetando' ? 'Ejetando o cartão' : 'Comparando'}
+      vivo
+    />`
+  } else if (v.pedidos.length)
+    destaque = html`<${Destaque}
+      tom="erro"
+      titulo="Cartão novo"
+      numero=${v.pedidos.length}
+      unidade=${v.pedidos.length === 1 ? 'esperando o dono' : 'esperando o dono'}
+      linha="Um toque e ele passa"
+    />`
+  else if (v.ultimo?.resultado === 'ok')
+    destaque = html`<${Destaque}
+      tom="ok"
+      titulo=${v.ultimo.soPasta ? 'Pasta copiada (o resto do cartão não foi conferido)' : v.ultimo.parcial ? 'Passou o escolhido (o resto ficou no cartão)' : 'Cartão OK, pode formatar'}
+      numero=${count(v.ultimo.copiados)}
+      unidade=${v.ultimo.copiados === 1 ? 'arquivo novo' : 'arquivos novos'}
+      linha=${`${v.ultimo.dono} · ${bytes(v.ultimo.bytes)} em ${duracao(v.ultimo.segundos)}`}
+    />`
   else destaque = html`<${Destaque} tom="grad" titulo="Ligado" linha="Espete um cartão" vivo />`
 
   // Cartão conferido: a mídia já pode ir para o Synquei (ele lê o descargas.jsonl da pasta do projeto).
   const synquei = p.synquei !== false && !v.job && v.ultimo?.resultado === 'ok'
+  // Cartão conferido: os brutos dele viram frames com a cor da câmera do dono (Estúdio › Frames, "Pasta ou cartão")
+  const framesDoCartao = !v.job && v.ultimo?.resultado === 'ok' && !!v.ultimo.pastaVideo
+  const abrirFrames = () => {
+    // com o pré-color ligado, os frames já estão sendo feitos: só abre o Frames (o andamento e o histórico)
+    if (!p.precolor) storage.set('frames.pedido', { caminho: v.ultimo.pastaVideo, nome: `${v.ultimo.dono} · ${v.ultimo.cartao}`, donoId: v.ultimo.donoId })
+    navigate('frames')
+  }
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
-      ${synquei || (!v.job && p.totalDiaria.descargas)
-        ? html`<div class="bk-proximo">
-            ${p.totalDiaria.descargas ? html`<${Button} icon="doc" variant="ghost" onClick=${() => openExternal(`/api/backup/relatorio?id=${encodeURIComponent(v.atual)}`)} title=${`Câmeras, cartões e conferência da ${p.diaria.nome}`}>Relatório</${Button}>` : null}
-            ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
-          </div>`
-        : null}
+      ${framesDoCartao ? html`<${Button} icon="sparkle" class="bk-synquei" onClick=${abrirFrames} title="Um frame por clipe, com a cor (LUT e ajuste) da câmera deste dono">${p.precolor ? 'Ver os frames do cartão' : 'Frames do cartão'}</${Button}>` : null}
+      ${
+        synquei || (!v.job && p.totalDiaria.descargas)
+          ? html`<div class="bk-proximo">
+              ${p.totalDiaria.descargas ? html`<${Button} icon="doc" variant="ghost" onClick=${() => openExternal(`/api/backup/relatorio?id=${encodeURIComponent(v.atual)}`)} title=${`Câmeras, cartões e conferência da ${p.diaria.nome}`}>Relatório</${Button}>` : null}
+              ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
+            </div>`
+          : null
+      }
       ${p.synquei !== false ? html`<${GravandoAgora} p=${p} />` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}
@@ -574,21 +801,34 @@ function Painel({ v, topo, onNovo, onEditar }) {
         </div>
       </div>
     </${Resumo}>
-    ${desligado
-      ? html`<${BotaoGrande} icone="sdcard" onClick=${() => post('/api/backup/ligar', { ligado: true })} dica="Cada cartão espetado passa sozinho">Ligar o backup automático</${BotaoGrande}>`
-      : html`<div class="bk-ligado"><${Linhas}><${Linha} titulo="Começar sozinho" sub="Ligado: cada cartão espetado passa sozinho."><${Switch} checked=${true} label="Backup automático" onChange=${() => post('/api/backup/ligar', { ligado: false })} /></${Linha}></${Linhas}></div>`}`
+    ${
+      desligado
+        ? html`<${BotaoGrande} icone="sdcard" onClick=${() => post('/api/backup/ligar', { ligado: true })} dica="Cada cartão espetado passa sozinho">Ligar o backup automático</${BotaoGrande}>`
+        : html`<div class="bk-ligado"><${Linhas}><${Linha} titulo="Começar sozinho" sub="Ligado: cada cartão espetado passa sozinho."><${Switch} checked=${true} label="Backup automático" onChange=${() => post('/api/backup/ligar', { ligado: false })} /></${Linha}></${Linhas}></div>`
+    }`
 
-  const acoes = html`${v.projetos.length > 1
-      ? html`<span class="select bk-projetos"><select value=${v.atual} onChange=${(e) => post('/api/backup/abrir', { id: e.currentTarget.value })} aria-label="Projeto">${v.projetos.map((x) => html`<option value=${x.id}>${x.nome}</option>`)}</select><${Icon} name="chevron-down" size=${12} /></span>`
-      : null}
+  const acoes = html`${
+    v.projetos.length > 1
+      ? html`<span class="select bk-projetos"
+          ><select value=${v.atual} onChange=${(e) => post('/api/backup/abrir', { id: e.currentTarget.value })} aria-label="Projeto">
+            ${v.projetos.map((x) => html`<option value=${x.id}>${x.nome}</option>`)}</select
+          ><${Icon} name="chevron-down" size=${12}
+        /></span>`
+      : null
+  }
     <${Button} icon="pencil" onClick=${onEditar} title="Nome, destinos, o que passa, Synquei e excluir o projeto">Editar</${Button}>
+    <${Button} icon="archive" onClick=${() => abrirArquivar({ sugestao: p.destinos?.[0]?.caminho ? `${p.destinos[0].caminho}/${p.pasta.split(/[\\/]/)[0]}` : undefined })} title="RAW em DNG e vídeo mais leve, numa pasta ao lado. O original fica.">Arquivar…</${Button}>
     <${Button} icon="plus" onClick=${onNovo}>Novo projeto</${Button}>
     <${Confirma} size=${undefined} icone="trash" pergunta="Excluir este projeto? Os arquivos nos HDs ficam." sim="Excluir" onSim=${() => post('/api/backup/apagar', { id: v.atual })}>Excluir</${Confirma}>`
 
   const espetados = v.volumes.filter((x) => x.estado !== 'pedido' && x.estado !== 'copiando')
   // "Copiar uma pasta…": uma pasta do cartão (ou de qualquer disco) entra como cartão; o comparativo pula o que já passou.
   const copiarPasta = async () => {
-    const caminho = await pickFolderPath({ title: 'Qual pasta copiar?', subtitle: 'Do cartão: o que já passou dele não copia de novo.', defaultPath: v.volumes.find((x) => !x.pasta && x.estado !== 'destino')?.caminho })
+    const caminho = await pickFolderPath({
+      title: 'Qual pasta copiar?',
+      subtitle: 'Do cartão: o que já passou dele não copia de novo.',
+      defaultPath: v.volumes.find((x) => !x.pasta && x.estado !== 'destino')?.caminho,
+    })
     if (caminho) await post('/api/backup/pasta', { caminho })
   }
 
@@ -606,25 +846,39 @@ function Painel({ v, topo, onNovo, onEditar }) {
       frase=${`${p.pasta.split(/[\\/]/).join(' / ')} / ${pastasDaMidia(p.midia)} / …`}
       i=${2}
       acao=${html`<div class="cp-acoes-topo">
-        ${p.diarias.length > 1
-          ? html`<span class="select bk-diarias"><select value=${p.diaria.n} onChange=${(e) => post('/api/backup/diaria', { n: Number(e.currentTarget.value) })} aria-label="Diária">${p.diarias.map((d) => html`<option value=${d.n}>${d.nome}</option>`)}</select><${Icon} name="chevron-down" size=${12} /></span>`
-          : null}
+        ${
+          p.diarias.length > 1
+            ? html`<span class="select bk-diarias"
+                ><select value=${p.diaria.n} onChange=${(e) => post('/api/backup/diaria', { n: Number(e.currentTarget.value) })} aria-label="Diária">
+                  ${p.diarias.map((d) => html`<option value=${d.n}>${d.nome}</option>`)}</select
+                ><${Icon} name="chevron-down" size=${12}
+              /></span>`
+            : null
+        }
         <${Button} size="sm" icon="plus" onClick=${() => post('/api/backup/diaria')} disabled=${!!v.job}>Nova diária</${Button}>
       </div>`}
     >
-      ${p.sugerirNovaDiaria
-        ? html`<div class="bk-aviso"><${Icon} name="info" size=${15} /><span>A data mudou desde a última descarga desta diária. Começar a próxima?</span><${Button} size="sm" onClick=${() => post('/api/backup/diaria')} disabled=${!!v.job}>Começar Diária ${String(Math.max(...p.diarias.map((d) => d.n)) + 1).padStart(2, '0')}</${Button}></div>`
-        : null}
-      ${p.donos.length
-        ? html`<div class="bk-donos">${p.donos.map((d, k) => html`<${Dono} key=${d.id} d=${d} k=${k} midia=${p.midia} bloqueado=${v.job?.dono === d.rotulo} />`)}</div>`
-        : html`<p class="bk-vazio-txt">Nenhum cartão nesta diária ainda.</p>`}
+      ${
+        p.sugerirNovaDiaria
+          ? html`<div class="bk-aviso"><${Icon} name="info" size=${15} /><span>A data mudou desde a última descarga desta diária. Começar a próxima?</span><${Button} size="sm" onClick=${() => post('/api/backup/diaria')} disabled=${!!v.job}>Começar Diária ${String(Math.max(...p.diarias.map((d) => d.n)) + 1).padStart(2, '0')}</${Button}></div>`
+          : null
+      }
+      ${
+        p.donos.length
+          ? html`<div class="bk-donos">
+              ${p.donos.map((d, k) => html`<${Dono} key=${d.id} d=${d} k=${k} midia=${p.midia} bloqueado=${v.job?.dono === d.rotulo} />`)}
+            </div>`
+          : html`<p class="bk-vazio-txt">Nenhum cartão nesta diária ainda.</p>`
+      }
     </${Passo}>
 
-    ${v.fila.length
-      ? html`<${Passo} icone="clock" cor="down" titulo="Na fila" sub=${plural(v.fila.length, 'cartão', 'cartões')} frase="Um cartão por vez: o próximo começa sozinho." i=${5}>
+    ${
+      v.fila.length
+        ? html`<${Passo} icone="clock" cor="down" titulo="Na fila" sub=${plural(v.fila.length, 'cartão', 'cartões')} frase="Um cartão por vez: o próximo começa sozinho." i=${5}>
           <div class="k-itens">${v.fila.map((x) => html`<${Item} icone="sdcard" tom="down" titulo=${x.nome} sub=${x.dono} />`)}</div>
         </${Passo}>`
-      : null}
+        : null
+    }
 
     <${Passo}
       icone="disk"
@@ -635,11 +889,16 @@ function Painel({ v, topo, onNovo, onEditar }) {
       i=${6}
       acao=${html`<${Button} size="sm" icon="folder" onClick=${copiarPasta}>Copiar uma pasta…</${Button}>`}
     >
-      ${espetados.length
-        ? html`<div class="k-itens">${espetados.map((x) => html`<${Volume} key=${x.caminho} v=${x} midia=${p.midia} />`)}</div>`
-        : v.volumes.length
-          ? html`<p class="bk-vazio-txt">Os outros discos estão logo acima, esperando ou passando.</p>`
-          : html`<p class="bk-vazio-txt">Nenhum cartão ou disco externo plugado agora. Espetou e não apareceu em alguns segundos? Veja se ele aparece no Finder (Mac) ou no Explorador (Windows).</p>`}
+      ${
+        espetados.length
+          ? html`<div class="k-itens">${espetados.map((x) => html`<${Volume} key=${x.caminho} v=${x} midia=${p.midia} />`)}</div>`
+          : v.volumes.length
+            ? html`<p class="bk-vazio-txt">Os outros discos estão logo acima, esperando ou passando.</p>`
+            : html`<p class="bk-vazio-txt">
+                Nenhum cartão ou disco externo plugado agora. Espetou e não apareceu em alguns segundos? Veja se ele aparece no Finder (Mac) ou no Explorador
+                (Windows).
+              </p>`
+      }
     </${Passo}>
 
     <${Passo}
@@ -653,21 +912,24 @@ function Painel({ v, topo, onNovo, onEditar }) {
         ${p.historico.length ? html`<${Confirma} icone="trash" pergunta="Limpar o histórico? Os arquivos ficam." sim="Limpar" disabled=${!!v.job} onSim=${() => post('/api/backup/historico/limpar')}>Limpar histórico</${Confirma}>` : null}
       </div>`}
     >
-      ${p.historico.length
-        ? html`<div class="k-itens bk-historico">
-            ${p.historico.map(
-              (h) => html`<${Item}
-                icone=${h.resultado === 'ok' ? 'circle-check' : h.resultado === 'cancelado' ? 'x' : 'warning'}
-                tom=${h.resultado === 'ok' ? 'ok' : h.resultado === 'cancelado' ? 'warn' : 'erro'}
-                titulo=${`${h.dono} · ${h.cartao}`}
-                sub=${h.pasta}
-                fim=${html`<span class="bk-hist-fim"><b>${h.copiados ? `${count(h.copiados)} novos · ${bytes(h.bytes)}` : 'nada novo'}</b><span>${horaDe(h.quando)} · ${duracao(h.segundos)}</span></span>`}
-              />`,
-            )}
-          </div>`
-        : html`<${Vazio} icone="sdcard" titulo=${v.ligado ? 'Espete o primeiro cartão' : 'Ligue o backup automático'}>
+      ${
+        p.historico.length
+          ? html`<div class="k-itens bk-historico">
+              ${p.historico.map(
+                (h) =>
+                  html`<${Item}
+                    icone=${h.resultado === 'ok' ? 'circle-check' : h.resultado === 'cancelado' ? 'x' : 'warning'}
+                    tom=${h.resultado === 'ok' ? 'ok' : h.resultado === 'cancelado' ? 'warn' : 'erro'}
+                    titulo=${`${h.dono} · ${h.cartao}`}
+                    sub=${h.pasta}
+                    fim=${html`<span class="bk-hist-fim"><b>${h.copiados ? `${count(h.copiados)} novos · ${bytes(h.bytes)}` : 'nada novo'}</b><span>${horaDe(h.quando)} · ${duracao(h.segundos)}</span></span>`}
+                  />`,
+              )}
+            </div>`
+          : html`<${Vazio} icone="sdcard" titulo=${v.ligado ? 'Espete o primeiro cartão' : 'Ligue o backup automático'}>
             ${v.ligado ? 'Na primeira vez, um toque diz de quem ele é. Depois, passa sozinho.' : 'Depois é só espetar os cartões. O app compara, copia o que falta e confere.'}
-          </${Vazio}>`}
+          </${Vazio}>`
+      }
     </${Passo}>
   </${Pagina}>`
 }
@@ -678,7 +940,21 @@ export function BackupPanel({ topo }) {
   if (!v) {
     return html`<${Pagina} titulo="Cartões" frase=${FRASE} class="page-backup">${topo}<${Passo} icone="refresh" cor="down" titulo="Carregando" i=${2}><${Barra} p=${null} /></${Passo}></${Pagina}>`
   }
-  if (!v.projeto || modo === 'novo') return html`<${FormProjeto} topo=${topo} tipos=${v.tiposSynquei || []} onPronto=${() => setModo(null)} onCancelar=${v.projeto ? () => setModo(null) : null} />`
-  if (modo === 'editar') return html`<${FormProjeto} topo=${topo} tipos=${v.tiposSynquei || []} inicial=${v.projeto} onPronto=${() => setModo(null)} onCancelar=${() => setModo(null)} onExcluido=${() => setModo(null)} />`
+  if (!v.projeto || modo === 'novo')
+    return html`<${FormProjeto}
+      topo=${topo}
+      tipos=${v.tiposSynquei || []}
+      onPronto=${() => setModo(null)}
+      onCancelar=${v.projeto ? () => setModo(null) : null}
+    />`
+  if (modo === 'editar')
+    return html`<${FormProjeto}
+      topo=${topo}
+      tipos=${v.tiposSynquei || []}
+      inicial=${v.projeto}
+      onPronto=${() => setModo(null)}
+      onCancelar=${() => setModo(null)}
+      onExcluido=${() => setModo(null)}
+    />`
   return html`<${Painel} v=${v} topo=${topo} onNovo=${() => setModo('novo')} onEditar=${() => setModo('editar')} />`
 }

@@ -6,7 +6,7 @@ import { isDomainError } from '@zro/observability'
 import { nomeLimpo } from './nucleo'
 
 /**
- * O rádio do set dentro do HUB (ADR 0042; titular, 05/11/2026: "usa o do ecossistema"): absolutezro.com/radio, com a
+ * O RADION dentro do HUB (ADR 0042; titular, 05/11/2026: "usa o do ecossistema"): absolutezro.com/radio, com a
  * conta e o banco do HUB. As regras moram em products/radio/api/_nucleo.js (cópia em ./nucleo.ts) e os dados no schema
  * `radio` (um schema por app, nunca dentro de `zro`). Não lançado: só passa quem o gate deixa (admin da plataforma ou
  * a lista de acesso), pelo authorize() na ordem do PRD §5.2.
@@ -21,6 +21,12 @@ export async function acessoAoRadio(db: Database, auth: Authenticated | null): P
     if (isDomainError(e)) return null
     throw e
   }
+}
+
+/** A foto da conta (perfil único): o id público de /api/v1/foto/<id>, ou null sem foto. Só a da própria pessoa (RLS). */
+export async function fotoDoRadio(db: Database, actor: Actor): Promise<string | null> {
+  const [r] = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`select public_id from zro.user_avatars where user_id = ${actor.userId}`)
+  return r ? (r.public_id as string) : null
 }
 
 /** Quem fala no rádio: o id da conta (o `sub` do login único) e o nome de exibição. */

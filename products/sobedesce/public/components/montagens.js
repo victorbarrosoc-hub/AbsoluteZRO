@@ -12,13 +12,18 @@ import { bridge, pathsFromDrop, pickFolderPath, revealLabel, revealPath } from '
 import { openModal, pickDriveFolder, pickLocal, promptDialog } from '../lib/modals.js'
 import { ZOOM_MAX, cobrir, enquadreDe, moverEnquadre } from '../lib/frames-posts.js'
 import {
+  ASPECTOS_FAIXA,
+  FAIXAS_N,
+  FAIXAS_PADRAO,
   FORMATOS,
   FORMATOS_CARROSSEL,
+  MODELOS,
   caixasDe,
   desenharMontagem,
   formatoPersonalizado,
   formatoPorId,
-  modeloPorId,
+  modeloDe,
+  modeloFaixas,
   modelosPara,
   preencher,
   quadroNoPonto,
@@ -26,8 +31,22 @@ import {
   trechoDe,
   trocarQuadros,
 } from '../lib/montagens.js'
+import {
+  MAX_SLIDES,
+  MIN_SLIDES,
+  caixasCarrossel,
+  desenharCarrossel,
+  gruposDe,
+  nomeCarrossel,
+  paginasDe,
+  quadroNoCarrossel,
+  quadrosDe,
+  remapear,
+  slideDosQuadros,
+  telaCarrossel,
+} from '../lib/montagens-carrossel.js'
 import { Icon } from './icons.js'
-import { Button, EmptyState, Slider } from './common.js'
+import { Button, EmptyState, Slider, Stepper, Switch } from './common.js'
 
 const FOTO_EXT = /\.(jpe?g|png|webp|tiff?|heic|heif)$/i
 const VIDEO_EXT = /\.(mp4|mov|m4v|mxf|mkv|avi|mts|m2ts|webm|3gp|mpg|mpeg)$/i
@@ -36,7 +55,7 @@ const FUNDOS = ['#ffffff', '#f7f6f2', '#1d1d1f', '#000000']
 const DURACOES = [3, 5, 8, 15]
 const TIPOS = [
   { value: 'post', label: 'Post' },
-  { value: 'carrossel', label: 'Carrossel contínuo' },
+  { value: 'carrossel', label: 'Carrossel' },
   { value: 'grade', label: 'Grade do perfil' },
 ]
 const PADRAO = {
@@ -45,9 +64,11 @@ const PADRAO = {
   formato: '4x5',
   personalizado: null,
   slides: 3,
+  paginas: null, // carrossel: { modelo, emenda } por slide (src: public/lib/montagens-carrossel.js)
   linhas: 2,
   quadrado: '3x4',
   modelo: 'grande-dois',
+  faixas: FAIXAS_PADRAO, // o modelo "Faixas": quantas, o formato do frame e a zona dos Stories
   quadros: [],
   enquadres: [],
   espaco: 12,
@@ -157,6 +178,35 @@ function Modelo({ modelo, tela, fotos, d, ativo, onEscolher }) {
     <b>${modelo.nome}</b>
     <span>${modelo.caixas.length === 1 ? '1 foto' : `${modelo.caixas.length} fotos`}</span>
   </button>`
+}
+
+/** Um jeito de carrossel na galeria (o mesmo modelo em cada slide, ou o panorama), com as fotos da pessoa. */
+function ModeloCarrossel({ paginas, nome, sub, tela, fotos, d, ativo, onEscolher }) {
+  const cv = useRef(null)
+  const grupos = useMemo(() => gruposDe(paginas), [paginas])
+  useEffect(() => {
+    let vivo = true
+    imagensDe(preencher([], quadrosDe(grupos), fotos), d).then((imgs) => {
+      if (!vivo || !cv.current) return
+      desenharCarrossel(cv.current, { tela, grupos, imagens: imgs, espaco: 30, fundo: '#ffffff', escala: 300 / Math.max(tela.w, tela.h) })
+    })
+    return () => {
+      vivo = false
+    }
+  }, [grupos, tela.w, tela.h, fotos])
+  return html`<button type="button" class=${cx('mt-modelo is-carrossel', ativo && 'is-on')} onClick=${onEscolher} aria-pressed=${ativo ? 'true' : 'false'}>
+    <span class="mt-modelo-tela"><canvas ref=${cv} aria-hidden="true"></canvas></span>
+    <b>${nome}</b>
+    <span>${sub}</span>
+  </button>`
+}
+
+/** O desenho pequeno de um modelo (para escolher o de cada slide). */
+function MiniModelo({ modelo, w, h }) {
+  const g = 2.5
+  return html`<svg viewBox=${`0 0 ${w} ${h}`} width=${w} height=${h} aria-hidden="true">
+    ${modelo.caixas.map(([x, y, cw, ch]) => html`<rect x=${x * w + g / 2} y=${y * h + g / 2} width=${Math.max(1, cw * w - g)} height=${Math.max(1, ch * h - g)} rx="1.5" />`)}
+  </svg>`
 }
 
 function Formatos({ lista, valor, personalizado, onEscolher, outro }) {
@@ -312,6 +362,24 @@ export function MontagensScreen() {
   const [vista, setVista] = useState(() => (rascunho().fotos.length ? 'montar' : 'escolher'))
   const [ativo, setAtivo] = useState(-1)
   const [trocando, setTrocando] = useState(-1)
+  const [slide, setSlide] = useState(0) // carrossel: o slide escolhido (o modelo dele fica no lado)
+  const [pega, setPega] = useState(null) // foto tocada na bandeja, esperando o toque no quadro
+  const [alvo, setAlvo] = useState(-1) // quadro embaixo da foto arrastada
+  const [largura, setLargura] = useState(980) // o espaço do palco (o carrossel cabe nele; comprido demais, rola)
+  const palco = useRef(null)
+  const rolagem = useRef(null) // a fileira do carrossel comprido (rola de lado)
+  /** Vai ao slide `i`: escolhe e rola a fileira até ele (centralizado, quando dá). */
+  const irAoSlide = (i) => {
+    const n = tela.fatias.length
+    const k = Math.max(0, Math.min(n - 1, i))
+    setSlide(k)
+    setAtivo(-1)
+    const r = rolagem.current
+    if (r) {
+      const larg = r.scrollWidth / n
+      r.scrollTo({ left: Math.max(0, larg * k - (r.clientWidth - larg) / 2), behavior: 'smooth' })
+    }
+  }
   const [solto, setSolto] = useState(false)
   const [salvando, setSalvando] = useState(null) // texto do que está salvando
   const [ultimo, setUltimo] = useState(null) // { arquivos, pasta }
@@ -328,18 +396,115 @@ export function MontagensScreen() {
       return y
     })
   const formato = d.personalizado && d.formato === d.personalizado.id ? d.personalizado : formatoPorId(d.formato)
-  const tela = telaDe({
-    tipo: d.tipo,
-    formato: d.tipo === 'carrossel' && !FORMATOS_CARROSSEL.includes(formato.id) ? formatoPorId('4x5') : formato,
-    slides: d.slides,
-    linhas: d.linhas,
-    quadrado: d.quadrado,
-  })
-  const modelo = modeloPorId(d.modelo)
-  const n = modelo.caixas.length
+  const ehCar = d.tipo === 'carrossel'
+  const ehGrade = d.tipo === 'grade'
+  // carrossel e grade do perfil: cada parte (slide ou quadradinho) com o próprio modelo e as próprias fotos
+  const porPartes = ehCar || ehGrade
+  const fCar = FORMATOS_CARROSSEL.includes(formato.id) ? formato : formatoPorId('4x5')
+  const telaBruta = ehCar
+    ? telaCarrossel(fCar, d.slides)
+    : telaDe({
+        tipo: d.tipo,
+        formato,
+        slides: d.slides,
+        linhas: d.linhas,
+        quadrado: d.quadrado,
+      })
+  // grade: as partes na ordem de postar (o 1 é o de baixo, à direita), para as fotos entrarem nessa ordem
+  const tela = ehGrade ? { ...telaBruta, fatias: [...telaBruta.fatias].sort((a, b) => a.n - b.n) } : telaBruta
+  const fx = d.faixas || FAIXAS_PADRAO
+  const modelo = useMemo(() => modeloDe(d), [d.modelo, fx.n, fx.aspecto, fx.seguro, fx.antesDepois])
+  const faixasDaGaleria = useMemo(() => modeloFaixas(fx), [fx.n, fx.aspecto, fx.seguro, fx.antesDepois])
+  // carrossel: cada slide com o próprio modelo; slides emendados viram um grupo (a foto passa de um para o outro)
+  const paginas = useMemo(() => (porPartes ? paginasDe(d, tela.fatias.length) : null), [porPartes, d.paginas, tela.fatias.length, d.modelo])
+  const grupos = useMemo(() => (paginas ? gruposDe(paginas) : null), [paginas])
+  const n = grupos ? quadrosDe(grupos) : modelo.caixas.length
+  const opts = { w: tela.w, h: tela.h, espaco: d.espaco, slides: tela.fatias.length, tela: porPartes ? tela : null }
+  const caixasAgora = () => (grupos ? caixasCarrossel(grupos, opts) : caixasDe(modelo, opts))
+  const noPonto = (x, y) => (grupos ? quadroNoCarrossel(grupos, opts, x, y) : quadroNoPonto(modelo, opts, x, y))
+  /** A parte (índice da fatia) no ponto: o slide do carrossel ou o quadradinho da grade. */
+  const slideNoPonto = (x, y = 1) => Math.max(0, tela.fatias.findIndex((f) => x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h))
+  /** O número que a pessoa vê na parte: no carrossel a posição, na grade a ordem de postar. */
+  const numeroDaParte = (i) => tela.fatias[i]?.n ?? i + 1
   const quadros = useMemo(() => preencher(d.quadros.slice(0, n), n, d.fotos), [d.quadros, d.fotos, n])
   const videosNoPost = d.tipo === 'post' ? quadros.map((p, i) => (p && ehVideo(p) ? i : -1)).filter((i) => i >= 0) : []
-  const escala = Math.min(d.tipo === 'carrossel' ? 980 / tela.w : 560 / tela.w, 520 / tela.h)
+  // carrossel comprido: cada slide com pelo menos 170 px na tela (a fileira rola de lado)
+  const escala = Math.min(ehCar ? Math.max(largura / tela.w, 170 / fCar.w) : 560 / tela.w, 520 / tela.h)
+  const longo = ehCar && tela.w * escala > largura + 1
+  useEffect(() => {
+    const el = palco.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setLargura(Math.max(320, el.clientWidth - 40)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [vista])
+
+  // ── ver a montagem andando (post com take): play e agulha embaixo; cada take toca no quadro dele, no trecho escolhido.
+  // A agulha anda pelo DOM (requestAnimationFrame), não pelo estado do Preact.
+  const [tocandoM, setTocandoM] = useState(false)
+  const [naoToca, setNaoToca] = useState({}) // caminho → true quando o navegador não toca o take (MXF, ProRes)
+  const agulhaM = useRef(0)
+  const rafM = useRef(0)
+  const reguaM = useRef(null)
+  const ponteiroM = useRef(null)
+  const tcM = useRef(null)
+  const vidsM = useRef({}) // índice do quadro → <video>
+  const tempoDoTake = (p, t) => {
+    const info = infoAtual[p]
+    if (!info) return 0
+    const tr = trechoDe(d.trechos[p], d.duracao, info.duracao)
+    return Math.min(info.duracao, tr.inicio + t * (tr.lento ? 0.5 : 1))
+  }
+  const marcar = (t) => {
+    agulhaM.current = t
+    if (ponteiroM.current) ponteiroM.current.style.left = `${(t / d.duracao) * 100}%`
+    if (tcM.current) tcM.current.textContent = tc(t)
+  }
+  const irPara = (t) => {
+    marcar(t)
+    for (const [i, v] of Object.entries(vidsM.current)) if (v && quadros[i]) v.currentTime = tempoDoTake(quadros[i], t)
+  }
+  const pararM = () => {
+    cancelAnimationFrame(rafM.current)
+    for (const v of Object.values(vidsM.current)) v?.pause()
+    setTocandoM(false)
+  }
+  const tocarM = () => {
+    if (tocandoM) return pararM()
+    const t0 = agulhaM.current >= d.duracao - 0.05 ? 0 : agulhaM.current
+    irPara(t0)
+    for (const [i, v] of Object.entries(vidsM.current)) {
+      if (!v || !quadros[i]) continue
+      v.playbackRate = d.trechos[quadros[i]]?.lento ? 0.5 : 1
+      v.play().catch(() => {})
+    }
+    const comeco = performance.now() - t0 * 1000
+    const passo = () => {
+      const t = (performance.now() - comeco) / 1000
+      if (t >= d.duracao) {
+        pararM()
+        irPara(0)
+        return
+      }
+      marcar(t)
+      rafM.current = requestAnimationFrame(passo)
+    }
+    rafM.current = requestAnimationFrame(passo)
+    setTocandoM(true)
+  }
+  const arrastoM = useRef(false)
+  const tempoNaRegua = (e) => {
+    const r = reguaM.current.getBoundingClientRect()
+    return Math.max(0, Math.min(d.duracao, ((e.clientX - r.left) / r.width) * d.duracao))
+  }
+  // mudou o trecho, a duração ou os quadros: para e volta a agulha para onde estava (dentro da duração)
+  // (o contador e a agulha são do DOM: o Preact não escreve neles, para não brigar com a agulha andando)
+  useEffect(() => {
+    pararM()
+    irPara(Math.min(agulhaM.current, d.duracao))
+    return () => cancelAnimationFrame(rafM.current)
+  }, [d.trechos, d.duracao, quadros, vista, trechoDoQuadro, videosNoPost.length])
+  const numeroDoQuadro = useMemo(() => (grupos ? slideDosQuadros(grupos, opts).map(numeroDaParte) : quadros.map((_, i) => i + 1)), [grupos, tela.w, tela.h, d.espaco, quadros])
 
   // informações dos takes (duração, tamanho) para a agulha e o enquadre
   useEffect(() => {
@@ -408,6 +573,7 @@ export function MontagensScreen() {
   const desenhar = async (cv, esc, { destaque = -1, buracos = null } = {}) => {
     const im = await imagensDe(quadros, d)
     imgs.current = im
+    if (grupos) return desenharCarrossel(cv, { tela, grupos, imagens: im, enquadres: d.enquadres, espaco: d.espaco, cantos: d.cantos, fundo: d.fundo, escala: esc, destaque })
     return desenharMontagem(cv, {
       formato: tela,
       modelo,
@@ -426,7 +592,7 @@ export function MontagensScreen() {
     let vivo = true
     const off = document.createElement('canvas')
     const dpr = window.devicePixelRatio || 1
-    desenhar(off, escala * dpr, { destaque: ativo }).then(({ caixas }) => {
+    desenhar(off, escala * dpr, { destaque: alvo >= 0 ? alvo : ativo }).then(({ caixas }) => {
       if (!vivo || !canvas.current) return
       const c = canvas.current
       c.width = off.width
@@ -477,7 +643,7 @@ export function MontagensScreen() {
           const r = 13 * dpr
           const x = f.x * s + 10 * dpr + r
           const y = f.y * s + 10 * dpr + r
-          g.fillStyle = 'rgba(29,29,31,0.85)'
+          g.fillStyle = porPartes && tela.fatias.indexOf(f) === slide ? '#0a84ff' : 'rgba(29,29,31,0.85)'
           g.beginPath()
           g.arc(x, y, r, 0, Math.PI * 2)
           g.fill()
@@ -493,18 +659,24 @@ export function MontagensScreen() {
     return () => {
       vivo = false
     }
-  }, [vista, quadros, d.enquadres, d.espaco, d.cantos, d.fundo, d.trechos, d.duracao, tela.w, tela.h, modelo, ativo, trechoDoQuadro])
+  }, [vista, quadros, d.enquadres, d.espaco, d.cantos, d.fundo, d.trechos, d.duracao, tela.w, tela.h, modelo, grupos, ativo, alvo, slide, trechoDoQuadro])
 
   // pontos em px da tela (escala 1)
   const ponto = (e) => {
     const r = canvas.current.getBoundingClientRect()
     return { x: ((e.clientX - r.left) / r.width) * tela.w, y: ((e.clientY - r.top) / r.height) * tela.h }
   }
-  const opts = { w: tela.w, h: tela.h, espaco: d.espaco }
   const desce = (e) => {
     const { x, y } = ponto(e)
-    const i = quadroNoPonto(modelo, opts, x, y)
+    if (porPartes) setSlide(slideNoPonto(x, y))
+    const i = noPonto(x, y)
     if (i < 0) return setAtivo(-1)
+    if (pega) {
+      porNoQuadro(i, pega)
+      setPega(null)
+      setAtivo(i)
+      return
+    }
     if (trocando >= 0) {
       if (i !== trocando) trocar(trocando, i)
       setTrocando(-1)
@@ -515,7 +687,7 @@ export function MontagensScreen() {
     const img = imgs.current[i]
     if (!img) return
     e.currentTarget.setPointerCapture?.(e.pointerId)
-    arrasto.current = { i, x, y, e: enquadreDe(d.enquadres[i]), caixa: caixasDe(modelo, opts)[i], iw: img.naturalWidth, ih: img.naturalHeight }
+    arrasto.current = { i, x, y, e: enquadreDe(d.enquadres[i]), caixa: caixasAgora()[i], iw: img.naturalWidth, ih: img.naturalHeight }
   }
   const move = (e) => {
     const a = arrasto.current
@@ -530,8 +702,21 @@ export function MontagensScreen() {
     const c = canvas.current
     if (!c) return
     const roda = (e) => {
+      // carrossel comprido: a rodinha e o trackpad rolam os slides; o zoom fica para a pinça (ctrl) ou o quadro escolhido
+      if (longo && !e.ctrlKey && !e.metaKey) {
+        const { x, y } = ponto(e)
+        const i = noPonto(x, y)
+        if (i < 0 || i !== ativo || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+          const r = rolagem.current
+          if (r) {
+            e.preventDefault()
+            r.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+          }
+          return
+        }
+      }
       const { x, y } = ponto(e)
-      const i = quadroNoPonto(modelo, opts, x, y)
+      const i = noPonto(x, y)
       if (i < 0 || !quadros[i]) return
       e.preventDefault()
       const q = enquadreDe(d.enquadres[i])
@@ -543,17 +728,77 @@ export function MontagensScreen() {
   })
   const soltarNoQuadro = (e) => {
     e.preventDefault()
+    setAlvo(-1)
     const p = e.dataTransfer.getData('text/x-sd-foto')
     if (p) {
       const { x, y } = ponto(e)
-      const i = quadroNoPonto(modelo, opts, x, y)
+      const i = noPonto(x, y)
       if (i >= 0) {
         porNoQuadro(i, p)
         setAtivo(i)
+        if (porPartes) setSlide(slideNoPonto(x, y))
       }
       return
     }
     soltar(e)
+  }
+  // arrastando uma foto da bandeja: o quadro embaixo dela acende
+  const sobreOPalco = (e) => {
+    e.preventDefault()
+    if (!canvas.current || !e.dataTransfer?.types?.includes('text/x-sd-foto')) return
+    const { x, y } = ponto(e)
+    const i = noPonto(x, y)
+    if (i !== alvo) setAlvo(i)
+  }
+  /** Tocar numa foto da bandeja: vai para o quadro escolhido (no carrossel, passa para o próximo); sem quadro, fica na mão. */
+  const tocarNaFoto = (p) => {
+    if (ativo >= 0) {
+      porNoQuadro(ativo, p)
+      if (porPartes && ativo + 1 < n) setAtivo(ativo + 1)
+      return
+    }
+    setPega(pega === p ? null : p)
+  }
+
+  // ── slides do carrossel
+  const partesDe = (x) => (x.tipo === 'grade' ? 3 * Math.max(1, Math.min(5, Math.round(x.linhas) || 1)) : paginasDe(x).length)
+  const mudaPaginas = (fn, extra = {}) =>
+    muda((x) => {
+      const antes = paginasDe(x, partesDe(x))
+      const novas = fn(antes)
+      const ga = gruposDe(antes)
+      const gd = gruposDe(novas)
+      const qa = preencher(x.quadros.slice(0, quadrosDe(ga)), quadrosDe(ga), x.fotos)
+      return { paginas: novas, ...(x.tipo === 'carrossel' ? { slides: novas.length } : {}), quadros: remapear(ga, gd, qa), enquadres: remapear(ga, gd, x.enquadres), ...extra }
+    })
+  const mudaLinhas = (v) => {
+    mudaPaginas((ps) => paginasDe({ paginas: ps }, 3 * v), { linhas: v })
+    setSlide(0)
+    setAtivo(-1)
+  }
+  /** Grade: uma imagem só, dividida pelos quadradinhos (como era antes), ou uma foto por quadradinho. */
+  const dividida = !!(ehGrade && paginas && paginas.length > 1 && paginas.slice(1).every((p) => p.emenda))
+  const dividir = (v) => {
+    mudaPaginas((ps) => ps.map((p, i) => (i === 0 ? { modelo: v ? 'uma' : p.modelo } : v ? { modelo: 'uma', emenda: true } : { modelo: 'uma' })))
+    setSlide(0)
+    setAtivo(-1)
+  }
+  const mudaSlides = (v) => {
+    mudaPaginas((ps) => paginasDe({ paginas: ps, slides: v }))
+    setSlide((s) => Math.min(s, v - 1))
+    setAtivo(-1)
+  }
+  const grupoDoSlide = (ps, s) => gruposDe(ps).find((g) => s >= g.de && s <= g.ate)
+  const modeloDoSlide = (s, id) => {
+    mudaPaginas((ps) => {
+      const g = grupoDoSlide(ps, s)
+      return ps.map((p, i) => (i === g.de ? { ...p, modelo: id } : p))
+    })
+    setAtivo(-1)
+  }
+  const emendar = (s, v) => {
+    mudaPaginas((ps) => ps.map((p, i) => (i === s ? { ...p, emenda: v } : p)))
+    setAtivo(-1)
   }
 
   // ── salvar
@@ -618,6 +863,30 @@ export function MontagensScreen() {
     })
     return [r]
   }
+  /** Faixas em lote: as fotos na ordem, em grupos do tamanho do modelo, um story (JPG) para cada grupo. */
+  const salvarLote = async () => {
+    const por = modelo.faixas.n
+    const grupos = []
+    for (let i = 0; i < d.fotos.length; i += por) grupos.push(d.fotos.slice(i, i + por))
+    try {
+      const arquivos = []
+      for (const [k, g] of grupos.entries()) {
+        setSalvando(`Story ${k + 1} de ${grupos.length}…`)
+        // o último grupo pode ser menor: sai com as faixas que tem, sem quadro vazio
+        const mod = g.length < por ? modeloFaixas({ ...fx, n: g.length }) : modelo
+        const im = await imagensDe(g, d)
+        const c = document.createElement('canvas')
+        desenharMontagem(c, { formato: tela, modelo: mod, imagens: im, enquadres: [], espaco: d.espaco, cantos: d.cantos, fundo: d.fundo, escala: 1 })
+        arquivos.push(await salvarImagem(c, `${d.nome} ${dois(k + 1)}`, tela.id))
+      }
+      setUltimo({ arquivos: arquivos.map((a) => a.arquivo), pasta: arquivos[0]?.pasta })
+      toast('success', `Salvos ${arquivos.length} stories, na ordem.`, { action: { label: revealLabel(), onClick: () => revealPath(arquivos[0].arquivo) } })
+    } catch (err) {
+      toast('error', err?.message || 'Não consegui salvar os stories.')
+    } finally {
+      setSalvando(null)
+    }
+  }
   const salvar = async (e) => {
     if (!quadros.some(Boolean)) return toast('error', 'Ponha pelo menos uma foto num quadro.')
     let como = 'foto'
@@ -678,25 +947,26 @@ export function MontagensScreen() {
     const o = { tipo }
     if (tipo === 'carrossel' && !FORMATOS_CARROSSEL.includes(d.formato)) o.formato = '4x5'
     if (tipo !== 'post' && d.tipo === 'post') o.modelo = 'uma'
+    // carrossel novo: uma foto por slide, na ordem (dá para trocar o modelo de cada slide e emendar para o panorama)
+    if (tipo === 'carrossel' && d.tipo !== 'carrossel') Object.assign(o, { paginas: Array.from({ length: d.slides }, () => ({ modelo: 'uma' })), quadros: [], enquadres: [] })
+    // grade nova: uma foto por quadradinho (a imagem dividida fica no "Uma imagem só, dividida")
+    if (tipo === 'grade' && d.tipo !== 'grade') Object.assign(o, { paginas: Array.from({ length: 3 * (d.linhas || 2) }, () => ({ modelo: 'uma' })), quadros: [], enquadres: [] })
+    if (tipo === 'post' && d.tipo !== 'post') Object.assign(o, { quadros: [], enquadres: [] })
     muda(o)
     setAtivo(-1)
+    setSlide(0)
   }
   const escolhaDoTipo = html`<div class="mt-tipo">
     <${Chips} label="Tipo de montagem" valor=${d.tipo} itens=${TIPOS} onEscolher=${mudaTipo} />
     ${
       d.tipo === 'carrossel'
-        ? html`<${Chips}
-            label="Slides"
-            valor=${d.slides}
-            itens=${[2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => ({ value: v, label: `${v}` }))}
-            onEscolher=${(v) => muda({ slides: v })}
-          />`
+        ? html`<div class="mt-slides"><span>Slides</span><${Stepper} value=${tela.fatias.length} min=${MIN_SLIDES} max=${MAX_SLIDES} label="Quantos slides" onChange=${mudaSlides} /></div>`
         : d.tipo === 'grade'
           ? html`<${Chips}
                 label="Linhas"
                 valor=${d.linhas}
                 itens=${[1, 2, 3, 4, 5].map((v) => ({ value: v, label: `3×${v}` }))}
-                onEscolher=${(v) => muda({ linhas: v })}
+                onEscolher=${mudaLinhas}
               />
               <${Chips}
                 label="Formato do quadradinho"
@@ -730,21 +1000,25 @@ export function MontagensScreen() {
     onDragLeave=${() => setSolto(false)}
     onDrop=${soltar}
   >
-    <div class="mt-bandeja-txt"><b>${d.fotos.length === 1 ? '1 item' : `${d.fotos.length} itens`}</b><span>Fotos e takes · arraste para um quadro</span></div>
+    <div class="mt-bandeja-txt"><b>${d.fotos.length === 1 ? '1 item' : `${d.fotos.length} itens`}</b><span>${ehCar ? 'Arraste até o slide · ou toque no slide e depois na foto' : ehGrade ? 'Arraste até o quadradinho · ou toque nele e depois na foto' : 'Fotos e takes · arraste para um quadro'}</span></div>
     <div class="mt-fotos">
       ${d.fotos.map((p) => {
         const j = quadros.indexOf(p)
         const v = ehVideo(p)
         return html`<span
           key=${p}
-          class=${cx('mt-foto', j >= 0 && 'is-usada')}
+          class=${cx('mt-foto', j >= 0 && 'is-usada', pega === p && 'is-pega')}
           draggable="true"
-          title=${nomeDe(p)}
-          onDragStart=${(e) => e.dataTransfer.setData('text/x-sd-foto', p)}
-          onClick=${() => ativo >= 0 && porNoQuadro(ativo, p)}
+          title=${`${nomeDe(p)}${j >= 0 && porPartes ? ` · ${ehCar ? 'slide' : 'quadradinho'} ${numeroDoQuadro[j]}` : ''}`}
+          onDragStart=${(e) => {
+            e.dataTransfer.setData('text/x-sd-foto', p)
+            e.dataTransfer.effectAllowed = 'copyMove'
+          }}
+          onDragEnd=${() => setAlvo(-1)}
+          onClick=${() => tocarNaFoto(p)}
         >
           <img src=${v ? quadroUrl(p, 1, 160) : fotoUrl(p)} alt="" loading="lazy" decoding="async" />
-          ${j >= 0 ? html`<i>${j + 1}</i>` : null} ${v ? html`<b class="mt-foto-play" aria-label="Vídeo"><${Icon} name="play" size=${9} /></b>` : null}
+          ${j >= 0 ? html`<i>${numeroDoQuadro[j]}</i>` : null} ${v ? html`<b class="mt-foto-play" aria-label="Vídeo"><${Icon} name="play" size=${9} /></b>` : null}
           <button
             type="button"
             class="mt-foto-x"
@@ -779,8 +1053,34 @@ export function MontagensScreen() {
       ${escolhaDoTipo}
       ${formatos}
       ${bandeja}
-      <div class="mt-modelos">
-        ${modelosPara(d.fotos.length).map(
+      ${
+        porPartes
+          ? html`<div class="mt-modelos is-carrossel">
+              ${[
+                { id: 'panorama', nome: ehCar ? 'Panorama' : 'Uma imagem dividida', sub: ehCar ? 'Uma foto passando por todos' : 'Uma foto cortada nos quadradinhos', paginas: tela.fatias.map((_, i) => (i ? { modelo: 'uma', emenda: true } : { modelo: 'uma' })) },
+                ...MODELOS.map((m) => ({ id: m.id, nome: m.id === 'uma' ? (ehCar ? 'Uma foto por slide' : 'Uma foto por quadradinho') : `${m.nome} em cada ${ehCar ? 'slide' : 'quadradinho'}`, sub: `${m.caixas.length * tela.fatias.length} fotos`, paginas: tela.fatias.map(() => ({ modelo: m.id })) })),
+              ].map(
+                (o) =>
+                  html`<${ModeloCarrossel}
+                    key=${o.id}
+                    paginas=${o.paginas}
+                    nome=${o.nome}
+                    sub=${o.sub}
+                    tela=${tela}
+                    fotos=${d.fotos}
+                    d=${d}
+                    ativo=${JSON.stringify(gruposDe(o.paginas).map((g) => [g.de, g.ate, g.modelo])) === JSON.stringify(grupos.map((g) => [g.de, g.ate, g.modelo]))}
+                    onEscolher=${() => {
+                      muda({ paginas: o.paginas, quadros: [], enquadres: [] })
+                      setAtivo(-1)
+                      setSlide(0)
+                      setVista('montar')
+                    }}
+                  />`,
+              )}
+            </div>`
+          : html`<div class="mt-modelos">
+        ${[faixasDaGaleria, ...modelosPara(d.fotos.length)].map(
           (m) =>
             html`<${Modelo}
               key=${m.id}
@@ -796,7 +1096,8 @@ export function MontagensScreen() {
               }}
             />`,
         )}
-      </div>
+      </div>`
+      }
     </div>`
 
   if (trechoDoQuadro >= 0 && quadros[trechoDoQuadro] && infoAtual[quadros[trechoDoQuadro]]) {
@@ -829,7 +1130,7 @@ export function MontagensScreen() {
       <div><h1 class="page-title"><button type="button" class="mt-nome" title="Trocar o nome" onClick=${async () => {
         const r = await promptDialog({ title: 'Nome da montagem', initial: d.nome, confirmLabel: 'Usar' })
         if (r && r.trim()) muda({ nome: r.trim().slice(0, 80) })
-      }}>${d.nome}</button></h1><p class="page-lead">${modelo.nome} · ${tipoNome}${videosNoPost.length ? ` · ${videosNoPost.length === 1 ? '1 take' : `${videosNoPost.length} takes`}` : ''}</p></div>
+      }}>${d.nome}</button></h1><p class="page-lead">${grupos ? nomeCarrossel(grupos) : modelo.nome} · ${tipoNome}${videosNoPost.length ? ` · ${videosNoPost.length === 1 ? '1 take' : `${videosNoPost.length} takes`}` : ''}</p></div>
       <div class="mt-acoes">
         <${Button} icon="grid" onClick=${() => setVista('escolher')}>Modelo e formato</${Button}>
         <${Button} variant="primary" icon="check" loading=${!!salvando} disabled=${!!salvando} onClick=${salvar}>${salvando || 'Salvar'}</${Button}>
@@ -837,10 +1138,80 @@ export function MontagensScreen() {
     </header>
     ${escolhaDoTipo}
     <div class="mt-corpo">
-      <div class="mt-palco" onDragOver=${(e) => e.preventDefault()} onDrop=${soltarNoQuadro}>
+      <div class="mt-palco" ref=${palco} onDragOver=${sobreOPalco} onDragLeave=${(e) => !e.currentTarget.contains(e.relatedTarget) && setAlvo(-1)} onDrop=${soltarNoQuadro}>
+        <div class=${cx('mt-rolagem', longo && 'is-longo')} ref=${rolagem}>
         <div class="mt-tela" style=${`width:${Math.round(tela.w * escala)}px;height:${Math.round(tela.h * escala)}px`}>
-          <canvas ref=${canvas} class=${cx('mt-canvas', trocando >= 0 && 'is-trocando')} style=${`width:${Math.round(tela.w * escala)}px;height:${Math.round(tela.h * escala)}px`} onPointerDown=${desce} onPointerMove=${move} onPointerUp=${sobe} onPointerCancel=${sobe} aria-label="Montagem: toque num quadro para escolher, arraste para enquadrar, role para dar zoom"></canvas>
+          <canvas ref=${canvas} class=${cx('mt-canvas', (trocando >= 0 || pega) && 'is-trocando')} style=${`width:${Math.round(tela.w * escala)}px;height:${Math.round(tela.h * escala)}px`} onPointerDown=${desce} onPointerMove=${move} onPointerUp=${sobe} onPointerCancel=${sobe} aria-label="Montagem: toque num quadro para escolher, arraste para enquadrar, role para dar zoom"></canvas>
+          ${videosNoPost.map((i) => {
+            const p = quadros[i]
+            const info = infoAtual[p]
+            if (!info || naoToca[p]) return null
+            const b = caixasAgora()[i]
+            const q = enquadreDe(d.enquadres[i])
+            const s = cobrir(info.largura, info.altura, b.w, b.h, q.x, q.y, q.zoom)
+            const pc = (v) => `${(v * 100).toFixed(4)}%`
+            return html`<div
+              key=${`${i}:${p}`}
+              class=${cx('mt-take-vivo', ativo === i && 'is-ativo')}
+              style=${`left:${pc(b.x / tela.w)};top:${pc(b.y / tela.h)};width:${pc(b.w / tela.w)};height:${pc(b.h / tela.h)};border-radius:${d.cantos * escala}px`}
+            >
+              <video
+                ref=${(el) => {
+                  if (el) vidsM.current[i] = el
+                  else delete vidsM.current[i]
+                }}
+                src=${videoUrl(p)}
+                muted=${d.som !== p}
+                playsinline
+                preload="auto"
+                style=${`left:${pc(-s.sx / s.sw)};top:${pc(-s.sy / s.sh)};width:${pc(info.largura / s.sw)};height:${pc(info.altura / s.sh)}`}
+                onLoadedMetadata=${(e) => (e.currentTarget.currentTime = tempoDoTake(p, agulhaM.current))}
+                onError=${() => setNaoToca((x) => ({ ...x, [p]: true }))}
+              ></video>
+            </div>`
+          })}
         </div>
+        </div>
+        ${
+          ehCar && tela.fatias.length > 1
+            ? html`<div class="mt-paginas" role="tablist" aria-label="Slides do carrossel">
+                ${longo ? html`<button type="button" class="mt-pag-seta" aria-label="Slide anterior" disabled=${slide <= 0} onClick=${() => irAoSlide(slide - 1)}><${Icon} name="chevron-left" size=${16} /></button>` : null}
+                ${tela.fatias.map(
+                  (f, i) => html`<button type="button" role="tab" aria-selected=${slide === i ? 'true' : 'false'} class=${cx('mt-pag', slide === i && 'is-on')} onClick=${() => irAoSlide(i)}>${i + 1}</button>`,
+                )}
+                ${longo ? html`<button type="button" class="mt-pag-seta" aria-label="Próximo slide" disabled=${slide >= tela.fatias.length - 1} onClick=${() => irAoSlide(slide + 1)}><${Icon} name="chevron-right" size=${16} /></button>` : null}
+              </div>`
+            : null
+        }
+        ${
+          videosNoPost.length
+            ? html`<div class="mt-tempo" role="group" aria-label="Ver a montagem">
+                <button type="button" class="mt-tempo-play" onClick=${tocarM} aria-label=${tocandoM ? 'Pausar' : 'Tocar a montagem'}><${Icon} name=${tocandoM ? 'pause-fill' : 'play'} size=${16} /></button>
+                <div
+                  class="mt-tempo-regua"
+                  ref=${reguaM}
+                  onPointerDown=${(e) => {
+                    if (tocandoM) pararM()
+                    e.currentTarget.setPointerCapture?.(e.pointerId)
+                    arrastoM.current = true
+                    irPara(tempoNaRegua(e))
+                  }}
+                  onPointerMove=${(e) => arrastoM.current && irPara(tempoNaRegua(e))}
+                  onPointerUp=${() => (arrastoM.current = false)}
+                  onPointerCancel=${() => (arrastoM.current = false)}
+                >
+                  ${Array.from({ length: d.duracao + 1 }, (_, k) => html`<i style=${`left:${(k / d.duracao) * 100}%`}></i>`)}
+                  <span class="mt-tempo-ponteiro" ref=${ponteiroM}></span>
+                </div>
+                <span class="mt-tempo-tc"><b ref=${tcM}></b> / ${tc(d.duracao)}</span>
+                ${
+                  ativoVideo
+                    ? html`<button type="button" class="mt-link" disabled=${!infoAtual[quadros[ativo]]} onClick=${() => setTrechoDoQuadro(ativo)}><${Icon} name="film" size=${14} />Mudar o trecho</button>`
+                    : html`<span class="mt-sub">${videosNoPost.some((i) => naoToca[quadros[i]]) ? 'Um take não toca aqui: ele fica no quadro do começo' : 'Toque num take para mudar o trecho'}</span>`
+                }
+              </div>`
+            : null
+        }
         ${
           ativo >= 0
             ? html`<div class="mt-barra" role="toolbar" aria-label="Quadro escolhido">
@@ -866,13 +1237,50 @@ export function MontagensScreen() {
                 </button>
                 ${quadros[ativo] ? html`<button type="button" aria-label="Tirar do quadro" onClick=${() => tirar(ativo)}><${Icon} name="x" size=${14} /></button>` : null}
               </div>`
-            : html`<p class="mt-dica">
-                ${d.tipo === 'grade' ? 'Os números são a ordem de postar · ' : d.tipo === 'carrossel' ? 'A linha azul é onde um slide vira o outro · ' : ''}Toque
+            : pega
+              ? html`<p class="mt-dica is-pega">Toque no ${ehCar ? 'slide' : ehGrade ? 'quadradinho' : 'quadro'} onde vai essa foto · <button type="button" class="mt-link" onClick=${() => setPega(null)}>Cancelar</button></p>`
+              : html`<p class="mt-dica">
+                ${d.tipo === 'grade' ? 'Os números são a ordem de postar · ' : ehCar ? 'Arraste uma foto até o número do slide · ' : ''}Toque
                 num quadro · arraste para enquadrar · role para dar zoom
               </p>`
         }
       </div>
       <aside class="mt-lado">
+        ${
+          grupos
+            ? (() => {
+                const g = grupoDoSlide(paginas, slide) || grupos[0]
+                const fat = tela.fatias[slide] || tela.fatias[0]
+                const mw = 30
+                const mh = Math.round((mw * fat.h) / fat.w)
+                const titulo = ehGrade
+                  ? dividida
+                    ? 'Grade inteira'
+                    : `Quadradinho ${numeroDaParte(slide)}`
+                  : g.slides > 1
+                    ? `Slides ${g.de + 1} a ${g.ate + 1}`
+                    : `Slide ${slide + 1}`
+                return html`<section class="mt-card mt-card-slide">
+                  <h3>${titulo}</h3>
+                  <div class="mt-minis" role="radiogroup" aria-label=${`Modelo do slide ${slide + 1}`}>
+                    ${MODELOS.map(
+                      (m) => html`<button type="button" role="radio" aria-checked=${g.modelo === m.id ? 'true' : 'false'} class=${cx('mt-mini', g.modelo === m.id && 'is-on')} title=${m.nome} aria-label=${m.nome} onClick=${() => modeloDoSlide(slide, m.id)}>
+                        <${MiniModelo} modelo=${m} w=${g.slides > 1 ? Math.round((mw * 1.6)) : mw} h=${mh} />
+                      </button>`,
+                    )}
+                  </div>
+                  ${
+                    ehGrade
+                      ? html`<label class="mt-linha-switch"><span><b>Uma imagem só, dividida</b><small>Desligado: uma foto em cada quadradinho</small></span><${Switch} checked=${dividida} label="Uma imagem só, dividida" onChange=${dividir} /></label>`
+                      : slide > 0
+                      ? html`<label class="mt-linha-switch"><span><b>Emendar com o ${slide}</b><small>A foto passa de um slide para o outro</small></span><${Switch} checked=${paginas[slide].emenda} label=${`Emendar o slide ${slide + 1} com o ${slide}`} onChange=${(v) => emendar(slide, v)} /></label>`
+                      : null
+                  }
+                  <p class="mt-sub">${ehGrade ? 'Toque num quadradinho para escolher o modelo dele. Os números são a ordem de postar.' : 'Toque num slide para mudar o dele. O formato vale para todos: o Instagram corta o carrossel pelo primeiro.'}</p>
+                </section>`
+              })()
+            : null
+        }
         ${
           videosNoPost.length
             ? html`<section class="mt-card">
@@ -893,6 +1301,31 @@ export function MontagensScreen() {
               </section>`
             : null
         }
+        ${
+          modelo.faixas && !ehCar
+            ? html`<section class="mt-card">
+                <h3>Faixas</h3>
+                <${Chips}
+                  label="Quantas faixas"
+                  valor=${modelo.faixas.n}
+                  itens=${FAIXAS_N.filter((v) => !modelo.faixas.antesDepois || v % 2 === 0).map((v) => ({ value: v, label: modelo.faixas.antesDepois ? `${v / 2} ${v === 2 ? 'par' : 'pares'}` : String(v) }))}
+                  onEscolher=${(v) => muda({ faixas: { ...fx, n: v }, quadros: [], enquadres: [] })}
+                />
+                <label class="mt-linha-switch"><span><b>Antes e depois</b><small>Em pares: o arquivo em cima, a cor embaixo, com rótulo</small></span><${Switch}
+                  checked=${modelo.faixas.antesDepois}
+                  label="Antes e depois"
+                  onChange=${(v) => muda({ faixas: { ...fx, antesDepois: v, n: v && fx.n % 2 ? Math.min(6, fx.n + 1) : fx.n }, quadros: [], enquadres: [] })}
+                /></label>
+                <h3 class="mt-h3-mais">Formato do frame</h3>
+                <${Chips} label="Formato do frame" valor=${modelo.faixas.aspecto} itens=${ASPECTOS_FAIXA.map((a) => ({ value: a.id, label: a.nome }))} onEscolher=${(v) => muda({ faixas: { ...fx, aspecto: v }, enquadres: [] })} />
+                ${
+                  tela.h / tela.w > 1.6
+                    ? html`<label class="mt-linha-switch"><span><b>Zona segura dos Stories</b><small>Nada embaixo do perfil nem do “responder”</small></span><${Switch} checked=${modelo.faixas.seguro} label="Zona segura dos Stories" onChange=${(v) => muda({ faixas: { ...fx, seguro: v } })} /></label>`
+                    : null
+                }
+              </section>`
+            : null
+        }
         <section class="mt-card"><h3>Espaço entre as fotos</h3><${Slider} value=${d.espaco} min=${0} max=${80} onInput=${(v) => muda({ espaco: v })} label="Espaço entre as fotos" format=${(v) => `${v} px`} /></section>
         <section class="mt-card"><h3>Cantos</h3><${Slider} value=${d.cantos} min=${0} max=${80} onInput=${(v) => muda({ cantos: v })} label="Cantos arredondados" format=${(v) => `${v} px`} /></section>
         <section class="mt-card"><h3>Fundo</h3><div class="mt-cores">
@@ -903,6 +1336,13 @@ export function MontagensScreen() {
           <h3>Sai assim</h3>
           <p>${tela.fatias.length > 1 ? `${tela.fatias.length} imagens ${tela.fatias[0].w} × ${tela.fatias[0].h}, numeradas` : videosNoPost.length ? `${tela.w} × ${tela.h} · MP4 ou JPG` : `${tela.w} × ${tela.h} · JPG`}</p>
           ${d.tipo !== 'post' && d.fotos.some(ehVideo) ? html`<p class="mt-sub">Aqui os takes entram como foto (o quadro do começo do trecho).</p>` : null}
+          ${
+            modelo.faixas && d.tipo === 'post' && d.fotos.length > modelo.faixas.n
+              ? html`<${Button} icon="stack" disabled=${!!salvando} onClick=${salvarLote} title="As fotos na ordem, em grupos do tamanho deste modelo: um story para cada grupo">
+                  Todas em stories · ${Math.ceil(d.fotos.length / modelo.faixas.n)}
+                </${Button}>`
+              : null
+          }
           <button type="button" class="mt-link" onClick=${escolherPasta}><${Icon} name="folder" size=${14} />${pasta() ? nomeDe(pasta()) : 'Downloads › Montagens'}</button>
           ${
             ultimo

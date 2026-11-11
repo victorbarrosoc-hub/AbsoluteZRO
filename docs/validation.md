@@ -15,6 +15,46 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Central 1.4.7: menu Administração (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+| Verificação       | Comando                                           | Resultado |
+| ----------------- | ------------------------------------------------- | --------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | 118/118   |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK  |
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Linux, Node 22, Electron 44.5.1 com Xvfb.
+
+| Verificação       | Comando                                           | Resultado                                          |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | **118/118** (novo: destino `campus`, só claude.ai) |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK                                           |
+
+## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
+
+Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.
+
+- HUB: `npm run lint`, `format:check`, `typecheck` e `build` ok; `npm test` **666/666** em 76 arquivos, com os novos
+  `espelho.test.ts` (a forma exata do espelho que o HUB aceita, o HEAD com tamanho e o cache; `/baixar/hub` com e sem
+  espelho, `?build=` e `?origem=github`; `/baixar/app` com o nome exato no GitHub para a central 1.4.3 e
+  `?origem=espelho`/`mac` no espelho), `espelho-bucket.test.ts` (a `0060` sem Storage não faz nada; com um
+  `storage.buckets` mínimo cria o bucket público, 1 GB, só dmg/exe/json, idempotente e sem policy) e
+  `espelho-ci.test.ts` (assinatura S3 v4 igual aos exemplos da documentação da AWS; o passo inteiro contra um S3 falso:
+  sem secrets pula sem pedido nenhum, sobe os dois instaladores e o `versao.json` com `espelho`, apaga o build antigo;
+  SHA-256 do Release diferente para antes de gravar `espelho`). `openapi.test.ts` passa (só descrições mudaram).
+- `npm run test:e2e -- tests/e2e/hub.spec.ts tests/e2e/a11y.spec.ts`: **23/23** (gate do `/baixar/app`, a central de
+  apps com progresso, acessibilidade do `/baixar`).
+- hub-desktop `npm test` **113/113**, com o novo `baixador.test.mjs`: pedaços com Range em até 6 conexões, sem Range uma
+  conexão só, retomada do byte exato depois de uma queda, pedaço parado pedido de novo, link 403 renovado pelo HUB,
+  tamanho diferente do catálogo, espelho com arquivo errado ou fora do ar caindo no GitHub, os dois errados = "não
+  confere" sem sobra no disco, cancelado no meio, a regra de destino do espelho (outro host, porta, bucket, `sign/` ou
+  usuário embutido recusados), o `https` do Node com IPv4 (servidor local de verdade, `remoteFamily` IPv4 e
+  redirecionamento fora da regra recusado), o caminho direto que nunca conecta passando para o do Chromium e a própria
+  central caindo no `?origem=github`. Teste de fumaça no Electron 44.5.1 (Linux, Xvfb): `SMOKE OK`.
+- Não verificado: o upload de verdade para o Supabase (sem as chaves S3 aqui) e a velocidade real no Brasil.
+- `node scripts/scan-secrets.mjs`: nenhum segredo.
+
 ## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`)
 
 Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Chromium e WebKit do Playwright 1.63).
@@ -49,6 +89,32 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   FECHADO); `npm test` (telas no Chromium) 95/95 (cadastro-foco e conta-zro passaram na rodada sozinha do próprio
   runner).
 
+## SOBEDESCE Celular 2.8.69: a cara do app de computador (06/11/2026, ramo `claude/sobedesce-celular-visual`)
+
+- `cd products/sobedesce && npm run test:fast`: **820/825** (4 pulados; 1 falhou por tempo com a máquina ocupada,
+  `set-celular`, `locator.waitFor` 20 s, que passa sozinho). Novos: `test/celular-visual.test.js` 4/4 (abas Início ·
+  Drive · Transferências · Estúdio, seções do Estúdio, "Falta" e "termina ~hh:mm", gráfico de velocidade) e
+  `test/frames-galeria-csp.test.js` 2/2 (o vídeo da galeria abre com a CSP do app; antes, "violates media-src
+  'self'"). `montagens-celular-navegador` 2/2 pelo Estúdio. `test/app-sw.test.js` confere 2.8.69 / `sobedesce-app-v84`.
+- `cd products/sobedesce/web`: `lint` ok, `typecheck` ok, `npm test` **384/384** (`celular-app.test.mts` passa pelas
+  abas Estúdio e Transferências no WebKit a 375, 393, 430 e 852 px: toque de 44 px, campo de 16 px, nada mais largo).
+
+## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
+
+Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
+
+- `cd products/sobedesce && npm run test:fast`: **813/819** (4 pulados, 2 falharam por tempo com a máquina ocupada:
+  `porta-malas-carro` e `set-celular`, `locator.waitFor` 40 s/20 s; os dois passam sozinhos e juntos com o teste novo do
+  navegador, 6/6). Novos: `test/montagens-celular.test.js` 9/9 (cópia idêntica de `lib/montagens.js`, partes e nomes
+  na ordem de postar, fatia igual ao corte da imagem inteira no carrossel contínuo, grade 3×5 sem canvas acima do limite
+  do Safari, foto aberta no tamanho do quadro, vídeo até 1920 px, tempo do take normal/lento/volta) e
+  `test/montagens-celular-navegador.test.js` 2/2 (Chromium e WebKit com cara de iPhone: foto do Drive pela faixa de
+  escolher, carrossel 3 × 1080×1350, grade 3×2 6 × 1080×1440 pela folha de compartilhar, vídeo 1080×1350 H.264 + AAC
+  de 3 s conferido pelo ffprobe). `test/app-sw.test.js` confere 2.8.68 / `sobedesce-app-v83`.
+- `cd products/sobedesce/web`: `npm run lint` ok, `npm run typecheck` ok, `npm test` **384/384** (com
+  `celular-app.test.mts`, que passa pela aba Criar no WebKit a 375, 393, 430 e 852 px: toque de 44 px e campo de 16 px).
+- `node scripts/scan-secrets.mjs`: nenhum segredo em 4426 arquivos.
+
 ## Synquei + SOBEDESCE: organização por tipo de vídeo (06/11/2026)
 
 | Verificação                                                                     | Comando                                      | Resultado      |
@@ -66,7 +132,7 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
 - `products/sobedesce/test/relatorio-backup.test.js` e `synquei-ponte.test.js`: relatório por câmera e cartão, só da
   diária pedida, repetição conta uma vez, sem botão sem cartão, Drive só diz conferido com MD5, link synquei://.
 
-## Rádio do set (05/11/2026, ADR 0042, proposta)
+## RADION, o rádio do set (05/11/2026, ADR 0042)
 
 - Só documento: nenhum código, migration ou deploy. `node scripts/scan-secrets.mjs` sem segredo; a ADR passa no
   Prettier (os 5 avisos do `format:check` já estavam na `main`).
@@ -90,6 +156,86 @@ Os oito ramos juntos em cima da `main` (Linux, Node 22, Postgres 16.15 local, Ch
   (novo `tests/e2e/radio.spec.ts`: conta comum recebe 404 na página, nos scripts e na API; duas contas de admin criam a
   diária, entram pelo link, se conectam, a fala aparece "no ar" e o aviso "Ação" ocupa a tela). As 7 falhas são todas
   do WebKit, que não está instalado nesta máquina (`Executable doesn't exist`), sem relação com o rádio.
+- Intercom no modelo do C1 Pro (06/11/2026): `products/radio` `npm test` 4/4. O e2e com três Chromium agora confere:
+  quem entra escolhe o setor; a faixa do setor vem logo depois do Geral, ouvindo; segurar o TALK para a Direção chega à
+  Bia e não ao Caio (Câmera), e a faixa da Direção acende na Bia; um toque trava o TALK aberto no Geral e outro fecha;
+  Caio desliga o Geral e a voz do Geral deixa de chegar a ele; "Todos" chega ao Caio mesmo assim; aviso "Ação". HUB:
+  lint, format:check, typecheck ok, `npm test` 633/633, build ok, `tests/e2e/radio.spec.ts` 2/2 (setor pela folha,
+  fala segurada acende o Geral do outro lado). Telas conferidas a 390 e 1280 px, claro e escuro.
+- Admin › Apps com o Rádio (06/11/2026): `tests/e2e/radio.spec.ts` 3/3 (novo: admin abre /admin/apps, e-mail sem conta
+  recusado, dá acesso a uma conta comum pelo e-mail em maiúsculas, a conta abre /radio (200) sem novo login, tirar e
+  ela volta a 404 na hora); `tests/integration/marca-fechada.test.ts` com o `radio`; HUB `npm test` 649/649, lint,
+  format:check, typecheck e build ok.
+- Rádio sem login (06/11/2026): `/radio` sem sessão (link aberto num navegador fora da conta, como o de dentro do
+  WhatsApp ou do Instagram) leva ao `/entrar?next=/radio?d=…` e, entrando, volta ao rádio com o código; logado sem acesso
+  segue 404. `tests/e2e/radio.spec.ts` 4/4.
+- TURN para o rádio (06/11/2026): `/api/v1/radio/ice` (gate; fora dele, 404) devolve STUN e, com
+  `CLOUDFLARE_TURN_KEY_ID` e `CLOUDFLARE_TURN_API_TOKEN` no servidor, credenciais temporárias (6 h) do TURN da Cloudflare
+  para a voz passar entre redes (4G com CGNAT). `products/radio/test/ice.test.js` 3/3 (sem chave só STUN, pedido certo à
+  Cloudflare com Bearer e ttl, porta 53 fora, falha volta para STUN); `tests/e2e/radio.spec.ts` 4/4 (sem a chave: só
+  STUN). Não conferido: a chave de verdade e duas redes de verdade.
+
+- RADION, Fase 1 (06/11/2026): `products/radio` `npm test` 11/11 (Postgres 16 e Chromium do Playwright 1.63 desta
+  máquina): poderes no banco (responsável só no setor dele e nunca com quem está sem setor, ninguém silencia o dono nem
+  a Direção, silenciar todos e o setor, Gravando cala o set menos Direção e Som e o Corta reativa, pedir a palavra,
+  convidado entra calado, mover, tirar, histórico só do dono, `radio_app` não escreve silêncio, mão, histórico, papel
+  nem setor; pessoas por apelido, nunca o sub), gate da página inicial (prévia só com acesso, para todos só com
+  `RADION_SITE_ABERTO=1`), login com `zro.set` e o repasse do Set contra a Absolute ZRO falsa, e de ponta a ponta em
+  três Chromium com voz de verdade: setor, a equipe sem o Geral, segurar e travar o TALK, deixar de ouvir, Todos,
+  Gravando que cala e Corta que reativa, a dona silencia, quem foi silenciado pede a palavra e ganha de volta.
+  HUB: `tests/integration/radio.test.ts` (cópias, gate, poderes pelo HUB) e `tests/e2e/radio.spec.ts` no desenho novo.
+- RADION no ar (07/11/2026): `https://radion.absolutezro.com/api/radio/saude` → `{ ok: true, migracoes: 2 }`, `/entrar`
+  leva ao `/oauth/authorize` com `radio-web` (o HUB aceita e pede login), `radio.absolutezro.com/<caminho>` → 308 para o
+  mesmo caminho no radion, `/api/radio/diarias` sem sessão → 401, `/` sem sessão → página neutra; o titular entrou e
+  abriu uma diária no celular. TALK no celular sem a tela inteira (barra e canal acendem): `npm test` 11/11,
+  `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4 e captura no Chromium em 390 × 844.
+- RADION, setores da diária (07/11/2026): `products/radio` `npm test` 12/12, com o teste novo de setores (nasce com os
+  sete; só o dono cria, renomeia e tira; nome repetido e cor fora da lista recusados; setor de outra diária não vale;
+  mover põe gente no setor novo; tirar o setor deixa quem estava sem setor e o responsável na equipe; a Direção não sai;
+  trava de setor; Gravando liga e o Corta desliga; renomear só o dono; sair e encerrar; `radio_app` não escreve setor nem lê setor de diária alheia). HUB:
+  `tests/integration/radio.test.ts` 4/4, `tests/e2e/radio.spec.ts` 4/4, typecheck. Capturas no Chromium em 390 × 844
+  (escuro) e 1200 × 800: No ar com Travar a fala e Sair, Setores com o lápis e o editor (cores, pessoas, pôr alguém),
+  Poderes com o Setor travado, Equipe, Avisos, Sair e a volta para Diárias.
+- RADION, página inicial nova (07/11/2026): `npm test` 12/12 (o `site.js` sai só pelo gate, como o `site.css`);
+  capturas no Chromium em 390 × 844 (claro e escuro) e 1440 × 900 com as seções entrando na rolagem e as três
+  demonstrações andando, sem erro no console.
+- RADION no ar (07/11/2026, HUB `0062`): HUB `npm test` 666/666 (gate aberto em web/sso/api, o RADION nos planos de
+  pacote e no grátis, contas antigas com ele no nível legado, claims de login único com `radio`, projeto com a etapa do
+  RADION), lint, typecheck, format; e2e `hub.spec.ts` 19/19 (a órbita e a faixa com os sete no ar), `radio.spec.ts` 4/4
+  (conta comum entra), `sso.spec.ts`, `z-entrada.spec.ts`, `login-pelo-app.spec.ts`; `products/radio` `npm test` 12/12.
+- RADION para computador (07/11/2026): `products/radio/desktop` `npm test` 31/31 (permissões só de áudio, deep link da
+  diária, estado conferido, título da barra, dica, selo, rótulo do atalho, cópias do hub-desktop, ícones, nomes do
+  Release); teste de fumaça no Linux (Xvfb) `SMOKE OK`; HUB `desktop-apps`, `downloads`, `login-pelo-app` e `meus-apps`
+  51/51 com o RADION no catálogo da central; `products/radio` `npm test` 12/12 e `tests/integration/radio.test.ts` com a
+  cópia nova (modo compacto e ponte do computador, que no navegador não aparecem). Primeiro build na main (b4002):
+  Mac e Windows empacotados, teste de fumaça dos dois `SMOKE OK`, Release `radion-versao-de-teste` com o .dmg, o .exe
+  e o `versao.json`. HUB `0064`: `tests/integration/radion-computador.test.ts` (desktop e download abertos só para o
+  RADION, web/api/sso como na 0062, idempotente e sem auditoria nova).
+- RADION, fotos das contas (07/11/2026): `products/radio` `npm test` 12/12 (a lista de diárias devolve `eu.foto`, só o
+  id público; valor estranho vira null; quem entra com foto aparece com ela na batida da equipe e, sem foto na conta,
+  sai também); `tests/integration/radio.test.ts` 5/5 (no HUB, a foto é a da própria conta pelo RLS, null sem foto).
+- RADION no Android (07/11/2026): `products/radio` `npm test` 13/13, com o teste novo de ponta a ponta no Chromium com o
+  agente de usuário do Android: depois do Ligar nenhum microfone aberto; segurando, o microfone abre e a voz chega ao
+  outro aparelho; soltando, fecha e a voz para; a fala travada abre e fecha igual. A troca de alto-falante em si só se
+  confere num Android de verdade (o Chromium de teste não escolhe saída de som).
+- RADION, pela voz (07/11/2026): `products/radio` `npm test` 14/14, com o teste novo de ponta a ponta: nos Ajustes,
+  Pela voz e sensibilidade Alta (guardadas no aparelho); com um tom contínuo no microfone falso (gerado na hora, sem voz
+  no repositório) a fala abre sozinha e a voz chega; um toque pausa (não abre mais sozinho e a voz para); outro retoma.
+  Telas dos Ajustes conferidas no celular (390 px, claro e escuro) e no computador.
+- RADION, microfone e som (07/11/2026): `products/radio` `npm test` 15/15, com o teste novo de ponta a ponta: com o rádio
+  ligado, a lista mostra os microfones com o nome de verdade; escolher um passa a mandar só ele (o antigo fecha); numa
+  nova visita, com o id trocado pelo navegador, o rádio liga com o microfone guardado (achado pelo nome). Telas
+  conferidas no celular (390 px) e no computador. A saída só se escolhe onde o navegador tem `setSinkId` (computador).
+- RADION, foto sem piscar (07/11/2026): `products/radio` `npm test` 16/16, com o teste novo: com a foto servida pela
+  rota do navegador, um observador da lista da equipe confere que todo círculo que entra nos redesenhos já vem com a
+  foto (no código antigo, 3 de 3 entravam sem).
+- RADION nativo, Android, marco 1 (08/11/2026): `./gradlew test assembleRelease` em `products/radio/nativo/android`.
+  Núcleo 6/6: estado conferido, texto da notificação e ordem da saída de som. App 8/8: regras de navegação e deep
+  link, login pelo navegador com state, PKCE, validade e troca recusada. O APK pede só RECORD_AUDIO,
+  MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE (microfone e mídia), POST_NOTIFICATIONS, WAKE_LOCK e INTERNET.
+  `products/radio` `npm test` 17/17, com o teste novo da ponte (`assets/ponte.js`) na página de verdade: o estado chega
+  ao app, o Falar/Parar abre e fecha a fala e o microfone fica aberto com o rádio ligado. A tela travada em si só se
+  confere num Android de verdade.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
@@ -654,6 +800,17 @@ da Higgsfield é a `0052`).
 - Conferido de verdade (01/11/2026): a CDN (`*.cloudfront.net`, `cdn.higgsfield.ai`) e o envio (`upload.higgsfield.ai`)
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
+
+## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
+
+Branch `sobedesce-drive-escopo`.
+
+- `web/tests/drive-hibrido.test.mts`: concessão perdida → o callback manda para o segundo pedido (`drive` com
+  `login_hint` da vaga), volta inteiro sem gastar vaga; desmarcou de novo → `?google=escolhidos`, sem terceiro pedido;
+  `?inteiro=` forjado ou com o acesso total desligado não pede o Drive inteiro; Picker: App ID errado usa o do client
+  ID, aspas e espaços, outro projeto, chave errada e a resposta com `problemas` sem valor.
+- `web/tests/google.test.mts`: reconectar depois de remover agora vai ao segundo pedido.
+- `web`: `npm run lint`, `npm run typecheck` e `npm test` (todos passando). HUB: `tsc` de `apps/hub-web` sem erro.
 
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)
 
@@ -5358,3 +5515,144 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `npm test` da Revela 187/187 (com as telas em Chromium); o teste da página inicial agora espera o título "revela.".
 - Não validado: Safari/iOS de verdade (o `:has()` da barra sobre a foto pede Safari 15.4+), e a página `marca/index.html`
   (manual antigo da marca) ainda mostra a identidade anterior.
+
+## Lote extra de 06/11/2026: SOBEDESCE 0.3.11 e Celular 2.8.69
+
+- Ramo `claude/lote-extra-2026-11-06`: `main` + #130 (Frames pré-color, Faixas, frames do cartão) +
+  `claude/sobedesce-celular-visual`; a Revela (#131) fica de fora.
+- SOBEDESCE `npm run test:fast`: 830 de 836 passaram, 4 pulados (como root), 2 falharam: `test/set-celular.test.js`
+  falha igual na `main` (a barra "Seções" não aparece no login de antes do Set) e `test/lan.test.js` "entre computadores"
+  oscila com a bateria inteira (passa 3/3 sozinho, sem mudança nos arquivos dele).
+- Montagens no celular em Chromium e WebKit (`test/montagens-celular-navegador.test.js`) 2/2; cópia idêntica,
+  `celular-visual`, `frames-galeria-csp`, `app-sw`, `frames-cor`, `montagens` e Backup Automático: 73/73.
+- Site do SOBEDESCE (`products/sobedesce/web`): lint e tipos limpos, `npm test` 384/384.
+- Raiz: lint, format:check e typecheck limpos; `npm test` 76 arquivos, 666/666; `scan-secrets` sem segredos.
+
+## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026)
+
+- Causa conferida no Electron 44.5.1 de verdade (`ELECTRON_RUN_AS_NODE`): app.asar com build 1100, troca do pacote como
+  a central faz (`.zro-novo` → `.app`, apaga o `.zro-antigo`) para 1119 → o `fs` do Electron segue lendo 1100; o
+  `original-fs` (e o `lerBuildInstalado` novo) lê 1119.
+- DMGs publicados conferidos (7z + `@electron/asar`): SOBEDESCE 0.3.10 b1119 tem `src/build-info.json` com build 1119 e
+  Relay 0.1.2 b2008 tem `desktop/build-info.json` com build 2008, dentro do app.asar; o `lerBuildInstalado` novo lê 1119
+  do app.asar real do SOBEDESCE. Pacotes dos apps sem mudança.
+- `apps/hub-desktop` `npm test` 117/117 (novos: app.asar real, unpacked e lixo; troca com o cache do Electron simulado,
+  que falha com a leitura da 1.4.4; `agenda.sincronizar`; ligações no `main.cjs`).
+- Raiz: lint, format:check e typecheck limpos; `npm test` 76 arquivos, 666/666; `npm run build` ok; e2e
+  `hub.spec.ts -g "central de apps"` 2/2 (com o cartão perdendo o "Atualizar" no aviso `reler`); `scan-secrets` sem
+  segredos. A bateria e2e inteira não foi rodada.
+- Não validado: num Mac de verdade com a central empacotada (a 1.4.5 só sai pelo workflow `hub-desktop` na `main`).
+
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+Branch `sobedesce-download-recuo`.
+
+- `test/download.test.js`: o Drive falso recusa com 403 de limite e com 429 em 6 conexões. O arquivo de 48 MiB termina
+  com o MD5 certo, as recusas passam pelo recuo da conta e ele zera no fim.
+- `test/manager.test.js`:
+  - Economia com prazo: depois do prazo, o arquivo volta às conexões normais; registro antigo sem prazo não fica
+    preso; "Tentar de novo" limpa `economia`, `economiaAte`, `quotaHits` e `copiaFalhou`.
+  - 403 `userRateLimitExceeded` diz "O Google pediu para ir mais devagar", e queda de rede continua "Sem conexão".
+  - O diagnóstico não leva nome de arquivo, caminho, e-mail, token nem o id da conta.
+  - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
+- `APP_VERSION` é a versão do `package.json`, com teste.
+- Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE 0.3.19: menu do Drive no computador (10/11/2026)
+
+- Só os arquivos do computador e do motor do #153 (`public/`, `src/`, testes), aplicados sobre a main da 0.3.18; nada em
+  `web/`. Sem conflito de versão com #150, #151 e #159 (nenhum deles mexe em `package.json`, `public/` ou `src/`).
+- `test/drive-menu.test.js` (parte do computador), `test/compartilhar.test.js` e `test/drive-web.test.js`: 24
+  passaram. Motor (`npm run test:fast`): 863 passaram, 1 falha. A falha é o "Set" do celular, que já falha neste
+  contêiner sem esta mudança.
+
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- No demo (trabalho de Frames real): "Escolher" em 2 takes e Montagem levou os 2 arquivos; carrossel 9:16 de 10
+  slides rola com a roda e o número 10 leva ao fim; grade 3×5 recebe uma foto por quadradinho de 1 a 8, começando
+  embaixo à direita, com o cartão "Quadradinho 8".
+- `test/montagens-carrossel.test.js` ganhou a geometria da grade (ordem de postar, toque, imagem dividida); 6 testes
+  passaram com `test/templates-html.test.js`.
+
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- Reproduzido no demo: envio de 2 vídeos (164 MB) com proxy. Com o ETA abaixo de 60 s, a página dava `InvalidCharacterError:
+… tag name ('1<small')` e parava. Com a correção, nenhum erro: "Falta <1 min" aparece e o andamento segue até o fim.
+  Os proxies saíram ("pronta") nos dois arquivos.
+- `test/templates-html.test.js`: falha com o código antigo e passa com o novo.
+- Proteção de tela, no demo com o defeito antigo forçado: Transferências mostra "Esta tela teve um problema…" com
+  "Tentar de novo", e o menu abre o Drive normalmente.
+
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (09/11/2026)
+
+- `test/ronda-pedidos.test.js` (6 testes, 6 passaram):
+  - recuo de 30 s até 5 min (12 perguntas por hora parado);
+  - uma pergunta só, e cada tipo recebe só os pendentes dele (sem tipo = proxy);
+  - acordar volta ao curto;
+  - 404/403 pausa 30 min;
+  - volta sem conta não prende a ronda;
+  - com a ronda, o tipo não faz GET sozinho.
+- Motor (`npm run test:fast`): 854 testes, 1 falha. A falha é o "Set" do celular, que já falha neste contêiner sem esta
+  mudança; os outros passaram.
+
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+Branch `sobedesce-frames-montagem-pc`.
+
+- Conferido no demo com um trabalho real (`POST /api/frames`), vídeo H.264 de 3 cenas de 6 s:
+  - o trabalho saiu com 3 frames e 3 takes;
+  - escolhidos 2 frames e 2 takes, com a barra mostrando "2 frames e 2 takes · escolhidos";
+  - "Montagem" pôs os 4 caminhos na montagem, com o nome do vídeo, e abriu a tela, que diz "4 itens foram para a
+    Montagem". Lá, os takes viram vídeo, com play e agulha.
+- O contador da agulha mostra "0:00,0 / 0:05,0" (antes saía "0:00,00:00:0,0").
+- Montagens (`test/montagens*.test.js`): passaram.
+
+## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
+
+Branch `sobedesce-carrossel-por-slide`.
+
+- `test/montagens-carrossel.test.js` (4 testes):
+  - 20 slides, numerados, com os limites;
+  - a montagem antiga (sem `paginas`) sai com as mesmas caixas de antes;
+  - cada slide com o próprio modelo e a própria borda, slides emendados num grupo, o número do slide de cada foto e o
+    quadro tocado;
+  - trocar o modelo de um slide ou o número de slides não tira as fotos dos outros.
+- Montagens no computador e no celular (`test/montagens.test.js`, `test/montagens-celular.test.js`): 22 testes, 22
+  passaram, e a lib do celular continua idêntica.
+- Conferido no demo (escuro):
+  - galeria do carrossel;
+  - arrastar uma foto até o slide 2 (o quadro acende);
+  - slide 3 com "Dois lado a lado";
+  - tocar na foto e depois no slide 4;
+  - 20 slides rolando de lado.
+- Salvar um carrossel de 3 slides (1–2 emendados e 3 com "Quatro") gerou 3 JPG de 1080 × 1350, na ordem certa.
+- Ver a montagem com take, no demo: post "Dois empilhados" com um take (trecho a partir de 10 s) e uma foto.
+  - O play anda o take no quadro: em 2 s, o vídeo estava em 12,4 s.
+  - A agulha em 4 s mostra o vídeo em 14 s, e o contador diz 0:04,0 / 0:05,0.
+  - O enquadre do take tocando bate com o da foto parada.
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+Branch `sobedesce-cartao-imprevistos`.
+
+- `test/cartao-imprevistos.test.js`:
+  - Detecta MP4 sem índice, MOV cortado, vazio e JPEG sem o fim. Não acusa o arquivo inteiro, o formato estranho, o
+    RAW nem o arquivo que sumiu.
+  - Separa o que fica no cartão (LRV, LRF, THM, `._`, `.DS_Store`, `Thumbs.db`) do que vai (material bruto e XML).
+  - Na descarga, o interrompido é copiado e avisado, os proxies ficam no cartão, o cartão sai como "não parcial" e é
+    ejetado.
+- `test/backup-automatico.test.js`: o contador zerado vai para `Cartão 01 · contador zerado`, conferido. O destino
+  antigo fica intacto e o mesmo cartão de novo não copia outra vez.
+- Backup Automático, fotos e vídeos e relatório: 39 testes, 39 passaram, 0 falhas.
+- Prévia do cartão (`test/cartao-imprevistos.test.js`):
+  - pega a maior prévia JPEG embutida no RAW, com `FF 00` e marcadores de reinício no meio, e devolve null sem prévia;
+  - lista do mais novo para o mais antigo, sem proxies, e responde 404 a um disco que não está plugado.
+- Conferida no demo, claro e escuro, com um cartão de exemplo em `/media/root`: JPG, ARW (prévia embutida) e MP4
+  tocando.
+- Arquivar (`test/arquivar.test.js`, 3 testes, 3 passaram):
+  - argumentos do DNG Converter por nível e do ffmpeg (CRF/qualidade, LUT, 1080p no Econômico);
+  - escolha do codificador (VideoToolbox só no Mac, x265 se houver, senão x264);
+  - pasta real com ffmpeg e um conversor DNG de mentira: DNG e MP4 em `<pasta> · arquivo`, o original intacto, e a
+    segunda vez não refaz nada.
+- Conferido no demo: pasta com 2 RAW, 2 vídeos (94 MB) e 1 nota; "Testar 8 s" com LUT S-Log3 estimou 33,5 MB e o
+  arquivo saiu com 33,9 MB (−65%).

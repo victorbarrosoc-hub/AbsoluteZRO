@@ -19,9 +19,14 @@ export const ARQUIVOS = {
   'app.css': 'text/css; charset=utf-8',
   'app.js': JS,
   'rtc.js': JS,
+  'icones.js': JS,
   'som.js': JS,
   'qr.js': JS,
   'vendor/qrcode.mjs': JS,
+  // a marca (SVG é texto; os PNG do iPhone ficam só no app separado)
+  'marca/radion-simbolo.svg': 'image/svg+xml',
+  'marca/radion-simbolo-branco.svg': 'image/svg+xml',
+  'marca/favicon.svg': 'image/svg+xml',
 }
 
 export function gerar() {

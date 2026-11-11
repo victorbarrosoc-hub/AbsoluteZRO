@@ -75,13 +75,87 @@ function resposta(buf, url = 'https://objects.githubusercontent.com/x') {
   }
 }
 
-/** `meusApps`: o que /api/v1/desktop/meus-apps responde (objeto, 401 sem sessão ou 404 no HUB antigo). */
+/**
+ * Um app.asar de verdade, no formato do @electron/asar (o mesmo do electron-builder): UInt32 4 · UInt32 tamanho do
+ * cabeçalho · pickle do cabeçalho (UInt32 tamanho · UInt32 tamanho do texto · JSON, alinhado em 4) · conteúdo.
+ * `arquivos`: { 'desktop/build-info.json': '…' }; `fora`: caminhos marcados "unpacked" (ficam em app.asar.unpacked).
+ */
+function asarCom(arquivos, fora = []) {
+  const raiz = { files: {} }
+  const partes = []
+  let offset = 0
+  for (const [nome, texto] of Object.entries(arquivos)) {
+    const buf = Buffer.from(texto)
+    const caminho = nome.split('/')
+    let no = raiz
+    for (const p of caminho.slice(0, -1)) no = no.files[p] ??= { files: {} }
+    if (fora.includes(nome)) no.files[caminho.at(-1)] = { size: buf.length, unpacked: true }
+    else {
+      no.files[caminho.at(-1)] = { size: buf.length, offset: String(offset) }
+      partes.push(buf)
+      offset += buf.length
+    }
+  }
+  const json = Buffer.from(JSON.stringify(raiz))
+  const alinhado = Math.ceil(json.length / 4) * 4
+  const cab = Buffer.alloc(8 + alinhado)
+  cab.writeUInt32LE(4 + alinhado, 0)
+  cab.writeUInt32LE(json.length, 4)
+  json.copy(cab, 8)
+  const topo = Buffer.alloc(8)
+  topo.writeUInt32LE(4, 0)
+  topo.writeUInt32LE(cab.length, 4)
+  return Buffer.concat([topo, cab, ...partes])
+}
+
 /**
  * O `fs` como o processo principal do Electron o vê: o app.asar é lido como uma pasta. O `rm` recursivo de um .app
  * entra no app.asar, não apaga o que "está dentro" e falha com ENOTEMPTY (conferido no Electron 44.5.1 de verdade; o
  * `original-fs` e o `process.noAsar` apagam). Com isso a troca de um app já instalado falhava na 1.4.0.
+ *
+ * E o cache: o Electron abre cada .asar uma vez e guarda pelo caminho, para sempre. Trocar o pacote (renomear o .app e
+ * apagar o antigo) não invalida: ler o build-info.json "de dentro" continua devolvendo o app antigo até o processo
+ * reiniciar (também conferido no Electron 44.5.1: build 1100 → troca para 1119 → o fs lê 1100; o original-fs, 1119).
  */
 function fsDoElectron() {
+  const cache = new Map()
+  const dentroDoAsar = (p) => {
+    const m = /^(.*?\.asar)(?:[\\/](.*))?$/.exec(String(p))
+    if (!m) return null
+    if (!cache.has(m[1])) {
+      try {
+        const b = fs.readFileSync(m[1])
+        cache.set(m[1], { b, tam: b.readUInt32LE(4), cab: JSON.parse(b.toString('utf8', 16, 16 + b.readUInt32LE(12))) })
+      } catch {
+        return null // não é um .asar (ou não existe): responde o fs comum
+      }
+    }
+    const a = cache.get(m[1])
+    let no = a.cab
+    for (const parte of (m[2] || '').split(/[\\/]/).filter(Boolean)) no = no && no.files ? no.files[parte] : undefined
+    return { a, no }
+  }
+  const semArquivo = (p) => Object.assign(new Error(`ENOENT: no such file or directory, open '${p}'`), { code: 'ENOENT' })
+  const leituras = {
+    readFileSync: (p, o) => {
+      const d = dentroDoAsar(p)
+      if (!d) return fs.readFileSync(p, o)
+      if (!d.no || d.no.files) throw semArquivo(p)
+      const ini = 8 + d.a.tam + Number(d.no.offset)
+      const buf = d.a.b.subarray(ini, ini + d.no.size)
+      return o ? buf.toString(typeof o === 'string' ? o : o.encoding) : buf
+    },
+    existsSync: (p) => {
+      const d = dentroDoAsar(p)
+      return d ? !!d.no : fs.existsSync(p)
+    },
+    statSync: (p, o) => {
+      const d = dentroDoAsar(p)
+      if (!d) return fs.statSync(p, o)
+      if (!d.no) throw semArquivo(p)
+      return { isDirectory: () => !!d.no.files, isFile: () => !d.no.files }
+    },
+  }
   const temAsar = (p) => {
     try {
       if (!fs.lstatSync(p).isDirectory()) return p.endsWith('.asar')
@@ -98,15 +172,23 @@ function fsDoElectron() {
     }
     return fs.promises.rm(p, o)
   }
-  return { ...fs, promises: { ...fs.promises, rm } }
+  return { ...fs, ...leituras, promises: { ...fs.promises, rm } }
 }
 
-/** Um .app no formato do electron-builder (Info.plist e app.asar). */
+/** Um .app no formato do electron-builder (Info.plist e app.asar com o desktop/build-info.json do build). */
 function criarBundle(caminho, build = 39) {
   fs.mkdirSync(path.join(caminho, 'Contents', 'Resources'), { recursive: true })
   fs.writeFileSync(path.join(caminho, 'Contents', 'Info.plist'), 'plist')
-  fs.writeFileSync(path.join(caminho, 'Contents', 'Resources', 'app.asar'), `asar b${build}`)
+  const info = JSON.stringify({ build, commit: 'abc1234' })
+  fs.writeFileSync(
+    path.join(caminho, 'Contents', 'Resources', 'app.asar'),
+    asarCom({ 'package.json': '{"name":"x"}', 'desktop/main.cjs': '// app', 'desktop/build-info.json': info }),
+  )
 }
+
+const buildDoBundle = (caminho) => lerBuildInstalado(fs, path.join(caminho, 'Contents', 'Resources', 'app.asar'))
+
+/** `meusApps`: o que /api/v1/desktop/meus-apps responde (objeto, 401 sem sessão ou 404 no HUB antigo). */
 
 function ambiente({ plataforma, arch = 'arm64', arquivo = conteudo, execRespostas = {}, meusApps = catalogo, electron = false, atalhos = false }) {
   const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'zro-central-'))
@@ -225,6 +307,63 @@ test('build do app instalado (o build-info.json dentro dele): instalado por outr
   assert.equal(lerBuildInstalado(fs, path.join(raiz, 'nada')), null)
 })
 
+test('build do app instalado: lê o app.asar de verdade (sem o suporte a .asar do Electron), unpacked e lixo', () => {
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'central-asar-'))
+  const gravar = (nome, buf) => (fs.writeFileSync(path.join(raiz, nome), buf), path.join(raiz, nome))
+  // SOBEDESCE: src/build-info.json (scripts/build-info.mjs), com os nós de integridade que o electron-builder grava
+  const sobedesce = gravar('sobedesce.asar', asarCom({ 'src/main.js': 'x'.repeat(5000), 'src/build-info.json': '{\n "build": 1119,\n "commit": "0d78c0c"\n}' }))
+  assert.equal(lerBuildInstalado(fs, sobedesce), 1119)
+  // Relay, Maestro, TPeasy, Carro do Freela e Synquei: desktop/build-info.json
+  assert.equal(lerBuildInstalado(fs, gravar('relay.asar', asarCom({ 'desktop/build-info.json': '{"build":2008}' }))), 2008)
+  // fora do pacote (asarUnpack): app.asar.unpacked ao lado
+  const solto = gravar('solto.asar', asarCom({ 'desktop/build-info.json': '' }, ['desktop/build-info.json']))
+  fs.mkdirSync(path.join(raiz, 'solto.asar.unpacked', 'desktop'), { recursive: true })
+  fs.writeFileSync(path.join(raiz, 'solto.asar.unpacked', 'desktop', 'build-info.json'), '{"build":77}')
+  assert.equal(lerBuildInstalado(fs, solto), 77)
+  assert.equal(lerBuildInstalado(fs, gravar('dev.asar', asarCom({ 'desktop/build-info.json': '{"build":0}' }))), null)
+  assert.equal(lerBuildInstalado(fs, gravar('sem.asar', asarCom({ 'desktop/main.cjs': '//' }))), null)
+  assert.equal(lerBuildInstalado(fs, gravar('lixo.asar', Buffer.from('asar b39'))), null)
+  assert.equal(lerBuildInstalado(fs, gravar('vazio.asar', Buffer.alloc(0))), null)
+  const enorme = Buffer.alloc(16)
+  enorme.writeUInt32LE(4, 0)
+  enorme.writeUInt32LE(0xfffffff0, 4)
+  assert.equal(lerBuildInstalado(fs, gravar('enorme.asar', enorme)), null)
+})
+
+test('Mac (1.4.5): depois de instalar, o cartão mostra o build novo e para de oferecer Atualizar (cache de .asar do Electron)', async () => {
+  // "Já instalei 3 vezes e nunca fica atualizado": a central lia o build-info.json pelo fs do Electron, que guarda cada
+  // app.asar aberto pelo caminho. Depois da troca do pacote, continuava lendo o app antigo: mesma versão, build menor
+  // → "Atualizar" e "0.3.10 disponível" para o que acabou de ser instalado, até a central reiniciar.
+  const { central, pastasMac } = ambiente({ plataforma: 'mac', electron: true, execRespostas: { plutil: '1.2.0\n' } })
+  const final = path.join(pastasMac[0], 'Synquei.app')
+  criarBundle(final, 39)
+  const antes = (await central.listar()).find((s) => s.id === 'synquei')
+  assert.deepEqual(antes.instalado, { versao: '1.2.0', build: 39 })
+  assert.equal(antes.atualizar, true)
+  const asar = path.join(final, 'Contents', 'Resources', 'app.asar')
+  assert.equal(lerBuildInstalado(central.d.fs, asar), 39, 'a leitura da 1.4.4 (fs do Electron) abre e guarda o app.asar')
+  await central.instalar('synquei')
+  const depois = (await central.listar()).find((s) => s.id === 'synquei')
+  assert.deepEqual(depois.instalado, { versao: '1.2.0', build: 40 })
+  assert.equal(depois.atualizar, false)
+  // o fs do Electron (o que a 1.4.4 usava aqui) ainda vê o app antigo: é o defeito que a leitura sem cache evita
+  assert.equal(lerBuildInstalado(central.d.fs, asar), 39)
+  // o app se atualizou por fora (sem a central e sem registro novo): a próxima leitura já vê
+  criarBundle(path.join(pastasMac[0], '.troca.app'), 41)
+  fs.rmSync(final, { recursive: true })
+  fs.renameSync(path.join(pastasMac[0], '.troca.app'), final)
+  assert.equal((await central.listar()).find((s) => s.id === 'synquei').instalado.build, 41)
+})
+
+test('main.cjs (1.4.5): a página e a agenda leem a mesma lista e relêem ao voltar o foco', () => {
+  const main = fs.readFileSync(new URL('../desktop/main.cjs', import.meta.url), 'utf8')
+  assert.match(main, /agenda\.sincronizar\(lista\)/)
+  assert.match(main, /win\.on\('focus', relerAoFocar\)/)
+  assert.match(main, /fase: 'reler'/)
+  const central = fs.readFileSync(new URL('../desktop/central.cjs', import.meta.url), 'utf8')
+  assert.doesNotMatch(central, /lerBuildInstalado\(this\.d\.fs/, 'o build instalado nunca pelo fs com cache de .asar')
+})
+
 test('registro do Windows: acha a entrada do app e o desinstalador', () => {
   const saida = [
     'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\abc',
@@ -275,9 +414,12 @@ test('download: maior que o catálogo para no meio; redirecionamento recusado e 
     }),
     (e) => e.codigo === 'download' && /recusado/.test(e.message),
   )
-  // a rede cai no meio do arquivo
+  // a rede cai no meio do arquivo: a mensagem de sempre (a causa vai para o log)
   const quebrado = { ok: true, url: 'https://x', headers: { get: () => null }, body: new ReadableStream({ pull: (c) => c.error(new Error('rede caiu')) }) }
-  await assert.rejects(baixar({ url: 'https://x', destino: path.join(raiz, 'q.dmg'), sha256: sha, deps: { fs, fetch: async () => quebrado } }), /rede caiu/)
+  await assert.rejects(
+    baixar({ url: 'https://x', destino: path.join(raiz, 'q.dmg'), sha256: sha, deps: { fs, fetch: async () => quebrado } }),
+    (e) => e.codigo === 'download' && /Não deu para baixar/.test(e.message),
+  )
   assert.equal(fs.existsSync(path.join(raiz, 'q.dmg.parte')), false)
 })
 
@@ -291,7 +433,8 @@ test('Mac: monta o .dmg, copia o app sem pedir senha, tira a quarentena e desmon
     cmds.filter((c) => c !== 'fetch' && c !== 'plutil' && c !== 'pgrep'),
     ['hdiutil', 'ditto', 'xattr', 'hdiutil'],
   )
-  assert.ok(chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/baixar/app/synquei/Synquei-1.2.0-b40-mac-universal.dmg`))
+  // o espelho primeiro (ADR 0043): o HUB manda para São Paulo quando o arquivo está lá
+  assert.ok(chamadas.some((c) => c[0] === 'fetch' && c[1] === `${HUB}/baixar/app/synquei/Synquei-1.2.0-b40-mac-universal.dmg?origem=espelho`))
   assert.deepEqual(
     avisos.map((a) => a.fase).filter((f, i, l) => l.indexOf(f) === i),
     ['baixando', 'instalando', 'pronto'],
@@ -320,7 +463,7 @@ test('Mac: atualiza o app já instalado (com app.asar) no fs do Electron e não 
   const final = path.join(pastasMac[0], 'Synquei.app')
   criarBundle(final, 39)
   await central.instalar('synquei')
-  assert.equal(fs.readFileSync(path.join(final, 'Contents', 'Resources', 'app.asar'), 'utf8'), 'asar b40')
+  assert.equal(buildDoBundle(final), 40)
   assert.deepEqual(
     fs.readdirSync(pastasMac[0]).filter((n) => n.includes('zro-')),
     [],
@@ -368,7 +511,7 @@ test('Mac: não deu para pôr o novo no lugar: o app antigo volta inteiro', asyn
     },
   }
   await assert.rejects(central.instalar('synquei'), /Não deu para instalar/)
-  assert.equal(fs.readFileSync(path.join(final, 'Contents', 'Resources', 'app.asar'), 'utf8'), 'asar b39')
+  assert.equal(buildDoBundle(final), 39)
   assert.deepEqual(
     fs.readdirSync(pastasMac[0]).filter((n) => n.includes('zro-')),
     [],

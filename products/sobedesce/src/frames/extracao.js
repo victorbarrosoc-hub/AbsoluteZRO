@@ -15,6 +15,21 @@ export function timecode(t, fps = 25) {
   return `${dd(h)}-${dd(m)}-${dd(s)}-${dd(fr)}`
 }
 
+/** Caminho da LUT dentro do filtro do ffmpeg (aspas, barras e o ":" do Windows escapados, como no Relay). */
+const caminhoNoFiltro = (c) => `'${String(c).replace(/\\/g, '/').replace(/'/g, "'\\''").replace(/:/g, '\\:')}'`
+
+/**
+ * A cor (docs/FRAMES.md, "Cor"): YUV → RGB de ponto flutuante com a matriz e a faixa explícitas (sem elas o ffmpeg
+ * supõe BT.601 e o HD sai deslocado), depois a LUT montada (src/cor/grade.js), tetraédrica. `cor`: { lut, matriz,
+ * faixa } ou null.
+ */
+export function filtroCor(cor) {
+  if (!cor?.lut) return null
+  const m = ['bt709', 'bt601', 'bt2020'].includes(cor.matriz) ? cor.matriz : 'bt709'
+  const r = cor.faixa === 'pc' ? 'pc' : 'tv'
+  return `scale=in_color_matrix=${m}:in_range=${r}:out_range=pc:flags=accurate_rnd+full_chroma_int,format=gbrpf32le,lut3d=file=${caminhoNoFiltro(cor.lut)}:interp=tetrahedral`
+}
+
 /** Filtro da logomarca: largura `tamanho` (fração da imagem), canto, opacidade, margem de 3%. */
 function filtroLogo(logo, entrada, saida) {
   const pos = {
@@ -32,13 +47,15 @@ function filtroLogo(logo, entrada, saida) {
 /**
  * Um frame em alta: o quadro exato em `t`, no tamanho do arquivo. JPEG (qualidade máxima, cor 4:4:4), PNG ou TIFF.
  */
-export async function extrairFrame({ ffmpeg, video, t, destino, formato = 'jpg', logo = null, signal }) {
+export async function extrairFrame({ ffmpeg, video, t, destino, formato = 'jpg', logo = null, cor = null, largura = null, signal }) {
   const a = ['-hide_banner', '-nostdin', '-y', '-loglevel', 'error', '-ss', t.toFixed(3), '-i', video]
   if (logo) a.push('-i', logo.path)
   a.push('-frames:v', '1', '-an', '-sn', '-dn')
   const pix = formato === 'jpg' ? 'yuvj444p' : formato === 'png' ? 'rgb24' : 'rgb24'
-  if (logo) a.push('-filter_complex', `${filtroLogo(logo, '0:v', 'v')};[v]format=${pix}[o]`, '-map', '[o]')
-  else a.push('-map', '0:v:0', '-vf', `format=${pix}`)
+  // `largura`: só para a prévia da cor (o frame de verdade sai no tamanho do arquivo)
+  const pre = [filtroCor(cor), largura ? `scale=${Math.round(largura)}:-2:flags=lanczos` : null].filter(Boolean).join(',')
+  if (logo) a.push('-filter_complex', `${pre ? `[0:v]${pre}[g];` : ''}${filtroLogo(logo, pre ? 'g' : '0:v', 'v')};[v]format=${pix}[o]`, '-map', '[o]')
+  else a.push('-map', '0:v:0', '-vf', `${pre ? `${pre},` : ''}format=${pix}`)
   if (formato === 'jpg') a.push('-c:v', 'mjpeg', '-q:v', '1', '-qmin', '1')
   else if (formato === 'png') a.push('-c:v', 'png')
   else a.push('-c:v', 'tiff', '-compression_algo', 'lzw')
@@ -80,14 +97,18 @@ export function h264Alta(encoder, altura) {
  * Um take: `dur` segundos a partir de `ini`, no formato pedido (original, 9:16, 4:5, 1:1), com ou sem som, fade curto
  * na entrada e na saída, logomarca opcional. `codec`: 'h264' (redes) ou 'prores' (edição, ProRes 422 HQ).
  */
-export async function extrairTake({ ffmpeg, encoder = 'libx264', video, ini, dur, destino, formato = 'original', foco = 0.5, audio = true, fade = true, codec = 'h264', logo = null, altura = 1080, signal, onProgress }) {
+export async function extrairTake({ ffmpeg, encoder = 'libx264', video, ini, dur, destino, formato = 'original', foco = 0.5, audio = true, fade = true, codec = 'h264', logo = null, cor = null, altura = 1080, signal, onProgress }) {
   const a = ['-hide_banner', '-nostdin', '-y', '-loglevel', 'error', '-progress', 'pipe:1', '-nostats', '-ss', ini.toFixed(3), '-t', dur.toFixed(3), '-i', video]
   if (logo) a.push('-i', logo.path)
   const vf = []
+  const fc = filtroCor(cor)
+  if (fc) vf.push(fc)
   const corte = filtroRecorte(formato, foco)
   if (corte) vf.push(corte)
   if (fade) vf.push(`fade=t=in:st=0:d=0.25,fade=t=out:st=${Math.max(0, dur - 0.25).toFixed(3)}:d=0.25`)
   const pix = codec === 'prores' ? 'yuv422p10le' : encoder === 'h264_qsv' || encoder === 'h264_mf' ? 'nv12' : 'yuv420p'
+  // com cor, a volta para YUV com a matriz BT.709 explícita (sem ela o ffmpeg usa BT.601 e o verde escurece)
+  if (fc) vf.push('scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int')
   vf.push(`format=${pix}`)
   if (logo) {
     a.push('-filter_complex', `[0:v]${vf.slice(0, -1).join(',') || 'null'}[b];${filtroLogo(logo, 'b', 'c')};[c]format=${pix}[v]`, '-map', '[v]')
@@ -96,6 +117,8 @@ export async function extrairTake({ ffmpeg, encoder = 'libx264', video, ini, dur
     a.push('-map', '0:a:0?')
     if (fade) a.push('-af', `afade=t=in:st=0:d=0.25,afade=t=out:st=${Math.max(0, dur - 0.25).toFixed(3)}:d=0.25`)
   } else a.push('-an')
+  // o take graduado já é Rec.709: marcado assim, todo player mostra a mesma cor
+  if (fc) a.push('-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv')
   if (codec === 'prores') {
     a.push('-c:v', 'prores_ks', '-profile:v', '3', '-vendor', 'apl0')
     if (audio) a.push('-c:a', 'pcm_s16le')

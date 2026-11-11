@@ -1,6 +1,63 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 06/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Central 1.4.7: menu Administração no app (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+Pedido do titular: o Campus no programa do computador, dentro de Administração, só para quem é administrador.
+
+- ✅ Menu **Administração** (Painel de administração e Campus, ⌘⇧K) só aparece para o papel `admin`: o app confere em
+  `/api/v1/admin/z-lab` com a sessão do HUB (200 só para admin). Sem mudança no HUB, sem custo na Vercel.
+- ⬜ Conferir no Mac do titular: o menu aparece depois de entrar, e some ao sair da conta.
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Pedido do titular: no app de computador, o Campus (página privada dele no claude.ai, link no painel de administração do
+HUB, PR #161) abre numa janela própria, não no navegador.
+
+- ✅ `regras.cjs`: o link do Campus vira o destino `campus`; a janela dele só navega em `https://claude.ai` e o resto vai
+  para o navegador; permissões só de copiar texto e tela cheia.
+- ✅ `main.cjs`: `abrirCampus()` abre (ou traz para a frente) uma janela com sessão separada `persist:campus`, longe da
+  sessão do HUB. O login do claude.ai fica lembrado nela. Entrar com o Google não roda em janela embutida: entra com
+  o e-mail.
+- ✅ Sem custo: só a central (workflow `hub-desktop`); nada na Vercel. O link no painel sai no lote de 13/11 (#161).
+- ⬜ Conferir no Mac do titular: Painel de administração → Campus abre a janela, e o login fica lembrado.
+
+## Central 1.4.5: "Atualizar" some depois de atualizar (06/11/2026, ramo `claude/central-atualizar-certo`)
+
+Bug do titular no Mac: "já instalei 3 vezes e nunca fica atualizado", em todos os apps (SOBEDESCE com o b1119 instalado e
+o cartão oferecendo "Atualizar · 0.3.10 disponível").
+
+- ✅ Causa: a central lia o `build-info.json` dentro do `app.asar` de cada app com o `fs` do Electron, que guarda cada
+  `.asar` aberto pelo caminho até o processo sair. Depois da troca do pacote, o build lido era o do app antigo (mesma
+  versão, build menor) até a central reiniciar. Conferido no Electron 44.5.1 e nos DMGs publicados (os pacotes estão
+  certos: SOBEDESCE `src/build-info.json` 1119, Relay `desktop/build-info.json` 2008).
+- ✅ `lerBuildInstalado` lê o `.asar` com o `original-fs`, abrindo e fechando a cada leitura (e o `unpacked`).
+- ✅ Sem estado velho: a lista da página limpa os pendentes da agenda; foco de volta na janela relê e avisa a página
+  (`fase: 'reler'`); a página do HUB relê ao voltar o foco ou a aba (`app-actions.tsx`, `painel-resumo.tsx`).
+- ✅ Nenhum app de `products/` muda: só a central (workflow `hub-desktop` na `main`) e o HUB (Vercel `absolutezro`).
+- ⬜ Conferir no Mac do titular depois da 1.4.5: os cartões em dia sem "Atualizar" e, numa atualização nova, o botão
+  sumindo ao terminar.
+
+## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
+
+- ✅ Espelho dos instaladores em São Paulo: bucket público `apps` do Supabase AbsoluteZRO-SP (migração HUB `0060`,
+  leitura pública, escrita só com as chaves S3), preenchido pelo job de versão de cada app de computador
+  (`scripts/espelho-apps.mjs` em `hub-desktop`, `sobedesce-desktop`, `synquei-desktop`, `relay-desktop`,
+  `maestro-desktop`, `tpeasy-desktop` e `carro-desktop`; AEON, Rift Motion e NOSSOM ficam de fora). Só o build atual de
+  cada tag fica lá; o `versao.json` ganha o campo `espelho`.
+- ✅ HUB: `/baixar/hub/<sistema>` (inclusive `?build=`) e `/baixar/app/<id>/mac|windows` mandam para o espelho quando o
+  arquivo está lá (HEAD conferido, com o tamanho do GitHub); o nome exato só com `?origem=espelho` (a central 1.4.3
+  recusa outro destino que não o GitHub); `?origem=github` força o GitHub.
+- ✅ Central **1.4.4**: espelho primeiro e GitHub de reserva, SHA-256 conferido em cada endereço; pedaços de 8 MB em até
+  6 conexões com Range, retomada, link vencido renovado, IPv4 primeiro (`desktop/baixador.cjs`). A 1.4.3 já recebe a
+  1.4.4 pelo espelho (a atualização dela segue o redirecionamento do HUB).
+- ✅ Apps: só leem o `versao.json` para avisar; quem baixa é a central. Nenhum arquivo de `products/` mudou.
+- ⛔ Ligar o espelho: o titular cria as chaves S3 (Supabase › Storage › S3), sobe o limite global de arquivo para 1 GB e
+  põe `SUPABASE_STORAGE_S3_ENDPOINT`, `SUPABASE_STORAGE_S3_ACCESS_KEY_ID` e `SUPABASE_STORAGE_S3_SECRET_ACCESS_KEY` nos
+  secrets do Actions (passos no ADR 0043). Sem eles, o passo pula com aviso e tudo segue pelo GitHub.
+- ⬜ Conferir no ar: o primeiro upload de verdade (o passo "Espelho em São Paulo" do Actions), a velocidade no Brasil e o
+  HEAD do Storage respondendo com o tamanho.
 
 ## Lote de sexta (06/11/2026, ramo `claude/lote-2026-11-06`, publicação autorizada pelo titular)
 
@@ -23,6 +80,57 @@ abaixo.
   hidratar (`Folha` só no navegador, no `<body>`), e o `criacao-tpeasy.spec.ts` pega o `/api/zro/eu?visitante=1` do
   TPeasy de agora.
 
+## Lote extra de 06/11/2026: SOBEDESCE 0.3.11 e Celular 2.8.69 (ramo `claude/lote-extra-2026-11-06`)
+
+Junta o #130 (`claude/sobedesce-frames-cor`) e o `claude/sobedesce-celular-visual` sobre a `main`. A Revela fica de
+fora deste lote (o #131 não entra hoje).
+
+- ✅ SOBEDESCE de computador **0.3.11**: no Frames, o passo Cor (pré-color com a LUT e o ajuste rápido de cada câmera),
+  a origem "Pasta ou cartão" (um frame por clipe) e "Frames do cartão" no Backup Automático (com o pré-color ligado, o
+  cartão OK já vira frames sozinho); nas Montagens, o modelo **Faixas** para Stories (antes e depois, em lote).
+- ✅ Conflitos com a `main` resolvidos com os dois comportamentos: o Relatório da diária e o "Gravando agora" (momento)
+  convivem com o pré-color e com o atalho dos frames do cartão.
+- ✅ SOBEDESCE Celular **2.8.69** / `sobedesce-app-v84` (uma subida só): `web/public/app/lib/montagens.js` recopiada do
+  computador (cópia idêntica, com as Faixas); a tela do celular ainda não oferece as Faixas.
+- ⬜ Conferir no ar: o pré-color com um cartão de verdade e o app do celular no Safari do iPhone.
+
+## SOBEDESCE Celular 2.8.69: a cara do app de computador (06/11/2026, ramo `claude/sobedesce-celular-visual`)
+
+Pedido do titular: o app do celular com a mesma linguagem do computador (0.3.6 a 0.3.9) e pouco texto.
+
+- ✅ Abas como as do computador: **Início · Drive · Transferências · Estúdio** (Transferências virou aba; Referências e
+  Criar entram no Estúdio). Cartões fica no computador (o leitor está lá); no celular, o atalho "Cartões" do Início
+  abre a Calculadora.
+- ✅ Estúdio com **Frames · Montagens · Referências** no topo (o controle de seções do computador), sem a tela de
+  escolher ferramenta.
+- ✅ Transferências com o resumo **ao vivo** ("Agora" do computador, 0.3.7/0.3.8): Subindo, Já passou, Falta com
+  "termina ~hh:mm", gráfico dos últimos 2 minutos, barra do total e Pausar/Retomar.
+- ✅ Início: os quatro atalhos do computador (Drive, Referências, Frames, Cartões) sempre à vista, em 2 × 2; menos
+  texto (sai o rodapé e as frases longas de Frames e Referências).
+- ✅ Frames "Da galeria" abre com a CSP do app (`media-src 'self' blob:`; antes a CSP recusava o vídeo da galeria).
+- ⬜ Cartões estilo computador (fases do cartão) mostrando os backups dos computadores da conta: o celular ainda não
+  recebe esse estado.
+- ⬜ Início com os cartões de número do computador (Enviando agora, Espaço, Computadores, Próximo envio) num só
+  bloco; Drive e as folhas seguem com o desenho de antes.
+
+## SOBEDESCE Celular 2.8.68: Montagens no celular (06/11/2026, ramo `claude/sobedesce-celular-montagens`)
+
+Pedido do titular: o que o app de computador faz e cabe no celular, também no celular, primeiro as Montagens (0.3.9).
+
+- ✅ Criar › Montagens: fotos e vídeos da galeria ou do Drive, post, carrossel contínuo (2 a 10 slides) e grade do
+  perfil (3×1 a 3×5, 3:4 ou 1:1, numerada na ordem de postar), os 12 modelos e os 9 formatos do computador (mesmo
+  `lib/montagens.js`), enquadrar com o dedo e pinça, trocar de lugar, espaço, cantos e fundo. Salva pela folha de
+  compartilhar do iPhone ou sobe pro Drive pela fila.
+- ✅ Vídeo de verdade no aparelho (WebCodecs + Mediabunny do Relay): até 4 takes, 3/5/8/15 s, até 1920 px, trecho e
+  câmera lenta, som de um take. iOS 16.4+; sem WebCodecs a tela diz e sai a foto.
+- 🟡 Som no iPhone só com o Safari que lê áudio pelo WebCodecs (iOS 26); antes disso o vídeo sai sem som, com aviso.
+  Câmera lenta sai sem som.
+- ⬜ Conferir num iPhone de verdade (memória com 4 takes 4K HEVC de 15 s, HEIC da galeria, folha "Salvar vídeo").
+- ⬜ Do computador e sem sentido no celular, ficam de fora: Cartões e Backup Automático (discos, ejetar, xxHash64),
+  Comparar (pasta do computador × Drive), Entre computadores, Procurar cenas (índice local), Gerar miniaturas de
+  BRAW/R3D, Resgate. Frames com takes e "Baixar como…" das Referências seguem pedidos ao computador.
+- ⬜ Transferências "ao vivo" do computador (gráfico de 5 min, "termina às"): o celular mostra %, velocidade e tempo.
+
 ## Synquei + SOBEDESCE: material organizado por tipo de vídeo (06/11/2026, ramo `claude/synquei-fluxo-sobedesce`)
 
 - ✅ Momentos por tipo (`products/synquei/app/js/momentos.js`, 18 tipos): casamento por momento (votos, cerimônia,
@@ -38,12 +146,13 @@ abaixo.
   vai em cada cartão que passar (`momento` na linha v1) e o Synquei põe o cartão nele em vez de adivinhar.
 - ⬜ Multicâmera criado direto no DaVinci (a API não cria; hoje vai o Angle e a linha sincronizada).
 
-## Rádio do set: voz por botão (05/11/2026, proposta, ADR 0042)
+## RADION, o rádio do set (05/11/2026, ADR 0042; nome em 06/11/2026)
 
 - 🟡 Pesquisa e desenho na [ADR 0042](decisions/0042-radio-do-set.md): canais por função vindos da escala do Maestro,
   avisos de set (Silêncio, Ação, Corta), tela de cue e entrada por QR. Fase 1 web (PWA, rádio com o app aberto); fase 2
   nativa (PushToTalk no iPhone) só com uso medido.
-- ⛔ Nome, servidor de mídia (custo por minuto de voz), plano e gravação de voz: decisão do titular.
+- ✅ Nome: **RADION — Stay connected.** (titular, 06/11/2026). ⛔ Servidor de mídia (custo por minuto de voz), plano e
+  gravação de voz: decisão do titular.
 - ✅ Fase 1 sem integração (05/11/2026, `products/radio/`, nome provisório): diária com código e QR, canais Geral e
   Equipe (pela função), segurar para falar, avisos de set (só dono e Direção), tela de cue, tela ligada. Voz em malha
   WebRTC de aparelho para aparelho; o servidor só leva oferta e resposta. Gate pela claim `zro_release` (página neutra e
@@ -52,9 +161,93 @@ abaixo.
   HUB. Núcleo único em `products/radio/api/_nucleo.js` (cópia gerada em `apps/hub-web/lib/radio`, teste confere);
   `/radio`, `/radio/app/*` e `/api/v1/radio/*` só para quem passa no gate (fora, 404); migração `0059` deixa o HUB
   assumir `radio_app`. HUB `0058` (produto fechado) e o schema `radio` já estão no AbsoluteZRO-SP.
-- ⬜ Ir ao ar: o ramo entra na `main` (o deploy do HUB aplica a `0059`). O projeto Vercel `radio` fica parado na
-  página neutra.
-- ⬜ Servidor TURN (4G com CGNAT) e servidor de mídia acima de ~10 pessoas; integrações (Maestro, TPeasy, SOBEDESCE).
+- ✅ No ar em absolutezro.com/radio (05/11/2026, PR #127; migração `0059` aplicada pelo deploy do HUB).
+- 🟡 Intercom no modelo do C1 Pro (06/11/2026): uma faixa por setor com cor, ícone e medidor ao vivo; Ouvir e Falar por
+  canal; TALK com toque (trava aberto, full duplex) e segurar (push-to-talk); "Todos" para a Direção; avisos no topo;
+  escolher o setor ao entrar. Falta conferir em iPhone e Android de verdade.
+- ✅ Admin › Apps (06/11/2026): cartão do Rádio em "Na Absolute ZRO" (ícone fechado em `/marca/radio`, estado, link
+  para abrir) com quem tem acesso e o campo "E-mail de quem pode entrar". Dar e tirar usam a lista do gate
+  (`zro.product_release_access`, canal web) pelo e-mail da conta; e-mail sem conta Absolute ZRO é recusado com aviso.
+- ✅ TURN da Cloudflare (06/11/2026, PRs #136 e #137): a voz passa entre redes (4G com CGNAT); testado pelo titular com
+  o celular travado. ⬜ Servidor de mídia acima de ~10 pessoas.
+- ✅ **RADION, Fase 1** (06/11/2026, telas aprovadas pelo titular): nome e marca (o leque: seis lâminas no mesmo rebite,
+  `products/radio/scripts/marca.mjs`), interface nova (lateral recolhível, Apps Absolute ZRO num balão, Início, No ar,
+  Diárias, Equipe, Avisos, Setores e responsáveis, Poderes, Convites e QR, Ajustes; celular com abas e o TALK no meio),
+  Figtree no texto e Nunito no logotipo. Papéis (dono, responsável por setor, equipe, convidado) e poderes de silêncio
+  (pessoa, setor, o set; Gravando cala o set menos Direção e Som até o Corta; pedir a palavra; histórico do dono),
+  migração `0001_poderes` do rádio, regras no banco (`radio.moderar`, `radio.avisar`), rota `/moderar`. Login único e
+  o Set no app próprio (`radion.absolutezro.com`, cliente `radio-web`, escopo `zro.set`, repasse `/api/zro/set`) e
+  página inicial com telas de verdade (prévia em `/sobre` para quem tem acesso; para todos só no lançamento,
+  `RADION_SITE_ABERTO=1`). HUB `0061`: nome RADION, endereço e os canais `sso` e `api` para a lista de acesso.
+  Domínio `radion.absolutezro.com` ligado ao projeto Vercel `radion` (antes `radio`) (07/11/2026, página neutra até o
+  login); `radio.absolutezro.com` redireciona (308). No ar em 07/11/2026: cliente `radio-web` cadastrado, variáveis do
+  `radion` postas pelo titular (banco pelo pooler de transação `aws-1-sa-east-1`), `/api/radio/saude` com 2 migrações e o
+  titular entrou pelo celular. No celular o TALK volta a ser o microfone (como antes do leque) e não troca de tela:
+  falando, a barra e o canal escolhido acendem; com o microfone aberto, tocar num canal não troca o destino; segurar
+  não abre o menu de imagem do iPhone (pedido do titular, 07/11/2026).
+- ✅ **RADION, setores da diária** (pedido do titular, 07/11/2026): o dono cria, renomeia, muda a cor e tira setores
+  (a Direção fica) e põe gente em cada um; trava de setor (quem já escolheu não troca sozinho, o dono move); Travar a
+  fala no topo do No ar (o dono cala o set; o responsável, o setor); Sair (desligar o rádio, deixar a diária ou, o dono,
+  encerrar); Sobre o RADION no menu. Gravando vira estado (liga no Gravando, desliga no Corta ou no mesmo botão, com
+  o selo "gravando" para todos). Diárias com opções: renomear (o dono), copiar o link, excluir (o dono) ou deixar.
+  Marca com o sinal (aprovada pelo titular, 07/11/2026): três arcos no quadrante oposto ao leque, na cor do rebite, e o
+  ícone do app maior (escala 3,55, o rebite no centro); `scripts/marca.mjs` refez símbolo, ícones, favicon e OG.
+- ✅ **RADION, página inicial nova** (pedido do titular, 07/11/2026, no estilo da página do SOBEDESCE): o celular com o
+  app ao vivo no herói (Rui chama a Câmera, você responde, a Direção fala com todos, Gravando cala o set), os números,
+  os grupos do set (quem ouve quem), as telas de verdade, Como funciona em três passos, os poderes (Gravando, Travar a
+  fala, Pedir a palavra, responsável, setores do seu jeito, qualquer celular), a voz de aparelho para aparelho e a
+  família. Motion com a rolagem e demonstrações em HTML (`app/site.js`), paradas com "reduzir movimento". A logo do
+  topo usa o símbolo branco no escuro (antes o filtro invertia as cores). Sem zoom ao tocar no Safari.
+- ✅ **RADION no ar para todos** (titular, 07/11/2026: "lançar para todos"): HUB `0062` abre o gate (web, sso e api; sem
+  app de computador), põe o RADION em todo plano de pacote e no grátis (sem limites próprios) e dá o acesso a quem já
+  assina; o ícone volta para `public/products/radio.svg` e para o `ICONES_PUBLICOS`; o projeto `radion` abre a página
+  inicial (`RADION_SITE_ABERTO=1`) e o robots deixa achar só o `/`. No topo da página e do app (também no celular), o
+  claro × escuro; um Entrar só, no topo. Migração `0002_setores` do rádio (`radio.setores`, `radio.setor`, `radio.sair`,
+  `radio.encerrar`). Bugs do celular: a página nova começa do topo, o nome da diária em Entrar no rádio, o aviso diz
+  "travou a fala" em vez de "silenciou você", a lista de diárias sem o código apertando e o cartão estreito do canal.
+- ✅ **RADION, imagem de compartilhar nova** (pedido do titular, 07/11/2026; das três propostas ele escolheu a "Ondas"):
+  o símbolo com o círculo no centro exato da imagem (regra do titular: o círculo é o centro da logo, sempre; vale também
+  para o favicon e os ícones), anéis nas cores dos setores saindo dele como o sinal, o nome, "stay connected.", uma linha
+  do que é e a Absolute ZRO pequena no canto. `og.png` e `apple-touch-icon.png` agora saem na raiz do
+  `radion.absolutezro.com`, fora do `/app/` que o robots fecha.
+- ✅ **RADION para computador** (pedido do titular, 07/11/2026: "não é só adaptar", experiência como a do SOBEDESCE):
+  `products/radio/desktop`, na moldura do Relay. Na barra de menus (Mac) ou na bandeja (Windows), com o canal ao lado e o
+  menu de falar; atalho global de falar (`⌘⇧Espaço`/`Ctrl+Shift+Espaço`, com reservas); modo compacto por cima das
+  outras janelas; fechar não desliga o rádio; não dorme na diária; notificação de aviso e de pedido da palavra quando a
+  janela está atrás; selo no Dock; `radion://d/<código>` abre a diária. A página conversa por `window.radionDesktop`
+  (estado conferido campo a campo no app). Na central (`APPS_DESKTOP`, `downloads`), login pelo navegador (HUB `0063`,
+  esquema `radion`) e workflow `radion-desktop.yml` (Release `radion-versao-de-teste`, build base 4000). Primeiro build
+  verde (b4002, Mac e Windows); HUB `0064` abre os canais `desktop` e `download` (titular, 07/11/2026: "pode abrir o
+  download na central também").
+- ✅ **RADION, fotos das contas** (pedido do titular, 07/11/2026): o topo, o menu, a folha "Mais" e a equipe (no ar,
+  lista da equipe, responsáveis, setores, cartão da pessoa) mostram a foto do perfil único da Absolute ZRO, com as
+  iniciais por baixo quando não há foto ou ela não abre. Migração `0003_fotos` do rádio: `radio.membros.foto` guarda só
+  o id público de `/api/v1/foto/<id>`; cada site monta o endereço (`%FOTO%`). A foto vem da sessão (claim `picture`) no
+  `radion.absolutezro.com` e de `zro.user_avatars` (RLS) no HUB, e se atualiza ao abrir a lista, criar ou entrar.
+- ✅ **RADION no Android, som no viva-voz** (titular, 07/11/2026: no Android o som saía no alto-falante de ligação):
+  com o microfone aberto o Android trata a página como chamada. Lá o microfone abre só enquanto a pessoa fala (segurar
+  ou fala travada) e fecha ao soltar; no Ligar ele só pede a permissão. iPhone e computador seguem com o microfone
+  aberto desde o Ligar.
+- ✅ **RADION, abrir o microfone pela voz** (titular, 07/11/2026: mãos livres para eventos e sets, com lapela): nos
+  Ajustes a pessoa escolhe Botão ou Pela voz, com a sensibilidade (Baixa, Média, Alta) e um medidor ao vivo com a marca.
+  Pela voz o microfone fica aberto, a fala sai quando o nível passa da marca em 2 de 3 leituras e fecha depois de 1,2 s
+  abaixo dela; a voz vai com 0,25 s de atraso para a primeira sílaba não se perder; um toque no botão pausa e retoma,
+  segurar ainda fala. A escolha é de cada aparelho (depende do microfone ligado nele).
+- ✅ **RADION, microfone e som** (titular, 07/11/2026: "fone Bluetooth + lapela é o combo perfeito"): nos Ajustes, o
+  Microfone (o do aparelho, a lapela, o fone: a lista do que o aparelho tem) e o Som (a saída das vozes e dos bipes, onde
+  o navegador deixa escolher; no iPhone e no Android, a dica de como trocar pelo sistema). A escolha fica no aparelho,
+  pelo id e pelo nome (o navegador troca o id entre visitas); trocar com o rádio ligado não derruba a fala; microfone
+  que some (lapela desligada) volta ao do aparelho.
+- ✅ **RADION, foto sem piscar** (titular, 07/11/2026: "bug na foto", vídeo do iPhone): a lista da equipe é redesenhada
+  a cada batida e a foto, recriada, deixava as iniciais aparecerem por um quadro. A foto vira o fundo do círculo e a
+  página lembra quais já abriram: no redesenho ela entra direto.
+- 🟡 **RADION nativo, Android, marco 1** (titular, 08/11/2026: caminho A, celular travado no bolso):
+  `products/radio/nativo/android`. O módulo `nucleo` (sem login nem banco, reaproveitável pelo DEICHECK) traz o
+  serviço em primeiro plano com Falar/Parar na tela bloqueada, o botão do fone, o "não dormir" e o som no fone ou no
+  viva-voz. O `app` traz a página do RADION numa WebView com a ponte do contrato do computador, o login pelo
+  navegador (`radion://entrar-app`) e as regras de navegação. APK de teste pelo GitHub Actions no Release
+  `radion-android-teste`, sem loja e sem custo. ⏳ Teste num Android de verdade e a chave fixa de assinatura.
+- Fase 2: diária ligada ao projeto do HUB e convite pelo @. Fase 3: agenda do Maestro e escala do Carro do Freela.
 
 ## "Manter no Dock" sempre à mão (03/11/2026, ramo `dock-sempre`)
 
@@ -1865,6 +2058,103 @@ do card... não consigo localizar o job que quero achar".
 - 🔶 No ramo `sobedesce-web-transferencias`, esperando a aprovação do titular pela prévia: tela Transferências no app
   web/celular (lotes, filtros, passar na frente, cancelar de verdade, pausar/retomar/cancelar o lote, histórico no
   IndexedDB v2 e conferência por MD5 num Web Worker; "Conferido" só com MD5 igual). Só `products/sobedesce/web/`.
+
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+- 🔶 Ramo `sobedesce-download-recuo` (relato de usuário pelo Painel Geral; o titular autorizou fazer e publicar o app
+  de computador no mesmo dia): baixando 30 GB, a velocidade deu dois picos e caiu para ~539 KB/s, "0 com problema".
+  - Economia com prazo de 1 h: depois disso, o arquivo volta às conexões dos Ajustes. "Tentar de novo" e a cópia
+    temporária também limpam a economia.
+  - Recuo por conta no 403/429: todas as conexões de download esperam juntas. A espera diz "O Google pediu para ir
+    mais devagar", e não "Sem conexão".
+  - Log do motor sempre ligado (sem token, nome de arquivo, caminho ou e-mail) e "Copiar diagnóstico" em Ajustes ›
+    Versão (`GET /api/diagnostico`).
+  - A versão escrita em Ajustes estava parada em "0.3.2" desde 01/11, em todas as versões novas. Agora ela vem do
+    `package.json`.
+  - Só o app de computador (workflow, sem custo); nada do site.
+
+## SOBEDESCE 0.3.19: menu do Drive igual ao do Google Drive, no computador (10/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-menu-pc` (titular via Z: soltar o que é grátis): a parte do app de computador do #153 sai
+  agora. Botão direito no item e no vazio, Copiar link (com "Qualquer pessoa com o link pode ver" ou "Só copiar",
+  escolha lembrada), selo "Público (link)", Restrito, estrela, arrastar para mover com Desfazer e ações rápidas.
+  - Motor: rotas `link/restringir` e `estrela`; a listagem traz `starred`, `permissionIds`, `createdTime`, `canShare`.
+  - O celular e o site (`web/`) continuam no #153, para o lote de sexta (13/11).
+
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-rolar` (titular: "não consigo ver as outras páginas no carrossel", "não consigo jogar
+  os takes selecionados pra montagem", "não consigo selecionar o número e a foto que vou colocar em cada número"):
+  - Carrossel: a roda do mouse rola de lado e os números dos slides (com ‹ ›) levam até cada um.
+  - Grade do perfil por quadradinho (foto e modelo próprios, na ordem de postar); "Uma imagem só, dividida" mantém o
+    jeito antigo.
+  - Takes do Frames com o botão visível "Escolher" / "Escolhido · N".
+  - Só o app de computador (workflow, sem custo); nada do site.
+
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- 🔶 Ramo `sobedesce-envio-proxy` (relato do titular via Z: lote de 2 vídeos com proxy parou em 3%, cancelar sem
+  resposta): quando faltava menos de 1 min, o "Falta" escrevia `<1` direto no html``, o "<" virava tag e a tela inteira
+  parava de desenhar (o envio continuava por baixo). Agora vai interpolado. Defeito desde a 0.3.8 (05/11).
+  - Guarda nova: `test/templates-html.test.js` recusa "<" seguido de número nos templates (computador e celular).
+  - Um erro de desenho não trava mais o app inteiro (o titular relatou todos os botões mortos): cada tela e a raiz
+    ficam protegidas (`useErrorBoundary`). A tela mostra o aviso e "Tentar de novo", e o menu continua.
+
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (CPU da Vercel, 09/11/2026)
+
+- 🔶 Ramo `sobedesce-ronda-pedidos` (proposta aprovada pelo titular via Z): o app de computador perguntava os pedidos
+  em 4 rondas (proxy, frames e formato a cada 30 s, Relay a cada 20 s; ~9/min). Agora é uma pergunta só
+  (`tipo=todos`, `src/engine/ronda-pedidos.js`) que vai de 30 s até 5 min enquanto não aparece pedido e volta a 30 s
+  com pedido ou quando a pessoa mexe no app. Parado: ~12 perguntas por hora em vez de ~540.
+  - Conserto junto: uma volta que acabava na hora (sem conta, em pausa) prendia a ronda para sempre.
+  - Falta: o sinal de vida do "Acompanhar pelo celular" (90 s parado) só pode espaçar junto com o limite de "ligado"
+    do celular (2 min), que é do site: vai no lote. Medir o antes/depois uma semana depois de publicar.
+
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+- 🔶 Ramo `sobedesce-frames-montagem-pc` (titular: "não é pra ficar só no celular, plataforma do computador também"):
+  - No trabalho do Frames, frames e takes (os cortes de cena) ganham o + de escolher, e a barra de escolhidos ganha
+    "Montagem", que leva os arquivos para a bandeja de Estúdio › Montagens, somando ao que já está lá.
+  - Contador da agulha da montagem com take: o texto saía duplicado ("0:00,00:00:0,0"); agora é só do DOM.
+  - Só o app de computador, sem custo.
+
+## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
+
+- 🔶 Ramo `sobedesce-carrossel-por-slide` (titular: "não consigo separar qual foto vai em que número"):
+  - Cada slide do carrossel tem o próprio modelo e as próprias fotos; "Emendar com o anterior" faz o panorama.
+  - Foto no número: arrastar até o slide, tocar no slide e depois na foto, ou tocar na foto e depois no slide.
+  - Até 20 slides (era 10); com muitos, a fileira rola de lado.
+  - **Ver a montagem com take:** play e agulha embaixo da montagem; cada take toca no quadro dele, no trecho escolhido
+    ("sem ver isso não faz sentido", titular).
+  - Só o app de computador, sem custo. O celular continua com o carrossel de antes até o lote do site (a lib
+    compartilhada `public/lib/montagens.js` não mudou).
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+- 🔶 Ramo `sobedesce-cartao-imprevistos` (titular, depois de estudar a página do Descarrega):
+  - **Contador zerado:** o arquivo com nome repetido não fica mais só como alerta. Ele vai conferido para
+    `Cartão NN · contador zerado`, sem gravar por cima, e não é copiado de novo.
+  - **Gravação interrompida:** MP4/MOV sem índice ou cortado e JPEG sem o fim geram o aviso "Confira antes de
+    formatar", com a lista dos arquivos.
+  - **Proxies:** LRV, LRF, THM e restos do sistema ficam no cartão sem segurar o "pode formatar". O projeto ganha a
+    opção "Levar os proxies da câmera".
+  - **Prévia do cartão:** o "Ver" mostra fotos, RAW (pela prévia JPEG embutida) e vídeos do cartão antes de copiar, e o
+    vídeo toca. A foto da montagem também passa a aceitar RAW.
+  - **Arquivar:** "Arquivar…" em Cartões faz uma cópia menor da pasta ao lado (`<pasta> · arquivo`): RAW → DNG (Adobe
+    DNG Converter, quando instalado) e vídeo compactado com LUT opcional, com "Testar 8 s" antes. O original não muda.
+  - Só o app de computador, sem custo, publicado pelo workflow no merge.
+
+## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
+
+- 🔶 Ramo `sobedesce-drive-escopo` (Painel Geral, relato do titular no celular), **lote de sexta 13/11**:
+  - **Reconectar com acesso total** pedia só `drive.file` (vaga já usada) e, sem a concessão antiga no Google, caía
+    calado em Arquivos escolhidos. Agora, quando a conta Google é a da vaga, faz um segundo pedido do `drive` só para
+    ela (`login_hint`, não gasta vaga); desmarcou de novo, avisa.
+  - **Escolher do Drive:** o App ID errado não derruba mais o Picker (usa o número do projeto do client ID) e o
+    `/admin` e o log dizem qual variável falhou, sem o valor.
+  - **Desconectou sozinho:** log com quanto tempo a conexão durou; 7 dias = app do Google em modo Teste.
+  - **Console da Absolute ZRO:** "Drive inteiro liberado" (a permissão) separado de "conectado: Drive inteiro / arquivos
+    escolhidos / precisa reconectar" (o que o Google deu a cada Drive).
 
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)
 

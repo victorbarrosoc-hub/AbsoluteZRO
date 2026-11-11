@@ -20,6 +20,7 @@ import path from 'node:path'
 import { EventEmitter } from 'node:events'
 import { httpRequest, HttpError } from '../net/http.js'
 import { classifyError, SobeDesceError, stalledError } from '../google/errors.js'
+import { ehLimite, emEconomia } from './recuo.js'
 import { resourceKeyHeader } from '../google/drive.js'
 import { abortError, backoffDelay, isAbortError, sleep } from '../util/backoff.js'
 import { SpeedMeter } from '../util/meter.js'
@@ -499,7 +500,7 @@ export class DownloadTask extends EventEmitter {
   #desired() {
     // Cota do arquivo estourada (manager.js, rec.economia): uma conexão só e sem cortar em blocos (#pick): o resto do
     // arquivo vai num pedido só ao Google.
-    if (this.single || this.record.economia) return 1
+    if (this.single || emEconomia(this.record)) return 1
     const n = Math.floor(Number(this.ctx.settings?.get?.().connectionsPerDownload) || 1)
     return Math.min(MAX_CONNECTIONS, Math.max(1, n))
   }
@@ -723,6 +724,13 @@ export class DownloadTask extends EventEmitter {
     while (seg.pos <= seg.end && !phase.signal.aborted) {
       if (w.index >= this.#desired()) return // menos conexões nos ajustes: devolve o pedaço
       const before = seg.pos
+      // A conta levou um "vá mais devagar" do Google: todas as conexões dela esperam juntas antes do próximo pedido.
+      try {
+        await this.ctx.recuo?.esperar(phase.signal)
+      } catch {
+        return
+      }
+      if (phase.signal.aborted || w.index >= this.#desired()) return
       const conn = this.#openConn(phase.signal, seg, w)
       let err = null
       try {
@@ -741,6 +749,7 @@ export class DownloadTask extends EventEmitter {
 
   #progressed(w) {
     w.fails = 0
+    this.ctx.recuo?.ok()
     let max = 0
     for (const x of this.workers.values()) max = Math.max(max, x.fails)
     this.record.attempts = max
@@ -770,9 +779,11 @@ export class DownloadTask extends EventEmitter {
       this.#fail(exhaustedError(err))
       return false
     }
-    this.log('download: tentando de novo', this.record.name, `(${w.fails})`, err?.message)
+    this.log('download: tentando de novo', this.record.id, `(${w.fails})`, info.status ?? '', info.reason ?? '')
     if (info.kind === 'auth') return true // token novo na próxima requisição, sem esperar
-    const wait = Math.min(this.opts.maxRetryWaitMs, Math.max(backoffDelay(w.fails - 1, { base: this.opts.retryBaseMs }), info.retryAfterMs ?? 0))
+    // Limite do Google: a espera é da conta (o recuo), não só desta conexão.
+    const daConta = ehLimite(info) && this.ctx.recuo ? this.ctx.recuo.bater(info.retryAfterMs) : 0
+    const wait = Math.min(this.opts.maxRetryWaitMs, Math.max(backoffDelay(w.fails - 1, { base: this.opts.retryBaseMs }), info.retryAfterMs ?? 0, daConta))
     try {
       await sleep(wait, phase.signal)
     } catch {
@@ -1197,7 +1208,7 @@ export class DownloadTask extends EventEmitter {
 
   #noteReset(reason) {
     this.counters.resets++
-    this.log('download: recomeçando do zero', this.record.name, reason)
+    this.log('download: recomeçando do zero', this.record.id, reason)
     this.emit('reset', { reason })
   }
 
@@ -1247,7 +1258,7 @@ export class DownloadTask extends EventEmitter {
       // assim um defeito no caminho novo nunca vira "veio diferente" à toa).
       if (actual != null && actual !== expected) {
         this.counters.hashConfirms++
-        this.log('download: MD5 da gravação não confere; confirmando com o arquivo inteiro', rec.name)
+        this.log('download: MD5 da gravação não confere; confirmando com o arquivo inteiro', rec.id)
         actual = null
       }
       try {
@@ -1432,7 +1443,8 @@ export class DownloadTask extends EventEmitter {
           this.badAuth = conn.auth
           continue
         }
-        const wait = Math.min(this.opts.maxRetryWaitMs, Math.max(backoffDelay(fails - 1, { base: this.opts.retryBaseMs }), info.retryAfterMs ?? 0))
+        const daConta = ehLimite(info) && this.ctx.recuo ? this.ctx.recuo.bater(info.retryAfterMs) : 0
+        const wait = Math.min(this.opts.maxRetryWaitMs, Math.max(backoffDelay(fails - 1, { base: this.opts.retryBaseMs }), info.retryAfterMs ?? 0, daConta))
         await sleep(wait, signal)
       }
     } finally {

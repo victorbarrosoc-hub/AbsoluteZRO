@@ -183,6 +183,18 @@ class AgendaDeApps extends EventEmitter {
     this.#mudou()
   }
 
+  /**
+   * A página leu a lista (central:listar, ao abrir, ao voltar o foco ou ao terminar uma ação): a agenda usa a mesma
+   * leitura, e o que já está no build disponível (ou mais novo) sai de "pendente" na hora, sem esperar a próxima
+   * conferência (1.4.5). Nunca lança.
+   */
+  sincronizar(lista) {
+    if (!Array.isArray(lista)) return
+    const antes = JSON.stringify(this.estado())
+    this.#lerLista(lista)
+    if (JSON.stringify(this.estado()) !== antes) this.#mudou()
+  }
+
   #lerLista(lista) {
     this.apps = lista.filter((s) => s.instalado).map((s) => ({ id: s.id, nome: s.nome, versao: s.instalado.versao || null }))
     this.marcarGerenciados(lista.filter((s) => s.instalado && s.gerenciavel).map((s) => s.id))

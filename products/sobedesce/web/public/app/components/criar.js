@@ -2,6 +2,8 @@
 //   Frames  o vídeo final (direto do Drive ou da galeria) vira frames escolhidos com o mesmo bom senso do computador,
 //           por cena, e posts (tríade, grade, polaroid, box, cinema, contato, carrossel). Desce do Drive, fica no
 //           celular (galeria/arquivos) e sobe de volta para o Drive, numa pasta organizada ao lado do vídeo.
+//   Montagens  fotos e takes (galeria ou Drive) em modelos prontos: post (foto ou vídeo), carrossel contínuo e grade
+//           do perfil, como no Estúdio do computador (components/montagens.js).
 // O trabalho fica nesta aba (que não desmonta): trocar de aba e voltar não perde nada.
 import { html, useEffect, useMemo, useRef, useState } from '../vendor/preact-htm.js'
 import { closeSheet, getState, openSheet, setState, setTab, toast, useApp } from '../lib/state.js'
@@ -19,6 +21,8 @@ import { Icon } from './icons.js'
 import { Button, SheetHead, cx } from './ui.js'
 import { BotaoGrande, Destaque, Opcoes, Passo, Pilulas, Stats } from './kit.js'
 import { TopoMarca } from './main.js'
+import { MontagensTela } from './montagens.js'
+import { EstudioSecoes } from './estudio.js'
 
 const QUANTOS = [6, 12, 24, 36]
 const GRANDE = 1.5e9 // acima disso, pelo celular demora: sugere o computador
@@ -287,23 +291,6 @@ async function subir(itens) {
 
 // ───── telas ─────
 
-function Hub({ onFrames, onCalc, temCalc }) {
-  return html`<div class="cr-hub">
-    <button type="button" class="cr-ferr k-entra" style="--i:1" onClick=${onFrames}>
-      <span class="cr-ferr-art is-frames" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span class="cr-ferr-txt"><b>Frames</b><span>Do vídeo final aos frames por cena e aos posts.</span></span>
-      <${Icon} name="chevron-right" size=${18} />
-    </button>
-    ${temCalc
-      ? html`<button type="button" class="cr-ferr k-entra" style="--i:2" onClick=${onCalc}>
-          <span class="cr-ferr-art is-calc" aria-hidden="true"><i></i></span>
-          <span class="cr-ferr-txt"><b>Calculadora</b><span>Quanto cabe no cartão e quanto HD levar.</span></span>
-          <${Icon} name="chevron-right" size=${18} />
-        </button>`
-      : null}
-  </div>`
-}
-
 function Escolher() {
   const input = useRef(null)
   const daGaleria = (e) => {
@@ -527,14 +514,13 @@ function Resultado({ j }) {
   </div>`
 }
 
-function FramesTela({ onVoltar }) {
+function FramesTela() {
   const j = useJob()
   return html`<div class="cr-frames">
-    <button type="button" class="cr-voltar" onClick=${onVoltar}><${Icon} name="chevron-left" size=${18} />Criar</button>
     <header class="k-cabeca k-entra" style="--i:0">
       <div class="k-cabeca-txt">
         <h1>Frames</h1>
-        <p>Do filme pronto aos posts: frames em alta e artes para as redes.</p>
+        <p>Do filme pronto aos posts.</p>
       </div>
     </header>
     ${!j
@@ -743,30 +729,18 @@ FramesPostSheet.tall = true
 
 // ───── aba ─────
 
-export function CriarScreen({ active, Calculadora = null }) {
-  const tela = useApp((s) => s.criarTela || 'hub')
-  const ir = (t) => {
-    setState({ criarTela: t })
-    window.scrollTo(0, 0)
-  }
+export function CriarScreen({ Calculadora = null }) {
+  const tela = useApp((s) => s.criarTela || 'frames')
   useJob()
+  // Estúdio (components/estudio.js): Frames · Montagens · Referências no topo. A Calculadora abre pelo atalho "Cartões"
+  // do Início (no computador ela mora em Cartões) e volta para lá.
   return html`<div class="screen cr-screen">
     <${TopoMarca} />
     <main class="cr-body">
-      ${tela === 'hub'
-        ? html`<header class="k-cabeca k-entra" style="--i:0">
-            <div class="k-cabeca-txt">
-              <h1>Criar</h1>
-              <p>Ferramentas para o filme pronto e para a gravação.</p>
-            </div>
-          </header>`
-        : null}
-      ${tela === 'frames'
-        ? html`<${FramesTela} onVoltar=${() => ir('hub')} />`
-        : tela === 'calc' && Calculadora
-          ? html`<div class="cr-frames"><button type="button" class="cr-voltar" onClick=${() => ir('hub')}><${Icon} name="chevron-left" size=${18} />Criar</button><${Calculadora} /></div>`
-          : html`<${Hub} onFrames=${() => ir('frames')} onCalc=${() => ir('calc')} temCalc=${Boolean(Calculadora)} />
-            ${job && job.fase !== 'ajustes' ? html`<button type="button" class="cr-voltar-job" onClick=${() => ir('frames')}>${job.fase === 'pronto' ? `${count(job.frames.length)} frames de “${nomeSemExt(job.video.nome)}” prontos` : 'Fazendo os frames…'} <${Icon} name="chevron-right" size=${16} /></button>` : null}`}
+      ${tela === 'calc' && Calculadora
+        ? html`<div class="cr-frames"><button type="button" class="cr-voltar" onClick=${() => setTab('send')}><${Icon} name="chevron-left" size=${18} />Início</button><${Calculadora} /></div>`
+        : html`<${EstudioSecoes} />
+            ${tela === 'montagens' ? html`<${MontagensTela} />` : html`<${FramesTela} />`}`}
     </main>
   </div>`
 }

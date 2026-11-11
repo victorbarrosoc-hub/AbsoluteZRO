@@ -21,17 +21,21 @@ export function Saudacao({ user }) {
   </div>`
 }
 
-/** Atalhos para as outras abas, em blocos grandes de um toque. */
+/**
+ * Atalhos, os mesmos do Início do computador: Drive, Referências, Frames e Cartões. No celular, Cartões é a
+ * Calculadora (o backup do cartão mora no computador, onde está o leitor).
+ */
 export function Atalhos() {
   const refsOn = useApp((s) => Boolean(s.recursos?.referencias))
   const itens = [
-    { tab: 'drive', icon: 'drive', nome: 'Drive', sub: 'Ver e baixar', tom: 'down' },
-    refsOn ? { tab: 'refs', icon: 'bookmark', nome: 'Referências', sub: 'Salvos', tom: 'refs' } : null,
-    { tab: 'criar', icon: 'sparkle', nome: 'Criar', sub: 'Frames e mais', tom: 'criar' },
+    { id: 'drive', icon: 'drive', nome: 'Drive', sub: 'Seus arquivos', tom: 'down', ir: () => setTab('drive') },
+    refsOn ? { id: 'refs', icon: 'bookmark', nome: 'Referências', sub: 'O que salvou', tom: 'refs', ir: () => setTab('refs') } : null,
+    { id: 'frames', icon: 'stack', nome: 'Frames', sub: 'Posts do filme', tom: 'criar', ir: () => (setState({ criarTela: 'frames' }), setTab('criar')) },
+    { id: 'cartoes', icon: 'disk', nome: 'Cartões', sub: 'Calculadora', tom: 'ok', ir: () => (setState({ criarTela: 'calc' }), setTab('criar')) },
   ].filter(Boolean)
   return html`<nav class=${cx('ini-atalhos', `n-${itens.length}`)} aria-label="Atalhos">
     ${itens.map(
-      (a, i) => html`<button key=${a.tab} type="button" class=${cx('ini-atalho', 'ini-entra', `tom-${a.tom}`)} style=${`--i:${i + 3}`} onClick=${() => setTab(a.tab)}>
+      (a, i) => html`<button key=${a.id} type="button" class=${cx('ini-atalho', 'ini-entra', `tom-${a.tom}`)} style=${`--i:${i + 3}`} onClick=${a.ir}>
         <span class="ini-atalho-icon"><${Icon} name=${a.icon} size=${20} /></span>
         <b>${a.nome}</b>
         <span>${a.sub}</span>

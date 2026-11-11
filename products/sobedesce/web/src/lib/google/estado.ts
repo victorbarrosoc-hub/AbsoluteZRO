@@ -11,8 +11,11 @@ export const DURACAO_OAUTH_S = 600;
 const CONTEXTO = "cookie:sd_google";
 
 export type ModoGoogle = "vincular" | "entrar";
-/** `pedido`: o modo do Drive pedido ao Google (só no vincular), para conferir na volta o que veio de fato. */
-export type EstadoOAuth = { state: string; verificador: string; modo: ModoGoogle; usuarioId: string | null; volta: string; expira: number; pedido?: ModoDrive };
+/**
+ * `pedido`: o modo do Drive pedido ao Google (só no vincular), para conferir na volta o que veio de fato.
+ * `segunda`: já é o segundo pedido (o Drive inteiro para a conta Google que já tem a vaga): não pede uma terceira vez.
+ */
+export type EstadoOAuth = { state: string; verificador: string; modo: ModoGoogle; usuarioId: string | null; volta: string; expira: number; pedido?: ModoDrive; segunda?: boolean };
 
 export function novoState(): string {
   return randomBytes(32).toString("base64url");
@@ -32,6 +35,7 @@ export function abrirEstado(valor: string | undefined): EstadoOAuth | null {
     if (e.modo !== "vincular" && e.modo !== "entrar") return null;
     if (typeof e.expira !== "number" || e.expira < Date.now()) return null;
     if (e.pedido !== undefined && e.pedido !== "total" && e.pedido !== "arquivos") return null;
+    if (e.segunda !== undefined && typeof e.segunda !== "boolean") return null;
     return e;
   } catch {
     return null;

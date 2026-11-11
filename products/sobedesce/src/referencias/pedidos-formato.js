@@ -24,7 +24,9 @@ export class PedidosFormato {
    * @param {() => import('./service.js').ReferenciasService|null} o.referencias
    * Trocáveis nos testes: pollMs, vidaMs, log.
    */
-  constructor({ cloud, referencias, pollMs = POLL_MS, vidaMs = VIDA_MS, log } = {}) {
+  constructor({ cloud, referencias, pollMs = POLL_MS, vidaMs = VIDA_MS, log, ronda = null } = {}) {
+    this.tipo = 'formato'
+    this.ronda = ronda // RondaPedidos: uma pergunta só para todos os tipos (src/engine/ronda-pedidos.js)
     this.cloud = cloud
     this.referencias = referencias
     this.pollMs = pollMs
@@ -38,6 +40,7 @@ export class PedidosFormato {
   }
 
   start() {
+    if (this.ronda) return this.ronda.ouvir(this)
     this.#planejar(10_000)
   }
 
@@ -50,7 +53,7 @@ export class PedidosFormato {
   }
 
   #planejar(ms = this.pollMs) {
-    if (this.closed) return
+    if (this.closed || this.ronda) return
     clearTimeout(this.timer)
     this.timer = setTimeout(() => {
       this.timer = null
@@ -65,7 +68,8 @@ export class PedidosFormato {
   }
 
   /** Pega e faz os pedidos pendentes, um por vez (os mais antigos primeiro). Devolve quantos terminaram aqui. */
-  async consultar() {
+  /** `lista`: os pedidos que a ronda já trouxe (sem ela, pergunta ao site). */
+  async consultar(lista = null) {
     if (this.rodando) return this.rodando
     this.rodando = (async () => {
       try {
@@ -73,7 +77,7 @@ export class PedidosFormato {
         if (this.closed || !svc || !this.cloud?.signedIn || Date.now() < this.pausaAte) return 0
         let pedidos
         try {
-          const d = await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=formato')
+          const d = lista ? { pedidos: lista } : await this.#api('GET', '/api/proxies/pedidos?status=pendente&tipo=formato')
           pedidos = Array.isArray(d.pedidos) ? d.pedidos.filter(p => p?.tipo === 'formato') : []
         } catch (err) {
           if (err instanceof HttpError && [400, 403, 404].includes(err.status)) this.pausaAte = Date.now() + SEM_SITE_MS

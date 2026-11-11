@@ -1,105 +1,365 @@
 <!doctype html>
 <html lang="pt-BR" data-tema="claro">
-  <!-- Rádio do set (ADR 0042, nome a definir). Não lançado: esta página só sai por api/pagina.js para quem passa no
-       gate. Sem script nem estilo inline (CSP). -->
+  <!-- RADION (ADR 0042). O rádio do set: um canal por setor, ouvir e falar por canal, TALK (toque trava, segurar
+       fala), responsáveis por setor e os poderes de silêncio. Não lançado: esta página só sai para quem passa no gate.
+       Sem script nem estilo inline (CSP). Telas aprovadas pelo titular em 06/11/2026. -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Rádio do set</title>
+    <title>RADION</title>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#f5f5f7" />
-    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <!-- %BASE% e %API%: onde o app mora (vazio e /api/radio no app separado; /radio e /api/v1/radio no HUB) -->
+    <!-- %BASE% e %API%: onde o app mora (vazio e /api/radio no app separado; /radio e /api/v1/radio no HUB).
+         %SET%: o Set da Absolute ZRO (o script e a API); %FOTO%: de onde vêm as fotos das contas (/api/v1/foto/<id>) -->
     <meta name="radio-base" content="%BASE%" />
     <meta name="radio-api" content="%API%" />
+    <meta name="radio-set" content="%SET%" />
+    <meta name="radio-set-api" content="%SET_API%" />
+    <meta name="radio-sair" content="%SAIR%" />
+    <meta name="radio-foto" content="%FOTO%" />
+    <link rel="icon" href="%BASE%/app/marca/favicon.svg" type="image/svg+xml" />
+    %TOQUE%
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="%BASE%/app/app.css" />
     <script type="module" src="%BASE%/app/app.js"></script>
   </head>
   <body>
-    <!-- 1 · diárias -->
-    <main id="tela-diarias" class="tela" hidden>
-      <header class="topo">
-        <span class="marca">Rádio do set</span>
-        <button class="icone" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro">◐</button>
-      </header>
-      <h1><span>Fale com a</span> <b>equipe.</b></h1>
-      <form id="criar" class="cartao" autocomplete="off">
-        <input id="criar-nome" name="nome" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" required />
-        <button class="glass-btn glass-btn--ink" type="submit">Criar diária</button>
-      </form>
-      <form id="entrar" class="cartao" autocomplete="off">
-        <input id="entrar-codigo" name="codigo" maxlength="7" placeholder="Código" aria-label="Código da diária" autocapitalize="characters" required />
-        <button class="glass-btn" type="submit">Entrar</button>
-      </form>
-      <p class="erro" id="diarias-erro" role="alert" hidden></p>
-      <ul id="lista" class="lista" aria-label="Suas diárias"></ul>
-    </main>
+    <div class="app" id="app" data-lado="aberto">
+      <!-- app de computador, modo compacto: a faixa de cima (arrasta a janelinha) -->
+      <div class="compacto-topo" id="compacto-topo" hidden>
+        <img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" />
+        <b id="compacto-nome">RADION</b>
+        <button class="compacto-sair" id="compacto-sair" type="button" title="Abrir o RADION inteiro" aria-label="Sair do modo compacto" data-ic="expandir"></button>
+      </div>
 
-    <!-- 2 · o rádio -->
-    <main id="tela-radio" class="tela" hidden>
-      <header class="topo">
-        <button class="icone" id="voltar" type="button" aria-label="Voltar">‹</button>
-        <div class="titulo-diaria">
-          <strong id="diaria-nome"></strong>
-          <span id="pessoas-conta" class="apoio"></span>
+      <!-- lateral -->
+      <aside class="lado" id="lado" aria-label="Menu">
+        <div class="lado-topo">
+          <span class="marca"><img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /><span>radion</span></span>
+          <button class="lado-recolher" id="recolher" type="button" title="Recolher o menu" aria-label="Recolher o menu" aria-expanded="true" data-ic="painel"></button>
         </div>
-        <button class="pilula" id="codigo" type="button" title="Chamar a equipe (QR)"></button>
-      </header>
-
-      <section id="ligar" class="ligar">
-        <button class="glass-btn glass-btn--ink grande" id="ligar-btn" type="button">Entrar no rádio</button>
-        <p class="apoio" id="ligar-dica">Deixe o app aberto e a tela ligada.</p>
-      </section>
-
-      <section id="radio" class="radio" hidden>
-        <div class="funcoes" id="funcoes" role="radiogroup" aria-label="Sua função"></div>
-
-        <div class="canais" role="radiogroup" aria-label="Falar para">
-          <button type="button" role="radio" data-canal="geral" aria-checked="true">Geral</button>
-          <button type="button" role="radio" data-canal="equipe" aria-checked="false" id="canal-equipe">Equipe</button>
+        <button class="nova" id="nova" type="button" data-ir="diarias" data-ic-antes="mais"><span>Nova diária</span></button>
+        <nav id="nav" aria-label="Páginas">
+          <button class="item" type="button" data-ir="inicio" data-ic="casa"><span class="item-rotulo">Início</span></button>
+          <button class="item" type="button" data-ir="noar" data-ic="ar" id="nav-noar"><span class="item-rotulo">No ar</span><span class="selo" id="nav-vivo" hidden>ao vivo</span></button>
+          <button class="item" type="button" data-ir="diarias" data-ic="cal"><span class="item-rotulo">Diárias</span><span class="num" id="nav-diarias"></span></button>
+          <button class="item" type="button" data-ir="equipe" data-ic="gente"><span class="item-rotulo">Equipe</span></button>
+          <button class="item" type="button" data-ir="avisos" data-ic="sino"><span class="item-rotulo">Avisos</span></button>
+          <button class="item" type="button" id="nav-set" data-ic="balao" hidden><span class="item-rotulo">Set</span><span class="num" id="nav-set-num"></span></button>
+          <div id="nav-diaria" hidden>
+            <div class="secao" id="nav-diaria-nome"></div>
+            <button class="item" type="button" data-ir="setores" data-ic="setores" id="nav-setores"><span class="item-rotulo">Setores e responsáveis</span></button>
+            <button class="item" type="button" data-ir="convites" data-ic="qr"><span class="item-rotulo">Convites e QR</span></button>
+          </div>
+        </nav>
+        <div class="lado-fim">
+          <button class="item" type="button" data-ir="ajustes" data-ic="ajustes"><span class="item-rotulo">Ajustes</span></button>
+          <a class="item" href="/sobre" data-so-app="1" data-ic="info"><span class="item-rotulo">Sobre o RADION</span></a>
+          <div class="divisor"></div>
+          <button class="item" type="button" id="apps-btn" data-ic="apps" aria-expanded="false" aria-controls="apps"><span class="item-rotulo">Apps Absolute ZRO</span></button>
+          <button class="eu" type="button" data-ir="ajustes" id="eu"><span class="av" id="eu-av"></span><div><b id="eu-nome"></b><small id="eu-sub"></small></div></button>
         </div>
+      </aside>
 
-        <p class="no-ar" id="no-ar" aria-live="polite"></p>
+      <div class="area">
+        <header class="topo">
+          <span class="marca"><img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /><span>radion</span></span>
+          <div class="caminho" id="caminho"></div>
+          <div class="topo-dir">
+            <span id="set-casa"></span>
+            <button class="redondo so-computador" id="compacto-btn" type="button" title="Modo compacto: uma janelinha por cima das outras" aria-label="Modo compacto" data-ic="compacto" hidden></button>
+            <button class="tema" id="tema" type="button" title="Tema claro ou escuro" aria-label="Tema claro ou escuro"><span data-ic="sol"></span><span data-ic="lua"></span></button>
+            <button class="av av--g" id="topo-av" type="button" aria-label="Sua conta e mais"></button>
+          </div>
+        </header>
 
-        <button class="ptt" id="ptt" type="button" aria-label="Segure para falar">
-          <span class="ptt-anel"></span>
-          <span class="ptt-texto" id="ptt-texto">Segure</span>
+        <!-- Início -->
+        <main class="pagina miolo" id="pg-inicio" hidden>
+          <div><h1 class="ola"><span class="leve" id="ola-saudacao">Olá,</span> <span class="forte" id="ola-nome"></span></h1><p class="sub" id="ola-sub"></p></div>
+          <section class="heroi" id="heroi" hidden>
+            <div class="heroi-texto">
+              <span class="chip chip--vivo" id="heroi-vivo"></span>
+              <b id="heroi-nome"></b>
+              <span id="heroi-sub"></span>
+              <div class="heroi-acoes">
+                <button class="vidro vidro--branco" type="button" data-ir="noar" data-ic-antes="ar">Entrar no rádio</button>
+                <button class="vidro vidro--claro" type="button" data-ir="avisos" data-ic-antes="sino">Avisos</button>
+              </div>
+            </div>
+            <div class="heroi-setores" id="heroi-setores"></div>
+          </section>
+          <section class="grade-4" id="estats" hidden></section>
+          <section class="cartao estat">
+            <div class="titulo-sec">Suas diárias<button class="vidro vidro--p" type="button" data-ir="diarias" data-ic-antes="mais">Nova diária</button></div>
+            <ul class="lista" id="lista-inicio"></ul>
+          </section>
+        </main>
+
+        <!-- No ar -->
+        <main class="pagina" id="pg-noar" hidden>
+          <div class="miolo vazio-noar" id="noar-vazio">
+            <div class="cartao vazio"><img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" /><b>Nenhuma diária aberta.</b><button class="vidro vidro--tinta" type="button" data-ir="diarias">Abrir uma diária</button></div>
+          </div>
+          <div class="noar" id="noar" hidden>
+            <div class="miolo noar-miolo">
+              <div class="noar-cabeca">
+                <h1><span class="forte" id="diaria-nome"></span> <span class="leve" id="diaria-papel"></span></h1>
+                <span class="chip chip--vivo" id="noar-conta"></span>
+                <span class="chip chip--gravando" id="gravando-chip" hidden>gravando</span>
+                <button class="redondo sair-btn" id="sair-btn" type="button" aria-label="Sair da diária" title="Sair" data-ic="sair"></button>
+                <div class="avisos-rapidos" id="avisos" hidden>
+                  <button class="aviso-btn aviso-btn--trava" id="travar-fala" type="button" hidden data-ic-antes="cadeado">Travar a fala</button>
+                  <button class="aviso-btn" type="button" data-aviso="acao" title="Toque para gravar; gravando, toque para cortar">Gravando</button>
+                  <button class="aviso-btn" type="button" data-aviso="corta">Corta</button>
+                  <button class="aviso-btn" type="button" data-aviso="silencio">Silêncio</button>
+                  <button class="aviso-btn" type="button" data-aviso="intervalo">Intervalo</button>
+                </div>
+              </div>
+              <ul class="pessoas-cel" id="pessoas-cel" aria-label="No ar agora"></ul>
+              <div class="faixa-silencio faixa-silencio--eu" id="eu-calado" hidden>
+                <span class="ico" data-ic="micoff"></span>
+                <div><b id="eu-calado-titulo"></b><small id="eu-calado-sub"></small></div>
+                <button class="vidro vidro--tinta" id="pedir-palavra" type="button" data-ic-antes="mao">Pedir a palavra</button>
+              </div>
+              <div class="faixa-silencio" id="silencio-set" hidden>
+                <span class="ico" data-ic="micoff"></span>
+                <div><b id="silencio-titulo">Silêncio no set</b><small id="silencio-sub"></small></div>
+                <span class="chip" id="silencio-maos" hidden></span>
+                <button class="vidro vidro--branco" id="reativar-todos" type="button" hidden>Destravar a fala</button>
+              </div>
+              <p class="erro" id="radio-erro" role="alert" hidden></p>
+              <div class="canais" id="canais" aria-label="Canais"></div>
+            </div>
+            <aside class="pessoas-lado" aria-label="No ar agora">
+              <div class="titulo-sec">No ar agora<button class="vidro vidro--p" id="silenciar-todos" type="button" hidden data-ic-antes="cadeado">Travar a fala</button><small id="pessoas-conta"></small></div>
+              <ul class="pessoas" id="pessoas"></ul>
+              <button class="chamar" type="button" data-ir="convites"><span class="ico ico--p" data-canal="geral" data-ic="qr"></span><div><b>Chamar alguém</b><small>Código <span class="codigo" id="codigo"></span></small></div></button>
+            </aside>
+          </div>
+          <!-- a base: para quem fala e o TALK -->
+          <footer class="base" id="base" hidden>
+            <div class="base-alvo">
+              <span class="base-rotulo">Falando para</span>
+              <strong id="alvo-nome" data-canal="geral">Geral</strong>
+              <p class="no-ar" id="no-ar" aria-live="polite"></p>
+            </div>
+            <button class="talk" id="ptt" type="button" aria-label="Falar: toque abre, segure para falar" data-estado="mudo" data-canal="geral">
+              <svg class="talk-anel" viewBox="0 0 120 120" aria-hidden="true"><circle class="talk-anel-fundo" cx="60" cy="60" r="54" /><circle class="talk-anel-nivel" id="talk-nivel" cx="60" cy="60" r="54" /></svg>
+              <span class="talk-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></span>
+              <span class="talk-texto" id="ptt-texto">Falar</span>
+            </button>
+            <div class="base-lado">
+              <button class="todos" id="todos" type="button" hidden aria-pressed="false" title="Falar para todos os canais">Todos</button>
+              <p class="base-dica" id="base-dica">Toque abre<br />Segure fala</p>
+            </div>
+          </footer>
+        </main>
+
+        <!-- Diárias -->
+        <main class="pagina miolo" id="pg-diarias" hidden>
+          <div><h1 class="ola ola--m"><span class="forte">Diárias</span></h1><p class="sub">Crie uma ou entre com o código.</p></div>
+          <section class="grade-2">
+            <form id="criar" class="cartao estat" autocomplete="off">
+              <div class="titulo-sec">Nova diária</div>
+              <div class="campo"><input id="criar-nome" name="nome" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" required /><button class="vidro vidro--tinta" type="submit">Criar</button></div>
+            </form>
+            <form id="entrar" class="cartao estat" autocomplete="off">
+              <div class="titulo-sec">Recebeu um código?</div>
+              <div class="campo"><input id="entrar-codigo" name="codigo" maxlength="7" placeholder="Código" aria-label="Código da diária" autocapitalize="characters" required /><button class="vidro" type="submit">Entrar</button></div>
+            </form>
+          </section>
+          <p class="erro" id="diarias-erro" role="alert" hidden></p>
+          <section class="cartao estat">
+            <div class="titulo-sec">Suas diárias</div>
+            <ul class="lista" id="lista" aria-label="Suas diárias"></ul>
+          </section>
+        </main>
+
+        <!-- Equipe -->
+        <main class="pagina miolo" id="pg-equipe" hidden>
+          <div class="cabeca"><div><h1 class="ola ola--m"><span class="forte">Equipe</span> <span class="leve" id="equipe-conta"></span></h1><p class="sub" id="equipe-sub"></p></div><button class="vidro" type="button" data-ir="convites" data-ic-antes="qr">Chamar pelo código</button></div>
+          <section class="cartao tabela" id="equipe-tabela"></section>
+        </main>
+
+        <!-- Avisos -->
+        <main class="pagina miolo" id="pg-avisos" hidden>
+          <div class="cabeca"><div><h1 class="ola ola--m"><span class="forte">Avisos</span></h1><p class="sub" id="avisos-sub"></p></div><label class="campo" id="avisos-para-casa" hidden><select class="seletor" id="avisos-para" aria-label="Para quem"></select></label></div>
+          <section class="avisos-grade" id="avisos-grade"></section>
+          <section class="cartao estat">
+            <div class="titulo-sec">Nesta sessão<button class="vidro vidro--p" id="cue-btn" type="button">Tela de cue</button></div>
+            <ul class="historico" id="avisos-lista"></ul>
+          </section>
+        </main>
+
+        <!-- Setores e responsáveis (o dono) -->
+        <main class="pagina miolo" id="pg-setores" hidden>
+          <div class="cabeca">
+            <div><h1 class="ola ola--m" id="setores-titulo"></h1><p class="sub" id="setores-sub"></p></div>
+            <button class="vidro" id="novo-setor" type="button" hidden data-ic-antes="mais">Novo setor</button>
+            <div class="segmento" role="tablist" aria-label="Setores ou poderes"><button type="button" role="tab" id="aba-setores" aria-selected="true">Setores</button><button type="button" role="tab" id="aba-poderes" aria-selected="false">Poderes</button></div>
+          </div>
+          <div class="duas" id="vista-setores">
+            <section class="cartao tabela" id="setores-tabela"></section>
+            <section class="cartao papeis" id="papeis"></section>
+          </div>
+          <div class="duas" id="vista-poderes" hidden>
+            <section class="cartao tabela" id="poderes-tabela"></section>
+            <div class="lista">
+              <section class="cartao regras" id="regras"></section>
+              <section class="cartao estat"><div class="titulo-sec">Histórico<small>a voz nunca</small></div><ul class="historico" id="historico"></ul></section>
+            </div>
+          </div>
+        </main>
+
+        <!-- Convites e QR -->
+        <main class="pagina miolo" id="pg-convites" hidden>
+          <div><h1 class="ola ola--m"><span class="leve">Chame a</span> <span class="forte">equipe.</span></h1><p class="sub">Quem abre o link entra com a conta da Absolute ZRO e cai na diária.</p></div>
+          <section class="cartao convite">
+            <div id="qr" class="qr" aria-hidden="true"></div>
+            <div class="convite-texto">
+              <small class="base-rotulo">Código</small>
+              <span class="convite-codigo" id="qr-codigo"></span>
+              <div class="heroi-acoes"><button class="vidro vidro--tinta" id="qr-copiar" type="button" data-ic-antes="link">Copiar link</button></div>
+            </div>
+          </section>
+        </main>
+
+        <!-- Ajustes -->
+        <main class="pagina miolo" id="pg-ajustes" hidden>
+          <div><h1 class="ola ola--m"><span class="forte">Ajustes</span></h1></div>
+          <section class="cartao ajustes">
+            <div class="ajuste"><span class="av av--g" id="aj-av"></span><div><b id="aj-nome"></b><small>O nome vem da sua conta Absolute ZRO.</small></div><a class="vidro vidro--p" id="aj-sair" href="#">Sair</a></div>
+            <div class="ajuste"><span class="ico ico--p" data-canal="geral" data-ic="lua"></span><div><b>Tema escuro</b><small>O claro é o padrão.</small></div><button class="alavanca" id="aj-tema" type="button" role="switch" aria-checked="false" aria-label="Tema escuro"></button></div>
+            <div class="ajuste ajuste--escolha"><span class="ico ico--p" data-canal="geral" data-ic="falar"></span><div><b>Microfone</b><small id="aj-mic-sub">A lapela ou o fone, se estiverem ligados.</small></div>
+              <label class="campo campo--aj"><select id="aj-mic" aria-label="Microfone"><option value="">O do aparelho</option></select></label>
+            </div>
+            <div class="ajuste ajuste--escolha"><span class="ico ico--p" data-canal="geral" data-ic="fone"></span><div><b>Som</b><small id="aj-som-sub">Onde as vozes e os avisos tocam.</small></div>
+              <label class="campo campo--aj" id="aj-som-casa" hidden><select id="aj-som" aria-label="Saída do som"><option value="">O do aparelho</option></select></label>
+            </div>
+            <div class="ajuste ajuste--escolha"><span class="ico ico--p" data-canal="geral" data-ic="mao"></span><div><b>Abrir o microfone</b><small id="aj-fala-sub">Segure o botão para falar.</small></div>
+              <div class="segmento" id="aj-fala" role="group" aria-label="Abrir o microfone"><button type="button" data-fala="botao" aria-selected="true">Botão</button><button type="button" data-fala="voz" aria-selected="false">Pela voz</button></div>
+            </div>
+            <div class="ajuste ajuste--escolha" id="aj-voz" hidden><span class="ico ico--p" data-canal="geral" data-ic="ar"></span><div><b>Sensibilidade</b><small id="aj-voz-sub">Ligue o rádio para ver o nível.</small><div class="voz-medidor" aria-hidden="true"><i id="aj-voz-nivel"></i><b id="aj-voz-limiar"></b></div></div>
+              <div class="segmento" id="aj-voz-sens" role="group" aria-label="Sensibilidade"><button type="button" data-sens="baixa" aria-selected="false">Baixa</button><button type="button" data-sens="media" aria-selected="true">Média</button><button type="button" data-sens="alta" aria-selected="false">Alta</button></div>
+            </div>
+            <div class="ajuste"><span class="ico ico--p" data-canal="geral" data-ic="fone"></span><div><b>Use fone</b><small>No iPhone, deixe o RADION aberto e a tela ligada.</small></div></div>
+          </section>
+        </main>
+      </div>
+
+      <!-- celular: para quem fala, logo acima das abas; falando, ela acende (a tela não muda: o set continua à vista) -->
+      <div class="fala-cel" id="fala-cel" hidden aria-live="polite">
+        <span class="base-rotulo" id="fala-cel-rotulo">Falar para</span>
+        <strong id="fala-cel-nome" data-canal="geral">Geral</strong>
+        <small id="fala-cel-sub">Segure para falar</small>
+        <button class="todos" id="todos-cel" type="button" hidden aria-pressed="false">Todos</button>
+      </div>
+
+      <!-- celular: abas com o TALK no meio -->
+      <nav class="abas" id="abas" aria-label="Abas">
+        <button class="aba" type="button" data-ir="noar" data-ic="ar">No ar</button>
+        <button class="aba" type="button" data-ir="diarias" data-ic="cal">Diárias</button>
+        <button class="talk" id="ptt-aba" type="button" aria-label="Falar: toque abre, segure para falar" data-estado="mudo" data-canal="geral">
+          <span class="talk-icone" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg></span>
         </button>
+        <button class="aba" type="button" data-ir="equipe" data-ic="gente">Equipe</button>
+        <button class="aba" type="button" data-ir="avisos" data-ic="sino">Avisos</button>
+      </nav>
+    </div>
 
-        <div class="avisos" id="avisos" hidden>
-          <button type="button" data-aviso="silencio">Silêncio</button>
-          <button type="button" data-aviso="acao">Ação</button>
-          <button type="button" data-aviso="corta">Corta</button>
-          <button type="button" data-aviso="intervalo">Intervalo</button>
+    <!-- entrar no rádio: o toque libera o microfone, o som e a tela ligada -->
+    <div class="ligar" id="ligar" hidden>
+      <div class="ligar-caixa">
+        <img class="simbolo simbolo--grafite" src="%BASE%/app/marca/radion-simbolo.svg" alt="" /><img class="simbolo simbolo--branco" src="%BASE%/app/marca/radion-simbolo-branco.svg" alt="" />
+        <h2 id="ligar-nome"></h2>
+        <p>Use fone. Deixe o app aberto e a tela ligada.</p>
+        <button class="vidro vidro--tinta vidro--g" id="ligar-btn" type="button">Entrar no rádio</button>
+      </div>
+    </div>
+
+    <!-- qual é o seu setor -->
+    <dialog id="setor-folha" class="folha" aria-labelledby="setor-titulo">
+      <h2 id="setor-titulo"><span>Seu</span> <b>setor</b></h2>
+      <div class="setores-escolha" id="setores" role="radiogroup" aria-label="Seu setor"></div>
+    </dialog>
+
+    <!-- celular: o resto do menu -->
+    <dialog id="mais-folha" class="folha folha--mais" aria-labelledby="mais-titulo">
+      <div class="mais-cabeca"><span class="av av--g" id="mais-av"></span><div><b id="mais-nome"></b><small id="mais-sub"></small></div></div>
+      <h2 id="mais-titulo" class="sr">Mais</h2>
+      <nav class="mais-lista" aria-label="Mais">
+        <button class="item" type="button" data-ir="inicio" data-ic="casa"><span class="item-rotulo">Início</span></button>
+        <button class="item" type="button" data-ir="setores" data-ic="setores" data-precisa-diaria="1"><span class="item-rotulo">Setores e responsáveis</span></button>
+        <button class="item" type="button" data-ir="convites" data-ic="qr" data-precisa-diaria="1"><span class="item-rotulo">Convites e QR</span></button>
+        <button class="item" type="button" id="mais-set" data-ic="balao" hidden><span class="item-rotulo">Set</span></button>
+        <button class="item" type="button" id="mais-apps" data-ic="apps"><span class="item-rotulo">Apps Absolute ZRO</span></button>
+        <button class="item" type="button" data-ir="ajustes" data-ic="ajustes"><span class="item-rotulo">Ajustes</span></button>
+        <a class="item" href="/sobre" data-so-app="1" data-ic="info"><span class="item-rotulo">Sobre o RADION</span></a>
+      </nav>
+    </dialog>
+
+    <!-- um setor: criar, renomear, a cor, quem está nele e tirar (o dono) -->
+    <dialog id="setor-editar" class="folha" aria-labelledby="se-titulo">
+      <form id="se-form" method="dialog" autocomplete="off">
+        <h2 id="se-titulo"><span>Novo</span> <b>setor</b></h2>
+        <div class="campo"><input id="se-nome" maxlength="24" placeholder="Nome do setor" aria-label="Nome do setor" required /></div>
+        <div class="cores" id="se-cores" role="radiogroup" aria-label="Cor"></div>
+        <div id="se-gente"></div>
+        <p class="erro" id="se-erro" role="alert" hidden></p>
+        <div class="folha-acoes">
+          <button class="vidro vidro--perigo" id="se-tirar" type="button" hidden>Tirar setor</button>
+          <button class="vidro" id="se-cancelar" type="button">Cancelar</button>
+          <button class="vidro vidro--tinta" id="se-salvar" type="submit">Salvar</button>
         </div>
+      </form>
+    </dialog>
 
-        <details class="pessoas">
-          <summary>Equipe</summary>
-          <ul id="pessoas"></ul>
-        </details>
+    <!-- uma diária da lista: renomear (o dono), copiar o link, excluir (o dono) ou deixar -->
+    <dialog id="diaria-folha" class="folha" aria-labelledby="df-titulo">
+      <form id="df-form" method="dialog" autocomplete="off">
+        <h2 id="df-titulo"><span>Diária</span> <b id="df-nome"></b></h2>
+        <div class="campo" id="df-campo"><input id="df-novo" maxlength="60" placeholder="Nome da diária" aria-label="Nome da diária" /><button class="vidro vidro--tinta" type="submit">Salvar</button></div>
+        <p class="sub" id="df-info"></p>
+        <div class="sair-lista">
+          <button class="sair-op" id="df-copiar" type="button"><span class="ico ico--p" data-canal="geral" data-ic="link"></span><div><b>Copiar o link</b><small id="df-codigo"></small></div></button>
+          <button class="sair-op" id="df-deixar" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="sair"></span><div><b>Deixar a diária</b><small>Sai da equipe. Para voltar, precisa do código.</small></div></button>
+          <button class="sair-op sair-op--perigo" id="df-excluir" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="x"></span><div><b>Excluir a diária</b><small>Some para todo mundo. O código para de valer.</small></div></button>
+        </div>
+        <p class="erro" id="df-erro" role="alert" hidden></p>
+        <div class="folha-acoes"><button class="vidro" id="df-fechar" type="button">Fechar</button></div>
+      </form>
+    </dialog>
 
-        <button class="glass-btn" id="cue-btn" type="button">Tela de cue</button>
-      </section>
-      <p class="erro" id="radio-erro" role="alert" hidden></p>
-    </main>
+    <!-- sair: desligar o rádio, deixar a diária ou (o dono) encerrar -->
+    <dialog id="sair-folha" class="folha" aria-labelledby="sair-titulo">
+      <h2 id="sair-titulo"><span>Sair de</span> <b id="sair-nome"></b></h2>
+      <div class="sair-lista">
+        <button class="sair-op" id="sair-desligar" type="button"><span class="ico ico--p" data-canal="geral" data-ic="micoff"></span><div><b>Sair do rádio</b><small>Desliga o microfone e o som. Você continua na diária.</small></div></button>
+        <button class="sair-op" id="sair-deixar" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="sair"></span><div><b>Deixar a diária</b><small>Sai da equipe. Para voltar, precisa do código.</small></div></button>
+        <button class="sair-op sair-op--perigo" id="sair-encerrar" type="button" hidden><span class="ico ico--p" data-canal="geral" data-ic="x"></span><div><b>Encerrar a diária</b><small>Fecha para todo mundo. O código para de valer.</small></div></button>
+      </div>
+      <div class="folha-acoes"><button class="vidro" id="sair-cancelar" type="button">Cancelar</button></div>
+    </dialog>
+
+    <!-- menu de uma pessoa -->
+    <div class="balao" id="menu-pessoa" hidden role="menu"></div>
+
+    <!-- apps da Absolute ZRO -->
+    <div class="apps" id="apps" hidden>
+      <svg class="balao-ponta" viewBox="0 0 11 22" aria-hidden="true"><path d="M11 0 1.5 9a3 3 0 0 0 0 4L11 22z" fill="currentColor" /></svg>
+      <div class="apps-caixa">
+        <div class="apps-titulo">ABSOLUTE ZRO</div>
+        <div class="apps-grade" id="apps-grade"></div>
+      </div>
+    </div>
 
     <!-- aviso de set: a tela inteira -->
-    <div class="aviso-tela" id="aviso-tela" hidden aria-live="assertive"><span id="aviso-texto"></span></div>
+    <div class="aviso-tela" id="aviso-tela" hidden aria-live="assertive"><small id="aviso-de"></small><b id="aviso-texto"></b></div>
 
     <!-- tela de cue: preta, sem brilho, para o elenco -->
     <div class="cue" id="cue" hidden>
       <span id="cue-texto">Aguardando</span>
-      <button class="icone" id="cue-fechar" type="button" aria-label="Fechar">×</button>
+      <button class="redondo" id="cue-fechar" type="button" aria-label="Fechar" data-ic="x"></button>
     </div>
-
-    <!-- chamar a equipe -->
-    <dialog id="qr-folha" class="folha">
-      <div id="qr" class="qr" aria-hidden="true"></div>
-      <strong id="qr-codigo" class="qr-codigo"></strong>
-      <div class="folha-acoes">
-        <button class="glass-btn" id="qr-copiar" type="button">Copiar link</button>
-        <button class="glass-btn glass-btn--ink" id="qr-fechar" type="button">Pronto</button>
-      </div>
-    </dialog>
   </body>
 </html>

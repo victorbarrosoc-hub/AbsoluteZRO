@@ -10,12 +10,15 @@
 //   internet"), então o Mac e o Windows não mostram o aviso de app não identificado. A garantia é o SHA-256.
 // - Atualizar ou remover com a ferramenta aberta: pede para fechar antes, nunca mata o processo. "Reiniciar e
 //   atualizar" (agenda.cjs) só pede para a ferramenta sair, do jeito educado (como o ⌘Q ou o X da janela).
+// - Download (baixador.cjs, ADR 0043): o espelho em São Paulo primeiro e o GitHub de reserva; pedaços em paralelo
+//   quando o servidor aceita Range.
 // - Atualização em segundo plano (agenda.cjs): `prebaixar` baixa e confere sem avisar a página; `instalar` reaproveita
 //   o arquivo já conferido (confere o SHA-256 de novo antes de usar).
 
 const path = require('node:path')
 const { createHash } = require('node:crypto')
 const { pathToFileURL, fileURLToPath } = require('node:url')
+const { baixarComReserva, comOrigem } = require('./baixador.cjs')
 
 const ID = /^[a-z0-9-]{2,40}$/
 const NOME_ARQUIVO = /^[A-Za-z0-9._-]{1,120}$/
@@ -105,14 +108,61 @@ const BUILD_INFO = [
   ['desktop', 'build-info.json'],
 ]
 
+const CABECALHO_MAX = 64 * 1024 * 1024
+
 /**
- * O build gravado dentro do app instalado (o build-info.json no app.asar; no processo do Electron, o fs lê o .asar
- * como uma pasta). Sem arquivo ou sem build (versão de desenvolvimento): null.
+ * Lê um arquivo de dentro de um .asar SEM o suporte a .asar do Electron (com o `original-fs`): abre, lê o cabeçalho e o
+ * trecho do arquivo e fecha, toda vez. Formato do @electron/asar: UInt32 4 · UInt32 tamanho do cabeçalho · pickle do
+ * cabeçalho (UInt32 tamanho · UInt32 tamanho do texto · JSON); o conteúdo começa em 8 + tamanho do cabeçalho.
+ * Arquivo "unpacked" fica ao lado, em app.asar.unpacked. Devolve o texto ou lança.
+ */
+function lerDoAsar(fs, asar, partes, p = path) {
+  const fd = fs.openSync(asar, 'r')
+  try {
+    const ler = (tamanho, posicao) => {
+      const buf = Buffer.alloc(tamanho)
+      if (fs.readSync(fd, buf, 0, tamanho, posicao) !== tamanho) throw new Error('asar curto')
+      return buf
+    }
+    const topo = ler(8, 0)
+    const tamanhoCabecalho = topo.readUInt32LE(4)
+    if (topo.readUInt32LE(0) !== 4 || tamanhoCabecalho < 8 || tamanhoCabecalho > CABECALHO_MAX) throw new Error('asar inválido')
+    const cab = ler(tamanhoCabecalho, 8)
+    const texto = cab.readUInt32LE(4)
+    if (8 + texto > tamanhoCabecalho) throw new Error('asar inválido')
+    let no = JSON.parse(cab.toString('utf8', 8, 8 + texto))
+    for (const parte of partes) no = no && no.files && Object.prototype.hasOwnProperty.call(no.files, parte) ? no.files[parte] : null
+    if (!no || no.files || !Number.isInteger(no.size) || no.size < 0 || no.size > 1024 * 1024) throw new Error('fora do asar')
+    if (no.unpacked) return fs.readFileSync(p.join(asar + '.unpacked', ...partes), 'utf8')
+    const offset = Number(no.offset)
+    if (!Number.isSafeInteger(offset) || offset < 0) throw new Error('asar inválido')
+    return ler(no.size, 8 + tamanhoCabecalho + offset).toString('utf8')
+  } finally {
+    fs.closeSync(fd)
+  }
+}
+
+/**
+ * O build gravado dentro do app instalado (o build-info.json no app.asar). Sem arquivo ou sem build (versão de
+ * desenvolvimento): null.
+ *
+ * `fs` tem de ser o SEM suporte a .asar (o `original-fs` no Electron). O `fs` comum do Electron guarda cada .asar
+ * aberto num cache por caminho, para sempre: depois que a central troca o pacote (ou o app se atualiza), ele continua
+ * lendo o app.asar antigo (o arquivo apagado segue aberto) e o cartão oferecia "Atualizar" para o build que acabou de
+ * ser instalado, até a central reiniciar (1.4.5; conferido no Electron 44.5.1). Aqui o arquivo é aberto e fechado a cada
+ * leitura. Pasta no lugar do .asar (app em desenvolvimento, testes): lê o arquivo dentro dela.
  */
 function lerBuildInstalado(fs, asar, p = path) {
+  let pasta = false
+  try {
+    pasta = fs.statSync(asar).isDirectory()
+  } catch {
+    return null
+  }
   for (const partes of BUILD_INFO) {
     try {
-      const b = Number(JSON.parse(fs.readFileSync(p.join(asar, ...partes), 'utf8')).build)
+      const texto = pasta ? fs.readFileSync(p.join(asar, ...partes), 'utf8') : lerDoAsar(fs, asar, partes, p)
+      const b = Number(JSON.parse(texto).build)
       if (Number.isInteger(b) && b > 0) return b
     } catch {
       // tenta o próximo
@@ -206,46 +256,39 @@ function estaNoDock(saida, caminho, insensivel = false) {
   return caminhosDoDock(saida).some((c) => f(c) === f(alvo))
 }
 
-/** Baixa para `destino`, conferindo tamanho e SHA-256. Se não bater, apaga e falha. */
-async function baixar({ url, destino, sha256, tamanho, onProgresso, signal, deps }) {
-  // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
-  const r = await (deps.fetchDeDownload || deps.fetch)(url, { redirect: 'follow', signal }).catch((e) => {
-    if (e instanceof ErroCentral) throw e
-    if (e && e.recusado) throw new ErroCentral('download', e.message)
-    throw new ErroCentral('download', signal && signal.aborted ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
-  })
-  if (!r.ok || !r.body) throw new ErroCentral('download', 'Não deu para baixar agora. Tente de novo.')
-  if (r.url && !/^https:\/\//.test(r.url) && !deps.permitirHttp) throw new ErroCentral('download', 'Endereço de download recusado.')
-  const total = Number(r.headers.get('content-length')) || tamanho || 0
+/**
+ * Baixa para `destino`, conferindo tamanho e SHA-256. `urls`: os endereços em ordem (o espelho primeiro, o GitHub de
+ * reserva; ADR 0043); arquivo que não confere num endereço tenta o próximo. Se nenhum bater, apaga e falha.
+ */
+async function baixar({ url, urls, destino, sha256, tamanho, onProgresso, signal, deps }) {
+  const lista = Array.isArray(urls) && urls.length ? urls : [url]
   const parcial = destino + '.parte'
   await deps.fs.promises.mkdir(path.dirname(destino), { recursive: true })
-  const arquivo = await deps.fs.promises.open(parcial, 'w')
-  const hash = createHash('sha256')
-  let recebido = 0
+  let r
   try {
-    const leitor = r.body.getReader()
-    for (;;) {
-      const { done, value } = await leitor.read()
-      if (done) break
-      recebido += value.length
-      // maior que o catálogo diz: não confere de jeito nenhum (e não enche o disco)
-      if (tamanho && recebido > tamanho) {
-        await leitor.cancel().catch(() => {})
-        throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
-      }
-      hash.update(value)
-      await arquivo.write(value)
-      if (onProgresso) onProgresso(recebido, total)
-    }
+    r = await baixarComReserva(lista, parcial, {
+      // no app, `fetchDeDownload` (download.cjs) confere cada redirecionamento; o fetch comum fica para os testes
+      abrir: deps.fetchDeDownload || deps.fetch,
+      // os pedaços do download paralelo: direto ao endereço final, IPv4 primeiro (download.cjs)
+      direto: deps.fetchDireto || null,
+      fs: deps.fs,
+      tamanho,
+      sha256,
+      signal,
+      aoProgresso: onProgresso,
+      permitirHttp: deps.permitirHttp,
+      log: deps.log,
+      ...(deps.download || {}),
+    })
   } catch (e) {
-    // cancelado, rede caiu ou grande demais: o pedaço baixado não fica para trás
-    await arquivo.close().catch(() => {})
+    // cancelado, rede caiu, grande demais ou recusado: o pedaço baixado não fica para trás
     await deps.fs.promises.rm(parcial, { force: true }).catch(() => {})
-    throw e
+    if (e instanceof ErroCentral) throw e
+    if (e && e.conferencia) throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
+    if (e && e.recusado) throw new ErroCentral('download', e.message)
+    throw new ErroCentral('download', (signal && signal.aborted) || (e && e.cancelado) ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
   }
-  await arquivo.close()
-  const obtido = hash.digest('hex')
-  if (obtido !== sha256 || (tamanho && recebido !== tamanho)) {
+  if (!r.confere || (tamanho && r.tamanho !== tamanho)) {
     await deps.fs.promises.rm(parcial, { force: true })
     throw new ErroCentral('conferencia', 'O arquivo baixado não confere com o original. Nada foi instalado.')
   }
@@ -352,7 +395,7 @@ class Central {
         } catch {
           versao = null
         }
-        return { caminho, versao, build: lerBuildInstalado(this.d.fs, path.join(caminho, 'Contents', 'Resources', 'app.asar')) }
+        return { caminho, versao, build: lerBuildInstalado(this.fsApps(), path.join(caminho, 'Contents', 'Resources', 'app.asar')) }
       }
       return null
     }
@@ -370,7 +413,7 @@ class Central {
         if (!e) continue
         const icone = e.DisplayIcon ? e.DisplayIcon.replace(/,\d+$/, '').replace(/^"|"$/g, '') : null
         const exe = e.InstallLocation ? path.win32.join(e.InstallLocation, app.windows.exe) : icone
-        const build = exe ? lerBuildInstalado(this.d.fs, path.win32.join(path.win32.dirname(exe), 'resources', 'app.asar'), path.win32) : null
+        const build = exe ? lerBuildInstalado(this.fsApps(), path.win32.join(path.win32.dirname(exe), 'resources', 'app.asar'), path.win32) : null
         return { caminho: exe, versao: e.DisplayVersion || null, build, desinstalador: caminhoDoComando(e.UninstallString), escopo: raiz }
       }
     }
@@ -613,8 +656,10 @@ class Central {
     await this.d.fs.promises.rm(pasta, { recursive: true, force: true }).catch(() => {})
     if (progresso) this.avisar(id, 'baixando', { recebido: 0, total: arquivo.tamanho })
     let ultimo = 0
+    const url = `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`
     await baixar({
-      url: `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`,
+      // o espelho em São Paulo primeiro (o HUB só manda para lá quando o arquivo está nele); o GitHub de reserva
+      urls: [comOrigem(url, 'espelho'), url],
       destino,
       sha256: arquivo.sha256,
       tamanho: arquivo.tamanho,

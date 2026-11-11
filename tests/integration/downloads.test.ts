@@ -15,10 +15,11 @@ const OFFICIAL = new Set([
   'revela.absolutezro.com',
   'maestro.absolutezro.com',
   'relay.absolutezro.com',
+  'radion.absolutezro.com',
   // instaladores que a própria Absolute ZRO entrega (rota /baixar/app/<id>/<sistema>, com o gate e o plano)
   'absolutezro.com',
 ])
-const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro', 'relay']
+const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro', 'relay', 'radio']
 
 describe('downloads', () => {
   it('cobre o catálogo inteiro, sem repetir', () => {

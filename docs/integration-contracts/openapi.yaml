@@ -1013,7 +1013,7 @@ paths:
         }
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { acao: criar, nome } → 201 { diaria }; { acao: entrar, codigo } → { diaria } ou 404; { acao: funcao, diaria, funcao } → { ok }'
+      summary: 'Rádio do set. { acao: criar, nome } → 201 { diaria }; { acao: entrar, codigo } → { diaria } ou 404; { acao: funcao, diaria, funcao } → { ok } ou 409 (setor travado ou de outra diária); { acao: sair, diaria } (quem não é o dono deixa a diária) e { acao: encerrar, diaria } (o dono fecha para todos) → { ok }'
       responses:
         {
           '200': { description: 'ok' },
@@ -1022,10 +1022,15 @@ paths:
           '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
           '404': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/radio/ice:
+    get:
+      security: [{ session: [] }]
+      summary: 'Rádio do set. Servidores de conexão do aparelho: { ok, iceServers, turn }. STUN sempre; com a chave TURN da Cloudflare no servidor, credenciais temporárias (6 h). Fora do gate, 404'
+      responses: { '200': { description: 'ok' }, '401': { $ref: '#/components/responses/Error' }, '404': { $ref: '#/components/responses/Error' } }
   /api/v1/radio/batida:
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { diaria, peer, sinais: [{ para, tipo: oferta | resposta, dados: { sdp } }], aviso } → { eu, pessoas, sinais, avisos, ultimoAviso }. A voz nunca passa pelo servidor'
+      summary: 'RADION. { diaria, peer, sinais: [{ para, tipo: oferta | resposta, dados: { sdp } }], aviso } → { eu (papel, podeModerar, silenciado), pessoas, membros, silenciados, maos, silencio, ajustes, sinais, avisos, ultimoAviso }. Pessoas por apelido da diária, nunca o sub. A voz nunca passa pelo servidor'
       responses:
         {
           '200': { description: 'ok' },
@@ -1037,7 +1042,7 @@ paths:
   /api/v1/radio/aviso:
     post:
       security: [{ session: [] }]
-      summary: 'Rádio do set. { diaria, tipo: silencio | acao | corta | intervalo } → 201 { aviso: { id, tipo, de } }; só o dono e a Direção'
+      summary: 'RADION. { diaria, tipo: silencio | acao | corta | intervalo, setor? } → 201 { aviso: { id, tipo, de, setor } }; dono e Direção para todos ou um setor, responsável só para o setor dele. Gravando para todos silencia o set (menos Direção e Som); Corta reativa'
       responses:
         {
           '200': { description: 'ok' },
@@ -1045,6 +1050,19 @@ paths:
           '401': { $ref: '#/components/responses/Error' },
           '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
           '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/radio/moderar:
+    post:
+      security: [{ session: [] }]
+      summary: 'RADION. { diaria, acao: silenciar | reativar | silenciar_todos | reativar_todos | mover | responsavel | papel | tirar | mao | baixar_mao, alvo? (apelido), valor?, minutos? (0, 5, 15) } → { ok }; { acao: ajustes, ajustes }, { acao: historico } e os setores da diária { acao: setor_criar | setor_editar | setor_tirar, setor: { id?, nome?, cor? } } para o dono. O dono pode tudo; o responsável, só no setor dele; ninguém silencia o dono nem a Direção'
+      responses:
+        {
+          '200': { description: 'ok' },
+          '400': { description: 'pedido inválido ({ ok: false, erro })' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { description: 'fora da diária ou sem permissão ({ ok: false, erro })' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { description: 'a pessoa não pode ser silenciada nem tirada (dono ou Direção)' },
         }
   /api/v1/set:
     get:
@@ -1406,6 +1424,10 @@ paths:
       summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.
       description: |
         Só o gate de lançamento (canal desktop). A central 1.4+ lê /api/v1/desktop/meus-apps; este fica para a 1.3.
+        Formato sem mudança com o espelho (ADR 0043): o download continua por /baixar/app/<id>/<arquivo>, que manda
+        para o espelho em São Paulo (bucket público `apps` do Supabase) com `?origem=espelho` (central 1.4.4) e nos
+        botões `mac`/`windows`, quando o arquivo está lá; o nome exato sem `origem` (central 1.4.3) e `?origem=github`
+        seguem no GitHub. O SHA-256 do catálogo continua sendo a conferência do arquivo.
       responses: { '200': { description: ok } }
   /api/v1/desktop/meus-apps:
     get:
@@ -1418,7 +1440,8 @@ paths:
         plano: `{ id, nome, plano, planos, mac: { bundle }, windows: { exe, nomeNoSistema } }`, sem arquivos (a central
         mostra "Incluso no plano X · Ver planos" e não atualiza; nada é apagado do computador). Produto fechado para a
         pessoa não aparece. O instalador de app pago em /baixar/app/<id>/<arquivo> também pede a sessão e o direito
-        (401 sem sessão, 403 sem o produto no plano, 404 fechado).
+        (401 sem sessão, 403 sem o produto no plano, 404 fechado). Espelho em São Paulo (ADR 0043): a central 1.4.4
+        pede `?origem=espelho` e, se falhar ou o SHA-256 não bater, o mesmo arquivo sem `origem` (GitHub).
       responses:
         {
           '200': { description: '{ versao: 2, apps: [...], bloqueados: [...] }' },

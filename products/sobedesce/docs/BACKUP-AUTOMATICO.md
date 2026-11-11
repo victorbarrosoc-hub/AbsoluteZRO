@@ -75,8 +75,17 @@ formatar. Sem internet: nada vai para o Drive.
   - **comparativo automático:** depois de copiar, compara tudo de novo; se sobrou algo (falha), tenta mais uma vez;
   - **mesmo nome, outro tamanho no destino:** nunca grava por cima. Exceção: arquivo pequeno (até 32 MB) e mais novo no
     cartão (o índice/XML que a câmera reescreve entre uma leva e outra): o antigo vai para
-    `.sobedesce-anteriores/<data>/` dentro da pasta do cartão e o novo é copiado. O resto vira alerta e o cartão não
-    fica "OK".
+    `.sobedesce-anteriores/<data>/` dentro da pasta do cartão e o novo é copiado. O resto é o **contador zerado** (a
+    câmera voltou a numerar do zero, 09/11/2026): o arquivo novo vai, com a mesma conferência, para a pasta
+    `Cartão NN · contador zerado`, ao lado do cartão. O antigo fica onde estava. Se o mesmo cartão volta, ele já está
+    lá e não é copiado de novo (`procurarTudo`). Só o que não deu para copiar vira alerta, e aí o cartão não fica "OK";
+  - **gravação interrompida** (`src/backup/imprevistos.js`, 09/11/2026): depois da cópia, o app lê só o cabeçalho de
+    cada MP4/MOV/BRAW/INSV (um bloco que passa do fim do arquivo ou a falta do índice `moov`) e de cada JPEG (sem o
+    marcador do fim). O arquivo é copiado igual ao do cartão, mas a tela, o aviso e a notificação dizem "Confira antes
+    de formatar" e listam os arquivos. Nada é alterado;
+  - **proxies e restos do sistema ficam no cartão:** LRV, LRF, THM, `._*`, `.DS_Store`, `Thumbs.db`. Não contam como
+    "ficou de fora", então não seguram o "pode formatar" nem o ejetar. A opção do projeto "Levar os proxies da câmera"
+    (`levarProxies`) leva tudo.
 - **Excluir o projeto** (Editar ou "Excluir" no painel, com um segundo toque): para a descarga de agora, tira o projeto
   da lista e o painel some; espetar o cartão de novo não copia mais nada (sem projeto, não há vigia). Os arquivos nos
   destinos ficam.
@@ -99,15 +108,52 @@ formatar. Sem internet: nada vai para o Drive.
 - **Sem licença do macOS para ler o cartão** (EPERM/EACCES): a mensagem diz onde liberar (Privacidade e Segurança →
   Arquivos e Pastas → SOBEDESCE → Volumes Removíveis).
 
+## Prévia do cartão (09/11/2026)
+
+- "Ver" em cada cartão espetado (Cartões › Backup): as fotos e os vídeos do cartão, do mais novo para o mais antigo,
+  antes de copiar (`POST /api/backup/previa`, até 400; proxies e restos do sistema ficam de fora).
+- A miniatura vem das rotas da montagem, pela chave da mídia:
+  - foto (`/api/montagens/foto`): JPG/PNG direto, HEIC/TIFF convertidos, e o RAW (ARW, NEF, CR2, CR3, RAF, DNG…)
+    pela prévia JPEG que a câmera grava dentro do arquivo (`src/media/raw-jpeg.js`, em cache);
+  - vídeo: um quadro em 1 s (`/api/montagens/quadro`). Tocar abre o vídeo (`/api/montagens/video`), quando o navegador
+    sabe tocar; senão, o quadro.
+- Só lê o cartão.
+
+## Arquivar (09/11/2026)
+
+- "Arquivar…" no topo de Cartões: escolhe uma pasta (o projeto, uma diária) e faz uma cópia menor em
+  `<pasta> · arquivo`, ao lado. **O original nunca é tocado** (`src/arquivar/servico.js`, rotas `/api/arquivar`).
+- Fotos RAW → DNG pelo Adobe DNG Converter (gratuito), quando instalado (no Mac em `/Applications`, no Windows em
+  `Program Files`, ou `SOBEDESCE_DNG`). Níveis: Máxima (`-c`, sem perda), Alta (`-lossy`), Equilibrado (`-lossy -side
+4096`), Econômico (`-lossy -side 2560`). Sem o conversor, o RAW é copiado igual e a tela diz como instalar.
+- Vídeo compactado pelo ffmpeg das prévias: HEVC no Mac (VideoToolbox), x265 ou x264 no resto, com a LUT de câmera →
+  Rec.709 opcional (`src/cor/lut.js`). Econômico vai até 1080p.
+- "Testar 8 s": converte 8 s do maior vídeo (a partir de 1/3) e mostra quanto a pasta de vídeos ficaria; "Ver o teste"
+  abre o arquivo.
+- Um trabalho por vez; o que já está no arquivo não é refeito; cada saída vai por `.sobedesce-parcial` e só entra no
+  nome final sem passar por cima. Arquivo que falha fica de fora (vale o original) e entra na lista de erros.
+
 ## Resumo de cada cartão (para o Synquei)
 
 No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<destino>/<Projeto>/.sobedesce/descargas.jsonl`:
 
 ```json
-{"v":1,"app":"sobedesce","id":"dsc…","quando":"2026-10-24T14:02:11.000Z","data":"2026-10-24","projeto":"Show","secao":"cenas",
- "diaria":{"n":1,"nome":"Diária 01"},"dono":{"id":"don…","nome":"Ana","camera":"FX30","pasta":"Ana - FX30"},
- "cartao":{"n":1,"nome":"SD FX30","volId":"uuid:…","pasta":"Diária 01/Cenas/Ana - FX30/Cartão 01"},
- "resultado":"ok","copiados":5,"bytes":12345,"arquivos":[{"rel":"PRIVATE/M4ROOT/CLIP/C0001.MP4","size":3001}]}
+{
+  "v": 1,
+  "app": "sobedesce",
+  "id": "dsc…",
+  "quando": "2026-10-24T14:02:11.000Z",
+  "data": "2026-10-24",
+  "projeto": "Show",
+  "secao": "cenas",
+  "diaria": { "n": 1, "nome": "Diária 01" },
+  "dono": { "id": "don…", "nome": "Ana", "camera": "FX30", "pasta": "Ana - FX30" },
+  "cartao": { "n": 1, "nome": "SD FX30", "volId": "uuid:…", "pasta": "Diária 01/Cenas/Ana - FX30/Cartão 01" },
+  "resultado": "ok",
+  "copiados": 5,
+  "bytes": 12345,
+  "arquivos": [{ "rel": "PRIVATE/M4ROOT/CLIP/C0001.MP4", "size": 3001 }]
+}
 ```
 
 - Uma linha por descarga e por seção (`secao`: `cenas` ou `fotos`; o cartão separado ganha duas, com o mesmo `id`).
@@ -120,23 +166,23 @@ No fim de cada cartão (menos cancelado), cada destino ganha uma linha em `<dest
 
 ## Rotas locais (`src/server/backup.js`)
 
-| Rota | O quê |
-| --- | --- |
-| `GET /api/backup` | o estado (também em `/api/state` → `backup` e no SSE `backup`) |
-| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar?, midia?, synquei? }` | cria e abre o projeto (`ligar` padrão: sim; `midia`: `tudo`, `videos` ou `fotos`) |
-| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar?, midia?, synquei? }` | edita |
-| `POST /api/backup/abrir` / `apagar` `{ id }` | troca de projeto / tira da lista (os arquivos ficam) |
-| `POST /api/backup/ligar` `{ ligado }` | liga/desliga o vigia |
-| `POST /api/backup/diaria` `{}` ou `{ n }` | nova diária / volta para uma diária |
-| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar, secao?, escolha? }` | o toque "de quem é" (`secao`: `separar`, `cenas` ou `fotos`) |
-| `POST /api/backup/conteudo` `{ caminho }` | o que tem no cartão: por tipo e as pastas com vídeo ou foto |
-| `POST /api/backup/escolher` `{ caminho, escolha: { tipos[], pastas[]? } }` | "Escolher o que passar" (só desta vez) |
-| `POST /api/backup/historico/limpar` | limpa a lista do histórico |
-| `POST /api/backup/repetir` / `ejetar` `{ caminho }` | copiar de novo / ejetar |
-| `POST /api/backup/usar` `{ caminho }` | "Usar como cartão" / "Copiar agora" |
-| `POST /api/backup/dono` `{ id, nome?, camera?, pasta?, secao? }` | edita o dono (a pasta vale para os próximos cartões) |
-| `POST /api/backup/cancelar` | para a descarga de agora |
-| `POST /api/backup/ignorados/limpar` | volta a perguntar pelos discos ignorados |
+| Rota                                                                                                   | O quê                                                                             |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `GET /api/backup`                                                                                      | o estado (também em `/api/state` → `backup` e no SSE `backup`)                    |
+| `POST /api/backup/projetos` `{ nome, destinos[], ejetar, ligar?, midia?, synquei? }`                   | cria e abre o projeto (`ligar` padrão: sim; `midia`: `tudo`, `videos` ou `fotos`) |
+| `POST /api/backup/projeto` `{ id, nome?, destinos?, ejetar?, midia?, synquei? }`                       | edita                                                                             |
+| `POST /api/backup/abrir` / `apagar` `{ id }`                                                           | troca de projeto / tira da lista (os arquivos ficam)                              |
+| `POST /api/backup/ligar` `{ ligado }`                                                                  | liga/desliga o vigia                                                              |
+| `POST /api/backup/diaria` `{}` ou `{ n }`                                                              | nova diária / volta para uma diária                                               |
+| `POST /api/backup/responder` `{ caminho, donoId \| nome+camera(+pasta) \| ignorar, secao?, escolha? }` | o toque "de quem é" (`secao`: `separar`, `cenas` ou `fotos`)                      |
+| `POST /api/backup/conteudo` `{ caminho }`                                                              | o que tem no cartão: por tipo e as pastas com vídeo ou foto                       |
+| `POST /api/backup/escolher` `{ caminho, escolha: { tipos[], pastas[]? } }`                             | "Escolher o que passar" (só desta vez)                                            |
+| `POST /api/backup/historico/limpar`                                                                    | limpa a lista do histórico                                                        |
+| `POST /api/backup/repetir` / `ejetar` `{ caminho }`                                                    | copiar de novo / ejetar                                                           |
+| `POST /api/backup/usar` `{ caminho }`                                                                  | "Usar como cartão" / "Copiar agora"                                               |
+| `POST /api/backup/dono` `{ id, nome?, camera?, pasta?, secao? }`                                       | edita o dono (a pasta vale para os próximos cartões)                              |
+| `POST /api/backup/cancelar`                                                                            | para a descarga de agora                                                          |
+| `POST /api/backup/ignorados/limpar`                                                                    | volta a perguntar pelos discos ignorados                                          |
 
 ## Testar
 
@@ -154,6 +200,15 @@ o `vol` no Windows em português e o ejetar.
   livre ou menos de 2 cartões: fica em laranja. O espaço é lido a cada varredura (3 s).
 - **Já passou:** o total do projeto (GB, cartões e arquivos, somando todas as diárias) e o da diária atual. O total do
   projeto fica guardado no `backup-automatico.json` (projetos antigos somam pelo histórico).
+
+## Frames do cartão
+
+Com o cartão OK, **Frames do cartão** abre Estúdio › Frames na pasta do vídeo daquele cartão no primeiro destino
+(`pastaVideo` na descarga): um frame por clipe, com a LUT e o ajuste que o dono usou da última vez (docs/FRAMES.md,
+"Pasta ou cartão"). Os frames ficam em Downloads › Frames; o cartão e a cópia não mudam.
+
+Com **Frames com cor ao terminar o cartão** ligado no projeto (`precolor`), isso acontece sozinho a cada cartão OK, com a
+cor que o dono usou por último; o botão vira "Ver os frames do cartão".
 
 ## Preparar no Synquei
 

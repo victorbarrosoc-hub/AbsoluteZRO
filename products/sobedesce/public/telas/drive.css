@@ -322,6 +322,179 @@
   }
 }
 
+/* ───── menu igual ao do Google Drive (09/11/2026): motivo do que está cinza, ações rápidas, estrela e o selo ───── */
+.ctx-menu .menu-item-text {
+  display: grid;
+  gap: 1px;
+}
+.menu-item-motivo {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: normal;
+}
+/* Ações rápidas da linha: aparecem ao passar o mouse, na seleção ou com o foco (o lugar do antigo "Copiar link"). */
+.drow-acts {
+  display: none;
+  flex: none;
+  gap: 2px;
+  margin-left: auto;
+}
+.drow-acts .drow-act {
+  display: inline-grid;
+  margin-left: 0;
+}
+.drow:hover .drow-acts,
+.drow.is-selected .drow-acts,
+.drow:focus-within .drow-acts {
+  display: inline-flex;
+}
+.drow-act.is-on,
+.drow-estrela,
+.gestrela {
+  color: var(--warn);
+}
+.drow-estrela {
+  display: inline-grid;
+  flex: none;
+}
+.gestrela {
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+.tag-publico,
+.gbadge-publico {
+  gap: 3px;
+  color: var(--down-text);
+  background: color-mix(in srgb, var(--down) 12%, var(--surface));
+}
+.gbadge-publico {
+  top: 7px;
+  bottom: auto;
+}
+
+/* ───── Copiar link, Compartilhar e Detalhes (components/compartilhar.js) ───── */
+.lk-opcoes {
+  display: grid;
+  gap: 8px;
+}
+.lk-opcao {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+.lk-opcao:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+.lk-opcao:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.lk-opcao.is-on {
+  border-color: color-mix(in srgb, var(--down) 55%, transparent);
+  background: color-mix(in srgb, var(--down) 7%, var(--surface));
+  opacity: 1;
+}
+.lk-opcao-ic {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--fill-2);
+  color: var(--text-2);
+}
+.lk-opcao.is-publico .lk-opcao-ic {
+  background: color-mix(in srgb, var(--down) 14%, var(--surface));
+  color: var(--down-text);
+}
+.lk-opcao-txt {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.lk-opcao-txt b {
+  font-weight: 600;
+}
+.lk-opcao-ok {
+  color: var(--down-text);
+}
+.lk-lembrar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.lk-rotulo {
+  margin: 0 0 8px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.lk-nota {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.lk-erro {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--err) 9%, var(--surface));
+  color: var(--err-text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.lk-erro .icon {
+  flex: none;
+  margin-top: 1px;
+}
+.lk-padrao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+.lk-padrao .lk-rotulo {
+  margin: 0;
+}
+.lk-dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+.lk-dl dt {
+  color: var(--text-2);
+}
+.lk-dl dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Drive híbrido (lib/modo-drive.js, components/modo-drive.js): a faixa "Arquivos escolhidos" da tela Drive e do
    seletor de pasta, o "Precisa de acesso total" no lugar do tamanho e a linha do modo em Ajustes. Calma, sem cor de
    alerta: não é erro, é o limite do modo. */

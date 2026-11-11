@@ -118,6 +118,67 @@ export const MODELOS = [
 
 export const modeloPorId = (id) => MODELOS.find((m) => m.id === id) || MODELOS[0]
 
+// ── faixas: frames empilhados com o formato do frame (o "stills" de filme, para o pré-color virar story)
+
+/** O formato de cada faixa: a proporção do frame (largura ÷ altura) ou tela cheia (as faixas dividem a altura). */
+export const ASPECTOS_FAIXA = [
+  { id: '16:9', nome: '16:9', v: 16 / 9 },
+  { id: '1.85', nome: '1,85', v: 1.85 },
+  { id: '2.39', nome: '2,39', v: 2.39 },
+  { id: '4:3', nome: '4:3', v: 4 / 3 },
+  { id: 'cheio', nome: 'Tela cheia', v: null },
+]
+export const FAIXAS_N = [2, 3, 4, 5, 6]
+export const FAIXAS_PADRAO = Object.freeze({ n: 3, aspecto: '16:9', seguro: true, antesDepois: false })
+/** Antes e depois: as faixas vão em pares (o arquivo em cima, a cor embaixo), com o rótulo de cada uma. */
+export const ROTULOS_ANTES_DEPOIS = Object.freeze(['ANTES', 'DEPOIS'])
+/** Zona dos Stories que a interface do Instagram cobre (perfil em cima; responder e figurinhas embaixo), em 1080×1920. */
+export const ZONA_STORIES = Object.freeze({ topo: 250 / 1920, base: 340 / 1920 })
+
+/** O modelo "Faixas": `n` frames um embaixo do outro, no formato `aspecto`, fora da zona dos Stories se `seguro`. */
+export function modeloFaixas(f = FAIXAS_PADRAO) {
+  // na tela, de 2 a 6; o último story de um lote pode sair com menos (1 inclusive)
+  const n = Number.isInteger(f?.n) && f.n >= 1 && f.n <= 6 ? f.n : FAIXAS_PADRAO.n
+  const a = ASPECTOS_FAIXA.find((x) => x.id === f?.aspecto) || ASPECTOS_FAIXA[0]
+  const seguro = f?.seguro !== false
+  const antesDepois = f?.antesDepois === true
+  return {
+    id: 'faixas',
+    nome: `${antesDepois ? 'Antes e depois' : 'Faixas'}${a.v ? ` ${a.nome}` : ''}`,
+    faixas: { n, aspecto: a.id, v: a.v, seguro, antesDepois, rotulos: antesDepois ? ROTULOS_ANTES_DEPOIS : null },
+    // em fração só para contar e para quem não sabe das faixas; as caixas de verdade saem de caixasDe
+    caixas: Array.from({ length: n }, (_, i) => [0, i / n, 1, 1 / n]),
+  }
+}
+
+/** O modelo de uma montagem salva: as faixas com os ajustes dela, ou um dos prontos. */
+export const modeloDe = (d) => (d?.modelo === 'faixas' ? modeloFaixas(d.faixas) : modeloPorId(d?.modelo))
+
+/**
+ * As faixas em px: a largura toda (menos a borda) no formato pedido, centradas na altura livre; se não cabem, ficam
+ * mais estreitas para manter o formato. Num formato vertical (9:16), `seguro` deixa livre a zona dos Stories.
+ */
+function caixasDasFaixas({ n, v, seguro }, { w, h, espaco, borda }) {
+  const e = Math.max(0, espaco)
+  const lado = borda ? e : 0
+  const vertical = h / w > 1.6
+  const topo = seguro && vertical ? Math.max(lado, h * ZONA_STORIES.topo) : lado
+  const base = seguro && vertical ? Math.max(lado, h * ZONA_STORIES.base) : lado
+  const livreW = Math.max(1, w - 2 * lado)
+  const livreH = Math.max(1, h - topo - base)
+  let fw = livreW
+  let fh = v ? fw / v : (livreH - e * (n - 1)) / n
+  if (v && fh * n + e * (n - 1) > livreH) {
+    fh = (livreH - e * (n - 1)) / n
+    fw = fh * v
+  }
+  fh = Math.max(1, fh)
+  const total = fh * n + e * (n - 1)
+  const y0 = topo + (livreH - total) / 2
+  const x = (w - fw) / 2
+  return Array.from({ length: n }, (_, i) => ({ x, y: y0 + i * (fh + e), w: fw, h: fh }))
+}
+
 // ── carrossel contínuo e grade do perfil
 
 /** Formatos de cada slide do carrossel e do quadradinho da grade (os que o Instagram mostra no feed e no perfil). */
@@ -177,6 +238,7 @@ const quase = (a, b) => Math.abs(a - b) < 1e-6
  */
 export function caixasDe(modelo, { w, h, espaco = 0, borda = true }) {
   const m = typeof modelo === 'string' ? modeloPorId(modelo) : modelo
+  if (m.faixas) return caixasDasFaixas(m.faixas, { w, h, espaco, borda })
   const e = Math.max(0, espaco)
   const fora = borda ? e : 0
   return m.caixas.map(([fx, fy, fw, fh]) => {
@@ -236,6 +298,7 @@ export function desenharMontagem(
   { formato, modelo, imagens = [], enquadres = [], espaco = 0, cantos = 0, fundo = '#ffffff', escala = 1, destaque = -1, vazio = '#e5e5ea', buracos = null },
 ) {
   const f = typeof formato === 'string' ? formatoPorId(formato) : formato
+  const m = typeof modelo === 'string' ? modeloPorId(modelo) : modelo
   const W = Math.round(f.w * escala)
   const H = Math.round(f.h * escala)
   if (canvas.width !== W) canvas.width = W
@@ -262,6 +325,28 @@ export function desenharMontagem(
       ctx.fillRect(c.x, c.y, c.w, c.h)
     }
     ctx.restore()
+    // rótulos das faixas (antes e depois): uma pílula escura no canto de cima, à esquerda
+    const rotulo = m?.faixas?.rotulos?.[i % m.faixas.rotulos.length]
+    if (rotulo) {
+      ctx.save()
+      const fs = Math.max(9, Math.round(W * 0.02))
+      ctx.font = `700 ${fs}px -apple-system, "SF Pro Text", Inter, system-ui, sans-serif`
+      const pad = Math.round(fs * 0.55)
+      const tw = ctx.measureText(rotulo).width + (rotulo.length - 1) * fs * 0.12
+      const x = c.x + Math.round(c.w * 0.025)
+      const y = c.y + Math.round(c.w * 0.025)
+      ctx.fillStyle = 'rgba(0,0,0,0.62)'
+      caminhoArredondado(ctx, x, y, tw + pad * 2, fs + pad * 1.3, (fs + pad * 1.3) / 2)
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.textBaseline = 'middle'
+      let px = x + pad
+      for (const ch of rotulo) {
+        ctx.fillText(ch, px, y + (fs + pad * 1.3) / 2)
+        px += ctx.measureText(ch).width + fs * 0.12
+      }
+      ctx.restore()
+    }
     if (i === destaque) {
       ctx.save()
       ctx.lineWidth = Math.max(2, 3 * (W / 1080))

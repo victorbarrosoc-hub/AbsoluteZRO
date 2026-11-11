@@ -19,6 +19,7 @@ import { PedidosProxy } from './engine/pedidos-proxy.js'
 import { PedidosFrames } from './engine/pedidos-frames.js'
 import { PedidosFormato } from './referencias/pedidos-formato.js'
 import { PedidosRelay } from './engine/pedidos-relay.js'
+import { RondaPedidos } from './engine/ronda-pedidos.js'
 import { AcompanharCelular } from './engine/acompanhar.js'
 import { UsoDiario } from './engine/uso.js'
 import { closeHttp, requestJSON } from './net/http.js'
@@ -138,7 +139,7 @@ function banner(url, root) {
  * Sobe tudo: ajustes, contas, MD5, fila e servidor. Usado pelo `npm start`, pelo demo, pelos testes e pelo desktop.
  * @param {{ home?: string, port?: number, open?: boolean, desktop?: boolean, quiet?: boolean,
  *   managerOptions?: object, serverOptions?: object, mobileOptions?: object, cloudOptions?: object, versionOptions?: object,
- *   referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object, pedidosRelayOptions?: object }} [opts]
+ *   referenciasOptions?: object, acompanharOptions?: object, pedidosProxyOptions?: object, pedidosFramesOptions?: object, pedidosFormatoOptions?: object, pedidosRelayOptions?: object, rondaOptions?: object }} [opts]
  *   `managerOptions`/`serverOptions`/`mobileOptions`/`cloudOptions`/`versionOptions` (opcionais) vão para o
  *   TransferManager/startServer/MobileReceiver/CloudAuth/VersionChecker (os testes trocam peças, ex.: mobileOptions { port: 0, host: '127.0.0.1' }).
  *   `segredos`: guarda do sistema para tokens e sessão (src/util/segredos.js); o app de desktop passa a do safeStorage
@@ -146,14 +147,14 @@ function banner(url, root) {
  * @returns {Promise<{ url: string, port: number, manager: TransferManager, auth: AuthManager, settings: Settings,
  *   hasher: Hasher, paths: object, server: object, mobile: MobileReceiver, versao: VersionChecker, shutdown(): Promise<void> }>}
  */
-export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {}, pedidosRelayOptions = {} } = {}) {
+export async function startApp({ home, port, open = true, desktop = false, quiet = false, segredos = null, managerOptions = {}, serverOptions = {}, mobileOptions = {}, cloudOptions = {}, versionOptions = {}, referenciasOptions = {}, acompanharOptions = {}, usoOptions = {}, pedidosProxyOptions = {}, pedidosFramesOptions = {}, pedidosFormatoOptions = {}, pedidosRelayOptions = {}, rondaOptions = {} } = {}) {
   const root = home ? path.resolve(home) : dataDir()
   fs.mkdirSync(root, { recursive: true, mode: 0o700 })
   const paths = dataPaths(root)
   const lockFile = path.join(root, LOCK_NAME)
   const token = await acquireLock(lockFile)
 
-  let settings, auth, hasher, manager, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay
+  let settings, auth, hasher, manager, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay, ronda
   try {
     settings = new Settings(paths.settings)
     await settings.load()
@@ -175,7 +176,9 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     await uso.init()
     uso.start()
     // "Gerar proxy" pedido pelo celular: este computador pega da conta SOBEDESCE e gera (src/engine/pedidos-proxy.js).
-    pedidosProxy = new PedidosProxy({ cloud: auth.cloud, manager, ...pedidosProxyOptions })
+    // Uma pergunta só ao site para os pedidos de todos os tipos, com recuo quando parado (src/engine/ronda-pedidos.js).
+    ronda = rondaOptions.desligada ? null : new RondaPedidos({ cloud: auth.cloud, ...rondaOptions })
+    pedidosProxy = new PedidosProxy({ cloud: auth.cloud, manager, ronda, ...pedidosProxyOptions })
     pedidosProxy.start()
     // Verificação do conversor da prévia leve (ffmpeg do app, do sistema ou avconvert): em segundo plano, vai para o log.
     if (!quiet || desktop) manager.previas?.init?.().catch(() => {})
@@ -187,20 +190,25 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     const wanted = port ?? (Number(process.env.SOBEDESCE_PORT) || DEFAULT_PORT)
     server = await startServer({ port: wanted, settings, auth, manager, hasher, paths, desktop, mobile, versao, referencias, ...serverOptions })
     // Frames pedido pelo celular: o serviço do Frames vem com o servidor (src/server/frames.js; src/engine/pedidos-frames.js).
-    pedidosFrames = new PedidosFrames({ cloud: auth.cloud, frames: () => server?.ctx?.frames ?? null, ...pedidosFramesOptions })
+    pedidosFrames = new PedidosFrames({ cloud: auth.cloud, frames: () => server?.ctx?.frames ?? null, ronda, ...pedidosFramesOptions })
     pedidosFrames.start()
     // "Baixar como…" pedido pelo celular (MP3 320, WAV…): este computador converte e sobe ao lado do original.
-    pedidosFormato = new PedidosFormato({ cloud: auth.cloud, referencias: () => referencias, ...pedidosFormatoOptions })
+    pedidosFormato = new PedidosFormato({ cloud: auth.cloud, referencias: () => referencias, ronda, ...pedidosFormatoOptions })
     pedidosFormato.start()
     // "Gerar versões com o Relay" pedido pelo Maestro: os trabalhos do Relay vêm com o servidor (src/server/relay.js).
-    pedidosRelay = new PedidosRelay({ cloud: auth.cloud, relay: () => server?.ctx?.relay ?? null, ...pedidosRelayOptions })
+    pedidosRelay = new PedidosRelay({ cloud: auth.cloud, relay: () => server?.ctx?.relay ?? null, ronda, ...pedidosRelayOptions })
     pedidosRelay.start()
+    if (ronda) {
+      server.ctx.ronda = ronda // a tela mexeu: volta ao intervalo curto (src/server/app.js)
+      ronda.start()
+    }
     // Falhar aqui (porta ocupada, pasta sem permissão) não impede o app de abrir: o erro aparece em Ajustes → Celular.
     await mobile.init().catch(err => console.warn('[sobedesce] recepção do celular não iniciou:', err?.message))
   } catch (err) {
     versao?.stop()
     await acompanhar?.close()
     await uso?.close()
+    ronda?.close()
     await pedidosProxy?.close()
     await pedidosFrames?.close()
     await pedidosFormato?.close()
@@ -226,6 +234,7 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
       // Última notícia para o celular ("o app foi fechado"), com tempo curto; depois para de mandar.
       await acompanhar.close({ final: true }).catch(() => {})
       await uso.close({ final: true }).catch(() => {})
+      ronda?.close()
       await pedidosProxy.close()
       await pedidosFrames?.close()
       await pedidosFormato?.close()
@@ -245,7 +254,7 @@ export async function startApp({ home, port, open = true, desktop = false, quiet
     })()
     return stopping
   }
-  return { url: server.url, port: server.port, manager, auth, settings, hasher, paths, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay, shutdown }
+  return { url: server.url, port: server.port, manager, auth, settings, hasher, paths, server, mobile, versao, referencias, acompanhar, uso, pedidosProxy, pedidosFrames, pedidosFormato, pedidosRelay, ronda, shutdown }
 }
 
 async function main() {

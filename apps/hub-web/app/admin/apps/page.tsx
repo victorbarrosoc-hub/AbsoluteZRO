@@ -2,11 +2,13 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
+import { listReleaseAccess } from '@zro/billing'
 import { papelNoConsole, podeVer, requirePlatformAdmin } from '@zro/core'
 import { EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { Fold } from '@/components/admin/parts'
 import { registerOAuthClientAction, setOAuthClientStatusAction } from '@/lib/actions/admin'
+import { darAcessoAoRadioAction, tirarAcessoAoRadioAction } from '@/lib/actions/radio-acesso'
 import { fmtDay } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
 
@@ -25,7 +27,16 @@ export default async function Apps() {
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id and a.last_login_at > now() - interval '7 days') as active7
                from zro.oauth_clients c order by c.status, (select count(*) from zro.app_accounts a where a.client_id = c.id) desc, c.name`,
     products: await tx`select id, name from zro.products order by step_order`,
+    // RADION (ADR 0042): no radion.absolutezro.com (login único, cliente radio-web) e, até o domínio ligar, em
+    // absolutezro.com/radio; quem entra é a lista do gate
+    radio:
+      (
+        await tx`select p.name, p.external_url, coalesce(r.state, 'development') as state from zro.products p
+                     left join zro.product_release r on r.product_id = p.id where p.id = 'radio'`
+      )[0] ?? null,
+    radioAcesso: (await listReleaseAccess(tx, { productId: 'radio' })).filter((a) => a.active),
   }))
+  const radioAberto = d.radio && ['released', 'public_beta'].includes(d.radio.state as string)
 
   return (
     <div className="page adm-page">
@@ -34,6 +45,66 @@ export default async function Apps() {
         <p>Os apps que entram com a conta Absolute ZRO.</p>
       </header>
       {!isAdmin && <Notice title="Só leitura">Cadastrar e desativar exige papel admin.</Notice>}
+
+      {d.radio && (
+        <section className="app-section" aria-labelledby="apps-hub">
+          <h2 id="apps-hub" className="app-section__title">
+            Na Absolute ZRO
+          </h2>
+          <ul className="app-cards">
+            <li className="app-card app-card--radio">
+              <div className="app-card__head">
+                <ProductMark productId="radio" name={d.radio.name as string} size={44} />
+                <div className="app-card__who">
+                  <strong>{d.radio.name as string}</strong>
+                  <span className="zro-faint">{((d.radio.external_url as string | null) ?? 'absolutezro.com/radio').replace(/^https:\/\//, '')}</span>
+                </div>
+                <Pill tone={radioAberto ? 'ok' : 'faint'}>{radioAberto ? 'Aberto' : 'Fechado'}</Pill>
+              </div>
+              <div className="app-card__nums">
+                <span>
+                  <strong>{d.radioAcesso.length.toLocaleString('pt-BR')}</strong> com acesso
+                </span>
+                <span className="zro-faint">e a administração</span>
+              </div>
+              {d.radio.external_url ? (
+                <a href={`${d.radio.external_url as string}/entrar`} className="app-card__link">
+                  Abrir o RADION →
+                </a>
+              ) : null}
+              <a href="/radio" className="app-card__link">
+                No HUB (absolutezro.com/radio) →
+              </a>
+
+              {d.radioAcesso.length > 0 && (
+                <ul className="adm-rows radio-acesso" aria-label="Quem entra no rádio">
+                  {d.radioAcesso.map((a) => (
+                    <li key={a.userId}>
+                      <span className="radio-acesso__quem">
+                        <Link href={`/admin/pessoas/${a.userId}`}>{a.userName}</Link>
+                        <span className="zro-faint">{a.userEmail}</span>
+                      </span>
+                      {isAdmin && (
+                        <ActionForm action={tirarAcessoAoRadioAction} submit="Tirar" variant="ghost" className="radio-acesso__tirar" inlineSubmit>
+                          <input type="hidden" name="userId" value={a.userId} />
+                        </ActionForm>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {isAdmin && (
+                <ActionForm action={darAcessoAoRadioAction} submit="Dar acesso" className="radio-acesso__novo" inlineSubmit>
+                  <Field label="E-mail de quem pode entrar" htmlFor="radio-email" hint="A pessoa precisa ter conta Absolute ZRO.">
+                    <input className="zro-input" id="radio-email" name="email" type="email" required autoComplete="off" placeholder="nome@produtora.com" />
+                  </Field>
+                </ActionForm>
+              )}
+            </li>
+          </ul>
+        </section>
+      )}
 
       {d.clients.length ? (
         <ul className="app-cards">

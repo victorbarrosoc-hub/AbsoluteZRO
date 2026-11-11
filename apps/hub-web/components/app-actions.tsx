@@ -28,7 +28,8 @@ export type Situacao = {
 type Atalho = { tipo: 'dock' | 'atalho'; feito: boolean }
 type Progresso = {
   id: string
-  fase: 'baixando' | 'instalando' | 'pronto' | 'erro' | 'removendo' | 'removido' | 'agendado'
+  /** 'reler' (central 1.4.5, id '*'): a janela voltou ao foco e a central releu os apps; os cartões leem de novo. */
+  fase: 'baixando' | 'instalando' | 'pronto' | 'erro' | 'removendo' | 'removido' | 'agendado' | 'reler'
   recebido?: number
   total?: number
   mensagem?: string
@@ -71,6 +72,19 @@ function listar(api: AppsApi, nova = false) {
 function atualizarTodos(api: AppsApi) {
   listar(api, true)
   ouvintes.forEach((f) => f())
+}
+
+/**
+ * Voltou para a janela ou para a aba (`intervalo` RELER_MS), ou a central 1.4.5 avisou 'reler' (cada cartão recebe o
+ * mesmo aviso: uma leitura só): lê de novo para a página toda. Instalou ou atualizou por fora, ou o app se atualizou:
+ * o cartão deixa de oferecer "Atualizar" sem recarregar.
+ */
+const RELER_MS = 3_000
+let relidaEm = 0
+function reler(api: AppsApi, intervalo = RELER_MS) {
+  if (Date.now() - relidaEm < intervalo) return
+  relidaEm = Date.now()
+  atualizarTodos(api)
 }
 
 const mb = (b: number) => (b > 0 ? `${Math.round(b / 1_048_576)} MB` : '')
@@ -133,7 +147,13 @@ export function AppActions({
       })
     ler()
     ouvintes.add(ler)
+    const voltar = () => {
+      if (document.visibilityState === 'visible') reler(a)
+    }
+    window.addEventListener('focus', voltar)
+    document.addEventListener('visibilitychange', voltar)
     const off = a.aoProgresso((ev) => {
+      if (ev.fase === 'reler') return reler(a, 500)
       if (ev.id !== id) return
       setProg(ev)
       if (ev.fase === 'erro') setErro(ev.mensagem ?? 'Algo deu errado.')
@@ -145,6 +165,8 @@ export function AppActions({
     return () => {
       vivo = false
       ouvintes.delete(ler)
+      window.removeEventListener('focus', voltar)
+      document.removeEventListener('visibilitychange', voltar)
       off()
     }
   }, [id])

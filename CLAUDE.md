@@ -22,9 +22,10 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 - Não declarar SSO com os apps antigos: o login único vale para o HUB.
 - Não fingir integração, IA, grading, saldo ou progresso. O HUB não processa edição nem cor.
 - **Apps não lançados não aparecem para usuários** (decisão do titular, 01/11/2026, migração 0049): AEON (`ai-edit`),
-  Revela (`finishing`), NOSSOM (`nossom`), Rift Motion (`rift-motion`) e o rádio do set (`radio`, ADR 0042) não aparecem em lugar nenhum (nome, ícone,
+  Revela (`finishing`), NOSSOM (`nossom`) e Rift Motion (`rift-motion`) não aparecem em lugar nenhum (nome, ícone,
   cartão, menu, link, OG, e-mail, notificação, resposta de API, Set, nem como "em desenvolvimento" ou "em breve"). No ar
-  só: Maestro, Carro do Freela, Synquei, SOBEDESCE, Relay e TPeasy. Quem decide é só o gate `zro.product_release`
+  só: Maestro, Carro do Freela, Synquei, SOBEDESCE, Relay, TPeasy e o RADION (rádio do set, id `radio`, ADR 0042,
+  lançado pelo titular em 07/11/2026, migração 0062). Quem decide é só o gate `zro.product_release`
   (`zro.release_allows` / `zro.release_visible`; `releaseVisibleFor`, `productAccessFor` e `releaseClaimsFor` já
   filtram): nada de lista à mão. Exceção: o papel de plataforma `admin` passa em todo canal (web, desktop, download,
   api, sso) e vê tudo. Presença do Set em app não visível sai como "Absolute ZRO". Os sites dos não lançados mostram só
