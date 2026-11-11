@@ -55,13 +55,10 @@
         <label class="entrada entrada--larga" id="caixa-frame" for="arquivo-frame">
           <span class="entrada-icone" data-icone="filme"></span>
           <strong>Seu frame</strong>
-          <span class="ficha" title="Exporte o still do editor já em Rec.709 (depois do CST)">Rec.709</span>
+          <span class="ficha" title="Still já tratado ou o log da câmera: o Autopilot reconhece">Still ou log</span>
           <span class="acao">Escolher ou soltar</span>
           <input id="arquivo-frame" type="file" accept="image/*" />
         </label>
-        <label class="campo-log entrada-lab" title="Still já tratado ou o log da câmera: o Lab leva o frame até a luz da cena do jeito certo"
-          ><span data-icone="cst"></span><select id="entrada" aria-label="O frame é"></select
-        ></label>
         <div class="exemplo">
           <button id="lab-exemplo" class="vidro" type="button"><span data-icone="imagem"></span> Usar um exemplo</button>
           <label class="vidro" id="abrir-receita" title="Uma receita .revela salva antes"
@@ -88,53 +85,71 @@
         <div class="lab-lado">
 
         <div class="lab-painel">
-          <div class="lab-correcao">
-            <label class="chave" title="Acerta a exposição e o branco do frame antes da base: o look fica igual em clipes diferentes"
-              ><input id="corrigir" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Analisar e corrigir</label
-            >
-            <output id="leitura-correcao" class="leitura-correcao"></output>
-          </div>
-
-          <div class="controle">
-            <label for="intensidade">Intensidade da base</label>
-            <output id="valor-intensidade" for="intensidade">100%</output>
-            <input id="intensidade" type="range" min="0" max="100" value="100" />
-          </div>
-
-          <fieldset class="filme-lab" aria-label="Película">
-            <label class="campo-log" title="O negativo que a câmera vira: curva de cada camada e separação de cor das fichas técnicas"
-              ><span data-icone="looks"></span><select id="negativo" aria-label="Negativo"></select
+          <section class="etapa" aria-labelledby="etapa-camera">
+            <h2 class="etapa-titulo" id="etapa-camera"><span class="etapa-n">1</span> Câmera</h2>
+            <p id="autopilot" class="autopilot" role="status" title="O Autopilot lê o frame: se é log ou já tratado e, com pista, de qual câmera">
+              <span data-icone="brilho"></span><span id="autopilot-frase">Autopilot</span>
+            </p>
+            <label class="campo-log entrada-lab" title="Still já tratado ou o log da câmera: o Lab leva o frame até a luz da cena do jeito certo"
+              ><span data-icone="cst"></span><select id="entrada" aria-label="O frame é"></select
             ></label>
-            <label class="campo-log" title="A cópia de cinema em que o negativo é copiado, com as curvas das fichas técnicas"
-              ><span data-icone="looks"></span><select id="copia" aria-label="Cópia de cinema"></select
-            ></label>
-            <div class="filme-opcoes">
-              <label class="campo-log" title="Luz do projetor: muda o branco da cópia"
-                ><select id="luz-copia" aria-label="Luz da cópia"></select
-              ></label>
-              <label class="campo-log" title="Forçar ou puxar a revelação do negativo"
-                ><select id="revelacao" aria-label="Revelação"></select
-              ></label>
-              <label class="chave" title="Cópia com menos pé e ombro: altas mais altas, sombras mais fundas"
-                ><input id="expandido" type="checkbox" role="switch" /><span class="chave-trilho"></span> Expandido</label
+            <div class="lab-correcao">
+              <label class="chave" title="Acerta a exposição e o branco do frame antes da base: o look fica igual em clipes diferentes"
+                ><input id="corrigir" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Analisar e corrigir</label
               >
+              <output id="leitura-correcao" class="leitura-correcao"></output>
             </div>
-          </fieldset>
+            <div id="ajustes-camera" class="ajustes-lab" aria-label="Exposição e branco"></div>
+          </section>
 
-          <div id="ajustes" class="ajustes-lab" aria-label="Ajustes"></div>
-          <details class="fino-lab">
-            <summary>Ajuste fino</summary>
-            <div id="ajustes-finos" class="ajustes-lab" aria-label="Ajuste fino"></div>
-          </details>
+          <section class="etapa" aria-labelledby="etapa-negativo">
+            <h2 class="etapa-titulo" id="etapa-negativo"><span class="etapa-n">2</span> Negativo <output id="qual-negativo" class="etapa-qual"></output></h2>
+            <div id="latas" class="latas" role="radiogroup" aria-label="Negativo"></div>
+            <select id="negativo" aria-label="Negativo" hidden></select>
+            <div class="etapa-linha" title="Forçar ou puxar a revelação do negativo">
+              <span class="etapa-rotulo">Revelação</span>
+              <div class="lab-grupos" id="revelacoes" role="radiogroup" aria-label="Revelação"></div>
+              <select id="revelacao" aria-label="Revelação" hidden></select>
+            </div>
+          </section>
 
-          <div class="textura-lab">
+          <section class="etapa" aria-labelledby="etapa-copia">
+            <h2 class="etapa-titulo" id="etapa-copia"><span class="etapa-n">3</span> Cópia <output id="qual-copia" class="etapa-qual"></output></h2>
+            <div class="lab-grupos" id="copias" role="radiogroup" aria-label="Cópia de cinema"></div>
+            <select id="copia" aria-label="Cópia de cinema" hidden></select>
+            <div class="etapa-linha" title="Luz do projetor: muda o branco da cópia">
+              <span class="etapa-rotulo">Luz</span>
+              <div class="lab-grupos" id="luzes" role="radiogroup" aria-label="Luz da cópia"></div>
+              <select id="luz-copia" aria-label="Luz da cópia" hidden></select>
+            </div>
+            <label class="chave" title="Cópia com menos pé e ombro: altas mais altas, sombras mais fundas"
+              ><input id="expandido" type="checkbox" role="switch" /><span class="chave-trilho"></span> Expandido</label
+            >
+          </section>
+
+          <section class="etapa" aria-labelledby="etapa-look">
+            <h2 class="etapa-titulo" id="etapa-look"><span class="etapa-n">4</span> Look</h2>
+            <div class="controle">
+              <label for="intensidade">Intensidade da base</label>
+              <output id="valor-intensidade" for="intensidade">100%</output>
+              <input id="intensidade" type="range" min="0" max="100" value="100" />
+            </div>
+            <div id="ajustes" class="ajustes-lab" aria-label="Ajustes"></div>
+            <details class="fino-lab">
+              <summary>Ajuste fino</summary>
+              <div id="ajustes-finos" class="ajustes-lab" aria-label="Ajuste fino"></div>
+            </details>
+          </section>
+
+          <section class="etapa textura-lab" aria-labelledby="etapa-textura">
+            <h2 class="etapa-titulo" id="etapa-textura"><span class="etapa-n">5</span> Textura</h2>
             <div class="lab-grupos" id="texturas" role="radiogroup" aria-label="Textura"></div>
             <div id="ajustes-textura" class="ajustes-lab" aria-label="Textura"></div>
             <details class="fino-lab">
               <summary>Mais textura</summary>
               <div id="ajustes-textura-finos" class="ajustes-lab" aria-label="Mais textura"></div>
             </details>
-          </div>
+          </section>
           <button id="zerar" class="vidro" type="button"><span data-icone="x"></span> Zerar ajustes</button>
         </div>
 
@@ -169,9 +184,38 @@
             <button id="salvar" class="vidro" type="button" title="Entra em Meus looks, na tela de LUT, neste navegador"><span data-icone="brilho"></span> Salvar em Meus looks</button>
             <button id="baixar-receita" class="vidro" type="button" title="Arquivo .revela: reabre aqui com a base e os ajustes"><span data-icone="copiar"></span> Baixar receita</button>
           </div>
+          <button id="abrir-ficha" class="vidro grande" type="button" title="O quadro com o look, a paleta, a técnica e os créditos, em PNG"><span data-icone="imagem"></span> Ficha de apresentação</button>
         </div>
         </div>
       </section>
+
+      <dialog id="ficha" class="folha-ficha" aria-label="Ficha de apresentação">
+        <div class="ficha-ver"><canvas id="ficha-tela" aria-label="Prévia da ficha"></canvas></div>
+        <form class="ficha-campos" method="dialog">
+          <input id="ficha-titulo" class="nome-look" type="text" maxlength="48" placeholder="Título" aria-label="Título" autocomplete="off" />
+          <div class="ficha-grade">
+            <label class="ficha-campo"><span>Direção</span><input id="ficha-direcao" type="text" maxlength="40" autocomplete="off" /></label>
+            <label class="ficha-campo"><span>Fotografia</span><input id="ficha-fotografia" type="text" maxlength="40" autocomplete="off" /></label>
+            <label class="ficha-campo"><span>Cor</span><input id="ficha-cor" type="text" maxlength="40" autocomplete="off" /></label>
+            <label class="ficha-campo"><span>Ano</span><input id="ficha-ano" type="text" maxlength="12" autocomplete="off" inputmode="numeric" /></label>
+            <label class="ficha-campo"><span>Câmera</span><input id="ficha-camera" type="text" maxlength="40" autocomplete="off" /></label>
+          </div>
+          <div class="ficha-opcoes">
+            <div class="segmentado" id="ficha-formatos" role="radiogroup" aria-label="Formato da ficha">
+              <label><input type="radio" name="ficha-formato" value="quadrada" checked /> Quadrada</label>
+              <label><input type="radio" name="ficha-formato" value="panoramica" /> Panorâmica</label>
+            </div>
+            <div class="segmentado" id="ficha-temas" role="radiogroup" aria-label="Cor da ficha">
+              <label><input type="radio" name="ficha-tema" value="claro" checked /> Clara</label>
+              <label><input type="radio" name="ficha-tema" value="escuro" /> Escura</label>
+            </div>
+          </div>
+          <div class="ficha-acoes">
+            <button id="ficha-fechar" class="vidro" type="submit">Fechar</button>
+            <button id="ficha-baixar" class="vidro vidro--tinta" type="button"><span data-icone="baixar"></span> Baixar PNG</button>
+          </div>
+        </form>
+      </dialog>
 
       <footer class="rodape entra"><span data-icone="cadeado"></span> Suas imagens não saem daqui</footer>
     </main>

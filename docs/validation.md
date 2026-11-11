@@ -5622,3 +5622,24 @@ Branch `sobedesce-cartao-imprevistos`.
     segunda vez não refaz nada.
 - Conferido no demo: pasta com 2 RAW, 2 vídeos (94 MB) e 1 nota; "Testar 8 s" com LUT S-Log3 estimou 33,5 MB e o
   arquivo saiu com 33,9 MB (−65%).
+
+## Revela Lab: Autopilot, latas de filme e ficha (11/11/2026)
+
+Branch `claude/revela-laboratorio`. Nada publicado.
+
+- `npm test` em `products/finishing`: 198 testes, 198 passaram (as telas em Chromium).
+- `test/autopilot.test.js` (6):
+  - seis cenas tratadas não são log; a mesma cena no log das 15 câmeras é log;
+  - frame lavado de propósito e frame quase branco continuam still;
+  - câmera pelo nome do arquivo e pelo fabricante do EXIF (JPEG montado no teste, nas duas ordens de bytes);
+  - sem pista, devolve "pede a câmera" em vez de chutar.
+- `test/ficha.test.js` (4): a paleta acha as quatro cores de um quadro em faixas (cor, lugar e peso), é sempre a
+  mesma, e a geometria cabe e não cobre o quadro em seis proporções e nos dois formatos.
+- `test/tela.test.js`, no Chromium:
+  - Lab no celular (390 px, sem rolagem lateral): etapas na ordem, exemplo lido, cópia e luz por fichas, 12 latas,
+    receita de volta com tudo aceso, ficha quadrada e panorâmica, PNG baixado.
+  - Autopilot: log sem pista pede a câmera, a escolha fica lembrada, o nome do arquivo ganha da lembrança e um still
+    tratado volta para Rec.709 mesmo com "slog3" no nome.
+- Conferido à mão em 1440 px e num iPhone 14 emulado: imagem no topo, latas, painel e a ficha nos dois temas.
+- Limite conhecido: sem pista, o Autopilot não diz a câmera; e um still com preto muito levantado, branco baixo e
+  quase sem cor é indistinguível de log.

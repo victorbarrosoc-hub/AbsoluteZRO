@@ -2261,6 +2261,18 @@ do card... não consigo localizar o job que quero achar".
 - ⬜ Conferir com gravação real: iPhone tocando o bip a uns metros da câmera, câmera com relógio errado.
 - ⬜ Vídeo 9:16 em uso real com um número medido (do próprio registro) e ficha de compatibilidade com aparelhos testados.
 
+## Revela Lab: Autopilot, latas de filme e ficha (11/11/2026)
+
+Pedido do titular: estudar a Kograde (kograde.com) e usar como referência para melhorar a Revela. Etapa 1, só a tela
+do Lab (`products/finishing`), branch `claude/revela-laboratorio`. A Revela segue fechada (gate) e nada foi publicado.
+
+- Feito: Autopilot (still ou log pelo frame; a câmera só com pista: nome do arquivo, EXIF ou a última escolhida),
+  painel na ordem do laboratório (Câmera, Negativo, Cópia, Look, Textura), latas de filme no lugar da lista de
+  negativos, fichas para cópia, luz e revelação, a prévia no topo e a ficha de apresentação em PNG (quadro com o look,
+  paleta, técnica e créditos). Detalhes no [README da Revela](../products/finishing/README.md#revela-lab).
+- Falta (próximas etapas, só com ordem do titular): o look como um nó dentro do Resolve (DCTL com os controles do
+  Lab) e uma barra compacta sobre a imagem. Publicar entra no lote, com custo levantado antes.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

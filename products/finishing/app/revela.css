@@ -2950,3 +2950,331 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
   --zro-set-raio: var(--raio-g);
   --zro-set-fonte: var(--fonte);
 }
+
+/* ─────────── Lab em etapas, na ordem do laboratório: câmera → negativo → cópia → look → textura ─────────── */
+
+/* com o frame na tela, a imagem é o assunto: o título de abertura sai */
+.tela-lab.com-frame .abertura {
+  display: none;
+}
+.tela-lab.com-frame .lab-entrada {
+  margin-bottom: 14px;
+}
+/* no computador, trocar o frame e os atalhos ficam numa linha só, acima da imagem */
+@media (min-width: 861px) {
+  .tela-lab.com-frame .lab-entrada {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    max-width: none;
+  }
+}
+.lab-painel {
+  gap: 0;
+}
+.etapa {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--linha);
+}
+.etapa:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.etapa-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.etapa-n {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--mudo);
+  background: rgb(var(--t) / 0.07);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.etapa-qual {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--mudo);
+  font-family: var(--fonte);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.etapa-linha {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.etapa-rotulo {
+  color: var(--mudo);
+  font-size: 13px;
+}
+.lab-painel .lab-grupos {
+  width: 100%;
+}
+.lab-painel .lab-grupo {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.lab-grupo[aria-checked='true'] {
+  color: var(--texto);
+  background: var(--superficie);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+}
+:root[data-tema='escuro'] .lab-grupo[aria-checked='true'],
+:root[data-tema='escuro'] .lab-grupo[aria-selected='true'] {
+  background: rgb(255 255 255 / 0.14);
+}
+.lab-painel > #zerar {
+  margin-top: 4px;
+}
+
+/* Autopilot: o que ele leu do frame; quando parece log e não há pista, pede a câmera */
+.autopilot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--mudo);
+  font-size: 13px;
+}
+.autopilot svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--amarelo);
+}
+.autopilot.pede {
+  color: var(--texto);
+  font-weight: 600;
+}
+.campo-log.pede {
+  box-shadow:
+    inset 0 0 0 1.5px var(--amarelo),
+    0 0 0 4px rgb(255 184 0 / 0.16);
+}
+.lab-painel .entrada-lab {
+  max-width: none;
+}
+
+/* latas de filme: a tampa de metal vista de cima, com o rótulo do negativo */
+.latas {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin: 0 -20px;
+  padding: 4px 20px 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.latas::-webkit-scrollbar {
+  display: none;
+}
+.lata {
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: transform 0.35s var(--mola-viva);
+}
+.lata:hover {
+  transform: translateY(-2px);
+}
+.lata:focus-visible {
+  outline: 2px solid var(--amarelo);
+  outline-offset: 3px;
+}
+.lata-tampa {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 74px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* metal escovado: a luz dá a volta na tampa */
+  background: conic-gradient(from 28deg, #d4d4d9, #fafafb, #b6b6bd, #ededf1, #c2c2c9, #f6f6f8, #adadb5, #e2e2e7, #d4d4d9);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.2),
+    0 6px 14px -7px rgb(0 0 0 / 0.5);
+}
+.lata-tampa::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.16),
+    inset 0 1.5px 0 1px rgb(255 255 255 / 0.75);
+}
+.lata-rotulo {
+  position: relative;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: var(--lata-tinta, #fff);
+  background: var(--lata, #2c2c2e);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.22);
+  text-align: center;
+}
+.lata-rotulo strong {
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.lata-rotulo small {
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+.lata[data-tipo='base'] {
+  --lata: linear-gradient(135deg, var(--roxo), var(--vermelho) 55%, var(--amarelo));
+}
+.lata[data-tipo='digital'] strong {
+  font-size: 11px;
+}
+.lata[data-tipo='kT'] {
+  --lata: #17244d;
+  --lata-tinta: #ffc93c;
+}
+.lata[data-tipo='kD'] {
+  --lata: #f5a800;
+  --lata-tinta: #1d1d1f;
+}
+.lata[data-tipo='fT'] {
+  --lata: #0d4a57;
+}
+.lata[data-tipo='fD'] {
+  --lata: #1c7a4c;
+}
+.lata[aria-checked='true'] .lata-tampa {
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.2),
+    0 0 0 2.5px var(--superficie),
+    0 0 0 5px var(--amarelo),
+    0 8px 16px -7px rgb(0 0 0 / 0.5);
+}
+
+/* ─────────── ficha de apresentação ─────────── */
+
+.folha-ficha {
+  width: min(94vw, 1040px);
+  max-height: 92dvh;
+  padding: 18px;
+  border: 0;
+  border-radius: var(--raio-g);
+  color: var(--texto);
+  background: var(--superficie);
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 40px 80px -24px rgb(0 0 0 / 0.6);
+}
+.folha-ficha[open] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px;
+  align-items: start;
+}
+.folha-ficha::backdrop {
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ficha-ver {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border-radius: var(--raio);
+  background: rgb(var(--t) / 0.05);
+  overflow: hidden;
+}
+.ficha-ver canvas {
+  display: block;
+  max-width: 100%;
+  max-height: calc(92dvh - 36px);
+}
+.ficha-campos,
+.ficha-grade,
+.ficha-opcoes {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.ficha-campo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--mudo);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ficha-grade input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--texto);
+  background: rgb(var(--t) / 0.05);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  font: inherit;
+  font-size: 15px;
+}
+.ficha-opcoes .segmentado {
+  width: 100%;
+}
+.ficha-opcoes .segmentado label {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+.ficha-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ficha-acoes .vidro {
+  flex: 1;
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .folha-ficha[open] {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .ficha-ver canvas {
+    max-height: 46dvh;
+  }
+  .ficha-grade {
+    grid-template-columns: 1fr 1fr;
+  }
+}

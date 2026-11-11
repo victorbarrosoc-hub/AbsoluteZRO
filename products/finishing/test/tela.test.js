@@ -1299,10 +1299,23 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByRole('radio', { name: 'Negativo 500T' }).click()
   assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
   // a cópia de cinema vai na receita
-  await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).selectOption('2383')
-  // negativo das fichas: Kodak e Fuji, e a luz do projetor
-  await pagina.getByRole('combobox', { name: 'Negativo' }).selectOption('5219')
-  await pagina.getByRole('combobox', { name: 'Luz da cópia' }).selectOption('D60')
+  // o painel segue a ordem do laboratório, e o exemplo já chega lido (com o frame na tela, o título de abertura sai)
+  assert.deepEqual(await pagina.locator('.etapa-titulo').evaluateAll((n) => n.map((h) => h.childNodes[1].textContent.trim())), ['Câmera', 'Negativo', 'Cópia', 'Look', 'Textura'])
+  assert.equal(await pagina.locator('#autopilot-frase').textContent(), 'Exemplo da Revela')
+  assert.equal(await pagina.getByRole('heading', { name: 'Crie o seu look.' }).isVisible(), false)
+  assert.deepEqual(await pagina.locator('#ajustes-camera input').evaluateAll((n) => n.map((i) => i.id)), ['aj-luz', 'aj-temperatura', 'aj-tint'])
+  // a cópia de cinema vai na receita: fichas no lugar da lista
+  await pagina.getByRole('radiogroup', { name: 'Cópia de cinema' }).getByRole('radio', { name: '2383' }).click()
+  assert.equal(await pagina.locator('#qual-copia').textContent(), '2383')
+  // negativo das fichas: uma lata para cada um (Kodak e Fuji), e a luz do projetor
+  assert.equal(await pagina.locator('#latas .lata').count(), 12)
+  // a base da Película é uma interpretação, sem negativo de ficha: o que vale é o digital, até a pessoa escolher a lata
+  assert.equal(await pagina.locator('#qual-negativo').textContent(), 'Digital')
+  await pagina.locator('#latas .lata[data-valor="8573"]').click()
+  assert.equal(await pagina.locator('#qual-negativo').textContent(), 'Eterna 500')
+  await pagina.getByRole('radio', { name: 'Vision3 500T · 5219' }).click()
+  assert.equal(await pagina.locator('#latas [aria-checked=true]').getAttribute('data-valor'), '5219')
+  await pagina.getByRole('radiogroup', { name: 'Luz da cópia' }).getByRole('radio', { name: 'D60' }).click()
   // textura: preset de 35 mm (grão e halation) com a prévia passando pela cena
   await pagina.getByRole('radio', { name: '35 mm' }).click()
   assert.equal(await pagina.locator('#tx-grao').inputValue(), '100')
@@ -1334,6 +1347,9 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(await pagina.locator('#aj-calor').inputValue(), '40')
   assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'negativo-500t')
   assert.equal(await pagina.locator('#copia').inputValue(), '2383')
+  assert.equal(await pagina.locator('#copias [aria-checked=true]').textContent(), '2383')
+  assert.equal(await pagina.locator('#latas [aria-checked=true]').getAttribute('data-valor'), '5219')
+  assert.equal(await pagina.locator('#luzes [aria-checked=true]').textContent(), 'D60')
 
   // pacote profissional (worker): zip com o look em log, a LUT do monitor, CDL e o controle de qualidade aprovado
   assert.equal(await pagina.locator('#entrada option').first().textContent(), 'Still já tratado (Rec.709)')
@@ -1347,10 +1363,70 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_Textura_DWG-DI.dctl'))
   assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
+  // ficha de apresentação: o quadro com o look, a paleta e a técnica, em PNG
+  await pagina.getByRole('button', { name: 'Ficha de apresentação' }).click()
+  await pagina.locator('#ficha[open]').waitFor()
+  await pagina.locator('#ficha-titulo').fill('Noite quente')
+  await pagina.getByLabel('Fotografia').fill('Ana')
+  assert.deepEqual(await pagina.locator('#ficha-tela').evaluate((c) => [c.width, c.height]), [2160, 2160])
+  // a ficha não é um retângulo liso: tem o quadro e a paleta
+  assert.ok((await pagina.locator('#ficha-tela').evaluate((c) => new Set(c.getContext('2d').getImageData(0, 1080, 2160, 1).data).size)) > 20)
+  await pagina.locator('input[name=ficha-formato][value=panoramica]').check({ force: true })
+  assert.deepEqual(await pagina.locator('#ficha-tela').evaluate((c) => [c.width, c.height]), [2560, 1440])
+  const [ficha] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar PNG' }).click()])
+  assert.equal(ficha.suggestedFilename(), 'ficha-noite-quente-panoramica.png')
+  assert.equal(readFileSync(await ficha.path()).readUInt32BE(0), 0x89504e47)
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-ficha')).fotografia), 'Ana')
+  await pagina.getByRole('button', { name: 'Fechar' }).click()
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+
   // salvo em Meus looks: aparece na grade da tela de LUT
   await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
   await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
   assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Revela Lab · Autopilot: reconhece log pelo nome, pede a câmera sem pista, lembra a escolha e volta para still', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1280, height: 800 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  // a mesma cena como still tratado e como a câmera gravaria em S-Log3
+  const { criarCst } = await import('../src/cor/espacos.js')
+  const tratado = cena(4, 320, 180)
+  const paraLog = criarCst({ curva: 'rec709', gamut: 'rec709' }, 'sony-slog3-cine', { tom: 'nenhum', gamut: 'cortar' }).aplicar
+  const log = aplicarEmImagem(tratado, paraLog)
+  const png = (imagem, name) => ({ name, mimeType: 'image/png', buffer: gravarPng(imagem) })
+  const lido = () => pagina.evaluate(() => [document.querySelector('#autopilot-frase').textContent, document.querySelector('#entrada').value, document.querySelector('#autopilot').classList.contains('pede')])
+  const soltar = async (arquivo) => {
+    await pagina.setInputFiles('#arquivo-frame', arquivo)
+    await pagina.locator('#lab:not([hidden])').waitFor()
+    await pagina.waitForFunction((nome) => document.querySelector('#estado').textContent === '' && nome, arquivo.name)
+  }
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.getByRole('heading', { name: 'Crie o seu look.' }).waitFor()
+
+  // log sem pista nenhuma: diz que parece log e pede a câmera, sem chutar
+  await soltar(png(log, 'frame.png'))
+  assert.deepEqual(await lido(), ['Parece log. Qual é a câmera?', 'still', true])
+  // a pessoa escolhe: vale, fica lembrado e o pedido some
+  await pagina.locator('#entrada').selectOption('arri-logc3')
+  assert.deepEqual(await lido(), ['ARRI · LogC3 / Wide Gamut 3 · escolha sua', 'arri-logc3', false])
+  assert.equal(await pagina.evaluate(() => localStorage.getItem('revela-camera')), 'arri-logc3')
+
+  // de volta à página: log com a câmera no nome do arquivo ganha da lembrança
+  await pagina.reload()
+  await soltar(png(log, 'A001C003_SLog3.png'))
+  assert.deepEqual(await lido(), ['Sony · S-Log3 / S-Gamut3.Cine · pelo nome do arquivo', 'sony-slog3-cine', false])
+  // sem pista no nome, a última câmera escolhida
+  await pagina.reload()
+  await soltar(png(log, 'frame.png'))
+  assert.deepEqual(await lido(), ['ARRI · LogC3 / Wide Gamut 3 · a sua última câmera', 'arri-logc3', false])
+  // e um still tratado volta para Rec.709 mesmo com "slog3" no nome
+  await soltar(png(tratado, 'grade_final_slog3.png'))
+  assert.deepEqual(await lido(), ['Frame já tratado (Rec.709)', 'still', false])
   assert.deepEqual(erros, [])
   await pagina.close()
 })

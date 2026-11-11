@@ -136,6 +136,36 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
 - **Folha de contato** para revisão (`node scripts/folha-de-contato.mjs <pasta>`): cada look nos frames de exemplo e
   numa cartela (ColorChecker, rampa de cinza, rampas de cor), pelo caminho inteiro.
 
+### Autopilot, latas de filme, painel em etapas e ficha (11/11/2026)
+
+Referência de experiência: a Kograde (plugins de cor para o Resolve), estudada a pedido do titular. O motor da Revela
+já era do mesmo tipo (negativo, revelação, cópia, densidade, textura); o que mudou foi a tela do Lab.
+
+- **Autopilot** (`src/cor/autopilot.js`): quando o frame chega, lê se ele já está tratado (Rec.709) ou se é log, por
+  três sinais que precisam concordar (preto levantado, branco baixo, pouca cor). A câmera só é afirmada com pista de
+  verdade: o nome do arquivo (`A001_slog3.jpg`), o fabricante no EXIF do JPEG ou a última câmera que a pessoa
+  escolheu (`localStorage` `revela-camera`). Sem pista, diz "Parece log. Qual é a câmera?" e destaca a lista: não
+  chuta (S-Log3, LogC3, F-Log e D-Log põem o preto quase no mesmo código, não dá para separar pelos pixels). A
+  escolha da pessoa e a entrada de uma receita aberta valem enquanto combinarem com o frame.
+- **Painel na ordem do laboratório**: 1 Câmera (Autopilot, a lista de entradas, Analisar e corrigir, Luz,
+  Temperatura e Tint), 2 Negativo, 3 Cópia, 4 Look (intensidade, Contraste, Cor e o ajuste fino), 5 Textura. O
+  cabeçalho de Negativo e Cópia diz o que está valendo (o da base, quando a pessoa não trocou).
+- **Latas de filme**: cada negativo das fichas é uma lata (a tampa de metal vista de cima, em CSS), com o número no
+  rótulo e a cor pela luz (tungstênio azul, dia âmbar ou verde). Desenho próprio, sem arte de fabricante. Cópia, luz
+  do projetor e revelação viraram fichas. As listas (`<select hidden>`) continuam sendo a fonte da verdade.
+- **Mais imagem**: com o frame na tela, o título de abertura sai e a prévia sobe para o topo.
+- **Ficha de apresentação** (`src/imagem/ficha.js`): o quadro com o look (e a textura) refeito em até 1920 px, as
+  cores dominantes marcadas no próprio quadro (k-médias em Oklab, sempre o mesmo resultado), créditos (título,
+  direção, fotografia, cor, ano) e a técnica (cópia, negativo, look, câmera, formato, textura). PNG quadrado
+  (2160 × 2160) ou panorâmico (2560 × 1440), claro ou escuro. Os créditos ficam em `localStorage` `revela-ficha`.
+  Tudo no navegador.
+- Testes: `test/autopilot.test.js` (as 15 câmeras em log, still tratado, frame lavado, nome, EXIF, decisão),
+  `test/ficha.test.js` (paleta e geometria em seis proporções e dois formatos) e, em `test/tela.test.js`, o Lab novo
+  de ponta a ponta e o Autopilot no Chromium.
+
+Próximas etapas pensadas com a mesma referência (nada feito ainda): o look como um nó só dentro do Resolve (DCTL com
+os controles do Lab) e uma barra compacta sobre a imagem.
+
 ## Meus looks
 
 Depois de um clone, **Salvar como meu look** guarda a LUT (33³, 16 bits, `src/cor/meuslooks.js`) com um nome, até 8,

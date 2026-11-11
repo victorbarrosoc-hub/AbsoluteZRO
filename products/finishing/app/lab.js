@@ -10,6 +10,9 @@ import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 import { criarTela, diParaLinear, linearParaDi } from '../src/cor/cena.js'
 import { AJUSTES_TEXTURA, PRESETS_TEXTURA, TEXTURA_NEUTRA, aplicarTextura, texturaAtiva } from '../src/cor/textura.js'
+import { autopilot, lerFabricante } from '../src/cor/autopilot.js'
+import { NEGATIVOS } from '../src/cor/negativos.js'
+import { desenharFicha, montarFicha, paletaDominante } from '../src/imagem/ficha.js'
 
 icones()
 escalonar()
@@ -18,6 +21,9 @@ const raiz = document.querySelector('main')
 const $ = (id) => raiz.querySelector(`#${id}`)
 const LADO_PREVIA = 1280
 const LADO_MINI = 300
+const LADO_FICHA = 1920
+const CHAVE_CAMERA = 'revela-camera'
+const CHAVE_FICHA = 'revela-ficha'
 const CHAVE_MEUS = 'revela-meus-looks'
 const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
@@ -27,6 +33,7 @@ let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', n
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
+let escolhida = false // a pessoa (ou a receita) já disse de onde vem o frame: o Autopilot respeita
 
 const avisar = (t, erro = false) => {
   $('estado').textContent = t
@@ -46,7 +53,7 @@ function desenhar(bm, lado) {
   return ctx.getImageData(0, 0, c.width, c.height)
 }
 
-async function receber(arquivo) {
+async function receber(arquivo, { entrada = null, frase = '' } = {}) {
   if (!arquivo) return
   if (!arquivo.type.startsWith('image/')) return avisar('Escolha uma imagem (um still do seu vídeo).', true)
   avisar('Abrindo o frame…')
@@ -64,10 +71,23 @@ async function receber(arquivo) {
     pixels[j + 1] = previa.data[i + 1] / 255
     pixels[j + 2] = previa.data[i + 2] / 255
   }
-  frame = { previa, mini, pixels }
+  let fabricante = ''
+  try {
+    fabricante = lerFabricante(await arquivo.slice(0, 262144).arrayBuffer())
+  } catch {
+    // sem EXIF, sem pista
+  }
+  frame = { previa, mini, pixels, bm, nome: arquivo.name }
+  if (entrada) {
+    // o exemplo da Revela: a origem é conhecida
+    receita.entrada = entrada
+    $('entrada').value = entrada
+    mostrarAutopilot(frase, false)
+  } else pilotar(arquivo.name, fabricante)
   lerFrame()
   $('lab').hidden = false
   $('lab-entrada').classList.add('compacta')
+  raiz.classList.add('com-frame')
   mostrarCorrecao()
   desenharBases()
   refazer()
@@ -82,8 +102,41 @@ function lerFrame() {
 
 // de onde vem o frame: still já tratado ou o log de uma câmera
 $('entrada').replaceChildren(...ENTRADAS_LAB.map((e) => Object.assign(document.createElement('option'), { value: e.id, textContent: e.nome })))
+const nomeDaEntrada = () => ENTRADAS_LAB.find((e) => e.id === receita.entrada)?.nome ?? ''
+function mostrarAutopilot(texto, pede) {
+  $('autopilot-frase').textContent = texto
+  $('autopilot').classList.toggle('pede', pede)
+  $('entrada').closest('.campo-log').classList.toggle('pede', pede)
+}
+/** O Autopilot lê o frame que chegou: still ou log e, com pista, a câmera. Sem pista, pede (não chuta). */
+function pilotar(nome, fabricante) {
+  let ultima = ''
+  try {
+    ultima = localStorage.getItem(CHAVE_CAMERA) ?? ''
+  } catch {
+    // janela privada: sem lembrança
+  }
+  // a câmera que já está valendo nesta sessão também é lembrança
+  if (!ultima && receita.entrada !== 'still') ultima = receita.entrada
+  const a = autopilot({ pixels: frame.pixels, nome, fabricante, ultima })
+  // a escolha da pessoa vale enquanto combinar com o frame (log com log, still com still)
+  if (escolhida && a.log === (receita.entrada !== 'still')) return mostrarAutopilot(`${nomeDaEntrada()} · escolha sua`, false)
+  if (a.entrada) {
+    receita.entrada = a.entrada
+    $('entrada').value = a.entrada
+  }
+  mostrarAutopilot(a.frase, a.entrada === null)
+}
 $('entrada').addEventListener('change', () => {
   receita.entrada = $('entrada').value
+  escolhida = true
+  if (receita.entrada !== 'still')
+    try {
+      localStorage.setItem(CHAVE_CAMERA, receita.entrada)
+    } catch {
+      // sem lembrança neste navegador
+    }
+  mostrarAutopilot(`${nomeDaEntrada()} · escolha sua`, false)
   if (!frame) return
   lerFrame()
   mostrarCorrecao()
@@ -106,7 +159,7 @@ caixa.addEventListener('drop', (e) => {
 $('lab-exemplo').addEventListener('click', async () => {
   try {
     const r = await fetch('exemplos/material-vestido.jpg')
-    await receber(new File([await r.blob()], 'material-vestido.jpg', { type: 'image/jpeg' }))
+    await receber(new File([await r.blob()], 'material-vestido.jpg', { type: 'image/jpeg' }), { entrada: 'still', frase: 'Exemplo da Revela' })
   } catch {
     avisar('Não deu para abrir o exemplo agora.', true)
   }
@@ -137,11 +190,11 @@ const telaSdr = criarTela('rec709')
 
 // com textura, a prévia faz o caminho do Resolve: frame → luz da cena → textura → look → tela
 let cenaGuardada = null
-function cenaDaPrevia() {
-  if (cenaGuardada?.frame === frame && cenaGuardada.entrada === receita.entrada) return cenaGuardada.img
+function cenaDe(base) {
+  if (cenaGuardada?.base === base && cenaGuardada.entrada === receita.entrada) return cenaGuardada.img
   const paraDi = paraCena(receita.entrada)
   const lut = assar((r, g, b) => paraDi(r, g, b).map(linearParaDi), 33)
-  const d = frame.previa.data
+  const d = base.data
   const img = new Float32Array((d.length / 4) * 3)
   for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
     const o = aplicar(lut, d[i] / 255, d[i + 1] / 255, d[i + 2] / 255)
@@ -149,12 +202,13 @@ function cenaDaPrevia() {
     img[j + 1] = diParaLinear(o[1])
     img[j + 2] = diParaLinear(o[2])
   }
-  cenaGuardada = { frame, entrada: receita.entrada, img }
+  // só a prévia fica guardada: a ficha passa uma vez e o frame maior ocuparia memória à toa
+  if (base === frame.previa) cenaGuardada = { base, entrada: receita.entrada, img }
   return img
 }
-function pintarComTextura(look, tamanho) {
-  const { width: w, height: h } = frame.previa
-  const tex = aplicarTextura(cenaDaPrevia(), w, h, receita.textura, { negativo: look.motor.negativo ?? 'digital' })
+function pintarComTextura(look, tamanho, base = frame.previa) {
+  const { width: w, height: h } = base
+  const tex = aplicarTextura(cenaDe(base), w, h, receita.textura, { negativo: look.motor.negativo ?? 'digital' })
   const lut = assar((r, g, b) => telaSdr.aplicar(look.motor.emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)])), tamanho)
   const out = new ImageData(w, h)
   for (let i = 0, j = 0; j < tex.length; i += 4, j += 3) {
@@ -289,6 +343,8 @@ $('corrigir').addEventListener('change', () => {
 })
 
 const formatar = (v) => (v > 0 ? `+${v}` : String(v))
+// na câmera se acerta a luz e o branco, como no set; contraste e cor já são o look
+const DA_CAMERA = ['luz', 'temperatura', 'tint']
 /** Acende o trilho do neutro até o valor (o neutro é o centro nos ajustes de dois lados). */
 function acender(barra) {
   const min = Number(barra.min)
@@ -331,7 +387,8 @@ function desenharAjustes() {
       linha.append(rotulo, valor, barra)
       return linha
   }
-  $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino).map(linhaDe))
+  $('ajustes-camera').replaceChildren(...AJUSTES.filter((a) => DA_CAMERA.includes(a.id)).map(linhaDe))
+  $('ajustes').replaceChildren(...AJUSTES.filter((a) => !a.fino && !DA_CAMERA.includes(a.id)).map(linhaDe))
   $('ajustes-finos').replaceChildren(...AJUSTES.filter((a) => a.fino).map(linhaDe))
 }
 $('zerar').addEventListener('click', () => {
@@ -404,10 +461,98 @@ const trocarFilme = () => {
   receita.negativo = $('negativo').value
   receita.luzCopia = $('luz-copia').value
   receita.revelacao = $('revelacao').value === '' ? null : Number($('revelacao').value)
+  const uso = peliculaEmUso()
+  $('qual-negativo').textContent = uso.negativo
+  $('qual-copia').textContent = uso.copia
   refazer()
   trocouLook()
 }
 for (const id of ['copia', 'negativo', 'luz-copia', 'revelacao']) $(id).addEventListener('change', trocarFilme)
+
+/** Fichas no lugar de uma lista: cada opção do <select> escondido vira um botão; o select continua sendo a verdade. */
+function fichasDe(select, onde, curto) {
+  const marcar = () => {
+    for (const b of onde.children) b.setAttribute('aria-checked', String(b.dataset.valor === select.value))
+  }
+  onde.replaceChildren(
+    ...[...select.options].map((o) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'lab-grupo'
+      b.setAttribute('role', 'radio')
+      b.dataset.valor = o.value
+      b.textContent = curto(o.value)
+      b.title = o.textContent
+      b.addEventListener('click', () => {
+        select.value = o.value
+        select.dispatchEvent(new Event('change'))
+        marcar()
+      })
+      return b
+    }),
+  )
+  return marcar
+}
+const acenderCopias = fichasDe($('copia'), $('copias'), (v) => (v === '' ? 'Da base' : v === 'nenhuma' ? 'Sem' : v))
+const acenderLuzes = fichasDe($('luz-copia'), $('luzes'), (v) => v || 'Da base')
+const acenderRevelacoes = fichasDe($('revelacao'), $('revelacoes'), (v) => (v === '' ? 'Da base' : Number(v) > 0 ? `+${v}` : v === '0' ? 'Normal' : `−${-Number(v)}`))
+
+// uma lata de filme para cada negativo: a cor do rótulo diz a luz (tungstênio azul, dia âmbar ou verde)
+const curtoDe = (nome) => /(\d+[TD]?)\s*$/.exec(nome)?.[1] ?? nome
+const familiaDe = (nome) => nome.replace(/\s*\d+[TD]?\s*$/, '')
+function desenharLatas() {
+  const lata = (valor, numero, familia, tipo, titulo) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'lata'
+    b.dataset.valor = valor
+    b.dataset.tipo = tipo
+    b.title = titulo
+    b.setAttribute('role', 'radio')
+    b.setAttribute('aria-label', titulo)
+    const tampa = document.createElement('span')
+    tampa.className = 'lata-tampa'
+    const rotulo = document.createElement('span')
+    rotulo.className = 'lata-rotulo'
+    rotulo.append(Object.assign(document.createElement('strong'), { textContent: numero }), Object.assign(document.createElement('small'), { textContent: familia }))
+    tampa.append(rotulo)
+    b.append(tampa)
+    b.addEventListener('click', () => {
+      $('negativo').value = valor
+      $('negativo').dispatchEvent(new Event('change'))
+      acenderLatas()
+    })
+    return b
+  }
+  $('latas').replaceChildren(
+    lata('', 'Base', 'da base', 'base', 'O negativo da base'),
+    lata('digital', 'Digital', 'sem filme', 'digital', 'Digital: a câmera, sem negativo'),
+    ...NEGATIVOS.map((n) => lata(n.id, curtoDe(n.nome), familiaDe(n.nome), `${n.fabricante === 'Kodak' ? 'k' : 'f'}${n.luz}`, `${n.nome} · ${n.numero}. ${n.frase ?? ''}`.trim())),
+  )
+}
+function acenderLatas() {
+  for (const b of $('latas').children) {
+    const acesa = b.dataset.valor === $('negativo').value
+    b.setAttribute('aria-checked', String(acesa))
+    // só a fileira anda (de lado): a página não pula até o painel quando a base muda
+    if (acesa) {
+      const fila = $('latas')
+      const alvo = b.offsetLeft - (fila.clientWidth - b.offsetWidth) / 2
+      if (b.offsetLeft < fila.scrollLeft || b.offsetLeft + b.offsetWidth > fila.scrollLeft + fila.clientWidth) fila.scrollLeft = Math.max(0, alvo)
+    }
+  }
+}
+desenharLatas()
+
+/** O negativo e a cópia que estão valendo (os da base, quando a pessoa não trocou). */
+function peliculaEmUso() {
+  const p = baseDoLab(receita.base)
+  const idNeg = receita.negativo || p?.negativoFicha || 'digital'
+  const idCop = receita.copia || p?.copia || 'nenhuma'
+  const neg = NEGATIVOS.find((n) => n.id === idNeg)
+  const cop = COPIAS_LAB.find((c) => c.id === idCop)
+  return { negativo: neg ? neg.nome : 'Digital', copia: idCop === 'nenhuma' || !cop ? 'Sem cópia' : cop.nome.replace(/^Cópia /, '') }
+}
 mostrarFilme()
 $('expandido').addEventListener('change', () => {
   receita.expandido = $('expandido').checked
@@ -426,6 +571,13 @@ function mostrarFilme() {
   $('luz-copia').value = receita.luzCopia ?? ''
   $('revelacao').value = receita.revelacao == null ? '' : String(receita.revelacao)
   $('expandido').checked = !!receita.expandido
+  acenderLatas()
+  acenderCopias()
+  acenderLuzes()
+  acenderRevelacoes()
+  const uso = peliculaEmUso()
+  $('qual-negativo').textContent = uso.negativo
+  $('qual-copia').textContent = uso.copia
 }
 
 $('intensidade').addEventListener('input', () => {
@@ -543,6 +695,8 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     // a correção da receita era do frame de quem salvou: aqui vale a leitura deste frame
     receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : lida.correcao }
     $('entrada').value = receita.entrada
+    escolhida = true
+    mostrarAutopilot(`${nomeDaEntrada()} · da receita`, false)
     mostrarFilme()
     desenharTextura()
     $('nome-look').value = lida.nome
@@ -558,6 +712,109 @@ $('arquivo-receita').addEventListener('change', async (e) => {
   } catch (erro) {
     avisar(erro.message, true)
   }
+})
+
+// ─────────── ficha de apresentação ───────────
+
+const CAMPOS_FICHA = ['titulo', 'direcao', 'fotografia', 'cor', 'ano', 'camera']
+let quadroFicha = null // { canvas, paleta }: o quadro com o look, no tamanho da ficha
+let marcaFicha = null
+
+/** O quadro inteiro com o look (e a textura), maior que a prévia, e as cores dominantes dele. */
+function revelarQuadro() {
+  const base = desenhar(frame.bm, LADO_FICHA)
+  const look = lookAtual()
+  const canvas = texturaAtiva(receita.textura) ? pintarComTextura(look, 33, base) : pintarCom(base, look.aplicar, 33)
+  const mini = document.createElement('canvas')
+  const escala = Math.min(1, 256 / Math.max(canvas.width, canvas.height))
+  mini.width = Math.max(1, Math.round(canvas.width * escala))
+  mini.height = Math.max(1, Math.round(canvas.height * escala))
+  const ctx = mini.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(canvas, 0, 0, mini.width, mini.height)
+  return { canvas, paleta: paletaDominante(ctx.getImageData(0, 0, mini.width, mini.height).data, mini.width, mini.height, 5) }
+}
+
+function pintarFicha() {
+  if (!quadroFicha) return
+  const valor = (id) => $(`ficha-${id}`).value
+  const uso = peliculaEmUso()
+  const textura = PRESETS_TEXTURA.find((p) => Object.entries({ ...TEXTURA_NEUTRA, ...p.valores }).every(([k, v]) => receita.textura[k] === v))
+  const plano = montarFicha({
+    titulo: valor('titulo'),
+    creditos: { direcao: valor('direcao'), fotografia: valor('fotografia'), cor: valor('cor'), ano: valor('ano') },
+    tecnica: {
+      copia: uso.copia,
+      negativo: uso.negativo,
+      look: baseDoLab(receita.base)?.nome ?? '',
+      camera: valor('camera'),
+      formato: `${frame.bm.width} × ${frame.bm.height}`,
+      textura: !texturaAtiva(receita.textura) ? '' : (textura?.nome ?? 'Sob medida'),
+    },
+    paleta: quadroFicha.paleta,
+    proporcao: quadroFicha.canvas.width / quadroFicha.canvas.height,
+    formato: raiz.querySelector('input[name=ficha-formato]:checked').value,
+    tema: raiz.querySelector('input[name=ficha-tema]:checked').value,
+  })
+  const tela = $('ficha-tela')
+  tela.width = plano.w
+  tela.height = plano.h
+  desenharFicha(tela.getContext('2d'), plano, { imagem: quadroFicha.canvas, marca: marcaFicha })
+}
+
+$('abrir-ficha').addEventListener('click', async () => {
+  if (!frame) return
+  avisar('Revelando o quadro da ficha…')
+  await espera()
+  let guardado = {}
+  try {
+    guardado = JSON.parse(localStorage.getItem(CHAVE_FICHA) ?? '{}') ?? {}
+  } catch {
+    guardado = {}
+  }
+  for (const id of CAMPOS_FICHA) if (typeof guardado[id] === 'string' && !$(`ficha-${id}`).value) $(`ficha-${id}`).value = guardado[id].slice(0, 48)
+  // a marca da câmera já sai do Autopilot; o modelo, a pessoa escreve
+  if (!$('ficha-camera').value && receita.entrada !== 'still') $('ficha-camera').value = nomeDaEntrada().split(' · ')[0]
+  if (!$('ficha-ano').value) $('ficha-ano').value = String(new Date().getFullYear())
+  try {
+    quadroFicha = revelarQuadro()
+    marcaFicha ??= await new Promise((ok) => {
+      const img = new Image()
+      img.onload = () => ok(img)
+      img.onerror = () => ok(null)
+      img.src = 'marca/revela-icone.svg'
+    })
+    await document.fonts?.load("800 40px 'Figtree Variable'").catch(() => {})
+  } catch {
+    return avisar('Não deu para montar a ficha deste frame.', true)
+  }
+  avisar('')
+  pintarFicha()
+  $('ficha').showModal()
+})
+for (const id of CAMPOS_FICHA)
+  $(`ficha-${id}`).addEventListener('input', () => {
+    pintarFicha()
+    try {
+      localStorage.setItem(CHAVE_FICHA, JSON.stringify(Object.fromEntries(CAMPOS_FICHA.map((c) => [c, $(`ficha-${c}`).value]))))
+    } catch {
+      // sem lembrança neste navegador
+    }
+  })
+for (const r of raiz.querySelectorAll('input[name=ficha-formato], input[name=ficha-tema]')) r.addEventListener('change', pintarFicha)
+$('ficha').addEventListener('click', (e) => e.target === $('ficha') && $('ficha').close())
+$('ficha').addEventListener('close', () => (quadroFicha = null))
+$('ficha-baixar').addEventListener('click', () => {
+  $('ficha-tela').toBlob((blob) => {
+    if (!blob) return avisar('Não deu para gerar a imagem da ficha.', true)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ficha-${arquivoBase()}-${raiz.querySelector('input[name=ficha-formato]:checked').value}.png`
+    document.body.append(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }, 'image/png')
 })
 
 /** ?base=negativo-500t (vindo de Revela Looks) escolhe a base; ?exemplo abre o frame de exemplo. */
