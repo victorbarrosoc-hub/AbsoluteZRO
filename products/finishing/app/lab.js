@@ -13,6 +13,7 @@ import { AJUSTES_TEXTURA, PRESETS_TEXTURA, TEXTURA_NEUTRA, aplicarTextura, textu
 import { autopilot, lerFabricante } from '../src/cor/autopilot.js'
 import { NEGATIVOS } from '../src/cor/negativos.js'
 import { desenharFicha, montarFicha, paletaDominante } from '../src/imagem/ficha.js'
+import { escreverDctlLab } from '../src/cor/dctl-lab.js'
 
 icones()
 escalonar()
@@ -659,6 +660,12 @@ $('baixar-pacote').addEventListener('click', () => {
     avisar('Não deu para montar o pacote neste navegador.', true)
   }
   fabrica.postMessage({ receita: { ...receita, nome: nome() } })
+})
+
+// o Lab como nó do Resolve: a mesma conta do look, com os controles dentro do DaVinci (a correção do frame fica de fora)
+$('baixar-no').addEventListener('click', () => {
+  baixarTexto(escreverDctlLab({ ...receita, nome: nome(), correcao: null }, { titulo: `Revela · ${nome()} · Lab` }), `Revela-Lab-${arquivoBase()}.dctl`)
+  avisar('Nó baixado. No Resolve Studio: copie para a pasta de LUTs, reinicie e escolha em ResolveFX Color › DCTL. Linha do tempo em DaVinci Wide Gamut / Intermediate.')
 })
 
 $('baixar-receita').addEventListener('click', () => {

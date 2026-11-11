@@ -136,6 +136,30 @@ export function matrizBranco(temperatura = 0, tint = 0, ganhosLms = null) {
 /** Luz DWG → espaço de cones Bradford (para medir e corrigir o branco de um frame). */
 export const dwgParaCones = (rgb) => mul(mulM(BRADFORD, DWG_XYZ), rgb)
 
+/**
+ * As matrizes e constantes do motor, para quem repete a conta em outra língua (a DCTL do Resolve, src/cor/dctl-lab.js):
+ * os números saem daqui, nunca são digitados de novo.
+ */
+export const CONSTANTES_DO_MOTOR = {
+  DWG_2020,
+  R2020_DWG,
+  DWG_LMS, // Rec.2020 linear → LMS do Oklab
+  LMS_DWG, // LMS do Oklab → Rec.2020 linear
+  OK_M2,
+  OK_M2i,
+  DWG_709,
+  R709_DWG,
+  Y_DWG,
+  L_CINZA,
+  EPS,
+  RAIZ_EPS,
+  INCL,
+  // balanço de branco: branco(v) = XYZ_DWG · BRADFORD⁻¹ · diag(d) · BRADFORD · DWG_XYZ · v
+  BRADFORD_DWG: mulM(BRADFORD, DWG_XYZ),
+  DWG_BRADFORD: mulM(XYZ_DWG, inversa(BRADFORD)),
+  BRADFORD,
+}
+
 // ─────────── perfis de película e looks ───────────
 
 /**

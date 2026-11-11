@@ -71,6 +71,7 @@ export function curvaDeTom(pico = 100) {
   const teto = m0
   return {
     pico: teto,
+    constantes: { g, t1, m2, s2 }, // para a DCTL do Resolve repetir a volta com os mesmos números
     ida(x) {
       if (!(x > 0)) return 0
       const f = m2 * (x / (x + s2)) ** g
@@ -101,6 +102,8 @@ function descomprimirDistancia(d) {
   const y = Math.min(0.999999, (d - LIMIAR) / ESCALA)
   return LIMIAR + (ESCALA * y) / (1 - y ** POTENCIA) ** (1 / POTENCIA)
 }
+/** As constantes da compressão de gamut da tela, para a DCTL do Resolve (src/cor/dctl-lab.js). */
+export const GAMUT_DA_TELA = { LIMIAR, ESCALA, POTENCIA }
 /** Canais que fogem do gamut chegam perto da borda em curva suave (o maior canal fica): nada de canal cortado. */
 export function comprimirGamut(rgb) {
   const ac = Math.max(rgb[0], rgb[1], rgb[2])

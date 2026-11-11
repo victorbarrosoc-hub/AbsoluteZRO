@@ -102,8 +102,9 @@ test('pacote: com textura leva a DCTL e o LEIA-ME põe a textura antes do look',
   const leia = p.arquivos.find((a) => a.nome.endsWith('LEIA-ME.txt')).dados
   assert.match(leia, /correção do frame \(CDL\) {2}→ {2}textura \(DCTL\) {2}→ {2}look \(LMT\)/)
   const sem = montarPacote({ nome: 'Limpo', base: 'revela' }, { qc: false })
-  assert.equal(
-    sem.arquivos.some((a) => a.nome.endsWith('.dctl')),
-    false,
+  // sem textura, a única DCTL do pacote é a do Lab (o look como nó)
+  assert.deepEqual(
+    sem.arquivos.filter((a) => a.nome.endsWith('.dctl')).map((a) => a.nome),
+    ['REVELA_LIMPO/REVELA_LIMPO_Lab_DWG-DI.dctl'],
   )
 })

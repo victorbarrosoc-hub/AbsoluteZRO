@@ -131,6 +131,9 @@ export function branco709(luz) {
   return b.map((v) => v / m)
 }
 
+/** As constantes e contas da cópia, para a DCTL do Resolve (src/cor/dctl-lab.js) repetir com os mesmos números. */
+export const CONSTANTES_DA_COPIA = { DWG_P3, P3_709, SOBRE_O_CINZA, MARGEM, FOG, inversa3, exposicaoPara, gama }
+
 function semNegativo(rgb) {
   const ac = Math.max(rgb[0], rgb[1], rgb[2])
   if (!(ac > 0)) return [0, 0, 0]

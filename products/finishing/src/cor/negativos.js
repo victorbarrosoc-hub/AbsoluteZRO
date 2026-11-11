@@ -69,6 +69,9 @@ export const NEGATIVOS = [
 ]
 export const negativoDe = (id) => NEGATIVOS.find((n) => n.id === id) ?? null
 
+/** As curvas e a matriz do scan, para a DCTL do Resolve (src/cor/dctl-lab.js) repetir com os mesmos números. */
+export const CONSTANTES_DOS_NEGATIVOS = { CURVAS, P3_DWG }
+
 const sp = (x) => (x > 30 ? x : Math.log1p(Math.exp(x)))
 /** A curva analítica de uma camada: stops → densidade. */
 const curvaDe =

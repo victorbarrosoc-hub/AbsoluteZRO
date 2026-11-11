@@ -5643,3 +5643,18 @@ Branch `claude/revela-laboratorio`. Nada publicado.
 - Conferido à mão em 1440 px e num iPhone 14 emulado: imagem no topo, latas, painel e a ficha nos dois temas.
 - Limite conhecido: sem pista, o Autopilot não diz a câmera; e um still com preto muito levantado, branco baixo e
   quase sem cor é indistinguível de log.
+
+### Etapa 2: o Lab como nó do DaVinci
+
+- `npm test` em `products/finishing`: 205 testes, 205 passaram.
+- `test/dctl-lab.test.js` (7), com a DCTL traduzida para JavaScript (`test/dctl-apoio.js`) e comparada ao motor:
+  - os 25 looks: diferença abaixo de 1e-6 em código DaVinci Intermediate;
+  - 80 receitas ao acaso (negativo, cópia, luz, revelação, expandido, intensidade e os 16 ajustes): pior caso abaixo
+    de um código e meio de 10 bits, 99% das cores abaixo de 2e-5;
+  - conta de 32 bits simulada: nenhum estouro, nem com código negativo ou acima de 1; pior caso abaixo de três
+    códigos de 10 bits, 99% abaixo de um terço de código;
+  - forma: 23 controles (o Resolve aceita 64), só contas que o Resolve tem, função definida antes de ser chamada,
+    nenhum número de 64 bits, os controles só dentro de `transform`;
+  - o nó abre com a receita e vai no pacote profissional, com o LEIA-ME.
+- No Chromium: "Nó para o DaVinci" baixa `Revela-Lab-noite-quente.dctl` com os valores da receita.
+- Não provado aqui: compilar e rodar a DCTL dentro do Resolve Studio (não há Resolve neste ambiente).

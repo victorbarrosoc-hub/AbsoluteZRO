@@ -163,8 +163,33 @@ já era do mesmo tipo (negativo, revelação, cópia, densidade, textura); o que
   `test/ficha.test.js` (paleta e geometria em seis proporções e dois formatos) e, em `test/tela.test.js`, o Lab novo
   de ponta a ponta e o Autopilot no Chromium.
 
-Próximas etapas pensadas com a mesma referência (nada feito ainda): o look como um nó só dentro do Resolve (DCTL com
-os controles do Lab) e uma barra compacta sobre a imagem.
+### O Lab como nó do DaVinci (11/11/2026)
+
+`src/cor/dctl-lab.js` escreve o motor do Lab na língua do Resolve (DCTL): um nó só, com Look (os 25), Negativo (do
+look, digital ou os 10 das fichas), Cópia (do look, sem, 2383, 2393, 3513), Luz da cópia, Revelação, Expandido,
+Intensidade e os 16 ajustes do Lab, com os mesmos nomes e limites. Entra e sai DaVinci Wide Gamut / Intermediate (é um
+LMT, como a LUT do pacote): a saída para a tela continua a do projeto. Precisa do Resolve Studio (DCTL não roda na
+versão gratuita).
+
+- **Onde sai**: no Lab, **Nó para o DaVinci** baixa `Revela-Lab-<nome>.dctl` aberto com a receita da tela; o pacote
+  profissional leva `REVELA_<NOME>_Lab_DWG-DI.dctl` e o LEIA-ME explica (usar o nó ou a LUT, não os dois). A correção
+  automática do frame não entra no nó (é de cada plano: vai antes, como a CDL). A textura continua na outra DCTL.
+- **A conta é a do motor**: todo número (matrizes, perfis, curvas das fichas, constantes da tela) é escrito a partir
+  do motor em JavaScript, nada é digitado de novo. Os perfis entram por `if` (só o que foge do neutro) e as tabelas
+  por funções, sem vetores, que é o que todo compilador de placa aceita.
+- **Como é conferido** (`test/dctl-lab.test.js`, com `test/dctl-apoio.js`): o teste lê o texto da DCTL, traduz para
+  JavaScript e compara com `criarLab(...).emDi`, cor por cor: os 25 looks (diferença abaixo de 1e-6 em código DI) e
+  80 receitas ao acaso com tudo mexido. Também simula a conta de 32 bits da placa (o resultado de cada função é
+  arredondado e não pode estourar) e cobra a forma: só contas que o Resolve tem, função definida antes de ser
+  chamada, nenhum número de 64 bits, os controles só dentro de `transform`.
+- **Diferença declarada**: com um negativo das fichas na cópia, o motor guarda a curva numa tabela de 4096 pontos e a
+  deixa monótona; o nó faz a conta direto. Na sombra profunda com revelação forçada e no super-branco as duas se
+  afastam até meio código de 10 bits (não se vê); em 99% das cores ficam abaixo de 2e-5.
+- **O que falta provar**: a DCTL ainda não foi compilada dentro do Resolve (não há Resolve neste ambiente). A forma
+  segue a da DCTL de textura e as regras conhecidas, mas o primeiro teste de verdade é abrir no Resolve Studio do
+  titular (Mac com Metal e, se der, uma máquina com placa NVIDIA).
+
+Próxima etapa pensada com a mesma referência: uma barra compacta sobre a imagem.
 
 ## Meus looks
 

@@ -11,6 +11,7 @@ import { criarTela, deTrabalho, linearParaDi, paraTrabalho } from './cena.js'
 import { criarLab, escreverReceita, paraCena } from './lab.js'
 import { copiaDe } from './copia.js'
 import { escreverDctlTextura } from './dctl.js'
+import { escreverDctlLab } from './dctl-lab.js'
 import { texturaAtiva } from './textura.js'
 import { NEUTRO, criarMotor } from './pelicula.js'
 import { avaliarLook, relatorioEmTexto } from './qc.js'
@@ -202,6 +203,11 @@ export function montarPacote(receita, opcoes = {}) {
       nome: `${prefixo}_Textura_DWG-DI.dctl`,
       dados: escreverDctlTextura(receita.textura, { negativo: look.motor.negativo ?? 'digital', titulo: `Revela · ${receita.nome || 'Meu look'} · textura` }),
     })
+  // o Lab como um nó: o mesmo look com os controles dentro do Resolve, aberto com esta receita (sem a correção do frame)
+  arquivos.push({
+    nome: `${prefixo}_Lab_DWG-DI.dctl`,
+    dados: escreverDctlLab({ ...receita, correcao: null }, { titulo: `Revela · ${receita.nome || 'Meu look'} · Lab` }),
+  })
   arquivos.push({ nome: `${prefixo}.revela`, dados: escreverReceita(receita) })
 
   // 6. controle de qualidade do look (o LMT) e leia-me
@@ -236,6 +242,11 @@ ARQUIVOS
     Para material já em Rec.709 (Premiere, Final Cut, CapCut). Aproximação: o caminho certo é o LMT.
   REVELA_${nome}_correcao_DWG-DI.cdl
     A correção do frame (exposição e branco) em ASC CDL, para aplicar antes do look.
+  REVELA_${nome}_Lab_DWG-DI.dctl
+    O Lab dentro do Resolve: o mesmo look num nó só, com o look, o negativo, a cópia e os ajustes para mexer com a
+    imagem tocando. Abre com esta receita. DaVinci Resolve Studio: copie para a pasta de LUTs, reinicie e escolha em
+    ResolveFX Color → DCTL, num nó no lugar da LUT do look (linha do tempo em DaVinci Wide Gamut / Intermediate). A
+    conta é a mesma da LUT; use um ou outro, não os dois.
   REVELA_${nome}.revela
     A receita, para reabrir e ajustar no Revela Lab.
 

@@ -1339,6 +1339,15 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(r.luzCopia, 'D60')
   assert.equal(r.textura.grao, 1)
 
+  // o Lab como nó do Resolve: a DCTL abre com os valores desta receita
+  const [no] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Nó para o DaVinci' }).click()])
+  assert.equal(no.suggestedFilename(), 'Revela-Lab-noite-quente.dctl')
+  const dctl = readFileSync(await no.path(), 'utf8')
+  assert.match(dctl, /^\/\/ Revela · Noite quente · Lab\n/)
+  assert.match(dctl, /DEFINE_UI_PARAMS\(p_Calor, Calor, DCTLUI_SLIDER_FLOAT, 40\.0000000, 0\.0, 100\.0, 1\.0\)/)
+  assert.match(dctl, /DEFINE_UI_PARAMS\(p_Copia, Cópia, DCTLUI_COMBO_BOX, 2,/)
+  assert.match(dctl, /__DEVICE__ float3 transform\(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B\)/)
+
   // zera, reabre a receita e volta tudo
   await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
   assert.equal(await pagina.locator('#aj-calor').inputValue(), '0')
@@ -1361,6 +1370,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
   assert.ok(zip.includes('O look inclui a cópia 2383'))
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_Textura_DWG-DI.dctl'))
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_Lab_DWG-DI.dctl'))
   assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
   // ficha de apresentação: o quadro com o look, a paleta e a técnica, em PNG
