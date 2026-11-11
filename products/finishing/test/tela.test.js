@@ -1398,6 +1398,70 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.close()
 })
 
+test('Revela Lab · mais imagem: a prévia na tela toda e a barra mexe nos mesmos controles do painel', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1280, height: 800 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  assert.equal(await pagina.locator('#hud').isVisible(), false)
+  await pagina.getByRole('button', { name: 'Mais imagem' }).click()
+  await pagina.locator('#hud').waitFor()
+  // a imagem toma a tela inteira, por cima do topo, do menu e do dock
+  assert.deepEqual(await pagina.locator('.palco').evaluate((p) => Object.values(p.getBoundingClientRect().toJSON()).slice(0, 4)), [0, 0, 1280, 800])
+  for (const [x, y] of [[20, 20], [1260, 20], [640, 400], [20, 780]]) assert.ok(await pagina.evaluate(([px, py]) => !!document.elementFromPoint(px, py).closest('.palco'), [x, y]), `${x},${y}`)
+  assert.equal(await pagina.locator('#divisao').inputValue(), '0')
+  assert.deepEqual(await pagina.locator('#hud output').allTextContents(), ['Revela Look', 'Digital', 'Sem cópia', '0'])
+
+  // negativo e cópia, um passo de cada vez: o painel acompanha
+  const proximo = (qual) => pagina.locator(`.hud-passo[data-passo="${qual}"] [data-ir="1"]`)
+  await proximo('negativo').click()
+  await proximo('negativo').click()
+  await proximo('copia').click()
+  await proximo('copia').click()
+  assert.deepEqual(await pagina.locator('#hud output').allTextContents(), ['Revela Look', 'Vision3 500T', '2383', '0'])
+  assert.deepEqual([await pagina.locator('#negativo').inputValue(), await pagina.locator('#copia').inputValue()], ['5219', '2383'])
+  assert.equal(await pagina.locator('#latas [aria-checked=true]').getAttribute('data-valor'), '5219')
+  assert.equal(await pagina.locator('#qual-copia').textContent(), '2383')
+
+  // um ajuste por vez: a barra mexe no controle do painel, e duplo clique volta ao neutro
+  await pagina.locator('#hud').getByRole('radio', { name: 'Contraste', exact: true }).click()
+  await pagina.locator('#hud-barra').fill('30')
+  assert.equal(await pagina.locator('#aj-contraste').inputValue(), '30')
+  assert.equal(await pagina.locator('#hud-numero').textContent(), '+30')
+  await pagina.locator('#hud-barra').dblclick()
+  assert.deepEqual([await pagina.locator('#aj-contraste').inputValue(), await pagina.locator('#hud-numero').textContent()], ['0', '0'])
+  await pagina.locator('#hud-ferramentas [data-ferramenta="intensidade"]').click()
+  await pagina.locator('#hud-barra').fill('60')
+  assert.deepEqual([await pagina.locator('#intensidade').inputValue(), await pagina.locator('#hud-numero').textContent()], ['60', '60%'])
+
+  // o look anda por todos os grupos: voltar do primeiro cai no último, e a grade do painel troca de grupo
+  await pagina.locator('.hud-passo[data-passo="base"] [data-ir="-1"]').click()
+  assert.equal(await pagina.locator('#hud-base').textContent(), 'Nórdico')
+  assert.equal(await pagina.getByRole('tab', { name: 'Clássicos' }).getAttribute('aria-selected'), 'true')
+  assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'nordico')
+  // a base nova traz a própria película
+  assert.deepEqual([await pagina.locator('#negativo').inputValue(), await pagina.locator('#copia').inputValue()], ['', ''])
+
+  // "Antes" vale enquanto segura
+  const antes = pagina.locator('#hud-comparar')
+  await antes.dispatchEvent('pointerdown')
+  assert.deepEqual([await antes.getAttribute('aria-pressed'), await pagina.locator('#divisao').inputValue()], ['true', '100'])
+  await antes.dispatchEvent('pointerup')
+  assert.deepEqual([await antes.getAttribute('aria-pressed'), await pagina.locator('#divisao').inputValue()], ['false', '0'])
+
+  // Esc volta ao painel, com a divisão de antes
+  await pagina.keyboard.press('Escape')
+  assert.equal(await pagina.locator('#hud').isVisible(), false)
+  assert.equal(await pagina.locator('#divisao').inputValue(), '50')
+  assert.ok((await pagina.locator('.palco').boundingBox()).width < 1000)
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 1280)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('Revela Lab · Autopilot: reconhece log pelo nome, pede a câmera sem pista, lembra a escolha e volta para still', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 800 } })
   const erros = []

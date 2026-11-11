@@ -189,7 +189,16 @@ versão gratuita).
   segue a da DCTL de textura e as regras conhecidas, mas o primeiro teste de verdade é abrir no Resolve Studio do
   titular (Mac com Metal e, se der, uma máquina com placa NVIDIA).
 
-Próxima etapa pensada com a mesma referência: uma barra compacta sobre a imagem.
+### Mais imagem: a prévia na tela toda, com uma barra (11/11/2026)
+
+O botão no canto da prévia põe a imagem na tela inteira (por cima do topo, do menu e do dock) e deixa uma barra de
+vidro escuro com o que se mexe olhando: **Look**, **Negativo** e **Cópia** (um passo para cada lado, dando a volta
+por todos) e um ajuste por vez (**Luz**, **Temperatura**, **Contraste**, **Cor** ou a **intensidade do look**) numa
+barra só. Duplo clique volta ao neutro; **Antes** vale enquanto segura; Esc ou o X voltam ao painel.
+
+A barra não guarda valor: mexe nos mesmos controles do painel (dispara os eventos deles), então a receita, a LUT, o nó
+e a ficha saem iguais. O resto dos ajustes continua no painel. No celular a barra tem quatro linhas e a imagem fica
+acima dela. `test/tela.test.js` cobre no Chromium (tela inteira, passos, ajuste, duplo clique, Antes e Esc).
 
 ## Meus looks
 

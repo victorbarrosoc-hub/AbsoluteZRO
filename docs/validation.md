@@ -5658,3 +5658,14 @@ Branch `claude/revela-laboratorio`. Nada publicado.
   - o nó abre com a receita e vai no pacote profissional, com o LEIA-ME.
 - No Chromium: "Nó para o DaVinci" baixa `Revela-Lab-noite-quente.dctl` com os valores da receita.
 - Não provado aqui: compilar e rodar a DCTL dentro do Resolve Studio (não há Resolve neste ambiente).
+
+### Etapa 3: mais imagem (a barra sobre a prévia)
+
+- `npm test` em `products/finishing`: 206 testes, 206 passaram.
+- `test/tela.test.js`, no Chromium a 1280 × 800:
+  - a prévia ocupa a tela inteira e fica por cima do topo, do menu e do dock (conferido em quatro pontos);
+  - negativo e cópia andam um passo de cada vez e o painel acompanha (lista, lata acesa, cabeçalho da etapa);
+  - o ajuste da barra muda o controle do painel, e duplo clique volta ao neutro; a intensidade vai a 60%;
+  - voltar do primeiro look cai no último (Nórdico), a grade troca de grupo e a película volta para a da base;
+  - "Antes" vale enquanto segura; Esc volta ao painel com a divisão de antes; sem rolagem lateral.
+- Conferido à mão em 1440 px e num iPhone 14 emulado (barra em quatro linhas, imagem acima dela).

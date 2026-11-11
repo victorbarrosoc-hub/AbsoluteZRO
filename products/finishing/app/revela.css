@@ -3278,3 +3278,236 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ─────────── mais imagem: a prévia na tela toda e os controles numa barra sobre ela ─────────── */
+
+.palco-botao {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #f5f5f7;
+  background: rgb(14 14 16 / 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: transform 0.3s var(--mola-viva);
+}
+.palco-botao:hover {
+  transform: scale(1.08);
+}
+.palco-botao svg {
+  width: 18px;
+  height: 18px;
+}
+html.so-imagem {
+  overflow: hidden;
+}
+/* a página (que é um plano só, por causa do isolation) sobe acima do topo, do menu e do dock */
+.tela-lab.imagem-cheia {
+  z-index: 300;
+}
+.tela-lab.imagem-cheia .lab-ver {
+  z-index: 5;
+}
+.tela-lab.imagem-cheia .palco {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tela-lab.imagem-cheia .palco:focus-within {
+  outline: 0;
+}
+.tela-lab.imagem-cheia .palco canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.tela-lab.imagem-cheia .rotulo,
+.tela-lab.imagem-cheia .divisao,
+.tela-lab.imagem-cheia .palco-botao {
+  display: none;
+}
+.hud {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 8px;
+  border-radius: 24px;
+  color: #f5f5f7;
+  background: rgb(28 28 30 / 0.72);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    0 24px 50px -22px rgb(0 0 0 / 0.9);
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+.hud[hidden] {
+  display: none;
+}
+.hud button {
+  border: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.hud button:focus-visible,
+.hud input:focus-visible {
+  outline: 2px solid var(--amarelo);
+  outline-offset: 2px;
+}
+.hud-passos,
+.hud-ajuste,
+.hud-acoes,
+.hud-ferramentas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hud-passo,
+.hud-ferramentas,
+.hud-valor,
+.hud-acoes button {
+  height: 36px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.08);
+}
+.hud-passo {
+  display: flex;
+  align-items: center;
+}
+.hud-passo button {
+  width: 26px;
+  height: 100%;
+  color: rgb(245 245 247 / 0.6);
+  font-size: 17px;
+  line-height: 1;
+}
+.hud-passo button:hover {
+  color: #fff;
+}
+.hud-passo output {
+  min-width: 74px;
+  max-width: 120px;
+  overflow: hidden;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-ferramentas {
+  gap: 0;
+  padding: 3px;
+}
+.hud-ferramentas button {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 11px;
+  color: rgb(245 245 247 / 0.65);
+  font-weight: 600;
+}
+.hud-ferramentas button[aria-checked='true'] {
+  color: #1d1d1f;
+  background: #f5f5f7;
+}
+.hud-valor {
+  display: grid;
+  grid-template-columns: auto auto 132px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.hud-valor span {
+  color: rgb(245 245 247 / 0.65);
+}
+.hud-valor output {
+  min-width: 34px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.hud-valor input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--amarelo);
+  cursor: ew-resize;
+}
+.hud-acoes button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  padding: 0 12px;
+  font-weight: 600;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hud-acoes button[aria-pressed='true'] {
+  color: #1d1d1f;
+  background: var(--amarelo);
+}
+.hud-acoes svg {
+  width: 16px;
+  height: 16px;
+}
+#hud-sair {
+  padding: 0;
+}
+@media (max-width: 640px) {
+  .hud {
+    width: calc(100% - 16px);
+    max-width: none;
+    border-radius: 20px;
+  }
+  .hud-passos {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .hud-passo {
+    flex: 1;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .hud-passo output {
+    min-width: 0;
+  }
+  .hud-ajuste {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+  .hud-ferramentas {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+  .hud-valor {
+    flex: 1;
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+  /* no celular a barra tem quatro linhas: a imagem fica na parte de cima, fora dela */
+  .tela-lab.imagem-cheia .palco {
+    place-items: start center;
+  }
+  .tela-lab.imagem-cheia .palco canvas {
+    height: calc(100% - 200px - env(safe-area-inset-bottom));
+  }
+}

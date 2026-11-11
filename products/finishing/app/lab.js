@@ -251,8 +251,11 @@ function pintar() {
   const ctx = tela.getContext('2d')
   ctx.drawImage(camadas.depois, 0, 0)
   ctx.drawImage(camadas.antes, 0, 0, x, h, 0, 0, x, h)
-  ctx.fillStyle = '#fff4e0'
-  ctx.fillRect(x - 1, 0, 2, h)
+  // a linha da divisão só existe quando há os dois lados (na tela toda é só o look, ou só o antes)
+  if (x > 0 && x < w) {
+    ctx.fillStyle = '#fff4e0'
+    ctx.fillRect(x - 1, 0, 2, h)
+  }
 }
 $('divisao').addEventListener('input', pintar)
 
@@ -306,19 +309,29 @@ function desenharBases() {
       nome.className = 'look-nome'
       nome.textContent = l.nome
       b.append(mini, nome)
-      b.addEventListener('click', () => {
-        receita.base = l.id
-        // a base traz a própria película: as escolhas de negativo e cópia voltam para "da base"
-        Object.assign(receita, { copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null })
-        mostrarFilme()
-        for (const x of $('bases').querySelectorAll('.look')) x.setAttribute('aria-checked', String(x === b))
-        refazer()
-        trocouLook()
-      })
+      b.addEventListener('click', () => escolherBase(l.id))
       return b
     }),
   )
   cascata($('bases'))
+}
+
+/** Troca a base do look (pelo painel ou pela barra sobre a imagem): a grade acompanha, mesmo se for de outro grupo. */
+function escolherBase(id) {
+  const base = baseDoLab(id)
+  if (!base) return
+  receita.base = id
+  // a base traz a própria película: as escolhas de negativo e cópia voltam para "da base"
+  Object.assign(receita, { copia: '', negativo: '', luzCopia: '', expandido: null, revelacao: null })
+  mostrarFilme()
+  const doGrupo = GRUPOS.find((g) => g.looks.includes(base)).id
+  if (doGrupo !== grupo) {
+    grupo = doGrupo
+    desenharGrupos()
+    desenharBases()
+  } else for (const x of $('bases').querySelectorAll('.look')) x.setAttribute('aria-checked', String(x.dataset.look === id))
+  refazer()
+  trocouLook()
 }
 
 /** O frame acusa a troca de base com um fade curto (o canvas é o mesmo, então recomeça a animação). */
@@ -720,6 +733,115 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     avisar(erro.message, true)
   }
 })
+
+// ─────────── mais imagem: a prévia na tela toda e os controles numa barra ───────────
+
+// os ajustes que se mexe olhando a imagem; o resto continua no painel
+const FERRAMENTAS = [
+  { id: 'luz', nome: 'Luz' },
+  { id: 'temperatura', nome: 'Temperatura', curto: 'Temp' },
+  { id: 'contraste', nome: 'Contraste' },
+  { id: 'cor', nome: 'Cor' },
+  { id: 'intensidade', nome: 'Intensidade do look', curto: 'Look' },
+]
+let ferramenta = 'luz'
+let divisaoGuardada = '50'
+// a barra não guarda valor nenhum: mexe nos mesmos controles do painel
+const alvoDaBarra = () => (ferramenta === 'intensidade' ? $('intensidade') : $(`aj-${ferramenta}`))
+
+function mostrarBarra() {
+  const alvo = alvoDaBarra()
+  const barra = $('hud-barra')
+  Object.assign(barra, { min: alvo.min, max: alvo.max })
+  barra.value = alvo.value
+  $('hud-nome').textContent = FERRAMENTAS.find((f) => f.id === ferramenta).nome
+  $('hud-numero').textContent = ferramenta === 'intensidade' ? `${alvo.value}%` : formatar(Number(alvo.value))
+  for (const b of $('hud-ferramentas').children) b.setAttribute('aria-checked', String(b.dataset.ferramenta === ferramenta))
+  const uso = peliculaEmUso()
+  $('hud-base').textContent = baseDoLab(receita.base)?.nome ?? ''
+  $('hud-negativo').textContent = uso.negativo
+  $('hud-copia').textContent = uso.copia
+}
+$('hud-ferramentas').replaceChildren(
+  ...FERRAMENTAS.map((f) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.dataset.ferramenta = f.id
+    b.textContent = f.curto ?? f.nome
+    b.title = f.nome
+    b.setAttribute('role', 'radio')
+    b.addEventListener('click', () => {
+      ferramenta = f.id
+      mostrarBarra()
+      $('hud-barra').focus({ preventScroll: true })
+    })
+    return b
+  }),
+)
+$('hud-barra').addEventListener('input', () => {
+  const alvo = alvoDaBarra()
+  alvo.value = $('hud-barra').value
+  alvo.dispatchEvent(new Event('input'))
+  mostrarBarra()
+})
+$('hud-barra').addEventListener('change', () => alvoDaBarra().dispatchEvent(new Event('change')))
+// duplo clique volta ao neutro, como no painel (a intensidade volta a 100%)
+$('hud-barra').addEventListener('dblclick', () => {
+  const alvo = alvoDaBarra()
+  if (ferramenta === 'intensidade') {
+    alvo.value = 100
+    alvo.dispatchEvent(new Event('input'))
+    alvo.dispatchEvent(new Event('change'))
+  } else alvo.dispatchEvent(new Event('dblclick'))
+  mostrarBarra()
+})
+// look, negativo e cópia: um passo para cada lado, dando a volta
+const TODAS_AS_BASES = GRUPOS.flatMap((g) => g.looks)
+function passo(qual, dir) {
+  const girar = (lista, atual) => lista[(lista.indexOf(atual) + dir + lista.length) % lista.length]
+  if (qual === 'base') escolherBase(girar(TODAS_AS_BASES.map((l) => l.id), receita.base))
+  else {
+    const lista = $(qual)
+    lista.value = girar([...lista.options].map((o) => o.value), lista.value)
+    lista.dispatchEvent(new Event('change'))
+    mostrarFilme()
+  }
+  mostrarBarra()
+}
+for (const b of raiz.querySelectorAll('.hud-passo button')) b.addEventListener('click', () => passo(b.closest('.hud-passo').dataset.passo, Number(b.dataset.ir)))
+
+function imagemCheia(liga) {
+  if (liga === raiz.classList.contains('imagem-cheia')) return
+  raiz.classList.toggle('imagem-cheia', liga)
+  document.documentElement.classList.toggle('so-imagem', liga)
+  $('hud').hidden = !liga
+  if (liga) {
+    // na tela toda só o look aparece; "Antes" fica num botão de segurar
+    divisaoGuardada = $('divisao').value
+    $('divisao').value = 0
+    mostrarBarra()
+    $('hud-barra').focus({ preventScroll: true })
+  } else {
+    $('divisao').value = divisaoGuardada
+    $('hud-comparar').setAttribute('aria-pressed', 'false')
+    $('imagem-cheia').focus({ preventScroll: true })
+  }
+  pintar()
+}
+$('imagem-cheia').addEventListener('click', () => imagemCheia(true))
+$('hud-sair').addEventListener('click', () => imagemCheia(false))
+addEventListener('keydown', (e) => e.key === 'Escape' && raiz.classList.contains('imagem-cheia') && !$('ficha').open && imagemCheia(false))
+// "Antes": segurar mostra o frame sem o look; no teclado, liga e desliga
+function comparar(liga) {
+  $('hud-comparar').setAttribute('aria-pressed', String(liga))
+  $('divisao').value = liga ? 100 : 0
+  pintar()
+}
+$('hud-comparar').addEventListener('pointerdown', () => comparar(true))
+for (const fim of ['pointerup', 'pointerleave', 'pointercancel']) $('hud-comparar').addEventListener(fim, () => comparar(false))
+$('hud-comparar').addEventListener('click', (e) => e.detail === 0 && comparar($('hud-comparar').getAttribute('aria-pressed') !== 'true'))
+// quem sai da aba do Lab com a imagem na tela toda volta ao painel
+addEventListener('revela:pagina', (e) => e.detail !== 'lab' && imagemCheia(false))
 
 // ─────────── ficha de apresentação ───────────
 

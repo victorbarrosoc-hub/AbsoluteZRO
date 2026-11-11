@@ -2273,8 +2273,10 @@ do Lab (`products/finishing`), branch `claude/revela-laboratorio`. A Revela segu
 - Etapa 2, feita (o titular mandou seguir): o Lab como um nó do DaVinci Resolve Studio (`src/cor/dctl-lab.js`), com
   Look, Negativo, Cópia, Luz, Revelação, Expandido, Intensidade e os 16 ajustes. Sai pelo botão "Nó para o DaVinci"
   e no pacote profissional. A conta é a do motor, conferida no teste por tradução da DCTL para JavaScript.
-- Falta: abrir a DCTL no Resolve Studio do titular (aqui não há Resolve para compilar) e a barra compacta sobre a
-  imagem (etapa 3). Publicar entra no lote, com custo levantado antes.
+- Etapa 3, feita: "mais imagem", a prévia na tela toda com uma barra (look, negativo, cópia e um ajuste por vez) que
+  mexe nos mesmos controles do painel.
+- Falta: abrir a DCTL no Resolve Studio do titular (aqui não há Resolve para compilar). A página da Revela no mesmo
+  estilo fica para o lançamento. Publicar entra no lote, com custo levantado antes.
 
 ## Fase 6 — Escala
 

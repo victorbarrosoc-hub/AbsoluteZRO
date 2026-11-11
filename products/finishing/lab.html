@@ -76,6 +76,38 @@
           <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
           <span class="rotulo rotulo-depois" id="rotulo-depois" aria-hidden="true">Depois</span>
           <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+          <button id="imagem-cheia" class="palco-botao" type="button" aria-label="Mais imagem" title="Mais imagem: a prévia na tela toda, com os controles numa barra">
+            <span data-icone="ampliar"></span>
+          </button>
+          <div id="hud" class="hud" role="toolbar" aria-label="Controles sobre a imagem" hidden>
+            <div class="hud-passos">
+              <div class="hud-passo" data-passo="base" title="Look">
+                <button type="button" data-ir="-1" aria-label="Look: anterior">‹</button>
+                <output id="hud-base" aria-label="Look"></output>
+                <button type="button" data-ir="1" aria-label="Look: próximo">›</button>
+              </div>
+              <div class="hud-passo" data-passo="negativo" title="Negativo">
+                <button type="button" data-ir="-1" aria-label="Negativo: anterior">‹</button>
+                <output id="hud-negativo" aria-label="Negativo"></output>
+                <button type="button" data-ir="1" aria-label="Negativo: próximo">›</button>
+              </div>
+              <div class="hud-passo" data-passo="copia" title="Cópia">
+                <button type="button" data-ir="-1" aria-label="Cópia: anterior">‹</button>
+                <output id="hud-copia" aria-label="Cópia"></output>
+                <button type="button" data-ir="1" aria-label="Cópia: próximo">›</button>
+              </div>
+            </div>
+            <div class="hud-ajuste">
+              <div class="hud-ferramentas" id="hud-ferramentas" role="radiogroup" aria-label="Ajuste"></div>
+              <label class="hud-valor" title="Duplo clique volta ao neutro"
+                ><span id="hud-nome"></span><output id="hud-numero" for="hud-barra"></output><input id="hud-barra" type="range" aria-label="Valor do ajuste"
+              /></label>
+            </div>
+            <div class="hud-acoes">
+              <button id="hud-comparar" type="button" aria-pressed="false" title="Segure para ver o frame antes do look">Antes</button>
+              <button id="hud-sair" type="button" aria-label="Voltar ao painel" title="Voltar ao painel (Esc)"><span data-icone="x"></span></button>
+            </div>
+          </div>
         </div>
 
         <div class="lab-grupos" id="grupos" role="tablist" aria-label="Bases"></div>
