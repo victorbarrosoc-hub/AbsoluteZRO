@@ -311,7 +311,7 @@ begin
     end if;
     new.criado_em := now();
     new.atualizado_em := now();
-    if new.prazo <= now() or new.prazo > now() + interval '30 days 5 minutes' then
+    if current_user = 'foto_app' and (new.prazo <= now() or new.prazo > now() + interval '30 days 5 minutes') then
       raise exception 'evento:prazo' using errcode = 'P0001';
     end if;
     return new;
@@ -329,13 +329,13 @@ begin
   if new.aviso_sha256 is distinct from old.aviso_sha256 then
     new.aviso_em := case when new.aviso_sha256 is null then null else now() end;
   end if;
-  if new.prazo <> old.prazo then
+  if new.prazo <> old.prazo and current_user = 'foto_app' then
     if new.prazo <= now() or new.prazo > now() + interval '30 days 5 minutes' then
       raise exception 'evento:prazo' using errcode = 'P0001';
     end if;
     -- depois de publicado, estender só uma vez
     if old.estado = 'publicado' and new.prazo > old.prazo then
-      if old.prorrogado and current_user = 'foto_app' then
+      if old.prorrogado then
         raise exception 'evento:prorrogado' using errcode = 'P0001';
       end if;
       new.prorrogado := true;

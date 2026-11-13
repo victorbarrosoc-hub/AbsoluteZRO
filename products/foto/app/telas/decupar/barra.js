@@ -198,7 +198,7 @@ function Meta({ est, esteira, total }) {
     classeBotao=${cx('pilula', est.meta != null && 'pilula--meta')}
     pressionado=${est.meta != null}
     rotulo="Quero cerca de"
-    gatilho=${html`<${Icone2} nome="meta" tamanho=${14} />${est.meta != null ? html`Cerca de <${Numero} valor=${est.meta} />` : 'Meta'}`}
+    gatilho=${html`<${Icone2} nome="meta" tamanho=${14} /><span class="dec-meta-texto">${est.meta != null ? html`Cerca de <${Numero} valor=${est.meta} />` : 'Meta'}</span>`}
   >
     ${(fechar) => html`<div class="dec-meta-quadro">
       <${Controle}
@@ -238,8 +238,8 @@ export function BarraDaDecupagem({ loja, est, esteira, modo, aoModo, principal, 
     <${Andamento} est=${est} esteira=${esteira} temFotos=${total > 0} />
     <div class="dec-meio pilulas--rola">
       <${Baldes} loja=${loja} />
-      <${Meta} est=${est} esteira=${esteira} total=${total} />
     </div>
+    <${Meta} est=${est} esteira=${esteira} total=${total} />
     <div class="dec-fim">
       <${Menu}
         classe="dec-so-largo"

@@ -18,6 +18,8 @@ const EV_DE = -11
 const EV_ATE = 7
 const CINZA = 0.18
 
+/** As frases que ficam à vista: as das altas (o que estourou e o que dá para recuperar) e a das sombras. */
+const aVista = (f) => /estourar|Altas luzes|sombra|Sombras/.test(f)
 const ev1 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`
 
 /** O código de tela de um cinza de EV `f` no eixo do arquivo, com os ajustes de agora (ponto + tela, sem vizinhança). */
@@ -260,8 +262,8 @@ export function Margem({ latitude, histo, ajustes, carregando, origem }) {
     <canvas ref=${ref} class="margem-grafico" role="img" aria-label=${raw ? `Histograma da cena. ${frases.join('. ')}` : 'Histograma da tela'}></canvas>
     ${
       raw
-        ? html`<div class="margem-frases" title=${frases.slice(2).join(' · ')}>
-            ${frases.slice(0, 2).map((f) => html`<span>${f}</span>`)}
+        ? html`<div class="margem-frases" title=${frases.filter((f) => !aVista(f)).join(' · ')}>
+            ${frases.filter(aVista).map((f) => html`<span>${f}</span>`)}
           </div>`
         : html`<div class="margem-frases"><span>${origem === 'imagem' ? 'Foto pronta: o arquivo não guarda nada além do que se vê.' : ''}</span></div>`
     }
