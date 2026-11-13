@@ -312,7 +312,7 @@ export function criarMotorGpu(gl, { precisao = 'auto' } = {}) {
     if (look === lookCarregado) return
     lookCarregado = look
     if (!look) return
-    const n = look.tamanho
+    const n = look.tamanho ?? look.lado
     if (!texLook) texLook = novaTextura(gl.TEXTURE_3D)
     gl.bindTexture(gl.TEXTURE_3D, texLook)
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
@@ -708,12 +708,16 @@ export function criarMotorGpu(gl, { precisao = 'auto' } = {}) {
     if (comLook) {
       carregarLook(look)
       textura('uLookLut', texLook, gl.TEXTURE_3D)
-      U.f('uLookTam', look.tamanho)
+      U.f('uLookTam', look.tamanho ?? look.lado)
+      U.v3('uLookMin', look.dominio?.min ?? [0, 0, 0])
+      U.v3('uLookMax', look.dominio?.max ?? [1, 1, 1])
       U.f('uLookQuantidade', ajustes.look.quantidade / 100)
     } else {
       // a unidade do sampler3D precisa de uma textura 3D válida mesmo sem uso
       if (!texLook) carregarLook({ tamanho: 2, dados: new Float32Array(24) })
       textura('uLookLut', texLook, gl.TEXTURE_3D)
+      U.v3('uLookMin', [0, 0, 0])
+      U.v3('uLookMax', [1, 1, 1])
     }
     const bits = !avisos ? 0 : (avisos === true || avisos.altas !== false ? 1 : 0) | (avisos === true || avisos.sombras !== false ? 2 : 0)
     U.i('uAvisos', bits)
@@ -749,7 +753,8 @@ export function criarMotorGpu(gl, { precisao = 'auto' } = {}) {
    *   comparar   null | { posicao: 0..1 (onde fica a divisória), antes?: ajustes (padrão: o neutro, mesma geometria) }
    *   avisos     false | true | { altas, sombras }
    *   tela       'srgb' | 'p3' | 'rec2020'
-   *   semLocal, semente, look ({ tamanho, dados: Float32Array RGB, vermelho mais rápido })
+   *   semLocal, semente, look (a LUT de src/estilo/look.js: { lado, dados: Float32Array RGB com o vermelho mais
+   *              rápido, dominio? }; `tamanho` vale como `lado`), aplicada quando `ajustes.look.id` existe
    * Devolve { largura, altura, regiao, zoom, ms, ignorados: [o que a placa não fez] }.
    */
   function desenhar(ajustesCrus, opcoes = {}) {

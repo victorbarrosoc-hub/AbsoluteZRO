@@ -165,6 +165,42 @@ test(NA_PLACA, { skip: pular, timeout: 300000 }, async () => {
     let difJs = 0
     for (let i = 0; i < j16.length; i++) difJs = Math.max(difJs, Math.abs(j16[i] - ref16.dados[i]))
     assert.equal(difJs, 0, 'a exportação no worker é o revelar do JS, bit a bit')
+    // look (LUT 17 de src/estilo/look.js): a placa (tetraédrica no shader) e o worker (aplicarLut) dão o mesmo
+    const look = await s.pagina.evaluate(async () => {
+      const { criarLut } = await import('/src/estilo/look.js')
+      const lut = criarLut(17, (r, g, b, saida) => {
+        saida[0] = Math.min(1, r * 1.1)
+        saida[1] = g * g
+        saida[2] = Math.sqrt(b) * 0.9
+        return saida
+      })
+      const ajustes = { look: { id: 'teste', quantidade: 80 } }
+      window.__s.ajustar(ajustes, { look: lut })
+      const gpu = await window.__s.exportarPixels(ajustes, { motor: 'gpu' })
+      const js = await window.__s.exportarPixels(ajustes, { motor: 'js' })
+      const sem = await window.__s.exportarPixels({}, { motor: 'js' })
+      let pior = 0
+      let mudou = 0
+      for (let i = 0; i < gpu.dados.length; i++) {
+        pior = Math.max(pior, Math.abs(gpu.dados[i] - js.dados[i]))
+        mudou = Math.max(mudou, Math.abs(js.dados[i] - sem.dados[i]))
+      }
+      window.__s.ajustar({}, { look: null })
+      return { pior, mudou }
+    })
+    // lado pedido: a placa reduz pelo zoom com superamostragem, o worker por Lanczos em luz linear; mesmo tamanho
+    const lados = await s.pagina.evaluate(async () => {
+      const g = await window.__s.exportarPixels({}, { motor: 'gpu', lado: 600 })
+      const j = await window.__s.exportarPixels({}, { motor: 'js', lado: 600 })
+      let soma = 0
+      for (let i = 0; i < g.dados.length; i++) if (i % 4 !== 3) soma += Math.abs(g.dados[i] - j.dados[i])
+      return { g: [g.largura, g.altura], j: [j.largura, j.altura], media: soma / ((g.dados.length * 3) / 4) }
+    })
+    assert.deepEqual(lados.g, [600, 400])
+    assert.deepEqual(lados.j, [600, 400])
+    assert.ok(lados.media < 3, `reduzida na placa × no worker: diferença média ${lados.media.toFixed(2)}/255`)
+    assert.ok(look.mudou > 20, `o look muda a foto (${look.mudou}/255)`)
+    assert.ok(look.pior <= 1, `look na placa × no worker: pior ${look.pior}/255`)
     // zoom de 100%: a sessão pede a base cheia e desenha a janela dela
     const zoom = await s.pagina.evaluate(async () => {
       window.__eventos = []
@@ -353,7 +389,8 @@ test('medidas: 24 MP fabricado (e ARW real, se houver) — abrir, arrastar, expo
         }
         const t = (tp) => a.eventos.find((e) => e.tipo === tp)
         const tam = `${a.info.largura}×${a.info.altura}`
-        linhas.push(`[${motor}] ARW do titular ${i + 1}: prévia em ${t('previa')?.t.toFixed(0)} ms; base reduzida (÷${t('base')?.reduzir}) em ${t('base')?.t.toFixed(0)} ms; ${tam}`)
+        const base = `base reduzida (÷${t('base')?.reduzir}) em ${t('base')?.t.toFixed(0)} ms`
+        linhas.push(`[${motor}] ARW do titular ${i + 1}: prévia em ${t('previa')?.t.toFixed(0)} ms; ${base}; ${tam}`)
       }
       if (existsSync(arw)) {
         const a = await s.pagina.evaluate(ABRIR, 'REAL.ARW')

@@ -616,6 +616,7 @@ uniform vec2 uCentro;          // centro do quadro na vista
 uniform bool uLook;
 uniform sampler3D uLookLut;
 uniform float uLookTam, uLookQuantidade;
+uniform vec3 uLookMin, uLookMax;    // DOMAIN_MIN e DOMAIN_MAX da .cube (padrão 0 e 1)
 uniform int uAvisos;           // bits: 1 altas, 2 sombras
 uniform vec3 uCorPerdida, uCorRecuperavel, uCorSombra;
 out vec4 saida;
@@ -624,7 +625,7 @@ out vec4 saida;
 // three-dimensional linear interpolation", J. Electronic Imaging 4(3)); o vermelho varia mais rápido, como no .cube
 vec3 lut(vec3 c) {
   float n = uLookTam - 1.0;
-  vec3 x = clamp(c, 0.0, 1.0) * n;
+  vec3 x = clamp((c - uLookMin) / (uLookMax - uLookMin), 0.0, 1.0) * n;
   vec3 i = min(floor(x), vec3(n - 1.0));
   vec3 f = x - i;
   ivec3 b = ivec3(i);

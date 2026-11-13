@@ -147,6 +147,13 @@ function mandarPrevia(bytes, progresso) {
   }
 }
 
+// a função do look para revelar.js, pela interpolação de src/estilo/look.js (carregada só quando há look)
+async function funcaoDoLook(lut, ajustes) {
+  if (!lut || !normalizar(ajustes).look.id) return undefined
+  const { aplicarLut } = await import('../../src/estilo/look.js')
+  return aplicarLut(lut)
+}
+
 const semDados = (base) => ({ ...base, imagem: { largura: base.imagem.largura, altura: base.imagem.altura } })
 
 // ─────────── tarefas ───────────
@@ -227,7 +234,7 @@ const TAREFAS = {
    * Prévia em JS (sem placa de vídeo): { id, ajustes, tela, semente, nivel: 'menor' | 'cheia', regiao?, lado? } →
    * { largura, altura, rgba } (Uint8ClampedArray, transferido). 'menor' é a reduzida levada a até `lado` px (800).
    */
-  async revelar({ id, ajustes, tela = 'srgb', semente = 1, nivel: qual = 'menor', regiao = null, lado = LADO_JS }) {
+  async revelar({ id, ajustes, tela = 'srgb', semente = 1, nivel: qual = 'menor', regiao = null, lado = LADO_JS, look = null }) {
     const foto = fotoDe(id)
     let base
     if (qual === 'cheia') base = (await nivel(foto, 'cheia')).base
@@ -237,7 +244,7 @@ const TAREFAS = {
       if (!foto.menor || foto.menor.k !== k || foto.menor.de !== red) foto.menor = { k, de: red, base: reduzirBase(red, k) }
       base = foto.menor.base
     }
-    const imagem = revelar(base, ajustes, { tela, semente, regiao: regiao ?? undefined })
+    const imagem = revelar(base, ajustes, { tela, semente, regiao: regiao ?? undefined, look: await funcaoDoLook(look, ajustes) })
     foto.ultimaTela = { imagem, espaco: tela, ev: normalizar(ajustes).luz.exposicao + (base.exposicaoBase ?? 0), base }
     const rgba = paraBytes(imagem, { bits: 8 })
     return comTransferencia({ largura: imagem.largura, altura: imagem.altura, rgba, quadro: imagem.quadro, reduzir: base.reduzir }, [rgba.buffer])
@@ -267,26 +274,31 @@ const TAREFAS = {
   },
 
   /**
-   * Exportação em JS: { id, ajustes, tela, bits, lado, semente } → { largura, altura, dados, espaco } em faixas, com
+   * Exportação em JS: { id, ajustes, tela, bits, lado, semente, look } → { largura, altura, dados, espaco } em faixas, com
    * progresso (0..1) e cancelável. `lado`: o lado maior pedido (a base sai do nível de redução que ainda o cobre e a
    * imagem é reduzida em luz linear por src/exportar/redimensionar.js).
    */
-  async exportar({ id, ajustes, tela = 'srgb', bits = 8, lado = null, semente = 1 }, { cancelado, progresso }) {
+  async exportar({ id, ajustes, tela = 'srgb', bits = 8, lado = null, semente = 1, look = null }, { cancelado, progresso }) {
     const foto = fotoDe(id)
     const cheia = (await nivel(foto, 'cheia')).base
     const a = normalizar(ajustes)
     const quadro = geometria(cheia, a)
     let base = cheia
+    let temporario = null
     if (lado) {
       const maior = Math.max(quadro.largura, quadro.altura)
       for (const r of [4, 2]) {
         if (maior / r >= lado) {
-          base = (await nivel(foto, `r${r}`)).base
+          temporario = `r${r}`
+          base = (await nivel(foto, temporario)).base
+          // o nível da exportação não fica guardado (a memória é das bases da tela)
+          foto.niveis.delete(temporario)
           break
         }
       }
     }
     if (cancelado()) return null
+    const fnLook = await funcaoDoLook(look, a)
     const { largura, altura } = geometria(base, a)
     // faixas de ~1/8 da altura (a vizinhança mede a foto inteira de novo em cada chamada: faixa demais custa)
     const passo = Math.max(64, Math.ceil(altura / 8))
@@ -298,7 +310,7 @@ const TAREFAS = {
       await new Promise((ok) => setTimeout(ok, 0))
       if (cancelado()) return null
       const linhas = Math.min(passo, altura - y)
-      const faixa = revelar(base, a, { tela, semente, regiao: { x: 0, y, largura, altura: linhas } })
+      const faixa = revelar(base, a, { tela, semente, regiao: { x: 0, y, largura, altura: linhas }, look: fnLook })
       if (flutuante) flutuante.set(faixa.dados, y * largura * 3)
       else dados.set(paraBytes(faixa, { bits, deslocamento: y * largura }), y * largura * canais)
       progresso((y + linhas) / altura)

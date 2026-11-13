@@ -205,6 +205,7 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
   let foto = null // { id, nome, base, latitude, exif, camera, avisos, origem, reduzir, semente, corte, cheia }
   let geracao = 0
   let ajustes = neutro()
+  let lookAtual = null // a LUT do look (src/estilo/look.js) quando ajustes.look.id existe
   const vista = { zoom: 'encaixar', x: 0.5, y: 0.5, comparar: null, avisos: false, tela: 'srgb', largura: null, altura: null }
   let pedido = 0
   let fechada = false
@@ -322,7 +323,7 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
   function quadroNaPlaca() {
     const a = normalizar(ajustes)
     const t0 = performance.now()
-    const opcoes = { comparar: vista.comparar, avisos: vista.avisos, semente: foto.semente, tela: vista.tela }
+    const opcoes = { comparar: vista.comparar, avisos: vista.avisos, semente: foto.semente, tela: vista.tela, look: lookAtual }
     // zoom acima do que a reduzida tem: a janela da base cheia, quando já chegou; senão a reduzida ampliada
     const querCheia = foto.reduzir > 1 && typeof vista.zoom === 'number' && vista.zoom * foto.reduzir > PEDE_CHEIA
     if (querCheia) {
@@ -406,7 +407,7 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
     try {
       const a = normalizar(ajustes)
       // zoom de verdade (acima do encaixe) no JS: o pedaço visível da base cheia; senão a prévia menor inteira
-      let pedidoJs = { id: f.id, ajustes: a, tela: vista.tela, semente: f.semente, nivel: 'menor' }
+      let pedidoJs = { id: f.id, ajustes: a, tela: vista.tela, semente: f.semente, nivel: 'menor', look: a.look.id ? lookAtual : null }
       if (typeof vista.zoom === 'number' && vista.zoom * f.reduzir > PEDE_CHEIA) {
         const meta = await metaCheia()
         const v = enquadrar(meta, 1, a)
@@ -532,9 +533,14 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
     }
   }
 
-  /** Troca os ajustes. Desenha no próximo quadro de animação; chamadas no meio do caminho valem só pela última. */
-  function ajustar(novos) {
+  /**
+   * Troca os ajustes. Desenha no próximo quadro de animação; chamadas no meio do caminho valem só pela última.
+   * `look`: a LUT do look da predefinição ({ lado, dados, dominio? }, de src/estilo/look.js `descompactar`), usada
+   * quando `ajustes.look.id` existe; sem passar, fica a última.
+   */
+  function ajustar(novos, { look } = {}) {
     ajustes = novos ?? neutro()
+    if (look !== undefined) lookAtual = look
     agendar()
   }
 
@@ -571,16 +577,18 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
    * Revela em resolução cheia: { largura, altura, dados (8 bits: Uint8ClampedArray RGBA; 16: Uint16Array RGB), espaco,
    * motor: 'gpu' | 'js', ms }. Na placa (de verdade) em ladrilhos de LADRILHO px lendo de volta; sem ela, no JS do
    * worker, em faixas. `opcoes`: tela, bits, lado (lado maior pedido), aoProgredir(0..1), sinal (AbortSignal), motor
-   * ('auto' | 'gpu' | 'js').
+   * ('auto' | 'gpu' | 'js'), look (padrão: o do último `ajustar`).
    */
-  async function exportarPixels(ajustesE, { tela = 'srgb', bits = 8, lado = null, aoProgredir = null, sinal = null, motor: qual = 'auto' } = {}) {
+  async function exportarPixels(ajustesE, opcoes = {}) {
+    const { tela = 'srgb', bits = 8, lado = null, aoProgredir = null, sinal = null, motor: qual = 'auto', look = lookAtual } = opcoes
     if (!foto) throw new Error('Nenhuma foto aberta.')
     const t0 = performance.now()
     const naGpu = qual === 'gpu' ? modo === 'gpu' : qual === 'auto' && modo === 'gpu' && !motor?.info.software
     const a = normalizar(ajustesE)
     if (sinal?.aborted) throw new DOMException('Exportação cancelada.', 'AbortError')
     if (!naGpu) {
-      const r = await pedir('exportar', { id: foto.id, ajustes: a, tela, bits, lado, semente: foto.semente }, { progresso: aoProgredir, sinal })
+      const pedido = { id: foto.id, ajustes: a, tela, bits, lado, semente: foto.semente, look: a.look.id ? look : null }
+      const r = await pedir('exportar', pedido, { progresso: aoProgredir, sinal })
       if (!r) throw new DOMException('Exportação cancelada.', 'AbortError')
       return { ...r, motor: 'js', ms: performance.now() - t0 }
     }
@@ -608,7 +616,7 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
           if (!motor) throw new ErroGpu('contexto-perdido', TEXTOS.perdeu)
           motor.carregarBase({ ...meta, imagem: { ...meta.imagem, dados: j.dados } }, { janela: j.janela, referencia: f.base, corte: corteDaBase(meta) })
           naPlaca = null
-          motor.desenhar(a, { alvo: 'textura', regiao, zoom, semente: f.semente, tela })
+          motor.desenhar(a, { alvo: 'textura', regiao, zoom, semente: f.semente, tela, look })
           const lido = motor.ler({ tipo: 'float' })
           const fonte = lido.dados
           for (let y = 0; y < h; y++) {
