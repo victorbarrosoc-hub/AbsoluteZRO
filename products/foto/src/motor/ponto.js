@@ -37,6 +37,7 @@ import { xyDeTemperatura } from './cor/branco.js'
 import { CURVAS, D65, ESPACOS, luminancia, rgbParaXyz, xyParaXYZ, xyzParaRgb } from './cor/espacos.js'
 import { diagonal, identidade, inversa, mulM, mulV } from './cor/matriz.js'
 import { LAB_PARA_LMS, LMS_PARA_LAB, criarOklab, matizDoCirculo } from './cor/oklab.js'
+import { exp2, log2 } from './cor/rapido.js'
 import { CINZA, MARGENS, PESO_MAXIMO, curvaDeTons } from './tela.js'
 
 // ─────────── constantes da cadeia (as faixas de cada controle) ───────────
@@ -450,19 +451,22 @@ export function criarPonto(ajustes, contexto = {}) {
   const temLuzZona = T.zonas.some((z) => z.luz !== 0)
   const veu = u.veu
   const iCinza = 1 / CINZA
-  const LN2 = Math.LN2
   const maxIndice = TAM_TOM - 1
 
   // ganho da tabela para um valor de cena já limitado em EPS
   const ganhoDe = (tabela, valor) => {
-    let pos = (Math.log2(valor * iCinza) - EV_MIN) * PASSOS_POR_EV
+    let pos = (log2(valor * iCinza) - EV_MIN) * PASSOS_POR_EV
     if (pos < 0) pos = 0
     else if (pos > maxIndice) pos = maxIndice
     const i = pos | 0
     return tabela[i] + (tabela[i + 1] - tabela[i]) * (pos - i)
   }
 
-  function aplicar(r, g, b, saida) {
+  // O pixel em `d[i..i+2]`, tratado no lugar. É a única cópia da conta: `aplicar` e `aplicarEm` passam por aqui.
+  function nucleo(d, i) {
+    const r = d[i]
+    const g = d[i + 1]
+    const b = d[i + 2]
     // 1. entrada: exposição e branco
     let x = e0 * r + e1 * g + e2 * b
     let y = e3 * r + e4 * g + e5 * b
@@ -538,7 +542,7 @@ export function criarPonto(ajustes, contexto = {}) {
           // luz por faixa (e a mistura do P&B): L·2^(ev·m)
           let ev = matiz[o + 3] + (matiz[q + 3] - matiz[o + 3]) * f
           if (pb) ev += matiz[o + 4] + (matiz[q + 4] - matiz[o + 4]) * f
-          if (ev !== 0) L *= Math.exp(LN2 * ev * peso)
+          if (ev !== 0) L *= exp2(ev * peso)
         }
         // 5c. vibração: ganho = 1 + v·(1/(1 + x²/ref²))·(1 − proteção·pele)
         if (vibracao !== 0) croma *= 1 + (vibracao * (1 - pele * (matiz[o + 5] + (matiz[q + 5] - matiz[o + 5]) * f))) / (1 + x2 * iVib2)
@@ -561,7 +565,7 @@ export function criarPonto(ajustes, contexto = {}) {
         const base = L > 0 ? L : 0
         A += base * (ws * zs.a + wm * zm.a + wh * za.a + zg.a)
         B += base * (ws * zs.b + wm * zm.b + wh * za.b + zg.b)
-        if (temLuzZona) L *= Math.exp(LN2 * (ws * zs.luz + wm * zm.luz + wh * za.luz + zg.luz))
+        if (temLuzZona) L *= exp2(ws * zs.luz + wm * zm.luz + wh * za.luz + zg.luz)
       }
 
       const l2 = b0 * L + b1 * A + b2 * B
@@ -585,21 +589,26 @@ export function criarPonto(ajustes, contexto = {}) {
       y += veu
       z += veu
     }
-    saida[0] = x
-    saida[1] = y
-    saida[2] = z
+    d[i] = x
+    d[i + 1] = y
+    d[i + 2] = z
+  }
+
+  const um = new Float64Array(3)
+  function aplicar(r, g, b, saida) {
+    um[0] = r
+    um[1] = g
+    um[2] = b
+    nucleo(um, 0)
+    saida[0] = um[0]
+    saida[1] = um[1]
+    saida[2] = um[2]
     return saida
   }
 
-  const temp = [0, 0, 0]
   function aplicarEm(dados, pixels, inicio = 0) {
     const fim = inicio + pixels * 3
-    for (let i = inicio; i < fim; i += 3) {
-      aplicar(dados[i], dados[i + 1], dados[i + 2], temp)
-      dados[i] = temp[0]
-      dados[i + 1] = temp[1]
-      dados[i + 2] = temp[2]
-    }
+    for (let i = inicio; i < fim; i += 3) nucleo(dados, i)
     return dados
   }
 

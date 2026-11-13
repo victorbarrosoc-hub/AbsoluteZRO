@@ -12,7 +12,7 @@ Como ler um RAW no navegador, o que cada biblioteca entrega (com números medido
 - **Fallback provado:** decodificador DNG em JS puro deu mosaico bit a bit igual ao LibRaw em 4 de 4 DNGs CFA.
 - **Matemática provada:** preto → WB → matriz câmera→sRGB própria bateu com `dcraw_process` do LibRaw com erro médio de 1,6e-5 (cerca de 1 LSB de 16 bits).
 
-No produto, a prévia e o EXIF acabaram lidos em JS puro, sem WASM (`src/raw/previa.js` e `exif.js`), para a decupagem ser instantânea; ver o contrato do Negativo em [ARQUITETURA.md](../ARQUITETURA.md).
+No produto, a prévia e o EXIF acabaram lidos em JS puro, sem WASM ([`src/raw/previa.js`](../../src/raw/previa.js) e [`exif.js`](../../src/raw/exif.js)), para a decupagem ser instantânea; ver o contrato do Negativo em [ARQUITETURA.md](../ARQUITETURA.md).
 
 ## 2. Pacotes npm
 
@@ -210,7 +210,7 @@ A ordem que o motor adotou está em [ARQUITETURA.md](../ARQUITETURA.md) (seção
 
 ### 5.8 Faixa dinâmica utilizável e margem de exposição
 
-Método da prova rodada em 13/11/2026 (virou `medirLatitude` em `src/raw/latitude.js`):
+Método da prova rodada em 13/11/2026 (virou `medirLatitude` em [`src/raw/latitude.js`](../../src/raw/latitude.js)):
 
 - **Ruído de leitura:** desvio dos pixels mascarados, quando existem.
 - **Modelo Poisson-Gauss** `var = a·S + b`: ajuste sobre a diferença entre verdes vizinhos (σ robusto por MAD/√2, por faixa de sinal). É o modelo do artigo de 2008 citado em https://arxiv.org/pdf/2512.15905 e da tag DNG NoiseProfile **[W]**.
@@ -269,7 +269,7 @@ O trecho está como foi rodado na prova; o código do produto segue o estilo da 
 
 Cobertura complementar:
 
-- **Tags DNG** (ColorMatrix1/2, ForwardMatrix, CalibrationIlluminant, AsShotNeutral, BaselineExposure, NoiseProfile, DefaultCrop, opcodes): leitor próprio, prova rodada em 13/11/2026 (virou `src/raw/dng.js`).
+- **Tags DNG** (ColorMatrix1/2, ForwardMatrix, CalibrationIlluminant, AsShotNeutral, BaselineExposure, NoiseProfile, DefaultCrop, opcodes): leitor próprio, prova rodada em 13/11/2026 (virou [`src/raw/dng.js`](../../src/raw/dng.js)).
 - **DNG lossy LinearRaw:** `libraw-wasm-nothread@1.6.0-nothread.1`, via `imageData()`.
 - **DNG com JPEG XL (ProRAW recente):** não testado; nenhuma amostra tinha JXL. O único candidato com libjxl e DNG SDK é o `raw-webgpu@0.2.0`, cujo worker rodou em Node sem GPU (prova rodada em 13/11/2026).
 - **Médio prazo:** build próprio do LibRaw 0.22.3 com um shim C pequeno expondo exatamente os campos da tabela. `emcc` não estava instalado na máquina da prova; `docker` e `cargo` estavam. Não testado.

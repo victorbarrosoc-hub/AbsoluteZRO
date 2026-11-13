@@ -226,7 +226,7 @@ fotografa muito paga mais que no ilimitado do Aftershoot (PhotoWorkout).
 - **Preço (verificado)**
   https://docs.camerabits.com/support/solutions/articles/48001252734-photo-mechanic-pricing-and-information — US$
   14,99/mês, US$ 149/ano ou US$ 299 perpétuo com 1 ano de atualizações. Plus a US$ 24,99/mês (trecho de busca).
-- **Reclamações:** a virada para assinatura em 2023 gerou reação; a empresa reconhece e por isso manteve a licença
+- **Reclamações:** a virada para assinatura em 2023 gerou reação; o fundador reconhece e por isso manteve a licença
   perpétua. https://home.camerabits.com/changes-coming-to-photo-mechanic/
 
 ### 1.6 Excire Foto 2027 / Excire Search 2026

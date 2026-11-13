@@ -227,8 +227,8 @@ Quase tudo aqui é relato de fórum ou material de concorrente; trate como sinal
   18% linear e cita ~12,3 EV de faixa de entrada típica:
   https://docs.darktable.org/usermanual/5.6/en/module-reference/processing-modules/filmic-rgb/. **Este é o modelo mais
   próximo do pedido de "margens de dynamic range nas exposições".**
-- [V] **AgX.** Curva por canal em log2 dentro de um espaço de primárias próprio (atenuação + rotação antes, purity boost
-  + reversão depois). Evita o colapso de cores saturadas nas 6 primárias/secundárias ("Notorious 6") e traz cores fora
+- [V] **AgX.** Curva por canal em log2 dentro de um espaço de primárias próprio (atenuação + rotação antes, purity
+  boost + reversão depois). Evita o colapso de cores saturadas nas 6 primárias/secundárias ("Notorious 6") e traz cores fora
   do gamut para dentro sem tocar as de dentro:
   https://docs.darktable.org/usermanual/5.6/en/module-reference/processing-modules/agx/
 - [V] **Sigmoid.** Curva log-logística generalizada com Contrast e Skew; modo por canal (rolloff tipo filme) ou razão

@@ -25,6 +25,7 @@
 import { ESPACOS, curvaDe, luminancia, matrizEntre } from './cor/espacos.js'
 import { inversa, mulM } from './cor/matriz.js'
 import { LAB_PARA_LMS, criarOklab } from './cor/oklab.js'
+import { exp2, log2 } from './cor/rapido.js'
 
 /** Cinza médio: 0,18 na cena vira 0,18 de luz na tela (código 118 de 255 em sRGB). */
 export const CINZA = 0.18
@@ -247,11 +248,12 @@ export function criarTela(id = 'srgb', opcoes = {}) {
   const lab = [0, 0, 0]
   const ig = 1 / CINZA
 
+  // a curva de tons no laço: x^c por tabela (cor/rapido.js); `curva.ida` é a mesma conta com Math.pow
   const f = (n) => {
     const x = n * ig
     if (!(x > xB)) return 0
     if (x >= xW) return 1
-    const u = x ** c
+    const u = exp2(c * log2(x))
     const y = a * (u / (u + k) - lb)
     return y < 0 ? 0 : y > 1 ? 1 : y
   }
@@ -261,12 +263,6 @@ export function criarTela(id = 'srgb', opcoes = {}) {
     const s = t * t * (3 - 2 * t)
     return BRANCO_K * s * s
   }
-  const codificar = (v) => {
-    const p = (v <= 0 ? 0 : v >= 1 ? 1 : v) * TAM_TABELA
-    const i = p | 0
-    return tabela[i] + (tabela[i + 1] - tabela[i]) * (p - i)
-  }
-
   // Cor que não cabe na tela: mesma luz (L de Oklab) e mesmo matiz, croma reduzida até a borda do cubo. Bisseção de
   // passos fixos, igual na GPU. Cor de dentro nem chega aqui.
   function comprimir(or, og, ob, saida) {
@@ -305,19 +301,27 @@ export function criarTela(id = 'srgb', opcoes = {}) {
   }
 
   const temp = [0, 0, 0]
-  const temp2 = [0, 0, 0]
 
-  function aplicar(r, g, b, saida) {
+  // O pixel de cena em `o[i..i+2]` vira código da tela em `d[j..j+2]`. É a única cópia da conta.
+  function nucleo(o, i, d, j) {
+    const r = o[i]
+    const g = o[i + 1]
+    const b = o[i + 2]
     const mx = r > g ? (r > b ? r : b) : g > b ? g : b
     const n = w0 * r + w1 * g + w2 * b + beta * mx
     const nc = n > EPS ? n : EPS
     const h = f(nc)
     const s = h / nc
-    const d = h - s * n
-    const kb = 1 - paraOBranco(h)
-    let or = h + (s * r + d - h) * kb
-    let og = h + (s * g + d - h) * kb
-    let ob = h + (s * b + d - h) * kb
+    const desloca = h - s * n
+    let kb = 1
+    if (h > BRANCO_H0) {
+      const t = h >= 1 ? 1 : (h - BRANCO_H0) / (1 - BRANCO_H0)
+      const st = t * t * (3 - 2 * t)
+      kb = 1 - BRANCO_K * st * st
+    }
+    let or = h + (s * r + desloca - h) * kb
+    let og = h + (s * g + desloca - h) * kb
+    let ob = h + (s * b + desloca - h) * kb
     if (preservar < 1) {
       const pr = f(r)
       const pg = f(g)
@@ -335,22 +339,33 @@ export function criarTela(id = 'srgb', opcoes = {}) {
       tg = temp[1]
       tb = temp[2]
     }
-    saida[0] = codificar(tr)
-    saida[1] = codificar(tg)
-    saida[2] = codificar(tb)
+    let p = (tr <= 0 ? 0 : tr >= 1 ? 1 : tr) * TAM_TABELA
+    let q = p | 0
+    d[j] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
+    p = (tg <= 0 ? 0 : tg >= 1 ? 1 : tg) * TAM_TABELA
+    q = p | 0
+    d[j + 1] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
+    p = (tb <= 0 ? 0 : tb >= 1 ? 1 : tb) * TAM_TABELA
+    q = p | 0
+    d[j + 2] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
+  }
+
+  const um = new Float64Array(3)
+  function aplicar(r, g, b, saida) {
+    um[0] = r
+    um[1] = g
+    um[2] = b
+    nucleo(um, 0, um, 0)
+    saida[0] = um[0]
+    saida[1] = um[1]
+    saida[2] = um[2]
     return saida
   }
 
   /** Bloco: `pixels` cores de `origem` (cena, 3 por pixel) viram código da tela em `destino` (pode ser o mesmo). */
   function aplicarEm(origem, destino, pixels, deOnde = 0, paraOnde = 0) {
     const fim = deOnde + pixels * 3
-    let j = paraOnde
-    for (let i = deOnde; i < fim; i += 3, j += 3) {
-      aplicar(origem[i], origem[i + 1], origem[i + 2], temp2)
-      destino[j] = temp2[0]
-      destino[j + 1] = temp2[1]
-      destino[j + 2] = temp2[2]
-    }
+    for (let i = deOnde, j = paraOnde; i < fim; i += 3, j += 3) nucleo(origem, i, destino, j)
     return destino
   }
 

@@ -329,7 +329,7 @@ Fora deste corte (ver seção 10). Fica o que foi medido, para quando o titular 
    limiar 0.363: mesma aceita 9/9 | diferente aceita por engano 0/57
 ```
 
-- Dois rostos tirados de uma foto de grupo (107 px e 103 px) casaram com o recorte certo da mesma pessoa, com cosseno 0,76 e 0,68.
+- Para dois rostos tirados de uma foto de grupo (107 px e 103 px), o recorte mais parecido de cada um teve cosseno 0,76 e 0,68.
 - Agrupamento: centroide incremental com limiar de cosseno 0,40 (o SFace separou em 0,49 contra 0,16 na prova). Só rostos com 60 px ou mais, nítidos e de olhos visíveis entram no centroide. Fundir grupos com centroides ≥ 0,45 no fim.
 - Amostra de 12 recortes rotulados de uma série de TV: não representa festa com 300 convidados, crianças ou gêmeos.
 - SFace declara 0,9940 de acerto no LFW (README do opencv_zoo).
