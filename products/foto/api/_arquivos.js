@@ -218,7 +218,15 @@ function s3({ endpoint, regiao, bucket, chaveId, segredo, buscar = fetch }) {
   const pedir = async (metodo, chave, corpo, tipo) => {
     const url = `${base}/${chaveBoa(chave)}`
     const sha = corpo ? sha256Hex(corpo) : SHA_VAZIO
-    const cabecalhos = assinarV4({ metodo, url, cabecalhos: { 'x-amz-content-sha256': sha, ...(tipo ? { 'content-type': tipo } : {}) }, sha256DoCorpo: sha, regiao, chaveId, segredo })
+    const cabecalhos = assinarV4({
+      metodo,
+      url,
+      cabecalhos: { 'x-amz-content-sha256': sha, ...(tipo ? { 'content-type': tipo } : {}) },
+      sha256DoCorpo: sha,
+      regiao,
+      chaveId,
+      segredo,
+    })
     return buscar(url, { method: metodo, headers: cabecalhos, body: corpo, signal: AbortSignal.timeout(20000) })
   }
   return {
@@ -248,7 +256,14 @@ export function armazenamento(ambiente = process.env, buscar = fetch) {
   const v = (nome) => (ambiente[nome] || '').trim()
   const endpoint = v('FOTO_S3_ENDPOINT')
   if (/^https?:\/\//.test(endpoint) && v('FOTO_S3_BUCKET') && v('FOTO_S3_KEY_ID') && v('FOTO_S3_SECRET')) {
-    return s3({ endpoint, regiao: v('FOTO_S3_REGION') || 'us-east-1', bucket: v('FOTO_S3_BUCKET'), chaveId: v('FOTO_S3_KEY_ID'), segredo: v('FOTO_S3_SECRET'), buscar })
+    return s3({
+      endpoint,
+      regiao: v('FOTO_S3_REGION') || 'us-east-1',
+      bucket: v('FOTO_S3_BUCKET'),
+      chaveId: v('FOTO_S3_KEY_ID'),
+      segredo: v('FOTO_S3_SECRET'),
+      buscar,
+    })
   }
   if (v('FOTO_ARQUIVOS_DIR') && !v('VERCEL')) return pasta(v('FOTO_ARQUIVOS_DIR'))
   return null
@@ -286,7 +301,8 @@ export async function limparVencidas({ dias = 30, arm = armazenamento() } = {}) 
      order by g.criada_em`
   let arquivos = 0
   for (const g of vencidas) {
-    const fotos = await sql`select chave, enviada_em, mini_enviada_em from foto.galeria_fotos where galeria = ${g.id} and (enviada_em is not null or mini_enviada_em is not null)`
+    const fotos =
+      await sql`select chave, enviada_em, mini_enviada_em from foto.galeria_fotos where galeria = ${g.id} and (enviada_em is not null or mini_enviada_em is not null)`
     arquivos += await apagarArquivos(arm, chavesDe(fotos))
     await sql.begin(async (tx) => {
       await tx`update foto.galeria_fotos set enviada_em = null, mini_enviada_em = null where galeria = ${g.id}`

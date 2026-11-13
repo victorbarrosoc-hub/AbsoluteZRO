@@ -1,10 +1,11 @@
-// Entrada do app (módulo carregado pela casca, app/index.html). Aqui fica só a estrutura: quem é a pessoa, o tema e o
-// ponto onde as telas montam. As telas (Preact + htm, sem build) entram em `Telas` abaixo.
-// Bibliotecas: sempre por caminho relativo a /vendor (a CSP não aceita import map inline).
+// Entrada do app (módulo carregado pela casca, app/index.html). Aqui fica só a estrutura: o tema, quem é a pessoa e o
+// ponto onde a casca monta. A casca (app/casca/casca.js) traz o topo, o dock e o painel; as telas moram em
+// app/telas/<nome>/index.js; o estado, em app/estado.js (a loja).
+// Bibliotecas: sempre por caminho relativo a /vendor (a CSP não aceita import map inline); veja app/preact.js.
 
-import { render } from '../vendor/preact/preact.mjs'
-import { html } from '../vendor/htm/preact.mjs'
-import { ASSINATURA, NOME } from './nome.js'
+import { html, render } from './preact.js'
+import { Casca } from './casca/casca.js'
+import { loja } from './estado.js'
 
 const raiz = document.documentElement
 
@@ -34,18 +35,7 @@ export async function conta() {
   }
 }
 
-/** Ponto de montagem das telas. Enquanto elas não chegam, só o nome e a assinatura. */
-function Telas() {
-  return html`<section class="casca"><h1>${NOME}</h1><p>${ASSINATURA}</p></section>`
-}
-
 const alvo = document.getElementById('app')
-render(html`<${Telas} />`, alvo)
+render(html`<${Casca} loja=${loja} tema=${tema} lerConta=${conta} />`, alvo)
 alvo.removeAttribute('aria-busy')
 raiz.dataset.pronto = '1'
-
-// A sessão acabou ou o acesso saiu: recarrega, e o servidor entrega a página neutra. Sem rede, fica como está
-// (e sem login configurado, que só acontece no modo local, também: recarregar não mudaria nada).
-conta().then((c) => {
-  if (!c.semRede && c.configurado !== false && !(c.ok && c.acesso)) location.reload()
-})

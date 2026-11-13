@@ -13,7 +13,11 @@ import { aplicarLocal, estimarRuido, luzDoAr, margemLocal, reduzirRuido, temLoca
 import { criarPonto } from './ponto.js'
 import { paraBytes, telaDe } from './tela.js'
 
+// Linhas por faixa. Com margem de vizinhança a faixa é mais alta e a foto é cortada também em colunas: o que se
+// processa a mais (a margem em volta de cada ladrilho) fica perto de metade do ladrilho, e a memória, limitada.
 const FAIXA = 128
+const FAIXA_COM_MARGEM = 512
+const LADRILHO = 2048
 
 // ─────────── geometria ───────────
 
@@ -34,7 +38,14 @@ const DO_EXIF = [null, null, 'espelharH', 'girar180', 'espelharV', 'transpor', '
 
 // m ∘ n: primeiro n (da nova vista para a anterior), depois m (da anterior para a base)
 function compor(m, n) {
-  return [m[0] * n[0] + m[1] * n[3], m[0] * n[1] + m[1] * n[4], m[0] * n[2] + m[1] * n[5] + m[2], m[3] * n[0] + m[4] * n[3], m[3] * n[1] + m[4] * n[4], m[3] * n[2] + m[4] * n[5] + m[5]]
+  return [
+    m[0] * n[0] + m[1] * n[3],
+    m[0] * n[1] + m[1] * n[4],
+    m[0] * n[2] + m[1] * n[5] + m[2],
+    m[3] * n[0] + m[4] * n[3],
+    m[3] * n[1] + m[4] * n[4],
+    m[3] * n[2] + m[4] * n[5] + m[5],
+  ]
 }
 
 /**
@@ -86,17 +97,21 @@ function amostrar(base, geo, x0, y0, w, h, destino) {
   const { largura: bw, altura: bh, dados } = base.imagem
   const [a, b, c, d, e, f] = geo.mapa
   if (geo.exata) {
+    // sem reamostrar: cada linha da saída é uma linha (ou coluna) da base, andando de pixel em pixel
+    const onde = (px, py) =>
+      Math.min(bh - 1, Math.max(0, Math.floor(d * px + e * py + f))) * bw + Math.min(bw - 1, Math.max(0, Math.floor(a * px + b * py + c)))
     for (let v = 0; v < h; v++) {
-      for (let u = 0; u < w; u++) {
-        const px = x0 + u + 0.5
-        const py = y0 + v + 0.5
-        const x = Math.min(bw - 1, Math.max(0, Math.floor(a * px + b * py + c)))
-        const y = Math.min(bh - 1, Math.max(0, Math.floor(d * px + e * py + f)))
-        const i = (y * bw + x) * 3
-        const o = (v * w + u) * 3
-        destino[o] = dados[i]
-        destino[o + 1] = dados[i + 1]
-        destino[o + 2] = dados[i + 2]
+      const py = y0 + v + 0.5
+      let i = onde(x0 + 0.5, py) * 3
+      const passo = w > 1 ? (onde(x0 + 1.5, py) - onde(x0 + 0.5, py)) * 3 : 0
+      const o = v * w * 3
+      if (passo === 3) destino.set(dados.subarray(i, i + w * 3), o)
+      else {
+        for (let u = 0, k = o; u < w; u++, k += 3, i += passo) {
+          destino[k] = dados[i]
+          destino[k + 1] = dados[i + 1]
+          destino[k + 2] = dados[i + 2]
+        }
       }
     }
     return
@@ -207,7 +222,14 @@ function processar(base, ajustesCrus, opcoes, entregar) {
   const idTela = opcoes.tela ?? 'srgb'
   const geo = geometria(base, ajustes)
   const regiao = opcoes.regiao ?? { x: 0, y: 0, largura: geo.largura, altura: geo.altura }
-  if (regiao.x < 0 || regiao.y < 0 || regiao.x + regiao.largura > geo.largura || regiao.y + regiao.altura > geo.altura || regiao.largura < 1 || regiao.altura < 1) {
+  if (
+    regiao.x < 0 ||
+    regiao.y < 0 ||
+    regiao.x + regiao.largura > geo.largura ||
+    regiao.y + regiao.altura > geo.altura ||
+    regiao.largura < 1 ||
+    regiao.altura < 1
+  ) {
     throw new Error('revelar: região fora do quadro')
   }
   const ponto = criarPonto(ajustes, contextoDe(base, ajustes))
@@ -228,29 +250,35 @@ function processar(base, ajustesCrus, opcoes, entregar) {
   const contextoLocal = { semente: opcoes.semente ?? 1, ar: null }
   if (local && ajustes.presenca.neblina > 0) contextoLocal.ar = luzDoArDaBase(base, ponto)
   const margem = local || ruido ? margemLocal(ajustes, quadro, escala) : 0
-  const faixa = Math.max(opcoes.faixa ?? FAIXA, 2 * margem)
+  const faixa = Math.max(opcoes.faixa ?? (margem ? FAIXA_COM_MARGEM : FAIXA), 2 * margem)
   const look = opcoes.look && ajustes.look.id ? opcoes.look : null
   const quantoLook = ajustes.look.quantidade / 100
   const cor = [0, 0, 0]
 
-  // colunas com margem (uma vez só), linhas com margem a cada faixa
-  const bx0 = Math.max(0, regiao.x - margem)
-  const bx1 = Math.min(geo.largura, regiao.x + regiao.largura + margem)
-  const bw = bx1 - bx0
+  // Faixas de linhas; com vizinhança ligada, cada faixa ainda é cortada em ladrilhos de colunas, para a memória de
+  // trabalho dos filtros (vários planos em float64) não depender da largura da foto. Cada ladrilho leva a sua margem.
+  const ladrilho = margem ? Math.max(opcoes.ladrilho ?? LADRILHO, 2 * margem) : regiao.largura
+  const fimX = regiao.x + regiao.largura
   for (let y = regiao.y; y < regiao.y + regiao.altura; y += faixa) {
     const linhas = Math.min(faixa, regiao.y + regiao.altura - y)
     const by0 = Math.max(0, y - margem)
     const by1 = Math.min(geo.altura, y + linhas + margem)
     const bh = by1 - by0
-    const dados = new Float32Array(bw * bh * 3)
-    amostrar(base, geo, bx0, by0, bw, bh, dados)
-    const bloco = { largura: bw, altura: bh, dados, x0: bx0, y0: by0, quadro, escala }
-    if (ruido && modeloDeRuido) reduzirRuido(bloco, { luz: ajustes.detalhe.ruidoLuz, cor: ajustes.detalhe.ruidoCor, ruido: modeloDeRuido })
-    ponto.aplicarEm(dados, bw * bh)
-    if (local) aplicarLocal(bloco, ajustes, contextoLocal)
     const pronta = new Float32Array(regiao.largura * linhas * 3)
-    for (let v = 0; v < linhas; v++) {
-      tela.aplicarEm(dados, pronta, regiao.largura, ((y + v - by0) * bw + (regiao.x - bx0)) * 3, v * regiao.largura * 3)
+    for (let x = regiao.x; x < fimX; x += ladrilho) {
+      const colunas = Math.min(ladrilho, fimX - x)
+      const bx0 = Math.max(0, x - margem)
+      const bx1 = Math.min(geo.largura, x + colunas + margem)
+      const bw = bx1 - bx0
+      const dados = new Float32Array(bw * bh * 3)
+      amostrar(base, geo, bx0, by0, bw, bh, dados)
+      const bloco = { largura: bw, altura: bh, dados, x0: bx0, y0: by0, quadro, escala }
+      if (ruido && modeloDeRuido) reduzirRuido(bloco, { luz: ajustes.detalhe.ruidoLuz, cor: ajustes.detalhe.ruidoCor, ruido: modeloDeRuido })
+      ponto.aplicarEm(dados, bw * bh)
+      if (local) aplicarLocal(bloco, ajustes, contextoLocal)
+      for (let v = 0; v < linhas; v++) {
+        tela.aplicarEm(dados, pronta, colunas, ((y + v - by0) * bw + (x - bx0)) * 3, (v * regiao.largura + (x - regiao.x)) * 3)
+      }
     }
     if (look) {
       for (let i = 0; i < pronta.length; i += 3) {
@@ -275,6 +303,7 @@ function processar(base, ajustesCrus, opcoes, entregar) {
  *   regiao     { x, y, largura, altura } dentro do quadro de saída: só esse pedaço (é como a exportação anda em blocos)
  *   semLocal   pula os passos de vizinhança (prévia durante o arrasto)
  *   semente    do grão (mesma foto, mesmo grão: passe algo estável da foto)
+ *   faixa, ladrilho   linhas e colunas por bloco de trabalho (só para medir e testar; o resultado não muda)
  *   look       (r, g, b, saida) → cor, aplicada sobre o código da tela quando `ajustes.look.id` existe, na quantidade
  *              de `ajustes.look.quantidade` (a LUT em si mora em src/estilo/look.js)
  */
@@ -302,7 +331,10 @@ export function revelarEmBytes(base, ajustes, opcoes = {}) {
   const regiao = regiaoDe(base, ajustes, opcoes)
   const dados = bits === 8 ? new Uint8ClampedArray(regiao.largura * regiao.altura * 4) : new Uint16Array(regiao.largura * regiao.altura * 3)
   const info = processar(base, ajustes, opcoes, (faixa, linha, linhas) => {
-    const bytes = paraBytes({ largura: regiao.largura, altura: linhas, dados: faixa }, { bits, pontilhado: opcoes.pontilhado, deslocamento: linha * regiao.largura })
+    const bytes = paraBytes(
+      { largura: regiao.largura, altura: linhas, dados: faixa },
+      { bits, pontilhado: opcoes.pontilhado, deslocamento: linha * regiao.largura },
+    )
     dados.set(bytes, linha * regiao.largura * canais)
   })
   return { largura: info.largura, altura: info.altura, dados, espaco: info.espaco, quadro: info.quadro }

@@ -17,9 +17,14 @@ const AMOSTRAS = 60000
 // Ferwerda, 2002), mas só parte do caminho — cena escura de propósito continua escura.
 export const AUTO_EXPOSICAO = { clarear: 0.6, escurecer: 0.4, folga: 0.15, min: -1.5, max: 2 }
 
-// Branco: tons quase neutros (croma relativa abaixo de 0,10) entre −4 e +2,5 EV; anda 80% do caminho, no máximo 60
-// mired e 30 de tinta; com menos de 2% da foto em tons neutros não mexe.
-export const AUTO_BRANCO = { croma: 0.1, evMin: -4, evMax: 2.5, parte: 0.8, mired: 60, tinta: 30, minimo: 0.02 }
+// Branco: pontos cinza escolhidos em três passadas, cada uma mais exigente e já com a correção da anterior (croma
+// relativa abaixo de 0,12, depois 0,07, depois 0,04), entre −4 e +2,5 EV — a ideia de Huo, Chang, Wang e Wei (2006),
+// "Robust automatic white balance algorithm using gray color points in images", IEEE Trans. Consumer Electronics 52(2).
+// Anda 80% do caminho. Não mexe em três casos: menos de 2% da foto em pontos cinza; correção menor que 6 mired e 3
+// de tinta; ou correção maior que 30 mired ou 15 de tinta. O teto é baixo de propósito: a câmera quase sempre acerta
+// por perto, e dominante maior que isso costuma ser a cor da cena (céu, folhagem de outono, parede), não a luz — nas
+// amostras reais foi o que separou as duas coisas.
+export const AUTO_BRANCO = { croma: [0.12, 0.07, 0.04], evMin: -4, evMax: 2.5, parte: 0.8, mired: 30, tinta: 15, minimo: 0.02, folgaMired: 6, folgaTinta: 3 }
 
 const numero = (v, casas = 1) => v.toFixed(casas).replace('.', ',').replace(/^-/, '−')
 const comSinal = (v, casas = 1) => (v >= 0 ? '+' : '') + numero(v, casas)
@@ -89,10 +94,10 @@ export function autoBranco(base) {
   const original = { kelvin: base.branco?.kelvin ?? 6500, tinta: base.branco?.tinta ?? 0 }
   const lab = [0, 0, 0]
   const ganhoBase = 2 ** (base.exposicaoBase ?? 0)
-  // duas passadas: a segunda escolhe os neutros já com a correção da primeira
   let ganhos = [1, 1, 1]
   let usados = 0
-  for (let passada = 0; passada < 2; passada++) {
+  for (let passada = 0; passada < AUTO_BRANCO.croma.length; passada++) {
+    const limite = AUTO_BRANCO.croma[passada]
     const soma = [0, 0, 0]
     let conta = 0
     let total = 0
@@ -108,7 +113,7 @@ export function autoBranco(base) {
         const ev = Math.log2((lum * ganhoBase) / CINZA)
         if (ev < AUTO_BRANCO.evMin || ev > AUTO_BRANCO.evMax) continue
         oklab.paraOklab(r, g, b, lab)
-        if (!(lab[0] > 0) || Math.hypot(lab[1], lab[2]) / lab[0] > AUTO_BRANCO.croma) continue
+        if (!(lab[0] > 0) || Math.hypot(lab[1], lab[2]) / lab[0] > limite) continue
         soma[0] += dados[o] / lum
         soma[1] += dados[o + 1] / lum
         soma[2] += dados[o + 2] / lum
@@ -139,20 +144,24 @@ export function autoBranco(base) {
   const luz = mulV(inversa(CAT16), [(cones[0] * antigo[0]) / d65[0], (cones[1] * antigo[1]) / d65[1], (cones[2] * antigo[2]) / d65[2]])
   const medido = temperaturaDeXy(XYZParaXy(luz))
   const mired0 = 1e6 / original.kelvin
-  let dm = (1e6 / medido.kelvin - mired0) * AUTO_BRANCO.parte
-  let dt = (medido.tinta - original.tinta) * AUTO_BRANCO.parte
-  const porque = []
-  const limitado = Math.abs(dm) > AUTO_BRANCO.mired || Math.abs(dt) > AUTO_BRANCO.tinta
-  dm = Math.max(-AUTO_BRANCO.mired, Math.min(AUTO_BRANCO.mired, dm))
-  dt = Math.max(-AUTO_BRANCO.tinta, Math.min(AUTO_BRANCO.tinta, dt))
+  const dm = (1e6 / medido.kelvin - mired0) * AUTO_BRANCO.parte
+  const dt = (medido.tinta - original.tinta) * AUTO_BRANCO.parte
+  const manter = (frase, confianca) => ({ temperatura: original.kelvin, tinta: original.tinta, mudou: false, porque: [frase], confianca, usados })
+  // Dominante maior que o limite quase nunca é a luz: é a cor da cena (céu, mar, parede). Aí o automático não mexe.
+  if (Math.abs(dm) > AUTO_BRANCO.mired || Math.abs(dt) > AUTO_BRANCO.tinta) {
+    return manter(
+      'A cor que domina os tons quase neutros é forte demais para ser só da luz (pode ser a cor da cena): mantive o branco como fotografado.',
+      'baixa',
+    )
+  }
+  if (Math.abs(dm) < AUTO_BRANCO.folgaMired && Math.abs(dt) < AUTO_BRANCO.folgaTinta) {
+    return manter('Os tons neutros da foto já estão neutros: mantive o branco.', usados > 0.15 ? 'alta' : 'media')
+  }
   const temperatura = Math.round(Math.max(KELVIN_MIN, Math.min(KELVIN_MAX, 1e6 / (mired0 + dm))) / 10) * 10
   const tinta = Math.round(Math.max(-150, Math.min(150, original.tinta + dt)))
-  const mudou = Math.abs(temperatura - original.kelvin) >= 50 || Math.abs(tinta - original.tinta) >= 2
-  if (!mudou) porque.push('Os tons neutros da foto já estão neutros: mantive o branco.')
-  else {
-    const lado = temperatura > original.kelvin ? 'mais quente' : temperatura < original.kelvin ? 'mais fria' : 'com outra tinta'
-    porque.push(`Os tons neutros (${Math.round(usados * 100)}% da foto) puxavam para uma cor; deixei a foto ${lado}: ${temperatura} K, tinta ${comSinal(tinta, 0)}.`)
-    if (limitado) porque.push('Andei só até o limite do automático: daqui em diante a cor pode ser da cena, não da luz.')
-  }
-  return { temperatura, tinta, mudou, porque, confianca: limitado ? 'baixa' : usados > 0.15 ? 'alta' : 'media', usados }
+  const lado = temperatura > original.kelvin ? 'mais quente' : temperatura < original.kelvin ? 'mais fria' : 'com outra tinta'
+  const porque = [
+    `Os tons neutros (${Math.round(usados * 100)}% da foto) puxavam para uma cor; deixei a foto ${lado}: ${temperatura} K, tinta ${comSinal(tinta, 0)}.`,
+  ]
+  return { temperatura, tinta, mudou: true, porque, confianca: usados > 0.15 ? 'alta' : 'media', usados }
 }

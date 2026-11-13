@@ -11,7 +11,7 @@
 //
 // A curva (em x = cena / 0,18, saída em luz linear da tela):
 //
-//   L(x) = x^c / (x^c + k)                 log-logística (a "sigmoide" do darktable e do filme)
+//   L(x) = x^c / (x^c + k)                 log-logística (Naka e Rushton, 1966; a forma das curvas de filme em log)
 //   f(x) = a · (L(x) − L(B))               0 em x ≤ B, 1 em x ≥ W
 //
 // com B = 2^−margemSombras, W = 2^margemAltas e a = 1 / (L(W) − L(B)). As duas constantes livres, c e k, saem de duas
@@ -25,7 +25,7 @@
 import { ESPACOS, curvaDe, luminancia, matrizEntre } from './cor/espacos.js'
 import { inversa, mulM } from './cor/matriz.js'
 import { LAB_PARA_LMS, criarOklab } from './cor/oklab.js'
-import { exp2, log2 } from './cor/rapido.js'
+import { EXP, LOG, POT, POT_MIN, exp2, f32, i32, log2 } from './cor/rapido.js'
 
 /** Cinza médio: 0,18 na cena vira 0,18 de luz na tela (código 118 de 255 em sRGB). */
 export const CINZA = 0.18
@@ -59,7 +59,7 @@ const BRANCO_H0 = 0.6
 export const EPS = CINZA * 2 ** -20
 
 const TOL_GAMUT = 1e-6
-const PASSOS_GAMUT = 22
+const PASSOS_GAMUT = 14
 
 const limitar = (v, a, b) => (v < a ? a : v > b ? b : v)
 
@@ -283,12 +283,12 @@ export function criarTela(id = 'srgb', opcoes = {}) {
       const l = B0[0] * L + B0[1] * A + B0[2] * Bb
       const m = B0[3] * L + B0[4] * A + B0[5] * Bb
       const z = B0[6] * L + B0[7] * A + B0[8] * Bb
-      const l3 = l * l * l
-      const m3 = m * m * m
-      const z3 = z * z * z
-      const r = q[0] * l3 + q[1] * m3 + q[2] * z3
-      const g = q[3] * l3 + q[4] * m3 + q[5] * z3
-      const b = q[6] * l3 + q[7] * m3 + q[8] * z3
+      const lc = l * l * l
+      const mc = m * m * m
+      const zc = z * z * z
+      const r = q[0] * lc + q[1] * mc + q[2] * zc
+      const g = q[3] * lc + q[4] * mc + q[5] * zc
+      const b = q[6] * lc + q[7] * mc + q[8] * zc
       if (r >= -TOL_GAMUT && g >= -TOL_GAMUT && b >= -TOL_GAMUT && r <= 1 + TOL_GAMUT && g <= 1 + TOL_GAMUT && b <= 1 + TOL_GAMUT) {
         lo = s
         tr = r
@@ -311,7 +311,24 @@ export function criarTela(id = 'srgb', opcoes = {}) {
     const mx = r > g ? (r > b ? r : b) : g > b ? g : b
     const n = w0 * r + w1 * g + w2 * b + beta * mx
     const nc = n > EPS ? n : EPS
-    const h = f(nc)
+    // h = f(nc), com log2 e 2^x de cor/rapido.js embutidos (é a conta mais cara do pixel)
+    let h = 0
+    const x = nc * ig
+    if (x >= xW) h = 1
+    else if (x > xB) {
+      f32[0] = x
+      const bits = i32[0]
+      const mant = bits & 0x7fffff
+      const il = mant >>> 13
+      const e = c * ((bits >>> 23) - 127 + LOG[il] + (LOG[il + 1] - LOG[il]) * ((mant & 0x1fff) * (1 / 8192)))
+      const ke = Math.floor(e)
+      const pe = (e - ke) * 1024
+      const ie = pe | 0
+      const u = POT[ke - POT_MIN] * (EXP[ie] + (EXP[ie + 1] - EXP[ie]) * (pe - ie))
+      h = a * (u / (u + k) - lb)
+      if (h < 0) h = 0
+      else if (h > 1) h = 1
+    }
     const s = h / nc
     const desloca = h - s * n
     let kb = 1
@@ -370,27 +387,33 @@ export function criarTela(id = 'srgb', opcoes = {}) {
     return destino
   }
 
+  // a volta da curva de tons no laço (2^x e log2 por tabela, erro relativo < 1e-6); `curva.volta` é a conta com Math.pow
+  const ic = 1 / c
+  const voltaRapida = (y) => {
+    if (!(y > 0)) return xB * CINZA
+    if (y >= 1) return xW * CINZA
+    const l = y / a + lb
+    return CINZA * exp2(ic * log2((k * l) / (1 - l)))
+  }
+
   /**
-   * Código da tela (0..1) → cena Rec.2020. Exata para `preservarMatiz` 100 (o padrão) e 0; no meio do caminho a
-   * mistura não tem inversa fechada e a função lança.
+   * Luz linear da tela (0..1, no espaço da tela) → cena Rec.2020. É a volta sem a curva de transferência, para quem
+   * já decodificou o código (uma tabela de 256 ou 65536 entradas resolve a foto inteira).
    */
-  function inverter(cr, cg, cb, saida) {
-    const tr = transferencia.decodificar(limitar(cr, 0, 1))
-    const tg = transferencia.decodificar(limitar(cg, 0, 1))
-    const tb = transferencia.decodificar(limitar(cb, 0, 1))
+  function inverterLinear(tr, tg, tb, saida) {
     const or = Mi[0] * tr + Mi[1] * tg + Mi[2] * tb
     const og = Mi[3] * tr + Mi[4] * tg + Mi[5] * tb
     const ob = Mi[6] * tr + Mi[7] * tg + Mi[8] * tb
     if (preservar === 0) {
-      saida[0] = curva.volta(or)
-      saida[1] = curva.volta(og)
-      saida[2] = curva.volta(ob)
+      saida[0] = voltaRapida(or)
+      saida[1] = voltaRapida(og)
+      saida[2] = voltaRapida(ob)
       return saida
     }
     if (preservar < 1) throw new Error('A volta da tela só existe com preservarMatiz em 100 ou em 0')
     const mx = or > og ? (or > ob ? or : ob) : og > ob ? og : ob
     const h = w0 * or + w1 * og + w2 * ob + beta * mx
-    const n = curva.volta(h)
+    const n = voltaRapida(h)
     if (!(h > 1e-12)) {
       saida[0] = saida[1] = saida[2] = n
       return saida
@@ -404,6 +427,19 @@ export function criarTela(id = 'srgb', opcoes = {}) {
     return saida
   }
 
+  /**
+   * Código da tela (0..1) → cena Rec.2020. Exata para `preservarMatiz` 100 (o padrão) e 0; no meio do caminho a
+   * mistura não tem inversa fechada e a função lança.
+   */
+  function inverter(cr, cg, cb, saida) {
+    return inverterLinear(
+      transferencia.decodificar(limitar(cr, 0, 1)),
+      transferencia.decodificar(limitar(cg, 0, 1)),
+      transferencia.decodificar(limitar(cb, 0, 1)),
+      saida,
+    )
+  }
+
   return {
     id,
     espaco,
@@ -411,6 +447,9 @@ export function criarTela(id = 'srgb', opcoes = {}) {
     aplicar,
     aplicarEm,
     inverter,
+    inverterLinear,
+    /** Curva de transferência da tela: { codificar, decodificar }. */
+    transferencia,
     /** f da curva de tons sobre um valor de cena (para desenhar a curva e a margem na tela). */
     tom: f,
     uniformes: {

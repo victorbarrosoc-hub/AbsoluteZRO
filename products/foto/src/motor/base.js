@@ -70,7 +70,8 @@ export function corDaCamera(negativo) {
     xyBranco = XYZParaXy(mulV(inversa(m), neutro))
   } else {
     // DNG: a matriz depende da temperatura da luz, que depende da matriz — itera até assentar (como o DNG SDK)
-    const [quente, fria] = matrizes.length === 2 ? (matrizes[0].kelvin <= matrizes[1].kelvin ? matrizes : [matrizes[1], matrizes[0]]) : [matrizes[0], matrizes[0]]
+    const [quente, fria] =
+      matrizes.length === 2 ? (matrizes[0].kelvin <= matrizes[1].kelvin ? matrizes : [matrizes[1], matrizes[0]]) : [matrizes[0], matrizes[0]]
     const peso = (T) => {
       if (quente === fria) return 1
       const g = (1 / T - 1 / fria.kelvin) / (1 / quente.kelvin - 1 / fria.kelvin)
@@ -173,6 +174,34 @@ function espelharBorda(mos) {
 
 // ─────────── reconstrução de altas luzes ───────────
 
+// Até quantas células de distância de um corte a razão entre canais é medida.
+const ALCANCE = 16
+
+// Máscara das células a até `raio` células (em x e em y) de alguma célula marcada. Duas passadas de contagem corrente.
+function vizinhanca(marca, cw, ch, raio) {
+  const naLinha = new Uint8Array(cw * ch)
+  for (let y = 0; y < ch; y++) {
+    const l = y * cw
+    let conta = 0
+    for (let x = 0; x < Math.min(raio, cw); x++) if (marca[l + x]) conta++
+    for (let x = 0; x < cw; x++) {
+      if (x + raio < cw && marca[l + x + raio]) conta++
+      if (conta) naLinha[l + x] = 1
+      if (x - raio >= 0 && marca[l + x - raio]) conta--
+    }
+  }
+  const saida = new Uint8Array(cw * ch)
+  const contas = new Int32Array(cw)
+  for (let y = 0; y < Math.min(raio, ch); y++) for (let x = 0; x < cw; x++) contas[x] += naLinha[y * cw + x]
+  for (let y = 0; y < ch; y++) {
+    const l = y * cw
+    if (y + raio < ch) for (let x = 0; x < cw; x++) contas[x] += naLinha[(y + raio) * cw + x]
+    for (let x = 0; x < cw; x++) if (contas[x]) saida[l + x] = 1
+    if (y - raio >= 0) for (let x = 0; x < cw; x++) contas[x] -= naLinha[(y - raio) * cw + x]
+  }
+  return saida
+}
+
 // Peso do "neutro" nas células com os três canais cortados: fraco perto da borda da região (onde a razão medida ao
 // lado manda) e dominante a partir de umas 8 células para dentro (soma 64 × 0,02 > 1). É o que faz a transição suave.
 const PESO_NEUTRO = 0.02
@@ -191,7 +220,8 @@ const PESO_NEUTRO = 0.02
  * 4. O sensel cortado fica com o maior entre o que tinha e o estimado (lido no lugar do sensel): a reconstrução só
  *    acrescenta.
  *
- * Devolve { celulas: [um, dois, tres] (frações da área), folga (EV acima de 1,0 do percentil 99,9 da imagem) }.
+ * Devolve { celulas: [um, dois, tres] (frações da área), folga (EV acima de 1,0 do percentil 99,9 da imagem, contado
+ * nas células cortadas e na vizinhança delas) }.
  */
 function reconstruirAltas(mos, ganhos) {
   const { dados, cortado, W, H, passo, padrao, lado } = mos
@@ -202,14 +232,24 @@ function reconstruirAltas(mos, ganhos) {
   const valor = new Float32Array(n * 3)
   const conta = new Uint8Array(n * 3)
   const marca = new Uint8Array(n) // bit c ligado = canal c cortado (ou sem amostra válida) na célula
+  // cor e célula de cada coluna, calculadas uma vez (o laço por sensel fica sem divisão nem resto)
+  const coresDaLinha = []
+  for (let f = 0; f < lado; f++) {
+    const cores = new Uint8Array(W)
+    for (let x = 0; x < W; x++) cores[x] = padrao[f * lado + (x % lado)]
+    coresDaLinha.push(cores)
+  }
+  const celulaDaColuna = new Int32Array(W)
+  for (let x = 0; x < W; x++) celulaDaColuna[x] = (x / cl) | 0
   for (let y = 0; y < H; y++) {
-    const cy = (y / cl) | 0
-    const fase = (y % lado) * lado
+    const cores = coresDaLinha[y % lado]
+    const primeira = ((y / cl) | 0) * cw
     const linha = (y + BORDA) * passo + BORDA
+    const mascara = y * W
     for (let x = 0; x < W; x++) {
-      const c = padrao[fase + (x % lado)]
-      const cel = cy * cw + ((x / cl) | 0)
-      if (cortado[y * W + x]) marca[cel] |= 1 << c
+      const c = cores[x]
+      const cel = primeira + celulaDaColuna[x]
+      if (cortado[mascara + x]) marca[cel] |= 1 << c
       else {
         valor[cel * 3 + c] += dados[linha + x]
         conta[cel * 3 + c]++
@@ -223,6 +263,9 @@ function reconstruirAltas(mos, ganhos) {
       else marca[i] |= 1 << c
     }
   }
+  // Só a vizinhança das células cortadas interessa (é de lá que vem a razão da borda): o resto da foto fica de fora
+  // das contas caras.
+  const perto = vizinhanca(marca, cw, ch, ALCANCE)
   // No Bayer o vermelho e o azul moram em cantos opostos da célula: num degradê, a média de cada canal vale para um
   // ponto diferente, e a razão entre canais ganharia um erro igual ao degradê de meio pixel. Leva os dois para o
   // centro da célula (bilinear com as três células vizinhas do lado do centro: pesos 9, 3, 3, 1). O verde, e os três
@@ -238,7 +281,7 @@ function reconstruirAltas(mos, ganhos) {
         const yv = y + dy
         for (let x = 0; x < cw; x++) {
           const i = y * cw + x
-          if (marca[i] & bit) continue
+          if (!perto[i] || marca[i] & bit) continue
           const xv = x + dx
           let soma = 9 * bruto[i * 3 + c]
           let peso = 9
@@ -270,6 +313,7 @@ function reconstruirAltas(mos, ganhos) {
     const k = (m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)
     quantas[k]++
     if (k === 0) {
+      if (!perto[i]) continue
       const r = valor[i * 3]
       const g = valor[i * 3 + 1]
       const b = valor[i * 3 + 2]
@@ -313,6 +357,8 @@ function reconstruirAltas(mos, ganhos) {
     for (let y = 0; y < f.ch; y++) {
       for (let x = 0; x < f.cw; x++) {
         const i = y * f.cw + x
+        // no nível das células só as marcadas vão usar a razão
+        if (k === 0 && !marca[i]) continue
         const w = f.w[i]
         const t = w >= 1 ? 1 : w
         let a = 0
@@ -378,6 +424,7 @@ function reconstruirAltas(mos, ganhos) {
       valor[i * 3 + 1] = g
       valor[i * 3 + 2] = b
     }
+    if (!perto[i]) continue
     const topo = Math.max(r, g, b)
     if (topo > 1) histograma[Math.min(CASAS - 1, (Math.log2(topo) * 16) | 0)]++
   }
@@ -394,15 +441,16 @@ function reconstruirAltas(mos, ganhos) {
   // de volta ao mosaico: só os sensels cortados, e só para cima. O valor de cada célula vale no centro dela; o sensel
   // lê o plano no lugar onde está (bilinear entre os centros das células vizinhas).
   for (let y = 0; y < H; y++) {
-    const fase = (y % lado) * lado
+    const cores = coresDaLinha[y % lado]
     const linha = (y + BORDA) * passo + BORDA
+    const mascara = y * W
     const fy = Math.min(Math.max((y + 0.5) / cl - 0.5, 0), ch - 1)
     const y0 = fy | 0
     const y1 = Math.min(y0 + 1, ch - 1)
     const ty = fy - y0
     for (let x = 0; x < W; x++) {
-      if (!cortado[y * W + x]) continue
-      const c = padrao[fase + (x % lado)]
+      if (!cortado[mascara + x]) continue
+      const c = cores[x]
       const fx = Math.min(Math.max((x + 0.5) / cl - 0.5, 0), cw - 1)
       const x0 = fx | 0
       const x1 = Math.min(x0 + 1, cw - 1)
@@ -742,7 +790,8 @@ let brancoD65 = null
  * Foto que já chega pronta (JPEG, PNG, TIFF) → Base. Entra pela inversa exata da tela neutra (contraste 0, margens
  * padrão) do espaço em que a foto está: com os ajustes neutros, `revelar` devolve a mesma imagem (erro < 1/255), e os
  * controles se comportam como no RAW. `dados`: Uint8Array, Uint8ClampedArray ou Uint16Array; `canais` 3 ou 4 (o alfa é
- * ignorado); `espaco`: 'srgb' | 'p3' | 'adobe' | 'rec2020' | 'prophoto'; `orientacao`: a do EXIF (1 a 8).
+ * ignorado); `espaco`: 'srgb' | 'p3' | 'adobe' | 'rec2020' (ProPhoto é maior que o espaço de trabalho: entra, mas as
+ * cores fora do Rec.2020 não voltam exatas); `orientacao`: a do EXIF (1 a 8).
  */
 export function baseDeImagem({ largura, altura, dados, canais = 4, espaco = 'srgb', orientacao = 1 }) {
   if (canais !== 3 && canais !== 4) throw new Error('canais precisa ser 3 ou 4')
@@ -750,10 +799,13 @@ export function baseDeImagem({ largura, altura, dados, canais = 4, espaco = 'srg
   const tela = criarTela(espaco, { altas: MARGENS.altas.padrao, sombras: MARGENS.sombras.padrao })
   const n = largura * altura
   const saida = new Float32Array(n * 3)
-  const escala = dados instanceof Uint16Array ? 1 / 65535 : 1 / 255
+  // a curva de transferência vira tabela (uma entrada por código possível): exata e sem potência por pixel
+  const niveis = dados instanceof Uint16Array ? 65535 : 255
+  const linear = new Float64Array(niveis + 1)
+  for (let i = 0; i <= niveis; i++) linear[i] = tela.transferencia.decodificar(i / niveis)
   const cor = [0, 0, 0]
   for (let p = 0, i = 0, o = 0; p < n; p++, i += canais, o += 3) {
-    tela.inverter(dados[i] * escala, dados[i + 1] * escala, dados[i + 2] * escala, cor)
+    tela.inverterLinear(linear[dados[i]], linear[dados[i + 1]], linear[dados[i + 2]], cor)
     saida[o] = cor[0]
     saida[o + 1] = cor[1]
     saida[o + 2] = cor[2]

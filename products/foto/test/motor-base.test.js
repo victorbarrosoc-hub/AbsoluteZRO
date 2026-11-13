@@ -9,7 +9,23 @@ import { matrizAdaptacao } from '../src/motor/cor/adaptacao.js'
 import { temperaturaDeXy, xyDeTemperatura } from '../src/motor/cor/branco.js'
 import { D50, D65, luminancia, xyParaXYZ } from '../src/motor/cor/espacos.js'
 import { diagonal, misturarM } from '../src/motor/cor/matriz.js'
-import { CAMERA, PADROES, XTRANS, cena, deSrgb8, deltaE, fotografar, inversa, latitudeDeTeste, mascaraDeBorda, miolo, mulM, mulV, psnr, sorteio } from './apoio-motor.js'
+import {
+  CAMERA,
+  PADROES,
+  XTRANS,
+  cena,
+  deSrgb8,
+  deltaE,
+  fotografar,
+  inversa,
+  latitudeDeTeste,
+  mascaraDeBorda,
+  miolo,
+  mulM,
+  mulV,
+  psnr,
+  sorteio,
+} from './apoio-motor.js'
 
 const perto = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} esperado ${b}, veio ${a} (tolerância ${tol})`)
 
@@ -53,7 +69,10 @@ test('cena com bordas: PSNR e ΔE dentro do limite, e o demosaico de qualidade g
       psnrBorda: psnr(imagem, base.imagem, borda),
     }
     const m = medidas[demosaico]
-    t.diagnostic(`${demosaico}: ΔE médio ${m.tudo.medio.toFixed(4)}, p99 ${m.tudo.p99.toFixed(4)}, pior ${m.tudo.pior.toFixed(3)}; na borda ${m.borda.medio.toFixed(4)} (${m.borda.pixels} px); PSNR ${m.psnr.toFixed(2)} dB, na borda ${m.psnrBorda.toFixed(2)} dB`)
+    t.diagnostic(`${demosaico}: ΔE médio ${m.tudo.medio.toFixed(4)}, p99 ${m.tudo.p99.toFixed(4)}, pior ${m.tudo.pior.toFixed(3)}`)
+    t.diagnostic(
+      `${demosaico}: na borda ΔE ${m.borda.medio.toFixed(4)} (${m.borda.pixels} px); PSNR ${m.psnr.toFixed(2)} dB, na borda ${m.psnrBorda.toFixed(2)} dB`,
+    )
   }
   const { rapido, qualidade } = medidas
   assert.ok(rapido.tudo.medio < 0.009 && rapido.tudo.p99 < 0.07, 'rápido: ΔE')
@@ -128,7 +147,11 @@ test('altas luzes: canal cortado recuperado, branco sem tinta, e nada cortado em
     }
     return { largura: W, altura: H, dados: d }
   }
-  for (const [nome, cor, pico] of [['luz quente', [1, 0.75, 0.45], 1.6], ['luz azulada', [0.6, 0.8, 1], 1.5], ['luz neutra', [1, 1, 1], 1.7]]) {
+  for (const [nome, cor, pico] of [
+    ['luz quente', [1, 0.75, 0.45], 1.6],
+    ['luz azulada', [0.6, 0.8, 1], 1.5],
+    ['luz neutra', [1, 1, 1], 1.7],
+  ]) {
     const img = mancha(cor, pico)
     const base = prepararBase(fotografar(img).negativo)
     assert.ok(base.cortado.um > 0.02 && base.cortado.tres === 0, `${nome}: ${JSON.stringify(base.cortado)}`)
@@ -160,7 +183,10 @@ test('altas luzes: canal cortado recuperado, branco sem tinta, e nada cortado em
     assert.ok(base.folgaAltas > 0.4 && base.folgaAltas < 1.5, `${nome}: folga ${base.folgaAltas}`)
   }
   // os três canais estourados: o miolo fica branco exato, mesmo com luz colorida, e a transição não tinge
-  for (const cor of [[1, 1, 1], [1, 0.75, 0.45]]) {
+  for (const cor of [
+    [1, 1, 1],
+    [1, 0.75, 0.45],
+  ]) {
     const img = mancha(cor, 7)
     const base = prepararBase(fotografar(img).negativo, { demosaico: 'qualidade' })
     assert.ok(base.cortado.tres > 0.1)
@@ -200,7 +226,13 @@ test('cor da câmera: matriz única D65, dois iluminantes por 1/T e ForwardMatri
   perto(Math.max(...base.branco.neutroCamera), 1, 1e-12)
 
   // DNG com as duas matrizes iguais: tem de dar o mesmo que a matriz única
-  const duas = fotografar(img, { origem: 'dng', matrizes: [{ kelvin: 2856, xyzParaCamera: CAMERA }, { kelvin: 6504, xyzParaCamera: CAMERA }] })
+  const duas = fotografar(img, {
+    origem: 'dng',
+    matrizes: [
+      { kelvin: 2856, xyzParaCamera: CAMERA },
+      { kelvin: 6504, xyzParaCamera: CAMERA },
+    ],
+  })
   duas.negativo.cor.neutroComoFotografado = duas.neutro
   delete duas.negativo.wb.comoFotografado
   assert.ok(deltaE(img, prepararBase(duas.negativo).imagem).pior < 6e-4, 'DNG, ColorMatrix')
@@ -213,7 +245,10 @@ test('cor da câmera: matriz única D65, dois iluminantes por 1/T e ForwardMatri
 
   // duas matrizes diferentes: sob luz de 3400 K a matriz usada é a interpolada por 1/T, e o neutro sai neutro
   const quente = CAMERA.map((v, i) => v * (1 + 0.06 * Math.sin(i * 1.7)))
-  const matrizes = [{ kelvin: 2856, xyzParaCamera: quente }, { kelvin: 6504, xyzParaCamera: CAMERA }]
+  const matrizes = [
+    { kelvin: 2856, xyzParaCamera: quente },
+    { kelvin: 6504, xyzParaCamera: CAMERA },
+  ]
   for (const T of [2856, 3400, 5000, 6504, 9000]) {
     const g = Math.min(1, Math.max(0, (1 / T - 1 / 6504) / (1 / 2856 - 1 / 6504)))
     const cm = misturarM(quente, CAMERA, g)
@@ -237,11 +272,13 @@ test('reduzir 2 e 4: o bloco do filtro de cor vira um pixel (prévia)', () => {
     const w = Math.floor(imagem.largura / fator)
     const h = Math.floor(imagem.altura / fator)
     const d = new Float32Array(w * h * 3)
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) {
-      let s = 0
-      for (let dy = 0; dy < fator; dy++) for (let dx = 0; dx < fator; dx++) s += imagem.dados[((y * fator + dy) * imagem.largura + x * fator + dx) * 3 + c]
-      d[(y * w + x) * 3 + c] = s / (fator * fator)
-    }
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        for (let c = 0; c < 3; c++) {
+          let s = 0
+          for (let dy = 0; dy < fator; dy++) for (let dx = 0; dx < fator; dx++) s += imagem.dados[((y * fator + dy) * imagem.largura + x * fator + dx) * 3 + c]
+          d[(y * w + x) * 3 + c] = s / (fator * fator)
+        }
     return { largura: w, altura: h, dados: d }
   }
   for (const fator of [2, 4]) {
@@ -258,7 +295,7 @@ test('reduzir 2 e 4: o bloco do filtro de cor vira um pixel (prévia)', () => {
   assert.ok(deltaE(plana([0.3, 0.2, 0.4], 16, 12), prepararBase(fotografar(chapada).negativo, { reduzir: 4 }).imagem).pior < 6e-4)
 })
 
-test("X-Trans: caminho básico, declarado em base.demosaico", () => {
+test('X-Trans: caminho básico, declarado em base.demosaico', () => {
   const { negativo } = fotografar(imagem, { padrao: XTRANS, tipo: 'xtrans' })
   for (const demosaico of ['rapido', 'qualidade']) {
     const base = prepararBase(negativo, { demosaico })

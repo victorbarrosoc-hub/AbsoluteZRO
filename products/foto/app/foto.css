@@ -4,6 +4,8 @@
    "reduzir movimento" respeitado. Aqui a foto é a protagonista: tudo em volta dela é o PALCO, neutro e escuro nos dois
    temas, sem luz colorida. A cor só aparece nas etiquetas (ponto) e nos sinais de estado.
 
+   Uma tela que é palco de ponta a ponta exporta `palco = true` e a casca escurece o topo junto (.sobre-palco).
+
    Ordem: fontes · tokens · base · títulos · vidro · palco · componentes (Controle, Segmentado, Pílulas, Chave, Menu,
    Folha, Aviso, Dica, Vazio, Esqueleto, Progresso, Estrelas, Marcas, Tecla) · motion · toque · corte de movimento. */
 
@@ -75,7 +77,8 @@
 /* O tema escuro e o palco usam os mesmos tokens: dentro de .palco tudo (vidro, pílulas, texto) já nasce para fundo
    escuro, no claro e no escuro. */
 :root[data-tema='escuro'],
-.palco {
+.palco,
+.sobre-palco {
   --fundo: #0e0e10;
   --superficie: #1c1c1f;
   --superficie-2: #26262a;
@@ -106,6 +109,12 @@
 }
 .palco {
   background: var(--palco);
+  color: var(--texto);
+  color-scheme: dark;
+}
+/* o que fica por cima de um palco (o topo e o dock, quando a tela é de foto) veste o mesmo escuro */
+.sobre-palco {
+  --vidro-topo: rgb(14 14 14 / 0.72);
   color: var(--texto);
   color-scheme: dark;
 }
@@ -1202,6 +1211,7 @@ button.estrela:active {
 .marcar {
   display: inline-flex;
   align-items: center;
+  align-self: stretch;
   gap: 2px;
 }
 .marcar-cores {
@@ -1409,7 +1419,7 @@ html[data-sentido] .painel * {
 
 /* ─────────── toque de 44 px (Apple HIG): o desenho fica, a área cresce por um ::before invisível ─────────── */
 @media (pointer: coarse) {
-  :is(.vidro, .liso, .pilula, .segmentado button, .menu-item, .marcar-cor, button.estrela, .dock-aba, .toque)::before {
+  :is(.vidro, .liso, .pilula, .segmentado button, .marcar-cor, button.estrela, .dock-aba, .toque)::before {
     content: '';
     position: absolute;
     inset: min(0px, calc((100% - 44px) / 2));

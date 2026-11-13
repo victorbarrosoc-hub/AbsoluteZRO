@@ -38,7 +38,13 @@ const sha256 = (b) => createHash('sha256').update(b).digest('hex')
 function jpeg(semente, tamanho = 600) {
   const corpo = Buffer.alloc(tamanho - 24)
   for (let i = 0; i < corpo.length; i++) corpo[i] = (semente * 31 + i * 7) % 251
-  return Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]), Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0', 'latin1'), Buffer.from([0xff, 0xdb]), corpo, Buffer.from([0xff, 0xd9])])
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+    Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0', 'latin1'),
+    Buffer.from([0xff, 0xdb]),
+    corpo,
+    Buffer.from([0xff, 0xd9]),
+  ])
 }
 
 const resposta = () => {
@@ -54,7 +60,14 @@ const resposta = () => {
   }
   return r
 }
-const cabecalhos = ({ ip = IP, cookie = '', origem = `https://${SITE}`, mais = {} } = {}) => ({ host: SITE, 'x-forwarded-proto': 'https', 'x-real-ip': ip, cookie, ...(origem ? { origin: origem } : {}), ...mais })
+const cabecalhos = ({ ip = IP, cookie = '', origem = `https://${SITE}`, mais = {} } = {}) => ({
+  host: SITE,
+  'x-forwarded-proto': 'https',
+  'x-real-ip': ip,
+  cookie,
+  ...(origem ? { origin: origem } : {}),
+  ...mais,
+})
 /** POST /api/link/<acao> com o corpo já lido (como na Vercel). */
 async function porta(acao, corpo, opcoes) {
   const r = resposta()
@@ -64,7 +77,10 @@ async function porta(acao, corpo, opcoes) {
 /** GET da imagem (e de abrir por consulta). */
 async function pegar(acao, consulta, opcoes = {}) {
   const r = resposta()
-  await rotaPorta({ method: opcoes.metodo ?? 'GET', url: `/api/link/porta?acao=${acao}&${new URLSearchParams(consulta)}`, headers: cabecalhos({ ...opcoes, origem: null }) }, r)
+  await rotaPorta(
+    { method: opcoes.metodo ?? 'GET', url: `/api/link/porta?acao=${acao}&${new URLSearchParams(consulta)}`, headers: cabecalhos({ ...opcoes, origem: null }) },
+    r,
+  )
   return r
 }
 async function pagina(token, arquivo, opcoes) {
@@ -79,10 +95,23 @@ const provaDe = (r) => String(r.headers['set-cookie']?.[0] ?? '').split(';')[0]
 async function publicada({ n = 4, ficha = {}, pin = null, pilha = false } = {}) {
   const token = link.novoToken()
   const g = await banco.comoPessoa(LIA, async (tx) => {
-    const [gal] = await tx`insert into foto.galerias ${tx({ nome: 'Casamento Ana & Rui', fotografo: 'Lia Fotografia', contratadas: 2, mensagem: 'Escolham com calma.', ...ficha })} returning id`
+    const [gal] =
+      await tx`insert into foto.galerias ${tx({ nome: 'Casamento Ana & Rui', fotografo: 'Lia Fotografia', contratadas: 2, mensagem: 'Escolham com calma.', ...ficha })} returning id`
     const linhas = Array.from({ length: n }, (_, i) => {
       const b = jpeg(i + 1)
-      return { galeria: gal.id, foto_id: `cat-${i + 1}`, nome: `IMG_${i + 1}.CR3`, ordem: i, grupo: pilha && i < 2 ? 'p1' : null, melhor: pilha && i === 1, largura: 1600, altura: 1067, tipo: 'image/jpeg', tamanho: b.length, sha256: sha256(b) }
+      return {
+        galeria: gal.id,
+        foto_id: `cat-${i + 1}`,
+        nome: `IMG_${i + 1}.CR3`,
+        ordem: i,
+        grupo: pilha && i < 2 ? 'p1' : null,
+        melhor: pilha && i === 1,
+        largura: 1600,
+        altura: 1067,
+        tipo: 'image/jpeg',
+        tamanho: b.length,
+        sha256: sha256(b),
+      }
     })
     const fotos = await tx`insert into foto.galeria_fotos ${tx(linhas)} returning id, ordem`
     await tx`update foto.galeria_fotos set enviada_em = now() where galeria = ${gal.id}`
@@ -106,7 +135,9 @@ before(async () => {
   if (pular) return
   pg = await subirPostgres()
   const admin = postgres(pg.url, { max: 1, onnotice: () => {} })
-  await admin.unsafe(`create role foto login password 'teste'; create role foto_app nologin; grant foto_app to foto with admin option; create schema foto authorization foto;`)
+  await admin.unsafe(
+    `create role foto login password 'teste'; create role foto_app nologin; grant foto_app to foto with admin option; create schema foto authorization foto;`,
+  )
   await admin.end()
   urlFoto = pg.url.replace('postgres://postgres@', 'postgres://foto:teste@')
   pasta = mkdtempSync(join(tmpdir(), 'foto-arquivos-'))
@@ -203,10 +234,22 @@ test('abrir: token certo devolve a galeria, as fotos e a seleção, sem nada do 
     d.fotos.map((f) => f.id),
     g.fotos,
   )
-  assert.deepEqual(d.fotos[1], { id: g.fotos[1], grupo: 'p1', melhor: true, largura: 1600, altura: 1067, v: sha256(jpeg(2)).slice(0, 12), mini: null, escolhida: false, comentario: null, etiquetas: [] })
+  assert.deepEqual(d.fotos[1], {
+    id: g.fotos[1],
+    grupo: 'p1',
+    melhor: true,
+    largura: 1600,
+    altura: 1067,
+    v: sha256(jpeg(2)).slice(0, 12),
+    mini: null,
+    escolhida: false,
+    comentario: null,
+    etiquetas: [],
+  })
   // nada do catálogo (id da foto, nome do arquivo), de quem publicou (sub, organização) nem do link (hashes)
   const texto = JSON.stringify(d)
-  for (const segredo of ['cat-1', 'IMG_1', '.CR3', 'zro-lia', 'org-1', g.id, g.token, link.hashToken(g.token), 'token', 'chave']) assert.ok(!texto.includes(segredo), segredo)
+  for (const segredo of ['cat-1', 'IMG_1', '.CR3', 'zro-lia', 'org-1', g.id, g.token, link.hashToken(g.token), 'token', 'chave'])
+    assert.ok(!texto.includes(segredo), segredo)
   // contou a abertura; abrir sem `contar` (ou por GET) não conta
   await porta('abrir', { token: g.token })
   const porGet = await pegar('abrir', { t: g.token })
@@ -225,13 +268,22 @@ test('porta estreita: token desconhecido, link revogado e link vencido são indi
   const encerrada = await publicada()
   const trocada = await publicada()
   await banco.comoPessoa(LIA, (tx) => tx`update foto.links set revogado_em = now() where galeria = ${revogada.id}`)
-  await semGuardas((tx) => tx`update foto.links set criado_em = now() - interval '10 days', expira_em = now() - interval '1 second' where galeria = ${vencida.id}`)
+  await semGuardas(
+    (tx) => tx`update foto.links set criado_em = now() - interval '10 days', expira_em = now() - interval '1 second' where galeria = ${vencida.id}`,
+  )
   await banco.comoPessoa(LIA, (tx) => tx`update foto.galerias set estado = 'encerrada' where id = ${encerrada.id}`)
   await banco.comoPessoa(LIA, async (tx) => {
     await tx`update foto.links set revogado_em = now() where galeria = ${trocada.id}`
     await tx`insert into foto.links ${tx({ galeria: trocada.id, token_hash: link.hashToken(link.novoToken()), expira_em: new Date(Date.now() + 86400000) })}`
   })
-  const mortos = { desconhecido: link.novoToken(), revogado: revogada.token, vencido: vencida.token, encerrada: encerrada.token, trocado: trocada.token, malformado: 'nao-e-um-token' }
+  const mortos = {
+    desconhecido: link.novoToken(),
+    revogado: revogada.token,
+    vencido: vencida.token,
+    encerrada: encerrada.token,
+    trocado: trocada.token,
+    malformado: 'nao-e-um-token',
+  }
   const foto = viva.fotos[0]
   const acoes = {
     abrir: (t) => porta('abrir', { token: t, contar: true }),
@@ -263,8 +315,16 @@ test('porta estreita: token desconhecido, link revogado e link vencido são indi
     assert.notEqual((await chamar(viva.token)).statusCode, 404, `${nome}: vivo`)
   }
   // nada foi escrito nas galerias mortas
-  assert.equal((await dono`select count(*)::int as n from foto.selecao where galeria in (${revogada.id}, ${vencida.id}, ${encerrada.id}, ${trocada.id})`)[0].n, 0)
-  assert.equal((await dono`select coalesce(sum(aberturas), 0)::int as n from foto.links where galeria in (${revogada.id}, ${vencida.id}, ${encerrada.id}, ${trocada.id})`)[0].n, 0)
+  assert.equal(
+    (await dono`select count(*)::int as n from foto.selecao where galeria in (${revogada.id}, ${vencida.id}, ${encerrada.id}, ${trocada.id})`)[0].n,
+    0,
+  )
+  assert.equal(
+    (
+      await dono`select coalesce(sum(aberturas), 0)::int as n from foto.links where galeria in (${revogada.id}, ${vencida.id}, ${encerrada.id}, ${trocada.id})`
+    )[0].n,
+    0,
+  )
   // direto no banco, pelo papel do app sem pessoa: as funções da porta devolvem o mesmo para os três
   for (const caso of ['desconhecido', 'revogado', 'vencido']) {
     const th = link.hashToken(mortos[caso])
@@ -302,7 +362,8 @@ test('PIN: sem a prova só sai o pedido de PIN; errado conta por link e IP e por
   // errado: 401, sem cookie; certo: a prova (HttpOnly, 12 h)
   const errado = await porta('pin', { token: g.token, pin: '1111' })
   assert.deepEqual([errado.statusCode, errado.corpo, errado.headers['set-cookie']], [401, { ok: false, erro: 'pin' }, undefined])
-  for (const ruim of ['', 'abcd', '24680000000', null, 2468.5]) assert.equal((await porta('pin', { token: g.token, pin: ruim }, { ip: OUTRO_IP })).statusCode, 401)
+  for (const ruim of ['', 'abcd', '24680000000', null, 2468.5])
+    assert.equal((await porta('pin', { token: g.token, pin: ruim }, { ip: OUTRO_IP })).statusCode, 401)
   const certo = await porta('pin', { token: g.token, pin: '2468' })
   assert.deepEqual([certo.statusCode, certo.corpo], [200, { ok: true }])
   const cookie = certo.headers['set-cookie'][0]
@@ -366,7 +427,11 @@ test('escolher, comentar e enviar: sem extras a galeria enche; depois de enviada
 
   // comentar e etiquetar (os dois de uma vez; vazio apaga); etiqueta fora da lista não entra
   const comentar = (foto, comentario, etiquetas) => porta('comentar', { token: g.token, foto, comentario, etiquetas })
-  assert.deepEqual((await comentar(b, '  Tirar o fio atrás  ', ['remover_objeto', 'suavizar_pele', 'remover_objeto'])).corpo, { ok: true, comentario: 'Tirar o fio atrás', etiquetas: ['remover_objeto', 'suavizar_pele'] })
+  assert.deepEqual((await comentar(b, '  Tirar o fio atrás  ', ['remover_objeto', 'suavizar_pele', 'remover_objeto'])).corpo, {
+    ok: true,
+    comentario: 'Tirar o fio atrás',
+    etiquetas: ['remover_objeto', 'suavizar_pele'],
+  })
   assert.deepEqual((await comentar(d, 'Adorei, mas não vou levar', [])).corpo.ok, true)
   for (const [texto, etiquetas, erro] of [
     ['x'.repeat(501), [], 'texto'],
@@ -405,7 +470,12 @@ test('escolher, comentar e enviar: sem extras a galeria enche; depois de enviada
   assert.deepEqual({ ...envio }, { nome: 'Ana b Cliente /b', escolhidas: 2, extras: 0, fotos: [b, c], com_link: true })
   assert.equal((await dono`select estado from foto.galerias where id = ${g.id}`)[0].estado, 'concluida')
   // travada: nada muda, nem escolha, nem comentário, nem outro envio; abrir mostra só leitura com o envio
-  for (const r of [await escolher(a, true), await escolher(b, false), await comentar(a, 'mudei de ideia', []), await porta('enviar', { token: g.token, nome: 'Rui' })]) {
+  for (const r of [
+    await escolher(a, true),
+    await escolher(b, false),
+    await comentar(a, 'mudei de ideia', []),
+    await porta('enviar', { token: g.token, nome: 'Rui' }),
+  ]) {
     assert.deepEqual([r.statusCode, r.corpo], [409, { ok: false, erro: 'travada' }])
   }
   const lida = (await porta('abrir', { token: g.token })).corpo
@@ -479,7 +549,12 @@ test('limites por link e por IP; o IP nunca vai para o banco', { skip: pular }, 
     Object.assign(limite.REGRAS, structuredClone(original))
     limite.REGRAS.linkIp.max = 4
     for (let i = 0; i < 4; i++) assert.equal((await porta('abrir', { token: i % 2 ? g.token : outra.token })).statusCode, 200)
-    for (const r of [await porta('abrir', { token: g.token }), await porta('escolher', { token: outra.token, foto: outra.fotos[0], escolhida: true }), await porta('pin', { token: g.token, pin: '1234' }), await pagina(g.token)]) {
+    for (const r of [
+      await porta('abrir', { token: g.token }),
+      await porta('escolher', { token: outra.token, foto: outra.fotos[0], escolhida: true }),
+      await porta('pin', { token: g.token, pin: '1234' }),
+      await pagina(g.token),
+    ]) {
       assert.equal(r.statusCode, 429)
     }
     assert.equal((await porta('abrir', { token: g.token }, { ip: OUTRO_IP })).statusCode, 200)
@@ -542,7 +617,12 @@ test('limites por link e por IP; o IP nunca vai para o banco', { skip: pular }, 
 test('escrita confere a origem; método errado, ação inventada e corpo torto não passam', { skip: pular }, async () => {
   const g = await publicada({ n: 2 })
   const corpo = { token: g.token, foto: g.fotos[0], escolhida: true }
-  for (const opcoes of [{ origem: 'https://outro.exemplo' }, { origem: `http://${SITE}` }, { mais: { 'sec-fetch-site': 'cross-site' } }, { mais: { 'sec-fetch-site': 'same-site' } }]) {
+  for (const opcoes of [
+    { origem: 'https://outro.exemplo' },
+    { origem: `http://${SITE}` },
+    { mais: { 'sec-fetch-site': 'cross-site' } },
+    { mais: { 'sec-fetch-site': 'same-site' } },
+  ]) {
     const r = await porta('escolher', corpo, opcoes)
     assert.deepEqual([r.statusCode, r.corpo], [403, { ok: false, erro: 'origem' }], JSON.stringify(opcoes))
   }
@@ -568,7 +648,13 @@ test('imagem: só por link vivo, só da galeria do link, com cache privado; nada
   assert.equal(r.statusCode, 200)
   assert.ok(r.bruto.equals(jpeg(1)))
   assert.deepEqual(
-    { tipo: r.headers['content-type'], tamanho: r.headers['content-length'], cache: r.headers['cache-control'], corp: r.headers['cross-origin-resource-policy'], como: r.headers['content-disposition'] },
+    {
+      tipo: r.headers['content-type'],
+      tamanho: r.headers['content-length'],
+      cache: r.headers['cache-control'],
+      corp: r.headers['cross-origin-resource-policy'],
+      como: r.headers['content-disposition'],
+    },
     { tipo: 'image/jpeg', tamanho: '600', cache: 'private, no-cache', corp: 'same-origin', como: 'inline' },
   )
   assert.equal(r.headers.etag, `"${sha256(jpeg(1)).slice(0, 32)}"`)
@@ -603,7 +689,11 @@ test('imagem: só por link vivo, só da galeria do link, com cache privado; nada
   const dir = process.env.FOTO_ARQUIVOS_DIR
   delete process.env.FOTO_ARQUIVOS_DIR
   try {
-    for (const x of [await pegar('imagem', { t: g.token, f: b }), await porta('abrir', { token: g.token }), await porta('escolher', { token: g.token, foto: b, escolhida: true })]) {
+    for (const x of [
+      await pegar('imagem', { t: g.token, f: b }),
+      await porta('abrir', { token: g.token }),
+      await porta('escolher', { token: g.token, foto: b, escolhida: true }),
+    ]) {
       assert.deepEqual([x.statusCode, x.corpo], [503, { ok: false, erro: 'sem_armazenamento' }])
     }
   } finally {
@@ -616,7 +706,11 @@ test('fechado: sem o login configurado (e fora do modo local) ou sem banco, o li
   assert.equal((await porta('abrir', { token: g.token })).statusCode, 200)
   const guardado = { id: process.env.ZRO_CLIENT_ID, segredo: process.env.ZRO_CLIENT_SECRET, url: process.env.FOTO_DATABASE_URL }
   const conferir = async (motivo) => {
-    for (const r of [await porta('abrir', { token: g.token }), await porta('pin', { token: g.token, pin: '1234' }), await porta('enviar', { token: g.token, nome: 'Ana' })]) {
+    for (const r of [
+      await porta('abrir', { token: g.token }),
+      await porta('pin', { token: g.token, pin: '1234' }),
+      await porta('enviar', { token: g.token, nome: 'Ana' }),
+    ]) {
       assert.deepEqual([r.statusCode, r.corpo], [404, { ok: false, erro: 'link' }], motivo)
     }
     const img = await pegar('imagem', { t: g.token, f: g.fotos[0] })
@@ -684,7 +778,7 @@ test('a página /g/<token>: só para link vivo, sem o nome nem o ícone do produ
     const texto = readFileSync(join(RAIZ, 'galeria', f), 'utf8')
     assert.ok(!texto.toLowerCase().includes(NOME.toLowerCase()), `${f} tem o nome do produto`)
     assert.ok(!texto.includes(ASSINATURA), `${f} tem a assinatura do produto`)
-    assert.doesNotMatch(texto, /app\/marca|manifest|apple-touch-icon|nome\.js|rel="icon"/, f)
+    assert.doesNotMatch(texto, /app\/marca|manifest|apple-touch-icon|nome\.js|favicon|icone-/, f)
   }
   assert.match(readFileSync(join(RAIZ, 'galeria/galeria.js'), 'utf8'), /Absolute ZRO/)
   // só GET

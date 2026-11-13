@@ -1,0 +1,616 @@
+/* A casca: topo em vidro (símbolo como assinatura, nome do trabalho, dock, Set, Z, tema, conta), o painel central que
+   as abas trocam, o início (abrir fotos) e a área de soltar. O conteúdo passa POR BAIXO do topo (vidro de verdade):
+   cada tela começa em var(--topo-a) e, no celular, termina antes do dock (var(--dock-a)). */
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ─────────── topo ─────────── */
+.topo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  height: var(--topo-a);
+  padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  background: var(--vidro-topo);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--linha);
+  view-transition-name: topo;
+  transition: background-color 0.4s var(--suave);
+}
+/* com o dock no meio, o nome do trabalho e os botões da direita não entram debaixo dele */
+@media (min-width: 720px) {
+  .topo[data-com-dock] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 400px;
+  }
+}
+.topo-esq {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.topo-dir {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+/* o símbolo, pequeno, como assinatura */
+.assinatura {
+  width: 44px;
+  flex: none;
+}
+.assinatura svg {
+  width: 27px;
+  height: auto;
+}
+.simbolo {
+  display: block;
+  color: var(--texto);
+  overflow: visible;
+}
+.trabalho .liso {
+  width: auto;
+  max-width: min(38vw, 340px);
+  height: 36px;
+  padding: 0 6px 0 10px;
+  display: inline-flex;
+  gap: 4px;
+  border-radius: 10px;
+  font: 600 15px/1 var(--fonte);
+  letter-spacing: -0.01em;
+}
+.trabalho-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trabalho .liso svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--fraco);
+}
+.topo-andamento {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 6px;
+  color: var(--mudo);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.topo-desligado {
+  margin-left: 6px;
+  min-height: 28px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+.topo-desligado svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ─────────── dock: as quatro etapas. No computador mora no topo; no celular vira a barra de baixo ─────────── */
+.dock {
+  position: absolute;
+  top: calc((var(--topo-a) - 38px) / 2);
+  left: 50%;
+  z-index: 31;
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgb(var(--t) / 0.07);
+  translate: -50% 0;
+  isolation: isolate;
+  view-transition-name: dock;
+}
+.dock-marca {
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: var(--l, 0px);
+  transform: translateX(var(--x, 0px));
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.06),
+    0 1px 3px rgb(0 0 0 / 0.12);
+  opacity: 0;
+}
+:root[data-tema='escuro'] .dock-marca,
+.sobre-palco .dock-marca {
+  background: rgb(255 255 255 / 0.14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.dock-marca[data-pronta] {
+  opacity: 1;
+}
+.dock-marca[data-viva] {
+  transition:
+    transform 0.42s var(--mola),
+    width 0.32s var(--mola);
+}
+.dock-aba {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: var(--mudo);
+  font: 600 13.5px/1 var(--fonte);
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 0.2s,
+    transform 0.3s var(--mola);
+}
+.dock-aba svg {
+  display: none;
+  width: 22px;
+  height: 22px;
+}
+.dock-aba:hover,
+.dock-aba[aria-current='page'] {
+  color: var(--texto);
+}
+.dock-aba:active {
+  transform: scale(0.95);
+}
+
+/* ─────────── painel ─────────── */
+.painel {
+  position: absolute;
+  inset: 0;
+  view-transition-name: painel;
+}
+.painel-aba {
+  position: absolute;
+  inset: 0;
+}
+/* a tela padrão: rola por baixo do topo. --fixa não rola (quem rola é um pedaço de dentro) */
+.tela {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-top: var(--topo-a);
+  padding-bottom: var(--dock-a);
+  overscroll-behavior: contain;
+}
+.tela--fixa {
+  overflow: hidden;
+}
+
+/* ─────────── conta ─────────── */
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgb(var(--t) / 0.1);
+  color: var(--texto);
+  font: 700 12px/1 var(--fonte);
+  letter-spacing: 0.02em;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.conta .liso {
+  width: 40px;
+  height: 40px;
+}
+.conta-quem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 12px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--linha);
+  min-width: 0;
+}
+.conta-quem > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+.conta-quem strong,
+.conta-quem small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conta-quem small {
+  color: var(--mudo);
+  font-size: 13px;
+}
+.balao {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--texto);
+  color: var(--fundo);
+  font: 700 10px/16px var(--fonte);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--fundo);
+}
+/* o anel da Z: discreto, nunca a entrada */
+.topo-z {
+  opacity: 0.72;
+}
+.topo-z:hover,
+.topo-z[aria-expanded='true'] {
+  opacity: 1;
+}
+.z-lugar {
+  min-height: min(560px, 62dvh);
+  --zro-ia-altura: min(520px, 58dvh);
+}
+.z-aviso {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 40px 12px;
+  text-align: center;
+  color: var(--mudo);
+}
+/* o Set com a cara daqui (products/relay/app/relay.css) */
+:root {
+  --zro-set-tinta: var(--texto);
+  --zro-set-apoio: var(--mudo);
+  --zro-set-apagado: var(--fraco);
+  --zro-set-linha: var(--linha);
+  --zro-set-linha-forte: var(--linha-forte);
+  --zro-set-superficie: var(--superficie);
+  --zro-set-superficie-2: var(--fundo);
+  --zro-set-superficie-3: var(--superficie-2);
+  --zro-set-vidro: var(--vidro-topo);
+  --zro-set-fundo: color-mix(in srgb, var(--fundo) 97%, transparent);
+  --zro-set-online: var(--cor-verde);
+  --zro-set-acento: var(--btn-main-fill);
+  --zro-set-acento-tinta: var(--btn-main-ink);
+  --zro-set-perigo: var(--erro);
+  --zro-set-raio: var(--raio-g);
+  --zro-set-fonte: var(--fonte);
+}
+
+/* ─────────── início: abrir fotos ─────────── */
+.inicio {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+}
+.inicio-heroi {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: min(100%, 720px);
+  padding: clamp(28px, 6vh, 72px) 20px clamp(24px, 5vh, 56px);
+  text-align: center;
+}
+.inicio[data-com-recentes] .inicio-heroi {
+  min-height: 0;
+  padding-top: clamp(40px, 9vh, 104px);
+}
+.simbolo-vivo {
+  width: clamp(132px, 19vw, 196px);
+  height: auto;
+  margin-bottom: clamp(18px, 3.4vh, 36px);
+}
+.inicio h1 {
+  font-size: clamp(44px, 8.4vw, 84px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.inicio-assinatura {
+  margin: 4px 0 0;
+  color: var(--mudo);
+  font-weight: 300;
+  font-size: clamp(19px, 2.7vw, 27px);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+.inicio-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: clamp(22px, 4.4vh, 40px);
+}
+.inicio-nota {
+  margin-top: 18px;
+  background: none;
+  color: var(--fraco);
+  font-size: 13px;
+}
+.inicio-nota svg {
+  width: 14px;
+  height: 14px;
+}
+.inicio-lendo {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(280px, 70vw);
+  margin-top: clamp(22px, 4.4vh, 40px);
+  color: var(--mudo);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.inicio-lendo .progresso {
+  width: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* o anel se desenha e o raio cruza (a marca inteira é a mesma; parado, é o desenho final) */
+  .simbolo-vivo .simbolo-anel {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: anel-desenha 1.25s var(--mola) 0.15s forwards;
+  }
+  .simbolo-vivo .simbolo-raio {
+    clip-path: inset(-1px 100% -1px 0);
+    animation: raio-cruza 0.85s var(--mola) 0.7s forwards;
+  }
+  .inicio h1 {
+    animation: entra 0.9s var(--mola) 0.25s backwards;
+  }
+  .inicio-assinatura {
+    animation: entra 0.9s var(--mola) 0.35s backwards;
+  }
+  .inicio-acoes,
+  .inicio-lendo {
+    animation: entra 0.9s var(--mola) 0.48s backwards;
+  }
+  .inicio-nota {
+    animation: entra 0.9s var(--mola) 0.6s backwards;
+  }
+}
+@keyframes anel-desenha {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes raio-cruza {
+  to {
+    clip-path: inset(-1px 0 -1px 0);
+  }
+}
+
+/* trabalhos recentes, em cartões */
+.recentes {
+  width: min(100%, 1040px);
+  padding: 0 20px clamp(32px, 6vh, 64px);
+}
+.recentes .sobretitulo {
+  margin: 0 4px 14px;
+}
+.recentes-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+.recente {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding: 8px 8px 12px;
+  border-radius: 22px;
+  background: var(--superficie);
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 1px 2px rgb(0 0 0 / 0.03);
+  text-align: left;
+  transition:
+    transform 0.35s var(--mola),
+    box-shadow 0.35s var(--suave);
+}
+.recente:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px var(--linha),
+    var(--sombra-cartao);
+}
+.recente-abrir {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+}
+.recente-capa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 16 / 10;
+  border-radius: 15px;
+  background: var(--palco);
+  overflow: hidden;
+}
+.recente-capa[data-fotos='1'] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+.recente-capa[data-fotos='2'] {
+  grid-template-rows: 1fr;
+}
+.recente-capa[data-fotos='3'] > :first-child {
+  grid-row: span 2;
+}
+.recente-capa img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+.recente-capa > span {
+  background: var(--palco-2);
+}
+.recente-texto {
+  display: grid;
+  gap: 2px;
+  padding: 0 44px 0 8px;
+  min-width: 0;
+}
+.recente-texto strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recente-texto span {
+  color: var(--mudo);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.recente .menu {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+}
+.folha-trabalhos .recentes {
+  width: 100%;
+  padding: 4px 0 0;
+}
+.folha-trabalhos .inicio-acoes {
+  justify-content: flex-start;
+  margin: 0 0 22px;
+}
+
+/* ─────────── soltar em qualquer lugar ─────────── */
+.soltar {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--fundo) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  pointer-events: none;
+  animation: fundo-abre 0.2s ease both;
+}
+.soltar-alvo {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgb(var(--t) / 0.3);
+  border-radius: var(--raio-g);
+}
+.soltar-alvo svg {
+  width: 40px;
+  height: 40px;
+}
+.soltar-alvo h2 {
+  font-size: clamp(28px, 4vw, 40px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .soltar-alvo svg {
+    animation: respira 1.4s var(--suave) infinite alternate;
+  }
+}
+@keyframes respira {
+  to {
+    transform: translateY(6px);
+  }
+}
+
+/* ─────────── celular: o dock vira a barra de baixo ─────────── */
+@media (max-width: 719px) {
+  :root {
+    --dock-a: calc(58px + env(safe-area-inset-bottom));
+  }
+  .topo {
+    gap: 4px;
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+  }
+  .trabalho .liso {
+    max-width: calc(100vw - 236px);
+  }
+  .topo-andamento span {
+    display: none;
+  }
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    top: auto;
+    translate: none;
+    justify-content: space-around;
+    height: var(--dock-a);
+    padding: 0 max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left));
+    border-radius: 0;
+    border-top: 1px solid var(--linha);
+    background: var(--vidro-topo);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    backdrop-filter: blur(20px) saturate(1.8);
+    transition: background-color 0.4s var(--suave);
+  }
+  .dock-marca {
+    display: none;
+  }
+  .dock-aba {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 0;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+  }
+  .dock-aba svg {
+    display: block;
+    transition: transform 0.35s var(--mola);
+  }
+  .dock-aba[aria-current='page'] svg {
+    transform: translateY(-1px) scale(1.08);
+  }
+  .inicio-acoes .vidro {
+    min-width: min(100%, 240px);
+  }
+}

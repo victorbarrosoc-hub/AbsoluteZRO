@@ -101,13 +101,20 @@ function lerFoto(f, i) {
   if (!f || typeof f !== 'object') return null
   const s = (v, max) => (typeof v === 'string' && v.length >= 1 && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v) ? v : null)
   const arquivo = (a, maximo) =>
-    a && typeof a === 'object' && TIPOS_DE_IMAGEM.includes(a.tipo) && inteiro(a.tamanho, 1, maximo) && typeof a.sha256 === 'string' && /^[0-9a-f]{64}$/.test(a.sha256) ? a : null
+    a &&
+    typeof a === 'object' &&
+    TIPOS_DE_IMAGEM.includes(a.tipo) &&
+    inteiro(a.tamanho, 1, maximo) &&
+    typeof a.sha256 === 'string' &&
+    /^[0-9a-f]{64}$/.test(a.sha256)
+      ? a
+      : null
   const fotoId = s(f.fotoId, 120)
   const nome = s(f.nome, 255)
   const previa = arquivo(f, MAX_PREVIA)
   const grupo = f.grupo == null || f.grupo === '' ? null : s(f.grupo, 64)
   const ordem = f.ordem === undefined ? i : f.ordem
-  if (!fotoId || !nome || !previa || grupo === null && f.grupo != null && f.grupo !== '') return null
+  if (!fotoId || !nome || !previa || (grupo === null && f.grupo != null && f.grupo !== '')) return null
   if (!inteiro(f.largura, 16, 8192) || !inteiro(f.altura, 16, 8192) || !inteiro(ordem, 0, 1000000)) return null
   if (f.melhor !== undefined && typeof f.melhor !== 'boolean') return null
   const mini = f.mini == null ? null : arquivo(f.mini, MAX_MINI)
@@ -246,7 +253,8 @@ async function registrarFotos(tx, corpo, id, arm) {
   }
   if (new Set(linhas.map((l) => l.foto_id)).size !== linhas.length) return erro(400, 'campo', { campo: 'fotos', repetida: true })
   const ids = linhas.map((l) => l.foto_id)
-  const antes = await tx`select foto_id, chave, mini_sha256 from foto.galeria_fotos where galeria = ${g.id} and foto_id = any(${ids}) and mini_enviada_em is not null`
+  const antes =
+    await tx`select foto_id, chave, mini_sha256 from foto.galeria_fotos where galeria = ${g.id} and foto_id = any(${ids}) and mini_enviada_em is not null`
   const r = await tx`
     insert into foto.galeria_fotos ${tx(linhas)}
     on conflict (galeria, foto_id) do update set
@@ -269,7 +277,8 @@ async function tirarFotos(tx, corpo, id, arm) {
   if (!g) return nao
   if (!EDITAVEIS.includes(g.estado)) return erro(409, 'travada')
   const ids = corpo.ids
-  if (!Array.isArray(ids) || !ids.length || ids.length > MAX_FOTOS_POR_PEDIDO || ids.some((i) => !UUID.test(String(i)))) return erro(400, 'campo', { campo: 'ids' })
+  if (!Array.isArray(ids) || !ids.length || ids.length > MAX_FOTOS_POR_PEDIDO || ids.some((i) => !UUID.test(String(i))))
+    return erro(400, 'campo', { campo: 'ids' })
   const fotos = await tx`select id, chave, enviada_em, mini_enviada_em from foto.galeria_fotos where galeria = ${g.id} and id = any(${ids}::uuid[])`
   const arquivos = await apagarArquivos(arm, chavesDe(fotos))
   await tx`delete from foto.galeria_fotos where galeria = ${g.id} and id = any(${fotos.map((f) => f.id)}::uuid[])`
@@ -285,7 +294,9 @@ async function gravarArquivo(tx, req, id, arm) {
   if (!f) return nao
   if (!EDITAVEIS.includes(f.estado)) return erro(409, 'travada')
   if (mini && !f.mini_sha256) return erro(400, 'sem_mini')
-  const esperado = mini ? { tipo: f.mini_tipo, tamanho: f.mini_tamanho, sha256: f.mini_sha256, maximo: MAX_MINI } : { tipo: f.tipo, tamanho: f.tamanho, sha256: f.sha256, maximo: MAX_PREVIA }
+  const esperado = mini
+    ? { tipo: f.mini_tipo, tamanho: f.mini_tamanho, sha256: f.mini_sha256, maximo: MAX_MINI }
+    : { tipo: f.tipo, tamanho: f.tamanho, sha256: f.sha256, maximo: MAX_PREVIA }
   const c = conferirPrevia(req.bytes, esperado)
   if (!c.ok) return erro(c.erro === 'grande' ? 413 : 400, c.erro)
   await arm.gravar(mini ? `${f.chave}-m` : f.chave, req.bytes, esperado.tipo)
@@ -383,7 +394,15 @@ async function selecao(tx, id) {
       escolhidas: escolhidas.length,
       extras: Math.max(escolhidas.length - g.contratadas, 0),
       ids: escolhidas.map((l) => l.foto_id),
-      fotos: linhas.map((l) => ({ id: l.id, fotoId: l.foto_id, nome: l.nome, escolhida: l.escolhida, comentario: l.comentario, etiquetas: l.etiquetas, atualizadaEm: l.atualizada_em })),
+      fotos: linhas.map((l) => ({
+        id: l.id,
+        fotoId: l.foto_id,
+        nome: l.nome,
+        escolhida: l.escolhida,
+        comentario: l.comentario,
+        etiquetas: l.etiquetas,
+        atualizadaEm: l.atualizada_em,
+      })),
       listas: { nomes, lightroom: bases.join(', '), captureOne: bases.join('\n') },
     },
   }
@@ -417,7 +436,9 @@ const rotas = rota({
   }),
   PATCH: comArquivos(({ tx, p, corpo, id, acao }) => (!id ? null : !acao ? alterar(tx, p, corpo, id) : acao === 'link' ? alterarLink(tx, corpo, id) : null)),
   PUT: comArquivos(({ tx, req, id, acao, arm }) => (id && acao === 'arquivo' ? gravarArquivo(tx, req, id, arm) : null)),
-  DELETE: comArquivos(({ tx, corpo, id, acao, arm }) => (!id ? null : !acao ? apagar(tx, id, arm) : acao === 'fotos' ? tirarFotos(tx, corpo, id, arm) : acao === 'link' ? revogarLink(tx, id) : null)),
+  DELETE: comArquivos(({ tx, corpo, id, acao, arm }) =>
+    !id ? null : !acao ? apagar(tx, id, arm) : acao === 'fotos' ? tirarFotos(tx, corpo, id, arm) : acao === 'link' ? revogarLink(tx, id) : null,
+  ),
 })
 
 export default async function galerias(req, res) {

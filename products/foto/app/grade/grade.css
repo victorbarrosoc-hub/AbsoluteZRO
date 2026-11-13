@@ -1,0 +1,627 @@
+/* A grade e a lupa. Tudo aqui mora no PALCO (.palco: neutro e escuro nos dois temas): a foto é a protagonista e a
+   interface some em volta dela. Seleção e foco são um anel branco no palco (grafite fora dele); cor só no ponto. */
+
+.decupar {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ─────────── a grade ─────────── */
+.grade {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+  padding-top: var(--topo-a);
+  padding-bottom: var(--dock-a);
+}
+.grade-area {
+  position: relative;
+  contain: layout style;
+}
+.grade-janela {
+  position: absolute;
+  top: 0;
+  display: grid;
+  will-change: transform;
+}
+.grade-vazia {
+  display: grid;
+  min-height: 100%;
+}
+
+.foto {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto var(--pe, 24px);
+  min-width: 0;
+  outline: none;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.foto-quadro {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  min-width: 0;
+  min-height: 0;
+}
+/* a moldura tem exatamente o tamanho da foto: o anel e os selos acompanham a imagem, não a célula */
+.foto-moldura {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 5px;
+  transition:
+    box-shadow 0.18s var(--suave),
+    transform 0.3s var(--mola);
+}
+.foto-moldura[data-forma='deitada'] {
+  width: 100%;
+}
+.foto-moldura[data-forma='de-pe'] {
+  height: 100%;
+}
+.foto-moldura img,
+.foto-espera,
+.foto-sem {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.foto-moldura img {
+  object-fit: cover;
+  background: var(--palco-2);
+  transition: opacity 0.25s var(--suave);
+}
+.foto-espera {
+  background-color: var(--palco-2);
+}
+.foto-sem {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  background: var(--palco-2);
+  color: var(--fraco);
+  font: 600 10px/1 var(--fonte);
+  letter-spacing: 0.06em;
+}
+.foto-sem svg {
+  width: 22px;
+  height: 22px;
+}
+.foto:active .foto-moldura {
+  transform: scale(0.985);
+}
+/* selecionada: anel; em foco (a ativa): anel cheio */
+.foto[aria-selected='true'] .foto-moldura {
+  box-shadow:
+    0 0 0 2px var(--palco),
+    0 0 0 4px rgb(255 255 255 / 0.5);
+}
+.foto[data-foco] .foto-moldura {
+  box-shadow:
+    0 0 0 2px var(--palco),
+    0 0 0 3.5px rgb(255 255 255 / 0.36);
+}
+.foto[data-foco][aria-selected='true'] .foto-moldura,
+.foto:focus-visible .foto-moldura {
+  box-shadow:
+    0 0 0 2px var(--palco),
+    0 0 0 4.5px #f5f5f7;
+}
+.foto[data-marca='rejeitada'] .foto-moldura img {
+  opacity: 0.3;
+}
+.foto-marca {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+}
+.foto-marca svg {
+  width: 12px;
+  height: 12px;
+}
+.selo {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(12 12 12 / 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #f5f5f7;
+  font: 600 10px/1 var(--fonte);
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.selo svg {
+  width: 11px;
+  height: 11px;
+}
+.selo-par {
+  left: 6px;
+  bottom: 6px;
+}
+.selo-pilha {
+  right: 6px;
+  bottom: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.25s var(--mola);
+}
+.selo-pilha:hover {
+  background: rgb(60 60 60 / 0.8);
+  transform: scale(1.06);
+}
+/* pilha fechada: duas folhas espiando por trás da capa */
+.foto[data-pilha='fechada'] .foto-moldura::before,
+.foto[data-pilha='fechada'] .foto-moldura::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  height: 12px;
+  border-radius: 5px 5px 0 0;
+}
+.foto[data-pilha='fechada'] .foto-moldura::before {
+  left: 5%;
+  right: 5%;
+  top: -4px;
+  background: rgb(255 255 255 / 0.3);
+}
+.foto[data-pilha='fechada'] .foto-moldura::after {
+  left: 11%;
+  right: 11%;
+  top: -8px;
+  background: rgb(255 255 255 / 0.15);
+}
+.foto[data-pilha='fechada'] .foto-quadro {
+  isolation: isolate;
+}
+/* pilha aberta no lugar: uma faixa une as fotos do grupo */
+.foto[data-pilha='aberta']::before {
+  content: '';
+  position: absolute;
+  inset: -4px -6px 0;
+  z-index: -1;
+  background: rgb(255 255 255 / 0.07);
+}
+.foto[data-pilha='aberta'][data-ponta='inicio']::before {
+  border-radius: 12px 0 0 12px;
+  left: -4px;
+}
+.foto[data-pilha='aberta'][data-ponta='fim']::before {
+  border-radius: 0 12px 12px 0;
+  right: -4px;
+}
+.grade-janela {
+  isolation: isolate;
+}
+/* o pé: estrelas e cor à esquerda; a nota e o motivo (quando a decupagem medir) ou o nome */
+.foto-pe {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 0 2px;
+  color: var(--fraco);
+  font: 500 11px/1 var(--fonte);
+}
+.foto-pe .estrelas {
+  flex: none;
+}
+.foto-pe .ponto {
+  width: 7px;
+  height: 7px;
+}
+.foto-nome,
+.foto-motivo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.foto-nome {
+  text-align: right;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-variant-numeric: tabular-nums;
+}
+.foto:hover .foto-nome,
+.foto[data-foco] .foto-nome,
+.foto[aria-selected='true'] .foto-nome {
+  opacity: 1;
+}
+.foto-motivo {
+  color: var(--mudo);
+}
+.foto-nota {
+  flex: none;
+  margin-left: auto;
+  color: var(--texto);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────── a barra de cima, em vidro escuro ─────────── */
+.grade-barra {
+  position: absolute;
+  top: var(--topo-a);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 14px 0 20px;
+  background: rgb(12 12 12 / 0.66);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.grade-barra .pilulas {
+  flex: 1;
+  min-width: 0;
+  /* o fim da linha some em vez de cortar */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  padding-right: 20px;
+}
+.grade-barra-fim {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.liso--ativo {
+  width: auto;
+  min-width: 36px;
+  padding: 0 9px;
+  gap: 4px;
+  display: inline-flex;
+  align-items: center;
+  background: rgb(var(--t) / 0.14);
+}
+.liso-n {
+  font: 700 12px/1 var(--fonte);
+  font-variant-numeric: tabular-nums;
+}
+.cores-icone {
+  display: inline-flex;
+}
+.cores-icone .ponto {
+  width: 9px;
+  height: 9px;
+  margin-left: -3px;
+  box-shadow: 0 0 0 1.5px var(--palco);
+}
+.cores-icone .ponto:first-child {
+  margin-left: 0;
+}
+.grade-tamanho {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+  color: var(--fraco);
+}
+.grade-tamanho svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.grade-tamanho .controle {
+  width: 112px;
+}
+
+/* ─────────── a barra de seleção: vidro flutuando embaixo ─────────── */
+.selecao {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--dock-a) + 18px);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+  height: 52px;
+  padding: 0 8px 0 18px;
+  border-radius: 999px;
+  translate: -50% 0;
+  color: var(--texto);
+  --anel-fundo: rgb(34 34 36);
+  animation: selecao-sobe 0.42s var(--mola) backwards;
+}
+@keyframes selecao-sobe {
+  from {
+    opacity: 0;
+    translate: -50% 18px;
+    scale: 0.96;
+  }
+}
+.selecao-n {
+  font: 700 14px/1 var(--fonte);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.selecao-palavra {
+  font-weight: 500;
+  color: var(--mudo);
+}
+.decupar .avisos,
+:root:has(.selecao) .avisos {
+  --avisos-sobe: 62px;
+}
+
+/* ─────────── a lupa ─────────── */
+.lupa {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  outline: none;
+  overflow: hidden;
+}
+.lupa-palco {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.quadro {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: calc(var(--topo-a) + 18px) 64px calc(var(--dock-a) + 88px);
+  cursor: zoom-in;
+  touch-action: none;
+}
+.quadro[data-zoom] {
+  cursor: grab;
+}
+.quadro[data-zoom]:active {
+  cursor: grabbing;
+}
+.quadro-moldura {
+  position: relative;
+  flex: none;
+  transform-origin: center;
+  transition: transform 0.42s var(--mola);
+  will-change: transform;
+}
+.quadro-moldura img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.quadro-moldura img[data-girada] {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+.quadro-moldura[data-nivel='mini'] img {
+  image-rendering: auto;
+}
+.lupa:not([data-comparar]) .quadro[data-principal] .quadro-moldura {
+  view-transition-name: foto;
+}
+.quadro-espera {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  background: var(--palco-2);
+  color: var(--fraco);
+  font-size: 13px;
+}
+.quadro-espera svg {
+  width: 32px;
+  height: 32px;
+}
+.quadro-etiqueta {
+  position: absolute;
+  top: calc(var(--topo-a) + 14px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(12 12 12 / 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--mudo);
+  font: 600 11px/1 var(--fonte);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.lupa[data-comparar] .quadro {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.lupa[data-comparar] .quadro + .quadro {
+  box-shadow: -1px 0 0 rgb(255 255 255 / 0.08);
+}
+.lupa-ficha {
+  position: absolute;
+  top: calc(var(--topo-a) + 14px);
+  left: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  max-width: calc(100% - 40px);
+  color: var(--fraco);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.lupa-ficha strong {
+  color: var(--mudo);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lupa[data-comparar] .lupa-ficha {
+  display: none;
+}
+.lupa-ficha .lupa-ficha-n {
+  display: none;
+}
+.lupa-seta {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  translate: 0 -50%;
+  background: rgb(255 255 255 / 0.06);
+  opacity: 0;
+  transition:
+    opacity 0.25s,
+    background-color 0.2s,
+    transform 0.25s var(--mola);
+}
+.lupa-seta--antes {
+  left: 12px;
+}
+.lupa-seta--depois {
+  right: 12px;
+}
+.lupa:hover .lupa-seta,
+.lupa-seta:focus-visible {
+  opacity: 1;
+}
+.lupa-seta:disabled {
+  opacity: 0 !important;
+}
+.lupa-barra {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--dock-a) + 18px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+  height: 52px;
+  padding: 0 8px;
+  border-radius: 999px;
+  translate: -50% 0;
+  --anel-fundo: rgb(34 34 36);
+}
+.lupa-contador {
+  padding: 0 8px 0 6px;
+  color: var(--mudo);
+  font: 600 13px/1 var(--fonte);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lupa-barra {
+    animation: selecao-sobe 0.42s var(--mola) 0.08s backwards;
+  }
+}
+
+/* ─────────── celular ─────────── */
+@media (max-width: 719px) {
+  .grade-barra {
+    gap: 4px;
+    padding: 0 6px 0 10px;
+  }
+  .grade-tamanho {
+    display: none;
+  }
+  .selecao,
+  .lupa-barra {
+    gap: 0;
+    bottom: calc(var(--dock-a) + 10px);
+    padding: 0 4px 0 12px;
+  }
+  .lupa-barra {
+    padding-left: 4px;
+  }
+  .selecao-palavra,
+  .selecao .marcar-cores,
+  .selecao .marcar .separador:nth-last-child(2),
+  .lupa-barra .marcar-cores,
+  .lupa-barra .marcar .separador:nth-last-child(2),
+  .lupa-barra .lupa-contador {
+    display: none;
+  }
+  .lupa-ficha .lupa-ficha-n {
+    display: inline;
+    margin-left: auto;
+  }
+  .lupa-ficha {
+    right: 12px;
+  }
+  .selecao .separador,
+  .lupa-barra .separador {
+    margin: 12px 3px;
+  }
+  .quadro {
+    padding: calc(var(--topo-a) + 10px) 8px calc(var(--dock-a) + 76px);
+  }
+  .lupa-seta {
+    display: none;
+  }
+  .lupa-ficha {
+    left: 12px;
+    gap: 8px;
+  }
+  .lupa-ficha span:nth-of-type(n + 3):not(.lupa-ficha-n) {
+    display: none;
+  }
+  .lupa[data-comparar] .lupa-palco {
+    grid-auto-flow: row;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+  .lupa[data-comparar] .quadro {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .lupa[data-comparar] .quadro:first-child {
+    padding-top: calc(var(--topo-a) + 8px);
+  }
+  .lupa[data-comparar] .quadro:last-child {
+    padding-bottom: calc(var(--dock-a) + 72px);
+  }
+  .lupa[data-comparar] .quadro + .quadro {
+    box-shadow: 0 -1px 0 rgb(255 255 255 / 0.08);
+  }
+  .lupa[data-comparar] .quadro-etiqueta {
+    top: 10px;
+  }
+  .lupa[data-comparar] .quadro:first-child .quadro-etiqueta {
+    top: calc(var(--topo-a) + 10px);
+  }
+}

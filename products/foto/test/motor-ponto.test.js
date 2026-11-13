@@ -6,10 +6,24 @@ import { test } from 'node:test'
 
 import { CONTROLES, FAIXAS, FAIXAS_MATIZ, neutro, normalizar } from '../src/motor/ajustes.js'
 import { xyDeTemperatura } from '../src/motor/cor/branco.js'
-import { rgbParaXyz, xyParaXYZ, xyzParaRgb } from '../src/motor/cor/espacos.js'
+import { xyParaXYZ, xyzParaRgb } from '../src/motor/cor/espacos.js'
 import { mulV } from '../src/motor/cor/matriz.js'
 import { matizDoCirculo } from '../src/motor/cor/oklab.js'
-import { EPS, EV_MAX, EV_MIN, LUZ, VEU, criarCurvaDePontos, criarParametrica, criarPonto, curvaDeLuz, matrizDeBranco, matrizDeCalibracao, pesosDasFaixas, uniformes } from '../src/motor/ponto.js'
+import {
+  EPS,
+  EV_MAX,
+  EV_MIN,
+  LUZ,
+  VEU,
+  criarCurvaDePontos,
+  criarParametrica,
+  criarPonto,
+  curvaDeLuz,
+  matrizDeBranco,
+  matrizDeCalibracao,
+  pesosDasFaixas,
+  uniformes,
+} from '../src/motor/ponto.js'
 import { CINZA } from '../src/motor/tela.js'
 import { CARTELA, deSrgb8, oklch, sorteio } from './apoio-motor.js'
 
@@ -34,14 +48,36 @@ test('ajustes neutros: a cadeia é a identidade exata', () => {
     assert.deepEqual(aplicar(ponto, c), c)
   }
   const p = ponto.uniformes.passos
-  assert.ok(Object.values(p).every((v) => v === false), 'nenhum passo ligado')
+  assert.ok(
+    Object.values(p).every((v) => v === false),
+    'nenhum passo ligado',
+  )
 })
 
 test('exposição: +1 EV dobra a cena, −1 EV divide por dois, e a exposição base do arquivo soma', () => {
   const c = [0.3, 0.2, 0.05]
-  assert.deepEqual(aplicar(com((a) => (a.luz.exposicao = 1)), c), [0.6, 0.4, 0.1])
-  assert.deepEqual(aplicar(com((a) => (a.luz.exposicao = -1)), c), [0.15, 0.1, 0.025])
-  assert.deepEqual(aplicar(com((a) => (a.luz.exposicao = 3)), [4, 4, 4]), [32, 32, 32], 'sem teto')
+  assert.deepEqual(
+    aplicar(
+      com((a) => (a.luz.exposicao = 1)),
+      c,
+    ),
+    [0.6, 0.4, 0.1],
+  )
+  assert.deepEqual(
+    aplicar(
+      com((a) => (a.luz.exposicao = -1)),
+      c,
+    ),
+    [0.15, 0.1, 0.025],
+  )
+  assert.deepEqual(
+    aplicar(
+      com((a) => (a.luz.exposicao = 3)),
+      [4, 4, 4],
+    ),
+    [32, 32, 32],
+    'sem teto',
+  )
   const a = neutro()
   a.luz.exposicao = 0.5
   const comBase = criarPonto(a, { ...contexto, exposicaoBase: 0.5 })
@@ -87,7 +123,13 @@ test('luz: cinza médio preso e cada controle monótono no sentido esperado, em 
     }
   }
   // as faixas documentadas: o deslocamento máximo de cada controle, no patamar
-  const desloca = (nome, onde) => ev(aplicar(com((a) => (a.luz[nome] = 100)), cinza(onde))) - onde
+  const desloca = (nome, onde) =>
+    ev(
+      aplicar(
+        com((a) => (a.luz[nome] = 100)),
+        cinza(onde),
+      ),
+    ) - onde
   perto(desloca('altas', 5), LUZ.altas.ev, 1e-4, 'altas +100 acima de +3 EV')
   perto(desloca('sombras', -6), LUZ.sombras.ev, 1e-4, 'sombras +100 abaixo de −4 EV')
   perto(desloca('brancos', 6), LUZ.brancos.ev, 1e-4, 'brancos +100 acima de +4,5 EV')
@@ -99,7 +141,20 @@ test('luz: cinza médio preso e cada controle monótono no sentido esperado, em 
   perto(desloca('pretos', -2), 0, 1e-6, 'pretos só abaixo de −3 EV')
   // contraste: a inclinação no cinza é 1,5^(c/100)
   const d = 1e-3
-  const inclinacao = (c) => (ev(aplicar(com((a) => (a.luz.contraste = c)), cinza(d))) - ev(aplicar(com((a) => (a.luz.contraste = c)), cinza(-d)))) / (2 * d)
+  const inclinacao = (c) =>
+    (ev(
+      aplicar(
+        com((a) => (a.luz.contraste = c)),
+        cinza(d),
+      ),
+    ) -
+      ev(
+        aplicar(
+          com((a) => (a.luz.contraste = c)),
+          cinza(-d),
+        ),
+      )) /
+    (2 * d)
   perto(inclinacao(100), 1.5, 2e-3)
   perto(inclinacao(-100), 1 / 1.5, 2e-3)
 })
@@ -107,23 +162,28 @@ test('luz: cinza médio preso e cada controle monótono no sentido esperado, em 
 test('luz: qualquer combinação de controles dá uma curva monótona e sem quina (C1) em EV', () => {
   const extremos = [-100, 0, 100]
   let combinacoes = 0
-  for (const contraste of extremos) for (const altas of extremos) for (const sombras of extremos) for (const brancos of extremos) for (const pretos of extremos) {
-    const f = curvaDeLuz({ contraste, altas, sombras, brancos, pretos })
-    combinacoes++
-    const h = 1 / 64
-    let anterior = f(EV_MIN)
-    let inclinacaoAnterior = null
-    for (let e = EV_MIN + h; e <= EV_MAX; e += h) {
-      const y = f(e)
-      const inclinacao = (y - anterior) / h
-      assert.ok(inclinacao > 0.02, `monótona em ${e} EV (${[contraste, altas, sombras, brancos, pretos]}): inclinação ${inclinacao}`)
-      // sem quina: a inclinação não pula de um passo para o outro
-      if (inclinacaoAnterior != null) assert.ok(Math.abs(inclinacao - inclinacaoAnterior) < 0.08, `C1 em ${e} EV: ${inclinacaoAnterior} → ${inclinacao}`)
-      inclinacaoAnterior = inclinacao
-      anterior = y
-    }
-    perto(f(0), 0, 1e-12, 'cinza')
-  }
+  for (const contraste of extremos)
+    for (const altas of extremos)
+      for (const sombras of extremos)
+        for (const brancos of extremos)
+          for (const pretos of extremos) {
+            const f = curvaDeLuz({ contraste, altas, sombras, brancos, pretos })
+            combinacoes++
+            const h = 1 / 64
+            let anterior = f(EV_MIN)
+            let inclinacaoAnterior = null
+            for (let e = EV_MIN + h; e <= EV_MAX; e += h) {
+              const y = f(e)
+              const inclinacao = (y - anterior) / h
+              assert.ok(inclinacao > 0.02, `monótona em ${e} EV (${[contraste, altas, sombras, brancos, pretos]}): inclinação ${inclinacao}`)
+              // sem quina: a inclinação não pula de um passo para o outro
+              if (inclinacaoAnterior != null)
+                assert.ok(Math.abs(inclinacao - inclinacaoAnterior) < 0.08, `C1 em ${e} EV: ${inclinacaoAnterior} → ${inclinacao}`)
+              inclinacaoAnterior = inclinacao
+              anterior = y
+            }
+            perto(f(0), 0, 1e-12, 'cinza')
+          }
   assert.equal(combinacoes, 243)
 })
 
@@ -145,24 +205,39 @@ test('luz: mesma resposta em qualquer foto — o ganho depende só do EV do pixe
 
 test('curva paramétrica e curva de pontos: neutras, monótonas, sem ultrapassar', () => {
   assert.equal(criarParametrica({ sombras: 0, escuros: 0, claros: 0, altas: 0 }), null)
-  for (const s of [-100, 100]) for (const e of [-100, 100]) for (const c of [-100, 100]) for (const al of [-100, 100]) {
-    const f = criarParametrica({ sombras: s, escuros: e, claros: c, altas: al })
-    perto(f(0), 0, 1e-12)
-    perto(f(1), 1, 1e-12)
-    let anterior = -1
-    for (let x = 0; x <= 1.0001; x += 1 / 512) {
-      const y = f(x)
-      assert.ok(y > anterior, `paramétrica monótona em ${x} (${[s, e, c, al]})`)
-      anterior = y
-    }
-  }
+  for (const s of [-100, 100])
+    for (const e of [-100, 100])
+      for (const c of [-100, 100])
+        for (const al of [-100, 100]) {
+          const f = criarParametrica({ sombras: s, escuros: e, claros: c, altas: al })
+          perto(f(0), 0, 1e-12)
+          perto(f(1), 1, 1e-12)
+          let anterior = -1
+          for (let x = 0; x <= 1.0001; x += 1 / 512) {
+            const y = f(x)
+            assert.ok(y > anterior, `paramétrica monótona em ${x} (${[s, e, c, al]})`)
+            anterior = y
+          }
+        }
   // cada região sobe a sua parte da curva
-  for (const [nome, x] of [['sombras', 0.2], ['escuros', 0.375], ['claros', 0.625], ['altas', 0.8]]) {
+  for (const [nome, x] of [
+    ['sombras', 0.2],
+    ['escuros', 0.375],
+    ['claros', 0.625],
+    ['altas', 0.8],
+  ]) {
     assert.ok(criarParametrica({ [nome]: 100 })(x) > x + 0.05, nome)
     assert.ok(criarParametrica({ [nome]: -100 })(x) < x - 0.05, nome)
   }
   // Fritsch-Carlson: passa pelos pontos, monótona quando os pontos são, nunca sai do intervalo entre dois pontos
-  const pontos = [[0, 0.05], [0.2, 0.1], [0.25, 0.4], [0.6, 0.45], [0.9, 0.95], [1, 1]]
+  const pontos = [
+    [0, 0.05],
+    [0.2, 0.1],
+    [0.25, 0.4],
+    [0.6, 0.45],
+    [0.9, 0.95],
+    [1, 1],
+  ]
   const f = criarCurvaDePontos(pontos)
   for (const [x, y] of pontos) perto(f(x), y, 1e-12)
   let anterior = -1
@@ -173,20 +248,61 @@ test('curva paramétrica e curva de pontos: neutras, monótonas, sem ultrapassar
     const i = pontos.findIndex((p) => p[0] > x)
     if (i > 0) assert.ok(y >= pontos[i - 1][1] - 1e-12 && y <= pontos[i][1] + 1e-12, 'sem ultrapassar')
   }
-  const reta = criarCurvaDePontos([[0, 0], [1, 1]])
+  const reta = criarCurvaDePontos([
+    [0, 0],
+    [1, 1],
+  ])
   for (const x of [0, 0.3, 1]) perto(reta(x), x, 1e-12)
   // na cadeia: a reta não liga o passo; a curva em S sobe o claro e desce o escuro; a curva do canal mexe só nele
-  assert.equal(com((a) => (a.curva.pontos.luz = [[0, 0], [1, 1]])).uniformes.passos.tom, false)
-  const emS = com((a) => (a.curva.pontos.luz = [[0, 0], [0.25, 0.18], [0.75, 0.82], [1, 1]]))
+  assert.equal(
+    com(
+      (a) =>
+        (a.curva.pontos.luz = [
+          [0, 0],
+          [1, 1],
+        ]),
+    ).uniformes.passos.tom,
+    false,
+  )
+  const emS = com(
+    (a) =>
+      (a.curva.pontos.luz = [
+        [0, 0],
+        [0.25, 0.18],
+        [0.75, 0.82],
+        [1, 1],
+      ]),
+  )
   assert.ok(ev(aplicar(emS, cinza(1.5))) > 1.5)
   assert.ok(ev(aplicar(emS, cinza(-2))) < -2)
-  const soVermelho = aplicar(com((a) => (a.curva.pontos.r = [[0, 0], [0.5, 0.6], [1, 1]])), [0.2, 0.2, 0.2])
+  const soVermelho = aplicar(
+    com(
+      (a) =>
+        (a.curva.pontos.r = [
+          [0, 0],
+          [0.5, 0.6],
+          [1, 1],
+        ]),
+    ),
+    [0.2, 0.2, 0.2],
+  )
   assert.ok(soVermelho[0] > 0.2 && soVermelho[1] === 0.2 && soVermelho[2] === 0.2)
   // preto levantado (o "fosco" das predefinições): nada fica abaixo do piso, nem ruído negativo
-  const fosco = com((a) => (a.curva.pontos.luz = [[0, 0.12], [1, 1]]))
+  const fosco = com(
+    (a) =>
+      (a.curva.pontos.luz = [
+        [0, 0.12],
+        [1, 1],
+      ]),
+  )
   const piso = norma(aplicar(fosco, [0, 0, 0]))
   assert.ok(piso > 0.002, `piso do fosco em ${piso}`)
-  for (const c of [[-0.01, 0.001, -0.002], [1e-9, 1e-9, 1e-9], [0.0001, 0.0002, 0.0001]]) assert.ok(norma(aplicar(fosco, c)) >= piso - 1e-9)
+  for (const c of [
+    [-0.01, 0.001, -0.002],
+    [1e-9, 1e-9, 1e-9],
+    [0.0001, 0.0002, 0.0001],
+  ])
+    assert.ok(norma(aplicar(fosco, c)) >= piso - 1e-9)
   // acima do branco da curva as altas luzes continuam distintas (nada é cortado na cena)
   assert.ok(norma(aplicar(emS, cinza(7))) > norma(aplicar(emS, cinza(6))) * 1.9)
 })
@@ -194,18 +310,36 @@ test('curva paramétrica e curva de pontos: neutras, monótonas, sem ultrapassar
 test('branco: adaptação CAT16 nos modos original, manual e auto', () => {
   const c = [0.3, 0.3, 0.3]
   // original não mexe; manual com o branco da própria foto também não
-  assert.deepEqual(aplicar(com((a) => (a.branco.modo = 'original')), c), c)
-  assert.deepEqual(aplicar(com((a) => Object.assign(a.branco, { modo: 'manual', temperatura: 5200, tinta: 8 })), c), c)
+  assert.deepEqual(
+    aplicar(
+      com((a) => (a.branco.modo = 'original')),
+      c,
+    ),
+    c,
+  )
+  assert.deepEqual(
+    aplicar(
+      com((a) => Object.assign(a.branco, { modo: 'manual', temperatura: 5200, tinta: 8 })),
+      c,
+    ),
+    c,
+  )
   // dizer que a luz era mais azul (mais kelvin) esquenta a foto; mais verde (tinta +), puxa para o magenta
   let anterior = 0
   for (const temperatura of [2500, 3500, 5200, 7000, 12000, 40000]) {
-    const s = aplicar(com((a) => Object.assign(a.branco, { modo: 'manual', temperatura, tinta: 8 })), c)
+    const s = aplicar(
+      com((a) => Object.assign(a.branco, { modo: 'manual', temperatura, tinta: 8 })),
+      c,
+    )
     assert.ok(s[0] / s[2] > anterior, `temperatura ${temperatura}: vermelho/azul ${s[0] / s[2]}`)
     anterior = s[0] / s[2]
   }
   anterior = Infinity
   for (const tinta of [-100, -40, 8, 60, 150]) {
-    const s = aplicar(com((a) => Object.assign(a.branco, { modo: 'manual', temperatura: 5200, tinta })), c)
+    const s = aplicar(
+      com((a) => Object.assign(a.branco, { modo: 'manual', temperatura: 5200, tinta })),
+      c,
+    )
     const verde = s[1] / (s[0] + s[2])
     assert.ok(verde < anterior, `tinta ${tinta}: verde ${verde}`)
     anterior = verde
@@ -233,14 +367,22 @@ test('branco: adaptação CAT16 nos modos original, manual e auto', () => {
   a.branco.modo = 'auto'
   assert.deepEqual(aplicar(criarPonto(a, contexto), c), c)
   const auto = aplicar(criarPonto(a, { ...contexto, brancoAuto: { kelvin: 7000, tinta: 8 } }), c)
-  const manual = aplicar(com((x) => Object.assign(x.branco, { modo: 'manual', temperatura: 7000, tinta: 8 })), c)
+  const manual = aplicar(
+    com((x) => Object.assign(x.branco, { modo: 'manual', temperatura: 7000, tinta: 8 })),
+    c,
+  )
   assert.deepEqual(auto, manual)
 })
 
 test('misturador: os pesos das faixas somam 1 e uma faixa não vaza para a oposta', () => {
   for (let g = 0; g < 360; g += 0.5) {
     const w = pesosDasFaixas((g * Math.PI) / 180)
-    perto(w.reduce((s, v) => s + v, 0), 1, 1e-12, `soma em ${g}°`)
+    perto(
+      w.reduce((s, v) => s + v, 0),
+      1,
+      1e-12,
+      `soma em ${g}°`,
+    )
     assert.ok(w.filter((v) => v > 0).length <= 2, 'só as duas vizinhas')
   }
   // no centro de cada faixa só ela pesa
@@ -274,22 +416,50 @@ test('misturador: matiz, saturação e luz por faixa andam no sentido esperado',
   // saturação: monótona, −100 tira a cor da faixa
   let anterior = -1
   for (const v of [-100, -50, 0, 50, 100]) {
-    const c = oklch(...aplicar(com((a) => (a.misturador.saturacao[5] = v)), azul))[1]
+    const c = oklch(
+      ...aplicar(
+        com((a) => (a.misturador.saturacao[5] = v)),
+        azul,
+      ),
+    )[1]
     assert.ok(c > anterior, `saturação do azul em ${v}`)
     anterior = c
   }
-  assert.ok(oklch(...aplicar(com((a) => (a.misturador.saturacao[5] = -100)), deSrgb8(0, 0, 200)))[1] < 0.004, 'azul puro sem cor')
+  assert.ok(
+    oklch(
+      ...aplicar(
+        com((a) => (a.misturador.saturacao[5] = -100)),
+        deSrgb8(0, 0, 200),
+      ),
+    )[1] < 0.004,
+    'azul puro sem cor',
+  )
   // luz: monótona, mexe na luz e deixa a croma relativa e o matiz
   anterior = -Infinity
   for (const v of [-100, -50, 0, 50, 100]) {
-    const [L, C, h] = oklch(...aplicar(com((a) => (a.misturador.luz[5] = v)), azul))
+    const [L, , h] = oklch(
+      ...aplicar(
+        com((a) => (a.misturador.luz[5] = v)),
+        azul,
+      ),
+    )
     assert.ok(L > anterior, `luz do azul em ${v}`)
     anterior = L
     perto(h, h0, 1e-3, 'matiz')
   }
   // matiz: positivo anda para a faixa seguinte (azul → roxo), negativo para a anterior (azul → ciano), sem mudar a croma
-  const mais = oklch(...aplicar(com((a) => (a.misturador.matiz[5] = 100)), azul))
-  const menos = oklch(...aplicar(com((a) => (a.misturador.matiz[5] = -100)), azul))
+  const mais = oklch(
+    ...aplicar(
+      com((a) => (a.misturador.matiz[5] = 100)),
+      azul,
+    ),
+  )
+  const menos = oklch(
+    ...aplicar(
+      com((a) => (a.misturador.matiz[5] = -100)),
+      azul,
+    ),
+  )
   assert.ok(mais[2] > h0 + 5 && menos[2] < h0 - 5, `matiz ${menos[2]} < ${h0} < ${mais[2]}`)
   perto(mais[1], c0, 2e-3, 'croma')
   // mesma resposta em qualquer exposição: a cadeia de cor é homogênea
@@ -303,7 +473,10 @@ test('misturador: matiz, saturação e luz por faixa andam no sentido esperado',
   })
   for (const cor of cores) {
     const base = aplicar(ponto, cor)
-    const dobro = aplicar(ponto, cor.map((v) => v * 8))
+    const dobro = aplicar(
+      ponto,
+      cor.map((v) => v * 8),
+    )
     dobro.forEach((v, k) => perto(v / 8, base[k], 1e-5 * Math.max(1e-3, Math.abs(base[k])) + 1e-9, 'homogênea'))
   }
 })
@@ -312,30 +485,61 @@ test('saturação e vibração: neutro fica neutro, sentido certo, pele e cor j�
   for (const cor of cores) {
     let anterior = -1
     for (const v of [-100, -50, 0, 50, 100]) {
-      const [, C] = oklch(...aplicar(com((a) => (a.cor.saturacao = v)), cor))
+      const [, C] = oklch(
+        ...aplicar(
+          com((a) => (a.cor.saturacao = v)),
+          cor,
+        ),
+      )
       assert.ok(C >= anterior, `saturação ${v}`)
       anterior = C
     }
     anterior = -1
     for (const v of [-100, -50, 0, 50, 100]) {
-      const [, C] = oklch(...aplicar(com((a) => (a.cor.vibracao = v)), cor))
+      const [, C] = oklch(
+        ...aplicar(
+          com((a) => (a.cor.vibracao = v)),
+          cor,
+        ),
+      )
       assert.ok(C >= anterior - 1e-9, `vibração ${v}`)
       anterior = C
     }
     // saturação −100: preto e branco
-    assert.ok(oklch(...aplicar(com((a) => (a.cor.saturacao = -100)), cor))[1] < 1e-6)
+    assert.ok(
+      oklch(
+        ...aplicar(
+          com((a) => (a.cor.saturacao = -100)),
+          cor,
+        ),
+      )[1] < 1e-6,
+    )
     // o matiz e a luz não mudam
     const antes = oklch(...cor)
-    const depois = oklch(...aplicar(com((a) => (a.cor.saturacao = 40)), cor))
+    const depois = oklch(
+      ...aplicar(
+        com((a) => (a.cor.saturacao = 40)),
+        cor,
+      ),
+    )
     perto(depois[0], antes[0], 1e-6, 'luz')
     if (antes[1] > 0.01) perto(depois[2], antes[2], 1e-3, 'matiz')
   }
   for (const v of [0.01, 0.18, 3]) {
     for (const controle of ['saturacao', 'vibracao']) {
-      aplicar(com((a) => (a.cor[controle] = 100)), [v, v, v]).forEach((s) => perto(s, v, 1e-6 * v, `cinza com ${controle}`))
+      aplicar(
+        com((a) => (a.cor[controle] = 100)),
+        [v, v, v],
+      ).forEach((s) => perto(s, v, 1e-6 * v, `cinza com ${controle}`))
     }
   }
-  const ganho = (cor) => oklch(...aplicar(com((a) => (a.cor.vibracao = 100)), cor))[1] / oklch(...cor)[1]
+  const ganho = (cor) =>
+    oklch(
+      ...aplicar(
+        com((a) => (a.cor.vibracao = 100)),
+        cor,
+      ),
+    )[1] / oklch(...cor)[1]
   // mesma croma relativa, matizes diferentes: a pele ganha menos que o azul
   const pele = deSrgb8(194, 150, 130)
   const [Lp, Cp] = oklch(...pele)
@@ -392,7 +596,13 @@ test('tonalização: cada zona tinge a sua parte; equilíbrio e mistura movem a 
   assert.ok(tinge(laranjaNasAltas, 2.5) > 0.05 && tinge(laranjaNasAltas, -4) < 1e-6, 'altas só na alta luz')
   assert.ok(tinge((a) => (a.tonalizacao.meios = { matiz: 120, saturacao: 60, luz: 0 }), 0) > 0.05)
   assert.ok(tinge((a) => (a.tonalizacao.meios = { matiz: 120, saturacao: 60, luz: 0 }), -5) < 1e-6)
-  for (const e of [-5, 0, 3]) perto(tinge((a) => (a.tonalizacao.global = { matiz: 300, saturacao: 50, luz: 0 }), e), 0.06, 1e-3, 'global em tudo')
+  for (const e of [-5, 0, 3])
+    perto(
+      tinge((a) => (a.tonalizacao.global = { matiz: 300, saturacao: 50, luz: 0 }), e),
+      0.06,
+      1e-3,
+      'global em tudo',
+    )
   // saturação monótona e o matiz é o do círculo de cores
   let anterior = -1
   for (const s of [0, 25, 50, 100]) {
@@ -400,23 +610,46 @@ test('tonalização: cada zona tinge a sua parte; equilíbrio e mistura movem a 
     assert.ok(t > anterior)
     anterior = t
   }
-  const h = oklch(...aplicar(com((a) => (a.tonalizacao.global = { matiz: 240, saturacao: 30, luz: 0 })), cinza(0)))[2]
+  const h = oklch(
+    ...aplicar(
+      com((a) => (a.tonalizacao.global = { matiz: 240, saturacao: 30, luz: 0 })),
+      cinza(0),
+    ),
+  )[2]
   perto(h, ((matizDoCirculo(240) * 180) / Math.PI + 360) % 360, 0.5, 'matiz da roda')
   // equilíbrio positivo: mais da foto conta como alta luz
-  const noCinza = (equilibrio) => tinge((a) => {
-    laranjaNasAltas(a)
-    a.tonalizacao.equilibrio = equilibrio
-  }, -0.5)
+  const noCinza = (equilibrio) =>
+    tinge((a) => {
+      laranjaNasAltas(a)
+      a.tonalizacao.equilibrio = equilibrio
+    }, -0.5)
   assert.ok(noCinza(100) > noCinza(0) && noCinza(0) > noCinza(-100))
   // mistura: mais mistura, mais as altas entram abaixo do pivô
-  const comMistura = (mistura) => tinge((a) => {
-    laranjaNasAltas(a)
-    a.tonalizacao.mistura = mistura
-  }, -1)
+  const comMistura = (mistura) =>
+    tinge((a) => {
+      laranjaNasAltas(a)
+      a.tonalizacao.mistura = mistura
+    }, -1)
   assert.ok(comMistura(100) > comMistura(50) && comMistura(50) > comMistura(0))
   // luz por zona
-  assert.ok(ev(aplicar(com((a) => (a.tonalizacao.sombras = { matiz: 0, saturacao: 0, luz: 100 })), cinza(-4))) > -3.2)
-  perto(ev(aplicar(com((a) => (a.tonalizacao.sombras = { matiz: 0, saturacao: 0, luz: 100 })), cinza(3))), 3, 1e-6)
+  assert.ok(
+    ev(
+      aplicar(
+        com((a) => (a.tonalizacao.sombras = { matiz: 0, saturacao: 0, luz: 100 })),
+        cinza(-4),
+      ),
+    ) > -3.2,
+  )
+  perto(
+    ev(
+      aplicar(
+        com((a) => (a.tonalizacao.sombras = { matiz: 0, saturacao: 0, luz: 100 })),
+        cinza(3),
+      ),
+    ),
+    3,
+    1e-6,
+  )
 })
 
 test('calibração: neutra é identidade, o branco nunca muda, as primárias andam no sentido do círculo', () => {
@@ -430,27 +663,76 @@ test('calibração: neutra é identidade, o branco nunca muda, as primárias and
   const vermelho = deSrgb8(200, 40, 40)
   const h0 = oklch(...vermelho)[2]
   const c0 = oklch(...vermelho)[1]
-  assert.ok(oklch(...aplicar(com((a) => (a.calibracao.vermelhoMatiz = 100)), vermelho))[2] > h0 + 3, 'vermelho + vai para o laranja')
-  assert.ok(oklch(...aplicar(com((a) => (a.calibracao.vermelhoMatiz = -100)), vermelho))[2] < h0 - 3, 'vermelho − vai para o magenta')
-  assert.ok(oklch(...aplicar(com((a) => (a.calibracao.vermelhoSaturacao = 100)), vermelho))[1] > c0 * 1.1)
-  assert.ok(oklch(...aplicar(com((a) => (a.calibracao.vermelhoSaturacao = -100)), vermelho))[1] < c0 * 0.9)
+  assert.ok(
+    oklch(
+      ...aplicar(
+        com((a) => (a.calibracao.vermelhoMatiz = 100)),
+        vermelho,
+      ),
+    )[2] >
+      h0 + 3,
+    'vermelho + vai para o laranja',
+  )
+  assert.ok(
+    oklch(
+      ...aplicar(
+        com((a) => (a.calibracao.vermelhoMatiz = -100)),
+        vermelho,
+      ),
+    )[2] <
+      h0 - 3,
+    'vermelho − vai para o magenta',
+  )
+  assert.ok(
+    oklch(
+      ...aplicar(
+        com((a) => (a.calibracao.vermelhoSaturacao = 100)),
+        vermelho,
+      ),
+    )[1] >
+      c0 * 1.1,
+  )
+  assert.ok(
+    oklch(
+      ...aplicar(
+        com((a) => (a.calibracao.vermelhoSaturacao = -100)),
+        vermelho,
+      ),
+    )[1] <
+      c0 * 0.9,
+  )
   // tinta das sombras: magenta (+) ou verde (−) só no escuro
-  const escuro = aplicar(com((a) => (a.calibracao.sombrasTinta = 100)), cinza(-4))
+  const escuro = aplicar(
+    com((a) => (a.calibracao.sombrasTinta = 100)),
+    cinza(-4),
+  )
   assert.ok(escuro[1] < escuro[0] && escuro[1] < escuro[2], 'magenta na sombra')
-  const verde = aplicar(com((a) => (a.calibracao.sombrasTinta = -100)), cinza(-4))
+  const verde = aplicar(
+    com((a) => (a.calibracao.sombrasTinta = -100)),
+    cinza(-4),
+  )
   assert.ok(verde[1] > verde[0] && verde[1] > verde[2], 'verde na sombra')
-  aplicar(com((a) => (a.calibracao.sombrasTinta = 100)), cinza(1)).forEach((v) => perto(v, cinza(1)[0], 1e-9, 'claro não muda'))
+  aplicar(
+    com((a) => (a.calibracao.sombrasTinta = 100)),
+    cinza(1),
+  ).forEach((v) => perto(v, cinza(1)[0], 1e-9, 'claro não muda'))
 })
 
 test('desbotar: levanta o preto, monótono, sem tocar na razão das altas', () => {
   let anterior = -1
   for (const v of [0, 25, 50, 100]) {
-    const s = aplicar(com((a) => (a.efeitos.desbotar = v)), [0, 0, 0])
+    const s = aplicar(
+      com((a) => (a.efeitos.desbotar = v)),
+      [0, 0, 0],
+    )
     assert.ok(s[0] > anterior)
     anterior = s[0]
   }
   perto(anterior, VEU, 1e-12)
-  const alto = aplicar(com((a) => (a.efeitos.desbotar = 100)), [4, 4, 4])
+  const alto = aplicar(
+    com((a) => (a.efeitos.desbotar = 100)),
+    [4, 4, 4],
+  )
   perto(alto[0], 4 + VEU, 1e-12)
 })
 
@@ -461,14 +743,22 @@ test('uniformes: os números que a GPU recebe, e a conta em bloco igual à conta
   a.misturador.luz[5] = -30
   a.misturador.matiz[1] = 20
   a.tonalizacao.sombras = { matiz: 220, saturacao: 20, luz: -10 }
-  a.curva.pontos.r = [[0, 0], [0.5, 0.55], [1, 1]]
+  a.curva.pontos.r = [
+    [0, 0],
+    [0.5, 0.55],
+    [1, 1],
+  ]
   a.curva.claros = 30
   a.calibracao.azulSaturacao = 20
   a.efeitos.desbotar = 10
   a.branco = { modo: 'manual', temperatura: 6100, tinta: 12 }
   const u = uniformes(normalizar(a), contexto)
-  assert.ok(Object.entries(u.passos).every(([k, v]) => v === (k !== 'pb')), JSON.stringify(u.passos))
-  for (const m of [u.entrada, u.calibracao, u.cor.paraLms, u.cor.deLms, u.cor.lmsParaLab, u.cor.labParaLms]) assert.ok(m.length === 9 && m.every(Number.isFinite))
+  assert.ok(
+    Object.entries(u.passos).every(([k, v]) => v === (k !== 'pb')),
+    JSON.stringify(u.passos),
+  )
+  for (const m of [u.entrada, u.calibracao, u.cor.paraLms, u.cor.deLms, u.cor.lmsParaLab, u.cor.labParaLms])
+    assert.ok(m.length === 9 && m.every(Number.isFinite))
   assert.ok(u.tom.tabela instanceof Float32Array && u.tom.tabela.length === (u.tom.evMax - u.tom.evMin) * u.tom.passosPorEv + 2)
   assert.ok(u.tom.tabela.every((v) => Number.isFinite(v) && v > 0))
   assert.equal(u.canais.length, 3)
@@ -502,7 +792,10 @@ test('desempenho da cadeia de ponto (ns por pixel, medido)', (t) => {
   for (let i = 0; i < n; i++) {
     const cor = cores[(rnd() * 24) | 0]
     const k = 2 ** (rnd() * 6 - 4)
-    dados.set(cor.map((v) => v * k), i * 3)
+    dados.set(
+      cor.map((v) => v * k),
+      i * 3,
+    )
   }
   const medir = (nome, mexe) => {
     const ponto = com(mexe)
@@ -526,7 +819,11 @@ test('desempenho da cadeia de ponto (ns por pixel, medido)', (t) => {
     a.cor.vibracao = 30
     a.misturador.luz[5] = -30
     a.tonalizacao.sombras = { matiz: 220, saturacao: 20, luz: 0 }
-    a.curva.pontos.r = [[0, 0], [0.5, 0.55], [1, 1]]
+    a.curva.pontos.r = [
+      [0, 0],
+      [0.5, 0.55],
+      [1, 1],
+    ]
     a.calibracao.azulSaturacao = 20
     a.efeitos.desbotar = 10
   })

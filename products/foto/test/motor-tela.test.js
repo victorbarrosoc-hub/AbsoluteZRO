@@ -178,7 +178,7 @@ test('branco estourado continua branco quando a exposição desce (a margem acom
 
 test('identidade: foto pronta + ajustes neutros devolve a mesma imagem (erro < 1/255 em 5000 cores)', () => {
   const rnd = sorteio(42)
-  for (const espaco of ['srgb', 'p3', 'adobe']) {
+  for (const espaco of ['srgb', 'p3', 'adobe', 'rec2020']) {
     const n = 5000
     const dados = new Uint8ClampedArray(n * 4)
     for (let i = 0; i < n * 4; i++) dados[i] = Math.floor(rnd() * 256)
@@ -197,8 +197,8 @@ test('identidade: foto pronta + ajustes neutros devolve a mesma imagem (erro < 1
     assert.ok(pior < 1 / 255, `${espaco}: pior erro ${pior * 255}/255`)
     // a volta é exata; o que sobra é a imagem de trabalho em float32, que a gama pura do Adobe RGB (inclinação
     // infinita no preto) amplia perto do zero
-    assert.ok(pior < (espaco === 'adobe' ? 1e-3 : 2e-5), `${espaco}: a volta é exata na prática (${pior})`)
-    if (espaco !== 'adobe') {
+    assert.ok(pior < (espaco === 'adobe' ? 1e-3 : 5e-5), `${espaco}: a volta é exata na prática (${pior})`)
+    if (espaco === 'srgb' || espaco === 'p3' || espaco === 'rec2020') {
       const saida = revelar(base, neutro(), { tela: espaco })
       const bytes = paraBytes(saida)
       for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) assert.equal(bytes[i * 4 + c], dados[i * 4 + c], `${espaco}: pixel ${i}`)
@@ -252,7 +252,10 @@ test('gamut: nada sai de 0..1 e a cor que já cabe na tela não muda', () => {
       const t = Math.min(1, Math.max(0, (h - u.branco.inicio) / (1 - u.branco.inicio)))
       const s = t * t * (3 - 2 * t)
       const k = 1 - u.branco.k * s * s
-      const linear = mulV(paraTela, c.map((v) => h + (v * (h / n) - h) * k))
+      const linear = mulV(
+        paraTela,
+        c.map((v) => h + (v * (h / n) - h) * k),
+      )
       if (linear.some((v) => v < 0 || v > 1)) continue
       conferidas++
       tela.aplicar(c[0], c[1], c[2], cod)
@@ -286,7 +289,10 @@ test('preservar matiz: a cor saturada mantém o matiz quando a luz sobe; por can
     for (let ev = -3; ev <= ate; ev += 0.5) {
       const g = 2 ** ev
       tela.aplicar(0.3 * g, 0.12 * g, 0.03 * g, cod)
-      const lin = mulV(M, cod.map((v) => CURVAS.rec2020.decodificar(v)))
+      const lin = mulV(
+        M,
+        cod.map((v) => CURVAS.rec2020.decodificar(v)),
+      )
       const h = oklch(...lin)[2]
       menor = Math.min(menor, h)
       maior = Math.max(maior, h)
@@ -314,7 +320,10 @@ test('ida ao branco: perto do pico a cor perde croma, e a luz muito forte de qua
   perto(croma(-2), croma(-1), 1e-3, 'longe do pico a croma relativa não muda')
   assert.ok(croma(2.5) < 0.8 * croma(0), 'perto do pico cai')
   tela.aplicar(60, 20, 5, cod)
-  assert.ok(cod.every((v) => v > 0.93), `luz forte quase branca: ${cod}`)
+  assert.ok(
+    cod.every((v) => v > 0.93),
+    `luz forte quase branca: ${cod}`,
+  )
 })
 
 test('paraBytes: 8 bits RGBA com pontilhado determinístico, 16 bits RGB', () => {

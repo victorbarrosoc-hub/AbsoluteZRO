@@ -2,7 +2,8 @@
 <html lang="pt-BR" data-tema="%TEMA%">
   <!-- A casca do app. Só sai por api/pagina.js, depois do gate (claim zro_release.foto). %NOME%, %ASSINATURA%, %TEMA% e
        %COR_TEMA% são trocados no servidor: o nome mora só em app/nome.js e o tema vem do cookie foto_tema (sem piscar e
-       sem script inline, que a CSP não deixa). As telas entram por app/principal.js. -->
+       sem script inline, que a CSP não deixa). O sistema visual está em app/foto.css; a casca monta em #app
+       (app/principal.js → app/casca/casca.js) e as telas entram em app/telas/<nome>/index.js. -->
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -15,82 +16,13 @@
     <link rel="apple-touch-icon" href="/app/marca/icone-180.png" />
     <link rel="manifest" href="/app/manifest.webmanifest" />
     <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <style>
-      @font-face {
-        font-family: 'Figtree Variable';
-        font-style: normal;
-        font-display: swap;
-        font-weight: 300 900;
-        src: url('/fontes/figtree-latin-wght-normal.woff2') format('woff2-variations');
-        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-      }
-      @font-face {
-        font-family: 'Figtree Variable';
-        font-style: normal;
-        font-display: swap;
-        font-weight: 300 900;
-        src: url('/fontes/figtree-latin-ext-wght-normal.woff2') format('woff2-variations');
-        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-      }
-      /* Claro é o padrão; o escuro é escolha (data-tema="escuro", vindo do cookie). Os demais tokens chegam com as telas. */
-      :root {
-        color-scheme: light;
-        --fundo: #f5f5f7;
-        --texto: #1d1d1f;
-        --apoio: #6e6e73;
-        --fonte: 'Figtree Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-      }
-      :root[data-tema='escuro'] {
-        color-scheme: dark;
-        --fundo: #0e0e10;
-        --texto: #f5f5f7;
-        --apoio: #a1a1a6;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        background: var(--fundo);
-        color: var(--texto);
-        font: 400 17px/1.45 var(--fonte);
-        -webkit-font-smoothing: antialiased;
-      }
-      #app {
-        min-height: 100%;
-        display: grid;
-      }
-      /* a casca antes das telas: só o nome, fino × pesado */
-      .casca {
-        place-self: center;
-        display: grid;
-        justify-items: center;
-        gap: 10px;
-        padding: 24px 16px;
-        text-align: center;
-      }
-      .casca h1 {
-        margin: 0;
-        font-size: clamp(34px, 7vw, 56px);
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        line-height: 1.05;
-      }
-      .casca p {
-        margin: 0;
-        color: var(--apoio);
-        font-weight: 300;
-        font-size: clamp(17px, 2.6vw, 21px);
-      }
-    </style>
+    <link rel="stylesheet" href="/app/foto.css" />
+    <link rel="stylesheet" href="/app/casca/casca.css" />
+    <link rel="stylesheet" href="/app/grade/grade.css" />
     <script type="module" src="/app/principal.js"></script>
   </head>
   <body>
-    <main id="app" aria-busy="true"></main>
+    <div id="app" aria-busy="true"></div>
     <noscript>Ligue o JavaScript para abrir.</noscript>
   </body>
 </html>

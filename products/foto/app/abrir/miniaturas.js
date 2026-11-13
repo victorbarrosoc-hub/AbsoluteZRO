@@ -26,6 +26,8 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
   const guardadas = new Set()
   /** ids que já se conferiu que NÃO estão no IndexedDB (não vale a pena procurar de novo) */
   const semGuardar = new Set()
+  /** ids sem miniatura guardada e sem o original ao alcance: não há de onde tirar (a tela não finge que está vindo) */
+  const faltando = new Set()
   let naTela = new Set()
   let total = 0
   let feitas = 0
@@ -52,7 +54,11 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
 
   async function gerar(id, prioridade) {
     const origem = await arquivoDe(id)
-    if (!origem) return false
+    if (!origem) {
+      faltando.add(id)
+      avisar(id)
+      return false
+    }
     const r = await pool.pedir('miniatura', { arquivo: origem.arquivo, par: origem.par, tipo: origem.tipo }, { prioridade: naTela.has(id) ? NA_TELA : prioridade, chave: `mini:${id}` })
     if (!r) return false
     if (r.semPrevia) {
@@ -72,7 +78,7 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
   /** Garante a miniatura de uma foto: memória → IndexedDB → gerar. Devolve se ela existe. */
   function pedir(id, prioridade = POR_TRAS) {
     if (urls.has(id)) return Promise.resolve(true)
-    if (semPrevia.has(id)) return Promise.resolve(false)
+    if (semPrevia.has(id) || faltando.has(id)) return Promise.resolve(false)
     if (andamento.has(id)) {
       if (prioridade > POR_TRAS) pool.priorizar(`mini:${id}`, prioridade)
       return andamento.get(id)
@@ -109,6 +115,14 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
     },
     /** Esta foto não tem prévia que o navegador abra (a tela mostra o cartão sem imagem, com o motivo). */
     semPrevia: (id) => semPrevia.has(id),
+    /** Não há miniatura guardada nem original ao alcance para fazer uma (trabalho reaberto sem os arquivos). */
+    falta: (id) => faltando.has(id),
+    /** Os originais voltaram (a pasta foi religada, as fotos foram escolhidas de novo): o que faltava pode ser feito. */
+    religou() {
+      const ids = [...faltando]
+      faltando.clear()
+      ids.forEach(avisar)
+    },
     pedir,
     /** Chama `f()` quando a miniatura da foto chega ou muda. Devolve a função que cancela. */
     assinar(id, f) {
@@ -127,7 +141,7 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
       // o que saiu da tela volta para o fim da fila
       for (const id of antes) if (!naTela.has(id) && andamento.has(id)) pool.priorizar(`mini:${id}`, POR_TRAS)
       for (const id of ids) {
-        if (urls.has(id) || semPrevia.has(id)) continue
+        if (urls.has(id) || semPrevia.has(id) || faltando.has(id)) continue
         if (andamento.has(id)) pool.priorizar(`mini:${id}`, NA_TELA)
         else pedir(id, NA_TELA)
       }
@@ -139,7 +153,7 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
     async gerarTudo(ids) {
       const prontas = await guardar.comMiniatura(ids)
       for (const id of prontas) guardadas.add(id)
-      const faltam = ids.filter((id) => !prontas.has(id) && !urls.has(id) && !semPrevia.has(id))
+      const faltam = ids.filter((id) => !prontas.has(id) && !urls.has(id) && !semPrevia.has(id) && !faltando.has(id))
       for (const id of faltam) semGuardar.add(id)
       total += faltam.length
       avisarProgresso()
@@ -216,6 +230,7 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
       for (const u of urls.values()) URL.revokeObjectURL(u)
       urls.clear()
       semPrevia.clear()
+      faltando.clear()
       semGuardar.clear()
       guardadas.clear()
       andamento.clear()

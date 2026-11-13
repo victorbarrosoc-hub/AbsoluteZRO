@@ -151,7 +151,12 @@ export async function linkVivo(req, token) {
 
 /** Abre a galeria. { estado: 'morto' | 'limite' | 'pin' } ou { estado: 'ok', dados }. `contar`: abertura da página. */
 export async function abrirLink(req, token, { contar = false } = {}) {
-  const p = await pelaPorta(req, token, { prefixo: 'link-abrir', regra: REGRAS.linkAbrir }, async (tx, th, pinOk) => (await tx`select foto.link_abrir(${th}, ${pinOk}, ${contar}) as r`)[0].r)
+  const p = await pelaPorta(
+    req,
+    token,
+    { prefixo: 'link-abrir', regra: REGRAS.linkAbrir },
+    async (tx, th, pinOk) => (await tx`select foto.link_abrir(${th}, ${pinOk}, ${contar}) as r`)[0].r,
+  )
   if (p.estado !== 'ok') return p
   if (!p.r) return { estado: 'morto' }
   if (p.r.estado === 'pin') return { estado: 'pin' }
@@ -220,13 +225,15 @@ export async function comentarFoto(req, token, foto, comentario, etiquetas) {
   const texto = comentario == null ? '' : comentario
   const lista = etiquetas == null ? [] : etiquetas
   if (!UUID.test(String(foto)) || typeof texto !== 'string' || texto.length > 2000) return { ok: false, erro: 'formato' }
-  if (!Array.isArray(lista) || lista.length > 16 || lista.some((e) => typeof e !== 'string' || !/^[a-z_]{1,40}$/.test(e))) return { ok: false, erro: 'etiquetas' }
+  if (!Array.isArray(lista) || lista.length > 16 || lista.some((e) => typeof e !== 'string' || !/^[a-z_]{1,40}$/.test(e)))
+    return { ok: false, erro: 'etiquetas' }
   return resultado(
     await pelaPorta(
       req,
       token,
       { prefixo: 'link-comentar', regra: REGRAS.linkComentar },
-      async (tx, th, pinOk) => (await tx`select foto.link_comentar(${th}, ${pinOk}, ${foto}::uuid, ${texto}, string_to_array(nullif(${lista.join(',')}, ''), ',')) as r`)[0].r,
+      async (tx, th, pinOk) =>
+        (await tx`select foto.link_comentar(${th}, ${pinOk}, ${foto}::uuid, ${texto}, string_to_array(nullif(${lista.join(',')}, ''), ',')) as r`)[0].r,
     ),
   )
 }
@@ -235,7 +242,12 @@ export async function comentarFoto(req, token, foto, comentario, etiquetas) {
 export async function enviarSelecao(req, token, nome) {
   if (typeof nome !== 'string' || nome.length > 200) return { ok: false, erro: 'nome' }
   return resultado(
-    await pelaPorta(req, token, { prefixo: 'link-enviar', regra: REGRAS.linkEnviar }, async (tx, th, pinOk) => (await tx`select foto.link_enviar(${th}, ${pinOk}, ${nome}) as r`)[0].r),
+    await pelaPorta(
+      req,
+      token,
+      { prefixo: 'link-enviar', regra: REGRAS.linkEnviar },
+      async (tx, th, pinOk) => (await tx`select foto.link_enviar(${th}, ${pinOk}, ${nome}) as r`)[0].r,
+    ),
   )
 }
 

@@ -5,14 +5,43 @@ import { test } from 'node:test'
 
 import { neutro } from '../src/motor/ajustes.js'
 import { luminancia } from '../src/motor/cor/espacos.js'
-import { LOCAL, aplicarLocal, caixa, campoDeGrao, contrasteLocal, estimarRuido, filtroGuiado, gaussiano, grao, limitesDaNitidez, luzDoAr, margemLocal, minimo, nitidez, reduzirRuido, temLocal, temRuido, tirarNeblina, vinheta } from '../src/motor/local.js'
+import {
+  LOCAL,
+  aplicarLocal,
+  caixa,
+  campoDeGrao,
+  contrasteLocal,
+  estimarRuido,
+  filtroGuiado,
+  gaussiano,
+  grao,
+  limitesDaNitidez,
+  luzDoAr,
+  margemLocal,
+  minimo,
+  nitidez,
+  reduzirRuido,
+  temLocal,
+  temRuido,
+  tirarNeblina,
+  vinheta,
+} from '../src/motor/local.js'
 import { cena, deltaE, sorteio } from './apoio-motor.js'
 
 const perto = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} esperado ${b}, veio ${a} (tolerância ${tol})`)
 const Y = luminancia('rec2020')
 
 function bloco(imagem, extra = {}) {
-  return { largura: imagem.largura, altura: imagem.altura, dados: Float32Array.from(imagem.dados), x0: 0, y0: 0, quadro: { largura: imagem.largura, altura: imagem.altura }, escala: 1, ...extra }
+  return {
+    largura: imagem.largura,
+    altura: imagem.altura,
+    dados: Float32Array.from(imagem.dados),
+    x0: 0,
+    y0: 0,
+    quadro: { largura: imagem.largura, altura: imagem.altura },
+    escala: 1,
+    ...extra,
+  }
 }
 
 function cinza(largura, altura, f) {
@@ -51,7 +80,10 @@ test('filtros de base: caixa, mínimo e gaussiano contra a conta direta; filtro 
       }
     }
   }
-  assert.deepEqual([...caixa(plano, w, h, 0)], [...plano].map((v) => v))
+  assert.deepEqual(
+    [...caixa(plano, w, h, 0)],
+    [...plano].map((v) => v),
+  )
   // gaussiano: constante fica constante, a média se mantém, o desvio de um impulso é o pedido
   const constante = new Float32Array(w * h).fill(0.7)
   for (const v of gaussiano(constante, w, h, 1.3)) perto(v, 0.7, 1e-6)
@@ -60,10 +92,11 @@ test('filtros de base: caixa, mínimo e gaussiano contra a conta direta; filtro 
   const g = gaussiano(impulso, 41, 41, 2)
   let soma = 0
   let m2 = 0
-  for (let y = 0; y < 41; y++) for (let x = 0; x < 41; x++) {
-    soma += g[y * 41 + x]
-    m2 += g[y * 41 + x] * (x - 20) ** 2
-  }
+  for (let y = 0; y < 41; y++)
+    for (let x = 0; x < 41; x++) {
+      soma += g[y * 41 + x]
+      m2 += g[y * 41 + x] * (x - 20) ** 2
+    }
   perto(soma, 1, 1e-5, 'soma')
   perto(Math.sqrt(m2), 2, 0.02, 'desvio')
   // filtro guiado: degrau de 2 passa quase intacto com eps pequeno; textura fina some
@@ -101,7 +134,10 @@ test('tudo neutro: nenhum passo de vizinhança mexe na imagem', () => {
 
 test('clareza e textura: mexem no relevo, não no plano, e a borda não ganha halo', () => {
   // plano: nada muda
-  const plano = bloco(cinza(200, 80, () => 0.3), { quadro: { largura: 4000, altura: 1600 }, x0: 1000, y0: 500 })
+  const plano = bloco(
+    cinza(200, 80, () => 0.3),
+    { quadro: { largura: 4000, altura: 1600 }, x0: 1000, y0: 500 },
+  )
   contrasteLocal(plano, { textura: 100, clareza: 100 })
   for (const v of plano.dados) perto(v, 0.3, 1e-6)
   // onda de 0,2 EV de amplitude, período de 60 px numa foto de 4000 px: é clareza (o raio é 1,2% do lado maior = 48 px)
@@ -135,7 +171,10 @@ test('clareza e textura: mexem no relevo, não no plano, e a borda não ganha ha
   contrasteLocal(largo, { textura: 100 })
   perto(amplitude(largo), 0.1, 0.01, 'textura não mexe na onda larga')
   // borda de 2 EV: o que passa além dos dois patamares (o halo) fica abaixo de 0,06 EV com tudo em +100
-  const degrau = bloco(cinza(600, 60, (x) => (x < 300 ? 0.09 : 0.36)), { quadro })
+  const degrau = bloco(
+    cinza(600, 60, (x) => (x < 300 ? 0.09 : 0.36)),
+    { quadro },
+  )
   contrasteLocal(degrau, { textura: 100, clareza: 100 })
   let halo = 0
   for (let x = 20; x < 580; x++) halo = Math.max(halo, x < 300 ? Math.abs(ev(degrau, x, 30) + 1) : Math.abs(ev(degrau, x, 30) - 1))
@@ -152,9 +191,17 @@ test('clareza e textura: mexem no relevo, não no plano, e a borda não ganha ha
 
 test('nitidez: o halo numa borda degrau nunca passa do limite; plano não muda; a máscara segura o que não é borda', () => {
   const quadro = { largura: 400, altura: 40 }
-  for (const [quantidade, detalhe, raio] of [[40, 25, 1], [150, 0, 1], [150, 100, 3], [80, 50, 0.5]]) {
+  for (const [quantidade, detalhe, raio] of [
+    [40, 25, 1],
+    [150, 0, 1],
+    [150, 100, 3],
+    [80, 50, 0.5],
+  ]) {
     const { ganho, limite } = limitesDaNitidez({ nitidez: quantidade, detalhe })
-    const degrau = bloco(cinza(400, 40, (x) => (x < 200 ? 0.12 : 0.24)), { quadro })
+    const degrau = bloco(
+      cinza(400, 40, (x) => (x < 200 ? 0.12 : 0.24)),
+      { quadro },
+    )
     nitidez(degrau, { nitidez: quantidade, raio, detalhe })
     let halo = 0
     for (let x = 10; x < 390; x++) {
@@ -170,7 +217,11 @@ test('nitidez: o halo numa borda degrau nunca passa do limite; plano não muda; 
   assert.ok(limitesDaNitidez({ nitidez: 40, detalhe: 100 }).limite > limitesDaNitidez({ nitidez: 40, detalhe: 0 }).limite)
   perto(limitesDaNitidez({ nitidez: 150 }).ganho, LOCAL.nitidez.ganho, 1e-12)
   // máscara: textura fraca (0,02 EV) perde a nitidez, a borda forte não
-  const mista = () => bloco(cinza(400, 40, (x, y) => (x < 200 ? 0.12 : 0.24) * 2 ** (0.02 * Math.sin(x * 1.9 + y * 0.7))), { quadro })
+  const mista = () =>
+    bloco(
+      cinza(400, 40, (x, y) => (x < 200 ? 0.12 : 0.24) * 2 ** (0.02 * Math.sin(x * 1.9 + y * 0.7))),
+      { quadro },
+    )
   const semMascara = mista()
   const comMascara = mista()
   const original = mista()
@@ -184,7 +235,10 @@ test('nitidez: o halo numa borda degrau nunca passa do limite; plano não muda; 
   assert.ok(mudou(comMascara, 40, 160) < mudou(semMascara, 40, 160) * 0.15, 'a textura fraca ficou de fora')
   assert.ok(mudou(comMascara, 198, 202) > mudou(semMascara, 198, 202) * 0.7, 'a borda continua nítida')
   // na prévia reduzida o raio encolhe junto; quando some (menos de um quarto de pixel), a nitidez não roda
-  const previa = bloco(cinza(100, 10, (x) => (x < 50 ? 0.12 : 0.24)), { quadro: { largura: 100, altura: 10 }, escala: 0.2 })
+  const previa = bloco(
+    cinza(100, 10, (x) => (x < 50 ? 0.12 : 0.24)),
+    { quadro: { largura: 100, altura: 10 }, escala: 0.2 },
+  )
   nitidez(previa, { nitidez: 150, raio: 1 })
   assert.deepEqual(previa.dados, cinza(100, 10, (x) => (x < 50 ? 0.12 : 0.24)).dados)
 })
@@ -227,11 +281,16 @@ test('ruído: o modelo do arquivo guia a limpeza — menos ruído, mesma média,
   const luz = so({ luz: 60 })
   const cor = so({ cor: 60 })
   const tudo = so({ luz: 100, cor: 100 })
-  for (const [nome, x0, x1] of [['escuro', 10, 100], ['claro', 140, 230]]) {
+  for (const [nome, x0, x1] of [
+    ['escuro', 10, 100],
+    ['claro', 140, 230],
+  ]) {
     const l = medir(luz, x0, x1)
     const c = medir(cor, x0, x1)
     const m = medir(tudo, x0, x1)
-    t.diagnostic(`${nome}: desvio de luz ${antes[nome].desvio.toExponential(2)} → ${l.desvio.toExponential(2)} (luz 60) → ${m.desvio.toExponential(2)} (100); ruído de cor ${antes[nome].cor.toExponential(2)} → ${c.cor.toExponential(2)} (cor 60)`)
+    const e2 = (v) => v.toExponential(2)
+    t.diagnostic(`${nome}: desvio de luz ${e2(antes[nome].desvio)} → ${e2(l.desvio)} (luz 60) → ${e2(m.desvio)} (100)`)
+    t.diagnostic(`${nome}: ruído de cor ${antes[nome].cor.toExponential(2)} → ${c.cor.toExponential(2)} (cor 60)`)
     // o mesmo ajuste limpa igual no escuro e no claro: é para isso que a variância é estabilizada
     assert.ok(l.desvio < antes[nome].desvio * 0.5, `${nome}: luz 60 corta o desvio pela metade`)
     assert.ok(m.desvio < antes[nome].desvio * 0.25, `${nome}: luz 100 corta para um quarto`)
@@ -277,6 +336,18 @@ test('grão: determinístico pela semente, igual em qualquer bloco, com a média
   const pedaco = { largura: 100, altura: 80, dados: new Float32Array(100 * 80 * 3).fill(0.18), x0: 130, y0: 90, quadro, escala: 1 }
   grao(pedaco, opcoes)
   for (let y = 0; y < 80; y++) for (let x = 0; x < 100; x++) assert.equal(pedaco.dados[(y * 100 + x) * 3], a.dados[((y + 90) * 400 + x + 130) * 3])
+  // e é a conta de `campoDeGrao` ponto a ponto (o laço guarda as linhas da grade, mas o campo é o mesmo)
+  const celula = Math.max(1, (LOCAL.grao.celulaMin + (LOCAL.grao.celulaMax - LOCAL.grao.celulaMin) * 0.25) * (400 / LOCAL.grao.ladoRef))
+  for (const [x, y] of [
+    [0, 0],
+    [17, 3],
+    [399, 299],
+    [200, 150],
+    [1, 298],
+  ]) {
+    const esperado = 0.18 * 2 ** (0.6 * LOCAL.grao.ev * campoDeGrao(x, y, celula, 0.5, 77))
+    perto(a.dados[(y * 400 + x) * 3], esperado, 1e-6, `campo em (${x}, ${y})`)
+  }
   // estatística: o desvio em EV é o do controle (0,3 EV em 100), a média em EV é zero, os três canais andam juntos
   let s = 0
   let s2 = 0
@@ -309,22 +380,32 @@ test('grão: determinístico pela semente, igual em qualquer bloco, com a média
   assert.ok(vizinhos(100) < vizinhos(0) * 0.6, 'grão maior varia mais devagar')
   // prévia reduzida a 1/4. Grão grande (célula de 16 px numa foto de 16000): a prévia mostra o MESMO grão, no mesmo
   // lugar. Grão fino (menor que o pixel da prévia): o desenho se perde, mas o desvio é o da média de 4×4 da foto cheia.
-  const media4 = (b) => {
+  const media4 = (cheio) => {
     const saida = new Float32Array(200 * 150)
     for (let y = 0; y < 150; y++) {
       for (let x = 0; x < 200; x++) {
         let m = 0
-        for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) m += Math.log2(b.dados[((y * 4 + dy) * 800 + x * 4 + dx) * 3] / 0.18)
+        for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) m += Math.log2(cheio.dados[((y * 4 + dy) * 800 + x * 4 + dx) * 3] / 0.18)
         saida[y * 200 + x] = m / 16
       }
     }
     return saida
   }
   const desvio = (v) => Math.sqrt(v.reduce((t, x) => t + x * x, 0) / v.length)
-  for (const [ladoDaFoto, igual] of [[16000, true], [4000, false], [800, false]]) {
-    const cheia = bloco(cinza(800, 600, () => 0.18), { quadro: { largura: ladoDaFoto, altura: ladoDaFoto * 0.75 } })
+  for (const [ladoDaFoto, igual] of [
+    [16000, true],
+    [4000, false],
+    [800, false],
+  ]) {
+    const cheia = bloco(
+      cinza(800, 600, () => 0.18),
+      { quadro: { largura: ladoDaFoto, altura: ladoDaFoto * 0.75 } },
+    )
     grao(cheia, { grao: 80, tamanho: 100, aspereza: 0, semente: 9 })
-    const previa = bloco(cinza(200, 150, () => 0.18), { quadro: { largura: ladoDaFoto / 4, altura: (ladoDaFoto * 0.75) / 4 }, escala: 0.25 })
+    const previa = bloco(
+      cinza(200, 150, () => 0.18),
+      { quadro: { largura: ladoDaFoto / 4, altura: (ladoDaFoto * 0.75) / 4 }, escala: 0.25 },
+    )
     grao(previa, { grao: 80, tamanho: 100, aspereza: 0, semente: 9 })
     const deLonge = media4(cheia)
     const naPrevia = Float32Array.from({ length: 200 * 150 }, (_, i) => Math.log2(previa.dados[i * 3] / 0.18))
@@ -421,9 +502,16 @@ test('escala proporcional: a prévia reduzida com os mesmos ajustes parece com a
     const w = imagem.largura / 2
     const h = imagem.altura / 2
     const d = new Float32Array(w * h * 3)
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) {
-      d[(y * w + x) * 3 + c] = (imagem.dados[(2 * y * imagem.largura + 2 * x) * 3 + c] + imagem.dados[(2 * y * imagem.largura + 2 * x + 1) * 3 + c] + imagem.dados[((2 * y + 1) * imagem.largura + 2 * x) * 3 + c] + imagem.dados[((2 * y + 1) * imagem.largura + 2 * x + 1) * 3 + c]) / 4
-    }
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        for (let c = 0; c < 3; c++) {
+          d[(y * w + x) * 3 + c] =
+            (imagem.dados[(2 * y * imagem.largura + 2 * x) * 3 + c] +
+              imagem.dados[(2 * y * imagem.largura + 2 * x + 1) * 3 + c] +
+              imagem.dados[((2 * y + 1) * imagem.largura + 2 * x) * 3 + c] +
+              imagem.dados[((2 * y + 1) * imagem.largura + 2 * x + 1) * 3 + c]) /
+            4
+        }
     return { largura: w, altura: h, dados: d }
   }
   const a = neutro()

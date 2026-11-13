@@ -143,14 +143,25 @@ export function filtroGuiado(guia, p, w, h, r, eps, borda = null) {
 }
 
 // Mínimo em janela de raio r, separável (van Herk / Gil-Werman): três comparações por pixel, qualquer raio.
-function minimoEmLinha(origem, destino, inicio, passo, n, r, g, hh) {
+// `fila` recebe a linha (ou coluna) com r de folga infinita de cada lado; g é o mínimo acumulado dentro de cada bloco
+// de 2r + 1 vindo da esquerda, hh vindo da direita.
+function minimoEmLinha(origem, destino, inicio, passo, n, r, fila, g, hh) {
   const k = 2 * r + 1
-  // g: mínimo acumulado dentro de cada bloco de k, da esquerda; hh: da direita. Com r de folga (infinito) nas pontas.
   const total = n + 2 * r
-  const valor = (j) => (j < r || j >= n + r ? Infinity : origem[inicio + (j - r) * passo])
-  for (let j = 0; j < total; j++) g[j] = j % k === 0 ? valor(j) : Math.min(g[j - 1], valor(j))
-  for (let j = total - 1; j >= 0; j--) hh[j] = j === total - 1 || (j + 1) % k === 0 ? valor(j) : Math.min(hh[j + 1], valor(j))
-  for (let x = 0; x < n; x++) destino[inicio + x * passo] = Math.min(hh[x], g[x + 2 * r])
+  for (let j = 0; j < r; j++) {
+    fila[j] = Infinity
+    fila[n + r + j] = Infinity
+  }
+  for (let j = 0, i = inicio; j < n; j++, i += passo) fila[r + j] = origem[i]
+  for (let j = 0; j < total; j++) {
+    const v = fila[j]
+    g[j] = j % k === 0 || v < g[j - 1] ? v : g[j - 1]
+  }
+  for (let j = total - 1; j >= 0; j--) {
+    const v = fila[j]
+    hh[j] = j === total - 1 || (j + 1) % k === 0 || v < hh[j + 1] ? v : hh[j + 1]
+  }
+  for (let x = 0, i = inicio; x < n; x++, i += passo) destino[i] = hh[x] < g[x + 2 * r] ? hh[x] : g[x + 2 * r]
 }
 
 export function minimo(origem, w, h, r) {
@@ -158,10 +169,11 @@ export function minimo(origem, w, h, r) {
   const temp = new Float32Array(w * h)
   const saida = new Float32Array(w * h)
   const maior = Math.max(w, h) + 2 * r
+  const fila = new Float32Array(maior)
   const g = new Float32Array(maior)
   const hh = new Float32Array(maior)
-  for (let y = 0; y < h; y++) minimoEmLinha(origem, temp, y * w, 1, w, r, g, hh)
-  for (let x = 0; x < w; x++) minimoEmLinha(temp, saida, x, w, h, r, g, hh)
+  for (let y = 0; y < h; y++) minimoEmLinha(origem, temp, y * w, 1, w, r, fila, g, hh)
+  for (let x = 0; x < w; x++) minimoEmLinha(temp, saida, x, w, h, r, fila, g, hh)
   return saida
 }
 
@@ -416,9 +428,9 @@ export function reduzirRuido(bloco, { luz = 0, cor = 0, ruido = null } = {}) {
 // ─────────── nitidez ───────────
 
 /** O ganho (k) e o limite de desvio (EV) que a nitidez usa: o halo numa borda nunca passa de k·limite EV. */
-export function limitesDaNitidez({ nitidez = 0, detalhe = 25 } = {}) {
+export function limitesDaNitidez({ nitidez: quantidade = 0, detalhe = 25 } = {}) {
   const N = LOCAL.nitidez
-  return { ganho: (nitidez / 150) * N.ganho, limite: N.limiteMin + (N.limiteMax - N.limiteMin) * (detalhe / 100) }
+  return { ganho: (quantidade / 150) * N.ganho, limite: N.limiteMin + (N.limiteMax - N.limiteMin) * (detalhe / 100) }
 }
 
 /**
@@ -488,7 +500,8 @@ export function campoDeGrao(X, Y, celula, aspereza, semente) {
     const tx = fx - ix
     const ty = fy - iy
     const s = semente + oitava * 7919
-    const v = (daGrade(ix, iy, s) * (1 - tx) + daGrade(ix + 1, iy, s) * tx) * (1 - ty) + (daGrade(ix, iy + 1, s) * (1 - tx) + daGrade(ix + 1, iy + 1, s) * tx) * ty
+    const v =
+      (daGrade(ix, iy, s) * (1 - tx) + daGrade(ix + 1, iy, s) * tx) * (1 - ty) + (daGrade(ix, iy + 1, s) * (1 - tx) + daGrade(ix + 1, iy + 1, s) * tx) * ty
     // a soma ponderada de valores independentes tem variância Σ peso²: dividir pela raiz devolve o desvio 1 em
     // qualquer ponto da célula
     soma += (p * v) / Math.sqrt(((1 - tx) * (1 - tx) + tx * tx) * ((1 - ty) * (1 - ty) + ty * ty))
@@ -514,12 +527,68 @@ export function grao(bloco, { grao: quantidade = 0, tamanho = 25, aspereza = 50,
   const f = 1 / escala
   const q = ((quantidade / 100) * G.ev) / Math.sqrt(1 + (0.8 * (f * f - 1)) / (celulaCheia * celulaCheia))
   const celula = Math.max(celulaCheia, f)
-  for (let y = 0; y < h; y++) {
-    // coordenada do centro do pixel em pixels da foto cheia, com o pixel i da foto cheia em i (não em i + 0,5): com
-    // célula de um pixel cada pixel cai em cima de um nó da grade e o grão é independente de pixel para pixel
-    const Y = (y0 + y + 0.5) * f - 0.5
+  // A conta é a de `campoDeGrao`, com as linhas da grade guardadas: cada nó é sorteado uma vez por linha de grade,
+  // não quatro vezes por pixel. Coordenada do centro do pixel em pixels da foto cheia, com o pixel i da foto cheia em
+  // i (não em i + 0,5): com célula de um pixel cada pixel cai em cima de um nó e o grão é independente entre pixels.
+  const peso = [1, aspereza / 100]
+  const norma = 1 / Math.sqrt(1 + peso[1] * peso[1])
+  const oitavas = []
+  for (let oitava = 0; oitava < 2; oitava++) {
+    if (!peso[oitava]) continue
+    const c = oitava ? celula * 3 : celula
+    const primeiro = Math.floor(((x0 + 0.5) * f - 0.5) / c)
+    const ultimo = Math.floor(((x0 + w - 0.5) * f - 0.5) / c) + 1
+    const nos = ultimo - primeiro + 1
+    // posição de cada coluna na grade: nó da esquerda e fração
+    const no = new Int32Array(w)
+    const tx = new Float32Array(w)
     for (let x = 0; x < w; x++) {
-      const g = 2 ** (q * campoDeGrao((x0 + x + 0.5) * f - 0.5, Y, celula, aspereza / 100, semente))
+      const fx = ((x0 + x + 0.5) * f - 0.5) / c
+      no[x] = Math.floor(fx) - primeiro
+      tx[x] = fx - Math.floor(fx)
+    }
+    oitavas.push({
+      c,
+      primeiro,
+      nos,
+      no,
+      tx,
+      peso: peso[oitava],
+      semente: semente + oitava * 7919,
+      linha: null,
+      deCima: new Float32Array(nos),
+      deBaixo: new Float32Array(nos),
+    })
+  }
+  const campo = new Float32Array(w)
+  for (let y = 0; y < h; y++) {
+    const Y = (y0 + y + 0.5) * f - 0.5
+    campo.fill(0)
+    for (const o of oitavas) {
+      const fy = Y / o.c
+      const iy = Math.floor(fy)
+      const ty = fy - iy
+      if (o.linha !== iy) {
+        // andou uma linha de grade: a de baixo vira a de cima quando dá; senão sorteia as duas
+        if (o.linha === iy - 1) {
+          const troca = o.deCima
+          o.deCima = o.deBaixo
+          o.deBaixo = troca
+        } else for (let k = 0; k < o.nos; k++) o.deCima[k] = daGrade(o.primeiro + k, iy, o.semente)
+        for (let k = 0; k < o.nos; k++) o.deBaixo[k] = daGrade(o.primeiro + k, iy + 1, o.semente)
+        o.linha = iy
+      }
+      const vy = (1 - ty) * (1 - ty) + ty * ty
+      const { no, tx, deCima, deBaixo } = o
+      for (let x = 0; x < w; x++) {
+        const k = no[x]
+        const t = tx[x]
+        const v = (deCima[k] * (1 - t) + deCima[k + 1] * t) * (1 - ty) + (deBaixo[k] * (1 - t) + deBaixo[k + 1] * t) * ty
+        campo[x] += (o.peso * v) / Math.sqrt(((1 - t) * (1 - t) + t * t) * vy)
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      const g = 2 ** (q * norma * campo[x])
       const o = (y * w + x) * 3
       dados[o] *= g
       dados[o + 1] *= g

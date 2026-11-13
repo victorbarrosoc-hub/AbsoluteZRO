@@ -31,13 +31,13 @@
 //
 // P&B vem ANTES da tonalização, de propósito: é o que permite o preto e branco tonalizado (sépia).
 
-import { FAIXAS_MATIZ } from './ajustes.js'
+import { FAIXAS_MATIZ, normalizar } from './ajustes.js'
 import { CAT16 } from './cor/adaptacao.js'
 import { xyDeTemperatura } from './cor/branco.js'
 import { CURVAS, D65, ESPACOS, luminancia, rgbParaXyz, xyParaXYZ, xyzParaRgb } from './cor/espacos.js'
 import { diagonal, identidade, inversa, mulM, mulV } from './cor/matriz.js'
 import { LAB_PARA_LMS, LMS_PARA_LAB, criarOklab, matizDoCirculo } from './cor/oklab.js'
-import { exp2, log2 } from './cor/rapido.js'
+import { LOG, exp2, f32, i32 } from './cor/rapido.js'
 import { CINZA, MARGENS, PESO_MAXIMO, curvaDeTons } from './tela.js'
 
 // ─────────── constantes da cadeia (as faixas de cada controle) ───────────
@@ -149,7 +149,9 @@ const eReta = (p) => p.length === 2 && p[0][0] === 0 && p[0][1] === 0 && p[1][0]
 
 /** A curva paramétrica (quatro regiões) sobre o código 0..1. */
 export function criarParametrica(curva) {
-  const partes = ['sombras', 'escuros', 'claros', 'altas'].map((nome) => ({ ...PARAMETRICA[nome], valor: (curva?.[nome] ?? 0) / 100 })).filter((p) => p.valor !== 0)
+  const partes = ['sombras', 'escuros', 'claros', 'altas']
+    .map((nome) => ({ ...PARAMETRICA[nome], valor: (curva?.[nome] ?? 0) / 100 }))
+    .filter((p) => p.valor !== 0)
   if (!partes.length) return null
   return (x) => {
     let y = x
@@ -346,7 +348,8 @@ function tabelaDeMatiz(ajustes) {
  *   eps, cinza
  */
 export function uniformes(ajustes, contexto = {}) {
-  const a = ajustes
+  // qualquer objeto de ajustes serve: campo ausente ou fora da faixa vira o neutro (ajustes.js)
+  const a = normalizar(ajustes)
   const ganho = 2 ** (a.luz.exposicao + (contexto.exposicaoBase ?? 0))
   let alvo = null
   if (a.branco.modo === 'manual') alvo = { kelvin: a.branco.temperatura, tinta: a.branco.tinta }
@@ -389,7 +392,16 @@ export function uniformes(ajustes, contexto = {}) {
   const veu = (a.efeitos.desbotar / 100) * VEU
 
   return {
-    passos: { tom: temTom, canais: temCanais, calibracao: temCalibracao, cor: temCor, misturador: temMisturador || pb, tonalizacao: temTonalizacao, pb, veu: veu !== 0 },
+    passos: {
+      tom: temTom,
+      canais: temCanais,
+      calibracao: temCalibracao,
+      cor: temCor,
+      misturador: temMisturador || pb,
+      tonalizacao: temTonalizacao,
+      pb,
+      veu: veu !== 0,
+    },
     entrada,
     tom: { tabela: tabelaTom, evMin: EV_MIN, evMax: EV_MAX, passosPorEv: PASSOS_POR_EV },
     canais: temCanais ? canais : null,
@@ -449,13 +461,23 @@ export function criarPonto(ajustes, contexto = {}) {
   const T = u.cor.tonalizacao
   const [zs, zm, za, zg] = T.zonas
   const temLuzZona = T.zonas.some((z) => z.luz !== 0)
+  const tPivo = T.pivo
+  const tSombra0 = T.pivo - T.largura
+  const tSombraInv = 1 / (T.mistura * T.largura + T.largura)
+  const tAlta0 = T.pivo - T.mistura * T.largura
+  const tAltaInv = 1 / (T.mistura * T.largura + T.largura)
+  const tMeioInv = 1 / T.largura
   const veu = u.veu
   const iCinza = 1 / CINZA
   const maxIndice = TAM_TOM - 1
 
-  // ganho da tabela para um valor de cena já limitado em EPS
+  // ganho da tabela para um valor de cena já limitado em EPS (log2 de cor/rapido.js embutido)
   const ganhoDe = (tabela, valor) => {
-    let pos = (log2(valor * iCinza) - EV_MIN) * PASSOS_POR_EV
+    f32[0] = valor * iCinza
+    const bits = i32[0]
+    const mant = bits & 0x7fffff
+    const il = mant >>> 13
+    let pos = ((bits >>> 23) - 127 + LOG[il] + (LOG[il + 1] - LOG[il]) * ((mant & 0x1fff) * (1 / 8192)) - EV_MIN) * PASSOS_POR_EV
     if (pos < 0) pos = 0
     else if (pos > maxIndice) pos = maxIndice
     const i = pos | 0
@@ -524,10 +546,10 @@ export function criarPonto(ajustes, contexto = {}) {
         const dsoma = aa + ab
         const t = dsoma > 1e-30 ? B / dsoma : 0
         const pos = (A >= 0 ? (B >= 0 ? t : 4 + t) : 2 - t) * (TAM_MATIZ / 4)
-        let i = pos | 0
-        if (i >= TAM_MATIZ) i = TAM_MATIZ - 1
-        const f = pos - i
-        const o = i * COLUNAS_MATIZ
+        let casa = pos | 0
+        if (casa >= TAM_MATIZ) casa = TAM_MATIZ - 1
+        const f = pos - casa
+        const o = casa * COLUNAS_MATIZ
         const q = o + COLUNAS_MATIZ
         // quanto a cor é cor: m = x²/(x² + ref²), com x = C/L. Zero no cinza: luz por faixa e P&B não mexem nele.
         const x2 = (A * A + B * B) / (Lp * Lp)
@@ -558,10 +580,17 @@ export function criarPonto(ajustes, contexto = {}) {
 
       // 5e. tonalização: desloca a e b na proporção de L e mexe na luz, por zona
       if (P.tonalizacao) {
-        const ws = 1 - suave(T.pivo - T.largura, T.pivo + T.mistura * T.largura, L)
-        const wh = suave(T.pivo - T.mistura * T.largura, T.pivo + T.largura, L)
-        const dm = L > T.pivo ? L - T.pivo : T.pivo - L
-        const wm = 1 - suave(0, T.largura, dm)
+        // ws = 1 − suave(pivô − largura; pivô + mistura·largura; L);  wh = suave(pivô − mistura·largura; pivô + largura; L)
+        // wm = 1 − suave(0; largura; |L − pivô|)        (suave = smoothstep, escrito por extenso: é o laço quente)
+        let t = (L - tSombra0) * tSombraInv
+        t = t < 0 ? 0 : t > 1 ? 1 : t
+        const ws = 1 - t * t * (3 - 2 * t)
+        t = (L - tAlta0) * tAltaInv
+        t = t < 0 ? 0 : t > 1 ? 1 : t
+        const wh = t * t * (3 - 2 * t)
+        t = (L > tPivo ? L - tPivo : tPivo - L) * tMeioInv
+        t = t > 1 ? 1 : t
+        const wm = 1 - t * t * (3 - 2 * t)
         const base = L > 0 ? L : 0
         A += base * (ws * zs.a + wm * zm.a + wh * za.a + zg.a)
         B += base * (ws * zs.b + wm * zm.b + wh * za.b + zg.b)
@@ -606,11 +635,27 @@ export function criarPonto(ajustes, contexto = {}) {
     return saida
   }
 
+  const soEntrada = !Object.values(P).some(Boolean)
+  const semNada = soEntrada && u.entrada.every((v, i) => v === (i % 4 === 0 ? 1 : 0))
+
   function aplicarEm(dados, pixels, inicio = 0) {
     const fim = inicio + pixels * 3
+    if (semNada) return dados
+    if (soEntrada) {
+      // só exposição e branco: a matriz, num laço curto
+      for (let i = inicio; i < fim; i += 3) {
+        const r = dados[i]
+        const g = dados[i + 1]
+        const b = dados[i + 2]
+        dados[i] = e0 * r + e1 * g + e2 * b
+        dados[i + 1] = e3 * r + e4 * g + e5 * b
+        dados[i + 2] = e6 * r + e7 * g + e8 * b
+      }
+      return dados
+    }
     for (let i = inicio; i < fim; i += 3) nucleo(dados, i)
     return dados
   }
 
-  return { aplicar, aplicarEm, uniformes: u }
+  return { aplicar, aplicarEm, uniformes: u, neutro: semNada }
 }

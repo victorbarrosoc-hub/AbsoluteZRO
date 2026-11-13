@@ -1,0 +1,419 @@
+# API do servidor — plataforma de fotos (id `foto`)
+
+O que o servidor guarda e responde: **galerias de seleção do cliente** e **predefinições na conta**. A foto original não
+sai do aparelho; só sobe a prévia reduzida de uma galeria que a pessoa mandou publicar. Este arquivo é o contrato que a
+tela do fotógrafo segue. Banco em [`db/migrations/0001_galerias.sql`](../db/migrations/0001_galerias.sql) e
+[`0002_predefinicoes.sql`](../db/migrations/0002_predefinicoes.sql).
+
+- [Regras gerais](#regras-gerais)
+- [Galerias: rotas do fotógrafo](#galerias-rotas-do-fotógrafo)
+- [Link do cliente: rotas públicas](#link-do-cliente-rotas-públicas)
+- [A página do cliente](#a-página-do-cliente)
+- [Predefinições na conta](#predefinições-na-conta)
+- [Armazenamento das prévias](#armazenamento-das-prévias)
+- [Limites](#limites)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+
+## Regras gerais
+
+- Tudo responde JSON com `ok: true` ou `ok: false, erro: '<código>'`. Datas em ISO 8601 (UTC).
+- **Rotas do fotógrafo** (`/api/foto/…`): passam por `rota()` (`api/_rota.js`). Precisam da sessão liberada pelo gate
+  (cookie `foto_conta` com a claim do app; no modo local, `foto_local`). Pessoa e organização vêm da sessão, nunca do
+  pedido. Rodam no banco como `foto_app`, com RLS: a pessoa só alcança o que é dela, na organização ativa. O que é de
+  outra pessoa responde `404 nao_existe`, igual ao que não existe.
+- Escrita (`POST`, `PUT`, `PATCH`, `DELETE`) só da própria origem: cabeçalho `Origin` de outro site dá `403 origem`.
+- Erros comuns a todas as rotas do fotógrafo:
+
+| status | `erro` | quando |
+| --- | --- | --- |
+| 401 | `sem_sessao` | sem sessão, ou sessão sem acesso ao app |
+| 403 | `origem` | escrita vinda de outra origem |
+| 400 | `corpo` | o corpo não é JSON |
+| 400 | `campo` | um campo veio errado; `campo` diz qual (`{ "ok": false, "erro": "campo", "campo": "contratadas" }`) |
+| 404 | `nao_existe` | não existe, ou não é seu |
+| 413 | `grande` | corpo acima do limite |
+| 503 | `sem_banco` | `FOTO_DATABASE_URL` não configurada |
+| 503 | `sem_armazenamento` | **galerias sem armazenamento configurado**: todas as rotas de galeria respondem isto. A tela mostra; nunca finge que publicou |
+
+## Galerias: rotas do fotógrafo
+
+Estados: `rascunho` → `publicada` → `concluida` (o cliente enviou) ⇄ `reaberta` (o fotógrafo reabriu); qualquer uma das
+três últimas → `encerrada` (fim; o link morre). Fotos entram, saem e trocam de arquivo em `rascunho`, `publicada` e
+`reaberta`; em `concluida` e `encerrada` a galeria fica como está (`409 travada`).
+
+| método e caminho | o que faz |
+| --- | --- |
+| `GET /api/foto/galerias` | lista (até 200, a mais nova primeiro) |
+| `POST /api/foto/galerias` | cria, em `rascunho` |
+| `GET /api/foto/galerias/<id>` | a ficha e as fotos |
+| `PATCH /api/foto/galerias/<id>` | altera a ficha |
+| `DELETE /api/foto/galerias/<id>` | apaga a galeria **e os arquivos** |
+| `POST /api/foto/galerias/<id>/fotos` | registra fotos em lote |
+| `DELETE /api/foto/galerias/<id>/fotos` | tira fotos (e os arquivos delas) |
+| `PUT /api/foto/galerias/<id>/arquivo?foto=<id>&v=previa\|mini` | envia os bytes de uma prévia ou miniatura |
+| `POST /api/foto/galerias/<id>/publicar` | publica e devolve o endereço **uma vez** |
+| `POST /api/foto/galerias/<id>/link` | troca o link (endereço novo, **uma vez**) |
+| `PATCH /api/foto/galerias/<id>/link` | define ou remove o PIN; estende a validade |
+| `DELETE /api/foto/galerias/<id>/link` | revoga o link |
+| `POST /api/foto/galerias/<id>/reabrir` | reabre a seleção enviada |
+| `POST /api/foto/galerias/<id>/encerrar` | encerra |
+| `GET /api/foto/galerias/<id>/selecao` | o que o cliente escolheu |
+
+### A ficha (`galeria`)
+
+```json
+{
+  "id": "5b0c6f0e-6a55-4c5c-9d0e-1b4f8f6f2a10",
+  "nome": "Casamento Ana & Rui",
+  "fotografo": "Lia Fotografia",
+  "contratadas": 40,
+  "permiteExtras": true,
+  "precoExtra": "R$ 25 por foto",
+  "prazo": "2026-12-01T15:00:00.000Z",
+  "estado": "publicada",
+  "marcaDagua": true,
+  "mensagem": "Escolham com calma.",
+  "criadaEm": "2026-11-13T18:20:11.512Z",
+  "atualizadaEm": "2026-11-13T18:31:02.120Z",
+  "publicadaEm": "2026-11-13T18:31:02.120Z",
+  "arquivosApagadosEm": null,
+  "fotos": 86,
+  "enviadas": 86,
+  "escolhidas": 12,
+  "link": { "id": "…", "temPin": true, "expiraEm": "2026-12-13T18:31:02.120Z", "aberturas": 3, "abertoEm": "…", "criadoEm": "…", "vivo": true },
+  "envio": null
+}
+```
+
+| campo | tipo | regra |
+| --- | --- | --- |
+| `nome` | texto, 1 a 120 | o nome do trabalho; o cliente vê |
+| `fotografo` | texto, 1 a 80 | o nome que o cliente vê. Ao criar, se faltar, vale o nome da sessão |
+| `contratadas` | inteiro, 1 a 5000 | quantas fotos o pacote inclui |
+| `permiteExtras` | booleano (padrão `false`) | sem extras, a seleção enche em `contratadas` |
+| `precoExtra` | texto até 60, ou `null` | **só texto informativo** ("R$ 25 por foto"). Não há cobrança |
+| `prazo` | data ISO, ou `null` | a data que o cliente vê ("Até 1 de dezembro"). Não derruba o link: quem derruba é a validade do link |
+| `marcaDagua` | booleano (padrão `true`) | diz se as prévias levam marca-d'água. **Quem grava a marca nos pixels é a tela**, antes de enviar |
+| `mensagem` | texto até 280, ou `null` | uma linha para o cliente |
+
+`fotos`, `enviadas` (com arquivo) e `escolhidas` são contagens. `link` é o link vivo (não revogado), sem token nem hash
+nenhum; `link.vivo` diz se ainda está na validade. `envio` é o último envio do cliente: `{ nome, em, escolhidas, extras }`.
+`estado`, `dono` e organização não se escrevem pelo corpo (são ignorados).
+
+### Criar — `POST /api/foto/galerias`
+
+```http
+POST /api/foto/galerias
+Content-Type: application/json
+
+{ "nome": "Casamento Ana & Rui", "contratadas": 40, "permiteExtras": true, "precoExtra": "R$ 25 por foto",
+  "prazo": "2026-12-01T15:00:00.000Z", "mensagem": "Escolham com calma." }
+```
+
+```json
+201 { "ok": true, "galeria": { "id": "5b0c…", "estado": "rascunho", "fotos": 0, "link": null, "envio": null, "…": "…" } }
+```
+
+### Listar e ler
+
+```json
+GET /api/foto/galerias
+200 { "ok": true, "galerias": [ { "id": "5b0c…", "nome": "…", "estado": "publicada", "fotos": 86, "escolhidas": 12, "link": { "…": "…" }, "envio": null } ] }
+
+GET /api/foto/galerias/5b0c…
+200 { "ok": true, "galeria": { "…": "…" }, "fotos": [
+  { "id": "9d1f…", "fotoId": "a41c9e…", "nome": "LIA_4101.CR3", "ordem": 0, "grupo": "serie-1", "melhor": true,
+    "largura": 2048, "altura": 1365, "tipo": "image/jpeg", "tamanho": 412033, "sha256": "…64 hex…", "enviada": true,
+    "mini": { "tipo": "image/jpeg", "tamanho": 38112, "sha256": "…", "enviada": true } } ] }
+```
+
+### Alterar — `PATCH /api/foto/galerias/<id>`
+
+Só os campos que vierem mudam. `""` ou `null` em `precoExtra`, `prazo` e `mensagem` apaga o valor.
+
+```json
+PATCH { "contratadas": 45, "mensagem": "" }
+200 { "ok": true, "galeria": { "contratadas": 45, "mensagem": null, "…": "…" } }
+```
+
+### Apagar — `DELETE /api/foto/galerias/<id>`
+
+Apaga primeiro os arquivos do armazenamento e depois a galeria (fotos, links, seleção e envios vão junto). Se o
+armazenamento falhar, a galeria continua lá para tentar de novo.
+
+```json
+200 { "ok": true, "arquivos": 172 }
+```
+
+### Registrar fotos — `POST /api/foto/galerias/<id>/fotos`
+
+Até **500 por pedido** e **1.500 por galeria**. Registrar de novo o mesmo `fotoId` **atualiza** a foto (não duplica); se o
+`sha256`, o `tamanho` ou o `tipo` mudarem, ela volta a `enviada: false` e pede os bytes de novo.
+
+```json
+POST { "fotos": [
+  { "fotoId": "a41c9e…", "nome": "LIA_4101.CR3", "ordem": 0, "grupo": "serie-1", "melhor": true,
+    "largura": 2048, "altura": 1365, "tipo": "image/jpeg", "tamanho": 412033, "sha256": "…64 hex…",
+    "mini": { "tipo": "image/jpeg", "tamanho": 38112, "sha256": "…64 hex…" } } ] }
+
+200 { "ok": true, "fotos": [ { "id": "9d1f…", "fotoId": "a41c9e…", "enviada": false, "mini": { "enviada": false, "…": "…" }, "…": "…" } ] }
+```
+
+| campo | regra |
+| --- | --- |
+| `fotoId` | o `id` da foto no catálogo (`src/biblioteca/catalogo.js`), 1 a 120 caracteres. É por ele que a seleção volta para o catálogo |
+| `nome` | o nome do arquivo original, 1 a 255 (só o fotógrafo vê; o cliente nunca recebe) |
+| `ordem` | inteiro ≥ 0; se faltar, a posição no lote |
+| `grupo`, `melhor` | pilha de parecidas (texto até 64, vindo de `agrupar()`) e se é a melhor dela. O cliente vê a pilha fechada, com a melhor na frente |
+| `largura`, `altura` | da **prévia**, em pixels (16 a 8192) |
+| `tipo` | `image/jpeg` ou `image/webp` |
+| `tamanho`, `sha256` | da prévia: bytes (até 4 MB) e sha256 em hex minúsculo. O servidor confere os dois quando os bytes chegam |
+| `mini` | opcional e **recomendada**: a miniatura da grade (~480 px no lado maior, até 512 KB), com `tipo`, `tamanho`, `sha256`. Sem ela, a grade do cliente baixa a prévia inteira de cada foto |
+
+A resposta devolve as fotos na ordem do pedido, cada uma com o `id` que as outras rotas usam. Erros: `400 campo`
+(`campo: "fotos"`, com `indice` da foto ruim ou `repetida: true`), `409 travada`, `409 teto` (passou de 1.500).
+
+### Enviar os bytes — `PUT /api/foto/galerias/<id>/arquivo?foto=<id da foto>&v=previa|mini`
+
+O corpo é o arquivo cru. Mande com **`Content-Type: application/octet-stream`** (é como a função da Vercel entrega o
+corpo intacto). Os bytes passam sempre pelo servidor do app: a CSP só deixa `'self'`.
+
+```http
+PUT /api/foto/galerias/5b0c…/arquivo?foto=9d1f…&v=previa
+Content-Type: application/octet-stream
+
+<bytes do JPEG>
+```
+
+```json
+200 { "ok": true, "foto": "9d1f…", "variante": "previa" }
+```
+
+O servidor confere e só grava se tudo passar:
+
+| status | `erro` | o que foi conferido |
+| --- | --- | --- |
+| 413 | `grande` | até 4 MB a prévia, 512 KB a miniatura |
+| 400 | `vazio` | corpo vazio |
+| 400 | `tipo` | os **bytes** são JPEG ou WebP (não vale o cabeçalho) e batem com o `tipo` registrado |
+| 400 | `tamanho` | o tamanho é o registrado |
+| 400 | `sha256` | o sha256 é o registrado |
+| 400 | `gps` | o arquivo não carrega posição de GPS (EXIF ou XMP). **A tela tira os metadados antes de enviar**; o servidor só confere |
+| 400 | `sem_mini` | `v=mini` numa foto registrada sem `mini` |
+| 409 | `travada` | galeria `concluida` ou `encerrada` |
+
+### Tirar fotos — `DELETE /api/foto/galerias/<id>/fotos`
+
+```json
+DELETE { "ids": ["9d1f…", "0a7b…"] }
+200 { "ok": true, "fotos": 2, "arquivos": 4 }
+```
+
+### Publicar — `POST /api/foto/galerias/<id>/publicar`
+
+Só de `rascunho`, com pelo menos uma foto e **todas com a prévia enviada**. Gera o link e devolve o endereço **uma única
+vez**: o token não fica legível no banco (só o sha256). Perdeu o endereço, troque o link.
+
+```json
+POST { "validadeDias": 30, "pin": "2468" }
+
+201 { "ok": true, "endereco": "https://foto.absolutezro.com/g/Wm3r…43 caracteres…", "galeria": { "estado": "publicada", "link": { "temPin": true, "vivo": true, "…": "…" }, "…": "…" } }
+```
+
+`validadeDias`: 1 a 90 (padrão 30). `pin`: opcional, 4 a 8 dígitos; mande ao cliente por outro caminho.
+Erros: `409 estado` (com o `estado` atual), `409 sem_fotos`, `409 faltam_arquivos` (com `faltam`), `400 campo`.
+
+### Link — `/api/foto/galerias/<id>/link`
+
+Um link vivo por galeria.
+
+```json
+POST   { "validadeDias": 30, "pin": "1357" }      troca: revoga o atual e cria outro
+201    { "ok": true, "endereco": "https://…/g/…", "galeria": { "…": "…" } }
+
+PATCH  { "pin": "1357" }                          define o PIN (quem já tinha digitado o antigo digita de novo)
+PATCH  { "pin": null }                            remove o PIN
+PATCH  { "validadeDias": 60 }                     a validade passa a contar de agora
+200    { "ok": true, "galeria": { "…": "…" } }
+
+DELETE                                            revoga (para sempre; o cliente recebe a página neutra)
+200    { "ok": true, "galeria": { "link": null, "…": "…" } }
+```
+
+Trocar não leva o PIN antigo junto (o servidor não consegue lê-lo): mande `pin` de novo se quiser um. Depois de revogar,
+`POST …/link` cria outro. Erros: `409 estado` (só em `publicada`, `concluida` ou `reaberta`), `409 sem_link`, `400 campo`.
+
+### Reabrir e encerrar
+
+```json
+POST /api/foto/galerias/<id>/reabrir     só de "concluida" → "reaberta": o cliente volta a poder mexer e envia de novo
+POST /api/foto/galerias/<id>/encerrar    de "publicada", "concluida" ou "reaberta" → "encerrada": o link morre
+200 { "ok": true, "galeria": { "estado": "reaberta", "…": "…" } }
+```
+
+Erro: `409 estado`.
+
+### Ler a seleção — `GET /api/foto/galerias/<id>/selecao`
+
+Vale em qualquer estado: antes do envio é o que o cliente marcou até agora (`enviada: false`).
+
+```json
+200 {
+  "ok": true,
+  "galeria": { "id": "5b0c…", "nome": "Casamento Ana & Rui", "estado": "concluida", "contratadas": 40, "permiteExtras": true, "precoExtra": "R$ 25 por foto" },
+  "enviada": true,
+  "envio": { "nome": "Ana Cliente", "em": "2026-11-20T21:14:03.201Z", "escolhidas": 42, "extras": 2 },
+  "envios": [ { "nome": "Ana Cliente", "em": "2026-11-20T21:14:03.201Z", "escolhidas": 42, "extras": 2 } ],
+  "escolhidas": 42,
+  "extras": 2,
+  "ids": ["a41c9e…", "77b0d2…"],
+  "fotos": [
+    { "id": "9d1f…", "fotoId": "a41c9e…", "nome": "LIA_4101.CR3", "escolhida": true, "comentario": "Tirar o fio de luz no canto.", "etiquetas": ["clarear", "remover_objeto"], "atualizadaEm": "…" }
+  ],
+  "listas": {
+    "nomes": ["LIA_4101.CR3", "LIA_4107.CR3"],
+    "lightroom": "LIA_4101, LIA_4107",
+    "captureOne": "LIA_4101\nLIA_4107"
+  }
+}
+```
+
+- **`ids`**: os `fotoId` das escolhidas, na ordem da galeria. É o caminho certo para marcar no catálogo (`cliente.escolhida`).
+- **`fotos`**: toda foto com escolha, comentário ou etiqueta (uma foto pode ter comentário sem estar escolhida).
+- **`etiquetas`**: lista fechada: `suavizar_pele`, `preto_e_branco`, `remover_objeto`, `clarear`, `recortar`.
+- **`listas`**: para colar em outros programas, com os nomes **sem extensão**. `lightroom`: separados por vírgula, para o
+  filtro de Texto da Biblioteca (Nome do arquivo → Contém). `captureOne`: um por linha, para Selecionar por lista de nomes
+  de arquivo (ignorando a extensão). É compatibilidade: nome repetido ou renomeado depois não casa; `ids` casa.
+- **`envios`**: todos os envios (reabrir e enviar de novo acrescenta um), o mais novo primeiro.
+
+## Link do cliente: rotas públicas
+
+Sem conta. Tudo pelo token do endereço (`/g/<token>`: 32 bytes em base64url, 43 caracteres). O cliente não tem papel no
+banco: as rotas chamam só as funções `foto.link_*` (a "porta estreita"), que respondem pelo sha256 do token.
+
+- `POST /api/link/<acao>` com JSON; o token vai no corpo. Escrita confere a origem (`403 origem`).
+- **Link desconhecido, revogado, vencido ou de galeria encerrada: sempre `404 { "ok": false, "erro": "link" }`**, igual
+  nos quatro casos.
+- Com PIN e sem a prova: `abrir` responde só `{ "ok": true, "estado": "pin" }`; as outras, `401 pin`; a imagem, `404`.
+- `429 limite` quando passa dos [limites](#limites). `503 sem_armazenamento` sem armazenamento configurado.
+- Sem o login único configurado (e fora do modo local) ou sem banco, o link não existe: `404 link`.
+
+| ação | corpo | resposta |
+| --- | --- | --- |
+| `abrir` | `{ token, contar? }` (ou `GET ?t=`) | a galeria, as fotos e a seleção atual |
+| `pin` | `{ token, pin }` | `{ ok: true }` e o cookie da prova (HttpOnly, 12 h); `401 pin` se errado |
+| `escolher` | `{ token, foto, escolhida }` | `{ ok, escolhida, escolhidas, extras }` |
+| `comentar` | `{ token, foto, comentario, etiquetas }` | `{ ok, comentario, etiquetas }` (os dois de uma vez; vazio apaga) |
+| `enviar` | `{ token, nome }` | `{ ok, envio: { nome, em, escolhidas, extras } }`; trava a seleção |
+| `imagem` | `GET ?t=&f=<foto>&v=mini&s=<12 do sha256>` | os bytes |
+
+```json
+POST /api/link/abrir  { "token": "Wm3r…", "contar": true }
+
+200 {
+  "ok": true, "estado": "ok",
+  "galeria": { "nome": "Casamento Ana & Rui", "fotografo": "Lia Fotografia", "contratadas": 40, "permiteExtras": true,
+               "precoExtra": "R$ 25 por foto", "prazo": "2026-12-01T15:00:00+00:00", "mensagem": "Escolham com calma.",
+               "marcaDagua": true, "estado": "publicada", "travada": false },
+  "expira": "2026-12-13T18:31:02.12+00:00",
+  "etiquetas": ["suavizar_pele", "preto_e_branco", "remover_objeto", "clarear", "recortar"],
+  "escolhidas": 12, "extras": 0,
+  "fotos": [ { "id": "9d1f…", "grupo": "serie-1", "melhor": true, "largura": 2048, "altura": 1365, "v": "3fa9c1d2e0b7",
+               "mini": "81c0aa7f2d11", "escolhida": true, "comentario": null, "etiquetas": [] } ],
+  "envio": null
+}
+```
+
+O cliente **não** recebe o id do catálogo, o nome do arquivo, quem é o dono, nem nada do link. Só aparecem fotos com a
+prévia enviada. `v` e `mini` são o começo do sha256 (entram no endereço da imagem para o navegador poder guardar).
+`contar: true` conta uma abertura (a página manda na primeira carga).
+
+Erros de `escolher`, `comentar` e `enviar`: `400 formato`, `400 foto` (não é desta galeria), `400 texto` (comentário acima
+de 500), `400 etiquetas` (fora da lista), `400 nome`, `409 travada` (já enviada), `409 cheia` (sem extras e já no
+contratado; vem com `escolhidas`), `409 vazia` (enviar sem nenhuma escolhida).
+
+**Imagem.** `GET /api/link/imagem?t=<token>&f=<foto>` ou, como a página usa, `GET /g/<token>/i/<foto>?v=mini&s=<v>`.
+Só de link vivo (e com a prova do PIN, se houver), só de foto da galeria do link. `v=mini` devolve a miniatura; sem ela,
+a prévia. Cache **privado**: com `s` igual ao começo do sha256, `private, max-age=86400, immutable`; sem, `private,
+no-cache` com `ETag`. Nada é listado: `404` vazio para qualquer outra coisa.
+
+## A página do cliente
+
+`GET /g/<token>` (`api/galeria.js`) serve `galeria/galeria.html` **só para link vivo**; os arquivos dela saem por
+`/g/<token>/<arquivo>` (`galeria.css`, `galeria.js`, `rede.js`), também só com link vivo. Link morto recebe a página
+neutra (`app/indisponivel.html`), a mesma de qualquer endereço que não existe. A página não leva o nome nem o ícone do
+produto: assina "Absolute ZRO". Depois de enviada, fica só leitura até o fotógrafo reabrir.
+
+## Predefinições na conta
+
+A biblioteca mora no aparelho; aqui fica a cópia que a pessoa mandou guardar e as que ela divide com a equipe. A pessoa vê
+as dela (em qualquer organização) e as compartilhadas da organização ativa; só o dono altera e apaga. Até 500 por pessoa.
+
+| método e caminho | o que faz |
+| --- | --- |
+| `GET /api/foto/predefinicoes` | `{ minhas, equipe }`, sem o `json` de cada uma |
+| `GET /api/foto/predefinicoes/<id>` | uma, com o `json` |
+| `PUT /api/foto/predefinicoes` | grava; a mesma `chave` de novo **atualiza** |
+| `PATCH /api/foto/predefinicoes/<id>` | `{ nome?, familia?, compartilhada? }` |
+| `DELETE /api/foto/predefinicoes/<id>` | apaga |
+
+```json
+PUT /api/foto/predefinicoes
+{ "chave": "look-quente", "nome": "Quente", "familia": "Retrato", "compartilhada": false,
+  "json": { "zro": "foto.predefinicao", "versao": 1, "id": "look-quente", "nome": "Quente", "ajustes": { "…": "…" } } }
+
+200 { "ok": true, "predefinicao": { "id": "c2a1…", "chave": "look-quente", "nome": "Quente", "familia": "Retrato",
+       "compartilhada": false, "minha": true, "tamanho": 1840, "criadaEm": "…", "atualizadaEm": "…" } }
+
+GET /api/foto/predefinicoes
+200 { "ok": true, "minhas": [ { "id": "c2a1…", "chave": "look-quente", "nome": "Quente", "…": "…" } ], "equipe": [ { "id": "…", "minha": false, "…": "…" } ] }
+
+GET /api/foto/predefinicoes/c2a1…
+200 { "ok": true, "predefinicao": { "id": "c2a1…", "…": "…", "json": { "zro": "foto.predefinicao", "…": "…" } } }
+
+PATCH /api/foto/predefinicoes/c2a1…  { "compartilhada": true }
+200 { "ok": true, "predefinicao": { "compartilhada": true, "…": "…" } }
+```
+
+- `chave`: o `id` de dentro do arquivo `.zropreset` (`[A-Za-z0-9._-]`, até 80), única por pessoa. `id` é o do servidor.
+- `json`: o arquivo inteiro, objeto, até **256 KB** (`413 grande`). `nome` até 80, `familia` até 60.
+- `compartilhada: true` divide com a organização ativa de quem gravou; sem organização, `409 sem_equipe`.
+- Predefinição de outra pessoa (mesmo compartilhada) não se altera nem se apaga: `404 nao_existe`. `409 teto` acima de 500.
+
+## Armazenamento das prévias
+
+`api/_arquivos.js`, um adaptador com duas pontas:
+
+- **Pasta local** (`FOTO_ARQUIVOS_DIR`): desenvolvimento e testes. Na Vercel é ignorada (o disco some).
+- **S3 compatível** (`FOTO_S3_*`): Supabase Storage (`https://<projeto>.supabase.co/storage/v1/s3`), R2 ou S3, no estilo
+  de caminho, com SigV4 própria (conferida contra os vetores da AWS). **O bucket é privado e só existe depois de o titular
+  autorizar.**
+
+A chave de cada arquivo é calculada pelo banco: `g/<galeria>/<foto>` (com `-m` no fim, a miniatura). Nada é listado.
+Apagar a galeria ou tirar uma foto apaga os arquivos. `limparVencidas({ dias = 30 })` apaga os arquivos de galeria sem
+link vivo há `dias` dias (venceu, foi revogado ou a galeria foi encerrada): a ficha e a seleção ficam, a galeria passa a
+`encerrada` com `arquivosApagadosEm`. É chamável; **agendar ainda não foi feito**.
+
+## Limites
+
+Por link (pelo sha256 do token) e por IP (o IP só como HMAC do dia; nunca é guardado). Estourou: `429 limite`.
+
+| o quê | limite |
+| --- | --- |
+| qualquer pedido de link, por IP | 1.200 por hora |
+| link que não existe, por IP | 30 por hora (depois, nem link bom abre daquele IP por um tempo) |
+| abrir, por link | 240 por hora |
+| PIN errado | 5 a cada 15 min por link e IP; 20 por link |
+| escolher, por link | 3.000 por hora |
+| comentar, por link | 600 por hora |
+| enviar, por link | 20 por hora |
+| imagens | 20.000 por hora por link; 6.000 por IP |
+
+## Variáveis de ambiente
+
+| variável | para quê |
+| --- | --- |
+| `FOTO_DATABASE_URL` | o banco (papel dono `foto`, pooler de transação) |
+| `FOTO_S3_ENDPOINT`, `FOTO_S3_REGION`, `FOTO_S3_BUCKET`, `FOTO_S3_KEY_ID`, `FOTO_S3_SECRET` | o bucket das prévias (região: `us-east-1` se faltar) |
+| `FOTO_ARQUIVOS_DIR` | pasta local das prévias (só fora da Vercel) |
+| `ZRO_CLIENT_SECRET` | além do login, é de onde sai a chave da prova do PIN e do HMAC do IP |

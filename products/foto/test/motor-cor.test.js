@@ -34,8 +34,16 @@ test('matrizes: branco vira branco, ida e volta dá a identidade, sRGB cabe em P
     for (const outro of Object.keys(ESPACOS)) matrizPerto(mulM(matrizEntre(outro, id), matrizEntre(id, outro)), identidade(), 1e-10, `${id} ⇄ ${outro}`)
   }
   // as primárias de um espaço menor têm coordenadas não negativas no maior
-  for (const [menor, maior] of [['srgb', 'p3'], ['srgb', 'rec2020'], ['srgb', 'adobe'], ['adobe', 'rec2020']]) {
-    assert.ok(matrizEntre(menor, maior).every((v) => v > -1e-9), `${menor} dentro de ${maior}`)
+  for (const [menor, maior] of [
+    ['srgb', 'p3'],
+    ['srgb', 'rec2020'],
+    ['srgb', 'adobe'],
+    ['adobe', 'rec2020'],
+  ]) {
+    assert.ok(
+      matrizEntre(menor, maior).every((v) => v > -1e-9),
+      `${menor} dentro de ${maior}`,
+    )
   }
   // referência publicada (ITU-R BT.2087): Rec.709 → Rec.2020
   matrizPerto(matrizEntre('srgb', 'rec2020'), [0.6274, 0.3293, 0.0433, 0.0691, 0.9195, 0.0114, 0.0164, 0.088, 0.8956], 1e-4, 'BT.2087')
@@ -65,7 +73,12 @@ test('curvas de transferência: pontos conhecidos e ida e volta', () => {
 
 test('adaptação cromática: Bradford contra a matriz publicada, CAT16 com as propriedades do artigo', () => {
   // Lindbloom, D65 → D50 (Bradford); tolerância pela diferença de arredondamento dos brancos
-  matrizPerto(matrizAdaptacao(xyParaXYZ(D65), xyParaXYZ(D50), 'bradford'), [1.0478112, 0.0228866, -0.050127, 0.0295424, 0.9904844, -0.0170491, -0.0092345, 0.0150436, 0.7521316], 4e-4, 'Bradford')
+  matrizPerto(
+    matrizAdaptacao(xyParaXYZ(D65), xyParaXYZ(D50), 'bradford'),
+    [1.0478112, 0.0228866, -0.050127, 0.0295424, 0.9904844, -0.0170491, -0.0092345, 0.0150436, 0.7521316],
+    4e-4,
+    'Bradford',
+  )
   // as três linhas da CAT16 somam 1: o branco de energia igual vira (1, 1, 1) nos cones (Li et al., 2017)
   for (let l = 0; l < 3; l++) perto(CAT16[l * 3] + CAT16[l * 3 + 1] + CAT16[l * 3 + 2], 1, 1e-6, `CAT16 linha ${l}`)
   matrizPerto(BRADFORD, [0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296], 0, 'Bradford')
@@ -84,10 +97,22 @@ test('adaptação cromática: Bradford contra a matriz publicada, CAT16 com as p
 test('Oklab: tabela de referência do artigo, ida e volta, cinza sem croma em qualquer espaço', () => {
   // Ottosson (2020), tabela de pares XYZ → Lab, 3 casas
   const pares = [
-    [[0.95, 1, 1.089], [1, 0, 0]],
-    [[1, 0, 0], [0.45, 1.236, -0.019]],
-    [[0, 1, 0], [0.922, -0.671, 0.263]],
-    [[0, 0, 1], [0.153, -1.415, -0.449]],
+    [
+      [0.95, 1, 1.089],
+      [1, 0, 0],
+    ],
+    [
+      [1, 0, 0],
+      [0.45, 1.236, -0.019],
+    ],
+    [
+      [0, 1, 0],
+      [0.922, -0.671, 0.263],
+    ],
+    [
+      [0, 0, 1],
+      [0.153, -1.415, -0.449],
+    ],
   ]
   for (const [xyz, lab] of pares) xyzParaOklab(...xyz).forEach((v, i) => perto(v, lab[i], 1e-3, `XYZ ${xyz}`))
   const rnd = sorteio(1)
@@ -117,7 +142,7 @@ test('Oklab: tabela de referência do artigo, ida e volta, cinza sem croma em qu
   deOklch(...a).forEach((v, i) => perto(v, o.paraOklab(0.3, 0.1, 0.05, [0, 0, 0])[i], 1e-12, 'Oklch ida e volta'))
   perto(deltaE('srgb', 1, 1, 1, 1, 1, 1), 0, 0)
   // sRGB puro em Oklch (valores do artigo e da CSS Color 4): vermelho 29°, amarelo 110°, verde 142°, azul 264°
-  const graus = (g) => (((matizDoCirculo(g) * 180) / Math.PI + 360) % 360)
+  const graus = (g) => ((matizDoCirculo(g) * 180) / Math.PI + 360) % 360
   perto(graus(0), 29.23, 0.05, 'vermelho')
   perto(graus(60), 109.77, 0.05, 'amarelo')
   perto(graus(120), 142.5, 0.05, 'verde')

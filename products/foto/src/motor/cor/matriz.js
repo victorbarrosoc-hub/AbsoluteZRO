@@ -25,7 +25,17 @@ export function inversa(m) {
   const C = d * h - e * g
   const det = a * A + b * B + c * C
   if (!(Math.abs(det) > 1e-300)) throw new Error('Matriz sem inversa')
-  return [A / det, -(b * i - c * h) / det, (b * f - c * e) / det, B / det, (a * i - c * g) / det, -(a * f - c * d) / det, C / det, -(a * h - b * g) / det, (a * e - b * d) / det]
+  return [
+    A / det,
+    -(b * i - c * h) / det,
+    (b * f - c * e) / det,
+    B / det,
+    (a * i - c * g) / det,
+    -(a * f - c * d) / det,
+    C / det,
+    -(a * h - b * g) / det,
+    (a * e - b * d) / det,
+  ]
 }
 
 export const diagonal = (d) => [d[0], 0, 0, 0, d[1], 0, 0, 0, d[2]]

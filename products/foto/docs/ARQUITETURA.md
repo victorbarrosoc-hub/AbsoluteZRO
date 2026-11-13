@@ -17,8 +17,12 @@ Contrato entre os módulos. Mudou um contrato, mude aqui primeiro. Decisão em
 3. **Não fingir.** Sinal que não foi medido não aparece. Camada de visão que não carregou aparece como indisponível.
    Importação aproximada diz o que ficou aproximado. Nota vem sempre com o motivo.
 4. **Fechado** (regra da raiz): sem a claim `zro_release.foto`, só a página neutra. Nome, ícone, OG e app só pela função.
-5. **Rosto é dado sensível.** Detectar rosto e olho fechado não identifica ninguém e roda local. Agrupar por pessoa
-   (assinatura do rosto) não entra neste corte.
+5. **Rosto é dado sensível** (LGPD, art. 5º II e art. 11). Detectar rosto e olho fechado não identifica ninguém.
+   **Reconhecer** (achar as fotos de uma pessoa num evento, agrupar por pessoa) cria uma assinatura do rosto: só com
+   aviso próprio e consentimento destacado, por evento, nunca ligado por padrão. A assinatura é calculada no aparelho
+   (do fotógrafo, para as fotos; do visitante, para a selfie, que **nunca** sai do celular). O servidor guarda só os
+   vetores das fotos do evento, apaga com o evento e não guarda o vetor de quem buscou. Sem banco de rostos entre
+   eventos; nada disso vai para log, exportação ou XMP.
 6. Repositório público: nenhuma foto de cliente, RAW privado, token ou `.env`. Amostras CC0 ficam em `.amostras/`
    (fora do git); os testes geram as próprias imagens.
 
@@ -97,12 +101,14 @@ valores acima de 1 são altas luzes de verdade; negativos pequenos são ruído e
 ### Motor (`src/motor/`)
 
 ```
-prepararBase(negativo, { demosaico: 'rapido' | 'qualidade', reduzir: 1 | 2 | 4 }) → Base
+prepararBase(negativo, { demosaico: 'rapido' | 'qualidade', reduzir: 1 | 2 | 4, latitude?: Latitude }) → Base
 baseDeImagem({ largura, altura, dados: Uint8ClampedArray | Uint16Array, canais: 3 | 4, espaco: 'srgb' | 'p3' | 'adobe' }) → Base
 revelar(base, ajustes, { tela: 'srgb' | 'p3' | 'rec2020', regiao? }) → Imagem de TELA (0..1, já com a curva da tela)
 paraBytes(imagemDeTela, { bits: 8 | 16, pontilhado }) → Uint8ClampedArray RGBA | Uint16Array RGB
 Base = { imagem: Imagem, latitude: Latitude | null, branco: { kelvin, tinta, neutroCamera? }, origem: 'raw' | 'imagem',
-         exposicaoBase, orientacao, ruido? }
+         exposicaoBase, orientacao, ruido?: { a, b, origem },   // var(Y) = a·Y + b na imagem de trabalho
+         demosaico: 'rapido' | 'qualidade' | 'basica' | 'agrupado' | null, reduzir,
+         cortado: { um, dois, tres }, folgaAltas }             // EV recuperados acima da saturação (entra na margem)
 ```
 
 Ordem (a mesma no JS e na GPU):
@@ -116,9 +122,11 @@ Ordem (a mesma no JS e na GPU):
 2. **Na cena** (`ponto.js`, por pixel, linear): exposição (EV + exposição base) → branco por adaptação cromática
    (CAT16) → luz em EV em torno do cinza (contraste com pivô em 0,18; altas, sombras, brancos e pretos como curvas
    suaves em log) → curva paramétrica e de pontos → calibração → misturador de 8 faixas e vibração/saturação em
-   Oklab → tonalização (sombras, meios, altas, global) → P&B → desbotar.
+   Oklab → P&B → tonalização (sombras, meios, altas, global; depois do P&B, para existir o P&B tonalizado) → desbotar.
 3. **Vizinhança** (`local.js`): textura, clareza, neblina, ruído (com o modelo de ruído medido no arquivo), nitidez,
-   grão, vinheta. Tudo que precisa de pixel vizinho mora aqui e roda em resolução proporcional.
+   grão, vinheta. Tudo que precisa de pixel vizinho mora aqui e roda em resolução proporcional. O ruído roda na base,
+   antes do passo 2 (é onde o modelo de ruído vale); o resto, depois: neblina → clareza e textura → nitidez → grão →
+   vinheta.
 4. **Tela** (`tela.js`): mapa de tons em sigmoide log-logística com o cinza preso, **com as margens de cima e de baixo
    tiradas da Latitude do arquivo** (em `auto`) → preservação de matiz → compressão de gamut em Oklab → curva da tela.
 
@@ -186,5 +194,5 @@ com endereço assinado em produção. **O bucket só existe depois de o titular 
 
 ## Fora deste corte (está no roadmap)
 
-Máscaras e ajustes locais, correção de lente por perfil, agrupar por pessoa, camada CLIP (cena por texto e estética),
+Máscaras e ajustes locais, correção de lente por perfil, venda de fotos com pagamento, número de peito, camada CLIP (cena por texto e estética),
 HDR e panorama, tethering, app de computador, cobrança de fotos extras.

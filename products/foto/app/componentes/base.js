@@ -179,7 +179,7 @@ export function Chave({ ligada, aoMudar, rotulo, desligada = false, classe }) {
 
 /**
  * Menu: um botão que abre uma lista de ações. `itens`: { rotulo, aoEscolher, icone?, detalhe?, perigo?, marcado?, href? }
- * | { divisa: true } | { titulo }. ↑ ↓ andam, Esc fecha e devolve o foco, clique fora fecha.
+ * | { divisa: true } | { titulo } | { no: vnode }. ↑ ↓ andam, Esc fecha e devolve o foco, clique fora fecha.
  * `gatilho` é o conteúdo do botão; `classeBotao` o estilo dele (padrão: liso).
  */
 export function Menu({ gatilho, rotulo, itens, lado = 'esquerda', classeBotao = 'liso', dica, classe, aoAbrir }) {
@@ -229,6 +229,7 @@ export function Menu({ gatilho, rotulo, itens, lado = 'esquerda', classeBotao = 
     ${aberto
       ? html`<div class="menu-lista" role="menu" data-lado=${lado} aria-label=${rotulo}>
           ${itens.filter(Boolean).map((it) => {
+            if (it.no) return it.no
             if (it.divisa) return html`<div class="menu-divisa" role="separator"></div>`
             if (it.titulo) return html`<div class="menu-titulo">${it.titulo}</div>`
             const dentro = html`${it.icone ? html`<${Icone} nome=${it.icone} />` : null}<span>${it.rotulo}</span>${it.detalhe ? html`<small>${it.detalhe}</small>` : null}`

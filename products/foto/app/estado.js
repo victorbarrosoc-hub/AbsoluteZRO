@@ -3,12 +3,13 @@
 //
 //   loja.catalogo                 o catálogo do trabalho aberto (fotos, marcas, filtros, seleção, desfazer)
 //   loja.trabalho()               { id, nome, origem: 'pasta' | 'arquivos', total, … } ou null
-//   loja.situacao()               'vazio' | 'abrindo' | 'aberto'
+//   loja.situacao()               'vazio' | 'retomando' | 'abrindo' | 'aberto'
 //   loja.ligado()                 os arquivos originais estão ao alcance? (depois de recarregar, só com a pasta)
 //   loja.abrirPasta() · escolherFotos(arquivos) · soltar(dataTransfer) · abrirRecente(id) · fecharTrabalho()
 //   loja.arquivo(id)              → { arquivo: File, par?: File, tipo } | null   (o original, para o motor)
 //   loja.miniaturas               url(id) · pedir(id) · blob(id, 'previa') · pixels(id) · grande(id)   (app/abrir/miniaturas.js)
 //   loja.aba(nome)                um objeto só daquela aba, que dura enquanto o trabalho está aberto
+//   loja.ocioso()                 → Promise: as fotos abertas já foram lidas e as miniaturas e prévias estão prontas
 //
 // Assinatura fina (a grade não redesenha tudo): `usarFoto(loja, id)` só acorda quando AQUELA foto muda;
 // `usarCatalogo(loja, seletor, tipos)` só quando o seletor devolve outra coisa; `usarLoja(loja, seletor)` para o
@@ -41,7 +42,8 @@ function nomePorData(data) {
 export function criarLoja() {
   const catalogo = criarCatalogo()
   let trabalho = null
-  let situacao = 'vazio'
+  // 'retomando': há um trabalho para reabrir ao carregar (a tela espera em vez de piscar o início)
+  let situacao = ultimo.ler() ? 'retomando' : 'vazio'
   let ligado = false
   let lendo = null
   /** id → { arquivo: File, par?: File, tipo } */
@@ -50,6 +52,9 @@ export function criarLoja() {
   const ouvintes = new Set()
   const porFoto = new Map()
   let relogio = null
+  /** o que está em curso por trás (ler as fotos e fazer as miniaturas): `loja.ocioso()` espera acabar */
+  let emCurso = Promise.resolve()
+  let geracao = null
   let guardando = Promise.resolve()
   let pendente = false
 
@@ -210,7 +215,8 @@ export function criarLoja() {
     pendente = true
     publicar()
     await salvarAgora()
-    void miniaturas.gerarTudo(ids)
+    if (religadas.length) miniaturas.religou()
+    geracao = miniaturas.gerarTudo(ids)
     if (!novo && (entraram.length || religadas.length)) {
       avisar(entraram.length ? `${entraram.length.toLocaleString('pt-BR')} ${entraram.length === 1 ? 'foto entrou' : 'fotos entraram'}` : 'Originais ligados de novo')
     }
@@ -229,6 +235,12 @@ export function criarLoja() {
     const entradas = await dePasta(pasta).catch(() => [])
     if (trabalho?.id !== meu || !entradas.length) return false
     return abrirEntradas(entradas, { pasta })
+  }
+
+  /** Acompanha uma abertura até as miniaturas dela ficarem prontas (para `ocioso`). */
+  const acompanhar = (p) => {
+    emCurso = Promise.allSettled([emCurso, Promise.resolve(p).then(() => geracao)])
+    return p
   }
 
   const loja = {
@@ -307,14 +319,14 @@ export function criarLoja() {
         avisar('Nenhuma foto nessa pasta.')
         return false
       }
-      return abrirEntradas(entradas, { nome: pasta.name, origem: 'pasta', pasta })
+      return acompanhar(abrirEntradas(entradas, { nome: pasta.name, origem: 'pasta', pasta }))
     },
     /** "Escolher fotos": os arquivos de um <input type="file" multiple>. */
-    escolherFotos: (lista) => abrirEntradas(deArquivos(lista)),
+    escolherFotos: (lista) => acompanhar(abrirEntradas(deArquivos(lista))),
     /** O que foi solto na janela. Chame dentro do evento `drop`. */
     async soltar(transferencia) {
-      const { entradas, pasta, nome } = await deSolta(transferencia)
-      return abrirEntradas(entradas, { nome, origem: pasta ? 'pasta' : 'arquivos', pasta })
+      const lendo = deSolta(transferencia).then(({ entradas, pasta, nome }) => abrirEntradas(entradas, { nome, origem: pasta ? 'pasta' : 'arquivos', pasta }))
+      return acompanhar(lendo)
     },
 
     /** Os trabalhos guardados neste aparelho, do mais recente para o mais antigo. */
@@ -342,16 +354,24 @@ export function criarLoja() {
       ultimo.gravar(id)
       guardar.salvarTrabalho(trabalho)
       publicar()
-      if (t.origem === 'pasta') void religarPasta({ pedir: pedirPermissao }).then(() => publicar())
+      if (t.origem === 'pasta') void acompanhar(religarPasta({ pedir: pedirPermissao }).then(() => publicar()))
       return true
     },
     /** Pede de novo a permissão da pasta (dentro de um clique) e religa os originais. */
-    religar: () => religarPasta({ pedir: true }).then((ok) => (publicar(), ok)),
+    religar: () => acompanhar(religarPasta({ pedir: true }).then((ok) => (publicar(), ok))),
+    /** Resolve quando nada mais está sendo lido nem gerado por trás (as miniaturas e prévias do que foi aberto). */
+    ocioso: () => emCurso.then(() => {}),
     /** Reabre o último trabalho ao carregar o app (sem pedir permissão: não há clique). */
     async iniciar() {
       const id = ultimo.ler()
-      if (!id || trabalho) return false
-      return loja.abrirRecente(id, { pedirPermissao: false })
+      if (trabalho) return false
+      const abriu = id ? await loja.abrirRecente(id, { pedirPermissao: false }).catch(() => false) : false
+      if (!abriu && situacao === 'retomando') {
+        situacao = 'vazio'
+        ultimo.gravar(null)
+        publicar()
+      }
+      return abriu
     },
     async fecharTrabalho() {
       await salvarAgora()
@@ -439,9 +459,7 @@ export function usarCatalogo(l, seletor, tipos) {
     const quer = tipos ? new Set(tipos) : null
     assinar.current = (f) =>
       l.catalogo.assinar((aviso) => {
-        if (quer) {
-          if (aviso.tipo === 'dados' && !aviso.lista ? !quer.has('dados*') : !quer.has(aviso.tipo) && !(aviso.tipo === 'dados' && quer.has('dados*'))) return
-        }
+        if (quer && !(aviso.tipo === 'dados' ? quer.has('dados*') || (aviso.lista && quer.has('dados')) : quer.has(aviso.tipo))) return
         f()
       })
   }
@@ -462,6 +480,14 @@ export function usarFoto(l, id) {
 /** O endereço da miniatura (blob:) quando ela existe, senão null. Redesenha quando chega. */
 export function usarMiniatura(l, id) {
   const [, redesenhar] = useState(0)
-  useEffect(() => l.miniaturas.assinar(id, () => redesenhar((n) => n + 1)), [l, id])
-  return l.miniaturas.url(id)
+  const url = l.miniaturas.url(id)
+  const vista = useRef(url)
+  vista.current = url
+  useEffect(() => {
+    const cancelar = l.miniaturas.assinar(id, () => redesenhar((n) => n + 1))
+    // chegou entre o desenho e a assinatura: redesenha já
+    if (l.miniaturas.url(id) !== vista.current || (!vista.current && l.miniaturas.semPrevia(id))) redesenhar((n) => n + 1)
+    return cancelar
+  }, [l, id])
+  return url
 }

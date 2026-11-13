@@ -36,11 +36,26 @@ const sha256 = (b) => createHash('sha256').update(b).digest('hex')
 function jpeg(semente, tamanho = 600) {
   const corpo = Buffer.alloc(tamanho - 24)
   for (let i = 0; i < corpo.length; i++) corpo[i] = (semente * 31 + i * 7) % 251
-  return Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]), Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0', 'latin1'), Buffer.from([0xff, 0xdb]), corpo, Buffer.from([0xff, 0xd9])])
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+    Buffer.from('JFIF\0\x01\x01\0\0\x01\0\x01\0\0', 'latin1'),
+    Buffer.from([0xff, 0xdb]),
+    corpo,
+    Buffer.from([0xff, 0xd9]),
+  ])
 }
 const registro = (n, mais = {}) => {
   const b = jpeg(n)
-  return { fotoId: `cat-${n}`, nome: `IMG_${String(n).padStart(4, '0')}.CR3`, largura: 1600, altura: 1067, tipo: 'image/jpeg', tamanho: b.length, sha256: sha256(b), ...mais }
+  return {
+    fotoId: `cat-${n}`,
+    nome: `IMG_${String(n).padStart(4, '0')}.CR3`,
+    largura: 1600,
+    altura: 1067,
+    tipo: 'image/jpeg',
+    tamanho: b.length,
+    sha256: sha256(b),
+    ...mais,
+  }
 }
 
 const comoPessoa = (p, fn) => banco.comoPessoa(p, fn)
@@ -74,7 +89,17 @@ async function galeriaPronta(p, n = 3, ficha = {}) {
     const [g] = await tx`insert into foto.galerias ${tx({ nome: 'Casamento', fotografo: 'Lia', contratadas: 2, ...ficha })} returning id`
     const linhas = Array.from({ length: n }, (_, i) => {
       const r = registro(i + 1)
-      return { galeria: g.id, foto_id: r.fotoId, nome: r.nome, ordem: i, largura: r.largura, altura: r.altura, tipo: r.tipo, tamanho: r.tamanho, sha256: r.sha256 }
+      return {
+        galeria: g.id,
+        foto_id: r.fotoId,
+        nome: r.nome,
+        ordem: i,
+        largura: r.largura,
+        altura: r.altura,
+        tipo: r.tipo,
+        tamanho: r.tamanho,
+        sha256: r.sha256,
+      }
     })
     const fotos = n ? await tx`insert into foto.galeria_fotos ${tx(linhas)} returning id` : []
     if (n) await tx`update foto.galeria_fotos set enviada_em = now() where galeria = ${g.id}`
@@ -97,7 +122,9 @@ before(async () => {
   if (pular) return
   pg = await subirPostgres()
   const admin = postgres(pg.url, { max: 1, onnotice: () => {} })
-  await admin.unsafe(`create role foto login password 'teste'; create role foto_app nologin; grant foto_app to foto with admin option; create schema foto authorization foto;`)
+  await admin.unsafe(
+    `create role foto login password 'teste'; create role foto_app nologin; grant foto_app to foto with admin option; create schema foto authorization foto;`,
+  )
   await admin.end()
   urlFoto = pg.url.replace('postgres://postgres@', 'postgres://foto:teste@')
   pasta = mkdtempSync(join(tmpdir(), 'foto-arquivos-'))
@@ -130,13 +157,15 @@ test('Postgres é exigido no CI', { skip: !EXIGIR }, () => {
 })
 
 test('migrações: toda tabela nova tem RLS, o público não tem nada e o papel do app só tem o que precisa', { skip: pular }, async () => {
-  const tabelas = await dono`select c.relname as nome, c.relrowsecurity as rls from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'foto' and c.relkind = 'r' order by 1`
+  const tabelas =
+    await dono`select c.relname as nome, c.relrowsecurity as rls from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'foto' and c.relkind = 'r' order by 1`
   assert.deepEqual(
     tabelas.filter((t) => t.nome !== 'migracoes').map((t) => [t.nome, t.rls]),
     [...TABELAS].sort().map((t) => [t, true]),
   )
   for (const t of TABELAS) {
-    const [p] = await dono`select has_table_privilege('public', ${`foto.${t}`}, 'select') as le, has_table_privilege('public', ${`foto.${t}`}, 'insert') as cria`
+    const [p] =
+      await dono`select has_table_privilege('public', ${`foto.${t}`}, 'select') as le, has_table_privilege('public', ${`foto.${t}`}, 'insert') as cria`
     assert.deepEqual({ ...p }, { le: false, cria: false }, t)
   }
   // o cliente não escreve seleção nem envio pelo papel do app: só a porta (funções do dono)
@@ -177,7 +206,8 @@ test('migrações: toda tabela nova tem RLS, o público não tem nada e o papel 
     },
   )
   // as funções da porta são do dono do schema e nenhuma tabela força RLS (senão a porta não responderia)
-  const portas = await dono`select p.proname as nome, p.prosecdef as definer, pg_get_userbyid(p.proowner) as dono from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'foto' and p.proname ~ '^link_' order by 1`
+  const portas =
+    await dono`select p.proname as nome, p.prosecdef as definer, pg_get_userbyid(p.proowner) as dono from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'foto' and p.proname ~ '^link_' order by 1`
   assert.deepEqual(
     portas.map((f) => f.nome),
     ['link_abrir', 'link_comentar', 'link_contagem', 'link_enviar', 'link_escolher', 'link_imagem', 'link_pin', 'link_vivo'],
@@ -259,7 +289,10 @@ test('isolamento · links: seguem a galeria; o papel do app não lê o hash do t
     assert.equal((await comoPessoa(outra, colunas)).length, 0)
     assert.equal(await comoPessoa(outra, async (tx) => (await tx`update foto.links set revogado_em = now() where galeria = ${g.id} returning id`).length), 0)
     await assert.rejects(
-      comoPessoa(outra, (tx) => tx`insert into foto.links ${tx({ galeria: g.id, token_hash: link.hashToken(link.novoToken()), expira_em: new Date(Date.now() + 3600000) })}`),
+      comoPessoa(
+        outra,
+        (tx) => tx`insert into foto.links ${tx({ galeria: g.id, token_hash: link.hashToken(link.novoToken()), expira_em: new Date(Date.now() + 3600000) })}`,
+      ),
       /link:estado|row-level security/,
     )
     await assert.rejects(
@@ -343,7 +376,13 @@ test('isolamento · limites: o papel do app não lê nem escreve', { skip: pular
 
 test('isolamento · predefinicoes: a pessoa vê as suas e as compartilhadas da organização dela; só o dono altera', { skip: pular }, async () => {
   const gravar = (p, chave, compartilhada) =>
-    comoPessoa(p, async (tx) => (await tx`insert into foto.predefinicoes (chave, nome, familia, json, compartilhada) values (${chave}, ${`Look ${chave}`}, 'Retrato', '{"zro":"foto.predefinicao","versao":1}'::jsonb, ${compartilhada}) returning id`)[0].id)
+    comoPessoa(
+      p,
+      async (tx) =>
+        (
+          await tx`insert into foto.predefinicoes (chave, nome, familia, json, compartilhada) values (${chave}, ${`Look ${chave}`}, 'Retrato', '{"zro":"foto.predefinicao","versao":1}'::jsonb, ${compartilhada}) returning id`
+        )[0].id,
+    )
   const privada = await gravar(LIA, 'lia-privada', false)
   const dividida = await gravar(LIA, 'lia-equipe', true)
   const daEva = await gravar(EVA, 'eva-equipe', true)
@@ -379,7 +418,10 @@ test('isolamento · predefinicoes: a pessoa vê as suas e as compartilhadas da o
   // sem equipe não há com quem compartilhar; json acima de 256 KB não entra
   await assert.rejects(gravar(ANA, 'ana-equipe', true), /predefinicoes_equipe/)
   await assert.rejects(
-    comoPessoa(LIA, (tx) => tx`insert into foto.predefinicoes (chave, nome, json) values ('grande', 'Grande', ${JSON.stringify({ a: 'x'.repeat(263000) })}::jsonb)`),
+    comoPessoa(
+      LIA,
+      (tx) => tx`insert into foto.predefinicoes (chave, nome, json) values ('grande', 'Grande', ${JSON.stringify({ a: 'x'.repeat(263000) })}::jsonb)`,
+    ),
     /violates check constraint/,
   )
   await dono`delete from foto.predefinicoes`
@@ -461,7 +503,8 @@ test('guardas: estados da galeria, fotos travadas depois do envio, validade e re
   for (const mexida of [
     (tx) => tx`delete from foto.galeria_fotos where id = ${g.fotos[1]}`,
     (tx) => tx`update foto.galeria_fotos set nome = 'outro.jpg' where id = ${g.fotos[1]}`,
-    (tx) => tx`insert into foto.galeria_fotos ${tx({ galeria: g.id, foto_id: r.fotoId, nome: r.nome, largura: 800, altura: 600, tipo: r.tipo, tamanho: r.tamanho, sha256: r.sha256 })}`,
+    (tx) =>
+      tx`insert into foto.galeria_fotos ${tx({ galeria: g.id, foto_id: r.fotoId, nome: r.nome, largura: 800, altura: 600, tipo: r.tipo, tamanho: r.tamanho, sha256: r.sha256 })}`,
   ]) {
     await assert.rejects(comoPessoa(LIA, mexida), /fotos:travada/)
   }
@@ -481,7 +524,16 @@ test('guardas: estados da galeria, fotos travadas depois do envio, validade e re
   // teto: 1.500 fotos por galeria
   const cheia = await galeriaPronta(LIA, 0)
   const lote = (de, n) =>
-    Array.from({ length: n }, (_, i) => ({ galeria: cheia.id, foto_id: `f-${de + i}`, nome: `f-${de + i}.jpg`, largura: 800, altura: 600, tipo: 'image/jpeg', tamanho: 1000, sha256: 'b'.repeat(64) }))
+    Array.from({ length: n }, (_, i) => ({
+      galeria: cheia.id,
+      foto_id: `f-${de + i}`,
+      nome: `f-${de + i}.jpg`,
+      largura: 800,
+      altura: 600,
+      tipo: 'image/jpeg',
+      tamanho: 1000,
+      sha256: 'b'.repeat(64),
+    }))
   await comoPessoa(LIA, async (tx) => {
     await tx`insert into foto.galeria_fotos ${tx(lote(0, 750))}`
     await tx`insert into foto.galeria_fotos ${tx(lote(750, 750))}`
@@ -533,13 +585,46 @@ test('rotas do fotógrafo: da criação à seleção, com a pasta local', { skip
   assert.equal((await galerias('POST', '', { corpo: { nome: 'Ensaio', contratadas: 0 } })).corpo.campo, 'contratadas')
   assert.equal((await galerias('POST', '', { corpo: { nome: 'Ensaio', contratadas: 5, prazo: 'ontem' } })).corpo.campo, 'prazo')
   const criada = await galerias('POST', '', {
-    corpo: { nome: '  Casamento Ana & Rui ', contratadas: 2, permiteExtras: true, precoExtra: 'R$ 25 por foto', prazo: '2030-01-15T12:00:00.000Z', mensagem: 'Escolham com calma.', dono: 'zro-rui', estado: 'publicada' },
+    corpo: {
+      nome: '  Casamento Ana & Rui ',
+      contratadas: 2,
+      permiteExtras: true,
+      precoExtra: 'R$ 25 por foto',
+      prazo: '2030-01-15T12:00:00.000Z',
+      mensagem: 'Escolham com calma.',
+      dono: 'zro-rui',
+      estado: 'publicada',
+    },
   })
   assert.equal(criada.statusCode, 201)
   const g = criada.corpo.galeria
   assert.deepEqual(
-    { nome: g.nome, fotografo: g.fotografo, contratadas: g.contratadas, permiteExtras: g.permiteExtras, precoExtra: g.precoExtra, estado: g.estado, marcaDagua: g.marcaDagua, mensagem: g.mensagem, fotos: g.fotos, link: g.link, envio: g.envio },
-    { nome: 'Casamento Ana & Rui', fotografo: 'Lia Fotógrafa', contratadas: 2, permiteExtras: true, precoExtra: 'R$ 25 por foto', estado: 'rascunho', marcaDagua: true, mensagem: 'Escolham com calma.', fotos: 0, link: null, envio: null },
+    {
+      nome: g.nome,
+      fotografo: g.fotografo,
+      contratadas: g.contratadas,
+      permiteExtras: g.permiteExtras,
+      precoExtra: g.precoExtra,
+      estado: g.estado,
+      marcaDagua: g.marcaDagua,
+      mensagem: g.mensagem,
+      fotos: g.fotos,
+      link: g.link,
+      envio: g.envio,
+    },
+    {
+      nome: 'Casamento Ana & Rui',
+      fotografo: 'Lia Fotógrafa',
+      contratadas: 2,
+      permiteExtras: true,
+      precoExtra: 'R$ 25 por foto',
+      estado: 'rascunho',
+      marcaDagua: true,
+      mensagem: 'Escolham com calma.',
+      fotos: 0,
+      link: null,
+      envio: null,
+    },
   )
   assert.equal(new Date(g.prazo).toISOString(), '2030-01-15T12:00:00.000Z')
   assert.deepEqual({ ...(await dono`select dono, organizacao from foto.galerias where id = ${g.id}`)[0] }, { dono: 'zro-lia', organizacao: 'org-1' })
@@ -559,14 +644,21 @@ test('rotas do fotógrafo: da criação à seleção, com a pasta local', { skip
 
   // alterar
   const alterada = await galerias('PATCH', g.id, { corpo: { fotografo: 'Lia Fotografia', marcaDagua: false, mensagem: '' } })
-  assert.deepEqual([alterada.corpo.galeria.fotografo, alterada.corpo.galeria.marcaDagua, alterada.corpo.galeria.mensagem, alterada.corpo.galeria.nome], ['Lia Fotografia', false, null, 'Casamento Ana & Rui'])
+  assert.deepEqual(
+    [alterada.corpo.galeria.fotografo, alterada.corpo.galeria.marcaDagua, alterada.corpo.galeria.mensagem, alterada.corpo.galeria.nome],
+    ['Lia Fotografia', false, null, 'Casamento Ana & Rui'],
+  )
 
   // publicar sem fotos não dá
   assert.deepEqual((await galerias('POST', `${g.id}/publicar`)).corpo, { ok: false, erro: 'sem_fotos' })
 
   // registrar em lote (com pilha e miniatura numa delas)
   const mini = jpeg(901, 200)
-  const lote = [registro(1, { grupo: 'p1', melhor: true }), registro(2, { grupo: 'p1' }), registro(3, { mini: { tipo: 'image/jpeg', tamanho: mini.length, sha256: sha256(mini) } })]
+  const lote = [
+    registro(1, { grupo: 'p1', melhor: true }),
+    registro(2, { grupo: 'p1' }),
+    registro(3, { mini: { tipo: 'image/jpeg', tamanho: mini.length, sha256: sha256(mini) } }),
+  ]
   assert.equal((await galerias('POST', `${g.id}/fotos`, { corpo: { fotos: [{ ...registro(9), tipo: 'image/png' }] } })).statusCode, 400)
   assert.equal((await galerias('POST', `${g.id}/fotos`, { corpo: { fotos: [{ ...registro(9), tamanho: 5 * 1024 * 1024 }] } })).statusCode, 400)
   assert.equal((await galerias('POST', `${g.id}/fotos`, { corpo: { fotos: [registro(9), registro(9)] } })).corpo.repetida, true)
@@ -596,6 +688,17 @@ test('rotas do fotógrafo: da criação à seleção, com a pasta local', { skip
   assert.equal((await enviar(fotos[1].id, jpeg(1))).corpo.erro, 'sha256')
   assert.deepEqual((await enviar(fotos[1].id, jpeg(2), 'mini')).corpo, { ok: false, erro: 'sem_mini' })
   assert.equal(existsSync(join(pasta, 'g', g.id)), false, 'nada foi gravado até aqui')
+  // prévia com posição de GPS no EXIF: recusada mesmo com tipo, tamanho e sha256 certos (a tela tira; o servidor confere)
+  const comGps = Buffer.concat([
+    jpeg(4).subarray(0, 2),
+    Buffer.from('ffe100224578696600004949' + '2a00080000000100258804000100000' + '01a00000000000000', 'hex'),
+    jpeg(4).subarray(2),
+  ])
+  const [marcada] = (await galerias('POST', `${g.id}/fotos`, { corpo: { fotos: [{ ...registro(4), tamanho: comGps.length, sha256: sha256(comGps) }] } })).corpo
+    .fotos
+  assert.deepEqual((await enviar(marcada.id, comGps)).corpo, { ok: false, erro: 'gps' })
+  assert.equal(existsSync(join(pasta, 'g', g.id)), false)
+  assert.deepEqual((await galerias('DELETE', `${g.id}/fotos`, { corpo: { ids: [marcada.id] } })).corpo, { ok: true, fotos: 1, arquivos: 0 })
   for (let i = 0; i < 3; i++) assert.deepEqual((await enviar(fotos[i].id, jpeg(i + 1))).corpo, { ok: true, foto: fotos[i].id, variante: 'previa' })
   assert.deepEqual((await enviar(fotos[2].id, mini, 'mini')).corpo, { ok: true, foto: fotos[2].id, variante: 'mini' })
   assert.deepEqual(readdirSync(join(pasta, 'g', g.id)).sort(), [fotos[0].id, fotos[1].id, fotos[2].id, `${fotos[2].id}-m`].sort())
@@ -621,7 +724,9 @@ test('rotas do fotógrafo: da criação à seleção, com a pasta local', { skip
   assert.deepEqual([pub.corpo.galeria.link.temPin, pub.corpo.galeria.link.vivo, pub.corpo.galeria.link.aberturas], [true, true, 0])
   const dias = (new Date(pub.corpo.galeria.link.expiraEm) - Date.now()) / 86400000
   assert.ok(dias > 19.9 && dias < 20.1)
-  const tudo = JSON.stringify(await dono`select to_jsonb(l) as l, (select to_jsonb(g) from foto.galerias g where g.id = l.galeria) as g from foto.links l where l.galeria = ${g.id}`)
+  const tudo = JSON.stringify(
+    await dono`select to_jsonb(l) as l, (select to_jsonb(g) from foto.galerias g where g.id = l.galeria) as g from foto.links l where l.galeria = ${g.id}`,
+  )
   assert.ok(!tudo.includes(token), 'o token não pode estar em coluna nenhuma')
   assert.ok(tudo.includes(link.hashToken(token)))
   assert.ok(!JSON.stringify((await galerias('GET', g.id)).corpo).includes(token), 'ler a galeria não devolve o endereço de novo')
@@ -747,7 +852,8 @@ test('limpeza: galeria sem link vivo há N dias perde os arquivos; a ficha e a s
   const pastas = existsSync(join(pasta, 'g')) ? readdirSync(join(pasta, 'g')) : []
   assert.ok(pastas.includes(viva.id) && pastas.includes(recente.id))
   assert.ok(!pastas.includes(vencida.id) && !pastas.includes(encerrada.id))
-  const [v] = await dono`select estado, arquivos_apagados_em is not null as apagados, (select count(*)::int from foto.galeria_fotos f where f.galeria = g.id and (f.enviada_em is not null or f.mini_enviada_em is not null)) as com_arquivo from foto.galerias g where id = ${vencida.id}`
+  const [v] =
+    await dono`select estado, arquivos_apagados_em is not null as apagados, (select count(*)::int from foto.galeria_fotos f where f.galeria = g.id and (f.enviada_em is not null or f.mini_enviada_em is not null)) as com_arquivo from foto.galerias g where id = ${vencida.id}`
   assert.deepEqual({ ...v }, { estado: 'encerrada', apagados: true, com_arquivo: 0 })
   // a fotógrafa ainda lê o que o cliente escolheu
   const s = (await galerias('GET', `${vencida.id}/selecao`)).corpo
@@ -773,7 +879,9 @@ test('rotas de predefinições: gravar, listar (minhas e da equipe), ler, compar
   assert.deepEqual([p.chave, p.nome, p.familia, p.compartilhada, p.minha], ['look-quente', 'Quente', 'Retrato', false, true])
   assert.ok(p.tamanho > 50)
   // a mesma chave de novo atualiza (mesmo id)
-  const regravada = await predefinicoes('PUT', null, { corpo: { chave: 'look-quente', nome: 'Quente 2', familia: 'Retrato', json: { ...json, nome: 'Quente 2' } } })
+  const regravada = await predefinicoes('PUT', null, {
+    corpo: { chave: 'look-quente', nome: 'Quente 2', familia: 'Retrato', json: { ...json, nome: 'Quente 2' } },
+  })
   assert.deepEqual([regravada.corpo.predefinicao.id, regravada.corpo.predefinicao.nome], [p.id, 'Quente 2'])
   // ler com o json; listar sem
   const lida = await predefinicoes('GET', p.id)
@@ -792,7 +900,10 @@ test('rotas de predefinições: gravar, listar (minhas e da equipe), ler, compar
   // outra organização e quem não tem equipe: nada
   assert.deepEqual((await predefinicoes('GET', null, { pessoa: EVA })).corpo.equipe, [])
   assert.equal((await predefinicoes('GET', p.id, { pessoa: EVA })).statusCode, 404)
-  assert.deepEqual((await predefinicoes('PUT', null, { pessoa: ANA, corpo: { chave: 'a', nome: 'A', json, compartilhada: true } })).corpo, { ok: false, erro: 'sem_equipe' })
+  assert.deepEqual((await predefinicoes('PUT', null, { pessoa: ANA, corpo: { chave: 'a', nome: 'A', json, compartilhada: true } })).corpo, {
+    ok: false,
+    erro: 'sem_equipe',
+  })
   assert.equal((await predefinicoes('PUT', null, { pessoa: ANA, corpo: { chave: 'a', nome: 'A', json } })).statusCode, 200)
   // sem sessão, 401; apagar
   assert.equal((await predefinicoes('GET', null, { semSessao: true })).statusCode, 401)
