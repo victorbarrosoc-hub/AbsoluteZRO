@@ -304,6 +304,32 @@ O armazenamento das prévias é um adaptador (`api/_arquivos.js`): pasta local e
 o fotógrafo envia cada prévia por `PUT`, o cliente recebe por link vivo. Sem armazenamento configurado, as rotas
 respondem `503 sem_armazenamento`. **O bucket só existe depois de o titular autorizar.**
 
+### Rosto em evento (`src/rosto/`, `app/rosto/`, `evento/`)
+
+Regra 5 e [`estudo/rosto-em-evento.md`](estudo/rosto-em-evento.md). Pilha no aparelho, igual nos dois lados: ONNX
+Runtime Web 1.31.1 só WASM, uma thread (`/vendor/onnxruntime-1.31.1/`, copiado de `node_modules` no build), YuNet
+2023mar de entrada livre e SFace 2021dec p8 (pesos int8 reabertos em float32), gerados por `scripts/onnx.mjs` a partir
+dos originais com commit fixo e conferidos pelo sha256 (`modelos.json`, bloco `rosto`; ficam em `.modelos-rosto/`).
+
+```
+src/rosto/alinhar.js     MOLDE, semelhanca(de, para), recortar(imagem RGBA, 5 pontos) → 112 × 112, tensorDoRosto, tensorDoDetector
+src/rosto/detectar.js    passadas(W, H, { lado: 1616 }) (global 640 + ladrilhos), passadaUnica, decodificar(saídas, passada), suprimir, invasao
+src/rosto/assinatura.js  normalizar, cosseno, quantizar → Int8Array(128), vetorValido, vetorParaTexto / vetorDeTexto (base64)
+src/rosto/decidir.js     LIMIARES, faixa(cossenos, rosto) → 'eu' | 'talvez' | null, procurar(sondas, rostos), ligar(pessoas, rostos), paraRemover
+src/rosto/qualidade.js   nitidez(recorte), pose(pontos), avaliarQuadro({ rostos, ladoDoQuadro, recorte }), DICAS
+src/rosto/quadros.js     criarCaptura() (de frente → girado → o outro lado), juntar(vetores) (3, ou os 2 que concordam ≥ 0,6)
+src/rosto/textos.js      TEXTOS (consentimento, aviso, cartaz, regulamento) com versão; o servidor grava versão e sha256
+app/rosto/motor.js       preparar(), rostosDaFoto(fonte 1616), quadro(fonte 320), girarEReduzir(bmp, orientação EXIF)
+app/rosto/worker.js      preparar | foto | quadro (o visitante e o fotógrafo); fotografo-worker.js: evento → rostos + prévias com marca
+app/rosto/preparo.js     api(), criarPreparo({ loja, evento, ids, marca }) (retomável), processarPedidos(evento), vetores locais no IndexedDB
+app/rosto/painel.js      PainelEvento({ loja }) — para a tela Entregar encaixar; cartaz.js: cartazA4() (PNG com QR e aviso)
+evento/                  a página pública /e/<token> (sem nome nem ícone do produto): consentimento → câmera ao vivo → resultados
+```
+
+Foto do evento: a maior JPEG do aparelho (embutida do RAW, girada pelo EXIF), 1616 px, nota ≥ 0,75, largura ≥ 20 px,
+colado = caixa que invade outra > 10%, perfil = guinada ≥ 0,3. Nada de caixa, imagem ou grupo sai do aparelho. Selfie:
+quadro de 320 px; sobem só 2 ou 3 vetores int8. Banco, rotas e limites em [`API.md`](API.md).
+
 ## Testes
 
 - `node --test`, sem framework. Um arquivo por módulo: `test/<módulo>.test.js`. Cada agente roda só os seus.

@@ -255,6 +255,14 @@
   background: rgb(255 255 255 / 0.12);
 }
 
+/* o aviso sobe acima da régua da lupa (e da faixa das cenas) */
+:root:has(.decupar .lupa) .avisos {
+  --avisos-sobe: 62px;
+}
+:root:has(.decupar .lupa[data-tira]) .avisos {
+  --avisos-sobe: 150px;
+}
+
 /* ─────────── o voo até o balde ─────────── */
 .voo {
   position: fixed;
@@ -441,22 +449,29 @@
   pointer-events: none;
   border-radius: inherit;
 }
+.sobre-mapa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
 .sobre-foco {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  /* os blocos viram um mapa contínuo: o foco acende, o resto escurece */
+  filter: blur(10px);
 }
 .sobre-veu {
   fill: #000;
-  opacity: 0.52;
+  opacity: 0.58;
 }
 .sobre-veu[data-nivel='media'] {
-  opacity: 0.22;
+  opacity: 0.2;
 }
 .sobre-nitida {
-  fill: var(--cor-amarelo);
-  opacity: 0.16;
+  fill: none;
 }
 .sobre-rosto {
   position: absolute;
@@ -601,23 +616,24 @@
 .cena-tira {
   position: absolute;
   z-index: 3;
-  left: 50%;
+  left: 16px;
+  right: 16px;
   bottom: calc(var(--dock-a) + 84px);
   display: flex;
   gap: 8px;
+  width: fit-content;
   max-width: calc(100% - 32px);
+  margin-inline: auto;
   padding: 6px;
   overflow-x: auto;
   border-radius: 16px;
   background: rgb(28 28 30 / 0.55);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  translate: -50% 0;
   scrollbar-width: none;
 }
 .lupa[data-painel] .cena-tira {
-  left: calc(50% - 159px);
-  max-width: calc(100% - 360px);
+  right: 334px;
 }
 .tira-foto {
   position: relative;
@@ -880,11 +896,14 @@ html[data-sentido='cena-volta']::view-transition-new(foto) {
     padding: 0 6px 0 4px;
   }
   .dec-so-largo,
-  .dec-ficha {
+  .dec-ficha,
+  .dec-modo,
+  .dec-andamento[data-situacao='pronta'],
+  .dec-balde .dec-balde-nome {
     display: none;
   }
-  .dec-modo {
-    margin: 0;
+  .dec-balde {
+    gap: 5px;
   }
   .dec-meio {
     gap: 6px;
@@ -920,10 +939,11 @@ html[data-sentido='cena-volta']::view-transition-new(foto) {
   .cena-topo {
     top: calc(var(--topo-a) + 4px);
   }
-  .lupa[data-painel] .cena-topo,
-  .lupa[data-painel] .cena-tira {
+  .lupa[data-painel] .cena-topo {
     left: 50%;
-    max-width: calc(100% - 16px);
+  }
+  .lupa[data-painel] .cena-tira {
+    right: 16px;
   }
   .cena-tira {
     bottom: calc(var(--dock-a) + 70px);

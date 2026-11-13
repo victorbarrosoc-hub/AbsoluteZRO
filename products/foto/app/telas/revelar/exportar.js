@@ -172,7 +172,13 @@ export function FolhaExportar({ aberta, aoFechar, sessao, foto, ajustes, look })
           ? html`<div class="rv-exportando">
               <${Progresso} valor=${estado.progresso} rotulo="Exportando" />
               <span class="apoio">${estado.progresso == null ? 'Gravando o arquivo…' : 'Revelando em resolução cheia…'}</span>
-              <div class="folha-pe"><button type="button" class="vidro" data-exportar-cancelar onClick=${() => controle.current?.abort()}>Cancelar</button></div>
+              <div
+                class="folha-pe"><button
+                type="button"
+                class="vidro"
+                data-exportar-cancelar
+                onClick=${() => controle.current?.abort()}>Cancelar</button></div
+              >
             </div>`
           : html`<div class="rv-exportando" data-pronto>
               <span class="rv-exportado">${estado.nome}</span>

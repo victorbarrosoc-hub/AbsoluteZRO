@@ -186,6 +186,9 @@ async function abrirRevelar({ opcoes = {}, tema = 'claro', motor = null, nome = 
   await pagina.waitForFunction((n) => document.querySelectorAll('.foto img').length >= n, Math.min(4, arquivos.length))
   await pagina.evaluate(async (alvo) => {
     const { loja } = await import('/app/estado.js')
+    await loja.ocioso()
+    // a análise da Decupar empilha fotos parecidas e o foco iria para a capa da pilha: aqui cada foto fica solta
+    loja.catalogo.empilhar(false)
     loja.catalogo.selecionar(loja.catalogo.fotos().find((f) => f.nome === alvo).id)
   }, nome)
   await pagina.keyboard.press('d')
@@ -249,7 +252,8 @@ async function medirArrasto(pagina, ms = 2500) {
   return Math.round((n / dt) * 10) / 10
 }
 
-test('revelar no computador: abre em dois tempos, margem, exposição, grupos, desfazer, copiar e colar, comparar, zoom, avisos, auto, exportar', { skip: semChromium, timeout: 600_000 }, async () => {
+const COMPUTADOR = 'revelar no computador: dois tempos, margem, exposição, grupos, desfazer, estilo, versões, comparar, zoom, avisos, auto, copiar, exportar'
+test(COMPUTADOR, { skip: semChromium, timeout: 600_000 }, async () => {
   const { contexto, pagina, olho } = await abrirRevelar()
   try {
     // dois tempos: a prévia da câmera (borrada) antes da revelação
@@ -310,6 +314,7 @@ test('revelar no computador: abre em dois tempos, margem, exposição, grupos, d
     assert.equal(await pagina.locator('.roda').count(), 1)
     assert.equal(await pagina.locator('.curva-grafico').count(), 1)
     // a curva: tocar cria um ponto e arrastar muda o palco
+    await pagina.locator('.curva-grafico').evaluate((el) => el.scrollIntoView({ block: 'center' }))
     const curva = await pagina.locator('.curva-grafico').boundingBox()
     const nc = await quadros(pagina)
     await pagina.mouse.move(curva.x + curva.width * 0.5, curva.y + curva.height * 0.5)
@@ -322,12 +327,15 @@ test('revelar no computador: abre em dois tempos, margem, exposição, grupos, d
     // zerar o grupo
     await pagina.locator('.rv-grupo[data-grupo="curva"] .rv-grupo-zerar').click()
     assert.equal(await pagina.locator('.curva-ponto').count(), 2)
+    // nada no painel passa da largura (o painel não rola de lado nem quando o foco entra num ponto da curva)
+    const painel = await pagina.locator('.painel-rola').evaluate((el) => [el.scrollWidth, el.clientWidth, el.scrollLeft])
+    assert.ok(painel[0] <= painel[1] && painel[2] === 0, `painel ${painel}`)
     await captura(pagina, '1440-claro-grupos')
 
     // antes e depois (\): a divisória e o antes (no JS, uma segunda sessão)
     await pagina.locator('.palco-revelar').click({ position: { x: 30, y: 30 } })
     await pagina.keyboard.press('\\')
-    await pagina.waitForSelector('.divisoria')
+    await pagina.waitForSelector('.divisoria', { state: 'attached' })
     await pagina.waitForTimeout(2500)
     await captura(pagina, '1440-claro-comparar')
     await pagina.keyboard.press('\\')
@@ -367,6 +375,26 @@ test('revelar no computador: abre em dois tempos, margem, exposição, grupos, d
     await pagina.keyboard.press('Shift+A')
     await pagina.waitForSelector('[data-porque]')
     assert.match(await pagina.locator('[data-porque]').innerText(), /EV/)
+
+    // estilo da lista curta, com a intensidade; e uma versão guardada
+    await pagina.locator('.menu-estilo > button').click()
+    await pagina.locator('.menu-estilo .menu-item').nth(1).click()
+    await pagina.waitForSelector('.rv-ajuste[data-caminho="intensidade"]')
+    assert.ok(await naLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).predefinicao?.id))
+    await pagina.locator('.rv-ajuste[data-caminho="intensidade"] input').focus()
+    await pagina.keyboard.press('Shift+ArrowRight')
+    assert.equal(await valorDe(pagina, 'intensidade'), '110%')
+    assert.equal(await naLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).predefinicao.intensidade), 110)
+    await pagina.locator('.painel-acoes-fim .menu > button').click()
+    await pagina.getByRole('menuitem', { name: /Versões/ }).click()
+    await pagina.locator('.folha-versoes input').fill('Quente')
+    await pagina.locator('.folha-versoes button[type="submit"]').click()
+    await pagina.waitForSelector('.folha-versoes .rv-versao')
+    assert.equal(await naLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).versoes?.[0]?.nome), 'Quente')
+    await pagina.keyboard.press('Escape')
+    await pagina.locator('.menu-estilo > button').click()
+    await pagina.getByRole('menuitemradio', { name: 'Sem estilo' }).click()
+    assert.equal(await pagina.locator('.rv-ajuste[data-caminho="intensidade"]').count(), 0)
 
     // copiar (com a escolha dos grupos) e colar na foto seguinte
     await exp.focus()
@@ -427,9 +455,15 @@ test('revelar na placa (SwiftShader): antes/depois e avisos da própria sessão,
   try {
     assert.equal(await pagina.locator('[data-motor-lento]').count(), 0)
     await captura(pagina, '1440-escuro')
+    const exp = pagina.locator('.rv-ajuste[data-caminho="luz.exposicao"] input')
+    await exp.focus()
+    const n0 = await quadros(pagina)
+    for (let i = 0; i < 15; i++) await pagina.keyboard.press('Shift+ArrowLeft')
+    await esperarQuadro(pagina, n0)
+    await pagina.locator('.palco-revelar').click({ position: { x: 30, y: 30 } })
     const media0 = await mediaDoPalco(pagina)
     await pagina.keyboard.press('\\')
-    await pagina.waitForSelector('.divisoria')
+    await pagina.waitForSelector('.divisoria', { state: 'attached' })
     await pagina.waitForTimeout(500)
     const media1 = await mediaDoPalco(pagina)
     assert.notEqual(Math.round(media0), Math.round(media1), 'o antes aparece à esquerda da divisória')
@@ -510,7 +544,8 @@ const alvosPequenos = (pagina) =>
           a = Math.max(a, r.height - cima - baixo)
         }
       }
-      if (l < 43.5 || a < 43.5) ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
+      const nome = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)
+      if (l < 43.5 || a < 43.5) ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} "${nome}" ${Math.round(l)}×${Math.round(a)}`)
     }
     return ruins
   })

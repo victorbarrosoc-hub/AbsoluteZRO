@@ -409,6 +409,78 @@ Por link (pelo sha256 do token) e por IP (o IP só como HMAC do dia; nunca é gu
 | enviar, por link | 20 por hora |
 | imagens | 20.000 por hora por link; 6.000 por IP |
 
+## Eventos com busca por rosto
+
+Estudo, números e textos em [`estudo/rosto-em-evento.md`](estudo/rosto-em-evento.md); regra 5 de
+[`ARQUITETURA.md`](ARQUITETURA.md). Banco em `db/migrations/0003_eventos.sql`. O fotógrafo escolhe o modo por evento:
+`consentimento` (padrão: só sobe o vetor de quem pediu para ser achado; o computador do fotógrafo compara e sobe as
+ligações) ou `aberta` (só com o aviso aceito: os vetores dos rostos das fotos sobem e ficam até o prazo). Só sobem
+prévias com marca-d'água. Sem armazenamento: `503 sem_armazenamento` em tudo.
+
+**Vetor**: 128 números int8 em base64 (172 caracteres), o maior componente em módulo exatamente 127
+(`src/rosto/assinatura.js`). Fora disso: `400 vetor` (visitante) ou `400 campo` (fotógrafo).
+
+### Rotas do fotógrafo — `/api/foto/eventos` (por `rota()`, RLS)
+
+| rota | corpo | resposta |
+| --- | --- | --- |
+| `GET /api/foto/eventos` | — | `{ eventos: [ficha] }` |
+| `POST /api/foto/eventos` | `{ nome, data?: 'AAAA-MM-DD', modo?, prazoDias?: 1–30 (14), marcaDagua?, galeria?, aviso?: versão do texto }` | `201 { evento }` |
+| `GET /api/foto/eventos/<id>` | — | `{ evento, fotos: [{ id, fotoId, nome, largura, altura, tipo, tamanho, sha256, enviada, mini, rostos, rostosEm }] }` |
+| `PATCH /api/foto/eventos/<id>` | os campos de criar (sem `galeria`) | `{ evento }`; `409 modo` (depois do rascunho), `409 prorrogado` (estender 2ª vez), `409 encerrado` |
+| `DELETE /api/foto/eventos/<id>` | — | `{ arquivos }` (o evento, as prévias e tudo o que é dele) |
+| `POST …/<id>/fotos` | `{ fotos: [{ fotoId, nome, ordem?, largura, altura, tipo, tamanho, sha256, mini? }] }` (até 500; até 5.000 por evento) | `{ fotos }` |
+| `DELETE …/<id>/fotos` | `{ ids: [id] }` | `{ fotos, arquivos }` |
+| `PUT …/<id>/arquivo?foto=<id>&v=previa\|mini` | bytes (`application/octet-stream`; até 4 MB / 512 KB; JPEG ou WebP; sem GPS) | `{ foto, variante }` |
+| `POST …/<id>/rostos` | aberta: `{ foto, rostos: [{ v, largura, nota (0–1), colado, perfil }] }` (troca os da foto); consentimento: `{ foto, quantos }` | `{ gravados, barrados }` (barrado = parecido ≥ 0,45 com quem pediu para não aparecer) |
+| `GET …/<id>/pessoas` | — | consentimento: `{ pessoas: [{ id, vetores: [v], atualizadoEm, processadoEm, pendente }] }` |
+| `POST …/<id>/ligacoes` | `{ pessoas: [id], ligacoes: [{ pessoa, foto, faixa: 'eu'\|'talvez' }] }` | `{ pessoas, ligacoes }` (troca as das pessoas listadas e marca como processadas) |
+| `POST …/<id>/publicar` | `{ pin? }` | `201 { endereco, evento }` — o endereço `/e/<token>` aparece **uma vez**; `409 sem_fotos`, `faltam_arquivos`, `sem_aviso` |
+| `POST …/<id>/link` | `{ pin? }` | `201 { endereco }` (revoga o anterior) |
+| `PATCH …/<id>/link` | `{ pin: '1234' \| null }` | `{ evento }` (trocar o PIN derruba as provas antigas) |
+| `POST …/<id>/encerrar` | — | `{ evento }` — o link morre e os vetores, pedidos de busca e ligações somem na hora |
+| `GET …/<id>/pedidos` | — | `{ pedidos: [{ id, nome, contato, em, fotos: [{ id, fotoId, nome }] }] }` |
+
+A ficha (`evento`): `{ id, nome, data, modo, estado: 'rascunho'\|'publicado'\|'encerrado', prazo, prorrogado, marcaDagua,
+galeria, aviso: { versao, em } | null, criadoEm, publicadoEm, encerradoEm, vetoresApagadosEm, arquivosApagadosEm,
+contagens: { fotos, enviadas, processadas, rostos, guardados, buscas, cadastros, remocoes, pessoas, pendentes, ligacoes,
+pedidos }, link: { id, temPin, aberturas, abertoEm, criadoEm } | null }`. O papel do app não lê `foto.evento_rostos`
+(só a função do dono grava e conta), nem o hash do token, do PIN ou da chave de quem pediu.
+
+### Rotas do visitante — `POST /api/evento/<acao>` (públicas)
+
+Sempre `{ token, … }`, com a origem do próprio site. Link desconhecido, revogado, vencido, de evento encerrado ou em
+rascunho: `404 { erro: 'link' }`, igual em toda ação. Com PIN e sem a prova: `401 pin`. `versao` é a do texto que a
+pessoa viu (`src/rosto/textos.js`); o servidor grava a versão e o sha256 do texto, nunca nada da pessoa.
+
+| ação | corpo | resposta |
+| --- | --- | --- |
+| `abrir` | `{ contar? }` | `{ estado: 'pin' }` ou `{ estado: 'ok', evento: { nome, data, modo, prazo, marcaDagua, fotos } }` |
+| `pin` | `{ pin }` | `{ ok }` + cookie `foto_epin_…` (12 h) |
+| `recusar` | `{ tipo: 'busca'\|'cadastro'\|'remocao', versao }` | `{ ok }` (registra a recusa) |
+| `achar` | `{ vetores: [1–3], versao }` | aberta: `{ eu: [foto], talvez: [foto] }` (até 200); consentimento: `409 modo` |
+| `cadastrar` | `{ vetores: [1–3], chave, versao }` | consentimento: `{ eu, talvez, processado, desde }`. `chave` = 32 bytes base64url do celular; o banco guarda o sha256. A mesma pessoa de novo reaproveita o pedido |
+| `minhas` | `{ chave }` | `{ eu, talvez, processado, desde }` ou `404 chave` |
+| `desistir` | `{ chave }` | `{ ok }` (apaga os vetores e as ligações) |
+| `remover` | `{ vetores, fotos?, versao }` | aberta. Sem `fotos`: `{ fotos }` parecidas (≥ 0,45) para conferir. Com `fotos`: `{ removidos }` e o vetor de quem pediu fica até o prazo para barrar foto nova |
+| `pedir` | `{ nome, contato, fotos: [id] }` | `{ fotos }` (sem pagamento) |
+
+`foto` = `{ id, largura, altura, v, mini }` (`v` e `mini`: começo do sha256). A imagem: `GET /e/<token>/i/<foto>?v=mini&s=<mini>`
+(ou `?s=<v>`), cache privado, só por link vivo. A página: `GET /e/<token>` (sem o nome do produto; câmera permitida só em
+`/e/*`); o worker e o núcleo que ele usa saem por `/e/<token>/app/rosto/…`, `/e/<token>/app/trabalho/servir.js` e
+`/e/<token>/src/rosto/…` (lista fechada). O vetor da busca não é gravado nem vai para log.
+
+Faixas (`src/rosto/decidir.js`, a mesma conta em `foto.rosto_faixa`): **É você** ≥ 0,50 com um quadro ou ≥ 0,45 em dois,
+só em rosto ≥ 24 px, nota ≥ 0,75, não colado, não de perfil; **Talvez** ≥ 0,40.
+
+Limites a mais: busca, pedido de busca e remoção, 5 a cada 10 min e 30 por dia por link e IP (1.200 por hora por link);
+abrir 3.000 por hora por link; PIN errado 5 a cada 15 min por link e IP e 60 por link; `minhas`/`desistir` 120 por hora por
+link e IP; `pedir` 10 por hora por link e IP; imagens 40.000 por hora por link e 3.000 por IP.
+
+Limpeza do prazo: `limparEventos()` (`api/_evento.js`, pela conexão do dono; agendar fica com o titular) chama
+`foto.eventos_limpar()` (vetores, pedidos de busca, ligações e remoções somem; o evento encerra) e apaga as prévias dos
+encerrados. Ficam a ficha, os pedidos de foto e o registro dos consentimentos até o evento ser apagado.
+
 ## Variáveis de ambiente
 
 | variável | para quê |

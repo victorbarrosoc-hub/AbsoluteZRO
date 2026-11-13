@@ -93,13 +93,7 @@ export function decodificar(saidas, passada, { limiar = 0.6 } = {}) {
   const m = 4 / k
   const { x0, y0, x1, y1 } = passada.borda
   return achados.filter(
-    (f) =>
-      !(
-        (x0 && f.x < sx + m) ||
-        (y0 && f.y < sy + m) ||
-        (x1 && f.x + f.largura > sx + passada.sw - m) ||
-        (y1 && f.y + f.altura > sy + passada.sh - m)
-      ),
+    (f) => !((x0 && f.x < sx + m) || (y0 && f.y < sy + m) || (x1 && f.x + f.largura > sx + passada.sw - m) || (y1 && f.y + f.altura > sy + passada.sh - m)),
   )
 }
 

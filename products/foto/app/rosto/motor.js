@@ -23,13 +23,61 @@ export const ARQUIVOS = {
 }
 export const TOTAL = Object.values(ARQUIVOS).reduce((s, a) => s + a.tamanho, 0)
 
+export const LADO_DA_FOTO = 1616
+
+/** A imagem girada pela orientação do EXIF (1, 3, 6, 8; os espelhados 2, 4, 5, 7 também) e reduzida a `lado`. */
+export function girarEReduzir(bmp, orientacao = 1, lado = LADO_DA_FOTO) {
+  const o = Number(orientacao) || 1
+  const deitada = o >= 5 && o <= 8
+  const k = Math.min(1, lado / Math.max(bmp.width, bmp.height))
+  const w = Math.round(bmp.width * k)
+  const h = Math.round(bmp.height * k)
+  const W = deitada ? h : w
+  const H = deitada ? w : h
+  const t = new OffscreenCanvas(W, H)
+  const c = t.getContext('2d')
+  c.imageSmoothingEnabled = true
+  c.imageSmoothingQuality = 'high'
+  // as 8 orientações do EXIF (TIFF 6.0): a matriz que leva a foto gravada à foto vista
+  const m = {
+    1: [1, 0, 0, 1, 0, 0],
+    2: [-1, 0, 0, 1, W, 0],
+    3: [-1, 0, 0, -1, W, H],
+    4: [1, 0, 0, -1, 0, H],
+    5: [0, 1, 1, 0, 0, 0],
+    6: [0, 1, -1, 0, W, 0],
+    7: [0, -1, -1, 0, W, H],
+    8: [0, -1, 1, 0, 0, H],
+  }[o] ?? [1, 0, 0, 1, 0, 0]
+  c.setTransform(...m)
+  c.drawImage(bmp, 0, 0, w, h)
+  return t
+}
+
 let pronto = null
 let ort = null
 let det = null
 let sface = null
 
-/** Baixa um arquivo contando os bytes; `conta(n)` recebe cada pedaço. */
+/** Baixa um arquivo contando os bytes; até 3 tentativas (vários workers baixando o mesmo arquivo ao mesmo tempo às
+ * vezes perdem a conexão no meio). `conta(n)` recebe cada pedaço; numa tentativa nova, o que já foi contado sai. */
 async function baixar(url, conta) {
+  for (let tentativa = 1; ; tentativa++) {
+    let parcial = 0
+    try {
+      return await baixarUmaVez(url, (n) => {
+        parcial += n
+        conta(n)
+      })
+    } catch (e) {
+      conta(-parcial)
+      if (tentativa >= 3 || e?.codigo === 'indisponivel') throw e
+      await new Promise((ok) => setTimeout(ok, 300 * tentativa))
+    }
+  }
+}
+
+async function baixarUmaVez(url, conta) {
   const r = await fetch(url, { cache: 'default' })
   if (!r.ok) throw Object.assign(new Error(`indisponivel: ${url} (${r.status})`), { codigo: 'indisponivel' })
   if (!r.body?.getReader) {

@@ -254,19 +254,22 @@ export function Cenas({ loja, lupa, aoSair, aoTrocar, aoAprender, fechar }) {
       <span><b>Cena ${(i + 1).toLocaleString('pt-BR')}</b> de ${cenas.length.toLocaleString('pt-BR')}</span>
       <small>${tipo} · ${cena.fotos.length} fotos${empate ? html` · <span class="cena-empate">${empate}</span>` : null}</small>
     </div>
-    <button type="button" class="liso" aria-label="Próxima cena" data-dica="Próxima" data-tecla="→" onClick=${() => proxima()}><${Icone} nome="direita" /></button>
+    <button type="button" class="liso" aria-label="Próxima cena" data-dica="Próxima" data-tecla="→" onClick=${() => proxima()}>
+      <${Icone} nome="direita" />
+    </button>
   </div>`
   const tira = html`<div class="cena-tira" role="listbox" aria-label="Fotos da cena">
     ${cena.fotos.map(
-      (f) => html`<${NaTira}
-        key=${f.id}
-        loja=${loja}
-        id=${f.id}
-        ativa=${f.id === foco}
-        escolhida=${f.id === escolhida.id}
-        sugerida=${f.id === cena.sugerida.id}
-        aoTocar=${(id) => c.selecionar(id)}
-      />`,
+      (f) =>
+        html`<${NaTira}
+          key=${f.id}
+          loja=${loja}
+          id=${f.id}
+          ativa=${f.id === foco}
+          escolhida=${f.id === escolhida.id}
+          sugerida=${f.id === cena.sugerida.id}
+          aoTocar=${(id) => c.selecionar(id)}
+        />`,
     )}
   </div>`
   return html`<div class=${cx('cenas palco')} data-cena=${cena.id}>

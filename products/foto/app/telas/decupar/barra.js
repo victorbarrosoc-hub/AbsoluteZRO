@@ -110,7 +110,12 @@ function Andamento({ est, esteira, temFotos }) {
   const a = est.analise
   const camadaFora = est.camadas.filter((k) => a.camadas?.[k] === 'indisponivel')
   const fora = camadaFora.length
-    ? html`<span class="dec-fora" title=${camadaFora.map((k) => a.motivos?.[k]).filter(Boolean).join(' · ')}
+    ? html`<span
+        class="dec-fora"
+        title=${camadaFora
+          .map((k) => a.motivos?.[k])
+          .filter(Boolean)
+          .join(' · ')}
         >${camadaFora.length === 1 ? `${NOMES_DAS_CAMADAS[camadaFora[0]]} indisponível` : 'Visão indisponível'}</span
       >`
     : null
@@ -144,15 +149,12 @@ function Andamento({ est, esteira, temFotos }) {
     return html`<div class="dec-andamento" data-situacao="pronta">
       <span class="dec-pronta" title=${`${milhar(a.total)} fotos analisadas neste aparelho`}><${Icone} nome="ok" /></span>
       <span class="dec-andamento-texto">${milhar(a.total)} analisadas</span>
-      ${a.puladas ? html`<span class="dec-fora" title=${a.erro ?? ''}>${milhar(a.puladas)} sem prévia</span>` : null}
-      ${fora}
+      ${a.puladas ? html`<span class="dec-fora" title=${a.erro ?? ''}>${milhar(a.puladas)} sem prévia</span>` : null} ${fora}
     </div>`
   }
   if (!temFotos) return null
   return html`<div class="dec-andamento">
-    <button type="button" class="vidro vidro--pequeno dec-comecar" onClick=${() => esteira.comecar()}>
-      <${Icone2} nome="tocar" tamanho=${14} />Analisar
-    </button>
+    <button type="button" class="vidro vidro--pequeno dec-comecar" onClick=${() => esteira.comecar()}><${Icone2} nome="tocar" tamanho=${14} />Analisar</button>
   </div>`
 }
 
@@ -170,16 +172,19 @@ function Baldes({ loja }) {
   const ativo = c.filtro().balde?.[0] ?? null
   return html`<div class="dec-baldes" role="group" aria-label="Baldes">
     ${BALDES.map(
-      (b) => html`<button
-        type="button"
-        class="pilula dec-balde"
-        data-valor=${b.valor}
-        aria-pressed=${ativo === b.valor ? 'true' : 'false'}
-        title=${b.dica}
-        onClick=${() => c.filtrar({ balde: ativo === b.valor ? null : b.valor })}
-      >
-        <span class="balde-ponto" data-balde=${b.valor} aria-hidden="true"></span>${b.rotulo}<span class="pilula-n"><${Numero} valor=${n.balde[b.valor] ?? 0} /></span>
-      </button>`,
+      (b) =>
+        html`<button
+          type="button"
+          class="pilula dec-balde"
+          data-valor=${b.valor}
+          aria-pressed=${ativo === b.valor ? 'true' : 'false'}
+          title=${b.dica}
+          aria-label=${`${b.rotulo}: ${n.balde[b.valor] ?? 0}`}
+          onClick=${() => c.filtrar({ balde: ativo === b.valor ? null : b.valor })}
+        >
+          <span class="balde-ponto" data-balde=${b.valor} aria-hidden="true"></span><span class="dec-balde-nome">${b.rotulo}</span
+          ><span class="pilula-n"><${Numero} valor=${n.balde[b.valor] ?? 0} /></span>
+        </button>`,
     )}
   </div>`
 }
@@ -200,30 +205,31 @@ function Meta({ est, esteira, total }) {
     rotulo="Quero cerca de"
     gatilho=${html`<${Icone2} nome="meta" tamanho=${14} /><span class="dec-meta-texto">${est.meta != null ? html`Cerca de <${Numero} valor=${est.meta} />` : 'Meta'}</span>`}
   >
-    ${(fechar) => html`<div class="dec-meta-quadro">
-      <${Controle}
-        rotulo="Quero cerca de"
-        valor=${est.meta ?? sugestao}
-        min=${1}
-        max=${Math.max(2, total)}
-        neutro=${sugestao}
-        formato=${(v) => milhar(v)}
-        aoMudar=${mudar}
-      />
-      <div class="dec-meta-pe">
-        <span class="apoio">A nota não muda: só quem fica.</span>
-        <button
-          type="button"
-          class="vidro vidro--pequeno"
-          onClick=${() => {
-            esteira.definirMeta(null)
-            fechar()
-          }}
-        >
-          Sem meta
-        </button>
-      </div>
-    </div>`}
+    ${(fechar) =>
+      html`<div class="dec-meta-quadro">
+        <${Controle}
+          rotulo="Quero cerca de"
+          valor=${est.meta ?? sugestao}
+          min=${1}
+          max=${Math.max(2, total)}
+          neutro=${sugestao}
+          formato=${(v) => milhar(v)}
+          aoMudar=${mudar}
+        />
+        <div class="dec-meta-pe">
+          <span class="apoio">A nota não muda: só quem fica.</span>
+          <button
+            type="button"
+            class="vidro vidro--pequeno"
+            onClick=${() => {
+              esteira.definirMeta(null)
+              fechar()
+            }}
+          >
+            Sem meta
+          </button>
+        </div>
+      </div>`}
   <//>`
 }
 

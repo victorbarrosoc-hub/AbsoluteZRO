@@ -69,8 +69,8 @@ export function Balao({ gatilho, rotulo, lado = 'esquerda', classeBotao = 'liso'
     ${
       aberto
         ? html`<div class="flutua-quadro" ref=${quadro} role="dialog" aria-label=${rotulo} data-lado=${lado}>
-          ${typeof children === 'function' ? children(() => fechar(true)) : children}
-        </div>`
+            ${typeof children === 'function' ? children(() => fechar(true)) : children}
+          </div>`
         : null
     }
   </span>`

@@ -92,7 +92,7 @@ async function fabricar() {
           const b = Math.floor(i / bloco)
           const k = i % bloco
           desenharCena(1000 + b * bloco + (k <= 2 ? 0 : k), k === 1 ? 6 : 0)
-          c.filter = k === 2 || k === 4 ? 'blur(5px)' : k === 1 ? 'blur(1.4px)' : 'none'
+          c.filter = k === 2 || k === 4 ? 'blur(5px)' : k === 1 ? 'blur(0.8px)' : 'none'
           c.drawImage(cena, 0, 0)
           c.filter = 'none'
           if (k === 5) {
@@ -111,7 +111,8 @@ async function fabricar() {
     )
     return lista.map((b64, i) => {
       const jpeg = Buffer.from(b64, 'base64')
-      if (RAWS.includes(i)) return { name: nomeDa(i), mimeType: 'application/octet-stream', buffer: dngFabricado(jpeg, { largura: 960, altura: 640, data: horaDa(i) }) }
+      if (RAWS.includes(i))
+        return { name: nomeDa(i), mimeType: 'application/octet-stream', buffer: dngFabricado(jpeg, { largura: 960, altura: 640, data: horaDa(i) }) }
       return { name: nomeDa(i), mimeType: 'image/jpeg', buffer: comExif(jpeg, { data: horaDa(i) }) }
     })
   } finally {
@@ -150,7 +151,11 @@ async function abrir({ opcoes = {}, tema, camadas } = {}) {
     const loja = (await import('/app/estado.js')).loja
     const e = (await import('/app/telas/decupar/esteira.js')).esteiraDa(loja)
     self.__log = []
-    e.assinar((s) => self.__log.push(`${s.trabalho} ${s.analise.situacao} ${s.analise.feitas}/${s.analise.total} cat=${loja.catalogo.tamanho} lendo=${JSON.stringify(loja.lendo())}`))
+    e.assinar((s) =>
+      self.__log.push(
+        `${s.trabalho} ${s.analise.situacao} ${s.analise.feitas}/${s.analise.total} cat=${loja.catalogo.tamanho} lendo=${JSON.stringify(loja.lendo())}`,
+      ),
+    )
   })
   await pagina.setInputFiles('input[data-escolher]', arquivos)
   await pagina.waitForFunction((n) => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === String(n), QUANTAS)
@@ -219,7 +224,8 @@ const alvosPequenos = (pagina) =>
         }
       }
       const nome = el.getAttribute('aria-label') || el.textContent || ''
-      if (l < 43.5 || a < 43.5) ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
+      if (l < 43.5 || a < 43.5)
+        ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
     }
     return ruins
   })
@@ -242,266 +248,287 @@ function lerZip(bytes) {
   return saida
 }
 
-test('decupar 120 fotos: começa sozinha, baldes e filtros, meta ao vivo, cenas, aceitar, atalhos, sobreposição e .xmp', { skip: semChromium, timeout: 900_000 }, async (t) => {
-  const { contexto, pagina, olho } = await abrir()
-  try {
-    // ───── começa sozinha, com o andamento à vista ─────
-    await pagina.waitForSelector('.dec-andamento[data-situacao="rodando"], .dec-andamento[data-situacao="preparando"]')
-    await pagina.waitForFunction(() => /\d+ de 120/.test(document.querySelector('.dec-andamento-texto')?.textContent ?? ''))
-    await pagina.waitForTimeout(1500)
-    await captura(pagina, 'andamento-1440-claro')
-    const t0 = Date.now()
-    await esperarAnalise(pagina)
-    const fim = await naPagina(pagina, (loja, esteira) => esteira.estado().analise)
-    console.log((await pagina.evaluate(() => self.__log)).filter((x, i, a) => x !== a[i - 1]).join('\n'))
-    t.diagnostic(`análise: ${fim.novas} fotos em ${((Date.now() - t0) / 1000).toFixed(0)} s depois do primeiro andamento; camadas ${JSON.stringify(fim.camadas)}`)
-    assert.equal(fim.feitas, QUANTAS)
-    assert.equal(fim.puladas, 0, fim.erro ?? '')
-    assert.ok(fim.camadas.rostos === 'pronta' || fim.camadas.rostos === 'indisponivel', JSON.stringify(fim.camadas))
-    assert.equal(fim.camadas.objetos, 'desligada')
-    await pagina.waitForSelector('.dec-andamento[data-situacao="pronta"]')
-
-    // ───── os baldes contam o que o catálogo diz, e filtram ─────
-    const dados = () =>
-      naPagina(pagina, (loja) =>
-        loja.catalogo.fotos().map((f) => ({
-          id: f.id,
-          nome: f.nome,
-          balde: f.magnitude?.balde,
-          motivos: f.magnitude?.motivos ?? [],
-          grupo: f.grupo,
-          escolha: f.escolha,
-          q: f.medidas?.nitidez?.qLocal ?? null,
-          marca: f.marca,
-          estrelas: f.estrelas,
-          medidas: !!f.medidas,
-        })),
+test(
+  'decupar 120 fotos: começa sozinha, baldes e filtros, meta ao vivo, cenas, aceitar, atalhos, sobreposição e .xmp',
+  { skip: semChromium, timeout: 900_000 },
+  async (t) => {
+    const { contexto, pagina, olho } = await abrir()
+    try {
+      // ───── começa sozinha, com o andamento à vista ─────
+      await pagina.waitForSelector('.dec-andamento[data-situacao="rodando"], .dec-andamento[data-situacao="preparando"]')
+      await pagina.waitForFunction(() => /\d+ de 120/.test(document.querySelector('.dec-andamento-texto')?.textContent ?? ''))
+      await pagina.waitForTimeout(1500)
+      await captura(pagina, 'andamento-1440-claro')
+      const t0 = Date.now()
+      await esperarAnalise(pagina)
+      const fim = await naPagina(pagina, (loja, esteira) => esteira.estado().analise)
+      console.log((await pagina.evaluate(() => self.__log)).filter((x, i, a) => x !== a[i - 1]).join('\n'))
+      t.diagnostic(
+        `análise: ${fim.novas} fotos em ${((Date.now() - t0) / 1000).toFixed(0)} s depois do primeiro andamento; camadas ${JSON.stringify(fim.camadas)}`,
       )
-    const fotos = await dados()
-    const porBalde = (b) => fotos.filter((f) => f.balde === b).length
-    const baldes = {}
-    for (const b of ['fica', 'talvez', 'fora']) {
-      baldes[b] = await numero(pagina, `.dec-balde[data-valor="${b}"] .pilula-n`)
-      assert.equal(baldes[b], porBalde(b), `balde ${b}`)
-    }
-    assert.equal(baldes.fica + baldes.talvez + baldes.fora, QUANTAS)
-    t.diagnostic(`baldes: ${JSON.stringify(baldes)}`)
-    await pagina.locator('.dec-balde[data-valor="fora"]').click()
-    const noFora = await naPagina(pagina, (loja) => loja.catalogo.itens().map((i) => i.foto.magnitude?.balde))
-    assert.ok(noFora.length > 0 && noFora.every((b) => b === 'fora'), JSON.stringify(noFora))
-    await captura(pagina, 'fora-1440-claro')
-    await pagina.locator('.dec-balde[data-valor="fora"]').click()
+      assert.equal(fim.feitas, QUANTAS)
+      assert.equal(fim.puladas, 0, fim.erro ?? '')
+      assert.ok(fim.camadas.rostos === 'pronta' || fim.camadas.rostos === 'indisponivel', JSON.stringify(fim.camadas))
+      assert.equal(fim.camadas.objetos, 'desligada')
+      await pagina.waitForSelector('.dec-andamento[data-situacao="pronta"]')
 
-    // motivos: a pílula diz quantas o filtro vai mostrar
-    const comMotivo = (busca) => fotos.filter((f) => f.motivos.some((m) => m.toLowerCase().includes(busca))).length
-    const borradas = await numero(pagina, '.dec-filtros .pilula[data-valor="borradas"] .pilula-n')
-    const estouradas = await numero(pagina, '.dec-filtros .pilula[data-valor="estouradas"] .pilula-n')
-    assert.equal(borradas, comMotivo('fora de foco'))
-    assert.equal(estouradas, comMotivo('altas luzes'))
-    assert.ok(borradas >= 12, `borradas: ${borradas}`)
-    assert.ok(estouradas >= 12, `estouradas: ${estouradas}`)
-    await pagina.locator('.dec-filtros .pilula[data-valor="borradas"]').click()
-    const filtradas = await naPagina(pagina, (loja) => ({
-      n: loja.catalogo.fotos().filter((f) => (f.magnitude?.motivos ?? []).some((m) => m.toLowerCase().includes('fora de foco'))).length,
-      todas: loja.catalogo.itens().every((i) => i.foto.magnitude.motivos.some((m) => m.toLowerCase().includes('fora de foco'))),
-    }))
-    assert.equal(filtradas.n, borradas)
-    assert.ok(filtradas.todas)
-    await pagina.locator('.dec-filtros .pilula[data-valor="borradas"]').click()
-    // repetidas: as reservas de cada momento, escondidas atrás da melhor
-    const grupos = new Map()
-    for (const f of fotos) if (f.grupo) grupos.set(f.grupo, [...(grupos.get(f.grupo) ?? []), f])
-    assert.equal(grupos.size, QUANTAS / BLOCO, 'um momento repetido por bloco')
-    assert.equal(await numero(pagina, '.dec-filtros .pilula[data-valor="repetidas"] .pilula-n'), (QUANTAS / BLOCO) * 2)
+      // ───── os baldes contam o que o catálogo diz, e filtram ─────
+      const dados = () =>
+        naPagina(pagina, (loja) =>
+          loja.catalogo.fotos().map((f) => ({
+            id: f.id,
+            nome: f.nome,
+            balde: f.magnitude?.balde,
+            motivos: f.magnitude?.motivos ?? [],
+            grupo: f.grupo,
+            escolha: f.escolha,
+            q: f.medidas?.nitidez?.qLocal ?? null,
+            marca: f.marca,
+            estrelas: f.estrelas,
+            medidas: !!f.medidas,
+          })),
+        )
+      const fotos = await dados()
+      const porBalde = (b) => fotos.filter((f) => f.balde === b).length
+      const baldes = {}
+      for (const b of ['fica', 'talvez', 'fora']) {
+        baldes[b] = await numero(pagina, `.dec-balde[data-valor="${b}"] .pilula-n`)
+        assert.equal(baldes[b], porBalde(b), `balde ${b}`)
+      }
+      assert.equal(baldes.fica + baldes.talvez + baldes.fora, QUANTAS)
+      t.diagnostic(`baldes: ${JSON.stringify(baldes)}`)
+      await pagina.locator('.dec-balde[data-valor="fora"]').click()
+      const noFora = await naPagina(pagina, (loja) => loja.catalogo.itens().map((i) => i.foto.magnitude?.balde))
+      assert.ok(noFora.length > 0 && noFora.every((b) => b === 'fora'), JSON.stringify(noFora))
+      await captura(pagina, 'fora-1440-claro')
+      await pagina.locator('.dec-balde[data-valor="fora"]').click()
 
-    // ───── meta ao vivo: os baldes mudam na hora, e nada é analisado de novo ─────
-    const antesDaMeta = await naPagina(pagina, (loja, esteira) => ({ novas: esteira.estado().analise.novas, medir: esteira.estado().analise.tempos.medir }))
-    await pagina.locator('.dec-meta > button').click()
-    const t1 = Date.now()
-    await pagina.locator('.dec-meta-quadro input[type="range"]').fill('30')
-    await pagina.waitForFunction(() => document.querySelector('.dec-balde[data-valor="fica"] .pilula-n')?.textContent.trim() === '30')
-    const levou = Date.now() - t1
-    const comMeta = await dados()
-    assert.equal(comMeta.filter((f) => f.balde === 'fica').length, 30)
-    // cada momento entra antes de qualquer repetida: nenhum grupo com duas no Fica
-    const noFica = comMeta.filter((f) => f.balde === 'fica' && f.grupo).map((f) => f.grupo)
-    assert.equal(new Set(noFica).size, noFica.length, 'a meta não leva duas do mesmo momento')
-    const depoisDaMeta = await naPagina(pagina, (loja, esteira) => ({ novas: esteira.estado().analise.novas, medir: esteira.estado().analise.tempos.medir }))
-    assert.deepEqual(depoisDaMeta, antesDaMeta, 'a meta não analisou nada de novo')
-    t.diagnostic(`meta 30: baldes trocados em ${levou} ms`)
-    await captura(pagina, 'meta-1440-claro')
-    await pagina.locator('.dec-meta-quadro .vidro').click()
-    await pagina.waitForFunction((n) => document.querySelector('.dec-balde[data-valor="fica"] .pilula-n')?.textContent.trim() === String(n), baldes.fica)
+      // motivos: a pílula diz quantas o filtro vai mostrar
+      const comMotivo = (busca) => fotos.filter((f) => f.motivos.some((m) => m.toLowerCase().includes(busca))).length
+      const borradas = await numero(pagina, '.dec-filtros .pilula[data-valor="borradas"] .pilula-n')
+      const estouradas = await numero(pagina, '.dec-filtros .pilula[data-valor="estouradas"] .pilula-n')
+      assert.equal(borradas, comMotivo('fora de foco'))
+      assert.equal(estouradas, comMotivo('altas luzes'))
+      assert.ok(borradas >= 12, `borradas: ${borradas}`)
+      assert.ok(estouradas >= 12, `estouradas: ${estouradas}`)
+      await pagina.locator('.dec-filtros .pilula[data-valor="borradas"]').click()
+      const filtradas = await naPagina(pagina, (loja) => ({
+        n: loja.catalogo.fotos().filter((f) => (f.magnitude?.motivos ?? []).some((m) => m.toLowerCase().includes('fora de foco'))).length,
+        todas: loja.catalogo.itens().every((i) => i.foto.magnitude.motivos.some((m) => m.toLowerCase().includes('fora de foco'))),
+      }))
+      assert.equal(filtradas.n, borradas)
+      assert.ok(filtradas.todas)
+      await pagina.locator('.dec-filtros .pilula[data-valor="borradas"]').click()
+      // repetidas: as reservas de cada momento, escondidas atrás da melhor
+      const grupos = new Map()
+      for (const f of fotos) if (f.grupo) grupos.set(f.grupo, [...(grupos.get(f.grupo) ?? []), f])
+      assert.equal(grupos.size, QUANTAS / BLOCO, 'um momento repetido por bloco')
+      assert.equal(await numero(pagina, '.dec-filtros .pilula[data-valor="repetidas"] .pilula-n'), (QUANTAS / BLOCO) * 2)
 
-    // ───── modo Cenas ─────
-    await pagina.locator('.foto').first().click()
-    await pagina.keyboard.press('c')
-    await pagina.waitForSelector('.cenas .lupa .quadro-moldura img')
-    assert.match(await pagina.locator('.cena-titulo').innerText(), /Cena\s+1\s+de\s+12/)
-    const cenaAtual = () =>
-      naPagina(pagina, (loja) => {
-        const c = loja.catalogo
-        const foco = c.foto(c.foco())
-        const membros = c.fotos().filter((f) => f.grupo && f.grupo === foco.grupo)
-        return { foco: foco.id, grupo: foco.grupo, qs: membros.map((f) => [f.id, f.medidas.nitidez.qLocal]), marcas: membros.map((f) => [f.id, f.marca]) }
-      })
-    const primeira = await cenaAtual()
-    // a escolhida (em foco ao entrar) é a mais nítida da cena
-    const maisNitida = primeira.qs.reduce((a, b) => (b[1] > a[1] ? b : a))
-    assert.equal(primeira.foco, maisNitida[0], `a escolhida não é a mais nítida: ${JSON.stringify(primeira.qs)}`)
-    assert.equal(await pagina.locator('.tira-foto[aria-selected="true"]').getAttribute('data-escolhida'), '')
-    await pagina.waitForTimeout(700)
-    await captura(pagina, 'cenas-1440-claro')
-    // → aceita a escolhida e passa para a próxima cena
-    await pagina.keyboard.press('ArrowRight')
-    await pagina.waitForFunction(() => /Cena\s+2\s+de/.test(document.querySelector('.cena-titulo')?.textContent ?? ''))
-    const marcada = await naPagina(pagina, (loja, esteira, id) => loja.catalogo.foto(id).marca, primeira.foco)
-    assert.equal(marcada, 'escolhida', '→ aceitou a escolhida da cena 1')
-    const segunda = await cenaAtual()
-    assert.notEqual(segunda.grupo, primeira.grupo)
-    // ↓ anda dentro da cena; S troca a escolhida
-    await pagina.keyboard.press('ArrowDown')
-    const outra = await naPagina(pagina, (loja) => loja.catalogo.foco())
-    assert.notEqual(outra, segunda.foco)
-    assert.ok(segunda.qs.some(([id]) => id === outra))
-    await pagina.keyboard.press('s')
-    const trocada = await cenaAtual()
-    const marcas = Object.fromEntries(trocada.marcas)
-    assert.equal(marcas[outra], 'escolhida')
-    assert.equal(await pagina.locator('.tira-foto[data-escolhida]').getAttribute('data-id'), outra)
-    await pagina.waitForSelector('.aviso')
-    t.diagnostic(`S: "${await pagina.locator('.aviso').innerText()}"`)
-    // a sobreposição e o painel também valem nas cenas
-    await pagina.keyboard.press('o')
-    await pagina.waitForSelector('.cenas .sobre .sobre-foco rect')
-    await pagina.waitForTimeout(500)
-    await captura(pagina, 'cenas-sobreposicao-1440-claro')
-    await pagina.keyboard.press('o')
-    // conta de toques: as 12 cenas com uma tecla cada
-    let toques = 2
-    for (let k = 2; k < 12; k++) {
+      // ───── meta ao vivo: os baldes mudam na hora, e nada é analisado de novo ─────
+      const antesDaMeta = await naPagina(pagina, (loja, esteira) => ({ novas: esteira.estado().analise.novas, medir: esteira.estado().analise.tempos.medir }))
+      await pagina.locator('.dec-meta > button').click()
+      const t1 = Date.now()
+      await pagina.locator('.dec-meta-quadro input[type="range"]').fill('30')
+      await pagina.waitForFunction(() => document.querySelector('.dec-balde[data-valor="fica"] .pilula-n')?.textContent.trim() === '30')
+      const levou = Date.now() - t1
+      const comMeta = await dados()
+      assert.equal(comMeta.filter((f) => f.balde === 'fica').length, 30)
+      // cada momento entra antes de qualquer repetida: nenhum grupo com duas no Fica
+      const noFica = comMeta.filter((f) => f.balde === 'fica' && f.grupo).map((f) => f.grupo)
+      assert.equal(new Set(noFica).size, noFica.length, 'a meta não leva duas do mesmo momento')
+      const depoisDaMeta = await naPagina(pagina, (loja, esteira) => ({ novas: esteira.estado().analise.novas, medir: esteira.estado().analise.tempos.medir }))
+      assert.deepEqual(depoisDaMeta, antesDaMeta, 'a meta não analisou nada de novo')
+      t.diagnostic(`meta 30: baldes trocados em ${levou} ms`)
+      await pagina.waitForTimeout(700)
+      await captura(pagina, 'meta-1440-claro')
+      await pagina.locator('.dec-meta-quadro .vidro').click()
+      await pagina.waitForFunction((n) => document.querySelector('.dec-balde[data-valor="fica"] .pilula-n')?.textContent.trim() === String(n), baldes.fica)
+
+      // ───── modo Cenas ─────
+      await pagina.locator('.foto').first().click()
+      await pagina.keyboard.press('c')
+      await pagina.waitForSelector('.cenas .lupa .quadro-moldura img')
+      assert.match(await pagina.locator('.cena-titulo').innerText(), /Cena\s+1\s+de\s+12/)
+      const cenaAtual = () =>
+        naPagina(pagina, (loja) => {
+          const c = loja.catalogo
+          const foco = c.foto(c.foco())
+          const membros = c.fotos().filter((f) => f.grupo && f.grupo === foco.grupo)
+          return { foco: foco.id, grupo: foco.grupo, qs: membros.map((f) => [f.id, f.medidas.nitidez.qLocal]), marcas: membros.map((f) => [f.id, f.marca]) }
+        })
+      const primeira = await cenaAtual()
+      // a escolhida (em foco ao entrar) é a mais nítida da cena
+      const maisNitida = primeira.qs.reduce((a, b) => (b[1] > a[1] ? b : a))
+      assert.equal(primeira.foco, maisNitida[0], `a escolhida não é a mais nítida: ${JSON.stringify(primeira.qs)}`)
+      assert.equal(await pagina.locator('.tira-foto[aria-selected="true"]').getAttribute('data-escolhida'), '')
+      await pagina.waitForTimeout(700)
+      await captura(pagina, 'cenas-1440-claro')
+      // → aceita a escolhida e passa para a próxima cena
+      await pagina.keyboard.press('ArrowRight')
+      await pagina.waitForFunction(() => /Cena\s+2\s+de/.test(document.querySelector('.cena-titulo')?.textContent ?? ''))
+      const marcada = await naPagina(pagina, (loja, esteira, id) => loja.catalogo.foto(id).marca, primeira.foco)
+      assert.equal(marcada, 'escolhida', '→ aceitou a escolhida da cena 1')
+      const segunda = await cenaAtual()
+      assert.notEqual(segunda.grupo, primeira.grupo)
+      // ↓ anda dentro da cena; S troca a escolhida
+      await pagina.keyboard.press('ArrowDown')
+      const outra = await naPagina(pagina, (loja) => loja.catalogo.foco())
+      assert.notEqual(outra, segunda.foco)
+      assert.ok(segunda.qs.some(([id]) => id === outra))
+      await pagina.keyboard.press('s')
+      const trocada = await cenaAtual()
+      const marcas = Object.fromEntries(trocada.marcas)
+      assert.equal(marcas[outra], 'escolhida')
+      assert.equal(await pagina.locator('.tira-foto[data-escolhida]').getAttribute('data-id'), outra)
+      await pagina.waitForSelector('.aviso')
+      t.diagnostic(`S: "${await pagina.locator('.aviso').innerText()}"`)
+      // a sobreposição e o painel também valem nas cenas
+      await pagina.keyboard.press('o')
+      await pagina.waitForSelector('.cenas .sobre .sobre-foco rect')
+      await pagina.waitForTimeout(500)
+      await captura(pagina, 'cenas-sobreposicao-1440-claro')
+      await pagina.keyboard.press('o')
+      // conta de toques: as 12 cenas com uma tecla cada
+      let toques = 2
+      for (let k = 2; k < 12; k++) {
+        await pagina.keyboard.press('ArrowRight')
+        toques++
+        await pagina.waitForTimeout(80)
+      }
       await pagina.keyboard.press('ArrowRight')
       toques++
-      await pagina.waitForTimeout(80)
+      await pagina.waitForSelector('.cenas-fim')
+      await pagina.waitForTimeout(900)
+      t.diagnostic(`cenas: 12 momentos decididos com ${toques} teclas (→ por cena, ↓ e S numa delas)`)
+      await captura(pagina, 'cenas-fim-1440-claro')
+      await pagina.keyboard.press('Escape')
+      await pagina.waitForSelector('.cenas', { state: 'detached' })
+      const escolhidasNasCenas = (await dados()).filter((f) => f.marca === 'escolhida' && f.grupo)
+      assert.equal(escolhidasNasCenas.length, 12)
+
+      // ───── aceitar sugestões (com desfazer) ─────
+      await naPagina(pagina, (loja) => {
+        while (loja.catalogo.desfazer());
+        return true
+      })
+      await pagina.waitForSelector('.dec-principal[data-acao="aceitar"]')
+      await pagina.locator('.dec-principal').click()
+      await pagina.waitForSelector('dialog.folha-aceitar[open] [data-acao="confirmar-aceitar"]')
+      const plano = await naPagina(pagina, (loja, esteira) => {
+        const p = esteira.planoDeAceitar()
+        return { escolhidas: p.escolhidas, rejeitadas: p.rejeitadas }
+      })
+      await pagina.waitForTimeout(700)
+      await captura(pagina, 'aceitar-1440-claro')
+      await pagina.locator('[data-acao="confirmar-aceitar"]').click()
+      const aceitas = await dados()
+      assert.equal(aceitas.filter((f) => f.marca === 'escolhida').length, plano.escolhidas)
+      assert.equal(aceitas.filter((f) => f.marca === 'rejeitada').length, plano.rejeitadas)
+      assert.ok(plano.escolhidas > 0 && plano.rejeitadas > 0, JSON.stringify(plano))
+      // as reservas de cada momento não viram escolhidas (a melhor já é)
+      for (const lista of grupos.values()) assert.ok(lista.map((f) => aceitas.find((x) => x.id === f.id)).filter((f) => f.marca === 'escolhida').length <= 1)
+      assert.match(await pagina.locator('.dec-principal').innerText(), new RegExp(`Tratar as ${plano.escolhidas} escolhidas`))
+      await pagina.keyboard.press('Control+z')
+      const desfeitas = await dados()
+      assert.equal(desfeitas.filter((f) => f.marca).length, 0, 'desfazer volta tudo de uma vez')
+      assert.equal(desfeitas.filter((f) => f.estrelas).length, 0)
+
+      // ───── atalhos na grade: P, X, 1–5 (e a miniatura voa até o balde) ─────
+      const ids = await naPagina(pagina, (loja) => {
+        const ids = loja.catalogo.itens().map((i) => i.foto.id)
+        loja.catalogo.selecionar(ids[0]) // a grade rola até ela
+        return ids
+      })
+      await pagina.locator(`.foto[data-id="${ids[0]}"]`).click()
+      await pagina.evaluate(() => {
+        self.__voos = 0
+        new MutationObserver((l) => l.forEach((m) => m.addedNodes.forEach((n) => n.classList?.contains('voo') && self.__voos++))).observe(document.body, {
+          childList: true,
+        })
+      })
+      await pagina.keyboard.press('p')
+      await pagina.keyboard.press('ArrowRight')
+      await pagina.keyboard.press('x')
+      for (const [k, n] of [
+        [2, 1],
+        [3, 3],
+        [4, 5],
+      ]) {
+        await naPagina(pagina, (loja, esteira, id) => loja.catalogo.selecionar(id), ids[k])
+        await pagina.keyboard.press(String(n))
+      }
+      const marcadas = Object.fromEntries((await dados()).map((f) => [f.id, f]))
+      assert.equal(marcadas[ids[0]].marca, 'escolhida')
+      assert.equal(marcadas[ids[1]].marca, 'rejeitada')
+      assert.deepEqual(
+        [2, 3, 4].map((k) => marcadas[ids[k]].estrelas),
+        [1, 3, 5],
+      )
+      await pagina.waitForTimeout(200)
+      assert.ok((await pagina.evaluate(() => self.__voos)) >= 2, 'P e X fazem a miniatura voar até a pílula')
+      assert.equal(await numero(pagina, '.grade-barra .pilula[data-valor="escolhida"] .pilula-n'), 1)
+
+      // ───── a lupa explica; O liga a sobreposição ─────
+      const borrada = (await dados()).find((f) => !f.grupo && f.motivos.some((m) => m.toLowerCase().includes('fora de foco')))
+      await naPagina(pagina, (loja, esteira, id) => loja.catalogo.selecionar(id), borrada.id)
+      await pagina.keyboard.press('e')
+      await pagina.waitForSelector('.lupa .quadro-moldura img')
+      await pagina.waitForSelector('.lupa-painel .explica-numero')
+      assert.match(await pagina.locator('.lupa-painel .explica-motivos').innerText(), /foco|Única/i)
+      assert.equal(await pagina.locator('.sobre').count(), 0)
+      await pagina.keyboard.press('o')
+      await pagina.waitForSelector('.lupa .sobre .sobre-foco rect')
+      assert.ok((await pagina.locator('.lupa .sobre .sobre-foco rect').count()) > 20)
+      await pagina.waitForTimeout(600)
+      await captura(pagina, 'lupa-sobreposicao-1440-claro')
+      await pagina.keyboard.press('i')
+      assert.equal(await pagina.locator('.lupa-painel').isHidden(), true)
+      await pagina.keyboard.press('i')
+      await pagina.keyboard.press('o')
+      await pagina.keyboard.press('g')
+      await pagina.waitForSelector('.lupa', { state: 'detached' })
+
+      // ───── gravar estrelas: um .zip com um .xmp por RAW decidido ─────
+      // "Aceitar sugestões" de novo (agora no menu ⋯, porque já há escolhida): os RAW ganham estrelas e marca
+      await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
+      await pagina.locator('.dec-barra .menu-item', { hasText: 'Aceitar sugestões' }).click()
+      await pagina.locator('[data-acao="confirmar-aceitar"]').click()
+      await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
+      await pagina.locator('.dec-barra .menu-item', { hasText: 'Gravar estrelas' }).click()
+      await pagina.waitForSelector('dialog.folha-gravar[open] [data-acao="confirmar-gravar"]')
+      assert.equal(await numero(pagina, '.gravar-numero b'), RAWS.length)
+      await pagina.waitForTimeout(700)
+      await captura(pagina, 'gravar-1440-claro')
+      const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.locator('[data-acao="confirmar-gravar"]').click()])
+      const caminho = await baixado.path()
+      const zip = lerZip(new Uint8Array(readFileSync(caminho)))
+      assert.deepEqual(
+        zip.map((z) => z.nome).sort(),
+        RAWS.map((i) => nomeDa(i).replace(/\.ARW$/, '.xmp')),
+      )
+      const finais = Object.fromEntries((await dados()).map((f) => [f.nome, f]))
+      for (const z of zip) {
+        const x = lerSidecarXmp(z.texto)
+        assert.ok(x, `${z.nome} não é XMP`)
+        const f = finais[z.nome.replace(/\.xmp$/, '.ARW')]
+        assert.equal(x.estrelas, f.estrelas, z.nome)
+        assert.equal(x.marca, f.marca ?? null, z.nome)
+      }
+      t.diagnostic(`zip: ${zip.map((z) => z.nome).join(', ')}`)
+
+      // ───── tratar as escolhidas: vai para Estilos com elas selecionadas ─────
+      const escolhidas = (await dados()).filter((f) => f.marca === 'escolhida').length
+      await pagina.locator('.dec-principal[data-acao="tratar"]').click()
+      await pagina.waitForFunction(() => location.hash === '#/estilos')
+      const selecionadas = await naPagina(pagina, (loja) => loja.catalogo.selecionadas().length)
+      assert.equal(selecionadas, escolhidas)
+      limpo(olho)
+    } finally {
+      await contexto.close()
     }
-    await pagina.keyboard.press('ArrowRight')
-    toques++
-    await pagina.waitForSelector('.cenas-fim')
-    t.diagnostic(`cenas: 12 momentos decididos com ${toques} teclas (→ por cena, ↓ e S numa delas)`)
-    await captura(pagina, 'cenas-fim-1440-claro')
-    await pagina.keyboard.press('Escape')
-    await pagina.waitForSelector('.cenas', { state: 'detached' })
-    const escolhidasNasCenas = (await dados()).filter((f) => f.marca === 'escolhida' && f.grupo)
-    assert.equal(escolhidasNasCenas.length, 12)
-
-    // ───── aceitar sugestões (com desfazer) ─────
-    await naPagina(pagina, (loja) => {
-      while (loja.catalogo.desfazer());
-      return true
-    })
-    await pagina.waitForSelector('.dec-principal[data-acao="aceitar"]')
-    await pagina.locator('.dec-principal').click()
-    await pagina.waitForSelector('dialog.folha-aceitar[open] [data-acao="confirmar-aceitar"]')
-    const plano = await naPagina(pagina, (loja, esteira) => {
-      const p = esteira.planoDeAceitar()
-      return { escolhidas: p.escolhidas, rejeitadas: p.rejeitadas }
-    })
-    await captura(pagina, 'aceitar-1440-claro')
-    await pagina.locator('[data-acao="confirmar-aceitar"]').click()
-    const aceitas = await dados()
-    assert.equal(aceitas.filter((f) => f.marca === 'escolhida').length, plano.escolhidas)
-    assert.equal(aceitas.filter((f) => f.marca === 'rejeitada').length, plano.rejeitadas)
-    assert.ok(plano.escolhidas > 0 && plano.rejeitadas > 0, JSON.stringify(plano))
-    // as reservas de cada momento não viram escolhidas (a melhor já é)
-    for (const lista of grupos.values()) assert.ok(lista.map((f) => aceitas.find((x) => x.id === f.id)).filter((f) => f.marca === 'escolhida').length <= 1)
-    assert.match(await pagina.locator('.dec-principal').innerText(), new RegExp(`Tratar as ${plano.escolhidas} escolhidas`))
-    await pagina.keyboard.press('Control+z')
-    const desfeitas = await dados()
-    assert.equal(desfeitas.filter((f) => f.marca).length, 0, 'desfazer volta tudo de uma vez')
-    assert.equal(desfeitas.filter((f) => f.estrelas).length, 0)
-
-    // ───── atalhos na grade: P, X, 1–5 (e a miniatura voa até o balde) ─────
-    const ids = await naPagina(pagina, (loja) => loja.catalogo.itens().map((i) => i.foto.id))
-    await pagina.locator(`.foto[data-id="${ids[0]}"]`).click()
-    await pagina.evaluate(() => {
-      self.__voos = 0
-      new MutationObserver((l) => l.forEach((m) => m.addedNodes.forEach((n) => n.classList?.contains('voo') && self.__voos++))).observe(document.body, { childList: true })
-    })
-    await pagina.keyboard.press('p')
-    await pagina.keyboard.press('ArrowRight')
-    await pagina.keyboard.press('x')
-    for (const [k, n] of [
-      [2, 1],
-      [3, 3],
-      [4, 5],
-    ]) {
-      await pagina.locator(`.foto[data-id="${ids[k]}"]`).click()
-      await pagina.keyboard.press(String(n))
-    }
-    const marcadas = Object.fromEntries((await dados()).map((f) => [f.id, f]))
-    assert.equal(marcadas[ids[0]].marca, 'escolhida')
-    assert.equal(marcadas[ids[1]].marca, 'rejeitada')
-    assert.deepEqual([2, 3, 4].map((k) => marcadas[ids[k]].estrelas), [1, 3, 5])
-    await pagina.waitForTimeout(200)
-    assert.ok((await pagina.evaluate(() => self.__voos)) >= 2, 'P e X fazem a miniatura voar até a pílula')
-    assert.equal(await numero(pagina, '.grade-barra .pilula[data-valor="escolhida"] .pilula-n'), 1)
-
-    // ───── a lupa explica; O liga a sobreposição ─────
-    const borrada = (await dados()).find((f) => f.motivos.some((m) => m.toLowerCase().includes('fora de foco')))
-    await naPagina(pagina, (loja, esteira, id) => loja.catalogo.selecionar(id), borrada.id)
-    await pagina.keyboard.press('e')
-    await pagina.waitForSelector('.lupa .quadro-moldura img')
-    await pagina.waitForSelector('.lupa-painel .explica-numero')
-    assert.match(await pagina.locator('.lupa-painel .explica-motivos').innerText(), /foco|Única/i)
-    assert.equal(await pagina.locator('.sobre').count(), 0)
-    await pagina.keyboard.press('o')
-    await pagina.waitForSelector('.lupa .sobre .sobre-foco rect')
-    assert.ok((await pagina.locator('.lupa .sobre .sobre-foco rect').count()) > 20)
-    await pagina.waitForTimeout(600)
-    await captura(pagina, 'lupa-sobreposicao-1440-claro')
-    await pagina.keyboard.press('i')
-    assert.equal(await pagina.locator('.lupa-painel').isHidden(), true)
-    await pagina.keyboard.press('i')
-    await pagina.keyboard.press('o')
-    await pagina.keyboard.press('g')
-    await pagina.waitForSelector('.lupa', { state: 'detached' })
-
-    // ───── gravar estrelas: um .zip com um .xmp por RAW decidido ─────
-    await pagina.locator('.dec-principal').click() // "Aceitar sugestões": os RAW ganham estrelas e marca
-    await pagina.locator('[data-acao="confirmar-aceitar"]').click()
-    await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
-    await pagina.locator('.dec-barra .menu-item', { hasText: 'Gravar estrelas' }).click()
-    await pagina.waitForSelector('dialog.folha-gravar[open] [data-acao="confirmar-gravar"]')
-    assert.equal(await numero(pagina, '.gravar-numero b'), RAWS.length)
-    await captura(pagina, 'gravar-1440-claro')
-    const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.locator('[data-acao="confirmar-gravar"]').click()])
-    const caminho = await baixado.path()
-    const zip = lerZip(new Uint8Array(readFileSync(caminho)))
-    assert.deepEqual(
-      zip.map((z) => z.nome).sort(),
-      RAWS.map((i) => nomeDa(i).replace(/\.ARW$/, '.xmp')),
-    )
-    const finais = Object.fromEntries((await dados()).map((f) => [f.nome, f]))
-    for (const z of zip) {
-      const x = lerSidecarXmp(z.texto)
-      assert.ok(x, `${z.nome} não é XMP`)
-      const f = finais[z.nome.replace(/\.xmp$/, '.ARW')]
-      assert.equal(x.estrelas, f.estrelas, z.nome)
-      assert.equal(x.marca, f.marca ?? null, z.nome)
-    }
-    t.diagnostic(`zip: ${zip.map((z) => z.nome).join(', ')}`)
-
-    // ───── tratar as escolhidas: vai para Estilos com elas selecionadas ─────
-    const escolhidas = (await dados()).filter((f) => f.marca === 'escolhida').length
-    await pagina.locator('.dec-principal[data-acao="tratar"]').click()
-    await pagina.waitForFunction(() => location.hash === '#/estilos')
-    const selecionadas = await naPagina(pagina, (loja) => loja.catalogo.selecionadas().length)
-    assert.equal(selecionadas, escolhidas)
-    limpo(olho)
-  } finally {
-    await contexto.close()
-  }
-})
+  },
+)
 
 test('escuro a 1440 e celular (390 px) nos dois temas: sem rolar de lado, alvos de 44 px, lupa e cenas', { skip: semChromium, timeout: 900_000 }, async () => {
   // aqui a análise roda só a parte clássica (a escolha da pessoa nos ajustes), para não repetir a camada de rostos
@@ -558,8 +585,9 @@ test('escuro a 1440 e celular (390 px) nos dois temas: sem rolar de lado, alvos 
       await pagina.locator('.lupa-painel .explica-fecha').tap()
       await pagina.locator('.lupa-barra button[aria-label="Voltar à grade"]').tap()
       await pagina.waitForSelector('.lupa', { state: 'detached' })
-      // cenas no celular
-      await pagina.locator('.dec-modo button[role="radio"]').nth(1).tap()
+      // cenas no celular (pelo menu ⋯)
+      await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').tap()
+      await pagina.locator('.dec-barra .menu-item', { hasText: 'Ver por cenas' }).tap()
       await pagina.waitForSelector('.cenas .lupa .quadro-moldura img')
       await pagina.waitForTimeout(700)
       await semRolarDeLado(pagina, 'cenas')

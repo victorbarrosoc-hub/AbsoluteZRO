@@ -51,18 +51,14 @@ export function textoAceito(versao, ...tipos) {
   return { versao, sha: sha256(textoDoRegistro(chave)) }
 }
 
-/** 1 a 3 vetores em base64 → lista de bytea em hex (128 bytes cada), ou null. */
+/** 1 a 3 vetores em base64, conferidos (128 bytes int8 bem-formados): a mesma lista, ou null. */
 export function sondasDe(lista) {
   if (!Array.isArray(lista) || lista.length < 1 || lista.length > 3) return null
-  const saida = []
-  for (const t of lista) {
-    const q = vetorDeTexto(t)
-    if (!q) return null
-    // em hex (o texto de um bytea): vira bytea[] no banco; o vetor não é guardado nem escrito em log
-    saida.push(`\\x${Buffer.from(q.buffer, q.byteOffset, q.byteLength).toString('hex')}`)
-  }
-  return saida
+  return lista.every((t) => vetorDeTexto(t)) ? lista.slice() : null
 }
+
+/** As sondas como bytea[] no banco (decodificadas lá; o vetor não é guardado nem escrito em log). */
+const comoBytea = (tx, s) => tx`(select array_agg(decode(x, 'base64') order by o) from unnest(${s}::text[]) with ordinality as t(x, o))`
 
 const pinDoEvento = async (tx, th) => (await tx`select foto.evento_pin(${th}) as r`)[0]?.r ?? null
 const nomeCookie = (token) => nomeCookiePin(token).replace('foto_pin_', 'foto_epin_')
@@ -75,7 +71,10 @@ const pinOkDe = (req, token, pin) => !pin.pin || provaConfere(lerCookie(req, nom
  */
 export async function pelaPortaDoEvento(req, token, { limites = () => [], consome = () => [], ip = null } = {}, fn) {
   const ipHash = ipHashDoDia(ipDe(req))
-  const doIp = [[ip ? `${ip.prefixo}:${ipHash}` : `evento-ip:${ipHash}`, ip ? ip.regra : REGRAS_EVENTO.ip], [`link-morto:${ipHash}`, REGRAS_EVENTO.mortoIp]]
+  const doIp = [
+    [ip ? `${ip.prefixo}:${ipHash}` : `evento-ip:${ipHash}`, ip ? ip.regra : REGRAS_EVENTO.ip],
+    [`link-morto:${ipHash}`, REGRAS_EVENTO.mortoIp],
+  ]
   if (!ehToken(token)) {
     if (!(await dentroDoLimite(doIp))) return { estado: 'limite' }
     await registrarTentativa(doIp[0][0], `link-morto:${ipHash}`)
@@ -109,7 +108,10 @@ export async function eventoVivo(req, token) {
 /** Confere o PIN. { ok: true, cookie } ou { ok: false, erro: 'morto' | 'limite' | 'pin' }. */
 export async function conferirPinDoEvento(req, token, pinDigitado) {
   const ipHash = ipHashDoDia(ipDe(req))
-  const doIp = [[`evento-ip:${ipHash}`, REGRAS_EVENTO.ip], [`link-morto:${ipHash}`, REGRAS_EVENTO.mortoIp]]
+  const doIp = [
+    [`evento-ip:${ipHash}`, REGRAS_EVENTO.ip],
+    [`link-morto:${ipHash}`, REGRAS_EVENTO.mortoIp],
+  ]
   if (!(await dentroDoLimite(doIp))) return { ok: false, erro: 'limite' }
   if (!ehToken(token)) {
     await registrarTentativa(`evento-ip:${ipHash}`, `link-morto:${ipHash}`)
@@ -123,7 +125,13 @@ export async function conferirPinDoEvento(req, token, pinDigitado) {
   }
   const chaveIp = `evento-pin:${th}:${ipHash}`
   const chaveLink = `evento-pin:${th}`
-  if (!(await dentroDoLimite([[chaveIp, REGRAS_EVENTO.pinIp], [chaveLink, REGRAS_EVENTO.pin]]))) return { ok: false, erro: 'limite' }
+  if (
+    !(await dentroDoLimite([
+      [chaveIp, REGRAS_EVENTO.pinIp],
+      [chaveLink, REGRAS_EVENTO.pin],
+    ]))
+  )
+    return { ok: false, erro: 'limite' }
   if (pin.pin && !pinConfere(String(pinDigitado ?? '').trim(), pin.pin)) {
     await registrarTentativa(chaveIp, chaveLink, `evento-ip:${ipHash}`)
     return { ok: false, erro: 'pin' }
@@ -186,7 +194,7 @@ export async function achar(req, token, vetores, versao) {
       req,
       token,
       { consome: busca },
-      async (tx, th, pinOk) => (await tx`select foto.evento_achar(${th}, ${pinOk}, ${s}::bytea[], ${t.versao}, ${t.sha}) as r`)[0].r,
+      async (tx, th, pinOk) => (await tx`select foto.evento_achar(${th}, ${pinOk}, ${comoBytea(tx, s)}, ${t.versao}, ${t.sha}) as r`)[0].r,
     ),
   )
 }
@@ -202,7 +210,8 @@ export async function cadastrar(req, token, vetores, chave, versao) {
       req,
       token,
       { consome: busca },
-      async (tx, th, pinOk) => (await tx`select foto.evento_cadastrar(${th}, ${pinOk}, ${s}::bytea[], ${sha256(chave)}, ${t.versao}, ${t.sha}) as r`)[0].r,
+      async (tx, th, pinOk) =>
+        (await tx`select foto.evento_cadastrar(${th}, ${pinOk}, ${comoBytea(tx, s)}, ${sha256(chave)}, ${t.versao}, ${t.sha}) as r`)[0].r,
     ),
   )
 }
@@ -245,7 +254,7 @@ export async function remover(req, token, vetores, fotos, versao) {
       token,
       { consome: busca },
       async (tx, th, pinOk) =>
-        (await tx`select foto.evento_remover(${th}, ${pinOk}, ${s}::bytea[], ${fotos == null ? null : fotos}::uuid[], ${t.versao}, ${t.sha}) as r`)[0].r,
+        (await tx`select foto.evento_remover(${th}, ${pinOk}, ${comoBytea(tx, s)}, ${fotos == null ? null : fotos}::uuid[], ${t.versao}, ${t.sha}) as r`)[0].r,
     ),
   )
 }
@@ -290,7 +299,8 @@ export async function limparEventos({ arm = armazenamento() } = {}) {
   if (!arm) return { ok: true, eventos: ids.length, arquivos, semArmazenamento: true }
   const pendentes = await sql`select id from foto.eventos where estado = 'encerrado' and arquivos_apagados_em is null`
   for (const e of pendentes) {
-    const fotos = await sql`select chave, enviada_em, mini_enviada_em from foto.evento_fotos where evento = ${e.id} and (enviada_em is not null or mini_enviada_em is not null)`
+    const fotos =
+      await sql`select chave, enviada_em, mini_enviada_em from foto.evento_fotos where evento = ${e.id} and (enviada_em is not null or mini_enviada_em is not null)`
     arquivos += await apagarArquivos(arm, chavesDe(fotos))
     await sql.begin(async (tx) => {
       await tx`update foto.evento_fotos set enviada_em = null, mini_enviada_em = null where evento = ${e.id}`

@@ -60,7 +60,8 @@ function lerFicha(corpo, { criar }) {
   }
   if (tem('data')) {
     if (corpo.data == null || corpo.data === '') campos.data = null
-    else if (typeof corpo.data !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(corpo.data) || Number.isNaN(new Date(`${corpo.data}T12:00:00Z`).getTime())) return { campo: 'data' }
+    else if (typeof corpo.data !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(corpo.data) || Number.isNaN(new Date(`${corpo.data}T12:00:00Z`).getTime()))
+      return { campo: 'data' }
     else campos.data = corpo.data
   }
   if (tem('modo')) {
@@ -98,7 +99,12 @@ function lerFoto(f, i) {
   if (!f || typeof f !== 'object') return null
   const s = (v, max) => (typeof v === 'string' && v.length >= 1 && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v) ? v : null)
   const arquivo = (a, maximo) =>
-    a && typeof a === 'object' && TIPOS_DE_IMAGEM.includes(a.tipo) && inteiro(a.tamanho, 1, maximo) && typeof a.sha256 === 'string' && /^[0-9a-f]{64}$/.test(a.sha256)
+    a &&
+    typeof a === 'object' &&
+    TIPOS_DE_IMAGEM.includes(a.tipo) &&
+    inteiro(a.tamanho, 1, maximo) &&
+    typeof a.sha256 === 'string' &&
+    /^[0-9a-f]{64}$/.test(a.sha256)
       ? a
       : null
   const fotoId = s(f.fotoId, 120)
@@ -281,7 +287,8 @@ async function tirarFotos(tx, corpo, id, arm) {
   if (!e) return nao
   if (e.estado === 'encerrado') return erro(409, 'encerrado')
   const ids = corpo.ids
-  if (!Array.isArray(ids) || !ids.length || ids.length > MAX_FOTOS_POR_PEDIDO || ids.some((i) => !UUID.test(String(i)))) return erro(400, 'campo', { campo: 'ids' })
+  if (!Array.isArray(ids) || !ids.length || ids.length > MAX_FOTOS_POR_PEDIDO || ids.some((i) => !UUID.test(String(i))))
+    return erro(400, 'campo', { campo: 'ids' })
   const fotos = await tx`select id, chave, enviada_em, mini_enviada_em from foto.evento_fotos where evento = ${e.id} and id = any(${ids}::uuid[])`
   const arquivos = await apagarArquivos(arm, chavesDe(fotos))
   await tx`delete from foto.evento_fotos where evento = ${e.id} and id = any(${fotos.map((f) => f.id)}::uuid[])`
@@ -329,7 +336,8 @@ async function gravarRostos(tx, corpo, id) {
   if (!Array.isArray(corpo.rostos) || corpo.rostos.length > 200) return erro(400, 'campo', { campo: 'rostos' })
   const lista = []
   for (const r of corpo.rostos) {
-    if (!r || typeof r !== 'object' || !vetorDeTexto(r.v) || !(r.largura >= 1 && r.largura <= 8192) || !(r.nota >= 0 && r.nota <= 1)) return erro(400, 'campo', { campo: 'rostos' })
+    if (!r || typeof r !== 'object' || !vetorDeTexto(r.v) || !(r.largura >= 1 && r.largura <= 8192) || !(r.nota >= 0 && r.nota <= 1))
+      return erro(400, 'campo', { campo: 'rostos' })
     lista.push({ v: r.v, largura: Math.round(r.largura), nota: Math.round(r.nota * 100), colado: r.colado === true, perfil: r.perfil === true })
   }
   const [{ r }] = await tx`select foto.evento_rostos_gravar(${f.id}, ${JSON.stringify(lista)}::text::jsonb) as r`
@@ -379,8 +387,11 @@ async function ligacoes(tx, corpo, id) {
   const vivas = new Set(existem.map((p) => p.id))
   await tx`delete from foto.evento_ligacoes where evento = ${e.id} and pessoa = any(${[...vivas]}::uuid[])`
   // quem desistiu no meio do caminho já não está: as ligações dela não entram
-  const validas = linhas.filter((l) => vivas.has(l.pessoa))
-  if (validas.length) await tx`insert into foto.evento_ligacoes ${tx(validas)} on conflict (pessoa, foto) do update set faixa = excluded.faixa`
+  // uma ligação por pessoa e foto (a faixa melhor ganha)
+  const unicas = new Map()
+  for (const l of linhas) if (vivas.has(l.pessoa) && (!unicas.has(`${l.pessoa}|${l.foto}`) || l.faixa === 'eu')) unicas.set(`${l.pessoa}|${l.foto}`, l)
+  const validas = [...unicas.values()]
+  if (validas.length) await tx`insert into foto.evento_ligacoes ${tx(validas)}`
   await tx`update foto.evento_pessoas set processado_em = now() where evento = ${e.id} and id = any(${[...vivas]}::uuid[])`
   return { status: 200, corpo: { ok: true, pessoas: vivas.size, ligacoes: validas.length } }
 }
@@ -472,7 +483,6 @@ const rotas = rota({
   DELETE: comArquivos(({ tx, corpo, id, acao, arm }) => (!id ? null : !acao ? apagar(tx, id, arm) : acao === 'fotos' ? tirarFotos(tx, corpo, id, arm) : null)),
 })
 
-
 export default async function eventos(req, res) {
   try {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && pessoaDe(req)) {
@@ -493,7 +503,8 @@ export default async function eventos(req, res) {
   } catch (e) {
     const regra = e?.code === 'P0001' && /^(evento|fotos|link|ligacao):([a-z_]+)$/.exec(String(e.message))
     if (regra) return json(res, 409, { ok: false, erro: regra[2] })
-    if (e?.code === '23514' || e?.code === '22P02' || e?.code === '22001' || e?.code === '22007' || e?.code === '22008') return json(res, 400, { ok: false, erro: 'campo' })
+    if (e?.code === '23514' || e?.code === '22P02' || e?.code === '22001' || e?.code === '22007' || e?.code === '22008')
+      return json(res, 400, { ok: false, erro: 'campo' })
     if (e?.code === '23503') return json(res, 400, { ok: false, erro: 'campo' })
     throw e
   }

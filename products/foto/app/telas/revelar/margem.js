@@ -7,17 +7,19 @@
 // Foto pronta (JPEG, PNG): o histograma da tela, e uma linha dizendo que o arquivo não tem margem além do que se vê.
 
 import { html, useEffect, useMemo, useRef, useState } from '../../preact.js'
-import { Esqueleto, Numero } from '../../componentes/base.js'
+import { Esqueleto } from '../../componentes/base.js'
 import { normalizar } from '../../../src/motor/ajustes.js'
 import { criarPonto } from '../../../src/motor/ponto.js'
 import { margens, telaDe } from '../../../src/motor/tela.js'
 import { resumoLatitude } from '../../../src/raw/latitude.js'
 import { janelaDaTela } from './logica.js'
 
-const EV_DE = -11
+const EV_DE = -12
 const EV_ATE = 7
 const CINZA = 0.18
 
+const DICA_PASSOU = 'A tela já passa do ponto em que o sensor satura'
+const DICA_ALTAS = 'Altas luzes guardadas acima do que a tela mostra'
 /** As frases que ficam à vista: as das altas (o que estourou e o que dá para recuperar) e a das sombras. */
 const aVista = (f) => /estourar|Altas luzes|sombra|Sombras/.test(f)
 const ev1 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`
@@ -176,26 +178,32 @@ function desenharTela(canvas, { histo, cor }) {
   c.clearRect(0, 0, W, H)
   if (!histo?.tela) return
   const t = histo.tela
-  const n = t.casas
+  // 64 casas, suavizadas: a amostra é pequena e o histograma de 256 casas sai serrilhado
+  const N = 64
+  const juntar = (lista) => {
+    const k = t.casas / N
+    const s = new Float64Array(N)
+    for (let i = 0; i < t.casas; i++) s[Math.min(N - 1, Math.floor(i / k))] += lista[i]
+    return s.map((v, i) => (s[Math.max(0, i - 1)] + 2 * v + s[Math.min(N - 1, i + 1)]) / 4)
+  }
+  const canais = { luma: juntar(t.luma), r: juntar(t.r), g: juntar(t.g), b: juntar(t.b) }
   let maior = 1
-  for (let i = 1; i < n - 1; i++) maior = Math.max(maior, Math.sqrt(t.luma[i]), Math.sqrt(t.r[i]), Math.sqrt(t.g[i]), Math.sqrt(t.b[i]))
+  for (const l of Object.values(canais)) for (let i = 1; i < N - 1; i++) maior = Math.max(maior, Math.sqrt(l[i]))
   const caminho = (lista) => {
     const p = new Path2D()
     p.moveTo(0, H)
-    for (let i = 0; i < n; i++) p.lineTo(((i + 0.5) / n) * W, H - Math.min(1, Math.sqrt(lista[i]) / maior) * (H - 4))
+    for (let i = 0; i < N; i++) p.lineTo(((i + 0.5) / N) * W, H - Math.min(1, Math.sqrt(lista[i]) / maior) * (H - 4))
     p.lineTo(W, H)
     p.closePath()
     return p
   }
   c.fillStyle = cor.texto
-  c.globalAlpha = 0.5
-  c.fill(caminho(t.luma))
-  c.globalAlpha = 0.5
+  c.globalAlpha = 0.45
+  c.fill(caminho(canais.luma))
+  c.globalAlpha = 0.6
   c.lineWidth = 1
-  for (const canal of ['r', 'g', 'b']) {
-    c.strokeStyle = cor.mudo
-    c.stroke(caminho(t[canal]))
-  }
+  c.strokeStyle = cor.mudo
+  for (const canal of ['r', 'g', 'b']) c.stroke(caminho(canais[canal]))
   c.globalAlpha = 1
 }
 
@@ -235,7 +243,8 @@ export function Margem({ latitude, histo, ajustes, carregando, origem }) {
   const acima = raw && m && Number.isFinite(m.acimaDoCinza) ? m.acimaDoCinza - janela.ate : null
   const abaixo = raw && m && Number.isFinite(m.abaixoDoCinza) ? janela.de + m.abaixoDoCinza : null
   const dica = raw
-    ? 'O histograma é o que o arquivo tem, em EV em torno do cinza. A faixa embaixo é o que a tela mostra. A linha cheia é onde o sensor satura; a tracejada, onde começa o ruído.'
+    ? 'O histograma é o que o arquivo tem, em EV em torno do cinza. A faixa embaixo é o que a tela mostra. ' +
+      'A linha cheia é onde o sensor satura; a tracejada, onde começa o ruído.'
     : 'Histograma da tela.'
   return html`<section
     class="margem"
@@ -250,10 +259,10 @@ export function Margem({ latitude, histo, ajustes, carregando, origem }) {
         raw
           ? html`<span class="margem-numeros">
               <span class="margem-num" data-lado="sombras" title="Sombra limpa guardada abaixo do que a tela mostra"
-                ><small>Sombras</small>${abaixo == null ? '—' : html`<${Numero} valor=${Math.max(0, abaixo)} formato=${(v) => `${ev1(-v)} EV`} />`}</span
+                ><small>Sombras</small>${abaixo == null ? '—' : `${ev1(-Math.max(0, abaixo))} EV`}</span
               >
-              <span class="margem-num" data-lado="altas" title=${acima != null && acima < 0 ? 'A tela já passa do ponto em que o sensor satura' : 'Altas luzes guardadas acima do que a tela mostra'}
-                ><small>Altas</small>${acima == null ? '—' : html`<${Numero} valor=${acima} formato=${(v) => `${ev1(v)} EV`} />`}</span
+              <span class="margem-num" data-lado="altas" title=${acima != null && acima < 0 ? DICA_PASSOU : DICA_ALTAS}
+                ><small>Altas</small>${acima == null ? '—' : `${ev1(acima)} EV`}</span
               >
             </span>`
           : null

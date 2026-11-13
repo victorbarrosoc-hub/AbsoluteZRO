@@ -47,8 +47,8 @@ export function ler(b) {
     const t = Number(chave & 7n)
     let v
     if (t === 0) [v, i] = lerVarint(b, i)
-    else if (t === 1) (v = b.subarray(i, i + 8)), (i += 8)
-    else if (t === 5) (v = b.subarray(i, i + 4)), (i += 4)
+    else if (t === 1) ((v = b.subarray(i, i + 8)), (i += 8))
+    else if (t === 5) ((v = b.subarray(i, i + 4)), (i += 4))
     else if (t === 2) {
       let tam
       ;[tam, i] = lerVarint(b, i)

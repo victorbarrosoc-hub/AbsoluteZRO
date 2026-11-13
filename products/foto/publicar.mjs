@@ -11,7 +11,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { baixar, modelos, PASTA_ROSTO, prepararRosto, situacao, situacaoRosto } from './scripts/modelos.mjs'
+import { baixar, modelos, prepararRosto, situacao, situacaoRosto } from './scripts/modelos.mjs'
 import { copiarOrt } from './scripts/vendor.mjs'
 
 const RAIZ = fileURLToPath(new URL('.', import.meta.url))
@@ -23,7 +23,7 @@ export const DO_MEDIAPIPE = ['vision_bundle.mjs', 'vision_bundle.js', 'wasm/visi
  * Monta `saida` (apagada antes). Devolve { mediapipe, modelos: { prontos, faltando } } para quem chama conferir.
  * `baixarModelos: false` usa só o que já está em `modelosEm` (.modelos/). `buscar` é o fetch (os testes trocam).
  */
-export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join(RAIZ, '.modelos'), rostoEm = PASTA_ROSTO, baixarModelos = process.env.FOTO_SEM_BAIXAR !== '1', buscar = fetch, log = () => {} } = {}) {
+export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join(RAIZ, '.modelos'), rostoEm = `${modelosEm}-rosto`, baixarModelos = process.env.FOTO_SEM_BAIXAR !== '1', buscar = fetch, log = () => {} } = {}) {
   if (!existsSync(join(RAIZ, 'vendor/libraw/libraw.wasm'))) throw new Error('vendor/ vazio: rode npm run vendor antes')
   rmSync(saida, { recursive: true, force: true })
   mkdirSync(saida, { recursive: true })
@@ -74,7 +74,7 @@ export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join
   const rosto = situacaoRosto(rostoEm)
   for (const m of rosto) {
     if (m.pronto) cpSync(join(rostoEm, m.arquivo), join(destino, m.arquivo))
-    else log(`aviso: modelo ${m.arquivo} ficou de fora; a busca por rosto aparece como indisponível`)
+    else log(`aviso: modelo ${m.arquivo} ficou de fora; a busca por rosto fica indisponível`)
   }
   // a lista que a tela lê (/modelos.json): o que veio (com sha256 para conferir) e o que faltou
   const ficha = ({ arquivo, camada, uso, tamanho, sha256, licenca, pronto }) => ({ arquivo, camada, uso, tamanho, sha256, licenca, pronto })

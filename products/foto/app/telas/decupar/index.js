@@ -232,7 +232,9 @@ export default function Decupar({ loja, ativa }) {
       data-tecla="O"
       data-dica-lado="cima"
       onClick=${alternarSobre}
-    ><${Icone2} nome="camadas" /></button>
+    >
+      <${Icone2} nome="camadas" />
+    </button>
     <button
       type="button"
       class="liso"
@@ -242,7 +244,9 @@ export default function Decupar({ loja, ativa }) {
       data-tecla="I"
       data-dica-lado="cima"
       onClick=${alternarPainel}
-    ><${Icone} nome="info" /></button>`
+    >
+      <${Icone} nome="info" />
+    </button>`
   const pecasDaLupa = {
     aoTecla: teclaDaLupa,
     camada: (id) => (sobre ? html`<${CamadaDaFoto} loja=${loja} id=${id} ativo=${id === c.foco() ? rosto : -1} />` : null),
@@ -294,6 +298,14 @@ export default function Decupar({ loja, ativa }) {
     { rotulo: 'Gravar estrelas no Lightroom', icone: 'estrela', aoEscolher: () => definirFolha('gravar') },
     n && temNota ? { rotulo: 'Aceitar sugestões', icone: 'ok', aoEscolher: () => definirFolha('aceitar') } : null,
     { divisa: true },
+    // no celular o modo sai da barra e mora aqui
+    celular()
+      ? {
+          rotulo: modo === 'cenas' ? 'Ver a grade' : 'Ver por cenas',
+          icone: modo === 'cenas' ? 'grade' : 'pilha',
+          aoEscolher: () => mudarModo(modo === 'cenas' ? 'grade' : 'cenas'),
+        }
+      : null,
     { rotulo: 'Como decupar', icone: 'filtro', aoEscolher: () => definirFolha('ajustes') },
   ]
 
@@ -355,11 +367,9 @@ export default function Decupar({ loja, ativa }) {
       topo=${52 + ALTURA_DA_BARRA}
       base=${76}
       aoVazio=${() =>
-        html`<${Vazio} icone="filtro" titulo=${['Nada', 'com esse filtro.']}><button
-          type="button"
-          class="vidro"
-          onClick=${() => c.limparFiltro()}
-        >Limpar o filtro</button><//>`}
+        html`<${Vazio} icone="filtro" titulo=${['Nada', 'com esse filtro.']}
+          ><button type="button" class="vidro" onClick=${() => c.limparFiltro()}>Limpar o filtro</button><//
+        >`}
     />
     <${BarraDaDecupagem} loja=${loja} est=${est} esteira=${esteira} modo=${modo} aoModo=${mudarModo} principal=${principal} mais=${mais} />
     <${BarraDaGrade} loja=${loja} tamanho=${tamanho} aoTamanho=${mudarTamanho} extra=${html`<${PilulasDaDecupagem} loja=${loja} />`} />
@@ -367,36 +377,36 @@ export default function Decupar({ loja, ativa }) {
     ${
       lupa && ativa && modo === 'grade'
         ? html`<${Lupa}
-          loja=${loja}
-          aoFechar=${fechar}
-          aoTecla=${(e) => {
-            if (teclaDaLupa(e)) return true
-            if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 's') return (trocarEscolhida(c.foco()), true)
-            return false
-          }}
-          aoDeslizar=${(lado) => {
-            const id = c.foco()
-            marcar(loja, [id], lado === 'cima' ? 'escolhida' : 'rejeitada')
-            if (c.foco() === id) c.mover(1)
-          }}
-          camada=${pecasDaLupa.camada}
-          painel=${pecasDaLupa.painel}
-          painelAberto=${painel}
-          extras=${extras}
-          controle=${controle}
-        />`
+            loja=${loja}
+            aoFechar=${fechar}
+            aoTecla=${(e) => {
+              if (teclaDaLupa(e)) return true
+              if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 's') return (trocarEscolhida(c.foco()), true)
+              return false
+            }}
+            aoDeslizar=${(lado) => {
+              const id = c.foco()
+              marcar(loja, [id], lado === 'cima' ? 'escolhida' : 'rejeitada')
+              if (c.foco() === id) c.mover(1)
+            }}
+            camada=${pecasDaLupa.camada}
+            painel=${pecasDaLupa.painel}
+            painelAberto=${painel}
+            extras=${extras}
+            controle=${controle}
+          />`
         : null
     }
     ${
       modo === 'cenas' && ativa
         ? html`<${Cenas}
-          loja=${loja}
-          lupa=${pecasDaLupa}
-          aoSair=${() => mudarModo('grade')}
-          aoTrocar=${trocarEscolhida}
-          aoAprender=${(a, b) => aprender(a, b)}
-          fechar=${fechamento}
-        />`
+            loja=${loja}
+            lupa=${pecasDaLupa}
+            aoSair=${() => mudarModo('grade')}
+            aoTrocar=${trocarEscolhida}
+            aoAprender=${(a, b) => aprender(a, b)}
+            fechar=${fechamento}
+          />`
         : null
     }
     <${FolhaDeAjustes} aberta=${folha === 'ajustes'} aoFechar=${fecharFolha} est=${est} esteira=${esteira} />

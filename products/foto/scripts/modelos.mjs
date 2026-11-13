@@ -97,14 +97,13 @@ export function modelosDeRosto(arquivo = LISTA) {
 }
 
 /** Situação dos modelos de rosto que vão para o site: { ...modelo, pronto }. */
-export const situacaoRosto = (pasta = PASTA_ROSTO, rosto = modelosDeRosto()) => rosto.modelos.map((m) => ({ ...m, pronto: confere(m, pasta) }))
+export const situacaoRosto = (pasta = PASTA_ROSTO, rosto = modelosDeRosto()) => rosto.modelos.map((m) => ({ ...m, pronto: existsSync(pasta) && confere(m, pasta) }))
 
 /**
  * Baixa os originais que faltam e gera os derivados (scripts/onnx.mjs). Nunca lança por causa da rede: devolve
  * { prontos, faltando }, como `baixar`.
  */
 export async function prepararRosto({ pasta = PASTA_ROSTO, rosto = modelosDeRosto(), buscar = fetch, log = () => {}, prazoMs = 300_000 } = {}) {
-  mkdirSync(pasta, { recursive: true })
   const { RECEITAS } = await import('./onnx.mjs')
   const prontos = []
   const faltando = []
@@ -120,6 +119,7 @@ export async function prepararRosto({ pasta = PASTA_ROSTO, rosto = modelosDeRost
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         const bytes = Buffer.from(await r.arrayBuffer())
         if (bytes.length !== fonte.tamanho || sha256(bytes) !== fonte.sha256) throw new Error(`${fonte.arquivo}: sha256 não confere`)
+        mkdirSync(pasta, { recursive: true })
         writeFileSync(join(pasta, fonte.arquivo), bytes)
         log(`baixado ${fonte.arquivo} (${bytes.length} bytes, sha256 confere)`)
       }

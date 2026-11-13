@@ -61,10 +61,10 @@ export function FolhaDeAjustes({ aberta, aoFechar, est, esteira }) {
     ${
       est.mexido
         ? html`<section class="ajuste">
-          <h3 class="sobretitulo">O que aprendi com você</h3>
-          ${est.aprendizado.map((frase) => html`<p class="ajuste-frase">${frase}</p>`)}
-          <button type="button" class="vidro vidro--pequeno" onClick=${() => esteira.zerarAprendizado()}>Zerar</button>
-        </section>`
+            <h3 class="sobretitulo">O que aprendi com você</h3>
+            ${est.aprendizado.map((frase) => html`<p class="ajuste-frase">${frase}</p>`)}
+            <button type="button" class="vidro vidro--pequeno" onClick=${() => esteira.zerarAprendizado()}>Zerar</button>
+          </section>`
         : null
     }
   <//>`
@@ -84,9 +84,15 @@ export function FolhaDeAceitar({ aberta, aoFechar, esteira, aoAceitou }) {
   }
   return html`<${Folha} aberta=${aberta} aoFechar=${aoFechar} titulo=${['Aceitar', 'as sugestões?']} largura=${480} classe="folha-aceitar">
     <div class="numeros">
-      <div><span class="marca" data-marca="escolhida"><${Icone} nome="ok" /></span><b><${Numero} valor=${p.escolhidas} /></b><span>escolhidas</span></div>
-      <div><span class="marca" data-marca="rejeitada"><${Icone} nome="x" /></span><b><${Numero} valor=${p.rejeitadas} /></b><span>rejeitadas</span></div>
-      <div><span class="numeros-estrela"><${Icone} nome="estrela" cheio /></span><b><${Numero} valor=${p.estrelas} /></b><span>com estrelas</span></div>
+      <div>
+        <span class="marca" data-marca="escolhida"><${Icone} nome="ok" /></span><b><${Numero} valor=${p.escolhidas} /></b><span>escolhidas</span>
+      </div>
+      <div>
+        <span class="marca" data-marca="rejeitada"><${Icone} nome="x" /></span><b><${Numero} valor=${p.rejeitadas} /></b><span>rejeitadas</span>
+      </div>
+      <div>
+        <span class="numeros-estrela"><${Icone} nome="estrela" cheio /></span><b><${Numero} valor=${p.estrelas} /></b><span>com estrelas</span>
+      </div>
     </div>
     <p class="apoio">O que você já marcou fica como está.</p>
     <div class="folha-pe">
@@ -145,25 +151,27 @@ export function FolhaDeGravar({ aberta, aoFechar, loja }) {
   return html`<${Folha} aberta=${aberta} aoFechar=${aoFechar} titulo=${['Gravar', 'as estrelas.']} largura=${500} classe="folha-gravar">
     ${
       p.fotos.length
-        ? html`<div class="gravar-numero"><b><${Numero} valor=${p.fotos.length} /></b><span>.xmp</span></div>
-          <p class="apoio">${destino}. As fotos não mudam.</p>`
+        ? html`<div class="gravar-numero">
+              <b><${Numero} valor=${p.fotos.length} /></b><span>.xmp</span>
+            </div>
+            <p class="apoio">${destino}. As fotos não mudam.</p>`
         : html`<p class="apoio">${p.semDecisao ? 'Marque ou aceite as sugestões primeiro.' : 'Nenhum RAW por aqui.'}</p>`
     }
     ${p.fora ? html`<p class="apoio gravar-fora">${milhar(p.fora)} JPEG ou DNG ficam de fora: guardam a nota dentro do arquivo, que a gente não muda.</p>` : null}
     ${
       comCor
         ? html`<div class="gravar-idioma">
-          <span class="apoio">Cores no Lightroom em</span>
-          <${Segmentado}
-            rotulo="Idioma das cores"
-            valor=${idioma}
-            aoMudar=${definirIdioma}
-            opcoes=${[
-              { valor: 'pt', rotulo: 'Português' },
-              { valor: 'en', rotulo: 'English' },
-            ]}
-          />
-        </div>`
+            <span class="apoio">Cores no Lightroom em</span>
+            <${Segmentado}
+              rotulo="Idioma das cores"
+              valor=${idioma}
+              aoMudar=${definirIdioma}
+              opcoes=${[
+                { valor: 'pt', rotulo: 'Português' },
+                { valor: 'en', rotulo: 'English' },
+              ]}
+            />
+          </div>`
         : null
     }
     <div class="folha-pe">

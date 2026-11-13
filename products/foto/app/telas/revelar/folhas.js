@@ -49,7 +49,10 @@ export function FolhaVersoes({ aberta, versoes, aoGuardar, aoUsar, aoApagar, aoF
   }
   return html`<${Folha} aberta=${aberta} aoFechar=${aoFechar} titulo=${['Versões', 'desta foto.']} largura=${460} classe="folha-versoes">
     <form class="rv-versao-nova" onSubmit=${guardar}>
-      <label class="campo"><span class="so-leitor">Nome da versão</span><input ref=${campo} type="text" maxlength="60" placeholder=${`Versão ${versoes.length + 1}`} autocomplete="off" /></label>
+      <label class="campo">
+        <span class="so-leitor">Nome da versão</span>
+        <input ref=${campo} type="text" maxlength="60" placeholder=${`Versão ${versoes.length + 1}`} autocomplete="off" />
+      </label>
       <button type="submit" class="vidro vidro--tinta">Guardar</button>
     </form>
     ${

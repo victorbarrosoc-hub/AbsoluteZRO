@@ -33,33 +33,36 @@ export function Sobreposicao({ foto, ativo = -1 }) {
   return html`<div class="sobre" aria-hidden="true">
     ${
       celulas.length
-        ? html`<svg class="sobre-foco" viewBox="0 0 1 1" preserveAspectRatio="none" shape-rendering="crispEdges">
-          ${celulas.map((k) =>
-            k.nivel === 'alta'
-              ? html`<rect x=${k.x} y=${k.y} width=${k.largura} height=${k.altura} class="sobre-nitida" />`
-              : html`<rect x=${k.x} y=${k.y} width=${k.largura} height=${k.altura} class="sobre-veu" data-nivel=${k.nivel} />`,
-          )}
-        </svg>`
+        ? html`<div class="sobre-mapa">
+            <svg class="sobre-foco" viewBox="0 0 1 1" preserveAspectRatio="none" shape-rendering="crispEdges">
+              ${celulas.map((k) =>
+                k.nivel === 'alta'
+                  ? html`<rect x=${k.x} y=${k.y} width=${k.largura} height=${k.altura} class="sobre-nitida" />`
+                  : html`<rect x=${k.x} y=${k.y} width=${k.largura} height=${k.altura} class="sobre-veu" data-nivel=${k.nivel} />`,
+              )}
+            </svg>
+          </div>`
         : null
     }
     ${s.rostos.map(
-      (r, i) => html`<div
-        class=${cx('sobre-rosto', i === ativo && 'sobre-rosto--ativo')}
-        data-estado=${r.estado}
-        data-principal=${r.principal ? '' : undefined}
-        style=${`left:${pct(r.x)};top:${pct(r.y)};width:${pct(r.largura)};height:${pct(r.altura)}`}
-      >
-        <span class="sobre-rotulo"><span class="sobre-ponto"></span>${r.rotulo}</span>
-      </div>`,
+      (r, i) =>
+        html`<div
+          class=${cx('sobre-rosto', i === ativo && 'sobre-rosto--ativo')}
+          data-estado=${r.estado}
+          data-principal=${r.principal ? '' : undefined}
+          style=${`left:${pct(r.x)};top:${pct(r.y)};width:${pct(r.largura)};height:${pct(r.altura)}`}
+        >
+          <span class="sobre-rotulo"><span class="sobre-ponto"></span>${r.rotulo}</span>
+        </div>`,
     )}
     ${
       s.tremido
         ? html`<svg class=${cx('sobre-tremido', s.tremido.forte && 'sobre-tremido--forte')} viewBox="0 0 1 1" preserveAspectRatio="none">
-            <line x1=${s.tremido.x1} y1=${s.tremido.y1} x2=${s.tremido.x2} y2=${s.tremido.y2} vector-effect="non-scaling-stroke" />
-          </svg>
-          <span class="sobre-tremido-rotulo" style=${`left:${pct((s.tremido.x1 + s.tremido.x2) / 2)};top:${pct(Math.max(s.tremido.y1, s.tremido.y2))}`}
-            >${s.tremido.rotulo}</span
-          >`
+              <line x1=${s.tremido.x1} y1=${s.tremido.y1} x2=${s.tremido.x2} y2=${s.tremido.y2} vector-effect="non-scaling-stroke" />
+            </svg>
+            <span class="sobre-tremido-rotulo" style=${`left:${pct((s.tremido.x1 + s.tremido.x2) / 2)};top:${pct(Math.max(s.tremido.y1, s.tremido.y2))}`}
+              >${s.tremido.rotulo}</span
+            >`
         : null
     }
   </div>`
@@ -70,11 +73,12 @@ function Barras({ componentes }) {
   if (!itens.length) return null
   return html`<div class="explica-barras">
     ${itens.map(
-      ([k, nome]) => html`<div class="explica-barra" title=${`${nome}: ${componentes[k]} de 100`}>
-        <span>${nome}</span>
-        <span class="explica-trilho"><span style=${`width:${Math.max(2, componentes[k])}%`}></span></span>
-        <b>${componentes[k]}</b>
-      </div>`,
+      ([k, nome]) =>
+        html`<div class="explica-barra" title=${`${nome}: ${componentes[k]} de 100`}>
+          <span>${nome}</span>
+          <span class="explica-trilho"><span style=${`width:${Math.max(2, componentes[k])}%`}></span></span>
+          <b>${componentes[k]}</b>
+        </div>`,
     )}
   </div>`
 }
@@ -86,7 +90,15 @@ export function Explicacao({ foto, sobre, aoSobre, aoFechar }) {
   if (!foto) return null
   const r = resumoDaFoto(foto)
   const raw = exposicaoPeloRaw(foto)
-  const fecha = html`<button type="button" class="liso explica-fecha" aria-label="Recolher" data-dica="Recolher" data-tecla="I" data-dica-lado="esquerda" onClick=${aoFechar}>
+  const fecha = html`<button
+    type="button"
+    class="liso explica-fecha"
+    aria-label="Recolher"
+    data-dica="Recolher"
+    data-tecla="I"
+    data-dica-lado="esquerda"
+    onClick=${aoFechar}
+  >
     <${Icone} nome="x" />
   </button>`
   if (!r.analisada) {
@@ -112,9 +124,9 @@ export function Explicacao({ foto, sobre, aoSobre, aoFechar }) {
     </ul>
     ${
       r.grupo
-        ? html`<div class="explica-linha"><${Icone} nome="pilha" /><span
-            >${r.grupo.frase}${r.grupo.empate.length ? html`<small>${r.grupo.empate.join(' · ')}</small>` : null}</span
-          ></div>`
+        ? html`<div class="explica-linha">
+            <${Icone} nome="pilha" /><span>${r.grupo.frase}${r.grupo.empate.length ? html`<small>${r.grupo.empate.join(' · ')}</small>` : null}</span>
+          </div>`
         : null
     }
     ${raw ? html`<div class="explica-linha" data-tom=${raw.tom}><${Icone} nome="sol" /><span>${raw.texto}</span></div>` : null}
@@ -129,8 +141,20 @@ export function Explicacao({ foto, sobre, aoSobre, aoFechar }) {
     <${Barras} componentes=${foto.magnitude?.componentes} />
     <div class="explica-certeza" data-confianca=${r.confianca?.id}>
       <span>${r.confianca?.texto}</span>
-      ${r.incertezas.length ? html`<ul>${r.incertezas.map((x) => html`<li>${x}</li>`)}</ul>` : null}
-      ${r.dicas.length ? html`<ul class="explica-dicas">${r.dicas.map((x) => html`<li>${x}</li>`)}</ul>` : null}
+      ${
+        r.incertezas.length
+          ? html`<ul>
+              ${r.incertezas.map((x) => html`<li>${x}</li>`)}
+            </ul>`
+          : null
+      }
+      ${
+        r.dicas.length
+          ? html`<ul class="explica-dicas">
+              ${r.dicas.map((x) => html`<li>${x}</li>`)}
+            </ul>`
+          : null
+      }
     </div>
     <button type="button" class="vidro vidro--pequeno explica-sobre" aria-pressed=${sobre ? 'true' : 'false'} onClick=${aoSobre}>
       <${Icone2} nome="camadas" />O que a análise viu<kbd class="tecla">O</kbd>

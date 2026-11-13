@@ -9,6 +9,7 @@ import { cx, html, useEffect, useLayoutEffect, useRef, useState } from '../../pr
 import { Vazio } from '../../componentes/base.js'
 import { Icone } from './icones.js'
 
+const DICAS = { gota: 'Toque num ponto que deveria ser cinza.', regua: 'Trace uma linha que deveria ser reta.' }
 const limitar = (v, a, b) => (v < a ? a : v > b ? b : v)
 
 /** O retângulo do corte, com as quatro alças e a grade dos terços. `corte` em frações do quadro; `razao` = l/a em px. */
@@ -83,7 +84,9 @@ function Corte({ corte, razao, caixa, aoMudar }) {
     >
       <span class="corte-terco" style="left:33.33%"></span><span class="corte-terco" style="left:66.66%"></span>
       <span class="corte-terco corte-terco--h" style="top:33.33%"></span><span class="corte-terco corte-terco--h" style="top:66.66%"></span>
-      ${['ec', 'dc', 'eb', 'db'].map((alca) => html`<span class=${`corte-alca corte-alca--${alca}`} data-alca=${alca} onPointerDown=${(e) => descer(e, alca)}></span>`)}
+      ${['ec', 'dc', 'eb', 'db'].map(
+        (alca) => html`<span class=${`corte-alca corte-alca--${alca}`} data-alca=${alca} onPointerDown=${(e) => descer(e, alca)}></span>`,
+      )}
     </div>
   </div>`
 }
@@ -229,7 +232,9 @@ export function Palco({
     <div class="palco-area">
       ${
         estado.miniatura && (fase === 'abrindo' || fase === 'previa')
-          ? html`<div class="rv-camada"><img class="palco-miniatura" src=${estado.miniatura} alt="" aria-hidden="true" style=${caixa ? posicaoCanvas : undefined} /></div>`
+          ? html`<div class="rv-camada">
+              <img class="palco-miniatura" src=${estado.miniatura} alt="" aria-hidden="true" style=${caixa ? posicaoCanvas : undefined} />
+            </div>`
           : null
       }
       <div class="rv-visor rv-visor--antes" hidden=${!antesJs || !comparar}><canvas ref=${refs.antes} class="palco-canvas" aria-hidden="true"></canvas></div>
@@ -309,8 +314,7 @@ export function Palco({
                 <//></div>`
               : null
       }
-      ${modo === 'gota' && !vazio ? html`<div class="palco-dica-modo" role="status"><${Icone} nome="gota" />Toque num ponto que deveria ser cinza.</div>` : null}
-      ${modo === 'regua' && !vazio ? html`<div class="palco-dica-modo" role="status"><${Icone} nome="regua" />Trace uma linha que deveria ser reta.</div>` : null}
+      ${modo && !vazio && DICAS[modo] ? html`<div class="palco-dica-modo" role="status"><${Icone} nome=${modo} />${DICAS[modo]}</div>` : null}
     </div>
     ${children}
   </div>`

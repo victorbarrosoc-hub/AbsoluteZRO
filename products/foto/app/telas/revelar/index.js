@@ -10,7 +10,7 @@
 //
 // Contrato de tela: export default um componente Preact que recebe { loja, ativa }.
 
-import { cx, html, useEffect, useRef, useState } from '../../preact.js'
+import { cx, html, reduzirMovimento, useEffect, useRef, useState } from '../../preact.js'
 import { Menu, Numero, avisar } from '../../componentes/index.js'
 import { usarCatalogo, usarFoto } from '../../estado.js'
 import { usarAtalhos } from '../../casca/atalhos.js'
@@ -67,6 +67,8 @@ await new Promise((pronto) => {
 
 const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const ev2 = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}`
+const CARREGANDO_CHEIA = 'Carregando a resolução cheia…'
+const SEM_ACELERACAO = 'Sem aceleração de vídeo aqui: a prévia sai do processador.'
 const MOTORES_LENTOS = [TEXTOS.semGpu, TEXTOS.software, TEXTOS.perdeu]
 
 /** A sessão pode ser forçada para a placa ou para o JS (laboratório e testes): localStorage foto_motor. */
@@ -183,7 +185,10 @@ export default function Revelar({ loja, ativa }) {
   const [nivel, definirNivel] = useState(null)
 
   const dpr = globalThis.devicePixelRatio || 1
-  const ajustesDaSessao = (x, m = modo) => (m === 'corte' ? { ...x, geometria: { ...x.geometria, corte: null } } : x)
+  // o modo vale já, sem esperar o desenho (sair do corte manda o corte para a sessão na mesma hora)
+  const modoRef = useRef(null)
+  modoRef.current = modo
+  const ajustesDaSessao = (x, m = modoRef.current) => (m === 'corte' ? { ...x, geometria: { ...x.geometria, corte: null } } : x)
   const quadro = info ? quadroDe(info.cheio, ajustesDaSessao(a)) : null
   const caixa = quadro && visor.W ? enquadrar({ quadro, W: visor.W, H: visor.H, dpr, vista }) : null
   const ampliada = typeof vista.zoom === 'number'
@@ -325,10 +330,12 @@ export default function Revelar({ loja, ativa }) {
   // os ajustes mudaram fora daqui com a foto aberta (outra aba aplicou um estilo, o catálogo desfez)
   useEffect(() => {
     if (!foto || carregado.current !== foto.id) return
-    const texto = JSON.stringify(foto.ajustes ?? null)
+    // o que vale é o catálogo de agora (o desenho pode chegar atrasado, com um passo que já passou)
+    const agora = loja.catalogo.foto(foto.id)
+    const texto = JSON.stringify(agora?.ajustes ?? null)
     if (texto === ultimoSalvo.current) return
     ultimoSalvo.current = texto
-    const x = normalizar(foto.ajustes)
+    const x = normalizar(agora.ajustes)
     if (igual(x, aRef.current)) return
     const hist = empurrar(hRef.current, x, 'Fora daqui')
     hRef.current = hist
@@ -336,11 +343,11 @@ export default function Revelar({ loja, ativa }) {
     definirH(hist)
     aRef.current = x
     definirA(x)
-    void lookDe(foto, x).then((look) => {
+    void lookDe(agora, x).then((look) => {
       lookRef.current = look
       sessao.current?.ajustar(ajustesDaSessao(x), { look })
     })
-    estiloPorId(foto.predefinicao?.id).then((p) => definirEstilo(p ? { p, intensidade: foto.predefinicao.intensidade ?? 100 } : null))
+    estiloPorId(agora.predefinicao?.id).then((p) => definirEstilo(p ? { p, intensidade: agora.predefinicao.intensidade ?? 100 } : null))
   }, [foto?.ajustes])
 
   // ─────────── mudar os ajustes ───────────
@@ -454,7 +461,8 @@ export default function Revelar({ loja, ativa }) {
         const t = s.lerTela()
         const k = Math.min(1, 400 / Math.max(t.largura, t.altura))
         const origem = new OffscreenCanvas(t.largura, t.altura)
-        origem.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(t.dados.buffer, t.dados.byteOffset, t.largura * t.altura * 4), t.largura, t.altura), 0, 0)
+        const rgba = new Uint8ClampedArray(t.dados.buffer, t.dados.byteOffset, t.largura * t.altura * 4)
+        origem.getContext('2d').putImageData(new ImageData(rgba, t.largura, t.altura), 0, 0)
         const mini = new OffscreenCanvas(Math.max(1, Math.round(t.largura * k)), Math.max(1, Math.round(t.altura * k)))
         mini.getContext('2d').drawImage(origem, 0, 0, mini.width, mini.height)
         const blob = await mini.convertToBlob({ type: 'image/jpeg', quality: 0.85 })
@@ -538,10 +546,15 @@ export default function Revelar({ loja, ativa }) {
     const novo = modo === m ? null : m
     if (novo === 'corte' || modo === 'corte') {
       ver({ zoom: 'encaixar', x: 0.5, y: 0.5 })
+      modoRef.current = novo
       sessao.current?.ajustar(ajustesDaSessao(aRef.current, novo), { look: lookRef.current })
       if (modo === 'corte') mudar(aRef.current, { final: true, rotulo: 'Corte' })
     }
-    if (novo === 'corte' && !abertos.has('geometria')) abrirGrupo('geometria', true)
+    if (novo === 'corte') {
+      if (!abertos.has('geometria')) abrirGrupo('geometria', true)
+      const comportamento = reduzirMovimento() ? 'auto' : 'smooth'
+      requestAnimationFrame(() => document.querySelector('.rv-grupo[data-grupo="geometria"]')?.scrollIntoView({ block: 'nearest', behavior: comportamento }))
+    }
     definirModo(novo)
   }
   function mudarCorte(c, final) {
@@ -829,6 +842,7 @@ export default function Revelar({ loja, ativa }) {
   ]
 
   return html`<div class=${cx('tela tela--fixa revelar', !painel && 'revelar--sem-painel', folhaAlta && 'revelar--folha-alta')}>
+    <h2 class="so-leitor">Revelar</h2>
     <${Palco}
       refs=${refs}
       caixa=${vazio ? null : caixa}
@@ -859,39 +873,100 @@ export default function Revelar({ loja, ativa }) {
         vazio
           ? null
           : html`<div class="palco-barra barra-vidro" role="toolbar" aria-label="Vista">
-              <button type="button" class="liso toque" aria-pressed=${comparar != null ? 'true' : 'false'} aria-label="Antes e depois" data-dica="Antes e depois" data-tecla="\\" data-comparar onClick=${alternarComparar}>
+              <button
+                type="button"
+                class="liso toque"
+                aria-pressed=${comparar != null ? 'true' : 'false'}
+                aria-label="Antes e depois"
+                data-dica="Antes e depois"
+                data-tecla="\\"
+                data-comparar
+                onClick=${alternarComparar}
+              >
                 <${Icone} nome="comparar" />
               </button>
-              <button type="button" class="liso toque" aria-pressed=${avisos ? 'true' : 'false'} aria-label="Avisos de corte" data-dica="Avisos de corte" data-tecla="J" data-avisos onClick=${alternarAvisos}>
+              <button
+                type="button"
+                class="liso toque"
+                aria-pressed=${avisos ? 'true' : 'false'}
+                aria-label="Avisos de corte"
+                data-dica="Avisos de corte"
+                data-tecla="J"
+                data-avisos
+                onClick=${alternarAvisos}
+              >
                 <${Icone} nome="avisos" />
               </button>
-              <button type="button" class=${cx('liso toque', ampliada && 'palco-zoom')} aria-pressed=${ampliada ? 'true' : 'false'} aria-label=${ampliada ? 'Encaixar' : 'Ver em 100%'} data-dica=${ampliada ? 'Encaixar' : '100%'} data-tecla="Z" data-zoom onClick=${() => alternarZoom()}>
+              <button
+                type="button"
+                class=${cx('liso toque', ampliada && 'palco-zoom')}
+                aria-pressed=${ampliada ? 'true' : 'false'}
+                aria-label=${ampliada ? 'Encaixar' : 'Ver em 100%'}
+                data-dica=${ampliada ? 'Encaixar' : '100%'}
+                data-tecla="Z"
+                data-zoom
+                onClick=${() => alternarZoom()}
+              >
                 <${Icone} nome=${ampliada ? 'encaixar' : 'zoom'} />${ampliada ? html`<span class="numeros">${zoomTexto}</span>` : null}
               </button>
               <span class="separador palco-barra-sep"></span>
-              <button type="button" class="liso toque so-computador" aria-pressed=${painel ? 'true' : 'false'} aria-label=${painel ? 'Esconder o painel' : 'Mostrar o painel'} data-dica="Painel" onClick=${() => definirPainel(!painel)}>
+              <button
+                type="button"
+                class="liso toque so-computador"
+                aria-pressed=${painel ? 'true' : 'false'}
+                aria-label=${painel ? 'Esconder o painel' : 'Mostrar o painel'}
+                data-dica="Painel"
+                onClick=${() => definirPainel(!painel)}
+              >
                 <${Icone} nome="painel" />
               </button>
             </div>`
       }
       ${
         !vazio && (ocupado || fase === 'abrindo' || fase === 'previa' || (ampliada && nivel === 'reduzida' && motor.modo === 'gpu'))
-          ? html`<div class="palco-estado" role="status"><span class="girando" aria-hidden="true"></span>${ocupado ?? (fase === 'abrindo' || fase === 'previa' ? 'Revelando…' : 'Carregando a resolução cheia…')}</div>`
+          ? html`<div class="palco-estado" role="status">
+              <span class="girando" aria-hidden="true"></span>${ocupado ?? (fase === 'abrindo' || fase === 'previa' ? 'Revelando…' : CARREGANDO_CHEIA)}
+            </div>`
           : null
       }
-      ${avisos && !vazio ? html`<div class="palco-legenda" aria-live="polite">${motor.modo === 'gpu' ? html`<span data-l="perdida">Perdido no arquivo</span><span data-l="recuperavel">Recuperável</span><span data-l="sombra">Abaixo do ruído</span>` : html`<span data-l="perdida">Branco na tela</span><span data-l="sombra">Preto na tela</span>`}</div>` : null}
+      ${
+        avisos && !vazio
+          ? html`<div class="palco-legenda" aria-live="polite">
+              ${
+                motor.modo === 'gpu'
+                  ? html`<span data-l="perdida">Perdido no arquivo</span><span data-l="recuperavel">Recuperável</span
+                      ><span data-l="sombra">Abaixo do ruído</span>`
+                  : html`<span data-l="perdida">Branco na tela</span><span data-l="sombra">Preto na tela</span>`
+              }
+            </div>`
+          : null
+      }
       <${Tira} loja=${loja} ids=${ids} foco=${foco} aoEscolher=${(id) => irPara(id, ids.indexOf(id) < ids.indexOf(foco) ? 'volta' : 'frente')} />
     <//>
 
     <aside class="painel-revelar" aria-label="Ajustes" hidden=${!painel}>
-      <button type="button" class="folha-puxador" aria-label=${folhaAlta ? 'Baixar os ajustes' : 'Subir os ajustes'} aria-expanded=${folhaAlta ? 'true' : 'false'} onClick=${() => definirFolhaAlta(!folhaAlta)}>
+      <button
+        type="button"
+        class="folha-puxador toque"
+        aria-label=${folhaAlta ? 'Baixar os ajustes' : 'Subir os ajustes'}
+        aria-expanded=${folhaAlta ? 'true' : 'false'}
+        onClick=${() => definirFolhaAlta(!folhaAlta)}
+      >
         <span></span>
       </button>
       <div class="painel-rola">
         <${Margem} latitude=${info?.latitude ?? null} histo=${histo} ajustes=${a} carregando=${!info && !vazio} origem=${info?.origem} />
 
         <div class="painel-acoes">
-          <button type="button" class="vidro vidro--tinta vidro--pequeno" data-auto disabled=${!pronta || !!ocupado} onClick=${fazerAuto} data-dica="Auto" data-tecla="⇧A">
+          <button
+            type="button"
+            class="vidro vidro--tinta vidro--pequeno"
+            data-auto
+            disabled=${!pronta || !!ocupado}
+            onClick=${fazerAuto}
+            data-dica="Auto"
+            data-tecla="⇧A"
+          >
             <${Icone} nome="auto" />Auto
           </button>
           <${Menu}
@@ -903,10 +978,28 @@ export default function Revelar({ loja, ativa }) {
             aoAbrir=${() => void estilosRapidos().then(definirRapidos)}
           />
           <span class="painel-acoes-fim">
-            <button type="button" class="liso toque" aria-label="Desfazer" data-dica="Desfazer" data-tecla="⌘Z" disabled=${!podeDesfazer(h)} data-desfazer onClick=${() => andarNoHistorico(desfazer)}>
+            <button
+              type="button"
+              class="liso toque"
+              aria-label="Desfazer"
+              data-dica="Desfazer"
+              data-tecla="⌘Z"
+              disabled=${!podeDesfazer(h)}
+              data-desfazer
+              onClick=${() => andarNoHistorico(desfazer)}
+            >
               <${Icone} nome="desfazer" />
             </button>
-            <button type="button" class="liso toque" aria-label="Refazer" data-dica="Refazer" data-tecla="⌘⇧Z" disabled=${!podeRefazer(h)} data-refazer onClick=${() => andarNoHistorico(refazer)}>
+            <button
+              type="button"
+              class="liso toque"
+              aria-label="Refazer"
+              data-dica="Refazer"
+              data-tecla="⌘⇧Z"
+              disabled=${!podeRefazer(h)}
+              data-refazer
+              onClick=${() => andarNoHistorico(refazer)}
+            >
               <${Icone} nome="refazer" />
             </button>
             <${Menu} rotulo="Mais" gatilho=${html`<${Icone} nome="tres" />`} classeBotao="liso toque" lado="direita" itens=${itensDoMenu} />
@@ -961,9 +1054,13 @@ export default function Revelar({ loja, ativa }) {
         />
       </div>
       <div class="painel-pe">
-        ${motorLento ? html`<span class="rv-nota motor-lento" data-motor-lento title=${motor.renderizador || ''}>Sem aceleração de vídeo nesta máquina: a prévia sai do processador.</span>` : null}
+        ${
+          motorLento
+            ? html`<span class="rv-nota motor-lento" data-motor-lento title=${motor.renderizador || ''}>${SEM_ACELERACAO}</span>`
+            : null
+        }
         <button type="button" class="vidro painel-exportar" data-exportar disabled=${!pronta} onClick=${() => definirFolha('exportar')}>
-          <${Icone} nome="exportar" />Exportar esta foto
+          <${Icone} nome="exportar" /><span>Exportar<span class="so-computador">${' esta foto'}</span></span>
         </button>
       </div>
     </aside>
@@ -992,7 +1089,14 @@ export default function Revelar({ loja, ativa }) {
       aoApagar=${(i) => loja.catalogo.atualizar(foco, { versoes: versoes.filter((_, k) => k !== i) })}
       aoFechar=${() => definirFolha(null)}
     />
-    <${FolhaExportar} aberta=${folha === 'exportar'} aoFechar=${() => definirFolha(null)} sessao=${sessao.current} foto=${foto} ajustes=${a} look=${lookRef.current} />
+    <${FolhaExportar}
+      aberta=${folha === 'exportar'}
+      aoFechar=${() => definirFolha(null)}
+      sessao=${sessao.current}
+      foto=${foto}
+      ajustes=${a}
+      look=${lookRef.current}
+    />
   </div>`
 }
 

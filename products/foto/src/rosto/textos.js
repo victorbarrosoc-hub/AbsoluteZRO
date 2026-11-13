@@ -10,21 +10,26 @@ export const TEXTOS = Object.freeze({
     versao: 'busca-2026-11-13',
     titulo: 'Achar suas fotos pelo rosto?',
     corpo:
-      'Vamos comparar seu rosto com as fotos deste evento. A selfie fica no seu celular. Só uma assinatura do rosto, uma sequência de números, vai para a comparação, e é apagada em seguida.',
+      'Vamos comparar seu rosto com as fotos deste evento. A selfie fica no seu celular. Só uma assinatura do rosto, ' +
+      'uma sequência de números, vai para a comparação, e é apagada em seguida.',
     caixa: 'Tenho 18 anos ou mais, ou sou responsável por quem aparece na selfie.',
   },
   cadastro: {
     versao: 'cadastro-2026-11-13',
     titulo: 'Achar suas fotos pelo rosto?',
     corpo:
-      'A selfie fica no seu celular. Só uma assinatura do rosto, uma sequência de números, fica guardada até {prazo} para o fotógrafo achar você nas fotos deste evento. Quem não pede não é procurado. Você pode desistir quando quiser.',
+      'A selfie fica no seu celular. Só uma assinatura do rosto, uma sequência de números, fica guardada até {prazo} ' +
+      'para o fotógrafo achar você nas fotos deste evento. Quem não pede não é procurado. Você pode desistir quando ' +
+      'quiser.',
     caixa: 'Tenho 18 anos ou mais, ou sou responsável por quem aparece na selfie.',
   },
   remocao: {
     versao: 'remocao-2026-11-13',
     titulo: 'Não quer aparecer na busca?',
     corpo:
-      'Vamos comparar seu rosto com as fotos deste evento e mostrar as parecidas. Você confere e elas saem da busca. A selfie fica no seu celular. A assinatura de quem pediu fica guardada até {prazo}, só para barrar fotos novas.',
+      'Vamos comparar seu rosto com as fotos deste evento e mostrar as parecidas. Você confere e elas saem da busca. ' +
+      'A selfie fica no seu celular. A assinatura de quem pediu fica guardada até {prazo}, só para barrar fotos ' +
+      'novas.',
     caixa: 'Tenho 18 anos ou mais, ou sou responsável por quem aparece na selfie.',
   },
   desistencia: {
@@ -37,14 +42,16 @@ export const TEXTOS = Object.freeze({
     versao: 'ativacao-aberta-2026-11-13',
     titulo: 'Busca aberta',
     corpo:
-      'Achar minhas fotos cria uma assinatura do rosto de cada pessoa nas fotos deste evento. Avise quem participa (cartaz e inscrição). As assinaturas somem em {prazo} ou quando você encerrar o evento.',
+      'Achar minhas fotos cria uma assinatura do rosto de cada pessoa nas fotos deste evento. Avise quem participa ' +
+      '(cartaz e inscrição). As assinaturas somem em {prazo} ou quando você encerrar o evento.',
     caixa: 'Vou avisar quem participa antes de abrir a busca.',
   },
   ativacaoConsentimento: {
     versao: 'ativacao-consentimento-2026-11-13',
     titulo: 'Com consentimento',
     corpo:
-      'Só quem pedir para ser achado entra na busca. Seu computador compara as fotos com a assinatura de quem pediu e envia só a ligação entre a foto e a pessoa. As assinaturas somem em {prazo} ou quando você encerrar o evento.',
+      'Só quem pedir para ser achado entra na busca. Seu computador compara as fotos com a assinatura de quem pediu e ' +
+      'envia só a ligação entre a foto e a pessoa. As assinaturas somem em {prazo} ou quando você encerrar o evento.',
     caixa: '',
   },
   cartazAberta: {
@@ -63,7 +70,9 @@ export const TEXTOS = Object.freeze({
     versao: 'regulamento-2026-11-13',
     titulo: 'Para o regulamento ou a inscrição',
     corpo:
-      'Neste evento haverá fotos. Quem quiser pode achar as próprias fotos pelo rosto, num link do fotógrafo. A selfie não sai do celular de quem busca; uma assinatura do rosto, uma sequência de números, é usada só neste evento e apagada até {prazo}. Quem não quiser aparecer na busca pode pedir pelo mesmo link.',
+      'Neste evento haverá fotos. Quem quiser pode achar as próprias fotos pelo rosto, num link do fotógrafo. A ' +
+      'selfie não sai do celular de quem busca; uma assinatura do rosto, uma sequência de números, é usada só neste ' +
+      'evento e apagada até {prazo}. Quem não quiser aparecer na busca pode pedir pelo mesmo link.',
     caixa: '',
   },
 })

@@ -15,7 +15,16 @@ import { Rodas } from './rodas.js'
 
 const MOLA = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const CORES_DAS_FAIXAS = { vermelho: 0, laranja: 30, amarelo: 55, verde: 120, ciano: 185, azul: 225, roxo: 270, magenta: 315 }
-const NOMES_DAS_FAIXAS = { vermelho: 'Vermelho', laranja: 'Laranja', amarelo: 'Amarelo', verde: 'Verde', ciano: 'Ciano', azul: 'Azul', roxo: 'Roxo', magenta: 'Magenta' }
+const NOMES_DAS_FAIXAS = {
+  vermelho: 'Vermelho',
+  laranja: 'Laranja',
+  amarelo: 'Amarelo',
+  verde: 'Verde',
+  ciano: 'Ciano',
+  azul: 'Azul',
+  roxo: 'Roxo',
+  magenta: 'Magenta',
+}
 
 /** Um controle da lista única, pelo caminho. */
 function Ctl({ caminho, a, mudar, desligado, dica, classe }) {
@@ -64,7 +73,14 @@ function Grupo({ id, rotulo, aberto, aoAlternar, mexido, aoZerar, children, extr
       ${extra}
       ${
         mexido && aoZerar
-          ? html`<button type="button" class="liso rv-grupo-zerar" aria-label=${`Zerar ${rotulo}`} data-dica="Zerar" data-dica-lado="esquerda" onClick=${aoZerar}>
+          ? html`<button
+              type="button"
+              class="liso rv-grupo-zerar"
+              aria-label=${`Zerar ${rotulo}`}
+              data-dica="Zerar"
+              data-dica-lado="esquerda"
+              onClick=${aoZerar}
+            >
               <${Icone} nome="zerar" />
             </button>`
           : null
@@ -72,6 +88,13 @@ function Grupo({ id, rotulo, aberto, aoAlternar, mexido, aoZerar, children, extr
     </div>
     ${aberto ? html`<div class="rv-grupo-corpo" id=${`grupo-${id}`} ref=${corpo}>${children}</div>` : null}
   </section>`
+}
+
+/** Os controles de um grupo, na ordem da lista única. */
+function Lista({ grupo, a, mudar }) {
+  return html`<div class="rv-controles">
+    ${controlesDoGrupo(grupo).map((c) => html`<${Ctl} key=${c.caminho} caminho=${c.caminho} a=${a} mudar=${mudar} />`)}
+  </div>`
 }
 
 function Luz({ a, mudar }) {
@@ -189,7 +212,14 @@ function Misturador({ a, mudar, aba, aoAba }) {
     ${FAIXAS.map(
       (f, i) => html`<div class="rv-faixa" key=${`${qual}-${f}`} style=${`--matiz:${CORES_DAS_FAIXAS[f]}`}>
         <span class="rv-faixa-ponto" aria-hidden="true"></span>
-        <${Ajuste} caminho=${`${pb ? 'pb.mistura' : `misturador.${aba}`}.${i}`} rotulo=${NOMES_DAS_FAIXAS[f]} valor=${lista[i]} min=${-100} max=${100} aoMudar=${(v, o) => gravar(i, v, o)} />
+        <${Ajuste}
+          caminho=${`${pb ? 'pb.mistura' : `misturador.${aba}`}.${i}`}
+          rotulo=${NOMES_DAS_FAIXAS[f]}
+          valor=${lista[i]}
+          min=${-100}
+          max=${100}
+          aoMudar=${(v, o) => gravar(i, v, o)}
+        />
       </div>`,
     )}
   </div>`
@@ -216,19 +246,56 @@ function Geometria({ a, mudar, corte, aoCorte, proporcao, aoProporcao, regua, ao
   }
   return html`<div class="rv-controles">
     <div class="linha-botoes">
-      <button type="button" class="vidro vidro--pequeno" aria-pressed=${corte ? 'true' : 'false'} data-corte onClick=${aoCorte} data-dica="Cortar" data-tecla="R">
+      <button
+        type="button"
+        class="vidro vidro--pequeno"
+        aria-pressed=${corte ? 'true' : 'false'}
+        data-corte
+        onClick=${aoCorte}
+        data-dica="Cortar"
+        data-tecla="R"
+      >
         <${Icone} nome="cortar" />${corte ? 'Pronto' : 'Cortar'}
       </button>
-      <button type="button" class="vidro vidro--pequeno vidro--icone" aria-pressed=${regua ? 'true' : 'false'} aria-label="Régua: trace uma linha que deveria ser reta" data-dica="Régua" data-regua onClick=${aoRegua}>
+      <button
+        type="button"
+        class="vidro vidro--pequeno vidro--icone"
+        aria-pressed=${regua ? 'true' : 'false'}
+        aria-label="Régua: trace uma linha que deveria ser reta"
+        data-dica="Régua"
+        data-regua
+        onClick=${aoRegua}
+      >
         <${Icone} nome="regua" />
       </button>
-      <button type="button" class="vidro vidro--pequeno vidro--icone" aria-label="Girar 90° para a esquerda" data-dica="Girar" data-girar onClick=${() => mudarG({ giro: (g.giro + 270) % 360, corte: null }, 'Girar')}>
+      <button
+        type="button"
+        class="vidro vidro--pequeno vidro--icone"
+        aria-label="Girar 90° para a esquerda"
+        data-dica="Girar"
+        data-girar
+        onClick=${() => mudarG({ giro: (g.giro + 270) % 360, corte: null }, 'Girar')}
+      >
         <${Icone} nome="girar" />
       </button>
-      <button type="button" class="vidro vidro--pequeno vidro--icone" aria-label="Espelhar na horizontal" aria-pressed=${g.espelhoH ? 'true' : 'false'} data-dica="Espelhar" onClick=${() => mudarG({ espelhoH: !g.espelhoH }, 'Espelhar')}>
+      <button
+        type="button"
+        class="vidro vidro--pequeno vidro--icone"
+        aria-label="Espelhar na horizontal"
+        aria-pressed=${g.espelhoH ? 'true' : 'false'}
+        data-dica="Espelhar"
+        onClick=${() => mudarG({ espelhoH: !g.espelhoH }, 'Espelhar')}
+      >
         <${Icone} nome="espelhar" />
       </button>
-      <button type="button" class="vidro vidro--pequeno vidro--icone" aria-label="Espelhar na vertical" aria-pressed=${g.espelhoV ? 'true' : 'false'} data-dica="Virar" onClick=${() => mudarG({ espelhoV: !g.espelhoV }, 'Virar')}>
+      <button
+        type="button"
+        class="vidro vidro--pequeno vidro--icone"
+        aria-label="Espelhar na vertical"
+        aria-pressed=${g.espelhoV ? 'true' : 'false'}
+        data-dica="Virar"
+        onClick=${() => mudarG({ espelhoV: !g.espelhoV }, 'Virar')}
+      >
         <${Icone} nome="virar" />
       </button>
     </div>
@@ -267,7 +334,17 @@ function Tela({ a, mudar, latitude }) {
       </div>
       ${
         manual
-          ? html`<${Ajuste} caminho=${`tela.${chave}`} rotulo="Margem" valor=${a.tela[chave]} min=${0.5} max=${16} passo=${0.1} neutro=${Math.round(m[lado] * 10) / 10} unidade="EV" aoMudar=${gravar} />`
+          ? html`<${Ajuste}
+              caminho=${`tela.${chave}`}
+              rotulo="Margem"
+              valor=${a.tela[chave]}
+              min=${0.5}
+              max=${16}
+              passo=${0.1}
+              neutro=${Math.round(m[lado] * 10) / 10}
+              unidade="EV"
+              aoMudar=${gravar}
+            />`
           : null
       }
     </div>`
@@ -301,7 +378,7 @@ export function Grupos({ a, mudar, abertos, aoAbrir, aoZerar, ferramentas, aba, 
     ${g(
       'presenca',
       'Presença',
-      () => html`<div class="rv-controles">${controlesDoGrupo('presenca').map((c) => html`<${Ctl} key=${c.caminho} caminho=${c.caminho} a=${a} mudar=${mudar} />`)}</div>`,
+      () => html`<${Lista} grupo="presenca" a=${a} mudar=${mudar} />`,
     )}
     ${g('curva', 'Curva', () => html`<${Curva} ajustes=${a} aoMudar=${mudar} />`)}
     ${g('misturador', 'Misturador', () => html`<${Misturador} a=${a} mudar=${mudar} aba=${aba} aoAba=${aoAba} />`)}
@@ -310,7 +387,7 @@ export function Grupos({ a, mudar, abertos, aoAbrir, aoZerar, ferramentas, aba, 
     ${g(
       'efeitos',
       'Efeitos',
-      () => html`<div class="rv-controles">${controlesDoGrupo('efeitos').map((c) => html`<${Ctl} key=${c.caminho} caminho=${c.caminho} a=${a} mudar=${mudar} />`)}</div>`,
+      () => html`<${Lista} grupo="efeitos" a=${a} mudar=${mudar} />`,
     )}
     ${g(
       'geometria',
