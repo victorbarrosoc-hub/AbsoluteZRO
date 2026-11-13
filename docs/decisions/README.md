@@ -44,3 +44,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0041](0041-login-google-pelo-navegador.md)      | Entrar com o Google pelo navegador do sistema (apps de computador) | aceita                |
 | [0042](0042-radio-do-set.md)                     | Rádio do set: voz por botão para a equipe (nome a definir)         | proposta              |
 | [0043](0043-espelho-dos-instaladores.md)         | Espelho dos instaladores em São Paulo (Supabase Storage)           | aceita                |
+| [0044](0044-zera-espaco-em-disco.md)             | ZERA: espaço em disco, mais rápido e seguro que o OmniDiskSweeper  | proposta              |

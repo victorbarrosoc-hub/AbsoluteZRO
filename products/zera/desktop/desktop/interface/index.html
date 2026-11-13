@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZERA</title>
+    <link rel="stylesheet" href="app.css" />
+    <script src="icones.js" defer></script>
+    <script src="formato.js" defer></script>
+    <script src="anel.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <!-- barra de título (no Mac, os três botões ficam à esquerda; a barra inteira arrasta a janela) -->
+    <header class="barra" id="barra">
+      <div class="barra-esq">
+        <nav class="trilha" id="trilha" aria-label="Caminho"></nav>
+      </div>
+      <div class="segmento" id="abas" role="tablist" hidden>
+        <button role="tab" data-aba="mapa" aria-selected="true">Mapa</button>
+        <button role="tab" data-aba="limpar" aria-selected="false">Limpar</button>
+        <span class="segmento-marca" aria-hidden="true"></span>
+      </div>
+      <div class="barra-dir">
+        <span class="frescor" id="frescor" hidden></span>
+        <button class="icone-btn" id="btn-revarrer" title="Varrer de novo (⌘R)" hidden></button>
+        <button class="icone-btn" id="btn-tema" title="Tema claro ou escuro"></button>
+      </div>
+    </header>
+
+    <main>
+      <!-- 1. Discos -->
+      <section class="tela" id="tela-inicio" hidden>
+        <div class="inicio">
+          <p class="sobre"><svg class="assinatura" viewBox="0 0 100 100" aria-hidden="true"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg>ZERA</p>
+          <h1><span class="fino">Espaço livre,</span> sem medo.</h1>
+          <p class="apoio">Veja o que pesa e libere com segurança.</p>
+          <div class="discos" id="discos"></div>
+          <button class="vidro vidro--pequeno" id="btn-pasta">Escolher pasta…</button>
+        </div>
+      </section>
+
+      <!-- 2. Varrendo -->
+      <section class="tela" id="tela-varrendo" hidden>
+        <div class="varrendo">
+          <p class="sobre" id="varrendo-nome"></p>
+          <div class="progresso-anel">
+            <svg viewBox="0 0 400 400" id="progresso-svg" aria-hidden="true">
+              <circle class="trilho" cx="200" cy="200" r="170" />
+              <g id="progresso-fatias" transform="rotate(-90 200 200)"></g>
+            </svg>
+            <div class="progresso-centro">
+              <strong id="progresso-bytes">0 GB</strong>
+              <span id="progresso-de"></span>
+              <small id="progresso-arquivos"></small>
+            </div>
+          </div>
+          <p class="atual" id="progresso-atual" dir="ltr"></p>
+          <button class="vidro vidro--pequeno" id="btn-parar">Parar</button>
+        </div>
+      </section>
+
+      <!-- 3. Mapa -->
+      <section class="tela tela-mapa" id="tela-mapa" hidden>
+        <div class="aviso-acesso" id="aviso-acesso" hidden>
+          <span id="aviso-acesso-texto"></span>
+          <button class="vidro vidro--mini" id="btn-acesso">Dar acesso</button>
+          <button class="icone-btn" id="btn-acesso-fechar" title="Fechar"></button>
+        </div>
+        <div class="mapa">
+          <div class="palco">
+            <svg class="anel" id="anel" viewBox="0 0 600 600" role="img" aria-label="Mapa do disco"></svg>
+            <button class="centro" id="centro" title="Voltar uma pasta">
+              <span class="centro-nome" id="centro-nome"></span>
+              <strong class="centro-bytes" id="centro-bytes"></strong>
+              <small class="centro-mais" id="centro-mais"></small>
+            </button>
+          </div>
+          <aside class="lista-painel">
+            <div class="lista-topo">
+              <h2 id="lista-titulo"></h2>
+              <p id="lista-sub"></p>
+              <div class="tipos" id="tipos"></div>
+            </div>
+            <ol class="lista" id="lista" tabindex="0" aria-label="Itens desta pasta"></ol>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 4. Limpar -->
+      <section class="tela tela-limpar" id="tela-limpar" hidden>
+        <div class="limpar">
+          <h1 class="limpar-titulo" id="limpar-titulo"></h1>
+          <p class="apoio" id="limpar-apoio"></p>
+          <div class="cartoes" id="cartoes"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- cesta: o que a pessoa separou para tirar -->
+    <div class="cesta" id="cesta" hidden>
+      <span class="cesta-icone" id="cesta-icone"></span>
+      <span class="cesta-texto"><strong id="cesta-total"></strong> <span id="cesta-qtd"></span></span>
+      <button class="vidro vidro--tinta vidro--mini" id="btn-revisar">Revisar</button>
+    </div>
+
+    <!-- folha (detalhe de um grupo, prévia, resultado) -->
+    <dialog class="folha" id="folha">
+      <div class="folha-corpo" id="folha-corpo"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

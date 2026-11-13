@@ -1,0 +1,84 @@
+# Empacotamento do ZERA (npm run dist:mac / dist:win, ou .github/workflows/zera-desktop.yml).
+# O motor (Rust) vai fora do app.asar, em resources/motor/: o CI compila um por arquitetura em motor-bin/<arch>/ e, no
+# Mac universal, o electron-builder junta os dois (lipo).
+appId: com.absolutezro.zera
+productName: ZERA
+copyright: Copyright © 2026 Absolute ZRO
+artifactName: ZERA-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: dist
+  buildResources: build
+
+asar: true
+files:
+  - package.json
+  - desktop/**/*
+  - '!**/*.map'
+  - '!**/*.md'
+
+extraResources:
+  - from: motor-bin/${arch}
+    to: motor
+    filter: ['zera-motor', 'zera-motor.exe']
+
+# Fusíveis do Electron (os mesmos dos outros apps do ecossistema): o executável não vira um Node com as permissões do
+# app, NODE_OPTIONS e --inspect não entram, e só o app.asar conferido pelo hash é carregado.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+  category: public.app-category.utilities
+  darkModeSupport: true
+  minimumSystemVersion: '11.0'
+  # Sem certificado da Apple por enquanto: assinatura ad-hoc (na primeira vez o macOS pede "Abrir Mesmo Assim").
+  identity: '-'
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+
+dmg:
+  title: ZERA
+  artifactName: ZERA-${version}-mac-universal.${ext}
+  iconSize: 96
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 190
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ZERA
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  uninstallDisplayName: ZERA
+  installerLanguages: [pt_BR]
+  language: '1046'
+  artifactName: ZERA-${version}-windows-setup.${ext}
+
+linux:
+  target: [dir]
+  category: Utility

@@ -1,0 +1,139 @@
+# ZERA (products/zera): motor em Rust + app para computador (Electron).
+# Não lançado (CLAUDE.md da raiz): este workflow não publica nada. Em pull request e na main, só os testes em Ubuntu
+# (motor, regras, interface no Chromium e o teste de fumaça do Electron). Os instaladores (.dmg universal e .exe) saem
+# só pelo botão "Run workflow", como artefato do Actions por 5 dias, para o titular testar. Release, central e espelho
+# só depois que o titular lançar (migração nova abrindo o gate).
+name: ZERA · app para computador
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/zera/**'
+      - '!products/zera/**/*.md'
+      - '.github/workflows/zera-desktop.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'products/zera/**'
+      - '.github/workflows/zera-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zera-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    name: Testes (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/zera/desktop/package-lock.json
+      # motor: testes de unidade e o binário que os testes do app usam
+      - name: Motor (cargo test e build)
+        working-directory: products/zera/motor
+        run: |
+          cargo test --locked
+          cargo build --release --locked
+      - name: Dependências do app
+        working-directory: products/zera/desktop
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      # regras, ponte com o motor de verdade e a interface no Chromium
+      - run: npm test
+        working-directory: products/zera/desktop
+      - name: Teste de fumaça (Electron no Xvfb)
+        working-directory: products/zera/desktop
+        run: |
+          export ZERA_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          xvfb-run -a npx electron . --smoke --no-sandbox
+          cat "$ZERA_SMOKE_SAIDA"
+          grep -q '^SMOKE OK$' "$ZERA_SMOKE_SAIDA"
+
+  app:
+    name: Instalador (${{ matrix.label }})
+    if: github.event_name == 'workflow_dispatch'
+    needs: testes
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: Mac
+            plataforma: mac
+          - os: windows-latest
+            label: Windows
+            plataforma: windows
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/zera/desktop/package-lock.json
+      # um motor por arquitetura em desktop/motor-bin/<arch>/ (o electron-builder põe em resources/motor; no Mac
+      # universal, junta os dois com lipo)
+      - name: Motor (Mac, x64 e arm64)
+        if: matrix.plataforma == 'mac'
+        working-directory: products/zera/motor
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          for par in x86_64-apple-darwin:x64 aarch64-apple-darwin:arm64; do
+            alvo="${par%%:*}"; arch="${par##*:}"
+            cargo build --release --locked --target "$alvo"
+            mkdir -p "../desktop/motor-bin/$arch"
+            cp "target/$alvo/release/zera-motor" "../desktop/motor-bin/$arch/"
+          done
+      - name: Motor (Windows, x64 e arm64)
+        if: matrix.plataforma == 'windows'
+        working-directory: products/zera/motor
+        run: |
+          rustup target add x86_64-pc-windows-msvc aarch64-pc-windows-msvc
+          for par in x86_64-pc-windows-msvc:x64 aarch64-pc-windows-msvc:arm64; do
+            alvo="${par%%:*}"; arch="${par##*:}"
+            cargo build --release --locked --target "$alvo"
+            mkdir -p "../desktop/motor-bin/$arch"
+            cp "target/$alvo/release/zera-motor.exe" "../desktop/motor-bin/$arch/"
+          done
+      - run: npm ci
+        working-directory: products/zera/desktop
+      - run: npm run dist:${{ matrix.plataforma == 'mac' && 'mac' || 'win' }}
+        working-directory: products/zera/desktop
+      - name: Teste de fumaça do app empacotado (Mac)
+        if: matrix.plataforma == 'mac'
+        working-directory: products/zera/desktop
+        timeout-minutes: 5
+        run: |
+          lipo -archs "dist/mac-universal/ZERA.app/Contents/Resources/motor/zera-motor"
+          export ZERA_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          "dist/mac-universal/ZERA.app/Contents/MacOS/ZERA" --smoke
+          grep -q '^SMOKE OK$' "$ZERA_SMOKE_SAIDA"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zera-${{ matrix.plataforma }}
+          path: |
+            products/zera/desktop/dist/ZERA-*-mac-universal.dmg
+            products/zera/desktop/dist/ZERA-*-windows-setup.exe
+          retention-days: 5
+          if-no-files-found: error

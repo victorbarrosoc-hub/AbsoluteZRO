@@ -1,6 +1,23 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 13/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## ZERA: espaço em disco (13/11/2026, ramo `claude/clever-sagan-ps04nb`, ADR 0044)
+
+Pedido do titular: estudar o OmniDiskSweeper e os parecidos e fazer melhor, mais rápido, no estilo do ecossistema.
+Não lançado: fora do catálogo, do gate e da central.
+
+- ✅ Motor em Rust (`products/zera/motor`): varredura paralela (~3× o `du` com 4 núcleos), árvore em memória, varredura
+  guardada, revarrer só o trecho que mudou, grupos do que dá para tirar (caches de edição de vídeo, caches de apps,
+  dependências, proxies, backups de iPhone, instaladores, downloads parados, grandes e esquecidos, Lixo) e repetidos
+  conferidos byte a byte.
+- ✅ App para computador (`products/zera/desktop`, Electron): discos, varredura com o anel se colorindo, mapa em anéis
+  com lista, Limpar em cartões, cesta, prévia conferida pelo app e Lixo do sistema (nunca apaga de vez); claro e
+  escuro, teclado, "reduzir movimento".
+- ✅ Workflow `zera-desktop.yml`: testes em Ubuntu; instaladores só pelo "Run workflow", como artefato (nada publicado).
+- ⬜ Titular: testar no Mac (o `.dmg` sai pelo "Run workflow") e dar "Acesso total ao disco".
+- ⛔ Lançar (titular): ícone, migração do catálogo e do gate, central, `zera.absolutezro.com`, assinatura Apple/Microsoft.
+- ⬜ Depois: leitura da MFT no Windows e `getattrlistbulk` no Mac; detectar clones do APFS.
 
 ## Central 1.4.7: menu Administração no app (09/11/2026, ramo `claude/desktop-admin-campus`)
 
