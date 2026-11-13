@@ -4933,3 +4933,10 @@ SOBEDESCE de computador, que disparam os instaladores).
 - `test/ajustar.test.js` no Chromium: a ficha técnica aparece antes de converter; "Ajustar" abre "Ajustar antes de
   converter", 24 fps exatos + "Usar neste arquivo" marca a saída como "Ajustado", nada vai para Meus presets, e o
   arquivo convertido sai a 24/1 (ffprobe).
+
+## Relay: presets do HandBrake (13/11/2026)
+
+- `test/handbrake.test.js`: RF 18/22, 23,976 exato, tamanho original e AAC 320 viram o preset do Relay; bitrate médio,
+  HEVC, teto de 1080p, cadência no máximo, giro/espelho, filtros do x264 e pastas; MKV, 10 bits, legendas, capítulos,
+  cadência fora da lista e 5.1 voltam em "Ficou de fora". No Chromium, "Trazer" com o `.json` do HandBrake lista os
+  dois presets e mostra o aviso (que antes sumia ao redesenhar a lista). `npm test` do Relay: 139/139.

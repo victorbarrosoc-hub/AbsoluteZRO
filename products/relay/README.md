@@ -36,7 +36,9 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
     volume normalizado (LUFS). No navegador a ficha diz que ficaram de fora;
   - cor da Revela (desligada até a Revela abrir, `app/recursos.js`): log da câmera → Rec.709 e um look `.cube`.
   Fica no aparelho e vai para outro aparelho ou para a equipe como `.relay.json` (Levar / Trazer). Fichas antigas
-  abrem iguais.
+  abrem iguais. "Trazer" também lê o `.json` que o HandBrake exporta (`src/handbrake.js`): codificador, RF ou bitrate,
+  cadência, teto de tamanho, recorte, giro, áudio e as opções do x264 viram a ficha; o que o Relay não faz
+  (capítulos, legendas, filtros que ele não tem, MKV) aparece em "Ficou de fora".
 - **Painel** (`/painel`, com a conta Absolute ZRO; quem entra cai nele): o que foi convertido neste aparelho (nome,
   destino, tamanho, quando, "converter de novo"), três números (conversões, duração, o que ficou a menos no disco),
   **projetos** (nome e destinos de sempre: "Converter" abre o conversor com eles marcados e as saídas entram no

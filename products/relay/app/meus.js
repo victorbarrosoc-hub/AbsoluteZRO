@@ -8,6 +8,7 @@ import { PRESETS, preset as presetDoRelay } from '../src/presets.js'
 import { LIMITES, OPCOES, especificacaoDe, exportar, importar, presetPersonalizado } from '../src/personalizado.js'
 import { fichaTecnica, fmtTempo, planejar, tamanhoLegivel } from '../src/plano.js'
 import { RECURSOS } from './recursos.js'
+import { doHandBrake, ehHandBrake } from '../src/handbrake.js'
 
 const CHAVE = 'relay-meus-presets'
 
@@ -45,7 +46,13 @@ export function baixarArquivo(lista) {
 
 export async function lerArquivo(arquivo) {
   if (arquivo.size > 1e6) throw new Error('Arquivo grande demais para uma lista de presets.')
-  return importar(JSON.parse(await arquivo.text()))
+  const dados = JSON.parse(await arquivo.text())
+  // presets do HandBrake (Presets → Exportar): viram fichas; o que o Relay não faz volta em `deixados`
+  if (ehHandBrake(dados)) {
+    const { fichas, deixados } = doHandBrake(dados)
+    return { ...importar(fichas), deixados }
+  }
+  return importar(dados)
 }
 
 // ─────────── editor ───────────

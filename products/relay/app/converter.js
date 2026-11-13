@@ -133,18 +133,19 @@ function desenharPresets() {
     arquivo.value = ''
     if (!f) return
     try {
-      const { presets, recusados } = await Meus.lerArquivo(f)
+      const { presets, recusados, deixados } = await Meus.lerArquivo(f)
       const antes = meus
       for (const p of presets) meus = [...meus.filter((x) => x.id !== p.id), p]
       Meus.guardar(meus)
       contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
-      avisar(`${presets.length} ${presets.length === 1 ? 'preset trazido' : 'presets trazidos'}${recusados ? `, ${recusados} recusado${recusados > 1 ? 's' : ''}` : ''}.`)
-      desenharPresets()
+      const fora = deixados ? [...new Set(Object.values(deixados).flat())] : []
+      desenharPresets() // antes do aviso: redesenhar recria o lugar dele
+      avisar(`${presets.length} ${presets.length === 1 ? 'preset trazido' : 'presets trazidos'}${recusados ? `, ${recusados} recusado${recusados > 1 ? 's' : ''}` : ''}.${fora.length ? ` Ficou de fora: ${fora.join(', ')}.` : ''}`)
     } catch (e) {
       avisar(e.message)
     }
   }
-  const trazer = el('label', { className: 'vidro', title: 'Trazer presets de um arquivo .relay.json' }, arquivo, icone('soltar'), 'Trazer')
+  const trazer = el('label', { className: 'vidro', title: 'Trazer presets de um arquivo .relay.json ou do HandBrake' }, arquivo, icone('soltar'), 'Trazer')
   const levar = el('button', { type: 'button', className: 'vidro', title: 'Baixar seus presets como .relay.json', disabled: !meus.length }, icone('baixar'), 'Levar')
   levar.onclick = () => Meus.baixarArquivo(meus)
   $('presets').replaceChildren(...meus.map(cartaoPreset), ...daEquipe.map(cartaoPreset), criar, el('div', { className: 'meus-acoes' }, trazer, levar, el('span', { className: 'apoio', id: 'aviso-meus', role: 'status' })))

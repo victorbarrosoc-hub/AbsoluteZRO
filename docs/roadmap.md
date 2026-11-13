@@ -1443,6 +1443,8 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Ajustar antes de converter (pedido do titular, 02/11/2026): cada saída mostra a ficha técnica aberta antes de
   converter e "Ajustar" abre o editor completo com os números do arquivo; "Usar neste arquivo" muda só aquela
   conversão, "Salvar preset" guarda em Meus e aplica.
+- ✅ Presets do HandBrake (pedido do titular, 13/11/2026): "Trazer" em Meus lê o `.json` exportado pelo HandBrake
+  (`src/handbrake.js`) e diz o que ficou de fora. O RF só vale no computador; no navegador vira o bitrate da tabela.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
