@@ -310,7 +310,8 @@ test('endereços digitados e a marca dos apps fechados', async ({ page, request 
 })
 
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
-  const FECHADOS = /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|revela\.absolutezro\.com|aeon\.absolutezro\.com/
+  const FECHADOS =
+    /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|revela\.absolutezro\.com|aeon\.absolutezro\.com|foto\.absolutezro\.com|luxon\.absolutezro\.com/
   await page.goto('/')
   // só o que está no ar, sem "Em breve" (titular, 30/10/2026: "Quando for pro ar, aí divulga")
   const strip = page.locator('.pstrip__list')

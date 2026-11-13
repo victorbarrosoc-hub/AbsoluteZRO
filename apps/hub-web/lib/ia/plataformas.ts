@@ -20,6 +20,19 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
       'Não aplica um pacote de LUTs pronto (.zip) direto: para chegar na cor de um pacote, o caminho é o Clonar LUT com frames antes e depois.',
     ],
   },
+  foto: {
+    nome: 'LUXON',
+    faz: [
+      'Plataforma de fotos no navegador (em construção, nome provisório): abre a pasta do ensaio e tudo roda no aparelho. A foto não sai dele, e nada é movido, renomeado nem apagado.',
+      'Decupagem: mede foco, borrão, exposição e olhos fechados, junta repetidas e sequências e dá a nota Magnitude a cada foto, sempre com o motivo (fica, talvez ou fora); marcas, estrelas e cores com os atalhos do Lightroom.',
+      'Revelação RAW com o motor Latitude: mede no arquivo a margem de exposição (quanto dá para recuperar nas altas luzes e nas sombras) e trabalha a luz em EV, com o mesmo resultado em qualquer foto; JPEG, PNG e TIFF entram nos mesmos controles.',
+      'Predefinições próprias (.zropreset) e importadas do Lightroom (.xmp, .lrtemplate), com relatório do que ficou exato, aproximado ou ignorado.',
+      'Estilo a partir de uma foto de referência: sai como controles editáveis, com a confiança de cada grupo e o erro medido.',
+      'Lote: corrige exposição e branco de cada foto e depois aplica o estilo; exporta JPEG, PNG ou TIFF e o XMP ao lado.',
+      "Seleção pelo cliente: galeria por link com prévias reduzidas e marca-d'água, PIN opcional, para o cliente escolher e comentar.",
+      'É só para foto: não trata vídeo.',
+    ],
+  },
   sobedesce: {
     nome: 'SOBEDESCE',
     faz: [

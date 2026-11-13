@@ -1,5 +1,6 @@
 // Os apps não lançados (migração 0049; decisão do titular, 01/11/2026): AEON (`ai-edit`), Revela (`finishing`), NOSSOM
-// (`nossom`) e Rift Motion (`rift-motion`) não aparecem para o público em lugar nenhum, nem como "Em desenvolvimento".
+// (`nossom`), Rift Motion (`rift-motion`) e a plataforma de fotos (`foto`, nome provisório LUXON, migração 0065) não
+// aparecem para o público em lugar nenhum, nem como "Em desenvolvimento".
 // No ar: Maestro, Carro do Freela, Synquei, SOBEDESCE, Relay e TPeasy. O papel de plataforma admin vê e usa tudo.
 // Aqui: o gate, o que uma conta comum e um admin veem (catálogo, claims, entregas, Z, selos, conexões), a presença do Set
 // mascarada como "Absolute ZRO" e a migração rodando de novo sem mudar nada.
@@ -19,7 +20,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
-const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion']
+const NAO_LANCADOS = ['ai-edit', 'finishing', 'nossom', 'rift-motion', 'foto']
 // o RADION (`radio`) abriu na 0062 (titular, 07/11/2026)
 const NO_AR = ['maestro', 'carro-do-freela', 'synquei', 'sobedesce', 'relay', 'tpeasy', 'radio']
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
@@ -53,7 +54,7 @@ describe('gate (0049)', () => {
     const antes = await contar()
     await db.sql.unsafe(MIGRATION)
     expect(await contar()).toEqual(antes)
-    expect(antes.produtos).toBe(4)
+    expect(antes.produtos).toBe(5)
     expect(antes.planos).toBeGreaterThan(0)
     resetReleaseCache()
   })
@@ -83,7 +84,7 @@ describe('conta comum × admin da plataforma', () => {
     const actor = await authorize(db, o.auth)
     const retrato = await retratoDoEcossistema(db, actor, null)
     const texto = JSON.stringify(retrato)
-    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Quasar', 'Rift Motion', 'ai-edit', 'finishing', 'nossom', 'rift-motion'])
+    for (const nome of ['AEON', 'Revela', 'NOSSOM', 'Quasar', 'Rift Motion', 'LUXON', 'ai-edit', 'finishing', 'nossom', 'rift-motion', '"foto"'])
       expect(texto, nome).not.toContain(nome)
   })
 

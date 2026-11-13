@@ -21,7 +21,7 @@ const NO_AR: Record<string, string> = {
   tpeasy: 'https://tpeasy.absolutezro.com',
 }
 const HUB = 'https://absolutezro.com'
-const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|vercel\.app/i
+const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|luxon|vercel\.app/i
 /** O ícone oficial (apps/hub-web/public/products): SVG, menos o do Carro do Freela, que é PNG. */
 const ext = (id: string) => (id === 'carro-do-freela' ? 'png' : 'svg')
 

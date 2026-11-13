@@ -1,0 +1,42 @@
+{
+  "origem": "https://storage.googleapis.com/mediapipe-models",
+  "nota": "Modelos de visão da decupagem (MediaPipe). Endereço oficial com versão fixa (/1/, nunca /latest/). Ficam fora do git: scripts/modelos.mjs baixa para .modelos/ e confere tamanho e sha256.",
+  "modelos": [
+    {
+      "arquivo": "blaze_face_full_range.tflite",
+      "camada": "rostos",
+      "uso": "Achar rostos na prévia, inclusive pequenos (não identifica ninguém)",
+      "url": "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_full_range/float16/1/blaze_face_full_range.tflite",
+      "tamanho": 1083786,
+      "sha256": "3698b18f063835bc609069ef052228fbe86d9c9a6dc8dcb7c7c2d69aed2b181b",
+      "licenca": "Apache-2.0"
+    },
+    {
+      "arquivo": "face_landmarker.task",
+      "camada": "rostos",
+      "uso": "Malha do rosto: olhos abertos, fechados, sorriso",
+      "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      "tamanho": 3758596,
+      "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+      "licenca": "Apache-2.0"
+    },
+    {
+      "arquivo": "efficientdet_lite0_int8.tflite",
+      "camada": "objetos",
+      "uso": "Objetos e animais",
+      "url": "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite",
+      "tamanho": 4602795,
+      "sha256": "0720bf247bd76e6594ea28fa9c6f7c5242be774818997dbbeffc4da460c723bb",
+      "licenca": "Apache-2.0"
+    },
+    {
+      "arquivo": "efficientnet_lite0_int8.tflite",
+      "camada": "cena",
+      "uso": "Rótulos de cena",
+      "url": "https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/int8/1/efficientnet_lite0.tflite",
+      "tamanho": 5434517,
+      "sha256": "bc2ffe19c1118de0c0c2a9088992da5589722656e0fba81421385300a4a34b16",
+      "licenca": "Apache-2.0"
+    }
+  ]
+}

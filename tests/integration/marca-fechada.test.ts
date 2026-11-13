@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 const RAIZ = path.resolve(__dirname, '../..')
 const ler = (f: string) => readFileSync(path.join(RAIZ, f), 'utf8')
-const FECHADOS = ['nossom', 'finishing', 'ai-edit', 'rift-motion']
+const FECHADOS = ['nossom', 'finishing', 'ai-edit', 'rift-motion', 'foto']
 
 describe('marca dos apps fechados', () => {
   it('nada deles em public/products nem em public/brand', () => {
@@ -20,7 +20,7 @@ describe('marca dos apps fechados', () => {
   it('o ProductMark (vai para o navegador) não cita app fechado; o ícone dele vem de /marca/<produto>', () => {
     const ui = ler('packages/ui/src/index.tsx')
     const mark = ui.slice(ui.indexOf('const ICONES_PUBLICOS'), ui.indexOf('export { cx }'))
-    expect(mark).not.toMatch(/nossom|finishing|ai-edit|revela|aeon/i)
+    expect(mark).not.toMatch(/nossom|finishing|ai-edit|revela|aeon|luxon|\bfoto\b/i)
     expect(mark).toContain('`/marca/${productId}`')
   })
 
@@ -35,7 +35,7 @@ describe('marca dos apps fechados', () => {
 
   it('a lista de @ reservados e os selos (com nomes de apps) ficam no servidor; a tela de criar conta usa só a forma', () => {
     const cliente = ler('packages/auth/src/arroba.ts')
-    expect(cliente).not.toMatch(/nossom|revela|aeon/i)
+    expect(cliente).not.toMatch(/nossom|revela|aeon|luxon/i)
     const conversa = ler('apps/hub-web/components/conversa-conta.tsx')
     expect(conversa).toMatch(/from '@zro\/auth\/arroba'/)
     expect(conversa).not.toMatch(/arroba-reservadas|validarArroba\(|sugerirArroba\(/)
