@@ -94,11 +94,8 @@ async function abrirEstilos(opcoes = {}, { tema } = {}) {
   await pagina.waitForFunction((n) => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === String(n), fotos.total)
   await pagina.waitForSelector('.foto img')
   await naLoja(pagina, (l) => l.ocioso())
-  // sem pilhas: a foto em foco não pula para a capa de uma pilha quando a análise agrupa as parecidas
-  await naLoja(pagina, (l) => {
-    l.catalogo.empilhar(false)
-    l.catalogo.selecionar(l.catalogo.visiveis()[0].id)
-  })
+  // com as pilhas ligadas: quando a análise agrupa as parecidas, a foto em foco continua a mesma
+  await naLoja(pagina, (l) => l.catalogo.selecionar(l.catalogo.visiveis()[0].id))
   const inicio = Date.now()
   await pagina.click('.dock-aba[data-aba="estilos"]')
   await pagina.waitForFunction(

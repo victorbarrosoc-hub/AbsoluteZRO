@@ -180,6 +180,43 @@ test('filtros combinam com E: marca, estrelas ≥ n, cor, balde, motivo, cena, t
   assert.deepEqual(n.tipo, { raw: 6, imagem: 6 })
 })
 
+test('filtro do cliente: escolhidas pela galeria e com pedido; a seleção que volta refaz a lista', () => {
+  const { c, ids } = novo(6)
+  const avisos = []
+  c.assinar((a) => avisos.push(a))
+  assert.deepEqual(c.contagens().cliente, { escolhida: 0, 'com-pedido': 0 })
+  c.atualizarVarias([
+    { id: ids[0], cliente: { galeria: 'g', escolhida: true, comentario: null, etiquetas: [] } },
+    { id: ids[1], cliente: { galeria: 'g', escolhida: true, comentario: 'Mais clara', etiquetas: [] } },
+    { id: ids[2], cliente: { galeria: 'g', escolhida: false, comentario: null, etiquetas: ['recortar'] } },
+    { id: ids[3], cliente: { galeria: 'g', escolhida: false, comentario: null, etiquetas: [] } },
+  ])
+  assert.deepEqual(c.contagens().cliente, { escolhida: 2, 'com-pedido': 2 })
+  c.filtrar({ cliente: 'escolhida' })
+  assert.equal(c.filtroAtivo(), true)
+  assert.deepEqual(nomes(c), [1, 2])
+  c.filtrar({ cliente: 'com-pedido' })
+  assert.deepEqual(nomes(c), [2, 3])
+  c.filtrar({ cliente: ['escolhida', 'com-pedido'] })
+  assert.deepEqual(nomes(c), [1, 2, 3])
+  // combina com E com os outros critérios
+  c.marcar([ids[1]], 'rejeitada')
+  c.filtrar({ cliente: 'escolhida', marca: 'sem' })
+  assert.deepEqual(nomes(c), [1])
+  c.filtrar({ marca: null })
+  // a galeria atualiza a escolha: a lista filtrada muda junto (o campo mexe na lista)
+  avisos.length = 0
+  c.atualizar(ids[4], { cliente: { galeria: 'g', escolhida: true, comentario: null, etiquetas: [] } })
+  assert.ok(avisos.some((a) => a.tipo === 'dados' && a.lista))
+  assert.deepEqual(nomes(c), [1, 2, 5])
+  // passa pelo guardar
+  const d = criarCatalogo(JSON.parse(JSON.stringify(c.serializar())))
+  assert.deepEqual(d.filtro().cliente, ['escolhida'])
+  assert.deepEqual(nomes(d), [1, 2, 5])
+  c.limparFiltro()
+  assert.equal(c.itens().length, 6)
+})
+
 test('ordem: captura, nome (números em ordem de gente) e nota; desc inverte; sem data e sem nota no fim', () => {
   const c = criarCatalogo()
   c.adicionar([
@@ -369,6 +406,57 @@ test('pilhas: grupo fechado mostra a capa; aberto, todas no lugar; a capa é a e
   c.definirGrupos([])
   assert.equal(c.itens().length, 8)
   assert.equal(c.foto(ids[1]).grupo, null)
+})
+
+test('a análise reagrupa no meio da edição: o foco fica na foto, não pula para a capa', () => {
+  // a Revelar e a Estilos mostram a foto em foco; a análise chama definirGrupos a cada 40 fotos
+  const { c, ids } = novo(6, (i) => ({ magnitude: { total: [10, 20, 90, 30, 40, 50][i] } }))
+  c.selecionar(ids[1])
+  const trocas = []
+  c.assinar((a) => a.tipo === 'selecao' && trocas.push(c.foco()))
+  c.definirGrupos([
+    { id: 'g', fotos: [ids[1], ids[2], ids[3]], tipo: 'repetidas' },
+    { id: 'h', fotos: [ids[4], ids[5]], tipo: 'sequencia' },
+  ])
+  assert.equal(c.foco(), ids[1], 'o foco pulou para a capa')
+  assert.deepEqual(c.alvo(), [ids[1]])
+  assert.ok(c.indice(ids[1]) >= 0)
+  assert.deepEqual(trocas, [])
+  // a pilha do foco abre no lugar; as outras ficam fechadas
+  assert.equal(c.pilhaAberta('g'), true)
+  assert.equal(c.pilhaAberta('h'), false)
+  assert.deepEqual(nomes(c), [1, 2, 3, 4, 6])
+  // a passada seguinte refaz os grupos: o foco continua
+  c.definirGrupos([{ id: 'g2', fotos: [ids[0], ids[1], ids[2], ids[3]], tipo: 'sequencia' }])
+  assert.equal(c.foco(), ids[1])
+  assert.deepEqual(trocas, [])
+  // com pilhas desligadas e ligadas de novo, também
+  c.empilhar(false)
+  c.empilhar(true)
+  assert.equal(c.foco(), ids[1])
+  // foco na capa: nada abre
+  c.definirGrupos([])
+  c.selecionar(ids[2])
+  c.definirGrupos([{ id: 'k', fotos: [ids[1], ids[2]], tipo: 'repetidas' }])
+  assert.equal(c.foco(), ids[2])
+  assert.equal(c.pilhaAberta('k'), false)
+  // a nota nova (sem desfazer, da análise) troca a capa: a foto em foco continua na tela
+  c.atualizar(ids[1], { magnitude: { total: 99 } })
+  assert.equal(c.foco(), ids[2])
+  assert.equal(c.pilhaAberta('k'), true)
+  // fechar à mão continua levando à capa (quem ficou no lugar), agora a de nota 99
+  c.alternarPilha('k', false)
+  assert.equal(c.foco(), ids[1])
+  // escolher pelo id uma foto escondida na pilha (a tira da Revelar): a pilha abre e a foto entra em foco
+  c.selecionar(ids[2])
+  assert.equal(c.foco(), ids[2])
+  assert.equal(c.pilhaAberta('k'), true)
+  // a que o filtro tirou continua de fora
+  c.alternarPilha('k', false)
+  c.filtrar({ marca: 'escolhida' })
+  c.selecionar(ids[2])
+  assert.equal(c.pilhaAberta('k'), false)
+  c.limparFiltro()
 })
 
 test('serializar e restaurar: passa por JSON e volta igual; desfazer e seleção não vão', () => {

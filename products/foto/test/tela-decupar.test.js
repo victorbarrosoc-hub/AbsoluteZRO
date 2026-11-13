@@ -324,6 +324,28 @@ test(
       for (const f of fotos) if (f.grupo) grupos.set(f.grupo, [...(grupos.get(f.grupo) ?? []), f])
       assert.equal(grupos.size, QUANTAS / BLOCO, 'um momento repetido por bloco')
       assert.equal(await numero(pagina, '.dec-filtros .pilula[data-valor="repetidas"] .pilula-n'), (QUANTAS / BLOCO) * 2)
+      // escolhidas pelo cliente: a pílula só existe quando a galeria trouxe alguma
+      assert.equal(await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').count(), 0)
+      await naPagina(pagina, (loja) => {
+        const ids = loja.catalogo
+          .fotos()
+          .filter((f) => !f.grupo)
+          .map((f) => f.id)
+        loja.catalogo.atualizarVarias([
+          { id: ids[3], cliente: { galeria: 'g', escolhida: true, comentario: null, etiquetas: [] } },
+          { id: ids[13], cliente: { galeria: 'g', escolhida: true, comentario: 'Mais clara', etiquetas: [] } },
+          { id: ids[23], cliente: { galeria: 'g', escolhida: false, comentario: null, etiquetas: ['recortar'] } },
+        ])
+      })
+      await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').waitFor()
+      assert.equal(await numero(pagina, '.dec-filtros .pilula[data-valor="cliente"] .pilula-n'), 2)
+      await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').click()
+      const doCliente = await naPagina(pagina, (loja) => loja.catalogo.itens().map((i) => !!i.foto.cliente?.escolhida))
+      assert.deepEqual(doCliente, [true, true])
+      await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').click()
+      assert.equal(await naPagina(pagina, (loja) => loja.catalogo.filtroAtivo()), false)
+      await naPagina(pagina, (loja) => loja.catalogo.atualizarVarias(loja.catalogo.fotos().filter((f) => f.cliente).map((f) => ({ id: f.id, cliente: null }))))
+      await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').waitFor({ state: 'detached' })
 
       // ───── meta ao vivo: os baldes mudam na hora, e nada é analisado de novo ─────
       const antesDaMeta = await naPagina(pagina, (loja, esteira) => ({ novas: esteira.estado().analise.novas, medir: esteira.estado().analise.tempos.medir }))

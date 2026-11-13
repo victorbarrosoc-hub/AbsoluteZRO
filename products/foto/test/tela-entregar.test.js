@@ -7,7 +7,8 @@
 //   2. exportar para uma pasta que já tem um arquivo com o mesmo nome: nada é sobrescrito (-2);
 //   3. criar e publicar uma galeria pela tela, o cliente escolher e comentar pela página pública (/g/<token>) e a
 //      seleção voltar ao catálogo como filtro, com o comentário e o pedido; "Tratar as escolhidas" leva ao lote;
-//   4. sem armazenamento (503 sem_armazenamento), a linha certa e nada de publicar;
+//   4. sem armazenamento (503 sem_armazenamento), a linha certa e nada de publicar, na galeria e na busca por rosto;
+//      com ele, a busca por rosto (app/rosto/painel.js) é a terceira ação, com "Novo evento";
 //   5. 390 px sem rolar de lado, claro e escuro, sem erro de console nem violação de CSP.
 // As imagens são desenhadas no próprio Chromium (faixas, um sol e um número: nenhuma foto de gente).
 // FOTO_TELAS=<pasta> grava as capturas entregar-*.png.
@@ -586,10 +587,46 @@ test('sem armazenamento: a galeria mostra uma linha e não finge', { skip: semBa
     assert.equal(await pagina.locator('[data-criar], [data-publicar]').count(), 0)
     await semRolarDeLado(pagina)
     await captura(pagina, 'galeria-sem-armazenamento-390-claro')
-    limpo(olho, [/503 \/api\/foto\/galerias/, /Failed to load resource.*503/])
+    // a busca por rosto: a mesma linha, sem "Novo evento"
+    await pagina.locator('.entregar-modo button', { hasText: 'Busca por rosto' }).click()
+    const fora = pagina.locator('[data-painel="evento"] [data-fora]')
+    await fora.waitFor()
+    assert.equal(await fora.getAttribute('data-fora'), 'sem_armazenamento')
+    assert.equal(await fora.innerText(), 'A busca por rosto precisa do armazenamento ligado no servidor.')
+    assert.equal(await pagina.locator('[data-painel="evento"] button', { hasText: 'Novo evento' }).count(), 0)
+    assert.equal(await pagina.locator('.entregar-cabeca h2').innerText(), 'Busca por rosto.')
+    await semRolarDeLado(pagina)
+    await captura(pagina, 'evento-sem-armazenamento-390-claro')
+    limpo(olho, [/503 \/api\/foto\/(galerias|eventos)/, /Failed to load resource.*503/])
   } finally {
     await contexto.close()
     process.env.FOTO_ARQUIVOS_DIR = guardado
+  }
+})
+
+test('busca por rosto: a terceira ação da Entregar, uma ideia por vez', { skip: semBanco, timeout: 300000 }, async () => {
+  const { contexto, pagina, olho } = await abrir()
+  try {
+    await carregar(pagina, fotos.arquivos.slice(0, 2))
+    await irParaEntregar(pagina)
+    const opcoes = await pagina.locator('.entregar-modo button').allInnerTexts()
+    assert.deepEqual(opcoes, ['Exportar', 'Galeria do cliente', 'Busca por rosto'])
+    // só monta quando visitada
+    assert.equal(await pagina.locator('.rosto-painel').count(), 0)
+    await pagina.locator('.entregar-modo button', { hasText: 'Busca por rosto' }).click()
+    await pagina.locator('[data-painel="evento"] .rosto-vazio').waitFor()
+    assert.equal(await pagina.locator('.entregar-cabeca h2').innerText(), 'Busca por rosto.')
+    // o título é da tela: o painel não repete
+    assert.equal(await pagina.locator('[data-painel="evento"] h3').count(), 0)
+    assert.equal(await pagina.locator('[data-painel="evento"] .vidro--tinta', { hasText: 'Novo evento' }).count(), 1)
+    assert.equal(await pagina.locator('[data-painel="exportar"]').isHidden(), true)
+    // a escolha fica para a próxima visita à aba
+    assert.equal(await naLoja(pagina, (l) => l.aba('entregar').modo), 'evento')
+    await semRolarDeLado(pagina)
+    await captura(pagina, 'evento-1440-claro')
+    limpo(olho)
+  } finally {
+    await contexto.close()
   }
 })
 
@@ -629,7 +666,11 @@ for (const tema of ['claro', 'escuro']) {
         await pagina.waitForSelector(semBanco ? '[data-fora], [data-criar]' : '[data-criar]')
         await semRolarDeLado(pagina)
         await captura(pagina, `galeria-${largura}-${tema}`)
-        limpo(olho, semBanco ? [/\/api\/foto\/galerias/, /Failed to load resource/] : [])
+        await pagina.locator('.entregar-modo button', { hasText: 'Busca por rosto' }).click()
+        await pagina.waitForSelector(semBanco ? '[data-painel="evento"] [data-fora]' : '[data-painel="evento"] .rosto-vazio')
+        await semRolarDeLado(pagina)
+        await captura(pagina, `evento-${largura}-${tema}`)
+        limpo(olho, semBanco ? [/\/api\/foto\/(galerias|eventos)/, /Failed to load resource/] : [])
       } finally {
         await contexto.close()
       }

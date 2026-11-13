@@ -187,8 +187,7 @@ async function abrirRevelar({ opcoes = {}, tema = 'claro', motor = null, nome = 
   await pagina.evaluate(async (alvo) => {
     const { loja } = await import('/app/estado.js')
     await loja.ocioso()
-    // a análise da Decupar empilha fotos parecidas e o foco iria para a capa da pilha: aqui cada foto fica solta
-    loja.catalogo.empilhar(false)
+    // com as pilhas ligadas: a análise da Decupar pode agrupar as parecidas no meio, e o foco fica na foto pedida
     loja.catalogo.selecionar(loja.catalogo.fotos().find((f) => f.nome === alvo).id)
   }, nome)
   await pagina.keyboard.press('d')

@@ -1,6 +1,7 @@
 // A barra da decupagem (a de cima, acima dos filtros da grade): o andamento da análise, os três baldes que contam
 // (Fica · Talvez · Fora), a meta "quero cerca de N", o tipo de ensaio e o rigor, o modo (Grade ou Cenas) e a ação de
-// fechar. E as pílulas de motivo e de cena, que entram na linha de filtros da grade (BarraDaGrade, `extra`).
+// fechar. E as pílulas de motivo, de cena e a das escolhidas pelo cliente (só quando a galeria trouxe alguma), que
+// entram na linha de filtros da grade (BarraDaGrade, `extra`).
 
 import { cx, html, useRef } from '../../preact.js'
 import { Icone } from '../../icones.js'
@@ -55,7 +56,10 @@ export function contarFiltros(fotos) {
 
 const mesmaLista = (a, b) => !!a && !!b && a.length === b.length && a.every((x) => b.includes(x))
 
-/** As pílulas de motivo, de cena e a das repetidas (empilhar), para a linha de filtros da grade. Só as que têm foto. */
+/**
+ * As pílulas de motivo, de cena, a das repetidas (empilhar) e a das escolhidas pelo cliente, para a linha de filtros
+ * da grade. Só as que têm foto.
+ */
 export function PilulasDaDecupagem({ loja }) {
   usarCatalogo(loja, (c) => c.versao, ['fotos', 'dados', 'filtro', 'pilhas'])
   const c = loja.catalogo
@@ -63,12 +67,27 @@ export function PilulasDaDecupagem({ loja }) {
   const n = contarFiltros(c.fotos())
   const motivos = FILTROS_DE_MOTIVO.filter((m) => n.motivos[m.valor] > 0 || f.motivo === m.busca)
   const cenas = FILTROS_DE_CENA.filter((k) => n.cenas[k.valor] > 0 || mesmaLista(f.cena, k.cenas))
-  if (!motivos.length && !cenas.length && !n.repetidas) return null
+  const doCliente = c.contagens().cliente.escolhida
+  const clienteAtivo = !!f.cliente?.includes('escolhida')
+  if (!motivos.length && !cenas.length && !n.repetidas && !doCliente && !clienteAtivo) return null
   const pilula = ({ valor, rotulo, contagem, ativo, aoTocar, dica, icone }) =>
     html`<button type="button" class="pilula" data-valor=${valor} aria-pressed=${ativo ? 'true' : 'false'} title=${dica} onClick=${aoTocar}>
       ${icone ? html`<${Icone} nome=${icone} />` : null}${rotulo}<span class="pilula-n"><${Numero} valor=${contagem} /></span>
     </button>`
   return html`<span class="dec-filtros" role="group" aria-label="Motivos e cenas">
+    ${
+      doCliente || clienteAtivo
+        ? pilula({
+            valor: 'cliente',
+            rotulo: 'Do cliente',
+            icone: 'pessoa',
+            contagem: doCliente,
+            ativo: clienteAtivo,
+            dica: 'As que o cliente escolheu na galeria',
+            aoTocar: () => c.filtrar({ cliente: clienteAtivo ? null : 'escolhida' }),
+          })
+        : null
+    }
     ${motivos.length ? html`<span class="dec-divisa" aria-hidden="true"></span>` : null}
     ${motivos.map((m) =>
       pilula({

@@ -4,6 +4,7 @@
 //   Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca: 'escolhida' | 'rejeitada' | null,
 //          estrelas: 0..5, cor: null | 'vermelho' | 'amarelo' | 'verde' | 'azul' | 'roxo', par?: { nome, tamanho, formato },
 //          largura?, altura?, semPrevia?, magnitude?, medidas?, rostos?, cena?, grupo?, ajustes?, predefinicao?, cliente? }
+//   (o contrato inteiro, com os campos das telas, está em docs/ARQUITETURA.md)
 //
 // Cada foto é um objeto que não muda: uma alteração troca o objeto (a grade compara por identidade e só redesenha o
 // cartão que mudou). `id` = hash estável de nome + tamanho + data de captura.
@@ -27,7 +28,11 @@ export const BALDES = ['fica', 'talvez', 'fora']
 export const ORDENS = ['captura', 'nome', 'nota']
 const LIMITE_DE_DESFAZER = 300
 /** Campos que mexem no que aparece (filtro, ordem, capa da pilha). */
-const DA_LISTA = new Set(['marca', 'estrelas', 'cor', 'magnitude', 'cena', 'tipo', 'grupo', 'exif', 'nome'])
+const DA_LISTA = new Set(['marca', 'estrelas', 'cor', 'magnitude', 'cena', 'tipo', 'grupo', 'exif', 'nome', 'cliente'])
+/** O que o cliente fez na galeria: escolheu, ou deixou um pedido (comentário ou etiqueta). */
+export const DO_CLIENTE = ['escolhida', 'com-pedido']
+const doCliente = (foto, v) =>
+  v === 'escolhida' ? !!foto.cliente?.escolhida : v === 'com-pedido' ? !!(foto.cliente?.comentario || foto.cliente?.etiquetas?.length) : false
 
 // ───────────────────────────── id estável ─────────────────────────────
 
@@ -106,7 +111,7 @@ function porNota(a, b) {
 }
 const COMPARAR = { captura: porCaptura, nome: porNome, nota: porNota }
 
-const FILTRO_VAZIO = Object.freeze({ marca: null, estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, texto: null })
+const FILTRO_VAZIO = Object.freeze({ marca: null, estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, cliente: null, texto: null })
 const lista = (v) => (v == null || v === '' ? null : Array.isArray(v) ? (v.length ? v : null) : [v])
 
 /** Deixa o filtro na forma canônica (listas, ou null quando não filtra). */
@@ -119,6 +124,7 @@ function normalizarFiltro(f) {
     motivo: f.motivo ? String(f.motivo).toLowerCase() : null,
     cena: lista(f.cena),
     tipo: lista(f.tipo),
+    cliente: lista(f.cliente),
     texto: f.texto ? String(f.texto).toLowerCase() : null,
   }
 }
@@ -131,11 +137,12 @@ function passa(foto, f) {
   if (f.motivo && !(foto.magnitude?.motivos || []).some((m) => String(m).toLowerCase().includes(f.motivo))) return false
   if (f.cena && !f.cena.includes(foto.cena ?? 'sem')) return false
   if (f.tipo && !f.tipo.includes(foto.tipo)) return false
+  if (f.cliente && !f.cliente.some((v) => doCliente(foto, v))) return false
   if (f.texto && !foto.nome.toLowerCase().includes(f.texto)) return false
   return true
 }
 
-const filtroAtivo = (f) => !!(f.marca || f.estrelas || f.cor || f.balde || f.motivo || f.cena || f.tipo || f.texto)
+const filtroAtivo = (f) => !!(f.marca || f.estrelas || f.cor || f.balde || f.motivo || f.cena || f.tipo || f.cliente || f.texto)
 
 // ───────────────────────────── catálogo ─────────────────────────────
 
@@ -252,11 +259,28 @@ export function criarCatalogo(inicial) {
     return mudou
   }
 
+  /**
+   * A pilha mudou sem a pessoa pedir (a análise reagrupou, mediu a nota que troca a capa, as pilhas voltaram): se a
+   * foto em foco ficou escondida dentro de uma pilha fechada, a pilha abre no lugar. Assim a Revelar e a Estilos,
+   * que mostram a foto em foco, não trocam de foto sozinhas. Fechar à mão continua levando à capa.
+   */
+  function abrirPilhaDoFoco() {
+    if (!foco || indices.has(foco)) return
+    const g = fotos.get(foco)?.grupo
+    if (!g || abertas.has(g) || !cacheItens.some((it) => it.pilha?.id === g && !it.pilha.aberta)) return
+    if (!cacheVisiveis.some((f) => f.id === foco)) return // saiu pelo filtro, não pela pilha
+    abertas.add(g)
+    sujo = true
+    recalcular()
+  }
+
   /** A lista visível mudou: refaz e avisa (o aviso leva o que mudou na seleção por tabela). */
-  function listaMudou(aviso) {
+  function listaMudou(aviso, { segurarFoco = false } = {}) {
     sujo = true
     cacheContagens = null
-    const mudou = reconciliar(recalcular())
+    const antes = recalcular()
+    if (segurarFoco) abrirPilhaDoFoco()
+    const mudou = reconciliar(antes)
     emitir({ ...aviso, lista: true })
     if (mudou.size) emitir({ tipo: 'selecao', ids: [...mudou] })
   }
@@ -350,7 +374,7 @@ export function criarCatalogo(inicial) {
         ids.push(id)
       }
       if (!ids.length) return ids
-      avisarDados(ids, [...campos])
+      avisarDados(ids, [...campos], { segurarFoco: true })
       return ids
     },
 
@@ -447,7 +471,8 @@ export function criarCatalogo(inicial) {
     },
     /**
      * Quantas fotos há em cada valor (sobre o catálogo inteiro, sem o filtro): para as pílulas com contagem.
-     * { total, visiveis, marca: { escolhida, rejeitada, sem }, estrelas: [0..5] (exatas), cor, balde, cena, tipo, motivo }
+     * { total, visiveis, marca: { escolhida, rejeitada, sem }, estrelas: [0..5] (exatas), cor, balde, cena, tipo, motivo,
+     *   cliente: { escolhida, 'com-pedido' } }
      */
     contagens() {
       garantir()
@@ -462,6 +487,7 @@ export function criarCatalogo(inicial) {
         cena: {},
         tipo: { raw: 0, imagem: 0 },
         motivo: {},
+        cliente: { escolhida: 0, 'com-pedido': 0 },
       }
       for (const k of CORES) c.cor[k] = 0
       for (const f of fotos.values()) {
@@ -472,6 +498,7 @@ export function criarCatalogo(inicial) {
         if (f.cena) c.cena[f.cena] = (c.cena[f.cena] || 0) + 1
         c.tipo[f.tipo]++
         for (const m of f.magnitude?.motivos || []) c.motivo[m] = (c.motivo[m] || 0) + 1
+        if (f.cliente) for (const v of DO_CLIENTE) if (doCliente(f, v)) c.cliente[v]++
       }
       return (cacheContagens = c)
     },
@@ -495,7 +522,7 @@ export function criarCatalogo(inicial) {
         if ((f.grupo ?? null) !== g) fotos.set(id, Object.freeze({ ...f, grupo: g }))
       }
       abertas = new Set([...abertas].filter((g) => tiposDeGrupo.has(g)))
-      listaMudou({ tipo: 'pilhas' })
+      listaMudou({ tipo: 'pilhas' }, { segurarFoco: true })
     },
     grupos() {
       const saida = new Map()
@@ -508,7 +535,7 @@ export function criarCatalogo(inicial) {
     empilhar(sim) {
       if (empilhado === !!sim) return
       empilhado = !!sim
-      listaMudou({ tipo: 'pilhas' })
+      listaMudou({ tipo: 'pilhas' }, { segurarFoco: empilhado })
     },
     pilhaAberta: (grupo) => abertas.has(grupo),
     alternarPilha(grupo, abrir = !abertas.has(grupo)) {
@@ -540,6 +567,12 @@ export function criarCatalogo(inicial) {
      */
     selecionar(id, { alternar = false, intervalo = false } = {}) {
       garantir()
+      // pedida pelo nome (a tira da Revelar mostra a lista sem pilhas): a pilha fechada que a esconde abre no lugar
+      const g = indices.has(id) ? null : fotos.get(id)?.grupo
+      if (g && !abertas.has(g) && tiposDeGrupo.has(g) && cacheVisiveis.some((f) => f.id === id)) {
+        abertas.add(g)
+        listaMudou({ tipo: 'pilhas', grupo: g })
+      }
       if (!indices.has(id)) return
       const antes = new Set(selecao)
       const focoAntes = foco
@@ -641,8 +674,8 @@ export function criarCatalogo(inicial) {
     },
   }
 
-  function avisarDados(ids, campos) {
-    if (campos.some((c) => DA_LISTA.has(c))) listaMudou({ tipo: 'dados', ids, campos })
+  function avisarDados(ids, campos, opcoes) {
+    if (campos.some((c) => DA_LISTA.has(c))) listaMudou({ tipo: 'dados', ids, campos }, opcoes)
     else emitir({ tipo: 'dados', ids, campos, lista: false })
   }
 

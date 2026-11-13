@@ -263,7 +263,7 @@ export default function Decupar({ loja, ativa }) {
   /** Leva as escolhidas, já selecionadas, para outra etapa. */
   const levar = (aba) => {
     c.empilhar(false)
-    c.filtrar({ marca: 'escolhida', estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, texto: null })
+    c.filtrar({ marca: 'escolhida', estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, cliente: null, texto: null })
     c.selecionarTudo()
     loja.aba(aba).daDecupagem = { ids: c.selecionadas(), em: Date.now() }
     definirModo('grade')
