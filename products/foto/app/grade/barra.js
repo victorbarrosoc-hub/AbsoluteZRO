@@ -64,10 +64,12 @@ export function BarraDaGrade({ loja, tamanho, aoTamanho }) {
         gatilho=${html`<span
           class="cores-icone"
           aria-hidden="true"
-        >${(cores.length ? cores.filter((x) => x !== 'sem') : CORES.slice(0, 3)).slice(0, 3).map((x) => html`<span
+        >${(cores.length ? cores.filter((x) => x !== 'sem') : CORES.slice(0, 3)).slice(0, 3).map(
+          (x) => html`<span
           class="ponto"
           data-cor=${x}
-        ></span>`)}</span>`}
+        ></span>`,
+        )}</span>`}
         itens=${[
           { rotulo: 'Qualquer', marcado: !cores.length, aoEscolher: () => c.filtrar({ cor: null }) },
           ...CORES.map((x) => ({

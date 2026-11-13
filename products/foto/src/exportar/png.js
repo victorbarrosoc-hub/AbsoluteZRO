@@ -239,7 +239,7 @@ export function conferirImagem({ largura, altura, dados, bits, canais }, formato
   if (canais !== 3) throw new Error(`${formato}: só RGB (canais: 3)`)
   const n = largura * altura
   if (bits === 16) {
-    if (!(dados instanceof Uint16Array) || dados.length !== n * 3) throw new Error(`${formato}: 16 bits pede Uint16Array RGB com largura × altura × 3 amostras`)
+    if (!(dados instanceof Uint16Array) || dados.length !== n * 3) throw new Error(`${formato}: 16 bits pede Uint16Array RGB (largura × altura × 3)`)
     return 3
   }
   if (bits !== 8) throw new Error(`${formato}: bits precisa ser 8 ou 16`)

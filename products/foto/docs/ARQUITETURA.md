@@ -172,7 +172,8 @@ a nota sai só com o que foi medido, a certeza cai, e a tela diz isso.
 ```
 Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca: 'escolhida' | 'rejeitada' | null,
        estrelas: 0..5, cor: null | 'vermelho' | 'amarelo' | 'verde' | 'azul' | 'roxo', magnitude?, medidas?, rostos?, cena?,
-       grupo?, ajustes?, predefinicao?, cliente?: { escolhida, comentario } }
+       grupo?, ajustes?, predefinicao?, cliente?: { escolhida, comentario },
+       par?: { nome, tamanho, formato }, proporcao?, semPrevia? }
 ```
 
 `id` = hash estável de nome + tamanho + data de captura. Estado em memória com `assinar()`; quem guarda é a tela
@@ -194,8 +195,10 @@ Tratar em lote = corrigir cada foto (`por-foto.js`: exposição e branco) e depo
 
 Rotas e formatos em [`API.md`](API.md). Galeria do cliente: token de 32 bytes (o banco guarda só o sha256), PIN
 opcional, porta estreita por funções `security definer`, limites por link e por IP, imagem servida só por link vivo.
-O armazenamento das prévias é um adaptador (`api/_arquivos.js`): pasta local em desenvolvimento e bucket privado
-com endereço assinado em produção. **O bucket só existe depois de o titular autorizar.**
+O armazenamento das prévias é um adaptador (`api/_arquivos.js`): pasta local em desenvolvimento e S3 compatível
+(Supabase Storage, R2 ou S3) em produção. Os bytes passam **sempre** pelo servidor do app (a CSP só deixa `'self'`):
+o fotógrafo envia cada prévia por `PUT`, o cliente recebe por link vivo. Sem armazenamento configurado, as rotas
+respondem `503 sem_armazenamento`. **O bucket só existe depois de o titular autorizar.**
 
 ## Testes
 

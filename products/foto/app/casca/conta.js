@@ -31,13 +31,17 @@ export function fotoDe(p) {
 function Avatar({ pessoa }) {
   const [falhou, definir] = useState(false)
   const src = falhou ? null : fotoDe(pessoa)
-  return html`<span class="avatar">${src ? html`<img
+  return html`<span class="avatar">${
+    src
+      ? html`<img
     src=${src}
     alt=""
     decoding="async"
     referrerpolicy="no-referrer"
     onError=${() => definir(true)}
-  />` : iniciais(pessoa)}</span>`
+  />`
+      : iniciais(pessoa)
+  }</span>`
 }
 
 /** Sai do app (a sessão na Absolute ZRO continua) e recarrega: o servidor entrega a página neutra. */

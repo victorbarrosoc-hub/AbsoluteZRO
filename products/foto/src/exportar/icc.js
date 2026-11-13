@@ -34,7 +34,8 @@ const DESCRICAO = {
   rec2020: 'Rec.2020',
   prophoto: 'ProPhoto RGB',
 }
-const DIREITOS = 'No copyright, use freely (CC0 1.0).'
+// A tag de direitos é obrigatória. O perfil são só os números públicos dos padrões: não há o que reservar.
+const DIREITOS = 'No copyright, use freely.'
 
 /** Nome que vai na tag `desc` do perfil (e no campo de nome do iCCP do PNG). */
 export function descricaoDoPerfil(espaco) {
@@ -280,7 +281,7 @@ export function perfilIcc(espaco) {
   return prontos.get(espaco).slice()
 }
 
-// ─────────── leitura (para conferir o que foi escrito e para reconhecer o perfil de um arquivo que chega) ───────────
+// ─────────── leitura: para conferir o que foi escrito e reconhecer o perfil de um arquivo que chega ───────────
 
 const texto4 = (v, p) => String.fromCharCode(v.getUint8(p), v.getUint8(p + 1), v.getUint8(p + 2), v.getUint8(p + 3))
 

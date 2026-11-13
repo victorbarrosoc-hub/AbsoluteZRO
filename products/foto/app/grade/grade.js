@@ -116,10 +116,14 @@ const Cartao = memo(
       <div class="foto-pe">
         <${Estrelas} valor=${foto.estrelas} compacta tamanho=${11} />
         <${Ponto} cor=${foto.cor} />
-        ${motivo ? html`<span
+        ${
+          motivo
+            ? html`<span
           class="foto-motivo"
           title=${foto.magnitude.motivos.join(' · ')}
-        >${motivo}</span>` : html`<span class="foto-nome">${nomeCurto(foto.nome)}</span>`}
+        >${motivo}</span>`
+            : html`<span class="foto-nome">${nomeCurto(foto.nome)}</span>`
+        }
         ${typeof nota === 'number' ? html`<span class="foto-nota" data-balde=${foto.magnitude.balde}>${Math.round(nota)}</span>` : null}
       </div>
     </div>`
@@ -282,7 +286,7 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
 
   const colunasCss = `repeat(${m.colunas},${m.lado.toFixed(2)}px)`
   const sobe = Math.round(recuo + primeira * m.passo)
-  const estiloDaJanela = `transform:translateY(${sobe}px);left:${m.margem}px;grid-template-columns:${colunasCss};column-gap:${m.vao}px;row-gap:${m.vao}px;--pe:${m.pe}px`
+  const estiloDaJanela = `transform:translateY(${sobe}px);left:${m.margem}px;grid-template-columns:${colunasCss};gap:${m.vao}px;--pe:${m.pe}px`
 
   return html`<div
     class="grade"
@@ -301,7 +305,8 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
             class=${cx('grade-janela', entrando && 'cascata')}
             style=${estiloDaJanela}
           >
-            ${janela.map((it, k) => html`<${Cartao}
+            ${janela.map(
+              (it, k) => html`<${Cartao}
               key=${it.foto.id}
               loja=${loja}
               id=${it.foto.id}
@@ -309,7 +314,8 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
               ordem=${k}
               entrada=${!foco && primeira === 0 && k === 0}
               h=${h.current}
-            />`)}
+            />`,
+            )}
           </div>
         </div>`
         : html`<div

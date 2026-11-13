@@ -130,7 +130,7 @@ test('o sistema visual: claro é o padrão, o palco é neutro e escuro nos dois 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration: 0\.01ms !important/)
   // o símbolo da casca é o da marca (scripts/marca.mjs gera app/marca/simbolo.svg)
   const simbolo = readFileSync(join(RAIZ, 'app/marca/simbolo.svg'), 'utf8')
-  const raio = /RAIO_DO_SIMBOLO = '([^']+)'/.exec(readFileSync(join(RAIZ, 'app/casca/simbolo.js'), 'utf8'))[1]
+  const raio = /RAIO_DO_SIMBOLO =\s*'([^']+)'/.exec(readFileSync(join(RAIZ, 'app/casca/simbolo.js'), 'utf8'))[1]
   assert.ok(simbolo.includes(raio), 'o raio do símbolo da casca não é o de app/marca/simbolo.svg')
 })
 
@@ -786,9 +786,7 @@ const alvosPequenos = (pagina) =>
       }
       const nome = el.getAttribute('aria-label') || el.textContent || ''
       if (l < 43.5 || a < 43.5)
-        ruins.push(
-          `${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`,
-        )
+        ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
     }
     return ruins
   })

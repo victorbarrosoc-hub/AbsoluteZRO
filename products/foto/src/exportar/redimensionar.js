@@ -4,7 +4,7 @@
 // escurece o detalhe fino e muda a cor das bordas. A imagem de tela que o motor entrega (0..1, já com a curva) é
 // linearizada linha a linha na entrada e recodificada na saída, quando `espaco` é informado.
 //
-// Filtros (separáveis: primeiro as colunas, depois as linhas):
+// Filtros (separáveis: primeiro as linhas, depois as colunas):
 //   Lanczos-3   sinc(x)·sinc(x/3) em |x| < 3 (Duchon, 1979; Turkowski, "Filters for Common Resampling Tasks", 1990).
 //               Na redução o núcleo é esticado pela razão: ele é o passa-baixa que evita serrilhado.
 //   área        média exata da área que cada pixel de saída cobre (caixa). É o filtro rápido das reduções grandes:
@@ -115,24 +115,84 @@ function tabelaDeLinearizar(decodificar) {
   return tabela
 }
 
-// Passada das colunas: cada linha de entrada (linearizada, se houver tabela) vira uma linha com `novaLargura` amostras.
-function passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, antiAnel, tabela) {
+// Passada das linhas (a primeira): cada linha de saída é a soma pesada de linhas inteiras de entrada, lidas em
+// sequência. A linearização acontece aqui: cada linha de entrada é linearizada uma vez e fica guardada enquanto alguma
+// linha de saída ainda precisa dela. Os limites contra ringing saem do menor e do maior valor, amostra a amostra, das
+// linhas centrais.
+function passadaVertical(dados, largura, altura, canais, novaAltura, metodo, antiAnel, tabela) {
+  const { inicio, quantos, pesos, maximo, centroDe, centroAte } = contribuicoes(altura, novaAltura, metodo)
+  const passo = largura * canais
+  const saida = new Float32Array(passo * novaAltura)
+  const limitar = antiAnel > 0 && metodo !== 'area'
+  const soma = new Float32Array(passo)
+  const menor = new Float32Array(passo)
+  const maior = new Float32Array(passo)
+  // linhas linearizadas ainda em uso (índice → linha) e as já liberadas, para reaproveitar a memória
+  const guardadas = new Map()
+  const livres = []
+  let maisAntiga = 0
+  const linear = (j) => {
+    let linha = guardadas.get(j)
+    if (linha) return linha
+    linha = livres.pop() ?? new Float32Array(passo)
+    const o = j * passo
+    for (let i = 0; i < passo; i++) {
+      const v = dados[o + i]
+      linha[i] = tabela[v <= 0 ? 0 : v >= 1 ? DEGRAUS : (v * DEGRAUS + 0.5) | 0]
+    }
+    guardadas.set(j, linha)
+    return linha
+  }
+  for (let y = 0; y < novaAltura; y++) {
+    if (tabela) {
+      for (; maisAntiga < inicio[y]; maisAntiga++) {
+        const velha = guardadas.get(maisAntiga)
+        if (velha) {
+          livres.push(velha)
+          guardadas.delete(maisAntiga)
+        }
+      }
+    }
+    soma.fill(0)
+    const n = quantos[y]
+    for (let j = 0; j < n; j++) {
+      const w = pesos[y * maximo + j]
+      const fonte = tabela ? linear(inicio[y] + j) : dados
+      const o = tabela ? 0 : (inicio[y] + j) * passo
+      for (let i = 0; i < passo; i++) soma[i] += fonte[o + i] * w
+    }
+    if (limitar) {
+      for (let j = centroDe[y]; j <= centroAte[y]; j++) {
+        const fonte = tabela ? linear(j) : dados
+        const o = tabela ? 0 : j * passo
+        if (j === centroDe[y]) {
+          for (let i = 0; i < passo; i++) menor[i] = maior[i] = fonte[o + i]
+          continue
+        }
+        for (let i = 0; i < passo; i++) {
+          const v = fonte[o + i]
+          if (v < menor[i]) menor[i] = v
+          else if (v > maior[i]) maior[i] = v
+        }
+      }
+      for (let i = 0; i < passo; i++) {
+        const s = soma[i]
+        soma[i] = s + ((s < menor[i] ? menor[i] : s > maior[i] ? maior[i] : s) - s) * antiAnel
+      }
+    }
+    saida.set(soma, y * passo)
+  }
+  return saida
+}
+
+// Passada das colunas (a segunda, já sobre a imagem de altura reduzida): cada linha vira uma linha com `novaLargura`
+// amostras.
+function passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, antiAnel) {
   const { inicio, quantos, pesos, maximo, centroDe, centroAte } = contribuicoes(largura, novaLargura, metodo)
   const saida = new Float32Array(novaLargura * altura * canais)
   const limitar = antiAnel > 0 && metodo !== 'area'
-  const linha = tabela ? new Float32Array(largura * canais) : null
   for (let y = 0; y < altura; y++) {
-    const o = y * largura * canais
-    let fonte = dados
-    let base = o
-    if (tabela) {
-      for (let i = 0; i < linha.length; i++) {
-        const v = dados[o + i]
-        linha[i] = tabela[v <= 0 ? 0 : v >= 1 ? DEGRAUS : (v * DEGRAUS + 0.5) | 0]
-      }
-      fonte = linha
-      base = 0
-    }
+    const base = y * largura * canais
     let d = y * novaLargura * canais
     if (canais === 3) {
       // o caso da foto, com os três canais na mesma volta
@@ -145,23 +205,23 @@ function passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, 
         let s2 = 0
         for (let j = 0; j < n; j++, p += 3) {
           const w = pesos[pw + j]
-          s0 += fonte[p] * w
-          s1 += fonte[p + 1] * w
-          s2 += fonte[p + 2] * w
+          s0 += dados[p] * w
+          s1 += dados[p + 1] * w
+          s2 += dados[p + 2] * w
         }
         if (limitar) {
           p = base + centroDe[x] * 3
           const fim = base + centroAte[x] * 3
-          let a0 = fonte[p]
+          let a0 = dados[p]
           let b0 = a0
-          let a1 = fonte[p + 1]
+          let a1 = dados[p + 1]
           let b1 = a1
-          let a2 = fonte[p + 2]
+          let a2 = dados[p + 2]
           let b2 = a2
           for (p += 3; p <= fim; p += 3) {
-            const v0 = fonte[p]
-            const v1 = fonte[p + 1]
-            const v2 = fonte[p + 2]
+            const v0 = dados[p]
+            const v1 = dados[p + 1]
+            const v2 = dados[p + 2]
             if (v0 < a0) a0 = v0
             else if (v0 > b0) b0 = v0
             if (v1 < a1) a1 = v1
@@ -185,13 +245,13 @@ function passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, 
       for (let k = 0; k < canais; k++) {
         let soma = 0
         let p = base + inicio[x] * canais + k
-        for (let j = 0; j < n; j++, p += canais) soma += fonte[p] * pesos[pw + j]
+        for (let j = 0; j < n; j++, p += canais) soma += dados[p] * pesos[pw + j]
         if (limitar) {
           let menor = Infinity
           let maior = -Infinity
           p = base + centroDe[x] * canais + k
           for (let j = centroDe[x]; j <= centroAte[x]; j++, p += canais) {
-            const v = fonte[p]
+            const v = dados[p]
             if (v < menor) menor = v
             if (v > maior) maior = v
           }
@@ -200,45 +260,6 @@ function passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, 
         saida[d + x * canais + k] = soma
       }
     }
-  }
-  return saida
-}
-
-// Passada das linhas: cada linha de saída é a soma pesada de linhas inteiras de entrada (acesso em sequência, sem
-// transpor a imagem). Os limites contra ringing saem do menor e do maior valor, amostra a amostra, das linhas centrais.
-function passadaVertical(dados, largura, altura, canais, novaAltura, metodo, antiAnel) {
-  const { inicio, quantos, pesos, maximo, centroDe, centroAte } = contribuicoes(altura, novaAltura, metodo)
-  const passo = largura * canais
-  const saida = new Float32Array(passo * novaAltura)
-  const limitar = antiAnel > 0 && metodo !== 'area'
-  const soma = new Float32Array(passo)
-  const menor = new Float32Array(passo)
-  const maior = new Float32Array(passo)
-  for (let y = 0; y < novaAltura; y++) {
-    soma.fill(0)
-    const n = quantos[y]
-    for (let j = 0; j < n; j++) {
-      const w = pesos[y * maximo + j]
-      const o = (inicio[y] + j) * passo
-      for (let i = 0; i < passo; i++) soma[i] += dados[o + i] * w
-    }
-    if (limitar) {
-      const primeira = centroDe[y] * passo
-      for (let i = 0; i < passo; i++) menor[i] = maior[i] = dados[primeira + i]
-      for (let j = centroDe[y] + 1; j <= centroAte[y]; j++) {
-        const o = j * passo
-        for (let i = 0; i < passo; i++) {
-          const v = dados[o + i]
-          if (v < menor[i]) menor[i] = v
-          else if (v > maior[i]) maior[i] = v
-        }
-      }
-      for (let i = 0; i < passo; i++) {
-        const s = soma[i]
-        soma[i] = s + ((s < menor[i] ? menor[i] : s > maior[i] ? maior[i] : s) - s) * antiAnel
-      }
-    }
-    saida.set(soma, y * passo)
   }
   return saida
 }
@@ -274,10 +295,11 @@ export function reamostrar(dados, largura, altura, canais, novaLargura, novaAltu
 }
 
 function doisEixos(dados, largura, altura, canais, novaLargura, novaAltura, metodo, antiAnel, tabela) {
-  // colunas primeiro (a linearização acontece aqui, linha a linha); depois as linhas
-  const h = largura === novaLargura && !tabela ? dados : passadaHorizontal(dados, largura, altura, canais, novaLargura, metodo, antiAnel, tabela)
-  if (altura === novaAltura) return h === dados ? Float32Array.from(dados) : h
-  return passadaVertical(h, novaLargura, altura, canais, novaAltura, metodo, antiAnel)
+  // linhas primeiro: é a passada que lê a imagem grande, e ela anda em sequência pela memória; as colunas vêm
+  // depois, sobre a imagem que já encolheu na altura
+  const v = altura === novaAltura && !tabela ? dados : passadaVertical(dados, largura, altura, canais, novaAltura, metodo, antiAnel, tabela)
+  if (largura === novaLargura) return v === dados ? Float32Array.from(dados) : v
+  return passadaHorizontal(v, largura, novaAltura, canais, novaLargura, metodo, antiAnel)
 }
 
 /**

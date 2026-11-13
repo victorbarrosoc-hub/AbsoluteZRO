@@ -63,12 +63,18 @@ function Capa({ ids }) {
       criadas.forEach((u) => URL.revokeObjectURL(u))
     }
   }, [ids.join(',')])
-  return html`<div class="recente-capa" data-fotos=${urls.length || 1}>${urls.length ? urls.map((u) => html`<img
+  return html`<div class="recente-capa" data-fotos=${urls.length || 1}>${
+    urls.length
+      ? urls.map(
+          (u) => html`<img
     src=${u}
     alt=""
     decoding="async"
     draggable=${false}
-  />`) : html`<span></span>`}</div>`
+  />`,
+        )
+      : html`<span></span>`
+  }</div>`
 }
 
 /** Os trabalhos guardados neste aparelho. `aoAbrir(id)` depois de abrir (para fechar a folha, por exemplo). */

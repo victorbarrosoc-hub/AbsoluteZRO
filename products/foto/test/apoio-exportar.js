@@ -82,7 +82,7 @@ export function comparar8(a, b) {
   return { medio: soma / a.length, maior, psnr: mse === 0 ? Infinity : 10 * Math.log10((255 * 255) / mse) }
 }
 
-// ─────────── decodificador JPEG baseline (ITU-T T.81), só o necessário: Huffman, 8 bits, 3 componentes ───────────
+// ─────────── decodificador JPEG baseline (ITU-T T.81), só o necessário: Huffman, 8 bits, 3 componentes ──────
 
 const ZIGUEZAGUE = (() => {
   const z = []

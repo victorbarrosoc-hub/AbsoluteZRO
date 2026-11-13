@@ -916,7 +916,9 @@ dialog.folha::backdrop {
   background: rgb(29 29 31 / 0.92);
   color: #f5f5f7;
   font-size: 14px;
-  box-shadow: 0 10px 34px rgb(0 0 0 / 0.28);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.1),
+    0 10px 34px rgb(0 0 0 / 0.28);
   -webkit-backdrop-filter: blur(18px) saturate(1.6);
   backdrop-filter: blur(18px) saturate(1.6);
   pointer-events: auto;

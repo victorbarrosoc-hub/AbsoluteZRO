@@ -30,11 +30,14 @@ export function Estrelas({ valor = 0, aoMudar, compacta = false, tamanho, classe
   if (!aoMudar) {
     if (compacta && !valor) return null
     return html`<span class=${cx('estrelas', classe)} role="img" aria-label=${valor ? plural(valor) : 'Sem estrelas'} style=${estilo} ref=${ref}>
-      ${Array.from({ length: compacta ? valor : 5 }, (_, i) => html`<span
+      ${Array.from(
+        { length: compacta ? valor : 5 },
+        (_, i) => html`<span
         class="estrela"
         data-cheia=${i < valor ? '' : undefined}
         style=${`--i:${i}`}
-      >${ESTRELA}</span>`)}
+      >${ESTRELA}</span>`,
+      )}
     </span>`
   }
   return html`<span class=${cx('estrelas', classe)} role="group" aria-label="Estrelas" style=${estilo} ref=${ref}>

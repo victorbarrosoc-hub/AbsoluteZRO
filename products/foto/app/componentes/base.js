@@ -182,11 +182,15 @@ export function Pilulas({ opcoes, valor, aoMudar, rotulo, multiplo = false, rola
           data-valor=${String(o.valor)}
           onClick=${() => tocar(o.valor)}
         >
-          ${o.cor ? html`<span
+          ${
+            o.cor
+              ? html`<span
             class="ponto"
             data-cor=${o.cor}
             aria-hidden="true"
-          ></span>` : null}${o.icone ? html`<${Icone} nome=${o.icone} />` : null}${o.rotulo}${
+          ></span>`
+              : null
+          }${o.icone ? html`<${Icone} nome=${o.icone} />` : null}${o.rotulo}${
             o.contagem != null ? html`<span class="pilula-n"><${Numero} valor=${o.contagem} /></span>` : null
           }
         </button>`,
@@ -259,9 +263,13 @@ export function Menu({ gatilho, rotulo, itens, lado = 'esquerda', classeBotao = 
             if (it.no) return it.no
             if (it.divisa) return html`<div class="menu-divisa" role="separator"></div>`
             if (it.titulo) return html`<div class="menu-titulo">${it.titulo}</div>`
-            const dentro = html`${it.icone ? html`<${Icone}
+            const dentro = html`${
+              it.icone
+                ? html`<${Icone}
               nome=${it.icone}
-            />` : null}<span>${it.rotulo}</span>${it.detalhe ? html`<small>${it.detalhe}</small>` : null}`
+            />`
+                : null
+            }<span>${it.rotulo}</span>${it.detalhe ? html`<small>${it.detalhe}</small>` : null}`
             const papel = it.marcado == null ? 'menuitem' : 'menuitemradio'
             const escolher = () => {
               fechar(true)
