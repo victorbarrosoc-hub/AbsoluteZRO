@@ -13,7 +13,7 @@ import { Icone } from '../../icones.js'
 import { Miniatura, Simbolo, carregarEstilos, contarCriterios, copiar, dataTexto, fotosDe, fotosTexto, numero, ordemDaGaleria, tempoTexto } from './comum.js'
 import { criarEnvio } from './lote.js'
 import { mascaraDeTexto } from './marca.js'
-import { qrSvg } from './qr.js'
+import { qrSvg } from '../../componentes/qr.js'
 import { ETIQUETAS, ErroServico, foraDoAr, servico, vinculo } from './servico.js'
 
 const MARCA_DA_GALERIA = { posicao: 'diagonal', opacidade: 0.22, tamanho: 0.3 }

@@ -230,7 +230,7 @@ after(async () => {
 // ───────────────────────────── 0. o QR próprio ─────────────────────────────
 
 test('o QR da galeria bate módulo a módulo com o gerador de referência (Kazuhiko Arase, o do RADION)', async (t) => {
-  const { qrMatriz, qrSvg } = await import('../app/telas/entregar/qr.js')
+  const { qrMatriz, qrSvg } = await import('../app/componentes/qr.js')
   let referencia
   try {
     referencia = (await import('../../radio/app/vendor/qrcode.mjs')).qrcode

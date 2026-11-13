@@ -1,5 +1,6 @@
-// QR Code próprio, sem dependência: o endereço da galeria vira um SVG que a câmera do celular lê. Só o que o link
-// precisa: modo byte (UTF-8), correção de erro M (15%), versões 1 a 10 (até 213 bytes; o endereço tem ~75).
+// QR Code próprio, sem dependência: o endereço da galeria do cliente e do evento vira um SVG que a câmera do celular
+// lê. Só o que o link precisa: modo byte (UTF-8), correção de erro M (15%), versões 1 a 10 (até 213 bytes; o endereço
+// tem ~75).
 //
 // ISO/IEC 18004:2015: 7.4.5 (modo byte), 7.4.10 (terminador e preenchimento 0xEC 0x11), 7.5 (Reed-Solomon em GF(256)
 // com o polinômio 0x11D), 7.6 (blocos intercalados), 7.7 (padrões de função), 7.7.3 (colocação em zigue-zague),

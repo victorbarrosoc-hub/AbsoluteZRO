@@ -1,8 +1,8 @@
 // O cartaz A4 do evento, gerado no aparelho: o aviso de B.4 (docs/estudo/rosto-em-evento.md) e o QR do link, para
 // imprimir e pôr na entrada. PNG de 150 ppi (1240 × 1754), preto no branco, Figtree. O QR vem do gerador da casa
-// (app/telas/entregar/qr.js, conferido módulo a módulo contra o de Kazuhiko Arase).
+// (app/componentes/qr.js, conferido módulo a módulo contra o de Kazuhiko Arase).
 
-import { qrMatriz } from '../telas/entregar/qr.js'
+import { qrMatriz } from '../componentes/qr.js'
 import { comPrazo, TEXTOS } from '../../src/rosto/textos.js'
 
 const L = 1240

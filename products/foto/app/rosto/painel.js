@@ -1,4 +1,5 @@
-// O painel do fotógrafo para a busca por rosto em evento: `PainelEvento({ loja })`, para a tela Entregar encaixar.
+// O painel do fotógrafo para a busca por rosto em evento: `PainelEvento({ loja, embutido })`, a terceira ação da tela
+// Entregar (embutido: o título fica com a tela, aqui só a linha de apoio e o botão).
 //
 //   lista      os eventos, com fotos, rostos, buscas e pedidos
 //   novo       nome, data, modo ("Com consentimento", o padrão, ou "Busca aberta", só com o aviso aceito), prazo, PIN,
@@ -6,13 +7,14 @@
 //   detalhe    preparar (rostos + prévias com marca, retomável), publicar (o endereço aparece UMA vez, com o QR e o
 //              cartaz A4), no modo com consentimento comparar aqui os pedidos de busca (a cada 30 s com o painel
 //              aberto) e subir só as ligações, pedidos de foto, trocar o link, encerrar e apagar
+//   fora       sem armazenamento, banco ou login no servidor: uma linha (a mesma da galeria) e nada mais
 //
 // Texto curto; os textos de aviso moram em src/rosto/textos.js. Nada de vetor na tela.
 
 import { cx, html, useEffect, useMemo, useRef, useState } from '../preact.js'
-import { Chave, Folha, Numero, Pilulas, Progresso, Segmentado, avisar } from '../componentes/index.js'
+import { Chave, Folha, Icone, Numero, Pilulas, Progresso, Segmentado, avisar } from '../componentes/index.js'
 import { usarCatalogo } from '../estado.js'
-import { qrSvg } from '../telas/entregar/qr.js'
+import { qrSvg } from '../componentes/qr.js'
 import { comPrazo, TEXTOS } from '../../src/rosto/textos.js'
 import { cartazA4 } from './cartaz.js'
 import { api, criarPreparo, escolhaDe, esquecerEvento, lembrarEscolha, processarPedidos } from './preparo.js'
@@ -32,6 +34,12 @@ const MENSAGENS = {
   prorrogado: 'O prazo já foi estendido uma vez.',
 }
 const mensagem = (e) => MENSAGENS[e?.codigo] ?? 'Não deu certo.'
+// o serviço não está ligado neste servidor: não adianta tentar de novo agora
+const FORA = {
+  sem_armazenamento: 'A busca por rosto precisa do armazenamento ligado no servidor.',
+  sem_banco: 'A busca por rosto precisa do serviço ligado no servidor.',
+  sem_sessao: 'A busca por rosto precisa da sua conta: entre para usar.',
+}
 
 function usarFolhaDeEstilo() {
   if (typeof document === 'undefined' || document.querySelector('link[data-rosto]')) return
@@ -406,33 +414,39 @@ const resumoDe = (e) =>
 
 // ───────── o painel ─────────
 
-export function PainelEvento({ loja }) {
+export function PainelEvento({ loja, embutido = false }) {
   usarFolhaDeEstilo()
   const [eventos, setEventos] = useState(null)
   const [aberto, setAberto] = useState(null)
   const [novo, setNovo] = useState(false)
   const [inicial, setInicial] = useState(null)
   const [erro, setErro] = useState(null)
+  const [fora, setFora] = useState(null)
   const carregar = async () => {
     try {
       setEventos((await api('GET', '')).eventos)
       setErro(null)
+      setFora(null)
     } catch (e) {
-      setErro(mensagem(e))
+      if (FORA[e?.codigo]) setFora(e.codigo)
+      else setErro(mensagem(e))
     }
   }
   useEffect(() => {
     carregar()
   }, [])
 
+  if (fora)
+    return html`<div class="linha-aviso linha-aviso--fora" role="status" data-fora=${fora}><${Icone} nome="info" />${FORA[fora]}</div>`
+
   if (aberto)
     return html`<section class="rosto-painel">
       <${Detalhe} loja=${loja} id=${aberto} inicial=${inicial} aoVoltar=${() => (setAberto(null), setInicial(null), carregar())} aoMudar=${carregar} />
     </section>`
-  return html`<section class="rosto-painel" aria-labelledby="rosto-titulo">
+  return html`<section class="rosto-painel" aria-labelledby=${embutido ? undefined : 'rosto-titulo'} aria-label=${embutido ? 'Busca por rosto' : undefined}>
     <header class="rosto-cabeca">
       <div>
-        <h3 id="rosto-titulo"><span class="fino">Busca </span><span class="pesado">por rosto</span></h3>
+        ${embutido ? null : html`<h3 id="rosto-titulo"><span class="fino">Busca </span><span class="pesado">por rosto</span></h3>`}
         <p class="apoio">Cada convidado acha as próprias fotos com uma selfie.</p>
       </div>
       <button type="button" class="vidro vidro--tinta" onClick=${() => setNovo(true)}>Novo evento</button>

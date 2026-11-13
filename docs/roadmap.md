@@ -1,6 +1,32 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 09/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 13/11/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+
+## Plataforma de fotos (id `foto`, nome provisório LUXON): primeiro corte, fechado (13/11/2026, ramo `claude/affectionate-cannon-6wo2rb`, ADR 0044)
+
+Pedido do titular: tratamento de fotos no ecossistema unindo Lightroom e Aftershoot, com motor mais preciso que use
+todo o RAW, decupagem por rosto, olho fechado, borrão e repetidas, estilos próprios e do Lightroom, extrair estilo de
+uma foto, lote, link para o cliente escolher e, depois, a busca por rosto em evento no estilo Banlek. Tudo roda no
+aparelho; o app nasce fechado pelo gate (`products/foto`, migração 0065). Estudo em
+`products/foto/docs/estudo/`; contrato em `products/foto/docs/ARQUITETURA.md`.
+
+- ✅ Leitura RAW: LibRaw em WASM injetado, leitor próprio de DNG (dois iluminantes, opcodes), Sony sem perdas
+  tamanho M (que o LibRaw entregava quase preto), prévia e EXIF sem WASM em menos de 1 ms.
+- ✅ Motor Latitude: base em float sem teto (preto e saturação medidos, altas luzes reconstruídas no mosaico),
+  controles em EV em torno do cinza, tela com as margens medidas no arquivo, tom neutro igual ao da câmera
+  (ΔL mediano +0,001 em 38 arquivos reais); espelho em WebGL2 (< 1/255) e sessão em dois tempos.
+- ✅ Decupagem Magnitude: nitidez, tremido × foco, exposição julgada pelo RAW, rostos e olhos (MediaPipe no
+  aparelho), objetos e cena, repetidas, nota explicada, meta ao vivo, modo Cenas e estrelas gravadas em `.xmp`.
+- ✅ Estilos: 39 da casa em 11 famílias, importação do Lightroom (`.xmp`, `.lrtemplate`, JPEG) com relatório por
+  chave, `.cube`, extração de estilo em controles editáveis, lote com correção por foto, exportação para o Lightroom.
+- ✅ Entrega: JPEG/TIFF/PNG com perfil ICC (Display P3 igual ao da Apple), lote em pasta ou `.zip`, galeria do
+  cliente (token só em hash, PIN, porta estreita) com a seleção voltando ao catálogo.
+- ✅ Achar minhas fotos pelo rosto em evento: selfie que não sai do celular, os dois modos por evento (com
+  consentimento, o padrão, e busca aberta com aviso prévio; decisão do titular), cartaz com QR.
+- ⬜ Titular: nome definitivo e busca no INPI; projeto Vercel e domínio; cliente OIDC `foto-web`; schema `foto` e
+  papéis no Supabase; bucket das prévias; pgvector; revisão jurídica da busca por rosto; lançamento.
+- ⬜ Conferir em máquina com placa de vídeo, Safari, Firefox e celular de verdade; ProRAW real; outros corpos Sony
+  em tamanho M/S; recalibrar a nota e os limiares de rosto com ensaios rotulados pelo titular.
 
 ## Central 1.4.7: menu Administração no app (09/11/2026, ramo `claude/desktop-admin-campus`)
 
