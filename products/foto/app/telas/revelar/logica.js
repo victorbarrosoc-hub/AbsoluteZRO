@@ -190,7 +190,7 @@ export function brancoDoPonto(cor, brancoAtual) {
   if (lms.some((v) => !(v > 0))) return null
   const t = temperaturaDeXy(XYZParaXy(mulV(CAT16_INV, lms)))
   const kelvin = Math.round(Math.max(CONTROLES['branco.temperatura'].min, Math.min(CONTROLES['branco.temperatura'].max, t.kelvin)) / 10) * 10
-  const tinta = Math.round(Math.max(-150, Math.min(150, t.tinta)))
+  const tinta = Math.round(Math.max(-150, Math.min(150, t.tinta))) || 0
   const perto = Math.abs(1e6 / kelvin - 1e6 / brancoAtual.kelvin) < 2 && Math.abs(tinta - brancoAtual.tinta) < 1
   return { kelvin, tinta, perto }
 }

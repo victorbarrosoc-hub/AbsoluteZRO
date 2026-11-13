@@ -11,6 +11,7 @@ import { LibRaw } from '../../vendor/libraw/index.js'
 import { servir } from '../trabalho/servir.js'
 import { criarLeitor } from '../../src/raw/libraw.js'
 import { medirLatitude } from '../../src/raw/latitude.js'
+import { exposicaoDaCamera } from '../../src/motor/base.js'
 import { resumirLatitude } from './compacto.js'
 
 const agora = () => performance.now()
@@ -40,6 +41,8 @@ servir({
     const ler = ms(agora() - t)
     if (cancelado()) return null
     t = agora()
+    // o mesmo zero da exposição que src/abrir.js usa, para as margens contarem do mesmo cinza que a revelação
+    negativo.exposicaoBase = exposicaoDaCamera(negativo, { dng: /\.dng$/i.test(nome ?? arquivo.name ?? '') })
     const latitude = resumirLatitude(medirLatitude(negativo))
     return { latitude, tempos: { ler, medir: ms(agora() - t) } }
   },

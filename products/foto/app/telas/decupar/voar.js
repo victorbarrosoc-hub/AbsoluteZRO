@@ -6,16 +6,22 @@ import { reduzirMovimento } from '../../preact.js'
 
 const MOLA = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
-/** Faz `img` (a miniatura de `origem`) voar até `destino`. Devolve quando chegou. */
+/** Onde a miniatura está agora (antes de marcar: com filtro, o cartão pode sair da grade em seguida). */
+export function fotografar(el) {
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  return r.width ? { rect: r, src: el.querySelector('img')?.src ?? null } : null
+}
+
+/** Faz a miniatura (`origem`, de fotografar) voar até `destino`. Devolve quando chegou. */
 export function voar(origem, destino) {
   if (!origem || !destino || reduzirMovimento() || typeof document.body.animate !== 'function') return Promise.resolve()
-  const a = origem.getBoundingClientRect()
+  const a = origem.rect
   const b = destino.getBoundingClientRect()
   if (!a.width || !b.width) return Promise.resolve()
-  const img = origem.querySelector('img')
   const copia = document.createElement('div')
   copia.className = 'voo'
-  if (img?.src) copia.style.backgroundImage = `url("${img.src}")`
+  if (origem.src) copia.style.backgroundImage = `url("${origem.src}")`
   Object.assign(copia.style, { left: `${a.left}px`, top: `${a.top}px`, width: `${a.width}px`, height: `${a.height}px` })
   document.body.append(copia)
   const dx = b.left + b.width / 2 - (a.left + a.width / 2)
