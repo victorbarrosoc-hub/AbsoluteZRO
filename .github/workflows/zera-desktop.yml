@@ -1,14 +1,14 @@
 # ZERA (products/zera): motor em Rust + app para computador (Electron).
 # Não lançado (CLAUDE.md da raiz): este workflow não publica nada. Em pull request e na main, só os testes em Ubuntu
 # (motor, regras, interface no Chromium e o teste de fumaça do Electron). Os instaladores (.dmg universal e .exe) saem
-# pelo botão "Run workflow" ou por uma tag zera-desktop-v* (que funciona antes do merge na main), como artefato do
-# Actions por 14 dias, para o titular testar. Release, central e espelho
+# pelo botão "Run workflow", por uma tag zera-desktop-v* ou por um commit com [zera-instaladores] na mensagem (os dois
+# últimos funcionam antes do merge na main), como artefato do Actions por 14 dias, para o titular testar. Release, central e espelho
 # só depois que o titular lançar (migração nova abrindo o gate).
 name: ZERA · app para computador
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
     tags: ['zera-desktop-v*']
     paths:
       - 'products/zera/**'
@@ -66,7 +66,10 @@ jobs:
 
   app:
     name: Instalador (${{ matrix.label }})
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/zera-desktop-v')
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/zera-desktop-v') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[zera-instaladores]'))
     needs: testes
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
