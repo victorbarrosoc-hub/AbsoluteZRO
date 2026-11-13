@@ -1,12 +1,13 @@
 // "Copiar link" de uma pasta ou arquivo do Drive (mandar para o cliente): copia o webViewLink, confere quem consegue
 // abrir e, se só quem tem acesso abre, oferece "Liberar para quem tiver o link" — que SEMPRE passa por uma confirmação
 // aqui mesmo ("Qualquer pessoa com o link vai poder ver e baixar") antes de chamar o motor. Um cartão por vez, no
-// canto dos avisos.
+// canto dos avisos. Com `publico: true` (a pessoa escolheu "Qualquer pessoa com o link pode ver" no Copiar link, ou
+// deixou essa escolha lembrada, 09/11/2026) libera e copia num clique; o cartão oferece "Deixar restrito".
 import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js'
 import { api, enc, withQuery } from '../lib/api.js'
 import { copyText } from '../lib/mobile.js'
 import { openExternal } from '../lib/desktop.js'
-import { avisoDoLink, CONFIRMAR_LIBERAR, LIBERAR } from '../lib/compartilhar.js'
+import { avisoDoLink, CONFIRMAR_LIBERAR, LIBERAR, RESTRITO, textoPublico } from '../lib/compartilhar.js'
 import { Icon } from './icons.js'
 import { Button, Spinner } from './common.js'
 
@@ -19,6 +20,16 @@ let timer = null
 
 function emit() {
   for (const fn of subs) fn(card)
+}
+
+// Quem mostra o selo "Público (link)" (a lista do Drive) fica sabendo quando o link de um item mudou.
+const mudancas = new Set()
+export function onLinkMudou(fn) {
+  mudancas.add(fn)
+  return () => mudancas.delete(fn)
+}
+function avisarMudanca(accountId, id, publico) {
+  for (const fn of mudancas) fn({ accountId, id, publico })
 }
 
 function put(next) {
@@ -46,13 +57,29 @@ export function driveLinkFor(id, isFolder, resourceKey) {
  * Copia o link de um item do Drive e mostra quem consegue abrir.
  * @param {{ accountId: string, id: string, name?: string, isFolder?: boolean, url?: string|null, resourceKey?: string|null }} item
  */
-export async function copyDriveLink({ accountId, id, name, isFolder = true, url = null, resourceKey = null }) {
+export async function copyDriveLink({ accountId, id, name, isFolder = true, url = null, resourceKey = null, publico = false }) {
   if (!accountId || !id) return
   const mine = ++seq
   // Copia já no clique (o clique ainda está "quente" para a área de transferência): o webViewLink da lista ou o link
   // montado pelo id. Se o motor devolver outro, copia de novo.
   url = url || driveLinkFor(id, isFolder, resourceKey)
   const cedo = await copyText(url)
+  if (publico) {
+    // A pessoa escolheu "Qualquer pessoa com o link pode ver": é o `confirmado` (nunca sai daqui sem essa escolha).
+    put({ seq: mine, accountId, id, rk: resourceKey, name: name || '', isFolder, fase: 'liberando', link: null, copiado: cedo, url })
+    try {
+      const res = await api.post(`/api/drive/${enc(accountId)}/link/liberar`, { id, rk: resourceKey || undefined, confirmado: true })
+      if (card?.seq !== mine) return
+      const copiado = res.link?.url && res.link.url !== url ? await copyText(res.link.url) : cedo
+      patch(mine, { fase: 'liberado', link: res.link, copiado, url: res.link?.url || url })
+      avisarMudanca(accountId, id, true)
+    } catch (err) {
+      if (card?.seq !== mine) return
+      // Política do Workspace, drive compartilhado, sem permissão: diz por quê, e que o link copiado não abre para todos.
+      patch(mine, { fase: 'erro', erro: err?.message || 'Não consegui liberar o link.', nota: cedo ? 'O link copiado só abre para quem já tem acesso.' : null })
+    }
+    return
+  }
   put({ seq: mine, accountId, id, rk: resourceKey, name: name || '', isFolder, fase: 'conferindo', link: null, copiado: cedo, url })
   try {
     const res = await api.get(withQuery(`/api/drive/${enc(accountId)}/link`, { id, rk: resourceKey }))
@@ -85,9 +112,33 @@ async function liberar(mine) {
     const res = await api.post(`/api/drive/${enc(c.accountId)}/link/liberar`, { id: c.id, rk: c.rk || undefined, confirmado: true })
     const copiado = res.link?.url && res.link.url !== c.url ? await copyText(res.link.url) : c.copiado
     patch(mine, { fase: 'liberado', link: res.link, copiado, url: res.link?.url || c.url })
+    avisarMudanca(c.accountId, c.id, true)
   } catch (err) {
     patch(mine, { fase: 'erro', erro: err?.message || 'Não consegui liberar o link.' })
   }
+}
+
+/** Volta para "Restrito" (só quem tem acesso abre): o botão "Deixar restrito" do cartão. Diminuir o acesso não pede confirmação. */
+async function restringir(mine) {
+  const c = card
+  if (!c || c.seq !== mine) return
+  patch(mine, { fase: 'restringindo' })
+  try {
+    const res = await api.post(`/api/drive/${enc(c.accountId)}/link/restringir`, { id: c.id, rk: c.rk || undefined, confirmado: true })
+    patch(mine, { fase: 'pronto', link: res.link, url: res.link?.url || c.url })
+    avisarMudanca(c.accountId, c.id, false)
+  } catch (err) {
+    patch(mine, { fase: 'erro', erro: err?.message || 'Não consegui deixar o link restrito.' })
+  }
+}
+
+/** Liga ou desliga "Qualquer pessoa com o link pode ver" fora do cartão (janela Compartilhar). Devolve o `link` novo. */
+export async function mudarAcessoDoLink({ accountId, id, resourceKey = null, publico }) {
+  const rota = publico ? 'liberar' : 'restringir'
+  const res = await api.post(`/api/drive/${enc(accountId)}/link/${rota}`, { id, rk: resourceKey || undefined, confirmado: true })
+  if (card?.accountId === accountId && card.id === id) put(null) // o cartão do mesmo item ficou velho
+  avisarMudanca(accountId, id, res.link?.access === 'qualquer')
+  return res.link
 }
 
 function useCard() {
@@ -135,6 +186,7 @@ export function LinkShareCard() {
       ${!c.copiado && c.url ? html`<input class="input linkcard-url" readonly value=${c.url} aria-label="Link" onFocus=${(e) => e.currentTarget.select()} />` : null}`
     actions = html`
       ${a.liberar ? html`<${Button} size="sm" icon="users" onClick=${() => pedirConfirmacao(c.seq)}>${LIBERAR}</${Button}>` : null}
+      ${c.link?.access === 'qualquer' && c.link.canShare ? html`<${Button} size="sm" icon="lock" onClick=${() => restringir(c.seq)} title="Só quem tem acesso abre">Deixar restrito</${Button}>` : null}
       ${c.url ? html`<${Button} size="sm" variant="ghost" icon="external" onClick=${() => openExternal(c.url)}>Abrir no Drive</${Button}>` : null}`
   } else if (c.fase === 'confirmar') {
     tone = 'warning'
@@ -148,16 +200,20 @@ export function LinkShareCard() {
   } else if (c.fase === 'liberando') {
     icon = null
     body = html`<span>Liberando ${nome}…</span>`
+  } else if (c.fase === 'restringindo') {
+    icon = null
+    body = html`<span>Deixando ${nome} restrito…</span>`
   } else if (c.fase === 'liberado') {
     tone = 'success'
-    icon = 'circle-check'
+    icon = 'globe'
     title = c.name || null
-    body = html`<span>Liberado. ${CONFIRMAR_LIBERAR}${c.copiado ? ' O link já está copiado.' : ''}</span>`
+    body = html`<span>${textoPublico(c.copiado)}</span>`
+    actions = c.link?.canShare !== false ? html`<${Button} size="sm" icon="lock" onClick=${() => restringir(c.seq)} title="Só quem tem acesso abre">${RESTRITO}</${Button}>` : null
   } else {
     tone = 'error'
     icon = 'warning'
     title = c.name || null
-    body = html`<span>${c.erro}</span>`
+    body = html`<span>${c.erro}</span>${c.nota ? html`<span class="sub">${c.nota}</span>` : null}`
   }
 
   return html`<div

@@ -28,12 +28,38 @@ export function escoposDoModo(modo: ModoDrive): string {
  * /api/drive/picker. Os três precisam ser do mesmo projeto do GOOGLE_CLIENT_ID.
  */
 export const VARIAVEIS_PICKER = { apiKey: "GOOGLE_PICKER_API_KEY", appId: "GOOGLE_APP_ID" } as const;
+
+/** Valor de variável como veio colado: sem espaços e sem aspas em volta. */
+const limpo = (v: string | undefined) => (v ?? "").trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+/** O número do projeto Google está no começo do client ID ("123456789012-abc….apps.googleusercontent.com"). */
+const numeroDoProjeto = (clientId: string) => /^(\d{6,20})-/.exec(clientId)?.[1] ?? null;
+
+export type ProblemaPicker = "client_id_falta" | "chave_falta" | "chave_formato" | "app_id_formato" | "app_id_outro_projeto";
+
+/**
+ * O que falta para o Picker, sem expor valor nenhum (vai para o log e para o /admin). O App ID aceita o número do
+ * projeto ("projects/123…" também); vazio ou inválido, vale o número que já está no começo do client ID (é o mesmo
+ * projeto, e o Picker só funciona com o projeto do client ID).
+ */
+export function diagnosticoPicker(env: Record<string, string | undefined> = process.env): { config: { clientId: string; apiKey: string; appId: string } | null; problemas: ProblemaPicker[]; appIdDoClientId: boolean } {
+  const clientId = limpo(env.GOOGLE_CLIENT_ID);
+  const apiKey = limpo(env[VARIAVEIS_PICKER.apiKey]);
+  const appIdBruto = limpo(env[VARIAVEIS_PICKER.appId]).replace(/^projects\//, "");
+  const doClient = numeroDoProjeto(clientId);
+  const problemas: ProblemaPicker[] = [];
+  if (!clientId) problemas.push("client_id_falta");
+  if (!apiKey) problemas.push("chave_falta");
+  else if (!/^[\w-]{20,80}$/.test(apiKey)) problemas.push("chave_formato");
+  let appId = /^\d{6,20}$/.test(appIdBruto) ? appIdBruto : "";
+  if (appIdBruto && !appId) problemas.push("app_id_formato");
+  if (appId && doClient && appId !== doClient) problemas.push("app_id_outro_projeto");
+  if ((!appId || appId !== doClient) && doClient) appId = doClient;
+  const pronto = Boolean(clientId && apiKey && /^[\w-]{20,80}$/.test(apiKey) && appId);
+  return { config: pronto ? { clientId, apiKey, appId } : null, problemas, appIdDoClientId: Boolean(doClient && appId === doClient && appIdBruto !== doClient) };
+}
+
 export function configDoPicker(env: Record<string, string | undefined> = process.env): { clientId: string; apiKey: string; appId: string } | null {
-  const clientId = env.GOOGLE_CLIENT_ID?.trim() ?? "";
-  const apiKey = env[VARIAVEIS_PICKER.apiKey]?.trim() ?? "";
-  const appId = env[VARIAVEIS_PICKER.appId]?.trim() ?? "";
-  if (!clientId || !/^[\w-]{20,80}$/.test(apiKey) || !/^\d{6,20}$/.test(appId)) return null;
-  return { clientId, apiKey, appId };
+  return diagnosticoPicker(env).config;
 }
 
 /**

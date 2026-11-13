@@ -15,6 +15,22 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Central 1.4.7: menu Administração (09/11/2026, ramo `claude/desktop-admin-campus`)
+
+| Verificação       | Comando                                           | Resultado |
+| ----------------- | ------------------------------------------------- | --------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | 118/118   |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK  |
+
+## Central 1.4.6: Campus numa janela própria (09/11/2026, ramo `claude/desktop-campus`)
+
+Linux, Node 22, Electron 44.5.1 com Xvfb.
+
+| Verificação       | Comando                                           | Resultado                                          |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Testes da central | `npm test` em `apps/hub-desktop`                  | **118/118** (novo: destino `campus`, só claude.ai) |
+| Teste de fumaça   | `xvfb-run -a npx electron . --smoke --no-sandbox` | SMOKE OK                                           |
+
 ## Downloads rápidos no Brasil (06/11/2026, ramo `claude/downloads-rapidos`, ADR 0043)
 
 Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63.
@@ -219,6 +235,13 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, o nome em Figtree (07/11/2026): antes e depois fotografados no iPhone (claro e escuro), no computador e na
   imagem de compartilhar; `node scripts/marca.mjs` e `node scripts/telas-do-site.mjs` refeitos; nenhuma referência ao
   Nunito no app, no site, na marca ou na cópia do HUB; `products/radio` `npm test` 17/17.
+- RADION nativo, Android, marco 1 (08/11/2026): `./gradlew test assembleRelease` em `products/radio/nativo/android`.
+  Núcleo 6/6: estado conferido, texto da notificação e ordem da saída de som. App 8/8: regras de navegação e deep
+  link, login pelo navegador com state, PKCE, validade e troca recusada. O APK pede só RECORD_AUDIO,
+  MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE (microfone e mídia), POST_NOTIFICATIONS, WAKE_LOCK e INTERNET.
+  `products/radio` `npm test` 17/17, com o teste novo da ponte (`assets/ponte.js`) na página de verdade: o estado chega
+  ao app, o Falar/Parar abre e fecha a fala e o microfone fica aberto com o rádio ligado. A tela travada em si só se
+  confere num Android de verdade.
 
 ## Entrar com o Google pelo navegador, nos apps de computador (02/11/2026, ADR 0041)
 
@@ -749,6 +772,17 @@ da Higgsfield é a `0052`).
 - Conferido de verdade (01/11/2026): a CDN (`*.cloudfront.net`, `cdn.higgsfield.ai`) e o envio (`upload.higgsfield.ai`)
   da Higgsfield respondem com CORS aberto, então o navegador baixa e envia direto, mesmo com COEP. Não testado: o login e
   a geração contra a Higgsfield de verdade a partir do HUB.
+
+## SOBEDESCE: Drive caía calado em Arquivos escolhidos (08/11/2026)
+
+Branch `sobedesce-drive-escopo`.
+
+- `web/tests/drive-hibrido.test.mts`: concessão perdida → o callback manda para o segundo pedido (`drive` com
+  `login_hint` da vaga), volta inteiro sem gastar vaga; desmarcou de novo → `?google=escolhidos`, sem terceiro pedido;
+  `?inteiro=` forjado ou com o acesso total desligado não pede o Drive inteiro; Picker: App ID errado usa o do client
+  ID, aspas e espaços, outro projeto, chave errada e a resposta com `problemas` sem valor.
+- `web/tests/google.test.mts`: reconectar depois de remover agora vai ao segundo pedido.
+- `web`: `npm run lint`, `npm run typecheck` e `npm test` (todos passando). HUB: `tsc` de `apps/hub-web` sem erro.
 
 ## SOBEDESCE: Montagens no Estúdio (05/11/2026)
 
@@ -5480,3 +5514,117 @@ SOBEDESCE de computador, que disparam os instaladores).
   `hub.spec.ts -g "central de apps"` 2/2 (com o cartão perdendo o "Atualizar" no aviso `reler`); `scan-secrets` sem
   segredos. A bateria e2e inteira não foi rodada.
 - Não validado: num Mac de verdade com a central empacotada (a 1.4.5 só sai pelo workflow `hub-desktop` na `main`).
+
+## SOBEDESCE 0.3.12: download não fica preso lento depois de o Google recusar (09/11/2026)
+
+Branch `sobedesce-download-recuo`.
+
+- `test/download.test.js`: o Drive falso recusa com 403 de limite e com 429 em 6 conexões. O arquivo de 48 MiB termina
+  com o MD5 certo, as recusas passam pelo recuo da conta e ele zera no fim.
+- `test/manager.test.js`:
+  - Economia com prazo: depois do prazo, o arquivo volta às conexões normais; registro antigo sem prazo não fica
+    preso; "Tentar de novo" limpa `economia`, `economiaAte`, `quotaHits` e `copiaFalhou`.
+  - 403 `userRateLimitExceeded` diz "O Google pediu para ir mais devagar", e queda de rede continua "Sem conexão".
+  - O diagnóstico não leva nome de arquivo, caminho, e-mail, token nem o id da conta.
+  - Recuo da conta: recusas juntas não somam espera, o `Retry-After` vale, a escada zera com progresso e tem teto.
+- `APP_VERSION` é a versão do `package.json`, com teste.
+- Os testes de cota que já existiam (economia, cópia temporária, cópia sem a marca) continuam passando.
+
+## SOBEDESCE 0.3.19: menu do Drive no computador (10/11/2026)
+
+- Só os arquivos do computador e do motor do #153 (`public/`, `src/`, testes), aplicados sobre a main da 0.3.18; nada em
+  `web/`. Sem conflito de versão com #150, #151 e #159 (nenhum deles mexe em `package.json`, `public/` ou `src/`).
+- `test/drive-menu.test.js` (parte do computador), `test/compartilhar.test.js` e `test/drive-web.test.js`: 24
+  passaram. Motor (`npm run test:fast`): 863 passaram, 1 falha. A falha é o "Set" do celular, que já falha neste
+  contêiner sem esta mudança.
+
+## SOBEDESCE 0.3.18: carrossel e grade por número, takes para a Montagem (10/11/2026)
+
+- No demo (trabalho de Frames real): "Escolher" em 2 takes e Montagem levou os 2 arquivos; carrossel 9:16 de 10
+  slides rola com a roda e o número 10 leva ao fim; grade 3×5 recebe uma foto por quadradinho de 1 a 8, começando
+  embaixo à direita, com o cartão "Quadradinho 8".
+- `test/montagens-carrossel.test.js` ganhou a geometria da grade (ordem de postar, toque, imagem dividida); 6 testes
+  passaram com `test/templates-html.test.js`.
+
+## SOBEDESCE 0.3.17: Transferências não congela mais no fim do envio (10/11/2026)
+
+- Reproduzido no demo: envio de 2 vídeos (164 MB) com proxy. Com o ETA abaixo de 60 s, a página dava `InvalidCharacterError:
+… tag name ('1<small')` e parava. Com a correção, nenhum erro: "Falta <1 min" aparece e o andamento segue até o fim.
+  Os proxies saíram ("pronta") nos dois arquivos.
+- `test/templates-html.test.js`: falha com o código antigo e passa com o novo.
+- Proteção de tela, no demo com o defeito antigo forçado: Transferências mostra "Esta tela teve um problema…" com
+  "Tentar de novo", e o menu abre o Drive normalmente.
+
+## SOBEDESCE 0.3.16: uma ronda só para os pedidos (09/11/2026)
+
+- `test/ronda-pedidos.test.js` (6 testes, 6 passaram):
+  - recuo de 30 s até 5 min (12 perguntas por hora parado);
+  - uma pergunta só, e cada tipo recebe só os pendentes dele (sem tipo = proxy);
+  - acordar volta ao curto;
+  - 404/403 pausa 30 min;
+  - volta sem conta não prende a ronda;
+  - com a ronda, o tipo não faz GET sozinho.
+- Motor (`npm run test:fast`): 854 testes, 1 falha. A falha é o "Set" do celular, que já falha neste contêiner sem esta
+  mudança; os outros passaram.
+
+## SOBEDESCE 0.3.15: Frames → Montagem no computador (09/11/2026)
+
+Branch `sobedesce-frames-montagem-pc`.
+
+- Conferido no demo com um trabalho real (`POST /api/frames`), vídeo H.264 de 3 cenas de 6 s:
+  - o trabalho saiu com 3 frames e 3 takes;
+  - escolhidos 2 frames e 2 takes, com a barra mostrando "2 frames e 2 takes · escolhidos";
+  - "Montagem" pôs os 4 caminhos na montagem, com o nome do vídeo, e abriu a tela, que diz "4 itens foram para a
+    Montagem". Lá, os takes viram vídeo, com play e agulha.
+- O contador da agulha mostra "0:00,0 / 0:05,0" (antes saía "0:00,00:00:0,0").
+- Montagens (`test/montagens*.test.js`): passaram.
+
+## SOBEDESCE 0.3.14: carrossel por slide (09/11/2026)
+
+Branch `sobedesce-carrossel-por-slide`.
+
+- `test/montagens-carrossel.test.js` (4 testes):
+  - 20 slides, numerados, com os limites;
+  - a montagem antiga (sem `paginas`) sai com as mesmas caixas de antes;
+  - cada slide com o próprio modelo e a própria borda, slides emendados num grupo, o número do slide de cada foto e o
+    quadro tocado;
+  - trocar o modelo de um slide ou o número de slides não tira as fotos dos outros.
+- Montagens no computador e no celular (`test/montagens.test.js`, `test/montagens-celular.test.js`): 22 testes, 22
+  passaram, e a lib do celular continua idêntica.
+- Conferido no demo (escuro):
+  - galeria do carrossel;
+  - arrastar uma foto até o slide 2 (o quadro acende);
+  - slide 3 com "Dois lado a lado";
+  - tocar na foto e depois no slide 4;
+  - 20 slides rolando de lado.
+- Salvar um carrossel de 3 slides (1–2 emendados e 3 com "Quatro") gerou 3 JPG de 1080 × 1350, na ordem certa.
+- Ver a montagem com take, no demo: post "Dois empilhados" com um take (trecho a partir de 10 s) e uma foto.
+  - O play anda o take no quadro: em 2 s, o vídeo estava em 12,4 s.
+  - A agulha em 4 s mostra o vídeo em 14 s, e o contador diz 0:04,0 / 0:05,0.
+  - O enquadre do take tocando bate com o da foto parada.
+
+## SOBEDESCE 0.3.13: imprevistos do cartão (09/11/2026)
+
+Branch `sobedesce-cartao-imprevistos`.
+
+- `test/cartao-imprevistos.test.js`:
+  - Detecta MP4 sem índice, MOV cortado, vazio e JPEG sem o fim. Não acusa o arquivo inteiro, o formato estranho, o
+    RAW nem o arquivo que sumiu.
+  - Separa o que fica no cartão (LRV, LRF, THM, `._`, `.DS_Store`, `Thumbs.db`) do que vai (material bruto e XML).
+  - Na descarga, o interrompido é copiado e avisado, os proxies ficam no cartão, o cartão sai como "não parcial" e é
+    ejetado.
+- `test/backup-automatico.test.js`: o contador zerado vai para `Cartão 01 · contador zerado`, conferido. O destino
+  antigo fica intacto e o mesmo cartão de novo não copia outra vez.
+- Backup Automático, fotos e vídeos e relatório: 39 testes, 39 passaram, 0 falhas.
+- Prévia do cartão (`test/cartao-imprevistos.test.js`):
+  - pega a maior prévia JPEG embutida no RAW, com `FF 00` e marcadores de reinício no meio, e devolve null sem prévia;
+  - lista do mais novo para o mais antigo, sem proxies, e responde 404 a um disco que não está plugado.
+- Conferida no demo, claro e escuro, com um cartão de exemplo em `/media/root`: JPG, ARW (prévia embutida) e MP4
+  tocando.
+- Arquivar (`test/arquivar.test.js`, 3 testes, 3 passaram):
+  - argumentos do DNG Converter por nível e do ffmpeg (CRF/qualidade, LUT, 1080p no Econômico);
+  - escolha do codificador (VideoToolbox só no Mac, x265 se houver, senão x264);
+  - pasta real com ffmpeg e um conversor DNG de mentira: DNG e MP4 em `<pasta> · arquivo`, o original intacto, e a
+    segunda vez não refaz nada.
+- Conferido no demo: pasta com 2 RAW, 2 vídeos (94 MB) e 1 nota; "Testar 8 s" com LUT S-Log3 estimou 33,5 MB e o
+  arquivo saiu com 33,9 MB (−65%).

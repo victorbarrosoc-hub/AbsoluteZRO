@@ -19,6 +19,7 @@ import { planDownloads, planUploads } from '../src/engine/planner.js'
 import { PART_SUFFIX } from '../src/util/paths.js'
 import { makeTmpDir, waitFor, setupDrive, randomFile, md5File } from './helpers.js'
 import { virtualMd5 } from './mock-drive.js'
+import { MSG_LIMITE, MSG_REDE, RecuoDaConta, emEconomia, limparLinha } from '../src/engine/recuo.js'
 
 const MiB = 1024 * 1024
 
@@ -515,6 +516,92 @@ test('cota de download do arquivo: 1ª vez em economia (uma conexão), depois es
   ctl.finish('q1')
   await waitFor(() => statusOf(m, 'q1') === 'completed')
   assert.equal(m.get('q1').economia, undefined, 'terminou: sai da economia')
+})
+
+test('economia com prazo: depois do prazo o arquivo volta às conexões normais; "Tentar de novo" limpa tudo (09/11/2026)', async t => {
+  const ctl = fakeTasks()
+  const dir = await makeTmpDir()
+  t.after(() => fs.rm(dir, { recursive: true, force: true }))
+  const { m } = await makeManager(t, { ctl, quotaDelays: [60_000], economiaMs: 60_000, economiaPrazoMs: 120 })
+  await m.add({ batch: batch('b1'), records: [dl(dir, 'e1')] })
+  await waitFor(() => ctl.live.has('e1'))
+  const quota = () => new HttpError(403, { body: { error: { errors: [{ reason: 'downloadQuotaExceeded' }] } } })
+  ctl.fail('e1', quota())
+  await waitFor(() => statusOf(m, 'e1') === 'waiting')
+  const r = m.get('e1')
+  assert.equal(r.economia, true)
+  assert.ok(emEconomia(r), 'logo depois da cota: uma conexão só')
+  await new Promise(ok => setTimeout(ok, 160))
+  assert.ok(!emEconomia(r), 'passou o prazo: volta às conexões dos Ajustes')
+  assert.ok(!emEconomia({ economia: true }), 'registro antigo, sem prazo: não fica preso numa conexão')
+  // Nova cota depois do prazo recomeça a economia (não pula direto para a espera longa).
+  r.quotaHits = 2
+  r.copiaFalhou = true
+  await m.retry(['e1'])
+  const limpo = m.get('e1')
+  assert.equal(limpo.economia, undefined)
+  assert.equal(limpo.economiaAte, undefined)
+  assert.equal(limpo.quotaHits, undefined)
+  assert.equal(limpo.copiaFalhou, undefined)
+})
+
+test('limite do Google (403/429) diz "ir mais devagar", não "sem conexão"; queda de rede continua "sem conexão"', async t => {
+  const ctl = fakeTasks()
+  const dir = await makeTmpDir()
+  t.after(() => fs.rm(dir, { recursive: true, force: true }))
+  const { m } = await makeManager(t, { ctl, settings: { maxConcurrentDownloads: 2 }, networkDelays: [60_000] })
+  await m.add({ batch: batch('b1'), records: [dl(dir, 'r1'), dl(dir, 'r2')] })
+  await waitFor(() => ctl.live.has('r1') && ctl.live.has('r2'))
+  ctl.fail('r1', new SobeDesceError('retry', 'A conexão com o Google falhou muitas vezes seguidas.', { reason: 'userRateLimitExceeded', status: 403 }))
+  const rede = new Error('socket hang up')
+  rede.code = 'ECONNRESET'
+  ctl.fail('r2', rede)
+  await waitFor(() => statusOf(m, 'r1') === 'waiting' && statusOf(m, 'r2') === 'waiting')
+  assert.equal(m.get('r1').error.message, MSG_LIMITE)
+  assert.equal(m.get('r2').error.message, MSG_REDE)
+  assert.ok(m.diario.ultimas().some(l => /limite do Google: espera r1/.test(l)), 'o log do motor anota')
+})
+
+test('diagnóstico: ajustes, estado e log sem nome de arquivo, caminho, e-mail ou token; recuo da conta', async t => {
+  const ctl = fakeTasks()
+  const dir = await makeTmpDir()
+  t.after(() => fs.rm(dir, { recursive: true, force: true }))
+  const { m } = await makeManager(t, { ctl, settings: { maxConcurrentDownloads: 1, connectionsPerDownload: 8 } })
+  const r = dl(dir, 'g1', { name: 'Casamento_Lia_Theo_A001.mov' })
+  await m.add({ batch: batch('b1'), records: [r, dl(dir, 'g2')] })
+  await waitFor(() => ctl.live.has('g1'))
+  m.log('teste', '/Users/lia/Movies/Casamento_Lia_Theo_A001.mov', 'lia@exemplo.com', 'Bearer ya29.abc')
+  m.recuoDe('acc1').bater()
+  const d = m.diagnostico()
+  const texto = JSON.stringify(d)
+  for (const proibido of ['Casamento_Lia_Theo', dir, '/Users/lia', 'lia@exemplo.com', 'ya29.abc', 'acc1']) assert.ok(!texto.includes(proibido), `vazou: ${proibido}`)
+  assert.equal(d.ajustes.conexoesPorArquivo, 8)
+  assert.equal((d.porStatus.running || 0) + (d.porStatus.queued || 0), 2)
+  assert.deepEqual(d.itens.map(i => [i.id, i.conta, i.tamanho, i.economia]), [['g1', 'conta 1', 1000, false], ['g2', 'conta 1', 1000, false]])
+  assert.equal(d.recuo[0].recusas, 1)
+  assert.ok(d.log.some(l => /teste \[caminho\] \[e-mail\] \[token\]/.test(l)))
+  assert.equal(limparLinha('C:\\Users\\lia\\x.mov e 1//0abc'), '[caminho] e [token]')
+})
+
+test('recuo da conta: recusas juntas não somam espera; um pedaço que chega zera a escada', async () => {
+  let agora = 1000
+  const r = new RecuoDaConta({ baseMs: 100, maxMs: 800, now: () => agora })
+  assert.equal(r.bater(), 100)
+  assert.equal(r.bater(), 100, 'outra conexão recusada ao mesmo tempo: mesma espera')
+  agora += 100
+  assert.equal(r.bater(), 200, 'depois da espera, a próxima recusa espera mais')
+  agora += 200
+  assert.equal(r.bater(5000), 5000, 'Retry-After do Google vale')
+  agora += 5000
+  r.ok()
+  assert.equal(r.bater(), 100, 'chegou um pedaço: recomeça')
+  agora += 100
+  for (let i = 0; i < 10; i++) {
+    r.bater()
+    agora += r.restante()
+  }
+  assert.ok(r.bater() <= 800, 'nunca passa do teto')
+  assert.equal(r.vezes, 16)
 })
 
 test('cota do arquivo de novo em economia: baixa por uma cópia temporária e apaga só a cópia no fim', async t => {
@@ -1106,4 +1193,10 @@ test('dois lotes de envio para a mesma pasta: o segundo enxerga o que o primeiro
   assert.deepEqual(names, ['C0001 (2).MXF', 'C0001.MXF'])
   assert.equal(await env.mock.contentMd5(a.target.fileId), md5A)
   assert.equal(await env.mock.contentMd5(b.target.fileId), md5B)
+})
+
+test('a versão que o app mostra é a do package.json (ficou em 0.3.2 escrita à mão desde 01/11/2026)', async () => {
+  const { APP_VERSION } = await import('../src/config.js')
+  const pkg = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.equal(APP_VERSION, pkg.version)
 })

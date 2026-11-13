@@ -287,10 +287,12 @@ function connect() {
     if (!d) return
     const quem = d.dono ? `${d.dono} · ` : ''
     // parcial: passou só o escolhido (só vídeos, só fotos, "Escolher o que passar"): nunca "pode formatar"
-    const titulo = d.ok ? (d.soPasta ? 'Pasta copiada' : d.parcial ? 'Passou o escolhido' : 'Cartão OK, pode formatar') : d.resultado === 'cancelado' ? 'Descarga parada' : 'Cartão com pendência'
+    // Gravação que parece interrompida: copiou igual, mas não é "pode formatar" sem conferir (src/backup/imprevistos.js).
+    const titulo = d.ok ? (d.soPasta ? 'Pasta copiada' : d.parcial ? 'Passou o escolhido' : d.suspeitos ? 'Cartão copiado: confira antes de formatar' : 'Cartão OK, pode formatar') : d.resultado === 'cancelado' ? 'Descarga parada' : 'Cartão com pendência'
     const fim = d.ejetado ? ' Ejetado: pode tirar.' : d.ejetarErro ? ` ${d.ejetarErro}` : ''
-    const texto = d.ok ? `${quem}${d.cartao || 'cartão'} está em todos os destinos.${d.parcial ? ' O resto ficou no cartão.' : ''}${fim}` : d.erro || `${quem}${d.faltam || 0} arquivos ainda não estão em todos os destinos.`
-    if (d.resultado !== 'cancelado') toast(d.ok && !d.ejetarErro ? 'success' : d.ok ? 'warning' : 'error', `${titulo}. ${texto}`, { duration: 12_000 })
+    const extra = `${d.suspeitos ? ` ${d.suspeitos === 1 ? '1 gravação parece interrompida' : `${d.suspeitos} gravações parecem interrompidas`}.` : ''}${d.zerados ? ` Contador zerado: ${d.zerados === 1 ? '1 arquivo foi' : `${d.zerados} arquivos foram`} para a pasta à parte.` : ''}`
+    const texto = d.ok ? `${quem}${d.cartao || 'cartão'} está em todos os destinos.${d.parcial ? ' O resto ficou no cartão.' : ''}${extra}${fim}` : d.erro || `${quem}${d.faltam || 0} arquivos ainda não estão em todos os destinos.`
+    if (d.resultado !== 'cancelado') toast(d.ok && !d.ejetarErro && !d.suspeitos ? 'success' : d.ok ? 'warning' : 'error', `${titulo}. ${texto}`, { duration: 12_000 })
     try {
       window.dispatchEvent(new CustomEvent('sd:backup', { detail: { titulo, texto } }))
     } catch {}

@@ -280,6 +280,67 @@ describe("callback: o escopo que veio de fato", () => {
     assert.equal((await drivesDe(p.token)).find((d) => d.email === primeira.email)?.modo, "total");
   });
 
+  test("a concessão do Drive inteiro sumiu no Google: reconectar pede o inteiro de novo só para a conta da vaga (08/11/2026)", async () => {
+    await zerarVagas();
+    const p = await pessoa("Kika");
+    await ligarDireto(p.id);
+    const g = conta("kika");
+    await conectarDrive(p.token, g);
+    assert.equal(await vagas.vagasUsadasPor(p.id), 1);
+
+    // Reconectar com a concessão antiga perdida: o pedido é drive.file + include_granted_scopes e o Google devolve só drive.file.
+    const r1 = await conectarDrive(p.token, g, `${BASICOS} ${DRIVE_FILE}`);
+    assert.equal(r1.pedido.get("scope"), `${BASICOS} ${DRIVE_FILE}`);
+    const segunda = new URL(r1.destino, SITE);
+    assert.equal(segunda.pathname, "/api/google/conectar", "não cai calado em Arquivos escolhidos");
+    assert.equal(segunda.searchParams.get("inteiro"), g.sub);
+
+    // O segundo pedido: o Drive inteiro, com a conta da vaga já escolhida no Google.
+    amb.google.proximo.conta = g;
+    amb.google.proximo.escopo = null;
+    const ida = await conectar.GET(pedido(r1.destino, { cookies: { sd_sessao: p.token } }));
+    assert.equal(ida.status, 302);
+    const u = new URL(ida.headers.get("location")!);
+    assert.equal(u.searchParams.get("scope"), `${BASICOS} ${DRIVE}`);
+    assert.equal(u.searchParams.get("login_hint"), g.email);
+    const google = await fetch(u, { redirect: "manual" });
+    const res = await callback.GET(pedido(google.headers.get("location")!.replace(SITE, ""), { cookies: { sd_google: cookiesDe(ida).get("sd_google"), sd_sessao: p.token } }));
+    const fim = new URL(res.headers.get("location")!, SITE);
+    assert.equal(fim.pathname + fim.search, "/conta?google=ok");
+    assert.equal((await drivesDe(p.token)).find((d) => d.email === g.email)?.modo, "total");
+    assert.equal((await vagas.resumoVagas()).usadas, 1, "a mesma conta Google não gasta outra vaga");
+
+    // Desmarcou a caixinha também no segundo pedido: conecta em Arquivos escolhidos, diz isso e não pede uma terceira vez.
+    const r2 = await conectarDrive(p.token, g, `${BASICOS} ${DRIVE_FILE}`);
+    amb.google.proximo.escopo = `${BASICOS} ${DRIVE_FILE}`;
+    const ida2 = await conectar.GET(pedido(r2.destino, { cookies: { sd_sessao: p.token } }));
+    const google2 = await fetch(new URL(ida2.headers.get("location")!), { redirect: "manual" });
+    const res2 = await callback.GET(pedido(google2.headers.get("location")!.replace(SITE, ""), { cookies: { sd_google: cookiesDe(ida2).get("sd_google"), sd_sessao: p.token } }));
+    const fim2 = new URL(res2.headers.get("location")!, SITE);
+    assert.equal(fim2.pathname + fim2.search, "/conta?google=escolhidos");
+  });
+
+  test("o segundo pedido só vale para a conta da vaga: outra conta Google ou sem acesso total, nada de Drive inteiro", async () => {
+    await zerarVagas();
+    const p = await pessoa("Lia");
+    await ligarDireto(p.id);
+    const g = conta("lia");
+    await conectarDrive(p.token, g);
+    // Conta Google nova da mesma pessoa, voltando com drive.file: fica em Arquivos escolhidos (M1), sem segundo pedido.
+    const outra = await conectarDrive(p.token, conta("lia-2"), `${BASICOS} ${DRIVE_FILE}`);
+    assert.equal(outra.destino, "/conta?google=ok");
+    // ?inteiro= com um sub que não é a vaga: o pedido continua drive.file.
+    amb.google.proximo.conta = g;
+    const forjado = await conectar.GET(pedido("/api/google/conectar?modo=vincular&inteiro=sub-de-outra-pessoa", { cookies: { sd_sessao: p.token } }));
+    assert.equal(new URL(forjado.headers.get("location")!).searchParams.get("scope"), `${BASICOS} ${DRIVE_FILE}`);
+    // Desligado no console: nem a conta da vaga ganha o segundo pedido.
+    await ligarDireto(p.id, false);
+    const desligado = await conectar.GET(pedido(`/api/google/conectar?modo=vincular&inteiro=${g.sub}`, { cookies: { sd_sessao: p.token } }));
+    const q = new URL(desligado.headers.get("location")!).searchParams;
+    assert.equal(q.get("scope"), `${BASICOS} ${DRIVE_FILE}`);
+    assert.equal(q.get("login_hint"), null);
+  });
+
   test("entrar com Google não troca o `drive` guardado por um token menor", async () => {
     await zerarVagas();
     const p = await pessoa("Iris");
@@ -342,7 +403,7 @@ describe("app do celular: navegar e comparar em Arquivos escolhidos", () => {
     assert.equal((await picker.GET(pedido("/api/drive/picker"))).status, 401);
     const p = await pessoa("Juca");
     const sem = await picker.GET(pedido("/api/drive/picker", { cookies: { sd_sessao: p.token } }));
-    assert.deepEqual(await sem.json(), { pronto: false });
+    assert.deepEqual(await sem.json(), { pronto: false, problemas: ["chave_falta"] });
     Object.assign(process.env, { GOOGLE_PICKER_API_KEY: "AIzaSyTeste-chave-publica-do-picker", GOOGLE_APP_ID: "123456789012" });
     try {
       const com = await (await picker.GET(pedido("/api/drive/picker", { cookies: { sd_sessao: p.token } }))).json();
@@ -350,6 +411,37 @@ describe("app do celular: navegar e comparar em Arquivos escolhidos", () => {
     } finally {
       delete process.env.GOOGLE_PICKER_API_KEY;
       delete process.env.GOOGLE_APP_ID;
+    }
+  });
+
+  test("Picker: diz qual variável falhou (sem o valor) e tira o App ID do client ID quando ele veio errado (08/11/2026)", async () => {
+    const { diagnosticoPicker } = await import("../src/lib/google/config");
+    const cliente = "123456789012-abcdef.apps.googleusercontent.com";
+    const chave = "AIzaSyTeste-chave-publica-do-picker";
+    // ID do projeto (nome) em vez do número: usa o número do client ID e diz o que estava errado.
+    const nome = diagnosticoPicker({ GOOGLE_CLIENT_ID: cliente, GOOGLE_PICKER_API_KEY: chave, GOOGLE_APP_ID: "sobedesce-476012" });
+    assert.deepEqual(nome.config, { clientId: cliente, apiKey: chave, appId: "123456789012" });
+    assert.deepEqual(nome.problemas, ["app_id_formato"]);
+    // Colado com aspas e espaços: vale igual, sem problema.
+    const aspas = diagnosticoPicker({ GOOGLE_CLIENT_ID: cliente, GOOGLE_PICKER_API_KEY: ` "${chave}" `, GOOGLE_APP_ID: "'123456789012'\n" });
+    assert.deepEqual(aspas, { config: { clientId: cliente, apiKey: chave, appId: "123456789012" }, problemas: [], appIdDoClientId: false });
+    // Número de outro projeto: o Picker só funciona com o do client ID.
+    assert.deepEqual(diagnosticoPicker({ GOOGLE_CLIENT_ID: cliente, GOOGLE_PICKER_API_KEY: chave, GOOGLE_APP_ID: "999999999999" }).problemas, ["app_id_outro_projeto"]);
+    // Sem App ID: o do client ID.
+    assert.equal(diagnosticoPicker({ GOOGLE_CLIENT_ID: cliente, GOOGLE_PICKER_API_KEY: chave }).config?.appId, "123456789012");
+    // Chave errada: desligado, e diz qual.
+    const ruim = diagnosticoPicker({ GOOGLE_CLIENT_ID: cliente, GOOGLE_PICKER_API_KEY: "chave com espaço", GOOGLE_APP_ID: "123456789012" });
+    assert.equal(ruim.config, null);
+    assert.deepEqual(ruim.problemas, ["chave_formato"]);
+    assert.deepEqual(diagnosticoPicker({}).problemas, ["client_id_falta", "chave_falta"]);
+    // A resposta diz o motivo, nunca o valor.
+    const p = await pessoa("Nina");
+    Object.assign(process.env, { GOOGLE_PICKER_API_KEY: "chave com espaço" });
+    try {
+      const r = await (await picker.GET(pedido("/api/drive/picker", { cookies: { sd_sessao: p.token } }))).json();
+      assert.deepEqual(r, { pronto: false, problemas: ["chave_formato"] });
+    } finally {
+      delete process.env.GOOGLE_PICKER_API_KEY;
     }
   });
 });

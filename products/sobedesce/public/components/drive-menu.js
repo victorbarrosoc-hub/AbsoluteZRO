@@ -24,7 +24,7 @@ export function posicaoMenu(x, y, w, h, vw, vh, margem = MARGEM) {
 
 /**
  * @param {{ titulo?: string, itens: Array<{ id: string, icon: string, label: string, hint?: string, disabled?: boolean,
- *           perigo?: boolean, sep?: boolean, title?: string }|null>, x: number, y: number, onClose: (id: string|null) => void }} props
+ *           motivo?: string, perigo?: boolean, sep?: boolean, title?: string }|null>, x: number, y: number, onClose: (id: string|null) => void }} props
  */
 function MenuContexto({ titulo, itens, x, y, onClose }) {
   const ref = useRef(null)
@@ -99,7 +99,7 @@ function MenuContexto({ titulo, itens, x, y, onClose }) {
             onClick=${() => onClose(it.id)}
           >
             <${Icon} name=${it.icon} size=${15} />
-            <span class="menu-item-text">${it.label}</span>
+            <span class="menu-item-text">${it.label}${it.disabled && it.motivo ? html`<small class="menu-item-motivo">${it.motivo}</small>` : null}</span>
             ${it.hint ? html`<span class="menu-item-hint">${it.hint}</span>` : null}
           </button>`,
       )}

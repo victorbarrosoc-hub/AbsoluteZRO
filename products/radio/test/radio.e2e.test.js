@@ -481,3 +481,58 @@ test('foto da conta: cabe no círculo no topo, nos Ajustes e na equipe', { skip:
   assert.deepEqual(await encaixe('#aj-av'), certo)
   assert.deepEqual(jo.erros, [])
 })
+
+// RADION no Android (products/radio/nativo/android): a ponte do app (assets/ponte.js) entra antes da página, como o
+// WebViewCompat.addDocumentStartJavaScript faz. Com ela a página se apresenta ao app pelo contrato do computador:
+// conta o estado (o app liga o serviço e mostra na notificação), recebe 'alternar-fala' (Falar/Parar da tela
+// bloqueada e do fone) e mantém o microfone aberto desde o Ligar (no app, a saída de som é do próprio app).
+test('Android nativo: a ponte do app conta o estado e o Falar/Parar da notificação abre e fecha a fala', { skip: pular, timeout: 90000 }, async () => {
+  const { readFileSync } = await import('node:fs')
+  const ponte = readFileSync(new URL('../nativo/android/app/src/main/assets/ponte.js', import.meta.url), 'utf8')
+  const ctx = await navegador.newContext({
+    permissions: ['microphone'],
+    userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.0.0 Mobile Safari/537.36 RADION-Android/0.1.0',
+  })
+  await ctx.addInitScript(() => {
+    window.__app = []
+    window.RadionAndroid = { postMessage: (s) => window.__app.push(JSON.parse(s)) }
+    const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+    window.__trilhas = []
+    navigator.mediaDevices.getUserMedia = async (c) => {
+      const m = await pedir(c)
+      window.__trilhas.push(...m.getAudioTracks())
+      return m
+    }
+  })
+  await ctx.addInitScript({ content: ponte })
+  const page = await ctx.newPage()
+  const erros = []
+  page.on('pageerror', (e) => erros.push(String(e)))
+  await page.goto(base)
+  assert.equal(await page.evaluate(() => window.radionDesktop?.plataforma), 'android')
+  assert.equal(await page.evaluate(() => /Android/.test(navigator.userAgent) || navigator.userAgentData?.platform === 'Android'), false)
+  await page.fill('#local-nome', 'Lu')
+  await page.click('#local button')
+  await page.waitForSelector('#pg-inicio:not([hidden])')
+  // o botão do modo compacto (só do computador) não aparece no celular
+  assert.equal(await page.isVisible('#compacto-btn'), false)
+  await page.click('.item[data-ir="diarias"]')
+  await page.fill('#criar-nome', 'Externa')
+  await page.click('#criar button')
+  await page.waitForSelector('#noar:not([hidden])')
+  await page.click('#ligar-btn')
+  // ligado: o app recebe o estado (liga o serviço) e o microfone fica aberto mesmo calado (tela travada)
+  await page.waitForFunction(() => window.__app.some((m) => m.t === 'estado' && m.e.ligado === true && m.e.diaria === 'Externa'))
+  await page.waitForFunction(() => window.__trilhas.some((t) => t.readyState === 'live'))
+  const ultimo = () => page.evaluate(() => [...window.__app].reverse().find((m) => m.t === 'estado').e)
+  assert.equal((await ultimo()).modo, 'mudo')
+  // Falar na notificação: abre a fala; Parar: fecha
+  await page.evaluate(() => window.__radionComando('alternar-fala'))
+  await page.waitForFunction(() => document.getElementById('ptt').dataset.estado === 'aberto')
+  await page.waitForFunction(() => [...window.__app].reverse().find((m) => m.t === 'estado').e.modo === 'aberto')
+  await page.evaluate(() => window.__radionComando('alternar-fala'))
+  await page.waitForFunction(() => document.getElementById('ptt').dataset.estado === 'mudo')
+  assert.equal(await page.evaluate(() => window.__trilhas.some((t) => t.readyState === 'live')), true)
+  assert.deepEqual(erros, [])
+  await ctx.close()
+})

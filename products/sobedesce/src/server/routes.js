@@ -24,6 +24,7 @@ import { registerTamanho } from './tamanho.js'
 import { registerCopiar } from './copiar.js'
 import { registerFrames } from './frames.js'
 import { registerMontagens } from './montagens.js'
+import { registerArquivar } from './arquivar.js'
 import { registerCenas } from './cenas.js'
 import { registerDiscos } from './discos.js'
 import { registerLan } from './lan.js'
@@ -68,7 +69,10 @@ export function sendJSON(res, status, body) {
     return
   }
   const json = JSON.stringify(body)
-  res.writeHead(status, baseHeaders({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': Buffer.byteLength(json) }))
+  res.writeHead(
+    status,
+    baseHeaders({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'content-length': Buffer.byteLength(json) }),
+  )
   res.end(json)
 }
 
@@ -102,7 +106,7 @@ function readBody(req) {
     if (Number(req.headers['content-length']) > BODY_LIMIT) return reject(new HttpProblem(413, 'O pedido é grande demais (limite de 1 MB).'))
     let size = 0
     let chunks = []
-    req.on('data', chunk => {
+    req.on('data', (chunk) => {
       size += chunk.length
       if (size > BODY_HARD_LIMIT) return req.destroy()
       if (size > BODY_LIMIT) chunks = null
@@ -133,7 +137,7 @@ function redirect(res, location) {
 // ─────────── páginas do login (navegador) ───────────
 
 function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 }
 
 const PAGE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
@@ -158,20 +162,34 @@ a.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .brand{margin-top:26px;font-size:12px;letter-spacing:.14em;color:var(--muted)}
 </style></head>
 <body><main class="card"><div class="mark" aria-hidden="true">${mark}</div><h1>${escapeHtml(heading)}</h1><p>${escapeHtml(text)}</p>
-${links.length ? `<div class="links">${links.map(l => `<a href="${escapeHtml(l.href)}"${l.primary ? ' class="primary"' : ''}>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
+${links.length ? `<div class="links">${links.map((l) => `<a href="${escapeHtml(l.href)}"${l.primary ? ' class="primary"' : ''}>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
 <div class="brand">SOBEDESCE</div></main></body></html>`
 }
 
 function sendHtml(res, status, html) {
   const body = Buffer.from(html, 'utf8')
-  res.writeHead(status, baseHeaders({ 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'content-security-policy': PAGE_CSP, 'content-length': body.length }))
+  res.writeHead(
+    status,
+    baseHeaders({
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'content-security-policy': PAGE_CSP,
+      'content-length': body.length,
+    }),
+  )
   res.end(body)
 }
 
 function loginOkPage(account, desktop) {
   const who = account?.email ? `${account.email} já pode ser usada.` : 'A conta já pode ser usada.'
   if (desktop) return page({ title: 'Conta conectada', heading: 'Conta conectada', text: `${who} Pode voltar para o SOBEDESCE.` })
-  return page({ title: 'Conta conectada', heading: 'Conta conectada', text: `${who} Voltando para o SOBEDESCE…`, refresh: '/#/transferencias', links: [{ href: '/#/transferencias', label: 'Abrir o SOBEDESCE', primary: true }] })
+  return page({
+    title: 'Conta conectada',
+    heading: 'Conta conectada',
+    text: `${who} Voltando para o SOBEDESCE…`,
+    refresh: '/#/transferencias',
+    links: [{ href: '/#/transferencias', label: 'Abrir o SOBEDESCE', primary: true }],
+  })
 }
 
 function loginErrorPage(message, desktop) {
@@ -190,7 +208,18 @@ class CompareJobs {
 
   start({ accountId, localPath, driveFolderId, mode }) {
     const id = newId('cmp')
-    const job = { id, accountId, mode, status: 'running', progress: { phase: 'local', done: 0, total: 0, current: '' }, result: null, error: null, ac: new AbortController(), lastSent: 0, timer: null }
+    const job = {
+      id,
+      accountId,
+      mode,
+      status: 'running',
+      progress: { phase: 'local', done: 0, total: 0, current: '' },
+      result: null,
+      error: null,
+      ac: new AbortController(),
+      lastSent: 0,
+      timer: null,
+    }
     this.jobs.set(id, job)
     this.#trim()
     this.#emit(job)
@@ -203,7 +232,7 @@ class CompareJobs {
           mode,
           hasher: this.ctx.hasher,
           signal: job.ac.signal,
-          onProgress: p => this.#progress(job, p),
+          onProgress: (p) => this.#progress(job, p),
           paths: this.ctx.paths,
           persist: false,
         })
@@ -256,8 +285,8 @@ class CompareJobs {
     const dir = this.ctx.paths.compares
     try {
       await writeJSONAtomic(path.join(dir, `${result.id}.json`), result)
-      const names = (await fs.readdir(dir)).filter(n => /^cmp[A-Za-z0-9_-]*\.json$/.test(n)).sort()
-      await Promise.all(names.slice(0, Math.max(0, names.length - KEEP_COMPARES)).map(n => fs.rm(path.join(dir, n), { force: true }).catch(() => {})))
+      const names = (await fs.readdir(dir)).filter((n) => /^cmp[A-Za-z0-9_-]*\.json$/.test(n)).sort()
+      await Promise.all(names.slice(0, Math.max(0, names.length - KEEP_COMPARES)).map((n) => fs.rm(path.join(dir, n), { force: true }).catch(() => {})))
     } catch (err) {
       // Sem gravar, o resultado vale enquanto o app estiver aberto.
       this.ctx.log('não consegui gravar a comparação:', err?.message)
@@ -326,7 +355,21 @@ class RawThumbJobs {
     if (!thumbnailer?.frameFor) throw new HttpProblem(409, 'Este computador não tem como tirar o frame dos RAW.')
     if (this.running()) throw new HttpProblem(409, 'Já estou gerando miniaturas. Espere terminar ou pare o lote atual.')
     const id = newId('thb')
-    const job = { id, accountId, driveFolderId, folderName, localDir, recursive, refazer, status: 'running', progress: null, error: null, ac: new AbortController(), lastSent: 0, timer: null }
+    const job = {
+      id,
+      accountId,
+      driveFolderId,
+      folderName,
+      localDir,
+      recursive,
+      refazer,
+      status: 'running',
+      progress: null,
+      error: null,
+      ac: new AbortController(),
+      lastSent: 0,
+      timer: null,
+    }
     this.job = job
     this.#emit(job)
     const run = async () => {
@@ -339,7 +382,7 @@ class RawThumbJobs {
           refazer,
           frame: (file, opts) => thumbnailer.frameFor(file, opts),
           signal: job.ac.signal,
-          onProgress: p => this.#progress(job, p),
+          onProgress: (p) => this.#progress(job, p),
         })
         job.progress = { ...s }
         job.status = 'done'
@@ -366,7 +409,13 @@ class RawThumbJobs {
 
   #progress(job, p) {
     if (job.status !== 'running') return
-    job.progress = { ...p, falhas: p.falhas.slice(), semLocalNomes: p.semLocalNomes.slice(), tamanhoNomes: p.tamanhoNomes.slice(), feitosIds: p.feitosIds.slice() }
+    job.progress = {
+      ...p,
+      falhas: p.falhas.slice(),
+      semLocalNomes: p.semLocalNomes.slice(),
+      tamanhoNomes: p.tamanhoNomes.slice(),
+      feitosIds: p.feitosIds.slice(),
+    }
     const wait = job.lastSent + COMPARE_EVENT_MS - Date.now()
     if (wait <= 0) return this.#emit(job)
     job.timer ??= setTimeout(() => {
@@ -378,7 +427,18 @@ class RawThumbJobs {
 
   view(job = this.job) {
     if (!job) return null
-    return { jobId: job.id, accountId: job.accountId, driveFolderId: job.driveFolderId, folderName: job.folderName, localDir: job.localDir, recursive: job.recursive, refazer: job.refazer, status: job.status, progress: job.progress, ...(job.error ? { error: job.error } : {}) }
+    return {
+      jobId: job.id,
+      accountId: job.accountId,
+      driveFolderId: job.driveFolderId,
+      folderName: job.folderName,
+      localDir: job.localDir,
+      recursive: job.recursive,
+      refazer: job.refazer,
+      status: job.status,
+      progress: job.progress,
+      ...(job.error ? { error: job.error } : {}),
+    }
   }
 
   #emit(job) {
@@ -435,11 +495,17 @@ function revealCommand(platform, target) {
  */
 export function createApi(ctx) {
   const routes = []
-  const route = (method, pattern, handler, { raw = false, corpo = true } = {}) => routes.push({ method, pattern: pattern.split('/').filter(Boolean), handler, raw, corpo })
+  const route = (method, pattern, handler, { raw = false, corpo = true } = {}) =>
+    routes.push({ method, pattern: pattern.split('/').filter(Boolean), handler, raw, corpo })
   const jobs = new CompareJobs(ctx)
   const thumbJobs = new RawThumbJobs(ctx)
   // "Preparar no Synquei" de um download do Drive (src/engine/preparo-synquei.js): manifesto na pasta e recibo de volta.
-  const preparo = ctx.preparo !== undefined ? ctx.preparo : ctx.manager?.setBatchInfo ? new PreparoSynquei({ manager: ctx.manager, log: (...a) => ctx.log?.(...a) }).start() : null
+  const preparo =
+    ctx.preparo !== undefined
+      ? ctx.preparo
+      : ctx.manager?.setBatchInfo
+        ? new PreparoSynquei({ manager: ctx.manager, log: (...a) => ctx.log?.(...a) }).start()
+        : null
 
   const state = () => {
     const snap = ctx.manager.snapshot()
@@ -481,23 +547,29 @@ export function createApi(ctx) {
     }
   }
 
-  const account = id => {
-    const acc = typeof id === 'string' && id ? ctx.auth.listAccounts().find(a => a.id === id) : null
+  const account = (id) => {
+    const acc = typeof id === 'string' && id ? ctx.auth.listAccounts().find((a) => a.id === id) : null
     if (!acc) throw new HttpProblem(404, 'Conta não encontrada. Conecte a conta de novo.')
     return acc
   }
 
   /** Nome de pasta para mostrar (sem controle, até 255). '' → null. */
-  const destName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 255) : '') || null
+  const destName = (v) =>
+    (typeof v === 'string'
+      ? v
+          .replace(/[\u0000-\u001f\u007f]/g, '')
+          .trim()
+          .slice(0, 255)
+      : '') || null
 
-  const enqueue = async plan => {
+  const enqueue = async (plan) => {
     const added = plan.records?.length ? await ctx.manager.add({ batch: plan.batch, records: plan.records }) : { records: [] }
     let bytes = 0
     for (const r of added.records) bytes += r.size || 0
     return { batch: plan.batch, count: added.records.length, bytes, skipped: plan.skipped || [], warnings: plan.warnings || [] }
   }
 
-  const compareJob = async jobId => {
+  const compareJob = async (jobId) => {
     const job = await jobs.lookup(jobId)
     if (!job) throw new HttpProblem(404, 'Essa comparação não existe mais. Compare de novo.')
     return job
@@ -528,7 +600,15 @@ export function createApi(ctx) {
     // "Também baixar para…": o mesmo caminho do Baixar (planDownloads + fila), com a árvore que a cópia já leu.
     baixar: async ({ accountId, items, destDir, signal }) => {
       const st = ctx.settings.get()
-      const plan = await planDownloads({ drive: ctx.manager.driveFor(accountId), accountId, items, destDir, conflict: st.downloadConflict, signal, reservedPaths: ctx.manager.reservedPaths() })
+      const plan = await planDownloads({
+        drive: ctx.manager.driveFor(accountId),
+        accountId,
+        items,
+        destDir,
+        conflict: st.downloadConflict,
+        signal,
+        reservedPaths: ctx.manager.reservedPaths(),
+      })
       if (plan.batch) plan.batch.destino = path.basename(path.resolve(destDir)) || null
       return enqueue(plan)
     },
@@ -536,6 +616,7 @@ export function createApi(ctx) {
 
   // Montagens (src/server/montagens.js): fotos do computador em modelos prontos; o motor mostra a foto e grava a pronta.
   registerMontagens({ route, ctx, HttpProblem, baseHeaders })
+  registerArquivar({ route, ctx, HttpProblem })
 
   // Frames (src/server/frames.js): frames, takes e posts de um vídeo final; a pasta pronta sobe pela fila de envio.
   const frames = registerFrames({
@@ -563,13 +644,27 @@ export function createApi(ctx) {
   // Backup Automático (src/server/backup.js): Cartões → Projetos; cada cartão espetado é descarregado sozinho.
   const backup = registerBackup({ route, ctx, HttpProblem, servico: ctx.backupServico })
 
-  const stringList = (v, max = 10_000) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').slice(0, max) : null)
+  const stringList = (v, max = 10_000) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string').slice(0, max) : null)
 
   // ── Referências (src/server/referencias.js)
   referenciasRoutes(route, ctx)
 
   // ── estado e eventos
   route('GET', '/api/state', () => state())
+  // "Copiar diagnóstico" (Ajustes, 09/11/2026): versão, ajustes, o estado das transferências sem nome de arquivo e as
+  // últimas linhas do log do motor. A pessoa copia e manda para o suporte; nada sai daqui sozinho.
+  route('GET', '/api/diagnostico', () => ({
+    diagnostico: {
+      app: {
+        version: APP_VERSION,
+        build: ctx.versao?.status()?.atual?.build ?? null,
+        plataforma: process.platform,
+        arquitetura: process.arch,
+        desktop: !!ctx.desktop,
+      },
+      ...ctx.manager.diagnostico(),
+    },
+  }))
   route('GET', '/api/events', ({ req, res }) => ctx.hub.attach(req, res, state()), { raw: true })
 
   // ── chave do Google e login
@@ -582,48 +677,67 @@ export function createApi(ctx) {
     return { setup }
   })
 
-  route('GET', '/api/auth/start', ({ res }) => {
-    if (!ctx.auth.hasClientCredentials()) return redirect(res, '/#/inicio')
-    try {
-      const { url } = ctx.auth.beginLogin(`http://127.0.0.1:${ctx.port}/oauth/callback`)
-      redirect(res, url)
-    } catch (err) {
-      sendHtml(res, 400, loginErrorPage(toProblem(err)?.message || 'Não consegui começar o login. Tente de novo.', ctx.desktop))
-    }
-  }, { raw: true })
+  route(
+    'GET',
+    '/api/auth/start',
+    ({ res }) => {
+      if (!ctx.auth.hasClientCredentials()) return redirect(res, '/#/inicio')
+      try {
+        const { url } = ctx.auth.beginLogin(`http://127.0.0.1:${ctx.port}/oauth/callback`)
+        redirect(res, url)
+      } catch (err) {
+        sendHtml(res, 400, loginErrorPage(toProblem(err)?.message || 'Não consegui começar o login. Tente de novo.', ctx.desktop))
+      }
+    },
+    { raw: true },
+  )
 
-  route('GET', '/oauth/callback', async ({ res, query }) => {
-    try {
-      const acc = await ctx.auth.completeLogin({ code: query.get('code'), state: query.get('state'), error: query.get('error') })
-      sendHtml(res, 200, loginOkPage(acc, ctx.desktop))
-    } catch (err) {
-      const p = toProblem(err)
-      if (!p) ctx.log('login falhou:', err?.stack || err)
-      sendHtml(res, 400, loginErrorPage(p?.message || 'Não consegui concluir o login. Tente conectar de novo.', ctx.desktop))
-    }
-  }, { raw: true })
+  route(
+    'GET',
+    '/oauth/callback',
+    async ({ res, query }) => {
+      try {
+        const acc = await ctx.auth.completeLogin({ code: query.get('code'), state: query.get('state'), error: query.get('error') })
+        sendHtml(res, 200, loginOkPage(acc, ctx.desktop))
+      } catch (err) {
+        const p = toProblem(err)
+        if (!p) ctx.log('login falhou:', err?.stack || err)
+        sendHtml(res, 400, loginErrorPage(p?.message || 'Não consegui concluir o login. Tente conectar de novo.', ctx.desktop))
+      }
+    },
+    { raw: true },
+  )
 
   // ── a Z, a IA da Absolute ZRO (public/components/z.js): o painel fala com /api/ia/* e o motor repassa ao site com o
   //    Bearer deste computador (CloudAuth.ia). A resposta (NDJSON nas mensagens) passa pedaço a pedaço, sem buffer.
-  const ia = (caminho) => async ({ req, res, params, body, signal }) => {
-    const alvo = typeof caminho === 'function' ? caminho(params) : caminho
-    let r
-    try {
-      r = ctx.auth.cloud ? await ctx.auth.cloud.ia(req.method, alvo, { body: req.method === 'POST' ? JSON.stringify(body) : undefined, signal }) : null
-    } catch {
-      if (signal.aborted) return res.destroy()
-      return sendJSON(res, 502, { erro: 'rede', mensagem: 'Sem conexão com a conta SOBEDESCE agora.' })
+  const ia =
+    (caminho) =>
+    async ({ req, res, params, body, signal }) => {
+      const alvo = typeof caminho === 'function' ? caminho(params) : caminho
+      let r
+      try {
+        r = ctx.auth.cloud ? await ctx.auth.cloud.ia(req.method, alvo, { body: req.method === 'POST' ? JSON.stringify(body) : undefined, signal }) : null
+      } catch {
+        if (signal.aborted) return res.destroy()
+        return sendJSON(res, 502, { erro: 'rede', mensagem: 'Sem conexão com a conta SOBEDESCE agora.' })
+      }
+      if (!r) return sendJSON(res, 401, { erro: 'sem_conta', mensagem: 'Entre na conta SOBEDESCE para conversar com a Z.' })
+      res.writeHead(
+        r.status,
+        baseHeaders({
+          'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-accel-buffering': 'no',
+        }),
+      )
+      if (!r.body) return res.end()
+      try {
+        for await (const pedaco of r.body) res.write(pedaco)
+      } catch {
+        return res.destroy()
+      }
+      res.end()
     }
-    if (!r) return sendJSON(res, 401, { erro: 'sem_conta', mensagem: 'Entre na conta SOBEDESCE para conversar com a Z.' })
-    res.writeHead(r.status, baseHeaders({ 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }))
-    if (!r.body) return res.end()
-    try {
-      for await (const pedaco of r.body) res.write(pedaco)
-    } catch {
-      return res.destroy()
-    }
-    res.end()
-  }
   const ID_CONVERSA = /^[A-Za-z0-9_-]{1,80}$/
   const conversa = (params) => {
     if (!ID_CONVERSA.test(params.id)) throw new HttpProblem(404, 'Conversa não encontrada.')
@@ -769,12 +883,42 @@ export function createApi(ctx) {
     if (id === 'root') throw new HttpProblem(400, 'O Meu Drive inteiro não pode ser liberado. Escolha uma pasta dentro dele.')
     const drive = ctx.manager.driveFor(params.acc)
     const before = await drive.sharing(id, { signal, resourceKey })
-    if (before.root) throw new HttpProblem(400, before.sharedDrive ? 'A raiz de um drive compartilhado não pode ser liberada para qualquer pessoa. Libere uma pasta dentro dele.' : 'O Meu Drive inteiro não pode ser liberado. Escolha uma pasta dentro dele.')
+    if (before.root)
+      throw new HttpProblem(
+        400,
+        before.sharedDrive
+          ? 'A raiz de um drive compartilhado não pode ser liberada para qualquer pessoa. Libere uma pasta dentro dele.'
+          : 'O Meu Drive inteiro não pode ser liberado. Escolha uma pasta dentro dele.',
+      )
     if (before.access === 'qualquer') return { link: before }
     if (!before.canShare) throw new HttpProblem(403, 'Sua conta não pode mudar o compartilhamento deste item. Peça a quem é dono ou gerente.')
     await drive.shareWithAnyone(before.id, { signal, resourceKey })
     ctx.log?.(`link liberado para qualquer pessoa: ${before.id}`)
     return { link: await drive.sharing(before.id, { signal, resourceKey }) }
+  })
+
+  // Volta para "Restrito" (só quem tem acesso abre). Também só com `confirmado: true` (o botão "Restrito" da tela).
+  route('POST', '/api/drive/:acc/link/restringir', async ({ params, body, signal }) => {
+    account(params.acc)
+    if (body.confirmado !== true) throw new HttpProblem(400, 'Confirme na tela antes de mudar o link.')
+    const { id, resourceKey } = linkTarget(body)
+    if (id === 'root') throw new HttpProblem(400, 'O Meu Drive não tem link para restringir.')
+    const drive = ctx.manager.driveFor(params.acc)
+    const before = await drive.sharing(id, { signal, resourceKey })
+    if (before.access !== 'qualquer') return { link: before }
+    if (!before.canShare) throw new HttpProblem(403, 'Sua conta não pode mudar o compartilhamento deste item. Peça a quem é dono ou gerente.')
+    const link = await drive.restrictLink(before.id, { signal, resourceKey })
+    ctx.log?.(`link restrito de novo: ${before.id}`)
+    return { link }
+  })
+
+  // ── Estrela (menu do item e ação rápida da linha, 09/11/2026): a mesma do Google Drive.
+  route('POST', '/api/drive/:acc/estrela', async ({ params, body, signal }) => {
+    account(params.acc)
+    const id = typeof body.id === 'string' && DRIVE_ID.test(body.id) && body.id !== 'root' ? body.id : null
+    if (!id) throw new HttpProblem(400, 'Item inválido.')
+    if (typeof body.starred !== 'boolean') throw new HttpProblem(400, 'Diga se é para pôr ou tirar a estrela.')
+    return await ctx.manager.driveFor(params.acc).setStarred(id, body.starred, { signal })
   })
 
   // ── Arquivos do Mac (._A003_C001.braw, .DS_Store, Thumbs.db) que vieram junto com os originais: para a lixeira do
@@ -790,11 +934,11 @@ export function createApi(ctx) {
     const folderId = typeof body.folderId === 'string' && DRIVE_ID.test(body.folderId) ? body.folderId : null
     if (!folderId) throw new HttpProblem(400, 'Pasta inválida.')
     const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : []
-    if (!ids.length || ids.length > LIXEIRA_LOTE || !ids.every(id => typeof id === 'string' && DRIVE_ID.test(id))) {
+    if (!ids.length || ids.length > LIXEIRA_LOTE || !ids.every((id) => typeof id === 'string' && DRIVE_ID.test(id))) {
       throw new HttpProblem(400, `Mande de 1 a ${LIXEIRA_LOTE} arquivos por vez.`)
     }
     const drive = ctx.manager.driveFor(params.acc)
-    const filhos = new Map((await drive.listChildren(folderId, { signal })).map(it => [it.id, it]))
+    const filhos = new Map((await drive.listChildren(folderId, { signal })).map((it) => [it.id, it]))
     const movidos = []
     const pulados = []
     const recusados = []
@@ -806,7 +950,7 @@ export function createApi(ctx) {
       else fila.push(it)
     }
     let compartilhado = false
-    const um = async it => {
+    const um = async (it) => {
       try {
         await drive.trash(it.id, { signal })
         movidos.push(it.id)
@@ -820,10 +964,13 @@ export function createApi(ctx) {
     for (let i = 0; i < fila.length; i += LIXEIRA_PARALELO) await Promise.all(fila.slice(i, i + LIXEIRA_PARALELO).map(um))
     if (movidos.length) ctx.log?.(`lixeira: ${movidos.length} arquivo(s) do Mac em ${folderId}`)
     // Nada foi e foi tudo recusa de permissão: responde como recusa (a tela mostra e para).
-    if (!movidos.length && recusados.length && recusados.every(r => r.status === 403)) {
-      throw new HttpProblem(403, compartilhado
-        ? 'Sua conta não pode mover arquivos para a lixeira neste drive compartilhado. Isso pede acesso de Administrador de conteúdo ou Administrador.'
-        : 'Sua conta não pode mover estes arquivos para a lixeira. Peça a quem é dono da pasta.')
+    if (!movidos.length && recusados.length && recusados.every((r) => r.status === 403)) {
+      throw new HttpProblem(
+        403,
+        compartilhado
+          ? 'Sua conta não pode mover arquivos para a lixeira neste drive compartilhado. Isso pede acesso de Administrador de conteúdo ou Administrador.'
+          : 'Sua conta não pode mover estes arquivos para a lixeira. Peça a quem é dono da pasta.',
+      )
     }
     return { movidos, pulados, recusados }
   })
@@ -839,18 +986,26 @@ export function createApi(ctx) {
     return { accountId: acc.id, id, resourceKey: DRIVE_ID.test(rk) ? rk : null }
   }
 
-  route('GET', '/api/drive/thumb', async ({ req, res, query, signal }) => {
-    const t = mediaTarget(req, query)
-    const img = await ctx.media.thumb({ ...t, size: query.get('s'), version: (query.get('v') || '').slice(0, 64), signal })
-    res.writeHead(200, baseHeaders({
-      'content-type': img.type,
-      'content-length': img.buf.length,
-      'cache-control': 'private, max-age=86400',
-      'content-security-policy': "default-src 'none'; sandbox",
-      'x-sobedesce-cache': img.source,
-    }))
-    res.end(img.buf)
-  }, { raw: true })
+  route(
+    'GET',
+    '/api/drive/thumb',
+    async ({ req, res, query, signal }) => {
+      const t = mediaTarget(req, query)
+      const img = await ctx.media.thumb({ ...t, size: query.get('s'), version: (query.get('v') || '').slice(0, 64), signal })
+      res.writeHead(
+        200,
+        baseHeaders({
+          'content-type': img.type,
+          'content-length': img.buf.length,
+          'cache-control': 'private, max-age=86400',
+          'content-security-policy': "default-src 'none'; sandbox",
+          'x-sobedesce-cache': img.source,
+        }),
+      )
+      res.end(img.buf)
+    },
+    { raw: true },
+  )
 
   // Proxy de câmera para a prévia (arquivo que não toca no Chromium). JSON comum: { proxy: DriveItem|null }.
   route('GET', '/api/drive/:acc/proxy', async ({ params, query, signal }) => {
@@ -905,7 +1060,7 @@ export function createApi(ctx) {
   route('POST', '/api/drive/:acc/mover', async ({ params, body, signal }) => {
     account(params.acc)
     const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : []
-    if (!ids.length || ids.length > MOVER_LOTE || !ids.every(id => typeof id === 'string' && DRIVE_ID.test(id) && id !== 'root')) {
+    if (!ids.length || ids.length > MOVER_LOTE || !ids.every((id) => typeof id === 'string' && DRIVE_ID.test(id) && id !== 'root')) {
       throw new HttpProblem(400, `Mande de 1 a ${MOVER_LOTE} itens por vez.`)
     }
     const destId = typeof body.destId === 'string' && DRIVE_ID.test(body.destId) ? body.destId : null
@@ -939,7 +1094,7 @@ export function createApi(ctx) {
     account(params.acc)
     if (body.confirmado !== true) throw new HttpProblem(400, 'Confirme na tela antes de mover para a lixeira.')
     const ids = Array.isArray(body.ids) ? [...new Set(body.ids)] : []
-    if (!ids.length || ids.length > MOVER_LOTE || !ids.every(id => typeof id === 'string' && DRIVE_ID.test(id) && id !== 'root')) {
+    if (!ids.length || ids.length > MOVER_LOTE || !ids.every((id) => typeof id === 'string' && DRIVE_ID.test(id) && id !== 'root')) {
       throw new HttpProblem(400, `Mande de 1 a ${MOVER_LOTE} itens por vez.`)
     }
     const drive = ctx.manager.driveFor(params.acc)
@@ -1035,15 +1190,17 @@ export function createApi(ctx) {
   route('POST', '/api/entregas/comprovante', async ({ body, signal }) => {
     const batchId = typeof body.batchId === 'string' && /^[\w-]{1,100}$/.test(body.batchId) ? body.batchId : null
     if (!batchId) throw new HttpProblem(400, 'Envio inválido.')
-    const recs = ctx.manager.snapshot().transfers.filter(r => r.batchId === batchId && r.type === 'upload')
+    const recs = ctx.manager.snapshot().transfers.filter((r) => r.batchId === batchId && r.type === 'upload')
     if (!recs.length) throw new HttpProblem(404, 'Não achei esse envio. Ele pode ter sido limpo da lista.')
     const pasta = pastaDoLote(recs)
     if (!pasta) throw new HttpProblem(400, 'O comprovante é de uma pasta enviada inteira (um envio, uma pasta).')
     // a pasta no Drive: o pai de um arquivo que está direto nela; senão, procurada pelo nome no destino do envio
     const t = recs[0].target || {}
-    let pastaId = recs.find(r => r.target?.relDir === pasta && r.target?.parentId)?.target.parentId || null
+    let pastaId = recs.find((r) => r.target?.relDir === pasta && r.target?.parentId)?.target.parentId || null
     if (!pastaId) {
-      const achada = await ctx.manager.driveFor(recs[0].accountId).findChild(t.rootId || 'root', pasta, { folder: true, signal, driveId: t.driveId || undefined })
+      const achada = await ctx.manager
+        .driveFor(recs[0].accountId)
+        .findChild(t.rootId || 'root', pasta, { folder: true, signal, driveId: t.driveId || undefined })
       pastaId = achada?.id || null
     }
     try {
@@ -1070,18 +1227,23 @@ export function createApi(ctx) {
   })
 
   // Relatório do download (src/backup/relatorio.js): a linha v2 que o lote gravou na pasta baixada.
-  route('GET', '/api/transfers/relatorio', async ({ res, query }) => {
-    const batchId = /^[\w-]{1,100}$/.test(query.get('batchId') || '') ? query.get('batchId') : null
-    const info = batchId && ctx.manager.batches?.get(batchId)?.synquei
-    if (!info || !info.pasta || !info.op) throw new HttpProblem(404, 'Este download ainda não tem relatório.')
-    const linha = await lerManifesto(info.pasta, info.op)
-    if (!linha) throw new HttpProblem(404, 'Não achei o resumo do download na pasta (ela foi movida ou o disco saiu?).')
-    let link = null
-    try {
-      link = linkSynquei(info.pasta, null, info.op)
-    } catch {}
-    sendHtml(res, 200, relatorioHtml(dadosDoDrive({ linha, link })))
-  }, { raw: true })
+  route(
+    'GET',
+    '/api/transfers/relatorio',
+    async ({ res, query }) => {
+      const batchId = /^[\w-]{1,100}$/.test(query.get('batchId') || '') ? query.get('batchId') : null
+      const info = batchId && ctx.manager.batches?.get(batchId)?.synquei
+      if (!info || !info.pasta || !info.op) throw new HttpProblem(404, 'Este download ainda não tem relatório.')
+      const linha = await lerManifesto(info.pasta, info.op)
+      if (!linha) throw new HttpProblem(404, 'Não achei o resumo do download na pasta (ela foi movida ou o disco saiu?).')
+      let link = null
+      try {
+        link = linkSynquei(info.pasta, null, info.op)
+      } catch {}
+      sendHtml(res, 200, relatorioHtml(dadosDoDrive({ linha, link })))
+    },
+    { raw: true },
+  )
 
   // Limpar concluídas: lote com proxy ainda sendo feito fica (e o proxy segue); a tela diz quantos ficaram.
   route('POST', '/api/transfers/clear', () => ctx.manager.clearFinished() ?? {})
@@ -1092,7 +1254,9 @@ export function createApi(ctx) {
   // Miniatura de .braw (Ajustes): o que o computador tem para tirar o frame e o último resultado.
   route('GET', '/api/raw-thumbs', async ({ query }) => {
     const t = ctx.manager.thumbnailer
-    const rawThumbs = t ? await t.status({ refresh: query.get('refresh') === '1' }) : { supported: false, found: false, via: null, enabled: false, last: null, downloadUrl: null }
+    const rawThumbs = t
+      ? await t.status({ refresh: query.get('refresh') === '1' })
+      : { supported: false, found: false, via: null, enabled: false, last: null, downloadUrl: null }
     return { rawThumbs }
   })
 
@@ -1102,7 +1266,8 @@ export function createApi(ctx) {
     const folderId = body.driveFolderId
     if (typeof folderId !== 'string' || !DRIVE_ID.test(folderId)) throw new HttpProblem(400, 'Escolha a pasta do Drive.')
     const raw = body.localDir
-    if (typeof raw !== 'string' || !raw.trim() || raw.includes('\0') || raw.length > 4096) throw new HttpProblem(400, 'Escolha a pasta do computador onde estão os originais.')
+    if (typeof raw !== 'string' || !raw.trim() || raw.includes('\0') || raw.length > 4096)
+      throw new HttpProblem(400, 'Escolha a pasta do computador onde estão os originais.')
     const localDir = expandHome(raw)
     if (!path.isAbsolute(localDir)) throw new HttpProblem(400, 'Escolha a pasta do computador onde estão os originais.')
     let st
@@ -1114,10 +1279,17 @@ export function createApi(ctx) {
     if (!st.isDirectory()) throw new HttpProblem(400, 'Escolha uma pasta do computador (não um arquivo).')
     for (const k of ['recursive', 'refazer']) if (body[k] != null && typeof body[k] !== 'boolean') throw new HttpProblem(400, 'Pedido inválido.')
     const folderName = typeof body.folderName === 'string' ? body.folderName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 255) : ''
-    const jobId = thumbJobs.start({ accountId: acc.id, driveFolderId: folderId, folderName, localDir, recursive: body.recursive !== false, refazer: body.refazer === true })
+    const jobId = thumbJobs.start({
+      accountId: acc.id,
+      driveFolderId: folderId,
+      folderName,
+      localDir,
+      recursive: body.recursive !== false,
+      refazer: body.refazer === true,
+    })
     // Lembra a pasta para a próxima vez (falhar aqui não impede o lote).
     if (ctx.settings.get().rawThumbLocalDir !== localDir) {
-      ctx.settings.update({ rawThumbLocalDir: localDir }).catch(err => ctx.log('não consegui lembrar a pasta das miniaturas:', err?.message))
+      ctx.settings.update({ rawThumbLocalDir: localDir }).catch((err) => ctx.log('não consegui lembrar a pasta das miniaturas:', err?.message))
     }
     return { jobId }
   })
@@ -1189,7 +1361,18 @@ export function createApi(ctx) {
     const base = ctx.auth?.cloud?.baseUrl || cloudUrl()
     const webUrl = `${base}/app/`
     const web = { webUrl, webQrSvg: webUrl ? qrSvg(webUrl) : null }
-    if (!ctx.mobile) return { available: false, enabled: false, running: false, port: st.mobilePort, urls: [], qrSvg: null, dropUrl: null, shortcutSteps: shortcutSteps(null), ...web }
+    if (!ctx.mobile)
+      return {
+        available: false,
+        enabled: false,
+        running: false,
+        port: st.mobilePort,
+        urls: [],
+        qrSvg: null,
+        dropUrl: null,
+        shortcutSteps: shortcutSteps(null),
+        ...web,
+      }
     const s = await ctx.mobile.status()
     return { available: true, ...s, qrSvg: s.qrUrl ? qrSvg(s.qrUrl) : null, shortcutSteps: shortcutSteps(s.dropUrl), ...web }
   }
@@ -1234,7 +1417,7 @@ export function createApi(ctx) {
     const [cmd, args] = revealCommand(ctx.platform || process.platform, target)
     try {
       const child = (ctx.spawn || nodeSpawn)(cmd, args, { detached: true, stdio: 'ignore', windowsHide: true })
-      child.on?.('error', err => ctx.log('não consegui abrir a pasta:', err?.code || err?.message))
+      child.on?.('error', (err) => ctx.log('não consegui abrir a pasta:', err?.code || err?.message))
       child.unref?.()
     } catch (err) {
       ctx.log('não consegui abrir a pasta:', err?.code || err?.message)
