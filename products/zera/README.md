@@ -80,6 +80,23 @@ cargo run --release -- varrer /caminho 4     # mede: bytes, arquivos, ms
 Instaladores: `.github/workflows/zera-desktop.yml` pelo botão "Run workflow" (`.dmg` universal e `.exe`, como
 artefato do Actions). Sem assinatura da Apple/Microsoft por enquanto.
 
+## Site (zera.absolutezro.com)
+
+`site/` é a página do produto (estática, sem rede de terceiros): herói com o app real num MacBook, o anel que se
+desenha com a rolagem, "Rápido, de verdade", "Sabe o que volta sozinho" e "Nada some sem você ver"; claro por padrão e
+escuro no seletor. `publicar.mjs` monta `publico/`:
+
+- sem `ZERA_SITE_ABERTO`: só a página neutra "Página indisponível." (app não lançado);
+- com `ZERA_SITE_ABERTO=1`: a página do produto.
+
+Na Vercel: projeto com Root Directory `products/zera` (o `vercel.json` já diz build e saída), domínio
+`zera.absolutezro.com`, e `ZERA_SITE_ABERTO=1` só no ambiente Preview até o lançamento.
+
+```bash
+cd products/zera && ZERA_SITE_ABERTO=1 node publicar.mjs && npx serve publico   # ver aberto
+cd products/zera/desktop && npm run site-imagens                                  # refaz as telas e o og.png
+```
+
 ## Limites conhecidos
 
 - **Windows**: tamanho ocupado estimado pelo cluster de 4 KB (sem a API de tamanho comprimido); hard links contam

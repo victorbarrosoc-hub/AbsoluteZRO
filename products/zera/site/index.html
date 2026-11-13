@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ZERA · Espaço livre, sem medo.</title>
+    <meta name="description" content="Veja o que pesa no disco e libere espaço com segurança, no Mac e no Windows. Da Absolute ZRO." />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://zera.absolutezro.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://zera.absolutezro.com/" />
+    <meta property="og:title" content="ZERA · Espaço livre, sem medo." />
+    <meta property="og:description" content="Veja o que pesa no disco e libere com segurança." />
+    <meta property="og:image" content="https://zera.absolutezro.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/site.css" />
+    <script src="/site.js" defer></script>
+  </head>
+  <body>
+    <header class="nav">
+      <a class="nav-marca" href="/" aria-label="ZERA">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg>
+        ZERA
+      </a>
+      <nav class="nav-links">
+        <a href="#mapa">Mapa</a>
+        <a href="#limpar">Limpar</a>
+        <a href="#seguro">Segurança</a>
+        <button class="tema" id="tema" type="button" aria-label="Tema escuro"></button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="heroi">
+        <p class="sobre revelar">Para Mac e Windows</p>
+        <h1 class="revelar"><span class="fino">Espaço livre,</span> sem medo.</h1>
+        <p class="apoio revelar">Veja o que pesa no disco e libere com segurança.</p>
+        <div class="acoes revelar">
+          <a class="vidro vidro--tinta" href="https://absolutezro.com/baixar">Baixar pela Absolute ZRO</a>
+          <a class="vidro" href="#mapa">Como funciona</a>
+        </div>
+        <figure class="macbook subir">
+          <div class="macbook-tela">
+            <img class="so-claro" src="/telas/mapa-claro.webp" width="1600" height="1030" alt="O ZERA mostrando o disco em anéis, com a lista de pastas ao lado" fetchpriority="high" />
+            <img class="so-escuro" src="/telas/mapa-escuro.webp" width="1600" height="1030" alt="" loading="lazy" />
+          </div>
+          <div class="macbook-base"></div>
+        </figure>
+      </section>
+
+      <section class="faixa" id="mapa">
+        <div class="texto-faixa revelar">
+          <h2><span class="fino">O disco inteiro,</span> num anel.</h2>
+          <p class="apoio">Cada pasta do tamanho que ocupa. Passe o mouse, clique, entre.</p>
+        </div>
+        <div class="anel-demo revelar" aria-hidden="true">
+          <svg viewBox="0 0 400 400" id="anel-demo"></svg>
+          <ul class="legenda">
+            <li><i class="k0"></i>Vídeo</li>
+            <li><i class="k1"></i>Áudio</li>
+            <li><i class="k2"></i>Imagens</li>
+            <li><i class="k3"></i>Projetos</li>
+            <li><i class="k4"></i>Apps</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="faixa faixa--cartoes">
+        <h2 class="revelar"><span class="fino">Rápido,</span> de verdade.</h2>
+        <div class="fatos">
+          <article class="fato revelar">
+            <span class="fato-icone"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"/><path d="M9 2.5v2.5M15 2.5v2.5M9 19v2.5M15 19v2.5M2.5 9H5M2.5 15H5M19 9h2.5M19 15h2.5"/></svg></span>
+            <h3>Todas as pastas ao mesmo tempo</h3>
+            <p>Usa cada núcleo do processador.</p>
+          </article>
+          <article class="fato revelar">
+            <span class="fato-icone"><svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/></svg></span>
+            <h3>Abre na hora</h3>
+            <p>O último mapa aparece já, e confere por trás.</p>
+          </article>
+          <article class="fato revelar">
+            <span class="fato-icone"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg></span>
+            <h3>Acompanha o disco</h3>
+            <p>Mudou uma pasta? Lê só ela de novo.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="faixa faixa--produto" id="limpar">
+        <div class="texto-faixa revelar">
+          <h2><span class="fino">Sabe o que</span> volta sozinho.</h2>
+          <p class="apoio">Caches de edição, de apps e de código: separados do que pede um olhar.</p>
+          <ul class="etiquetas">
+            <li>Media Cache do Premiere</li>
+            <li>CacheClip do DaVinci</li>
+            <li>Render Files do Final Cut</li>
+            <li>Prévias do Lightroom</li>
+            <li>Repetidos, byte a byte</li>
+          </ul>
+        </div>
+        <figure class="macbook macbook--menor revelar">
+          <div class="macbook-tela">
+            <img class="so-claro" src="/telas/limpar-claro.webp" width="1600" height="1030" alt="A tela Limpar, com os grupos do que dá para tirar" loading="lazy" />
+            <img class="so-escuro" src="/telas/limpar-escuro.webp" width="1600" height="1030" alt="" loading="lazy" />
+          </div>
+          <div class="macbook-base"></div>
+        </figure>
+      </section>
+
+      <section class="faixa faixa--produto faixa--inversa" id="seguro">
+        <div class="texto-faixa revelar">
+          <h2><span class="fino">Nada some</span> sem você ver.</h2>
+          <p class="apoio">Tudo vai para o Lixo, depois da sua revisão. Sistema nunca sai.</p>
+          <ol class="passos">
+            <li><b>Separe</b></li>
+            <li><b>Revise</b></li>
+            <li><b>Lixo</b></li>
+          </ol>
+        </div>
+        <figure class="macbook macbook--menor revelar">
+          <div class="macbook-tela">
+            <img class="so-claro" src="/telas/revisar-claro.webp" width="1600" height="1030" alt="A revisão antes de mover para o Lixo" loading="lazy" />
+            <img class="so-escuro" src="/telas/revisar-escuro.webp" width="1600" height="1030" alt="" loading="lazy" />
+          </div>
+          <div class="macbook-base"></div>
+        </figure>
+      </section>
+
+      <section class="final">
+        <h2 class="revelar"><span class="fino">Comece</span> do zero.</h2>
+        <div class="acoes revelar">
+          <a class="vidro vidro--tinta" href="https://absolutezro.com/baixar">Baixar pela Absolute ZRO</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <a href="https://absolutezro.com" aria-label="Absolute ZRO">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg>
+        Absolute ZRO
+      </a>
+      <span>© 2026 Absolute ZRO</span>
+    </footer>
+  </body>
+</html>

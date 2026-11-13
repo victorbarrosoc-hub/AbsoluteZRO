@@ -24,6 +24,10 @@ arquivo só acrescenta.
 - **Interface sem rede e sem framework** (`desktop/desktop/interface/`): CSP fechada, só arquivos locais. Nome vindo do
   disco entra como texto (`h()`/`textContent`), nunca como HTML. Motion só com CSS (anel por `stroke-dasharray`),
   sempre com "reduzir movimento". Padrão Apple da raiz: claro por padrão, Figtree, vidro, pouco texto.
+- **Site** (`site/`, `publicar.mjs`, `vercel.json`; projeto Vercel com Root Directory `products/zera`): **fechado por
+  padrão**, só a página neutra (`indisponivel.html`, sem nome nem marca). `ZERA_SITE_ABERTO=1` monta a página do
+  produto: só no ambiente **Preview** da Vercel até o lançamento; em **Production** só quando o titular lançar. Telas
+  do site saem do app real (`npm run site-imagens` em `desktop/`); nada inline no HTML (CSP do `vercel.json`).
 - **Ícone do app ainda não existe**: o titular aprova antes (regra da raiz: não inventar logo). Na tela, a assinatura é
   o símbolo da Absolute ZRO.
 - Antes de entregar: `cargo test` em `motor/`, `npm run motor && npm test` em `desktop/` (Chromium do Playwright) e

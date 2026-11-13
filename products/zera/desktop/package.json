@@ -21,6 +21,7 @@
     "smoke": "electron . --smoke",
     "test": "node --test test/*.test.mjs",
     "telas": "node scripts/telas.mjs",
+    "site-imagens": "node scripts/site-imagens.mjs",
     "dist:mac": "electron-builder --mac --publish never",
     "dist:win": "electron-builder --win --publish never",
     "dist:linux": "electron-builder --linux dir --publish never"

@@ -15,6 +15,11 @@ Não lançado: fora do catálogo, do gate e da central.
   com lista, Limpar em cartões, cesta, prévia conferida pelo app e Lixo do sistema (nunca apaga de vez); claro e
   escuro, teclado, "reduzir movimento".
 - ✅ Workflow `zera-desktop.yml`: testes em Ubuntu; instaladores só pelo "Run workflow", como artefato (nada publicado).
+- ✅ Site `zera.absolutezro.com` (`products/zera/site`, `publicar.mjs`, `vercel.json`): página do produto com as telas
+  reais num MacBook, claro/escuro, motion na rolagem; **fechado por padrão** (página neutra) e aberto com
+  `ZERA_SITE_ABERTO=1`.
+- ⛔ Publicar na Vercel: o conector desta sessão não tem acesso ao time (pede reautenticação). Falta criar o projeto
+  (Root Directory `products/zera`), pôr o domínio e `ZERA_SITE_ABERTO=1` só no Preview.
 - ⬜ Titular: testar no Mac (o `.dmg` sai pelo "Run workflow") e dar "Acesso total ao disco".
 - ⛔ Lançar (titular): ícone, migração do catálogo e do gate, central, `zera.absolutezro.com`, assinatura Apple/Microsoft.
 - ⬜ Depois: leitura da MFT no Windows e `getattrlistbulk` no Mac; detectar clones do APFS.

@@ -19,16 +19,17 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 
 Linux, 4 núcleos, Node 22, Rust 1.97, Electron 44.5.1 com Xvfb, Chromium do Playwright 1.63.
 
-| Verificação                              | Comando                                                               | Resultado                                                  |
-| ---------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Motor                                    | `cargo test` em `products/zera/motor`                                 | 13/13                                                      |
-| Regras, motor de verdade e interface     | `npm test` em `products/zera/desktop`                                 | 11/11                                                      |
-| Teste de fumaça (dev e app empacotado)   | `xvfb-run -a npx electron . --smoke --no-sandbox`                     | SMOKE OK nos dois; motor em `resources/motor`, fusíveis ok |
-| Compila para Windows e Mac               | `cargo check --target x86_64-pc-windows-gnu` / `aarch64-apple-darwin` | ok                                                         |
-| Velocidade (`/`, 196 mil arquivos, frio) | `du -sx /` × `zera-motor varrer / 4`                                  | 2,9 s × 1,0 s                                              |
-| Velocidade (cache cheio)                 | idem                                                                  | 0,47 s × 0,18 s                                            |
-| Total igual ao `du`                      | `du -sxB1 /` × `zera-motor varrer /`                                  | diferença de 0,004%                                        |
-| Fluxo real no Electron (pasta de 4,6 GB) | Playwright `_electron`: varrer, mapa, limpar, repetidos, Lixo         | 5 itens no Lixo do sistema, 838 MB; sem erro no console    |
+| Verificação                                | Comando                                                               | Resultado                                                  |
+| ------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Motor                                      | `cargo test` em `products/zera/motor`                                 | 13/13                                                      |
+| Regras, motor de verdade, interface e site | `npm test` em `products/zera/desktop`                                 | 13/13                                                      |
+| Site aberto (1440 px e iPhone 15)          | Playwright em `publico/`                                              | sem erro no console e sem rolagem lateral                  |
+| Teste de fumaça (dev e app empacotado)     | `xvfb-run -a npx electron . --smoke --no-sandbox`                     | SMOKE OK nos dois; motor em `resources/motor`, fusíveis ok |
+| Compila para Windows e Mac                 | `cargo check --target x86_64-pc-windows-gnu` / `aarch64-apple-darwin` | ok                                                         |
+| Velocidade (`/`, 196 mil arquivos, frio)   | `du -sx /` × `zera-motor varrer / 4`                                  | 2,9 s × 1,0 s                                              |
+| Velocidade (cache cheio)                   | idem                                                                  | 0,47 s × 0,18 s                                            |
+| Total igual ao `du`                        | `du -sxB1 /` × `zera-motor varrer /`                                  | diferença de 0,004%                                        |
+| Fluxo real no Electron (pasta de 4,6 GB)   | Playwright `_electron`: varrer, mapa, limpar, repetidos, Lixo         | 5 itens no Lixo do sistema, 838 MB; sem erro no console    |
 
 ## Central 1.4.7: menu Administração (09/11/2026, ramo `claude/desktop-admin-campus`)
 
