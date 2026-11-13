@@ -23,6 +23,12 @@ aparelho; o app nasce fechado pelo gate (`products/foto`, migração 0065). Estu
   cliente (token só em hash, PIN, porta estreita) com a seleção voltando ao catálogo.
 - ✅ Achar minhas fotos pelo rosto em evento: selfie que não sai do celular, os dois modos por evento (com
   consentimento, o padrão, e busca aberta com aviso prévio; decisão do titular), cartaz com QR.
+- ✅ Rodada de integração (13/11/2026): a busca por rosto virou a terceira ação da Entregar (mesma linha de "precisa
+  do serviço" sem armazenamento, banco ou login; o QR mora em `app/componentes/qr.js`); filtro `cliente` no catálogo e
+  a pílula "Do cliente" na Decupar; o foco não pula mais para a capa quando a análise reagrupa (a pilha abre); sem
+  placa, o próprio worker desenha o antes/depois e os avisos recuperável × perdido (`src/motor/avisos.js`), sem ler o
+  arquivo de novo; o branco Manual parte do da câmera e a margem soma a folga das altas; a folha "?" mostra as teclas
+  da tela da frente; contrato das telas em `ARQUITETURA.md`.
 - ⬜ Titular: nome definitivo e busca no INPI; projeto Vercel e domínio; cliente OIDC `foto-web`; schema `foto` e
   papéis no Supabase; bucket das prévias; pgvector; revisão jurídica da busca por rosto; lançamento.
 - ⬜ Conferir em máquina com placa de vídeo, Safari, Firefox e celular de verdade; ProRAW real; outros corpos Sony

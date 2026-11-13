@@ -15,6 +15,18 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Plataforma de fotos: rodada de integração (13/11/2026, ramo `claude/affectionate-cannon-6wo2rb`)
+
+| Verificação                                                                    | Comando                                                                             | Resultado                                                                          |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Suíte inteira do app (Postgres e Chromium reais, amostras e modelos presentes) | `cd products/foto && FOTO_EXIGIR=1 node --test --test-concurrency=1 test/*.test.js` | **564/565**, 0 falhas, 1 pulado (medidas de 24 MP, só com `FOTO_MEDIR=1`), 642 s   |
+| Casca, o teste "teclado" que falhou uma vez na entrada da grade                | `FOTO_EXIGIR=1 node --test test/casca.test.js` três vezes                           | 16/16 nas três                                                                     |
+| Segredos                                                                       | `node scripts/scan-secrets.mjs`                                                     | nenhum segredo em 4912 arquivos                                                    |
+| HUB: lint, formatação, tipos                                                   | `npm run lint && npm run format:check && npm run typecheck`                         | ok                                                                                 |
+| HUB: unitários + integração (Postgres 16 em UTF-8)                             | `npm test`                                                                          | **669/669** em 77 arquivos (em banco `C` o teste de busca sem acento do Set falha) |
+| HUB: build de produção                                                         | `npm run build`                                                                     | ok                                                                                 |
+| HUB: E2E                                                                       | `npm run test:e2e`                                                                  | **68/68** no Chromium; os 7 de WebKit não rodam aqui (WebKit não instalado)        |
+
 ## Central 1.4.7: menu Administração (09/11/2026, ramo `claude/desktop-admin-campus`)
 
 | Verificação       | Comando                                           | Resultado |
