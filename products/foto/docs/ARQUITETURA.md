@@ -18,11 +18,17 @@ Contrato entre os módulos. Mudou um contrato, mude aqui primeiro. Decisão em
    Importação aproximada diz o que ficou aproximado. Nota vem sempre com o motivo.
 4. **Fechado** (regra da raiz): sem a claim `zro_release.foto`, só a página neutra. Nome, ícone, OG e app só pela função.
 5. **Rosto é dado sensível** (LGPD, art. 5º II e art. 11). Detectar rosto e olho fechado não identifica ninguém.
-   **Reconhecer** (achar as fotos de uma pessoa num evento, agrupar por pessoa) cria uma assinatura do rosto: só com
-   aviso próprio e consentimento destacado, por evento, nunca ligado por padrão. A assinatura é calculada no aparelho
-   (do fotógrafo, para as fotos; do visitante, para a selfie, que **nunca** sai do celular). O servidor guarda só os
-   vetores das fotos do evento, apaga com o evento e não guarda o vetor de quem buscou. Sem banco de rostos entre
-   eventos; nada disso vai para log, exportação ou XMP.
+   **Reconhecer** (achar as fotos de uma pessoa num evento) cria uma assinatura do rosto: só com aviso próprio e
+   consentimento destacado, por evento, desligado por padrão. A selfie **nunca** sai do celular do visitante; o vetor
+   da busca não é gravado nem vai para log. O fotógrafo escolhe o modo por evento (decisão do titular, 13/11/2026):
+   - **Com consentimento** (padrão): só vai ao servidor a assinatura de quem pediu para ser achado; o computador do
+     fotógrafo compara com as fotos e sobe só a ligação "foto ↔ pessoa". Nenhum vetor de quem não consentiu sai do
+     aparelho do fotógrafo.
+   - **Busca aberta** (só em evento com aviso prévio: inscrição ou cartaz gerado pelo app): o servidor guarda os
+     vetores dos rostos das fotos daquele evento, com prazo curto, e apaga com o evento.
+   Sobem só prévias reduzidas com marca-d'água; o original fica no aparelho. Sem banco de rostos entre eventos; nada
+   disso vai para exportação ou XMP. Estudo e números em [`estudo/rosto-em-evento.md`](estudo/rosto-em-evento.md).
+   Revisão jurídica antes de lançar.
 6. Repositório público: nenhuma foto de cliente, RAW privado, token ou `.env`. Amostras CC0 ficam em `.amostras/`
    (fora do git); os testes geram as próprias imagens.
 

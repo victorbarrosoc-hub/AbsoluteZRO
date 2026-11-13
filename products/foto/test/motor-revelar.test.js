@@ -164,6 +164,20 @@ test('geometria: corte em fração do quadro e ângulo com o maior retângulo de
   assert.throws(() => revelar(baseDe(imagem), neutro(), { regiao: { x: 15, y: 0, largura: 10, altura: 5 } }), /região/)
 })
 
+test('pôr neblina: a cor do ar é a da foto inteira, então o resultado não depende do ladrilho', () => {
+  const imagem = cena(7, 300, 200, { ganho: 0.6 })
+  const base = prepararBase(fotografar(imagem).negativo, { latitude: latitudeDeTeste() })
+  const a = neutro()
+  a.presenca.neblina = -50
+  const inteira = revelar(base, a)
+  for (const [faixa, ladrilho] of [
+    [16, 40],
+    [37, 111],
+  ]) {
+    iguais(revelar(base, a, { faixa, ladrilho }), inteira, 2e-6, `neblina negativa em faixas de ${faixa}, ladrilhos de ${ladrilho}`)
+  }
+})
+
 test('revelar em faixas e por região: o pedaço é igual ao mesmo pedaço da foto inteira, com tudo ligado', () => {
   const imagem = cena(3, 300, 200, { ganho: 0.6 })
   const { negativo } = fotografar(imagem, { ruido: { leitura: 3, ganho: 0.6 } })

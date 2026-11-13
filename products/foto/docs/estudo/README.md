@@ -16,6 +16,7 @@ Cada documento marca a confiança do que diz: **verificado** (fonte lida ou prov
 | [cliente-e-estilo.md](cliente-e-estilo.md) | Galerias de seleção do cliente e extração de estilo de uma referência |
 | [nome.md](nome.md) | Família de nomes, candidatos, conflitos, top 3, o que falta verificar |
 | [o-que-ja-existia.md](o-que-ja-existia.md) | O que o ecossistema já tinha e serviu de referência |
+| [rosto-em-evento.md](rosto-em-evento.md) | Achar minhas fotos pelo rosto (estilo Banlek): mercado, LGPD e prova técnica |
 
 ## As 12 decisões que o estudo sustentou
 

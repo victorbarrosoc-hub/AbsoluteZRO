@@ -26,7 +26,7 @@ export function usarPrevia(previas, pedido, { prioridade = 0, elemento = null } 
     previas
       .pedir(pedido, { prioridade })
       .then((url) => vivo && url && atual.current === chave && definir({ chave, url }))
-      .catch(() => {})
+      .catch((e) => vivo && e?.name !== 'AbortError' && atual.current === chave && definir({ chave, url: null, erro: true }))
     return () => {
       vivo = false
     }
@@ -42,13 +42,13 @@ export function usarPrevia(previas, pedido, { prioridade = 0, elemento = null } 
     return () => obs.disconnect()
   }, [chave])
   const pronta = estado.chave === chave && !!estado.url
-  return { url: estado.url, pronta, chave }
+  return { url: estado.url, pronta, chave, erro: estado.chave === chave && !!estado.erro }
 }
 
-function CartaoBase({ p, previas, fonte, daFoto, naFoto, favorito, itensDoMenu, aoVer, aoAplicar, aoFavoritar, marca }) {
+function CartaoBase({ i = 0, p, previas, fonte, daFoto, naFoto, favorito, itensDoMenu, aoVer, aoAplicar, aoFavoritar, marca }) {
   const ref = useRef(null)
-  const { url, pronta } = usarPrevia(previas, fonte ? { fonte, p, daFoto, lado: 320 } : null, { elemento: ref })
-  return html`<li class=${cx('estilo', naFoto && 'estilo--na-foto')} ref=${ref}>
+  const { url, pronta, erro } = usarPrevia(previas, fonte ? { fonte, p, daFoto, lado: 320 } : null, { elemento: ref })
+  return html`<li class=${cx('estilo', naFoto && 'estilo--na-foto')} ref=${ref} style=${`--i:${i}`}>
     <button
       type="button"
       class="estilo-cartao"
@@ -61,7 +61,13 @@ function CartaoBase({ p, previas, fonte, daFoto, naFoto, favorito, itensDoMenu, 
       onClick=${(e) => aoAplicar(p, e.currentTarget.querySelector('.estilo-imagem'))}
     >
       <span class="estilo-imagem">
-        ${url ? html`<img src=${url} alt="" draggable="false" data-pronta=${pronta ? '1' : '0'} />` : html`<span class="esqueleto" aria-hidden="true"></span>`}
+        ${
+          url
+            ? html`<img src=${url} alt="" draggable="false" data-pronta=${pronta ? '1' : '0'} />`
+            : erro
+              ? html`<span class="estilo-falhou" title="Não deu para revelar"><${Icone} nome="aviso" /></span>`
+              : html`<span class="esqueleto" aria-hidden="true"></span>`
+        }
         ${naFoto ? html`<span class="estilo-selo" aria-hidden="true"><${Icone} nome="ok" /></span>` : null}
         ${marca ? html`<span class="estilo-origem" aria-hidden="true">${marca}</span>` : null}
       </span>

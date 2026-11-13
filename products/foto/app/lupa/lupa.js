@@ -8,6 +8,17 @@
 // duas lado a lado com o zoom e a posição sincronizados; P, X, U, 0–5 e 6–9 marcam; G ou Esc voltam à grade.
 // O zoom fica ligado ao trocar de foto (é assim que se confere o foco de uma sequência).
 // O contador "N de M" é anunciado (aria-live). Nenhum redesenho por quadro: arrastar escreve o transform direto.
+//
+// Peças opcionais (quem não passa fica com a lupa de sempre; a Decupar usa todas):
+//   aoTecla(evento, comando) → true   a tecla é de quem chamou (vem antes das da lupa; comando pode ser null)
+//   contador                          o texto no lugar de "N de M"        limites: { antes, depois } para as setas
+//   andar(passo, origem)              troca o "anda pelo catálogo" (origem: 'seta' | 'deslize')
+//   fixa + aoComparar()               a comparação controlada por quem chamou (N e o botão chamam aoComparar)
+//   aoDeslizar('cima' | 'baixo')      deslizar na vertical, no toque (escolher e rejeitar)
+//   camada(id)                        o que vai por cima da foto, dentro da moldura (acompanha o zoom)
+//   painel + painelAberto             um painel ao lado (a foto encolhe para caber)
+//   topo, tira, extras                um cabeçalho, uma faixa acima da régua e botões a mais na régua
+//   controle                          objeto que a lupa preenche: zoomEm(fx, fy), desligarZoom(), zoomLigado()
 
 import { cx, html, useEffect, useLayoutEffect, useRef, useState } from '../preact.js'
 import { lerTecla } from '../../src/biblioteca/catalogo.js'
@@ -55,7 +66,7 @@ export function fichaDoExif(exif = {}) {
 }
 
 /** Um quadro do palco: a foto encaixada, com zoom, arrastar e deslizar. Um quadro por foto (a `key` é o id). */
-function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
+function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar, aoDeslizar, camada }) {
   const { foto } = usarFoto(loja, id)
   const caixa = useRef(null)
   const moldura = useRef(null)
@@ -160,7 +171,9 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
   const gesto = useRef(null)
   const baixou = (e) => {
     if (e.button) return
-    gesto.current = { x: e.clientX, y: e.clientY, fx: zoom.estado.fx, fy: zoom.estado.fy, andou: false, id: e.pointerId }
+    // deslizar para marcar só no toque (no mouse, arrastar sem zoom não faz nada)
+    const toque = e.pointerType !== 'mouse' || matchMedia('(pointer: coarse)').matches
+    gesto.current = { x: e.clientX, y: e.clientY, fx: zoom.estado.fx, fy: zoom.estado.fy, andou: false, id: e.pointerId, toque }
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const moveu = (e) => {
@@ -170,10 +183,21 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
     const dy = e.clientY - g.y
     if (!g.andou && Math.hypot(dx, dy) < 5) return
     g.andou = true
-    if (!zoom.estado.ligado) return
+    if (!zoom.estado.ligado) {
+      // deslizar na vertical (escolher para cima, rejeitar para baixo): a foto acompanha o dedo e a dica acende
+      if (aoDeslizar && g.toque && Math.abs(dy) > Math.abs(dx)) {
+        moldura.current.style.translate = `0 ${(dy * 0.45).toFixed(1)}px`
+        caixa.current.dataset.deslize = dy < -40 ? 'cima' : dy > 40 ? 'baixo' : ''
+      }
+      return
+    }
     const { fl: l, fa: a } = medidas.current
     const s = escala()
     zoom.definir({ fx: limitar(g.fx - dx / (l * s), -0.5, 0.5), fy: limitar(g.fy - dy / (a * s), -0.5, 0.5) }, { animar: false })
+  }
+  const soltarDeslize = () => {
+    if (moldura.current) moldura.current.style.translate = ''
+    if (caixa.current) delete caixa.current.dataset.deslize
   }
   const soltou = (e) => {
     const g = gesto.current
@@ -182,7 +206,9 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
     const dx = e.clientX - g.x
     const dy = e.clientY - g.y
     if (g.andou) {
+      soltarDeslize()
       if (!zoom.estado.ligado && Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) aoAndar?.(dx < 0 ? 1 : -1)
+      else if (!zoom.estado.ligado && aoDeslizar && g.toque && Math.abs(dy) > 64 && Math.abs(dy) > Math.abs(dx) * 1.5) aoDeslizar(dy < 0 ? 'cima' : 'baixo')
       return
     }
     if (zoom.estado.ligado) return zoom.definir({ ligado: false })
@@ -205,7 +231,10 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
     onPointerDown=${baixou}
     onPointerMove=${moveu}
     onPointerUp=${soltou}
-    onPointerCancel=${() => (gesto.current = null)}
+    onPointerCancel=${() => {
+      gesto.current = null
+      soltarDeslize()
+    }}
   >
     <div class="quadro-moldura" ref=${moldura} data-nivel=${fonte?.nivel} style=${`width:${fl.toFixed(1)}px;height:${fa.toFixed(1)}px`}>
       ${
@@ -221,8 +250,15 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
           />`
           : html`<span class="quadro-espera">${foto?.semPrevia ? html`<${Icone} nome="fotos" /><span>Sem prévia neste navegador</span>` : null}</span>`
       }
+      ${camada ? camada(id) : null}
     </div>
     ${etiqueta ? html`<span class="quadro-etiqueta">${etiqueta}</span>` : null}
+    ${
+      aoDeslizar
+        ? html`<span class="quadro-dica" data-para="cima" aria-hidden="true"><${Icone} nome="ok" />Escolher</span
+          ><span class="quadro-dica" data-para="baixo" aria-hidden="true"><${Icone} nome="x" />Rejeitar</span>`
+        : null
+    }
   </div>`
 }
 
@@ -230,14 +266,34 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
  * `aoFechar()`: voltar à grade. `revelar(foto, { sinal })`: opcional; devolve um Blob com a foto revelada (a lupa
  * troca a prévia por ela) ou null para ficar com a prévia.
  */
-export function Lupa({ loja, aoFechar, revelar }) {
+export function Lupa({
+  loja,
+  aoFechar,
+  revelar,
+  aoTecla,
+  contador,
+  limites,
+  andar: andarDeFora,
+  fixa: fixaDeFora,
+  aoComparar,
+  aoDeslizar,
+  camada,
+  painel,
+  painelAberto = false,
+  topo,
+  tira,
+  extras,
+  controle,
+  classe,
+}) {
   const c = loja.catalogo
   const TIPOS = ['selecao', 'fotos', 'filtro', 'ordem', 'pilhas', 'dados']
   const foco = usarCatalogo(loja, (x) => x.foco(), TIPOS)
   const total = usarCatalogo(loja, (x) => x.itens().length, TIPOS)
   const posicao = usarCatalogo(loja, (x) => x.indice(x.foco() ?? ''), TIPOS)
   const { foto } = usarFoto(loja, foco ?? '')
-  const [fixa, definirFixa] = useState(null)
+  const [fixaPropria, definirFixa] = useState(null)
+  const fixa = aoComparar ? (fixaDeFora ?? null) : fixaPropria
   const [ampliada, definirAmpliada] = useState(false)
   const zoom = useRef(null)
   zoom.current ??= criarZoom(definirAmpliada)
@@ -251,12 +307,20 @@ export function Lupa({ loja, aoFechar, revelar }) {
     if (!foco || !foto) aoFechar?.()
   }, [foco, !!foto])
   useEffect(() => {
-    if (fixa && !c.tem(fixa)) definirFixa(null)
+    if (fixaPropria && !c.tem(fixaPropria)) definirFixa(null)
   })
+  // quem chamou pode ligar o zoom num ponto (o rosto principal) e saber se está ligado
+  useLayoutEffect(() => {
+    if (!controle) return
+    controle.zoomEm = (fx, fy) => zoom.current.definir({ ligado: true, fx, fy })
+    controle.desligarZoom = () => zoom.current.definir({ ligado: false })
+    controle.zoomLigado = () => zoom.current.estado.ligado
+  }, [controle])
 
-  const andar = (passo) => c.mover(passo)
+  const andar = (passo, origem = 'seta') => (andarDeFora ? andarDeFora(passo, origem) : c.mover(passo))
   const alternarZoom = () => zoom.current.definir(zoom.current.estado.ligado ? { ligado: false } : { ligado: true, fx: 0, fy: 0 })
   const alternarComparar = () => {
+    if (aoComparar) return aoComparar()
     if (fixa) return definirFixa(null)
     if (!foco) return
     definirFixa(foco)
@@ -266,6 +330,7 @@ export function Lupa({ loja, aoFechar, revelar }) {
 
   usarAtalhos(true, (e) => {
     const comando = lerTecla(e)
+    if (aoTecla?.(e, comando)) return e.preventDefault()
     if (!comando) return
     if (comando.acao === 'mover') {
       e.preventDefault()
@@ -285,7 +350,7 @@ export function Lupa({ loja, aoFechar, revelar }) {
       case 'sair':
         e.preventDefault()
         if (zoom.current.estado.ligado) return zoom.current.definir({ ligado: false })
-        if (fixa) return definirFixa(null)
+        if (fixa) return aoComparar ? aoComparar() : definirFixa(null)
         return aoFechar?.()
       default:
     }
@@ -294,9 +359,25 @@ export function Lupa({ loja, aoFechar, revelar }) {
   if (!foco || !foto) return null
   const ids = [foco]
   const ficha = fichaDoExif(foto.exif)
-  return html`<div class="lupa palco" ref=${raiz} role="region" aria-label="Foto grande" tabindex="-1" data-comparar=${fixa ? '' : undefined}>
+  const texto = contador ?? `${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}`
+  const antes = limites ? limites.antes : posicao > 0
+  const depois = limites ? limites.depois : posicao < total - 1
+  return html`<div
+    class=${cx('lupa palco', classe)}
+    ref=${raiz}
+    role="region"
+    aria-label="Foto grande"
+    tabindex="-1"
+    data-comparar=${fixa ? '' : undefined}
+    data-painel=${painel && painelAberto ? '' : undefined}
+    data-tira=${tira ? '' : undefined}
+  >
     <div class="lupa-palco">
-      ${fixa ? html`<${Quadro} key=${`fixa:${fixa}`} loja=${loja} id=${fixa} zoom=${zoom.current} revelar=${revelar} etiqueta="Fixa" />` : null}
+      ${
+        fixa
+          ? html`<${Quadro} key=${`fixa:${fixa}`} loja=${loja} id=${fixa} zoom=${zoom.current} revelar=${revelar} etiqueta="Fixa" camada=${camada} />`
+          : null
+      }
       <${Quadro}
         key=${`atual:${foco}`}
         loja=${loja}
@@ -304,28 +385,33 @@ export function Lupa({ loja, aoFechar, revelar }) {
         zoom=${zoom.current}
         principal
         revelar=${revelar}
-        aoAndar=${andar}
+        aoAndar=${(passo) => andar(passo, 'deslize')}
+        aoDeslizar=${aoDeslizar}
+        camada=${camada}
         etiqueta=${fixa ? 'Candidata' : null}
       />
     </div>
     <div class="lupa-ficha"><strong>${foto.nome}</strong>${ficha.map((p) => html`<span>${p}</span>`)}<span
       class="lupa-ficha-n"
       aria-hidden="true"
-    >${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}</span></div>
+    >${texto}</span></div>
+    ${topo ?? null}
     <button
       type="button"
       class="liso lupa-seta lupa-seta--antes"
       aria-label="Foto anterior"
-      disabled=${posicao <= 0}
+      disabled=${!antes}
       onClick=${() => andar(-1)}
     ><${Icone} nome="esquerda" /></button>
     <button
       type="button"
       class="liso lupa-seta lupa-seta--depois"
       aria-label="Próxima foto"
-      disabled=${posicao >= total - 1}
+      disabled=${!depois}
       onClick=${() => andar(1)}
     ><${Icone} nome="direita" /></button>
+    ${painel ? html`<aside class="lupa-painel" aria-label="Por que esta nota" hidden=${!painelAberto}>${painel}</aside>` : null}
+    ${tira ?? null}
     <div class="lupa-barra barra-vidro" role="toolbar" aria-label="Foto">
       <button
         type="button"
@@ -336,7 +422,7 @@ export function Lupa({ loja, aoFechar, revelar }) {
         data-dica-lado="cima"
         onClick=${() => aoFechar?.()}
       ><${Icone} nome="grade" /></button>
-      <span class="lupa-contador" aria-live="polite" aria-atomic="true">${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}</span>
+      <span class="lupa-contador" aria-live="polite" aria-atomic="true">${texto}</span>
       <span class="separador" aria-hidden="true"></span>
       <${Marcar}
         fotos=${[foto]}
@@ -365,6 +451,7 @@ export function Lupa({ loja, aoFechar, revelar }) {
         data-dica-lado="cima"
         onClick=${alternarComparar}
       ><${Icone} nome="comparar" /></button>
+      ${extras ?? null}
     </div>
   </div>`
 }

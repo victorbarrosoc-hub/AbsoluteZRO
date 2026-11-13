@@ -7,14 +7,11 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { neutro, normalizar } from '../src/motor/ajustes.js'
-import { contextoDe, revelar } from '../src/motor/revelar.js'
-import { criarPonto } from '../src/motor/ponto.js'
-import { tirarNeblina } from '../src/motor/local.js'
-import { telaDe } from '../src/motor/tela.js'
+import { neutro } from '../src/motor/ajustes.js'
+import { revelar } from '../src/motor/revelar.js'
 import { criarOklab } from '../src/motor/cor/oklab.js'
 import { CURVAS } from '../src/motor/cor/espacos.js'
-import { AVISOS, TOLERANCIA, luzDoArDaFoto } from '../src/motor/gpu/motor.js'
+import { AVISOS, TOLERANCIA } from '../src/motor/gpu/motor.js'
 import { EXIGIR } from './apoio-tela.js'
 import { NA_PAGINA, abrirPagina, baseParaPagina, baseSintetica, deBase64, semChromium } from './apoio-gpu.js'
 
@@ -226,20 +223,6 @@ const VIZINHANCA = [
   ],
 ]
 
-// Pôr neblina: revelar.js mede a luz do ar em cada ladrilho (só a de tirar é da foto inteira); a placa usa a da foto
-// inteira nos dois sentidos. A referência aqui é a mesma cadeia do JS (ponto → tirarNeblina → tela) com o ar da foto.
-function porNeblinaComArDaFoto(base, ajustes) {
-  const a = normalizar(ajustes)
-  const contexto = contextoDe(base, a)
-  const { largura, altura } = base.imagem
-  const dados = Float32Array.from(base.imagem.dados)
-  criarPonto(a, contexto).aplicarEm(dados, largura * altura)
-  tirarNeblina({ largura, altura, dados, x0: 0, y0: 0, quadro: { largura, altura }, escala: 1 }, { quantidade: a.presenca.neblina, ar: luzDoArDaFoto(base, a) })
-  const saida = new Float32Array(dados.length)
-  telaDe('srgb', a, base).aplicarEm(dados, saida, largura * altura)
-  return { largura, altura, dados: saida }
-}
-
 test('GPU: vizinhança dentro da tolerância (ΔE em Oklab), também em região com margem', { skip: pular, timeout: 300000 }, async () => {
   const s = await abrirPagina()
   try {
@@ -254,7 +237,7 @@ test('GPU: vizinhança dentro da tolerância (ΔE em Oklab), também em região 
     )
     const linhas = []
     casos.forEach(([nome, ajustes], i) => {
-      const js = nome === 'neblina −' ? porNeblinaComArDaFoto(base, ajustes) : revelar(base, ajustes, { semente: 5 })
+      const js = revelar(base, ajustes, { semente: 5 })
       const d = deltaE(js, deBase64(saidas[i].dados))
       linhas.push(`${nome}: média ${d.media.toFixed(4)}, p99 ${d.p99.toFixed(4)}, pior ${d.pior.toFixed(3)}`)
       const dentro = d.media < TOLERANCIA.vizinhanca.media && d.p99 < TOLERANCIA.vizinhanca.p99

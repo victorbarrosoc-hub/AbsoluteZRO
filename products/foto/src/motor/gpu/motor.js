@@ -115,8 +115,7 @@ function reduzida256(base) {
 
 /**
  * A luz do ar (cor da neblina) da foto inteira: a base reduzida a 256 px, depois da cena (a conta de revelar.js
- * luzDoArDaBase). A placa usa esta para tirar E para pôr neblina; o JS de revelar.js só a usa para tirar (para pôr,
- * mede em cada ladrilho — o resultado lá depende do ladrilho).
+ * luzDoArDaBase). Vale para tirar e para pôr neblina, aqui e no JS.
  */
 export function luzDoArDaFoto(base, ajustes, contexto = contextoDe(base, normalizar(ajustes)), pequena = reduzida256(base)) {
   const copia = { ...pequena, dados: Float32Array.from(pequena.dados) }

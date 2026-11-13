@@ -30,6 +30,46 @@ import { MARGENS, criarTela } from './tela.js'
 /** Sensel conta como cortado a partir desta fração da saturação efetiva (em DN): perto do teto a resposta já entorta. */
 export const LIMIAR_CORTE = 0.98
 
+// ─────────── o zero da exposição ───────────
+//
+// A base sai com o neutro saturando em 1,0, e o motor trata 0,18 como o cinza médio da cena. Falta dizer ONDE a
+// câmera pôs o cinza que o fotômetro mediu, contado da saturação: esse é o zero da exposição. Supor que ele cai em
+// 0,18 da saturação (2,47 EV abaixo) deixava toda revelação neutra cerca de 1 EV mais escura que o JPEG da própria
+// câmera, em todos os formatos — inclusive nos DNG de celular, cujo BaselineExposure já vem calibrado pelo fabricante.
+//
+// A física diz o mesmo. Pela ISO 12232, a sensibilidade pela saturação é S = 78/H_sat e o fotômetro (K = 12,5) põe a
+// média da cena em H = 10/S: o cinza medido fica em 10/78 = 12,8% da saturação, 2,97 EV abaixo (0,49 EV a mais que
+// 0,18). E o fabricante declara a ISO pela SOS/REI com mais folga ainda para as altas luzes (os laboratórios medem a
+// ISO "de saturação" uns 0,3 a 0,7 EV abaixo da nominal). Somando, ~1 EV: o cinza medido mora em 0,09 da saturação.
+// É também o que o BaselineExposure do DNG supõe (o zero da Adobe), e o que se mediu: nos DNG com prévia da câmera
+// (Pixel 6 Pro, Ricoh GR, iPhone XS, 5D Mark III pelo conversor da Adobe, dois drones DJI) a mediana do que faltava
+// sobre o BaselineExposure declarado foi 1,03 EV.
+//
+// Isto muda só o lugar do cinza da cena: a saturação continua sendo a saturação. A Latitude conta a margem acima do
+// cinza com este número (acimaDoCinza = log2(1/0,18) + exposicaoBase), então o branco da tela segue onde o sensor
+// satura e nada lava. Os controles continuam em EV em torno do cinza: mesmo número, mesmo resultado em qualquer foto.
+export const EXPOSICAO_DE_REFERENCIA = 1
+
+// Arquivo que não é DNG não declara exposição base: o fabricante decide a folga da ISO dele, e o Lightroom guarda um
+// número por câmera para isso. Aqui, por fabricante, só onde há medida: Sony pede 0,4 EV a mais (mediana de 26
+// arquivos de ILCE-7M4 contra o JPEG da câmera e a prévia embutida). O DNG já traz o dele no BaselineExposure.
+export const EXPOSICAO_POR_FABRICANTE = [{ fabricante: /^sony/i, ev: 0.4 }]
+
+/**
+ * O zero da exposição de um arquivo RAW, em EV: o BaselineExposure declarado (DNG), mais a referência, mais o número
+ * do fabricante quando o arquivo não é DNG. `abrirFoto` grava isto em `negativo.exposicaoBase` antes de medir a
+ * Latitude, para a base e as margens partirem do mesmo cinza.
+ */
+export function exposicaoDaCamera(negativo, { dng = false } = {}) {
+  const declarada = Number.isFinite(negativo.exposicaoBase) ? negativo.exposicaoBase : 0
+  let fabricante = 0
+  if (!dng) {
+    const nome = String(negativo.fabricante ?? '').trim()
+    for (const f of EXPOSICAO_POR_FABRICANTE) if (f.fabricante.test(nome)) fabricante = f.ev
+  }
+  return declarada + EXPOSICAO_DE_REFERENCIA + fabricante
+}
+
 // Margem espelhada em volta do mosaico de trabalho: 4 sensels cobrem os núcleos 5×5 e a vizinhança da homogeneidade,
 // e por ser par mantém a fase do filtro de cor.
 const BORDA = 4

@@ -9,7 +9,8 @@
 //   1. ler: DNG pelo leitor próprio (dng.js; sem WASM), o resto pelo LibRaw (`leitor` = criarLeitor(LibRaw), injetado);
 //      Sony "sem perdas" M e S e DNG LinearRaw chegam já sem mosaico (cfa 'linear')
 //   2. opcodes do DNG que são ganho (GainMap, FixVignetteRadial) aplicados no mosaico, com o preto já tirado
-//   3. Latitude medida no dado e passada ao prepararBase (preto, saturação efetiva, modelo de ruído)
+//   3. o zero da exposição (BaselineExposure + a referência de base.js + o número do fabricante, fora do DNG) no
+//      negativo; a Latitude medida no dado parte dele e vai ao prepararBase (preto, saturação, modelo de ruído)
 //   4. base: demosaico próprio; X-Trans em 'qualidade' usa o Markesteijn do LibRaw (revelarLinear) e segue pelo mesmo
 //      caminho de imagem sem mosaico (altas luzes, matriz)
 //   5. DefaultCrop do arquivo; a orientação fica em base.orientacao (revelar.js gira)
@@ -27,7 +28,7 @@ import { extrairPrevia } from './raw/previa.js'
 import { medirLatitude } from './raw/latitude.js'
 import { aplicarOpcodes, funcaoDoMapa } from './raw/opcodes.js'
 import { criarNegativo, pretoEm } from './raw/negativo.js'
-import { prepararBase, baseDeImagem } from './motor/base.js'
+import { prepararBase, baseDeImagem, exposicaoDaCamera } from './motor/base.js'
 import { luminancia } from './motor/cor/espacos.js'
 
 export { ErroRaw }
@@ -282,7 +283,8 @@ export async function abrirFoto(bytes, { nome, leitor, demosaico = 'rapido', red
 
   // 1. ler
   let n
-  if (ehDng(u8)) {
+  const dng = ehDng(u8)
+  if (dng) {
     try {
       n = lerDng(u8, { nome })
     } catch (erro) {
@@ -302,7 +304,9 @@ export async function abrirFoto(bytes, { nome, leitor, demosaico = 'rapido', red
   // 2. opcodes (ganho no mosaico)
   const opcodes = aplicarOpcodesNoNegativo(n)
 
-  // 3. Latitude
+  // 3. o zero da exposição (onde a câmera pôs o cinza medido; ver base.js) e a Latitude, que conta as margens a
+  // partir dele: a base e o branco da tela partem do mesmo cinza
+  n.exposicaoBase = exposicaoDaCamera(n, { dng })
   const latitude = medirLatitude(n)
 
   // 4. base
@@ -370,6 +374,9 @@ function abrirJpeg(u8, { nome, reduzir }) {
     canais = 3
   }
   const aberta = abrirImagem({ largura, altura, dados, canais, espaco: cor.espaco, exif })
+  // a base saiu de bytes já reduzidos: baseDeImagem não sabe disso e diria reduzir 1. A escala da vizinhança (clareza,
+  // neblina, grão em local.js) é medida na foto cheia, então a base precisa contar a redução de verdade
+  aberta.base.reduzir = reduzir
   if (cor.perfil === 'desconhecido') aberta.avisos.push('Perfil de cor do JPEG desconhecido: aberto como sRGB.')
   if (/\.(dng|arw|cr[23w]|nef|nrw|raf|rw2|orf|pef|srw|3fr|iiq|x3f)$/i.test(nome || '')) aberta.avisos.push('Arquivo com nome de RAW que é um JPEG: aberto como foto pronta.')
   aberta.camera = camera

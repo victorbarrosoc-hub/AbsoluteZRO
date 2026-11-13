@@ -292,7 +292,9 @@ function processar(base, ajustesCrus, opcoes, entregar) {
     }
   }
   const contextoLocal = { semente: opcoes.semente ?? 1, ar: null, mapas: null }
-  if (local && ajustes.presenca.neblina > 0) contextoLocal.ar = luzDoArDaBase(base, ponto)
+  // a cor do ar vem da foto inteira nos dois sentidos (tirar e pôr neblina): medida no ladrilho, ela mudaria de um
+  // ladrilho para o outro e o resultado dependeria de como a foto foi cortada em blocos (a GPU faz igual)
+  if (local && ajustes.presenca.neblina !== 0) contextoLocal.ar = luzDoArDaBase(base, ponto)
   // neblina e clareza: o mapa largo uma vez, na foto inteira reduzida, em vez de por ladrilho com margem enorme
   if (local && !opcoes.vizinhancaExata) contextoLocal.mapas = mapasDaFoto(base, geo, ponto, ajustes, contextoLocal.ar, quadro, escala)
   const margem = local || ruido ? margemLocal(ajustes, quadro, escala, contextoLocal.mapas) : 0

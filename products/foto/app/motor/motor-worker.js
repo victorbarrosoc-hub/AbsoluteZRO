@@ -101,11 +101,7 @@ async function decodificarNoNavegador(bytes, exif) {
 
 async function abrirNivel(foto, reduzir, demosaico) {
   try {
-    const aberta = await abrirFoto(foto.bytes, { nome: foto.nome, leitor: await leitor(), demosaico, reduzir })
-    // JPEG reduzido por abrirFoto chega com base.reduzir = 1 (baseDeImagem não sabe da redução); a escala da
-    // vizinhança (local.js) depende dele, então vale o que foi pedido
-    if (aberta.origem === 'imagem' && (aberta.base.reduzir ?? 1) !== reduzir) aberta.base.reduzir = reduzir
-    return aberta
+    return await abrirFoto(foto.bytes, { nome: foto.nome, leitor: await leitor(), demosaico, reduzir })
   } catch (erro) {
     if (!erro?.decodificarNaTela) throw erro
     const aberta = await decodificarNoNavegador(foto.bytes, lerExifSeguro(foto.bytes))

@@ -13,11 +13,12 @@ import { abrirFoto, abrirImagem, conferirBase, ErroRaw } from '../src/abrir.js'
 import { lerSonySemMosaico, ehSonySemMosaico } from '../src/raw/sony.js'
 import { escreverDng } from '../src/raw/dng.js'
 import { criarNegativo } from '../src/raw/negativo.js'
-import { prepararBase } from '../src/motor/base.js'
+import { EXPOSICAO_DE_REFERENCIA, exposicaoDaCamera, prepararBase } from '../src/motor/base.js'
 import { revelar } from '../src/motor/revelar.js'
 import { neutro } from '../src/motor/ajustes.js'
 import { autoExposicao } from '../src/motor/auto.js'
 import { decodificarJpeg } from '../src/raw/jpeg.js'
+import { codificarJpeg } from '../src/exportar/jpeg.js'
 import { criarOklab } from '../src/motor/cor/oklab.js'
 import { CURVAS } from '../src/motor/cor/espacos.js'
 import { fabricarNegativo, acaso, carregarLibRaw, precisaDoLibRaw, precisaDeAmostras, lerAmostra, montarTiff } from './apoio-raw.js'
@@ -121,6 +122,33 @@ test('abrirFoto: DNG fabricado sem LibRaw (Latitude medida, redução, recorte d
   const r2 = await abrirFoto(bytes, { nome: 'sintetico.dng', reduzir: 2 })
   assert.deepEqual([r2.base.imagem.largura, r2.base.imagem.altura], [112, 74])
   assert.equal(r2.base.demosaico, 'agrupado')
+})
+
+test('abrirFoto: o zero da exposição (BaselineExposure + referência; fabricante só fora do DNG) entra na base e na Latitude', async () => {
+  const n = criarNegativo(fabricarNegativo({ largura: 64, altura: 48, semente: 3, exposicaoBase: 0.35 }))
+  const r = await abrirFoto(escreverDng(n), { nome: 'zero.dng' })
+  const ev = 0.35 + EXPOSICAO_DE_REFERENCIA
+  assert.ok(Math.abs(r.base.exposicaoBase - ev) < 1e-9, `base: ${r.base.exposicaoBase}`)
+  // a margem acima do cinza parte do mesmo zero: o branco da tela continua onde o sensor satura
+  assert.ok(Math.abs(r.latitude.margem.acimaDoCinza - (Math.log2(1 / 0.18) + ev)) < 1e-9, `latitude: ${r.latitude.margem.acimaDoCinza}`)
+  // o número do fabricante só vale para quem não declara (o DNG já traz o dele)
+  assert.equal(exposicaoDaCamera({ fabricante: 'SONY', exposicaoBase: 0 }), EXPOSICAO_DE_REFERENCIA + 0.4)
+  assert.equal(exposicaoDaCamera({ fabricante: 'SONY', exposicaoBase: 0.35 }, { dng: true }), EXPOSICAO_DE_REFERENCIA + 0.35)
+  assert.equal(exposicaoDaCamera({ fabricante: 'Canon', exposicaoBase: 0 }), EXPOSICAO_DE_REFERENCIA)
+})
+
+test('abrirFoto: JPEG reduzido guarda a redução na base (a vizinhança mede na escala da foto cheia)', async () => {
+  const largura = 64
+  const altura = 48
+  const rgb8 = new Uint8Array(largura * altura * 3)
+  for (let i = 0; i < rgb8.length; i++) rgb8[i] = (i * 37) % 251
+  const jpeg = codificarJpeg({ largura, altura, rgb8 })
+  for (const reduzir of [1, 2, 4]) {
+    const r = await abrirFoto(jpeg, { nome: 'foto.jpg', reduzir })
+    assert.equal(r.origem, 'imagem')
+    assert.equal(r.base.reduzir, reduzir)
+    assert.deepEqual([r.base.imagem.largura, r.base.imagem.altura], [largura / reduzir, altura / reduzir])
+  }
 })
 
 test('abrirFoto recusa com motivo: sem leitor para RAW de fabricante, PNG decodifica na tela, imagem toda preta', async () => {

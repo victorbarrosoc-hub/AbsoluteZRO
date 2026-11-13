@@ -8,7 +8,8 @@
 // Esc. role="listbox" multisselecionável, cada foto é role="option" com roving tabindex. As teclas de marcar são as
 // do Lightroom (src/biblioteca/catalogo.js). Duplo clique, Enter, E ou espaço abrem a foto (`aoAbrir`).
 // O cartão mostra a marca, as estrelas, a cor, o selo de par RAW + JPEG, a pilha (grupo de repetidas, que abre no
-// lugar) e tem espaço para a nota e o motivo da decupagem (foto.magnitude, quando existir).
+// lugar) e tem espaço para a nota e o motivo da decupagem (foto.magnitude, quando existir). Com a nota, o cartão leva
+// o balde (data-balde) e, quando a cobertura protegeu a foto (a única de um momento), o selo "Única".
 
 import { cx, html, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from '../preact.js'
 import { lerTecla } from '../../src/biblioteca/catalogo.js'
@@ -70,6 +71,7 @@ const Cartao = memo(
       tabindex=${emFoco || entrada ? 0 : -1}
       data-id=${id}
       data-marca=${foto.marca ?? undefined}
+      data-balde=${foto.magnitude?.balde ?? undefined}
       data-foco=${emFoco ? '' : undefined}
       data-pilha=${pilha ? (pilha.aberta ? 'aberta' : 'fechada') : undefined}
       data-ponta=${ponta}
@@ -96,6 +98,7 @@ const Cartao = memo(
           }
           <${Marca} marca=${foto.marca} classe="foto-marca" />
           ${foto.par ? html`<span class="selo selo-par" title="RAW e JPEG do mesmo clique">RAW+J</span>` : null}
+          ${foto.magnitude?.detalhe?.protegida ? html`<span class="selo selo-unica" title="A única foto deste momento: não sai sozinha">Única</span>` : null}
           ${
             pilha && (!pilha.aberta || pilha.posicao === 0)
               ? html`<button

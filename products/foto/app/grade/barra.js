@@ -16,8 +16,11 @@ const ORDENS = [
   { por: 'nota', rotulo: 'Nota' },
 ]
 
-/** Os filtros e a visão da grade. `tamanho` e `aoTamanho`: o lado da miniatura (o controle some no celular). */
-export function BarraDaGrade({ loja, tamanho, aoTamanho }) {
+/**
+ * Os filtros e a visão da grade. `tamanho` e `aoTamanho`: o lado da miniatura (o controle some no celular).
+ * `extra`: mais pílulas depois das de marca, na mesma linha que rola (a Decupar põe os motivos e as cenas).
+ */
+export function BarraDaGrade({ loja, tamanho, aoTamanho, extra }) {
   usarCatalogo(loja, (c) => c.versao, ['fotos', 'dados', 'filtro', 'ordem', 'pilhas'])
   const c = loja.catalogo
   const n = c.contagens()
@@ -26,9 +29,8 @@ export function BarraDaGrade({ loja, tamanho, aoTamanho }) {
   const marca = f.marca?.[0] ?? 'todas'
   const cores = f.cor || []
   const temNota = n.balde.sem < n.total
-  return html`<div class="grade-barra" role="toolbar" aria-label="Filtros">
-    <${Pilulas}
-      rola
+  const marcas = html`<${Pilulas}
+      rola=${!extra}
       rotulo="Marca"
       valor=${marca}
       aoMudar=${(v) => c.filtrar({ marca: v == null || v === 'todas' ? null : v })}
@@ -38,7 +40,9 @@ export function BarraDaGrade({ loja, tamanho, aoTamanho }) {
         { valor: 'rejeitada', rotulo: 'Rejeitadas', contagem: n.marca.rejeitada },
         { valor: 'sem', rotulo: 'Sem marca', contagem: n.marca.sem },
       ]}
-    />
+    />`
+  return html`<div class="grade-barra" role="toolbar" aria-label="Filtros">
+    ${extra ? html`<div class="grade-barra-rola pilulas--rola">${marcas}${extra}</div>` : marcas}
     <span class="grade-barra-fim">
       <${Menu}
         rotulo=${f.estrelas ? `Estrelas: ${f.estrelas} ou mais` : 'Filtrar por estrelas'}
