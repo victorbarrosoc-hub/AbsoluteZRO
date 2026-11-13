@@ -20,7 +20,7 @@ import { autoExposicao } from '../src/motor/auto.js'
 import { decodificarJpeg } from '../src/raw/jpeg.js'
 import { criarOklab } from '../src/motor/cor/oklab.js'
 import { CURVAS } from '../src/motor/cor/espacos.js'
-import { fabricarNegativo, acaso, carregarLibRaw, precisaDoLibRaw, precisaDeAmostras, lerAmostra } from './apoio-raw.js'
+import { fabricarNegativo, acaso, carregarLibRaw, precisaDoLibRaw, precisaDeAmostras, lerAmostra, montarTiff } from './apoio-raw.js'
 import { fabricarArwSemMosaico } from './apoio-abrir.js'
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -138,6 +138,24 @@ test('abrirFoto recusa com motivo: sem leitor para RAW de fabricante, PNG decodi
   assert.throws(() => conferirBase(nan), (e) => e instanceof ErroRaw && /inválidos/.test(e.message))
 })
 
+test('DNG em JPEG XL (ProRAW novo): recusa dizendo o que fazer', async () => {
+  const ifd = [
+    [0x00fe, 4, 0],
+    [0x0100, 4, 16],
+    [0x0101, 4, 16],
+    [0x0102, 3, [16, 16, 16]],
+    [0x0103, 3, 52546],
+    [0x0106, 3, 34892],
+    [0x0115, 3, 3],
+    [0xc612, 1, Uint8Array.of(1, 7, 0, 0)],
+    [0xc621, 10, [[1, 1], [0, 1], [0, 1], [0, 1], [1, 1], [0, 1], [0, 1], [0, 1], [1, 1]]],
+    [0x0111, 4, { pos: 'd' }],
+    [0x0117, 4, { tam: 'd' }],
+  ]
+  const bytes = montarTiff({ blocos: [{ nome: 'ifd0', ifd }, { nome: 'd', bytes: new Uint8Array(64) }] }).bytes
+  await assert.rejects(abrirFoto(bytes, { nome: 'IMG_0001.DNG' }), (e) => e instanceof ErroRaw && e.codigo === 'sem-suporte' && /JPEG XL/.test(e.message) && /JPEG sem perdas/.test(e.message))
+})
+
 test('abrirImagem: foto já decodificada vira base, com a orientação do EXIF', () => {
   const dados = new Uint8ClampedArray(16 * 8 * 4).fill(128)
   const r = abrirImagem({ largura: 16, altura: 8, dados, canais: 4, espaco: 'p3', exif: { orientacao: 8 } })
@@ -240,6 +258,7 @@ test('amostras CC0: todas abrem pela porta única (ou são recusadas com motivo)
     if (nome === 'samsung_g973.dng') {
       // é um JPEG com nome de RAW: abre como foto pronta
       assert.equal(r.origem, 'imagem')
+      assert.ok(r.avisos.some((a) => /nome de RAW/.test(a)))
       linhas.push(`${nome}: JPEG, ${ms.toFixed(0)} ms`)
       continue
     }

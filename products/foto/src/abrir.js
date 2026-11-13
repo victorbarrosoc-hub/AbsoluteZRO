@@ -371,6 +371,7 @@ function abrirJpeg(u8, { nome, reduzir }) {
   }
   const aberta = abrirImagem({ largura, altura, dados, canais, espaco: cor.espaco, exif })
   if (cor.perfil === 'desconhecido') aberta.avisos.push('Perfil de cor do JPEG desconhecido: aberto como sRGB.')
+  if (/\.(dng|arw|cr[23w]|nef|nrw|raf|rw2|orf|pef|srw|3fr|iiq|x3f)$/i.test(nome || '')) aberta.avisos.push('Arquivo com nome de RAW que é um JPEG: aberto como foto pronta.')
   aberta.camera = camera
   conferirBase(aberta.base, { nome })
   return aberta
