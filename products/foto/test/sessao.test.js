@@ -196,9 +196,15 @@ test(
       assert.ok(r.info.folgaAltas >= 0)
       const conta = await s.pagina.evaluate(
         async (cores) => {
-          const quadro = async () => {
-            const n = window.__eventos.filter((e) => e.tipo === 'quadro').length
-            for (let i = 0; i < 200 && window.__eventos.filter((e) => e.tipo === 'quadro').length <= n; i++) await new Promise((ok) => setTimeout(ok, 25))
+          // espera o quadro novo e mais nada vindo (um quadro pedido no meio de outro sai logo depois dele)
+          const quadros = () => window.__eventos.filter((e) => e.tipo === 'quadro').length
+          const quadro = async (n = quadros()) => {
+            for (let i = 0; i < 400 && quadros() <= n; i++) await new Promise((ok) => setTimeout(ok, 25))
+            for (let visto = quadros(), i = 0; i < 40; i++) {
+              await new Promise((ok) => setTimeout(ok, 300))
+              if (quadros() === visto) break
+              visto = quadros()
+            }
           }
           const contar = () => {
             const { dados } = window.__s.lerTela()
@@ -207,6 +213,7 @@ test(
               for (const k in cores) if (dados[i] === cores[k] && dados[i + 1] === cores[k] && dados[i + 2] === cores[k]) n[k]++
             return { n, media: window.__media() }
           }
+          await quadro(0)
           const sem = contar()
           window.__s.ver({ avisos: true })
           await quadro()
