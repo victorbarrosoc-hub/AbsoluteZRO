@@ -62,7 +62,10 @@ export function criarLeitor(LibRaw) {
   async function comArquivo(bytes, nome, fazer) {
     const u8 = exato(bytes)
     if (u8.length >= 3 && u8[0] === 0xff && u8[1] === 0xd8 && u8[2] === 0xff) {
-      throw new ErroRaw('nao-e-raw', `${nome ? `${nome} ` : 'O arquivo '}é um JPEG${/\.(jpe?g)$/i.test(nome || '') ? '' : ' com nome de RAW'}: não tem o dado do sensor.`)
+      throw new ErroRaw(
+        'nao-e-raw',
+        `${nome ? `${nome} ` : 'O arquivo '}é um JPEG${/\.(jpe?g)$/i.test(nome || '') ? '' : ' com nome de RAW'}: não tem o dado do sensor.`,
+      )
     }
     const lr = new LibRaw()
     try {
@@ -79,7 +82,8 @@ export function criarLeitor(LibRaw) {
   /** CFA relativo à área ativa, pelo que o LibRaw responde em COLOR(linha, coluna). */
   function lerCfa(lr) {
     const filtros = lr.getFilters() >>> 0
-    if (lr.getColors() !== 3 || filtros === 0 || filtros === 1) throw new ErroRaw('sem-suporte', 'Sensor sem mosaico de três cores (monocromático, Foveon ou de quatro cores).')
+    if (lr.getColors() !== 3 || filtros === 0 || filtros === 1)
+      throw new ErroRaw('sem-suporte', 'Sensor sem mosaico de três cores (monocromático, Foveon ou de quatro cores).')
     const lado = filtros === 9 ? 6 : 2
     const letra = [0, 1, 2, 3].map((i) => String.fromCharCode(lr.getCdesc(i)))
     const cor = (l, c) => {
@@ -96,7 +100,9 @@ export function criarLeitor(LibRaw) {
       }
     }
     // o campo `filters` do LibRaw descreve 8 linhas × 2 colunas: confere que o Bayer se repete mesmo de 2 em 2
-    if (lado === 2) for (let l = 2; l < 8; l++) for (let c = 0; c < 2; c++) if (cor(l, c) !== padrao[(l % 2) * 2 + c]) throw new ErroRaw('sem-suporte', 'Mosaico que não se repete de 2 em 2.')
+    if (lado === 2)
+      for (let l = 2; l < 8; l++)
+        for (let c = 0; c < 2; c++) if (cor(l, c) !== padrao[(l % 2) * 2 + c]) throw new ErroRaw('sem-suporte', 'Mosaico que não se repete de 2 em 2.')
     return { cfa: { tipo: lado === 6 ? 'xtrans' : 'bayer', lado, padrao }, indice }
   }
 
@@ -118,7 +124,7 @@ export function criarLeitor(LibRaw) {
       colunas: mmc(lado, repetido ? pc : 1),
       cfa,
       area,
-      valor: (la, ca) => base + porCor[indice[mod(la, lado) * lado + mod(ca, lado)]] + (repetido ? padrao[mod(la, pl) * pc + mod(ca, pc)] : 0)
+      valor: (la, ca) => base + porCor[indice[mod(la, lado) * lado + mod(ca, lado)]] + (repetido ? padrao[mod(la, pl) * pc + mod(ca, pc)] : 0),
     })
   }
 
@@ -210,7 +216,8 @@ export function criarLeitor(LibRaw) {
           // cam_xyz do LibRaw: uma matriz só, XYZ (D65) → câmera, linha a linha
           const m = []
           for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) m.push(lr.getCamXyz(i, j))
-          if (!m.some((v) => v !== 0) || !m.every(Number.isFinite)) throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}câmera sem matriz de cor conhecida pelo leitor.`)
+          if (!m.some((v) => v !== 0) || !m.every(Number.isFinite))
+            throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}câmera sem matriz de cor conhecida pelo leitor.`)
           cor = { origem: 'libraw', matrizes: [{ kelvin: 6500, xyzParaCamera: m }] }
         }
 
@@ -237,7 +244,7 @@ export function criarLeitor(LibRaw) {
           branco,
           wb: dng && dng.wb.comoFotografado ? dng.wb : wb,
           cor,
-          exposicaoBase: dng ? dng.exposicaoBase : 0
+          exposicaoBase: dng ? dng.exposicaoBase : 0,
         }
         if (dng && dng.perfilRuido) n.perfilRuido = dng.perfilRuido
         if (dng && dng.recorte) n.recorte = dng.recorte
@@ -267,7 +274,8 @@ export function criarLeitor(LibRaw) {
    *
    * opcoes:
    *   qualidade  'rapida' | 'alta' (padrão) | número do LibRaw (0 linear, 1 VNG, 2 PPG, 3 AHD, 4 DCB, 11 DHT, 12 AAHD)
-   *   metade     true = metade da resolução por blocos de 2×2, sem interpolar (só Bayer)
+   *   metade     true = metade da resolução, sem interpolar (half_size do LibRaw). Vale também para X-Trans, e é o
+   *              que o torna usável: 26 MP em ~2,5 s, contra ~15 s do Markesteijn de 1 passada em WASM de uma thread
    *   wb         'camera' (padrão) | 'nenhum' | [r, g, b]: equilíbrio usado SÓ POR DENTRO do demosaico. Os algoritmos
    *              direcionais comparam canais e erram a direção com o verde dominando; por isso o LibRaw equilibra,
    *              interpola, e aqui os multiplicadores são desfeitos na saída. O resultado é o mesmo espaço de câmera

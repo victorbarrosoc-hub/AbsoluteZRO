@@ -14,6 +14,9 @@
     },
     "api/recurso.js": {
       "includeFiles": "{app/**,src/**}"
+    },
+    "api/galeria.js": {
+      "includeFiles": "{galeria/**,app/indisponivel.html}"
     }
   },
   "rewrites": [
@@ -36,6 +39,34 @@
     {
       "source": "/src/:f*",
       "destination": "/api/recurso?pasta=src&f=:f*"
+    },
+    {
+      "source": "/api/foto/galerias/:id/:acao",
+      "destination": "/api/foto/galerias?id=:id&acao=:acao"
+    },
+    {
+      "source": "/api/foto/galerias/:id",
+      "destination": "/api/foto/galerias?id=:id"
+    },
+    {
+      "source": "/api/foto/predefinicoes/:id",
+      "destination": "/api/foto/predefinicoes?id=:id"
+    },
+    {
+      "source": "/api/link/:acao",
+      "destination": "/api/link/porta?acao=:acao"
+    },
+    {
+      "source": "/g/:token/i/:foto",
+      "destination": "/api/link/porta?acao=imagem&t=:token&f=:foto"
+    },
+    {
+      "source": "/g/:token/:arquivo",
+      "destination": "/api/galeria?t=:token&f=:arquivo"
+    },
+    {
+      "source": "/g/:token",
+      "destination": "/api/galeria?t=:token"
     }
   ],
   "headers": [

@@ -24,6 +24,14 @@
 //   perfilRuido?    [{ escala, deslocamento }] por canal (NoiseProfile do DNG, em sinal normalizado 0..1)
 //   previa?         { jpeg: Uint8Array, largura?, altura? }   a maior JPEG embutida
 //
+// Opcionais que os leitores acrescentam quando o arquivo traz (nada disso é exigido por criarNegativo):
+//   exif.subsegundo é a fração do segundo (0 ≤ x < 1)
+//   branco.maximo   teto do formato segundo o LibRaw (o `declarado` já é o menor entre ele e o fim do trecho linear)
+//   recorte?        { x, y, largura, altura }   DefaultCrop do DNG, contado do canto da área ativa
+//   opcodes?        { lista1?, lista2?, lista3? }   OpcodeList do DNG já lidas (src/raw/opcodes.js)
+//   cor.matrizes[].cameraParaXyzD50 é a ForwardMatrix do DNG (vale para a câmera já equilibrada, neutro = 1,1,1);
+//   cor.matrizes[].calibracao? = AnalogBalance · CameraCalibration quando não é a identidade (xyzParaCamera já a inclui)
+//
 // Motivo dos nomes: quem lê o código de revelação precisa saber de onde cada número veio (declarado pelo arquivo
 // versus medido). O que é MEDIDO fica em src/raw/latitude.js, nunca aqui.
 

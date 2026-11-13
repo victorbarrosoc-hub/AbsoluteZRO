@@ -126,6 +126,6 @@ export function temperaturaDeXy(xy) {
   return {
     kelvin: Math.min(KELVIN_MAX, Math.max(KELVIN_MIN, kelvin)),
     tinta: Math.min(150, Math.max(-150, tinta)),
-    noLugar: Math.abs(tinta) <= 150 && kelvin >= KELVIN_MIN * 0.999 && kelvin <= KELVIN_MAX * 1.001,
+    noLugar: Math.abs(tinta) <= 150 + 1e-6 && kelvin >= KELVIN_MIN * 0.999 && kelvin <= KELVIN_MAX * 1.001,
   }
 }

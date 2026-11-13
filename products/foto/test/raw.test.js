@@ -19,7 +19,7 @@ import {
   precisaDoLibRaw,
   precisaDeAmostras,
   lerAmostra,
-  AMOSTRAS
+  AMOSTRAS,
 } from './apoio-raw.js'
 
 const iguais = (a, b) => a.length === b.length && Buffer.from(a.buffer, a.byteOffset, a.byteLength).equals(Buffer.from(b.buffer, b.byteOffset, b.byteLength))
@@ -42,21 +42,29 @@ function negativoCompleto() {
     corte: 15000,
     declarado: 16000,
     semente: 11,
-    exposicaoBase: 0.35
+    exposicaoBase: 0.35,
   })
   n.cor = {
     origem: 'dng',
     matrizes: [
-      { kelvin: 2850, xyzParaCamera: [0.9962, -0.4568, -0.1468, -0.4629, 1.4161, 0.2815, -0.0258, 0.0995, 0.7301], cameraParaXyzD50: [0.7868, 0.0092, 0.1683, 0.2291, 0.8615, -0.0906, 0.0027, -0.4752, 1.2976] },
-      { kelvin: 6500, xyzParaCamera: [0.7368, -0.2173, -0.0873, -0.4603, 1.2249, 0.1974, -0.0821, 0.1363, 0.473], cameraParaXyzD50: [0.7637, 0.0805, 0.1201, 0.2649, 0.9179, -0.1828, 0.0137, -0.2456, 1.057] }
+      {
+        kelvin: 2850,
+        xyzParaCamera: [0.9962, -0.4568, -0.1468, -0.4629, 1.4161, 0.2815, -0.0258, 0.0995, 0.7301],
+        cameraParaXyzD50: [0.7868, 0.0092, 0.1683, 0.2291, 0.8615, -0.0906, 0.0027, -0.4752, 1.2976],
+      },
+      {
+        kelvin: 6500,
+        xyzParaCamera: [0.7368, -0.2173, -0.0873, -0.4603, 1.2249, 0.1974, -0.0821, 0.1363, 0.473],
+        cameraParaXyzD50: [0.7637, 0.0805, 0.1201, 0.2649, 0.9179, -0.1828, 0.0137, -0.2456, 1.057],
+      },
     ],
-    neutroComoFotografado: [0.5, 1, 0.625]
+    neutroComoFotografado: [0.5, 1, 0.625],
   }
   n.wb = { comoFotografado: [2, 1, 1.6] }
   n.perfilRuido = [
     { escala: 1.25e-5, deslocamento: 1.5e-7 },
     { escala: 7.5e-6, deslocamento: 5e-8 },
-    { escala: 1.3e-5, deslocamento: 1.25e-7 }
+    { escala: 1.3e-5, deslocamento: 1.25e-7 },
   ]
   n.recorte = { x: 8, y: 6, largura: 300, altura: 224 }
   n.exif = { data: '2026-11-13T09:41:07', subsegundo: 0.37, iso: 400, tempo: 1 / 250, abertura: 2.8, focal: 35, lente: 'ZRO 35mm f/1.4', orientacao: 1 }
@@ -80,9 +88,9 @@ function negativoCompleto() {
         origemV: 0,
         origemH: 0,
         planosDoMapa: 1,
-        ganhos: Float32Array.of(1, 1.5, 2, 1.25, 1.75, 2.25)
-      }
-    ]
+        ganhos: Float32Array.of(1, 1.5, 2, 1.25, 1.75, 2.25),
+      },
+    ],
   }
   return criarNegativo(n)
 }
@@ -169,8 +177,16 @@ const tagsDeDng = ({ largura, altura, bits, compressao, extra = [] }) => [
   [0xc61d, 4, (1 << bits) - 1],
   [0xc621, 10, [8000, -2000, -1000, -4000, 12000, 2000, -1000, 2000, 6000].map((v) => [v, 10000])],
   [0xc65a, 3, 21],
-  [0xc628, 5, [[1, 2], [1, 1], [2, 3]]],
-  ...extra
+  [
+    0xc628,
+    5,
+    [
+      [1, 2],
+      [1, 1],
+      [2, 3],
+    ],
+  ],
+  ...extra,
 ]
 
 test('leitor próprio de DNG: 12 bits empacotados, big-endian, em duas tiras', () => {
@@ -210,13 +226,13 @@ test('leitor próprio de DNG: 12 bits empacotados, big-endian, em duas tiras', (
           extra: [
             [0x0111, 4, [{ pos: 't1' }, { pos: 't2' }]],
             [0x0116, 4, 12],
-            [0x0117, 4, [{ tam: 't1' }, { tam: 't2' }]]
-          ]
-        })
+            [0x0117, 4, [{ tam: 't1' }, { tam: 't2' }]],
+          ],
+        }),
       },
       { nome: 't1', bytes: empacotar(0, 12) },
-      { nome: 't2', bytes: empacotar(12, 20) }
-    ]
+      { nome: 't2', bytes: empacotar(12, 20) },
+    ],
   })
   const n = lerDng(bytes)
   assert.ok(iguais(n.sensor.dados, dados))
@@ -250,8 +266,14 @@ test('JPEG lossless: preditores 1 a 7, um e dois componentes, com e sem interval
       }
     }
   }
-  assert.throws(() => decodificarJpegSemPerdas(jpegFalso({ largura: 8, altura: 8 })), (e) => e instanceof ErroRaw && e.codigo === 'sem-suporte')
-  assert.throws(() => decodificarJpegSemPerdas(Uint8Array.of(1, 2, 3, 4, 5)), (e) => e instanceof ErroRaw && e.codigo === 'corrompido')
+  assert.throws(
+    () => decodificarJpegSemPerdas(jpegFalso({ largura: 8, altura: 8 })),
+    (e) => e instanceof ErroRaw && e.codigo === 'sem-suporte',
+  )
+  assert.throws(
+    () => decodificarJpegSemPerdas(Uint8Array.of(1, 2, 3, 4, 5)),
+    (e) => e instanceof ErroRaw && e.codigo === 'corrompido',
+  )
 })
 
 test('leitor próprio de DNG: blocos em JPEG lossless (quadro de 2 componentes) e tabela de linearização', () => {
@@ -265,7 +287,8 @@ test('leitor próprio de DNG: blocos em JPEG lossless (quadro de 2 componentes) 
   for (let by = 0; by < 2; by++) {
     for (let bx = 0; bx < 2; bx++) {
       const bloco = new Uint16Array(lb * ab) // o que passa da imagem fica em zero, como nos arquivos reais
-      for (let y = 0; y < ab && by * ab + y < altura; y++) for (let x = 0; x < lb && bx * lb + x < largura; x++) bloco[y * lb + x] = dados[(by * ab + y) * largura + bx * lb + x]
+      for (let y = 0; y < ab && by * ab + y < altura; y++)
+        for (let x = 0; x < lb && bx * lb + x < largura; x++) bloco[y * lb + x] = dados[(by * ab + y) * largura + bx * lb + x]
       blocos.push(codificarJpegSemPerdas(bloco, { colunas: lb / 2, linhas: ab, componentes: 2, bits: 12, preditor: 1 + ((by * 2 + bx) % 7) }))
     }
   }
@@ -285,15 +308,21 @@ test('leitor próprio de DNG: blocos em JPEG lossless (quadro de 2 componentes) 
             [0x0144, 4, blocos.map((_, i) => ({ pos: `b${i}` }))],
             [0x0145, 4, blocos.map((_, i) => ({ tam: `b${i}` }))],
             [0xc618, 3, curva],
-            [0xc68d, 4, [2, 4, 78, 98]]
-          ]
-        })
+            [0xc68d, 4, [2, 4, 78, 98]],
+          ],
+        }),
       },
-      ...blocos.map((b, i) => ({ nome: `b${i}`, bytes: b }))
-    ]
+      ...blocos.map((b, i) => ({ nome: `b${i}`, bytes: b })),
+    ],
   })
   const n = lerDng(bytes)
-  assert.ok(iguais(n.sensor.dados, Uint16Array.from(dados, (v) => curva[v])), 'mosaico = curva[dado]')
+  assert.ok(
+    iguais(
+      n.sensor.dados,
+      Uint16Array.from(dados, (v) => curva[v]),
+    ),
+    'mosaico = curva[dado]',
+  )
   assert.deepEqual(n.area, { x: 4, y: 2, largura: 94, altura: 76 })
 })
 
@@ -302,17 +331,44 @@ test('leitor próprio de DNG: recusa com motivo o que não é DNG ou não tem mo
     assert.throws(
       () => lerDng(bytes),
       (e) => e instanceof ErroRaw && e.codigo === codigo && e.message.includes(trecho),
-      `esperava ${codigo} com "${trecho}"`
+      `esperava ${codigo} com "${trecho}"`,
     )
   recusa(jpegFalso({ largura: 64, altura: 48 }), 'nao-e-raw', 'JPEG')
   recusa(Uint8Array.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), 'nao-e-raw', 'TIFF')
-  recusa(montarTiff({ blocos: [{ nome: 'ifd0', ifd: [[0x0100, 4, 10], [0x0101, 4, 10]] }] }).bytes, 'nao-e-raw', 'DNGVersion')
-  const comum = [[0x00fe, 4, 0], [0x0100, 4, 16], [0x0101, 4, 16], [0x0115, 3, 3], [0xc612, 1, Uint8Array.of(1, 4, 0, 0)], [0x0111, 4, { pos: 'd' }], [0x0117, 4, { tam: 'd' }]]
+  recusa(
+    montarTiff({
+      blocos: [
+        {
+          nome: 'ifd0',
+          ifd: [
+            [0x0100, 4, 10],
+            [0x0101, 4, 10],
+          ],
+        },
+      ],
+    }).bytes,
+    'nao-e-raw',
+    'DNGVersion',
+  )
+  const comum = [
+    [0x00fe, 4, 0],
+    [0x0100, 4, 16],
+    [0x0101, 4, 16],
+    [0x0115, 3, 3],
+    [0xc612, 1, Uint8Array.of(1, 4, 0, 0)],
+    [0x0111, 4, { pos: 'd' }],
+    [0x0117, 4, { tam: 'd' }],
+  ]
   const dado = { nome: 'd', bytes: new Uint8Array(64) }
   const linear = montarTiff({ blocos: [{ nome: 'ifd0', ifd: [...comum, [0x0102, 3, [8, 8, 8]], [0x0103, 3, 34892], [0x0106, 3, 34892]] }, dado] }).bytes
   recusa(linear, 'sem-suporte', 'LinearRaw')
   assert.equal(lerTagsDng(linear).linear, true)
-  const deflate = montarTiff({ blocos: [{ nome: 'ifd0', ifd: [...tagsDeDng({ largura: 16, altura: 16, bits: 16, compressao: 8 }), [0x0111, 4, { pos: 'd' }], [0x0117, 4, { tam: 'd' }]] }, dado] }).bytes
+  const deflate = montarTiff({
+    blocos: [
+      { nome: 'ifd0', ifd: [...tagsDeDng({ largura: 16, altura: 16, bits: 16, compressao: 8 }), [0x0111, 4, { pos: 'd' }], [0x0117, 4, { tam: 'd' }]] },
+      dado,
+    ],
+  }).bytes
   recusa(deflate, 'sem-suporte', 'Deflate')
   const truncado = escreverDng(criarNegativo(fabricarNegativo({ largura: 64, altura: 48 })))
   recusa(truncado.subarray(0, truncado.length - 100), 'corrompido', 'truncado')
@@ -333,13 +389,19 @@ test('opcodes: ler, escrever e aplicar GainMap e FixVignetteRadial; os demais fi
     origemV: 0,
     origemH: 0,
     planosDoMapa: 1,
-    ganhos: Float32Array.of(1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6) // ganho = 1 + 3·h/W' + 2·v/H' (um plano inclinado)
+    ganhos: Float32Array.of(1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6), // ganho = 1 + 3·h/W' + 2·v/H' (um plano inclinado)
   }
   const vinheta = { id: 3, k: [0.5, 0.25, 0, 0, 0], centro: { x: 0.5, y: 0.5 } }
   const torcao = { id: 1, opcional: true, bruto: new Uint8Array(20) }
   const lista = lerOpcodes(escreverOpcodes([mapa, vinheta, torcao]))
-  assert.deepEqual(lista.map((o) => o.nome), ['GainMap', 'FixVignetteRadial', 'WarpRectilinear'])
-  assert.deepEqual(lista.map((o) => o.aplicavel), [true, true, false])
+  assert.deepEqual(
+    lista.map((o) => o.nome),
+    ['GainMap', 'FixVignetteRadial', 'WarpRectilinear'],
+  )
+  assert.deepEqual(
+    lista.map((o) => o.aplicavel),
+    [true, true, false],
+  )
   assert.equal(lista[2].opcional, true)
   assert.deepEqual([...lista[0].ganhos], [...mapa.ganhos])
   assert.deepEqual(lista[1].k, vinheta.k)
@@ -355,7 +417,16 @@ test('opcodes: ler, escrever e aplicar GainMap e FixVignetteRadial; os demais fi
   assert.deepEqual(r.naoAplicados, [{ nome: 'WarpRectilinear', motivo: 'opcode não coberto por este leitor', opcional: true }])
   // conta à mão: mapa bilinear no centro do pixel e vinheta radial normalizada pelo canto mais distante
   const longe = 30 ** 2 + 20 ** 2
-  for (const [y, x] of [[1, 0], [1, 58], [39, 0], [39, 58], [21, 30], [7, 44], [0, 0], [2, 1]]) {
+  for (const [y, x] of [
+    [1, 0],
+    [1, 58],
+    [39, 0],
+    [39, 58],
+    [21, 30],
+    [7, 44],
+    [0, 0],
+    [2, 1],
+  ]) {
     const noMapa = y >= 1 && (y - 1) % 2 === 0 && x % 2 === 0
     const ganho = noMapa ? 1 + (3 * (x + 0.5)) / largura + (2 * (y + 0.5)) / altura : 1
     const r2 = ((x + 0.5 - 30) ** 2 + (y + 0.5 - 20) ** 2) / longe
@@ -393,7 +464,10 @@ test('LibRaw abre o DNG fabricado: mesmo mosaico, mesmas margens, e o negativo s
   usarLibRaw(LibRaw)
   const deNovo = await abrirRaw(folgado.subarray(32, 32 + bytes.length), { nome: 'fabricado.dng' })
   assert.ok(iguais(deNovo.sensor.dados, n.sensor.dados))
-  await assert.rejects(leitor.ler(jpegFalso({ largura: 64, altura: 48 }), { nome: 'foto.dng' }), (e) => e instanceof ErroRaw && e.codigo === 'nao-e-raw' && e.message.includes('JPEG'))
+  await assert.rejects(
+    leitor.ler(jpegFalso({ largura: 64, altura: 48 }), { nome: 'foto.dng' }),
+    (e) => e instanceof ErroRaw && e.codigo === 'nao-e-raw' && e.message.includes('JPEG'),
+  )
   await assert.rejects(leitor.ler(new Uint8Array(4096).fill(7), { nome: 'lixo.cr2' }), (e) => e instanceof ErroRaw && e.codigo === 'nao-e-raw')
 })
 
@@ -402,7 +476,9 @@ test('revelarLinear: espaço de câmera, linear, sem equilíbrio na saída, 1,0 
   if (!precisaDoLibRaw(t, LibRaw)) return
   // campo liso: cada canal com um nível conhecido acima do preto
   const niveis = [2000, 6000, 3000]
-  const n = criarNegativo(fabricarNegativo({ largura: 96, altura: 64, preto: 500, corte: 16000, declarado: 16000, ganho: 0.001, leitura: 0, sinal: (u, v, c) => niveis[c] }))
+  const n = criarNegativo(
+    fabricarNegativo({ largura: 96, altura: 64, preto: 500, corte: 16000, declarado: 16000, ganho: 0.001, leitura: 0, sinal: (u, v, c) => niveis[c] }),
+  )
   const leitor = criarLeitor(LibRaw)
   for (const wb of ['camera', 'nenhum', [3, 1, 2]]) {
     for (const qualidade of ['rapida', 'alta']) {
@@ -438,13 +514,20 @@ const ESPERADO = {
   'canon_30d.cr2': { sensor: [3596, 2360], area: [74, 12, 3522, 2348], cfa: '0112', preto: 128, branco: 4095, origem: 'libraw' },
   'canon_5d3.dng': { sensor: [1920, 818], area: [0, 0, 1920, 818], cfa: '0112', preto: 2145, branco: 16200, origem: 'dng' },
   'canon_r6.cr3': { sensor: [3584, 2386], area: [156, 108, 3407, 2271], cfa: '0112', preto: 512, branco: 14008, origem: 'libraw' },
-  'fuji_xt30ii.raf': { sensor: [6384, 4182], area: [0, 6, 6246, 4170], cfa: '110112112110201021112110110112021201', preto: 1022, branco: 16383, origem: 'libraw' },
+  'fuji_xt30ii.raf': {
+    sensor: [6384, 4182],
+    area: [0, 6, 6246, 4170],
+    cfa: '110112112110201021112110110112021201',
+    preto: 1022,
+    branco: 16383,
+    origem: 'libraw',
+  },
   'iphone_xs.dng': { sensor: [4032, 3024], area: [0, 0, 4032, 3024], cfa: '0112', preto: 528, branco: 4095, origem: 'dng' },
   'nikon_d70s.nef': { sensor: [3040, 2014], area: [0, 0, 3039, 2014], cfa: '2110', preto: 0, branco: 3827, origem: 'libraw' },
   'pana_lx7.rw2': { sensor: [1904, 1384], area: [0, 0, 1840, 1384], cfa: '1021', preto: 142, branco: 4079, origem: 'libraw' },
   'pixel6pro.dng': { sensor: [4080, 3072], area: [0, 0, 4080, 3072], cfa: '1201', preto: 1023, branco: 16368, origem: 'dng' },
   'ricoh_gr.dng': { sensor: [4960, 3280], area: [0, 0, 4944, 3280], cfa: '0112', preto: 0, branco: 4095, origem: 'dng' },
-  'sony_a7s.arw': { sensor: [2816, 1872], area: [0, 0, 2784, 1872], cfa: '0112', preto: 512, branco: 15360, origem: 'libraw' }
+  'sony_a7s.arw': { sensor: [2816, 1872], area: [0, 0, 2784, 1872], cfa: '0112', preto: 512, branco: 15360, origem: 'libraw' },
 }
 
 test('amostras: os 12 arquivos abrem (ou são recusados com motivo) e o mosaico do leitor próprio é o do LibRaw', { timeout: 120000 }, async (t) => {
@@ -478,7 +561,10 @@ test('amostras: os 12 arquivos abrem (ou são recusados com motivo) e o mosaico 
     assert.equal(n.cor.origem, e.origem)
     assert.equal(n.cor.matrizes.length, e.origem === 'dng' ? 2 : 1, `${nome}: matrizes`)
     assert.equal(n.formato, nome.split('.').pop())
-    assert.ok(n.wb.comoFotografado.every((v) => v > 0.5 && v < 4), `${nome}: WB`)
+    assert.ok(
+      n.wb.comoFotografado.every((v) => v > 0.5 && v < 4),
+      `${nome}: WB`,
+    )
     assert.match(n.exif.data, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d$/)
     assert.ok(n.exif.iso > 0 && n.exif.tempo > 0)
     if (nome !== 'canon_5d3.dng') assert.ok(n.previa.jpeg.length > 50000 && n.previa.largura >= 640, `${nome}: prévia`)
@@ -494,26 +580,38 @@ test('amostras: os 12 arquivos abrem (ou são recusados com motivo) e o mosaico 
 
   // o que só o DNG traz
   const pixel = lerDng(await lerAmostra('pixel6pro.dng'))
-  assert.deepEqual(pixel.cor.matrizes.map((m) => m.kelvin), [2850, 6500])
+  assert.deepEqual(
+    pixel.cor.matrizes.map((m) => m.kelvin),
+    [2850, 6500],
+  )
   perto(pixel.exposicaoBase, 0.72, 1e-9, 'BaselineExposure do Pixel')
   perto(pixel.perfilRuido[1].escala, 7.703e-6, 1e-8, 'NoiseProfile (verde)')
   assert.deepEqual(pixel.recorte, { x: 8, y: 8, largura: 4064, altura: 3056 })
-  assert.deepEqual(pixel.opcodes.lista2.map((o) => o.nome), ['GainMap', 'GainMap', 'GainMap', 'GainMap'])
-  assert.deepEqual(pixel.opcodes.lista3.map((o) => [o.nome, o.aplicavel]), [['WarpRectilinear', false]])
+  assert.deepEqual(
+    pixel.opcodes.lista2.map((o) => o.nome),
+    ['GainMap', 'GainMap', 'GainMap', 'GainMap'],
+  )
+  assert.deepEqual(
+    pixel.opcodes.lista3.map((o) => [o.nome, o.aplicavel]),
+    [['WarpRectilinear', false]],
+  )
   const iphone = lerDng(await lerAmostra('iphone_xs.dng'))
   listaPerto(iphone.opcodes.lista3[0].k, [1.5123, 4.1917, -9.2382, 8.7176, -2.7503], 1e-4, 'vinheta radial do iPhone XS')
   const ricoh = lerTagsDng(await lerAmostra('ricoh_gr.dng'))
   perto(ricoh.exposicaoBase, -0.2, 1e-9, 'BaselineExposure da Ricoh GR')
   listaPerto(ricoh.cor.matrizes[0].xyzParaCamera.slice(0, 3), [0.5533, -0.1912, 0.0107], 1e-4, 'ColorMatrix1 da Ricoh GR')
   const canon = lerTagsDng(await lerAmostra('canon_5d3.dng'))
-  assert.ok(canon.cor.matrizes.every((m) => m.cameraParaXyzD50.length === 9), 'ForwardMatrix nos dois iluminantes')
+  assert.ok(
+    canon.cor.matrizes.every((m) => m.cameraParaXyzD50.length === 9),
+    'ForwardMatrix nos dois iluminantes',
+  )
 
   // GainMap do Pixel num mosaico liso: clareia as bordas (até 4,7×) e quase não mexe no centro
   const { largura, altura } = pixel.sensor
   const liso = new Float32Array(largura * altura).fill(1)
   const t1 = performance.now()
   const corrigido = aplicarOpcodes(liso, { largura, altura }, pixel.opcodes.lista2)
-  t.diagnostic(`4 GainMap em ${(largura * altura / 1e6).toFixed(1)} MP: ${Math.round(performance.now() - t1)} ms`)
+  t.diagnostic(`4 GainMap em ${((largura * altura) / 1e6).toFixed(1)} MP: ${Math.round(performance.now() - t1)} ms`)
   assert.deepEqual(corrigido.aplicados, ['GainMap', 'GainMap', 'GainMap', 'GainMap'])
   const centro = corrigido.dados[(altura >> 1) * largura + (largura >> 1)]
   assert.ok(centro >= 1 && centro < 1.1, `centro ${centro}`)
@@ -528,7 +626,10 @@ test('amostras: revelarLinear confere com o mosaico (X-Trans na metade da resolu
   const LibRaw = await carregarLibRaw()
   if (!precisaDoLibRaw(t, LibRaw)) return
   const leitor = criarLeitor(LibRaw)
-  for (const [nome, opcoes] of [['canon_r6.cr3', { qualidade: 'rapida' }], ['fuji_xt30ii.raf', { metade: true }]]) {
+  for (const [nome, opcoes] of [
+    ['canon_r6.cr3', { qualidade: 'rapida' }],
+    ['fuji_xt30ii.raf', { metade: true }],
+  ]) {
     const bytes = await lerAmostra(nome)
     const n = await leitor.ler(bytes, { nome })
     // média por canal do mosaico normalizado (preto subtraído, negativos em zero, dividido por maximo − preto)

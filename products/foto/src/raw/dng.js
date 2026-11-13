@@ -15,7 +15,7 @@
 //   cor.matrizes[].cameraParaXyzD50   é a ForwardMatrix do arquivo: vale para a câmera JÁ equilibrada (neutro = 1,1,1)
 
 import { criarNegativo, R, G, B } from './negativo.js'
-import { criarFonte, abrirTiff, lerIfd, numeros, numero, texto, lerExif, lerCamera } from './exif.js'
+import { criarFonte, abrirTiff, lerIfd, numeros, numero, lerExif, lerCamera } from './exif.js'
 import { extrairPrevia } from './previa.js'
 import { lerOpcodes, escreverOpcodes } from './opcodes.js'
 
@@ -73,7 +73,7 @@ const T = {
   opcodes1: 0xc740,
   opcodes2: 0xc741,
   opcodes3: 0xc74e,
-  perfilRuido: 0xc761
+  perfilRuido: 0xc761,
 }
 
 const CFA = 32803
@@ -102,7 +102,7 @@ const KELVIN_DO_ILUMINANTE = {
   21: 6500,
   22: 7500,
   23: 5000,
-  24: 3200
+  24: 3200,
 }
 // Na escrita: o código padrão (A, D50, D55, D65, D75, estúdio) da temperatura mais próxima
 const ILUMINANTES_DE_ESCRITA = [17, 24, 23, 20, 21, 22]
@@ -123,7 +123,17 @@ const inversa = (m) => {
   const D = -(d * i - f * g)
   const C = d * h - e * g
   const det = a * A + b * D + c * C
-  return [A / det, (c * h - b * i) / det, (b * f - c * e) / det, D / det, (a * i - c * g) / det, (c * d - a * f) / det, C / det, (b * g - a * h) / det, (a * e - b * d) / det]
+  return [
+    A / det,
+    (c * h - b * i) / det,
+    (b * f - c * e) / det,
+    D / det,
+    (a * i - c * g) / det,
+    (c * d - a * f) / det,
+    C / det,
+    (b * g - a * h) / det,
+    (a * e - b * d) / det,
+  ]
 }
 
 const IDENTIDADE = [1, 0, 0, 0, 1, 0, 0, 0, 1]
@@ -195,7 +205,7 @@ function tagsDeCor(a) {
   const matrizes = []
   for (const [tagM, tagC, tagF, tagI] of [
     [T.matriz1, T.calibracao1, T.direta1, T.iluminante1],
-    [T.matriz2, T.calibracao2, T.direta2, T.iluminante2]
+    [T.matriz2, T.calibracao2, T.direta2, T.iluminante2],
   ]) {
     const cm = lista(tagM, 9)
     if (!cm) continue
@@ -240,7 +250,11 @@ function tagsDeCor(a) {
   }
 
   const opcodes = {}
-  for (const [nome, tag] of [['lista1', T.opcodes1], ['lista2', T.opcodes2], ['lista3', T.opcodes3]]) {
+  for (const [nome, tag] of [
+    ['lista1', T.opcodes1],
+    ['lista2', T.opcodes2],
+    ['lista3', T.opcodes3],
+  ]) {
     const e = cru && cru.get(tag)
     if (e && e.n >= 4) opcodes[nome] = lerOpcodes(a.fonte.fatia(e.onde, e.onde + e.n))
   }
@@ -356,7 +370,8 @@ export function decodificarJpegSemPerdas(u8, inicio = 0, tamanho = u8.length - i
   const saida = new Uint16Array(linhas * porLinha)
   const inicial = 1 << (bitsDaAmostra - pt - 1)
   const linhasPorIntervalo = reinicio > 0 ? reinicio / colunas : 0
-  if (reinicio > 0 && !Number.isInteger(linhasPorIntervalo)) throw new ErroRaw('sem-suporte', 'JPEG lossless com intervalo de reinício que não fecha linhas inteiras.')
+  if (reinicio > 0 && !Number.isInteger(linhasPorIntervalo))
+    throw new ErroRaw('sem-suporte', 'JPEG lossless com intervalo de reinício que não fecha linhas inteiras.')
   let bits = 0
   let nbits = 0
   let i = 0
@@ -464,7 +479,8 @@ function decodificarMosaico(a) {
   const compressao = um(cru, T.compressao) ?? 1
   if (!(largura > 0 && altura > 0)) throw new ErroRaw('corrompido', 'DNG sem as medidas do sensor.')
   if ((um(cru, T.amostras) ?? 1) !== 1) throw new ErroRaw('sem-suporte', 'DNG com mais de uma amostra por pixel no dado do sensor.')
-  if ((um(cru, T.formatoDaAmostra) ?? 1) !== 1 || !(bits >= 8 && bits <= 16)) throw new ErroRaw('sem-suporte', `DNG com ${bits} bits ou ponto flutuante: este leitor cobre inteiros de 8 a 16 bits.`)
+  if ((um(cru, T.formatoDaAmostra) ?? 1) !== 1 || !(bits >= 8 && bits <= 16))
+    throw new ErroRaw('sem-suporte', `DNG com ${bits} bits ou ponto flutuante: este leitor cobre inteiros de 8 a 16 bits.`)
   if (compressao !== 1 && compressao !== 7) {
     const nome = { 8: 'Deflate', 34892: 'JPEG com perdas', 52546: 'JPEG XL', 32946: 'Deflate' }[compressao] || `código ${compressao}`
     throw new ErroRaw('sem-suporte', `DNG com compressão ${nome}: este leitor cobre sem compressão e JPEG lossless.`)
@@ -474,7 +490,8 @@ function decodificarMosaico(a) {
   const tamanhos = numeros(tiff, cru.get(emBlocos ? T.tamanhoDosBlocos : T.tamanhoDasTiras), 1 << 20)
   const lb = emBlocos ? um(cru, T.larguraDoBloco) : largura
   const ab = emBlocos ? um(cru, T.alturaDoBloco) : Math.min(um(cru, T.linhasPorTira) ?? altura, altura)
-  if (!(lb > 0 && ab > 0) || posicoes.length === 0 || tamanhos.length < posicoes.length) throw new ErroRaw('corrompido', 'DNG sem a posição do dado do sensor.')
+  const semPosicao = !(lb > 0 && ab > 0) || posicoes.length === 0 || tamanhos.length < posicoes.length
+  if (semPosicao) throw new ErroRaw('corrompido', 'DNG sem a posição do dado do sensor.')
   const porLinha = Math.ceil(largura / lb)
   const dados = new Uint16Array(largura * altura)
   const bytesPorLinha = Math.ceil((lb * bits) / 8)
@@ -559,9 +576,11 @@ function geometria(a) {
   if ((um(cru, T.cfaLayout) ?? 1) !== 1) throw new ErroRaw('sem-suporte', 'DNG com mosaico deslocado (CFALayout diferente de 1).')
   const dim = numeros(tiff, cru.get(T.cfaDim), 2)
   const lado = dim[0]
-  if (dim[0] !== dim[1] || (lado !== 2 && lado !== 6)) throw new ErroRaw('sem-suporte', `DNG com mosaico ${dim.join('×')}: este leitor cobre Bayer (2×2) e X-Trans (6×6).`)
+  if (dim[0] !== dim[1] || (lado !== 2 && lado !== 6))
+    throw new ErroRaw('sem-suporte', `DNG com mosaico ${dim.join('×')}: este leitor cobre Bayer (2×2) e X-Trans (6×6).`)
   const padrao = Uint8Array.from(numeros(tiff, cru.get(T.cfaPadrao), lado * lado))
-  if (padrao.length !== lado * lado || !padrao.every((v) => v === R || v === G || v === B)) throw new ErroRaw('sem-suporte', 'DNG com filtro que não é vermelho, verde e azul.')
+  if (padrao.length !== lado * lado || !padrao.every((v) => v === R || v === G || v === B))
+    throw new ErroRaw('sem-suporte', 'DNG com filtro que não é vermelho, verde e azul.')
   const cfa = { tipo: lado === 2 ? 'bayer' : 'xtrans', lado, padrao }
 
   // Preto (DNG 1.4): BlackLevel[linha mod R][coluna mod C] + DeltaH[coluna] + DeltaV[linha], tudo a partir do canto
@@ -580,7 +599,7 @@ function geometria(a) {
     valor: (la, ca) =>
       (niveis[resto(la, rep[0]) * rep[1] + resto(ca, rep[1])] ?? niveis[0]) +
       (temH && ca >= 0 && ca < deltaH.length ? deltaH[ca] : 0) +
-      (temV && la >= 0 && la < deltaV.length ? deltaV[la] : 0)
+      (temV && la >= 0 && la < deltaV.length ? deltaV[la] : 0),
   })
 
   const w = cru.has(T.branco) ? numero(tiff, cru.get(T.branco)) : (1 << bits) - 1
@@ -619,7 +638,7 @@ export function lerDng(bytes, { nome } = {}) {
     branco,
     wb: cor.wb,
     cor: cor.cor,
-    exposicaoBase: cor.exposicaoBase
+    exposicaoBase: cor.exposicaoBase,
   }
   if (cor.perfilRuido) n.perfilRuido = cor.perfilRuido
   if (cor.recorte) n.recorte = cor.recorte
@@ -770,7 +789,7 @@ export function escreverDng(negativo) {
     entrada(T.preto, RACIONAL, niveis),
     entrada(T.branco, LONGO, Math.min(...n.branco.declarado)),
     entrada(T.areaAtiva, LONGO, [area.y, area.x, area.y + area.altura, area.x + area.largura]),
-    entrada(T.exposicaoBase, SRACIONAL, n.exposicaoBase || 0)
+    entrada(T.exposicaoBase, SRACIONAL, n.exposicaoBase || 0),
   ]
   n.cor.matrizes.forEach((m, i) => {
     const cm = m.calibracao ? vezes(inversa(m.calibracao), m.xyzParaCamera) : m.xyzParaCamera
@@ -782,12 +801,23 @@ export function escreverDng(negativo) {
   const wb = n.wb && n.wb.comoFotografado
   const neutro = n.cor.neutroComoFotografado || (wb ? [1 / wb[0], 1, 1 / wb[2]] : null)
   if (neutro) e0.push(entrada(T.neutro, RACIONAL, neutro))
-  if (n.perfilRuido) e0.push(entrada(T.perfilRuido, DUPLO, n.perfilRuido.flatMap((c) => [c.escala, c.deslocamento])))
+  if (n.perfilRuido)
+    e0.push(
+      entrada(
+        T.perfilRuido,
+        DUPLO,
+        n.perfilRuido.flatMap((c) => [c.escala, c.deslocamento]),
+      ),
+    )
   if (n.recorte) {
     e0.push(entrada(T.recorteOrigem, LONGO, [n.recorte.x, n.recorte.y]))
     e0.push(entrada(T.recorteTamanho, LONGO, [n.recorte.largura, n.recorte.altura]))
   }
-  for (const [nome, tag] of [['lista1', T.opcodes1], ['lista2', T.opcodes2], ['lista3', T.opcodes3]]) {
+  for (const [nome, tag] of [
+    ['lista1', T.opcodes1],
+    ['lista2', T.opcodes2],
+    ['lista3', T.opcodes3],
+  ]) {
     if (n.opcodes && n.opcodes[nome]) e0.push(entrada(tag, INDEFINIDO, escreverOpcodes(n.opcodes[nome])))
   }
 
@@ -815,7 +845,7 @@ export function escreverDng(negativo) {
         entrada(T.amostras, CURTO, 3),
         entrada(T.linhasPorTira, LONGO, n.previa.altura || 0),
         entrada(T.tamanhoDasTiras, LONGO, jpeg.length),
-        entrada(0x011c, CURTO, 1)
+        entrada(0x011c, CURTO, 1),
       ]
     : null
   if (sub) e0.push(entrada(T.subIfds, LONGO, 0))

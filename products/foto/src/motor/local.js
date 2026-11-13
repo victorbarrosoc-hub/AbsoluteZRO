@@ -107,9 +107,10 @@ export function caixa(origem, w, h, r, destino = new Float64Array(w * h)) {
 /**
  * Filtro guiado. `guia` e `p` são planos w×h; devolve q = média(a)·guia + média(b), com a = cov(guia, p)/(var(guia) +
  * eps) e b = média(p) − a·média(guia). Com `p` igual a `guia` é o alisamento que respeita borda: onde a variância da
- * janela é muito maior que eps a imagem passa igual; onde é menor, vira a média.
+ * janela é muito maior que eps a imagem passa igual; onde é menor, vira a média. `borda` (opcional, Float32Array)
+ * recebe a média de a.
  */
-export function filtroGuiado(guia, p, w, h, r, eps) {
+export function filtroGuiado(guia, p, w, h, r, eps, borda = null) {
   const n = w * h
   const mesmo = guia === p
   const mI = caixa(guia, w, h, r)
@@ -136,6 +137,8 @@ export function filtroGuiado(guia, p, w, h, r, eps) {
   const mB = caixa(b, w, h, r, mI)
   const q = new Float32Array(n)
   for (let i = 0; i < n; i++) q[i] = mA[i] * guia[i] + mB[i]
+  // quanto da janela é borda (0 = superfície lisa, 1 = borda forte), para quem quiser pesar o detalhe
+  if (borda) for (let i = 0; i < n; i++) borda[i] = mA[i]
   return q
 }
 
@@ -230,9 +233,11 @@ const ladoCheio = (bloco) => Math.max(bloco.quadro.largura, bloco.quadro.altura)
 // ─────────── clareza e textura ───────────
 
 /**
- * Contraste local em duas escalas, no log2 da norma: L' = L + t·(L − guiado_fino(L)) + c·(L − guiado_largo(L)).
- * O filtro guiado deixa a borda forte na base (variação acima do limiar da escala), então o que é amplificado é o
- * relevo dentro das superfícies, e a borda não ganha halo. `textura` e `clareza` em −100..100.
+ * Contraste local em duas escalas, no log2 da norma:
+ *   L' = L + t·(1 − a_fino)²·(L − guiado_fino(L)) + c·(1 − a_largo)²·(L − guiado_largo(L))
+ * O filtro guiado deixa a borda forte na base (variação acima do limiar da escala), e o que ainda sobra de detalhe
+ * junto dela é pesado por (1 − a)², com a a média do coeficiente do filtro (perto de 1 na borda, 0 na superfície):
+ * o que é amplificado é o relevo dentro das superfícies, e a borda não ganha halo. `textura` e `clareza` em −100..100.
  */
 export function contrasteLocal(bloco, { textura = 0, clareza = 0 } = {}) {
   if (!textura && !clareza) return bloco
@@ -240,6 +245,7 @@ export function contrasteLocal(bloco, { textura = 0, clareza = 0 } = {}) {
   const n = w * h
   const L = planoDeLuz(dados, n)
   const novo = Float32Array.from(L)
+  const borda = new Float32Array(n)
   for (const [valor, cfg] of [
     [textura, LOCAL.textura],
     [clareza, LOCAL.clareza],
@@ -247,9 +253,12 @@ export function contrasteLocal(bloco, { textura = 0, clareza = 0 } = {}) {
     if (!valor) continue
     const r = raioEmPixels(cfg.raio, bloco)
     if (r < 1) continue // nesta escala o detalhe é menor que um pixel: não há o que realçar (nem na exportação reduzida)
-    const base = filtroGuiado(L, L, w, h, r, cfg.limiarEv * cfg.limiarEv)
+    const base = filtroGuiado(L, L, w, h, r, cfg.limiarEv * cfg.limiarEv, borda)
     const k = (valor / 100) * cfg.ganho
-    for (let i = 0; i < n; i++) novo[i] += k * (L[i] - base[i])
+    for (let i = 0; i < n; i++) {
+      const liso = 1 - borda[i]
+      novo[i] += k * liso * liso * (L[i] - base[i])
+    }
   }
   aplicarGanhoEv(dados, n, L, novo)
   return bloco
@@ -415,7 +424,7 @@ export function limitesDaNitidez({ nitidez = 0, detalhe = 25 } = {}) {
 /**
  * Máscara de nitidez no log2 da norma: D = L − gauss(L, raio); L' = L + k·m·lim·tanh(D/lim).
  * `detalhe` abre o limite do desvio (pouco detalhe = só o fino, sem halo; muito = borda mais dura); `mascara` deixa a
- * nitidez só onde há borda (m = suave(0,5·e; 1,5·e; média de |D|), e = mascara/100 · 0,25 EV).
+ * nitidez só onde há borda (m = suave(0,5·e; 1,5·e; maior |D| da vizinhança), e = mascara/100 · 0,25 EV).
  */
 export function nitidez(bloco, { nitidez: quantidade = 0, raio = 1, detalhe = 25, mascara = 0 } = {}) {
   if (!quantidade) return bloco
@@ -429,12 +438,13 @@ export function nitidez(bloco, { nitidez: quantidade = 0, raio = 1, detalhe = 25
   const novo = new Float32Array(n)
   let m = null
   if (mascara > 0) {
+    // força da borda: o maior |D| da vizinhança (o mínimo de −|D|), para a borda inteira entrar e a textura não
     const forca = new Float32Array(n)
-    for (let i = 0; i < n; i++) forca[i] = Math.abs(L[i] - borrado[i])
-    const media = caixa(forca, w, h, Math.max(1, Math.round(2 * sigma)))
+    for (let i = 0; i < n; i++) forca[i] = -Math.abs(L[i] - borrado[i])
+    const maior = minimo(forca, w, h, Math.max(1, Math.round(2 * sigma)))
     const e = (mascara / 100) * LOCAL.nitidez.mascaraEv
     m = new Float32Array(n)
-    for (let i = 0; i < n; i++) m[i] = suave(0.5 * e, 1.5 * e, media[i])
+    for (let i = 0; i < n; i++) m[i] = suave(0.5 * e, 1.5 * e, -maior[i])
   }
   for (let i = 0; i < n; i++) {
     const d = limite * Math.tanh((L[i] - borrado[i]) / limite)
@@ -461,7 +471,7 @@ function daGrade(x, y, semente) {
 
 /**
  * Campo de grão no ponto (X, Y) do quadro cheio (em pixels da imagem cheia): ruído de valor numa grade de célula
- * `celula`, interpolado em bilinear e normalizado para desvio perto de 1, mais uma oitava três vezes mais larga
+ * `celula`, interpolado em bilinear e normalizado para desvio 1, mais uma oitava três vezes mais larga
  * pesada pela aspereza. Só depende de (X, Y, semente): mesma foto, mesmo grão, em qualquer bloco e escala.
  */
 export function campoDeGrao(X, Y, celula, aspereza, semente) {
@@ -479,8 +489,9 @@ export function campoDeGrao(X, Y, celula, aspereza, semente) {
     const ty = fy - iy
     const s = semente + oitava * 7919
     const v = (daGrade(ix, iy, s) * (1 - tx) + daGrade(ix + 1, iy, s) * tx) * (1 - ty) + (daGrade(ix, iy + 1, s) * (1 - tx) + daGrade(ix + 1, iy + 1, s) * tx) * ty
-    // a interpolação bilinear de valores independentes tem variância média 4/9: 1,5 devolve o desvio 1
-    soma += p * 1.5 * v
+    // a soma ponderada de valores independentes tem variância Σ peso²: dividir pela raiz devolve o desvio 1 em
+    // qualquer ponto da célula
+    soma += (p * v) / Math.sqrt(((1 - tx) * (1 - tx) + tx * tx) * ((1 - ty) * (1 - ty) + ty * ty))
     peso += p * p
   }
   return soma / Math.sqrt(peso)
@@ -489,21 +500,26 @@ export function campoDeGrao(X, Y, celula, aspereza, semente) {
 /**
  * Grão: v' = v·2^(q·z), com z o campo de grão e q = grao/100 · 0,3 EV. Multiplicativo na cena, como a granulação do
  * filme: aparece nos meios-tons e some no branco, que o mapa de tons comprime. `tamanho` e `aspereza` de 0 a 100.
- * Na prévia reduzida a célula encolhe junto; quando fica menor que um pixel o desvio cai na mesma proporção (é o que a
- * média de vários grãos por pixel faria).
+ * Na prévia reduzida a célula encolhe junto e o desvio cai como cairia na média de vários grãos por pixel.
  */
 export function grao(bloco, { grao: quantidade = 0, tamanho = 25, aspereza = 50, semente = 1 } = {}) {
   if (!quantidade) return bloco
   const { largura: w, altura: h, dados, x0 = 0, y0 = 0, escala } = bloco
   const G = LOCAL.grao
-  const celulaCheia = (G.celulaMin + (G.celulaMax - G.celulaMin) * (tamanho / 100)) * (ladoCheio(bloco) / G.ladoRef)
-  const naEscala = celulaCheia * escala
-  const q = (quantidade / 100) * G.ev * Math.min(1, naEscala)
-  const celula = Math.max(celulaCheia, 1 / escala)
+  // célula em pixels da imagem cheia: proporcional ao lado maior, nunca menor que um pixel dela
+  const celulaCheia = Math.max(1, (G.celulaMin + (G.celulaMax - G.celulaMin) * (tamanho / 100)) * (ladoCheio(bloco) / G.ladoRef))
+  // na prévia cada pixel é a média de f×f pixels da foto cheia (f = 1/escala): o desvio do grão cai. Para grão de um
+  // pixel a queda é 1/f; para célula bem maior que f não há queda. 1/√(1 + 0,8·(f² − 1)/célula²) acompanha a média
+  // de verdade a menos de 10% nos dois extremos e no meio (medido no teste).
+  const f = 1 / escala
+  const q = ((quantidade / 100) * G.ev) / Math.sqrt(1 + (0.8 * (f * f - 1)) / (celulaCheia * celulaCheia))
+  const celula = Math.max(celulaCheia, f)
   for (let y = 0; y < h; y++) {
-    const Y = (y0 + y + 0.5) / escala
+    // coordenada do centro do pixel em pixels da foto cheia, com o pixel i da foto cheia em i (não em i + 0,5): com
+    // célula de um pixel cada pixel cai em cima de um nó da grade e o grão é independente de pixel para pixel
+    const Y = (y0 + y + 0.5) * f - 0.5
     for (let x = 0; x < w; x++) {
-      const g = 2 ** (q * campoDeGrao((x0 + x + 0.5) / escala, Y, celula, aspereza / 100, semente))
+      const g = 2 ** (q * campoDeGrao((x0 + x + 0.5) * f - 0.5, Y, celula, aspereza / 100, semente))
       const o = (y * w + x) * 3
       dados[o] *= g
       dados[o + 1] *= g

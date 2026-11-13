@@ -52,6 +52,13 @@ BaselineExposure, NoiseProfile, opcodes). `extrairPrevia(bytes) → { jpeg, larg
 `lerExif(bytes) → exif` em `src/raw/previa.js` e `exif.js`, em JS puro, sem WASM: é o que a decupagem usa para ser
 instantânea. `escreverDng(negativoSintetico) → Uint8Array` existe para os testes fabricarem um RAW conhecido.
 
+A classe LibRaw é injetada (em Node vem de `node_modules`, no navegador de `/vendor`): `criarLeitor(LibRaw)` devolve
+`{ ler(bytes, { nome }), revelarLinear(bytes, opcoes) }`, e `abrirRaw` usa o leitor de `usarLibRaw(LibRaw)` (ou
+`{ leitor }`). Arquivo que não abre lança `ErroRaw` com `codigo` (`nao-e-raw`, `sem-suporte`, `corrompido`) e o motivo.
+Leitura parcial: `extrairPrevia(começo, { total, lado? })` devolve `{ jpeg: null, precisa: { inicio, fim } }` quando a
+prévia mora adiante; `extrairPreviaDe(ler, total)` faz as leituras sozinho. `opcodes.js` lê as OpcodeList do DNG e
+aplica GainMap e FixVignetteRadial num mosaico Float32 (`aplicarOpcodes`); os demais saem listados como não aplicados.
+
 ### Latitude (`src/raw/latitude.js`)
 
 `medirLatitude(negativo) → Latitude`: o que o **arquivo** tem, medido no dado do sensor.
@@ -71,6 +78,10 @@ instantânea. `escreverDng(negativoSintetico) → Uint8Array` existe para os tes
   confianca: 'alta' | 'media' | 'baixa'
 }
 ```
+
+O que não deu para medir sai `null` (ruído, faixa, `sombras` e `abaixoDoCinza` de um quadro todo estourado), nunca um
+número de enfeite: quem consome confere. O piso de ruído das margens é o ruído de leitura. `resumoLatitude(latitude)`
+devolve as frases curtas da tela; `latitude.detalhe` diz de onde veio cada número.
 
 ### Ajustes (`src/motor/ajustes.js`)
 

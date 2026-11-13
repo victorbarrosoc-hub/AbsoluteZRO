@@ -18,21 +18,26 @@ const relativo = (a, b, tol, nome) => assert.ok(Math.abs(a / b - 1) <= tol, `${n
 const CAMERA = { largura: 1200, altura: 800, esquerda: 40, topo: 24, preto: 512, corte: 12000, declarado: 16383, ganho: 0.5, leitura: 3 }
 const FAIXA = CAMERA.corte - CAMERA.preto
 
-/** Fração dos blocos 2×2 com exatamente 1, 2 e 3 canais acima de 98 % da faixa, pela cena SEM ruído. */
-function cortadoDaCena({ largura, altura, pico = 1.5, stops = 15 }) {
+/** Fração dos blocos do mosaico com exatamente 1, 2 e 3 canais acima de 98 % da faixa, pela cena SEM ruído. */
+function cortadoDaCena(n, { faixa = FAIXA, pico = 4, stops = 15 } = {}) {
+  const { largura, altura } = n.area
+  const lado = n.cfa.lado
+  const bloco = lado === 2 ? 2 : 3
   const conta = [0, 0, 0, 0]
-  for (let y = 0; y < altura; y += 2) {
-    for (let x = 0; x < largura; x += 2) {
-      let k = 0
-      // RGGB: vermelho em (0,0), verdes em (0,1) e (1,0), azul em (1,1); canal cortado se algum sensel dele passa
-      const passa = (dx, dy, c) => cena((x + dx) / largura, (y + dy) / altura, c, { pico: pico * FAIXA, stops }) >= 0.98 * FAIXA
-      if (passa(0, 0, 0)) k++
-      if (passa(1, 0, 1) || passa(0, 1, 1)) k++
-      if (passa(1, 1, 2)) k++
-      conta[k]++
+  let total = 0
+  for (let y = 0; y + bloco <= altura; y += bloco) {
+    for (let x = 0; x + bloco <= largura; x += bloco) {
+      const cortou = [false, false, false] // canal cortado se algum sensel dele no bloco passa do limite
+      for (let j = 0; j < bloco; j++) {
+        for (let i = 0; i < bloco; i++) {
+          const c = n.cfa.padrao[((y + j) % lado) * lado + ((x + i) % lado)]
+          if (cena((x + i) / largura, (y + j) / altura, c, { pico: pico * faixa, stops }) >= 0.98 * faixa) cortou[c] = true
+        }
+      }
+      conta[cortou.filter(Boolean).length]++
+      total++
     }
   }
-  const total = (largura / 2) * (altura / 2)
   return { um: conta[1] / total, dois: conta[2] / total, tres: conta[3] / total }
 }
 
@@ -61,7 +66,7 @@ test('latitude recupera preto, saturação, ganho e ruído de um sensor fabricad
   assert.deepEqual(l.margem.altas, [0, 0, 0])
   assert.ok(l.margem.sombras < 0.6, `sombras ${l.margem.sombras}`)
   // área cortada: a ±0,5 ponto percentual da cena sem ruído
-  const verdade = cortadoDaCena(CAMERA)
+  const verdade = cortadoDaCena(n)
   assert.ok(verdade.um > 0.01 && verdade.dois > 0.01 && verdade.tres > 0.01, 'a cena de teste tem os três casos')
   for (const k of ['um', 'dois', 'tres']) perto(l.cortado[k], verdade[k], 0.005, `cortado.${k}`)
 
@@ -70,7 +75,11 @@ test('latitude recupera preto, saturação, ganho e ruído de um sensor fabricad
 })
 
 test('latitude sem pixels mascarados: ruído pelo ajuste entre verdes vizinhos (leitura a 20 %, ganho a 8 %)', () => {
-  for (const [cfa, semente] of [['RGGB', 7], ['GBRG', 8], ['BGGR', 9]]) {
+  for (const [cfa, semente] of [
+    ['RGGB', 7],
+    ['GBRG', 8],
+    ['BGGR', 9],
+  ]) {
     const n = criarNegativo(fabricarNegativo({ ...CAMERA, esquerda: 0, topo: 0, cfa, semente }))
     const l = medirLatitude(n)
     assert.equal(l.ruido.origem, 'ajuste', cfa)
@@ -85,14 +94,17 @@ test('latitude sem pixels mascarados: ruído pelo ajuste entre verdes vizinhos (
 })
 
 test('latitude em X-Trans: blocos de 3×3 e verdes vizinhos na linha', () => {
-  const n = criarNegativo(fabricarNegativo({ ...CAMERA, largura: 1200, altura: 798, esquerda: 0, topo: 6, cfa: 'XTRANS', preto: 1022, corte: 16383, semente: 13 }))
+  const n = criarNegativo(
+    fabricarNegativo({ ...CAMERA, largura: 1200, altura: 798, esquerda: 0, topo: 6, cfa: 'XTRANS', preto: 1022, corte: 16383, semente: 13 }),
+  )
   const l = medirLatitude(n)
   assert.deepEqual(l.branco, [16383, 16383, 16383])
   assert.equal(l.ruido.origem, 'ajuste')
   relativo(l.ruido.ganho, 0.5, 0.08, 'ganho')
   relativo(l.ruido.leitura, 3, 0.25, 'leitura')
-  assert.ok(l.cortado.um > 0.01 && l.cortado.dois > 0.01 && l.cortado.tres > 0.01)
-  perto(l.cortado.um + l.cortado.dois + l.cortado.tres, 0.185, 0.03, 'área com algum canal cortado')
+  const verdade = cortadoDaCena(n, { faixa: 16383 - 1022 })
+  assert.ok(verdade.um > 0.01 && verdade.dois > 0.01 && verdade.tres > 0.01, 'a cena de teste tem os três casos')
+  for (const k of ['um', 'dois', 'tres']) perto(l.cortado[k], verdade[k], 0.005, `cortado.${k}`)
 })
 
 test('latitude com NoiseProfile: vale o perfil do arquivo, convertido para DN', () => {
@@ -112,8 +124,8 @@ test('latitude com NoiseProfile: vale o perfil do arquivo, convertido para DN', 
 })
 
 test('latitude: sem corte o branco é o declarado; a exposição base desloca o cinza', () => {
-  // cena que chega só a 40 % do sensor, 1,5 stop abaixo do topo
-  const n = criarNegativo(fabricarNegativo({ ...CAMERA, corte: 16383, pico: 0.4, stops: 9, exposicaoBase: 0.72, semente: 5 }))
+  // cena que chega só a 40 % do sensor e cujo pé fica 6 stops abaixo do topo
+  const n = criarNegativo(fabricarNegativo({ ...CAMERA, corte: 16383, pico: 0.4, stops: 6, exposicaoBase: 0.72, semente: 5 }))
   const l = medirLatitude(n)
   assert.deepEqual(l.branco, [16383, 16383, 16383])
   assert.deepEqual(l.detalhe.empilhamento, [null, null, null])
@@ -122,8 +134,9 @@ test('latitude: sem corte o branco é o declarado; a exposição base desloca o 
   ;[0.5, 1, 0.72].forEach((cor, c) => perto(l.margem.altas[c], Math.log2(1 / (0.4 * cor)), 0.06, `altas[${c}]`))
   perto(l.margem.acimaDoCinza, Math.log2(1 / 0.18) + 0.72, 1e-9, 'acima do cinza com exposição base')
   perto(l.margem.abaixoDoCinza, Math.log2((0.18 * (16383 - 512)) / 3) - 0.72, 0.08, 'abaixo do cinza com exposição base')
-  // pé da cena (percentil 0,1): 9 stops abaixo do pico, 0,55 no degrau vertical mais escuro, verde
-  perto(l.margem.sombras, Math.log2((0.4 * 15871 * 2 ** -9 * 0.55) / 3), 0.35, 'folga nas sombras')
+  // pé da cena (percentil 0,1): 6 stops abaixo do pico, 0,55 no degrau vertical mais escuro, verde = 54,6 DN; o
+  // percentil cai na cauda de baixo do ruído desse degrau (σ ≈ 6 DN), daí a tolerância de 0,3 stop
+  perto(l.margem.sombras, Math.log2((0.4 * 15871 * 2 ** -6 * 0.55) / 3), 0.3, 'folga nas sombras')
 })
 
 test('latitude: margem que não é sensor mascarado não vira preto', () => {
@@ -165,16 +178,21 @@ test('resumoLatitude: frases curtas, em português, só com o que foi medido', (
     faixa: { engenharia: 14.04, fotografica: 7.84 },
     margem: { altas: [1.99, 1.08, 1.71], sombras: 5.62, acimaDoCinza: 2.47, abaixoDoCinza: 11.6 },
     cortado: { um: 0, dois: 0, tres: 0 },
-    confianca: 'alta'
+    confianca: 'alta',
   }
   assert.deepEqual(resumoLatitude(base), ['+1,1 EV até estourar', '5,6 EV de sombra limpa', '14,0 EV de faixa no sensor (7,8 com pouco ruído)'])
-  const estourada = { ...base, margem: { ...base.margem, altas: [0.3, 0, 0], sombras: 0 }, cortado: { um: 0.031, dois: 0.004, tres: 0.012 }, confianca: 'baixa' }
+  const estourada = {
+    ...base,
+    margem: { ...base.margem, altas: [0.3, 0, 0], sombras: 0 },
+    cortado: { um: 0.031, dois: 0.004, tres: 0.012 },
+    confianca: 'baixa',
+  }
   assert.deepEqual(resumoLatitude(estourada), [
     'Altas luzes: 1,2 % da área estourou de vez',
     'Altas luzes: 3,5 % da área perdeu um canal (recuperável)',
     'Sombras já no ruído',
     '14,0 EV de faixa no sensor (7,8 com pouco ruído)',
-    'Medida aproximada: o ruído deste arquivo não fechou no modelo'
+    'Medida aproximada: o ruído deste arquivo não fechou no modelo',
   ])
   for (const frase of [...resumoLatitude(base), ...resumoLatitude(estourada)]) assert.ok(frase.length <= 64, frase)
 })
@@ -197,7 +215,9 @@ test('latitude de 24 MP em menos de 150 ms', (t) => {
     l = medirLatitude(n)
     tempos.push(performance.now() - t0)
   }
-  t.diagnostic(`24 MP: ${tempos.map((v) => `${Math.round(v)} ms`).join(', ')} (amostra de ${(l.detalhe.amostra.sensels / 1e6).toFixed(1)} M sensels, 1 linha de bloco a cada ${l.detalhe.amostra.salto})`)
+  t.diagnostic(
+    `24 MP: ${tempos.map((v) => `${Math.round(v)} ms`).join(', ')} (${(l.detalhe.amostra.sensels / 1e6).toFixed(1)} M sensels)`,
+  )
   assert.ok(Math.min(...tempos) < 150, `melhor de 5: ${Math.min(...tempos).toFixed(0)} ms`)
   assert.deepEqual(l.branco, [15000, 15000, 15000])
   assert.ok(Math.abs(l.ruido.ganho / 0.5 - 1) < 0.1)
@@ -214,7 +234,9 @@ test('amostras: a latitude bate com a tabela da pesquisa', { timeout: 120000 }, 
     const n = await leitor.ler(await lerAmostra(nome), { nome })
     const t0 = performance.now()
     const l = medirLatitude(n)
-    t.diagnostic(`${nome} (${(n.sensor.largura * n.sensor.altura / 1e6).toFixed(1)} MP, ${Math.round(performance.now() - t0)} ms): ${resumoLatitude(l).join(' · ')}`)
+    t.diagnostic(
+      `${nome} (${((n.sensor.largura * n.sensor.altura) / 1e6).toFixed(1)} MP, ${Math.round(performance.now() - t0)} ms): ${resumoLatitude(l).join(' · ')}`,
+    )
     return l
   }
 
@@ -251,7 +273,10 @@ test('amostras: a latitude bate com a tabela da pesquisa', { timeout: 120000 }, 
   perto(px.ruido.leitura, 3.64, 0.01, 'Pixel: leitura do perfil')
   perto(px.faixa.engenharia, 12.04, 0.02, 'Pixel: faixa de engenharia')
   relativo(px.detalhe.ajuste.ganho, px.ruido.ganho, 0.15, 'Pixel: inclinação do ajuste contra o perfil')
-  assert.ok(px.detalhe.ajuste.leitura > px.ruido.leitura && px.detalhe.ajuste.leitura < 2 * px.ruido.leitura, 'Pixel: a leitura do ajuste é um teto, até 1 stop acima')
+  assert.ok(
+    px.detalhe.ajuste.leitura > px.ruido.leitura && px.detalhe.ajuste.leitura < 2 * px.ruido.leitura,
+    'Pixel: a leitura do ajuste é um teto, até 1 stop acima',
+  )
   perto(px.margem.acimaDoCinza, 3.19, 0.01, 'Pixel: acima do cinza com BaselineExposure 0,72')
   assert.equal(px.confianca, 'alta')
 

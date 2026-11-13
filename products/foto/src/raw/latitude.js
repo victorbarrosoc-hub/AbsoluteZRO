@@ -75,7 +75,7 @@ function acharMascarados(n, pretoDeclarado, faixaDeclarada) {
     { nome: 'esquerda', esp: area.x, pos: (i) => i, vertical: true },
     { nome: 'direita', esp: sensor.largura - area.x - area.largura, pos: (i) => sensor.largura - 1 - i, vertical: true },
     { nome: 'topo', esp: area.y, pos: (i) => i, vertical: false },
-    { nome: 'base', esp: sensor.altura - area.y - area.altura, pos: (i) => sensor.altura - 1 - i, vertical: false }
+    { nome: 'base', esp: sensor.altura - area.y - area.altura, pos: (i) => sensor.altura - 1 - i, vertical: false },
   ]
   let melhor = null
   for (const m of margens) {
@@ -273,6 +273,107 @@ function ajustar(pontos) {
 /** Sinal (DN acima do preto) em que SNR = k no modelo var = a·S + σ²: raiz positiva de S² − k²a·S − k²σ² = 0. */
 const sinalComSnr = (k, a, sigma) => (k * k * a + Math.sqrt(k ** 4 * a * a + 4 * k * k * sigma * sigma)) / 2
 
+// As passadas pelo sensor ficam em funções próprias e pequenas: o motor do JavaScript otimiza cada laço cedo, e a
+// primeira medida de uma sessão não paga a compilação de uma função gigante.
+
+/** Passada 1: histograma de cada cor (65536 níveis por cor, num vetor só) sobre as linhas de bloco amostradas. */
+function histogramas(dados, largura, area, cores, lado, bloco, blocosY, salto, larguraUtil) {
+  const hist = new Uint32Array(3 * 65536)
+  for (let by = 0; by < blocosY; by += salto) {
+    for (let j = 0; j < bloco; j++) {
+      const y = by * bloco + j
+      const cc = cores[y % lado]
+      const linha = (area.y + y) * largura + area.x
+      for (let x = 0; x < larguraUtil; x++) hist[(cc[x] << 16) | dados[linha + x]]++
+    }
+  }
+  return hist
+}
+
+/** Um par de verdes vizinhos (ambos abaixo do corte) entra no histograma da diferença da sua faixa de sinal. */
+function passadaBayer(dados, largura, area, padrao, limite, faixaDe, blocosY, salto, larguraUtil, { dif, somaSinal, pares, cortados }) {
+  const k00 = padrao[0]
+  const k01 = padrao[1]
+  const k10 = padrao[2]
+  const k11 = padrao[3]
+  const l00 = limite[k00]
+  const l01 = limite[k01]
+  const l10 = limite[k10]
+  const l11 = limite[k11]
+  const limG = limite[G]
+  const verdeEm00 = k00 === G // os dois verdes ficam numa diagonal: (0,0)-(1,1) ou (0,1)-(1,0)
+  const bits = new Uint8Array([0, 1, 1, 2, 1, 2, 2, 3])
+  const conta = new Float64Array(4)
+  let blocos = 0
+  for (let by = 0; by < blocosY; by += salto) {
+    const r0 = (area.y + by * 2) * largura + area.x
+    const r1 = r0 + largura
+    for (let x = 0; x < larguraUtil; x += 2) {
+      const v00 = dados[r0 + x]
+      const v01 = dados[r0 + x + 1]
+      const v10 = dados[r1 + x]
+      const v11 = dados[r1 + x + 1]
+      const m = (v00 >= l00 ? 1 << k00 : 0) | (v01 >= l01 ? 1 << k01 : 0) | (v10 >= l10 ? 1 << k10 : 0) | (v11 >= l11 ? 1 << k11 : 0)
+      conta[bits[m]]++
+      const a = verdeEm00 ? v00 : v01
+      const b = verdeEm00 ? v11 : v10
+      if (a < limG && b < limG) {
+        const f = faixaDe[(a + b) >> 1]
+        let d = a - b + MEIA_DIFERENCA
+        if (d < 0) d = 0
+        else if (d >= LARGURA_DIF) d = LARGURA_DIF - 1
+        dif[f * LARGURA_DIF + d]++
+        somaSinal[f] += a + b
+        pares[f]++
+      }
+    }
+    blocos += larguraUtil >> 1
+  }
+  for (let k = 0; k < 4; k++) cortados[k] = conta[k]
+  return blocos
+}
+
+function passadaXTrans(dados, largura, area, cores, limite, faixaDe, blocosY, salto, larguraUtil, blocosX, { dif, somaSinal, pares, cortados }) {
+  const limG = limite[G]
+  let blocos = 0
+  for (let by = 0; by < blocosY; by += salto) {
+    const y = by * 3
+    const linhas = [0, 1, 2].map((j) => (area.y + y + j) * largura + area.x)
+    const cs = [0, 1, 2].map((j) => cores[(y + j) % 6])
+    for (let x = 0; x < larguraUtil; x += 3) {
+      let m = 0
+      for (let j = 0; j < 3; j++) {
+        for (let i = 0; i < 3; i++) {
+          const k = cs[j][x + i]
+          if (dados[linhas[j] + x + i] >= limite[k]) m |= 1 << k
+        }
+      }
+      cortados[(m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)]++
+    }
+    blocos += blocosX
+    // verdes vizinhos na mesma linha (no X-Trans eles andam aos pares)
+    for (let j = 0; j < 3; j++) {
+      const cc = cs[j]
+      const linha = linhas[j]
+      for (let x = 0; x + 1 < larguraUtil; x++) {
+        if (cc[x] !== G || cc[x + 1] !== G) continue
+        const a = dados[linha + x]
+        const b = dados[linha + x + 1]
+        x++
+        if (a >= limG || b >= limG) continue
+        const f = faixaDe[(a + b) >> 1]
+        let d = a - b + MEIA_DIFERENCA
+        if (d < 0) d = 0
+        else if (d >= LARGURA_DIF) d = LARGURA_DIF - 1
+        dif[f * LARGURA_DIF + d]++
+        somaSinal[f] += a + b
+        pares[f]++
+      }
+    }
+  }
+  return blocos
+}
+
 // ------------------------------------------------------------------------------------------------------ medida
 
 /**
@@ -321,15 +422,7 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   }
 
   // ---- passada 1: histograma por cor
-  const hist = new Uint32Array(3 * 65536)
-  for (let by = 0; by < blocosY; by += salto) {
-    for (let j = 0; j < bloco; j++) {
-      const y = by * bloco + j
-      const cc = cores[y % lado]
-      const linha = (area.y + y) * largura + area.x
-      for (let x = 0; x < larguraUtil; x++) hist[(cc[x] << 16) | dados[linha + x]]++
-    }
-  }
+  const hist = histogramas(dados, largura, area, cores, lado, bloco, blocosY, salto, larguraUtil)
   const h = [0, 1, 2].map((k) => hist.subarray(k << 16, (k + 1) << 16))
   const total = h.map((hk) => {
     let s = 0
@@ -339,7 +432,14 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
 
   // ---- branco efetivo por canal
   const pilha = h.map((hk, k) => empilhamento(hk, total[k], preto[k]))
-  const branco = [0, 1, 2].map((k) => (pilha[k] ? Math.min(brancoDeclarado[k], pilha[k].nivel) : brancoDeclarado[k]))
+  // Canal sem empilhamento próprio (não chegou a estourar nesta foto) herda o corte mais baixo visto nos outros,
+  // desde que nenhum dado dele passe desse nível: o corte é do sensor, e o declarado já se provou errado ali.
+  const menorPilha = Math.min(...pilha.map((p) => (p ? p.nivel : Infinity)))
+  const branco = [0, 1, 2].map((k) => {
+    if (pilha[k]) return Math.min(brancoDeclarado[k], pilha[k].nivel)
+    const topo = percentil(h[k], total[k], 1 - 2e-5)
+    return menorPilha < Infinity && topo <= menorPilha ? Math.min(brancoDeclarado[k], menorPilha) : brancoDeclarado[k]
+  })
   const faixa = branco.map((w, k) => w - preto[k])
   const limite = faixa.map((f, k) => preto[k] + CORTE * f)
 
@@ -353,84 +453,11 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   const somaSinal = new Float64Array(FAIXAS)
   const pares = new Float64Array(FAIXAS)
   const cortados = [0, 0, 0, 0]
-  const lim0 = limite[0]
-  const lim1 = limite[1]
-  const lim2 = limite[2]
-  const limG = limite[G]
-  let blocos = 0
-  if (lado === 2) {
-    const k00 = cfa.padrao[0]
-    const k01 = cfa.padrao[1]
-    const k10 = cfa.padrao[2]
-    const k11 = cfa.padrao[3]
-    const l00 = limite[k00]
-    const l01 = limite[k01]
-    const l10 = limite[k10]
-    const l11 = limite[k11]
-    const verdeEm00 = k00 === G // os dois verdes ficam numa diagonal: (0,0)-(1,1) ou (0,1)-(1,0)
-    const bits = new Uint8Array([0, 1, 1, 2, 1, 2, 2, 3])
-    for (let by = 0; by < blocosY; by += salto) {
-      const r0 = (area.y + by * 2) * largura + area.x
-      const r1 = r0 + largura
-      for (let x = 0; x < larguraUtil; x += 2) {
-        const v00 = dados[r0 + x]
-        const v01 = dados[r0 + x + 1]
-        const v10 = dados[r1 + x]
-        const v11 = dados[r1 + x + 1]
-        const m = (v00 >= l00 ? 1 << k00 : 0) | (v01 >= l01 ? 1 << k01 : 0) | (v10 >= l10 ? 1 << k10 : 0) | (v11 >= l11 ? 1 << k11 : 0)
-        cortados[bits[m]]++
-        const a = verdeEm00 ? v00 : v01
-        const b = verdeEm00 ? v11 : v10
-        if (a < limG && b < limG) {
-          const f = faixaDe[(a + b) >> 1]
-          let d = a - b + MEIA_DIFERENCA
-          if (d < 0) d = 0
-          else if (d >= LARGURA_DIF) d = LARGURA_DIF - 1
-          dif[f * LARGURA_DIF + d]++
-          somaSinal[f] += a + b
-          pares[f]++
-        }
-      }
-      blocos += larguraUtil >> 1
-    }
-  } else {
-    const lims = [lim0, lim1, lim2]
-    for (let by = 0; by < blocosY; by += salto) {
-      const y = by * 3
-      const linhas = [0, 1, 2].map((j) => (area.y + y + j) * largura + area.x)
-      const cs = [0, 1, 2].map((j) => cores[(y + j) % lado])
-      for (let x = 0; x < larguraUtil; x += 3) {
-        let m = 0
-        for (let j = 0; j < 3; j++) {
-          for (let i = 0; i < 3; i++) {
-            const k = cs[j][x + i]
-            if (dados[linhas[j] + x + i] >= lims[k]) m |= 1 << k
-          }
-        }
-        cortados[(m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)]++
-      }
-      blocos += blocosX
-      // verdes vizinhos na mesma linha (no X-Trans eles andam aos pares)
-      for (let j = 0; j < 3; j++) {
-        const cc = cs[j]
-        const linha = linhas[j]
-        for (let x = 0; x + 1 < larguraUtil; x++) {
-          if (cc[x] !== G || cc[x + 1] !== G) continue
-          const a = dados[linha + x]
-          const b = dados[linha + x + 1]
-          x++
-          if (a >= limG || b >= limG) continue
-          const f = faixaDe[(a + b) >> 1]
-          let d = a - b + MEIA_DIFERENCA
-          if (d < 0) d = 0
-          else if (d >= LARGURA_DIF) d = LARGURA_DIF - 1
-          dif[f * LARGURA_DIF + d]++
-          somaSinal[f] += a + b
-          pares[f]++
-        }
-      }
-    }
-  }
+  const acumulos = { dif, somaSinal, pares, cortados }
+  const blocos =
+    lado === 2
+      ? passadaBayer(dados, largura, area, cfa.padrao, limite, faixaDe, blocosY, salto, larguraUtil, acumulos)
+      : passadaXTrans(dados, largura, area, cores, limite, faixaDe, blocosY, salto, larguraUtil, blocosX, acumulos)
 
   // ---- ajuste do ruído
   const pontos = []
@@ -479,16 +506,16 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
     ruido,
     faixa: {
       engenharia: temRuido ? log2(faixa[G] / ruido.leitura) : null,
-      fotografica: s10 ? log2(faixa[G] / s10) : null
+      fotografica: s10 ? log2(faixa[G] / s10) : null,
     },
     margem: {
       altas: p999.map((p, k) => Math.max(0, log2(faixa[k] / Math.max(p, 1)))),
       sombras: temRuido ? Math.max(0, log2(p001 / ruido.leitura)) : null,
       acimaDoCinza: log2(1 / CINZA) + exposicaoBase,
-      abaixoDoCinza: temRuido ? log2((CINZA * faixa[G]) / ruido.leitura) - exposicaoBase : null
+      abaixoDoCinza: temRuido ? log2((CINZA * faixa[G]) / ruido.leitura) - exposicaoBase : null,
     },
     cortado: { um: cortados[1] / Math.max(1, blocos), dois: cortados[2] / Math.max(1, blocos), tres: cortados[3] / Math.max(1, blocos) },
-    confianca: 'baixa'
+    confianca: 'baixa',
   }
 
   // ---- confiança
@@ -508,7 +535,7 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
     empilhamento: pilha,
     ajuste,
     amostra: { salto, blocos, sensels: blocos * bloco * bloco },
-    percentis: { p999, p001 }
+    percentis: { p999, p001 },
   }
   return latitude
 }
@@ -531,12 +558,14 @@ export function resumoLatitude(latitude) {
   else {
     const recuperavel = l.cortado.um + l.cortado.dois
     if (l.cortado.tres >= 0.0005) frases.push(`Altas luzes: ${pct(l.cortado.tres)} % da área estourou de vez`)
-    if (recuperavel >= 0.0005) frases.push(`Altas luzes: ${pct(recuperavel)} % da área perdeu ${l.cortado.dois > l.cortado.um ? 'dois canais' : 'um canal'} (recuperável)`)
+    if (recuperavel >= 0.0005)
+      frases.push(`Altas luzes: ${pct(recuperavel)} % da área perdeu ${l.cortado.dois > l.cortado.um ? 'dois canais' : 'um canal'} (recuperável)`)
   }
   if (l.margem.sombras !== null) frases.push(l.margem.sombras >= 0.05 ? `${ev(l.margem.sombras)} EV de sombra limpa` : 'Sombras já no ruído')
   if (l.faixa.engenharia !== null) {
     frases.push(`${ev(l.faixa.engenharia)} EV de faixa no sensor${l.faixa.fotografica !== null ? ` (${ev(l.faixa.fotografica)} com pouco ruído)` : ''}`)
   }
-  if (l.confianca === 'baixa') frases.push(l.ruido.leitura === null ? 'Ruído não medido neste arquivo' : 'Medida aproximada: o ruído deste arquivo não fechou no modelo')
+  if (l.confianca === 'baixa')
+    frases.push(l.ruido.leitura === null ? 'Ruído não medido neste arquivo' : 'Medida aproximada: o ruído deste arquivo não fechou no modelo')
   return frases
 }

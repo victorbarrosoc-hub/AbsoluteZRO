@@ -36,7 +36,7 @@ export class Fonte {
       inicio: p.inicio,
       fim: p.inicio + p.dados.length,
       dados: p.dados,
-      vista: new DataView(p.dados.buffer, p.dados.byteOffset, p.dados.byteLength)
+      vista: new DataView(p.dados.buffer, p.dados.byteOffset, p.dados.byteLength),
     }))
     this.total = Math.max(total ?? 0, ...this.partes.map((p) => p.fim))
     this.completa = u8.length >= this.total
@@ -336,6 +336,12 @@ function lenteDe(v) {
   return s
 }
 
+/** [focal mínima, focal máxima, abertura, abertura] de uma tag de especificação de lente, ou undefined se não houver. */
+function especificacaoDe(tiff, entrada) {
+  const v = entrada ? tentar(() => numeros(tiff, entrada, 4)) : undefined
+  return v && v.length >= 2 && v[0] > 0 && Number.isFinite(v[0]) ? v : undefined
+}
+
 /** Tags de exposição: moram no IFD Exif e, em TIFF/EP (NEF, DNG antigo), também no IFD0. Só preenche o que falta. */
 function exposicao(tiff, tags, exif, bruto) {
   const num = (tag, i) => tentar(() => numero(tiff, tags.get(tag), i))
@@ -343,6 +349,7 @@ function exposicao(tiff, tags, exif, bruto) {
   bruto.original ??= dataDe(txt(0x9003))
   bruto.digitalizada ??= dataDe(txt(0x9004))
   bruto.subOriginal ??= txt(0x9291) || undefined
+  bruto.subDigitalizada ??= txt(0x9292) || undefined
   bruto.sub ??= txt(0x9290) || undefined
   if (exif.tempo === undefined) {
     const t = num(0x829a)
@@ -368,8 +375,9 @@ function exposicao(tiff, tags, exif, bruto) {
   }
   if (exif.lente === undefined) {
     const nome = txt(0xa434)
-    if (nome && /[a-z0-9]/i.test(nome)) exif.lente = nome // a Sony grava '----' quando não reconhece a lente
-    else bruto.especificacao ??= tentar(() => numeros(tiff, tags.get(0xa432), 4))
+    if (nome && /[a-z0-9]/i.test(nome))
+      exif.lente = nome // a Sony grava '----' quando não reconhece a lente
+    else bruto.especificacao ??= especificacaoDe(tiff, tags.get(0xa432))
   }
 }
 
@@ -386,7 +394,7 @@ function fabricante(tiff, entrada, exif, bruto) {
       const iso = tentar(() => numero(mn, tags.get(0x0002), 1))
       if (iso > 0) exif.iso = iso
     }
-    bruto.especificacao ??= tentar(() => numeros(mn, tags.get(0x0084), 4))
+    bruto.especificacao ??= especificacaoDe(mn, tags.get(0x0084))
     return
   }
   if (/^canon/i.test(bruto.fabricante || '')) {
@@ -414,7 +422,7 @@ function deTiff(tiff, saida, { ifd0 = tiff.primeiro } = {}) {
     const iso = tentar(() => numero(tiff, tags.get(0x0017))) // RW2 guarda o ISO no IFD0
     if (iso > 0) exif.iso = iso
   }
-  bruto.especificacao ??= tentar(() => (tags.has(0xc630) ? numeros(tiff, tags.get(0xc630), 4) : undefined)) // LensInfo do DNG
+  bruto.especificacao ??= especificacaoDe(tiff, tags.get(0xc630)) // LensInfo do DNG
 }
 
 function deExif(tiff, deslocamento, saida) {
@@ -473,7 +481,8 @@ function ler(bytes, opcoes) {
   const { exif, bruto } = saida
   const data = bruto.original || bruto.digitalizada || bruto.modificada
   if (data) exif.data = data
-  const sub = bruto.original ? bruto.subOriginal : bruto.sub
+  // cada data tem a sua fração de segundo (EXIF 2.32: SubSecTimeOriginal, SubSecTimeDigitized, SubSecTime)
+  const sub = bruto.original ? bruto.subOriginal : bruto.digitalizada ? bruto.subDigitalizada : bruto.sub
   if (data && sub && /^\d+$/.test(sub.trim())) exif.subsegundo = Number(`0.${sub.trim()}`)
   if (exif.lente === undefined) {
     const lente = lenteDe(bruto.especificacao)

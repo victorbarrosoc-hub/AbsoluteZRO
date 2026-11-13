@@ -24,10 +24,11 @@ export const AMOSTRAS = [
   'pixel6pro.dng',
   'ricoh_gr.dng',
   'samsung_g973.dng',
-  'sony_a7s.arw'
+  'sony_a7s.arw',
 ]
 
-const pastaDasAmostras = path.join(raiz, '.amostras')
+// FOTO_AMOSTRAS aponta outra pasta (ou uma que não existe, para conferir que os testes pulam em vez de falhar)
+const pastaDasAmostras = process.env.FOTO_AMOSTRAS || path.join(raiz, '.amostras')
 export const temAmostras = AMOSTRAS.every((a) => existsSync(path.join(pastaDasAmostras, a)))
 export const caminhoDaAmostra = (nome) => path.join(pastaDasAmostras, nome)
 export const lerAmostra = async (nome) => new Uint8Array(await readFile(caminhoDaAmostra(nome)))
@@ -135,12 +136,12 @@ export function fabricarNegativo({
   leitura = 3,
   corte = 16383,
   declarado = 16383,
-  pico = 1.5,
+  pico = 4,
   stops = 15,
   semente = 1,
   exposicaoBase = 0,
   enchimento = null,
-  sinal = cena
+  sinal = cena,
 } = {}) {
   const rng = acaso(semente)
   const xtrans = cfa === 'XTRANS'
@@ -180,7 +181,7 @@ export function fabricarNegativo({
     branco: { declarado: [declarado, declarado, declarado] },
     wb: { comoFotografado: [2, 1, 1.5] },
     cor: { origem: 'dng', matrizes: [{ kelvin: 6500, xyzParaCamera: [0.8, -0.2, -0.1, -0.4, 1.2, 0.2, -0.1, 0.2, 0.6] }] },
-    exposicaoBase
+    exposicaoBase,
   }
   if (pretoPadrao) n.preto.padrao = pretoPadrao
   return n
@@ -238,7 +239,10 @@ export function montarTiff({ le = true, magia = 42, blocos, cabecalho = null }) 
     return n * TAM[tipo]
   }
   const par = (n) => n + (n & 1)
-  const tamanho = (b) => (b.bytes ? b.bytes.length : 2 + b.ifd.length * 12 + 4 + b.ifd.reduce((s, [, tipo, valor]) => s + (tamDoValor(tipo, valor) > 4 ? par(tamDoValor(tipo, valor)) : 0), 0))
+  const tamanho = (b) =>
+    b.bytes
+      ? b.bytes.length
+      : 2 + b.ifd.length * 12 + 4 + b.ifd.reduce((s, [, tipo, valor]) => s + (tamDoValor(tipo, valor) > 4 ? par(tamDoValor(tipo, valor)) : 0), 0)
   const pos = {}
   let p = inicio
   for (const b of blocos) {
@@ -253,7 +257,8 @@ export function montarTiff({ le = true, magia = 42, blocos, cabecalho = null }) 
     v.setUint16(2, magia, le)
     v.setUint32(4, pos[blocos[0].nome], le)
   }
-  const resolver = (x) => (x && typeof x === 'object' && 'pos' in x ? pos[x.pos] : x && typeof x === 'object' && 'tam' in x ? tamanho(blocos.find((b) => b.nome === x.tam)) : x)
+  const resolver = (x) =>
+    x && typeof x === 'object' && 'pos' in x ? pos[x.pos] : x && typeof x === 'object' && 'tam' in x ? tamanho(blocos.find((b) => b.nome === x.tam)) : x
   const gravar = (onde, tipo, valor) => {
     if (tipo === 2) {
       const s = String(valor)
@@ -417,12 +422,17 @@ export function montarCr3({ cmt1, cmt2, miniatura, previa, inteira, sensor }) {
           caixa(
             'stbl',
             // entrada de amostra: 8 de caixa + 78 da entrada de vídeo + 4 que a Canon acrescenta, e então as filhas
-            caixa('stsd', be32(0), be32(1), caixa('CRAW', new Uint8Array(6), be16(1), new Uint8Array(16), be16(largura), be16(altura), new Uint8Array(50), be16(3), be16(0), filhas)),
+            caixa(
+              'stsd',
+              be32(0),
+              be32(1),
+              caixa('CRAW', new Uint8Array(6), be16(1), new Uint8Array(16), be16(largura), be16(altura), new Uint8Array(50), be16(3), be16(0), filhas),
+            ),
             caixa('stsz', be32(0), be32(tamanho), be32(1)),
-            caixa('co64', be32(0), be32(1), be32(0), be32(posicao))
-          )
-        )
-      )
+            caixa('co64', be32(0), be32(1), be32(0), be32(posicao)),
+          ),
+        ),
+      ),
     )
   const montarMoov = (posInteira, posSensor) =>
     caixa(
@@ -432,10 +442,10 @@ export function montarCr3({ cmt1, cmt2, miniatura, previa, inteira, sensor }) {
         hex('85c0b687820f11e08111f4ce462b6a48'),
         caixa('CMT1', cmt1),
         caixa('CMT2', cmt2),
-        caixa('THMB', be32(0), be16(miniatura.largura), be16(miniatura.altura), be32(miniatura.jpeg.length), be16(1), be16(0), miniatura.jpeg)
+        caixa('THMB', be32(0), be16(miniatura.largura), be16(miniatura.altura), be32(miniatura.jpeg.length), be16(1), be16(0), miniatura.jpeg),
       ),
       trilha({ ...inteira, tamanho: inteira.jpeg.length, posicao: posInteira, filhas: caixa('JPEG', be32(0)) }),
-      trilha({ largura: sensor.largura, altura: sensor.altura, tamanho: sensor.dados.length, posicao: posSensor, filhas: caixa('CMP1', new Uint8Array(52)) })
+      trilha({ largura: sensor.largura, altura: sensor.altura, tamanho: sensor.dados.length, posicao: posSensor, filhas: caixa('CMP1', new Uint8Array(52)) }),
     )
   const ftyp = caixa('ftyp', quatro('crx '), be32(1), quatro('crx '), quatro('isom'))
   const uuidPrevia = caixa(
@@ -443,7 +453,7 @@ export function montarCr3({ cmt1, cmt2, miniatura, previa, inteira, sensor }) {
     hex('eaf42b5e1c984b88b9fbb7dc406e4d16'),
     be32(0),
     be32(1),
-    caixa('PRVW', be32(0), be16(1), be16(previa.largura), be16(previa.altura), be16(1), be32(previa.jpeg.length), previa.jpeg)
+    caixa('PRVW', be32(0), be16(1), be16(previa.largura), be16(previa.altura), be16(1), be32(previa.jpeg.length), previa.jpeg),
   )
   const antes = ftyp.length + montarMoov(0, 0).length + uuidPrevia.length + 8
   const moov = montarMoov(antes, antes + inteira.jpeg.length)

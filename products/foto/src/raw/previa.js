@@ -44,7 +44,7 @@ export function cabecalhoJpeg(fonte, inicio, fim = fonte.total) {
         bits: fonte.u8(p + 4),
         altura: fonte.u16(p + 5, false),
         largura: fonte.u16(p + 7, false),
-        canais: fonte.u8(p + 9)
+        canais: fonte.u8(p + 9),
       }
     }
     p += 2 + tam
@@ -136,28 +136,34 @@ function candidatasTiff(fonte) {
       deslocamento = d.proximo
     }
   }
-  visitar(tiff.primeiro, 0)
-  return lista
+  let falta = null
+  try {
+    visitar(tiff.primeiro, 0)
+  } catch (erro) {
+    if (!(erro instanceof Falta)) throw erro
+    falta = erro // o que já foi achado continua valendo; quem chamou decide se busca o resto
+  }
+  return { lista, falta }
 }
 
 function candidatasCr3(fonte) {
   const e = lerCr3(fonte)
-  if (e.falta) throw e.falta
   const lista = []
   // THMB e PRVW: 16 bytes de cabeçalho (versão, medidas e tamanho do JPEG) e o JPEG até o fim da caixa
   for (const c of [e.thmb, e.prvw]) if (c && c.fim - c.inicio > 20) lista.push({ inicio: c.inicio + 16, tamanho: c.fim - c.inicio - 16 })
   for (const t of e.trilhas) {
-    if (t.jpeg && t.tamanho > 0) lista.push({ inicio: t.inicio, tamanho: t.tamanho, ...(t.largura && t.altura ? { largura: t.largura, altura: t.altura } : {}) })
+    if (t.jpeg && t.tamanho > 0)
+      lista.push({ inicio: t.inicio, tamanho: t.tamanho, ...(t.largura && t.altura ? { largura: t.largura, altura: t.altura } : {}) })
   }
-  return lista
+  return { lista, falta: e.falta || null }
 }
 
 function candidatas(fonte) {
   const tipo = reconhecer(fonte)
   if (tipo === 'tiff') return candidatasTiff(fonte)
   if (tipo === 'bmff') return candidatasCr3(fonte)
-  if (tipo === 'raf') return [{ inicio: fonte.u32(84, false), tamanho: fonte.u32(88, false) }]
-  return []
+  if (tipo === 'raf') return { lista: [{ inicio: fonte.u32(84, false), tamanho: fonte.u32(88, false) }], falta: null }
+  return { lista: [], falta: null }
 }
 
 /**
@@ -174,7 +180,8 @@ function varrer(fonte) {
     if (!decodificavel(cab)) continue
     const fim = fimDoJpeg(b, i + 2)
     if (fim < 0) continue
-    if (fim - i >= MENOR_NA_VARREDURA && (!melhor || fim - i > melhor.tamanho)) melhor = { inicio: i, tamanho: fim - i, largura: cab.largura, altura: cab.altura }
+    if (fim - i >= MENOR_NA_VARREDURA && (!melhor || fim - i > melhor.tamanho))
+      melhor = { inicio: i, tamanho: fim - i, largura: cab.largura, altura: cab.altura }
     i = fim - 1
   }
   return melhor
@@ -203,17 +210,22 @@ function fimDoJpeg(b, p) {
 /** Tira o enchimento depois do FF D9 (o RW2 arredonda o tamanho declarado para blocos de 512 bytes). */
 function aparar(jpeg) {
   const n = jpeg.length
-  for (let i = n - 2, limite = Math.max(2, n - 65536); i >= limite; i--) if (jpeg[i] === 0xff && jpeg[i + 1] === 0xd9) return i + 2 === n ? jpeg : jpeg.subarray(0, i + 2)
+  for (let i = n - 2, limite = Math.max(2, n - 65536); i >= limite; i--)
+    if (jpeg[i] === 0xff && jpeg[i + 1] === 0xd9) return i + 2 === n ? jpeg : jpeg.subarray(0, i + 2)
   return jpeg
 }
 
 const area = (c) => (c.largura || 0) * (c.altura || 0)
 
-/** Confere cada candidata no que já está carregado e ordena da maior para a menor. Pode lançar Falta (estrutura). */
+/**
+ * Confere cada candidata no que já está carregado e ordena da maior para a menor: { lista, falta }. `falta` é o
+ * pedaço da ESTRUTURA (diretório, caixa) que ainda não foi lido; enquanto existir, a lista pode estar incompleta.
+ */
 function conferidas(fonte) {
   const lista = []
   const vistas = new Set()
-  for (const c of candidatas(fonte)) {
+  const achadas = candidatas(fonte)
+  for (const c of achadas.lista) {
     const fim = c.inicio + c.tamanho
     if (!(c.inicio > 0) || fim > fonte.total || vistas.has(c.inicio)) continue
     vistas.add(c.inicio)
@@ -228,7 +240,8 @@ function conferidas(fonte) {
     if (decodificavel(cab)) lista.push({ inicio: c.inicio, tamanho: c.tamanho, largura: cab.largura, altura: cab.altura, conferida: true })
   }
   // maior primeiro: pela área quando as duas são conhecidas, senão pelo tamanho em bytes (é o que sempre se sabe)
-  return lista.sort((a, b) => (area(a) && area(b) ? area(b) - area(a) : 0) || b.tamanho - a.tamanho)
+  lista.sort((a, b) => (area(a) && area(b) ? area(b) - area(a) : 0) || b.tamanho - a.tamanho)
+  return { lista, falta: achadas.falta }
 }
 
 /**
@@ -237,7 +250,7 @@ function conferidas(fonte) {
  */
 export function listarPrevias(bytes, opcoes) {
   try {
-    return conferidas(criarFonte(bytes, opcoes))
+    return conferidas(criarFonte(bytes, opcoes)).lista
   } catch {
     return []
   }
@@ -257,12 +270,20 @@ export function listarPrevias(bytes, opcoes) {
  */
 export function extrairPrevia(bytes, { total, trechos, lado } = {}) {
   const fonte = criarFonte(bytes, { total, trechos })
+  // falta um pedaço da ESTRUTURA: pede com folga, para não voltar aqui a cada diretório
+  const pedir = (falta) => ({ jpeg: null, precisa: { inicio: falta.inicio, fim: Math.min(fonte.total, Math.max(falta.fim, falta.inicio + 65536)) } })
   try {
-    let lista = conferidas(fonte)
+    const achadas = conferidas(fonte)
+    const falta = achadas.falta
+    let lista = achadas.lista
     if (lado > 0) {
-      const servem = lista.filter((c) => Math.max(c.largura || 0, c.altura || 0) >= lado).reverse()
+      const servem = lista.filter((c) => Math.max(c.largura || 0, c.altura || 0) >= lado).reverse() // da menor para a maior
+      // já tem na mão uma que serve: não precisa ler o resto do arquivo para saber se existe outra
+      const pronta = servem.find((c) => c.conferida && fonte.tem(c.inicio, c.inicio + c.tamanho))
+      if (pronta) return { jpeg: aparar(fonte.fatia(pronta.inicio, pronta.inicio + pronta.tamanho)), largura: pronta.largura, altura: pronta.altura }
       lista = [...servem, ...lista.filter((c) => !servem.includes(c))]
     }
+    if (falta) return pedir(falta)
     for (const c of lista) {
       const fim = c.inicio + c.tamanho
       if (!fonte.tem(c.inicio, fim)) {
@@ -271,15 +292,13 @@ export function extrairPrevia(bytes, { total, trechos, lado } = {}) {
       // carregada por inteiro, a candidata já foi conferida (as que não eram JPEG decodificável saíram da lista)
       return { jpeg: aparar(fonte.fatia(c.inicio, fim)), largura: c.largura, altura: c.altura }
     }
-    if (lista.length === 0 && fonte.completa && reconhecer(fonte) !== 'jpeg') {
+    if (fonte.completa && reconhecer(fonte) !== 'jpeg') {
       const achada = varrer(fonte)
       if (achada) return { jpeg: fonte.fatia(achada.inicio, achada.inicio + achada.tamanho), largura: achada.largura, altura: achada.altura }
     }
     return null
   } catch (erro) {
-    if (!(erro instanceof Falta)) return null
-    // falta um pedaço da ESTRUTURA (diretório, caixa): pede com folga para não voltar aqui a cada entrada
-    return { jpeg: null, precisa: { inicio: erro.inicio, fim: Math.min(fonte.total, Math.max(erro.fim, erro.inicio + 65536)) } }
+    return erro instanceof Falta ? pedir(erro) : null
   }
 }
 

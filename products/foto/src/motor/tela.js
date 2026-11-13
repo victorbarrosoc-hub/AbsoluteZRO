@@ -190,14 +190,15 @@ export function margens(ajustes, base = null) {
   return saida
 }
 
-// Tabela da curva da tela (linear → código), para não pagar três potências por pixel. 16384 trechos retos: o erro
-// máximo fica perto de 1e-6 (o pior caso é logo acima do trecho reto do sRGB), bem abaixo de um passo de 16 bits.
-const TAM_TABELA = 16384
+// Tabela da curva da tela (linear → código), para não pagar três potências por pixel. É indexada pela RAIZ do valor
+// linear: nessa escala as curvas são quase retas (a gama 2,2 vira s^0,91; o trecho reto do sRGB, uma parábola), e
+// 4096 trechos dão erro máximo perto de 2e-6 (na emenda do sRGB) — menos de um sétimo de um passo de 16 bits.
+const TAM_TABELA = 4096
 const tabelas = new Map()
 function tabelaDe(nomeCurva, curva) {
   if (!tabelas.has(nomeCurva)) {
     const t = new Float32Array(TAM_TABELA + 2)
-    for (let i = 0; i <= TAM_TABELA; i++) t[i] = curva.codificar(i / TAM_TABELA)
+    for (let i = 0; i <= TAM_TABELA; i++) t[i] = curva.codificar((i / TAM_TABELA) ** 2)
     t[TAM_TABELA + 1] = t[TAM_TABELA]
     tabelas.set(nomeCurva, t)
   }
@@ -339,13 +340,13 @@ export function criarTela(id = 'srgb', opcoes = {}) {
       tg = temp[1]
       tb = temp[2]
     }
-    let p = (tr <= 0 ? 0 : tr >= 1 ? 1 : tr) * TAM_TABELA
+    let p = (tr <= 0 ? 0 : tr >= 1 ? 1 : Math.sqrt(tr)) * TAM_TABELA
     let q = p | 0
     d[j] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
-    p = (tg <= 0 ? 0 : tg >= 1 ? 1 : tg) * TAM_TABELA
+    p = (tg <= 0 ? 0 : tg >= 1 ? 1 : Math.sqrt(tg)) * TAM_TABELA
     q = p | 0
     d[j + 1] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
-    p = (tb <= 0 ? 0 : tb >= 1 ? 1 : tb) * TAM_TABELA
+    p = (tb <= 0 ? 0 : tb >= 1 ? 1 : Math.sqrt(tb)) * TAM_TABELA
     q = p | 0
     d[j + 2] = tabela[q] + (tabela[q + 1] - tabela[q]) * (p - q)
   }

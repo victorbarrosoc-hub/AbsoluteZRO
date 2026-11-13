@@ -26,7 +26,7 @@ export const NOMES = {
   11: 'DeltaPerColumn',
   12: 'ScalePerRow',
   13: 'ScalePerColumn',
-  14: 'WarpRectilinear2'
+  14: 'WarpRectilinear2',
 }
 
 const GAIN_MAP = 9
@@ -46,7 +46,7 @@ function lerGainMap(v) {
     espacoH: v.getFloat64(48),
     origemV: v.getFloat64(56),
     origemH: v.getFloat64(64),
-    planosDoMapa: v.getUint32(72)
+    planosDoMapa: v.getUint32(72),
   }
   const n = m.pontosV * m.pontosH * m.planosDoMapa
   if (!(n > 0) || v.byteLength < 76 + n * 4 || m.passoLinha < 1 || m.passoColuna < 1) return null
@@ -86,7 +86,7 @@ export function lerOpcodes(bytes) {
       opcional: (flags & 1) !== 0,
       pulaNaPrevia: (flags & 2) !== 0,
       aplicavel: false,
-      bruto
+      bruto,
     }
     const pv = new DataView(bruto.buffer, bruto.byteOffset, bruto.byteLength)
     const lido = id === GAIN_MAP ? lerGainMap(pv) : id === VINHETA_RADIAL ? lerVinheta(pv) : null
@@ -105,7 +105,9 @@ export function escreverOpcodes(lista) {
       const b = new Uint8Array(76 + op.ganhos.length * 4)
       const v = new DataView(b.buffer)
       const a = op.area
-      ;[a.topo, a.esquerda, a.base, a.direita, op.plano ?? 0, op.planos ?? 1, op.passoLinha ?? 1, op.passoColuna ?? 1, op.pontosV, op.pontosH].forEach((x, i) => v.setUint32(i * 4, x))
+      ;[a.topo, a.esquerda, a.base, a.direita, op.plano ?? 0, op.planos ?? 1, op.passoLinha ?? 1, op.passoColuna ?? 1, op.pontosV, op.pontosH].forEach((x, i) =>
+        v.setUint32(i * 4, x),
+      )
       ;[op.espacoV, op.espacoH, op.origemV, op.origemH].forEach((x, i) => v.setFloat64(40 + i * 8, x))
       v.setUint32(72, op.planosDoMapa ?? 1)
       op.ganhos.forEach((g, i) => v.setFloat32(76 + i * 4, g))
@@ -124,7 +126,9 @@ export function escreverOpcodes(lista) {
   v.setUint32(0, lista.length)
   let p = 4
   lista.forEach((op, i) => {
-    const versao = String(op.versao || '1.3.0.0').split('.').map(Number)
+    const versao = String(op.versao || '1.3.0.0')
+      .split('.')
+      .map(Number)
     v.setUint32(p, op.id)
     versao.forEach((x, k) => v.setUint8(p + 4 + k, x || 0))
     v.setUint32(p + 8, (op.opcional ? 1 : 0) | (op.pulaNaPrevia ? 2 : 0))
@@ -221,7 +225,8 @@ export function aplicarOpcodes(mosaico, { largura, altura, area }, lista, { dest
       aplicarVinheta(dados, largura, img, op)
       aplicados.push(op.nome)
     } else {
-      const motivo = op.id === GAIN_MAP ? (op.aplicavel ? 'mapa para um plano que o mosaico não tem' : 'parâmetros inválidos') : 'opcode não coberto por este leitor'
+      const motivo =
+        op.id === GAIN_MAP ? (op.aplicavel ? 'mapa para um plano que o mosaico não tem' : 'parâmetros inválidos') : 'opcode não coberto por este leitor'
       naoAplicados.push({ nome: op.nome, motivo, opcional: op.opcional })
     }
   }

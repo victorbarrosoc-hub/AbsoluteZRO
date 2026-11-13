@@ -238,8 +238,11 @@ export function criarCatalogo(inicial) {
     if (foco && !indices.has(foco)) {
       mudou.add(foco)
       const era = selecao.size === 0
+      // a pilha fechou com o foco dentro: vai para a capa; senão, para quem tomou o lugar
+      const grupo = fotos.get(foco)?.grupo
+      const capa = grupo ? cacheItens.find((it) => it.pilha?.id === grupo) : null
       const i = Math.min(indiceAntigo ?? 0, cacheItens.length - 1)
-      foco = i >= 0 ? cacheItens[i].foto.id : null
+      foco = capa ? capa.foto.id : i >= 0 ? cacheItens[i].foto.id : null
       if (foco) {
         mudou.add(foco)
         if (era) selecao.add(foco)

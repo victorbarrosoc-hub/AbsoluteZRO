@@ -188,7 +188,8 @@ const PESO_NEUTRO = 0.02
  *    entra como neutra com peso fraco.
  * 3. Um ou dois canais cortados: o canal que falta é o canal válido vezes a razão (média geométrica quando há dois
  *    válidos). Três: o menor brilho em que todos os canais estariam no teto com aquela razão — no miolo, branco.
- * 4. O sensel cortado fica com o maior entre o que tinha e o estimado: a reconstrução só acrescenta.
+ * 4. O sensel cortado fica com o maior entre o que tinha e o estimado (lido no lugar do sensel): a reconstrução só
+ *    acrescenta.
  *
  * Devolve { celulas: [um, dois, tres] (frações da área), folga (EV acima de 1,0 do percentil 99,9 da imagem) }.
  */
@@ -215,15 +216,56 @@ function reconstruirAltas(mos, ganhos) {
       }
     }
   }
-  // médias; razões das células válidas; histograma do brilho acima de 1,0 para a folga
-  const nivel0 = { w: new Float32Array(n), a: new Float32Array(n), b: new Float32Array(n), cw, ch }
-  const quantas = [0, 0, 0, 0]
-  const iG = [1 / ganhos[0], 1 / ganhos[1], 1 / ganhos[2]]
+  // médias por célula
   for (let i = 0; i < n; i++) {
     for (let c = 0; c < 3; c++) {
       if (conta[i * 3 + c]) valor[i * 3 + c] /= conta[i * 3 + c]
       else marca[i] |= 1 << c
     }
+  }
+  // No Bayer o vermelho e o azul moram em cantos opostos da célula: num degradê, a média de cada canal vale para um
+  // ponto diferente, e a razão entre canais ganharia um erro igual ao degradê de meio pixel. Leva os dois para o
+  // centro da célula (bilinear com as três células vizinhas do lado do centro: pesos 9, 3, 3, 1). O verde, e os três
+  // canais no X-Trans, já têm o centro de massa no centro.
+  if (lado === 2) {
+    const bruto = Float32Array.from(valor)
+    for (let c = 0; c < 3; c += 2) {
+      const pos = padrao.indexOf(c)
+      const dx = (pos & 1) === 0 ? 1 : -1
+      const dy = pos >> 1 === 0 ? 1 : -1
+      const bit = 1 << c
+      for (let y = 0; y < ch; y++) {
+        const yv = y + dy
+        for (let x = 0; x < cw; x++) {
+          const i = y * cw + x
+          if (marca[i] & bit) continue
+          const xv = x + dx
+          let soma = 9 * bruto[i * 3 + c]
+          let peso = 9
+          const temX = xv >= 0 && xv < cw
+          const temY = yv >= 0 && yv < ch
+          if (temX && !(marca[i + dx] & bit)) {
+            soma += 3 * bruto[(i + dx) * 3 + c]
+            peso += 3
+          }
+          if (temY && !(marca[i + dy * cw] & bit)) {
+            soma += 3 * bruto[(i + dy * cw) * 3 + c]
+            peso += 3
+          }
+          if (temX && temY && !(marca[i + dy * cw + dx] & bit)) {
+            soma += bruto[(i + dy * cw + dx) * 3 + c]
+            peso += 1
+          }
+          valor[i * 3 + c] = soma / peso
+        }
+      }
+    }
+  }
+  // razões das células válidas
+  const nivel0 = { w: new Float32Array(n), a: new Float32Array(n), b: new Float32Array(n), cw, ch }
+  const quantas = [0, 0, 0, 0]
+  const iG = [1 / ganhos[0], 1 / ganhos[1], 1 / ganhos[2]]
+  for (let i = 0; i < n; i++) {
     const m = marca[i]
     const k = (m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)
     quantas[k]++
@@ -349,15 +391,25 @@ function reconstruirAltas(mos, ganhos) {
       break
     }
   }
-  // de volta ao mosaico: só os sensels cortados, e só para cima
+  // de volta ao mosaico: só os sensels cortados, e só para cima. O valor de cada célula vale no centro dela; o sensel
+  // lê o plano no lugar onde está (bilinear entre os centros das células vizinhas).
   for (let y = 0; y < H; y++) {
-    const cy = (y / cl) | 0
     const fase = (y % lado) * lado
     const linha = (y + BORDA) * passo + BORDA
+    const fy = Math.min(Math.max((y + 0.5) / cl - 0.5, 0), ch - 1)
+    const y0 = fy | 0
+    const y1 = Math.min(y0 + 1, ch - 1)
+    const ty = fy - y0
     for (let x = 0; x < W; x++) {
       if (!cortado[y * W + x]) continue
       const c = padrao[fase + (x % lado)]
-      const estimado = valor[(cy * cw + ((x / cl) | 0)) * 3 + c]
+      const fx = Math.min(Math.max((x + 0.5) / cl - 0.5, 0), cw - 1)
+      const x0 = fx | 0
+      const x1 = Math.min(x0 + 1, cw - 1)
+      const tx = fx - x0
+      const estimado =
+        (valor[(y0 * cw + x0) * 3 + c] * (1 - tx) + valor[(y0 * cw + x1) * 3 + c] * tx) * (1 - ty) +
+        (valor[(y1 * cw + x0) * 3 + c] * (1 - tx) + valor[(y1 * cw + x1) * 3 + c] * tx) * ty
       if (estimado > dados[linha + x]) dados[linha + x] = estimado
     }
   }
@@ -585,8 +637,9 @@ function agrupar(mos, fator) {
 
 // O modelo de ruído do arquivo trazido para a luminância da imagem de trabalho: var(Y) ≈ a·Y + b, para um pixel
 // neutro. Cada sensel tem var = α·x + β no sinal normalizado; a luminância é Σ q_c·x_c com q_c = ganho_c · (peso de
-// Y na coluna c da matriz), e para o neutro x_c = Y / ganho_c. Logo a = α·Σ q_c²/ganho_c e b = β·Σ q_c². Ignora a
-// correlação que o demosaico cria entre vizinhos (é um teto por pixel). `amostras` é quantos sensels viram um pixel.
+// Y na coluna c da matriz), e para o neutro x_c = Y / ganho_c. Logo a = α·Σ q_c²/(ganho_c·n_c) e b = β·Σ q_c²/n_c,
+// com n_c o número de sensels do canal c que viram um pixel (1 sem redução). Ignora a correlação que o demosaico cria
+// entre vizinhos: é um teto por pixel.
 function ruidoDaBase(negativo, latitude, cor, amostras) {
   let alfa = null
   let beta = null
@@ -602,17 +655,17 @@ function ruidoDaBase(negativo, latitude, cor, amostras) {
     beta = p.deslocamento
     origem = 'perfil'
   }
-  if (!(alfa >= 0) || !(beta >= 0)) return null
+  if (alfa == null || beta == null || !(alfa >= 0) || !(beta >= 0)) return null
   const Y = luminancia('rec2020')
   const M = cor.paraRec2020
   let a = 0
   let b = 0
   for (let c = 0; c < 3; c++) {
     const q = cor.ganhos[c] * (Y[0] * M[c] + Y[1] * M[3 + c] + Y[2] * M[6 + c])
-    a += (q * q) / cor.ganhos[c]
-    b += q * q
+    a += (q * q) / (cor.ganhos[c] * amostras[c])
+    b += (q * q) / amostras[c]
   }
-  return { a: (alfa * a) / amostras, b: (beta * b) / amostras, origem }
+  return { a: alfa * a, b: beta * b, origem }
 }
 
 // ─────────── as duas portas de entrada ───────────
@@ -636,11 +689,13 @@ export function prepararBase(negativo, { demosaico = 'rapido', reduzir = 1, lati
   mos.cortado = null
   let imagem
   let feito
-  let amostras = 1
+  let amostras = [1, 1, 1]
   if (reduzir > 1) {
     imagem = agrupar(mos, reduzir)
     feito = 'agrupado'
-    amostras = (reduzir * reduzir) / 2
+    // sensels de cada cor por pixel: no Bayer, um quarto, metade e um quarto do bloco; no X-Trans, 2, 5 e 2 em cada 9
+    const janela = mos.lado === 2 ? reduzir * reduzir : Math.max(reduzir, 3) ** 2
+    amostras = mos.lado === 2 ? [janela / 4, janela / 2, janela / 4] : [(janela * 2) / 9, (janela * 5) / 9, (janela * 2) / 9]
   } else {
     espelharBorda(mos)
     imagem = { largura: mos.W, altura: mos.H, dados: new Float32Array(mos.W * mos.H * 3) }
