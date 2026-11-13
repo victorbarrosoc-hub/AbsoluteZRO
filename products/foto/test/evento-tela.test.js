@@ -279,10 +279,8 @@ before(async () => {
   await subirApp(urlFoto)
   navegador = await playwright.chromium.launch()
   const fot = await navegador.newPage()
-  if (process.env.FOTO_DEPURAR) fot.on('console', (m) => console.log('fotografo:', m.text()))
   await fot.goto(`${base}/`)
   dados = await prepararEventos(fot)
-  if (process.env.FOTO_DEPURAR) console.log(JSON.stringify(dados, null, 1))
   arquivoVideo = await fabricarVideo(fot)
   dados.fotografo = fot
   cameraNav = await playwright.chromium.launch({
@@ -512,7 +510,7 @@ test('o painel do fotógrafo: lista os eventos, abre um, publica outro e mostra 
   await tirar(pagina, 'painel-1440-claro')
   await pagina.getByRole('button', { name: /Casamento Lia e Rui/ }).click()
   await pagina.locator('.rosto-numeros').waitFor()
-  await pagina.getByText(/comparados aqui, neste computador/).waitFor({ timeout: 30_000 })
+  await pagina.locator('.rosto-fila').waitFor({ timeout: 30_000 })
   await tirar(pagina, 'painel-detalhe-1440-claro')
   // trocar o link: o endereço aparece uma vez, com o QR
   await pagina.getByRole('button', { name: 'Trocar link' }).click()

@@ -35,11 +35,11 @@ export async function cartazA4({ endereco, nome, data = null, modo, prazo }) {
   c.textBaseline = 'alphabetic'
   const t = TEXTOS[modo === 'aberta' ? 'cartazAberta' : 'cartazConsentimento']
 
-  c.font = fonte(800, 92)
+  c.font = fonte(800, 80)
   let y = 230
   for (const linha of quebrar(c, t.titulo, L - 200)) {
     c.fillText(linha, L / 2, y)
-    y += 104
+    y += 92
   }
   c.font = fonte(300, 44)
   c.fillStyle = '#6e6e73'

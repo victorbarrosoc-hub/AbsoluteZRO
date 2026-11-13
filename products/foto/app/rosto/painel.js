@@ -189,7 +189,9 @@ function Endereco({ endereco, evento }) {
       <div class="rosto-acoes">
         <button type="button" class="vidro vidro--tinta" onClick=${() => copiar(endereco, 'Endereço')}>Copiar</button>
         <button type="button" class="vidro" onClick=${baixar}>Cartaz A4</button>
-        <button type="button" class="liso" onClick=${() => copiar(comPrazo(TEXTOS.regulamento.corpo, evento.prazo), 'Texto')}>Texto do regulamento</button>
+        <button type="button" class="rosto-texto" onClick=${() => copiar(comPrazo(TEXTOS.regulamento.corpo, evento.prazo), 'Texto')}>
+          Texto do regulamento
+        </button>
       </div>
     </div>
   </div>`
@@ -232,7 +234,8 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
         if (!vivo) return
         setFila(r)
         if (r.pessoas) recarregar()
-      } catch {
+      } catch (erro) {
+        console.warn('rosto: comparar', erro?.message)
         /* tenta na próxima */
       }
     }
@@ -321,7 +324,7 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
   const prontoParaPublicar = e.estado === 'rascunho' && c.fotos > 0 && c.enviadas === c.fotos && !rodando
   return html`<div class="rosto-detalhe">
     <header class="rosto-cabeca">
-      <button type="button" class="liso" onClick=${() => aoVoltar(false)}>Eventos</button>
+      <button type="button" class="rosto-texto" onClick=${() => aoVoltar(false)}>Eventos</button>
       <h3>${e.nome}</h3>
       <${Fichas} e=${e} />
     </header>
@@ -381,8 +384,8 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
     }
     <div class="rosto-acoes rosto-acoes--fim">
       ${c.pedidos > 0 && html`<button type="button" class="vidro" onClick=${verPedidos}>Ver pedidos</button>`}
-      ${e.estado === 'publicado' && html`<button type="button" class="liso" onClick=${encerrar}>Encerrar</button>`}
-      <button type="button" class="liso rosto-perigo" onClick=${apagar}>Apagar</button>
+      ${e.estado === 'publicado' && html`<button type="button" class="rosto-texto" onClick=${encerrar}>Encerrar</button>`}
+      <button type="button" class="rosto-texto rosto-perigo" onClick=${apagar}>Apagar</button>
     </div>
     <${Folha} aberta=${!!pedidos} aoFechar=${() => setPedidos(null)} titulo=${['Pedidos', 'de foto']}>
       <ul class="rosto-pedidos">
@@ -397,6 +400,9 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
     </${Folha}>
   </div>`
 }
+
+const resumoDe = (e) =>
+  [plural(e.contagens.enviadas, 'foto', 'fotos'), plural(e.contagens.rostos, 'rosto', 'rostos'), plural(e.contagens.pedidos, 'pedido', 'pedidos')].join(' · ')
 
 // ───────── o painel ─────────
 
@@ -440,10 +446,7 @@ export function PainelEvento({ loja }) {
             <button type="button" class="cartao rosto-item" onClick=${() => setAberto(e.id)}>
               <span class="rosto-item-nome">${e.nome}${e.data ? html` <span class="apoio">· ${dia(e.data)}</span>` : ''}</span>
               <${Fichas} e=${e} />
-              <span class="apoio"
-                >${plural(e.contagens.enviadas, 'foto', 'fotos')} · ${plural(e.contagens.rostos, 'rosto', 'rostos')} ·
-                ${plural(e.contagens.pedidos, 'pedido', 'pedidos')}</span
-              >
+              <span class="apoio">${resumoDe(e)}</span>
             </button>
           </li>`,
       )}

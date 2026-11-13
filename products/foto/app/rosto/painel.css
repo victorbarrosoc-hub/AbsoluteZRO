@@ -218,3 +218,33 @@
     justify-content: center;
   }
 }
+.rosto-texto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--mudo);
+  font: 600 14px/1 var(--fonte);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.rosto-texto:hover {
+  background: rgb(var(--t) / 0.06);
+}
+.rosto-detalhe .rosto-cabeca .rosto-texto {
+  margin-left: -12px;
+}
+.rosto-pin input {
+  width: 100%;
+}
+.rosto-numero b,
+.rosto-numero b * {
+  font-size: 28px;
+  font-weight: 800;
+}
+.rosto-numero b {
+  color: var(--texto);
+}
