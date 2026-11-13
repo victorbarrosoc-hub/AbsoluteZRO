@@ -18,8 +18,9 @@ Não lançado: fora do catálogo, do gate e da central.
 - ✅ Site `zera.absolutezro.com` (`products/zera/site`, `publicar.mjs`, `vercel.json`): página do produto com as telas
   reais num MacBook, claro/escuro, motion na rolagem; **fechado por padrão** (página neutra) e aberto com
   `ZERA_SITE_ABERTO=1`.
-- ⛔ Publicar na Vercel: o conector desta sessão não tem acesso ao time (pede reautenticação). Falta criar o projeto
-  (Root Directory `products/zera`), pôr o domínio e `ZERA_SITE_ABERTO=1` só no Preview.
+- ✅ Vercel (titular, 13/11/2026: "bota na vercel no pro"): projeto `zera` no time Victorbarrosoc, ligado ao repositório
+  (Root Directory `products/zera`), domínio `zera.absolutezro.com` verificado. Production **fechada** (página neutra,
+  robots fecha); `ZERA_SITE_ABERTO=1` só no Preview, protegido pelo login da Vercel. Abrir o domínio = lançar.
 - ⬜ Titular: testar no Mac (o `.dmg` sai pelo "Run workflow") e dar "Acesso total ao disco".
 - ⛔ Lançar (titular): ícone, migração do catálogo e do gate, central, `zera.absolutezro.com`, assinatura Apple/Microsoft.
 - ⬜ Depois: leitura da MFT no Windows e `getattrlistbulk` no Mac; detectar clones do APFS.
