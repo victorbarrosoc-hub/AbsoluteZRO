@@ -293,7 +293,11 @@ const CASA = {
     [
       'Prata',
       'Preto e branco neutro, de contraste médio.',
-      { luz: { contraste: 14, altas: -10 }, pb: { ativo: true, mistura: f({ vermelho: 5, laranja: 10, amarelo: 5, ciano: -5, azul: -15, roxo: -5 }) }, efeitos: { grao: 12 } },
+      {
+        luz: { contraste: 14, altas: -10 },
+        pb: { ativo: true, mistura: f({ vermelho: 5, laranja: 10, amarelo: 5, ciano: -5, azul: -15, roxo: -5 }) },
+        efeitos: { grao: 12 },
+      },
     ],
     [
       'Carvão',
@@ -410,7 +414,10 @@ const CASA = {
 
 const CRIADA_EM = '2026-11-13T00:00:00.000Z'
 const semAcento = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-const slug = (t) => semAcento(t).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const slug = (t) =>
+  semAcento(t)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 
 let casa = null
 
@@ -462,7 +469,8 @@ export function normalizarBiblioteca(entrada) {
 }
 
 const copia = (estado) => structuredClone(normalizarEntrada(estado))
-const normalizarEntrada = (estado) => (estado && estado.versao === VERSAO_DO_ESTADO && Array.isArray(estado.predefinicoes) ? estado : normalizarBiblioteca(estado))
+const normalizarEntrada = (estado) =>
+  estado && estado.versao === VERSAO_DO_ESTADO && Array.isArray(estado.predefinicoes) ? estado : normalizarBiblioteca(estado)
 
 /** Todas as predefinições: as da casa primeiro, depois as da pessoa. */
 export function todas(estado) {
@@ -491,7 +499,9 @@ function exigirDaPessoa(estado, id) {
 
 /** Busca sem acento e sem caixa em nome, família e descrição; todas as palavras têm de aparecer. */
 export function buscar(estado, texto) {
-  const palavras = semAcento(String(texto ?? '')).split(/\s+/).filter(Boolean)
+  const palavras = semAcento(String(texto ?? ''))
+    .split(/\s+/)
+    .filter(Boolean)
   const lista = todas(estado)
   if (!palavras.length) return lista
   return lista.filter((p) => {
@@ -661,7 +671,11 @@ export function moverDeFamilia(estado, id, familia) {
 /** Guarda a ordem manual de uma família (a lista de ids como a pessoa arrastou). */
 export function reordenar(estado, familia, ids) {
   const e = copia(estado)
-  const daFamilia = new Set(todas(e).filter((p) => p.familia === familia).map((p) => p.id))
+  const daFamilia = new Set(
+    todas(e)
+      .filter((p) => p.familia === familia)
+      .map((p) => p.id),
+  )
   e.ordem[familia] = [...new Set(ids)].filter((id) => daFamilia.has(id))
   return e
 }

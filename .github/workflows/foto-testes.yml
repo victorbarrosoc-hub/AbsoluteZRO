@@ -2,6 +2,8 @@
 # login único contra a Absolute ZRO falsa, o banco num Postgres de verdade, as bibliotecas de vendor/ contra os pacotes,
 # os modelos de visão pelo sha256 e a casca no Chromium com os cabeçalhos de produção, além dos testes do núcleo.
 # Roda quando a pasta ou este arquivo mudam. FOTO_EXIGIR=1: o que falta (Postgres, Chromium, modelo) vira falha, não pulo.
+# As amostras RAW CC0 (raw.pixls.us) não são baixadas por padrão, para o CI não depender de site de terceiros: rodando à
+# mão com `amostras` ligado, o workflow baixa (sha256 conferido) e exige (FOTO_EXIGIR_AMOSTRAS=1).
 name: Fotos · testes
 
 on:
@@ -15,6 +17,11 @@ on:
       - 'products/foto/**'
       - '.github/workflows/foto-testes.yml'
   workflow_dispatch:
+    inputs:
+      amostras:
+        description: 'Baixar as amostras RAW CC0 do raw.pixls.us e exigir os testes com arquivo real'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,5 +55,10 @@ jobs:
         run: ls /usr/lib/postgresql/*/bin/initdb || (sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql)
       # os modelos de visão não ficam no git: baixa dos endereços oficiais e confere o sha256 (falha se faltar)
       - run: node scripts/modelos.mjs
+      - name: Amostras RAW (só quando pedido)
+        if: ${{ inputs.amostras }}
+        run: node scripts/amostras.mjs
       - run: FOTO_EXIGIR=1 npm test
+        env:
+          FOTO_EXIGIR_AMOSTRAS: ${{ inputs.amostras && '1' || '0' }}
       - run: node publicar.mjs

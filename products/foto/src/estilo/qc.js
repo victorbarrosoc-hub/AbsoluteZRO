@@ -207,7 +207,12 @@ export function qc(entrada, opcoes = {}) {
     for (const pele of m.peles) {
       if (!pele.medidas) continue
       if (pele.min < L.peleFaixa[0] || pele.max > L.peleFaixa[1]) {
-        por('pele-matiz', `A ${pele.nome} sai da faixa de cor de pele (${numero(pele.min, 0)}° a ${numero(pele.max, 0)}°).`, pele.min < L.peleFaixa[0] ? pele.min : pele.max, L.peleFaixa)
+        por(
+          'pele-matiz',
+          `A ${pele.nome} sai da faixa de cor de pele (${numero(pele.min, 0)}° a ${numero(pele.max, 0)}°).`,
+          pele.min < L.peleFaixa[0] ? pele.min : pele.max,
+          L.peleFaixa,
+        )
       }
       if (pele.max - pele.min > espalha) {
         por('pele-espalhamento', `A ${pele.nome} muda de cor entre a sombra e a luz (${numero(pele.max - pele.min, 0)}°).`, pele.max - pele.min, espalha)

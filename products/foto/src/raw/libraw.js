@@ -16,6 +16,7 @@ import { criarNegativo } from './negativo.js'
 import { ErroRaw, lerDng, lerTagsDng, pretoDoPadrao } from './dng.js'
 import { lerExif, lerCamera, criarFonte } from './exif.js'
 import { extrairPrevia, cabecalhoJpeg } from './previa.js'
+import { lerSonySemMosaico } from './sony.js'
 
 export { ErroRaw }
 
@@ -48,6 +49,11 @@ function erroDoLibRaw(erro, nome) {
 }
 
 /** Texto vindo de estrutura C: só vale se for legível. */
+// Matriz de reserva para câmera que o LibRaw desta compilação ainda não conhece (a Nikon Z5 II, por exemplo): a
+// ColorMatrix2 (D65) que o Adobe DNG Converter grava para a Sony ILCE-7M4, um sensor CMOS de Bayer típico. Só entra com
+// `matrizGenerica: true`, e o Negativo sai marcado (`cor.generica`) para a tela avisar que a cor é aproximada.
+const MATRIZ_GENERICA = [0.746, -0.2365, -0.0588, -0.5687, 1.3442, 0.2474, -0.0624, 0.1156, 0.6584]
+
 const textoLimpo = (s) => (typeof s === 'string' && /^[\x20-\x7e]{1,128}$/.test(s.trim()) && /[a-z0-9]/i.test(s) ? s.trim() : '')
 
 /**
@@ -170,7 +176,59 @@ export function criarLeitor(LibRaw) {
     }
   }
 
-  async function ler(bytes, { nome } = {}) {
+  /** cam_xyz do LibRaw (XYZ D65 → câmera, uma matriz só); a de reserva, ou ErroRaw, quando a câmera não tem. */
+  function corDoLibRaw(lr, nome, matrizGenerica) {
+    const m = []
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) m.push(lr.getCamXyz(i, j))
+    if (m.some((v) => v !== 0) && m.every(Number.isFinite)) return { origem: 'libraw', matrizes: [{ kelvin: 6500, xyzParaCamera: m }] }
+    if (matrizGenerica) return { origem: 'libraw', matrizes: [{ kelvin: 6500, xyzParaCamera: MATRIZ_GENERICA.slice() }], generica: true }
+    throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}câmera sem matriz de cor conhecida pelo leitor.`)
+  }
+
+  function marcaDe(lr, u8) {
+    const camera = lerCamera(u8)
+    if (camera.fabricante || camera.modelo) return camera
+    try {
+      const ip = lr.getIParams()
+      return { fabricante: textoLimpo(ip.make), modelo: textoLimpo(ip.model) }
+    } catch {
+      return camera
+    }
+  }
+
+  // Sony "sem perdas" M e S: a imagem já vem sem mosaico, em YCbCr. O pixel sai do leitor próprio (sony.js: croma em
+  // bilinear, preto e branco medidos); do LibRaw só a matriz da câmera, que o arquivo não traz. Nem chega a desempacotar.
+  function negativoSony(lr, u8, nome, matrizGenerica) {
+    const s = lerSonySemMosaico(u8)
+    if (!s) throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}ARW sem mosaico num formato que este leitor ainda não conhece.`)
+    const marca = marcaDe(lr, u8)
+    const n = {
+      tipo: 'raw',
+      formato: extensao(nome) || 'arw',
+      fabricante: marca.fabricante,
+      modelo: marca.modelo,
+      exif: completarExif(lr, lerExif(u8)),
+      sensor: s.sensor,
+      area: s.area,
+      cfa: { tipo: 'linear' },
+      preto: s.preto,
+      branco: s.branco,
+      wb: s.wb,
+      cor: corDoLibRaw(lr, nome, matrizGenerica),
+      exposicaoBase: 0,
+    }
+    if (s.recorte) n.recorte = s.recorte
+    const previa = previaDe(lr, u8)
+    if (previa) n.previa = previa
+    if (nome) n.nome = nome
+    return criarNegativo(n)
+  }
+
+  /**
+   * RAW → Negativo. `matrizGenerica: true` abre câmera que o LibRaw não conhece com uma matriz de reserva (o Negativo
+   * sai com `cor.generica`); sem isso, ErroRaw 'sem-suporte'.
+   */
+  async function ler(bytes, { nome, matrizGenerica = false } = {}) {
     const u8 = exato(bytes)
     let dng = null
     try {
@@ -181,9 +239,17 @@ export function criarLeitor(LibRaw) {
     if (dng && dng.linear) return lerDng(u8, { nome }) // lança o motivo certo (LinearRaw / lossy DNG): não há mosaico
     try {
       return await comArquivo(u8, nome, (lr) => {
+        if (/sony_ycbcr/.test(lr.unpackFunctionName())) return negativoSony(lr, u8, nome, matrizGenerica)
         lr.unpack()
         const dados = lr.getRawImage()
-        if (!dados) throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}o arquivo não traz mosaico (sRAW, Foveon ou imagem já revelada).`)
+        if (!dados) {
+          const funcao = lr.unpackFunctionName()
+          const qual = /sraw/.test(funcao) ? 'o sRAW/mRAW da Canon' : /foveon|x3f/i.test(funcao) ? 'o sensor Foveon' : 'este RAW reduzido'
+          throw new ErroRaw(
+            'sem-suporte',
+            `${nome ? `${nome}: ` : ''}o arquivo já vem sem mosaico e este leitor ainda não abre ${qual}. Grave em RAW de tamanho cheio (L).`,
+          )
+        }
         const largura = lr.getRawWidth()
         const altura = lr.getRawHeight()
         let area = { x: lr.getLeftMargin(), y: lr.getTopMargin(), largura: lr.getActiveWidth(), altura: lr.getActiveHeight() }
@@ -210,27 +276,9 @@ export function criarLeitor(LibRaw) {
         const cam = [0, 1, 2].map((i) => lr.getCamMul(i))
         const wb = cam.every((v) => v > 0 && Number.isFinite(v)) ? { comoFotografado: [cam[0] / cam[1], 1, cam[2] / cam[1]] } : {}
 
-        let cor
-        if (dng && dng.cor.matrizes.length) cor = dng.cor
-        else {
-          // cam_xyz do LibRaw: uma matriz só, XYZ (D65) → câmera, linha a linha
-          const m = []
-          for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) m.push(lr.getCamXyz(i, j))
-          if (!m.some((v) => v !== 0) || !m.every(Number.isFinite))
-            throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}câmera sem matriz de cor conhecida pelo leitor.`)
-          cor = { origem: 'libraw', matrizes: [{ kelvin: 6500, xyzParaCamera: m }] }
-        }
-
-        const camera = lerCamera(u8)
-        let marca = camera
-        if (!camera.fabricante && !camera.modelo) {
-          try {
-            const ip = lr.getIParams()
-            marca = { fabricante: textoLimpo(ip.make), modelo: textoLimpo(ip.model) }
-          } catch {
-            marca = camera
-          }
-        }
+        // cam_xyz do LibRaw: uma matriz só, XYZ (D65) → câmera, linha a linha
+        const cor = dng && dng.cor.matrizes.length ? dng.cor : corDoLibRaw(lr, nome, matrizGenerica)
+        const marca = marcaDe(lr, u8)
         const n = {
           tipo: 'raw',
           formato: extensao(nome) || (dng ? 'dng' : ''),
@@ -287,7 +335,12 @@ export function criarLeitor(LibRaw) {
    */
   async function revelarLinear(bytes, { nome, qualidade = 'alta', metade = false, wb = 'camera' } = {}) {
     return comArquivo(bytes, nome, (lr) => {
+      // arquivo já sem mosaico (Sony M e S, sRAW): o LibRaw "revela" uma imagem quase preta, em silêncio. Não há
+      // demosaico a fazer: quem abre é ler(), e o motor segue sem demosaico.
+      if (/sony_ycbcr|sraw/.test(lr.unpackFunctionName()))
+        throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}o arquivo já vem sem mosaico: não há demosaico de reserva a fazer.`)
       lr.unpack()
+      if (!lr.getRawImage()) throw new ErroRaw('sem-suporte', `${nome ? `${nome}: ` : ''}o arquivo não traz mosaico para o demosaico de reserva.`)
       const cam = [0, 1, 2].map((i) => lr.getCamMul(i))
       let mul = [1, 1, 1]
       if (Array.isArray(wb) && wb.length === 3 && wb.every((v) => v > 0)) mul = [wb[0] / wb[1], 1, wb[2] / wb[1]]
@@ -317,11 +370,19 @@ export function criarLeitor(LibRaw) {
       const maior = Math.max(...mul)
       const k = mul.map((v) => maior / v / 65535)
       const dados = new Float32Array(px.length)
+      let maior16 = 0
+      let menor16 = 65535
       for (let i = 0; i < px.length; i += 3) {
         dados[i] = px[i] * k[0]
         dados[i + 1] = px[i + 1] * k[1]
         dados[i + 2] = px[i + 2] * k[2]
+        const v = px[i + 1]
+        if (v > maior16) maior16 = v
+        if (v < menor16) menor16 = v
       }
+      // falha nunca é silenciosa: imagem toda preta ou toda branca é erro, não foto
+      if (maior16 < 64) throw new ErroRaw('corrompido', `${nome ? `${nome}: ` : ''}o demosaico de reserva devolveu uma imagem toda preta.`)
+      if (menor16 > 65000) throw new ErroRaw('corrompido', `${nome ? `${nome}: ` : ''}o demosaico de reserva devolveu uma imagem toda branca.`)
       return { largura: img.width, altura: img.height, dados, orientacao: 1, girada, wbNoDemosaico: mul, maximo }
     })
   }

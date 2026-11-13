@@ -42,8 +42,11 @@ const erro = (codigo, mensagem) => new ErroPredefinicao(codigo, mensagem)
 // Texto de uma linha: sem caracteres de controle, espaços juntos, cortado no limite.
 function texto(v, limite, padrao = '') {
   if (typeof v !== 'string') return padrao
-  // eslint-disable-next-line no-control-regex
-  const limpo = v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim()
+  const limpo = v
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   return limpo.length ? [...limpo].slice(0, limite).join('') : padrao
 }
 
@@ -90,7 +93,8 @@ function lookValido(v) {
   if (v == null) return null
   if (typeof v !== 'object') throw erro('look-invalido', 'O look desta predefinição não é uma LUT válida.')
   const lado = v.lado
-  if (!Number.isInteger(lado) || lado < LADO_MIN || lado > LADO_MAX) throw erro('look-invalido', `O look precisa ter de ${LADO_MIN} a ${LADO_MAX} pontos por lado.`)
+  if (!Number.isInteger(lado) || lado < LADO_MIN || lado > LADO_MAX)
+    throw erro('look-invalido', `O look precisa ter de ${LADO_MIN} a ${LADO_MAX} pontos por lado.`)
   if (typeof v.dados !== 'string' || !/^[A-Za-z0-9+/]*={0,2}$/.test(v.dados)) throw erro('look-invalido', 'Os dados do look não estão em base64.')
   // 16 bits por canal: lado³ · 3 · 2 bytes → 4 caracteres de base64 a cada 3 bytes
   const bytes = lado * lado * lado * 6
@@ -198,7 +202,7 @@ function deTexto(entrada, oQue) {
   if (t instanceof Uint8Array || t instanceof ArrayBuffer) t = new TextDecoder('utf-8').decode(t)
   if (typeof t !== 'string') return t
   try {
-    return JSON.parse(t.replace(/^﻿/, ''))
+    return JSON.parse(t.replace(/^\uFEFF/, ''))
   } catch {
     throw erro('json-invalido', `O arquivo não é ${oQue} (o conteúdo não é JSON).`)
   }
@@ -242,7 +246,16 @@ const numero = (v, casas = 0) => {
 }
 const comSinal = (v, casas = 0) => (v > 0 ? `+${numero(v, casas)}` : numero(v, casas))
 
-const NOME_DA_FAIXA = { vermelho: 'vermelho', laranja: 'laranja', amarelo: 'amarelo', verde: 'verde', ciano: 'ciano', azul: 'azul', roxo: 'roxo', magenta: 'magenta' }
+const NOME_DA_FAIXA = {
+  vermelho: 'vermelho',
+  laranja: 'laranja',
+  amarelo: 'amarelo',
+  verde: 'verde',
+  ciano: 'ciano',
+  azul: 'azul',
+  roxo: 'roxo',
+  magenta: 'magenta',
+}
 const NOME_DA_ZONA = { sombras: 'sombras', meios: 'meios-tons', altas: 'altas luzes', global: 'geral' }
 const NOME_DA_CURVA = { luz: 'Curva de pontos', r: 'Curva do vermelho', g: 'Curva do verde', b: 'Curva do azul' }
 const NOME_DO_GRUPO = {
@@ -320,12 +333,16 @@ export function diferenca(a, b) {
       }
     }
   }
-  if (B.branco.modo !== A.branco.modo) por('branco.modo', 'cor', `Branco ${B.branco.modo === 'manual' ? 'manual' : B.branco.modo === 'auto' ? 'automático' : 'como fotografado'}`)
+  if (B.branco.modo !== A.branco.modo)
+    por('branco.modo', 'cor', `Branco ${B.branco.modo === 'manual' ? 'manual' : B.branco.modo === 'auto' ? 'automático' : 'como fotografado'}`)
   if ((lookA?.dados ?? null) !== (lookB?.dados ?? null)) por('look', 'look', lookB ? `Look "${lookB.nome}" (LUT ${lookB.lado})` : 'Sem look')
   // ordem da tela: pela ordem dos grupos e, dentro deles, a dos controles
   const ordem = Object.keys(NOME_DO_GRUPO)
   const pos = (g) => (ordem.indexOf(g) < 0 ? ordem.length : ordem.indexOf(g))
-  return saida.map((d, i) => ({ d, i })).sort((x, y) => pos(x.d.grupo) - pos(y.d.grupo) || x.i - y.i).map((x) => x.d)
+  return saida
+    .map((d, i) => ({ d, i }))
+    .sort((x, y) => pos(x.d.grupo) - pos(y.d.grupo) || x.i - y.i)
+    .map((x) => x.d)
 }
 
 /** As frases curtas do que a predefinição mexe (a partir de `mexidos()` do motor), na ordem dos painéis. */
@@ -356,7 +373,13 @@ export function criarPacote(lista, { nome = 'Minhas predefinições', agora = nu
     vistos.add(p.id)
     predefinicoes.push(p)
   }
-  return { zro: TIPO_PACOTE, versao: VERSAO, nome: texto(nome, LIMITES.nome, 'Minhas predefinições'), criadoEm: dataValida(agora) ?? new Date().toISOString(), predefinicoes }
+  return {
+    zro: TIPO_PACOTE,
+    versao: VERSAO,
+    nome: texto(nome, LIMITES.nome, 'Minhas predefinições'),
+    criadoEm: dataValida(agora) ?? new Date().toISOString(),
+    predefinicoes,
+  }
 }
 
 /** Texto do arquivo `.zropack` (JSON estável). */

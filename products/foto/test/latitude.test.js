@@ -299,3 +299,41 @@ test('amostras: a latitude bate com a tabela da pesquisa', { timeout: 120000 }, 
   assert.equal(gr.confianca, 'baixa')
   perto(gr.margem.acimaDoCinza, 2.27, 0.01, 'GR: acima do cinza com BaselineExposure −0,2')
 })
+
+test('latitude sem mosaico (três canais por pixel): corte por canal, fração cortada e confiança no máximo média', () => {
+  const { normal } = acaso(21)
+  const largura = 600
+  const altura = 400
+  const preto = 1024
+  const corte = 18878
+  const dados = new Uint16Array(largura * altura * 3)
+  for (let y = 0; y < altura; y++) {
+    for (let x = 0; x < largura; x++) {
+      // degradê horizontal de 2^-8 a 2^1 da faixa: a ponta direita estoura; o vermelho é 1,3× mais forte
+      const s = 2 ** (-8 + (9 * x) / largura) * (corte - preto)
+      for (let c = 0; c < 3; c++) {
+        const v = s * [1.3, 1, 0.8][c]
+        const dn = preto + v + Math.sqrt(0.4 * v + 9) * normal()
+        dados[(y * largura + x) * 3 + c] = Math.max(0, Math.min(corte, Math.round(dn)))
+      }
+    }
+  }
+  const n = criarNegativo({
+    tipo: 'raw',
+    sensor: { largura, altura, amostras: 3, dados },
+    area: { x: 0, y: 0, largura, altura },
+    cfa: { tipo: 'linear' },
+    preto: { porCanal: [preto, preto, preto] },
+    branco: { declarado: [20000, 20000, 20000] },
+    wb: { comoFotografado: [2, 1, 1.5], aplicado: true },
+    cor: { origem: 'libraw', matrizes: [{ kelvin: 6500, xyzParaCamera: [0.8, -0.2, -0.1, -0.4, 1.2, 0.2, -0.1, 0.2, 0.6] }] },
+  })
+  const l = medirLatitude(n)
+  assert.equal(l.detalhe.semMosaico, true)
+  assert.ok(l.branco.every((b) => b <= corte && b >= corte - 4), `branco ${l.branco}`)
+  // o vermelho estoura antes: há pixel com um canal só cortado, e a ponta tem os três
+  assert.ok(l.cortado.um > 0.005, `um canal: ${l.cortado.um}`)
+  assert.ok(l.cortado.tres > 0.03, `três canais: ${l.cortado.tres}`)
+  assert.ok(l.confianca !== 'alta')
+  assert.ok(l.ruido.ganho > 0.2 && l.ruido.ganho < 0.8, `ganho ${l.ruido.ganho}`)
+})

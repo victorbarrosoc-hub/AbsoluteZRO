@@ -361,7 +361,8 @@ test('leitor próprio de DNG: recusa com motivo o que não é DNG ou não tem mo
   ]
   const dado = { nome: 'd', bytes: new Uint8Array(64) }
   const linear = montarTiff({ blocos: [{ nome: 'ifd0', ifd: [...comum, [0x0102, 3, [8, 8, 8]], [0x0103, 3, 34892], [0x0106, 3, 34892]] }, dado] }).bytes
-  recusa(linear, 'sem-suporte', 'LinearRaw')
+  // LinearRaw com perdas (Compression 34892) agora abre; com bytes que não são JPEG, o motivo é o JPEG inválido
+  recusa(linear, 'corrompido', 'JPEG')
   assert.equal(lerTagsDng(linear).linear, true)
   const deflate = montarTiff({
     blocos: [
@@ -544,8 +545,13 @@ test('amostras: os 12 arquivos abrem (ou são recusados com motivo) e o mosaico 
       continue
     }
     if (nome === 'adobe_5d3_lossy.dng') {
-      await assert.rejects(leitor.ler(bytes, { nome }), (e) => e instanceof ErroRaw && e.codigo === 'sem-suporte' && /LinearRaw/.test(e.message))
-      assert.equal(lerTagsDng(bytes).cor.matrizes.length, 2, 'as tags de cor do DNG com perdas ainda saem')
+      // DNG com perdas: já sem mosaico (LinearRaw), três amostras por pixel, 8 bits que o MapPolynomial devolve ao linear
+      const n = await leitor.ler(bytes, { nome })
+      assert.equal(n.cfa.tipo, 'linear')
+      assert.equal(n.sensor.amostras, 3)
+      assert.equal(n.sensor.dados.length, n.sensor.largura * n.sensor.altura * 3)
+      assert.equal(lerTagsDng(bytes).cor.matrizes.length, 2, 'as tags de cor do DNG com perdas saem')
+      assert.ok(n.opcodes.lista2.some((o) => o.nome === 'MapPolynomial' && o.aplicavel))
       continue
     }
     const t0 = performance.now()

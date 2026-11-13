@@ -7,7 +7,7 @@ import { test } from 'node:test'
 import { baseDeImagem, corDaCamera, prepararBase } from '../src/motor/base.js'
 import { matrizAdaptacao } from '../src/motor/cor/adaptacao.js'
 import { temperaturaDeXy, xyDeTemperatura } from '../src/motor/cor/branco.js'
-import { D50, D65, luminancia, xyParaXYZ } from '../src/motor/cor/espacos.js'
+import { D50, D65, luminancia, rgbParaXyz, xyParaXYZ } from '../src/motor/cor/espacos.js'
 import { diagonal, misturarM } from '../src/motor/cor/matriz.js'
 import {
   CAMERA,
@@ -395,4 +395,65 @@ test('desempenho de prepararBase (medido em 2 MP; o de 24 MP está no relatório
     t.diagnostic(`${demosaico}: ${ms.toFixed(0)} ms em ${((W * H) / 1e6).toFixed(1)} MP (${((ms * 1e6) / (W * H)).toFixed(0)} ns/px)`)
     assert.equal(base.imagem.dados.length, W * H * 3)
   }
+})
+
+// Arquivo já sem mosaico (Sony "sem perdas" M e S, DNG LinearRaw): o mesmo caminho de ida, sem o mosaico. `aplicado`
+// grava o dado já multiplicado pelo branco, como o YCbCr da Sony.
+function fotografarSemMosaico(img, { aplicado = false, preto = 256, branco = 4095 } = {}) {
+  const { negativo, ganhos } = fotografar(plana([0.18, 0.18, 0.18], 2, 2)) // só os campos de cor da mesma câmera
+  const cm = mulM(CAMERA, rgbParaXyz('rec2020'))
+  const noBranco = mulV(CAMERA, xyParaXYZ(D65))
+  const maior = Math.max(...noBranco)
+  const { largura, altura, dados } = img
+  const sensor = new Uint16Array(largura * altura * 3)
+  for (let i = 0; i < largura * altura; i++) {
+    for (let c = 0; c < 3; c++) {
+      let s = ((cm[c * 3] * dados[i * 3] + cm[c * 3 + 1] * dados[i * 3 + 1] + cm[c * 3 + 2] * dados[i * 3 + 2]) / maior) * (branco - preto)
+      if (aplicado) s *= ganhos[c]
+      sensor[i * 3 + c] = Math.min(branco, Math.max(0, Math.round(preto + s)))
+    }
+  }
+  return {
+    ...negativo,
+    sensor: { largura, altura, amostras: 3, dados: sensor },
+    area: { x: 0, y: 0, largura, altura },
+    cfa: { tipo: 'linear' },
+    preto: { porCanal: [preto, preto, preto] },
+    branco: { declarado: [branco, branco, branco] },
+    wb: { comoFotografado: ganhos, ...(aplicado ? { aplicado: true } : {}) },
+  }
+}
+
+test('sem mosaico: a cena volta sem demosaico, com o branco aplicado ou não, e a redução agrupa', () => {
+  for (const aplicado of [false, true]) {
+    const n = fotografarSemMosaico(imagem, { aplicado })
+    const b = prepararBase(n)
+    assert.equal(b.demosaico, null)
+    assert.deepEqual([b.imagem.largura, b.imagem.altura], [imagem.largura, imagem.altura])
+    const d = deltaE(b.imagem, imagem)
+    assert.ok(d.medio < 0.004, `aplicado=${aplicado}: ΔE médio ${d.medio.toFixed(4)}`)
+    const b2 = prepararBase(n, { reduzir: 2 })
+    assert.equal(b2.demosaico, 'agrupado')
+    assert.deepEqual([b2.imagem.largura, b2.imagem.altura], [imagem.largura / 2, imagem.altura / 2])
+  }
+})
+
+test('sem mosaico: canal cortado é reconstruído pela razão da borda (só para cima)', () => {
+  // uma mancha que passa do teto só no vermelho da câmera (laranja forte), sobre um fundo médio
+  const img = plana([0.1, 0.1, 0.1], 96, 64)
+  for (let y = 16; y < 48; y++) {
+    for (let x = 24; x < 72; x++) {
+      const r = Math.hypot(x - 48, (y - 32) * 1.5)
+      const k = Math.max(0, 1 - r / 26)
+      img.dados.set([0.1 + 2.2 * k, 0.1 + 0.9 * k, 0.1 + 0.35 * k], (y * 96 + x) * 3)
+    }
+  }
+  const alto = prepararBase(fotografarSemMosaico(img, { branco: 65535, preto: 256 }))
+  const n = fotografarSemMosaico(img, { branco: 4095 * 4, preto: 256 })
+  const b = prepararBase(n)
+  assert.ok(b.cortado.um > 0, 'houve canal cortado')
+  // no miolo da mancha, o canal reconstruído chega perto do que um sensor sem corte veria (e nunca fica abaixo do corte)
+  const i = (32 * 96 + 48) * 3
+  const razao = b.imagem.dados[i] / alto.imagem.dados[i]
+  assert.ok(razao > 0.8 && razao < 1.25, `vermelho reconstruído / verdadeiro = ${razao.toFixed(3)}`)
 })

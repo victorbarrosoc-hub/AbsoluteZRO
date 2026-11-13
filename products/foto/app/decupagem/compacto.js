@@ -68,6 +68,8 @@ export function resumirRosto(rosto, deteccao = null) {
     chave: rosto.chave === true,
     principal: rosto.principal === true,
     cortado: rosto.cortado === true,
+    // a malha recusou (nuca, cabelo, rosto quase todo escondido): conta como pessoa, sem decidir foco nem pessoa-chave
+    duvidoso: rosto.duvidoso === true,
     pontos: pontos.length === 2 && pontos.every(Boolean) ? pontos : null,
     // por que os olhos não foram lidos, quando não foram: 'pequeno' | 'secundario' | 'sem-malha' | 'outro-rosto'
     semOlhos: rosto.olhos == null ? (deteccao?.semMalha ?? rosto.semOlhos ?? 'sem-malha') : null,

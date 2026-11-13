@@ -512,3 +512,37 @@ test('desempenho de revelar (medido em 2 MP; o de 24 MP está no relatório)', (
     a.efeitos.vinheta = -20
   })
 })
+
+// O ganho de tempo aparece em foto grande (24 MP: medido no relatório); aqui, com 0,8 MP e a máquina dividida, o
+// tempo só é informado.
+test('neblina e clareza pelo mapa largo (foto grande): perto da conta bloco a bloco e sem depender do ladrilho', (t) => {
+  // 1100 px de lado maior: o mapa largo entra (k = 2); cena com véu para a neblina ter o que tirar
+  const imagem = cena(17, 1100, 720, { ganho: 0.5 })
+  for (let i = 0; i < imagem.dados.length; i++) imagem.dados[i] = imagem.dados[i] * 0.6 + 0.25
+  const base = baseDe(imagem)
+  const a = neutro()
+  Object.assign(a.presenca, { clareza: 60, neblina: 50, textura: 20 })
+  a.geometria.angulo = 2
+  const t0 = performance.now()
+  const rapida = revelar(base, a)
+  const msRapida = performance.now() - t0
+  const t1 = performance.now()
+  const exata = revelar(base, a, { vizinhancaExata: true })
+  const msExata = performance.now() - t1
+  const semEfeito = revelar(base, { ...neutro(), geometria: a.geometria })
+  // o efeito (contra a mesma foto sem neblina nem clareza) e a diferença entre os dois caminhos, em código de tela
+  let efeito = 0
+  let diferenca = 0
+  for (let i = 0; i < rapida.dados.length; i++) {
+    efeito += Math.abs(exata.dados[i] - semEfeito.dados[i])
+    diferenca += Math.abs(rapida.dados[i] - exata.dados[i])
+  }
+  efeito /= rapida.dados.length
+  diferenca /= rapida.dados.length
+  assert.ok(efeito > 0.02, `os ajustes mudam a foto (${efeito.toFixed(4)})`)
+  assert.ok(diferenca < efeito * 0.15, `mapa largo contra bloco a bloco: ${diferenca.toFixed(4)} (efeito ${efeito.toFixed(4)})`)
+  // o mapa é da foto inteira: faixas e ladrilhos não mudam nada
+  iguais(revelar(base, a, { faixa: 61, ladrilho: 300 }), rapida, 2e-6, 'mapa largo em ladrilhos')
+  iguais(revelar(base, a, { regiao: { x: 0, y: 0, largura: rapida.largura, altura: 200 } }), { ...rapida, altura: 200, dados: rapida.dados.subarray(0, rapida.largura * 200 * 3) }, 2e-6, 'região')
+  t.diagnostic(`0,8 MP: mapa largo ${msRapida.toFixed(0)} ms, bloco a bloco ${msExata.toFixed(0)} ms; diferença ${diferenca.toFixed(4)} para um efeito de ${efeito.toFixed(4)}`)
+})

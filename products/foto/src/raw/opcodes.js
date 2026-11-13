@@ -31,6 +31,36 @@ export const NOMES = {
 
 const GAIN_MAP = 9
 const VINHETA_RADIAL = 3
+const MAPA_POLINOMIAL = 8
+
+// DNG 1.4, MapPolynomial: Top, Left, Bottom, Right, Plane, Planes, RowPitch, ColPitch (LONG), Degree (LONG) e
+// Degree + 1 coeficientes (DOUBLE). O valor do pixel, normalizado de 0 a 1, vira Σ cᵢ·xⁱ (cortado em 0..1). É como o
+// "DNG com perdas" devolve ao linear os 8 bits do JPEG (lista 2, um por plano).
+function lerMapaPolinomial(v) {
+  if (v.byteLength < 44) return null
+  const grau = v.getUint32(32)
+  if (grau > 8 || v.byteLength < 36 + (grau + 1) * 8) return null
+  const m = {
+    area: { topo: v.getUint32(0), esquerda: v.getUint32(4), base: v.getUint32(8), direita: v.getUint32(12) },
+    plano: v.getUint32(16),
+    planos: v.getUint32(20),
+    passoLinha: v.getUint32(24),
+    passoColuna: v.getUint32(28),
+    coeficientes: Array.from({ length: grau + 1 }, (_, i) => v.getFloat64(36 + i * 8)),
+  }
+  if (m.passoLinha < 1 || m.passoColuna < 1 || m.planos < 1) return null
+  return m
+}
+
+/** A função de um MapPolynomial já lido: x (0..1) → y (0..1). */
+export function funcaoDoMapa(op) {
+  const c = op.coeficientes
+  return (x) => {
+    let y = 0
+    for (let i = c.length - 1; i >= 0; i--) y = y * x + c[i]
+    return y < 0 ? 0 : y > 1 ? 1 : y
+  }
+}
 
 function lerGainMap(v) {
   if (v.byteLength < 76) return null
@@ -64,7 +94,8 @@ function lerVinheta(v) {
 /**
  * Lista de opcodes a partir dos bytes da tag: [{ id, nome, versao, opcional, pulaNaPrevia, aplicavel, bruto, … }].
  * GainMap traz { area, plano, planos, passoLinha, passoColuna, pontosV, pontosH, espacoV, espacoH, origemV, origemH,
- * planosDoMapa, ganhos: Float32Array }; FixVignetteRadial traz { k: [k0..k4], centro: { x, y } }.
+ * planosDoMapa, ganhos: Float32Array }; FixVignetteRadial traz { k: [k0..k4], centro: { x, y } }; MapPolynomial traz
+ * { area, plano, planos, passoLinha, passoColuna, coeficientes } (quem aplica é abrir.js, na imagem sem mosaico).
  * Lista truncada ou inválida devolve o que deu para ler.
  */
 export function lerOpcodes(bytes) {
@@ -89,7 +120,7 @@ export function lerOpcodes(bytes) {
       bruto,
     }
     const pv = new DataView(bruto.buffer, bruto.byteOffset, bruto.byteLength)
-    const lido = id === GAIN_MAP ? lerGainMap(pv) : id === VINHETA_RADIAL ? lerVinheta(pv) : null
+    const lido = id === GAIN_MAP ? lerGainMap(pv) : id === VINHETA_RADIAL ? lerVinheta(pv) : id === MAPA_POLINOMIAL ? lerMapaPolinomial(pv) : null
     if (lido) Object.assign(op, lido, { aplicavel: true })
     lista.push(op)
     p += 16 + tam

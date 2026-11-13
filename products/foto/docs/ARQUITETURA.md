@@ -63,6 +63,28 @@ Leitura parcial: `extrairPrevia(começo, { total, lado? })` devolve `{ jpeg: nul
 prévia mora adiante; `extrairPreviaDe(ler, total)` faz as leituras sozinho. `opcodes.js` lê as OpcodeList do DNG e
 aplica GainMap e FixVignetteRadial num mosaico Float32 (`aplicarOpcodes`); os demais saem listados como não aplicados.
 
+**Arquivo já sem mosaico** (Sony "sem perdas" M e S em YCbCr, `src/raw/sony.js`; DNG LinearRaw: ProRAW em JPEG sem
+perdas e o "DNG com perdas"): Negativo com `cfa: { tipo: 'linear' }` e `sensor: { largura, altura, amostras: 3, dados }`
+(RGB de câmera entrelaçado, linear). `wb.aplicado: true` quando o dado já vem com o branco como fotografado (o YCbCr da
+Sony): quem revela não multiplica de novo. `prepararBase` pula o demosaico (preto, saturação, corte, altas luzes em RGB,
+matriz) e devolve `demosaico: null` (ou 'agrupado' com redução). sRAW da Canon e sNEF ainda são recusados com motivo.
+
+### Abrir (`src/abrir.js`) — a porta única
+
+```
+abrirFoto(bytes, { nome, leitor, demosaico = 'rapido', reduzir = 1 })
+  → Promise<{ base, latitude, exif, camera: { fabricante, modelo }, previa: { jpeg, largura, altura } | null, avisos: [texto], origem: 'raw' | 'imagem' }>
+abrirImagem({ largura, altura, dados, canais, espaco, exif }) → o mesmo formato, com latitude null (foto já decodificada)
+conferirBase(base) → { p01, p50, p999 } ou ErroRaw (imagem toda preta ou toda branca)
+```
+
+`leitor` = `criarLeitor(LibRaw)`; sem ele só DNG e JPEG abrem. Ordem: ler → opcodes de ganho no mosaico (e
+MapPolynomial na imagem sem mosaico) → Latitude → `prepararBase` com ela → DefaultCrop → conferência. X-Trans em
+'qualidade' passa pelo Markesteijn do LibRaw (`revelarLinear`) e segue como imagem sem mosaico. Câmera que o LibRaw não
+conhece abre com matriz de reserva e aviso. JPEG sequencial abre pelo decodificador próprio, com o espaço do perfil ICC;
+PNG, HEIC, WebP e JPEG progressivo lançam ErroRaw com `decodificarNaTela = true` (a tela decodifica e chama
+`abrirImagem`).
+
 ### Latitude (`src/raw/latitude.js`)
 
 `medirLatitude(negativo) → Latitude`: o que o **arquivo** tem, medido no dado do sensor.
@@ -127,6 +149,10 @@ Ordem (a mesma no JS e na GPU):
    grão, vinheta. Tudo que precisa de pixel vizinho mora aqui e roda em resolução proporcional. O ruído roda na base,
    antes do passo 2 (é onde o modelo de ruído vale); o resto, depois: neblina → clareza e textura → nitidez → grão →
    vinheta.
+   A transmissão da neblina e a base larga da clareza saem de um mapa calculado UMA vez por revelação, na foto
+   inteira reduzida (lado ~512 px), e lido no tamanho cheio com a guia cheia (filtro guiado rápido, He e Sun 2015):
+   os ladrilhos não precisam mais de centenas de pixels de margem. `revelar(…, { vizinhancaExata: true })` faz a conta
+   bloco a bloco, só para medir.
 4. **Tela** (`tela.js`): mapa de tons em sigmoide log-logística com o cinza preso, **com as margens de cima e de baixo
    tiradas da Latitude do arquivo** (em `auto`) → preservação de matiz → compressão de gamut em Oklab → curva da tela.
 
@@ -135,6 +161,25 @@ Foto que já chega pronta (JPEG, PNG, TIFF) entra pela inversa exata do passo 4:
 
 `ponto.js` expõe `criarPonto(ajustes, contexto) → { aplicar(r, g, b, saida) }` e `uniformes(ajustes, contexto)`: os
 mesmos números que a GPU recebe. `gpu/` (WebGL2) é espelho do JS; o teste trava a diferença em menos de 1/255.
+
+### Motor na placa (`src/motor/gpu/motor.js`) e sessão de revelação (`app/motor/`)
+
+```
+criarMotorGpu(gl, { precisao: 'auto' | 'alta' }) → { info: { renderizador, software, maxTextura },
+  carregarBase(base, { janela?, referencia?, corte? }), desenhar(ajustes, { alvo: 'tela' | 'textura', regiao, zoom,
+  comparar: { posicao, antes? }, avisos, tela, semLocal, semente, look }) → { largura, altura, ms, ignorados },
+  ler({ tipo: 'float' | 'uint8', regiao }), histograma(ajustes) → Promise<{ tela, cena }>, mostrarImagem(fonte), liberar(), perdido() }
+criarSessao({ canvas, motor: 'auto' | 'gpu' | 'js', aoMudar }) → { abrir(File | { bytes, nome }) → Promise<{ latitude, exif,
+  camera, avisos, largura, altura, origem, motor }>, ajustar(ajustes), ver({ zoom: 'encaixar' | número, x, y, comparar,
+  avisos, tela }), histograma(), auto(), exportarPixels(ajustes, { tela, bits, lado, aoProgredir, sinal }) → Promise<{
+  largura, altura, dados, espaco, motor }>, lerTela(), estado(), fechar() }
+```
+
+Ponto, tela, geometria e look na placa: a mesma conta do JS (< 1/255). Vizinhança: os mesmos filtros; o filtro guiado
+de raio maior que 6 px roda reduzido por área e volta por bilinear (ΔE Oklab médio < 0,003). Redução de ruído só no JS.
+Avisos: o alfa da cena leva os canais cortados no sensor (`base.corte` = matriz Rec.2020 → câmera e limiar por canal;
+sem negativo, aproximado pelo neutro da câmera, `corteDaBase`) e a sombra abaixo do piso de ruído (`latitude.margem
+.abaixoDoCinza`). `zoom` da sessão: 1 = um pixel da foto cheia por pixel do aparelho.
 
 ### Decupagem (`src/decupagem/`)
 
@@ -167,13 +212,36 @@ Detecção que o worker entrega por rosto: `{ caixa: { x, y, largura, altura } e
 objetos e animais; rótulos de cena) rodam em `app/decupagem/visao-worker.js` com MediaPipe; sem elas (`rostos` undefined)
 a nota sai só com o que foi medido, a certeza cai, e a tela diz isso.
 
+### Esteira da decupagem (`app/decupagem/`)
+
+```
+criarAnalise({ loja }) → { iniciar({ ids?, camadas: ['rostos', 'objetos', 'rotulos'], rigor, ensaio, pesos?, raw? }), pausar(), retomar(),
+                          cancelar(), estado(), assinar(f), mostrar(ids), refazerNota({ rigor, ensaio, pesos }), meta(n),
+                          revisarPeloRaw(ids?), grupos(), encerrar() }
+estado() → { situacao: 'parada' | 'preparando' | 'rodando' | 'pausada' | 'fechando' | 'pronta' | 'cancelada', feitas, total, novas,
+             puladas, porSegundo, restante?, camadas: { rostos, objetos, rotulos: 'pronta' | 'carregando' | 'indisponivel' | 'desligada' },
+             motivos, raw: { feitas, total, lidas, falhas }, tempos (ms por etapa), erro }
+```
+
+Por foto: a prévia de 1024 px → `medir` num pool (`medir-worker.js`) → visão num worker só (`visao-worker.js`) →
+`classificarCena` → `catalogo.atualizarVarias` em lotes. A cada 40 fotos e no fim, `avaliarEnsaio` dá a Magnitude e os
+grupos (`catalogo.definirGrupos`). O que está na tela passa na frente (a análise escuta o mesmo `miniaturas.mostrar` da
+grade). Recarregar não refaz nada: entra na fila só a foto sem `medidas` ou sem uma camada pedida e disponível.
+`refazerNota` não relê pixel nenhum. A segunda passada (`raw: true` ou `revisarPeloRaw`) lê o RAW das fotos cuja prévia
+mostrou estouro além da tolerância (`raw-worker.js`: LibRaw + `medirLatitude`) e reavalia. A lupa desenha com
+`sobreposicao(foto)` (frações do quadro: rostos com o estado dos olhos, mapa de nitidez, direção do tremido) e escreve
+com `resumoDaFoto(foto)` (frases de `textos.js`). O que cada foto ganha está no cabeçalho de `analisar.js`; rosto que a
+malha recusou (nuca, cabelo) vem com `duvidoso: true` e não decide foco nem pessoa-chave.
+
 ### Catálogo (`src/biblioteca/catalogo.js`)
 
 ```
 Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca: 'escolhida' | 'rejeitada' | null,
        estrelas: 0..5, cor: null | 'vermelho' | 'amarelo' | 'verde' | 'azul' | 'roxo', magnitude?, medidas?, rostos?, cena?,
        grupo?, ajustes?, predefinicao?, cliente?: { escolhida, comentario },
-       par?: { nome, tamanho, formato }, proporcao?, semPrevia? }
+       par?: { nome, tamanho, formato }, proporcao?, semPrevia?,
+       latitude?, analise?: { versao, camadas, objetos, rotulos, cena: { confianca, porque, noite }, giro, raw? },
+       escolha?: { tipo, tamanho, escolhida, equivalente, equivalentes, desempate } }
 ```
 
 `id` = hash estável de nome + tamanho + data de captura. Estado em memória com `assinar()`; quem guarda é a tela
@@ -190,6 +258,27 @@ Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca:
 Importar do Lightroom (`.xmp`, `.lrtemplate`) devolve a predefinição e um relatório por chave: `exato`, `aproximado`
 ou `ignorado`, com a razão. Extrair de uma referência devolve controles editáveis, a confiança por grupo e o erro medido.
 Tratar em lote = corrigir cada foto (`por-foto.js`: exposição e branco) e depois aplicar o estilo.
+
+Funções (`src/estilo/`; tudo puro, sem DOM; o estado da biblioteca é JSON e a tela guarda):
+
+```
+predefinicao.js  criarPredefinicao(campos, { agora }) · validar · ler(texto|bytes) · serializar · aplicar(p, daFoto, intensidade)
+                 ajustesDe(p) · diferenca(a, b?) · oQueMexe(p) · gruposMexidos(p) · criarPacote · lerPacote → { predefinicoes, erros }
+biblioteca.js    estilosDaCasa() · FAMILIAS · criarBiblioteca · porFamilia(estado, { busca, soFavoritos, criterio }) · buscar · ordenar
+                 favoritar · usar · recentes · duplicar · renomear · moverDeFamilia · reordenar · acrescentar · remover · exportar · importar
+qc.js            qc(p | ajustes) → { aprovado, tonalizado, pb, medidas, problemas: [{ codigo, texto, valor, limite }] }
+lightroom-ler.js importarLightroom(texto | bytes, { nome, familia, tipo }) → { predefinicao, relatorio: { itens, resumo, avisos,
+                 desconhecidas, meta }, daFoto }   (aceita .xmp, sidecar, JPEG com XMP no APP1 e .lrtemplate)
+lightroom-escrever.js  escreverXmp(p) → { xmp, chaves, relatorio: { itens, deFora } } · nomeDoArquivoXmp(p)
+cube.js          lerCube(texto | bytes) → { titulo, lado, dominio, dados, avisos } · escreverCube(lut)
+look.js          aplicarLut(lut) → (r, g, b, saida) (o `opcoes.look` de revelar) · compactar(lut) → { look } · descompactar
+                 lookDaPredefinicao(p) · assar(p, { lado, tela, intensidade }) → { lut, deFora }
+referencia.js    extrairEstilo([imagem…], { alvo?, residuo?, vizinhanca? }) → { ajustes, predefinicao, confianca, erro: { antes,
+                 depois, teto, aderencia, alcance, pareado? }, grupos, pb, avisos, look, tempo }   imagem = { largura, altura,
+                 dados RGBA, espaco: 'srgb' | 'p3' } (a tela decodifica)
+por-foto.js      tratarEmLote([{ id, base?, ajustes?, grupo? }], p, { modo: 'so-estilo' | 'corrigir-e-estilo' |
+                 'manter-o-que-ja-mexi', intensidade, suavizar }) → [{ id, ajustes, explicacao, correcao }]
+```
 
 ### Servidor
 

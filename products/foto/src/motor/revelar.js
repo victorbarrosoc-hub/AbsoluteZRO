@@ -9,7 +9,7 @@
 
 import { normalizar } from './ajustes.js'
 import { autoBranco } from './auto.js'
-import { aplicarLocal, estimarRuido, luzDoAr, margemLocal, reduzirRuido, temLocal, temRuido } from './local.js'
+import { aplicarLocal, estimarRuido, luzDoAr, mapasLargos, margemLocal, reduzirRuido, temLocal, temRuido } from './local.js'
 import { criarPonto } from './ponto.js'
 import { paraBytes, telaDe } from './tela.js'
 
@@ -214,6 +214,50 @@ function luzDoArDaBase(base, ponto) {
   return luzDoAr({ largura: w, altura: h, dados: reduzida })
 }
 
+// Lado da foto reduzida em que os mapas largos (transmissão da neblina, base da clareza) são calculados, uma vez por
+// revelação: abaixo de 2× isto a foto é pequena e cada bloco calcula o seu (é rápido e exato).
+export const LADO_DOS_MAPAS = 512
+
+// A foto inteira no quadro de saída, reduzida por média de k×k, com a cadeia de ponto: a entrada de mapasLargos.
+function mapasDaFoto(base, geo, ponto, ajustes, ar, quadro, escala) {
+  const p = ajustes.presenca
+  if (!(p.clareza || p.neblina > 0)) return null
+  const k = Math.floor(Math.max(geo.largura, geo.altura) / LADO_DOS_MAPAS)
+  if (k < 2) return null
+  const w = Math.ceil(geo.largura / k)
+  const h = Math.ceil(geo.altura / k)
+  const reduzida = new Float32Array(w * h * 3)
+  const faixa = new Float32Array(geo.largura * k * 3)
+  for (let j = 0; j < h; j++) {
+    const y0 = j * k
+    const linhas = Math.min(k, geo.altura - y0)
+    amostrar(base, geo, 0, y0, geo.largura, linhas, faixa)
+    for (let i = 0; i < w; i++) {
+      const x0 = i * k
+      const colunas = Math.min(k, geo.largura - x0)
+      let r = 0
+      let g = 0
+      let b = 0
+      for (let y = 0; y < linhas; y++) {
+        let o = (y * geo.largura + x0) * 3
+        for (let x = 0; x < colunas; x++, o += 3) {
+          r += faixa[o]
+          g += faixa[o + 1]
+          b += faixa[o + 2]
+        }
+      }
+      const inv = 1 / (linhas * colunas)
+      const o = (j * w + i) * 3
+      reduzida[o] = r * inv
+      reduzida[o + 1] = g * inv
+      reduzida[o + 2] = b * inv
+    }
+  }
+  ponto.aplicarEm(reduzida, w * h)
+  const bloco = { largura: w, altura: h, dados: reduzida, x0: 0, y0: 0, quadro: { largura: w, altura: h }, escala: escala / k }
+  return mapasLargos(bloco, ajustes, { k, quadro, ar })
+}
+
 // ─────────── o laço ───────────
 
 // Processa a região pedida em faixas e entrega cada faixa pronta (código da tela, Float32, 3 por pixel).
@@ -247,9 +291,11 @@ function processar(base, ajustesCrus, opcoes, entregar) {
       modeloDeRuido = g.ruido
     }
   }
-  const contextoLocal = { semente: opcoes.semente ?? 1, ar: null }
+  const contextoLocal = { semente: opcoes.semente ?? 1, ar: null, mapas: null }
   if (local && ajustes.presenca.neblina > 0) contextoLocal.ar = luzDoArDaBase(base, ponto)
-  const margem = local || ruido ? margemLocal(ajustes, quadro, escala) : 0
+  // neblina e clareza: o mapa largo uma vez, na foto inteira reduzida, em vez de por ladrilho com margem enorme
+  if (local && !opcoes.vizinhancaExata) contextoLocal.mapas = mapasDaFoto(base, geo, ponto, ajustes, contextoLocal.ar, quadro, escala)
+  const margem = local || ruido ? margemLocal(ajustes, quadro, escala, contextoLocal.mapas) : 0
   const faixa = Math.max(opcoes.faixa ?? (margem ? FAIXA_COM_MARGEM : FAIXA), 2 * margem)
   const look = opcoes.look && ajustes.look.id ? opcoes.look : null
   const quantoLook = ajustes.look.quantidade / 100
@@ -304,6 +350,8 @@ function processar(base, ajustesCrus, opcoes, entregar) {
  *   semLocal   pula os passos de vizinhança (prévia durante o arrasto)
  *   semente    do grão (mesma foto, mesmo grão: passe algo estável da foto)
  *   faixa, ladrilho   linhas e colunas por bloco de trabalho (só para medir e testar; o resultado não muda)
+ *   vizinhancaExata   neblina e clareza calculadas bloco a bloco no tamanho cheio, sem o mapa largo reduzido (só para
+ *              medir e testar: é várias vezes mais lento em foto grande, e a diferença fica abaixo do que se vê)
  *   look       (r, g, b, saida) → cor, aplicada sobre o código da tela quando `ajustes.look.id` existe, na quantidade
  *              de `ajustes.look.quantidade` (a LUT em si mora em src/estilo/look.js)
  */

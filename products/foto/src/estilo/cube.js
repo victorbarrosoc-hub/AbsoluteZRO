@@ -130,7 +130,10 @@ export function escreverCube(lut, { casas = 6, titulo = lut.titulo ?? '' } = {})
   if (!Number.isInteger(lado) || lado < LADO_MIN || lado > LADO_MAX) throw erro('lado', `Tamanho de LUT não aceito: ${lado}.`)
   if (!dados || dados.length !== lado * lado * lado * 3) throw erro('incompleta', 'Os dados da LUT não batem com o tamanho.')
   const linhas = []
-  const limpo = String(titulo).replace(/["\r\n]/g, ' ').trim().slice(0, 120)
+  const limpo = String(titulo)
+    .replace(/["\r\n]/g, ' ')
+    .trim()
+    .slice(0, 120)
   if (limpo) linhas.push(`TITLE "${limpo}"`)
   linhas.push(`LUT_3D_SIZE ${lado}`)
   const min = lut.dominio?.min ?? [0, 0, 0]

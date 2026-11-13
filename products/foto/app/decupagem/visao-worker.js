@@ -21,18 +21,31 @@
 //   analisar { previa: Blob | { largura, altura, rgba }, original?: { arquivo: File, par?: File, tipo }, camadas,
 //              medidas?, cru? }
 //            → { rostos?, deteccoes?, objetos?, rotulos?, giro, quadro: { largura, altura }, camadas: [as que rodaram],
-//                falhas?, tempos: { abrir, rostos, giros, grande, malhas, leitura, objetos, rotulos, total } (ms) }
+//                falhas?, estado: { a situação de cada camada }, tempos: { abrir, rostos, giros, grande, malhas, leitura,
+//                objetos, rotulos, total } (ms) }
+//   estado {} → { camadas, motivos, tempos }
 //     rostos     o que analisarRostos devolveu, enxuto (app/decupagem/compacto.js). Camada que não rodou: undefined.
+//                Rosto que a malha recusou num recorte em que ela caberia (nuca, cabelo, rosto quase todo escondido: na
+//                calibração com fotos reais, 9 de 18 detecções do detector num ensaio de casal) vem com `duvidoso: true`:
+//                conta como pessoa no quadro, mas não decide o foco nem quem é a pessoa-chave.
 //     deteccoes  (só com cru: true) as detecções no formato do cabeçalho de src/decupagem/rostos.js:
 //                { caixa, confianca, olhos: [{x,y},{x,y}], malha?: 478 × {x,y}, blendshapes? }, tudo em px da prévia
 //     objetos    [{ classe, confianca, caixa }]      rotulos  [{ nome, confianca, indice }]
 
 import { servir } from '../trabalho/servir.js'
 import { lumaDe } from '../../src/decupagem/medidas.js'
-import { analisarRostos, pesoDoRosto } from '../../src/decupagem/rostos.js'
+import { analisarRostos, pesoDoRosto, rostoCortado } from '../../src/decupagem/rostos.js'
 import { lerExif } from '../../src/raw/exif.js'
 import { extrairPreviaDe } from '../../src/raw/previa.js'
 import { resumirRosto } from './compacto.js'
+
+// O MediaPipe escreve o próprio diário pelo console (versão do GL, "Graph successfully started", o delegate XNNPACK),
+// parte dele como erro. Não é falha: fica fora do console da pessoa. Erro de verdade (E…, exceções) passa.
+const DIARIO = /^(INFO: |[IW]\d{4} \d|Graph successfully started)/
+for (const nivel of ['log', 'info', 'warn', 'error']) {
+  const original = console[nivel].bind(console)
+  console[nivel] = (...partes) => (typeof partes[0] === 'string' && DIARIO.test(partes[0]) ? undefined : original(...partes))
+}
 
 const VENDOR = new URL('../../vendor/mediapipe/', import.meta.url)
 const NA_RAIZ = (caminho) => new URL(caminho, self.location.origin).href
@@ -53,7 +66,8 @@ export const AJUSTES = Object.freeze({
   giros: [90, -90, 180], // sem rosto de pé, a prévia é tentada deitada
   // rosto com menos px que isto na melhor imagem disponível não dá malha: fica sem leitura de olhos (não se inventa)
   rostoMinimo: 36,
-  // a malha só é lida para quem pode ser pessoa-chave (peso de pelo menos 35% do maior; a nota usa 50%) e, no máximo, 12
+  // a malha só é lida para quem pode ser pessoa-chave (peso de pelo menos 35% do maior rosto que a malha confirmou; a
+  // nota usa 50%) e, no máximo, 12 tentativas por foto
   pesoMinimo: 0.35,
   maximoDeMalhas: 12,
   // a imagem maior só é aberta quando o recorte tirado da prévia seria ampliado e ela tem pelo menos 1,25× a prévia
@@ -365,35 +379,40 @@ function acharRostos(previa, quadro, tempos) {
   return { deteccoes, giro }
 }
 
-/** Para cada rosto que pode ser pessoa-chave: recorte girado pela linha dos olhos → malha e blendshapes. */
+/**
+ * Para cada rosto que pode ser pessoa-chave: recorte girado pela linha dos olhos → malha e blendshapes. Do maior para
+ * o menor; a régua de "pode ser pessoa-chave" é o maior rosto que a malha CONFIRMOU (nuca e cabelo também passam no
+ * detector, e a malha recusa: o rosto seguinte não pode ficar de fora por causa deles).
+ */
 async function lerMalhas(deteccoes, previa, quadro, original, giro, tempos) {
-  const pesos = deteccoes.map((d) => pesoDoRosto(d.caixa, quadro).peso)
-  const maior = Math.max(...pesos)
-  const candidatos = deteccoes
-    .map((d, i) => ({ d, peso: pesos[i] }))
-    .filter((x) => x.peso >= AJUSTES.pesoMinimo * maior)
-    .sort((a, b) => b.peso - a.peso)
-    .slice(0, AJUSTES.maximoDeMalhas)
-  for (const d of deteccoes) if (!candidatos.some((c) => c.d === d)) d.semMalha = 'secundario'
+  const ordem = deteccoes.map((d) => ({ d, peso: pesoDoRosto(d.caixa, quadro).peso })).sort((a, b) => b.peso - a.peso)
 
   // a imagem maior só é aberta se algum recorte, tirado da prévia, precisaria ser ampliado
   const L = AJUSTES.ladoDoRecorte
   const ladoDe = (d) => Math.max(d.caixa.largura, d.caixa.altura) * AJUSTES.folgaDoRecorte
+  const maior = ordem[0].peso
   let grande = null
-  if (original && candidatos.some((c) => ladoDe(c.d) < L)) {
+  if (original && ordem.some((c) => c.peso >= AJUSTES.pesoMinimo * maior && ladoDe(c.d) < L)) {
     const t = agora()
     grande = await abrirGrande(original, quadro)
     tempos.grande = ms(agora() - t)
   }
   const t = agora()
+  let regua = null
+  let tentadas = 0
   try {
-    for (const { d } of candidatos) {
+    for (const { d, peso } of ordem) {
+      if (tentadas >= AJUSTES.maximoDeMalhas || peso < AJUSTES.pesoMinimo * (regua ?? 0)) {
+        d.semMalha = 'secundario'
+        continue
+      }
       const lado = ladoDe(d)
       const usaGrande = grande && lado < L
       if (d.caixa.largura * (usaGrande ? grande.ganho : 1) < AJUSTES.rostoMinimo) {
         d.semMalha = 'pequeno'
         continue
       }
+      tentadas++
       // a inclinação da linha dos olhos; sem os pontos (ou com eles colados), vale o giro em que o rosto foi achado
       const [a, b] = d.olhos ?? []
       const temOlhos = a && b && Math.hypot(b.x - a.x, b.y - a.y) > 1
@@ -404,6 +423,7 @@ async function lerMalhas(deteccoes, previa, quadro, original, giro, tempos) {
         d.semMalha = lido.motivo
         continue
       }
+      regua ??= peso
       d.malha = lido.malha
       if (lido.blendshapes) d.blendshapes = lido.blendshapes
       d.fonte = usaGrande ? 'grande' : 'previa'
@@ -414,6 +434,20 @@ async function lerMalhas(deteccoes, previa, quadro, original, giro, tempos) {
     grande?.bitmap.close()
   }
   tempos.malhas = ms(agora() - t)
+}
+
+/** Um rosto que o detector achou e a malha não confirmou: entra sem leitura nenhuma, e nunca como pessoa-chave. */
+function rostoDuvidoso(d, quadro) {
+  return {
+    caixa: d.caixa,
+    confianca: d.confianca,
+    olhos: null,
+    ...pesoDoRosto(d.caixa, quadro),
+    chave: false,
+    principal: false,
+    cortado: rostoCortado(d.caixa, quadro),
+    duvidoso: true,
+  }
 }
 
 // ───────────────────────────── analisar ─────────────────────────────
@@ -455,8 +489,15 @@ async function analisar({ previa, original, camadas: pedidas, medidas, cru }, { 
             c.drawImage(bitmap, 0, 0)
             rgba = c.getImageData(0, 0, quadro.largura, quadro.altura).data
           }
-          const lidos = analisarRostos(deteccoes, lumaDe({ ...quadro, rgba }), { medidas })
-          saida.rostos = lidos.map((r, i) => resumirRosto({ ...r, giro }, deteccoes[i]))
+          // o que a malha recusou num recorte em que ela caberia (nuca, cabelo, rosto quase todo escondido) fica como
+          // pessoa no quadro, mas não decide o foco nem quem é a pessoa-chave: a nitidez dali não é a de um rosto
+          const recusado = (d) => d.semMalha === 'sem-malha' || d.semMalha === 'outro-rosto'
+          const confirmados = deteccoes.filter((d) => !recusado(d))
+          const lidos = analisarRostos(confirmados, lumaDe({ ...quadro, rgba }), { medidas })
+          saida.rostos = [
+            ...lidos.map((r, i) => resumirRosto({ ...r, giro }, confirmados[i])),
+            ...deteccoes.filter(recusado).map((d) => resumirRosto(rostoDuvidoso(d, quadro), d)),
+          ]
           tempos.leitura = ms(agora() - t)
         } else saida.rostos = []
         if (cru) saida.deteccoes = deteccoes

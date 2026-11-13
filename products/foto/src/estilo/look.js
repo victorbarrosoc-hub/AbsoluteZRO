@@ -179,7 +179,8 @@ export function paraBase64(bytes) {
     const a = bytes[i]
     const b = i + 1 < bytes.length ? bytes[i + 1] : 0
     const c = i + 2 < bytes.length ? bytes[i + 2] : 0
-    trecho += B64[a >> 2] + B64[((a & 3) << 4) | (b >> 4)] + (i + 1 < bytes.length ? B64[((b & 15) << 2) | (c >> 6)] : '=') + (i + 2 < bytes.length ? B64[c & 63] : '=')
+    trecho +=
+      B64[a >> 2] + B64[((a & 3) << 4) | (b >> 4)] + (i + 1 < bytes.length ? B64[((b & 15) << 2) | (c >> 6)] : '=') + (i + 2 < bytes.length ? B64[c & 63] : '=')
     if (trecho.length >= 8192) {
       partes.push(trecho)
       trecho = ''
@@ -268,11 +269,13 @@ export function assar(predefinicao, { lado = 33, tela = 'srgb', intensidade = 10
   const codigos = new Uint16Array(n * 3)
   const k = 65535 / (lado - 1)
   let o = 0
-  for (let b = 0; b < lado; b++) for (let g = 0; g < lado; g++) for (let r = 0; r < lado; r++, o += 3) {
-    codigos[o] = Math.round(r * k)
-    codigos[o + 1] = Math.round(g * k)
-    codigos[o + 2] = Math.round(b * k)
-  }
+  for (let b = 0; b < lado; b++)
+    for (let g = 0; g < lado; g++)
+      for (let r = 0; r < lado; r++, o += 3) {
+        codigos[o] = Math.round(r * k)
+        codigos[o + 1] = Math.round(g * k)
+        codigos[o + 2] = Math.round(b * k)
+      }
   const base = baseDeImagem({ largura: lado * lado, altura: lado, dados: codigos, canais: 3, espaco: tela })
   const look = lookDaPredefinicao(predefinicao)
   if (look) ajustes.look.quantidade = Math.max(0, Math.min(200, (estilo.look.quantidade * intensidade) / 100))

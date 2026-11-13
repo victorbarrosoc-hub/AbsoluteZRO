@@ -308,7 +308,7 @@ const tabelas = new Map()
 
 // Tabela de Huffman como consulta direta de 16 bits: (comprimento << 8) | categoria. Os blocos de um DNG repetem a
 // mesma tabela centenas de vezes; por isso fica guardada pela própria definição.
-function tabelaHuffman(u8, q, total) {
+export function tabelaHuffman(u8, q, total) {
   let chave = ''
   for (let i = q; i < q + 16 + total; i++) chave += String.fromCharCode(u8[i])
   let lut = tabelas.get(chave)

@@ -40,6 +40,9 @@ export const LIMIARES_ROSTO = Object.freeze({
   piscadaAberto: 0.35,
   sorriso: 0.6, // mouthSmile a partir do qual o olho apertado é riso, não piscada
   aperto: 0.5, // eyeSquint
+  // riso forte: o olho espremido pela bochecha fica com EAR de olho fechado (0,09 a 0,14 nas fotos reais de evento,
+  // com mouthSmile 0,81 a 0,94); olho fechado de verdade (beijo, oração, dormindo) veio com sorriso até 0,19
+  risoForte: 0.8,
   guinada: 25, // graus: acima disto o olho de trás aparece achatado e não é lido
   chave: 0.5, // rosto com peso de pelo menos metade do maior é pessoa-chave
   razaoFundo: 0.6, // rosto com menos de 60% do contraste de borda do fundo: o foco caiu atrás
@@ -86,9 +89,10 @@ export function guinadaDaMalha(malha) {
 
 /**
  * Estado dos olhos em quatro classes, pela regra medida (EAR + blendshapes; médias dos dois olhos):
- *   fechados  EAR < 0,15, ou piscada ≥ 0,5 com EAR < 0,20
+ *   fechados  EAR < 0,15, ou piscada ≥ 0,5 com EAR < 0,20, a não ser no riso forte (mouthSmile ≥ 0,8): aí é 'sorrindo'
  *   abertos   EAR ≥ 0,22 e piscada < 0,35
- *   no meio   'sorrindo' se mouthSmile ≥ 0,6 e eyeSquint ≥ 0,5 (olho apertado de riso: aprovado); senão 'parcial'
+ *   no meio   'sorrindo' se mouthSmile ≥ 0,6 e eyeSquint ≥ 0,5 (olho apertado de riso: aprovado); 'abertos' se
+ *             eyeSquint ≥ 0,5 sem piscada (< 0,35: apertado de sol); senão 'parcial'
  * O blendshape de piscada sozinho não basta em foto parada (olho fechado de verdade deu 0,36 a 0,67), por isso o
  * EAR manda. Com o rosto virado mais de 25°, só o olho da frente é lido. Sem blendshapes vale só o EAR (e o meio
  * vira 'parcial', porque não dá para saber se é riso). Sem malha: { olhos: null }.
@@ -114,10 +118,14 @@ export function estadoDosOlhos({ malha, blendshapes } = {}) {
   const dirS = ler('mouthSmileRight')
   const esqS = ler('mouthSmileLeft')
   const sorriso = dirS == null || esqS == null ? (dirS ?? esqS) : media(dirS, esqS)
+  const riso = sorriso != null && sorriso >= L.risoForte
   let olhos
-  if (valor < L.earFechado || (piscada != null && piscada >= L.piscadaFechado && valor < L.earDuvida)) olhos = 'fechados'
+  const fechadoPeloEar = valor < L.earFechado || (piscada != null && piscada >= L.piscadaFechado && valor < L.earDuvida)
+  if (fechadoPeloEar) olhos = riso ? 'sorrindo' : 'fechados' // no riso forte, é o olho espremido pela bochecha
   else if (valor >= L.earAberto && (piscada == null || piscada < L.piscadaAberto)) olhos = 'abertos'
   else if (sorriso != null && aperto != null && sorriso >= L.sorriso && aperto >= L.aperto) olhos = 'sorrindo'
+  // apertado sem piscada (sol de frente, olhar concentrado): a pálpebra não desceu, o olho está aberto
+  else if (aperto != null && piscada != null && aperto >= L.aperto && piscada < L.piscadaAberto) olhos = 'abertos'
   else olhos = 'parcial'
   return { olhos, ear: valor, earPorOlho: [d, e], olhoUsado: usado, piscada, aperto, sorriso, guinada }
 }

@@ -162,3 +162,33 @@ export const APRENDIZADO = Object.freeze({
   semMudanca: () => 'Suas trocas ainda não apontam uma preferência.',
   zerar: () => 'Zerar o aprendizado volta aos pesos de fábrica.',
 })
+
+/** O estado dos olhos de um rosto, como a lupa escreve ao lado da caixa. */
+export const OLHOS = Object.freeze({
+  abertos: 'Olhos abertos',
+  sorrindo: 'Sorrindo',
+  parcial: 'Piscando',
+  fechados: 'Olhos fechados',
+  semLeitura: 'Olhos sem leitura',
+  duvidoso: 'Talvez não seja rosto',
+})
+
+/** As camadas de visão e o estado de cada uma (a tela nunca finge uma camada que não carregou). */
+export const CAMADAS = Object.freeze({ rostos: 'Rostos e olhos', objetos: 'Objetos e animais', rotulos: 'Cena' })
+export const ESTADO_DA_CAMADA = Object.freeze({ pronta: 'Ligada', carregando: 'Carregando', indisponivel: 'Indisponível', desligada: 'Desligada' })
+
+/** A foto dentro do grupo do momento. */
+export const NO_GRUPO = Object.freeze({
+  escolhida: (total) => `A escolhida de ${total}`,
+  equivalente: (total) => `Equivale à escolhida (${total} no grupo)`,
+  reserva: (total) => `Reserva (${total} no grupo)`,
+})
+
+/** A análise, foto a foto. */
+export const ANALISE = Object.freeze({
+  naFila: () => 'Na fila da análise',
+  semPrevia: () => 'Sem prévia para analisar',
+  rawLido: () => 'Exposição conferida no RAW',
+  rawNaoAbriu: () => 'O RAW não abriu: exposição vista só na prévia',
+  tremido: (comprimento) => `Tremido de cerca de ${Math.round(comprimento)} px`,
+})

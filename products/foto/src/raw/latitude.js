@@ -333,6 +333,53 @@ function passadaBayer(dados, largura, area, padrao, limite, faixaDe, blocosY, sa
   return blocos
 }
 
+/**
+ * Imagem já sem mosaico (cfa 'linear', três amostras por pixel): cada pixel é um "bloco" com os três canais. O ruído
+ * vem da diferença entre verdes a DOIS pixels de distância na mesma linha: o vizinho imediato divide com este o que a
+ * câmera interpolou, e a diferença mentiria para menos.
+ */
+function passadaLinear(dados, largura, area, limite, faixaDe, blocosY, salto, larguraUtil, { dif, somaSinal, pares, cortados }) {
+  const [l0, l1, l2] = limite
+  const conta = new Float64Array(4)
+  let blocos = 0
+  for (let y = 0; y < blocosY; y += salto) {
+    const linha = ((area.y + y) * largura + area.x) * 3
+    for (let x = 0; x < larguraUtil; x++) {
+      const o = linha + x * 3
+      conta[(dados[o] >= l0 ? 1 : 0) + (dados[o + 1] >= l1 ? 1 : 0) + (dados[o + 2] >= l2 ? 1 : 0)]++
+    }
+    for (let x = 0; x + 2 < larguraUtil; x += 3) {
+      const a = dados[linha + x * 3 + 1]
+      const b = dados[linha + (x + 2) * 3 + 1]
+      if (a >= l1 || b >= l1) continue
+      const f = faixaDe[(a + b) >> 1]
+      let d = a - b + MEIA_DIFERENCA
+      if (d < 0) d = 0
+      else if (d >= LARGURA_DIF) d = LARGURA_DIF - 1
+      dif[f * LARGURA_DIF + d]++
+      somaSinal[f] += a + b
+      pares[f]++
+    }
+    blocos += larguraUtil
+  }
+  for (let k = 0; k < 4; k++) cortados[k] = conta[k]
+  return blocos
+}
+
+/** Histograma de cada canal na imagem sem mosaico (as três amostras de cada pixel). */
+function histogramasLinear(dados, largura, area, blocosY, salto, larguraUtil) {
+  const hist = new Uint32Array(3 * 65536)
+  for (let y = 0; y < blocosY; y += salto) {
+    const linha = ((area.y + y) * largura + area.x) * 3
+    for (let x = 0; x < larguraUtil * 3; x += 3) {
+      hist[dados[linha + x]]++
+      hist[65536 | dados[linha + x + 1]]++
+      hist[131072 | dados[linha + x + 2]]++
+    }
+  }
+  return hist
+}
+
 function passadaXTrans(dados, largura, area, cores, limite, faixaDe, blocosY, salto, larguraUtil, blocosX, { dif, somaSinal, pares, cortados }) {
   const limG = limite[G]
   let blocos = 0
@@ -384,15 +431,17 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   const n = negativo
   const { dados, largura } = n.sensor
   const { area, cfa } = n
-  const lado = cfa.lado
-  const bloco = lado === 2 ? 2 : 3 // X-Trans: blocos de 3×3 (cada um tem as três cores)
+  // imagem já sem mosaico (Sony "sem perdas" M e S, DNG LinearRaw): cada pixel tem os três canais, não há mascarados
+  const linear = cfa.tipo === 'linear'
+  const lado = linear ? 1 : cfa.lado
+  const bloco = linear ? 1 : lado === 2 ? 2 : 3 // X-Trans: blocos de 3×3 (cada um tem as três cores)
 
   // preto declarado por cor (média do padrão repetido) e faixa declarada
   const pretoDeclarado = [0, 0, 0]
   const vezes = [0, 0, 0]
   const centroY = area.y + (Math.floor(area.altura / 2 / 12) * 12 || 0)
   const centroX = area.x + (Math.floor(area.largura / 2 / 12) * 12 || 0)
-  for (let l = 0; l < 12 && centroY + l < area.y + area.altura; l++) {
+  for (let l = 0; !linear && l < 12 && centroY + l < area.y + area.altura; l++) {
     for (let c = 0; c < 12 && centroX + c < area.x + area.largura; c++) {
       const k = corEm(n, centroY + l, centroX + c)
       pretoDeclarado[k] += pretoEm(n, centroY + l, centroX + c)
@@ -403,7 +452,7 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   const brancoDeclarado = n.branco.declarado
 
   // ---- preto: mascarados validados, ou o declarado
-  const retangulo = acharMascarados(n, pretoDeclarado[G], brancoDeclarado[G] - pretoDeclarado[G])
+  const retangulo = linear ? null : acharMascarados(n, pretoDeclarado[G], brancoDeclarado[G] - pretoDeclarado[G])
   const mascarados = retangulo ? medirMascarados(n, retangulo) : null
   const temMascarados = !!mascarados && mascarados.amostras >= 2000 && mascarados.preto.every(Number.isFinite) && mascarados.leitura > 0
   const preto = temMascarados ? mascarados.preto : pretoDeclarado
@@ -415,14 +464,16 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   const larguraUtil = blocosX * bloco
   // cor de cada coluna, para cada fase de linha do mosaico
   const cores = []
-  for (let f = 0; f < lado; f++) {
+  for (let f = 0; !linear && f < lado; f++) {
     const cc = new Uint8Array(larguraUtil)
     for (let x = 0; x < larguraUtil; x++) cc[x] = cfa.padrao[f * lado + (x % lado)]
     cores.push(cc)
   }
 
   // ---- passada 1: histograma por cor
-  const hist = histogramas(dados, largura, area, cores, lado, bloco, blocosY, salto, larguraUtil)
+  const hist = linear
+    ? histogramasLinear(dados, largura, area, blocosY, salto, larguraUtil)
+    : histogramas(dados, largura, area, cores, lado, bloco, blocosY, salto, larguraUtil)
   const h = [0, 1, 2].map((k) => hist.subarray(k << 16, (k + 1) << 16))
   const total = h.map((hk) => {
     let s = 0
@@ -454,8 +505,9 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   const pares = new Float64Array(FAIXAS)
   const cortados = [0, 0, 0, 0]
   const acumulos = { dif, somaSinal, pares, cortados }
-  const blocos =
-    lado === 2
+  const blocos = linear
+    ? passadaLinear(dados, largura, area, limite, faixaDe, blocosY, salto, larguraUtil, acumulos)
+    : lado === 2
       ? passadaBayer(dados, largura, area, cfa.padrao, limite, faixaDe, blocosY, salto, larguraUtil, acumulos)
       : passadaXTrans(dados, largura, area, cores, limite, faixaDe, blocosY, salto, larguraUtil, blocosX, acumulos)
 
@@ -527,8 +579,11 @@ export function medirLatitude(negativo, { amostra = SENSELS_NA_AMOSTRA } = {}) {
   else if (ruido.origem === 'perfil') latitude.confianca = ajuste && ajuste.ganho / ruido.ganho > 0.5 && ajuste.ganho / ruido.ganho < 2 ? 'alta' : 'media'
   else if (ruido.origem === 'mascarados') latitude.confianca = 'media'
   else if (ruido.origem === 'ajuste' && ajuste.leitura !== null && ajuste.apoio >= 0.25) latitude.confianca = 'media'
+  // sem mosaico, a câmera já interpolou (e pode ter limpado ruído): o ruído medido entre vizinhos é um piso, não a medida
+  if (linear && latitude.confianca === 'alta') latitude.confianca = 'media'
 
   latitude.detalhe = {
+    semMosaico: linear,
     pretoDeclarado,
     brancoDeclarado: [...brancoDeclarado],
     mascarados: temMascarados ? { ...retangulo, leitura: mascarados.leitura, amostras: mascarados.amostras } : null,

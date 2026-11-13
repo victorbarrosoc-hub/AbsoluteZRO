@@ -112,6 +112,17 @@ export function caixa(origem, w, h, r, destino = new Float64Array(w * h)) {
  */
 export function filtroGuiado(guia, p, w, h, r, eps, borda = null) {
   const n = w * h
+  const { mA, mB } = mediasGuiadas(guia, p, w, h, r, eps)
+  const q = new Float32Array(n)
+  for (let i = 0; i < n; i++) q[i] = mA[i] * guia[i] + mB[i]
+  // quanto da janela é borda (0 = superfície lisa, 1 = borda forte), para quem quiser pesar o detalhe
+  if (borda) for (let i = 0; i < n; i++) borda[i] = mA[i]
+  return q
+}
+
+/** As médias dos coeficientes do filtro guiado (Ā e B̄, Float64): q = Ā·guia + B̄. */
+function mediasGuiadas(guia, p, w, h, r, eps) {
+  const n = w * h
   const mesmo = guia === p
   const mI = caixa(guia, w, h, r)
   const prod = new Float64Array(n)
@@ -135,11 +146,7 @@ export function filtroGuiado(guia, p, w, h, r, eps, borda = null) {
   }
   const mA = caixa(a, w, h, r, mII)
   const mB = caixa(b, w, h, r, mI)
-  const q = new Float32Array(n)
-  for (let i = 0; i < n; i++) q[i] = mA[i] * guia[i] + mB[i]
-  // quanto da janela é borda (0 = superfície lisa, 1 = borda forte), para quem quiser pesar o detalhe
-  if (borda) for (let i = 0; i < n; i++) borda[i] = mA[i]
-  return q
+  return { mA, mB }
 }
 
 // Mínimo em janela de raio r, separável (van Herk / Gil-Werman): três comparações por pixel, qualquer raio.
@@ -208,6 +215,81 @@ export function gaussiano(origem, w, h, sigma) {
   return saida
 }
 
+// ─────────── mapas largos (filtro guiado rápido) ───────────
+
+// O filtro guiado de raio largo (a base da clareza, a transmissão da neblina) muda devagar no espaço: os coeficientes
+// Ā e B̄ podem ser calculados UMA vez, numa versão reduzida da foto inteira, e lidos no tamanho cheio por bilinear,
+// com a guia no tamanho cheio — q = Ā↑·guia + B̄↑. É o "filtro guiado rápido" (He e Sun, 2015, "Fast Guided Filter",
+// arXiv:1505.00996), que os autores mostram justamente em neblina e realce de detalhe: a borda continua no lugar porque
+// vem da guia cheia. Sem isso cada ladrilho recalcula o mapa com centenas de pixels de margem.
+//
+// mapa = { a, b: Float32Array (w×h), w, h, k, quadro }: o pixel (j, i) do mapa cobre os pixels [i·k, (i+1)·k) ×
+// [j·k, (j+1)·k) do quadro, e vale no centro deles.
+
+function mapaGuiado(guia, p, w, h, r, eps, k, quadro) {
+  const { mA, mB } = mediasGuiadas(guia, p, w, h, r, eps)
+  return { a: Float32Array.from(mA), b: Float32Array.from(mB), w, h, k, quadro }
+}
+
+/** Ā↑ e B̄↑ do mapa nos pixels do bloco (bilinear, centros alinhados). */
+function lerMapa(mapa, bloco) {
+  const { largura: w, altura: h, x0, y0 } = bloco
+  if (mapa.quadro.largura !== bloco.quadro.largura || mapa.quadro.altura !== bloco.quadro.altura) throw new Error('mapa largo de outro quadro')
+  const A = new Float32Array(w * h)
+  const B = new Float32Array(w * h)
+  const i0 = new Int32Array(w)
+  const i1 = new Int32Array(w)
+  const tx = new Float32Array(w)
+  for (let x = 0; x < w; x++) {
+    const u = limitar((x0 + x + 0.5) / mapa.k - 0.5, 0, mapa.w - 1)
+    i0[x] = u | 0
+    i1[x] = Math.min(i0[x] + 1, mapa.w - 1)
+    tx[x] = u - i0[x]
+  }
+  for (let y = 0; y < h; y++) {
+    const v = limitar((y0 + y + 0.5) / mapa.k - 0.5, 0, mapa.h - 1)
+    const j0 = v | 0
+    const j1 = Math.min(j0 + 1, mapa.h - 1)
+    const ty = v - j0
+    const l0 = j0 * mapa.w
+    const l1 = j1 * mapa.w
+    for (let x = 0, o = y * w; x < w; x++, o++) {
+      const t = tx[x]
+      const a0 = mapa.a[l0 + i0[x]] + (mapa.a[l0 + i1[x]] - mapa.a[l0 + i0[x]]) * t
+      const a1 = mapa.a[l1 + i0[x]] + (mapa.a[l1 + i1[x]] - mapa.a[l1 + i0[x]]) * t
+      const b0 = mapa.b[l0 + i0[x]] + (mapa.b[l0 + i1[x]] - mapa.b[l0 + i0[x]]) * t
+      const b1 = mapa.b[l1 + i0[x]] + (mapa.b[l1 + i1[x]] - mapa.b[l1 + i0[x]]) * t
+      A[o] = a0 + (a1 - a0) * ty
+      B[o] = b0 + (b1 - b0) * ty
+    }
+  }
+  return { A, B }
+}
+
+/**
+ * Os mapas largos de uma foto, a partir dela reduzida (`reduzida`: bloco da foto inteira já com a cadeia de ponto,
+ * k vezes menor que o quadro de trabalho; `quadro`: o quadro de trabalho). Devolve { neblina?, clareza? } para
+ * `aplicarLocal(bloco, ajustes, { mapas })`. A clareza é medida depois de tirar a neblina, como no bloco.
+ */
+export function mapasLargos(reduzida, ajustes, { k, quadro, ar = null }) {
+  const p = ajustes.presenca
+  const mapas = {}
+  if (p.neblina > 0) {
+    const A = ar ?? luzDoAr(reduzida)
+    const { w, h, guia, canal, r } = transmissaoCrua(reduzida, p.neblina / 100, A)
+    mapas.neblina = mapaGuiado(guia, canal, w, h, r * 4, 1e-3, k, quadro)
+    tirarNeblina(reduzida, { quantidade: p.neblina, ar: A, mapa: { ...mapas.neblina, k: 1, quadro: reduzida.quadro } })
+  }
+  if (p.clareza) {
+    const r = raioEmPixels(LOCAL.clareza.raio, reduzida)
+    if (r >= 1) {
+      const L = planoDeLuz(reduzida.dados, reduzida.largura * reduzida.altura)
+      mapas.clareza = mapaGuiado(L, L, reduzida.largura, reduzida.altura, r, LOCAL.clareza.limiarEv ** 2, k, quadro)
+    }
+  }
+  return mapas
+}
+
 // ─────────── planos de apoio ───────────
 
 // log2 da norma de cada pixel (a mesma norma da tela: 75% luminância, 25% maior canal), com piso em EPS
@@ -251,7 +333,7 @@ const ladoCheio = (bloco) => Math.max(bloco.quadro.largura, bloco.quadro.altura)
  * junto dela é pesado por (1 − a)², com a a média do coeficiente do filtro (perto de 1 na borda, 0 na superfície):
  * o que é amplificado é o relevo dentro das superfícies, e a borda não ganha halo. `textura` e `clareza` em −100..100.
  */
-export function contrasteLocal(bloco, { textura = 0, clareza = 0 } = {}) {
+export function contrasteLocal(bloco, { textura = 0, clareza = 0, larga = null } = {}) {
   if (!textura && !clareza) return bloco
   const { largura: w, altura: h, dados } = bloco
   const n = w * h
@@ -263,9 +345,20 @@ export function contrasteLocal(bloco, { textura = 0, clareza = 0 } = {}) {
     [clareza, LOCAL.clareza],
   ]) {
     if (!valor) continue
-    const r = raioEmPixels(cfg.raio, bloco)
-    if (r < 1) continue // nesta escala o detalhe é menor que um pixel: não há o que realçar (nem na exportação reduzida)
-    const base = filtroGuiado(L, L, w, h, r, cfg.limiarEv * cfg.limiarEv, borda)
+    let base
+    if (cfg === LOCAL.clareza && larga) {
+      // a base larga já calculada na foto inteira reduzida (mapasLargos): só a leitura, com a luz deste bloco
+      const { A, B } = lerMapa(larga, bloco)
+      base = new Float32Array(n)
+      for (let i = 0; i < n; i++) {
+        base[i] = A[i] * L[i] + B[i]
+        borda[i] = A[i]
+      }
+    } else {
+      const r = raioEmPixels(cfg.raio, bloco)
+      if (r < 1) continue // nesta escala o detalhe é menor que um pixel: não há o que realçar (nem na exportação reduzida)
+      base = filtroGuiado(L, L, w, h, r, cfg.limiarEv * cfg.limiarEv, borda)
+    }
     const k = (valor / 100) * cfg.ganho
     for (let i = 0; i < n; i++) {
       const liso = 1 - borda[i]
@@ -308,7 +401,7 @@ export function luzDoAr(imagem) {
  * Tirar neblina (quantidade > 0) pelo canal escuro: t = 1 − ω·mín_janela(mín_canais(I/A)), refinado por filtro guiado
  * pela luz; J = (I − A)/máx(t, 0,1) + A. Quantidade negativa põe neblina: J = I·t + A·(1 − t), t = 1 − 0,5·|q|.
  */
-export function tirarNeblina(bloco, { quantidade = 0, ar = null } = {}) {
+export function tirarNeblina(bloco, { quantidade = 0, ar = null, mapa = null } = {}) {
   if (!quantidade) return bloco
   const { largura: w, altura: h, dados } = bloco
   const n = w * h
@@ -323,20 +416,17 @@ export function tirarNeblina(bloco, { quantidade = 0, ar = null } = {}) {
     }
     return bloco
   }
-  const escuro = new Float32Array(n)
-  const guia = new Float32Array(n)
-  for (let i = 0, o = 0; i < n; i++, o += 3) {
-    const m = Math.min(dados[o] / A[0], dados[o + 1] / A[1], dados[o + 2] / A[2])
-    escuro[i] = m < 0 ? 0 : m > 1 ? 1 : m
-    // guia em raiz quadrada da luz relativa ao ar: escala parecida com a do olho, limitada
-    const y = (Y2020[0] * dados[o]) / A[0] + (Y2020[1] * dados[o + 1]) / A[1] + (Y2020[2] * dados[o + 2]) / A[2]
-    guia[i] = Math.sqrt(y < 0 ? 0 : y > 4 ? 4 : y)
+  let t
+  if (mapa) {
+    // a transmissão larga já calculada na foto inteira reduzida (mapasLargos): só a guia é deste bloco
+    const guia = guiaDaNeblina(dados, n, A)
+    const { A: ma, B: mb } = lerMapa(mapa, bloco)
+    t = new Float32Array(n)
+    for (let i = 0; i < n; i++) t[i] = ma[i] * guia[i] + mb[i]
+  } else {
+    const { guia, canal, r } = transmissaoCrua(bloco, q, A)
+    t = filtroGuiado(guia, canal, w, h, r * 4, 1e-3)
   }
-  const r = Math.max(1, raioEmPixels(LOCAL.neblina.raio, bloco))
-  const canal = minimo(escuro, w, h, r)
-  const omega = LOCAL.neblina.omega * q
-  for (let i = 0; i < n; i++) canal[i] = 1 - omega * canal[i]
-  const t = filtroGuiado(guia, canal, w, h, r * 4, 1e-3)
   for (let i = 0, o = 0; i < n; i++, o += 3) {
     const ti = 1 / (t[i] > LOCAL.neblina.tMin ? (t[i] < 1 ? t[i] : 1) : LOCAL.neblina.tMin)
     dados[o] = (dados[o] - A[0]) * ti + A[0]
@@ -344,6 +434,32 @@ export function tirarNeblina(bloco, { quantidade = 0, ar = null } = {}) {
     dados[o + 2] = (dados[o + 2] - A[2]) * ti + A[2]
   }
   return bloco
+}
+
+// guia em raiz quadrada da luz relativa ao ar: escala parecida com a do olho, limitada
+function guiaDaNeblina(dados, n, A) {
+  const guia = new Float32Array(n)
+  for (let i = 0, o = 0; i < n; i++, o += 3) {
+    const y = (Y2020[0] * dados[o]) / A[0] + (Y2020[1] * dados[o + 1]) / A[1] + (Y2020[2] * dados[o + 2]) / A[2]
+    guia[i] = Math.sqrt(y < 0 ? 0 : y > 4 ? 4 : y)
+  }
+  return guia
+}
+
+// A transmissão antes do refino: 1 − ω·q·mínimo na janela do canal escuro (I/A), e a guia do refino.
+function transmissaoCrua(bloco, q, A) {
+  const { largura: w, altura: h, dados } = bloco
+  const n = w * h
+  const escuro = new Float32Array(n)
+  for (let i = 0, o = 0; i < n; i++, o += 3) {
+    const m = Math.min(dados[o] / A[0], dados[o + 1] / A[1], dados[o + 2] / A[2])
+    escuro[i] = m < 0 ? 0 : m > 1 ? 1 : m
+  }
+  const r = Math.max(1, raioEmPixels(LOCAL.neblina.raio, bloco))
+  const canal = minimo(escuro, w, h, r)
+  const omega = LOCAL.neblina.omega * q
+  for (let i = 0; i < n; i++) canal[i] = 1 - omega * canal[i]
+  return { w, h, guia: guiaDaNeblina(dados, n, A), canal, r }
 }
 
 // ─────────── ruído ───────────
@@ -645,16 +761,17 @@ export const temRuido = (ajustes) => !!(ajustes.detalhe.ruidoLuz || ajustes.deta
  * Quantos pixels de vizinhança um bloco precisa ter além do miolo para o resultado ser o da foto inteira: o alcance
  * dos filtros ligados (o filtro guiado alcança 2 raios; a neblina, mínimo + guiado de 4 raios).
  */
-export function margemLocal(ajustes, quadro, escala) {
+export function margemLocal(ajustes, quadro, escala, mapas = null) {
   const lado = Math.max(quadro.largura, quadro.altura)
   const px = (fracao) => Math.round(fracao * lado)
   let m = 0
   const p = ajustes.presenca
   const d = ajustes.detalhe
-  if (p.neblina > 0) m += Math.max(1, px(LOCAL.neblina.raio)) * 9
+  // com o mapa largo já calculado (mapasLargos), a neblina e a clareza não precisam de vizinhança no bloco
+  if (p.neblina > 0 && !mapas?.neblina) m += Math.max(1, px(LOCAL.neblina.raio)) * 9
   let c = 0
   if (p.textura) c = Math.max(c, 2 * px(LOCAL.textura.raio))
-  if (p.clareza) c = Math.max(c, 2 * px(LOCAL.clareza.raio))
+  if (p.clareza && !mapas?.clareza) c = Math.max(c, 2 * px(LOCAL.clareza.raio))
   m += c
   if (d.nitidez) {
     const sigma = d.raio * escala
@@ -668,14 +785,15 @@ export function margemLocal(ajustes, quadro, escala) {
 
 /**
  * Os passos de vizinhança que vêm depois da cena, na ordem: neblina → clareza e textura → nitidez → grão → vinheta.
- * `contexto`: { ar (luz do ar medida na foto inteira), semente (do grão) }.
+ * `contexto`: { ar (luz do ar medida na foto inteira), semente (do grão), mapas (de mapasLargos, opcional) }.
  */
 export function aplicarLocal(bloco, ajustes, contexto = {}) {
   const p = ajustes.presenca
   const d = ajustes.detalhe
   const e = ajustes.efeitos
-  tirarNeblina(bloco, { quantidade: p.neblina, ar: contexto.ar })
-  contrasteLocal(bloco, { textura: p.textura, clareza: p.clareza })
+  const mapas = contexto.mapas || {}
+  tirarNeblina(bloco, { quantidade: p.neblina, ar: contexto.ar, mapa: mapas.neblina })
+  contrasteLocal(bloco, { textura: p.textura, clareza: p.clareza, larga: mapas.clareza })
   nitidez(bloco, { nitidez: d.nitidez, raio: d.raio, detalhe: d.detalhe, mascara: d.mascara })
   grao(bloco, { grao: e.grao, tamanho: e.graoTamanho, aspereza: e.graoAspereza, semente: contexto.semente ?? 1 })
   vinheta(bloco, { vinheta: e.vinheta, meio: e.vinhetaMeio, suavidade: e.vinhetaSuavidade })

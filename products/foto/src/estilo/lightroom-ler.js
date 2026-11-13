@@ -36,7 +36,8 @@
 // O nosso `pretos` sozinho não imita isso (ele só age abaixo de −3 EV; subtrair preto escurece até perto do cinza).
 // A tabela BLACKS saiu de um ajuste no nosso motor: para cada nível de preto, a rampa de cinza (−8 a +3,5 EV) foi
 // revelada com o preto subtraído e, em busca exaustiva, achou-se o par (pretos, sombras) que dá a curva mais parecida.
-// Erro rms que sobrou, em códigos de 8 bits: 3,4 (−100), 0,6 (−50), 0,3 (−25), 0,4 (+25), 0,8 (+50), 2,9 (+100).
+// Os níveis de ±25 são o meio do caminho (±0,0025). Erro rms que sobrou, em códigos de 8 bits: 2,5 (−100), 0,6 (−50),
+// 0,3 (−25), 0,4 (+25), 0,8 (+50), 2,9 (+100).
 // O teste test/estilo-lightroom.test.js refaz a conta e trava a tabela.
 
 import { FAIXAS, FAIXAS_MATIZ, normalizar } from '../motor/ajustes.js'
@@ -61,7 +62,7 @@ export const GRAUS_POR_100 = 30
 
 /** Blacks2012 → [pretos, sombras] nossos (ver o cabeçalho). Entre os pontos, interpolação linear. */
 export const BLACKS = [
-  [-100, -100, -60],
+  [-100, -100, -91],
   [-50, -100, -18],
   [-25, -75, -8],
   [0, 0, 0],
@@ -462,7 +463,8 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
   }
   for (const chave of Object.keys(chaves)) if (META.has(chave)) anotar(chave, 'exato', 'meta', R.meta)
   for (const painel of [...Object.keys(PAINEIS), 'EnableLensCorrections', 'EnableTransform']) {
-    if (tem(painel) && !vistas.has(painel)) anotar(painel, 'exato', 'meta', bool(chaves[painel]) ? 'painel ligado' : 'painel desligado: as chaves dele não entram')
+    if (tem(painel) && !vistas.has(painel))
+      anotar(painel, 'exato', 'meta', bool(chaves[painel]) ? 'painel ligado' : 'painel desligado: as chaves dele não entram')
   }
 
   // ── exposição e branco: da foto ──
@@ -634,7 +636,12 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
     if (pontos) por(`curva.pontos.${canal}`, pontos)
   }
   if (tem('CurveRefineSaturation')) {
-    anotar('CurveRefineSaturation', num(chaves.CurveRefineSaturation) === 100 ? 'exato' : 'ignorado', null, num(chaves.CurveRefineSaturation) === 100 ? R.neutro : R.semControle)
+    anotar(
+      'CurveRefineSaturation',
+      num(chaves.CurveRefineSaturation) === 100 ? 'exato' : 'ignorado',
+      null,
+      num(chaves.CurveRefineSaturation) === 100 ? R.neutro : R.semControle,
+    )
   }
 
   // ── HSL ──
@@ -657,10 +664,20 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
       mexeu = true
       if (parte === 'matiz') {
         lista[k] = matizDoMisturador(k, limitar(v, -100, 100))
-        anotar(chave, 'aproximado', caminho, `±100 lá ≈ ±${GRAUS_POR_100}° (suposição); aqui o passo é metade do caminho até a faixa vizinha${Math.abs(lista[k]) === 100 ? '; ficou no limite' : ''}`)
+        anotar(
+          chave,
+          'aproximado',
+          caminho,
+          `±100 lá ≈ ±${GRAUS_POR_100}° (suposição); aqui o passo é metade do caminho até a faixa vizinha${Math.abs(lista[k]) === 100 ? '; ficou no limite' : ''}`,
+        )
       } else {
         lista[k] = Math.round(limitar(v, -100, 100))
-        anotar(chave, 'aproximado', caminho, parte === 'saturacao' ? 'saturação da faixa: de 0 a 2×, em Oklab' : 'luz da faixa: ±1,5 EV, pesada pela saturação da cor')
+        anotar(
+          chave,
+          'aproximado',
+          caminho,
+          parte === 'saturacao' ? 'saturação da faixa: de 0 a 2×, em Oklab' : 'luz da faixa: ±1,5 EV, pesada pela saturação da cor',
+        )
       }
     })
     if (mexeu) por(`misturador.${parte}`, lista)
@@ -757,7 +774,13 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
     ['ColorNoiseReductionDetail', 50],
     ['ColorNoiseReductionSmoothness', 50],
   ]) {
-    if (tem(chave)) anotar(chave, 'ignorado', null, num(chaves[chave]) === padrao ? 'ajuste fino do redutor de ruído, no padrão' : `ajuste fino do redutor de ruído: ${R.semControle}`)
+    if (tem(chave))
+      anotar(
+        chave,
+        'ignorado',
+        null,
+        num(chaves[chave]) === padrao ? 'ajuste fino do redutor de ruído, no padrão' : `ajuste fino do redutor de ruído: ${R.semControle}`,
+      )
   }
 
   // ── efeitos ──
@@ -768,7 +791,12 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
   ]) {
     if (!tem(chave)) continue
     if (!grao) anotar(chave, 'exato', caminho, 'sem grão, não age')
-    else direto(chave, caminho, chave === 'GrainSize' ? 'tamanho do grão; mesma faixa' : 'a aspereza (Roughness) da interface; mesma faixa', { min: 0, max: 100, neutro })
+    else
+      direto(chave, caminho, chave === 'GrainSize' ? 'tamanho do grão; mesma faixa' : 'a aspereza (Roughness) da interface; mesma faixa', {
+        min: 0,
+        max: 100,
+        neutro,
+      })
   }
   if (tem('GrainSeed')) anotar('GrainSeed', 'ignorado', null, 'a semente do grão aqui sai da própria foto')
   let vinheta = null
@@ -811,7 +839,18 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
     meta.look = nome
     const daAdobe = /adobe/i.test(String(look.Copyright ?? '')) || /^Adobe /.test(nome)
     vistas.add('Look')
-    for (const chave of ['Name', 'Amount', 'Cluster', 'UUID', 'SupportsAmount', 'SupportsMonochrome', 'SupportsOutputReferred', 'Copyright', 'Group', 'Stubbed']) {
+    for (const chave of [
+      'Name',
+      'Amount',
+      'Cluster',
+      'UUID',
+      'SupportsAmount',
+      'SupportsMonochrome',
+      'SupportsOutputReferred',
+      'Copyright',
+      'Group',
+      'Stubbed',
+    ]) {
       if (look[chave] != null) itens.push({ chave: `Look.${chave}`, valor: mostrar(look[chave]), classe: 'exato', para: 'meta', razao: R.meta })
     }
     const anotarLook = (chave, classe, razao) => itens.push({ chave: `Look.Parameters.${chave}`, valor: mostrar(parametros[chave]), classe, para: null, razao })
@@ -827,7 +866,10 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
             ? `o perfil "${nome}" traz uma ${tipoDaTabela} embutida, que ainda não é lida`
             : `o perfil "${nome}" não veio no arquivo (só a referência à ${tipoDaTabela})`,
         )
-        if (nome) avisos.push(`O perfil "${nome}" não foi importado${daAdobe ? ' (é da Adobe)' : ''}: a cor de base é a do nosso motor. A curva de tons dele foi aplicada.`)
+        if (nome)
+          avisos.push(
+            `O perfil "${nome}" não foi importado${daAdobe ? ' (é da Adobe)' : ''}: a cor de base é a do nosso motor. A curva de tons dele foi aplicada.`,
+          )
       } else if (chave === 'ConvertToGrayscale') anotarLook(chave, 'exato', bool(parametros[chave]) ? 'perfil em preto e branco: ligado' : 'em cores')
       else if (/^(Version|ProcessVersion|CameraProfile)$/.test(chave)) anotarLook(chave, 'exato', R.meta)
       else anotarLook(chave, 'ignorado', 'ajuste embutido no perfil, não importado')
@@ -875,7 +917,15 @@ function montar(chaves, opcoes, tipoDeArquivo, metaExtra = {}) {
   Object.assign(relatorio.meta, Object.fromEntries(Object.entries(metaExtra).filter(([, v]) => v)))
   const nome = opcoes.nome || relatorio.meta.nome || metaExtra.nome || 'Importada do Lightroom'
   const predefinicao = criarPredefinicao(
-    { nome, familia: opcoes.familia ?? 'Importadas', descricao: opcoes.descricao ?? '', autor: relatorio.meta.direitos, ajustes: normalizar(ajustes), levar, origem: { tipo: 'lightroom', relatorio } },
+    {
+      nome,
+      familia: opcoes.familia ?? 'Importadas',
+      descricao: opcoes.descricao ?? '',
+      autor: relatorio.meta.direitos,
+      ajustes: normalizar(ajustes),
+      levar,
+      origem: { tipo: 'lightroom', relatorio },
+    },
     { agora: opcoes.agora ?? null },
   )
   return { predefinicao, relatorio, daFoto }
@@ -924,7 +974,7 @@ export function importarLightroom(entrada, opcoes = {}) {
     bytes = new TextDecoder('utf-8').decode(bytes)
   }
   if (typeof bytes !== 'string' || !bytes.trim()) throw erro('vazio', 'O arquivo está vazio.')
-  const texto = bytes.replace(/^﻿/, '')
+  const texto = bytes.replace(/^\uFEFF/, '')
   if (pareceLrtemplate(texto)) return importarLrtemplate(texto, opcoes)
   if (!texto.includes('<')) throw erro('nao-reconhecido', 'Este arquivo não é uma predefinição do Lightroom (.xmp ou .lrtemplate).')
   return importarXmp(texto, opcoes)

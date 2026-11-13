@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url'
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const EXIGIR = process.env.FOTO_EXIGIR === '1'
+// As amostras vêm de site de terceiros (scripts/amostras.mjs): a falta delas só é falha quando pedido à parte. FOTO_EXIGIR
+// continua valendo para o LibRaw, que é dependência do pacote.
+export const EXIGIR_AMOSTRAS = process.env.FOTO_EXIGIR_AMOSTRAS === '1'
 
 // ------------------------------------------------------------------------------------------------- amostras
 
@@ -33,11 +36,11 @@ export const temAmostras = AMOSTRAS.every((a) => existsSync(path.join(pastaDasAm
 export const caminhoDaAmostra = (nome) => path.join(pastaDasAmostras, nome)
 export const lerAmostra = async (nome) => new Uint8Array(await readFile(caminhoDaAmostra(nome)))
 
-/** Opções de `test()` para um teste que precisa das amostras: pula com mensagem; com FOTO_EXIGIR=1 a falta vira falha. */
+/** Para um teste que precisa das amostras: pula com mensagem; com FOTO_EXIGIR_AMOSTRAS=1 a falta vira falha. */
 export function precisaDeAmostras(t) {
   if (temAmostras) return true
-  if (EXIGIR) throw new Error('FOTO_EXIGIR=1 e as amostras CC0 não estão em products/foto/.amostras')
-  t.skip('sem as amostras CC0 em products/foto/.amostras (fora do git)')
+  if (EXIGIR_AMOSTRAS) throw new Error('FOTO_EXIGIR_AMOSTRAS=1 e as amostras CC0 não estão em products/foto/.amostras (node scripts/amostras.mjs)')
+  t.skip('sem as amostras CC0 em products/foto/.amostras (fora do git; node scripts/amostras.mjs baixa)')
   return false
 }
 

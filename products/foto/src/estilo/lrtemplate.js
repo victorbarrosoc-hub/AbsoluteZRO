@@ -205,7 +205,7 @@ export function lerLrtemplate(entrada) {
   }
   if (typeof texto !== 'string' || !texto.trim()) throw erro('vazio', 'O arquivo .lrtemplate está vazio.')
   if (texto.length > TAMANHO_MAX) throw erro('grande', 'Este arquivo é grande demais para uma predefinição.')
-  const lua = analisarLua(texto.replace(/^﻿/, ''))
+  const lua = analisarLua(texto.replace(/^\uFEFF/, ''))
   const s = lua.s
   if (!s || typeof s !== 'object' || Array.isArray(s)) throw erro('nao-e-predefinicao', 'Este arquivo não é uma predefinição do Lightroom.')
   // predefinição de ajuste local, de exportação ou de metadados usa o mesmo formato com outro `type`
@@ -226,5 +226,5 @@ export function lerLrtemplate(entrada) {
 
 /** True quando o texto tem cara de .lrtemplate (começa por `s = {`, com ou sem comentário antes). */
 export function pareceLrtemplate(texto) {
-  return typeof texto === 'string' && /^﻿?(\s|--[^\n]*\n)*s\s*=\s*\{/.test(texto.slice(0, 2000))
+  return typeof texto === 'string' && /^\uFEFF?(\s|--[^\n]*\n)*s\s*=\s*\{/.test(texto.slice(0, 2000))
 }

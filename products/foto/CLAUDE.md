@@ -56,6 +56,7 @@ mude lá primeiro.
 ```
 npm ci                      # uma vez
 npm run modelos             # baixa os modelos de visão para .modelos/ (confere o sha256)
+node scripts/amostras.mjs   # baixa as 12 amostras RAW CC0 do raw.pixls.us para .amostras/ (confere o sha256)
 npm run dev                 # monta publico/ e abre http://localhost:8094 em modo local
 npm test                    # node --test: núcleo, gate, login, banco (Postgres temporário) e Chromium
 node --test test/fechado.test.js   # um módulo só
@@ -63,8 +64,10 @@ FOTO_DATABASE_URL=… npm run migrar # aplica db/migrations no banco (papel dono
 npm run vendor              # refaz vendor/ depois de mudar a versão de uma biblioteca
 ```
 
-Teste que precisa de amostra (`.amostras/`), modelo (`.modelos/`), Postgres ou Chromium pula com mensagem; com
-`FOTO_EXIGIR=1` (CI) a falta vira falha. Antes de entregar: `npm test` nesta pasta e `node scripts/scan-secrets.mjs` na raiz.
+Teste que precisa de modelo (`.modelos/`), Postgres ou Chromium pula com mensagem; com `FOTO_EXIGIR=1` (CI) a falta
+vira falha. Amostra RAW (`.amostras/`, e `.amostras/titular/` com os arquivos do titular, que nunca saem da máquina) só
+é exigida com `FOTO_EXIGIR_AMOSTRAS=1`: o CI não baixa por padrão, para não depender de site de terceiros (o workflow
+tem a opção manual `amostras`). Antes de entregar: `npm test` nesta pasta e `node scripts/scan-secrets.mjs` na raiz.
 
 ## Depende do titular (nada disso foi feito)
 

@@ -154,6 +154,69 @@ function normalizar(negativo, latitude, ganhos) {
   return { dados, cortado, cortados, W, H, passo, lado, padrao: cfa.padrao, tipo: cfa.tipo }
 }
 
+// Imagem que já chega sem mosaico (cfa 'linear': Sony "sem perdas" M e S, DNG LinearRaw, ou o demosaico do LibRaw
+// na exportação de X-Trans): RGB entrelaçado, só a área ativa, sem borda (não há demosaico). `cortado` guarda um bit
+// por canal saturado em cada pixel. `escala` já leva o branco: ganho de câmera, ou só a normalização quando o arquivo
+// gravou o dado com o branco aplicado.
+function normalizarLinear(negativo, latitude, escalaDoDado) {
+  const { area, sensor } = negativo
+  const W = area.largura
+  const H = area.altura
+  const dados = new Float32Array(W * H * 3)
+  const cortado = new Uint8Array(W * H)
+  const preto = latitude?.preto ?? negativo.preto.porCanal
+  const branco = latitude?.branco ?? negativo.branco.declarado
+  const escala = [0, 1, 2].map((c) => escalaDoDado[c] / (branco[c] - preto[c]))
+  const limiar = [0, 1, 2].map((c) => LIMIAR_CORTE * branco[c])
+  const [p0, p1, p2] = preto
+  const [e0, e1, e2] = escala
+  const [l0, l1, l2] = limiar
+  const bruto = sensor.dados
+  let cortados = 0
+  for (let y = 0; y < H; y++) {
+    let i = ((area.y + y) * sensor.largura + area.x) * 3
+    let o = y * W * 3
+    for (let x = 0; x < W; x++, i += 3, o += 3) {
+      const r = bruto[i]
+      const g = bruto[i + 1]
+      const b = bruto[i + 2]
+      dados[o] = (r - p0) * e0
+      dados[o + 1] = (g - p1) * e1
+      dados[o + 2] = (b - p2) * e2
+      const m = (r >= l0 ? 1 : 0) | (g >= l1 ? 2 : 0) | (b >= l2 ? 4 : 0)
+      if (m) {
+        cortado[y * W + x] = m
+        cortados++
+      }
+    }
+  }
+  return { dados, cortado, cortados, W, H, passo: W, lado: 1, padrao: null, tipo: 'linear' }
+}
+
+// Prévia da imagem sem mosaico: média de cada bloco `fator`×`fator`.
+function agruparLinear(mos, fator) {
+  const { dados: m, W, H } = mos
+  const largura = Math.floor(W / fator)
+  const altura = Math.floor(H / fator)
+  const saida = new Float32Array(largura * altura * 3)
+  const k = 1 / (fator * fator)
+  for (let oy = 0; oy < altura; oy++) {
+    for (let y = oy * fator; y < oy * fator + fator; y++) {
+      let i = y * W * 3
+      let o = oy * largura * 3
+      for (let ox = 0; ox < largura; ox++, o += 3) {
+        for (let j = 0; j < fator; j++, i += 3) {
+          saida[o] += m[i]
+          saida[o + 1] += m[i + 1]
+          saida[o + 2] += m[i + 2]
+        }
+      }
+    }
+    for (let o = oy * largura * 3; o < (oy + 1) * largura * 3; o++) saida[o] *= k
+  }
+  return { largura, altura, dados: saida }
+}
+
 // Espelha a borda (depois da reconstrução, antes do demosaico): x = −j ↔ j e x = W − 1 + j ↔ W − 1 − j.
 function espelharBorda(mos) {
   const { dados, W, H, passo } = mos
@@ -225,7 +288,9 @@ const PESO_NEUTRO = 0.02
  */
 function reconstruirAltas(mos, ganhos) {
   const { dados, cortado, W, H, passo, padrao, lado } = mos
-  const cl = lado === 2 ? 2 : 3
+  const linear = mos.tipo === 'linear'
+  // sem mosaico a célula é de 2×2 pixels: barata, e ainda fina para a razão entre canais da borda do corte
+  const cl = linear || lado === 2 ? 2 : 3
   const cw = Math.ceil(W / cl)
   const ch = Math.ceil(H / cl)
   const n = cw * ch
@@ -234,14 +299,28 @@ function reconstruirAltas(mos, ganhos) {
   const marca = new Uint8Array(n) // bit c ligado = canal c cortado (ou sem amostra válida) na célula
   // cor e célula de cada coluna, calculadas uma vez (o laço por sensel fica sem divisão nem resto)
   const coresDaLinha = []
-  for (let f = 0; f < lado; f++) {
+  for (let f = 0; !linear && f < lado; f++) {
     const cores = new Uint8Array(W)
     for (let x = 0; x < W; x++) cores[x] = padrao[f * lado + (x % lado)]
     coresDaLinha.push(cores)
   }
   const celulaDaColuna = new Int32Array(W)
   for (let x = 0; x < W; x++) celulaDaColuna[x] = (x / cl) | 0
-  for (let y = 0; y < H; y++) {
+  for (let y = 0; linear && y < H; y++) {
+    const primeira = ((y / cl) | 0) * cw
+    for (let x = 0, i = y * W * 3; x < W; x++, i += 3) {
+      const cel = primeira + celulaDaColuna[x]
+      const m = cortado[y * W + x]
+      for (let c = 0; c < 3; c++) {
+        if (m & (1 << c)) marca[cel] |= 1 << c
+        else {
+          valor[cel * 3 + c] += dados[i + c]
+          conta[cel * 3 + c]++
+        }
+      }
+    }
+  }
+  for (let y = 0; !linear && y < H; y++) {
     const cores = coresDaLinha[y % lado]
     const primeira = ((y / cl) | 0) * cw
     const linha = (y + BORDA) * passo + BORDA
@@ -440,7 +519,29 @@ function reconstruirAltas(mos, ganhos) {
   }
   // de volta ao mosaico: só os sensels cortados, e só para cima. O valor de cada célula vale no centro dela; o sensel
   // lê o plano no lugar onde está (bilinear entre os centros das células vizinhas).
-  for (let y = 0; y < H; y++) {
+  for (let y = 0; linear && y < H; y++) {
+    const fy = Math.min(Math.max((y + 0.5) / cl - 0.5, 0), ch - 1)
+    const y0 = fy | 0
+    const y1 = Math.min(y0 + 1, ch - 1)
+    const ty = fy - y0
+    for (let x = 0; x < W; x++) {
+      const m = cortado[y * W + x]
+      if (!m) continue
+      const fx = Math.min(Math.max((x + 0.5) / cl - 0.5, 0), cw - 1)
+      const x0 = fx | 0
+      const x1 = Math.min(x0 + 1, cw - 1)
+      const tx = fx - x0
+      const o = (y * W + x) * 3
+      for (let c = 0; c < 3; c++) {
+        if (!(m & (1 << c))) continue
+        const estimado =
+          (valor[(y0 * cw + x0) * 3 + c] * (1 - tx) + valor[(y0 * cw + x1) * 3 + c] * tx) * (1 - ty) +
+          (valor[(y1 * cw + x0) * 3 + c] * (1 - tx) + valor[(y1 * cw + x1) * 3 + c] * tx) * ty
+        if (estimado > dados[o + c]) dados[o + c] = estimado
+      }
+    }
+  }
+  for (let y = 0; !linear && y < H; y++) {
     const cores = coresDaLinha[y % lado]
     const linha = (y + BORDA) * passo + BORDA
     const mascara = y * W
@@ -725,20 +826,32 @@ function ruidoDaBase(negativo, latitude, cor, amostras) {
  *
  * Base = { imagem: { largura, altura, dados: Float32Array }, latitude, branco: { kelvin, tinta, neutroCamera },
  *          origem: 'raw', exposicaoBase, orientacao, ruido: { a, b, origem } | null,
- *          demosaico: 'rapido' | 'qualidade' | 'basica' | 'agrupado', reduzir,
+ *          demosaico: 'rapido' | 'qualidade' | 'basica' | 'agrupado' | null (arquivo já sem mosaico), reduzir,
  *          cortado: { um, dois, tres } (fração das células), folgaAltas (EV recuperados acima da saturação) }
  */
 export function prepararBase(negativo, { demosaico = 'rapido', reduzir = 1, latitude = null } = {}) {
   if (![1, 2, 4].includes(reduzir)) throw new Error('reduzir precisa ser 1, 2 ou 4')
   if (demosaico !== 'rapido' && demosaico !== 'qualidade') throw new Error("demosaico precisa ser 'rapido' ou 'qualidade'")
   const cor = corDaCamera(negativo)
-  const mos = normalizar(negativo, latitude, cor.ganhos)
-  const altas = mos.cortados ? reconstruirAltas(mos, cor.ganhos) : { celulas: [0, 0, 0], folga: 0 }
+  const linear = negativo.cfa.tipo === 'linear'
+  // Do dado ao sinal normalizado com o branco aplicado. No mosaico é o ganho de câmera; no arquivo que gravou o dado
+  // já equilibrado (wb.aplicado, o YCbCr da Sony) é só a razão entre o ganho que a cor usa e o que a câmera aplicou —
+  // o mesmo número nos três canais quando os dois partem dos mesmos multiplicadores. É também o nível em que cada
+  // canal satura no sinal normalizado, que a reconstrução de altas luzes e o modelo de ruído precisam.
+  const m = negativo.wb?.aplicado ? negativo.wb.comoFotografado : null
+  const ganhos = m ? cor.ganhos.map((g, c) => g / m[c]) : cor.ganhos
+  const mos = linear ? normalizarLinear(negativo, latitude, ganhos) : normalizar(negativo, latitude, ganhos)
+  const altas = mos.cortados ? reconstruirAltas(mos, ganhos) : { celulas: [0, 0, 0], folga: 0 }
   mos.cortado = null
   let imagem
   let feito
   let amostras = [1, 1, 1]
-  if (reduzir > 1) {
+  if (linear) {
+    // já sem mosaico: não há demosaico a fazer, só a redução da prévia
+    imagem = reduzir > 1 ? agruparLinear(mos, reduzir) : { largura: mos.W, altura: mos.H, dados: mos.dados }
+    feito = reduzir > 1 ? 'agrupado' : null
+    amostras = [reduzir * reduzir, reduzir * reduzir, reduzir * reduzir]
+  } else if (reduzir > 1) {
     imagem = agrupar(mos, reduzir)
     feito = 'agrupado'
     // sensels de cada cor por pixel: no Bayer, um quarto, metade e um quarto do bloco; no X-Trans, 2, 5 e 2 em cada 9
@@ -776,7 +889,7 @@ export function prepararBase(negativo, { demosaico = 'rapido', reduzir = 1, lati
     origem: 'raw',
     exposicaoBase: negativo.exposicaoBase ?? 0,
     orientacao: negativo.exif?.orientacao ?? 1,
-    ruido: ruidoDaBase(negativo, latitude, cor, amostras),
+    ruido: ruidoDaBase(negativo, latitude, { ...cor, ganhos }, amostras),
     demosaico: feito,
     reduzir,
     cortado: { um: altas.celulas[0], dois: altas.celulas[1], tres: altas.celulas[2] },
