@@ -7,7 +7,16 @@ import { test } from 'node:test'
 import { lerExif } from '../src/raw/exif.js'
 import { montarExif } from '../src/exportar/exif-escrever.js'
 import { espacoDoPerfil, perfilIcc } from '../src/exportar/icc.js'
-import { TABELAS_DE_HUFFMAN, ZIGUEZAGUE, codificarJpeg, embutirNoJpeg, extrairDoJpeg, lerSegmentosJpeg, limparJpeg, tabelaDeQuantizacao } from '../src/exportar/jpeg.js'
+import {
+  TABELAS_DE_HUFFMAN,
+  ZIGUEZAGUE,
+  codificarJpeg,
+  embutirNoJpeg,
+  extrairDoJpeg,
+  lerSegmentosJpeg,
+  limparJpeg,
+  tabelaDeQuantizacao,
+} from '../src/exportar/jpeg.js'
 import { TIPO, lerBlocoTiff, montarBlocoTiff } from '../src/exportar/tiff.js'
 import { pacoteXmp } from '../src/exportar/xmp.js'
 import { abrirChromium, base64, cenaDeTeste, comparar8, decodificarJpeg, paraRgb8, semChromium, sorteio } from './apoio-exportar.js'
@@ -21,8 +30,8 @@ const assinatura = (jpeg, s, n) => String.fromCharCode(...jpeg.subarray(s.dados[
 
 // T.81, K.1 (tabela K.1, luminância): os 64 passos de exemplo, linha a linha
 const K1 = [
-  16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24,
-  35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99,
+  16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103,
+  77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99,
 ]
 
 test('JPEG: tabelas de Huffman típicas coerentes (T.81, K.3) e ziguezague é a permutação da figura A.6', () => {
@@ -35,13 +44,25 @@ test('JPEG: tabelas de Huffman típicas coerentes (T.81, K.3) e ziguezague é a 
     assert.ok(t.bits.reduce((s, b, i) => s + b / 2 ** (i + 1), 0) < 1, `${nome}: códigos formam um prefixo válido`)
   }
   // DC: categorias 0 a 11. AC: toda combinação de corrida 0–15 com tamanho 1–10, mais fim de bloco (00) e 16 zeros (F0)
-  for (const nome of ['dcLuz', 'dcCroma']) assert.deepEqual([...TABELAS_DE_HUFFMAN[nome].valores].sort((a, b) => a - b), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+  for (const nome of ['dcLuz', 'dcCroma'])
+    assert.deepEqual(
+      [...TABELAS_DE_HUFFMAN[nome].valores].sort((a, b) => a - b),
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    )
   const esperados = [0x00, 0xf0]
   for (let corrida = 0; corrida < 16; corrida++) for (let tamanho = 1; tamanho <= 10; tamanho++) esperados.push((corrida << 4) | tamanho)
   esperados.sort((a, b) => a - b)
-  for (const nome of ['acLuz', 'acCroma']) assert.deepEqual([...TABELAS_DE_HUFFMAN[nome].valores].sort((a, b) => a - b), esperados, nome)
+  for (const nome of ['acLuz', 'acCroma'])
+    assert.deepEqual(
+      [...TABELAS_DE_HUFFMAN[nome].valores].sort((a, b) => a - b),
+      esperados,
+      nome,
+    )
 
-  assert.deepEqual([...ZIGUEZAGUE].sort((a, b) => a - b), Array.from({ length: 64 }, (_, i) => i))
+  assert.deepEqual(
+    [...ZIGUEZAGUE].sort((a, b) => a - b),
+    Array.from({ length: 64 }, (_, i) => i),
+  )
   assert.deepEqual(ZIGUEZAGUE.slice(0, 16), [0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4, 5])
   assert.deepEqual(ZIGUEZAGUE.slice(-4), [47, 55, 62, 63])
 })
@@ -59,7 +80,10 @@ test('JPEG: a escala de qualidade é a do libjpeg (50 = tabela da norma, 100 = t
   const dqt = lerSegmentosJpeg(jpeg).find((s) => s.marcador === 0xdb)
   assert.equal(jpeg[dqt.dados[0]], 0, 'tabela 0, 8 bits')
   const esperada = tabelaDeQuantizacao(K1, 75)
-  assert.deepEqual(Array.from(jpeg.subarray(dqt.dados[0] + 1, dqt.dados[0] + 65)), ZIGUEZAGUE.map((i) => esperada[i]))
+  assert.deepEqual(
+    Array.from(jpeg.subarray(dqt.dados[0] + 1, dqt.dados[0] + 65)),
+    ZIGUEZAGUE.map((i) => esperada[i]),
+  )
 })
 
 test('JPEG: estrutura baseline (SOI, JFIF, DQT, SOF0, DHT, SOS, EOI) e tamanho da imagem no SOF0', () => {
@@ -98,7 +122,20 @@ test('JPEG: o que foi codificado decodifica, com erro dentro do esperado para a 
     const jpeg = codificar(qualidade, sub)
     const d = decodificarJpeg(jpeg)
     assert.deepEqual([d.largura, d.altura], [CENA.largura, CENA.altura])
-    assert.deepEqual(d.amostragem, sub === '420' ? [[2, 2], [1, 1], [1, 1]] : [[1, 1], [1, 1], [1, 1]])
+    assert.deepEqual(
+      d.amostragem,
+      sub === '420'
+        ? [
+            [2, 2],
+            [1, 1],
+            [1, 1],
+          ]
+        : [
+            [1, 1],
+            [1, 1],
+            [1, 1],
+          ],
+    )
     const erro = comparar8(d.rgb, RGB)
     assert.ok(erro.psnr >= psnr, `q${qualidade} ${sub}: PSNR ${erro.psnr.toFixed(2)} dB, esperado ≥ ${psnr}`)
     assert.ok(erro.medio <= medio, `q${qualidade} ${sub}: erro médio ${erro.medio.toFixed(2)}, esperado ≤ ${medio}`)
@@ -263,7 +300,23 @@ function jpegDeCamera() {
       { tag: 0x010f, tipo: TIPO.ASCII, valores: 'Fabricante' },
       { tag: 0x0112, tipo: TIPO.SHORT, valores: 6 },
       { tag: 0x8769, filho: { entradas: [{ tag: 0xa431, tipo: TIPO.ASCII, valores: 'SERIE-123456' }] } },
-      { tag: 0x8825, filho: { entradas: [{ tag: 1, tipo: TIPO.ASCII, valores: 'S' }, { tag: 2, tipo: TIPO.RACIONAL, valores: [[23, 1], [33, 1], [0, 1]] }] } },
+      {
+        tag: 0x8825,
+        filho: {
+          entradas: [
+            { tag: 1, tipo: TIPO.ASCII, valores: 'S' },
+            {
+              tag: 2,
+              tipo: TIPO.RACIONAL,
+              valores: [
+                [23, 1],
+                [33, 1],
+                [0, 1],
+              ],
+            },
+          ],
+        },
+      },
     ],
   })
   const seg = (m, bytes) => Uint8Array.of(0xff, m, (bytes.length + 2) >> 8, (bytes.length + 2) & 0xff, ...bytes)
@@ -302,10 +355,23 @@ const contem = (bytes, texto) => {
 test('limparJpeg: tira EXIF, GPS, XMP, IPTC, MPF, comentário, miniatura e o que vem depois do fim', () => {
   const sujo = jpegDeCamera()
   assert.equal(lerExif(sujo).orientacao, 6)
-  for (const texto of ['SERIE-123456', 'segredo', 'legenda com nome de cliente', 'SEGUNDA IMAGEM', 'MPF', 'JFXX']) assert.ok(contem(sujo, texto), `o arquivo de partida tem "${texto}"`)
+  for (const texto of ['SERIE-123456', 'segredo', 'legenda com nome de cliente', 'SEGUNDA IMAGEM', 'MPF', 'JFXX'])
+    assert.ok(contem(sujo, texto), `o arquivo de partida tem "${texto}"`)
 
   const limpo = limparJpeg(sujo)
-  for (const texto of ['SERIE-123456', 'segredo', 'mais', 'legenda com nome de cliente', 'SEGUNDA IMAGEM', 'MPF', 'JFXX', 'Fabricante', 'comentário', 'xmp', 'Photoshop']) {
+  for (const texto of [
+    'SERIE-123456',
+    'segredo',
+    'mais',
+    'legenda com nome de cliente',
+    'SEGUNDA IMAGEM',
+    'MPF',
+    'JFXX',
+    'Fabricante',
+    'comentário',
+    'xmp',
+    'Photoshop',
+  ]) {
     assert.ok(!contem(limpo, texto), `"${texto}" saiu`)
   }
   // fica: SOI, JFIF (sem miniatura), o EXIF só com a orientação, o perfil, o APP14 da Adobe e a imagem
@@ -318,7 +384,10 @@ test('limparJpeg: tira EXIF, GPS, XMP, IPTC, MPF, comentário, miniatura e o que
   // o EXIF que sobra tem uma tag só: a orientação (senão a foto deitaria)
   const { exif, icc, xmp } = extrairDoJpeg(limpo)
   const { diretorio } = lerBlocoTiff(exif)
-  assert.deepEqual(diretorio.entradas.map((e) => [e.tag, e.valores[0]]), [[0x0112, 6]])
+  assert.deepEqual(
+    diretorio.entradas.map((e) => [e.tag, e.valores[0]]),
+    [[0x0112, 6]],
+  )
   assert.deepEqual(diretorio.filhos, {}, 'sem ExifIFD nem GPS')
   assert.deepEqual(lerExif(limpo), { orientacao: 6 })
   assert.equal(xmp, null)

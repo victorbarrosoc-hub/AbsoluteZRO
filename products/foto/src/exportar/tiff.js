@@ -350,11 +350,19 @@ export async function escreverTiff({ largura, altura, dados, canais = 3, bits = 
     E(TAG.bits, TIPO.SHORT, [bits, bits, bits]),
     E(TAG.compressao, TIPO.SHORT, comprimir ? 8 : 1),
     E(TAG.fotometria, TIPO.SHORT, 2),
-    E(TAG.tiras, TIPO.LONG, tiras.map(() => 0)), // posições de verdade entram depois de medir o diretório
+    E(
+      TAG.tiras,
+      TIPO.LONG,
+      tiras.map(() => 0),
+    ), // posições de verdade entram depois de medir o diretório
     E(TAG.orientacao, TIPO.SHORT, orientacao),
     E(TAG.amostras, TIPO.SHORT, 3),
     E(TAG.linhasPorTira, TIPO.LONG, linhasPorTira),
-    E(TAG.bytesPorTira, TIPO.LONG, tiras.map((t) => t.length)),
+    E(
+      TAG.bytesPorTira,
+      TIPO.LONG,
+      tiras.map((t) => t.length),
+    ),
     E(TAG.resolucaoX, TIPO.RACIONAL, [Math.round(ppi), 1]),
     E(TAG.resolucaoY, TIPO.RACIONAL, [Math.round(ppi), 1]),
     E(TAG.planos, TIPO.SHORT, 1),

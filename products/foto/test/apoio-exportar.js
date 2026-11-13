@@ -96,7 +96,9 @@ const ZIGUEZAGUE = (() => {
 })()
 
 // T.81, A.3.3: a DCT inversa pela definição (lenta e direta, de propósito: é a régua do teste)
-const COSSENOS = Array.from({ length: 8 }, (_, x) => Array.from({ length: 8 }, (_, u) => (u === 0 ? Math.SQRT1_2 : 1) * Math.cos(((2 * x + 1) * u * Math.PI) / 16)))
+const COSSENOS = Array.from({ length: 8 }, (_, x) =>
+  Array.from({ length: 8 }, (_, u) => (u === 0 ? Math.SQRT1_2 : 1) * Math.cos(((2 * x + 1) * u * Math.PI) / 16)),
+)
 
 function idct(coef, saida) {
   const meio = new Float64Array(64)
@@ -151,7 +153,7 @@ export function decodificarJpeg(jpeg) {
     const tam = (jpeg[p + 2] << 8) | jpeg[p + 3]
     const d = p + 4
     if (m === 0xdb) {
-      for (let q = d; q < p + 2 + tam; ) {
+      for (let q = d; q < p + 2 + tam;) {
         if (jpeg[q] >> 4 !== 0) throw new Error('decodificarJpeg: só tabela de quantização de 8 bits')
         const tabela = new Int32Array(64)
         for (let k = 0; k < 64; k++) tabela[ZIGUEZAGUE[k]] = jpeg[q + 1 + k]
@@ -166,7 +168,7 @@ export function decodificarJpeg(jpeg) {
         quadro.componentes.push({ id: jpeg[q], h: jpeg[q + 1] >> 4, v: jpeg[q + 1] & 15, tq: jpeg[q + 2] })
       }
     } else if (m === 0xc4) {
-      for (let q = d; q < p + 2 + tam; ) {
+      for (let q = d; q < p + 2 + tam;) {
         const bits = Array.from(jpeg.subarray(q + 1, q + 17))
         const n = bits.reduce((s, b) => s + b, 0)
         const tabela = tabelaDeHuffman(bits, jpeg.subarray(q + 17, q + 17 + n))
@@ -251,7 +253,7 @@ export function decodificarJpeg(jpeg) {
             coef.fill(0)
             c.anterior += receber(simbolo(huffman.dc[c.td]))
             coef[0] = c.anterior * q[0]
-            for (let k = 1; k < 64; ) {
+            for (let k = 1; k < 64;) {
               const rs = simbolo(huffman.ac[c.ta])
               const corrida = rs >> 4
               const n = rs & 15

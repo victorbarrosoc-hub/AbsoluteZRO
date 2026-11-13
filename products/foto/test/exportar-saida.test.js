@@ -22,7 +22,17 @@ import { abrirChromium, base64, cenaDeTeste, comparar8, decodificarJpeg, paraRgb
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CENA = cenaDeTeste(600, 400, 17)
 const CONTEXTO = {
-  exif: { fabricante: 'Fabricante', modelo: 'Modelo', data: '2026-08-09T10:11:12', iso: 320, tempo: 1 / 500, abertura: 1.8, focal: 85, lente: 'Lente 85mm', orientacao: 8 },
+  exif: {
+    fabricante: 'Fabricante',
+    modelo: 'Modelo',
+    data: '2026-08-09T10:11:12',
+    iso: 320,
+    tempo: 1 / 500,
+    abertura: 1.8,
+    focal: 85,
+    lente: 'Lente 85mm',
+    orientacao: 8,
+  },
   foto: { estrelas: 4, cor: 'verde', marca: 'escolhida' },
   software: 'Programa de teste',
   autor: 'Autora de Teste',
@@ -41,7 +51,15 @@ test('Entrega: JPEG em Display P3, tamanho cheio, com perfil P3, EXIF sem local 
   const { icc, exif, xmp } = extrairDoJpeg(saida.bytes)
   assert.equal(espacoDoPerfil(icc), 'p3', 'o perfil embutido é Display P3')
   // EXIF: o do contrato, com a orientação em 1 e sem GPS (a receita é "sem local", e o local foi entregue)
-  assert.deepEqual(lerExif(saida.bytes), { orientacao: 1, tempo: 1 / 500, abertura: 1.8, iso: 320, focal: 85, lente: 'Lente 85mm', data: '2026-08-09T10:11:12' })
+  assert.deepEqual(lerExif(saida.bytes), {
+    orientacao: 1,
+    tempo: 1 / 500,
+    abertura: 1.8,
+    iso: 320,
+    focal: 85,
+    lente: 'Lente 85mm',
+    data: '2026-08-09T10:11:12',
+  })
   const { diretorio } = lerBlocoTiff(exif)
   assert.equal(diretorio.filhos[0x8825], undefined, 'sem GPS')
   assert.equal(valorDe(diretorio, 0x0131), 'Programa de teste')
@@ -54,7 +72,11 @@ test('Entrega: JPEG em Display P3, tamanho cheio, com perfil P3, EXIF sem local 
   assert.ok(xmp.includes('Programa de teste') && xmp.includes('Autora de Teste'))
   // a imagem: qualidade 92 vai com croma inteira e erro pequeno contra os pixels de entrada
   const d = decodificarJpeg(saida.bytes)
-  assert.deepEqual(d.amostragem, [[1, 1], [1, 1], [1, 1]])
+  assert.deepEqual(d.amostragem, [
+    [1, 1],
+    [1, 1],
+    [1, 1],
+  ])
   const erro = comparar8(d.rgb, paraRgb8(CENA))
   assert.ok(erro.psnr > 38, `PSNR ${erro.psnr.toFixed(2)} dB`)
   // um perfil só, um EXIF só, um XMP só
@@ -86,7 +108,7 @@ test('Instagram: reduz para o lado pedido em sRGB, com nitidez de tela e só os 
   assert.ok(detalhe(d.rgb) > detalhe(semNitidez.rgb) * 1.02)
 })
 
-test("Prova do cliente: sem máscara não sai; com máscara sai com a marca nos pixels e nenhum metadado", async () => {
+test('Prova do cliente: sem máscara não sai; com máscara sai com a marca nos pixels e nenhum metadado', async () => {
   const receita = { ...receitaDaPredefinicao('prova'), tamanho: { tipo: 'lado', px: 320 } }
   await assert.rejects(gerarSaida(CENA, receita, CONTEXTO), /marca-d'água/)
   const saida = await gerarSaida(CENA, receita, { ...CONTEXTO, mascara: MASCARA })
@@ -104,7 +126,8 @@ test("Prova do cliente: sem máscara não sai; com máscara sai com a marca nos 
   // a marca está nos pixels: contra a mesma saída sem marca, uma parte grande da imagem clareou
   const semMarca = decodificarJpeg((await gerarSaida(CENA, { ...receita, marcaDagua: null }, CONTEXTO)).bytes)
   let clareou = 0
-  for (let i = 0; i < d.rgb.length; i += 3) if (d.rgb[i] + d.rgb[i + 1] + d.rgb[i + 2] - (semMarca.rgb[i] + semMarca.rgb[i + 1] + semMarca.rgb[i + 2]) > 40) clareou++
+  for (let i = 0; i < d.rgb.length; i += 3)
+    if (d.rgb[i] + d.rgb[i + 1] + d.rgb[i + 2] - (semMarca.rgb[i] + semMarca.rgb[i + 1] + semMarca.rgb[i + 2]) > 40) clareou++
   const fracao = clareou / (320 * 213)
   assert.ok(fracao > 0.05 && fracao < 0.5, `marca em ${(fracao * 100).toFixed(1)}% da imagem`)
 })
@@ -165,6 +188,10 @@ test('gerarSaida: codificador de fora (o canvas do navegador), WebP só com ele,
   assert.deepEqual(pedidos, [{ formato: 'jpeg', largura: 200, altura: 133, rgba: 200 * 133 * 4, qualidade: 77 }])
   assert.equal(espacoDoPerfil(extrairDoJpeg(saida.bytes).icc), 'p3', 'o perfil entra depois, em cima do que o codificador devolveu')
   assert.equal(lerExif(saida.bytes).iso, 320)
+  // de 90 para cima o codificador de fora não é chamado: o canvas não faz croma inteira, e a receita pede
+  const alta = await gerarSaida(CENA, { formato: 'jpeg', qualidade: 92, tamanho: 200 }, { ...CONTEXTO, codificar: falso })
+  assert.equal(pedidos.length, 1)
+  assert.deepEqual(decodificarJpeg(alta.bytes).amostragem[0], [1, 1])
 
   await assert.rejects(gerarSaida(CENA, { formato: 'webp' }, CONTEXTO), /WebP/)
   const webp = await gerarSaida(CENA, { formato: 'webp', espaco: 'p3', qualidade: 80 }, { ...CONTEXTO, codificar: async () => Uint8Array.of(1, 2, 3) })
@@ -221,7 +248,7 @@ test('Chromium: o núcleo de exportação roda igual no navegador, e a foto em P
         }
         const entrega = receitaDaPredefinicao('entrega')
         const proprio = await gerarSaida(imagem, entrega, contexto)
-        const comCanvas = await gerarSaida(imagem, entrega, { ...contexto, codificar: canvas })
+        const comCanvas = await gerarSaida(imagem, { ...entrega, qualidade: 80 }, { ...contexto, codificar: canvas })
         const png = await gerarSaida(imagem, { formato: 'png', bits: 16, espaco: 'p3' }, contexto)
         const tiff = await gerarSaida(imagem, { formato: 'tiff', bits: 16, espaco: 'adobe', compressao: 'deflate' }, contexto)
         // cor lisa em P3, lida numa tela sRGB: o navegador converte pelo perfil que embutimos
@@ -265,7 +292,10 @@ test('Chromium: o núcleo de exportação roda igual no navegador, e a foto em P
     assert.equal(lerSidecarXmp(dentro.xmp).estrelas, 4)
     const marcas = lerSegmentosJpeg(comCanvas).map((s) => s.marcador)
     assert.deepEqual([marcas.filter((m) => m === 0xe1).length, marcas.filter((m) => m === 0xe2).length], [2, 1], 'um EXIF, um XMP, um perfil')
-    assert.ok(comparar8(semAlfa(doNavegador.canvasAberto), rgb8).psnr > 36, 'a foto codificada pelo canvas volta com os mesmos pixels em P3')
+    // (qualidade 80 em 4:2:0: nesta cena de bordas duras de cor isso dá perto de 29 dB, no canvas e no nosso)
+    const doCanvas = comparar8(semAlfa(doNavegador.canvasAberto), rgb8)
+    assert.ok(doCanvas.psnr > 27.5, `a foto codificada pelo canvas volta em P3 (${doCanvas.psnr.toFixed(2)} dB)`)
+    assert.notDeepEqual(comCanvas, bytes(doNavegador.proprio), 'é mesmo outro codificador')
 
     // 3. PNG e TIFF de 16 bits escritos no navegador (com a compressão dele) e lidos aqui: pixels exatos
     assert.deepEqual((await lerPng(bytes(doNavegador.png))).dados, paraRgb16(cena))

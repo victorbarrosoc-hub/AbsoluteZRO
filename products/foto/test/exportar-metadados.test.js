@@ -23,7 +23,15 @@ const CONTRATO = {
   lente: 'Lente 24-70mm f/2.8',
   orientacao: 6, // a câmera estava de lado; a exportação entrega de pé
 }
-const OPCOES = { software: 'Programa de teste 1.0', autor: 'Autora de Teste', direitos: '(c) 2026 Autora de Teste', largura: 4000, altura: 6000, espaco: 'p3', quando: '2026-11-13T10:00:00' }
+const OPCOES = {
+  software: 'Programa de teste 1.0',
+  autor: 'Autora de Teste',
+  direitos: '(c) 2026 Autora de Teste',
+  largura: 4000,
+  altura: 6000,
+  espaco: 'p3',
+  quando: '2026-11-13T10:00:00',
+}
 const LOCAL = { latitude: -23.550519, longitude: -46.633308, altitude: 760.5 }
 
 const noJpeg = (exif) => embutirNoJpeg(codificarJpeg({ largura: 8, altura: 8, rgb8: new Uint8Array(192).fill(90) }), { exif })
@@ -51,7 +59,12 @@ test('EXIF: o bloco escrito é relido pelo leitor da biblioteca, campo a campo, 
 test('EXIF: estrutura válida (EXIF 2.32) — tags obrigatórias do JPEG, tipos e ordem', () => {
   const { diretorio } = lerBlocoTiff(montarExif(CONTRATO, OPCOES))
   const exif = diretorio.filhos[0x8769]
-  for (const d of [diretorio, exif]) assert.deepEqual(tagsDe(d), [...tagsDe(d)].sort((a, b) => a - b), 'tags em ordem crescente')
+  for (const d of [diretorio, exif])
+    assert.deepEqual(
+      tagsDe(d),
+      [...tagsDe(d)].sort((a, b) => a - b),
+      'tags em ordem crescente',
+    )
   // diretório principal
   assert.equal(valorDe(diretorio, 0x0112), 1, 'Orientation = 1')
   assert.deepEqual(valorDe(diretorio, 0x011a), [72, 1])
@@ -109,7 +122,15 @@ test('EXIF: sem GPS por padrão; o local só entra com "todos" e com o local ent
   const ne = lerBlocoTiff(montarExif({}, { metadados: 'todos', local: { latitude: 59.999999999, longitude: 10.75 } })).diretorio.filhos[0x8825]
   assert.equal(valorDe(ne, 1), 'N')
   assert.equal(valorDe(ne, 3), 'E')
-  assert.deepEqual(valorDe(ne, 2, { todos: true }), [[60, 1], [0, 1], [0, 10000]], 'o arredondamento dos segundos passa para minutos e graus')
+  assert.deepEqual(
+    valorDe(ne, 2, { todos: true }),
+    [
+      [60, 1],
+      [0, 1],
+      [0, 10000],
+    ],
+    'o arredondamento dos segundos passa para minutos e graus',
+  )
   assert.equal(lerBlocoTiff(montarExif({}, { metadados: 'todos', local: { latitude: 120, longitude: 0 } })).diretorio.filhos[0x8825], undefined)
 })
 
@@ -330,8 +351,16 @@ test('XMP: lê as decisões que já existem — Lightroom, forma de elemento, ou
   assert.equal(lido.cor, 'roxo')
   assert.equal(lido.marca, 'rejeitada')
   // Bridge: Rating = −1 quer dizer rejeitada (e a nota é zero); com pick presente, vale o pick
-  const bridge = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="-1"/></rdf:RDF></x:xmpmeta>'
-  assert.deepEqual(lerSidecarXmp(bridge), { estrelas: 0, cor: null, rotulo: null, marca: 'rejeitada', tem: { estrelas: true, cor: false, marca: true }, ajustes: null })
+  const bridge =
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="-1"/></rdf:RDF></x:xmpmeta>'
+  assert.deepEqual(lerSidecarXmp(bridge), {
+    estrelas: 0,
+    cor: null,
+    rotulo: null,
+    marca: 'rejeitada',
+    tem: { estrelas: true, cor: false, marca: true },
+    ajustes: null,
+  })
   const comPick = bridge.replace('xmp:Rating="-1"', 'xmp:Rating="-1" xmlns:xmpDM="http://ns.adobe.com/xmp/1.0/DynamicMedia/" xmpDM:pick="0"')
   assert.equal(lerSidecarXmp(comPick).marca, null)
   // etiqueta de texto livre: a cor não é nossa, mas o texto fica registrado
@@ -358,7 +387,14 @@ test('XMP: atualizar preserva, caractere por caractere, tudo o que não foi pedi
   // várias mudanças: nota, cor (no idioma que o arquivo já usava), marca e os nossos ajustes
   const ajustes = { versao: 1, luz: { exposicao: -0.5 } }
   const completo = atualizarSidecarXmp(DO_LIGHTROOM, { estrelas: 4, cor: 'azul', marca: 'escolhida', ajustes })
-  assert.deepEqual(lerSidecarXmp(completo), { estrelas: 4, cor: 'azul', rotulo: 'Blue', marca: 'escolhida', tem: { estrelas: true, cor: true, marca: true }, ajustes })
+  assert.deepEqual(lerSidecarXmp(completo), {
+    estrelas: 4,
+    cor: 'azul',
+    rotulo: 'Blue',
+    marca: 'escolhida',
+    tem: { estrelas: true, cor: true, marca: true },
+    ajustes,
+  })
   // tudo o que era do Lightroom continua lá, na mesma ordem
   for (const trecho of [
     'x:xmptk="Adobe XMP Core 7.0-c000 1.000000, 0000/00/00-00:00:00        "',
@@ -390,14 +426,22 @@ test('XMP: atualizar preserva, caractere por caractere, tudo o que não foi pedi
   assert.deepEqual([lerSidecarXmp(outra).estrelas, lerSidecarXmp(outra).marca, lerSidecarXmp(outra).ajustes], [1, 'rejeitada', { versao: 1 }])
   assert.match(outra, /xmpDM:good="false"/)
   const semCor = atualizarSidecarXmp(outra, { cor: null, marca: null, ajustes: null })
-  assert.deepEqual(lerSidecarXmp(semCor), { estrelas: 1, cor: null, rotulo: null, marca: null, tem: { estrelas: true, cor: false, marca: true }, ajustes: null })
+  assert.deepEqual(lerSidecarXmp(semCor), {
+    estrelas: 1,
+    cor: null,
+    rotulo: null,
+    marca: null,
+    tem: { estrelas: true, cor: false, marca: true },
+    ajustes: null,
+  })
   assert.ok(!semCor.includes('xmp:Label') && !semCor.includes('xmpDM:good') && !semCor.includes('Ajustes'))
   assert.ok(semCor.includes('crs:Exposure2012="+0.35"'))
 })
 
 test('XMP: atualizar em formas variadas — elemento, descrição fechada em si, sem descrição, idioma, Rating −1', () => {
   // propriedade como elemento: troca o conteúdo; tirar leva o elemento inteiro
-  const elementos = '<x:xmpmeta xmlns:x="adobe:ns:meta/">\n<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">\n  <xmp:Rating>1</xmp:Rating>\n  <xmp:Label>Verde</xmp:Label>\n  <xmp:Nickname>apelido</xmp:Nickname>\n </rdf:Description>\n</rdf:RDF>\n</x:xmpmeta>'
+  const elementos =
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/">\n<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">\n  <xmp:Rating>1</xmp:Rating>\n  <xmp:Label>Verde</xmp:Label>\n  <xmp:Nickname>apelido</xmp:Nickname>\n </rdf:Description>\n</rdf:RDF>\n</x:xmpmeta>'
   assert.equal(atualizarSidecarXmp(elementos, { estrelas: 3 }), elementos.replace('<xmp:Rating>1<', '<xmp:Rating>3<'))
   assert.equal(atualizarSidecarXmp(elementos, { cor: null }), elementos.replace('\n  <xmp:Label>Verde</xmp:Label>', ''))
   // idioma automático: o arquivo usava português, continua em português; pedindo inglês, vai em inglês
@@ -406,9 +450,17 @@ test('XMP: atualizar em formas variadas — elemento, descrição fechada em si,
   assert.match(atualizarSidecarXmp(DO_LIGHTROOM, { cor: 'roxo' }, { idioma: 'pt' }), /xmp:Label="Roxo"/)
 
   // descrição fechada em si mesma, sem o namespace xmp declarado
-  const fechada = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Exposure2012="+1.00"/></rdf:RDF></x:xmpmeta>'
+  const fechada =
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Exposure2012="+1.00"/></rdf:RDF></x:xmpmeta>'
   const aberta = atualizarSidecarXmp(fechada, { estrelas: 5, marca: 'escolhida', ajustes: { a: 1 } })
-  assert.deepEqual(lerSidecarXmp(aberta), { estrelas: 5, cor: null, rotulo: null, marca: 'escolhida', tem: { estrelas: true, cor: false, marca: true }, ajustes: { a: 1 } })
+  assert.deepEqual(lerSidecarXmp(aberta), {
+    estrelas: 5,
+    cor: null,
+    rotulo: null,
+    marca: 'escolhida',
+    tem: { estrelas: true, cor: false, marca: true },
+    ajustes: { a: 1 },
+  })
   assert.ok(aberta.includes('crs:Exposure2012="+1.00"'))
   assert.ok(aberta.includes('</rdf:Description>'))
   // só atributos novos numa descrição fechada: continua fechada
@@ -424,13 +476,15 @@ test('XMP: atualizar em formas variadas — elemento, descrição fechada em si,
   }
 
   // prefixo "xmp" já usado para outra coisa: a propriedade nova ganha outro prefixo, com o namespace certo
-  const ocupado = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://exemplo.invalid/outro/" xmp:Coisa="1"/></rdf:RDF></x:xmpmeta>'
+  const ocupado =
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://exemplo.invalid/outro/" xmp:Coisa="1"/></rdf:RDF></x:xmpmeta>'
   const desviado = atualizarSidecarXmp(ocupado, { estrelas: 4 })
   assert.equal(lerSidecarXmp(desviado).estrelas, 4)
   assert.ok(desviado.includes('xmp:Coisa="1"') && desviado.includes('xmlns:xmp1="http://ns.adobe.com/xap/1.0/"') && desviado.includes('xmp1:Rating="4"'))
 
   // Bridge: Rating = −1. Mexer só na cor não toca na nota; tirar a rejeição zera a nota; rejeitar de novo usa a bandeira
-  const bridge = '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="-1"/></rdf:RDF></x:xmpmeta>'
+  const bridge =
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="-1"/></rdf:RDF></x:xmpmeta>'
   assert.ok(atualizarSidecarXmp(bridge, { cor: 'azul' }).includes('xmp:Rating="-1"'), 'o que a pessoa tinha fica')
   const liberada = atualizarSidecarXmp(bridge, { marca: null })
   assert.ok(liberada.includes('xmp:Rating="0"') && liberada.includes('xmpDM:pick="0"'))
@@ -446,53 +500,60 @@ test('XMP: atualizar em formas variadas — elemento, descrição fechada em si,
   assert.throws(() => atualizarSidecarXmp(DO_LIGHTROOM, { cor: 'laranja' }), /cor desconhecida/)
 })
 
-test('Chromium: o XML que escrevemos e atualizamos é bem formado e um leitor de XML de verdade acha as propriedades', { skip: semChromium, timeout: 240000 }, async () => {
-  const ajustes = { nota: 'a "b" <c> & \'d\'', luz: { exposicao: 1 } }
-  const textos = {
-    novo: sidecarXmp({ estrelas: 3, cor: 'verde', marca: 'rejeitada', ajustes, autor: 'João & Maria', direitos: '© <2026>', software: 'X "Y"' }),
-    pacote: pacoteXmp({ estrelas: 1, cor: 'azul', idioma: 'en', marca: 'escolhida' }),
-    atualizado: atualizarSidecarXmp(DO_LIGHTROOM, { estrelas: 4, cor: 'roxo', marca: 'escolhida', ajustes }),
-    retirado: atualizarSidecarXmp(atualizarSidecarXmp(DO_LIGHTROOM, { marca: 'escolhida', ajustes }), { cor: null, marca: null, ajustes: null }),
-  }
-  const navegador = await abrirChromium()
-  try {
-    const pagina = await navegador.newPage()
-    await pagina.goto('about:blank')
-    const lidos = await pagina.evaluate(
-      ({ textos, ns }) => {
-        const saida = {}
-        for (const [nome, texto] of Object.entries(textos)) {
-          const doc = new DOMParser().parseFromString(texto, 'application/xml')
-          const erro = doc.getElementsByTagName('parsererror')[0]
-          const d = doc.getElementsByTagNameNS('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Description')[0]
-          saida[nome] = {
-            erro: erro ? erro.textContent : null,
-            raiz: doc.documentElement.namespaceURI + doc.documentElement.localName,
-            nota: d?.getAttributeNS('http://ns.adobe.com/xap/1.0/', 'Rating'),
-            rotulo: d?.getAttributeNS('http://ns.adobe.com/xap/1.0/', 'Label'),
-            pick: d?.getAttributeNS('http://ns.adobe.com/xmp/1.0/DynamicMedia/', 'pick'),
-            ajustes: doc.getElementsByTagNameNS(ns, 'Ajustes')[0]?.textContent ?? null,
-            autor: doc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'creator')[0]?.textContent ?? null,
-            assuntos: Array.from(doc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'subject')[0]?.getElementsByTagName('rdf:li') ?? [], (li) => li.textContent),
-          }
-        }
-        return saida
-      },
-      { textos, ns: NAMESPACE_DOS_AJUSTES },
-    )
-    for (const [nome, lido] of Object.entries(lidos)) {
-      assert.equal(lido.erro, null, `${nome}: XML mal formado`)
-      assert.equal(lido.raiz, 'adobe:ns:meta/xmpmeta')
+test(
+  'Chromium: o XML que escrevemos e atualizamos é bem formado e um leitor de XML de verdade acha as propriedades',
+  { skip: semChromium, timeout: 240000 },
+  async () => {
+    const ajustes = { nota: 'a "b" <c> & \'d\'', luz: { exposicao: 1 } }
+    const textos = {
+      novo: sidecarXmp({ estrelas: 3, cor: 'verde', marca: 'rejeitada', ajustes, autor: 'João & Maria', direitos: '© <2026>', software: 'X "Y"' }),
+      pacote: pacoteXmp({ estrelas: 1, cor: 'azul', idioma: 'en', marca: 'escolhida' }),
+      atualizado: atualizarSidecarXmp(DO_LIGHTROOM, { estrelas: 4, cor: 'roxo', marca: 'escolhida', ajustes }),
+      retirado: atualizarSidecarXmp(atualizarSidecarXmp(DO_LIGHTROOM, { marca: 'escolhida', ajustes }), { cor: null, marca: null, ajustes: null }),
     }
-    assert.deepEqual([lidos.novo.nota, lidos.novo.rotulo, lidos.novo.pick, lidos.novo.autor], ['3', 'Verde', '-1', 'João & Maria'])
-    assert.deepEqual(JSON.parse(lidos.novo.ajustes), ajustes)
-    assert.deepEqual([lidos.pacote.nota, lidos.pacote.rotulo, lidos.pacote.pick], ['1', 'Blue', '1'])
-    assert.deepEqual([lidos.atualizado.nota, lidos.atualizado.rotulo, lidos.atualizado.pick], ['4', 'Purple', '1'])
-    assert.deepEqual(JSON.parse(lidos.atualizado.ajustes), ajustes)
-    assert.deepEqual(lidos.atualizado.assuntos, ['casamento', 'família & amigos'])
-    assert.deepEqual([lidos.retirado.nota, lidos.retirado.rotulo, lidos.retirado.pick, lidos.retirado.ajustes], ['2', null, '0', null])
-    assert.deepEqual(lidos.retirado.assuntos, ['casamento', 'família & amigos'])
-  } finally {
-    await navegador.close()
-  }
-})
+    const navegador = await abrirChromium()
+    try {
+      const pagina = await navegador.newPage()
+      await pagina.goto('about:blank')
+      const lidos = await pagina.evaluate(
+        ({ textos, ns }) => {
+          const saida = {}
+          for (const [nome, texto] of Object.entries(textos)) {
+            const doc = new DOMParser().parseFromString(texto, 'application/xml')
+            const erro = doc.getElementsByTagName('parsererror')[0]
+            const d = doc.getElementsByTagNameNS('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Description')[0]
+            saida[nome] = {
+              erro: erro ? erro.textContent : null,
+              raiz: doc.documentElement.namespaceURI + doc.documentElement.localName,
+              nota: d?.getAttributeNS('http://ns.adobe.com/xap/1.0/', 'Rating'),
+              rotulo: d?.getAttributeNS('http://ns.adobe.com/xap/1.0/', 'Label'),
+              pick: d?.getAttributeNS('http://ns.adobe.com/xmp/1.0/DynamicMedia/', 'pick'),
+              ajustes: doc.getElementsByTagNameNS(ns, 'Ajustes')[0]?.textContent ?? null,
+              autor: doc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'creator')[0]?.textContent ?? null,
+              assuntos: Array.from(
+                doc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'subject')[0]?.getElementsByTagName('rdf:li') ?? [],
+                (li) => li.textContent,
+              ),
+            }
+          }
+          return saida
+        },
+        { textos, ns: NAMESPACE_DOS_AJUSTES },
+      )
+      for (const [nome, lido] of Object.entries(lidos)) {
+        assert.equal(lido.erro, null, `${nome}: XML mal formado`)
+        assert.equal(lido.raiz, 'adobe:ns:meta/xmpmeta')
+      }
+      assert.deepEqual([lidos.novo.nota, lidos.novo.rotulo, lidos.novo.pick, lidos.novo.autor], ['3', 'Verde', '-1', 'João & Maria'])
+      assert.deepEqual(JSON.parse(lidos.novo.ajustes), ajustes)
+      assert.deepEqual([lidos.pacote.nota, lidos.pacote.rotulo, lidos.pacote.pick], ['1', 'Blue', '1'])
+      assert.deepEqual([lidos.atualizado.nota, lidos.atualizado.rotulo, lidos.atualizado.pick], ['4', 'Purple', '1'])
+      assert.deepEqual(JSON.parse(lidos.atualizado.ajustes), ajustes)
+      assert.deepEqual(lidos.atualizado.assuntos, ['casamento', 'família & amigos'])
+      assert.deepEqual([lidos.retirado.nota, lidos.retirado.rotulo, lidos.retirado.pick, lidos.retirado.ajustes], ['2', null, '0', null])
+      assert.deepEqual(lidos.retirado.assuntos, ['casamento', 'família & amigos'])
+    } finally {
+      await navegador.close()
+    }
+  },
+)

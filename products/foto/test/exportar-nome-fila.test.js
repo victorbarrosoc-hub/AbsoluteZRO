@@ -74,7 +74,10 @@ test('nome: saneado para Windows e macOS — proibidos, reservados, pontas, cont
     const s = sanear(entrada)
     assert.ok(s.length > 0, 'nunca vazio')
     assert.ok(!/[<>:"/\\|?*]/.test(s), `caractere proibido em ${JSON.stringify(s)}`)
-    assert.ok(Array.from(s).every((c) => c.codePointAt(0) >= 32 && c.codePointAt(0) !== 127), 'sem caractere de controle')
+    assert.ok(
+      Array.from(s).every((c) => c.codePointAt(0) >= 32 && c.codePointAt(0) !== 127),
+      'sem caractere de controle',
+    )
     assert.ok(!/^[\s.]|[\s.]$/.test(s), `ponta com ponto ou espaço em ${JSON.stringify(s)}`)
     assert.equal(s, s.normalize('NFC'))
     assert.equal(sanear(s), s, 'sanear o que já está saneado não muda nada')
@@ -96,7 +99,10 @@ test('nome: colisão resolve com -2, -3 e nunca devolve um nome que já existe',
   assert.equal(acento.proximo({ nome: 'café.nef' }), 'café-2.jpg')
   // sequência do lote anda sozinha; extensão por formato
   const lote = criarNomes({ modelo: '{trabalho}_{seq:3}', extensao: 'tiff', inicio: 9 })
-  assert.deepEqual([lote.proximo(FOTO), lote.proximo(FOTO), lote.proximo({ ...FOTO, seq: 500 })], ['Casamento Ana e Leo_009.tif', 'Casamento Ana e Leo_010.tif', 'Casamento Ana e Leo_500.tif'])
+  assert.deepEqual(
+    [lote.proximo(FOTO), lote.proximo(FOTO), lote.proximo({ ...FOTO, seq: 500 })],
+    ['Casamento Ana e Leo_009.tif', 'Casamento Ana e Leo_010.tif', 'Casamento Ana e Leo_500.tif'],
+  )
   assert.deepEqual(EXTENSOES, { jpeg: 'jpg', tiff: 'tif', png: 'png', webp: 'webp' })
   assert.equal(nomeDeSaida('{nome}', FOTO, { extensao: 'png', existentes: ['IMG_0042.png'] }), 'IMG_0042-2.png')
   // nome no limite: ainda cabe o sufixo e a extensão em 255 bytes
@@ -143,7 +149,14 @@ test('receita: qualquer entrada vira receita válida, e normalizar de novo não 
     pasta: '',
     compressao: null,
   })
-  for (const lixo of [null, undefined, 42, 'jpeg', [], { formato: 'bmp', qualidade: 'alta', bits: 12, espaco: 'cmyk', tamanho: 'grande', nitidez: 7, metadados: 'x', marcaDagua: {}, nome: 9, pasta: {} }]) {
+  for (const lixo of [
+    null,
+    undefined,
+    42,
+    'jpeg',
+    [],
+    { formato: 'bmp', qualidade: 'alta', bits: 12, espaco: 'cmyk', tamanho: 'grande', nitidez: 7, metadados: 'x', marcaDagua: {}, nome: 9, pasta: {} },
+  ]) {
     assert.deepEqual(normalizarReceita(lixo), padrao, JSON.stringify(lixo))
   }
   assert.deepEqual(FORMATOS, ['jpeg', 'tiff', 'png', 'webp'])
@@ -157,7 +170,10 @@ test('receita: qualquer entrada vira receita válida, e normalizar de novo não 
   // 16 bits só onde existe; formato sem perda não tem qualidade
   assert.equal(normalizarReceita({ formato: 'jpeg', bits: 16 }).bits, 8)
   assert.equal(normalizarReceita({ formato: 'webp', bits: 16 }).bits, 8)
-  assert.deepEqual([normalizarReceita({ formato: 'tiff', bits: 16, qualidade: 50 }).bits, normalizarReceita({ formato: 'tiff', bits: 16, qualidade: 50 }).qualidade], [16, null])
+  assert.deepEqual(
+    [normalizarReceita({ formato: 'tiff', bits: 16, qualidade: 50 }).bits, normalizarReceita({ formato: 'tiff', bits: 16, qualidade: 50 }).qualidade],
+    [16, null],
+  )
   assert.equal(normalizarReceita({ formato: 'png', bits: 16 }).bits, 16)
   // compressão só no TIFF
   assert.equal(normalizarReceita({ formato: 'tiff' }).compressao, 'nenhuma')
@@ -171,15 +187,32 @@ test('receita: qualquer entrada vira receita válida, e normalizar de novo não 
   assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'lado', px: 1e9, ampliar: true } }).tamanho, { tipo: 'lado', px: 65535, ampliar: true })
   assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'lado', px: 3 } }).tamanho, { tipo: 'lado', px: 16, ampliar: false })
   assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'megapixels', mp: 12.3456 } }).tamanho, { tipo: 'megapixels', mp: 12.35, ampliar: false })
-  assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'caixa', largura: 1920.4, altura: 1080 } }).tamanho, { tipo: 'caixa', largura: 1920, altura: 1080, ampliar: false })
+  assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'caixa', largura: 1920.4, altura: 1080 } }).tamanho, {
+    tipo: 'caixa',
+    largura: 1920,
+    altura: 1080,
+    ampliar: false,
+  })
   assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'caixa', largura: 1920 } }).tamanho, { tipo: 'original', ampliar: false })
   assert.deepEqual(normalizarReceita({ tamanho: { tipo: 'lado', px: -5 } }).tamanho, { tipo: 'original', ampliar: false })
   // nitidez e marca
   assert.deepEqual(normalizarReceita({ nitidez: 'fosco' }).nitidez, { destino: 'fosco', intensidade: 'padrao' })
   assert.deepEqual(normalizarReceita({ nitidez: { destino: 'brilhante', intensidade: 'alta' } }).nitidez, { destino: 'brilhante', intensidade: 'alta' })
   assert.equal(normalizarReceita({ nitidez: { destino: 'outdoor' } }).nitidez, null)
-  assert.deepEqual(normalizarReceita({ marcaDagua: '  © Ana  ' }).marcaDagua, { texto: '© Ana', posicao: 'inferior-direito', opacidade: 0.5, tamanho: 0.25, margem: 0.03 })
-  assert.deepEqual(normalizarReceita({ marcaDagua: { texto: 'x', posicao: 'canto', opacidade: 9, tamanho: 0, margem: 2 } }).marcaDagua, { texto: 'x', posicao: 'inferior-direito', opacidade: 1, tamanho: 0.01, margem: 0.45 })
+  assert.deepEqual(normalizarReceita({ marcaDagua: '  © Ana  ' }).marcaDagua, {
+    texto: '© Ana',
+    posicao: 'inferior-direito',
+    opacidade: 0.5,
+    tamanho: 0.25,
+    margem: 0.03,
+  })
+  assert.deepEqual(normalizarReceita({ marcaDagua: { texto: 'x', posicao: 'canto', opacidade: 9, tamanho: 0, margem: 2 } }).marcaDagua, {
+    texto: 'x',
+    posicao: 'inferior-direito',
+    opacidade: 1,
+    tamanho: 0.01,
+    margem: 0.45,
+  })
   assert.equal(normalizarReceita({ marcaDagua: { texto: '   ' } }).marcaDagua, null)
   assert.equal(normalizarReceita({ nome: 'x'.repeat(500) }).nome.length, 200)
 
@@ -192,7 +225,14 @@ test('receita: qualquer entrada vira receita válida, e normalizar de novo não 
       qualidade: escolher([undefined, r() * 200 - 50, 'x']),
       bits: escolher([8, 16, 32, undefined]),
       espaco: escolher([...ESPACOS_DE_SAIDA, 'xyz', undefined]),
-      tamanho: escolher([undefined, 1000 * r(), { tipo: 'lado', px: r() * 9000 }, { tipo: 'megapixels', mp: r() * 60 }, { tipo: 'caixa', largura: r() * 4000, altura: r() * 4000, ampliar: r() < 0.5 }, { tipo: 'x' }]),
+      tamanho: escolher([
+        undefined,
+        1000 * r(),
+        { tipo: 'lado', px: r() * 9000 },
+        { tipo: 'megapixels', mp: r() * 60 },
+        { tipo: 'caixa', largura: r() * 4000, altura: r() * 4000, ampliar: r() < 0.5 },
+        { tipo: 'x' },
+      ]),
       nitidez: escolher([null, 'tela', { destino: 'fosco', intensidade: 'baixa' }, { destino: 1 }]),
       metadados: escolher([...METADADOS, 'tudo', undefined]),
       marcaDagua: escolher([null, 'PROVA', { texto: 'a', posicao: 'diagonal', opacidade: r() * 2 }, { posicao: 'centro' }]),
@@ -211,14 +251,23 @@ test('receita: qualquer entrada vira receita válida, e normalizar de novo não 
 })
 
 test('predefinições de saída: Entrega, Instagram, Prova do cliente e Impressão', () => {
-  assert.deepEqual(PREDEFINICOES_DE_SAIDA.map((p) => p.id), ['entrega', 'instagram', 'prova', 'impressao'])
-  assert.deepEqual(PREDEFINICOES_DE_SAIDA.map((p) => p.nome), ['Entrega', 'Instagram', 'Prova do cliente', 'Impressão'])
+  assert.deepEqual(
+    PREDEFINICOES_DE_SAIDA.map((p) => p.id),
+    ['entrega', 'instagram', 'prova', 'impressao'],
+  )
+  assert.deepEqual(
+    PREDEFINICOES_DE_SAIDA.map((p) => p.nome),
+    ['Entrega', 'Instagram', 'Prova do cliente', 'Impressão'],
+  )
   for (const p of PREDEFINICOES_DE_SAIDA) {
     assert.deepEqual(normalizarReceita(p.receita), p.receita, `${p.id}: receita já normalizada`)
     assert.ok(p.descricao.length > 0 && p.descricao.length < 80)
   }
   const entrega = receitaDaPredefinicao('entrega')
-  assert.deepEqual([entrega.formato, entrega.espaco, entrega.qualidade, entrega.tamanho.tipo, entrega.marcaDagua, entrega.metadados], ['jpeg', 'p3', 92, 'original', null, 'sem-local'])
+  assert.deepEqual(
+    [entrega.formato, entrega.espaco, entrega.qualidade, entrega.tamanho.tipo, entrega.marcaDagua, entrega.metadados],
+    ['jpeg', 'p3', 92, 'original', null, 'sem-local'],
+  )
   const instagram = receitaDaPredefinicao('instagram')
   assert.deepEqual([instagram.formato, instagram.espaco, instagram.tamanho], ['jpeg', 'srgb', { tipo: 'lado', px: 2160, ampliar: false }])
   const prova = receitaDaPredefinicao('prova')
@@ -226,7 +275,10 @@ test('predefinições de saída: Entrega, Instagram, Prova do cliente e Impress�
   assert.ok(prova.marcaDagua && prova.marcaDagua.texto.length > 0)
   const impressao = receitaDaPredefinicao('impressao')
   assert.deepEqual([impressao.formato, impressao.bits, impressao.espaco, impressao.tamanho.tipo, impressao.qualidade], ['tiff', 16, 'adobe', 'original', null])
-  assert.deepEqual(['entrega', 'instagram', 'prova', 'impressao'].map((id) => extensaoDaReceita(receitaDaPredefinicao(id))), ['jpg', 'jpg', 'jpg', 'tif'])
+  assert.deepEqual(
+    ['entrega', 'instagram', 'prova', 'impressao'].map((id) => extensaoDaReceita(receitaDaPredefinicao(id))),
+    ['jpg', 'jpg', 'jpg', 'tif'],
+  )
   // é uma cópia: mexer nela não mexe na predefinição
   entrega.qualidade = 10
   assert.equal(receitaDaPredefinicao('entrega').qualidade, 92)
@@ -242,7 +294,10 @@ test('chave de saída: a mesma foto, os mesmos ajustes e a mesma receita dão a 
   const base = chaveDeSaida({ foto: 'f1', ajustes, receita })
   assert.match(base, /^[0-9a-f]{16}$/)
   // ordem das chaves e receita crua × normalizada não importam
-  assert.equal(chaveDeSaida({ receita: { ...receita }, ajustes: { cor: { vibracao: 5 }, luz: { contraste: 10, exposicao: 0.3 }, versao: 1 }, foto: 'f1' }), base)
+  assert.equal(
+    chaveDeSaida({ receita: { ...receita }, ajustes: { cor: { vibracao: 5 }, luz: { contraste: 10, exposicao: 0.3 }, versao: 1 }, foto: 'f1' }),
+    base,
+  )
   assert.equal(chaveDeSaida({ foto: 'f1', ajustes, receita: { formato: 'jpeg', qualidade: 92, espaco: 'p3', pasta: 'Entrega' } }), base)
   assert.equal(chaveDeSaida({ foto: 'f1', ajustes: structuredClone(ajustes), receita: structuredClone(receita) }), base)
   const outras = [
@@ -277,19 +332,30 @@ test('fila: estados, limite de simultâneos e progresso', () => {
   assert.equal(fila.estado().terminada, false)
 
   const primeiros = fila.proximos()
-  assert.deepEqual(primeiros.map((x) => x.id), ['i1', 'i2'], 'só dois de cada vez, na ordem')
+  assert.deepEqual(
+    primeiros.map((x) => x.id),
+    ['i1', 'i2'],
+    'só dois de cada vez, na ordem',
+  )
   assert.equal(primeiros[0].dados.foto, 'foto-1')
   assert.deepEqual(fila.proximos(), [], 'sem vaga, nada novo')
   assert.deepEqual(estados(fila), ['tratando', 'tratando', 'na-fila', 'na-fila', 'na-fila'])
 
   fila.concluir('i1', { arquivo: 'a.jpg' })
-  assert.deepEqual(fila.proximos().map((x) => x.id), ['i3'], 'abriu uma vaga')
+  assert.deepEqual(
+    fila.proximos().map((x) => x.id),
+    ['i3'],
+    'abriu uma vaga',
+  )
   fila.falhar('i2', new Error('disco cheio'))
   fila.falhar('i3', 'sem permissão na pasta')
   const meio = fila.estado()
   assert.deepEqual(meio.contagem, { total: 5, naFila: 2, tratando: 0, prontas: 1, falhas: 2, puladas: 0 })
   assert.equal(meio.progresso, 3 / 5)
-  assert.deepEqual(meio.itens.map((x) => x.motivo), [null, 'disco cheio', 'sem permissão na pasta', null, null])
+  assert.deepEqual(
+    meio.itens.map((x) => x.motivo),
+    [null, 'disco cheio', 'sem permissão na pasta', null, null],
+  )
   assert.deepEqual(meio.itens[0].resultado, { arquivo: 'a.jpg' })
 
   fila.pular('i4', 'arquivo original sumiu')
@@ -313,17 +379,29 @@ test('fila: estados, limite de simultâneos e progresso', () => {
 
 test('fila: pausar, retomar e cancelar', () => {
   const fila = criarFila({ itens: [1, 2, 3, 4].map((n) => item(n)), simultaneos: 1 })
-  assert.deepEqual(fila.proximos().map((x) => x.id), ['i1'])
+  assert.deepEqual(
+    fila.proximos().map((x) => x.id),
+    ['i1'],
+  )
   fila.pausar()
   assert.equal(fila.estado().pausada, true)
   fila.concluir('i1')
   assert.deepEqual(fila.proximos(), [], 'em pausa não começa nada novo (o que estava em curso terminou)')
   fila.retomar()
-  assert.deepEqual(fila.proximos().map((x) => x.id), ['i2'])
+  assert.deepEqual(
+    fila.proximos().map((x) => x.id),
+    ['i2'],
+  )
 
   fila.cancelar()
   assert.deepEqual(estados(fila), ['pronta', 'tratando', 'pulada', 'pulada'])
-  assert.deepEqual(fila.estado().itens.slice(2).map((x) => x.motivo), ['cancelada', 'cancelada'])
+  assert.deepEqual(
+    fila
+      .estado()
+      .itens.slice(2)
+      .map((x) => x.motivo),
+    ['cancelada', 'cancelada'],
+  )
   assert.deepEqual(fila.proximos(), [])
   // o que estava em curso: se terminar, vale; se cair, não é falha
   fila.falhar('i2', new Error('abortado'))
@@ -350,10 +428,17 @@ test('fila: repetir só as que falharam', () => {
   assert.equal(fila.estado().terminada, true)
   assert.equal(fila.repetirFalhas(), 2)
   assert.deepEqual(estados(fila), ['pronta', 'na-fila', 'na-fila', 'pulada'])
-  assert.deepEqual(fila.proximos().map((x) => x.id), ['i2', 'i3'], 'a pronta e a pulada não voltam')
+  assert.deepEqual(
+    fila.proximos().map((x) => x.id),
+    ['i2', 'i3'],
+    'a pronta e a pulada não voltam',
+  )
   fila.concluir('i2')
   fila.falhar('i3', 'erro B de novo')
-  assert.deepEqual(fila.estado().itens.map((x) => x.tentativas), [1, 2, 2, 1])
+  assert.deepEqual(
+    fila.estado().itens.map((x) => x.tentativas),
+    [1, 2, 2, 1],
+  )
   assert.equal(fila.estado().itens[2].motivo, 'erro B de novo')
   assert.equal(fila.repetirFalhas(), 1)
   fila.proximos()
@@ -367,7 +452,11 @@ test('fila: repetir só as que falharam', () => {
   cancelada.cancelar()
   assert.equal(cancelada.repetirFalhas(), 1)
   assert.equal(cancelada.estado().cancelada, false)
-  assert.deepEqual(cancelada.proximos().map((x) => x.id), ['i1'], 'só a que falhou; a cancelada continua pulada')
+  assert.deepEqual(
+    cancelada.proximos().map((x) => x.id),
+    ['i1'],
+    'só a que falhou; a cancelada continua pulada',
+  )
 })
 
 test('fila: idempotência — a mesma saída não é refeita, no lote e entre lotes', () => {
@@ -393,8 +482,17 @@ test('fila: idempotência — a mesma saída não é refeita, no lote e entre lo
   // segundo lote, com as chaves do primeiro: só roda o que falhou e o que é novo
   const segunda = criarFila({ itens: [...itens, item(3)], feitas })
   assert.deepEqual(estados(segunda), ['pulada', 'pulada', 'pulada', 'pulada', 'na-fila', 'na-fila'])
-  assert.deepEqual(segunda.estado().itens.slice(0, 4).map((x) => x.motivo), ['ja-feita', 'ja-feita', 'ja-feita', 'ja-feita'])
-  assert.deepEqual(segunda.proximos().map((x) => x.id), ['i2', 'i3'])
+  assert.deepEqual(
+    segunda
+      .estado()
+      .itens.slice(0, 4)
+      .map((x) => x.motivo),
+    ['ja-feita', 'ja-feita', 'ja-feita', 'ja-feita'],
+  )
+  assert.deepEqual(
+    segunda.proximos().map((x) => x.id),
+    ['i2', 'i3'],
+  )
   // mudou um ajuste da foto 1: aquela saída volta a ser trabalho
   const terceira = criarFila({ itens: [item(1, { ajustes: { versao: 1, cor: { saturacao: 20 } } })], feitas })
   assert.deepEqual(estados(terceira), ['na-fila'])
@@ -464,7 +562,13 @@ test('fila: executar — roda com o limite de simultâneos, guarda o motivo das 
   assert.equal(pico, 3, 'nunca mais de três ao mesmo tempo, e chega a três')
   assert.deepEqual(final.contagem, { total: 12, naFila: 0, tratando: 0, prontas: 10, falhas: 2, puladas: 0 })
   assert.equal(final.terminada, true)
-  assert.deepEqual(final.itens.filter((x) => x.estado === 'falhou').map((x) => [x.id, x.motivo]), [['i4', 'arquivo corrompido'], ['i9', 'sem memória']])
+  assert.deepEqual(
+    final.itens.filter((x) => x.estado === 'falhou').map((x) => [x.id, x.motivo]),
+    [
+      ['i4', 'arquivo corrompido'],
+      ['i9', 'sem memória'],
+    ],
+  )
   assert.deepEqual(final.itens[0].resultado, { arquivo: 'foto-1.jpg' })
   assert.ok(final.itens.filter((x) => x.estado === 'pronta').every((x) => x.duracao >= 0))
   assert.ok(final.estimativa.medidos === 10 && final.estimativa.restanteMs === 0)
@@ -521,7 +625,11 @@ test('fila: executar — pausa espera o retomar; cancelar dispara o sinal e nada
   )
   assert.ok(sinais.every((s) => s.aborted))
   assert.equal(cancelada.cancelada, true)
-  assert.deepEqual(cancelada.contagem, { total: 6, naFila: 0, tratando: 0, prontas: 1, falhas: 0, puladas: 5 }, 'interrompida por cancelamento é pulada, não falha')
+  assert.deepEqual(
+    cancelada.contagem,
+    { total: 6, naFila: 0, tratando: 0, prontas: 1, falhas: 0, puladas: 5 },
+    'interrompida por cancelamento é pulada, não falha',
+  )
   assert.ok(cancelada.itens.slice(1).every((x) => x.motivo === 'cancelada'))
   assert.ok(sinais.length <= 3, 'depois do cancelamento nada novo começou')
 })

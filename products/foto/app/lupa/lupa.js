@@ -194,6 +194,10 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
     zoom.definir({ ligado: true, fx: (px * (s - 1)) / s, fy: (py * (s - 1)) / s })
   }
 
+  // a imagem maior de um RAW pode vir deitada: gira dentro da moldura (que já tem a medida certa)
+  const estiloDoGiro =
+    giro !== 1 ? `width:${(deitado ? fa : fl).toFixed(1)}px;height:${(deitado ? fl : fa).toFixed(1)}px;transform:translate(-50%,-50%) ${GIRO[giro]}` : undefined
+
   return html`<div
     class="quadro"
     ref=${caixa}
@@ -211,7 +215,7 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
             alt=${foto?.nome ?? ''}
             draggable=${false}
             decoding="async"
-            style=${giro !== 1 ? `width:${(deitado ? fa : fl).toFixed(1)}px;height:${(deitado ? fl : fa).toFixed(1)}px;transform:translate(-50%,-50%) ${GIRO[giro]}` : undefined}
+            style=${estiloDoGiro}
             data-girada=${giro !== 1 ? '' : undefined}
             onLoad=${(e) => definirNatural({ l: e.currentTarget.naturalWidth, a: e.currentTarget.naturalHeight })}
           />`

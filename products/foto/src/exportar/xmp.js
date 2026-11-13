@@ -325,7 +325,11 @@ export function lerSidecarXmp(texto) {
   } else if (numero < 0) {
     saida.tem.marca = true
     saida.marca = 'rejeitada'
-  } else if (String(bom ?? '').trim().toLowerCase() === 'true') {
+  } else if (
+    String(bom ?? '')
+      .trim()
+      .toLowerCase() === 'true'
+  ) {
     saida.tem.marca = true
     saida.marca = 'escolhida'
   }

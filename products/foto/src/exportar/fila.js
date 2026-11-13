@@ -393,7 +393,15 @@ export function criarFila({ itens = [], simultaneos = 2, feitas = [], minimoPara
       }
       const resolvidas = contagem.prontas + contagem.falhas + contagem.puladas
       return {
-        itens: lista.map((x) => ({ id: x.id, chave: x.chave, estado: x.estado, motivo: x.motivo, tentativas: x.tentativas, duracao: x.duracao, resultado: x.resultado })),
+        itens: lista.map((x) => ({
+          id: x.id,
+          chave: x.chave,
+          estado: x.estado,
+          motivo: x.motivo,
+          tentativas: x.tentativas,
+          duracao: x.duracao,
+          resultado: x.resultado,
+        })),
         contagem,
         progresso: contagem.total ? resolvidas / contagem.total : 1,
         pausada,
@@ -471,7 +479,10 @@ const subamostragemDe = (qualidade) => (qualidade >= 90 ? '444' : '420')
  *              mascara     { largura, altura, dados: Float32Array } da marca-d'água, desenhada por quem chama a partir
  *                          de `receita.marcaDagua.texto`. Receita com marca e sem máscara LANÇA: prova sem marca não sai
  *              codificar   opcional: ({ formato, largura, altura, rgba, qualidade }) → Promise<Uint8Array>, o
- *                          codificador do navegador (canvas). Sem ele o JPEG sai pelo codificador próprio; WebP só com ele
+ *                          codificador do navegador (canvas.convertToBlob). É usado em WebP (só existe com ele) e em
+ *                          JPEG de qualidade abaixo de 90. De 90 para cima o JPEG sai SEMPRE pelo codificador próprio:
+ *                          o canvas do Chromium corta a croma pela metade (4:2:0) em qualquer qualidade abaixo de 100
+ *                          (medido no teste), e quem pede 92 espera a croma inteira
  *
  * → { bytes, tipo (MIME), extensao, largura, altura, receita (a normalizada) }
  * Ordem: reduzir (em luz linear) → nitidez de saída → marca-d'água → bytes → codificar → perfil ICC, EXIF e XMP.
@@ -520,10 +531,12 @@ export async function gerarSaida(imagem, receita, contexto = {}) {
   let bytes
   if (r.formato === 'jpeg' || r.formato === 'webp') {
     const rgba = paraBytes(atual, { bits: 8 })
-    if (contexto.codificar) bytes = await contexto.codificar({ formato: r.formato, largura, altura, rgba, qualidade: r.qualidade })
-    else {
+    const subamostragem = subamostragemDe(r.qualidade)
+    if (contexto.codificar && (r.formato === 'webp' || subamostragem === '420')) {
+      bytes = await contexto.codificar({ formato: r.formato, largura, altura, rgba, qualidade: r.qualidade })
+    } else {
       const { codificarJpeg } = await import('./jpeg.js')
-      bytes = codificarJpeg({ largura, altura, rgb8: rgba, qualidade: r.qualidade, subamostragem: subamostragemDe(r.qualidade) })
+      bytes = codificarJpeg({ largura, altura, rgb8: rgba, qualidade: r.qualidade, subamostragem })
     }
     if (r.formato === 'jpeg') {
       const { embutirNoJpeg } = await import('./jpeg.js')

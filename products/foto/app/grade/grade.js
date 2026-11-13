@@ -280,6 +280,10 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
     }
   })
 
+  const colunasCss = `repeat(${m.colunas},${m.lado.toFixed(2)}px)`
+  const sobe = Math.round(recuo + primeira * m.passo)
+  const estiloDaJanela = `transform:translateY(${sobe}px);left:${m.margem}px;grid-template-columns:${colunasCss};column-gap:${m.vao}px;row-gap:${m.vao}px;--pe:${m.pe}px`
+
   return html`<div
     class="grade"
     ref=${rolador}
@@ -295,7 +299,7 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
         ? html`<div class="grade-area" style=${`height:${Math.ceil(altura)}px`}>
           <div
             class=${cx('grade-janela', entrando && 'cascata')}
-            style=${`transform:translateY(${Math.round(recuo + primeira * m.passo)}px);left:${m.margem}px;grid-template-columns:repeat(${m.colunas},${m.lado.toFixed(2)}px);column-gap:${m.vao}px;row-gap:${m.vao}px;--pe:${m.pe}px`}
+            style=${estiloDaJanela}
           >
             ${janela.map((it, k) => html`<${Cartao}
               key=${it.foto.id}

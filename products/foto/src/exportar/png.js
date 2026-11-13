@@ -41,7 +41,7 @@ export function adler32(bytes) {
   let a = 1
   let b = 0
   // 5552 é o maior trecho em que as somas não passam de 32 bits antes do resto por 65521
-  for (let i = 0; i < bytes.length; ) {
+  for (let i = 0; i < bytes.length;) {
     const fim = Math.min(i + 5552, bytes.length)
     for (; i < fim; i++) {
       a += bytes[i]
@@ -234,7 +234,8 @@ function filtrar(dados, largura, altura, bits, entrada, adaptativo) {
 
 /** Confere o que os escritores de PNG e TIFF recebem; devolve quantas amostras por pixel a entrada tem (3 ou 4). */
 export function conferirImagem({ largura, altura, dados, bits, canais }, formato) {
-  if (!Number.isInteger(largura) || !Number.isInteger(altura) || largura < 1 || altura < 1) throw new Error(`${formato}: largura e altura precisam ser inteiros positivos`)
+  if (!Number.isInteger(largura) || !Number.isInteger(altura) || largura < 1 || altura < 1)
+    throw new Error(`${formato}: largura e altura precisam ser inteiros positivos`)
   if (canais !== 3) throw new Error(`${formato}: só RGB (canais: 3)`)
   const n = largura * altura
   if (bits === 16) {
@@ -345,7 +346,8 @@ export async function lerPng(bytes) {
       saida.altura = v.getUint32(p + 12)
       saida.bits = dados[8]
       const cor = dados[9]
-      if ((cor !== 2 && cor !== 6) || (saida.bits !== 8 && saida.bits !== 16) || dados[12] !== 0) throw new Error('PNG: só RGB ou RGBA de 8 ou 16 bits, sem entrelaçamento')
+      if ((cor !== 2 && cor !== 6) || (saida.bits !== 8 && saida.bits !== 16) || dados[12] !== 0)
+        throw new Error('PNG: só RGB ou RGBA de 8 ou 16 bits, sem entrelaçamento')
       saida.canais = cor === 2 ? 3 : 4
     } else if (tipo === 'iCCP') {
       const zero = dados.indexOf(0)

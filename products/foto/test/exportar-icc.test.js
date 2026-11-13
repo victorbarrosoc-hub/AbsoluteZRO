@@ -26,11 +26,46 @@ const ascii = (b, p, n = 4) => String.fromCharCode(...b.subarray(p, p + n))
 // A tolerância cobre a diferença de D50 entre perfis: o da HP e o da Kodak usam Z = 0,8251/0,8252; o PCS do ICC (e a
 // Apple, a Adobe e nós) usa 0,8249.
 const PUBLICADOS = {
-  srgb: { colunas: [[0.436066, 0.222488, 0.013916], [0.385147, 0.716873, 0.097076], [0.143066, 0.060608, 0.714096]], tol: 3e-4 },
-  p3: { colunas: [[0.515121, 0.241196, -0.001053], [0.291977, 0.692245, 0.041885], [0.157104, 0.066574, 0.784073]], tol: 2e-5 },
-  adobe: { colunas: [[0.609741, 0.311111, 0.01947], [0.205276, 0.625671, 0.060867], [0.149185, 0.063217, 0.744568]], tol: 3e-5 },
-  prophoto: { colunas: [[0.797675, 0.28804, 0], [0.135192, 0.711874, 0], [0.031338, 0.000086, 0.82521]], tol: 4e-4 },
-  rec2020: { colunas: [[0.6735, 0.279, -0.0019], [0.1657, 0.6753, 0.03], [0.1251, 0.0456, 0.7972]], tol: 4e-4 },
+  srgb: {
+    colunas: [
+      [0.436066, 0.222488, 0.013916],
+      [0.385147, 0.716873, 0.097076],
+      [0.143066, 0.060608, 0.714096],
+    ],
+    tol: 3e-4,
+  },
+  p3: {
+    colunas: [
+      [0.515121, 0.241196, -0.001053],
+      [0.291977, 0.692245, 0.041885],
+      [0.157104, 0.066574, 0.784073],
+    ],
+    tol: 2e-5,
+  },
+  adobe: {
+    colunas: [
+      [0.609741, 0.311111, 0.01947],
+      [0.205276, 0.625671, 0.060867],
+      [0.149185, 0.063217, 0.744568],
+    ],
+    tol: 3e-5,
+  },
+  prophoto: {
+    colunas: [
+      [0.797675, 0.28804, 0],
+      [0.135192, 0.711874, 0],
+      [0.031338, 0.000086, 0.82521],
+    ],
+    tol: 4e-4,
+  },
+  rec2020: {
+    colunas: [
+      [0.6735, 0.279, -0.0019],
+      [0.1657, 0.6753, 0.03],
+      [0.1251, 0.0456, 0.7972],
+    ],
+    tol: 4e-4,
+  },
 }
 
 // A matriz de adaptação D65 → D50 (Bradford) como está na tag `chad` dos perfis sRGB e Display P3 publicados
@@ -115,7 +150,10 @@ test('ICC: primárias iguais às dos perfis publicados (D50 por Bradford); Displ
   // o caminho do titular: os nove números do Display P3 são exatamente os inteiros s15Fixed16 do perfil da Apple
   const p3 = lerIcc(perfilIcc('p3')).tags
   const inteiros = [p3.rXYZ, p3.gXYZ, p3.bXYZ].flatMap((t) => t.xyz.map((v) => Math.round(v * 65536)))
-  assert.deepEqual(inteiros, PUBLICADOS.p3.colunas.flat().map((v) => Math.round(v * 65536)))
+  assert.deepEqual(
+    inteiros,
+    PUBLICADOS.p3.colunas.flat().map((v) => Math.round(v * 65536)),
+  )
 })
 
 test('ICC: as primárias somam o branco do PCS, wtpt é D50 e chad é a Bradford publicada', () => {
@@ -149,7 +187,10 @@ test('ICC: a matriz confere com uma conta independente (primárias → XYZ → B
     const conesPara = vezes(BRADFORD, [0.9642, 1, 0.8249])
     const nossa = matrizDoPerfil(espaco)
     for (let c = 0; c < 3; c++) {
-      const cones = vezes(BRADFORD, P[c].map((v) => v * S[c])).map((v, i) => (v * conesPara[i]) / conesDe[i])
+      const cones = vezes(
+        BRADFORD,
+        P[c].map((v) => v * S[c]),
+      ).map((v, i) => (v * conesPara[i]) / conesDe[i])
       const adaptado = resolver(BRADFORD, cones)
       for (let l = 0; l < 3; l++) perto(nossa[l * 3 + c], adaptado[l], 1e-12, `${espaco}: coluna ${c}, linha ${l}`)
     }

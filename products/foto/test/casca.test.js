@@ -23,7 +23,8 @@ const TELAS = pastaDasTelas()
 const QUANTAS = 300
 const ESPERA = 60_000
 /** O nome que o trabalho ganha sozinho: a data da primeira foto (com o ano, quando não é o ano corrente). */
-const TRABALHO = `Fotos de ${new Date('2026-11-13T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', ...(new Date().getFullYear() === 2026 ? {} : { year: 'numeric' }) })}`
+const COM_ANO = new Date().getFullYear() === 2026 ? {} : { year: 'numeric' }
+const TRABALHO = `Fotos de ${new Date('2026-11-13T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', ...COM_ANO })}`
 
 let app, navegador, fotos
 
@@ -783,9 +784,10 @@ const alvosPequenos = (pagina) =>
           a = Math.max(a, r.height - cima - baixo)
         }
       }
+      const nome = el.getAttribute('aria-label') || el.textContent || ''
       if (l < 43.5 || a < 43.5)
         ruins.push(
-          `${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`,
+          `${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`,
         )
     }
     return ruins
@@ -1030,6 +1032,12 @@ test('componentes: Controle, Segmentado, Pílulas, Chave, Menu, Estrelas, Progre
       const { html, render, useState } = await import('/app/preact.js')
       const c = await import('/app/componentes/index.js')
       window.__mudancas = []
+      const itensDoMenu = [
+        { rotulo: 'Copiar ajustes', icone: 'trocar', aoEscolher: () => window.__mudancas.push(['menu', 'copiar', null]) },
+        { rotulo: 'Colar ajustes' },
+        { divisa: true },
+        { rotulo: 'Zerar', perigo: true },
+      ]
       function Mostra() {
         const [v, definir] = useState({ exposicao: 0, contraste: -20, visao: 'grade', pilhas: true, cenas: ['retrato'], estrelas: 2 })
         const mudar = (k) => (x, extra) => {
@@ -1061,13 +1069,17 @@ test('componentes: Controle, Segmentado, Pílulas, Chave, Menu, Estrelas, Progre
             <button class="vidro vidro--tinta" id="principal"><${c.Icone} nome="ok" />Tratar as escolhidas</button>
             <button class="vidro">Enviar para o cliente</button>
             <button class="vidro vidro--icone" aria-label="Desfazer" data-dica="Desfazer" data-tecla="⌘Z"><${c.Icone} nome="desfazer" /></button>
-            <${c.Menu} rotulo="Mais" gatilho=${html`<${c.Icone} nome="tres" />`} itens=${[{ rotulo: 'Copiar ajustes', icone: 'trocar', aoEscolher: () => window.__mudancas.push(['menu', 'copiar', null]) }, { rotulo: 'Colar ajustes' }, { divisa: true }, { rotulo: 'Zerar', perigo: true }]} />
+            <${c.Menu} rotulo="Mais" gatilho=${html`<${c.Icone} nome="tres" />`} itens=${itensDoMenu} />
             <span class="ficha"><${c.Icone} nome="info" />Latitude 12,4 EV</span>
             <${c.Tecla}>P<//>
           </div>
           <${c.Progresso} valor=${0.42} rotulo="Analisando" />
           <${c.Progresso} valor=${null} rotulo="Lendo" />
-          <div style="display:flex;gap:12px"><${c.Esqueleto} largura=${96} altura=${64} raio=${10} /><${c.Esqueleto} largura=${96} altura=${64} raio=${10} /><div style="flex:1;display:grid;gap:8px;align-content:center"><${c.Esqueleto} largura="70%" /><${c.Esqueleto} largura="40%" /></div></div>
+          <div style="display:flex;gap:12px">
+            <${c.Esqueleto} largura=${96} altura=${64} raio=${10} />
+            <${c.Esqueleto} largura=${96} altura=${64} raio=${10} />
+            <div style="flex:1;display:grid;gap:8px;align-content:center"><${c.Esqueleto} largura="70%" /><${c.Esqueleto} largura="40%" /></div>
+          </div>
         </div>`
       }
       const alvo = Object.assign(document.createElement('div'), { id: 'mostra', className: 'cartao' })

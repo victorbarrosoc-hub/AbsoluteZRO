@@ -67,7 +67,11 @@ for (const bits of [8, 16]) {
 
       // as tags do RGB baseline (seção 6), em ordem crescente, com os tipos da especificação
       const tags = lido.diretorio.entradas.map((e) => e.tag)
-      assert.deepEqual(tags, [...tags].sort((a, b) => a - b), 'entradas em ordem crescente de tag')
+      assert.deepEqual(
+        tags,
+        [...tags].sort((a, b) => a - b),
+        'entradas em ordem crescente de tag',
+      )
       for (const tag of [256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296]) assert.ok(tags.includes(tag), `falta a tag ${tag}`)
       assert.deepEqual(valorDe(lido.diretorio, TAG.bits, { todos: true }), [bits, bits, bits])
       assert.equal(valorDe(lido.diretorio, TAG.fotometria), 2)
@@ -105,7 +109,11 @@ for (const bits of [8, 16]) {
         if (i > 0) assert.ok(p >= posicoes[i - 1] + tamanhos[i - 1])
       })
       const cru = CENA.largura * CENA.altura * 3 * (bits / 8)
-      if (compressao === 'nenhuma') assert.equal(tamanhos.reduce((s, t) => s + t, 0), cru)
+      if (compressao === 'nenhuma')
+        assert.equal(
+          tamanhos.reduce((s, t) => s + t, 0),
+          cru,
+        )
       else assert.ok(arquivo.length < cru * 0.95, `Deflate encolhe (${arquivo.length} de ${cru})`)
     })
   }
@@ -153,7 +161,10 @@ test('TIFF: aceita o RGBA de paraBytes (descarta o alfa), respeita a orientaçã
     assert.equal(lido.xmp, null)
     assert.equal(lido.exif, null)
   }
-  assert.ok(rgba.every((v, i) => i % 4 !== 3 || v === 255), 'a entrada não foi tocada')
+  assert.ok(
+    rgba.every((v, i) => i % 4 !== 3 || v === 255),
+    'a entrada não foi tocada',
+  )
   await assert.rejects(escreverTiff({ largura: 40, altura: 30, dados: new Uint8Array(10), bits: 8 }), /amostras/)
   await assert.rejects(escreverTiff({ largura: 40, altura: 30, dados: new Uint8Array(n * 3), bits: 16 }), /Uint16Array/)
   await assert.rejects(escreverTiff({ largura: 40, altura: 30, dados: new Uint8Array(n * 4), bits: 8, canais: 4 }), /RGB/)
@@ -237,7 +248,16 @@ test('TIFF: diretório com valores de todos os tipos vai e volta, com os valores
     const tamanho = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8][u16le(bloco, p + 2)] * u32le(bloco, p + 4)
     if (tamanho > 4) assert.equal(u32le(bloco, p + 8) % 2, 0)
   }
-  assert.throws(() => montarBlocoTiff({ entradas: [{ tag: 1, tipo: TIPO.SHORT, valores: 1 }, { tag: 1, tipo: TIPO.SHORT, valores: 2 }] }), /repetida/)
+  assert.throws(
+    () =>
+      montarBlocoTiff({
+        entradas: [
+          { tag: 1, tipo: TIPO.SHORT, valores: 1 },
+          { tag: 1, tipo: TIPO.SHORT, valores: 2 },
+        ],
+      }),
+    /repetida/,
+  )
   assert.throws(() => lerBlocoTiff(new Uint8Array(16)), /ordem de bytes/)
 })
 
@@ -254,7 +274,7 @@ for (const bits of [8, 16]) {
       const pedacos = []
       const idat = []
       let iccp = null
-      for (let p = 8; p < arquivo.length; ) {
+      for (let p = 8; p < arquivo.length;) {
         const n = v.getUint32(p)
         const tipo = String.fromCharCode(...arquivo.subarray(p + 4, p + 8))
         assert.equal(v.getUint32(p + 8 + n), zlib.crc32(arquivo.subarray(p + 4, p + 8 + n)), `CRC do pedaço ${tipo}`)
@@ -272,7 +292,10 @@ for (const bits of [8, 16]) {
       assert.equal(pedacos.at(-1), 'IEND')
       assert.ok(pedacos.indexOf('iCCP') < pedacos.indexOf('IDAT'))
       const primeiro = pedacos.indexOf('IDAT')
-      assert.ok(pedacos.slice(primeiro, primeiro + idat.length).every((t) => t === 'IDAT'), 'IDATs consecutivos')
+      assert.ok(
+        pedacos.slice(primeiro, primeiro + idat.length).every((t) => t === 'IDAT'),
+        'IDATs consecutivos',
+      )
       assert.ok(!pedacos.includes('sRGB') && !pedacos.includes('gAMA'), 'com iCCP não vai sRGB nem gAMA')
 
       // iCCP: nome em Latin-1, zero, método 0, perfil em zlib

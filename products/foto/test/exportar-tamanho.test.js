@@ -5,7 +5,15 @@ import { test } from 'node:test'
 
 import { CURVAS } from '../src/motor/cor/espacos.js'
 import { POSICOES, aplicarMarcaDagua, encaixarMarca } from '../src/exportar/marca-dagua.js'
-import { DESTINOS_DE_NITIDEZ, INTENSIDADES_DE_NITIDEZ, calcularTamanho, nitidezDeSaida, parametrosDeNitidez, reamostrar, redimensionar } from '../src/exportar/redimensionar.js'
+import {
+  DESTINOS_DE_NITIDEZ,
+  INTENSIDADES_DE_NITIDEZ,
+  calcularTamanho,
+  nitidezDeSaida,
+  parametrosDeNitidez,
+  reamostrar,
+  redimensionar,
+} from '../src/exportar/redimensionar.js'
 import { cenaDeTeste, sorteio } from './apoio-exportar.js'
 
 const perto = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: esperado ${b}, veio ${a} (tolerância ${tol})`)
@@ -31,7 +39,11 @@ test('tamanho: lado maior, megapixels e caixa mantêm a proporção e não ampli
   const r = sorteio(2)
   for (let i = 0; i < 300; i++) {
     const original = { largura: 200 + Math.floor(r() * 8000), altura: 200 + Math.floor(r() * 8000) }
-    const pedido = [{ tipo: 'lado', px: 64 + Math.floor(r() * 4000) }, { tipo: 'megapixels', mp: 0.1 + r() * 20 }, { tipo: 'caixa', largura: 64 + Math.floor(r() * 3000), altura: 64 + Math.floor(r() * 3000) }][i % 3]
+    const pedido = [
+      { tipo: 'lado', px: 64 + Math.floor(r() * 4000) },
+      { tipo: 'megapixels', mp: 0.1 + r() * 20 },
+      { tipo: 'caixa', largura: 64 + Math.floor(r() * 3000), altura: 64 + Math.floor(r() * 3000) },
+    ][i % 3]
     const t = calcularTamanho(original, pedido)
     assert.ok(t.largura <= original.largura && t.altura <= original.altura, 'nunca amplia')
     const menor = Math.min(t.largura, t.altura)
@@ -49,7 +61,12 @@ test('redução: a luz média da foto é preservada (Lanczos, área e automátic
   const cena = cenaDeTeste(640, 427, 3)
   const antes = media(cena.dados)
   for (const metodo of ['lanczos', 'area', 'auto']) {
-    for (const [l, a] of [[320, 214], [219, 146], [100, 67], [47, 31]]) {
+    for (const [l, a] of [
+      [320, 214],
+      [219, 146],
+      [100, 67],
+      [47, 31],
+    ]) {
       const depois = media(reamostrar(cena.dados, 640, 427, 3, l, a, { metodo }))
       // medido: até 0,03% (o que sobra é o limite contra ringing nas bordas duras da cena); a área é exata
       for (let c = 0; c < 3; c++) perto(depois[c], antes[c], antes[c] * 1e-3, `${metodo} → ${l} × ${a}, canal ${c}`)
@@ -71,12 +88,19 @@ test('redução: a luz média da foto é preservada (Lanczos, área e automátic
 // Borda degrau vertical: metade 0,2, metade 0,8
 function degrau(largura, altura, onde = 0.5) {
   const dados = new Float32Array(largura * altura * 3)
-  for (let y = 0; y < altura; y++) for (let x = 0; x < largura; x++) dados.fill(x < largura * onde ? 0.2 : 0.8, (y * largura + x) * 3, (y * largura + x) * 3 + 3)
+  for (let y = 0; y < altura; y++)
+    for (let x = 0; x < largura; x++) dados.fill(x < largura * onde ? 0.2 : 0.8, (y * largura + x) * 3, (y * largura + x) * 3 + 3)
   return dados
 }
 
 test('redução: borda degrau sem ringing (nada passa dos dois patamares) e ainda nítida', () => {
-  for (const [de, para] of [[600, 205], [600, 150], [600, 400], [1000, 97], [601, 333]]) {
+  for (const [de, para] of [
+    [600, 205],
+    [600, 150],
+    [600, 400],
+    [1000, 97],
+    [601, 333],
+  ]) {
     const altura = 24
     const novaAltura = Math.max(2, Math.round((altura * para) / de))
     const entrada = degrau(de, altura, 0.503)
@@ -110,7 +134,10 @@ test('redução: geometria sem deslocamento — uma rampa continua rampa e o cen
   const rampa = new Float32Array(L * A * 3)
   for (let y = 0; y < A; y++) for (let x = 0; x < L; x++) rampa.set([(x + 0.5) / L, (y + 0.5) / A, 0.5], (y * L + x) * 3)
   for (const metodo of ['lanczos', 'area', 'auto']) {
-    for (const [l, a] of [[137, 103], [40, 30]]) {
+    for (const [l, a] of [
+      [137, 103],
+      [40, 30],
+    ]) {
       const saida = reamostrar(rampa, L, A, 3, l, a, { metodo })
       // longe das bordas, o pixel de saída vale a coordenada do próprio centro
       for (let y = 4; y < a - 4; y += 3) {
@@ -294,7 +321,10 @@ test("marca-d'água: a mesma receita dá a mesma marca em qualquer tamanho de fo
   const opcoes = { posicao: 'inferior-direito', tamanho: 0.3, margem: 0.04 }
   const pequena = encaixarMarca({ largura: 600, altura: 400 }, mascara, opcoes)
   const grande = encaixarMarca({ largura: 6000, altura: 4000 }, mascara, opcoes)
-  assert.deepEqual([grande.largura, grande.altura, grande.x, grande.y], [pequena.largura, pequena.altura, pequena.x, pequena.y].map((v) => v * 10))
+  assert.deepEqual(
+    [grande.largura, grande.altura, grande.x, grande.y],
+    [pequena.largura, pequena.altura, pequena.x, pequena.y].map((v) => v * 10),
+  )
   // marca que não cabe é encolhida para caber dentro das margens, sem perder a proporção
   const estreita = encaixarMarca({ largura: 1000, altura: 100 }, mascaraDeTeste(100, 100), { tamanho: 0.5, margem: 0.1 })
   assert.deepEqual([estreita.largura, estreita.altura], [80, 80])
@@ -329,7 +359,12 @@ test("marca-d'água repetida em diagonal: cobre a foto toda, com vãos, inclinad
   const fracao = total / (L * A)
   assert.ok(fracao > 0.17 && fracao < 0.27, `fração coberta ${fracao.toFixed(3)}`)
   // cada quadrante da foto recebe marca (é repetida, não uma só)
-  for (const [x0, y0] of [[0, 0], [300, 0], [0, 200], [300, 200]]) {
+  for (const [x0, y0] of [
+    [0, 0],
+    [300, 0],
+    [0, 200],
+    [300, 200],
+  ]) {
     let n = 0
     for (let y = y0; y < y0 + 200; y++) for (let x = x0; x < x0 + 300; x++) if (marcado(x, y)) n++
     assert.ok(n > 300 * 200 * 0.1, `quadrante (${x0}, ${y0}) com ${n} pixels de marca`)
