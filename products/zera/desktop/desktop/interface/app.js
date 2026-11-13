@@ -831,9 +831,9 @@
     })
     const mac = est.plataforma === 'darwin' ? ' No Mac, cópias feitas pelo Finder podem não ocupar espaço extra.' : ''
     abrirFolha(
-      topoFolha('Repetidos', Z.fmt.bytes(d.desperdicio), 'Fica o mais antigo de cada grupo.' + mac),
+      topoFolha('Repetidos', Z.fmt.bytes(d.desperdicio), 'Fica o original de cada grupo; as cópias vão marcadas.' + mac),
       lista,
-      h('div', { class: 'folha-pe' }, h('span', { class: 'nota', text: `${Z.fmt.num(d.qtd)} grupos` }), h('button', { class: 'vidro', onclick: fecharFolha }, 'Fechar'), botao),
+      h('div', { class: 'folha-pe' }, h('span', { class: 'nota', text: `${Z.fmt.num(d.qtd)} ${d.qtd === 1 ? 'grupo' : 'grupos'}` }), h('button', { class: 'vidro', onclick: fecharFolha }, 'Fechar'), botao),
     )
   }
 
