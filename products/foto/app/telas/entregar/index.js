@@ -22,6 +22,12 @@ const TITULOS = {
   evento: ['Busca', 'por rosto.'],
 }
 
+/** As teclas desta tela para a folha "?". */
+export const atalhos = [
+  { tecla: ['←', '→'], oque: 'No seletor: Exportar, Galeria, Busca por rosto' },
+  { tecla: 'Esc', oque: 'Fechar a folha' },
+]
+
 export default function Entregar({ loja, ativa }) {
   usarFolhaDeEstilo()
   const guardado = loja.aba('entregar')

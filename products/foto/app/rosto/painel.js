@@ -436,8 +436,7 @@ export function PainelEvento({ loja, embutido = false }) {
     carregar()
   }, [])
 
-  if (fora)
-    return html`<div class="linha-aviso linha-aviso--fora" role="status" data-fora=${fora}><${Icone} nome="info" />${FORA[fora]}</div>`
+  if (fora) return html`<div class="linha-aviso linha-aviso--fora" role="status" data-fora=${fora}><${Icone} nome="info" />${FORA[fora]}</div>`
 
   if (aberto)
     return html`<section class="rosto-painel">

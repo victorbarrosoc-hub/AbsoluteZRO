@@ -234,7 +234,18 @@ const TAREFAS = {
    * transferido). 'menor' é a reduzida levada a até `lado` px (800). O antes (padrão: o neutro com a mesma geometria)
    * fica guardado enquanto ele, o nível e a região não mudam; os avisos saem da base, como na placa.
    */
-  async revelar({ id, ajustes, tela = 'srgb', semente = 1, nivel: qual = 'menor', regiao = null, lado = LADO_JS, look = null, comparar = null, avisos = false }) {
+  async revelar({
+    id,
+    ajustes,
+    tela = 'srgb',
+    semente = 1,
+    nivel: qual = 'menor',
+    regiao = null,
+    lado = LADO_JS,
+    look = null,
+    comparar = null,
+    avisos = false,
+  }) {
     const foto = fotoDe(id)
     let base
     if (qual === 'cheia') base = (await nivel(foto, 'cheia')).base

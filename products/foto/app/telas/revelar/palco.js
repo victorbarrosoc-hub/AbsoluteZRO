@@ -287,11 +287,7 @@ export function Palco({
             </div>`
           : null
       }
-      ${
-        linha
-          ? html`<svg class="regua-linha" aria-hidden="true"><line x1=${linha.de.x} y1=${linha.de.y} x2=${linha.ate.x} y2=${linha.ate.y} /></svg>`
-          : null
-      }
+      ${linha ? html`<svg class="regua-linha" aria-hidden="true"><line x1=${linha.de.x} y1=${linha.de.y} x2=${linha.ate.x} y2=${linha.ate.y} /></svg>` : null}
       </div>
       ${
         fase === 'vazio'

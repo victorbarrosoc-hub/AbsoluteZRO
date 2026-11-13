@@ -53,6 +53,27 @@ async function abrir(opcoes = {}, { tema } = {}) {
   await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
   return { contexto, pagina, olho, resposta }
 }
+/** Espera a grade parar (a cascata de entrada acabou, nada se mexe) e devolve quantas colunas ela tem. */
+async function gradeParada(pagina) {
+  const contar = () =>
+    pagina.evaluate(() => {
+      const fotos = [...document.querySelectorAll('.foto')]
+      const topo = fotos[0].offsetTop
+      return fotos.filter((f) => f.offsetTop === topo).length
+    })
+  let antes = -1
+  for (let i = 0; i < 100; i++) {
+    // só as animações que terminam (a de entrada); o brilho de espera das miniaturas é infinito
+    await pagina.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().iterations === Infinity),
+    )
+    await pagina.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))))
+    const agora = await contar()
+    if (agora === antes) return agora
+    antes = agora
+  }
+  return antes
+}
 const CELULAR = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
 
 /** Escolhe as 300 fotos e espera a grade ficar inteira (a contagem de "Todas" chega ao total). */
@@ -400,10 +421,9 @@ test('teclado: setas pelas colunas, P, X, 1–5, cor, Shift, Cmd/Ctrl + A, Esc, 
     const ids = await naLoja(pagina, (l) => l.catalogo.itens().map((i) => i.foto.id))
     const cartao = (i) => pagina.locator(`.foto[data-id="${ids[i]}"]`)
     const emFoco = () => pagina.evaluate(() => document.activeElement?.dataset.id ?? null)
-    const colunas = await pagina.evaluate(() => {
-      const topo = document.querySelector('.foto').getBoundingClientRect().top
-      return [...document.querySelectorAll('.foto')].filter((f) => Math.abs(f.getBoundingClientRect().top - topo) < 2).length
-    })
+    // a grade entra em cascata (cada cartão sobe um pouco depois do anterior): conta as colunas pela posição de layout
+    // (sem as transformações) e só depois que a entrada terminou e a contagem ficou igual em dois quadros seguidos
+    const colunas = await gradeParada(pagina)
     assert.ok(colunas >= 4, `${colunas} colunas`)
 
     await cartao(0).click()
@@ -513,10 +533,7 @@ test('teclado: setas pelas colunas, P, X, 1–5, cor, Shift, Cmd/Ctrl + A, Esc, 
     const focoAntes = await naLoja(pagina, (l) => l.catalogo.foco())
     for (let i = 0; i < 4; i++) await pagina.keyboard.press('Shift+ArrowRight')
     assert.equal(await naLoja(pagina, (l) => l.catalogo.foco()), focoAntes)
-    const colunasDepois = await pagina.evaluate(() => {
-      const topo = document.querySelector('.foto').getBoundingClientRect().top
-      return [...document.querySelectorAll('.foto')].filter((f) => Math.abs(f.getBoundingClientRect().top - topo) < 2).length
-    })
+    const colunasDepois = await gradeParada(pagina)
     assert.ok(colunasDepois < colunas, `${colunasDepois} colunas depois de aumentar (eram ${colunas})`)
     // duplo clique no controle volta ao neutro
     await tamanho.dblclick()
@@ -532,10 +549,34 @@ test('teclado: setas pelas colunas, P, X, 1–5, cor, Shift, Cmd/Ctrl + A, Esc, 
     assert.doesNotMatch(await pagina.locator('.painel-aba[data-tela="revelar"]').innerText(), /em breve|em desenvolvimento/i)
     await pagina.waitForFunction(() => !document.documentElement.dataset.sentido)
     await captura(pagina, 'revelar-1440-claro')
+    // a folha "?" mostra as teclas da casca e as da tela da frente (o `atalhos` que cada tela exporta)
+    const gruposDaFolha = async () => {
+      await pagina.keyboard.press('?')
+      await pagina.waitForSelector('dialog.folha-atalhos[open]')
+      const r = await pagina.evaluate(() =>
+        Object.fromEntries(
+          [...document.querySelectorAll('dialog.folha-atalhos .atalhos section')].map((sec) => [
+            sec.querySelector('h3').textContent,
+            [...sec.querySelectorAll('kbd')].map((k) => k.textContent),
+          ]),
+        ),
+      )
+      await pagina.keyboard.press('Escape')
+      await pagina.waitForSelector('dialog.folha-atalhos[open]', { state: 'detached' })
+      return r
+    }
+    const naRevelar = await gruposDaFolha()
+    for (const t of ['\\', 'J', 'W', 'R']) assert.ok(naRevelar.Revelar?.includes(t), `Revelar: ${t} em ${JSON.stringify(naRevelar.Revelar)}`)
+    assert.ok(naRevelar.Marcar?.includes('P'), 'as da casca continuam')
+    assert.equal(naRevelar.Decupar, undefined)
     await pagina.locator('.dock-aba[data-aba="entregar"]').click()
     await pagina.waitForSelector('.painel-aba[data-tela="entregar"]:not([hidden]) h2')
+    assert.ok((await gruposDaFolha()).Entregar?.includes('Esc'))
     await pagina.keyboard.press('g')
     await pagina.waitForSelector('.painel-aba[data-tela="decupar"]:not([hidden])')
+    const naDecupar = await gruposDaFolha()
+    for (const t of ['C', 'S', 'O', 'I']) assert.ok(naDecupar.Decupar?.includes(t), `Decupar: ${t}`)
+    assert.equal(naDecupar.Revelar, undefined)
     assert.equal(await pagina.locator('.dock-aba[aria-current="page"]').innerText(), 'Decupar')
     assert.ok((await pagina.locator('.foto').count()) > 10)
     limpo(olho)
@@ -830,10 +871,7 @@ test('celular (390 px): nada rola de lado, os alvos têm 44 px, o dock é a barr
       assert.ok(dock.y > 700 && Math.abs(dock.y + dock.height - 844) < 1 && dock.width === 390, JSON.stringify(dock))
       assert.equal(await pagina.locator('.dock-aba svg').first().isVisible(), true)
       // três colunas ou mais, e poucos nós
-      const colunas = await pagina.evaluate(() => {
-        const topo = document.querySelector('.foto').getBoundingClientRect().top
-        return [...document.querySelectorAll('.foto')].filter((f) => Math.abs(f.getBoundingClientRect().top - topo) < 2).length
-      })
+      const colunas = await gradeParada(pagina)
       assert.ok(colunas >= 3, `${colunas} colunas`)
       assert.ok((await pagina.locator('.foto').count()) <= 60)
       // tocar seleciona e sobe a barra de marcar; tocar de novo abre a foto grande

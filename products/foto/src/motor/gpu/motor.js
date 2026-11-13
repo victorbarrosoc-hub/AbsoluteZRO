@@ -346,7 +346,10 @@ export function criarMotorGpu(gl, { precisao = 'auto' } = {}) {
     U.v3('uZonaM', [zm.a, zm.b, zm.luz])
     U.v3('uZonaA', [za.a, za.b, za.luz])
     U.v3('uZonaG', [zg.a, zg.b, zg.luz])
-    U.b('uLuzZona', T.zonas.some((z) => z.luz !== 0))
+    U.b(
+      'uLuzZona',
+      T.zonas.some((z) => z.luz !== 0),
+    )
     const inv = 1 / (T.mistura * T.largura + T.largura)
     gl.uniform4f(atual.local('uTonal4'), T.pivo, T.pivo - T.largura, inv, T.pivo - T.mistura * T.largura)
     U.f('uTonalMeioInv', 1 / T.largura)
@@ -903,8 +906,7 @@ export function criarMotorGpu(gl, { precisao = 'auto' } = {}) {
     if (fonte.dados) {
       const rgba = new Uint8Array(fonte.dados.buffer, fonte.dados.byteOffset, w0 * h0 * 4)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w0, h0, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba)
-    }
-    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, fonte)
+    } else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, fonte)
     gl.generateMipmap(gl.TEXTURE_2D)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)

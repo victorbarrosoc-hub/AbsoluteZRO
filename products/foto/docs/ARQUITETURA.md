@@ -185,10 +185,18 @@ criarMotorGpu(gl, { precisao: 'auto' | 'alta' }) → { info: { renderizador, sof
   comparar: { posicao, antes? }, avisos, tela, semLocal, semente, look }) → { largura, altura, ms, ignorados },
   ler({ tipo: 'float' | 'uint8', regiao }), histograma(ajustes) → Promise<{ tela, cena }>, mostrarImagem(fonte), liberar(), perdido() }
 criarSessao({ canvas, motor: 'auto' | 'gpu' | 'js', aoMudar }) → { abrir(File | { bytes, nome }) → Promise<{ latitude, exif,
-  camera, avisos, largura, altura, origem, motor }>, ajustar(ajustes), ver({ zoom: 'encaixar' | número, x, y, comparar,
-  avisos, tela }), histograma(), auto(), exportarPixels(ajustes, { tela, bits, lado, aoProgredir, sinal }) → Promise<{
-  largura, altura, dados, espaco, motor }>, lerTela(), estado(), fechar() }
+  camera, avisos, largura, altura, origem, motor, branco: { kelvin, tinta, neutro } | null, folgaAltas }>, ajustar(ajustes),
+  ver({ zoom: 'encaixar' | número, x, y, comparar: { posicao, antes? } | null, avisos, tela }), histograma(), auto(),
+  exportarPixels(ajustes, { tela, bits, lado, aoProgredir, sinal }) → Promise<{ largura, altura, dados, espaco, motor }>,
+  lerTela(), estado(), fechar() }
 ```
+
+`branco` é a luz da foto como a câmera gravou (o da base; `neutro` = o neutro da câmera): o branco Manual da Revelar
+parte dele. `folgaAltas` são os EV que a reconstrução de altas luzes recuperou acima da saturação; a margem da Revelar
+soma ao topo da faixa, como `margens()` em `tela.js`. Sem placa, o worker (`motor-worker.js`) desenha o antes/depois e
+os avisos da mesma base, sem ler o arquivo de novo: `src/motor/avisos.js` (`marcasDosAvisos`, `pintarAvisos`,
+`comporAntes`, `AVISOS`, `corteDaBase`) é a tradução em JS dos passos da placa — perdido sólido (três canais cortados no
+sensor), recuperável e sombra abaixo do ruído em listras de 8 px.
 
 Ponto, tela, geometria e look na placa: a mesma conta do JS (< 1/255). Vizinhança: os mesmos filtros; o filtro guiado
 de raio maior que 6 px roda reduzido por área e volta por bilinear (ΔE Oklab médio < 0,003). Redução de ruído só no JS.
@@ -253,14 +261,80 @@ malha recusou (nuca, cabelo) vem com `duvidoso: true` e não decide foco nem pes
 ```
 Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca: 'escolhida' | 'rejeitada' | null,
        estrelas: 0..5, cor: null | 'vermelho' | 'amarelo' | 'verde' | 'azul' | 'roxo', magnitude?, medidas?, rostos?, cena?,
-       grupo?, ajustes?, predefinicao?: { id, nome, intensidade, modo }, cliente?: { escolhida, comentario },
+       grupo?, ajustes?, predefinicao?: { id, nome, intensidade, modo },
+       versoes?: [{ nome, ajustes, quando }],
+       cliente?: { galeria, escolhida, comentario, etiquetas: [etiqueta] } | null,
        par?: { nome, tamanho, formato }, proporcao?, semPrevia?,
        latitude?, analise?: { versao, camadas, objetos, rotulos, cena: { confianca, porque, noite }, giro, raw? },
        escolha?: { tipo, tamanho, escolhida, equivalente, equivalentes, desempate } }
 ```
 
+Quem escreve cada campo novo (todos sem desfazer, por `atualizar`/`atualizarVarias`, salvo onde diz):
+
+| Campo | Quem | O quê |
+| --- | --- | --- |
+| `versoes` | Revelar (folha Versões) | ajustes guardados com nome; "usar" volta a eles com desfazer |
+| `cliente` | Entregar (galeria, `aplicarSelecao`) | o que o cliente fez no link: escolheu, comentou, pediu (`etiquetas` da lista fechada do banco); `null` quando saiu da galeria |
+| `analise` | esteira da Decupar (`analisar.js`) | versão, camadas que rodaram, objetos e rótulos, a cena com o porquê, o giro do horizonte e `raw: 'lido'` depois da segunda passada |
+| `escolha` | esteira da Decupar | o papel da foto no momento (`avaliarEnsaio`): a escolhida, as equivalentes e o desempate |
+| `latitude` | esteira da Decupar (segunda passada pelo RAW) | a Latitude medida no arquivo (`medirLatitude`), que a nota usa para separar recuperável de perdido |
+
 `id` = hash estável de nome + tamanho + data de captura. Estado em memória com `assinar()`; quem guarda é a tela
 (IndexedDB e a pasta escolhida). Atalhos do Lightroom: P, X, U, 0–5, 6–9, setas, espaço, Z, G, E, N.
+
+- Filtro: `filtrar({ marca, estrelas, cor, balde, motivo, cena, tipo, cliente, texto })`; `cliente` é `'escolhida'`
+  e/ou `'com-pedido'` (comentário ou etiqueta), e `contagens().cliente` conta os dois. A Decupar mostra a pílula
+  "Do cliente" só quando há alguma escolhida.
+- Pilhas e foco: a análise reagrupa (`definirGrupos`), mede a nota que troca a capa (`atualizarVarias`) ou as pilhas
+  voltam (`empilhar(true)`) sem a pessoa pedir: se a foto em foco ficou escondida numa pilha fechada, a pilha abre no
+  lugar e o foco fica nela (a Revelar e a Estilos não trocam de foto sozinhas). `selecionar(id)` de uma foto escondida
+  numa pilha também a abre. Fechar a pilha à mão continua levando o foco à capa.
+
+### Telas e peças da casca (`app/`)
+
+Tela = `app/telas/<nome>/index.js`: `export default` um componente Preact que recebe `{ loja, ativa }`. Opcionais:
+`export const palco = true` (palco escuro de ponta a ponta; o topo e o dock escurecem junto) e
+`export const atalhos = [{ tecla, oque }]` — as teclas da tela, que a folha "?" (`FolhaAtalhos`) mostra primeiro, num
+grupo com o nome da etapa, junto com as da casca (o mapa do catálogo, `ATALHOS`). `tecla` é texto (`'J'`,
+`'Shift+A'`, `'⌘+Shift+C'`) ou lista de teclas (`['←', '→']`).
+
+Peças com props opcionais que as telas acrescentaram (quem não passa fica com o de sempre):
+
+```
+Lupa({ loja, aoFechar, revelar?,
+       aoTecla?(evento, comando) → true   a tecla é de quem chamou (vem antes das da lupa)
+       contador?, limites?: { antes, depois }      o texto no lugar de "N de M" e o que as setas podem
+       andar?(passo, origem: 'seta' | 'deslize')   troca o "anda pelo catálogo"
+       fixa?, aoComparar?()                         a comparação controlada por quem chamou
+       aoDeslizar?('cima' | 'baixo')                deslizar na vertical, no toque
+       camada?(id)                                  o que vai por cima da foto, dentro da moldura (acompanha o zoom)
+       painel?, painelAberto?                       um painel ao lado (a foto encolhe para caber)
+       topo?, tira?, extras?, classe?               cabeçalho, faixa acima da régua, botões a mais na régua
+       controle? }                                  objeto que a lupa preenche: zoomEm(fx, fy), desligarZoom(), zoomLigado()
+BarraDaGrade({ loja, tamanho, aoTamanho, extra? })  extra: mais pílulas depois das de marca, na mesma linha que rola
+Balao({ gatilho, rotulo, lado: 'esquerda' | 'direita', classeBotao, dica, classe, aoAbrir, pressionado, children })
+       app/componentes/balao.js: um botão que abre um quadro pequeno preso a ele (um controle, duas linhas, um botão);
+       Esc fecha e devolve o foco, clique fora fecha; `children` pode ser (fechar) => vnode. Lista de ações é Menu.
+PainelEvento({ loja, embutido? })   app/rosto/painel.js, a terceira ação da Entregar (embutido: o título fica com a tela)
+qrSvg(texto, { rotulo }) · qrMatriz(texto)   app/componentes/qr.js, o QR da galeria e do evento
+```
+
+O que fica neste aparelho (nada disso sai dele; tudo com try/catch, e sem armazenamento vale o padrão):
+
+| Onde | Chave | O quê |
+| --- | --- | --- |
+| IndexedDB `foto` | lojas `trabalhos`, `catalogos`, `pastas`, `miniaturas` | os trabalhos, o catálogo inteiro (`serializar`), a pasta escolhida e as miniaturas (`app/abrir/guardar.js`) |
+| IndexedDB `foto-estilos` | loja `kv`: `biblioteca`, `conta` | a biblioteca de estilos da pessoa e a cópia do que está na conta (`app/telas/estilos/acervo.js`; a Entregar só lê `biblioteca`) |
+| IndexedDB `foto-rosto` | loja `rostos`: `<evento>\|<foto>` | os vetores dos rostos das fotos de um evento com consentimento (`app/rosto/preparo.js`); nunca sobem |
+| localStorage | `foto_trabalho` | o trabalho aberto por último |
+| cookie | `foto_tema` | claro ou escuro (o servidor lê para a página já nascer certa) |
+| localStorage | `foto_miniatura`, `foto_decupar_painel` | o tamanho da miniatura e o painel "por que esta nota" aberto |
+| localStorage | `foto_decupar_sozinha`, `foto_decupar_camadas`, `foto_decupar_pesos`, `foto_decupar_t_<trabalho>` | a análise começa sozinha, as camadas de visão, os pesos aprendidos e ensaio, rigor e meta de cada trabalho |
+| localStorage | `foto_motor` | 'gpu' ou 'js' forçado na Revelar (laboratório e testes) |
+| localStorage | `foto_estilos` | as preferências da tela Estilos |
+| localStorage | `foto_galeria:<trabalho>` | a ligação trabalho ↔ galeria do cliente (o servidor não sabe de trabalho) |
+| localStorage | `foto_exportadas:<trabalho>` | as chaves de saída já exportadas (`chaveDeSaida`): o lote seguinte pula as prontas |
+| localStorage | `foto-rosto:<evento>` | as fotos e a marca escolhidas ao criar um evento, para continuar o preparo |
 
 ### Predefinição (`src/estilo/predefinicao.js`), arquivo `.zropreset`
 
@@ -322,7 +396,7 @@ src/rosto/textos.js      TEXTOS (consentimento, aviso, cartaz, regulamento) com 
 app/rosto/motor.js       preparar(), rostosDaFoto(fonte 1616), quadro(fonte 320), girarEReduzir(bmp, orientação EXIF)
 app/rosto/worker.js      preparar | foto | quadro (o visitante e o fotógrafo); fotografo-worker.js: evento → rostos + prévias com marca
 app/rosto/preparo.js     api(), criarPreparo({ loja, evento, ids, marca }) (retomável), processarPedidos(evento), vetores locais no IndexedDB
-app/rosto/painel.js      PainelEvento({ loja }) — para a tela Entregar encaixar; cartaz.js: cartazA4() (PNG com QR e aviso)
+app/rosto/painel.js      PainelEvento({ loja, embutido }) — a terceira ação da Entregar; cartaz.js: cartazA4() (PNG com QR e aviso)
 evento/                  a página pública /e/<token> (sem nome nem ícone do produto): consentimento → câmera ao vivo → resultados
 ```
 

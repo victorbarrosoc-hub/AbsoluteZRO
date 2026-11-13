@@ -36,6 +36,18 @@ import { fotografar, voar } from './voar.js'
 /** A tela inteira é palco: a casca escurece o topo e o dock junto. */
 export const palco = true
 
+/** As teclas desta tela para a folha "?" (além das da grade e da lupa, que a casca mostra). */
+export const atalhos = [
+  { tecla: 'C', oque: 'Modo Cenas' },
+  { tecla: 'S', oque: 'Esta passa a ser a escolhida do momento' },
+  { tecla: '→', oque: 'Nas cenas: aceitar e passar' },
+  { tecla: ['↑', '↓'], oque: 'Nas cenas: andar no momento' },
+  { tecla: 'O', oque: 'O que a análise viu' },
+  { tecla: 'I', oque: 'Por que esta nota' },
+  { tecla: 'Espaço', oque: 'Zoom no rosto' },
+  { tecla: ['Alt', '←', '→'], oque: 'Rosto anterior, próximo' },
+]
+
 // o estilo da Decupar entra junto com a tela (a casca só carrega a tela na primeira visita)
 await new Promise((ok) => {
   if (document.querySelector('link[data-decupar]')) return ok()

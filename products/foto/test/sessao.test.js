@@ -1,8 +1,9 @@
 // A sessão de revelação (app/motor/sessao.js + motor-worker.js) no Chromium de verdade, servida com os cabeçalhos de
 // produção: abrir um DNG fabricado (escreverDng) e um JPEG desenhado; a prévia embutida aparece antes da base; ajustar
 // muda os pixels; histograma e automático respondem; exportarPixels devolve o tamanho cheio e bate com revelar do JS;
-// sem placa de verdade a sessão cai para o JS e diz isso; contexto perdido não deixa tela preta; zoom de 100% pede a
-// base cheia.
+// sem placa de verdade a sessão cai para o JS e diz isso, e o próprio worker desenha o antes/depois e os avisos de corte
+// (recuperável × perdido, src/motor/avisos.js) sem ler o arquivo de novo; `abrir` devolve o branco da câmera e a folga
+// das altas; contexto perdido não deixa tela preta; zoom de 100% pede a base cheia.
 //
 // FOTO_MEDIR=1 roda também as medidas de tempo (DNG fabricado de 24 MP e, se as amostras existirem, um ARW real).
 
@@ -12,10 +13,13 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { abrirFoto } from '../src/abrir.js'
 import { escreverDng } from '../src/raw/dng.js'
-import { revelarEmBytes } from '../src/motor/revelar.js'
+import { revelar, revelarEmBytes } from '../src/motor/revelar.js'
+import { neutro } from '../src/motor/ajustes.js'
+import { AVISOS, comporAntes, marcasDosAvisos, pintarAvisos } from '../src/motor/avisos.js'
+import { paraBytes } from '../src/motor/tela.js'
 import { cena, fotografar } from './apoio-motor.js'
 import { EXIGIR, desenharJpegs } from './apoio-tela.js'
-import { abrirPagina, deBase64, semChromium } from './apoio-gpu.js'
+import { abrirPagina, baseSintetica, deBase64, semChromium } from './apoio-gpu.js'
 import { caminhoDaAmostra } from './apoio-raw.js'
 
 const pular = semChromium && !EXIGIR ? semChromium : false
@@ -107,6 +111,126 @@ async function servirArquivo(pagina, nome, corpo) {
 }
 
 const AJUSTES_EXPORTAR = { luz: { exposicao: 0.3, contraste: 20, sombras: 30 }, cor: { saturacao: 20, vibracao: 10 } }
+
+// ─────────── os avisos e o antes no JS (o que o worker desenha sem placa), contra a mesma regra da placa ───────────
+
+test('avisos em JS: perdido sólido, recuperável e sombra em listras, como na placa; antes à esquerda da divisória', () => {
+  // o mesmo caso do teste da placa (gpu.test.js): topo com os três canais em 4, faixa seguinte só com o vermelho alto
+  const base = baseSintetica(3, 200, 120, { altas: true, latitude: { margem: { abaixoDoCinza: 2, acimaDoCinza: 2.5 } } })
+  base.corte = { matriz: [1, 0, 0, 0, 1, 0, 0, 0, 1], limiar: [1, 1, 1] }
+  const img = revelar(base, neutro(), {})
+  const rgba = paraBytes(img, { bits: 8 })
+  const limpa = rgba.slice()
+  pintarAvisos(rgba, 200, 120, marcasDosAvisos(base, neutro(), {}), true)
+  const cor = (k) => AVISOS[k].map((v) => Math.round(v * 255))
+  const px = (d, x, y) => [0, 1, 2].map((c) => d[(y * 200 + x) * 4 + c])
+  const igual = (v, k) => v.every((x, i) => x === cor(k)[i])
+  for (const [x, y] of [
+    [0, 0],
+    [57, 3],
+    [199, 5],
+  ])
+    assert.ok(igual(px(rgba, x, y), 'perdida'), `perdida em ${x},${y}: ${px(rgba, x, y)}`)
+  let recuperaveis = 0
+  for (let y = 6; y < 12; y++) for (let x = 0; x < 200; x++) if (igual(px(rgba, x, y), 'recuperavel')) recuperaveis++
+  assert.ok(recuperaveis > 500 && recuperaveis < 700, `recuperáveis pintados: ${recuperaveis} de 1200`)
+  assert.ok(
+    [0, 1, 2, 3, 4, 5, 6, 7].some((x) => igual(px(rgba, x, 118), 'sombra')),
+    'sombra marcada',
+  )
+  // só as altas: a sombra fica de fora
+  const soAltas = limpa.slice()
+  pintarAvisos(soAltas, 200, 120, marcasDosAvisos(base, neutro(), {}), { altas: true, sombras: false })
+  assert.ok(![0, 1, 2, 3, 4, 5, 6, 7].some((x) => igual(px(soAltas, x, 118), 'sombra')))
+  // foto pronta: o que o JPEG tinha em 255 é perdido
+  const pronta = baseSintetica(3, 200, 120, { altas: true, origem: 'imagem' })
+  const p = paraBytes(revelar(pronta, neutro(), {}), { bits: 8 })
+  pintarAvisos(p, 200, 120, marcasDosAvisos(pronta, neutro(), {}), { altas: true, sombras: false })
+  assert.ok(igual(px(p, 10, 2), 'perdida'))
+  // uma região da foto (zoom de 100%): as marcas seguem a geometria
+  const regiao = { x: 20, y: 0, largura: 40, altura: 20 }
+  const r = paraBytes(revelar(base, neutro(), { regiao }), { bits: 8 })
+  pintarAvisos(r, 40, 20, marcasDosAvisos(base, neutro(), { regiao }), true, { x0: 20, y0: 0 })
+  assert.ok(igual([r[0], r[1], r[2]], 'perdida'))
+  // antes | depois
+  const antes = new Uint8ClampedArray(rgba.length).fill(7)
+  const depois = limpa.slice()
+  comporAntes(depois, antes, 200, 0.25)
+  assert.deepEqual(px(depois, 10, 60), [7, 7, 7])
+  assert.deepEqual(px(depois, 50, 60), [240, 240, 240])
+  assert.deepEqual(px(depois, 120, 60), px(limpa, 120, 60))
+})
+
+test(
+  'sessão sem placa: o worker desenha o antes/depois e os avisos; abrir devolve o branco da câmera e a folga',
+  { skip: pular, timeout: 240000 },
+  async () => {
+    const s = await abrirPagina()
+    try {
+      // cena com um sol (os três canais estouram) e uma faixa vermelha forte (só um canal)
+      const imagem = cena(9, 480, 320)
+      for (let y = 0; y < 320; y++)
+        for (let x = 0; x < 480; x++) {
+          const o = (y * 480 + x) * 3
+          if (y < 60 && x < 160) imagem.dados.set([30, 30, 30], o)
+          else if (y < 60) imagem.dados.set([2.5, 0.05, 0.05], o)
+        }
+      await servirArquivo(s.pagina, 'IMG_0004.DNG', dngDe(imagem, null))
+      await s.pagina.evaluate(async () => {
+        window.__motores = 0
+        const W = window.Worker
+        window.Worker = class extends W {
+          constructor(url, opcoes) {
+            super(url, opcoes)
+            window.__motores++
+          }
+        }
+      })
+      await s.pagina.evaluate(MONTAR, { motor: 'js' })
+      const r = await s.pagina.evaluate(ABRIR, 'IMG_0004.DNG')
+      assert.equal(r.info.motor, 'js')
+      // o branco como a câmera gravou e a folga das altas, da base
+      assert.ok(r.info.branco && Number.isFinite(r.info.branco.kelvin) && Number.isFinite(r.info.branco.tinta), JSON.stringify(r.info.branco))
+      assert.ok(Array.isArray(r.info.branco.neutro) && r.info.branco.neutro.length === 3)
+      assert.equal(typeof r.info.folgaAltas, 'number')
+      assert.ok(r.info.folgaAltas >= 0)
+      const conta = await s.pagina.evaluate(
+        async (cores) => {
+          const quadro = async () => {
+            const n = window.__eventos.filter((e) => e.tipo === 'quadro').length
+            for (let i = 0; i < 200 && window.__eventos.filter((e) => e.tipo === 'quadro').length <= n; i++) await new Promise((ok) => setTimeout(ok, 25))
+          }
+          const contar = () => {
+            const { dados } = window.__s.lerTela()
+            const n = { perdida: 0, recuperavel: 0, sombra: 0 }
+            for (let i = 0; i < dados.length; i += 4)
+              for (const k in cores) if (dados[i] === cores[k] && dados[i + 1] === cores[k] && dados[i + 2] === cores[k]) n[k]++
+            return { n, media: window.__media() }
+          }
+          const sem = contar()
+          window.__s.ver({ avisos: true })
+          await quadro()
+          const com = contar()
+          window.__s.ver({ avisos: false, comparar: { posicao: 0.5, antes: { luz: { exposicao: -3 } } } })
+          await quadro()
+          const comparar = contar()
+          window.__s.ver({ comparar: null })
+          await quadro()
+          return { sem, com, comparar, depois: contar(), motores: window.__motores }
+        },
+        Object.fromEntries(Object.entries(AVISOS).map(([k, v]) => [k, Math.round(v[0] * 255)])),
+      )
+      assert.ok(conta.com.n.perdida > conta.sem.n.perdida + 100, `perdido: ${JSON.stringify(conta)}`)
+      assert.ok(conta.com.n.recuperavel > conta.sem.n.recuperavel + 50, `recuperável: ${JSON.stringify(conta)}`)
+      assert.ok(conta.comparar.media < conta.sem.media - 5, `o antes (−3 EV) escurece a metade esquerda: ${JSON.stringify(conta)}`)
+      assert.ok(Math.abs(conta.depois.media - conta.sem.media) < 0.5, 'sem comparar, volta ao que era')
+      assert.equal(conta.motores, 1, 'uma sessão, um worker: o arquivo não é lido de novo')
+      assert.deepEqual(s.olho.erros, [])
+    } finally {
+      await s.fechar()
+    }
+  },
+)
 
 const NA_PLACA = 'sessão na placa: DNG fabricado abre em dois tempos, ajusta, mede, exporta igual ao JS e pede a base cheia no zoom'
 test(NA_PLACA, { skip: pular, timeout: 300000 }, async () => {
@@ -233,12 +357,18 @@ test('sessão sem placa de verdade: cai para o JS do worker, diz isso e o JPEG e
     const software = /swiftshader|llvmpipe|software/i.test(estado.renderizador)
     if (software) {
       assert.equal(estado.motor, 'js', 'renderizador de software: a prévia sai do JS')
-      assert.ok(estado.avisos.some((a) => /software/.test(a)), `aviso: ${estado.avisos}`)
+      assert.ok(
+        estado.avisos.some((a) => /software/.test(a)),
+        `aviso: ${estado.avisos}`,
+      )
     }
     const r = await s.pagina.evaluate(ABRIR, 'IMG_0002.JPG')
     assert.equal(r.info.origem, 'imagem')
     assert.equal(r.info.largura, 1200)
-    assert.ok(r.eventos.some((e) => e.tipo === 'previa'), 'o próprio JPEG é a primeira imagem')
+    assert.ok(
+      r.eventos.some((e) => e.tipo === 'previa'),
+      'o próprio JPEG é a primeira imagem',
+    )
     assert.ok(r.media > 20)
     const depois = await s.pagina.evaluate(async () => {
       window.__s.ajustar({ luz: { exposicao: -1 } })
@@ -353,7 +483,11 @@ test('medidas: 24 MP fabricado (e ARW real, se houver) — abrir, arrastar, expo
     // um ARW do titular (só números no relatório; o arquivo nunca sai da máquina)
     const doTitular = [caminhoDaAmostra('titular/sequencia'), caminhoDaAmostra('titular/variedade/raw-e-jpg-camera')]
       .filter((p) => existsSync(p))
-      .flatMap((p) => readdirSync(p).filter((n) => /\.arw$/i.test(n)).map((n) => join(p, n)))
+      .flatMap((p) =>
+        readdirSync(p)
+          .filter((n) => /\.arw$/i.test(n))
+          .map((n) => join(p, n)),
+      )
     const titular = doTitular.slice(0, 1).concat(doTitular.filter((p) => /raw-e-jpg/.test(p)).slice(0, 1))
     for (const [i, p] of titular.entries()) await servirArquivo(s.pagina, `TITULAR${i}.ARW`, readFileSync(p))
     for (const motor of ['gpu', 'js']) {

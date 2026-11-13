@@ -223,6 +223,15 @@ function Palco({ fonte, daFoto, p, intensidade, arrastando, antes, semFoto, vazi
   </section>`
 }
 
+/** As teclas desta tela para a folha "?". */
+export const atalhos = [
+  { tecla: ['←', '→', '↑', '↓'], oque: 'Andar pelos estilos' },
+  { tecla: 'Enter', oque: 'Aplicar' },
+  { tecla: 'F', oque: 'Favoritar' },
+  { tecla: '/', oque: 'Buscar' },
+  { tecla: '\\', oque: 'Segurar para ver o antes' },
+]
+
 export default function Estilos({ loja, ativa }) {
   acervo ??= criarAcervo()
   previas ??= criarPrevias()

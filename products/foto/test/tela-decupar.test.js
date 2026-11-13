@@ -344,7 +344,14 @@ test(
       assert.deepEqual(doCliente, [true, true])
       await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').click()
       assert.equal(await naPagina(pagina, (loja) => loja.catalogo.filtroAtivo()), false)
-      await naPagina(pagina, (loja) => loja.catalogo.atualizarVarias(loja.catalogo.fotos().filter((f) => f.cliente).map((f) => ({ id: f.id, cliente: null }))))
+      await naPagina(pagina, (loja) =>
+        loja.catalogo.atualizarVarias(
+          loja.catalogo
+            .fotos()
+            .filter((f) => f.cliente)
+            .map((f) => ({ id: f.id, cliente: null })),
+        ),
+      )
       await pagina.locator('.dec-filtros .pilula[data-valor="cliente"]').waitFor({ state: 'detached' })
 
       // ───── meta ao vivo: os baldes mudam na hora, e nada é analisado de novo ─────
@@ -540,29 +547,29 @@ test(
       t.diagnostic(`zip: ${zip.map((z) => z.nome).join(', ')}`)
 
       // ───── na pasta (com permissão de escrita): o .xmp que já existia é atualizado sem perder nada ─────
-    // (showDirectoryPicker não roda no Chromium automatizado; a pasta privada do navegador tem a mesma API de escrita)
-    const ANTIGO = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:xmp="http://ns.adobe.com/xap/1.0/" crs:Exposure2012="+0.50" xmp:Rating="1"/></rdf:RDF></x:xmpmeta>`
-    const naPasta = await naPagina(
-      pagina,
-      async (loja, esteira, antigo) => {
-        const { gravarNaPasta, caminhoDoXmp } = await import('/app/telas/decupar/gravar.js')
-        const raiz = await navigator.storage.getDirectory()
-        const fotos = loja.catalogo.fotos().filter((f) => f.formato === 'arw')
-        const w = await (await raiz.getFileHandle(caminhoDoXmp(fotos[0]), { create: true })).createWritable()
-        await w.write(antigo)
-        await w.close()
-        const r = await gravarNaPasta(raiz, fotos)
-        const textos = {}
-        for (const f of fotos) textos[f.nome] = await (await (await raiz.getFileHandle(caminhoDoXmp(f))).getFile()).text()
-        return { r, textos, primeira: fotos[0].nome }
-      },
-      ANTIGO,
-    )
-    assert.deepEqual([naPasta.r.novos, naPasta.r.atualizados, naPasta.r.falhas.length], [RAWS.length - 1, 1, 0])
-    for (const [nome, texto] of Object.entries(naPasta.textos)) assert.equal(lerSidecarXmp(texto).estrelas, finais[nome].estrelas, nome)
-    assert.match(naPasta.textos[naPasta.primeira], /crs:Exposure2012="\+0\.50"/, 'o ajuste do Lightroom ficou')
+      // (showDirectoryPicker não roda no Chromium automatizado; a pasta privada do navegador tem a mesma API de escrita)
+      const ANTIGO = `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:xmp="http://ns.adobe.com/xap/1.0/" crs:Exposure2012="+0.50" xmp:Rating="1"/></rdf:RDF></x:xmpmeta>`
+      const naPasta = await naPagina(
+        pagina,
+        async (loja, esteira, antigo) => {
+          const { gravarNaPasta, caminhoDoXmp } = await import('/app/telas/decupar/gravar.js')
+          const raiz = await navigator.storage.getDirectory()
+          const fotos = loja.catalogo.fotos().filter((f) => f.formato === 'arw')
+          const w = await (await raiz.getFileHandle(caminhoDoXmp(fotos[0]), { create: true })).createWritable()
+          await w.write(antigo)
+          await w.close()
+          const r = await gravarNaPasta(raiz, fotos)
+          const textos = {}
+          for (const f of fotos) textos[f.nome] = await (await (await raiz.getFileHandle(caminhoDoXmp(f))).getFile()).text()
+          return { r, textos, primeira: fotos[0].nome }
+        },
+        ANTIGO,
+      )
+      assert.deepEqual([naPasta.r.novos, naPasta.r.atualizados, naPasta.r.falhas.length], [RAWS.length - 1, 1, 0])
+      for (const [nome, texto] of Object.entries(naPasta.textos)) assert.equal(lerSidecarXmp(texto).estrelas, finais[nome].estrelas, nome)
+      assert.match(naPasta.textos[naPasta.primeira], /crs:Exposure2012="\+0\.50"/, 'o ajuste do Lightroom ficou')
 
-    // ───── tratar as escolhidas: vai para Estilos com elas selecionadas ─────
+      // ───── tratar as escolhidas: vai para Estilos com elas selecionadas ─────
       const escolhidas = (await dados()).filter((f) => f.marca === 'escolhida').length
       await pagina.locator('.dec-principal[data-acao="tratar"]').click()
       await pagina.waitForFunction(() => location.hash === '#/estilos')

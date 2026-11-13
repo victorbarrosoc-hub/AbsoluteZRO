@@ -24,12 +24,16 @@ const DICA_ALTAS = 'Altas luzes guardadas acima do que a tela mostra'
 const aVista = (f) => /estourar|Altas luzes|sombra|Sombras/.test(f)
 const ev1 = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`
 
-/** O código de tela de um cinza de EV `f` no eixo do arquivo, com os ajustes de agora (ponto + tela, sem vizinhança). */
-export function codigoDaTela(ajustes, latitude) {
+/**
+ * O código de tela de um cinza de EV `f` no eixo do arquivo, com os ajustes de agora (ponto + tela, sem vizinhança).
+ * `folgaAltas`: os EV que a reconstrução de altas luzes recuperou acima da saturação (a tela mapeia até lá, como o
+ * motor faz em `margens`), então o topo da faixa inclui a folga.
+ */
+export function codigoDaTela(ajustes, latitude, folgaAltas = 0) {
   const a = normalizar(ajustes)
   // o branco não muda um cinza de lugar na escala de tons; fica de fora para não depender do branco da câmera
   a.branco = { ...a.branco, modo: 'original' }
-  const base = latitude ? { latitude, origem: 'raw' } : { origem: 'imagem' }
+  const base = latitude ? { latitude, origem: 'raw', folgaAltas } : { origem: 'imagem' }
   const ponto = criarPonto(a, { branco: { kelvin: 6500, tinta: 0 }, exposicaoBase: 0 })
   const tela = telaDe('srgb', a, base)
   const m = margens(a, base)
@@ -211,11 +215,11 @@ function desenharTela(canvas, { histo, cor }) {
  * `latitude`: a do arquivo (null em foto pronta). `histo`: { cena, tela, ev } (ev = a exposição com que o histograma da
  * cena foi lido; o desenho volta ao eixo do arquivo). `ajustes`: os de agora. `carregando`: ainda sem base.
  */
-export function Margem({ latitude, histo, ajustes, carregando, origem }) {
+export function Margem({ latitude, folgaAltas = 0, histo, ajustes, carregando, origem }) {
   const ref = useRef(null)
   const tema = usarTema()
   const raw = !!latitude
-  const conta = useMemo(() => (raw ? codigoDaTela(ajustes, latitude) : null), [raw, latitude, ajustes])
+  const conta = useMemo(() => (raw ? codigoDaTela(ajustes, latitude, folgaAltas) : null), [raw, latitude, folgaAltas, ajustes])
   const janela = useMemo(() => (conta ? janelaDaTela(conta.codigo) : null), [conta])
   const frases = useMemo(() => (latitude ? resumoLatitude(latitude) : []), [latitude])
 

@@ -47,10 +47,18 @@ export function Folha({ aberta, aoFechar, titulo, largura, classe, children }) {
 const noMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')
 const comoSeLe = (tecla) => (!noMac() && tecla === '⌘' ? 'Ctrl' : !noMac() && tecla === '⇧' ? 'Shift' : tecla)
 
-/** O mapa de teclas, do contrato (src/biblioteca/catalogo.js). `extras`: mais linhas [{ grupo, teclas, rotulo }]. */
-export function FolhaAtalhos({ aberta, aoFechar, extras = [] }) {
+/** `tecla` de uma tela ('Shift+A', '⌘+Z', ['←', '→']) → as teclas que a folha desenha. */
+export const teclasDe = (tecla) => (Array.isArray(tecla) ? tecla : String(tecla).split(/(?<=.)\+/)).map((t) => ({ Shift: '⇧', Cmd: '⌘', Ctrl: '⌘' })[t] ?? t)
+
+/**
+ * O mapa de teclas: o da casca (o contrato do catálogo, src/biblioteca/catalogo.js, mais `extras`: [{ grupo, teclas,
+ * rotulo }]) e, primeiro, o da tela da frente (`tela`: { nome, atalhos: [{ tecla, oque }] }, o `export const atalhos`
+ * de app/telas/<nome>/index.js).
+ */
+export function FolhaAtalhos({ aberta, aoFechar, extras = [], tela = null }) {
   const grupos = new Map()
-  for (const a of [...ATALHOS, ...extras]) {
+  const daTela = (tela?.atalhos ?? []).map((a) => ({ grupo: tela.nome, teclas: teclasDe(a.tecla), rotulo: a.oque }))
+  for (const a of [...daTela, ...ATALHOS, ...extras]) {
     if (!grupos.has(a.grupo)) grupos.set(a.grupo, [])
     grupos.get(a.grupo).push(a)
   }

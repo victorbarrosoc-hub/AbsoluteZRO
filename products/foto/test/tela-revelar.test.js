@@ -122,6 +122,10 @@ test('lógica: quadro, zoom no ponto, régua, conta-gotas e a janela da margem',
   assert.ok(Math.abs(j0.cinza) < 0.1, `cinza ${j0.cinza}`)
   assert.ok(Math.abs(j1.cinza - j0.cinza + 1) < 0.1, `cinza ${j1.cinza}`)
   assert.ok(j1.ate < j0.ate - 0.3 && j1.de < j0.de - 0.3, `${JSON.stringify(j0)} → ${JSON.stringify(j1)}`)
+  // a folga que a reconstrução de altas luzes recuperou sobe o topo da faixa (a tela mapeia até lá); o cinza fica
+  const jf = janelaDaTela(codigoDaTela(neutro(), latitude, 1).codigo)
+  assert.ok(jf.ate > j0.ate + 0.3, `com folga: ${JSON.stringify(j0)} → ${JSON.stringify(jf)}`)
+  assert.ok(Math.abs(jf.cinza - j0.cinza) < 0.1)
 })
 
 // ─────────────────────────────── no Chromium ───────────────────────────────
@@ -172,6 +176,15 @@ async function abrirRevelar({ opcoes = {}, tema = 'claro', motor = null, nome = 
     // o seletor de arquivo do sistema não abre no Chromium automatizado: a exportação cai no download
     window.showSaveFilePicker = undefined
     window.__fases = []
+    // quantas sessões do motor abriram (o antes/depois sem placa não abre uma segunda, que leria o arquivo de novo)
+    window.__motores = 0
+    const W = window.Worker
+    window.Worker = class extends W {
+      constructor(url, opcoes) {
+        super(url, opcoes)
+        if (String(url).includes('motor-worker')) window.__motores++
+      }
+    }
     new MutationObserver(() => {
       const el = document.querySelector('.palco-revelar')
       const f = el && /fase-(\w[\w-]*)/.exec(el.className)?.[1]
@@ -205,7 +218,7 @@ const captura = (pagina, nome) => pagina.screenshot({ path: join(TELAS, `revelar
 /** Média dos pixels do palco (lê o canvas da sessão, seja 2D ou WebGL com o quadro guardado). */
 const mediaDoPalco = (pagina) =>
   pagina.evaluate(() => {
-    const c = document.querySelector('.rv-visor:not(.rv-visor--antes) .palco-canvas')
+    const c = document.querySelector('.rv-visor .palco-canvas:not([hidden])')
     const t = document.createElement('canvas')
     t.width = 96
     t.height = 64
@@ -331,12 +344,16 @@ test(COMPUTADOR, { skip: semChromium, timeout: 600_000 }, async () => {
     assert.ok(painel[0] <= painel[1] && painel[2] === 0, `painel ${painel}`)
     await captura(pagina, '1440-claro-grupos')
 
-    // antes e depois (\): a divisória e o antes (no JS, uma segunda sessão)
+    // antes e depois (\): a divisória e o antes, desenhados pela própria sessão (no JS, pelo mesmo worker, da mesma base)
     await pagina.locator('.palco-revelar').click({ position: { x: 30, y: 30 } })
+    const semComparar = await mediaDoPalco(pagina)
+    const qc = await quadros(pagina)
     await pagina.keyboard.press('\\')
     await pagina.waitForSelector('.divisoria', { state: 'attached' })
-    await pagina.waitForTimeout(2500)
+    await esperarQuadro(pagina, qc)
     await captura(pagina, '1440-claro-comparar')
+    assert.notEqual(Math.round(await mediaDoPalco(pagina)), Math.round(semComparar), 'o antes aparece à esquerda da divisória')
+    assert.equal(await pagina.evaluate(() => window.__motores), 1, 'uma sessão só: o arquivo não é lido de novo')
     await pagina.keyboard.press('\\')
     assert.equal(await pagina.locator('.divisoria').count(), 0)
 
@@ -353,21 +370,43 @@ test(COMPUTADOR, { skip: semChromium, timeout: 600_000 }, async () => {
     for (let i = 0; i < 30; i++) await pagina.keyboard.press('Shift+ArrowRight')
     await esperarQuadro(pagina, na)
     await pagina.locator('.palco-revelar').click({ position: { x: 30, y: 30 } })
+    // os pixels pintados com as cores dos avisos (AVISOS de src/motor/avisos.js), lidos do quadro da sessão
+    const pintados = () =>
+      pagina.evaluate(async () => {
+        const { AVISOS } = await import('/src/motor/avisos.js')
+        const c = document.querySelector('.rv-visor .palco-canvas:not([hidden])')
+        const t = document.createElement('canvas')
+        t.width = c.width
+        t.height = c.height
+        const x = t.getContext('2d')
+        x.drawImage(c, 0, 0)
+        const d = x.getImageData(0, 0, c.width, c.height).data
+        const cores = Object.fromEntries(Object.entries(AVISOS).map(([k, v]) => [k, Math.round(v[0] * 255)]))
+        const n = { perdida: 0, recuperavel: 0, sombra: 0 }
+        for (let i = 0; i < d.length; i += 4) for (const k in cores) if (d[i] === cores[k] && d[i + 1] === cores[k] && d[i + 2] === cores[k]) n[k]++
+        return n
+      })
+    const sem = await pintados()
+    const qa = await quadros(pagina)
     await pagina.keyboard.press('j')
-    await pagina.waitForSelector('.palco-legenda')
-    await pagina.waitForTimeout(600)
-    const marcados = await pagina.evaluate(() => {
-      const c = document.querySelector('.palco-avisos')
-      if (!c || c.hidden) return -1
-      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
-      let n = 0
-      for (let i = 3; i < d.length; i += 4) if (d[i]) n++
-      return n
-    })
-    assert.ok(marcados > 0, `pixels marcados: ${marcados}`)
+    await pagina.waitForSelector('.palco-legenda [data-l="recuperavel"]')
+    await esperarQuadro(pagina, qa)
+    const com = await pintados()
+    assert.ok(com.recuperavel + com.perdida > sem.recuperavel + sem.perdida + 50, `avisos: ${JSON.stringify(sem)} → ${JSON.stringify(com)}`)
     await captura(pagina, '1440-claro-avisos')
     await pagina.keyboard.press('j')
     await exp.dblclick()
+
+    // branco Manual: parte do branco da câmera (o da base que a sessão devolve), então a foto não muda
+    await pagina.waitForTimeout(400)
+    const antesDoManual = await mediaDoPalco(pagina)
+    const qm = await quadros(pagina)
+    await pagina.locator('.rv-grupo[data-grupo="cor"] .linha-branco [role="radio"]', { hasText: 'Manual' }).click()
+    await esperarQuadro(pagina, qm)
+    const manual = await naLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).ajustes?.branco)
+    assert.equal(manual?.modo, 'manual')
+    assert.ok(Math.abs((await mediaDoPalco(pagina)) - antesDoManual) < 1.5, 'o Manual começa igual ao Original')
+    await pagina.locator('.rv-grupo[data-grupo="cor"] .linha-branco [role="radio"]', { hasText: 'Original' }).click()
 
     // auto (Shift+A): mexe na exposição e diz por quê
     await pagina.locator('.palco-revelar').click({ position: { x: 30, y: 30 } })
@@ -440,7 +479,7 @@ test(COMPUTADOR, { skip: semChromium, timeout: 600_000 }, async () => {
 
     // quadros por segundo arrastando a exposição (JS nesta máquina, sem placa de verdade)
     const qps = await medirArrasto(pagina)
-    const motor = await pagina.evaluate(() => document.querySelector('[data-motor-lento]') ? 'js' : 'gpu')
+    const motor = await pagina.evaluate(() => (document.querySelector('[data-motor-lento]') ? 'js' : 'gpu'))
     console.log(`# arrastando a exposição: ${qps} quadros/s (${motor})`)
     assert.ok(qps > 1, `${qps} quadros/s`)
     limpo(olho)
@@ -472,7 +511,7 @@ test('revelar na placa (SwiftShader): antes/depois e avisos da própria sessão,
     await pagina.keyboard.press('j')
     // conta-gotas (W): o branco vira manual e muda
     await pagina.locator('.rv-grupo[data-grupo="cor"] [data-gota]').click()
-    const caixa = await pagina.locator('.rv-visor:not(.rv-visor--antes) .palco-canvas').boundingBox()
+    const caixa = await pagina.locator('.rv-visor .palco-canvas:not([hidden])').boundingBox()
     await pagina.mouse.click(caixa.x + caixa.width * 0.3, caixa.y + caixa.height * 0.5)
     await pagina.waitForFunction(() => !document.querySelector('.palco-revelar.modo-gota'))
     const branco = await naLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).ajustes?.branco)

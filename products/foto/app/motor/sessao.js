@@ -411,7 +411,16 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
       const a = normalizar(ajustes)
       // zoom de verdade (acima do encaixe) no JS: o pedaço visível da base cheia; senão a prévia menor inteira
       const comparar = vista.comparar ? { posicao: vista.comparar.posicao ?? 0.5, antes: vista.comparar.antes ?? null } : null
-      let pedidoJs = { id: f.id, ajustes: a, tela: vista.tela, semente: f.semente, nivel: 'menor', look: a.look.id ? lookAtual : null, comparar, avisos: vista.avisos }
+      let pedidoJs = {
+        id: f.id,
+        ajustes: a,
+        tela: vista.tela,
+        semente: f.semente,
+        nivel: 'menor',
+        look: a.look.id ? lookAtual : null,
+        comparar,
+        avisos: vista.avisos,
+      }
       if (typeof vista.zoom === 'number' && vista.zoom * f.reduzir > PEDE_CHEIA) {
         const meta = await metaCheia()
         const v = enquadrar(meta, 1, a)

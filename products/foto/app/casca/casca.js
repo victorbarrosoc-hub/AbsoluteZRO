@@ -3,7 +3,8 @@
 //
 // Contrato de tela: app/telas/<nome>/index.js exporta `default` um componente Preact que recebe
 // { loja, ativa } (e, se a tela é um palco escuro de ponta a ponta, `export const palco = true`: o topo e o dock
-// escurecem junto). `ativa` diz se a aba está na frente: a tela fica montada (o estado dela é preservado) e só some.
+// escurecem junto; `export const atalhos = [{ tecla, oque }]`: as teclas da tela, que a folha "?" mostra junto com as
+// da casca enquanto ela está na frente). `ativa` diz se a aba está na frente: a tela fica montada (o estado dela é preservado) e só some.
 // A tela ocupa o painel inteiro; use a classe `.tela` (rola por baixo do topo) ou `.tela.tela--fixa`.
 //
 // Teclas da casca: G vai para Decupar e D para Revelar (como no Lightroom); Ctrl/Cmd + Alt + 1–4 escolhem a etapa
@@ -141,6 +142,7 @@ export function Casca({ loja, tema, lerConta }) {
       const modulo = await CARREGAR[nome]()
       const Tela = modulo.default
       Tela.palco = !!modulo.palco
+      Tela.atalhos = Array.isArray(modulo.atalhos) ? modulo.atalhos : []
       definirTelas((t) => ({ ...t, [nome]: Tela }))
       definirFalhas((f) => ({ ...f, [nome]: false }))
       return Tela
@@ -325,7 +327,12 @@ export function Casca({ loja, tema, lerConta }) {
     </main>
     <input ref=${arquivo} class="so-leitor" type="file" multiple accept=${ACEITA} tabindex="-1" aria-hidden="true" data-escolher onChange=${escolheu} />
     <${Avisos} />
-    <${FolhaAtalhos} aberta=${folha === 'atalhos'} aoFechar=${() => definirFolha(null)} extras=${ATALHOS_DA_CASCA} />
+    <${FolhaAtalhos}
+      aberta=${folha === 'atalhos'}
+      aoFechar=${() => definirFolha(null)}
+      extras=${ATALHOS_DA_CASCA}
+      tela=${aberto && telas[aba]?.atalhos?.length ? { nome: ABAS.find((a) => a.id === aba)?.rotulo, atalhos: telas[aba].atalhos } : null}
+    />
     <${Trabalhos} loja=${loja} aberta=${folha === 'trabalhos'} aoFechar=${() => definirFolha(null)} aoEscolher=${escolher} />
     <${Renomear} loja=${loja} aberta=${folha === 'renomear'} aoFechar=${() => definirFolha(null)} />
     ${

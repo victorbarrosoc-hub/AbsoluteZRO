@@ -64,7 +64,8 @@ export function marcasDosAvisos(base, ajustes, { regiao = null, largura, altura,
   const y0 = regiao?.y ?? 0
   const [a, b, c, d, e, f] = geo.mapa
   const { largura: bw, altura: bh, dados } = base.imagem
-  const original = !corte && base.origem === 'imagem' ? criarTela(base.espaco ?? 'srgb', { altas: MARGENS.altas.padrao, sombras: MARGENS.sombras.padrao }) : null
+  const original =
+    !corte && base.origem === 'imagem' ? criarTela(base.espaco ?? 'srgb', { altas: MARGENS.altas.padrao, sombras: MARGENS.sombras.padrao }) : null
   const abaixo = base.latitude?.margem?.abaixoDoCinza
   const piso = Number.isFinite(abaixo) ? 0.18 * 2 ** (-abaixo - (base.exposicaoBase ?? 0)) : 0
   const Y = luminancia('rec2020')
@@ -87,8 +88,7 @@ export function marcasDosAvisos(base, ajustes, { regiao = null, largura, altura,
       const bl = dados[o + 2]
       let marca = 0
       if (M) {
-        marca =
-          (M[0] * r + M[1] * g + M[2] * bl >= L[0]) + (M[3] * r + M[4] * g + M[5] * bl >= L[1]) + (M[6] * r + M[7] * g + M[8] * bl >= L[2])
+        marca = (M[0] * r + M[1] * g + M[2] * bl >= L[0]) + (M[3] * r + M[4] * g + M[5] * bl >= L[1]) + (M[6] * r + M[7] * g + M[8] * bl >= L[2])
       } else if (original) {
         original.aplicar(r, g, bl, codigo)
         if (codigo[0] >= alto || codigo[1] >= alto || codigo[2] >= alto) marca = 3

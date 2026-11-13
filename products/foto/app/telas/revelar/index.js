@@ -135,6 +135,21 @@ async function estilosRapidos() {
   return [...recentes, ...um].filter((p) => !vistos.has(p.id) && vistos.add(p.id))
 }
 
+/** As teclas desta tela para a folha "?". */
+export const atalhos = [
+  { tecla: ['←', '→'], oque: 'Foto anterior, próxima' },
+  { tecla: '\\', oque: 'Antes e depois' },
+  { tecla: 'J', oque: 'Avisos de corte' },
+  { tecla: 'Z', oque: 'Encaixar, 100%' },
+  { tecla: 'Shift+A', oque: 'Automático' },
+  { tecla: 'R', oque: 'Cortar e endireitar' },
+  { tecla: 'W', oque: 'Conta-gotas do branco' },
+  { tecla: '⌘+Z', oque: 'Desfazer o ajuste' },
+  { tecla: '⌘+Shift+C', oque: 'Copiar ajustes' },
+  { tecla: '⌘+Shift+V', oque: 'Colar ajustes' },
+  { tecla: 'Esc', oque: 'Sair da ferramenta' },
+]
+
 export default function Revelar({ loja, ativa }) {
   const aba = loja.aba('revelar')
   aba.historicos ??= new Map()
@@ -526,10 +541,18 @@ export default function Revelar({ loja, ativa }) {
     }
   }
 
+  // o branco como a câmera gravou (a sessão devolve o da base): é de onde o Manual parte
+  const brancoDaCamera = () => (info?.branco && Number.isFinite(info.branco.kelvin) ? info.branco : null)
+
   async function modoDoBranco(m) {
     const x = normalizar(aRef.current)
-    if (m !== 'original' && x.branco.modo === 'original') {
-      // o manual e o auto começam do branco medido (sem placa de saber o do arquivo, é o ponto de partida honesto)
+    const camera = brancoDaCamera()
+    if (m === 'manual' && x.branco.modo === 'original' && camera) {
+      // o Manual parte do branco da câmera: nada muda na foto até a pessoa mexer
+      x.branco.temperatura = camera.kelvin
+      x.branco.tinta = camera.tinta
+    } else if (m !== 'original' && x.branco.modo === 'original') {
+      // o auto (e o manual sem o branco do arquivo) começam do branco medido
       try {
         const r = await autoDe(foco)
         x.branco.temperatura = r.branco.temperatura
@@ -551,8 +574,14 @@ export default function Revelar({ loja, ativa }) {
     let x = normalizar(aRef.current)
     try {
       if (x.branco.modo !== 'manual') {
-        const r = await autoDe(foco).catch(() => null)
-        x.branco = { modo: 'manual', temperatura: r?.branco.temperatura ?? x.branco.temperatura, tinta: r?.branco.tinta ?? x.branco.tinta }
+        // parte do branco que está na tela: o da câmera (original) ou o medido (auto)
+        const camera = x.branco.modo === 'original' ? brancoDaCamera() : null
+        const r = camera ? null : await autoDe(foco).catch(() => null)
+        x.branco = {
+          modo: 'manual',
+          temperatura: camera?.kelvin ?? r?.branco.temperatura ?? x.branco.temperatura,
+          tinta: camera?.tinta ?? r?.branco.tinta ?? x.branco.tinta,
+        }
         mudar(x, { final: false })
         await proximoQuadro()
       }
@@ -887,7 +916,14 @@ export default function Revelar({ loja, ativa }) {
         <span></span>
       </button>
       <div class="painel-rola">
-        <${Margem} latitude=${info?.latitude ?? null} histo=${histo} ajustes=${a} carregando=${!info && !vazio} origem=${info?.origem} />
+        <${Margem}
+          latitude=${info?.latitude ?? null}
+          folgaAltas=${info?.folgaAltas ?? 0}
+          histo=${histo}
+          ajustes=${a}
+          carregando=${!info && !vazio}
+          origem=${info?.origem}
+        />
 
         <div class="painel-acoes">
           <button
@@ -986,11 +1022,7 @@ export default function Revelar({ loja, ativa }) {
         />
       </div>
       <div class="painel-pe">
-        ${
-          motorLento
-            ? html`<span class="rv-nota motor-lento" data-motor-lento title=${motor.renderizador || ''}>${SEM_ACELERACAO}</span>`
-            : null
-        }
+        ${motorLento ? html`<span class="rv-nota motor-lento" data-motor-lento title=${motor.renderizador || ''}>${SEM_ACELERACAO}</span>` : null}
         <button type="button" class="vidro painel-exportar" data-exportar disabled=${!pronta} onClick=${() => definirFolha('exportar')}>
           <${Icone} nome="exportar" /><span>Exportar<span class="so-computador">${' esta foto'}</span></span>
         </button>
