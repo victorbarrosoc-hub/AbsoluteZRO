@@ -113,7 +113,8 @@ export function Cenas({ loja, lupa, aoSair, aoTrocar, aoAprender, fechar }) {
     const antes = { filtro: c.filtro(), empilhado: c.empilhado() }
     c.limparFiltro()
     c.empilhar(false)
-    if (cena && !cena.ids.includes(c.foco())) c.selecionar(escolhidaDa(cena).id)
+    // a cena entra com a escolhida em foco (a melhor, destacada)
+    if (cena) c.selecionar(escolhidaDa(cena).id)
     definirPronto(true)
     return () => {
       c.empilhar(antes.empilhado)

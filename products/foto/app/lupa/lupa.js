@@ -159,6 +159,8 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar, aoDesli
     const ty = z.ligado ? limitar(-z.fy * a * s, -sobraY, sobraY) : 0
     el.style.transition = animar ? '' : 'none'
     el.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${s.toFixed(4)})`
+    // o que vai por cima da foto (camada) desfaz a escala no traço e no texto
+    el.style.setProperty('--zoom', s.toFixed(4))
     caixa.current?.toggleAttribute('data-zoom', z.ligado)
   }
   useLayoutEffect(() => {
