@@ -26,6 +26,10 @@ import { criarPonto, uniformes as uniformesDoPonto } from '../ponto.js'
 import { contextoDe, geometria } from '../revelar.js'
 import { MARGENS, PESO_MAXIMO, criarTela, telaDe } from '../tela.js'
 import * as G from './glsl.js'
+import { AVISOS, corteDaBase } from '../avisos.js'
+
+// as cores e a máscara dos avisos moram em ../avisos.js (o mesmo que o JS do worker desenha sem placa)
+export { AVISOS, corteDaBase }
 
 /** Acima deste raio (em pixels da vista) o filtro guiado roda reduzido por área. */
 export const RAIO_MAXIMO = 6
@@ -34,13 +38,6 @@ export const RAIO_MAXIMO = 6
 export const TOLERANCIA = {
   ponto: 1 / 255, // maior diferença por canal, em código de 8 bits
   vizinhanca: { media: 0.003, p99: 0.015 }, // ΔE em Oklab (0,02 já se vê lado a lado); medido: 0,0007 e 0,004
-}
-
-/** Cores dos avisos (código da tela): neutras, distintas entre si e da foto. */
-export const AVISOS = {
-  perdida: [0.06, 0.06, 0.06], // altas luzes sem dado no arquivo (três canais cortados no sensor): sólido
-  recuperavel: [0.5, 0.5, 0.5], // a tela corta, ou um ou dois canais cortados, mas o arquivo tem dado: listras
-  sombra: [0.93, 0.93, 0.93], // abaixo do piso de ruído medido no arquivo: listras
 }
 
 const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render|mesa offscreen/i
@@ -54,34 +51,6 @@ export class ErroGpu extends Error {
 }
 
 const CURVAS = { srgb: 0, rec2020: 1, gama22: 2, linear: 3 }
-
-/**
- * O que a máscara de avisos precisa de uma base RAW: a matriz Rec.2020 → câmera (já com o branco) e o limiar de corte
- * por canal. Sai de `corDaCamera(negativo)` quando o negativo existe (exato); sem ele, do neutro da câmera guardado na
- * base, tratando Rec.2020 como espaço de câmera (aproximado: `exato: false`).
- */
-export function corteDaBase(base, { cor = null, limiar = 0.98 } = {}) {
-  if (base.origem !== 'raw') return null
-  if (cor?.paraRec2020 && cor?.ganhos) {
-    return { matriz: inverter3(cor.paraRec2020), limiar: cor.ganhos.map((g) => limiar * g), exato: true }
-  }
-  const neutro = base.branco?.neutroCamera
-  if (!Array.isArray(neutro) || !neutro.every((v) => v > 0)) return null
-  const maior = Math.max(...neutro)
-  return { matriz: [1, 0, 0, 0, 1, 0, 0, 0, 1], limiar: neutro.map((v) => (limiar * maior) / v), exato: false }
-}
-
-function inverter3(m) {
-  const [a, b, c, d, e, f, g, h, i] = m
-  const A = e * i - f * h
-  const B = -(d * i - f * g)
-  const C = d * h - e * g
-  const det = a * A + b * B + c * C
-  const l0 = [A, -(b * i - c * h), b * f - c * e]
-  const l1 = [B, a * i - c * g, -(a * f - c * d)]
-  const l2 = [C, -(a * h - b * g), a * e - b * d]
-  return [...l0, ...l1, ...l2].map((v) => v / det)
-}
 
 // A luz do ar medida na base inteira reduzida a 256 px, depois da cena — a mesma conta de revelar.js (luzDoArDaBase).
 function reduzida256(base) {

@@ -14,13 +14,16 @@
 // ou na exportação; no zoom, só a janela visível (com margem) sobe para a placa.
 //
 // Sem placa de vídeo de verdade (WebGL2 ausente, renderizador de software como SwiftShader ou llvmpipe, contexto
-// perdido) a prévia sai do JS do worker, numa imagem de até 800 px, e `avisos` diz isso. Nunca tela preta.
+// perdido) a prévia sai do JS do worker, numa imagem de até 800 px, e `avisos` diz isso. Nunca tela preta. O antes/
+// depois e os avisos de corte (recuperável × perdido, sombra abaixo do ruído) saem prontos do worker, da mesma base:
+// ninguém precisa abrir o arquivo de novo.
 //
 // O canvas: a sessão escolhe o tamanho do desenho (pixels do aparelho) e escreve `style.width`/`style.height` em px de
 // CSS; quem monta a tela só centraliza. O visor é o elemento pai do canvas (ou `ver({ largura, altura })` em pixels do
 // aparelho).
 
-import { ErroGpu, corteDaBase, criarMotorGpu } from '../../src/motor/gpu/motor.js'
+import { ErroGpu, criarMotorGpu } from '../../src/motor/gpu/motor.js'
+import { corteDaBase } from '../../src/motor/avisos.js'
 import { neutro, normalizar } from '../../src/motor/ajustes.js'
 import { margemLocal, temLocal } from '../../src/motor/local.js'
 import { geometria } from '../../src/motor/revelar.js'
@@ -407,7 +410,8 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
     try {
       const a = normalizar(ajustes)
       // zoom de verdade (acima do encaixe) no JS: o pedaço visível da base cheia; senão a prévia menor inteira
-      let pedidoJs = { id: f.id, ajustes: a, tela: vista.tela, semente: f.semente, nivel: 'menor', look: a.look.id ? lookAtual : null }
+      const comparar = vista.comparar ? { posicao: vista.comparar.posicao ?? 0.5, antes: vista.comparar.antes ?? null } : null
+      let pedidoJs = { id: f.id, ajustes: a, tela: vista.tela, semente: f.semente, nivel: 'menor', look: a.look.id ? lookAtual : null, comparar, avisos: vista.avisos }
       if (typeof vista.zoom === 'number' && vista.zoom * f.reduzir > PEDE_CHEIA) {
         const meta = await metaCheia()
         const v = enquadrar(meta, 1, a)
@@ -475,7 +479,9 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
 
   /**
    * Abre um arquivo (File) ou { bytes, nome }. Resolve quando a base reduzida está na tela:
-   * { latitude, exif, camera, avisos, largura, altura (do quadro em resolução cheia), origem, motor }.
+   * { latitude, exif, camera, avisos, largura, altura (do quadro em resolução cheia), origem, motor,
+   *   branco: { kelvin, tinta, neutro } (a luz da foto como a câmera gravou; `neutro` = o neutro da câmera, ou null),
+   *   folgaAltas (EV que a reconstrução de altas luzes recuperou acima da saturação; 0 sem RAW) }.
    * Erro de leitura rejeita com a mensagem pronta e `codigo` ('nao-e-raw', 'sem-suporte', 'corrompido').
    */
   async function abrir(arquivo) {
@@ -530,6 +536,8 @@ export function criarSessao({ canvas, motor: preferencia = 'auto', aoMudar = () 
       altura: Math.round(geo.altura * foto.reduzir),
       origem: r.origem,
       motor: modo,
+      branco: base.branco ? { kelvin: base.branco.kelvin, tinta: base.branco.tinta, neutro: base.branco.neutroCamera ?? null } : null,
+      folgaAltas: base.folgaAltas ?? 0,
     }
   }
 

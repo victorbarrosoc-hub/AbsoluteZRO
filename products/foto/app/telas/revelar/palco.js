@@ -92,7 +92,8 @@ function Corte({ corte, razao, caixa, aoMudar }) {
 }
 
 /**
- * `refs`: { canvas, antes, avisos } (useRef da tela). `caixa`: onde o canvas está ({ esq, topo, cw, ch } em px de CSS,
+ * `refs`: { canvas } (useRef da tela; o antes/depois e os avisos saem desenhados pela sessão, na placa ou no JS).
+ * `caixa`: onde o canvas está ({ esq, topo, cw, ch } em px de CSS,
  * dentro do visor). `estado`: { fase, erro, miniatura, nivel }. `modo`: null | 'gota' | 'corte' | 'regua'.
  */
 export function Palco({
@@ -101,9 +102,6 @@ export function Palco({
   estado,
   comparar,
   aoComparar,
-  avisos,
-  avisosJs,
-  antesJs,
   modo,
   corte,
   razao,
@@ -237,12 +235,9 @@ export function Palco({
             </div>`
           : null
       }
-      <div class="rv-visor rv-visor--antes" hidden=${!antesJs || !comparar}><canvas ref=${refs.antes} class="palco-canvas" aria-hidden="true"></canvas></div>
       <div
         class="rv-visor"
         ref=${visor}
-        style=${antesJs && comparar != null ? `--corte-antes:${comparar * 100}%` : undefined}
-        data-com-antes=${antesJs && comparar != null ? '' : undefined}
         onPointerDown=${descer}
         onPointerMove=${andar}
         onPointerUp=${subir}
@@ -259,7 +254,6 @@ export function Palco({
       ${
         caixa && !vazio
           ? html`<div class="palco-sobre" style=${posicaoCanvas}>
-              <canvas ref=${refs.avisos} class="palco-avisos" hidden=${!(avisos && avisosJs)} aria-hidden="true"></canvas>
               ${
                 comparar != null
                   ? html`<div class="divisoria" style=${`left:${comparar * 100}%`} ref=${divisoria}>

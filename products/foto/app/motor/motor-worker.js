@@ -1,6 +1,7 @@
 // Worker da revelação (módulo). Abre o arquivo pela porta única (src/abrir.js), guarda as bases e faz o que é pesado
 // fora da tela: a prévia embutida (instantânea), a base reduzida, a base cheia (demosaico 'qualidade') em janelas para o
-// zoom de 100%, o automático, a prévia em JS quando não há placa de vídeo e a exportação em resolução cheia.
+// zoom de 100%, o automático, a prévia em JS quando não há placa de vídeo (com o antes/depois e os avisos de corte,
+// recuperável × perdido, desenhados aqui mesmo: src/motor/avisos.js) e a exportação em resolução cheia.
 //
 // Mensagens: { id, tipo, dados } → { id, ok: true, resultado } | { id, ok: false, erro: { nome, mensagem, codigo } };
 // { id, progresso } no meio do caminho; { cancelar: id } pede para parar. Erro de leitura chega com o `codigo` do
@@ -13,7 +14,8 @@ import { abrirFoto, abrirImagem } from '../../src/abrir.js'
 import { lerExif } from '../../src/raw/exif.js'
 import { criarLeitor } from '../../src/raw/libraw.js'
 import { extrairPrevia, extrairPreviaDe } from '../../src/raw/previa.js'
-import { normalizar } from '../../src/motor/ajustes.js'
+import { neutro, normalizar } from '../../src/motor/ajustes.js'
+import { comporAntes, marcasDosAvisos, pintarAvisos } from '../../src/motor/avisos.js'
 import { autoBranco, autoExposicao } from '../../src/motor/auto.js'
 import { histogramaDaCena, histogramaDaTela } from '../../src/motor/histograma.js'
 import { geometria, revelar } from '../../src/motor/revelar.js'
@@ -227,10 +229,12 @@ const TAREFAS = {
   },
 
   /**
-   * Prévia em JS (sem placa de vídeo): { id, ajustes, tela, semente, nivel: 'menor' | 'cheia', regiao?, lado? } →
-   * { largura, altura, rgba } (Uint8ClampedArray, transferido). 'menor' é a reduzida levada a até `lado` px (800).
+   * Prévia em JS (sem placa de vídeo): { id, ajustes, tela, semente, nivel: 'menor' | 'cheia', regiao?, lado?,
+   * comparar?: { posicao, antes? }, avisos?: bool | { altas, sombras } } → { largura, altura, rgba } (Uint8ClampedArray,
+   * transferido). 'menor' é a reduzida levada a até `lado` px (800). O antes (padrão: o neutro com a mesma geometria)
+   * fica guardado enquanto ele, o nível e a região não mudam; os avisos saem da base, como na placa.
    */
-  async revelar({ id, ajustes, tela = 'srgb', semente = 1, nivel: qual = 'menor', regiao = null, lado = LADO_JS, look = null }) {
+  async revelar({ id, ajustes, tela = 'srgb', semente = 1, nivel: qual = 'menor', regiao = null, lado = LADO_JS, look = null, comparar = null, avisos = false }) {
     const foto = fotoDe(id)
     let base
     if (qual === 'cheia') base = (await nivel(foto, 'cheia')).base
@@ -243,6 +247,20 @@ const TAREFAS = {
     const imagem = revelar(base, ajustes, { tela, semente, regiao: regiao ?? undefined, look: await funcaoDoLook(look, ajustes) })
     foto.ultimaTela = { imagem, espaco: tela, ev: normalizar(ajustes).luz.exposicao + (base.exposicaoBase ?? 0), base }
     const rgba = paraBytes(imagem, { bits: 8 })
+    if (avisos) {
+      const marcas = marcasDosAvisos(base, normalizar(ajustes), { regiao, largura: imagem.largura, altura: imagem.altura })
+      pintarAvisos(rgba, imagem.largura, imagem.altura, marcas, avisos, { x0: regiao?.x ?? 0, y0: regiao?.y ?? 0 })
+    }
+    if (comparar) {
+      const a = normalizar(comparar.antes ?? neutro())
+      a.geometria = normalizar(ajustes).geometria
+      const chave = JSON.stringify([a, qual, regiao, tela, semente, base.imagem.largura, base.imagem.altura])
+      if (foto.antes?.chave !== chave || foto.antes.de !== base) {
+        const img = revelar(base, a, { tela, semente, regiao: regiao ?? undefined })
+        foto.antes = { chave, de: base, rgba: paraBytes(img, { bits: 8 }) }
+      }
+      if (foto.antes.rgba.length === rgba.length) comporAntes(rgba, foto.antes.rgba, imagem.largura, comparar.posicao)
+    } else foto.antes = null
     return comTransferencia({ largura: imagem.largura, altura: imagem.altura, rgba, quadro: imagem.quadro, reduzir: base.reduzir }, [rgba.buffer])
   },
 

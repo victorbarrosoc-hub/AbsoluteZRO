@@ -46,9 +46,6 @@
   user-select: none;
   -webkit-user-select: none;
 }
-.rv-visor--antes {
-  pointer-events: none;
-}
 .rv-camada {
   pointer-events: none;
 }
@@ -69,9 +66,6 @@
   transition:
     filter 0.5s var(--suave),
     opacity 0.3s var(--suave);
-}
-.rv-visor[data-com-antes] .palco-canvas {
-  clip-path: inset(0 0 0 var(--corte-antes));
 }
 /* em dois tempos: a miniatura borrada na hora, a prévia da câmera ainda borrada, a revelação nítida */
 .palco-miniatura {
@@ -100,13 +94,6 @@
 }
 .palco-sobre {
   position: absolute;
-}
-.palco-avisos {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
 }
 
 /* a barra de cima: vidro escuro, só ícones */

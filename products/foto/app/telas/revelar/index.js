@@ -148,9 +148,8 @@ export default function Revelar({ loja, ativa }) {
   const nSelecao = usarCatalogo(loja, (c) => c.selecao().size, ['selecao'])
   const { foto } = usarFoto(loja, foco)
 
-  const refs = { canvas: useRef(null), antes: useRef(null), avisos: useRef(null) }
+  const refs = { canvas: useRef(null) }
   const sessao = useRef(null)
-  const antes = useRef(null)
   const geracao = useRef(0)
   const carregado = useRef(null)
   const aRef = useRef(neutro())
@@ -240,7 +239,6 @@ export default function Revelar({ loja, ativa }) {
   useEffect(
     () => () => {
       sessao.current?.fechar()
-      antes.current?.s.fechar()
       sessao.current = null
     },
     [],
@@ -259,7 +257,6 @@ export default function Revelar({ loja, ativa }) {
     if (!s) return
     carregado.current = id
     const g = ++geracao.current
-    desligarAntes()
     definirModo(null)
     definirComparar(null)
     definirPorque(aba.porque.get(id) ?? null)
@@ -306,7 +303,15 @@ export default function Revelar({ loja, ativa }) {
       return
     }
     if (g !== geracao.current) return
-    definirInfo({ cheio: { largura: r.largura, altura: r.altura }, latitude: r.latitude, origem: r.origem, camera: r.camera, avisos: r.avisos })
+    definirInfo({
+      cheio: { largura: r.largura, altura: r.altura },
+      latitude: r.latitude,
+      origem: r.origem,
+      camera: r.camera,
+      avisos: r.avisos,
+      branco: r.branco,
+      folgaAltas: r.folgaAltas,
+    })
     const geo = !igual(x.geometria, neutro().geometria)
     esperas.current = { g, quadros: geo && r.motor === 'js' ? 2 : 1 }
     s.ajustar(x, { look: lookRef.current })
@@ -363,7 +368,7 @@ export default function Revelar({ loja, ativa }) {
     aRef.current = x
     definirA(x)
     sessao.current?.ajustar(ajustesDaSessao(x), { look: lookRef.current })
-    antes.current?.s.ajustar(antesDe(x))
+    if (comparar != null) sessao.current?.ver({ comparar: { posicao: comparar, antes: antesDe(x) } })
     relogios.current.arrastando = !final
     if (!final || !foco) return
     const hist = empurrar(hRef.current, x, rotulo)
@@ -387,13 +392,13 @@ export default function Revelar({ loja, ativa }) {
     aRef.current = x
     definirA(x)
     sessao.current?.ajustar(ajustesDaSessao(x), { look: lookRef.current })
-    antes.current?.s.ajustar(antesDe(x))
+    if (comparar != null) sessao.current?.ver({ comparar: { posicao: comparar, antes: antesDe(x) } })
     salvar(foco, x)
     agendarMiniatura()
     if (rotulo) avisar(`${f === desfazer ? 'Desfeito' : 'Refeito'}: ${rotulo}`, { duracao: 1800 })
   }
 
-  // ─────────── depois de cada quadro: histograma, avisos (sem placa), miniatura ───────────
+  // ─────────── depois de cada quadro: histograma, miniatura ───────────
 
   function depoisDoQuadro() {
     clearTimeout(relogios.current.histo)
@@ -408,48 +413,10 @@ export default function Revelar({ loja, ativa }) {
         // sem quadro ainda
       }
     }, 140)
-    if (avisosRef.current && motorRef.current === 'js') pintarAvisosJs()
   }
 
   const avisosRef = useRef(false)
   avisosRef.current = avisos
-  const motorRef = useRef(null)
-  motorRef.current = motor.modo
-
-  // sem placa, a sessão não desenha os avisos: o palco mostra o que a TELA corta (preto e branco puros), em listras
-  function pintarAvisosJs() {
-    const s = sessao.current
-    const alvo = refs.avisos.current
-    if (!s || !alvo) return
-    let t
-    try {
-      t = s.lerTela()
-    } catch {
-      return
-    }
-    const { largura: w, altura: hh, dados } = t
-    alvo.width = w
-    alvo.height = hh
-    const c = alvo.getContext('2d')
-    const img = c.createImageData(w, hh)
-    const o = img.data
-    for (let y = 0, i = 0; y < hh; y++) {
-      for (let x = 0; x < w; x++, i += 4) {
-        const r = dados[i]
-        const g = dados[i + 1]
-        const b = dados[i + 2]
-        const listra = (x + y) % 8 < 4
-        if (Math.max(r, g, b) >= 254 && listra) {
-          o[i] = o[i + 1] = o[i + 2] = 32
-          o[i + 3] = 255
-        } else if (Math.max(r, g, b) <= 2 && listra) {
-          o[i] = o[i + 1] = o[i + 2] = 236
-          o[i + 3] = 255
-        }
-      }
-    }
-    c.putImageData(img, 0, 0)
-  }
 
   function agendarMiniatura() {
     clearTimeout(relogios.current.mini)
@@ -478,7 +445,6 @@ export default function Revelar({ loja, ativa }) {
   function ver(v) {
     definirVista(v)
     sessao.current?.ver({ zoom: v.zoom, x: v.x, y: v.y })
-    antes.current?.s.ver({ zoom: v.zoom, x: v.x, y: v.y })
   }
   const contas = () => (quadro && visor.W ? { quadro, W: visor.W, H: visor.H, dpr, vista } : null)
   function zoomEm(fator, cx, cy) {
@@ -498,38 +464,12 @@ export default function Revelar({ loja, ativa }) {
 
   const antesDe = (x) => ({ ...neutro(), geometria: ajustesDaSessao(x).geometria })
 
-  async function ligarAntes() {
-    if (antes.current || !refs.antes.current || !foco) return
-    const origem = loja.arquivo(foco)
-    if (!origem) return
-    const s2 = criarSessao({ canvas: refs.antes.current, motor: 'js' })
-    antes.current = { s: s2, id: foco }
-    s2.ajustar(antesDe(aRef.current))
-    s2.ver({ zoom: vista.zoom, x: vista.x, y: vista.y })
-    definirOcupado('Preparando o antes…')
-    try {
-      await s2.abrir(origem.arquivo)
-    } catch {
-      // sem o antes: a divisória fica, mas só com o depois
-    }
-    definirOcupado((o) => (o === 'Preparando o antes…' ? null : o))
-  }
-  function desligarAntes() {
-    antes.current?.s.fechar()
-    antes.current = null
-  }
-
   function mudarComparar(pos) {
     definirComparar(pos)
     const s = sessao.current
     if (!s) return
-    if (pos == null) {
-      s.ver({ comparar: null })
-      desligarAntes()
-      return
-    }
-    if (motor.modo === 'gpu') s.ver({ comparar: { posicao: pos, antes: antesDe(aRef.current) } })
-    else void Promise.resolve().then(ligarAntes)
+    // na placa ou no JS do worker, a sessão desenha o antes da mesma base (sem ler o arquivo de novo)
+    s.ver({ comparar: pos == null ? null : { posicao: pos, antes: antesDe(aRef.current) } })
   }
   const alternarComparar = () => mudarComparar(comparar == null ? 0.5 : null)
 
@@ -537,7 +477,6 @@ export default function Revelar({ loja, ativa }) {
     const v = !avisos
     definirAvisos(v)
     sessao.current?.ver({ avisos: v })
-    if (v && motor.modo === 'js') requestAnimationFrame(pintarAvisosJs)
   }
 
   // ─────────── ferramentas: corte, régua, conta-gotas ───────────
@@ -850,11 +789,8 @@ export default function Revelar({ loja, ativa }) {
       comparar=${comparar}
       aoComparar=${(p) => {
         definirComparar(p)
-        if (motor.modo === 'gpu') sessao.current?.ver({ comparar: { posicao: p, antes: antesDe(aRef.current) } })
+        sessao.current?.ver({ comparar: { posicao: p, antes: antesDe(aRef.current) } })
       }}
-      avisos=${avisos}
-      avisosJs=${motor.modo === 'js'}
-      antesJs=${motor.modo === 'js'}
       modo=${vazio ? null : modo}
       corte=${a.geometria.corte}
       razao=${razao}
@@ -932,12 +868,8 @@ export default function Revelar({ loja, ativa }) {
       ${
         avisos && !vazio
           ? html`<div class="palco-legenda" aria-live="polite">
-              ${
-                motor.modo === 'gpu'
-                  ? html`<span data-l="perdida">Perdido no arquivo</span><span data-l="recuperavel">Recuperável</span
-                      ><span data-l="sombra">Abaixo do ruído</span>`
-                  : html`<span data-l="perdida">Branco na tela</span><span data-l="sombra">Preto na tela</span>`
-              }
+              <span data-l="perdida">Perdido no arquivo</span><span data-l="recuperavel">Recuperável</span
+              ><span data-l="sombra">Abaixo do ruído</span>
             </div>`
           : null
       }
