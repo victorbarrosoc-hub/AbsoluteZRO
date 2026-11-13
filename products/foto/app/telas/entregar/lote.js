@@ -217,7 +217,12 @@ export function criarExportacao({ itens, receita, tratar, destino, chaveDestino,
   // ─── 1. medir (só com estilo e correção): as séries que têm alguma foto por fazer ───
   async function medir(sinal) {
     if (!tratar?.predefinicao) return
-    const pendentes = new Set(fila.estado().itens.filter((x) => x.estado === 'na-fila').map((x) => x.id))
+    const pendentes = new Set(
+      fila
+        .estado()
+        .itens.filter((x) => x.estado === 'na-fila')
+        .map((x) => x.id),
+    )
     const lista = itens.map((it) => it.foto)
     // a série (fotos seguidas do mesmo grupo) de uma pendente entra inteira: a suavização olha as vizinhas
     const entra = new Set()

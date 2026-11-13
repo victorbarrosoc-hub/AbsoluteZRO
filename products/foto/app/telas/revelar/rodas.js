@@ -89,7 +89,7 @@ export function Rodas({ ajustes, aoMudar }) {
     >
       <span class="roda-bolinha" style=${`transform:translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`}></span>
     </div>
-    <div class="controles">
+    <div class="rv-controles">
       <${Ajuste}
         caminho=${`tonalizacao.${zona}.luz`}
         rotulo="Luz"

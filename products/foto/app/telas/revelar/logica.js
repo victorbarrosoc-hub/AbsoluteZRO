@@ -229,3 +229,51 @@ export function janelaDaTela(codigo, { evMin = -14, evMax = 10, passo = 1 / 16 }
   }
   return { de: de ?? evMin, ate: ate ?? evMax, cinza: cinza ?? 0 }
 }
+
+// ─────────── a vista: zoom e arrasto ───────────
+
+const prender = (v, a, b) => (v < a ? a : v > b ? b : v)
+
+/**
+ * O que a sessão mostra (mesmas contas de app/motor/sessao.js `enquadrar`): `quadro` em px da foto cheia, `W` × `H` o
+ * visor em px de CSS, `dpr`, `vista` { zoom: 'encaixar' | número (1 = 100%), x, y }. Devolve o zoom de verdade (`z`, px do
+ * aparelho por px da foto), o encaixe, o pedaço visível (`x0`, `y0`, `w`, `h` em px da foto) e onde o canvas fica no
+ * visor (`esq`, `topo`, `cw`, `ch` em px de CSS).
+ */
+export function enquadrar({ quadro, W, H, dpr = 1, vista }) {
+  const L = quadro.largura
+  const A = quadro.altura
+  const encaixe = Math.min((W * dpr) / L, (H * dpr) / A)
+  const z = typeof vista.zoom === 'number' ? Math.max(encaixe, vista.zoom) : encaixe
+  const w = Math.min(L, (W * dpr) / z)
+  const h = Math.min(A, (H * dpr) / z)
+  const x0 = prender(vista.x * L - w / 2, 0, L - w)
+  const y0 = prender(vista.y * A - h / 2, 0, A - h)
+  const cw = (w * z) / dpr
+  const ch = (h * z) / dpr
+  return { encaixe, z, w, h, x0, y0, cw, ch, esq: (W - cw) / 2, topo: (H - ch) / 2 }
+}
+
+/** A vista nova com zoom `zoom` mantendo parado o ponto (cx, cy) do visor (px de CSS). Zoom no encaixe vira 'encaixar'. */
+export function zoomNoPonto({ quadro, W, H, dpr = 1, vista }, zoom, cx, cy) {
+  const g = enquadrar({ quadro, W, H, dpr, vista })
+  const px = prender(g.x0 + ((cx - g.esq) * dpr) / g.z, 0, quadro.largura)
+  const py = prender(g.y0 + ((cy - g.topo) * dpr) / g.z, 0, quadro.altura)
+  const z = Math.min(8, Math.max(g.encaixe, zoom))
+  if (z <= g.encaixe * 1.001) return { zoom: 'encaixar', x: 0.5, y: 0.5 }
+  const w = Math.min(quadro.largura, (W * dpr) / z)
+  const h = Math.min(quadro.altura, (H * dpr) / z)
+  const esq = (W - (w * z) / dpr) / 2
+  const topo = (H - (h * z) / dpr) / 2
+  const x0 = px - ((cx - esq) * dpr) / z
+  const y0 = py - ((cy - topo) * dpr) / z
+  return { zoom: z, x: prender((x0 + w / 2) / quadro.largura, 0, 1), y: prender((y0 + h / 2) / quadro.altura, 0, 1) }
+}
+
+/** Arrastar a foto ampliada `dx`, `dy` px de CSS. */
+export function arrastar({ quadro, W, H, dpr = 1, vista }, dx, dy) {
+  const g = enquadrar({ quadro, W, H, dpr, vista })
+  const x0 = prender(g.x0 - (dx * dpr) / g.z, 0, quadro.largura - g.w)
+  const y0 = prender(g.y0 - (dy * dpr) / g.z, 0, quadro.altura - g.h)
+  return { ...vista, x: (x0 + g.w / 2) / quadro.largura, y: (y0 + g.h / 2) / quadro.altura }
+}

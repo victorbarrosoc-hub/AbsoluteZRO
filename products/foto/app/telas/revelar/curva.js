@@ -161,7 +161,7 @@ export function Curva({ ajustes, aoMudar }) {
     </svg>
     ${
       canal === 'luz'
-        ? html`<div class="controles">
+        ? html`<div class="rv-controles">
             ${['curva.altas', 'curva.claros', 'curva.escuros', 'curva.sombras'].map((caminho) => {
               const c = CONTROLES[caminho]
               return html`<${Ajuste}

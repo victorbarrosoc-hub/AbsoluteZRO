@@ -3,6 +3,8 @@
 
 .estilos {
   --biblioteca-l: clamp(360px, 31vw, 480px);
+  /* o fundo da tela, resolvido aqui (dentro do palco --fundo é o escuro) */
+  --fundo-tela: var(--fundo);
 }
 .estilos-grade {
   display: grid;
@@ -27,6 +29,8 @@
   grid-column: 1;
   position: relative;
   display: grid;
+  /* uma célula de tamanho definido: a foto encaixa (max-height em % precisa disso) */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   min-height: 0;
   padding: 72px 64px 108px;
@@ -299,7 +303,15 @@
   border-radius: 0;
 }
 .estilo-imagem img {
-  transition: transform 0.5s var(--mola);
+  transition:
+    transform 0.5s var(--mola),
+    opacity 0.3s,
+    filter 0.3s;
+}
+/* a prévia de antes (outra foto, outra correção) fica velada até a nova chegar */
+.estilo-imagem img[data-pronta='0'] {
+  opacity: 0.5;
+  filter: blur(2px);
 }
 .estilo-falhou {
   display: grid;
@@ -691,7 +703,11 @@
   box-shadow: 0 0 0 0.5px rgb(var(--t) / 0.2);
 }
 .relatorio-lista code {
-  font: 500 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    500 12px/1.3 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
   color: var(--texto);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -781,9 +797,7 @@
 .comparador {
   --x: 50%;
   position: relative;
-  max-height: 46vh;
   margin: 0 auto;
-  width: 100%;
   border-radius: 14px;
   overflow: hidden;
   background: var(--palco);
@@ -988,13 +1002,24 @@
     grid-template-rows: auto auto;
     height: auto;
   }
+  /* o palco fica preso em cima enquanto a biblioteca rola por baixo: a foto nunca sai de vista */
   .estilos-palco {
+    position: sticky;
+    top: 8px;
+    z-index: 3;
     margin: 8px 12px 0;
-    height: clamp(340px, 62vh, 600px);
+    height: clamp(320px, 46vh, 460px);
     border-radius: 22px;
+    /* o que rola por baixo não aparece em volta do palco preso */
+    box-shadow: 0 -20px 0 12px var(--fundo-tela);
+  }
+  :root[data-tema='escuro'] .estilos-palco {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      0 -20px 0 12px var(--fundo-tela);
   }
   .palco-foto {
-    padding: 64px 12px 132px;
+    padding: 58px 12px 122px;
   }
   .palco-cabeca {
     padding: 14px 12px 0 18px;
@@ -1018,10 +1043,24 @@
   .estilos-barra > .vidro--icone {
     grid-area: antes;
   }
+  /* a intensidade numa linha só: rótulo, trilho, valor */
   .estilos-intensidade {
     grid-area: intensidade;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'rotulo trilho valor';
+    align-items: center;
     min-width: 0;
-    padding: 4px 6px 0;
+    padding: 0 6px;
+  }
+  .estilos-intensidade .controle-rotulo {
+    grid-area: rotulo;
+  }
+  .estilos-intensidade .controle-valor {
+    grid-area: valor;
+  }
+  .estilos-intensidade .controle-trilho {
+    grid-area: trilho;
+    grid-column: trilho;
   }
   .estilos-modo {
     grid-area: modo;
@@ -1035,7 +1074,7 @@
     padding: 0 14px;
   }
   .palco-nota {
-    bottom: 126px;
+    bottom: 118px;
     font-size: 12px;
   }
   .estilos-biblioteca {
@@ -1060,6 +1099,11 @@
   .estilos-lista {
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     gap: 14px 10px;
+  }
+  /* o cartão focado pelo teclado não para atrás do palco preso */
+  .estilo {
+    scroll-margin-top: calc(clamp(320px, 46vh, 460px) + 76px);
+    scroll-margin-bottom: calc(var(--dock-a) + 12px);
   }
 }
 @media (max-width: 480px) {
@@ -1100,6 +1144,14 @@
     display: inline;
   }
 }
-:root[data-tema='escuro'] .estilos-palco {
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+@media (min-width: 861px) {
+  :root[data-tema='escuro'] .estilos-palco {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+  }
+}
+/* o aviso (com Desfazer) sobe para não cobrir a barra de aplicar */
+@media (min-width: 861px) {
+  :root:has(.painel-aba:not([hidden]) .estilos) {
+    --avisos-sobe: 74px;
+  }
 }

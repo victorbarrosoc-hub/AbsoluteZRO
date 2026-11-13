@@ -271,5 +271,6 @@ export function qrSvg(texto, { rotulo = 'QR do endereço' } = {}) {
   let d = ''
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (modulos[r][c]) d += `M${c + q} ${r + q}h1v1h-1z`
   const lado = n + 2 * q
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}" shape-rendering="crispEdges" role="img" aria-label="${rotulo}"><rect width="${lado}" height="${lado}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`
+  const abre = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}" shape-rendering="crispEdges" role="img" aria-label="${rotulo}">`
+  return `${abre}<rect width="${lado}" height="${lado}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`
 }

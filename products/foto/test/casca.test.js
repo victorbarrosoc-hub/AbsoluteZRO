@@ -43,6 +43,9 @@ after(async () => {
 async function abrir(opcoes = {}, { tema } = {}) {
   const contexto = await navegador.newContext({ viewport: { width: 1440, height: 900 }, ...opcoes })
   if (tema) await contexto.addCookies([{ name: 'foto_tema', value: tema, url: app.base }])
+  // a casca é testada sem a análise da Decupar por trás (ela muda notas, pilhas e ocupa a máquina): a preferência
+  // "começar sozinha" desligada, como a pessoa desliga nos ajustes (test/tela-decupar.test.js testa com ela ligada)
+  await contexto.addInitScript(() => localStorage.setItem('foto_decupar_sozinha', '0'))
   contexto.setDefaultTimeout(ESPERA)
   const pagina = await contexto.newPage()
   const olho = vigiar(pagina, app.base)

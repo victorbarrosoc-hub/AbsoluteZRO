@@ -29,7 +29,7 @@ export function Ajuste({ caminho, rotulo, valor, min, max, passo = 1, neutro = 0
     if (v == null) return
     aoMudar?.(Math.max(min, Math.min(max, v)), { final: true })
   }
-  return html`<div class="ajuste" data-caminho=${caminho} data-editando=${editando ? '' : undefined}>
+  return html`<div class="rv-ajuste" data-caminho=${caminho} data-editando=${editando ? '' : undefined}>
     <${Controle}
       rotulo=${rotulo}
       valor=${valor}
@@ -47,7 +47,7 @@ export function Ajuste({ caminho, rotulo, valor, min, max, passo = 1, neutro = 0
       editando
         ? html`<input
             ref=${campo}
-            class="ajuste-numero"
+            class="rv-ajuste-numero"
             type="text"
             inputmode="decimal"
             value=${texto}
@@ -61,7 +61,7 @@ export function Ajuste({ caminho, rotulo, valor, min, max, passo = 1, neutro = 0
           />`
         : desligado
           ? null
-          : html`<button type="button" class="ajuste-editar" aria-label=${`Digitar ${rotulo}`} tabindex="-1" onClick=${() => definir(true)}></button>`
+          : html`<button type="button" class="rv-ajuste-editar toque" aria-label=${`Digitar ${rotulo}`} tabindex="-1" onClick=${() => definir(true)}></button>`
     }
   </div>`
 }

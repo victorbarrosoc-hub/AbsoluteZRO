@@ -160,6 +160,8 @@ async function naPagina(f, arg) {
 
 async function abrirPagina() {
   contexto = await navegador.newContext({ viewport: { width: 1280, height: 860 } })
+  // a esteira é testada sozinha: a Decupar não começa a dela por trás (preferência "começar sozinha" desligada)
+  await contexto.addInitScript(() => localStorage.setItem('foto_decupar_sozinha', '0'))
   contexto.setDefaultTimeout(ESPERA)
   pagina = await contexto.newPage()
   olho = vigiar(pagina, app.base)

@@ -75,6 +75,10 @@ export function criarPrevias({ pool = criarPool(WORKER, { tamanho: Math.min(3, t
       return promessa
     },
     priorizar: (chave, prioridade) => pool.priorizar(chave, prioridade),
+    /** A foto em foco mudou: o que ainda espera na fila para outra fonte sai (quem pediu recebe AbortError). */
+    cancelarOutras(fonteChave) {
+      for (const chave of [...andamento.keys()]) if (!chave.startsWith(`${fonteChave}|`)) pool.cancelar(chave)
+    },
     cancelar: (chave) => pool.cancelar(chave),
     /** Quanto custou cada prévia (ms no worker), para medir. */
     tempos: () => tempos.slice(),

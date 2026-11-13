@@ -11,7 +11,8 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { baixar, modelos, situacao } from './scripts/modelos.mjs'
+import { baixar, modelos, PASTA_ROSTO, prepararRosto, situacao, situacaoRosto } from './scripts/modelos.mjs'
+import { copiarOrt } from './scripts/vendor.mjs'
 
 const RAIZ = fileURLToPath(new URL('.', import.meta.url))
 const MEDIAPIPE = '@mediapipe/tasks-vision'
@@ -22,7 +23,7 @@ export const DO_MEDIAPIPE = ['vision_bundle.mjs', 'vision_bundle.js', 'wasm/visi
  * Monta `saida` (apagada antes). Devolve { mediapipe, modelos: { prontos, faltando } } para quem chama conferir.
  * `baixarModelos: false` usa só o que já está em `modelosEm` (.modelos/). `buscar` é o fetch (os testes trocam).
  */
-export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join(RAIZ, '.modelos'), baixarModelos = process.env.FOTO_SEM_BAIXAR !== '1', buscar = fetch, log = () => {} } = {}) {
+export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join(RAIZ, '.modelos'), rostoEm = PASTA_ROSTO, baixarModelos = process.env.FOTO_SEM_BAIXAR !== '1', buscar = fetch, log = () => {} } = {}) {
   if (!existsSync(join(RAIZ, 'vendor/libraw/libraw.wasm'))) throw new Error('vendor/ vazio: rode npm run vendor antes')
   rmSync(saida, { recursive: true, force: true })
   mkdirSync(saida, { recursive: true })
@@ -44,6 +45,9 @@ export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join
     log(`aviso: ${MEDIAPIPE} não está em node_modules; as camadas de visão ficam indisponíveis`)
   }
 
+  // ONNX Runtime Web (busca por rosto em evento): também grande demais para o git; três arquivos de node_modules
+  const ort = copiarOrt(join(saida, 'vendor'), { log })
+
   // Modelos: baixa o que falta (se puder) e leva só o que confere com modelos.json
   if (baixarModelos) {
     try {
@@ -59,14 +63,27 @@ export async function publicar({ saida = join(RAIZ, 'publico'), modelosEm = join
     if (m.pronto) cpSync(join(modelosEm, m.arquivo), join(destino, m.arquivo))
     else log(`aviso: modelo ${m.arquivo} ficou de fora; a camada "${m.camada}" aparece como indisponível`)
   }
+  // os de rosto: originais baixados e derivados gerados (scripts/onnx.mjs); só o derivado conferido vai para o site
+  if (baixarModelos) {
+    try {
+      await prepararRosto({ pasta: rostoEm, buscar, log })
+    } catch (e) {
+      log(`aviso: não deu para preparar os modelos de rosto (${String(e?.message ?? e).slice(0, 120)})`)
+    }
+  }
+  const rosto = situacaoRosto(rostoEm)
+  for (const m of rosto) {
+    if (m.pronto) cpSync(join(rostoEm, m.arquivo), join(destino, m.arquivo))
+    else log(`aviso: modelo ${m.arquivo} ficou de fora; a busca por rosto aparece como indisponível`)
+  }
   // a lista que a tela lê (/modelos.json): o que veio (com sha256 para conferir) e o que faltou
   const ficha = ({ arquivo, camada, uso, tamanho, sha256, licenca, pronto }) => ({ arquivo, camada, uso, tamanho, sha256, licenca, pronto })
-  writeFileSync(join(saida, 'modelos.json'), `${JSON.stringify({ mediapipe, modelos: lista.map(ficha) }, null, 2)}\n`)
+  writeFileSync(join(saida, 'modelos.json'), `${JSON.stringify({ mediapipe, onnxruntime: ort, modelos: lista.map(ficha), rosto: rosto.map(ficha) }, null, 2)}\n`)
 
   writeFileSync(join(saida, 'robots.txt'), 'User-agent: *\nDisallow: /\n')
   // o 404 do site (a Vercel serve publico/404.html para o que não existe): a página neutra
   cpSync(join(RAIZ, 'app/indisponivel.html'), join(saida, '404.html'))
-  return { mediapipe, modelos: { prontos: lista.filter((m) => m.pronto).map((m) => m.arquivo), faltando: lista.filter((m) => !m.pronto).map((m) => m.arquivo) } }
+  return { mediapipe, onnxruntime: ort, rosto: rosto.filter((m) => m.pronto).map((m) => m.arquivo), modelos: { prontos: lista.filter((m) => m.pronto).map((m) => m.arquivo), faltando: lista.filter((m) => !m.pronto).map((m) => m.arquivo) } }
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) {

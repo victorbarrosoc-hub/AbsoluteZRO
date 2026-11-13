@@ -63,11 +63,13 @@ export async function lerParaImportar(arquivo) {
       saida.predefinicoes.push(...pacote.predefinicoes)
       saida.erros.push(...pacote.erros.map((e) => `${e.nome || `Item ${e.indice + 1}`}: ${e.mensagem}`))
     } else {
-      const r = importarLightroom(bytes, { nome })
-      saida.predefinicoes.push(r.predefinicao)
+      // o nome que o arquivo traz vale; o do arquivo é só a reserva
+      const r = importarLightroom(bytes)
+      const p = r.predefinicao.nome === 'Importada do Lightroom' && nome ? criarPredefinicao({ ...r.predefinicao, id: undefined, nome }) : r.predefinicao
+      saida.predefinicoes.push(p)
       saida.relatorio = r.relatorio
       saida.avisos.push(...(r.relatorio.avisos || []))
-      saida.qc = qc(r.predefinicao)
+      saida.qc = qc(p)
     }
   } catch (e) {
     saida.erros.push(e?.message || 'Não deu para ler este arquivo.')

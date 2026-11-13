@@ -262,6 +262,37 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* o selo da cobertura (a única foto de um momento) e o balde no pé: ● fica, ◐ talvez, ○ fora */
+.selo-unica {
+  top: 6px;
+  right: 6px;
+  letter-spacing: 0.04em;
+}
+.foto[data-marca] .selo-unica {
+  right: 6px;
+}
+.foto-nota[data-balde]::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: currentColor;
+}
+.foto-nota[data-balde='talvez']::before {
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.foto-nota[data-balde='fora'] {
+  color: var(--fraco);
+}
+.foto-nota[data-balde='fora']::before {
+  background: none;
+  box-shadow: inset 0 0 0 1.2px currentColor;
+}
+
 /* ─────────── a barra de cima, em vidro escuro ─────────── */
 .grade-barra {
   position: absolute;
@@ -286,6 +317,22 @@
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
   padding-right: 20px;
+}
+.grade-barra-rola {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 24px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.grade-barra .grade-barra-rola .pilulas {
+  flex: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  padding-right: 0;
 }
 .grade-barra-fim {
   display: flex;
@@ -551,6 +598,88 @@
   }
 }
 
+/* lupa com painel ao lado (a foto encolhe), com faixa embaixo (as fotos da cena) e a dica de deslizar */
+.lupa-painel {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--topo-a) + 14px);
+  right: 14px;
+  bottom: calc(var(--dock-a) + 18px);
+  width: 304px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: 22px;
+  background: rgb(28 28 30 / 0.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 0 1px rgb(255 255 255 / 0.07);
+  scrollbar-width: none;
+}
+.lupa-painel[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lupa-painel:not([hidden]) {
+    animation: painel-entra 0.42s var(--mola) both;
+  }
+}
+@keyframes painel-entra {
+  from {
+    opacity: 0;
+    translate: 16px 0;
+  }
+}
+.lupa[data-painel] .quadro {
+  padding-right: 332px;
+}
+.lupa[data-painel] .lupa-seta--depois {
+  right: 330px;
+}
+.lupa[data-painel] .lupa-barra {
+  left: calc(50% - 159px);
+}
+.lupa[data-tira] .quadro {
+  padding-bottom: calc(var(--dock-a) + 176px);
+}
+.quadro-dica {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgb(245 245 247 / 0.94);
+  color: #1d1d1f;
+  font: 700 14px/1 var(--fonte);
+  translate: -50% 0;
+  opacity: 0;
+  scale: 0.9;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    scale 0.3s var(--mola);
+}
+.quadro-dica svg {
+  width: 16px;
+  height: 16px;
+}
+.quadro-dica[data-para='cima'] {
+  top: calc(var(--topo-a) + 54px);
+}
+.quadro-dica[data-para='baixo'] {
+  bottom: calc(var(--dock-a) + 90px);
+}
+.quadro[data-deslize='cima'] .quadro-dica[data-para='cima'],
+.quadro[data-deslize='baixo'] .quadro-dica[data-para='baixo'] {
+  opacity: 1;
+  scale: 1;
+}
+
 /* ─────────── celular ─────────── */
 @media (max-width: 719px) {
   .grade-barra {
@@ -623,5 +752,25 @@
   }
   .lupa[data-comparar] .quadro:first-child .quadro-etiqueta {
     top: calc(var(--topo-a) + 10px);
+  }
+}
+
+@media (max-width: 719px) {
+  .lupa-painel {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--dock-a) + 72px);
+    width: auto;
+    max-height: 52%;
+  }
+  .lupa[data-painel] .quadro {
+    padding-right: 8px;
+  }
+  .lupa[data-painel] .lupa-barra {
+    left: 50%;
+  }
+  .lupa[data-tira] .quadro {
+    padding-bottom: calc(var(--dock-a) + 152px);
   }
 }

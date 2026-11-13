@@ -235,17 +235,23 @@ export function Margem({ latitude, histo, ajustes, carregando, origem }) {
   const dica = raw
     ? 'O histograma é o que o arquivo tem, em EV em torno do cinza. A faixa embaixo é o que a tela mostra. A linha cheia é onde o sensor satura; a tracejada, onde começa o ruído.'
     : 'Histograma da tela.'
-  return html`<section class="margem" aria-label="Margem do arquivo" data-raw=${raw ? '' : undefined}>
+  return html`<section
+    class="margem"
+    aria-label="Margem do arquivo"
+    data-raw=${raw ? '' : undefined}
+    data-de=${janela ? janela.de.toFixed(2) : undefined}
+    data-ate=${janela ? janela.ate.toFixed(2) : undefined}
+  >
     <div class="margem-topo">
       <span class="sobretitulo" title=${dica}>Margem</span>
       ${
         raw
           ? html`<span class="margem-numeros">
               <span class="margem-num" data-lado="sombras" title="Sombra limpa guardada abaixo do que a tela mostra"
-                >${abaixo == null ? '—' : html`<${Numero} valor=${Math.max(0, abaixo)} formato=${(v) => `${ev1(-v)} EV`} />`}</span
+                ><small>Sombras</small>${abaixo == null ? '—' : html`<${Numero} valor=${Math.max(0, abaixo)} formato=${(v) => `${ev1(-v)} EV`} />`}</span
               >
               <span class="margem-num" data-lado="altas" title=${acima != null && acima < 0 ? 'A tela já passa do ponto em que o sensor satura' : 'Altas luzes guardadas acima do que a tela mostra'}
-                >${acima == null ? '—' : html`<${Numero} valor=${acima} formato=${(v) => `${ev1(v)} EV`} />`}</span
+                ><small>Altas</small>${acima == null ? '—' : html`<${Numero} valor=${acima} formato=${(v) => `${ev1(v)} EV`} />`}</span
               >
             </span>`
           : null

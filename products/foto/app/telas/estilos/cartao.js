@@ -10,7 +10,11 @@ import { Menu } from '../../componentes/base.js'
  * A prévia de um pedido ({ fonte, p, daFoto, intensidade, lado, local }): { url, pronta }. Enquanto a nova não chega,
  * fica a anterior (sem piscar ao trocar de foto); `pronta` diz se a que está é a do pedido atual.
  */
-export function usarPrevia(previas, pedido, { prioridade = 0, elemento = null } = {}) {
+/**
+ * `espera` (ms): pede só depois de o pedido ficar parado esse tempo (o palco, enquanto o mouse corre a biblioteca).
+ * `cancelarAoTrocar`: o pedido anterior que ainda não saiu da fila é cancelado (não acumula trabalho velho).
+ */
+export function usarPrevia(previas, pedido, { prioridade = 0, elemento = null, espera = 0, cancelarAoTrocar = false } = {}) {
   const chave = pedido ? previas.chaveDe(pedido) : null
   const [estado, definir] = useState(() => ({ chave, url: chave ? previas.pronta(chave) : null }))
   const atual = useRef(chave)
@@ -23,12 +27,16 @@ export function usarPrevia(previas, pedido, { prioridade = 0, elemento = null } 
       return
     }
     let vivo = true
-    previas
-      .pedir(pedido, { prioridade })
-      .then((url) => vivo && url && atual.current === chave && definir({ chave, url }))
-      .catch((e) => vivo && e?.name !== 'AbortError' && atual.current === chave && definir({ chave, url: null, erro: true }))
+    const pedir = () =>
+      previas
+        .pedir(pedido, { prioridade })
+        .then((url) => vivo && url && atual.current === chave && definir({ chave, url }))
+        .catch((e) => vivo && e?.name !== 'AbortError' && atual.current === chave && definir({ chave, url: null, erro: true }))
+    const relogio = espera ? setTimeout(pedir, espera) : (pedir(), null)
     return () => {
       vivo = false
+      clearTimeout(relogio)
+      if (cancelarAoTrocar && !previas.pronta(chave)) previas.cancelar(chave)
     }
   }, [chave])
   // na tela: passa na frente da fila

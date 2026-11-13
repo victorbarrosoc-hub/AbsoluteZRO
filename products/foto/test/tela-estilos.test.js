@@ -62,6 +62,16 @@ const naLoja = (pagina, f, arg) =>
     codigo: f.toString(),
     arg,
   })
+/** Espera uma condição lida da loja (de dentro da página), conferindo a cada 100 ms. */
+async function esperarNaLoja(pagina, f, arg, { tempo = ESPERA } = {}) {
+  const fim = Date.now() + tempo
+  for (;;) {
+    const v = await naLoja(pagina, f, arg)
+    if (v) return v
+    if (Date.now() > fim) throw new Error(`esperei demais: ${f.toString().slice(0, 120)}`)
+    await new Promise((ok) => setTimeout(ok, 100))
+  }
+}
 const fotoEmFoco = (pagina) =>
   naLoja(pagina, (l) => {
     const f = l.catalogo.foto(l.catalogo.foco())
@@ -84,10 +94,17 @@ async function abrirEstilos(opcoes = {}, { tema } = {}) {
   await pagina.waitForFunction((n) => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === String(n), fotos.total)
   await pagina.waitForSelector('.foto img')
   await naLoja(pagina, (l) => l.ocioso())
-  await naLoja(pagina, (l) => l.catalogo.selecionar(l.catalogo.visiveis()[0].id))
+  // sem pilhas: a foto em foco não pula para a capa de uma pilha quando a análise agrupa as parecidas
+  await naLoja(pagina, (l) => {
+    l.catalogo.empilhar(false)
+    l.catalogo.selecionar(l.catalogo.visiveis()[0].id)
+  })
   const inicio = Date.now()
   await pagina.click('.dock-aba[data-aba="estilos"]')
-  await pagina.waitForFunction((n) => new Set([...document.querySelectorAll('.estilo-cartao img[data-pronta="1"]')].map((i) => i.closest('button').dataset.estilo)).size >= n, CASA)
+  await pagina.waitForFunction(
+    (n) => new Set([...document.querySelectorAll('.estilo-cartao img[data-pronta="1"]')].map((i) => i.closest('button').dataset.estilo)).size >= n,
+    CASA,
+  )
   const tempo = Date.now() - inicio
   await pagina.waitForSelector('.estilos-palco[data-pronto="1"]')
   return { contexto, pagina, olho, tempo }
@@ -131,7 +148,8 @@ test('a aba abre sem erro nem CSP, e os 39 estilos aparecem com a foto da pessoa
   assert.equal(medida.distintos, CASA, 'cada estilo dá uma imagem diferente')
   assert.ok(medida.lado >= 300 && medida.lado <= 340, `prévia de ${medida.lado} px`)
   // as famílias da casa e o palco escuro
-  for (const f of ['Natural', 'Retrato', 'Palco e show', 'Preto e branco', 'Comida e produto']) assert.ok(await pagina.locator(`.biblioteca-secao h3:text-is("${f}")`).count(), f)
+  for (const f of ['Natural', 'Retrato', 'Palco e show', 'Preto e branco', 'Comida e produto'])
+    assert.ok(await pagina.locator(`.biblioteca-secao h3:text-is("${f}")`).count(), f)
   assert.equal(await pagina.locator('.estilos-palco.palco').count(), 1)
   // sem banco: a conta não aparece, e não há pílula de equipe
   assert.equal(await pagina.locator('.pilula[data-valor="equipe"]').count(), 0)
@@ -162,32 +180,39 @@ test('passar o mouse mostra no palco sem aplicar; clicar aplica e Desfazer volta
   await assentar(pagina)
   await captura(pagina, 'aplicado-1440-claro')
   await pagina.locator('.aviso button').click()
-  await pagina.waitForFunction(async () => !(await import('/app/estado.js')).loja.catalogo.foto((await import('/app/estado.js')).loja.catalogo.foco()).ajustes)
+  await esperarNaLoja(pagina, (l) => !l.catalogo.foto(l.catalogo.foco()).ajustes)
   assert.equal((await fotoEmFoco(pagina)).predefinicao ?? null, null)
 
   // "o que mexe": os controles em palavras
   await pagina.hover(`.estilo-cartao[data-estilo="${id}"]`)
   await pagina.click(`.estilo-cartao[data-estilo="${id}"]`)
   await pagina.mouse.move(700, 450)
+  // a intensidade vale para o que acabou de ser aplicado (Shift + ← tira 10)
+  await pagina.focus('.estilos-intensidade input')
+  await pagina.keyboard.press('Shift+ArrowLeft')
+  await esperarNaLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).predefinicao?.intensidade === 90)
+  assert.ok(Math.abs((await fotoEmFoco(pagina)).ajustes.luz.altas - -14.4) < 0.7)
   await pagina.click('.palco-acoes button[aria-label="O que este estilo mexe"]')
   await pagina.waitForSelector('dialog.folha-mexe[open] .mexe dd')
   const linhas = await pagina.locator('dialog.folha-mexe .mexe dd').allInnerTexts()
-  assert.ok(linhas.some((l) => /Altas luzes −16/.test(l)), linhas.join(' | '))
+  assert.ok(
+    linhas.some((l) => /Altas luzes −16/.test(l)),
+    linhas.join(' | '),
+  )
   assert.ok(await pagina.locator('dialog.folha-mexe .qualidade--ok').count(), 'passou no qc')
+  await assentar(pagina)
+  await captura(pagina, 'mexe-1440-claro')
   await pagina.keyboard.press('Escape')
   await pagina.waitForSelector('dialog.folha-mexe[open]', { state: 'detached' })
 
   // aplicar em todas (corrigindo cada foto antes)
   await pagina.click('.estilos-aplicar')
-  await pagina.waitForFunction(
-    async (id) => (await import('/app/estado.js')).loja.catalogo.fotos().every((f) => f.predefinicao?.id === id),
-    id,
-  )
+  await esperarNaLoja(pagina, (l, id) => l.catalogo.fotos().every((f) => f.predefinicao?.id === id), id)
   const todas = await naLoja(pagina, (l) => l.catalogo.fotos().map((f) => f.predefinicao.modo))
   assert.ok(todas.every((m) => m === 'corrigir-e-estilo'))
   assert.match(await pagina.locator('.aviso').innerText(), /Dourado em \d+ fotos/)
   await pagina.locator('.aviso button').click()
-  await pagina.waitForFunction(async () => (await import('/app/estado.js')).loja.catalogo.fotos().filter((f) => f.predefinicao).length === 1)
+  await esperarNaLoja(pagina, (l) => l.catalogo.fotos().filter((f) => f.predefinicao).length === 1)
   limpo(olho)
 })
 
@@ -199,7 +224,12 @@ test('importar um .xmp mostra o relatório honesto e guarda em Importados', { sk
   await pagina.setInputFiles('dialog[open] input[data-entrada="importar"]', [{ name: 'quente.xmp', mimeType: 'application/rdf+xml', buffer: Buffer.from(XMP) }])
   await pagina.waitForSelector('dialog[open] .relatorio-numeros')
   const numeros = await pagina.evaluate(() =>
-    Object.fromEntries([...document.querySelectorAll('dialog[open] .relatorio-numeros > div')].map((d) => [d.dataset.classe, Number(d.querySelector('.relatorio-n').textContent)])),
+    Object.fromEntries(
+      [...document.querySelectorAll('dialog[open] .relatorio-numeros > div')].map((d) => [
+        d.dataset.classe,
+        Number(d.querySelector('.relatorio-n').textContent),
+      ]),
+    ),
   )
   assert.deepEqual(numeros, esperado)
   assert.ok(esperado.exato + esperado.aproximado > 5 && esperado.ignorado >= 1, JSON.stringify(esperado))
@@ -234,7 +264,9 @@ test('extrair de uma referência gerada devolve um estilo com aderência medida 
   })
   await pagina.click('.biblioteca-novo > button')
   await pagina.click('.menu-item:has-text("Extrair de uma foto")')
-  await pagina.setInputFiles('dialog[open] input[data-entrada="referencia"]', [{ name: 'referencia.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') }])
+  await pagina.setInputFiles('dialog[open] input[data-entrada="referencia"]', [
+    { name: 'referencia.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') },
+  ])
   await pagina.waitForSelector('dialog[open] .aderencia-n', { timeout: ESPERA })
   const aderencia = Number(await pagina.locator('dialog[open] .aderencia-n').getAttribute('data-aderencia'))
   const grupos = await pagina.locator('dialog[open] .extraido-grupos .ficha').allInnerTexts()
@@ -250,7 +282,9 @@ test('extrair de uma referência gerada devolve um estilo com aderência medida 
   await pagina.waitForSelector('dialog[open]', { state: 'detached' })
   await pagina.waitForSelector('.pilula[data-valor="meus"][aria-pressed="true"]')
   await pagina.waitForFunction(() => [...document.querySelectorAll('.estilo-nome')].some((n) => n.textContent === 'Sépia da referência'))
-  const guardado = await pagina.evaluate(() => [...document.querySelectorAll('.estilo-cartao')].find((b) => b.textContent.includes('Sépia da referência')).dataset.estilo)
+  const guardado = await pagina.evaluate(
+    () => [...document.querySelectorAll('.estilo-cartao')].find((b) => b.textContent.includes('Sépia da referência')).dataset.estilo,
+  )
   await pagina.waitForSelector(`.estilo-cartao[data-estilo="${guardado}"] img[data-pronta="1"]`)
   limpo(olho)
 })
@@ -284,6 +318,37 @@ test('exportar baixa os quatro formatos', { skip: semChromium }, async () => {
   assert.equal(pacote.nome, 'Meus estilos.zropack')
   const nomes = lerPacote(pacote.texto).predefinicoes.map((p) => p.nome)
   assert.deepEqual(nomes.sort(), ['Quente de teste', 'Sépia da referência'])
+
+  limpo(olho)
+})
+
+test('organizar: duplicar, renomear, mover de família e apagar com Desfazer', { skip: semChromium }, async () => {
+  const { pagina, olho } = sessao
+  await pagina.click('.pilula[data-valor="todos"]')
+  const menuDe = async (seletor, rotulo) => {
+    const caixa = pagina.locator(`.estilo:has(${seletor})`).first()
+    await caixa.hover()
+    await caixa.locator('.estilo-mais').click()
+    await pagina.click(`.menu-lista .menu-item:has-text("${rotulo}")`)
+  }
+  await menuDe('.estilo-cartao[data-estilo="casa-noite-neon"]', 'Duplicar')
+  await pagina.waitForFunction(() => [...document.querySelectorAll('.estilo-nome')].some((n) => n.textContent === 'Neon cópia'))
+  const copia = () => pagina.evaluate(() => [...document.querySelectorAll('.estilo-cartao')].find((b) => b.textContent.includes('Neon cópia'))?.dataset.estilo)
+  const id = await copia()
+  assert.ok(id && !id.startsWith('casa-'))
+  await menuDe(`.estilo-cartao[data-estilo="${id}"]`, 'Renomear')
+  await pagina.fill('dialog[open] input', 'Neon da casa')
+  await pagina.click('dialog[open] button[type="submit"]')
+  await pagina.waitForFunction(() => [...document.querySelectorAll('.estilo-nome')].some((n) => n.textContent === 'Neon da casa'))
+  await menuDe(`.estilo-cartao[data-estilo="${id}"]`, 'Mover de família')
+  await pagina.selectOption('dialog[open] select', '__nova')
+  await pagina.fill('dialog[open] input', 'Shows')
+  await pagina.click('dialog[open] button[type="submit"]')
+  await pagina.waitForSelector('.biblioteca-secao[aria-label="Shows"]')
+  await menuDe(`.estilo-cartao[data-estilo="${id}"]`, 'Apagar')
+  await pagina.waitForFunction((id) => !document.querySelector(`.estilo-cartao[data-estilo="${id}"]`), id)
+  await pagina.locator('.aviso button').click()
+  await pagina.waitForSelector(`.biblioteca-secao[aria-label="Shows"] .estilo-cartao[data-estilo="${id}"]`)
   limpo(olho)
 })
 
@@ -314,10 +379,42 @@ test('teclado: / busca, setas andam, F favorita, Enter aplica', { skip: semChrom
   await pagina.waitForSelector('.estilo-cartao[data-estilo="casa-retrato-pele"] + .estilo-estrela[aria-pressed="true"]')
   assert.equal(await pagina.locator('.pilula[data-valor="favoritos"]').count(), 1)
   await pagina.keyboard.press('Enter')
-  await pagina.waitForFunction(async () => {
-    const { loja } = await import('/app/estado.js')
-    return loja.catalogo.foto(loja.catalogo.foco()).predefinicao?.id === 'casa-retrato-pele'
-  })
+  await esperarNaLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).predefinicao?.id === 'casa-retrato-pele')
+  limpo(olho)
+})
+
+test('guardar o ajuste da foto em foco como estilo, escolhendo o que viaja', { skip: semChromium }, async () => {
+  const { pagina, olho } = sessao
+  // a foto em foco está com Pele (da prova do teclado)
+  await pagina.click('.biblioteca-novo > button')
+  await pagina.click('.menu-item:has-text("Guardar o ajuste desta foto")')
+  await pagina.waitForSelector('dialog[open] .criar')
+  const grupos = await pagina.locator('dialog[open] .pilula').allInnerTexts()
+  assert.ok(grupos.includes('Luz') && grupos.includes('Presença') && grupos.includes('Misturador'), grupos.join(', '))
+  // o que é da foto (exposição, branco) começa de fora
+  for (const g of ['Exposição', 'Branco']) {
+    const p = pagina.locator(`dialog[open] .pilula:text-is("${g}")`)
+    if (await p.count()) assert.equal(await p.getAttribute('aria-pressed'), 'false', g)
+  }
+  await pagina.click('dialog[open] .pilula:text-is("Presença")')
+  await pagina.fill('dialog[open] input[type="text"]', 'Pele sem textura')
+  await assentar(pagina)
+  await captura(pagina, 'criar-1440-claro')
+  await pagina.click('dialog[open] button[type="submit"]')
+  await pagina.waitForSelector('dialog[open]', { state: 'detached' })
+  await pagina.waitForFunction(() => [...document.querySelectorAll('.estilo-nome')].some((n) => n.textContent === 'Pele sem textura'))
+  // o que viajou: a luz e o misturador da Pele, sem a presença (textura e clareza)
+  const caixa = pagina.locator('.estilo:has(.estilo-nome:text-is("Pele sem textura"))').first()
+  await caixa.hover()
+  await caixa.locator('.estilo-mais').click()
+  await pagina.click('.menu-lista .menu-item:has-text("O que mexe")')
+  await pagina.waitForSelector('dialog.folha-mexe[open] .mexe dd')
+  const linhas = await pagina.locator('dialog.folha-mexe[open] .mexe').innerText()
+  assert.match(linhas, /Altas luzes/)
+  assert.match(linhas, /Misturador/)
+  assert.doesNotMatch(linhas, /Textura|Clareza/)
+  await pagina.keyboard.press('Escape')
+  await pagina.waitForSelector('dialog.folha-mexe[open]', { state: 'detached' })
   limpo(olho)
 })
 
@@ -348,7 +445,9 @@ test('tema claro e escuro (1440)', { skip: semChromium }, async () => {
 const alvosPequenos = (pagina) =>
   pagina.evaluate(() => {
     const ruins = []
-    for (const el of document.querySelectorAll('.estilos button, .estilos a[href], .estilos [role="radio"], .estilos input:not([type="file"]), .estilos select, .estilos summary')) {
+    for (const el of document.querySelectorAll(
+      '.estilos button, .estilos a[href], .estilos [role="radio"], .estilos input:not([type="file"]), .estilos select, .estilos summary',
+    )) {
       const r = el.getBoundingClientRect()
       const s = getComputedStyle(el)
       if (!r.width || !r.height || s.visibility === 'hidden' || s.pointerEvents === 'none' || el.closest('[hidden], .so-leitor, [inert]')) continue
@@ -364,7 +463,8 @@ const alvosPequenos = (pagina) =>
         }
       }
       const nome = el.getAttribute('aria-label') || el.textContent || ''
-      if (l < 43.5 || a < 43.5) ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
+      if (l < 43.5 || a < 43.5)
+        ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${nome.trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
     }
     return ruins
   })
@@ -391,10 +491,7 @@ test('celular (390 px): nada rola de lado, os alvos têm 44 px, claro e escuro',
       assert.deepEqual(await alvosPequenos(pagina), [])
       // tocar aplica direto (não há passar o mouse)
       await pagina.tap('.estilo-cartao[data-estilo="casa-natural-dia-claro"]')
-      await pagina.waitForFunction(async () => {
-        const { loja } = await import('/app/estado.js')
-        return loja.catalogo.foto(loja.catalogo.foco()).predefinicao?.id === 'casa-natural-dia-claro'
-      })
+      await esperarNaLoja(pagina, (l) => l.catalogo.foto(l.catalogo.foco()).predefinicao?.id === 'casa-natural-dia-claro')
       await pagina.waitForSelector('.estilos-palco[data-palco-estilo="casa-natural-dia-claro"][data-pronto="1"]')
       await assentar(pagina)
       await captura(pagina, `390-${tema}`)

@@ -1,0 +1,934 @@
+/* Decupar · a barra da decupagem, os baldes, as cenas, o painel "por que esta nota" e a sobreposição. Mora no palco
+   (escuro nos dois temas, como a grade). Cor só em ponto e traço: o texto fica em branco e cinza. */
+
+.decupar {
+  --dec-a: 56px;
+}
+.decupar .grade-barra {
+  top: calc(var(--topo-a) + var(--dec-a));
+}
+
+/* ─────────── a barra da decupagem ─────────── */
+.dec-barra {
+  position: absolute;
+  top: var(--topo-a);
+  left: 0;
+  right: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--dec-a);
+  padding: 0 14px 0 16px;
+  background: rgb(12 12 12 / 0.7);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid rgb(255 255 255 / 0.05);
+}
+.dec-andamento {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-width: 0;
+  color: var(--mudo);
+  font: 500 13px/1 var(--fonte);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dec-andamento-texto {
+  color: var(--texto);
+}
+.dec-andamento[data-situacao='pronta'] .dec-andamento-texto {
+  color: var(--mudo);
+}
+.dec-anel {
+  position: relative;
+}
+.dec-anel .progresso-anel {
+  width: 24px;
+  height: 24px;
+}
+.dec-anel:disabled {
+  opacity: 1;
+}
+.dec-anel-acao {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.dec-anel-acao svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 3;
+}
+.dec-anel:hover .dec-anel-acao,
+.dec-anel:focus-visible .dec-anel-acao,
+.dec-anel[aria-pressed='true'] .dec-anel-acao {
+  opacity: 1;
+}
+.dec-andamento[data-situacao='preparando'] .progresso-anel {
+  animation: dec-gira 1.1s linear infinite;
+}
+.dec-andamento[data-situacao='preparando'] .progresso-anel .feito {
+  stroke-dasharray: 28 100;
+}
+@keyframes dec-gira {
+  to {
+    rotate: 1turn;
+  }
+}
+.dec-pronta {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--texto);
+}
+.dec-pronta svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+.dec-fora {
+  padding-left: 8px;
+  border-left: 1px solid rgb(255 255 255 / 0.1);
+  color: var(--fraco);
+}
+.dec-comecar svg {
+  width: 13px;
+  height: 13px;
+}
+
+.dec-meio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 24px 0 2px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.dec-baldes {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.05);
+}
+.dec-balde {
+  min-height: 34px;
+  padding: 0 14px 0 12px;
+  background: none;
+  color: var(--mudo);
+  font-size: 14px;
+}
+.dec-balde[aria-pressed='true'] {
+  background: var(--texto);
+  color: var(--fundo);
+}
+.dec-balde .pilula-n {
+  min-width: 2ch;
+  color: var(--texto);
+  opacity: 1;
+  font-weight: 700;
+}
+.dec-balde[aria-pressed='true'] .pilula-n {
+  color: var(--fundo);
+}
+/* ● fica · ◐ talvez · ○ fora: forma, não cor */
+.balde-ponto {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.balde-ponto[data-balde='talvez'] {
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1.2px currentColor;
+}
+.balde-ponto[data-balde='fora'] {
+  background: none;
+  box-shadow: inset 0 0 0 1.4px currentColor;
+}
+.dec-balde[data-valor='fica'] .balde-ponto {
+  color: var(--texto);
+}
+.dec-balde[aria-pressed='true'] .balde-ponto {
+  color: var(--fundo);
+}
+.pilula--meta[aria-pressed='true'] {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--texto);
+}
+.dec-meta .pilula svg {
+  width: 14px;
+  height: 14px;
+}
+.dec-meta-quadro {
+  display: grid;
+  gap: 12px;
+  width: 300px;
+  max-width: 100%;
+}
+.dec-meta-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.dec-fim {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.dec-ficha {
+  width: auto;
+  height: 34px;
+  gap: 4px;
+  padding: 0 8px 0 11px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--mudo);
+  font: 600 13px/1 var(--fonte);
+  white-space: nowrap;
+}
+.dec-ficha:hover {
+  color: var(--texto);
+}
+.dec-ficha svg {
+  width: 14px;
+  height: 14px;
+}
+.dec-ficha small {
+  color: var(--fraco);
+  font-weight: 500;
+  font-size: 11px;
+}
+.dec-modo {
+  margin: 0 6px;
+}
+.dec-modo button {
+  gap: 6px;
+}
+.dec-principal {
+  margin-left: 6px;
+  min-height: 36px;
+  padding: 0 16px 0 13px;
+}
+.dec-principal svg {
+  width: 16px;
+  height: 16px;
+}
+.dec-curto {
+  display: none;
+}
+
+/* os motivos e as cenas, na linha dos filtros da grade */
+.dec-filtros {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.dec-divisa {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: rgb(255 255 255 / 0.12);
+}
+
+/* ─────────── o voo até o balde ─────────── */
+.voo {
+  position: fixed;
+  z-index: 200;
+  border-radius: 6px;
+  background: #222 center / cover no-repeat;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ─────────── por que esta nota ─────────── */
+.explica {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 20px 18px 18px;
+  color: var(--texto);
+  font-size: 13px;
+}
+.explica-fecha {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+}
+.explica-fecha svg {
+  width: 16px;
+  height: 16px;
+}
+.explica-nota {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.explica-numero {
+  font: 800 54px/0.9 var(--fonte-titulo);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.explica[data-balde='fora'] .explica-numero {
+  color: var(--mudo);
+}
+.explica-lado {
+  display: grid;
+  gap: 7px;
+}
+.explica-balde {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 700 14px/1 var(--fonte);
+}
+.explica-motivos {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 600 15px/1.3 var(--fonte);
+}
+.explica-motivos li + li {
+  color: var(--mudo);
+  font-weight: 500;
+  font-size: 13px;
+}
+.explica-linha {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--mudo);
+  line-height: 1.35;
+}
+.explica-linha svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--fraco);
+}
+.explica-linha span {
+  display: grid;
+  gap: 2px;
+}
+.explica-linha small {
+  color: var(--fraco);
+  font-size: 12px;
+}
+.explica-linha[data-tom='certo'] span {
+  color: var(--texto);
+}
+.explica-rostos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.explica-rosto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  font-size: 12px;
+  font-weight: 600;
+}
+.explica-barras {
+  display: grid;
+  gap: 7px;
+}
+.explica-barra {
+  display: grid;
+  grid-template-columns: 74px 1fr 26px;
+  align-items: center;
+  gap: 10px;
+  color: var(--fraco);
+  font-size: 12px;
+}
+.explica-barra b {
+  color: var(--mudo);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.explica-trilho {
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.08);
+  overflow: hidden;
+}
+.explica-trilho span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(245 245 247 / 0.8);
+}
+.explica-certeza {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+  color: var(--mudo);
+  font-weight: 600;
+}
+.explica-certeza ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fraco);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.explica-dicas li::before {
+  content: '→ ';
+}
+.explica-sobre {
+  justify-self: start;
+  gap: 8px;
+}
+.explica-sobre .tecla {
+  margin-left: 2px;
+  opacity: 0.6;
+}
+.explica-espera {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+}
+.explica-esqueleto {
+  width: 88px;
+  height: 46px;
+  border-radius: 10px;
+}
+
+/* ─────────── a sobreposição: o que a análise viu ─────────── */
+.sobre {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.sobre-foco {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sobre-veu {
+  fill: #000;
+  opacity: 0.52;
+}
+.sobre-veu[data-nivel='media'] {
+  opacity: 0.22;
+}
+.sobre-nitida {
+  fill: var(--cor-amarelo);
+  opacity: 0.16;
+}
+.sobre-rosto {
+  position: absolute;
+  border: 2px solid #f5f5f7;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+.sobre-rosto[data-principal] {
+  border-width: 2.5px;
+}
+.sobre-rosto[data-estado='fechados'] {
+  border-color: var(--cor-vermelho);
+}
+.sobre-rosto[data-estado='parcial'] {
+  border-color: var(--cor-amarelo);
+}
+.sobre-rosto[data-estado='semLeitura'],
+.sobre-rosto[data-estado='duvidoso'] {
+  border-style: dashed;
+  border-color: rgb(245 245 247 / 0.6);
+}
+.sobre-rosto--ativo {
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 0 0 6px rgb(245 245 247 / 0.18);
+}
+.sobre-rotulo {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgb(12 12 12 / 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #f5f5f7;
+  font: 600 11px/1 var(--fonte);
+  white-space: nowrap;
+  translate: -50% 0;
+}
+.sobre-ponto {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cor-verde);
+}
+[data-estado='fechados'] > .sobre-ponto,
+[data-estado='fechados'] .sobre-ponto {
+  background: var(--cor-vermelho);
+}
+[data-estado='parcial'] .sobre-ponto {
+  background: var(--cor-amarelo);
+}
+[data-estado='semLeitura'] .sobre-ponto,
+[data-estado='duvidoso'] .sobre-ponto {
+  background: rgb(245 245 247 / 0.5);
+}
+.sobre-tremido {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sobre-tremido line {
+  stroke: var(--cor-amarelo);
+  stroke-width: 4px;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgb(0 0 0 / 0.6));
+}
+.sobre-tremido--forte line {
+  stroke: var(--cor-vermelho);
+}
+.sobre-tremido-rotulo {
+  position: absolute;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgb(12 12 12 / 0.72);
+  color: #f5f5f7;
+  font: 600 11px/1 var(--fonte);
+  white-space: nowrap;
+  translate: -50% 12px;
+}
+
+/* ─────────── as cenas ─────────── */
+.cenas {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+.cenas:not(:has(.lupa)) {
+  display: grid;
+  place-items: center;
+  padding: calc(var(--topo-a) + 24px) 24px calc(var(--dock-a) + 24px);
+}
+.cenas-fim .vazio-acoes {
+  gap: 10px;
+}
+.cena-topo {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--topo-a) + 8px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  translate: -50% 0;
+}
+.lupa[data-painel] .cena-topo {
+  left: calc(50% - 159px);
+}
+.cena-titulo {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 180px;
+  font: 400 15px/1 var(--fonte);
+  color: var(--mudo);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.cena-titulo b {
+  color: var(--texto);
+  font-weight: 800;
+}
+.cena-titulo small {
+  color: var(--fraco);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cena-empate {
+  color: var(--mudo);
+}
+.lupa--cenas .lupa-ficha {
+  max-width: calc(50% - 160px);
+}
+.cena-tira {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(var(--dock-a) + 84px);
+  display: flex;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 6px;
+  overflow-x: auto;
+  border-radius: 16px;
+  background: rgb(28 28 30 / 0.55);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  translate: -50% 0;
+  scrollbar-width: none;
+}
+.lupa[data-painel] .cena-tira {
+  left: calc(50% - 159px);
+  max-width: calc(100% - 360px);
+}
+.tira-foto {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mudo);
+  cursor: pointer;
+  font: 600 11px/1 var(--fonte);
+}
+.tira-moldura {
+  position: relative;
+  display: block;
+  height: 56px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--palco-2);
+  transition:
+    box-shadow 0.2s,
+    transform 0.3s var(--mola);
+}
+.tira-moldura img,
+.tira-moldura .esqueleto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tira-foto:hover .tira-moldura {
+  transform: translateY(-2px);
+}
+.tira-foto[aria-selected='true'] .tira-moldura {
+  box-shadow:
+    0 0 0 2px rgb(28 28 30),
+    0 0 0 4px #f5f5f7;
+}
+.tira-foto[data-marca='rejeitada'] img {
+  opacity: 0.35;
+}
+.tira-marca {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+}
+.tira-marca svg {
+  width: 10px;
+  height: 10px;
+}
+.tira-coroa {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.4);
+}
+.tira-coroa svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.6;
+}
+.tira-pe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tira-pe b {
+  color: var(--texto);
+}
+.tira-foto[data-balde='fora'] .tira-pe b {
+  color: var(--fraco);
+}
+
+/* a troca de cena: a foto sai para um lado e a próxima entra do outro (View Transition) */
+html[data-sentido^='cena']::view-transition-old(painel),
+html[data-sentido^='cena']::view-transition-new(painel) {
+  animation: 220ms ease both vt-surge;
+}
+html[data-sentido^='cena']::view-transition-old(painel) {
+  animation-name: vt-some;
+}
+html[data-sentido^='cena']::view-transition-group(foto) {
+  animation: none;
+}
+html[data-sentido='cena-frente']::view-transition-old(foto) {
+  animation: 300ms cubic-bezier(0.32, 0.72, 0, 1) both cena-sai;
+}
+html[data-sentido='cena-frente']::view-transition-new(foto) {
+  animation: 420ms cubic-bezier(0.32, 0.72, 0, 1) both cena-entra;
+}
+html[data-sentido='cena-volta']::view-transition-old(foto) {
+  animation: 300ms cubic-bezier(0.32, 0.72, 0, 1) both cena-sai-volta;
+}
+html[data-sentido='cena-volta']::view-transition-new(foto) {
+  animation: 420ms cubic-bezier(0.32, 0.72, 0, 1) both cena-entra-volta;
+}
+@keyframes cena-sai {
+  to {
+    opacity: 0;
+    transform: translateX(-8%) scale(0.96);
+  }
+}
+@keyframes cena-entra {
+  from {
+    opacity: 0;
+    transform: translateX(10%) scale(0.98);
+  }
+}
+@keyframes cena-sai-volta {
+  to {
+    opacity: 0;
+    transform: translateX(8%) scale(0.96);
+  }
+}
+@keyframes cena-entra-volta {
+  from {
+    opacity: 0;
+    transform: translateX(-10%) scale(0.98);
+  }
+}
+
+/* ─────────── as folhas ─────────── */
+.ajuste {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--linha);
+}
+.ajuste:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.ajuste .segmentado {
+  justify-self: start;
+  max-width: 100%;
+}
+.ajuste .apoio {
+  font-size: 13px;
+}
+.ajuste-camada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+.ajuste-camada small {
+  color: var(--fraco);
+  font-size: 12px;
+}
+.ajuste-camada[data-situacao='indisponivel'] small {
+  color: var(--aviso);
+}
+.ajuste-sempre {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.ajuste-sempre svg {
+  width: 18px;
+  height: 18px;
+  padding: 0 11px;
+  box-sizing: content-box;
+}
+.ajuste-frase {
+  margin: 0;
+  font: 600 15px/1.35 var(--fonte);
+}
+.ajuste .vidro {
+  justify-self: start;
+}
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 6px 0 14px;
+}
+.numeros > div {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgb(var(--t) / 0.05);
+}
+.numeros b {
+  font: 800 30px/1 var(--fonte-titulo);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.numeros > div > span:last-child {
+  color: var(--mudo);
+  font-size: 13px;
+}
+.numeros .marca {
+  position: static;
+}
+.numeros-estrela svg {
+  width: 18px;
+  height: 18px;
+}
+.gravar-numero {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.gravar-numero b {
+  font: 800 52px/1 var(--fonte-titulo);
+  letter-spacing: -0.03em;
+}
+.gravar-numero span {
+  color: var(--mudo);
+  font: 600 18px/1 var(--fonte);
+}
+.gravar-fora {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.gravar-idioma {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+/* ─────────── celular ─────────── */
+@media (max-width: 1100px) {
+  .dec-andamento-texto,
+  .dec-fora {
+    display: none;
+  }
+  .dec-modo button {
+    font-size: 0;
+    gap: 0;
+  }
+}
+@media (max-width: 719px) {
+  .decupar {
+    --dec-a: 52px;
+  }
+  .dec-barra {
+    gap: 6px;
+    padding: 0 6px 0 4px;
+  }
+  .dec-so-largo,
+  .dec-ficha {
+    display: none;
+  }
+  .dec-modo {
+    margin: 0;
+  }
+  .dec-meio {
+    gap: 6px;
+    padding-right: 20px;
+  }
+  .dec-baldes {
+    padding: 2px;
+  }
+  .dec-balde {
+    padding: 0 10px 0 9px;
+    font-size: 13px;
+  }
+  .dec-meta .pilula {
+    padding: 0 10px;
+  }
+  .dec-principal {
+    margin-left: 0;
+    padding: 0 12px 0 10px;
+    font-size: 13px;
+  }
+  .dec-longo {
+    display: none;
+  }
+  .dec-curto {
+    display: inline;
+  }
+  .lupa--cenas .lupa-ficha {
+    display: none;
+  }
+  .cena-topo {
+    top: calc(var(--topo-a) + 4px);
+  }
+  .lupa[data-painel] .cena-topo,
+  .lupa[data-painel] .cena-tira {
+    left: 50%;
+    max-width: calc(100% - 16px);
+  }
+  .cena-tira {
+    bottom: calc(var(--dock-a) + 70px);
+  }
+  .tira-moldura {
+    height: 48px;
+  }
+  .numeros {
+    grid-template-columns: 1fr;
+  }
+  .numeros > div {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+  }
+}

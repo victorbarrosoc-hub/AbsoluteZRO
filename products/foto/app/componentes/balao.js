@@ -6,9 +6,12 @@
 
 import { cx, html, useLayoutEffect, useRef, useState } from '../preact.js'
 
+const MARGEM = 12
+
 export function Balao({ gatilho, rotulo, lado = 'esquerda', classeBotao = 'liso', dica, classe, children, aoAbrir, pressionado }) {
   const [aberto, definir] = useState(false)
   const ref = useRef(null)
+  const quadro = useRef(null)
   const fechar = (devolver = false) => {
     definir(false)
     if (devolver) ref.current?.querySelector('button')?.focus()
@@ -16,9 +19,28 @@ export function Balao({ gatilho, rotulo, lado = 'esquerda', classeBotao = 'liso'
   useLayoutEffect(() => {
     if (!aberto) return
     const fora = (e) => !ref.current?.contains(e.target) && fechar()
+    // o quadro é fixo na tela (o botão pode morar numa linha que rola e cortaria o quadro): mede e encosta no botão
+    const posicionar = () => {
+      const q = quadro.current
+      const b = ref.current?.querySelector('button')?.getBoundingClientRect()
+      if (!q || !b) return
+      const l = q.offsetWidth
+      const x = lado === 'direita' ? b.right - l : b.left
+      // um ancestral com filtro ou vidro (backdrop-filter) vira a referência do fixo: desconta a posição dele
+      q.style.left = '0px'
+      q.style.top = '0px'
+      const base = q.getBoundingClientRect()
+      q.style.left = `${Math.max(MARGEM, Math.min(innerWidth - l - MARGEM, x)) - base.left}px`
+      q.style.top = `${b.bottom + 8 - base.top}px`
+    }
+    posicionar()
+    addEventListener('resize', posicionar)
     document.addEventListener('pointerdown', fora, true)
-    ref.current?.querySelector('.balao-quadro input, .balao-quadro button')?.focus()
-    return () => document.removeEventListener('pointerdown', fora, true)
+    ref.current?.querySelector('.flutua-quadro input, .flutua-quadro button')?.focus()
+    return () => {
+      removeEventListener('resize', posicionar)
+      document.removeEventListener('pointerdown', fora, true)
+    }
   }, [aberto])
   const tecla = (e) => {
     if (!aberto) return
@@ -28,7 +50,7 @@ export function Balao({ gatilho, rotulo, lado = 'esquerda', classeBotao = 'liso'
       fechar(true)
     } else if (e.key.length === 1 || e.key.startsWith('Arrow')) e.stopPropagation() // o conteúdo é de quem digita, não da tela
   }
-  return html`<span class=${cx('balao', classe)} ref=${ref} onKeyDown=${tecla}>
+  return html`<span class=${cx('flutua', classe)} ref=${ref} onKeyDown=${tecla}>
     <button
       type="button"
       class=${classeBotao}
@@ -46,7 +68,7 @@ export function Balao({ gatilho, rotulo, lado = 'esquerda', classeBotao = 'liso'
     </button>
     ${
       aberto
-        ? html`<div class="balao-quadro" role="dialog" aria-label=${rotulo} data-lado=${lado}>
+        ? html`<div class="flutua-quadro" ref=${quadro} role="dialog" aria-label=${rotulo} data-lado=${lado}>
           ${typeof children === 'function' ? children(() => fechar(true)) : children}
         </div>`
         : null

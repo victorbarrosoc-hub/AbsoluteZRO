@@ -136,6 +136,74 @@ import { LibRaw } from '/vendor/libraw/index.js' // carrega libraw.wasm do lado 
 `
 }
 
+// ───────── ONNX Runtime Web (rosto em evento) ─────────
+// 14,8 MB de WebAssembly: grande demais para o git. Como o MediaPipe, vem de node_modules (está em dependencies) e o
+// build copia só os três arquivos que a busca por rosto usa (WASM de uma thread; sem WebGPU, sem WebGL), sem alteração.
+// A pasta leva a versão no nome: o cache de /vendor é imutável.
+
+export const ORT = 'onnxruntime-web'
+export const ORT_VERSAO = '1.31.1'
+export const PASTA_ORT = `onnxruntime-${ORT_VERSAO}`
+/** Os três arquivos e o sha256 de cada um (docs/estudo/rosto-em-evento.md, D.1). */
+export const DO_ORT = {
+  'ort.wasm.min.mjs': 'c21d9c326d453a4a61398270c804d5979e118540597cb0c07f7b3d64e6098234',
+  'ort-wasm-simd-threaded.mjs': '30ed0b5cd1182ede931fea448afb567d4dc705ec957af09f108a2be5f770dac3',
+  'ort-wasm-simd-threaded.wasm': '4b884c203b0fa48d057be3332c65513ff85aa3c5bddd6946acc0fab7ecda001d',
+}
+const LICENCA_ORT = `MIT License
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
+
+/**
+ * Copia o ONNX Runtime Web de node_modules para `<vendor>/onnxruntime-<versão>/` (o build). Confere a versão e o
+ * sha256 de cada arquivo. Devolve a versão, ou null (com aviso) se o pacote não estiver lá: a busca por rosto fica
+ * indisponível, o resto do app segue.
+ */
+export function copiarOrt(vendorDestino, { nm = NM, log = () => {} } = {}) {
+  const pacote = join(nm, ORT)
+  const faltam = Object.keys(DO_ORT).filter((f) => !existsSync(join(pacote, 'dist', f)))
+  if (faltam.length || !existsSync(join(pacote, 'package.json'))) {
+    log(`aviso: ${ORT} não está em node_modules; a busca por rosto fica indisponível`)
+    return null
+  }
+  const v = JSON.parse(readFileSync(join(pacote, 'package.json'), 'utf8')).version
+  if (v !== ORT_VERSAO) throw new Error(`${ORT} ${v} em node_modules; o build espera ${ORT_VERSAO}`)
+  const destino = join(vendorDestino, PASTA_ORT)
+  mkdirSync(destino, { recursive: true })
+  for (const [f, hash] of Object.entries(DO_ORT)) {
+    const bytes = readFileSync(join(pacote, 'dist', f))
+    if (sha256(bytes) !== hash) throw new Error(`${ORT}/dist/${f}: sha256 não confere`)
+    writeFileSync(join(destino, f), bytes)
+  }
+  writeFileSync(join(destino, 'LICENSE'), LICENCA_ORT)
+  writeFileSync(
+    join(destino, 'README.md'),
+    `# ONNX Runtime Web\n\n${ORT} ${v}, MIT (\`LICENSE\`). Cópia de \`node_modules\` feita no build, sem alteração: ${Object.keys(DO_ORT)
+      .map((f) => `\`${f}\``)
+      .join(', ')}.\n`,
+  )
+  return v
+}
+
 /** Refaz vendor/ do zero. */
 export async function vendorizar() {
   rmSync(VENDOR, { recursive: true, force: true })

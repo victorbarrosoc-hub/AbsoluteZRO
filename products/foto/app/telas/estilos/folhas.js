@@ -63,7 +63,12 @@ function Qualidade({ resultado }) {
     <span>${resultado.problemas.length === 1 ? resultado.problemas[0].texto : `${resultado.problemas.length} pontos de atenção`}</span>
     ${
       resultado.problemas.length > 1
-        ? html`<details class="recolhido"><summary>Ver</summary><ul>${resultado.problemas.map((x) => html`<li>${x.texto}</li>`)}</ul></details>`
+        ? html`<details class="recolhido">
+            <summary>Ver</summary>
+            <ul>
+              ${resultado.problemas.map((x) => html`<li>${x.texto}</li>`)}
+            </ul>
+          </details>`
         : null
     }
   </div>`
@@ -85,18 +90,15 @@ function Relatorio({ relatorio }) {
     <div class="relatorio-numeros">
       ${CLASSES.map(
         ([k, rotulo]) =>
-          html`<div data-classe=${k}><span class="relatorio-n"><${Numero} valor=${relatorio.resumo[k] || 0} /></span><span class="relatorio-r">${rotulo}</span></div>`,
+          html`<div data-classe=${k}>
+            <span class="relatorio-n"><${Numero} valor=${relatorio.resumo[k] || 0} /></span><span class="relatorio-r">${rotulo}</span>
+          </div>`,
       )}
     </div>
     <details class="recolhido">
       <summary>Ver as ${total} chaves</summary>
       <ul class="relatorio-lista">
-        ${relatorio.itens.map(
-          (it) =>
-            html`<li data-classe=${it.classe}>
-              <code>${it.chave}</code><span>${it.razao}</span>
-            </li>`,
-        )}
+        ${relatorio.itens.map((it) => html`<li data-classe=${it.classe}><code>${it.chave}</code><span>${it.razao}</span></li>`)}
       </ul>
     </details>
   </div>`
@@ -116,8 +118,20 @@ function Importado({ item, previas, fonte, daFoto }) {
     </div>
     ${item.relatorio ? html`<${Relatorio} relatorio=${item.relatorio} />` : null}
     <${Qualidade} resultado=${item.qc} />
-    ${item.avisos.length ? html`<ul class="avisos-estilo">${item.avisos.map((a) => html`<li>${a}</li>`)}</ul>` : null}
-    ${item.erros.length ? html`<ul class="avisos-estilo avisos-estilo--erro">${item.erros.map((a) => html`<li>${a}</li>`)}</ul>` : null}
+    ${
+      item.avisos.length
+        ? html`<ul class="avisos-estilo">
+            ${item.avisos.map((a) => html`<li>${a}</li>`)}
+          </ul>`
+        : null
+    }
+    ${
+      item.erros.length
+        ? html`<ul class="avisos-estilo avisos-estilo--erro">
+            ${item.erros.map((a) => html`<li>${a}</li>`)}
+          </ul>`
+        : null
+    }
   </article>`
 }
 
@@ -150,7 +164,7 @@ export function FolhaImportar({ aberta, aoFechar, resultados, lendo, aoArquivos,
 /** Antes e depois com a divisória que a pessoa arrasta (um range de verdade, para o teclado). */
 function Comparador({ antes, depois, largura, altura }) {
   const [x, definirX] = useState(50)
-  return html`<div class="comparador" style=${`--x:${x}%;aspect-ratio:${largura} / ${altura}`}>
+  return html`<div class="comparador" style=${`--x:${x}%;aspect-ratio:${largura} / ${altura};width:min(100%, calc(42vh * ${(largura / altura).toFixed(4)}))`}>
     <img src=${antes} alt="Antes" draggable="false" />
     <img class="comparador-depois" src=${depois} alt="Depois" draggable="false" />
     <span class="comparador-linha" aria-hidden="true"></span>
@@ -161,6 +175,7 @@ function Comparador({ antes, depois, largura, altura }) {
 }
 
 const NIVEL = { alta: 'alta', media: 'média', baixa: 'baixa' }
+const GRUPO_DA_CONFIANCA = { tom: 'Tom', neutro: 'Tonalização', cor: 'Cor', misturador: 'Misturador', vizinhanca: 'Textura e vinheta' }
 
 /**
  * Extrair de uma foto: 1 a 10 referências (JPEG/PNG), a foto em foco como alvo. `extrair(arquivos)` → resultado do
@@ -255,19 +270,33 @@ export function FolhaExtrair({ aberta, aoFechar, comAlvo, extrair, aoGuardar, in
                 <span class="aderencia-n" data-aderencia=${resultado.erro.aderencia}><${Numero} valor=${resultado.erro.aderencia} formato=${porcento} /></span>
               </div>
               <div class="extraido-grupos">
-                ${resultado.grupos.length ? resultado.grupos.map((g) => html`<span class="ficha">${g}</span>`) : html`<span class="apoio">Nenhum controle mexido.</span>`}
+                ${
+                  resultado.grupos.length
+                    ? resultado.grupos.map((g) => html`<span class="ficha">${g}</span>`)
+                    : html`<span class="apoio">Nenhum controle mexido.</span>`
+                }
                 ${resultado.pareado ? html`<span class="ficha ficha--marca" title="A referência é a mesma cena da sua foto">Mesma cena</span>` : null}
               </div>
               <details class="recolhido">
                 <summary>Confiança</summary>
                 <ul class="confianca">
-                  ${Object.entries(resultado.confianca).map(([k, v]) => html`<li><span>${k === 'vizinhanca' ? 'vizinhança' : k}</span><span data-nivel=${v}>${NIVEL[v] ?? v}</span></li>`)}
+                  ${Object.entries(resultado.confianca).map(
+                    ([k, v]) => html`<li><span>${GRUPO_DA_CONFIANCA[k] ?? k}</span><span data-nivel=${v}>${NIVEL[v] ?? v}</span></li>`,
+                  )}
                 </ul>
               </details>
             </div>
-            ${resultado.avisos.length ? html`<ul class="avisos-estilo">${resultado.avisos.map((a) => html`<li>${a}</li>`)}</ul>` : null}
+            ${
+              resultado.avisos.length
+                ? html`<ul class="avisos-estilo">
+                    ${resultado.avisos.map((a) => html`<li>${a}</li>`)}
+                  </ul>`
+                : null
+            }
             <div class="folha-pe folha-pe--campo">
-              <label class="campo campo--linha"><span class="so-leitor">Nome</span><input type="text" value=${nome} maxlength="80" onInput=${(e) => definirNome(e.currentTarget.value)} /></label>
+              <label class="campo campo--linha"
+                ><span class="so-leitor">Nome</span><input type="text" value=${nome} maxlength="80" onInput=${(e) => definirNome(e.currentTarget.value)}
+              /></label>
               <button type="button" class="vidro" onClick=${() => definirSituacao('vazio')}>Outra</button>
               <button type="submit" class="vidro vidro--tinta" disabled=${!resultado.grupos.length}>Guardar como estilo</button>
             </div>
@@ -355,8 +384,12 @@ export function FolhaCriar({ aberta, aoFechar, ajustes, look, familias, aoGuarda
       vazio
         ? html`<div class="vazio vazio--folha"><span class="apoio">Esta foto ainda não tem ajustes.</span></div>`
         : html`<form onSubmit=${salvar} class="criar">
-            <label class="campo"><span>Nome</span><input type="text" required maxlength="80" value=${nome} onInput=${(e) => definirNome(e.currentTarget.value)} autocomplete="off" /></label>
-            <div class="campo"><span>O que viaja</span>
+            <label class="campo"
+              ><span>Nome</span
+              ><input type="text" required maxlength="80" value=${nome} onInput=${(e) => definirNome(e.currentTarget.value)} autocomplete="off"
+            /></label>
+            <div class="campo">
+              <span>O que viaja</span>
               <${Pilulas}
                 rotulo="O que viaja"
                 multiplo
@@ -365,7 +398,8 @@ export function FolhaCriar({ aberta, aoFechar, ajustes, look, familias, aoGuarda
                 aoMudar=${(v) => definirGrupos(v || [])}
               />
             </div>
-            <label class="campo"><span>Família</span>
+            <label class="campo"
+              ><span>Família</span>
               <select value=${familia} onChange=${(e) => definirFamilia(e.currentTarget.value)}>
                 ${familias.map((f) => html`<option value=${f}>${f}</option>`)}
               </select>
@@ -405,18 +439,25 @@ export function FolhaEditar({ aberta, aoFechar, modo, p, familias, aoSalvar }) {
     <form onSubmit=${salvar}>
       ${
         modo === 'renomear'
-          ? html`<label class="campo"><span class="so-leitor">Nome</span><input ref=${campo} type="text" maxlength="80" value=${valor} onInput=${(e) => definir(e.currentTarget.value)} /></label>`
-          : html`<label class="campo"><span class="so-leitor">Família</span>
-              <select ref=${campo} value=${valor} onChange=${(e) => definir(e.currentTarget.value)}>
-                ${familias.map((f) => html`<option value=${f}>${f}</option>`)}
-                <option value="__nova">Nova família…</option>
-              </select>
-            </label>
-            ${
-              valor === '__nova'
-                ? html`<label class="campo"><span class="so-leitor">Nome da família</span><input type="text" maxlength="40" placeholder="Nome da família" value=${nova} onInput=${(e) => definirNova(e.currentTarget.value)} /></label>`
-                : null
-            }`
+          ? html`<label class="campo"
+              ><span class="so-leitor">Nome</span
+              ><input ref=${campo} type="text" maxlength="80" value=${valor} onInput=${(e) => definir(e.currentTarget.value)}
+            /></label>`
+          : html`<label class="campo"
+                ><span class="so-leitor">Família</span>
+                <select ref=${campo} value=${valor} onChange=${(e) => definir(e.currentTarget.value)}>
+                  ${familias.map((f) => html`<option value=${f}>${f}</option>`)}
+                  <option value="__nova">Nova família…</option>
+                </select>
+              </label>
+              ${
+                valor === '__nova'
+                  ? html`<label class="campo"
+                      ><span class="so-leitor">Nome da família</span
+                      ><input type="text" maxlength="40" placeholder="Nome da família" value=${nova} onInput=${(e) => definirNova(e.currentTarget.value)}
+                    /></label>`
+                  : null
+              }`
       }
       <div class="folha-pe">
         <button type="button" class="vidro" onClick=${aoFechar}>Cancelar</button>
@@ -451,16 +492,34 @@ export function FolhaMexe({ aberta, aoFechar, p }) {
   for (const l of linhas) {
     const g = NOME_DO_GRUPO[l.grupo] ?? l.grupo
     if (!grupos.has(g)) grupos.set(g, [])
-    grupos.get(g).push(l.texto)
+    // "Misturador · matiz: …" dentro do grupo Misturador vira "Matiz: …"
+    const t = l.texto.replace(/^[^·]+ · /, '')
+    grupos.get(g).push(t.charAt(0).toUpperCase() + t.slice(1))
   }
   const resumo = p?.origem?.relatorio?.resumo
-  return html`<${Folha} aberta=${aberta} aoFechar=${aoFechar} titulo=${['O que', `${p?.nome ?? 'o estilo'} mexe.`]} largura=${520} classe="folha-estilo folha-mexe">
+  return html`<${Folha}
+    aberta=${aberta}
+    aoFechar=${aoFechar}
+    titulo=${['O que', `${p?.nome ?? 'o estilo'} mexe.`]}
+    largura=${520}
+    classe="folha-estilo folha-mexe"
+  >
     ${p ? html`<div class="mexe-grupos" aria-label="Grupos">${gruposMexidos(p).map((g) => html`<span class="ficha">${g}</span>`)}</div>` : null}
     <dl class="mexe">
-      ${[...grupos].map(([g, lista]) => html`<div><dt>${g}</dt>${lista.map((t) => html`<dd>${t}</dd>`)}</div>`)}
+      ${[...grupos].map(
+        ([g, lista]) =>
+          html`<div>
+            <dt>${g}</dt>
+            ${lista.map((t) => html`<dd>${t}</dd>`)}
+          </div>`,
+      )}
     </dl>
     ${linhas.length ? null : html`<span class="apoio">Não mexe em nada.</span>`}
-    ${resumo ? html`<span class="apoio mexe-origem">Do Lightroom: ${resumo.exato} exatas, ${resumo.aproximado} aproximadas, ${resumo.ignorado} ignoradas.</span>` : null}
+    ${
+      resumo
+        ? html`<span class="apoio mexe-origem">Do Lightroom: ${resumo.exato} exatas, ${resumo.aproximado} aproximadas, ${resumo.ignorado} ignoradas.</span>`
+        : null
+    }
     <${Qualidade} resultado=${resultado} />
   <//>`
 }

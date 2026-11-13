@@ -39,16 +39,7 @@ import { criarAcervo } from './acervo.js'
 import { criarPrevias } from './previas.js'
 import { Cartao, usarPrevia } from './cartao.js'
 import { FolhaCriar, FolhaEditar, FolhaExtrair, FolhaImportar, FolhaMexe } from './folhas.js'
-import {
-  eArquivoDeEstilo,
-  eImagem,
-  exportarCube,
-  exportarPacote,
-  exportarXmp,
-  exportarZropreset,
-  lerParaImportar,
-  temXmpDoLightroom,
-} from './arquivos.js'
+import { eArquivoDeEstilo, eImagem, exportarCube, exportarPacote, exportarXmp, exportarZropreset, lerParaImportar, temXmpDoLightroom } from './arquivos.js'
 
 // a folha de estilo da tela entra junto com ela (a casca só liga a do sistema visual)
 if (typeof document !== 'undefined' && !document.querySelector('link[data-estilos]')) {
@@ -70,6 +61,8 @@ const MODOS = [
   { valor: 'so-estilo', rotulo: 'Só o estilo', curto: 'Só o estilo', detalhe: 'Não corrige nada' },
 ]
 const CENA = { chave: 'cena', cena: true }
+const NOTA_VAZIO = 'Abra fotos para ver os estilos nelas.'
+const NOTA_SEM_PREVIA = 'Esta foto ainda não tem prévia.'
 const PREFERENCIAS = 'foto_estilos'
 
 const semAcento = (t) =>
@@ -108,6 +101,8 @@ function soDaFoto(ajustes) {
   return n
 }
 
+const corrigida = (r) => Math.abs(r.correcao?.exposicao || 0) >= 0.05 || r.correcao?.brancoMudou
+
 /** A explicação curta de uma foto tratada: só o que mudou de verdade. */
 const explicar = (linhas) =>
   linhas
@@ -115,7 +110,10 @@ const explicar = (linhas) =>
     .map((t) => t.replace(/\.$/, ''))
     .join(' · ')
 
-const icone = (corpo) => html`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">${corpo}</svg>`
+const icone = (corpo) =>
+  html`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+    ${corpo}
+  </svg>`
 const LUPA = icone(html`<circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" />`)
 
 // uma biblioteca e um pool por página: o que já foi revelado continua valendo ao trocar de aba ou de trabalho
@@ -168,13 +166,23 @@ function secoesDe({ bib, conta, filtro, busca }) {
     por('conta', 'Na conta', naConta, 'Conta')
   } else if (filtro === 'importados') por('importados', null, importadas)
   else if (filtro === 'equipe') por('equipe', null, conta.equipe, 'Equipe')
-  else if (FAMILIAS.includes(filtro)) por(filtro, null, casa.filter((p) => p.familia === filtro))
+  else if (FAMILIAS.includes(filtro))
+    por(
+      filtro,
+      null,
+      casa.filter((p) => p.familia === filtro),
+    )
   else {
     if (!busca && bib.favoritos.length) por('favoritos', 'Favoritos', bib.favoritos.map((id) => todos.get(id)).filter(Boolean))
     for (const [f, l] of porFamilia(daPessoa)) por(`p-${f}`, f === FAMILIA_DA_PESSOA ? 'Meus' : f, l)
     por('conta', 'Na conta', naConta, 'Conta')
     por('equipe', 'Da equipe', conta.equipe, 'Equipe')
-    for (const f of FAMILIAS) por(f, f, casa.filter((p) => p.familia === f))
+    for (const f of FAMILIAS)
+      por(
+        f,
+        f,
+        casa.filter((p) => p.familia === f),
+      )
     por('importados', 'Importados', importadas)
   }
   return { secoes, todos, locaisIds, contagem: { daPessoa: daPessoa.length + naConta.length, importadas: importadas.length } }
@@ -183,7 +191,7 @@ function secoesDe({ bib, conta, filtro, busca }) {
 /** O palco: a foto grande (escura nos dois temas) com o estilo que está sendo visto. */
 function Palco({ fonte, daFoto, p, intensidade, arrastando, antes, semFoto, vazio, refImagem, nomeDaFoto, podeAndar, aoAndar, children }) {
   const pedido = fonte && daFoto ? { fonte, p: antes ? null : p, daFoto, intensidade, lado: arrastando ? 640 : 1024, local: !arrastando } : null
-  const grande = usarPrevia(previas, pedido, { prioridade: 100 })
+  const grande = usarPrevia(previas, pedido, { prioridade: 100, espera: 60, cancelarAoTrocar: true })
   // enquanto a grande não chega, a do cartão (mesma foto, mesmo estilo) segura o lugar: a troca é imediata
   const pequena = fonte && daFoto && intensidade === 100 ? previas.pronta(previas.chaveDe({ fonte, p: antes ? null : p, daFoto, lado: 320 })) : null
   // a última que ficou pronta, para nunca voltar ao vazio
@@ -203,12 +211,15 @@ function Palco({ fonte, daFoto, p, intensidade, arrastando, antes, semFoto, vazi
     </div>
     ${
       podeAndar
-        ? html`<button type="button" class="liso palco-andar palco-andar--antes" aria-label="Foto anterior" onClick=${() => aoAndar(-1)}><${Icone} nome="esquerda" /></button>
-            <button type="button" class="liso palco-andar palco-andar--depois" aria-label="Próxima foto" onClick=${() => aoAndar(1)}><${Icone} nome="direita" /></button>`
+        ? html`<button type="button" class="liso palco-andar palco-andar--antes" aria-label="Foto anterior" onClick=${() => aoAndar(-1)}>
+              <${Icone} nome="esquerda" />
+            </button>
+            <button type="button" class="liso palco-andar palco-andar--depois" aria-label="Próxima foto" onClick=${() => aoAndar(1)}>
+              <${Icone} nome="direita" />
+            </button>`
         : null
     }
-    ${semFoto ? html`<span class="palco-nota">${vazio ? 'Abra fotos para ver os estilos nelas.' : 'Esta foto ainda não tem prévia.'}</span>` : null}
-    ${children}
+    ${semFoto ? html`<span class="palco-nota">${vazio ? NOTA_VAZIO : NOTA_SEM_PREVIA}</span>` : null} ${children}
   </section>`
 }
 
@@ -264,6 +275,9 @@ export default function Estilos({ loja, ativa }) {
     }
   }, [focoId])
   const semFoto = !!fonte?.cena
+  useEffect(() => {
+    if (fonte) previas.cancelarOutras(fonte.chave)
+  }, [fonte])
 
   // a foto trocou: o palco volta para o estilo que ela tem, e a intensidade para a dela
   useEffect(() => {
@@ -341,7 +355,13 @@ export default function Estilos({ loja, ativa }) {
     let resultados
     if (ids.length === 1 && ids[0] === s.focoId && s.daFoto) {
       const ajustes = aplicar(p, s.daFoto, forca)
-      resultados = [{ id: ids[0], ajustes, explicacao: [...(s.modo === 'so-estilo' ? [] : s.correcao?.explicacao || []), `${p.nome}${forca !== 100 ? ` a ${forca}%` : ''}`] }]
+      resultados = [
+        {
+          id: ids[0],
+          ajustes,
+          explicacao: [...(s.modo === 'so-estilo' ? [] : s.correcao?.explicacao || []), `${p.nome}${forca !== 100 ? ` a ${forca}%` : ''}`],
+        },
+      ]
     } else if (s.modo === 'so-estilo') {
       resultados = tratarEmLote(
         ids.map((id) => ({ id, ajustes: c.foto(id)?.ajustes })),
@@ -389,9 +409,7 @@ export default function Estilos({ loja, ativa }) {
       resultados.length === 1
         ? explicar(resultados[0].explicacao) || p.nome
         : `${p.nome} em ${resultados.length.toLocaleString('pt-BR')} fotos${
-            s.modo === 'so-estilo'
-              ? ''
-              : ` · ${resultados.filter((r) => Math.abs(r.correcao?.exposicao || 0) >= 0.05 || r.correcao?.brancoMudou).length.toLocaleString('pt-BR')} corrigidas`
+            s.modo === 'so-estilo' ? '' : ` · ${resultados.filter(corrigida).length.toLocaleString('pt-BR')} corrigidas`
           }`
     avisar(texto, { desfazer: () => c.desfazer() })
   }
@@ -427,12 +445,16 @@ export default function Estilos({ loja, ativa }) {
     void aplicarEm(p, ids)
   }
 
-  /** A intensidade (e o modo) valem também para a última aplicação, se o palco mostra aquele estilo. */
+  /** A intensidade vale também para a última aplicação, se o palco mostra aquele estilo (o modo vale para a próxima). */
   function reaplicar(mudanca) {
     const u = ultimo.current
     const p = u && estado.current.todos.get(u.pId)
     if (!p || palcoId !== u.pId) return
-    void aplicarEm(p, u.ids.filter((id) => loja.catalogo.foto(id)), { ...mudanca, silencioso: true })
+    void aplicarEm(
+      p,
+      u.ids.filter((id) => loja.catalogo.foto(id)),
+      { ...mudanca, silencioso: true },
+    )
   }
 
   // ── a biblioteca muda ──
@@ -500,7 +522,9 @@ export default function Estilos({ loja, ativa }) {
       { rotulo: 'Duplicar', icone: 'mais', aoEscolher: () => duplicarEstilo(p) },
       local ? { rotulo: 'Renomear', icone: 'lapis', aoEscolher: () => abrirFolha('renomear', p) } : null,
       local ? { rotulo: 'Mover de família', icone: 'pasta', aoEscolher: () => abrirFolha('mover', p) } : null,
-      !local && !daCasa ? { rotulo: 'Guardar neste aparelho', icone: 'soltar', aoEscolher: () => mudarBiblioteca((e) => acrescentar(e, p), `${p.nome} guardado`) } : null,
+      !local && !daCasa
+        ? { rotulo: 'Guardar neste aparelho', icone: 'soltar', aoEscolher: () => mudarBiblioteca((e) => acrescentar(e, p), `${p.nome} guardado`) }
+        : null,
       { divisa: true },
       { titulo: 'Exportar' },
       { rotulo: 'Estilo', detalhe: '.zropreset', icone: 'soltar', aoEscolher: () => exportar(exportarZropreset, p) },
@@ -664,14 +688,23 @@ export default function Estilos({ loja, ativa }) {
     if (!lista.length) return
     e.preventDefault()
     let i = lista.indexOf(atual)
-    if (i < 0) i = Math.max(0, lista.findIndex((b) => b.dataset.estilo === palcoId))
+    if (i < 0)
+      i = Math.max(
+        0,
+        lista.findIndex((b) => b.dataset.estilo === palcoId),
+      )
     else if (typeof passo === 'number') i = Math.max(0, Math.min(lista.length - 1, i + passo))
     else {
       // a linha de cima ou de baixo: o cartão mais perto na horizontal
-      const r = lista[i].getBoundingClientRect()
+      // posição de layout (sem as transformações da cascata, que ainda podem estar correndo)
+      const caixa = (b) => {
+        const li = b.closest('.estilo')
+        return { left: li.offsetLeft, top: li.offsetTop, width: li.offsetWidth, height: li.offsetHeight, bottom: li.offsetTop + li.offsetHeight }
+      }
+      const r = caixa(lista[i])
       const meio = r.left + r.width / 2
       const candidatos = lista
-        .map((b, k) => ({ k, r: b.getBoundingClientRect() }))
+        .map((b, k) => ({ k, r: caixa(b) }))
         .filter((c) => (passo === 'baixo' ? c.r.top > r.top + r.height / 2 : c.r.bottom < r.top + r.height / 2))
       if (candidatos.length) {
         const linha = passo === 'baixo' ? Math.min(...candidatos.map((c) => c.r.top)) : Math.max(...candidatos.map((c) => c.r.top))
@@ -727,7 +760,7 @@ export default function Estilos({ loja, ativa }) {
         <header class="palco-cabeca">
           <div class="palco-titulo" aria-live="polite">
             <span class="sobretitulo">${antes ? 'Antes' : (estiloDoPalco?.familia ?? (nomeDaFoto || ' '))}</span>
-            <h2>${antes ? html`<span class="fino">Sem estilo</span>` : estiloDoPalco ? html`<span class="pesado">${estiloDoPalco.nome}</span>` : html`<span class="fino">Sem estilo</span>`}</h2>
+            <h2>${!antes && estiloDoPalco ? html`<span class="pesado">${estiloDoPalco.nome}</span>` : html`<span class="fino">Sem estilo</span>`}</h2>
           </div>
           ${
             estiloDoPalco
@@ -741,8 +774,19 @@ export default function Estilos({ loja, ativa }) {
                     data-tecla="F"
                     data-dica-lado="esquerda"
                     onClick=${() => alternarFavorito(estiloDoPalco.id)}
-                  ><${Icone} nome="estrela" cheio=${favoritos.has(estiloDoPalco.id)} /></button>
-                  <button type="button" class="liso" aria-label="O que este estilo mexe" data-dica="O que mexe" data-dica-lado="esquerda" onClick=${() => abrirFolha('mexe', estiloDoPalco)}><${Icone} nome="info" /></button>
+                  >
+                    <${Icone} nome="estrela" cheio=${favoritos.has(estiloDoPalco.id)} />
+                  </button>
+                  <button
+                    type="button"
+                    class="liso"
+                    aria-label="O que este estilo mexe"
+                    data-dica="O que mexe"
+                    data-dica-lado="esquerda"
+                    onClick=${() => abrirFolha('mexe', estiloDoPalco)}
+                  >
+                    <${Icone} nome="info" />
+                  </button>
                 </div>`
               : null
           }
@@ -765,7 +809,9 @@ export default function Estilos({ loja, ativa }) {
             onKeyDown=${(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), definirAntes(true))}
             onKeyUp=${(e) => (e.key === ' ' || e.key === 'Enter') && definirAntes(false)}
             onContextMenu=${(e) => e.preventDefault()}
-          ><${Icone} nome="comparar" /></button>
+          >
+            <${Icone} nome="comparar" />
+          </button>
           <${Controle}
             rotulo="Intensidade"
             classe="estilos-intensidade"
@@ -801,7 +847,11 @@ export default function Estilos({ loja, ativa }) {
           />
           ${
             tratando
-              ? html`<div class="estilos-tratando" role="status"><${Progresso} valor=${tratando.total ? tratando.feitas / tratando.total : null} rotulo="Tratando" /><span><${Numero} valor=${tratando.feitas} /> de <${Numero} valor=${tratando.total} /></span></div>`
+              ? html`<div class="estilos-tratando" role="status">
+                  <${Progresso} valor=${tratando.total ? tratando.feitas / tratando.total : null} rotulo="Tratando" /><span
+                    ><${Numero} valor=${tratando.feitas} /> de <${Numero} valor=${tratando.total}
+                  /></span>
+                </div>`
               : html`<button
                   type="button"
                   class="vidro vidro--tinta estilos-aplicar"
@@ -865,36 +915,46 @@ export default function Estilos({ loja, ativa }) {
                   ${busca ? html`<button type="button" class="vidro" onClick=${() => definirBusca('')}>Limpar a busca</button>` : null}
                 <//>`
               : secoes.map(
-                  (s) => html`<section class="biblioteca-secao" key=${s.id} aria-label=${s.titulo ?? undefined}>
-                    ${s.titulo ? html`<h3>${s.titulo}</h3>` : null}
-                    <ul class="estilos-lista cascata">
-                      ${s.lista.map(
-                        (p) =>
-                          html`<${Cartao}
-                            key=${`${s.id}:${p.id}`}
-                            i=${indice++}
-                            p=${p}
-                            fonte=${fonte}
-                            daFoto=${daFoto}
-                            naFoto=${p.id === aplicadoId}
-                            favorito=${favoritos.has(p.id)}
-                            marca=${s.marca}
-                            previas=${previas}
-                            itensDoMenu=${estaveis.itensDoMenu}
-                            aoVer=${estaveis.verCartao}
-                            aoAplicar=${estaveis.escolher}
-                            aoFavoritar=${estaveis.alternarFavorito}
-                          />`,
-                      )}
-                    </ul>
-                  </section>`,
+                  (s) =>
+                    html`<section class="biblioteca-secao" key=${s.id} aria-label=${s.titulo ?? undefined}>
+                      ${s.titulo ? html`<h3>${s.titulo}</h3>` : null}
+                      <ul class="estilos-lista cascata">
+                        ${s.lista.map(
+                          (p) =>
+                            html`<${Cartao}
+                              key=${`${s.id}:${p.id}`}
+                              i=${indice++}
+                              p=${p}
+                              fonte=${fonte}
+                              daFoto=${daFoto}
+                              naFoto=${p.id === aplicadoId}
+                              favorito=${favoritos.has(p.id)}
+                              marca=${s.marca}
+                              previas=${previas}
+                              itensDoMenu=${estaveis.itensDoMenu}
+                              aoVer=${estaveis.verCartao}
+                              aoAplicar=${estaveis.escolher}
+                              aoFavoritar=${estaveis.alternarFavorito}
+                            />`,
+                        )}
+                      </ul>
+                    </section>`,
                 )
           }
         </div>
       </section>
     </div>
 
-    ${soltando ? html`<div class="estilos-soltar" aria-hidden="true"><div><${Icone} nome="soltar" /><h2><span class="fino">Solte o </span><span class="pesado">preset ou a referência.</span></h2></div></div>` : null}
+    ${
+      soltando
+        ? html`<div class="estilos-soltar" aria-hidden="true">
+            <div>
+              <${Icone} nome="soltar" />
+              <h2><span class="fino">Solte o </span><span class="pesado">preset ou a referência.</span></h2>
+            </div>
+          </div>`
+        : null
+    }
 
     <${FolhaImportar}
       aberta=${folha === 'importar'}
@@ -942,7 +1002,6 @@ export default function Estilos({ loja, ativa }) {
     <${FolhaMexe} aberta=${folha === 'mexe'} aoFechar=${() => definirFolha(null)} p=${alvoDaFolha} />
   </div>`
 }
-
 
 /** Quanto custou cada prévia no worker ({ lado, ms }): para medir (o teste lê). */
 export const temposDasPrevias = () => previas?.tempos() ?? []

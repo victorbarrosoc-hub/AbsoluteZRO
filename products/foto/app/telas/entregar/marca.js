@@ -6,7 +6,8 @@
 
 const ALTURA_DO_TEXTO = 220
 
-const tela = (l, a) => (typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(l, a) : Object.assign(document.createElement('canvas'), { width: l, height: a }))
+const tela = (l, a) =>
+  typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(l, a) : Object.assign(document.createElement('canvas'), { width: l, height: a })
 
 /** Texto → { largura, altura, dados: Float32Array }. */
 export async function mascaraDeTexto(texto) {

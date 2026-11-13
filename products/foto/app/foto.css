@@ -800,6 +800,24 @@ h3 {
   text-transform: uppercase;
 }
 
+/* ─────────── Balão (um quadro pequeno preso a um botão; fixo na tela para não ser cortado por linha que rola) ─────────── */
+.flutua {
+  position: relative;
+  display: inline-flex;
+}
+.flutua-quadro {
+  position: fixed;
+  z-index: 60;
+  width: max-content;
+  max-width: min(340px, calc(100vw - 24px));
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra-flutua);
+  animation: menu-abre 0.28s var(--mola) both;
+}
+
 /* ─────────── Folha (dialog) ─────────── */
 dialog.folha {
   width: min(var(--folha-l, 520px), calc(100vw - 32px));
@@ -902,6 +920,9 @@ dialog.folha::backdrop {
   justify-items: center;
   gap: 8px;
   translate: -50% 0;
+  /* com left: 50% a caixa encolhe para metade da tela e o texto quebra; a largura acompanha o aviso */
+  width: max-content;
+  max-width: calc(100vw - 32px);
   pointer-events: none;
   transition: bottom 0.35s var(--mola);
 }

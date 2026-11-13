@@ -253,7 +253,7 @@ malha recusou (nuca, cabelo) vem com `duvidoso: true` e não decide foco nem pes
 ```
 Foto { id, nome, caminho, tamanho, tipo: 'raw' | 'imagem', formato, exif, marca: 'escolhida' | 'rejeitada' | null,
        estrelas: 0..5, cor: null | 'vermelho' | 'amarelo' | 'verde' | 'azul' | 'roxo', magnitude?, medidas?, rostos?, cena?,
-       grupo?, ajustes?, predefinicao?, cliente?: { escolhida, comentario },
+       grupo?, ajustes?, predefinicao?: { id, nome, intensidade, modo }, cliente?: { escolhida, comentario },
        par?: { nome, tamanho, formato }, proporcao?, semPrevia?,
        latitude?, analise?: { versao, camadas, objetos, rotulos, cena: { confianca, porque, noite }, giro, raw? },
        escolha?: { tipo, tamanho, escolhida, equivalente, equivalentes, desempate } }

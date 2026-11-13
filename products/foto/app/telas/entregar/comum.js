@@ -50,8 +50,7 @@ export function contarCriterios(catalogo, estrelas) {
 export function ordemDaGaleria(fotos) {
   const porGrupo = new Map()
   for (const f of fotos) if (f.grupo) porGrupo.set(f.grupo, [...(porGrupo.get(f.grupo) || []), f])
-  const melhorDe = (lista) =>
-    lista.find((f) => f.escolha?.escolhida) ?? [...lista].sort((a, b) => (b.magnitude?.total ?? -1) - (a.magnitude?.total ?? -1))[0]
+  const melhorDe = (lista) => lista.find((f) => f.escolha?.escolhida) ?? [...lista].sort((a, b) => (b.magnitude?.total ?? -1) - (a.magnitude?.total ?? -1))[0]
   const saida = []
   const feitos = new Set()
   for (const f of fotos) {
@@ -109,7 +108,10 @@ export async function carregarEstilos() {
   const porLook = new Map(lista.filter((p) => p.look).map((p) => [idDoLook(p), p]))
   const familias = [...FAMILIAS, ...new Set(lista.map((p) => p.familia).filter((f) => !FAMILIAS.includes(f)))]
   const favoritas = estado.favoritos.map((id) => porId.get(id)).filter(Boolean)
-  const grupos = [...(favoritas.length ? [['Favoritos', favoritas]] : []), ...familias.map((f) => [f, lista.filter((p) => p.familia === f)]).filter(([, l]) => l.length)]
+  const grupos = [
+    ...(favoritas.length ? [['Favoritos', favoritas]] : []),
+    ...familias.map((f) => [f, lista.filter((p) => p.familia === f)]).filter(([, l]) => l.length),
+  ]
   return { lista, grupos, porId, look: (id) => porLook.get(id) ?? null }
 }
 
@@ -170,9 +172,9 @@ export const Simbolo = ({ nome, classe }) =>
   ></svg>`
 
 /** A miniatura de uma foto do catálogo (a mesma da grade). */
-export function Miniatura({ loja, id, classe }) {
+export function Miniatura({ loja, id, classe, estilo }) {
   const url = usarMiniatura(loja, id)
-  return html`<span class=${`mini ${classe || ''}`}>${url ? html`<img src=${url} alt="" draggable="false" decoding="async" />` : null}</span>`
+  return html`<span class=${`mini ${classe || ''}`} style=${estilo}>${url ? html`<img src=${url} alt="" draggable="false" decoding="async" />` : null}</span>`
 }
 
 /** Copia para a área de transferência; devolve se deu. */

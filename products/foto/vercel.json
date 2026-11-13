@@ -17,6 +17,15 @@
     },
     "api/galeria.js": {
       "includeFiles": "{galeria/**,app/indisponivel.html}"
+    },
+    "api/evento.js": {
+      "includeFiles": "{evento/**,app/indisponivel.html,app/rosto/**,app/trabalho/servir.js,src/rosto/**}"
+    },
+    "api/link/evento.js": {
+      "includeFiles": "src/rosto/**"
+    },
+    "api/foto/eventos.js": {
+      "includeFiles": "src/rosto/**"
     }
   },
   "rewrites": [
@@ -67,6 +76,38 @@
     {
       "source": "/g/:token",
       "destination": "/api/galeria?t=:token"
+    },
+    {
+      "source": "/api/foto/eventos/:id/:acao",
+      "destination": "/api/foto/eventos?id=:id&acao=:acao"
+    },
+    {
+      "source": "/api/foto/eventos/:id",
+      "destination": "/api/foto/eventos?id=:id"
+    },
+    {
+      "source": "/api/evento/:acao",
+      "destination": "/api/link/evento?acao=:acao"
+    },
+    {
+      "source": "/e/:token/i/:foto",
+      "destination": "/api/link/evento?acao=imagem&t=:token&f=:foto"
+    },
+    {
+      "source": "/e/:token/app/:pasta/:arquivo",
+      "destination": "/api/evento?t=:token&d=app-:pasta&f=:arquivo"
+    },
+    {
+      "source": "/e/:token/src/:pasta/:arquivo",
+      "destination": "/api/evento?t=:token&d=src-:pasta&f=:arquivo"
+    },
+    {
+      "source": "/e/:token/:arquivo",
+      "destination": "/api/evento?t=:token&f=:arquivo"
+    },
+    {
+      "source": "/e/:token",
+      "destination": "/api/evento?t=:token"
     }
   ],
   "headers": [
@@ -96,6 +137,15 @@
         {
           "key": "Cross-Origin-Opener-Policy",
           "value": "same-origin"
+        }
+      ]
+    },
+    {
+      "source": "/e/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(), geolocation=()"
         }
       ]
     },
