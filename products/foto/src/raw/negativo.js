@@ -12,11 +12,16 @@
 //   area            { x, y, largura, altura }                 área ativa dentro do sensor
 //   cfa             { tipo: 'bayer' | 'xtrans', lado: 2 | 6, padrao: Uint8Array(lado·lado) }
 //                     padrao[l·lado + c] = 0 R, 1 G, 2 B, com (l, c) contados a partir do canto da ÁREA ATIVA
+//                   ou { tipo: 'linear' }: o arquivo JÁ VEM SEM MOSAICO (Sony "sem perdas" M e S, sRAW, DNG LinearRaw
+//                     como o ProRAW e o DNG com perdas). Aí sensor = { largura, altura, amostras: 3, dados: Uint16Array
+//                     com R, G, B entrelaçados (3 por pixel) }, linear, em espaço de câmera; não há padrão de preto.
 //   preto           { porCanal: [r, g, b], padrao?: { linhas, colunas, valores: Float32Array } }
 //                     preto de um sensel = porCanal[cor] + padrao[(l mod linhas)·colunas + (c mod colunas)],
 //                     com (l, c) em coordenadas do SENSOR (o padrão repetido nasce no canto do sensor)
 //   branco          { declarado: [r, g, b] }    nível de saturação que o arquivo declara, por canal (em DN)
 //   wb              { comoFotografado?: [r, g, b] }           multiplicadores com G = 1
+//                     aplicado?: true quando o dado JÁ ESTÁ multiplicado por eles (só existe em cfa 'linear': o
+//                     YCbCr da Sony é gravado depois do equilíbrio de branco). Quem revela não multiplica de novo.
 //   cor             { origem: 'dng' | 'libraw', matrizes: [{ kelvin, xyzParaCamera: number[9], cameraParaXyzD50?: number[9] }] }
 //                     uma ou duas matrizes (dois iluminantes no DNG); linha a linha (m[0..2] = primeira linha)
 //                     neutroComoFotografado?: [r, g, b] (AsShotNeutral do DNG)
@@ -27,7 +32,8 @@
 // Opcionais que os leitores acrescentam quando o arquivo traz (nada disso é exigido por criarNegativo):
 //   exif.subsegundo é a fração do segundo (0 ≤ x < 1)
 //   branco.maximo   teto do formato segundo o LibRaw (o `declarado` já é o menor entre ele e o fim do trecho linear)
-//   recorte?        { x, y, largura, altura }   DefaultCrop do DNG, contado do canto da área ativa
+//   recorte?        { x, y, largura, altura }   DefaultCrop do DNG (e da Sony, que usa as mesmas tags no ARW),
+//                   contado do canto da área ativa
 //   opcodes?        { lista1?, lista2?, lista3? }   OpcodeList do DNG já lidas (src/raw/opcodes.js)
 //   cor.matrizes[].cameraParaXyzD50 é a ForwardMatrix do DNG (vale para a câmera já equilibrada, neutro = 1,1,1);
 //   cor.matrizes[].calibracao? = AnalogBalance · CameraCalibration quando não é a identidade (xyzParaCamera já a inclui)
@@ -47,15 +53,21 @@ const obrigatorio = (cond, msg) => {
 export function criarNegativo(n) {
   obrigatorio(n && n.tipo === 'raw', 'tipo')
   obrigatorio(n.sensor && n.sensor.dados instanceof Uint16Array, 'sensor.dados precisa ser Uint16Array')
-  obrigatorio(n.sensor.dados.length === n.sensor.largura * n.sensor.altura, 'sensor: tamanho não bate com largura × altura')
+  obrigatorio(n.cfa && (n.cfa.tipo === 'bayer' || n.cfa.tipo === 'xtrans' || n.cfa.tipo === 'linear'), 'cfa.tipo')
+  const linear = n.cfa.tipo === 'linear'
+  if (linear) obrigatorio(n.sensor.amostras === 3, 'sensor.amostras precisa ser 3 na imagem sem mosaico')
+  else obrigatorio(n.sensor.amostras === undefined || n.sensor.amostras === 1, 'sensor.amostras só vale 3 com cfa linear')
+  obrigatorio(n.sensor.dados.length === n.sensor.largura * n.sensor.altura * (linear ? 3 : 1), 'sensor: tamanho não bate com largura × altura')
   const a = n.area
   obrigatorio(a && a.x >= 0 && a.y >= 0 && a.largura > 0 && a.altura > 0, 'area')
   obrigatorio(a.x + a.largura <= n.sensor.largura && a.y + a.altura <= n.sensor.altura, 'area fora do sensor')
-  obrigatorio(n.cfa && (n.cfa.tipo === 'bayer' || n.cfa.tipo === 'xtrans'), 'cfa.tipo')
-  obrigatorio(n.cfa.lado === (n.cfa.tipo === 'bayer' ? 2 : 6), 'cfa.lado')
-  obrigatorio(n.cfa.padrao instanceof Uint8Array && n.cfa.padrao.length === n.cfa.lado * n.cfa.lado, 'cfa.padrao')
-  obrigatorio(n.cfa.padrao.every((v) => v === R || v === G || v === B), 'cfa.padrao só aceita 0, 1 e 2')
+  if (!linear) {
+    obrigatorio(n.cfa.lado === (n.cfa.tipo === 'bayer' ? 2 : 6), 'cfa.lado')
+    obrigatorio(n.cfa.padrao instanceof Uint8Array && n.cfa.padrao.length === n.cfa.lado * n.cfa.lado, 'cfa.padrao')
+    obrigatorio(n.cfa.padrao.every((v) => v === R || v === G || v === B), 'cfa.padrao só aceita 0, 1 e 2')
+  }
   obrigatorio(Array.isArray(n.preto?.porCanal) && n.preto.porCanal.length === 3, 'preto.porCanal')
+  obrigatorio(!linear || !n.preto.padrao, 'preto.padrao não existe na imagem sem mosaico')
   if (n.preto.padrao) {
     const p = n.preto.padrao
     obrigatorio(p.valores instanceof Float32Array && p.valores.length === p.linhas * p.colunas, 'preto.padrao')
@@ -73,11 +85,15 @@ export function criarNegativo(n) {
   n.exif ??= {}
   n.exif.orientacao ??= 1
   n.wb ??= {}
+  obrigatorio(!n.wb.aplicado || (linear && Array.isArray(n.wb.comoFotografado)), 'wb.aplicado só vale na imagem sem mosaico, com os multiplicadores')
   n.exposicaoBase ??= 0
   return n
 }
 
-/** Cor do filtro (0 R, 1 G, 2 B) do sensel na linha e coluna do SENSOR. */
+/** True quando o arquivo já vem sem mosaico (três amostras por pixel): não há demosaico a fazer. */
+export const semMosaico = (n) => n.cfa.tipo === 'linear'
+
+/** Cor do filtro (0 R, 1 G, 2 B) do sensel na linha e coluna do SENSOR. Só para mosaico (Bayer e X-Trans). */
 export function corEm(n, linha, coluna) {
   const lado = n.cfa.lado
   const l = (((linha - n.area.y) % lado) + lado) % lado

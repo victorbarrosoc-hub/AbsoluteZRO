@@ -3,6 +3,10 @@
 // BaselineExposure, NoiseProfile, opcodes) e é o plano B quando o WASM não carrega. O mosaico sai idêntico, bit a
 // bit, ao do LibRaw nos DNG de teste.
 //
+// DNG que já vem sem mosaico (PhotometricInterpretation = LinearRaw, três amostras por pixel) também sai daqui, como
+// Negativo de cfa 'linear': sem compressão, JPEG lossless (ProRAW do iPhone) e JPEG com perdas em blocos (o "DNG com
+// perdas" do Lightroom, decodificado por jpeg.js). JPEG XL e Deflate são recusados dizendo o que fazer.
+//
 // Fontes: especificação DNG 1.4 (Adobe; tags, ordem de linearização, BlackLevel, ActiveArea), TIFF 6.0, TIFF/EP
 // (CFAPattern), ITU-T T.81 anexo H (JPEG lossless: processo SOF3, preditores 1 a 7, intervalos de reinício) e
 // EXIF 2.32 (LightSource). Nada de código de terceiros.
@@ -18,15 +22,10 @@ import { criarNegativo, R, G, B } from './negativo.js'
 import { criarFonte, abrirTiff, lerIfd, numeros, numero, lerExif, lerCamera } from './exif.js'
 import { extrairPrevia } from './previa.js'
 import { lerOpcodes, escreverOpcodes } from './opcodes.js'
+import { decodificarJpeg } from './jpeg.js'
+import { ErroRaw } from './erro.js'
 
-/** Erro com motivo que a tela pode mostrar. `codigo`: 'nao-e-raw' | 'sem-suporte' | 'corrompido'. */
-export class ErroRaw extends Error {
-  constructor(codigo, mensagem) {
-    super(mensagem)
-    this.name = 'ErroRaw'
-    this.codigo = codigo
-  }
-}
+export { ErroRaw }
 
 const T = {
   subtipo: 0x00fe,
@@ -74,10 +73,33 @@ const T = {
   opcodes2: 0xc741,
   opcodes3: 0xc74e,
   perfilRuido: 0xc761,
+  planar: 0x011c,
 }
 
 const CFA = 32803
 const LINEAR = 34892
+
+const JPEG_COM_PERDAS = 34892
+const JPEG_XL = 52546
+
+/** O que dizer de uma compressão que este leitor não abre: o nome dela e, quando há saída, o que a pessoa pode fazer. */
+function semCompressao(compressao) {
+  if (compressao === JPEG_XL) {
+    return new ErroRaw(
+      'sem-suporte',
+      'DNG gravado em JPEG XL: este leitor ainda não abre. No iPhone, grave o ProRAW como "JPEG sem perdas" (Ajustes › Câmera › Formatos); ' +
+        'um DNG que já existe pode ser regravado no Adobe DNG Converter com compatibilidade anterior ao JPEG XL (DNG 1.4).',
+    )
+  }
+  if (compressao === 8 || compressao === 32946) {
+    return new ErroRaw(
+      'sem-suporte',
+      'DNG com compressão Deflate (ponto flutuante ou HDR): este leitor cobre sem compressão, JPEG lossless e JPEG com perdas. ' +
+        'Regrave no Adobe DNG Converter sem a opção de dado em ponto flutuante.',
+    )
+  }
+  return new ErroRaw('sem-suporte', `DNG com compressão de código ${compressao}: este leitor cobre sem compressão, JPEG lossless e JPEG com perdas.`)
+}
 
 // Temperatura de cada código de iluminante (EXIF 2.32, LightSource). As lâmpadas fluorescentes valem o meio da faixa
 // que o EXIF dá a cada uma (D 5700–7100 K, N 4600–5400, W 3900–4500, WW 3200–3700, L 2600–3250), que é como a
@@ -481,10 +503,8 @@ function decodificarMosaico(a) {
   if ((um(cru, T.amostras) ?? 1) !== 1) throw new ErroRaw('sem-suporte', 'DNG com mais de uma amostra por pixel no dado do sensor.')
   if ((um(cru, T.formatoDaAmostra) ?? 1) !== 1 || !(bits >= 8 && bits <= 16))
     throw new ErroRaw('sem-suporte', `DNG com ${bits} bits ou ponto flutuante: este leitor cobre inteiros de 8 a 16 bits.`)
-  if (compressao !== 1 && compressao !== 7) {
-    const nome = { 8: 'Deflate', 34892: 'JPEG com perdas', 52546: 'JPEG XL', 32946: 'Deflate' }[compressao] || `código ${compressao}`
-    throw new ErroRaw('sem-suporte', `DNG com compressão ${nome}: este leitor cobre sem compressão e JPEG lossless.`)
-  }
+  if (compressao === JPEG_COM_PERDAS) throw new ErroRaw('sem-suporte', 'DNG com o mosaico em JPEG com perdas: este leitor só cobre o JPEG com perdas na imagem já sem mosaico.')
+  if (compressao !== 1 && compressao !== 7) throw semCompressao(compressao)
   const emBlocos = cru.has(T.blocos)
   const posicoes = numeros(tiff, cru.get(emBlocos ? T.blocos : T.tiras), 1 << 20)
   const tamanhos = numeros(tiff, cru.get(emBlocos ? T.tamanhoDosBlocos : T.tamanhoDasTiras), 1 << 20)
@@ -527,6 +547,87 @@ function decodificarMosaico(a) {
     for (let i = 0; i < dados.length; i++) dados[i] = curva[dados[i] < ultimo ? dados[i] : ultimo]
   }
   return { largura, altura, dados, bits }
+}
+
+// DNG LinearRaw: a imagem já sem mosaico, três amostras por pixel entrelaçadas (PlanarConfiguration = 1), em tiras
+// ou blocos. Sem compressão (8 a 16 bits), JPEG lossless de três componentes (o ProRAW do iPhone: DNG 1.6, cap.
+// "Compression") ou JPEG com perdas de 8 bits em blocos ("lossy DNG", DNG 1.4: Compression 34892; a curva que devolve
+// os 8 bits ao linear vem na OpcodeList2, como MapPolynomial, e é aplicada por quem revela).
+function decodificarLinear(a) {
+  const { u8, tiff, cru, um } = a
+  const largura = um(cru, T.largura)
+  const altura = um(cru, T.altura)
+  const bits = um(cru, T.bits)
+  const compressao = um(cru, T.compressao) ?? 1
+  const amostras = um(cru, T.amostras) ?? 1
+  if (!(largura > 0 && altura > 0)) throw new ErroRaw('corrompido', 'DNG sem as medidas da imagem.')
+  if (amostras !== 3) {
+    const oQue = amostras === 1 ? 'monocromático' : `com ${amostras} amostras por pixel`
+    throw new ErroRaw('sem-suporte', `DNG já revelado ${oQue} (LinearRaw): este leitor cobre três cores.`)
+  }
+  if ((um(cru, T.planar) ?? 1) !== 1) throw new ErroRaw('sem-suporte', 'DNG já revelado com os canais em planos separados: este leitor cobre os canais entrelaçados.')
+  if (compressao !== 1 && compressao !== 7 && compressao !== JPEG_COM_PERDAS) throw semCompressao(compressao)
+  if ((um(cru, T.formatoDaAmostra) ?? 1) !== 1 || !(bits >= 8 && bits <= 16))
+    throw new ErroRaw('sem-suporte', `DNG com ${bits} bits ou ponto flutuante: este leitor cobre inteiros de 8 a 16 bits.`)
+  const emBlocos = cru.has(T.blocos)
+  const posicoes = numeros(tiff, cru.get(emBlocos ? T.blocos : T.tiras), 1 << 20)
+  const tamanhos = numeros(tiff, cru.get(emBlocos ? T.tamanhoDosBlocos : T.tamanhoDasTiras), 1 << 20)
+  const lb = emBlocos ? um(cru, T.larguraDoBloco) : largura
+  const ab = emBlocos ? um(cru, T.alturaDoBloco) : Math.min(um(cru, T.linhasPorTira) ?? altura, altura)
+  if (!(lb > 0 && ab > 0) || posicoes.length === 0 || tamanhos.length < posicoes.length) throw new ErroRaw('corrompido', 'DNG sem a posição da imagem.')
+  const porLinha = Math.ceil(largura / lb)
+  const dados = new Uint16Array(largura * altura * 3)
+  const bytesPorLinha = Math.ceil((lb * 3 * bits) / 8)
+  const temp = new Uint16Array(lb * 3)
+  for (let i = 0; i < posicoes.length; i++) {
+    const x0 = (i % porLinha) * lb
+    const y0 = Math.floor(i / porLinha) * ab
+    if (y0 >= altura) break
+    const l = Math.min(lb, largura - x0)
+    const linhas = Math.min(ab, altura - y0)
+    if (posicoes[i] + tamanhos[i] > u8.length) throw new ErroRaw('corrompido', 'DNG truncado: a imagem passa do fim do arquivo.')
+    if (compressao === 1) {
+      if (linhas * bytesPorLinha > tamanhos[i]) throw new ErroRaw('corrompido', 'DNG com tira menor que o declarado.')
+      for (let y = 0; y < linhas; y++) {
+        if (l === lb) desempacotar(u8, posicoes[i] + y * bytesPorLinha, bits, lb * 3, tiff.le, dados, ((y0 + y) * largura + x0) * 3)
+        else {
+          desempacotar(u8, posicoes[i] + y * bytesPorLinha, bits, lb * 3, tiff.le, temp, 0)
+          dados.set(temp.subarray(0, l * 3), ((y0 + y) * largura + x0) * 3)
+        }
+      }
+    } else if (compressao === 7) {
+      // como no mosaico: vale a sequência de amostras do quadro, redobrada na largura do bloco (3 por pixel)
+      const j = decodificarJpegSemPerdas(u8, posicoes[i], tamanhos[i])
+      const cabem = Math.min(Math.floor(j.dados.length / (lb * 3)), linhas)
+      if (cabem < linhas) throw new ErroRaw('corrompido', 'DNG com bloco de JPEG lossless menor que o declarado.')
+      for (let y = 0; y < linhas; y++) dados.set(j.dados.subarray(y * lb * 3, y * lb * 3 + l * 3), ((y0 + y) * largura + x0) * 3)
+    } else {
+      const j = decodificarJpeg(u8, { inicio: posicoes[i], fim: posicoes[i] + tamanhos[i] })
+      if (j.canais !== 3 || j.largura < l || j.altura < linhas) throw new ErroRaw('corrompido', 'DNG com bloco de JPEG de tamanho diferente do declarado.')
+      for (let y = 0; y < linhas; y++) {
+        const o = ((y0 + y) * largura + x0) * 3
+        const q = y * j.largura * 3
+        for (let k = 0; k < l * 3; k++) dados[o + k] = j.dados[q + k]
+      }
+    }
+  }
+  const tabela = cru.get(T.linearizacao)
+  if (tabela && tabela.n > 0) {
+    const curva = Uint16Array.from(numeros(tiff, tabela, 65536))
+    const ultimo = curva.length - 1
+    for (let i = 0; i < dados.length; i++) dados[i] = curva[dados[i] < ultimo ? dados[i] : ultimo]
+  }
+  // área ativa, preto e branco por amostra (DNG 1.4: BlackLevel tem RepeatRows·RepeatCols·SamplesPerPixel valores)
+  const ativa = cru.has(T.areaAtiva) ? numeros(tiff, cru.get(T.areaAtiva), 4) : [0, 0, altura, largura]
+  const area = { x: ativa[1], y: ativa[0], largura: ativa[3] - ativa[1], altura: ativa[2] - ativa[0] }
+  const rep = cru.has(T.pretoDim) ? numeros(tiff, cru.get(T.pretoDim), 2) : [1, 1]
+  const delta = (tag) => cru.has(tag) && numeros(tiff, cru.get(tag), 65536).some((v) => v !== 0)
+  if (rep[0] !== 1 || rep[1] !== 1 || delta(T.pretoDeltaH) || delta(T.pretoDeltaV))
+    throw new ErroRaw('sem-suporte', 'DNG já revelado com nível de preto que muda de pixel para pixel: este leitor cobre um preto por canal.')
+  const niveis = cru.has(T.preto) ? numeros(tiff, cru.get(T.preto), 3) : [0]
+  const brancos = cru.has(T.branco) ? numeros(tiff, cru.get(T.branco), 3) : [(1 << bits) - 1]
+  const tres = (v) => [v[0], v[1] ?? v[0], v[2] ?? v[0]]
+  return { largura, altura, dados, bits, area, preto: { porCanal: tres(niveis) }, branco: { declarado: tres(brancos) }, compressao }
 }
 
 /**
@@ -607,19 +708,18 @@ function geometria(a) {
 }
 
 /**
- * DNG → Negativo, com leitor próprio. Lança `ErroRaw` com o motivo quando o arquivo não é DNG, não tem o mosaico
- * (LinearRaw, "lossy DNG") ou usa compressão que este leitor não cobre (Deflate, JPEG XL).
+ * DNG → Negativo, com leitor próprio. Com mosaico (CFA) sai o Negativo de sempre; já sem mosaico (LinearRaw: ProRAW,
+ * "DNG com perdas") sai o Negativo de cfa 'linear', com três amostras por pixel. Lança `ErroRaw` com o motivo quando
+ * o arquivo não é DNG ou usa compressão que este leitor não cobre (Deflate, JPEG XL), dizendo o que fazer.
  */
 export function lerDng(bytes, { nome } = {}) {
   const a = abrir(bytes)
   const { cru, um } = a
-  if (!cru) throw new ErroRaw('sem-suporte', 'DNG sem o dado do sensor (nenhum diretório com mosaico).')
-  if (um(cru, T.foto) === LINEAR) {
-    const comPerdas = um(cru, T.compressao) === 34892
-    throw new ErroRaw('sem-suporte', `DNG já revelado (LinearRaw${comPerdas ? ', com perdas' : ''}): não traz o mosaico do sensor, só a imagem pronta.`)
-  }
-  const sensor = decodificarMosaico(a)
-  const { area, cfa, preto, branco } = geometria(a)
+  if (!cru) throw new ErroRaw('sem-suporte', 'DNG sem o dado do sensor (nenhum diretório com mosaico ou imagem linear).')
+  const linear = um(cru, T.foto) === LINEAR
+  const lido = linear ? decodificarLinear(a) : null
+  const sensor = lido ? { largura: lido.largura, altura: lido.altura, dados: lido.dados, amostras: 3 } : decodificarMosaico(a)
+  const { area, cfa, preto, branco } = lido ? { area: lido.area, cfa: { tipo: 'linear' }, preto: lido.preto, branco: lido.branco } : geometria(a)
   const cor = tagsDeCor(a)
   if (cor.cor.matrizes.length === 0) throw new ErroRaw('sem-suporte', 'DNG sem matriz de cor (ColorMatrix).')
   const camera = lerCamera(a.u8)
@@ -631,7 +731,7 @@ export function lerDng(bytes, { nome } = {}) {
     fabricante: camera.fabricante,
     modelo: camera.modelo,
     exif: lerExif(a.u8),
-    sensor: { largura: sensor.largura, altura: sensor.altura, dados: sensor.dados },
+    sensor: lido ? sensor : { largura: sensor.largura, altura: sensor.altura, dados: sensor.dados },
     area,
     cfa,
     preto,

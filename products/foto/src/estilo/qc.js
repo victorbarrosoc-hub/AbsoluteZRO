@@ -57,10 +57,10 @@ export const CARTELA = [
 ]
 
 // Os limites. A revelação neutra mede: croma do cinza 0; pele em 44° a 46° de matiz Oklab, espalhamento abaixo de 2°;
-// separação de 17/255 na sombra e 48/255 na alta luz; degrau máximo de 0,011 em L.
+// separação de 17/255 na sombra e 48/255 na alta luz; degrau máximo de 0,0097 (2,5/255).
 export const LIMITES_QC = {
-  monotonia: 2e-4, // quanto L pode descer entre dois passos (ruído de conta)
-  degrau: 0.03, // salto máximo de L entre passos de 0,045 EV (quase o triplo do neutro)
+  monotonia: 1e-5, // quanto o código pode descer entre dois passos (ruído de conta)
+  degrau: 0.03, // salto máximo de código entre passos de 0,045 EV (o triplo do neutro)
   croma: 0.02, // cinza de estilo não tonalizado (0,02 de ΔE Oklab já se vê lado a lado)
   cromaTonalizado: 0.08,
   peleFaixa: [15, 80], // graus de matiz Oklab: do rosado ao amarelado; fora disso a pele é magenta ou verde
@@ -124,18 +124,18 @@ function medir(ajustes, look) {
   const d = imagem.dados
   let foraDaFaixa = 0
   for (let i = 0; i < d.length; i++) if (!(d[i] >= 0 && d[i] <= 1)) foraDaFaixa++
+  // tom medido no código da tela (média dos três canais): perto do preto, L de Oklab amplifica erro de conta
   const L = new Float64Array(PASSOS)
   let desce = 0
   let degrau = 0
   let croma = 0
   for (let i = 0; i < PASSOS; i++) {
-    const c = lch(d, i * 3)
-    L[i] = c[0]
+    L[i] = (d[i * 3] + d[i * 3 + 1] + d[i * 3 + 2]) / 3
     if (i) {
       desce = Math.max(desce, L[i - 1] - L[i])
       degrau = Math.max(degrau, L[i] - L[i - 1])
     }
-    if (i >= indiceDoEv(-4) && i <= indiceDoEv(2.5)) croma = Math.max(croma, c[1])
+    if (i >= indiceDoEv(-4) && i <= indiceDoEv(2.5)) croma = Math.max(croma, lch(d, i * 3)[1])
   }
   const peles = []
   let cromaDaCartela = 0
