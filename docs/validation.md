@@ -229,6 +229,12 @@ Linux, Node 22, Chromium e WebKit do Playwright 1.63, ffmpeg/ffprobe do sistema.
 - RADION, foto sem piscar (07/11/2026): `products/radio` `npm test` 16/16, com o teste novo: com a foto servida pela
   rota do navegador, um observador da lista da equipe confere que todo círculo que entra nos redesenhos já vem com a
   foto (no código antigo, 3 de 3 entravam sem).
+- RADION, foto do tamanho certo (07/11/2026): `products/radio` `npm test` 17/17, com o teste novo: foto de 512 px com
+  fundo preto servida pela rota do navegador; no topo, na equipe e nos Ajustes o círculo usa a foto em `cover`, no
+  centro, sem as iniciais por cima (no código de antes: `auto` e `0% 0%`, a foto presa no canto).
+- RADION, o nome em Figtree (07/11/2026): antes e depois fotografados no iPhone (claro e escuro), no computador e na
+  imagem de compartilhar; `node scripts/marca.mjs` e `node scripts/telas-do-site.mjs` refeitos; nenhuma referência ao
+  Nunito no app, no site, na marca ou na cópia do HUB; `products/radio` `npm test` 17/17.
 - RADION nativo, Android, marco 1 (08/11/2026): `./gradlew test assembleRelease` em `products/radio/nativo/android`.
   Núcleo 6/6: estado conferido, texto da notificação e ordem da saída de som. App 8/8: regras de navegação e deep
   link, login pelo navegador com state, PKCE, validade e troca recusada. O APK pede só RECORD_AUDIO,

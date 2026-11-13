@@ -241,6 +241,15 @@ Pedido do titular: o que o app de computador faz e cabe no celular, também no c
 - ✅ **RADION, foto sem piscar** (titular, 07/11/2026: "bug na foto", vídeo do iPhone): a lista da equipe é redesenhada
   a cada batida e a foto, recriada, deixava as iniciais aparecerem por um quadro. A foto vira o fundo do círculo e a
   página lembra quais já abriram: no redesenho ela entra direto.
+- ✅ **RADION, foto do tamanho certo** (titular, 07/11/2026: "círculo preto" no topo e no menu, iPhone): o atalho
+  `background` no estilo do círculo zerava o `cover` da classe e a foto (512 px, fundo escuro) saía no tamanho real,
+  presa no canto. O círculo agora só recebe a cor; a foto cabe no centro no topo, no menu, nos Ajustes e na equipe.
+  Pronto para o lote de sexta (Vercel travada).
+- ✅ **RADION, o nome em Figtree** (titular, 07/11/2026, pelo Painel Geral): "radion" passa de Nunito Black para Figtree
+  ExtraBold (800), -0,04em, e fica mais junto do símbolo (0,32em: ~8 px em 25 px). No cabeçalho do app e da página
+  inicial, na imagem de compartilhar (o nome segue no topo, decisão do titular) e nas telas da página
+  inicial (refeitas); o Nunito sai do carregamento e do
+  repositório. O símbolo não muda. Lote de sexta.
 - 🟡 **RADION nativo, Android, marco 1** (titular, 08/11/2026: caminho A, celular travado no bolso):
   `products/radio/nativo/android`. O módulo `nucleo` (sem login nem banco, reaproveitável pelo DEICHECK) traz o
   serviço em primeiro plano com Falar/Parar na tela bloqueada, o botão do fone, o "não dormir" e o som no fone ou no

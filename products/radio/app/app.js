@@ -155,7 +155,10 @@ function comFoto(el, id) {
 }
 function pintarAv(el, nome, foto) {
   el.textContent = iniciais(nome)
-  el.style.background = cor(nome)
+  // só a cor (backgroundColor): o atalho "background" no estilo do elemento zerava o "cover" da classe e a foto saía no
+  // tamanho real, presa no canto de cima (foto escura = círculo preto; titular, 07/11/2026)
+  el.style.backgroundImage = ''
+  el.style.backgroundColor = cor(nome)
   el.classList.remove('av--foto')
   delete el.dataset.foto
   const id = fotoValida(foto)
@@ -1762,8 +1765,7 @@ $('qr-copiar').addEventListener('click', async () => {
 function desenharAjustes() {
   const n = estado.nome || estado.eu?.nome || ''
   $('aj-nome').textContent = n
-  $('aj-av').textContent = iniciais(n)
-  $('aj-av').style.background = cor(n)
+  pintarAv($('aj-av'), n, estado.foto)
   $('aj-sair').hidden = !SAIR
   for (const b of $('aj-fala').querySelectorAll('button')) b.setAttribute('aria-selected', String((b.dataset.fala === 'voz') === estado.porVoz))
   $('aj-fala-sub').textContent = estado.porVoz ? 'Abre sozinho quando você fala. Melhor com lapela.' : 'Segure o botão para falar; um toque deixa aberto.'
