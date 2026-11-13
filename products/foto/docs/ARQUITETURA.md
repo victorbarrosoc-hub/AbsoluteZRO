@@ -85,7 +85,13 @@ conferirBase(base) → { p01, p50, p999 } ou ErroRaw (imagem toda preta ou toda 
 ```
 
 `leitor` = `criarLeitor(LibRaw)`; sem ele só DNG e JPEG abrem. Ordem: ler → opcodes de ganho no mosaico (e
-MapPolynomial na imagem sem mosaico) → Latitude → `prepararBase` com ela → DefaultCrop → conferência. X-Trans em
+MapPolynomial na imagem sem mosaico) → zero da exposição → Latitude → `prepararBase` com ela → DefaultCrop →
+conferência. O **zero da exposição** (`exposicaoDaCamera` em `src/motor/base.js`) é gravado em `negativo.exposicaoBase`
+antes da Latitude: BaselineExposure declarado + `EXPOSICAO_DE_REFERENCIA` (1 EV: o cinza que o fotômetro mediu fica em
+~0,09 da saturação, pela ISO 12232 mais a folga da SOS/REI) + o número do fabricante quando o arquivo não é DNG
+(`EXPOSICAO_POR_FABRICANTE`; hoje Sony +0,4). A base, as margens da tela e a Latitude partem do mesmo cinza; sem ele a
+revelação neutra saía ~1 EV abaixo do JPEG da câmera. JPEG aberto com `reduzir` > 1 sai com `base.reduzir` igual ao
+pedido (a vizinhança mede na escala da foto cheia). X-Trans em
 'qualidade' passa pelo Markesteijn do LibRaw (`revelarLinear`) e segue como imagem sem mosaico. Câmera que o LibRaw não
 conhece abre com matriz de reserva e aviso. JPEG sequencial abre pelo decodificador próprio, com o espaço do perfil ICC;
 PNG, HEIC, WebP e JPEG progressivo lançam ErroRaw com `decodificarNaTela = true` (a tela decodifica e chama
@@ -104,7 +110,7 @@ PNG, HEIC, WebP e JPEG progressivo lançam ErroRaw com `decodificarNaTela = true
   margem: {
     altas: [r, g, b],          // stops entre o percentil 99,9 e a saturação, por canal
     sombras,                   // stops entre o percentil 0,1 e o piso de ruído (SNR = 1)
-    acimaDoCinza, abaixoDoCinza   // stops disponíveis em torno do cinza médio (0,18), já com a exposição base
+    acimaDoCinza, abaixoDoCinza   // stops disponíveis em torno do cinza médio (0,18), já com a exposição base (por abrirFoto, com o zero de referência)
   },
   cortado: { um, dois, tres }, // fração da área com 1, 2 ou 3 canais saturados (1 e 2 = recuperável; 3 = perdido)
   confianca: 'alta' | 'media' | 'baixa'
@@ -131,10 +137,12 @@ valores acima de 1 são altas luzes de verdade; negativos pequenos são ruído e
 ```
 prepararBase(negativo, { demosaico: 'rapido' | 'qualidade', reduzir: 1 | 2 | 4, latitude?: Latitude }) → Base
 baseDeImagem({ largura, altura, dados: Uint8ClampedArray | Uint16Array, canais: 3 | 4, espaco: 'srgb' | 'p3' | 'adobe' }) → Base
+exposicaoDaCamera(negativo, { dng }) → EV   // o zero da exposição: BaselineExposure + referência (+ fabricante fora do DNG)
 revelar(base, ajustes, { tela: 'srgb' | 'p3' | 'rec2020', regiao? }) → Imagem de TELA (0..1, já com a curva da tela)
 paraBytes(imagemDeTela, { bits: 8 | 16, pontilhado }) → Uint8ClampedArray RGBA | Uint16Array RGB
 Base = { imagem: Imagem, latitude: Latitude | null, branco: { kelvin, tinta, neutroCamera? }, origem: 'raw' | 'imagem',
-         exposicaoBase, orientacao, ruido?: { a, b, origem },   // var(Y) = a·Y + b na imagem de trabalho
+         exposicaoBase,                 // EV somados à cena: o do negativo (por abrirFoto, já com o zero de referência)
+         orientacao, ruido?: { a, b, origem },   // var(Y) = a·Y + b na imagem de trabalho
          demosaico: 'rapido' | 'qualidade' | 'basica' | 'agrupado' | null, reduzir,
          cortado: { um, dois, tres }, folgaAltas }             // EV recuperados acima da saturação (entra na margem)
 ```
@@ -158,7 +166,8 @@ Ordem (a mesma no JS e na GPU):
    A transmissão da neblina e a base larga da clareza saem de um mapa calculado UMA vez por revelação, na foto
    inteira reduzida (lado ~512 px), e lido no tamanho cheio com a guia cheia (filtro guiado rápido, He e Sun 2015):
    os ladrilhos não precisam mais de centenas de pixels de margem. `revelar(…, { vizinhancaExata: true })` faz a conta
-   bloco a bloco, só para medir.
+   bloco a bloco, só para medir. A cor do ar (neblina) é medida uma vez na foto inteira (reduzida a 256 px, depois da
+   cena) e vale nos dois sentidos, tirar e pôr: o resultado não depende do ladrilho, no JS e na GPU.
 4. **Tela** (`tela.js`): mapa de tons em sigmoide log-logística com o cinza preso, **com as margens de cima e de baixo
    tiradas da Latitude do arquivo** (em `auto`) → preservação de matiz → compressão de gamut em Oklab → curva da tela.
 
