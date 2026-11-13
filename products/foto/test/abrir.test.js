@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 
 import { abrirFoto, abrirImagem, conferirBase, ErroRaw } from '../src/abrir.js'
 import { lerSonySemMosaico, ehSonySemMosaico } from '../src/raw/sony.js'
-import { escreverDng, lerDng } from '../src/raw/dng.js'
+import { escreverDng } from '../src/raw/dng.js'
 import { criarNegativo } from '../src/raw/negativo.js'
 import { prepararBase } from '../src/motor/base.js'
 import { revelar } from '../src/motor/revelar.js'
@@ -264,7 +264,7 @@ test('JPEG do Lightroom em Display P3: o espaço vem do perfil ICC', async (t) =
   assert.equal(r.base.espaco, 'p3')
 })
 
-test('a base sem mosaico (DNG LinearRaw lido pelo leitor próprio) é a mesma conta do RGB que entrou', () => {
+test('base sem mosaico com o branco já aplicado no dado (YCbCr da Sony): o branco não é aplicado duas vezes', () => {
   // negativo linear fabricado em memória: RGB de câmera com o branco já aplicado, como o YCbCr da Sony
   const largura = 64
   const altura = 48
@@ -286,5 +286,4 @@ test('a base sem mosaico (DNG LinearRaw lido pelo leitor próprio) é a mesma co
   const bc = prepararBase(cinza)
   const [r, g, bb] = bc.imagem.dados
   assert.ok(Math.abs(r / g - 1) < 1e-3 && Math.abs(bb / g - 1) < 1e-3, `neutro: ${r.toFixed(4)} ${g.toFixed(4)} ${bb.toFixed(4)}`)
-  assert.ok(lerDng) // o leitor próprio cobre LinearRaw (o teste de raw confere o DNG com perdas real)
 })

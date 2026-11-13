@@ -93,9 +93,10 @@ const MONTAR = async ({ motor, largura = 900, altura = 600 }) => {
 
 // abre o arquivo servido em /teste/<nome> pelo roteamento do Playwright
 const ABRIR = async (nome) => {
+  const blob = await (await fetch(`/teste/${nome}`)).blob()
+  // o relógio começa com o arquivo na mão (como quando a pessoa escolhe a foto)
   window.__t0 = performance.now()
   window.__eventos = []
-  const blob = await (await fetch(`/teste/${nome}`)).blob()
   const info = await window.__s.abrir(new File([blob], nome, { lastModified: 1 }))
   await window.__quadro()
   return { info, eventos: window.__eventos.slice(), media: window.__media() }
@@ -321,7 +322,8 @@ test('medidas: 24 MP fabricado (e ARW real, se houver) — abrir, arrastar, expo
     for (const [i, p] of titular.entries()) await servirArquivo(s.pagina, `TITULAR${i}.ARW`, readFileSync(p))
     for (const motor of ['gpu', 'js']) {
       await s.pagina.reload()
-      await s.pagina.evaluate(MONTAR, { motor, largura: 1440, altura: 900 })
+      const est = await s.pagina.evaluate(MONTAR, { motor, largura: 1440, altura: 900 })
+      if (motor === 'gpu') linhas.push(`renderizador: ${est.renderizador}`)
       const r = await s.pagina.evaluate(ABRIR, 'GRANDE.DNG')
       const ev = (t) => r.eventos.find((e) => e.tipo === t)?.t
       const reduzir = r.eventos.find((e) => e.tipo === 'base')?.reduzir
@@ -360,8 +362,7 @@ test('medidas: 24 MP fabricado (e ARW real, se houver) — abrir, arrastar, expo
         linhas.push(`[${motor}] ARW real (A7S): prévia em ${t('previa')?.toFixed(0)} ms; base reduzida em ${t('base')?.toFixed(0)} ms; ${tam}`)
       }
     }
-    const info = await s.pagina.evaluate(() => window.__s.estado().renderizador)
-    console.log(`# renderizador: ${info}\n# ${linhas.join('\n# ')}`)
+    console.log(`# ${linhas.join('\n# ')}`)
   } finally {
     await s.fechar()
   }
