@@ -18,7 +18,15 @@ import { usarCatalogo, usarFoto } from '../estado.js'
 import { colorir, estrelar, executarComAviso, marcar } from '../grade/acoes.js'
 
 /** As oito orientações do EXIF como transform de CSS (o que falta girar na imagem maior). */
-const GIRO = { 2: 'scaleX(-1)', 3: 'rotate(180deg)', 4: 'scaleY(-1)', 5: 'rotate(90deg) scaleY(-1)', 6: 'rotate(90deg)', 7: 'rotate(-90deg) scaleY(-1)', 8: 'rotate(-90deg)' }
+const GIRO = {
+  2: 'scaleX(-1)',
+  3: 'rotate(180deg)',
+  4: 'scaleY(-1)',
+  5: 'rotate(90deg) scaleY(-1)',
+  6: 'rotate(90deg)',
+  7: 'rotate(-90deg) scaleY(-1)',
+  8: 'rotate(-90deg)',
+}
 const limitar = (v, min, max) => Math.max(min, Math.min(max, v))
 
 /** O zoom compartilhado pelos quadros: { ligado, fx, fy }, com fx e fy = o ponto da foto (−0,5 a 0,5) no centro. */
@@ -186,10 +194,19 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
     zoom.definir({ ligado: true, fx: (px * (s - 1)) / s, fy: (py * (s - 1)) / s })
   }
 
-  return html`<div class="quadro" ref=${caixa} data-principal=${principal ? '' : undefined} onPointerDown=${baixou} onPointerMove=${moveu} onPointerUp=${soltou} onPointerCancel=${() => (gesto.current = null)}>
+  return html`<div
+    class="quadro"
+    ref=${caixa}
+    data-principal=${principal ? '' : undefined}
+    onPointerDown=${baixou}
+    onPointerMove=${moveu}
+    onPointerUp=${soltou}
+    onPointerCancel=${() => (gesto.current = null)}
+  >
     <div class="quadro-moldura" ref=${moldura} data-nivel=${fonte?.nivel} style=${`width:${fl.toFixed(1)}px;height:${fa.toFixed(1)}px`}>
-      ${fonte
-        ? html`<img
+      ${
+        fonte
+          ? html`<img
             src=${fonte.url}
             alt=${foto?.nome ?? ''}
             draggable=${false}
@@ -198,7 +215,8 @@ function Quadro({ loja, id, zoom, principal, revelar, etiqueta, aoAndar }) {
             data-girada=${giro !== 1 ? '' : undefined}
             onLoad=${(e) => definirNatural({ l: e.currentTarget.naturalWidth, a: e.currentTarget.naturalHeight })}
           />`
-        : html`<span class="quadro-espera">${foto?.semPrevia ? html`<${Icone} nome="fotos" /><span>Sem prévia neste navegador</span>` : null}</span>`}
+          : html`<span class="quadro-espera">${foto?.semPrevia ? html`<${Icone} nome="fotos" /><span>Sem prévia neste navegador</span>` : null}</span>`
+      }
     </div>
     ${etiqueta ? html`<span class="quadro-etiqueta">${etiqueta}</span>` : null}
   </div>`
@@ -275,19 +293,74 @@ export function Lupa({ loja, aoFechar, revelar }) {
   return html`<div class="lupa palco" ref=${raiz} role="region" aria-label="Foto grande" tabindex="-1" data-comparar=${fixa ? '' : undefined}>
     <div class="lupa-palco">
       ${fixa ? html`<${Quadro} key=${`fixa:${fixa}`} loja=${loja} id=${fixa} zoom=${zoom.current} revelar=${revelar} etiqueta="Fixa" />` : null}
-      <${Quadro} key=${`atual:${foco}`} loja=${loja} id=${foco} zoom=${zoom.current} principal revelar=${revelar} aoAndar=${andar} etiqueta=${fixa ? 'Candidata' : null} />
+      <${Quadro}
+        key=${`atual:${foco}`}
+        loja=${loja}
+        id=${foco}
+        zoom=${zoom.current}
+        principal
+        revelar=${revelar}
+        aoAndar=${andar}
+        etiqueta=${fixa ? 'Candidata' : null}
+      />
     </div>
-    <div class="lupa-ficha"><strong>${foto.nome}</strong>${ficha.map((p) => html`<span>${p}</span>`)}<span class="lupa-ficha-n" aria-hidden="true">${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}</span></div>
-    <button type="button" class="liso lupa-seta lupa-seta--antes" aria-label="Foto anterior" disabled=${posicao <= 0} onClick=${() => andar(-1)}><${Icone} nome="esquerda" /></button>
-    <button type="button" class="liso lupa-seta lupa-seta--depois" aria-label="Próxima foto" disabled=${posicao >= total - 1} onClick=${() => andar(1)}><${Icone} nome="direita" /></button>
+    <div class="lupa-ficha"><strong>${foto.nome}</strong>${ficha.map((p) => html`<span>${p}</span>`)}<span
+      class="lupa-ficha-n"
+      aria-hidden="true"
+    >${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}</span></div>
+    <button
+      type="button"
+      class="liso lupa-seta lupa-seta--antes"
+      aria-label="Foto anterior"
+      disabled=${posicao <= 0}
+      onClick=${() => andar(-1)}
+    ><${Icone} nome="esquerda" /></button>
+    <button
+      type="button"
+      class="liso lupa-seta lupa-seta--depois"
+      aria-label="Próxima foto"
+      disabled=${posicao >= total - 1}
+      onClick=${() => andar(1)}
+    ><${Icone} nome="direita" /></button>
     <div class="lupa-barra barra-vidro" role="toolbar" aria-label="Foto">
-      <button type="button" class="liso" aria-label="Voltar à grade" data-dica="Grade" data-tecla="G" data-dica-lado="cima" onClick=${() => aoFechar?.()}><${Icone} nome="grade" /></button>
+      <button
+        type="button"
+        class="liso"
+        aria-label="Voltar à grade"
+        data-dica="Grade"
+        data-tecla="G"
+        data-dica-lado="cima"
+        onClick=${() => aoFechar?.()}
+      ><${Icone} nome="grade" /></button>
       <span class="lupa-contador" aria-live="polite" aria-atomic="true">${(posicao + 1).toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}</span>
       <span class="separador" aria-hidden="true"></span>
-      <${Marcar} fotos=${[foto]} aoMarcar=${(m) => marcar(loja, ids, m)} aoEstrelar=${(n) => estrelar(loja, ids, n)} aoColorir=${(x) => colorir(loja, ids, x)} />
+      <${Marcar}
+        fotos=${[foto]}
+        aoMarcar=${(m) => marcar(loja, ids, m)}
+        aoEstrelar=${(n) => estrelar(loja, ids, n)}
+        aoColorir=${(x) => colorir(loja, ids, x)}
+      />
       <span class="separador" aria-hidden="true"></span>
-      <button type="button" class=${cx('liso')} aria-label="Zoom de 100%" aria-pressed=${ampliada ? 'true' : 'false'} data-dica="Zoom de 100%" data-tecla="Z" data-dica-lado="cima" onClick=${alternarZoom}><${Icone} nome="zoom" /></button>
-      <button type="button" class="liso" aria-label="Comparar duas" aria-pressed=${fixa ? 'true' : 'false'} data-dica="Comparar" data-tecla="N" data-dica-lado="cima" onClick=${alternarComparar}><${Icone} nome="comparar" /></button>
+      <button
+        type="button"
+        class=${cx('liso')}
+        aria-label="Zoom de 100%"
+        aria-pressed=${ampliada ? 'true' : 'false'}
+        data-dica="Zoom de 100%"
+        data-tecla="Z"
+        data-dica-lado="cima"
+        onClick=${alternarZoom}
+      ><${Icone} nome="zoom" /></button>
+      <button
+        type="button"
+        class="liso"
+        aria-label="Comparar duas"
+        aria-pressed=${fixa ? 'true' : 'false'}
+        data-dica="Comparar"
+        data-tecla="N"
+        data-dica-lado="cima"
+        onClick=${alternarComparar}
+      ><${Icone} nome="comparar" /></button>
     </div>
   </div>`
 }

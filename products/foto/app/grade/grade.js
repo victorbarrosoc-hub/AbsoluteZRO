@@ -79,17 +79,26 @@ const Cartao = memo(
     >
       <div class="foto-quadro">
         <div class="foto-moldura" data-forma=${proporcao >= PROPORCAO_DA_CELULA ? 'deitada' : 'de-pe'} style=${`aspect-ratio:${proporcao.toFixed(4)}`}>
-          ${mini
-            ? html`<img src=${mini} alt="" draggable=${false} decoding="async" />`
-            : foto.semPrevia
-              ? html`<span class="foto-sem" title="Este navegador não abre a prévia deste arquivo"><${Icone} nome="fotos" /><span>${foto.formato.toUpperCase()}</span></span>`
-              : loja.miniaturas.falta(id)
-                ? html`<span class="foto-sem" title="O arquivo não está ao alcance: ligue a pasta ou escolha as fotos de novo"><${Icone} nome="ligar" /></span>`
-                : html`<span class="foto-espera esqueleto"></span>`}
+          ${
+            mini
+              ? html`<img src=${mini} alt="" draggable=${false} decoding="async" />`
+              : foto.semPrevia
+                ? html`<span
+                  class="foto-sem"
+                  title="Este navegador não abre a prévia deste arquivo"
+                ><${Icone} nome="fotos" /><span>${foto.formato.toUpperCase()}</span></span>`
+                : loja.miniaturas.falta(id)
+                  ? html`<span
+                    class="foto-sem"
+                    title="O arquivo não está ao alcance: ligue a pasta ou escolha as fotos de novo"
+                  ><${Icone} nome="ligar" /></span>`
+                  : html`<span class="foto-espera esqueleto"></span>`
+          }
           <${Marca} marca=${foto.marca} classe="foto-marca" />
           ${foto.par ? html`<span class="selo selo-par" title="RAW e JPEG do mesmo clique">RAW+J</span>` : null}
-          ${pilha && (!pilha.aberta || pilha.posicao === 0)
-            ? html`<button
+          ${
+            pilha && (!pilha.aberta || pilha.posicao === 0)
+              ? html`<button
                 type="button"
                 class="selo selo-pilha toque"
                 tabindex="-1"
@@ -100,18 +109,31 @@ const Cartao = memo(
               >
                 <${Icone} nome="pilha" />${pilha.total}
               </button>`
-            : null}
+              : null
+          }
         </div>
       </div>
       <div class="foto-pe">
         <${Estrelas} valor=${foto.estrelas} compacta tamanho=${11} />
         <${Ponto} cor=${foto.cor} />
-        ${motivo ? html`<span class="foto-motivo" title=${foto.magnitude.motivos.join(' · ')}>${motivo}</span>` : html`<span class="foto-nome">${nomeCurto(foto.nome)}</span>`}
+        ${motivo ? html`<span
+          class="foto-motivo"
+          title=${foto.magnitude.motivos.join(' · ')}
+        >${motivo}</span>` : html`<span class="foto-nome">${nomeCurto(foto.nome)}</span>`}
         ${typeof nota === 'number' ? html`<span class="foto-nota" data-balde=${foto.magnitude.balde}>${Math.round(nota)}</span>` : null}
       </div>
     </div>`
   },
-  (a, b) => a.id === b.id && a.ordem === b.ordem && a.entrada === b.entrada && a.loja === b.loja && a.h === b.h && a.pilha?.id === b.pilha?.id && a.pilha?.total === b.pilha?.total && a.pilha?.aberta === b.pilha?.aberta && a.pilha?.posicao === b.pilha?.posicao,
+  (a, b) =>
+    a.id === b.id &&
+    a.ordem === b.ordem &&
+    a.entrada === b.entrada &&
+    a.loja === b.loja &&
+    a.h === b.h &&
+    a.pilha?.id === b.pilha?.id &&
+    a.pilha?.total === b.pilha?.total &&
+    a.pilha?.aberta === b.pilha?.aberta &&
+    a.pilha?.posicao === b.pilha?.posicao,
 )
 
 /**
@@ -144,7 +166,9 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
       const estilo = getComputedStyle(el)
       const pt = parseFloat(estilo.paddingTop) || 0
       const pb = parseFloat(estilo.paddingBottom) || 0
-      definirCaixa((c) => (c.l === el.clientWidth && c.a === el.clientHeight && c.pt === pt && c.pb === pb ? c : { l: el.clientWidth, a: el.clientHeight, pt, pb }))
+      definirCaixa((c) =>
+        c.l === el.clientWidth && c.a === el.clientHeight && c.pt === pt && c.pb === pb ? c : { l: el.clientWidth, a: el.clientHeight, pt, pb },
+      )
       if (Math.abs(el.scrollTop - rolagem.current) > 1) el.scrollTop = rolagem.current
     }
     medir()
@@ -220,7 +244,8 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
     clique(e, id) {
       const c = loja.catalogo
       // no toque, tocar de novo na foto que já está em foco abre a foto grande
-      if (e.pointerType !== 'mouse' && matchMedia('(pointer: coarse)').matches && !e.shiftKey && c.foco() === id && c.selecao().size === 1 && c.selecionada(id)) return aoAbrir?.(id)
+      if (e.pointerType !== 'mouse' && matchMedia('(pointer: coarse)').matches && !e.shiftKey && c.foco() === id && c.selecao().size === 1 && c.selecionada(id))
+        return aoAbrir?.(id)
       c.selecionar(id, { alternar: e.metaKey || e.ctrlKey, intervalo: e.shiftKey })
     },
     abrir(id) {
@@ -255,13 +280,38 @@ export function Grade({ loja, tamanho = TAMANHO_PADRAO, aoAbrir, teclado = true,
     }
   })
 
-  return html`<div class="grade" ref=${rolador} onScroll=${aoRolar} role="listbox" aria-multiselectable="true" aria-label=${rotulo} aria-rowcount=${linhas} tabindex="-1">
-    ${itens.length
-      ? html`<div class="grade-area" style=${`height:${Math.ceil(altura)}px`}>
-          <div class=${cx('grade-janela', entrando && 'cascata')} style=${`transform:translateY(${Math.round(recuo + primeira * m.passo)}px);left:${m.margem}px;grid-template-columns:repeat(${m.colunas},${m.lado.toFixed(2)}px);column-gap:${m.vao}px;row-gap:${m.vao}px;--pe:${m.pe}px`}>
-            ${janela.map((it, k) => html`<${Cartao} key=${it.foto.id} loja=${loja} id=${it.foto.id} pilha=${it.pilha} ordem=${k} entrada=${!foco && primeira === 0 && k === 0} h=${h.current} />`)}
+  return html`<div
+    class="grade"
+    ref=${rolador}
+    onScroll=${aoRolar}
+    role="listbox"
+    aria-multiselectable="true"
+    aria-label=${rotulo}
+    aria-rowcount=${linhas}
+    tabindex="-1"
+  >
+    ${
+      itens.length
+        ? html`<div class="grade-area" style=${`height:${Math.ceil(altura)}px`}>
+          <div
+            class=${cx('grade-janela', entrando && 'cascata')}
+            style=${`transform:translateY(${Math.round(recuo + primeira * m.passo)}px);left:${m.margem}px;grid-template-columns:repeat(${m.colunas},${m.lado.toFixed(2)}px);column-gap:${m.vao}px;row-gap:${m.vao}px;--pe:${m.pe}px`}
+          >
+            ${janela.map((it, k) => html`<${Cartao}
+              key=${it.foto.id}
+              loja=${loja}
+              id=${it.foto.id}
+              pilha=${it.pilha}
+              ordem=${k}
+              entrada=${!foco && primeira === 0 && k === 0}
+              h=${h.current}
+            />`)}
           </div>
         </div>`
-      : html`<div class="grade-vazia" style=${`padding-top:${topo}px`}>${aoVazio?.() ?? html`<${Vazio} icone="fotos" titulo=${['Nada', 'por aqui.']} />`}</div>`}
+        : html`<div
+          class="grade-vazia"
+          style=${`padding-top:${topo}px`}
+        >${aoVazio?.() ?? html`<${Vazio} icone="fotos" titulo=${['Nada', 'por aqui.']} />`}</div>`
+    }
   </div>`
 }

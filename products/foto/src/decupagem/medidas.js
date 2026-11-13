@@ -15,6 +15,9 @@
 //     horizonte: { angulo, forca } | null
 //   }
 //
+// Ângulos em graus, com o y da tela para baixo: `borrao.angulo` é a direção do tremido (0..180; 0 = horizontal, cresce
+// no sentido horário); `horizonte.angulo` > 0 quer dizer que a linha desce para a direita.
+//
 // O que não deu para medir sai null (nitidez e borrão de miniatura sem blocos, cepstro de prévia com menos de 256 px,
 // horizonte sem borda), nunca um número de enfeite.
 
@@ -33,6 +36,9 @@ export const LIMIARES = Object.freeze({
   cepstroZ: -10,
   cepstroRaioMin: 4,
   cepstroRaioMax: 64,
+  // 6 px: abaixo disso o vale não é tremido. Prévia embutida de câmera, com a nitidez aplicada pela própria câmera,
+  // mostra vales de z ≤ −10 a 4 ou 5 px do centro (visto numa sequência real de 21 fotos; a causa provável, não
+  // confirmada, é o halo dessa nitidez).
   comprimentoMin: 6,
   comprimentoForte: 12,
   anel: -2.5,
@@ -343,7 +349,13 @@ function qDasPartesNitidas(p0, s0, p1, s1) {
 function classificarBorrao(q, cep) {
   const movimento = !!cep && cep.z <= LIMIARES.cepstroZ && cep.comprimento >= LIMIARES.comprimentoMin && cep.anel > LIMIARES.anel
   if (movimento) {
-    return { tipo: 'movimento', grau: cep.comprimento >= LIMIARES.comprimentoForte ? 'forte' : 'leve', comprimento: cep.comprimento, angulo: cep.angulo, cepstro: cep }
+    return {
+      tipo: 'movimento',
+      grau: cep.comprimento >= LIMIARES.comprimentoForte ? 'forte' : 'leve',
+      comprimento: cep.comprimento,
+      angulo: cep.angulo,
+      cepstro: cep,
+    }
   }
   if (q >= LIMIARES.nitida) return { tipo: 'nenhum', grau: 'nenhum', cepstro: cep }
   return { tipo: 'foco', grau: q >= LIMIARES.leve ? 'leve' : 'forte', cepstro: cep }

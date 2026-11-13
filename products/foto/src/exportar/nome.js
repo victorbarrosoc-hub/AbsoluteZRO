@@ -57,6 +57,10 @@ export function sanear(texto, { reserva = 'foto', limite = LIMITE } = {}) {
   let limpo = ''
   for (const c of s) {
     const codigo = c.codePointAt(0)
+    if (c === '\t' || c === '\n' || c === '\r') {
+      limpo += ' ' // quebra de linha e tabulação separam palavras: viram espaço
+      continue
+    }
     if (codigo < 32 || codigo === 127) continue
     limpo += '<>:"/\\|?*'.includes(c) ? '-' : c
   }

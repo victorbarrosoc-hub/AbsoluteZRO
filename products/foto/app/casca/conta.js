@@ -31,7 +31,13 @@ export function fotoDe(p) {
 function Avatar({ pessoa }) {
   const [falhou, definir] = useState(false)
   const src = falhou ? null : fotoDe(pessoa)
-  return html`<span class="avatar">${src ? html`<img src=${src} alt="" decoding="async" referrerpolicy="no-referrer" onError=${() => definir(true)} />` : iniciais(pessoa)}</span>`
+  return html`<span class="avatar">${src ? html`<img
+    src=${src}
+    alt=""
+    decoding="async"
+    referrerpolicy="no-referrer"
+    onError=${() => definir(true)}
+  />` : iniciais(pessoa)}</span>`
 }
 
 /** Sai do app (a sessão na Absolute ZRO continua) e recarrega: o servidor entrega a página neutra. */
@@ -53,7 +59,11 @@ export function Conta({ conta, aoAtalhos }) {
     rotulo=${`Sua conta: ${nome}`}
     gatilho=${html`<${Avatar} pessoa=${p} />`}
     itens=${[
-      { no: html`<div class="conta-quem"><${Avatar} pessoa=${p} /><span><strong>${nome}</strong>${p.email ? html`<small>${p.email}</small>` : null}</span></div>` },
+      {
+        no: html`<div class="conta-quem"><${Avatar}
+          pessoa=${p}
+        /><span><strong>${nome}</strong>${p.email ? html`<small>${p.email}</small>` : null}</span></div>`,
+      },
       conta.local ? null : { rotulo: 'Sua conta Absolute ZRO', href: ondeEditar(p), externo: true, icone: 'pessoa' },
       { rotulo: 'Atalhos do teclado', icone: 'teclado', detalhe: '?', aoEscolher: aoAtalhos },
       conta.local ? null : { divisa: true },

@@ -26,17 +26,20 @@ import { criarMiniaturas } from './abrir/miniaturas.js'
 import { avisar } from './componentes/aviso.js'
 import { useEffect, useRef, useState } from './preact.js'
 
+/** uma decisão (marca, estrela, ajuste) vai para o disco em 300 ms; o que é medido por trás espera até 2 s */
 const ESPERA_DA_GUARDA = 300
+const ESPERA_DO_MEDIDO = 2000
 const VAZIO = { zro: 'foto.catalogo', versao: 1, fotos: [] }
 /** O que vem do arquivo (o resto é decisão ou medida, e acompanha a foto quando ela é aberta de novo). */
 const DO_ARQUIVO = new Set(['id', 'nome', 'caminho', 'tamanho', 'tipo', 'formato', 'exif', 'par'])
 
 const novoId = () => (globalThis.crypto?.randomUUID ? crypto.randomUUID() : `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`)
 
-/** "13 de novembro" a partir do EXIF ('AAAA-MM-DDTHH:MM:SS') ou de hoje. */
+/** "13 de novembro" (com o ano, se não for este) a partir do EXIF ('AAAA-MM-DDTHH:MM:SS') ou de hoje. */
 function nomePorData(data) {
   const d = data && /^\d{4}-\d{2}-\d{2}/.test(data) ? new Date(`${data.slice(0, 10)}T12:00:00`) : new Date()
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+  const esteAno = d.getFullYear() === new Date().getFullYear()
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', ...(esteAno ? {} : { year: 'numeric' }) })
 }
 
 export function criarLoja() {
@@ -63,19 +66,33 @@ export function criarLoja() {
     for (const id of ids) porFoto.get(id)?.forEach((f) => f())
   }
 
+  // o que as miniaturas descobrem (a proporção da foto, ou que não há prévia) entra no catálogo em lotes: mil
+  // miniaturas chegando não viram mil avisos
+  let descobertas = []
+  let relogioDasDescobertas = null
+  const despejar = () => {
+    relogioDasDescobertas = null
+    const lote = descobertas
+    descobertas = []
+    catalogo.atualizarVarias(lote)
+  }
   const miniaturas = criarMiniaturas({
     arquivoDe: (id) => arquivos.get(id) ?? null,
     aoGerar(id, { proporcao, semPrevia }) {
       const f = catalogo.foto(id)
       if (!f) return
-      if (semPrevia && !f.semPrevia) catalogo.atualizar(id, { semPrevia: true })
-      else if (proporcao && Math.abs((f.proporcao || 0) - proporcao) > 0.001) catalogo.atualizar(id, { proporcao, semPrevia: false })
+      if (semPrevia) {
+        if (!f.semPrevia) descobertas.push({ id, semPrevia: true })
+      } else if (proporcao && Math.abs((f.proporcao || 0) - proporcao) > 0.001) descobertas.push({ id, proporcao, semPrevia: false })
+      else if (f.semPrevia) descobertas.push({ id, semPrevia: false })
+      if (descobertas.length && !relogioDasDescobertas) relogioDasDescobertas = setTimeout(despejar, 120)
     },
   })
 
   catalogo.assinar((aviso) => {
     if ((aviso.tipo === 'dados' || aviso.tipo === 'selecao') && aviso.ids) acordar(aviso.ids)
-    if (aviso.tipo !== 'selecao' && aviso.tipo !== 'historico') agendarGuarda()
+    if (aviso.tipo === 'historico') agendarGuarda(ESPERA_DA_GUARDA)
+    else if (aviso.tipo !== 'selecao') agendarGuarda(ESPERA_DO_MEDIDO)
   })
 
   function resumo() {
@@ -83,16 +100,26 @@ export function criarLoja() {
     return { ...trabalho, total: catalogo.tamanho, capas: visiveis.slice(0, 4).map((f) => f.id) }
   }
 
-  function agendarGuarda() {
+  let prazo = 0
+  function agendarGuarda(espera = ESPERA_DA_GUARDA) {
     if (!trabalho) return
+    const quando = Date.now() + espera
+    // já há uma gravação marcada para antes: ela leva isto junto
+    if (pendente && prazo && prazo <= quando) return
     pendente = true
+    prazo = quando
     clearTimeout(relogio)
-    relogio = setTimeout(() => void salvarAgora(), ESPERA_DA_GUARDA)
+    relogio = setTimeout(() => void salvarAgora(), espera)
   }
 
   /** Grava já o catálogo e o resumo do trabalho. Devolve quando o IndexedDB confirmou. */
   function salvarAgora() {
     clearTimeout(relogio)
+    prazo = 0
+    if (descobertas.length) {
+      clearTimeout(relogioDasDescobertas)
+      despejar()
+    }
     if (!trabalho || !pendente) return guardando
     pendente = false
     const t = (trabalho = resumo())
@@ -110,6 +137,7 @@ export function criarLoja() {
     lendo = null
     arquivos.clear()
     abas.clear()
+    descobertas = []
     miniaturas.limpar()
     catalogo.restaurar(VAZIO)
   }
@@ -177,7 +205,16 @@ export function criarLoja() {
             const exif = r.exif || { orientacao: 1 }
             const id = idDaFoto({ nome: p.principal.nome, tamanho: p.principal.tamanho, data: exif.data })
             const par = p.par ? { par: { nome: p.par.nome, tamanho: p.par.tamanho, formato: formatoDe(p.par.nome)?.formato || '' } } : {}
-            prontas[inicio + k] = { id, nome: p.principal.nome, caminho: p.principal.caminho, tamanho: p.principal.tamanho, tipo: p.tipo, formato: p.formato, exif, ...par }
+            prontas[inicio + k] = {
+              id,
+              nome: p.principal.nome,
+              caminho: p.principal.caminho,
+              tamanho: p.principal.tamanho,
+              tipo: p.tipo,
+              formato: p.formato,
+              exif,
+              ...par,
+            }
             arquivos.set(id, origemDe(p))
           })
           // entra na ordem em que os arquivos vieram: a grade cresce pelo fim, sem pular
@@ -218,7 +255,11 @@ export function criarLoja() {
     if (religadas.length) miniaturas.religou()
     geracao = miniaturas.gerarTudo(ids)
     if (!novo && (entraram.length || religadas.length)) {
-      avisar(entraram.length ? `${entraram.length.toLocaleString('pt-BR')} ${entraram.length === 1 ? 'foto entrou' : 'fotos entraram'}` : 'Originais ligados de novo')
+      avisar(
+        entraram.length
+          ? `${entraram.length.toLocaleString('pt-BR')} ${entraram.length === 1 ? 'foto entrou' : 'fotos entraram'}`
+          : 'Originais ligados de novo',
+      )
     }
     return true
   }
@@ -360,7 +401,13 @@ export function criarLoja() {
     /** Pede de novo a permissão da pasta (dentro de um clique) e religa os originais. */
     religar: () => acompanhar(religarPasta({ pedir: true }).then((ok) => (publicar(), ok))),
     /** Resolve quando nada mais está sendo lido nem gerado por trás (as miniaturas e prévias do que foi aberto). */
-    ocioso: () => emCurso.then(() => {}),
+    ocioso: () =>
+      emCurso.then(() => {
+        if (descobertas.length) {
+          clearTimeout(relogioDasDescobertas)
+          despejar()
+        }
+      }),
     /** Reabre o último trabalho ao carregar o app (sem pedir permissão: não há clique). */
     async iniciar() {
       const id = ultimo.ler()
@@ -389,7 +436,10 @@ export function criarLoja() {
       await guardar.apagarTrabalho(id)
     },
     renomear(nome) {
-      const limpo = String(nome || '').replace(/\s+/g, ' ').trim().slice(0, 80)
+      const limpo = String(nome || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 80)
       if (!trabalho || !limpo || limpo === trabalho.nome) return
       trabalho = { ...trabalho, nome: limpo }
       pendente = true

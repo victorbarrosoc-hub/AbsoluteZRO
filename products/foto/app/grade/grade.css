@@ -395,7 +395,7 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: calc(var(--topo-a) + 18px) 64px calc(var(--dock-a) + 88px);
+  padding: calc(var(--topo-a) + 44px) 64px calc(var(--dock-a) + 88px);
   cursor: zoom-in;
   touch-action: none;
 }
@@ -472,7 +472,7 @@
 }
 .lupa-ficha {
   position: absolute;
-  top: calc(var(--topo-a) + 14px);
+  top: calc(var(--topo-a) + 15px);
   left: 20px;
   display: flex;
   align-items: baseline;
@@ -589,7 +589,7 @@
     margin: 12px 3px;
   }
   .quadro {
-    padding: calc(var(--topo-a) + 10px) 8px calc(var(--dock-a) + 76px);
+    padding: calc(var(--topo-a) + 40px) 8px calc(var(--dock-a) + 76px);
   }
   .lupa-seta {
     display: none;

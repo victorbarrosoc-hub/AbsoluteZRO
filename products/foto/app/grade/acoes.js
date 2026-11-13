@@ -41,7 +41,7 @@ export function executarComAviso(loja, comando, opcoes) {
   const quantas = c.alvo().length
   const feito = executar(c, comando, opcoes)
   if (feito && quantas > 1 && TEXTO[comando.acao]) {
-    const valor = comando.acao === 'cor' ? c.foto(c.alvo()[0] ?? '')?.cor ?? null : comando.valor
+    const valor = comando.acao === 'cor' ? (c.foto(c.alvo()[0] ?? '')?.cor ?? null) : comando.valor
     avisarLote(loja, comando.acao, quantas, valor)
   }
   return feito

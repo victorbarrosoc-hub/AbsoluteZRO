@@ -32,13 +32,15 @@ export function Folha({ aberta, aoFechar, titulo, largura, classe, children }) {
     onClick=${(e) => e.target === ref.current && aoFechar?.()}
     onKeyDown=${(e) => e.key !== 'Escape' && e.stopPropagation()}
   >
-    ${aberta
-      ? html`<header class="folha-topo">
+    ${
+      aberta
+        ? html`<header class="folha-topo">
             <h2>${fino ? html`<span class="fino">${fino} </span>` : null}<span class="pesado">${pesado}</span></h2>
             <button type="button" class="liso" aria-label="Fechar" onClick=${() => aoFechar?.()}><${Icone} nome="x" /></button>
           </header>
           <div class="folha-corpo">${children}</div>`
-      : null}
+        : null
+    }
   </dialog>`
 }
 

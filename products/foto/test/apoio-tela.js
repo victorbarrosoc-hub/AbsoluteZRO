@@ -103,13 +103,28 @@ export function comExif(jpeg, { data, orientacao = 1 } = {}) {
   const exifIfd = ifd0 + 2 + entradas0 * 12 + 4
   const onde = exifIfd + 2 + 12 + 4
   const tiff = [
-    0x49, 0x49, 0x2a, 0x00, ...u32(ifd0),
+    0x49,
+    0x49,
+    0x2a,
+    0x00,
+    ...u32(ifd0),
     ...u16(entradas0),
-    ...u16(0x0112), ...u16(3), ...u32(1), ...u16(orientacao), 0, 0,
-    ...u16(0x8769), ...u16(4), ...u32(1), ...u32(exifIfd),
+    ...u16(0x0112),
+    ...u16(3),
+    ...u32(1),
+    ...u16(orientacao),
+    0,
+    0,
+    ...u16(0x8769),
+    ...u16(4),
+    ...u32(1),
+    ...u32(exifIfd),
     ...u32(0),
     ...u16(1),
-    ...u16(0x9003), ...u16(2), ...u32(texto.length), ...u32(onde),
+    ...u16(0x9003),
+    ...u16(2),
+    ...u32(texto.length),
+    ...u32(onde),
     ...u32(0),
     ...Buffer.from(texto, 'latin1'),
   ]
@@ -209,7 +224,11 @@ export async function fabricarFotos(navegador, { quantas = 300 } = {}) {
   // o RAW e o par dele: mesmo nome, extensões diferentes
   const ultimo = jpegs[quantas - 1]
   const nomeRaw = `IMG_${String(quantas).padStart(4, '0')}`
-  arquivos.push({ name: `${nomeRaw}.DNG`, mimeType: 'image/x-adobe-dng', buffer: dngFabricado(ultimo, { largura: 720, altura: 480, data: horaDaFoto(quantas - 1) }) })
+  arquivos.push({
+    name: `${nomeRaw}.DNG`,
+    mimeType: 'image/x-adobe-dng',
+    buffer: dngFabricado(ultimo, { largura: 720, altura: 480, data: horaDaFoto(quantas - 1) }),
+  })
   arquivos.push({ name: `${nomeRaw}.JPG`, mimeType: 'image/jpeg', buffer: comExif(ultimo, { data: horaDaFoto(quantas - 1) }) })
   return { arquivos, total: quantas, raw: `${nomeRaw}.DNG` }
 }

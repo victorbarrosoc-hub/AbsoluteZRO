@@ -40,11 +40,13 @@ export function Avisos() {
     return () => ouvintes.delete(definir)
   }, [])
   return html`<div class="avisos" role="status" aria-live="polite">
-    ${aviso
-      ? html`<div class="aviso" key=${aviso.chave} data-saindo=${aviso.saindo ? '' : undefined}>
+    ${
+      aviso
+        ? html`<div class="aviso" key=${aviso.chave} data-saindo=${aviso.saindo ? '' : undefined}>
           <span>${aviso.texto}</span>
-          ${aviso.desfazer
-            ? html`<button
+          ${
+            aviso.desfazer
+              ? html`<button
                 type="button"
                 onClick=${() => {
                   aviso.desfazer()
@@ -53,8 +55,10 @@ export function Avisos() {
               >
                 ${aviso.rotulo}
               </button>`
-            : null}
+              : null
+          }
         </div>`
-      : null}
+        : null
+    }
   </div>`
 }

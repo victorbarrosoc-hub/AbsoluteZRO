@@ -24,7 +24,21 @@ export function formatarValor(v, { passo = 1, sinal = false } = {}) {
  *
  * `aoMudar(valor, { final })`: `final: false` enquanto arrasta (prévia), `true` quando solta (é o que entra no desfazer).
  */
-export function Controle({ rotulo, valor, min = -100, max = 100, passo = 1, neutro = 0, aoMudar, formato, desligado = false, linha = false, id, dica, classe }) {
+export function Controle({
+  rotulo,
+  valor,
+  min = -100,
+  max = 100,
+  passo = 1,
+  neutro = 0,
+  aoMudar,
+  formato,
+  desligado = false,
+  linha = false,
+  id,
+  dica,
+  classe,
+}) {
   const proprio = useRef(`controle-${Math.random().toString(36).slice(2, 9)}`).current
   const nome = id || proprio
   const v = limitar(Number(valor) || 0, min, max)
@@ -160,10 +174,21 @@ export function Pilulas({ opcoes, valor, aoMudar, rotulo, multiplo = false, rola
   return html`<div class=${cx('pilulas', rola && 'pilulas--rola', classe)} role="group" aria-label=${rotulo}>
     ${opcoes.map(
       (o) =>
-        html`<button type="button" class="pilula" aria-pressed=${ativos.includes(o.valor) ? 'true' : 'false'} title=${o.dica} data-valor=${String(o.valor)} onClick=${() => tocar(o.valor)}>
-          ${o.cor ? html`<span class="ponto" data-cor=${o.cor} aria-hidden="true"></span>` : null}${o.icone ? html`<${Icone} nome=${o.icone} />` : null}${o.rotulo}${o.contagem != null
-            ? html`<span class="pilula-n"><${Numero} valor=${o.contagem} /></span>`
-            : null}
+        html`<button
+          type="button"
+          class="pilula"
+          aria-pressed=${ativos.includes(o.valor) ? 'true' : 'false'}
+          title=${o.dica}
+          data-valor=${String(o.valor)}
+          onClick=${() => tocar(o.valor)}
+        >
+          ${o.cor ? html`<span
+            class="ponto"
+            data-cor=${o.cor}
+            aria-hidden="true"
+          ></span>` : null}${o.icone ? html`<${Icone} nome=${o.icone} />` : null}${o.rotulo}${
+            o.contagem != null ? html`<span class="pilula-n"><${Numero} valor=${o.contagem} /></span>` : null
+          }
         </button>`,
     )}
   </div>`
@@ -189,7 +214,8 @@ export function Menu({ gatilho, rotulo, itens, lado = 'esquerda', classeBotao = 
     definir(false)
     if (devolver) ref.current?.querySelector('button')?.focus()
   }
-  useEffect(() => {
+  // efeito de layout: o foco entra no primeiro item junto com o menu (Enter, Enter escolhe sem perder tecla)
+  useLayoutEffect(() => {
     if (!aberto) return
     const fora = (e) => !ref.current?.contains(e.target) && fechar()
     document.addEventListener('pointerdown', fora, true)
@@ -226,26 +252,45 @@ export function Menu({ gatilho, rotulo, itens, lado = 'esquerda', classeBotao = 
     >
       ${gatilho}
     </button>
-    ${aberto
-      ? html`<div class="menu-lista" role="menu" data-lado=${lado} aria-label=${rotulo}>
+    ${
+      aberto
+        ? html`<div class="menu-lista" role="menu" data-lado=${lado} aria-label=${rotulo}>
           ${itens.filter(Boolean).map((it) => {
             if (it.no) return it.no
             if (it.divisa) return html`<div class="menu-divisa" role="separator"></div>`
             if (it.titulo) return html`<div class="menu-titulo">${it.titulo}</div>`
-            const dentro = html`${it.icone ? html`<${Icone} nome=${it.icone} />` : null}<span>${it.rotulo}</span>${it.detalhe ? html`<small>${it.detalhe}</small>` : null}`
+            const dentro = html`${it.icone ? html`<${Icone}
+              nome=${it.icone}
+            />` : null}<span>${it.rotulo}</span>${it.detalhe ? html`<small>${it.detalhe}</small>` : null}`
             const papel = it.marcado == null ? 'menuitem' : 'menuitemradio'
             const escolher = () => {
               fechar(true)
               it.aoEscolher?.()
             }
             return it.href
-              ? html`<a class="menu-item" role=${papel} href=${it.href} target=${it.externo ? '_blank' : undefined} rel=${it.externo ? 'noopener' : undefined} tabindex="-1" onClick=${() => fechar()}>${dentro}</a>`
-              : html`<button type="button" class=${cx('menu-item', it.perigo && 'menu-item--perigo')} role=${papel} aria-checked=${it.marcado == null ? undefined : it.marcado ? 'true' : 'false'} tabindex="-1" onClick=${escolher}>
+              ? html`<a
+                class="menu-item"
+                role=${papel}
+                href=${it.href}
+                target=${it.externo ? '_blank' : undefined}
+                rel=${it.externo ? 'noopener' : undefined}
+                tabindex="-1"
+                onClick=${() => fechar()}
+              >${dentro}</a>`
+              : html`<button
+                type="button"
+                class=${cx('menu-item', it.perigo && 'menu-item--perigo')}
+                role=${papel}
+                aria-checked=${it.marcado == null ? undefined : it.marcado ? 'true' : 'false'}
+                tabindex="-1"
+                onClick=${escolher}
+              >
                   ${dentro}
                 </button>`
           })}
         </div>`
-      : null}
+        : null
+    }
   </span>`
 }
 
@@ -266,7 +311,11 @@ export function Vazio({ icone, titulo, apoio, children, classe }) {
 /** Esqueleto: a forma do que vai chegar. */
 export function Esqueleto({ largura, altura, raio, classe }) {
   const medida = (v) => (typeof v === 'number' ? `${v}px` : v)
-  return html`<span class=${cx('esqueleto', classe)} aria-hidden="true" style=${`width:${medida(largura) ?? '100%'};height:${medida(altura) ?? '1em'};${raio != null ? `border-radius:${medida(raio)}` : ''}`}></span>`
+  return html`<span
+    class=${cx('esqueleto', classe)}
+    aria-hidden="true"
+    style=${`width:${medida(largura) ?? '100%'};height:${medida(altura) ?? '1em'};${raio != null ? `border-radius:${medida(raio)}` : ''}`}
+  ></span>`
 }
 
 /** Barra de progresso discreta. `valor`: 0..1, ou null enquanto não se sabe (corre de lado). */
@@ -287,7 +336,16 @@ export function Progresso({ valor, rotulo, classe }) {
 /** O anel de progresso (cabe no topo, ao lado do nome do trabalho). */
 export function ProgressoAnel({ valor, rotulo }) {
   const p = limitar(valor ?? 0, 0, 1)
-  return html`<svg class="progresso-anel" viewBox="0 0 20 20" role="progressbar" aria-label=${rotulo} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${Math.round(p * 100)} style=${`--p:${p}`}>
+  return html`<svg
+    class="progresso-anel"
+    viewBox="0 0 20 20"
+    role="progressbar"
+    aria-label=${rotulo}
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow=${Math.round(p * 100)}
+    style=${`--p:${p}`}
+  >
     <circle class="trilho" cx="10" cy="10" r="7.5" />
     <circle class="feito" cx="10" cy="10" r="7.5" pathLength="100" />
   </svg>`

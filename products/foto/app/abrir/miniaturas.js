@@ -11,6 +11,8 @@ import { guardar } from './guardar.js'
 const WORKER = new URL('../trabalho/miniatura-worker.js', import.meta.url)
 const MAXIMO_NA_MEMORIA = 1600
 const NA_TELA = 100
+/** ler o EXIF das fotos novas: depois do que está na tela, antes do resto */
+const IDENTIFICAR = 50
 const POR_TRAS = 0
 
 /**
@@ -59,7 +61,11 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
       avisar(id)
       return false
     }
-    const r = await pool.pedir('miniatura', { arquivo: origem.arquivo, par: origem.par, tipo: origem.tipo }, { prioridade: naTela.has(id) ? NA_TELA : prioridade, chave: `mini:${id}` })
+    const r = await pool.pedir(
+      'miniatura',
+      { arquivo: origem.arquivo, par: origem.par, tipo: origem.tipo },
+      { prioridade: naTela.has(id) ? NA_TELA : prioridade, chave: `mini:${id}` },
+    )
     if (!r) return false
     if (r.semPrevia) {
       semPrevia.add(id)
@@ -203,6 +209,19 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
       if (r) return r
       return origem.par ? { blob: origem.par, orientacao: 1, doNavegador: true } : null
     },
+    /**
+     * Entrega de fora a miniatura e a prévia de uma foto (o motor, para o RAW que não traz JPEG embutida, ou para
+     * mostrar a foto já revelada na grade): { mini: Blob, previa?: Blob, proporcao? }. Fica guardada como as outras.
+     */
+    entregar(id, { mini, previa, proporcao }) {
+      if (!mini) return
+      semPrevia.delete(id)
+      faltando.delete(id)
+      guardadas.add(id)
+      lembrar(id, mini)
+      guardar.salvarMiniaturas(id, { mini, previa })
+      aoGerar?.(id, { proporcao })
+    },
     /** Identifica arquivos (EXIF do começo de cada um), em lotes pelo pool. Devolve na mesma ordem. */
     async identificar(arquivos, { aoLote } = {}) {
       const LOTE = 24
@@ -214,7 +233,7 @@ export function criarMiniaturas({ arquivoDe, aoGerar, pool = criarPool(WORKER, {
           const parte = arquivos.slice(inicio, inicio + LOTE)
           let r
           try {
-            r = await pool.pedir('identificar', { arquivos: parte }, { prioridade: NA_TELA + 10 })
+            r = await pool.pedir('identificar', { arquivos: parte }, { prioridade: IDENTIFICAR })
           } catch {
             r = parte.map(() => ({ exif: { orientacao: 1 } }))
           }

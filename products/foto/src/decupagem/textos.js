@@ -127,7 +127,18 @@ export const EMPATE = Object.freeze({
   ordem: () => 'Desempate pela ordem de captura',
 })
 
-const ANIMAIS = { bird: 'pássaro', cat: 'gato', dog: 'cachorro', horse: 'cavalo', sheep: 'ovelha', cow: 'vaca', elephant: 'elefante', bear: 'urso', zebra: 'zebra', giraffe: 'girafa' }
+const ANIMAIS = {
+  bird: 'pássaro',
+  cat: 'gato',
+  dog: 'cachorro',
+  horse: 'cavalo',
+  sheep: 'ovelha',
+  cow: 'vaca',
+  elephant: 'elefante',
+  bear: 'urso',
+  zebra: 'zebra',
+  giraffe: 'girafa',
+}
 
 /** O porquê da cena, em uma linha. */
 export const PORQUE_DA_CENA = Object.freeze({

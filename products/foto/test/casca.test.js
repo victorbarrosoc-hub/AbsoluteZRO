@@ -22,6 +22,8 @@ const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const TELAS = pastaDasTelas()
 const QUANTAS = 300
 const ESPERA = 60_000
+/** O nome que o trabalho ganha sozinho: a data da primeira foto (com o ano, quando não é o ano corrente). */
+const TRABALHO = `Fotos de ${new Date('2026-11-13T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', ...(new Date().getFullYear() === 2026 ? {} : { year: 'numeric' }) })}`
 
 let app, navegador, fotos
 
@@ -52,14 +54,25 @@ const CELULAR = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobil
 /** Escolhe as 300 fotos e espera a grade ficar inteira (a contagem de "Todas" chega ao total). */
 async function carregar(pagina) {
   await pagina.setInputFiles('input[data-escolher]', fotos.arquivos)
-  await pagina.waitForFunction((n) => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === String(n), fotos.total, { timeout: ESPERA })
+  await pagina.waitForFunction((n) => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === String(n), fotos.total, {
+    timeout: ESPERA,
+  })
   await pagina.waitForSelector('.foto img', { timeout: ESPERA })
 }
-const limpo = (olho) => assert.deepEqual({ erros: olho.erros, falhas: olho.falhas, ruins: olho.ruins, fora: olho.fora }, { erros: [], falhas: [], ruins: [], fora: [] })
+const limpo = (olho) =>
+  assert.deepEqual({ erros: olho.erros, falhas: olho.falhas, ruins: olho.ruins, fora: olho.fora }, { erros: [], falhas: [], ruins: [], fora: [] })
 const captura = (pagina, nome) => pagina.screenshot({ path: join(TELAS, `casca-${nome}.png`) })
-const contagem = (pagina, valor) => pagina.locator(`.pilula[data-valor="${valor}"] .pilula-n`).innerText().then((t) => Number(t.replace(/\D/g, '')))
+const contagem = (pagina, valor) =>
+  pagina
+    .locator(`.pilula[data-valor="${valor}"] .pilula-n`)
+    .innerText()
+    .then((t) => Number(t.replace(/\D/g, '')))
 /** O estado da loja, lido de dentro da página (o mesmo módulo que o app usa). */
-const naLoja = (pagina, f, arg) => pagina.evaluate(async ({ codigo, arg }) => new Function('loja', 'arg', `return (${codigo})(loja, arg)`)((await import('/app/estado.js')).loja, arg), { codigo: f.toString(), arg })
+const naLoja = (pagina, f, arg) =>
+  pagina.evaluate(async ({ codigo, arg }) => new Function('loja', 'arg', `return (${codigo})(loja, arg)`)((await import('/app/estado.js')).loja, arg), {
+    codigo: f.toString(),
+    arg,
+  })
 
 function arquivosDe(pasta, base = '') {
   const lista = []
@@ -76,7 +89,13 @@ test('Chromium é exigido no CI', { skip: !EXIGIR }, () => {
 })
 
 test('o nome do produto mora só em app/nome.js: telas, estilos e núcleo da biblioteca não escrevem', () => {
-  const fontes = [...arquivosDe(join(RAIZ, 'app')).map((f) => `app/${f}`), ...arquivosDe(join(RAIZ, 'src/biblioteca')).map((f) => `src/biblioteca/${f}`), 'test/casca.test.js', 'test/catalogo.test.js', 'test/apoio-tela.js']
+  const fontes = [
+    ...arquivosDe(join(RAIZ, 'app')).map((f) => `app/${f}`),
+    ...arquivosDe(join(RAIZ, 'src/biblioteca')).map((f) => `src/biblioteca/${f}`),
+    'test/casca.test.js',
+    'test/catalogo.test.js',
+    'test/apoio-tela.js',
+  ]
   for (const f of fontes) {
     if (f === 'app/nome.js' || !/\.(js|css|html|webmanifest|svg)$/.test(f)) continue
     const texto = readFileSync(join(RAIZ, f), 'utf8')
@@ -128,9 +147,19 @@ test('a casca abre: o símbolo, o nome fino × pesado, uma ação principal, sem
     const estilo = await pagina.evaluate(() => {
       const h1 = getComputedStyle(document.querySelector('#app h1'))
       const p = getComputedStyle(document.querySelector('#app p'))
-      return { pesoH1: h1.fontWeight, corH1: h1.color, pesoP: p.fontWeight, corP: p.color, fundo: getComputedStyle(document.body).backgroundColor, fonte: getComputedStyle(document.body).fontFamily }
+      return {
+        pesoH1: h1.fontWeight,
+        corH1: h1.color,
+        pesoP: p.fontWeight,
+        corP: p.color,
+        fundo: getComputedStyle(document.body).backgroundColor,
+        fonte: getComputedStyle(document.body).fontFamily,
+      }
     })
-    assert.deepEqual({ ...estilo, fonte: undefined }, { pesoH1: '800', corH1: 'rgb(29, 29, 31)', pesoP: '300', corP: 'rgb(110, 110, 115)', fundo: 'rgb(245, 245, 247)', fonte: undefined })
+    assert.deepEqual(
+      { ...estilo, fonte: undefined },
+      { pesoH1: '800', corH1: 'rgb(29, 29, 31)', pesoP: '300', corP: 'rgb(110, 110, 115)', fundo: 'rgb(245, 245, 247)', fonte: undefined },
+    )
     assert.match(estilo.fonte, /Figtree Variable/)
     // uma ação principal (vidro escuro) e uma secundária
     assert.equal(await pagina.locator('.inicio-acoes .vidro').count(), 2)
@@ -144,7 +173,10 @@ test('a casca abre: o símbolo, o nome fino × pesado, uma ação principal, sem
     // o anel terminou de se desenhar e o raio de cruzar
     await pagina.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
     assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('.simbolo-vivo .simbolo-anel')).strokeDashoffset), '0px')
-    assert.match(await pagina.evaluate(() => getComputedStyle(document.querySelector('.simbolo-vivo .simbolo-raio')).clipPath), /^inset\(-1px 0(px|%)?( -1px 0(px|%)?)?\)$/)
+    assert.match(
+      await pagina.evaluate(() => getComputedStyle(document.querySelector('.simbolo-vivo .simbolo-raio')).clipPath),
+      /^inset\(-1px 0(px|%)?( -1px 0(px|%)?)?\)$/,
+    )
     // modo local: sem conta de verdade, nem Set nem Z aparecem (e nada é pedido para fora)
     await pagina.mouse.move(300, 300)
     await pagina.waitForTimeout(300)
@@ -152,7 +184,12 @@ test('a casca abre: o símbolo, o nome fino × pesado, uma ação principal, sem
     // ? abre o mapa de teclas, que vem do contrato
     await pagina.keyboard.press('?')
     await pagina.waitForSelector('dialog.folha-atalhos[open]')
-    await pagina.waitForFunction(() => document.querySelector('dialog.folha-atalhos').getAnimations({ subtree: true }).every((a) => a.playState !== 'running'))
+    await pagina.waitForFunction(() =>
+      document
+        .querySelector('dialog.folha-atalhos')
+        .getAnimations({ subtree: true })
+        .every((a) => a.playState !== 'running'),
+    )
     const teclas = await pagina.locator('dialog.folha-atalhos kbd').allInnerTexts()
     for (const t of ['P', 'X', 'U', 'G', 'E', 'Z', 'N', 'D', '?', 'Caps Lock']) assert.ok(teclas.includes(t), t)
     await captura(pagina, 'atalhos-1440-claro')
@@ -175,7 +212,18 @@ test('com a sessão do login único: a mesma casca, sem pedir nada de fora e sem
   const contexto = await navegador.newContext({ viewport: { width: 1440, height: 900 } })
   try {
     const z = await import('../api/_zro.js')
-    const sessao = z.selar(z.COOKIE_CONTA, { sub: 'zro-1', nome: 'Lia Fotógrafa', email: 'lia@exemplo.com', apps: ['foto'], org: { id: 'org-1', nome: 'Estúdio Lia', papel: 'owner' }, lido: Math.floor(Date.now() / 1000) }, 3600)
+    const sessao = z.selar(
+      z.COOKIE_CONTA,
+      {
+        sub: 'zro-1',
+        nome: 'Lia Fotógrafa',
+        email: 'lia@exemplo.com',
+        apps: ['foto'],
+        org: { id: 'org-1', nome: 'Estúdio Lia', papel: 'owner' },
+        lido: Math.floor(Date.now() / 1000),
+      },
+      3600,
+    )
     await contexto.addCookies([{ name: 'foto_conta', value: sessao, url: app.base }])
     const pagina = await contexto.newPage()
     const olho = vigiar(pagina, app.base)
@@ -190,7 +238,13 @@ test('com a sessão do login único: a mesma casca, sem pedir nada de fora e sem
     assert.equal(await pagina.locator('.conta .avatar').innerText(), 'LF')
     await pagina.locator('.conta button').click()
     assert.equal(await pagina.locator('.conta .menu-lista a[role="menuitem"]').getAttribute('href'), 'https://absolutezro.com/perfil')
-    assert.deepEqual(await pagina.locator('.conta .menu-lista [role="menuitem"]').allInnerTexts().then((l) => l.map((t) => t.split('\n')[0])), ['Sua conta Absolute ZRO', 'Atalhos do teclado', 'Sair'])
+    assert.deepEqual(
+      await pagina
+        .locator('.conta .menu-lista [role="menuitem"]')
+        .allInnerTexts()
+        .then((l) => l.map((t) => t.split('\n')[0])),
+      ['Sua conta Absolute ZRO', 'Atalhos do teclado', 'Sair'],
+    )
     // (o clique acima é um gesto: o Set e a Z só são procurados depois dele, e aqui a Absolute ZRO não existe.
     // O que se confere é a abertura: até o primeiro gesto, nada saiu da origem e nada deu erro.)
     assert.ok(pedidos.includes('/api/zro/eu'))
@@ -212,7 +266,11 @@ test('com a sessão do login único, sem gesto: nenhum pedido para fora, nenhuma
   const contexto = await navegador.newContext({ viewport: { width: 1440, height: 900 } })
   try {
     const z = await import('../api/_zro.js')
-    const sessao = z.selar(z.COOKIE_CONTA, { sub: 'zro-1', nome: 'Lia Fotógrafa', email: 'lia@exemplo.com', apps: ['foto'], lido: Math.floor(Date.now() / 1000) }, 3600)
+    const sessao = z.selar(
+      z.COOKIE_CONTA,
+      { sub: 'zro-1', nome: 'Lia Fotógrafa', email: 'lia@exemplo.com', apps: ['foto'], lido: Math.floor(Date.now() / 1000) },
+      3600,
+    )
     await contexto.addCookies([{ name: 'foto_conta', value: sessao, url: app.base }])
     const pagina = await contexto.newPage()
     const olho = vigiar(pagina, app.base)
@@ -249,10 +307,10 @@ test('"Escolher fotos" com 300 arquivos: miniaturas, RAW + JPEG como uma foto s�
     assert.equal(await naLoja(pagina, (l) => l.catalogo.tamanho), QUANTAS)
     assert.ok(levou < ESPERA, `a grade levou ${levou} ms`)
     // a casca com trabalho: o nome no topo, o dock com as quatro etapas e Decupar na frente
-    assert.match(await pagina.locator('.trabalho-nome').innerText(), /^Fotos de 13 de novembro$/)
+    assert.equal(await pagina.locator('.trabalho-nome').innerText(), TRABALHO)
     assert.deepEqual(await pagina.locator('.dock-aba').allInnerTexts(), ['Decupar', 'Revelar', 'Estilos', 'Entregar'])
     assert.equal(await pagina.locator('.dock-aba[aria-current="page"]').innerText(), 'Decupar')
-    assert.match(await pagina.title(), new RegExp(`^Fotos de 13 de novembro · ${NOME}$`))
+    assert.equal(await pagina.title(), `${TRABALHO} · ${NOME}`)
     // a grade é uma lista de opções multisselecionável, com uma só parada de Tab
     assert.equal(await pagina.locator('.grade').getAttribute('role'), 'listbox')
     assert.equal(await pagina.locator('.grade').getAttribute('aria-multiselectable'), 'true')
@@ -287,10 +345,15 @@ test('"Escolher fotos" com 300 arquivos: miniaturas, RAW + JPEG como uma foto s�
     assert.match(await ultima.getAttribute('aria-label'), /RAW e JPEG/)
     assert.equal(await ultima.locator('.selo-par').innerText(), 'RAW+J')
     await pagina.waitForFunction(() => [...document.querySelectorAll('.foto')].at(-1)?.querySelector('img')?.naturalWidth > 0, null, { timeout: ESPERA })
-    const raw = await naLoja(pagina, (l, nome) => {
-      const f = l.catalogo.fotos().find((x) => x.nome === nome)
-      return { tipo: f.tipo, formato: f.formato, par: f.par, exif: f.exif, proporcao: f.proporcao, semPrevia: !!f.semPrevia, original: l.temOriginal(f.id) }
-    }, fotos.raw)
+    await naLoja(pagina, (l) => l.ocioso().then(() => true))
+    const raw = await naLoja(
+      pagina,
+      (l, nome) => {
+        const f = l.catalogo.fotos().find((x) => x.nome === nome)
+        return { tipo: f.tipo, formato: f.formato, par: f.par, exif: f.exif, proporcao: f.proporcao, semPrevia: !!f.semPrevia, original: l.temOriginal(f.id) }
+      },
+      fotos.raw,
+    )
     assert.equal(raw.tipo, 'raw')
     assert.equal(raw.formato, 'dng')
     assert.equal(raw.par.nome, fotos.raw.replace('.DNG', '.JPG'))
@@ -311,7 +374,12 @@ test('"Escolher fotos" com 300 arquivos: miniaturas, RAW + JPEG como uma foto s�
     })
     assert.deepEqual(guardadas, { com: QUANTAS, lado: 720, tipo: 'image/jpeg' })
     // o pool: núcleos − 1 workers (no máximo 8), e a fila vazia no fim
-    const pool = await naLoja(pagina, (l) => ({ tamanho: l.miniaturas.pool.tamanho, workers: l.miniaturas.pool.workers, pendentes: l.miniaturas.pool.pendentes, nucleos: navigator.hardwareConcurrency }))
+    const pool = await naLoja(pagina, (l) => ({
+      tamanho: l.miniaturas.pool.tamanho,
+      workers: l.miniaturas.pool.workers,
+      pendentes: l.miniaturas.pool.pendentes,
+      nucleos: navigator.hardwareConcurrency,
+    }))
     assert.equal(pool.tamanho, Math.max(1, Math.min(8, pool.nucleos - 1)))
     assert.ok(pool.workers >= 1 && pool.workers <= pool.tamanho)
     assert.equal(pool.pendentes, 0)
@@ -358,7 +426,12 @@ test('teclado: setas pelas colunas, P, X, 1–5, cor, Shift, Cmd/Ctrl + A, Esc, 
     for (const n of [1, 2, 3, 4, 5]) {
       await pagina.keyboard.press('ArrowRight')
       await pagina.keyboard.press(String(n))
-      assert.equal(await cartao(1 + n).locator('.estrelas').getAttribute('aria-label'), n === 1 ? '1 estrela' : `${n} estrelas`)
+      assert.equal(
+        await cartao(1 + n)
+          .locator('.estrelas')
+          .getAttribute('aria-label'),
+        n === 1 ? '1 estrela' : `${n} estrelas`,
+      )
     }
     await pagina.keyboard.press('8')
     assert.equal(await cartao(6).locator('.foto-pe .ponto').getAttribute('data-cor'), 'verde')
@@ -488,7 +561,11 @@ test('lupa: abre, conta "N de M", navega, dá zoom no ponto, arrasta, compara du
     assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('.lupa')).backgroundColor), 'rgb(12, 12, 12)')
     assert.match(await pagina.locator('.lupa-ficha strong').innerText(), /^IMG_0001\.JPG$/)
     // a imagem melhora sozinha: miniatura → prévia → o arquivo (aqui, 720 px)
-    await pagina.waitForFunction(() => document.querySelector('.quadro-moldura')?.dataset.nivel === 'grande' && document.querySelector('.quadro-moldura img').naturalWidth === 720, null, { timeout: ESPERA })
+    await pagina.waitForFunction(
+      () => document.querySelector('.quadro-moldura')?.dataset.nivel === 'grande' && document.querySelector('.quadro-moldura img').naturalWidth === 720,
+      null,
+      { timeout: ESPERA },
+    )
     await pagina.waitForTimeout(500)
     await captura(pagina, 'lupa-1440-claro')
 
@@ -555,11 +632,19 @@ test('lupa: abre, conta "N de M", navega, dá zoom no ponto, arrasta, compara du
     // N compara duas lado a lado, com o zoom sincronizado
     await pagina.keyboard.press('n')
     await pagina.waitForFunction(() => document.querySelectorAll('.lupa .quadro').length === 2)
-    assert.deepEqual(await pagina.locator('.quadro-etiqueta').allInnerTexts().then((l) => l.map((t) => t.toUpperCase())), ['FIXA', 'CANDIDATA'])
+    assert.deepEqual(
+      await pagina
+        .locator('.quadro-etiqueta')
+        .allInnerTexts()
+        .then((l) => l.map((t) => t.toUpperCase())),
+      ['FIXA', 'CANDIDATA'],
+    )
     assert.equal(await contador(), '5 de 300')
     await pagina.keyboard.press('z')
     await pagina.waitForTimeout(600)
-    const escalas = await pagina.evaluate(() => [...document.querySelectorAll('.quadro .quadro-moldura')].map((m) => new DOMMatrix(getComputedStyle(m).transform).a))
+    const escalas = await pagina.evaluate(() =>
+      [...document.querySelectorAll('.quadro .quadro-moldura')].map((m) => new DOMMatrix(getComputedStyle(m).transform).a),
+    )
     assert.equal(escalas.length, 2)
     assert.ok(escalas.every((e) => e >= 1.9) && Math.abs(escalas[0] - escalas[1]) < 0.01, `zoom dessincronizado: ${escalas}`)
     await captura(pagina, 'comparar-1440-claro')
@@ -616,7 +701,12 @@ test('tema: troca na hora, persiste ao recarregar e nasce certo (sem piscar)', {
     await captura(pagina, 'grade-1440-escuro')
     await pagina.locator('.trabalho button').click()
     await pagina.waitForSelector('.trabalho .menu-lista')
-    await pagina.waitForFunction(() => document.querySelector('.menu-lista').getAnimations().every((a) => a.playState !== 'running'))
+    await pagina.waitForFunction(() =>
+      document
+        .querySelector('.menu-lista')
+        .getAnimations()
+        .every((a) => a.playState !== 'running'),
+    )
     await captura(pagina, 'menu-1440-escuro')
     await pagina.keyboard.press('Escape')
     await pagina.keyboard.press('Escape')
@@ -643,7 +733,12 @@ test('reduzir movimento: nada anima, nada fica escondido esperando, e tudo conti
       const anel = getComputedStyle(document.querySelector('.simbolo-vivo .simbolo-anel'))
       const raio = getComputedStyle(document.querySelector('.simbolo-vivo .simbolo-raio'))
       const h1 = getComputedStyle(document.querySelector('#app h1'))
-      return { tracejado: anel.strokeDasharray, corte: raio.clipPath, opacidade: h1.opacity, rodando: document.getAnimations().filter((a) => a.playState === 'running').length }
+      return {
+        tracejado: anel.strokeDasharray,
+        corte: raio.clipPath,
+        opacidade: h1.opacity,
+        rodando: document.getAnimations().filter((a) => a.playState === 'running').length,
+      }
     })
     assert.deepEqual(parado, { tracejado: 'none', corte: 'none', opacidade: '1', rodando: 0 })
     await carregar(pagina)
@@ -688,12 +783,28 @@ const alvosPequenos = (pagina) =>
           a = Math.max(a, r.height - cima - baixo)
         }
       }
-      if (l < 43.5 || a < 43.5) ruins.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`)
+      if (l < 43.5 || a < 43.5)
+        ruins.push(
+          `${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.')} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 24)}" ${Math.round(l)}×${Math.round(a)}`,
+        )
     }
     return ruins
   })
 const semRolarDeLado = async (pagina, onde) => {
-  const m = await pagina.evaluate(() => ({ pagina: document.scrollingElement.scrollWidth, janela: innerWidth, largos: [...document.querySelectorAll('#app *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 0.5 && !e.closest('.pilulas--rola') && getComputedStyle(e).position !== 'fixed' && e.getBoundingClientRect().width > 0).map((e) => `${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]}`).slice(0, 5) }))
+  const m = await pagina.evaluate(() => ({
+    pagina: document.scrollingElement.scrollWidth,
+    janela: innerWidth,
+    largos: [...document.querySelectorAll('#app *')]
+      .filter(
+        (e) =>
+          e.getBoundingClientRect().right > innerWidth + 0.5 &&
+          !e.closest('.pilulas--rola') &&
+          getComputedStyle(e).position !== 'fixed' &&
+          e.getBoundingClientRect().width > 0,
+      )
+      .map((e) => `${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]}`)
+      .slice(0, 5),
+  }))
   assert.equal(m.pagina, m.janela, `${onde}: a página rola de lado`)
   assert.deepEqual(m.largos, [], `${onde}: elementos passando da borda`)
 }
@@ -759,7 +870,12 @@ test('celular (390 px): nada rola de lado, os alvos têm 44 px, o dock é a barr
       await semRolarDeLado(pagina, 'estilos')
       await pagina.locator('.trabalho button').tap()
       await pagina.waitForSelector('.trabalho .menu-lista')
-      await pagina.waitForFunction(() => document.querySelector('.menu-lista').getAnimations().every((a) => a.playState !== 'running'))
+      await pagina.waitForFunction(() =>
+        document
+          .querySelector('.menu-lista')
+          .getAnimations()
+          .every((a) => a.playState !== 'running'),
+      )
       assert.deepEqual(await alvosPequenos(pagina), [], 'menu')
       await semRolarDeLado(pagina, 'menu')
       limpo(olho)
@@ -789,7 +905,7 @@ test('o trabalho reabre depois de recarregar: marcas, miniaturas guardadas, a fo
     // volta direto para o trabalho (sem passar pelo início), com o nome, as marcas e a foto em foco
     await pagina.waitForSelector('.foto img', { timeout: ESPERA })
     assert.equal(await pagina.locator('.inicio').count(), 0)
-    assert.equal(await pagina.locator('.trabalho-nome').innerText(), 'Fotos de 13 de novembro')
+    assert.equal(await pagina.locator('.trabalho-nome').innerText(), TRABALHO)
     assert.equal(await contagem(pagina, 'todas'), QUANTAS)
     assert.equal(await contagem(pagina, 'escolhida'), 1)
     assert.equal(await contagem(pagina, 'rejeitada'), 1)
@@ -828,7 +944,7 @@ test('o trabalho reabre depois de recarregar: marcas, miniaturas guardadas, a fo
     await pagina.locator('.trabalho .menu-item', { hasText: 'Fechar' }).click()
     await pagina.waitForSelector('.inicio .recente')
     assert.equal(await pagina.locator('.recente').count(), 1)
-    assert.equal(await pagina.locator('.recente-texto strong').innerText(), 'Fotos de 13 de novembro')
+    assert.equal(await pagina.locator('.recente-texto strong').innerText(), TRABALHO)
     assert.match(await pagina.locator('.recente-texto span').innerText(), /^300 fotos · hoje$/)
     await pagina.waitForFunction(() => document.querySelectorAll('.recente-capa img').length === 4)
     assert.equal(await pagina.locator('#app h1').innerText(), NOME)
@@ -900,6 +1016,249 @@ test('soltar arquivos em qualquer lugar da janela abre o trabalho', { skip: semC
     await pagina.waitForSelector('.aviso')
     assert.equal(await pagina.locator('.aviso').innerText(), 'Nenhuma foto por aqui.')
     assert.equal(await contagem(pagina, 'todas'), 3)
+    limpo(olho)
+  } finally {
+    await contexto.close()
+  }
+})
+
+test('componentes: Controle, Segmentado, Pílulas, Chave, Menu, Estrelas, Progresso, Aviso, pelo teclado e com ARIA', { skip: semChromium }, async () => {
+  const { contexto, pagina, olho } = await abrir()
+  try {
+    // uma mostra montada na própria página, com os componentes de app/componentes (os que as telas vão usar)
+    await pagina.evaluate(async () => {
+      const { html, render, useState } = await import('/app/preact.js')
+      const c = await import('/app/componentes/index.js')
+      window.__mudancas = []
+      function Mostra() {
+        const [v, definir] = useState({ exposicao: 0, contraste: -20, visao: 'grade', pilhas: true, cenas: ['retrato'], estrelas: 2 })
+        const mudar = (k) => (x, extra) => {
+          window.__mudancas.push([k, x, extra?.final ?? null])
+          definir((a) => ({ ...a, [k]: x }))
+        }
+        return html`<div style="display:grid;gap:22px">
+          <h2><span class="fino">Sistema </span><span class="pesado">visual.</span></h2>
+          <${c.Controle} rotulo="Exposição" id="exposicao" valor=${v.exposicao} min=${-5} max=${5} passo=${0.05} aoMudar=${mudar('exposicao')} />
+          <${c.Controle} rotulo="Contraste" id="contraste" valor=${v.contraste} aoMudar=${mudar('contraste')} />
+          <${c.Controle} rotulo="Nitidez" id="nitidez" valor=${40} min=${0} max=${150} neutro=${40} desligado />
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+            <${c.Segmentado} rotulo="Visão" valor=${v.visao} aoMudar=${mudar('visao')} opcoes=${[
+              { valor: 'grade', rotulo: 'Grade' },
+              { valor: 'cenas', rotulo: 'Cenas' },
+              { valor: 'rostos', rotulo: 'Rostos' },
+            ]} />
+            <${c.Chave} rotulo="Empilhar repetidas" ligada=${v.pilhas} aoMudar=${mudar('pilhas')} />
+            <${c.Estrelas} valor=${v.estrelas} aoMudar=${mudar('estrelas')} tamanho=${18} />
+            <${c.Marca} marca="escolhida" /><${c.Marca} marca="rejeitada" /><${c.Ponto} cor="roxo" />
+          </div>
+          <${c.Pilulas} rotulo="Cena" multiplo valor=${v.cenas} aoMudar=${mudar('cenas')} opcoes=${[
+            { valor: 'retrato', rotulo: 'Retrato', contagem: 128 },
+            { valor: 'grupo', rotulo: 'Grupo', contagem: 42 },
+            { valor: 'paisagem', rotulo: 'Paisagem', contagem: 1204 },
+            { valor: 'fora', rotulo: 'Olho fechado', contagem: 4, cor: 'vermelho' },
+          ]} />
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="vidro vidro--tinta" id="principal"><${c.Icone} nome="ok" />Tratar as escolhidas</button>
+            <button class="vidro">Enviar para o cliente</button>
+            <button class="vidro vidro--icone" aria-label="Desfazer" data-dica="Desfazer" data-tecla="⌘Z"><${c.Icone} nome="desfazer" /></button>
+            <${c.Menu} rotulo="Mais" gatilho=${html`<${c.Icone} nome="tres" />`} itens=${[{ rotulo: 'Copiar ajustes', icone: 'trocar', aoEscolher: () => window.__mudancas.push(['menu', 'copiar', null]) }, { rotulo: 'Colar ajustes' }, { divisa: true }, { rotulo: 'Zerar', perigo: true }]} />
+            <span class="ficha"><${c.Icone} nome="info" />Latitude 12,4 EV</span>
+            <${c.Tecla}>P<//>
+          </div>
+          <${c.Progresso} valor=${0.42} rotulo="Analisando" />
+          <${c.Progresso} valor=${null} rotulo="Lendo" />
+          <div style="display:flex;gap:12px"><${c.Esqueleto} largura=${96} altura=${64} raio=${10} /><${c.Esqueleto} largura=${96} altura=${64} raio=${10} /><div style="flex:1;display:grid;gap:8px;align-content:center"><${c.Esqueleto} largura="70%" /><${c.Esqueleto} largura="40%" /></div></div>
+        </div>`
+      }
+      const alvo = Object.assign(document.createElement('div'), { id: 'mostra', className: 'cartao' })
+      alvo.style.cssText = 'position:fixed;z-index:200;top:72px;left:50%;translate:-50% 0;width:560px;padding:28px;max-height:calc(100vh - 96px);overflow:auto'
+      document.body.append(alvo)
+      render(html`<${Mostra} />`, alvo)
+    })
+    const mudancas = () => pagina.evaluate(() => window.__mudancas.splice(0))
+    const valor = (id) => pagina.locator(`#mostra output[for="${id}"]`).innerText()
+
+    // Controle: rótulo ligado ao campo, número tabular, ← → um passo, Shift dez, duplo clique zera, roda só com Alt
+    const exposicao = pagina.locator('#exposicao')
+    assert.equal(await pagina.locator('#mostra label[for="exposicao"]').innerText(), 'Exposição')
+    assert.equal(await valor('exposicao'), '0,00')
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('#mostra .controle-valor')).fontVariantNumeric), 'tabular-nums')
+    await exposicao.focus()
+    await pagina.keyboard.press('ArrowRight')
+    assert.equal(await valor('exposicao'), '+0,05')
+    await pagina.keyboard.press('Shift+ArrowRight')
+    assert.equal(await valor('exposicao'), '+0,55')
+    assert.equal(await exposicao.getAttribute('aria-valuetext'), '+0,55')
+    await pagina.keyboard.press('Shift+ArrowLeft')
+    await pagina.keyboard.press('ArrowLeft')
+    await pagina.keyboard.press('ArrowLeft')
+    assert.equal(await valor('exposicao'), '−0,05')
+    assert.deepEqual(
+      (await mudancas()).map((m) => m[2]),
+      [true, true, true, true, true],
+    )
+    // o trilho acende do neutro até o valor, e o controle mexido fica marcado
+    const trilho = await pagina.evaluate(() => {
+      const el = document.querySelector('#exposicao').closest('.controle')
+      return {
+        de: Number(el.style.getPropertyValue('--de')),
+        ate: Number(el.style.getPropertyValue('--ate')),
+        neutro: Number(el.style.getPropertyValue('--neutro')),
+        mexido: el.hasAttribute('data-mexido'),
+      }
+    })
+    assert.deepEqual(trilho, { de: 0.495, ate: 0.5, neutro: 0.5, mexido: true })
+    await exposicao.hover()
+    await pagina.mouse.wheel(0, -100)
+    assert.equal(await valor('exposicao'), '−0,05')
+    await pagina.keyboard.down('Alt')
+    await pagina.mouse.wheel(0, -100)
+    await pagina.keyboard.up('Alt')
+    assert.equal(await valor('exposicao'), '0,00')
+    await pagina.keyboard.press('Shift+ArrowRight')
+    await exposicao.dblclick()
+    assert.equal(await valor('exposicao'), '0,00')
+    assert.equal(await pagina.evaluate(() => document.querySelector('#exposicao').closest('.controle').hasAttribute('data-mexido')), false)
+    assert.equal(await valor('contraste'), '−20')
+    assert.equal(await pagina.locator('#nitidez').isDisabled(), true)
+    await mudancas()
+
+    // Segmentado: radiogroup com setas e uma só parada de Tab; a marca desliza até o ativo
+    const segmentos = pagina.locator('#mostra .segmentado [role="radio"]')
+    assert.equal(await pagina.locator('#mostra .segmentado').getAttribute('role'), 'radiogroup')
+    assert.deepEqual(await segmentos.evaluateAll((l) => l.map((b) => b.tabIndex)), [0, -1, -1])
+    await segmentos.first().focus()
+    await pagina.keyboard.press('ArrowRight')
+    assert.equal(await segmentos.nth(1).getAttribute('aria-checked'), 'true')
+    assert.equal(await pagina.evaluate(() => document.activeElement.textContent.trim()), 'Cenas')
+    await pagina.keyboard.press('End')
+    assert.equal(await segmentos.nth(2).getAttribute('aria-checked'), 'true')
+    assert.equal(await pagina.locator('#mostra .segmentado-marca').getAttribute('data-pronta'), '')
+    // Chave: um interruptor de verdade
+    const chave = pagina.locator('#mostra .chave input')
+    assert.equal(await chave.getAttribute('role'), 'switch')
+    await chave.focus()
+    await pagina.keyboard.press('Space')
+    assert.equal(await chave.isChecked(), false)
+    // Estrelas: tocar na nota que já está tira
+    await pagina.locator('#mostra button[aria-label="4 estrelas"]').click()
+    assert.equal(await pagina.locator('#mostra button[aria-label="4 estrelas"]').getAttribute('aria-pressed'), 'true')
+    await pagina.locator('#mostra button[aria-label="4 estrelas"]').click()
+    assert.equal(await pagina.locator('#mostra .estrela[data-cheia]').count(), 0)
+    // Pílulas: várias de uma vez, com contagem em milhar
+    await pagina.locator('#mostra .pilula[data-valor="paisagem"]').click()
+    assert.deepEqual(await pagina.locator('#mostra .pilula[aria-pressed="true"]').evaluateAll((l) => l.map((b) => b.dataset.valor)), ['retrato', 'paisagem'])
+    assert.equal(await pagina.locator('#mostra .pilula[data-valor="paisagem"] .pilula-n').innerText(), '1.204')
+    assert.deepEqual(
+      (await mudancas()).map((m) => m.slice(0, 2)),
+      [
+        ['visao', 'cenas'],
+        ['visao', 'rostos'],
+        ['pilhas', false],
+        ['estrelas', 4],
+        ['estrelas', 0],
+        ['cenas', ['retrato', 'paisagem']],
+      ],
+    )
+    // Menu: abre, ↓ anda, Esc fecha e devolve o foco; Enter escolhe
+    const gatilho = pagina.locator('#mostra .menu > button')
+    await gatilho.click()
+    assert.equal(await gatilho.getAttribute('aria-expanded'), 'true')
+    assert.equal(await pagina.evaluate(() => document.activeElement.textContent.trim()), 'Copiar ajustes')
+    await pagina.keyboard.press('ArrowDown')
+    assert.equal(await pagina.evaluate(() => document.activeElement.textContent.trim()), 'Colar ajustes')
+    await pagina.keyboard.press('Escape')
+    assert.equal(await pagina.locator('#mostra .menu-lista').count(), 0)
+    assert.equal(await pagina.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Mais')
+    await pagina.keyboard.press('Enter')
+    await pagina.keyboard.press('Enter')
+    assert.deepEqual(await mudancas(), [['menu', 'copiar', null]])
+    // Progresso e Dica
+    assert.equal(await pagina.locator('#mostra .progresso').first().getAttribute('aria-valuenow'), '42')
+    assert.equal(await pagina.locator('#mostra .progresso').nth(1).getAttribute('aria-valuenow'), null)
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('#mostra [data-dica]'), '::after').content), '"Desfazer  ·  ⌘Z"')
+    // Aviso com desfazer
+    await pagina.evaluate(async () =>
+      (await import('/app/componentes/index.js')).avisar('12 fotos rejeitadas', { desfazer: () => window.__mudancas.push(['desfez', 1, null]) }),
+    )
+    assert.equal(await pagina.locator('.avisos').getAttribute('role'), 'status')
+    assert.equal(await pagina.locator('.aviso span').innerText(), '12 fotos rejeitadas')
+    await pagina.waitForFunction(() =>
+      document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().iterations === Infinity),
+    )
+    await pagina.mouse.move(700, 880)
+    await captura(pagina, 'componentes-claro')
+    await pagina.locator('[data-tema-botao]').click()
+    await pagina.waitForTimeout(500)
+    await captura(pagina, 'componentes-escuro')
+    await pagina.locator('.aviso button').click()
+    assert.deepEqual(await mudancas(), [['desfez', 1, null]])
+    await pagina.waitForSelector('.aviso', { state: 'detached' })
+    // os ícones têm todos o mesmo traço e nenhum nome ficou sem desenho
+    const icones = await pagina.evaluate(async () => {
+      const { NOMES_DE_ICONE } = await import('/app/icones.js')
+      return NOMES_DE_ICONE.length
+    })
+    assert.ok(icones >= 30)
+    limpo(olho)
+  } finally {
+    await contexto.close()
+  }
+})
+
+test('pilhas e nota: o grupo de repetidas vira uma pilha que abre no lugar; a nota e o motivo têm lugar no cartão', { skip: semChromium }, async () => {
+  const { contexto, pagina, olho } = await abrir()
+  try {
+    await pagina.setInputFiles('input[data-escolher]', fotos.arquivos.slice(0, 14))
+    await pagina.waitForFunction(() => document.querySelector('.pilula[data-valor="todas"] .pilula-n')?.textContent.trim() === '14')
+    await naLoja(pagina, (l) => l.ocioso().then(() => true))
+    const ids = await naLoja(pagina, (l) => l.catalogo.itens().map((i) => i.foto.id))
+    // o que a decupagem vai entregar: grupos e a nota com o motivo
+    await naLoja(
+      pagina,
+      (l, ids) => {
+        l.catalogo.definirGrupos([
+          { id: 'g1', fotos: [ids[1], ids[2], ids[3], ids[4]], tipo: 'repetidas' },
+          { id: 'g2', fotos: [ids[8], ids[9]], tipo: 'sequencia' },
+        ])
+        l.catalogo.atualizarVarias([
+          { id: ids[0], magnitude: { total: 91.4, balde: 'fica', motivos: ['Nítida, olhos abertos'] } },
+          { id: ids[3], magnitude: { total: 78, balde: 'fica', motivos: ['A mais nítida de 4'] } },
+          { id: ids[5], magnitude: { total: 22, balde: 'fora', motivos: ['Borrada', 'Estourada'] } },
+        ])
+      },
+      ids,
+    )
+    await pagina.waitForFunction(() => document.querySelectorAll('.foto').length === 10)
+    // a capa da pilha é a de maior nota; o selo diz quantas há
+    const capa = pagina.locator('.foto[data-pilha="fechada"]').first()
+    assert.equal(await capa.getAttribute('data-id'), ids[3])
+    assert.equal((await capa.locator('.selo-pilha').innerText()).trim(), '4')
+    assert.equal(await capa.locator('.selo-pilha').getAttribute('aria-expanded'), 'false')
+    assert.match(await capa.getAttribute('aria-label'), /pilha de 4$/)
+    assert.equal(await capa.locator('.foto-nota').innerText(), '78')
+    assert.equal(await capa.locator('.foto-motivo').innerText(), 'A mais nítida de 4')
+    assert.equal(await pagina.locator(`.foto[data-id="${ids[0]}"] .foto-nota`).innerText(), '91')
+    assert.equal(await pagina.locator(`.foto[data-id="${ids[5]}"] .foto-motivo`).getAttribute('title'), 'Borrada · Estourada')
+    await pagina.locator('.foto').first().click()
+    await pagina.waitForTimeout(500)
+    await captura(pagina, 'pilha-fechada-1440-claro')
+    // abre no lugar: as quatro lado a lado, na ordem, e o selo de fechar na primeira
+    await capa.locator('.selo-pilha').click()
+    await pagina.waitForFunction(() => document.querySelectorAll('.foto[data-pilha="aberta"]').length === 4)
+    assert.deepEqual(await pagina.locator('.foto').evaluateAll((l) => l.slice(0, 6).map((f) => f.dataset.id)), [ids[0], ids[1], ids[2], ids[3], ids[4], ids[5]])
+    assert.deepEqual(await pagina.locator('.foto[data-pilha="aberta"]').evaluateAll((l) => l.map((f) => f.dataset.ponta)), ['inicio', 'meio', 'meio', 'fim'])
+    assert.equal(await pagina.locator('.foto[data-pilha="aberta"] .selo-pilha').count(), 1)
+    await pagina.waitForTimeout(400)
+    await captura(pagina, 'pilha-aberta-1440-claro')
+    // com a nota medida, dá para ordenar por ela; fechar devolve a pilha
+    await pagina.locator('.foto[data-pilha="aberta"] .selo-pilha').click()
+    await pagina.waitForFunction(() => document.querySelectorAll('.foto').length === 10)
+    await pagina.locator('.grade-barra .menu > button[aria-label^="Ordem"]').click()
+    assert.deepEqual(await pagina.locator('.grade-barra .menu-lista [role="menuitemradio"]').allInnerTexts(), ['Captura', 'Nome', 'Nota', 'Inverter'])
+    await pagina.locator('.grade-barra .menu-item', { hasText: 'Nota' }).click()
+    assert.equal(await pagina.locator('.foto').first().getAttribute('data-id'), ids[0])
+    assert.equal(await pagina.locator('.foto').nth(1).getAttribute('data-id'), ids[3])
     limpo(olho)
   } finally {
     await contexto.close()

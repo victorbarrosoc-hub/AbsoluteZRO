@@ -52,7 +52,12 @@ export function deArquivos(arquivos) {
 function lerEntradaAntiga(e, prefixo, nivel, saida) {
   if (e.isFile) {
     if (!formatoDe(e.name)) return Promise.resolve()
-    return new Promise((ok) => e.file((f) => (saida.push(entrada(f, `${prefixo}${e.name}`)), ok()), () => ok()))
+    return new Promise((ok) =>
+      e.file(
+        (f) => (saida.push(entrada(f, `${prefixo}${e.name}`)), ok()),
+        () => ok(),
+      ),
+    )
   }
   if (!e.isDirectory || nivel >= FUNDO || e.name.startsWith('.')) return Promise.resolve()
   const leitor = e.createReader()
@@ -89,7 +94,11 @@ export async function deSolta(transferencia) {
     const entradas = []
     for (const h of resolvidos) {
       if (h.kind === 'directory') for (const e of await dePasta(h)) entradas.push(pastas.length > 1 ? { ...e, caminho: `${h.name}/${e.caminho}` } : e)
-      else if (formatoDe(h.name)) await h.getFile().then((f) => entradas.push(entrada(f)), () => {})
+      else if (formatoDe(h.name))
+        await h.getFile().then(
+          (f) => entradas.push(entrada(f)),
+          () => {},
+        )
     }
     const unica = pastas.length === 1 && resolvidos.length === 1 ? pastas[0] : null
     return { entradas, pasta: unica, nome: unica?.name ?? null }

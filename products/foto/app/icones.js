@@ -17,8 +17,10 @@ const CORPOS = {
   // a Z: o anel com a estrela de 4 pontas às 3 horas
   z: '<circle cx="12" cy="12" r="7.5"/><path d="M19.5 8.8l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z" fill="currentColor" stroke="none"/>',
   // as quatro abas
-  decupar: '<rect x="3.5" y="4.5" width="7" height="7" rx="2"/><rect x="13.5" y="4.5" width="7" height="7" rx="2"/><rect x="3.5" y="14.5" width="7" height="5" rx="2"/><path d="m13.8 17 2.2 2.2 4.2-4.4"/>',
-  revelar: '<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
+  decupar:
+    '<rect x="3.5" y="4.5" width="7" height="7" rx="2"/><rect x="13.5" y="4.5" width="7" height="7" rx="2"/><rect x="3.5" y="14.5" width="7" height="5" rx="2"/><path d="m13.8 17 2.2 2.2 4.2-4.4"/>',
+  revelar:
+    '<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
   estilos: '<path d="m12 3.5 8.5 4.6-8.5 4.6-8.5-4.6Z"/><path d="m3.5 12.4 8.5 4.6 8.5-4.6"/><path d="m3.5 16.4 8.5 4.6 8.5-4.6"/>',
   entregar: '<path d="M20.5 3.5 10 14"/><path d="M20.5 3.5 14 20.5l-4-6.5-6.5-4Z"/>',
   esquerda: '<path d="m14.5 5-7 7 7 7"/>',
@@ -26,7 +28,8 @@ const CORPOS = {
   baixo: '<path d="m6 9.5 6 6 6-6"/>',
   zoom: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M11 8.5v5M8.5 11h5"/>',
   comparar: '<rect x="3.5" y="5" width="7.5" height="14" rx="2.2"/><rect x="13" y="5" width="7.5" height="14" rx="2.2"/>',
-  grade: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/>',
+  grade:
+    '<rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/>',
   ordenar: '<path d="M7 5v14M7 19l-3-3M7 19l3-3M17 19V5M17 5l-3 3M17 5l3 3"/>',
   filtro: '<path d="M4 6.5h16M7 12h10M10 17.5h4"/>',
   tres: '<circle cx="5.5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18.5" cy="12" r="1.2" fill="currentColor"/>',
@@ -43,7 +46,8 @@ const CORPOS = {
   cadeado: '<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   lapis: '<path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19Z"/><path d="m14.5 6.5 3 3"/>',
   lixo: '<path d="M4.5 7h15M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 7l.8 11.2a2 2 0 0 0 2 1.8h5.4a2 2 0 0 0 2-1.8L17.500 7"/>',
-  tamanho: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="4" y="14.5" width="5" height="5" rx="1.6"/><rect x="14.5" y="14.5" width="5" height="5" rx="1.6"/><rect x="14.5" y="6" width="5" height="5" rx="1.6"/>',
+  tamanho:
+    '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="4" y="14.5" width="5" height="5" rx="1.6"/><rect x="14.5" y="14.5" width="5" height="5" rx="1.6"/><rect x="14.5" y="6" width="5" height="5" rx="1.6"/>',
 }
 
 /** Os nomes que existem (para os testes e para quem monta menu). */

@@ -10,7 +10,15 @@ import { ACEITA, formatoDe, juntarPares } from '../src/biblioteca/arquivos.js'
 function fotos(n, extra = () => ({})) {
   return Array.from({ length: n }, (_, i) => {
     const num = String(i + 1).padStart(4, '0')
-    return { nome: `IMG_${num}.CR3`, caminho: `cartao/IMG_${num}.CR3`, tamanho: 20_000_000 + i, tipo: 'raw', formato: 'cr3', exif: { data: `2026-11-13T10:00:${String(i % 60).padStart(2, '0')}`, orientacao: 1 }, ...extra(i) }
+    return {
+      nome: `IMG_${num}.CR3`,
+      caminho: `cartao/IMG_${num}.CR3`,
+      tamanho: 20_000_000 + i,
+      tipo: 'raw',
+      formato: 'cr3',
+      exif: { data: `2026-11-13T10:00:${String(i % 60).padStart(2, '0')}`, orientacao: 1 },
+      ...extra(i),
+    }
   })
 }
 function novo(n = 10, extra) {
@@ -18,7 +26,11 @@ function novo(n = 10, extra) {
   const ids = c.adicionar(fotos(n, extra))
   return { c, ids }
 }
-const nomes = (c) => c.itens().map((i) => i.foto.nome.slice(4, 8)).map(Number)
+const nomes = (c) =>
+  c
+    .itens()
+    .map((i) => i.foto.nome.slice(4, 8))
+    .map(Number)
 
 test('id estável: nome + tamanho + data de captura, sem depender da pasta nem de maiúsculas', () => {
   const a = idDaFoto({ nome: 'IMG_0001.CR3', tamanho: 123, data: '2026-11-13T10:00:00' })
@@ -38,7 +50,10 @@ test('id estável: nome + tamanho + data de captura, sem depender da pasta nem d
 
 test('foto: campos do contrato, valores fora do contrato viram neutros, objeto que não muda', () => {
   const f = criarFoto({ nome: 'a.dng', tamanho: 9, tipo: 'raw', formato: 'DNG', marca: 'talvez', estrelas: 9, cor: 'rosa' })
-  assert.deepEqual({ marca: f.marca, estrelas: f.estrelas, cor: f.cor, formato: f.formato, tipo: f.tipo, caminho: f.caminho }, { marca: null, estrelas: 5, cor: null, formato: 'dng', tipo: 'raw', caminho: 'a.dng' })
+  assert.deepEqual(
+    { marca: f.marca, estrelas: f.estrelas, cor: f.cor, formato: f.formato, tipo: f.tipo, caminho: f.caminho },
+    { marca: null, estrelas: 5, cor: null, formato: 'dng', tipo: 'raw', caminho: 'a.dng' },
+  )
   assert.deepEqual(f.exif, {})
   assert.ok(Object.isFrozen(f))
   assert.equal(criarFoto({ nome: 'b.jpg', tamanho: 1 }).tipo, 'imagem')
@@ -113,7 +128,11 @@ test('atualizar: dados medidos não entram no desfazer e só refazem a lista qua
 })
 
 test('filtros combinam com E: marca, estrelas ≥ n, cor, balde, motivo, cena, tipo', () => {
-  const { c, ids } = novo(12, (i) => ({ tipo: i % 2 ? 'imagem' : 'raw', cena: i < 6 ? 'retrato' : 'paisagem', magnitude: { total: i * 8, balde: i < 4 ? 'fora' : i < 8 ? 'talvez' : 'fica', motivos: i < 4 ? ['Olho fechado'] : ['Nítida'] } }))
+  const { c, ids } = novo(12, (i) => ({
+    tipo: i % 2 ? 'imagem' : 'raw',
+    cena: i < 6 ? 'retrato' : 'paisagem',
+    magnitude: { total: i * 8, balde: i < 4 ? 'fora' : i < 8 ? 'talvez' : 'fica', motivos: i < 4 ? ['Olho fechado'] : ['Nítida'] },
+  }))
   c.marcar(ids.slice(0, 6), 'escolhida')
   c.marcar(ids.slice(10), 'rejeitada')
   c.estrelar(ids.slice(2, 8), 4)
@@ -324,7 +343,10 @@ test('pilhas: grupo fechado mostra a capa; aberto, todas no lugar; a capa é a e
   c.alternarPilha('g1')
   assert.deepEqual(nomes(c), [1, 2, 3, 4, 5, 6, 7])
   assert.deepEqual(
-    c.itens().slice(1, 4).map((i) => i.pilha.posicao),
+    c
+      .itens()
+      .slice(1, 4)
+      .map((i) => i.pilha.posicao),
     [0, 1, 2],
   )
   assert.equal(c.pilhaAberta('g1'), true)
@@ -425,7 +447,8 @@ test('atalhos do Lightroom: teclas viram comandos', () => {
   assert.equal(lerTecla({ key: 'P', getModifierState: (m) => m === 'CapsLock' }).avancar, true)
   // a tabela da folha de atalhos cobre o que o contrato lista
   const mostradas = ATALHOS.flatMap((a) => [...a.teclas, ...(a.ou || [])]).join(' ')
-  for (const tecla of ['P', 'X', 'U', '0', '5', '6', '9', '←', '→', 'Espaço', 'Z', 'G', 'E', 'N', 'Caps Lock', 'Shift']) assert.ok(mostradas.includes(tecla), tecla)
+  for (const tecla of ['P', 'X', 'U', '0', '5', '6', '9', '←', '→', 'Espaço', 'Z', 'G', 'E', 'N', 'Caps Lock', 'Shift'])
+    assert.ok(mostradas.includes(tecla), tecla)
   assert.ok(ATALHOS.every((a) => a.rotulo && a.grupo && a.acao))
 })
 
@@ -499,11 +522,25 @@ test('arquivos: o que é foto, e RAW + JPEG do mesmo nome viram uma só', () => 
   assert.deepEqual(formatoDe('a.JPEG'), { tipo: 'imagem', formato: 'jpg' })
   assert.deepEqual(formatoDe('a.tiff'), { tipo: 'imagem', formato: 'tif' })
   assert.deepEqual(formatoDe('a.heic'), { tipo: 'imagem', formato: 'heic' })
-  for (const fora of ['notas.txt', 'video.mov', '.DS_Store', '._IMG_1.CR3', 'semextensao', 'a.xmp', 'IMG_1.CR3.xmp', '']) assert.equal(formatoDe(fora), null, fora)
-  for (const ext of ['.dng', '.cr2', '.cr3', '.nef', '.arw', '.rw2', '.orf', '.raf', '.pef', '.jpg', '.png', '.webp', '.heic', '.tif']) assert.ok(ACEITA.split(',').includes(ext), ext)
+  for (const fora of ['notas.txt', 'video.mov', '.DS_Store', '._IMG_1.CR3', 'semextensao', 'a.xmp', 'IMG_1.CR3.xmp', ''])
+    assert.equal(formatoDe(fora), null, fora)
+  for (const ext of ['.dng', '.cr2', '.cr3', '.nef', '.arw', '.rw2', '.orf', '.raf', '.pef', '.jpg', '.png', '.webp', '.heic', '.tif'])
+    assert.ok(ACEITA.split(',').includes(ext), ext)
 
   const a = (caminho, tamanho = 1) => ({ nome: caminho.split('/').pop(), caminho, tamanho })
-  const pares = juntarPares([a('c/IMG_1.JPG', 5), a('c/IMG_1.CR3', 30), a('c/IMG_2.CR3'), a('c/img_2.jpg'), a('c/IMG_3.JPG'), a('c/leia.txt'), a('outra/IMG_1.JPG'), a('c/IMG_4.png'), a('c/IMG_4.jpg'), a('c/IMG_5.DNG'), a('c/IMG_5.CR3')])
+  const pares = juntarPares([
+    a('c/IMG_1.JPG', 5),
+    a('c/IMG_1.CR3', 30),
+    a('c/IMG_2.CR3'),
+    a('c/img_2.jpg'),
+    a('c/IMG_3.JPG'),
+    a('c/leia.txt'),
+    a('outra/IMG_1.JPG'),
+    a('c/IMG_4.png'),
+    a('c/IMG_4.jpg'),
+    a('c/IMG_5.DNG'),
+    a('c/IMG_5.CR3'),
+  ])
   assert.deepEqual(
     pares.map((p) => [p.principal.caminho, p.par?.caminho ?? null, p.tipo, p.formato]),
     [

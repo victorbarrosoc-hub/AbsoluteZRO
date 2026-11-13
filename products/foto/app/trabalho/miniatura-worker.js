@@ -17,7 +17,11 @@ const CABECA_DO_ID = 128 * 1024
 const LADO_MINI = 400
 const LADO_PREVIA = 1024
 
-const bytes = (arquivo, inicio, fim) => arquivo.slice(inicio, fim).arrayBuffer().then((b) => new Uint8Array(b))
+const bytes = (arquivo, inicio, fim) =>
+  arquivo
+    .slice(inicio, fim)
+    .arrayBuffer()
+    .then((b) => new Uint8Array(b))
 
 function exifSeguro(dados, total) {
   try {
@@ -61,7 +65,16 @@ function desenhar(fonte, largura, altura, lado, orientacao = 1) {
   const L = tela.width
   const A = tela.height
   // as oito orientações do EXIF como matriz (a, b, c, d, e, f)
-  const m = { 1: [1, 0, 0, 1, 0, 0], 2: [-1, 0, 0, 1, L, 0], 3: [-1, 0, 0, -1, L, A], 4: [1, 0, 0, -1, 0, A], 5: [0, 1, 1, 0, 0, 0], 6: [0, 1, -1, 0, L, 0], 7: [0, -1, -1, 0, L, A], 8: [0, -1, 1, 0, 0, A] }[orientacao] || [1, 0, 0, 1, 0, 0]
+  const m = {
+    1: [1, 0, 0, 1, 0, 0],
+    2: [-1, 0, 0, 1, L, 0],
+    3: [-1, 0, 0, -1, L, A],
+    4: [1, 0, 0, -1, 0, A],
+    5: [0, 1, 1, 0, 0, 0],
+    6: [0, 1, -1, 0, L, 0],
+    7: [0, -1, -1, 0, L, A],
+    8: [0, -1, 1, 0, 0, A],
+  }[orientacao] || [1, 0, 0, 1, 0, 0]
   c.setTransform(...m)
   c.drawImage(fonte, 0, 0, deitada ? A : L, deitada ? L : A)
   return tela
@@ -145,7 +158,12 @@ servir({
     if (!r.previa) return null
     const dela = exifSeguro(r.previa.jpeg.subarray(0, 128 * 1024), r.previa.jpeg.length).orientacao || 1
     // copia: a vista aponta para o pedaço lido do arquivo
-    return { blob: new Blob([r.previa.jpeg.slice()], { type: 'image/jpeg' }), orientacao: dela === 1 ? r.exif.orientacao || 1 : 1, largura: r.previa.largura, altura: r.previa.altura }
+    return {
+      blob: new Blob([r.previa.jpeg.slice()], { type: 'image/jpeg' }),
+      orientacao: dela === 1 ? r.exif.orientacao || 1 : 1,
+      largura: r.previa.largura,
+      altura: r.previa.altura,
+    }
   },
 
   async pixels({ blob, lado }) {

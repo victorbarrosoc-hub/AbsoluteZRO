@@ -29,10 +29,22 @@ export function AcoesDeAbrir({ loja, aoEscolher, grande = true }) {
   const comPasta = loja.temPasta()
   const tamanho = grande ? 'vidro--grande' : ''
   return html`<div class="inicio-acoes">
-    ${comPasta
-      ? html`<button type="button" class=${cx('vidro vidro--tinta', tamanho)} data-acao="abrir-pasta" onClick=${() => loja.abrirPasta()}><${Icone} nome="pasta" />Abrir pasta</button>`
-      : null}
-    <button type="button" class=${cx('vidro', !comPasta && 'vidro--tinta', tamanho)} data-acao="escolher-fotos" onClick=${aoEscolher}><${Icone} nome="fotos" />Escolher fotos</button>
+    ${
+      comPasta
+        ? html`<button
+          type="button"
+          class=${cx('vidro vidro--tinta', tamanho)}
+          data-acao="abrir-pasta"
+          onClick=${() => loja.abrirPasta()}
+        ><${Icone} nome="pasta" />Abrir pasta</button>`
+        : null
+    }
+    <button
+      type="button"
+      class=${cx('vidro', !comPasta && 'vidro--tinta', tamanho)}
+      data-acao="escolher-fotos"
+      onClick=${aoEscolher}
+    ><${Icone} nome="fotos" />Escolher fotos</button>
   </div>`
 }
 
@@ -51,7 +63,12 @@ function Capa({ ids }) {
       criadas.forEach((u) => URL.revokeObjectURL(u))
     }
   }, [ids.join(',')])
-  return html`<div class="recente-capa" data-fotos=${urls.length || 1}>${urls.length ? urls.map((u) => html`<img src=${u} alt="" decoding="async" draggable=${false} />`) : html`<span></span>`}</div>`
+  return html`<div class="recente-capa" data-fotos=${urls.length || 1}>${urls.length ? urls.map((u) => html`<img
+    src=${u}
+    alt=""
+    decoding="async"
+    draggable=${false}
+  />`) : html`<span></span>`}</div>`
 }
 
 /** Os trabalhos guardados neste aparelho. `aoAbrir(id)` depois de abrir (para fechar a folha, por exemplo). */
@@ -80,7 +97,12 @@ export function Recentes({ loja, aoAbrir, menos }) {
                 aoAbrir?.(t.id)
               }}
             ></button>
-            <${Menu} rotulo=${`Mais sobre ${t.nome}`} lado="direita" gatilho=${html`<${Icone} nome="tres" />`} itens=${[{ rotulo: 'Tirar da lista', icone: 'lixo', perigo: true, aoEscolher: () => loja.esquecer(t.id).then(carregar) }]} />
+            <${Menu}
+              rotulo=${`Mais sobre ${t.nome}`}
+              lado="direita"
+              gatilho=${html`<${Icone} nome="tres" />`}
+              itens=${[{ rotulo: 'Tirar da lista', icone: 'lixo', perigo: true, aoEscolher: () => loja.esquecer(t.id).then(carregar) }]}
+            />
           </article>`,
       )}
     </div>
@@ -97,13 +119,15 @@ export function Inicio({ loja, aoEscolher }) {
       <${Simbolo} vivo />
       <h1>${NOME}</h1>
       <p class="inicio-assinatura">${ASSINATURA}</p>
-      ${abrindo
-        ? html`<div class="inicio-lendo" role="status">
+      ${
+        abrindo
+          ? html`<div class="inicio-lendo" role="status">
             <${Progresso} valor=${lendo?.total ? lendo.feitas / lendo.total : null} rotulo="Lendo as fotos" />
             <span>${lendo?.total ? html`<${Numero} valor=${lendo.total} /> ${lendo.total === 1 ? 'foto' : 'fotos'}` : 'Lendo a pasta'}</span>
           </div>`
-        : html`<${AcoesDeAbrir} loja=${loja} aoEscolher=${aoEscolher} />
-            <span class="ficha inicio-nota"><${Icone} nome="cadeado" />Nada sai deste aparelho</span>`}
+          : html`<${AcoesDeAbrir} loja=${loja} aoEscolher=${aoEscolher} />
+            <span class="ficha inicio-nota"><${Icone} nome="cadeado" />Nada sai deste aparelho</span>`
+      }
     </section>
     ${abrindo ? null : html`<${Recentes} loja=${loja} />`}
   </div>`

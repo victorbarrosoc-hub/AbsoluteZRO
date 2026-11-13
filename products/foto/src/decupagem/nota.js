@@ -58,7 +58,7 @@ export const PARAMETROS = Object.freeze({
   // foco: 0 em q = 0,52 (o piso de uma imagem toda borrada, que é ruído) e 100 no topo (0,75, ou o do ensaio)
   qPiso: 0.52,
   qTopo: 0.75,
-  qTopoMinimo: 0.6, // a calibração não desce o topo abaixo do limiar de "borrada": ensaio todo fora de foco não vira nítido
+  qTopoMinimo: 0.65, // a calibração não desce o topo abaixo do meio da faixa "leve": ensaio todo fora de foco não vira nítido
   calibrarCom: 12, // mínimo de fotos para a calibração valer
   // exposição: pontos por ponto percentual de área, acima da tolerância
   altas: { tolerancia: 1, custo: 4 }, // um canal estourado (perde cor)
@@ -131,7 +131,8 @@ function percentilDe(ordenados, p) {
 /**
  * Calibração dentro do ensaio. Junta o q de foco de todas as fotos e tira a régua: o `topo` (q que vale 100) passa
  * a ser o percentil 90 do ensaio, nunca acima do de fábrica (ensaio todo nítido não fica mais exigente) nem abaixo
- * do limiar de borrada. Com menos de 12 fotos não há ensaio para calibrar: vale a régua de fábrica.
+ * de 0,65 (com isso o teto de fora de foco, que na régua de fábrica começa em q = 0,60, nunca recua para menos de
+ * 0,565). Com menos de 12 fotos não há ensaio para calibrar: vale a régua de fábrica.
  * `posto(q)` diz a fração do ensaio que é menos nítida que q.
  */
 export function calibrar(fotos) {
@@ -287,7 +288,9 @@ export function avaliar(sinais, opcoes = {}) {
   const tremidaForte = tremida && b.comprimento >= LIMIARES.comprimentoForte
 
   // pessoas, exposição e ruído
-  const pessoas = comGente ? componentePessoas(sinais, { olhosContam: ensaio.olhosContam, pesosDoRosto: pesos.rosto, focoDoRosto: foco.origem === 'quadro' ? null : F }) : null
+  const pessoas = comGente
+    ? componentePessoas(sinais, { olhosContam: ensaio.olhosContam, pesosDoRosto: pesos.rosto, focoDoRosto: foco.origem === 'quadro' ? null : F })
+    : null
   const exposicao = componenteExposicao(sinais, noite)
   const R = 100 * limitar(1 - (m.ruido - P.ruidoLimpo) / P.ruidoFaixa)
 
@@ -325,7 +328,14 @@ export function avaliar(sinais, opcoes = {}) {
       if (F < 70) motivos.push({ texto: MOTIVOS.focoSuave(), peso: perdidos('foco') })
       else {
         const g = sinais.grupo
-        const texto = g?.maisNitida && g.tamanho >= 2 ? MOTIVOS.maisNitida(g.tamanho) : foco.origem === 'olhos' ? MOTIVOS.olhosNitidos() : foco.origem === 'rosto' ? MOTIVOS.rostoNitido() : MOTIVOS.nitida()
+        const texto =
+          g?.maisNitida && g.tamanho >= 2
+            ? MOTIVOS.maisNitida(g.tamanho)
+            : foco.origem === 'olhos'
+              ? MOTIVOS.olhosNitidos()
+              : foco.origem === 'rosto'
+                ? MOTIVOS.rostoNitido()
+                : MOTIVOS.nitida()
         motivos.push({ texto, peso: ganhos('foco') })
       }
     }
@@ -333,7 +343,8 @@ export function avaliar(sinais, opcoes = {}) {
 
   if (pessoas) {
     if (pessoas.fechados > 0 && !pessoas.perdoados) teto('olhosFechados', MOTIVOS.olhosFechados(pessoas.fechados, pessoas.lidos))
-    else if (pessoas.fechados > 0) motivos.push({ texto: pessoas.doMomento ? MOTIVOS.olhosFechadosDoMomento() : MOTIVOS.olhosNaoContam(), peso: 0.2 * peso('pessoas') })
+    else if (pessoas.fechados > 0)
+      motivos.push({ texto: pessoas.doMomento ? MOTIVOS.olhosFechadosDoMomento() : MOTIVOS.olhosNaoContam(), peso: 0.2 * peso('pessoas') })
     else if (pessoas.parciais > 0) motivos.push({ texto: MOTIVOS.piscando(pessoas.parciais, pessoas.lidos), peso: perdidos('pessoas') })
     else if (pessoas.lidos > 0 && pessoas.valor != null) {
       motivos.push({ texto: pessoas.sorrindo ? MOTIVOS.sorrindo(pessoas.lidos) : MOTIVOS.olhosAbertos(pessoas.lidos), peso: ganhos('pessoas') })
@@ -360,7 +371,7 @@ export function avaliar(sinais, opcoes = {}) {
   if (balde === 'fora' && sinais.unica === true) {
     balde = 'talvez'
     protegida = true
-    motivos.push({ texto: MOTIVOS.unica(), peso: 900 })
+    motivos.push({ texto: MOTIVOS.unica(), peso: 2000 }) // vem antes do teto: é o que explica o balde
   }
 
   // certeza: cada coisa que não deu para ler tira um degrau
@@ -379,7 +390,8 @@ export function avaliar(sinais, opcoes = {}) {
   // dicas: não mexem na nota
   const dicas = []
   const h = m.horizonte
-  if (h && h.forca >= P.horizonte.forca && P.horizonte.cenas.includes(cena) && Math.abs(h.angulo) >= P.horizonte.min && Math.abs(h.angulo) <= P.horizonte.max) dicas.push(DICAS.horizonte(h.angulo))
+  if (h && h.forca >= P.horizonte.forca && P.horizonte.cenas.includes(cena) && Math.abs(h.angulo) >= P.horizonte.min && Math.abs(h.angulo) <= P.horizonte.max)
+    dicas.push(DICAS.horizonte(h.angulo))
   if (principal?.cortado) dicas.push(DICAS.rostoCortado())
 
   motivos.sort((x, y) => y.peso - x.peso)
@@ -420,7 +432,12 @@ export function protegerCobertura(magnitudes, grupos = [], ids = null) {
   const subir = (id, texto) => {
     const mg = saida.get(id)
     if (!mg || mg.balde !== 'fora') return
-    saida.set(id, { ...mg, balde: 'talvez', motivos: [texto, ...mg.motivos.filter((t) => t !== texto)].slice(0, 3), detalhe: { ...mg.detalhe, protegida: true } })
+    saida.set(id, {
+      ...mg,
+      balde: 'talvez',
+      motivos: [texto, ...mg.motivos.filter((t) => t !== texto)].slice(0, 3),
+      detalhe: { ...mg.detalhe, protegida: true },
+    })
   }
   const emGrupo = new Set()
   for (const g of grupos) {
@@ -449,7 +466,9 @@ export function protegerCobertura(magnitudes, grupos = [], ids = null) {
  */
 export function meta(fotos, n, { grupos = null } = {}) {
   const P = PARAMETROS.novidade
-  const lista = (Array.isArray(fotos) ? fotos : []).filter((f) => f && typeof f.magnitude?.total === 'number').map((f, entrada) => ({ id: f.id, total: f.magnitude.total, entrada, valor: f.magnitude.total }))
+  const lista = (Array.isArray(fotos) ? fotos : [])
+    .filter((f) => f && typeof f.magnitude?.total === 'number')
+    .map((f, entrada) => ({ id: f.id, total: f.magnitude.total, entrada, valor: f.magnitude.total }))
   const porId = new Map(lista.map((f) => [f.id, f]))
   for (const g of grupos ?? []) {
     const fator = g.tipo === 'repetidas' ? P.repetidas : P.sequencia
@@ -522,9 +541,7 @@ function contextoDoGrupo(grupo, porId) {
   const fotos = grupo.fotos.map((id) => porId.get(id)).filter(Boolean)
   // olhos fechados em todas: em cada foto com olhos lidos, TODAS as pessoas-chave estão de olhos fechados, e são
   // pelo menos duas fotos assim (uma só pode ser piscada)
-  const comOlhos = fotos
-    .map((f) => pessoasChave(f.rostos).chaves.filter((r) => r.olhos in VALOR_DOS_OLHOS))
-    .filter((lidos) => lidos.length)
+  const comOlhos = fotos.map((f) => pessoasChave(f.rostos).chaves.filter((r) => r.olhos in VALOR_DOS_OLHOS)).filter((lidos) => lidos.length)
   const olhosFechadosEmTodas = comOlhos.length >= 2 && comOlhos.every((lidos) => lidos.every((r) => r.olhos === 'fechados'))
   // a mais nítida: só quando ganha da segunda por mais que o ruído da medida
   const focos = fotos.map((f) => ({ id: f.id, q: focoDaFoto(f).q })).filter((x) => x.q != null)
@@ -556,8 +573,15 @@ export function avaliarEnsaio(fotos, opcoes = {}) {
     id: g.id,
     fotos: g.fotos,
     tipo: g.tipo,
-    ...escolherNoGrupo(g.fotos.map((id) => ({ id, magnitude: magnitudes.get(id) })).filter((x) => x.magnitude), { margem: opcoes.margem ?? MARGEM_DE_ERRO }),
+    ...escolherNoGrupo(
+      g.fotos.map((id) => ({ id, magnitude: magnitudes.get(id) })).filter((x) => x.magnitude),
+      { margem: opcoes.margem ?? MARGEM_DE_ERRO },
+    ),
   }))
-  magnitudes = protegerCobertura(magnitudes, grupos, lista.map((f) => f.id))
+  magnitudes = protegerCobertura(
+    magnitudes,
+    grupos,
+    lista.map((f) => f.id),
+  )
   return { magnitudes, grupos, referencia }
 }

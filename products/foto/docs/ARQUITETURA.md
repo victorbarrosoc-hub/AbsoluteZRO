@@ -32,7 +32,7 @@ Contrato entre os módulos. Mudou um contrato, mude aqui primeiro. Decisão em
 src/            núcleo sem DOM, ESM puro, roda igual em Node e no navegador (é o que os testes cobrem)
   raw/          ler o arquivo: negativo.js (contrato), libraw.js, dng.js, previa.js, exif.js, latitude.js
   motor/        Latitude: ajustes.js (contrato), base.js, ponto.js, local.js, tela.js, revelar.js, auto.js, cor/, gpu/
-  decupagem/    Magnitude: medidas.js, rostos.js, cena.js, grupos.js, nota.js
+  decupagem/    Magnitude: medidas.js, fft.js, rostos.js, cena.js, grupos.js, nota.js, textos.js
   estilo/       predefinicao.js, biblioteca.js, lightroom-ler.js, lightroom-escrever.js, lrtemplate.js, cube.js,
                 look.js, referencia.js, por-foto.js, qc.js
   exportar/     jpeg.js, tiff.js, png.js, icc.js, xmp.js, nome.js, fila.js
@@ -141,18 +141,31 @@ mesmos números que a GPU recebe. `gpu/` (WebGL2) é espelho do JS; o teste trav
 Entrada: a prévia (JPEG embutido ou a foto reduzida a 1024 px no lado maior) como `{ largura, altura, rgba }`.
 
 ```
-medir(previa) → Medidas { nitidez: { q, s0, s1, mapa }, borrao: { tipo: 'nenhum' | 'foco' | 'movimento', comprimento?, angulo? },
-                         exposicao: { altas, altas3, baixas, p1, p50, p99 }, ruido, dhash, phash, horizonte? }
-analisarRostos(deteccoes, luma) → [{ caixa, olhos: 'abertos' | 'parcial' | 'fechados' | 'sorrindo', ear, nitidezOlhos, peso }]
-classificarCena({ rostos, objetos, rotulos, medidas }) → 'retrato' | 'grupo' | 'pessoas' | 'animal' | 'natureza' | 'paisagem' |
-                                                         'comida' | 'arquitetura' | 'produto' | 'documento' | 'noturna' | 'outra'
-agrupar(fotos) → [{ id, fotos: [id], tipo: 'repetidas' | 'sequencia' }]
-avaliar(sinais, { rigor }) → Magnitude { total, estrelas, balde: 'fica' | 'talvez' | 'fora', motivos: [texto], componentes, confianca }
+medir(previa) → Medidas { largura, altura, nitidez: { q, s0, s1, qLocal, mapa: { colunas, linhas, bloco, valores } },
+                         borrao: { tipo: 'nenhum' | 'foco' | 'movimento', grau: 'nenhum' | 'leve' | 'forte', comprimento?, angulo?, cepstro },
+                         exposicao: { altas, altas3, baixas, p1, p50, p99, media }, ruido, dhash, phash, horizonte: { angulo, forca } | null }
+analisarRostos(deteccoes, luma) → [{ caixa, olhos: 'abertos' | 'parcial' | 'fechados' | 'sorrindo' | null, ear, nitidezOlhos, nitidezRosto,
+                                     razaoFundo, focoErrado, sorriso, peso, chave, principal, cortado }]
+classificarCena({ rostos, objetos, rotulos, medidas }) → { cena: 'retrato' | 'grupo' | 'pessoas' | 'animal' | 'natureza' | 'paisagem' | 'comida' |
+                                                           'arquitetura' | 'produto' | 'documento' | 'noturna' | 'outra', confianca, porque, noite }
+agrupar(fotos) → [{ id, fotos: [id], tipo: 'repetidas' | 'sequencia', escolhida, reservas, equivalentes, desempate }]
+avaliar(sinais, { rigor, ensaio, pesos, referencia }) → Magnitude { total, estrelas, balde: 'fica' | 'talvez' | 'fora', motivos: [texto],
+                                                                    componentes: { foco, pessoas, exposicao, ruido }, confianca, incertezas, dicas, detalhe }
+avaliarEnsaio(fotos, opcoes) → { magnitudes: Map(id → Magnitude), grupos, referencia }   // calibra, agrupa, avalia, escolhe e protege a cobertura
+calibrar(fotos) → referencia · protegerCobertura(magnitudes, grupos) · meta(fotos, n, { grupos }) · ajustarPesos(pesos, trocas)
 ```
 
-`sinais` junta medidas, rostos, cena, exif e, quando o RAW já foi lido, a `Latitude`: exposição estourada só reprova
-quando o dado do sensor está perdido. Camadas de visão (rosto e olhos; objetos e animais; rótulos de cena) rodam em
-`app/decupagem/visao-worker.js` com MediaPipe; sem elas a nota sai só com o que foi medido, e a tela diz isso.
+`sinais` junta medidas, rostos, cena, exif, `tipo` e, quando o RAW já foi lido, a `Latitude`: exposição estourada só
+reprova quando o dado do sensor está perdido (três canais); canal recuperável vira aviso. `exposicao.altas`, `altas3` e
+`baixas` são fração da área (0 a 1); `dhash` e `phash` são 16 dígitos hexadecimais. Quem decide a classe de nitidez é
+`qLocal` (o q das partes mais nítidas); `q` é a medida de percentis. O que não deu para medir sai `null`. O `cena` do
+catálogo é `classificarCena(...).cena`. Todos os textos (motivos, cenas, baldes) moram em `textos.js`.
+
+Detecção que o worker entrega por rosto: `{ caixa: { x, y, largura, altura } em px da prévia, confianca?, olhos?: [{ x, y },
+{ x, y }] em px da prévia, malha?: 478 pontos em unidade isotrópica, blendshapes?: { nome: valor } }`. Objetos:
+`[{ classe, confianca }]` (COCO). Rótulos: `[{ nome, confianca, indice? }]` (ImageNet). Camadas de visão (rosto e olhos;
+objetos e animais; rótulos de cena) rodam em `app/decupagem/visao-worker.js` com MediaPipe; sem elas (`rostos` undefined)
+a nota sai só com o que foi medido, a certeza cai, e a tela diz isso.
 
 ### Catálogo (`src/biblioteca/catalogo.js`)
 

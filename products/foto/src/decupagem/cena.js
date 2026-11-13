@@ -44,8 +44,41 @@ export const OBJETOS_DE_ANIMAL = Object.freeze(['bird', 'cat', 'dog', 'horse', '
 
 /** Classes COCO que apoiam uma cena (não decidem sozinhas: um copo na mesa não faz da foto uma foto de comida). */
 export const OBJETOS_DE_APOIO = Object.freeze({
-  comida: ['banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'bowl', 'fork', 'knife', 'spoon', 'wine glass', 'cup'],
-  produto: ['bottle', 'handbag', 'backpack', 'suitcase', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'book', 'clock', 'vase', 'scissors', 'hair drier', 'toothbrush'],
+  comida: [
+    'banana',
+    'apple',
+    'sandwich',
+    'orange',
+    'broccoli',
+    'carrot',
+    'hot dog',
+    'pizza',
+    'donut',
+    'cake',
+    'bowl',
+    'fork',
+    'knife',
+    'spoon',
+    'wine glass',
+    'cup',
+  ],
+  produto: [
+    'bottle',
+    'handbag',
+    'backpack',
+    'suitcase',
+    'laptop',
+    'mouse',
+    'remote',
+    'keyboard',
+    'cell phone',
+    'book',
+    'clock',
+    'vase',
+    'scissors',
+    'hair drier',
+    'toothbrush',
+  ],
 })
 
 /** Os 398 primeiros rótulos do ImageNet-1k (índices 0 a 397, de 'tench' a 'puffer') são todos animais. */

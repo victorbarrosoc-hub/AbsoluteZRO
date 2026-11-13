@@ -58,12 +58,14 @@ function PainelDaZ() {
     }
   }, [])
   return html`<div class="z-lugar" ref=${lugar}>
-    ${aviso
-      ? html`<div class="z-aviso" role="status">
+    ${
+      aviso
+        ? html`<div class="z-aviso" role="status">
           <span>${aviso.texto}</span>
           ${aviso.entrar ? html`<a class="vidro vidro--tinta" href="/api/zro/entrar?volta=%2F">Entrar com Absolute ZRO</a>` : null}
         </div>`
-      : null}
+        : null
+    }
   </div>`
 }
 
@@ -82,7 +84,16 @@ export function AnelDaZ({ conta }) {
     return () => (vivo = false)
   }, [dentro])
   if (!existe) return null
-  return html`<button type="button" class="liso topo-z" aria-label="Z, a IA da Absolute ZRO" aria-haspopup="dialog" aria-expanded=${aberta ? 'true' : 'false'} data-dica="Z" data-dica-lado="esquerda" onClick=${() => definirAberta(true)}>
+  return html`<button
+    type="button"
+    class="liso topo-z"
+    aria-label="Z, a IA da Absolute ZRO"
+    aria-haspopup="dialog"
+    aria-expanded=${aberta ? 'true' : 'false'}
+    data-dica="Z"
+    data-dica-lado="esquerda"
+    onClick=${() => definirAberta(true)}
+  >
       <${Icone} nome="z" />
     </button>
     <${Folha} aberta=${aberta} aoFechar=${() => definirAberta(false)} titulo="Z" largura=${760} classe="folha-z">${aberta ? html`<${PainelDaZ} />` : null}<//>`

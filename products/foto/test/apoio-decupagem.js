@@ -86,30 +86,26 @@ function separavel(img, nucleo) {
   const meio = (nucleo.length - 1) >> 1
   const tmp = new Float32Array(dados.length)
   const saida = novaImagem(W, H)
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  // uma direção por vez; `passo` é a distância entre vizinhos (3 valores na horizontal, uma linha na vertical)
+  const passar = (de, para, n, outros, passo, salto) => {
+    for (let o = 0; o < outros; o++) {
       for (let c = 0; c < 3; c++) {
-        let s = 0
-        for (let k = 0; k < nucleo.length; k++) {
-          const xx = Math.min(W - 1, Math.max(0, x + k - meio))
-          s += nucleo[k] * dados[(y * W + xx) * 3 + c]
+        const base = o * salto + c
+        for (let i = 0; i < n; i++) {
+          let s = 0
+          if (i >= meio && i < n - meio) {
+            let p = base + (i - meio) * passo
+            for (let k = 0; k < nucleo.length; k++, p += passo) s += nucleo[k] * de[p]
+          } else {
+            for (let k = 0; k < nucleo.length; k++) s += nucleo[k] * de[base + Math.min(n - 1, Math.max(0, i + k - meio)) * passo]
+          }
+          para[base + i * passo] = s
         }
-        tmp[(y * W + x) * 3 + c] = s
       }
     }
   }
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      for (let c = 0; c < 3; c++) {
-        let s = 0
-        for (let k = 0; k < nucleo.length; k++) {
-          const yy = Math.min(H - 1, Math.max(0, y + k - meio))
-          s += nucleo[k] * tmp[(yy * W + x) * 3 + c]
-        }
-        saida.dados[(y * W + x) * 3 + c] = s
-      }
-    }
-  }
+  passar(dados, tmp, W, H, 3, W * 3)
+  passar(tmp, saida.dados, H, W, W * 3, 3)
   return saida
 }
 

@@ -386,8 +386,18 @@ export function criarCatalogo(inicial) {
       return itens.map((i) => i.id)
     },
     /** 'escolhida' | 'rejeitada' | null */
-    marcar: (ids, marca) => api.definir(ids, { marca: MARCAS.includes(marca) ? marca : null }, { rotulo: marca === 'escolhida' ? 'Escolhida' : marca === 'rejeitada' ? 'Rejeitada' : 'Sem marca' }),
-    estrelar: (ids, n) => api.definir(ids, { estrelas: n }, { rotulo: estrelasValidas(n) ? `${estrelasValidas(n)} ${estrelasValidas(n) === 1 ? 'estrela' : 'estrelas'}` : 'Sem estrelas' }),
+    marcar: (ids, marca) =>
+      api.definir(
+        ids,
+        { marca: MARCAS.includes(marca) ? marca : null },
+        { rotulo: marca === 'escolhida' ? 'Escolhida' : marca === 'rejeitada' ? 'Rejeitada' : 'Sem marca' },
+      ),
+    estrelar: (ids, n) =>
+      api.definir(
+        ids,
+        { estrelas: n },
+        { rotulo: estrelasValidas(n) ? `${estrelasValidas(n)} ${estrelasValidas(n) === 1 ? 'estrela' : 'estrelas'}` : 'Sem estrelas' },
+      ),
     colorir: (ids, cor) => api.definir(ids, { cor: CORES.includes(cor) ? cor : null }, { rotulo: CORES.includes(cor) ? `Cor: ${cor}` : 'Sem cor' }),
 
     get podeDesfazer() {
@@ -442,7 +452,17 @@ export function criarCatalogo(inicial) {
     contagens() {
       garantir()
       if (cacheContagens) return cacheContagens
-      const c = { total: fotos.size, visiveis: cacheVisiveis.length, marca: { escolhida: 0, rejeitada: 0, sem: 0 }, estrelas: [0, 0, 0, 0, 0, 0], cor: { sem: 0 }, balde: { fica: 0, talvez: 0, fora: 0, sem: 0 }, cena: {}, tipo: { raw: 0, imagem: 0 }, motivo: {} }
+      const c = {
+        total: fotos.size,
+        visiveis: cacheVisiveis.length,
+        marca: { escolhida: 0, rejeitada: 0, sem: 0 },
+        estrelas: [0, 0, 0, 0, 0, 0],
+        cor: { sem: 0 },
+        balde: { fica: 0, talvez: 0, fora: 0, sem: 0 },
+        cena: {},
+        tipo: { raw: 0, imagem: 0 },
+        motivo: {},
+      }
       for (const k of CORES) c.cor[k] = 0
       for (const f of fotos.values()) {
         c.marca[f.marca ?? 'sem']++
@@ -622,7 +642,6 @@ export function criarCatalogo(inicial) {
   }
 
   function avisarDados(ids, campos) {
-    cacheContagens = null
     if (campos.some((c) => DA_LISTA.has(c))) listaMudou({ tipo: 'dados', ids, campos })
     else emitir({ tipo: 'dados', ids, campos, lista: false })
   }

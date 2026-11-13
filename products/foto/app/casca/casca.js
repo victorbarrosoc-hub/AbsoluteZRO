@@ -34,9 +34,7 @@ const CARREGAR = {
   entregar: () => import('../telas/entregar/index.js'),
 }
 
-const ATALHOS_DA_CASCA = [
-  { grupo: 'Ver', teclas: ['⌘', 'Alt', '1', '–', '4'], rotulo: 'Trocar de etapa' },
-]
+const ATALHOS_DA_CASCA = [{ grupo: 'Ver', teclas: ['⌘', 'Alt', '1', '–', '4'], rotulo: 'Trocar de etapa' }]
 
 /** As miniaturas sendo feitas por trás: um anel discreto ao lado do nome. */
 function Andamento({ loja }) {
@@ -44,10 +42,16 @@ function Andamento({ loja }) {
   useEffect(() => loja.miniaturas.assinarProgresso(definir), [loja])
   const lendo = usarLoja(loja, (l) => l.lendo())
   if (lendo?.total) {
-    return html`<span class="topo-andamento" role="status" aria-label="Lendo as fotos"><${ProgressoAnel} valor=${lendo.feitas / lendo.total} rotulo="Lendo as fotos" /><span><${Numero} valor=${lendo.total} /></span></span>`
+    return html`<span class="topo-andamento" role="status" aria-label="Lendo as fotos"><${ProgressoAnel}
+      valor=${lendo.feitas / lendo.total}
+      rotulo="Lendo as fotos"
+    /><span><${Numero} valor=${lendo.total} /></span></span>`
   }
   if (!p.total || p.feitas >= p.total) return null
-  return html`<span class="topo-andamento" title="Preparando as miniaturas"><${ProgressoAnel} valor=${p.feitas / p.total} rotulo="Preparando as miniaturas" /></span>`
+  return html`<span class="topo-andamento" title="Preparando as miniaturas"><${ProgressoAnel}
+    valor=${p.feitas / p.total}
+    rotulo="Preparando as miniaturas"
+  /></span>`
 }
 
 function Trabalhos({ loja, aberta, aoFechar, aoEscolher }) {
@@ -90,11 +94,16 @@ function Renomear({ loja, aberta, aoFechar }) {
 /** Uma aba do painel: a tela carregada sob demanda, que fica montada depois da primeira visita. */
 function Aba({ nome, ativa, loja, Tela, falhou, aoTentar }) {
   return html`<section class="painel-aba" hidden=${!ativa} data-tela=${nome} aria-label=${ABAS.find((a) => a.id === nome)?.rotulo}>
-    ${Tela
-      ? html`<${Tela} loja=${loja} ativa=${ativa} />`
-      : falhou
-        ? html`<div class="tela"><${Vazio} icone="aviso" titulo=${['Não deu', 'para abrir.']}><button type="button" class="vidro" onClick=${aoTentar}>Tentar de novo</button><//></div>`
-        : null}
+    ${
+      Tela
+        ? html`<${Tela} loja=${loja} ativa=${ativa} />`
+        : falhou
+          ? html`<div class="tela"><${Vazio}
+            icone="aviso"
+            titulo=${['Não deu', 'para abrir.']}
+          ><button type="button" class="vidro" onClick=${aoTentar}>Tentar de novo</button><//></div>`
+          : null
+    }
   </section>`
 }
 
@@ -224,11 +233,19 @@ export function Casca({ loja, tema, lerConta }) {
 
   return html`<header class=${cx('topo', noPalco && 'sobre-palco')} data-com-dock=${aberto ? '' : undefined}>
       <div class="topo-esq">
-        <button type="button" class="liso assinatura" aria-label=${aberto ? 'Seus trabalhos' : NOME} data-dica=${aberto ? 'Trabalhos' : undefined} data-dica-lado="direita" onClick=${() => aberto && definirFolha('trabalhos')}>
+        <button
+          type="button"
+          class="liso assinatura"
+          aria-label=${aberto ? 'Seus trabalhos' : NOME}
+          data-dica=${aberto ? 'Trabalhos' : undefined}
+          data-dica-lado="direita"
+          onClick=${() => aberto && definirFolha('trabalhos')}
+        >
           <${Simbolo} />
         </button>
-        ${aberto
-          ? html`<${Menu}
+        ${
+          aberto
+            ? html`<${Menu}
                 classe="trabalho"
                 rotulo=${`Trabalho: ${trabalho.nome}`}
                 gatilho=${html`<span class="trabalho-nome">${trabalho.nome}</span><${Icone} nome="baixo" />`}
@@ -242,18 +259,29 @@ export function Casca({ loja, tema, lerConta }) {
                 ]}
               />
               <${Andamento} loja=${loja} />`
-          : null}
+            : null
+        }
       </div>
       <div class="topo-dir">
         <${EntradaDoSet} conta=${conta} />
         <${AnelDaZ} conta=${conta} />
-        <button type="button" class="liso" data-tema-botao aria-label=${escuro ? 'Usar o tema claro' : 'Usar o tema escuro'} aria-pressed=${escuro ? 'true' : 'false'} data-dica=${escuro ? 'Tema claro' : 'Tema escuro'} data-dica-lado="esquerda" onClick=${alternarTema}>
+        <button
+          type="button"
+          class="liso"
+          data-tema-botao
+          aria-label=${escuro ? 'Usar o tema claro' : 'Usar o tema escuro'}
+          aria-pressed=${escuro ? 'true' : 'false'}
+          data-dica=${escuro ? 'Tema claro' : 'Tema escuro'}
+          data-dica-lado="esquerda"
+          onClick=${alternarTema}
+        >
           <${Icone} nome=${escuro ? 'sol' : 'lua'} />
         </button>
         <${Conta} conta=${conta} aoAtalhos=${() => definirFolha('atalhos')} />
       </div>
     </header>
-    ${aberto
+    ${
+      aberto
         ? html`<nav class=${cx('dock', noPalco && 'sobre-palco')} aria-label="Etapas" ref=${dock}>
             <span class="dock-marca" data-marca-desliza aria-hidden="true"></span>
             ${ABAS.map(
@@ -273,22 +301,38 @@ export function Casca({ loja, tema, lerConta }) {
                 </a>`,
             )}
           </nav>`
-        : null}
+        : null
+    }
     <main class="painel" id="painel">
-      ${situacao === 'retomando'
-        ? null
-        : aberto
-          ? ABAS.filter((a) => a.id === aba || telas[a.id]).map((a) => html`<${Aba} key=${a.id} nome=${a.id} ativa=${a.id === aba} loja=${loja} Tela=${telas[a.id]} falhou=${falhas[a.id]} aoTentar=${() => carregar(a.id)} />`)
-          : html`<${Inicio} loja=${loja} aoEscolher=${escolher} />`}
+      ${
+        situacao === 'retomando'
+          ? null
+          : aberto
+            ? ABAS.filter((a) => a.id === aba || telas[a.id]).map(
+                (a) =>
+                  html`<${Aba}
+                    key=${a.id}
+                    nome=${a.id}
+                    ativa=${a.id === aba}
+                    loja=${loja}
+                    Tela=${telas[a.id]}
+                    falhou=${falhas[a.id]}
+                    aoTentar=${() => carregar(a.id)}
+                  />`,
+              )
+            : html`<${Inicio} loja=${loja} aoEscolher=${escolher} />`
+      }
     </main>
     <input ref=${arquivo} class="so-leitor" type="file" multiple accept=${ACEITA} tabindex="-1" aria-hidden="true" data-escolher onChange=${escolheu} />
     <${Avisos} />
     <${FolhaAtalhos} aberta=${folha === 'atalhos'} aoFechar=${() => definirFolha(null)} extras=${ATALHOS_DA_CASCA} />
     <${Trabalhos} loja=${loja} aberta=${folha === 'trabalhos'} aoFechar=${() => definirFolha(null)} aoEscolher=${escolher} />
     <${Renomear} loja=${loja} aberta=${folha === 'renomear'} aoFechar=${() => definirFolha(null)} />
-    ${soltando
-      ? html`<div class="soltar" aria-hidden="true">
+    ${
+      soltando
+        ? html`<div class="soltar" aria-hidden="true">
           <div class="soltar-alvo"><${Icone} nome="soltar" /><h2><span class="fino">Solte </span><span class="pesado">para abrir.</span></h2></div>
         </div>`
-      : null}`
+        : null
+    }`
 }

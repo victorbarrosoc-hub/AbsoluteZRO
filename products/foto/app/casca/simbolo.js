@@ -5,7 +5,8 @@
 
 import { cx, html } from '../preact.js'
 
-export const RAIO_DO_SIMBOLO = 'M33.6 -1.8C39.36 -0.81 42.24 -0.09 48 0C42.24 0.09 39.36 0.81 33.6 1.8L-33.6 1.8C-39.36 0.81 -42.24 0.09 -48 0C-42.24 -0.09 -39.36 -0.81 -33.6 -1.8Z'
+export const RAIO_DO_SIMBOLO =
+  'M33.6 -1.8C39.36 -0.81 42.24 -0.09 48 0C42.24 0.09 39.36 0.81 33.6 1.8L-33.6 1.8C-39.36 0.81 -42.24 0.09 -48 0C-42.24 -0.09 -39.36 -0.81 -33.6 -1.8Z'
 
 export function Simbolo({ vivo = false, classe }) {
   return html`<svg class=${cx('simbolo', vivo && 'simbolo-vivo', classe)} viewBox="-48 -34.3 96 68.6" width="96" height="68.6" aria-hidden="true">

@@ -5,7 +5,9 @@ import { cx, html, useEffect, useRef } from '../preact.js'
 import { Icone } from '../icones.js'
 import { CORES } from '../../src/biblioteca/catalogo.js'
 
-const ESTRELA = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2.6 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9Z" /></svg>`
+const ESTRELA = html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path
+  d="m12 2.6 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9Z"
+/></svg>`
 const plural = (n) => (n === 1 ? '1 estrela' : `${n} estrelas`)
 
 /**
@@ -28,14 +30,26 @@ export function Estrelas({ valor = 0, aoMudar, compacta = false, tamanho, classe
   if (!aoMudar) {
     if (compacta && !valor) return null
     return html`<span class=${cx('estrelas', classe)} role="img" aria-label=${valor ? plural(valor) : 'Sem estrelas'} style=${estilo} ref=${ref}>
-      ${Array.from({ length: compacta ? valor : 5 }, (_, i) => html`<span class="estrela" data-cheia=${i < valor ? '' : undefined} style=${`--i:${i}`}>${ESTRELA}</span>`)}
+      ${Array.from({ length: compacta ? valor : 5 }, (_, i) => html`<span
+        class="estrela"
+        data-cheia=${i < valor ? '' : undefined}
+        style=${`--i:${i}`}
+      >${ESTRELA}</span>`)}
     </span>`
   }
   return html`<span class=${cx('estrelas', classe)} role="group" aria-label="Estrelas" style=${estilo} ref=${ref}>
     ${Array.from(
       { length: 5 },
       (_, i) =>
-        html`<button type="button" class="estrela" data-cheia=${i < valor ? '' : undefined} style=${`--i:${i}`} aria-label=${plural(i + 1)} aria-pressed=${valor === i + 1 ? 'true' : 'false'} onClick=${() => aoMudar(valor === i + 1 ? 0 : i + 1)}>
+        html`<button
+          type="button"
+          class="estrela"
+          data-cheia=${i < valor ? '' : undefined}
+          style=${`--i:${i}`}
+          aria-label=${plural(i + 1)}
+          aria-pressed=${valor === i + 1 ? 'true' : 'false'}
+          onClick=${() => aoMudar(valor === i + 1 ? 0 : i + 1)}
+        >
           ${ESTRELA}
         </button>`,
     )}
@@ -45,7 +59,12 @@ export function Estrelas({ valor = 0, aoMudar, compacta = false, tamanho, classe
 /** O selo de escolhida ou rejeitada (nada quando a foto não tem marca). */
 export function Marca({ marca, classe }) {
   if (marca !== 'escolhida' && marca !== 'rejeitada') return null
-  return html`<span class=${cx('marca', classe)} data-marca=${marca} role="img" aria-label=${marca === 'escolhida' ? 'Escolhida' : 'Rejeitada'}><${Icone} nome=${marca === 'escolhida' ? 'ok' : 'x'} /></span>`
+  return html`<span
+    class=${cx('marca', classe)}
+    data-marca=${marca}
+    role="img"
+    aria-label=${marca === 'escolhida' ? 'Escolhida' : 'Rejeitada'}
+  ><${Icone} nome=${marca === 'escolhida' ? 'ok' : 'x'} /></span>`
 }
 
 /** A etiqueta de cor: um ponto. */
@@ -67,24 +86,55 @@ export function Marcar({ fotos, aoMarcar, aoEstrelar, aoColorir, semCores = fals
   const estrelas = fotos.length && fotos.every((f) => f.estrelas === fotos[0].estrelas) ? fotos[0].estrelas : 0
   const cor = fotos.length && fotos.every((f) => f.cor === fotos[0].cor) ? fotos[0].cor : null
   return html`<div class="marcar" role="group" aria-label="Marcar">
-    <button type="button" class="liso" aria-label="Escolher" aria-pressed=${escolhida ? 'true' : 'false'} data-dica="Escolher" data-tecla="P" data-dica-lado=${ladoDaDica} data-marcar="escolhida" onClick=${() => aoMarcar(escolhida ? null : 'escolhida')}>
+    <button
+      type="button"
+      class="liso"
+      aria-label="Escolher"
+      aria-pressed=${escolhida ? 'true' : 'false'}
+      data-dica="Escolher"
+      data-tecla="P"
+      data-dica-lado=${ladoDaDica}
+      data-marcar="escolhida"
+      onClick=${() => aoMarcar(escolhida ? null : 'escolhida')}
+    >
       <${Icone} nome="ok" />
     </button>
-    <button type="button" class="liso" aria-label="Rejeitar" aria-pressed=${rejeitada ? 'true' : 'false'} data-dica="Rejeitar" data-tecla="X" data-dica-lado=${ladoDaDica} data-marcar="rejeitada" onClick=${() => aoMarcar(rejeitada ? null : 'rejeitada')}>
+    <button
+      type="button"
+      class="liso"
+      aria-label="Rejeitar"
+      aria-pressed=${rejeitada ? 'true' : 'false'}
+      data-dica="Rejeitar"
+      data-tecla="X"
+      data-dica-lado=${ladoDaDica}
+      data-marcar="rejeitada"
+      onClick=${() => aoMarcar(rejeitada ? null : 'rejeitada')}
+    >
       <${Icone} nome="x" />
     </button>
     <span class="separador" aria-hidden="true"></span>
     <${Estrelas} valor=${estrelas} aoMudar=${aoEstrelar} tamanho=${17} />
-    ${semCores
-      ? null
-      : html`<span class="separador" aria-hidden="true"></span>
+    ${
+      semCores
+        ? null
+        : html`<span class="separador" aria-hidden="true"></span>
           <span class="marcar-cores" role="group" aria-label="Cor">
             ${CORES.map(
               (c) =>
-                html`<button type="button" class="marcar-cor" aria-label=${c} aria-pressed=${cor === c ? 'true' : 'false'} data-dica=${c} data-tecla=${TECLA_DA_COR[c]} data-dica-lado=${ladoDaDica} onClick=${() => aoColorir(cor === c ? null : c)}>
+                html`<button
+                  type="button"
+                  class="marcar-cor"
+                  aria-label=${c}
+                  aria-pressed=${cor === c ? 'true' : 'false'}
+                  data-dica=${c}
+                  data-tecla=${TECLA_DA_COR[c]}
+                  data-dica-lado=${ladoDaDica}
+                  onClick=${() => aoColorir(cor === c ? null : c)}
+                >
                   <span class="ponto" data-cor=${c}></span>
                 </button>`,
             )}
-          </span>`}
+          </span>`
+    }
   </div>`
 }

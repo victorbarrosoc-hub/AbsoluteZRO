@@ -26,10 +26,11 @@ export const LIMIARES_GRUPO = Object.freeze({
 })
 
 /**
- * Margem de erro da nota, em pontos. Quadros igualmente nítidos da mesma cena, andando 1% a 3% do quadro, medem q a
- * 0,02 um do outro no caso típico e até 0,04 no pior (test/decupagem-nota.test.js trava isso): na parte da régua
- * que não está saturada, 0,02 de q são uns 9 pontos de foco, perto de 5 pontos da nota. Abaixo disso a ordem entre
- * duas fotos não quer dizer nada, e o grupo diz "equivalentes".
+ * Margem de erro da nota, em pontos. A medida de nitidez varia entre quadros igualmente nítidos da mesma cena: até
+ * 0,013 de q em rajadas sintéticas andando 1% a 3% do quadro (test/decupagem-nota.test.js trava isso) e 0,04 numa
+ * sequência real de cinco quadros com o sujeito se mexendo. Na parte da régua que não está saturada, 0,02 de q são
+ * uns 9 pontos de foco, perto de 5 pontos da nota. Abaixo disso a ordem entre duas fotos não quer dizer nada, e o
+ * grupo diz "equivalentes".
  */
 export const MARGEM_DE_ERRO = 5
 

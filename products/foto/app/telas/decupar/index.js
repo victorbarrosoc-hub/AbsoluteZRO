@@ -79,7 +79,11 @@ export default function Decupar({ loja, ativa }) {
       topo=${52}
       base=${76}
       aoVazio=${() =>
-        html`<${Vazio} icone="filtro" titulo=${['Nada', 'com esse filtro.']}><button type="button" class="vidro" onClick=${() => loja.catalogo.limparFiltro()}>Limpar o filtro</button><//>`}
+        html`<${Vazio} icone="filtro" titulo=${['Nada', 'com esse filtro.']}><button
+          type="button"
+          class="vidro"
+          onClick=${() => loja.catalogo.limparFiltro()}
+        >Limpar o filtro</button><//>`}
     />
     <${BarraDaGrade} loja=${loja} tamanho=${tamanho} aoTamanho=${mudarTamanho} />
     ${lupa ? null : html`<${BarraDeSelecao} loja=${loja} aoAbrir=${abrir} />`}

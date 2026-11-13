@@ -182,7 +182,10 @@ export function analisarRostos(deteccoes, luma, opcoes = {}) {
   const quadro = { largura: luma.largura, altura: luma.altura }
   const metade = reduzir(luma)
   const mapa = mapaDeNitidez(luma, 16)
-  const sFundo = nitidezDoFundo(mapa, lista.map((d) => d.caixa))
+  const sFundo = nitidezDoFundo(
+    mapa,
+    lista.map((d) => d.caixa),
+  )
   const qQuadro = opcoes.medidas?.nitidez?.qLocal ?? opcoes.medidas?.nitidez?.q ?? qDaRegiao(luma, metade, { x: 0, y: 0, ...quadro }, 32)?.q ?? null
   const L = LIMIARES_ROSTO
   const rostos = lista.map((d) => {

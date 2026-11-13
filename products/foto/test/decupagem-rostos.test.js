@@ -6,7 +6,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { lumaDe, medir } from '../src/decupagem/medidas.js'
-import { analisarRostos, ear, estadoDosOlhos, faixaDosOlhos, guinadaDaMalha, pesoDoRosto, rostoCortado, LIMIARES_ROSTO, OLHO_DIREITO, OLHO_ESQUERDO } from '../src/decupagem/rostos.js'
+import {
+  analisarRostos,
+  ear,
+  estadoDosOlhos,
+  faixaDosOlhos,
+  guinadaDaMalha,
+  pesoDoRosto,
+  rostoCortado,
+  LIMIARES_ROSTO,
+  OLHO_DIREITO,
+  OLHO_ESQUERDO,
+} from '../src/decupagem/rostos.js'
 import { classificarCena, cenaDeRotulo, eNoite, ROTULOS_PARA_CENA, OBJETOS_DE_ANIMAL, OBJETOS_DE_APOIO, LIMIARES_CENA } from '../src/decupagem/cena.js'
 import { CENAS } from '../src/decupagem/textos.js'
 import { expressao, folhas, fotografar, gauss, malhaDeRosto, mascaraDaCaixa, misturar, paraPrevia } from './apoio-decupagem.js'
@@ -68,7 +79,10 @@ test('olhos: as quatro classes pela regra da pesquisa (EAR e blendshapes), com o
 
 test('olhos: os limiares exatos da regra', () => {
   const L = LIMIARES_ROSTO
-  assert.deepEqual([L.earFechado, L.earDuvida, L.piscadaFechado, L.earAberto, L.piscadaAberto, L.sorriso, L.aperto, L.guinada], [0.15, 0.2, 0.5, 0.22, 0.35, 0.6, 0.5, 25])
+  assert.deepEqual(
+    [L.earFechado, L.earDuvida, L.piscadaFechado, L.earAberto, L.piscadaAberto, L.sorriso, L.aperto, L.guinada],
+    [0.15, 0.2, 0.5, 0.22, 0.35, 0.6, 0.5, 25],
+  )
   const estado = (v, bs) => estadoDosOlhos({ malha: malhaDeRosto({ ear: [v, v] }), blendshapes: expressao(bs) }).olhos
   assert.equal(estado(0.149, { piscada: 0 }), 'fechados')
   assert.equal(estado(0.151, { piscada: 0 }), 'parcial')
@@ -136,10 +150,22 @@ test('rosto cortado: caixa que encosta na borda ou passa dela', () => {
 })
 
 test('faixa dos olhos: de um olho ao outro, com meia distância para os lados e um terço para cima e para baixo', () => {
-  assert.deepEqual(faixaDosOlhos([{ x: 100, y: 50 }, { x: 160, y: 50 }]), { x: 70, y: 30, largura: 120, altura: 40 })
+  assert.deepEqual(
+    faixaDosOlhos([
+      { x: 100, y: 50 },
+      { x: 160, y: 50 },
+    ]),
+    { x: 70, y: 30, largura: 120, altura: 40 },
+  )
   assert.equal(faixaDosOlhos([{ x: 100, y: 50 }]), null)
   assert.equal(faixaDosOlhos(null), null)
-  assert.equal(faixaDosOlhos([{ x: 1, y: 1 }, { x: 1, y: 1 }]), null)
+  assert.equal(
+    faixaDosOlhos([
+      { x: 1, y: 1 },
+      { x: 1, y: 1 },
+    ]),
+    null,
+  )
 })
 
 // ───────────────────────────── nitidez no rosto contra o fundo ─────────────────────────────
@@ -209,14 +235,38 @@ test('analisarRostos: rosto principal, pessoas-chave e secundárias, com malha e
   const luma = lumaDe(paraPrevia(folhas(12, 640, 428, { raioMin: 2.5 })))
   const deteccoes = [
     { caixa: { x: 40, y: 60, largura: 38, altura: 44 }, confianca: 0.7 }, // pequeno, no canto, sem malha
-    { caixa: { x: 250, y: 120, largura: 150, altura: 180 }, confianca: 0.97, olhos: [{ x: 295, y: 190 }, { x: 355, y: 190 }], malha: malhaDeRosto({ ear: [0.3, 0.29] }), blendshapes: expressao({ sorriso: 0.8 }) },
-    { caixa: { x: 440, y: 150, largura: 110, altura: 130 }, confianca: 0.9, malha: malhaDeRosto({ ear: [0.09, 0.1] }), blendshapes: expressao({ piscada: 0.7 }) },
+    {
+      caixa: { x: 250, y: 120, largura: 150, altura: 180 },
+      confianca: 0.97,
+      olhos: [
+        { x: 295, y: 190 },
+        { x: 355, y: 190 },
+      ],
+      malha: malhaDeRosto({ ear: [0.3, 0.29] }),
+      blendshapes: expressao({ sorriso: 0.8 }),
+    },
+    {
+      caixa: { x: 440, y: 150, largura: 110, altura: 130 },
+      confianca: 0.9,
+      malha: malhaDeRosto({ ear: [0.09, 0.1] }),
+      blendshapes: expressao({ piscada: 0.7 }),
+    },
   ]
   const rostos = analisarRostos(deteccoes, luma)
   assert.equal(rostos.length, 3)
-  assert.deepEqual(rostos.map((r) => r.principal), [false, true, false])
-  assert.deepEqual(rostos.map((r) => r.chave), [false, true, true], 'o rosto com menos da metade do peso do maior é secundário')
-  assert.deepEqual(rostos.map((r) => r.olhos), [null, 'abertos', 'fechados'])
+  assert.deepEqual(
+    rostos.map((r) => r.principal),
+    [false, true, false],
+  )
+  assert.deepEqual(
+    rostos.map((r) => r.chave),
+    [false, true, true],
+    'o rosto com menos da metade do peso do maior é secundário',
+  )
+  assert.deepEqual(
+    rostos.map((r) => r.olhos),
+    [null, 'abertos', 'fechados'],
+  )
   perto(rostos[1].sorriso, 0.8, 1e-12, 'sorriso')
   assert.equal(rostos[0].nitidezOlhos, null, 'sem os pontos dos olhos não há faixa dos olhos')
   assert.equal(rostos[0].nitidezRosto, null, 'rosto de 38 × 44 px não comporta a medida de nitidez (menos de 6 blocos)')
@@ -236,7 +286,11 @@ test('analisarRostos: sem detecção devolve lista vazia; detecção sem caixa �
 
 // ───────────────────────────── cena ─────────────────────────────
 
-const medidasDe = (largura, exposicaoDaFoto = { p1: 10, p50: 110, p99: 230, altas: 0.001 }) => ({ largura, altura: Math.round(largura / 1.5), exposicao: { altas3: 0, baixas: 0, media: 110, ...exposicaoDaFoto } })
+const medidasDe = (largura, exposicaoDaFoto = { p1: 10, p50: 110, p99: 230, altas: 0.001 }) => ({
+  largura,
+  altura: Math.round(largura / 1.5),
+  exposicao: { altas3: 0, baixas: 0, media: 110, ...exposicaoDaFoto },
+})
 const rosto = (largura, confianca = 0.95) => ({ caixa: { x: 100, y: 100, largura, altura: largura * 1.2 }, confianca })
 
 test('cena: os rostos decidem retrato, grupo e pessoas', () => {
@@ -260,17 +314,36 @@ test('cena: gente com contexto forte continua sendo gente (o rótulo não ganha 
   const medidas = medidasDe(1000)
   // os erros do classificador de imagem sozinho na prova: fundo branco virou "produto", mesa virou "comida"
   assert.equal(classificarCena({ rostos: [rosto(220)], rotulos: [{ nome: 'lotion', confianca: 0.8 }], objetos: [], medidas }).cena, 'retrato')
-  assert.equal(classificarCena({ rostos: [rosto(120)], rotulos: [{ nome: 'pizza', confianca: 0.82 }], objetos: [{ classe: 'pizza', confianca: 0.9 }], medidas }).cena, 'pessoas')
+  assert.equal(
+    classificarCena({ rostos: [rosto(120)], rotulos: [{ nome: 'pizza', confianca: 0.82 }], objetos: [{ classe: 'pizza', confianca: 0.9 }], medidas }).cena,
+    'pessoas',
+  )
   // rosto e cachorro: a regra do animal só vale sem rosto
   assert.equal(classificarCena({ rostos: [rosto(200)], objetos: [{ classe: 'dog', confianca: 0.9 }], medidas }).cena, 'retrato')
 })
 
 test('cena: sem rosto, os objetos decidem pessoas e animal', () => {
   const medidas = medidasDe(1000)
-  const costas = classificarCena({ rostos: [], objetos: [{ classe: 'person', confianca: 0.8 }, { classe: 'dog', confianca: 0.9 }], rotulos: [], medidas })
+  const costas = classificarCena({
+    rostos: [],
+    objetos: [
+      { classe: 'person', confianca: 0.8 },
+      { classe: 'dog', confianca: 0.9 },
+    ],
+    rotulos: [],
+    medidas,
+  })
   assert.equal(costas.cena, 'pessoas')
   assert.equal(costas.porque, 'Pessoa no quadro, sem rosto à vista')
-  const bicho = classificarCena({ rostos: [], objetos: [{ classe: 'dog', confianca: 0.88 }, { classe: 'cat', confianca: 0.8 }], rotulos: [{ nome: 'seashore', confianca: 0.5 }], medidas })
+  const bicho = classificarCena({
+    rostos: [],
+    objetos: [
+      { classe: 'dog', confianca: 0.88 },
+      { classe: 'cat', confianca: 0.8 },
+    ],
+    rotulos: [{ nome: 'seashore', confianca: 0.5 }],
+    medidas,
+  })
   assert.equal(bicho.cena, 'animal')
   assert.equal(bicho.porque, 'Tem cachorro no quadro')
   assert.equal(bicho.confianca, 'alta')
@@ -282,13 +355,28 @@ test('cena: sem rosto, os objetos decidem pessoas e animal', () => {
 test('cena: os rótulos ImageNet escolhem entre natureza, paisagem, comida, arquitetura, produto e documento', () => {
   const medidas = medidasDe(1000)
   const de = (rotulos, objetos = []) => classificarCena({ rostos: [], objetos, rotulos, medidas })
-  assert.equal(de([{ nome: 'seashore', confianca: 0.6 }, { nome: 'sandbar', confianca: 0.2 }]).cena, 'paisagem')
+  assert.equal(
+    de([
+      { nome: 'seashore', confianca: 0.6 },
+      { nome: 'sandbar', confianca: 0.2 },
+    ]).cena,
+    'paisagem',
+  )
   assert.equal(de([{ nome: 'daisy', confianca: 0.7 }]).cena, 'natureza')
   assert.equal(de([{ nome: 'cheeseburger', confianca: 0.65 }]).cena, 'comida')
-  assert.equal(de([{ nome: 'church', confianca: 0.4 }, { nome: 'bell cote', confianca: 0.3 }]).cena, 'arquitetura')
+  assert.equal(
+    de([
+      { nome: 'church', confianca: 0.4 },
+      { nome: 'bell cote', confianca: 0.3 },
+    ]).cena,
+    'arquitetura',
+  )
   assert.equal(de([{ nome: 'perfume', confianca: 0.5 }]).cena, 'produto')
   assert.equal(de([{ nome: 'menu', confianca: 0.45 }]).cena, 'documento')
-  const praia = de([{ nome: 'seashore', confianca: 0.6 }, { nome: 'sandbar', confianca: 0.2 }])
+  const praia = de([
+    { nome: 'seashore', confianca: 0.6 },
+    { nome: 'sandbar', confianca: 0.2 },
+  ])
   assert.equal(praia.confianca, 'alta')
   assert.equal(praia.porque, 'Parece paisagem')
   perto(praia.pontos.paisagem, 0.8, 1e-12, 'soma dos rótulos da cena')

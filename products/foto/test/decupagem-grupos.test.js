@@ -97,7 +97,17 @@ test('ligar: a regra de cada par da cascata', () => {
   assert.equal(par({ d: 15, p: 15 }, null), null)
   // sem impressão digital não há como ligar
   assert.equal(ligar({ id: 'x', exif: {} }, { id: 'y', exif: {} }, 0.5), null)
-  assert.deepEqual([LIMIARES_GRUPO.repetidaSegundos, LIMIARES_GRUPO.repetidaHamming, LIMIARES_GRUPO.cinzaHamming, LIMIARES_GRUPO.cinzaCosseno, LIMIARES_GRUPO.sequenciaSegundos, LIMIARES_GRUPO.sequenciaCosseno], [2, 10, 20, 0.9, 30, 0.86])
+  assert.deepEqual(
+    [
+      LIMIARES_GRUPO.repetidaSegundos,
+      LIMIARES_GRUPO.repetidaHamming,
+      LIMIARES_GRUPO.cinzaHamming,
+      LIMIARES_GRUPO.cinzaCosseno,
+      LIMIARES_GRUPO.sequenciaSegundos,
+      LIMIARES_GRUPO.sequenciaCosseno,
+    ],
+    [2, 10, 20, 0.9, 30, 0.86],
+  )
 })
 
 test('agrupar: uma rajada vira um grupo de repetidas; a foto diferente no meio fica de fora', () => {
@@ -154,7 +164,13 @@ test('agrupar: sequência é a mesma cena em até 30 s, decidida pelo vetor; gru
   assert.equal(agrupar(fotos.slice(0, 2))[0].tipo, 'repetidas')
   // sem vetor a mesma lista é mais conservadora: só a rajada
   const semVetor = agrupar(fotos.map(({ vetor: _, ...f }) => f))
-  assert.deepEqual(semVetor.map((g) => g.fotos), [['s1', 's2'], ['s4', 's5']])
+  assert.deepEqual(
+    semVetor.map((g) => g.fotos),
+    [
+      ['s1', 's2'],
+      ['s4', 's5'],
+    ],
+  )
 })
 
 test('agrupar: zona cinza em rajada vira repetida com o vetor; sem ele, vira sequência', () => {
@@ -167,9 +183,21 @@ test('agrupar: zona cinza em rajada vira repetida com o vetor; sem ele, vira seq
 })
 
 test('agrupar: fotos sem data vão para o fim e só ligam com a vizinha quase idêntica', () => {
-  const fotos = [foto('x1', 0, { semData: true }), foto('d1', 3), foto('x2', 0, { semData: true, d: 4 }), foto('x3', 0, { semData: true, d: 30, inicio: 30 }), foto('d2', 3.5, { d: 2 })]
+  const fotos = [
+    foto('x1', 0, { semData: true }),
+    foto('d1', 3),
+    foto('x2', 0, { semData: true, d: 4 }),
+    foto('x3', 0, { semData: true, d: 30, inicio: 30 }),
+    foto('d2', 3.5, { d: 2 }),
+  ]
   const grupos = agrupar(fotos)
-  assert.deepEqual(grupos.map((g) => g.fotos), [['d1', 'd2'], ['x1', 'x2']])
+  assert.deepEqual(
+    grupos.map((g) => g.fotos),
+    [
+      ['d1', 'd2'],
+      ['x1', 'x2'],
+    ],
+  )
   // foto com data nunca liga com foto sem data, por mais parecida
   assert.deepEqual(agrupar([foto('a', 1), foto('b', 0, { semData: true })]), [])
 })
@@ -247,7 +275,10 @@ test('empate: fora da margem não há empate, por menor que seja a folga', () =>
   const r = escolherNoGrupo([foto('a', 0, { total: 80, detalhe: { olhos: 1 } }), foto('b', 1, { total: 85, detalhe: { olhos: 0 } })])
   assert.deepEqual(r, { escolhida: 'b', reservas: ['a'], equivalentes: [], desempate: null })
   // a margem é parâmetro
-  assert.equal(escolherNoGrupo([foto('a', 0, { total: 80, detalhe: { olhos: 1 } }), foto('b', 1, { total: 85, detalhe: { olhos: 0 } })], { margem: 6 }).escolhida, 'a')
+  assert.equal(
+    escolherNoGrupo([foto('a', 0, { total: 80, detalhe: { olhos: 1 } }), foto('b', 1, { total: 85, detalhe: { olhos: 0 } })], { margem: 6 }).escolhida,
+    'a',
+  )
 })
 
 test('escolha: grupo com foto sem nota não escolhe ninguém', () => {
