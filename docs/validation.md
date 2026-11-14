@@ -15,6 +15,15 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Plataforma de fotos: lacunas fechadas (14/11/2026, ramo `claude/affectionate-cannon-6wo2rb`)
+
+| Verificação                                                                                | Comando                                                                             | Resultado                                                                        |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Suíte inteira do app (Postgres e Chromium reais, amostras e modelos)                       | `cd products/foto && FOTO_EXIGIR=1 node --test --test-concurrency=1 test/*.test.js` | **621/622**, 0 falhas, 1 pulado (medidas de 24 MP, só com `FOTO_MEDIR=1`), 884 s |
+| Busca por rosto: 300 aparelhos no mesmo IP; cabeça 3D passa, rosto em tela plana é barrado | `test/eventos.test.js`, `test/evento-tela.test.js`                                  | ok (vídeo `.y4m` gerado no teste, nenhuma foto de pessoa)                        |
+| Limpeza agendada: sem `CRON_SECRET` não roda; segunda rodada não muda nada                 | `test/cron.test.js`                                                                 | 5/5                                                                              |
+| Segredos                                                                                   | `node scripts/scan-secrets.mjs`                                                     | nenhum segredo em 4940 arquivos                                                  |
+
 ## Plataforma de fotos: rodada de integração (13/11/2026, ramo `claude/affectionate-cannon-6wo2rb`)
 
 | Verificação                                                                    | Comando                                                                             | Resultado                                                                          |

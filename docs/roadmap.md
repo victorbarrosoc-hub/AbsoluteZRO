@@ -29,6 +29,12 @@ aparelho; o app nasce fechado pelo gate (`products/foto`, migração 0065). Estu
   placa, o próprio worker desenha o antes/depois e os avisos recuperável × perdido (`src/motor/avisos.js`), sem ler o
   arquivo de novo; o branco Manual parte do da câmera e a margem soma a folga das altas; a folha "?" mostra as teclas
   da tela da frente; contrato das telas em `ARQUITETURA.md`.
+- ✅ Lacunas fechadas (14/11/2026): fila de dúvidas, filtro por pessoa (desligado por padrão, só no aparelho) e
+  calibração em 30 s na Decupar; extração de textura, clareza, neblina e nitidez; perfis `.xmp` com tabela da Adobe
+  lidos; limite de busca por aparelho, prova de vida com desafio e paralaxe, evento com crianças; avisos ao fotógrafo
+  dentro do app e limpeza diária (`api/cron/limpar.js`).
+- ⬜ Titular: `CRON_SECRET` na Vercel do app; confirmar 14 dias para rascunho abandonado; canal de aviso fora do app
+  (e-mail ou push do HUB).
 - ⬜ Titular: nome definitivo e busca no INPI; projeto Vercel e domínio; cliente OIDC `foto-web`; schema `foto` e
   papéis no Supabase; bucket das prévias; pgvector; revisão jurídica da busca por rosto; lançamento.
 - ⬜ Conferir em máquina com placa de vídeo, Safari, Firefox e celular de verdade; ProRAW real; outros corpos Sony
