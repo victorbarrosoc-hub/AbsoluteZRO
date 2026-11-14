@@ -48,6 +48,11 @@ Decisão: [ADR 0044](../../docs/decisions/0044-camzro.md).
 - Guias: 2,39, 2:1, 1,85, 16:9, 4:3, 1:1, 4:5, 9:16; terços, proporção áurea, centro, área segura 90/80%; nível pelo
   acelerômetro.
 - LUT de monitor `.cube` (1D/3D até 65³, trilinear na placa de vídeo): só na tela; o `.cube` vai ao lado do clipe.
+- **Looks ZRO** (Monitor › Looks ZRO; titular, 14/11/2026, a partir do estudo do 2Shoot): Contraste 709 (para ver o
+  Neutro ZRO), Tungstênio 500, Diurno 250, Teal e laranja, Bleach, Desbotado, Noite e P&B. Contas em
+  `nucleo/looks.js` (curva em S monótona, saturação na luma Rec.709, tom dividido), viram um `.cube` de 33 pontos: só
+  na tela, o arquivo grava limpo, e o `.cube` vai ao lado do clipe com o nome na ficha (`camera.lut_monitor`) e no CSV
+  do DaVinci (`LUT: …`). Sem grão nem halação queimados no arquivo.
 - Desanamorfizar 1,33×–2×; espelhar.
 - Medidor de áudio: pico com balística IEC (cai 20 dB em 1,7 s) e loudness momentânea (BS.1770, filtro K).
 

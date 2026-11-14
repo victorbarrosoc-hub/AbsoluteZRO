@@ -78,6 +78,10 @@ Linux, Node 22, Postgres 16 local, Chromium do Playwright 1.63 (câmera e microf
 - Botão Exposição (iPhone): no Chromium com as capacidades do Safari simuladas (trava, sem ISO, tempo, Kelvin e
   distância), ISO e Obturador somem, o botão mostra "Auto · 1/200" e um toque pede `exposureMode: single-shot` e mostra
   "Travada"; sem erro de página. `npm test` 41/41. Não verificado: no iPhone de verdade.
+- Looks ZRO: `npm test` em `products/camzro` **42/42** (teste novo: saída em 0–1, tom monótono na rampa de cinza para
+  os 8 looks, P&B neutro com filtro vermelho, Bleach com menos croma, `.cube` de 33 pontos lido de volta igual nos
+  nós, nome no CSV). No Chromium com o take do Coverr: escolher o look troca a LUT do visor (média do quadro: sem look
+  142/138/132, P&B 146/146/146, Noite 118/121/127), o look volta depois de recarregar, sem erro de página.
 - `node scripts/scan-secrets.mjs`: nenhum segredo.
 - Não verificado: aparelho de verdade (Android com controles manuais, iPhone/Safari, câmera USB), a descarga numa pasta
   (o seletor de pasta pede uma pessoa) e o login único (sem cliente `camzro-web` cadastrado; o gate foi testado com o

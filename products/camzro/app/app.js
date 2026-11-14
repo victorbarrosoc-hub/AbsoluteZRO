@@ -14,6 +14,7 @@ import * as tc from './nucleo/timecode.js'
 import * as cl from './nucleo/claquete.js'
 import * as md from './nucleo/metadados.js'
 import { lerCube, paraTextura, ErroLut } from './nucleo/lut.js'
+import { cubeDoLook, look as lookPorId } from './nucleo/looks.js'
 import { bitrateAudio, bitrateSugerido, bitrateTexto, nivelDoEspaco, segundosQueCabem, tempoTexto } from './nucleo/armazenamento.js'
 import { guia, areaSegura, PROPORCOES, caixaDaPrevia, nivel as calcNivel } from './nucleo/guias.js'
 import { posicaoNoMedidor } from './nucleo/audio.js'
@@ -72,6 +73,7 @@ function efeito(caminho) {
   const grupo = caminho.split('.')[0]
   if (REABRE.has(caminho)) return void reabrir()
   if (grupo === 'camera') void aplicarControles()
+  if (caminho === 'monitor.look') usarLook()
   if (grupo === 'monitor') desenharSobre()
   if (grupo === 'tema') aplicarTema()
   atualizarTela()
@@ -778,6 +780,7 @@ export async function carregarLut(arquivo) {
     S.lut = paraTextura(l)
     S.lutTexto = texto
     S.lutNome = (l.titulo || arquivo.name.replace(/\.cube$/i, '')).slice(0, 60)
+    if (A.monitor.look) definir('monitor.look', '') // uma LUT de fora tira o look
     avisar(`LUT ${S.lutNome} no monitor (não grava no arquivo).`)
   } catch (e) {
     avisar(e instanceof ErroLut ? e.message : 'Não deu para ler a LUT.', { ruim: true })
@@ -788,6 +791,36 @@ export function tirarLut() {
   S.lut = null
   S.lutTexto = null
   S.lutNome = ''
+  S.lutDoLook = ''
+  if (A.monitor.look) definir('monitor.look', '')
+  if (folhaAberta()) redesenharFolha()
+}
+
+/**
+ * Looks ZRO (nucleo/looks.js): o look escolhido vira a LUT do monitor. Só na tela; o .cube vai ao lado de cada take
+ * (o mesmo caminho da LUT carregada), com o nome na ficha e no CSV.
+ */
+const cacheLooks = new Map()
+export function usarLook() {
+  const id = A.monitor.look
+  if (!id) {
+    if (S.lutDoLook) {
+      S.lut = null
+      S.lutTexto = null
+      S.lutNome = ''
+      S.lutDoLook = ''
+    }
+  } else if (S.lutDoLook !== id) {
+    if (!cacheLooks.has(id)) {
+      const texto = cubeDoLook(id)
+      cacheLooks.set(id, { texto, textura: paraTextura(lerCube(texto)) })
+    }
+    const c = cacheLooks.get(id)
+    S.lut = c.textura
+    S.lutTexto = c.texto
+    S.lutNome = `ZRO · ${lookPorId(id).nome}`
+    S.lutDoLook = id
+  }
   if (folhaAberta()) redesenharFolha()
 }
 
@@ -897,6 +930,7 @@ async function comecar() {
 
 function ligar() {
   aplicarTema()
+  if (A.monitor.look) usarLook() // o look escolhido da última vez
   pintar()
   registrarFolhas()
   $('abrir').addEventListener('click', comecar)

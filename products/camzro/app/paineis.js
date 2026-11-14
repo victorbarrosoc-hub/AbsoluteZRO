@@ -2,6 +2,7 @@
 // numa nota. Cada folha é uma função que devolve HTML; os cliques passam por data-set (muda um ajuste),
 // data-acao (faz algo) e data-folha (abre outra folha).
 
+import { LOOKS } from './nucleo/looks.js'
 import { A, S, $, definir, substituirAjustes, avisar, cadencia, perfil, abrirSlate, zerarNivel, tirarLut, MODO } from './app.js'
 import * as E from './estado.js'
 import { pintar, svg } from './icones.js'
@@ -164,6 +165,7 @@ function folhaMonitor() {
     ${grupo('Foco', cartao([interruptor('monitor.pico', m.pico, 'Peaking'), linha('Cor', selecao('monitor.picoCor', Object.keys(E.CORES_PICO).map((v) => ({ v, r: v[0].toUpperCase() + v.slice(1) })), m.picoCor)), linha('Sensibilidade', `<input type="range" min="0" max="1" step="0.05" value="${m.picoSensibilidade}" data-campo="monitor.picoSensibilidade" data-num aria-label="Sensibilidade do peaking" />`), interruptor('monitor.mono', m.mono, 'Preto e branco')]))}
     ${grupo('Guias', `${segmentos('monitor.guia', [{ v: '', r: 'Nenhuma' }, ...PROPORCOES.map((p) => ({ v: p.id, r: p.rotulo }))], m.guia)}${cartao([interruptor('monitor.grade', m.grade, 'Terços'), interruptor('monitor.aurea', m.aurea, 'Proporção áurea'), interruptor('monitor.centro', m.centro, 'Centro'), interruptor('monitor.segura', m.segura, 'Área segura', '90% e 80%'), interruptor('monitor.nivel', m.nivel, 'Nível', `<button type="button" class="glass-btn glass-btn--pequeno" data-acao="zerar-nivel">Zerar</button>`)])}`)}
     ${grupo('Lente', cartao([linha('Anamórfico', selecao('monitor.anamorfico', ANAMORFICOS.map((v) => ({ v, r: v === 1 ? 'Não' : `${String(v).replace('.', ',')}×` })), m.anamorfico, { num: true }), 'A prévia desespreme; o arquivo fica como gravou'), interruptor('monitor.espelho', m.espelho, 'Espelhar a prévia'), linha('Lente', campoTexto('camera.lente', A.camera.lente, { max: 40, rotulo: 'Lente' }), 'Vai na ficha do clipe')]))}
+    ${grupo('Looks ZRO', `${segmentos('monitor.look', [{ v: '', r: 'Nenhum' }, ...LOOKS.map((l) => ({ v: l.id, r: l.nome, dica: l.dica }))], m.look)}${nota('Só na tela: o arquivo grava limpo. O look vai junto, num .cube ao lado do clipe, para a cor decidir depois.')}`)}
     ${grupo('LUT de monitor', `${cartao([linha(S.lutNome || 'Nenhuma', S.lutNome ? `<button type="button" class="glass-btn glass-btn--pequeno" data-acao="tirar-lut">Tirar</button>` : '', 'Só na tela: o arquivo grava limpo')])}<div class="acoes-folha"><button type="button" class="glass-btn glass-btn--pequeno" data-acao="carregar-lut">Carregar .cube</button></div>`)}`
 }
 

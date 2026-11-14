@@ -5,6 +5,7 @@
 import { CLAQUETE_INICIAL, campo, CAMERAS, idDoAparelho } from './nucleo/claquete.js'
 import { CADENCIAS } from './nucleo/exposicao.js'
 import { PROPORCOES, ANAMORFICOS } from './nucleo/guias.js'
+import { IDS as LOOK_IDS } from './nucleo/looks.js'
 
 const CHAVE = 'camzro.ajustes.v1'
 const CHAVE_PRESETS = 'camzro.presets.v1'
@@ -14,7 +15,7 @@ export const FORMATO_PRESET = 'camzro.preset/1'
 export const PADRAO = Object.freeze({
   formato: { resolucao: '1080', cadencia: '30', codec: 'auto', nivel: 'alta', bitrate: 0, modoBitrate: 'variable', quadroChave: 1, conteiner: 'mov', audio: 'pcm-s24', rede: 60, fecharTake: true },
   camera: { camera: '', voltada: 'environment', microfone: '', exposicao: 'auto', tempo: 0, angulo: 180, iso: 0, compensacao: 0, ev: 0, nd: 0, balanco: 'auto', kelvin: 5600, foco: 'auto', distancia: 0, zoom: 1, tocha: false, lente: '', perfil: 'padrao' },
-  monitor: { falsaCor: 'arri', falsaCorLigada: false, zebra: false, zebraModo: 'acima', zebraNivel: 95, pico: false, picoCor: 'vermelho', picoSensibilidade: 0.6, mono: false, guia: '', grade: false, aurea: false, centro: false, segura: false, anamorfico: 1, espelho: false, scopes: '', nivel: false, mostrarAngulo: true },
+  monitor: { falsaCor: 'arri', falsaCorLigada: false, zebra: false, zebraModo: 'acima', zebraNivel: 95, pico: false, picoCor: 'vermelho', picoSensibilidade: 0.6, mono: false, guia: '', grade: false, aurea: false, centro: false, segura: false, anamorfico: 1, espelho: false, scopes: '', nivel: false, mostrarAngulo: true, look: '' },
   claquete: { ...CLAQUETE_INICIAL },
   sincronia: { bip: false, claqueteNaTela: false },
   tema: 'claro',
@@ -88,6 +89,7 @@ export function limpar(a = {}) {
       scopes: um(m.scopes, ['', 'histograma', 'onda', 'parade', 'vetor'], ''),
       nivel: bool(m.nivel, false),
       mostrarAngulo: bool(m.mostrarAngulo, true),
+      look: um(m.look, ['', ...LOOK_IDS], ''),
     },
     claquete: {
       projeto: campo(k.projeto, 60),

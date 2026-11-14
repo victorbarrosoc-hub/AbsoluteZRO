@@ -75,7 +75,7 @@ export const COLUNAS_RESOLVE = ['File Name', 'Scene', 'Shot', 'Take', 'Good Take
 export function csvResolve(sidecars, { keywords = [] } = {}) {
   const linhas = [COLUNAS_RESOLVE.join(',')]
   for (const s of sidecars) {
-    const k = [...keywords, s.claquete.bom ? 'Bom take' : null, s.camera.perfil_imagem === 'neutro-zro' ? 'Neutro ZRO' : null, 'CAMZRO'].filter(Boolean).join(', ')
+    const k = [...keywords, s.claquete.bom ? 'Bom take' : null, s.camera.perfil_imagem === 'neutro-zro' ? 'Neutro ZRO' : null, s.camera.lut_monitor ? `LUT: ${s.camera.lut_monitor}` : null, 'CAMZRO'].filter(Boolean).join(', ')
     const v = [
       s.arquivo,
       s.claquete.cena,

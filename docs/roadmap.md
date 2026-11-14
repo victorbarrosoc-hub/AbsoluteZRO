@@ -47,6 +47,8 @@ ecossistema, sem publicar na Vercel ainda. Nome provisório CAMZRO, id `camzro`,
 - ✅ Marca (pedido do titular, 09/11/2026: "Crie a logo da CAMZRO"): três estudos; o titular escolheu o **Obturador
   180°** (o anel e a centelha da Absolute ZRO com meio disco dentro). Símbolo, favicon, ícones, manifest, OG e o herói
   (o obturador gira e para em 180°) em `products/camzro/scripts/marca.mjs` e `docs/marca/camzro.md`.
+- ✅ **Looks ZRO** (titular, 14/11/2026, depois do estudo do 2Shoot): 8 looks de cinema só na tela, o arquivo grava
+  limpo e o `.cube` do look vai ao lado de cada take, com o nome na ficha e no CSV do DaVinci.
 - ✅ iPhone mais honesto (titular, 09/11/2026, depois de testar no aparelho): sem ISO e obturador, a fileira de baixo
   mostra um botão **Exposição** que trava e solta; aviso único de que o manual completo é no Android. Muda quando
   houver o app nativo.

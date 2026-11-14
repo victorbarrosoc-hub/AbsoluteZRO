@@ -12,6 +12,7 @@ import * as au from '../app/nucleo/audio.js'
 import * as meta from '../app/nucleo/metadados.js'
 import * as rel from '../app/nucleo/relogio.js'
 import * as ctl from '../app/nucleo/controles.js'
+import * as lk from '../app/nucleo/looks.js'
 import * as gu from '../app/nucleo/guias.js'
 
 const perto = (a, b, tol = 1e-6, msg) => assert.ok(Math.abs(a - b) <= tol, msg || `${a} ≠ ${b} (±${tol})`)
@@ -479,4 +480,45 @@ test('roteiro do Maestro vira a decupagem da claquete', async () => {
   assert.equal(elo.plano_id, c1.planos[0].id)
   assert.throws(() => mae.lerRoteiro('{"contract":"outra/1"}'), mae.ErroRoteiro)
   assert.throws(() => mae.lerRoteiro('não é json'), mae.ErroRoteiro)
+})
+
+test('Looks ZRO: saída em 0–1, tom monótono, P&B neutro, Bleach tira cor, .cube de 33 pontos lido de volta', () => {
+  assert.equal(lk.LOOKS.length, 8)
+  assert.equal(new Set(lk.IDS).size, lk.IDS.length)
+  // a curva em S não inverte o tom para |k| ≤ 1 e prende as pontas
+  for (const k of [-1, -0.5, 0, 0.35, 1]) {
+    perto(lk.curva(0, k), 0)
+    perto(lk.curva(1, k), 1)
+    for (let x = 0; x < 1; x += 0.01) assert.ok(lk.curva(x + 0.01, k) >= lk.curva(x, k) - 1e-12)
+  }
+  const cores = []
+  for (const r of [0, 0.25, 0.5, 0.75, 1]) for (const g of [0, 0.5, 1]) for (const b of [0, 0.5, 1]) cores.push([r, g, b])
+  for (const { id } of lk.LOOKS) {
+    for (const c of cores) for (const v of lk.aplicarLook(id, c)) assert.ok(v >= 0 && v <= 1, `${id} fora de 0–1`)
+    // rampa de cinza: a luma de saída nunca desce
+    let antes = -1
+    for (let x = 0; x <= 1.0001; x += 0.05) {
+      const l = lk.luma(lk.aplicarLook(id, [x, x, x]))
+      assert.ok(l >= antes - 1e-9, `${id}: tom invertido em ${x.toFixed(2)}`)
+      antes = l
+    }
+  }
+  // P&B: sem cor; filtro vermelho: o vermelho puro sai mais claro que o azul puro
+  const [r, g, b] = lk.aplicarLook('pb', [0.8, 0.3, 0.2])
+  assert.ok(r === g && g === b)
+  assert.ok(lk.aplicarLook('pb', [1, 0, 0])[0] > lk.aplicarLook('pb', [0, 0, 1])[0])
+  // Bleach: menos croma que a entrada (distância à luma)
+  const croma = (c) => Math.max(...c) - Math.min(...c)
+  assert.ok(croma(lk.aplicarLook('bleach', [0.7, 0.4, 0.3])) < croma([0.7, 0.4, 0.3]))
+  // o .cube: 33 pontos, título com o nome, e a LUT lida de volta dá a mesma cor nos nós
+  const texto = lk.cubeDoLook('tungstenio')
+  const l = lut.lerCube(texto)
+  assert.equal(l.tamanho, 33)
+  assert.equal(l.titulo, 'ZRO · Tungstênio 500')
+  const esperado = lk.aplicarLook('tungstenio', [0.5, 0.25, 0.75])
+  lut.aplicar(l, [0.5, 0.25, 0.75]).forEach((v, i) => perto(v, esperado[i], 1e-5))
+  assert.equal(lk.cubeDoLook('nada'), null)
+  // o nome da LUT vai nas palavras-chave do CSV do DaVinci
+  const sc = meta.sidecar({ arquivo: 'c.mov', nome: 'c', inicioMs: 0, duracao: 1, quadros: 24, fps: 24, tcInicio: 0, claquete: cl.CLAQUETE_INICIAL, video: {}, camera: { lut: 'ZRO · Bleach' } })
+  assert.match(meta.csvResolve([sc]), /LUT: ZRO · Bleach, CAMZRO/)
 })
