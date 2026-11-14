@@ -147,8 +147,11 @@ async function emJpeg(base, ajustes, look, { local = true, qualidade = 0.86 } = 
   return { blob, largura: r.largura, altura: r.altura }
 }
 
-/** Uma imagem (Blob JPEG ou PNG) → { largura, altura, dados RGBA, espaco } no tamanho que basta para a extração. */
-async function imagemDe(blob, lado = 768) {
+/**
+ * Uma imagem (Blob JPEG ou PNG) → { largura, altura, dados RGBA, espaco }. Até 2048 px: a extração reduz sozinha o que
+ * é de tom e cor, mas textura e nitidez só existem perto da escala real da foto (abaixo de ~1700 px elas somem).
+ */
+async function imagemDe(blob, lado = 2048) {
   const bitmap = await createImageBitmap(blob)
   const k = Math.min(1, lado / Math.max(bitmap.width, bitmap.height))
   const largura = Math.max(1, Math.round(bitmap.width * k))
@@ -200,7 +203,7 @@ servir({
   async extrair({ referencias, alvo, daFoto, nome }) {
     const refs = []
     for (const blob of referencias) refs.push(await imagemDe(blob))
-    const imagemAlvo = alvo ? await imagemDe(alvo.blob ?? null, 768).catch(() => null) : null
+    const imagemAlvo = alvo ? await imagemDe(alvo.blob ?? null).catch(() => null) : null
     const r = extrairEstilo(refs, { alvo: imagemAlvo ?? undefined, nome })
     // antes e depois na foto da pessoa (ou na cena neutra, sem foto)
     const fonte = alvo?.blob ? alvo : { chave: 'cena', cena: true }

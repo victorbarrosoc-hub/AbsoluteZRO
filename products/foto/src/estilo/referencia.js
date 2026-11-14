@@ -46,7 +46,8 @@
 // LIMITES (estudo, B6): uma imagem não separa a luz da cena do tratamento; o que sai é o estilo mais simples que explica
 // a referência, não o que o autor usou. Referência em preto e branco não diz nada de matiz (cor e misturador ficam
 // zerados); faixa de cor com pouco pixel em qualquer das duas fica zerada; faixa de luz sem pixel quase neutro não
-// entra na tonalização. Textura, neblina e nitidez não são estimadas.
+// entra na tonalização. Textura, clareza, neblina, nitidez e (pareado) vinheta saem de vizinhanca.js, só quando a
+// medida responde e o valor passa da incerteza; sem par, na prática ficam de fora (o conteúdo pesa mais que o controle).
 
 import { FAIXAS, neutro, normalizar } from '../motor/ajustes.js'
 import { baseDeImagem } from '../motor/base.js'
@@ -1123,8 +1124,8 @@ export function extrairEstilo(referencias, opcoes = {}) {
   let locais = null
   if (temAlvo && opcoes.vizinhanca !== false) {
     const primeira = estimarVizinhanca(conferidas, alvoConferido, neutro(), { pareado: !!pares, tela, soLargas: true })
-    const largos = { clareza: primeira.presenca.clareza ?? 0, neblina: primeira.presenca.neblina ?? 0 }
-    if (largos.clareza || largos.neblina) {
+    const largos = { clareza: primeira.presenca.clareza ?? 0, neblina: primeira.presenca.neblina ?? 0, vinheta: primeira.efeitos.vinheta ?? 0 }
+    if (largos.clareza || largos.neblina || largos.vinheta) {
       const base = comVizinhanca(alvos[0].base, largos, tela)
       rendersAnteriores += modelo.renders + 1
       modelo = criarModelo({ base, dados: base.imagem.dados }, juntos, tela, pbRef)
@@ -1194,9 +1195,10 @@ export function extrairEstilo(referencias, opcoes = {}) {
   // modelo passa a usar o alvo com as novas, e o refino conjunto do tom (abaixo) corre sobre ele ──
   if (locais) {
     const segunda = estimarVizinhanca(conferidas, alvoConferido, normalizar(montar(params, valores)), { pareado: !!pares, tela })
-    const antigos = { clareza: locais.primeira.presenca.clareza ?? 0, neblina: locais.primeira.presenca.neblina ?? 0 }
-    const largos = { clareza: segunda.presenca.clareza ?? 0, neblina: segunda.presenca.neblina ?? 0 }
-    if (largos.clareza !== antigos.clareza || largos.neblina !== antigos.neblina) {
+    const doBloco = (l) => ({ clareza: l.presenca.clareza ?? 0, neblina: l.presenca.neblina ?? 0, vinheta: l.efeitos.vinheta ?? 0 })
+    const antigos = doBloco(locais.primeira)
+    const largos = doBloco(segunda)
+    if (Object.keys(largos).some((k) => largos[k] !== antigos[k])) {
       const base = comVizinhanca(alvos[0].base, largos, tela)
       rendersAnteriores += modelo.renders + 1
       modelo = criarModelo({ base, dados: base.imagem.dados }, juntos, tela, pbRef)
@@ -1251,10 +1253,11 @@ export function extrairEstilo(referencias, opcoes = {}) {
   // Vinheta e grão: só pareado (ajustarVizinhanca). Textura, clareza, neblina e nitidez: com alvo, pareado ou não
   // (vizinhanca.js), cada um só quando a medida responde e o valor passa da incerteza.
   let vizinhanca = null
-  if (pares && opcoes.vizinhanca !== false) vizinhanca = ajustarVizinhanca(alvos[0], refs, ajustes, tela)
+  if (pares && opcoes.vizinhanca !== false) vizinhanca = ajustarVizinhanca(alvos[0], refs, ajustes, tela, !!locais)
   if (vizinhanca) Object.assign(ajustes.efeitos, vizinhanca.efeitos)
   if (locais) {
     Object.assign(ajustes.presenca, locais.presenca)
+    Object.assign(ajustes.efeitos, locais.efeitos)
     Object.assign(ajustes.detalhe, locais.detalhe)
   }
 
@@ -1372,13 +1375,14 @@ function confiancaLocal(vinhetaEGrao, locais, referencias) {
   return ordem[n]
 }
 
-// O alvo com clareza e neblina já aplicadas, de volta à cena pela inversa da tela (baseDeImagem): é sobre ele que o
+// O alvo com clareza, neblina e vinheta já aplicadas, de volta à cena pela inversa da tela (baseDeImagem): é sobre ele que o
 // tom é ajustado na 1ª volta do refino conjunto. A ordem fica trocada (vizinhança antes do tom; no motor é depois), o
 // que só serve para o tom não engolir o efeito; a 2ª volta mede a vizinhança na ordem do motor.
-function comVizinhanca(base, { clareza, neblina }, tela) {
+function comVizinhanca(base, { clareza, neblina, vinheta }, tela) {
   const a = neutro()
   a.presenca.clareza = clareza
   a.presenca.neblina = neblina
+  a.efeitos.vinheta = vinheta
   const img = revelar(base, a, { tela, semente: 7 })
   const codigos = new Uint16Array(img.dados.length)
   for (let i = 0; i < codigos.length; i++) codigos[i] = Math.round(limitar(img.dados[i], 0, 1) * 65535)
@@ -1404,7 +1408,7 @@ function semEstilo(r, px, f) {
 // Vinheta e grão por busca de seção áurea, comparando as medidas locais da referência (média das referências) com as da
 // revelação do alvo a 256 px (vinheta) e do miolo a 512 px (grão). A clareza saiu daqui: vizinhanca.js a mede na banda
 // do próprio controle, junto com textura, neblina e nitidez.
-function ajustarVizinhanca(alvo, refs, ajustes, tela) {
+function ajustarVizinhanca(alvo, refs, ajustes, tela, comLocais = false) {
   const L = R.ladoLocal
   const medidasRef = refs.map((r) => {
     const red = reduzir({ largura: r.largura, altura: r.altura, dados: paraCodigos(r.lin), canais: 3, espaco: r.espaco, niveis: 65535 }, L)
@@ -1443,8 +1447,12 @@ function ajustarVizinhanca(alvo, refs, ajustes, tela) {
     const v = secaoAurea((x) => Math.abs(m(x) - alvoRef[campo]), -100, 100, 7)
     return Math.abs(v) >= 8 ? Math.round(v) : 0
   }
-  const vin = buscar('efeitos.vinheta', 'vinheta')
-  if (vin) efeitos.vinheta = vin
+  // a vinheta, pareada, agora sai de vizinhanca.js junto com clareza e neblina (que mexem nos cantos também); aqui
+  // ela só é buscada quando a vizinhança nova foi desligada
+  if (!comLocais) {
+    const vin = buscar('efeitos.vinheta', 'vinheta')
+    if (vin) efeitos.vinheta = vin
+  }
   // grão: no miolo do alvo a 512 px (onde o grão de uma referência de 512 px se mede)
   let grao = 0
   if (alvoRef.grao != null) {

@@ -30,6 +30,11 @@
 //   Vinheta           → efeitos.vinheta   pelo ganho de canto que o darktable publica (ver `vinhetaEmEv`)
 //   Curvas            → curva.*           os pontos são copiados (x/255, y/255); a paramétrica vai 1:1 para as nossas
 //                                         quatro regiões
+//   Perfil (crs:Look, RGBTable/LookTable, arquivo de perfil com PresetType="Look") → look (perfil-adobe.js): a tabela
+//                                         RGB embutida é decodificada (MD5 conferido) e vira o look, "exato" (ou
+//                                         "aproximado" se o perfil é feito sobre base linear); a tabela HSV é lida e
+//                                         fica de fora (age antes da curva de tom); perfil padrão da Adobe sem tabela no
+//                                         arquivo ganha a nossa aproximação pelo nome (PERFIS_ADOBE), "aproximado"
 //
 // BLACKS. O único número publicado para o Blacks2012 é a tabela do darktable (lightroom.c:371-377): o slider vira um
 // nível de preto subtraído na luz linear (−100 → +0,020; −50 → +0,005; +50 → −0,005; +100 → −0,010, com o branco em 1).
@@ -44,6 +49,8 @@ import { FAIXAS, FAIXAS_MATIZ, normalizar } from '../motor/ajustes.js'
 import { matizDoCirculo } from '../motor/cor/oklab.js'
 import { LOCAL } from '../motor/local.js'
 import { COR, criarCurvaDePontos } from '../motor/ponto.js'
+import { compactar } from './look.js'
+import { lerTabela, PERFIS_ADOBE, perfilAdobe, tabelaParaLut } from './perfil-adobe.js'
 import { criarPredefinicao } from './predefinicao.js'
 import { lerLrtemplate, pareceLrtemplate } from './lrtemplate.js'
 
@@ -830,57 +837,128 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
   if (tem('OverrideLookVignette')) anotar('OverrideLookVignette', 'ignorado', null, 'vinheta do perfil: o perfil não é importado')
 
   // ── perfil ──
+  // A tabela do perfil (crs:RGBTable ou crs:LookTable → atributo crs:Table_<MD5>), no crs:Look de uma foto ou
+  // predefinição e no topo de um arquivo de perfil (PresetType="Look"): perfil-adobe.js decodifica e confere o MD5.
+  // A RGB vira o look; a HSV (LookTable) não cabe no look. Perfil padrão da Adobe sem tabela no arquivo ganha a nossa
+  // aproximação pelo nome (PERFIS_ADOBE), dita como tal.
+  let lookDoPerfil = null
+  let perfilAproximado = null
+  const ondeFica = (chaveTabela) => (look && parametros[chaveTabela] != null ? `Look.Parameters.${chaveTabela}` : chaveTabela)
+  const lerTabelaDoArquivo = (chaveTabela, digest, nomePerfil, base) => {
+    const atributo = `Table_${digest}`
+    const onde = ondeFica(chaveTabela)
+    const tipoDaTabela = chaveTabela === 'LookTable' ? 'tabela de cor (matiz, saturação e valor)' : 'tabela RGB (LUT 3D)'
+    const nota = (classe, razao) => {
+      itens.push({ chave: onde, valor: String(digest).slice(0, 40), classe, para: classe === 'ignorado' ? null : 'look', razao })
+      vistas.add(chaveTabela)
+    }
+    if (!tem(atributo)) return { lida: false, nota, tipoDaTabela }
+    vistas.add(atributo)
+    let tabela
+    try {
+      tabela = lerTabela(String(chaves[atributo]), digest)
+    } catch (e) {
+      itens.push({ chave: atributo, valor: '(tabela)', classe: 'ignorado', para: null, razao: e.message })
+      nota('ignorado', `a ${tipoDaTabela} do perfil "${nomePerfil}" não foi lida: ${e.message}`)
+      return { lida: true }
+    }
+    if (tabela.confere === false) {
+      itens.push({ chave: atributo, valor: '(tabela)', classe: 'ignorado', para: null, razao: 'o MD5 da tabela não bate com o nome: arquivo alterado' })
+      nota('ignorado', 'tabela corrompida (o MD5 não bate com o digest do arquivo)')
+      return { lida: true }
+    }
+    itens.push({ chave: atributo, valor: `(tabela, ${tabela.bytes} bytes)`, classe: 'exato', para: 'look', razao: 'decodificada; o MD5 confere com o digest do arquivo' })
+    if (tabela.tipo === 'hsv') {
+      nota(
+        'ignorado',
+        `a ${tipoDaTabela} do perfil "${nomePerfil}" foi lida, mas a Adobe a aplica antes da curva de tom, na luz de cena dela: não cabe no nosso look (que vem depois da tela)`,
+      )
+      return { lida: true }
+    }
+    const quantidade = num(chaves.RGBTableAmount) ?? num(parametros.RGBTableAmount) ?? 1
+    const baseLinear = /linear/i.test(String(base ?? ''))
+    const { lut, foraDaFaixa } = tabelaParaLut(tabela, { quantidade, baseLinear })
+    lookDoPerfil = { lut, nome: nomePerfil || 'Perfil do Lightroom' }
+    const extra = foraDaFaixa ? `; ${foraDaFaixa} de ${lut.lado ** 3} nós saíram do sRGB e foram presos` : ''
+    if (baseLinear) {
+      nota(
+        'aproximado',
+        `${tipoDaTabela} ${tabela.divisoes}${tabela.dimensoes === 3 ? '³' : ''} lida e aplicada como look; o perfil é feito sobre uma base sem curva de tom ("${String(base).slice(0, 40)}"): a nossa tela é desfeita antes da tabela, mas a exposição de base da Adobe não vem no arquivo${extra}`,
+      )
+    } else {
+      nota(
+        'exato',
+        `${tipoDaTabela} ${tabela.divisoes}${tabela.dimensoes === 3 ? '³' : ''} (${tabela.primarias}, gama ${tabela.gama}) aplicada como look, depois da tela, como a Adobe aplica depois da curva de tom; a cor que chega nela é a do nosso motor${extra}`,
+      )
+    }
+    return { lida: true }
+  }
+  // a aproximação nossa de um perfil padrão da Adobe; não sobrescreve o que o arquivo já trouxe (a curva do Look)
+  const aproximar = (nomeAdobe) => {
+    const perfil = PERFIS_ADOBE[nomeAdobe]
+    for (const [caminho, valor] of Object.entries(perfil.ajustes)) {
+      const atual = ler(caminho)
+      if (Array.isArray(valor) && Array.isArray(atual) && !Array.isArray(valor[0])) {
+        por(
+          caminho,
+          atual.map((x, k) => Math.round(limitar(x + valor[k], -100, 100))),
+        )
+      } else if (atual == null) por(caminho, valor)
+    }
+    perfilAproximado = nomeAdobe
+    return perfil.razao
+  }
+  const comoFazer = 'para levar a cor exata, exporte uma foto de referência com o perfil e use "extrair de uma referência", ou exporte uma .cube do perfil e importe a .cube'
   if (tem('CameraProfile')) {
     meta.perfil = String(chaves.CameraProfile)
-    anotar('CameraProfile', 'ignorado', null, `perfil de câmera "${meta.perfil.slice(0, 40)}": a cor de base é a do nosso motor`)
+    const adobe = perfilAdobe(meta.perfil)
+    if (adobe && adobe !== 'Adobe Standard' && !look) {
+      anotar('CameraProfile', 'aproximado', 'look', `perfil "${adobe}" da Adobe pelo nome (a tabela dele não vem no arquivo): ${aproximar(adobe)}; ${comoFazer}`)
+    } else anotar('CameraProfile', 'ignorado', null, `perfil de câmera "${meta.perfil.slice(0, 40)}": a cor de base é a do nosso motor`)
   }
   if (look) {
     const nome = typeof look.Name === 'string' ? look.Name : ''
     meta.look = nome
     const daAdobe = /adobe/i.test(String(look.Copyright ?? '')) || /^Adobe /.test(nome)
     vistas.add('Look')
-    for (const chave of [
-      'Name',
-      'Amount',
-      'Cluster',
-      'UUID',
-      'SupportsAmount',
-      'SupportsMonochrome',
-      'SupportsOutputReferred',
-      'Copyright',
-      'Group',
-      'Stubbed',
-    ]) {
+    for (const chave of ['Name', 'Amount', 'Cluster', 'UUID', 'SupportsAmount', 'SupportsMonochrome', 'SupportsOutputReferred', 'Copyright', 'Group', 'Stubbed']) {
       if (look[chave] != null) itens.push({ chave: `Look.${chave}`, valor: mostrar(look[chave]), classe: 'exato', para: 'meta', razao: R.meta })
     }
     const anotarLook = (chave, classe, razao) => itens.push({ chave: `Look.Parameters.${chave}`, valor: mostrar(parametros[chave]), classe, para: null, razao })
     for (const chave of Object.keys(parametros)) {
       if (/^ToneCurvePV2012/.test(chave)) continue // já tratadas com as curvas
       if (chave === 'LookTable' || chave === 'RGBTable') {
-        const embutida = tem(`Table_${parametros[chave]}`)
-        const tipoDaTabela = chave === 'LookTable' ? 'tabela de cor (matiz, saturação e valor)' : 'LUT 3D'
-        anotarLook(
-          chave,
-          'ignorado',
-          embutida
-            ? `o perfil "${nome}" traz uma ${tipoDaTabela} embutida, que ainda não é lida`
-            : `o perfil "${nome}" não veio no arquivo (só a referência à ${tipoDaTabela})`,
-        )
-        if (nome)
-          avisos.push(
-            `O perfil "${nome}" não foi importado${daAdobe ? ' (é da Adobe)' : ''}: a cor de base é a do nosso motor. A curva de tons dele foi aplicada.`,
-          )
-      } else if (chave === 'ConvertToGrayscale') anotarLook(chave, 'exato', bool(parametros[chave]) ? 'perfil em preto e branco: ligado' : 'em cores')
-      else if (/^(Version|ProcessVersion|CameraProfile)$/.test(chave)) anotarLook(chave, 'exato', R.meta)
+        const r = lerTabelaDoArquivo(chave, parametros[chave], nome, parametros.CameraProfile)
+        if (r.lida) continue
+        const adobe = perfilAdobe(nome)
+        if (adobe) r.nota('aproximado', `perfil "${adobe}" da Adobe: a tabela não vem no arquivo; aproximação nossa pelo nome: ${aproximar(adobe)}; ${comoFazer}`)
+        else {
+          r.nota('ignorado', `o perfil "${nome}" não veio no arquivo (só a referência à ${r.tipoDaTabela}); ${comoFazer}`)
+          if (nome) avisos.push(`O perfil "${nome}" não foi importado${daAdobe ? ' (é da Adobe)' : ''}: a cor de base é a do nosso motor. A curva de tons dele foi aplicada.`)
+        }
+      } else if (chave === 'RGBTableAmount') anotarLook(chave, 'exato', 'quantidade da tabela, levada para o look')
+      else if (chave === 'ConvertToGrayscale') anotarLook(chave, 'exato', bool(parametros[chave]) ? 'perfil em preto e branco: ligado' : 'em cores')
+      else if (/^(Version|ProcessVersion|CameraProfile|CameraProfileDigest)$/.test(chave)) anotarLook(chave, 'exato', R.meta)
       else anotarLook(chave, 'ignorado', 'ajuste embutido no perfil, não importado')
     }
   }
+  // arquivo de perfil (PresetType="Look"): a tabela fica no topo
+  for (const chaveTabela of ['RGBTable', 'LookTable']) {
+    if (!tem(chaveTabela) || vistas.has(chaveTabela) || look) continue
+    const nomePerfil = typeof chaves.Name === 'string' ? chaves.Name : ''
+    const r = lerTabelaDoArquivo(chaveTabela, chaves[chaveTabela], nomePerfil, chaves.CameraProfile)
+    if (!r.lida) r.nota('ignorado', `a ${r.tipoDaTabela} não veio no arquivo (só a referência a ela); ${comoFazer}`)
+  }
+  for (const chave of ['RGBTableAmount', 'ToneMapStrength']) {
+    if (!tem(chave) || vistas.has(chave)) continue
+    if (chave === 'RGBTableAmount') anotar(chave, lookDoPerfil ? 'exato' : 'ignorado', lookDoPerfil ? 'look' : null, lookDoPerfil ? 'quantidade da tabela, levada para o look' : 'sem tabela lida, a quantidade não age')
+    else anotar(chave, 'ignorado', null, 'força do mapa de tons da Adobe: o nosso mapa de tons é outro')
+  }
+  if (perfilAproximado) meta.perfilAproximado = perfilAproximado
   for (const chave of Object.keys(chaves)) {
     if (vistas.has(chave)) continue
-    if (/^Table_[0-9A-Fa-f]{32}$/.test(chave)) anotar(chave, 'ignorado', null, 'dados de tabela de perfil: ainda não lidos', '(tabela)')
-    else if (chave === 'RGBTable' || chave === 'LookTable' || chave === 'RGBTableAmount' || chave === 'ToneMapStrength') {
-      anotar(chave, 'ignorado', null, 'tabela de perfil: ainda não lida')
-    } else if (LENTE.test(chave)) {
+    if (/^Table_[0-9A-Fa-f]{32}$/.test(chave)) anotar(chave, 'ignorado', null, 'tabela de perfil que nenhuma chave do arquivo usa', '(tabela)')
+    else if (LENTE.test(chave)) {
       const ativo = /^(LensProfileEnable|AutoLateralCA)$/.test(chave) ? bool(chaves[chave]) : /Amount$/.test(chave) && num(chaves[chave])
       anotar(chave, 'ignorado', null, R.lente)
       if (ativo && !avisos.includes('A correção de lente do arquivo não foi importada.')) avisos.push('A correção de lente do arquivo não foi importada.')
@@ -902,30 +980,44 @@ export function converterChaves(chaves, { tipo = 'predefinicao' } = {}) {
   for (const chave of desconhecidas) anotar(chave, 'ignorado', null, 'chave desconhecida')
   const resumo = { exato: 0, aproximado: 0, ignorado: 0 }
   for (const item of itens) resumo[item.classe]++
-  return { ajustes, levar, relatorio: { itens, resumo, avisos, desconhecidas, meta }, daFoto }
+  return { ajustes, levar, relatorio: { itens, resumo, avisos, desconhecidas, meta }, daFoto, look: lookDoPerfil }
 }
 
 // ─────────── entradas ───────────
 
 function montar(chaves, opcoes, tipoDeArquivo, metaExtra = {}) {
   const tipo = opcoes.tipo ?? (chaves.PresetType != null || tipoDeArquivo === 'lrtemplate' ? 'predefinicao' : 'foto')
-  if (String(chaves.PresetType ?? '') === 'Look') {
-    throw erro('e-perfil', 'Este arquivo é um perfil do Lightroom (não uma predefinição). Perfis com tabela de cor ainda não são lidos.')
+  const ePerfil = String(chaves.PresetType ?? '') === 'Look'
+  const { ajustes, levar, relatorio, daFoto, look } = converterChaves(chaves, { tipo })
+  if (ePerfil && !look && !relatorio.meta.perfilAproximado && !Object.keys(ajustes).length) {
+    const razao = relatorio.itens.find((i) => /Table$/.test(i.chave) && i.classe === 'ignorado')?.razao
+    throw erro(
+      'e-perfil',
+      `Este perfil do Lightroom não traz nada que dê para ler${razao ? ` (${razao})` : ''}. Exporte uma foto com o perfil e use "extrair de uma referência", ou exporte uma .cube dele.`,
+    )
   }
-  const { ajustes, levar, relatorio, daFoto } = converterChaves(chaves, { tipo })
   relatorio.meta.arquivo = tipoDeArquivo
   Object.assign(relatorio.meta, Object.fromEntries(Object.entries(metaExtra).filter(([, v]) => v)))
   const nome = opcoes.nome || relatorio.meta.nome || metaExtra.nome || 'Importada do Lightroom'
+  const campos = {
+    nome,
+    familia: opcoes.familia ?? 'Importadas',
+    descricao: opcoes.descricao ?? '',
+    autor: relatorio.meta.direitos,
+    ajustes: normalizar(ajustes),
+    levar,
+    origem: { tipo: 'lightroom', relatorio },
+  }
+  if (look) {
+    const { look: compacto, cortados } = compactar(look.lut, look.nome)
+    campos.look = compacto
+    // a quantidade do Look (0 a 2 na Adobe; aqui 0 a 200), quando o arquivo traz
+    const quanto = num(chaves.Look?.Amount)
+    campos.ajustes = { ...campos.ajustes, look: { id: null, quantidade: quanto != null ? limitar(Math.round(quanto * 100), 0, 200) : 100 } }
+    if (cortados) relatorio.avisos.push(`A tabela do perfil tem ${cortados} pontos fora do sRGB: ficaram presos na borda.`)
+  }
   const predefinicao = criarPredefinicao(
-    {
-      nome,
-      familia: opcoes.familia ?? 'Importadas',
-      descricao: opcoes.descricao ?? '',
-      autor: relatorio.meta.direitos,
-      ajustes: normalizar(ajustes),
-      levar,
-      origem: { tipo: 'lightroom', relatorio },
-    },
+    campos,
     { agora: opcoes.agora ?? null },
   )
   return { predefinicao, relatorio, daFoto }

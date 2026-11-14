@@ -384,9 +384,13 @@ O que fica neste aparelho (nada disso sai dele; tudo com try/catch, e sem armaze
   "origem": { "tipo": "nossa" | "manual" | "lightroom" | "referencia", "relatorio"? } }
 ```
 
-Importar do Lightroom (`.xmp`, `.lrtemplate`) devolve a predefinição e um relatório por chave: `exato`, `aproximado`
-ou `ignorado`, com a razão. Extrair de uma referência devolve controles editáveis, a confiança por grupo e o erro medido.
-Tratar em lote = corrigir cada foto (`por-foto.js`: exposição e branco) e depois aplicar o estilo.
+Importar do Lightroom (`.xmp`, `.lrtemplate`, perfil `.xmp` com tabela) devolve a predefinição e um relatório por chave:
+`exato`, `aproximado` ou `ignorado`, com a razão. A tabela RGB embutida num perfil (`crs:Table_<MD5>`, MD5 conferido)
+vira o look; a HSV (LookTable) é lida e fica de fora; perfil padrão da Adobe sem tabela no arquivo ganha a nossa
+aproximação pelo nome, como `aproximado`. Extrair de uma referência devolve controles editáveis, a confiança por grupo e
+o erro medido; textura, clareza, neblina, nitidez e vinheta saem só quando a medida responde e o valor passa de 3
+incertezas (na prática, só com a referência sendo a mesma cena do alvo). Tratar em lote = corrigir cada foto
+(`por-foto.js`: exposição e branco) e depois aplicar o estilo.
 
 Funções (`src/estilo/`; tudo puro, sem DOM; o estado da biblioteca é JSON e a tela guarda):
 
@@ -397,14 +401,20 @@ biblioteca.js    estilosDaCasa() · FAMILIAS · criarBiblioteca · porFamilia(es
                  favoritar · usar · recentes · duplicar · renomear · moverDeFamilia · reordenar · acrescentar · remover · exportar · importar
 qc.js            qc(p | ajustes) → { aprovado, tonalizado, pb, medidas, problemas: [{ codigo, texto, valor, limite }] }
 lightroom-ler.js importarLightroom(texto | bytes, { nome, familia, tipo }) → { predefinicao, relatorio: { itens, resumo, avisos,
-                 desconhecidas, meta }, daFoto }   (aceita .xmp, sidecar, JPEG com XMP no APP1 e .lrtemplate)
+                 desconhecidas, meta }, daFoto }   (aceita .xmp, sidecar, perfil .xmp, JPEG com XMP no APP1 e .lrtemplate)
+perfil-adobe.js  lerTabela(texto, digest?) → { tipo: 'rgb' | 'hsv', digest, confere, … } · tabelaParaLut(t, { lado, quantidade,
+                 baseLinear }) → { lut, foraDaFaixa } · PERFIS_ADOBE · perfilAdobe(nome) · deBase85 · paraBase85 · md5
+inflar.js        inflar(bytes zlib, tamanho?) · inflarCru(bytes deflate) (síncrono, sem dependência)
 lightroom-escrever.js  escreverXmp(p) → { xmp, chaves, relatorio: { itens, deFora } } · nomeDoArquivoXmp(p)
 cube.js          lerCube(texto | bytes) → { titulo, lado, dominio, dados, avisos } · escreverCube(lut)
 look.js          aplicarLut(lut) → (r, g, b, saida) (o `opcoes.look` de revelar) · compactar(lut) → { look } · descompactar
                  lookDaPredefinicao(p) · assar(p, { lado, tela, intensidade }) → { lut, deFora }
 referencia.js    extrairEstilo([imagem…], { alvo?, residuo?, vizinhanca? }) → { ajustes, predefinicao, confianca, erro: { antes,
-                 depois, teto, aderencia, alcance, pareado? }, grupos, pb, avisos, look, tempo }   imagem = { largura, altura,
-                 dados RGBA, espaco: 'srgb' | 'p3' } (a tela decodifica)
+                 depois, teto, aderencia, alcance, pareado? }, grupos, pb, avisos, look, vizinhanca: { …, controles }, tempo }
+                 imagem = { largura, altura, dados RGBA, espaco: 'srgb' | 'p3' } (a tela decodifica; a textura só se mede a
+                 partir de ~840 px de lado e a nitidez com o raio acima de ¼ de pixel: imagem reduzida demais fica sem elas)
+vizinhanca.js    estimarVizinhanca(refs, alvo, ajustes, { pareado, tela, soLargas }) → { presenca, detalhe, efeitos, controles:
+                 { [textura|clareza|neblina|nitidez|vinheta]: { valor, incerteza, confianca, sai, razao } }, renders, tempo }
 por-foto.js      tratarEmLote([{ id, base?, ajustes?, grupo? }], p, { modo: 'so-estilo' | 'corrigir-e-estilo' |
                  'manter-o-que-ja-mexi', intensidade, suavizar }) → [{ id, ajustes, explicacao, correcao }]
 ```

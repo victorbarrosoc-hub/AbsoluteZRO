@@ -1,37 +1,50 @@
-// Textura, clareza, neblina e nitidez de uma referência, na língua dos NOSSOS controles (src/motor/local.js). Cada
-// medida usa o mesmo filtro, o mesmo raio e o mesmo limiar que o controle usa, e é comparada entre a referência e o
-// alvo revelado pelo nosso motor: o valor estimado é o que faz a medida da revelação bater com a da referência.
+// Textura, clareza, neblina, nitidez (e, pareado, vinheta) de uma referência, na língua dos NOSSOS controles
+// (src/motor/local.js). Cada medida usa o filtro, o raio e o limiar que o controle usa, e é comparada entre a referência
+// e o alvo revelado pelo nosso motor: o valor estimado é o que faz a medida da revelação bater com a da referência.
 //
-// AS MEDIDAS (todas no log2 da norma da tela, 75% luminância + 25% maior canal, a mesma norma do motor):
+// AS MEDIDAS (no log2 da norma, 75% luminância + 25% maior canal, a norma do motor):
 //
-//   textura   na foto em tamanho de medida (recortes; o raio da textura é 0,0006 do lado, ~4 px numa foto de 6000):
-//             log(rms(L − G_f) ÷ rms(G_f − G_4f)), G_f o filtro guiado da textura (raio r_f, ε = 0,2²) e o peso
-//             (1 − a_f)² do próprio motor (a textura poupa a borda). O denominador é a banda logo acima: a clareza, a
-//             neblina e o tom multiplicam as duas bandas juntas, e a razão não muda (medido: ≤ 0,01 com clareza ±50,
-//             neblina +40 e contraste +40, contra 0,19 da textura de 0 a 100).
-//   nitidez   log(rms(L − g_σ) ÷ rms(g_σ − g_4σ)) fora das bordas e o mesmo NAS bordas (os 4% de maior banda média): é
-//             o halo, que a nitidez cria e a textura não (a textura poupa a borda). σ = raio da nitidez × escala. A
-//             banda fina tem o piso de ruído tirado (desvio absoluto mediano dos 25% de pixels mais lisos; Donoho e
-//             Johnstone, 1994): ruído de outra câmera ou de outro ISO não vira nitidez.
+//   textura   em recortes na escala de medida (o raio da textura é 0,0006 do lado: ~4 px numa foto de 6000 px, menos
+//             de 1 px abaixo de ~840 px, onde o controle não age): log(rms(L − G_f) ÷ rms(G_f − G_4f)), G_f o filtro
+//             guiado da textura (raio r_f, ε = 0,2²) com o peso (1 − a_f)² do próprio motor (a textura poupa a borda).
+//             O denominador é a banda logo acima: clareza, neblina e tom multiplicam as duas juntas e a razão não muda
+//             (medido: ≤ 0,01 com clareza ±50, neblina +40 e contraste +40, contra 0,19 da textura de 0 a 100).
+//   nitidez   log(rms(L − g_σ) ÷ rms(g_σ − g_4σ)) fora das bordas, pesada por a_f² (onde a textura NÃO age: é o que
+//             separa as duas quando os raios se encostam), e o mesmo NAS bordas (os 4% de maior banda média): o halo,
+//             que a nitidez cria e a textura não. σ = raio da nitidez × escala de medida. g_4σ: três caixas seguidas.
+//   piso      nos recortes, cada pixel pesa s²/(s² + 9·piso²), s o relevo da banda média e o piso o degrau do código
+//             da foto levado ao log2: o motor amplifica o degrau de 8 bits do alvo, e na referência ele veio depois do
+//             tratamento (sem isto, um céu liso de 8 bits dobrava a medida da nitidez). Recorte com menos de 60% do
+//             relevo acima do piso fica de fora. O ruído (estimarRuido do motor) entra só sem par, como incerteza.
 //   clareza   na foto reduzida a 320 px: log(rms(g_c/3 − G_c) ÷ rms(G_c − G_4c)) com o peso (1 − a_c)², G_c o filtro
 //             guiado da clareza (raio 0,012 do lado, ε = 0,5²). A banda vai de r_c/3 a r_c: abaixo disso ficaria a
 //             sobra da nitidez e da textura da foto cheia (medido: nitidez 80 mexia 0,035 na medida com a banda toda,
-//             0,000 nesta). Variação entre cenas parecidas: 0,006 (≈ 5 de clareza; a medida anterior variava 0,05).
-//   neblina   canal escuro (He, Sun e Tang, 2011): média de mín_janela(mín_canais(I/A)), A a luz do ar medida como o
-//             motor mede (luzDoAr), janela de 0,006 do lado; e o croma Oklab médio onde o canal escuro é alto (onde a
-//             névoa mora) ÷ onde é baixo: tirar névoa satura justamente onde ela estava.
+//             0,000 nesta; entre cenas sintéticas parecidas a medida varia 0,006, a anterior 0,05).
+//   neblina   pareado: o canal escuro (He, Sun e Tang, 2011), mín_janela(mín_canais(I/A)), A a luz do ar como o motor
+//             mede; dentro de cada faixa de norma do alvo neutro, com a reta da faixa tirada, o resíduo dos pixels de
+//             canal escuro alto menos o dos de canal baixo, na norma da CENA (a inversa da tela). Tom, curva,
+//             contraste, pretos e desbotar levam pixels de mesma norma ao mesmo lugar e não mexem nela (medido:
+//             contraste +25 dava neblina 19 medido na tela, 0 assim). Sem par: a média do canal escuro e a razão do
+//             croma onde ele é alto ÷ onde é baixo.
+//   vinheta   pareado: a mesma conta da neblina, com canto (distância ao centro ≥ 0,8 da meia-diagonal) menos miolo
+//             (< 0,5) no lugar de canal alto menos baixo.
 //
-// A ESTIMATIVA: Levenberg–Marquardt com diferenças finitas, em dois blocos que não se enxergam (medido acima): {textura,
-// nitidez} nos recortes e {clareza, neblina} na foto reduzida, com os ajustes de ponto já extraídos aplicados na
-// revelação do alvo. Os resíduos são divididos pelo erro de medida de cada um (a dispersão entre recortes ou quadrantes)
-// e há uma penalidade que puxa para zero (desvio a priori de 60). Um controle só sai se (1) a medida responde a ele no
-// alvo (de −50 a +50 a medida anda mais que 4 erros de medida), e (2) o valor é maior que 2 incertezas (incerteza = erro
-// de medida ÷ inclinação) e que 5. A confiança é alta com 4 incertezas, média com 2.
+// A ESTIMATIVA: Levenberg–Marquardt com diferenças finitas e atualização de Broyden, em dois blocos que quase não se
+// enxergam (medido acima): {clareza, neblina, vinheta} na foto reduzida, revelada inteira pelo motor; {textura,
+// nitidez} nos recortes, revelados como pedaços da foto (revelarRecorte: o mesmo código de `revelar`, com os mapas
+// largos da clareza e da neblina já estimadas). Os ajustes de ponto entram nas duas revelações. Pareado, cada
+// quadrante e cada recorte é comparado com o seu par; sem par, as médias. Os resíduos são divididos pelo erro de medida
+// (VIZINHANCA.erroPar ou erroCena) e uma penalidade puxa para zero (desvio a priori de 60). Incerteza = a da curvatura
+// (JᵀJ)⁻¹, inflada pelo resíduo que sobrou. Um controle só sai se (1) a medida responde a ele no alvo (de −50 a +50
+// ela anda mais que 4 erros de medida do par), (2) o valor passa de 3 incertezas e de 5 e (3) o ajuste não parou no
+// limite da faixa. Confiança alta com 5 incertezas, pareado; média nos outros casos que saem.
 //
-// LIMITES: sem par (outra cena), a medida também muda com o conteúdo; a incerteza inclui isso só no que a dispersão
-// entre recortes enxerga. Textura só se mede com a foto a partir de ~840 px de lado (abaixo, o raio do motor é menor que
-// um pixel e o controle não age); nitidez, quando o raio na escala de medida passa de ¼ de pixel. Neblina negativa (o
-// véu uniforme) é quase igual a desbotar + contraste e é absorvida pelo tom.
+// O refino conjunto com o tom mora em referencia.js (duas voltas: a vizinhança antes e depois do tom).
+//
+// LIMITES: sem par (outra cena), a medida muda com o conteúdo muito mais que com o controle (erroCena, medido em fotos
+// reais): na prática a vizinhança só sai com par. Textura só com a foto a partir de ~840 px de lado; nitidez, quando o
+// raio na escala de medida passa de ¼ de pixel. Em cena de manchas lisas a clareza quase não age (poupa a borda) e a
+// neblina quase vira uma conta de cor: as medidas respondem pouco e ficam de fora, ou saem pequenas.
 
 import { neutro } from '../motor/ajustes.js'
 import { baseDeImagem } from '../motor/base.js'
@@ -40,7 +53,7 @@ import { criarOklab } from '../motor/cor/oklab.js'
 import { aplicarLocal, caixa, estimarRuido, filtroGuiado, gaussiano, LOCAL, luzDoAr, mapasLargos, minimo } from '../motor/local.js'
 import { criarPonto } from '../motor/ponto.js'
 import { contextoDe, revelar } from '../motor/revelar.js'
-import { telaDe } from '../motor/tela.js'
+import { criarTela, MARGENS, telaDe } from '../motor/tela.js'
 
 export const VIZINHANCA = {
   ladoLargo: 320, // a foto inteira reduzida para clareza e neblina
@@ -54,11 +67,15 @@ export const VIZINHANCA = {
   responde: 4, // a medida tem de andar mais que isto × o erro de medida de −50 a +50
   // erro de medida de cada medida: pareado (por recorte ou quadrante, o piso do que não é o controle) e sem par (o que
   // a medida varia de uma cena para outra parecida; calibrado nas cenas sintéticas, ver o teste)
-  erroPar: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01, nevoaL: 0.002, nevoaC: 0.01 },
-  // erroCena: o desvio-padrão de cada medida entre cenas diferentes, todas no neutro: o quanto o conteúdo sozinho mexe
-  // nela. É o maior entre dois tipos de cena sintética (test/apoio-estilo.js): paisagem de textura natural (cenaNatural,
-  // seis sementes, 1024 e 2560 px) e manchas de uma mesma sessão (cenaDeSessao, seis sementes, 360 e 1024 px).
-  erroCena: { textura: 0.06, nitidez: 0.055, halo: 0.11, clareza: 0.053, escuro: 0.072, croma: 0.097 },
+  erroPar: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01, nevoaL: 0.01, vinheta: 0.002 },
+  // erroCena: o desvio-padrão de cada medida entre fotos diferentes, todas sem o efeito: o quanto o conteúdo sozinho
+  // mexe nela. Em cenas sintéticas (test/apoio-estilo.js) ele fica entre 0,016 e 0,11; em 23 fotos reais de um mesmo
+  // ensaio (todas com textura, clareza e neblina 0 e a mesma nitidez declaradas no XMP), muito maior: clareza 0,197,
+  // canal escuro 0,166, croma 1,15, textura 0,198, nitidez 1,03, halo 0,877 (fundo desfocado, pele, céu e folhagem
+  // mudam a banda fina e a média muito mais que os controles). Vale o das fotos reais: sem par, a vizinhança só sai com
+  // um efeito muito maior que o de qualquer estilo comum, e na prática fica de fora. Antes desta calibração, 8 de 24
+  // pares reais (10 controles) davam neblina, clareza ou nitidez que o XMP não tinha.
+  erroCena: { textura: 0.198, nitidez: 1.03, halo: 0.877, clareza: 0.197, escuro: 0.166, croma: 1.15 },
 }
 const V = VIZINHANCA
 
@@ -357,9 +374,9 @@ export function medidasFinas(L, w, h, m, { rf, sigma, ruidoA = 0, passo = 1 / 25
 
 /**
  * As medidas largas (foto inteira reduzida, RGB linear da tela, w×h): { clareza, escuro, croma }. `ar`: a luz do ar
- * já medida (nos quadrantes, a da foto inteira).
+ * já medida; `soClareza`: só a clareza (pareado, a neblina é medida por medidasDaNevoaPar).
  */
-export function medidasLargas(lin, w, h, espaco, ar = null) {
+export function medidasLargas(lin, w, h, espaco, ar = null, soClareza = false) {
   const n = w * h
   const L = planoLog(lin, espaco)
   const lado = Math.max(w, h)
@@ -379,6 +396,7 @@ export function medidasLargas(lin, w, h, espaco, ar = null) {
     p[i] = liso * liso
   }
   const clareza = Math.log(Math.max(1e-6, rmsPesado(medio, p)) / Math.max(1e-6, rmsPesado(largo, p)))
+  if (soClareza) return { clareza }
   // canal escuro relativo à luz do ar, medida como o motor mede
   const A = ar ?? luzDoAr({ largura: w, altura: h, dados: lin })
   const dc = canalEscuro(lin, w, h, A)
@@ -412,64 +430,122 @@ export function medidasLargas(lin, w, h, espaco, ar = null) {
 }
 
 /**
- * A partição de um quadrante do alvo neutro para a neblina pareada: cada pixel vai para uma de 8 faixas de luz
- * (quantis da luz Oklab) e, dentro da faixa, para "alto" (canal escuro acima da mediana da faixa) ou "baixo".
- * Devolve { faixa: Int8Array, alto: Uint8Array }.
+ * A partição de um quadrante do alvo neutro para a neblina pareada: cada pixel vai para uma de 16 faixas de luz
+ * (quantis do log2 da norma do motor na cena, 75% luminância + 25% maior canal: é por ela que tom, curva, contraste e
+ * pretos agem) e, dentro da faixa, para "alto" (canal escuro acima da mediana da faixa) ou "baixo". Com a luz Oklab no lugar
+ * da norma, uma foto de manchas coloridas com contraste e pretos dava neblina 42. Devolve { celula: Int32Array (a
+ * faixa), alto: Uint8Array, celulas, entrada: Float32Array (o log2 da norma do alvo neutro) }.
  */
-export function particaoDaNevoa(lin, w, h, espaco, ar) {
+export function particaoDaNevoa(lin, w, h, espaco, ar, qx = 0, qy = 0) {
   const n = w * h
-  const ok = criarOklab(espaco)
-  const lab = [0, 0, 0]
-  const L = new Float32Array(n)
-  for (let i = 0; i < n; i++) L[i] = ok.paraOklab(Math.max(0, lin[i * 3]), Math.max(0, lin[i * 3 + 1]), Math.max(0, lin[i * 3 + 2]), lab)[0]
+  // canto (1) e miolo (0) pela distância ao centro da FOTO (o quadrante é ¼ dela), como a vinheta do motor mede
+  const canto = new Int8Array(n).fill(-1)
+  for (let y = 0; y < h; y++) {
+    const dy = (qy * h + y + 0.5 - h) / h
+    for (let x = 0; x < w; x++) {
+      const dx = (qx * w + x + 0.5 - w) / w
+      const r = Math.sqrt((dx * dx + dy * dy) / 2)
+      if (r >= 0.8) canto[y * w + x] = 1
+      else if (r < 0.5) canto[y * w + x] = 0
+    }
+  }
+  const L = normaDaCena(lin, w, h, espaco)
   const dc = canalEscuro(lin, w, h, ar)
-  const cortes = Array.from({ length: 7 }, (_, k) => percentil(L, (k + 1) / 8))
-  const faixa = new Int8Array(n)
+  const F = 16
+  const cortes = Array.from({ length: F - 1 }, (_, k) => percentil(L, (k + 1) / F))
+  const celula = new Int32Array(n)
   for (let i = 0; i < n; i++) {
     let b = 0
-    while (b < 7 && L[i] > cortes[b]) b++
-    faixa[i] = b
+    while (b < F - 1 && L[i] > cortes[b]) b++
+    celula[i] = b
   }
   const alto = new Uint8Array(n)
-  for (let b = 0; b < 8; b++) {
+  for (let b = 0; b < F; b++) {
     const dcs = []
-    for (let i = 0; i < n; i++) if (faixa[i] === b) dcs.push(dc[i])
+    for (let i = 0; i < n; i++) if (celula[i] === b) dcs.push(dc[i])
     const mediana = percentil(dcs, 0.5)
-    for (let i = 0; i < n; i++) if (faixa[i] === b && dc[i] > mediana) alto[i] = 1
+    for (let i = 0; i < n; i++) if (celula[i] === b && dc[i] > mediana) alto[i] = 1
   }
-  return { faixa, alto }
+  return { celula, alto, canto, celulas: F, entrada: L }
+}
+
+// log2 da norma na CENA (a inversa da tela, como o motor recebe uma foto pronta, e a norma do motor em Rec.2020): é
+// nela que a cadeia de ponto age. Medida na tela, o mapa de tons e a compressão de gamut tratam cores saturadas de outro
+// jeito e o contraste +25 virava neblina 18.
+const Y2020 = luminancia('rec2020')
+function normaDaCena(lin, w, h, espaco) {
+  // a mesma inversa que baseDeImagem usa (tela neutra, margens padrão), direto na luz linear (sem passar por código)
+  const tela = criarTela(espaco, { altas: MARGENS.altas.padrao, sombras: MARGENS.sombras.padrao })
+  const n = w * h
+  const L = new Float32Array(n)
+  const c = [0, 0, 0]
+  for (let i = 0; i < n; i++) {
+    tela.inverterLinear(limitar(lin[i * 3], 0, 1), limitar(lin[i * 3 + 1], 0, 1), limitar(lin[i * 3 + 2], 0, 1), c)
+    const r = c[0]
+    const g = c[1]
+    const b = c[2]
+    const mx = r > g ? (r > b ? r : b) : g > b ? g : b
+    const v = 0.75 * (Y2020[0] * r + Y2020[1] * g + Y2020[2] * b) + 0.25 * mx
+    L[i] = Math.log2(v > 1e-6 ? v : 1e-6)
+  }
+  return L
 }
 
 /**
- * A neblina pareada, que o tom não imita: numa mesma faixa de luz do alvo (a partição acima, fixa), a diferença entre
- * os pixels de canal escuro alto (onde a névoa mora) e os de canal escuro baixo, na luz Oklab e no log do croma. Uma
- * curva de tom, um contraste ou uma saturação levam pixels de mesma cor ao mesmo lugar: a diferença não muda. Tirar
- * névoa age pelo canal escuro (He, Sun e Tang, 2011): escurece e satura os de canal alto mais que os outros.
+ * A neblina pareada, que o tom não imita. Em cada faixa (a partição acima, fixa, do alvo neutro), a saída (log2 da
+ * norma) é ajustada por uma reta na entrada (o log2 da norma do alvo neutro): um ajuste que age pela norma (tom, curva,
+ * contraste, pretos, desbotar) é, dentro da faixa estreita, essa reta, e o que sobra é zero nos dois grupos. A medida é
+ * o resíduo médio dos pixels de canal escuro alto (onde a névoa mora) menos o dos de canal escuro baixo: tirar névoa age
+ * pelo canal escuro da vizinhança (He, Sun e Tang, 2011) e escurece mais os de canal alto. Sem a reta, contraste +25
+ * já dava neblina 19 (os dois grupos não têm a mesma norma média dentro da faixa, e o contraste estica a diferença).
  */
-function medidasDaNevoaPar(lin, n, espaco, { faixa, alto }) {
-  const ok = criarOklab(espaco)
-  const lab = [0, 0, 0]
-  const s = new Float64Array(8 * 2 * 3) // por faixa e grupo: soma de L, soma de log C, contagem
+export function medidasDaNevoaPar(lin, w, h, espaco, { celula, alto, canto, celulas, entrada }) {
+  const n = w * h
+  const L = normaDaCena(lin, w, h, espaco)
+  // por faixa: n, Σx, Σy, Σxx, Σxy (todos); por grupo (canal escuro baixo e alto; miolo e canto): n, Σx, Σy
+  const T = 17
+  const s = new Float64Array(celulas * T)
   for (let i = 0; i < n; i++) {
-    ok.paraOklab(Math.max(0, lin[i * 3]), Math.max(0, lin[i * 3 + 1]), Math.max(0, lin[i * 3 + 2]), lab)
-    const o = (faixa[i] * 2 + alto[i]) * 3
-    s[o] += lab[0]
-    s[o + 1] += Math.log(Math.hypot(lab[1], lab[2]) + 0.01)
-    s[o + 2]++
+    const o = celula[i] * T
+    const x = entrada[i]
+    const y = L[i]
+    s[o]++
+    s[o + 1] += x
+    s[o + 2] += y
+    s[o + 3] += x * x
+    s[o + 4] += x * y
+    const g = o + 5 + alto[i] * 3
+    s[g]++
+    s[g + 1] += x
+    s[g + 2] += y
+    if (canto[i] >= 0) {
+      const c = o + 11 + canto[i] * 3
+      s[c]++
+      s[c + 1] += x
+      s[c + 2] += y
+    }
   }
-  let dL = 0
-  let dC = 0
-  let peso = 0
-  for (let b = 0; b < 8; b++) {
-    const a = (b * 2 + 1) * 3
-    const z = b * 2 * 3
-    const p = Math.min(s[a + 2], s[z + 2])
-    if (p < 4) continue
-    dL += p * (s[a] / s[a + 2] - s[z] / s[z + 2])
-    dC += p * (s[a + 1] / s[a + 2] - s[z + 1] / s[z + 2])
-    peso += p
+  // o resíduo médio do grupo 1 menos o do grupo 0, com a reta da faixa tirada, pesado pelo menor grupo
+  const diferenca = (g0) => {
+    let soma = 0
+    let peso = 0
+    for (let b = 0; b < celulas; b++) {
+      const o = b * T
+      const nb = s[o]
+      const n0 = s[o + g0]
+      const n1 = s[o + g0 + 3]
+      const p = Math.min(n0, n1)
+      if (p < 4) continue
+      const vx = s[o + 3] / nb - (s[o + 1] / nb) ** 2
+      const beta = vx > 1e-9 ? (s[o + 4] / nb - (s[o + 1] / nb) * (s[o + 2] / nb)) / vx : 1
+      const dy = s[o + g0 + 5] / n1 - s[o + g0 + 2] / n0
+      const dx = s[o + g0 + 4] / n1 - s[o + g0 + 1] / n0
+      soma += p * (dy - beta * dx)
+      peso += p
+    }
+    return peso ? soma / peso : 0
   }
-  return { nevoaL: peso ? dL / peso : 0, nevoaC: peso ? dC / peso : 0 }
+  return { nevoaL: diferenca(5), vinheta: diferenca(11) }
 }
 
 function canalEscuro(lin, w, h, A) {
@@ -589,7 +665,6 @@ function ajustar(params, residuos, { iteracoes = 5, r0 = null, J0 = null } = {})
       )
       const novo = v.map((x, j) => limitar(x + passo[j], params[j].min, params[j].max))
       const rn = residuos(novo)
-      if (process.env.DEPURAR) console.log("LM", novo.map(Math.round), rn.reduce((s, x) => s + x * x, 0).toFixed(1), custo.toFixed(1))
       const c = rn.reduce((s, x) => s + x * x, 0)
       if (c < custo) {
         const pequeno = novo.every((x, j) => Math.abs(x - v[j]) < 1)
@@ -661,7 +736,6 @@ function estimarBloco(params, ref, medirAlvo, ajustes, escalas, { pareado, contr
   })
   if (!ativos.length) return
   const sub = ativos.map((j) => params[j])
-  if (process.env.DEPURAR && sub.length === 2 && sub[1].nome === "nitidez") { const rr = residuosDe(sub)([0, 60]); console.log("em (0,60)", rr.reduce((s, x) => s + x * x, 0).toFixed(1), rr.map((x) => x.toFixed(0)).join(" ")) }
   const { valores, residuos, J } = ajustar(sub, residuosDe(sub), { r0, J0: ativos.map((j) => J0[j]) })
   // incerteza: a da curvatura (Jᵀ J)⁻¹, inflada pelo resíduo que sobrou quando há mais dados que parâmetros (pareado)
   const dados = residuos.slice(0, nDados)
@@ -709,7 +783,8 @@ const media = (lista) => {
  * cena do alvo (então cada recorte e cada quadrante é comparado com o seu par, e a incerteza sai do que sobrou);
  * `soLargas`: só clareza e neblina (a 1ª volta do refino conjunto em referencia.js só precisa delas).
  *
- * Devolve { presenca: { textura?, clareza?, neblina? }, detalhe: { nitidez? }, controles: { [nome]: { valor,
+ * Devolve { presenca: { textura?, clareza?, neblina? }, detalhe: { nitidez? }, efeitos: { vinheta? (só pareado) },
+ * controles: { [nome]: { valor,
  * incerteza, confianca, sai, razao } }, renders, tempo }.
  */
 export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela = 'srgb', soLargas = false } = {}) {
@@ -717,7 +792,7 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   let renders = 0
   const contar = () => renders++
   const controles = {}
-  const saida = { presenca: {}, detalhe: {} }
+  const saida = { presenca: {}, detalhe: {}, efeitos: {} }
   const contexto = { pareado, controles, saida, contar }
   const pedacos = (lista) => (pareado ? lista : [media(lista)])
 
@@ -743,19 +818,18 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   let particoes = null
   if (pareado) {
     const ar = luzDoAr({ largura: rA.w, altura: rA.h, dados: linAlvo })
-    particoes = QUADRANTES.map(([qx, qy]) => particaoDaNevoa(quadrante(linAlvo, rA.w, qx, qy), hw, hh, tela, ar))
+    particoes = QUADRANTES.map(([qx, qy]) => particaoDaNevoa(quadrante(linAlvo, rA.w, qx, qy), hw, hh, tela, ar, qx, qy))
   }
   const largas = (lin, w, h) => {
     if (!pareado) return [medidasLargas(lin, w, h, tela)]
-    const ar = luzDoAr({ largura: w, altura: h, dados: lin })
     return QUADRANTES.map(([qx, qy], k) => {
       const q = quadrante(lin, w, qx, qy)
-      return { ...medidasLargas(q, hw, hh, tela, ar), ...medidasDaNevoaPar(q, hw * hh, tela, particoes[k]) }
+      return { ...medidasLargas(q, hw, hh, tela, null, true), ...medidasDaNevoaPar(q, hw, hh, tela, particoes[k]) }
     })
   }
   // pareado, a referência vai para a grade do alvo reduzido (mesmos pixels)
   const largasRef = refs.map((img) => {
-    if (pareado) return largas(recorteLinear(img, 0, 0, rA.w, rA.h, img.largura / rA.w), rA.w, rA.h)
+    if (pareado) return largas(recorteLinear(img, 0, 0, rA.w, rA.h, (rA.k * img.largura) / alvo.largura), rA.w, rA.h)
     const r = reduzido(img, V.ladoLargo)
     return largas(recorteLinear(img, 0, 0, r.w, r.h, r.k), r.w, r.h)
   })
@@ -770,7 +844,10 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   estimarBloco(
     [
       { nome: 'clareza', caminho: 'presenca.clareza', min: -100, max: 100, h: 8, medidas: ['clareza'] },
-      { nome: 'neblina', caminho: 'presenca.neblina', min: -50, max: 100, h: 8, medidas: pareado ? ['nevoaL', 'nevoaC'] : ['escuro', 'croma'] },
+      { nome: 'neblina', caminho: 'presenca.neblina', min: -50, max: 100, h: 8, medidas: pareado ? ['nevoaL'] : ['escuro', 'croma'] },
+      // a vinheta escurece os cantos, onde também mexeriam a neblina e a clareza: pareado, entra no mesmo bloco, medida
+      // como a neblina (canto menos miolo na mesma faixa de norma, com a reta tirada: o tom não a imita)
+      ...(pareado ? [{ nome: 'vinheta', caminho: 'efeitos.vinheta', min: -100, max: 100, h: 8, medidas: ['vinheta'] }] : []),
     ],
     refLarga,
     (a) => {
