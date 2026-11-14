@@ -215,10 +215,8 @@ export const DUVIDAS = Object.freeze({
 export const PESSOAS = Object.freeze({
   versao: 1,
   titulo: ['Agrupar', 'por pessoa.'],
-  aviso:
-    'Agrupar por pessoa cria uma assinatura do rosto de cada um, guardada só neste aparelho e apagada com o trabalho. ' +
-    'Ela nunca sai daqui: não vai para a conta, para a galeria, para a exportação nem para o XMP.',
-  pontos: ['Só neste aparelho', 'Some com o trabalho ou em "Esquecer rostos"', 'Nada vai para a galeria nem para o Lightroom'],
+  aviso: 'Agrupar por pessoa cria uma assinatura do rosto de cada um, guardada só neste aparelho e apagada com o trabalho.',
+  pontos: ['Não vai para a conta, a galeria, a exportação nem o XMP', 'Some com o trabalho ou em "Esquecer rostos"'],
   consentimento: 'Tenho o consentimento das pessoas fotografadas para isso.',
   ligar: 'Agrupar',
   esquecer: 'Esquecer rostos',
@@ -253,7 +251,8 @@ export const CALIBRACAO = Object.freeze({
     olhos: (d) => (d < 0 ? 'Olho semicerrado passa com você.' : 'Você é mais exigente com olho semicerrado.'),
     exposicao: (k) => (k > 1 ? 'Você tolera mais luz estourada e sombra fechada.' : 'Você quer a luz mais contida.'),
   },
-  contraditorio: (dimensao) => `${{ nitidez: 'Foco', olhos: 'Olhos', exposicao: 'Luz' }[dimensao]}: respostas diferentes para fotos parecidas, ficou como estava.`,
+  contraditorio: (dimensao) =>
+    `${{ nitidez: 'Foco', olhos: 'Olhos', exposicao: 'Luz' }[dimensao]}: respostas diferentes para fotos parecidas, ficou como estava.`,
   igual: 'Suas respostas batem com o padrão.',
   limite: 'Chegou ao limite do ajuste.',
 })

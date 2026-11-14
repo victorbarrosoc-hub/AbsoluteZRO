@@ -43,7 +43,9 @@ function invasao(a, b) {
 
 /** Uma impressão das caixas da foto: mudou a leitura dos rostos, a assinatura guardada não vale mais. */
 export function chaveDosRostos(rostos) {
-  return (Array.isArray(rostos) ? rostos : []).map((r) => (r?.caixa ? [r.caixa.x, r.caixa.y, r.caixa.largura].map((v) => Math.round(v)).join(',') : '-')).join(';')
+  return (Array.isArray(rostos) ? rostos : [])
+    .map((r) => (r?.caixa ? [r.caixa.x, r.caixa.y, r.caixa.largura].map((v) => Math.round(v)).join(',') : '-'))
+    .join(';')
 }
 
 /**
@@ -95,7 +97,16 @@ export function rostosDoEnsaio(fotos, assinaturas) {
     for (const x of a.rostos ?? []) {
       const r = f.rostos[x.i]
       if (!r || !x.v || x.v.length !== 128) continue
-      saida.push({ foto: f.id, i: x.i, v: unitario(x.v), largura: r.caixa.largura, bom: rostoBom(r, f.rostos), chave: !!r.chave, peso: r.peso ?? 0, caixa: r.caixa })
+      saida.push({
+        foto: f.id,
+        i: x.i,
+        v: unitario(x.v),
+        largura: r.caixa.largura,
+        bom: rostoBom(r, f.rostos),
+        chave: !!r.chave,
+        peso: r.peso ?? 0,
+        caixa: r.caixa,
+      })
     }
   }
   return saida

@@ -37,7 +37,7 @@ import { neutro } from '../motor/ajustes.js'
 import { baseDeImagem } from '../motor/base.js'
 import { curvaDe, luminancia } from '../motor/cor/espacos.js'
 import { criarOklab } from '../motor/cor/oklab.js'
-import { aplicarLocal, caixa, estimarRuido, filtroGuiado, gaussiano, LOCAL, luzDoAr, minimo } from '../motor/local.js'
+import { aplicarLocal, caixa, estimarRuido, filtroGuiado, gaussiano, LOCAL, luzDoAr, mapasLargos, minimo } from '../motor/local.js'
 import { criarPonto } from '../motor/ponto.js'
 import { contextoDe, revelar } from '../motor/revelar.js'
 import { telaDe } from '../motor/tela.js'
@@ -49,7 +49,7 @@ export const VIZINHANCA = {
   limiteLado: 2048, // escala de medida máxima dos recortes (acima disto os recortes saem de uma média)
   priori: 60, // desvio a priori dos controles (a penalidade que puxa para zero)
   minimo: 5, // valor mínimo para sair
-  sigmas: { sai: 2, alta: 4 }, // valor ÷ incerteza para sair e para confiança alta
+  sigmas: { sai: 3, alta: 5 }, // valor ÷ incerteza para sair e para confiança alta
   confiavel: 0.6, // fração mínima do recorte com relevo acima do piso de quantização e ruído
   responde: 4, // a medida tem de andar mais que isto × o erro de medida de −50 a +50
   // erro de medida de cada medida: pareado (por recorte ou quadrante, o piso do que não é o controle) e sem par (o que
@@ -160,24 +160,49 @@ export function planoLog(lin, espaco) {
 export const baseDoRecorte = (lin, w, h, espaco) => baseDeImagem({ largura: w, altura: h, dados: codigos16(lin), canais: 3, espaco })
 
 // só a textura e a nitidez (e nada do que é da foto inteira): é o que os recortes medem
-function soFinos(ajustes) {
+// textura e nitidez; clareza e neblina só quando vêm os mapas largos da foto inteira (`mapasDoAlvo`)
+function soFinos(ajustes, comLargos) {
   const a = neutro()
   a.presenca.textura = ajustes.presenca.textura
+  if (comLargos) {
+    a.presenca.clareza = ajustes.presenca.clareza
+    a.presenca.neblina = ajustes.presenca.neblina
+  }
   Object.assign(a.detalhe, ajustes.detalhe, { ruidoLuz: 0, ruidoCor: 0 })
   return a
 }
 
 /**
+ * Os mapas largos (base da clareza, transmissão da neblina) do alvo inteiro, para os recortes: o mesmo caminho de
+ * `revelar` (mapasDaFoto), que calcula o filtro guiado largo uma vez na foto reduzida com a cadeia de ponto e o lê no
+ * tamanho cheio (He e Sun, 2015). `base`: o alvo reduzido; `quadro`: a foto na escala de medida. A luz do ar é medida
+ * nessa mesma foto reduzida (o motor usa uma de 256 px). null quando não há clareza nem neblina.
+ */
+export function mapasDoAlvo(base, ajustes, quadro) {
+  const p = ajustes.presenca
+  if (!p.clareza && !p.neblina) return null
+  const { largura: w, altura: h } = base.imagem
+  const dados = Float32Array.from(base.imagem.dados)
+  criarPonto(ajustes, contextoDe(base, ajustes)).aplicarEm(dados, w * h)
+  const ar = luzDoAr({ largura: w, altura: h, dados })
+  const k = quadro.largura / w
+  const bloco = { largura: w, altura: h, dados, x0: 0, y0: 0, quadro: { largura: w, altura: h }, escala: 1 / k }
+  return { mapas: mapasLargos(bloco, ajustes, { k, quadro, ar }), ar }
+}
+
+/**
  * Revela um recorte do alvo (RGB linear da tela, w×h, com margem) pelo motor como um pedaço da foto inteira: a cadeia
- * de ponto com os ajustes dados e, da vizinhança, só textura e nitidez. `quadro` é a foto inteira na escala de medida,
+ * de ponto com os ajustes dados e, da vizinhança, textura e nitidez (e clareza e neblina, com `largos` de
+ * `mapasDoAlvo`). `quadro` é a foto inteira na escala de medida,
  * (x0, y0) onde o recorte fica nela, `escala` = escala de medida ÷ escala da foto (o raio da nitidez é em pixels da foto
  * cheia). É o mesmo código de `revelar` (ponto.js, local.js, tela.js), sem montar a foto inteira.
  */
-export function revelarRecorte(lin, w, h, ajustes, { espaco, quadro, x0, y0, escala, base = null }) {
+export function revelarRecorte(lin, w, h, ajustes, { espaco, quadro, x0, y0, escala, base = null, largos = null }) {
   base ??= baseDoRecorte(lin, w, h, espaco)
   const dados = Float32Array.from(base.imagem.dados)
   criarPonto(ajustes, contextoDe(base, ajustes)).aplicarEm(dados, w * h)
-  aplicarLocal({ largura: w, altura: h, dados, x0, y0, quadro, escala }, soFinos(ajustes), { semente: 1 })
+  const contexto = { semente: 1, mapas: largos?.mapas ?? null, ar: largos?.ar ?? null }
+  aplicarLocal({ largura: w, altura: h, dados, x0, y0, quadro, escala }, soFinos(ajustes, !!largos), contexto)
   const saida = new Float32Array(w * h * 3)
   telaDe(espaco, ajustes, base).aplicarEm(dados, saida, w * h, 0, 0)
   return saida
@@ -246,16 +271,18 @@ export function medidasFinas(L, w, h, m, { rf, sigma, ruidoA = 0, passo = 1 / 25
   for (let y = m; y < h - m; y++) for (let x = m; x < w - m; x++) dentro[y * w + x] = 1
   const saida = {}
   // O piso de cada pixel no log2: o degrau do código da foto de onde ele veio (passo²/12, levado ao log2 pela inclinação
-  // da curva sRGB: dlog2Y/dc = 2,4/((c + 0,055)·ln 2)) e o ruído medido (a/(Y·ln²2)). A nitidez e a textura do motor
-  // amplificam esse piso no alvo de 8 bits, e na referência ele veio depois do tratamento: onde o relevo da banda média
-  // não passa de 3 pisos, o pixel pesa pouco (peso s²/(s² + 9·piso²)). Sem isto, um céu liso de 8 bits dobrava a medida.
+  // da curva sRGB: dlog2Y/dc = 2,4/((c + 0,055)·ln 2)). A nitidez e a textura do motor amplificam esse degrau no alvo de
+  // 8 bits, e na referência ele veio depois do tratamento: onde o relevo da banda média não passa de 3 pisos, o pixel
+  // pesa pouco (peso s²/(s² + 9·piso²)). Sem isto, um céu liso de 8 bits dobrava a medida (medido: resíduo 13171 →
+  // 44 no valor verdadeiro). O ruído medido NÃO entra aqui: o estimador do motor confunde textura fina com ruído e
+  // jogava fora recortes bons; ele só entra como incerteza (ver `ruido` abaixo).
   const piso = new Float32Array(n)
   const degrau = (passo * passo) / 12
   for (let i = 0; i < n; i++) {
     const x = (limitar(L[i], -12, 0) + 12) * 64
     const k = x | 0
     const d2 = INCLINACAO_LOG[k] + (INCLINACAO_LOG[k + 1] - INCLINACAO_LOG[k]) * (x - k)
-    piso[i] = degrau * d2 + (ruidoA > 0 ? ruidoA / (2 ** L[i] * Math.LN2 * Math.LN2) : 0)
+    piso[i] = degrau * d2
   }
   const confiavel = (banda, raio) => {
     const e = new Float32Array(n)
@@ -328,8 +355,11 @@ export function medidasFinas(L, w, h, m, { rf, sigma, ruidoA = 0, passo = 1 / 25
   return saida
 }
 
-/** As medidas largas (foto inteira reduzida, RGB linear da tela, w×h): { clareza, escuro, croma }. */
-export function medidasLargas(lin, w, h, espaco) {
+/**
+ * As medidas largas (foto inteira reduzida, RGB linear da tela, w×h): { clareza, escuro, croma }. `ar`: a luz do ar
+ * já medida (nos quadrantes, a da foto inteira).
+ */
+export function medidasLargas(lin, w, h, espaco, ar = null) {
   const n = w * h
   const L = planoLog(lin, espaco)
   const lado = Math.max(w, h)
@@ -350,7 +380,7 @@ export function medidasLargas(lin, w, h, espaco) {
   }
   const clareza = Math.log(Math.max(1e-6, rmsPesado(medio, p)) / Math.max(1e-6, rmsPesado(largo, p)))
   // canal escuro relativo à luz do ar, medida como o motor mede
-  const A = luzDoAr({ largura: w, altura: h, dados: lin })
+  const A = ar ?? luzDoAr({ largura: w, altura: h, dados: lin })
   const escuro = new Float32Array(n)
   for (let i = 0; i < n; i++) escuro[i] = Math.min(lin[i * 3] / A[0], lin[i * 3 + 1] / A[1], lin[i * 3 + 2] / A[2])
   const dc = minimo(escuro, w, h, Math.max(1, Math.round(LOCAL.neblina.raio * lado)))
@@ -481,6 +511,8 @@ function ajustar(params, residuos, { iteracoes = 5, r0 = null, J0 = null } = {})
   let custo = r.reduce((s, x) => s + x * x, 0)
   let mu = 1e-2
   for (let it = 0; it < iteracoes; it++) {
+    const antes = v.slice()
+    const rAntes = r
     const JtJ = produto(J)
     const Jtr = J.map((col) => col.reduce((s, x, k) => s + x * r[k], 0))
     let melhorou = false
@@ -506,7 +538,18 @@ function ajustar(params, residuos, { iteracoes = 5, r0 = null, J0 = null } = {})
       mu *= 8
     }
     if (!melhorou) break
-    if (it < iteracoes - 1) J = jacobiano(params, residuos, v, r)
+    // o jacobiano anda pela atualização de Broyden (1965, "A class of methods for solving nonlinear simultaneous
+    // equations", Math. Comp. 19): J += (Δr − J·Δv)·Δvᵀ/|Δv|², sem revelar de novo a cada passo
+    const dv = v.map((x, j) => x - antes[j])
+    const n2 = dv.reduce((s, x) => s + x * x, 0)
+    if (n2 > 1e-9) {
+      for (let k = 0; k < r.length; k++) {
+        let previsto = 0
+        for (let j = 0; j < v.length; j++) previsto += J[j][k] * dv[j]
+        const erro = r[k] - rAntes[k] - previsto
+        for (let j = 0; j < v.length; j++) J[j][k] += (erro * dv[j]) / n2
+      }
+    }
   }
   // J é o do último ponto aceito (ou o de antes dele): a incerteza só pede a curvatura perto da solução
   return { valores: v, residuos: r, J }
@@ -563,13 +606,21 @@ function estimarBloco(params, ref, medirAlvo, ajustes, escalas, { pareado, contr
     const valor = Math.round(valores[j])
     const incerteza = Math.sqrt(Math.max(cov[j][j], 0) * sobra)
     const z = Math.abs(valor) / Math.max(incerteza, 1e-9)
-    const sai = Math.abs(valor) >= V.minimo && z >= V.sigmas.sai
+    // no limite da faixa = a diferença não se explica por este controle (o ajuste foi até onde pôde): não sai
+    const noLimite = valores[j] <= p.min + 0.5 || valores[j] >= p.max - 0.5
+    const sai = Math.abs(valor) >= V.minimo && z >= V.sigmas.sai && !noLimite
     controles[p.nome] = {
       valor,
       incerteza: Math.round(incerteza * 10) / 10,
       confianca: !sai ? 'baixa' : z >= V.sigmas.alta && pareado ? 'alta' : 'media',
       sai,
-      razao: sai ? 'medido' : Math.abs(valor) < V.minimo ? 'perto de zero' : 'incerteza grande demais para o valor',
+      razao: sai
+        ? 'medido'
+        : Math.abs(valor) < V.minimo
+          ? 'perto de zero'
+          : noLimite
+            ? 'foi ao limite da faixa: a diferença não é deste controle'
+            : 'incerteza grande demais para o valor',
     }
     if (sai) {
       const [g, c] = p.caminho.split('.')
@@ -610,6 +661,7 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   // pareado: os quatro quadrantes (cada um com o seu par); sem par: a foto inteira
   const largas = (lin, w, h) => {
     if (!pareado) return [medidasLargas(lin, w, h, tela)]
+    const ar = luzDoAr({ largura: w, altura: h, dados: lin })
     const hw = Math.floor(w / 2)
     const hh = Math.floor(h / 2)
     return [
@@ -620,7 +672,7 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
     ].map(([qx, qy]) => {
       const q = new Float32Array(hw * hh * 3)
       for (let y = 0; y < hh; y++) q.set(lin.subarray(((qy * hh + y) * w + qx * hw) * 3, ((qy * hh + y) * w + qx * hw + hw) * 3), y * hw * 3)
-      return medidasLargas(q, hw, hh, tela)
+      return medidasLargas(q, hw, hh, tela, ar)
     })
   }
   const largasRef = refs.map((img) => {
@@ -676,7 +728,9 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
     const qA = quadroDe(alvo)
     const posicoes = (img, lin, w, h) => {
       const q = quadroDe(img)
-      return escolherRecortes(lin, w, h, tela, V.recortes).map(({ u, v }) => ({
+      // foto pequena: os recortes não passam de 60% da área (senão se sobrepõem e só custam tempo)
+      const quantos = limitar(Math.floor((0.6 * q.largura * q.altura) / (lado * lado)), 3, V.recortes)
+      return escolherRecortes(lin, w, h, tela, quantos).map(({ u, v }) => ({
         x0: limitar(Math.round(u * q.largura - lado / 2), 0, Math.max(0, q.largura - lado)),
         y0: limitar(Math.round(v * q.altura - lado / 2), 0, Math.max(0, q.altura - lado)),
       }))
@@ -703,10 +757,17 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
       return { x0, y0, lin, base: baseDoRecorte(lin, lado, lado, alvo.espaco) }
     })
     const quadro = { largura: qA.largura, altura: qA.altura }
+    // a clareza e a neblina que acabaram de sair entram nos recortes do alvo (pelos mapas largos, como em `revelar`):
+    // a referência as tem, e elas mexem um pouco na banda fina (medido: clareza −30 virava textura −13 sem isto)
+    const ajustesFinos = structuredClone(ajustes)
+    Object.assign(ajustesFinos.presenca, saida.presenca)
+    const largos = mapasDoAlvo(baseLarga, ajustesFinos, quadro)
     const medirCrus = (lista, a) =>
-      lista.map(({ x0, y0, lin, base }) => medir(linearDeCodigo(revelarRecorte(lin, lado, lado, a, { espaco: tela, quadro, x0, y0, escala, base })), ruidoAlvo, passoDe(alvo)))
+      lista.map(({ x0, y0, lin, base }) =>
+        medir(linearDeCodigo(revelarRecorte(lin, lado, lado, a, { espaco: tela, quadro, x0, y0, escala, base, largos })), ruidoAlvo, passoDe(alvo)),
+      )
     // recorte sem relevo acima do piso (céu liso de 8 bits, parede lisa) não diz nada: fica fora, no alvo e no par dele
-    const bons = medirCrus(crus, ajustes).map((m, k) => (m.confiavel >= V.confiavel ? k : -1)).filter((k) => k >= 0)
+    const bons = medirCrus(crus, ajustesFinos).map((m, k) => (m.confiavel >= V.confiavel ? k : -1)).filter((k) => k >= 0)
     crus = bons.map((k) => crus[k])
     if (pareado) finasRef[0] = bons.map((k) => finasRef[0][k])
     else for (let i = 0; i < finasRef.length; i++) finasRef[i] = finasRef[i].filter((m) => m.confiavel >= V.confiavel)
@@ -720,10 +781,10 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
     } else if (!pareado && sigma >= 0.25) {
       // a parte da banda fina que é ruído difere entre as fotos: isso vira incerteza da nitidez e do halo, não valor.
       // d log(e) = ½ · Δ(fração de ruído): é o quanto a medida andaria só pela diferença de ruído
-      const diferenca = 0.5 * Math.abs(refFina[0].ruido - medirAlvo(ajustes)[0].ruido)
+      const diferenca = 0.5 * Math.abs(refFina[0].ruido - medirAlvo(ajustesFinos)[0].ruido)
       escalas = { ...escalas, nitidez: Math.hypot(escalas.nitidez, diferenca), halo: Math.hypot(escalas.halo, diferenca) }
     }
-    if (finos.length) estimarBloco(finos, refFina, medirAlvo, ajustes, escalas, contexto)
+    if (finos.length) estimarBloco(finos, refFina, medirAlvo, ajustesFinos, escalas, contexto)
   }
   return { ...saida, controles, renders, tempo: performance.now() - inicio }
 }

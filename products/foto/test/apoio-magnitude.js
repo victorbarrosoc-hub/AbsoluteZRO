@@ -20,7 +20,18 @@ export function medidas({ q = 0.85, altas = 0, altas3 = 0, baixas = 0, p1 = 12, 
 }
 
 /** Um rosto como o catálogo guarda (o resumo de app/decupagem/compacto.js). */
-export function rosto({ x = 400, y = 200, largura = 120, olhos = 'abertos', ear = 0.3, nitidez = 0.85, chave = true, principal = true, guinada = 0, duvidoso = false } = {}) {
+export function rosto({
+  x = 400,
+  y = 200,
+  largura = 120,
+  olhos = 'abertos',
+  ear = 0.3,
+  nitidez = 0.85,
+  chave = true,
+  principal = true,
+  guinada = 0,
+  duvidoso = false,
+} = {}) {
   return {
     caixa: { x, y, largura, altura: largura * 1.2 },
     confianca: 0.95,

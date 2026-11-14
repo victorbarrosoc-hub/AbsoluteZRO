@@ -217,11 +217,37 @@ analisarRostos(deteccoes, luma) → [{ caixa, olhos: 'abertos' | 'parcial' | 'fe
 classificarCena({ rostos, objetos, rotulos, medidas }) → { cena: 'retrato' | 'grupo' | 'pessoas' | 'animal' | 'natureza' | 'paisagem' | 'comida' |
                                                            'arquitetura' | 'produto' | 'documento' | 'noturna' | 'outra', confianca, porque, noite }
 agrupar(fotos) → [{ id, fotos: [id], tipo: 'repetidas' | 'sequencia', escolhida, reservas, equivalentes, desempate }]
-avaliar(sinais, { rigor, ensaio, pesos, referencia }) → Magnitude { total, estrelas, balde: 'fica' | 'talvez' | 'fora', motivos: [texto],
+avaliar(sinais, { rigor, ensaio, pesos, referencia, limiares }) → Magnitude { total, estrelas, balde: 'fica' | 'talvez' | 'fora', motivos: [texto],
                                                                     componentes: { foco, pessoas, exposicao, ruido }, confianca, incertezas, dicas, detalhe }
 avaliarEnsaio(fotos, opcoes) → { magnitudes: Map(id → Magnitude), grupos, referencia }   // calibra, agrupa, avalia, escolhe e protege a cobertura
-calibrar(fotos) → referencia · protegerCobertura(magnitudes, grupos) · meta(fotos, n, { grupos }) · ajustarPesos(pesos, trocas)
+calibrar(fotos) → referencia · protegerCobertura(magnitudes, grupos) · meta(fotos, n, { grupos, pessoas? }) · ajustarPesos(pesos, trocas)
+limiaresPadrao() → { nitidez: 0, olhos: 0, exposicao: 1 } · normalizarLimiares · corteDeFoco(referencia, limiares) · olhosComLimiar(rosto, d)
+excessoDeExposicao(sinais) → vezes a tolerância de fábrica da pior área (altas 1%, perdido 0,5%, sombra 2%)
+
+duvidas.js    filaDeDuvidas(fotos, { rigor, pessoas?, maximo = 60 }) → [{ id, motivos, importancia, sugestao: 'fica' | 'fora', texto }]
+pessoas.js    rostoParaAssinar(foto) · rostoBom(rosto, outros) · rostosDoEnsaio(fotos, assinaturas) · agruparPessoas(rostos) → { pessoas, soltos }
+              manterIds(pessoas, anteriores) · protegerPessoas(magnitudes, pessoas) · coberturaDe(pessoa, fotoDe) · chaveDosRostos(rostos)
+calibracao.js perguntas(fotos, { limiares, referencia, grupos }) → [{ tipo: 'serve', dimensao, id, valor, corte } | { tipo: 'qual', ids }]
+              ajustarLimiares(limiares, respostas, { referencia, pesos }) → { limiares, pesos, mudou, contraditorias, explicacao }
 ```
+
+**Limiares da pessoa** (calibração em 30 segundos). Três números, com limite (`PARAMETROS.limiares`): `nitidez` soma ao
+corte de "fora de foco" em q (±0,05), `olhos` soma aos cortes de EAR de olho fechado e aberto (±0,04) e `exposicao`
+multiplica as tolerâncias de área estourada e de sombra fechada (0,5 a 4). De fábrica não mexem em nada. Cada resposta
+"serve?" é um lado do corte; o novo corte é o meio do intervalo que as respostas deixam (ou um passo além, com um lado
+só); intervalo vazio é contradição e não mexe. "Qual das duas?" passa por `ajustarPesos`. A tela guarda por pessoa (o
+id da sessão, 'local' sem login) e tipo de ensaio.
+
+**Fila de dúvidas.** Entra só a foto sem marca com: a melhor de uma pessoa-chave sem nenhuma foto boa (100), Fora com
+pessoa-chave e momento sem outra que fica (80), única do momento em Talvez (70), escolhida de cena empatada (60), nota a
+menos de 5 pontos de um corte sem teto (50, mais perto mais alto), certeza baixa (40). Até 60, da mais importante.
+
+**Agrupar por pessoa** (regra 5: desligado por padrão, aviso próprio e consentimento do fotógrafo). Assinatura SFace dos
+rostos que a análise achou (≥ 24 px na prévia, não recusados pela malha, até 12 por foto). Centroide incremental com
+cosseno ≥ 0,40; só rosto bom entra no centroide (≥ 60 px, nítido q ≥ 0,6, olho visível, guinada ≤ 30°, não colado:
+outra caixa cobrindo > 10%); o resto só se junta a um grupo que existe, com ≥ 0,45, e nunca cria pessoa; dois rostos da
+mesma foto nunca são a mesma pessoa; no fim, centroides ≥ 0,45 sem foto em comum se fundem. Pessoa-chave = tem rosto
+chave em alguma foto: a melhor dela não vai para Fora sozinha (`protegerPessoas`) e a meta garante uma foto de cada.
 
 `sinais` junta medidas, rostos, cena, exif, `tipo` e, quando o RAW já foi lido, a `Latitude`: exposição estourada só
 reprova quando o dado do sensor está perdido (três canais); canal recuperável vira aviso. `exposicao.altas`, `altas3` e
@@ -238,9 +264,12 @@ a nota sai só com o que foi medido, a certeza cai, e a tela diz isso.
 ### Esteira da decupagem (`app/decupagem/`)
 
 ```
-criarAnalise({ loja }) → { iniciar({ ids?, camadas: ['rostos', 'objetos', 'rotulos'], rigor, ensaio, pesos?, raw? }), pausar(), retomar(),
-                          cancelar(), estado(), assinar(f), mostrar(ids), refazerNota({ rigor, ensaio, pesos }), meta(n),
-                          revisarPeloRaw(ids?), grupos(), encerrar() }
+criarAnalise({ loja }) → { iniciar({ ids?, camadas: ['rostos', 'objetos', 'rotulos'], rigor, ensaio, pesos?, limiares?, raw? }), pausar(),
+                          retomar(), cancelar(), estado(), assinar(f), mostrar(ids), refazerNota({ rigor, ensaio, pesos, limiares }), meta(n),
+                          definirPessoas([{ id, fotos, chave }] | null), revisarPeloRaw(ids?), grupos(), encerrar() }
+criarPessoas({ loja }) → { estado(), assinar(f), abrir(trabalho), ligar(), esquecer(), renomear(id, nome), atualizar(), usarAssinador(pool) }
+  estado() → { trabalho, ligado, situacao: 'desligado' | 'preparando' | 'rodando' | 'pronto' | 'indisponivel', feitas, total, motivo,
+               pessoas: [{ id, nome, fotos, chave, capa: { foto, caixa, quadro } }] }
 estado() → { situacao: 'parada' | 'preparando' | 'rodando' | 'pausada' | 'fechando' | 'pronta' | 'cancelada', feitas, total, novas,
              puladas, porSegundo, restante?, camadas: { rostos, objetos, rotulos: 'pronta' | 'carregando' | 'indisponivel' | 'desligada' },
              motivos, raw: { feitas, total, lidas, falhas }, tempos (ms por etapa), erro }
@@ -255,6 +284,14 @@ mostrou estouro além da tolerância (`raw-worker.js`: LibRaw + `medirLatitude`)
 `sobreposicao(foto)` (frações do quadro: rostos com o estado dos olhos, mapa de nitidez, direção do tremido) e escreve
 com `resumoDaFoto(foto)` (frases de `textos.js`). O que cada foto ganha está no cabeçalho de `analisar.js`; rosto que a
 malha recusou (nuca, cabelo) vem com `duvidoso: true` e não decide foco nem pessoa-chave.
+
+Pessoas (`pessoas.js` + `pessoas-worker.js`): só depois de `ligar()` (o consentimento, com a versão do aviso). O worker
+não tem motor próprio: usa o de `app/rosto/motor.js` (YuNet + SFace p8). Para cada rosto da análise, recorta 1,6× a caixa
+na prévia, deixa a linha dos olhos de pé, acha o rosto de novo no meio do recorte (senão tapa a borda e tenta outra vez)
+e assina em int8. Vetores e grupos ficam só no IndexedDB `foto-pessoas` (lojas `trabalhos` e `rostos`), nunca no
+catálogo, em XMP, exportação, galeria ou log; a nota recebe só ids. `esquecer()` apaga as duas lojas do trabalho; a
+faxina ao abrir apaga o que é de trabalho tirado da lista. O filtro por pessoa é `catalogo.filtrar({ ids, idsDe })`, que
+`serializar()` não leva.
 
 ### Catálogo (`src/biblioteca/catalogo.js`)
 
@@ -282,9 +319,10 @@ Quem escreve cada campo novo (todos sem desfazer, por `atualizar`/`atualizarVari
 `id` = hash estável de nome + tamanho + data de captura. Estado em memória com `assinar()`; quem guarda é a tela
 (IndexedDB e a pasta escolhida). Atalhos do Lightroom: P, X, U, 0–5, 6–9, setas, espaço, Z, G, E, N.
 
-- Filtro: `filtrar({ marca, estrelas, cor, balde, motivo, cena, tipo, cliente, texto })`; `cliente` é `'escolhida'`
-  e/ou `'com-pedido'` (comentário ou etiqueta), e `contagens().cliente` conta os dois. A Decupar mostra a pílula
-  "Do cliente" só quando há alguma escolhida.
+- Filtro: `filtrar({ marca, estrelas, cor, balde, motivo, cena, tipo, cliente, texto, ids, idsDe })`; `ids` é um conjunto
+  de fotos que quem chama escolheu (`idsDe` diz quem, ex. 'pessoa:p3') e vale só na sessão: `serializar()` não leva.
+  `cliente` é `'escolhida'` e/ou `'com-pedido'` (comentário ou etiqueta), e `contagens().cliente` conta os dois. A
+  Decupar mostra a pílula "Do cliente" só quando há alguma escolhida.
 - Pilhas e foco: a análise reagrupa (`definirGrupos`), mede a nota que troca a capa (`atualizarVarias`) ou as pilhas
   voltam (`empilhar(true)`) sem a pessoa pedir: se a foto em foco ficou escondida numa pilha fechada, a pilha abre no
   lugar e o foco fica nela (a Revelar e a Estilos não trocam de foto sozinhas). `selecionar(id)` de uma foto escondida
@@ -325,11 +363,13 @@ O que fica neste aparelho (nada disso sai dele; tudo com try/catch, e sem armaze
 | --- | --- | --- |
 | IndexedDB `foto` | lojas `trabalhos`, `catalogos`, `pastas`, `miniaturas` | os trabalhos, o catálogo inteiro (`serializar`), a pasta escolhida e as miniaturas (`app/abrir/guardar.js`) |
 | IndexedDB `foto-estilos` | loja `kv`: `biblioteca`, `conta` | a biblioteca de estilos da pessoa e a cópia do que está na conta (`app/telas/estilos/acervo.js`; a Entregar só lê `biblioteca`) |
+| IndexedDB `foto-pessoas` | lojas `trabalhos` (consentimento, nomes, grupos) e `rostos`: `<trabalho>\|<foto>` | agrupar por pessoa na Decupar (`app/decupagem/pessoas.js`): vetores int8 e grupos; somem com "Esquecer rostos" ou com o trabalho |
 | IndexedDB `foto-rosto` | loja `rostos`: `<evento>\|<foto>` | os vetores dos rostos das fotos de um evento com consentimento (`app/rosto/preparo.js`); nunca sobem |
 | localStorage | `foto_trabalho` | o trabalho aberto por último |
 | cookie | `foto_tema` | claro ou escuro (o servidor lê para a página já nascer certa) |
 | localStorage | `foto_miniatura`, `foto_decupar_painel` | o tamanho da miniatura e o painel "por que esta nota" aberto |
 | localStorage | `foto_decupar_sozinha`, `foto_decupar_camadas`, `foto_decupar_pesos`, `foto_decupar_t_<trabalho>` | a análise começa sozinha, as camadas de visão, os pesos aprendidos e ensaio, rigor e meta de cada trabalho |
+| localStorage | `foto_decupar_limiares` | os limiares da calibração, por pessoa e tipo de ensaio |
 | localStorage | `foto_motor` | 'gpu' ou 'js' forçado na Revelar (laboratório e testes) |
 | localStorage | `foto_estilos` | as preferências da tela Estilos |
 | localStorage | `foto_galeria:<trabalho>` | a ligação trabalho ↔ galeria do cliente (o servidor não sabe de trabalho) |

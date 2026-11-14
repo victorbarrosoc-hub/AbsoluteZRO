@@ -402,7 +402,7 @@ export default function Decupar({ loja, ativa }) {
       loja=${loja}
       tamanho=${tamanho}
       aoTamanho=${mudarTamanho}
-      extra=${html`<${PilulasDaDecupagem} loja=${loja} /><${PilulasDePessoas} loja=${loja} est=${est} aoAbrir=${() => definirFolha('pessoas')} />`}
+      extra=${html`<${PilulasDePessoas} loja=${loja} est=${est} aoAbrir=${() => definirFolha('pessoas')} /><${PilulasDaDecupagem} loja=${loja} />`}
     />
     ${lupa || modo !== 'grade' ? null : html`<${BarraDeSelecao} loja=${loja} aoAbrir=${abrir} />`}
     ${

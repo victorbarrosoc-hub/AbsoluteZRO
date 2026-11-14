@@ -7,6 +7,7 @@ import { Icone } from '../../icones.js'
 import { Tecla } from '../../componentes/base.js'
 import { Folha } from '../../componentes/folha.js'
 import { CALIBRACAO } from '../../../src/decupagem/textos.js'
+import { recorteEmCss } from './pessoas.js'
 
 /** A prévia de 1024 px da foto (a mesma da lupa), como endereço; solta ao sair. */
 function usarPrevia(loja, id) {
@@ -38,17 +39,7 @@ function FotoDaPergunta({ loja, id, rotulo, aoTocar, tecla }) {
   const url = usarPrevia(loja, id)
   const m = foto?.medidas
   const r = (foto?.rostos ?? []).find((x) => x.principal && !x.duvidoso)
-  let detalhe = null
-  if (url && r && m?.largura) {
-    const lado = Math.max(r.caixa.largura, r.caixa.altura) * 1.6
-    const sw = Math.min(1, lado / m.largura)
-    const sh = Math.min(1, lado / m.altura)
-    const x0 = Math.max(0, Math.min(1 - sw, (r.caixa.x + r.caixa.largura / 2 - lado / 2) / m.largura))
-    const y0 = Math.max(0, Math.min(1 - sh, (r.caixa.y + r.caixa.altura / 2 - lado / 2) / m.altura))
-    const px = sw < 1 ? (x0 / (1 - sw)) * 100 : 50
-    const py = sh < 1 ? (y0 / (1 - sh)) * 100 : 50
-    detalhe = `background-image:url("${url}");background-size:${(100 / sw).toFixed(2)}% ${(100 / sh).toFixed(2)}%;background-position:${px.toFixed(2)}% ${py.toFixed(2)}%`
-  }
+  const detalhe = r ? recorteEmCss(url, r.caixa, m, 1.6) : ''
   const corpo = html`<span class="calibrar-moldura" style=${`aspect-ratio:${(foto?.proporcao || (m ? m.largura / m.altura : 1.5)).toFixed(3)}`}>
       ${url ? html`<img src=${url} alt="" draggable=${false} />` : html`<span class="esqueleto"></span>`}
       ${detalhe ? html`<span class="calibrar-detalhe" style=${detalhe} aria-hidden="true"></span>` : null}

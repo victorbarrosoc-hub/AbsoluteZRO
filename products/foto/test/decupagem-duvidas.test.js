@@ -86,14 +86,28 @@ test('o rigor muda o que está no limite; a fila é curta (máximo)', () => {
   assert.ok(equilibrado.length <= FILA.maximo)
   assert.ok(equilibrado.every((d) => Math.abs(d.distancia) < FILA.limite))
   const estrito = filaDeDuvidas(fotos, { rigor: 'estrito', maximo: 1000 })
-  for (const d of estrito) assert.ok(Math.abs(fotos.find((f) => f.id === d.id).magnitude.total - RIGORES.estrito.fica) < FILA.limite || Math.abs(fotos.find((f) => f.id === d.id).magnitude.total - RIGORES.estrito.fora) < FILA.limite)
+  for (const d of estrito)
+    assert.ok(
+      Math.abs(fotos.find((f) => f.id === d.id).magnitude.total - RIGORES.estrito.fica) < FILA.limite ||
+        Math.abs(fotos.find((f) => f.id === d.id).magnitude.total - RIGORES.estrito.fora) < FILA.limite,
+    )
 })
 
 test('pessoa-chave cujas fotos caíram todas em Fora: a melhor sobe a Talvez e encabeça a fila', () => {
   const fotos = [
     { id: 'a', medidas: medidas({ q: 0.5 }), rostos: [rosto({ x: 100, nitidez: 0.5 })], exif: { data: '2026-11-13T10:00:00' } },
-    { id: 'b', medidas: medidas({ q: 0.45, dhash: 'ffffffffffffffff', phash: 'ffffffffffffffff' }), rostos: [rosto({ x: 300, nitidez: 0.45 })], exif: { data: '2026-11-13T11:00:00' } },
-    ...Array.from({ length: 12 }, (_, i) => ({ id: `n${i}`, medidas: medidas({ q: 0.86 }), rostos: [], exif: { data: `2026-11-13T12:${String(i).padStart(2, '0')}:00` } })),
+    {
+      id: 'b',
+      medidas: medidas({ q: 0.45, dhash: 'ffffffffffffffff', phash: 'ffffffffffffffff' }),
+      rostos: [rosto({ x: 300, nitidez: 0.45 })],
+      exif: { data: '2026-11-13T11:00:00' },
+    },
+    ...Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i}`,
+      medidas: medidas({ q: 0.86 }),
+      rostos: [],
+      exif: { data: `2026-11-13T12:${String(i).padStart(2, '0')}:00` },
+    })),
   ]
   // as duas da tia são de momentos diferentes: cada uma sozinha já subiria pela cobertura do momento; num grupo só
   // (a mesma cena), a cobertura do momento sobe uma, e a da pessoa garante que é a melhor dela

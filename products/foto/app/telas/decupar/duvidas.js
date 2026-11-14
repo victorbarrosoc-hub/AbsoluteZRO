@@ -108,7 +108,11 @@ export function Duvidas({ loja, esteira, lupa, aoSair, fechar }) {
     return html`<div class="cenas duvidas palco duvidas-fim">
       <${Vazio} icone="ok" titulo=${['Nenhuma', 'dúvida.']} apoio=${DUVIDAS.resto()}>
         <button type="button" class="vidro" onClick=${aoSair}><${Icone} nome="grade" />Ver a grade</button>
-        ${fechar ? html`<button type="button" class="vidro vidro--tinta" disabled=${fechar.desligado} onClick=${fechar.aoTocar}>${fechar.rotulo}</button>` : null}
+        ${
+          fechar
+            ? html`<button type="button" class="vidro vidro--tinta" disabled=${fechar.desligado} onClick=${fechar.aoTocar}>${fechar.rotulo}</button>`
+            : null
+        }
       <//>
     </div>`
   }
@@ -117,29 +121,19 @@ export function Duvidas({ loja, esteira, lupa, aoSair, fechar }) {
   const faltam = pendentes.length
   const topo = html`<div class="cena-topo duvida-topo">
     <div class="cena-titulo" aria-live="polite">
-      <span class="duvida-faltam"><b><${Numero} valor=${faltam} /></b> ${faltam === 1 ? 'dúvida' : 'dúvidas'}</span>
+      <span class="duvida-faltam"
+        ><b><${Numero} valor=${faltam} /></b> ${faltam === 1 ? 'dúvida' : 'dúvidas'}</span
+      >
       <small>${atual.texto}</small>
     </div>
   </div>`
   const fica = atual.sugestao === 'fica'
   const tira = html`<div class="duvida-respostas" role="group" aria-label=${DUVIDAS.sugestao[atual.sugestao]}>
-    <button
-      type="button"
-      class=${fica ? 'vidro' : 'vidro vidro--tinta'}
-      data-resposta="fora"
-      aria-keyshortcuts="X"
-      onClick=${() => responder('fora')}
-    >
+    <button type="button" class=${fica ? 'vidro' : 'vidro vidro--tinta'} data-resposta="fora" aria-keyshortcuts="X" onClick=${() => responder('fora')}>
       <${Icone} nome="x" />Fora<${Tecla}>X<//>
     </button>
     <span class="duvida-sugestao">${DUVIDAS.sugestao[atual.sugestao]}</span>
-    <button
-      type="button"
-      class=${fica ? 'vidro vidro--tinta' : 'vidro'}
-      data-resposta="fica"
-      aria-keyshortcuts="P"
-      onClick=${() => responder('fica')}
-    >
+    <button type="button" class=${fica ? 'vidro vidro--tinta' : 'vidro'} data-resposta="fica" aria-keyshortcuts="P" onClick=${() => responder('fica')}>
       <${Icone} nome="ok" />Fica<${Tecla}>P<//>
     </button>
   </div>`

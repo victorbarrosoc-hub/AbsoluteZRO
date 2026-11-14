@@ -1107,17 +1107,34 @@ export function extrairEstilo(referencias, opcoes = {}) {
     o += d.length
   }
   const pbRef = ref.pb
-  const modelo = criarModelo({ base: alvos[0].base, dados: todos }, juntos, tela, pbRef)
-  const pxAlvo = modelo.pixels(modelo.revelar(neutro()))
+  let modelo = criarModelo({ base: alvos[0].base, dados: todos }, juntos, tela, pbRef)
+  let pxAlvo = modelo.pixels(modelo.revelar(neutro()))
+
+  // ── mesma cena? (a referência é a própria foto da pessoa, tratada: dá para comparar pixel a pixel) ──
+  const pares = temAlvo && refs.length === 1 ? parear(alvos[0], refs[0], pxRefs[0], juntos, pxAlvo) : null
+
+  // ── refino conjunto com a vizinhança, 1ª volta ──
+  // Clareza e neblina mexem no tom e na cor da foto inteira; ajustados depois do tom, o tom (sombras, curva, croma)
+  // já teria engolido o efeito (medido: neblina 40 virava sombras −70 e neblina 0). Então: (1) a vizinhança é estimada
+  // com o tom neutro (as medidas dela são razões de bandas e de regiões, que pouco ligam para o tom); (2) o tom é
+  // ajustado sobre o alvo JÁ com essa clareza e neblina; (3) a vizinhança é estimada de novo com o tom (abaixo).
+  let locais = null
+  if (temAlvo && opcoes.vizinhanca !== false) {
+    const primeira = estimarVizinhanca(conferidas, alvoConferido, neutro(), { pareado: !!pares, tela })
+    const largos = { clareza: primeira.presenca.clareza ?? 0, neblina: primeira.presenca.neblina ?? 0 }
+    if (largos.clareza || largos.neblina) {
+      const base = comVizinhanca(alvos[0].base, largos, tela)
+      modelo = criarModelo({ base, dados: base.imagem.dados }, juntos, tela, pbRef)
+      pxAlvo = modelo.pixels(modelo.revelar(neutro()))
+    }
+    locais = { primeira }
+  }
   const fAlvo = impressao(pxAlvo)
   if (pbRef) avisos.push('A referência é preto e branco: a cor não dá para copiar. Saiu um preto e branco com o tom dela.')
   else if (fAlvo.pb) avisos.push('A sua foto não tem cor: só a luz e o tom entram.')
   const pesos = pesosDe(ref, fAlvo)
   const bandasUteis = pesos.neutro.filter((v) => v > 0.02).length
   if (bandasUteis < 3) avisos.push('Há poucos tons quase neutros nas fotos: a tonalização não foi copiada.')
-
-  // ── mesma cena? (a referência é a própria foto da pessoa, tratada: dá para comparar pixel a pixel) ──
-  const pares = temAlvo && refs.length === 1 ? parear(alvos[0], refs[0], pxRefs[0], juntos, pxAlvo) : null
 
   // ── os controles ativos ──
   // Pareado (mesma cena): todos. Cena diferente: só os globais (sem a curva de pontos de quatro regiões, que copiaria o
@@ -1210,10 +1227,10 @@ export function extrairEstilo(referencias, opcoes = {}) {
   // Vinheta e grão: só pareado (ajustarVizinhanca). Textura, clareza, neblina e nitidez: com alvo, pareado ou não
   // (vizinhanca.js), cada um só quando a medida responde e o valor passa da incerteza.
   let vizinhanca = null
-  let locais = null
   if (pares && opcoes.vizinhanca !== false) vizinhanca = ajustarVizinhanca(alvos[0], refs, ajustes, tela)
   if (vizinhanca) Object.assign(ajustes.efeitos, vizinhanca.efeitos)
-  if (temAlvo && opcoes.vizinhanca !== false) {
+  if (locais) {
+    // 2ª volta: com o tom já ajustado (é a revelação de verdade: tom e depois vizinhança, como o motor faz)
     locais = estimarVizinhanca(conferidas, alvoConferido, ajustes, { pareado: !!pares, tela })
     Object.assign(ajustes.presenca, locais.presenca)
     Object.assign(ajustes.detalhe, locais.detalhe)
@@ -1331,6 +1348,19 @@ function confiancaLocal(vinhetaEGrao, locais, referencias) {
   let n = vinhetaEGrao && (Object.keys(vinhetaEGrao.efeitos).length || 0) ? (referencias > 1 ? 1 : 0) : 0
   for (const c of Object.values(locais?.controles ?? {})) if (c.sai) n = Math.max(n, ordem.indexOf(c.confianca))
   return ordem[n]
+}
+
+// O alvo com clareza e neblina já aplicadas, de volta à cena pela inversa da tela (baseDeImagem): é sobre ele que o
+// tom é ajustado na 1ª volta do refino conjunto. A ordem fica trocada (vizinhança antes do tom; no motor é depois), o
+// que só serve para o tom não engolir o efeito; a 2ª volta mede a vizinhança na ordem do motor.
+function comVizinhanca(base, { clareza, neblina }, tela) {
+  const a = neutro()
+  a.presenca.clareza = clareza
+  a.presenca.neblina = neblina
+  const img = revelar(base, a, { tela, semente: 7 })
+  const codigos = new Uint16Array(img.dados.length)
+  for (let i = 0; i < codigos.length; i++) codigos[i] = Math.round(limitar(img.dados[i], 0, 1) * 65535)
+  return baseDeImagem({ largura: img.largura, altura: img.altura, dados: codigos, canais: 3, espaco: tela })
 }
 
 // O "sem estilo" de uma referência (quando não há alvo): a mesma foto com o eixo neutro zerado. É o único pedaço do

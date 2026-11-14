@@ -49,10 +49,18 @@ export function FolhaDeAjustes({ aberta, aoFechar, est, esteira, aoPessoas, aoCa
     </section>
     <section class="ajuste">
       <h3 class="sobretitulo">Seu limite</h3>
-      ${est.limiaresMexidos ? est.calibrado.map((frase) => html`<p class="ajuste-frase">${frase}</p>`) : html`<p class="apoio">O padrão. Responda a umas fotos do ensaio e ele se ajusta a você.</p>`}
+      ${
+        est.limiaresMexidos
+          ? est.calibrado.map((frase) => html`<p class="ajuste-frase">${frase}</p>`)
+          : html`<p class="apoio">O padrão. Responda a umas fotos do ensaio e ele se ajusta a você.</p>`
+      }
       <div class="ajuste-botoes">
         <button type="button" class="vidro vidro--pequeno" data-acao="calibrar" onClick=${aoCalibrar}>Calibrar em 30 segundos</button>
-        ${est.limiaresMexidos ? html`<button type="button" class="vidro vidro--pequeno" onClick=${() => esteira.voltarAoPadrao()}>${CALIBRACAO.padrao}</button>` : null}
+        ${
+          est.limiaresMexidos
+            ? html`<button type="button" class="vidro vidro--pequeno" onClick=${() => esteira.voltarAoPadrao()}>${CALIBRACAO.padrao}</button>`
+            : null
+        }
       </div>
     </section>
     <section class="ajuste">
@@ -63,11 +71,7 @@ export function FolhaDeAjustes({ aberta, aoFechar, est, esteira, aoPessoas, aoCa
       </div>
       ${camada('rostos')} ${camada('objetos')} ${camada('rotulos')}
       <div class="ajuste-camada" data-situacao=${est.pessoas.ligado ? 'pronta' : 'desligada'}>
-        <${Chave}
-          rotulo="Agrupar por pessoa"
-          ligada=${est.pessoas.ligado}
-          aoMudar=${(sim) => (sim ? aoPessoas?.() : esteira.pessoas.esquecer())}
-        />
+        <${Chave} rotulo="Agrupar por pessoa" ligada=${est.pessoas.ligado} aoMudar=${(sim) => (sim ? aoPessoas?.() : esteira.pessoas.esquecer())} />
         <small>${est.pessoas.ligado ? 'Só neste aparelho' : ESTADO_DA_CAMADA.desligada}</small>
       </div>
       ${est.pessoas.ligado ? html`<button type="button" class="vidro vidro--pequeno" onClick=${aoPessoas}>Ver as pessoas</button>` : null}

@@ -1370,3 +1370,11 @@ button.calibrar-foto:focus-visible .calibrar-moldura {
     display: none;
   }
 }
+.lupa--duvidas .quadro {
+  padding-top: calc(var(--topo-a) + 76px);
+}
+.decupar .vidro kbd.tecla {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+  color: inherit;
+}

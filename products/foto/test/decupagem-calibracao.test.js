@@ -6,7 +6,19 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { ajustarLimiares, cortes, earDaFoto, explicarLimiares, medidaDe, perguntas } from '../src/decupagem/calibracao.js'
-import { avaliar, avaliarEnsaio, calibrar, corteDeFoco, excessoDeExposicao, limiaresMexidos, limiaresPadrao, normalizarLimiares, olhosComLimiar, PARAMETROS, pesosPadrao } from '../src/decupagem/nota.js'
+import {
+  avaliar,
+  avaliarEnsaio,
+  calibrar,
+  corteDeFoco,
+  excessoDeExposicao,
+  limiaresMexidos,
+  limiaresPadrao,
+  normalizarLimiares,
+  olhosComLimiar,
+  PARAMETROS,
+  pesosPadrao,
+} from '../src/decupagem/nota.js'
 import { LIMIARES_ROSTO } from '../src/decupagem/rostos.js'
 import { CALIBRACAO } from '../src/decupagem/textos.js'
 import { medidas, rosto } from './apoio-magnitude.js'
@@ -87,7 +99,12 @@ test('respostas contraditórias não mexem; respostas que batem com o padrão ta
   r = ajustarLimiares(PADRAO, [serve('exposicao', 5, true), serve('exposicao', 2, false)])
   assert.deepEqual(r.limiares, PADRAO)
   // concordou com o padrão dos dois lados
-  r = ajustarLimiares(PADRAO, [serve('nitidez', corteQ + 0.02, true), serve('nitidez', corteQ - 0.02, false), serve('exposicao', 0.5, true), serve('exposicao', 2, false)])
+  r = ajustarLimiares(PADRAO, [
+    serve('nitidez', corteQ + 0.02, true),
+    serve('nitidez', corteQ - 0.02, false),
+    serve('exposicao', 0.5, true),
+    serve('exposicao', 2, false),
+  ])
   assert.deepEqual(r.limiares, PADRAO)
   assert.deepEqual(r.explicacao, [CALIBRACAO.igual])
   // a contradição numa dimensão não impede a outra de andar
@@ -103,7 +120,10 @@ test('"qual das duas?" passa por ajustarPesos: preferir a de olhos melhores dá 
   assert.ok(r.pesos.pessoas.pessoas > pesosPadrao().pessoas.pessoas)
   assert.ok(r.pesos.pessoas.foco < pesosPadrao().pessoas.foco)
   assert.deepEqual(r.limiares, PADRAO)
-  assert.ok(r.explicacao.some((f) => /mais valor a pessoas/.test(f)), JSON.stringify(r.explicacao))
+  assert.ok(
+    r.explicacao.some((f) => /mais valor a pessoas/.test(f)),
+    JSON.stringify(r.explicacao),
+  )
 })
 
 test('perguntas: perto dos cortes, uma de cada lado por dimensão, e só fotos sem problema nas outras', () => {
@@ -135,20 +155,36 @@ test('perguntas: perto dos cortes, uma de cada lado por dimensão, e só fotos s
   for (const p of lista) {
     const c = cortes(PADRAO, null)[p.dimensao]
     assert.equal(p.corte, c)
-    assert.equal(p.valor, medidaDe(fotos.find((f) => f.id === p.id), p.dimensao))
+    assert.equal(
+      p.valor,
+      medidaDe(
+        fotos.find((f) => f.id === p.id),
+        p.dimensao,
+      ),
+    )
   }
   assert.equal(earDaFoto(fotos.find((f) => f.id === 'o2')), 0.13)
 })
 
 test('de ponta a ponta: as respostas tornam o ensaio mais tolerante com foco, e a foto aceita muda de balde', () => {
-  const fotos = Array.from({ length: 14 }, (_, i) => ({ id: `f${i}`, medidas: medidas({ q: 0.56 + i * 0.015 }), rostos: [], tipo: 'imagem', exif: { data: `2026-11-13T10:${String(i * 2).padStart(2, '0')}:00` } }))
+  const fotos = Array.from({ length: 14 }, (_, i) => ({
+    id: `f${i}`,
+    medidas: medidas({ q: 0.56 + i * 0.015 }),
+    rostos: [],
+    tipo: 'imagem',
+    exif: { data: `2026-11-13T10:${String(i * 2).padStart(2, '0')}:00` },
+  }))
   const referencia = calibrar(fotos)
   const lista = perguntas(fotos, { referencia }).filter((p) => p.dimensao === 'nitidez')
   assert.ok(lista.length >= 2)
   const abaixo = lista.filter((p) => p.valor < p.corte).sort((a, b) => b.valor - a.valor)[0]
   const antes = avaliarEnsaio(fotos, { referencia }).magnitudes.get(abaixo.id)
   assert.ok(antes.detalhe.tetos.includes('foraDeFoco'))
-  const r = ajustarLimiares(PADRAO, lista.map((p) => ({ ...p, serve: true })), { referencia })
+  const r = ajustarLimiares(
+    PADRAO,
+    lista.map((p) => ({ ...p, serve: true })),
+    { referencia },
+  )
   const depois = avaliarEnsaio(fotos, { referencia, limiares: r.limiares }).magnitudes.get(abaixo.id)
   assert.ok(!depois.detalhe.tetos.includes('foraDeFoco'))
   assert.ok(depois.total > antes.total)

@@ -246,7 +246,15 @@ function componenteFoco(q, referencia) {
 // `folga`: o limiar de exposição da pessoa (vezes as tolerâncias de área).
 function componenteExposicao(sinais, noite, folga = 1) {
   const B = PARAMETROS
-  const P = folga === 1 ? B : { ...B, altas: { ...B.altas, tolerancia: B.altas.tolerancia * folga }, perdidas: { ...B.perdidas, tolerancia: B.perdidas.tolerancia * folga }, baixas: { ...B.baixas, tolerancia: B.baixas.tolerancia * folga } }
+  const P =
+    folga === 1
+      ? B
+      : {
+          ...B,
+          altas: { ...B.altas, tolerancia: B.altas.tolerancia * folga },
+          perdidas: { ...B.perdidas, tolerancia: B.perdidas.tolerancia * folga },
+          baixas: { ...B.baixas, tolerancia: B.baixas.tolerancia * folga },
+        }
   const e = sinais.medidas.exposicao
   const cortado = sinais.latitude?.cortado
   const peloRaw = !!cortado && num(cortado.tres) != null
@@ -467,7 +475,8 @@ export function avaliar(sinais, opcoes = {}) {
   else if (!b.cepstro) incertezas.push(INCERTEZAS.semTremido())
   const e = m.exposicao
   const folga = limiares.exposicao
-  if (exposicao.soPrevia && (e.altas * 100 > P.altas.tolerancia * folga || e.altas3 * 100 > P.perdidas.tolerancia * folga)) incertezas.push(INCERTEZAS.rawNaoLido())
+  if (exposicao.soPrevia && (e.altas * 100 > P.altas.tolerancia * folga || e.altas3 * 100 > P.perdidas.tolerancia * folga))
+    incertezas.push(INCERTEZAS.rawNaoLido())
   const cortes = RIGORES[rigor]
   if (!tetos.length && (Math.abs(total - cortes.fica) < P.noLimite || Math.abs(total - cortes.fora) < P.noLimite)) incertezas.push(INCERTEZAS.noLimite())
   const confianca = incertezas.length === 0 ? 'alta' : incertezas.length === 1 ? 'media' : 'baixa'

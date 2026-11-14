@@ -6,7 +6,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { agruparPessoas, chaveDosRostos, coberturaDe, LIMIARES_PESSOA, manterIds, protegerPessoas, rostoBom, rostoParaAssinar, rostosDoEnsaio } from '../src/decupagem/pessoas.js'
+import {
+  agruparPessoas,
+  chaveDosRostos,
+  coberturaDe,
+  LIMIARES_PESSOA,
+  manterIds,
+  protegerPessoas,
+  rostoBom,
+  rostoParaAssinar,
+  rostosDoEnsaio,
+} from '../src/decupagem/pessoas.js'
 import { avaliarEnsaio, meta } from '../src/decupagem/nota.js'
 import { cosseno } from '../src/decupagem/grupos.js'
 import { MOTIVOS } from '../src/decupagem/textos.js'
@@ -15,7 +25,17 @@ import { int8, medidas, rosto, vetorBase, vetorPerto } from './apoio-magnitude.j
 const PESSOAS = { noiva: vetorBase(11), noivo: vetorBase(22), tia: vetorBase(33), padrinho: vetorBase(44) }
 
 /** Um rosto de entrada de agruparPessoas. */
-const r = (foto, i, pessoa, cos, semente, extra = {}) => ({ foto, i, v: vetorPerto(PESSOAS[pessoa], cos, semente), largura: 120, bom: true, chave: true, peso: 0.1, quem: pessoa, ...extra })
+const r = (foto, i, pessoa, cos, semente, extra = {}) => ({
+  foto,
+  i,
+  v: vetorPerto(PESSOAS[pessoa], cos, semente),
+  largura: 120,
+  bom: true,
+  chave: true,
+  peso: 0.1,
+  quem: pessoa,
+  ...extra,
+})
 
 function ensaioFabricado() {
   const rostos = []
@@ -34,7 +54,8 @@ function ensaioFabricado() {
 test('os vetores fabricados têm a forma da pesquisa: mesma pessoa 0,55–0,8 com a base, pessoas diferentes perto de 0', () => {
   const v = vetorPerto(PESSOAS.noiva, 0.7, 5)
   assert.ok(Math.abs(cosseno(v, PESSOAS.noiva) - 0.7) < 1e-4)
-  for (const a of Object.keys(PESSOAS)) for (const b of Object.keys(PESSOAS)) if (a < b) assert.ok(Math.abs(cosseno(PESSOAS[a], PESSOAS[b])) < 0.25, `${a}×${b}`)
+  for (const a of Object.keys(PESSOAS))
+    for (const b of Object.keys(PESSOAS)) if (a < b) assert.ok(Math.abs(cosseno(PESSOAS[a], PESSOAS[b])) < 0.25, `${a}×${b}`)
 })
 
 test('agrupar: uma pessoa por grupo, ninguém junto de outro, dois rostos da mesma foto nunca na mesma pessoa', () => {

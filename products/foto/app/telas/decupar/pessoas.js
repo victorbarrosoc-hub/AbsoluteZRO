@@ -15,6 +15,23 @@ const milhar = (n) => Number(n || 0).toLocaleString('pt-BR')
 export const nomeDa = (p) => p.nome || PESSOAS.nome(Number(String(p.id).replace(/\D/g, '')) || 1)
 const chaveDoFiltro = (p) => `pessoa:${p.id}`
 
+/**
+ * O estilo que mostra só o quadrado em volta de `caixa` (px de um quadro de `quadro.largura` × `quadro.altura`) de uma
+ * imagem `url` posta como fundo: `folga` vezes o lado da caixa. Sem nada a mostrar, ''.
+ */
+export function recorteEmCss(url, caixa, quadro, folga = 1.25) {
+  if (!url || !caixa || !quadro?.largura || !quadro?.altura) return ''
+  const lado = Math.max(caixa.largura, caixa.altura) * folga
+  const sw = Math.min(1, lado / quadro.largura)
+  const sh = Math.min(1, lado / quadro.altura)
+  const x0 = Math.max(0, Math.min(1 - sw, (caixa.x + caixa.largura / 2 - lado / 2) / quadro.largura))
+  const y0 = Math.max(0, Math.min(1 - sh, (caixa.y + caixa.altura / 2 - lado / 2) / quadro.altura))
+  const px = sw < 1 ? (x0 / (1 - sw)) * 100 : 50
+  const py = sh < 1 ? (y0 / (1 - sh)) * 100 : 50
+  const tamanho = `${(100 / sw).toFixed(2)}% ${(100 / sh).toFixed(2)}%`
+  return `background-image:url("${url}");background-size:${tamanho};background-position:${px.toFixed(2)}% ${py.toFixed(2)}%`
+}
+
 /** O rosto da capa, recortado da miniatura por CSS (a caixa vem em px da prévia; `quadro` é o tamanho dela). */
 export function RostoDaPessoa({ loja, pessoa, classe }) {
   const url = usarMiniatura(loja, pessoa.capa.foto)
@@ -22,17 +39,7 @@ export function RostoDaPessoa({ loja, pessoa, classe }) {
     if (!url) loja.miniaturas.pedir?.(pessoa.capa.foto, 50)
   }, [pessoa.capa.foto, !!url])
   const { caixa, quadro } = pessoa.capa
-  let estilo = ''
-  if (url && caixa && quadro?.largura && quadro?.altura) {
-    const lado = Math.max(caixa.largura, caixa.altura) * 1.25
-    const sw = Math.min(1, lado / quadro.largura)
-    const sh = Math.min(1, lado / quadro.altura)
-    const x0 = Math.max(0, Math.min(1 - sw, (caixa.x + caixa.largura / 2 - lado / 2) / quadro.largura))
-    const y0 = Math.max(0, Math.min(1 - sh, (caixa.y + caixa.altura / 2 - lado / 2) / quadro.altura))
-    const px = sw < 1 ? (x0 / (1 - sw)) * 100 : 50
-    const py = sh < 1 ? (y0 / (1 - sh)) * 100 : 50
-    estilo = `background-image:url("${url}");background-size:${(100 / sw).toFixed(2)}% ${(100 / sh).toFixed(2)}%;background-position:${px.toFixed(2)}% ${py.toFixed(2)}%`
-  }
+  const estilo = recorteEmCss(url, caixa, quadro, 1.25)
   return html`<span class=${cx('rosto-pessoa', classe)} style=${estilo} aria-hidden="true">${url ? null : html`<${Icone} nome="pessoa" />`}</span>`
 }
 
@@ -48,14 +55,10 @@ export function PilulasDePessoas({ loja, est, aoAbrir, maximo = 8 }) {
   const rodando = e.situacao === 'rodando' || e.situacao === 'preparando'
   return html`<span class="dec-filtros dec-pessoas" role="group" aria-label="Pessoas">
     <span class="dec-divisa" aria-hidden="true"></span>
-    <button
-      type="button"
-      class="pilula"
-      data-valor="pessoas"
-      title=${rodando ? PESSOAS.andamento(e.feitas, e.total) : 'Pessoas'}
-      onClick=${aoAbrir}
-    >
-      <${Icone} nome="pessoa" />Pessoas<span class="pilula-n">${rodando ? `${milhar(e.feitas)}/${milhar(e.total)}` : html`<${Numero} valor=${e.pessoas.length} />`}</span>
+    <button type="button" class="pilula" data-valor="pessoas" title=${rodando ? PESSOAS.andamento(e.feitas, e.total) : 'Pessoas'} onClick=${aoAbrir}>
+      <${Icone} nome="pessoa" />Pessoas<span class="pilula-n"
+        >${rodando ? `${milhar(e.feitas)}/${milhar(e.total)}` : html`<${Numero} valor=${e.pessoas.length} />`}</span
+      >
     </button>
     ${lista.map((p) => {
       const cob = coberturaDe(p, (id) => c.foto(id))
@@ -134,7 +137,7 @@ export function FolhaDePessoas({ aberta, aoFechar, loja, esteira, est }) {
     return html`<${Folha} aberta=${aberta} aoFechar=${aoFechar} titulo=${PESSOAS.titulo} largura=${500} classe="folha-pessoas">
       <p class="pessoas-aviso">${PESSOAS.aviso}</p>
       <ul class="pessoas-pontos">
-        ${PESSOAS.pontos.map((t, k) => html`<li><${Icone} nome=${['cadeado', 'lixo', 'entregar'][k]} />${t}</li>`)}
+        ${PESSOAS.pontos.map((t, k) => html`<li><${Icone} nome=${['cadeado', 'lixo'][k]} />${t}</li>`)}
       </ul>
       ${semRostos ? html`<p class="apoio">${PESSOAS.semRostos}</p>` : null}
       <label class="pessoas-consentimento">

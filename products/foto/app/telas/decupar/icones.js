@@ -9,7 +9,9 @@ const CORPOS = {
   meta: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r=".9" fill="currentColor"/>',
   aceitar: '<path d="m4.5 12.5 4 4 6-8"/><path d="m11.5 16.5 1 0 7-8.5" opacity=".6"/>',
   tratar: '<path d="M12 3.5 14 9l5.5 2-5.5 2-2 5.5-2-5.5-5.5-2L10 9Z"/>',
-  duvida: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6"/><circle cx="12" cy="16.9" r=".9" fill="currentColor" stroke="none"/>',
+  duvida:
+    '<circle cx="12" cy="12" r="8.5"/>' +
+    '<path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6"/><circle cx="12" cy="16.9" r=".9" fill="currentColor" stroke="none"/>',
   calibrar: '<path d="M5 7h8M17 7h2M5 17h2M11 17h8"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
 }
 
