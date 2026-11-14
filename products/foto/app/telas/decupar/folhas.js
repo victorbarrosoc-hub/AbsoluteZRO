@@ -6,13 +6,13 @@ import { Icone } from '../../icones.js'
 import { Chave, Numero, Segmentado } from '../../componentes/base.js'
 import { Folha } from '../../componentes/folha.js'
 import { avisar } from '../../componentes/aviso.js'
-import { CAMADAS, ENSAIOS, ESTADO_DA_CAMADA, RIGORES } from '../../../src/decupagem/textos.js'
+import { CALIBRACAO, CAMADAS, ENSAIOS, ESTADO_DA_CAMADA, PESSOAS, RIGORES } from '../../../src/decupagem/textos.js'
 import { baixar, gravarNaPasta, pastaDoTrabalho, planoDeGravar, zipDosXmp } from './gravar.js'
 
 const milhar = (n) => Number(n || 0).toLocaleString('pt-BR')
 
-/** Os ajustes: tipo de ensaio, rigor, o que a análise olha, começar sozinha e o aprendizado. */
-export function FolhaDeAjustes({ aberta, aoFechar, est, esteira }) {
+/** Os ajustes: tipo de ensaio, rigor, calibração, o que a análise olha, pessoas, começar sozinha e o aprendizado. */
+export function FolhaDeAjustes({ aberta, aoFechar, est, esteira, aoPessoas, aoCalibrar }) {
   const camada = (k) => {
     const situacao = est.analise.camadas?.[k]
     const pedida = est.camadas.includes(k)
@@ -48,12 +48,29 @@ export function FolhaDeAjustes({ aberta, aoFechar, est, esteira }) {
       <p class="apoio">${RIGORES[est.rigor].dica}.</p>
     </section>
     <section class="ajuste">
+      <h3 class="sobretitulo">Seu limite</h3>
+      ${est.limiaresMexidos ? est.calibrado.map((frase) => html`<p class="ajuste-frase">${frase}</p>`) : html`<p class="apoio">O padrão. Responda a umas fotos do ensaio e ele se ajusta a você.</p>`}
+      <div class="ajuste-botoes">
+        <button type="button" class="vidro vidro--pequeno" data-acao="calibrar" onClick=${aoCalibrar}>Calibrar em 30 segundos</button>
+        ${est.limiaresMexidos ? html`<button type="button" class="vidro vidro--pequeno" onClick=${() => esteira.voltarAoPadrao()}>${CALIBRACAO.padrao}</button>` : null}
+      </div>
+    </section>
+    <section class="ajuste">
       <h3 class="sobretitulo">O que a análise olha</h3>
       <div class="ajuste-camada" data-situacao="pronta">
         <span class="ajuste-sempre"><${Icone} nome="ok" />Nitidez, tremido e exposição</span>
         <small>Sempre</small>
       </div>
       ${camada('rostos')} ${camada('objetos')} ${camada('rotulos')}
+      <div class="ajuste-camada" data-situacao=${est.pessoas.ligado ? 'pronta' : 'desligada'}>
+        <${Chave}
+          rotulo="Agrupar por pessoa"
+          ligada=${est.pessoas.ligado}
+          aoMudar=${(sim) => (sim ? aoPessoas?.() : esteira.pessoas.esquecer())}
+        />
+        <small>${est.pessoas.ligado ? 'Só neste aparelho' : ESTADO_DA_CAMADA.desligada}</small>
+      </div>
+      ${est.pessoas.ligado ? html`<button type="button" class="vidro vidro--pequeno" onClick=${aoPessoas}>Ver as pessoas</button>` : null}
       <div class="ajuste-camada">
         <${Chave} rotulo="Começar sozinha ao abrir" ligada=${est.sozinha} aoMudar=${(v) => esteira.definirSozinha(v)} />
       </div>

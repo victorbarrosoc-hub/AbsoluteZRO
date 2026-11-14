@@ -177,6 +177,28 @@
 .dock-aba:active {
   transform: scale(0.95);
 }
+/* um aviso esperando na Entregar (o cliente enviou, um visitante pediu): um ponto, sem número */
+.dock-ponto {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--erro);
+  box-shadow: 0 0 0 2px var(--fundo);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dock-ponto {
+    animation: dock-ponto-entra 0.4s var(--mola) both;
+  }
+}
+@keyframes dock-ponto-entra {
+  from {
+    transform: scale(0);
+  }
+}
 
 /* ─────────── painel ─────────── */
 .painel {
@@ -609,6 +631,10 @@
   }
   .dock-aba[aria-current='page'] svg {
     transform: translateY(-1px) scale(1.08);
+  }
+  .dock-ponto {
+    top: 3px;
+    right: calc(50% - 17px);
   }
   .inicio-acoes .vidro {
     min-width: min(100%, 240px);

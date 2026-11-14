@@ -24,6 +24,64 @@
 .entregar-painel {
   min-width: 0;
 }
+
+/* ─────────── avisos (o cliente enviou, um visitante pediu) ─────────── */
+.entregar-avisos {
+  display: grid;
+  gap: 10px;
+  margin: -12px 0 28px;
+  padding: 14px 18px;
+}
+.entregar-avisos-lista {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.aviso-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+.aviso-ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--erro);
+}
+.aviso-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.aviso-texto strong,
+.aviso-texto small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aviso-texto strong {
+  font-weight: 600;
+}
+.aviso-texto small {
+  color: var(--mudo);
+  font-size: 13px;
+}
+.entregar-avisos-pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding-left: 20px;
+  font-size: 13px;
+}
+.estado-notificar {
+  justify-self: start;
+  font-size: 13px;
+}
 .link {
   border: 0;
   background: none;

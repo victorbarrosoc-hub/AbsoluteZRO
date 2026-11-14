@@ -29,6 +29,8 @@ const LIA_FORA = { sub: 'zro-lia', org: 'org-2' }
 const ANA = { sub: 'zro-ana', org: null }
 const TABELAS = ['galerias', 'galeria_fotos', 'links', 'selecao', 'envios', 'limites', 'predefinicoes']
 // as da 0003 (busca por rosto em evento): isolamento e permissões conferidos em test/eventos.test.js
+// a da 0005 (avisos ao fotógrafo): isolamento e permissões conferidos em test/avisos.test.js
+const DE_AVISOS = ['avisos']
 const DE_EVENTOS = ['eventos', 'evento_fotos', 'evento_links', 'evento_rostos', 'evento_pessoas', 'evento_ligacoes', 'evento_remocoes', 'evento_consentimentos', 'evento_pedidos', 'evento_buscas']
 
 let pg, urlFoto, dono, banco, z, link, arquivos, rotaGalerias, rotaPredefinicoes, pasta
@@ -162,7 +164,7 @@ test('migrações: toda tabela nova tem RLS, o público não tem nada e o papel 
   const tabelas =
     await dono`select c.relname as nome, c.relrowsecurity as rls from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'foto' and c.relkind = 'r' order by 1`
   assert.deepEqual(
-    tabelas.filter((t) => t.nome !== 'migracoes' && !DE_EVENTOS.includes(t.nome)).map((t) => [t.nome, t.rls]),
+    tabelas.filter((t) => t.nome !== 'migracoes' && !DE_EVENTOS.includes(t.nome) && !DE_AVISOS.includes(t.nome)).map((t) => [t.nome, t.rls]),
     [...TABELAS].sort().map((t) => [t, true]),
   )
   for (const t of TABELAS) {

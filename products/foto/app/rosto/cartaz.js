@@ -22,8 +22,8 @@ function quebrar(ctx, texto, largura) {
   return linhas
 }
 
-/** { endereco, nome, data?, modo, prazo } → Blob PNG. */
-export async function cartazA4({ endereco, nome, data = null, modo, prazo }) {
+/** { endereco, nome, data?, modo, criancas?, prazo } → Blob PNG. */
+export async function cartazA4({ endereco, nome, data = null, modo, criancas = false, prazo }) {
   await Promise.all([300, 700, 800].map((p) => document.fonts?.load?.(`${p} 40px "Figtree Variable"`).catch(() => {})))
   const tela = new OffscreenCanvas(L, A)
   const c = tela.getContext('2d')
@@ -33,7 +33,7 @@ export async function cartazA4({ endereco, nome, data = null, modo, prazo }) {
   c.fillStyle = '#1d1d1f'
   c.textAlign = 'center'
   c.textBaseline = 'alphabetic'
-  const t = TEXTOS[modo === 'aberta' ? 'cartazAberta' : 'cartazConsentimento']
+  const t = TEXTOS[criancas ? 'cartazCriancas' : modo === 'aberta' ? 'cartazAberta' : 'cartazConsentimento']
 
   c.font = fonte(800, 80)
   let y = 230

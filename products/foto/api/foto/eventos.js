@@ -5,7 +5,8 @@
 // O vercel.json reescreve /api/foto/eventos/<id> e /api/foto/eventos/<id>/<acao> para ?id=<id>&acao=<acao>:
 //
 //   GET    /api/foto/eventos                   lista, com as contagens
-//   POST   /api/foto/eventos                   cria (rascunho): nome, data, modo, prazoDias, marcaDagua, galeria?, aviso
+//   POST   /api/foto/eventos                   cria (rascunho): nome, data, modo, prazoDias, marcaDagua, galeria?, aviso,
+//                                              criancas (evento com crianças: só com consentimento, prazo até 15 dias)
 //   GET    /api/foto/eventos/<id>              a ficha, as fotos, o link e as contagens
 //   PATCH  /api/foto/eventos/<id>              altera a ficha (o modo só no rascunho; o prazo estende uma vez)
 //   DELETE /api/foto/eventos/<id>              apaga o evento, as prévias e tudo o que é dele
@@ -35,6 +36,9 @@ import { paraBase64, vetorDeTexto } from '../../src/rosto/assinatura.js'
 export const MAX_FOTOS_POR_PEDIDO = 500
 export const PRAZO_PADRAO_DIAS = 14
 export const PRAZO_MAXIMO_DIAS = 30
+/** Evento com crianças (db/migrations/0004): no máximo 15 dias, 7 se não disser. */
+export const PRAZO_CRIANCAS_DIAS = 15
+export const PRAZO_CRIANCAS_PADRAO = 7
 const MODOS = ['consentimento', 'aberta']
 
 const erro = (status, codigo, mais = {}) => ({ status, corpo: { ok: false, erro: codigo, ...mais } })
@@ -68,10 +72,18 @@ function lerFicha(corpo, { criar }) {
     if (!MODOS.includes(corpo.modo)) return { campo: 'modo' }
     campos.modo = corpo.modo
   } else if (criar) campos.modo = 'consentimento'
+  if (tem('criancas')) {
+    if (typeof corpo.criancas !== 'boolean') return { campo: 'criancas' }
+    campos.criancas = corpo.criancas
+    // com crianças, a busca é só com consentimento: pedir busca aberta junto é erro, não troca escondida
+    if (corpo.criancas && campos.modo === 'aberta') return { campo: 'modo' }
+    if (corpo.criancas && criar) campos.modo = 'consentimento'
+  }
+  const criancas = campos.criancas === true
   if (tem('prazoDias')) {
-    if (!inteiro(corpo.prazoDias, 1, PRAZO_MAXIMO_DIAS)) return { campo: 'prazoDias' }
+    if (!inteiro(corpo.prazoDias, 1, criancas ? PRAZO_CRIANCAS_DIAS : PRAZO_MAXIMO_DIAS)) return { campo: 'prazoDias' }
     campos.prazo = new Date(Date.now() + corpo.prazoDias * 86400000)
-  } else if (criar) campos.prazo = new Date(Date.now() + PRAZO_PADRAO_DIAS * 86400000)
+  } else if (criar) campos.prazo = new Date(Date.now() + (criancas ? PRAZO_CRIANCAS_PADRAO : PRAZO_PADRAO_DIAS) * 86400000)
   if (tem('marcaDagua')) {
     if (typeof corpo.marcaDagua !== 'boolean') return { campo: 'marcaDagua' }
     campos.marca_dagua = corpo.marcaDagua
@@ -86,7 +98,7 @@ function lerFicha(corpo, { criar }) {
       campos.aviso_versao = null
       campos.aviso_sha256 = null
     } else {
-      const t = textoAceito(corpo.aviso, 'ativacaoAberta', 'ativacaoConsentimento')
+      const t = textoAceito(corpo.aviso, 'ativacaoAberta', 'ativacaoConsentimento', 'ativacaoCriancas')
       if (!t) return { campo: 'aviso' }
       campos.aviso_versao = t.versao
       campos.aviso_sha256 = t.sha
@@ -139,6 +151,7 @@ function fichaDe(e) {
     nome: e.nome,
     data: e.data ? new Date(e.data).toISOString().slice(0, 10) : null,
     modo: e.modo,
+    criancas: e.criancas,
     estado: e.estado,
     prazo: e.prazo,
     prorrogado: e.prorrogado,
@@ -214,7 +227,7 @@ async function listar(tx) {
 }
 
 async function registrarAtivacao(tx, e, versao) {
-  const t = textoAceito(versao, 'ativacaoAberta', 'ativacaoConsentimento')
+  const t = textoAceito(versao, 'ativacaoAberta', 'ativacaoConsentimento', 'ativacaoCriancas')
   if (t) await tx`insert into foto.evento_consentimentos ${tx({ evento: e, tipo: 'ativacao', resultado: 'aceitou', versao: t.versao, sha256_texto: t.sha })}`
 }
 
@@ -238,6 +251,10 @@ async function alterar(tx, corpo, id) {
   if (!e) return nao
   const f = lerFicha(corpo, { criar: false })
   if (f.campo) return erro(400, 'campo', { campo: f.campo })
+  // ligar a marca de crianças num evento com prazo maior que 15 dias encurta o prazo junto
+  const teto = Date.now() + PRAZO_CRIANCAS_DIAS * 86400000
+  if (f.campos.criancas === true && !f.campos.prazo && new Date(e.prazo).getTime() > teto) f.campos.prazo = new Date(teto)
+  if (f.campos.prazo && (f.campos.criancas ?? e.criancas) && f.campos.prazo.getTime() > teto + 60000) return erro(400, 'campo', { campo: 'prazoDias' })
   if (Object.keys(f.campos).length) await tx`update foto.eventos set ${tx(f.campos)} where id = ${e.id}`
   if (f.campos.aviso_versao && f.campos.aviso_versao !== e.aviso_versao) await registrarAtivacao(tx, e.id, f.campos.aviso_versao)
   return { status: 200, corpo: { ok: true, evento: fichaDe(await umEvento(tx, e.id)) } }
@@ -410,6 +427,7 @@ async function publicar(tx, req, corpo, id) {
   if (!e.n_fotos) return erro(409, 'sem_fotos')
   if (e.n_enviadas < e.n_fotos) return erro(409, 'faltam_arquivos', { faltam: e.n_fotos - e.n_enviadas })
   if (e.modo === 'aberta' && !e.aviso_versao) return erro(409, 'sem_aviso')
+  if (e.criancas && !String(e.aviso_versao ?? '').startsWith('ativacao-criancas-')) return erro(409, 'sem_aviso')
   if (corpo.pin != null && !PIN.test(String(corpo.pin))) return erro(400, 'campo', { campo: 'pin' })
   await tx`update foto.eventos set estado = 'publicado' where id = ${e.id}`
   return novoLink(tx, req, e, corpo)

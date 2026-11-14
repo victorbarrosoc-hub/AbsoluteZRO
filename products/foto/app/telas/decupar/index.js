@@ -7,6 +7,9 @@
 //
 // Teclas da Decupar, além das da grade e da lupa (src/biblioteca/catalogo.js, padrão Lightroom):
 //   C           modo Cenas (G volta)            S   a foto em foco passa a ser a escolhida do momento (e os pesos aprendem)
+//   Q           modo Dúvidas: só as decisões de baixa confiança, uma de cada vez (P fica, X fora, → pula). D seria o
+//               óbvio, mas D é Revelar (Lightroom e a casca) e F é tela cheia na indústria; Q não é nada na casca e,
+//               no Lightroom, só existe na Revelação (remover manchas)
 //   O           sobreposição na lupa            I   o painel "por que esta nota"
 //   Espaço      zoom no rosto principal (sem rosto: 100% no centro)        Alt + ← →  rosto anterior, próximo
 
@@ -29,7 +32,10 @@ import { BarraDaDecupagem, PilulasDaDecupagem } from './barra.js'
 import { Cenas } from './cenas.js'
 import { esteiraDa, lembrar } from './esteira.js'
 import { Explicacao, Sobreposicao } from './explica.js'
+import { Duvidas } from './duvidas.js'
+import { FolhaDeCalibrar } from './calibrar.js'
 import { FolhaDeAceitar, FolhaDeAjustes, FolhaDeGravar } from './folhas.js'
+import { FolhaDePessoas, PilulasDePessoas } from './pessoas.js'
 import { Icone2 } from './icones.js'
 import { fotografar, voar } from './voar.js'
 
@@ -39,6 +45,8 @@ export const palco = true
 /** As teclas desta tela para a folha "?" (além das da grade e da lupa, que a casca mostra). */
 export const atalhos = [
   { tecla: 'C', oque: 'Modo Cenas' },
+  { tecla: 'Q', oque: 'Modo Dúvidas' },
+  { tecla: ['P', 'X'], oque: 'Nas dúvidas: Fica, Fora' },
   { tecla: 'S', oque: 'Esta passa a ser a escolhida do momento' },
   { tecla: '→', oque: 'Nas cenas: aceitar e passar' },
   { tecla: ['↑', '↓'], oque: 'Nas cenas: andar no momento' },
@@ -106,7 +114,7 @@ export default function Decupar({ loja, ativa }) {
   const [painel, definirPainel] = useState(() => lembrar.ler(CHAVE_DO_PAINEL, celular() ? '0' : '1') === '1')
   const [sobre, definirSobre] = useState(false)
   const [rosto, definirRosto] = useState(-1)
-  const [folha, definirFolha] = useState(null) // 'ajustes' | 'aceitar' | 'gravar'
+  const [folha, definirFolha] = useState(null) // 'ajustes' | 'aceitar' | 'gravar' | 'pessoas' | 'calibrar'
   const controle = useRef({}).current
   const escolhidas = usarCatalogo(loja, (x) => x.contagens().marca.escolhida, ['fotos', 'dados', 'historico'])
   const temNota = usarCatalogo(loja, (x) => x.contagens().balde.sem < x.tamanho, ['fotos', 'dados'])
@@ -164,7 +172,7 @@ export default function Decupar({ loja, ativa }) {
     void comTransicao(
       () => {
         definirModo(m)
-        if (m === 'cenas') definirLupa(false)
+        if (m !== 'grade') definirLupa(false)
       },
       { sentido: 'fica' },
     )
@@ -275,7 +283,7 @@ export default function Decupar({ loja, ativa }) {
   /** Leva as escolhidas, já selecionadas, para outra etapa. */
   const levar = (aba) => {
     c.empilhar(false)
-    c.filtrar({ marca: 'escolhida', estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, cliente: null, texto: null })
+    c.filtrar({ marca: 'escolhida', estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, cliente: null, texto: null, ids: null })
     c.selecionarTudo()
     loja.aba(aba).daDecupagem = { ids: c.selecionadas(), em: Date.now() }
     definirModo('grade')
@@ -318,6 +326,9 @@ export default function Decupar({ loja, ativa }) {
           aoEscolher: () => mudarModo(modo === 'cenas' ? 'grade' : 'cenas'),
         }
       : null,
+    celular() && modo !== 'duvidas' ? { rotulo: 'Ver as dúvidas', icone: 'aviso', aoEscolher: () => mudarModo('duvidas') } : null,
+    { rotulo: est.pessoas.ligado ? 'Pessoas' : 'Agrupar por pessoa', icone: 'pessoa', aoEscolher: () => definirFolha('pessoas') },
+    { rotulo: 'Calibrar em 30 segundos', icone: 'z', aoEscolher: () => definirFolha('calibrar') },
     { rotulo: 'Como decupar', icone: 'filtro', aoEscolher: () => definirFolha('ajustes') },
   ]
 
@@ -329,6 +340,9 @@ export default function Decupar({ loja, ativa }) {
     if (k === 'c') {
       e.preventDefault()
       mudarModo('cenas')
+    } else if (k === 'q') {
+      e.preventDefault()
+      mudarModo('duvidas')
     } else if (k === 's' && c.foco()) {
       e.preventDefault()
       trocarEscolhida(c.foco())
@@ -384,8 +398,13 @@ export default function Decupar({ loja, ativa }) {
         >`}
     />
     <${BarraDaDecupagem} loja=${loja} est=${est} esteira=${esteira} modo=${modo} aoModo=${mudarModo} principal=${principal} mais=${mais} />
-    <${BarraDaGrade} loja=${loja} tamanho=${tamanho} aoTamanho=${mudarTamanho} extra=${html`<${PilulasDaDecupagem} loja=${loja} />`} />
-    ${lupa || modo === 'cenas' ? null : html`<${BarraDeSelecao} loja=${loja} aoAbrir=${abrir} />`}
+    <${BarraDaGrade}
+      loja=${loja}
+      tamanho=${tamanho}
+      aoTamanho=${mudarTamanho}
+      extra=${html`<${PilulasDaDecupagem} loja=${loja} /><${PilulasDePessoas} loja=${loja} est=${est} aoAbrir=${() => definirFolha('pessoas')} />`}
+    />
+    ${lupa || modo !== 'grade' ? null : html`<${BarraDeSelecao} loja=${loja} aoAbrir=${abrir} />`}
     ${
       lupa && ativa && modo === 'grade'
         ? html`<${Lupa}
@@ -421,7 +440,21 @@ export default function Decupar({ loja, ativa }) {
           />`
         : null
     }
-    <${FolhaDeAjustes} aberta=${folha === 'ajustes'} aoFechar=${fecharFolha} est=${est} esteira=${esteira} />
+    ${
+      modo === 'duvidas' && ativa
+        ? html`<${Duvidas} loja=${loja} esteira=${esteira} lupa=${pecasDaLupa} aoSair=${() => mudarModo('grade')} fechar=${fechamento} />`
+        : null
+    }
+    <${FolhaDeAjustes}
+      aberta=${folha === 'ajustes'}
+      aoFechar=${fecharFolha}
+      est=${est}
+      esteira=${esteira}
+      aoPessoas=${() => definirFolha('pessoas')}
+      aoCalibrar=${() => definirFolha('calibrar')}
+    />
+    <${FolhaDePessoas} aberta=${folha === 'pessoas'} aoFechar=${fecharFolha} loja=${loja} esteira=${esteira} est=${est} />
+    <${FolhaDeCalibrar} aberta=${folha === 'calibrar'} aoFechar=${fecharFolha} loja=${loja} esteira=${esteira} est=${est} />
     <${FolhaDeAceitar}
       aberta=${folha === 'aceitar'}
       aoFechar=${fecharFolha}

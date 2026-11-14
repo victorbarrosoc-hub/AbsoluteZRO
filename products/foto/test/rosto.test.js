@@ -6,6 +6,9 @@
 //   - a decisão com os limiares do estudo (D.3): uma sonda, duas de três, rosto pequeno, colado, perfil, nota baixa;
 //   - juntar os 3 quadros, a qualidade da selfie e a máquina da captura;
 //   - o plano das passadas do detector e a leitura da saída;
+//   - a prova de vida (src/rosto/vida.js): homografia, paralaxe e o limiar medido em cabeças 3D sintéticas contra o
+//     mesmo rosto num plano (test/apoio-cabeca.js), o desafio cumprido na ordem, fora de ordem, tarde, com salto, com
+//     lacuna; a cabeça num vídeo exibido numa tela PASSA (limite documentado); moiré e cintilação só de apoio;
 //   - as receitas do ONNX (scripts/onnx.mjs): o protobuf lido e regravado byte a byte e, com os originais em
 //     .modelos-rosto/, os derivados com o sha256 de modelos.json.
 
@@ -22,6 +25,24 @@ import { decodificar, invasao, passadas, passadaUnica, suprimir } from '../src/r
 import { avaliarQuadro, DICAS, nitidez, pose } from '../src/rosto/qualidade.js'
 import { criarCaptura, juntar, serveParaEtapa } from '../src/rosto/quadros.js'
 import { PELA_VERSAO, TEXTOS, textoDoRegistro } from '../src/rosto/textos.js'
+import {
+  andamento,
+  aplicar,
+  cintilacao,
+  conferirVida,
+  dioDe,
+  formaDe,
+  guinadaNaImagem,
+  homografia,
+  paralaxe,
+  PASSOS,
+  quadrosValidos,
+  serveParaVetor,
+  sinaisDeTela,
+  sortearPassos,
+  VIDA,
+} from '../src/rosto/vida.js'
+import { achatar, pontos3d, projetar, quadrosDoDesafio, sorteio as sorteio3d } from './apoio-cabeca.js'
 import { gravar, ler, RECEITAS, sfaceP8, yunetDinamico } from '../scripts/onnx.mjs'
 import { modelosDeRosto, PASTA_ROSTO } from '../scripts/modelos.mjs'
 
@@ -439,6 +460,249 @@ test('textos: cada texto tem versão única e entra no registro com título, cor
   assert.match(TEXTOS.busca.corpo, /A selfie fica no seu celular/)
   assert.match(TEXTOS.cartazAberta.corpo, /^Neste evento você pode achar suas fotos pelo rosto\. A selfie não sai do seu celular\./)
   assert.match(TEXTOS.busca.caixa, /18 anos/)
+  // com crianças: a caixa fala só do responsável, e os textos falam com os responsáveis
+  assert.equal(TEXTOS.cadastroCriancas.caixa, 'Sou responsável por quem aparece na selfie.')
+  assert.doesNotMatch(TEXTOS.cadastroCriancas.caixa, /18 anos/)
+  for (const k of ['cadastroCriancas', 'ativacaoCriancas', 'cartazCriancas', 'regulamentoCriancas']) assert.match(TEXTOS[k].corpo, /responsáve/, k)
+  assert.match(TEXTOS.cadastroCriancas.versao, /^cadastro-criancas-/)
+  assert.match(TEXTOS.ativacaoCriancas.versao, /^ativacao-criancas-/)
+})
+
+// ───────── prova de vida ─────────
+
+const GRAU = Math.PI / 180
+const mediana = (xs) => [...xs].sort((a, b) => a - b)[xs.length >> 1]
+const quantil = (xs, q) => [...xs].sort((a, b) => a - b)[Math.floor(q * (xs.length - 1))]
+
+test('vida: a homografia de 4 pontos volta exata; o plano não tem paralaxe, a cabeça tem', () => {
+  const de = [
+    [10, 10],
+    [90, 12],
+    [20, 80],
+    [85, 75],
+  ]
+  const H0 = [1.1, 0.2, 5, -0.1, 0.9, 7, 0.001, -0.0005, 1]
+  const para = de.map((p) => aplicar(H0, p))
+  const H = homografia(de, para)
+  for (let i = 0; i < 9; i++) assert.ok(Math.abs(H[i] - H0[i]) < 1e-6, `h${i}`)
+  assert.equal(homografia(de, [de[0], de[0], de[0], de[0]]), homografia(de, [de[0], de[0], de[0], de[0]]))
+  // o plano girado e inclinado em qualquer direção: paralaxe zero (sem ruído)
+  const pl = achatar(pontos3d())
+  const ref = projetar(pl, {})
+  for (const pose of [{ guinada: 50 * GRAU }, { guinada: -30 * GRAU, arfagem: 35 * GRAU }, { rolagem: 20 * GRAU, z: 1.5, x: 0.4 }])
+    assert.ok(paralaxe(ref, projetar(pl, pose)) < 1e-6, JSON.stringify(pose))
+  // a cabeça girando 25°: o nariz sai do plano
+  const cab = pontos3d()
+  const p = paralaxe(projetar(cab, {}), projetar(cab, { guinada: 25 * GRAU }))
+  assert.ok(p > 0.2, `paralaxe ${p}`)
+  // guinada na imagem: virar para a esquerda (da pessoa) leva o nariz para a direita da imagem crua
+  assert.ok(guinadaNaImagem(projetar(cab, { guinada: 25 * GRAU })) > VIDA.giro)
+  assert.ok(guinadaNaImagem(projetar(cab, { guinada: -25 * GRAU })) < -VIDA.giro)
+  assert.ok(serveParaVetor('esquerda', projetar(cab, { guinada: 25 * GRAU })))
+  assert.ok(!serveParaVetor('esquerda', projetar(cab, { guinada: -25 * GRAU })))
+  assert.ok(serveParaVetor('frente', projetar(cab, {})))
+  // a forma (altura / distância entre os olhos) de uma cabeça girando fica na faixa; a de um cartão deitado, não
+  const f = formaDe(projetar(cab, {}), projetar(cab, { guinada: 30 * GRAU }))
+  assert.ok(f > VIDA.forma[0] && f < VIDA.forma[1], `forma ${f}`)
+  assert.ok(formaDe(ref, projetar(pl, { arfagem: 55 * GRAU })) < VIDA.forma[0])
+})
+
+test('vida: o limiar da paralaxe, medido em 3.000 cabeças 3D contra o mesmo rosto num plano (ruído de 1 px no quadro de 320)', () => {
+  const r = sorteio3d(44)
+  const ruido = (p) => p.map(([x, y]) => [x + r.normal(), y + r.normal()])
+  const cabecas = []
+  const planos = []
+  // cabeças: nariz de 0,10 a 0,50 DIO além do rosto, câmera de 4,5 a 9,5 DIO (28 a 60 cm), giro de 15° a 35°, 3
+  // quadros por giro (mediana), os dois giros na média — o que conferirVida faz
+  while (cabecas.length < 3000) {
+    const p3 = pontos3d({ nariz: 0.1 + r.u() * 0.4 })
+    const cam = { distancia: 4.5 + r.u() * 5 }
+    const base = { arfagem: r.normal() * 5 * GRAU, rolagem: r.normal() * 5 * GRAU }
+    const ref = ruido(projetar(p3, base, cam))
+    const giros = []
+    for (const lado of [1, -1]) {
+      const g = lado * (15 + r.u() * 20) * GRAU
+      const v = []
+      for (let k = 0; k < 3; k++) {
+        const q = ruido(projetar(p3, { ...base, guinada: g + r.normal() * 2 * GRAU, arfagem: base.arfagem + r.normal() * 4 * GRAU, z: r.u() * 2 }, cam))
+        if (lado * guinadaNaImagem(q) >= VIDA.giro && formaDe(ref, q) >= VIDA.forma[0] && formaDe(ref, q) <= VIDA.forma[1]) v.push(paralaxe(ref, q))
+      }
+      if (v.length) giros.push(mediana(v))
+    }
+    if (giros.length === 2) cabecas.push((giros[0] + giros[1]) / 2)
+  }
+  // planos: o mesmo rosto numa foto ou tela, inclinado de qualquer jeito até a guinada passar do giro para cada lado e a
+  // forma caber (o melhor que quem ataca com um cartão consegue)
+  let tentativas = 0
+  while (planos.length < 1000 && tentativas < 3e6) {
+    tentativas++
+    const pl = achatar(pontos3d())
+    const cam = { distancia: 3 + r.u() * 6 }
+    const ref = ruido(projetar(pl, {}, cam))
+    const giros = []
+    for (const lado of [1, -1]) {
+      const pose = { guinada: (r.u() * 2 - 1) * 70 * GRAU, arfagem: (r.u() * 2 - 1) * 50 * GRAU, rolagem: r.normal() * 5 * GRAU, z: r.u() * 1.5 }
+      const v = []
+      for (let k = 0; k < 3; k++) {
+        const q = ruido(projetar(pl, { ...pose, guinada: pose.guinada + r.normal() * GRAU }, cam))
+        if (lado * guinadaNaImagem(q) >= VIDA.giro && formaDe(ref, q) >= VIDA.forma[0] && formaDe(ref, q) <= VIDA.forma[1]) v.push(paralaxe(ref, q))
+      }
+      if (v.length < 3) break
+      giros.push(mediana(v))
+    }
+    if (giros.length === 2) planos.push((giros[0] + giros[1]) / 2)
+  }
+  const baixo = cabecas.filter((x) => x < VIDA.duvida).length / cabecas.length
+  const passa = planos.filter((x) => x >= VIDA.paralaxe).length / planos.length
+  const duvida = planos.filter((x) => x >= VIDA.duvida && x < VIDA.paralaxe).length / planos.length
+  console.log(
+    `# medida: paralaxe da cabeça 3D p0,1% ${quantil(cabecas, 0.001).toFixed(3)}, mediana ${mediana(cabecas).toFixed(3)}; ` +
+      `plano mediana ${mediana(planos).toFixed(3)}, p99 ${quantil(planos, 0.99).toFixed(3)}; ` +
+      `cabeça barrada ${(baixo * 100).toFixed(2)}%; plano que passa ${(passa * 100).toFixed(1)}% e na dúvida ${(duvida * 100).toFixed(1)}% ` +
+      `(1 cartão em ${Math.round(tentativas / planos.length)} poses sorteadas chega a cumprir os dois giros)`,
+  )
+  assert.equal(baixo, 0, 'nenhuma cabeça 3D cai abaixo da dúvida')
+  assert.ok(quantil(cabecas, 0.001) >= VIDA.paralaxe, 'mesmo a cabeça mais rasa passa do limiar')
+  assert.ok(passa < 0.06, `plano passando: ${passa}`)
+  assert.ok(mediana(planos) < VIDA.duvida, 'o plano típico fica abaixo da dúvida')
+})
+
+/** Os quadros com o nariz recolocado no plano dos olhos e da boca (o que a homografia prevê) e empurrado `desloc` ×
+ *  distância entre os olhos para o lado do giro: a paralaxe vira o que se quiser. */
+function narizDesenhado(q, desloc) {
+  const ref = q.find((x) => Math.abs(guinadaNaImagem(x.p)) < VIDA.frente).p
+  return q.map((x) => {
+    const g = guinadaNaImagem(x.p)
+    if (Math.abs(g) < VIDA.giro / 2) return x
+    const H = homografia(
+      [0, 1, 3, 4].map((i) => ref[i]),
+      [0, 1, 3, 4].map((i) => x.p[i]),
+    )
+    const n = aplicar(H, ref[2])
+    const p = x.p.slice()
+    p[2] = [n[0] + Math.sign(g) * desloc * dioDe(x.p), n[1]]
+    return { ...x, p }
+  })
+}
+
+test('vida: o desafio na ordem passa; fora de ordem, tarde, com salto, com lacuna ou num plano não', () => {
+  // cada ordem sorteada aparece; são as 6 permutações
+  const vistas = new Set()
+  for (let i = 0; i < 400; i++) {
+    const p = sortearPassos()
+    assert.deepEqual([...p].sort(), [...PASSOS].sort())
+    vistas.add(p.join())
+  }
+  assert.equal(vistas.size, 6)
+  for (let k = 0; k < 60; k++) {
+    const passos = sortearPassos(sorteio3d(k).u)
+    const q = quadrosDoDesafio(passos, { semente: k, nariz: 0.15 + (k % 8) * 0.04 })
+    const v = conferirVida({ passos, quadros: q, decorridoMs: q.at(-1).t + 400 })
+    assert.equal(v.ok, true, `${passos} ${JSON.stringify(v)}`)
+    assert.ok(v.medidas.paralaxe >= VIDA.paralaxe)
+    // o mesmo rosto achatado (foto, tela) seguindo os mesmos movimentos: a guinada não aparece
+    const pl = quadrosDoDesafio(passos, { semente: k, plano: true })
+    assert.equal(conferirVida({ passos, quadros: pl, decorridoMs: pl.at(-1).t + 400 }).motivo, 'passos')
+  }
+  const passos = ['direita', 'perto', 'esquerda']
+  const q = quadrosDoDesafio(passos, { semente: 7 })
+  const fim = q.at(-1).t + 400
+  assert.equal(conferirVida({ passos, quadros: q, decorridoMs: fim }).ok, true)
+  // outra ordem: os mesmos movimentos não cumprem
+  assert.equal(conferirVida({ passos: ['esquerda', 'direita', 'perto'], quadros: q, decorridoMs: fim }).motivo, 'passos')
+  // tarde: depois do prazo, ou quadros "do futuro" (mais tempo do que passou)
+  assert.equal(conferirVida({ passos, quadros: q, decorridoMs: VIDA.prazoMs + 1 }).motivo, 'prazo')
+  assert.equal(conferirVida({ passos, quadros: q, decorridoMs: q.at(-1).t - 5000 }).motivo, 'prazo')
+  // lacuna de 2 s no meio (câmera tampada para trocar a foto)
+  const lac = q.map((x, i) => (i > 20 ? { ...x, t: x.t + 2000 } : x))
+  assert.equal(conferirVida({ passos, quadros: lac, decorridoMs: fim + 2000 }).motivo, 'lacuna')
+  // salto: o rosto pula de lugar entre dois quadros seguidos (corte de vídeo, troca de foto)
+  const sal = q.map((x, i) => (i > 20 ? { ...x, p: x.p.map(([a, b]) => [a + 80, b]) } : x))
+  assert.equal(conferirVida({ passos, quadros: sal, decorridoMs: fim }).motivo, 'salto')
+  // pontos fabricados (cliente modificado): olhos e boca da cabeça, nariz no plano deles empurrado para o lado
+  const vf = conferirVida({ passos, quadros: narizDesenhado(q, 0.13), decorridoMs: fim })
+  assert.equal(vf.ok, true, 'sinal honesto: com a paralaxe fabricada, passa — o servidor não vê a câmera')
+  assert.equal(conferirVida({ passos, quadros: narizDesenhado(q, 0.04), decorridoMs: fim }).motivo, 'passos', 'nariz quase no plano: a guinada não chega')
+  // formato
+  assert.equal(conferirVida({ passos: ['esquerda'], quadros: q, decorridoMs: fim }).motivo, 'formato')
+  assert.equal(quadrosValidos([...q.slice(0, 5), { t: 1, p: q[0].p }]), false, 'tempo voltando')
+  assert.equal(quadrosValidos([{ t: 0, p: [[1, 2]] }, ...q]), false)
+  assert.equal(quadrosValidos(Array(VIDA.quadros + 1).fill(q[0])), false)
+  // o andamento diz onde parou
+  const meio = andamento(passos, q.slice(0, 22))
+  assert.ok(meio.ref >= 0 && meio.feitos >= 1 && !meio.pronto)
+})
+
+test('vida: NÃO barra a cabeça 3D mostrada num vídeo numa tela plana (a profundidade está no vídeo) — limite documentado', () => {
+  const passos = ['esquerda', 'perto', 'direita']
+  const q = quadrosDoDesafio(passos, { semente: 3 })
+  // a tela (plana) inclinada diante da câmera: cada quadro do vídeo passa pela mesma homografia
+  const H = homografia(
+    [
+      [0, 0],
+      [320, 0],
+      [0, 240],
+      [320, 240],
+    ],
+    [
+      [20, 10],
+      [300, 25],
+      [10, 230],
+      [310, 215],
+    ],
+  )
+  const naTela = q.map((x) => ({ ...x, p: x.p.map((p) => aplicar(H, p)) }))
+  assert.equal(conferirVida({ passos, quadros: naTela, decorridoMs: q.at(-1).t + 400 }).ok, true)
+})
+
+test('vida: moiré e cintilação só de apoio — decidem só na faixa de dúvida da paralaxe', () => {
+  // um recorte de "pele" (gradiente, manchas suaves, ruído de sensor) e o mesmo visto através de uma grade de tela
+  const r = sorteio3d(9)
+  const imagem = (grade) => {
+    const L = 96
+    const d = new Uint8ClampedArray(L * L * 4)
+    const manchas = Array.from({ length: 6 }, () => [r.u() * 0.15, r.u() * 0.15, r.u() * 6, 4 + r.u() * 10])
+    const fx = 0.3 + r.u() * 0.15
+    const fy = 0.02 + r.u() * 0.1
+    for (let y = 0; y < L; y++)
+      for (let x = 0; x < L; x++) {
+        let v = 150 + 0.4 * (x - 48) - 0.2 * (y - 48)
+        for (const [a, b, ph, amp] of manchas) v += amp * Math.sin(a * x + b * y + ph)
+        if (grade) v *= 1 + grade * Math.sin(2 * Math.PI * (fx * x + fy * y))
+        v += r.normal() * 6
+        const i = (y * L + x) * 4
+        d.set([v * 1.1, v * 0.85, v * 0.7, 255], i)
+      }
+    return { largura: L, altura: L, dados: d }
+  }
+  const p = [
+    [30, 40],
+    [66, 40],
+    [48, 48],
+    [36, 70],
+    [60, 70],
+  ]
+  const pele = Array.from({ length: 40 }, () => sinaisDeTela(imagem(0), p).m)
+  const tela = Array.from({ length: 40 }, () => sinaisDeTela(imagem(0.06), p).m)
+  console.log(`# medida: moiré pele máx ${Math.max(...pele)}, tela (grade de 6%) mín ${Math.min(...tela)}`)
+  assert.ok(Math.max(...pele) < VIDA.moire)
+  assert.ok(Math.min(...tela) >= VIDA.moire)
+  assert.equal(sinaisDeTela(imagem(0), [[0, 0], [1, 0], [94, 94], [0, 1], [1, 1]]), null, 'recorte fora da imagem')
+  assert.ok(cintilacao([120, 121, 122, 123, 124, 125, 126]) < 0.005, 'brilho que anda devagar')
+  assert.ok(cintilacao([120, 132, 118, 131, 119, 133, 120]) > VIDA.cintilacao, 'brilho que pisca')
+  // na dúvida (paralaxe entre `duvida` e `paralaxe`), os sinais decidem; acima, não mudam nada
+  const passos = ['esquerda', 'direita', 'perto']
+  const base = quadrosDoDesafio(passos, { semente: 5, ruido: 0, giro: 35 })
+  const raso = narizDesenhado(base, 0.095)
+  const v = conferirVida({ passos, quadros: raso, decorridoMs: raso.at(-1).t + 400 })
+  assert.ok(v.medidas?.paralaxe >= VIDA.duvida && v.medidas.paralaxe < VIDA.paralaxe, JSON.stringify(v))
+  assert.equal(v.ok, true)
+  const comMoire = raso.map((x) => ({ ...x, m: 300 }))
+  assert.equal(conferirVida({ passos, quadros: comMoire, decorridoMs: raso.at(-1).t + 400 }).motivo, 'tela')
+  const piscando = raso.map((x, i) => ({ ...x, l: i % 2 ? 150 : 130 }))
+  assert.equal(conferirVida({ passos, quadros: piscando, decorridoMs: raso.at(-1).t + 400 }).motivo, 'tela')
+  const fundo = base.map((x) => ({ ...x, m: 300 }))
+  assert.equal(conferirVida({ passos, quadros: fundo, decorridoMs: fundo.at(-1).t + 400 }).ok, true, 'com profundidade clara, a tela não decide')
 })
 
 // ───────── ONNX ─────────

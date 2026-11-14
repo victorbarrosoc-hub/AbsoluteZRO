@@ -180,6 +180,30 @@ test('filtros combinam com E: marca, estrelas ≥ n, cor, balde, motivo, cena, t
   assert.deepEqual(n.tipo, { raw: 6, imagem: 6 })
 })
 
+test('filtro por conjunto de fotos (ids, com quem pediu em idsDe): combina com E e nunca vai para serializar', () => {
+  const { c, ids } = novo(8)
+  c.marcar(ids.slice(0, 4), 'escolhida')
+  c.filtrar({ ids: [ids[1], ids[2], ids[6]], idsDe: 'pessoa:p2' })
+  assert.deepEqual(nomes(c), [2, 3, 7])
+  assert.equal(c.filtroAtivo(), true)
+  assert.equal(c.filtro().idsDe, 'pessoa:p2')
+  c.filtrar({ marca: 'escolhida' })
+  assert.deepEqual(nomes(c), [2, 3])
+  // guardar não leva o conjunto: é dado desta sessão (as fotos de uma pessoa moram só no aparelho)
+  const guardado = JSON.parse(JSON.stringify(c.serializar()))
+  assert.equal('ids' in guardado.filtro, false)
+  assert.equal('idsDe' in guardado.filtro, false)
+  assert.equal(guardado.filtro.marca[0], 'escolhida')
+  const outro = criarCatalogo(guardado)
+  assert.deepEqual(nomes(outro), [1, 2, 3, 4])
+  // tirar o critério; rótulo sem lista não filtra
+  c.filtrar({ ids: null, marca: null })
+  assert.equal(c.filtroAtivo(), false)
+  c.filtrar({ idsDe: 'pessoa:p1' })
+  assert.equal(c.filtroAtivo(), false)
+  assert.equal(c.filtro().idsDe, null)
+})
+
 test('filtro do cliente: escolhidas pela galeria e com pedido; a seleção que volta refaz a lista', () => {
   const { c, ids } = novo(6)
   const avisos = []

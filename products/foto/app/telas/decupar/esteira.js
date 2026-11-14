@@ -3,26 +3,45 @@
 // cerca de N", o aprendizado dos pesos e "aceitar sugestões"). A tela só lê `estado()` e chama as funções.
 //
 //   const e = esteiraDa(loja)
-//   e.estado()  → { trabalho, analise, ensaio, ensaioDetectado, rigor, meta, camadas, sozinha, aprendizado, mexido }
+//   e.estado()  → { trabalho, analise, ensaio, ensaioDetectado, rigor, meta, camadas, sozinha, aprendizado, mexido,
+//                   limiares, limiaresMexidos, calibrado: [frases], pessoas: (app/decupagem/pessoas.js) }
 //   e.assinar(f) · comecar() · pausar() · retomar() · definirRigor(r) · definirEnsaio(e) · definirMeta(n | null)
 //   e.definirCamadas([...]) · definirSozinha(bool) · aprender(troca) → frases · zerarAprendizado()
 //   e.planoDeAceitar() → { itens, escolhidas, rejeitadas, estrelas } · aceitar(plano) → ids
+//   e.duvidas() → a fila de dúvidas (src/decupagem/duvidas.js) · pessoasChave() → [{ id, fotos, chave }]
+//   e.perguntas() → as da calibração · calibrar(respostas) → { explicacao, mudou, … } · voltarAoPadrao()
+//   e.pessoas   ligar() · esquecer() · renomear(id, nome) (agrupar por pessoa, só no aparelho)
 //
 // O que fica guardado neste aparelho (localStorage, tudo com try/catch; sem ele, vale o padrão):
 //   foto_decupar_sozinha   '0' desliga o começo sozinho (a pessoa liga e desliga nos ajustes)
 //   foto_decupar_camadas   as camadas de visão pedidas (padrão: rostos)
 //   foto_decupar_pesos     os pesos aprendidos, por tipo de ensaio
 //   foto_decupar_t_<id>    ensaio, rigor e meta de cada trabalho
+//   foto_decupar_limiares  os limiares da calibração, por pessoa (a da sessão; 'local' sem login) e tipo de ensaio
 // A meta mexe só no BALDE da nota (magnitude.balde, guardando o da nota em magnitude.baldeDaNota): as notas e os
 // motivos continuam os da análise, e tirar a meta devolve os baldes como eram.
 
 import { criarAnalise } from '../../decupagem/analisar.js'
-import { ajustarPesos, ENSAIOS as REGRAS, meta as metaDoEnsaio, pesosPadrao, RIGORES as CORTES } from '../../../src/decupagem/nota.js'
+import { criarPessoas } from '../../decupagem/pessoas.js'
+import { ajustarLimiares, explicarLimiares, perguntas as perguntasDoEnsaio } from '../../../src/decupagem/calibracao.js'
+import { filaDeDuvidas } from '../../../src/decupagem/duvidas.js'
+import {
+  ajustarPesos,
+  calibrar,
+  ENSAIOS as REGRAS,
+  limiaresMexidos,
+  limiaresPadrao,
+  meta as metaDoEnsaio,
+  normalizarLimiares,
+  pesosPadrao,
+  RIGORES as CORTES,
+} from '../../../src/decupagem/nota.js'
 
 export const CHAVES = Object.freeze({
   sozinha: 'foto_decupar_sozinha',
   camadas: 'foto_decupar_camadas',
   pesos: 'foto_decupar_pesos',
+  limiares: 'foto_decupar_limiares',
   trabalho: (id) => `foto_decupar_t_${id}`,
 })
 export const CAMADAS_PADRAO = Object.freeze(['rostos'])
@@ -92,7 +111,19 @@ function criarEsteira(loja) {
   let camadas = lerCamadas()
   let sozinha = lembrar.ler(CHAVES.sozinha) !== '0'
   let pesosTodos = lembrar.lerJson(CHAVES.pesos, {}) || {}
+  let quem = 'local'
+  let limiaresTodos = lerLimiares()
   let estadoDaAnalise = analise.estado()
+  const pessoas = criarPessoas({
+    loja,
+    aoMudar: (e) => {
+      estadoDasPessoas = e
+      analise.definirPessoas(e.ligado ? e.pessoas : null)
+      if (metaAtual != null) agendarMeta(60)
+      publicar()
+    },
+  })
+  let estadoDasPessoas = pessoas.estado()
   let instantaneo = null
   let escrevendo = false
   let relogioDaMeta = null
@@ -104,6 +135,31 @@ function criarEsteira(loja) {
   }
   const pesos = () => pesosTodos[ensaio] ?? undefined
   const mexido = () => !!pesosTodos[ensaio]
+  function lerLimiares() {
+    const v = lembrar.lerJson(CHAVES.limiares, {})
+    return v && typeof v === 'object' ? v : {}
+  }
+  const limiares = () => normalizarLimiares(limiaresTodos[quem]?.[ensaio])
+  /** As opções da nota de agora (o que refazerNota e iniciar recebem). */
+  const daNota = () => ({ rigor, ensaio, pesos: pesos(), limiares: limiares() })
+  /** As pessoas-chave, só com ligado (a meta e a fila de dúvidas usam). */
+  const pessoasChave = () => (estadoDasPessoas.ligado ? estadoDasPessoas.pessoas.filter((p) => p.chave) : null)
+  // de quem são os limiares: a pessoa da sessão (sem rede ou sem login, 'local')
+  if (typeof fetch === 'function')
+    fetch('/api/zro/eu', { headers: { accept: 'application/json' } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        const id = r?.pessoa?.id
+        if (!id || id === quem) return
+        const antes = JSON.stringify(limiares())
+        quem = String(id)
+        if (JSON.stringify(limiares()) !== antes) {
+          if (iniciada) analise.refazerNota(daNota())
+          aplicarMeta()
+        }
+        publicar()
+      })
+      .catch(() => {})
 
   function publicar() {
     instantaneo = null
@@ -130,12 +186,14 @@ function criarEsteira(loja) {
       ensaioEscolhido = !!g?.ensaioEscolhido
       rigor = g?.rigor in CORTES ? g.rigor : 'equilibrado'
       metaAtual = Number.isFinite(g?.meta) && g.meta > 0 ? g.meta : null
+      void pessoas.abrir(t)
       publicar()
     }
     const pronto = !!t && loja.situacao() === 'aberto' && !loja.lendo()
     if (pronto) {
       // o catálogo guardado pode ter vindo com a meta de antes: confere os baldes com a meta de agora
       agendarMeta()
+      pessoas.atualizar()
       if (sozinha && !iniciada) api.comecar()
     }
   }
@@ -159,7 +217,7 @@ function criarEsteira(loja) {
       const r = metaDoEnsaio(
         fotos.map((f) => ({ id: f.id, magnitude: f.magnitude })),
         metaAtual,
-        { grupos: c.grupos() },
+        { grupos: c.grupos(), pessoas: pessoasChave() },
       )
       const ficam = new Set(r.ficam)
       for (const f of fotos) {
@@ -221,6 +279,10 @@ function criarEsteira(loja) {
         sozinha,
         mexido: mexido(),
         aprendizado: mexido() ? ajustarPesos(pesos(), []).explicacao : null,
+        limiares: limiares(),
+        limiaresMexidos: limiaresMexidos(limiares()),
+        calibrado: explicarLimiares(limiares()),
+        pessoas: estadoDasPessoas,
       }
       return instantaneo
     },
@@ -233,7 +295,7 @@ function criarEsteira(loja) {
     comecar() {
       if (!trabalho || loja.lendo()) return null
       iniciada = true
-      const fim = analise.iniciar({ camadas, rigor, ensaio, pesos: pesos(), raw: true })
+      const fim = analise.iniciar({ camadas, ...daNota(), raw: true })
       publicar()
       return fim
     },
@@ -244,7 +306,7 @@ function criarEsteira(loja) {
       if (!(r in CORTES) || r === rigor) return
       rigor = r
       guardarTrabalho()
-      analise.refazerNota({ rigor, ensaio, pesos: pesos() })
+      analise.refazerNota(daNota())
       aplicarMeta()
       publicar()
     },
@@ -253,7 +315,7 @@ function criarEsteira(loja) {
       ensaio = e
       if (escolhido) ensaioEscolhido = true
       guardarTrabalho()
-      analise.refazerNota({ rigor, ensaio, pesos: pesos() })
+      analise.refazerNota(daNota())
       aplicarMeta()
       publicar()
     },
@@ -265,7 +327,7 @@ function criarEsteira(loja) {
       guardarTrabalho()
       aplicarMeta()
       // sem meta, a nota de agora decide o balde de novo (o guardado em baldeDaNota pode ser de antes do rigor)
-      if (v == null && c.fotos().some((f) => f.medidas)) analise.refazerNota({ rigor, ensaio, pesos: pesos() })
+      if (v == null && c.fotos().some((f) => f.medidas)) analise.refazerNota(daNota())
       publicar()
     },
     definirCamadas(lista) {
@@ -295,7 +357,7 @@ function criarEsteira(loja) {
       ])
       pesosTodos = { ...pesosTodos, [ensaio]: r.pesos }
       lembrar.gravar(CHAVES.pesos, pesosTodos)
-      analise.refazerNota({ rigor, ensaio, pesos: r.pesos })
+      analise.refazerNota(daNota())
       aplicarMeta()
       publicar()
       return r.explicacao
@@ -304,7 +366,7 @@ function criarEsteira(loja) {
       pesosTodos = { ...pesosTodos }
       delete pesosTodos[ensaio]
       lembrar.gravar(CHAVES.pesos, pesosTodos)
-      analise.refazerNota({ rigor, ensaio, pesos: undefined })
+      analise.refazerNota(daNota())
       aplicarMeta()
       publicar()
     },
@@ -343,8 +405,52 @@ function criarEsteira(loja) {
       const porId = new Map(plano.itens.map((i) => [i.id, i.campos]))
       return c.definir([...porId.keys()], (f) => porId.get(f.id), { rotulo: 'Sugestões aceitas' })
     },
+
+    // ───────── fila de dúvidas ─────────
+
+    /** As dúvidas de agora, da mais importante para a menos (só fotos ainda sem marca). */
+    duvidas: () => filaDeDuvidas(c.fotos(), { rigor, pessoas: pessoasChave() }),
+    pessoasChave,
+
+    // ───────── calibração ─────────
+
+    /** As perguntas do ensaio aberto, perto dos cortes de agora. */
+    perguntas() {
+      const fotos = c.fotos().filter((f) => f.medidas)
+      return perguntasDoEnsaio(fotos, { limiares: limiares(), referencia: calibrar(fotos), grupos: analise.grupos() })
+    },
+    /** As respostas viram os limiares (e os pesos, nos pares) deste tipo de ensaio, desta pessoa, neste aparelho. */
+    calibrar(respostas) {
+      const fotos = c.fotos().filter((f) => f.medidas)
+      const r = ajustarLimiares(limiares(), respostas, { referencia: calibrar(fotos), pesos: pesos() ?? pesosPadrao() })
+      api.definirLimiares(r.limiares, { semNota: true })
+      if (respostas.some((x) => x?.tipo === 'qual')) {
+        pesosTodos = { ...pesosTodos, [ensaio]: r.pesos }
+        lembrar.gravar(CHAVES.pesos, pesosTodos)
+      }
+      analise.refazerNota(daNota())
+      aplicarMeta()
+      publicar()
+      return r
+    },
+    definirLimiares(novos, { semNota = false } = {}) {
+      const l = normalizarLimiares(novos)
+      const meus = { ...(limiaresTodos[quem] ?? {}) }
+      if (limiaresMexidos(l)) meus[ensaio] = l
+      else delete meus[ensaio]
+      limiaresTodos = { ...limiaresTodos, [quem]: meus }
+      lembrar.gravar(CHAVES.limiares, limiaresTodos)
+      if (semNota) return
+      analise.refazerNota(daNota())
+      aplicarMeta()
+      publicar()
+    },
+    voltarAoPadrao: () => api.definirLimiares(limiaresPadrao()),
+
+    pessoas,
     encerrar() {
       analise.encerrar()
+      pessoas.encerrar()
       ouvintes.clear()
     },
   }

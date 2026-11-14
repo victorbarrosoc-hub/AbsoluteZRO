@@ -3,13 +3,16 @@
 //   Galeria           o link para o cliente escolher as fotos (galeria.js); a escolha volta para o catálogo
 //   Busca por rosto   o evento em que cada convidado acha as próprias fotos com uma selfie (app/rosto/painel.js)
 // Sem armazenamento, banco ou login no servidor, Galeria e Busca por rosto mostram a mesma linha e nada mais.
-// "Tratar as escolhidas pelo cliente" leva da galeria ao lote já com elas.
+// "Tratar as escolhidas pelo cliente" leva da galeria ao lote já com elas. Acima das três, os avisos (o cliente enviou,
+// um visitante pediu), com "Abrir" (avisos.js).
 //
 // Contrato de tela: export default um componente Preact que recebe { loja, ativa }.
 
 import { html, useEffect, useState } from '../../preact.js'
 import { usarCatalogo, usarLoja } from '../../estado.js'
-import { Segmentado, Vazio } from '../../componentes/index.js'
+import { Segmentado, Vazio, avisar } from '../../componentes/index.js'
+import { marcar } from '../../casca/avisos.js'
+import { ListaDeAvisos } from './avisos.js'
 import { usarFolhaDeEstilo } from './comum.js'
 import { Exportar } from './exportar.js'
 import { Galeria } from './galeria.js'
@@ -42,6 +45,23 @@ export default function Entregar({ loja, ativa }) {
     if (!visitou[modo]) definirVisitou((v) => ({ ...v, [modo]: true }))
   }, [modo])
 
+  // abrir um aviso: o pedido vai para a busca por rosto; a escolha, para a galeria (a deste trabalho, ou o trabalho deste
+  // aparelho ligado a ela). A galeria marca como lido quando mostra; o resto marca aqui.
+  async function abrirAviso(a) {
+    if (a.tipo === 'pedido') {
+      definirModo('evento')
+      return marcar({ ids: [a.id] })
+    }
+    if (trabalho && vinculo.ler(trabalho.id) === a.galeria) return definirModo('galeria')
+    const outro = vinculo.trabalhoDe(a.galeria)
+    if (outro) {
+      if (await loja.abrirRecente(outro).catch(() => false)) return definirModo('galeria')
+      return avisar('Não deu para abrir esse trabalho.')
+    }
+    avisar('Essa galeria é de um trabalho de outro aparelho.')
+    return marcar({ ids: [a.id] })
+  }
+
   if (!trabalho || !total) {
     return html`<div class="tela entregar-tela"><div class="entregar"><${Vazio} icone="entregar" titulo=${['Nada', 'para entregar.']} /></div></div>`
   }
@@ -63,6 +83,7 @@ export default function Entregar({ loja, ativa }) {
           aoMudar=${definirModo}
         />
       </header>
+      <${ListaDeAvisos} aoAbrir=${abrirAviso} />
       <div class="entregar-painel" hidden=${modo !== 'exportar'} data-painel="exportar">
         ${visitou.exportar ? html`<${Exportar} loja=${loja} ativa=${ativa && modo === 'exportar'} pedido=${pedido} />` : null}
       </div>

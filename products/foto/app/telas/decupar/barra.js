@@ -258,6 +258,8 @@ function Meta({ est, esteira, total }) {
  */
 export function BarraDaDecupagem({ loja, est, esteira, modo, aoModo, principal, mais }) {
   const total = usarCatalogo(loja, (c) => c.tamanho, ['fotos'])
+  // a fila de dúvidas encolhe a cada decisão (e muda com a nota): a contagem acompanha
+  const duvidas = usarCatalogo(loja, () => (modo === 'duvidas' ? -1 : esteira.duvidas().length), ['fotos', 'dados'])
   const ensaio = ENSAIOS[est.ensaio]
   return html`<div class="dec-barra" role="toolbar" aria-label="Decupagem">
     <${Andamento} est=${est} esteira=${esteira} temFotos=${total > 0} />
@@ -301,6 +303,11 @@ export function BarraDaDecupagem({ loja, est, esteira, modo, aoModo, principal, 
         opcoes=${[
           { valor: 'grade', rotulo: 'Grade', icone: 'grade', mostrarRotulo: true, dica: 'Foto por foto · G' },
           { valor: 'cenas', rotulo: 'Cenas', icone: 'pilha', mostrarRotulo: true, dica: 'Uma cena por vez · C' },
+          {
+            valor: 'duvidas',
+            rotulo: html`<${Icone2} nome="duvida" />Dúvidas${duvidas > 0 ? html`<span class="dec-modo-n"><${Numero} valor=${duvidas} /></span>` : null}`,
+            dica: 'Só o que está em dúvida · Q',
+          },
         ]}
       />
       <${Menu} lado="direita" rotulo="Mais" dica="Mais" gatilho=${html`<${Icone} nome="tres" />`} itens=${mais} />

@@ -5,9 +5,11 @@
 //             a prévia da foto do evento: girada pelo EXIF aqui (a prévia embutida do RAW não vem girada; sem girar,
 //             a pesquisa achou 8 rostos onde havia 38), reduzida a 1616 px no lado maior, YuNet global + ladrilhos,
 //             nota ≥ 0,75, largura ≥ 20 px, alinhar → SFace p8 → int8. `v` é Int8Array(128).
-//   quadro    { bitmap, etapa, guinadaDoGiro }    → { avaliacao, rostos, vetor? }
-//             um quadro da câmera do visitante: detecta (320 px), avalia a qualidade (luz, nitidez, distância) e só
-//             assina quando o quadro serve para a etapa da captura (src/rosto/quadros.js). `vetor` é Float32Array.
+//   quadro    { bitmap, querer }                  → { avaliacao, rostos, pontos?, tela?, vetor?, tipo? }
+//             um quadro da câmera do visitante: detecta (320 px), avalia a qualidade (luz, nitidez, distância), devolve
+//             os 5 pontos (com um rosto só) e os sinais de tela, e só assina quando a pose serve para um dos vetores
+//             que faltam (`querer`: 'frente' | 'esquerda' | 'direita', src/rosto/vida.js). `vetor` é Float32Array.
+//             (Compatível: { etapa, guinadaDoGiro } segue a captura antiga de src/rosto/quadros.js.)
 //
 // Nenhuma imagem sai daqui: só números. No celular do visitante, nem os números saem da página sem a pessoa pedir.
 
@@ -15,6 +17,7 @@ import { comTransferencia, servir } from '../trabalho/servir.js'
 import { girarEReduzir, LADO_DA_FOTO, preparar, quadro, rostosDaFoto } from './motor.js'
 import { avaliarQuadro } from '../../src/rosto/qualidade.js'
 import { serveParaEtapa } from '../../src/rosto/quadros.js'
+import { serveParaVetor } from '../../src/rosto/vida.js'
 
 servir({
   async preparar(_, { progresso }) {
@@ -37,12 +40,16 @@ servir({
     )
   },
 
-  async quadro({ bitmap, etapa = 0, guinadaDoGiro = null }) {
+  async quadro({ bitmap, etapa = 0, guinadaDoGiro = null, querer = null }) {
     let avaliacao = null
+    let tipo = null
     const r = await quadro(bitmap, {
       assinarSe: (rostos, recorte, ladoDoQuadro) => {
         avaliacao = avaliarQuadro({ rostos, ladoDoQuadro, recorte })
-        return avaliacao.ok && serveParaEtapa(etapa, avaliacao.pose, guinadaDoGiro)
+        if (!avaliacao.ok) return false
+        if (!querer) return serveParaEtapa(etapa, avaliacao.pose, guinadaDoGiro)
+        tipo = rostos.length === 1 ? (querer.find((t) => serveParaVetor(t, rostos[0].pontos)) ?? null) : null
+        return tipo != null
       },
     })
     bitmap.close?.()
@@ -51,7 +58,10 @@ servir({
     const saida = {
       avaliacao: { ok: avaliacao.ok, dica: avaliacao.dica, pose: avaliacao.pose ?? null, medidas: avaliacao.medidas ?? null },
       rostos: r.rostos.length,
+      pontos: r.rostos.length === 1 ? r.rostos[0].pontos.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]) : null,
+      tela: r.tela,
       vetor,
+      tipo: vetor ? tipo : null,
     }
     return vetor ? comTransferencia(saida, [vetor.buffer]) : saida
   },

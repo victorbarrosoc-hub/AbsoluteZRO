@@ -5,29 +5,68 @@
 //   abrir      POST { token, contar? }                      a ficha do evento (sem fotos: cada um só vê as suas)
 //   pin        POST { token, pin }                          confere o PIN e grava a prova (cookie HttpOnly, 12 h)
 //   recusar    POST { token, tipo, versao }                 "Agora não": registra a recusa (sem nada da pessoa)
-//   achar      POST { token, vetores, versao }              busca aberta: { eu, talvez } (só fotos; até 200)
-//   cadastrar  POST { token, vetores, chave, versao }       com consentimento: guarda o pedido; { eu, talvez, processado }
+//   desafio    POST { token }                               o desafio de vida (ordem sorteada, prazo curto); emite o
+//                                                           cookie do aparelho (`foto_ap`) se ainda não houver
+//   prova      POST { token, desafio, quadros, vetores, para }   confere a captura ao vivo; { prova } de uso único
+//   achar      POST { token, vetores, versao, prova | lembranca }   busca aberta: { eu, talvez, lembranca? } (até 200)
+//   cadastrar  POST { token, vetores, chave, versao, prova }   com consentimento: guarda o pedido; { eu, talvez, processado }
 //   minhas     POST { token, chave }                        volta pelo mesmo link: as fotos ligadas a quem pediu
 //   desistir   POST { token, chave }                        apaga o pedido e as ligações
-//   remover    POST { token, vetores, fotos?, versao }      "não quero aparecer": sem fotos, as parecidas; com fotos, apaga
+//   remover    POST { token, vetores, fotos?, versao, prova }   "não quero aparecer": sem fotos, as parecidas; com fotos, apaga
 //   pedir      POST { token, nome, contato, fotos }         "quero estas fotos" (sem pagamento)
 //   imagem     GET ?t=&f=&v=mini&s=<12 do sha256>           os bytes de uma prévia com marca-d'água; cache privado
 //
 // `vetores`: 1 a 3 strings base64 de 128 bytes (int8, src/rosto/assinatura.js). A selfie nunca vem: não há rota que
 // aceite imagem. O corpo não vai para log. Link desconhecido, revogado ou vencido: sempre 404 { erro: 'link' }.
-// Escrita confere a origem. Limites: 429 { erro: 'limite' }. Formatos em docs/API.md.
+// Escrita confere a origem. Limites: 429 { erro: 'limite', escopo: 'aparelho' | 'rede' | 'evento' }. Sem prova de
+// captura ao vivo (ou com prova já usada, de outro aparelho ou de outros vetores): 403 { erro: 'prova' }. Prova de vida
+// que não passou: 422 { erro: 'vida', motivo }. Formatos em docs/API.md.
 
 import { armazenamento } from '../_arquivos.js'
-import { abrirEvento, achar, cadastrar, conferirPinDoEvento, desistir, imagemDoEvento, minhas, pedir, recusar, remover } from '../_evento.js'
+import {
+  abrirEvento,
+  achar,
+  aparelhoDe,
+  cadastrar,
+  conferirPinDoEvento,
+  cookieDoAparelho,
+  desistir,
+  emitirDesafio,
+  idDoAparelho,
+  imagemDoEvento,
+  minhas,
+  novoAparelho,
+  pedir,
+  provarVida,
+  recusar,
+  remover,
+} from '../_evento.js'
 import { linkLigado } from '../_link.js'
 import { lerJson } from '../_sessao.js'
 import { consulta, json, origemDoPedido } from '../_zro.js'
 
-const STATUS = { link: 404, limite: 429, pin: 401, formato: 400, vetor: 400, fotos: 400, nome: 400, contato: 400, chave: 404, modo: 409, cheio: 409 }
+const STATUS = {
+  link: 404,
+  limite: 429,
+  pin: 401,
+  formato: 400,
+  vetor: 400,
+  fotos: 400,
+  nome: 400,
+  contato: 400,
+  chave: 404,
+  modo: 409,
+  cheio: 409,
+  prova: 403,
+  desafio: 403,
+  vida: 422,
+}
 const ACOES = {
   abrir: ['POST'],
   pin: ['POST'],
   recusar: ['POST'],
+  desafio: ['POST'],
+  prova: ['POST'],
   achar: ['POST'],
   cadastrar: ['POST'],
   minhas: ['POST'],
@@ -38,7 +77,7 @@ const ACOES = {
 }
 
 const morto = (res) => json(res, 404, { ok: false, erro: 'link' })
-const responder = (res, r) => (r.ok ? json(res, 200, r) : json(res, STATUS[r.erro] ?? 400, r))
+const responder = (res, r, cookies = []) => (r.ok ? json(res, 200, r, cookies) : json(res, STATUS[r.erro] ?? 400, r, cookies))
 
 function origemBoa(req) {
   const origem = req.headers.origin
@@ -90,7 +129,8 @@ export default async function evento(req, res) {
   if (!origemBoa(req)) return json(res, 403, { ok: false, erro: 'origem' })
   let corpo
   try {
-    corpo = await lerJson(req, 16384)
+    // a prova leva os pontos do detector quadro a quadro (até 360 quadros): 64 KB; o resto cabe em 16 KB
+    corpo = await lerJson(req, acao === 'prova' ? 65536 : 16384)
   } catch {
     return json(res, 400, { ok: false, erro: 'formato' })
   }
@@ -114,10 +154,19 @@ export default async function evento(req, res) {
     return json(res, 200, { ok: true }, [`${r.cookie.nome}=${r.cookie.valor}; Path=/; Max-Age=${r.cookie.maxAge}; HttpOnly${seguro}; SameSite=Lax`])
   }
   if (acao === 'recusar') return responder(res, await recusar(req, token, corpo.tipo, corpo.versao))
-  if (acao === 'achar') return responder(res, await achar(req, token, corpo.vetores, corpo.versao))
-  if (acao === 'cadastrar') return responder(res, await cadastrar(req, token, corpo.vetores, corpo.chave, corpo.versao))
+  const aparelho = aparelhoDe(req)
+  if (acao === 'desafio') {
+    // sem cookie do aparelho (ou adulterado): nasce um aqui, e o desafio já fica preso a ele
+    const novo = aparelho ? null : novoAparelho()
+    const r = await emitirDesafio(req, token, aparelho ?? idDoAparelho(novo))
+    return responder(res, r, novo && r.erro !== 'link' ? [cookieDoAparelho(novo, origemDoPedido(req).startsWith('https://'))] : [])
+  }
+  if (acao === 'prova') return responder(res, await provarVida(req, token, aparelho, corpo))
+  const prova = { aparelho, prova: corpo.prova ?? null, lembranca: corpo.lembranca ?? null }
+  if (acao === 'achar') return responder(res, await achar(req, token, corpo.vetores, corpo.versao, prova))
+  if (acao === 'cadastrar') return responder(res, await cadastrar(req, token, corpo.vetores, corpo.chave, corpo.versao, prova))
   if (acao === 'minhas') return responder(res, await minhas(req, token, corpo.chave))
   if (acao === 'desistir') return responder(res, await desistir(req, token, corpo.chave))
-  if (acao === 'remover') return responder(res, await remover(req, token, corpo.vetores, corpo.fotos ?? null, corpo.versao))
+  if (acao === 'remover') return responder(res, await remover(req, token, corpo.vetores, corpo.fotos ?? null, corpo.versao, prova))
   return responder(res, await pedir(req, token, corpo.nome, corpo.contato, corpo.fotos))
 }

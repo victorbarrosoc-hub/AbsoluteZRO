@@ -111,7 +111,21 @@ function porNota(a, b) {
 }
 const COMPARAR = { captura: porCaptura, nome: porNome, nota: porNota }
 
-const FILTRO_VAZIO = Object.freeze({ marca: null, estrelas: 0, cor: null, balde: null, motivo: null, cena: null, tipo: null, cliente: null, texto: null })
+const FILTRO_VAZIO = Object.freeze({
+  marca: null,
+  estrelas: 0,
+  cor: null,
+  balde: null,
+  motivo: null,
+  cena: null,
+  tipo: null,
+  cliente: null,
+  texto: null,
+  ids: null,
+  idsDe: null,
+})
+/** Critérios que valem só nesta sessão: não vão para serializar() (ex.: as fotos de uma pessoa, que é dado do aparelho). */
+const SO_NA_SESSAO = ['ids', 'idsDe']
 const lista = (v) => (v == null || v === '' ? null : Array.isArray(v) ? (v.length ? v : null) : [v])
 
 /** Deixa o filtro na forma canônica (listas, ou null quando não filtra). */
@@ -126,6 +140,9 @@ function normalizarFiltro(f) {
     tipo: lista(f.tipo),
     cliente: lista(f.cliente),
     texto: f.texto ? String(f.texto).toLowerCase() : null,
+    // um conjunto de fotos escolhido por quem chama (`idsDe` diz quem: 'pessoa:p3'); sem a lista, o rótulo não vale
+    ids: Array.isArray(f.ids) || f.ids instanceof Set ? new Set(f.ids) : null,
+    idsDe: (Array.isArray(f.ids) || f.ids instanceof Set) && f.idsDe ? String(f.idsDe) : null,
   }
 }
 
@@ -139,10 +156,11 @@ function passa(foto, f) {
   if (f.tipo && !f.tipo.includes(foto.tipo)) return false
   if (f.cliente && !f.cliente.some((v) => doCliente(foto, v))) return false
   if (f.texto && !foto.nome.toLowerCase().includes(f.texto)) return false
+  if (f.ids && !f.ids.has(foto.id)) return false
   return true
 }
 
-const filtroAtivo = (f) => !!(f.marca || f.estrelas || f.cor || f.balde || f.motivo || f.cena || f.tipo || f.cliente || f.texto)
+const filtroAtivo = (f) => !!(f.marca || f.estrelas || f.cor || f.balde || f.motivo || f.cena || f.tipo || f.cliente || f.texto || f.ids)
 
 // ───────────────────────────── catálogo ─────────────────────────────
 
@@ -641,7 +659,7 @@ export function criarCatalogo(inicial) {
         grupos: [...tiposDeGrupo].map(([id, tipo]) => ({ id, tipo })),
         abertas: [...abertas],
         empilhado,
-        filtro: { ...filtro },
+        filtro: Object.fromEntries(Object.entries(filtro).filter(([k]) => !SO_NA_SESSAO.includes(k))),
         ordem: { ...ordem },
         foco,
       }

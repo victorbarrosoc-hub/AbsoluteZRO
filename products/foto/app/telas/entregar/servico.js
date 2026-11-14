@@ -77,6 +77,18 @@ export const vinculo = {
       // sem armazenamento: a lista do servidor ainda mostra a galeria
     }
   },
+  /** O trabalho deste aparelho ligado a uma galeria, ou null (o aviso pode ser de outro aparelho). */
+  trabalhoDe(galeria) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const chave = localStorage.key(i)
+        if (chave?.startsWith('foto_galeria:') && localStorage.getItem(chave) === galeria) return chave.slice('foto_galeria:'.length)
+      }
+    } catch {
+      // sem armazenamento: nenhum
+    }
+    return null
+  },
 }
 
 export const ETIQUETAS = {

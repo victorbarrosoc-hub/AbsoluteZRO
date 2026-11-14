@@ -2,12 +2,14 @@
 // link vivo) com o ONNX Runtime e os dois modelos, e a câmera AO VIVO (getUserMedia). Não há como mandar uma foto da
 // galeria: a busca só aceita o que a câmera vê agora (docs/estudo/rosto-em-evento.md, B.5).
 //
-// A selfie fica aqui: cada quadro vai para o worker como ImageBitmap (transferido, sem cópia), volta só a avaliação e,
-// quando o quadro serve para a etapa, o vetor. Três quadros (de frente, girado, o outro lado) viram 2 ou 3 vetores int8
-// em base64: é só isso que a página manda.
+// A selfie fica aqui: cada quadro vai para o worker como ImageBitmap (transferido, sem cópia), volta só a avaliação, os
+// 5 pontos do rosto e, quando a pose serve, o vetor. A captura segue o desafio que o servidor sorteou (src/rosto/vida.js):
+// de frente, depois a ordem pedida de "vire para a sua esquerda", "para a sua direita" e "chegue mais perto". Saem os
+// vetores (de frente e dos dois giros, int8 em base64) e os pontos quadro a quadro, para o servidor conferir a prova.
 
-import { criarCaptura, juntar } from './src/rosto/quadros.js'
+import { juntar } from './src/rosto/quadros.js'
 import { quantizar, vetorParaTexto } from './src/rosto/assinatura.js'
+import { andamento, conferirVida, VIDA } from './src/rosto/vida.js'
 
 let worker = null
 let seq = 0
@@ -73,32 +75,49 @@ export async function ligarCamera(video) {
 
 const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms))
 
+/** Falha da prova de vida no próprio celular (antes de gastar a prova no servidor). */
+const falhaDeVida = (motivo) => Object.assign(new Error('vida'), { codigo: 'vida', motivo })
+
 /**
- * Lê quadros até juntar os três. `aoMudar({ etapa, dica, boa })` a cada quadro. Devolve os vetores em base64 (2 ou 3).
- * `sinal` (AbortSignal) para parar.
+ * Segue o desafio `{ passos, recebidoEm }` até o fim. `aoMudar({ etapa, total, passo, boa })` a cada quadro (passo:
+ * 'frente' ou o passo do desafio; etapa: quantos já foram). Devolve { vetores (2 ou 3, base64), quadros }.
+ * Erros: codigo 'vida' com motivo ('prazo', 'passos', 'plano', 'tela', 'salto', 'lacuna', 'outra'). `sinal` para parar.
  */
-export async function capturar(video, { aoMudar = () => {}, sinal } = {}) {
-  const captura = criarCaptura()
+export async function capturar(video, { desafio, aoMudar = () => {}, sinal } = {}) {
+  const { passos } = desafio
+  const t0 = desafio.recebidoEm ?? performance.now()
+  const quadros = []
+  const vetores = { frente: null, esquerda: null, direita: null }
+  const total = passos.length + 1
   while (!sinal?.aborted) {
+    const agora = performance.now() - t0
+    if (agora > VIDA.prazoMs - 1500) throw falhaDeVida('prazo')
     if (video.readyState < 2 || !video.videoWidth) {
       await esperar(80)
       continue
     }
+    const antes = andamento(passos, quadros)
+    const querer = Object.keys(vetores).filter((k) => !vetores[k])
     const bitmap = await createImageBitmap(video)
-    const r = await pedirAoWorker('quadro', { bitmap, etapa: captura.etapa(), guinadaDoGiro: captura.guinadaDoGiro() }, { transferir: [bitmap] })
+    const t = Math.round(performance.now() - t0)
+    const r = await pedirAoWorker('quadro', { bitmap, querer }, { transferir: [bitmap] })
     if (sinal?.aborted) break
-    const a = r.avaliacao
-    const p = captura.passo({ ok: a.ok, dica: a.dica, pose: a.pose, vetor: r.vetor, agora: performance.now() })
-    aoMudar({ etapa: p.etapa, dica: p.dica, boa: a.ok, pegou: p.pegou })
-    if (p.pronto) {
-      const j = juntar(p.vetores)
-      if (j.ok) return j.vetores.map((v) => vetorParaTexto(quantizar(v)))
-      captura.recomecar()
-      aoMudar({ etapa: 0, dica: 'denovo', boa: false })
-      await esperar(900)
+    if (r.pontos && quadros.length < VIDA.quadros) quadros.push({ t, p: r.pontos, ...(r.tela ? { m: r.tela.m, l: r.tela.l } : {}) })
+    if (r.vetor && r.tipo && !vetores[r.tipo]) vetores[r.tipo] = r.vetor
+    const a = andamento(passos, quadros)
+    // o passo que a tela mostra: o do desafio; terminado, o giro que ainda não deu vetor (a qualidade não deixou)
+    const falta = !vetores.frente ? 'frente' : ['esquerda', 'direita'].find((k) => !vetores[k])
+    const passo = a.pronto ? (falta ?? null) : a.feitos === 0 && a.ref < 0 ? 'frente' : a.atual
+    aoMudar({ etapa: a.ref < 0 ? 0 : 1 + a.feitos, total, passo, boa: Boolean(r.avaliacao.ok && r.pontos), dica: r.avaliacao.dica, mudou: a.feitos > antes.feitos })
+    if (a.pronto && vetores.frente && vetores.esquerda && vetores.direita) {
+      const v = conferirVida({ passos, quadros, decorridoMs: performance.now() - t0 })
+      if (!v.ok) throw falhaDeVida(v.motivo)
+      const j = juntar([vetores.frente, vetores.esquerda, vetores.direita])
+      if (!j.ok) throw falhaDeVida('outra')
+      return { vetores: j.vetores.map((x) => vetorParaTexto(quantizar(x))), quadros }
     }
     // um respiro para a tela (e para a bateria): no máximo ~12 quadros por segundo
-    await esperar(p.pegou ? 350 : 60)
+    await esperar(r.vetor ? 120 : 40)
   }
   throw Object.assign(new Error('cancelado'), { name: 'AbortError' })
 }

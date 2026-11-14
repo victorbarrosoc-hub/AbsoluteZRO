@@ -8,13 +8,15 @@
 // runtime e os modelos vêm de /vendor e /modelos (site estático, sem marca, cache imutável).
 //
 // Só aqui a câmera é permitida (Permissions-Policy camera=(self) no vercel.json, para /e/*): a selfie é ao vivo.
+// A página já sai com o cookie do aparelho (`foto_ap`, HttpOnly, assinado): o limite fino de buscas é por aparelho, não
+// por rede (num evento todo mundo sai pelo mesmo Wi-Fi). Ele não diz quem a pessoa é; só conta buscas.
 
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
-import { eventoVivo } from './_evento.js'
+import { aparelhoDe, cookieDoAparelho, eventoVivo, novoAparelho } from './_evento.js'
 import { ehToken, linkLigado } from './_link.js'
-import { consulta } from './_zro.js'
+import { consulta, origemDoPedido } from './_zro.js'
 import { neutra, temaDe } from './pagina.js'
 
 const RAIZ = new URL('../', import.meta.url)
@@ -23,7 +25,7 @@ export const PERMITIDOS = {
   '': /^[a-z0-9-]{1,40}\.(css|js)$/,
   'app-rosto': /^(worker|motor)\.js$/,
   'app-trabalho': /^servir\.js$/,
-  'src-rosto': /^(alinhar|assinatura|decidir|detectar|qualidade|quadros|textos)\.js$/,
+  'src-rosto': /^(alinhar|assinatura|decidir|detectar|qualidade|quadros|textos|vida)\.js$/,
 }
 const PASTAS = { '': 'evento/', 'app-rosto': 'app/rosto/', 'app-trabalho': 'app/trabalho/', 'src-rosto': 'src/rosto/' }
 const TIPOS = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' }
@@ -61,6 +63,7 @@ export default async function pagina(req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'no-store')
+    if (!aparelhoDe(req)) res.setHeader('Set-Cookie', [cookieDoAparelho(novoAparelho(), origemDoPedido(req).startsWith('https://'))])
     return res.end(req.method === 'HEAD' ? undefined : html)
   }
   const etag = `W/"${createHash('sha256').update(corpo).digest('base64url').slice(0, 27)}"`

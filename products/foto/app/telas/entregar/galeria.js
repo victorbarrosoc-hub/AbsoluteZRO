@@ -15,9 +15,13 @@ import { criarEnvio } from './lote.js'
 import { mascaraDeTexto } from './marca.js'
 import { qrSvg } from '../../componentes/qr.js'
 import { ETIQUETAS, ErroServico, foraDoAr, servico, vinculo } from './servico.js'
+import { assinar as assinarAvisos, marcar as marcarAvisos, pedirNotificacao, usarAvisos } from '../../casca/avisos.js'
 
 const MARCA_DA_GALERIA = { posicao: 'diagonal', opacidade: 0.22, tamanho: 0.3 }
-const ESPERA_DO_ESTADO = 15000
+/** O estado e a seleção do cliente: a cada 60 s com a aba na frente, ao voltar o foco (no máximo a cada 5 s) e na hora
+ * em que chega o aviso de envio (app/casca/avisos.js). */
+const ESPERA_DO_ESTADO = 60000
+const FOLGA_DO_ESTADO = 5000
 
 const ESTADOS = {
   rascunho: 'Rascunho',
@@ -363,6 +367,7 @@ function SelecaoDoCliente({ loja, selecao, aoTratar }) {
 
 function Painel({ loja, dados, selecao, aoAcao, aoTratar, ocupado }) {
   const g = dados.galeria
+  const { permissao } = usarAvisos()
   const viva = g.link?.vivo
   const fracao = g.contratadas ? Math.min(1, g.escolhidas / g.contratadas) : 0
   const itensDoMenu = [
@@ -395,6 +400,11 @@ function Painel({ loja, dados, selecao, aoAcao, aoTratar, ocupado }) {
                 : null
           }
         </div>
+        ${
+          ['publicada', 'reaberta'].includes(g.estado) && permissao === 'default'
+            ? html`<button type="button" class="link estado-notificar" onClick=${pedirNotificacao} data-notificar>Avisar quando o cliente enviar</button>`
+            : null
+        }
       </div>
       <div class="estado-acoes">
         <button type="button" class="vidro liso-icone" aria-label="Atualizar" data-dica="Atualizar" disabled=${ocupado}
@@ -441,6 +451,7 @@ export function Galeria({ loja, ativa, aoTratarCliente }) {
   const [confirmar, definirConfirmar] = useState(null)
   const [ocupado, definirOcupado] = useState(false)
   const estilos = useRef(null)
+  const carregadoPara = useRef(undefined)
 
   useEffect(() => {
     Object.assign(guardado, { situacao, motivo, lista, dados, selecao, envio, total, publicacao })
@@ -465,6 +476,7 @@ export function Galeria({ loja, ativa, aoTratarCliente }) {
   }
 
   async function carregar() {
+    carregadoPara.current = trabalho?.id
     try {
       const galerias = await servico.listar()
       definirLista(galerias)
@@ -485,17 +497,37 @@ export function Galeria({ loja, ativa, aoTratarCliente }) {
     }
   }
 
-  // ao entrar na aba e a cada 15 s enquanto ela está na frente: o estado e a seleção do cliente
+  // ao entrar na aba, ao voltar o foco, a cada 60 s e quando chega o aviso de que o cliente enviou: o estado e a seleção
   useEffect(() => {
     if (!ativa) return
-    if (situacao === 'carregando' || situacao === 'erro') void carregar()
-    const t = setInterval(() => {
+    // (outro trabalho aberto com a tela montada, como ao abrir um aviso: relê a galeria dele)
+    if (situacao === 'carregando' || situacao === 'erro' || (carregadoPara.current && carregadoPara.current !== trabalho?.id)) void carregar()
+    let ultimo = Date.now()
+    const conferir = (forcar = false) => {
       const g = guardado.dados?.galeria
       if (document.visibilityState !== 'visible' || guardado.situacao !== 'galeria' || !g || ['rascunho', 'encerrada'].includes(g.estado) || guardado.envio)
         return
+      if (!forcar && Date.now() - ultimo < FOLGA_DO_ESTADO) return
+      ultimo = Date.now()
       void lerGaleria(g.id).catch(() => {})
-    }, ESPERA_DO_ESTADO)
-    return () => clearInterval(t)
+    }
+    const t = setInterval(() => conferir(true), ESPERA_DO_ESTADO)
+    const voltou = () => conferir()
+    addEventListener('focus', voltou)
+    document.addEventListener('visibilitychange', voltou)
+    // o aviso desta galeria: relê na hora e, como a fotógrafa está vendo, conta como lido
+    const sair = assinarAvisos((e) => {
+      const g = guardado.dados?.galeria
+      if (!g || document.visibilityState !== 'visible' || !e.avisos.some((a) => a.tipo === 'escolha' && a.galeria === g.id)) return
+      conferir(true)
+      void marcarAvisos({ galeria: g.id })
+    })
+    return () => {
+      clearInterval(t)
+      removeEventListener('focus', voltou)
+      document.removeEventListener('visibilitychange', voltou)
+      sair()
+    }
   }, [ativa, trabalho?.id])
 
   // ─── criar e enviar ───

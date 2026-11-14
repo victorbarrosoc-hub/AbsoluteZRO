@@ -248,3 +248,21 @@
 .rosto-numero b {
   color: var(--texto);
 }
+/* evento com crianças: a ficha forte na lista e uma linha no detalhe */
+.rosto-fichas .ficha--forte {
+  background: rgb(var(--t) / 0.12);
+  color: var(--texto);
+  font-weight: 700;
+}
+.rosto-criancas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+}
+.rosto-criancas svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}

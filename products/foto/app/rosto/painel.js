@@ -2,7 +2,8 @@
 // Entregar (embutido: o título fica com a tela, aqui só a linha de apoio e o botão).
 //
 //   lista      os eventos, com fotos, rostos, buscas e pedidos
-//   novo       nome, data, modo ("Com consentimento", o padrão, ou "Busca aberta", só com o aviso aceito), prazo, PIN,
+//   novo       nome, data, "Evento com crianças" (só com consentimento, prazo até 15 dias, aviso aos responsáveis),
+//              modo ("Com consentimento", o padrão, ou "Busca aberta", só com o aviso aceito), prazo, PIN,
 //              marca-d'água e quais fotos (todas do trabalho ou a seleção)
 //   detalhe    preparar (rostos + prévias com marca, retomável), publicar (o endereço aparece UMA vez, com o QR e o
 //              cartaz A4), no modo com consentimento comparar aqui os pedidos de busca (a cada 30 s com o painel
@@ -20,6 +21,8 @@ import { cartazA4 } from './cartaz.js'
 import { api, criarPreparo, escolhaDe, esquecerEvento, lembrarEscolha, processarPedidos } from './preparo.js'
 
 const PRAZOS = [7, 14, 30]
+/** Evento com crianças: prazo mais curto (db/migrations/0004). */
+const PRAZOS_CRIANCAS = [7, 15]
 const dia = (v, mes = 'short') =>
   v ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: mes }).format(new Date(v.length === 10 ? `${v}T12:00:00` : v)) : ''
 const plural = (n, um, varios) => `${(n ?? 0).toLocaleString('pt-BR')} ${n === 1 ? um : varios}`
@@ -28,7 +31,8 @@ const MENSAGENS = {
   sem_armazenamento: 'O armazenamento das prévias ainda não foi ligado.',
   sem_banco: 'O banco ainda não foi ligado.',
   sem_sessao: 'Entre de novo.',
-  sem_aviso: 'Aceite o aviso da busca aberta antes de publicar.',
+  sem_aviso: 'Aceite o aviso antes de publicar.',
+  criancas: 'Evento com crianças é só com consentimento.',
   faltam_arquivos: 'Ainda há fotos sem prévia.',
   sem_fotos: 'Prepare as fotos antes.',
   prorrogado: 'O prazo já foi estendido uma vez.',
@@ -74,6 +78,7 @@ function Numeros({ e }) {
 
 function Fichas({ e }) {
   return html`<span class="rosto-fichas">
+    ${e.criancas && html`<span class="ficha ficha--forte">Com crianças</span>`}
     <span class="ficha">${e.modo === 'aberta' ? 'Busca aberta' : 'Com consentimento'}</span>
     <span class="ficha">${{ rascunho: 'Rascunho', publicado: 'No ar', encerrado: 'Encerrado' }[e.estado]}</span>
     ${e.estado !== 'encerrado' && html`<span class="ficha">até ${dia(e.prazo)}</span>`}
@@ -88,6 +93,7 @@ function Novo({ loja, aoCriar, aoFechar }) {
   const [nome, setNome] = useState(loja.trabalho?.()?.nome ?? '')
   const [data, setData] = useState('')
   const [modo, setModo] = useState('consentimento')
+  const [criancas, setCriancas] = useState(false)
   const [prazo, setPrazo] = useState(14)
   const [comMarca, setComMarca] = useState(true)
   const [marca, setMarca] = useState('Prova')
@@ -95,8 +101,18 @@ function Novo({ loja, aoCriar, aoFechar }) {
   const [aceito, setAceito] = useState(false)
   const [indo, setIndo] = useState(false)
   const prazoData = new Date(Date.now() + prazo * 86400000).toISOString()
-  const aviso = TEXTOS[modo === 'aberta' ? 'ativacaoAberta' : 'ativacaoConsentimento']
-  const pode = nome.trim() && (modo === 'consentimento' || aceito) && (quais === 'todas' ? total : selecionadas) > 0 && !indo
+  const aviso = TEXTOS[criancas ? 'ativacaoCriancas' : modo === 'aberta' ? 'ativacaoAberta' : 'ativacaoConsentimento']
+  const pedeAceite = criancas || modo === 'aberta'
+  const pode = nome.trim() && (!pedeAceite || aceito) && (quais === 'todas' ? total : selecionadas) > 0 && !indo
+  // com crianças: só com consentimento e prazo de até 15 dias (7 sugeridos)
+  const mudarCriancas = (v) => {
+    setCriancas(v)
+    setAceito(false)
+    if (v) {
+      setModo('consentimento')
+      setPrazo((p) => (PRAZOS_CRIANCAS.includes(p) ? p : 7))
+    } else setPrazo((p) => (PRAZOS.includes(p) ? p : 14))
+  }
   const criar = async (ev) => {
     ev.preventDefault()
     if (!pode) return
@@ -105,10 +121,11 @@ function Novo({ loja, aoCriar, aoFechar }) {
       const r = await api('POST', '', {
         nome: nome.trim(),
         data: data || null,
-        modo,
+        modo: criancas ? 'consentimento' : modo,
+        criancas,
         prazoDias: prazo,
         marcaDagua: comMarca,
-        aviso: modo === 'aberta' ? aviso.versao : TEXTOS.ativacaoConsentimento.versao,
+        aviso: aviso.versao,
       })
       const ids = quais === 'selecao' ? loja.catalogo.selecionadas().map((f) => f.id) : loja.catalogo.fotos().map((f) => f.id)
       aoCriar(r.evento, { ids, marca: comMarca ? marca.trim() || 'Prova' : null })
@@ -122,25 +139,34 @@ function Novo({ loja, aoCriar, aoFechar }) {
       >Nome do evento<input value=${nome} maxlength="120" placeholder="Corrida da Serra" onInput=${(e) => setNome(e.currentTarget.value)}
     /></label>
     <label class="campo">Data<input type="date" value=${data} onInput=${(e) => setData(e.currentTarget.value)} /></label>
-    <${Segmentado}
-      rotulo="Modo"
-      valor=${modo}
-      aoMudar=${(v) => (setModo(v), setAceito(false))}
-      opcoes=${[
-        { valor: 'consentimento', rotulo: 'Com consentimento' },
-        { valor: 'aberta', rotulo: 'Busca aberta' },
-      ]}
-    />
+    <${Chave} ligada=${criancas} aoMudar=${mudarCriancas} rotulo="Evento com crianças" />
+    ${
+      !criancas &&
+      html`<${Segmentado}
+        rotulo="Modo"
+        valor=${modo}
+        aoMudar=${(v) => (setModo(v), setAceito(false))}
+        opcoes=${[
+          { valor: 'consentimento', rotulo: 'Com consentimento' },
+          { valor: 'aberta', rotulo: 'Busca aberta' },
+        ]}
+      />`
+    }
     <p class="apoio rosto-aviso">${comPrazo(aviso.corpo, prazoData)}</p>
     ${
-      modo === 'aberta' &&
+      pedeAceite &&
       html`<label class="rosto-caixa"
         ><input type="checkbox" checked=${aceito} onChange=${(e) => setAceito(e.currentTarget.checked)} /><span>${aviso.caixa}</span></label
       >`
     }
     <div class="rosto-linha">
       <span class="rosto-rotulo">Prazo</span>
-      <${Pilulas} rotulo="Prazo" valor=${prazo} aoMudar=${(v) => v && setPrazo(v)} opcoes=${PRAZOS.map((d) => ({ valor: d, rotulo: `${d} dias` }))} />
+      <${Pilulas}
+        rotulo="Prazo"
+        valor=${prazo}
+        aoMudar=${(v) => v && setPrazo(v)}
+        opcoes=${(criancas ? PRAZOS_CRIANCAS : PRAZOS).map((d) => ({ valor: d, rotulo: `${d} dias` }))}
+      />
     </div>
     <div class="rosto-linha">
       <span class="rosto-rotulo">Fotos</span>
@@ -176,7 +202,7 @@ function Endereco({ endereco, evento }) {
     }
   }
   const baixar = async () => {
-    const blob = await cartazA4({ endereco, nome: evento.nome, data: evento.data, modo: evento.modo, prazo: evento.prazo })
+    const blob = await cartazA4({ endereco, nome: evento.nome, data: evento.data, modo: evento.modo, criancas: evento.criancas, prazo: evento.prazo })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `cartaz-${
@@ -197,7 +223,7 @@ function Endereco({ endereco, evento }) {
       <div class="rosto-acoes">
         <button type="button" class="vidro vidro--tinta" onClick=${() => copiar(endereco, 'Endereço')}>Copiar</button>
         <button type="button" class="vidro" onClick=${baixar}>Cartaz A4</button>
-        <button type="button" class="rosto-texto" onClick=${() => copiar(comPrazo(TEXTOS.regulamento.corpo, evento.prazo), 'Texto')}>
+        <button type="button" class="rosto-texto" onClick=${() => copiar(comPrazo(TEXTOS[evento.criancas ? 'regulamentoCriancas' : 'regulamento'].corpo, evento.prazo), 'Texto')}>
           Texto do regulamento
         </button>
       </div>
@@ -337,6 +363,10 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
       <${Fichas} e=${e} />
     </header>
     <${Numeros} e=${e} />
+    ${
+      e.criancas &&
+      html`<p class="apoio rosto-criancas"><${Icone} nome="info" />Com crianças: só um responsável pede a busca. Tudo some em ${dia(e.prazo, 'long')}.</p>`
+    }
     ${
       e.estado === 'rascunho' &&
       html`<div class="cartao rosto-passo">

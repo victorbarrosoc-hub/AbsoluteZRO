@@ -20,6 +20,7 @@ import { usarLoja } from '../estado.js'
 import { ACEITA } from '../../src/biblioteca/arquivos.js'
 import { AcoesDeAbrir, Inicio, Recentes } from '../abrir/inicio.js'
 import { usarAtalhos } from './atalhos.js'
+import { ligar as ligarAvisos, usarAvisos } from './avisos.js'
 import { Conta } from './conta.js'
 import { ABAS, enderecoDaAba, usarRota } from './rota.js'
 import { EntradaDoSet } from './set.js'
@@ -156,6 +157,11 @@ export function Casca({ loja, tema, lerConta }) {
   }, [aberto, aba])
 
   usarMarca(dock, '[aria-current="page"]', [aba, aberto])
+
+  // os avisos ao fotógrafo (o cliente enviou, um visitante pediu): um ponto na aba Entregar
+  const { naoLidos } = usarAvisos()
+  const comConta = !!(conta?.ok && conta.acesso)
+  useEffect(() => (aberto && comConta ? ligarAvisos() : undefined), [aberto, comConta])
 
   const trocar = async (nome) => {
     if (nome === aba) return
@@ -299,7 +305,12 @@ export function Casca({ loja, tema, lerConta }) {
                     void trocar(a.id)
                   }}
                 >
-                  <${Icone} nome=${a.icone} /><span>${a.rotulo}</span>
+                  <${Icone} nome=${a.icone} /><span>${a.rotulo}</span>${
+                    a.id === 'entregar' && naoLidos > 0
+                      ? html`<span class="dock-ponto" data-avisos=${naoLidos} aria-hidden="true"></span><span class="so-leitor">
+                          (${naoLidos === 1 ? '1 aviso' : `${naoLidos} avisos`})</span>`
+                      : null
+                  }
                 </a>`,
             )}
           </nav>`

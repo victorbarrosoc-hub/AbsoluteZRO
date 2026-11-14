@@ -286,7 +286,7 @@ export async function apagarArquivos(arm, chaves) {
  * Limpeza: galeria sem link vivo há mais de `dias` dias (o link venceu ou foi revogado, ou a galeria foi encerrada)
  * perde os arquivos. A ficha e a seleção ficam (o fotógrafo ainda lê o que o cliente escolheu); a galeria passa a
  * `encerrada`, com `arquivos_apagados_em`. Roda pela conexão do servidor (dono do schema): não é rota de pessoa.
- * Chamável (tarefa agendada ou à mão); agendar fica para depois. Devolve { ok, galerias, arquivos }.
+ * Chamada todo dia por api/cron/limpar.js (e à mão, se preciso). Devolve { ok, galerias, arquivos }.
  */
 export async function limparVencidas({ dias = 30, arm = armazenamento() } = {}) {
   if (!arm) return { ok: false, erro: 'sem_armazenamento' }

@@ -1,6 +1,6 @@
 // Magnitude: a nota da decupagem. De 0 a 100, com estrelas, balde (fica, talvez, fora) e SEMPRE o motivo.
 //
-//   avaliar(sinais, { rigor, ensaio, pesos, referencia }) → Magnitude
+//   avaliar(sinais, { rigor, ensaio, pesos, referencia, limiares }) → Magnitude
 //   { total, estrelas, balde, motivos: [até 3 frases, a de maior peso primeiro], componentes: { foco, pessoas,
 //     exposicao, ruido }, confianca: 'alta' | 'media' | 'baixa', incertezas: [frases], dicas: [frases], detalhe }
 //
@@ -28,11 +28,13 @@
 //
 // Os pesos, os tetos e os cortes de balde são proposta de produto: ainda não foram medidos contra a escolha de
 // fotógrafos. Por isso existe ajustarPesos(): a pessoa troca a escolhida, os pesos andam, e a mudança é dita em
-// palavras e pode ser zerada.
+// palavras e pode ser zerada. E existem os `limiares` da pessoa (src/decupagem/calibracao.js): três números que movem
+// os cortes de nitidez, olhos e exposição, cada um com limite, sempre à vista e com "voltar ao padrão".
 
 import { DICAS, INCERTEZAS, MOTIVOS, APRENDIZADO } from './textos.js'
 import { agrupar, escolherNoGrupo, FOLGA_DE_NITIDEZ, MARGEM_DE_ERRO } from './grupos.js'
 import { LIMIARES } from './medidas.js'
+import { LIMIARES_ROSTO } from './rostos.js'
 import { eNoite } from './cena.js'
 
 /** Cortes de balde por rigor: nota a partir de `fica` fica; abaixo de `fora` sai; no meio, talvez. */
@@ -81,7 +83,32 @@ export const PARAMETROS = Object.freeze({
   taxa: 0.15,
   pesoMinimo: 0.5,
   pesoMaximo: 2,
+  // os limiares da pessoa (calibração): o que cada um move e até onde pode ir
+  //   nitidez   q somado ao corte de "fora de foco" (positivo = mais exigente)
+  //   olhos     somado aos cortes de EAR do olho fechado e do aberto (positivo = mais exigente com olho semicerrado)
+  //   exposicao vezes a tolerância de área estourada e de sombra fechada (maior = tolera mais)
+  limiares: Object.freeze({ nitidez: Object.freeze([-0.05, 0.05]), olhos: Object.freeze([-0.04, 0.04]), exposicao: Object.freeze([0.5, 4]) }),
 })
+
+/** Os limiares de fábrica: não mexem em nada. */
+export const limiaresPadrao = () => ({ nitidez: 0, olhos: 0, exposicao: 1 })
+
+/** Limiares válidos e dentro dos limites (o que vier fora vira o padrão ou a borda). */
+export function normalizarLimiares(l) {
+  const P = PARAMETROS.limiares
+  const padrao = limiaresPadrao()
+  const ler = (k) => {
+    const v = num(l?.[k])
+    return v == null ? padrao[k] : limitar(v, P[k][0], P[k][1])
+  }
+  return { nitidez: ler('nitidez'), olhos: ler('olhos'), exposicao: ler('exposicao') }
+}
+
+/** Os limiares saem do padrão? */
+export const limiaresMexidos = (l) => {
+  const n = normalizarLimiares(l)
+  return n.nitidez !== 0 || n.olhos !== 0 || n.exposicao !== 1
+}
 
 /** Pesos de fábrica. `pessoas` vale quando há rosto analisado; `demais`, no resto; `rosto` reparte o componente pessoas. */
 export function pesosPadrao() {
@@ -162,6 +189,52 @@ export function calibrar(fotos) {
 
 // ───────────────────────────── componentes ─────────────────────────────
 
+/**
+ * O q abaixo do qual a foto leva o teto de "fora de foco": é onde o componente de foco cruza 35. Com a régua do
+ * ensaio (`referencia`) e o limiar de nitidez da pessoa (somado ao q).
+ */
+export function corteDeFoco(referencia, limiares) {
+  const P = PARAMETROS
+  const topo = num(referencia?.topo) ?? P.qTopo
+  return P.qPiso + (TETOS.foraDeFoco / 100) * (topo - P.qPiso) + normalizarLimiares(limiares).nitidez
+}
+
+/**
+ * O estado dos olhos de um rosto com o limiar de olhos da pessoa (`d`, somado aos cortes de EAR de
+ * src/decupagem/rostos.js). Sem limiar, ou sem o EAR guardado, é o estado que a análise leu. Riso forte segue riso;
+ * olho apertado de sol (eyeSquint sem piscada) segue aberto.
+ */
+export function olhosComLimiar(rosto, d = 0) {
+  const estado = rosto?.olhos ?? null
+  const e = num(rosto?.ear)
+  if (!d || estado == null || estado === 'sorrindo' || e == null) return estado
+  const L = LIMIARES_ROSTO
+  const p = num(rosto.piscada)
+  const semPiscada = p == null || p < L.piscadaAberto
+  const fechado = e < L.earFechado + d || (p != null && p >= L.piscadaFechado && e < L.earDuvida + d)
+  if (fechado) return (num(rosto.sorriso) ?? 0) >= L.risoForte ? 'sorrindo' : 'fechados'
+  const aberto = e >= L.earAberto + d && semPiscada
+  if (estado === 'fechados' || estado === 'parcial') return aberto ? 'abertos' : 'parcial'
+  const deSol = (num(rosto.aperto) ?? 0) >= L.aperto && semPiscada
+  return estado === 'abertos' && !aberto && !deSol ? 'parcial' : estado
+}
+
+/**
+ * Quantas vezes a tolerância de fábrica a pior área da foto passa: altas luzes de um canal (1%), dado perdido
+ * (0,5%) ou sombra fechada (2%). Abaixo de 1, nada desconta. É a régua do limiar de exposição: com o limiar k, a foto
+ * só perde ponto quando passa de k. Com a Latitude do RAW, conta o perdido no sensor (um ou dois canais voltam).
+ */
+export function excessoDeExposicao(sinais) {
+  const P = PARAMETROS
+  const e = sinais?.medidas?.exposicao
+  if (!e) return null
+  const cortado = sinais.latitude?.cortado
+  const peloRaw = !!cortado && num(cortado.tres) != null
+  const perdido = peloRaw ? cortado.tres : e.altas3
+  const altas = peloRaw || sinais.tipo === 'raw' ? 0 : e.altas
+  return Math.max((altas * 100) / P.altas.tolerancia, (perdido * 100) / P.perdidas.tolerancia, (e.baixas * 100) / P.baixas.tolerancia)
+}
+
 function componenteFoco(q, referencia) {
   if (q == null) return null
   const P = PARAMETROS
@@ -170,8 +243,10 @@ function componenteFoco(q, referencia) {
 }
 
 // Exposição. Devolve { valor, perdido (fração com dado sem volta), problemas: [{ texto, custo }], avisos: [texto] }.
-function componenteExposicao(sinais, noite) {
-  const P = PARAMETROS
+// `folga`: o limiar de exposição da pessoa (vezes as tolerâncias de área).
+function componenteExposicao(sinais, noite, folga = 1) {
+  const B = PARAMETROS
+  const P = folga === 1 ? B : { ...B, altas: { ...B.altas, tolerancia: B.altas.tolerancia * folga }, perdidas: { ...B.perdidas, tolerancia: B.perdidas.tolerancia * folga }, baixas: { ...B.baixas, tolerancia: B.baixas.tolerancia * folga } }
   const e = sinais.medidas.exposicao
   const cortado = sinais.latitude?.cortado
   const peloRaw = !!cortado && num(cortado.tres) != null
@@ -211,8 +286,9 @@ function componenteExposicao(sinais, noite) {
 }
 
 // Pessoas. Devolve o componente, as partes (0..1) e a contagem dos olhos das pessoas-chave.
-function componentePessoas(sinais, { olhosContam, pesosDoRosto, focoDoRosto }) {
-  const { chaves } = pessoasChave(sinais.rostos)
+function componentePessoas(sinais, { olhosContam, pesosDoRosto, focoDoRosto, dOlhos = 0 }) {
+  const { chaves: brutas } = pessoasChave(sinais.rostos)
+  const chaves = dOlhos ? brutas.map((r) => ({ ...r, olhos: olhosComLimiar(r, dOlhos) })) : brutas
   const lidos = chaves.filter((r) => r.olhos in VALOR_DOS_OLHOS)
   const fechados = lidos.filter((r) => r.olhos === 'fechados').length
   const parciais = lidos.filter((r) => r.olhos === 'parcial').length
@@ -264,6 +340,7 @@ function baldeDe(total, rigor) {
  *   ensaio     'geral' (padrão) | 'recem-nascido' | 'boudoir' | 'esporte'
  *   pesos      os de pesosPadrao() ou os que ajustarPesos() devolveu
  *   referencia o que calibrar() devolveu para o ensaio
+ *   limiares  { nitidez, olhos, exposicao } da pessoa (limiaresPadrao() = de fábrica; ver PARAMETROS.limiares)
  */
 export function avaliar(sinais, opcoes = {}) {
   const m = sinais?.medidas
@@ -272,6 +349,7 @@ export function avaliar(sinais, opcoes = {}) {
   const rigor = opcoes.rigor in RIGORES ? opcoes.rigor : 'equilibrado'
   const ensaio = ENSAIOS[opcoes.ensaio] ?? ENSAIOS.geral
   const pesos = opcoes.pesos ?? pesosPadrao()
+  const limiares = normalizarLimiares(opcoes.limiares)
   const temRostos = Array.isArray(sinais.rostos)
   const { todas, principal } = pessoasChave(sinais.rostos)
   const comGente = todas.length > 0
@@ -280,7 +358,8 @@ export function avaliar(sinais, opcoes = {}) {
 
   // foco
   const foco = focoDaFoto(sinais)
-  const F = componenteFoco(foco.q, opcoes.referencia)
+  // o limiar de nitidez da pessoa move a régua: q menos o limiar é o que a régua de fábrica lê
+  const F = componenteFoco(foco.q == null ? null : foco.q - limiares.nitidez, opcoes.referencia)
   const b = m.borrao ?? { tipo: 'nenhum' }
   const rostoNitido = comGente && foco.origem !== 'quadro' && foco.q >= LIMIARES.nitida
   // tremido de câmera pega o quadro inteiro; se o rosto mediu nítido, é panorâmica ou fundo em movimento, não defeito
@@ -289,9 +368,14 @@ export function avaliar(sinais, opcoes = {}) {
 
   // pessoas, exposição e ruído
   const pessoas = comGente
-    ? componentePessoas(sinais, { olhosContam: ensaio.olhosContam, pesosDoRosto: pesos.rosto, focoDoRosto: foco.origem === 'quadro' ? null : F })
+    ? componentePessoas(sinais, {
+        olhosContam: ensaio.olhosContam,
+        pesosDoRosto: pesos.rosto,
+        focoDoRosto: foco.origem === 'quadro' ? null : F,
+        dOlhos: limiares.olhos,
+      })
     : null
-  const exposicao = componenteExposicao(sinais, noite)
+  const exposicao = componenteExposicao(sinais, noite, limiares.exposicao)
   const R = 100 * limitar(1 - (m.ruido - P.ruidoLimpo) / P.ruidoFaixa)
 
   // soma ponderada do que foi possível medir
@@ -352,7 +436,7 @@ export function avaliar(sinais, opcoes = {}) {
   }
 
   // o teto pede certeza: vale para a imagem pronta e para o RAW já lido; só pela prévia de um RAW, não
-  if (exposicao.perdido > P.estouradaTeto && !exposicao.soPrevia) teto('estourada', MOTIVOS.altasPerdidas(exposicao.perdido))
+  if (exposicao.perdido > P.estouradaTeto * limiares.exposicao && !exposicao.soPrevia) teto('estourada', MOTIVOS.altasPerdidas(exposicao.perdido))
   else {
     const custoTotal = exposicao.problemas.reduce((s, p) => s + p.custo, 0)
     const pior = exposicao.problemas.reduce((a, p) => (!a || p.custo > a.custo ? p : a), null)
@@ -382,7 +466,8 @@ export function avaliar(sinais, opcoes = {}) {
   if (F == null) incertezas.push(INCERTEZAS.semNitidez())
   else if (!b.cepstro) incertezas.push(INCERTEZAS.semTremido())
   const e = m.exposicao
-  if (exposicao.soPrevia && (e.altas * 100 > P.altas.tolerancia || e.altas3 * 100 > P.perdidas.tolerancia)) incertezas.push(INCERTEZAS.rawNaoLido())
+  const folga = limiares.exposicao
+  if (exposicao.soPrevia && (e.altas * 100 > P.altas.tolerancia * folga || e.altas3 * 100 > P.perdidas.tolerancia * folga)) incertezas.push(INCERTEZAS.rawNaoLido())
   const cortes = RIGORES[rigor]
   if (!tetos.length && (Math.abs(total - cortes.fica) < P.noLimite || Math.abs(total - cortes.fora) < P.noLimite)) incertezas.push(INCERTEZAS.noLimite())
   const confianca = incertezas.length === 0 ? 'alta' : incertezas.length === 1 ? 'media' : 'baixa'
@@ -462,13 +547,16 @@ export function protegerCobertura(magnitudes, grupos = [], ids = null) {
  * Como todas as que sobram de um grupo têm a mesma novidade, escolher sempre a de maior nota × novidade é o mesmo
  * que ordenar tudo por nota × fator^(posição no grupo): uma ordenação só.
  * `fotos` = [{ id, magnitude }]; `opcoes.grupos` = o que agrupar() devolveu (sem grupos, vale só a nota).
- * Devolve { ficam: [id], saem: [id], ordem: [id], corte: nota da última que ficou }.
+ * `opcoes.pessoas` = [{ id, fotos: [id] }], as pessoas-chave (agrupar por pessoa, só quando a pessoa ligou): a melhor
+ * foto de cada uma (a primeira dela na ordem, que não esteja em Fora se houver outra) entra antes de tudo. Com mais
+ * pessoas que a meta, ficam as das pessoas com a melhor foto.
+ * Devolve { ficam: [id], saem: [id], ordem: [id], corte: nota da última que ficou } e, com pessoas, `garantidas: [id]`.
  */
-export function meta(fotos, n, { grupos = null } = {}) {
+export function meta(fotos, n, { grupos = null, pessoas = null } = {}) {
   const P = PARAMETROS.novidade
   const lista = (Array.isArray(fotos) ? fotos : [])
     .filter((f) => f && typeof f.magnitude?.total === 'number')
-    .map((f, entrada) => ({ id: f.id, total: f.magnitude.total, entrada, valor: f.magnitude.total }))
+    .map((f, entrada) => ({ id: f.id, total: f.magnitude.total, balde: f.magnitude.baldeDaNota ?? f.magnitude.balde, entrada, valor: f.magnitude.total }))
   const porId = new Map(lista.map((f) => [f.id, f]))
   for (const g of grupos ?? []) {
     const fator = g.tipo === 'repetidas' ? P.repetidas : P.sequencia
@@ -479,7 +567,27 @@ export function meta(fotos, n, { grupos = null } = {}) {
   lista.sort((a, b) => b.valor - a.valor || b.total - a.total || a.entrada - b.entrada)
   const ordem = lista.map((f) => f.id)
   const quantas = Math.max(0, Math.min(ordem.length, Math.round(n)))
-  return { ficam: ordem.slice(0, quantas), saem: ordem.slice(quantas), ordem, corte: quantas ? lista[quantas - 1].total : null }
+  const posicao = new Map(ordem.map((id, i) => [id, i]))
+  const garantidas = []
+  for (const p of pessoas ?? []) {
+    const dela = (p.fotos ?? []).filter((id) => posicao.has(id)).sort((a, b) => posicao.get(a) - posicao.get(b))
+    const melhor = dela.find((id) => porId.get(id).balde !== 'fora') ?? dela[0]
+    if (melhor != null && !garantidas.includes(melhor)) garantidas.push(melhor)
+  }
+  garantidas.sort((a, b) => posicao.get(a) - posicao.get(b))
+  const ficam = garantidas.slice(0, quantas)
+  const dentro = new Set(ficam)
+  for (const id of ordem) {
+    if (ficam.length >= quantas) break
+    if (!dentro.has(id)) {
+      ficam.push(id)
+      dentro.add(id)
+    }
+  }
+  ficam.sort((a, b) => posicao.get(a) - posicao.get(b))
+  const ultima = ficam.length ? porId.get(ficam[ficam.length - 1]).total : null
+  const r = { ficam, saem: ordem.filter((id) => !dentro.has(id)), ordem, corte: ultima }
+  return pessoas ? { ...r, garantidas: garantidas.slice(0, quantas) } : r
 }
 
 // ───────────────────────────── aprendizado ─────────────────────────────
@@ -537,12 +645,16 @@ export function ajustarPesos(pesos, trocas) {
 // ───────────────────────────── o ensaio inteiro ─────────────────────────────
 
 // O que cada foto de um grupo precisa saber do grupo para ser avaliada.
-function contextoDoGrupo(grupo, porId) {
+function contextoDoGrupo(grupo, porId, dOlhos = 0) {
   const fotos = grupo.fotos.map((id) => porId.get(id)).filter(Boolean)
   // olhos fechados em todas: em cada foto com olhos lidos, TODAS as pessoas-chave estão de olhos fechados, e são
   // pelo menos duas fotos assim (uma só pode ser piscada)
-  const comOlhos = fotos.map((f) => pessoasChave(f.rostos).chaves.filter((r) => r.olhos in VALOR_DOS_OLHOS)).filter((lidos) => lidos.length)
-  const olhosFechadosEmTodas = comOlhos.length >= 2 && comOlhos.every((lidos) => lidos.every((r) => r.olhos === 'fechados'))
+  const estados = (f) =>
+    pessoasChave(f.rostos)
+      .chaves.map((r) => olhosComLimiar(r, dOlhos))
+      .filter((o) => o in VALOR_DOS_OLHOS)
+  const comOlhos = fotos.map(estados).filter((lidos) => lidos.length)
+  const olhosFechadosEmTodas = comOlhos.length >= 2 && comOlhos.every((lidos) => lidos.every((o) => o === 'fechados'))
   // a mais nítida: só quando ganha da segunda por mais que o ruído da medida
   const focos = fotos.map((f) => ({ id: f.id, q: focoDaFoto(f).q })).filter((x) => x.q != null)
   focos.sort((a, b) => b.q - a.q)
@@ -564,7 +676,7 @@ export function avaliarEnsaio(fotos, opcoes = {}) {
   const base = opcoes.grupos ?? agrupar(lista)
   const contexto = new Map()
   for (const g of base) {
-    const ctx = contextoDoGrupo(g, porId)
+    const ctx = contextoDoGrupo(g, porId, normalizarLimiares(opcoes.limiares).olhos)
     for (const id of g.fotos) contexto.set(id, ctx(id))
   }
   let magnitudes = new Map()

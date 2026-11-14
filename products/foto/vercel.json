@@ -8,6 +8,12 @@
   "regions": [
     "gru1"
   ],
+  "crons": [
+    {
+      "path": "/api/cron/limpar",
+      "schedule": "23 6 * * *"
+    }
+  ],
   "functions": {
     "api/pagina.js": {
       "includeFiles": "{app/**,src/**}"
@@ -26,6 +32,10 @@
     },
     "api/foto/eventos.js": {
       "includeFiles": "src/rosto/**"
+    },
+    "api/cron/limpar.js": {
+      "includeFiles": "src/rosto/**",
+      "maxDuration": 60
     }
   },
   "rewrites": [

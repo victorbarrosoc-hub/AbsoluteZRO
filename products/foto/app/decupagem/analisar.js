@@ -2,12 +2,14 @@
 // tela. Tudo roda neste aparelho; nada sai dele.
 //
 //   const analise = criarAnalise({ loja })
-//   analise.iniciar({ ids?, camadas: ['rostos', 'objetos', 'rotulos'], rigor, ensaio, pesos?, raw? })
+//   analise.iniciar({ ids?, camadas: ['rostos', 'objetos', 'rotulos'], rigor, ensaio, pesos?, limiares?, raw? })
 //   analise.pausar() · retomar() · cancelar()
 //   analise.estado()      → { situacao, feitas, total, novas, puladas, porSegundo, restante?, camadas, motivos, raw, tempos, erro? }
 //   analise.assinar(f)    f(estado) a cada mudança (no máximo umas 4 vezes por segundo); devolve quem cancela
 //   analise.mostrar(ids)  o que está na tela passa na frente (a grade já avisa as miniaturas; a análise escuta o mesmo)
-//   analise.refazerNota({ rigor, ensaio, pesos })   na hora: a nota e os baldes de novo, sem reanalisar pixel nenhum
+//   analise.refazerNota({ rigor, ensaio, pesos, limiares })   na hora: a nota e os baldes de novo, sem reanalisar pixel nenhum
+//   analise.definirPessoas(lista | null)  as pessoas-chave ([{ id, fotos, chave }], de app/decupagem/pessoas.js): a
+//                                         única foto de cada uma não vai para Fora sozinha (protegerPessoas). Só ids.
 //   analise.meta(n)       "quero cerca de n": { ficam, saem, ordem, corte } (src/decupagem/nota.js)
 //   analise.revisarPeloRaw(ids?)  a segunda passada: lê o RAW das fotos com estouro em dúvida e reavalia
 //
@@ -33,6 +35,7 @@
 import { criarPool, tamanhoPadrao } from '../trabalho/pool.js'
 import { classificarCena } from '../../src/decupagem/cena.js'
 import { avaliarEnsaio, meta as metaDoEnsaio, PARAMETROS } from '../../src/decupagem/nota.js'
+import { protegerPessoas } from '../../src/decupagem/pessoas.js'
 
 export const VERSAO = 1
 export const CAMADAS = Object.freeze(['rostos', 'objetos', 'rotulos'])
@@ -134,7 +137,8 @@ export function criarAnalise({ loja, workers = null, ajustes = {} } = {}) {
   let pools = workers
   const usar = () => (pools ??= workersPadrao())
 
-  let opcoes = { camadas: [...CAMADAS], rigor: 'equilibrado', ensaio: 'geral', pesos: undefined, raw: false }
+  let opcoes = { camadas: [...CAMADAS], rigor: 'equilibrado', ensaio: 'geral', pesos: undefined, limiares: undefined, raw: false }
+  let pessoas = null
   let situacao = 'parada'
   let erro = null
   let camadas = Object.fromEntries(CAMADAS.map((c) => [c, 'desligada']))
@@ -257,8 +261,10 @@ export function criarAnalise({ loja, workers = null, ajustes = {} } = {}) {
       rigor: opcoes.rigor,
       ensaio: opcoes.ensaio,
       pesos: opcoes.pesos,
+      limiares: opcoes.limiares,
       grupos: reagrupar || !jaAgrupou ? undefined : grupos.filter((g) => g.fotos.every((id) => catalogo.foto(id)?.medidas)),
     })
+    if (pessoas?.length) r.magnitudes = protegerPessoas(r.magnitudes, pessoas)
     grupos = r.grupos
     jaAgrupou = true
     const escolhas = new Map()
@@ -500,13 +506,21 @@ export function criarAnalise({ loja, workers = null, ajustes = {} } = {}) {
      * catálogo). `camadas`: as de visão que ligam ([] = só as medidas clássicas). Devolve uma Promise que resolve
      * com o estado quando a fila acaba (ou com o estado do momento, se for cancelada).
      */
-    async iniciar({ ids, camadas: pedidas = opcoes.camadas, rigor = opcoes.rigor, ensaio = opcoes.ensaio, pesos = opcoes.pesos, raw: comRaw = opcoes.raw } = {}) {
+    async iniciar({
+      ids,
+      camadas: pedidas = opcoes.camadas,
+      rigor = opcoes.rigor,
+      ensaio = opcoes.ensaio,
+      pesos = opcoes.pesos,
+      limiares = opcoes.limiares,
+      raw: comRaw = opcoes.raw,
+    } = {}) {
       const minha = ++geracao
       terminou?.resolver(estado())
       let resolver
       const promessa = new Promise((r) => (resolver = r))
       terminou = { resolver }
-      opcoes = { camadas: CAMADAS.filter((c) => pedidas.includes(c)), rigor, ensaio, pesos, raw: !!comRaw }
+      opcoes = { camadas: CAMADAS.filter((c) => pedidas.includes(c)), rigor, ensaio, pesos, limiares, raw: !!comRaw }
       erro = null
       situacao = 'preparando'
       novas = 0
@@ -581,9 +595,19 @@ export function criarAnalise({ loja, workers = null, ajustes = {} } = {}) {
         pools.visao?.priorizar?.(`visao:${id}`, A.naTela)
       }
     },
-    /** A nota de novo com outro rigor, ensaio ou pesos. Não relê pixel nenhum; devolve quanto levou (ms). */
-    refazerNota({ rigor = opcoes.rigor, ensaio = opcoes.ensaio, pesos = opcoes.pesos } = {}) {
-      opcoes = { ...opcoes, rigor, ensaio, pesos }
+    /** A nota de novo com outro rigor, ensaio, pesos ou limiares. Não relê pixel nenhum; devolve quanto levou (ms). */
+    refazerNota({ rigor = opcoes.rigor, ensaio = opcoes.ensaio, pesos = opcoes.pesos, limiares = opcoes.limiares } = {}) {
+      opcoes = { ...opcoes, rigor, ensaio, pesos, limiares }
+      const ms = notar({ reagrupar: false })
+      avisar(true)
+      return ms
+    },
+    /** As pessoas-chave para a cobertura (null = sem agrupar por pessoa). Refaz a nota se mudou. */
+    definirPessoas(lista) {
+      const nova = Array.isArray(lista) && lista.length ? lista.map((p) => ({ id: p.id, fotos: [...p.fotos], chave: !!p.chave })) : null
+      if (JSON.stringify(nova) === JSON.stringify(pessoas)) return 0
+      pessoas = nova
+      if (!catalogo.fotos().some((f) => f.medidas)) return 0
       const ms = notar({ reagrupar: false })
       avisar(true)
       return ms
@@ -594,7 +618,7 @@ export function criarAnalise({ loja, workers = null, ajustes = {} } = {}) {
       return metaDoEnsaio(
         fotos.map((f) => ({ id: f.id, magnitude: f.magnitude })),
         n,
-        { grupos },
+        { grupos, pessoas: pessoas ? pessoas.filter((p) => p.chave) : null },
       )
     },
     revisarPeloRaw: (ids) => revisarPeloRaw(ids),

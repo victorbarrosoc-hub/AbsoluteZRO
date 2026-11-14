@@ -9,6 +9,8 @@
 //      seleção voltar ao catálogo como filtro, com o comentário e o pedido; "Tratar as escolhidas" leva ao lote;
 //   4. sem armazenamento (503 sem_armazenamento), a linha certa e nada de publicar, na galeria e na busca por rosto;
 //      com ele, a busca por rosto (app/rosto/painel.js) é a terceira ação, com "Novo evento";
+//   4b. avisos: o cliente envia e um visitante pede pela porta estreita; o ponto na aba Entregar, a lista com "Abrir",
+//      a permissão de notificação só num gesto e a notificação com texto neutro;
 //   5. 390 px sem rolar de lado, claro e escuro, sem erro de console nem violação de CSP.
 // As imagens são desenhadas no próprio Chromium (faixas, um sol e um número: nenhuma foto de gente).
 // FOTO_TELAS=<pasta> grava as capturas entregar-*.png.
@@ -624,6 +626,120 @@ test('busca por rosto: a terceira ação da Entregar, uma ideia por vez', { skip
     assert.equal(await naLoja(pagina, (l) => l.aba('entregar').modo), 'evento')
     await semRolarDeLado(pagina)
     await captura(pagina, 'evento-1440-claro')
+    limpo(olho)
+  } finally {
+    await contexto.close()
+  }
+})
+
+// ───────────────────────────── 4b. avisos ─────────────────────────────
+
+test('avisos: o ponto na aba Entregar, a lista com Abrir e a notificação neutra pedida num gesto', { skip: semBanco, timeout: 300000 }, async () => {
+  // a notificação do navegador é trocada por uma que anota (e a janela finge não ter o foco, como numa aba de trás)
+  const antesDeAbrir = (c) =>
+    c.addInitScript(() => {
+      window.__notas = []
+      window.__pedidos = 0
+      let permissao = 'default'
+      window.Notification = class {
+        constructor(titulo, opcoes) {
+          window.__notas.push({ titulo, ...opcoes })
+        }
+        close() {}
+        static get permission() {
+          return permissao
+        }
+        static async requestPermission() {
+          window.__pedidos += 1
+          permissao = 'granted'
+          return permissao
+        }
+      }
+      document.hasFocus = () => false
+    })
+  const { contexto, pagina, olho } = await abrir({ antesDeAbrir })
+  const { NOME } = await import('../app/nome.js')
+  const consultar = () => pagina.evaluate(() => import('/app/casca/avisos.js').then((m) => m.atualizar({ forcar: true }).then(() => m.atual().naoLidos)))
+  try {
+    await carregar(pagina, fotos.arquivos.slice(0, 2))
+    const trabalho = await naLoja(pagina, (l) => l.trabalho().id)
+    const local = (await contexto.cookies()).find((c) => c.name === 'foto_local')
+    const { sub } = JSON.parse(Buffer.from(local.value, 'base64url').toString('utf8'))
+    // a galeria desta pessoa, publicada pelo banco (o caminho da tela já está no teste 3), ligada a este trabalho
+    const { createHash, randomBytes } = await import('node:crypto')
+    const token = randomBytes(32).toString('base64url')
+    const [g] = await dono`insert into foto.galerias ${dono({ dono: sub, nome: 'Ensaio da Serra', fotografo: 'Lia', contratadas: 2, estado: 'rascunho' })} returning id`
+    const [f] = await dono`insert into foto.galeria_fotos ${dono({ galeria: g.id, foto_id: 'cat-1', nome: 'IMG_1.CR3', largura: 1600, altura: 1067, tipo: 'image/jpeg', tamanho: 600, sha256: 'a'.repeat(64), enviada_em: new Date() })} returning id`
+    await dono`update foto.galerias set estado = 'publicada' where id = ${g.id}`
+    const th = createHash('sha256').update(token).digest('hex')
+    await dono`insert into foto.links ${dono({ galeria: g.id, token_hash: th, expira_em: new Date(Date.now() + 86400000) })}`
+    await pagina.evaluate(([t, id]) => localStorage.setItem(`foto_galeria:${t}`, id), [trabalho, g.id])
+    // um evento desta pessoa, publicado, com uma foto
+    const [e] = await dono`insert into foto.eventos ${dono({ dono: sub, nome: 'Formatura', prazo: new Date(Date.now() + 86400000), estado: 'publicado' })} returning id`
+    const [ef] = await dono`insert into foto.evento_fotos ${dono({ evento: e.id, foto_id: 'ev-1', nome: 'E_1.CR3', largura: 1600, altura: 1067, tipo: 'image/jpeg', tamanho: 600, sha256: 'b'.repeat(64), enviada_em: new Date() })} returning id`
+    const eth = createHash('sha256').update(randomBytes(32)).digest('hex')
+    await dono`insert into foto.evento_links ${dono({ evento: e.id, token_hash: eth })}`
+    const pelaPorta = (fn) =>
+      dono.begin(async (tx) => {
+        await tx.unsafe('set local role foto_app')
+        return fn(tx)
+      })
+
+    // nada ainda: sem ponto, sem lista, e a permissão não foi pedida ao abrir
+    assert.equal(await consultar(), 0)
+    await irParaEntregar(pagina)
+    // (a galeria ligada abre a Entregar nela; com ela na frente, o aviso dela já conta como lido: fica no Exportar)
+    await pagina.locator('.entregar-modo button', { hasText: 'Exportar' }).click()
+    assert.equal(await pagina.locator('.dock-ponto').count(), 0)
+    assert.equal(await pagina.locator('.entregar-avisos').count(), 0)
+    assert.equal(await pagina.evaluate(() => window.__pedidos), 0)
+
+    // o cliente envia (pela porta estreita): o ponto aparece na aba e a lista na Entregar
+    await pelaPorta((tx) => tx`select foto.link_escolher(${th}, true, ${f.id}::uuid, true)`)
+    const [enviou] = await pelaPorta((tx) => tx`select foto.link_enviar(${th}, true, 'Ana Cliente') as r`)
+    assert.equal(enviou.r.ok, true, JSON.stringify(enviou.r))
+    assert.equal(await consultar(), 1)
+    await pagina.waitForSelector('.dock-aba[data-aba="entregar"] .dock-ponto')
+    await pagina.waitForSelector('.entregar-avisos .aviso-item[data-aviso="escolha"]')
+    assert.equal(await pagina.locator('.aviso-texto strong').innerText(), 'Ensaio da Serra')
+    assert.match(await pagina.locator('.aviso-texto small').innerText(), /^Ana Cliente escolheu 1 foto · agora$/)
+    // a notificação: só o que chegou com a página aberta, com texto neutro (nem o nome do produto, nem quem enviou)
+    const notas = await pagina.evaluate(() => window.__notas)
+    assert.deepEqual(notas, [])
+    await captura(pagina, 'avisos-1440-claro')
+
+    // a permissão só num gesto: o botão pede uma vez; a próxima chegada vira notificação
+    await pagina.locator('.entregar-avisos [data-notificar]').click()
+    assert.equal(await pagina.evaluate(() => window.__pedidos), 1)
+    await pagina.waitForSelector('.entregar-avisos [data-notificar]', { state: 'detached' })
+    await pelaPorta((tx) => tx`select foto.evento_pedir(${eth}, true, 'Bia', 'bia@exemplo.com', ${[ef.id]}::uuid[])`)
+    assert.equal(await consultar(), 2)
+    const [nota] = await pagina.evaluate(() => window.__notas)
+    assert.deepEqual({ titulo: nota.titulo, body: nota.body, icon: nota.icon }, { titulo: 'Absolute ZRO', body: 'Pedido de fotos · Formatura', icon: undefined })
+    assert.ok(!JSON.stringify(nota).includes(NOME) && !JSON.stringify(nota).includes('Bia'))
+    assert.equal(await pagina.locator('.aviso-item').count(), 2)
+    // no celular: sem rolar de lado, o ponto no ícone da aba
+    await pagina.setViewportSize({ width: 390, height: 844 })
+    await semRolarDeLado(pagina)
+    const [ponto, aba] = await pagina.evaluate(() => [document.querySelector('.dock-ponto'), document.querySelector('.dock-aba[data-aba="entregar"]')].map((e) => e.getBoundingClientRect().toJSON()))
+    assert.ok(ponto.left >= aba.left && ponto.right <= aba.right && ponto.top >= aba.top - 1, 'o ponto fica dentro da aba')
+    await captura(pagina, 'avisos-390-claro')
+    await pagina.setViewportSize({ width: 1440, height: 900 })
+
+    // abrir o pedido leva à busca por rosto e marca como lido
+    await pagina.locator('.aviso-item[data-aviso="pedido"] [data-abrir-aviso]').click()
+    await pagina.waitForSelector('[data-painel="evento"]:not([hidden])')
+    await pagina.waitForFunction(() => document.querySelectorAll('.aviso-item').length === 1)
+    // abrir a escolha leva à galeria deste trabalho, que mostra o envio e conta o aviso como lido: o ponto some
+    await pagina.locator('.aviso-item[data-aviso="escolha"] [data-abrir-aviso]').click()
+    await pagina.waitForSelector('.estado-galeria[data-estado="concluida"]')
+    await pagina.waitForSelector('.entregar-avisos', { state: 'detached' })
+    await pagina.waitForSelector('.dock-ponto', { state: 'detached' })
+    // (a tela tira da lista antes de o servidor responder: espera o banco)
+    const naoLidosNoBanco = async () => (await dono`select count(*)::int as n from foto.avisos where dono = ${sub} and lido_em is null`)[0].n
+    for (let i = 0; i < 50 && (await naoLidosNoBanco()); i++) await new Promise((ok) => setTimeout(ok, 100))
+    assert.equal(await naoLidosNoBanco(), 0)
+    await semRolarDeLado(pagina)
     limpo(olho)
   } finally {
     await contexto.close()

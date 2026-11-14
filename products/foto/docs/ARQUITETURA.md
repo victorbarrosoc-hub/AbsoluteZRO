@@ -378,6 +378,16 @@ O armazenamento das prévias é um adaptador (`api/_arquivos.js`): pasta local e
 o fotógrafo envia cada prévia por `PUT`, o cliente recebe por link vivo. Sem armazenamento configurado, as rotas
 respondem `503 sem_armazenamento`. **O bucket só existe depois de o titular autorizar.**
 
+**Avisos ao fotógrafo** ([API.md](API.md#avisos-ao-fotógrafo)): `foto.avisos` (0005) nasce por gatilho quando o cliente
+envia (`foto.envios`) ou um visitante pede (`foto.evento_pedidos`), na mesma transação da porta. A loja do navegador é
+`app/casca/avisos.js` (`ligar`, `atualizar`, `marcar`, `assinar`, `usarAvisos`, `pedirNotificacao`, `textoDoAviso`):
+a casca liga com um trabalho aberto e a conta liberada e põe o ponto na aba Entregar; a Entregar mostra a lista
+(`app/telas/entregar/avisos.js`) e a Galeria relê o estado quando chega o aviso dela (e a cada 60 s, ao voltar o foco),
+contando-o como lido. Notificação do navegador só com permissão pedida num gesto, com texto neutro. Fora do app, nada.
+
+**Limpeza agendada** ([API.md](API.md#limpeza-agendada)): `api/cron/limpar.js` (porta do `CRON_SECRET`) chama
+`limpar()` de `api/cron/_limpeza.js`: galerias vencidas, eventos vencidos, rascunhos parados há 14 dias e avisos velhos.
+
 ### Rosto em evento (`src/rosto/`, `app/rosto/`, `evento/`)
 
 Regra 5 e [`estudo/rosto-em-evento.md`](estudo/rosto-em-evento.md). Pilha no aparelho, igual nos dois lados: ONNX

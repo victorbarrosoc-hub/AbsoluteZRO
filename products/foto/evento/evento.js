@@ -1,6 +1,8 @@
 // A página do visitante de um evento: abre pelo link (ou pelo QR do cartaz), sem cadastro. PIN (se houver) → o pedido
-// de consentimento, numa tela só dele (texto de src/rosto/textos.js, caixa dos 18 anos desmarcada) → a câmera AO VIVO
-// com o oval e uma dica por vez → três quadros → a assinatura no próprio celular → só os números vão → "É você" e
+// de consentimento, numa tela só dele (texto de src/rosto/textos.js, caixa dos 18 anos desmarcada; com crianças, a de
+// "sou responsável", destacada) → a câmera AO VIVO com o oval e uma dica por vez → o desafio sorteado pelo servidor (de
+// frente, depois vire para a esquerda, para a direita e chegue mais perto, na ordem pedida) → a assinatura no próprio
+// celular → a prova de vida conferida no servidor → só os números vão → "É você" e
 // "Talvez seja você" → favoritar e pedir as fotos (nome e contato; sem pagamento). No modo com consentimento, o pedido
 // fica guardado e as fotos aparecem quando o fotógrafo processar: a pessoa volta pelo mesmo link. "Não quero aparecer"
 // sempre à mão. "Lembrar neste celular" é opcional e tem "Esquecer".
@@ -15,12 +17,13 @@ import { capturar, encerrar, ligarCamera, preparar } from './leitor.js'
 import { chaveDaAba, esquecer, guardarNaAba, lembrado, lembrar, novaChave } from './memoria.js'
 import { enderecoDaFoto, pedir } from './rede.js'
 import { DICAS } from './src/rosto/qualidade.js'
+import { INSTRUCOES } from './src/rosto/vida.js'
 import { comPrazo, TEXTOS } from './src/rosto/textos.js'
 
 const dia = (v) => (v ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' }).format(new Date(`${String(v).slice(0, 10)}T12:00:00`)) : '')
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`
 const semMenu = (e) => e.preventDefault()
-const DICA = { ...DICAS, denovo: 'Vamos de novo', pronto: 'Pronto' }
+const DICA = { ...DICAS, ...INSTRUCOES, frente: 'Olhe para a câmera', denovo: 'Vamos de novo', pronto: 'Pronto', conferindo: 'Conferindo' }
 
 // ───────── ícones (traço único, 24 × 24) ─────────
 
@@ -47,6 +50,11 @@ const icone = {
   relogio: () => svg(html`<circle cx="12" cy="12" r="8.2" /><path d="M12 7.5V12l3 2" />`),
   tema: () => svg(html`<circle cx="12" cy="12" r="8.2" /><path d="M12 3.8a8.2 8.2 0 0 0 0 16.4Z" fill="currentColor" stroke="none" />`),
   nada: () => svg(html`<circle cx="12" cy="12" r="8.2" /><path d="m6.2 6.2 11.6 11.6" />`),
+  esquerda: () => svg(html`<path d="M19 12H5.5M11 6l-6 6 6 6" />`),
+  direita: () => svg(html`<path d="M5 12h13.5M13 6l6 6-6 6" />`),
+  perto: () => svg(html`<path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4" /><path d="M9.5 12h5M12 9.5v5" />`),
+  frente: () => svg(html`<circle cx="12" cy="12" r="3.2" /><circle cx="12" cy="12" r="8.2" />`),
+  crianca: () => svg(html`<circle cx="12" cy="8" r="3.2" /><path d="M6.5 20a5.5 5.5 0 0 1 11 0" />`),
 }
 const SIMBOLO = html`<svg class="simbolo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
   <path
@@ -89,6 +97,14 @@ function Estado({ fino, pesado, apoio, acao, aoAgir, segunda, aoSegunda, marca =
 const ERROS = {
   link: { fino: 'Link', pesado: 'indisponível.', apoio: 'Peça um novo a quem fotografou.' },
   limite: { fino: 'Muitas', pesado: 'tentativas.', apoio: 'Espere alguns minutos e tente de novo.' },
+  'limite-aparelho': { fino: 'Muitas buscas', pesado: 'deste aparelho.', apoio: 'Tente em alguns minutos.', acao: 'Voltar' },
+  'limite-rede': { fino: 'Muita gente', pesado: 'nesta rede.', apoio: 'Tente em alguns minutos.', acao: 'Voltar' },
+  'limite-evento': { fino: 'Muita gente', pesado: 'buscando agora.', apoio: 'Tente em alguns minutos.', acao: 'Voltar' },
+  vida: { fino: 'Não deu para', pesado: 'confirmar.', apoio: 'Faça cada movimento quando a tela pedir.', acao: 'Tentar de novo' },
+  'vida-prazo': { fino: 'O tempo', pesado: 'acabou.', apoio: 'Faça cada movimento quando a tela pedir.', acao: 'Tentar de novo' },
+  'vida-plano': { fino: 'Não deu para', pesado: 'confirmar.', apoio: 'A câmera precisa ver você, não uma foto ou tela.', acao: 'Tentar de novo' },
+  'vida-outra': { fino: 'Só você', pesado: 'no quadro.', apoio: 'Do começo ao fim, sem trocar de pessoa.', acao: 'Tentar de novo' },
+  prova: { fino: 'A câmera', pesado: 'precisa ver você.', apoio: 'Tire a selfie de novo, ao vivo.', acao: 'Tentar de novo' },
   rede: { fino: 'Sem', pesado: 'conexão.', apoio: 'Confira a internet e tente de novo.', acao: 'Tentar de novo' },
   'camera-negada': { fino: 'Sem', pesado: 'câmera.', apoio: 'Libere a câmera para este site e tente de novo.', acao: 'Tentar de novo' },
   'sem-camera': { fino: 'Sem', pesado: 'câmera.', apoio: 'Abra este link no celular.', acao: 'Voltar' },
@@ -157,13 +173,15 @@ function Pin({ aoAbrir }) {
 function Pedido({ evento, tipo, aoPermitir, aoRecusar, aoNaoAparecer, voltar }) {
   const t = TEXTOS[tipo]
   const [maior, setMaior] = useState(false)
+  const criancas = tipo === 'cadastroCriancas'
   return html`<section class="pedir entra" aria-labelledby="pedido-titulo">
     <div class="rosto-icone">${icone.rosto()}</div>
     <p class="sobretitulo evento-nome">${evento.nome}${evento.data ? ` · ${dia(evento.data)}` : ''}</p>
+    ${criancas && html`<p class="ficha-criancas">${icone.crianca()}<span>Evento com crianças</span></p>`}
     <h1 id="pedido-titulo">${t.titulo}</h1>
     <p class="apoio">${comPrazo(t.corpo, evento.prazo)}</p>
-    <label class="caixa">
-      <input type="checkbox" checked=${maior} onChange=${(e) => setMaior(e.currentTarget.checked)} />
+    <label class=${`caixa ${criancas ? 'caixa--destaque' : ''}`}>
+      <input type="checkbox" checked=${maior} onChange=${(e) => setMaior(e.currentTarget.checked)} required aria-required="true" />
       <span>${t.caixa}</span>
     </label>
     <div class="acoes">
@@ -178,6 +196,8 @@ function Pedido({ evento, tipo, aoPermitir, aoRecusar, aoNaoAparecer, voltar }) 
         <li>A comparação usa só números tirados do rosto; nenhuma imagem sua sai do celular.</li>
         <li>A busca vale só para este evento e termina em ${dia(evento.prazo)}.</li>
         <li>Você pode desistir e pedir para apagar a qualquer momento, por este link.</li>
+        <li>A câmera pede alguns movimentos para confirmar que é alguém ao vivo, não uma foto.</li>
+        <li>Um cookie deste aparelho só conta as buscas; ele não diz quem você é.</li>
         <li>Prefere sem rosto? Fale com quem fotografou.</li>
       </ul>
     </details>
@@ -185,12 +205,15 @@ function Pedido({ evento, tipo, aoPermitir, aoRecusar, aoNaoAparecer, voltar }) 
   </section>`
 }
 
-/** O download do leitor (uma vez) e a câmera ao vivo. Devolve os vetores por `aoPronto`. */
-function Camera({ aoPronto, aoCancelar, aoErro }) {
+/**
+ * O download do leitor (uma vez), a câmera ao vivo e o desafio de vida: pede o desafio ao servidor, segue os passos,
+ * manda os pontos para a prova e devolve por `aoPronto({ vetores, prova })`. `para`: 'busca' | 'cadastro' | 'remocao'.
+ */
+function Camera({ para, aoPronto, aoCancelar, aoErro }) {
   const video = useRef(null)
   const [fase, setFase] = useState('baixando')
   const [progresso, setProgresso] = useState(0)
-  const [estado, setEstado] = useState({ etapa: 0, dica: 'frente', boa: false })
+  const [estado, setEstado] = useState({ etapa: 0, total: 4, passo: 'frente', boa: false })
   useEffect(() => {
     const parar = new AbortController()
     let desligar = null
@@ -201,13 +224,17 @@ function Camera({ aoPronto, aoCancelar, aoErro }) {
         setFase('camera')
         desligar = await ligarCamera(video.current)
         if (parar.signal.aborted) return desligar()
-        const vetores = await capturar(video.current, { sinal: parar.signal, aoMudar: setEstado })
+        // o desafio só sai com o leitor pronto e a câmera ligada: o prazo curto é todo da pessoa
+        const { desafio } = await pedir('desafio')
+        const r = await capturar(video.current, { desafio: { ...desafio, recebidoEm: performance.now() }, sinal: parar.signal, aoMudar: setEstado })
         desligar()
         desligar = null
-        aoPronto(vetores)
+        setEstado((e) => ({ ...e, passo: 'conferindo', boa: true }))
+        const { prova } = await pedir('prova', { desafio, quadros: r.quadros, vetores: r.vetores, para })
+        aoPronto({ vetores: r.vetores, prova })
       } catch (e) {
         desligar?.()
-        if (e?.name !== 'AbortError' && !parar.signal.aborted) aoErro(e?.codigo || 'indisponivel')
+        if (e?.name !== 'AbortError' && !parar.signal.aborted) aoErro(e?.codigo ? e : 'indisponivel')
       }
     })()
     return () => {
@@ -215,12 +242,13 @@ function Camera({ aoPronto, aoCancelar, aoErro }) {
       desligar?.()
     }
   }, [])
-  const dica = DICA[estado.dica] ?? DICA.frente
+  const instrucao = !estado.boa && estado.dica && estado.passo !== 'conferindo' ? DICA[estado.dica] : (DICA[estado.passo] ?? DICA.frente)
+  const seta = estado.boa && ['esquerda', 'direita', 'perto'].includes(estado.passo) ? icone[estado.passo]() : null
   return html`<div class="camera" role="dialog" aria-modal="true" aria-label="Câmera">
     <div class="camera-topo">
       <button class="redondo redondo--escuro" type="button" onClick=${aoCancelar} aria-label="Cancelar">${icone.fechar()}</button>
     </div>
-    <div class="camera-palco">
+    <div class=${`camera-palco ${estado.passo === 'perto' ? 'camera-palco--perto' : ''}`}>
       <video ref=${video} autoplay muted playsinline aria-hidden="true"></video>
       ${
         fase === 'camera' &&
@@ -228,13 +256,14 @@ function Camera({ aoPronto, aoCancelar, aoErro }) {
           <defs>
             <mask id="buraco">
               <rect width="100" height="140" fill="#fff" />
-              <ellipse cx="50" cy="66" rx="27" ry="36" fill="#000" />
+              <ellipse class="oval-furo" cx="50" cy="66" rx="27" ry="36" fill="#000" />
             </mask>
           </defs>
           <rect width="100" height="140" fill="rgb(0 0 0 / 0.55)" mask="url(#buraco)" />
           <ellipse class=${`oval-borda ${estado.boa ? 'boa' : ''}`} cx="50" cy="66" rx="27" ry="36" vector-effect="non-scaling-stroke" />
         </svg>`
       }
+      ${seta && html`<div class=${`seta seta--${estado.passo}`} aria-hidden="true">${seta}</div>`}
     </div>
     <div class="camera-base" aria-live="polite">
       ${
@@ -244,8 +273,10 @@ function Camera({ aoPronto, aoCancelar, aoErro }) {
               <p class="dica">Preparando</p>
               <p class="miudo"><span class="anel-numero">${progresso}%</span> · só na primeira vez</p>
             </div>`
-          : html`<p class="dica">${dica}</p>
-              <div class="passos" aria-label=${`${estado.etapa} de 3`}>${[0, 1, 2].map((i) => html`<i class=${i < estado.etapa ? 'feito' : ''}></i>`)}</div>
+          : html`<p class="dica" data-passo=${estado.passo}>${instrucao}</p>
+              <div class="passos" aria-label=${`${estado.etapa} de ${estado.total}`}>
+                ${Array.from({ length: estado.total }, (_, i) => html`<i class=${i < estado.etapa ? 'feito' : ''}></i>`)}
+              </div>
               <p class="miudo">A selfie não sai do seu celular.</p>`
       }
     </div>
@@ -392,15 +423,22 @@ function App() {
   const [conferir, setConferir] = useState(null) // remoção: fotos parecidas
   const [removidas, setRemovidas] = useState(0)
   const ultimos = useRef(null) // os vetores da última captura (só em memória)
+  const prova = useRef(null) // a prova de vida da última captura (uso único no servidor)
+  const lembranca = useRef(null) // busca aberta: a captura de antes vale de novo neste aparelho
   const chave = useRef(null)
 
   const falhar = (f) => {
-    setErro(f?.codigo && ERROS[f.codigo] ? f.codigo : typeof f === 'string' && ERROS[f] ? f : 'erro')
+    const escopo = f?.dados?.escopo ?? f?.escopo
+    const motivo = f?.motivo ?? f?.dados?.motivo
+    const fino = f?.codigo === 'limite' && escopo ? `limite-${escopo}` : f?.codigo === 'vida' && motivo ? `vida-${motivo === 'tela' ? 'plano' : motivo}` : null
+    setErro(fino && ERROS[fino] ? fino : f?.codigo && ERROS[f.codigo] ? f.codigo : typeof f === 'string' && ERROS[f] ? f : 'erro')
     setFase('erro')
   }
 
   const consentimento = () => evento?.modo === 'consentimento'
-  const tipoDoPedido = () => (fluxo === 'remocao' ? 'remocao' : evento?.modo === 'consentimento' ? 'cadastro' : 'busca')
+  const tipoDoPedido = () =>
+    fluxo === 'remocao' ? 'remocao' : evento?.modo === 'consentimento' ? (evento?.criancas ? 'cadastroCriancas' : 'cadastro') : 'busca'
+  const paraDoPedido = () => (fluxo === 'remocao' ? 'remocao' : evento?.modo === 'consentimento' ? 'cadastro' : 'busca')
 
   async function abrir(contar = false) {
     setFase('carregando')
@@ -423,8 +461,9 @@ function App() {
           chave.current = null
         }
       }
-      if (r.evento.modo === 'aberta' && guardado?.vetores?.length) {
+      if (r.evento.modo === 'aberta' && guardado?.vetores?.length && guardado.lembranca) {
         ultimos.current = guardado.vetores
+        lembranca.current = guardado.lembranca
         return buscar(guardado.vetores, r.evento)
       }
       setFase('inicio')
@@ -441,30 +480,44 @@ function App() {
 
   async function buscar(vetores, ev = evento) {
     setFase('buscando')
+    // a prova vale uma vez: sai daqui e não volta
+    const p = prova.current
+    prova.current = null
     try {
       if (ev.modo === 'consentimento') {
         const k = chave.current || novaChave()
-        const r = await pedir('cadastrar', { vetores, chave: k, versao: TEXTOS.cadastro.versao })
+        const versao = (ev.criancas ? TEXTOS.cadastroCriancas : TEXTOS.cadastro).versao
+        const r = await pedir('cadastrar', { vetores, chave: k, versao, prova: p })
         chave.current = k
         guardarNaAba(k)
         if (lembrando) await lembrar({ chave: k })
         setAchadas(r)
       } else {
-        const r = await pedir('achar', { vetores, versao: TEXTOS.busca.versao })
+        const r = await pedir('achar', { vetores, versao: TEXTOS.busca.versao, ...(p ? { prova: p } : { lembranca: lembranca.current }) })
+        if (r.lembranca) lembranca.current = r.lembranca
+        if (lembrando && lembranca.current) await lembrar({ vetores, lembranca: lembranca.current })
         setAchadas(r)
       }
       setFase('resultado')
     } catch (f) {
+      // a lembrança deste aparelho não vale mais (cookie novo, prazo): volta ao começo, com selfie nova
+      if (f.codigo === 'prova' && !p) {
+        lembranca.current = null
+        await esquecer()
+        setLembrando(false)
+        return setFase('inicio')
+      }
       falhar(f)
     }
   }
 
-  async function aoCapturar(vetores) {
+  async function aoCapturar({ vetores, prova: p }) {
     ultimos.current = vetores
+    prova.current = p
     if (fluxo === 'remocao') {
       setFase('buscando')
       try {
-        const r = await pedir('remover', { vetores, versao: TEXTOS.remocao.versao })
+        const r = await pedir('remover', { vetores, versao: TEXTOS.remocao.versao, prova: p })
         setConferir(r.fotos)
         setEscolhidas(new Set(r.fotos.map((f) => f.id)))
         setFase('conferir')
@@ -473,15 +526,15 @@ function App() {
       }
       return
     }
-    if (lembrando && evento.modo === 'aberta') await lembrar({ vetores })
     buscar(vetores)
   }
 
   async function confirmarRemocao() {
     setFase('buscando')
     try {
-      const r = await pedir('remover', { vetores: ultimos.current, fotos: [...escolhidas], versao: TEXTOS.remocao.versao })
+      const r = await pedir('remover', { vetores: ultimos.current, fotos: [...escolhidas], versao: TEXTOS.remocao.versao, prova: prova.current })
       ultimos.current = null
+      prova.current = null
       setRemovidas(r.removidos)
       setEscolhidas(new Set())
       setFase('removido')
@@ -492,7 +545,7 @@ function App() {
 
   async function recusar() {
     const tipo = tipoDoPedido()
-    pedir('recusar', { tipo, versao: TEXTOS[tipo].versao }).catch(() => {})
+    pedir('recusar', { tipo: tipo === 'cadastroCriancas' ? 'cadastro' : tipo, versao: TEXTOS[tipo].versao }).catch(() => {})
     setFluxo('busca')
     setFase('recusou')
   }
@@ -514,12 +567,13 @@ function App() {
   async function mudarLembrar(ligar) {
     setLembrando(ligar)
     if (!ligar) return esquecer().then(() => chave.current && guardarNaAba(chave.current))
-    await lembrar(consentimento() ? { chave: chave.current } : { vetores: ultimos.current })
+    await lembrar(consentimento() ? { chave: chave.current } : { vetores: ultimos.current, lembranca: lembranca.current })
   }
 
   async function esquecerTudo() {
     await esquecer()
     ultimos.current = null
+    lembranca.current = null
     chave.current = consentimento() ? chave.current : null
     setLembrando(false)
     setAchadas(null)
@@ -552,7 +606,13 @@ function App() {
   if (fase === 'pin') return html`<${Pin} aoAbrir=${() => abrir(false)} /><${Assinatura} />`
   if (fase === 'erro') {
     const e = ERROS[erro] ?? ERROS.erro
-    return html`<${Estado} ...${e} aoAgir=${() => (erro === 'sem-camera' ? setFase('inicio') : abrir(false))} /><${Assinatura} />`
+    const agir = () =>
+      erro === 'sem-camera' || erro.startsWith('limite-')
+        ? setFase(achadas ? 'resultado' : 'inicio')
+        : erro.startsWith('vida') || erro === 'prova'
+          ? setFase('camera')
+          : abrir(false)
+    return html`<${Estado} ...${e} marca=${erro.startsWith('limite') ? icone.relogio() : undefined} aoAgir=${agir} /><${Assinatura} />`
   }
   if (fase === 'inicio' || fase === 'pedido-remocao')
     return html`<${Pedido}
@@ -566,6 +626,7 @@ function App() {
       <${Assinatura} />`
   if (fase === 'camera')
     return html`<${Camera}
+      para=${paraDoPedido()}
       aoPronto=${aoCapturar}
       aoCancelar=${() => (encerrar(), setFase(fluxo === 'remocao' ? 'pedido-remocao' : 'inicio'))}
       aoErro=${falhar}

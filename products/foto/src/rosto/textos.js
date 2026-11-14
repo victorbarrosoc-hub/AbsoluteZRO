@@ -23,6 +23,16 @@ export const TEXTOS = Object.freeze({
       'quiser.',
     caixa: 'Tenho 18 anos ou mais, ou sou responsável por quem aparece na selfie.',
   },
+  /** Evento com crianças (db/migrations/0004): só um responsável pede, e a caixa é obrigatória e destacada. */
+  cadastroCriancas: {
+    versao: 'cadastro-criancas-2026-11-14',
+    titulo: 'Achar as fotos pelo rosto?',
+    corpo:
+      'Este evento tem crianças: só um responsável pode pedir. A selfie fica no seu celular. Só uma assinatura do ' +
+      'rosto, uma sequência de números, fica guardada até {prazo} para o fotógrafo achar as fotos. Você pode desistir ' +
+      'quando quiser.',
+    caixa: 'Sou responsável por quem aparece na selfie.',
+  },
   remocao: {
     versao: 'remocao-2026-11-13',
     titulo: 'Não quer aparecer na busca?',
@@ -54,6 +64,14 @@ export const TEXTOS = Object.freeze({
       'envia só a ligação entre a foto e a pessoa. As assinaturas somem em {prazo} ou quando você encerrar o evento.',
     caixa: '',
   },
+  ativacaoCriancas: {
+    versao: 'ativacao-criancas-2026-11-14',
+    titulo: 'Evento com crianças',
+    corpo:
+      'A busca fica só com consentimento: entra quem um responsável cadastrar, e mais ninguém. Avise os responsáveis ' +
+      '(cartaz e inscrição). As assinaturas somem em {prazo} ou quando você encerrar o evento.',
+    caixa: 'Vou avisar os responsáveis antes de publicar.',
+  },
   cartazAberta: {
     versao: 'cartaz-aberta-2026-11-13',
     titulo: 'Ache suas fotos pelo rosto',
@@ -66,6 +84,14 @@ export const TEXTOS = Object.freeze({
     corpo: 'Neste evento você pode achar suas fotos pelo rosto. A selfie não sai do seu celular. Só é procurado quem pedir. Aponte aqui.',
     caixa: '',
   },
+  cartazCriancas: {
+    versao: 'cartaz-criancas-2026-11-14',
+    titulo: 'Ache as fotos pelo rosto',
+    corpo:
+      'Pais e responsáveis podem achar as fotos pelo rosto. A selfie não sai do celular. Só é procurado quem um ' +
+      'responsável cadastrar. Aponte aqui.',
+    caixa: '',
+  },
   regulamento: {
     versao: 'regulamento-2026-11-13',
     titulo: 'Para o regulamento ou a inscrição',
@@ -73,6 +99,15 @@ export const TEXTOS = Object.freeze({
       'Neste evento haverá fotos. Quem quiser pode achar as próprias fotos pelo rosto, num link do fotógrafo. A ' +
       'selfie não sai do celular de quem busca; uma assinatura do rosto, uma sequência de números, é usada só neste ' +
       'evento e apagada até {prazo}. Quem não quiser aparecer na busca pode pedir pelo mesmo link.',
+    caixa: '',
+  },
+  regulamentoCriancas: {
+    versao: 'regulamento-criancas-2026-11-14',
+    titulo: 'Para o regulamento ou a inscrição',
+    corpo:
+      'Neste evento haverá fotos. Pais e responsáveis podem achar as fotos das crianças pelo rosto, num link do ' +
+      'fotógrafo. Só entra na busca quem um responsável cadastrar. A selfie não sai do celular; uma assinatura do ' +
+      'rosto, uma sequência de números, é usada só neste evento e apagada até {prazo}.',
     caixa: '',
   },
 })

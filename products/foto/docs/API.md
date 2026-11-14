@@ -12,6 +12,8 @@ tela do fotógrafo segue. Banco em [`db/migrations/0001_galerias.sql`](../db/mig
 - [Predefinições na conta](#predefinições-na-conta)
 - [Armazenamento das prévias](#armazenamento-das-prévias)
 - [Limites](#limites)
+- [Avisos ao fotógrafo](#avisos-ao-fotógrafo)
+- [Limpeza agendada](#limpeza-agendada)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 
 ## Regras gerais
@@ -392,7 +394,7 @@ PATCH /api/foto/predefinicoes/c2a1…  { "compartilhada": true }
 A chave de cada arquivo é calculada pelo banco: `g/<galeria>/<foto>` (com `-m` no fim, a miniatura). Nada é listado.
 Apagar a galeria ou tirar uma foto apaga os arquivos. `limparVencidas({ dias = 30 })` apaga os arquivos de galeria sem
 link vivo há `dias` dias (venceu, foi revogado ou a galeria foi encerrada): a ficha e a seleção ficam, a galeria passa a
-`encerrada` com `arquivosApagadosEm`. É chamável; **agendar ainda não foi feito**.
+`encerrada` com `arquivosApagadosEm`. Roda todo dia pela [limpeza agendada](#limpeza-agendada).
 
 ## Limites
 
@@ -477,9 +479,62 @@ Limites a mais: busca, pedido de busca e remoção, 5 a cada 10 min e 30 por dia
 abrir 3.000 por hora por link; PIN errado 5 a cada 15 min por link e IP e 60 por link; `minhas`/`desistir` 120 por hora por
 link e IP; `pedir` 10 por hora por link e IP; imagens 40.000 por hora por link e 3.000 por IP.
 
-Limpeza do prazo: `limparEventos()` (`api/_evento.js`, pela conexão do dono; agendar fica com o titular) chama
+Limpeza do prazo: `limparEventos()` (`api/_evento.js`, pela conexão do dono; roda todo dia em `api/cron/limpar.js`) chama
 `foto.eventos_limpar()` (vetores, pedidos de busca, ligações e remoções somem; o evento encerra) e apaga as prévias dos
 encerrados. Ficam a ficha, os pedidos de foto e o registro dos consentimentos até o evento ser apagado.
+
+## Avisos ao fotógrafo
+
+Quando o cliente envia a escolha (`enviar` do link) ou um visitante pede fotos (`pedir` do evento), nasce um aviso para a
+dona, na mesma transação, por gatilho em `foto.envios` e `foto.evento_pedidos` (`db/migrations/0005_avisos.sql`; a porta
+estreita não mudou). O aviso guarda só referências; nome do trabalho, quem e quantas são lidos na hora. Contato nunca sai
+por aqui. Enviar de novo depois de reabrir troca o aviso não lido daquela galeria pelo novo. Apagar a galeria, o evento ou
+o pedido leva o aviso junto. Por `rota()` (RLS): a pessoa só vê os dela, na organização em que criou.
+
+| método e caminho | corpo | resposta |
+| --- | --- | --- |
+| `GET /api/foto/avisos` | — | `{ avisos: [aviso], naoLidos }`: os não lidos, até 50, o mais novo primeiro |
+| `POST /api/foto/avisos` | um de: `{ ids: [id] }` (1–100), `{ galeria: id }`, `{ evento: id }`, `{ todos: true }` | `{ marcados, naoLidos }` |
+
+`aviso` = `{ id, tipo: 'escolha' | 'pedido', em, galeria, evento, nome, quem, fotos }` (`galeria` ou `evento`, o outro
+`null`; `nome` é o do trabalho; `quem`, o nome que o cliente ou o visitante deu; `fotos`, quantas escolheu ou pediu).
+Marcar é uma vez, com a hora do servidor (não volta a não lido). Erro: `400 campo`. **Sem banco, o GET responde
+`200 { ok: false, erro: 'sem_banco' }`** (a casca consulta sozinha e não deve sujar o console); o POST, `503 sem_banco`.
+
+Na tela: a casca consulta ao abrir, ao voltar o foco ou a aba (no máximo a cada 10 s) e a cada 60 s, e põe um ponto na aba
+Entregar; a Entregar lista os avisos com "Abrir". Com a permissão que a pessoa der num gesto ("Avisar neste computador"),
+a página aberta mostra a notificação do navegador com texto neutro: título "Absolute ZRO", corpo "Escolha recebida ·
+<trabalho>" ou "Pedido de fotos · <trabalho>", sem ícone, sem o nome do produto e sem quem enviou.
+
+**Fora do app não sai nada.** E-mail espera o provedor transacional (decisão do titular, `docs/roadmap.md`, "Bloqueios").
+O HUB não tem canal pronto para avisar uma pessoa: a caixa de entregas entre apps (`/api/v1/apps/entregas`) é só
+Maestro → TPeasy, com escopo e destino fechados (`ENTREGAS_ENTRE_APPS`), e o Set é conversa entre pessoas, sem aviso de
+sistema; os dois mostrariam o nome do app de origem. Quando o titular decidir, o caminho é um canal de avisos no HUB que
+receba, com o token da pessoa, só `{ titulo: 'Absolute ZRO', texto: '<trabalho>', link }` e entregue por e-mail ou push:
+este app chamaria esse canal do mesmo gatilho de hoje, por um worker que lê `foto.avisos` não entregues. Nada disso está
+ligado.
+
+## Limpeza agendada
+
+`GET /api/cron/limpar` (`api/cron/limpar.js`), uma vez por dia às 03:23 de Brasília (`vercel.json`, `crons`: `23 6 * * *`
+UTC). Só com `Authorization: Bearer <CRON_SECRET>` (a Vercel manda sozinha), comparado em tempo constante. Sem o
+segredo configurado: `503 sem_config` e nada roda; errado: `401 nao_autorizado`; sem banco: `503 sem_banco`. Roda pela
+conexão do dono do schema. Cada etapa é idempotente e uma que falha não segura as outras (`500`, com `falhas`).
+
+| etapa | o quê |
+| --- | --- |
+| galerias | sem link vivo há 30 dias: as prévias saem e a galeria encerra (`limparVencidas`); a ficha e a seleção ficam |
+| eventos | prazo vencido: vetores, pedidos de busca, ligações e remoções somem, o evento encerra e as prévias saem (`limparEventos`). Sem armazenamento, os vetores saem do mesmo jeito |
+| rascunhos | rascunho com prévias enviadas e parado há **14 dias** (a última foto registrada ou enviada): as prévias saem; a ficha e as fotos registradas ficam e a tela oferece "Enviar as que faltam" |
+| avisos | lidos há 30 dias, ou criados há 180, saem |
+
+```json
+200 { "ok": true, "galerias": 1, "eventos": 0, "rascunhos": 1, "avisos": 3, "arquivos": 9, "semArmazenamento": false, "falhas": [] }
+```
+
+O corpo e o log (`limpar: {…}`) levam só contagens: nenhum id, nome, link ou contato. Rascunho em 14 dias: é cópia
+reduzida de foto de cliente que ninguém vê (o rascunho não tem link) e refazer o envio é barato (o original está no
+aparelho); 30 dias, como a galeria vencida, deixaria prévia esquecida tempo demais.
 
 ## Variáveis de ambiente
 
@@ -489,3 +544,4 @@ encerrados. Ficam a ficha, os pedidos de foto e o registro dos consentimentos at
 | `FOTO_S3_ENDPOINT`, `FOTO_S3_REGION`, `FOTO_S3_BUCKET`, `FOTO_S3_KEY_ID`, `FOTO_S3_SECRET` | o bucket das prévias (região: `us-east-1` se faltar) |
 | `FOTO_ARQUIVOS_DIR` | pasta local das prévias (só fora da Vercel) |
 | `ZRO_CLIENT_SECRET` | além do login, é de onde sai a chave da prova do PIN e do HMAC do IP |
+| `CRON_SECRET` | a senha da [limpeza agendada](#limpeza-agendada) (sem ela, a limpeza não roda) |

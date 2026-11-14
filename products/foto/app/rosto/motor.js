@@ -14,6 +14,7 @@ import { normalizar, quantizar } from '../../src/rosto/assinatura.js'
 import { decodificar, invasao, passadas, passadaUnica, suprimir } from '../../src/rosto/detectar.js'
 import { LIMIARES } from '../../src/rosto/decidir.js'
 import { pose } from '../../src/rosto/qualidade.js'
+import { sinaisDeTela } from '../../src/rosto/vida.js'
 
 export const ORT = '/vendor/onnxruntime-1.31.1/'
 export const ARQUIVOS = {
@@ -208,7 +209,8 @@ export async function rostosDaFoto(fonte, { lado = 1616 } = {}) {
 
 /**
  * Um quadro da câmera (a selfie): detecta numa passada só (lado 320) e, se `assinarSe(rostos, recorte, lado)` disser que sim,
- * assina o rosto. Devolve { rostos: [{ nota, largura, pontos }], recorte?, vetor? } em px do quadro reduzido.
+ * assina o rosto. Devolve { rostos: [{ nota, largura, pontos }], recorte?, vetor?, tela? } em px do quadro reduzido;
+ * `tela` (com um rosto só): moiré e brilho em volta do nariz, na resolução da câmera (src/rosto/vida.js).
  */
 export async function quadro(fonte, { lado = 320, assinarSe = () => false } = {}) {
   await preparar()
@@ -221,12 +223,14 @@ export async function quadro(fonte, { lado = 320, assinarSe = () => false } = {}
   }))
   let recorte = null
   let vetor = null
+  let tela = null
   const ladoDoQuadro = Math.max(fonte.width, fonte.height) * p.k
   if (rostos.length) {
     const imagem = pixelsDe(fonte)
     recorte = recortar(imagem, rostos[0]._pontos)
+    if (rostos.length === 1) tela = sinaisDeTela(imagem, rostos[0]._pontos)
     if (assinarSe(rostos, recorte, ladoDoQuadro)) vetor = (await assinar(imagem, rostos[0]._pontos, recorte)).vetor
   }
   for (const r of rostos) delete r._pontos
-  return { rostos, recorte, vetor, ladoDoQuadro }
+  return { rostos, recorte, vetor, ladoDoQuadro, tela }
 }

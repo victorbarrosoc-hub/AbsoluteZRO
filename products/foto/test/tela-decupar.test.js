@@ -651,3 +651,297 @@ test('escuro a 1440 e celular (390 px) nos dois temas: sem rolar de lado, alvos 
     }
   }
 })
+
+// ───────────────────────────── dúvidas, pessoas e calibração ─────────────────────────────
+
+/**
+ * Rostos FABRICADOS nas fotos (nada de gente: as fotos seguem sendo texturas). Quatro "pessoas", cada uma num lugar do
+ * quadro (x = 60 + 230 × k): a 0 nas cenas de cada bloco, a 1 em parte delas, a 2 em quatro fotos e a 3 numa foto só,
+ * a repetida borrada do bloco 5 (o momento já tem foto que fica, e a principal dela está borrada: vai para Fora). A
+ * nitidez do rosto é a da foto, salvo a da pessoa 3, nítida (o rosto dela entra no centroide). As assinaturas vêm de um
+ * assinador falso que devolve vetores fabricados: cada pessoa uma semente, cada rosto com cosseno 0,7 com ela.
+ */
+async function comPessoasFabricadas(pagina) {
+  return naPagina(pagina, (loja, esteira) => {
+    const c = loja.catalogo
+    const fotos = c.fotos().slice().sort((a, b) => a.nome.localeCompare(b.nome))
+    const rosto = (k, q, { largura = 130, principal = false, olhos = 'abertos' } = {}) => ({
+      caixa: { x: 60 + 230 * k, y: 180 + 10 * k, largura, altura: Math.round(largura * 1.2) },
+      confianca: 0.95,
+      olhos,
+      ear: olhos === 'fechados' ? 0.1 : 0.3,
+      piscada: olhos === 'fechados' ? 0.8 : 0.05,
+      aperto: 0.1,
+      sorriso: 0.2,
+      guinada: 0,
+      nitidezOlhos: q,
+      nitidezRosto: q,
+      tamanho: largura / 960,
+      peso: largura / 960,
+      chave: true,
+      principal,
+      cortado: false,
+      duvidoso: false,
+      pontos: null,
+    })
+    const mudancas = []
+    fotos.forEach((f, i) => {
+      const k = i % 10
+      const q = f.medidas.nitidez.qLocal
+      const rostos = []
+      if ([0, 1, 2, 3, 6].includes(k)) rostos.push(rosto(0, q, { largura: 150, principal: true, olhos: i % 20 === 6 ? 'fechados' : 'abertos' }))
+      if ([0, 1, 2, 7].includes(k)) rostos.push(rosto(1, q, { principal: rostos.length === 0 }))
+      if (k === 8 && i < 40) rostos.push(rosto(2, q, { principal: true }))
+      if (i === 52) rostos.push(rosto(3, 0.86, { largura: 80 }))
+      mudancas.push({ id: f.id, rostos, analise: { ...f.analise, camadas: ['rostos'] } })
+    })
+    c.atualizarVarias(mudancas)
+    esteira.analise.refazerNota()
+    // o assinador falso: o "quem" sai do lugar da caixa; o vetor, de uma semente por pessoa e outra por rosto
+    const sorteio = (s) => () => {
+      s = (s + 0x6d2b79f5) >>> 0
+      let t = s
+      t = Math.imul(t ^ (t >>> 15), t | 1)
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+    const gauss = (r) => Math.sqrt(-2 * Math.log(r() || 1e-9)) * Math.cos(2 * Math.PI * r())
+    const unit = (v) => {
+      const n = Math.hypot(...v)
+      return v.map((x) => x / n)
+    }
+    const base = (k) => {
+      const r = sorteio(1000 + k)
+      return unit(Array.from({ length: 128 }, () => gauss(r)))
+    }
+    let n = 0
+    esteira.pessoas.usarAssinador({
+      async pedir(tipo, dados) {
+        if (tipo === 'preparar') return { ms: 0 }
+        return {
+          rostos: dados.rostos.map((x) => {
+            const k = Math.round((x.caixa.x - 60) / 230)
+            const b = base(k)
+            const r = sorteio(5000 + n++)
+            const ruido = unit(Array.from({ length: 128 }, () => gauss(r)))
+            const v = unit(b.map((y, j) => 0.7 * y + 0.71 * ruido[j]))
+            const m = Math.max(...v.map(Math.abs))
+            return { i: x.i, v: Int8Array.from(v, (y) => Math.round((y / m) * 127)), nota: 0.9 }
+          }),
+        }
+      },
+      cancelarTudo() {},
+    })
+    return fotos[52].id
+  })
+}
+
+const capturaDois = (pagina, nome) => pagina.screenshot({ path: join(TELAS, `decupar2-${nome}.png`) })
+
+/** Liga o agrupamento pela folha (aviso → consentimento → Agrupar) e espera as pessoas. */
+async function ligarPessoas(pagina, { capturar = null } = {}) {
+  await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
+  await pagina.locator('.dec-barra .menu-item', { hasText: 'Agrupar por pessoa' }).click()
+  await pagina.waitForSelector('dialog.folha-pessoas[open] .pessoas-aviso')
+  assert.equal(await pagina.locator('[data-acao="ligar-pessoas"]').isDisabled(), true, 'sem consentimento não liga')
+  if (capturar) {
+    await pagina.waitForTimeout(500)
+    await capturaDois(pagina, `folha-pessoas-${capturar}`)
+  }
+  await pagina.locator('.pessoas-consentimento input').check()
+  await pagina.locator('[data-acao="ligar-pessoas"]').click()
+  await pagina.waitForFunction(() => {
+    const e = self.__esteira.estado().pessoas
+    return e.ligado && e.situacao === 'pronto' && e.pessoas.length === 4
+  })
+}
+
+test('dúvidas, pessoas e calibração: a fila cai a zero, o agrupamento só com consentimento e some ao esquecer, a calibração muda o limite', { skip: semChromium, timeout: 900_000 }, async (t) => {
+  const { contexto, pagina, olho } = await abrir({ camadas: [] })
+  try {
+    await esperarAnalise(pagina)
+    const daTia = await comPessoasFabricadas(pagina)
+
+    // ───── modo Dúvidas: só o que está em dúvida, uma por vez, até zero ─────
+    const fila = await naPagina(pagina, (loja, esteira) => esteira.duvidas().map((d) => ({ id: d.id, motivos: d.motivos, sugestao: d.sugestao })))
+    assert.ok(fila.length >= 3, JSON.stringify(fila))
+    const naBarra = await numero(pagina, '.dec-modo .dec-modo-n')
+    assert.equal(naBarra, fila.length)
+    t.diagnostic(`dúvidas: ${fila.length} de ${QUANTAS} (${[...new Set(fila.flatMap((d) => d.motivos))].join(', ')})`)
+    await pagina.keyboard.press('q')
+    await pagina.waitForSelector('.duvidas .lupa .quadro-moldura img')
+    const faltam = () => numero(pagina, '.duvida-faltam b')
+    assert.equal(await faltam(), fila.length)
+    const primeira = await naPagina(pagina, (loja) => loja.catalogo.foco())
+    assert.equal(primeira, fila[0].id, 'a mais importante vem primeiro')
+    await pagina.waitForTimeout(700)
+    await capturaDois(pagina, 'duvidas-1440-claro')
+    // P: fica; X: fora; → pula (a contagem não cai); a contagem cai uma por resposta
+    await pagina.keyboard.press('p')
+    await pagina.waitForFunction((n) => Number(document.querySelector('.duvida-faltam b')?.textContent.replace(/\D/g, '')) === n, fila.length - 1)
+    assert.equal(await naPagina(pagina, (loja, esteira, id) => loja.catalogo.foto(id).marca, primeira), 'escolhida')
+    const segunda = await naPagina(pagina, (loja) => loja.catalogo.foco())
+    await pagina.keyboard.press('ArrowRight')
+    assert.notEqual(await naPagina(pagina, (loja) => loja.catalogo.foco()), segunda)
+    assert.equal(await faltam(), fila.length - 1)
+    await pagina.keyboard.press('x')
+    await pagina.waitForFunction((n) => Number(document.querySelector('.duvida-faltam b')?.textContent.replace(/\D/g, '')) === n, fila.length - 2)
+    for (let n = fila.length - 2; n > 0; n--) {
+      await pagina.locator('.duvida-respostas [data-resposta="fica"]').click()
+      if (n > 1) await pagina.waitForFunction((m) => Number(document.querySelector('.duvida-faltam b')?.textContent.replace(/\D/g, '')) === m, n - 1)
+    }
+    await pagina.waitForSelector('.duvidas-fim')
+    const marcadas = await naPagina(pagina, (loja, esteira, ids) => ids.map((id) => loja.catalogo.foto(id).marca), fila.map((d) => d.id))
+    assert.ok(marcadas.every(Boolean), 'toda dúvida respondida')
+    assert.equal(await naPagina(pagina, (loja, esteira) => esteira.duvidas().length), 0)
+    await pagina.waitForTimeout(500)
+    await capturaDois(pagina, 'duvidas-fim-1440-claro')
+    await pagina.keyboard.press('Escape')
+    await pagina.waitForSelector('.duvidas', { state: 'detached' })
+    await naPagina(pagina, (loja) => {
+      while (loja.catalogo.desfazer());
+      return true
+    })
+
+    // ───── agrupar por pessoa: o aviso, o consentimento, as pílulas, a cobertura e a meta ─────
+    assert.equal(await pagina.locator('.pilula--pessoa').count(), 0, 'desligado por padrão')
+    const antes = await naPagina(pagina, (loja, esteira, id) => loja.catalogo.foto(id).magnitude, daTia)
+    assert.equal(antes.balde, 'fora', `a foto da pessoa 3 devia cair em Fora: ${JSON.stringify(antes.motivos)}`)
+    await ligarPessoas(pagina, { capturar: '1440-claro' })
+    await pagina.waitForSelector('.pilula--pessoa')
+    assert.equal(await pagina.locator('.pilula--pessoa').count(), 4)
+    const pessoas = await naPagina(pagina, (loja, esteira) => esteira.estado().pessoas.pessoas.map((p) => ({ id: p.id, fotos: p.fotos.length, chave: p.chave })))
+    t.diagnostic(`pessoas: ${JSON.stringify(pessoas)}`)
+    assert.deepEqual(
+      pessoas.map((p) => p.fotos),
+      [60, 48, 4, 1],
+    )
+    // a única foto da pessoa 3 não vai para Fora sozinha
+    await pagina.waitForFunction((id) => self.__loja.catalogo.foto(id).magnitude.balde === 'talvez', daTia)
+    const depois = await naPagina(pagina, (loja, esteira, id) => loja.catalogo.foto(id).magnitude, daTia)
+    assert.equal(depois.motivos[0], 'A melhor foto que há desta pessoa')
+    assert.equal(depois.total, antes.total, 'a nota não muda')
+    assert.equal(await pagina.locator('.pilula--pessoa[data-sozinha]').count(), 1)
+    // a pílula filtra; o filtro não vai para o catálogo guardado
+    await pagina.locator('.pilula--pessoa').last().click()
+    assert.deepEqual(
+      await naPagina(pagina, (loja) => loja.catalogo.itens().map((i) => i.foto.id)),
+      [daTia],
+    )
+    const guardado = await naPagina(pagina, (loja) => JSON.stringify(loja.catalogo.serializar()))
+    assert.doesNotMatch(guardado, /pessoa:|idsDe|Int8Array/)
+    await pagina.waitForTimeout(600)
+    await capturaDois(pagina, 'pilulas-1440-claro')
+    await pagina.locator('.pilula--pessoa').last().click()
+    // a meta garante uma foto de cada pessoa-chave
+    await naPagina(pagina, (loja, esteira) => esteira.definirMeta(10))
+    await pagina.waitForFunction((id) => self.__loja.catalogo.foto(id).magnitude.balde === 'fica', daTia)
+    await naPagina(pagina, (loja, esteira) => esteira.definirMeta(null))
+    // a folha lista as pessoas com a cobertura; dá nome
+    await pagina.locator('.pilula[data-valor="pessoas"]').click()
+    await pagina.waitForSelector('dialog.folha-pessoas[open] .pessoas-lista')
+    assert.equal(await pagina.locator('.pessoa-linha').count(), 4)
+    assert.match(await pagina.locator('.pessoa-linha[data-sozinha] small').innerText(), /Uma foto só/)
+    await pagina.locator('.pessoa-linha[data-sozinha] .pessoa-nome').fill('Tia')
+    await pagina.locator('.pessoa-linha[data-sozinha] .pessoa-nome').press('Enter')
+    await pagina.waitForFunction(() => self.__esteira.estado().pessoas.pessoas.some((p) => p.nome === 'Tia'))
+    await pagina.waitForTimeout(400)
+    await capturaDois(pagina, 'folha-pessoas-lista-1440-claro')
+    // os vetores estão no IndexedDB do trabalho; "Esquecer rostos" apaga tudo
+    const trabalho = await naPagina(pagina, (loja) => loja.trabalho().id)
+    const contar = () => naPagina(pagina, async (loja, esteira, t) => (await import('/app/decupagem/pessoas.js')).deposito.contar(t), trabalho)
+    const guardados = await contar()
+    assert.equal(guardados.trabalho, 1)
+    assert.ok(guardados.rostos >= 60, JSON.stringify(guardados))
+    await pagina.locator('[data-acao="esquecer-rostos"]').click()
+    await pagina.waitForSelector('dialog.folha-pessoas[open]', { state: 'detached' }).catch(() => {})
+    await pagina.waitForFunction(() => !self.__esteira.estado().pessoas.ligado)
+    assert.deepEqual(await contar(), { trabalho: 0, rostos: 0 }, 'sumiu do IndexedDB')
+    assert.equal(await pagina.locator('.pilula--pessoa').count(), 0)
+    await pagina.waitForFunction((id) => self.__loja.catalogo.foto(id).magnitude.balde === 'fora', daTia)
+
+    // ───── calibração: perguntas perto do corte; aceitar as de foco mole deixa o ensaio mais tolerante ─────
+    await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
+    await pagina.locator('.dec-barra .menu-item', { hasText: 'Calibrar' }).click()
+    await pagina.waitForSelector('dialog.folha-calibrar[open] .calibrar')
+    const perguntas = await naPagina(pagina, (loja, esteira) => esteira.perguntas())
+    assert.ok(perguntas.length >= 3, JSON.stringify(perguntas))
+    await pagina.waitForSelector('dialog.folha-calibrar .calibrar-moldura img')
+    await pagina.waitForTimeout(500)
+    await capturaDois(pagina, 'calibrar-1440-claro')
+    for (const p of perguntas) {
+      if (p.tipo === 'serve') await pagina.locator('dialog.folha-calibrar .calibrar').press(p.dimensao === 'nitidez' ? 'p' : p.valor >= p.corte ? 'p' : 'x')
+      else await pagina.locator('dialog.folha-calibrar .calibrar').press('1')
+    }
+    await pagina.waitForSelector('dialog.folha-calibrar .calibrar-fim')
+    const est = await naPagina(pagina, (loja, esteira) => esteira.estado())
+    t.diagnostic(`calibração: ${perguntas.length} perguntas → ${JSON.stringify(est.limiares)} · ${est.calibrado.join(' ')}`)
+    if (perguntas.some((p) => p.tipo === 'serve' && p.dimensao === 'nitidez' && p.valor < p.corte)) {
+      assert.ok(est.limiares.nitidez < 0, JSON.stringify(est.limiares))
+      assert.ok(await naPagina(pagina, () => !!localStorage.getItem('foto_decupar_limiares')))
+    }
+    await pagina.waitForTimeout(400)
+    await capturaDois(pagina, 'calibrar-fim-1440-claro')
+    if (await pagina.locator('[data-acao="voltar-ao-padrao"]').count()) {
+      await pagina.locator('[data-acao="voltar-ao-padrao"]').click()
+      assert.equal(await naPagina(pagina, (loja, esteira) => esteira.estado().limiaresMexidos), false)
+    } else await pagina.locator('[data-acao="calibrado"]').click()
+    limpo(olho)
+  } finally {
+    await contexto.close()
+  }
+})
+
+test('dúvidas, pessoas e calibração em 1440 escuro e 390 claro e escuro: sem rolar de lado, alvos de 44 px', { skip: semChromium, timeout: 900_000 }, async () => {
+  for (const [tema, largura] of [
+    ['escuro', 1440],
+    ['claro', 390],
+    ['escuro', 390],
+  ]) {
+    const celular = largura === 390
+    const { contexto, pagina, olho } = await abrir({ tema, camadas: [], opcoes: celular ? CELULAR : {} })
+    const nome = (x) => `${x}-${largura}-${tema}`
+    try {
+      await esperarAnalise(pagina)
+      await comPessoasFabricadas(pagina)
+      // dúvidas (no celular, pelo menu ⋯)
+      if (celular) {
+        await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').tap()
+        await pagina.locator('.dec-barra .menu-item', { hasText: 'Ver as dúvidas' }).tap()
+      } else await pagina.keyboard.press('q')
+      await pagina.waitForSelector('.duvidas .lupa .quadro-moldura img')
+      await pagina.waitForTimeout(700)
+      if (celular) {
+        await semRolarDeLado(pagina, 'dúvidas')
+        assert.deepEqual(await alvosPequenos(pagina), [], 'dúvidas')
+      }
+      await capturaDois(pagina, nome('duvidas'))
+      await pagina.locator('.lupa-barra button[aria-label="Voltar à grade"]').click()
+      await pagina.waitForSelector('.duvidas', { state: 'detached' })
+      // a folha do aviso, as pílulas e a lista
+      await ligarPessoas(pagina, { capturar: `${largura}-${tema}` })
+      await pagina.waitForSelector('.pilula--pessoa')
+      await pagina.waitForTimeout(600)
+      if (celular) {
+        await semRolarDeLado(pagina, 'pílulas')
+        assert.deepEqual(await alvosPequenos(pagina), [], 'pílulas')
+      }
+      await capturaDois(pagina, nome('pilulas'))
+      await pagina.locator('.pilula[data-valor="pessoas"]').click()
+      await pagina.waitForSelector('dialog.folha-pessoas[open] .pessoas-lista')
+      await pagina.waitForTimeout(500)
+      await capturaDois(pagina, nome('folha-pessoas-lista'))
+      await pagina.locator('dialog.folha-pessoas .folha-pe .vidro--tinta').click()
+      // calibração
+      await pagina.locator('.dec-barra .menu > button[aria-label="Mais"]').click()
+      await pagina.locator('.dec-barra .menu-item', { hasText: 'Calibrar' }).click()
+      await pagina.waitForSelector('dialog.folha-calibrar .calibrar-moldura img')
+      await pagina.waitForTimeout(600)
+      if (celular) assert.deepEqual(await alvosPequenos(pagina), [], 'calibrar')
+      await capturaDois(pagina, nome('calibrar'))
+      limpo(olho)
+    } finally {
+      await contexto.close()
+    }
+  }
+})

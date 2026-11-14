@@ -99,6 +99,7 @@ export const MOTIVOS = Object.freeze({
   // cobertura
   unica: () => 'Única foto deste momento',
   unicaDoGrupo: () => 'A melhor que há deste momento',
+  unicaDaPessoa: () => 'A melhor foto que há desta pessoa',
 })
 
 /** Dicas: aparecem ao lado da nota e não mexem nela. */
@@ -191,4 +192,68 @@ export const ANALISE = Object.freeze({
   rawLido: () => 'Exposição conferida no RAW',
   rawNaoAbriu: () => 'O RAW não abriu: exposição vista só na prévia',
   tremido: (comprimento) => `Tremido de cerca de ${Math.round(comprimento)} px`,
+})
+
+/** A fila de dúvidas: por que cada foto está ali, numa linha, e a sugestão. */
+export const DUVIDAS = Object.freeze({
+  pessoaSozinha: () => 'A única foto boa de uma pessoa',
+  chaveFora: () => 'Pessoa em destaque, mas a nota manda para Fora',
+  unicaTalvez: () => 'Única foto do momento, em Talvez',
+  empate: (total) => `Empate entre ${total} da mesma cena`,
+  limite: () => 'Nota no limite entre dois baldes',
+  certeza: () => 'A análise não teve certeza',
+  sugestao: { fica: 'Sugestão: Fica', fora: 'Sugestão: Fora' },
+  faltam: (n) => (n === 1 ? 'Falta 1' : `Faltam ${n}`),
+  vazia: () => 'Nenhuma dúvida.',
+  resto: () => 'O resto segue a sugestão.',
+})
+
+/**
+ * Agrupar por pessoa (regra 5 de docs/ARQUITETURA.md). O aviso tem versão: muda o texto, muda a versão, e o
+ * consentimento guardado vale só para a versão que a pessoa leu.
+ */
+export const PESSOAS = Object.freeze({
+  versao: 1,
+  titulo: ['Agrupar', 'por pessoa.'],
+  aviso:
+    'Agrupar por pessoa cria uma assinatura do rosto de cada um, guardada só neste aparelho e apagada com o trabalho. ' +
+    'Ela nunca sai daqui: não vai para a conta, para a galeria, para a exportação nem para o XMP.',
+  pontos: ['Só neste aparelho', 'Some com o trabalho ou em "Esquecer rostos"', 'Nada vai para a galeria nem para o Lightroom'],
+  consentimento: 'Tenho o consentimento das pessoas fotografadas para isso.',
+  ligar: 'Agrupar',
+  esquecer: 'Esquecer rostos',
+  esquecidos: 'Rostos esquecidos neste aparelho.',
+  nome: (n) => `Pessoa ${n}`,
+  cobertura: (fotos, boas, protegida) =>
+    fotos === 1
+      ? 'Uma foto só. Não vai para Fora sozinha.'
+      : protegida
+        ? `${fotos} fotos, nenhuma boa. A melhor fica em Talvez.`
+        : `${fotos} fotos, ${boas} ${boas === 1 ? 'boa' : 'boas'}`,
+  andamento: (feitas, total) => `Rostos ${feitas} de ${total}`,
+  nenhuma: 'Nenhum rosto grande o bastante ainda.',
+  indisponivel: 'O leitor de rostos não abriu neste aparelho.',
+  semRostos: 'Ligue "Rostos e olhos" para agrupar por pessoa.',
+})
+
+/** A calibração: as perguntas, as respostas e o que mudou, em palavras. */
+export const CALIBRACAO = Object.freeze({
+  titulo: ['Calibrar', 'em 30 segundos.'],
+  serve: 'Esta serve?',
+  qual: 'Qual das duas?',
+  sim: 'Serve',
+  nao: 'Não serve',
+  dimensoes: { nitidez: 'Foco', olhos: 'Olhos', exposicao: 'Luz' },
+  poucas: 'Poucas fotos perto do limite neste ensaio. Volte quando a análise tiver andado mais.',
+  pronto: 'Pronto.',
+  aplicar: 'Usar',
+  padrao: 'Voltar ao padrão',
+  mudancas: {
+    nitidez: (d) => (d < 0 ? 'Você aceita foco um pouco mais suave.' : 'Você pede foco mais firme.'),
+    olhos: (d) => (d < 0 ? 'Olho semicerrado passa com você.' : 'Você é mais exigente com olho semicerrado.'),
+    exposicao: (k) => (k > 1 ? 'Você tolera mais luz estourada e sombra fechada.' : 'Você quer a luz mais contida.'),
+  },
+  contraditorio: (dimensao) => `${{ nitidez: 'Foco', olhos: 'Olhos', exposicao: 'Luz' }[dimensao]}: respostas diferentes para fotos parecidas, ficou como estava.`,
+  igual: 'Suas respostas batem com o padrão.',
+  limite: 'Chegou ao limite do ajuste.',
 })
