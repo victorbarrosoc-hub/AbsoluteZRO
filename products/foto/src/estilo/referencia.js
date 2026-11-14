@@ -1108,6 +1108,7 @@ export function extrairEstilo(referencias, opcoes = {}) {
   }
   const pbRef = ref.pb
   let modelo = criarModelo({ base: alvos[0].base, dados: todos }, juntos, tela, pbRef)
+  let rendersAnteriores = 0 // os dos modelos trocados pelo refino com a vizinhança
   let pxAlvo = modelo.pixels(modelo.revelar(neutro()))
 
   // ── mesma cena? (a referência é a própria foto da pessoa, tratada: dá para comparar pixel a pixel) ──
@@ -1117,13 +1118,15 @@ export function extrairEstilo(referencias, opcoes = {}) {
   // Clareza e neblina mexem no tom e na cor da foto inteira; ajustados depois do tom, o tom (sombras, curva, croma)
   // já teria engolido o efeito (medido: neblina 40 virava sombras −70 e neblina 0). Então: (1) a vizinhança é estimada
   // com o tom neutro (as medidas dela são razões de bandas e de regiões, que pouco ligam para o tom); (2) o tom é
-  // ajustado sobre o alvo JÁ com essa clareza e neblina; (3) a vizinhança é estimada de novo com o tom (abaixo).
+  // ajustado sobre o alvo JÁ com essa clareza e neblina (partida e grupos); (3) a vizinhança é estimada de novo com
+  // esse tom e, se mudou, o alvo do modelo é refeito com ela antes do refino conjunto do tom (abaixo).
   let locais = null
   if (temAlvo && opcoes.vizinhanca !== false) {
-    const primeira = estimarVizinhanca(conferidas, alvoConferido, neutro(), { pareado: !!pares, tela })
+    const primeira = estimarVizinhanca(conferidas, alvoConferido, neutro(), { pareado: !!pares, tela, soLargas: true })
     const largos = { clareza: primeira.presenca.clareza ?? 0, neblina: primeira.presenca.neblina ?? 0 }
     if (largos.clareza || largos.neblina) {
       const base = comVizinhanca(alvos[0].base, largos, tela)
+      rendersAnteriores += modelo.renders + 1
       modelo = criarModelo({ base, dados: base.imagem.dados }, juntos, tela, pbRef)
       pxAlvo = modelo.pixels(modelo.revelar(neutro()))
     }
@@ -1161,11 +1164,17 @@ export function extrairEstilo(referencias, opcoes = {}) {
     if (pares) residuosPareados(px, pares, saida)
     return saida
   }
-  const r0 = residuos(fAlvo, ref, pesos)
-  const antes = erroDe(r0)
-  const vetor0 = [...r0.tom, ...r0.neutro, ...r0.setor, ...r0.croma]
-  if (pares) residuosPareados(pxAlvo, pares, vetor0)
-  const custoNeutro = vetor0.reduce((s, x) => s + x * x, 0)
+  // o erro e o custo de não mexer (refeitos quando a vizinhança da 2ª volta troca o alvo do modelo)
+  let antes
+  let custoNeutro
+  const medirNeutro = () => {
+    const r0 = residuos(impressao(pxAlvo, false), ref, pesos)
+    antes = erroDe(r0)
+    const vetor0 = [...r0.tom, ...r0.neutro, ...r0.setor, ...r0.croma]
+    if (pares) residuosPareados(pxAlvo, pares, vetor0)
+    custoNeutro = vetor0.reduce((s, x) => s + x * x, 0)
+  }
+  medirNeutro()
   // penalidade: todos os controles em 100 custariam `R.penalidade` do erro inicial. Pareado, os dados decidem mais.
   const penalidade = Math.sqrt(((pares ? R.penalidade : R.penalidadeSemPar) * custoNeutro) / Math.max(1, params.length))
 
@@ -1181,6 +1190,21 @@ export function extrairEstilo(referencias, opcoes = {}) {
     ajustar(params, valores, vetorDe, { ...op, iteracoes: 3, grupos: ['cor'] })
     if (faixasAtivas.length) ajustar(params, valores, vetorDe, { ...op, iteracoes: 2, grupos: ['misturador'] })
   } else if (pbRef && pares) ajustar(params, valores, vetorDe, { ...op, iteracoes: 3, grupos: ['pb'] })
+  // ── refino conjunto com a vizinhança, 2ª volta: medida com o tom da partida; se a clareza ou a neblina mudaram, o
+  // modelo passa a usar o alvo com as novas, e o refino conjunto do tom (abaixo) corre sobre ele ──
+  if (locais) {
+    const segunda = estimarVizinhanca(conferidas, alvoConferido, normalizar(montar(params, valores)), { pareado: !!pares, tela })
+    const antigos = { clareza: locais.primeira.presenca.clareza ?? 0, neblina: locais.primeira.presenca.neblina ?? 0 }
+    const largos = { clareza: segunda.presenca.clareza ?? 0, neblina: segunda.presenca.neblina ?? 0 }
+    if (largos.clareza !== antigos.clareza || largos.neblina !== antigos.neblina) {
+      const base = comVizinhanca(alvos[0].base, largos, tela)
+      rendersAnteriores += modelo.renders + 1
+      modelo = criarModelo({ base, dados: base.imagem.dados }, juntos, tela, pbRef)
+      pxAlvo = modelo.pixels(modelo.revelar(neutro()))
+      medirNeutro()
+    }
+    locais = { ...segunda, renders: locais.primeira.renders + segunda.renders }
+  }
   // ── 3. refino conjunto ──
   ajustar(params, valores, vetorDe, { ...op, iteracoes: 3 })
 
@@ -1230,8 +1254,6 @@ export function extrairEstilo(referencias, opcoes = {}) {
   if (pares && opcoes.vizinhanca !== false) vizinhanca = ajustarVizinhanca(alvos[0], refs, ajustes, tela)
   if (vizinhanca) Object.assign(ajustes.efeitos, vizinhanca.efeitos)
   if (locais) {
-    // 2ª volta: com o tom já ajustado (é a revelação de verdade: tom e depois vizinhança, como o motor faz)
-    locais = estimarVizinhanca(conferidas, alvoConferido, ajustes, { pareado: !!pares, tela })
     Object.assign(ajustes.presenca, locais.presenca)
     Object.assign(ajustes.detalhe, locais.detalhe)
   }
@@ -1335,7 +1357,7 @@ export function extrairEstilo(referencias, opcoes = {}) {
     look,
     vizinhanca: vizinhanca || locais ? { ...(vizinhanca?.medidas ?? {}), controles: locais?.controles ?? null } : null,
     tempo: { total, porReferencia: total / refs.length },
-    renders: modelo.renders + (vizinhanca?.renders ?? 0) + (locais?.renders ?? 0),
+    renders: rendersAnteriores + modelo.renders + (vizinhanca?.renders ?? 0) + (locais?.renders ?? 0),
   }
 }
 

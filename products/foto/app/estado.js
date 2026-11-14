@@ -434,6 +434,13 @@ export function criarLoja() {
         publicar()
       }
       await guardar.apagarTrabalho(id)
+      // assinaturas de rosto do filtro por pessoa vão junto, na hora (regra 5: nada de rosto fica sem trabalho)
+      try {
+        const { deposito } = await import('./decupagem/pessoas.js')
+        await deposito.esquecer(id)
+      } catch {
+        // sem IndexedDB ou sem nada guardado: a faxina ao abrir o app apaga o que sobrar
+      }
     },
     renomear(nome) {
       const limpo = String(nome || '')

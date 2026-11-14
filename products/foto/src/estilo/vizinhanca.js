@@ -54,7 +54,7 @@ export const VIZINHANCA = {
   responde: 4, // a medida tem de andar mais que isto × o erro de medida de −50 a +50
   // erro de medida de cada medida: pareado (por recorte ou quadrante, o piso do que não é o controle) e sem par (o que
   // a medida varia de uma cena para outra parecida; calibrado nas cenas sintéticas, ver o teste)
-  erroPar: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01 },
+  erroPar: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01, nevoaL: 0.002, nevoaC: 0.01 },
   // erroCena: o desvio-padrão de cada medida entre cenas diferentes, todas no neutro: o quanto o conteúdo sozinho mexe
   // nela. É o maior entre dois tipos de cena sintética (test/apoio-estilo.js): paisagem de textura natural (cenaNatural,
   // seis sementes, 1024 e 2560 px) e manchas de uma mesma sessão (cenaDeSessao, seis sementes, 360 e 1024 px).
@@ -381,9 +381,7 @@ export function medidasLargas(lin, w, h, espaco, ar = null) {
   const clareza = Math.log(Math.max(1e-6, rmsPesado(medio, p)) / Math.max(1e-6, rmsPesado(largo, p)))
   // canal escuro relativo à luz do ar, medida como o motor mede
   const A = ar ?? luzDoAr({ largura: w, altura: h, dados: lin })
-  const escuro = new Float32Array(n)
-  for (let i = 0; i < n; i++) escuro[i] = Math.min(lin[i * 3] / A[0], lin[i * 3 + 1] / A[1], lin[i * 3 + 2] / A[2])
-  const dc = minimo(escuro, w, h, Math.max(1, Math.round(LOCAL.neblina.raio * lado)))
+  const dc = canalEscuro(lin, w, h, A)
   const p30 = percentil(dc, 0.3)
   const p70 = percentil(dc, 0.7)
   const ok = criarOklab(espaco)
@@ -411,6 +409,74 @@ export function medidasLargas(lin, w, h, espaco, ar = null) {
     escuro: somaDc / n,
     croma: Math.log(Math.max(1e-3, cAlto / Math.max(1, nAlto)) / Math.max(1e-3, cBaixo / Math.max(1, nBaixo))),
   }
+}
+
+/**
+ * A partição de um quadrante do alvo neutro para a neblina pareada: cada pixel vai para uma de 8 faixas de luz
+ * (quantis da luz Oklab) e, dentro da faixa, para "alto" (canal escuro acima da mediana da faixa) ou "baixo".
+ * Devolve { faixa: Int8Array, alto: Uint8Array }.
+ */
+export function particaoDaNevoa(lin, w, h, espaco, ar) {
+  const n = w * h
+  const ok = criarOklab(espaco)
+  const lab = [0, 0, 0]
+  const L = new Float32Array(n)
+  for (let i = 0; i < n; i++) L[i] = ok.paraOklab(Math.max(0, lin[i * 3]), Math.max(0, lin[i * 3 + 1]), Math.max(0, lin[i * 3 + 2]), lab)[0]
+  const dc = canalEscuro(lin, w, h, ar)
+  const cortes = Array.from({ length: 7 }, (_, k) => percentil(L, (k + 1) / 8))
+  const faixa = new Int8Array(n)
+  for (let i = 0; i < n; i++) {
+    let b = 0
+    while (b < 7 && L[i] > cortes[b]) b++
+    faixa[i] = b
+  }
+  const alto = new Uint8Array(n)
+  for (let b = 0; b < 8; b++) {
+    const dcs = []
+    for (let i = 0; i < n; i++) if (faixa[i] === b) dcs.push(dc[i])
+    const mediana = percentil(dcs, 0.5)
+    for (let i = 0; i < n; i++) if (faixa[i] === b && dc[i] > mediana) alto[i] = 1
+  }
+  return { faixa, alto }
+}
+
+/**
+ * A neblina pareada, que o tom não imita: numa mesma faixa de luz do alvo (a partição acima, fixa), a diferença entre
+ * os pixels de canal escuro alto (onde a névoa mora) e os de canal escuro baixo, na luz Oklab e no log do croma. Uma
+ * curva de tom, um contraste ou uma saturação levam pixels de mesma cor ao mesmo lugar: a diferença não muda. Tirar
+ * névoa age pelo canal escuro (He, Sun e Tang, 2011): escurece e satura os de canal alto mais que os outros.
+ */
+function medidasDaNevoaPar(lin, n, espaco, { faixa, alto }) {
+  const ok = criarOklab(espaco)
+  const lab = [0, 0, 0]
+  const s = new Float64Array(8 * 2 * 3) // por faixa e grupo: soma de L, soma de log C, contagem
+  for (let i = 0; i < n; i++) {
+    ok.paraOklab(Math.max(0, lin[i * 3]), Math.max(0, lin[i * 3 + 1]), Math.max(0, lin[i * 3 + 2]), lab)
+    const o = (faixa[i] * 2 + alto[i]) * 3
+    s[o] += lab[0]
+    s[o + 1] += Math.log(Math.hypot(lab[1], lab[2]) + 0.01)
+    s[o + 2]++
+  }
+  let dL = 0
+  let dC = 0
+  let peso = 0
+  for (let b = 0; b < 8; b++) {
+    const a = (b * 2 + 1) * 3
+    const z = b * 2 * 3
+    const p = Math.min(s[a + 2], s[z + 2])
+    if (p < 4) continue
+    dL += p * (s[a] / s[a + 2] - s[z] / s[z + 2])
+    dC += p * (s[a + 1] / s[a + 2] - s[z + 1] / s[z + 2])
+    peso += p
+  }
+  return { nevoaL: peso ? dL / peso : 0, nevoaC: peso ? dC / peso : 0 }
+}
+
+function canalEscuro(lin, w, h, A) {
+  const n = w * h
+  const escuro = new Float32Array(n)
+  for (let i = 0; i < n; i++) escuro[i] = Math.min(lin[i * 3] / A[0], lin[i * 3 + 1] / A[1], lin[i * 3 + 2] / A[2])
+  return minimo(escuro, w, h, Math.max(1, Math.round(LOCAL.neblina.raio * Math.max(w, h))))
 }
 
 // ─────────── onde medir ───────────
@@ -640,12 +706,13 @@ const media = (lista) => {
  *
  * `refs`: as referências como chegaram ({ largura, altura, dados de 8 ou 16 bits, canais, espaco }); `alvo`: a foto da
  * pessoa, idem; `ajustes`: os de ponto já extraídos (entram na revelação do alvo); `pareado`: a referência é a mesma
- * cena do alvo (então cada recorte e cada quadrante é comparado com o seu par, e a incerteza sai do que sobrou).
+ * cena do alvo (então cada recorte e cada quadrante é comparado com o seu par, e a incerteza sai do que sobrou);
+ * `soLargas`: só clareza e neblina (a 1ª volta do refino conjunto em referencia.js só precisa delas).
  *
  * Devolve { presenca: { textura?, clareza?, neblina? }, detalhe: { nitidez? }, controles: { [nome]: { valor,
  * incerteza, confianca, sai, razao } }, renders, tempo }.
  */
-export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela = 'srgb' } = {}) {
+export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela = 'srgb', soLargas = false } = {}) {
   const inicio = performance.now()
   let renders = 0
   const contar = () => renders++
@@ -658,24 +725,37 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   const rA = reduzido(alvo, V.ladoLargo)
   const linAlvo = recorteLinear(alvo, 0, 0, rA.w, rA.h, rA.k)
   const baseLarga = baseDeImagem({ largura: rA.w, altura: rA.h, dados: codigos16(linAlvo), canais: 3, espaco: alvo.espaco })
-  // pareado: os quatro quadrantes (cada um com o seu par); sem par: a foto inteira
+  // pareado: os quatro quadrantes (cada um com o seu par), com a neblina medida pela partição fixa do alvo neutro;
+  // sem par: a foto inteira
+  const QUADRANTES = [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ]
+  const hw = Math.floor(rA.w / 2)
+  const hh = Math.floor(rA.h / 2)
+  const quadrante = (lin, w, qx, qy) => {
+    const q = new Float32Array(hw * hh * 3)
+    for (let y = 0; y < hh; y++) q.set(lin.subarray(((qy * hh + y) * w + qx * hw) * 3, ((qy * hh + y) * w + qx * hw + hw) * 3), y * hw * 3)
+    return q
+  }
+  let particoes = null
+  if (pareado) {
+    const ar = luzDoAr({ largura: rA.w, altura: rA.h, dados: linAlvo })
+    particoes = QUADRANTES.map(([qx, qy]) => particaoDaNevoa(quadrante(linAlvo, rA.w, qx, qy), hw, hh, tela, ar))
+  }
   const largas = (lin, w, h) => {
     if (!pareado) return [medidasLargas(lin, w, h, tela)]
     const ar = luzDoAr({ largura: w, altura: h, dados: lin })
-    const hw = Math.floor(w / 2)
-    const hh = Math.floor(h / 2)
-    return [
-      [0, 0],
-      [1, 0],
-      [0, 1],
-      [1, 1],
-    ].map(([qx, qy]) => {
-      const q = new Float32Array(hw * hh * 3)
-      for (let y = 0; y < hh; y++) q.set(lin.subarray(((qy * hh + y) * w + qx * hw) * 3, ((qy * hh + y) * w + qx * hw + hw) * 3), y * hw * 3)
-      return medidasLargas(q, hw, hh, tela, ar)
+    return QUADRANTES.map(([qx, qy], k) => {
+      const q = quadrante(lin, w, qx, qy)
+      return { ...medidasLargas(q, hw, hh, tela, ar), ...medidasDaNevoaPar(q, hw * hh, tela, particoes[k]) }
     })
   }
+  // pareado, a referência vai para a grade do alvo reduzido (mesmos pixels)
   const largasRef = refs.map((img) => {
+    if (pareado) return largas(recorteLinear(img, 0, 0, rA.w, rA.h, img.largura / rA.w), rA.w, rA.h)
     const r = reduzido(img, V.ladoLargo)
     return largas(recorteLinear(img, 0, 0, r.w, r.h, r.k), r.w, r.h)
   })
@@ -690,7 +770,7 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   estimarBloco(
     [
       { nome: 'clareza', caminho: 'presenca.clareza', min: -100, max: 100, h: 8, medidas: ['clareza'] },
-      { nome: 'neblina', caminho: 'presenca.neblina', min: -50, max: 100, h: 8, medidas: ['escuro', 'croma'] },
+      { nome: 'neblina', caminho: 'presenca.neblina', min: -50, max: 100, h: 8, medidas: pareado ? ['nevoaL', 'nevoaC'] : ['escuro', 'croma'] },
     ],
     refLarga,
     (a) => {
@@ -710,6 +790,7 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   const rf = Math.round(LOCAL.textura.raio * M)
   const sigma = ajustes.detalhe.raio * escala
   const finos = []
+  if (soLargas) return { ...saida, controles, renders, tempo: performance.now() - inicio }
   if (rf >= 1) finos.push({ nome: 'textura', caminho: 'presenca.textura', min: -100, max: 100, h: 8, medidas: ['textura', 'halo'] })
   else controles.textura = { valor: 0, incerteza: null, confianca: 'baixa', sai: false, razao: 'foto pequena: o raio da textura é menor que um pixel' }
   if (sigma >= 0.25) finos.push({ nome: 'nitidez', caminho: 'detalhe.nitidez', min: 0, max: 150, h: 8, medidas: ['nitidez', 'halo'] })
