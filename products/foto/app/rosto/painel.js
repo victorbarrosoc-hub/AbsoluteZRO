@@ -365,7 +365,7 @@ function Detalhe({ loja, id, inicial, aoVoltar, aoMudar }) {
     <${Numeros} e=${e} />
     ${
       e.criancas &&
-      html`<p class="apoio rosto-criancas"><${Icone} nome="info" />Com crianças: só um responsável pede a busca. Tudo some em ${dia(e.prazo, 'long')}.</p>`
+      html`<p class="apoio rosto-criancas"><${Icone} nome="info" />Com crianças: só um responsável pede a busca. As assinaturas somem em ${dia(e.prazo, 'long')}.</p>`
     }
     ${
       e.estado === 'rascunho' &&

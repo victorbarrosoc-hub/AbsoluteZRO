@@ -402,17 +402,39 @@ src/rosto/assinatura.js  normalizar, cosseno, quantizar → Int8Array(128), veto
 src/rosto/decidir.js     LIMIARES, faixa(cossenos, rosto) → 'eu' | 'talvez' | null, procurar(sondas, rostos), ligar(pessoas, rostos), paraRemover
 src/rosto/qualidade.js   nitidez(recorte), pose(pontos), avaliarQuadro({ rostos, ladoDoQuadro, recorte }), DICAS
 src/rosto/quadros.js     criarCaptura() (de frente → girado → o outro lado), juntar(vetores) (3, ou os 2 que concordam ≥ 0,6)
-src/rosto/textos.js      TEXTOS (consentimento, aviso, cartaz, regulamento) com versão; o servidor grava versão e sha256
+src/rosto/textos.js      TEXTOS (consentimento, aviso, cartaz, regulamento; os de crianças) com versão; o servidor grava versão e sha256
+src/rosto/vida.js        VIDA, sortearPassos, andamento(passos, quadros), conferirVida (o celular e o servidor), paralaxe, sinaisDeTela
 app/rosto/motor.js       preparar(), rostosDaFoto(fonte 1616), quadro(fonte 320), girarEReduzir(bmp, orientação EXIF)
 app/rosto/worker.js      preparar | foto | quadro (o visitante e o fotógrafo); fotografo-worker.js: evento → rostos + prévias com marca
 app/rosto/preparo.js     api(), criarPreparo({ loja, evento, ids, marca }) (retomável), processarPedidos(evento), vetores locais no IndexedDB
 app/rosto/painel.js      PainelEvento({ loja, embutido }) — a terceira ação da Entregar; cartaz.js: cartazA4() (PNG com QR e aviso)
-evento/                  a página pública /e/<token> (sem nome nem ícone do produto): consentimento → câmera ao vivo → resultados
+evento/                  a página pública /e/<token> (sem nome nem ícone do produto): consentimento → câmera ao vivo → desafio → resultados
 ```
 
 Foto do evento: a maior JPEG do aparelho (embutida do RAW, girada pelo EXIF), 1616 px, nota ≥ 0,75, largura ≥ 20 px,
 colado = caixa que invade outra > 10%, perfil = guinada ≥ 0,3. Nada de caixa, imagem ou grupo sai do aparelho. Selfie:
 quadro de 320 px; sobem só 2 ou 3 vetores int8. Banco, rotas e limites em [`API.md`](API.md).
+
+**Busca em camadas** (num evento todo mundo sai pelo mesmo Wi-Fi): por aparelho (cookie `foto_ap` assinado, 5 buscas a
+cada 10 min), por rede (IP só como HMAC do dia, 900 a cada 10 min: um salão de 300 convidados) e por evento (3.000 por
+hora, contra varredura). E toda busca leva uma **prova de vida** de uso único, presa ao aparelho, ao link e aos vetores:
+
+- o servidor sorteia a ordem de "vire para a sua esquerda", "para a sua direita" e "chegue mais perto" (30 s); o celular
+  manda os 5 pontos do detector quadro a quadro (nunca pixel) e o servidor confere com `conferirVida`: ordem cumprida em
+  2 quadros seguidos cada, guinada ≥ 0,18 nos giros, rosto 1,25× maior no "perto", sem lacuna de 1,5 s nem salto;
+- planaridade: a homografia dos olhos e cantos da boca, do quadro de frente ao girado, prevê o nariz de um rosto chato;
+  paralaxe = distância ao nariz visto / distância entre os olhos. Cabeça ≥ 0,15 passa; < 0,12 é plano; entre os dois,
+  moiré (pico na alta frequência da bochecha) ou cintilação (o brilho piscando) barram, e só ali;
+- barra: foto impressa, foto ou vídeo parado numa tela, a foto virada ou inclinada (com o YuNet, o rosto chato girado até
+  70° não passou de 0,17 de guinada; a cabeça girando 15° dá 0,19), o envio de arquivo (não existe). **Não barra**:
+  vídeo de alguém girando a cabeça exibido numa tela, se quem ataca segue a ordem sorteada a tempo (a profundidade está
+  no vídeo); máscara 3D; câmera virtual; cliente modificado que fabrica pontos e vetores (o servidor não vê a câmera).
+  Esses ficam com os limites, a busca num evento só e a resposta sem nota. Não é antifraude (PAD ISO 30107-3).
+
+**Evento com crianças** (`db/migrations/0004`): só com consentimento (constraint, gatilho e porta), prazo de até 15 dias,
+aviso aos responsáveis para publicar, a caixa "sou responsável por quem aparece na selfie" obrigatória e destacada, e o
+cartaz e o regulamento falando com os responsáveis. Nada de estimar idade pelo rosto (não é confiável e seria outra
+biometria).
 
 ## Testes
 

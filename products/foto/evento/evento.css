@@ -1020,10 +1020,10 @@ noscript {
 }
 .seta--esquerda {
   left: max(14px, env(safe-area-inset-left));
+  --para: -8px;
 }
 .seta--direita {
   right: max(14px, env(safe-area-inset-right));
-  --para: -8px;
 }
 .seta--perto {
   left: 50%;

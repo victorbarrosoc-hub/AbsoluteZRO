@@ -12,7 +12,12 @@
 //   - com consentimento: o pedido guarda só os vetores de quem pediu; o fotógrafo lê, compara, sobe as ligações; a
 //     pessoa volta pela chave; reaproveita o pedido; desiste e tudo some;
 //   - "não quero aparecer": confere, apaga e barra foto nova parecida;
-//   - pedidos de foto; o modo errado é recusado; encerrar, apagar (cascata) e a limpeza do prazo.
+//   - pedidos de foto; o modo errado é recusado; encerrar, apagar (cascata) e a limpeza do prazo;
+//   - a busca em camadas: aparelho (cookie assinado), rede (IP) e evento (link); 300 aparelhos no mesmo IP passam, um
+//     aparelho repetindo é barrado, trocar de cookie sem prova não ajuda; a prova de vida é de uso único, presa ao
+//     aparelho, ao link e aos vetores, e nada dela grava vetor;
+//   - evento com crianças (0004): só com consentimento (constraint, gatilho e porta), prazo até 15 dias, aviso e texto
+//     próprios para os responsáveis.
 
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -28,6 +33,7 @@ import { NOME } from '../app/nome.js'
 import { normalizar, quantizar, vetorParaTexto } from '../src/rosto/assinatura.js'
 import { procurar } from '../src/rosto/decidir.js'
 import { TEXTOS } from '../src/rosto/textos.js'
+import { quadrosDoDesafio } from './apoio-cabeca.js'
 
 const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const EXIGIR = process.env.FOTO_EXIGIR === '1'
@@ -54,7 +60,7 @@ const NOVAS = [
 ]
 const NEUTRA = readFileSync(join(RAIZ, 'app/indisponivel.html'))
 
-let pg, urlFoto, dono, banco, z, link, evento, rotaEventos, rotaVisitante, rotaPagina, pasta
+let pg, urlFoto, dono, banco, z, link, evento, rotaEventos, rotaVisitante, rotaPagina, pasta, APARELHO
 
 // ───────── um Postgres que guarda o log (o vetor da busca não pode aparecer nele) ─────────
 
@@ -171,9 +177,10 @@ async function fotografo(metodo, caminho = '', { pessoa = LIA, corpo, bytes } = 
   await rotaEventos({ method: metodo, url: `/api/foto/eventos?${q}`, headers, body: bytes ?? corpo ?? (metodo === 'GET' ? undefined : {}) }, s)
   return s
 }
-async function visitante(acao, corpo, { ip = IP, cookie = '' } = {}) {
+/** Um pedido do visitante. Por padrão do mesmo aparelho (o cookie `foto_ap` que a página dá); `aparelho: null` = sem. */
+async function visitante(acao, corpo, { ip = IP, cookie = '', aparelho = APARELHO } = {}) {
   const s = resposta()
-  const headers = { host: SITE, 'x-forwarded-proto': 'https', 'x-real-ip': ip, cookie, origin: `https://${SITE}` }
+  const headers = { host: SITE, 'x-forwarded-proto': 'https', 'x-real-ip': ip, cookie: [aparelho, cookie].filter(Boolean).join('; '), origin: `https://${SITE}` }
   await rotaVisitante({ method: 'POST', url: `/api/link/evento?acao=${acao}`, headers, body: corpo }, s)
   return s
 }
@@ -191,6 +198,30 @@ async function pagina(token, consulta = '') {
   return s
 }
 const tokenDe = (endereco) => endereco.split('/e/')[1]
+/** Um aparelho novo: o cookie que a página daria. */
+const novoAparelho = () => `foto_ap=${evento.novoAparelho()}`
+
+/**
+ * A prova de vida como o celular faz: pede o desafio, "cumpre" (os 5 pontos de uma cabeça 3D sintética seguindo a ordem
+ * sorteada, test/apoio-cabeca.js, com o tempo encolhido) e manda os pontos. Isto é exatamente o que um cliente
+ * modificado faria: o servidor não vê a câmera (limite documentado em src/rosto/vida.js). { prova } ou { erro: resposta }.
+ */
+async function provaPara(token, vetores, para, opcoes = {}) {
+  const d = await visitante('desafio', { token }, opcoes)
+  if (d.statusCode !== 200) return { erro: d }
+  const quadros = quadrosDoDesafio(d.corpo.desafio.passos, { escala: 0.2, fps: 40, inicio: 0 })
+  const p = await visitante('prova', { token, desafio: d.corpo.desafio, quadros, vetores, para }, opcoes)
+  return p.statusCode === 200 ? { prova: p.corpo.prova } : { erro: p }
+}
+/** Uma busca (achar, cadastrar, remover) com a prova feita na hora, do mesmo aparelho. A resposta leva `.prova`. */
+async function buscar(acao, corpo, opcoes = {}) {
+  const para = acao === 'achar' ? 'busca' : acao === 'cadastrar' ? 'cadastro' : 'remocao'
+  const pr = await provaPara(corpo.token, corpo.vetores, para, opcoes)
+  if (pr.erro) return pr.erro
+  const s = await visitante(acao, { ...corpo, prova: pr.prova }, opcoes)
+  s.prova = pr.prova
+  return s
+}
 const provaDe = (s) => String(s.headers['set-cookie']?.[0] ?? '').split(';')[0]
 
 /**
@@ -264,6 +295,7 @@ before(async () => {
   rotaEventos = (await import('../api/foto/eventos.js')).default
   rotaVisitante = (await import('../api/link/evento.js')).default
   rotaPagina = (await import('../api/evento.js')).default
+  APARELHO = novoAparelho()
 })
 after(async () => {
   await dono?.end({ timeout: 5 })
@@ -338,10 +370,10 @@ test('isolamento: cada tabela nova, por pessoa e por organização', { skip: pul
   const a = await eventoPronto({ rostos: (i) => [{ v: aoCosseno(base, 0.8) }, { v: r.vetor(), largura: 30 }].slice(0, 1 + (i % 2)) })
   const c = await eventoPronto({ modo: 'consentimento' })
   // o visitante gera pessoa, ligação, remoção, consentimento, pedido e contagem
-  await visitante('achar', { token: a.token, vetores: [texto(aoCosseno(base, 0.9))], versao: TEXTOS.busca.versao })
-  await visitante('remover', { token: a.token, vetores: [texto(r.vetor())], fotos: [a.fotos[3]], versao: TEXTOS.remocao.versao })
+  await buscar('achar', { token: a.token, vetores: [texto(aoCosseno(base, 0.9))], versao: TEXTOS.busca.versao })
+  await buscar('remover', { token: a.token, vetores: [texto(r.vetor())], fotos: [a.fotos[3]], versao: TEXTOS.remocao.versao })
   const k = link.novoToken()
-  const cad = await visitante('cadastrar', { token: c.token, vetores: [texto(base)], chave: k, versao: TEXTOS.cadastro.versao })
+  const cad = await buscar('cadastrar', { token: c.token, vetores: [texto(base)], chave: k, versao: TEXTOS.cadastro.versao })
   assert.equal(cad.statusCode, 200, JSON.stringify(cad.corpo))
   const pes = await fotografo('GET', `${c.id}/pessoas`)
   assert.equal(
@@ -444,6 +476,8 @@ test('porta estreita: link morto de qualquer tipo dá a mesma resposta em toda a
     ['remover', { vetores: v, versao: TEXTOS.remocao.versao }],
     ['pedir', { nome: 'Ana', contato: 'ana@x.com', fotos: [vivo.fotos[0]] }],
     ['recusar', { tipo: 'busca', versao: TEXTOS.busca.versao }],
+    ['desafio', {}],
+    ['prova', { desafio: { id: 'A'.repeat(16), passos: ['esquerda', 'direita', 'perto'], em: Date.now(), selo: 'x' }, quadros: [], vetores: v, para: 'busca' }],
   ]
   for (const t of mortos) {
     for (const [acao, corpo] of acoes) {
@@ -462,7 +496,7 @@ test('porta estreita: link morto de qualquer tipo dá a mesma resposta em toda a
   await semLimites()
   const ab = await visitante('abrir', { token: vivo.token, contar: true })
   assert.equal(ab.statusCode, 200)
-  assert.deepEqual(Object.keys(ab.corpo.evento).sort(), ['data', 'fotos', 'marcaDagua', 'modo', 'nome', 'prazo'])
+  assert.deepEqual(Object.keys(ab.corpo.evento).sort(), ['criancas', 'data', 'fotos', 'marcaDagua', 'modo', 'nome', 'prazo'])
   const html = await pagina(vivo.token)
   assert.equal(html.statusCode, 200)
   assert.ok(!html.bruto.toString().includes(NOME))
@@ -491,7 +525,8 @@ test('porta estreita: link morto de qualquer tipo dá a mesma resposta em toda a
   const comPin = await eventoPronto({ pin: '4821', rostos: () => [{ v: r.vetor() }] })
   await semLimites()
   assert.deepEqual((await visitante('abrir', { token: comPin.token })).corpo, { ok: true, estado: 'pin' })
-  assert.equal((await visitante('achar', { token: comPin.token, vetores: v, versao: TEXTOS.busca.versao })).statusCode, 401)
+  assert.equal((await buscar('achar', { token: comPin.token, vetores: v, versao: TEXTOS.busca.versao })).statusCode, 401)
+  assert.equal((await visitante('desafio', { token: comPin.token })).statusCode, 401, 'sem PIN, sem desafio')
   assert.equal((await imagem(comPin.token, comPin.fotos[0])).statusCode, 404)
   assert.equal((await visitante('pin', { token: comPin.token, pin: '0000' })).statusCode, 401)
   const certo = await visitante('pin', { token: comPin.token, pin: '4821' })
@@ -499,7 +534,7 @@ test('porta estreita: link morto de qualquer tipo dá a mesma resposta em toda a
   const cookie = provaDe(certo)
   assert.match(cookie, /^foto_epin_/)
   assert.equal((await visitante('abrir', { token: comPin.token }, { cookie })).corpo.estado, 'ok')
-  assert.equal((await visitante('achar', { token: comPin.token, vetores: v, versao: TEXTOS.busca.versao }, { cookie })).statusCode, 200)
+  assert.equal((await buscar('achar', { token: comPin.token, vetores: v, versao: TEXTOS.busca.versao }, { cookie })).statusCode, 200)
   // trocar o PIN derruba a prova
   assert.equal((await fotografo('PATCH', `${comPin.id}/link`, { corpo: { pin: '9999' } })).statusCode, 200)
   assert.deepEqual((await visitante('abrir', { token: comPin.token }, { cookie })).corpo, { ok: true, estado: 'pin' })
@@ -527,7 +562,7 @@ test('busca aberta: as faixas batem com src/rosto/decidir.js; o vetor da busca n
   for (const k of Object.keys(antigo)) console[k] = (...a) => consolelog.push(a.map(String).join(' '))
   let s
   try {
-    s = await visitante('achar', { token: e.token, vetores: sondas.map(texto), versao: TEXTOS.busca.versao })
+    s = await buscar('achar', { token: e.token, vetores: sondas.map(texto), versao: TEXTOS.busca.versao })
     // e um erro no meio do caminho (vetor ruim chega ao banco pela função): nada vaza
     await link.comoLink((tx) => tx`select foto.evento_achar(${link.hashToken(e.token)}, true, ${[`\\x${'00'.repeat(127)}`]}::bytea[], 'x', 'y') as r`)
     await link.comoLink((tx) => tx`select foto.evento_achar(${link.hashToken(e.token)}, true, ${['\\xzz']}::bytea[], 'x', 'y')`).catch(() => {})
@@ -572,22 +607,182 @@ test('busca aberta: as faixas batem com src/rosto/decidir.js; o vetor da busca n
   assert.deepEqual(Object.keys(reg).sort(), ['criado_em', 'evento', 'id', 'resultado', 'sha256_texto', 'tipo', 'versao'])
   assert.equal(await contar('evento_buscas', `evento = '${e.id}' and buscas = 1`), 1)
   // vetor mal-formado, versão de texto errada, modo errado
-  assert.equal((await visitante('achar', { token: e.token, vetores: ['A'.repeat(172)], versao: TEXTOS.busca.versao })).corpo.erro, 'vetor')
-  assert.equal((await visitante('achar', { token: e.token, vetores: [texto(pessoa)], versao: 'busca-1999' })).corpo.erro, 'formato')
-  assert.equal((await visitante('achar', { token: e.token, vetores: Array(4).fill(texto(pessoa)), versao: TEXTOS.busca.versao })).corpo.erro, 'vetor')
+  assert.equal((await buscar('achar', { token: e.token, vetores: ['A'.repeat(172)], versao: TEXTOS.busca.versao })).corpo.erro, 'vetor')
+  assert.equal((await buscar('achar', { token: e.token, vetores: [texto(pessoa)], versao: 'busca-1999' })).corpo.erro, 'formato')
+  assert.equal((await buscar('achar', { token: e.token, vetores: Array(4).fill(texto(pessoa)), versao: TEXTOS.busca.versao })).corpo.erro, 'vetor')
   assert.equal(
-    (await visitante('cadastrar', { token: e.token, vetores: [texto(pessoa)], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })).statusCode,
+    (await buscar('cadastrar', { token: e.token, vetores: [texto(pessoa)], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })).statusCode,
     409,
   )
-  // limite: 5 buscas em 10 minutos por link e IP (as anteriores já contaram); outro IP segue
-  await semLimites()
-  for (let i = 0; i < 5; i++)
-    assert.equal((await visitante('achar', { token: e.token, vetores: [texto(pessoa)], versao: TEXTOS.busca.versao })).statusCode, 200)
-  assert.equal((await visitante('achar', { token: e.token, vetores: [texto(pessoa)], versao: TEXTOS.busca.versao })).statusCode, 429)
-  assert.equal((await visitante('achar', { token: e.token, vetores: [texto(pessoa)], versao: TEXTOS.busca.versao }, { ip: '198.51.100.40' })).statusCode, 200)
   // o IP não vai para o banco: só o HMAC do dia
   const chaves = (await dono`select string_agg(chave, ' ') as s from foto.limites`)[0].s
   assert.ok(!chaves.includes(IP))
+})
+
+test('busca em camadas: 300 aparelhos no mesmo IP passam; um aparelho repetindo é barrado; cookie novo sem prova não ajuda', { skip: pular, timeout: 300_000 }, async () => {
+  await semLimites()
+  const pessoa = r.vetor()
+  const e = await eventoPronto({ n: 4, rostos: (i) => [{ v: i < 2 ? aoCosseno(pessoa, 0.8) : r.vetor() }] })
+  const sonda = [texto(aoCosseno(pessoa, 0.85))]
+  const corpo = { token: e.token, vetores: sonda, versao: TEXTOS.busca.versao }
+  // um salão: 300 convidados, cada um com o seu aparelho, todos pelo mesmo IP (o Wi-Fi do evento), abrindo a página,
+  // fazendo a prova e buscando
+  const t0 = Date.now()
+  for (let i = 0; i < 300; i++) {
+    const aparelho = novoAparelho()
+    assert.equal((await visitante('abrir', { token: e.token, contar: true }, { aparelho })).statusCode, 200)
+    const s = await buscar('achar', corpo, { aparelho })
+    assert.equal(s.statusCode, 200, `convidado ${i}: ${JSON.stringify(s.corpo)}`)
+    assert.equal(s.corpo.eu.length, 2)
+  }
+  console.log(`# medida: 300 convidados no mesmo IP (abrir, desafio, prova, busca) em ${Date.now() - t0} ms`)
+  // um aparelho repetindo: 5 em 10 minutos, a 6ª é barrada com o escopo do aparelho
+  const teimoso = novoAparelho()
+  for (let i = 0; i < 5; i++) assert.equal((await buscar('achar', corpo, { aparelho: teimoso })).statusCode, 200, `busca ${i + 1}`)
+  const sexta = await buscar('achar', corpo, { aparelho: teimoso })
+  assert.equal(sexta.statusCode, 429)
+  assert.deepEqual(sexta.corpo, { ok: false, erro: 'limite', escopo: 'aparelho' })
+  // trocar o cookie: sem prova, nada; a prova do aparelho anterior não vale para o novo
+  const prova = (await provaPara(e.token, sonda, 'busca', { aparelho: novoAparelho() })).prova
+  assert.ok(prova)
+  for (const outro of [null, novoAparelho(), 'foto_ap=AAAAAAAAAAAAAAAAAAAAAA.forjado']) {
+    const s = await visitante('achar', { ...corpo, prova }, { aparelho: outro })
+    assert.equal(s.statusCode, 403, String(outro))
+    assert.equal(s.corpo.erro, 'prova')
+  }
+  const semProva = await visitante('achar', corpo, { aparelho: novoAparelho() })
+  assert.deepEqual([semProva.statusCode, semProva.corpo.erro], [403, 'prova'])
+  // a prova é de uso único, dos vetores daquela captura e do link dela
+  const dono_ = novoAparelho()
+  const p1 = (await provaPara(e.token, sonda, 'busca', { aparelho: dono_ })).prova
+  assert.equal((await visitante('achar', { ...corpo, vetores: [texto(r.vetor())], prova: p1 }, { aparelho: dono_ })).corpo.erro, 'prova', 'outros vetores')
+  assert.equal((await visitante('cadastrar', { ...corpo, chave: link.novoToken(), versao: TEXTOS.cadastro.versao, prova: p1 }, { aparelho: dono_ })).corpo.erro, 'prova', 'outro uso')
+  const usa = await visitante('achar', { ...corpo, prova: p1 }, { aparelho: dono_ })
+  assert.equal(usa.statusCode, 200)
+  assert.equal((await visitante('achar', { ...corpo, prova: p1 }, { aparelho: dono_ })).corpo.erro, 'prova', 'de novo')
+  const outroEvento = await eventoPronto({ n: 1, rostos: () => [{ v: r.vetor() }] })
+  assert.equal((await visitante('achar', { ...corpo, token: outroEvento.token, prova: p1 }, { aparelho: dono_ })).corpo.erro, 'prova', 'outro link')
+  // "lembrar neste aparelho": a captura de antes vale de novo, só neste aparelho e com os mesmos vetores
+  assert.match(usa.corpo.lembranca, /^\d+\.[A-Za-z0-9_-]{32}$/)
+  assert.equal((await visitante('achar', { ...corpo, lembranca: usa.corpo.lembranca }, { aparelho: dono_ })).statusCode, 200)
+  assert.equal((await visitante('achar', { ...corpo, lembranca: usa.corpo.lembranca }, { aparelho: novoAparelho() })).corpo.erro, 'prova')
+  assert.equal((await visitante('achar', { ...corpo, vetores: [texto(r.vetor())], lembranca: usa.corpo.lembranca }, { aparelho: dono_ })).corpo.erro, 'prova')
+  // o desafio vale uma prova só, e só dentro do prazo
+  const d = await visitante('desafio', { token: e.token }, { aparelho: dono_ })
+  const quadros = quadrosDoDesafio(d.corpo.desafio.passos, { escala: 0.2, fps: 40, inicio: 0 })
+  const pedido = { token: e.token, desafio: d.corpo.desafio, quadros, vetores: sonda, para: 'busca' }
+  assert.equal((await visitante('prova', pedido, { aparelho: dono_ })).statusCode, 200)
+  assert.equal((await visitante('prova', pedido, { aparelho: dono_ })).corpo.erro, 'prova', 'o mesmo desafio de novo')
+  const d2 = await visitante('desafio', { token: e.token }, { aparelho: dono_ })
+  assert.equal((await visitante('prova', { ...pedido, desafio: d2.corpo.desafio }, { aparelho: novoAparelho() })).corpo.erro, 'desafio', 'de outro aparelho')
+  const forjado = { ...d2.corpo.desafio, passos: ['perto', 'esquerda', 'direita'].filter((x) => x) }
+  if (forjado.passos.join() !== d2.corpo.desafio.passos.join())
+    assert.equal((await visitante('prova', { ...pedido, desafio: forjado }, { aparelho: dono_ })).corpo.erro, 'desafio', 'ordem trocada')
+  const velho = { ...d2.corpo.desafio, em: d2.corpo.desafio.em - 60000 }
+  assert.equal((await visitante('prova', { ...pedido, desafio: velho }, { aparelho: dono_ })).corpo.erro, 'desafio', 'hora mexida')
+  // a prova que não passa: a foto (o mesmo rosto num plano) não cumpre o desafio
+  const plano = quadrosDoDesafio(d2.corpo.desafio.passos, { escala: 0.2, fps: 40, inicio: 0, plano: true })
+  const naoPassa = await visitante('prova', { ...pedido, desafio: d2.corpo.desafio, quadros: plano }, { aparelho: dono_ })
+  assert.deepEqual([naoPassa.statusCode, naoPassa.corpo.erro, naoPassa.corpo.motivo], [422, 'vida', 'passos'])
+  // o desafio da página nova emite o cookie do aparelho (HttpOnly, assinado)
+  const sem = await visitante('desafio', { token: e.token }, { aparelho: null })
+  assert.equal(sem.statusCode, 200)
+  assert.match(String(sem.headers['set-cookie']?.[0]), /^foto_ap=[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{32}; Path=\/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax$/)
+  const pag = await pagina(e.token)
+  assert.match(String(pag.headers['set-cookie']?.[0]), /^foto_ap=/)
+
+  // a rede e o evento: os tetos dizem o escopo (os números de produção são altos; aqui baixam para conferir)
+  const antes = { ip: evento.REGRAS_EVENTO.buscaIp.max, link: evento.REGRAS_EVENTO.busca.max }
+  try {
+    await semLimites()
+    evento.REGRAS_EVENTO.buscaIp.max = 2
+    for (let i = 0; i < 2; i++) assert.equal((await buscar('achar', corpo, { aparelho: novoAparelho() })).statusCode, 200)
+    const rede = await buscar('achar', corpo, { aparelho: novoAparelho() })
+    assert.deepEqual([rede.statusCode, rede.corpo.escopo], [429, 'rede'])
+    assert.equal((await buscar('achar', corpo, { aparelho: novoAparelho(), ip: '198.51.100.40' })).statusCode, 200, 'outra rede segue')
+    evento.REGRAS_EVENTO.buscaIp.max = antes.ip
+    evento.REGRAS_EVENTO.busca.max = 3
+    const lim = await buscar('achar', corpo, { aparelho: novoAparelho(), ip: '198.51.100.41' })
+    assert.deepEqual([lim.statusCode, lim.corpo.escopo], [429, 'evento'], 'o teto do link vale para todas as redes')
+  } finally {
+    evento.REGRAS_EVENTO.buscaIp.max = antes.ip
+    evento.REGRAS_EVENTO.busca.max = antes.link
+  }
+  // nada disso grava vetor: nem em foto.limites (só HMAC do aparelho e do IP), nem em tabela nenhuma
+  const hex = Buffer.from(Buffer.from(sonda[0], 'base64')).toString('hex')
+  const tabelas = await dono`select tablename from pg_tables where schemaname = 'foto'`
+  for (const { tablename } of tabelas) {
+    const tudo = (await dono.unsafe(`select coalesce(string_agg(t::text, ' '), '') as s from foto.${tablename} t`))[0].s
+    assert.ok(!tudo.includes(hex) && !tudo.includes(sonda[0].slice(0, 40)), `sonda em foto.${tablename}`)
+  }
+  const chaves = (await dono`select string_agg(chave, ' ') as s from foto.limites`)[0].s
+  assert.ok(!chaves.includes(IP))
+  assert.ok(!chaves.includes(dono_.split('=')[1].split('.')[0]), 'o id do aparelho não vai para o banco')
+  assert.ok(!pg.log().includes(hex.slice(0, 64)))
+})
+
+test('evento com crianças: só com consentimento (constraint, gatilho e porta), prazo até 15 dias, textos dos responsáveis', { skip: pular }, async () => {
+  await semLimites()
+  // criar: modo vira consentimento; pedir busca aberta junto é erro; prazo padrão 7 e no máximo 15
+  const c = await fotografo('POST', '', { corpo: { nome: 'Festa da escola', criancas: true, aviso: TEXTOS.ativacaoCriancas.versao } })
+  assert.equal(c.statusCode, 201, JSON.stringify(c.corpo))
+  assert.deepEqual([c.corpo.evento.modo, c.corpo.evento.criancas], ['consentimento', true])
+  const dias = (iso) => Math.round((new Date(iso).getTime() - Date.now()) / 86400000)
+  assert.equal(dias(c.corpo.evento.prazo), 7)
+  assert.deepEqual((await fotografo('POST', '', { corpo: { nome: 'X', criancas: true, modo: 'aberta' } })).corpo, { ok: false, erro: 'campo', campo: 'modo' })
+  assert.equal((await fotografo('POST', '', { corpo: { nome: 'X', criancas: true, prazoDias: 20 } })).statusCode, 400)
+  assert.equal((await fotografo('POST', '', { corpo: { nome: 'X', criancas: true, prazoDias: 15 } })).statusCode, 201)
+  const id = c.corpo.evento.id
+  assert.equal((await fotografo('PATCH', id, { corpo: { modo: 'aberta' } })).corpo.erro, 'criancas', 'o gatilho recusa')
+  assert.equal((await fotografo('PATCH', id, { corpo: { prazoDias: 16 } })).statusCode, 400)
+  // a constraint segura mesmo sem o gatilho (o dono do schema, com o gatilho desligado)
+  const [def] = await dono`select pg_get_constraintdef(oid) as d from pg_constraint where conname = 'eventos_criancas'`
+  assert.match(def.d, /NOT criancas\) OR \(modo = 'consentimento'/)
+  await dono.begin(async (tx) => {
+    await tx`alter table foto.eventos disable trigger eventos_criancas`
+    await assert.rejects(
+      tx.savepoint((sp) => sp`update foto.eventos set modo = 'aberta' where id = ${id}`),
+      /eventos_criancas/,
+    )
+    await tx`alter table foto.eventos enable trigger eventos_criancas`
+  })
+  // ligar a marca num evento de 30 dias encurta o prazo para 15
+  const longo = await fotografo('POST', '', { corpo: { nome: 'Y', prazoDias: 30 } })
+  const ligado = await fotografo('PATCH', longo.corpo.evento.id, { corpo: { criancas: true } })
+  assert.equal(ligado.statusCode, 200, JSON.stringify(ligado.corpo))
+  assert.equal(dias(ligado.corpo.evento.prazo), 15)
+  assert.equal((await fotografo('PATCH', longo.corpo.evento.id, { corpo: { criancas: true, modo: 'aberta' } })).statusCode, 400)
+
+  // publicar pede o aviso dos responsáveis
+  const e = await eventoPronto({ modo: 'consentimento', n: 2, publicar: false })
+  assert.equal((await fotografo('PATCH', e.id, { corpo: { criancas: true } })).statusCode, 200)
+  assert.equal((await fotografo('POST', `${e.id}/publicar`)).corpo.erro, 'sem_aviso')
+  await dono`update foto.eventos set aviso_versao = ${TEXTOS.ativacaoConsentimento.versao}, aviso_sha256 = ${'a'.repeat(64)} where id = ${e.id}`
+  await assert.rejects(dono`update foto.eventos set estado = 'publicado' where id = ${e.id}`, /evento:sem_aviso/, 'o banco também pede o aviso')
+  assert.equal((await fotografo('PATCH', e.id, { corpo: { aviso: TEXTOS.ativacaoCriancas.versao } })).statusCode, 200)
+  const pub = await fotografo('POST', `${e.id}/publicar`)
+  assert.equal(pub.statusCode, 201, JSON.stringify(pub.corpo))
+  assert.equal(pub.corpo.evento.criancas, true)
+  const token = tokenDe(pub.corpo.endereco)
+  assert.equal((await fotografo('PATCH', e.id, { corpo: { criancas: false } })).corpo.erro, 'criancas', 'desligar só no rascunho')
+  // a porta: a ficha leva a marca; o texto comum é recusado; o dos responsáveis entra; busca aberta e remoção, não
+  assert.equal((await visitante('abrir', { token })).corpo.evento.criancas, true)
+  const v = [texto(r.vetor())]
+  const comum = await buscar('cadastrar', { token, vetores: v, chave: link.novoToken(), versao: TEXTOS.cadastro.versao })
+  assert.deepEqual([comum.statusCode, comum.corpo.erro], [400, 'formato'])
+  const certo = await buscar('cadastrar', { token, vetores: v, chave: link.novoToken(), versao: TEXTOS.cadastroCriancas.versao })
+  assert.equal(certo.statusCode, 200, JSON.stringify(certo.corpo))
+  const [reg] = await dono`select versao, sha256_texto from foto.evento_consentimentos where evento = ${e.id} and tipo = 'cadastro'`
+  assert.equal(reg.versao, TEXTOS.cadastroCriancas.versao)
+  assert.equal(reg.sha256_texto, evento.textoAceito(TEXTOS.cadastroCriancas.versao, 'cadastroCriancas').sha)
+  assert.equal((await buscar('achar', { token, vetores: v, versao: TEXTOS.busca.versao })).statusCode, 409)
+  assert.equal((await buscar('remover', { token, vetores: v, versao: TEXTOS.remocao.versao })).statusCode, 409)
+  assert.equal((await visitante('recusar', { token, tipo: 'cadastro', versao: TEXTOS.cadastroCriancas.versao })).statusCode, 200)
+  // e num evento comum, o texto dos responsáveis não entra
+  const comumEv = await eventoPronto({ modo: 'consentimento', n: 1 })
+  assert.equal((await buscar('cadastrar', { token: comumEv.token, vetores: v, chave: link.novoToken(), versao: TEXTOS.cadastroCriancas.versao })).corpo.erro, 'formato')
+  // a lista do fotógrafo mostra a marca
+  assert.equal((await fotografo('GET')).corpo.eventos.find((x) => x.id === e.id).criancas, true)
 })
 
 test('"não quero aparecer": confere as parecidas, apaga só o confirmado e barra foto nova parecida', { skip: pular }, async () => {
@@ -595,14 +790,19 @@ test('"não quero aparecer": confere as parecidas, apaga só o confirmado e barr
   const eu = r.vetor()
   const e = await eventoPronto({ n: 5, rostos: (i) => [{ v: i < 3 ? aoCosseno(eu, 0.8) : r.vetor() }] })
   const v = [texto(aoCosseno(eu, 0.85))]
-  const previa = await visitante('remover', { token: e.token, vetores: v, versao: TEXTOS.remocao.versao })
+  const previa = await buscar('remover', { token: e.token, vetores: v, versao: TEXTOS.remocao.versao })
   assert.equal(previa.statusCode, 200)
   assert.deepEqual(previa.corpo.fotos.map((f) => f.id).sort(), e.fotos.slice(0, 3).sort())
   assert.equal(await contar('evento_rostos', `evento = '${e.id}'`), 5, 'conferir não apaga nada')
-  const feito = await visitante('remover', { token: e.token, vetores: v, fotos: e.fotos.slice(0, 2), versao: TEXTOS.remocao.versao })
+  // a mesma prova vale uma vez para conferir e uma para apagar; uma terceira, não
+  const feito = await visitante('remover', { token: e.token, vetores: v, fotos: e.fotos.slice(0, 2), versao: TEXTOS.remocao.versao, prova: previa.prova })
+  assert.equal(
+    (await visitante('remover', { token: e.token, vetores: v, fotos: e.fotos.slice(0, 2), versao: TEXTOS.remocao.versao, prova: previa.prova })).corpo.erro,
+    'prova',
+  )
   assert.deepEqual(feito.corpo, { ok: true, removidos: 2 })
   assert.equal(await contar('evento_rostos', `evento = '${e.id}'`), 3)
-  const achou = await visitante('achar', { token: e.token, vetores: v, versao: TEXTOS.busca.versao })
+  const achou = await buscar('achar', { token: e.token, vetores: v, versao: TEXTOS.busca.versao })
   assert.deepEqual(
     achou.corpo.eu.map((f) => f.id),
     [e.fotos[2]],
@@ -632,9 +832,9 @@ test('com consentimento: só quem pediu; o fotógrafo compara e sobe as ligaçõ
     (await fotografo('POST', `${e.id}/rostos`, { corpo: { foto: e.fotos[0], rostos: [{ v: texto(ana), largura: 80, nota: 0.9 }] } })).statusCode,
     409,
   )
-  assert.equal((await visitante('achar', { token: e.token, vetores: [texto(ana)], versao: TEXTOS.busca.versao })).statusCode, 409)
+  assert.equal((await buscar('achar', { token: e.token, vetores: [texto(ana)], versao: TEXTOS.busca.versao })).statusCode, 409)
   const chave = link.novoToken()
-  const c = await visitante('cadastrar', {
+  const c = await buscar('cadastrar', {
     token: e.token,
     vetores: [texto(aoCosseno(ana, 0.9)), texto(aoCosseno(ana, 0.88))],
     chave,
@@ -676,12 +876,16 @@ test('com consentimento: só quem pediu; o fotógrafo compara e sobe as ligaçõ
   assert.equal((await visitante('minhas', { token: e.token, chave: link.novoToken() })).corpo.erro, 'chave')
   // pediu de novo (outro celular): o mesmo pedido, com as fotos já ligadas e a chave nova
   const chave2 = link.novoToken()
-  const de_novo = await visitante('cadastrar', {
-    token: e.token,
-    vetores: [texto(aoCosseno(ana, 0.87)), texto(aoCosseno(ana, 0.86)), texto(aoCosseno(ana, 0.85))],
-    chave: chave2,
-    versao: TEXTOS.cadastro.versao,
-  })
+  const de_novo = await buscar(
+    'cadastrar',
+    {
+      token: e.token,
+      vetores: [texto(aoCosseno(ana, 0.87)), texto(aoCosseno(ana, 0.86)), texto(aoCosseno(ana, 0.85))],
+      chave: chave2,
+      versao: TEXTOS.cadastro.versao,
+    },
+    { aparelho: novoAparelho() },
+  )
   assert.deepEqual(
     de_novo.corpo.eu.map((f) => f.id),
     [e.fotos[1]],
@@ -689,7 +893,7 @@ test('com consentimento: só quem pediu; o fotógrafo compara e sobe as ligaçõ
   assert.equal(await contar('evento_pessoas', `evento = '${e.id}'`), 1)
   assert.equal((await fotografo('GET', `${e.id}/pessoas`)).corpo.pessoas[0].pendente, true, 'vetor novo: comparar de novo')
   // outra pessoa é outro pedido
-  await visitante('cadastrar', { token: e.token, vetores: [texto(r.vetor())], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })
+  await buscar('cadastrar', { token: e.token, vetores: [texto(r.vetor())], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })
   assert.equal(await contar('evento_pessoas', `evento = '${e.id}'`), 2)
   // desistir: vetores e ligações somem, fica o registro
   assert.deepEqual((await visitante('desistir', { token: e.token, chave: chave2 })).corpo, { ok: true })
@@ -742,7 +946,7 @@ test('pedidos de foto, regras do fotógrafo, encerrar, apagar em cascata e a lim
   assert.ok(!existsSync(join(pasta, 'g', e.id)) || readdirSync(join(pasta, 'g', e.id)).length === 0)
   // prazo vencido: a limpeza apaga vetores, pessoas e ligações e encerra
   const c = await eventoPronto({ modo: 'consentimento', n: 2 })
-  await visitante('cadastrar', { token: c.token, vetores: [texto(r.vetor())], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })
+  await buscar('cadastrar', { token: c.token, vetores: [texto(r.vetor())], chave: link.novoToken(), versao: TEXTOS.cadastro.versao })
   const a = await eventoPronto({ n: 2, rostos: () => [{ v: r.vetor() }] })
   await dono`update foto.eventos set prazo = now() - interval '1 second' where id = any(${[c.id, a.id]})`
   const l2 = await evento.limparEventos()

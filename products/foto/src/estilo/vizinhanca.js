@@ -37,24 +37,28 @@ import { neutro } from '../motor/ajustes.js'
 import { baseDeImagem } from '../motor/base.js'
 import { curvaDe, luminancia } from '../motor/cor/espacos.js'
 import { criarOklab } from '../motor/cor/oklab.js'
-import { aplicarLocal, filtroGuiado, gaussiano, LOCAL, luzDoAr, minimo } from '../motor/local.js'
+import { aplicarLocal, caixa, estimarRuido, filtroGuiado, gaussiano, LOCAL, luzDoAr, minimo } from '../motor/local.js'
 import { criarPonto } from '../motor/ponto.js'
 import { contextoDe, revelar } from '../motor/revelar.js'
 import { telaDe } from '../motor/tela.js'
 
 export const VIZINHANCA = {
   ladoLargo: 320, // a foto inteira reduzida para clareza e neblina
-  recorte: 128, // lado do recorte na escala de medida (textura e nitidez)
-  recortes: 6,
+  recorte: 96, // lado do recorte na escala de medida (textura e nitidez)
+  recortes: 12, // a grade 4×3 inteira, menos as células estouradas ou escuras: mais conteúdo na média, menos variação
   limiteLado: 2048, // escala de medida máxima dos recortes (acima disto os recortes saem de uma média)
   priori: 60, // desvio a priori dos controles (a penalidade que puxa para zero)
   minimo: 5, // valor mínimo para sair
   sigmas: { sai: 2, alta: 4 }, // valor ÷ incerteza para sair e para confiança alta
+  confiavel: 0.6, // fração mínima do recorte com relevo acima do piso de quantização e ruído
   responde: 4, // a medida tem de andar mais que isto × o erro de medida de −50 a +50
   // erro de medida de cada medida: pareado (por recorte ou quadrante, o piso do que não é o controle) e sem par (o que
   // a medida varia de uma cena para outra parecida; calibrado nas cenas sintéticas, ver o teste)
   erroPar: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01 },
-  erroCena: { textura: 0.01, nitidez: 0.01, halo: 0.02, clareza: 0.005, escuro: 0.003, croma: 0.01 },
+  // erroCena: o desvio-padrão de cada medida entre cenas diferentes, todas no neutro: o quanto o conteúdo sozinho mexe
+  // nela. É o maior entre dois tipos de cena sintética (test/apoio-estilo.js): paisagem de textura natural (cenaNatural,
+  // seis sementes, 1024 e 2560 px) e manchas de uma mesma sessão (cenaDeSessao, seis sementes, 360 e 1024 px).
+  erroCena: { textura: 0.06, nitidez: 0.055, halo: 0.11, clareza: 0.053, escuro: 0.072, croma: 0.097 },
 }
 const V = VIZINHANCA
 
@@ -114,11 +118,25 @@ function codigos16(lin) {
   return s
 }
 
+// código da tela → linear, por tabela de 4096 trechos com interpolação linear (erro < 3e-8, como em referencia.js)
+const DECODIFICAR = Float64Array.from({ length: 4098 }, (_, i) => curvaSrgb.decodificar(Math.min(1, i / 4096)))
 function linearDeCodigo(codigo) {
   const lin = new Float32Array(codigo.length)
-  for (let i = 0; i < codigo.length; i++) lin[i] = curvaSrgb.decodificar(limitar(codigo[i], 0, 1))
+  for (let i = 0; i < codigo.length; i++) {
+    const x = limitar(codigo[i], 0, 1) * 4096
+    const k = x | 0
+    lin[i] = DECODIFICAR[k] + (DECODIFICAR[k + 1] - DECODIFICAR[k]) * (x - k)
+  }
   return lin
 }
+
+// (dlog2Y/dc)² da curva sRGB em função de log2 Y, de −12 a 0 em passos de 1/64 (é o que leva o degrau do código ao
+// log2 no piso de `medidasFinas`): 2,4/((c + 0,055)·ln 2), com o trecho reto (c = 12,92·Y) abaixo de 0,0031308
+const INCLINACAO_LOG = Float64Array.from({ length: 12 * 64 + 2 }, (_, i) => {
+  const Y = 2 ** (-12 + i / 64)
+  const d = Y <= 0.0031308 ? 1 / (Y * Math.LN2) : 2.4 / ((curvaSrgb.codificar(Math.min(1, Y)) + 0.055) * Math.LN2)
+  return d * d
+})
 
 /** log2 da norma da tela (75% luminância + 25% maior canal, a norma do motor) de RGB linear da tela. */
 export function planoLog(lin, espaco) {
@@ -138,6 +156,9 @@ export function planoLog(lin, espaco) {
 
 // ─────────── o nosso motor nos recortes ───────────
 
+/** A base do motor de um recorte (a inversa da tela, pixel a pixel): calculada uma vez e reaproveitada. */
+export const baseDoRecorte = (lin, w, h, espaco) => baseDeImagem({ largura: w, altura: h, dados: codigos16(lin), canais: 3, espaco })
+
 // só a textura e a nitidez (e nada do que é da foto inteira): é o que os recortes medem
 function soFinos(ajustes) {
   const a = neutro()
@@ -152,9 +173,9 @@ function soFinos(ajustes) {
  * (x0, y0) onde o recorte fica nela, `escala` = escala de medida ÷ escala da foto (o raio da nitidez é em pixels da foto
  * cheia). É o mesmo código de `revelar` (ponto.js, local.js, tela.js), sem montar a foto inteira.
  */
-export function revelarRecorte(lin, w, h, ajustes, { espaco, quadro, x0, y0, escala }) {
-  const base = baseDeImagem({ largura: w, altura: h, dados: codigos16(lin), canais: 3, espaco })
-  const dados = base.imagem.dados
+export function revelarRecorte(lin, w, h, ajustes, { espaco, quadro, x0, y0, escala, base = null }) {
+  base ??= baseDoRecorte(lin, w, h, espaco)
+  const dados = Float32Array.from(base.imagem.dados)
   criarPonto(ajustes, contextoDe(base, ajustes)).aplicarEm(dados, w * h)
   aplicarLocal({ largura: w, altura: h, dados, x0, y0, quadro, escala }, soFinos(ajustes), { semente: 1 })
   const saida = new Float32Array(w * h * 3)
@@ -174,25 +195,81 @@ function rmsPesado(v, p) {
   return q > 0 ? Math.sqrt(s / q) : 0
 }
 
+// Gaussiana larga aproximada por três caixas seguidas (Wells, 1986, "Efficient synthesis of Gaussian filters by
+// cascaded uniform filters", IEEE TPAMI 8(2)): largura w com 3(w² − 1)/12 = σ². É medida (a mesma conta na referência
+// e no alvo), não o motor; custa O(n) em qualquer raio.
+function quaseGaussiano(origem, w, h, sigma) {
+  const r = Math.max(1, Math.round((Math.sqrt(4 * sigma * sigma + 1) - 1) / 2))
+  return caixa(caixa(caixa(origem, w, h, r), w, h, r), w, h, r)
+}
+
+function media01(v, dentro) {
+  let s = 0
+  let q = 0
+  for (let i = 0; i < v.length; i++) {
+    if (!dentro[i]) continue
+    s += v[i]
+    q++
+  }
+  return q ? s / q : 0
+}
+
+// percentil por ordenação de uma amostra (no máximo ~4000 valores, passo fixo): basta para um corte de peso
 function percentil(valores, p) {
   if (!valores.length) return 0
-  const o = Float32Array.from(valores).sort()
+  const passo = Math.max(1, Math.floor(valores.length / 4000))
+  const o = new Float32Array(Math.ceil(valores.length / passo))
+  for (let i = 0, j = 0; i < valores.length; i += passo, j++) o[j] = valores[i]
+  o.sort()
   return o[Math.min(o.length - 1, Math.floor(p * o.length))]
 }
 
+// Quanto da variância de um ruído branco passa pela banda L − g_σ (núcleo do `gaussiano` do motor): Σ(δ − G)² =
+// 1 − 2·G(0, 0) + ΣG², com G = k ⊗ k separável.
+function passaNaBandaFina(sigma) {
+  const r = Math.max(1, Math.ceil(sigma * 3))
+  const k = Array.from({ length: 2 * r + 1 }, (_, i) => Math.exp(-((i - r) ** 2) / (2 * sigma * sigma)))
+  const s = k.reduce((a, b) => a + b, 0)
+  const q = k.reduce((a, b) => a + (b / s) ** 2, 0)
+  return 1 - 2 * (k[r] / s) ** 2 + q * q
+}
+
 /**
- * As medidas finas de um recorte (plano log `L`, w×h; a margem `m` fica fora da conta): { textura?, nitidez?, halo? }.
- * `rf`: raio da textura na escala de medida (sem textura abaixo de 1); `sigma`: o da nitidez (sem nitidez abaixo de ¼).
+ * As medidas finas de um recorte (plano log `L`, w×h; a margem `m` fica fora da conta): { textura?, nitidez?, halo?,
+ * ruido? }. `rf`: raio da textura na escala de medida (sem textura abaixo de 1); `sigma`: o da nitidez (sem nitidez
+ * abaixo de ¼). `ruidoA` (opcional): o ruído da imagem, var(Y) = a·Y na luz linear da tela; `ruido` devolve a parte da
+ * banda fina que ele explica (variância no log2), para comparar fotos de ruídos diferentes.
  */
-export function medidasFinas(L, w, h, m, { rf, sigma }) {
+export function medidasFinas(L, w, h, m, { rf, sigma, ruidoA = 0, passo = 1 / 255 }) {
   const n = w * h
   const dentro = new Uint8Array(n)
   for (let y = m; y < h - m; y++) for (let x = m; x < w - m; x++) dentro[y * w + x] = 1
   const saida = {}
+  // O piso de cada pixel no log2: o degrau do código da foto de onde ele veio (passo²/12, levado ao log2 pela inclinação
+  // da curva sRGB: dlog2Y/dc = 2,4/((c + 0,055)·ln 2)) e o ruído medido (a/(Y·ln²2)). A nitidez e a textura do motor
+  // amplificam esse piso no alvo de 8 bits, e na referência ele veio depois do tratamento: onde o relevo da banda média
+  // não passa de 3 pisos, o pixel pesa pouco (peso s²/(s² + 9·piso²)). Sem isto, um céu liso de 8 bits dobrava a medida.
+  const piso = new Float32Array(n)
+  const degrau = (passo * passo) / 12
+  for (let i = 0; i < n; i++) {
+    const x = (limitar(L[i], -12, 0) + 12) * 64
+    const k = x | 0
+    const d2 = INCLINACAO_LOG[k] + (INCLINACAO_LOG[k + 1] - INCLINACAO_LOG[k]) * (x - k)
+    piso[i] = degrau * d2 + (ruidoA > 0 ? ruidoA / (2 ** L[i] * Math.LN2 * Math.LN2) : 0)
+  }
+  const confiavel = (banda, raio) => {
+    const e = new Float32Array(n)
+    for (let i = 0; i < n; i++) e[i] = banda[i] * banda[i]
+    const s2 = caixa(e, w, h, Math.max(1, Math.round(raio)))
+    for (let i = 0; i < n; i++) e[i] = s2[i] / (s2[i] + 9 * piso[i])
+    return e
+  }
+  // onde a textura age: (1 − a)², a do filtro guiado da textura (perto de 1 na borda e no relevo forte)
+  let aTextura = null
   if (rf >= 1) {
     const eps = LOCAL.textura.limiarEv ** 2
-    const borda = new Float32Array(n)
-    const g1 = filtroGuiado(L, L, w, h, rf, eps, borda)
+    aTextura = new Float32Array(n)
+    const g1 = filtroGuiado(L, L, w, h, rf, eps, aTextura)
     const g4 = filtroGuiado(g1, g1, w, h, 4 * rf, eps)
     const fino = new Float32Array(n)
     const medio = new Float32Array(n)
@@ -200,14 +277,18 @@ export function medidasFinas(L, w, h, m, { rf, sigma }) {
     for (let i = 0; i < n; i++) {
       fino[i] = L[i] - g1[i]
       medio[i] = g1[i] - g4[i]
-      const liso = 1 - borda[i]
-      p[i] = dentro[i] * liso * liso
+    }
+    const c = confiavel(medio, 2 * rf)
+    saida.confiavel = media01(c, dentro)
+    for (let i = 0; i < n; i++) {
+      const liso = 1 - aTextura[i]
+      p[i] = dentro[i] * liso * liso * c[i]
     }
     saida.textura = Math.log(Math.max(1e-6, rmsPesado(fino, p)) / Math.max(1e-6, rmsPesado(medio, p)))
   }
   if (sigma >= 0.25) {
     const b1 = gaussiano(L, w, h, sigma)
-    const b4 = gaussiano(L, w, h, 4 * sigma)
+    const b4 = quaseGaussiano(b1, w, h, Math.sqrt(15) * sigma)
     const fina = new Float32Array(n)
     const media = new Float32Array(n)
     const mags = []
@@ -217,23 +298,32 @@ export function medidasFinas(L, w, h, m, { rf, sigma }) {
       if (dentro[i]) mags.push(Math.abs(media[i]))
     }
     const corteBorda = percentil(mags, 0.96)
-    const corteLiso = percentil(mags, 0.25)
+    const c = confiavel(media, 2 * sigma)
+    saida.confiavel = Math.min(saida.confiavel ?? 1, media01(c, dentro))
     const borda = new Float32Array(n)
     const resto = new Float32Array(n)
-    const lisos = []
+    let ruido = 0
+    let pesoRuido = 0
+    const passa = passaNaBandaFina(sigma)
     for (let i = 0; i < n; i++) {
       if (!dentro[i]) continue
-      const a = Math.abs(media[i])
-      if (a >= corteBorda) borda[i] = 1
-      else resto[i] = 1
-      if (a <= corteLiso) lisos.push(Math.abs(fina[i]))
+      if (Math.abs(media[i]) >= corteBorda) borda[i] = c[i]
+      else {
+        // fora da borda, a nitidez pesa onde a textura NÃO age (a²): é o que separa uma da outra quando os raios se
+        // encostam (foto de ~2000 px: textura com 1 px, nitidez com 1 px)
+        resto[i] = (aTextura ? aTextura[i] * aTextura[i] : 1) * c[i]
+        // ruído no log2: var(log2 Y) ≈ a/(Y·ln²2) para var(Y) = a·Y
+        if (ruidoA > 0) {
+          ruido += resto[i] * ((passa * ruidoA) / (2 ** L[i] * Math.LN2 * Math.LN2))
+          pesoRuido += resto[i]
+        }
+      }
     }
-    // piso de ruído: desvio absoluto mediano da banda fina nos pixels mais lisos (1,4826 = MAD → desvio da gaussiana)
-    const ruido = 1.4826 * percentil(lisos, 0.5)
-    const semRuido = (e) => Math.sqrt(Math.max(e * e - ruido * ruido, 0.25 * e * e))
-    saida.nitidez = Math.log(Math.max(1e-6, semRuido(rmsPesado(fina, resto))) / Math.max(1e-6, rmsPesado(media, resto)))
-    saida.nitidezBruta = Math.log(Math.max(1e-6, rmsPesado(fina, resto)) / Math.max(1e-6, rmsPesado(media, resto)))
+    const e = rmsPesado(fina, resto)
+    saida.nitidez = Math.log(Math.max(1e-6, e) / Math.max(1e-6, rmsPesado(media, resto)))
     saida.halo = Math.log(Math.max(1e-6, rmsPesado(fina, borda)) / Math.max(1e-6, rmsPesado(media, borda)))
+    // a fração da energia fina que o ruído explica (0 a 1)
+    saida.ruido = pesoRuido ? Math.min(1, ruido / pesoRuido / Math.max(1e-12, e * e)) : 0
   }
   return saida
 }
@@ -294,6 +384,20 @@ export function medidasLargas(lin, w, h, espaco) {
 }
 
 // ─────────── onde medir ───────────
+
+/**
+ * O ruído de uma foto, var(Y) = a·Y na luz linear da tela, na escala de medida (`q`: { k, largura, altura }): o
+ * estimador do motor (estimarRuido, desvio absoluto mediano da diferença para os vizinhos) em 64 linhas espalhadas.
+ */
+function ruidoDaImagem(img, q) {
+  const linhas = Math.min(64, q.altura)
+  const dados = new Float32Array(q.largura * linhas * 3)
+  for (let j = 0; j < linhas; j++) {
+    const y = Math.floor(((j + 0.5) * q.altura) / linhas)
+    dados.set(recorteLinear(img, 0, y, q.largura, 1, q.k), j * q.largura * 3)
+  }
+  return estimarRuido({ largura: q.largura, altura: linhas, dados })?.a ?? null
+}
 
 /** Tamanho reduzido (≤ `lado`) de uma imagem: { w, h, k } com k = pixels da origem por pixel reduzido. */
 export function reduzido(img, lado) {
@@ -387,6 +491,7 @@ function ajustar(params, residuos, { iteracoes = 5, r0 = null, J0 = null } = {})
       )
       const novo = v.map((x, j) => limitar(x + passo[j], params[j].min, params[j].max))
       const rn = residuos(novo)
+      if (process.env.DEPURAR) console.log("LM", novo.map(Math.round), rn.reduce((s, x) => s + x * x, 0).toFixed(1), custo.toFixed(1))
       const c = rn.reduce((s, x) => s + x * x, 0)
       if (c < custo) {
         const pequeno = novo.every((x, j) => Math.abs(x - v[j]) < 1)
@@ -440,12 +545,14 @@ function estimarBloco(params, ref, medirAlvo, ajustes, escalas, { pareado, contr
   const J0 = jacobiano(params, todos, params.map(() => 0), r0)
   const ativos = []
   params.forEach((p, j) => {
-    const anda = 100 * Math.sqrt(J0[j].slice(0, nDados).reduce((s, x) => s + x * x, 0) / ref.length)
+    // em erros de medida do par (o ruído da própria medida), não do conteúdo: responder é coisa da foto e do controle
+    const anda = 100 * Math.sqrt(J0[j].slice(0, nDados).reduce((s, x, k) => s + (x * escalas[nomes[k % nomes.length]] / V.erroPar[nomes[k % nomes.length]]) ** 2, 0) / ref.length)
     if (anda >= V.responde) ativos.push(j)
     else controles[p.nome] = { valor: 0, incerteza: null, confianca: 'baixa', sai: false, razao: 'a medida não responde a este controle nesta foto' }
   })
   if (!ativos.length) return
   const sub = ativos.map((j) => params[j])
+  if (process.env.DEPURAR && sub.length === 2 && sub[1].nome === "nitidez") { const rr = residuosDe(sub)([0, 60]); console.log("em (0,60)", rr.reduce((s, x) => s + x * x, 0).toFixed(1), rr.map((x) => x.toFixed(0)).join(" ")) }
   const { valores, residuos, J } = ajustar(sub, residuosDe(sub), { r0, J0: ativos.map((j) => J0[j]) })
   // incerteza: a da curvatura (Jᵀ J)⁻¹, inflada pelo resíduo que sobrou quando há mais dados que parâmetros (pareado)
   const dados = residuos.slice(0, nDados)
@@ -558,7 +665,9 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
   if (finos.length) {
     const T = V.recorte
     const margemRender = 2 * Math.max(rf, 1) + Math.ceil(3 * Math.max(sigma, 1)) + 1
-    const margemMedida = margemRender + 4 * Math.max(rf, 1)
+    // as medidas alcançam 12σ (gaussiana de 4σ) e 10·r_f (guiado de r_f e depois de 4·r_f, cada um com 2 raios): a
+    // margem da medida cobre isso além da margem da revelação, para a borda do recorte não entrar na conta
+    const margemMedida = margemRender + Math.max(Math.ceil(12 * Math.max(sigma, 0.25)), 10 * rf)
     const lado = T + 2 * margemMedida
     const quadroDe = (img) => {
       const k = Math.max(img.largura, img.altura) / M
@@ -573,7 +682,10 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
       }))
     }
     const recortesAlvo = posicoes(alvo, linAlvo, rA.w, rA.h)
-    const medir = (lin) => medidasFinas(planoLog(lin, tela), lado, lado, margemMedida, { rf, sigma })
+    // sem par, o ruído de cada foto entra na conta (outra câmera, outro ISO): medido na foto inteira, em linhas
+    const ruidoDe = (img, q) => (pareado || sigma < 0.25 ? 0 : (ruidoDaImagem(img, q) ?? 0))
+    const passoDe = (img) => 1 / (img.dados instanceof Uint16Array ? 65535 : 255)
+    const medir = (lin, ruidoA, passo) => medidasFinas(planoLog(lin, tela), lado, lado, margemMedida, { rf, sigma, ruidoA, passo })
     const finasRef = refs.map((img) => {
       const q = quadroDe(img)
       let pos
@@ -582,18 +694,36 @@ export function estimarVizinhanca(refs, alvo, ajustes, { pareado = false, tela =
         const r = reduzido(img, V.ladoLargo)
         pos = posicoes(img, recorteLinear(img, 0, 0, r.w, r.h, r.k), r.w, r.h)
       }
-      return pos.map(({ x0, y0 }) => medir(recorteLinear(img, x0, y0, lado, lado, q.k)))
+      const a = ruidoDe(img, q)
+      return pos.map(({ x0, y0 }) => medir(recorteLinear(img, x0, y0, lado, lado, q.k), a, passoDe(img)))
     })
-    const crus = recortesAlvo.map(({ x0, y0 }) => ({ x0, y0, lin: recorteLinear(alvo, x0, y0, lado, lado, qA.k) }))
+    const ruidoAlvo = ruidoDe(alvo, qA)
+    let crus = recortesAlvo.map(({ x0, y0 }) => {
+      const lin = recorteLinear(alvo, x0, y0, lado, lado, qA.k)
+      return { x0, y0, lin, base: baseDoRecorte(lin, lado, lado, alvo.espaco) }
+    })
     const quadro = { largura: qA.largura, altura: qA.altura }
-    estimarBloco(
-      finos,
-      pareado ? finasRef[0] : [media(finasRef.map(media))],
-      (a) => pedacos(crus.map(({ x0, y0, lin }) => medir(linearDeCodigo(revelarRecorte(lin, lado, lado, a, { espaco: tela, quadro, x0, y0, escala }))))),
-      ajustes,
-      pareado ? V.erroPar : V.erroCena,
-      contexto,
-    )
+    const medirCrus = (lista, a) =>
+      lista.map(({ x0, y0, lin, base }) => medir(linearDeCodigo(revelarRecorte(lin, lado, lado, a, { espaco: tela, quadro, x0, y0, escala, base })), ruidoAlvo, passoDe(alvo)))
+    // recorte sem relevo acima do piso (céu liso de 8 bits, parede lisa) não diz nada: fica fora, no alvo e no par dele
+    const bons = medirCrus(crus, ajustes).map((m, k) => (m.confiavel >= V.confiavel ? k : -1)).filter((k) => k >= 0)
+    crus = bons.map((k) => crus[k])
+    if (pareado) finasRef[0] = bons.map((k) => finasRef[0][k])
+    else for (let i = 0; i < finasRef.length; i++) finasRef[i] = finasRef[i].filter((m) => m.confiavel >= V.confiavel)
+    const medirAlvo = (a) => pedacos(medirCrus(crus, a))
+    let escalas = pareado ? V.erroPar : V.erroCena
+    const poucos = crus.length < 3 || finasRef.some((l) => l.length < 3)
+    const refFina = poucos ? null : pareado ? finasRef[0] : [media(finasRef.map(media))]
+    if (poucos) {
+      for (const p of finos) controles[p.nome] = { valor: 0, incerteza: null, confianca: 'baixa', sai: false, razao: 'pouco relevo fino para medir' }
+      finos.length = 0
+    } else if (!pareado && sigma >= 0.25) {
+      // a parte da banda fina que é ruído difere entre as fotos: isso vira incerteza da nitidez e do halo, não valor.
+      // d log(e) = ½ · Δ(fração de ruído): é o quanto a medida andaria só pela diferença de ruído
+      const diferenca = 0.5 * Math.abs(refFina[0].ruido - medirAlvo(ajustes)[0].ruido)
+      escalas = { ...escalas, nitidez: Math.hypot(escalas.nitidez, diferenca), halo: Math.hypot(escalas.halo, diferenca) }
+    }
+    if (finos.length) estimarBloco(finos, refFina, medirAlvo, ajustes, escalas, contexto)
   }
   return { ...saida, controles, renders, tempo: performance.now() - inicio }
 }

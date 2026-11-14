@@ -30,7 +30,7 @@
 // TRÊS CASOS, do mais ao menos informativo:
 //   pareado     a referência é a MESMA cena do alvo (a foto da pessoa tratada por alguém; o JPEG da câmera e o RAW):
 //               mesma proporção e correlação de postos da luz ≥ 0,9. Entram também as diferenças ponto a ponto (1024
-//               pares), todos os controles, a vizinhança (vinheta, clareza e grão por busca de seção áurea numa revelação
+//               pares), todos os controles, a vizinhança (vinheta e grão por busca de seção áurea numa revelação
 //               de 256 px, só quando a medida responde ao controle) e o resíduo sai dos pares (regressão de núcleo)
 //   cena outra  só a impressão digital, que também muda com o conteúdo (tom e croma variam de uma foto para outra da
 //               mesma sessão quase tanto quanto um estilo leve). Por isso: penalidade 15× maior, sem a curva de quatro
@@ -55,6 +55,7 @@ import { criarOklab, matizDoCirculo } from '../motor/cor/oklab.js'
 import { pesosDasFaixas } from '../motor/ponto.js'
 import { revelar } from '../motor/revelar.js'
 import { aplicarLut, compactar, criarLut } from './look.js'
+import { estimarVizinhanca } from './vizinhanca.js'
 import { criarPredefinicao, gruposMexidos } from './predefinicao.js'
 
 export const REFERENCIA = {
@@ -849,7 +850,7 @@ function aplicarMapaEmPixels(px, mapa) {
   return { L, A, B, n: px.n, valido: px.valido }
 }
 
-// ─────────── vizinhança: vinheta, clareza, grão ───────────
+// ─────────── vizinhança: vinheta e grão ───────────
 
 function reduzirBase(base, lado) {
   const { largura, altura, dados } = base.imagem
@@ -904,7 +905,7 @@ function caixa1(L, w, h, r) {
   return out
 }
 
-/** As medidas de vizinhança de um plano de luz: vinheta (canto ÷ centro), clareza (contraste local médio), grão. */
+/** As medidas de vizinhança de um plano de luz: vinheta (canto ÷ centro) e grão. */
 function medidasLocais(L, w, h) {
   const cx = (w - 1) / 2
   const cy = (h - 1) / 2
@@ -928,19 +929,14 @@ function medidasLocais(L, w, h) {
   const raio = Math.max(2, Math.round(Math.max(w, h) * 0.02))
   const largo = caixa1(L, w, h, raio)
   const fino = caixa1(L, w, h, 1)
-  let clareza = 0
-  let nClareza = 0
   const grao = []
   for (let i = 0; i < w * h; i++) {
     if (L[i] < 0.25 || L[i] > 0.85) continue
-    clareza += Math.abs(L[i] - largo[i])
-    nClareza++
     // grão: o resíduo fino onde a vizinhança larga é lisa
     if (Math.abs(fino[i] - largo[i]) < 0.01) grao.push(Math.abs(L[i] - fino[i]))
   }
   return {
     vinheta: nCanto && nCentro ? canto / nCanto - centro / nCentro : 0,
-    clareza: nClareza ? clareza / nClareza : 0,
     grao: grao.length > 50 ? percentis(grao, [50])[0] : null,
   }
 }
@@ -1051,7 +1047,8 @@ function erroPareado(px, pares) {
  * 16 bits; `canais: 3` para RGB), espaco: 'srgb' | 'p3' }.
  *
  * `opcoes`: alvo (a foto da pessoa, mesmo formato; recomendado), residuo (true: devolve também a LUT 17³ do que os
- * controles não alcançaram), vizinhanca (padrão true: mede vinheta, clareza e grão no caso pareado), nome, agora.
+ * controles não alcançaram), vizinhanca (padrão true: vinheta e grão no caso pareado; textura, clareza, neblina e
+ * nitidez com alvo, pareado ou não, ver vizinhanca.js), nome, agora.
  *
  * Devolve { ajustes, predefinicao, confianca: { tom, neutro, cor, misturador, vizinhanca }, erro: { antes, depois,
  * teto, comResiduo, aderencia, alcance, porGrupo: { antes, depois } }, grupos, pb, avisos, look (LUT | null),
@@ -1062,7 +1059,8 @@ export function extrairEstilo(referencias, opcoes = {}) {
   const lista = Array.isArray(referencias) ? referencias : [referencias]
   if (!lista.length) throw new ErroReferencia('sem-referencia', 'Mande ao menos uma foto de referência.')
   if (lista.length > R.maxReferencias) throw new ErroReferencia('referencias-demais', `Use até ${R.maxReferencias} referências.`)
-  const refs = lista.map((img, i) => reduzir(conferirImagem(img, `Referência ${i + 1}`), R.lado))
+  const conferidas = lista.map((img, i) => conferirImagem(img, `Referência ${i + 1}`))
+  const refs = conferidas.map((img) => reduzir(img, R.lado))
   const tela = refs.some((r) => r.espaco === 'p3') ? 'p3' : 'srgb'
   const avisos = []
   const pxRefs = refs.map((r) => oklabDe(r.lin, r.espaco, r.cortado))
@@ -1072,8 +1070,9 @@ export function extrairEstilo(referencias, opcoes = {}) {
   // ── o alvo (ou o "sem estilo" da própria referência) ──
   const temAlvo = !!opcoes.alvo
   let alvos
+  const alvoConferido = temAlvo ? conferirImagem(opcoes.alvo, 'Alvo') : null
   if (temAlvo) {
-    const a = reduzir(conferirImagem(opcoes.alvo, 'Alvo'), R.lado)
+    const a = reduzir(alvoConferido, R.lado)
     alvos = [{ ...a, base: baseDeImagem({ largura: a.largura, altura: a.altura, dados: paraCodigos(a.lin), canais: 3, espaco: a.espaco }) }]
   } else {
     alvos = refs.map((r, i) => semEstilo(r, pxRefs[i], impressoes[i]))
@@ -1208,11 +1207,16 @@ export function extrairEstilo(referencias, opcoes = {}) {
   const pixelDepois = pares ? erroPareado(pxDepois, pares) : null
 
   // ── vizinhança (só com alvo) ──
+  // Vinheta e grão: só pareado (ajustarVizinhanca). Textura, clareza, neblina e nitidez: com alvo, pareado ou não
+  // (vizinhanca.js), cada um só quando a medida responde e o valor passa da incerteza.
   let vizinhanca = null
+  let locais = null
   if (pares && opcoes.vizinhanca !== false) vizinhanca = ajustarVizinhanca(alvos[0], refs, ajustes, tela)
-  if (vizinhanca) {
-    Object.assign(ajustes.efeitos, vizinhanca.efeitos)
-    Object.assign(ajustes.presenca, vizinhanca.presenca)
+  if (vizinhanca) Object.assign(ajustes.efeitos, vizinhanca.efeitos)
+  if (temAlvo && opcoes.vizinhanca !== false) {
+    locais = estimarVizinhanca(conferidas, alvoConferido, ajustes, { pareado: !!pares, tela })
+    Object.assign(ajustes.presenca, locais.presenca)
+    Object.assign(ajustes.detalhe, locais.detalhe)
   }
 
   // ── 4. teto e resíduo ──
@@ -1262,7 +1266,7 @@ export function extrairEstilo(referencias, opcoes = {}) {
     neutro: bandasUteis >= 5 ? nivel(melhora('neutro'), 0.6, 0.3) : bandasUteis >= 3 ? 'media' : 'baixa',
     cor: pesos.semCor || !temAlvo ? 'baixa' : rebaixar(nivel(melhora('croma'), 0.5, 0.25), !pares),
     misturador: pesos.semCor || !faixasAtivas.length ? 'baixa' : pares && faixasAtivas.length >= 4 ? nivel(melhora('setor'), 0.5, 0.25) : 'baixa',
-    vizinhanca: vizinhanca ? (refs.length > 1 ? 'media' : 'baixa') : 'baixa',
+    vizinhanca: confiancaLocal(vizinhanca, locais, refs.length),
   }
   const relatorio = {
     referencias: refs.length,
@@ -1273,6 +1277,12 @@ export function extrairEstilo(referencias, opcoes = {}) {
     alcance: arred(alcance, 3),
     confianca,
     avisos,
+  }
+  if (locais) {
+    // por controle de vizinhança: o valor, a incerteza (em unidades do controle) e por que saiu ou não
+    relatorio.vizinhanca = Object.fromEntries(
+      Object.entries(locais.controles).map(([k, c]) => [k, { valor: c.sai ? c.valor : 0, medido: c.valor, incerteza: c.incerteza, confianca: c.confianca, razao: c.razao }]),
+    )
   }
   const campos = {
     nome: opcoes.nome ?? 'Da referência',
@@ -1306,13 +1316,22 @@ export function extrairEstilo(referencias, opcoes = {}) {
     pb: pbRef,
     avisos,
     look,
-    vizinhanca: vizinhanca?.medidas ?? null,
+    vizinhanca: vizinhanca || locais ? { ...(vizinhanca?.medidas ?? {}), controles: locais?.controles ?? null } : null,
     tempo: { total, porReferencia: total / refs.length },
-    renders: modelo.renders + (vizinhanca?.renders ?? 0),
+    renders: modelo.renders + (vizinhanca?.renders ?? 0) + (locais?.renders ?? 0),
   }
 }
 
 const arred = (v, casas = 2) => Math.round(v * 10 ** casas) / 10 ** casas
+
+// A confiança do grupo "vizinhança": a melhor entre a dos controles locais que saíram (vizinhanca.js) e a da vinheta e
+// do grão (média com várias referências, baixa com uma).
+function confiancaLocal(vinhetaEGrao, locais, referencias) {
+  const ordem = ['baixa', 'media', 'alta']
+  let n = vinhetaEGrao && (Object.keys(vinhetaEGrao.efeitos).length || 0) ? (referencias > 1 ? 1 : 0) : 0
+  for (const c of Object.values(locais?.controles ?? {})) if (c.sai) n = Math.max(n, ordem.indexOf(c.confianca))
+  return ordem[n]
+}
 
 // O "sem estilo" de uma referência (quando não há alvo): a mesma foto com o eixo neutro zerado. É o único pedaço do
 // estilo que se separa do conteúdo numa foto só (ver o cabeçalho).
@@ -1330,8 +1349,9 @@ function semEstilo(r, px, f) {
   return { ...r, lin, base: baseDeImagem({ largura: r.largura, altura: r.altura, dados: paraCodigos(lin), canais: 3, espaco: r.espaco }) }
 }
 
-// Vinheta, clareza e grão por busca de seção áurea, comparando as medidas locais da referência (média das referências)
-// com as da revelação do alvo a 256 px (vinheta e clareza) e do miolo a 512 px (grão).
+// Vinheta e grão por busca de seção áurea, comparando as medidas locais da referência (média das referências) com as da
+// revelação do alvo a 256 px (vinheta) e do miolo a 512 px (grão). A clareza saiu daqui: vizinhanca.js a mede na banda
+// do próprio controle, junto com textura, neblina e nitidez.
 function ajustarVizinhanca(alvo, refs, ajustes, tela) {
   const L = R.ladoLocal
   const medidasRef = refs.map((r) => {
@@ -1343,7 +1363,6 @@ function ajustarVizinhanca(alvo, refs, ajustes, tela) {
   })
   const alvoRef = {
     vinheta: medidasRef.reduce((s, m) => s + m.local.vinheta, 0) / refs.length,
-    clareza: medidasRef.reduce((s, m) => s + m.local.clareza, 0) / refs.length,
     grao: medidasRef.every((m) => m.grao != null) ? medidasRef.reduce((s, m) => s + m.grao, 0) / refs.length : null,
   }
   const pequena = reduzirBase(alvo.base, L)
@@ -1361,11 +1380,9 @@ function ajustarVizinhanca(alvo, refs, ajustes, tela) {
     return a
   }
   const efeitos = {}
-  const presenca = {}
   const neutroLocal = medir(ajustes)
-  // Vinheta e clareza: só quando a medida responde ao controle (de −50 a +50 a medida tem de andar mais que 3% do
-  // valor dela); senão o controle não se separa do conteúdo e fica em zero. A clareza do motor poupa as bordas fortes
-  // (LOCAL.clareza.limiarEv), então numa cena só de bordas duras ela quase não aparece e não é estimada.
+  // Vinheta: só quando a medida responde ao controle (de −50 a +50 a medida tem de andar mais que 3% do valor dela);
+  // senão o controle não se separa do conteúdo e fica em zero.
   const buscar = (caminho, campo) => {
     const m = (v) => medir(comControle(caminho, v))[campo]
     const baixo = m(-50)
@@ -1376,8 +1393,6 @@ function ajustarVizinhanca(alvo, refs, ajustes, tela) {
   }
   const vin = buscar('efeitos.vinheta', 'vinheta')
   if (vin) efeitos.vinheta = vin
-  const cla = buscar('presenca.clareza', 'clareza')
-  if (cla) presenca.clareza = cla
   // grão: no miolo do alvo a 512 px (onde o grão de uma referência de 512 px se mede)
   let grao = 0
   if (alvoRef.grao != null) {
@@ -1391,5 +1406,5 @@ function ajustarVizinhanca(alvo, refs, ajustes, tela) {
       if (grao >= 6) efeitos.grao = Math.round(grao)
     }
   }
-  return { efeitos, presenca, medidas: { referencia: alvoRef, alvo: neutroLocal }, renders }
+  return { efeitos, medidas: { referencia: alvoRef, alvo: neutroLocal }, renders }
 }

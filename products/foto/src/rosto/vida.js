@@ -9,13 +9,19 @@
 //   2. planaridade: rosto de verdade tem profundidade. Quando ele gira, o nariz sai do plano dos olhos e da boca. A
 //      homografia que leva os olhos e os cantos da boca do quadro de frente ao quadro girado diz onde o nariz estaria
 //      se o rosto fosse plano (foto impressa, tela); a distância até o nariz visto, sobre a distância entre os olhos, é
-//      a paralaxe. Plano dá ~0; cabeça girando dá perto da guinada.
+//      a paralaxe. Na geometria, plano dá 0 e cabeça girando dá perto da guinada. Com o detector de verdade o plano não
+//      dá 0: o YuNet aprendeu rostos 3D e entorta os pontos de um rosto chato inclinado (medimos até 0,21 de paralaxe e
+//      0,17 de guinada num plano girado 50°). Por isso quem mais separa é a guinada exigida (0,18): um rosto chato não
+//      leva o nariz tão longe. A paralaxe pega o resto (nariz no plano dos olhos e da boca).
 //   3. sinais de tela, só de apoio (decidem apenas na faixa de dúvida da paralaxe): moiré, pico isolado na alta
-//      frequência do recorte em volta do nariz; cintilação, o brilho desse recorte oscilando de um quadro ao outro.
+//      frequência de um recorte da bochecha; cintilação, o brilho desse recorte oscilando de um quadro ao outro. Os
+//      limiares vêm de imagens simuladas, não de telas de verdade: calibrar com telas antes de dar mais peso a eles.
 //
-// Não barra: vídeo de alguém girando a cabeça exibido numa tela, se quem ataca segue a ordem sorteada a tempo (a
-// profundidade está no vídeo); máscara; câmera virtual; cliente modificado que fabrica pontos e vetores (o servidor não
-// vê a câmera). Esses casos ficam com os limites por aparelho, rede e evento.
+// Barra: foto impressa, foto ou vídeo parado numa tela, a mesma foto virada ou inclinada para imitar o giro, troca de
+// foto com lacuna ou salto, envio de arquivo (não existe). Não barra: vídeo de alguém girando a cabeça exibido numa tela,
+// se quem ataca segue a ordem sorteada a tempo (a profundidade está no vídeo); foto "animada" por IA; máscara; câmera
+// virtual; cliente modificado que fabrica pontos e vetores (o servidor não vê a câmera). Esses casos ficam com os
+// limites por aparelho, rede e evento, com a busca restrita a um evento e com a resposta sem nota.
 //
 // Quadro: { t (ms desde o desafio), p: 5 pontos [x, y] no quadro analisado (olhos, nariz, cantos da boca), m (moiré),
 // l (brilho médio do recorte, 0..255) }. Guinada aqui é na imagem, sem depender da ordem dos olhos: > 0 = nariz para a
@@ -26,8 +32,10 @@ export const PASSOS = Object.freeze(['esquerda', 'direita', 'perto'])
 export const VIDA = Object.freeze({
   /** do desafio emitido à prova recebida pelo servidor */
   prazoMs: 30000,
-  /** |guinada| mínima para "virou" e máxima para assinar (a mesma faixa de src/rosto/qualidade.js) */
-  giro: 0.12,
+  /** |guinada| mínima para "virou" e máxima para assinar o vetor do giro. Com o YuNet de verdade (test/evento-tela),
+   *  a cabeça 3D girando 15° já dá 0,19 e o mesmo rosto num plano girado ou inclinado até 70° não passou de 0,17 (o
+   *  detector entorta os pontos de um rosto chato, mas não tanto) */
+  giro: 0.18,
   giroMax: 0.45,
   /** |guinada| abaixo disso é "de frente" */
   frente: 0.15,
@@ -35,13 +43,13 @@ export const VIDA = Object.freeze({
   perto: 1.25,
   /** quadros seguidos cumprindo o passo (um quadro só pode ser ruído do detector) */
   seguidos: 2,
-  /** girou como cabeça, não como cartão inclinado: a razão altura (olhos → boca) / distância entre os olhos, sobre a
-   *  do quadro de frente. Cabeça girando 15° a 35° dá ~1,05 a 1,3; cartão inclinado na diagonal sai disso */
-  forma: [0.85, 1.45],
+  /** girou como cabeça, não como cartão deitado: a razão altura (olhos → boca) / distância entre os olhos, sobre a
+   *  do quadro de frente. A cabeça girando 15° a 50° dá 1,05 a 2,1 no detector; cartão quase deitado passa disso */
+  forma: [0.8, 2.4],
   /** paralaxe do nariz / distância entre os olhos (a mediana de cada giro, na média dos dois): de `paralaxe` para
    *  cima, rosto com profundidade; abaixo de `duvida`, plano; entre os dois, os sinais de tela decidem */
-  paralaxe: 0.11,
-  duvida: 0.08,
+  paralaxe: 0.15,
+  duvida: 0.12,
   /** sinais de tela (só apoio): pico/mediana do espectro alto e oscilação do brilho */
   moire: 40,
   cintilacao: 0.04,
@@ -215,13 +223,20 @@ const COS = Float64Array.from({ length: N * N }, (_, i) => Math.cos((2 * Math.PI
 const SEN = Float64Array.from({ length: N * N }, (_, i) => -Math.sin((2 * Math.PI * Math.floor(i / N) * (i % N)) / N))
 
 /**
- * Moiré e brilho no recorte de 32 × 32 px (na resolução da câmera, sem reamostrar: o moiré mora na grade de pixels)
- * em volta do nariz. `imagem`: { largura, altura, dados RGBA }; `pontos`: os 5, em px dessa imagem.
- * m = maior potência / mediana na banda alta (raio 8 a 16 de 16): textura natural cai suave, tela fotografada faz pico.
+ * Moiré e brilho num recorte de 32 × 32 px da bochecha (o meio entre o olho e o canto da boca, do lado mais longe do
+ * nariz: pele lisa, sem a borda das narinas), na resolução da câmera, sem reamostrar (o moiré mora na grade de pixels).
+ * `imagem`: { largura, altura, dados RGBA }; `pontos`: os 5, em px dessa imagem.
+ * m = maior potência / mediana na banda alta (raio 8 a 16 de 16): pele cai suave, tela fotografada faz pico isolado.
  */
 export function sinaisDeTela({ largura, altura, dados }, pontos) {
-  const x0 = Math.round(pontos[2][0] - N / 2)
-  const y0 = Math.round(pontos[2][1] - N / 2)
+  const bochecha = [
+    [(pontos[0][0] + pontos[3][0]) / 2, (pontos[0][1] + pontos[3][1]) / 2],
+    [(pontos[1][0] + pontos[4][0]) / 2, (pontos[1][1] + pontos[4][1]) / 2],
+  ]
+  const longe = (b) => Math.hypot(b[0] - pontos[2][0], b[1] - pontos[2][1])
+  const [cx, cy] = longe(bochecha[0]) >= longe(bochecha[1]) ? bochecha[0] : bochecha[1]
+  const x0 = Math.round(cx - N / 2)
+  const y0 = Math.round(cy - N / 2)
   if (x0 < 0 || y0 < 0 || x0 + N > largura || y0 + N > altura) return null
   const L = new Float64Array(N * N)
   let soma = 0

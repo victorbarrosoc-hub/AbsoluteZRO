@@ -93,12 +93,26 @@ export function renderizar({ textura, pose = {}, plano = false, L = 640, A = 480
     const n = Math.hypot(...l)
     return l.map((x) => x / n)
   })()
+  // bilinear (o vizinho mais próximo faria serrilhado periódico, que o detector de moiré leria como tela)
   const amostra = (x, y) => {
-    const tx = Math.round(textura.cx + x * textura.escala)
-    const ty = Math.round(textura.cy + y * textura.escala)
-    if (tx < 0 || ty < 0 || tx >= textura.largura || ty >= textura.altura) return null
-    const i = (ty * textura.largura + tx) * 4
-    return textura.dados[i + 3] > 8 ? [textura.dados[i], textura.dados[i + 1], textura.dados[i + 2]] : null
+    const fx = textura.cx + x * textura.escala - 0.5
+    const fy = textura.cy + y * textura.escala - 0.5
+    const x0 = Math.floor(fx)
+    const y0 = Math.floor(fy)
+    if (x0 < 0 || y0 < 0 || x0 + 1 >= textura.largura || y0 + 1 >= textura.altura) return null
+    const ax = fx - x0
+    const ay = fy - y0
+    const c = [0, 0, 0, 0]
+    for (const [dx, dy, w] of [
+      [0, 0, (1 - ax) * (1 - ay)],
+      [1, 0, ax * (1 - ay)],
+      [0, 1, (1 - ax) * ay],
+      [1, 1, ax * ay],
+    ]) {
+      const i = ((y0 + dy) * textura.largura + x0 + dx) * 4
+      for (let k = 0; k < 4; k++) c[k] += textura.dados[i + k] * w
+    }
+    return c[3] > 128 ? [c[0], c[1], c[2]] : null
   }
   for (let py = 0; py < A; py++) {
     for (let px = 0; px < L; px++) {
@@ -162,10 +176,10 @@ const GRAU = Math.PI / 180
 
 /**
  * As poses, quadro a quadro, de quem segue o desafio: 0,8 s de frente; para cada passo, 0,4 s indo, 0,7 s parado e 0,4 s
- * voltando. `giro` em graus (25: o comum de "vire um pouco"), `perto`: quanto a cabeça chega (em DIO); `escala`
+ * voltando. `giro` em graus (35: o comum de "vire para a sua esquerda"), `perto`: quanto a cabeça chega (em DIO); `escala`
  * encolhe o tempo (o teste de banco não espera 6 s por prova). Devolve [{ t, pose }] a `fps` quadros por segundo.
  */
-export function posesDoDesafio(passos, { fps = 10, giro = 25, perto = 1.6, inicio = 300, escala = 1 } = {}) {
+export function posesDoDesafio(passos, { fps = 10, giro = 35, perto = 1.6, inicio = 300, escala = 1 } = {}) {
   const alvo = { esquerda: { guinada: giro * GRAU }, direita: { guinada: -giro * GRAU }, perto: { z: perto } }
   const trechos = [{ de: {}, para: {}, ms: 800 }]
   for (const p of passos) trechos.push({ de: {}, para: alvo[p], ms: 400 }, { de: alvo[p], para: alvo[p], ms: 700 }, { de: alvo[p], para: {}, ms: 400 })

@@ -260,12 +260,13 @@ export function protegerPessoas(magnitudes, pessoas) {
 }
 
 /**
- * Quantas fotos a pessoa tem, quantas boas (fora de Fora, sem contar a que só subiu pela cobertura) e se a melhor
- * está protegida. `fotoDe(id)` → a foto do catálogo.
+ * Quantas fotos a pessoa tem, quantas boas (fora de Fora, sem contar a que só subiu pela cobertura) e se ela depende
+ * da cobertura (nenhuma boa; a melhor subiu para Talvez). `fotoDe(id)` → a foto do catálogo.
  */
 export function coberturaDe(pessoa, fotoDe) {
   const fotos = (pessoa?.fotos ?? []).map(fotoDe).filter(Boolean)
   const boas = fotos.filter((f) => f.magnitude && f.magnitude.balde !== 'fora' && !f.magnitude.detalhe?.protegida).length
-  const protegida = fotos.some((f) => f.magnitude?.detalhe?.protegida && f.magnitude.motivos?.[0] === MOTIVOS.unicaDaPessoa())
+  // protegida: não tem foto boa, e a melhor dela só não está em Fora por causa da cobertura
+  const protegida = boas === 0 && fotos.some((f) => f.magnitude?.detalhe?.protegida && f.magnitude.balde !== 'fora')
   return { fotos: fotos.length, boas, protegida }
 }

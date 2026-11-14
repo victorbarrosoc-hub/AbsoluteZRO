@@ -414,10 +414,16 @@ Por link (pelo sha256 do token) e por IP (o IP só como HMAC do dia; nunca é gu
 ## Eventos com busca por rosto
 
 Estudo, números e textos em [`estudo/rosto-em-evento.md`](estudo/rosto-em-evento.md); regra 5 de
-[`ARQUITETURA.md`](ARQUITETURA.md). Banco em `db/migrations/0003_eventos.sql`. O fotógrafo escolhe o modo por evento:
+[`ARQUITETURA.md`](ARQUITETURA.md). Banco em `db/migrations/0003_eventos.sql` e `0004_evento_criancas.sql`. O fotógrafo escolhe o modo por evento:
 `consentimento` (padrão: só sobe o vetor de quem pediu para ser achado; o computador do fotógrafo compara e sobe as
 ligações) ou `aberta` (só com o aviso aceito: os vetores dos rostos das fotos sobem e ficam até o prazo). Só sobem
 prévias com marca-d'água. Sem armazenamento: `503 sem_armazenamento` em tudo.
+
+**Evento com crianças** (`criancas: true`, ligado na criação): o modo é sempre `consentimento` (pedir `aberta` junto dá
+`400 campo: modo`; o banco recusa por constraint e gatilho, `409 criancas`), o prazo vai até 15 dias (7 se não disser;
+ligar a marca encurta um prazo maior), publicar pede o aviso `ativacao-criancas-…` (`409 sem_aviso`) e o pedido do
+visitante usa o texto `cadastro-criancas-…`, com a caixa "sou responsável por quem aparece na selfie" (a porta recusa o
+texto comum, `400 formato`, e vice-versa). Desligar a marca, só no rascunho. Nada de estimar idade pelo rosto.
 
 **Vetor**: 128 números int8 em base64 (172 caracteres), o maior componente em módulo exatamente 127
 (`src/rosto/assinatura.js`). Fora disso: `400 vetor` (visitante) ou `400 campo` (fotógrafo).
@@ -427,9 +433,9 @@ prévias com marca-d'água. Sem armazenamento: `503 sem_armazenamento` em tudo.
 | rota | corpo | resposta |
 | --- | --- | --- |
 | `GET /api/foto/eventos` | — | `{ eventos: [ficha] }` |
-| `POST /api/foto/eventos` | `{ nome, data?: 'AAAA-MM-DD', modo?, prazoDias?: 1–30 (14), marcaDagua?, galeria?, aviso?: versão do texto }` | `201 { evento }` |
+| `POST /api/foto/eventos` | `{ nome, data?: 'AAAA-MM-DD', modo?, criancas?, prazoDias?: 1–30 (14; com crianças 1–15, 7), marcaDagua?, galeria?, aviso?: versão do texto }` | `201 { evento }` |
 | `GET /api/foto/eventos/<id>` | — | `{ evento, fotos: [{ id, fotoId, nome, largura, altura, tipo, tamanho, sha256, enviada, mini, rostos, rostosEm }] }` |
-| `PATCH /api/foto/eventos/<id>` | os campos de criar (sem `galeria`) | `{ evento }`; `409 modo` (depois do rascunho), `409 prorrogado` (estender 2ª vez), `409 encerrado` |
+| `PATCH /api/foto/eventos/<id>` | os campos de criar (sem `galeria`) | `{ evento }`; `409 modo` (depois do rascunho), `409 prorrogado` (estender 2ª vez), `409 encerrado`, `409 criancas` (busca aberta com crianças; desligar depois do rascunho) |
 | `DELETE /api/foto/eventos/<id>` | — | `{ arquivos }` (o evento, as prévias e tudo o que é dele) |
 | `POST …/<id>/fotos` | `{ fotos: [{ fotoId, nome, ordem?, largura, altura, tipo, tamanho, sha256, mini? }] }` (até 500; até 5.000 por evento) | `{ fotos }` |
 | `DELETE …/<id>/fotos` | `{ ids: [id] }` | `{ fotos, arquivos }` |
@@ -443,7 +449,7 @@ prévias com marca-d'água. Sem armazenamento: `503 sem_armazenamento` em tudo.
 | `POST …/<id>/encerrar` | — | `{ evento }` — o link morre e os vetores, pedidos de busca e ligações somem na hora |
 | `GET …/<id>/pedidos` | — | `{ pedidos: [{ id, nome, contato, em, fotos: [{ id, fotoId, nome }] }] }` |
 
-A ficha (`evento`): `{ id, nome, data, modo, estado: 'rascunho'\|'publicado'\|'encerrado', prazo, prorrogado, marcaDagua,
+A ficha (`evento`): `{ id, nome, data, modo, criancas, estado: 'rascunho'\|'publicado'\|'encerrado', prazo, prorrogado, marcaDagua,
 galeria, aviso: { versao, em } | null, criadoEm, publicadoEm, encerradoEm, vetoresApagadosEm, arquivosApagadosEm,
 contagens: { fotos, enviadas, processadas, rostos, guardados, buscas, cadastros, remocoes, pessoas, pendentes, ligacoes,
 pedidos }, link: { id, temPin, aberturas, abertoEm, criadoEm } | null }`. O papel do app não lê `foto.evento_rostos`
@@ -455,16 +461,24 @@ Sempre `{ token, … }`, com a origem do próprio site. Link desconhecido, revog
 rascunho: `404 { erro: 'link' }`, igual em toda ação. Com PIN e sem a prova: `401 pin`. `versao` é a do texto que a
 pessoa viu (`src/rosto/textos.js`); o servidor grava a versão e o sha256 do texto, nunca nada da pessoa.
 
+**Aparelho**: a página (`GET /e/<token>`) e o `desafio` emitem o cookie `foto_ap` (16 bytes sorteados + HMAC, HttpOnly,
+`SameSite=Lax`, 30 dias) quando ele falta. Ele só conta buscas; no banco entra um HMAC dele com o link, que não liga um
+evento a outro. **Prova de vida**: toda busca (`achar`, `cadastrar`, `remover`) leva a `prova` emitida por `prova` para
+este aparelho, este link e estes vetores; uso único (a de `remocao` vale uma vez para conferir e uma para apagar; 3 min
+para buscar, 15 para a remoção). Sem ela, com ela gasta, de outro aparelho ou de outros vetores: `403 prova`.
+
 | ação | corpo | resposta |
 | --- | --- | --- |
-| `abrir` | `{ contar? }` | `{ estado: 'pin' }` ou `{ estado: 'ok', evento: { nome, data, modo, prazo, marcaDagua, fotos } }` |
+| `abrir` | `{ contar? }` | `{ estado: 'pin' }` ou `{ estado: 'ok', evento: { nome, data, modo, prazo, marcaDagua, criancas, fotos } }` |
 | `pin` | `{ pin }` | `{ ok }` + cookie `foto_epin_…` (12 h) |
 | `recusar` | `{ tipo: 'busca'\|'cadastro'\|'remocao', versao }` | `{ ok }` (registra a recusa) |
-| `achar` | `{ vetores: [1–3], versao }` | aberta: `{ eu: [foto], talvez: [foto] }` (até 200); consentimento: `409 modo` |
-| `cadastrar` | `{ vetores: [1–3], chave, versao }` | consentimento: `{ eu, talvez, processado, desde }`. `chave` = 32 bytes base64url do celular; o banco guarda o sha256. A mesma pessoa de novo reaproveita o pedido |
+| `desafio` | — | `{ desafio: { id, passos, em, selo }, prazoMs: 30000 }`: `passos` = a ordem sorteada de `esquerda`, `direita` e `perto` (o "esquerda" é o da pessoa); `selo` = HMAC do link, do aparelho, da ordem e da hora |
+| `prova` | `{ desafio, quadros: [{ t, p: [[x, y] × 5], m?, l? }] (3–360), vetores, para: 'busca'\|'cadastro'\|'remocao' }` (até 64 KB) | `{ prova, ate }`; `403 desafio` (selo de outro aparelho, ordem ou hora mexida), `403 prova` (desafio já usado), `422 { erro: 'vida', motivo }` (`prazo`, `passos`, `lacuna`, `salto`, `plano`, `tela`, `formato`). `t` em ms desde o desafio; `p` os pontos do detector (olhos, nariz, cantos da boca) no quadro de 320; `m` moiré e `l` brilho da bochecha (`src/rosto/vida.js`). Nenhum pixel |
+| `achar` | `{ vetores: [1–3], versao, prova \| lembranca }` | aberta: `{ eu: [foto], talvez: [foto], lembranca? }` (até 200); consentimento ou crianças: `409 modo`. `lembranca` (com a prova) deixa repetir a mesma busca neste aparelho, sem outra selfie, até 30 dias ("Lembrar neste aparelho") |
+| `cadastrar` | `{ vetores: [1–3], chave, versao, prova }` | consentimento: `{ eu, talvez, processado, desde }`. `chave` = 32 bytes base64url do celular; o banco guarda o sha256. A mesma pessoa de novo reaproveita o pedido |
 | `minhas` | `{ chave }` | `{ eu, talvez, processado, desde }` ou `404 chave` |
 | `desistir` | `{ chave }` | `{ ok }` (apaga os vetores e as ligações) |
-| `remover` | `{ vetores, fotos?, versao }` | aberta. Sem `fotos`: `{ fotos }` parecidas (≥ 0,45) para conferir. Com `fotos`: `{ removidos }` e o vetor de quem pediu fica até o prazo para barrar foto nova |
+| `remover` | `{ vetores, fotos?, versao, prova }` | aberta. Sem `fotos`: `{ fotos }` parecidas (≥ 0,45) para conferir. Com `fotos`: `{ removidos }` e o vetor de quem pediu fica até o prazo para barrar foto nova |
 | `pedir` | `{ nome, contato, fotos: [id] }` | `{ fotos }` (sem pagamento) |
 
 `foto` = `{ id, largura, altura, v, mini }` (`v` e `mini`: começo do sha256). A imagem: `GET /e/<token>/i/<foto>?v=mini&s=<mini>`
@@ -475,9 +489,18 @@ pessoa viu (`src/rosto/textos.js`); o servidor grava a versão e o sha256 do tex
 Faixas (`src/rosto/decidir.js`, a mesma conta em `foto.rosto_faixa`): **É você** ≥ 0,50 com um quadro ou ≥ 0,45 em dois,
 só em rosto ≥ 24 px, nota ≥ 0,75, não colado, não de perfil; **Talvez** ≥ 0,40.
 
-Limites a mais: busca, pedido de busca e remoção, 5 a cada 10 min e 30 por dia por link e IP (1.200 por hora por link);
-abrir 3.000 por hora por link; PIN errado 5 a cada 15 min por link e IP e 60 por link; `minhas`/`desistir` 120 por hora por
-link e IP; `pedir` 10 por hora por link e IP; imagens 40.000 por hora por link e 3.000 por IP.
+Limites da busca (`achar`, `cadastrar`, `remover`), em camadas, `429 { erro: 'limite', escopo }`:
+
+| escopo | limite | por quê |
+| --- | --- | --- |
+| `aparelho` | 5 a cada 10 min e 30 por dia, por link e aparelho | o limite fino: um aparelho repetindo é barrado sem travar o salão |
+| `rede` | 900 a cada 10 min e 6.000 por dia, por link e IP | 300 convidados no mesmo Wi-Fi × 3 tentativas (a busca, outra com mais luz, a remoção) na janela do cartaz |
+| `evento` | 3.000 por hora, por link | teto contra varredura automatizada, valendo para todas as redes |
+
+Desafio: 12 a cada 10 min por aparelho, 1.800 por IP, 6.000 por hora por link (cada desafio vale uma prova só). Qualquer
+pedido de evento por IP: 6.000 por hora. Abrir 3.000 por hora por link; PIN errado 5 a cada 15 min por link e IP e 60 por
+link; `minhas`/`desistir` 120 por hora por link e IP; `pedir` 10 por hora por link e IP; imagens 40.000 por hora por link
+e 15.000 por IP. Trocar de cookie não ajuda: aparelho novo não tem prova, e a prova custa uma captura ao vivo.
 
 Limpeza do prazo: `limparEventos()` (`api/_evento.js`, pela conexão do dono; roda todo dia em `api/cron/limpar.js`) chama
 `foto.eventos_limpar()` (vetores, pedidos de busca, ligações e remoções somem; o evento encerra) e apaga as prévias dos

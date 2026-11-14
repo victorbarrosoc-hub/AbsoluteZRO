@@ -612,7 +612,8 @@ function App() {
         : erro.startsWith('vida') || erro === 'prova'
           ? setFase('camera')
           : abrir(false)
-    return html`<${Estado} ...${e} marca=${erro.startsWith('limite') ? icone.relogio() : undefined} aoAgir=${agir} /><${Assinatura} />`
+    const marca = erro.startsWith('limite') ? icone.relogio() : erro.startsWith('vida') || erro === 'prova' ? icone.rosto() : undefined
+    return html`<${Estado} ...${e} marca=${marca} aoAgir=${agir} /><${Assinatura} />`
   }
   if (fase === 'inicio' || fase === 'pedido-remocao')
     return html`<${Pedido}

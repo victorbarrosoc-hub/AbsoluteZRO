@@ -1,15 +1,21 @@
 // A página do visitante (/e/<token>) e o lado do fotógrafo no Chromium de verdade, com os cabeçalhos de produção
 // (vercel.json), um Postgres temporário, a pasta local de arquivos, o ONNX Runtime e os modelos de verdade, e uma
-// CÂMERA FALSA: o Chromium lê um vídeo .y4m gerado aqui a partir de um rosto SINTÉTICO desenhado num canvas (nenhuma foto
-// de gente). O fotógrafo (app/rosto/preparo.js, o mesmo código do painel) prepara as fotos sintéticas do evento:
-// rostos, prévias com marca-d'água, upload; publica. O visitante:
-//   - busca aberta: consentimento → câmera ao vivo (de frente, vira, o outro lado) → "É você" → favoritar → pedir;
+// CÂMERA FALSA: o Chromium lê um vídeo .y4m gerado aqui (nenhuma foto de gente). Dois vídeos: uma CABEÇA 3D sintética
+// (test/apoio-cabeca.js: elipsoide com nariz, a textura do rosto desenhado, luz) que gira para os dois lados e chega
+// perto, em laço; e o MESMO rosto num plano (foto ou tela) que gira e chega perto. O fotógrafo (app/rosto/preparo.js,
+// o mesmo código do painel) prepara as fotos sintéticas do evento: rostos, prévias com marca-d'água, upload; publica.
+// O visitante:
+//   - busca aberta: consentimento → câmera ao vivo → o desafio sorteado pelo servidor (vire para a esquerda, para a
+//     direita, chegue mais perto, na ordem pedida) → a prova conferida no servidor → "É você" → favoritar → pedir;
+//   - o mesmo rosto num plano girando: o desafio não se cumpre, nada é buscado; a planaridade e a guinada medidas com o
+//     YuNet de verdade nos quadros das duas cabeças;
+//   - o limite do aparelho, com a mensagem curta; evento com crianças (a caixa do responsável destacada);
 //   - com consentimento: pedido feito → o computador do fotógrafo compara e sobe as ligações → a pessoa volta pelo link
 //     e vê as fotos;
 //   - "não quero aparecer": confere e tira da busca;
 //   - o que sai pela rede é só o vetor (base64 de 128 bytes por quadro), nunca imagem;
 //   - 390 px e 1440 px, claro e escuro, sem erro de console, sem violação de CSP, sem pedido para fora.
-// Capturas em FOTO_TELAS (ou numa pasta temporária): evento-*.png.
+// Capturas em FOTO_TELAS (ou numa pasta temporária): evento-*.png e evento2-*.png (desafio, limite, crianças).
 
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -20,6 +26,8 @@ import { createRequire } from 'node:module'
 import postgres from 'postgres'
 import { NOME } from '../app/nome.js'
 import { pastaDasTelas, vigiar } from './apoio-tela.js'
+import { renderizar } from './apoio-cabeca.js'
+import { dioDe, formaDe, guinadaNaImagem, paralaxe, VIDA } from '../src/rosto/vida.js'
 import { semPostgres, subirPostgres } from './banco-apoio.js'
 
 const EXIGIR = process.env.FOTO_EXIGIR === '1'
@@ -159,7 +167,7 @@ function i420(rgba, L, A) {
   return Buffer.concat([y, u, v])
 }
 
-let pg, dono, servidor, base, pasta, saida, telas, navegador, cameraNav, arquivoVideo, dados
+let pg, dono, servidor, base, pasta, saida, telas, navegador, cameraNav, planoNav, videos, dados, textura
 
 async function subirApp(urlFoto) {
   process.env.FOTO_LOCAL = '1'
@@ -216,9 +224,13 @@ async function prepararEventos(pagina) {
       miniaturas: { grande: async (id) => blobs[id] },
     }
     const saida = {}
-    for (const modo of ['aberta', 'consentimento']) {
-      const { evento } = await api('POST', '', { nome: modo === 'aberta' ? 'Corrida da Serra' : 'Casamento Lia e Rui', data: '2026-11-20', modo, prazoDias: 14,
-        aviso: modo === 'aberta' ? 'ativacao-aberta-2026-11-13' : 'ativacao-consentimento-2026-11-13' })
+    const fichas = {
+      aberta: { nome: 'Corrida da Serra', modo: 'aberta', prazoDias: 14, aviso: 'ativacao-aberta-2026-11-13' },
+      consentimento: { nome: 'Casamento Lia e Rui', modo: 'consentimento', prazoDias: 14, aviso: 'ativacao-consentimento-2026-11-13' },
+      criancas: { nome: 'Festa da Escola', criancas: true, prazoDias: 7, aviso: 'ativacao-criancas-2026-11-14' },
+    }
+    for (const modo of Object.keys(fichas)) {
+      const { evento } = await api('POST', '', { data: '2026-11-20', ...fichas[modo] })
       const t0 = performance.now()
       const p = criarPreparo({ loja, evento, ids, marca: 'Prova' })
       await p.comecar()
@@ -234,32 +246,61 @@ async function prepararEventos(pagina) {
   return pagina.evaluate(codigo)
 }
 
-/** Os 3 quadros do vídeo (de frente, girado para um lado e para o outro), 640 × 480, em I420. */
-async function fabricarVideo(pagina) {
-  const quadros = await pagina.evaluate(`(async () => {
+/** A textura do rosto (o mesmo desenho das fotos do evento, de frente), RGBA 512 × 512, 120 px por distância entre olhos. */
+async function fabricarTextura(pagina) {
+  const b64 = await pagina.evaluate(`(async () => {
     ${desenharRosto.toString()}
-    const saida = []
-    for (const giro of [0, 0.7, -0.7]) {
-      const t = new OffscreenCanvas(640, 480)
-      const c = t.getContext('2d')
-      const g = c.createLinearGradient(0, 0, 640, 480)
-      g.addColorStop(0, '#8d9aa3')
-      g.addColorStop(1, '#5d6870')
-      c.fillStyle = g
-      c.fillRect(0, 0, 640, 480)
-      desenharRosto(c, { cx: 320, cy: 250, largura: 210, giro })
-      const d = c.getImageData(0, 0, 640, 480).data
-      let s = ''
-      for (let i = 0; i < d.length; i += 8192) s += String.fromCharCode(...d.subarray(i, i + 8192))
-      saida.push(btoa(s))
-    }
-    return saida
+    const t = new OffscreenCanvas(512, 512)
+    desenharRosto(t.getContext('2d'), { cx: 256, cy: 256, largura: 300, giro: 0 })
+    const d = t.getContext('2d').getImageData(0, 0, 512, 512).data
+    let s = ''
+    for (let i = 0; i < d.length; i += 8192) s += String.fromCharCode(...d.subarray(i, i + 8192))
+    return btoa(s)
   })()`)
-  const [frente, direita, esquerda] = quadros.map((b) => i420(Buffer.from(b, 'base64'), 640, 480))
-  const ordem = [...Array(18).fill(frente), ...Array(12).fill(direita), ...Array(4).fill(frente), ...Array(12).fill(esquerda), ...Array(4).fill(frente)]
+  return { largura: 512, altura: 512, dados: Buffer.from(b64, 'base64'), escala: 120, cx: 256, cy: 256 }
+}
+
+const GRAU = Math.PI / 180
+const fundo = (x, y) => {
+  const k = (x + y) / 1120
+  return [141 - 48 * k, 154 - 50 * k, 163 - 51 * k]
+}
+
+/**
+ * O laço do vídeo, a 15 quadros por segundo: de frente; vira para a esquerda (da pessoa) e volta; de frente; para a
+ * direita e volta; de frente; chega perto e volta. Qualquer ordem sorteada cabe em até 3 voltas (~19 s, dentro dos 30).
+ */
+function laco({ giro = 28, perto = 2.4 } = {}) {
+  const poses = []
+  const parado = (n, pose) => {
+    for (let i = 0; i < n; i++) poses.push(pose)
+  }
+  const ida = (n, alvo) => {
+    for (let i = 1; i <= n; i++) poses.push(Object.fromEntries(Object.entries(alvo).map(([k, v]) => [k, (v * i) / n])))
+  }
+  const volta = (n, alvo) => {
+    for (let i = n - 1; i >= 0; i--) poses.push(Object.fromEntries(Object.entries(alvo).map(([k, v]) => [k, (v * i) / n])))
+  }
+  parado(15, {})
+  for (const alvo of [{ guinada: giro * GRAU }, { guinada: -giro * GRAU }, { z: perto }]) {
+    ida(5, alvo)
+    parado(11, alvo)
+    volta(5, alvo)
+    parado(5, {})
+  }
+  return poses
+}
+
+/** Um vídeo .y4m (640 × 480, I420, 15 qps) da cabeça 3D ou do mesmo rosto num plano. Quadros iguais são renderizados uma vez. */
+function fabricarVideo(nome, { plano = false, giro, perto }) {
+  const cache = new Map()
   const partes = [Buffer.from('YUV4MPEG2 W640 H480 F15:1 Ip A1:1 C420jpeg\n')]
-  for (const q of ordem) partes.push(Buffer.from('FRAME\n'), q)
-  const arquivo = join(saida, 'camera.y4m')
+  for (const pose of laco({ giro, perto })) {
+    const k = JSON.stringify(pose)
+    if (!cache.has(k)) cache.set(k, i420(renderizar({ textura, pose, plano, fundo }), 640, 480))
+    partes.push(Buffer.from('FRAME\n'), cache.get(k))
+  }
+  const arquivo = join(saida, `${nome}.y4m`)
   writeFileSync(arquivo, Buffer.concat(partes))
   return arquivo
 }
@@ -281,14 +322,18 @@ before(async () => {
   const fot = await navegador.newPage()
   await fot.goto(`${base}/`)
   dados = await prepararEventos(fot)
-  arquivoVideo = await fabricarVideo(fot)
+  textura = await fabricarTextura(fot)
+  // a cabeça gira 28° e chega 2,4 distâncias entre os olhos mais perto; o plano gira 40° (a foto que quem ataca vira)
+  videos = { cabeca: fabricarVideo('cabeca', {}), plano: fabricarVideo('plano', { plano: true, giro: 40 }) }
   dados.fotografo = fot
-  cameraNav = await playwright.chromium.launch({
-    args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-video-capture=${arquivoVideo}`],
-  })
+  const camera = (arquivo) =>
+    playwright.chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', `--use-file-for-fake-video-capture=${arquivo}`] })
+  cameraNav = await camera(videos.cabeca)
+  planoNav = await camera(videos.plano)
 })
 after(async () => {
   await cameraNav?.close()
+  await planoNav?.close()
   await navegador?.close()
   if (servidor) await new Promise((ok) => servidor.close(ok))
   await dono?.end({ timeout: 5 })
@@ -303,10 +348,10 @@ test('Chromium, Postgres e os modelos de rosto são exigidos no CI', { skip: !EX
 })
 
 /** Um visitante com câmera falsa: contexto novo (sem cache), na largura pedida e no tema pedido. */
-async function visitante({ largura = 390, altura = 844, tema = 'claro' } = {}) {
-  // todos os visitantes daqui saem do mesmo IP: o limite de buscas por link e IP (5 em 10 min) zera a cada um
+async function visitante({ largura = 390, altura = 844, tema = 'claro', nav = cameraNav } = {}) {
+  // cada visitante é um aparelho novo (contexto novo, cookie novo); os limites zeram para não somar entre os testes
   await dono`delete from foto.limites`
-  const ctx = await cameraNav.newContext({ viewport: { width: largura, height: altura }, deviceScaleFactor: 2, permissions: ['camera'] })
+  const ctx = await nav.newContext({ viewport: { width: largura, height: altura }, deviceScaleFactor: 2, permissions: ['camera'] })
   if (tema === 'escuro') await ctx.addCookies([{ name: 'foto_tema', value: 'escuro', url: base }])
   const pagina = await ctx.newPage()
   const olho = vigiar(pagina, base)
@@ -331,16 +376,23 @@ const semProblemas = (olho, rotulo) => {
     `${rotulo}: falhas`,
   )
 }
-/** O que saiu pela rede é JSON, sem imagem, e os vetores são base64 de 128 bytes. */
+/**
+ * O que saiu pela rede é JSON, sem imagem, e os vetores são base64 de 128 bytes. A prova leva também os 5 pontos do
+ * detector quadro a quadro, o tempo, o moiré e o brilho: só números, nenhum pixel.
+ */
 function soVetores(enviados) {
   assert.ok(enviados.length > 0)
   for (const e of enviados) {
     assert.match(e.tipo, /^application\/json/, e.url)
-    assert.ok(e.corpo.length < 2000, `${e.url}: ${e.corpo.length} bytes`)
+    assert.ok(e.corpo.length < (e.url === '/api/evento/prova' ? 65536 : 2000), `${e.url}: ${e.corpo.length} bytes`)
     assert.ok(!/data:image|base64,|\/9j\//.test(e.corpo), `${e.url}: imagem?`)
     const j = JSON.parse(e.corpo)
-    const permitidas = new Set(['token', 'contar', 'versao', 'vetores', 'chave', 'tipo', 'pin', 'nome', 'contato', 'fotos'])
+    const permitidas = new Set(['token', 'contar', 'versao', 'vetores', 'chave', 'tipo', 'pin', 'nome', 'contato', 'fotos', 'prova', 'lembranca', 'desafio', 'quadros', 'para'])
     for (const k of Object.keys(j)) assert.ok(permitidas.has(k), `${e.url}: campo ${k}`)
+    for (const q of j.quadros ?? []) {
+      assert.deepEqual(Object.keys(q).filter((k) => !['t', 'p', 'm', 'l'].includes(k)), [], 'quadro: só tempo, pontos, moiré e brilho')
+      assert.ok(q.p.length === 5 && q.p.flat().every(Number.isFinite))
+    }
     for (const v of j.vetores ?? []) {
       assert.equal(v.length, 172)
       assert.equal(Buffer.from(v, 'base64').length, 128)
@@ -489,6 +541,155 @@ test('escuro e computador: consentimento, câmera e resultados em 1440 px; "não
   await ctx.close()
 })
 
+/** Pede ao worker do rosto (o mesmo da página do visitante) a análise de um quadro RGBA 640 × 480. */
+async function analisar(pagina, rgba) {
+  const b64 = Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength).toString('base64')
+  return pagina.evaluate(`(async () => {
+    if (!window.__rosto) {
+      const w = new Worker('/app/rosto/worker.js', { type: 'module' })
+      let seq = 0
+      const pend = new Map()
+      w.onmessage = (e) => {
+        const p = pend.get(e.data.id)
+        if (!p || e.data.progresso !== undefined) return
+        pend.delete(e.data.id)
+        e.data.ok ? p.ok(e.data.resultado) : p.falha(new Error(e.data.erro.mensagem))
+      }
+      window.__rosto = (tipo, dados, tr = []) => new Promise((ok, falha) => { const id = ++seq; pend.set(id, { ok, falha }); w.postMessage({ id, tipo, dados }, tr) })
+      await window.__rosto('preparar', {})
+    }
+    const s = atob('${b64}')
+    const a = new Uint8ClampedArray(s.length)
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i)
+    const bmp = await createImageBitmap(new ImageData(a, 640, 480))
+    const r = await window.__rosto('quadro', { bitmap: bmp, querer: ['frente'] }, [bmp])
+    return { pontos: r.pontos, m: r.tela?.m ?? null }
+  })()`)
+}
+
+test('planaridade e guinada com o YuNet de verdade: a cabeça 3D girando passa; o mesmo rosto num plano não chega ao giro', { skip: pular, timeout: 240_000 }, async () => {
+  const pagina = dados.fotografo
+  const medir = async (plano, poses) => {
+    const ref = (await analisar(pagina, renderizar({ textura, pose: {}, plano, fundo }))).pontos
+    const saida = []
+    for (const [nome, pose] of poses) {
+      const a = await analisar(pagina, renderizar({ textura, pose, plano, fundo }))
+      if (!a.pontos) continue
+      saida.push({ nome, g: guinadaNaImagem(a.pontos), par: paralaxe(ref, a.pontos), forma: formaDe(ref, a.pontos), m: a.m, dio: dioDe(a.pontos) / dioDe(ref) })
+    }
+    return saida
+  }
+  const giros = []
+  for (const g of [15, 20, 25, 30, 40]) giros.push([`e${g}`, { guinada: g * GRAU }], [`d${g}`, { guinada: -g * GRAU }])
+  const cabeca = await medir(false, giros)
+  const planos = []
+  for (const g of [10, 20, 30, 40, 50, 60, 70]) planos.push([`e${g}`, { guinada: g * GRAU }], [`d${g}`, { guinada: -g * GRAU }])
+  for (const a of [20, 35]) for (const g of [30, 50]) planos.push([`a${a}e${g}`, { guinada: g * GRAU, arfagem: a * GRAU }], [`a${a}d${g}`, { guinada: -g * GRAU, arfagem: -a * GRAU }])
+  const plano = await medir(true, planos)
+  const perto = await medir(false, [['perto', { z: 2.4 }]])
+  const linha = (xs) => xs.map((x) => `${x.nome} g ${x.g.toFixed(2)} par ${x.par.toFixed(2)} forma ${x.forma.toFixed(2)} m ${x.m}`).join('; ')
+  console.log(`# medida (YuNet): cabeça ${linha(cabeca)}`)
+  console.log(`# medida (YuNet): plano ${linha(plano)}`)
+  console.log(`# medida (YuNet): perto ${perto[0].dio.toFixed(2)}× a distância entre os olhos`)
+  assert.equal(cabeca.length, giros.length, 'o detector acha a cabeça em todos os giros')
+  // a cabeça girando 15° ou mais: virou para o lado pedido, com profundidade
+  for (const x of cabeca) {
+    const lado = x.nome[0] === 'e' ? 1 : -1
+    assert.ok(lado * x.g >= VIDA.giro, `cabeça ${x.nome}: guinada ${x.g}`)
+    assert.ok(x.par >= VIDA.paralaxe, `cabeça ${x.nome}: paralaxe ${x.par}`)
+  }
+  // o plano girado ou inclinado: nenhum quadro conta como giro (a guinada não chega, ou a forma é de cartão deitado)
+  for (const x of plano) assert.ok(Math.abs(x.g) < VIDA.giro || x.forma < VIDA.forma[0] || x.forma > VIDA.forma[1], `plano ${x.nome}: ${JSON.stringify(x)}`)
+  assert.ok(perto[0].dio >= VIDA.perto, 'chegar perto cresce o rosto o bastante')
+})
+
+/** Abre o pedido, marca a caixa e permite; espera a câmera. */
+async function abrirCamera(pagina, endereco) {
+  await pagina.goto(endereco)
+  await buscarPeloRosto(pagina)
+}
+const enderecoDe = (modo) => dados[modo].endereco.replace(/^https?:\/\/[^/]+/, base)
+
+test('desafio de vida: a câmera pede os passos sorteados (claro e escuro); o mesmo rosto num plano não passa e nada é buscado', { skip: pular, timeout: 300_000 }, async () => {
+  for (const tema of ['claro', 'escuro']) {
+    const { ctx, pagina, olho } = await visitante({ tema })
+    await abrirCamera(pagina, enderecoDe('aberta'))
+    await pagina.locator('.oval').waitFor({ timeout: 60_000 })
+    // a instrução do desafio aparece (com a seta), não só "olhe para a câmera"
+    await pagina.locator('.dica[data-passo="esquerda"], .dica[data-passo="direita"], .dica[data-passo="perto"]').waitFor({ timeout: 30_000 })
+    await pagina.locator('.seta').waitFor({ timeout: 10_000 })
+    assert.match(await pagina.locator('.dica').textContent(), /Vire para a sua (esquerda|direita)|Chegue mais perto/)
+    await pagina.waitForTimeout(500)
+    await pagina.screenshot({ path: join(telas, `evento2-desafio-390-${tema}.png`) })
+    semProblemas(olho, `desafio ${tema}`)
+    await ctx.close()
+  }
+  // o mesmo rosto numa foto (plano) que gira e chega perto: o desafio não se cumpre no prazo; nada é buscado
+  const { ctx, pagina, olho, enviados } = await visitante({ nav: planoNav })
+  await abrirCamera(pagina, enderecoDe('aberta'))
+  await pagina.getByRole('heading', { name: /tempo acabou|confirmar/ }).waitFor({ timeout: 70_000 })
+  await tirar(pagina, 'vida-plano-390-claro')
+  await pagina.screenshot({ path: join(telas, 'evento2-vida-plano-390-claro.png') })
+  assert.ok(enviados.some((e) => e.url === '/api/evento/desafio'))
+  assert.ok(!enviados.some((e) => ['/api/evento/achar', '/api/evento/prova'].includes(e.url)), 'nada foi comparado')
+  semProblemas(olho, 'plano')
+  // "Tentar de novo" volta à câmera com outro desafio
+  await pagina.getByRole('button', { name: 'Tentar de novo' }).click()
+  await pagina.locator('.camera').waitFor()
+  await ctx.close()
+})
+
+test('limite: "Muitas buscas deste aparelho." (claro e escuro), curto e com a saída de volta', { skip: pular, timeout: 180_000 }, async () => {
+  const { REGRAS_EVENTO } = await import('../api/_evento.js')
+  const antes = REGRAS_EVENTO.desafioAparelho.max
+  try {
+    for (const tema of ['claro', 'escuro']) {
+      const { ctx, pagina, olho } = await visitante({ tema })
+      REGRAS_EVENTO.desafioAparelho.max = 0
+      await abrirCamera(pagina, enderecoDe('aberta'))
+      await pagina.getByRole('heading', { name: /Muitas buscas deste aparelho/ }).waitFor({ timeout: 60_000 })
+      assert.match(await pagina.locator('.apoio').first().textContent(), /Tente em alguns minutos\./)
+      await tirar(pagina, `limite-390-${tema}`)
+      await pagina.screenshot({ path: join(telas, `evento2-limite-390-${tema}.png`) })
+      REGRAS_EVENTO.desafioAparelho.max = antes
+      // o 429 aparece no console do navegador (é o servidor dizendo não); o resto, limpo
+      olho.erros = olho.erros.filter((e) => !/status of 429/.test(e))
+      semProblemas(olho, `limite ${tema}`)
+      await pagina.getByRole('button', { name: 'Voltar' }).click()
+      await pagina.getByRole('heading', { name: /Achar suas fotos pelo rosto\?/ }).waitFor()
+      await ctx.close()
+    }
+  } finally {
+    REGRAS_EVENTO.desafioAparelho.max = antes
+  }
+})
+
+test('evento com crianças: a caixa do responsável, destacada e obrigatória; o pedido grava o texto dos responsáveis', { skip: pular, timeout: 240_000 }, async () => {
+  for (const tema of ['claro', 'escuro']) {
+    const { ctx, pagina, olho, enviados } = await visitante({ tema })
+    await pagina.goto(enderecoDe('criancas'))
+    await pagina.getByRole('heading', { name: /Achar as fotos pelo rosto\?/ }).waitFor()
+    assert.equal(await pagina.locator('.ficha-criancas').textContent(), 'Evento com crianças')
+    const caixa = pagina.locator('.caixa--destaque')
+    assert.match(await caixa.textContent(), /Sou responsável por quem aparece na selfie\./)
+    assert.doesNotMatch(await caixa.textContent(), /18 anos/)
+    assert.equal(await pagina.getByRole('button', { name: 'Permitir' }).isDisabled(), true)
+    await tirar(pagina, `criancas-390-${tema}`)
+    await pagina.screenshot({ path: join(telas, `evento2-criancas-390-${tema}.png`) })
+    if (tema === 'claro') {
+      await buscarPeloRosto(pagina, { titulo: /Achar as fotos pelo rosto\?/ })
+      await pagina.getByRole('heading', { name: /Pedido feito/ }).waitFor({ timeout: 120_000 })
+      const cad = enviados.find((e) => e.url === '/api/evento/cadastrar')
+      assert.equal(JSON.parse(cad.corpo).versao, 'cadastro-criancas-2026-11-14')
+      const [r] = await dono`select versao from foto.evento_consentimentos where evento = ${dados.criancas.id} and tipo = 'cadastro'`
+      assert.equal(r.versao, 'cadastro-criancas-2026-11-14')
+      soVetores(enviados)
+    }
+    semProblemas(olho, `crianças ${tema}`)
+    await ctx.close()
+  }
+})
+
 test('o painel do fotógrafo: lista os eventos, abre um, publica outro e mostra o endereço com o QR', { skip: pular, timeout: 120_000 }, async () => {
   const pagina = dados.fotografo
   await pagina.setViewportSize({ width: 1440, height: 900 })
@@ -506,8 +707,16 @@ test('o painel do fotógrafo: lista os eventos, abre um, publica outro e mostra 
     render(html\`<\${PainelEvento} loja=\${loja} />\`, caixa)
   })()`)
   await pagina.getByRole('button', { name: /Corrida da Serra/ }).waitFor()
-  assert.equal(await pagina.locator('.rosto-item').count(), 2)
+  assert.equal(await pagina.locator('.rosto-item').count(), 3)
+  assert.equal(await pagina.locator('.rosto-item .ficha--forte').count(), 1, 'o evento com crianças aparece marcado')
   await tirar(pagina, 'painel-1440-claro')
+  // o evento com crianças: uma linha no detalhe
+  await pagina.getByRole('button', { name: /Festa da Escola/ }).click()
+  await pagina.locator('.rosto-criancas').waitFor()
+  assert.match(await pagina.locator('.rosto-criancas').textContent(), /Com crianças: só um responsável pede a busca\. As assinaturas somem em/)
+  await tirar(pagina, 'painel-criancas-1440-claro')
+  await pagina.screenshot({ path: join(telas, 'evento2-painel-criancas-1440-claro.png') })
+  await pagina.getByRole('button', { name: 'Eventos' }).click()
   await pagina.getByRole('button', { name: /Casamento Lia e Rui/ }).click()
   await pagina.locator('.rosto-numeros').waitFor()
   await pagina.locator('.rosto-fila').waitFor({ timeout: 30_000 })

@@ -113,7 +113,8 @@ export function FolhaDePessoas({ aberta, aoFechar, loja, esteira, est }) {
   const [consentiu, definirConsentiu] = useState(false)
   const e = est.pessoas
   const c = loja.catalogo
-  const semRostos = !est.camadas.includes('rostos')
+  // sem a camada de rostos e sem rosto lido antes, não há o que agrupar
+  const semRostos = !est.camadas.includes('rostos') && !c.fotos().some((f) => Array.isArray(f.rostos))
   const ver = (p) => {
     c.filtrar({ ids: p.fotos, idsDe: chaveDoFiltro(p) })
     aoFechar()
